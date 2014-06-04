@@ -1,0 +1,15 @@
+<div>
+    <script type="text/javascript" src="/static_view/time_series_volume/scripts/timeseriesVolume.js?$currentVersionJS"></script>
+    <script type="text/javascript" src="/static/js/webGL_Connectivity.js?$currentVersionJS"></script>
+    <script type="text/javascript" src="/static/colorScheme/js/colorSchemeComponent.js?$currentVersionJS"></script>
+
+    <canvas id="volumetric-ts-canvas"></canvas>
+
+    <script type="text/javascript">
+        $().ready(function() {
+            startVisualiser('${dataUrls}', ${minValue}, ${maxValue}, '${volumeOrigin}', '${voxelSize}', '${voxelUnit}');
+            $("#volumetric-ts-canvas").mousedown(customMouseDown).mouseup(customMouseUp)
+                                      .mousemove(customMouseMove)
+        })
+    </script>
+</div>

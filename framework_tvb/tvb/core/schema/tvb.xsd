@@ -1,0 +1,202 @@
+<?xml version="1.0"?>
+<xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema">
+
+    <xs:annotation>
+    	<xs:documentation>
+	    	This is a validation XML schema.
+			You should use this in case you intend to produce TVB compatible interfaces.
+			You are expected to write your algorithms in some programming language (e.g. Matlab, Python) and then describe its interface in an XML file.
+			The XML file, if compatible with this XSD, will be parsable by TVB, thus integrated in TVB's UI and results processed by our visualizers.
+		</xs:documentation>
+	</xs:annotation>
+
+	<xs:simpleType name="alfaNumericString">
+		<xs:restriction base="xs:string">
+			<xs:minLength value="1" />
+			<xs:pattern value="[a-zA-Z0-9]*" />
+		</xs:restriction>
+	</xs:simpleType>
+
+    <xs:element name="tvb">
+        <xs:complexType>
+            <xs:all>
+                <xs:element name="algorithm_group" type="algorithmGroupType"/>
+            </xs:all>
+        </xs:complexType>
+    </xs:element>
+
+
+    <xs:complexType name="algorithmGroupType">
+        <xs:sequence>
+            <xs:element name="algorithm" type="algorithmType" minOccurs="1" maxOccurs="unbounded"/>
+        </xs:sequence>
+        <xs:attribute name="name" type="xs:string" use="required"/>
+        <xs:attribute name="type" type="xs:string" use="required"/>
+        <xs:attribute name="uiName" type="xs:string" use="required"/>
+        <xs:attribute name="description" type="xs:string" use="optional"/>
+        <xs:attribute name="label" type="xs:string" use="required"/>
+        <xs:attribute name="additionalPath" type="xs:string" use="optional"/>
+        <xs:attribute name="subsection" type="xs:string" use="optional"/>
+    </xs:complexType>
+
+
+    <xs:complexType name="algorithmType">
+        <xs:sequence>
+            <xs:element name="code" type="codeType"/>
+            <xs:element name="matlab_file" type="codeType" minOccurs="0"/>
+            <xs:element name="inputs" minOccurs="0">
+                <xs:complexType>
+                    <xs:sequence>
+                        <xs:element name="input" type="inputType" minOccurs="1" maxOccurs="unbounded"/>
+                    </xs:sequence>
+                </xs:complexType>
+            </xs:element>
+            <xs:element name="outputs" type="outputsType" minOccurs="0"/>
+        </xs:sequence>
+        <xs:attribute name="name" type="xs:string" use="required"/>
+        <xs:attribute name="identifier" type="alfaNumericString" use="required"/>
+    </xs:complexType>
+
+
+    <xs:complexType name="codeType">
+        <xs:attribute name="value" type="xs:string" use="required"/>
+        <xs:attribute name="import" type="xs:string" use="optional"/>
+    </xs:complexType>
+
+
+    <xs:complexType name="inputType">
+        <xs:sequence>
+            <xs:element name="name">
+                <xs:complexType>
+                    <xs:attribute name="value" type="xs:string" use="required"/>
+                </xs:complexType>
+            </xs:element>
+            <xs:element name="label">
+                <xs:complexType>
+                    <xs:attribute name="value" type="xs:string" use="required"/>
+                </xs:complexType>
+            </xs:element>
+            <xs:element name="description" minOccurs="0">
+                <xs:complexType>
+                    <xs:attribute name="value" type="xs:string" use="required"/>
+                </xs:complexType>
+            </xs:element>
+            <xs:element name="type" type="type"/>
+        </xs:sequence>
+        <xs:attribute name="required" use="optional">
+            <xs:simpleType>
+                <xs:restriction base="xs:string">
+                    <xs:enumeration value="True"/>
+                    <xs:enumeration value="False"/>
+                </xs:restriction>
+            </xs:simpleType>
+        </xs:attribute>
+        <xs:attribute name="overwrite" type="xs:string" use="optional"/>
+    </xs:complexType>
+
+
+    <xs:complexType name="type">
+        <xs:sequence>
+            <xs:element name="options" type="optionsType" minOccurs="0" maxOccurs="1"/>
+            <xs:element name="conditions" type="conditionsType" minOccurs="0" maxOccurs="1"/>
+            <xs:element name="pre_process" type="preProcessType" minOccurs="0" maxOccurs="1"/>
+        </xs:sequence>
+        <xs:attribute name="value" type="xs:string" use="required"/>
+        <xs:attribute name="field" type="xs:string" use="optional"/>
+        <xs:attribute name="initparam" type="xs:string" use="optional"/>
+        <xs:attribute name="default" type="xs:string" use="optional"/>
+        <xs:attribute name="minValue" type="xs:string" use="optional"/>
+        <xs:attribute name="maxValue" type="xs:string" use="optional"/>
+    </xs:complexType>
+
+    <xs:complexType name="preProcessType">
+        <xs:sequence>
+            <xs:element name="python_method" minOccurs="1" maxOccurs="1">
+                <xs:complexType>
+                    <xs:attribute name="value" type="xs:string" use="required"/>
+                </xs:complexType>
+            </xs:element>
+            <xs:element name="ui_method" minOccurs="1" maxOccurs="1">
+                <xs:complexType>
+                    <xs:attribute name="value" type="xs:string" use="required"/>
+                    <xs:attribute name="parameters_prefix" type="xs:string" use="required"/>
+                </xs:complexType>
+            </xs:element>
+            <xs:element name="parameters" minOccurs="0" maxOccurs="1">
+                <xs:complexType>
+                    <xs:sequence>
+                        <xs:element name="parameter" minOccurs="1" maxOccurs="unbounded">
+                            <xs:complexType>
+                                <xs:attribute name="name" type="xs:string" use="required"/>
+                                <xs:attribute name="value" type="xs:string" use="required"/>
+                                <xs:attribute name="operations" type="xs:string" use="optional"/>
+                            </xs:complexType>
+                        </xs:element>
+                    </xs:sequence>
+                </xs:complexType>
+            </xs:element>
+        </xs:sequence>
+    </xs:complexType>
+
+    <xs:complexType name="conditionsType">
+        <xs:sequence>
+            <xs:element name="cond_fields" minOccurs="1" maxOccurs="1">
+                <xs:complexType>
+                    <xs:attribute name="value_list" type="xs:string" use="required"/>
+                </xs:complexType>
+            </xs:element>
+            <xs:element name="cond_operations" minOccurs="1" maxOccurs="1">
+                <xs:complexType>
+                    <xs:attribute name="value_list" type="xs:string" use="required"/>
+                </xs:complexType>
+            </xs:element>
+            <xs:element name="cond_values" minOccurs="1" maxOccurs="1">
+                <xs:complexType>
+                    <xs:attribute name="value_list" type="xs:string" use="required"/>
+                </xs:complexType>
+            </xs:element>
+        </xs:sequence>
+    </xs:complexType>
+
+
+    <xs:complexType name="optionsType">
+        <xs:sequence>
+            <xs:element name="option" minOccurs="1" maxOccurs="unbounded">
+                <xs:complexType>
+                    <xs:all>
+                        <xs:element name="inputs" minOccurs="0">
+                            <xs:complexType>
+                                <xs:sequence>
+                                    <xs:element name="input" type="inputType" minOccurs="1" maxOccurs="unbounded"/>
+                                </xs:sequence>
+                            </xs:complexType>
+                        </xs:element>
+                    </xs:all>
+                    <xs:attribute name="name" type="xs:string" use="required"/>
+                    <xs:attribute name="value" type="xs:string" use="required"/>
+                </xs:complexType>
+            </xs:element>
+        </xs:sequence>
+    </xs:complexType>
+
+
+    <xs:complexType name="outputsType">
+        <xs:sequence>
+            <xs:element name="output" minOccurs="1" maxOccurs="unbounded">
+                <xs:complexType>
+                    <xs:sequence>
+                        <xs:element name="field" minOccurs="1" maxOccurs="unbounded">
+                            <xs:complexType>
+                                <xs:attribute name="name" type="xs:string" use="required"/>
+                                <xs:attribute name="reference" type="xs:string" use="optional"/>
+                                <xs:attribute name="value" type="xs:string" use="optional"/>
+                            </xs:complexType>
+                        </xs:element>
+                    </xs:sequence>
+                    <xs:attribute name="type" type="xs:string" use="required"/>
+                </xs:complexType>
+            </xs:element>
+        </xs:sequence>
+    </xs:complexType>
+</xs:schema>
+

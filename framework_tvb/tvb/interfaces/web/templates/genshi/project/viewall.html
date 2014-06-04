@@ -1,0 +1,92 @@
+<!-- ============================= -->
+<!-- Main Content --> 
+<!-- ============================= -->
+<div id="main" class="columnized colscheme-1">
+  <form id="projectsForm" method="post" xmlns:xi="http://www.w3.org/2001/XInclude" xmlns:py="http://genshi.edgewall.org/">
+	
+	<xi:include href="pagination.html"/>
+	<input type="hidden" name="selected_project_id" value="${selectedProject.id if selectedProject is not None else ''}" id="hidden_project_id"/>
+        
+	<!-- Column displaying the project list -->
+	<section class="project-list view-column col-1">
+		<h2 py:if="projectsList is None or len(projectsList)==0"><mark>No project available.</mark> Create a new project to have a working context.</h2>
+	    <table class="list" py:if="projectsList">
+			<!-- Table header w/ pagination controls -->
+			<thead>
+				${displayPaginationControls(page_number, total_pages, 5, 'projectsForm')}
+				<input type="hidden" name="page" value="$page_number" id="currentPage"/>
+			
+				<tr>
+					<th class="id">ID</th>
+					<th class="title">The Virtual Brain project</th>
+					<th class="owner">Owner</th>
+					<th class="ops">Operations</th>
+					<th class="data">Data structure</th>
+				</tr>
+			</thead>
+			
+			<!-- Table footer w/ pagination controls -->
+			<tfoot>
+				${displayPaginationControls(page_number, total_pages, 5, 'projectsForm')}
+			</tfoot>
+	
+			<tbody>
+		        <!-- Potential selection errors -->
+				<tr class="selector-error" py:if="len(projectsList) == 0">
+					<td colspan="5"> You have no project to work in. Please create a new one with the button on the right. </td>
+				</tr>
+		
+				<tr class="selector-error" py:if="len(projectsList) &gt; 0 and selectedProject == None">
+					<td colspan="5"> You haven't selected a project yet. Please do so below. </td>
+				</tr>
+		
+		        <!-- Loop through all projects -->
+		        <tr py:for="proj in projectsList" id="li_prj_$proj.id" class="${'project-active' if selectedProject and int(selectedProject.id)==proj.id else ''} project-owned">
+					<td class="id" tabindex="1" onkeypress="redirectToHrefChild(this)">
+						<a href="#" title="Select this project to work with..." class="action action-relevancy ${'action-make-irrelevant' if selectedProject and int(selectedProject.id)==proj.id else 'action-make-relevant'}" 
+						   onclick="selectProject($proj.id, 'projectsForm')" tabindex="-1">Select</a>
+						$proj.id
+					</td>
+					
+					<td class="title" tabindex='2' onkeypress="redirectToHrefChild(this)">
+						<a href="#" title="Edit basic project properties..." class="action action-edit" onclick="viewProject(${proj.id}, 'projectsForm')" tabindex="-1">Edit</a>
+						 ${proj.name}
+					</td>
+					
+					<td class="owner">${proj.administrator.username}</td>
+		
+					<td class="ops" tabindex='3' onkeypress="redirectToHrefChild(this)">
+						<a href="/project/viewoperations/${proj.id}" title="Manage operations..." class="action action-view" tabindex="-1">Operations</a>
+						<ul>
+							<li class="ops-finished ${'ops-zero' if int(proj.operations_finished)==0 else ''}" title="Finished operations">${proj.operations_finished}</li>
+							<li class="ops-started ${'ops-zero' if int(proj.operations_started)==0 else ''}" title="Started operations">${proj.operations_started}</li>
+							<li class="ops-error ${'ops-zero' if int(proj.operations_error)==0 else ''}" title="Failed operations">${proj.operations_error}</li>
+							<li class="ops-cancelled ${'ops-zero' if int(proj.operations_canceled)==0 else ''}" title="Cancelled operations">${proj.operations_canceled}</li>
+						</ul>
+					</td>
+					
+					<td class="data" tabindex='4' onkeypress="redirectToHrefChild(this)">
+						<a href="/project/editstructure/${proj.id}" title="View/Edit data structure..." class="action action-view" tabindex="-1">Project Data</a>
+					</td>
+		        </tr>
+	        </tbody>
+	    </table>
+	</section>
+
+	<!-- Toolbar for project creation --> 
+	<!-- Usually, this should go right after div#main but here we only have a single column --> 
+    <aside class="header-component toolbar can-extend auto-extends">
+      <h3>View All Projects</h3>
+	  <div class="extension">
+	   <div class="dropdown-pane"> 
+        <ul> 
+            <li><button tabindex='50' type="submit" class="action action-new" value="Create" name="create" >Create new project</button></li>
+            <li><button tabindex='50' type="button" class="action action-upload" value="Import project structure" name="import" 
+            			onclick='showProjectUploadOverlay();'>Import project structure</button>
+            </li>
+        </ul>
+       </div>
+      </div>
+    </aside>
+</form>
+</div>

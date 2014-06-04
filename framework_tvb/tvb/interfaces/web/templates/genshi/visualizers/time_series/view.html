@@ -1,0 +1,88 @@
+<div xmlns:xi="http://www.w3.org/2001/XInclude" xmlns:py="http://genshi.edgewall.org/">
+    <script type="text/javascript" src="/static/js/d3.v2.min.js"></script>
+    <script type="text/javascript" src="/static/js/tvbviz.js?$currentVersionJS"></script>
+    <script type="text/javascript" src="/static_view/commons/scripts/regionSelector.js?$currentVersionJS"></script>
+    <script type="text/javascript" src="/static_view/time_series/scripts/timeseriesSVG.js?$currentVersionJS"></script>
+    <script type="text/javascript" src="/static_view/commons/scripts/visualizers_commons.js?$currentVersionJS"></script>
+
+    <link rel="stylesheet" type="text/css" href="/static/style/tvbviz.css?$currentVersionJS"/>
+    <link rel="stylesheet" type="text/css" href="/static/style/subsection_eeg.css?$currentVersionJS"/>
+    <link rel="stylesheet" type="text/css" href="/static/style/subsection_timeseries.css?$currentVersionJS"/>
+
+	<section class="view-column timeseries-display col-1">
+		<!-- Toolbar, only containing legends -->
+		<ul class="toolbar-inline">
+			<li>
+			Resize: Click/Drag blue box in visualizer canvas
+			</li>
+			
+			<li>
+				<nav class="inline-menu">
+					<button class="action action-menu">Use focus (center area)</button>
+
+					<div class="extension">
+		    			<div class="dropdown-pane">
+		    				<p>Click and drag to zoom</p>
+		    				<p>Click once to reset zoom</p>
+		    				<p>Mouse/scroll wheel to navigate to scroll signals</p>
+		    				<p>Shift + Mouse/scroll wheel to scale signal amplitudes</p>
+		    			</div>
+		    		</div>
+				</nav>
+			</li>
+			
+			<li>
+				<nav class="inline-menu">
+					<button class="action action-menu">Use temporal context (horizontal, bottom)</button>
+
+					<div class="extension">
+		    			<div class="dropdown-pane">
+		    				<p>Solid line marks mean across channels, in time</p>
+		    				<p>Shaded area marks standard deviation across channels, in time</p>
+		    				<p>Click and drag to select a subset of signals</p>
+		    				<p>Click and drag a selection to change selected signals</p>
+		    				<p>Click outside selection box to cancel and reset view</p>
+		    			</div>
+		    		</div>
+				</nav>
+			</li>
+			
+			<li>
+				<nav class="inline-menu">
+					<button class="action action-menu">Use signal context (vertical, left)</button>
+
+					<div class="extension">
+		    			<div class="dropdown-pane">
+		    				<p>Solid lines show each signal</p>
+		    				<p>Click and drag to select a subset of signals</p>
+		    				<p>Click and drag a selection to change selected signals</p>
+		    				<p>Click outside selection box to cancel and reset view</p>
+		    			</div>
+		    		</div>
+				</nav>
+			</li>
+			
+			<li py:if="preview == False" class="channel-selector">
+                <xi:include href="../commons/channel_selector_button.html" />
+                ${drawRegionSelectorButton(ts_title, groupedLabels, initialSelection)}
+			</li>
+			
+		</ul>
+
+		<!-- Actual visualizer -->
+	    <div id="time-series-viewer"></div>
+	
+	    <script type="text/javascript">
+	    
+			function launchViewer(width, height) {
+	        	// Global method automatically called when portlet is initialized.
+	        	// E.g. it might arrange the drawing to fill the page.
+	        }
+        
+	        $(document).ready(function () {
+	            initTimeseriesViewer("$baseURL", "$preview", "$shape", "$t0", "$dt",$labels_json, "$measurePointsSelectionGID")
+	        });
+	
+	    </script>
+    </section>
+</div>

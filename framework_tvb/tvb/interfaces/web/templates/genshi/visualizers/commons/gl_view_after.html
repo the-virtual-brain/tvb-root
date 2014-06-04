@@ -1,0 +1,46 @@
+<div xmlns:py="http://genshi.edgewall.org/" xmlns:xi="http://www.w3.org/2001/XInclude" py:strip="True" >
+     <div class="monitor master assisted" id="brain-3d">
+        <!--Draw brain-->
+        <xi:include href="brain_component.html"/>
+        ${draw_brain_component("GLcanvas", value_of('minActivityLabels'))}
+
+        <div class="helper">
+            <span> Refresh Step: </span><span id="TimeStep">0.0</span><span> ms </span>
+            <br/>
+            <span> Refresh Rate: </span><span id="FramesPerSecond">0.0</span><span> fps</span>
+            <br/>
+            <span> Time Line: </span><span id="TimeNow">0.0</span><span> ms  </span>
+            <br/>
+            <span id="Infobox"></span>
+        </div>
+    </div>
+
+    <py:if test="show_navigator">
+        <div class="monitor slave" id="brain-x" >
+            <br/>
+            <span class="brainArea"></span>
+        </div>
+
+        <div class="monitor slave" id="brain-y" >
+            <br/>
+            <span class="brainArea"></span>
+        </div>
+
+        <div class="monitor slave" id="brain-z" >
+            <br/>
+            <span class="brainArea"></span>
+        </div>
+    </py:if>
+
+    <div class="slider-div lastChild">
+        <div id="slider" class="shadow"></div>
+    </div>
+
+    <ul class="usecaseClass lastChild" py:if="not extended_view">
+        <li><b>USE :</b></li>
+        <li>Your mouse to rotate the brain.</li>
+        <li>SPACE key to have a top view.</li>
+        <li>Cursor Keys to quickly rotate brain.</li>
+        <li>Mouse wheel to zoom in/out the brain.</li>
+    </ul>
+</div>

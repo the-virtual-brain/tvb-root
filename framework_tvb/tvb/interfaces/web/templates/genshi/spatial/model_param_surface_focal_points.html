@@ -1,0 +1,28 @@
+<div xmlns:py="http://genshi.edgewall.org/">
+    <ul class="focal-points">
+    	<py:if test="focal_points">
+	        <py:for each="idx in xrange(len(focal_points))">
+		        <li>
+		        	<a href="#" onclick="BS_centerNavigatorOnFocalPoint(${focal_points[idx]})">Focal point ${focal_points[idx]}</a>
+		        	<a href="#" onclick="MP_removeFocalPointForSurfaceModelParam(${focal_points[idx]})" class="action action-delete">Delete</a>
+		        </li>
+	        </py:for>
+   		</py:if>
+    </ul>
+    
+    <script type="text/javascript">
+	    $(document).ready(function () {
+            MP_redrawSurfaceFocalPoints('${focal_points_json}');
+        });
+	</script>
+    <py:if test="defined('error_msg')">
+        <script>
+            displayMessage('${error_msg}', "errorMessage");
+        </script>
+    </py:if>
+    <py:if test="not defined('error_msg')">
+        <script>
+            displayMessage('');
+        </script>
+    </py:if>
+</div>

@@ -1,0 +1,8 @@
+<div xmlns:py="http://genshi.edgewall.org/" py:strip="True">
+    <!--! The name of the first option should equal FlowController.NEW_SELECTION_NAME
+        It could be passed via a template variable. Should it?
+    -->
+    <option selected="selected" value="${value_of('noneSelectionVal', '[]')}">New selection</option>
+    <option py:for="name, val in namedSelections"
+            value="$val">$name</option>
+</div>

@@ -1,0 +1,151 @@
+<!-- ====================================================== --> 
+<!-- Display Short-Burst page with 2 areas (left and right) --> 
+<!-- ====================================================== -->
+<div id="main" class="columnized colscheme-3-1st-narrow" xmlns:xi="http://www.w3.org/2001/XInclude" xmlns:py="http://genshi.edgewall.org/" >
+	<script type="text/javascript" src="/static/jquery/jquery.jstree.js?$currentVersionJS"></script>
+    <script type="text/javascript" src="/static/js/bursts.js?$currentVersionJS"></script>
+    <script type="text/javascript" src="/static/js/parameterSpace.js?$currentVersionJS"></script>
+    <!--We need projectTree.js for the Results TAB. -->
+    <script type="text/javascript" src="/static/js/projectTree.js?$currentVersionJS"></script>
+    <script type="text/javascript" src="/static/colorScheme/js/colorpicker.js?$currentVersionJS"></script>
+
+	<link rel="stylesheet" href="/static/colorScheme/css/colorpicker.css" type="text/css"/>
+	
+	<script type="text/javascript">
+    	$(document).ready(function(){
+    		initBurstConfiguration($selectedPortlets, '$burstConfig.selected_tab');
+		});
+    </script>
+    
+    <!-- Select from Burst History -->
+	<section id="section-view-history" class="view-history view-column col-1">
+		<h4><mark></mark> History</h4>
+	</section>
+	
+	<!-- Configure Simulation -->
+	<section id="section-simulator-main" class="edit-simulator view-column col-2 is-created">
+		<hgroup>
+			<h4><span id="title-simulation"><mark>Configure</mark> New simulation core</span></h4>
+		 
+			<input type="text" id="input-burst-name-id" name="burstName" value="${burstConfig.name if burstConfig.name else ''}" title="Simulation name" onkeypress="user_edited_title=true;"/>
+		</hgroup>
+		
+		<!-- <a id="button-continue-burst" href="#" onclick="launchNewBurst('continue'); alert('Not yet implemented!')" style="display: none;"
+			title="Continue burst" class="column-control-prev action action-big-continue">Continue</a> -->
+			
+		<a id="button-branch-burst" href="#" onclick="launchNewBurst('branch');" style="display: none;"
+			title="Create a new simulation with current state as initial conditions" class="column-control action action-big-branch">Branch</a>
+			
+		<a id="button-launch-new-burst" href="#" onclick="launchNewBurst('new');" 
+			title="Launch simulation(s) using the current parameters" class="column-control action action-big-launch">Launch</a>
+		
+		<ul class="toolbar-inline">
+			<li>
+				<a href="#" title="Configure simulator visible parameters" class="action action-edit" onclick="configureSimulator(this);" id="configure-simulator-button">Configure Interface</a>
+			</li>
+			<li>
+				<a href="#" title="Set up model parameters for region-based simulations" class="action action-analyze" onclick="configureModelParamsOnRegions();" id="configRegionModelParam">Set up region Model</a>
+			</li>
+			<li>
+				<a href="#" title="Configure noise for region-based simulations" class="action action-analyze" onclick="configureNoiseParameters();" id="configNoiseValues">Configure noise</a>
+			</li>
+			<li>
+				<a href="#" title="Set up model parameters fro surface-based simulations	" class="action action-analyze" onclick="configureModelParamsOnSurface();" id="configSurfaceModelParam">Set up surface model</a>
+			</li>
+			<li>
+				<a href="#" title="Uncheck all parameters" class="action action-toggle action-all-off" onclick="toggleSimulatorParametersChecks(false);" id="button-uncheck-all-params" style="display:none;">Uncheck All</a>
+			</li>
+			<li>
+				<a href="#" title="Check all parameters to appear visible" class="action action-toggle action-all-on" onclick="toggleSimulatorParametersChecks(true);" id="button-check-all-params" style="display:none;">Check All</a>
+			</li>
+		</ul>
+		
+		<div id="div-simulator-parameters">
+			<py:if test="burstConfig.id is None">
+				<xi:include href="../flow/genericAdapterFormFields.html"/>
+			</py:if>
+		</div>
+	</section>
+
+	
+	<!-- View Parameter space exploration or ISO Parameter space for selected Burst -->
+	<section id="section-pse" class="parameter-space-exploration view-column col-3" style="display: none;">
+		<h4><mark>Parameter Space Exploration</mark> <span id="title-visualizers"></span></h4>
+		<a href="#" title="Maximize View" class="column-control action action-zoom-in" id="button-maximize-iso"
+			onclick="toogleMaximizeBurst(this);">Maximize</a>
+		<ul id="section-portlets-ul" class="view-switcher tabswitcher">
+			<li id="pse-flot" class="active">
+				<a href="#" onclick="changePSETab(this, 'flot');">
+					View Parameter Space Discrete
+				</a>
+			</li>
+			<li id="pse-iso">
+				<a href="#" onclick="changePSETab(this, 'iso');">
+					View Parameter Space Continous
+				</a>
+			</li>
+		</ul>
+		<div class="flex-wrapper" id="burst-pse-flot"></div>
+		<div class="flex-wrapper" id="burst-pse-iso" style="display: none"></div>
+	</section>
+	
+	<!-- Configure + View portlets for selected Burst -->
+	<section id="section-portlets" class="view-portlets view-column col-3">
+		<h4><mark>Visualize</mark> <span id="title-visualizers">New simulation</span></h4>
+		<a href="#" title="Maximize View" class="column-control action action-zoom-in" id="button-maximize-portlets"
+			onclick="toggleMaximizeColumn(this, 'section-portlets');">Maximize</a>
+		
+		<ul id="section-portlets-ul" class="view-switcher tabswitcher">
+			<py:for each="tab_idx in range(burstConfig.nr_of_tabs)">
+        		<py:if test="str(tab_idx) == str(burstConfig.selected_tab)">
+        			<li class="active"><a href="#" id="portletTab_${tab_idx}" onclick="changeBurstTile(this);">View ${tab_idx+1}</a></li>
+        		</py:if>
+        		<py:if test="str(tab_idx) != str(burstConfig.selected_tab)">
+        			<li><a href="#" id="portletTab_${tab_idx}" onclick="changeBurstTile(this);">View ${tab_idx+1}</a></li>
+        		</py:if>
+        	</py:for>
+        	<py:if test="'-1' != str(burstConfig.selected_tab)">
+        		<li><a href="#" id="tab-burst-tree" onclick="displayBurstTree(this, ${selectedProject.id}, '${baseUrl}');">Results</a></li>
+        	</py:if>
+        	<py:if test="'-1' == str(burstConfig.selected_tab)">
+        		<li class="active"><a href="#" id="tab-burst-tree" onclick="displayBurstTree(this, ${selectedProject.id}, '${baseUrl}');">Results</a></li>
+        	</py:if>
+		</ul>
+		        	
+		<ul class="toolbar-inline standard-portlets-toolbar" id="portlets-toolbar">
+			<li>
+				<a href="#" id="configure-tabs-button" class="action action-edit hideable" onclick="selectPortlets(false);">Configure View</a>
+			</li>
+			<li>
+				<a href="#" id="save-configure-tabs-button" class="action action-edit hideable" onclick="selectPortlets(true);">Save choices</a>
+			</li>
+			<li>
+		        <a href="#" id="cancel-configure-tabs-button" class="action action-reset hideable" onclick="returnToSessionPortletConfiguration()">Cancel</a>
+			</li>
+			<li>
+				<a href="#" id="save-portlet-params-button" class="action action-store hideable" onclick="savePortletParams()">Save portlet parameters</a>
+			</li>
+			<li>
+				<a href="#" id="cancel-configure-portlet-params-button" class="action action-reset hideable" onclick="cancelPortletConfig()">Cancel</a>
+			</li>
+		</ul>
+		
+		<div class="portlet-container portlet-run visible-2-2" id="portlets-display">
+			No visualizers configured for this tab yet.
+		</div>
+		<div class="portlet-container portlet-edit visible-2-2" id="portlets-configure" style="display: none;">
+			<xi:include href="portlets_select.html"></xi:include>
+		    ${drawPortletConfiguration(portletList, 0)}
+	        ${drawPortletConfiguration(portletList, 1)}
+	        ${drawPortletConfiguration(portletList, 2)}
+	        ${drawPortletConfiguration(portletList, 3)}
+		</div>
+		<div class="portlet-container portlet-configure visible-2-2" id="portlet-param-config" style="display: none;">
+		</div>
+		
+		<div class="portlet-container specialviewer visible-2-2" id="div-burst-tree" style="display: none;">
+			<div id="treeOverlay"></div>
+		</div>      
+	</section>
+</div>
+

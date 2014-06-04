@@ -1,0 +1,1 @@
+.. include:: ../../manuals/templates/copyright_notice.rst

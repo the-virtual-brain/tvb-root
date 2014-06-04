@@ -1,0 +1,206 @@
+<?xml version="1.0"?>
+ 
+		
+<tvb xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="../../../core/schema/tvb.xsd">
+
+    <algorithm_group name="bct" subsection="bctdegree" type="tvb.adapters.analyzers.group_matlab_adapter.MatlabAdapter" additionalPath="externals/BCT"
+                     uiName="Degree and Similarity Algorithms" description="Brain Connectivity Toolbox" label="Choose Degree and Similarity Algorithm:">
+    	<!-- Degree -->
+
+        <algorithm name="Indegree and outdegree" identifier="IOD">
+            <code value="[id,od,deg] = degrees_dir(CIJ);"/>
+            <matlab_file value="degrees_dir.m"/>
+            <inputs>
+                <input required="True">
+                    <name value="CIJ"/>
+                    <label value="Directed (binary/weighted) connection matrix:"/>
+                    <type value="tvb.datatypes.connectivity.Connectivity" field="weights"/>
+                </input>
+            </inputs>
+            <outputs>
+                <output type="tvb.datatypes.graph.ConnectivityMeasure">
+                    <field name="array_data" reference="result['id']"/>
+                    <field name="connectivity" reference="inputs['CIJ_gid']"/>
+                    <field name="title" value="Node indegree"/>
+                </output>
+                <output type="tvb.datatypes.graph.ConnectivityMeasure">
+                    <field name="array_data" reference="result['od']"/>
+                    <field name="connectivity" reference="inputs['CIJ_gid']"/>
+                    <field name="title" value="Node outdegree"/>
+                </output>
+                <output type="tvb.datatypes.graph.ConnectivityMeasure">
+                    <field name="array_data" reference="result['deg']"/>
+                    <field name="connectivity" reference="inputs['CIJ_gid']"/>
+                    <field name="title" value="Node degree (indegree + outdegree)"/>
+                </output>
+            </outputs>
+        </algorithm>
+
+        <algorithm name="Joint Degree" identifier="JD">
+            <code value="[J,J_od,J_id,J_bl] = jdegree(CIJ);"/>
+            <matlab_file value="jdegree.m"/>
+            <inputs>
+                <input required="True">
+                    <name value="CIJ"/>
+                    <label value="Connectivity Matrix:"/>
+                    <type value="tvb.datatypes.connectivity.Connectivity" field="weights"/>
+                </input>
+            </inputs>
+            <outputs>
+                <output type="tvb.datatypes.graph.ConnectivityMeasure">
+                    <field name="array_data" reference="result['J']"/>
+                    <field name="connectivity" reference="inputs['CIJ_gid']"/>
+                    <field name="title"
+                           reference="'Joint Degree JOD= ' +str(result['J_od'])+ ', JID= ' +str(result['J_id'])+ ', JBL= ' +str(result['J_bl'])"/>
+                    <field name="label_x" value="Connectivity Nodes"/>
+                    <field name="label_y" value="Connectivity Nodes"/>
+                </output>
+                <output type="tvb.datatypes.mapped_values.ValueWrapper">
+                    <field name="data_value" reference="int(result['J_od'])"/>
+                    <field name="data_type" value="int"/>
+                    <field name="data_name" value="Number of vertices with od &gt; id"/>
+                </output>
+                <output type="tvb.datatypes.mapped_values.ValueWrapper">
+                    <field name="data_value" reference="int(result['J_id'])"/>
+                    <field name="data_type" value="int"/>
+                    <field name="data_name" value="Number of vertices with id &gt; od"/>
+                </output>
+                <output type="tvb.datatypes.mapped_values.ValueWrapper">
+                    <field name="data_value" reference="int(result['J_bl'])"/>
+                    <field name="data_type" value="int"/>
+                    <field name="data_name" value="Number of vertices with id = od"/>
+                </output>
+            </outputs>
+        </algorithm>
+
+        <algorithm name="Degree" identifier="DUND">
+            <code value="deg = degrees_und(CIJ);"/>
+            <matlab_file value="degrees_und.m"/>
+            <inputs>
+                <input required="True">
+                    <name value="CIJ"/>
+                    <label value="Undirected (binary/weighted) connection matrix:"/>
+                    <type value="tvb.datatypes.connectivity.Connectivity" field="weights"/>
+                </input>
+            </inputs>
+            <outputs>
+                <output type="tvb.datatypes.graph.ConnectivityMeasure">
+                    <field name="array_data" reference="result['deg']"/>
+                    <field name="connectivity" reference="inputs['CIJ_gid']"/>
+                    <field name="title" value="Node degree"/>
+                </output>
+            </outputs>
+        </algorithm>
+        <algorithm name="Matching Index" identifier="MI">
+            <code value="[Min,Mout,Mall] = matching_ind(CIJ);"/>
+            <matlab_file value="matching_ind.m"/>
+            <inputs>
+                <input required="True">
+                    <name value="CIJ"/>
+                    <label value="Connection/adjacency matrix:"/>
+                    <type value="tvb.datatypes.connectivity.Connectivity" field="weights"/>
+                </input>
+            </inputs>
+            <outputs>
+                <output type="tvb.datatypes.graph.ConnectivityMeasure">
+                    <field name="array_data" reference="result['Min']"/>
+                    <field name="connectivity" reference="inputs['CIJ_gid']"/>
+                    <field name="title" value="Matching index for incoming connections"/>
+                </output>
+                <output type="tvb.datatypes.graph.ConnectivityMeasure">
+                    <field name="array_data" reference="result['Mout']"/>
+                    <field name="connectivity" reference="inputs['CIJ_gid']"/>
+                    <field name="title" value="Matching index for outgoing connections"/>
+                </output>
+                <output type="tvb.datatypes.graph.ConnectivityMeasure">
+                    <field name="array_data" reference="result['Mall']"/>
+                    <field name="connectivity" reference="inputs['CIJ_gid']"/>
+                    <field name="title" value="Matching index for all connections"/>
+                </output>
+            </outputs>
+        </algorithm>
+
+        <algorithm name="Strength" identifier="STR">
+            <code value="strength = strengths_und(CIJ);"/>
+            <matlab_file value="strengths_und.m"/>
+            <inputs>
+                <input required="True">
+                    <name value="CIJ"/>
+                    <label value="Directed weighted connection matrix:"/>
+                    <type value="tvb.datatypes.connectivity.Connectivity" field="weights"/>
+                </input>
+            </inputs>
+            <outputs>
+                <output type="tvb.datatypes.graph.ConnectivityMeasure">
+                    <field name="array_data" reference="result['strength']"/>
+                    <field name="connectivity" reference="inputs['CIJ_gid']"/>
+                    <field name="title" value="Node strength"/>
+                </output>
+            </outputs>
+        </algorithm>
+
+        <algorithm name="Instrength and Outstrength" identifier="ISOS">
+            <code value="[is,os,strength] = strengths_dir(CIJ);"/>
+            <matlab_file value="strengths_dir.m"/>
+            <inputs>
+                <input required="True">
+                    <name value="CIJ"/>
+                    <label value="Directed weighted connection matrix:"/>
+                    <type value="tvb.datatypes.connectivity.Connectivity" field="weights"/>
+                </input>
+            </inputs>
+            <outputs>
+                <output type="tvb.datatypes.graph.ConnectivityMeasure">
+                    <field name="array_data" reference="result['is']"/>
+                    <field name="connectivity" reference="inputs['CIJ_gid']"/>
+                    <field name="title" value="Node instrength"/>
+                </output>
+                <output type="tvb.datatypes.graph.ConnectivityMeasure">
+                    <field name="array_data" reference="result['os']"/>
+                    <field name="connectivity" reference="inputs['CIJ_gid']"/>
+                    <field name="title" value="Node outstrength"/>
+                </output>
+                <output type="tvb.datatypes.graph.ConnectivityMeasure">
+                    <field name="array_data" reference="result['strength']"/>
+                    <field name="connectivity" reference="inputs['CIJ_gid']"/>
+                    <field name="title" value="Node strength (instrength + outstrength)"/>
+                </output>
+            </outputs>
+        </algorithm>
+
+        <algorithm name="Strength and Weight" identifier="STW">
+            <code value="[Spos,Sneg,vpos,vneg] = strengths_und_sign(CIJ);"/>
+            <matlab_file value="strengths_und_sign.m"/>
+            <inputs>
+                <input required="True">
+                    <name value="CIJ"/>
+                    <label value="Directed weighted connection matrix:"/>
+                    <type value="tvb.datatypes.connectivity.Connectivity" field="weights"/>
+                </input>
+            </inputs>
+            <outputs>
+                <output type="tvb.datatypes.graph.ConnectivityMeasure">
+                    <field name="array_data" reference="result['Spos']"/>
+                    <field name="connectivity" reference="inputs['CIJ_gid']"/>
+                    <field name="title" value="Nodal strength of positive weights"/>
+                </output>
+                <output type="tvb.datatypes.graph.ConnectivityMeasure">
+                    <field name="array_data" reference="result['Sneg']"/>
+                    <field name="connectivity" reference="inputs['CIJ_gid']"/>
+                    <field name="title" value="Nodal strength of negative weights"/>
+                </output>
+                <output type="tvb.datatypes.mapped_values.ValueWrapper">
+                    <field name="data_value" reference="float(result['vpos'])"/>
+                    <field name="data_type" value="float"/>
+                    <field name="data_name" value="Total positive weight"/>
+                </output>
+                <output type="tvb.datatypes.mapped_values.ValueWrapper">
+                    <field name="data_value" reference="float(result['vneg'])"/>
+                    <field name="data_type" value="float"/>
+                    <field name="data_name" value="Total negative weight"/>
+                </output>
+            </outputs>
+        </algorithm>
+               
+	</algorithm_group>
+</tvb>

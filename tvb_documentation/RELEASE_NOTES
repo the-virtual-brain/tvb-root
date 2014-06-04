@@ -1,0 +1,188 @@
+======================================================================================================================================
+ The Virtual Brain (TVB)
+ Version: 1.2 - build 6200
+ Release Date: 4 June 2014
+ Description: New Documentation Site
+======================================================================================================================================
+    * New set of EEG sensors
+    * Selection component reused on several pages in TVB
+    * Improve speed on load-time for some visualizers
+    * Topographic viewer - same color scheme
+    * Several bug-fixes (branching a running simulation, PSE discrete refresh)
+    * New scripts for the console interface
+
+======================================================================================================================================
+ The Virtual Brain (TVB)
+ Version: 1.1.3 - build 5810
+ Release Date: 9 April 2014
+ Description: Epileptor Model
+======================================================================================================================================
+    * New visualizer for Pearson Correlation Coefficient results
+    * Improvements in the TimeSeries visualizer (scaling control added)
+    * Non-zeo metadata exposed for the Connectivity DataTypes
+
+
+======================================================================================================================================
+ The Virtual Brain (TVB)
+ Version: 1.1.2 - build 5746
+ Release Date: 1 April 2014
+ Description: Usability Improvements
+======================================================================================================================================
+    * Improved images exported from TVB
+    * Added whitish color schemes for exporting TVB images with better beamer compatibility.
+    * Matjax issue fixed
+    * New Model and Integration scheme for the Simulator
+    * New static visualizers (Surface, RegionMapping)
+    * New importers (OBJ - surfaces)
+    * Improved existing visualizers (Brain, TimeSeries EEG)
+    * New default transparent Face (for orientation)
+    * New TimeSeriesMetric: Proxy Metastability
+
+
+======================================================================================================================================
+ The Virtual Brain (TVB)
+ Version: 1.1 - build 5250
+ Release Date: 9 November 2013
+ Description: New plugged algorithms and a new interface.
+======================================================================================================================================
+    * TVB deployed on MacOS stays as an icon in dock.
+    * New Analyzer and viewer: Pearson Correlation Coefficients
+    * New simulation model: LarterBreakspear
+    * Add interface over HTTP using JSON, to be used from Matlab
+    * Review and improvements in API documentation
+    * Small bug-fixing
+
+    Known problem:
+    =======================
+    Chrome 30 is having a problem with MatJax, and it might happen at times that your simulator labels are not correctly rendered.
+    https://groups.google.com/forum/#!topic/mathjax-users/CWGx1koV3SU
+    Please ignore the gray labels; they should have this fixed soon (Chrome / MatJax)
+
+======================================================================================================================================
+ The Virtual Brain (TVB)
+ Version: 1.0.7 - build 5090
+ Release Date: 2 September 2013
+ Description: Fixes and improvements.
+======================================================================================================================================
+
+	IMPORTANT: Github contributors should update their TVB distribution package and after that do a pull from github repo.
+	
+    * Added high resolution image export with TVB logo.
+    * Fixed bug that caused IDLE based interface to crash on Windows based machines.
+    * New visualisers available for various datatypes (TimeSeriesMEG, TimeSeriesSEEG, Connectivity).
+
+======================================================================================================================================
+ The Virtual Brain (TVB)
+ Version: 1.0.4 - build 4765
+ Release Date: 15 April 2013
+ Description: Bug Fix in TVB-Simulator.
+======================================================================================================================================
+
+	* Add new monitor Stereo-EEG.
+	* Fix a bug in Simulator, related to Stefanescu-Jirsa Models.
+
+
+======================================================================================================================================
+ The Virtual Brain (TVB)
+ Version: 1.0.3 - build 4730
+ Release Date: 30 Mar 2013
+ Description: Change TVB License. Branch a Simulation.
+======================================================================================================================================
+
+Important changes:
+	- TVB license is now GPL v2
+	- Saving a Simulation State is possible now.
+	  "Branching" a previous executed simulation, will let you avoid having transient signal.
+	- TVB Scientific Library package is published on GitHub
+	- BCT is available from the Large Scale Connectivity page as well
+	- A new Connectivity importer has been added (accepting DTI Pipeline results)
+	- Simulator Input Parameters "Variables Watched by Monitor" is not displayed as a multi-select component, instead of an array.
+
+
+======================================================================================================================================
+ The Virtual Brain (TVB)
+ Version: 1.0.2 - build 4480
+ Release Date: 08 Feb 2013
+ Description: Stable console interface. Bug fixing. Small performance and usability improvements
+======================================================================================================================================
+
+The main addition of this release is a stable console interface. Aside from this there have been a number of improvements and fixes:
+	- the fact that a Matlab installation makes BCT algorithms available in TVB is made more obvious in settings page
+	- possibility to change between state-variable/modes in brain and time-series visualizers
+	- two new models available: Deco-Jirsa(Mean-Field Brunel Wang) and Kuramoto Oscillator
+	- operations are now transactional so invalid db states should not be generated
+	- new DataTypes available: PsiTable, NerfTable, FaceSurface and CapEEG
+
+
+======================================================================================================================================
+ The Virtual Brain (TVB)
+ Version: 1.0.1 - build 4280
+ Release Date: 18 Dec 2012
+ Description: Performance improvement. Bug fixing
+======================================================================================================================================
+
+This is a minor release but with important achievements on performance and code-cleanness:
+- improve performance for running a simulation on regions level with Raw monitor with a factor of 10;
+- improve performance on loading web pages, by making sure no duplicate JS/CSS files are loaded and some asynchronous work is done, where possible;
+- fix HDF5 concurrency problems by replacing the library used behind (from pyTables to H5PY);
+- fix MPLH5 portlets concurrency problem (when multiple of them are selected on the same page);
+- include IDLE python module, for preparing console-users.
+
+When running TVB 1.0.1 after you previously had TVB version 1.0 installed be advised that on the first login, all your datatypes
+will be upgraded from TVB 1.0 pyTables format to H5PY. This might take a while depending on the amount of data you have generated.
+Please be patient and don't shut down TVB during this process. You also have the option to execute the tvb_clean command and drop
+previous data in which case the above step is skipped.
+
+
+======================================================================================================================================
+ The Virtual Brain (TVB)
+ Version: 1.0 - build 3970
+ Release Date: 13 Oct 2012
+ Description: SFN 2012 release
+======================================================================================================================================
+
+This is a full-features release for TVB software.
+ - You can install TVB on Mac OS (x32 or x64 architecture), Linux (x32 or x64) or Windows (x32)
+ - TVB can be installed in 3 different configurations:
+    * on a personal computer for single-user usage;
+    * on a server and made accessible to an unlimited number of users through browser.
+      The server is expected to have a decent hardware, based on the expected number of clients. 
+      Each client will need to have a compatible graphic card, and WebGL compatible browser.
+    * or on a cluster (similar with server installation, but with parallelization support).
+      When installed on a cluster, OAR is expected to be configured separately of TVB.
+ - Default user is the same: admin/pass , but you can change it when TVB settings page is first displayed.
+ - At startup, a default project will be created, containing demo-data as well (Connectivity, Cortical Surface, Projection Matrices, Sensors)
+ - Default data is automatically filled, with every new project you create.
+ - When filling parameters for the simulations, you can consult the manual about their meaning and the tooltips for each parameter.
+ 
+ Known issues:
+ - on Linux systems, Chrome browser has a bug when displaying select tags inside an overlay. 
+   We have one situations for this, when displaying a visualizer's top-right call-out. 
+   As this is a known bug in Chrome, we will wait for the next release to fix it. Until then we advise you to use FireFox while under Linux.
+
+
+======================================================================================================================================
+ The Virtual Brain (TVB)
+ Version: 0.9T1 - build 1883
+ Release Date: 6 March 2012
+ Description: First TVB Teaser Release.
+======================================================================================================================================
+
+This is a Teaser package.
+ - Default user is admin/pass
+ - At startup a default project is created and a default set of input-data will exist in that project.
+ - Simulations can be launched, with any of the models/monitors in the system.
+ - If you have Octave or Matlab in the path, Brain Connectivity analyzers will be visible and ready for execution.
+ - Once you have some data in your project, you should go to the visualizers area and see them in multiple formats, 
+ 	or use context-menu (right-click menu) on a specific DataType (pages Project-Operations or Project-Data Structure) to see available visualizers/analyzers.
+ 
+
+Some of the capabilities that are currently in work are disabled from this version:
+ - import / upload /export buttons are visible but disabled
+ - input fields for the simulation are fixed, except for monitor, model and surface/region.
+
+
+======================================================================================================================================
+Our Technical Team is currently composed of: Lia Domide, Jochen Mersmann, Bogdan Neacsa, Paula Sanz Leon and Marmaduke Woodman.
+For contact, please use tvb.admin@thevirtualbrain.org
+

@@ -1,0 +1,57 @@
+<?xml version="1.0"?>
+<xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema"
+targetNamespace="http://www.thevirtualbrain.org/tvb"
+xmlns="http://www.thevirtualbrain.org/tvb">
+
+    <xs:element name='events'>
+        <xs:complexType>
+            <xs:sequence>
+                <xs:element name="event" type="eventType" minOccurs="0" maxOccurs="unbounded"/>
+            </xs:sequence>
+        </xs:complexType>
+    </xs:element>
+
+	<xs:complexType name='eventType'>
+            <xs:all>
+                <xs:element name="launcher" type="launcherType" minOccurs="0" maxOccurs="1"/>
+                <xs:element name="adapter" type="adapterType" minOccurs="0" maxOccurs="1"/>
+                <xs:element name="method" minOccurs="1" maxOccurs="1">
+	                <xs:complexType>
+				        <xs:attribute name="name" type="xs:string" use="required"/>
+				        <xs:attribute name="operation-hidden" type="xs:string" use="optional"/>
+				    </xs:complexType>
+				</xs:element>
+                <xs:element name="args" type="argumentsType" minOccurs="0" maxOccurs="1"/>
+            </xs:all>
+            <xs:attribute name="hookpoint" type="xs:string" use="required"/>
+            <xs:attribute name="type" type="xs:string" use="required"/>
+            <xs:attribute name="delay" type="xs:string" use="optional"/>
+	</xs:complexType>
+	
+	<xs:complexType name="argumentsType">
+        <xs:sequence>
+             <xs:element name="arg" type="argType" minOccurs="1" maxOccurs="unbounded"/>
+        </xs:sequence>
+    </xs:complexType>
+      
+	<xs:complexType name="argType">
+        <xs:attribute name="name" type="xs:string" use="required"/>
+        <xs:attribute name="value" type="xs:string" use="required"/>
+        <xs:attribute name="type" type="xs:string" use="optional"/>
+        <xs:attribute name="module" type="xs:string" use="optional"/>
+    </xs:complexType>
+    
+    <xs:complexType name="adapterType">
+        <xs:attribute name="module" type="xs:string" use="required"/>
+        <xs:attribute name="class" type="xs:string" use="required"/>
+        <xs:attribute name="uid" type="xs:string" use="optional"/>
+    </xs:complexType>
+    
+    <xs:complexType name="launcherType">
+        <xs:attribute name="module" type="xs:string" use="required"/>
+        <xs:attribute name="class" type="xs:string" use="required"/>
+        <xs:attribute name="instance" type="xs:string" use="optional"/>
+    </xs:complexType> 
+	
+</xs:schema>
+

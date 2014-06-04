@@ -1,0 +1,37 @@
+<div xmlns:py="http://genshi.edgewall.org/" xmlns:xi="http://www.w3.org/2001/XInclude" py:strip="True">
+	<!-- === Box: Project call-out --> 
+	<h3><mark>Project ID</mark>${selectedProject.id if selectedProject else '-'}</h3>
+	   
+	<p class="ops-beacon ${'ops-pending' if (selectedProject and selectedProject.operations_started > 0) else ''}"
+	   title="Show all ops for this project">${selectedProject.operations_started if selectedProject else '-'} background operations pending</p>
+		
+	<div class="extension">
+		<div class="dropdown-pane" py:if="selectedProject">
+			<h4>Current Project</h4>
+			<p tabindex="51" onkeypress="redirectToHrefChild(this)">
+				<a href="/project/editone/${selectedProject.id}" tabindex='-1' title="Show current project...">${selectedProject.name}</a>
+				<br/>
+				${selectedProject.description}
+			</p>
+		
+			<h4>Main operations</h4>
+			<dl>
+				<dt><mark>Simulation</mark> Cockpit</dt>
+				<dd><a href="/burst/" title="This ops…">Show</a></dd>
+				
+				<dt><mark>Stimuli</mark> Entities</dt>
+				<dd><a href="/spatial/" title="This ops…">Show</a></dd>
+				
+			</dl>
+		
+			<ul>
+				<li class="ops-pending"><a href="/project/viewoperations/${selectedProject.id}" title="View started operations here ..."><mark>${selectedProject.operations_started}</mark> pending ops</a></li>
+				<li class="ops-error"><a href="/project/viewoperations/${selectedProject.id}" title="View failed operations here..."><mark>${selectedProject.operations_error}</mark> failed ops</a></li>
+				<li class="ops-done"><a href="/project/viewoperations/${selectedProject.id}" title="View finished operations here..."><mark>${selectedProject.operations_finished}</mark> ready ops</a></li>
+			</ul>
+		</div>
+	</div>
+	<script type="text/javascript">
+		setTimeout(function() { updateCallOutProject(); }, 3000);
+	</script>
+</div>

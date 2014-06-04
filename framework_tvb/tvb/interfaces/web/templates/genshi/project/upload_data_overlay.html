@@ -1,0 +1,25 @@
+<py:for each="idx in xrange(len(uploadAlgorithms))" xmlns:py="http://genshi.edgewall.org/" xmlns:xi="http://www.w3.org/2001/XInclude">
+    <py:with vars="algorithm = uploadAlgorithms[idx];
+    			   algo_interface_key = 'template_for_algo_' + str(algorithm.id);
+                   inputList=algorithmsInterface[algo_interface_key].inputList;
+                   submitLink=algorithmsInterface[algo_interface_key].submitLink;">
+
+        <section id="overlayTabContent_${idx}" class="uploader upload-${algorithm.subsection_name}">
+            <form method="post" action="${submitLink}" enctype="multipart/form-data" id="form_${algorithm.id}">
+            	<fieldset class="toolbar-inline">
+                    <ul>
+                        <li>
+                            <button type="submit" class="action action-upload" onClick="showOverlayProgress()">Upload</button>
+                        </li>
+                    </ul>
+                </fieldset>
+                <xi:include href="../flow/genericAdapterFormFields.html"/>
+                <fieldset>
+                    <legend>
+                    	Please be aware that large uploads might take some time and are not interruptible.
+                    </legend>
+                </fieldset>
+            </form>
+        </section>
+    </py:with>
+</py:for>

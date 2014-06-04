@@ -1,0 +1,13 @@
+<section class="configure-stimulus-equation view-column col-2"  xmlns:xi="http://www.w3.org/2001/XInclude">
+	
+	<h4><mark>Select</mark> Connectivity Region</h4>
+	
+    <xi:include href="left_template_connectivity_view.html"/>
+    
+    <script type="text/javascript">
+        $("#GLcanvas").click(function () {
+            NP_toggleAndLoadNoise(CONN_pickedIndex);
+        });
+    </script>
+    
+</section>

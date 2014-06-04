@@ -1,0 +1,2 @@
+include tvb/basic/logger/library_logger.conf
+recursive-include tvb/simulator/files *.bz2 *.mat *.npz *.txt

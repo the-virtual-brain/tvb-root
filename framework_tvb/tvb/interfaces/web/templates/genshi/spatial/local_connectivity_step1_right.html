@@ -1,0 +1,24 @@
+<section class="configure-stimulus-shape view-column col-1" xmlns:py="http://genshi.edgewall.org/">
+	
+	<h4><mark>View</mark> Plot</h4>
+	
+	<!-- Div used by the plotEquations function to display the actual plot. -->
+    <div id="equationDivId"></div>
+
+    <script type="text/javascript">
+   		$(document).ready(function() {
+   		   equationsPrefixes = ${equationsPrefixes};
+           equationsPrefixes.push('cutoff');
+	       BS_plotEquations('equationDivId', '${equationViewerUrl}', 'form_spatial_local_connectivity_data', equationsPrefixes);
+        });
+    </script>
+	    
+    <py:if test="defined('displayedMessage') and displayedMessage != None">
+	    <script type="text/javascript">
+	    	$(document).ready(function() {
+	            displayMessage('${displayedMessage}', "infoMessage");
+	        });
+	    </script>
+    </py:if>
+   
+</section>

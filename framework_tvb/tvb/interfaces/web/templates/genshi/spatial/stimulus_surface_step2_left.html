@@ -1,0 +1,42 @@
+<section xmlns:xi="http://www.w3.org/2001/XInclude" xmlns:py="http://genshi.edgewall.org/"
+        class="select-points view-column col-1">
+	
+	<script type="text/javascript" src="/static/js/vertice_pick/base_vertice_pick.js?$currentVersionJS"></script>
+    <script type="text/javascript" src="/static/js/vertice_pick/stimulus_vertice_pick.js?$currentVersionJS"></script>
+	<h4>	<mark>Select</mark> Focal points</h4>
+	
+	<fieldset>
+    	${generateDisplay(existentEntitiesInputList, False, "")}
+    </fieldset>
+	<form>
+    	<fieldset>
+			<legend>Entity details</legend>
+	    	${generateDisplay(entitiySavedName, False, "")}
+    	</fieldset>
+	</form>
+	
+    <xi:include href="left_template_brain_pick.html" py:with="callback='STIM_initFocalPoints(' + definedFocalPoints + ')'"/>
+
+	<script type="text/javascript">
+        $(document).ready(function() {
+        	$("select[name='existentEntitiesSelect']").change(function () {
+                BS_loadEntity();
+            });
+        });
+    </script>
+    
+    <form id="load-existing-entity" action="${loadExistentEntityUrl}" method="POST">
+    	<input type="hidden" id="entity-gid" name="surface_stimulus_gid" value="None"/>
+    	<input type="hidden" name="from_step" value="2"/>
+    </form>
+    <form id="reset-to-default" action="${resetToDefaultUrl}" method="POST">
+    	<input type="hidden" name="from_step" value="2"/>
+    </form>
+    
+    <py:if test="defined('displayedMessage') and displayedMessage != None">
+		<script type="text/javascript">
+			displayMessage('${displayedMessage}', '${messageType}');
+		</script>
+    </py:if>
+    
+</section>

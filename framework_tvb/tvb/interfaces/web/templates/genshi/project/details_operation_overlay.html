@@ -1,0 +1,79 @@
+<form id="form_edit_metadata" method="post" xmlns:py="http://genshi.edgewall.org/">
+	
+	<fieldset class="toolbar-inline">
+		<ul>
+            <li py:if="'operation' not in nodeType">
+            	<button type="button" value="Save" tabindex="4" onclick="overlaySubmitMetadata('form_edit_metadata', 'null');"
+                        class="action action-confirm" title="Submit current changes to node attributes">Save</button>
+            </li>
+            <li py:if="'operation' in nodeType and displayReloadBtn">
+				<button type="button" value="Reload" onclick="reloadOperation(${operationId}, 'form_edit_metadata');"
+                		class="action action-confirm" title="Reload the selected operation">Reload </button>
+            </li>
+                
+			<!--MakeRelevant/MakeNotRelevant-->
+            <li py:with="toBeStatus = 'False' if isRelevant else 'True';
+                      buttonLabel ='Make irrelevant' if isRelevant else 'Make relevant';
+	                  buttonClass ='action-make-irrelevant' if isRelevant else 'action-make-relevant';">
+
+	            <button type="button" class="action action-relevancy $buttonClass" title="Make this operation(s) ${'Irrelevant' if isRelevant else 'Relevant'}"
+	            		onclick="overlayMarkVisibility('${entity_gid}', '$nodeType', '$toBeStatus', '$backPageIdentifier');">$buttonLabel</button>
+	            	
+            </li>
+	        
+			<li py:if="'operation' not in nodeType" class="tool-removal">
+				<button type="button" tabindex='2' value="Remove" onclick="overlayRemoveEntity(${project.id}, '${entity_gid}', '$backPageIdentifier');"
+						class="action action-remove" title="Delete currently selected node">Remove</button>
+            </li>
+		</ul>
+	</fieldset>
+
+    <input type="hidden" name="nodeType" value="${nodeType}"/>
+    
+	<fieldset py:for="i in xrange(len(nodeFields))">
+	<py:with vars="fields_dictionary = nodeFields[i]">
+	
+		<legend py:if="i &gt; 0 or len(nodeFields) == 1">Generic Metadata</legend>
+		<legend py:if="i == 0 and len(nodeFields) &gt; 1 and 'operation' not in nodeType">Scientific Metadata</legend>
+		<legend py:if="i == 0 and len(nodeFields) &gt; 1 and 'operation' in nodeType">Changed Input Parameters</legend>
+		
+		<dl>
+			<py:for each="field_key in sorted(fields_dictionary.iterkeys())">
+			<py:with vars="field_def = fields_dictionary[field_key]">
+			
+				<py:if test="field_def and not ('hidden' in field_def and field_def['hidden']=='True')">
+					<dt class="">
+						<label for="$field_key">${field_def['name']} :</label>
+					</dt>
+					<dd>
+						<p class="field-data">
+							<input id="$field_key" type="text" name="$field_key" class="inputField" tabindex="3" value="${field_def['value'] if 'value' in field_def else ''}"
+                                   py:if="field_key != 'data_state' and (('readonly' not in field_def or field_def['readonly'] != 'True') and ('disabled' not in field_def or field_def['disabled'] != 'True'))"/>
+                            
+                            <input type="text" id="$field_key" name="$field_key" class="inputField"
+                                   readonly="readonly" value="${field_def['value'] if 'value' in field_def else ''}"
+                                   py:if="field_key != 'data_state' and 'readonly' in field_def and field_def['readonly'] == 'True'"/>
+                                   
+                            <input type="text" id="$field_key" name="$field_key" class="inputField"
+                                   disabled="disabled" value="${field_def['value'] if 'value' in field_def else ''}"
+                                   py:if="field_key != 'data_state' and 'disabled' in field_def and field_def['disabled'] == 'True'"/>
+                                   
+                            <select id="$field_key" name="$field_key" class="inputField" py:if="field_key=='data_state'" tabindex="3">
+                                <py:for each="state in allStates">
+                                    <option value="${state}" selected="selected" py:if="state == field_def['value']">${allStates[state]}</option>
+                                    <option value="${state}" py:if="state != field_def['value']">${allStates[state]}</option>
+                                </py:for>
+                            </select>
+						</p>
+					</dd>
+				</py:if>
+                <py:if test="field_def and 'hidden' in field_def and field_def['hidden'] == 'True'">
+                    <input id="$field_key" type="hidden" name="$field_key" value="${field_def['value'] if 'value' in field_def else ''}"/>
+                </py:if>
+            </py:with>
+			</py:for>
+		</dl>
+	</py:with>	
+	</fieldset>
+</form>
+

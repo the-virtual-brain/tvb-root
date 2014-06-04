@@ -1,0 +1,64 @@
+{\rtf1\ansi\ansicpg1252\cocoartf949\cocoasubrtf540
+{\fonttbl\f0\fswiss\fcharset0 Helvetica;}
+{\colortbl;\red255\green255\blue255;}
+\margl1440\margr1440\vieww15680\viewh15160\viewkind0
+\pard\tx566\tx1133\tx1700\tx2267\tx2834\tx3401\tx3968\tx4535\tx5102\tx5669\tx6236\tx6803\ql\qnatural\pardirnatural
+
+\f0\fs24 \cf0 This package was debianized by Daniel Rus Morales <danirus@tol-project.org> on\
+Sat, 15 Dec 2007 19:35:03 +0100\
+\
+It was downloaded from http://www.cise.ufl.edu/research/sparse/SuiteSparse/SuiteSparse-3.1.0.tar.gz\
+\
+Copyright Holder:\
+AMD                    Copyright (c) 2004-2007 by Timothy A. Davis, Patrick R. Amestoy, and\
+                       Iain S. Duff.\
+BTF                    Copyright (c) 2004-2007, University of Florida. Author: Timothy A. Davis.\
+CCOLAMD, COLAMD        Copyright (c) 1998-2007, University of Florida. Author: Timothy A. Davis,\
+                       Siva Rajamanickam, and Stefan Larimore. The COLAMD algorithm was developed\
+                       in collaboration Esmond Ng and John Gilbert.\
+CSparse, CXSparse      Copyright (c) 2006-2007, Timothy A. Davis.\
+KLU                    Copyright (c) 2004-2007, University of Florida.\
+                       Author: Timothy A. Davis. Co-author: Eka Palamadai.\
+LDL                    Copyright (c) 2003-2007 by Timothy A. Davis.\
+UMFPACK                Copyright (c) 1994-2007 by Timothy A. Davis, University of Florida.\
+CHOLDMOD               Copyright (c) 2004-2007. Some portions are Copyright (c) Univ. of Florida.\
+                       Others are Copyright (c) by their authors (T. A. Davis and W. Hager).\
+                       Distributed under the GNU LGPL license; the Supernodal and Modify\
+                       (update/downdate) Modules are distributed under the GNU GPL license.\
+\
+License: LGPL, GPL\
+\
+On Debian systems, the complete text of the GNU Lesser General Public\
+License, version 2.1, can be found in\
+`/usr/share/common-licenses/LGPL-2.1'.  On Debian systems, the\
+complete text of the GNU General Public License, version 2, can be\
+found in `/usr/share/common-licenses/GPL-2'.\
+\
+\
+AMD: LGPL-2.1+\
+BTF: LGPL-2.1+\
+CCOLAMD: LGPL-2.1+\
+COLAMD: LGPL-2.1+\
+CSparse: LGPL-2.1+\
+CXSparse: LGPL-2.1+\
+KLU: LGPL-2.1+\
+LDL: LGPL-2.1+\
+UMFPACK: GPL-2+\
+CHOLMOD:\
+ - Check: LGPL-2.1+\
+ - Cholesky: LGPL-2.1+\
+ - Core: LGPL-2.1+\
+ - Demo: GPL-2+\
+ - MatrixOps: GPL-2+\
+ - Modify: GPL-2+\
+ - Partition: LGPL-2.1+\
+ - Supernodal: GPL-2+\
+ - Tcov: GPL-2+\
+ - Valgrind: GPL-2+\
+\
+The Debian packaging information is Copyright \'a9 2006-2009 Debian\
+Scientific Computing Project and released under the terms of the GNU\
+General Public License, version 3 or later.  On Debian systems, the\
+complete text of the license, can be found in\
+`/usr/share/common-licenses/GPL-3'.\
+}

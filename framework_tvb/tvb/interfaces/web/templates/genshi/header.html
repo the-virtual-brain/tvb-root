@@ -1,0 +1,51 @@
+<header xmlns:py="http://genshi.edgewall.org/" xmlns:xi="http://www.w3.org/2001/XInclude">
+	<!-- CrossNav: Project information -->
+	<aside id="control_top_left" class="header-component project can-extend" xmlns:py="http://genshi.edgewall.org/" 
+ 	   		tabindex="51" onkeypress="redirectToHrefChild(this)">
+ 	   	<script type="text/javascript">
+ 	   		$(document).ready(function() {
+ 	   			updateCallOutProject();
+ 	   		})
+ 	   	</script>
+	</aside>
+	
+	<!-- Section-related sub-navigation -->
+	<nav class="header-component can-extend ${'auto-extends' if (subMenuContent and subMenuContent in mainContent or mainContent in subMenuContent) else ''}" py:if="subMenuContent">
+		<h3>${section_name.capitalize()} Menu</h3>
+		<div class="extension">
+			<div class="dropdown-pane">
+				<xi:include href="${subMenuContent}.html" />
+			</div>
+		</div>
+	</nav>
+	<nav class="header-component" py:if="subMenuContent is None">
+		<h3>${section_name.capitalize()} Menu</h3>
+	</nav>
+
+	<!-- Optional Back button -->
+	<section class="header-component back-nav" py:if="back_page_link">
+		<a href="$back_page_link" title="Go back to invocation page">Back</a>
+	</section>
+	
+	<!-- Headlines of current section -->
+	<hgroup class="header-component">
+		<h1><mark>${section_titles[section_name].capitalize() if section_name in section_titles else section_name.capitalize()}</mark> 
+			${sub_section_titles[subsection_name].capitalize() if subsection_name in sub_section_titles else ''}</h1>
+		<a class="helper-hook" title="Click here to open Online-Help" href="#" onClick="showHelpOverlay('${section_name}', '${subsection_name}')" py:if="showOnlineHelp">?</a>
+		<h2>$title</h2>
+	</hgroup>
+
+	<!-- Messages -->
+	<section class="header-component message-container">
+		<h3>Messages</h3>
+		<ul>
+			<li id="messageDivParent" class="msg-sticky msg-level-fatal" py:if="messageType=='ERROR'"><div id="messageDiv">$message</div></li>
+			<li id="messageDivParent" class="msg-transient transient-medium msg-level-warn" py:if="messageType=='WARNING'"><div id="messageDiv">$message</div></li>
+			<li id="messageDivParent" class="msg-transient msg-level-info" py:if="messageType=='INFO'"><div id="messageDiv">$message</div></li>
+		</ul>
+	</section>
+
+	<section class="header-component actionhook">
+	</section>
+
+</header>

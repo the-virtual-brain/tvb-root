@@ -1,0 +1,263 @@
+#!/bin/bash
+
+## --- 9/28/2011 --- ##
+
+## PURPOSE ##
+  # create FA, TRD, MD and EV images from raw 4D dti data using camino's restore
+
+## INPUT REQUIREMENTS #
+  # <pfx>_DTI.img:    raw 4D dti data, analyze format
+  # <pfx>_noise.txt:   text file containing standard deviation of noise used for restore
+  #  bvals.txt:           text file containing b values for all images (1xNumGradients:  including 0s for b0s)
+  #  gradients.txt:     text file containing gradient info (3xNumGradients:  including 0s for b0s)
+
+## SOFTWARE REQUIREMENTS #
+  # camino
+  # fsl-4.1 or newer
+  
+## PRIMARY OUTPUT ##
+  # *_ec_restore_fa
+  # *_ec_restore_md
+  # *_ec_restore_trd
+  # *_ec_restore_l_1
+  # *_ec_restore_l_2
+  # *_ec_restore_l_3
+  # *_ec_restore_ev1_1 (primary ev, xvec)
+  # *_ec_restore_ev1_2 (primary ev, yvec)
+  # *_ec_restore_ev1_3 (primary ev, zvec)
+  # *_ec_restore_ev2_1
+  # *_ec_restore_ev2_2
+  # *_ec_restore_ev2_3
+  # *_ec_restore_ev3_1
+  # *_ec_restore_ev3_2
+  # *_ec_restore_ev3_3
+
+## NOTES ##
+  # assumes b0 images are the stored at the beginning of the 4D analyze image
+  
+#=======================================================================================
+
+### PREP SCRIPT ###
+
+## Check arguments ##
+if [ ${#} -ne 1 ]; then 
+  echo ""
+  echo " Error: Must supply subject prefix as first argument,"; 
+  echo " and the following are required in the subject's directory:"
+  echo "   - <pfx>_DTI.img /.hdr"
+  echo "   - <pfx>_noise.txt"
+  echo "   - ../gradients.txt"
+  echo "   - ../bvals.txt"
+  echo ""
+  exit
+fi
+
+## change into subject's directory ##
+pfx=${1}
+if [ ! -d ${pfx} ]; then echo "Error: \"${pfx}\" directory does not exist"; exit; fi
+cd ${pfx}
+
+#=======================================================================================
+
+### ==> VARIABLES <== ###
+
+## threshold for excluding background voxels ##
+#  --> (for restore, bug in program that causes restore algorithm to get stuck in noisy background voxels)
+bgthresh=100 
+
+## filename for 4D analyze DTI image ##
+dti=`ls ${pfx}*DTI.img | sed "s/\.img//"`
+if [ ${dti}x = "x" ]; then echo "Error:  No DTI found"; exit; fi
+
+## filename for file with standard deviation of the noise ##
+noisefn=`ls ${pfx}_*noise*.txt`
+if [ ${noisefn}x = "x" ]; then echo "Error:  No noise file found"; exit; fi
+
+## filename for file with b0s ##
+#bvalsfn="../bvals.txt"
+bvalsfn="${pfx}_DTI.bval"
+
+## filename for file with gradients ##
+#--> (consistent format for gradient table is an issue)
+#gradientfn="../gradients.txt" 
+gradientfn="${pfx}_DTI.bvec"
+#=======================================================================================
+
+###  PROCESSING ###
+
+## eddy correct ##
+FSLOUTPUTTYPE=NIFTI_GZ
+eddy_correct ${dti}.img ${dti}_ec.nii.gz 0
+gunzip ${dti}_ec.nii.gz
+
+#-------------------------------------------------------------------------------------------------------
+
+# This is a mess!!
+# (the following converts the gradient table between the required formats for
+#  camino and rot_grad using clumsy shell commands and also negates the x vector
+#  of the gradient table where necessary)
+
+## find number of gradients and b0 images (for rot_grad) ##
+numb0s="0"
+numgrads="0"
+bvals=`cat ${bvalsfn}`
+for bval in ${bvals}
+do
+  isnum=`echo ${bval}x | sed "s/^[0-9].*/true/"`
+  if [ ${isnum} != "true" ]; then break; fi
+
+  if [ ${bval} -eq 0 ]; then
+    numb0s=`echo "${numb0s} + 1" | bc`
+  else
+    numgrads=`echo "${numgrads} + 1" | bc`
+    echo ${numgrads} ${bval}
+  fi
+done
+
+echo "Number of b0 images: ${numb0s}"
+echo "Number of gradient images: ${numgrads}"
+
+## transpose gradient table (for rot_grad) ##
+head -n 1 ${gradientfn} |   sed "s/\s\{1,\}/\n/g" > ${pfx}_gradx.txt
+head -n 2 ${gradientfn} | tail -n 1 |  sed "s/\s\{1,\}/\n/g" > ${pfx}_grady.txt
+head -n 3 ${gradientfn} | tail -n 1 |  sed "s/\s\{1,\}/\n/g" > ${pfx}_gradz.txt
+
+## negate x component of gradient vector (if using gradient table from dcm2nii) ##
+if [ -e ${pfx}_gradx_ng.txt ]; then
+  rm ${pfx}_gradx_ng.txt
+fi
+
+xvec=`cat ${pfx}_gradx.txt`
+for x in ${xvec}; do
+  echo "${x} * -1" | bc >> ${pfx}_gradx_ng.txt
+done
+
+## assemble gradient table (format for rot_grad) ##
+paste  ${pfx}_gradx_ng.txt  ${pfx}_grady.txt  ${pfx}_gradz.txt > ${pfx}_rotgrad_table_temp.txt
+
+## remove b0 entries (for rot_grad) ##
+numlines=`cat ${pfx}_rotgrad_table_temp.txt | wc -l`
+numlines=`echo "${numlines} - ${numb0s}" | bc`
+tail -n ${numlines} ${pfx}_rotgrad_table_temp.txt > ${pfx}_rotgrad_table.txt
+rm ${pfx}_rotgrad_table_temp.txt
+
+## rotate gradients ##
+ecclog=`ls ${pfx}*.ecclog`
+rot_grad ${numgrads} ${numb0s} ${pfx}_rotgrad_table.txt ${ecclog}
+
+## convert from rot_grad output format  ##
+if [ -e rot_csv_${dti}_ec.ecclog ]; then
+  rm rot_csv_${dti}_ec.ecclog
+fi
+
+## add entries for b0 images ## (assuming b0s are all at the beginning of the 4D volume)
+counter=0
+while [ ${counter} -lt ${numb0s} ]; do
+  echo "0,0,0" >> rot_csv_${dti}_ec.ecclog
+  counter=`echo ${counter} + 1 |bc`
+done
+
+## create csv file ##
+cat rot_${dti}_ec.ecclog  |  sed "s/\s\{1,\}/,/g" >> rot_csv_${dti}_ec.ecclog
+
+## create rotated gradient table with negative xvecs (for camino) ##
+if [ -e rot_${dti}_negative_xvec.txt ]; then
+  rm rot_${dti}_negative_xvec.txt
+fi
+
+xvec=`cut rot_csv_${dti}_ec.ecclog -d"," -f1`
+for x in ${xvec}; do
+  echo "${x} * -1" | bc >> rot_${dti}_negative_xvec.txt
+done
+
+cut rot_csv_${dti}_ec.ecclog -d"," -f2 > rot_${dti}_yvec.txt
+cut rot_csv_${dti}_ec.ecclog -d"," -f3 > rot_${dti}_zvec.txt
+
+echo "VERSION: BVECTOR" > rot_${dti}_gradient.scheme
+head -n 1 ${bvalsfn} | sed "s/\s\{1,\}/\n/g" > ${pfx}_temp_bvals.txt
+paste rot_${dti}_negative_xvec.txt  rot_${dti}_yvec.txt rot_${dti}_zvec.txt ${pfx}_temp_bvals.txt >> rot_${dti}_gradient.scheme
+rm ${pfx}_temp_bvals.txt
+# end mess
+
+#-------------------------------------------------------------------------------------------------------
+
+## fit tensors with camino ##
+fslchfiletype ANALYZE ${dti}_ec.nii
+analyze2voxel -4dimage ${dti}_ec.img > ${dti}_ec.Bfloat
+modelfit -bgthresh ${bgthresh} -inputfile ${dti}_ec.Bfloat -inversion -2 -schemefile rot_${dti}_gradient.scheme -sigma `cat ${noisefn}` -outliermap ${dti}_ec_restore_outlier > ${dti}_ec_restore.Bdouble
+
+## create fa image ##
+fa < ${dti}_ec_restore.Bdouble > ${dti}_ec_restore_fa.Bdouble
+mv ${dti}_ec_restore_fa.Bdouble ${dti}_ec_restore_fa.img
+
+## get header info ##
+xdim=`fslinfo ${dti}.img | grep "^dim1" | sed "s/dim1 *//"`
+ydim=`fslinfo ${dti}.img | grep "^dim2" | sed "s/dim2 *//"`
+zdim=`fslinfo ${dti}.img | grep "^dim3" | sed "s/dim3 *//"`
+xsize=`fslinfo ${dti}.img | grep "^pixdim1" | sed "s/pixdim1 *//"`
+ysize=`fslinfo ${dti}.img | grep "^pixdim2" | sed "s/pixdim2 *//"`
+zsize=`fslinfo ${dti}.img | grep "^pixdim3" | sed "s/pixdim3 *//"`
+
+## create fa header ##
+analyzeheader -datadims ${xdim} ${ydim} ${zdim} -voxeldims ${xsize} ${ysize} ${zsize} -datatype double > ${dti}_ec_restore_fa.hdr
+
+## create first EV and L image/headers ##
+dteig < ${dti}_ec_restore.Bdouble > ${dti}_ec_restore_eig.Bdouble
+cat ${dti}_ec_restore_eig.Bdouble | shredder 0 8 88 > ${dti}_ec_restore_l_1.img
+analyzeheader -datadims ${xdim} ${ydim} ${zdim} -voxeldims ${xsize} ${ysize} ${zsize} -datatype double > ${dti}_ec_restore_l_1.hdr
+cat ${dti}_ec_restore_eig.Bdouble | shredder 8 8 88 > ${dti}_ec_restore_ev1_1.img
+analyzeheader -datadims ${xdim} ${ydim} ${zdim} -voxeldims ${xsize} ${ysize} ${zsize} -datatype double > ${dti}_ec_restore_ev1_1.hdr
+cat ${dti}_ec_restore_eig.Bdouble | shredder 16 8 88 > ${dti}_ec_restore_ev1_2.img
+analyzeheader -datadims ${xdim} ${ydim} ${zdim} -voxeldims ${xsize} ${ysize} ${zsize} -datatype double > ${dti}_ec_restore_ev1_2.hdr
+cat ${dti}_ec_restore_eig.Bdouble | shredder 24 8 88 > ${dti}_ec_restore_ev1_3.img
+analyzeheader -datadims ${xdim} ${ydim} ${zdim} -voxeldims ${xsize} ${ysize} ${zsize} -datatype double > ${dti}_ec_restore_ev1_3.hdr
+
+## create second EV and L image/headers ##
+cat ${dti}_ec_restore_eig.Bdouble | shredder  32 8 88 > ${dti}_ec_restore_l_2.img
+analyzeheader -datadims ${xdim} ${ydim} ${zdim} -voxeldims ${xsize} ${ysize} ${zsize} -datatype double > ${dti}_ec_restore_l_2.hdr
+cat ${dti}_ec_restore_eig.Bdouble | shredder 40 8 88 > ${dti}_ec_restore_ev2_1.img
+analyzeheader -datadims ${xdim} ${ydim} ${zdim} -voxeldims ${xsize} ${ysize} ${zsize} -datatype double > ${dti}_ec_restore_ev2_1.hdr
+cat ${dti}_ec_restore_eig.Bdouble | shredder 48 8 88 > ${dti}_ec_restore_ev2_2.img
+analyzeheader -datadims ${xdim} ${ydim} ${zdim} -voxeldims ${xsize} ${ysize} ${zsize} -datatype double > ${dti}_ec_restore_ev2_2.hdr
+cat ${dti}_ec_restore_eig.Bdouble | shredder 56 8 88 > ${dti}_ec_restore_ev2_3.img
+analyzeheader -datadims ${xdim} ${ydim} ${zdim} -voxeldims ${xsize} ${ysize} ${zsize} -datatype double > ${dti}_ec_restore_ev2_3.hdr
+
+## create third EV and L image/headers ##
+cat ${dti}_ec_restore_eig.Bdouble | shredder  64 8 88 > ${dti}_ec_restore_l_3.img
+analyzeheader -datadims ${xdim} ${ydim} ${zdim} -voxeldims ${xsize} ${ysize} ${zsize} -datatype double > ${dti}_ec_restore_l_3.hdr
+cat ${dti}_ec_restore_eig.Bdouble | shredder 72 8 88 > ${dti}_ec_restore_ev3_1.img
+analyzeheader -datadims ${xdim} ${ydim} ${zdim} -voxeldims ${xsize} ${ysize} ${zsize} -datatype double > ${dti}_ec_restore_ev3_1.hdr
+cat ${dti}_ec_restore_eig.Bdouble | shredder 80 8 88 > ${dti}_ec_restore_ev3_2.img
+analyzeheader -datadims ${xdim} ${ydim} ${zdim} -voxeldims ${xsize} ${ysize} ${zsize} -datatype double > ${dti}_ec_restore_ev3_2.hdr
+cat ${dti}_ec_restore_eig.Bdouble | shredder 88 8 88 > ${dti}_ec_restore_ev3_3.img
+analyzeheader -datadims ${xdim} ${ydim} ${zdim} -voxeldims ${xsize} ${ysize} ${zsize} -datatype double > ${dti}_ec_restore_ev3_3.hdr
+
+## create TRD image/header ##
+rm ${dti}_ec_restore_eig.Bdouble
+trd < ${dti}_ec_restore.Bdouble > ${dti}_ec_restore_trd.Bdouble
+mv ${dti}_ec_restore_trd.Bdouble ${dti}_ec_restore_trd.img
+analyzeheader -datadims ${xdim} ${ydim} ${zdim} -voxeldims ${xsize} ${ysize} ${zsize} -datatype double > ${dti}_ec_restore_trd.hdr
+
+## create MD image/header ##
+md < ${dti}_ec_restore.Bdouble > ${dti}_ec_restore_md.Bdouble
+mv ${dti}_ec_restore_md.Bdouble ${dti}_ec_restore_md.img
+analyzeheader -datadims ${xdim} ${ydim} ${zdim} -voxeldims ${xsize} ${ysize} ${zsize} -datatype double > ${dti}_ec_restore_md.hdr
+
+
+#=======================================================================================
+
+### ADDITIONAL CLEAN-UP ###
+
+rm ${dti}_ec.Bfloat
+rm ${dti}_ec_restore.Bdouble
+rm ${pfx}_gradx_ng.txt
+rm ${pfx}_gradx.txt
+rm ${pfx}_grady.txt
+rm ${pfx}_gradz.txt
+rm rot_${dti}_negative_xvec.txt
+rm rot_${dti}_yvec.txt
+rm rot_${dti}_zvec.txt
+
+#=======================================================================================
+
+cd ../

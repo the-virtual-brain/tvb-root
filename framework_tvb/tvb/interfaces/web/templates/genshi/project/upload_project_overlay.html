@@ -1,0 +1,27 @@
+<form method="post" enctype="multipart/form-data" action="/project/projectupload"  xmlns:py="http://genshi.edgewall.org/" xmlns:xi="http://www.w3.org/2001/XInclude">
+    <section class="uploader upload-project active">
+        <fieldset class="toolbar-inline">
+            <ul>
+                <li>
+                    <button type="submit" class="action action-upload" onClick="showOverlayProgress()">Upload</button>
+                </li>
+            </ul>
+        </fieldset>
+
+        <fieldset>
+            <dl>
+                <dt class="field-mandatory">
+                    <label for="uploadedfile">Project archive</label>
+                </dt>
+                <dd>
+                    <p class="field-data">
+                        <input id="uploadedfile" type="file" tabindex='3' name='uploadedfile' class="inputField" accept="application/zip"/>
+                    </p>
+                </dd>
+            </dl>
+            <legend>
+            	Please be aware that large uploads might take some time and are not interruptible.
+            </legend>
+        </fieldset>
+    </section>
+</form>

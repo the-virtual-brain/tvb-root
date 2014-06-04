@@ -1,0 +1,54 @@
+<div xmlns:py="http://genshi.edgewall.org/">
+    <!--data parameter wil be of form [[[l1,l2,l3,..], [v1,v2,v3,...], dict()],[],...]; where l1,l2,l3,.. are the
+    labels of the options and the v1,v2,v3,... represents the values of the options; dict() represents a
+    dictionary which contains the allowed aggregation functions on each dimension-->
+    <py:def function="drawReduceComponent(select_name, data, parameters_prefix, required_dimension, selected_items, selected_functions, expected_shape, operations)">
+
+        <input id="${select_name}_expected_shape" name="${select_name}_${parameters_prefix}_0" type="hidden" value="expected_shape_${expected_shape}"/>
+        <input id="${select_name}_operations" name="${select_name}_${parameters_prefix}_0" type="hidden" value="operations_${operations}"/>
+
+        <input id="${select_name}_expected_dim" name="${select_name}_${parameters_prefix}_0"
+               type="hidden" value="requiredDim_${required_dimension}"/>
+        <input id="${select_name}_array_shape" type="hidden" value="${array_shape}"/>
+        <table>
+            <tr>
+                <td colspan="${len(data)}">The input expects an array of ${required_dimension}D</td>
+            </tr>
+            <tr>
+                <td colspan="${len(data)}"><span style="color: red;" id="${select_name}_span_expected_dim">${required_dim_msg}</span></td>
+            </tr>
+            <tr>
+                <py:for each="idx in xrange(len(data))">
+                    <td>
+                        <select id="dimId_${select_name}_${parameters_prefix}_$idx"
+                                name='${select_name}_${parameters_prefix}_$idx' multiple='multiple'
+                                onchange="updateShapeLabel('${select_name}', '${parameters_prefix}', $idx)">
+                            <py:for each="idx2 in xrange(len(data[idx][0]))">
+                                <option value='${data[idx][1][idx2]}' selected="selected" py:if="(idx in selected_items) and (idx2 in selected_items[idx])">${data[idx][0][idx2]}</option>
+                                <option value='${data[idx][1][idx2]}' py:if="(idx not in selected_items) or (idx2 not in selected_items[idx])">${data[idx][0][idx2]}</option>
+                            </py:for>
+                        </select>
+                    </td>
+                </py:for>
+            </tr>
+            <tr>
+                <py:for each="idx in xrange(len(data))">
+                    <td>
+                        <select id="funcId_${select_name}_${parameters_prefix}_$idx" name='${select_name}_${parameters_prefix}_$idx'
+                                onchange="updateShapeLabel('${select_name}', '${parameters_prefix}',$idx)">
+                            <option value='func_none'>None</option>
+                            <py:for each="key, value in data[idx][2].iteritems()">
+                                <option value='func_${key}' selected="selected" py:if="(idx in selected_functions) and (key == selected_functions[idx])">${value}</option>
+                                <option value='func_${key}' py:if="(idx not in selected_functions) or (key != selected_functions[idx])">${value}</option>
+                            </py:for>
+                        </select>
+                    </td>
+                </py:for>
+            </tr>
+            <tr>
+                <td colspan="${len(data)}"><span id="${select_name}_span_shape">Array shape: ${array_shape} => ${currentDim}</span></td>
+            </tr>
+        </table>
+    </py:def>
+    ${drawReduceComponent(select_name, data, parameters_prefix, required_dimension, selected_items, selected_functions, expected_shape, operations)}
+</div>

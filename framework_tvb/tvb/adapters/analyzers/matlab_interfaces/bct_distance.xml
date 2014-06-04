@@ -1,0 +1,127 @@
+<?xml version="1.0"?>
+ 
+		
+<tvb xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="../../../core/schema/tvb.xsd">
+
+    <algorithm_group name="bct" subsection="bctdistance" type="tvb.adapters.analyzers.group_matlab_adapter.MatlabAdapter" additionalPath="externals/BCT"
+                     uiName="Distance Algorithms" description="Brain Connectivity Toolbox" label="Choose Distance Algorithm:">
+        <!-- Distance -->
+
+        <algorithm name="Reachability and distance matrices (Breadth-first search)" identifier="RDM">
+            <code value="[R,D] = breadthdist(CIJ);"/>
+            <matlab_file value="breadthdist.m"/>
+            <inputs>
+                <input required="True">
+                    <name value="CIJ"/>
+                    <label value="Binary (directed/undirected) connection matrix:"/>
+                    <type value="tvb.datatypes.connectivity.Connectivity" field="weights"/>
+                </input>
+            </inputs>
+            <outputs>
+                <output type="tvb.datatypes.graph.ConnectivityMeasure">
+                    <field name="array_data" reference="result['R']"/>
+                    <field name="connectivity" reference="inputs['CIJ_gid']"/>
+                    <field name="title" value="Reachability matrix"/>
+                </output>
+                <output type="tvb.datatypes.graph.ConnectivityMeasure">
+                    <field name="array_data" reference="result['D']"/>
+                    <field name="connectivity" reference="inputs['CIJ_gid']"/>
+                    <field name="title" value="Distance matrix"/>
+                </output>
+            </outputs>
+        </algorithm>
+
+        <algorithm name="Distance binary matrix" identifier="DBIN">
+            <code value="D = distance_bin(A);"/>
+            <matlab_file value="distance_bin.m"/>
+            <inputs>
+                <input required="True">
+                    <name value="A"/>
+                    <label value="Binary (directed/undirected) connection matrix:"/>
+                    <type value="tvb.datatypes.connectivity.Connectivity" field="weights"/>
+                </input>
+            </inputs>
+            <outputs>
+                <output type="tvb.datatypes.graph.ConnectivityMeasure">
+                    <field name="array_data" reference="result['D']"/>
+                    <field name="connectivity" reference="inputs['A_gid']"/>
+                    <field name="title" value="Distance matrix"/>
+                </output>
+            </outputs>
+        </algorithm>
+
+        <algorithm name="Distance weighted matrix" identifier="DWEI">
+            <code value="D = distance_wei(A);"/>
+            <matlab_file value="distance_wei.m"/>
+            <inputs>
+                <input required="True">
+                    <name value="A"/>
+                    <label value="Weighted (directed/undirected) connection matrix:"/>
+                    <type value="tvb.datatypes.connectivity.Connectivity" field="weights"/>
+                </input>
+            </inputs>
+            <outputs>
+                <output type="tvb.datatypes.graph.ConnectivityMeasure">
+                    <field name="array_data" reference="result['D']"/>
+                    <field name="connectivity" reference="inputs['A_gid']"/>
+                    <field name="title" value="Distance matrix"/>
+                </output>
+            </outputs>
+        </algorithm>
+
+        <algorithm name="Network walks" identifier="NETW">
+            <code value="[Wq,twalk,wlq]  = findwalks(A);"/>
+            <matlab_file value="findwalks.m"/>
+            <inputs>
+                <input required="True">
+                    <name value="A"/>
+                    <label value="Binary (directed/undirected) connection matrix:"/>
+                    <type value="tvb.datatypes.connectivity.Connectivity" field="weights"/>
+                </input>
+            </inputs>
+            <outputs>
+                <output type="tvb.datatypes.graph.ConnectivityMeasure">
+                    <field name="array_data" reference="result['Wq']"/>
+                    <field name="connectivity" reference="inputs['A_gid']"/>
+                    <field name="title" value="3D matrix"/>
+                </output>
+                <output type="tvb.datatypes.mapped_values.ValueWrapper">
+                    <field name="data_value" reference="float(result['twalk'])"/>
+                    <field name="data_type" value="float"/>
+                    <field name="data_name" value="Total number of walks found"/>
+                </output>
+                <output type="tvb.datatypes.graph.ConnectivityMeasure">
+                    <field name="array_data" reference="result['wlq']"/>
+                    <field name="connectivity" reference="inputs['A_gid']"/>
+                    <field name="title" value="Walk length distribution"/>
+                </output>
+            </outputs>
+        </algorithm>
+
+        <algorithm name="Reachability and distance matrices (Algebraic path count)" identifier="RDA">
+            <code value="[R,D] = reachdist(CIJ);"/>
+            <matlab_file value="reachdist.m"/>
+            <inputs>
+                <input required="True">
+                    <name value="CIJ"/>
+                    <label value="Binary (directed/undirected) connection matrix:"/>
+                    <type value="tvb.datatypes.connectivity.Connectivity" field="weights"/>
+                </input>
+            </inputs>
+            <outputs>
+                <output type="tvb.datatypes.graph.ConnectivityMeasure">
+                    <field name="array_data" reference="result['R']"/>
+                    <field name="connectivity" reference="inputs['CIJ_gid']"/>
+                    <field name="title" value="Reachability matrix"/>
+                </output>
+                <output type="tvb.datatypes.graph.ConnectivityMeasure">
+                    <field name="array_data" reference="result['D']"/>
+                    <field name="connectivity" reference="inputs['CIJ_gid']"/>
+                    <field name="title" value="Distance matrix"/>
+                </output>
+            </outputs>
+        </algorithm>
+                   
+    </algorithm_group>
+</tvb>
+                     

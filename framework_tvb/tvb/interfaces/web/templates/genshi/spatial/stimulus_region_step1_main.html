@@ -1,0 +1,39 @@
+<div id="main" class="columnized colscheme-2-even" xmlns:py="http://genshi.edgewall.org/" xmlns:xi="http://www.w3.org/2001/XInclude">
+    <xi:include href="stimulus_region_step1_left.html"/>
+    <xi:include href="stimulus_region_step1_right.html"/>
+    
+    <!-- === Box: Form controls -->
+    <aside class="header-component toolbar can-extend auto-extends">
+    	<h3>SpatioTemporal Entities</h3>
+	  <div class="extension">
+	   <div class="dropdown-pane">
+        <ul>
+            <li>
+            	<!-- <form action="${resetToDefaultUrl}/1" method="POST"> -->
+                	<button class="action action-analyze action-idle" disabled="disabled">
+                		Edit Stimulus Equations
+                	</button>
+               <!-- </form> -->
+            </li>
+			<li>
+				<button class="action action-view" onclick="STIM_submitRegionStimulusData('${next_step_url}', 2);return false;">
+					Set Regions Scaling
+				</button>
+			</li>
+			<li>
+				<py:if test="anyScaling">
+					<button class="action action-plus" onclick="STIM_submitRegionStimulusData('${next_step_url}', 3);return false;">
+						Save Stimulus Region
+					</button>
+				</py:if>
+				<py:if test="not anyScaling">
+					<button class="action action-plus action-idle" onclick="displayMessage('You first need to define your regions scaling!', 'infoMessage');return false;">
+						Save New Stimulus on Region
+					</button>
+				</py:if>
+			</li>
+        </ul>
+       </div>
+      </div>
+    </aside>
+</div>

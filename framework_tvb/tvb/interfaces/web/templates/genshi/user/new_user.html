@@ -1,0 +1,54 @@
+<py:def function="create_user_registration(data, errors, title, include_description)" xmlns:py="http://genshi.edgewall.org/">
+	<table class="contentTable" summary="Register New User" xmlns:py="http://genshi.edgewall.org/">
+		<thead><tr><td colspan='2'><h2> ${title}</h2></td></tr></thead>
+		<tr>
+			<td><label for="username">Username *</label></td>
+			<td><input tabindex='1' id="username" type="textField" name="username" value="${data.username if ('username' in data) else ''}" class="inputField"/>
+				<br/>
+				<span py:if="'username' in errors" class="errorMessage">${errors.username}</span>
+			</td>
+		</tr>
+		<tr>
+			<td><label for="password">Password *</label></td>
+			<td><input tabindex='2' id="password" type="password" name="password" value="${data.password if ('password' in data) else ''}" class="inputField"/>
+				<br/>
+				<span py:if="'password' in errors" class="errorMessage">${errors.password}</span>
+			</td>
+		</tr>
+		<tr>
+			<td><label for="password2">Confirm Password *</label></td>
+			<td><input tabindex='3' id="password2" type="password" name="password2" value="${data.password2 if ('password2' in data) else ''}" class="inputField"/>
+				<br/>
+				<span py:if="'password2' in errors" class="errorMessage">${errors.password2}</span>
+			</td>
+		</tr>
+		<tr>
+			<td><label for="email">Email Address *</label></td>
+			<td><input tabindex='4' id="email" type="textField" name="email" value="${data.email if ('email' in data) else ''}" class="inputField"/>
+				<br/>
+				<span py:if="'email' in errors" class="errorMessage">${errors.email}</span>
+			</td>
+		</tr>
+		<tr>
+			<td><label for="role">Role *</label></td>
+			<!-- TODO make this two values dymanic, retrieved from code. -->
+			<td><select tabindex='5' id="role" name="role" class="inputField" value="${data.role if ('role' in data) else ''}">
+					<option value="RESEARCHER">Researcher</option>
+					<option value="CLINICIAN" selected="${'SELECTED' if ('role' in data and data.role=='CLINICIAN') else ''}">Clinician</option>
+				</select>
+				<br/>
+				<span py:if="'role' in errors" class="errorMessage">${errors.role}</span>
+			</td>
+		</tr>
+		<py:if test="include_description">
+			<tr>
+				<td><label for="comment">Why do you want to use TVB?</label></td>
+				<td><textarea tabindex='6' id="comment" name="comment" rows="10" cols="35" class="inputArea">${data.comment if ('comment' in data) else ''}</textarea>
+					<br/>
+					<span py:if="'comment' in errors" class="errorMessage">${errors.comment}</span>
+				</td>
+			</tr>
+		</py:if>
+	</table>
+</py:def>
+

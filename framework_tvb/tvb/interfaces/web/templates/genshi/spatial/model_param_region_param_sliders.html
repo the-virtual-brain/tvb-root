@@ -1,0 +1,24 @@
+<div xmlns:py="http://genshi.edgewall.org/">
+	
+    <py:def function="drawParametersSliders(paramsNames, paramSlidersData)">
+        <table class="paramSlidersTable" py:if="paramsNames">
+            <tr>
+                <td>
+                    <button onclick="MP_resetParamSliders('div_spatial_model_params')">Reset parameters for node(s)</button>
+                </td>
+            </tr>
+            <tr py:for="paramName in paramsNames">
+                <td class="paramName">${paramName}</td>
+                <td class="paramSlider"><div id='${paramName}'></div></td>
+                <td class="paramValue"><span id='value_${paramName}'></span></td>
+            </tr>
+        </table>
+        <script type="text/javascript">
+            $(document).ready(function () {
+                MP_drawSlidersForModelParameters('$paramSlidersData');
+            });
+        </script>
+    </py:def>
+
+    ${drawParametersSliders(parametersNames, paramSlidersData)}
+</div>

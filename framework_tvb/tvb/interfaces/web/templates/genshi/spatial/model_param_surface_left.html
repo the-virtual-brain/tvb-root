@@ -1,0 +1,44 @@
+<div xmlns:py="http://genshi.edgewall.org/" xmlns:xi="http://www.w3.org/2001/XInclude">
+	<script type="text/javascript" src="/static/js/spatial/model_parameters.js"></script>
+	
+	<h4><mark>Surface</mark> Model Configuration</h4>
+	<form id="form_spatial_model_param_equations">
+		<fieldset>
+			<legend>Selected parameter</legend>
+	        <xi:include href="../flow/genericAdapterFormFields.html"/>
+	    </fieldset>
+	</form>
+	
+	<button class="action" onclick="MP_applyEquationForParameter()" style="float: right">Apply equation</button>
+	<fieldset>
+		<legend>Applied equations:</legend>
+	    <py:if test="applied_equations">
+	        <py:for each="param in applied_equations">
+	        	<p>
+	        		<b>Parameter ${param} :</b> ${applied_equations[param]['equation_params']}
+	        	</p>
+	        </py:for>
+	    </py:if>
+	</fieldset>
+	
+	<fieldset>
+		<legend>Current equation plot:</legend>
+		<div id='div_spatial_model_params_equation_chart'></div>
+		<form id="equationPlotAxisParams">
+			${generateDisplay(parametersEquationPlotDict, False, "")}
+		</form>
+	</fieldset>
+	<br/> <br/> <br/> <br/> <br/>
+	<br/> <br/> <br/> <br/> <br/>
+	
+	<script type="text/javascript">
+	        $(document).ready(function () {
+                $("select[name='model_param']")
+                        .unbind('change.displayFocalPoints')
+                        .bind('change.displayFocalPoints', MP_displayFocalPoints);
+	            BS_plotEquations('div_spatial_model_params_equation_chart', '${equationViewerUrl}',
+                        'form_spatial_model_param_equations', $equationsPrefixes, 'equationPlotAxisParams');
+	            MathJax.Hub.Queue(["Typeset",MathJax.Hub]);
+	        });
+    </script>
+</div>

@@ -1,0 +1,17 @@
+<script id="shader-fs" type="x-shader/x-fragment">
+        #ifdef GL_ES
+		    precision highp float;
+		#endif
+		varying vec3 vLightWeighting;
+		varying vec4 vColor;
+		varying float picked;
+
+		void main(void) {
+			if (picked == 0.0) {
+				gl_FragColor = vec4(vColor.rgb * vLightWeighting, vColor.a);
+			} else {
+				gl_FragColor = vColor;
+			}
+
+		}
+</script>

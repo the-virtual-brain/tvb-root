@@ -1,0 +1,221 @@
+<!-- Visualizer Large Scale Connectivity Matrix -->
+
+<div xmlns:xi="http://www.w3.org/2001/XInclude" xmlns:py="http://genshi.edgewall.org/">
+    <script type="text/javascript" src="/static/jquery/jquery.json-2.2.min.js" ></script>
+	<script type="text/javascript" src="/static/jquery/jquery.mousewheel.js"></script>
+    <script type="text/javascript" src="/static/jquery/jquery.contextmenu.js" ></script>
+	<script type="text/javascript" src="/static/js/sylvester.js"></script>
+	<script type="text/javascript" src="/static/js/glUtils.js"></script>
+    <script type="text/javascript" src="/static/js/zoom.js" ></script>
+    <script type="text/javascript" src="/static/js/jit-tvb.js?$currentVersionJS" ></script>
+    <script type="text/javascript" src="/static/js/projectTree.js?$currentVersionJS"></script>
+    <script type="text/javascript" src="/static/js/mplh5.js?$currentVersionJS"></script>
+    <script type="text/javascript" src="/static/colorScheme/js/colorSchemeComponent.js?$currentVersionJS"></script>
+    <script type="text/javascript" src="/static/js/webGL_ShaderAndMatrixes.js?$currentVersionJS" ></script>
+    <script type="text/javascript" src="/static/js/webGL_Mouse.js?$currentVersionJS"></script>
+    <script type="text/javascript" src="/static/js/webGL_Pick.js?$currentVersionJS"></script>
+    <script type="text/javascript" src="/static/js/webGL_Connectivity.js?$currentVersionJS"></script>
+    <script type="text/javascript" src="/static_view/connectivity/scripts/matrixScript.js?$currentVersionJS" ></script>
+    <script type="text/javascript" src="/static_view/connectivity/scripts/connectivityScript.js?$currentVersionJS" ></script>
+    <script type="text/javascript" src="/static_view/connectivity/scripts/connectivity2DScript.js?$currentVersionJS"></script>
+    <script type="text/javascript" src="/static_view/connectivity/scripts/connectivityStepPlot.js?$currentVersionJS"></script>
+    <script type="text/javascript" src="/static_view/connectivity/scripts/connectivityGlobals.js?$currentVersionJS" ></script>
+    <script type="text/javascript" src="/static_view/connectivity/scripts/selectionControlScript.js?$currentVersionJS"></script>
+    <script type="text/javascript" src="/static_view/commons/scripts/regionSelector.js?$currentVersionJS"></script>
+    <script type="text/javascript" src="/static_view/connectivity/scripts/orientation.js?$currentVersionJS"></script>
+
+	<link rel="stylesheet" type="text/css" href="/static/style/section_connectivity.css?$currentVersionJS"/>
+	
+	<py:def function="drawMatrixLegendArea(canvasContainerID)">
+		<!-- The matrix' legend -->
+		<div class="matrix-legend" id="$canvasContainerID"></div>
+		
+		<div class="matrix-legend"> 
+			<table id="table-${canvasContainerID}" class="table-legend-labels">
+		    	<py:for each='label in range(7)'>
+		    		<py:if test='label != 0'>
+			    		<tr height="${str(100/8) + '%'}" style='vertical-align: bottom;'> <td>${label}</td> </tr>
+		    		</py:if>
+		    		<py:if test='label == 0'>
+			    		<tr height="20px"> <td>${label}</td> </tr>
+		    		</py:if>
+		    	</py:for>
+		    </table>
+		</div> 
+	</py:def>
+	
+	<!-- Connectivity viewer -->
+	<section class="view-column connectivity-viewer col-1">
+	<h4><mark>View</mark> Large Scale Connectivity</h4>
+	<a id="showConnectivityDetailsBtn" href="#" onclick='displayNodeDetails("${connectivity_entity.gid}", "${connectivity_entity.type}", null, "Visualizers");'
+       class="column-control action action-big-analyze" title="Overlay info for current connectivity entity.">Open Overlay</a>
+	
+	<div class="monitor" id="monitorDiv">
+		
+		<ul class="view-switcher tabswitcher">
+			<li class="active"><a id="leftSideDefaultSelectedTabId" href="#" onclick="hideLeftSideTabs(this); startConnectivity();">3D Edges</a></li>
+			<li><a href="#" onclick="hideLeftSideTabs(this); start2DConnectivity(0);">Hemisphere 1</a></li>
+			<li><a href="#" onclick="hideLeftSideTabs(this); start2DConnectivity(1);">Transverse</a></li>
+			<li><a href="#" onclick="hideLeftSideTabs(this); start2DConnectivity(2);">Hemisphere 2</a></li>
+			<li><a href="#" onclick="hideLeftSideTabs(this); startMPLH5ConnectivityView()">Matrix</a></li>
+			<li><a href="#" onclick="hideLeftSideTabs(this); startSpaceTimeConnectivity()">Space Time</a></li>
+		</ul>
+		
+		<div id="monitor-mplh5" class="monitor-container" style="display:none">
+			<xi:include href="../mplh5/figure_template.html" py:with="parentDiv='monitorDiv'"/>
+			<script type="text/javascript">
+		        $(document).ready(function() {
+		            connect_manager('$mplh5ServerURL', $figureNumber);
+		        });
+		    </script>
+		</div>	
+		
+		<xi:include href="connectivity_view.html"/>
+		${drawConnectivityViewer(True)}
+		<xi:include href="connectivity_2D_view.html"/>
+		<xi:include href="connectivity_plot_view.html"/>
+		${drawConnectivityPlotViewer()}
+		
+	</div>	        
+	</section>
+		
+	<!-- Matrix viewer and controls -->
+	<section id="scrollable-matrix-section" class="view-column matrix-controller col-2">
+		<form id="experimentFormId" action="$submitURL" method="post">
+			<hgroup>
+				<h4><mark>Control</mark> Large Scale Matrices</h4>
+		        <input type="text" name="User_Tag_1_Perpetuated" value="" title="User name for the new Connectivity to be generated"/>
+			</hgroup>
+	    	<input type="hidden" id="newWeightsId" name="new_weights"/>
+	    	<input type="hidden" id="newTractsId" name="new_tracts"/>
+	        <input type="hidden" id="interestAreaNodeIndexesId" name="interest_area_indexes"/>
+	        <input type="hidden" id="originalConnectivityId" name="original_connectivity" value="$originalConnectivity"/>
+	    	<a href="#" tabindex='-1' onclick='saveSubConnectivity();' class="action action-big-new column-control" title="Create new connectivity matrix from current selection">Create new</a>
+	    </form>
+
+    <div id="chkList" class="matrix">
+    	<ul class="matrix-switcher tabswitcher">
+			<li class="active"><a href="#" id="rightSideDefaultSelectedTabId" onclick="hideRightSideTabs(this); showWeightsTable();">Weights Matrix</a></li>
+			<li><a href="#" onclick="hideRightSideTabs(this); showTractsTable();">Tracts Matrix</a></li>
+		</ul>
+
+		<!-- Toolbar -->
+    	<ul class="toolbar-inline matrix-control">
+
+			<!-- Selection controls -->
+    		<li>Selection</li>
+    		
+			<!-- Node/Edge operations -->
+			<li class="selection-ops">
+				<nav class="inline-menu">
+					<button class="action action-menu">Edge Operations</button>
+
+					<div class="extension">
+		    			<div class="dropdown-pane">
+		    				<ul>
+		    					<li class="selectors">
+		    						<label for="con-op-operation"><mark>Operation</mark></label>
+		    						<select id='con-op-operation'></select>
+		    					</li>
+		    					
+		    					<li class="selectors">
+		    						<label for="con-op-edges-type"><mark>Edges type</mark></label>
+		    						<select id='con-op-edges-type'></select>
+		    					</li>
+		    					
+		    					<li class="operators">
+		    						<label for="con-op-arguments"><mark>Weight change</mark></label>
+		    						<input id='con-op-arguments' type='text' value='' placeholder="numeric value"/>
+		    					</li>
+		    					
+		    					<li class="actors">
+		    						<button class="action action-analyze" onclick='doGroupOperation()' value='Apply weight change to selected nodes'>Apply weight change</button>
+		    					</li>
+		    				</ul>
+		    			</div>
+		    		</div>
+				</nav>
+			</li>
+
+            <li class="selector-storage">
+                <xi:include href="../commons/channel_selector_button.html" />
+                ${drawRegionSelectorButton(connectivity_entity.display_name, groupedLabels, initialSelection, buttonTitle="Select Nodes")}
+            </li>
+
+            <li class="selector-storage">
+                <xi:include href="../commons/channel_selector_quick.html"/>
+                ${drawQuickSelector("selection-text-area", "loadSelectionFromTextBtn")}
+            </li>
+
+		</ul>
+
+		<xi:include href="matrix_with_quadrants.html"/>
+		<!-- Matrices: Weights -->
+		<div id="div-matrix-weights" class="matrix-viewer">
+
+			<!-- The actual matrix -->
+			<div class="matrix-table">
+	        	${draw2DConnectivityMatrix('leftHemisphere', 0, pointsLabels, 0, int(len(pointsLabels) / 2), 0, int(len(pointsLabels) / 2), 'w')}
+	        	${draw2DConnectivityMatrix('leftRightQuarter', 2, pointsLabels, 0, int(len(pointsLabels) / 2), int(len(pointsLabels) / 2), len(pointsLabels), 'w')}
+	        	${draw2DConnectivityMatrix('rightLeftQuarter', 1, pointsLabels, int(len(pointsLabels) / 2), len(pointsLabels), 0, int(len(pointsLabels) / 2), 'w')}
+	    		${draw2DConnectivityMatrix('rightHemisphere', 3, pointsLabels, int(len(pointsLabels) / 2), len(pointsLabels), int(len(pointsLabels) / 2), len(pointsLabels), 'w')}
+			</div>
+			
+			${drawMatrixLegendArea('weights-legend')}
+	    </div>
+
+		<!-- Matrices: Tracts -->
+	    <div id="div-matrix-tracts" class="matrix-viewer">
+	    	
+			<!-- The actual matrix -->
+	    	<div class="matrix-table">
+	        	${draw2DConnectivityMatrix('leftHemisphereTracts', 0, pointsLabels, 0, int(len(pointsLabels) / 2), 0, int(len(pointsLabels) / 2), 't')}
+	        	${draw2DConnectivityMatrix('leftRightQuarterTracts', 2, pointsLabels, 0, int(len(pointsLabels) / 2), int(len(pointsLabels) / 2), len(pointsLabels), 't')}
+	        	${draw2DConnectivityMatrix('rightLeftQuarterTracts', 1, pointsLabels, int(len(pointsLabels) / 2), len(pointsLabels), 0, int(len(pointsLabels) / 2), 't')}
+	    		${draw2DConnectivityMatrix('rightHemisphereTracts', 3, pointsLabels, int(len(pointsLabels) / 2), len(pointsLabels), int(len(pointsLabels) / 2), len(pointsLabels), 't')}
+			</div>
+			
+			${drawMatrixLegendArea('tracts-legend')}
+	    </div>
+
+    </div>
+    
+    <py:with vars="start_points_x= '[0, ' + str(int(len(pointsLabels)/2)) + ', 0, ' + str(int(len(pointsLabels)/2)) + ']' ">
+	<py:with vars="end_points_x= '[' + str(int(len(pointsLabels)/2)) + ', ' + str(int(len(pointsLabels))) + ', ' + str(int(len(pointsLabels) / 2)) + ', ' + str(len(pointsLabels)) + ']' ">
+	<py:with vars="start_points_y= '[0, ' + str(int(len(pointsLabels)/2)) + ', ' + str(int(len(pointsLabels)/2)) + ', 0]' ">
+	<py:with vars="end_points_y= '[' + str(int(len(pointsLabels)/2)) + ', ' + str(int(len(pointsLabels))) + ', ' + str(len(pointsLabels)) + ', ' + str(len(pointsLabels)/2)+ ']' ">
+
+    <script type="text/javascript">    	
+        $(document).ready(function() {
+
+            prepareConnectivity2D(${leftHemisphereJson}, ${bothHemisphereJson}, ${rightHemisphereJson});
+            mplh5_figureNo = $figureNumber;
+            //Do all the required initializations and draw the right table view of the connectivity matrix
+            GFUNC_storeMinMax('${weightsMin}', '${weightsNonZeroMin}', '${weightsMax}', '${tractsMin}', '${tractsNonZeroMin}', '${tractsMax}');
+            TBL_storeHemisphereDetails(${start_points_x}, ${end_points_x}, ${start_points_y}, ${end_points_y});
+
+            patchContextMenu();
+            $('#GLcanvas').contextMenu('#contextMenuDiv', {'appendTo': ".connectivity-viewer", 'shadow': false, 'offsetY': -13, 'offsetX': 0});
+
+			prepareConnectivity('$urlWeights', '$urlTracts', '$urlPositions', '$urlVertices',
+                    '$urlTriangles', '$urlNormals', '$urlLabels',
+                    '$connectivity_nose_correction', false, '$conductionSpeed',
+                    '$raysArray', '$colorsArray');
+            GVAR_baseSelection = '$base_selection';
+            GFUN_initSelectionComponent("${measurePointsSelectionGID}", "${hemisphereOrderUrl}");
+            GFUN_initializeConnectivityFull();
+        });
+
+    </script>
+    </py:with>
+	</py:with>
+	</py:with>
+	</py:with>
+	<input type="hidden" id="currentlyEditedNode"/>
+
+    <xi:include href="context_menu_table.html"/>
+    <xi:include href="context_menu_canvas.html"/>
+    
+	</section>
+</div>
+

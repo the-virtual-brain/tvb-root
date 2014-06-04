@@ -1,0 +1,23 @@
+<section class="configure-stimulus-equation view-column col-2" xmlns:xi="http://www.w3.org/2001/XInclude" xmlns:py="http://genshi.edgewall.org/">
+	
+	<h4><mark>Define</mark> Stimulus</h4>
+	
+	<fieldset>
+		<legend>Loaded stimulus</legend>
+	    ${generateDisplay(existentEntitiesInputList, False, "")}
+	</fieldset>
+	<form>
+    	<fieldset>
+			<legend>Entity details</legend>
+	    	${generateDisplay(entitiySavedName, False, "")}
+    	</fieldset>
+	</form>
+    
+    <fieldset>
+	    <legend>Stimulus interface</legend>
+	    <form id="form_spatial_stimulus_equations">
+	        <xi:include href="../flow/genericAdapterFormFields.html" py:with="includeGenericAdapterTemplateFunctions=False"/>
+	    </form>
+	</fieldset>
+    
+</section>

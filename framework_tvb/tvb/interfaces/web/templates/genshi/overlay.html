@@ -1,0 +1,61 @@
+<aside id="overlay" class="${overlay_class} ${'dialog-sidebar' if overlay_tabs_vertical else ''}"
+       xmlns:py="http://genshi.edgewall.org/" xmlns:xi="http://www.w3.org/2001/XInclude">
+	<hgroup>
+		<ul class="action-block block-pager" py:if="show_overlay_pagination">
+			<li><a href="#" onclick="$action_overlay_previous" class="action action-page-back">&lt;</a></li>
+			<li><a href="#" onclick="$action_overlay_next" class="action action-page-fwd">&gt;</a></li>
+		</ul>
+		<h4>
+			<mark>${overlay_title}</mark>
+			${overlay_description}
+		</h4>
+		<a href="#" title="Close this dialog..." class="action action-exit" onClick="closeOverlay()">Exit</a>
+	</hgroup>
+	
+	<ul class="view-switcher tabswitcher" py:if="overlay_tabs_horizontal">
+        <py:for each="idx in xrange(len(overlay_tabs_horizontal))">
+        	<py:with vars="tab = overlay_tabs_horizontal[idx];
+        	               li_class = tab.css_class if (tab.css_class is not None) else '';
+        	               li_class = li_class if (tab.enabled) else li_class + ' disabled';
+        	               tab_select_acton = 'selectOverlayTab(\'overlayTab_\', '+ str(overlay_indexes[idx]) + ')' if (tab.enabled) else 'return false;'">
+	            <li id="overlayTab_${overlay_indexes[idx]}" class="${li_class}">
+	                <a href="#" title="${tab.description}" onclick="${tab_select_acton}" >${tab.name}</a>
+	            </li>
+            </py:with>
+        </py:for>
+    </ul>
+	
+	<section class="overlay-content">
+		<xi:include href="${overlay_content_template}.html"/>
+    	
+    	<section class="uploader upload-progress blocker">
+    		Please wait until this upload has finished. Interrupting it may cause serious data loss.
+    	</section>
+	</section>
+
+    <aside class="overlay-sidebar" py:if="overlay_tabs_vertical">
+        <h4></h4>
+
+        <ul>
+            <py:for each="idx in xrange(len(overlay_tabs_vertical))">
+                <py:with vars="tab = overlay_tabs_vertical[idx];
+                               li_class = tab.css_class if (tab.css_class is not None) else '';
+                               li_class = li_class if (tab.enabled) else li_class + ' disabled';
+                               tab_select_action = 'selectOverlayTab(\'overlayTabHorizontal_\', '+ str(idx) + ')' if (tab.enabled) else 'return false;'">
+                    <li id="overlayTabHorizontal_${idx}" class="${li_class}">
+                        <a href="#" title="${tab.description}" onclick="${tab_select_action}" >${tab.name}</a>
+                    </li>
+                </py:with>
+            </py:for>
+        </ul>
+    </aside>
+
+
+    <script type="text/javascript">
+        //select the first tab on load
+        $(document).ready(function() {
+            selectOverlayTab('overlayTab_', 0);
+            selectOverlayTab('overlayTabHorizontal_', 0);
+        });
+    </script>
+</aside>

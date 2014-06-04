@@ -1,0 +1,45 @@
+{
+ "styles" : [
+     [ "noborder", {
+         "commands": [[ "GRID", [ 0, 0 ], [ -1, -1 ], 0.05, "white" ]]
+       }],
+     
+     [ "header-footer-text" , 
+         {"parent": "normal",
+          "fontName": "Arial",
+          "textColor": gray,
+          "alignment": "left",
+          "leading": 6,
+          "background-color": white }],
+		
+	   [ "header-title-text" , 
+         {"parent": "header-footer-text",
+          "fontSize": 12 }],
+          
+     [ "header-info-text" , 
+         {"parent": "header-footer-text",
+          "alignment": "right",
+          "fontSize": 8 }],     
+     
+     [ "footer-info-text" , 
+         {"parent": "header-footer-text",
+          "alignment": "right",
+          "fontSize": 8 }],     
+     
+     [ "main-title" , 
+         {"parent": "normal",
+          "fontName": "Arial",
+          "textColor": black,
+          "alignment": "left",
+          "fontSize": 30, 
+          "background-color": white }],
+     
+     [ "legendtext", {
+          "parent": "normal",
+          "fontSize": 15,
+          "leading": 20,
+          "padding": 10px,
+          "fontWeight": "bold"
+           }]
+  ]
+}

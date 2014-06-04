@@ -1,0 +1,43 @@
+<!-- ============================= --> 
+<!--          User Login Page      --> 
+<!-- ============================= -->
+<div id="main" xmlns:py="http://genshi.edgewall.org/" xmlns:xi="http://www.w3.org/2001/XInclude"> 
+	
+	<form method="post" id="user_login_form"> 
+		<!-- === Box: Form controls --> 
+	    <aside class="header-component toolbar can-extend auto-extends">
+	    	<h3>Login User</h3>
+			<div class="extension">
+			   <div class="dropdown-pane">
+		        <ul> 
+		            <li><button tabindex='50' type="submit()" class="action action-confirm">Login</button></li> 
+		        </ul>
+		       </div>
+	        </div> 
+	    </aside>
+	
+        <xi:include href="../index.html" /> 
+        
+        <dl class="fieldlist"> 
+            <dt><label for="username">Login</label></dt> 
+            <dd><input tabindex='1' id="username" type="text" name="username" value="${data.username if ('username' in data) else ''}" />
+                <br/>
+                <span py:if="'username' in errors" class="errorMessage">${errors.username}</span>
+            </dd> 
+            <dt><label for="password">Password</label></dt> 
+            <dd><input tabindex='2' id="password" type="password" name="password" value="" />
+                <br/>
+                <span py:if="'password' in errors" class="errorMessage">${errors.password}</span>
+            </dd> 
+             
+            <dt class="info">New account</dt> 
+            <dd class="info" tabindex='3' onkeypress="redirectToHrefChild(this)"><a href="/user/register" tabindex="-1"><u>Register</u></a></dd>
+            <dt class="info">Password</dt> 
+            <dd class="info" tabindex='3' onkeypress="redirectToHrefChild(this)"><a href="/user/recoverpassword" tabindex="-1"><u>Recover</u></a></dd>
+            <dt class="info">More information</dt> 
+            <dd class="info" tabindex='3' onkeypress="redirectToHrefChild(this)"><a href="http://www.thevirtualbrain.org" title="Visit our website..." tabindex="-1">www.thevirtualbrain.org</a></dd> 
+            <dt class="info">Up-to-date</dt> 
+            <dd class="info" tabindex='3' onkeypress="redirectToHrefChild(this)"><a href="http://twitter.com/thevirtualbrain" title="Follow us on Twitter..." tabindex="-1">@thevirtualbrain</a></dd> 
+        </dl> 
+    </form>
+</div>

@@ -1,0 +1,11 @@
+<ul class="toolbar-inline" xmlns:py="http://genshi.edgewall.org/" xmlns:xi="http://www.w3.org/2001/XInclude">
+    <li>
+        <button id="ctrl-action-pause" class="action action-controller-pause" title="Pause/Start Drawing"
+                onclick="pauseMovie();" tabindex="1">Pause activity</button>
+    </li>
+
+    <li class="channel-selector can-extend" py:if="not isOneToOneMapping and not extended_view">
+        <xi:include href="channel_selector_button.html" />
+        ${drawRegionSelectorButton(measurePointsTitle, groupedLabels, initialSelection)}
+    </li>
+</ul>

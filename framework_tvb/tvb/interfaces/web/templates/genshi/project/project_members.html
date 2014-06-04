@@ -1,0 +1,11 @@
+<span xmlns:py="http://genshi.edgewall.org/"
+    py:for="user in usersList" display="inline" class="user_on_page_$usersCurrentPage">
+
+    <input type="checkbox" name="users" value="${user.id}" id="${user.id}" tabindex="5"
+            checked="${'checked' if user.id in usersMembers else None}"
+            disabled="${disabled if not editUsersEnabled else None}" />
+
+    ${user.username}
+    <img src="/static/style/img/role/${user.role.lower()}.png" alt="${user.role}" class="userRole"/>
+    <br/>
+</span>

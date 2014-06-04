@@ -1,0 +1,59 @@
+<section class="configure-stimulus-equation view-column col-2" xmlns:xi="http://www.w3.org/2001/XInclude"
+         xmlns:py="http://genshi.edgewall.org/">
+
+    <h4>
+        <mark>Define</mark>
+        Equation
+    </h4>
+
+    <fieldset>
+        <legend>Selected entity</legend>
+        ${generateDisplay(existentEntitiesInputList, False, "")}
+    </fieldset>
+
+    <fieldset>
+        <legend>Local connectivity parameters</legend>
+        <form id="form_spatial_local_connectivity_data">
+            <xi:include href="../flow/genericAdapterFormFields.html"
+                        py:with="includeGenericAdapterTemplateFunctions=False"/>
+        </form>
+    </fieldset>
+
+    <script type="text/javascript">
+        $(document).ready(function () {
+            var entityElement = $("select[name='existentEntitiesSelect']");
+            entityElement.change(function () { BS_loadEntity(); });
+            // Any on change event should reset the loaded entity, disable the view button and enable the create button
+            $("input").change(function () {
+                var selectEntity = $("select[name='existentEntitiesSelect']")[0];
+                selectEntity.options[selectEntity.options.selectedIndex].selected = false;
+                selectEntity.options[0].selected = true;
+                LCONN_disableView('In order to view a Local Connectivity entity, you have to load it first!');
+                LCONN_enableCreate();
+            });
+            $("select[name!='existentEntitiesSelect']").change(function () {
+                var selectEntity = $("select[name='existentEntitiesSelect']")[0];
+                selectEntity.options[selectEntity.options.selectedIndex].selected = false;
+                selectEntity.options[0].selected = true;
+                LCONN_disableView('In order to view a Local Connectivity entity, you have to load it first!');
+                LCONN_enableCreate();
+            });
+            // On the page load check if we have a loaded entity so we know if we should disable the view or create steps.
+            var selectedEntityGid = entityElement.val();
+            if (selectedEntityGid == undefined || selectedEntityGid == "None" || selectedEntityGid.trim().length == 0) {
+                LCONN_disableView('In order to view a Local Connectivity entity, you have to load it first!');
+            } else {
+                LCONN_disableCreate('You have not changed any of the current Local Connectivity parameters. No point to create new entity.');
+            }
+        });
+    </script>
+
+    <form id="load-existing-entity" action="${loadExistentEntityUrl}" method="POST">
+        <input type="hidden" id="entity-gid" name="local_connectivity_gid" value="None"/>
+        <input type="hidden" name="from_step" value="1"/>
+    </form>
+    <form id="reset-to-default" action="${resetToDefaultUrl}" method="POST">
+        <input type="hidden" name="from_step" value="1"/>
+    </form>
+
+</section>

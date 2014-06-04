@@ -1,0 +1,32 @@
+
+<py:def function="draw_multipleselect(inputRow, disabled, treeSessionKey)" xmlns:py="http://genshi.edgewall.org/">   
+	<!--
+	Draw Multiple-select control (e.g. for selecting the simutation's monitors).  
+	-->
+	
+    <select name="$inputRow.name" tabindex='1' id="$inputRow.name" multiple="multiple" onchange="multipleSelect(this, 'data_$inputRow.name')">
+        ${create_select_options(inputRow, True)}
+    </select> 
+    
+    ${add_checkbox_control(inputRow)}
+    
+    <py:for each="option in inputRow.options">
+    	<py:if test="'attributes' in option">
+	        <py:with vars="input_row_default = [] if 'default' not in inputRow else inputRow.default.split(',') if isinstance(inputRow.default, (str, unicode)) else inputRow.default;
+						   isEnabled=(str(option.value) in input_row_default) or ('default' not in inputRow and str(option.value)==str(inputRow.options[0].value));
+	        			   add_attrs= {'disabled': 'disabled', 'style': 'display:None;'} if not isEnabled or disabled else {'style': 'display:block;'};">
+	            <div id="data_$inputRow.name$option.value" py:attrs="add_attrs">
+	                <p><b>${option.name}</b></p> 
+	                ${generate_help_tooltip(option)}
+	                
+	                <py:if test="'attributes' in option and option.attributes">
+	                    ${generateDisplay(option.attributes, not isEnabled or disabled, "data_" + inputRow.name + str(option.value), treeSessionKey)}
+	                    <hr/>
+	                </py:if>
+	            </div>
+	        </py:with>
+        </py:if>
+    </py:for>
+
+</py:def> 
+     

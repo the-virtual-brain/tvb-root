@@ -1,0 +1,175 @@
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+
+    <modelVersion>4.0.0</modelVersion>
+
+    <parent>
+        <groupId>${tvb.groupId}</groupId>
+        <artifactId>${tvb.artifactId}</artifactId>
+        <version>${tvb.version}</version>
+        <relativePath>../pom.xml</relativePath>
+    </parent>
+
+    <artifactId>load_tests</artifactId>
+    <version>${tvb.version}</version>
+    <packaging>pom</packaging>
+    <name>TVB Application - Load Tests</name>
+
+    <repositories>
+        <!--Needed for jMeter pplugin-->
+        <repository>
+            <id>Maven JMeter Plugin</id>
+            <url>http://yciabaud.github.com/jmeter-maven-plugin/repository</url>
+        </repository>
+        <!--Needed for apache-lang-->
+        <repository>
+            <id>JBoss Deprecated</id>
+            <url>https://repository.jboss.org/nexus/content/repositories/deprecated</url>
+        </repository>
+    </repositories>
+
+    <dependencies>
+        <dependency>
+            <groupId>apache-lang</groupId>
+            <artifactId>commons-lang</artifactId>
+            <version>${apache.commons.lang.version}</version>
+        </dependency>
+    </dependencies>
+
+    <build>
+        <plugins>
+            <plugin>
+                <groupId>com.lazerycode.jmeter</groupId>
+                <artifactId>jmeter-maven-plugin</artifactId>
+                <version>${jmeter.maven.plugin.version}</version>
+                <executions>
+                    <execution>
+                        <id>jmeter-tests</id>
+                        <phase>verify</phase>
+                        <goals>
+                            <goal>jmeter</goal>
+                        </goals>
+                    </execution>
+                </executions>
+                <dependencies>
+                    <dependency>
+                        <groupId>${tvb.groupId}</groupId>
+                        <artifactId>functional_tests</artifactId>
+                        <version>${tvb.version}</version>
+                    </dependency>
+                </dependencies>
+                <configuration>
+                    <useOldTestEndDetection>true</useOldTestEndDetection>
+                </configuration>
+            </plugin>
+            <!--Generate Nice reports for test results. -->
+            <plugin>
+                <groupId>org.codehaus.mojo</groupId>
+                <artifactId>xml-maven-plugin</artifactId>
+                <executions>
+                    <execution>
+                        <phase>verify</phase>
+                        <goals>
+                            <goal>transform</goal>
+                        </goals>
+                    </execution>
+                </executions>
+                <configuration>
+                    <transformationSets>
+                        <transformationSet>
+                            <dir>target/jmeter/report</dir>
+                            <excludes>
+                                <exclude>*.html</exclude>
+                                <exclude>*.jpg</exclude>
+                            </excludes>
+                            <stylesheet>src/main/resources/jmeter-results-detail-report_21.xsl</stylesheet>
+                            <outputDir>target/jmeterNice</outputDir>
+                            <fileMappers>
+                                <fileMapper
+                                        implementation="org.codehaus.plexus.components.io.filemappers.FileExtensionMapper">
+                                    <targetExtension>html</targetExtension>
+                                </fileMapper>
+                            </fileMappers>
+                        </transformationSet>
+                    </transformationSets>
+                </configuration>
+                <dependencies>
+                    <dependency>
+                        <groupId>net.sf.saxon</groupId>
+                        <artifactId>saxon</artifactId>
+                        <version>8.7</version>
+                    </dependency>
+                </dependencies>
+            </plugin>
+            <!-- Copy JMeter related files -->
+            <plugin>
+                <artifactId>maven-antrun-plugin</artifactId>
+                <executions>
+                    <execution>
+                        <id>BeforeTests</id>
+                        <phase>generate-resources</phase>
+                        <!--Run this at the begining,to include application-context,server.properties, and other files -->
+                        <configuration>
+                            <tasks>
+                                <!-- Make sure the jmeter icons are copied to the right folder-->
+                                <copy file="src/main/resources/expand.jpg"
+                                      toFile="target/jmeterNice/expand.jpg">
+                                </copy>
+                                <copy file="src/main/resources/collapse.jpg"
+                                      toFile="target/jmeterNice/collapse.jpg">
+                                </copy>
+                            </tasks>
+                        </configuration>
+                        <goals>
+                            <goal>run</goal>
+                        </goals>
+                    </execution>
+                </executions>
+            </plugin>
+
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-surefire-plugin</artifactId>
+                <configuration>
+                    <forkMode>pertest</forkMode>
+                    <argLine>-Xms256m -Xmx1024m</argLine>
+                    <testFailureIgnore>false</testFailureIgnore>
+                    <skip>false</skip>
+                </configuration>
+            </plugin>
+        </plugins>
+    </build>
+
+    <profiles>
+        <profile>
+            <id>simpleLoadTestOnly</id>
+            <activation>
+                <activeByDefault>false</activeByDefault>
+            </activation>
+            <build>
+                <plugins>
+                    <plugin>
+                        <groupId>com.lazerycode.jmeter</groupId>
+                        <artifactId>jmeter-maven-plugin</artifactId>
+                        <version>${jmeter.maven.plugin.version}</version>
+                        <configuration>
+                            <useOldTestEndDetection>true</useOldTestEndDetection>
+                            <testFilesExcluded>
+                                <!--Remove complex JMeter and Selenium tests, 
+                                as those have sometimes problems with HTML_Unit and take a lot of time to be executed-->
+                                <excluded>NavigateToDataStructureTest.jmx</excluded>
+                                <excluded>RunBurstWithDefaultValues_1_3_10_15.jmx</excluded>
+                                <excluded>RunBurstWithDefaultValuesAndCleanAfter_1_3_10_15.jmx</excluded>
+                            </testFilesExcluded>
+                        </configuration>
+                    </plugin>
+                </plugins>
+            </build>
+        </profile>
+    </profiles>
+
+    <properties>
+        <apache.commons.lang.version>2.1</apache.commons.lang.version>
+        <jmeter.maven.plugin.version>1.4.1</jmeter.maven.plugin.version>
+    </properties>
+</project>

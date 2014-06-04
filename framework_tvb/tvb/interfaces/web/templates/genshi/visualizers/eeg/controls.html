@@ -1,0 +1,55 @@
+<fieldset class="slider" xmlns:py="http://genshi.edgewall.org/">
+
+    <ul class="toolbar-inline" py:if="not extended_view">
+        <li>
+            <button id="ctrl-action-pause" class="action action-controller-pause"
+                    title="Pause Animation" onclick="stopAnimation();">Pause</button>
+        </li>
+	</ul>
+
+    <dl>
+        <py:if test="not extended_view">
+            <dt>
+                <label for="ctrl-input-speed">Speed</label>
+                <span class="slider-value" id="display-speed">3</span>
+            </dt>
+            <dd>
+                <div class="sliderDiv sliderLabels">
+                    <div id="ctrl-input-speed" class="shadow sliderPosition"></div>
+                </div>
+            </dd>
+        </py:if>
+
+        <dt>
+            <label for="ctrl-input-scale">Scaling</label>
+            <span class="slider-value" id="display-scale" title="Distance between adjacent lines">1</span>
+        </dt>
+        <dd>
+            <div class="sliderDiv sliderLabels">
+                <div id="ctrl-input-scale" class="shadow sliderPosition"></div>
+            </div>
+        </dd>
+
+        <dt>
+            <label for="display-page-size">Page size</label>
+            <span class="slider-value" id="display-page-size" title="Number of points displayed per page">
+                ${min(number_of_visible_points, longestChannelLength)}
+            </span>
+        </dt>
+        <dd>
+            <py:if test="longestChannelLength &lt; number_of_visible_points or longestChannelLength - number_of_visible_points &lt; 50">
+                All points already displayed!
+            </py:if>
+
+            <py:if test="number_of_visible_points &lt; page_size and page_size - number_of_visible_points &gt; 49">
+                <select id='page-size-select' onchange="AG_rePaginate($(this).val());" autocomplete="off">
+                    <py:for each="value in range(number_of_visible_points, page_size - 1, (page_size - number_of_visible_points) / 10)">
+                        <option value="${value}">${value} </option>
+                    </py:for>
+                </select>
+                A change here will trigger Graph redrawing from the first step!
+            </py:if>
+        </dd>
+    </dl>
+</fieldset>
+

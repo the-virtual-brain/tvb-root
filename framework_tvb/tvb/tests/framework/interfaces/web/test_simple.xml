@@ -1,0 +1,511 @@
+<?xml version="1.0"?>
+ 
+		
+<tvb xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+     xsi:noNamespaceSchemaLocation="http://invalid/schema/tvb.xsd">
+
+    <algorithm_group name="group" type="tvb.tests.framework.adapters.testgroupadapter.TestGroupAdapter"
+                     uiName="Simulator Adapter"
+                     label="Choose Brain Connectivity Toolbox Algorithm:">
+        <algorithm name="Simulator" identifier="SIM">
+            <code value=""/>
+            <inputs>
+                <input required="True">
+                    <name value="conn"/>
+                    <label value="Connectivity Matrix:"/>
+                    <type value="tvb.datatypes.connectivity.Connectivity"/>
+                </input>
+                <input required="True">
+                    <name value="coupling_method"/>
+                    <label value="Coupling Method:"/>
+                    <type value="select" default="Linear" display_ranger="True">
+                        <options>
+                            <option name="Linear" value="Linear"/>
+                            <option name="NonLinear" value="NonLinear"/>
+                            <!--<option name="Synaptic" value="Synaptic" class="tvb.simulator.coupling.Synaptic"/> -->
+                        </options>
+                    </type>
+                </input>
+                <input required="True">
+                    <name value="model"/>
+                    <label value="Model:"/>
+                    <type value="select" default="HR">
+                        <options>
+                            <option name="FHN" value="FHN">
+                                <inputs>
+                                    <input required="False">
+                                        <name value="model_0"/>
+                                        <label value="Tau:"/>
+                                        <description value="Tau Parameter"/>
+                                        <type value="float" default="1.25"/>
+                                    </input>
+                                    <input required="False">
+                                        <name value="model_1"/>
+                                        <label value="a:"/>
+                                        <type value="float" default="1.05"/>
+                                    </input>
+                                    <input required="False">
+                                        <name value="model_2"/>
+                                        <label value="b:"/>
+                                        <type value="float" default="0.2"/>
+                                    </input>
+                                    <input required="False">
+                                        <name value="model_3"/>
+                                        <label value="c:"/>
+                                        <type value="float" default="1"/>
+                                    </input>
+                                    <input required="False">
+                                        <name value="model_4"/>
+                                        <label value="d:"/>
+                                        <type value="float" default="1"/>
+                                    </input>
+                                    <input required="False">
+                                        <name value="model_5"/>
+                                        <label value="e:"/>
+                                        <type value="float" default="-1"/>
+                                    </input>
+                                    <input required="False">
+                                        <name value="model_nsig"/>
+                                        <label value="Nsig:"/>
+                                        <type value="float" default="1"/>
+                                    </input>
+                                </inputs>
+                            </option>
+                            <option name="HR" value="HR">
+                                <inputs>
+                                    <input required="False">
+                                        <name value="model_0"/>
+                                        <label value="r:"/>
+                                        <type value="float" default="0.006"/>
+                                    </input>
+                                    <input required="False">
+                                        <name value="model_1"/>
+                                        <label value="a:"/>
+                                        <type value="float" default="1.05"/>
+                                    </input>
+                                    <input required="False">
+                                        <name value="model_2"/>
+                                        <label value="b:"/>
+                                        <type value="float" default="0.2"/>
+                                    </input>
+                                    <input required="False">
+                                        <name value="model_3"/>
+                                        <label value="c:"/>
+                                        <type value="float" default="1"/>
+                                    </input>
+                                    <input required="False">
+                                        <name value="model_4"/>
+                                        <label value="d:"/>
+                                        <type value="float" default="1"/>
+                                    </input>
+                                    <input required="False">
+                                        <name value="model_5"/>
+                                        <label value="s:"/>
+                                        <type value="float" default="4"/>
+                                    </input>
+                                    <input required="False">
+                                        <name value="model_6"/>
+                                        <label value="xo:"/>
+                                        <type value="float" default="-1"/>
+                                    </input>
+                                    <input required="False">
+                                        <name value="model_nsig"/>
+                                        <label value="Nsig:"/>
+                                        <type value="float" default="1.0"/>
+                                    </input>
+                                </inputs>
+                            </option>
+                            <option name="ML" value="ML">
+                                <inputs>
+                                    <input required="False">
+                                        <name value="model_0"/>
+                                        <label value="gCa:"/>
+                                        <type value="float" default="1.0"/>
+                                    </input>
+                                    <input required="False">
+                                        <name value="model_1"/>
+                                        <label value="gK:"/>
+                                        <type value="float" default="2.0"/>
+                                    </input>
+                                    <input required="False">
+                                        <name value="model_2"/>
+                                        <label value="gL:"/>
+                                        <type value="float" default="0.5"/>
+                                    </input>
+                                    <input required="False">
+                                        <name value="model_3"/>
+                                        <label value="phi:"/>
+                                        <type value="float" default="0.2"/>
+                                    </input>
+                                    <input required="False">
+                                        <name value="model_4"/>
+                                        <label value="V1:"/>
+                                        <type value="float" default="-0.01"/>
+                                    </input>
+                                    <input required="False">
+                                        <name value="model_5"/>
+                                        <label value="V2:"/>
+                                        <type value="float" default="0.15"/>
+                                    </input>
+                                    <input required="False">
+                                        <name value="model_6"/>
+                                        <label value="V3:"/>
+                                        <type value="float" default="0.1"/>
+                                    </input>
+                                    <input required="False">
+                                        <name value="model_7"/>
+                                        <label value="V4:"/>
+                                        <type value="float" default="0.145"/>
+                                    </input>
+                                    <input required="False">
+                                        <name value="model_8"/>
+                                        <label value="VCa:"/>
+                                        <type value="float" default="1.0"/>
+                                    </input>
+                                    <input required="False">
+                                        <name value="model_9"/>
+                                        <label value="VK:"/>
+                                        <type value="float" default="-0.7"/>
+                                    </input>
+                                    <input required="False">
+                                        <name value="model_10"/>
+                                        <label value="VL:"/>
+                                        <type value="float" default="-0.5"/>
+                                    </input>
+                                    <input required="False">
+                                        <name value="model_nsig"/>
+                                        <label value="Nsig:"/>
+                                        <type value="float" default="1.0"/>
+                                    </input>
+                                </inputs>
+                            </option>
+                            <option name="Larter" value="Larter">
+                                <inputs>
+                                    <input required="False">
+                                        <name value="model_0"/>
+                                        <label value="gCa:"/>
+                                        <type value="float" default="1.1"/>
+                                    </input>
+                                    <input required="False">
+                                        <name value="model_1"/>
+                                        <label value="gNa:"/>
+                                        <type value="float" default="6.7"/>
+                                    </input>
+                                    <input required="False">
+                                        <name value="model_2"/>
+                                        <label value="gK:"/>
+                                        <type value="float" default="2.0"/>
+                                    </input>
+                                    <input required="False">
+                                        <name value="model_3"/>
+                                        <label value="gL:"/>
+                                        <type value="float" default="0.5"/>
+                                    </input>
+                                    <input required="False">
+                                        <name value="model_4"/>
+                                        <label value="phi:"/>
+                                        <type value="float" default="0.7"/>
+                                    </input>
+                                    <input required="False">
+                                        <name value="model_5"/>
+                                        <label value="VNa:"/>
+                                        <type value="float" default="0.53"/>
+                                    </input>
+                                    <input required="False">
+                                        <name value="model_6"/>
+                                        <label value="TK:"/>
+                                        <type value="float" default="0.0"/>
+                                    </input>
+                                    <input required="False">
+                                        <name value="model_7"/>
+                                        <label value="TNa:"/>
+                                        <type value="float" default="0.3"/>
+                                    </input>
+                                    <input required="False">
+                                        <name value="model_8"/>
+                                        <label value="d_Ca:"/>
+                                        <type value="float" default="0.15"/>
+                                    </input>
+                                    <input required="False">
+                                        <name value="model_9"/>
+                                        <label value="TCa:"/>
+                                        <type value="float" default="-0.01"/>
+                                    </input>
+                                    <input required="False">
+                                        <name value="model_10"/>
+                                        <label value="d_Na:"/>
+                                        <type value="float" default="0.15"/>
+                                    </input>
+                                    <input required="False">
+                                        <name value="model_11"/>
+                                        <label value="d_K:"/>
+                                        <type value="float" default="0.3"/>
+                                    </input>
+                                    <input required="False">
+                                        <name value="model_12"/>
+                                        <label value="b:"/>
+                                        <type value="float" default="0.1"/>
+                                    </input>
+                                    <input required="False">
+                                        <name value="model_13"/>
+                                        <label value="VCa:"/>
+                                        <type value="float" default="1.0"/>
+                                    </input>
+                                    <input required="False">
+                                        <name value="model_14"/>
+                                        <label value="VK:"/>
+                                        <type value="float" default="-0.7"/>
+                                    </input>
+                                    <input required="False">
+                                        <name value="model_15"/>
+                                        <label value="VL:"/>
+                                        <type value="float" default="-0.5"/>
+                                    </input>
+                                    <input required="False">
+                                        <name value="model_16"/>
+                                        <label value="aie:"/>
+                                        <type value="float" default="2.0"/>
+                                    </input>
+                                    <input required="False">
+                                        <name value="model_17"/>
+                                        <label value="aei:"/>
+                                        <type value="float" default="2.0"/>
+                                    </input>
+                                    <input required="False">
+                                        <name value="model_18"/>
+                                        <label value="ani:"/>
+                                        <type value="float" default="0.4"/>
+                                    </input>
+                                    <input required="False">
+                                        <name value="model_19"/>
+                                        <label value="aee:"/>
+                                        <type value="float" default="0.4"/>
+                                    </input>
+                                    <input required="False">
+                                        <name value="model_20"/>
+                                        <label value="ane:"/>
+                                        <type value="float" default="1.0"/>
+                                    </input>
+                                    <input required="False">
+                                        <name value="model_21"/>
+                                        <label value="c:"/>
+                                        <type value="float" default="0.1"/>
+                                    </input>
+                                    <input required="False">
+                                        <name value="model_nsig"/>
+                                        <label value="Nsig:"/>
+                                        <type value="float" default="1"/>
+                                    </input>
+                                </inputs>
+                            </option>
+                            <option name="WilsonCowan" value="WilsonCowan">
+                                <inputs>
+                                    <input required="False">
+                                        <name value="model_0"/>
+                                        <label value="a:"/>
+                                        <type value="float" default="0.1" minValue="0.01" maxValue="0.91" stepValue="0.01"/>
+                                    </input>
+                                    <input required="False">
+                                        <name value="model_1"/>
+                                        <label value="b:"/>
+                                        <type value="float" default="40"/>
+                                    </input>
+                                    <input required="False">
+                                        <name value="model_2"/>
+                                        <label value="c:"/>
+                                        <type value="float" default="100"/>
+                                    </input>
+                                    <input required="False">
+                                        <name value="model_3"/>
+                                        <label value="Tau:"/>
+                                        <type value="float" default="1.0"/>
+                                    </input>
+                                    <input required="False">
+                                        <name value="model_4"/>
+                                        <label value="Tau 1:"/>
+                                        <type value="float" default="0.2"/>
+                                    </input>
+                                    <input required="False">
+                                        <name value="model_5"/>
+                                        <label value="wI:"/>
+                                        <type value="float" default="1.5"/>
+                                    </input>
+                                    <input required="False">
+                                        <name value="model_6"/>
+                                        <label value="Ib:"/>
+                                        <type value="float" default="10.0"/>
+                                    </input>
+                                    <input required="False">
+                                        <name value="model_7"/>
+                                        <label value="alp:"/>
+                                        <type value="float" default="0.007"/>
+                                    </input>
+                                    <input required="False">
+                                        <name value="model_nsig"/>
+                                        <label value="Nsig:"/>
+                                        <type value="float" default="1"/>
+                                    </input>
+                                </inputs>
+                            </option>
+                            <option name="rFHN" value="rFHN">
+                                <inputs>
+                                    <input required="False">
+                                        <name value="model_nsig"/>
+                                        <label value="Nsig:"/>
+                                        <type value="float" default="1"/>
+                                    </input>
+                                </inputs>
+                            </option>
+                            <option name="rHR" value="rHR">
+                                <inputs>
+                                    <input required="False">
+                                        <name value="model_nsig"/>
+                                        <label value="Nsig:"/>
+                                        <type value="float" default="1"/>
+                                    </input>
+                                </inputs>
+                            </option>
+                        </options>
+                    </type>
+                </input>
+                <input required="False">
+                    <name value="monitors"/>
+                    <label value="Monitors:"/>
+                    <type value="selectMultiple" default="Raw,GlobalAverage">
+                        <options>
+                            <option name="Raw" value="Raw">
+                                <inputs>
+                                    <input required="False">
+                                        <name value="monitors_period_raw"/>
+                                        <label value="Monitors Period:"/>
+                                        <type value="float" default="0.2"/>
+                                    </input>
+                                </inputs>
+                            </option>
+                            <option name="SubSample" value="SubSample">
+                                <inputs>
+                                    <input required="False">
+                                        <name value="monitors_period_sub"/>
+                                        <label value="Monitors Period:"/>
+                                        <type value="float" default="0.2"/>
+                                    </input>
+                                </inputs>
+                            </option>
+                            <option name="GlobalAverage" value="GlobalAverage">
+                                <inputs>
+                                    <input required="False">
+                                        <name value="monitors_period_avg"/>
+                                        <label value="Monitors Period:"/>
+                                        <type value="float" default="0.2"/>
+                                    </input>
+                                </inputs>
+                            </option>
+                            <option name="TemporalAverage" value="TemporalAverage">
+                                <inputs>
+                                    <input required="False">
+                                        <name value="monitors_period_tavg"/>
+                                        <label value="Monitors Period:"/>
+                                        <type value="float" default="0.2"/>
+                                    </input>
+                                </inputs>
+                            </option>
+                        </options>
+
+                    </type>
+                </input>
+                <input required="False">
+                    <name value="integration_method"/>
+                    <label value="Integration Method:"/>
+                    <type value="select" default="Euler">
+                        <options>
+                            <option name="Euler" value="Euler">
+                                <inputs>
+                                    <input required="False">
+                                        <name value="dt"/>
+                                        <label value="dt:"/>
+                                        <type value="float" default="deterministic"/>
+                                    </input>
+                                    <input required="False">
+                                        <name value="method"/>
+                                        <label value="method:"/>
+                                        <type value="select" default="deterministic">
+                                            <options>
+                                                <option name="Deterministic" value="deterministic"/>
+                                                <option name="Stochastic" value="stochastic"/>
+                                            </options>
+                                        </type>
+                                    </input>
+                                    <input required="False">
+                                        <name value="int_ntau"/>
+                                        <label value="Ntau:"/>
+                                        <type value="float" default="0"/>
+                                    </input>
+                                </inputs>
+                            </option>
+                            <option name="Heun" value="Heun">
+                                <inputs>
+                                    <input required="False">
+                                        <name value="dt"/>
+                                        <label value="dt:"/>
+                                        <type value="float" default="0.1"/>
+                                    </input>
+                                    <input required="False">
+                                        <name value="method"/>
+                                        <label value="method:"/>
+                                        <type value="select" default="deterministic">
+                                            <options>
+                                                <option name="Deterministic" value="deterministic"/>
+                                                <option name="Stochastic" value="stochastic"/>
+                                            </options>
+                                        </type>
+                                    </input>
+                                    <input required="False">
+                                        <name value="int_ntau"/>
+                                        <label value="Ntau:"/>
+                                        <type value="float" default="0"/>
+                                    </input>
+                                </inputs>
+                            </option>
+                            <option name="RungeKutta" value="RungeKutta">
+                                <inputs>
+                                    <input required="False">
+                                        <name value="dt"/>
+                                        <label value="dt:"/>
+                                        <type value="float" default="0.1"/>
+                                    </input>
+                                    <input required="False">
+                                        <name value="method"/>
+                                        <label value="method:"/>
+                                        <type value="select" default="deterministic">
+                                            <options>
+                                                <option name="Deterministic" value="deterministic"/>
+                                                <option name="Stochastic" value="stochastic"/>
+                                            </options>
+                                        </type>
+                                    </input>
+                                    <input required="False">
+                                        <name value="int_ntau"/>
+                                        <label value="Ntau:"/>
+                                        <type value="float" default="0"/>
+                                    </input>
+                                </inputs>
+                            </option>
+                        </options>
+
+                    </type>
+                </input>
+                <input required="False">
+                    <name value="T"/>
+                    <label value="T:"/>
+                    <type value="float" default="1.0"/>
+                </input>
+            </inputs>
+            <outputs>
+                <output type="tvb.datatypes.timeseries.TimeSeries">
+                    <field name="time_line"/>
+                </output>
+            </outputs>
+        </algorithm>
+    </algorithm_group>
+</tvb>
+

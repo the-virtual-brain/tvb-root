@@ -1,0 +1,32 @@
+<div xmlns:py="http://genshi.edgewall.org/" xmlns:xi="http://www.w3.org/2001/XInclude">
+
+    <script type="text/javascript">
+        $(document).ready(function() {
+            $("#main").addClass("colscheme-2-even brain-extended");
+            $("#eegSectionId").removeClass("view-column col-1");
+        });
+    </script>
+
+    <section class="view-column">
+        <xi:include href="${brainViewerTemplate}"/>
+    </section>
+
+    <section class="view-column">
+        <xi:include href="../eeg/view.html"/>
+    </section>
+
+    <!--
+        These functions depend on globals created by the brain and the eeg viewer
+        They do some synchronisation between the viewers.
+    -->
+    <script type="text/javascript" py:if="not defined('isSEEG')">
+        $(document).ready(function(){
+            EX_initializeChannels();
+        });
+    </script>
+    <script type="text/javascript" py:if="defined('isSEEG')">
+        $(document).ready(function(){
+            EX_initializeChannelsForSensorsInternal();
+        });
+   </script>
+</div>

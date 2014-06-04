@@ -1,0 +1,89 @@
+<div xmlns:py="http://genshi.edgewall.org/" xmlns:xi="http://www.w3.org/2001/XInclude">
+
+	<script type="text/javascript" src="/static/jquery/jquery.jstree.js"></script>
+
+	<py:with vars="tab_names = [tab.name for tab in overlay_tabs_horizontal]">
+
+		<!-- Overlay: Metadata -->
+		<section id="overlayTabContent_0" class="node-data node-metadata active">
+			<xi:include href="details_operation_overlay.html"/>
+	    </section>
+
+        <py:def function="displayAlgoGroupButtons(algo_group, category, launchAsync)">
+            <py:with vars="algoName = '' if algo_group['algo_param'] is None else algo_group['algo_param'];
+                           displayName = algo_group['displayName'];
+                           url = algo_group['url'];
+                           isPartOfGroup = algo_group.get('part_of_group', False)">
+
+                <h5 py:if="algoName != ''"> $displayName </h5>
+                <ul>
+                    <li py:for="algo in sorted(algo_group['children'], key=lambda k: k['name'])">
+                        <py:with vars="ident = '' if algo['ident'] is None else algo['ident'];
+                                       paramName = algo['param_name'];
+                                       linkLabel = algo['name'] if algoName != '' else displayName;
+                                       launchParamName = paramName if not isPartOfGroup else 'range_param_name';
+                                       launchParamVal = entity_gid if not isPartOfGroup else paramName">
+
+                            <button class="action action-$category $category-${linkLabel.lower().replace(' ','')}"
+                                    onclick="launchAdapter('$url', '$launchParamName', '$launchParamVal', '$algoName', '$ident', '$backPageIdentifier', $launchAsync);">
+                                $linkLabel
+                            </button>
+                        </py:with>
+                    </li>
+                </ul>
+            </py:with>
+        </py:def>
+
+	    <!-- Overlay: Analyzers -->
+		<section id="overlayTabContent_1" class="node-data node-analyze ">
+			<div py:if="categories and 'Analyze' in categories">
+				<py:for each="group_dict in sorted(categories['Analyze'].values(), key=lambda k: k['displayName'])">
+					${displayAlgoGroupButtons(group_dict, 'analyze', 'true')}
+				</py:for>
+			</div>
+		</section>  
+		
+		<!-- Overlay: Visualizers -->
+		<section id="overlayTabContent_2" class="node-data node-view ">
+			<py:if test="categories and 'View' in categories">
+				<div py:if="categories and 'View' in categories">
+					<py:for each="algorithm in categories['View']">
+						${displayAlgoGroupButtons(categories['View'][algorithm], 'view', 'false')}
+					</py:for>
+				</div>
+			</py:if>
+		</section>
+	        
+		<!-- Overlay: Project Links -->
+		<section id="overlayTabContent_3" class="node-data node-link ">
+			<div id="linkable_projects_div_${entity_gid}" class="link-incoming">
+		    	<xi:include href="linkable_projects.html"/>
+			</div>
+		</section>
+		
+		<!-- Overlay: Data Exporters -->
+		<section id="overlayTabContent_4" class="node-data node-export ">
+			<ul py:if="exporters">
+				<li py:for="exporter in exporters">
+					<button class="action action-export" onclick="window.location='/project/downloaddata/${entity_gid}/${exporter}';">${exporters[exporter]}</button>
+				</li>
+			</ul>
+			<label py:if="not exporters">No exporters are currently available for this DataType.</label>
+		</section>
+		
+		<!-- Overlay: Data Exporters -->
+		<section id="overlayTabContent_5" class="node-data node-chain-dts ">
+			<div id="div-burst-tree">
+				<div id="treeOverlay"></div>
+				<script type="text/javascript">
+					$(document).ready(function() { 
+                        var filterValue = {'type' : 'from_datatype', 'value' : '$entity_gid'};
+                        updateTree('#treeOverlay', '${selectedProject.id}', '${baseUrl}', JSON.stringify(filterValue));
+                    })
+				</script>
+			</div>
+		</section>
+        
+    </py:with>
+</div>
+

@@ -1,0 +1,169 @@
+<?xml version="1.0"?>
+ 
+		
+<tvb xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="../../core/schema/tvb.xsd">
+
+    <algorithm_group name="simple_portlet" type="" uiName="Simple Python Portlets" label="Selected Portlet:">
+        
+        <!--  For each portlet, a preview with the name $identifider$.png should be present in:
+        	 tvb/interfaces/static/style/img/portlets 
+        	 and a style in section_burst.css
+       -->
+        <algorithm name="BCT - Clustering Coeficient WD" identifier="CCWD">
+            <code value=""/>
+            <inputs>
+                <input>
+                    <name value="chain_1"/>
+                    <label value="First adapter from chain"/>
+                    <type value="tvb.adapters.analyzers.group_matlab_adapter.MatlabAdapter" initparam="adapters/analyzers/matlab_interfaces/bct_clustering.xml" field="bct" default="CCWD"/>
+                </input>
+                <input overwrite="chain_1">
+                    <name value="bct_parameters_option_CCWD_A"/>
+                    <label value="Overwrite with first input of the simulator adapter."/>
+                    <type value="dynamic" default="step_0[connectivity]" />
+                </input>
+                
+                <input>
+                    <name value="chain_2"/>
+                    <label value="Second adapter from chain"/>
+                    <type value="tvb.adapters.visualizers.histogram.HistogramViewer" field=""/>
+                </input>
+                <input overwrite="chain_2">
+                	<name value="input_data"/>
+                	<label value="Overwrite input_data parameter of second adapter with the first release of the first adapter."/>
+                	<type value="dynamic" default="step_1[0]"/>
+                </input>
+                
+            </inputs>
+        </algorithm>
+        
+        <algorithm name="BCT - Node Betweenness Centrality Binary" identifier="NBCB">
+            <code value=""/>
+            <inputs>
+                <input>
+                    <name value="chain_1"/>
+                    <label value="First adapter from chain"/>
+                    <type value="tvb.adapters.analyzers.group_matlab_adapter.MatlabAdapter" initparam="adapters/analyzers/matlab_interfaces/bct_centrality.xml" field="bct" default="NBCB"/>
+                </input>
+                <input overwrite="chain_1">
+                    <name value="bct_parameters_option_NBCB_A"/>
+                    <label value="Overwrite with first input of the simulator adapter."/>
+                    <type value="dynamic" default="step_0[connectivity]" />
+                </input>
+                
+                <input>
+                    <name value="chain_2"/>
+                    <label value="Second adapter from chain"/>
+                    <type value="tvb.adapters.visualizers.histogram.HistogramViewer" field=""/>
+                </input>
+                <input overwrite="chain_2">
+                	<name value="input_data"/>
+                	<label value="Overwrite input_data parameter of second adapter with the first release of the first adapter."/>
+                	<type value="dynamic" default="step_1[0]"/>
+                </input>
+                
+            </inputs>
+        </algorithm>
+        
+        <algorithm name="BCT - Instrength and Outstrength" identifier="ISOS">
+            <code value=""/>
+            <inputs>
+                <input>
+                    <name value="chain_1"/>
+                    <label value="First adapter from chain"/>
+                    <type value="tvb.adapters.analyzers.group_matlab_adapter.MatlabAdapter" initparam="adapters/analyzers/matlab_interfaces/bct_degree.xml" field="bct" default="ISOS"/>
+                </input>
+                <input overwrite="chain_1">
+                    <name value="bct_parameters_option_ISOS_CIJ"/>
+                    <label value="Overwrite with first input of the simulator adapter."/>
+                    <type value="dynamic" default="step_0[connectivity]" />
+                </input>
+                
+                <input>
+                    <name value="chain_2"/>
+                    <label value="Second adapter from chain"/>
+                    <type value="tvb.adapters.visualizers.histogram.HistogramViewer" field=""/>
+                </input>
+                <input overwrite="chain_2">
+                	<name value="input_data"/>
+                	<label value="Overwrite input_data parameter of second adapter with the first release of the first adapter."/>
+                	<type value="dynamic" default="step_1[0]"/>
+                </input>
+                
+            </inputs>
+        </algorithm>
+        
+        <algorithm name="BCT - Instrength and Outstrength- Topo" identifier="ISOSTOPO">
+            <code value=""/>
+            <inputs>
+                <input>
+                    <name value="chain_1"/>
+                    <label value="First adapter from chain"/>
+                    <type value="tvb.adapters.analyzers.group_matlab_adapter.MatlabAdapter" initparam="adapters/analyzers/matlab_interfaces/bct_degree.xml" field="bct" default="ISOS"/>
+                </input>
+                <input overwrite="chain_1">
+                    <name value="bct_parameters_option_ISOS_CIJ"/>
+                    <label value="Overwrite with first input of the simulator adapter."/>
+                    <type value="dynamic" default="step_0[connectivity]" />
+                </input>
+                
+                <input>
+                    <name value="chain_2"/>
+                    <label value="Second adapter from chain"/>
+                    <type value="tvb.adapters.visualizers.mplh5_topographic.TopographicViewer" field=""/>
+                </input>
+                <input overwrite="chain_2">
+                	<name value="data_0"/>
+                	<label value="Overwrite data_0 parameter of second adapter with the first release of the first adapter."/>
+                	<type value="dynamic" default="step_1[0]"/>
+                </input>
+                <input overwrite="chain_2">
+                	<name value="data_1"/>
+                	<label value="Overwrite data_1 parameter of second adapter with the second release of the first adapter."/>
+                	<type value="dynamic" default="step_1[1]"/>
+                </input>
+                <input overwrite="chain_2">
+                	<name value="data_2"/>
+                	<label value="Overwrite data_2 parameter of second adapter with the third release of the first adapter."/>
+                	<type value="dynamic" default="step_1[2]"/>
+                </input>
+                
+            </inputs>
+        </algorithm>
+        
+        <algorithm name="BCT - Strength and Weight" identifier="STW">
+            <code value=""/>
+            <inputs>
+                <input>
+                    <name value="chain_1"/>
+                    <label value="First adapter from chain"/>
+                    <type value="tvb.adapters.analyzers.group_matlab_adapter.MatlabAdapter" initparam="adapters/analyzers/matlab_interfaces/bct_degree.xml" field="bct" default="STW"/>
+                </input>
+                <input overwrite="chain_1">
+                    <name value="bct_parameters_option_STW_CIJ"/>
+                    <label value="Overwrite with first input of the simulator adapter."/>
+                    <type value="dynamic" default="step_0[connectivity]" />
+                </input>
+                
+                <input>
+                    <name value="chain_2"/>
+                    <label value="Second adapter from chain"/>
+                    <type value="tvb.adapters.visualizers.mplh5_topographic.TopographicViewer" field=""/>
+                </input>
+                <input overwrite="chain_2">
+                	<name value="data_0"/>
+                	<label value="Overwrite data_0 parameter of second adapter with the first release of the first adapter."/>
+                	<type value="dynamic" default="step_1[0]"/>
+                </input>
+                <input overwrite="chain_2">
+                	<name value="data_1"/>
+                	<label value="Overwrite data_1 parameter of second adapter with the second release of the first adapter."/>
+                	<type value="dynamic" default="step_1[1]"/>
+                </input>
+                
+            </inputs>
+        </algorithm>
+        
+   </algorithm_group>
+   
+</tvb>

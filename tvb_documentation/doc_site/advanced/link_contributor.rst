@@ -1,0 +1,1 @@
+.. include:: ../../manuals/ContributorsManual/ContributorsManual.rst

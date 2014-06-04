@@ -1,0 +1,14 @@
+<div id="monitor-2D-id" class="monitor-container monitor-2d">
+	<ul class="toolbar-inline monitor-control">
+		<li>Min ray <mark>${round(minRay, 2) if abs(minRay) > 1 else round(minRay, 4)}</mark></li>
+
+		<li>Max ray <mark>${round(maxRay, 2) if abs(maxRay) > 1 else round(maxRay, 4)}</mark></li>
+
+		<li class="value-above">Value above <mark style="background-color:${firstColor}">${round(stepValue, 2) if abs(stepValue) > 1 else round(stepValue, 4)}</mark></li>
+
+		<li class="value-below">Value below <mark style="background-color:${secondColor}">${round(stepValue, 2) if abs(stepValue)> 1 else round(stepValue, 4)}</mark></li>
+
+		<li><a href="#" id="change2DViewBtn" class="action action-plus" title="Display associated color and shape size for nodes" onclick="change2DView();">Show All</a></li>
+	</ul>
+	<div id="hemispheresDisplay" class="viewer"></div>
+</div>

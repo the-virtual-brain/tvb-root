@@ -1,0 +1,120 @@
+<!DOCTYPE html>
+<!-- This is a demo of the region selection component
+     You can open this file in a browser. No server is needed. Selections are not saved.
+-->
+<html>
+<head>
+    <script type="application/javascript" src="../../../../../static/jquery/jquery.js"></script>
+    <script type="application/javascript">
+        function displayMessage(a, b){
+            if(b == null) {b = '';}
+            $("#log").append('<p>' + b + ' ' + a + '</p>');
+        }
+    </script>
+    <script type="application/javascript" src="regionSelector.js"></script>
+    <style type="text/css">
+        p {margin: 0 }
+    </style>
+</head>
+
+<body>
+    <h1>RegionSelectComponent demo</h1>
+
+    <table class="first">
+        <thead>
+            <tr><td colspan="2"> <h2>First selector </h2></td></tr>
+            <tr><td colspan="2">
+                    <button class="action action-all-on"> Select all </button>
+                    <button class="action action-all-off"> Clear all</button>
+                    <hr/>
+                </td>
+            </tr>
+        </thead>
+        <tr><td>
+                <label> A <input type='checkbox' autocomplete="off" value="A" checked/></label>
+            </td><td>
+                <label> B <input type='checkbox' autocomplete="off" value="B"/></label>
+            </td>
+        </tr>
+        <tr><td>
+                <label> C <input type='checkbox' autocomplete="off" value="C"/> </label>
+            </td><td>
+                <label> D <input type='checkbox' autocomplete="off" value="D" checked/> </label>
+            </td>
+        </tr>
+        <tr><td colspan="2">
+            <select>
+                <option selected value="[]">New selection</option>
+                <option value="[&quot;A&quot;]">A selection</option>
+            </select>
+            <input type="text" />
+            <button class="action-store">Save current selection</button>
+        </td></tr>
+
+    </table>
+
+
+    <table class="second">
+        <thead>
+            <tr><td colspan="2"> <h2>Second selector</h2></td></tr>
+            <tr><td colspan="2">
+                    <button class="action action-view"> Apply selection</button>
+                    <button class="action action-all-on"> Select all </button>
+                    <button class="action action-all-off"> Clear all</button>
+                    <hr/>
+                </td>
+            </tr>
+        </thead>
+        <tr><td>
+                <label> A_label <input type='checkbox' autocomplete="off" value="A_val" /></label>
+            </td><td>
+                <label> B_label <input type='checkbox' autocomplete="off" value="B_val"/></label>
+            </td>
+        </tr>
+        <tr><td colspan="2">
+            <select>
+                <option selected value="[]">New selection</option>
+            </select>
+            <input type="text" />
+            <button class="action-store">Save current selection</button>
+        </td></tr>
+    </table>
+
+    <h2>Actions</h2>
+    <button id="selectsome">select some</button>
+    <button id="showval">print selected values</button>
+
+    <h2>log</h2>
+    <div id="log"></div>
+
+    <script type="application/javascript">
+        $(document).ready(function(){
+            var sel_first = new TVBUI.RegionSelectComponent(".first")
+            sel_first.change(function(value){
+                displayMessage("first: change " + value);
+            });
+            sel_first.$dom.on("newSelection", function(_ev, name, selection, labels){
+                displayMessage("first: save " + name + " " + selection + " " + labels);
+            });
+
+            var sel_second = new TVBUI.RegionSelectComponent(".second");
+            sel_second.change(function(value){
+                displayMessage("second: change " + value);
+            });
+
+            sel_second.$dom.on("selectionApplied", function(_ev, selection){
+                displayMessage("second: applied " + selection);
+            });
+
+            $('#selectsome').click(function(){
+                sel_first.val(['B']);
+            });
+
+            $('#showval').click(function(){
+                displayMessage('first ' + sel_first.val());
+                displayMessage('second ' + sel_second.val());
+            });
+        });
+    </script>
+</body>
+</html>

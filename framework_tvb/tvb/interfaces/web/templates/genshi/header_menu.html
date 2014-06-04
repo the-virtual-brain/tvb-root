@@ -1,0 +1,12 @@
+<!-- =========================================== --> 
+<!-- Second navigation layer displayed in header --> 
+<!-- =========================================== -->
+<ul xmlns:py="http://genshi.edgewall.org/" py:if="submenu_list">
+	<li py:for="menu_entry in submenu_list" id="nav-$section_name-$menu_entry.subsection" class="${'active' if subsection_name==menu_entry.subsection else ''}">
+		<a href="$menu_entry.link" title="$menu_entry.title">
+			<p>$menu_entry.title</p>
+			<p py:if="'description' in menu_entry">$menu_entry.description</p>
+		</a>
+	</li>
+</ul>
+

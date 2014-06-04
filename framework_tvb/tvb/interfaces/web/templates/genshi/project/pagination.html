@@ -1,0 +1,19 @@
+<py:def function="displayPaginationControls(page_number, total_pages, col_span, submit_form_id)" xmlns:py="http://genshi.edgewall.org/">
+	<tr class="toolbar-inline" py:if="total_pages &gt; 1">
+		<th colspan="$col_span">
+		<ul class="action-block block-pager">
+			<li>
+				<a href="#" title="Go to previous page" class="action action-page-back" py:if="page_number!= 1"
+					onclick="changeDisplayPage(${page_number-1}, '$submit_form_id')">&lt;</a>
+				<a href="#" title="Go to previous page" class="action action-page-back action-idle" py:if="page_number &lt;= 1">&lt;</a>
+			</li>
+			<li class="signpost">Page $page_number of $total_pages</li>
+			<li>
+				<a href="#" title="Go to next page" class="action action-page-fwd" py:if="page_number &lt; total_pages"
+					onclick="changeDisplayPage(${page_number+1}, '$submit_form_id')">&gt;</a>
+				<a href="#" title="Go to next page" class="action action-page-fwd action-idle" py:if="page_number &gt;= total_pages">&gt;</a>
+			</li>
+		</ul>
+		</th>
+	</tr>
+</py:def>

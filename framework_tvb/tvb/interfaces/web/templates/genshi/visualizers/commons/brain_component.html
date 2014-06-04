@@ -1,0 +1,15 @@
+<py:def function="draw_brain_component(canvas_id, legend_labels)" xmlns:py="http://genshi.edgewall.org/">
+    <div id="brainComponentContainer" class="tvb-snapshot-image">
+        <canvas id="$canvas_id" class="brainComponentCanvas" tabindex='100'></canvas>
+
+        <div id="brainLegendDiv">
+            <table class="brainLegendContent" py:if="legend_labels">
+                <py:for each='label in legend_labels'>
+                    <tr>
+                        <td><label>${label}</label></td>
+                    </tr>
+                </py:for>
+            </table>
+        </div>
+    </div>
+</py:def>

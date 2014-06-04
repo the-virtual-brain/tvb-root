@@ -1,0 +1,12 @@
+<div class="flex-wrapper" xmlns:xi="http://www.w3.org/2001/XInclude">
+
+	<xi:include href="./function_pse.html"/>
+    ${generateIsoclinePSE(metrics)}
+
+    <script type="text/javascript">
+         $(document).ready(function() {
+            initISOData('${sorted(metrics.keys())[0]}', '${figuresJSON}', '$mplh5ServerURL')
+        });
+    </script>
+
+</div>

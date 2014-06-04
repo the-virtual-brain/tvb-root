@@ -1,0 +1,80 @@
+<py:def function="generateFramePSE(dataTypeGroupGID, available_metrics)" xmlns:py="http://genshi.edgewall.org/">
+
+	<script type="text/javascript" src="/static/flot/jquery.flot.min.js"></script>
+    <script type="text/javascript" src="/static/flot/jquery.flot.symbol.min.js"></script>
+    <script type="text/javascript" src="/static/colorScheme/js/colorSchemeComponent.js"></script>
+    <script type="text/javascript" src="/static/colorScheme/js/colorpicker.js"></script>
+    <link rel="stylesheet" href="/static/colorScheme/css/colorpicker.css" type="text/css"/>
+
+ 	<!-- Controls for changing metrics -->
+	<ul class="toolbar-inline burst-pse-metrics">
+		<li>
+		<label for="color_metric_select">Color metric</label>
+		<select id="color_metric_select">
+			<option value="None">None</option>
+            <py:for each="metric in available_metrics">
+                <py:if test="metric==color_metric">
+                    <option value="$metric" selected="selected">$metric</option>
+                </py:if>
+                <py:if test="metric!=color_metric">
+                    <option value="$metric">$metric</option>
+                </py:if>
+            </py:for>
+		</select>
+		</li>
+		
+		<li>
+		<label for="size_metric_select">Size metric</label>
+		<select id="size_metric_select">
+			<option value="None">None</option>
+            <py:for each="metric in available_metrics">
+                <py:if test="metric==size_metric">
+                    <option value="$metric" selected="selected">$metric</option>
+                </py:if>
+                <py:if test="metric!=size_metric">
+                    <option value="$metric">$metric</option>
+                </py:if>
+            </py:for>
+		</select>
+		</li>
+		
+		<li>
+		<a href="#" onclick="PSE_mainDraw('main_div_pse', '${pse_back_page}')" title="Refresh..." class="action action-refresh">Refresh</a>
+		</li>
+	</ul>
+
+ 	<!-- Controls for displaying MAX / MIN values -->
+	<ul class="toolbar-inline burst-pse-colors">
+		<li>
+		    <label id="minColorLabel"></label>
+		</li>
+		<li>
+		    <label id="maxColorLabel"></label>
+		</li>
+        <li>
+		    <label id="minShapeLabel"></label>
+		</li>
+		<li>
+		    <label id="maxShapeLabel"></label>
+		</li>
+        <li>
+            <label class="pse-graph-title"><mark>axis Y - axis X</mark> $title_y  -  $title_x</label>
+        </li>
+	</ul>
+   	
+	<input type="hidden" id="datatype-group-gid" value="$dataTypeGroupGID"/>
+	
+	<!-- Here PSE bubles will be displayed.	-->
+	<div id="main_div_pse" class="specialviewer"></div>
+	
+	<script type="text/javascript">
+    	$(document).ready(function() {
+    		PSEDiscreteInitialize('$labels_x', '$labels_y', '$series_array', '$data', '$pse_back_page',
+                    $has_started_ops, $min_color, $max_color, $min_shape_size_weight, $max_shape_size_weight);
+            window.onresize = function() { redrawPlot('main_div_pse'); };
+		});
+    </script>
+
+</py:def>
+
+

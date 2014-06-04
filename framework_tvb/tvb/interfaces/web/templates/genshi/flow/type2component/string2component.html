@@ -1,0 +1,16 @@
+
+<py:def function="draw_string_component(inputRow, disabled)" xmlns:py="http://genshi.edgewall.org/">
+	 <!--  
+	    Draw Input field for a String  (input text).
+	  -->
+     <py:with vars="add_attrs={'readonly': 'readonly'} if ('locked' in inputRow and inputRow.locked) else {};
+ 				    add_attrs2={'disabled':'disabled'} if disabled else {};
+ 					x=add_attrs.update(add_attrs2);">                   
+         <input type="text" tabindex='1' name="$inputRow.name" id="$inputRow.name" 
+         		value="${inputRow.default if ('default' in inputRow) else ''}" py:attrs="add_attrs"/>
+    </py:with>
+    
+	${add_checkbox_control(inputRow)}
+	
+</py:def>
+     

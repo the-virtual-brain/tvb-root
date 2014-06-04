@@ -1,0 +1,49 @@
+<!-- ============================= --> 
+<!--          MPLH5 Display        --> 
+<!-- ============================= -->
+<div xmlns:py="http://genshi.edgewall.org/">
+    <!-- Static images used on this page. B64 encoded to avoid seperate path loading... -->
+    <img style='display: none;' id="button_max" src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABQAAAAUCAYAAACNiR0NAAAABHNCSVQICAgIfAhkiAAAAAlwSFlzAAAEAwAABAMBtJq7BgAAABl0RVh0U29mdHdhcmUAd3d3Lmlua3NjYXBlLm9yZ5vuPBoAAAN+SURBVDiNfZVbTJtlHMZ/3wGwVBhIWbGxjDMbwnAC0bCDuiWiS3YhlybsZsmmxuiNd8aIBO/MrrxZ4qJREy92pU6NyYynThonDGLHqSml5UxpCy2Utt/3fp8XbKWlxSf5J1/+h+f/vG/ePJ/UdfWGyQGoisyFZxvoaLXT2lhNXdURAIKRGDO+EKMPlvl9Yh5dGAdHkQ4SHnfaGHrrAmuPpXkgx5gXOyyIBABOpZQ6xUqbUc7R3SLe//QOvuVIYUJZknijv4e+s018rvuY0WN527PRqpZzWWngu1+m+fKHcQxzT5f6qOHqa92c6H2SD3fG0BDID/PdxdXUqBYAwiLFSGoNAK+IMMQWAy82cRn44vb9fcIWp41XzjYzFP8bHYGUpeRMiZ1TJdUATKejuBNLAEREEr8W43Zslt9e6OfPsQC+5QiqqsgMv3merxMedD2ZUZaBuX/xpmkwlwjh1zbZFKlM/t3oHa5fe4krQ9+inuusI6Tu4N0K5SjLYsl8RvQEE/EFgJzF7i0/k/Z2TrfXona22pnR1pGEXvDytey8YSBr6YJ9ruQcHY0OpNHAkvmjNEkwFeWU1cG5I00PhZnERYpmiw1bkRWATX2Xse2lHKJbG+Pc2pjgpNXBkOUiav3RSlYDYWTTwKZYeLrUXlABQIVq4XxFU05uNDaPrKWZ3VqgpaEK1TRMEBqSaYAhDiU7DJLQkbUUkqyACerceoSnisoI7oaJJGO4o16SQssMtJc7sRWX7R1ZSzC+NZ9DGNheRdbStJU7mV3ZQJ3ybVDbXMni9hrfL44w7PkmZ+Bm99u8XPMMANOxBQbc1/NUKkCn1cG0L4w8MbNOfbEdSdfxRQPIWjonst8hpplXfxS9jx9nai6M7PIEqaKSmuIykrvxvEbJ2CeUTKMg2XMVDbSUHOOuJ4isC4MPbvzB684+rIaJoqVyQjKzCfPrVsPk445rfPSZC10YKI6uS4PR+C6lxUX0n+zCtehG6GkkQyAZAk1oTEXmGFkZx70ygTfsy9QsksJwzzuMjsb59X5gb2m2fQ30tfPqmWMMuj/hn9V///e5dNd0MPj8e/zkCvDVz56MfeUZbKPjCQav9OKLz3Jv7R6ToVm8YT8AzVX1tFW30GPvobGshcGbfx1usNlQFZnT7bW01Vdyor6SZseefXmXQ0z5o0z6o9z1BAv+Av4D2HLBnnU1sUYAAAAASUVORK5CYII=" />
+    <img style='display: none;' id="button_resize" src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABQAAAAUCAYAAACNiR0NAAAABHNCSVQICAgIfAhkiAAAAAlwSFlzAAAEAwAABAMBtJq7BgAAABl0RVh0U29mdHdhcmUAd3d3Lmlua3NjYXBlLm9yZ5vuPBoAAAOhSURBVDiNfZVLTFxVGMd/99zLMMy0PGZ4F6bA8Ia+tY0lscZGqZFFk+60gQWG7mriWppqWxcmmlTdNLE1ttW40Jq4MEpqQmOpxjYoQkEYec2Y4TUMDJnXfc24GB0GmPaf/Hf3/M7/fN+535GO9F1Lsk2KLOhod9FaX067u4L6ikIAZpZCTMwsMjLpZ2jMi2Emti9F2g50Vzp459zLLCctTEVhLmLii5oAVNtkauwyjTYokzQuXBtg2h/MDhSSRPcrh+k60cbteZ3JDWPH7plqylc4uzeH7wbHuP3D7ySSqVzK/x90nzrE/meaufxnGN0E8VQceIIml0Mqrx9poUeCz74fBv5b5650pJJNhnm+1MJpl5VjTgWXFSwJE8nI7oV1lbfuBzj5XAvuSkcqoSIL3u17ia8mIxhxA2eO4FX3rnSSZBICMZOFiM5C2OCeL8KgN8psSCOspZry5mCAD3tP0vveNygd7S5WVAnPShQJWNhQgU2gJEGJTabEJhNWI9x4uEzMSG4eD/h1NsR4i52OdhdKm7uM6aCGZKQ6ubgez1qzX7xhznzhQTUSCKDYphCIbjbu/nyEfbWliLbacnzBGMIwEYbJ0nqc5I6bCfvL8yjNSSJrOp01dj49XYOs6WmP+jZo3luGaKgoZHE1ijAMhGGgx3XWYvoOoN0i8+D8AXoOOrn5WhP7ym0ITU97yheicU8RApKgm0gZnl2OAvCzZ42YZm6BfnCmAYss4bDn4FRAqDpC1ZFUA0gi/vavU7U7J30VAsEowzPrDI4H6P7kES9cGtoCzVSTIzedsLU4l6l/gojxuSVcRbkIwyQaVnk0scy3Q17e+Pg3jIiKf2GDC18+zgpsLLama3ig0s5f88uI0ekl6kryEKbB9PwaiZjGY08APaIiNJ0Xmx1cOdueFdhQmpdOeLyhkIm5FcTQmBfHboXaYht+f2hLoZ25gr5TbqLx7P+1u3wXQtM5VldI4x47Q2NeFMNM0H/9J94/18n1r0eJZ9RrQ9Xp6b8LgLPASn11AfVV+dRXF+CuKiDfqmBPJrjSe4i3b9zFMBOb06an8yCuIif9Hz3YAn2arBaZS+eP411b5fMf/wAyhsqtgRG8wVXuXO3iaJNzy9Gz+WiTkztXu/AGV7k1MJLeJOuAvdh9gumZNR4O+xmfWsEzu5pqQq2T1sYSnj1cibuuiIs37z15wGYq/QS4immpLqGhOjWaPL4gE74Vxr2BJz4B/wKrEccDtJ7HywAAAABJRU5ErkJggg==" />
+    <img style='display: none;' id="button_home" src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABQAAAAUCAYAAACNiR0NAAAABHNCSVQICAgIfAhkiAAAAAlwSFlzAAAEAwAABAMBtJq7BgAAABl0RVh0U29mdHdhcmUAd3d3Lmlua3NjYXBlLm9yZ5vuPBoAAANvSURBVDiNjZVdTJtVGMd/79tauvLZFoaAfJQP040CUmYmA0TishCTGXXJIjEmxk2vjd5suzC7WmI0eqdRkwW3C40X6p2JJBKJjBgWt0ExE6G23cqg3Whrx1ffc87rRUs3GApP8r865/zO85Xn0bre/txkm1ktOj2+Op5uLsfvcfNElRsNiMYSTIcTTPy5xNhUGCHV9qdo24FN1S4+eauPkrUlrLEgcnkBmVwCwFJWicVVjahs5r6jkne+GGMuem9noK5pnB5sZ6i3ESZ/QCyFHrqlgZn9V7PaQNexuGvQDr3I17/O8+WPU6jcuaW66/h5gNOD7bzaaifz8yXkP8uYZpZhahaKn38NbPsw4lGKBoYo7D2BWk2zNvYNHZ1tOFwVTM4uAqBvhjnU28j6+HdII4NUKisTivpPYqv1UtR9HFtzJ2bOE6UU63dCLF88y0v+KpqqXVmg1aLz0aleMhPfIzIGQpKTRnHfCewe32bclPS9gmYvBGB9MUx69gZrsQXSl9/ngzeOYLXoWHt8dThSUVaiwS3JdT37Mo4n/dtKqGPbX5v1UEgMka1y6o+rlEcD9Pjq0DvqnajFIFKSV+nhFyhqfeaRltiEAljd1RjCzCszc4WOeie63+NiPbaQz1tJ1wCl/v6dYQ9Zqf857C2dGFJhSEV6foaO+jL0hpoKVuN3EBKKfUdwdw/uCgPQC+x4z3yGvaEVQ5ik/p7FU1ORrbKUJtI0WY0vEPr2U+Tayq5AUwqunz/Fxv0VDKEQuXzqwdtxHnM9jhQm6XCQ+O8TyI313YFKcTdwjWRoDkOYFNS0ELwdR78WWsZWUYVUio3VFWLTk/le280282dIhaPxADciSfSpcAJLZQNCQTI0T2ZD7AkGbKlyYXsvU+EE+nggguGuw1FVTyoawRCKvfkHhlAYQlF2sAvd0854IIIupOLMV1eoPHYSoXQMYbJXoiFMlKWAg+99yNlLEwipHkybN4/5GChOcPXCu+hWK1qugf/bTKRhcOjcx4ymnVz8KQDkhgPA8MgMo2knR4dHKGk8wEoy9b8q9ng5OjzCaNrJ8MhM/psdB+yF17tZ++s6d3/7hfjNAPfmbgLgbvZS4fVRfriffS1Pce7yBPMLy1v8fgQID1ZAW52TttpSmmr3AzB/K8b0rRTTkQTjgciOK+Bfa+a4GLtdYmQAAAAASUVORK5CYII=" />
+
+    <link type="text/css" rel="stylesheet" href="/static/style/section_visualisers.css"/>
+
+    <span id='plot_canvas_$figureNumber' style="top:0; left:0;">
+        <canvas id="canvas_$figureNumber" onmouseup="releaseCanvas(event, $figureNumber);"> </canvas>
+        <div id='button_menu_$figureNumber' class="mplh5_button_menu">
+             <table width="100%" border="0" cellspacing="0" cellpadding="0">
+                  <tr>
+                       <td>
+                           <span id="status_$figureNumber" style='color: white;'>Disconnected</span>
+                       </td>
+                       <td>
+                           <span id='cursor_info_$figureNumber' style='color: white;' onclick='change_cursor_info($figureNumber);' >Cursor</span>
+                       </td>
+                       <td width="24" style="text-align: right; padding-left: 5px;">
+                           <img id="hb_$figureNumber" src="" onclick='go_home($figureNumber);' style="cursor: pointer;" tabindex="1" onkeypress="fireOnClick(this)"/>
+                           <script>document.getElementById('hb_$figureNumber').src = document.getElementById('button_home').src</script>
+                       </td>
+                       <py:if test="showFullToolbar == True">
+	                       <td width="24" style="text-align: right; padding-left: 5px; padding-right: 5px;">
+	                           <img id="mb_$figureNumber" src="" onclick="maximise($figureNumber, '$parentDiv');" style="cursor: pointer;" tabindex="1" onkeypress="fireOnClick(this)"/> 
+	                           <script>document.getElementById('mb_$figureNumber').src = document.getElementById('button_max').src</script>
+	                       </td>
+	                       <td width="24" style="text-align: right; padding-right: 5px;" onmousedown="clickSize(event,$figureNumber);">
+	                           <img id="rb_$figureNumber" src=""  style="cursor: se-resize;"/> 
+	                           <script>document.getElementById('rb_$figureNumber').src = document.getElementById('button_resize').src</script>
+	                       </td>
+                       </py:if>
+                  </tr>
+             </table>
+        </div>
+        <div id='limit_div_0_$figureNumber' class="mplh5_limit_div"
+             onmousemove="slideCanvas(event, $figureNumber);" onmouseup="releaseCanvas(event, $figureNumber);" />
+        <div id='zoom_div_$figureNumber' class="mplh5_zoom_div"
+             onmousemove="slideCanvas(event, $figureNumber);" onmouseup="releaseCanvas(event, $figureNumber);"/>
+    </span>
+    
+    <div id='resize_div'></div>
+    
+</div>
+

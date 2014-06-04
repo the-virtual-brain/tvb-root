@@ -1,0 +1,32 @@
+<div id="main"  class="columnized colscheme-2-even" xmlns:xi="http://www.w3.org/2001/XInclude">
+    <xi:include href="stimulus_region_step2_left.html"/>
+    <xi:include href="stimulus_region_step2_right.html"/>
+    
+    <form id="base_spatio_temporal_form" method="POST">
+	    <!-- === Box: Form controls -->
+	    <aside class="header-component toolbar can-extend auto-extends">
+	    	<h3>SpatioTemporal Entities</h3>
+		  <div class="extension">
+		   <div class="dropdown-pane">
+	        <ul>
+	            <li>
+                	<button class="action action-analyze" onclick="STIM_submitRegionStimulusData('${next_step_url}', 1);return false;">
+                		Edit Stimulus Equations
+                	</button>
+                </li>
+				<li>
+					<button class="action action-view action-idle" onclick="displayMessage('', 'warningMessage'); return false;">
+						Set Regions Scaling
+					</button>
+				</li>
+				<li>
+					<button class="action action-plus" onclick="STIM_submitRegionStimulusData('${next_step_url}', 3, true);return false;">
+						Save New Stimulus on Region
+					</button>
+				</li>
+	        </ul>
+	       </div>
+	      </div>
+	    </aside>
+	 </form>
+</div>

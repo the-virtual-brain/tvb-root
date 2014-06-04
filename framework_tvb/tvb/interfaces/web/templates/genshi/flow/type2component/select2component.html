@@ -1,0 +1,79 @@
+<div xmlns:py="http://genshi.edgewall.org/" py:strip="True">
+    
+    <py:def function="drawSelectComponentRange(parentId, inputRow, disabled)">
+     <!--    Function to generate the UI component for a Select Ranger. -->
+      <p class="field-adapters">
+        <table id="${parentId}" class="ranger-div-class" border='0'>
+            <tr py:for="oneOption in inputRow.options">
+                <td>
+                    <p> $oneOption.value: <input tabindex='1' id='${parentId}${oneOption.value}check' checked="no" type="checkbox" value="$oneOption.value"/> </p>                     	
+                </td>
+            </tr>
+            <tr><td><input id='${parentId}_hidden' type='hidden' name='${inputRow.name}'/></td></tr>
+        </table>
+        <hr/>
+        <input type="button" tabindex='1' class="right-display" value="V" id="${parentId}_buttonExpand" py:if="not disabled"
+        	   onclick="prepareSelectRangeComponent('$parentId', '$inputRow.name');" />
+		<input type="button" tabindex='1' class="right-display" value="V" id="${parentId}_buttonExpand" disabled='disabled' py:if="disabled"
+			   onclick="prepareSelectRangeComponent('$parentId', '$inputRow.name');" />
+        <input tabindex='1' type="button" class="right-display" value="//" id="${parentId}_buttonCollapse" disabled='disabled'
+    	   	   onclick="disableRangeComponent('$parentId', '$inputRow.name')" />
+      </p>
+    </py:def> 
+    
+	<py:def function="draw_simple_select(inputRow, disabled, parentDivId, treeSessionKey)">   
+	     <!-- Model/Monitor/ enumerates - a select that optionally has a subtree with attributes for each option-->
+	     <py:choose test="len(inputRow.options) &gt; 4">
+		     <py:when test="True">
+		     	<select name="$inputRow.name" tabindex='1' id="$inputRow.name" py:if="not disabled and inputRow.options"
+			     	     onchange="updateDivContent('data_$inputRow.name', this, '$parentDivId');">
+				        <option value="" py:if="('required' not in inputRow) or (not inputRow.required)">None</option>
+				        ${create_select_options(inputRow, False)}        
+			    </select>       
+			    <select name="$inputRow.name" tabindex='1' id="$inputRow.name" disabled = "disabled" py:if="disabled and inputRow.options"
+			    		onchange="updateDivContent('data_$inputRow.name', this, '$parentDivId');">
+				        <option value="" py:if="('required' not in inputRow) or (not inputRow.required)">None</option>
+				        ${create_select_options(inputRow, False)}
+			    </select>
+		    </py:when>
+		    <py:otherwise>
+			    <py:for each="option in inputRow.options">
+			    	<input type="radio" name="$inputRow.name" value="${option.value}" onchange="updateDivContent('data_$inputRow.name', null, '$parentDivId', this);" checked="checked"
+			    		   id="${inputRow.name + '_' + option.value}" py:if="('default' in inputRow) and (str(option.value) in str(inputRow.default))"/>
+			    	<input type="radio" name="$inputRow.name" value="${option.value}" onchange="updateDivContent('data_$inputRow.name', null, '$parentDivId', this);"
+			    		   id="${inputRow.name + '_' + option.value}" py:if="not (('default' in inputRow) and (str(option.value) in str(inputRow.default)))"/> 
+			    	
+			    	<label for="${inputRow.name + '_' + option.value}">${option.name}</label>
+				</py:for> 
+		    </py:otherwise>
+	   </py:choose>
+	    
+	    <py:if test="inputRow.options and ('display_ranger' in inputRow)">
+		    ${drawSelectComponentRange(parentDivId+inputRow.name+"range", inputRow, disabled)} 
+		</py:if>			
+	    
+        ${add_checkbox_control(inputRow)}	  
+                    
+	    <py:for each="option in inputRow.options">
+            <py:with vars="isEnabled =('default' in inputRow and (str(option.value)==str(inputRow.default))) or ('default' not in inputRow and str(option.value)==str(inputRow.options[0].value))">
+                <div id="data_$inputRow.name$option.value" style="display:block" py:if="isEnabled and not disabled">
+                	${generate_help_tooltip(option)}
+                    <py:if test="'attributes' in option and option.attributes">
+                        ${generateDisplay(option.attributes, False, "data_" + inputRow.name + str(option.value), treeSessionKey)}
+                        <hr/>
+                    </py:if>
+                </div>
+                <div id="data_$inputRow.name$option.value" style="display:None" disabled='disabled' py:if="not isEnabled or disabled">
+                	${generate_help_tooltip(option)}
+                    <py:if test="'attributes' in option and option.attributes">
+                        ${generateDisplay(option.attributes, True, "data_" + inputRow.name + option.value, treeSessionKey)}
+                        <hr/>
+                    </py:if>
+                </div>
+            </py:with>
+        </py:for>
+        
+	</py:def> 
+</div>
+
+

@@ -1,0 +1,46 @@
+<div id="editNodeValues">
+	<!-- Drop-down context menu for matrix cells -->
+	<aside class="menu-cell">
+		<div class="node-source">
+			<mark id="selectedSourceNodeDetails"></mark>
+			
+			<ul>
+				<li class="node-drawing"><a href="#" tabindex='-1' class="action action-plus" title="Toggle incoming edges for current line header" onclick='toggleIngoingLines(0)'>Toggle in</a></li>
+				<li class="node-drawing"><a href="#" tabindex='-1' class="action action-plus" title="Toggle outgoing edges for current line header" onclick='toggleOutgoingLines(0)'>Toggle out</a></li>
+				<li class="node-cutting"><a href="#" tabindex='-1' class="action action-minus" title="Set all incoming edges to 0" onclick='cutIngoingLines(0)'>Cut in</a></li>
+				<li class="node-cutting"><a href="#" tabindex='-1' class="action action-minus" title="Set all outgoing edges to 0" onclick='cutOutgoingLines(0)'>Cut out</a></li>
+			</ul>
+		</div>
+		
+		<div class="node-target">
+			<mark id="selectedTargetNodeDetails"></mark>
+			
+			<ul>
+				<li class="node-drawing"><a href="#" tabindex='-1' class="action action-plus" title="Toggle incoming edges for current column header" onclick='toggleIngoingLines(1)'>Toggle in</a></li>
+				<li class="node-drawing"><a href="#" tabindex='-1' class="action action-plus" title="Toggle outgoing edges for current column header" onclick='toggleOutgoingLines(1)'>Toggle out</a></li>
+				<li class="node-cutting"><a href="#" tabindex='-1' class="action action-minus" title="Set all incoming edges to 0" onclick='cutIngoingLines(1)'>Cut in</a></li>
+				<li class="node-cutting"><a href="#" tabindex='-1' class="action action-minus" title="Set all outgoing edges to 0" onclick='cutOutgoingLines(1)'>Cut out</a></li>
+			</ul>
+		</div>
+		
+		<input type="text" name="edge value" id="weightsValue"/>
+
+		<button class="action action-store" onclick='saveNodeDetails()' title="Change weight of this node's edges">Change edge value</button>
+		<button class="action action-reset" onclick='hideNodeDetails()'>Cancel</button>	
+    </aside>
+
+	<script type='text/javascript'>
+		$('html').click(function(e) {
+		  	var ev = arguments[0] || window.event,
+			origEl = ev.target || ev.srcElement;
+			if (origEl.parentNode.parentNode.parentNode.parentNode.className!='menu-cell')
+			 	if (origEl.parentNode.className!='menu-cell') 
+			 		if (origEl.id.indexOf("td_") != 0) {
+						hideNodeDetails()
+					}
+		});
+	</script>
+
+</div>
+    
+	

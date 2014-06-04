@@ -1,0 +1,24 @@
+<div xmlns:py="http://genshi.edgewall.org/" class="adaptersDiv" xmlns:xi="http://www.w3.org/2001/XInclude">
+    <py:if test="not defined('includeGenericAdapterTemplateFunctions') or includeGenericAdapterTemplateFunctions == True">
+        <xi:include href="genericAdapterTemplateFunctions.html"/>
+    </py:if>
+
+    <py:with vars="drawHiddenRanges = draw_hidden_ranges if defined('draw_hidden_ranges') else False;
+                   tree_session_key = treeSessionKey if defined('treeSessionKey') else 'defaultTree'">
+        ${generateDisplay(inputList, False, "", tree_session_key, draw_hidden_ranges=drawHiddenRanges)}
+    </py:with>
+
+    <script type="text/javascript">
+        $(document).ready(function () {
+            $('.adaptersDiv select').each(function () {
+                if (!this.disabled)
+                    if (this.onchange)
+                        this.onchange();
+            });
+            $('.adaptersDiv input[type="radio"]').each(function () {
+                if (!this.disabled) if (this.checked) if (this.onchange)
+                    this.onchange();
+            });
+        });
+    </script>
+</div>

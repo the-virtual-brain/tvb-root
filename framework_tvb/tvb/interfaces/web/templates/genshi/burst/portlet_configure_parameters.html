@@ -1,0 +1,16 @@
+<div xmlns:py="http://genshi.edgewall.org/" class="adaptersDiv" xmlns:xi="http://www.w3.org/2001/XInclude" py:strip="True">
+	
+	<xi:include href="../flow/genericAdapterTemplateFunctions.html"/>
+	
+	<table py:if="adapters_list">
+		<tr py:for="i in xrange(len(adapters_list))">
+			<py:with vars="is_not_last = (i &lt; len(adapters_list) -1); adapter_config = adapters_list[i];">
+			<td>
+				Configuration for <b>${adapter_config.ui_name}</b> <py:if test="adapter_config.subalgorithm_field is not None and adapter_config.subalgorithm_value is not None"> subalgorithm: <i>${adapter_config.subalgorithm_value}</i></py:if>:
+				${generateDisplay(adapter_config.interface, False, "", treeSessionKey, 'forces-create' if is_not_last else '')}
+			</td>
+			</py:with>
+		</tr>
+	</table>
+	
+</div>

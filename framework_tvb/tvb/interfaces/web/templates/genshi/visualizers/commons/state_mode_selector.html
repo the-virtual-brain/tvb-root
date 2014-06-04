@@ -1,0 +1,19 @@
+<py:def function="drawStateModeSelector(modeOrStates, componentId, name, callback)" xmlns:py="http://genshi.edgewall.org/">
+	<py:if test="len(modeOrStates) > 1">
+        <dt>
+		    <label for="${componentId}">${name}</label>
+        </dt>
+        <dd>
+            <select id="${componentId}" onchange="${callback}()">
+                <py:for each="idx, entry in enumerate(modeOrStates)">
+                    <py:if test="idx == 0">
+                        <option selected="selected" value="$idx">${entry}</option>
+                    </py:if>
+                    <py:if test="idx > 0">
+                        <option  value="$idx">${entry}</option>
+                    </py:if>
+                </py:for>
+            </select>
+		</dd>
+	</py:if>
+</py:def>

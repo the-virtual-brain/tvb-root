@@ -1,0 +1,90 @@
+<div xmlns:xi="http://www.w3.org/2001/XInclude" xmlns:py="http://genshi.edgewall.org/">
+    <link type="text/css" rel="stylesheet" href="/static/style/subsection_eeg.css?$currentVersionJS"/>
+    <script type="text/javascript" src="/static/jquery/jquery.json-2.2.min.js" ></script>
+    <script type="text/javascript" src="/static/jquery/jquery.contextmenu.js"></script>
+    <script type="text/javascript" src="/static/flot/jquery.flot.js"></script>
+    <script type="text/javascript" src="/static/flot/jquery.flot.navigate.js"></script>
+    <script type="text/javascript" src="/static/flot/jquery.flot.selection.js"></script>
+    <!--we use the method HLPR_readJSONfromFile-->
+    <script type="text/javascript" src="/static/js/webGL_Connectivity.js?$currentVersionJS"></script>
+    <script type="text/javascript" src="/static_view/eeg/scripts/animated_graph.js?$currentVersionJS" ></script>
+    <script type="text/javascript" src="/static_view/eeg/scripts/graph_events.js?$currentVersionJS"></script>
+    <script type="text/javascript" src="/static_view/commons/scripts/visualizers_commons.js?$currentVersionJS"></script>
+    <script type="text/javascript" src="/static_view/commons/scripts/regionSelector.js?$currentVersionJS"></script>
+
+    <script type="text/javascript">
+        $(document).ready(function() {
+            AG_startAnimatedChart($ag_settings);
+        });
+    </script>
+	
+	<section id="eegSectionId" class="view-column eeg-display col-1">
+		<!-- Inner visualizer controls and legend -->
+		<ul class="toolbar-inline">
+			<!-- Zoom explanation -->
+			<li py:if="not extended_view" class="zoom-control">
+				<nav class="inline-menu">
+					<button class="action action-menu">Usage</button>
+
+					<div class="extension">
+		    			<div class="dropdown-pane">
+		    				<p>Select zoom area with your mouse (you may do that several times to zoom in further)</p>
+		    				<p>Use "Zoom out to 100%" to zoom out completely</p>
+		    				<p>Use "Zoom out one level" to zoom out step by step</p>
+		    			</div>
+		    		</div>
+				</nav>
+			</li>
+
+			<!-- Zoom action buttons -->
+			<li py:if="not extended_view" class="zoom-control">
+		    	<button class="action action-mini-zoom-out" onclick='resetToDefaultView()'>Zoom out to 100%</button>
+			</li>
+
+			<li py:if="not extended_view" class="zoom-control">
+		    	<button class="action action-reset" onclick='zoomBack()'>Zoom out one level</button>
+			</li>
+
+			<!-- Value inspector -->
+			<li py:if="not extended_view" class="value-inspector value-channel">
+	            <mark>Channel</mark>
+	            <span id="info-channel">0</span>
+			</li>
+			
+			<li py:if="not extended_view" class="value-inspector value-time">
+	            <mark>Time</mark>
+	            <span id="info-time">0</span>
+			</li>
+			
+			<li py:if="not extended_view" class="value-inspector value-value">
+	            <mark>Value</mark>
+	            <span id="info-value">0</span>
+			</li>
+			
+			<!-- Channel selector -->
+			<li py:if="channelsPage != None" class="channel-selector">
+				<nav class="inline-menu">
+					<button class="action action-menu">Select channels</button>
+
+					<div class="extension">
+		    			<div class="dropdown-pane">
+	    					<xi:include href="${channelsPage}"/>
+	    					<xi:include href='../commons/state_mode_selector.html'/>
+                            <py:for each="idx, name in enumerate(tsNames)">
+                                ${drawRegionSelector(name, "channelSelector" + str(idx), groupedLabels[idx], initialSelection[idx])}
+                            </py:for>
+		    			</div>
+		    		</div>
+				</nav>
+			</li>
+		</ul>
+		
+		<!-- Actual visualizer -->
+		<div id="EEGcanvasDiv" class="mainCanvas ${'canvasExtended' if extended_view else ''}">
+	    </div>
+
+		<div class="chart-x-label">${label_x}</div>
+
+	    <input type="hidden" id="columnIndexId"/>
+	</section>
+</div>

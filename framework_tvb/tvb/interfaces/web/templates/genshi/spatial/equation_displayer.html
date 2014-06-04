@@ -1,0 +1,29 @@
+<div xmlns:xi="http://www.w3.org/2001/XInclude" xmlns:py="http://genshi.edgewall.org/">
+    <py:def function="plotEquations(allSeries, prefix, message)">
+        <div id="equationCanvasId_${prefix}" class="specialviewer equationDisplay"></div>
+
+        <script type="text/javascript">
+            $(document).ready(function () {
+            	var options = {xaxes: [{ axisLabel: "${'Time (ms)' if prefix=='temporal' else 'Distance (mm)'}" }] };
+                $.plot($("#equationCanvasId_${prefix}"), $allSeries, options);
+            });
+        </script>
+
+        <py:if test="message">
+            <!--if the message is empty we don't want to clear the other messages-->
+            <script type="text/javascript">
+                displayMessage("$message", "warningMessage");
+            </script>
+        </py:if>
+    </py:def>
+    <py:if test="allSeries is not None">
+    	${plotEquations(allSeries, prefix, message)}
+    </py:if>
+    <py:if test="allSeries is None">
+	    <script type="text/javascript">
+	    	$(document).ready(function () {
+	                displayMessage('$errorMsg', "warningMessage");
+	            });
+	    </script>
+    </py:if>
+</div>

@@ -1,0 +1,63 @@
+<div xmlns:py="http://genshi.edgewall.org/" py:strip="True">
+    <script type="text/javascript" src="/static/jquery/jquery_ui.js"></script>
+    <script type="text/javascript" src="/static/colorScheme/js/colorpicker.js"></script>
+
+    <link type="text/css" rel="stylesheet" href="/static/colorScheme/css/colorpicker.css"/>
+    <link rel="stylesheet" type="text/css" href="/static/style/color_scheme.css"/>
+
+    <dt>
+        <label for="setColorSchemeSelId">Color Scheme</label>
+    </dt>
+    <dd>
+        <select id="setColorSchemeSelId" onchange="ColSch_setColorScheme(this.options[this.selectedIndex].value, true);" tabindex="1">
+            <option value="linear" selected="selected">Linear gradient</option>
+            <option value="rainbow">Rainbow</option>
+            <option value="hotcold">Hot-Cold</option>
+            <option value="TVB">TVB</option>
+            <option value="sparse">Sparse colors</option>
+            <option value="lightHotcold">Light Hot-Cold</option>
+            <option value="lightTVB">Light TVB</option>
+            <option value="transparentHotCold">Transparent Hot-Cold</option>
+        </select>
+        <fieldset id="colorSchemeFieldSet_linear" style="display:none;">
+            <dl>
+                <dt>
+                    <label>Trim marginal values</label>
+                </dt>
+                <dd>
+                    <label id="sliderMinValue"></label>
+                    <div id="rangerForLinearColSch" title="By moving margins here, some values are ignored from the colored display and shown black-ish"></div>
+                    <label id="sliderMaxValue"></label>
+                </dd>
+
+                <dt>
+                    <label>Start - End Colors</label>
+                </dt>
+                <dd>
+                    <div id="startColorSelector" class="colorSelector">
+                        <div></div>
+                    </div>
+
+                    <div id="endColorSelector" class="colorSelector">
+                        <div></div>
+                    </div>
+                </dd>
+            </dl>
+        </fieldset>
+
+        <fieldset id="colorSchemeFieldSet_sparse" style="display:none;">
+            <dl>
+                <dt>
+                    <label for="sliderForSparseColSch">Using</label>
+                    <span class="slider-value" id="ColSch_colorNo"></span>
+                    <span class="slider-value"> colors.</span>
+                </dt>
+                <dd>
+                    <div class="sliderStepDiv">
+                        <div id="sliderForSparseColSch" class="shadow"></div>
+                    </div>
+                </dd>
+            </dl>
+        </fieldset>
+    </dd>
+</div>

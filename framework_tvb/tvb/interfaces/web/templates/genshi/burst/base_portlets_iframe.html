@@ -1,0 +1,24 @@
+<div xmlns:py="http://genshi.edgewall.org/" xmlns:xi="http://www.w3.org/2001/XInclude" class="portlet-frame" id="main">
+	
+	<script type="text/javascript" src="/static/jquery/jquery.js"></script>
+	<script type="text/javascript" src="/static/js/genericTVB.js?$currentVersionJS" ></script>
+    <script type="text/javascript" src="/static/mathjax/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    <xi:include href="../mathjax_config.html" /> 
+    
+    
+    <link rel="stylesheet" type="text/css" href="/static/jquery/jquery.css" />
+    <link rel="stylesheet" type="text/css" href="/static/style/base.css?$currentVersionJS" />
+    
+    <div class="infoMessage" py:if="launch_success"><div id="messageDiv"></div></div> 
+    <div py:if="not launch_success">
+    	Visualization step failed with message:
+    	<div class="errorMessage" id="messageDiv">${error_msg}</div>
+    	It could be because current visualizer is not compatible with Simulation's chosen Monitor, or because of a miss-configured additional parameter.
+    	Please check your configuration and in extreme cases review user-manual.
+    </div> 
+    
+    <py:if test="launch_success">
+    	<xi:include href="${mainContent}.html"></xi:include>
+    </py:if>
+		
+</div>

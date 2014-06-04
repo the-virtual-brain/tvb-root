@@ -1,0 +1,69 @@
+<?xml version="1.0"?>
+ 
+		
+<tvb xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="../../../core/schema/tvb.xsd">
+
+    <algorithm_group name="bct" subsection="bctdensity" type="tvb.adapters.analyzers.group_matlab_adapter.MatlabAdapter" additionalPath="externals/BCT"
+                     uiName="Density Algorithms" description="Brain Connectivity Toolbox" label="Choose Density Algorithm:">
+         <!-- Physical Connectivity -->
+
+        <algorithm name="Density Directed" identifier="DD">
+            <code value="[kden,N,K]  = density_dir(A);"/>
+            <matlab_file value="density_dir.m"/>
+            <inputs>
+                <input required="True">
+                    <name value="A"/>
+                    <label value="Directed (weighted/binary) connection matrix:"/>
+                    <type value="tvb.datatypes.connectivity.Connectivity" field="weights"/>
+                </input>
+            </inputs>
+            <outputs>
+                <output type="tvb.datatypes.mapped_values.ValueWrapper">
+                    <field name="data_value" reference="float(result['kden'])"/>
+                    <field name="data_type" value="float"/>
+                    <field name="data_name" value="Density"/>
+                </output>
+                <output type="tvb.datatypes.mapped_values.ValueWrapper">
+                    <field name="data_value" reference="int(result['N'])"/>
+                    <field name="data_type" value="int"/>
+                    <field name="data_name" value="Number of vertices"/>
+                </output>
+                <output type="tvb.datatypes.mapped_values.ValueWrapper">
+                    <field name="data_value" reference="int(result['K'])"/>
+                    <field name="data_type" value="int"/>
+                    <field name="data_name" value="Number of edges"/>
+                </output>
+            </outputs>
+        </algorithm>
+
+        <algorithm name="Density Undirected" identifier="DU">
+            <code value="[kden,N,K]  = density_und(A);"/>
+            <matlab_file value="density_und.m"/>
+            <inputs>
+                <input required="True">
+                    <name value="A"/>
+                    <label value="Undirected (weighted/binary) connection matrix:"/>
+                    <type value="tvb.datatypes.connectivity.Connectivity" field="weights"/>
+                </input>
+            </inputs>
+            <outputs>
+                <output type="tvb.datatypes.mapped_values.ValueWrapper">
+                    <field name="data_value" reference="float(result['kden'])"/>
+                    <field name="data_type" value="float"/>
+                    <field name="data_name" value="Density"/>
+                </output>
+                <output type="tvb.datatypes.mapped_values.ValueWrapper">
+                    <field name="data_value" reference="int(result['N'])"/>
+                    <field name="data_type" value="int"/>
+                    <field name="data_name" value="Number of vertices"/>
+                </output>
+                <output type="tvb.datatypes.mapped_values.ValueWrapper">
+                    <field name="data_value" reference="int(result['K'])"/>
+                    <field name="data_type" value="int"/>
+                    <field name="data_name" value="Number of edges"/>
+                </output>
+            </outputs>
+        </algorithm>
+        
+    </algorithm_group>
+</tvb>

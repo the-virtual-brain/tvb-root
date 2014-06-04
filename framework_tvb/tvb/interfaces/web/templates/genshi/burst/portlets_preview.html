@@ -1,0 +1,16 @@
+<div id="portlets-display" class="portlet-container portlet-preview visible-${'2-2' if len(portlet_tab_list)==4 else '2-1' if len(portlet_tab_list)==3 else '1-1' if len(portlet_tab_list)==2 else '1'}" 
+	 xmlns:py="http://genshi.edgewall.org/" >
+	
+	<py:if test="len(portlet_tab_list) == 0">
+		<p>No visualizers configured for this tab.</p>
+	</py:if>
+			
+	<py:for each="i in xrange(len(portlet_tab_list))">
+		<div class="portlet portlet-type-${portlet_tab_list[i].algorithm_identifier.lower()} portlet-${i}">
+			<h5>${portlet_tab_list[i].name}</h5>
+			<a href="#" title="Configure this view..." class="action action-edit" 
+			  onclick="showPortletParametersPage(${i})">Configure</a>
+		</div>
+	</py:for>
+	
+</div>

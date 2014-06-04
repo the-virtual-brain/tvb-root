@@ -1,0 +1,45 @@
+<section class="configure-stimulus-equation view-column col-2">
+	<div xmlns:xi="http://www.w3.org/2001/XInclude" xmlns:py="http://genshi.edgewall.org/">
+		
+		<h4><mark>Define</mark> Stimulus</h4>
+		<fieldset>
+			<legend>Loaded stimulus</legend>
+	    	${generateDisplay(existentEntitiesInputList, False, "")}
+    	</fieldset>
+    	<form>
+	    	<fieldset>
+				<legend>Entity details</legend>
+		    	${generateDisplay(entitiySavedName, False, "")}
+	    	</fieldset>
+    	</form>
+    		
+    	<fieldset>
+	    	<legend>Stimulus interface</legend>
+		    <form id="form_spatial_surface_stimulus_equations">
+		        <xi:include href="../flow/genericAdapterFormFields.html" py:with="includeGenericAdapterTemplateFunctions=False"/>
+		    </form>
+		</fieldset>
+			
+	    <script type="text/javascript">
+	    	$(document).ready(function() {
+	    		$("select[name='existentEntitiesSelect']").change(function () { BS_loadEntity(); });
+	            BS_plotEquations('temporalEquationDivId', '${temporalEquationViewerUrl}',
+		            'form_spatial_surface_stimulus_equations', $.parseJSON('${temporalFieldsPrefixes}'), 'temporalEquationAxisParams');
+		        BS_plotEquations('spatialEquationDivId', '${spatialEquationViewerUrl}',
+		            'form_spatial_surface_stimulus_equations', $.parseJSON('${spatialFieldsPrefixes}'), 'spatialEquationAxisParams');
+		        <py:if test="defined('displayedMessage') and displayedMessage != None">
+					displayMessage('${displayedMessage}', '${messageType}');
+			    </py:if>
+	        });
+	    </script>
+	    
+	    <form id="load-existing-entity" action="${loadExistentEntityUrl}" method="POST">
+	    	<input type="hidden" id="entity-gid" name="surface_stimulus_gid" value="None"/>
+	    	<input type="hidden" name="from_step" value="1"/>
+	    </form>
+	    <form id="reset-to-default" action="${resetToDefaultUrl}" method="POST">
+	    	<input type="hidden" name="from_step" value="1"/>
+	    </form>
+	    
+	</div>
+</section>

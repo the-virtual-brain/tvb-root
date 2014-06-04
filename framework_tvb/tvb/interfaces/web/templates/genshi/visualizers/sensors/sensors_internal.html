@@ -1,0 +1,18 @@
+<div id="s-brain" class="brain" xmlns:py="http://genshi.edgewall.org/" xmlns:xi="http://www.w3.org/2001/XInclude">
+    <xi:include href="../commons/gl_view_header.html" />
+
+    <script type="text/javascript" src="/static_view/commons/scripts/internalBrain.js?$currentVersionJS"></script>
+
+    <xi:include href="../commons/fragment_shader.html" />
+	<xi:include href="../commons/vertex_shader.html" py:with="isOneToOneMapping=False"/>
+
+    <script type="text/javascript">
+        $(document).ready(function() {
+            VSI_StartInternalSensorViewer('${urlMeasurePoints}', '${noOfMeasurePoints}',
+                    '${urlMeasurePointsLabels}', '${shelfObject}',
+                    '${minMeasure}', '${maxMeasure}', '${urlMeasure}');
+        });
+    </script>
+
+    <xi:include href="../commons/gl_view_after.html" py:with="show_navigator=False; extended_view=False"/>
+</div>

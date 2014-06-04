@@ -1,0 +1,44 @@
+<section xmlns:xi="http://www.w3.org/2001/XInclude" xmlns:py="http://genshi.edgewall.org/"
+        class="select-points view-column col-1">
+	
+	<h4><mark>View</mark> Local connectivity</h4>
+	
+    ${generateDisplay(existentEntitiesInputList, False, "")}
+	
+	<py:if test="no_local_connectivity == False">
+		<xi:include href="left_template_brain_pick.html"/>
+	</py:if>
+	<py:if test="no_local_connectivity == True">
+		Should not get here before the load of a local connectivity.
+	</py:if>
+    
+
+	<script type="text/javascript">
+        $(document).ready(function() {
+        	 $("select[name='existentEntitiesSelect']").change(function () { BS_loadEntity(); });
+             $('#GLcanvas')
+                     .unbind('click.displayIndexForThePickedVertex')
+                     .bind('click.displayIndexForThePickedVertex', function () {
+                                        BS_displayIndexForThePickedVertex();
+                                        LCON_displayGradientForThePickedVertex();
+                                     });
+	         LCONN_disableView('You are already in VIEW mode. If you want to display a different Local Connectivity entity just pick it from the selector menu above the visualizer.');
+	         LCONN_disableCreate('If you want to create a new Local Connectivity entity, go back to the EDIT page to set a new set of parameters.');
+        });
+    </script>
+    
+    <py:if test="defined('displayedMessage') and displayedMessage != None">
+		<script type="text/javascript">
+			displayMessage('${displayedMessage}', '${messageType}');
+		</script>
+    </py:if>
+    
+    <form id="load-existing-entity" action="${loadExistentEntityUrl}" method="POST">
+    	<input type="hidden" id="entity-gid" name="local_connectivity_gid" value="None"/>
+    	<input type="hidden" name="from_step" value="2"/>
+    </form>
+    <form id="reset-to-default" action="${resetToDefaultUrl}" method="POST">
+    	<input type="hidden" name="from_step" value="2"/>
+    </form>
+    
+</section>

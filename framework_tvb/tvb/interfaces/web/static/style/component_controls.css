@@ -1,0 +1,201 @@
+/**
+ * TheVirtualBrain-Framework Package. This package holds all Data Management, and 
+ * Web-UI helpful to run brain-simulations. To use it, you also need do download
+ * TheVirtualBrain-Scientific Package (for simulators). See content of the
+ * documentation-folder for more details. See also http://www.thevirtualbrain.org
+ *
+ * (c) 2012-2013, Baycrest Centre for Geriatric Care ("Baycrest")
+ *
+ * This program is free software; you can redistribute it and/or modify it under 
+ * the terms of the GNU General Public License version 2 as published by the Free
+ * Software Foundation. This program is distributed in the hope that it will be
+ * useful, but WITHOUT ANY WARRANTY; without even the implied warranty of 
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU General Public
+ * License for more details. You should have received a copy of the GNU General 
+ * Public License along with this program; if not, you can download it here
+ * http://www.gnu.org/licenses/old-licenses/gpl-2.0
+ *
+ **/
+
+/* SECOND WARNING !! */
+/* Deprecation has now taken effect. This file isn't called anymore! */
+
+/* WARNING ! */
+/* This file should be deprecated and its contents moved into proper section-* & subsection-* files. */
+
+/* -------------------------------------------- */
+/* The Virtual Brain: System */
+/* -------------------------------------------- */
+/* Created by two tribes GmbH, Stuttgart */
+/* -------------------------------------------- */
+/* StyleSheet Scope: COMPLEX CONTROL PANELS */
+/* Version: 1.3.1 */
+/* !-------------------------------------------- */
+/* !Color dictionary */
+/* !-------------------------------------------- */
+/* basic: 2d87b1 xxx */
+
+/* !-------------------------------------------- */
+/* !General layout */
+/* !-------------------------------------------- */
+
+.controller h3 {
+color: #93949e;
+font-size: 22px;
+font-weight: bold;
+text-transform: uppercase;
+text-shadow: rgba(0, 0, 0, 1.0) -0px -1px 1px, rgba(255, 255, 255, 0.5) 0px 1px 1px;
+}
+
+.controller h3 mark {
+color: #60626b;
+}
+
+/* !-------------------------------------------- */
+/* !Common control widgets */
+/* !-------------------------------------------- */
+
+.controller.info:hover,
+.controller.info.expanded {
+z-index: 100;
+}
+
+.controller.action:hover,
+.controller.action.expanded {
+min-width: 350px;
+}
+
+.controller fieldset {
+border: none;
+margin: 10px 0 10px 0;
+padding: 0;
+}
+
+.controller button {
+margin-right: 5px;
+}
+
+.controller input[type="range"] {
+-webkit-appearance: none;
+background-color: #787a86;
+-webkit-box-shadow: inset rgba(0, 0, 0, 1) -4px -2px 5px -2px;
+-moz-box-shadow: inset rgba(0, 0, 0, 1) -4px -2px 5px -2px;
+border-radius: 8px;
+}
+
+/* !-------------------------------------------- */
+/* !BOX: Project information */
+/* !-------------------------------------------- */
+
+.controller.info .boxcontent {
+padding: 10px 0 0 15px;
+}
+
+.controller.info .boxcontent h3 {
+margin-left: 135px;
+}
+
+.controller.info dl {
+font-weight: bold;
+}
+
+.controller.info dt {
+border-top: 1px solid #000;
+clear: left;
+color: #787a86;
+float: left;
+font-size: 11px;
+margin: 10px 0 0 0;
+padding: 15px 3% 0 0;
+text-align: right;
+text-transform: uppercase;
+width: 25%;
+}
+
+.controller.info dd {
+border-top: 1px solid #000;
+float: left;
+font-size: 14px;
+margin: 10px 0 0 0;
+padding: 13px 0 0 0;
+width: 70%;
+}
+
+.controller.info dt:first-child,
+.controller.info dt:first-child + dd {
+border-top: none;
+margin-top: 0;
+}
+
+.controller.info dd.longtext {
+font-weight: normal;
+}
+
+.controller.info dd + dd {
+border-top: none;
+margin: 0 0 0 28%;
+padding-top: 0;
+}
+
+.controller.info dd span {
+font-weight: normal;
+}
+
+.controller.info dd a {
+color: #2172a5;
+}
+
+/* !-------------------------------------------- */
+/* !BOX: EEG controller */
+/* !-------------------------------------------- */
+
+.controller.action .boxcontent {
+padding: 10px 0 35px 15px;
+}
+
+.controller.action .boxcontent h3 {
+text-align: center;
+}
+
+.controller.action .boxcontent:after {
+background: transparent url("/static/style/img/control/control_divider.png") 0 0 repeat-x;
+content: "";
+display: block;
+height: 10px;
+left: 0;
+position: absolute;
+bottom: 25px;
+width: 100%;
+}
+
+.controller.action fieldset.action {
+bottom: -85px;
+left: 80px;
+position: absolute;
+z-index: 110;
+}
+
+body#s-eeg .controller.action fieldset.slider li {
+background: rgba(0, 0, 0, 0.25);
+float: left;
+height: 200px;
+margin: 0 5px 0 0;
+width: 120px;
+}
+
+body#s-eeg .controller.action fieldset.slider {
+text-align: center;
+}
+
+body#s-eeg .controller.action fieldset.slider dt span.slider-value {
+display: block;
+}
+
+body#s-eeg .controller.action input[type="range"] {
+cursor: ns-resize;
+height: 30px;
+margin: 70px 0 0 -25px;
+width: 150px;
+-webkit-transform: rotate(-90deg);
+-moz-transform: rotate(-90deg);
+}

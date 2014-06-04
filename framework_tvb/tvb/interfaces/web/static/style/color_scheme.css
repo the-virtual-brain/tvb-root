@@ -1,0 +1,24 @@
+#rangerForLinearColSch {
+    width: 140px;
+    display: inline-table;
+}
+
+#startColorSelector {
+    margin-left: 0;
+    margin-right: 0;
+    display: inline-table;
+}
+
+#endColorSelector {
+    margin-left: 60%;
+    margin-right: 0;
+    display: inline-table;
+}
+
+#sliderMinValue {
+    padding-right: 10px;
+}
+
+#sliderMaxValue {
+    padding-left: 10px;
+}

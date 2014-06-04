@@ -1,0 +1,120 @@
+<?xml version="1.0"?>
+
+<tvb xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="../../../core/schema/tvb.xsd">
+
+    <algorithm_group name="bct" type="tvb.adapters.analyzers.group_matlab_adapter.MatlabAdapter" additionalPath="externals/BCT"
+                     uiName="Modularity Algorithms" description="Brain Connectivity Toolbox" label="Choose Modularity Algorithm:">
+        <!-- Modularity -->
+
+        <algorithm name="Optimal Community Structure and Modularity" identifier="OCSM">
+            <code value="[Ci,Q] = modularity_dir(W);"/>
+            <matlab_file value="modularity_dir.m"/>
+            <inputs>
+                <input required="True">
+                    <name value="W"/>
+                    <label value="Directed (weighted or binary) connection matrix:"/>
+                    <type value="tvb.datatypes.connectivity.Connectivity" field="weights"/>
+                </input>
+            </inputs>
+            <outputs>
+                <output type="tvb.datatypes.graph.ConnectivityMeasure">
+                    <field name="array_data" reference="result['Ci']"/>
+                    <field name="connectivity" reference="inputs['W_gid']"/>
+                    <field name="title" value="Optimal Community Structure"/>
+                </output>
+                <output type="tvb.datatypes.mapped_values.ValueWrapper">
+                    <field name="data_value" reference="float(result['Q'])"/>
+                    <field name="data_type" value="float"/>
+                    <field name="data_name" value="Maximized Modularity"/>
+                </output>
+            </outputs>
+        </algorithm>
+
+        <algorithm name="Optimal Community Structure and Modularity (Louvain)" identifier="OCSML">
+            <code value="[Ci,Q] = modularity_louvain_und(W);"/>
+            <matlab_file value="modularity_louvain_und.m"/>
+            <inputs>
+                <input required="True">
+                    <name value="W"/>
+                    <label value="Undirected (weighted or binary) connection matrix:"/>
+                    <type value="tvb.datatypes.connectivity.Connectivity" field="weights"/>
+                </input>
+            </inputs>
+            <outputs>
+                <output type="tvb.datatypes.graph.ConnectivityMeasure">
+                    <field name="array_data" reference="result['Ci']"/>
+                    <field name="connectivity" reference="inputs['W_gid']"/>
+                    <field name="title" value="Optimal Community Structure"/>
+                </output>
+                <output type="tvb.datatypes.mapped_values.ValueWrapper">
+                    <field name="data_value" reference="float(result['Q'])"/>
+                    <field name="data_type" value="float"/>
+                    <field name="data_name" value="Modularity"/>
+                </output>
+            </outputs>
+        </algorithm>
+
+        <algorithm name="Optimal Community Structure and Modularity (Louvain-Sign)" identifier="OCStMLS">
+            <code value="[Ci,Q] = modularity_louvain_und_sign(W, qtype);"/>
+            <matlab_file value="modularity_louvain_und_sign.m"/>
+            <inputs>
+                <input required="True">
+                    <name value="W"/>
+                    <label value="Undirected (weighted or binary) connection matrix with positive and negative weights:"/>
+                    <type value="tvb.datatypes.connectivity.Connectivity" field="weights"/>
+                </input>
+                <input required="True">
+                    <name value="qtype"/>
+                    <label value="Modularity Type:"/>
+                    <description value="See Rubinov and Sporns, 2011"/>
+                    <type value="select" default="sta">
+                        <options>
+                            <option name="sta [Q_*]" value="sta"/>
+                            <option name="pos [Q_+]" value="pos"/>
+                            <option name="smp [Q_simple]" value="smp"/>
+                            <option name="gja [Q_GJA]" value="gja"/>
+                            <option name="neg [Q_-]" value="neg"/>
+                        </options>
+                    </type>
+                </input>
+            </inputs>
+            <outputs>
+                <output type="tvb.datatypes.graph.ConnectivityMeasure">
+                    <field name="array_data" reference="result['Ci']"/>
+                    <field name="connectivity" reference="inputs['W_gid']"/>
+                    <field name="title" value="Community Affiliation Vector"/>
+                </output>
+                <output type="tvb.datatypes.mapped_values.ValueWrapper">
+                    <field name="data_value" reference="float(result['Q'])"/>
+                    <field name="data_type" value="float"/>
+                    <field name="data_name" value="Modularity"/>
+                </output>
+            </outputs>
+        </algorithm>
+
+        <algorithm name="Optimal Community Structure and Modularity (Undirected)" identifier="OpCSMU">
+            <code value="[Ci,Q] = modularity_und(W);"/>
+            <matlab_file value="modularity_und.m"/>
+            <inputs>
+                <input required="True">
+                    <name value="W"/>
+                    <label value="Directed (weighted or binary) connection matrix:"/>
+                    <type value="tvb.datatypes.connectivity.Connectivity" field="weights"/>
+                </input>
+            </inputs>
+            <outputs>
+                <output type="tvb.datatypes.graph.ConnectivityMeasure">
+                    <field name="array_data" reference="result['Ci']"/>
+                    <field name="connectivity" reference="inputs['W_gid']"/>
+                    <field name="title" value="Optimal Community Structure"/>
+                </output>
+                <output type="tvb.datatypes.mapped_values.ValueWrapper">
+                    <field name="data_value" reference="float(result['Q'])"/>
+                    <field name="data_type" value="float"/>
+                    <field name="data_name" value="Maximized Modularity"/>
+                </output>
+            </outputs>
+        </algorithm>
+
+    </algorithm_group>
+</tvb>

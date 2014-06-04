@@ -1,0 +1,22 @@
+<div id="portlets-display" class="portlet-container portlet-run visible-${'2-2' if len(portlet_tab_list)==4 else '2-1' if len(portlet_tab_list)==3 else '1-1' if len(portlet_tab_list)==2 else '1'}" 
+	 xmlns:py="http://genshi.edgewall.org/" xmlns:xi="http://www.w3.org/2001/XInclude">
+	
+	<py:if test="len(portlet_tab_list) == 0 and status=='running'">
+		<p>Simulation is still running....</p>
+		<p>Visualizers will be loaded when computation has finished!</p>
+	</py:if>
+	<py:if test="len(portlet_tab_list) == 0 and status!='running'">
+		<p>No visualizers configured for this tab to display.</p>
+	</py:if>
+	
+	<py:def function="drawPortletVisualizer(portlet_entity, width, height, portlet_idx)">
+		<xi:include href="portlet_visualization_template.html" py:with="portlet_idx=portlet_idx"></xi:include>
+	</py:def>
+	<py:for each="i in xrange(len(portlet_tab_list))">
+		<py:with vars="portlet_width= max_width if (len(portlet_tab_list)==1 or len(portlet_tab_list)==3 and i==2) else max_width/2; 
+					   portlet_height=max_height/2 if (len(portlet_tab_list) &gt; 1) else max_height;">
+		${drawPortletVisualizer(portlet_tab_list[i], portlet_width, portlet_height-38, i)}
+		</py:with>
+	</py:for>
+	
+</div>
