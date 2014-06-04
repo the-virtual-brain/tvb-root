@@ -230,10 +230,6 @@ class Raw(Monitor):
         """
         # Simulation time step
         self.dt = simulator.integrator.dt
-
-        if self.period is not None:
-            LOG.warning("%s: Raw monitor ignores period argument." % repr(self))
-
         self.period = simulator.integrator.dt #Needed for Monitor consistency
 
         # state-variables to monitor

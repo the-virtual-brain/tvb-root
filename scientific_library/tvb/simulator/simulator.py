@@ -829,6 +829,3 @@ class Simulator(core.Type):
                         self.number_of_nodes * self.model.nvar * 
                         self.model.number_of_modes / monitor.period)
         self._storage_requirement = int(strgreq)
-
-
-#EoF

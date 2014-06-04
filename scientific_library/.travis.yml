@@ -1,7 +1,7 @@
 virtualenv:
   system_site_packages: true
 before_install:
- - sudo apt-get install -qq python-numpy python-scipy
+- sudo apt-get install -qq python-numpy python-scipy python-nose python3-nose python-coverage python-matplotlib
 
 language: python
 python:
@@ -9,5 +9,5 @@ python:
     - "3.3"
 
 install: "pip install numpy; pip install cython; pip install -r requirements.txt"
-script: "python -m unittest discover"
+script: "nosetests"
 

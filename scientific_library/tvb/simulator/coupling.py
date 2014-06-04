@@ -409,6 +409,18 @@ class Sigmoidal(Coupling):
         return sig
 
 
+    # TODO finish this
+    device_info = coupling_device_info(
+        pars = ['cmin', 'cmax', 'midpoint', 'sigma'],
+        kernel = """
+        // load parameters
+        float cmin     = P(0)
+            , cmax     = P(1)
+            , midpoint = P(2)
+            , sigma    = P(3)
+        """
+    )
+
 class PreSigmoidal(Coupling):
     """Pre-Sigmoidal Coupling function (pre-product) with a Static/Dynamic 
     and Local/Global threshold.

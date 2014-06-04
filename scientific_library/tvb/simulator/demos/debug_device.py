@@ -72,107 +72,89 @@ debugging (july/2013)
 
 """
 
-from tvb.simulator.lab import *
-from tvb.simulator.backend import cee, cuda, driver
+import time
+import itertools
 
-map(reload, [driver, cee, cuda])
-conn = connectivity.Connectivity(load_default=True, speed=300.0)
+import matplotlib as mpl
+mpl.use('Agg')
 
-sim = simulator.Simulator(
-    model=models.Generic2dOscillator(),
-    connectivity=conn,
-    coupling=coupling.Linear(a=1e-2),
-    integrator=integrators.HeunStochastic(
-        dt=2 ** -5,
-        noise=noise.Additive(nsig=numpy.ones((2, 1, 1)) * 1e-5)
-    ),
-    monitors=monitors.Raw()
-)
+from numpy import *
+import numpy
 
-sim.configure()
+from tvb.simulator import lab
+# can't reload individual modules, must reboot ipython
+from tvb.simulator.backend import driver_conf
+driver_conf.using_gpu = 1
+from tvb.simulator.backend import driver, util
+reload(driver)
 
-# then build device handler and pack it wiht simulation
-dh = cuda.Handler.init_like(sim)
-dh.n_thr = 64
-dh.n_rthr = dh.n_thr
-dh.fill_with(0, sim)
-for i in range(1, dh.n_thr):
-    dh.fill_with(i, sim)
+def makesim():
+    sim = lab.simulator.Simulator(
+        model = lab.models.Generic2dOscillator(b=-10.0, c=0., d=0.02, I=0.0),
+        connectivity = lab.connectivity.Connectivity(speed=4.0),
+        coupling = lab.coupling.Linear(a=1e-2),                                         # shape must match model..
+        integrator = lab.integrators.EulerDeterministic(dt=2**-5),
+        #integrator = lab.integrators.HeunStochastic(dt=2**-5, noise=lab.noise.Additive(nsig=ones((2, 1, 1))*1e-2)),
+        monitors = lab.monitors.Raw()
+    )
+    sim.configure()
+    return sim
 
-print 'required mem ', dh.nbytes / 2 ** 30.
+"""
+Parameter sweep scenario : we sweep in two dimensions over the coupling
+function's scale parameter ``a``, and the excitability parameter of the 
+oscillator ``a``
+"""
 
-# run both with raw monitoring, compare output
-simgen = sim(simulation_length=100)
-cont = True
-
-ys1, ys2, ys3 = [], [], []
-et1, et2 = 0.0, 0.0
-while cont:
-
-    # simulator output
-    try:
-        # history & indicies
-        #histidx = ((sim.current_step - 1 - sim.connectivity.idelays)%sim.horizon)[:4, :4].flat[:]*74 + r_[:4, :4, :4, :4]
-        #histval = [sim.history[(sim.current_step - 1 - sim.connectivity.idelays[10,j])%sim.horizon, 0, j, 0] for j in range(dh.n_node)]
-        #print 'histidx', histidx
-        #print 'hist[idx]', histval
-
-        tic = time()
-        t1, y1 = next(simgen)[0]
-        ys1.append(y1)
-        et1 += time() - tic
-    except StopIteration:
-        break
+sims = []
+for i, coupling_a in enumerate(r_[:0.1:16j]):
+    for j, model_a in enumerate(r_[-2.0:2.0:16j]):
+        simi = makesim()
+        simi.coupling.a[:] = coupling_a
+        simi.model.a[:] = model_a
+        sims.append(simi)
+        print 'simulation %d generated' % (i*32+j,)
 
 
-    #print 'state sim', sim.integrator.X[:, -1, 0]
-    #print 'state dh ', dh.x.value.transpose((1, 0, 2))[:, -1, 0]
+# then build device handler and pack it iwht simulation
+dh = driver.device_handler.init_like(sims[0])
+dh.n_thr = dh.n_rthr = len(sims)
+for i, simi in enumerate(sims):
+    dh.fill_with(i, simi)
+
+nsteps = 10000
+ds = 50
+ys1 = zeros((nsteps/ds, dh.n_node, dh.n_svar, len(sims)))
+ys2 = zeros((nsteps/ds, dh.n_node, dh.n_svar, len(sims)))
+dys1 = zeros((nsteps/ds, dh.n_node, dh.n_svar, len(sims)))
+dys2 = zeros((nsteps/ds, dh.n_node, dh.n_svar, len(sims)))
+print ys1.nbytes/2**30.0
+
+simgens = [s(simulation_length=1000) for s in sims]
+
+tc, tg = util.timer(), util.timer()
+for i in range(nsteps):
+
+    # iterate each simulation
+    with tc:
+        for j, (sgj, smj) in enumerate(zip(simgens, sims)):
+            ((t, y), ) = next(sgj)
+            # y.shape==(svar, nnode, nmode)
+            ys1[i/ds, ..., j] = y[..., 0].T
+            dys1[i/ds, ..., j] = smj.dx[..., 0].T
+
+    with tg:
+        dh()
+
+    ys2[i/ds, ...] = dh.x.device.get()
+    dys2[i/ds, ...] = dh.dx1.device.get()
+
+    if i/ds and not i%ds:
+        err = ((ys1[:i/ds] - ys2[:i/ds])**2).sum()/ys1[:i/ds].ptp()/len(sims)
+        print t, tc.elapsed, tg.elapsed, err
 
 
-    tic = time()
-    # dh output
-    cuda.gen_noise_into(dh.ns, dh.inpr.value[0])
-    dh()
+print tc.elapsed, tg.elapsed
 
-    #print 'I sim', sim.coupling.ret[0, 10:15, 0]
-
-    # compare dx
-    #print 'dx1 sim', sim.integrator.dX[:, -1, 0]
-    #print 'dx1 dh ', dh.dx1.value.flat[:]
-    
-    t2 = dh.i_step * dh.inpr.value[0]
-    _y2 = dh.x.value.reshape((dh.n_node, -1, dh.n_mode)).transpose((1, 0, 2))
-    #ys3.append(_y2)
-
-    # in this case where our simulations are all identical, the easiest
-    # comparison, esp. to check that all threads on device behave, is to
-    # randomly sample one of the threads at each step (right?)
-    y2 = _y2[0]
-    ys2.append(y2)
-    et2 += time() - tic
-
-    if dh.i_step % 100 == 0:
-        stmt = "%4.2f\t%4.2f\t%.3f"
-        print stmt % (t1, t2, ((y1 - y2) ** 2).sum()/y1.ptp())
-
-ys1 = array(ys1)
-ys2 = array(ys2)
-#ys3 = array(ys3)
-#print ys3.shape, ys3.nbytes/2**30.0
-
-print et1, et2, et2 * 1. / dh.n_thr
-#print ys1.flat[::450]
-#print ys2.flat[::450]
-savez('debug.npz', ys1=ys1, ys2=ys2)    # , ys3=ys3)
-
-from matplotlib import pyplot as pl
-
-pl.figure(2)
-pl.clf()
-pl.subplot(311), pl.imshow(ys1[:, 0, :, 0].T, aspect='auto', interpolation='nearest'), pl.colorbar()
-pl.subplot(312), pl.imshow(ys2[:, :, 0].T, aspect='auto', interpolation='nearest'), pl.colorbar()
-pl.subplot(313), pl.imshow(100 * ((ys1[:, 0] - ys2) / ys1.ptp())[..., 0].T, aspect='auto',
-                           interpolation='nearest'), pl.colorbar()
-
-#pl.show()
-pl.savefig('debug.png')
+print 'saving output data to ./debug.npz'
+savez('debug.npz', ys1=ys1, ys2=ys2, dys1=dys1, dys2=dys2)

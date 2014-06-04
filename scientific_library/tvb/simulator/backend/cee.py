@@ -24,12 +24,12 @@
 #   Paula Sanz Leon, Stuart A. Knock, M. Marmaduke Woodman, Lia Domide,
 #   Jochen Mersmann, Anthony R. McIntosh, Viktor Jirsa (2013)
 #       The Virtual Brain: a simulator of primate brain network dynamics.
-#   Frontiers in Neuroinformatics (7:10. doi: 10.3389/fninf.2013.00010)
+#   Frontiers in Neuroinformatics (in press)
 #
 #
 
 """
-This module enables execution of generated C code.
+Driver implementation for C99 + OpenMP
 
 .. moduleauthor:: Marmaduke Woodman <mw@eml.cc>
 
@@ -38,57 +38,70 @@ This module enables execution of generated C code.
 import tempfile
 import subprocess
 import ctypes
-import psutil
-import ctypes
-import numpy as np
+import logging
 
-import driver
+LOG = logging.getLogger(__name__)
+LOG.setLevel(logging.DEBUG)
 
-total_mem = psutil.phymem_usage().total
+try:
+    import psutil
+    total_mem = psutil.phymem_usage().total
+except Exception as exc:
+    LOG.exception(exc)
+    LOG.warning('psutil not available, memory limits will not be respected')
+    total_mem = 42**42
 
-compilers = {
-    'gcc': 'gcc -std=c99 -fPIC -shared -lm'.split(' '),
-}
-default_compiler = 'gcc'
 
+from . import base
+
+
+# FIXME this is additive white noise
 def gen_noise_into(devary, dt):
-    """
-    Generate additive white noise into arrays.
-
-    """
-    devary.cpu[:] = np.random.normal(size=devary.shape)
+    devary.cpu[:] = random.normal(size=devary.shape)
     devary.cpu[:] *= sqrt(dt)
 
-def dll(src, libname, compiler=None, debug=False):
-    """
-    Write src to a temporary file and compile as shared
-    library that can be loaded afterwards.
 
-    """
-    args = compilers[compiler or default_compiler][:]
+def dll(src, libname,
+        args=['gcc', '-std=c99', '-fPIC', '-shared', '-lm'],
+        debug=False):
+
     if debug:
         file = open('temp.c', 'w')
     else:
         file = tempfile.NamedTemporaryFile(suffix='.c')
-    
+    LOG.debug('open C file %r', file)
+
     with file as fd:
         fd.write(src)
         fd.flush()
-        arg.append('-g' if debug else '-O3')
-        ret = subprocess.call(args + [fd.name, '-o', libname])
-
-    return ret
+        if debug:
+            args.append('-g')
+        else:
+            args.append('-O3')
+        args += [fd.name, '-o', libname]
+        LOG.debug('calling %r', args)
+        proc = subprocess.Popen(args, 
+                stdout=subprocess.PIPE,
+                stderr=subprocess.PIPE,
+            )
+        proc.wait()
+        LOG.debug('return code %r', proc.returncode)
+        if proc.returncode > 0:
+            LOG.error('failed compilation:\n%s\n%s', proc.stdout.read(), proc.stderr.read())
 
 class srcmod(object):
 
     def __init__(self, src, fns, debug=False, printsrc=False):
 
-        self.src = src
-        if self.src.__class__.__module__ == 'cgen':
-            self.src = '\n'.join(self.src.generate())
+        if src.__class__.__module__ == 'cgen':
+            self.src = '\n'.join(src.generate())
+        else:
+            self.src = src
+
+        if printsrc:
+            print "srcmod: source is \n%s" % (self.src,)
 
         if debug:
-            print "backend.cee.srcmod:\n%s" % (self.src,)
             dll(self.src, 'temp.so', debug=debug)
             self._module = ctypes.CDLL('temp.so')
         else:
@@ -111,25 +124,75 @@ class srcmod(object):
                 fn_ = fn
             setattr(self, f, fn_)
 
+class C99Compiler(object):
+    def __call__(self, src, libname, debug=False, io=subprocess.PIPE):
+        args = [self.cmd] + self.flags
+        if debug:
+            file = open('temp.c', 'w')
+        else:
+            file = tempfile.NamedTemporaryFile(suffix='.c')
+        LOG.debug('open C file %r', file)
+        with file as fd:
+            fd.write(src)
+            fd.flush()
+            args.append(self.g_flag if debug else self.opt_flag)
+            args += [fd.name, '-o', libname]
+            LOG.debug('calling %r', args)
+            proc = subprocess.Popen(args, stdout=io, stderr=io)
+            proc.wait()
+            LOG.debug('return code %r', proc.returncode)
+            if proc.returncode > 0:
+                LOG.error('failed compilation:\n%s\n%s', 
+                        proc.stdout.read(), proc.stderr.read())
 
-class Code(driver.Code):
-    def __init__(self, *args, **kwds):
+
+class GCC(C99Compiler):
+    cmd = 'gcc'
+    flags = ['-std=c99', '-fPIC', '-shared', '-lm']
+    g_flag = '-g'
+    opt_flag = '-O3'
+
+
+class Code(base.Code):
+    "Interface to C code"
+
+    def __init__(self, cc=None, **kwds):
         super(Code, self).__init__(*args, **kwds)
-        self.mod = srcmod("#include <math.h>\n" + self.source, self.fns)
+        self.cc = cc or GCC()
+
+    def build_module(self, fns, debug=False):
+
+        if debug:
+            self.cc(self.src, 'temp.so', debug=debug)
+            self._module = ctypes.CDLL('temp.so')
+        else:
+            with tempfile.NamedTemporaryFile(suffix='.so') as fd:
+                self.cc(self.src, fd.name, debug=debug)
+                self._module = ctypes.CDLL(fd.name)
+
+        for f in fns:
+            fn = getattr(self._module, f)
+            if debug:
+                def fn_(*args, **kwds):
+                    try:
+                        ret = fn(*args, **kwds)
+                    except Exception as exc:
+                        msg = 'ctypes call of %r failed w/ %r'
+                        msg %= (f, exc)
+                        raise Exception(msg)
+                    return ret
+            else:
+                fn_ = fn
+            setattr(self, f, fn_)
 
 
-class Global(driver.Global):
-    """
-    Encapsulates a source module C static in a Python data descriptor
-    for easy handling
-
-    """
+class Global(base.Global):
 
     def post_init(self):
         if self.__post_init:
             self._cget = getattr(self.code.mod, 'get_'+self.name)
             self._cset = getattr(self.code.mod, 'set_'+self.name)
-            self.__post_init = False
+            super(Global, self).post_init()
 
     def __get__(self, inst, ownr):
         self.post_init()
@@ -139,13 +202,9 @@ class Global(driver.Global):
         self.post_init()
         ctype = ctypes.c_int32 if self.dtype==int32 else ctypes.c_float
         self._cset(ctype(val))
-
  
-class Array(driver.Array):
-    """
-    Encapsulates an array that is on the device
 
-    """
+class Array(base.Array):
 
     @property
     def device(self):
@@ -156,9 +215,6 @@ class Array(driver.Array):
         return self._device
 
     def set(self, ary):
-        """
-        In place update the device array.
-        """
         _ = self.device
         delattr(self, '_device')
         self._cpu[:] = ary
@@ -169,12 +225,12 @@ class Array(driver.Array):
         return self.cpu.copy()
 
 
-class Handler(driver.Handler):
-    i_step_type = ctypes.c_int32
-    def __init__(self, *args, **kwds):
-        kwds.update({'Code': Code, 'Global': Global, 'Array': Array})
-        super(Handler, self).__init__(*args, **kwds)
-        self._device_update = self.code.mod.update
+class RegionParallel(base.RegionParallel):
+    pass
+
+    def get_update_fun(self):
+        return device_code.mod.update
+
     @property
     def mem_info(self):
         if psutil:
@@ -182,11 +238,16 @@ class Handler(driver.Handler):
             return phymem.free, phymem.total
         else:
             return None, None
-    @property
-    def occupancy(self):
-        pass
+
     @property
     def extra_args(self):
         return {}
 
 
+    def __call__(self, extra=None, step_type=ctypes.c_int32):
+        args  = [step_type(self.i_step)]
+        for k in self.device_state:
+            args.append(getattr(self, k).device)
+        kwds = extra or self.extra_args
+        self._device_update(*args, **kwds)
+        self.i_step += self.n_msik

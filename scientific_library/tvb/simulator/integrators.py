@@ -411,9 +411,9 @@ class EulerDeterministic(Integrator):
 
         """
 
-        dX = dfun(X, coupling, local_coupling) * self.dt
+        self.dX = dfun(X, coupling, local_coupling) 
 
-        return X + dX + self.dt * stimulus
+        return X + self.dt * (self.dX + stimulus)
 
     device_info = integrator_device_info(
         pars = ['dt'],

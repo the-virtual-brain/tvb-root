@@ -980,7 +980,6 @@ if IMPORTED_MAYAVI:
         minD = connectivity.delays.min()
         maxD = connectivity.delays.max()
         stepD = (maxD - minD) / 10.
-
         if order is None:
             order = numpy.arange(0, N)
 
@@ -990,7 +989,6 @@ if IMPORTED_MAYAVI:
         # colourmap to emphasise large numbers
         #MAP = numpy.loadtxt('../plot/colourmaps/BlackToBlue')
         #mapstep = 1. / MAP.shape[0]
-
 
         # Loop over connectivity matrix, colouring and one cube per matrix element
         K = []

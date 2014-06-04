@@ -24,50 +24,72 @@
 #   Paula Sanz Leon, Stuart A. Knock, M. Marmaduke Woodman, Lia Domide,
 #   Jochen Mersmann, Anthony R. McIntosh, Viktor Jirsa (2013)
 #       The Virtual Brain: a simulator of primate brain network dynamics.
-#   Frontiers in Neuroinformatics (7:10. doi: 10.3389/fninf.2013.00010)
+#   Frontiers in Neuroinformatics (in press)
 #
 #
-
-"""
-tvb.simulator.backend.driver
-============================
-
-This modules defines several classes that are informally base
-or abstract classes for various actual backends. Backend specific
-code is provided by subclassing the classes in this module, and in
-most cases, the classes here don't function at all, so the user 
-should e.g. import backend.cee directly.
-
-class Code -       Setup and load template code on device
-class Global -     Setup & access global variables in code
-class Array -      Alloc, free, set, get main data storage
-class Handler -    Coordinate code & data on device
-
-"""
 
 import sys
 import os.path
 import string
 import glob
 import subprocess
+import logging
+
 from numpy import *
+
+LOG = logging.getLogger(__name__)
+LOG.setLevel(logging.DEBUG)
+
+import driver_conf as dc
+
+using_gpu = getattr(dc, 'using_gpu', 0)
+LOG.debug('using_gpu = %r', using_gpu)
+
+if using_gpu:
+    import pycuda.driver as cuda
+    import pycuda.autoinit
+    from pycuda.compiler import SourceModule as CUDASourceModule
+    from pycuda import gpuarray
+    import pycuda.tools
+
+    class OccupancyRecord(pycuda.tools.OccupancyRecord):
+        def __repr__(self):
+            ret = "Occupancy(tb_per_mp=%d, limited_by=%r, warps_per_mp=%d, occupancy=%0.3f)"
+            return ret % (self.tb_per_mp, self.limited_by, self.warps_per_mp, self.occupancy)
+
+    _, total_mem = cuda.mem_get_info()
+
+    from pycuda.curandom import XORWOWRandomNumberGenerator as XWRNG
+    rng = XWRNG()
+
+    # FIXME should be on the noise objects, but has different interface
+    # FIXME this is additive white noise
+    def gen_noise_into(devary, dt):
+        gary = devary.device
+        rng.fill_normal(gary)
+        gary.set(gary.get()*sqrt(dt))
+
+else: # using Cpu
+    import psutil
+    import ctypes
+
+    total_mem = psutil.phymem_usage().total
+
+    # FIXME this is additive white noise
+    def gen_noise_into(devary, dt):
+        devary.cpu[:] = random.normal(size=devary.shape)
+        devary.cpu[:] *= sqrt(dt)
+
 from tvb.simulator.lab import *
 
-def cpp(filename):
-    proc = subprocess.Popen(['cpp', filename], stdout=subprocess.PIPE)
-    return proc.stdout.read()
+from . import cee, templates
 
-class Code(object):
-    here = os.path.dirname(os.path.abspath(__file__)) + os.path.sep 
-    def sources(self):
-        srcs = {}
-        for name in glob.glob(self.here + '*.cu'):
-            key = os.path.basename(name)
-            with open(name, 'r') as fd:
-                srcs[key] = fd.read()
-        return srcs
 
-    def __init__(self, fns=[], T=string.Template, **kwds):
+class device_code(object):
+
+    @classmethod
+    def build(cls, fns=[], T=string.Template, templ='tvb.cu', debug=False,
+              **kwds):
         """
         Build a device code object based on code template and arguments. You
         may provide the following keyword arguments to customize the template:
@@ -82,77 +104,122 @@ class Code(object):
         the device_code.defaults attribute.
 
         Please refer to tvb.cu template file for the context in which each
-        template argument is used, the definition of the macros, etc.
+        template argument is used, the definition of the macros, etc. The following
+        illustrative examples show what kind of code can be inserted
+
 
         """
+
+        _example_code = {
+            'model_dfun': """
+            float a   = P(0)
+                , b   = P(1)
+                , tau = P(2)
+                , x   = X(0)
+                , y   = X(1) ;
+
+            DX(0) = (x - x*x*x/3.0 + y)*tau;
+            DX(1) = (a + b*y - x + I(0))/tau;
+            """,
+
+            'noise_gfun': """
+            float nsig;
+            for (int i_svar=0; i_svar<n_svar; i_svar++)
+            {
+                nsig = P(i_svar);
+                GX(i_svar) = sqrt(2.0*nsig);
+            }
+            """, 
+
+            'integrate': """
+            float dt = P(0);
+            model_dfun(dx1, x, mmpr, input);
+            noise_gfun(gx, x, nspr);
+            for (int i_svar=0; i_svar<n_svar; i_svar++)
+                X(i_svar) += dt*(DX1(i_svar) + STIM(i_svar)) + GX(i_svar)*NS(i_svar);
+            """,
+
+            'coupling': """
+            // parameters
+            float a = P(0);
+
+            I = 0.0;
+            for (int j_node=0; j_node<n_node; j_node++, idel++, conn++)
+                I += a*GIJ*XJ;
+
+
+            """
+            }
+
 
         args = dict()
-        for k in self.defaults.keys():
-            args[k] = kwds.get(k, self.defaults[k])
+        for k in 'model_dfun noise_gfun integrate coupling'.split():
+            if k not in kwds:
+                LOG.debug('using example code for %r', k)
+                src = cls._example_code[k]
+            else:
+                src = kwds[k]
+            args[k] = src
 
-        self.source = T(self.sources()['tvb.cu']).substitute(**args) 
-        with open('temp.cu', 'w') as fd:
-            fd.write(self.source)
+        source = T(templates.sources[templ]).substitute(**args) 
 
-        self.fns = fns
+        if debug:
+            temppath = os.path.abspath('./temp.cu')
+            LOG.debug('completed template written to %r', temppath)
+            with open(temppath, 'w') as fd:
+                fd.write(source)
 
-    # default template filler
-    defaults = {
-        'model_dfun': """
-        float a   = P(0)
-            , b   = P(1)
-            , tau = P(2)
-            , x   = X(0)
-            , y   = X(1) ;
+        if using_gpu:
+            cls.mod = CUDASourceModule("#define TVBGPU\n" + source, 
+                                       options=["--ptxas-options=-v"])
+        else:
+            cls.mod = cee.srcmod("#include <math.h>\n" + source, fns)
 
-        DX(0) = (x - x*x*x/3.0 + y)*tau;
-        DX(1) = (a + b*y - x + I(0))/tau;
-        """,
-
-        'noise_gfun': """
-        float nsig;
-        for (int i_svar=0; i_svar<n_svar; i_svar++)
-        {
-            nsig = P(i_svar);
-            GX(i_svar) = sqrt(2.0*nsig);
-        }
-        """, 
-
-        'integrate': """
-        float dt = P(0);
-        model_dfun(dx1, x, mmpr, input);
-        noise_gfun(gx, x, nspr);
-        for (int i_svar=0; i_svar<n_svar; i_svar++)
-            X(i_svar) += dt*(DX1(i_svar) + STIM(i_svar)) + GX(i_svar)*NS(i_svar);
-        """,
-
-        'coupling': """
-        // parameters
-        float a = P(0);
-
-        I = 0.0;
-        for (int j_node=0; j_node<n_node; j_node++, idel++, conn++)
-            I += a*GIJ*XJ;
-
-
-        """
-        }
-
-class Global(object):
+class device_global(object):
     """
     Encapsulates a source module device global in a Python data descriptor
     for easy handling
 
     """
 
-    def __init__(self, name, dtype, code):
-        self.code  = code
+    def __init__(self, name, dtype):
+        self.code  = device_code
         self.name  = name
         self.dtype = dtype
         self.__post_init = True
-       
 
-class Array(object):
+    def post_init(self):
+        if self.__post_init:
+            if using_gpu:
+                self.ptr   = self.code.mod.get_global(self.name)[0]
+            else:
+                self._cget = getattr(self.code.mod, 'get_'+self.name)
+                self._cset = getattr(self.code.mod, 'set_'+self.name)
+            self.__post_init = False
+
+    def __get__(self, inst, ownr):
+        self.post_init()
+        if using_gpu:
+            buff = array([0]).astype(self.dtype)
+            cuda.memcpy_dtoh(buff, self.ptr)
+            return buff[0]
+        else:
+            ret = self._cget()
+            return ret
+
+
+    def __set__(self, inst, val):
+        self.post_init()
+        if using_gpu:
+            cuda.memcpy_htod(self.ptr, self.dtype(val))
+            buff = empty((1,)).astype(self.dtype)
+            cuda.memcpy_dtoh(buff, self.ptr)
+        else:
+            ctype = ctypes.c_int32 if self.dtype==int32 else ctypes.c_float
+            self._cset(ctype(val))
+        
+
+class device_array(object):
     """
     Encapsulates an array that is on the device
 
@@ -165,6 +232,35 @@ class Array(object):
         return self._cpu
 
     @property
+    def device(self):
+        if not hasattr(self, '_device'):
+            if using_gpu:
+                if self.pagelocked:
+                    raise NotImplementedError
+                self._device = gpuarray.to_gpu(self.cpu)
+            else:
+                ctype = ctypes.c_float if self.type==float32 else ctypes.c_int32
+                ptrtype = ctypes.POINTER(ctype)
+                self._device = ascontiguousarray(self.cpu).ctypes.data_as(ptrtype)
+        return self._device
+
+    def set(self, ary):
+        """
+        In place update the device array.
+        """
+        _ = self.device
+        if using_gpu:
+            self._device.set(ary)
+        else:
+            delattr(self, '_device')
+            self._cpu[:] = ary
+            _ = self.cpu
+
+    @property
+    def value(self):
+        return self.device.get() if using_gpu else self.cpu.copy()
+
+    @property
     def shape(self):
         return tuple(getattr(self.parent, k) for k in self.dimensions)
 
@@ -173,14 +269,19 @@ class Array(object):
         bytes_per_elem = empty((1,), dtype=self.type).nbytes
         return prod(self.shape)*bytes_per_elem
 
-    def __init__(self, name, type, dimensions):
+    def __init__(self, name, type, dimensions, pagelocked=False):
         self.parent = None
         self.name = name
         self.type = type
         self.dimensions = dimensions
+        if using_gpu:
+            self.pagelocked = pagelocked
+        else:
+            if pagelocked:
+                print 'ignoring pagelocked on CPU'
 
 
-class Handler(object):
+class device_handler(object):
     """
     The device_handler class is a convenience class designed around the
     kernel functions implemented in the tvb.cu file.
@@ -193,12 +294,21 @@ class Handler(object):
                        'n_cvar', 'n_cfpr', 'n_mmpr', 'n_nspr', 'n_inpr', 
                        'n_tavg', 'n_msik', 'n_mode'])
 
-    def init_globals(self, Global=Global):
-        "generate accessors for global constants"
-        for const in ['horizon', 'n_node', 'n_thr' , 'n_rthr', 'n_svar',
-                'n_cvar', 'n_cfpr', 'n_mmpr', 'n_nspr', 'n_inpr', 'n_tavg',
-                'n_msik', 'n_mode']:
-            setattr(self, const, Global(const, int32, self.code))
+    # generate accessors for global constants
+    horizon = device_global('horizon', int32)
+    n_node  = device_global('n_node', int32)
+    n_thr   = device_global('n_thr', int32)
+    n_rthr  = device_global('n_rthr', int32)
+    n_svar  = device_global('n_svar', int32)
+    n_cvar  = device_global('n_cvar', int32)
+    n_cfpr  = device_global('n_cfpr', int32)
+    n_mmpr  = device_global('n_mmpr', int32)
+    n_nspr  = device_global('n_nspr', int32)
+    n_inpr  = device_global('n_inpr', int32)
+    n_tavg  = device_global('n_tavg', int32)
+    n_msik  = device_global('n_msik', int32)
+    n_mode  = device_global('n_mode', int32)
+
 
     ##########################################################
     # simulation workspace arrays, also an ORDERED list of the arguments
@@ -206,31 +316,29 @@ class Handler(object):
     device_state = ['idel', 'cvars', 'inpr', 'conn', 'cfpr', 'nspr', 'mmpr',
         'input', 'x', 'hist', 'dx1', 'dx2', 'gx', 'ns', 'stim', 'tavg']
 
-    def init_arrays(self, Array=Array):
-        "initialize arrays"
-        # thread invariant, call invariant
-        self.idel  = Array('idel',    int32, ('n_node', 'n_node'))
-        self.cvars = Array('cvars',   int32, ('n_cvar', ))
-        self.inpr  = Array('inpr',  float32, ('n_inpr', ))
+    # thread invariant, call invariant
+    idel  = device_array('idel',    int32, ('n_node', 'n_node'))
+    cvars = device_array('cvars',   int32, ('n_cvar', ))
+    inpr  = device_array('inpr',  float32, ('n_inpr', ))
 
-        # possibly but not currently thread varying, call invariant
-        self.conn  = Array('conn',  float32, ('n_node', 'n_node'))
-        self.cfpr  = Array('cfpr',  float32, ('n_cfpr', ))
+    # possibly but not currently thread varying, call invariant
+    conn  = device_array('conn',  float32, ('n_node', 'n_node'))
 
-        # thread varying, call invariant
-        self.nspr  = Array('nspr',  float32, ('n_node', 'n_nspr', 'n_thr'))
-        self.mmpr  = Array('mmpr',  float32, ('n_node', 'n_mmpr', 'n_thr'))
+    # thread varying, call invariant
+    nspr  = device_array('nspr',  float32, ('n_node', 'n_nspr', 'n_thr'))
+    mmpr  = device_array('mmpr',  float32, ('n_node', 'n_mmpr', 'n_thr'))
+    cfpr  = device_array('cfpr',  float32, (          'n_cfpr', 'n_thr'))
 
-        # thread varying, call varying
-        self.input = Array('input', float32, (                     'n_cvar', 'n_thr'))
-        self.x     = Array('x',     float32, (           'n_node', 'n_svar', 'n_thr'))
-        self.hist  = Array('hist',  float32, ('horizon', 'n_node', 'n_cvar', 'n_thr'))
-        self.dx1   = Array('dx1',   float32, (                     'n_svar', 'n_thr'))
-        self.dx2   = Array('dx2',   float32, (                     'n_svar', 'n_thr'))
-        self.gx    = Array('gx',    float32, (                     'n_svar', 'n_thr'))
-        self.ns    = Array('ns',    float32, (           'n_node', 'n_svar', 'n_thr'))
-        self.stim  = Array('stim',  float32, (           'n_node', 'n_svar', 'n_thr'))
-        self.tavg  = Array('tavg',  float32, (           'n_node', 'n_svar', 'n_thr'))
+    # thread varying, call varying
+    input = device_array('input', float32, (                     'n_cvar', 'n_thr'))
+    x     = device_array('x',     float32, (           'n_node', 'n_svar', 'n_thr'))
+    hist  = device_array('hist',  float32, ('horizon', 'n_node', 'n_cvar', 'n_thr'))
+    dx1   = device_array('dx1',   float32, (                     'n_svar', 'n_thr'))
+    dx2   = device_array('dx2',   float32, (                     'n_svar', 'n_thr'))
+    gx    = device_array('gx',    float32, (                     'n_svar', 'n_thr'))
+    ns    = device_array('ns',    float32, (           'n_node', 'n_svar', 'n_thr'))
+    stim  = device_array('stim',  float32, (           'n_node', 'n_svar', 'n_thr'))
+    tavg  = device_array('tavg',  float32, (           'n_node', 'n_svar', 'n_thr'))
 
     def fill_with(self, idx, sim):
         """
@@ -251,15 +359,14 @@ class Handler(object):
 
             # could eventually vary with idx
             self.conn  .cpu[:] = sim.connectivity.weights.T
-            self.cfpr  .cpu[:] = sim.coupling.device_info.cfpr
+
+        self.cfpr  .cpu[..., idx] = sim.coupling.device_info.cfpr
+        self.mmpr  .cpu[..., idx] = sim.model.device_info.mmpr
 
         # each device_info should know the required shape, so none of these
         # assignments should fail with a shape error
         if hasattr(sim.integrator, 'noise'):
             self.nspr  .cpu[..., idx] = sim.integrator.noise.device_info.nspr
-
-        # mass model parameters
-        self.mmpr  .cpu[..., idx] = sim.model.device_info.mmpr
 
         # sim's history shape is (horizon, n_svars, n_nodes, n_modes)
 
@@ -293,14 +400,12 @@ class Handler(object):
 
     block_dim = property(lambda s: 256)
 
-    def __init__(self, code_args={}, Code=Code, Global=Global, Array=Array, **kwds):
+    def __init__(self, code_args={}, **kwds):
 
         fns = ['update'] + [f+d for d in self._dimensions 
                                 for f in ['set_', 'get_']]
 
-        self.code = Code(fns, **code_args)
-        self.init_globals(Global)
-        self.init_arrays(Array)
+        device_code.build(fns, **code_args)
 
         for k in self._dimensions:
             if k in kwds:
@@ -308,11 +413,17 @@ class Handler(object):
             else:
                 missing = self._dimensions - set(kwds.keys())
                 if missing:
-                    msg = 'Handler requires the keyword value %r' % missing
+                    msg = 'device_handler requires the keyword value %r' % missing
                     raise TypeError(msg)
 
         for k in self.device_state:
             getattr(self, k).parent = self
+        
+        if using_gpu:
+            updatefn = device_code.mod.get_function('update')
+        else:
+            updatefn = device_code.mod.update
+        self._device_update = updatefn
 
         self.i_step = 0
 
@@ -370,10 +481,10 @@ class Handler(object):
                 'n_tavg' : n_tavg, 'n_msik' : n_msik }
 
         # extract code from simulator components
-        code = {'model_dfun': sim.model           .device_info.kernel,
-                'integrate':  sim.integrator      .device_info.kernel,
+        code = {'model_dfun': sim.model.device_info.kernel,
+                'integrate':  sim.integrator.device_info.kernel,
                 'noise_gfun': sim.integrator.noise.device_info.kernel if stoch else "",
-                'coupling':   sim.coupling        .device_info.kernel}
+                'coupling':   sim.coupling.device_info.kernel}
 
         dh = cls(code_args=code, **dims)
         return dh
@@ -381,13 +492,23 @@ class Handler(object):
 
     @property
     def nbytes(self):
+
         memuse = sum([getattr(self, k).nbytes for k in self.device_state])
-        free, total = self.mem_info
+
+        if using_gpu:
+            free, total = cuda.mem_get_info()
+        elif psutil:
+            phymem = psutil.phymem_usage()
+            free, total = phymem.free, phymem.total
+        else:
+            free, total = None, None
+
         if free and total: # are not None
             if memuse > free:
-                print '%r: nbytes=%d exceeds free memory' % (self, memuse)
+                print '%r: nbytes=%d exceeds free device memory' % (self, memuse)
             if memuse > total:
-                raise MemoryError('%r: nbytes=%d exceeds total memory' % (self, memuse))
+                raise MemoryError('%r: nbytes=%d exceeds total device memory' % (self, memuse))
+
         return memuse
 
     @property
@@ -398,13 +519,43 @@ class Handler(object):
         self.n_thr = old_n_thr 
         return nbs
 
+    @property
+    def occupancy(self):
+        if using_gpu:
+            try:
+                return OccupancyRecord(pycuda.tools.DeviceData(), self.n_thr)
+            except Exception as exc:
+                return exc
 
-    def __call__(self, extra=None):
-        args  = [self.i_step_type(self.i_step)]
+    @property
+    def extra_args(self):
+        if using_gpu:
+            bs = int(self.n_thr)%1024
+            gs = int(self.n_thr)/1024
+            if bs == 0:
+                bs = 1024
+            if gs == 0:
+                gs = 1
+            return {'block': (bs, 1, 1),
+                    'grid' : (gs, 1)}
+        else:
+            return {}
+
+    def __call__(self, extra=None, step_type=int32 if using_gpu else ctypes.c_int32):
+        args  = [step_type(self.i_step)]
         for k in self.device_state:
             args.append(getattr(self, k).device)
-        kwds = extra or self.extra_args
-        self._device_update(*args, **kwds)
+        try:
+            kwds = extra or self.extra_args
+            self._device_update(*args, **kwds)
+        except cuda.LogicError as e:
+            print 0, 'i_step', type(args[0])
+            for i, k in enumerate(self.device_state):
+                attr = getattr(self, k).device
+                print i+1, k, type(attr), attr.dtype
+            print kwds
+            raise e
         self.i_step += self.n_msik
-
+        if using_gpu:
+            cuda.Context.synchronize()
 
