@@ -54,7 +54,7 @@ class NIFTIImporterTest(TransactionalTestCase):
 
     NII_FILE = os.path.join(os.path.dirname(demo_data.__file__), 'minimal.nii')
     GZ_NII_FILE = os.path.join(os.path.dirname(demo_data.__file__), 'minimal.nii.gz')
-    TVB_NII_FILE = os.path.join(os.path.dirname(demo_data.__file__), 'tvb_nifti_demo_data.nii.gz')
+    TVB_NII_FILE = os.path.join(os.path.dirname(demo_data.__file__), 'avg152T1_LR_nifti.nii.gz')
     WRONG_NII_FILE = os.path.abspath(__file__)
 
     DEFAULT_ORIGIN = [[0.0, 0.0, 0.0]]
@@ -107,15 +107,15 @@ class NIFTIImporterTest(TransactionalTestCase):
 
         # Since self.assertAlmostEquals is not available on all machine
         # We compare floats as following
-        self.assertTrue(abs(2.0 - time_series.sample_period) <= 0.001)
+        self.assertTrue(abs(1.0 - time_series.sample_period) <= 0.001)
         self.assertEqual("sec", str(time_series.sample_period_unit))
         self.assertEqual(0.0, time_series.start_time)
-        self.assertTrue(time_series.title is not None)
+        self.assertTrue(time_series.title.startswith("NIFTI"))
 
         data_shape = time_series.read_data_shape()
         self.assertEquals(4, len(data_shape))
         # We have only one entry for time dimension
-        self.assertEqual(150, data_shape[0])
+        self.assertEqual(1, data_shape[0])
         dimension_labels = time_series.labels_ordering
         self.assertTrue(dimension_labels is not None)
         self.assertEquals(4, len(dimension_labels))
@@ -196,7 +196,7 @@ def suite():
     Gather all the tests in a test suite.
     """
     test_suite = unittest.TestSuite()
-    test_suite.addTest(unittest.makeSuite(NIFTIImporterTest))
+    test_suite.addTest(unittest.makeSuite(NIFTIImporterTest, prefix="test_import_demo_nii_data"))
     return test_suite
 
 
