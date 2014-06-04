@@ -1,0 +1,156 @@
+	This document contains all the required information in order to setup a machine with all libraries needed by The Virtual Brain so
+one can quickly start packaging TVB. NOTE: If all you want is to contribute to TVB you can do this with minimal trouble by just
+downloading one of our distributions and test your code there.
+
+	Most of the requirements of TVB can be installed straight-forward using a tool like easy_install (http://pypi.python.org/pypi/setuptools) or 
+pip (http://pypi.python.org/pypi/pip). There are however some packages like numpy, scipy or h5py that have a more complex installation
+procedure.
+
+1. Obtaining a Python distribution with required compilers
+
+	On most unix based distributions a python distribution should be available by default. If this is not the case or if the version
+is an unsupported one, you can install Python 2.7.3 from http://www.python.org/download/. 
+
+An alternative to this would be to install Entought Python Distribution (http://www.enthought.com/products/epd.php). 
+This will also bring a python distribution with a lot of the required dependencies already prepackaged (numpy, scipy, matplotlib, etc. 
+full list here http://www.enthought.com/products/epdlibraries.php). The drawback is that EPD is not open-source and the free version only has support 
+for 32-bit packages (except linux where 64-bit is also free). Another downside would be that a lot of extra packages that TVB does not really need
+will also be installed.
+NOTE: The rest of this document will assume that you went for the standard python distribution solution. The steps that should no longer be needed
+for EPD will be marked accordingly.
+
+	In addition to a Python distribution, since TVB has dependencies that use C/C++ bindings for fast computations (eg. numpy, scipy, h5py) you also
+need gcc, g++ and fortran compilers. 
+
+	1.1 Unix
+
+	You can just use the available package manager (apt-get, yum) and install python-dev, gcc, g++ and gfortran.
+
+	1.2 MacOS 
+
+	You will need to install XCode which should provide all required compilers. The versions might be outdated however, if you need to upgrade there
+is help to be found online. (eg. https://sites.google.com/site/dwhipp/tutorials/mac_compilers,
+ http://scicomp.stackexchange.com/questions/2469/how-should-i-install-a-fortran-compiler-on-a-mac-os-x-10-x-x-4).
+An alternative is to just use macports or homebrew to install everything required, however this was you will have less control on what versions
+will be installed.
+
+	1.3 Windows
+
+	For windows the easiest alternative is to just install Microsoft Visual Studio 2008 Express Edition. This alternative is free and provided a Command
+Line set up with a proper environment so you can compile most of the required libraries. However 64-bit support is not offered by default, and you need
+either to get a Professional Edition or 'hack' the Express Edition by following the instructions found here. (http://jenshuebel.wordpress.com/2009/02/12/visual-c-2008-express-edition-and-64-bit-targets/)
+Also, for building 64-bit Cython extensions (eg. for our gdist custom extension) you need to install a proper version of Microsoft SDK by following the 
+steps from here: http://wiki.cython.org/64BitCythonExtensionsOnWindows
+For 32-bit windows OS, mingw should be a possible alternative to Visual Studio but the setup is harder and we do not recommend it unless you have good knowledge
+of compilers and MinGW. 
+
+The rest of this document will assume that you installed Visual Studio 2008 and you always start the command prompt that comes with visual studio instead of the standard cmd. 
+
+2. Installing numpy/scipy (Skip if you are using Entought)
+
+	Numpy/Scipy can be built with or withoud MKL support. Either way it has some additional dependencies that need to be installed
+	beforehand, namely blas, lapack and atlas. (Intel MKL also have their own blas, lapack and atlas implementations).
+	Although for numpy these are optional they are required in order to build scipy. The generic way to go around for this is to just
+	download the required libraries yourself. Download the source from numpy and rename site.cfg.example to site.cfg. Then make sure 
+	that the include dirs are properly set for the above mentioned libraries. There are however some simpler solutions for some OS:
+
+	2.1 Unix-based system
+	
+	Simplest way to build numpy/scipy is to just use the packager available for your system to get all the required dependencies. 
+	On debian/ubuntu:
+		- Add to /etc/apt/sources.list:
+			deb http://debs.astraw.com/ dapper/
+		- sudo apt-get install python-numpy python-scipy
+	On redhat/fedora:
+		- pick up your arch/distribution from http://download.opensuse.org/repositories/science:/ScientificLinux/ and take the corresponding .repo file. 
+		- put this .repo file into /etc/yum.repo.d/
+		- yum install python-numpy python-scipy
+	You can also just used the package manager to install the dependencies and then build the packages from source. In this case, the required dependecies are:
+	liblapack-dev, swig, libatlas-base-dev, libfftw3-dev, libsuitesparse-dev
+		
+	2.2 MacOS
+	
+	You can use macports and get all the required dependencies. The packages are py27-numpy and py27-scipy. You can also find *.dmg for both numpy and scipy
+	on the download sites. http://sourceforge.net/projects/numpy/files/NumPy/1.6.2/ and http://sourceforge.net/projects/scipy/files/scipy/0.11.0/
+	
+	2.3 Windows
+	
+	You can find installers for windows 32-bit on the download sites. http://sourceforge.net/projects/numpy/files/NumPy/1.6.2/ and http://sourceforge.net/projects/scipy/files/scipy/0.11.0/
+	There are also some pre-packaged unofficial distributions for both 32/64 bit machines: http://www.lfd.uci.edu/~gohlke/pythonlibs/
+	
+	Installing with MKL support
+	
+	A complete install with MKL support was only done on a Windows 64-bit machine, and it is tricky on all OS, needing the Intel Composer.
+	Steps that were taken were:
+		 1. Download and install Visual Studio 2008 SP1 and Microsoft SDK. 
+		 2. Download and install Intel Composer 2013. 
+		 3. Edit numpy site.cfg starting from example found here: http://scipy.github.com/building/windows.html#building-numpy-with-the-intel-math-kernel-library-mkl . For the mkl_libs files use the MKL advisor to compute the required dependencies http://software.intel.com/sites/products/mkl/ . 
+		 4. Start a Microsoft SDK console in 64-bit release environment. (setenv /x64 /Release) 
+		 5. python setup.py build / install
+	Even so there were some problems with building scipy. Attached are the numpy site.cfg and the problems + solutions on building Scipy.
+	
+3. Installing HDF5/h5py (Skip if you are using Entought)
+
+	The most problems you will face here is building HDF5 from source, mostly on windows machines. Sources can be found at http://www.hdfgroup.org/ftp/HDF5/current/src/
+	
+	3.1 Unix 
+	
+	Installing HDF5 implies downloading the sources, then unzip and go into source folder. From there:
+		1. ./configure --prefix=/some/path/to/somewhere
+		2. make 
+		3. make check 
+		4. sudo make install 
+	After you successfully installed HDF5, installing h5py should be straight-forward even using easy_install or pip. In case the hdf5 installation is not found
+	you can set the environmental variable HDF5_DIR=/path/to/hdf5/here
+	
+	3.2 MacOS
+	
+	Installing HDF5 implies downloading the sources, then unzip and go into source folder. From there:
+		1. export MACOSX_DEPLOYMENT_TARGET=10.6 
+		2. export SDKROOT=/Developer/SDKs/MacOSX10.6u.sdk 
+		3. export CFLAGS="-isysroot ${SDKROOT} -O0 -gdwarf-2 -arch x86_64" 
+		4. export CXXFLAGS="-isysroot ${SDKROOT} -O0 -gdwarf-2 -arch x86_64" 
+		5. ./configure --prefix=/some/path/to/somewhere
+		6. make 
+		7. make check 
+		8. sudo make install 
+	After you successfully installed HDF5, installing h5py should be straight-forward even using easy_install or pip. In case the hdf5 installation is not found
+	you can set the environmental variable HDF5_DIR=/path/to/hdf5/here
+	
+	3.3 Windows
+	
+	Considering you followed the previous steps, you will require additionally:
+		1. Install CMake. (www.cmake.org). 
+	    2. Install NSIS. (http://nsis.sourceforge.net/Download) 
+	    3. Get the hdf5 source (http://www.hdfgroup.org/ftp/HDF5/current/src/). 
+	    4. Follow instructions from ${hdf5-source-dir}/release_docs/CMake.txt .(In the configure phase, next to the defaults check BUILD_SHARED_LIBS, HDF5_BUILD_CPP_LIBS). If you get any errors related to zlib, szlib you can try to follow Section V from ${hdf5-source-dir}/release_docs/Install_windows.txt 
+	    5. Step 4 should result in an installer. Use this to install HDF5 to a folder of your choosing.
+	Once you installed HDF5, h5py still requires some additional tweaks.
+		1. Download the h5py sources 
+		2. From h5py setup.py file, find the COMPILER_SETTINGS for windows platform and change the line:
+	'libraries'     : ['hdf5dll18','hdf5_hldll'] to 'libraries'     : ['hdf5dll','hdf5_hldll']
+		3. Add to the LIB and INCLUDE environmental variables the paths to the lib and include sub-folders from the HDF5 installation
+		4. python setup.py install
+		
+3. TVB externals
+
+	Almost all of the externals installation are straight forward, just go to the specific directory, and do a `python setup.py install`. 
+	However geodesic_distance on windows 64-bit proved problematic, but following the instructions from 1.3 should do the trick. The openMEEG
+	package however is not even distributed yet as it is hard to compile and computer-specific if you want to get big performance improvements.
+	
+4. Other problematic packages
+
+	Matplotlib can also offer some problems when trying to build from source. However these can be fixed by just using package managers like apt-get, yum or macports,
+	or just use pre-build packages available as installers for Windows, or *.dmg for MacOS. You can find them here: https://github.com/matplotlib/matplotlib/downloads
+	
+	Psycopg2 might also cause some problems on windows machines. There is a maintained pre-build port for psycopg2 to windows here: http://www.stickpeople.com/projects/python/win-psycopg/
+	
+	rst2pdf can also cause problems on windows machines. There is a pre-build package that is distributed by the pythonXY project here: http://code.google.com/p/pythonxy/downloads/list
+	
+5. Everything else
+
+	The rest of the dependencies should install nicely if you just do a `python setup.py develop` in trunk/framework_tvb folder,
+	`python setup_library.py develop` in trunk/scientific_library, and `python setup_extra.py develop` in trunk.
+	If for some reason one of the libraries will still not install correctly, try using pip or a package manager for that
+	specific package and report the problem so this document can be updated accordingly.
+	

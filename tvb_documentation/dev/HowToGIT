@@ -1,0 +1,55 @@
+## GIT URLS
+#   https://github.com/the-virtual-brain/tvb-framework.git
+#   https://github.com/the-virtual-brain/tvb-library.git
+#   https://github.com/the-virtual-brain/tvb-geodesic=.git
+#   https://github.com/the-virtual-brain/tvb-docs.git
+
+## SVN URLS
+#   https://repo.thevirtualbrain.org/svn/tvb/trunk/ --trunk=framework_tvb
+#   https://repo.thevirtualbrain.org/svn/tvb/trunk/ --trunk=scientific_library
+#   https://repo.thevirtualbrain.org/svn/tvb/trunk/externals/ --trunk=geodesic_distance
+#   https://repo.thevirtualbrain.org/svn/tvb/trunk/ --trunk=tvb_documentation
+#   https://repo.thevirtualbrain.org/svn/tvb/trunk/ --trunk=tvb_data
+
+
+## Initialize new 3rd party SYNCHRONIZATION REPO:
+
+    git svn clone -s -r6000:HEAD --no-minimize-url https://repo.thevirtualbrain.org/svn/tvb/trunk/ --trunk=tvb_documentation
+    cd docs
+    git pull $$URL_GIT$$ trunk
+
+## For special cases when the Github Repo does not already exists:
+    git branch -m master trunk
+    git remote add mirror https://github.com/the-virtual-brain/tvb-docs.git
+
+    git config --unset remote.mirror.fetch
+    git config remote.mirror.push 'refs/remotes/*:refs/heads/*'
+    # The above flag are not working on Windows
+    git push mirror
+
+## Synchronize Git and SVN repositories:
+    git svn rebase
+    git pull mirror
+    git svn dcommit   (followed by multiple "git rebase --skip" and another "git svn dcommit")
+    git push mirror
+
+    git svn fetch
+    git merge -Xtheirs remotes/trunk
+
+    git merge -s ours origin/trunk
+    git merge -Xtheirs origin/trunk
+
+    git mergetool
+
+## Merge Pull Request:
+    git checkout -b $$BRANCH_NAME$$ trunk
+    git pull https://github.com/d00k/tvb-simulator.git add-readme
+    git checkout trunk
+    git merge $$BRANCH_NAME$$
+    git commit
+    # Merge possible conflicts and test current version
+    git push origin trunk
+
+
+## Clean unreferences branches:
+    git remote prune origin
