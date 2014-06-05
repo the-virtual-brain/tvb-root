@@ -266,7 +266,7 @@
         </algorithm>
 
 
-        <algorithm name="Connectivity 2D Viewer" identifier="Connectivity2D">
+        <algorithm name="Connectivity 2D Visualizer" identifier="Connectivity2D">
             <code value=""/>
             <inputs>
                 <input>
@@ -282,7 +282,7 @@
             </inputs>
         </algorithm>
         
-        <algorithm name="Brain Viewer" identifier="BrainV">
+        <algorithm name="Brain Visualizer" identifier="BrainV">
             <code value=""/>
             <inputs>
                 <input>
@@ -298,7 +298,7 @@
             </inputs>
         </algorithm>
 
-        <algorithm name="EEG lines Viewer" identifier="EegLinesV">
+        <algorithm name="EEG lines Visualizer" identifier="EegLinesV">
             <code value=""/>
             <inputs>
                 <input>

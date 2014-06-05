@@ -14,27 +14,23 @@
 
 ## Initialize new 3rd party SYNCHRONIZATION REPO:
 
-    git svn clone -s -r6000:HEAD --no-minimize-url https://repo.thevirtualbrain.org/svn/tvb/trunk/ --trunk=tvb_documentation
-    cd docs
-    git pull $$URL_GIT$$ trunk
-
-## For special cases when the Github Repo does not already exists:
-    git branch -m master trunk
-    git remote add mirror https://github.com/the-virtual-brain/tvb-docs.git
+    git svn clone -s -r6000:HEAD --no-minimize-url https://repo.thevirtualbrain.org/svn/tvb/trunk/ --trunk=tvb_documentation --prefix=svn/
+    cd trunk
+    git remote add github https://github.com/the-virtual-brain/tvb_documentation-docs.git
+    git push github master
 
     git config --unset remote.mirror.fetch
     git config remote.mirror.push 'refs/remotes/*:refs/heads/*'
     # The above flag are not working on Windows
-    git push mirror
 
 ## Synchronize Git and SVN repositories:
     git svn rebase
-    git pull mirror
+    git pull github
     git svn dcommit   (followed by multiple "git rebase --skip" and another "git svn dcommit")
-    git push mirror
+    git push github
 
     git svn fetch
-    git merge -Xtheirs remotes/trunk
+    git merge -Xtheirs remotes/svn/trunk
 
     git merge -s ours origin/trunk
     git merge -Xtheirs origin/trunk
