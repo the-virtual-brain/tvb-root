@@ -3,7 +3,7 @@
 
     <input type="checkbox" name="users" value="${user.id}" id="${user.id}" tabindex="5"
             checked="${'checked' if user.id in usersMembers else None}"
-            disabled="${disabled if not editUsersEnabled else None}" />
+            disabled="${'disabled' if not editUsersEnabled else None}" />
 
     ${user.username}
     <img src="/static/style/img/role/${user.role.lower()}.png" alt="${user.role}" class="userRole"/>
