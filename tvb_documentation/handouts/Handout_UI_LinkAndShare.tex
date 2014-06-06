@@ -146,7 +146,7 @@
 \section{Objectives}\label{sec:objectives}
 
 \newthought{This short tutorial} provides the basic steps you need to know in order to import data into TVB; share data with other users and/or link data to other TVB projects.
-After this session you should be able to export a project and share it with your neighbour. 
+After this session you should be able to import a new dataset, export a project and share it with your neighbour. 
 
 \section{Project: Session\_II\_ShareAndLink\_a}\label{sec:project_data}
 % let's start a new thought -- a new section
@@ -166,6 +166,8 @@ In this exercise we will assume that multiple users are working with the same TV
     \multicolumn{1}{l}{Multiple Users And One Virtual Brain}\\
     \\
     \multicolumn{1}{l}{Importing A Connectivity}\\
+    \\
+    \multicolumn{1}{l}{Importing A New Datset}\\
     \\
     \multicolumn{1}{l}{Link And Share}\\
     $\quad$ \textit{SimulationConnectivity74} \\
@@ -243,6 +245,46 @@ In this exercise we will assume that multiple users are working with the same TV
 \end{figure}
 
 
+\subsection{Importing A New Dataset}\label{sec:import_datastet}
+
+\newthought{The primary purpose of} TVB is to simulate whole brain dynamics. 
+The most fundamental stage is building a realization of a computational model which we call a large-scale brain network model. This model is constituted by a set of structural and functional components linked together, completely creating a particular model of the brain.
+In addition to the default datatset, we provide two extra datasets from two different subjects: \textit{DH\_20120806} and \textit{QL\_20120814}. You will now upload one of them. 
+
+\begin{formal}
+\begin{enumerate}
+\item Unzip \textit{QL\_20120814.zip}. You have a collection of files (see Table \ref{tab:filestab}).
+\item Go to \textsc{Projects} $\rightarrow$ \textsc{Data structure}.
+\item Upload   QL\_20120814\_Connectivity.zip using the \underline{Connectivity ZIP} importer.
+\item Upload QL\_20120814\_Surface\_Cortex.zip using the \underline{Surface ZIP} importer. Select the corresponding type of surface. 
+\item Upload QL\_20120814\_RegionMapping.txt using the \underline{RegionMapping} uploader. This file links the two previous datatypes you just uploaded. 
+\item Upload QL\_20120814\_EEGLocations.txt using the \underline{Sensors} importer. This file contains the positions of the EEG sensors. 
+\item Upload QL\_20120814\_Surface\_Cortex.zip and QL\_20120814\_Surface\_EEGCap.zip using the \underline{Surface ZIP}. Do not forget to select the correct type of surface. 
+\item Lastly, upload QL\_20120814\_ProjectionMatrix.mat using the \underline{Projection Matrix Surface  - EEG} importer. This is the leadfield matrix to obtain EEG signals. Link this projection matrix to the sensors you previously uploaded. 
+
+\end{enumerate}
+\end{formal}
+
+\begin{margintable}
+  \centering
+  \fontfamily{ppl}\selectfont
+  \begin{tabular}{l}
+    \toprule
+    Name \\
+    \midrule
+    QL\_20120814\_Connectivity.zip\\
+QL\_20120814\_EEGLocations.txt\\
+QL\_20120814\_ProjectionMatrix.mat\\
+QL\_20120814\_RegionMapping.txt\\
+QL\_20120814\_Surface\_Cortex.zip\\
+QL\_20120814\_Surface\_EEGCap.zip\\
+QL\_20120814\_Surface\_Face.zip\\
+    \bottomrule
+  \end{tabular}
+  \caption{Files in \textit{QL\_20120814.zip} }
+  \label{tab:filestab}
+\end{margintable}
+
 \subsection{Link And Share}\label{sec:link_and_share}
 \begin{formal}
 \begin{enumerate}[resume]
@@ -251,6 +293,7 @@ In this exercise we will assume that multiple users are working with the same TV
 \item In the \underline{metadata overlay}, go to the tab \underline{Links}. You'll see a list with all your projects. See Fig. \ref{fig:linkstab}.
 \item Link this datatype (connectivity) with the project you'll share (e.g. \textit{Session\_II\_ShareAndLink\_b}).
 \item Link the two time-series from simulations \textit{SimulationConnectivity74} and \textit{SimulationConnectivity96}.
+\item Link the corresponding connectivity matrices.
 \end{enumerate}
 \end{formal} 
 
@@ -268,7 +311,7 @@ In this exercise we will assume that multiple users are working with the same TV
 
 \begin{formal}
   \begin{enumerate}[resume]
-    \setcounter{enumi}{12}
+    \setcounter{enumi}{13}
     \item Go to \textsc{Project} $\rightarrow$ \textsc{List of all projects}
     \item Switch to \textit{Session\_II\_ShareAndLink\_b}.
     \item Then from \textsc{Project} $\rightarrow$ \textsc{Basic properties} 
