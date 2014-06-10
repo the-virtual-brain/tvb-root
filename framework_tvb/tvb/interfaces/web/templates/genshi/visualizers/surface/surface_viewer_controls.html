@@ -43,6 +43,14 @@
             <label for="ctrl-action-points">points display</label>
         </dd>
 
+        <dt></dt>
+        <dd>
+            <input id="displayFaceChkId" type="checkbox" onchange="switchFaceObject();"
+                       autocomplete="off" tabindex="1"
+                       title="Face approximative will move along with brain navigator." />
+            <label for="displayFaceChkId" >shell surface</label>
+        </dd>
+
         <py:if test="hasRegionMap">
             <dt></dt>
             <dd>

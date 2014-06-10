@@ -34,6 +34,7 @@
 
 import json
 import numpy
+from tvb.adapters.visualizers.brain import BrainViewer
 from tvb.basic.filters.chain import UIFilter, FilterChain
 from tvb.basic.traits.core import KWARG_FILTERS_UI
 from tvb.core.adapters.abcdisplayer import ABCDisplayer
@@ -71,7 +72,10 @@ class SurfaceViewer(ABCDisplayer):
                  'type': ConnectivityMeasure, 'required': False,
                  'description': 'A connectivity measure',
                  'conditions': FilterChain(fields=[FilterChain.datatype + '._nr_dimensions'],
-                                           operations=["=="], values=[1])}]
+                                           operations=["=="], values=[1])},
+                {'name': 'shell_surface', 'label': 'Shell Surface',
+                 'type': SurfaceData, 'required': False,
+                 'description': "Face surface to be displayed semi-transparently, for orientation only."}]
 
 
     def _compute_surface_params(self, surface, region_map):
@@ -129,13 +133,19 @@ class SurfaceViewer(ABCDisplayer):
         return dict(minMeasure=min_measure, maxMeasure=max_measure, clientMeasureUrl=client_measure_url)
 
 
-    def launch(self, surface, region_map=None, connectivity_measure=None):
+    def launch(self, surface, region_map=None, connectivity_measure=None, shell_surface=None):
         params = dict(title="Surface Visualizer", extended_view=False,
                       isOneToOneMapping=False, hasRegionMap=region_map is not None)
 
         params.update(self._compute_surface_params(surface, region_map))
         params.update(self._compute_measure_points_param(surface, region_map))
         params.update(self._compute_measure_param(connectivity_measure, params['noOfMeasurePoints']))
+
+        try:
+            params['shelfObject'] = BrainViewer.get_shell_surface_urls(shell_surface, self.current_project_id)
+        except ValueError:
+            params['shelfObject'] = None
+
         return self.build_display_result("surface/surface_view", params,
                                          pages={"controlPage": "surface/surface_viewer_controls"})
 
