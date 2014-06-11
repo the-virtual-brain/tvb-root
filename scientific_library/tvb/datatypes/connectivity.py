@@ -80,7 +80,7 @@ class Connectivity(connectivity_scientific.ConnectivityScientific, connectivity_
             result.centres = reader.read_field("centres")
             result.region_labels = reader.read_field("region_labels")
             result.orientations = reader.read_field("orientations")
-            result.cortical = reader.read_field("cortical")
+            result.cortical = reader.read_optional_field("cortical")
             result.hemispheres = reader.read_field("hemispheres")
             result.areas = reader.read_field("areas")
             result.tract_lengths = reader.read_field("tract_lengths")
@@ -88,16 +88,17 @@ class Connectivity(connectivity_scientific.ConnectivityScientific, connectivity_
         else:
             reader = ZipReader(source_full_path)
 
-            result.weights = reader.read_array_from_file("weights.txt")
-            result.centres = reader.read_array_from_file("centres.txt", use_cols=(1, 2, 3))
-            result.region_labels = reader.read_array_from_file("centres.txt", dtype="string", use_cols=(0,))
-            result.orientations = reader.read_array_from_file("average_orientations.txt")
-            result.cortical = reader.read_array_from_file("cortical.txt", dtype=numpy.bool)
-            result.hemispheres = reader.read_array_from_file("hemispheres.txt", dtype=numpy.bool)
-            result.areas = reader.read_array_from_file("areas.txt")
-            result.tract_lengths = reader.read_array_from_file("tract_lengths.txt")
+            result.weights = reader.read_array_from_file("weights")
+            result.centres = reader.read_array_from_file("centres", use_cols=(1, 2, 3))
+            result.region_labels = reader.read_array_from_file("centres", dtype=numpy.str, use_cols=(0,))
+            result.orientations = reader.read_array_from_file("average_orientations")
+            result.cortical = reader.read_optional_array_from_file("cortical", dtype=numpy.bool)
+            result.hemispheres = reader.read_optional_array_from_file("hemispheres", dtype=numpy.bool)
+            result.areas = reader.read_optional_array_from_file("areas")
+            result.tract_lengths = reader.read_array_from_file("tract_lengths")
 
         return result
+
 
     @classmethod
     def default(cls):

@@ -68,6 +68,13 @@ class H5Reader():
             return self.hfd5_source['/' + field][()]
         except Exception:
             self.logger.exception("Could not read from %s field" % field)
+            raise ReaderException("Could not read from %s field" % field)
+
+
+    def read_optional_field(self, field):
+        try:
+            return self.read_field(field)
+        except ReaderException:
             return numpy.array([])
 
 
@@ -95,7 +102,7 @@ class FileReader():
                 return numpy.array([])
 
             # Try to read NumPy:
-            if self.file_path.endswith('.txt') or self.file_path.endswith('.txt.bz2'):
+            if self.file_path.endswith('.txt') or self.file_path.endswith('.bz2'):
                 return self._read_text(self.file_stream, dtype, skip_rows, use_cols)
 
             if self.file_path.endswith('.npz'):
@@ -106,7 +113,7 @@ class FileReader():
 
         except Exception:
             self.logger.exception("Could not read from %s file" % self.file_path)
-            return numpy.array([])
+            raise ReaderException("Could not read from %s file" % self.file_path)
 
 
     def _read_text(self, file_stream, dtype, skip_rows, use_cols):
@@ -139,20 +146,32 @@ class ZipReader():
 
     def read_array_from_file(self, file_name, dtype=numpy.float64, skip_rows=0, use_cols=None, matlab_data_name=None):
 
-        file_reader = FileReader(file_name)
-
         matching_file_name = None
         for actual_name in self.zip_archive.namelist():
-            if actual_name.endswith(file_name):
+            if file_name in actual_name and not actual_name.startswith("__MACOSX"):
                 matching_file_name = actual_name
+                break
 
         if matching_file_name is not None:
+            file_reader = FileReader(matching_file_name)
             file_reader.file_stream = self.zip_archive.open(matching_file_name, 'rU')
             return file_reader.read_array(dtype, skip_rows, use_cols, matlab_data_name)
-        else:
-            self.logger.warning("File %s not found in ZIP." % file_name)
 
-        return numpy.array([])
+        self.logger.warning("File %s not found in ZIP." % file_name)
+        raise ReaderException("File %s not found in ZIP." % file_name)
+
+
+    def read_optional_array_from_file(self, file_name, dtype=numpy.float64, skip_rows=0,
+                                      use_cols=None, matlab_data_name=None):
+        try:
+            return self.read_array_from_file(file_name, dtype, skip_rows, use_cols, matlab_data_name)
+        except ReaderException:
+            return numpy.array([])
+
+
+
+class ReaderException(Exception):
+    pass
 
 
 

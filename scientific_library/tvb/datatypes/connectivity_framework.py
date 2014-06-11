@@ -88,10 +88,10 @@ class ConnectivityFramework(connectivity_data.ConnectivityData):
         inverse_permutation = numpy.argsort(permutation)  # trick to invert a permutation represented as an array
         interest_areas = inverse_permutation[interest_areas]
         # see :meth"`ordered_weights` for why [p:][:p]
-        new_weights = new_weights[inverse_permutation, :][:,inverse_permutation]
+        new_weights = new_weights[inverse_permutation, :][:, inverse_permutation]
 
         if new_tracts is not None:
-            new_tracts = new_tracts[inverse_permutation, :][:,inverse_permutation]
+            new_tracts = new_tracts[inverse_permutation, :][:, inverse_permutation]
 
         return self.generate_new_connectivity(new_weights, interest_areas, storage_path, new_tracts)
 
@@ -148,7 +148,7 @@ class ConnectivityFramework(connectivity_data.ConnectivityData):
         # how this works:
         # w[permutation, :] selects all rows at the indices present in the permutation array thus permuting the rows
         # [:, permutation] does the same to columns. See numpy index arrays
-        return self.weights[permutation, :][:,permutation]
+        return self.weights[permutation, :][:, permutation]
 
     @property
     def ordered_tracts(self):
@@ -156,7 +156,7 @@ class ConnectivityFramework(connectivity_data.ConnectivityData):
         Similar to :meth:`ordered_weights`
         """
         permutation = self.hemisphere_order_indices
-        return self.tract_lengths[permutation, :][:,permutation]
+        return self.tract_lengths[permutation, :][:, permutation]
 
     @property
     def ordered_labels(self):
@@ -169,7 +169,7 @@ class ConnectivityFramework(connectivity_data.ConnectivityData):
     @property
     def ordered_centres(self):
         """
-        Similar to :meth:`ordered_weights`
+        Similar to :method:`ordered_weights`
         """
         permutation = self.hemisphere_order_indices
         return self.centres[permutation]
@@ -181,7 +181,7 @@ class ConnectivityFramework(connectivity_data.ConnectivityData):
         if self.hemispheres is not None:
             l, r = [], []
 
-            for i, (is_right, label) in enumerate(zip( self.hemispheres, self.region_labels)):
+            for i, (is_right, label) in enumerate(zip(self.hemispheres, self.region_labels)):
                 if is_right:
                     r.append((i, label))
                 else:
@@ -192,7 +192,7 @@ class ConnectivityFramework(connectivity_data.ConnectivityData):
 
 
     def get_default_selection(self):
-        # should this be subselection or all always?
+        # should this be sub-selection or all always?
         sel = self.saved_selection
         if sel is not None:
             return sel
