@@ -143,7 +143,7 @@ class SurfaceViewer(ABCDisplayer):
 
         try:
             params['shelfObject'] = BrainViewer.get_shell_surface_urls(shell_surface, self.current_project_id)
-        except ValueError:
+        except Exception:
             params['shelfObject'] = None
 
         return self.build_display_result("surface/surface_view", params,

@@ -82,6 +82,7 @@ class SurfaceViewersTest(TransactionalTestCase):
         Check that all required keys are present in output from SurfaceViewer launch.
         """
         viewer = SurfaceViewer()
+        viewer.current_project_id = self.test_project.id
         result = viewer.launch(self.surface, self.region_mapping)
 
         self.assert_compliant_dictionary(self.EXPECTED_KEYS, result)
@@ -92,6 +93,7 @@ class SurfaceViewersTest(TransactionalTestCase):
         Check that all required keys are present in output from RegionMappingViewer launch.
         """
         viewer = RegionMappingViewer()
+        viewer.current_project_id = self.test_project.id
         result = viewer.launch(self.region_mapping)
 
         self.assert_compliant_dictionary(self.EXPECTED_KEYS, result)
