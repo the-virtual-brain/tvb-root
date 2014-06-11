@@ -34,7 +34,7 @@
                     <label value="Binary undirected connection matrix:"/>
                     <type value="tvb.datatypes.connectivity.Connectivity" field="weights">
 	                    <conditions>
-				            <cond_fields value_list="[FilterChain.datatype + '._unidirectional']"/>
+				            <cond_fields value_list="[FilterChain.datatype + '._undirected']"/>
 				            <cond_operations value_list="['==']"/>    
 				            <cond_values value_list="['1']"/>
 				        </conditions>
@@ -78,7 +78,7 @@
                     <label value="Weighted undirected connection matrix:"/>
                     <type value="tvb.datatypes.connectivity.Connectivity" field="scaled_weights()">
 	                    <conditions>
-				            <cond_fields value_list="[FilterChain.datatype + '._unidirectional']"/>
+				            <cond_fields value_list="[FilterChain.datatype + '._undirected']"/>
 				            <cond_operations value_list="['==']"/>    
 				            <cond_values value_list="['1']"/>
 				        </conditions>
@@ -123,7 +123,7 @@
                     <label value="Binary undirected connection matrix:"/>
                     <type value="tvb.datatypes.connectivity.Connectivity" field="weights">
 	                    <conditions>
-				            <cond_fields value_list="[FilterChain.datatype + '._unidirectional']"/>
+				            <cond_fields value_list="[FilterChain.datatype + '._undirected']"/>
 				            <cond_operations value_list="['==']"/>    
 				            <cond_values value_list="['1']"/>
 				        </conditions>
@@ -165,7 +165,7 @@
                     <label value="Weighted undirected connection matrix:"/>
                     <type value="tvb.datatypes.connectivity.Connectivity" field="scaled_weights()">
 	                    <conditions>
-				            <cond_fields value_list="[FilterChain.datatype + '._unidirectional']"/>
+				            <cond_fields value_list="[FilterChain.datatype + '._undirected']"/>
 				            <cond_operations value_list="['==']"/>    
 				            <cond_values value_list="['1']"/>
 				        </conditions>

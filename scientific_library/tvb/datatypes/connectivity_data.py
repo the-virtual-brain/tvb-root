@@ -65,7 +65,7 @@ class ConnectivityData(MappedType):
         stored_metadata=[key for key in MappedType.DEFAULT_WITH_ZERO_METADATA],
         doc="""Matrix of values representing the strength of connections between regions, arbitrary units.""")
 
-    unidirectional = basic.Integer(
+    undirected = basic.Integer(
         default=0, required=False,
         doc="1, when the weights matrix is square and symmetric over the main diagonal, 0 when bi-directional matrix.")
 

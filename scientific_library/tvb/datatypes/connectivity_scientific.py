@@ -101,7 +101,7 @@ class ConnectivityScientific(connectivity_data.ConnectivityData):
         self.trait["delays"].log_debug(owner=self.__class__.__name__)
         
         if (self.weights.transpose() == self.weights).all():
-            self.unidirectional = 1 
+            self.undirected = 1
     
     
     def _find_summary_info(self):
@@ -110,7 +110,8 @@ class ConnectivityScientific(connectivity_data.ConnectivityData):
         of this dataType.
         """
         summary = {"Number of regions": self.number_of_regions,
-                   "Number of connections": self.number_of_connections}
+                   "Number of connections": self.number_of_connections,
+                   "Undirected": self.undirected}
 
         summary.update(self.get_info_about_array('areas',
                                                  [self.METADATA_ARRAY_MAX,
