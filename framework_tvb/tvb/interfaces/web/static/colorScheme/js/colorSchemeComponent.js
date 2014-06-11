@@ -439,7 +439,7 @@ SPARSE_COLORS = [
 0x00FFFF, /* Cyan */
 0x008B8B, /* DarkCyan */
 0x0000FF, /* Blue */
-0x000080, /* Navy */
+0x000080, /* Navy Blue */
 0xFF00FF, /* Magenta */
 0x9400D3, /* DarkViolet */
 0x4B0082, /* Indigo */
@@ -450,8 +450,56 @@ SPARSE_COLORS = [
 0xB8860B, /* DarkGoldenrod */
 0xD2691E, /* Chocolate */
 0xDEB887, /* BurlyWood */
-0x8B4513  /* SaddleBrown */
-];
+0x8B4513, /* SaddleBrown */
+0xF0F0F0, /* Black */
+0xE5E4E2, /* White Platinum */
+0x736F6E, /* Smokey Gray */
+0x4C4646, /* Black Cow */
+0xD1D0CE, /* Gray Goose */
+0xBCC6CC, /* Metallic Silver */
+0x566D7E, /* Marble Blue */
+0x737CA1, /* Slate Blue */
+0x151B54, /* Midnight Blue */
+0x2B3856, /* Dark Slate Blue */
+0x2B60DE, /* Royal Blue */
+0x6960EC, /* Blue Lotus */
+0x95B9C7, /* Baby Blue */
+0x6698FF, /* Sky Blue */
+0xB7CEEC, /* Blue Angel */
+0x50EBEC, /* Celeste */
+0x81B8D0, /* Tiffany Blue */
+0x92C7C7, /* Cyan Opaque */
+0x77BFC7, /* Blue Hosta */
+0x46C7C7, /* Jellyfish Green */
+0x3EA99F, /* Light Sea Green */
+0x3B9C9C, /* Dark Turquoise */
+0x4C787E, /* Beetle Green */
+0x78866B, /* Camouflage Green */
+0x728C00, /* Venom Green */
+0x52D017, /* Yellow Green */
+0xA1C935, /* Salad Green */
+0xC3FDB8, /* Light Jade */
+0xCCFB5D, /* Tea Green */
+0xF3E5AB, /* Vanilla */
+0xE9AB17, /* Beer Yellow */
+0xFFCBA4, /* Deep Peach */
+0xC2B280, /* Sand */
+0xC68E17, /* Caramel */
+0xB5A642, /* Brass */
+0x827839, /* Moccasin */
+0x785D26, /* Sandstone */
+0x7F462C, /* Sepia */
+0xDC381F, /* Grapefruit */
+0x990012, /* Red Whine */
+0x7E3817, /* Sangria */
+0x7D0541, /* Plum Pie */
+0xC48793, /* Lipstick Pink  */
+0xFDD7E4, /* Pig Pink */
+0xF535AA, /* Neon Pink */
+0xC25A7C, /* Tulip Pink  */
+0x7E587E, /* Viola Purple */
+0x7D1B7E, /* Dark Orchid */
+0x9172EC /* Crocus Purple */];
 
 /**
  * Used by discrete color schemes. This makes the color interval open at the right end.
