@@ -64,14 +64,6 @@ PARAM_CONSOLE = "console"
 PARAM_LIBRARY = "library"
 PARAM_MODEL_VALIDATION = "validate"
 
-### Ensure Python is using UTF-8 encoding.
-### While running distribution/console, default encoding is ASCII
-# This is set here for uniformity with the main tvb process.
-# Tvb profile and settings are initialized in this file.
-# Without this their semantics differ from the main tvb process.
-# Ex TVB_STORAGE will differ if the .tvb.configuration file contains non-ascii bytes
-reload(sys)
-sys.setdefaultencoding('utf-8')
 
 ### This is a TVB Framework initialization call. Make sure a good default profile gets set.
 from tvb.basic.profile import TvbProfile
@@ -106,9 +98,9 @@ SUBPARAM_PROFILE = TvbProfile.SUBPARAM_PROFILE
 CONSOLE_TVB = 'tvb_bin.run_IDLE'
 VALIDATE_TVB = 'tvb.core.model_validations'
 CONSOLE_PROFILE_SET = ('from tvb.basic.profile import TvbProfile as tvb_profile; '
-                       'tvb_profile.set_profile(["-profile", "CONSOLE_PROFILE"]);')
+                       'tvb_profile.set_profile(["-profile", "CONSOLE_PROFILE"], try_reload=False);')
 LIBRARY_PROFILE_SET = ('from tvb.basic.profile import TvbProfile as tvb_profile; '
-                       'tvb_profile.set_profile(["-profile", "LIBRARY_PROFILE"]);')
+                       'tvb_profile.set_profile(["-profile", "LIBRARY_PROFILE"], try_reload=False);')
 
 WEB_TVB = 'tvb.interfaces.web.run'
 DESKTOP_TVB = 'tvb.interfaces.desktop.run'

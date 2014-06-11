@@ -106,7 +106,7 @@ class TvbProfile():
     @staticmethod
     def set_profile(script_argv, remove_from_args=False, try_reload=True):
         """
-        Sets TVB profile from script_argv.
+        Sets TVB profile from script_argv and specify UTF-8 and encoding.
 
         :param script_argv: represents a list of string arguments.
                       If the script_argv contains the string '-profile' 
@@ -121,6 +121,13 @@ class TvbProfile():
         E.g.: if script_argv = ['$param1', ..., '-profile', 'TEST_SQLITE_PROFILE', ...] 
               than the  profile will be set to 'TEST_SQLITE_PROFILE'
         """
+
+        ### Ensure Python is using UTF-8 encoding (otherwise default encoding is ASCII)
+        ### We should make sure UTF-8 gets set before reading from any TVB files
+        ### e.g. TVB_STORAGE will differ if the .tvb.configuration file contains non-ascii bytes
+        reload(sys)
+        sys.setdefaultencoding('utf-8')
+
         selected_profile = TvbProfile.get_profile(script_argv)
         
         if try_reload:

@@ -41,19 +41,12 @@ The results of the computation will be stored by the adapter itself.
 
 """
 
+
+import sys
+from tvb.basic.profile import TvbProfile as tvb_profile
+
 ## Make sure selected profile is propagated when launching an operation.
 ### Reload modules, only when running, thus avoid problems when sphinx generates documentation
-import sys
-
-### Ensure Python is using UTF-8 encoding.
-### While running distribution/console, default encoding is ASCII
-# This is set here for uniformity with the main tvb process.
-# Tvb profile and settings are initialized in this file.
-# Without this their semantics differ from the main tvb process.
-reload(sys)
-sys.setdefaultencoding('utf-8')
-
-from tvb.basic.profile import TvbProfile as tvb_profile
 tvb_profile.set_profile(sys.argv, try_reload=(__name__ == '__main__'))
 
 ### Overwrite PostgreSQL number of connections when executed in the context of a node

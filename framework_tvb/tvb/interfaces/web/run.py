@@ -45,12 +45,6 @@ from copy import copy
 from cherrypy import Tool
 from sys import platform, argv
 
-### Ensure Python is using UTF-8 encoding.
-### While running distribution/console, default encoding is ASCII
-# This is intentionally done before tvb profile, logging and settings are initialized because those assume utf8
-reload(sys)
-sys.setdefaultencoding('utf-8')
-
 ### This will set running profile from arguments.
 ### Reload modules, only when running, thus avoid problems when sphinx generates documentation
 from tvb.basic.profile import TvbProfile
