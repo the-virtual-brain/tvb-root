@@ -380,35 +380,35 @@
         <copyright-notice value="Copyright (c) 1998-2003 Carnegie Mellon University. All rights reserved."/>
         <description value="A dependency of psycopg2 dynamic build. This product includes cryptographic software written by Eric Young."/>
     </dependency>
-    <dependency env="macos32" name="libtcl8.5.dylib">
+    <dependency env="[macos32,macos64]" name="libtcl8.5.dylib">
         <full-name value="TCL85 dylib"/>
-        <project-home value="http://www.activestate.com/"/>
+        <project-home value="http://www.tcl.tk/software/tcltk/license.html"/>
         <version value="unknown"/>
         <usage value="dynamic linking"/>
         <license value="LICENSE_tcl85.txt"/>
         <license-type value="BSD_ like"/>
-        <copyright-notice value="Copyright (C) 2001 by ActiveState Corporation"/>
-        <description value="License found at http://www.tcl.tk/software/tcltk/license.html. Library used as IDLE dependency, for the console-users."/>
+        <copyright-notice value="Copyright (C) 1989-2008 by Regents of the University of California, Sun Microsystems, Inc., Scriptics Corporation, and other parties"/>
+        <description value="Library used as IDLE dependency, for the console-users."/>
     </dependency>
     <dependency env="[linux32,linux64]" name="libtcl8.5.so.0">
         <full-name value="TCL85 so"/>
-        <project-home value="http://www.activestate.com/"/>
+        <project-home value="http://www.tcl.tk/software/tcltk/license.html"/>
         <version value="unknown"/>
         <usage value="dynamic linking"/>
         <license value="LICENSE_tcl85.txt"/>
         <license-type value="BSD_ like"/>
-        <copyright-notice value="Copyright (C) 2001 by ActiveState Corporation"/>
-        <description value="License found at http://www.tcl.tk/software/tcltk/license.html. Library used as IDLE dependency, for the console-users."/>
+        <copyright-notice value="Copyright (C) 1989-2008 by Regents of the University of California, Sun Microsystems, Inc., Scriptics Corporation, and other parties"/>
+        <description value="Library used as IDLE dependency, for the console-users."/>
     </dependency>
-    <dependency env="macos32" name="libtk8.5.dylib">
+    <dependency env="[macos32,macos64]" name="libtk8.5.dylib">
         <full-name value="TK85 dylib"/>
         <project-home value="http://tkinter.unpythonic.net/wiki/Tkinter"/>
         <version value="unknown"/>
         <usage value="dynamic linking"/>
         <license value="LICENSE_tcl85.txt"/>
         <license-type value="BSD_ like"/>
-        <copyright-notice value="Copyright (C) 2001 by ActiveState Corporation"/>
-        <description value="License found at http://www.tcl.tk/software/tcltk/license.html. Library used as IDLE dependency, for the console-users."/>
+        <copyright-notice value="Copyright (C) 1989-2008 by Regents of the University of California, Sun Microsystems, Inc., Scriptics Corporation, and other parties"/>
+        <description value="Library used as IDLE dependency, for the console-users."/>
     </dependency>
     <dependency env="[linux32,linux64]" name="libtk8.5.so.0">
         <full-name value="TK85 so"/>
@@ -417,8 +417,8 @@
         <usage value="dynamic linking"/>
         <license value="LICENSE_tcl85.txt"/>
         <license-type value="BSD_ like"/>
-        <copyright-notice value="Copyright (C) 2001 by ActiveState Corporation"/>
-        <description value="License found at http://www.tcl.tk/software/tcltk/license.html. Library used as IDLE dependency, for the console-users."/>
+        <copyright-notice value="Copyright (C) 1989-2008 by Regents of the University of California, Sun Microsystems, Inc., Scriptics Corporation, and other parties"/>
+        <description value="Library used as IDLE dependency, for the console-users."/>
     </dependency>
     <dependency env="macos32" name="libx11.6.dylib">
         <full-name value="The current version of the X Window System."/>
@@ -692,23 +692,23 @@
     </dependency>
     <dependency env="[macos64,macos32]" name="tcl.framework">
         <full-name value="TCL85 Framework"/>
-        <project-home value="http://www.activestate.com/"/>
+        <project-home value="http://www.tcl.tk/software/tcltk/license.html"/>
         <version value="unknown"/>
         <usage value="dynamic linking"/>
         <license value="LICENSE_tcl85.txt"/>
         <license-type value="BSD_ like"/>
-        <copyright-notice value="Copyright (C) 2001 by ActiveState Corporation"/>
-        <description value="License found at http://www.tcl.tk/software/tcltk/license.html. Library used as IDLE dependency, for the console-users."/>
+        <copyright-notice value="Copyright (C) 1989-2008 by Regents of the University of California, Sun Microsystems, Inc., Scriptics Corporation, and other parties"/>
+        <description value="Library used as IDLE dependency, for the console-users."/>
     </dependency>
     <dependency env="[win32,win64]" name="tcl85.dll">
         <full-name value="TCL85 dll"/>
-        <project-home value="http://www.activestate.com/"/>
+        <project-home value="http://www.tcl.tk/software/tcltk/license.html"/>
         <version value="8.5.2.2"/>
         <usage value="dynamic linking"/>
         <license value="LICENSE_tcl85.txt"/>
         <license-type value="BSD_ like"/>
-        <copyright-notice value="Copyright (C) 2001 by ActiveState Corporation"/>
-        <description value="License found at http://www.tcl.tk/software/tcltk/license.html. Library used as IDLE dependency, for the console-users."/>
+        <copyright-notice value="Copyright (C) 1989-2008 by Regents of the University of California, Sun Microsystems, Inc., Scriptics Corporation, and other parties"/>
+        <description value="Library used as IDLE dependency, for the console-users."/>
     </dependency>
     <dependency env="[win32,linux64,macos32,win64,linux32,macos64]" name="tempita">
         <full-name value="Tempita"/>
@@ -727,8 +727,8 @@
         <usage value="dynamic linking"/>
         <license value="LICENSE_tcl85.txt"/>
         <license-type value="BSD_ like"/>
-        <copyright-notice value="Copyright (C) 2001 by ActiveState Corporation"/>
-        <description value="License found at http://www.tcl.tk/software/tcltk/license.html. Library used as IDLE dependency, for the console-users."/>
+        <copyright-notice value="Copyright (C) 1989-2008 by Regents of the University of California, Sun Microsystems, Inc., Scriptics Corporation, and other parties"/>
+        <description value="Library used as IDLE dependency, for the console-users."/>
     </dependency>
     <dependency env="[win32,win64]" name="tk85.dll">
         <full-name value="TK85 dll"/>
@@ -737,8 +737,8 @@
         <usage value="dynamic linking"/>
         <license value="LICENSE_tcl85.txt"/>
         <license-type value="BSD_ like"/>
-        <copyright-notice value="Copyright (C) 2001 by ActiveState Corporation"/>
-        <description value="License found at http://www.tcl.tk/software/tcltk/license.html. Library used as IDLE dependency, for the console-users."/>
+        <copyright-notice value="Copyright (C) 1989-2008 by Regents of the University of California, Sun Microsystems, Inc., Scriptics Corporation, and other parties"/>
+        <description value="Library used as IDLE dependency, for the console-users."/>
     </dependency>
     <dependency env="[win32,win64,linux32,linux64]" name="wsgiref">
         <full-name value="Python module wsgiref"/>
