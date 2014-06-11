@@ -43,6 +43,8 @@ except Exception:
 import os
 import numpy
 import zipfile
+import uuid
+from tempfile import gettempdir
 from scipy import io as scipy_io
 from tvb.basic.logger.builder import get_logger
 
@@ -152,13 +154,22 @@ class ZipReader():
                 matching_file_name = actual_name
                 break
 
-        if matching_file_name is not None:
-            file_reader = FileReader(matching_file_name)
-            file_reader.file_stream = self.zip_archive.open(matching_file_name, 'rU')
-            return file_reader.read_array(dtype, skip_rows, use_cols, matlab_data_name)
+        if matching_file_name is None:
+            self.logger.warning("File %s not found in ZIP." % file_name)
+            raise ReaderException("File %s not found in ZIP." % file_name)
 
-        self.logger.warning("File %s not found in ZIP." % file_name)
-        raise ReaderException("File %s not found in ZIP." % file_name)
+        zip_entry = self.zip_archive.open(matching_file_name, 'rU')
+
+        if matching_file_name.endswith(".bz2"):
+            temp_file = copy_zip_entry_into_temp(zip_entry, matching_file_name)
+            file_reader = FileReader(temp_file)
+            result = file_reader.read_array(dtype, skip_rows, use_cols, matlab_data_name)
+            os.remove(temp_file)
+            return result
+
+        file_reader = FileReader(matching_file_name)
+        file_reader.file_stream = zip_entry
+        return file_reader.read_array(dtype, skip_rows, use_cols, matlab_data_name)
 
 
     def read_optional_array_from_file(self, file_name, dtype=numpy.float64, skip_rows=0,
@@ -196,3 +207,30 @@ def try_get_absolute_path(relative_module, file_suffix):
             LOG.exception("Could not import tvb_data Python module for default data-set!")
 
     return result_full_path
+
+
+
+def copy_zip_entry_into_temp(source, file_suffix, buffer_size=1024 * 1024):
+    """
+    Copy a ZIP Entry into a new file created under system temporary folder.
+
+    :param source: ZipEntry
+    :param file_suffix: String suffix to be added to the temporary file name
+    :param buffer_size: Buffer size used when copying the file-content
+    :return: the path towards the new file.
+    """
+
+    result_dest_path = os.path.join(gettempdir(), "tvb_" + str(uuid.uuid1()) + file_suffix)
+    result_dest = open(result_dest_path, 'wb')
+
+    while 1:
+        copy_buffer = source.read(buffer_size)
+        if copy_buffer:
+            result_dest.write(copy_buffer)
+        else:
+            break
+
+    source.close()
+    result_dest.close()
+
+    return result_dest_path

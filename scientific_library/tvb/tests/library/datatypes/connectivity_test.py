@@ -173,6 +173,27 @@ class ConnectivityTest(BaseTestCase):
         self.assertEqual(conn.parent_connectivity, '')
 
 
+    def test_connectivity_bzip_in_zip(self):
+        conn = connectivity.Connectivity.from_file("connectivity_68.zip")
+        conn.configure()
+        self.assertEqual(conn.weights.shape, (68, 68))
+        self.assertEqual(conn.weights.max(), 0.12053822)
+        self.assertEqual(conn.weights.min(), 0.0)
+        self.assertEqual(conn.tract_lengths.shape, (68, 68))
+        self.assertEqual(conn.tract_lengths.max(), 252.90276)
+        self.assertEqual(conn.tract_lengths.min(), 0.0)
+        self.assertEqual(conn.centres.shape, (68, 3))
+        self.assertEqual(conn.orientations.shape, (68, 3))
+        self.assertEqual(conn.region_labels.shape, (68,))
+        self.assertEqual(conn.areas.shape, (0,))
+        self.assertEqual(conn.unidirectional, 1)
+        self.assertEqual(conn.speed, numpy.array([3.0]))
+        self.assertEqual(conn.hemispheres.shape, (68,))
+        self.assertEqual(conn.idelays.shape, (0,))
+        self.assertEqual(conn.delays.shape, (68, 68))
+        self.assertEqual(conn.number_of_regions, 68)
+
+
 
 def suite():
     """
