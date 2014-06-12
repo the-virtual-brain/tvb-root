@@ -29,53 +29,35 @@
 #
 
 """
-Demo script for console profile which is showing how a project import can be done from the command line.
-Later on, this project will be available from the web-interface.
+
+Demo script for console profile which is showing how a project export can be done from the command line.
+After running this script, you should have a message in the console telling where the exported ZIP is placed.
 
 .. moduleauthor:: Lia Domide <lia.domide@codemart.ro>
+
 """
 
 import tvb.interfaces.command.prepare
-from tvb.core.entities import model
-from tvb.core.services.user_service import UserService
-from tvb.core.services.import_service import ImportService
+from tvb.core.services.project_service import ProjectService
+from tvb.adapters.exporters.export_manager import ExportManager
 from sys import argv
 
 
+def run_export(project_id):
 
-def run_import(project_path):
+    s = ProjectService()
+    mng = ExportManager()
 
-    ## If we would know a UserID to have as admin, next step would not be necessary.
-    ## Make sure at least one user exists in TVB DB:
-    user_service = UserService()
-    admins = user_service.get_administrators()
-
-    if admins:
-        admin = admins[0]
-    else:
-        ## No Admin user was found, we will create one
-        user_service.create_user("admin", "pass", role=model.ROLE_ADMINISTRATOR,
-                                 email="info@thevirtualbrain.org", validated=True)
-        admin = user_service.get_administrators()[0]
-
-    ## Do the actual import of a project from ZIP:
-    import_service = ImportService()
-    import_service.import_project_structure(project_path, admin.id)
-
-    print "Project imported successfully. Check the Web UI!"
-
+    project = s.find_project(project_id)
+    export_file = mng.export_project(project)
+    print ("Check the exported file: %s" % export_file)
 
 
 if __name__ == '__main__':
 
     if len(argv) < 2:
-        PROJECT_PATH = "2014-03-28_14-20_Epilepsy.zip"
-    else:
-        PROJECT_PATH = str(argv[1])
+        print "You should specify a project ID to be exported!"
 
-    print "We will try to import project at path " + PROJECT_PATH
+    print "We will try to export project with ID: " + str(argv[1])
 
-    run_import(PROJECT_PATH)
-
-
-
+    run_export(argv[0])
