@@ -609,7 +609,9 @@ class BurstController(BaseController):
         result, input_data, operation_id = self.burst_service.launch_visualization(visualizer, is_preview=False)
         algorithm = self.flow_service.get_algorithm_by_identifier(visualizer.fk_algorithm)
 
-        result[common.KEY_TITLE] = algorithm.name
+        if common.KEY_TITLE not in result:
+            result[common.KEY_TITLE] = algorithm.name
+
         result[common.KEY_ADAPTER] = algorithm.algo_group.id
         result[common.KEY_OPERATION_ID] = operation_id
         result[common.KEY_INCLUDE_RESOURCES] = 'flow/included_resources'
