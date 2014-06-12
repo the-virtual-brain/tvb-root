@@ -550,12 +550,12 @@
         <copyright-notice value="Copyright (c) 2007,2008  David M. Cooke &lt;david.m.cooke@gmail.com&gt;  Copyright (c) 2009,2010  Francesc Alted &lt;faltet@pytables.org&gt;  Copyright (c) 2011-      See AUTHORS.txt"/>
         <description value="Fast numerical array expression evaluator for Python and NumPy."/>
     </dependency>
-    <dependency env="[win32,linux64,macos32,win64,linux32,macos64]" name="numpy">
+    <dependency env="[win32,linux64,win64,linux32,macos64,macos32]" name="numpy">
         <full-name value="Numpy"/>
         <project-home value="http://numpy.scipy.org/license.html#license"/>
-        <version value="[1.6.2,1.6.1,1.8.0]"/>
+        <version value="[1.6.2,1.6.1,1.8.0,1.8.1]"/>
         <usage value="dynamic linking"/>
-        <license value="LICENSE_numpy_1.5.1.txt"/>
+        <license value="LICENSE_numpy.txt"/>
         <license-type value="BSD_"/>
         <copyright-notice value="Copyright (c) 2005-2009, NumPy Developers."/>
         <description value="Numpy library will be used by simulation and analysis modules."/>
