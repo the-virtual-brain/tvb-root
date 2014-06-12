@@ -73,7 +73,8 @@ class ProjectionRegionEEGData(ProjectionMatrixData):
     sources = connectivity_module.Connectivity
     
     __tablename__ = None
-    
+
+
 
 class ProjectionSurfaceEEGData(ProjectionMatrixData):
     """
@@ -97,7 +98,8 @@ class ProjectionSurfaceEEGData(ProjectionMatrixData):
     
     sources = surfaces_module.CorticalSurface
     
-    
+
+
 class ProjectionRegionMEGData(ProjectionMatrixData):
     """
     Specific projection, from a Connectivity datatype to a MEGSensors datatype,
@@ -109,7 +111,8 @@ class ProjectionRegionMEGData(ProjectionMatrixData):
     sources = connectivity_module.Connectivity
     
     __tablename__ = None
-    
+
+
     
 class ProjectionSurfaceMEGData(ProjectionMatrixData):
     """

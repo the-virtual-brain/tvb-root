@@ -40,7 +40,7 @@ import tvb.datatypes.projections_data as data
 class ProjectionMatrixFramework(data.ProjectionMatrixData):
     """ This class exists to add framework methods to ProjectionMatrixData. """
     __tablename__ = None
-    
+
 
     
 class ProjectionRegionEEGFramework(data.ProjectionRegionEEGData):
@@ -63,4 +63,16 @@ class ProjectionRegionEEGFramework(data.ProjectionRegionEEGData):
 
 class ProjectionSurfaceEEGFramework(data.ProjectionSurfaceEEGData):
     """ This class exists to add framework methods to ProjectionSurfaceEEGData. """
+    __tablename__ = None
+
+
+
+class ProjectionRegionMEGFramework(data.ProjectionRegionMEGData):
+    """ This class exists to add framework methods to ProjectionRegionMEGData. """
+    __tablename__ = None
+
+
+
+class ProjectionSurfaceMEGFramework(data.ProjectionSurfaceMEGData):
+    """ This class exists to add framework methods to ProjectionSurfaceMEGData. """
     __tablename__ = None

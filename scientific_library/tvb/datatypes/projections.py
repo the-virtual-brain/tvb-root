@@ -101,4 +101,47 @@ class ProjectionSurfaceEEG(framework.ProjectionSurfaceEEGFramework,
     
     """
     pass
-    
+
+
+
+class ProjectionRegionMEG(framework.ProjectionRegionMEGFramework,
+                          scientific.ProjectionRegionMEGScientific, ProjectionMatrix):
+    """
+    This class brings together the scientific and framework methods that are
+    associated with the ProjectionMatrix DataType.
+
+    ::
+
+                          ProjectionRegionMEGData
+                                     |
+                                    / \\
+        ProjectionRegionMEGFramework   ProjectionRegionMEGScientific
+                                    \ /
+                                     |
+                           ProjectionRegionMEG
+
+
+    """
+    pass
+
+
+
+class ProjectionSurfaceMEG(framework.ProjectionSurfaceMEGFramework,
+                           scientific.ProjectionSurfaceMEGScientific, ProjectionMatrix):
+    """
+    This class brings together the scientific and framework methods that are
+    associated with the ProjectionMatrix DataType.
+
+    ::
+
+                          ProjectionSurfaceMEGData
+                                      |
+                                     / \\
+        ProjectionSurfaceMEGFramework   ProjectionSurfaceMEGScientific
+                                     \ /
+                                      |
+                          ProjectionSurfaceMEG
+
+
+    """
+    pass
