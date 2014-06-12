@@ -1,19 +1,50 @@
+# -*- coding: utf-8 -*-
+#
+#
+# TheVirtualBrain-Framework Package. This package holds all Data Management, and
+# Web-UI helpful to run brain-simulations. To use it, you also need do download
+# TheVirtualBrain-Scientific Package (for simulators). See content of the
+# documentation-folder for more details. See also http://www.thevirtualbrain.org
+#
+# (c) 2012-2013, Baycrest Centre for Geriatric Care ("Baycrest")
+#
+# This program is free software; you can redistribute it and/or modify it under
+# the terms of the GNU General Public License version 2 as published by the Free
+# Software Foundation. This program is distributed in the hope that it will be
+# useful, but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU General Public
+# License for more details. You should have received a copy of the GNU General
+# Public License along with this program; if not, you can download it here
+# http://www.gnu.org/licenses/old-licenses/gpl-2.0
+#
+#
+#   CITATION:
+# When using The Virtual Brain for scientific publications, please cite it as follows:
+#
+#   Paula Sanz Leon, Stuart A. Knock, M. Marmaduke Woodman, Lia Domide,
+#   Jochen Mersmann, Anthony R. McIntosh, Viktor Jirsa (2013)
+#       The Virtual Brain: a simulator of primate brain network dynamics.
+#   Frontiers in Neuroinformatics (7:10. doi: 10.3389/fninf.2013.00010)
+#
+#
 
 """
+.. moduleauthor:: Marmaduke Woodman <duke@eml.cc>
+
 Provides facilities to import FieldTrip data sets into TVB as
 time series and sensor data.
 
 """
 
 import os
-
 import numpy
-import scipy.io
-
+import ConfigParser
+from scipy.io import loadmat
+from StringIO import StringIO
 from tvb.adapters.uploaders.abcuploader import ABCUploader
 from tvb.basic.logger.builder import get_logger
-from tvb.datatypes.time_series import TimeSeriesMEG, TimeSeriesEEG
-from tvb.datatypes.sensors import SensorsMEG, SensorsEEG
+from tvb.datatypes.time_series import TimeSeriesEEG
+from tvb.datatypes.sensors import SensorsEEG
 
 
 class FieldTripUploader(ABCUploader):
@@ -32,28 +63,27 @@ class FieldTripUploader(ABCUploader):
     _ui_description = "Upload continuous time-series data from the FieldTrip toolbox"
     logger = get_logger(__name__)
 
+
     def get_upload_input_tree(self):
-        return [
-            {'name': 'matfile',
-             "type": "upload",
-             #'type': "array", "quantifier": "manual",
-             'required_type': '.mat',
-             'label': 'Please select a MAT file contain FieldTrip data and header as variables "dat" and "hdr"',
-             'required': 'true'}
-        ]
+        return [{'name': 'matfile',
+                 "type": "upload",
+                 'required_type': '.mat',
+                 'label': 'Please select a MAT file contain FieldTrip data and header as variables "dat" and "hdr"',
+                 'required': 'true'}]
+
 
     def get_output(self):
-        return [TimeSeries]#, SensorsMEG]
+        return [TimeSeriesEEG]
+
 
     def launch(self, matfile):
-        mat = scipy.io.loadmat(matfile)
+        mat = loadmat(matfile)
         hdr = mat['hdr']
         fs, ns = [hdr[key][0, 0][0, 0] for key in ['Fs', 'nSamples']]
 
         # the entities to populate
         #ch = SensorsMEG(storage_path=self.storage_path)
-        ts = TimeSeries(#sensors=ch, 
-                storage_path=self.storage_path)
+        ts = TimeSeriesEEG(storage_path=self.storage_path)
 
         # (nchan x ntime) -> (t, sv, ch, mo)
         dat = mat['dat'].T[:, numpy.newaxis, :, numpy.newaxis]
@@ -64,49 +94,43 @@ class FieldTripUploader(ABCUploader):
         # fill in header info
         ts.length_1d, ts.length_2d, ts.length_3d, ts.length_4d = dat.shape
         ts.labels_ordering = 'Time 1 Channel 1'.split()
-        ts.write_time_slice(numpy.r_[:ns]*1.0/fs)
+        ts.write_time_slice(numpy.r_[:ns] * 1.0 / fs)
         ts.start_time = 0.0
         ts.sample_period_unit = 's'
-        ts.sample_period = 1.0/float(fs)
+        ts.sample_period = 1.0 / float(fs)
         ts.close_file()
 
-        # setup sensors information
-        """
-        ch.labels = numpy.array(
-            [str(l[0]) for l in hdr['label'][0, 0][:, 0]])
-        ch.number_of_sensors = ch.labels.size
-        """
+        return ts
 
-        return ts#, ch
 
 
 class VHDR(ABCUploader):
     """
     Upload a BrainVision Analyser file.
-
     """
 
     _ui_name = "BrainVision EEG Signal uploader"
     _ui_subsection = "signals"
     _ui_description = "Upload continuous EEG data from a BrainVision file"
 
+
     def get_upload_input_tree(self):
-        return [
-            {'name': 'vhdr',
-             "type": "upload",
-             #'type': "array", "quantifier": "manual",
-             'required_type': '.vhdr',
-             'label': 'Please select a VHDR file',
-             'required': 'true'},
-            {'name': 'dat',
-             'type': 'upload',
-             'required_type': '.dat',
-             'label': 'Please select the corresponding DAT file',
-             'required': 'true'}
-        ]
+        return [{'name': 'vhdr',
+                 "type": "upload",
+                 #'type': "array", "quantifier": "manual",
+                 'required_type': '.vhdr',
+                 'label': 'Please select a VHDR file',
+                 'required': 'true'},
+                {'name': 'dat',
+                 'type': 'upload',
+                 'required_type': '.dat',
+                 'label': 'Please select the corresponding DAT file',
+                 'required': 'true'}]
+
 
     def get_output(self):
-        return [TimeSeries]
+        return [TimeSeriesEEG]
+
 
     def launch(self, vhdr, dat):
 
@@ -122,7 +146,7 @@ class VHDR(ABCUploader):
         while not self.srclines[0].startswith('['):
             self.srclines.pop(0)
 
-        self.sio = StringIO.StringIO()
+        self.sio = StringIO()
         self.sio.write('\n'.join(self.srclines))
         self.sio.seek(0)
 
@@ -134,10 +158,10 @@ class VHDR(ABCUploader):
 
         self.binaryformat = self.cp.get('Binary Infos', 'BinaryFormat')
 
-        self.labels = [self.cp.get('Channel Infos', o).split(',')[0] 
-                for o in self.cp.options('Channel Infos')]
+        self.labels = [self.cp.get('Channel Infos', o).split(',')[0]
+                       for o in self.cp.options('Channel Infos')]
 
-        self.fs = self.srate = 1e6/float(self.samplinginterval)
+        self.fs = self.srate = 1e6 / float(self.samplinginterval)
         self.nchan = int(self.numberofchannels)
 
         # important if not in same directory
@@ -162,13 +186,14 @@ class VHDR(ABCUploader):
         ts.write_data_slice(dat)
         ts.length_1d, ts.length_2d, ts.length_3d, ts.length_4d = dat.shape
         ts.labels_ordering = 'Time 1 Channel 1'.split()
-        ts.write_time_slice(numpy.r_[:dat.shape[0]]*1.0/self.fs)
+        ts.write_time_slice(numpy.r_[:dat.shape[0]] * 1.0 / self.fs)
         ts.start_time = 0.0
         ts.sample_period_unit = 's'
-        ts.sample_period = 1.0/float(self.fs)
+        ts.sample_period = 1.0 / float(self.fs)
         ts.close_file()
 
         return ts
+
 
     def read_data(self, mmap=False, dt='float32', mode='r'):
         """
@@ -177,46 +202,46 @@ class VHDR(ABCUploader):
         """
 
         if mmap:
-            ary = np.memmap(self.datafile, dt, mode)
+            ary = numpy.memmap(self.datafile, dt, mode)
         else:
-            ary = np.fromfile(self.datafile, dt)
+            ary = numpy.fromfile(self.datafile, dt)
         self.data = ary.reshape((-1, self.nchan)).T
         self.nsamp = self.data.shape[1]
 
 
+
 class EEGLAB(ABCUploader):
-    "EEGLAB .set file"
+    """EEGLAB .set file"""
 
     _ui_name = "EEGLAB .SET uploader"
     _ui_subsection = "signals"
     _ui_description = "Upload continuous time-series data from the EEGLAB toolbox"
     logger = get_logger(__name__)
 
+
     def get_upload_input_tree(self):
-        return [
-            {'name': 'matfile',
-             "type": "upload",
-             #'type': "array", "quantifier": "manual",
-             'required_type': '.mat',
-             'label': 'Please select a MAT file contain FieldTrip data and header as variables "dat" and "hdr"',
-             'required': 'true'},
-            {'name': 'fdtfile',
-             "type": "upload",
-             #'type': "array", "quantifier": "manual",
-             'required_type': '.fdt',
-             'label': 'Please select the corresponding FDT file',
-             'required': 'true'}
-        ]
+        return [{'name': 'matfile',
+                 "type": "upload",
+                 'required_type': '.mat',
+                 'label': 'Please select a MAT file contain FieldTrip data and header as variables "dat" and "hdr"',
+                 'required': 'true'},
+                {'name': 'fdtfile',
+                 "type": "upload",
+                 'required_type': '.fdt',
+                 'label': 'Please select the corresponding FDT file',
+                 'required': 'true'}]
+
 
     def get_output(self):
-        return [TimeSeriesEEG]#, SensorsMEG]
+        return [TimeSeriesEEG]
+
 
     def launch(self, matfile, fdtfile):
-        super(EEGLAB, self).__init__(filename)
-        self.mat = loadmat(filename)
+
+        self.mat = loadmat(matfile)
         self.fs = self.mat['EEG']['srate'][0, 0][0, 0]
         self.nsamp = self.mat['EEG']['pnts'][0, 0][0, 0]
-        self.data = np.fromfile(fdtfile, dtype=np.float32)
+        self.data = numpy.fromfile(fdtfile, dtype=numpy.float32)
         self.data = self.data.reshape((self.nsamp, -1)).T
         self.nchan = self.data.shape[0]
         self.labels = [c[0] for c in self.mat['EEG']['chanlocs'][0, 0]['labels'][0]]
@@ -226,8 +251,7 @@ class EEGLAB(ABCUploader):
             labels=self.labels,
             number_of_sensors=len(self.labels)
         )
-        uid = vhdr + '-sensors'
-        self._capture_operation_results([ch], uid=uid)
+        self._capture_operation_results([ch])
 
         ts = TimeSeriesEEG(
             sensors=ch,
@@ -243,10 +267,10 @@ class EEGLAB(ABCUploader):
         # fill in header info
         ts.length_1d, ts.length_2d, ts.length_3d, ts.length_4d = dat.shape
         ts.labels_ordering = 'Time 1 Channel 1'.split()
-        ts.write_time_slice(numpy.r_[:dat.shape[0]]*1.0/self.fs)
+        ts.write_time_slice(numpy.r_[:dat.shape[0]] * 1.0 / self.fs)
         ts.start_time = 0.0
         ts.sample_period_unit = 's'
-        ts.sample_period = 1.0/float(self.fs)
+        ts.sample_period = 1.0 / float(self.fs)
         ts.close_file()
 
-        return ts#, ch
+        return ts
