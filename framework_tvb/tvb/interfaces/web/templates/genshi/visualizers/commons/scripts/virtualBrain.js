@@ -135,6 +135,7 @@ var NEXT_PAGE_THREASHOLD = 100;
 var activityMin = 0, activityMax = 0;
 var isOneToOneMapping = false;
 var isDoubleView = false;
+var isEEGView = false;
 var drawingMode;
 var VS_showLegend = true;
 var isInternalSensorView = false;
@@ -306,6 +307,8 @@ function _VS_movie_entrypoint(baseDatatypeURL, onePageSize, urlTimeList, urlVert
     if (oneToOneMapping == 'True') {
         isOneToOneMapping = true;
     }
+    // these global flags could be structured better
+    isEEGView = isDoubleView && !isInternalSensorView;
     activityMin = parseFloat(minActivity);
     activityMax = parseFloat(maxActivity);
     pageSize = onePageSize;
@@ -359,6 +362,7 @@ function VS_StartSurfaceViewer(urlVerticesList, urlLinesList, urlTrianglesList, 
 function VS_StartEEGSensorViewer(urlVerticesList, urlLinesList, urlTrianglesList, urlNormalsList, urlMeasurePoints,
                                noOfMeasurePoints, urlMeasurePointsLabels,
                                shelfObject, minMeasure, maxMeasure, urlMeasure){
+    isEEGView = true;
     _VS_static_entrypoint(urlVerticesList, urlLinesList, urlTrianglesList, urlNormalsList, urlMeasurePoints,
                                noOfMeasurePoints, '', '', urlMeasurePointsLabels,
                                '', shelfObject, null, false, true, true, minMeasure, maxMeasure, urlMeasure);
@@ -370,7 +374,6 @@ function VS_StartBrainActivityViewer(baseDatatypeURL, onePageSize, urlTimeList, 
                     urlAlphasList, urlAlphasIndicesList, minActivity, maxActivity,
                     oneToOneMapping, doubleView, shelfObject, hemisphereChunkMask,
                     urlMeasurePointsLabels, boundaryURL, measurePointsSelectionGID) {
-
     _VS_movie_entrypoint.apply(this, arguments);
     _VS_init_cubicalMeasurePoints();
 
@@ -813,13 +816,10 @@ function computeAlphas(vertices, measurePoints) {
         var currentAlphas = [];
         var currentAlphasIndices = [];
         for (var j = 0; j < vertices[i].length/3; j++) {
-            var currentVertex = [vertices[i][j * 3], vertices[i][j * 3 + 1], vertices[i][j * 3 + 2]];
+            var currentVertex = vertices[i].slice(j * 3, (j + 1) * 3);
             var closestPosition = _findClosestPosition(currentVertex, measurePoints);
-            currentAlphas.push(1);
-            currentAlphas.push(0);
-            currentAlphasIndices.push(closestPosition);
-            currentAlphasIndices.push(0);
-            currentAlphasIndices.push(0);
+            currentAlphas.push(1, 0);
+            currentAlphasIndices.push(closestPosition, 0, 0);
         }
         alphas.push(currentAlphas);
         alphasIndices.push(currentAlphasIndices);
@@ -888,11 +888,16 @@ function initBuffers(urlVertices, urlNormals, urlTriangles, urlAlphas, urlAlphas
     
     var alphas = normals;  // Fake buffers, copy of the normals, in case of transparency, we only need dummy ones.
     var alphasIndices = normals;
+    // warning: these 'fake' buffers will be used and rendered when region colored surfaces are shown.
+    // This happens for all static surface viewers. The reason we do not have weird coloring effects
+    // is that normals have subunitary components that are truncated to 0 in the shader.
+    // todo: accidental use of the fake buffers should be visible. consider uvec3 in shader
     if (!isOneToOneMapping && urlAlphas && urlAlphasIndices && urlAlphas.length) {
         alphas = HLPR_getDataBuffers(gl, urlAlphas);
         alphasIndices = HLPR_getDataBuffers(gl, urlAlphasIndices);
-    } else if (isDoubleView) {
-        //if is double view than we use the static surface 'eeg_skin_surface' and we have to compute the alphas and alphasIndices;
+    } else if (isEEGView) {
+        // if is eeg view than we use the static surface 'eeg_skin_surface' and we have to compute the alphas and alphasIndices;
+        // todo: do this on the server to eliminate this special case
         var alphasData = computeAlphas(verticesData, measurePoints);
         alphas = createWebGlBuffers(alphasData[0]);
         alphasIndices = createWebGlBuffers(alphasData[1]);
