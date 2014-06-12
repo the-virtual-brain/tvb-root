@@ -633,9 +633,9 @@
     <dependency env="[win32,linux64,macos32,win64,linux32,macos64]" name="scipy">
         <full-name value="Scipy"/>
         <project-home value="http://www.scipy.org/scipylib/faq.html#what-are-scipy-s-licensing-terms"/>
-        <version value="[0.10.1,0.10.0,0.9.0,0.11.0,0.11.0rc2,0.13.2]"/>
+        <version value="[0.10.1,0.10.0,0.9.0,0.11.0,0.11.0rc2,0.13.2,0.14.0]"/>
         <usage value="dynamic linking"/>
-        <license value="LICENSE_scipy_0.9.txt"/>
+        <license value="LICENSE_scipy.txt"/>
         <license-type value="BSD_"/>
         <copyright-notice value="Copyright (c) 2001, 2002 Enthought, Inc. Copyright (c) 2003-2009 SciPy Developers."/>
         <description value="SciPy is freely available. It is distributed as Open Source software, meaning that you have complete access to the source code and can use it in anyway allowed by its liberal BSD_ license."/>
