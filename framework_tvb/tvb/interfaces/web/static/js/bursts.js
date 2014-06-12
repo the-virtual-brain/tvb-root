@@ -227,16 +227,21 @@ function renameBurstEntry(burst_id, new_name_id) {
         type: "POST",
         async: false,
         url: '/burst/rename_burst/' + burst_id + '/' + newValue,
-        success: function() {
-            displayMessage("Simulation successfully renamed!");
-            $("#burst_id_" + burst_id + " a").html(newValue);
-            if (sessionStoredBurst.id == burst_id + "") {
-                sessionStoredBurst.name = newValue;
-                fill_burst_name(newValue, true, false);
+        success: function(r) {
+            var result = $.parseJSON(r);
+            if ('success' in result) {
+                displayMessage(result['success']);
+                $("#burst_id_" + burst_id + " a").html(newValue);
+                if (sessionStoredBurst.id == burst_id + "") {
+                    sessionStoredBurst.name = newValue;
+                    fill_burst_name(newValue, true, false);
+                }
+            } else {
+                displayMessage(result['error'], "errorMessage");
             }
         } ,
         error: function() {
-            displayMessage("Error when renaming simulation. Try entering only letters, numbers, or _ in the new name.", "errorMessage");
+            displayMessage("Error when renaming simulation.", "errorMessage");
         }
     });
 }
@@ -346,8 +351,8 @@ function tryExpandRangers() {
 /*
  * Set on change on all simulator inputs, to set a new burst as active whenever something changes.
  */
-function setSimulatorChangeListener(parentDiv) {
-    var parentDiv = $('#' + parentDiv);
+function setSimulatorChangeListener(parentDivId) {
+    var parentDiv = $('#' + parentDivId);
     parentDiv.find('select').each(function() {
         if (!this.disabled) { this.onchange(); }
     });
@@ -544,6 +549,7 @@ function changePSETab(clickedHref, toShow) {
     }
 }
 
+
 function resizeIsoFigures() {
     var pseElem = $('#burst-pse-flot');
     var width = pseElem.width();
@@ -556,7 +562,7 @@ function resizeIsoFigures() {
 }
 
 
-function toogleMaximizeBurst(hrefElement) {
+function toggleMaximizeBurst(hrefElement) {
     /*
      * Maximize or minimize the left side div on a group burst. Also resize
      * plot for the tab that is currently selected.
@@ -1154,7 +1160,12 @@ function launchNewBurst(launchMode) {
         success: function(r) {
                     loadBurstHistory();
                     var result = $.parseJSON(r);
-                    changeBurstHistory(result[0]);
+                    if ('id' in result) {
+                        changeBurstHistory(result['id']);
+                    }
+                    if ('error' in result){
+                        displayMessage(result['error'], "errorMessage");
+                    }
         } ,
         error: function() {
                     displayMessage("Error when launching simulation. Please check te logs or contact your administrator.", "errorMessage");

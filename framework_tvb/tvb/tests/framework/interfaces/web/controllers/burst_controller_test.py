@@ -238,7 +238,7 @@ class BurstContollerTest(BaseControllersTest):
         launch_params['connectivity'] = dao.get_datatype_by_id(connectivity.id).gid
         launch_params['simulation_length'] = '100'
         launch_params = {"simulator_parameters": json.dumps(launch_params)}
-        burst_id, _ = json.loads(self.burst_c.launch_burst("new", "test_burst", **launch_params))
+        burst_id = json.loads(self.burst_c.launch_burst("new", "test_burst", **launch_params))['id']
         waited = 1
         timeout = 100
         burst_config = dao.get_burst_by_id(burst_id)
@@ -250,7 +250,7 @@ class BurstContollerTest(BaseControllersTest):
             self.fail("Timed out waiting for simulations to finish.")
         if burst_config.status != BurstConfiguration.BURST_FINISHED:
             BurstService().stop_burst(burst_config)
-            self.fail("Burst should have finished succesfully.")
+            self.fail("Burst should have finished successfully.")
 
 
     def test_load_burst(self):
