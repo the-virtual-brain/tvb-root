@@ -45,3 +45,26 @@
     top:0;
     left:0;
 }
+
+.flot-x-axis div.flot-tick-label {
+    /* Rotate Axis Labels */
+    transform: translateX(50%) rotate(30deg); /* CSS3 */
+    transform-origin: 0 0;
+
+    -ms-transform: translateX(50%) rotate(30deg); /* IE */
+    -ms-transform-origin: 0 0;
+
+    -moz-transform: translateX(50%) rotate(30deg); /* Firefox */
+    -moz-transform-origin: 0 0;
+
+    -webkit-transform: translateX(50%) rotate(30deg); /* Safari and Chrome */
+    -webkit-transform-origin: 0 0;
+
+    -o-transform: translateX(50%) rotate(30deg); /* Opera */
+    -o-transform-origin: 0 0;
+}
+
+div.flot-tick-label{
+    /* increase label contrast*/
+    color: #000000;
+}

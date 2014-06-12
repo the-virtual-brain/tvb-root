@@ -31,10 +31,9 @@ function drawHistogram(canvasDivId, data, labels, colorsPy) {
     var options = {
         series: {stack: 0,
                  lines: {show: false, steps: false },
-                 bars: {show: true, barWidth: 0.9, align: 'center'}},
+                 bars: {show: true, barWidth: 0.9, align: 'center', fill:0.8, lineWidth:0}},
         xaxis: {ticks: histogramLabels,
-                labelWidth: 100,
-                shouldRotateLabels: true}
+                labelWidth: 100}
     };
 
     var canvasDiv = $("#" + canvasDivId);
@@ -81,7 +80,7 @@ function computeColors(colorsArray) {
         var color = getGradientColorString(colorsArray[i], minColor, maxColor);
         result.push(color);
     }
-    return result
+    return result;
 }
 
 function changeColors() {
