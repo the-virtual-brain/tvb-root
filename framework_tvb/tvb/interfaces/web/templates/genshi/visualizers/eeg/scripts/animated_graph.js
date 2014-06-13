@@ -406,7 +406,7 @@ function changeMode(selectComp) {
 	refreshChannels();
 }
 
-function changeStateVar(selectComp) {
+function changeStateVariable(selectComp) {
 	var tsIndex = parseInt(selectComp.id.split('--'));
 	tsStates[tsIndex] = parseInt($(selectComp).val());
 	refreshChannels();

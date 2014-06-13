@@ -205,7 +205,7 @@ function changeMode() {
     refreshChannels();
 }
 
-function changeStateVar() {
+function changeStateVariable() {
     tsView.state_var($('#state-variable-select').val());
     refreshChannels();
 }
