@@ -63,8 +63,8 @@
 			</li>
 			
 			<li py:if="preview == False" class="channel-selector">
-                <xi:include href="../commons/channel_selector_button.html" />
-                ${drawRegionSelectorButton(ts_title, groupedLabels, initialSelection)}
+                <xi:include href="../commons/timeseries_selector_button.html" />
+                ${drawTimeseriesSelectorButton(ts_title,labelsStateVar, labelsModes, groupedLabels, initialSelection)}
 			</li>
 			
 		</ul>

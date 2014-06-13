@@ -1240,7 +1240,7 @@ function drawScene() {
  * Change the currently selected state variable. Get the newly selected value, reset the currentTimeValue to start
  * and read the first page of the new mode/state var combination.
  */
-function changeStateVariable() {
+function changeStateVar() {
     selectedStateVar = $('#state-variable-select').val();
     $("#slider").slider("option", "value", currentTimeValue);
     initActivityData();

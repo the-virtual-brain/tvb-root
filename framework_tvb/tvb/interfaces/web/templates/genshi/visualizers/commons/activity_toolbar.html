@@ -5,7 +5,7 @@
     </li>
 
     <li class="channel-selector can-extend" py:if="not isOneToOneMapping and not extended_view">
-        <xi:include href="channel_selector_button.html" />
-        ${drawRegionSelectorButton(measurePointsTitle, groupedLabels, initialSelection)}
+        <xi:include href="timeseries_selector_button.html" />
+        ${drawTimeseriesSelectorButton(measurePointsTitle,labelsStateVar, labelsModes, groupedLabels, initialSelection)}
     </li>
 </ul>

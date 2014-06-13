@@ -2501,20 +2501,20 @@ color: black;
 }
 
 .regionSelector h5{
-font-size: 14px;
+font-size: 16px;
 margin: 5px;
 text-align: center;
 }
 
 .regionSelector h6 {
 font-size: 12px;
+font-weight: normal;
 margin-bottom: 5px;
 text-align: center;
 }
 
 .regionSelector .selection-toolbar{
 text-align: center;
-border-bottom: 1px solid rgba(0, 0, 0, 0.3);
 padding: 5px 0;
 }
 
@@ -2545,6 +2545,21 @@ background: rgba(250, 247, 228, 0.5);
 .regionSelector .submatrix label.selected {
 border-color: #41921f;
 font-weight: bold;
+}
+
+.regionSelector .modeSelectorInline{
+margin:5px 0;
+padding:10px;
+font-size: 14px;
+border-bottom: 1px solid rgba(0, 0, 0, 0.3);
+text-align: right;
+}
+
+.regionSelector .modeSelectorInline select{
+min-width: 100px;
+margin:0 10px 0 5px;
+padding:2px;
+font-size: 14px;
 }
 
 .quickSelector li{
