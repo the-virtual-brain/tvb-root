@@ -1,0 +1,26 @@
+<div xmlns:py="http://genshi.edgewall.org/" xmlns:xi="http://www.w3.org/2001/XInclude" py:strip="True">
+    <py:def function="_drw"></py:def>
+
+    <py:def function="drawTimeseriesSelectorButton(title, labelsStateVar, labelsModes, groupedOptions, initialSelection=[], namedSelections=[], buttonTitle='Select signal components')">
+        <xi:include href='../commons/state_mode_selector.html'/>
+        <xi:include href="../commons/channel_selector.html" />
+
+        <nav class="inline-menu">
+            <button class="action action-menu">$buttonTitle</button>
+
+            <div class="extension">
+                <div class="dropdown-pane">
+                    <div id="channelSelector" class="regionSelector">
+                        <h5>$title</h5>
+                        <div py:if="len(labelsStateVar) > 1 or len(labelsModes) > 1" class="modeSelectorInline">
+                            ${drawStateModeSelectorInline(labelsStateVar, 'state-variable-select', 'State variable', 'changeStateVar')}
+                            ${drawStateModeSelectorInline(labelsModes, 'mode-select', 'Mode', 'changeMode')}
+                        </div>
+                        ${drawRegionSelectorToolbar(namedSelections)}
+                        ${drawRegionSelectorChannels(groupedOptions, initialSelection)}
+                    </div>
+                </div>
+            </div>
+        </nav>
+    </py:def>
+</div>

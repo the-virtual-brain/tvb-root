@@ -6,35 +6,42 @@
     @param namedSelections: a collection of tuples [(selectionName, selectionValueList)]
 -->
 <div xmlns:py="http://genshi.edgewall.org/" xmlns:xi="http://www.w3.org/2001/XInclude" py:strip="True">
+    <py:def function="drawRegionSelectorToolbar(namedSelections)">
+        <div class="selection-toolbar">
+            <!--! <button class="action action-view">Apply selection</button> -->
+            <button class="action action-all-on" title="Add all">&nbsp;</button>
+            <button class="action action-all-off" title="Remove all">&nbsp;</button>
+            <select>
+                <xi:include href="channel_selector_opts.html" />
+            </select>
+            <input type="text" title="Enter new selection name here"/>
+            <button class="action action-store" title="Save your currently selected nodes">Save</button>
+        </div>
+    </py:def>
+
+    <py:def function="drawRegionSelectorChannels(groupedOptions, initialSelection)">
+        <section py:for="groupName, options in groupedOptions"
+                 py:with="sectionWidth=100/len(groupedOptions)"
+                 class="submatrix" style="width:${sectionWidth}%">
+            <h6>$groupName</h6>
+
+            <label py:for="value, label in options"
+                   py:with="selected = value in initialSelection"
+                   title="$label"
+                   class="${'selected' if selected else None}">
+                <input type='checkbox' autocomplete="off"
+                       value="$value"
+                       checked="${'checked' if selected else None}"/>
+                $label
+            </label>
+        </section>
+    </py:def>
+
     <py:def function="drawRegionSelector(title, divId, groupedOptions, initialSelection=[], namedSelections=[])">
         <div id='${divId}' class="regionSelector">
             <h5>$title</h5>
-            <div class="selection-toolbar">
-                <!--! <button class="action action-view">Apply selection</button> -->
-                <button class="action action-all-on" title="Add all">&nbsp;</button>
-                <button class="action action-all-off" title="Remove all">&nbsp;</button>
-                <select>
-                    <xi:include href="channel_selector_opts.html" />
-                </select>
-                <input type="text" title="Enter new selection name here"/>
-                <button class="action action-store" title="Save your currently selected nodes">Save</button>
-            </div>
-
-            <section py:for="groupName, options in groupedOptions"
-                     py:with="sectionWidth=100/len(groupedOptions)"
-                     class="submatrix" style="width:${sectionWidth}%">
-                <h6>$groupName</h6>
-
-                <label py:for="value, label in options"
-                       py:with="selected = value in initialSelection"
-                       title="$label"
-                       class="${'selected' if selected else None}">
-                    <input type='checkbox' autocomplete="off"
-                           value="$value"
-                           checked="${'checked' if selected else None}"/>
-                    $label
-                </label>
-            </section>
+            ${drawRegionSelectorToolbar(namedSelections)}
+            ${drawRegionSelectorChannels(groupedOptions, initialSelection)}
         </div>
     </py:def>
 </div>

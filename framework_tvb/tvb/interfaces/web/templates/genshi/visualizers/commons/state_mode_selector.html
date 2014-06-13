@@ -1,19 +1,28 @@
-<py:def function="drawStateModeSelector(modeOrStates, componentId, name, callback)" xmlns:py="http://genshi.edgewall.org/">
-	<py:if test="len(modeOrStates) > 1">
-        <dt>
-		    <label for="${componentId}">${name}</label>
-        </dt>
-        <dd>
+<div xmlns:py="http://genshi.edgewall.org/" py:strip="True">
+    <py:def function="drawStateModeSelector(modeOrStates, componentId, name, callback)" >
+        <py:if test="len(modeOrStates) > 1">
+            <dt>
+                <label for="${componentId}">${name}</label>
+            </dt>
+            <dd>
+                <select id="${componentId}" onchange="${callback}()">
+                    <py:for each="idx, entry in enumerate(modeOrStates)">
+                        <option selected="${'selected' if idx==0 else None}" value="$idx">${entry}</option>
+                    </py:for>
+                </select>
+            </dd>
+        </py:if>
+    </py:def>
+
+    <py:def function="drawStateModeSelectorInline(modeOrStates, componentId, name, callback)">
+        <span py:if="len(modeOrStates) > 1">
+            <label for="${componentId}">${name}</label>
             <select id="${componentId}" onchange="${callback}()">
                 <py:for each="idx, entry in enumerate(modeOrStates)">
-                    <py:if test="idx == 0">
-                        <option selected="selected" value="$idx">${entry}</option>
-                    </py:if>
-                    <py:if test="idx > 0">
-                        <option  value="$idx">${entry}</option>
-                    </py:if>
+                    <option selected="${'selected' if idx==0 else None}" value="$idx">${entry}</option>
                 </py:for>
             </select>
-		</dd>
-	</py:if>
-</py:def>
+        </span>
+    </py:def>
+
+</div>

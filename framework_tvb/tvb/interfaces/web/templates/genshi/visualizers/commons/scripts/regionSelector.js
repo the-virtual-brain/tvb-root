@@ -64,7 +64,7 @@ function RegionSelectComponent(dom, settings){
     // save dom variables, set up listeners
     self._boxes = $dom.find(settings.boxesSelector);
     self._textBox = $dom.find(settings.textboxSelector);
-    self._dropDown = $dom.find('select');
+    self._dropDown = $dom.find(settings.selectionDropdown);
     self._dropDownOptions = self._dropDown.find('option');
 
     self._boxes.change(function(){self._onchange(this);});
@@ -88,7 +88,8 @@ RegionSelectComponent.prototype.defaults = {
     uncheckSelector: '.action-all-off',
     boxesSelector: 'input[type=checkbox]',
     textboxSelector : 'input[type=text]',
-    saveSelectionButtonSelector : '.action-store'
+    saveSelectionButtonSelector : '.action-store',
+    selectionDropdown: 'selection-toolbar > select'
 };
 
 /**
