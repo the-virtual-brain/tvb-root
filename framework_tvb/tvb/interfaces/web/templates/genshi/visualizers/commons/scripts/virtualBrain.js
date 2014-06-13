@@ -261,7 +261,7 @@ function _VS_static_entrypoint(urlVerticesList, urlLinesList, urlTrianglesList, 
         activityMin = 0;
         activityMax = 1;
         activitiesData = [[0]];
-    }else{
+    } else {
         _initMeasurePoints(noOfMeasurePoints, urlMeasurePoints, urlMeasurePointsLabels);
         activityMin = parseFloat(minMeasure);
         activityMax = parseFloat(maxMeasure);
@@ -273,7 +273,7 @@ function _VS_static_entrypoint(urlVerticesList, urlLinesList, urlTrianglesList, 
             for(i = 0; i < NO_OF_MEASURE_POINTS; i++){
                 measure.push(i);
             }
-        }else{
+        } else {
             measure = HLPR_readJSONfromFile(urlMeasure);
         }
         // The activity data will contain just one frame containing the values of the connectivity measure.
@@ -367,6 +367,9 @@ function VS_StartEEGSensorViewer(urlVerticesList, urlLinesList, urlTrianglesList
                                noOfMeasurePoints, '', '', urlMeasurePointsLabels,
                                '', shelfObject, null, false, true, true, minMeasure, maxMeasure, urlMeasure);
     _VS_init_cubicalMeasurePoints();
+    if (urlVerticesList) {
+        ColSch_initColorSchemeParams(minMeasure, maxMeasure);
+    }
 }
 
 function VS_StartBrainActivityViewer(baseDatatypeURL, onePageSize, urlTimeList, urlVerticesList, urlLinesList,

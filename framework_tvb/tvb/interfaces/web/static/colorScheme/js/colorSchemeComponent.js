@@ -6,7 +6,7 @@ var normalizedEndColorRGB = [1, 0, 0];                              // function 
 var normalizedNodeColorRGB = [1, 1, 1];
 var _colorScheme = null;                                             // the color scheme to be used for current drawing
 var _linearGradientStart = 0, _linearGradientEnd = 1 ;               // keep the interest interval
-var _sparseColorNo = 10;
+var _sparseColorNo = 50;
 var _refreshCallback = null ;                                        // this is called when color scheme changes update the visualiser
 
 function drawSimpleColorPicker(divId, refreshFunction) {
