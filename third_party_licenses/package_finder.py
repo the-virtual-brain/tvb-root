@@ -90,7 +90,7 @@ EXCLUDES_SO = [  # libpq dependencies on dynamic psycopg linux 32
                  # part of library that is already in packages_accepted.xml
                  '_bisect.so', '_collections.so', '_functools.so', '_hashlib.so', '_io.so', '_locale.so', 
                  '_random.so', '_socket.so', '_ssl.so', '_struct.so', '_weakref.so', 'unicodedata.so', 
-                 'array.so', 'cpickle.so', 'cstringio.so', 'select.so', 'fcntl.so', 'binascii.so', 
+                 'array.so', 'cpickle.so', 'cstringio.so', 'select.so', 'fcntl.so', 'binascii.so', 'future_builtins.so',
                  'operator.so', 'zlib.so', 'time.so', 'itertools.so', 'math.so', 'strop.so', 'syslog.so', 
                  '_bsddb.so', '_codecs_cn.so', '_codecs_hk.so', '_codecs_iso2022.so', '_codecs_jp.so', 
                  '_codecs_kr.so', '_codecs_tw.so', '_csv.so', '_ctypes.so', '_curses.so', '_heapq.so', 

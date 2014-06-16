@@ -169,7 +169,7 @@ def copy_distribution_dataset(dist_path, library_path):
     ### Copy demo-data inside TVB package, for usage from code (e.g. default import when creating a new project).
     destination_folder_inside = os.path.join(dist_path, library_path, 'tvb_data')
     ### Copy in User's visible area, all in one folder.
-    top_destination_folder = os.path.join(dist_path, "tvb_data")
+    top_destination_folder = os.path.join(dist_path, "demo_data")
 
     for coded_origin, coded_destination in included_data:
         origin = _prepare_name(coded_origin, destination_folder_inside, top_destination_folder, source_folder)

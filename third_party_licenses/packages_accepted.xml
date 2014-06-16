@@ -553,7 +553,7 @@
     <dependency env="[win32,linux64,win64,linux32,macos64,macos32]" name="numpy">
         <full-name value="Numpy"/>
         <project-home value="http://numpy.scipy.org/license.html#license"/>
-        <version value="[1.6.2,1.6.1,1.8.0,1.8.1]"/>
+        <version value="[1.8.0,1.8.1]"/>
         <usage value="dynamic linking"/>
         <license value="LICENSE_numpy.txt"/>
         <license-type value="BSD_"/>
@@ -613,7 +613,7 @@
     <dependency env="[linux32,win32,linux64,macos32,win64,macos64]" name="python">
         <full-name value="Python"/>
         <project-home value="http://docs.python.org/license.html"/>
-        <version value="[2.6.6,2.7.6]"/>
+        <version value="[2.6.6,2.7.7]"/>
         <usage value="dynamic linking"/>
         <license value="LICENSE_python.txt"/>
         <license-type value="PSF_"/>
@@ -633,7 +633,7 @@
     <dependency env="[win32,linux64,macos32,win64,linux32,macos64]" name="scipy">
         <full-name value="Scipy"/>
         <project-home value="http://www.scipy.org/scipylib/faq.html#what-are-scipy-s-licensing-terms"/>
-        <version value="[0.10.1,0.10.0,0.9.0,0.11.0,0.11.0rc2,0.13.2,0.14.0]"/>
+        <version value="0.14.0"/>
         <usage value="dynamic linking"/>
         <license value="LICENSE_scipy.txt"/>
         <license-type value="BSD_"/>
