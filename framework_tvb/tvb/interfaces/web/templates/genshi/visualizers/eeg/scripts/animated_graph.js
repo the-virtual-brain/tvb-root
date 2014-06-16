@@ -169,6 +169,8 @@ var longestChannelIndex = 0;
 
 // region selection component
 var AG_regionSelector = null;
+// State mode selector. Used as a global only in dual view
+var AG_modeSelector = null;
 
 window.onresize = function() {
     var canvas = $('#EEGcanvasDiv');
@@ -310,9 +312,11 @@ function _AG_init_selection(filterGids){
     }
 
     // init selectors
+    var selectorId, selector;
+
     for(var i = 0; i < filterGids.length; i++){
-        var selectorId = "#channelSelector" + i;
-        var selector = TVBUI.regionSelector(selectorId, {filterGid: filterGids[i]});
+        selectorId = "#channelSelector" + i;
+        selector = TVBUI.regionSelector(selectorId, {filterGid: filterGids[i]});
         selector.change(function(_current_selection){
             AG_submitableSelectedChannels = getSelectedChannelsAsGlobalIndices();
             refreshChannels();
@@ -333,6 +337,19 @@ function _AG_init_selection(filterGids){
         AG_submitableSelectedChannels = AG_regionSelector._allValues.slice(0, defaultSelectionLength);
         AG_regionSelector.val(AG_submitableSelectedChannels);
     }
+
+    // Init the mode selection components. Assumes that there are part of the selector dom
+    var modeSelectors = [];
+    for(i = 0; i < filterGids.length; i++) {
+        selectorId = "#channelSelector" + i;
+        selector = TVBUI.modeAndStateSelector(selectorId, i);
+        selector.modeChanged(_AG_changeMode);
+        selector.stateVariableChanged(_AG_changeStateVariable);
+        modeSelectors.push(selector);
+    }
+    // The dual view needs to subscribe to this selector; so we save it like AG_regionSelector
+    AG_modeSelector = modeSelectors[0];
+
     refreshChannels();
 }
 
@@ -398,15 +415,13 @@ function refreshChannels() {
     drawGraph(false, noOfShiftedPoints);
 }
 
-function changeMode(selectComp) {
-    var tsIndex = parseInt(selectComp.id.split('--'));
-    tsModes[tsIndex] = parseInt($(selectComp).val());
+function _AG_changeMode(tsIndex, val) {
+    tsModes[tsIndex] = parseInt(val);
     refreshChannels();
 }
 
-function changeStateVariable(selectComp) {
-    var tsIndex = parseInt(selectComp.id.split('--'));
-    tsStates[tsIndex] = parseInt($(selectComp).val());
+function _AG_changeStateVariable(tsIndex, val) {
+    tsStates[tsIndex] = parseInt(val);
     refreshChannels();
 }
 

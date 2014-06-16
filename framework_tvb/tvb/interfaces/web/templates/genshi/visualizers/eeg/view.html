@@ -21,62 +21,65 @@
 	<section id="eegSectionId" class="view-column eeg-display col-1">
 		<!-- Inner visualizer controls and legend -->
 		<ul class="toolbar-inline">
-			<!-- Zoom explanation -->
-			<li py:if="not extended_view" class="zoom-control">
-				<nav class="inline-menu">
-					<button class="action action-menu">Usage</button>
+            <py:if test="not extended_view">
+                <li>
+                    <button id="ctrl-action-pause" class="action action-controller-pause" title="Pause/Start Drawing"
+                            onclick="stopAnimation();" tabindex="1">Pause</button>
+                </li>
+                <!-- Zoom explanation -->
+                <li class="zoom-control">
+                    <nav class="inline-menu">
+                        <button class="action action-menu">Usage</button>
 
-					<div class="extension">
-		    			<div class="dropdown-pane">
-		    				<p>Select zoom area with your mouse (you may do that several times to zoom in further)</p>
-		    				<p>Use "Zoom out to 100%" to zoom out completely</p>
-		    				<p>Use "Zoom out one level" to zoom out step by step</p>
-		    			</div>
-		    		</div>
-				</nav>
-			</li>
+                        <div class="extension">
+                            <div class="dropdown-pane">
+                                <p>Select zoom area with your mouse (you may do that several times to zoom in further)</p>
+                                <p>Use "Zoom out to 100%" to zoom out completely</p>
+                                <p>Use "Zoom out one level" to zoom out step by step</p>
+                            </div>
+                        </div>
+                    </nav>
+                </li>
 
-			<!-- Zoom action buttons -->
-			<li py:if="not extended_view" class="zoom-control">
-		    	<button class="action action-mini-zoom-out" onclick='resetToDefaultView()'>Zoom out to 100%</button>
-			</li>
+                <!-- Zoom action buttons -->
+                <li class="zoom-control">
+                    <button class="action action-mini-zoom-out" onclick='resetToDefaultView()'>Zoom out to 100%</button>
+                </li>
 
-			<li py:if="not extended_view" class="zoom-control">
-		    	<button class="action action-reset" onclick='zoomBack()'>Zoom out one level</button>
-			</li>
+                <li class="zoom-control">
+                    <button class="action action-reset" onclick='zoomBack()'>Zoom out one level</button>
+                </li>
 
-			<!-- Value inspector -->
-			<li py:if="not extended_view" class="value-inspector value-channel">
-	            <mark>Channel</mark>
-	            <span id="info-channel">0</span>
-			</li>
-			
-			<li py:if="not extended_view" class="value-inspector value-time">
-	            <mark>Time</mark>
-	            <span id="info-time">0</span>
-			</li>
-			
-			<li py:if="not extended_view" class="value-inspector value-value">
-	            <mark>Value</mark>
-	            <span id="info-value">0</span>
-			</li>
-			
+                <!-- Value inspector -->
+                <li class="value-inspector value-channel">
+                    <mark>Channel</mark>
+                    <span id="info-channel">0</span>
+                </li>
+
+                <li class="value-inspector value-time">
+                    <mark>Time</mark>
+                    <span id="info-time">0</span>
+                </li>
+
+                <li class="value-inspector value-value">
+                    <mark>Value</mark>
+                    <span id="info-value">0</span>
+                </li>
+            </py:if>
+
 			<!-- Channel selector -->
-			<li py:if="channelsPage != None" class="channel-selector">
-				<nav class="inline-menu">
-					<button class="action action-menu">Select channels</button>
+            <xi:include href="${channelsPage}"/>
+            <xi:include href="../commons/timeseries_selector_button.html" />
 
-					<div class="extension">
-		    			<div class="dropdown-pane">
-	    					<xi:include href="${channelsPage}"/>
-	    					<xi:include href='../commons/state_mode_selector.html'/>
-                            <py:for each="idx, name in enumerate(tsNames)">
-                                ${drawRegionSelector(name, "channelSelector" + str(idx), groupedLabels[idx], initialSelection[idx])}
-                            </py:for>
-		    			</div>
-		    		</div>
-				</nav>
-			</li>
+            <li py:for="idx, name in enumerate(tsNames)"
+                py:if="channelsPage != None" class="channel-selector">
+
+                ${drawTimeseriesSelectorButton(
+                    name, tsStateVars[name], tsModes[name],
+                    groupedLabels[idx], initialSelection[idx],
+                    containerId="channelSelector" + str(idx),
+                    buttonTitle="signal %s components " % (idx+1))}
+            </li>
 		</ul>
 		
 		<!-- Actual visualizer -->
