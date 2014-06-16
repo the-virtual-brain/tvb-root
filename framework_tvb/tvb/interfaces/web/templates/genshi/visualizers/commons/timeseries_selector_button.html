@@ -1,8 +1,29 @@
 <div xmlns:py="http://genshi.edgewall.org/" xmlns:xi="http://www.w3.org/2001/XInclude" py:strip="True">
-    <py:def function="_drw"></py:def>
 
-    <py:def function="drawTimeseriesSelectorButton(title, labelsStateVar, labelsModes, groupedOptions, initialSelection=[], namedSelections=[], buttonTitle='Select signal components')">
-        <xi:include href='../commons/state_mode_selector.html'/>
+    <py:def function="drawStateModeSelectorInline(modes, states)">
+        <span>
+            <label>
+                State variable
+                <select class="state-variable-select">
+                    <option py:for="idx, entry in enumerate(states)"
+                            selected="${'selected' if idx==0 else None}" value="$idx">
+                        ${entry}
+                    </option>
+                </select>
+            </label>
+            <label>
+                Mode
+                <select class="mode-select">
+                    <option py:for="idx, entry in enumerate(modes)"
+                            selected="${'selected' if idx==0 else None}" value="$idx">
+                        ${entry}
+                    </option>
+                </select>
+            </label>
+        </span>
+    </py:def>
+
+    <py:def function="drawTimeseriesSelectorButton(title, labelsStateVar, labelsModes, groupedOptions, initialSelection=[], namedSelections=[], buttonTitle='Select signal components', containerId='channelSelector')">
         <xi:include href="../commons/channel_selector.html" />
 
         <nav class="inline-menu">
@@ -10,11 +31,10 @@
 
             <div class="extension">
                 <div class="dropdown-pane">
-                    <div id="channelSelector" class="regionSelector">
+                    <div id="$containerId" class="regionSelector">
                         <h5>$title</h5>
                         <div py:if="len(labelsStateVar) > 1 or len(labelsModes) > 1" class="modeSelectorInline">
-                            ${drawStateModeSelectorInline(labelsStateVar, 'state-variable-select', 'State variable', 'changeStateVariable')}
-                            ${drawStateModeSelectorInline(labelsModes, 'mode-select', 'Mode', 'changeMode')}
+                            ${drawStateModeSelectorInline(labelsModes, labelsStateVar)}
                         </div>
                         ${drawRegionSelectorToolbar(namedSelections)}
                         ${drawRegionSelectorChannels(groupedOptions, initialSelection)}

@@ -346,10 +346,43 @@ TextGridSelectComponent.prototype.setGridText = function(nrs){
     }
 };
 
+/**
+ * This is a component managing a mode and a state variable select
+ * @constructor
+ */
+function ModeAndStateSelectComponent(dom, id){
+    var self = this;
+    var $dom = $(dom);
+    self._id = id;
+    self._modeSelect = $dom.find('.mode-select');
+    self._stateVarSelect = $dom.find('.state-variable-select');
+}
+
+/**
+ * Subscribe a function to the mode change event
+ */
+ModeAndStateSelectComponent.prototype.modeChanged = function(fn){
+    var self = this;
+    self._modeSelect.change(function(){
+        fn(self._id, $(this).val());
+    });
+};
+
+/**
+ * Subscribe a function to the state variable change event
+ */
+ModeAndStateSelectComponent.prototype.stateVariableChanged = function(fn){
+    var self = this;
+    self._stateVarSelect.change(function(){
+        fn(self._id, $(this).val());
+    });
+};
+
 // @exports
 TVBUI.RegionSelectComponent = RegionSelectComponent;
 TVBUI.TextGridSelectComponent = TextGridSelectComponent;
 TVBUI.QuickSelectComponent = QuickSelectComponent;
+TVBUI.ModeAndStateSelectComponent = ModeAndStateSelectComponent;
 
 })($, displayMessage, TVBUI);  //depends
 
@@ -441,6 +474,18 @@ TVBUI.textGridRegionSelector = function(dom, settings){
 TVBUI.quickSelector = function(regionSelectComponent, textDom, buttonDom){
     return new TVBUI.QuickSelectComponent(regionSelectComponent,
         textDom, buttonDom, function(txt) {displayMessage(txt, "errorMessage");});
+};
+
+/**
+ * Creates a component that manages mode and state variable selects
+ * @param dom selector of container element
+ * @param id  some identification of the associated time series
+ * @param onModeChange callback
+ * @param onStateVariableChange callback
+ * @returns {TVBUI.ModeAndStateSelectComponent}
+ */
+TVBUI.modeAndStateSelector = function(dom, id){
+    return new TVBUI.ModeAndStateSelectComponent(dom, id);
 };
 
 })($, displayMessage, doAjaxCall, TVBUI); // depends

@@ -13,16 +13,4 @@
             </dd>
         </py:if>
     </py:def>
-
-    <py:def function="drawStateModeSelectorInline(modeOrStates, componentId, name, callback)">
-        <span py:if="len(modeOrStates) > 1">
-            <label for="${componentId}">${name}</label>
-            <select id="${componentId}" onchange="${callback}()">
-                <py:for each="idx, entry in enumerate(modeOrStates)">
-                    <option selected="${'selected' if idx==0 else None}" value="$idx">${entry}</option>
-                </py:for>
-            </select>
-        </span>
-    </py:def>
-
 </div>
