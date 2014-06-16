@@ -85,7 +85,7 @@ function _updateScalingFromSlider(value){
         value = $("#ctrl-input-scale").slider("value");
     }
     var expo_scale = (value - 50) / 50; // [1 .. -1]
-    var scale = Math.pow(10, expo_scale*3); // [1000..-1000]
+    var scale = Math.pow(10, expo_scale*4); // [1000..-1000]
     tsView.magic_fcs_amp_scl = _initial_magic_fcs_amp_scl * scale;
     tsView.prepare_data();
     tsView.render_focus();
