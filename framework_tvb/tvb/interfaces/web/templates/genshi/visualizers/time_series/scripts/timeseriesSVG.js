@@ -67,6 +67,9 @@ function _initSelection(filterGid) {
         }
         refreshChannels();
     });
+    var modeSelector = TVBUI.modeAndStateSelector("#channelSelector", 0);
+    modeSelector.modeChanged(_changeMode);
+    modeSelector.stateVariableChanged(_changeStateVariable);
 }
 
 function _compute_labels_for_current_selection() {
@@ -200,12 +203,12 @@ function refreshChannels() {
     await_data();
 }
 
-function changeMode() {
-    tsView.mode($('#mode-select').val());
+function _changeMode(id, val) {
+    tsView.mode(parseInt(val));
     refreshChannels();
 }
 
-function changeStateVariable() {
-    tsView.state_var($('#state-variable-select').val());
+function _changeStateVariable(id, val) {
+    tsView.state_var(parseInt(val));
     refreshChannels();
 }

@@ -544,6 +544,9 @@ function _initChannelSelection(selectionGID){
     for(var i=0; i < selection.length; i++){
         VS_selectedRegions.push(parseInt(selection[i], 10));
     }
+    var mode_selector = TVBUI.modeAndStateSelector("#channelSelector", 0);
+    mode_selector.modeChanged(VS_changeMode);
+    mode_selector.stateVariableChanged(VS_changeStateVariable);
 }
 
 ////////////////////////////////////////// GL Initializations //////////////////////////////////////////
@@ -1243,8 +1246,8 @@ function drawScene() {
  * Change the currently selected state variable. Get the newly selected value, reset the currentTimeValue to start
  * and read the first page of the new mode/state var combination.
  */
-function changeStateVariable() {
-    selectedStateVar = $('#state-variable-select').val();
+function VS_changeStateVariable(id, val) {
+    selectedStateVar = val;
     $("#slider").slider("option", "value", currentTimeValue);
     initActivityData();
 }
@@ -1253,8 +1256,8 @@ function changeStateVariable() {
  * Change the currently selected mode. Get the newly selected value, reset the currentTimeValue to start
  * and read the first page of the new mode/state var combination.
  */
-function changeMode() {
-    selectedMode = $('#mode-select').val();
+function VS_changeMode(id, val) {
+    selectedMode = val;
     $("#slider").slider("option", "value", currentTimeValue);
     initActivityData();
 }
