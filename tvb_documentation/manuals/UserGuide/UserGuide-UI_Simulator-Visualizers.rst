@@ -146,6 +146,25 @@ This visualizer can be used for displaying EEG, MEEG, and internal sensors .
 It is a static view, intended for visual inspecting imported sensors in TVB.
 Optionally it can display the sensors on a EEG cap surface.
 
+To show sensors displaying on a Cap, check the call-out on the top-right corner.
+
+When displaying the EEG sensors on a EEG Cap surface, we are automatically computing a "parcellation".
+Currently this parcellation has no anatomical meaning, it is only based on distance (a vertex gets coloured as
+the closest sensor).
+
+.. figure:: screenshots/sensors_eeg_MEG.jpg
+   :width: 90%
+   :align: center
+
+   EEG and MEG Sensors.
+
+
+.. figure:: screenshots/sensors_internal.jpg
+   :width: 60%
+   :align: center
+
+   Internal Sensors.
+
 
 Group Display
 .......................

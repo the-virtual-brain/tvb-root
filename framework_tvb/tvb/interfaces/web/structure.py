@@ -111,7 +111,7 @@ class WebStructure(object):
     SUB_SECTION_VIEW_13 = "view_pca"
     SUB_SECTION_VIEW_14 = "view_pse"
     SUB_SECTION_VIEW_15 = "view_pse_iso"
-    SUB_SECTION_VIEW_16 = "view_sensor"
+    SUB_SECTION_VIEW_16 = "view_sensors"
     SUB_SECTION_VIEW_17 = "view_surface"
     SUB_SECTION_VIEW_18 = "view_timeseries"
     SUB_SECTION_VIEW_19 = "view_ts_volume"
