@@ -530,7 +530,7 @@ tv.plot = {
             f.h(f.h() || 500);
             f.point_limit(f.point_limit() || 500);
 
-            f.magic_fcs_amp_scl = 0.01;
+            f.magic_fcs_amp_scl = 1;
 
             // make sure we got numbers not strings
             f.dt(+f.dt());
@@ -740,7 +740,7 @@ tv.plot = {
             var ys = f.ys();
             var da_lines = [];
             var line_avg;
-
+            var ys_std = ys.min();
             //To set this properly, we need to know:
             // nsig - how many signals on the screen?
             // std  - std of signals
@@ -755,7 +755,7 @@ tv.plot = {
 
                 line_avg = d3.mean(da_lines[sig_idx]);
                 for (var tt_idx = 0; tt_idx < ys.shape[0]; tt_idx++) {
-                    da_lines[sig_idx][tt_idx] = f.magic_fcs_amp_scl * (da_lines[sig_idx][tt_idx] - line_avg);
+                    da_lines[sig_idx][tt_idx] = f.magic_fcs_amp_scl * (da_lines[sig_idx][tt_idx] - line_avg) / Math.abs(ys_std);
                     // multiply by -1 because the y axis points down
                     da_lines[sig_idx][tt_idx] *= -1;
                 }

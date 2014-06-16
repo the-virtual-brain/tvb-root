@@ -172,17 +172,28 @@ var AG_regionSelector = null;
 // State mode selector. Used as a global only in dual view
 var AG_modeSelector = null;
 
-window.onresize = function() {
+function resizeToFillParent(){
     var canvas = $('#EEGcanvasDiv');
-    if (!isDoubleView  && !isSmallPreview ) {
-        // Just use parent section width and height. For width remove some space for the labels to avoid scrolls
-        // For height we have the toolbar there. Using 100% does not seem to work properly with FLOT.
-        canvas.width(canvas.parent().width() - 40);
-        canvas.height(canvas.parent().height() - 100);
-    } else if (isSmallPreview) {
-        canvas.width(canvas.parent().width());
-        canvas.height(canvas.parent().height());
+    var container, width, height;
+//    if (isDoubleView) {
+//        return;
+//    }
+    if(!isSmallPreview ) {
+		// Just use parent section width and height. For width remove some space for the labels to avoid scrolls
+		// For height we have the toolbar there. Using 100% does not seem to work properly with FLOT.
+        container = canvas.parent();
+        width = container.width() - 40;
+        height = container.height() - 80;
+    } else {
+        container = $('body');
+        width = container.width() - 40;
+        height = container.height() - 20;
     }
+    canvas.width(width).height(height);
+}
+
+window.onresize = function() {
+    resizeToFillParent();
     redrawPlot(plot.getData());
 };
 
@@ -273,13 +284,7 @@ function _AG_initPaginationState(number_of_visible_points){
  * @private
  */
 function _AG_preStart() {
-    if (!isDoubleView) {
-        var canvas = $('#EEGcanvasDiv');
-        // Just use parent section width and height. For width remove some space for the labels to avoid scrolls
-        // For height we have the toolbar there. Using 100% does not seem to work properly with FLOT.
-        canvas.width(canvas.parent().width() - 40);
-        canvas.height(canvas.parent().height() - 100);
-    }
+    resizeToFillParent();
 }
 
 /**

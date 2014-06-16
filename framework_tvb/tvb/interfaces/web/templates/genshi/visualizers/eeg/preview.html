@@ -18,19 +18,10 @@
         }
     </script>
 	
-	<table width="100%">
-		<tr height="95%">
-			<td>
-				<div id="EEGcanvasDiv" class="mainCanvas ${'canvasExtended' if extended_view else ''}">
-    			</div>
-			</td>
-		</tr>
-		<tr>
-			<td>
-				<div class="chart-x-label">${label_x}</div>
-			</td>
-		</tr>
-	</table>
-    
+    <div id="EEGcanvasDiv" class="mainCanvas ${'canvasExtended' if extended_view else ''}">
+    </div>
+
+    <div class="chart-x-label">${label_x}</div>
+
     <input type="hidden" id="columnIndexId"/>
 </div>

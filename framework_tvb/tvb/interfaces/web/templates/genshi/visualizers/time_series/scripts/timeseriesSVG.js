@@ -132,6 +132,7 @@ function initTimeseriesViewer(baseURL, isPreview, dataShape, t0, dt, channelLabe
     ts.labels(_compute_labels_for_current_selection());
     ts.channels(TS_SVG_selectedChannels);
     // run
+    resizeToFillParent(ts);
     ts(d3.select("#time-series-viewer"));
     tsView = ts;
 
@@ -145,6 +146,21 @@ function initTimeseriesViewer(baseURL, isPreview, dataShape, t0, dt, channelLabe
             }
         });
     }
+}
+
+function resizeToFillParent(ts){
+    var container, width, height;
+
+    if(!ts.preview()) {
+        container = $('#time-series-viewer').parent();
+        width = container.width();
+        height = container.height() - 80;
+    }else{
+        container = $('body');
+        width = container.width();
+        height = container.height() - 10;
+    }
+    ts.w(width).h(height);
 }
 
 /*
@@ -170,8 +186,6 @@ function refreshChannels() {
     var new_ts = tv.plot.time_series();
 
     // configure data
-    var displayElem = $('#time-series-viewer');
-    new_ts.w(displayElem.width()).h(displayElem.height());
     new_ts.baseURL(tsView.baseURL()).preview(tsView.preview()).mode(tsView.mode()).state_var(tsView.state_var());
     new_ts.shape(shape).t0(tsView.t0()).dt(tsView.dt());
     new_ts.labels(selectedLabels);
@@ -185,7 +199,8 @@ function refreshChannels() {
         new_ts.channels(tv.ndar.range(allChannelLabels.length).data);
     }
 
-    displayElem.empty();
+    resizeToFillParent(new_ts);
+    $('#time-series-viewer').empty();
     new_ts(d3.select("#time-series-viewer"));
     tsView = new_ts;
     // The new_ts(...) call above will trigger a data load from the server based on the selected channels
