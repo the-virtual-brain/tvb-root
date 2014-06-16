@@ -42,7 +42,7 @@ from tvb.core.entities.storage import dao
 from tvb.core.adapters.abcdisplayer import ABCDisplayer
 from tvb.datatypes.surfaces import RegionMapping, EEGCap, FaceSurface
 from tvb.datatypes.surfaces_data import SurfaceData
-from tvb.datatypes.time_series import TimeSeries, TimeSeriesSurface, TimeSeriesSEEG
+from tvb.datatypes.time_series import TimeSeries, TimeSeriesSurface, TimeSeriesSEEG, TimeSeriesRegion
 
 
 MAX_MEASURE_POINTS_LENGTH = 235
@@ -426,3 +426,31 @@ class BrainSEEG(BrainEEG):
         result_params['isSEEG'] = True
         return result_params
         
+
+class BrainRegionDual(BrainViewer):
+    """
+    Visualizer merging Brain 3D display and animated time series display
+    """
+    _ui_name = "Brain Region Activity in 3D and 2D"
+    _ui_subsection = "brain_region_dual"
+
+
+    def get_input_tree(self):
+        return [{'name': 'region_activity', 'label': 'Time Series Region',
+                 'type': TimeSeriesRegion, 'required': True,
+                 'description': 'dual view'},
+                ]
+
+    def launch(self, region_activity):
+        """
+        Overwrite Brain Visualizer launch and extend functionality,
+        by adding a Monitor set of parameters near.
+        """
+        params = BrainViewer.compute_parameters(self, region_activity)
+        params.update(EegMonitor().compute_parameters(region_activity, is_extended_view=True))
+        params['biHemispheric'] = False
+        params['isOneToOneMapping'] = False
+        params['brainViewerTemplate'] = 'view.html'
+        return self.build_display_result("brain/extendedview", params,
+                                         pages=dict(controlPage="brain/extendedcontrols",
+                                                    channelsPage="commons/channel_selector.html"))

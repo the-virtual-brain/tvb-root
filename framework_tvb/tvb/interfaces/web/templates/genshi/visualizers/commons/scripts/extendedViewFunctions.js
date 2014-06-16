@@ -37,6 +37,10 @@ function _EX_commonChannelInit(updateColorBufferForMeasurePoint){
         }
     );
 
+    // subscribe the 3d view to mode and state var changes
+    AG_modeSelector.modeChanged(VS_changeMode);
+    AG_modeSelector.stateVariableChanged(VS_changeStateVariable);
+
     // initialize brain region filter with animated graph selection
     var selection = AG_regionSelector.val();
     for(var i=0; i < selection.length; i++){
