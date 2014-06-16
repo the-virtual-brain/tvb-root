@@ -703,7 +703,7 @@
     <dependency env="[win32,win64]" name="tcl85.dll">
         <full-name value="TCL85 dll"/>
         <project-home value="http://www.tcl.tk/software/tcltk/license.html"/>
-        <version value="8.5.2.2"/>
+        <version value="8.5.2.15"/>
         <usage value="dynamic linking"/>
         <license value="LICENSE_tcl85.txt"/>
         <license-type value="BSD_ like"/>
@@ -733,7 +733,7 @@
     <dependency env="[win32,win64]" name="tk85.dll">
         <full-name value="TK85 dll"/>
         <project-home value="http://tkinter.unpythonic.net/wiki/Tkinter"/>
-        <version value="8.5.2.2"/>
+        <version value="8.5.2.15"/>
         <usage value="dynamic linking"/>
         <license value="LICENSE_tcl85.txt"/>
         <license-type value="BSD_ like"/>
