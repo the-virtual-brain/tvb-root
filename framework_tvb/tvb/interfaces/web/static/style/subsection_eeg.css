@@ -150,3 +150,8 @@ white-space: nowrap;
     font-weight: bold;
     text-shadow: 1px 1px 1px rgba(255, 255, 255, 1);
 }
+
+.flot-overlay{
+    cursor: crosshair;
+}
+
