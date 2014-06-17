@@ -106,7 +106,8 @@ EXCLUDES_SO = [  # libpq dependencies on dynamic psycopg linux 32
                  'libxau.so.6', 'libxcb.so.1', 'libxdmcp.so.6', 'libxext.so.6', 'libxft.so.2', 'libxrender.so.1', 
                  'libxss.so.1', re.compile(r'h5py\..+\.so'), re.compile(r'libhdf5_hl.*\.so')]
 
-EXCLUDES_DYLIB = ['libcrypto.1.0.0.dylib', 'libgcc_s.1.dylib', 'libgfortran.2.dylib', 'libgfortran.2.0.0.dylib',
+EXCLUDES_DYLIB = ['libcrypto.1.0.0.dylib', 'libgcc_s.1.dylib',
+                  'libgfortran.2.dylib', 'libgfortran.2.0.0.dylib', 'libgfortran.3.dylib',
                   'libncursesw.5.dylib', 'libncurses.5.dylib', 'libpq.5.dylib', 'libpq.5.6.dylib', 'libssl.1.0.0.dylib',
                   ##Dependencies of Tkinter
                   'libfontconfig.1.dylib', 'libxau.6.dylib', 'libxcb.1.dylib', 'libxdmcp.6.dylib',
