@@ -130,7 +130,17 @@
         <copyright-notice value="Copyright (c) 2008 Andrew Collette"/>
         <description value="H5Py is the lbrary that we use for accessing from python hdf5 library."/>
     </dependency>
-    <dependency env="[win32,win64]" name="hdf5dll.dll">
+    <dependency env="[win64]" name="hdf5.dll">
+        <full-name value="HDF5 dynamic library"/>
+        <project-home value="http://www.hdfgroup.org/HDF5/"/>
+        <version value="unknown"/>
+        <usage value="dynamic linking"/>
+        <license value="LICENSE_hdf5.txt"/>
+        <license-type value="BSD_"/>
+        <copyright-notice value="Copyright 2006-2011 by The HDF Group. Copyright 1998-2006 by the Board of Trustees of the University of Illinois."/>
+        <description value="Library used for efficient storage."/>
+    </dependency>
+    <dependency env="[win32]" name="hdf5dll.dll">
         <full-name value="HDF5 dynamic library"/>
         <project-home value="http://www.hdfgroup.org/HDF5/"/>
         <version value="unknown"/>
