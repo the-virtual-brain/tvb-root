@@ -159,6 +159,8 @@ def _extract_all(zip_name, dest):
     """ Extract a ZIP archive to introspect"""
     zip_ = zipfile.ZipFile(zip_name)
     for file_ in zip_.namelist():
+        if file_ == "./":
+            continue
         if file_.endswith('/'):
             os.makedirs(os.path.join(dest, file_))
         else:
