@@ -115,7 +115,7 @@ TCi --> inferior temporal cortex
 from scipy import io
 from tvb.simulator.lab import *
 import os
-import tvb.simulator
+import tvb_data
 import matplotlib.gridspec as gridspec
 import tvb.datatypes.projections as projections
 
@@ -144,9 +144,8 @@ def configure_simulation(stimulate):
     """
     # eeg projection matrix from regions to sensors
     LOG.info("Reading sensors info")
-    root_path = os.path.dirname(tvb.simulator.__file__)
-    proj_mat_path = os.path.join(root_path, 'files', "connectivity",
-                                 "o52r00_irp2008", "projection_eeg_1020_62.mat")
+    root_path = os.path.dirname(tvb_data.__file__)
+    proj_mat_path = os.path.join(root_path, 'projectionMatrix', "region_conn_74_eeg_1020_62.mat")
     matlab_data = io.matlab.loadmat(proj_mat_path)
     eeg_projection = matlab_data["ProjectionMatrix"]
 
