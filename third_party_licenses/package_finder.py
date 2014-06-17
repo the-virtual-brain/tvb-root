@@ -57,10 +57,10 @@ EXCLUDES = ['_builtinsuites', 'tvb_bin', 'bsddb', 'carbon', 'compiler', 'config'
             ]
  
 EXCLUDES_DLL = ['libeay32.dll', 'msvcm90.dll', 'msvcr90.dll', 'python27.dll',
-                'pywintypes27.dll', 'sqlite3.dll', 'ssleay32.dll', 'zlib1.dll',
+                'pywintypes27.dll', 'sqlite3.dll', 'ssleay32.dll', 'zlib1.dll', 'zlib.dll',
                 ## match any of the dll, so or dylib from hdf5 hl library, since the license is already
                 ## included by the libhdf5.* equivalent
-                'hdf5_hldll.dll', 'hdf5_hl.dll', 'pythoncom27.dll',
+                'hdf5_hldll.dll', 'hdf5_hl.dll', 'h5py_hdf5_hl.dll', 'h5py_hdf5.dll', 'pythoncom27.dll',
                 ## Exclude numpy distributed dll's
                 'libifcoremd.dll', 'libiomp5md.dll', 'libmmd.dll',
                 ## These come from psycopg2 postgresql
