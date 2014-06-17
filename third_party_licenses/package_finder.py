@@ -130,7 +130,7 @@ EXTRA_MODULES = {'jquery': '1.7.2',
                  'mathjax': '2.0'}
 
 ## These file-name pattern should not be found in TVB distribution.
-LICENSE_INTERDICTIONS = [re.compile(".*lzo.*"), re.compile(".*szip.*")]
+LICENSE_INTERDICTIONS = [re.compile(".*lzo.*")] ##, re.compile(".*szip.*")]
 
 PIP_WIN = ['c:\\Python27\\Scripts\\pip', 'E:\\TVB\\Python2.7.2\\Scripts\\pip']
 PIP_MAC = ['/usr/local/bin/pip', '/Library/Frameworks/Python.framework/Versions/2.7/bin/pip']

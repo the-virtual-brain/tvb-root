@@ -122,13 +122,13 @@
     </dependency>
     <dependency env="[win32,linux64,macos32,win64,linux32,macos64]" name="h5py">
         <full-name value="H5py"/>
-        <project-home value="http://code.google.com/p/h5py/"/>
+        <project-home value="http://www.h5py.org/"/>
         <version value="2.3.0"/>
         <usage value="dynamic linking"/>
         <license value="LICENSE_h5py.txt"/>
         <license-type value="BSD_ 3rd clause"/>
-        <copyright-notice value="Copyright (c) 2008 Andrew Collette"/>
-        <description value="H5Py is the lbrary that we use for accessing from python hdf5 library."/>
+        <copyright-notice value="Copyright (c) 2008 - 2013 Andrew Collette and contributors"/>
+        <description value="H5Py is the library that we use for accessing from python HDF5 library."/>
     </dependency>
     <dependency env="[win64]" name="hdf5.dll">
         <full-name value="HDF5 dynamic library"/>
@@ -689,6 +689,26 @@
         <license-type value="MIT_"/>
         <copyright-notice value="Copyright (c) 2004-2007 Gerhard Haring"/>
         <description value="Python DB-API module for SQLite 3."/>
+    </dependency>
+     <dependency env="[win32]" name="szip.dll">
+        <full-name value="Szip in HDF5"/>
+        <project-home value="http://www.hdfgroup.org/doc_resource/SZIP/Commercial_szip.html"/>
+        <version value="unknown"/>
+        <usage value="dynamic linking"/>
+        <license value="LICENSE_szip.txt"/>
+        <license-type value="Royal Free"/>
+        <copyright-notice value="Copyright (C) 2001 Science and Technology Corporation @ UNM.  All rights released.  Copyright (C) 2003 Lowell H. Miles and Jack A. Venbrux"/>
+        <description value="This gets included in Windows only, because H5PY comes directly with it."/>
+    </dependency>
+     <dependency env="[win64]" name="sz.dll">
+        <full-name value="Szip in HDF5"/>
+        <project-home value="http://www.hdfgroup.org/doc_resource/SZIP/Commercial_szip.html"/>
+        <version value="unknown"/>
+        <usage value="dynamic linking"/>
+        <license value="LICENSE_szip.txt"/>
+        <license-type value="Royal Free"/>
+        <copyright-notice value="Copyright (C) 2001 Science and Technology Corporation @ UNM.  All rights released.  Copyright (C) 2003 Lowell H. Miles and Jack A. Venbrux"/>
+        <description value="This gets included in Windows only, because H5PY comes directly with it."/>
     </dependency>
     <dependency env="[win32,linux64,macos32,win64,linux32,macos64]" name="tables">
         <full-name value="PyTables"/>
