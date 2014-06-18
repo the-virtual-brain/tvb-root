@@ -32,7 +32,6 @@
 .. moduleauthor:: Lia Domide <lia.domide@codemart.ro>
 """
 
-import numpy
 from tvb.adapters.uploaders.abcuploader import ABCUploader
 from tvb.adapters.uploaders.constants import DATA_NAME_PROJECTION
 from tvb.basic.filters.chain import FilterChain
@@ -91,7 +90,7 @@ class ProjectionMatrixRegionEEGImporter(ABCUploader):
 
         :param projection_file: a mat file containing projection matrix values which map \
                                 the connectivity to the sensors; the matrix size should be \
-                                `conectivity.number_of_regions` x `sensors.number_of_sensors`
+                                `connectivity.number_of_regions` x `sensors.number_of_sensors`
 
         :raises LaunchException: when no connectivity is specified
         """
@@ -133,14 +132,12 @@ class ProjectionMatrixRegionEEGImporter(ABCUploader):
             raise LaunchException("Invalid (empty) dataset...")
         
         if eeg_projection_data.shape[0] != sensors.number_of_sensors:
-            raise LaunchException('Invalid Projection Matrix shape[0]: ' + str(eeg_projection_data.shape[0]) +
-                                  " Was expecting " + str(sensors.number_of_sensors))
+            raise LaunchException("Invalid Projection Matrix shape[0]: %d Expected: %d" % (eeg_projection_data.shape[0],
+                                                                                           sensors.number_of_sensors))
         
-        if eeg_projection_data.shape[1] < expected_shape:
-            self.logger.warning("Invalid Projection Matrix shape:" + str(eeg_projection_data.shape[1]) 
-                                + ". We filled it with zeros up to: " + str(expected_shape))
-            padding = numpy.zeros((eeg_projection_data.shape[0], expected_shape - eeg_projection_data.shape[1]))
-            eeg_projection_data = numpy.hstack((eeg_projection_data, padding))
+        if eeg_projection_data.shape[1] != expected_shape:
+            raise LaunchException("Invalid Projection Matrix shape[1]: %d Expected: %d" % (eeg_projection_data.shape[1],
+                                                                                           expected_shape))
         
         self.logger.debug("Creating Projection Matrix instance")
         projection_matrix.sources = sources
