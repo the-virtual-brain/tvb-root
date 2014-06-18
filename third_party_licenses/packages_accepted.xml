@@ -380,6 +380,16 @@
         <copyright-notice value="Copyright (c) 2004, 2006-2012 Glenn Randers-Pehrson"/>
         <description value="LIBPNG is the official PNG reference library. Is is included because Matplotlib makes use of it."/>
     </dependency>
+        <dependency env="macos32" name="libquadmath.0.dylib">
+        <full-name value="GCC Quad-Precision Math Library Application Programming Interface (API)"/>
+        <project-home value="http://gcc.gnu.org/onlinedocs/libquadmath/"/>
+        <version value="unknown"/>
+        <usage value="dynamic linking"/>
+        <license value="LICENSE_quadmath.txt"/>
+        <license-type value="LGPL v2"/>
+        <copyright-notice value="Copyright (c) 2000, 2001, 2002, 2007, 2008 Free Software Foundation"/>
+        <description value="This appeared after recent updates of numerical libraries. Sources also found here: https://gnu.googlesource.com/gcc/+/gcc-4_6_4-release/libquadmath"/>
+    </dependency>
     <dependency env="[linux32,linux64]" name="libsasl2.so.2">
         <full-name value="libsasl cryptographic library"/>
         <project-home value="https://www.archlinux.org/packages/core/i686/libsasl/"/>
