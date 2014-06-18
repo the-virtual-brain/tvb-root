@@ -98,7 +98,7 @@ class ProjectionMatrixTest(TransactionalTestCase):
         importer = ABCAdapter.build_adapter(group)
 
         zip_path = os.path.join(os.path.abspath(os.path.dirname(dataset.__file__)), 
-                                'region_conn_74_eeg_1020_62.mat')
+                                'surface_reg_13_eeg_62.mat')
         args = {'projection_file': zip_path, 'dataset_name': 'ProjectionMatrix',
                 'connectivity': self.connectivity.gid, 'sensors': self.sensors.gid,
                 'surface': self.surface.gid,

@@ -25,9 +25,9 @@
 
 ## Synchronize Git and SVN repositories:
     git svn rebase
-    git pull github
-    git svn dcommit   (followed by multiple "git rebase --skip" and another "git svn dcommit")
+    git pull github [master]
     git push github
+    git svn dcommit   (followed by multiple "git rebase --skip" and another "git svn dcommit")
 
     git svn fetch
     git merge -Xtheirs remotes/svn/trunk
