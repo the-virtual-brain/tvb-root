@@ -125,8 +125,6 @@ function initTimeseriesViewer(baseURL, isPreview, dataShape, t0, dt, channelLabe
     dataShape[2] = TS_SVG_selectedChannels.length;
 
     // configure data
-    var displayElem = $('#time-series-viewer');
-    ts.w(displayElem.width()).h(displayElem.height());
     ts.baseURL(baseURL).preview(isPreview).mode(0).state_var(0);
     ts.shape(dataShape).t0(t0).dt(dt);
     ts.labels(_compute_labels_for_current_selection());
