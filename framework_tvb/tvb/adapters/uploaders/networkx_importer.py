@@ -34,7 +34,7 @@
 
 import networkx
 from tvb.adapters.uploaders.abcuploader import ABCUploader
-from tvb.adapters.uploaders.handler_connectivity import networkx2connectivity
+from tvb.adapters.uploaders.handler_connectivity import networkx_cmt_2connectivity
 from tvb.core.adapters.exceptions import ParseException, LaunchException
 from tvb.core.entities.storage import transactional
 from tvb.datatypes.connectivity import Connectivity
@@ -61,7 +61,7 @@ class NetworkxConnectivityImporter(ABCUploader):
     def launch(self, data_file):
         try:
             net = networkx.read_gpickle(data_file)
-            conn = networkx2connectivity(net, self.storage_path)
+            conn = networkx_cmt_2connectivity(net, self.storage_path)
             return [conn]
         except ParseException, excep:
             self.log.exception(excep)

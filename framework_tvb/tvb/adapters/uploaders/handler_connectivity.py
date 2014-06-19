@@ -110,7 +110,7 @@ def connectivity2networkx(connectivity):
 def networkx2connectivity(network, storage_path, nose_correction=None):
     """
     Populate Connectivity DataType from NetworkX object.
-
+    This method is deprecated.
     :param network: NetworkX graph
     :param storage_path: File path where to persist Connectivity.
     :return: Connectivity object
@@ -128,7 +128,8 @@ def networkx2connectivity(network, storage_path, nose_correction=None):
 
 def networkx_default_2connectivity(net, storage_path, nose_correction=None):
     """
-    Populate Connectivity DataType from NetworkX object, as in the default CFF example
+    Populate Connectivity DataType from NetworkX object, as in the default CFF example.
+    This is deprecated.
     """
     weights_matrix, tract_matrix, labels_vector = [], [], []
     positions, areas, orientation = [], [], []
@@ -170,8 +171,7 @@ def networkx_default_2connectivity(net, storage_path, nose_correction=None):
 
 
 KEY_CMT_COORDINATES = "dn_position"
-KEY_CMT_LABEL = "dn_name"
-KEY_CMT_LABEL2 = "dn_label"
+KEY_CMT_LABEL = ["dn_name", "dn_label"]
 
 KEY_CMT_REGION = "dn_region"
 KEY_CMT_REGION_CORTICAL = "cortical"
@@ -182,6 +182,13 @@ KEY_CMT_HEMISPHERE_RIGHT = "right"
 KEY_CMT_WEIGHT = "fa_mean"
 KEY_CMT_TRACT = "fiber_length_mean"
 
+
+def _find_value(node_data, candidate_keys):
+    """ find a value in node data using a list of candidate keys"""
+    for key in candidate_keys:
+        if key in node_data:
+            return node_data[key]
+    raise ValueError("could not find label")
 
 
 def networkx_cmt_2connectivity(net, storage_path):
@@ -198,10 +205,7 @@ def networkx_cmt_2connectivity(net, storage_path):
         node_data = net.node[node]
         positions.append(list(node_data[KEY_CMT_COORDINATES]))
 
-        label = node_data.get(KEY_CMT_LABEL)
-        if label is None:
-            label = node_data.get(KEY_CMT_LABEL2)
-
+        label = _find_value(node_data, KEY_CMT_LABEL)
         labels_vector.append(str(label))
 
         weights_matrix.append([0.0] * graph_size)
