@@ -41,7 +41,7 @@ from cfflib import load
 from tempfile import gettempdir
 from zipfile import ZipFile, ZIP_DEFLATED
 from tvb.adapters.uploaders.abcuploader import ABCUploader
-from tvb.adapters.uploaders.gifti.gifti import loadImage
+from nibabel.gifti import giftiio
 from tvb.adapters.uploaders.handler_connectivity import networkx2connectivity
 from tvb.basic.logger.builder import get_logger
 from tvb.core.adapters.exceptions import LaunchException
@@ -117,7 +117,7 @@ class CFF_Importer(ABCUploader):
 
             if surfaces:
                 try:
-                    self._parse_connectome_surface(surfaces, cdatas)
+                    self._parse_connectome_surfaces(surfaces, cdatas)
                 except Exception, excep:
                     self.log.exception(excep)
                     warning_message += "Problem when importing Surface (or related attributes: LocalConnectivity/RegionMapping) !! \n"
@@ -149,7 +149,7 @@ class CFF_Importer(ABCUploader):
             self._capture_operation_results([conn], uid)
 
 
-    def _parse_connectome_surface(self, connectome_surface, connectome_data):
+    def _parse_connectome_surfaces(self, connectome_surface, connectome_data):
         """
         Parse data from a CSurface object and save it in our internal Surface DataTypes
         """
@@ -159,8 +159,8 @@ class CFF_Importer(ABCUploader):
             self.log.debug("Using temporary folder for CFF import:" + tmpdir)
             _zipfile = ZipFile(c_surface.parent_cfile.src, 'r', ZIP_DEFLATED)
             gifti_file = _zipfile.extract(c_surface.src, tmpdir)
-            gifti_img = loadImage(gifti_file)
-            surface_meta = gifti_img.meta.get_data_as_dict()
+            gifti_img = giftiio.read(gifti_file)
+            surface_meta = gifti_img.meta.get_metadata()
             res, uid = None, None
 
             if surface_meta.get(ct.SURFACE_CLASS) == ct.CLASS_SURFACE:
@@ -182,16 +182,15 @@ class CFF_Importer(ABCUploader):
             elif surface_meta.get(ct.SURFACE_CLASS) == ct.CLASS_CORTEX:
                 for one_data in connectome_data:
                     cd_meta = one_data.get_metadata_as_dict()
-                    if ct.KEY_UID not in cd_meta or surface_meta[ct.KEY_UID] != cd_meta[ct.KEY_UID]:
-                        continue
-                    if cd_meta[ct.KEY_ROLE] == ct.ROLE_REGION_MAP:
-                        res, uid = handler_surface.cdata2region_mapping(one_data, surface_meta, self.storage_path)
-                    if cd_meta[ct.KEY_ROLE] == ct.ROLE_LOCAL_CON:
-                        res, uid = handler_surface.cdata2local_connectivity(one_data, surface_meta,
-                                                                            self.storage_path)
-                    if res is not None:
-                        self.nr_of_datatypes += 1
-                        self._capture_operation_results([res], uid)
+                    if ct.KEY_UID in cd_meta and surface_meta[ct.KEY_UID] == cd_meta[ct.KEY_UID]:
+                        if cd_meta[ct.KEY_ROLE] == ct.ROLE_REGION_MAP:
+                            res, uid = handler_surface.cdata2region_mapping(one_data, surface_meta, self.storage_path)
+                        if cd_meta[ct.KEY_ROLE] == ct.ROLE_LOCAL_CON:
+                            res, uid = handler_surface.cdata2local_connectivity(one_data, surface_meta,
+                                                                                self.storage_path)
+                        if res is not None:
+                            self.nr_of_datatypes += 1
+                            self._capture_operation_results([res], uid)
             try:
                 if os.path.exists(tmpdir):
                     shutil.rmtree(tmpdir)

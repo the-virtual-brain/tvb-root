@@ -41,13 +41,13 @@ from scipy import sparse
 from zipfile import ZipFile, ZIP_DEFLATED
 from tempfile import gettempdir
 from cfflib import CData
+from nibabel import nifti1
+from nibabel.gifti import GiftiMetaData, GiftiNVPairs, GiftiImage, write
 from tvb.core.adapters.exceptions import ParseException
 from tvb.core.adapters.abcadapter import ABCAdapter
 from tvb.core.entities.storage import dao
 from tvb.core.utils import get_unique_file_name
 from tvb.adapters.uploaders.abcuploader import ABCUploader
-from tvb.adapters.uploaders.gifti.util import GiftiDataType, GiftiIntentCode
-from tvb.adapters.uploaders.gifti.gifti import GiftiNVPairs, GiftiMetaData, saveImage, GiftiDataArray, GiftiImage
 from tvb.adapters.uploaders.helper_handler import get_uids_dict, get_gifty_file_name
 from tvb.adapters.uploaders import constants
 from tvb.basic.config.settings import TVBSettings as cfg
@@ -62,30 +62,6 @@ NUMPY_TEMP_FOLDER = os.path.join(cfg.TVB_STORAGE, "NUMPY_TMP")
 #
 # Surface <-> GIFTI
 # 
-
-
-def _create_gifty_array(input_data_list, intent, datatype=GiftiDataType.NIFTI_TYPE_FLOAT32):
-    """
-    From a input list of points, the intent of this list and the number of points(used for dimensionality)
-    create a GIFTI array.
-    """
-    gii_array = GiftiDataArray()
-    gii_array.data = input_data_list
-    gii_array.dims.extend(input_data_list.shape)
-    gii_array.datatype = datatype
-    gii_array.intent = intent
-    return gii_array
-
-
-def _create_gifti_nv_pairs(name, value):
-    """
-    Creates a GiftiNVPairs with the specified data.
-    """
-    gifti_pair = GiftiNVPairs()
-    gifti_pair.name = name
-    gifti_pair.value = value
-
-    return gifti_pair
 
 
 def _create_c_data(file_prefix, src, metadata_dict, fileformat='Other'):
@@ -116,10 +92,10 @@ def surface2gifti(surface_data, project_id):
     with additional information.
     """
     uids_dict = get_uids_dict(surface_data)
-    gii_surface_uid = _create_gifti_nv_pairs(constants.KEY_UID, uids_dict[constants.KEY_SURFACE_UID])
-    gii_surface_class = _create_gifti_nv_pairs(constants.SURFACE_CLASS, constants.CLASS_SURFACE)
-    gii_zero_based = _create_gifti_nv_pairs(constants.PARAM_ZERO_BASED, surface_data.zero_based_triangles)
-    gii_surface_type = _create_gifti_nv_pairs(constants.SURFACE_TYPE, surface_data.surface_type)
+    gii_surface_uid = GiftiNVPairs(constants.KEY_UID, uids_dict[constants.KEY_SURFACE_UID])
+    gii_surface_class = GiftiNVPairs(constants.SURFACE_CLASS, constants.CLASS_SURFACE)
+    gii_zero_based = GiftiNVPairs(constants.PARAM_ZERO_BASED, surface_data.zero_based_triangles)
+    gii_surface_type = GiftiNVPairs(constants.SURFACE_TYPE, surface_data.surface_type)
 
     gii_meta_object = GiftiMetaData()
     gii_meta_object.data.append(gii_surface_uid)
@@ -144,7 +120,7 @@ def surface2gifti(surface_data, project_id):
     gii_image.set_metadata(gii_meta_object)
 
     gii_filename = get_gifty_file_name(project_id, 'tvb_surface.surf.gii')
-    saveImage(gii_image, gii_filename)
+    write(gii_image, gii_filename)
     return gii_filename, cdata_vertices, cdata_normals, cdata_triangles
 
 
@@ -153,7 +129,7 @@ def gifti2surface(gifti_image, vertices_array=None, normals_array=None, triangle
     """
     Convert GiftiImage object into our internal Surface DataType
     """
-    meta = gifti_image.meta.get_data_as_dict()
+    meta = gifti_image.meta.get_metadata()
     if vertices_array:
         tmpdir = os.path.join(gettempdir(), vertices_array.parent_cfile.get_unique_cff_name())
         LOG.debug("Using temporary folder for surface import: " + tmpdir)
@@ -170,22 +146,22 @@ def gifti2surface(gifti_image, vertices_array=None, normals_array=None, triangle
                 triangles_array = _zipfile.extract(triangles_array.src, tmpdir)
                 triangles_array = numpy.load(triangles_array)
         except:
-            raise RuntimeError('Can not extract %s from Connectome file.' % vertices_array)         
-    
+            raise RuntimeError('Can not extract %s from Connectome file.' % vertices_array)
+
+        if os.path.isdir(tmpdir):
+            shutil.rmtree(tmpdir)
+
     if vertices_array is None:
-        for i in xrange(int(gifti_image.numDA)):
+        for darray in gifti_image.darrays:
             # Intent code is stored in the DataArray structure
-            darray = gifti_image.darrays[i]
-            if darray.intent == GiftiIntentCode.NIFTI_INTENT_POINTSET:
+            if darray.intent == nifti1.intent_codes['NIFTI_INTENT_POINTSET']:
                 vertices_array = darray.data
-                continue
-            if darray.intent == GiftiIntentCode.NIFTI_INTENT_TRIANGLE:
+            elif darray.intent == nifti1.intent_codes['NIFTI_INTENT_TRIANGLE']:
                 triangles_array = darray.data
-                continue
-            if darray.intent == GiftiIntentCode.NIFTI_INTENT_NORMAL:
+            elif darray.intent == nifti1.intent_codes['NIFTI_INTENT_NORMAL']:
                 normals_array = darray.data
-                continue
-    zero_based_val = eval(meta[constants.PARAM_ZERO_BASED])
+
+    zero_based_val = meta[constants.PARAM_ZERO_BASED] == 'True'
     
     if meta[constants.KEY_UID] in [surfaces.CORTICAL, 'srf_reg13', 'srf_80k']:
         surface = surfaces.CorticalSurface()
@@ -197,9 +173,7 @@ def gifti2surface(gifti_image, vertices_array=None, normals_array=None, triangle
     surface.storage_path = storage_path
     # Remove mappings from MetaData (or too large exception will be thrown)
     del meta[constants.MAPPINGS_DICT]
-    surface.set_metadata(meta) 
-    if os.path.isdir(tmpdir):
-        shutil.rmtree(tmpdir)
+    surface.set_metadata(meta)
         
     surface.zero_based_triangles = zero_based_val
     surface.vertices = vertices_array

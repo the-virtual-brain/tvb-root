@@ -46,7 +46,7 @@ from tvb.datatypes.time_series import TimeSeriesSurface
 OPTION_READ_METADATA = "ReadFromMetaData"
 
 
-class GIFTIParser():
+class GIFTIParser(object):
     """
     This class reads content of a GIFTI file and builds / returns a Surface instance
     filled with details.
