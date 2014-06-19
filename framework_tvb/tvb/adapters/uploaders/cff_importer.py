@@ -42,7 +42,7 @@ from tempfile import gettempdir
 from zipfile import ZipFile, ZIP_DEFLATED
 from tvb.adapters.uploaders.abcuploader import ABCUploader
 from nibabel.gifti import giftiio
-from tvb.adapters.uploaders.handler_connectivity import networkx2connectivity
+from tvb.adapters.uploaders.handler_connectivity import networkx2connectivity, KEY_NOSE
 from tvb.basic.logger.builder import get_logger
 from tvb.core.adapters.exceptions import LaunchException
 from tvb.core.entities.storage import dao, transactional
@@ -144,9 +144,11 @@ class CFF_Importer(ABCUploader):
         Parse data from a NetworkX object and save it in Connectivity DataTypes.
         """
         for net in connectome_network:
-            conn, uid = networkx2connectivity(net, self.storage_path)
+            net.load()
+            meta = net.get_metadata_as_dict()
+            conn = networkx2connectivity(net.data, self.storage_path, meta.get(KEY_NOSE))
             self.nr_of_datatypes += 1
-            self._capture_operation_results([conn], uid)
+            self._capture_operation_results([conn], meta.get(ct.KEY_UID))
 
 
     def _parse_connectome_surfaces(self, connectome_surface, connectome_data):

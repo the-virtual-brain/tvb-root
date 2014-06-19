@@ -107,58 +107,53 @@ def connectivity2networkx(connectivity):
     return network
 
 
-def networkx2connectivity(network_obj, storage_path):
+def networkx2connectivity(network, storage_path, nose_correction=None):
     """
     Populate Connectivity DataType from NetworkX object.
 
-    :param network_obj: NetworkX object to read data from it
+    :param network: NetworkX graph
     :param storage_path: File path where to persist Connectivity.
-    :return: Tuple(Connectivity object, uid from metadata)
+    :return: Connectivity object
     """
     try:
         ## Try with default fields
-        return networkx_default_2connectivity(network_obj, storage_path)
-    except Exception, exc:
+        return networkx_default_2connectivity(network, storage_path, nose_correction)
+    except Exception, exc:  #maybe catch only keyerror ?
 
         ## When exception, try fields as from Connectome Mapper Toolkit
         LOGGER.debug(exc)
-        return networkx_cmt_2connectivity(network_obj, storage_path)
+        return networkx_cmt_2connectivity(network, storage_path)
 
 
 
-def networkx_default_2connectivity(network_obj, storage_path):
+def networkx_default_2connectivity(net, storage_path, nose_correction=None):
     """
     Populate Connectivity DataType from NetworkX object, as in the default CFF example
     """
-    network_obj.load()
     weights_matrix, tract_matrix, labels_vector = [], [], []
     positions, areas, orientation = [], [], []
     # Read all nodes
-    graph_data = network_obj.data
-    graph_size = len(graph_data.nodes())
-    for node in graph_data.nodes():
-        positions.append([graph_data.node[node][KEY_POS_X],
-                          graph_data.node[node][KEY_POS_Y],
-                          graph_data.node[node][KEY_POS_Z]])
-        labels_vector.append(graph_data.node[node][KEY_POS_LABEL])
-        if KEY_AREA in graph_data.node[node]:
-            areas.append(graph_data.node[node][KEY_AREA])
-        if KEY_ORIENTATION_AVG in graph_data.node[node]:
-            orientation.append(graph_data.node[node][KEY_ORIENTATION_AVG])
+    graph_size = len(net.nodes())
+    for node in net.nodes():
+        node_data = net.node[node]
+        positions.append([node_data[KEY_POS_X], node_data[KEY_POS_Y], node_data[KEY_POS_Z]])
+        labels_vector.append(node_data[KEY_POS_LABEL])
+        if KEY_AREA in node_data:
+            areas.append(node_data[KEY_AREA])
+        if KEY_ORIENTATION_AVG in node_data:
+            orientation.append(node_data[KEY_ORIENTATION_AVG])
         weights_matrix.append([0.0] * graph_size)
         tract_matrix.append([0.0] * graph_size)
     # Read all edges
-    for edge in network_obj.data.edges():
+    for edge in net.edges():
         start = edge[0]
         end = edge[1]
-        weights_matrix[start][end] = graph_data.adj[start][end][KEY_WEIGHT]
-        tract_matrix[start][end] = graph_data.adj[start][end][KEY_TRACT]
+        weights_matrix[start][end] = net.adj[start][end][KEY_WEIGHT]
+        tract_matrix[start][end] = net.adj[start][end][KEY_TRACT]
 
-    meta = network_obj.get_metadata_as_dict()
-    
     result = Connectivity()
     result.storage_path = storage_path
-    result.nose_correction = meta[KEY_NOSE] if KEY_NOSE in meta else None
+    result.nose_correction = nose_correction
     result.weights = weights_matrix
     result.centres = positions
     result.region_labels = labels_vector
@@ -166,7 +161,7 @@ def networkx_default_2connectivity(network_obj, storage_path):
     result.orientations = orientation
     result.areas = areas
     result.tract_lengths = tract_matrix
-    return result, (meta[ct.KEY_UID] if ct.KEY_UID in meta else None)
+    return result
 
 
 #
@@ -176,6 +171,7 @@ def networkx_default_2connectivity(network_obj, storage_path):
 
 KEY_CMT_COORDINATES = "dn_position"
 KEY_CMT_LABEL = "dn_name"
+KEY_CMT_LABEL2 = "dn_label"
 
 KEY_CMT_REGION = "dn_region"
 KEY_CMT_REGION_CORTICAL = "cortical"
@@ -188,43 +184,47 @@ KEY_CMT_TRACT = "fiber_length_mean"
 
 
 
-def networkx_cmt_2connectivity(network_obj, storage_path):
+def networkx_cmt_2connectivity(net, storage_path):
     """
     Populate Connectivity DataType from NetworkX object produced with Connectome Mapper Toolkit.
     """
-    network_obj.load()
     weights_matrix, tract_matrix, labels_vector = [], [], []
     positions, cortical, hemisphere = [], [], []
 
     # Read all nodes
-    graph_data = network_obj.data
-    graph_size = len(graph_data.nodes())
+    graph_size = len(net.nodes())
 
-    for node in graph_data.nodes():
-        positions.append(list(graph_data.node[node][KEY_CMT_COORDINATES]))
-        labels_vector.append(str(graph_data.node[node][KEY_CMT_LABEL]))
+    for node in net.nodes():
+        node_data = net.node[node]
+        positions.append(list(node_data[KEY_CMT_COORDINATES]))
+
+        label = node_data.get(KEY_CMT_LABEL)
+        if label is None:
+            label = node_data.get(KEY_CMT_LABEL2)
+
+        labels_vector.append(str(label))
 
         weights_matrix.append([0.0] * graph_size)
         tract_matrix.append([0.0] * graph_size)
 
-        if KEY_CMT_REGION_CORTICAL == graph_data.node[node][KEY_CMT_REGION]:
+        if KEY_CMT_REGION_CORTICAL == node_data[KEY_CMT_REGION]:
             cortical.append(1)
         else:
             cortical.append(0)
 
-        if KEY_CMT_HEMISPHERE_RIGHT == graph_data.node[node][KEY_CMT_HEMISPHERE]:
+        if KEY_CMT_HEMISPHERE_RIGHT == node_data[KEY_CMT_HEMISPHERE]:
             hemisphere.append(True)
         else:
             hemisphere.append(False)
 
 
     # Read all edges (and make the matrix square
-    for edge in network_obj.data.edges():
+    for edge in net.edges():
         start = edge[0]
         end = edge[1]
-        weights_matrix[start - 1][end - 1] = graph_data.adj[start][end][KEY_CMT_WEIGHT]
+        weights_matrix[start - 1][end - 1] = net.adj[start][end][KEY_CMT_WEIGHT]
         weights_matrix[end - 1][start - 1] = weights_matrix[start - 1][end - 1]
-        tract_matrix[start - 1][end - 1] = graph_data.adj[start][end][KEY_CMT_TRACT]
+        tract_matrix[start - 1][end - 1] = net.adj[start][end][KEY_CMT_TRACT]
         tract_matrix[end - 1][start - 1] = tract_matrix[start - 1][end - 1]
 
     result = Connectivity()
@@ -236,6 +236,6 @@ def networkx_cmt_2connectivity(network_obj, storage_path):
     result.cortical = cortical
     result.weights = weights_matrix
     result.tract_lengths = tract_matrix
-    return result, None
+    return result
 
 
