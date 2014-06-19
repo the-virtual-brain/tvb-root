@@ -64,10 +64,10 @@ class GIFTISurfaceImporter(ABCUploader):
                  'default': OPTION_READ_METADATA},
 
                 {'name': 'data_file', 'type': 'upload', 'required_type': '.gii', 'required': True,
-                 'label': 'Please select file to import (.gii)'},
+                 'label': 'Please select a .gii (LH if cortex)'},
 
                 {'name': 'data_file_part2', 'type': 'upload', 'required_type': '.gii', 'required': False,
-                 'label': 'Please select part 2 of the file to import (.gii)'},
+                 'label': "Optionally select 2'nd .gii (RH if cortex)"},
 
                 {'name': 'should_center', 'type': 'bool', 'default': False,
                  'label': 'Center surface using vertex means along axes'}

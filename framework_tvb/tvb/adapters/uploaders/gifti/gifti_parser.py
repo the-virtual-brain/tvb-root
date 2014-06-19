@@ -40,6 +40,7 @@ from nibabel.nifti1 import intent_codes, data_type_codes
 from tvb.adapters.uploaders.handler_surface import create_surface_of_type, center_vertices
 from tvb.basic.logger.builder import get_logger
 from tvb.core.adapters.exceptions import ParseException
+from tvb.datatypes.surfaces import CorticalSurface
 from tvb.datatypes.time_series import TimeSeriesSurface
 
 
@@ -123,6 +124,7 @@ class GIFTIParser(object):
         # Now fill TVB data type with geometry data
         vertices = data_arrays[0].data
         triangles = data_arrays[1].data
+        vertices_in_lh = len(vertices)
         # If a second file is present append that data
         if data_arrays_part2 is not None:
             # offset the indices
@@ -132,6 +134,12 @@ class GIFTIParser(object):
 
         if should_center:
             vertices = center_vertices(vertices)
+
+        # set hemisphere mask if cortex
+        if isinstance(surface, CorticalSurface):
+            # if there was a 2nd file then len(vertices) != vertices_in_lh
+            surface.hemisphere_mask = np.zeros(len(vertices), dtype=np.bool)
+            surface.hemisphere_mask[vertices_in_lh:] = 1
 
         surface.vertices = vertices
         surface.triangles = triangles
