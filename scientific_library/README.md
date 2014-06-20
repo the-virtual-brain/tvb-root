@@ -6,7 +6,7 @@ THE VIRTUAL BRAIN SCIENTIFIC LIBRARY
 The Virtual Brain Project (TVB Project) has the purpose of offering some modern tools to the Neurosciences community, for computing, simulating and analyzing functional and structural data of human brains.
 
 "TVB Scientific Library" is the most important scientific contribution of TVB Project, but only a part of our code. In order to use this TVB Python Library (modify/run/test), you are advised to follow the steps described here: 
-https://github.com/the-virtual-brain/docs/blob/trunk/README.md
+http://docs.thevirtualbrain.com/advanced/link_contributor.html
 
 The interaction with TVB source code is recommended for advanced users only, for which the concepts proposed by TVB are known and understood, and which also have some programming knowledge.
 

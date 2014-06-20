@@ -701,7 +701,7 @@ except ImportError:
     LOG.error("Mayavi is needed for this demo but due to sizing and packaging constraints we are not distributing it. "
               "If you want to see the actual plot you should use the github version and install all the required "
               "dependencies as described here: (advanced users only)"
-              "https://github.com/the-virtual-brain/docs/blob/trunk/InstallationManual/InstallationManual.rst")
+              "http://docs.thevirtualbrain.com/advanced/link_installation_build.html")
     IMPORTED_MAYAVI = False
     #raise
 
