@@ -97,8 +97,7 @@ class WebStructure(object):
     ### These subsections can extend, and depend on existing visualizers in the system.
     SUB_SECTION_VIEW_0 = "view_connectivity"
     SUB_SECTION_VIEW_1 = "view_brain"
-    SUB_SECTION_VIEW_2 = "view_brain_eeg"
-    SUB_SECTION_VIEW_3 = "view_brain_seeg"
+    SUB_SECTION_VIEW_2 = "view_brain_dual"
     SUB_SECTION_VIEW_4 = "view_covariance"
     SUB_SECTION_VIEW_5 = "view_coherence"
     SUB_SECTION_VIEW_6 = "view_complex_coherence"
@@ -178,8 +177,7 @@ class WebStructure(object):
 
         SUB_SECTION_VIEW_0: "Connectivity Visualizer",
         SUB_SECTION_VIEW_1: "Brain Visualizer",
-        SUB_SECTION_VIEW_2: "Brain EEG Visualizer",
-        SUB_SECTION_VIEW_3: "Brain SEEG Visualizer",
+        SUB_SECTION_VIEW_2: "Brain Dual Activity Visualizer (3D and 2D)",
         SUB_SECTION_VIEW_4: "Covariance Visualizer",
         SUB_SECTION_VIEW_5: "Coherence Visualizer",
         SUB_SECTION_VIEW_6: "Complex Coherence Visualizer",
@@ -207,14 +205,13 @@ class WebStructure(object):
         ## Connectivity subsection link will not be needed, as we will have a full section in the help for this.
         ## SUB_SECTION_VIEW_0: "connectivity-visualizer**",
         SUB_SECTION_VIEW_1: "brain-activity-visualizer",
-        SUB_SECTION_VIEW_2: "dual-brain-eeg-visualizer",
-        SUB_SECTION_VIEW_3: "dual-brain-seeg-visualizer",
+        SUB_SECTION_VIEW_2: "dual-brain-activity-visualizer",
         SUB_SECTION_VIEW_4: "covariance-visualizer",
         SUB_SECTION_VIEW_5: "cross-coherence-visualizer",
         SUB_SECTION_VIEW_6: "complex-coherence-visualizer",
         SUB_SECTION_VIEW_7: "cross-correlation-visualizer",
         SUB_SECTION_VIEW_8: "pearson-coefficients-visualizer",
-        SUB_SECTION_VIEW_9: "eeg-time-series-visualizer",
+        SUB_SECTION_VIEW_9: "animated-time-series-visualizer",
         SUB_SECTION_VIEW_10: "fourier-spectrum-visualizer",
         SUB_SECTION_VIEW_11: "connectivity-measure-visualizer",
         SUB_SECTION_VIEW_12: "independent-component-visualizer",

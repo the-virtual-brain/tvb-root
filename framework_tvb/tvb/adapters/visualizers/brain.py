@@ -197,7 +197,7 @@ class BrainViewer(ABCDisplayer):
 
         boundary_url = self._get_url_for_region_boundaries(time_series)
 
-        retu = dict(title="Cerebral Activity", isOneToOneMapping=one_to_one_map,
+        retu = dict(title=self._get_subtitle(time_series), isOneToOneMapping=one_to_one_map,
                     urlVertices=json.dumps(url_vertices), urlTriangles=json.dumps(url_triangles),
                     urlLines=json.dumps(url_lines), urlNormals=json.dumps(url_normals),
                     urlMeasurePointsLabels=measure_points_labels, measure_points=measure_points,
@@ -293,13 +293,17 @@ class BrainViewer(ABCDisplayer):
         return activity_base_url, time_urls
 
 
+    def _get_subtitle(self, time_series):
+        return "Cerebral Activity: " + time_series.title
+
+
 
 class BrainEEG(BrainViewer):
     """
     Visualizer merging Brain 3D display and EEG lines display.
     """
     _ui_name = "Brain EEG Activity in 3D and 2D"
-    _ui_subsection = "brain_eeg"
+    _ui_subsection = "brain_dual"
 
 
     def get_input_tree(self):
@@ -371,6 +375,7 @@ class BrainEEG(BrainViewer):
         params['biHemispheric'] = False
         params['isOneToOneMapping'] = False
         params['brainViewerTemplate'] = 'view.html'
+        params['title'] = self._get_subtitle(surface_activity)
         return self.build_display_result("brain/extendedview", params,
                                          pages=dict(controlPage="brain/extendedcontrols",
                                                     channelsPage="commons/channel_selector.html"))
@@ -402,7 +407,7 @@ class BrainSEEG(BrainEEG):
     Visualizer merging Brain 3D display and MEG lines display.
     """
     _ui_name = "Brain SEEG Activity in 3D and 2D"
-    _ui_subsection = "brain_seeg"
+    _ui_subsection = "brain_dual"
 
 
     def get_input_tree(self):
@@ -427,19 +432,20 @@ class BrainSEEG(BrainEEG):
         return result_params
         
 
+
 class BrainRegionDual(BrainViewer):
     """
     Visualizer merging Brain 3D display and animated time series display
     """
-    _ui_name = "Brain Region Activity in 3D and 2D"
-    _ui_subsection = "brain_region_dual"
+    _ui_name = "Brain Regions Activity in 3D and 2D"
+    _ui_subsection = "brain_dual"
 
 
     def get_input_tree(self):
         return [{'name': 'region_activity', 'label': 'Time Series Region',
                  'type': TimeSeriesRegion, 'required': True,
-                 'description': 'dual view'},
-                ]
+                 'description': 'dual view'}]
+
 
     def launch(self, region_activity):
         """
@@ -451,6 +457,7 @@ class BrainRegionDual(BrainViewer):
         params['biHemispheric'] = False
         params['isOneToOneMapping'] = False
         params['brainViewerTemplate'] = 'view.html'
+        params['title'] = self._get_subtitle(region_activity)
         return self.build_display_result("brain/extendedview", params,
                                          pages=dict(controlPage="brain/extendedcontrols",
                                                     channelsPage="commons/channel_selector.html"))

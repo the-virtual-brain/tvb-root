@@ -13,7 +13,7 @@ A 3D scene of the brain activity:
 - at the region level: the brain is represented by a coarse granularity - each 
   region is represented with only one color.
 
-.. figure:: screenshots/brain.jpg
+.. figure:: screenshots/visualizer_brain.jpg
    :width: 90%
    :align: center
 
@@ -40,62 +40,50 @@ Time Series Volume Visualizer
 This visualizer is still work in progress.
 
 
-EEG Time Series Visualizer
-~~~~~~~~~~~~~~~~~~~~~~~~~~
+Animated Time Series Visualizer
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-.. figure:: screenshots/visualizer_timeseries_eeg.jpg
+.. figure:: screenshots/visualizer_timeseries_animated.jpg
    :width: 90%
    :align: center
 
-   Preview for EEG Time Series Visualizer
+   Preview for Animated Time Series Visualizer
 
 
-If you used an EEG monitor to record the activity of your large-scale brain 
-simulation, this display allows you to select the channels of the 62-sensors 
-EEG recording. 
+This is an alternative of TVB for displaying signal lines in a 2D display.
 
-.. figure:: screenshots/visualizer_timeseries_eeg_channel_selection.jpg
+The label "animated" comes from the red line which will pass the entire signal step by step, at a configurable
+speed. In single mode, this red-line might not be very useful, but it makes more sense when the same 2D display
+gets reused in the Dual Visualizers (combined with the 3D display on a surface) where the red-line shows the
+current step displayed in the 3D movie on the left.
+
+.. figure:: screenshots/visualizer_timeseries_channel_selection.jpg
    :width: 90%
    :align: center
 
-   Selecting the "channels" to be displayed.
+   Selecting the "channels" to be displayed (available in several viewers of TVB).
    
    
-Dual Brain - EEG Visualizer
-~~~~~~~~~~~~~~~~~~~~~~~~~~~
+Dual Brain Activity Visualizer
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-.. figure:: screenshots/visualizer_timeseries_eeg.jpg
-   :width: 90%
-   :align: center
-
-   Preview for EEG Time Series Visualizer
-
-
-This visualizer combines the brain activity on top of a 3D display of the pacient's 
-head and on the right column, the EEG channels recordings. Channel selection is 
-also available.
+This visualizer combines the brain activity movie shown in a 3D display on the left,
+with the explicit channels recording lines on the right.
+Movie start/stop, speed control, color schema change, channel selection are some of the features available in this visualizer.
 
 
 .. figure:: screenshots/visualizer_dual_head_eeg.jpg
-   :width: 90%
+   :width: 70%
    :align: center
 
    Brain activity wit EEG recordings.
 
 
-Dual Brain - sEEG Visualizer
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-This visualizer combines the brain activity on top of a 3D display of the pacient's
-head and on the right column, the sEEG (Stereo EEG) channels recordings. Channel selection is
-also available.
-
-
-.. figure:: screenshots/visualizer_dual_head_seeg.jpg
+.. figure:: screenshots/visualizer_dual_seeg_and_regions.jpg
    :width: 90%
    :align: center
 
-   Brain activity wit sEEG recordings.
+   Brain activity with sEEG recordings (on the left instance) and region level activity (on the right).
 
 
 Connectivity Measure Visualizer
