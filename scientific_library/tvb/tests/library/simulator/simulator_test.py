@@ -73,10 +73,10 @@ class Simulator(object):
         gavg    = monitors.GlobalAverage(period=2 ** -2)
         subsamp = monitors.SubSample(period=2 ** -2)
         tavg    = monitors.TemporalAverage(period=2 ** -2)
-        spheeg  = monitors.SphericalEEG(sensors=sens_eeg, period=2 ** -2)
-        sphmeg  = monitors.SphericalMEG(sensors=sens_meg, period=2 ** -2)
+        #spheeg  = monitors.SphericalEEG(sensors=sens_eeg, period=2 ** -2)
+        #sphmeg  = monitors.SphericalMEG(sensors=sens_meg, period=2 ** -2)
         
-        self.monitors = (raw, gavg, subsamp, tavg, spheeg, sphmeg) 
+        self.monitors = (raw, gavg, subsamp, tavg) 
         
         self.model  = None
         self.method = None
@@ -90,9 +90,9 @@ class Simulator(object):
         """
 
         raw_data, gavg_data, subsamp_data, tavg_data = [], [], [], []
-        spheeg_data, sphmeg_data = [], []
+        # spheeg_data, sphmeg_data = [], []
 
-        for raw, gavg, subsamp, tavg, spheeg, sphmeg in self.sim(simulation_length=simulation_length):    
+        for raw, gavg, subsamp, tavg in self.sim(simulation_length=simulation_length):    
 
             if not raw is None:
                 raw_data.append(raw)
@@ -106,16 +106,17 @@ class Simulator(object):
             if not tavg is None:
                 tavg_data.append(tavg)
                 
-            if not spheeg is None:
-                spheeg_data.append(spheeg)
+            # if not spheeg is None:
+            #     spheeg_data.append(spheeg)
                 
-            if not sphmeg is None:
-                sphmeg_data.append(sphmeg)
+            # if not sphmeg is None:
+            #     sphmeg_data.append(sphmeg)
                 
 
     def configure(self, dt=2 ** -4, model="Generic2dOscillator", speed=4.0,
                   coupling_strength=0.00042, method="HeunDeterministic", 
-                  surface_sim=False):
+                  surface_sim=False,
+                  default_connectivity=True):
         """
         Create an instance of the Simulator class, by default use the
         generic plane oscillator local dynamic model and the deterministic 
@@ -126,8 +127,17 @@ class Simulator(object):
         self.model = model
         self.method = method
         
-        white_matter = connectivity.Connectivity(load_default=True)
-        white_matter_coupling = coupling.Linear(a=coupling_strength)
+        if default_connectivity:
+            white_matter = connectivity.Connectivity(load_default=True)
+            # NOTE: This is the default region mapping should consider changing the name.
+            region_mapping = surfaces.RegionMapping.from_file(source_file="cortex_reg13/all_regions_cortex_reg13.txt")
+        else:
+            white_matter   = connectivity.Connectivity.from_file(source_file="connectivity_190.zip")
+            region_mapping = surfaces.RegionMapping.from_file(source_file="cortex_reg13/region_mapping/o52r00_irp2008_hemisphere_both_subcortical_true_regions_190.txt.bz2")
+
+            
+
+        white_matter_coupling = coupling.Linear(a=coupling_strength)    
         white_matter.speed = speed
 
         dynamics = eval("models." + model + "()")
@@ -140,7 +150,7 @@ class Simulator(object):
         
         if surface_sim:
             local_coupling_strength = numpy.array([2 ** -10])
-            default_cortex = surfaces.Cortex.from_file()
+            default_cortex = surfaces.Cortex(load_default = True, region_mapping_data=region_mapping)
             default_cortex.coupling_strength = local_coupling_strength
         else: 
             default_cortex = None
@@ -162,7 +172,7 @@ class SimulatorTest(BaseTestCase):
         
         AVAILABLE_MODELS = get_traited_subclasses(models.Model)
         AVAILABLE_METHODS = get_traited_subclasses(integrators.Integrator)
-        MODEL_NAMES = AVAILABLE_MODELS.keys()
+        MODEL_NAMES  = AVAILABLE_MODELS.keys()
         METHOD_NAMES = AVAILABLE_METHODS.keys()
         METHOD_NAMES.append('RungeKutta4thOrderDeterministic')
         
@@ -177,26 +187,23 @@ class SimulatorTest(BaseTestCase):
             test_simulator.run_simulation()
             
             
-#    def test_simulator_surface(self):
-#        
-#        AVAILABLE_MODELS  = get_traited_subclasses(models.Model)
-#        # stupid model
-#        del AVAILABLE_MODELS['BrunelWang']
-#        AVAILABLE_METHODS = get_traited_subclasses(integrators.Integrator)
-#        MODEL_NAMES  = AVAILABLE_MODELS.keys()
-#        METHOD_NAMES = AVAILABLE_METHODS.keys()
-#        METHOD_NAMES.append('RungeKutta4thOrderDeterministic')
-#    
-#        #init
-#        test_simulator = Simulator()
-#    
-#        #test cases
-#        for model_name, method_name in itertools.product(MODEL_NAMES, METHOD_NAMES):        
-#            test_simulator.configure(model= model_name,
-#                                     method=method_name,
-#                                     surface_sim=True)
-#                                     
-#            test_simulator.run_simulation(simulation_length=2**2)
+    def test_simulator_surface(self): 
+        """
+        This test mainly evaluates if surface simulations run when
+        subcortical structures are included. 
+       
+        TODO: 
+            Should be as complete as the one for region simulations.
+
+        """       
+        #init
+        test_simulator = Simulator()
+   
+        #test cases
+        for default_connectivity in [True, False]:
+            test_simulator.configure(surface_sim=True,
+                                     default_connectivity = default_connectivity)                             
+            test_simulator.run_simulation(simulation_length=2**2)
 
 
 
