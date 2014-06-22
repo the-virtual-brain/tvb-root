@@ -317,3 +317,22 @@ class TimeSeriesVolumeFramework(time_series_data.TimeSeriesVolumeData, TimeSerie
 
         slices = (slice(from_idx, to_idx), slice(overall_shape[1]), slice(overall_shape[2]), slice(overall_shape[3]))
         return self.read_data_slice(tuple(slices))
+
+    def get_rotated_volume_slice(self, from_idx, to_idx):
+        """
+        :input: int from_idx, int to_idx.
+        :return: Multidimensional matrix with its last dimension rotated to get a better view of the brain.
+        """
+        from_idx, to_idx = int(from_idx), int(to_idx)
+        overall_shape = self.read_data_shape()
+        slices = (slice(from_idx, to_idx), slice(overall_shape[1]), slice(overall_shape[2]), slice(overall_shape[3]))
+        slices = self.read_data_slice(tuple(slices))
+        slices = slices[:, :,:,::-1]
+        return slices
+
+    @property
+    def get_volume_shape(self):
+        """
+        :return: Data size for each dimension. [Time, X, Y, Z]
+        """
+        return self.read_data_shape()
