@@ -331,7 +331,7 @@ class RegionMapping(surfaces_framework.RegionMappingFramework, surfaces_scientif
     """
 
     @staticmethod
-    def from_file(source_file=os.path.join("cortex_reg13", "all_regions_cortex_reg13.txt"), instance=None):
+    def from_file(source_file=os.path.join("cortex_reg13", "region_mapping", "o52r00_irp2008_hemisphere_both_subcortical_false_regions_74.txt.bz2"), instance=None):
 
         if instance is None:
             result = RegionMapping()

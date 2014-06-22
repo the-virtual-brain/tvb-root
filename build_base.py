@@ -159,7 +159,7 @@ def copy_distribution_dataset(dist_path, library_path):
                      ("surfaceData.outer_skull_4096.zip", "$INSIDE.surfaceData.outer_skull_4096.zip"),
                      ("surfaceData.eeg_skin_surface.zip", "$INSIDE.surfaceData.eeg_skin_surface.zip"),
                      ("surfaceData.face_surface_old.zip", "$INSIDE.surfaceData.face_surface_old.zip"),
-                     ("surfaceData.cortex_reg13.all_regions_cortex_reg13.txt", "$INSIDE.surfaceData.cortex_reg13.all_regions_cortex_reg13.txt"),
+                     ("surfaceData.cortex_reg13.region_mapping.o52r00_irp2008_hemisphere_both_subcortical_false_regions_74.txt.bz2", "$INSIDE.surfaceData.cortex_reg13.region_mapping.o52r00_irp2008_hemisphere_both_subcortical_false_regions_74.txt.bz2"),
                      ("surfaceData.cortex_reg13.local_connectivity_surface_cortex_reg13.mat", "$INSIDE.surfaceData.cortex_reg13.local_connectivity_surface_cortex_reg13.mat"),
 
                      ("obj.__init__.py", "$INSIDE.obj.__init__.py"),

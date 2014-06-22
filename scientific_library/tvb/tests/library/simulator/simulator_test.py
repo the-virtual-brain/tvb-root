@@ -130,7 +130,7 @@ class Simulator(object):
         if default_connectivity:
             white_matter = connectivity.Connectivity(load_default=True)
             # NOTE: This is the default region mapping should consider changing the name.
-            region_mapping = surfaces.RegionMapping.from_file(source_file="cortex_reg13/all_regions_cortex_reg13.txt")
+            region_mapping = surfaces.RegionMapping.from_file(source_file="cortex_reg13/region_mapping/o52r00_irp2008_hemisphere_both_subcortical_false_regions_74.txt.bz2")
         else:
             white_matter   = connectivity.Connectivity.from_file(source_file="connectivity_190.zip")
             region_mapping = surfaces.RegionMapping.from_file(source_file="cortex_reg13/region_mapping/o52r00_irp2008_hemisphere_both_subcortical_true_regions_190.txt.bz2")
