@@ -220,7 +220,6 @@ class ConnectivityViewer(ABCDisplayer):
                              pointsLabels=input_data.ordered_labels, conductionSpeed=input_data.speed or 1,
                              urlVertices=json.dumps(url_vertices), urlTriangles=json.dumps(url_triangles),
                              urlNormals=json.dumps(url_normals),
-                             connectivity_nose_correction=json.dumps(input_data.nose_correction),
                              connectivity_entity=input_data, surface_entity=surface_data,
                              algo_group=self.get_algo_group(),
                              base_selection=input_data.saved_selection_labels,

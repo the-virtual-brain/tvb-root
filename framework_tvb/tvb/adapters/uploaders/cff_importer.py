@@ -42,7 +42,7 @@ from tempfile import gettempdir
 from zipfile import ZipFile, ZIP_DEFLATED
 from tvb.adapters.uploaders.abcuploader import ABCUploader
 from nibabel.gifti import giftiio
-from tvb.adapters.uploaders.handler_connectivity import networkx2connectivity, KEY_NOSE
+from tvb.adapters.uploaders.handler_connectivity import networkx2connectivity
 from tvb.basic.logger.builder import get_logger
 from tvb.core.adapters.exceptions import LaunchException
 from tvb.core.entities.storage import dao, transactional
@@ -120,7 +120,8 @@ class CFF_Importer(ABCUploader):
                     self._parse_connectome_surfaces(surfaces, cdatas)
                 except Exception, excep:
                     self.log.exception(excep)
-                    warning_message += "Problem when importing Surface (or related attributes: LocalConnectivity/RegionMapping) !! \n"
+                    warning_message += "Problem when importing Surface (or related attributes: " \
+                                       "LocalConnectivity/RegionMapping) !! \n"
 
             self._cleanup_after_cfflib(conn_obj)
 
@@ -146,7 +147,7 @@ class CFF_Importer(ABCUploader):
         for net in connectome_network:
             net.load()
             meta = net.get_metadata_as_dict()
-            conn = networkx2connectivity(net.data, self.storage_path, meta.get(KEY_NOSE))
+            conn = networkx2connectivity(net.data, self.storage_path)
             self.nr_of_datatypes += 1
             self._capture_operation_results([conn], meta.get(ct.KEY_UID))
 

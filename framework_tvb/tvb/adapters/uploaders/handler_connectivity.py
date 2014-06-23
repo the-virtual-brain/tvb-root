@@ -33,11 +33,8 @@
 """
 
 import numpy
-from cfflib import CNetwork, nx
-from tvb.adapters.uploaders.helper_handler import get_uids_dict
 from tvb.basic.logger.builder import get_logger
 from tvb.datatypes.connectivity import Connectivity
-import tvb.adapters.uploaders.constants as ct
 
 
 ### Connectivity related constants
@@ -49,7 +46,6 @@ KEY_AREA = 'area'
 KEY_ORIENTATION_AVG = 'average_orientation'
 KEY_WEIGHT = 'weight'
 KEY_TRACT = 'tract'
-KEY_NOSE = 'nose_correction'
 CFF_CONNECTIVITY_TITLE = "TVB Connectivity Matrix"
 
 LOGGER = get_logger(__name__)
@@ -70,44 +66,10 @@ def _get_coord_xform(darray):
 
 #
 # GRAPHML <-> Connectivity
-# 
+#
 
 
-def connectivity2networkx(connectivity):
-    """
-    Build NetworkX object from internal DataType Connectivity.
-    """
-    if connectivity is None:
-        return None
-    graph = nx.DiGraph()
-    # Add all nodes
-    for i in range(connectivity.number_of_regions):
-        node_dict = {KEY_POS_X: connectivity.centres[i][0],
-                     KEY_POS_Y: connectivity.centres[i][1],
-                     KEY_POS_Z: connectivity.centres[i][2],
-                     KEY_POS_LABEL: connectivity.region_labels[i]}
-        if connectivity.areas is not None:
-            node_dict[KEY_AREA] = connectivity.areas[i]
-        if connectivity.orientations is not None:
-            node_dict[KEY_ORIENTATION_AVG] = connectivity.orientations[i]
-        graph.add_node(i, node_dict)
-    # Add all edges
-    for i, weights_row in enumerate(connectivity.weights):
-        for j, value in enumerate(weights_row):
-            graph.add_edge(i, j, 
-                           {KEY_WEIGHT: value,
-                            KEY_TRACT: connectivity.tract_lengths[i][j]})
-
-    uids_dict = get_uids_dict(connectivity)
-
-    network = CNetwork(CFF_CONNECTIVITY_TITLE + "_" + connectivity.gid)
-    network.set_with_nxgraph(graph)
-    network.update_metadata({KEY_NOSE: connectivity.nose_correction,
-                             ct.KEY_UID: uids_dict[ct.KEY_CONNECTIVITY_UID]})
-    return network
-
-
-def networkx2connectivity(network, storage_path, nose_correction=None):
+def networkx2connectivity(network, storage_path):
     """
     Populate Connectivity DataType from NetworkX object.
     This method is deprecated.
@@ -117,8 +79,8 @@ def networkx2connectivity(network, storage_path, nose_correction=None):
     """
     try:
         ## Try with default fields
-        return networkx_default_2connectivity(network, storage_path, nose_correction)
-    except Exception, exc:  #maybe catch only keyerror ?
+        return networkx_default_2connectivity(network, storage_path)
+    except Exception, exc:
 
         ## When exception, try fields as from Connectome Mapper Toolkit
         LOGGER.debug(exc)
@@ -126,7 +88,7 @@ def networkx2connectivity(network, storage_path, nose_correction=None):
 
 
 
-def networkx_default_2connectivity(net, storage_path, nose_correction=None):
+def networkx_default_2connectivity(net, storage_path):
     """
     Populate Connectivity DataType from NetworkX object, as in the default CFF example.
     This is deprecated.
@@ -154,7 +116,6 @@ def networkx_default_2connectivity(net, storage_path, nose_correction=None):
 
     result = Connectivity()
     result.storage_path = storage_path
-    result.nose_correction = nose_correction
     result.weights = weights_matrix
     result.centres = positions
     result.region_labels = labels_vector

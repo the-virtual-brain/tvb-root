@@ -307,7 +307,6 @@ function drawScene() {
         mvTranslate([0.0, 0.0, GL_zTranslation]);
         multMatrix(GL_currentRotationMatrix);
         mvTranslate([GVAR_additionalXTranslationStep, GVAR_additionalYTranslationStep, 0]);
-        applyConnectivityNoseCorrection();
         _drawLines(linesBuffer);
         mvPopMatrix();
 
@@ -317,7 +316,6 @@ function drawScene() {
         mvTranslate([0.0, 0.0, GL_zTranslation]);
         multMatrix(GL_currentRotationMatrix);
         mvTranslate([GVAR_additionalXTranslationStep, GVAR_additionalYTranslationStep, 0]);
-        applyConnectivityNoseCorrection();
         displayPoints();
         mvPopMatrix();
 
@@ -335,7 +333,6 @@ function drawScene() {
             gl.enable(gl.CULL_FACE);
             addLightForCorticalSurface();
             multMatrix(GL_currentRotationMatrix);
-            applyConnectivityNoseCorrection();
             mvTranslate([GVAR_additionalXTranslationStep, GVAR_additionalYTranslationStep, 0]);
 
             // Draw the transparent object twice, to get a correct rendering
@@ -364,7 +361,6 @@ function drawScene() {
         mvTranslate([0.0, 0.0, GL_zTranslation]);
         multMatrix(GL_currentRotationMatrix);
         mvTranslate([GVAR_additionalXTranslationStep, GVAR_additionalYTranslationStep, 0]);
-        applyConnectivityNoseCorrection();
 
         for (var i = 0; i < NO_POSITIONS; i++){
             gl.uniform3f(shaderProgram.pickingColor, GL_colorPickerInitColors[i][0],
@@ -690,18 +686,9 @@ var verticesBuffers = [];
 var normalsBuffers = [];
 var indexesBuffers = [];
 var hemispheres = ['leftHemisphere', 'rightLeftQuarter', 'leftRightQuarter', 'rightHemisphere'];
-var connectivity_nose_correction;
 var GVAR_additionalXTranslationStep = 0;
 var GVAR_additionalYTranslationStep = 0;
 
-
-function applyConnectivityNoseCorrection() {
-    if (connectivity_nose_correction != null && connectivity_nose_correction.length === 3) {
-        mvRotate(parseInt(connectivity_nose_correction[0]), [1, 0, 0]);
-        mvRotate(parseInt(connectivity_nose_correction[1]), [0, 1, 0]);
-        mvRotate(parseInt(connectivity_nose_correction[2]), [0, 0, 1]);
-    }
-}
 
 /**
  * Returns <code>true</code> if at least one point form the given list is checked.
@@ -872,9 +859,8 @@ function connectivity_initCanvas() {
  * only once.
  */
 function saveRequiredInputs_con(fileWeights, fileTracts, filePositions, urlVerticesList, urlTrianglesList,
-                                urlNormalsList, urlLabels, conn_nose_correction, condSpeed, rays, colors) {
+                                urlNormalsList, urlLabels, condSpeed, rays, colors) {
     GVAR_initPointsAndLabels(filePositions, urlLabels);
-    connectivity_nose_correction = $.parseJSON(conn_nose_correction);
     NO_POSITIONS = GVAR_positionsPoints.length;
     GFUNC_initTractsAndWeights(fileWeights, fileTracts);
     if (rays) raysWeights = $.parseJSON(rays);
@@ -934,10 +920,10 @@ function changeSurfaceTransparency(inputField) {
  * be drawn alone, without widths and tracts.
  */
 function prepareConnectivity(fileWeights, fileTracts, filePositions, urlVerticesList , urlTrianglesList,
-                             urlNormalsList, urlLabels,  conn_nose_correction, isSingleMode, conductionSpeed, rays, colors) {
+                             urlNormalsList, urlLabels, isSingleMode, conductionSpeed, rays, colors) {
     connectivity_initCanvas();
     saveRequiredInputs_con(fileWeights, fileTracts, filePositions, urlVerticesList , urlTrianglesList,
-                           urlNormalsList, urlLabels, conn_nose_correction, conductionSpeed, rays, colors);
+                           urlNormalsList, urlLabels, conductionSpeed, rays, colors);
     connectivity_startGL(isSingleMode);
 }
 

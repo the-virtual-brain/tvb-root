@@ -63,17 +63,14 @@ class ZIPConnectivityImporter(ABCUploader):
         Take as input a ZIP archive.
         """
         return [{'name': 'uploaded', 'type': 'upload', 'required_type': 'application/zip',
-                 'label': 'Connectivity file (zip)', 'required': True},
-                {'name': 'rotate_x', 'label': 'Rotate x', 'type': 'int', 'default': 0, 'minValue': 0, 'maxValue': 360},
-                {'name': 'rotate_y', 'label': 'Rotate y', 'type': 'int', 'default': 0, 'minValue': 0, 'maxValue': 360},
-                {'name': 'rotate_z', 'label': 'Rotate z', 'type': 'int', 'default': 0, 'minValue': 0, 'maxValue': 360}]
+                 'label': 'Connectivity file (zip)', 'required': True}]
         
         
     def get_output(self):
         return [Connectivity]
 
 
-    def launch(self, uploaded, rotate_x=0, rotate_y=0, rotate_z=0):
+    def launch(self, uploaded):
         """
         Execute import operations: unpack ZIP and build Connectivity object as result.
 
@@ -124,7 +121,6 @@ class ZIPConnectivityImporter(ABCUploader):
         
         result = Connectivity()
         result.storage_path = self.storage_path
-        result.nose_correction = [rotate_x, rotate_y, rotate_z]
         
         ### Fill positions
         if centres is None:

@@ -103,7 +103,6 @@ class ConnectivityTest(BaseTestCase):
         self.assertEqual(conn.number_of_regions, 74)
         self.assertEqual(conn.number_of_connections, 1560)
         self.assertTrue(conn.parcellation_mask is None)
-        self.assertTrue(conn.nose_correction is None)
         self.assertTrue(conn.saved_selection is None)
         self.assertEqual(conn.parent_connectivity, '')
         summary = conn.summary_info
@@ -146,7 +145,6 @@ class ConnectivityTest(BaseTestCase):
         self.assertEqual(conn.delays.shape, (0,))
         self.assertEqual(conn.number_of_regions, 0)
         self.assertTrue(conn.parcellation_mask is None)
-        self.assertTrue(conn.nose_correction is None)
         self.assertTrue(conn.saved_selection is None)
         self.assertEqual(conn.parent_connectivity, '')
 
@@ -168,7 +166,6 @@ class ConnectivityTest(BaseTestCase):
         self.assertEqual(conn.delays.shape, (0,))
         self.assertEqual(conn.number_of_regions, 0)
         self.assertTrue(conn.parcellation_mask is None)
-        self.assertTrue(conn.nose_correction is None)
         self.assertTrue(conn.saved_selection is None)
         self.assertEqual(conn.parent_connectivity, '')
 

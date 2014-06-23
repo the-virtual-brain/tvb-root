@@ -167,7 +167,6 @@ class CSVConnectivityImporter(ABCUploader):
                                   "has only %s nodes." % (weights_matrix.shape[0], input_data.orientations.shape[0]))
         result = Connectivity()
         result.storage_path = self.storage_path
-        result.nose_correction = input_data.nose_correction
         result.centres = input_data.centres
         result.region_labels = input_data.region_labels
         result.weights = weights_matrix

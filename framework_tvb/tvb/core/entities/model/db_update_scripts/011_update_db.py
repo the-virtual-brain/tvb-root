@@ -34,7 +34,7 @@ Change of DB structure from TVB version 1.2 to 1.2.1
 .. moduleauthor:: Lia Domide <lia.domide@codemart.ro>
 """
 
-from sqlalchemy import Column, Integer
+from sqlalchemy import Column, Integer, String
 from sqlalchemy.sql import text
 from migrate.changeset.schema import create_column, drop_column
 from tvb.core.entities import model
@@ -45,6 +45,7 @@ meta = model.Base.metadata
 
 COL_OLD = Column('_unidirectional', Integer)
 COL_NEW = Column('_undirected', Integer)
+COL_NOSE_CORRECTION = Column('_nose_correction', String)
 
 
 def upgrade(migrate_engine):
@@ -63,6 +64,7 @@ def upgrade(migrate_engine):
     session.close()
 
     drop_column(COL_OLD, table1)
+    drop_column(COL_NOSE_CORRECTION, table1)
 
 
 
@@ -81,3 +83,4 @@ def downgrade(migrate_engine):
     session.close()
 
     drop_column(COL_NEW, table1)
+    create_column(COL_NOSE_CORRECTION, table1)

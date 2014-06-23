@@ -127,9 +127,6 @@ class ConnectivityData(MappedType):
 
     # ------------- FRAMEWORK ATTRIBUTES -----------------------------
 
-    # Rotation if positions are not normalized.
-    nose_correction = basic.JSONType(required=False)
-
     # Original Connectivity, from which current connectivity was edited.
     parent_connectivity = basic.String(required=False)
 

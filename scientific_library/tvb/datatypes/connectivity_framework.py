@@ -64,7 +64,6 @@ class ConnectivityFramework(connectivity_data.ConnectivityData):
         final_conn = self.__class__()
         final_conn.parent_connectivity = self.gid
         final_conn.storage_path = storage_path
-        final_conn.nose_correction = self.nose_correction
         final_conn.weights = new_weights
         final_conn.centres = self.centres
         final_conn.region_labels = self.region_labels

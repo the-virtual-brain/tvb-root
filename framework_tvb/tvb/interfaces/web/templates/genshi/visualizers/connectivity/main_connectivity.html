@@ -197,10 +197,8 @@
             patchContextMenu();
             $('#GLcanvas').contextMenu('#contextMenuDiv', {'appendTo': ".connectivity-viewer", 'shadow': false, 'offsetY': -13, 'offsetX': 0});
 
-			prepareConnectivity('$urlWeights', '$urlTracts', '$urlPositions', '$urlVertices',
-                    '$urlTriangles', '$urlNormals', '$urlLabels',
-                    '$connectivity_nose_correction', false, '$conductionSpeed',
-                    '$raysArray', '$colorsArray');
+			prepareConnectivity('$urlWeights', '$urlTracts', '$urlPositions', '$urlVertices', '$urlTriangles',
+                    '$urlNormals', '$urlLabels', false, '$conductionSpeed', '$raysArray', '$colorsArray');
             GVAR_baseSelection = '$base_selection';
             GFUN_initSelectionComponent("${measurePointsSelectionGID}", "${hemisphereOrderUrl}");
             GFUN_initializeConnectivityFull();
