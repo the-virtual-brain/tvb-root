@@ -6,10 +6,11 @@
 
     <div class="volumetric-ts-ui">
         <div id="buttons"></div>
-        <div id="sliders">
+        <div id="sliders" title="space in $voxelUnit">
             <span id="x-slider"></span>
             <span id="y-slider"></span>
-            <span id="z-slider"></span>   
+            <span id="z-slider"></span>
+            (in $voxelUnit)
         </div>
     </div>
     <canvas id="volumetric-ts-canvas"></canvas>
@@ -21,10 +22,11 @@
 
     <script type="text/javascript">
         $().ready(function() {
-            startVisualiser('${dataUrls}', ${minValue}, ${maxValue}, '${volumeOrigin}', '${voxelSize}', '${voxelUnit}');
-            $("#volumetric-ts-canvas").mousedown(customMouseDown).mouseup(customMouseUp)
+            TSV_initVisualizer('${dataUrls}', ${minValue}, ${maxValue}, '${volumeOrigin}', '${voxelSize}');
+            $("#volumetric-ts-canvas").mousedown(customMouseDown)
+                                      .mouseup(customMouseUp)
                                       .mousemove(customMouseMove);
-            startUserInterface();
+            TSV_startUserInterface();
         })
     </script>
 </div>

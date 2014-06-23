@@ -29,6 +29,7 @@
 #
 
 """
+.. moduleauthor:: Robert Parcus <betoparcus@gmail.com>
 .. moduleauthor:: Ciprian Tomoiaga <ciprian.tomoiaga@codemart.ro>
 """
 
@@ -50,20 +51,24 @@ class TimeSeriesVolumeVisualiser(ABCDisplayer):
                  'type': TimeSeriesVolume,
                  'required': True}]
 
+
     def get_required_memory_size(self, **kwargs):
         """Return required memory."""
         return -1
 
 
     def launch(self, time_series_volume):
+
         dataUrls = [self.paths2url(time_series_volume, "get_rotated_volume_slice", parameter=""),
                     self.paths2url(time_series_volume, "get_volume_shape", parameter="")]
         minValue, maxValue = time_series_volume.get_min_max_values()
         volume = time_series_volume.volume
 
-        return self.build_display_result("time_series_volume/view",
-                                         dict(title="Volumetric Time Series", minValue=minValue, maxValue=maxValue,
-                                              dataUrls=json.dumps(dataUrls), voxelUnit=volume.voxel_unit,
-                                              volumeOrigin=json.dumps(volume.origin.tolist()),
-                                              voxelSize=json.dumps(volume.voxel_size.tolist())))
+        params = dict(title="Volumetric Time Series", minValue=minValue, maxValue=maxValue,
+                      dataUrls=json.dumps(dataUrls), voxelUnit=volume.voxel_unit,
+                      volumeOrigin=json.dumps(volume.origin.tolist()),
+                      voxelSize=json.dumps(volume.voxel_size.tolist()))
+
+        return self.build_display_result("time_series_volume/view", params,
+                                         pages=dict(controlPage="time_series_volume/controls"))
 

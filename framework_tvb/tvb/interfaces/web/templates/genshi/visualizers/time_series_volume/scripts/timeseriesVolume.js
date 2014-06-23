@@ -1,4 +1,4 @@
-// TODO: add legend, labels on axes, color scheme support
+
 var tsVol = { 
     ctx: null,                  // the context for drawing on current canvas.
     currentQuadrant: 0,         // the quadrant we're in.
@@ -6,7 +6,7 @@ var tsVol = {
     minimumValue: null,         // minimum value of the dataset.
     maximumValue: null,         // maximum value of the dataset.
     voxelSize: null,
-    volumeOrigin: null,         // volumeOrigin is not used for now.                                                       // is irrelevant; if needed, use it _setQuadrant
+    volumeOrigin: null,         // volumeOrigin is not used for now. if needed, use it in _setQuadrant
     selectedEntity: [0, 0, 0],  // the selected voxel; [i, j, k].
     entitySize: [0, 0, 0],
     quadrantHeight: null,
@@ -41,9 +41,8 @@ var Quadrant = function (params) {                // this keeps all necessary da
  * @param maxValue  The maximum value for all the slices
  * @param volOrigin The origin of the rendering; irrelevant in 2D, for now
  * @param sizeOfVoxel   How the voxel is sized on each axis; [xScale, yScale, zScale]
- * @param voxelUnit The unit used for this rendering ("mm", "cm" etc)
  */
-function startVisualiser(dataUrls, minValue, maxValue, volOrigin, sizeOfVoxel, voxelUnit) {
+function TSV_initVisualizer(dataUrls, minValue, maxValue, volOrigin, sizeOfVoxel) {
     var canvas = document.getElementById("volumetric-ts-canvas");
     if (!canvas.getContext) {
         displayMessage('You need a browser with canvas capabilities, to see this demo fully!', "errorMessage");
@@ -53,10 +52,11 @@ function startVisualiser(dataUrls, minValue, maxValue, volOrigin, sizeOfVoxel, v
     tsVol.volumeOrigin = $.parseJSON(volOrigin)[0];
     tsVol.voxelSize    = $.parseJSON(sizeOfVoxel);
 
-    canvas.width  = $(canvas).parent().width();            // fill the screen on width
-    canvas.height = canvas.width / 3;                      // three quadrants + some space for labeling
-    tsVol.quadrantHeight = canvas.width / 3;               // quadrants are squares
-    tsVol.quadrantWidth = tsVol.quadrantHeight
+    var canvasWidth = $(canvas).parent().width();
+    canvas.width  = canvasWidth;                          // fill the screen on width
+    canvas.height = canvasWidth / 3;                      // three quadrants + some space for labeling
+    tsVol.quadrantHeight = canvasWidth / 3;               // quadrants are squares
+    tsVol.quadrantWidth = canvasWidth/ 3;
 
     tsVol.ctx = canvas.getContext("2d");
     tsVol.ctx.beginPath();
@@ -89,8 +89,7 @@ function startVisualiser(dataUrls, minValue, maxValue, volOrigin, sizeOfVoxel, v
 
     _setupBuffersSize();
 
-    //'linear', 'rainbow', 'hotcold', 'TVB', 'sparse', 'light-hotcold', 'light-TVB'
-    ColSch_setColorScheme("rainbow", false);
+    ColSch_initColorSchemeParams(minValue, maxValue, drawSceneFunctional);
 
     tsVol.data = getSliceAtTime(tsVol.currentTimePoint);
     drawSceneFunctional(tsVol.currentTimePoint);
@@ -100,7 +99,7 @@ function startVisualiser(dataUrls, minValue, maxValue, volOrigin, sizeOfVoxel, v
 }
 
 function asyncRequest(fileName, sect) {
-    var fileData = null;
+
     tsVol.requestQueue.push(sect);
     //console.log("tsVol.requestQueue push:", tsVol.requestQueue);
     doAjaxCall({
@@ -124,11 +123,10 @@ function asyncRequest(fileName, sect) {
 
     /****WEB WORKER****/
     // We build a worker from an anonymous function body
-    // TODO: Create a nice inline worker-wrapper function
-    // that returns a blob.
+    // TODO: Create a nice inline worker-wrapper function that returns a blob.
 
     /*
-    *  This worker is used to parse big JSON on other threds
+    *  This worker is used to parse big JSON on other threads
     */
     var blobURL = URL.createObjectURL( 
         new Blob([ 
@@ -149,7 +147,7 @@ function asyncRequest(fileName, sect) {
     /****END OF WEB WORKER****/
 
 /*
-*  Function that parses JSON data in a webworker.
+*  Function that parses JSON data in a web-worker.
 */
 function parseAsync(data, callback){
     var worker;
@@ -161,7 +159,6 @@ function parseAsync(data, callback){
             callback( json );
         }, false);
         worker.postMessage( data );
-        return;
     }
     else{
         json = JSON.parse( data );
@@ -193,7 +190,7 @@ function streamToBuffer(){
     var section = Math.floor(tsVol.currentTimePoint/tsVol.bufferSize);
     var maxSections = Math.floor(tsVol.timeLength/tsVol.bufferSize);
     var from = "from_idx="+tsVol.currentTimePoint;
-    var to = ";to_idx="+(tsVol.bufferSize+tsVol.currentTimePoint)%tsVol.timeLength;
+    var to = ";to_idx=" + Math.min(tsVol.bufferSize + tsVol.currentTimePoint, tsVol.timeLength);
     var query = tsVol.dataAddress+from+to;
     for( var i = 0; i <= tsVol.lookAhead; i++ ){
             var tmp = (section+i)%maxSections;
@@ -208,17 +205,16 @@ function streamToBuffer(){
 * It takes an integer n and returns an array with all integers from 0 to n-1
 */
 function range(len){
-    return Array.apply(null, Array(len)).map(function (_, i) {return i;});
+    return Array.apply(null, new Array(len)).map(function (_, i) {return i;});
 }
 
 /*
-*  This functions returns the X,Y,Z data from timepoint t.
+*  This functions returns the X,Y,Z data from time-point t.
 */
 function getSliceAtTime(t){
     var buffer;
-    var maxSections = Math.floor(tsVol.timeLength/tsVol.bufferSize);
-    var from = "from_idx="+t;
-    var to = ";to_idx="+(tsVol.bufferSize+t)%tsVol.timeLength;
+    var from = "from_idx=" + t;
+    var to = ";to_idx=" + Math.min(tsVol.bufferSize + t, tsVol.timeLength);
     var query = tsVol.dataAddress+from+to;
     var section = Math.floor(t/tsVol.bufferSize);
     /*
@@ -226,9 +222,9 @@ function getSliceAtTime(t){
      TODO: This should happen on a fail handler.
     */
     for(var i in tsVol.requestQueue){
-        if( (tsVol.requestQueue[i] < section ||
-             tsVol.requestQueue[i] > section+tsVol.lookAhead) &&
-             !(tsVol.requestQueue[i] in range(tsVol.lookAhead))){
+        var currentStep = tsVol.requestQueue[i];
+        if( (currentStep < section ||currentStep > section + tsVol.lookAhead) &&
+             !(currentStep in range(tsVol.lookAhead))){
             tsVol.requestQueue.splice(i, 1);
         }
     } 
@@ -252,7 +248,7 @@ function getSliceAtTime(t){
  * Draws the current view depending on the selected entity
  */
 // TODO: since only two dimensions change at every time, redraw just those quadrants
-// NOTE: this is true only when we navigate, not when we play the timeseries
+// NOTE: this is true only when we navigate, not when we play the time-series
 function drawSceneFunctional(tIndex) {
     var i, j, k, ii, jj, kk;
     
@@ -296,7 +292,7 @@ function drawVoxel(line, col, value) {
     tsVol.ctx.fillStyle = getGradientColorString(value, tsVol.minimumValue, tsVol.maximumValue);
     // col increases horizontally and line vertically, so col represents the X drawing axis, and line the Y
 	tsVol.ctx.fillRect(col * tsVol.currentQuadrant.entityWidth, line * tsVol.currentQuadrant.entityHeight,
-	                 tsVol.currentQuadrant.entityWidth+1, tsVol.currentQuadrant.entityHeight+1);
+	                   tsVol.currentQuadrant.entityWidth+1, tsVol.currentQuadrant.entityHeight+1);
 }
 
 /**
@@ -399,10 +395,6 @@ function _setupQuadrants() {
         var entityDimensions = _getEntityDimensions(tsVol.quadrants[quadIdx].axes.x, tsVol.quadrants[quadIdx].axes.y);
         tsVol.quadrants[quadIdx].entityHeight = entityDimensions.height;
         tsVol.quadrants[quadIdx].entityWidth  = entityDimensions.width;
-        var drawingHeight = _getDataSize(tsVol.quadrants[quadIdx].axes.y) * tsVol.quadrants[quadIdx].entityHeight;
-        var drawingWidth  = _getDataSize(tsVol.quadrants[quadIdx].axes.x) * tsVol.quadrants[quadIdx].entityWidth;
-        //tsVol.quadrants[quadIdx].offsetY = (tsVol.quadrantHeight - drawingHeight) / 2;
-        //tsVol.quadrants[quadIdx].offsetX = (tsVol.quadrantWidth  - drawingWidth)  / 2;
         tsVol.quadrants[quadIdx].offsetY = 0;
         tsVol.quadrants[quadIdx].offsetX = 0;
     }
@@ -414,14 +406,14 @@ function _setupQuadrants() {
  * TODO: have modifiable limits while suggesting an optimal, safe setup.
  */
 function _setupBuffersSize() {
-    var tpSize = tsVol.entitySize[0]*tsVol.entitySize[1]*tsVol.entitySize[2];
+    var tpSize = tsVol.entitySize[0] * tsVol.entitySize[1] * tsVol.entitySize[2];
     //enough to be avoid waisting bandwidth and to parse the json smoothly
-    while(tsVol.bufferSize*tpSize <= 1000000){ 
+    while(tsVol.bufferSize * tpSize <= 1000000){
         tsVol.bufferSize++;
     }
     //Very safe measure to avoid crashes. Tested on Chrome.
-    while(tsVol.bufferSize*tpSize*tsVol.bufferL2Size <= 157286400){ 
-        tsVol.bufferL2Size*= 2;
+    while(tsVol.bufferSize * tpSize * tsVol.bufferL2Size <= 157286400){
+        tsVol.bufferL2Size *= 2;
     }
     tsVol.bufferL2Size/= 2
 }
@@ -446,8 +438,9 @@ function customMouseMove(e) {
         return;
     }
     //fix for Firefox
-    var xpos = e.pageX-$('#volumetric-ts-canvas').offset().left;
-    var ypos = e.pageY-$('#volumetric-ts-canvas').offset().top;
+    var offset = $('#volumetric-ts-canvas').offset();
+    var xpos = e.pageX - offset.left;
+    var ypos = e.pageY - offset.top;
     var selectedQuad = tsVol.quadrants[Math.floor(xpos / tsVol.quadrantWidth)];
     // check if it's inside the quadrant but outside the drawing
     if (ypos < selectedQuad.offsetY || ypos >= tsVol.quadrantHeight - selectedQuad.offsetY ||
@@ -468,8 +461,8 @@ function customMouseMove(e) {
 /**
  * Functions that calls all the setup functions for the main UI of the time series volume visualizer.
 */
-function startUserInterface(){
-    startButtomSet();
+function TSV_startUserInterface(){
+    startButtonSet();
     startPositionSliders();
     startMovieSlider();
 }
@@ -477,9 +470,9 @@ function startUserInterface(){
 /**
  * Function that creates all the buttons for playing, stoping and seeking time points.
 */
-function startButtomSet(){
+function startButtonSet(){
 	// we setup every buttom
-    var container = $('#buttons')
+    var container = $('#buttons');
     var first = $('<button id="first">').button({icons:{primary:"ui-icon-seek-first"}});
     var prev = $('<button id="prev">').button({icons:{primary:"ui-icon-seek-prev"}});
     var playButton = $('<button id="play">').button({icons:{primary:"ui-icon-play"}});
@@ -488,7 +481,7 @@ function startButtomSet(){
     var end = $('<button id="end">').button({icons:{primary:"ui-icon-seek-end"}});
 
     // put the buttoms on an array for easier manipulation
-    buttonsArray = [first, prev, playButton, stopButton, next, end];
+    var buttonsArray = [first, prev, playButton, stopButton, next, end];
 
     //we attach event listeners to buttoms as needed
     playButton.click(playBack);
@@ -501,7 +494,7 @@ function startButtomSet(){
     // we setup the DOM element that will contain the buttoms 
     container.buttonset();
 
-    // add every buttom to the container and refresh it afterwards
+    // add every button to the container and refresh it afterwards
     buttonsArray.forEach(function(entry){
         container.append(entry)
     });
@@ -515,7 +508,7 @@ function startPositionSliders(){
     var i = 0;
     var axArray = ["X", "Y", "Z"];
     // We loop trough every slider
-    $( "#sliders > span" ).each(function(){
+    $( "#sliders").find("> span" ).each(function(){
         var value = tsVol.selectedEntity[i];
         var opts = {
                         value: value,
@@ -525,7 +518,7 @@ function startPositionSliders(){
                         orientation: "horizontal",
                         change: slideMove, // call this function *after* the slide is moved OR the value changes
                         slide: slideMove  //  we use this to keep it smooth.   
-                    }
+                    };
         $(this).slider(opts).each(function(){
             // The starting time point. Supposing it is always ZERO.
             var el = $('<label class="min-coord">'+opts.min+'</label>');
@@ -548,7 +541,7 @@ function startPositionSliders(){
  * Code for "movie player" slider. Creates the slider and adds labels
 */
 function startMovieSlider(){
-	    $("#time-position > span").each(function(){
+	    $("#time-position").find("> span").each(function(){
         var value = 0;
         var opts = {
                         value: value,
@@ -585,18 +578,18 @@ function stopPlayback(){
 
 function playNextTimePoint(){
     tsVol.currentTimePoint++;
-    tsVol.currentTimePoint = tsVol.currentTimePoint%(tsVol.timeLength+1)
+    tsVol.currentTimePoint = tsVol.currentTimePoint%(tsVol.timeLength+1);
     drawSceneFunctional(tsVol.currentTimePoint)
 }
 
 function playPreviousTimePoint(){
     if(tsVol.currentTimePoint === 0)
-        tsVol.currentTimePoint = tsVol.timeLength+1
+        tsVol.currentTimePoint = tsVol.timeLength+1;
     drawSceneFunctional(--tsVol.currentTimePoint)
 }
 
 function seekFirst(){
-    tsVol.currentTimePoint = 0
+    tsVol.currentTimePoint = 0;
     drawSceneFunctional(tsVol.currentTimePoint);
 }
 
@@ -609,7 +602,7 @@ function seekEnd(){
 function updateSliders(){
     var axArray = ["X", "Y", "Z"];
     var i = 0;
-    $( "#sliders > span" ).each(function(){
+    $( "#sliders").find("> span" ).each(function(){
         $(this).slider("option", "value", tsVol.selectedEntity[i]); //update the handle
         $('slider-'+axArray[i]+'-value').empty().text( '['+tsVol.selectedEntity[i]+']' ); //update the label
         i += 1;
@@ -618,7 +611,7 @@ function updateSliders(){
 
 // Updated the player slider bar while playback is on.
 function updateMoviePlayerSlider(){
-    $("#time-position > span").each(function(){
+    $("#time-position").find("> span").each(function(){
         $(this).slider("option", "value", tsVol.currentTimePoint);
         $('#time-slider-value').empty().text( tsVol.currentTimePoint+'/'+tsVol.timeLength );
     })
@@ -626,7 +619,7 @@ function updateMoviePlayerSlider(){
 
 // When the navigation sliders are moved, this redraws the scene accordingly.
 function slideMove(event, ui){
-    var quadID = ["x-slider", "y-slider", "z-slider"].indexOf(event.target.id)
+    var quadID = ["x-slider", "y-slider", "z-slider"].indexOf(event.target.id);
     var selectedQuad = tsVol.quadrants[quadID];
 
     //  Updates the label value on the slider.
@@ -641,15 +634,15 @@ function slideMove(event, ui){
 
 // Updates the value at the end of the player bar when we move the handle.
 function moviePlayerMove(event, ui){
-    $("#time-position > span").each(function(){
+    $("#time-position").find("> span").each(function(){
         $('#time-slider-value').empty().text( ui.value+'/'+tsVol.timeLength );
     })
 }
 
 /*
-* Redraws the scene at the selected timepoint at the end of a slide action.
+* Redraws the scene at the selected time-point at the end of a slide action.
 * Calling this during the the whole slide showed to be too expensive.
-* Thus, the new timepoint is drawn only when the user releases the click from the handler
+* Thus, the new time-point is drawn only when the user releases the click from the handler
 */
 function moviePlayerMoveEnd(event, ui){
     tsVol.currentTimePoint = ui.value;
