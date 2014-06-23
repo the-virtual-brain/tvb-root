@@ -85,7 +85,7 @@ function TSV_initVisualizer(dataUrls, minValue, maxValue, volOrigin, sizeOfVoxel
     tsVol.entitySize[0] = tsVol.dataSize[1];           // get entities number of voxels
     tsVol.entitySize[1] = tsVol.dataSize[2];
     tsVol.entitySize[2] = tsVol.dataSize[3];
-    tsVol.entitySize[3] = tsVol.dataSize[0];              // get entities number of time points
+    tsVol.entitySize[3] = tsVol.dataSize[0];           // get entities number of time points
 
     _setupBuffersSize();
 
@@ -121,30 +121,30 @@ function asyncRequest(fileName, sect) {
     });
 }
 
-    /****WEB WORKER****/
-    // We build a worker from an anonymous function body
-    // TODO: Create a nice inline worker-wrapper function that returns a blob.
+/****WEB WORKER****/
+// We build a worker from an anonymous function body
+// TODO: Create a nice inline worker-wrapper function that returns a blob.
 
-    /*
-    *  This worker is used to parse big JSON on other threads
-    */
-    var blobURL = URL.createObjectURL( 
-        new Blob([ 
-            '(',
-            // our worker goes inside this function
-            function(){
-                self.addEventListener( 'message', function (e){
-                    var data = e.data;
-                    var json = JSON.parse( data );
-                    self.postMessage( json );
-                    self.close();
-                }, false );
-            }.toString(),
-            ')()' ], 
-        { type: 'application/javascript' } 
-        ) 
-    );
-    /****END OF WEB WORKER****/
+/*
+*  This worker is used to parse big JSON on other threads
+*/
+var blobURL = URL.createObjectURL(
+    new Blob([
+        '(',
+        // our worker goes inside this function
+        function(){
+            self.addEventListener( 'message', function (e){
+                var data = e.data;
+                var json = JSON.parse(data);
+                self.postMessage(json);
+                self.close();
+            }, false );
+        }.toString(),
+        ')()' ],
+    { type: 'application/javascript' }
+    )
+);
+/****END OF WEB WORKER****/
 
 /*
 *  Function that parses JSON data in a web-worker.
@@ -193,11 +193,11 @@ function streamToBuffer(){
     var to = ";to_idx=" + Math.min(tsVol.bufferSize + tsVol.currentTimePoint, tsVol.timeLength);
     var query = tsVol.dataAddress+from+to;
     for( var i = 0; i <= tsVol.lookAhead; i++ ){
-            var tmp = (section+i)%maxSections;
-            if(!tsVol.bufferL2[tmp] && tsVol.requestQueue.indexOf(tmp) < 0){
-                asyncRequest(query, tmp);
-            }
+        var tmp = (section+i)%maxSections;
+        if(!tsVol.bufferL2[tmp] && tsVol.requestQueue.indexOf(tmp) < 0) {
+            asyncRequest(query, tmp);
         }
+    }
 }
 
 /*
@@ -215,7 +215,7 @@ function getSliceAtTime(t){
     var buffer;
     var from = "from_idx=" + t;
     var to = ";to_idx=" + Math.min(tsVol.bufferSize + t, tsVol.timeLength);
-    var query = tsVol.dataAddress+from+to;
+    var query = tsVol.dataAddress + from + to;
     var section = Math.floor(t/tsVol.bufferSize);
     /*
      Here we erase failed requests from the request queue. 
@@ -231,12 +231,12 @@ function getSliceAtTime(t){
 
     if(tsVol.bufferL2[section]){
         buffer = tsVol.bufferL2[section];
-        console.log("asdasd1 ", section)
+        console.log("Found in buffer L2: ", section)
     }else{
         buffer = HLPR_readJSONfromFile(query);
         tsVol.bufferL2[section] = buffer;
         tsVol.requestQueue.splice(section, 1);
-        console.log("asdasd2", section)
+        console.log("Not found in buffer L2:", section)
     }
     return buffer[t%tsVol.bufferSize];
 }
@@ -468,10 +468,10 @@ function TSV_startUserInterface(){
 }
 
 /**
- * Function that creates all the buttons for playing, stoping and seeking time points.
+ * Function that creates all the buttons for playing, stopping and seeking time points.
 */
 function startButtonSet(){
-	// we setup every buttom
+	// we setup every button
     var container = $('#buttons');
     var first = $('<button id="first">').button({icons:{primary:"ui-icon-seek-first"}});
     var prev = $('<button id="prev">').button({icons:{primary:"ui-icon-seek-prev"}});
@@ -480,10 +480,10 @@ function startButtonSet(){
     var next = $('<button id="next">').button({icons:{primary:"ui-icon-seek-next"}});
     var end = $('<button id="end">').button({icons:{primary:"ui-icon-seek-end"}});
 
-    // put the buttoms on an array for easier manipulation
+    // put the buttons on an array for easier manipulation
     var buttonsArray = [first, prev, playButton, stopButton, next, end];
 
-    //we attach event listeners to buttoms as needed
+    //we attach event listeners to buttons as needed
     playButton.click(playBack);
     stopButton.click(stopPlayback);
     prev.click(playPreviousTimePoint);
@@ -491,7 +491,7 @@ function startButtonSet(){
     first.click(seekFirst);
     end.click(seekEnd);
 
-    // we setup the DOM element that will contain the buttoms 
+    // we setup the DOM element that will contain the buttons
     container.buttonset();
 
     // add every button to the container and refresh it afterwards
@@ -544,14 +544,14 @@ function startMovieSlider(){
 	    $("#time-position").find("> span").each(function(){
         var value = 0;
         var opts = {
-                        value: value,
-                        min: 0,
-                        max: tsVol.timeLength,
-                        animate: true,
-                        orientation: "horizontal",
-                        range: "min",
-                        stop: moviePlayerMoveEnd,
-                        slide: moviePlayerMove   
+                    value: value,
+                    min: 0,
+                    max: tsVol.timeLength,
+                    animate: true,
+                    orientation: "horizontal",
+                    range: "min",
+                    stop: moviePlayerMoveEnd,
+                    slide: moviePlayerMove
                     };
         $(this).slider(opts).each(function(){
             // The starting point. Supposing it is always ZERO.
@@ -564,7 +564,7 @@ function startMovieSlider(){
     });
 }
 
-// ==================================== CALLBACK FUCTIONS START ===============================================
+// ==================================== CALLBACK FUNCTIONS START ===============================================
 
 function playBack(){
     if(!tsVol.playerIntervalID)
@@ -649,5 +649,5 @@ function moviePlayerMoveEnd(event, ui){
     drawSceneFunctional(tsVol.currentTimePoint);
 }
 
-// ==================================== CALLBACK FUCTIONS END ===============================================
+// ==================================== CALLBACK FUNCTIONS END ===============================================
 // ==================================== UI RELATED CODE END =================================================
