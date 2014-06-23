@@ -165,7 +165,7 @@ class GIFTIParser(object):
             time_series.gid = gid.replace("{", "").replace("}", "")
         if sample_period:
             time_series.sample_period = float(sample_period)
-
+        # todo : make sure that write_time_slice is not required here
         # Now read time series data
         for data_array in data_arrays:
             time_series.write_data_slice([data_array.data])
