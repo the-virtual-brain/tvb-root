@@ -200,11 +200,13 @@ class TimeSeriesFramework(time_series_data.TimeSeriesData):
         """
         return [('', list(enumerate(self.get_space_labels())))]
 
+
     def get_default_selection(self):
         """
         :return: The measure point indices that have to be shown by default. By default show all.
         """
         return range(len(self.get_space_labels()))
+
 
     def get_measure_points_selection_gid(self):
         """
@@ -212,6 +214,7 @@ class TimeSeriesFramework(time_series_data.TimeSeriesData):
                  We have to decide if the default should be all selections or none
         """
         return ''
+
 
     @staticmethod
     def accepted_filters():
@@ -230,8 +233,9 @@ class TimeSeriesFramework(time_series_data.TimeSeriesData):
 
 class TimeSeriesSensorsFramework(TimeSeriesFramework):
     """
-    Base class for all sensor datatypes
+    Base class for all sensor TS-datatypes
     """
+
     def get_space_labels(self):
         """
         :return: An array of strings with the sensors labels.
@@ -240,10 +244,12 @@ class TimeSeriesSensorsFramework(TimeSeriesFramework):
             return list(self.sensors.labels)
         return []
 
+
     def get_measure_points_selection_gid(self):
         if self.sensors is not None:
             return self.sensors.gid
         return ''
+
 
     def get_default_selection(self):
         if self.sensors is not None:
@@ -297,9 +303,11 @@ class TimeSeriesRegionFramework(time_series_data.TimeSeriesRegionData, TimeSerie
             return super(TimeSeriesRegionFramework, self).get_measure_points_selection_gid()
 
 
+
 class TimeSeriesSurfaceFramework(time_series_data.TimeSeriesSurfaceData, TimeSeriesFramework):
     """ This class exists to add framework methods to TimeSeriesSurfaceData. """
     SELECTION_LIMIT = 200
+
 
     def get_space_labels(self):
         """
@@ -308,15 +316,10 @@ class TimeSeriesSurfaceFramework(time_series_data.TimeSeriesSurfaceData, TimeSer
         return ['signal-%d' % i for i in xrange(min(self._length_3d, self.SELECTION_LIMIT))]
 
 
+
 class TimeSeriesVolumeFramework(time_series_data.TimeSeriesVolumeData, TimeSeriesFramework):
     """ This class exists to add framework methods to TimeSeriesVolumeData. """
 
-    def get_volume_slice(self, from_idx, to_idx):
-        from_idx, to_idx = int(from_idx), int(to_idx)
-        overall_shape = self.read_data_shape()
-
-        slices = (slice(from_idx, to_idx), slice(overall_shape[1]), slice(overall_shape[2]), slice(overall_shape[3]))
-        return self.read_data_slice(tuple(slices))
 
     def get_rotated_volume_slice(self, from_idx, to_idx):
         """
@@ -327,8 +330,9 @@ class TimeSeriesVolumeFramework(time_series_data.TimeSeriesVolumeData, TimeSerie
         overall_shape = self.read_data_shape()
         slices = (slice(from_idx, to_idx), slice(overall_shape[1]), slice(overall_shape[2]), slice(overall_shape[3]))
         slices = self.read_data_slice(tuple(slices))
-        slices = slices[:, :,:,::-1]
+        slices = slices[:, :, :, ::-1]
         return slices
+
 
     @property
     def get_volume_shape(self):
