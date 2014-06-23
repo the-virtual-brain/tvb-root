@@ -42,3 +42,78 @@ width: 100%;
 .toolbar-inline .extension p {
 color: #000;
 }
+
+/* !-------------------------------------------- */
+/* !COMPONENT: Volume Time Series Visualizer GUI */
+/* !-------------------------------------------- */
+.volumetric-ts-ui {
+	height: 8%;
+	padding: 1px;
+}
+
+#buttons {
+	height: 50px;
+    float: left;
+    clear: left;
+}
+#buttons > button {
+	height: inherit;
+}
+
+#sliders{
+	float: left;
+}
+
+#sliders > span {
+	width: 150px;
+	float: left;
+	margin: 15px;
+}
+
+.min-coord {
+	position: relative;
+	left: 0%;
+	top: 17px;
+}
+
+.axis-name {
+	position: relative;
+	left: 30%;
+	bottom: 21px;
+}
+
+.slider-value {
+	position: relative;
+	left: 8%;
+	top: 17px;
+}
+
+.max-coord {
+	position: relative;
+	left: 30%;
+	top: 17px;
+}
+
+#time-position {
+	float: left;
+	width: 80%;
+}
+
+#time-position > span {
+	width: 100%;
+	float: left;
+	margin: 15px;
+	margin-bottom: 40px;
+}
+
+#time-slider-min {
+	position: relative;
+	left: 0px;
+	top: 19px;
+}
+
+#time-slider-value {
+	position: relative;
+	left: 101%; 
+	top: -3px;
+}

@@ -2,14 +2,29 @@
     <script type="text/javascript" src="/static_view/time_series_volume/scripts/timeseriesVolume.js?$currentVersionJS"></script>
     <script type="text/javascript" src="/static/js/webGL_Connectivity.js?$currentVersionJS"></script>
     <script type="text/javascript" src="/static/colorScheme/js/colorSchemeComponent.js?$currentVersionJS"></script>
+    <link rel="stylesheet" type="text/css" href="/static/style/subsection_timeseries.css?$currentVersionJS"/>
 
+    <div class="volumetric-ts-ui">
+        <div id="buttons"></div>
+        <div id="sliders">
+            <span id="x-slider"></span>
+            <span id="y-slider"></span>
+            <span id="z-slider"></span>   
+        </div>
+    </div>
     <canvas id="volumetric-ts-canvas"></canvas>
+    <div class="volumetric-ts-ui">
+        <div id="time-position">
+            <span id="time-slider"></span>
+        </div>
+    </div>
 
     <script type="text/javascript">
         $().ready(function() {
             startVisualiser('${dataUrls}', ${minValue}, ${maxValue}, '${volumeOrigin}', '${voxelSize}', '${voxelUnit}');
             $("#volumetric-ts-canvas").mousedown(customMouseDown).mouseup(customMouseUp)
-                                      .mousemove(customMouseMove)
+                                      .mousemove(customMouseMove);
+            startUserInterface();
         })
     </script>
 </div>
