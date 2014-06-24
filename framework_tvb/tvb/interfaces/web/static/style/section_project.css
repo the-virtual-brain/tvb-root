@@ -612,6 +612,11 @@ background-position: 0 -236px;
 .ss-list td.data {
 }
 
+.ss-list .disk_size{
+font-family: monospace;
+text-align: right;
+}
+
 /* !============================================================================ */
 /* !============================================================================ */
 /* !TEMPORARY STUFF BELOW - ONLY FOR BACK-END DEVELOPERS! */

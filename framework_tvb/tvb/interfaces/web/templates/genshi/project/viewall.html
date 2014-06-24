@@ -22,6 +22,7 @@
 					<th class="owner">Owner</th>
 					<th class="ops">Operations</th>
 					<th class="data">Data structure</th>
+                    <th class="disk_size"> Size </th>
 				</tr>
 			</thead>
 			
@@ -68,6 +69,10 @@
 					<td class="data" tabindex='4' onkeypress="redirectToHrefChild(this)">
 						<a href="/project/editstructure/${proj.id}" title="View/Edit data structure..." class="action action-view" tabindex="-1">Project Data</a>
 					</td>
+
+                    <td class="disk_size">
+                        <span> ${proj.disk_size} </span>
+                    </td>
 		        </tr>
 	        </tbody>
 	    </table>

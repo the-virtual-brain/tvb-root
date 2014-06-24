@@ -303,9 +303,19 @@ class ProjectService:
             prj.operations_started = sta
             prj.operations_error = err
             prj.operations_canceled = canceled
+            prj.disk_size = self.get_human_disk_size(prj.id)
         self.logger.debug("Displaying " + str(len(available_projects)) + " projects in UI for user " + str(user_id))
         return available_projects, pages_no
 
+    @staticmethod
+    def get_human_disk_size(project_id):
+        size = dao.get_project_disk_size(project_id)
+        m = ['kb', 'Mb', 'Gb']
+        exp = 0
+        while size >= 1024.0 and exp < len(m) - 1:
+            size /= 1024.0
+            exp +=1
+        return "%.1f %s" % (size, m[exp])
 
     @staticmethod
     def get_linkable_projects_for_user(user_id, data_id):
