@@ -45,7 +45,7 @@ class MatTimeSeriesImporter(ABCUploader):
     """
     Import time series from a .mat file.
     """
-    _ui_name = "Mat timeseries"
+    _ui_name = "Timeseries MAT"
     _ui_subsection = "mat_ts_importer"
     _ui_description = "Import time series from a .mat file."
 
@@ -75,7 +75,7 @@ class MatTimeSeriesImporter(ABCUploader):
                           'attributes': [{'name': 'connectivity', 'required': True, 'label': 'Connectivity',
                                           'type': 'tvb.datatypes.connectivity.Connectivity'}]},
                          {'name': self.TS_EEG, 'value': self.TS_EEG,
-                          'attributes': [{'name': 'sensors', 'required': True, 'label': 'EEG sensors',
+                          'attributes': [{'name': 'sensors', 'required': True, 'label': 'EEG Sensors',
                                           'type': 'tvb.datatypes.sensors.SensorsEEG'}]}
                          ]},
 
