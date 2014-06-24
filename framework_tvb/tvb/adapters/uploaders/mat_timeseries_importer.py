@@ -31,6 +31,7 @@
 """
 .. moduleauthor:: Mihai Andrei <mihai.andrei@codemart.ro>
 """
+
 import scipy.io
 import numpy
 from tvb.adapters.uploaders.abcuploader import ABCUploader
@@ -66,30 +67,25 @@ class MatTimeSeriesImporter(ABCUploader):
              'label': 'Transpose the array. Expected shape is (time, channel)'},
 
             {'name': 'slice', 'type': 'str', 'default': '',
-             'label': 'Slice of the array in numpy syntax. Expected shape is (time, channel)' },
+             'label': 'Slice of the array in numpy syntax. Expected shape is (time, channel)'},
 
             {'name': 'ts_type', 'type': 'select', 'required': True,
              'label': 'time series type',
-             'options': [
-                {'name': self.TS_REGION, 'value': self.TS_REGION,
-                 'attributes': [ {'name': 'connectivity', 'required': True,
-                                  'type': 'tvb.datatypes.connectivity.Connectivity',
-                                  'label': 'connectivity'}]
-                },
-                {'name': self.TS_EEG, 'value': self.TS_EEG,
-                 'attributes': [ {'name': 'sensors', 'required': True,
-                                  'type': 'tvb.adapters.uploaders.signals.SensorsEEG',
-                                  'label': 'EEG sensors'} ]
-                }
-            ]},
+             'options': [{'name': self.TS_REGION, 'value': self.TS_REGION,
+                          'attributes': [{'name': 'connectivity', 'required': True, 'label': 'Connectivity',
+                                          'type': 'tvb.datatypes.connectivity.Connectivity'}]},
+                         {'name': self.TS_EEG, 'value': self.TS_EEG,
+                          'attributes': [{'name': 'sensors', 'required': True, 'label': 'EEG sensors',
+                                          'type': 'tvb.datatypes.sensors.SensorsEEG'}]}
+                         ]},
 
             {'name': 'sampling_rate', 'type': 'int', 'default': 1000,
              'label': 'sampling rate (Hz)'},
 
             {'name': 'start_time', 'type': 'int', 'default': 0,
              'label': 'starting time (ms)'},
-
         ]
+
 
     def get_output(self):
         return [TimeSeriesRegion, TimeSeriesEEG]
@@ -128,18 +124,18 @@ class MatTimeSeriesImporter(ABCUploader):
     def create_region_ts(self, data, connectivity):
         if connectivity.number_of_regions != data.shape[1]:
             raise LaunchException("Data has %d channels but the connectivity has %d nodes"
-                                  % (data.shape[1],  connectivity.number_of_regions))
+                                  % (data.shape[1], connectivity.number_of_regions))
         return TimeSeriesRegion(storage_path=self.storage_path, connectivity=connectivity)
 
 
     def create_eeg_ts(self, data, sensors):
         if sensors.number_of_sensors != data.shape[1]:
             raise LaunchException("Data has %d channels but the sensors have %d"
-                                  % (data.shape[1],  sensors.number_of_sensors))
+                                  % (data.shape[1], sensors.number_of_sensors))
         return TimeSeriesEEG(storage_path=self.storage_path, sensors=sensors)
 
 
-    ts_builder = {TS_REGION : create_region_ts, TS_EEG: create_eeg_ts}
+    ts_builder = {TS_REGION: create_region_ts, TS_EEG: create_eeg_ts}
 
 
     @transactional
@@ -162,7 +158,7 @@ class MatTimeSeriesImporter(ABCUploader):
             ts.write_time_slice(numpy.r_[:data.shape[0]] * ts.sample_period)
             # we expect empirical data shape to be time, channel.
             # But tvb expects time, state, channel, mode. Introduce those dimensions
-            ts.write_data_slice(data[:,numpy.newaxis, :, numpy.newaxis])
+            ts.write_data_slice(data[:, numpy.newaxis, :, numpy.newaxis])
             ts.close_file()
 
             return ts
