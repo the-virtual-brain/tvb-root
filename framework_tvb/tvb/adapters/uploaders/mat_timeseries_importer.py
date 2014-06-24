@@ -32,9 +32,9 @@
 .. moduleauthor:: Mihai Andrei <mihai.andrei@codemart.ro>
 """
 
-import scipy.io
 import numpy
 from tvb.adapters.uploaders.abcuploader import ABCUploader
+from tvb.adapters.uploaders.mat.mat_parser import read_nested_mat_file
 from tvb.core.adapters.exceptions import ParseException, LaunchException
 from tvb.core.entities.storage import transactional
 from tvb.core.utils import parse_slice
@@ -49,8 +49,8 @@ class MatTimeSeriesImporter(ABCUploader):
     _ui_subsection = "mat_ts_importer"
     _ui_description = "Import time series from a .mat file."
 
-    TS_REGION = 'TimeSeriesRegion'
-    TS_EEG = 'TimeSeriesEEG'
+    TS_REGION = 'region'
+    TS_EEG = 'EEG'
 
     def get_upload_input_tree(self):
         return [
@@ -69,7 +69,7 @@ class MatTimeSeriesImporter(ABCUploader):
             {'name': 'slice', 'type': 'str', 'default': '',
              'label': 'Slice of the array in numpy syntax. Expected shape is (time, channel)'},
 
-            {'name': 'ts_type', 'type': 'select', 'required': True,
+            {'name': 'tstype', 'type': 'select', 'required': True,
              'label': 'time series type',
              'options': [{'name': self.TS_REGION, 'value': self.TS_REGION,
                           'attributes': [{'name': 'connectivity', 'required': True, 'label': 'Connectivity',
@@ -89,36 +89,6 @@ class MatTimeSeriesImporter(ABCUploader):
 
     def get_output(self):
         return [TimeSeriesRegion, TimeSeriesEEG]
-
-
-    @staticmethod
-    def read_nested_mat_structure(m, structure_path):
-        structure_path = structure_path.strip()
-        nested_fields = structure_path.split('.')
-
-        if not structure_path:
-            return m
-        if '' in nested_fields:
-            raise ValueError("bad path: '%s' " % structure_path)
-
-        try:
-            for field_name in nested_fields:
-                # unwrap object arrays containers of shape 1, 1
-                m = m[field_name]
-                if issubclass(m.dtype.type, numpy.object_) and m.shape == (1, 1):
-                    m = m[0, 0]
-        except ValueError as ex:
-            raise ParseException("missing field: %s" % ex[0])
-
-        return m
-
-
-    def _read_mat(self, data_file, dataset_name, structure_path):
-        mat = scipy.io.loadmat(data_file)
-        try:
-            return self.read_nested_mat_structure(mat[dataset_name], structure_path)
-        except KeyError as ex:
-            raise ParseException("could not find: %s" % ex[0])
 
 
     def create_region_ts(self, data, connectivity):
@@ -141,16 +111,16 @@ class MatTimeSeriesImporter(ABCUploader):
     @transactional
     def launch(self, data_file, dataset_name, structure_path='',
                transpose=False, slice=None, sampling_rate=1000,
-               start_time=0, ts_type=None, ts_type_parameters=None):
+               start_time=0, tstype=None, tstype_parameters=None):
         try:
-            data = self._read_mat(data_file, dataset_name, structure_path)
+            data = read_nested_mat_file(data_file, dataset_name, structure_path)
 
             if transpose:
                 data = data.T
             if slice:
                 data = data[parse_slice(slice)]
 
-            ts = self.ts_builder[ts_type](self, data, **ts_type_parameters)
+            ts = self.ts_builder[tstype](self, data, **tstype_parameters)
 
             ts.start_time = start_time
             ts.sample_period = 1.0 / sampling_rate
