@@ -75,7 +75,7 @@ class SimulatorAdapter(ABCAsynchronous):
 
 #    MONITOR_RESULTS = {"Raw": [time_series.TimeSeriesRegion, time_series.TimeSeriesSurface],
 #                       "SubSample": [time_series.TimeSeriesRegion, time_series.TimeSeriesSurface],
-#                       "SpatialAverage": time_series.TimeSeries,
+#                       "SpatialAverage": [time_series.TimeSeries, time_series.TimeSeriesRegion],
 #                       "GlobalAverage": time_series.TimeSeries,
 #                       "TemporalAverage": [time_series.TimeSeriesRegion, time_series.TimeSeriesSurface],
 #                       "EEG": time_series.TimeSeriesEEG,
@@ -83,16 +83,10 @@ class SimulatorAdapter(ABCAsynchronous):
 #                       "SphericalMEG": time_series.TimeSeriesMEG,
 #                       "Bold": [time_series.TimeSeriesRegion, time_series.TimeSeriesSurface]}
 
-    RESULTS_MAP = {time_series.TimeSeriesEEG: ["SphericalEEG", "EEG"],
-                   time_series.TimeSeriesMEG: ["SphericalMEG"],  # Add here also "MEG" monitor reference
-                   time_series.TimeSeries: ["GlobalAverage", "SpatialAverage"],
-                   time_series.TimeSeriesSEEG: ["SEEG"]}
-
-                   # time_series.TimeSeriesVolume: ["Bold"],
-                   #SK:   For a number of reasons, it's probably best to avoid returning TimeSeriesVolume ,
-                   #      from a simulation directly, instead just stick with the source, i.e. Region and Surface,
-                   #      then later we can add a voxelisation "analyser" to produce TimeSeriesVolume on which Volume
-                   #      based analysers and visualisers (which don't exist yet) can operate.
+#SK:   For a number of reasons, it's probably best to avoid returning TimeSeriesVolume ,
+#      from a simulation directly, instead just stick with the source, i.e. Region and Surface,
+#      then later we can add a voxelisation "analyser" to produce TimeSeriesVolume on which Volume
+#      based analysers and visualisers (which don't exist yet) can operate.
 
     # This is a list with the monitors that actually return multi dimensions for the state variable dimension.
     # We exclude from this for example EEG, MEG or Bold which return 
@@ -250,58 +244,22 @@ class SimulatorAdapter(ABCAsynchronous):
         """
         result_datatypes = dict()
         start_time = self.algorithm.current_step * self.algorithm.integrator.dt
-        m_ind = -1
-        for m_name in monitors:
-            m_ind += 1
-            sample_period = self.algorithm.monitors[m_ind].period
-            # Create the required output for each monitor that was submitted
-            if (m_name in self.RESULTS_MAP[time_series.TimeSeriesEEG]
-                    and hasattr(self.algorithm.monitors[m_ind], 'sensors')):
-                result_datatypes[m_name] = time_series.TimeSeriesEEG(storage_path=self.storage_path,
-                                                                     sensors=self.algorithm.monitors[m_ind].sensors,
-                                                                     sample_period=sample_period,
-                                                                     title=' ' + m_name, start_time=start_time, )
 
-            elif (m_name in self.RESULTS_MAP[time_series.TimeSeriesMEG]
-                  and hasattr(self.algorithm.monitors[m_ind], 'sensors')):
-                result_datatypes[m_name] = time_series.TimeSeriesMEG(storage_path=self.storage_path,
-                                                                     sensors=self.algorithm.monitors[m_ind].sensors,
-                                                                     sample_period=sample_period,
-                                                                     title=' ' + m_name, start_time=start_time)
-                
-            elif (m_name in self.RESULTS_MAP[time_series.TimeSeriesSEEG]
-                  and hasattr(self.algorithm.monitors[m_ind], 'sensors')):
-                result_datatypes[m_name] = time_series.TimeSeriesSEEG(storage_path=self.storage_path,
-                                                                      sensors=self.algorithm.monitors[m_ind].sensors,
-                                                                      sample_period=sample_period,
-                                                                      title=' ' + m_name, start_time=start_time)
-
-            elif m_name in self.RESULTS_MAP[time_series.TimeSeries]:
-                result_datatypes[m_name] = time_series.TimeSeries(storage_path=self.storage_path,
-                                                                  sample_period=sample_period,
-                                                                  title=' ' + m_name, start_time=start_time)
-
-            elif not self._is_surface_simulation(surface, surface_parameters):
-                ## We do not have a surface selected from UI, or regions only result.
-                result_datatypes[m_name] = time_series.TimeSeriesRegion(storage_path=self.storage_path,
-                                                                        connectivity=connectivity,
-                                                                        sample_period=sample_period,
-                                                                        title='Regions ' + m_name,
-                                                                        start_time=start_time)
-
-            else:
-                result_datatypes[m_name] = time_series.TimeSeriesSurface(storage_path=self.storage_path,
-                                                                         surface=surface, sample_period=sample_period,
-                                                                         title='Surface ' + m_name,
-                                                                         start_time=start_time)
+        for monitor in self.algorithm.monitors:
+            m_name = monitor.__class__.__name__
+            ts = monitor.create_time_series(self.storage_path, connectivity, surface)
+            self.log.debug("Monitor %s created the TS %s" % (m_name, ts))
             # Now check if the monitor will return results for each state variable, in which case store
             # the labels for these state variables.
+            # todo move these into monitors as well
             if m_name in self.HAVE_STATE_VARIABLES:
-                selected_state_vars = [self.algorithm.model.state_variables[idx]
-                                       for idx in self.algorithm.monitors[m_ind].voi]
-                state_variable_dimension_name = result_datatypes[m_name].labels_ordering[1]
-                result_datatypes[m_name].labels_dimensions[state_variable_dimension_name] = selected_state_vars
-        
+                selected_state_vars = [self.algorithm.model.state_variables[idx] for idx in monitor.voi]
+                state_variable_dimension_name = ts.labels_ordering[1]
+                ts.labels_dimensions[state_variable_dimension_name] = selected_state_vars
+
+            ts.start_time = start_time
+            result_datatypes[m_name] = ts
+
         #### Create Simulator State entity and persist it in DB. H5 file will be empty now.
         if not self._is_group_launch():
             simulation_state = SimulationState(storage_path=self.storage_path)

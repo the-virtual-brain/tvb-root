@@ -60,6 +60,8 @@ Conversion of power of 2 sample-rates(Hz) to Monitor periods(ms)
 import numpy
 
 #The Virtual Brain
+from tvb.datatypes.time_series import TimeSeries, TimeSeriesRegion, TimeSeriesEEG
+from tvb.datatypes.time_series import TimeSeriesMEG, TimeSeriesSEEG, TimeSeriesSurface
 from tvb.simulator.common import get_logger
 LOG = get_logger(__name__)
 
@@ -181,10 +183,30 @@ class Monitor(core.Type):
         This is the method where the specific Monitor's recording/monitoring
         function is defined, that is, it defines the return of a subset or
         projection of the state_variables of the Simulator's Model.
-
         """
-        pass
 
+
+    def create_time_series(self, storage_path, connectivity=None, surface=None):
+        """
+        Create a time series instance that will be populated by this monitor
+        :param surface: if present a TimeSeriesSurface is returned
+        :param connectivity: if present a TimeSeriesRegion is returned
+        Otherwise a plain TimeSeries will be returned
+        """
+        if surface is not None:
+            return TimeSeriesSurface(storage_path=storage_path,
+                                     surface=surface,
+                                     sample_period=self.period,
+                                     title='Surface ' + self.__class__.__name__)
+        if connectivity is not None:
+            return TimeSeriesRegion(storage_path=storage_path,
+                                    connectivity=connectivity,
+                                    sample_period=self.period,
+                                    title='Regions ' + self.__class__.__name__)
+
+        return TimeSeries(storage_path=storage_path,
+                          sample_period=self.period,
+                          title=' ' + self.__class__.__name__)
 
 
 class Raw(Monitor):
@@ -346,8 +368,10 @@ class SpatialAverage(Monitor):
 
         """
         super(SpatialAverage, self).config_for_sim(simulator)
+        self.is_default_special_mask = False
 
         if self.spatial_mask.size == 0:
+            self.is_default_special_mask = True
             if not (simulator.surface is None):
                 self.spatial_mask = simulator.surface.region_mapping
             else:
@@ -414,6 +438,16 @@ class SpatialAverage(Monitor):
             monitored_state = numpy.dot(self.spatial_mean, state[self.voi, :])
             return [time, monitored_state.transpose((1, 0, 2))]
 
+    def create_time_series(self, storage_path, connectivity=None, surface=None):
+        if self.is_default_special_mask:
+            return TimeSeriesRegion(storage_path=storage_path,
+                                    sample_period=self.period,
+                                    title = 'Regions ' + self.__class__.__name__,
+                                    connectivity=connectivity)
+        else:
+            # mask does not correspond to the number of regions
+            # let the parent create a plain TimeSeries
+            return super(SpatialAverage, self).create_time_series(storage_path)
 
 
 class GlobalAverage(Monitor):
@@ -447,6 +481,9 @@ class GlobalAverage(Monitor):
             data = numpy.mean(state[self.voi, :], axis=1)[:, numpy.newaxis, :]
             return [time, data]
 
+    def create_time_series(self, storage_path, connectivity=None, surface=None):
+        # ignore connectivity and surface and let parent create a TimeSeries
+        return super(GlobalAverage, self).create_time_series(storage_path)
 
 
 class TemporalAverage(Monitor):
@@ -622,98 +659,11 @@ class EEG(Monitor):
             return [time, eeg.transpose((1, 0, 2))]
 
 
-
-#class MEG(Monitor):
-#    """
-#    Monitors the temporally averaged value for the models variable of interest
-#    projected to sensors on the head surface at each sampling period.
-#    
-#    .. note:: For the moment, this returns single squid MEG.
-#    
-#    .. #Currently there seems to be a clash betwen traits and autodoc, autodoc
-#    .. #can't find the methods of the class, the class specific names below get
-#    .. #us around this...
-#    .. automethod:: MEG.__init__
-#    .. automethod:: MEG.config_for_sim
-#    .. automethod:: MEG.record
-#    
-#    """
-#    #_ui_name = "MEG (ONLY FOR reg13 SURFACE + o52r00_irp2008 CORTEX-ONLY CONNECTIVITY (74))"
-#    
-#    #TODO: Currently all monitors return a 3D state [variables of interest, nodes, modes],
-#    #      resulting in a 4D TimeSeries with time as the zeroth dim, however,
-#    #      TimeSeriesMEG is really intended to only be 2D [time, channels]. So,
-#    #      we should be summing over variables of interest and Modes, however,
-#    #      this will require across the board changes to Analysers their adapters
-#    #      and some visualisers so that everything works... In other words, this
-#    #      will need to be done in one big step, otherwise it'll break everthing. 
-#    
-#    #TODO: add reference electrode capability, support single point through to 
-#    #      grand average
-#    
-#    #TODO: ?Maybe easier from UI perspective to frame this in terms of sources,
-#    #       head geometry, and sensors...?
-#    
-#    #TODO: Probably going to need to make ProjectionMatrix a datatype and then
-#    #      use it for projection_matrix in order to be able to access this 
-#    #      sensibly via the UI... May need to explicitly define subtypes, ie,
-#    #      SurfaceToEEG, SurfaceToMEG, RegionToEEG,  RegionToMEG, etc
-#    projection_matrix = arrays.FloatArray(
-#        label = "Projection matrix",
-#        required = True,
-#        doc = """An array that is used to map activity from nodes of the 
-#        simulation to a set of MEG sensors.""")
-#    
-#    
-#    def __init__(self, **kwargs):
-#        """Initialise MEG monitor from the base Monitor class."""
-#        LOG.info("%s: initing..." % str(self))
-#        super(MEG, self).__init__(**kwargs)
-#        LOG.debug("%s: inited." % repr(self))
-#    
-#    
-#    def config_for_sim(self, simulator):
-#        """
-#        Set the monitor's variables of interest based on the model
-#        specification. Calculates the number of integration steps (isteps)
-#        between returns by the record method. And initialises the stock array
-#        over which the simulation state will be temporally averaged before the 
-#        projection_matrix is applied.
-#        
-#        """
-#        super(MEG, self).config_for_sim(simulator)
-#        
-#        if self.projection_matrix.size == 0:
-#            self.projection_matrix = simulator.surface.meg_projection
-#        
-#        self.trait["projection_matrix"].log_debug(owner=self.__class__.__name__)
-#        
-#        stock_size = (self.istep, self.voi.shape[0],
-#                      simulator.number_of_nodes,
-#                      simulator.model.number_of_modes)
-#        LOG.debug("%s: stock_size is %s" % (str(self), str(stock_size)))
-#        
-#        self._stock = numpy.zeros(stock_size)
-#        #import pdb; pdb.set_trace()
-#    
-#    
-#    def record(self, step, state):
-#        """ 
-#        Records if integration step corresponds to sampling period. Otherwise
-#        just update the monitor's stock.
-#        
-#        """
-#        self._stock[((step % self.istep) - 1), :] = state[self.voi, :]
-#        if step % self.istep == 0:
-#            time = (step - self.istep / 2.0) * self.dt
-#            avg_stock = numpy.mean(self._stock, axis=0)
-#            #If there are multiple variables or modes we assume they can be 
-#            #sensibly summed to form a single source...
-#            avg_stock = avg_stock.sum(axis=0)[numpy.newaxis,:,:] #state-variables
-#            avg_stock = avg_stock.sum(axis=2)[:,:,numpy.newaxis] #modes
-#            meg = numpy.dot(self.projection_matrix, avg_stock)
-#            return [time, meg.transpose((1, 0, 2))]
-#
+    def create_time_series(self, storage_path, connectivity=None, surface=None):
+         return TimeSeriesEEG(storage_path=storage_path,
+                              sensors=self.sensors,
+                              sample_period=self.period,
+                              title=' ' + self.__class__.__name__)
 
 
 #TODO: Once OpenMEEG is operational, dump the sphericals they're a hacky mess...
@@ -850,6 +800,11 @@ class SphericalEEG(Monitor):
             return [time, eeg.transpose((1, 0, 2))]
 
 
+    def create_time_series(self, storage_path, connectivity=None, surface=None):
+         return TimeSeriesEEG(storage_path=storage_path,
+                              sensors=self.sensors,
+                              sample_period=self.period,
+                              title=' ' + self.__class__.__name__)
 
 
 class SphericalMEG(Monitor):
@@ -991,6 +946,11 @@ class SphericalMEG(Monitor):
             meg = numpy.dot(self.projection_matrix, avg_stock)
             return [time, meg.transpose((1, 0, 2))]
 
+    def create_time_series(self, storage_path, connectivity=None, surface=None):
+        return TimeSeriesMEG(storage_path=storage_path,
+                             sensors=self.sensors,
+                             sample_period=self.period,
+                             title=' ' + self.__class__.__name__)
 
 #NOTE: It's probably best to do voxelisation as an offline "analysis" style
 #      process, returning region or surface timeseries for BOLD based on the
@@ -1526,3 +1486,8 @@ class SEEG(Monitor):
             eeg = numpy.dot(self.projection_matrix, avg_stock)
             return [time, eeg.transpose((1, 0, 2))]
 
+    def create_time_series(self, storage_path, connectivity=None, surface=None):
+        return TimeSeriesSEEG(storage_path=storage_path,
+                              sensors=self.sensors,
+                              sample_period=self.period,
+                              title=' ' + self.__class__.__name__)
