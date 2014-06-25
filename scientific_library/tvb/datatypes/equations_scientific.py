@@ -168,10 +168,10 @@ class PulseTrainScientific(equations_data.PulseTrainData, EquationScientific):
         # rolling in the deep ...  
         onset = self.parameters["onset"]
         off = var < onset
-        var = numpy.roll(var, int(off.sum() + 1))
-        var[:, 0:off.sum()] = 0.0
+        var = numpy.roll(var, off.sum() + 1)
+        var[..., off] = 0.0
         self._pattern = numexpr.evaluate(self.equation, global_dict=self.parameters)
-        self._pattern[:, 0:off.sum()] = 0.0
+        self._pattern[..., off] = 0.0
 
 
     pattern = property(fget=_get_pattern, fset=_set_pattern)
