@@ -140,7 +140,7 @@ When displaying the EEG sensors on a EEG Cap surface, we are automatically compu
 Currently this parcellation has no anatomical meaning, it is only based on distance (a vertex gets coloured as
 the closest sensor).
 
-.. figure:: screenshots/sensors_eeg_MEG.jpg
+.. figure:: screenshots/sensors_eeg_meg.jpg
    :width: 90%
    :align: center
 
