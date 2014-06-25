@@ -174,11 +174,14 @@ class CaseDAO(RootDAO):
 
 
     def get_project_disk_size(self, project_id):
+        """
+        Do a SUM on DATA_TYPES table column DISK_SIZE, for the current project.
+        :returns 0 when no DT are found, or SUM from DB.
+        """
         try:
-            return self.session.query(func.sum(model.DataType.disk_size)
-                        ).join((model.Operation, model.DataType.fk_from_operation == model.Operation.id)
-                        ).filter(model.Operation.fk_launched_in == project_id).scalar()
-
+            total_size = self.session.query(func.sum(model.DataType.disk_size)).join(model.Operation
+                                        ).filter(model.Operation.fk_launched_in == project_id).scalar()
+            return total_size or 0
         except SQLAlchemyError, excep:
             self.logger.exception(excep)
             return -1

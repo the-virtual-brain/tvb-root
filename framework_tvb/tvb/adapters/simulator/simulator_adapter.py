@@ -69,25 +69,6 @@ class SimulatorAdapter(ABCAsynchronous):
     available_integrators = get_traited_subclasses(Integrator)
     available_couplings = get_traited_subclasses(Coupling)
 
-
-### Info: This are the possible results returned with this adapter from different Monitors.
-###       When a list appears(surface & region), we actually return only one based on param surface being None or not.
-
-#    MONITOR_RESULTS = {"Raw": [time_series.TimeSeriesRegion, time_series.TimeSeriesSurface],
-#                       "SubSample": [time_series.TimeSeriesRegion, time_series.TimeSeriesSurface],
-#                       "SpatialAverage": [time_series.TimeSeries, time_series.TimeSeriesRegion],
-#                       "GlobalAverage": time_series.TimeSeries,
-#                       "TemporalAverage": [time_series.TimeSeriesRegion, time_series.TimeSeriesSurface],
-#                       "EEG": time_series.TimeSeriesEEG,
-#                       "SphericalEEG": time_series.TimeSeriesEEG,
-#                       "SphericalMEG": time_series.TimeSeriesMEG,
-#                       "Bold": [time_series.TimeSeriesRegion, time_series.TimeSeriesSurface]}
-
-#SK:   For a number of reasons, it's probably best to avoid returning TimeSeriesVolume ,
-#      from a simulation directly, instead just stick with the source, i.e. Region and Surface,
-#      then later we can add a voxelisation "analyser" to produce TimeSeriesVolume on which Volume
-#      based analysers and visualisers (which don't exist yet) can operate.
-
     # This is a list with the monitors that actually return multi dimensions for the state variable dimension.
     # We exclude from this for example EEG, MEG or Bold which return 
     HAVE_STATE_VARIABLES = ["GlobalAverage", "SpatialAverage", "Raw", "SubSample", "TemporalAverage"]

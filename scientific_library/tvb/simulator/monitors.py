@@ -666,6 +666,98 @@ class EEG(Monitor):
                               title=' ' + self.__class__.__name__)
 
 
+#class MEG(Monitor):
+#    """
+#    Monitors the temporally averaged value for the models variable of interest
+#    projected to sensors on the head surface at each sampling period.
+#
+#    .. note:: For the moment, this returns single squid MEG.
+#
+#    .. #Currently there seems to be a clash betwen traits and autodoc, autodoc
+#    .. #can't find the methods of the class, the class specific names below get
+#    .. #us around this...
+#    .. automethod:: MEG.__init__
+#    .. automethod:: MEG.config_for_sim
+#    .. automethod:: MEG.record
+#
+#    """
+#    #_ui_name = "MEG (ONLY FOR reg13 SURFACE + o52r00_irp2008 CORTEX-ONLY CONNECTIVITY (74))"
+#
+#    #TODO: Currently all monitors return a 3D state [variables of interest, nodes, modes],
+#    #      resulting in a 4D TimeSeries with time as the zeroth dim, however,
+#    #      TimeSeriesMEG is really intended to only be 2D [time, channels]. So,
+#    #      we should be summing over variables of interest and Modes, however,
+#    #      this will require across the board changes to Analysers their adapters
+#    #      and some visualisers so that everything works... In other words, this
+#    #      will need to be done in one big step, otherwise it'll break everthing.
+#
+#    #TODO: add reference electrode capability, support single point through to
+#    #      grand average
+#
+#    #TODO: ?Maybe easier from UI perspective to frame this in terms of sources,
+#    #       head geometry, and sensors...?
+#
+#    #TODO: Probably going to need to make ProjectionMatrix a datatype and then
+#    #      use it for projection_matrix in order to be able to access this
+#    #      sensibly via the UI... May need to explicitly define subtypes, ie,
+#    #      SurfaceToEEG, SurfaceToMEG, RegionToEEG,  RegionToMEG, etc
+#    projection_matrix = arrays.FloatArray(
+#        label = "Projection matrix",
+#        required = True,
+#        doc = """An array that is used to map activity from nodes of the
+#        simulation to a set of MEG sensors.""")
+#
+#
+#    def __init__(self, **kwargs):
+#        """Initialise MEG monitor from the base Monitor class."""
+#        LOG.info("%s: initing..." % str(self))
+#        super(MEG, self).__init__(**kwargs)
+#        LOG.debug("%s: inited." % repr(self))
+#
+#
+#    def config_for_sim(self, simulator):
+#        """
+#        Set the monitor's variables of interest based on the model
+#        specification. Calculates the number of integration steps (isteps)
+#        between returns by the record method. And initialises the stock array
+#        over which the simulation state will be temporally averaged before the
+#        projection_matrix is applied.
+#
+#        """
+#        super(MEG, self).config_for_sim(simulator)
+#
+#        if self.projection_matrix.size == 0:
+#            self.projection_matrix = simulator.surface.meg_projection
+#
+#        self.trait["projection_matrix"].log_debug(owner=self.__class__.__name__)
+#
+#        stock_size = (self.istep, self.voi.shape[0],
+#                      simulator.number_of_nodes,
+#                      simulator.model.number_of_modes)
+#        LOG.debug("%s: stock_size is %s" % (str(self), str(stock_size)))
+#
+#        self._stock = numpy.zeros(stock_size)
+#        #import pdb; pdb.set_trace()
+#
+#
+#    def record(self, step, state):
+#        """
+#        Records if integration step corresponds to sampling period. Otherwise
+#        just update the monitor's stock.
+#
+#        """
+#        self._stock[((step % self.istep) - 1), :] = state[self.voi, :]
+#        if step % self.istep == 0:
+#            time = (step - self.istep / 2.0) * self.dt
+#            avg_stock = numpy.mean(self._stock, axis=0)
+#            #If there are multiple variables or modes we assume they can be
+#            #sensibly summed to form a single source...
+#            avg_stock = avg_stock.sum(axis=0)[numpy.newaxis,:,:] #state-variables
+#            avg_stock = avg_stock.sum(axis=2)[:,:,numpy.newaxis] #modes
+#            meg = numpy.dot(self.projection_matrix, avg_stock)
+#            return [time, meg.transpose((1, 0, 2))]
+#
+
 #TODO: Once OpenMEEG is operational, dump the sphericals they're a hacky mess...
 
 class SphericalEEG(Monitor):
@@ -957,6 +1049,12 @@ class SphericalMEG(Monitor):
 #      simulation. The voxelisation only really makes sense for surface anyway,
 #      and it should be interesting/benificial to be able to compare the effect
 #      of different voxelisations on the same underlying surface.
+
+#SK:   For a number of reasons, it's probably best to avoid returning TimeSeriesVolume ,
+#      from a simulation directly, instead just stick with the source, i.e. Region and Surface,
+#      then later we can add a voxelisation "analyser" to produce TimeSeriesVolume on which Volume
+#      based analysers and visualisers (which don't exist yet) can operate.
+
 class Bold(Monitor):
     """
 
@@ -1303,6 +1401,7 @@ class BoldMultithreaded(Bold):
             return [time, averaged.reshape((1, shape[2], 1) + shape[4:])]
 
 
+
 class BalloonWindkesselAccordingToKJFristonEtAl2003NeuroImage(Monitor):
     """
 
@@ -1406,9 +1505,10 @@ class BalloonWindkesselAccordingToKJFristonEtAl2003NeuroImage(Monitor):
                              axis=1)
             bold = numpy.dot(hrf, self._stock.transpose((1, 2, 0, 3)))
             bold = bold.reshape(self._stock.shape[1:])
-            bold = bold.sum(axis=0)[numpy.newaxis,:,:] #state-variables
-            bold = bold.sum(axis=2)[:,:,numpy.newaxis] #modes
+            bold = bold.sum(axis=0)[numpy.newaxis, :, :]    #state-variables
+            bold = bold.sum(axis=2)[:, :, numpy.newaxis]    #modes
             return [time, bold]
+
 
 
 class SEEG(Monitor):
@@ -1417,15 +1517,14 @@ class SEEG(Monitor):
     """
     _ui_name = "Stereo-EEG"
 
-    sigma = basic.Float(label="conductivity",
-                        default=1.0)
+    sigma = basic.Float(label="conductivity", default=1.0)
 
     sensors = sensors_module.SensorsInternal(
         label="Internal brain sensors",
         default=None,
         required=True,
-        doc="""The set of SEEG sensors for which the forward solution will be
-        calculated.""")
+        doc="""The set of SEEG sensors for which the forward solution will be calculated.""")
+
 
     def __init__(self, **kwargs):
         """
@@ -1438,6 +1537,7 @@ class SEEG(Monitor):
         self.projection_matrix = None
         LOG.debug("%s: inited." % repr(self))
 
+
     def config_for_sim(self, simulator):
         """
         Compute the projection matrix -- simple distance weight for now.
@@ -1448,7 +1548,7 @@ class SEEG(Monitor):
         
         if simulator.surface is None:
             r_0 = simulator.connectivity.centres
-            Q = simulator.connectivity.orientations # * simulator.connectivity.areas
+            Q = simulator.connectivity.orientations     # * simulator.connectivity.areas
         else:
             r_0 = simulator.surface.vertices
             Q = simulator.surface.vertex_normals
@@ -1456,8 +1556,8 @@ class SEEG(Monitor):
         V_r = numpy.zeros((self.sensors.locations.shape[0], r_0.shape[0]))
         for sensor_k in numpy.arange(self.sensors.locations.shape[0]):
             a = self.sensors.locations[sensor_k, :] - r_0
-            na = numpy.sqrt(numpy.sum(a**2, axis=1))[:, numpy.newaxis]
-            V_r[sensor_k, :] = numpy.sum(Q * (a / na**3), axis=1 ) / (4.0 * numpy.pi * self.sigma)
+            na = numpy.sqrt(numpy.sum(a ** 2, axis=1))[:, numpy.newaxis]
+            V_r[sensor_k, :] = numpy.sum(Q * (a / na ** 3), axis=1) / (4.0 * numpy.pi * self.sigma)
 
         self.projection_matrix = V_r
 
@@ -1482,9 +1582,10 @@ class SEEG(Monitor):
             #If there are multiple variables or modes we assume they can be 
             #sensibly summed to form a single source...
             avg_stock = avg_stock.sum(axis=0)[numpy.newaxis,:,:] #state-variables
-            avg_stock = avg_stock.sum(axis=2)[:,:,numpy.newaxis] #modes
+            avg_stock = avg_stock.sum(axis=2)[:, :, numpy.newaxis] #modes
             eeg = numpy.dot(self.projection_matrix, avg_stock)
             return [time, eeg.transpose((1, 0, 2))]
+
 
     def create_time_series(self, storage_path, connectivity=None, surface=None):
         return TimeSeriesSEEG(storage_path=storage_path,
