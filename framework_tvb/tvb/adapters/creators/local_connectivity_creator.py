@@ -67,11 +67,13 @@ class LocalConnectivityCreator(ABCAsynchronous):
         """
         Used for creating a `LocalConnectivity`
         """
+        # cortex
         local_connectivity = LocalConnectivity(storage_path=self.storage_path)
         local_connectivity.cutoff = float(kwargs['cutoff'])
         local_connectivity.surface = kwargs['surface']
         local_connectivity.equation = self.get_lconn_equation(kwargs)
         local_connectivity.compute_sparse_matrix()
+        local_connectivity.compute()
 
         return local_connectivity
 
