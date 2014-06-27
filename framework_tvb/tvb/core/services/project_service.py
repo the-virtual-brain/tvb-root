@@ -303,24 +303,49 @@ class ProjectService:
             prj.operations_started = sta
             prj.operations_error = err
             prj.operations_canceled = canceled
-            prj.disk_size = self._get_human_disk_size(prj.id)
+            prj.disk_size = dao.get_project_disk_size(prj.id)
+            prj.disk_size_human = self._get_human_disk_size(prj.disk_size)
         self.logger.debug("Displaying " + str(len(available_projects)) + " projects in UI for user " + str(user_id))
         return available_projects, pages_no
 
 
     @staticmethod
-    def _get_human_disk_size(project_id):
+    def _get_human_disk_size(size, si=False):
         """
-        :param project_id: ID
+        :param size: size in kibibytes
+        :param si: if True use SI units (multiple of 1000 not 1024)
         :return: a String with [number] [memory unit measure]
         """
-        size = dao.get_project_disk_size(project_id)
-        m = ['kb', 'Mb', 'Gb']
+        if si:
+            m = ['kB', 'MB', 'GB']
+            base = 1000.0
+        else:
+            m = ['KiB', 'MiB', 'GiB']
+            base = 1024.0
+
         exp = 0
-        while size >= 1024.0 and exp < len(m) - 1:
-            size /= 1024.0
+        while size >= base and exp < len(m) - 1:
+            size /= base
             exp += 1
         return "%.1f %s" % (size, m[exp])
+
+
+    @staticmethod
+    def compute_recursive_h5_disk_usage(start_path = '.'):
+        """
+        Computes the disk usage of all h5 files under the given directory.
+        :param start_path:
+        :return: A tuple of size in kiB and number of files
+        """
+        total_size = 0
+        n_files = 0
+        for dir_path, _, file_names in os.walk(start_path):
+            for f in file_names:
+                if f.endswith('.h5'):
+                    fp = os.path.join(dir_path, f)
+                    total_size += os.path.getsize(fp)
+                    n_files += 1
+        return int(round(total_size/1024.)), n_files
 
 
     @staticmethod
