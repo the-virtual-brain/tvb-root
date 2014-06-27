@@ -172,7 +172,7 @@ class SurfaceStimulusController(SpatioTemporalController):
                                                                       StimuliSurface())[0]
             self.flow_service.fire_operation(surface_stimulus_creator, common.get_logged_user(),
                                              common.get_current_project().id, **context.equation_kwargs)
-            common.set_info_message("The operation for creating the stimulus was successfully launched.")
+            common.set_important_message("The operation for creating the stimulus was successfully launched.")
             context.selected_stimulus = None
 
         except (NameError, ValueError, SyntaxError), _:

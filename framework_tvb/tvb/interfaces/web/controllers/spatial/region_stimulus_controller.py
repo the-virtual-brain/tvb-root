@@ -178,7 +178,7 @@ class RegionStimulusController(SpatioTemporalController):
         context.equation_kwargs.update({'weight': json.dumps(context.get_weights())})
         self.flow_service.fire_operation(local_connectivity_creator, common.get_logged_user(),
                                          common.get_current_project().id, **context.equation_kwargs)
-        common.set_info_message("The operation for creating the stimulus was successfully launched.")
+        common.set_important_message("The operation for creating the stimulus was successfully launched.")
 
 
     def _get_stimulus_interface(self, default_connectivity_gid=None):

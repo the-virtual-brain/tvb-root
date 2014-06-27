@@ -75,7 +75,7 @@ class SettingsController(UserController):
                     thread = threading.Thread(target=self._restart_services, kwargs={'should_reset': isreset})
                     thread.start()
                     common.add2session(common.KEY_IS_RESTART, True)
-                    common.set_info_message('Please wait until TVB is restarted properly!')
+                    common.set_important_message('Please wait until TVB is restarted properly!')
                     raise cherrypy.HTTPRedirect('/tvb')
                 # Here we will leave the same settings page to be displayed.
                 # It will continue reloading when CherryPy restarts.

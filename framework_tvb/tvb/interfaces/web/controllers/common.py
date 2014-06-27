@@ -45,6 +45,7 @@ from tvb.basic.traits.exceptions import TVBException
 TYPE_ERROR = "ERROR"
 TYPE_WARNING = "WARNING"
 TYPE_INFO = "INFO"
+TYPE_IMPORTANT = "IMPORTANT"
 
 KEY_CURRENT_VERSION = "currentVersion"
 KEY_CURRENT_JS_VERSION = "currentVersionJS"
@@ -142,6 +143,11 @@ def set_warning_message(msg):
 def set_info_message(msg):
     """ Set info message in session"""
     set_message(msg, TYPE_INFO)
+
+
+def set_important_message(msg):
+    """ Set info message in session"""
+    set_message(msg, TYPE_IMPORTANT)
 
 
 def get_from_session(attribute):

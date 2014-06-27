@@ -38,10 +38,12 @@
 	<!-- Messages -->
 	<section class="header-component message-container">
 		<h3>Messages</h3>
-		<ul>
-			<li id="messageDivParent" class="msg-sticky msg-level-fatal" py:if="messageType=='ERROR'"><div id="messageDiv">$message</div></li>
-			<li id="messageDivParent" class="msg-transient transient-medium msg-level-warn" py:if="messageType=='WARNING'"><div id="messageDiv">$message</div></li>
-			<li id="messageDivParent" class="msg-transient msg-level-info" py:if="messageType=='INFO'"><div id="messageDiv">$message</div></li>
+		<ul py:with="msgClass = {'ERROR': 'msg-sticky msg-level-fatal',
+		                         'WARNING': 'msg-transient transient-medium msg-level-warn',
+		                         'INFO': 'msg-transient msg-level-info',
+		                         'IMPORTANT':'msg-transient transient-medium msg-level-confirm'}">
+
+            <li id="messageDivParent" class="${msgClass[messageType]}"><div id="messageDiv">$message</div></li>
 		</ul>
 	</section>
 

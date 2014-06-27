@@ -159,7 +159,7 @@ class LocalConnectivityController(SpatioTemporalController):
                                                                     LOCAL_CONN_CREATOR_CLASS, LocalConnectivity())[0]
         self.flow_service.fire_operation(local_connectivity_creator, common.get_logged_user(),
                                          common.get_current_project().id, **kwargs)
-        common.set_info_message("The operation for creating the local connectivity was successfully launched.")
+        common.set_important_message("The operation for creating the local connectivity was successfully launched.")
         context.reset()
         return self.step_1()
 

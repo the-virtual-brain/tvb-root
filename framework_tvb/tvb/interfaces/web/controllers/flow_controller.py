@@ -450,7 +450,7 @@ class FlowController(BaseController):
             else:
                 if isinstance(result, list):
                     result = "Launched %s operations." % len(result)
-                common.set_info_message(str(result))
+                common.set_important_message(str(result))
         except formencode.Invalid, excep:
             errors = excep.unpack_errors()
         except OperationException, excep1:

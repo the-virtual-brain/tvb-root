@@ -427,7 +427,7 @@ function tvbSubmitPageAsync(action, params){
         url: action,
         data: params,
         success: function (data) {
-            displayMessage("Operation launched.", "infoMessage");
+            displayMessage("Operation launched.", "importantMessage");
         },
         error: function (){
             displayMessage("Operation failed to launch.", "errorMessage");
