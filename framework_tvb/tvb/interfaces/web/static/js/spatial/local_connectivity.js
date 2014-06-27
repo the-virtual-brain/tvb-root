@@ -19,17 +19,26 @@
 
 /**
  * Displays a gradient on the surface used by the selected local connectivity.
+ * @param [selectedLocalConnectivity] the gid of the local connectivity
  */
-function LCON_displayGradientForThePickedVertex() {
+function LCON_displayGradientForThePickedVertex(selectedLocalConnectivity) {
 
     if (TRIANGLE_pickedIndex >= 0) {
-        if (!LEG_legendBuffers.length) LEG_generateLegendBuffers();         // only generate them on first pick
-        var selectedLocalConnectivity = $("select[name='existentEntitiesSelect']").val();
-        if (selectedLocalConnectivity == undefined || selectedLocalConnectivity == "None" ||
+        if (!LEG_legendBuffers.length) {
+            // only generate them on first pick
+            LEG_generateLegendBuffers();
+        }
+
+        if (selectedLocalConnectivity == null){
+            selectedLocalConnectivity = $("select[name='existentEntitiesSelect']").val();
+        }
+
+        if (selectedLocalConnectivity == null || selectedLocalConnectivity == "None" ||
             selectedLocalConnectivity.trim().length == 0) {
             LCONN_PICK_drawDefaultColorBuffers();
             return;
         }
+
         var url = '/spatial/localconnectivity/compute_data_for_gradient_view?local_connectivity_gid=';
         url += selectedLocalConnectivity + "&selected_triangle=" + TRIANGLE_pickedIndex;
         doAjaxCall({
