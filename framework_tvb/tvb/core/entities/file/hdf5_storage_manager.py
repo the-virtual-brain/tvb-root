@@ -119,7 +119,22 @@ class HDF5StorageManager(object):
             # Open file in append mode ('a') to allow adding multiple data sets in the same file
             chunk_shape = self.__compute_chunk_shape(data_to_store.shape)
             hdf5File = self._open_h5_file(chunk_shape=chunk_shape)
-            hdf5File[where + dataset_name] = data_to_store
+
+            # h5 does not allow updating or deleting data sets.
+            # trying to do so will raise a RuntimeError: unable to create link
+            # If the data set is already present then we try to update the data
+            # If the shapes do not match then we cannot do much. Creating the data set with maxshape could be a solution
+
+            full_dataset_name = where + dataset_name
+            if full_dataset_name not in hdf5File:
+                hdf5File[full_dataset_name] = data_to_store
+            elif hdf5File[full_dataset_name].shape == data_to_store.shape:
+                hdf5File[full_dataset_name][...] = data_to_store[...]
+            else:
+                msg  = "Cannot update existing h5 dataset %s." %  full_dataset_name
+                msg += "shape mismatch %s %s" % (hdf5File[full_dataset_name].shape, data_to_store.shape)
+                raise RuntimeError(msg)
+
         finally:
             # Now close file
             self.close_file()
