@@ -312,7 +312,7 @@ class ProjectService:
     @staticmethod
     def _get_human_disk_size(size, si=False):
         """
-        :param size: size in kibibytes
+        :param size: size in kilobytes
         :param si: if True use SI units (multiple of 1000 not 1024)
         :return: a String with [number] [memory unit measure]
         """
@@ -328,24 +328,6 @@ class ProjectService:
             size /= base
             exp += 1
         return "%.1f %s" % (size, m[exp])
-
-
-    @staticmethod
-    def compute_recursive_h5_disk_usage(start_path = '.'):
-        """
-        Computes the disk usage of all h5 files under the given directory.
-        :param start_path:
-        :return: A tuple of size in kiB and number of files
-        """
-        total_size = 0
-        n_files = 0
-        for dir_path, _, file_names in os.walk(start_path):
-            for f in file_names:
-                if f.endswith('.h5'):
-                    fp = os.path.join(dir_path, f)
-                    total_size += os.path.getsize(fp)
-                    n_files += 1
-        return int(round(total_size/1024.)), n_files
 
 
     @staticmethod

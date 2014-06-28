@@ -31,11 +31,7 @@
 """
 .. moduleauthor:: Bogdan Neacsa <bogdan.neacsa@codemart.ro>
 """
-from tvb.basic.profile import TvbProfile
 import tvb_data
-
-TvbProfile.set_profile(["-profile" , TvbProfile.TEST_SQLITE_PROFILE])
-
 import os
 import unittest
 import shutil
@@ -301,42 +297,27 @@ class ProjectServiceTest(TransactionalTestCase):
         self.assertEqual('0.0 KiB', projects[0].disk_size_human)
 
 
-    def test_2_default_projects_have_same_nonzero_disk_size(self):
-        # create 2 default projects
-        for i in range(2):
-            project = TestFactory.create_project(self.test_user, 'test_proj_%d' % i)
-            TestFactory.import_cff(test_user=self.test_user, test_project=project)
-
-        projects, pages = self.project_service.retrieve_projects_for_user(self.test_user.id)
-        db_stored_disk_sizes = [p.disk_size for p in projects]
-
-        self.assertNotEqual(0, db_stored_disk_sizes[0])
-        self.assertEqual(db_stored_disk_sizes[0], db_stored_disk_sizes[1], "the projects should have the same size")
-
-
-    def _assert_db_stored_project_size_close_to_real_disk_usage(self, project):
-        actual_disk_size, n_files = self.project_service.compute_recursive_h5_disk_usage(self.structure_helper.get_project_folder(project))
-        ratio = float(actual_disk_size) / project.disk_size
-
-        msg = "Real disk usage: %s The one recorded in the db : %s. Ratio should be less than 1.5" % (actual_disk_size, project.disk_size)
-        self.assertTrue(ratio < 1.5, msg)
-
-
-    def test_db_stored_project_size_for_small_project(self):
+    def test_project_disk_size(self):
+        project1 = TestFactory.create_project(self.test_user, 'test_proj1')
         zip_path = os.path.join(os.path.dirname(tvb_data.__file__), 'connectivity', 'connectivity_66.zip')
+        TestFactory.import_zip_connectivity(self.test_user, project1, 'testSubject', zip_path)
 
-        project = TestFactory.create_project(self.test_user, 'test_proj')
-        TestFactory.import_zip_connectivity(self.test_user, project, 'testSubject', zip_path)
-        projects, _ = self.project_service.retrieve_projects_for_user(self.test_user.id)
-        self._assert_db_stored_project_size_close_to_real_disk_usage(projects[0])
+        project2 = TestFactory.create_project(self.test_user, 'test_proj2')
+        TestFactory.import_cff(test_user=self.test_user, test_project=project2)
 
+        projects = self.project_service.retrieve_projects_for_user(self.test_user.id)[0]
+        self.assertNotEqual(projects[0].disk_size, projects[1].disk_size, "projects should have different size")
 
-    def test_db_stored_project_size_for_default_project(self):
-        project = TestFactory.create_project(self.test_user, 'test_proj')
-        TestFactory.import_cff(test_user=self.test_user, test_project=project)
+        for project in projects:
+            self.assertNotEqual(0, project.disk_size)
+            self.assertNotEqual(0, project.disk_size_human)
 
-        projects, _ = self.project_service.retrieve_projects_for_user(self.test_user.id)
-        self._assert_db_stored_project_size_close_to_real_disk_usage(projects[0])
+            prj_folder = self.structure_helper.get_project_folder(project)
+            actual_disk_size = self.compute_recursive_h5_disk_usage(prj_folder)[0]
+
+            ratio = float(actual_disk_size) / project.disk_size
+            msg = "Real disk usage: %s The one recorded in the db : %s" % (actual_disk_size, project.disk_size)
+            self.assertTrue(ratio < 1.4, msg)
 
 
     def test_get_linkable_projects(self):

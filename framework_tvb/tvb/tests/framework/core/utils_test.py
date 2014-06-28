@@ -27,22 +27,24 @@
 #   Frontiers in Neuroinformatics (7:10. doi: 10.3389/fninf.2013.00010)
 #
 #
+
 """
 .. moduleauthor:: Lia Domide <lia.domide@codemart.ro>
 .. moduleauthor:: Bogdan Neacsa <bogdan.neacsa@codemart.ro>
 .. moduleauthor:: Ionel Ortelecan <ionel.ortelecan@codemart.ro>
 """
+
 import os
-import numpy
 import unittest
 import datetime
 from tvb.core.utils import path2url_part, get_unique_file_name, string2date, date2string, string2bool
 from tvb.core.utils import string2array
 from tvb.tests.framework.core.base_testcase import TransactionalTestCase
 
+
 class UtilsTest(TransactionalTestCase):
     """
-    This class contains tests for the tvb.core.services.flowservice module.
+    This class contains test helper methods.
     """  
     
     
@@ -51,12 +53,14 @@ class UtilsTest(TransactionalTestCase):
         Reset the database before each test.
         """
         pass
-    
+
+
     def tearDown(self):
         """
         Reset the database when test is done.
         """
         pass
+
 
     def test_path2url_part(self):
         """
@@ -66,7 +70,8 @@ class UtilsTest(TransactionalTestCase):
         self.assertFalse(os.sep in processed_path, "Invalid character " + os.sep + " should have beed removed")
         self.assertFalse(' ' in processed_path, "Invalid character ' ' should have beed removed")
         self.assertFalse(':' in processed_path, "Invalid character ':' should have beed removed")
-        
+
+
     def test_get_unique_file_name(self):
         """
         Test that we get unique file names no matter if we pass the same folder as input.
@@ -108,16 +113,17 @@ class UtilsTest(TransactionalTestCase):
         custom_date = string2date(custom_time_string, date_format=custom_format)
         self.assertEqual(custom_date, datetime.datetime(1999, 1, 1), 
                          "Did not get expected datetime from conversion object.")
-        
+
+
     def test_string2date_invalid(self):
         """
-        Chech that a ValueError is raised in case some invalid date is passed.
+        Check that a ValueError is raised in case some invalid date is passed.
         """
         self.assertRaises(ValueError, string2date, "somethinginvalid")
         
     def test_date2string(self):
         """
-        Chech the date2string method for various inputs.
+        Check the date2string method for various inputs.
         """
         date_input = datetime.datetime(1999, 3, 16, 18, 20, 33, 100000)
         self.assertEqual(date2string(date_input, complex_format=False), '03-16-1999', 
@@ -131,10 +137,11 @@ class UtilsTest(TransactionalTestCase):
                          "Did not get expected string from datetime conversion object.")
         
         self.assertEqual("None", date2string(None), "Expected to return 'None' for None input.")
-        
+
+
     def test_string2bool(self):
         """
-        Chech the date2string method for various inputs.
+        Check the date2string method for various inputs.
         """
         self.assertTrue(string2bool("True"), "Expect True boolean for input 'True'")
         self.assertTrue(string2bool(u"True"), "Expect True boolean for input u'True'")
@@ -158,6 +165,7 @@ class UtilsTest(TransactionalTestCase):
             self.assertEqual(result_array[0], 1)
             self.assertEqual(result_array[1], 2)
             self.assertEqual(result_array[2], 3)
+
         
         
 def suite():
