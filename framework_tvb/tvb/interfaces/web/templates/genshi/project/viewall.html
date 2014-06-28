@@ -28,7 +28,7 @@
 			
 			<!-- Table footer w/ pagination controls -->
 			<tfoot>
-				${displayPaginationControls(page_number, total_pages, 5, 'projectsForm')}
+				${displayPaginationControls(page_number, total_pages, 6, 'projectsForm')}
 			</tfoot>
 	
 			<tbody>
@@ -38,7 +38,7 @@
 				</tr>
 		
 				<tr class="selector-error" py:if="len(projectsList) &gt; 0 and selectedProject == None">
-					<td colspan="5"> You haven't selected a project yet. Please do so below. </td>
+					<td colspan="6"> You haven't selected a project yet. Please do so below. </td>
 				</tr>
 		
 		        <!-- Loop through all projects -->
