@@ -117,7 +117,7 @@
 							<a py:if="operation['additional'] == ''"  class="action action-mini-zoom-in"  onclick="displayNodeDetails('${operation['gid']}', '${'operationGroup' if operation['group'] else 'operation'}', 'operations');" title="Show details...">${op_ui_status}</a> 
 							
 							<nav class="inline-menu" py:if="operation['additional'] != ''">
-								<button tabindex='3' class="action action-menu"><mark>${op_ui_status}</mark></button>
+								<button tabindex='3' class="action action-menu" onclick="return false;"><mark>${op_ui_status}</mark></button>
 								
 								<div class="extension">
 									<div class="dropdown-pane">

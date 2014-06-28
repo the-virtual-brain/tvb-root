@@ -566,8 +566,8 @@ class Array(mapped.Array):
                  and self.trait.file_storage != FILE_STORAGE_NONE) and value.size > 0):
 
             if not isinstance(value, self.trait.wraps):
-                raise Exception("Invalid DataType!! It expects %s, but is %s" % str(self.trait.wraps), str(type(value)))
-
+                raise Exception("Invalid DataType!! It expects %s, but is %s" % (str(self.trait.wraps),
+                                                                                 str(type(value))))
             self._write_in_storage(inst, value)
 
 
