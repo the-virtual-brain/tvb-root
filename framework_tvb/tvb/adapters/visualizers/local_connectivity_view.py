@@ -31,26 +31,24 @@
 """
 .. moduleauthor:: Mihai Andrei <mihai.andrei@codemart.ro>
 """
+
 import json
 from tvb.core.adapters.abcdisplayer import ABCDisplayer
 from tvb.datatypes.surfaces import LocalConnectivity
 
-# todo : this viewer relies on js and shaders that have similar functionality to virtualbrain.js
 
 class LocalConnectivityViewer(ABCDisplayer):
     """
     Local connectivity visualizer
     """
     _ui_name = "Local Connectivity Visualizer"
-    _ui_subsection = "surface"
+    _ui_subsection = "connectivity_local"
+
 
     def get_input_tree(self):
         return [{'name': 'local_conn', 'label': 'Local connectivity',
-                 'type': LocalConnectivity, 'required': True,
-                 'description': ''}]
+                 'type': LocalConnectivity, 'required': True}]
 
-
-    # todo : this duplicates functionality from SpatioTemporalController
     def _compute_surface_params(self, surface):
         url_vertices_pick, url_normals_pick, url_triangles_pick = surface.get_urls_for_pick_rendering()
         url_vertices, url_normals, _, url_triangles, alphas, alphas_indices = surface.get_urls_for_rendering(True, None)
@@ -68,7 +66,7 @@ class LocalConnectivityViewer(ABCDisplayer):
         }
 
     def launch(self, local_conn):
-        params = dict(title="Surface Visualizer", extended_view=False,
+        params = dict(title="Local Connectivity Visualizer", extended_view=False,
                       isOneToOneMapping=False, hasRegionMap=False)
 
         params.update(self._compute_surface_params(local_conn.surface))

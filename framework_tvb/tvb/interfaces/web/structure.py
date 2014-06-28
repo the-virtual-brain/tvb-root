@@ -98,6 +98,7 @@ class WebStructure(object):
     SUB_SECTION_VIEW_0 = "view_connectivity"
     SUB_SECTION_VIEW_1 = "view_brain"
     SUB_SECTION_VIEW_2 = "view_brain_dual"
+    SUB_SECTION_VIEW_3 = "view_connectivity_local"
     SUB_SECTION_VIEW_4 = "view_covariance"
     SUB_SECTION_VIEW_5 = "view_coherence"
     SUB_SECTION_VIEW_6 = "view_complex_coherence"
@@ -178,6 +179,7 @@ class WebStructure(object):
         SUB_SECTION_VIEW_0: "Connectivity Visualizer",
         SUB_SECTION_VIEW_1: "Brain Visualizer",
         SUB_SECTION_VIEW_2: "Brain Dual Activity Visualizer (3D and 2D)",
+        SUB_SECTION_VIEW_3: "Local Connectivity Visualizer",
         SUB_SECTION_VIEW_4: "Covariance Visualizer",
         SUB_SECTION_VIEW_5: "Coherence Visualizer",
         SUB_SECTION_VIEW_6: "Complex Coherence Visualizer",
@@ -206,6 +208,7 @@ class WebStructure(object):
         ## SUB_SECTION_VIEW_0: "connectivity-visualizer**",
         SUB_SECTION_VIEW_1: "brain-activity-visualizer",
         SUB_SECTION_VIEW_2: "dual-brain-activity-visualizer",
+        SUB_SECTION_VIEW_3: "local-connectivity-visualizer",
         SUB_SECTION_VIEW_4: "covariance-visualizer",
         SUB_SECTION_VIEW_5: "cross-coherence-visualizer",
         SUB_SECTION_VIEW_6: "complex-coherence-visualizer",

@@ -127,6 +127,7 @@ Optionally it can display associated RegionMapping entities for a given surface.
 
    Surface Visualizer.
 
+
 Sensor Visualizer
 ~~~~~~~~~~~~~~~~~~~~
 
@@ -152,6 +153,17 @@ the closest sensor).
    :align: center
 
    Internal Sensors.
+
+
+Local Connectivity Visualizer
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Once a Local Connectivity dataTypes (which in fact is a huge sparse matrix of max size surface
+vertices x surface vertices, shaped after the cut-off) gets computed, one can view the correlation
+of a given vertex compared to all its neighbours, by launching this viewer (from the DataType overlay).
+
+In order to see some correlation, one should pick (by mouse click) a vertex on the 3D cortical
+surface once it loads in the canvas.
 
 
 Group Display
