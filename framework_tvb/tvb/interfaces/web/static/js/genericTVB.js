@@ -26,28 +26,30 @@ function displayMessage(msg, className) {
     var messagesDiv = $("#messageDiv");
     messagesDiv.empty();
     messagesDiv.append(msg);
-    if (className == 'errorMessage'){
-        className = 'msg-sticky msg-level-fatal';
-        console.warn(msg);
-    } else if (className =='warningMessage') {
-        className = 'msg-transient transient-medium msg-level-warn';
-        console.warn(msg);
-    } else if (className =='importantMessage') {
-        className = 'msg-transient transient-medium msg-level-confirm';
-        console.info(msg);
-    } else {
-        className = 'msg-transient msg-level-info';
-        console.info(msg);
-    }
 
     var messageDivParent = document.getElementById("messageDivParent");	
     if (messageDivParent) {
+        if (className == 'errorMessage'){
+            className = 'msg-sticky msg-level-fatal';
+            console.warn(msg);
+        } else if (className =='warningMessage') {
+            className = 'msg-transient transient-medium msg-level-warn';
+            console.warn(msg);
+        } else if (className =='importantMessage') {
+            className = 'msg-transient transient-medium msg-level-confirm';
+            console.info(msg);
+        } else {
+            className = 'msg-transient msg-level-info';
+            console.info(msg);
+        }
         messageDivParent.className = className;
         $(messageDivParent.parentNode).html($(messageDivParent.parentNode).html());
+
     } else {
+        //  We are on the base_user template
         messageDivParent = $("#generic-message");
         messageDivParent.removeClass('no-message');
-        messageDivParent.className = className;
+        messageDivParent[0].className = 'generic-message ' + className;
     }
 }
 

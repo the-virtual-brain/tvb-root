@@ -59,12 +59,14 @@
     <!-- App Content --> 
     <!-- ========================================================== -->
 
-    <body class="${'user-authorized' if mainContent=='profile' else 'user-anon'} style-default v-odinson ${'is-helping' if (showOnlineHelp) else ''}" id="s-user"> 
+    <body class="${'user-authorized' if mainContent=='profile' else 'user-anon'} style-default v-odinson ${'is-helping' if (showOnlineHelp) else ''}" id="s-user"
+        py:with="msgClass = {'ERROR': 'generic-message errorMessage',
+                             'WARNING': 'generic-message warningMessage',
+                             'INFO': 'generic-message infoMessage',
+                             'IMPORTANT':'generic-message importantMessage'}">
         <xi:include href="tooltip.html" py:if="defined('includeTooltip') and includeTooltip"/>
-        
-        <div id="generic-message" class="generic-message errorMessage ${'no-message' if len(message)==0 else ''}" py:if="messageType=='ERROR'"><div id="messageDiv">$message</div></div> 
-        <div id="generic-message" class="generic-message warningMessage ${'no-message' if len(message)==0 else ''}" py:if="messageType=='WARNING'"><div id="messageDiv">$message</div></div>
-        <div id="generic-message" class="generic-message infoMessage ${'no-message' if len(message)==0 else ''}" py:if="messageType=='INFO'"><div id="messageDiv">$message</div></div>
+
+        <div id="generic-message" class="${msgClass[messageType]} ${'no-message' if len(message)==0 else ''}"><div id="messageDiv">$message</div></div>
 
         <div id="main" py:if="defined('wrapContentInMainDiv') and wrapContentInMainDiv">
             <xi:include href="${mainContent}.html"/>
