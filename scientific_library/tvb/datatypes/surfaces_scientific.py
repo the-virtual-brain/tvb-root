@@ -643,7 +643,7 @@ class CortexScientific(surfaces_data.CortexData, SurfaceScientific):
             self.compute_region_areas()
 
         if self.local_connectivity is None:
-            self.local_connectivity = surfaces_data.LocalConnectivityData(cutoff=40.0, use_storage=False, surface=self)
+            self.local_connectivity = LocalConnectivityScientific(cutoff=40.0, use_storage=False, surface=self)
 
         if self.local_connectivity.matrix.size == 0:
             self.compute_local_connectivity()
@@ -780,7 +780,7 @@ class CortexScientific(surfaces_data.CortexData, SurfaceScientific):
         # TODO: try to remove 'collections'
         if number_of_nodes > self.number_of_vertices:
             counter = collections.Counter(self.region_mapping)
-            vertices_per_region  = numpy.asarray(counter.values())
+            vertices_per_region = numpy.asarray(counter.values())
             non_cortical_regions = numpy.where(vertices_per_region == 1)
             LOG.info("set vertex mapping: There are %d non-cortical regions" % len(non_cortical_regions[0]))
             cortical_regions = numpy.where(vertices_per_region > 1)
@@ -800,8 +800,7 @@ class CortexScientific(surfaces_data.CortexData, SurfaceScientific):
     vertex_mapping = property(fget=_get_vertex_mapping, fset=_set_vertex_mapping)
     #--------------------------------------------------------------------------#
 
-    #TODO: May be better to have these return values for assignment to the
-    #      associated Connectivity...
+    #TODO: May be better to have these return values for assignment to the associated Connectivity...
     #TODO: These will need to do something sensible with non-cortical regions.
     def compute_region_areas(self):
         """
@@ -862,7 +861,7 @@ class CortexScientific(surfaces_data.CortexData, SurfaceScientific):
                 avg_orient = numpy.mean(orient, axis=0)
                 average_orientation[k, :] = avg_orient / numpy.sqrt(numpy.sum(avg_orient ** 2))
             for nk in non_cortical_regions[0]:
-                average_orientation[k, :] = numpy.zeros((1, 3))
+                average_orientation[nk, :] = numpy.zeros((1, 3))
         else:
             #Average orientation of the region
             for k in regions:
