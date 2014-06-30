@@ -641,8 +641,10 @@ class LocalConnectivityScientific(surfaces_data.LocalConnectivityData):
             LOG.error(msg)
             raise Exception(msg)
 
-        self.matrix = gdist.local_gdist_matrix(self.surface.vertices.astype(numpy.float64),
-                                               self.surface.triangles.astype(numpy.int32), max_distance=self.cutoff)
+        self.matrix_gdist = gdist.local_gdist_matrix(self.surface.vertices.astype(numpy.float64),
+                                                     self.surface.triangles.astype(numpy.int32),
+                                                     max_distance=self.cutoff)
+        self.compute()
 
 
 
@@ -702,7 +704,7 @@ class CortexScientific(surfaces_data.CortexData, SurfaceScientific):
         loc_con_cutoff = self.local_connectivity.cutoff
         self.compute_geodesic_distance_matrix(max_dist=loc_con_cutoff)
 
-        self.local_connectivity.matrix = self.geodesic_distance_matrix.copy()
+        self.local_connectivity.matrix_gdist = self.geodesic_distance_matrix.copy()
         self.local_connectivity.compute()  # Evaluate equation based distance
         self.local_connectivity.trait["matrix"].log_debug(owner=self.__class__.__name__ + ".local_connectivity")
 
@@ -857,7 +859,7 @@ class CortexScientific(surfaces_data.CortexData, SurfaceScientific):
             # Count how many vertices each region has.
             counter = collections.Counter(self.region_mapping)
             # Presumably non-cortical regions will have len 1. 
-            vertices_per_region  = numpy.asarray(counter.values())
+            vertices_per_region = numpy.asarray(counter.values())
             non_cortical_regions = numpy.where(vertices_per_region == 1)
             cortical_regions = numpy.where(vertices_per_region > 1)
             #Average orientation of the region
@@ -890,7 +892,7 @@ class CortexScientific(surfaces_data.CortexData, SurfaceScientific):
             # Count how many vertices each region has.
             counter = collections.Counter(self.region_mapping)
             # Presumably non-cortical regions will have len 1 vertex assigned.
-            vertices_per_region  = numpy.asarray(counter.values())
+            vertices_per_region = numpy.asarray(counter.values())
             non_cortical_regions = numpy.where(vertices_per_region == 1)
             cortical_regions = numpy.where(vertices_per_region > 1)
             cortical_region_mapping = [x for x in self.region_mapping if x in cortical_regions[0]]

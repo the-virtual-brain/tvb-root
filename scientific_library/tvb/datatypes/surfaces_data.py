@@ -261,6 +261,8 @@ class LocalConnectivityData(MappedType):
 
     surface = CorticalSurfaceData(label="Surface", order=1)
 
+    matrix_gdist = SparseMatrix(order=-1, file_storage=core.FILE_STORAGE_NONE)
+
     matrix = SparseMatrix(order=-1)
 
     equation = equations.FiniteSupportEquation(
@@ -283,18 +285,18 @@ class LocalConnectivityData(MappedType):
         LOG.info("Mapping geodesic distance through the LocalConnectivity.")
 
         #Start with data being geodesic_distance_matrix, then map it through equation
-        self.equation.pattern = self.matrix.data
+        self.equation.pattern = self.matrix_gdist.data
 
         #Then replace original data with result...
-        self.matrix.data = self.equation.pattern
+        self.matrix_gdist.data = self.equation.pattern
 
         #Homogenise spatial discretisation effects across the surface
-        nv = self.matrix.shape[0]
+        nv = self.matrix_gdist.shape[0]
         ind = numpy.arange(nv, dtype=int)
-        pos_mask = self.matrix.data > 0.0
-        neg_mask = self.matrix.data < 0.0
-        pos_con = self.matrix.copy()
-        neg_con = self.matrix.copy()
+        pos_mask = self.matrix_gdist.data > 0.0
+        neg_mask = self.matrix_gdist.data < 0.0
+        pos_con = self.matrix_gdist.copy()
+        neg_con = self.matrix_gdist.copy()
         pos_con.data[neg_mask] = 0.0
         neg_con.data[pos_mask] = 0.0
         pos_contrib = pos_con.sum(axis=1)
