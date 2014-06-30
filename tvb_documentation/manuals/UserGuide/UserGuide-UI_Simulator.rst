@@ -53,13 +53,28 @@ settings:
   - Simulation Length
 
 You can find more detailed information by clicking on the |interrogationicon| 
-icon next to each element. 
+icon next to each element.
+
+
+.. note::
+
+    **You can filter DataTypes (like Long Range Connectivity) from UI**
+
+    .. image:: screenshots/filter_datatypes.jpg
+       :width: 60%
+       :align: center
+
+    * Click on *Add Filter* button bellow a DataType
+    * select the attribute to be filtered, the operator to apply and the value in this filter
+    * click *Apply Filters* to have the results filtered in the selector component right above the filters
+    * this ca also be used in the context of Parameter Space Exploration of |TVB|
+
 
 .. note:: 
   
   **TVB performs region-based and surface-based simulations**
 
-  You can access specific configuration pages for both types of simulation. 
+  You can access specific configuration pages for both types of simulation.
 
 
 Region-based simulations
