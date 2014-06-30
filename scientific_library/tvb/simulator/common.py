@@ -46,7 +46,7 @@ import zipfile
 def get_logger(name):
     try:
         from tvb.basic.logger.builder import get_logger
-        return get_logger(__name__)
+        return get_logger(name)
     except ImportError:
         import logging
         return logging.getLogger(name)
