@@ -255,6 +255,10 @@ class EegMonitor(ABCDisplayer):
 
     def compute_required_info(self, list_of_timeseries):
         """Compute average difference between Max and Min."""
+        # The values computed by this function will be serialized to json and passed to the client.
+        # The time series might be of numpy.float32 a data type that is not serializable.
+        # To overcome this we convert numpy scalars to python floats
+
         step = []
         translations = []
         channels_per_set = []
@@ -273,12 +277,12 @@ class EegMonitor(ABCDisplayer):
                 self.has_nan = self.has_nan or self._replace_nan_values(page_chunk_data[:, idx])
                 array_max = numpy.max(page_chunk_data[:, idx])
                 array_min = numpy.min(page_chunk_data[:, idx])
-                translations.append((array_max + array_min) / 2)
+                translations.append( float( (array_max + array_min) / 2 ) )
                 if array_max == array_min:
                     array_max += 1
                 step.append(abs(array_max - array_min))
 
-        return max(step), translations, channels_per_set
+        return float(max(step)), translations, channels_per_set
 
 
     @staticmethod
