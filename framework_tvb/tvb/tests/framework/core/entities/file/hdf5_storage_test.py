@@ -33,13 +33,14 @@
     .. moduleauthor:: Calin Pavel <calin.pavel@codemart.ro>
 """
 
-import unittest
 import os
+import numpy
 import shutil
+import unittest
 import tvb.core.entities.file.hdf5_storage_manager as hdf5
-import numpy as numpy
 from tvb.basic.config.settings import TVBSettings as cfg
 from tvb.core.entities.file.exceptions import FileStructureException, MissingDataSetException
+from tvb.core.entities.file.exceptions import IncompatibleFileManagerException
 
 
 # Some constants used by tests
@@ -117,6 +118,26 @@ class HDF5StorageTest(unittest.TestCase):
         Test if simple array data is stored
         """
         self.storage.store_data(DATASET_NAME_1, self.test_2D_array)
+        # Now read data
+        read_data = self.storage.get_data(DATASET_NAME_1)
+        self.assertArrayEqual(self.test_2D_array, read_data, "Did not get the expected data")
+
+
+    def test_store_data_repeatedly(self):
+        """
+        Test if simple array data is stored
+        """
+        self.storage.store_data(DATASET_NAME_1, self.test_2D_array)
+        ## Update with the same shape should work:
+        self.storage.store_data(DATASET_NAME_1, self.test_2D_array)
+
+        try:
+            ## But update with a different shape should throw an exception
+            self.storage.store_data(DATASET_NAME_1, self.test_3D_array)
+            self.fail("Update with a different shape is expected to fail")
+        except IncompatibleFileManagerException:
+            pass
+
         # Now read data
         read_data = self.storage.get_data(DATASET_NAME_1)
         self.assertArrayEqual(self.test_2D_array, read_data, "Did not get the expected data")
