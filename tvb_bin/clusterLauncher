@@ -2,6 +2,8 @@
 # make sure system knows where TVB libraries are located:
 
 # This should always be places at /home/tvbadmin/clusterLauncher since that is the command we use in cluster settings
+export TVB_ROOT=/home/tvbadmin/TVB_Distribution
+export PATH=$TVB_ROOT:$PATH
 
 if [ ! ${TVB_ROOT+1} ]; then
         echo "ERROR:    TVB_ROOT environment variable is required!!!"
@@ -23,4 +25,4 @@ else
    export LD_RUN_PATH=$TVB_ROOT/tvb_data
 fi
 
-$TVB_ROOT/tvb_data/python2.7 -m tvb.core.operation_async_launcher $1
+$TVB_ROOT/tvb_data/exe/python -m tvb.core.operation_async_launcher $1
