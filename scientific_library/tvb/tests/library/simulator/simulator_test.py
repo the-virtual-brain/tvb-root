@@ -132,7 +132,7 @@ class Simulator(object):
             # NOTE: This is the default region mapping should consider changing the name.
             region_mapping = surfaces.RegionMapping.from_file(source_file="cortex_reg13/region_mapping/o52r00_irp2008_hemisphere_both_subcortical_false_regions_74.txt.bz2")
         else:
-            white_matter   = connectivity.Connectivity.from_file(source_file="connectivity_190.zip")
+            white_matter = connectivity.Connectivity.from_file(source_file="connectivity_190.zip")
             region_mapping = surfaces.RegionMapping.from_file(source_file="cortex_reg13/region_mapping/o52r00_irp2008_hemisphere_both_subcortical_true_regions_190.txt.bz2")
 
             
@@ -150,7 +150,7 @@ class Simulator(object):
         
         if surface_sim:
             local_coupling_strength = numpy.array([2 ** -10])
-            default_cortex = surfaces.Cortex(load_default = True, region_mapping_data=region_mapping)
+            default_cortex = surfaces.Cortex(load_default=True, region_mapping_data=region_mapping)
             default_cortex.coupling_strength = local_coupling_strength
         else: 
             default_cortex = None
@@ -195,15 +195,13 @@ class SimulatorTest(BaseTestCase):
         TODO: 
             Should be as complete as the one for region simulations.
 
-        """       
-        #init
+        """
         test_simulator = Simulator()
-   
-        #test cases
+
         for default_connectivity in [True, False]:
-            test_simulator.configure(surface_sim=True,
-                                     default_connectivity = default_connectivity)                             
-            test_simulator.run_simulation(simulation_length=2**2)
+            test_simulator.configure(surface_sim=True, default_connectivity=default_connectivity)
+            test_simulator.run_simulation(simulation_length=2 ** 2)
+            LOG.debug("Surface simulation finished for defaultConnectivity= %s" % str(default_connectivity))
 
 
 

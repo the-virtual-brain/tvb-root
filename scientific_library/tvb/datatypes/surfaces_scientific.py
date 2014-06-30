@@ -166,32 +166,6 @@ class SurfaceScientific(surfaces_data.SurfaceData):
         return dist
 
 
-    def compute_geodesic_distance_matrix(self, max_dist):
-        """
-        Calculate a sparse matrix of the geodesic distance from each vertex to 
-        all vertices within max_dist of them on the surface, 
-
-        ``max_dist``: find the distance to vertices out as far as max_dist.
-
-        NOTE: Compute time increases rapidly with max_dist and the memory 
-        efficiency of the sparse matrices decreases, so, don't use too large a 
-        value for max_dist...
-
-        """
-        #TODO: Probably should check that max_dist isn't "too" large or too 
-        #      small, min should probably be max edge length...
-
-        #if NO_GEODESIC_DISTANCE:
-        #    LOG.error("%s: The geodesic distance library didn't load" % repr(self))
-        #    return
-
-        dist = gdist.local_gdist_matrix(self.vertices.astype(numpy.float64),
-                                        self.triangles.astype(numpy.int32),
-                                        max_distance=max_dist)
-
-        self.geodesic_distance_matrix = dist
-
-
     @property
     def vertex_neighbours(self):
         """
@@ -641,9 +615,6 @@ class LocalConnectivityScientific(surfaces_data.LocalConnectivityData):
             LOG.error(msg)
             raise Exception(msg)
 
-        self.matrix_gdist = gdist.local_gdist_matrix(self.surface.vertices.astype(numpy.float64),
-                                                     self.surface.triangles.astype(numpy.int32),
-                                                     max_distance=self.cutoff)
         self.compute()
 
 
@@ -672,13 +643,7 @@ class CortexScientific(surfaces_data.CortexData, SurfaceScientific):
             self.compute_region_areas()
 
         if self.local_connectivity is None:
-            # TODO: Switch to degree weighted nearest neighbour, or store a default,
-            # computing this every time I want a configured Cortex is a pain...
-            self.local_connectivity = surfaces_data.LocalConnectivityData(cutoff=40.0, use_storage=False)
-
-        if self.local_connectivity.cutoff == 0:
-            self.local_connectivity.cutoff = 40.0
-            #TODO: Temporary hack
+            self.local_connectivity = surfaces_data.LocalConnectivityData(cutoff=40.0, use_storage=False, surface=self)
 
         if self.local_connectivity.matrix.size == 0:
             self.compute_local_connectivity()
@@ -700,12 +665,7 @@ class CortexScientific(surfaces_data.CortexData, SurfaceScientific):
         """
         """
         LOG.info("Computing local connectivity matrix")
-        #TODO: Better to put this in configure, then callers job, if change cutoff, to explicit call compute...matrix 
-        loc_con_cutoff = self.local_connectivity.cutoff
-        self.compute_geodesic_distance_matrix(max_dist=loc_con_cutoff)
-
-        self.local_connectivity.matrix_gdist = self.geodesic_distance_matrix.copy()
-        self.local_connectivity.compute()  # Evaluate equation based distance
+        self.local_connectivity.compute_sparse_matrix()  # Evaluate equation based distance
         self.local_connectivity.trait["matrix"].log_debug(owner=self.__class__.__name__ + ".local_connectivity")
 
         #HACK FOR DEBUGGING CAUSE TRAITS REPORTS self.local_connectivity.trait["matrix"] AS BEING EMPTY...

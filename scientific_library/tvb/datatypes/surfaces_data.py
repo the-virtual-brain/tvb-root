@@ -52,6 +52,14 @@ from tvb.basic.traits.core import FILE_STORAGE_NONE
 
 LOG = get_logger(__name__)
 
+try:  # externals.geodesic_distance.
+    import gdist
+    #NO_GEODESIC_DISTANCE = False
+except ImportError:
+    #NO_GEODESIC_DISTANCE = True
+    LOG.error("Failed to import geodesic distance package from externals...")
+    LOG.error("Check it's configured, externals/geodesic_distance/setup.py")
+
 OUTER_SKIN = "Skin Air"
 OUTER_SKULL = "Skull Skin"
 INNER_SKULL = "Brain Skull"
@@ -261,8 +269,6 @@ class LocalConnectivityData(MappedType):
 
     surface = CorticalSurfaceData(label="Surface", order=1)
 
-    matrix_gdist = SparseMatrix(order=-1, file_storage=core.FILE_STORAGE_NONE)
-
     matrix = SparseMatrix(order=-1)
 
     equation = equations.FiniteSupportEquation(
@@ -285,18 +291,21 @@ class LocalConnectivityData(MappedType):
         LOG.info("Mapping geodesic distance through the LocalConnectivity.")
 
         #Start with data being geodesic_distance_matrix, then map it through equation
-        self.equation.pattern = self.matrix_gdist.data
+        matrix_gdist = gdist.local_gdist_matrix(self.surface.vertices.astype(numpy.float64),
+                                                self.surface.triangles.astype(numpy.int32),
+                                                max_distance=self.cutoff)
+        self.equation.pattern = matrix_gdist.data
 
         #Then replace original data with result...
-        self.matrix_gdist.data = self.equation.pattern
+        matrix_gdist.data = self.equation.pattern
 
         #Homogenise spatial discretisation effects across the surface
-        nv = self.matrix_gdist.shape[0]
+        nv = matrix_gdist.shape[0]
         ind = numpy.arange(nv, dtype=int)
-        pos_mask = self.matrix_gdist.data > 0.0
-        neg_mask = self.matrix_gdist.data < 0.0
-        pos_con = self.matrix_gdist.copy()
-        neg_con = self.matrix_gdist.copy()
+        pos_mask = matrix_gdist.data > 0.0
+        neg_mask = matrix_gdist.data < 0.0
+        pos_con = matrix_gdist.copy()
+        neg_con = matrix_gdist.copy()
         pos_con.data[neg_mask] = 0.0
         neg_con.data[pos_mask] = 0.0
         pos_contrib = pos_con.sum(axis=1)
