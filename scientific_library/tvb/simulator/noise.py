@@ -72,12 +72,12 @@ class RandomStream(core.Type):
     """
     _ui_name = "Random state"
     wraps = numpy.random.RandomState
-    defaults = ((42,), {}) # for init wrapped value: wraps(*def[0], **def[1])
+    defaults = ((42,), {})  # for init wrapped value: wraps(*def[0], **def[1])
 
     init_seed = basic.Integer(
-        label = "A random seed", 
-        default = 42,
-        doc = """A random seed used to initialise the state of an instance of
+        label="A random seed",
+        default=42,
+        doc="""A random seed used to initialise the state of an instance of
         numpy's RandomState.""")
 
 
@@ -130,23 +130,25 @@ class noise_device_info(object):
         self._pars = pars
         self._kernel = kernel
 
+
     @property
     def n_nspr(self):
         # par1_svar1, par1_svar2... par1_svar1...
         n = 0
         for p in self._pars:
-	    p_ = p if type(p) in (str, unicode) else p.trait.name
+            p_ = p if type(p) in (str, unicode) else p.trait.name
             attr = getattr(self.inst, p_)
             n += attr.size
             # assuming given parameters have correct size
         return n
 
+
     @property
     def nspr(self):
         pars = []
-	for p in self._pars:
-	    p_ = p if type(p) in (str, unicode) else p.trait.name
-	    pars.append(getattr(self.inst, p_).flat[:])
+        for p in self._pars:
+            p_ = p if type(p) in (str, unicode) else p.trait.name
+            pars.append(getattr(self.inst, p_).flat[:])
         return numpy.hstack(pars)
 
     @property
@@ -202,17 +204,15 @@ class Noise(core.Type):
     #      filled by the state_variable_range attribute of the Model.
 
     ntau = basic.Float(
-        label = r":math:`\tau`", 
-        required = True,
-        default = 0.0,
-        doc = """The noise correlation time""")
+        label=r":math:`\tau`",
+        required=True,
+        default=0.0, range=basic.Range(lo=0.0, hi=20.0, step=1.0),
+        doc="""The noise correlation time""")
 
     random_stream = RandomStream(
-        label = "Random Stream",
-        #fixed_type = True, #Can only be RandomStream in UI
-        #default = RandomStream,
-        required = True,
-        doc = """An instance of numpy's RandomState associated with this 
+        label="Random Stream",
+        required=True,
+        doc="""An instance of numpy's RandomState associated with this
         specific Noise object.""")
 
 
@@ -242,9 +242,7 @@ class Noise(core.Type):
         """
         super(Noise, self).configure()
         #self.random_stream.configure()
-        self.trait["random_stream"].configure() #stupid wraps
-        #TODO: Check with Lia that explicit cascading of configure() fits with
-        #       intended/expected usage...
+        self.trait["random_stream"].configure()
 
 
     def __repr__(self):
@@ -305,19 +303,20 @@ class Noise(core.Type):
         #      using numpy's normal() instead.
         self.dt = dt
         self._E = numpy.exp(-self.dt / self.ntau)
-        self._sqrt_1_E2 = numpy.sqrt((1.0 - self._E**2))
+        self._sqrt_1_E2 = numpy.sqrt((1.0 - self._E ** 2))
         self._eta = self.random_stream.normal(size=shape)
         self._dt_sqrt_lambda = self.dt * numpy.sqrt(1.0 / self.ntau)
 
+
     #TODO: Check performance, if issue, inline coloured and white...
-    def generate(self, shape, truncate=False, lo=-1.0, hi=1.0,):
+    def generate(self, shape, truncate=False, lo=-1.0, hi=1.0, ):
         """Generate and return some "noise" of the requested ``shape``."""
         if self.ntau > 0.0:
             noise = self.coloured(shape)
         else:
             if truncate:
-                noise =  self.truncated_white(shape, lo, hi)
-            else: 
+                noise = self.truncated_white(shape, lo, hi)
+            else:
                 noise = self.white(shape)
         return noise
 
@@ -336,11 +335,11 @@ class Noise(core.Type):
         amplitude scaled by :math:`\\sqrt{dt}`.
 
         """
-
         noise = numpy.sqrt(self.dt) * self.random_stream.normal(size=shape)
         return noise
 
-    def truncated_white(self,  shape, lo, hi):
+
+    def truncated_white(self, shape, lo, hi):
         """
 
         Return truncated Gaussian random variates in the range ``[lo, hi]``, as an
@@ -371,12 +370,12 @@ class Additive(Noise):
     """
 
     nsig = arrays.FloatArray(
-        configurable_noise = True,
-        label = ":math:`D`",
-        required = True,
-        default = numpy.array([1.0,]),
-        order = 1,
-        doc = """The noise dispersion, it is the standard deviation of the 
+        configurable_noise=True,
+        label=":math:`D`",
+        required=True,
+        default=numpy.array([1.0]), range=basic.Range(lo=0.0, hi=10.0, step=0.1),
+        order=1,
+        doc="""The noise dispersion, it is the standard deviation of the
         distribution from which the Gaussian random variates are drawn. NOTE:
         Sensible values are typically ~<< 1% of the dynamic range of a Model's
         state variables.""")
@@ -401,8 +400,9 @@ class Additive(Noise):
 
         return g_x
 
+
     device_info = noise_device_info(
-        pars = ['nsig'],
+        pars=['nsig'],
         kernel="""
         float nsig;
         for (int i_svar=0; i_svar<n_svar; i_svar++)
@@ -411,7 +411,7 @@ class Additive(Noise):
             GX(i_svar) = sqrt(2.0*nsig);
         }
         """
-        )
+    )
 
 
 class Multiplicative(Noise):
@@ -434,21 +434,20 @@ class Multiplicative(Noise):
     """
 
     nsig = arrays.FloatArray(
-        configurable_noise = True,
-        label = ":math:`D`",
-        required = True,
-        default = numpy.array([1.0,]),
-        order = 1,
-        doc = """The noise dispersion, it is the standard deviation of the 
+        configurable_noise=True,
+        label=":math:`D`",
+        required=True,
+        default=numpy.array([1.0, ]), range=basic.Range(lo=0.0, hi=10.0, step=0.1),
+        order=1,
+        doc="""The noise dispersion, it is the standard deviation of the
         distribution from which the Gaussian random variates are drawn. NOTE:
         Sensible values are typically ~<< 1% of the dynamic range of a Model's
         state variables.""")
 
     b = equations.TemporalApplicableEquation(
-        label = ":math:`b`",
-        default = equations.Linear(parameters = {"a": 1.0, "b": 0.0}),
-        doc = """A function evaluated on the state-variables, the result of
-        which enters as the diffusion coefficient.""")
+        label=":math:`b`",
+        default=equations.Linear(parameters={"a": 1.0, "b": 0.0}),
+        doc="""A function evaluated on the state-variables, the result of which enters as the diffusion coefficient.""")
 
 
     def __init__(self, **kwargs):
@@ -478,9 +477,10 @@ class Multiplicative(Noise):
         return g_x
 
 
+
 class MultiplicativeSimple(Multiplicative):
     """
-    Demo for device_info -- defines simple multiplicate noise.
+    Demo for device_info -- defines simple multiplicand noise.
 
     """
 
@@ -494,7 +494,7 @@ class MultiplicativeSimple(Multiplicative):
             GX(i_svar) = sqrt(2.0*nsig)*X(i);
         }
         """
-        )
+    )
 
 
 
