@@ -50,13 +50,11 @@ class ConsoleTraitedTest(BaseTestCase):
         """
         Test scientific methods are executed
         """
-        local_coupling_strength = 0.0121
-
         default_cortex = surfaces.Cortex.from_file()
-        default_cortex.coupling_strength = local_coupling_strength
+        default_cortex.coupling_strength = 0.0121
         self.assertTrue(default_cortex.local_connectivity is None)
 
-        grey_matter = surfaces.LocalConnectivity(load_default=True, surface=default_cortex)
+        grey_matter = surfaces.LocalConnectivity(load_default=True, surface=default_cortex, cutoff=2)
         default_cortex.local_connectivity = grey_matter
         default_cortex.compute_local_connectivity()
         self.assertTrue(default_cortex.local_connectivity is not None)
