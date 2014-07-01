@@ -32,6 +32,7 @@
 
 Framework methods for the TimeSeries datatypes.
 
+.. moduleauthor:: Robert Parcus <betoparcus@gmail.com>
 .. moduleauthor:: Ciprian Tomoiaga <ciprian.tomoiaga@codemart.ro>
 .. moduleauthor:: Lia Domide <lia.domide@codemart.ro>
 .. moduleauthor:: Stuart A. Knock <Stuart@tvb.invalid>
