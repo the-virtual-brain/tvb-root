@@ -333,6 +333,26 @@ class TimeSeriesVolumeFramework(time_series_data.TimeSeriesVolumeData, TimeSerie
         slices = slices[:, :, :, ::-1]
         return slices
 
+    def get_volume_view(self, from_idx, to_idx, x_plane, y_plane, z_plane):
+        """
+        :input: int from_idx, int to_idx, int x_plane, int y_plane, int z_plane.
+        :return: An array of 3 elements containing the planes xy, yz and xy.
+        """
+        from_idx = int(from_idx)
+        to_idx  = int(to_idx)
+        x_plane = int(x_plane)
+        y_plane = int(y_plane)
+        z_plane = int(z_plane)
+
+        overall_shape = self.read_data_shape()
+
+        slices = (slice(from_idx, to_idx), slice(overall_shape[1]), slice(overall_shape[2]), slice(overall_shape[3]))
+        slices = self.read_data_slice(tuple(slices))
+        slices = slices[:, :,:,::-1]
+        slicex = slices[:, :, :, z_plane].tolist()
+        slicey = slices[:, x_plane, :, :].tolist()
+        slicez = slices[:, :, y_plane, :].tolist()
+        return [slicex, slicey, slicez]
 
     @property
     def get_volume_shape(self):
