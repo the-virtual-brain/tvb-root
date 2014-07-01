@@ -29,7 +29,9 @@
 #
 
 """
-Find a TS in current project (by Subject) and later run an analyzer on it
+Find a Connectivity in current project (by Subject) and later run a simulation on it.
+
+__main__ will contain the code.
 
 .. moduleauthor:: Lia Domide <lia.domide@codemart.ro>
 """
