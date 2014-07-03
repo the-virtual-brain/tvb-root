@@ -10,8 +10,8 @@ from tvb.core.entities.model import Project
 
 
 class DiagnoseDiskUsage(object):
-    FORMAT_DT = '    {:14} {:20} {:>12} {:>12} {:>12}'
-    HEADER_DT = FORMAT_DT.format('', '', 'disk_size(kib)', 'db_size(kib)', 'ratio(%)')
+    FORMAT_DT = '    {:14} {:20} {:>12} {:>12} {:>12} {:>12}'
+    HEADER_DT = FORMAT_DT.format('', '', 'disk_size(kib)', 'db_size(kib)', 'delta(kib)', 'ratio(%)')
 
 
     def __init__(self, prj_id):
@@ -65,12 +65,19 @@ class DiagnoseDiskUsage(object):
         if expected != 0:
             ratio = int(100.0 * actual / expected)
             if ratio > 200:
-                ratio = "!! %s" % ratio
+                ratio = "! %s" % ratio
             else:
                 ratio = str(ratio)
         else:
             ratio = 'inf'
-        print DiagnoseDiskUsage.FORMAT_DT.format(col1, col2, '{:,}'.format(actual), '{:,}'.format(expected), ratio)
+
+        delta = actual - expected
+        if delta > 100:
+            delta = "! %s" % delta
+        else:
+            delta = str(delta)
+
+        print DiagnoseDiskUsage.FORMAT_DT.format(col1, col2, '{:,}'.format(actual), '{:,}'.format(expected), delta, ratio)
 
 
     def analyse_operation(self, op):
