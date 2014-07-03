@@ -310,7 +310,7 @@ class ProjectServiceTest(TransactionalTestCase):
 
         for project in projects:
             self.assertNotEqual(0, project.disk_size)
-            self.assertNotEqual(0, project.disk_size_human)
+            self.assertNotEqual('0.0 KiB', project.disk_size_human)
 
             prj_folder = self.structure_helper.get_project_folder(project)
             actual_disk_size = self.compute_recursive_h5_disk_usage(prj_folder)[0]
