@@ -1,45 +1,45 @@
 <div xmlns:py="http://genshi.edgewall.org/">
-	
-		<h4>History</h4>
-		<a href="#" title="Prepare a new simulation " class="column-control action action-big-new" onclick="resetToNewBurst();">New</a>
-		
-		<ul class="burst-list" id="burst-history">
-			
-			<py:for each="idx in xrange(len(burst_list))">
-				<li class="burst ${'burst-group' if burst_list[idx].is_group else ''} ${'burst-started' if burst_list[idx].status == 'running' else 'burst-canceled' if burst_list[idx].status == 'canceled' else 'burst-error' if burst_list[idx].status == 'error' else 'burst-finished'}" 
-				    id='burst_id_${burst_list[idx].id}'>
-					<a href="#" onclick="changeBurstHistory(${burst_list[idx].id});" title="Load this simulation">${burst_list[idx].name}</a>
-					<nav class="inline-menu inline-hover-menu">
-						<button class="action action-edit action-menu">Edit</button>
-						<div class="extension">
-							<div class="dropdown-pane">
-								<p class="burst-prop-state"></p>
-								<p class="burst-prop-title">
-									<textarea type="text" id="new_name_${burst_list[idx].id}" py:if="burst_list[idx].status != 'running'">${burst_list[idx].name}</textarea>
-									<label py:if="burst_list[idx].status == 'running'">${burst_list[idx].name}</label>
-								</p>
-								<button class="action action-store" onclick="renameBurstEntry(${burst_list[idx].id}, 'new_name_${burst_list[idx].id}')" 
-										py:if="burst_list[idx].status != 'running'"
-										title="Rename with new name from above input-field">Rename</button>
-								<p><button class="action action-copy" onclick="copyBurst(${burst_list[idx].id})" title="Create a copy of the current simulation configuration.">
-									Copy</button></p>
-								<py:if test="burst_list[idx].current_weight">
-									<p class="burst-prop-processtime" py:if="burst_list[idx].current_weight['process_time']"><mark>Processing time:</mark> ${burst_list[idx].current_weight['process_time']}</p>
-									<p class="burst-prop-processtime" py:if="burst_list[idx].current_weight['process_time']"><mark>Workflows:</mark> ${burst_list[idx].current_weight['number_of_workflows']}</p>
-									<p class="burst-prop-dataweight" py:if="burst_list[idx].current_weight['disk_size']"><mark>Datatypes:</mark> ${burst_list[idx].current_weight['datatypes_number']}</p>
-									<p class="burst-prop-dataweight" py:if="burst_list[idx].current_weight['disk_size']"><mark>Size:</mark> ${burst_list[idx].current_weight['disk_size']}</p>
-									<p class="burst-prop-age"><mark>Created:</mark> ${burst_list[idx].current_weight['start_time'].strftime('%Y/%m/%d %H:%M')}</p>
-									<p class="burst-prop-error" py:if="burst_list[idx].current_weight['error']"><mark>Error message:</mark> ${burst_list[idx].current_weight['error']}</p>
-									<p class="burst-prop-cancelled" py:if="burst_list[idx].status=='canceled'">This simulation was canceled from execution by the user.</p>
-									<p class="burst-prop-age" py:if="burst_list[idx].status=='running'">This simulation is still running....</p>
-								</py:if>
-								
-								<button class="action action-delete" onclick="cancelOrRemoveBurst(${burst_list[idx].id})" title="Stop/Remove this simulation and all its data">
-									${'Cancel' if burst_list[idx].status == 'running' else 'Delete'}</button>
-							</div>
-						</div>
-					</nav>
-				</li>
-			</py:for>
-		</ul>
+
+    <h4>History</h4>
+    <a href="#" title="Prepare a new simulation " class="column-control action action-big-new" onclick="resetToNewBurst();">New</a>
+
+    <ul class="burst-list" id="burst-history">
+        <py:for each="idx in xrange(len(burst_list))">
+            <li class="burst ${'burst-group' if burst_list[idx].is_group else ''} ${'burst-started' if burst_list[idx].status == 'running' else 'burst-canceled' if burst_list[idx].status == 'canceled' else 'burst-error' if burst_list[idx].status == 'error' else 'burst-finished'}"
+                id='burst_id_${burst_list[idx].id}'>
+                <a href="#" onclick="changeBurstHistory(${burst_list[idx].id});" title="Load this simulation">${burst_list[idx].name}</a>
+                <nav class="inline-menu inline-hover-menu">
+                    <button class="action action-edit action-menu">Edit</button>
+                    <div class="extension">
+                        <div class="dropdown-pane">
+                            <p class="burst-prop-state"></p>
+                            <p class="burst-prop-title">
+                                <textarea type="text" id="new_name_${burst_list[idx].id}" py:if="burst_list[idx].status != 'running'">${burst_list[idx].name}</textarea>
+                                <label py:if="burst_list[idx].status == 'running'">${burst_list[idx].name}</label>
+                            </p>
+                            <button class="action action-store" onclick="renameBurstEntry(${burst_list[idx].id}, 'new_name_${burst_list[idx].id}')"
+                                    py:if="burst_list[idx].status != 'running'"
+                                    title="Rename with new name from above input-field">Rename</button>
+                            <p><button class="action action-copy" onclick="copyBurst(${burst_list[idx].id})" title="Create a copy of the current simulation configuration.">
+                                Copy</button></p>
+                            <py:if test="burst_list[idx].current_weight">
+                                <p class="burst-prop-processtime"><mark>Processing time : </mark><span>${burst_list[idx].current_weight['process_time']}</span></p>
+                                <p class="burst-prop-workflows" py:if="burst_list[idx].current_weight['number_of_workflows']"><mark>Workflows : </mark> ${burst_list[idx].current_weight['number_of_workflows']}</p>
+                                <p class="burst-prop-dataweight" py:if="burst_list[idx].current_weight['datatypes_number']"><mark>Datatypes : </mark> ${burst_list[idx].current_weight['datatypes_number']}</p>
+                                <p class="burst-prop-datasize" py:if="burst_list[idx].current_weight['disk_size']"><mark>Size : </mark> ${burst_list[idx].current_weight['disk_size']}</p>
+
+                                <p class="burst-prop-age"><mark>Created : </mark> ${burst_list[idx].current_weight['start_time'].strftime('%Y/%m/%d %H:%M')}</p>
+                                <p class="burst-prop-error" py:if="burst_list[idx].current_weight['error']"><mark>Error message : </mark> ${burst_list[idx].current_weight['error']}</p>
+                                <p class="burst-prop-cancelled" py:if="burst_list[idx].status=='canceled'">This simulation was canceled from execution by the user.</p>
+                                <p class="burst-prop-age" py:if="burst_list[idx].status=='running'">This simulation is still running....</p>
+                            </py:if>
+
+                            <button class="action action-delete" onclick="cancelOrRemoveBurst(${burst_list[idx].id})" title="Stop/Remove this simulation and all its data">
+                                ${'Cancel' if burst_list[idx].status == 'running' else 'Delete'}</button>
+                        </div>
+                    </div>
+                </nav>
+            </li>
+        </py:for>
+    </ul>
 </div>

@@ -37,6 +37,7 @@ Created on Apr 27, 2012
 
 import json
 import threading
+from datetime import datetime
 from types import IntType
 from tvb.config import MEASURE_METRICS_MODULE, MEASURE_METRICS_CLASS, DEFAULT_PORTLETS
 from tvb.config import SIMULATION_DATATYPE_MODULE, SIMULATION_DATATYPE_CLASS
@@ -484,8 +485,18 @@ class BurstService():
             burst = dao.get_burst_by_id(b_id)
             burst.prepare_after_load()
             if burst is not None:
-                result.append([burst.id, burst.status, burst.is_group,
-                               "Check Operations page for error Message" if burst.status == burst.BURST_ERROR else ''])
+                if burst.status == burst.BURST_RUNNING:
+                    seconds_running = (datetime.now() - burst.start_time).total_seconds()
+                else:
+                    seconds_running = (burst.finish_time - burst.start_time).total_seconds()
+
+                if burst.status == burst.BURST_ERROR:
+                    msg = "Check Operations page for error Message"
+                else:
+                    msg = ''
+
+                result.append([burst.id, burst.status, burst.is_group, msg, seconds_running])
+
             else:
                 self.logger.debug("Could not find burst with id=" + str(b_id) + ". Might have been deleted by user!!")
         return result
