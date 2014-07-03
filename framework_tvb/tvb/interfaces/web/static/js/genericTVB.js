@@ -885,6 +885,8 @@ function upgradeFileStorage() {
  */
 function showDataUploadOverlay(projectId) {
     showOverlay("/project/get_data_uploader_overlay/" + projectId, true);
+     // Bind the menu events for the online help pop-ups
+     setupMenuEvents($('.uploader .adaptersDiv'));
 }
 
 /**

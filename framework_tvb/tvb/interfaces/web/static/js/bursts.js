@@ -316,6 +316,8 @@ function _fillSimulatorParametersArea(htmlContent, isConfigure) {
     _toggleLaunchButtons(!isConfigure && sessionStoredBurst.id=='', !isConfigure && sessionStoredBurst.id!='' && sessionStoredBurst.isFinished && !sessionStoredBurst.isRange);
 
     MathJax.Hub.Queue(["Typeset", MathJax.Hub, "div-simulator-parameters"]);
+    // Bind the menu events for the online help pop-ups. Needed for the new dom created
+    setupMenuEvents(simParamElem);
 }
 
 /*
