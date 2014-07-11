@@ -1,0 +1,21 @@
+<div xmlns:py="http://genshi.edgewall.org/" py:strip="True" xmlns:xi="http://www.w3.org/2001/XInclude">
+    <xi:include href="../flow/genericAdapterTemplateFunctions.html" />
+
+    <py:def function="drawSlider(par)">
+        <td class="paramName">${par.label}</td>
+        <td class="paramHelp"> ${generate_help_tooltip(par)}</td>
+        <td class="paramSlider"><div id="slider_${par.name}"></div></td>
+        <td class="paramValue"><input type="text" value="${par.default}" id="value_${par.name}"/></td>
+    </py:def>
+
+    <button id="reset_sliders">Reset parameters</button>
+
+    <table class="paramSlidersTable" py:with="step=(1 + len(parameters))/2">
+        <tr py:for="i in xrange(step)">
+            ${drawSlider(parameters[i])}
+            <py:if test="i + step &lt; len(parameters)">
+                ${drawSlider(parameters[i + step])}
+            </py:if>
+        </tr>
+    </table>
+</div>

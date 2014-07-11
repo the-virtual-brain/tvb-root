@@ -29,8 +29,56 @@
 /* globals doAjaxCall, displayMessage, MathJax, getSubmitableData */
 
 var dynamicPage = {
+    sliderDefaultState : {},
     treeState: {},
     dynamic_gid: null
+};
+
+dynamicPage._initSliders = function(){
+    function _initSlider(slider, input, option){
+        slider.slider({
+            value: option.default,
+            min: option.min,
+            max: option.max,
+            step: option.step,
+
+            slide: function(ev, target) {
+                input.val(target.value);
+            },
+
+            change: function(ev, target){
+                input.val(target.value);
+                dynamicPage.onParameterChanged(option.name, target.value);
+            }
+        });
+
+        input.change(function(){
+            var val = parseFloat(input.val());
+            if (isNaN(val) || val < option.min || val > option.max){
+                val = option.default;
+            }
+            slider.slider('value', val);
+        }).click(function(){
+            input.select();
+        });
+    }
+
+    for (var i = 0; i < dynamicPage.sliderDefaultState.length; i++){
+        var option = dynamicPage.sliderDefaultState[i];
+        var slider = $("#slider_" + option.name);
+        var input = $("#value_" + option.name);
+
+        _initSlider(slider, input, option);
+
+    }
+};
+
+dynamicPage.onSliderReset = function(){
+    for (var i = 0; i < dynamicPage.sliderDefaultState.length; i++) {
+        var option = dynamicPage.sliderDefaultState[i];
+        var slider = $("#slider_" + option.name);
+        slider.slider('value', option.default);
+    }
 };
 
 dynamicPage._url = function(func, tail){
@@ -41,12 +89,28 @@ dynamicPage._url = function(func, tail){
     return url;
 };
 
+dynamicPage._fetchSlidersFromServer = function(){
+    var sliderContainer = $('#div_spatial_model_params');
+    sliderContainer.empty();
+
+    doAjaxCall({
+        url: dynamicPage._url('sliders_fragment'),
+        success: function(fragment) {
+            sliderContainer.html(fragment);
+            $('#reset_sliders').click(dynamicPage.onSliderReset);
+            MathJax.Hub.Queue(["Typeset", MathJax.Hub, 'div_spatial_model_params']);
+            dynamicPage._initSliders();
+            setupMenuEvents(sliderContainer);
+        }
+    });
+};
 
 dynamicPage.onModelChanged = function(name){
     doAjaxCall({
         url: dynamicPage._url('model_changed', name) ,
         success: function(data){
-
+            dynamicPage.sliderDefaultState = $.parseJSON(data).options;
+            dynamicPage._fetchSlidersFromServer();
         }
     });
 };

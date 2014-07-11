@@ -242,21 +242,36 @@ margin-left: 5%;
     max-width: 1000px;
 }
 
+#div_spatial_model_params button{
+    margin: 0 10px 5px 0;
+    float:right;
+}
+
 .paramSlidersTable {
     width: 100%;
 }
 
+.paramSlidersTable td{
+    padding: 0 5px;
+}
+
 .paramName {
-    width: 15%;
+    width: 8%;
+    text-align: right;
 }
 
 .paramSlider {
-    width: 75%
+    width: 32%
 }
 
 .paramValue {
-    width: 10%;
+    width: 8%;
     text-align: center;
+}
+
+.paramSlidersTable td.paramHelp{
+    width:16px;
+    padding:0;
 }
 
 /* !------------------------------------------------ */

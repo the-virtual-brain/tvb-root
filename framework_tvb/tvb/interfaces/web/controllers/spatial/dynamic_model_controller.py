@@ -222,6 +222,7 @@ class DynamicModelController(BaseController):
     def model_changed(self, dynamic_gid, name):
         dynamic = self.get_cached_dynamic(dynamic_gid)
         dynamic.model = self.available_models[name]()
+        return self.slider_options(dynamic.model)
 
 
     @expose_json
@@ -233,7 +234,6 @@ class DynamicModelController(BaseController):
 
         noise_framework.build_noise(integrator_parameters)
         integrator = self.available_integrators[integrator_name](**integrator_parameters)
-        integrator.raw_ui_integrator_parameters = integrator_parameters
 
         dynamic = self.get_cached_dynamic(dynamic_gid)
         dynamic.integrator = integrator
@@ -268,6 +268,39 @@ class DynamicModelController(BaseController):
         model = dynamic.model
         setattr(model, name, numpy.array([float(value)]))
         model.configure()
+
+
+    @expose_fragment('spatial/dynamic_sliders')
+    def sliders_fragment(self, dynamic_gid):
+        dynamic = self.get_cached_dynamic(dynamic_gid)
+        model = dynamic.model
+        ret = []
+        for name in model.ui_configurable_parameters:
+            trait_kwd = model.trait[name].trait.inits.kwd
+            ret.append({
+                'name': name,
+                'label': trait_kwd.get('label'),
+                'default': trait_kwd.get('default'),
+                'description': trait_kwd.get('doc'),
+            })
+        return {'parameters' : ret, 'showOnlineHelp' : True}
+
+    @staticmethod
+    def slider_options(model):
+        ret = []
+        for name in model.ui_configurable_parameters:
+            parameter_trait = model.trait[name].trait
+            ranger = parameter_trait.range_interval
+            default = float(parameter_trait.inits.kwd.get('default'))
+
+            ret.append({
+                'name': name,
+                'min': ranger.lo,
+                'max': ranger.hi,
+                'step': ranger.step,
+                'default': default
+            })
+        return {'options' : ret}
 
 
     @expose_json
