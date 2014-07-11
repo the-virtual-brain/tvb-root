@@ -31,20 +31,24 @@ function updateDivContent(divID, selectComponent, parentDIV, radioComponent) {
    	var first_ranger = document.getElementById('range_1');
 	var second_ranger = document.getElementById('range_2');
 
-	$('div[id^="' + divID +'"]').hide();
-	$('div[id^="' + divID +'"] input').attr('disabled', 'disabled');
-    $('div[id^="' + divID +'"] select').attr('disabled', 'disabled');
-	$('div[id^="' + divID +'"] table[class="ranger-div-class"]').each(function () { 
-													disableRangeComponent(this.id, this.id.replace('_RANGER', ''));
-													});
-    //Switched tabs so reset ranger values
-	if (first_ranger != null && first_ranger.value.indexOf(component.name) == 0){
-		first_ranger.value= '0';
-	} 
-	if (second_ranger != null && second_ranger.value.indexOf(component.name) == 0){
-		second_ranger.value= '0';
-	} 
-	
+    var sub_divs = $('div[id^="' + divID +'"]');
+	sub_divs.hide();
+	sub_divs.find('input').attr('disabled', 'disabled');
+    sub_divs.find('select').attr('disabled', 'disabled');
+
+    if (first_ranger != null && second_ranger != null) {
+        sub_divs.find('table.ranger-div-class').each(function () {
+            disableRangeComponent(this.id, this.id.replace('_RANGER', ''));
+        });
+        //Switched tabs so reset ranger values
+        if (first_ranger.value.indexOf(component.name) === 0) {
+            first_ranger.value = '0';
+        }
+        if (second_ranger.value.indexOf(component.name) === 0) {
+            second_ranger.value = '0';
+        }
+    }
+
 	$('div[id="' + divID + selectedValue + '"]').show();	
 	//Get all the ranger type component from the div to be shown init to default values
 	//then disable them.

@@ -1891,6 +1891,10 @@ nav.inline-menu .dropdown-pane p {
 margin-bottom: 10px;
 }
 
+/* inline description boxes */
+nav.inline-description{
+max-width: 600px;
+}
 /* !-------------------------------------------- */
 /* !COMPONENT: Tab switcher */
 /* !-------------------------------------------- */

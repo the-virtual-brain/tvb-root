@@ -1,0 +1,48 @@
+<div id="main" class="columnized colscheme-2-even" xmlns:xi="http://www.w3.org/2001/XInclude" xmlns:py="http://genshi.edgewall.org/">
+    <script type="text/javascript" src="/static/js/d3.v2.min.js"></script>
+    <script type="text/javascript" src="/static/js/jquery.ba-throttle-debounce.min.js"></script>
+    <script type="text/javascript" src="/static/js/canvas2image.js"></script>
+    <script type="text/javascript" src="/static/js/dynamicPage.js"></script>
+
+    <section class="configure-stimulus-shape view-column col-1">
+        <div id="left_input_tree">
+            ${generateDisplay(input_tree, False, "")}
+        </div>
+    </section>
+
+    <section class="configure-stimulus-shape view-column">
+        <fieldset>
+            <legend> Configure parameters: </legend>
+            <div id='div_spatial_model_params'>
+
+            </div>
+        </fieldset>
+
+        <div class="dynamicChart">
+
+        </div>
+    </section>
+
+    <form id="base_spatio_temporal_form">
+	    <aside class="header-component toolbar can-extend auto-extends">
+	      <h3>Dynamic</h3>
+		  <div class="extension">
+		   <div class="dropdown-pane">
+	        <ul>
+	        	<li>
+                    <button class="action action-confirm">
+                    	Save new dynamic
+                    </button>
+                </li>
+	        </ul>
+	       </div>
+	      </div>
+	    </aside>
+	</form>
+
+    <script type="text/javascript">
+        $(document).ready(function () {
+            dynamicPage.main('${dynamic_gid}');
+        });
+    </script>
+</div>

@@ -347,4 +347,24 @@ class TabConfiguration():
     
     
            
-        
+class Dynamic(Base):
+    __tablename__ = 'DYNAMIC'
+    id = Column(Integer, primary_key=True)
+    name = Column(String, unique=True)
+    fk_user = Column(Integer, ForeignKey('USERS.id'))
+    code_version = Column(Integer)
+
+    model_class = Column(String)
+    model_parameters = Column(String)
+    integrator_class = Column(String)
+    integrator_parameters = Column(String)
+
+    def __init__(self, name, model_class, model_parameters, integrator_class, integrator_parameters):
+        self.name = name
+        self.model_class = model_class
+        self.model_parameters = model_parameters
+        self.integrator_class = integrator_class
+        self.integrator_parameters = integrator_parameters
+
+    def __repr__(self):
+        return "<Dynamic(%s, %s, %s)" % (self.name, self.model_class, self.integrator_class)

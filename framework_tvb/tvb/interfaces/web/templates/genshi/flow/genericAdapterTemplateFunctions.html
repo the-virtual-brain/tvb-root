@@ -43,6 +43,9 @@
 					</div>
 				</div>
 			</nav>
+            <nav class="inline-description" py:if="inputRow.get('inline_description') is not None">
+                ${Markup(inputRow.inline_description.replace('\n', '&lt;br/&gt;'))}
+            </nav>
 		</py:if>
      </py:def>     
      
