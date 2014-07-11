@@ -359,8 +359,9 @@ class Dynamic(Base):
     integrator_class = Column(String)
     integrator_parameters = Column(String)
 
-    def __init__(self, name, model_class, model_parameters, integrator_class, integrator_parameters):
+    def __init__(self, name, user_id, model_class, model_parameters, integrator_class, integrator_parameters):
         self.name = name
+        self.fk_user = user_id
         self.model_class = model_class
         self.model_parameters = model_parameters
         self.integrator_class = integrator_class
@@ -368,3 +369,7 @@ class Dynamic(Base):
 
     def __repr__(self):
         return "<Dynamic(%s, %s, %s)" % (self.name, self.model_class, self.integrator_class)
+
+    @property
+    def ui_name(self):
+        return "%s - %s" % (self.model_class, self.name)

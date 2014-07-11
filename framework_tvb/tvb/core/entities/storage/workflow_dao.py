@@ -335,3 +335,17 @@ class WorkflowDAO(RootDAO):
             result = []
         return result
 
+
+    def get_dynamics_for_user(self, user_id):
+        try:
+            return self.session.query(model.Dynamic).filter(model.Dynamic.fk_user == user_id).all()
+        except SQLAlchemyError, exc:
+            self.logger.exception(exc)
+            return []
+
+
+    def get_dynamic(self, dyn_id):
+        try:
+            return self.session.query(model.Dynamic).filter(model.Dynamic.id == dyn_id).one()
+        except SQLAlchemyError, exc:
+            self.logger.exception(exc)

@@ -328,6 +328,7 @@ class DynamicModelController(BaseController):
 
         entity = tvb.core.entities.model.Dynamic(
             dynamic_name,
+            common.get_logged_user().id,
             model.__class__.__name__,
             json.dumps(model_parameters),
             integrator.__class__.__name__,

@@ -34,7 +34,9 @@ var dynamicPage = {
     dynamic_gid: null
 };
 
-dynamicPage._initSliders = function(){
+(function(){
+
+function _initSliders (){
     function _initSlider(slider, input, option){
         slider.slider({
             value: option.default,
@@ -48,7 +50,7 @@ dynamicPage._initSliders = function(){
 
             change: function(ev, target){
                 input.val(target.value);
-                dynamicPage.onParameterChanged(option.name, target.value);
+                onParameterChanged(option.name, target.value);
             }
         });
 
@@ -71,65 +73,65 @@ dynamicPage._initSliders = function(){
         _initSlider(slider, input, option);
 
     }
-};
+}
 
-dynamicPage.onSliderReset = function(){
+function onSliderReset(){
     for (var i = 0; i < dynamicPage.sliderDefaultState.length; i++) {
         var option = dynamicPage.sliderDefaultState[i];
         var slider = $("#slider_" + option.name);
         slider.slider('value', option.default);
     }
-};
+}
 
-dynamicPage._url = function(func, tail){
+function _url(func, tail){
     var url = '/burst/create_dynamic/' + func + '/' + dynamicPage.dynamic_gid;
     if (tail != null){
         url+= '/' + tail;
     }
     return url;
-};
+}
 
-dynamicPage._fetchSlidersFromServer = function(){
+function _fetchSlidersFromServer(){
     var sliderContainer = $('#div_spatial_model_params');
     sliderContainer.empty();
 
     doAjaxCall({
-        url: dynamicPage._url('sliders_fragment'),
+        url: _url('sliders_fragment'),
         success: function(fragment) {
             sliderContainer.html(fragment);
-            $('#reset_sliders').click(dynamicPage.onSliderReset);
+            $('#reset_sliders').click(onSliderReset);
             MathJax.Hub.Queue(["Typeset", MathJax.Hub, 'div_spatial_model_params']);
-            dynamicPage._initSliders();
+            _initSliders();
             setupMenuEvents(sliderContainer);
         }
     });
-};
+}
 
-dynamicPage.onModelChanged = function(name){
+function onModelChanged(name){
     doAjaxCall({
-        url: dynamicPage._url('model_changed', name) ,
+        url: _url('model_changed', name) ,
         success: function(data){
             dynamicPage.sliderDefaultState = $.parseJSON(data).options;
-            dynamicPage._fetchSlidersFromServer();
+            _fetchSlidersFromServer();
         }
     });
-};
+}
 
-dynamicPage.onParameterChanged = function(name, value){
+function onParameterChanged(name, value){
     doAjaxCall({
-        url: dynamicPage._url('parameter_changed'),
+        url: _url('parameter_changed'),
         data: {'name' : name, 'value': value},
         success: function(data){
 
         }
     });
-};
+}
 
-dynamicPage.onSubmit = function(event){
+function onSubmit(event){
     var name = $('#dynamic_name').val().trim();
     if (name.length ) {
         doAjaxCall({
-            url: dynamicPage._url('submit', name),
+            url: _url('submit', name),
             success: function(){
                 displayMessage('Dynamic saved', 'importantMessage');
             }
@@ -138,37 +140,39 @@ dynamicPage.onSubmit = function(event){
         displayMessage('A name is required', 'errorMessage');
     }
     event.preventDefault();
-};
+}
 
-dynamicPage.onIntegratorChanged = function(state){
+function onIntegratorChanged(state){
     doAjaxCall({
-        url: dynamicPage._url('integrator_changed'),
+        url: _url('integrator_changed'),
         data: state
     });
-};
+}
 
-dynamicPage.debouncedOnIntegratorChanged = $.debounce( 250, dynamicPage.onIntegratorChanged);
+var debouncedOnIntegratorChanged = $.debounce( 250, onIntegratorChanged);
 
 // Detect changes by doing a tree diff. This diff is simple but relies on a specific tree structure.
-dynamicPage.onTreeChange = function(){
+function onTreeChange(){
     var state = getSubmitableData('left_input_tree');
     var previous = dynamicPage.treeState;
     if (state.model_type !== previous.model_type){
-        dynamicPage.onModelChanged(state.model_type);
+        onModelChanged(state.model_type);
     }else if (state.dynamic_name === previous.dynamic_name){
         // Name has not changed. The change is in the integrator subtree
-        dynamicPage.debouncedOnIntegratorChanged(state);
+        debouncedOnIntegratorChanged(state);
     }
     dynamicPage.treeState = state;
-};
+}
 
-dynamicPage.main = function(dynamic_gid){
+function main(dynamic_gid){
     dynamicPage.dynamic_gid = dynamic_gid;
     $('.field-adapters').hide(); // hide expand range buttons. Careful as this class is used for other things as well
     // listen for changes of the left tree
-    $('#left_input_tree').find('input').add('select').change(dynamicPage.onTreeChange);
-    $('#base_spatio_temporal_form').submit(dynamicPage.onSubmit);
-    dynamicPage.onTreeChange();
-};
+    $('#left_input_tree').find('input').add('select').change(onTreeChange);
+    $('#base_spatio_temporal_form').submit(onSubmit);
+    onTreeChange();
+}
 
+dynamicPage.main = main;
 
+})();
