@@ -78,6 +78,24 @@ class PhasePlaneInteractive(object):
         self.model.configure()
         self.model.update_derived_parameters()
 
+        self.ipp_fig = None
+        self.pp_splt = None
+
+    def reset(self, model, integrator):
+        """
+        Resets the state associated with the model and integrator.
+        Redraws plot.
+        """
+        self.model = model
+        self.integrator = integrator
+        self.draw_phase_plane()
+
+
+    def refresh(self):
+        self._set_mesh_grid()
+        self._calc_phase_plane()
+        self._update_phase_plane()
+
 
     def get_required_memory_size(self, **kwargs):
         """
@@ -105,7 +123,11 @@ class PhasePlaneInteractive(object):
         self._set_state_vector()
 
         #TODO: see how we can get the figure size from the UI to better 'fit' the encompassing div
-        self.ipp_fig = pylab.figure(figsize=(10, 8))
+        if self.ipp_fig is None:
+            self.ipp_fig = pylab.figure(figsize=(10, 8))
+            # add mouse handler for trajectory clicking
+            self.ipp_fig.canvas.mpl_connect('button_press_event', self._click_trajectory)
+
         pylab.clf()
         self.pp_ax = self.ipp_fig.add_axes([0.265, 0.2, 0.7, 0.75])
 
@@ -149,8 +171,6 @@ class PhasePlaneInteractive(object):
         #Plot phase plane
         self._plot_phase_plane()
 
-        # add mouse handler for trajectory clicking
-        self.ipp_fig.canvas.mpl_connect('button_press_event', self._click_trajectory)
         self.ipp_fig.canvas.draw()
 
         return dict(mplh5ServerURL=config.MPLH5_SERVER_URL, figureNumber=self.ipp_fig.number, showFullToolbar=False)
@@ -510,7 +530,7 @@ class PhasePlaneInteractive(object):
         self.default_sv = sv_mean.repeat(self.model.number_of_modes, axis=2)
         self.no_coupling = numpy.zeros((self.model.nvar, 1, self.model.number_of_modes))
 
-
+#mark
     def _calc_phase_plane(self):
         """ Calculate the vector field. """
         svx_ind = self.model.state_variables.index(self.svx)

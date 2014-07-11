@@ -1,19 +1,19 @@
 # -*- coding: utf-8 -*-
 #
 #
-# TheVirtualBrain-Framework Package. This package holds all Data Management, and 
+# TheVirtualBrain-Framework Package. This package holds all Data Management, and
 # Web-UI helpful to run brain-simulations. To use it, you also need do download
 # TheVirtualBrain-Scientific Package (for simulators). See content of the
 # documentation-folder for more details. See also http://www.thevirtualbrain.org
 #
 # (c) 2012-2013, Baycrest Centre for Geriatric Care ("Baycrest")
 #
-# This program is free software; you can redistribute it and/or modify it under 
+# This program is free software; you can redistribute it and/or modify it under
 # the terms of the GNU General Public License version 2 as published by the Free
 # Software Foundation. This program is distributed in the hope that it will be
-# useful, but WITHOUT ANY WARRANTY; without even the implied warranty of 
+# useful, but WITHOUT ANY WARRANTY; without even the implied warranty of
 # MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU General Public
-# License for more details. You should have received a copy of the GNU General 
+# License for more details. You should have received a copy of the GNU General
 # Public License along with this program; if not, you can download it here
 # http://www.gnu.org/licenses/old-licenses/gpl-2.0
 #
@@ -33,6 +33,7 @@
 """
 import json
 import numpy
+from tvb.adapters.visualizers.phase_plane_interactive import PhasePlaneInteractive
 from tvb.basic.traits import core, types_basic, traited_interface
 from tvb.basic.traits.parameters_factory import get_traited_subclasses
 from tvb.basic.traits.util import multiline_math_directives_to_matjax
@@ -59,6 +60,10 @@ class Dynamic(object):
         self.model = model
         self.integrator = integrator
 
+        # The phase plane holds a global reference to a mplh5 figure
+        # Only one instance should exist for a browser page.
+        # To achieve something close to that we store it here
+        self.phase_plane = PhasePlaneInteractive(model, integrator)
 
 class SessionCache(object):
     """
@@ -202,6 +207,8 @@ class DynamicModelController(BaseController):
         }
         self.fill_default_attributes(params)
 
+        dynamic = self.get_cached_dynamic(dynamic_gid)
+        params.update(dynamic.phase_plane.draw_phase_plane())
         return params
 
 
@@ -222,6 +229,8 @@ class DynamicModelController(BaseController):
     def model_changed(self, dynamic_gid, name):
         dynamic = self.get_cached_dynamic(dynamic_gid)
         dynamic.model = self.available_models[name]()
+
+        dynamic.phase_plane.reset(dynamic.model, dynamic.integrator)
         return self.slider_options(dynamic.model)
 
 
@@ -241,6 +250,7 @@ class DynamicModelController(BaseController):
         dynamic.model.configure()
         self._configure_integrator_noise(integrator, dynamic.model)
 
+        dynamic.phase_plane.reset(dynamic.model, dynamic.integrator)
 
 
     @staticmethod
@@ -268,6 +278,7 @@ class DynamicModelController(BaseController):
         model = dynamic.model
         setattr(model, name, numpy.array([float(value)]))
         model.configure()
+        dynamic.phase_plane.refresh()
 
 
     @expose_fragment('spatial/dynamic_sliders')

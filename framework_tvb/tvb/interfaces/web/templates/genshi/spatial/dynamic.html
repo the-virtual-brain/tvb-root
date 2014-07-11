@@ -19,7 +19,7 @@
         </fieldset>
 
         <div class="dynamicChart">
-
+           <xi:include href="../visualizers/mplh5/figure.html"/>
         </div>
     </section>
 
@@ -29,6 +29,11 @@
 		  <div class="extension">
 		   <div class="dropdown-pane">
 	        <ul>
+                <li>
+                    <button class="action action-download" type="button" id="ctrl-action-export">
+                    	Save Figure
+                    </button>
+                </li>
 	        	<li>
                     <button class="action action-confirm">
                     	Save new dynamic
@@ -43,6 +48,12 @@
     <script type="text/javascript">
         $(document).ready(function () {
             dynamicPage.main('${dynamic_gid}');
+
+            $("#ctrl-action-export").click(function(){
+                C2I_exportFigures({suggestedName:"region-parameters"});
+                return false;
+            });
+
         });
     </script>
 </div>
