@@ -1,5 +1,6 @@
 <div xmlns:py="http://genshi.edgewall.org/" xmlns:xi="http://www.w3.org/2001/XInclude" py:strip="True">
     <!--! Include genericAdapterTemplateFunctions only once. Otherwise js dependencies will be loaded for each adapter -->
+    <xi:include href="../flow/genericAdapterJsIncludes.html"/>
     <xi:include href="../flow/genericAdapterTemplateFunctions.html"/>
 
     <py:for each="idx, algorithm in enumerate(uploadAlgorithms)">
