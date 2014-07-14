@@ -308,7 +308,7 @@ QuickSelectComponent.prototype._parse = function(text){
  * This inherits from RegionSelectComponent and adds arbitrary text for each channel
  * It is a view. It holds no model. The text values are not remembered.
  * Debatable if inheritance is worth it. If it is not merge this behaviour in parent
- * The favor of inheritance used is described below
+ * The flavor of inheritance used is described below
  * @constructor
  * @extends RegionSelectComponent
  */
@@ -316,10 +316,10 @@ function TextGridSelectComponent(dom, settings){
     // calling a ctor without new creates no new object but attaches everything to this
     // so calling it with the current (empty) object initializes as the super ctor would have
     RegionSelectComponent.call(this, dom, settings);
-    if (this.settings.emptyValue == null) { this.settings.emptyValue = 0; }
+    if (this.settings.emptyValue === undefined) { this.settings.emptyValue = 0; }
     // inject spans
     this._boxes.each(function(){
-        $("<span>0</span>").addClass("node-scale").appendTo($(this).parent());
+        $("<span></span>").addClass("node-scale").text(settings.emptyValue).appendTo($(this).parent());
     });
     this._spans = this.$dom.find("span.node-scale");
 }
