@@ -369,7 +369,3 @@ class Dynamic(Base):
 
     def __repr__(self):
         return "<Dynamic(%s, %s, %s)" % (self.name, self.model_class, self.integrator_class)
-
-    @property
-    def ui_name(self):
-        return "%s - %s" % (self.model_class, self.name)

@@ -43,7 +43,7 @@ from tvb.core.entities.storage import dao
 import tvb.core.entities.model
 from tvb.datatypes import noise_framework
 from tvb.interfaces.web.controllers import common
-from tvb.interfaces.web.controllers.base_controller import BaseController
+from tvb.interfaces.web.controllers.burst.base_controller import BurstBaseController
 from tvb.interfaces.web.controllers.decorators import expose_page, expose_json, expose_fragment, profile_func
 from tvb.simulator import models, integrators
 
@@ -64,6 +64,7 @@ class Dynamic(object):
         # Only one instance should exist for a browser page.
         # To achieve something close to that we store it here
         self.phase_plane = PhasePlaneInteractive(model, integrator)
+
 
 class SessionCache(object):
     """
@@ -169,11 +170,11 @@ class _LeftFragmentAdapter(ABCAdapter):
 
 
 
-class DynamicModelController(BaseController):
+class DynamicModelController(BurstBaseController):
     KEY_CACHED_DYNAMIC_MODEL = 'cache.DynamicModelController'
 
     def __init__(self):
-        BaseController.__init__(self)
+        BurstBaseController.__init__(self)
         self.available_models = get_traited_subclasses(models.Model)
         self.available_integrators = get_traited_subclasses(integrators.Integrator)
         self.cache = SessionCache()
@@ -201,7 +202,7 @@ class DynamicModelController(BaseController):
 
         params = {
             'title': "Dynamic model",
-            'mainContent': 'spatial/dynamic',
+            'mainContent': 'burst/dynamic',
             'input_tree': input_tree,
             'dynamic_gid': dynamic_gid
         }
@@ -213,16 +214,7 @@ class DynamicModelController(BaseController):
 
 
     def fill_default_attributes(self, param):
-        """
-        Overwrite base controller to add required parameters for adapter templates.
-        """
-        BaseController.fill_default_attributes(self, param)
-        param.update({
-            common.KEY_SECTION: 'burst',
-            common.KEY_SUB_SECTION: 'regionmodel',
-            common.KEY_INCLUDE_RESOURCES: 'spatial/included_resources',
-            common.KEY_PARAMETERS_CONFIG: False
-        })
+        BurstBaseController.fill_default_attributes(self, param, subsection='dynamic')
 
 
     @expose_json
@@ -281,7 +273,7 @@ class DynamicModelController(BaseController):
         dynamic.phase_plane.refresh()
 
 
-    @expose_fragment('spatial/dynamic_sliders')
+    @expose_fragment('burst/dynamic_sliders')
     def sliders_fragment(self, dynamic_gid):
         dynamic = self.get_cached_dynamic(dynamic_gid)
         model = dynamic.model
@@ -339,3 +331,27 @@ class DynamicModelController(BaseController):
 
         dao.store_entity(entity)
 
+
+    @staticmethod
+    def group_parameter_values_by_name(model_parameters_list):
+        """
+        Given a list of model parameters like this:
+            ["a", [2.0]], ['b', [1.0]
+            ["a", [3.0]], ['b', [7.0]
+        Group them by param name to get:
+        {'a': [2.0, 3.0], 'b': [1.0, 7.0]}
+        """
+        ret = {}
+        for model_parameters in model_parameters_list:
+            for param_name, param_vals in model_parameters:
+                if param_name not in ret:
+                    ret[param_name] = []
+                ret[param_name].extend(param_vals)
+        return ret
+
+
+    @expose_fragment('burst/dynamic_minidetail')
+    def dynamic_detail(self, dynamic_id):
+        dynamic = dao.get_dynamic(dynamic_id)
+        model_parameters = self.group_parameter_values_by_name([json.loads(dynamic.model_parameters)])
+        return {'model_parameters': model_parameters}

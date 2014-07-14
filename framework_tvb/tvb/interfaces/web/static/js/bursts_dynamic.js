@@ -84,7 +84,7 @@ function onSliderReset(){
 }
 
 function _url(func, tail){
-    var url = '/burst/create_dynamic/' + func + '/' + dynamicPage.dynamic_gid;
+    var url = '/burst/dynamic/' + func + '/' + dynamicPage.dynamic_gid;
     if (tail != null){
         url+= '/' + tail;
     }

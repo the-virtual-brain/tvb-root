@@ -47,9 +47,9 @@ from tvb.core.services.burst_service import BurstService, KEY_PARAMETER_CHECKED,
 from tvb.core.services.workflow_service import WorkflowService
 from tvb.core.services.operation_service import RANGE_PARAMETER_1, RANGE_PARAMETER_2
 from tvb.interfaces.web.controllers import common
+from tvb.interfaces.web.controllers.burst.base_controller import BurstBaseController
 from tvb.interfaces.web.controllers.decorators import context_selected, check_user, settings, handle_error
 from tvb.interfaces.web.controllers.decorators import expose_page, expose_fragment, expose_json
-from tvb.interfaces.web.controllers.base_controller import BaseController
 from tvb.interfaces.web.controllers.flow_controller import KEY_CONTROLLS, SelectedAdapterContext
 
 PORTLET_STEP_SEPARATOR = "____"
@@ -57,14 +57,14 @@ BURST_NAME = 'burstName'
 
 
 
-class BurstController(BaseController):
+class BurstController(BurstBaseController):
     """
     Controller class for Burst-Pages.
     """
 
 
     def __init__(self):
-        BaseController.__init__(self)
+        BurstBaseController.__init__(self)
         self.burst_service = BurstService()
         self.workflow_service = WorkflowService()
         self.context = SelectedAdapterContext()
