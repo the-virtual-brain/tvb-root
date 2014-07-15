@@ -159,9 +159,11 @@ class BurstConfiguration(Base, Exportable):
             return True
 
         for param in [RANGE_PARAMETER_1, RANGE_PARAMETER_2]:
-            if param in self.simulator_configuration and KEY_SAVED_VALUE in self.simulator_configuration[param] \
-                    and self.simulator_configuration[param][KEY_SAVED_VALUE] != '0':
-                return True
+            try:
+                if self.simulator_configuration[param][KEY_SAVED_VALUE] != '0':
+                    return True
+            except KeyError:
+                pass
         return False
 
 
@@ -224,9 +226,7 @@ class BurstConfiguration(Base, Exportable):
         """
         if param_name not in self.simulator_configuration:
             self.simulator_configuration[param_name] = {}
-        if KEY_SAVED_VALUE not in self.simulator_configuration[param_name]:
-            return None
-        return self.simulator_configuration[param_name][KEY_SAVED_VALUE]
+        return self.simulator_configuration[param_name].get(KEY_SAVED_VALUE)
 
 
     def get_all_simulator_values(self):
@@ -235,13 +235,12 @@ class BurstConfiguration(Base, Exportable):
         """
         result = {}
         any_checked = False
-        for key in self.simulator_configuration:
-            if KEY_PARAMETER_CHECKED in self.simulator_configuration[key] \
-                    and self.simulator_configuration[key][KEY_PARAMETER_CHECKED]:
+        for key, value in self.simulator_configuration.iteritems():
+            if value.get(KEY_PARAMETER_CHECKED):
                 any_checked = True
-            if KEY_SAVED_VALUE not in self.simulator_configuration[key]:
+            if KEY_SAVED_VALUE not in value:
                 continue
-            result[key] = self.simulator_configuration[key][KEY_SAVED_VALUE]
+            result[key] = value[KEY_SAVED_VALUE]
         return result, any_checked
 
 
