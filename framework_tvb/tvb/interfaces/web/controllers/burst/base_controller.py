@@ -51,3 +51,20 @@ class BurstBaseController(BaseController):
 
         BaseController.fill_default_attributes(self, template_dictionary)
         return template_dictionary
+
+    @staticmethod
+    def group_parameter_values_by_name(model_parameters_list):
+        """
+        Given a list of model parameters like this:
+            ["a", [2.0]], ['b', [1.0]
+            ["a", [3.0]], ['b', [7.0]
+        Group them by param name to get:
+        {'a': [2.0, 3.0], 'b': [1.0, 7.0]}
+        """
+        ret = {}
+        for model_parameters in model_parameters_list:
+            for param_name, param_vals in model_parameters:
+                if param_name not in ret:
+                    ret[param_name] = []
+                ret[param_name].extend(param_vals)
+        return ret
