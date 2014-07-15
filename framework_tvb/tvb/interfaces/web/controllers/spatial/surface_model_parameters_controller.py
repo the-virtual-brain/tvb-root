@@ -41,12 +41,12 @@ import tvb.basic.traits.traited_interface as interface
 from tvb.basic.traits.parameters_factory import get_traited_instance_for_name
 from tvb.core.adapters.abcadapter import ABCAdapter
 from tvb.core.adapters.abcadapter import KEY_EQUATION, KEY_FOCAL_POINTS
+from tvb.core.entities.model import PARAMS_MODEL_PATTERN
 from tvb.datatypes import equations
 from tvb.interfaces.web.controllers import common
 from tvb.interfaces.web.controllers.base_controller import BaseController
 from tvb.interfaces.web.controllers.decorators import expose_page, expose_fragment, expose_json, handle_error, check_user
 from tvb.interfaces.web.controllers.spatial.base_spatio_temporal_controller import SpatioTemporalController
-from tvb.interfaces.web.controllers.spatial.base_spatio_temporal_controller import PARAMS_MODEL_PATTERN
 from tvb.interfaces.web.entities.context_model_parameters import SurfaceContextModelParameters, EquationDisplayer
 
 

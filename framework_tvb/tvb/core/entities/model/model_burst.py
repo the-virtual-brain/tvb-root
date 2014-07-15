@@ -59,6 +59,12 @@ PARAM_RANGE_PREFIX = 'range_'
 RANGE_PARAMETER_1 = "range_1"
 RANGE_PARAMETER_2 = "range_2"
 
+PARAM_CONNECTIVITY = 'connectivity'
+PARAM_SURFACE = 'surface'
+PARAM_MODEL = 'model'
+PARAM_INTEGRATOR = 'integrator'
+
+PARAMS_MODEL_PATTERN = 'model_parameters_option_%s_%s'
 
 class BurstConfiguration(Base, Exportable):
     """

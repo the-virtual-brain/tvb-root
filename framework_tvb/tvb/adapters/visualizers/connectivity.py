@@ -227,6 +227,18 @@ class ConnectivityViewer(ABCDisplayer):
         global_params.update(self.build_template_params_for_subselectable_datatype(input_data))
         return global_params, global_pages
 
+
+    @staticmethod
+    def get_connectivity_parameters(input_connectivity, surface_data=None):
+        """
+        Returns a dictionary which contains all the needed data for drawing a connectivity.
+        """
+        viewer = ConnectivityViewer()
+        global_params, global_pages = viewer.compute_connectivity_global_params(input_connectivity, surface_data)
+        global_params.update(global_pages)
+        global_params['selectedConnectivityGid'] = input_connectivity.gid
+        return global_params
+
 #    
 # -------------------- Connectivity 3D code starting -------------------
 

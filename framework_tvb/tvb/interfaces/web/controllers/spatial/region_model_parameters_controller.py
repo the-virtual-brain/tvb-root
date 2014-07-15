@@ -35,12 +35,14 @@
 
 import json
 import cherrypy
+from tvb.adapters.visualizers.connectivity import ConnectivityViewer
 from tvb.basic.traits.util import multiline_math_directives_to_matjax
+from tvb.core.entities.model import PARAMS_MODEL_PATTERN
 from tvb.interfaces.web.controllers import common
 from tvb.interfaces.web.controllers.base_controller import BaseController
 from tvb.interfaces.web.controllers.decorators import expose_page, expose_fragment, expose_json, handle_error, check_user
 from tvb.interfaces.web.entities.context_model_parameters import ContextModelParameters
-from tvb.interfaces.web.controllers.spatial.base_spatio_temporal_controller import SpatioTemporalController, PARAMS_MODEL_PATTERN
+from tvb.interfaces.web.controllers.spatial.base_spatio_temporal_controller import SpatioTemporalController
 
 
 ### SESSION KEY for ContextModelParameter entity.
@@ -77,7 +79,7 @@ class RegionsModelParametersController(SpatioTemporalController):
         """
         model, integrator, connectivity, _ = self.get_data_from_burst_configuration()
 
-        connectivity_viewer_params = self.get_connectivity_parameters(connectivity)
+        connectivity_viewer_params = ConnectivityViewer.get_connectivity_parameters(connectivity)
         context_model_parameters = ContextModelParameters(connectivity, model, integrator)
         data_for_param_sliders = self.get_data_for_param_sliders('0', context_model_parameters)
         common.add2session(KEY_CONTEXT_MPR, context_model_parameters)

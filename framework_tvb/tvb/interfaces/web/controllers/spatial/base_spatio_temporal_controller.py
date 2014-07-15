@@ -38,13 +38,13 @@ from copy import deepcopy
 
 import cherrypy
 
-from tvb.adapters.visualizers.connectivity import ConnectivityViewer
 from tvb.basic.traits import traited_interface
 from tvb.basic.logger.builder import get_logger
 from tvb.basic.traits.parameters_factory import get_traited_instance_for_name
 from tvb.core.adapters.abcadapter import ABCAdapter
+from tvb.core.entities.model import RANGE_PARAMETER_1, RANGE_PARAMETER_2, PARAM_MODEL, PARAM_INTEGRATOR
+from tvb.core.entities.model import PARAM_CONNECTIVITY, PARAM_SURFACE
 from tvb.core.services.flow_service import FlowService
-from tvb.core.services.operation_service import RANGE_PARAMETER_1, RANGE_PARAMETER_2
 from tvb.interfaces.web.controllers import common
 from tvb.interfaces.web.controllers.base_controller import BaseController
 from tvb.interfaces.web.controllers.decorators import settings, expose_page
@@ -55,21 +55,14 @@ from tvb.config import SIMULATOR_CLASS, SIMULATOR_MODULE
 from tvb.datatypes import noise_framework
 
 
-PARAM_CONNECTIVITY = 'connectivity'
-PARAM_SURFACE = 'surface'
-PARAM_MODEL = 'model'
-PARAM_INTEGRATOR = 'integrator'
 MODEL_PARAMETERS = 'model_parameters'
 INTEGRATOR_PARAMETERS = 'integrator_parameters'
-PARAMS_MODEL_PATTERN = 'model_parameters_option_%s_%s'
-
 
 
 class SpatioTemporalController(BaseController):
     """
     Base class which contains methods related to spatio-temporal actions.
     """
-
 
     def __init__(self):
         BaseController.__init__(self)
@@ -90,18 +83,6 @@ class SpatioTemporalController(BaseController):
         """
         template_specification = {'title': "Spatio temporal", 'data': data, 'mainContent': 'header_menu'}
         return self.fill_default_attributes(template_specification)
-
-
-    @staticmethod
-    def get_connectivity_parameters(input_connectivity, surface_data=None):
-        """
-        Returns a dictionary which contains all the needed data for drawing a connectivity.
-        """
-        viewer = ConnectivityViewer()
-        global_params, global_pages = viewer.compute_connectivity_global_params(input_connectivity, surface_data)
-        global_params.update(global_pages)
-        global_params['selectedConnectivityGid'] = input_connectivity.gid
-        return global_params
 
 
     def get_data_from_burst_configuration(self):
@@ -330,7 +311,7 @@ class SpatioTemporalController(BaseController):
         try:
             int(str_value)
             return True
-        except Exception:
+        except ValueError:
             return False
         
         

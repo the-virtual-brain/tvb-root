@@ -36,6 +36,7 @@
 import json
 
 import cherrypy
+from tvb.adapters.visualizers.connectivity import ConnectivityViewer
 
 from tvb.core.adapters.abcadapter import ABCAdapter
 from tvb.core.entities.transient.structure_entities import DataTypeMetaData
@@ -160,7 +161,7 @@ class RegionStimulusController(SpatioTemporalController):
         Generates the html for displaying the connectivity matrix.
         """
         connectivity = ABCAdapter.load_entity_by_gid(connectivity_gid)
-        connectivity_viewer_params = self.get_connectivity_parameters(connectivity)
+        connectivity_viewer_params = ConnectivityViewer.get_connectivity_parameters(connectivity)
 
         template_specification = dict()
         template_specification['isSingleMode'] = True
