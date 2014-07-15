@@ -39,18 +39,6 @@ function BS_displayIndexForThePickedVertex() {
 
 
 /**
- * Display the name for the selected connectivity node.
- */
-function BS_displayNameForPickedNode() {
-    if (CONN_pickedIndex == undefined || CONN_pickedIndex < 0) {
-        displayMessage("No node is currently selected selected.", "warningMessage");
-    } else {
-        displayMessage("The selected node is " + GVAR_pointsLabels[CONN_pickedIndex], "infoMessage");
-    }
-}
-
-
-/**
  * Generate the data from the currently configured stimulus/LC and display as movie.
  */
 function BS_startSignalVisualization() {

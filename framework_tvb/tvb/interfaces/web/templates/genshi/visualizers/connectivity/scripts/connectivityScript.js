@@ -152,6 +152,16 @@ function customMouseMove(event) {
     GFUNC_updateLeftSideVisualization();
 }
 
+/**
+ * Display the name for the selected connectivity node.
+ */
+function displayNameForPickedNode() {
+    if (CONN_pickedIndex === undefined || CONN_pickedIndex < 0) {
+        displayMessage("No node is currently selected selected.", "warningMessage");
+    } else {
+        displayMessage("The selected node is " + GVAR_pointsLabels[CONN_pickedIndex], "infoMessage");
+    }
+}
 
 var linesBuffer;
 
