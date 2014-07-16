@@ -2033,7 +2033,10 @@ class JansenRit(Model):
         y4 = state_variables[4, :]
         y5 = state_variables[5, :]
 
-        lrc = coupling[0, :] -  coupling[1, :]
+        # NOTE: This is assumed to be \sum_j u_kj * S[y_{1_j} - y_{2_j}]
+
+        lrc = coupling[0, :]
+
         short_range_coupling =  local_coupling*(y1 -  y2)
 
         # NOTE: for local couplings
@@ -2050,14 +2053,14 @@ class JansenRit(Model):
         #p = p_min + (p_max - p_min) * numpy.random.uniform()
 
         #NOTE: We were getting numerical overflow in the three exp()s below...
-        temp = self.r * (self.v0 - (y1 - y2))
-        sigm_y1_y2 = numpy.where(temp > magic_exp_number, 0.0, 2.0 * self.nu_max / (1.0 + numpy.exp(temp)))
+        temp       = self.r * (self.v0 - (y1 - y2))
+        sigm_y1_y2 = numpy.where(temp > magic_exp_number,2.0 * self.nu_max / (1.0 + numpy.exp(temp)), 2.0 * self.nu_max / (1.0 + numpy.exp(temp)))
 
-        temp = self.r * (self.v0 - (self.a_1 * self.J * y0))
-        sigm_y0_1 = numpy.where(temp > magic_exp_number, 0.0, 2.0 * self.nu_max / (1.0 + numpy.exp(temp)))
+        temp      = self.r * (self.v0 - (self.a_1 * self.J * y0))
+        sigm_y0_1 = numpy.where(temp > magic_exp_number, 2.0 * self.nu_max / (1.0 + numpy.exp(temp)), 2.0 * self.nu_max / (1.0 + numpy.exp(temp)))
 
-        temp = self.r * (self.v0 - (self.a_3 * self.J * y0))
-        sigm_y0_3 = numpy.where(temp > magic_exp_number, 0.0, 2.0 * self.nu_max / (1.0 + numpy.exp(temp)))
+        temp      = self.r * (self.v0 - (self.a_3 * self.J * y0))
+        sigm_y0_3 = numpy.where(temp > magic_exp_number, 2.0 * self.nu_max / (1.0 + numpy.exp(temp)), 2.0 * self.nu_max / (1.0 + numpy.exp(temp)))
 
         dy0 = y3
         dy3 = self.A * self.a * sigm_y1_y2 - 2.0 * self.a * y3 - self.a ** 2 * y0
