@@ -29,11 +29,12 @@
 #
 
 """
-Demo using the Jansen and Rit model.
-White noise is added to one specific state variable to emulate the external
-stochastic stimulus p(t) as described in [JanseRit_1995]
+Single node dynamics using the Jansen and Rit model. 
 
-.. moduleauthor:: Paula Sanz Leon <pau.sleon@gmail.com>
+White noise is added to one specific state variable to emulate the external
+stochastic stimulus p(t) as described in [JansenRit_1995]
+
+.. moduleauthor:: Paula Sanz Leon <paula.sanz-leon@univ-amu.fr>
 
 """
 
@@ -44,17 +45,22 @@ from tvb.simulator.lab import *
 ##----------------------------------------------------------------------------##
 
 LOG.info("Configuring...")
+
 #Initialise a Model, Coupling, and Connectivity.
-jrm = models.JansenRit()
-nsigma = 0.022
+jrm = models.JansenRit(mu=0., v0=6.)
 
-white_matter = connectivity.Connectivity(load_default=True)
-white_matter.speed = numpy.array([4.0])
-
-white_matter_coupling = coupling.Linear(a=0.0)
+white_matter          = connectivity.Connectivity(load_default=True)
+white_matter.speed    = numpy.array([100.0])
+white_matter_coupling = coupling.SigmoidalJansenRit(a=10.0)
 
 #Initialise an Integrator adding noise to only one state variable
-hiss = noise.Additive(nsig=numpy.array([0., 0., 0., 0., nsigma, 0.]))
+phi_n_scaling = (jrm.a * jrm.A * (jrm.p_max-jrm.p_min) * 0.5 )**2 / 2.
+sigma         = numpy.zeros(6) 
+sigma[3]      = phi_n_scaling
+
+#Initialise additive noise for three state variable
+
+hiss    = noise.Additive(nsig=sigma)
 heunint = integrators.HeunStochastic(dt=2 ** -4, noise=hiss)
 
 #Initialise some Monitors with period in physical time
@@ -102,24 +108,24 @@ TAVG = numpy.array(tavg_data)
 
 #Plot raw time series
 figure(1)
-plot(raw_time, RAW[:, 0, :, 0])
+plot(raw_time, RAW[:, 0, 0:4, 0])
 title("Raw -- State variable 0")
 
 figure(2)
-plot(raw_time, RAW[:, 1, :, 0])
+plot(raw_time, RAW[:, 1, 0:4, 0])
 title("Raw -- State variable 1")
 
 figure(3)
-plot(raw_time, RAW[:, 2, :, 0])
+plot(raw_time, RAW[:, 2, 0:4, 0])
 title("Raw -- State variable 2")
 
 figure(4)
-plot(raw_time, RAW[:, 1, :, 0] - RAW[:, 2, :, 0])
+plot(raw_time, RAW[:, 1, 0:4, 0] - RAW[:, 2, 0:4, 0])
 title("Raw -- State variable 1 - 2")
 
 
 figure(5)
-plot(tavg_time, TAVG[:, 0, :, 0])
+plot(tavg_time, TAVG[:, 0, 0:4, 0])
 title("Temporal Average")
 
 #Show them
