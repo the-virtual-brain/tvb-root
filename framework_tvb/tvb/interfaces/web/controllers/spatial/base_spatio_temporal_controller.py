@@ -264,26 +264,20 @@ class SpatioTemporalController(BaseController):
         """
         Fill range for the X-axis displayed in 2D graph.
         """
-        min_x = 0
-        max_x = 100
-        error_msg = ''
-        if self.is_int(min_x_str):
+        try:
             min_x = int(min_x_str)
+        except ValueError:
+            return 0, 100, "The min value for the x-axis should be an integer value."
 
-            if self.is_int(max_x_str):
-                max_x = int(max_x_str)
-            else:
-                min_x = 0
-                error_msg = "The max value for the x-axis should be an integer value."
+        try:
+            max_x = int(max_x_str)
+        except ValueError:
+            return 0, 100, "The max value for the x-axis should be an integer value."
 
-            if min_x >= max_x:
-                error_msg = "The min value for the x-axis should be smaller then the max value of the x-axis."
-                min_x = 0
-                max_x = 100
-        else:
-            error_msg = "The min value for the x-axis should be an integer value."
+        if min_x >= max_x:
+            return 0, 100, "The min value for the x-axis should be smaller then the max value of the x-axis."
 
-        return min_x, max_x, error_msg
+        return min_x, max_x, ''
 
 
     @staticmethod
@@ -301,30 +295,3 @@ class SpatioTemporalController(BaseController):
                     if entry[ABCAdapter.KEY_NAME] == 'midpoint1':
                         entry['locked'] = True
         return equations_dict
-
-
-    @staticmethod
-    def is_int(str_value):
-        """
-        Checks if the given string may be converted to an int value.
-        """
-        try:
-            int(str_value)
-            return True
-        except ValueError:
-            return False
-        
-        
-    def get_data_for_param_sliders(self, connectivity_node_index, context_model_parameters):
-        """
-        Method used only for handling the exception.
-        """
-        try:
-            return context_model_parameters.get_data_for_param_sliders(connectivity_node_index)
-        except ValueError:
-            self.logger.exception("All the model parameters that are configurable should be valid arrays or numbers.")
-            common.set_error_message("All the model parameters that are configurable should be valid arrays or numbers")
-            raise cherrypy.HTTPRedirect("/burst/")
-        
-        
-        

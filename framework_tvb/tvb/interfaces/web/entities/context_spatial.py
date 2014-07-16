@@ -39,7 +39,7 @@ import tvb.simulator.integrators as integrators_module
 from tvb.basic.logger.builder import get_logger
 
 
-class BaseSpatialContext():
+class BaseSpatialContext(object):
     
     def __init__(self, connectivity, default_model=None, default_integrator=None):
         self.logger = get_logger(self.__class__.__module__)
@@ -53,11 +53,13 @@ class BaseSpatialContext():
         if self.default_integrator is None:
             self.default_integrator = integrators_module.RungeKutta4thOrderDeterministic()
 
+        self.model_name = self.default_model.__class__.__name__
         self.model_parameter_names = deepcopy(self.default_model.ui_configurable_parameters)
+
         if not len(self.model_parameter_names):
             self.logger.warning("The 'ui_configurable_parameters' list of the current model is empty!")
-            
-    
+
+
     def _get_model_for_region(self, connectivity_node_index):
         """
         Returns the model instance corresponding to the connectivity node found at the specified index.

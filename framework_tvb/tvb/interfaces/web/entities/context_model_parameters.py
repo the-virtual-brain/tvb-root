@@ -33,47 +33,28 @@
 """
 
 import numpy
-import tvb.basic.traits.parameters_factory as parameters_factory
-import tvb.simulator.models as models_module
 from copy import deepcopy
 from tvb.basic.traits.core import Type
 from tvb.core.adapters.abcadapter import KEY_EQUATION, KEY_FOCAL_POINTS, KEY_SURFACE_GID, ABCAdapter
 from tvb.datatypes.equations import SpatialApplicableEquation, Gaussian
-from tvb.adapters.visualizers.phase_plane_interactive import PhasePlaneInteractive
 from tvb.interfaces.web.entities.context_spatial import BaseSpatialContext
 
 
 KEY_FOCAL_POINTS_TRIANGLES = "focal_points_triangles"
 
 
-
-class ContextModelParameters(BaseSpatialContext):
+class SurfaceContextModelParameters(BaseSpatialContext):
     """
-    This class behaves like a controller. The model for this controller will
-    be the fields defined into the init method and the view is represented
-    by a PhasePlaneInteractive instance.
-
-    This class may also be used into the desktop application.
+    This class contains methods which allows you to edit the model
+    parameters for each vertex of the given surface.
     """
 
 
-    def __init__(self, connectivity, default_model=None,
-                 default_integrator=None, compute_phase_plane_params=True):
+    def __init__(self, surface, connectivity, default_model=None, default_integrator=None):
         BaseSpatialContext.__init__(self, connectivity, default_model, default_integrator)
         self.prepared_model_parameter_names = self._prepare_parameter_names(self.model_parameter_names)
-
-        model = self._get_model_for_region(0)
-        if compute_phase_plane_params:
-            self._phase_plane = PhasePlaneInteractive(deepcopy(model), deepcopy(self.default_integrator))
-            self.phase_plane_params = self._phase_plane.draw_phase_plane()
-
-
-    @property
-    def model_name(self):
-        """
-        Get class-name for the simulation model saved in current context.
-        """
-        return self.default_model.__class__.__name__
+        self.surface = surface
+        self.applied_equations = dict()
 
 
     @staticmethod
@@ -86,146 +67,6 @@ class ContextModelParameters(BaseSpatialContext):
         for param in parameter_names:
             result[param] = param.replace("_", "")
         return result
-
-
-    def load_model_for_connectivity_node(self, connectivity_node_index):
-        """
-        Sets the parameters of the model found into the phase_plane instance
-        to the parameters of the model of the specified connectivity node.
-        """
-        connectivity_node_index = int(connectivity_node_index)
-        model = self._get_model_for_region(connectivity_node_index)
-        self._phase_plane.update_all_model_parameters(model)
-
-
-    def update_model_parameter(self, connectivity_node_index, param_name, param_value):
-        """
-        Updates the given parameter of the model used by the given connectivity node.
-        """
-        connectivity_node_index = int(connectivity_node_index)
-        if connectivity_node_index < 0:
-            return
-
-        param_value = float(param_value)
-        model = self._get_model_for_region(connectivity_node_index)
-        setattr(model, param_name, numpy.array([param_value]))
-        self._phase_plane.update_model_parameter(param_name, param_value)
-
-
-    def set_model_for_connectivity_nodes(self, source_node_index_for_model, connectivity_node_indexes):
-        """
-        Set the model for all the nodes specified in 'connectivity_node_indexes' list to
-        the model of the node with index 'source_node_index_for_model'
-        """
-        source_node_index = int(source_node_index_for_model)
-        model = self._get_model_for_region(source_node_index)
-        for index in connectivity_node_indexes:
-            self.connectivity_models[int(index)] = deepcopy(model)
-
-
-    def reset_model_parameters_for_nodes(self, connectivity_node_indexes):
-        """
-        Resets all the model parameters for each node specified in the 'connectivity_node_indexes'
-        list. The parameters will be reset to their default values.
-        """
-        if not len(connectivity_node_indexes):
-            return
-        for index in connectivity_node_indexes:
-            index = int(index)
-            if index < 0:
-                continue
-            model = self._compute_default_model(index)
-            self.connectivity_models[index] = deepcopy(model)
-
-
-    def get_data_for_param_sliders(self, connectivity_node_index):
-        """
-        NOTE: This method may throw 'ValueError' exception.
-
-        Return a dict which contains all the needed information for
-        drawing the sliders for the model parameters of the selected connectivity node.
-        """
-        connectivity_node_index = int(connectivity_node_index)
-        current_model = self._get_model_for_region(connectivity_node_index)
-        #we have to obtain the model with its default values(the one submitted from burst may have some
-        # parameters values changed); the step is computed based on the number of decimals of the default values
-        default_model_for_node = parameters_factory.get_traited_instance_for_name(self.model_name,
-                                                                                  models_module.Model, {})
-        param_sliders_data = dict()
-        for param_name in self.model_parameter_names:
-            current_value = getattr(current_model, param_name)
-            ### Convert to list to avoid having non-serializable values numpy.int32
-            if isinstance(current_value, numpy.ndarray):
-                current_value = current_value.tolist()[0]
-            else:
-                #check if the current_value represents a valid number
-                #handle the exception in the place where you call this method
-                float(current_value)
-            ranger = default_model_for_node.trait[param_name].trait.range_interval
-
-            if current_value > ranger.hi:
-                current_value = ranger.hi
-                self.update_model_parameter(connectivity_node_index, param_name, current_value)
-            if current_value < ranger.lo:
-                current_value = ranger.lo
-                self.update_model_parameter(connectivity_node_index, param_name, current_value)
-
-            param_sliders_data[param_name] = {'min': ranger.lo, 'max': ranger.hi,
-                                              'default': current_value, 'step': ranger.step}
-        param_sliders_data['all_param_names'] = self.model_parameter_names
-        return param_sliders_data
-
-
-    def get_values_for_parameter(self, parameter_name):
-        """
-        Returns a list which contains the values for the given model
-        parameter name. The values are collected from each node of the used connectivity.
-
-        If all the parameter values are equal then a list with
-        one value will be returned.
-        """
-        default_attr = getattr(self.default_model, parameter_name)
-        if isinstance(default_attr, numpy.ndarray):
-            default_attr = default_attr.tolist()
-        else:
-            #if the user set the parameter as a number
-            default_attr = [default_attr]
-
-        if len(self.connectivity_models):
-            param_values = []
-            for i in range(self.connectivity.number_of_regions):
-                if i in self.connectivity_models:
-                    current_model = self.connectivity_models[i]
-                    current_attr = getattr(current_model, parameter_name)
-                    if isinstance(current_attr, numpy.ndarray):
-                        current_attr = current_attr[0]
-                    param_values.append(current_attr)
-                else:
-                    if 1 < len(default_attr) > i:
-                        param_values.append(default_attr[i])
-                    else:
-                        param_values.append(default_attr[0])
-            #check if all the values are equals
-            if param_values.count(param_values[0]) != len(param_values):
-                return str(param_values)
-            else:
-                return str([default_attr[0]])
-
-        return deepcopy(str(default_attr))
-
-
-
-class SurfaceContextModelParameters(ContextModelParameters):
-    """
-    This class contains methods which allows you to edit the model
-    parameters for each vertex of the given surface.
-    """
-
-
-    def __init__(self, surface, connectivity, default_model=None, default_integrator=None):
-        ContextModelParameters.__init__(self, connectivity, default_model, default_integrator, False)
-        self.surface = surface
-        self.applied_equations = dict()
 
 
     def apply_equation(self, param_name, equation_instance):
@@ -252,9 +93,10 @@ class SurfaceContextModelParameters(ContextModelParameters):
         if model_param in self.applied_equations:
             if triangle_index >= 0:
                 vertex_index = int(self.surface.triangles[triangle_index][0])
-                if vertex_index not in self.applied_equations[model_param][KEY_FOCAL_POINTS]:
-                    self.applied_equations[model_param][KEY_FOCAL_POINTS].append(vertex_index)
-                    self.applied_equations[model_param][KEY_FOCAL_POINTS_TRIANGLES].append(triangle_index)
+                model_equation = self.applied_equations[model_param]
+                if vertex_index not in model_equation[KEY_FOCAL_POINTS]:
+                    model_equation[KEY_FOCAL_POINTS].append(vertex_index)
+                    model_equation[KEY_FOCAL_POINTS_TRIANGLES].append(triangle_index)
 
 
     def remove_focal_point(self, model_param, triangle_index):
@@ -267,18 +109,19 @@ class SurfaceContextModelParameters(ContextModelParameters):
         triangle_index = int(triangle_index)
         if model_param in self.applied_equations:
             if triangle_index >= 0:
-                if triangle_index in self.applied_equations[model_param][KEY_FOCAL_POINTS_TRIANGLES]:
-                    f_p_idx = self.applied_equations[model_param][KEY_FOCAL_POINTS_TRIANGLES].index(triangle_index)
-                    self.applied_equations[model_param][KEY_FOCAL_POINTS].remove(
-                        self.applied_equations[model_param][KEY_FOCAL_POINTS][f_p_idx])
-                    self.applied_equations[model_param][KEY_FOCAL_POINTS_TRIANGLES].remove(triangle_index)
+                model_equation = self.applied_equations[model_param]
+
+                if triangle_index in model_equation[KEY_FOCAL_POINTS_TRIANGLES]:
+                    f_p_idx = model_equation[KEY_FOCAL_POINTS_TRIANGLES].index(triangle_index)
+                    model_equation[KEY_FOCAL_POINTS].remove(model_equation[KEY_FOCAL_POINTS][f_p_idx])
+                    model_equation[KEY_FOCAL_POINTS_TRIANGLES].remove(triangle_index)
 
 
     def reset_equations_for_all_parameters(self):
         """
         Reset the equations for all the model parameters.
         """
-        self.applied_equations = dict()
+        self.applied_equations = {}
 
 
     def reset_param_equation(self, model_param):
@@ -293,9 +136,10 @@ class SurfaceContextModelParameters(ContextModelParameters):
         """
         :returns: the applied equation for the given model param OR None if there is no equation applied to this param.
         """
-        if parameter_name in self.applied_equations and KEY_EQUATION in self.applied_equations[parameter_name]:
+        try:
             return self.applied_equations[parameter_name][KEY_EQUATION]
-        return None
+        except KeyError:
+            return None
 
 
     def get_focal_points_for_parameter(self, parameter_name):
@@ -303,6 +147,7 @@ class SurfaceContextModelParameters(ContextModelParameters):
         :returns: the list of focal points for the equation applied in the given model param.
         """
         if parameter_name in self.applied_equations and KEY_FOCAL_POINTS in self.applied_equations[parameter_name]:
+            # todo did the above check intent to be for KEY_FOCAL_POINTS_TRIANGLES?
             return self.applied_equations[parameter_name][KEY_FOCAL_POINTS_TRIANGLES]
         return []
 

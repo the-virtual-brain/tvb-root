@@ -530,7 +530,7 @@ class PhasePlaneInteractive(object):
         self.default_sv = sv_mean.repeat(self.model.number_of_modes, axis=2)
         self.no_coupling = numpy.zeros((self.model.nvar, 1, self.model.number_of_modes))
 
-#mark
+
     def _calc_phase_plane(self):
         """ Calculate the vector field. """
         svx_ind = self.model.state_variables.index(self.svx)
@@ -621,43 +621,4 @@ class PhasePlaneInteractive(object):
             self._plot_trajectory(x, y)
 
 
-    def update_model_parameter(self, param_name, param_new_value):
-        """
-        Update model parameters based on the current parameter slider values.
 
-        NOTE: Haven't figured out how to update independantly, so just update
-            everything.
-        """
-        #TODO: Grab caller and use val directly, ie independent parameter update.
-        setattr(self.model, param_name, numpy.array([param_new_value]))
-
-        self.model.update_derived_parameters()
-        self._calc_phase_plane()
-        self._update_phase_plane()
-
-
-    def update_all_model_parameters(self, model_instance):
-        for key in model_instance.ui_configurable_parameters:
-            attr = getattr(model_instance, key)
-            if isinstance(attr, numpy.ndarray) and attr.size == 1:
-                setattr(self.model, key, numpy.array([attr[0]]))
-
-        self.model.update_derived_parameters()
-        self._calc_phase_plane()
-        self._update_phase_plane()
-
-
-    def update_model_parameters_from_dict(self, parameters_dict):
-        """
-        NOTE: I expect that the given parameters exists on the current
-        model and also that they are numpy arrays.
-
-        Sets the parameters from the given dict on the current
-        model instance and also updates the phase-plane.
-        """
-        for param_name in parameters_dict:
-            setattr(self.model, param_name, numpy.array([parameters_dict[param_name]]))
-
-        self.model.update_derived_parameters()
-        self._calc_phase_plane()
-        self._update_phase_plane()
