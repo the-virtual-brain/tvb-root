@@ -39,7 +39,7 @@ import json
 import cherrypy
 from tvb.adapters.visualizers.connectivity import ConnectivityViewer
 from tvb.core.adapters.abcadapter import ABCAdapter
-from tvb.core.entities.model import PARAM_CONNECTIVITY, PARAMS_MODEL_PATTERN
+from tvb.core.entities.model import PARAM_CONNECTIVITY, PARAMS_MODEL_PATTERN, PARAM_MODEL
 from tvb.core.entities.storage import dao
 from tvb.interfaces.web.controllers import common
 from tvb.interfaces.web.controllers.burst.base_controller import BurstBaseController
@@ -110,7 +110,10 @@ class RegionsModelParametersController(BurstBaseController):
         burst_configuration = common.get_from_session(common.KEY_BURST_CONFIG)
         model_parameters = self.group_parameter_values_by_name(json.loads(d.model_parameters) for d in dynamics)
 
-        # todo: change model in burst config
+        # change selected model in burst config
+        burst_configuration.update_simulation_parameter(PARAM_MODEL, model_name)
+
+        # update model parameters in burst config
         for param_name, param_vals in model_parameters.iteritems():
             full_name = PARAMS_MODEL_PATTERN % (model_name, param_name)
             burst_configuration.update_simulation_parameter(full_name, str(param_vals))

@@ -108,7 +108,7 @@ function onCanvasPick(){
 function onShowDynamicDetails(){
     var dynamic_id = $('#current_dynamic').val();
     doAjaxCall({
-        url:'/spatial/modelparameters/regions/dynamic_detail/' + dynamic_id,
+        url:'/burst/dynamic/dynamic_detail/' + dynamic_id,
         success:function(frag){
             $('#dynamic-detail').find('.dropdown-pane').html(frag);
         }
