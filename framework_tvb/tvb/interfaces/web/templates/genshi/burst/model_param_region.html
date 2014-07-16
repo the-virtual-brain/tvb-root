@@ -1,0 +1,84 @@
+<div id="main" class="columnized colscheme-2-even" xmlns:xi="http://www.w3.org/2001/XInclude">
+    <link rel="stylesheet" type="text/css" href="/static/style/section_stimulus.css?$currentVersionJS"/>
+    <script type="text/javascript" src="/static/js/canvas2image.js"></script>
+    <script type="text/javascript" src="/static/js/bursts_model_parameters.js" ></script>
+
+    <section class="configure-stimulus-equation view-column col-2"  xmlns:xi="http://www.w3.org/2001/XInclude">
+        <h4><mark>Select</mark> Connectivity Region</h4>
+        <xi:include href="../visualizers/connectivity/left_template_connectivity_view.html"/>
+    </section>
+
+    <section xmlns:xi="http://www.w3.org/2001/XInclude" xmlns:py="http://genshi.edgewall.org/"
+         class="configure-stimulus-shape view-column col-1">
+
+        <h4><mark>Configure</mark> Node Parameters</h4>
+        <xi:include href="../visualizers/commons/channel_selector.html" />
+        <xi:include href="../visualizers/commons/channel_selector_quick.html" />
+
+        <ul class="toolbar-inline">
+            <li>
+                <label for="current_dynamic">Select model configuration</label>
+                <select id="current_dynamic" tabindex="1" class="dataset-selector">
+                    <option py:for="dyn in dynamics" value="${dyn.id}">${dyn.model_class} - ${dyn.name}</option>
+                </select>
+            </li>
+
+            <li>
+                <nav class="inline-menu" id="dynamic-detail">
+                    <button class="action action-menu"> detail </button>
+                    <div class="extension">
+                        <div class="dropdown-pane">
+                        </div>
+                    </div>
+                </nav>
+            </li>
+
+            <li>
+                <button id="put-model" class="action action-store" title="Put into selected nodes">Put into selected nodes</button>
+            </li>
+
+            <!-- Quick-Select -->
+            <li class="selector-storage">
+                ${drawQuickSelector("selection-text-area", "loadSelectionFromTextBtn")}
+            </li>
+        </ul>
+
+        ${drawRegionSelector(connectivity_entity.display_name, "channelSelector", groupedLabels, initialSelection)}
+    </section>
+
+    <form id="base_spatio_temporal_form" action="${submit_parameters_url}" method="POST">
+	    <!-- === Box: Form controls -->
+	    <aside class="header-component toolbar can-extend auto-extends">
+	    	<h3>SpatioTemporal Entities</h3>
+		    <div class="extension">
+		        <div class="dropdown-pane">
+	                <ul>
+                        <li>
+                            <button class="action action-download" type="button" id="ctrl-action-export">
+                                Save Figure
+                            </button>
+                        </li>
+                        <li>
+                            <button class="action action-confirm">
+                                Submit Region Parameters
+                            </button>
+                        </li>
+	                </ul>
+	            </div>
+	        </div>
+	    </aside>
+        <input type="hidden" name="dynamic_ids" />
+	</form>
+
+	<script type="text/javascript">
+        $(document).ready(function () {
+            $("#ctrl-action-export").click(function(){
+                C2I_exportFigures({suggestedName:"region-parameters"});
+                return false;
+            });
+
+            modelParam.main($dynamics_json, "${measurePointsSelectionGID}");
+        });
+    </script>
+
+</div>

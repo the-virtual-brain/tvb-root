@@ -29,13 +29,18 @@
 #
 """
 .. moduleauthor:: Bogdan Neacsa <bogdan.neacsa@codemart.ro>
+.. moduleauthor:: Mihai Andrei <mihai.andrei@codemart.ro>
 """
 import json
 import unittest
 import cherrypy
+from tvb.core.entities.model import Dynamic
+from tvb.core.entities.storage import dao
 import tvb.interfaces.web.controllers.common as common
-from tvb.interfaces.web.controllers.spatial.region_model_parameters_controller import RegionsModelParametersController
+from tvb.interfaces.web.controllers.burst.region_model_parameters_controller import RegionsModelParametersController
 from tvb.interfaces.web.controllers.burst.burst_controller import BurstController
+from tvb.simulator.integrators import HeunDeterministic
+from tvb.simulator.models import Generic2dOscillator, Kuramoto
 from tvb.tests.framework.core.base_testcase import TransactionalTestCase
 from tvb.tests.framework.interfaces.web.controllers.base_controller_test import BaseControllersTest
 from tvb.tests.framework.datatypes.datatypes_factory import DatatypesFactory
@@ -60,107 +65,69 @@ class RegionsModelParametersControllerTest(TransactionalTestCase, BaseController
             new_params[key] = {'value': val}
         new_params['connectivity'] = {'value': self.connectivity.gid}
         stored_burst.simulator_configuration = new_params
-    
-    
+
+    def _setup_dynamic(self):
+        dynamic_g = Dynamic("test_dyn", self.test_user.id,
+                          Generic2dOscillator.__name__,
+                          '[["tau", [1.0]], ["a", [5.0]], ["b", [-10.0]], ["c", [10.0]], ["I", [0.0]], ["d", [0.02]], ["e", [3.0]], ["f", [1.0]], ["g", [0.0]], ["alpha", [1.0]], ["beta", [5.0]], ["gamma", [1.0]]]',
+                          HeunDeterministic.__name__,
+                          None)
+
+        dynamic_k = Dynamic("test_dyn_kura", self.test_user.id,
+                          Kuramoto.__name__,
+                          '[["omega", [1.0]]]',
+                          HeunDeterministic.__name__,
+                          None)
+
+        self.dynamic_g = dao.store_entity(dynamic_g)
+        self.dynamic_k = dao.store_entity(dynamic_k)
+
     def tearDown(self):
         """ Clean the testing environment """
         BaseControllersTest.cleanup(self)
-#        if os.path.exists(cfg.TVB_CONFIG_FILE):
-#            os.remove(cfg.TVB_CONFIG_FILE)
     
     
-    def test_edit_model_parameters(self):
+    def test_index(self):
         """
         Verifies that result dictionary has the expected keys / values after call to
         `edit_model_parameters()`
         """
-        result_dict = self.region_m_p_c.edit_model_parameters()
+        result_dict = self.region_m_p_c.index()
         self.assertEqual(self.connectivity.gid, result_dict['connectivity_entity'].gid)
-        self.assertTrue(result_dict['displayDefaultSubmitBtn'])
-        self.assertEqual(result_dict['mainContent'], 'spatial/model_param_region_main')
+        self.assertEqual(result_dict['mainContent'], 'burst/model_param_region')
         self.assertEqual(result_dict['submit_parameters_url'], 
-                         '/spatial/modelparameters/regions/submit_model_parameters')
-        self.assertTrue('paramSlidersData' in result_dict)
-        self.assertTrue('parametersNames' in result_dict)
+                         '/burst/modelparameters/regions/submit_model_parameters')
+        self.assertTrue('dynamics' in result_dict)
+        self.assertTrue('dynamics_json' in result_dict)
         self.assertTrue('pointsLabels' in result_dict)
         self.assertTrue('positions' in result_dict)
+
+        json.loads(result_dict['dynamics_json'])
+
         
-        
-    def test_load_model_for_connectivity_node(self):
-        """
-        Verifies that result dictionary has the expected keys / values after call to
-        `edit_model_parameters()`
-        """
-        self.region_m_p_c.edit_model_parameters()
-        result_dict = self.region_m_p_c.load_model_for_connectivity_node(1)
-        self.assertTrue('paramSlidersData' in result_dict)
-        self.assertTrue('parametersNames' in result_dict)
-        
-        
-    def test_update_model_parameter_for_nodes(self):
-        """
-        Verifies that result dictionary has the expected keys / values after call to
-        `update_model_parameter_for_nodes(...)`
-        """
-        self.region_m_p_c.edit_model_parameters()
-        result_dict = self.region_m_p_c.load_model_for_connectivity_node(1)
-        param_names = result_dict['parametersNames']
-        param_values = json.loads(result_dict['paramSlidersData'])
-        old_value = param_values[param_names[0]]["default"]
-        self.region_m_p_c.update_model_parameter_for_nodes(param_names[0], 
-                                                           old_value + 1, json.dumps([1]))
-        result_dict = self.region_m_p_c.load_model_for_connectivity_node(1)
-        param_names = result_dict['parametersNames']
-        param_values = json.loads(result_dict['paramSlidersData'])
-        self.assertEqual(param_values[param_names[0]]["default"], old_value + 1)
-        
-        
-    def test_copy_model(self):
-        """
-        Verifies that result dictionary has the expected keys / values after call to
-        `copy_model()`
-        """
-        self.region_m_p_c.edit_model_parameters()
-        result_dict = self.region_m_p_c.load_model_for_connectivity_node(1)
-        param_names = result_dict['parametersNames']
-        param_values = json.loads(result_dict['paramSlidersData'])
-        old_value = param_values[param_names[0]]["default"]
-        self.region_m_p_c.update_model_parameter_for_nodes(param_names[0], 
-                                                           old_value + 1, json.dumps([1]))
-        self.region_m_p_c.copy_model('1', json.dumps([2]))
-        result_dict = self.region_m_p_c.load_model_for_connectivity_node(2)
-        param_names = result_dict['parametersNames']
-        param_values = json.loads(result_dict['paramSlidersData'])
-        self.assertEqual(param_values[param_names[0]]["default"], old_value + 1)
-        
-        
-    def test_reset_model_parameters_for_nodes(self):
-        """
-        Verifies that result dictionary has the expected keys / values after call to
-        `reset_model_parameters_for_nodes(...)`
-        """
-        self.region_m_p_c.edit_model_parameters()
-        result_dict = self.region_m_p_c.load_model_for_connectivity_node(1)
-        param_names = result_dict['parametersNames']
-        param_values = json.loads(result_dict['paramSlidersData'])
-        old_value = param_values[param_names[0]]["default"]
-        self.region_m_p_c.update_model_parameter_for_nodes(param_names[0], 
-                                                           old_value + 1, json.dumps([1]))
-        self.region_m_p_c.reset_model_parameters_for_nodes(json.dumps([1]))
-        result_dict = self.region_m_p_c.load_model_for_connectivity_node(2)
-        param_names = result_dict['parametersNames']
-        param_values = json.loads(result_dict['paramSlidersData'])
-        self.assertEqual(param_values[param_names[0]]["default"], old_value)
-        
-        
-    def test_submit_model_parameters(self):
+    def test_submit_model_parameters_happy(self):
         """
         Verifies call to `submit_model_parameters(...)` correctly redirects to '/burst/'
         """
-        self.region_m_p_c.edit_model_parameters()
-        self._expect_redirect('/burst/', self.region_m_p_c.submit_model_parameters)
+        self._setup_dynamic()
+        self.region_m_p_c.index()
+
+        dynamic_ids = json.dumps([self.dynamic_g.id for _ in range(self.connectivity.number_of_regions)])
+
+        self._expect_redirect('/burst/', self.region_m_p_c.submit_model_parameters, dynamic_ids)
         
-            
+
+    def test_submit_model_parameters_inconsistent_models(self):
+        self._setup_dynamic()
+        self.region_m_p_c.index()
+
+        dynamic_ids = [self.dynamic_g.id for _ in range(self.connectivity.number_of_regions)]
+        dynamic_ids[-1] = self.dynamic_k.id
+        dynamic_ids = json.dumps(dynamic_ids)
+
+        self.assertRaises(Exception,  self.region_m_p_c.submit_model_parameters, dynamic_ids)
+
+
 def suite():
     """
     Gather all the tests in a test suite.

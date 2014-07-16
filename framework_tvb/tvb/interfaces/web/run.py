@@ -81,10 +81,10 @@ from tvb.interfaces.web.controllers.project.figure_controller import FigureContr
 from tvb.interfaces.web.controllers.flow_controller import FlowController
 from tvb.interfaces.web.controllers.settings_controller import SettingsController
 from tvb.interfaces.web.controllers.burst.burst_controller import BurstController
+from tvb.interfaces.web.controllers.burst.region_model_parameters_controller import RegionsModelParametersController
 from tvb.interfaces.web.controllers.burst.exploration_controller import ParameterExplorationController
 from tvb.interfaces.web.controllers.burst.dynamic_model_controller import DynamicModelController
 from tvb.interfaces.web.controllers.spatial.base_spatio_temporal_controller import SpatioTemporalController
-from tvb.interfaces.web.controllers.spatial.region_model_parameters_controller import RegionsModelParametersController
 from tvb.interfaces.web.controllers.spatial.surface_model_parameters_controller import SurfaceModelParametersController
 from tvb.interfaces.web.controllers.spatial.region_stimulus_controller import RegionStimulusController
 from tvb.interfaces.web.controllers.spatial.surface_stimulus_controller import SurfaceStimulusController
@@ -122,7 +122,7 @@ def init_cherrypy(arguments=None):
     cherrypy.tree.mount(ParameterExplorationController(), "/burst/explore/", config=CONFIGUER)
     cherrypy.tree.mount(DynamicModelController(), "/burst/dynamic/", config=CONFIGUER)
     cherrypy.tree.mount(SpatioTemporalController(), "/spatial/", config=CONFIGUER)
-    cherrypy.tree.mount(RegionsModelParametersController(), "/spatial/modelparameters/regions/", config=CONFIGUER)
+    cherrypy.tree.mount(RegionsModelParametersController(), "/burst/modelparameters/regions/", config=CONFIGUER)
     cherrypy.tree.mount(SurfaceModelParametersController(), "/spatial/modelparameters/surface/", config=CONFIGUER)
     cherrypy.tree.mount(RegionStimulusController(), "/spatial/stimulus/region/", config=CONFIGUER)
     cherrypy.tree.mount(SurfaceStimulusController(), "/spatial/stimulus/surface/", config=CONFIGUER)

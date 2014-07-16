@@ -111,7 +111,7 @@ function onModelChanged(name){
     doAjaxCall({
         url: _url('model_changed', name) ,
         success: function(data){
-            dynamicPage.sliderDefaultState = $.parseJSON(data).options;
+            dynamicPage.sliderDefaultState = JSON.parse(data).options;
             _fetchSlidersFromServer();
         }
     });

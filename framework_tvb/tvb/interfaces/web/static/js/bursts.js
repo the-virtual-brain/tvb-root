@@ -465,7 +465,7 @@ function configureModel(actionUrl) {
 }
 
 function configureModelParamsOnRegions() {
-    configureModel("/spatial/modelparameters/regions/edit_model_parameters/");
+    configureModel("/burst/modelparameters/regions/");
 }
 
 function configureModelParamsOnSurface() {
