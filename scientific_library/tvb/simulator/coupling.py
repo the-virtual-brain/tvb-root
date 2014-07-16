@@ -409,17 +409,78 @@ class Sigmoidal(Coupling):
         return sig
 
 
-    # TODO finish this
-    device_info = coupling_device_info(
-        pars = ['cmin', 'cmax', 'midpoint', 'sigma'],
-        kernel = """
-        // load parameters
-        float cmin     = P(0)
-            , cmax     = P(1)
-            , midpoint = P(2)
-            , sigma    = P(3)
+class SigmoidalJansenRit(Sigmoidal):
+    """
+    Sigmoidal Coupling function for the Jansen and Rit model.
+
+    """
+
+
+    cmin = arrays.FloatArray(
+        label = ":math:`c_{min}`",
+        default = numpy.array([0.0,]),
+        range = basic.Range(lo = -1000.0, hi = 1000.0, step = 10.0),
+        doc = """Minimum of the sigmoid function""",
+        order = 1)
+
+    cmax = arrays.FloatArray(
+        label = ":math:`c_{max}`",
+        default = numpy.array([2.0 * 0.0025,]),
+        range = basic.Range(lo = -1000.0, hi = 1000.0, step = 10.0),
+        doc = """Maximum of the sigmoid function""",
+        order = 2)
+
+    midpoint = arrays.FloatArray(
+        label = "midpoint",
+        default = numpy.array([6.0,]),
+        range = basic.Range(lo = -1000.0, hi = 1000.0, step = 10.0),
+        doc = """Midpoint of the linear portion of the sigmoid""",
+        order = 3)
+
+    r  = arrays.FloatArray(
+        label = r":math:`r`",
+        default = numpy.array([1.0,]),
+        range = basic.Range(lo = 0.01, hi = 1000.0, step = 10.0),
+        doc = """the steepness of the sigmoidal transformation""",
+        order = 4)
+
+
+    a = arrays.FloatArray(
+        label = r":math:`a`",
+        default = numpy.array([0.56,]),
+        range = basic.Range(lo = 0.01, hi = 1000.0, step = 10.0),
+        doc = """Scaling of the coupling term """,
+        order = 5)
+
+
+
+
+    def __init__(self, **kwargs):
+        """Precompute a constant after the base __init__"""
+        super(SigmoidalJansenRit, self).__init__(**kwargs)
+
+
+    def __call__(self, g_ij, x_i, x_j):
+        r"""
+        Evaluate the Sigmoidal function for the arg ``x``. The equation being
+        evaluated has the following form:
+
+            .. math::
+                c_{min} + (c_{max} - c_{min}) / (1.0 + \exp(-a(x-midpoint)/\sigma))
+
+        Assumes that x_j has have two state variables.
+
+
         """
-    )
+
+        magic_exp_number = 709
+        diff_input = x_j[:, 0, numpy.newaxis, :, :] - x_j[:, 1, numpy.newaxis, :, :]        
+        temp       = self.r * (self.midpoint - (diff_input))
+        sigm_y1_y2 = numpy.where(temp > magic_exp_number, self.cmax / (1.0 + numpy.exp(temp)), self.cmax / (1.0 + numpy.exp(temp)))     
+        coupled_input = self.a * ( g_ij * sigm_y1_y2).sum(axis=0)
+
+        return coupled_input
+
 
 class PreSigmoidal(Coupling):
     """Pre-Sigmoidal Coupling function (pre-product) with a Static/Dynamic 
@@ -542,6 +603,7 @@ class PreSigmoidal(Coupling):
         return numpy.array([c_0, c_1])
 
 
+
 class Difference(Coupling):
 
     a = arrays.FloatArray(
@@ -575,6 +637,7 @@ class Difference(Coupling):
             I += a*GIJ*(XJ - XI);
         """
         )
+
 
 
 class Kuramoto(Coupling):
