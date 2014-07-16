@@ -26,130 +26,6 @@
  * ---------------------------------------===========================================--------------------------------------
  */
 
-
-/**
- * Draws sliders for the parameters of a model.
- *
- * @param paramSlidersData will be a dictionary of form:
- * dict = {'$param_name': { 'min': $min, 'max': $max, 'default': $default, 'name': '$param_name'},
- *          ...,
- *          'all_param_names': [list_with_all_parameters_names]
- *          }
- */
-function MP_drawSlidersForModelParameters(paramSlidersData) {
-    paramSlidersData = $.parseJSON(paramSlidersData);
-    for (var i = 0; i < paramSlidersData['all_param_names'].length; i++) {
-        var paramName = paramSlidersData['all_param_names'][i];
-        var paramData = paramSlidersData[paramName];
-
-        _drawSlider(paramName, paramData['min'], paramData['max'], paramData['step'], paramData['default']);
-    }
-}
-
-function _drawSlider(name, minValue, maxValue, stepValue, defaultValue) {
-    var sliderElement = $("#" + name);
-    sliderElement.slider({
-        value: defaultValue,
-        min: minValue,
-        max: maxValue,
-        step: stepValue
-    });
-
-    $("#value_" + name).text(defaultValue);
-
-    sliderElement.slider({
-        change: function(event, ui) {
-            if (GVAR_interestAreaNodeIndexes.length == 0) {
-                displayMessage(NO_NODE_SELECTED_MSG, "errorMessage");
-            } else {
-	            var newValue = $('#' + name).slider("option", "value");
-	            $("#value_" + name).text(newValue);
-	            doAjaxCall({
-	                async:false,
-	                type:'GET',
-	                url:'/spatial/modelparameters/regions/update_model_parameter_for_nodes/' + name + '/' + newValue + '/' + $.toJSON(GVAR_interestAreaNodeIndexes),
-	                success:function (data) { }
-	            });
-			}
-        }
-    });
-}
-
-
-/**
- * @param parentDivId the id of the div in which are drawn the model parameters sliders
- */
-function MP_resetParamSliders(parentDivId) {
-    if (GVAR_interestAreaNodeIndexes.length > 0) {
-        doAjaxCall({
-            async:false,
-            type:'GET',
-            url:'/spatial/modelparameters/regions/reset_model_parameters_for_nodes/' + $.toJSON(GVAR_interestAreaNodeIndexes),
-            success:function (data) {
-                $("#" + parentDivId).empty().append(data);
-            }
-        });
-    }
-}
-
-function _loadModelForConnectivityNode(connectivityNodeIndex, paramSlidersDivId) {
-    if (connectivityNodeIndex >= 0) {
-        doAjaxCall({
-            async:false,
-            type:'GET',
-            url:'/spatial/modelparameters/regions/load_model_for_connectivity_node/' + connectivityNodeIndex,
-            success:function (data) {
-                $("#" + paramSlidersDivId).empty().append(data);
-            }
-        });
-    }
-}
-
-
-/**
- * This method will toggle the selected node.
- * If there remains only one selected node than this method
- * will also load the model, for the remaining selected node,
- * into the phase plane viewer.
- *
- * @param nodeIndex the index of the node that hast to be toggled.
- */
-function MP_toggleAndLoadModel(nodeIndex) {
-    BS_toggleNodeSelection(nodeIndex);
-    if (GFUNC_isNodeAddedToInterestArea(nodeIndex)) {
-        if (GVAR_interestAreaNodeIndexes.length == 1) {
-            _loadModelForConnectivityNode(GVAR_interestAreaNodeIndexes[0], 'div_spatial_model_params');
-        } else if (GVAR_interestAreaNodeIndexes.length > 1) {
-            _copyModel(GVAR_interestAreaNodeIndexes[0], [nodeIndex]);
-        }
-    }
-}
-
-
-function MP_copyAndLoadModel() {
-    if (GVAR_interestAreaNodeIndexes.length != 0) {
-        _copyModel(GVAR_interestAreaNodeIndexes[0], GVAR_interestAreaNodeIndexes.slice(1));
-        _loadModelForConnectivityNode(GVAR_interestAreaNodeIndexes[0], 'div_spatial_model_params');
-    }
-}
-
-
-/**
- * Replace the model of the nodes 'to_nodes' with the model of the node 'from_node'.
- *
- * @param fromNode the index of the node from where will be copied the model
- * @param toNodes a list with the nodes indexes for which will be replaced the model
- */
-function _copyModel(fromNode, toNodes) {
-    doAjaxCall({
-        async:false,
-        type:'POST',
-        url:'/spatial/modelparameters/regions/copy_model/' + fromNode + '/' + $.toJSON(toNodes),
-        success:function (data) {
-        }
-    });
-}
-
 function MP_getSelectedParamName(){
     var maybeSelect = $("[name='model_param']");
     if ( maybeSelect.prop('tagName') == "SELECT" ){
@@ -220,10 +96,10 @@ function MP_addFocalPointForSurfaceModelParam() {
  * Redraw the left side (3D surface view) of the focal points recieved in the json.
  */
 function MP_redrawSurfaceFocalPoints(focalPointsJson) {
-	BASE_PICK_clearFocalPoints();
-	BS_addedFocalPointsTriangles = [];
-	var focalPointsTriangles = $.parseJSON(focalPointsJson);
-	for (var i = 0; i < focalPointsTriangles.length; i++) {
+    BASE_PICK_clearFocalPoints();
+    BS_addedFocalPointsTriangles = [];
+    var focalPointsTriangles = $.parseJSON(focalPointsJson);
+    for (var i = 0; i < focalPointsTriangles.length; i++) {
         TRIANGLE_pickedIndex = parseInt(focalPointsTriangles[i]);
         BASE_PICK_moveBrainNavigator(true);
         BASE_PICK_addFocalPoint(TRIANGLE_pickedIndex);
@@ -259,31 +135,31 @@ function MP_onSubmit(ev){
 // --------------------------------------------------------------------------------------
 
 function NP_updateNoiseParameters(rootDivID) {
-	var noiseValues = {};
-	var displayedValue = '[';
-	$('#' + rootDivID).find("input[id^='noisevalue']")
+    var noiseValues = {};
+    var displayedValue = '[';
+    $('#' + rootDivID).find("input[id^='noisevalue']")
                       .each( function() {
                                     var nodeIdx = this.getAttribute('id').split('__')[1];
                                     noiseValues[parseInt(nodeIdx)] = $(this).val();
                                     displayedValue += $(this).val() + ' '
                                 } );
-	displayedValue = displayedValue.slice(0, -1);
-	displayedValue += ']';
-	var submitData = {'selectedNodes': $.toJSON(GVAR_interestAreaNodeIndexes),
-					  'noiseValues': $.toJSON(noiseValues)};
-					  
-	doAjaxCall({  	type: "POST",
-    			async: true,
-				url: '/spatial/noiseconfiguration/update_noise_configuration',
-				data: submitData, 
-				traditional: true,
+    displayedValue = displayedValue.slice(0, -1);
+    displayedValue += ']';
+    var submitData = {'selectedNodes': $.toJSON(GVAR_interestAreaNodeIndexes),
+                      'noiseValues': $.toJSON(noiseValues)};
+
+    doAjaxCall({type: "POST",
+                async: true,
+                url: '/spatial/noiseconfiguration/update_noise_configuration',
+                data: submitData,
+                traditional: true,
                 success: function() {
-                	var nodesLength = GVAR_interestAreaNodeIndexes.length;
-				    for (var i = 0; i < nodesLength; i++) {
-				        $("#nodeScale" + GVAR_interestAreaNodeIndexes[i]).text(displayedValue);
-				        document.getElementById("nodeScale" + GVAR_interestAreaNodeIndexes[i]).className = "node-scale node-scale-selected"
-				    }
-				    GFUNC_removeAllMatrixFromInterestArea();
+                    var nodesLength = GVAR_interestAreaNodeIndexes.length;
+                    for (var i = 0; i < nodesLength; i++) {
+                        $("#nodeScale" + GVAR_interestAreaNodeIndexes[i]).text(displayedValue);
+                        document.getElementById("nodeScale" + GVAR_interestAreaNodeIndexes[i]).className = "node-scale node-scale-selected"
+                    }
+                    GFUNC_removeAllMatrixFromInterestArea();
                 }
             });
 }
@@ -305,13 +181,13 @@ function _fill_node_selection_with_noise_values(data) {
  * Load the default values for the table-like connectivity node selection display.
  */
 function NP_loadDefaultNoiseValues() {
-	doAjaxCall({  	type: "POST",
-    			async: true,
-				url: '/spatial/noiseconfiguration/load_initial_values',
-				traditional: true,
+    doAjaxCall({type: "POST",
+                async: true,
+                url: '/spatial/noiseconfiguration/load_initial_values',
+                traditional: true,
                 success: function(r) {
                     _fill_node_selection_with_noise_values(r);
-				    GFUNC_removeAllMatrixFromInterestArea();
+                    GFUNC_removeAllMatrixFromInterestArea();
                 }
             });
 }
@@ -344,10 +220,10 @@ function _loadNoiseValuesForConnectivityNode(connectivityNodeIndex) {
             url:'/spatial/noiseconfiguration/load_noise_values_for_connectivity_node/' + connectivityNodeIndex,
             showBlockerOverlay : true,
             success:function (data) {
-            	var parsedData = $.parseJSON(data);
-            	for (var key in parsedData) {
-            		$('#noisevalue__' + key).val(parsedData[key]);
-            	}
+                var parsedData = $.parseJSON(data);
+                for (var key in parsedData) {
+                    $('#noisevalue__' + key).val(parsedData[key]);
+                }
             }
         });
     }

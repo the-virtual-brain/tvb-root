@@ -1,7 +1,7 @@
 <div xmlns:py="http://genshi.edgewall.org/" py:strip="True">
     <!-- Hemisphere table -->
     <!-- This file is DEPRECATED -->
-    <py:def function="drawHemisphereSection(hemisphereName, pointLabels, shiftNumber, usedInArea)">
+    <py:def function="drawHemisphereSection(hemisphereName, pointLabels, shiftNumber)">
         <section class="submatrix">
             <h5>$hemisphereName hemisphere</h5>
 
@@ -12,31 +12,11 @@
                         <tr>
                             <py:for each="j in range(COLS_NUMBER)">
                                 <py:if test="i*COLS_NUMBER + j &lt; len(pointLabels)">
-                                    <py:if test="usedInArea == 'interestSelection'">
-                                        <td id='nodeSelection${shiftNumber + i*COLS_NUMBER + j}' onclick='SEL_toggleNodeSelection(this)' class="selected">
-                                            ${pointLabels[i*COLS_NUMBER + j]}
-                                        </td>
-                                    </py:if>
-                                    <py:if test="usedInArea == 'setStimulusScale'">
-                                        <td id='nodeSelection${shiftNumber + i*COLS_NUMBER + j}' class='stimulusScale'
-                                            onclick='STIM_toggleNodeSelection(${shiftNumber + i*COLS_NUMBER + j});'>
-                                            ${pointLabels[i*COLS_NUMBER + j]}
-                                            <span class="node-scale" id="nodeScale${shiftNumber + i*COLS_NUMBER + j}"></span>
-                                        </td>
-                                    </py:if>
-                                    <py:if test="usedInArea == 'setModelParams'">
-                                        <td id='nodeSelection${shiftNumber + i*COLS_NUMBER + j}' class='stimulusScale'
-                                            onclick='MP_toggleAndLoadModel(${shiftNumber + i*COLS_NUMBER + j});'>
-                                            ${pointLabels[i*COLS_NUMBER + j]}
-                                        </td>
-                                    </py:if>
-                                    <py:if test="usedInArea == 'setNoiseConfig'">
-                                        <td id='nodeSelection${shiftNumber + i*COLS_NUMBER + j}' class='stimulusScale'
-                                            onclick='NP_toggleAndLoadNoise(${shiftNumber + i*COLS_NUMBER + j});'>
-                                            ${pointLabels[i*COLS_NUMBER + j]}
-                                            <span class="node-scale" id="nodeScale${shiftNumber + i*COLS_NUMBER + j}">[1]</span>
-                                        </td>
-                                    </py:if>
+                                    <td id='nodeSelection${shiftNumber + i*COLS_NUMBER + j}' class='stimulusScale'
+                                        onclick='NP_toggleAndLoadNoise(${shiftNumber + i*COLS_NUMBER + j});'>
+                                        ${pointLabels[i*COLS_NUMBER + j]}
+                                        <span class="node-scale" id="nodeScale${shiftNumber + i*COLS_NUMBER + j}">[1]</span>
+                                    </td>
                                 </py:if>
                             </py:for>
                         </tr>
