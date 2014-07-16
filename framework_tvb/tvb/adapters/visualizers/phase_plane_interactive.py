@@ -29,20 +29,18 @@
 #
 """
 .. moduleauthor:: Ionel Ortelecan <ionel.ortelecan@codemart.ro>
+.. moduleauthor:: Mihai Andrei <mihai.andrei@codemart.ro>
 """
 
 import numpy
 import pylab
 import colorsys
-import tvb.simulator.integrators as integrators_module
 from matplotlib.widgets import Slider, Button, RadioButtons
 from tvb.basic.config.settings import TVBSettings as config
 from tvb.basic.logger.builder import get_logger
 
 
 # Define a colour theme... see: matplotlib.colors.cnames.keys()
-BACKGROUNDCOLOUR = "slategrey"   # 'gainsboro'
-EDGECOLOUR = "darkslateblue"  # 'lemonchiffon'
 AXCOLOUR = "steelblue"  # 'burlywood'
 BUTTONCOLOUR = "steelblue"  # 'fuchsia'
 HOVERCOLOUR = "darkred"  # 'chartreuse'
@@ -74,9 +72,6 @@ class PhasePlaneInteractive(object):
         self.log = get_logger(self.__class__.__module__)
         self.model = model
         self.integrator = integrator
-        #Make sure the model is fully configured...
-        self.model.configure()
-        self.model.update_derived_parameters()
 
         self.ipp_fig = None
         self.pp_splt = None
@@ -95,14 +90,6 @@ class PhasePlaneInteractive(object):
         self._set_mesh_grid()
         self._calc_phase_plane()
         self._update_phase_plane()
-
-
-    def get_required_memory_size(self, **kwargs):
-        """
-        Return the required memory to run this algorithm.
-        """
-        # Don't know how much memory is needed.
-        return -1
 
 
     def draw_phase_plane(self):
@@ -147,17 +134,6 @@ class PhasePlaneInteractive(object):
         #Sliders
         self._add_axes_range_sliders()
         self._add_state_variable_sliders()
-        if isinstance(self.integrator, integrators_module.IntegratorStochastic):
-            if self.integrator.noise.ntau > 0.0:
-                self.integrator.noise.configure_coloured(self.integrator.dt,
-                                                         (1, self.model.nvar, 1, self.model.number_of_modes))
-            else:
-                self.integrator.noise.configure_white(self.integrator.dt,
-                                                      (1, self.model.nvar, 1, self.model.number_of_modes))
-
-            self._add_noise_slider()
-            self._add_reset_noise_button()
-            self._add_reset_seed_button()
 
         #Reset buttons
         #self._add_reset_param_button()
@@ -264,21 +240,6 @@ class PhasePlaneInteractive(object):
             self.sv_sliders[sv_str].on_changed(self._update_state_variables)
 
 
-    def _add_noise_slider(self):
-        """
-        Add a slider to the figure to allow the integrators noise strength to
-        be set.
-        """
-        pos_shp = [0.04, 0.365, 0.125, 0.025]
-        sax = self.ipp_fig.add_axes(pos_shp, axisbg=AXCOLOUR)
-
-        ## Only get the first value in the array of noise nsig,
-        ## because otherwise the slider does not know what to do with more
-        init_point = self.integrator.noise.nsig.flatten()[0]
-        self.noise_slider = Slider(sax, "Noise", 0.0, 1.0, valinit=init_point)
-        self.noise_slider.on_changed(self._update_noise)
-
-
     def _add_reset_sv_button(self):
         """
         Add a button to the figure for reseting the model state variables to
@@ -292,33 +253,6 @@ class PhasePlaneInteractive(object):
                 svsl.reset()
 
         self.reset_sv_button.on_clicked(reset_state_variables)
-
-
-    def _add_reset_noise_button(self):
-        """
-        Add a button to the figure for resetting the noise to its default value.
-        """
-        bax = self.ipp_fig.add_axes([0.04, 0.4, 0.125, 0.04])
-        self.reset_noise_button = Button(bax, 'Reset noise strength', color=BUTTONCOLOUR, hovercolor=HOVERCOLOUR)
-
-        def reset_noise(event):
-            self.noise_slider.reset()
-
-        self.reset_noise_button.on_clicked(reset_noise)
-
-
-    def _add_reset_seed_button(self):
-        """
-        Add a button to the figure for reseting the random number generator to
-        its intial state. For reproducible noise...
-        """
-        bax = self.ipp_fig.add_axes([0.04, 0.315, 0.125, 0.04])
-        self.reset_seed_button = Button(bax, 'Reset random stream', color=BUTTONCOLOUR, hovercolor=HOVERCOLOUR)
-
-        def reset_seed(event):
-            self.integrator.noise.trait["random_stream"].reset()
-
-        self.reset_seed_button.on_clicked(reset_seed)
 
 
     def _add_reset_axes_button(self):
@@ -402,11 +336,6 @@ class PhasePlaneInteractive(object):
         """ Update the visualised mode based on radio button selection. """
         self.mode = label
         self._update_phase_plane()
-
-
-    def _update_noise(self, nsig):
-        """ Update integrator noise based on the noise slider value. """
-        self.integrator.noise.nsig = numpy.array([nsig, ])
 
 
     def _update_range(self, val):

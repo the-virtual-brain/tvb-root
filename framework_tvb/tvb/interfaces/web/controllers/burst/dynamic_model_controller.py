@@ -57,6 +57,8 @@ class Dynamic(object):
             model = models.Generic2dOscillator()
         if integrator is None:
             integrator = integrators.HeunDeterministic()
+
+        model.configure()
         self.model = model
         self.integrator = integrator
 
@@ -209,6 +211,7 @@ class DynamicModelController(BurstBaseController):
         self.fill_default_attributes(params)
 
         dynamic = self.get_cached_dynamic(dynamic_gid)
+        self._configure_integrator_noise(dynamic.integrator, dynamic.model)
         params.update(dynamic.phase_plane.draw_phase_plane())
         return params
 
