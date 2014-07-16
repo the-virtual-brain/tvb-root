@@ -33,7 +33,6 @@
 
 import unittest
 from tvb.tests.framework.interfaces.web import genshi_test
-from tvb.tests.framework.interfaces.web import context_model_parameters_test
 from tvb.tests.framework.interfaces.web.controllers import controllers_test_main
 
 
@@ -43,7 +42,6 @@ def suite():
     """
     test_suite = unittest.TestSuite()
     test_suite.addTest(genshi_test.suite())
-    test_suite.addTest(context_model_parameters_test.suite())
     test_suite.addTest(controllers_test_main.suite())
     return test_suite
 
