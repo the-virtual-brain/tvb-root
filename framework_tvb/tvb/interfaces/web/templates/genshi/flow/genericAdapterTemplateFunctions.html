@@ -1,6 +1,6 @@
 <div xmlns:py="http://genshi.edgewall.org/" xmlns:xi="http://www.w3.org/2001/XInclude" py:strip="True">
     
-    <!-- Contains the required functions to generate the HTML for primitive types. -->
+    <!--! Contains the required functions to generate the HTML for primitive types. -->
     <xi:include href="type2component/array2component.html"/>
     <xi:include href="type2component/boolean2component.html"/>
     <xi:include href="type2component/datatype2component.html"/>
@@ -12,7 +12,7 @@
  
     	
      <py:def function="create_select_options(inputRow, use_in)">
-     	<!-- Function to generate 'option' elements inside a simple/multiple 'select' components. --> 
+     	<!--! Function to generate 'option' elements inside a simple/multiple 'select' components. -->
      	<py:for each="option in inputRow.options">
 			<py:with vars="add_attrs1={'selected': 'selected'} if ('default' in inputRow) and (str(option.value)==str(inputRow.default)) else {};
 						   input_row_default = [] if 'default' not in inputRow else [inputRow.default] if isinstance(inputRow.default, (str, unicode)) else inputRow.default;
@@ -24,7 +24,7 @@
      </py:def>
      
      <py:def function="generate_help_tooltip(inputRow)">
-		<!--     Generate Green hookpoint for help-text. 	 -->
+		<!--!     Generate Green hookpoint for help-text. 	 -->
      	<py:if test="showOnlineHelp">
 	     	<nav class="inline-menu helper" py:if="'description' in inputRow and inputRow.description is not None and not defined('isCallout')">
 				<a href="#" title="Need help? Click here to get more details" class="helper-hook action-menu">?</a>
@@ -42,7 +42,7 @@
      </py:def>     
      
      <py:def function="add_checkbox_control(inputRow)">
-		<!--     Add checkbox near a controller to filter controls visible. 	 -->
+		<!--!     Add checkbox near a controller to filter controls visible. 	 -->
      	<py:if test="param_checkbox_config == True">
 	     	<p class="field-adapters">
 	     		<py:with vars="add_attrs = {'checked': 'checked'} if (none_checked or inputRow.name in selectedParametersDictionary and selectedParametersDictionary[inputRow.name]['checked']) else {};
@@ -55,8 +55,8 @@
      </py:def>
     
     <py:def function="generateDisplay(inputList, disabled, parentDivId, treeSessionKey='defaultTree', extra_class=None, draw_hidden_ranges = False)">
-        <!--    Genshi function, to generate one level in the tree of Adapter input parameters. -->
-        <!-- In case some other form of elements except selects and inputs are used /static/JS/bursts.js should also be changed -->
+        <!--!    Genshi function, to generate one level in the tree of Adapter input parameters. -->
+        <!--! In case some other form of elements except selects and inputs are used /static/JS/bursts.js should also be changed -->
         <fieldset>
             <py:if test="draw_hidden_ranges">
                 <!-- This inputs will be used to remember which rangers are currently selected in UI.  -->
@@ -78,7 +78,7 @@
 	                    <py:if test="inputRow.type=='upload'">${draw_upload(inputRow)}</py:if>       
 	                    <py:if test="inputRow.type=='array'">${draw_array_component(inputRow, disabled)}</py:if>
 	                    <py:if test="inputRow.type=='str'">${draw_string_component(inputRow, disabled)}</py:if>
-	                    <!--When type is List we expect to have a string which should be the json representation of a list -->
+	                    <!--! When type is List we expect to have a string which should be the json representation of a list -->
 	                    <py:if test="inputRow.type=='list'">${draw_string_component(inputRow, disabled)}</py:if>
 	                    <py:if test="inputRow.type=='bool'">${draw_bool(inputRow)}</py:if>
 	                    <py:if test="inputRow.type=='int'">${draw_number_component(inputRow, disabled, parentDivId)}</py:if>
@@ -91,7 +91,7 @@
                    
                     <p class="field-comment errorMessage" py:if="'inputRow.name' in errors">${errors[inputRow.name]}</p>
                     
-                    <!--  In case a new level in the tree is needed, call recursively the function to display it.-->
+                    <!--!  In case a new level in the tree is needed, call recursively the function to display it.-->
                     <py:if test="inputRow.type=='dict'">
                     	<label>Dictionary of parameters</label>
                     	<div id="dict_$inputRow.name">

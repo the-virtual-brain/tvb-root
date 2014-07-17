@@ -1,7 +1,7 @@
 <div xmlns:py="http://genshi.edgewall.org/" py:strip="True">
     
     <py:def function="drawSelectComponentRange(parentId, inputRow, disabled)">
-     <!--    Function to generate the UI component for a Select Ranger. -->
+     <!--!    Function to generate the UI component for a Select Ranger. -->
       <p class="field-adapters">
         <table id="${parentId}" class="ranger-div-class" border='0'>
             <tr py:for="oneOption in inputRow.options">
@@ -22,7 +22,7 @@
     </py:def> 
     
 	<py:def function="draw_simple_select(inputRow, disabled, parentDivId, treeSessionKey)">   
-	     <!-- Model/Monitor/ enumerates - a select that optionally has a subtree with attributes for each option-->
+	     <!--! Model/Monitor/ enumerates - a select that optionally has a subtree with attributes for each option-->
 	     <py:choose test="len(inputRow.options) &gt; 4">
 		     <py:when test="True">
 		     	<select name="$inputRow.name" tabindex='1' id="$inputRow.name" py:if="not disabled and inputRow.options"

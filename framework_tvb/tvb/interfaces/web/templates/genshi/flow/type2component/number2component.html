@@ -1,8 +1,7 @@
-
 <div xmlns:py="http://genshi.edgewall.org/" py:strip="True">
 	
      <py:def function="draw_number_component(inputRow, disabled, parentDivId)">
-        <!-- Draw Input field for a number  (input text). -->
+        <!--! Draw Input field for a number  (input text). -->
      	<py:with vars="add_attrs={'readonly': 'readonly'} if ('locked' in inputRow and inputRow.locked) else {};
      				   add_attrs2={'disabled':'disabled'} if disabled else {};
      				   x=add_attrs.update(add_attrs2);">
@@ -12,12 +11,12 @@
         ${add_checkbox_control(inputRow)}
         
    		<py:if test="('minValue' in inputRow) and ('maxValue' in inputRow) and ('stepValue' in inputRow) and (param_checkbox_config != True)">	
-       		${drawRangeComponent(parentDivId+inputRow.name + "_RANGER", float(inputRow.minValue), float(inputRow.maxValue), float(inputRow.stepValue), inputRow.name, disabled)}                              			
+       		<!--!${drawRangeComponent(parentDivId+inputRow.name + "_RANGER", float(inputRow.minValue), float(inputRow.maxValue), float(inputRow.stepValue), inputRow.name, disabled)}                              			-->
 		</py:if>
      </py:def>
      
     <py:def function="drawRangeComponent(containerDivId, minValue, maxValue, stepValue, submitName, disabled)">
-        <!--    Function to generate the UI component for a Range parameter. (for FLOAT/INT/ARRAY attributes) -->
+        <!--!    Function to generate the UI component for a Range parameter. (for FLOAT/INT/ARRAY attributes) -->
         <table id="${containerDivId}" class="ranger-div-class" style="display: none;">
         	<tr>
 	            <td><label for='${containerDivId}_interval_span'>Available Interval:</label></td>
@@ -54,6 +53,6 @@
 	        	   title="Colapse Ranger"
 	        	   onclick="disableRangeComponent('$containerDivId', '$submitName')" />
         </p>
-    </py:def> 
-     
+    </py:def>
+
 </div>

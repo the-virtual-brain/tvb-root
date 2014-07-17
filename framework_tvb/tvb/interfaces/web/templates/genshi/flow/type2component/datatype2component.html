@@ -1,8 +1,7 @@
-
 <div xmlns:py="http://genshi.edgewall.org/" xmlns:xi="http://www.w3.org/2001/XInclude" py:strip="True">
 
      <py:def function="reduceArrayDimension(parentFieldName, parameters_prefix, parameters)">
-     	  <!--    Function to generate the UI component for a datatype array reduce transformation. -->
+     	  <!--!    Function to generate the UI component for a datatype array reduce transformation. -->
      	  
          <p class="field-adapters" id="dimensionsDiv_$parentFieldName"></p>
 
@@ -23,7 +22,7 @@
 
 
 	<py:def function="draw_datatype_full(inputRow, disabled, parentDivId, treeSessionKey)">
-		<!--     Draw full control for DataType select (filters and reduce dimention controls included).     -->
+		<!--!     Draw full control for DataType select (filters and reduce dimention controls included).     -->
 		
         <xi:include href="datatype2select_simple.html"/> 
     	${add_checkbox_control(inputRow)}

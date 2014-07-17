@@ -1,14 +1,10 @@
-
 <py:def function="draw_bool(inputRow)"  xmlns:py="http://genshi.edgewall.org/">
- 	<!--  
+ 	<!--!
 	Draw field for a Boolean  (input checkbox).
 	-->
-	
  	<py:with vars="add_attrs={'checked': 'checked'} if ('default' in inputRow and (inputRow.default == True or inputRow.default == 'true')) else {}">
         <input type="checkbox" tabindex='1' name="$inputRow.name" id="$inputRow.name" py:attrs="add_attrs"/>
     </py:with>
-
     ${add_checkbox_control(inputRow)}
-    
 </py:def>
      
