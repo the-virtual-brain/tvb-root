@@ -322,8 +322,8 @@ function disableRangeComponent(containerTableId, inputName) {
     
 	topTable.style.display = 'none';
     $('#' + spinnerId).spinner('disable');
-	$('table[id="' + containerTableId + '"] input').attr('disabled', 'disabled');   /// Disable hidden input field
-	$('div[id="' + sliderDivId + '"]').attr('disabled', 'disabled');
+    $('#' + containerTableId).find('input').attr('disabled', 'disabled');   /// Disable hidden input field
+    $('#' + sliderDivId).attr('disabled', 'disabled');
 	
 	var first_ranger = document.getElementById(RANGE_PARAMETER_1);
 	var second_ranger = document.getElementById(RANGE_PARAMETER_2);
@@ -332,8 +332,8 @@ function disableRangeComponent(containerTableId, inputName) {
 	} else if (second_ranger.value == inputName){
 		second_ranger.value = '0'
 	}
-	
-	$("input[name='"+ inputName + "'][type='text']").each(function() {
+
+    $("#" + inputName).each(function () {
 		this.style.display = 'block';
 		this.disabled = false;
 	});
