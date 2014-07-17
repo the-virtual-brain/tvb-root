@@ -314,7 +314,7 @@ function _refreshFromToValues(v0, v1, containerDivId) {
 }
 
 
-function disableRangeComponent(containerTableId, inputName) {
+function disableRangeComponent(containerTableId, inputName, silent) {
     //Set display to none on parent DIV and disable sub-components to avoid submit.
     var spinnerId = containerTableId + STEP_INPUT_SUFFIX;
     var sliderDivId = containerTableId + SLIDER_SUFFIX;
@@ -343,7 +343,9 @@ function disableRangeComponent(containerTableId, inputName) {
     $("#" + containerTableId + BUTTON_COLLAPSE_SUFFIX).attr('disabled', 'disabled');
     $('#' + containerTableId + STEP_INPUT_SUFFIX).attr('disabled', 'disabled');
     $("#" + containerTableId + BUTTON_EXPAND_SUFFIX).removeAttr('disabled');
-    _computeNrOfOps();
+    if (! silent){
+        _computeNrOfOps();
+    }
 }
 
 /*************************************************************************************************************************
