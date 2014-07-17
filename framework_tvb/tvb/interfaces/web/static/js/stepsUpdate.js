@@ -40,7 +40,7 @@ function updateDivContent(divID, component, parentDIV, radioComponent) {
 
     if (first_ranger != null && second_ranger != null) {
         sub_divs.find('table.ranger-div-class').each(function () {
-            disableRangeComponent(this.id, this.id.replace('_RANGER', ''), true);
+            disableRangeComponent(this.id, this.id.replace('_RANGER', ''));
         });
         //Switched tabs so reset ranger values
         if (first_ranger.value.indexOf(component.name) === 0) {
