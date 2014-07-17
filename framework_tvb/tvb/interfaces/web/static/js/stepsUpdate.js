@@ -17,10 +17,11 @@
  *
  **/
 
-function updateDivContent(divID, selectComponent, parentDIV, radioComponent) {
-    //   When changing the selected value: hide/display correct sub-controlls div.
-    var component = eval(selectComponent);
-    var selectedValue = '';
+/**   When changing the selected value: hide/display correct sub-controlls div.
+ *
+ */
+function updateDivContent(divID, component, parentDIV, radioComponent) {
+    var selectedValue;
     if (radioComponent) {
         component = radioComponent;
         selectedValue = component.value;
@@ -51,42 +52,33 @@ function updateDivContent(divID, selectComponent, parentDIV, radioComponent) {
     }
 
     var sub_div = $('#' + divID + selectedValue);
+    sub_div.show();
 
-    $('div[id="' + divID + selectedValue + '"]').show();
     //Get all the ranger type component from the div to be shown init to default values
     //then disable them.
-    //todo: this filters query is always empty. If it is not used then assume unique id's and simplify queries
-    var filters =  $('p[id="' + divID + selectedValue + '"]').filter(function() { return (this.id.indexOf("data_select") != -1); });
-    filters.show();
-    $('p[id^="' + filters.id +'"] input').attr('disabled', 'disabled');
-    $('p[id^="' + filters.id +'"] select').attr('disabled', 'disabled');	
 
-     //Get all input type fields from the div to be shown that are not part of
-     //a range component, remove the disable attribute and set display style to inline
-    // todo simplify the selector of non-ranger inputs
-    var selector_name = 'div[id="' + divID + selectedValue + '"] input';
-    if (parentDIV != null &&  parentDIV != '') {
-        selector_name = 'div[id="'+ parentDIV + '"] '+ selector_name;
-    }
-    var inputs =  $(selector_name).filter(function() { return (this.id.indexOf("_RANGER") == -1 || this.id.indexOf('RANGER_buttonExpand') > 0); });
+    //Get all input type fields from the div to be shown that are not part of
+    //a range component, remove the disable attribute and set display style to inline
+    var inputs =  sub_div.find('input');
+    inputs = inputs.filter(function() { return (this.id.indexOf("_RANGER") == -1 || this.id.indexOf('RANGER_buttonExpand') > 0); });
     inputs.removeAttr('disabled').css('display', 'inline');
 
-     //Get all dictionary type fields from the div to be shown that are not part of
-     //a range component, remove the disable attribute and set display style to inline
-    selector_name = 'div[id^="dict"]';
+    //Get all dictionary type fields from the div to be shown that are not part of
+    //a range component, remove the disable attribute and set display style to inline
+    var selector_name = 'div[id^="dict"]';
+    var dicts;
     if (parentDIV) {
-        selector_name = 'div[id="'+ parentDIV + '"] '+ selector_name;
+        dicts = $('#'+ parentDIV).find(selector_name);
+    }else{
+        dicts = $(selector_name);
     }
-    var dicts =  $(selector_name).filter(function() { return (this.id.indexOf("_RANGER") == -1); });
+    dicts = dicts.filter(function() { return (this.id.indexOf("_RANGER") == -1); });
     dicts.removeAttr('disabled').css('display', 'inline');
 
-     //Get all select type fields from the div to be shown that are not part of
-     //a range component, remove the disable attribute and set display style to inline
-    selector_name = 'div[id="' + divID + selectedValue + '"] select';
-    if (parentDIV) {
-        selector_name = 'div[id="'+ parentDIV + '"] '+ selector_name;
-    }
-    var selectors =  $(selector_name).filter(function() { return (this.id.indexOf("_RANGER") == -1); });
+    //Get all select type fields from the div to be shown that are not part of
+    //a range component, remove the disable attribute and set display style to inline
+
+    var selectors = sub_div.find('select').filter(function() { return (this.id.indexOf("_RANGER") == -1); });
     selectors.removeAttr('disabled').css('display', 'inline');
 
     sub_div.find('select').trigger("change");
