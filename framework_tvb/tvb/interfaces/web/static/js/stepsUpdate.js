@@ -22,19 +22,20 @@ function updateDivContent(divID, selectComponent, parentDIV, radioComponent) {
     var component = eval(selectComponent);
     var selectedValue = '';
     if (radioComponent) {
-    	component = radioComponent;
-    	selectedValue = component.value;
+        component = radioComponent;
+        selectedValue = component.value;
     } else {
-    	selectedValue = $(component).val();
+        selectedValue = $(component).val();
     }
-    //Get the input fields that hold the active rangers
-   	var first_ranger = document.getElementById('range_1');
-	var second_ranger = document.getElementById('range_2');
 
     var sub_divs = $('div[id^="' + divID +'"]'); // todo: this is greedy. If model changed it selects all inputs for all models.
-	sub_divs.hide();
-	sub_divs.find('input').attr('disabled', 'disabled');
+    sub_divs.hide();
+    sub_divs.find('input').attr('disabled', 'disabled');
     sub_divs.find('select').attr('disabled', 'disabled');
+
+    //Get the input fields that hold the active rangers
+    var first_ranger = $('#range_1')[0];
+    var second_ranger = $('#range_2')[0];
 
     if (first_ranger != null && second_ranger != null) {
         sub_divs.find('table.ranger-div-class').each(function () {
@@ -52,40 +53,40 @@ function updateDivContent(divID, selectComponent, parentDIV, radioComponent) {
     var sub_div = $('#' + divID + selectedValue);
 
     $('div[id="' + divID + selectedValue + '"]').show();
-	//Get all the ranger type component from the div to be shown init to default values
-	//then disable them.
+    //Get all the ranger type component from the div to be shown init to default values
+    //then disable them.
     //todo: this filters query is always empty. If it is not used then assume unique id's and simplify queries
-	var filters =  $('p[id="' + divID + selectedValue + '"]').filter(function() { return (this.id.indexOf("data_select") != -1); });
-	filters.show();
-	$('p[id^="' + filters.id +'"] input').attr('disabled', 'disabled');
+    var filters =  $('p[id="' + divID + selectedValue + '"]').filter(function() { return (this.id.indexOf("data_select") != -1); });
+    filters.show();
+    $('p[id^="' + filters.id +'"] input').attr('disabled', 'disabled');
     $('p[id^="' + filters.id +'"] select').attr('disabled', 'disabled');	
-	
-	 //Get all input type fields from the div to be shown that are not part of 
-	 //a range component, remove the disable attribute and set display style to inline
+
+     //Get all input type fields from the div to be shown that are not part of
+     //a range component, remove the disable attribute and set display style to inline
     // todo simplify the selector of non-ranger inputs
-	var selector_name = 'div[id="' + divID + selectedValue + '"] input';
-	if (parentDIV != null &&  parentDIV != '') {
-	    selector_name = 'div[id="'+ parentDIV + '"] '+ selector_name;
-	}
-	var inputs =  $(selector_name).filter(function() { return (this.id.indexOf("_RANGER") == -1 || this.id.indexOf('RANGER_buttonExpand') > 0); });
+    var selector_name = 'div[id="' + divID + selectedValue + '"] input';
+    if (parentDIV != null &&  parentDIV != '') {
+        selector_name = 'div[id="'+ parentDIV + '"] '+ selector_name;
+    }
+    var inputs =  $(selector_name).filter(function() { return (this.id.indexOf("_RANGER") == -1 || this.id.indexOf('RANGER_buttonExpand') > 0); });
     inputs.removeAttr('disabled').css('display', 'inline');
 
-	 //Get all dictionary type fields from the div to be shown that are not part of 
-	 //a range component, remove the disable attribute and set display style to inline
-	selector_name = 'div[id^="dict"]';
-	if (parentDIV) {
-	    selector_name = 'div[id="'+ parentDIV + '"] '+ selector_name;
-	}
-	var dicts =  $(selector_name).filter(function() { return (this.id.indexOf("_RANGER") == -1); });
-    dicts.removeAttr('disabled').css('display', 'inline');
-
-	 //Get all select type fields from the div to be shown that are not part of 
-	 //a range component, remove the disable attribute and set display style to inline	 
-	selector_name = 'div[id="' + divID + selectedValue + '"] select';
+     //Get all dictionary type fields from the div to be shown that are not part of
+     //a range component, remove the disable attribute and set display style to inline
+    selector_name = 'div[id^="dict"]';
     if (parentDIV) {
         selector_name = 'div[id="'+ parentDIV + '"] '+ selector_name;
     }
-	var selectors =  $(selector_name).filter(function() { return (this.id.indexOf("_RANGER") == -1); });
+    var dicts =  $(selector_name).filter(function() { return (this.id.indexOf("_RANGER") == -1); });
+    dicts.removeAttr('disabled').css('display', 'inline');
+
+     //Get all select type fields from the div to be shown that are not part of
+     //a range component, remove the disable attribute and set display style to inline
+    selector_name = 'div[id="' + divID + selectedValue + '"] select';
+    if (parentDIV) {
+        selector_name = 'div[id="'+ parentDIV + '"] '+ selector_name;
+    }
+    var selectors =  $(selector_name).filter(function() { return (this.id.indexOf("_RANGER") == -1); });
     selectors.removeAttr('disabled').css('display', 'inline');
 
     sub_div.find('select').trigger("change");
@@ -94,75 +95,76 @@ function updateDivContent(divID, selectComponent, parentDIV, radioComponent) {
 
 
 function updateDatatypeDiv(selectComponent) {
-	//When updating a dataType, supplementary range checks are needed
-	var component = eval(selectComponent);
+    //When updating a dataType, supplementary range checks are needed
+    var component = eval(selectComponent);
     if (component.options.length == 0) {
         return;
     }
-    //First get the ranger hidden values to check for available spots
-    var first_ranger = $('#range_1');
-	var second_ranger = $('#range_2');
-	var selectedName = component.options[component.selectedIndex].innerHTML;
-	selectedName = selectedName.replace(/[^a-z]/gi,'');
-	if (selectedName == 'All') {
-		if (first_ranger.value == '0') {
-			//If a spot is available set it to the current component name and mark the previous selection as the new one
-			first_ranger.value = component.name;
-		}
-		else if (second_ranger.value == '0') {
-			second_ranger.value = component.name;
-		} else {
-			//If no selections are available, get the previous selection and re-set the select component
-			component.selectedIndex = getPreviousSelection(component);
-			displayMessage("TVB has reached the maximum number of supported parameters for Parameter Space Exploration!", 'warningMessage');
-		}
-	} else {
-		setPreviousSelection(component, component.selectedIndex);
-	}
+
+    var selectedName = component.options[component.selectedIndex].innerHTML;
+    selectedName = selectedName.replace(/[^a-z]/gi,'');
+
+    if (selectedName == 'All') {
+        //First get the ranger hidden values to check for available spots
+        var first_ranger = $('#range_1')[0];
+        var second_ranger = $('#range_2')[0];
+
+        if (first_ranger.value == '0') {
+            //If a spot is available set it to the current component name and mark the previous selection as the new one
+            first_ranger.value = component.name;
+        }
+        else if (second_ranger.value == '0') {
+            second_ranger.value = component.name;
+        } else {
+            //If no selections are available, get the previous selection and re-set the select component
+            component.selectedIndex = getPreviousSelection(component);
+            displayMessage("TVB has reached the maximum number of supported parameters for Parameter Space Exploration!", 'warningMessage');
+        }
+    } else {
+        setPreviousSelection(component, component.selectedIndex);
+    }
 }
 
 
 function getPreviousSelection(component) {
-	//  This will use the defaultSelected attribute to store not only the selected option but
-	// also the one selected before, in case a ranger is no longer available.
-	var options = component.options;
-	for (var i = 0; i < options.length; i++) {
-		if (options[i].defaultSelected == true) {
-			return i;
-		}
-	}
+    //  This will use the defaultSelected attribute to store not only the selected option but
+    // also the one selected before, in case a ranger is no longer available.
+    var options = component.options;
+    for (var i = 0; i < options.length; i++) {
+        if (options[i].defaultSelected == true) {
+            return i;
+        }
+    }
     return undefined;
 }
 
 function setPreviousSelection(component, optionId) {
-	//  This will set the defaultSelected in order to mark the previous selection, in case a return to it is needed.
-	var options = component.options;
-	for (var i=0; i < options.length; i++) {
-		options[i].defaultSelected = false;
-	}
-	options[optionId].defaultSelected = true;
+    //  This will set the defaultSelected in order to mark the previous selection, in case a return to it is needed.
+    var options = component.options;
+    for (var i=0; i < options.length; i++) {
+        options[i].defaultSelected = false;
+    }
+    options[optionId].defaultSelected = true;
 }
-
-
 
 
 function multipleSelect(obj, divID) {
     //   When changing the selected values in a multi-select controll, update the sub-controlls div.
-	var divs = $('div[id^="' + divID +'"]');
+    var divs = $('div[id^="' + divID +'"]');
     divs.hide();
     divs.find('input').attr('disabled', 'disabled');
     divs.find('select').attr('disabled', 'disabled');
-	for(var i=0; i<obj.length; i++) {
-    	if(obj[i].selected) {
+    for(var i=0; i<obj.length; i++) {
+        if(obj[i].selected) {
             var div = $('#' + divID + obj[i].value);
-    		div.show();
+            div.show();
             div.find('input').removeAttr('disabled');
 
             var selectRef = div.find('select');
             selectRef.removeAttr('disabled');
             selectRef.trigger("change");
             div.find('input[type="radio"][checked="checked"]').trigger("change");
-    	}
+        }
     }
 }
 
