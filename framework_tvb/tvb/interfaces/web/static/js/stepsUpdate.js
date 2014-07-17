@@ -31,7 +31,7 @@ function updateDivContent(divID, selectComponent, parentDIV, radioComponent) {
    	var first_ranger = document.getElementById('range_1');
 	var second_ranger = document.getElementById('range_2');
 
-    var sub_divs = $('div[id^="' + divID +'"]');
+    var sub_divs = $('div[id^="' + divID +'"]'); // todo: this is greedy. If model changed it selects all inputs for all models.
 	sub_divs.hide();
 	sub_divs.find('input').attr('disabled', 'disabled');
     sub_divs.find('select').attr('disabled', 'disabled');
@@ -49,9 +49,12 @@ function updateDivContent(divID, selectComponent, parentDIV, radioComponent) {
         }
     }
 
-	$('div[id="' + divID + selectedValue + '"]').show();	
+    var sub_div = $('#' + divID + selectedValue);
+
+    $('div[id="' + divID + selectedValue + '"]').show();
 	//Get all the ranger type component from the div to be shown init to default values
 	//then disable them.
+    //todo: this filters query is always empty. If it is not used then assume unique id's and simplify queries
 	var filters =  $('p[id="' + divID + selectedValue + '"]').filter(function() { return (this.id.indexOf("data_select") != -1); });
 	filters.show();
 	$('p[id^="' + filters.id +'"] input').attr('disabled', 'disabled');
@@ -59,39 +62,34 @@ function updateDivContent(divID, selectComponent, parentDIV, radioComponent) {
 	
 	 //Get all input type fields from the div to be shown that are not part of 
 	 //a range component, remove the disable attribute and set display style to inline
+    // todo simplify the selector of non-ranger inputs
 	var selector_name = 'div[id="' + divID + selectedValue + '"] input';
 	if (parentDIV != null &&  parentDIV != '') {
 	    selector_name = 'div[id="'+ parentDIV + '"] '+ selector_name;
 	}
 	var inputs =  $(selector_name).filter(function() { return (this.id.indexOf("_RANGER") == -1 || this.id.indexOf('RANGER_buttonExpand') > 0); });
-    inputs.removeAttr('disabled');
-	for (var i=0; i<inputs.length; ++i){
-		 inputs[i].style.display = 'inline'; 
-	 }  	 
+    inputs.removeAttr('disabled').css('display', 'inline');
+
 	 //Get all dictionary type fields from the div to be shown that are not part of 
 	 //a range component, remove the disable attribute and set display style to inline
 	selector_name = 'div[id^="dict"]';
-	if (parentDIV != null &&  parentDIV != '') {
+	if (parentDIV) {
 	    selector_name = 'div[id="'+ parentDIV + '"] '+ selector_name;
 	}
 	var dicts =  $(selector_name).filter(function() { return (this.id.indexOf("_RANGER") == -1); });
-    dicts.removeAttr('disabled');
-	for (var j=0; j < dicts.length; ++j){
-		 dicts[j].style.display = 'inline';
-	 }  	 
+    dicts.removeAttr('disabled').css('display', 'inline');
+
 	 //Get all select type fields from the div to be shown that are not part of 
 	 //a range component, remove the disable attribute and set display style to inline	 
 	selector_name = 'div[id="' + divID + selectedValue + '"] select';
-    if (parentDIV != null && parentDIV != '') {
+    if (parentDIV) {
         selector_name = 'div[id="'+ parentDIV + '"] '+ selector_name;
     }
 	var selectors =  $(selector_name).filter(function() { return (this.id.indexOf("_RANGER") == -1); });
-    selectors.removeAttr('disabled');
-	for (var k=0; k < selectors.length; ++k) {
-		 selectors[k].style.display = 'inline';
-	}  
-    $('#' + divID+ selectedValue + ' select').trigger("change");
-    $('#' + divID+ selectedValue + ' input[type="radio"][checked="checked"]').trigger("change");
+    selectors.removeAttr('disabled').css('display', 'inline');
+
+    sub_div.find('select').trigger("change");
+    sub_div.find('input[type="radio"][checked="checked"]').trigger("change");
 }
 
 
@@ -102,8 +100,8 @@ function updateDatatypeDiv(selectComponent) {
         return;
     }
     //First get the ranger hidden values to check for available spots
-    var first_ranger = document.getElementById('range_1');
-	var second_ranger = document.getElementById('range_2');  
+    var first_ranger = $('#range_1');
+	var second_ranger = $('#range_2');
 	var selectedName = component.options[component.selectedIndex].innerHTML;
 	selectedName = selectedName.replace(/[^a-z]/gi,'');
 	if (selectedName == 'All') {
@@ -150,17 +148,20 @@ function setPreviousSelection(component, optionId) {
 
 function multipleSelect(obj, divID) {
     //   When changing the selected values in a multi-select controll, update the sub-controlls div.
-	$('div[id^="' + divID +'"]').hide();
-    $('div[id^="' + divID +'"] input').attr('disabled', 'disabled');
-    $('div[id^="' + divID +'"] select').attr('disabled', 'disabled');
+	var divs = $('div[id^="' + divID +'"]');
+    divs.hide();
+    divs.find('input').attr('disabled', 'disabled');
+    divs.find('select').attr('disabled', 'disabled');
 	for(var i=0; i<obj.length; i++) {
     	if(obj[i].selected) {
-    		$('#' + divID + obj[i].value).show();
-            $('#' + divID + obj[i].value +' input').removeAttr('disabled');
-            var selectRef = $('#' + divID + obj[i].value +' select');
+            var div = $('#' + divID + obj[i].value);
+    		div.show();
+            div.find('input').removeAttr('disabled');
+
+            var selectRef = div.find('select');
             selectRef.removeAttr('disabled');
             selectRef.trigger("change");
-            $('#' + divID + obj[i].value +' input[type="radio"][checked="checked"]').trigger("change");
+            div.find('input[type="radio"][checked="checked"]').trigger("change");
     	}
     }
 }
@@ -238,24 +239,3 @@ function updateShapeLabel(selectNamePrefix, genshiParam, dimensionIndex) {
     $("#" + spanId).text("Array shape:" + $.toJSON(hiddenShape) + dimLbl);
     hiddenShapeRef.val($.toJSON(hiddenShape));
 }
-
-
-/*
- * Helper function to better handle editing class of HTML elements dynamically.
- */
-function hasClass(ele,cls) {
-	return ele.className.match(new RegExp('(\\s|^)'+cls+'(\\s|$)'));
-}
-
-function addClass(ele,cls) {
-	if (!this.hasClass(ele,cls)) ele.className += " "+cls;
-}
-
-function removeClass(ele,cls) {
-	if (hasClass(ele,cls)) {
-		var reg = new RegExp('(\\s|^)'+cls+'(\\s|$)');
-		ele.className=ele.className.replace(reg,'');
-	}
-}
-
-
