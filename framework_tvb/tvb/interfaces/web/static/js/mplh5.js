@@ -416,19 +416,7 @@ function slideCanvas(e,id) {
 	if (zdraw > -1)  {
         zdiv[id].style.width = e.pageX - startX + "px";
         zdiv[id].style.height = e.pageY - startY + "px";
-    } 
-    if (cursor_info[id] == 0) {
-		try {
-	        var pc = document.getElementById('canvas_' + id);
-	        var pos = findPosition(pc);
-	        var msgArgs = {
-	        	'current_x' : (e.pageX - pos[0]),
-	        	'current_y' : (canvii[id].clientHeight - (e.pageY - pos[1]))
-	        };
-	        sendMessage(id, 'motion_notify', msgArgs, false);
-	        // we need coords based on 0,0 in bottom left corner...
-	    } catch (err) {}
-	}
+    }
 	return false;
 }
  
