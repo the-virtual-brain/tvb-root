@@ -326,37 +326,34 @@ function _refreshFromToValues(v0, v1, containerDivId) {
 
 function disableRangeComponent(containerTableId, inputName) {
     //todo nothing if allready disabled
-    //Set display to none on parent DIV and disable sub-components to avoid submit.
-    var spinnerId = containerTableId + STEP_INPUT_SUFFIX;
-    var sliderDivId = containerTableId + SLIDER_SUFFIX;
-    var topTable = document.getElementById(containerTableId);
-    
-    topTable.style.display = 'none';
-    $('#' + spinnerId).spinner('disable');
-    $('#' + containerTableId).find('input').attr('disabled', 'disabled');   /// Disable hidden input field
-    $('#' + sliderDivId).attr('disabled', 'disabled');
-
     var first_ranger = document.getElementById(RANGE_PARAMETER_1);
     var second_ranger = document.getElementById(RANGE_PARAMETER_2);
     if (first_ranger.value == inputName){
         first_ranger.value = '0';
     } else if (second_ranger.value == inputName){
-        second_ranger.value = '0'
+        second_ranger.value = '0';
     }
 
-    $("#" + inputName).each(function () {
-        this.style.display = 'block';
-        this.disabled = false;
-    });
+    //Set display to none on parent DIV and disable sub-components to avoid submit.
+    var spinnerId = containerTableId + STEP_INPUT_SUFFIX;
+    var sliderDivId = containerTableId + SLIDER_SUFFIX;
+    var topTable = $('#' + containerTableId);
+
+    topTable.hide();
+    $('#' + spinnerId).spinner('disable');
+    topTable.find('input').attr('disabled', 'disabled');   /// Disable hidden input field
+    $('#' + sliderDivId).attr('disabled', 'disabled');
+
+
+    $("#" + inputName).removeAttr('disabled').css('display', 'block');
 
     $('#' + containerTableId + INPUT_FROM_RANGE).attr('disabled', 'disabled');
     $('#' + containerTableId + INPUT_TO_RANGE).attr('disabled', 'disabled');
-    $("#" + containerTableId + BUTTON_COLLAPSE_SUFFIX).attr('disabled', 'disabled');
+    $('#' + containerTableId + BUTTON_COLLAPSE_SUFFIX).attr('disabled', 'disabled');
     $('#' + containerTableId + STEP_INPUT_SUFFIX).attr('disabled', 'disabled');
-    $("#" + containerTableId + BUTTON_EXPAND_SUFFIX).removeAttr('disabled');
+    $('#' + containerTableId + BUTTON_EXPAND_SUFFIX).removeAttr('disabled');
 
     _computeNrOfOps();
-
 }
 
 /*************************************************************************************************************************
