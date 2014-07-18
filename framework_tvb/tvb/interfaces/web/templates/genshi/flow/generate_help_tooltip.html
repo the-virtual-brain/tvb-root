@@ -1,0 +1,17 @@
+<py:def function="generate_help_tooltip(inputRow)" xmlns:py="http://genshi.edgewall.org/">
+    <!--!     Generate Green hookpoint for help-text. 	 -->
+    <py:if test="showOnlineHelp">
+        <nav class="inline-menu helper" py:if="'description' in inputRow and inputRow.description is not None and not defined('isCallout')">
+            <a href="#" title="Need help? Click here to get more details" class="helper-hook action-menu">?</a>
+            <div class="extension">
+                <div class="dropdown-pane">
+                    <mark>${inputRow.label if 'label' in inputRow else inputRow.name}</mark>
+                    <div class="dropdown-pane-overlay">${Markup(inputRow.description.replace('\n', '&lt;br/&gt;'))}</div>
+                </div>
+            </div>
+        </nav>
+        <nav class="inline-description" py:if="inputRow.get('inline_description') is not None">
+            ${Markup(inputRow.inline_description.replace('\n', '&lt;br/&gt;'))}
+        </nav>
+    </py:if>
+ </py:def>

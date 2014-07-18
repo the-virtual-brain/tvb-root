@@ -1,5 +1,13 @@
 <div xmlns:py="http://genshi.edgewall.org/" xmlns:xi="http://www.w3.org/2001/XInclude" py:strip="True">
-    
+    <script type="text/javascript" src="/static/jquery/jquery_ui.js"></script>    <!--JQuery custom imports for the Range controller -->
+    <script type="text/javascript" src="/static/jquery/jquery.json-2.2.min.js"></script>
+    <script type="text/javascript" src="/static/jquery/ui.spinner.js"></script>
+    <script type="text/javascript" src="/static/js/DateTimePicker_css.js"></script>
+    <script type="text/javascript" src="/static/js/filters.js?$currentVersionJS"></script>
+    <script type="text/javascript" src="/static/js/stepsUpdate.js?$currentVersionJS"></script>
+    <script type="text/javascript" src="/static/js/range.js?$currentVersionJS"></script>
+
+
     <!--! Contains the required functions to generate the HTML for primitive types. -->
     <xi:include href="type2component/array2component.html"/>
     <xi:include href="type2component/boolean2component.html"/>
@@ -9,9 +17,10 @@
     <xi:include href="type2component/number2component.html"/>
     <xi:include href="type2component/select2component.html"/>
     <xi:include href="type2component/string2component.html"/>
- 
+
+    <xi:include href="generate_help_tooltip.html" />
     	
-     <py:def function="create_select_options(inputRow, use_in)">
+    <py:def function="create_select_options(inputRow, use_in)">
      	<!--! Function to generate 'option' elements inside a simple/multiple 'select' components. -->
      	<py:for each="option in inputRow.options">
 			<py:with vars="add_attrs1={'selected': 'selected'} if ('default' in inputRow) and (str(option.value)==str(inputRow.default)) else {};
@@ -21,27 +30,9 @@
 				<option value="${option.value}" py:attrs="add_attrs"> ${option.name} </option>
   	 		</py:with>
 		</py:for> 
-     </py:def>
+    </py:def>
      
-     <py:def function="generate_help_tooltip(inputRow)">
-		<!--!     Generate Green hookpoint for help-text. 	 -->
-     	<py:if test="showOnlineHelp">
-	     	<nav class="inline-menu helper" py:if="'description' in inputRow and inputRow.description is not None and not defined('isCallout')">
-				<a href="#" title="Need help? Click here to get more details" class="helper-hook action-menu">?</a>
-				<div class="extension">
-					<div class="dropdown-pane">
-						<mark>${inputRow.label if 'label' in inputRow else inputRow.name}</mark>
-                        <div class="dropdown-pane-overlay">${Markup(inputRow.description.replace('\n', '&lt;br/&gt;'))}</div>
-					</div>
-				</div>
-			</nav>
-            <nav class="inline-description" py:if="inputRow.get('inline_description') is not None">
-                ${Markup(inputRow.inline_description.replace('\n', '&lt;br/&gt;'))}
-            </nav>
-		</py:if>
-     </py:def>     
-     
-     <py:def function="add_checkbox_control(inputRow)">
+    <py:def function="add_checkbox_control(inputRow)">
 		<!--!     Add checkbox near a controller to filter controls visible. 	 -->
      	<py:if test="param_checkbox_config == True">
 	     	<p class="field-adapters">
@@ -52,7 +43,7 @@
 		        </py:with>
 	        </p>
         </py:if>   
-     </py:def>
+    </py:def>
     
     <py:def function="generateDisplay(inputList, disabled, parentDivId, treeSessionKey='defaultTree', extra_class=None, draw_hidden_ranges = False)">
         <!--!    Genshi function, to generate one level in the tree of Adapter input parameters. -->
