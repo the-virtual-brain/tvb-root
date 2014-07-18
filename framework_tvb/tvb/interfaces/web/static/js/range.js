@@ -325,7 +325,6 @@ function _refreshFromToValues(v0, v1, containerDivId) {
 
 
 function disableRangeComponent(containerTableId, inputName) {
-    //todo nothing if allready disabled
     var first_ranger = document.getElementById(RANGE_PARAMETER_1);
     var second_ranger = document.getElementById(RANGE_PARAMETER_2);
     if (first_ranger.value == inputName){

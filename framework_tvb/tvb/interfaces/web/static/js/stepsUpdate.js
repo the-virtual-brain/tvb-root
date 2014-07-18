@@ -17,6 +17,20 @@
  *
  **/
 
+/**
+ * Find the range component dom and disable it
+ * @param sub_divs a jquery object of candidate parent elements where to search for rangers
+ * @param value the "value" of the ranger as stored in the hidden inputs
+ * @private
+ */
+function _disableDomForRangeComponent_ByValue(sub_divs, value){
+    if (value != 0) {
+        sub_divs.find('table[id$=' + value + '_RANGER]').each(function () {
+            disableRangeComponent(this.id, this.id.replace('_RANGER', ''));
+        });
+    }
+}
+
 /**   When changing the selected value: hide/display correct sub-controlls div.
  *
  */
@@ -29,7 +43,9 @@ function updateDivContent(divID, component, parentDIV, radioComponent) {
         selectedValue = $(component).val();
     }
 
-    var sub_divs = $('div[id^="' + divID +'"]'); // todo: this is greedy. If model changed it selects all inputs for all models.
+    // todo: this is greedy. it selects descendant divs as well (rangers, dub-data types)
+    // todo: it should be sufficient to select top level divs
+    var sub_divs = $('div[id^="' + divID +'"]');
     sub_divs.hide();
     sub_divs.find('input').attr('disabled', 'disabled');
     sub_divs.find('select').attr('disabled', 'disabled');
@@ -39,9 +55,9 @@ function updateDivContent(divID, component, parentDIV, radioComponent) {
     var second_ranger = $('#range_2')[0];
 
     if (first_ranger != null && second_ranger != null) {
-        sub_divs.find('table.ranger-div-class').each(function () {
-            disableRangeComponent(this.id, this.id.replace('_RANGER', ''));
-        });
+        // call disable only on the active range components
+        _disableDomForRangeComponent_ByValue(sub_divs, first_ranger.value);
+        _disableDomForRangeComponent_ByValue(sub_divs, second_ranger.value);
         //Switched tabs so reset ranger values
         if (first_ranger.value.indexOf(component.name) === 0) {
             first_ranger.value = '0';
@@ -49,6 +65,7 @@ function updateDivContent(divID, component, parentDIV, radioComponent) {
         if (second_ranger.value.indexOf(component.name) === 0) {
             second_ranger.value = '0';
         }
+        _computeNrOfOps();
     }
 
     var sub_div = $('#' + divID + selectedValue);
@@ -81,6 +98,7 @@ function updateDivContent(divID, component, parentDIV, radioComponent) {
     var selectors = sub_div.find('select').filter(function() { return (this.id.indexOf("_RANGER") == -1); });
     selectors.removeAttr('disabled').css('display', 'inline');
 
+    // These triggers end up calling updateDivContent recursively
     sub_div.find('select').trigger("change");
     sub_div.find('input[type="radio"][checked="checked"]').trigger("change");
 }
