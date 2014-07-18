@@ -166,6 +166,19 @@ def remove_from_session(key):
     cherrypy.session.release_lock()
     return None
 
+def expire_session():
+    """
+    Expires and cleans current session.
+    """
+    # remove all session items
+    cherrypy.session.acquire_lock()
+    cherrypy.session.clear()
+    # clear any caches held by cherrypy
+    cherrypy.session.clean_up()
+    # expire client side cookie
+    cherrypy.lib.sessions.expire()
+    cherrypy.session.release_lock()
+
 
 def add2session(key, value):
     """ Set in session, at a key, a value"""
