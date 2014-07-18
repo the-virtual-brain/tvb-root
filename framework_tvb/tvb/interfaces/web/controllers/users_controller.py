@@ -159,6 +159,13 @@ class UserController(BaseController):
         common.remove_from_session(common.KEY_BURST_CONFIG)
         common.remove_from_session(common.KEY_CACHED_SIMULATOR_TREE)
         common.set_info_message("Thank you for using The Virtual Brain!")
+
+        # remove all session items
+        cherrypy.session.clear()
+        # clear any caches held by cherrypy
+        cherrypy.session.clean_up()
+        # expire client side cookie
+        cherrypy.lib.sessions.expire()
         raise cherrypy.HTTPRedirect("/user")
 
 
