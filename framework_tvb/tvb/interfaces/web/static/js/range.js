@@ -334,23 +334,17 @@ function disableRangeComponent(containerTableId, inputName) {
         second_ranger.value = '0';
     }
 
-    //Set display to none on parent DIV and disable sub-components to avoid submit.
-    var spinnerId = containerTableId + STEP_INPUT_SUFFIX;
-    var sliderDivId = containerTableId + SLIDER_SUFFIX;
     var topTable = $('#' + containerTableId);
-
     topTable.hide();
-    $('#' + spinnerId).spinner('disable');
-    topTable.find('input').attr('disabled', 'disabled');   /// Disable hidden input field
-    $('#' + sliderDivId).attr('disabled', 'disabled');
+    // Disable all input fields in the ranger
+    topTable.find('input').attr('disabled', 'disabled');
 
+    $('#' + containerTableId + STEP_INPUT_SUFFIX).spinner('disable');
+    $('#' + containerTableId + SLIDER_SUFFIX).attr('disabled', 'disabled');
 
     $("#" + inputName).removeAttr('disabled').css('display', 'block');
 
-    $('#' + containerTableId + INPUT_FROM_RANGE).attr('disabled', 'disabled');
-    $('#' + containerTableId + INPUT_TO_RANGE).attr('disabled', 'disabled');
     $('#' + containerTableId + BUTTON_COLLAPSE_SUFFIX).attr('disabled', 'disabled');
-    $('#' + containerTableId + STEP_INPUT_SUFFIX).attr('disabled', 'disabled');
     $('#' + containerTableId + BUTTON_EXPAND_SUFFIX).removeAttr('disabled');
 
     _computeNrOfOps();
