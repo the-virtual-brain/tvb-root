@@ -2,7 +2,7 @@ User
 ----
 
 TVB Settings
-.............
+............
 
 Once started, |TVB| should automatically open your default browser and start on 
 the default `http://127.0.0.1:8080/settings/settings`. If not, you should 
@@ -20,41 +20,41 @@ is the only one that cannot be changed later on. The others will be accessible a
 from the profile page of the administrator. These settings are:
 
 Administrator User Name:
-	the name of the administrator. Default value here is `admin`.
-	Remember it, as you will need this account for validating other accounts created with `Register` function.
+    the name of the administrator. Default value here is `admin`.
+    Remember it, as you will need this account for validating other accounts created with `Register` function.
 
 Password:
-	the password of the administrator. Default value here is `pass`.
-	Remember it, as you will need it at a first login.
-	This password can be changed later by clicking the `Change password` link, from the profile page
-	(available only after a login).
+    the password of the administrator. Default value here is `pass`.
+    Remember it, as you will need it at a first login.
+    This password can be changed later by clicking the `Change password` link, from the profile page
+    (available only after a login).
 
 Administrator Email:
-	the email of the administrator. Emails requesting validations for new users will
-	be sent to this address. This can be changed by clicking the `edit` link from the
-	profile page.
+    the email of the administrator. Emails requesting validations for new users will
+    be sent to this address. This can be changed by clicking the `edit` link from the
+    profile page.
 
 Root folder for all projects:
-	this is the root storage for |TVB|. All your projects will be stored here, as well
-	as the logging file and the files used as input and output for the backend server.
-	Please provide here a valid folder path, on a drive which has enough space for storing TVB data.
-	This field will be present on the settings page later on, but you won't be able to change it.
-	In case you are forced to change this path/folder, we recommend that you export your 
-	existing projects, stop |TVB|, start it with the clean option (and configure 
-	new folder) and then import your projects back into the system.
+    this is the root storage for |TVB|. All your projects will be stored here, as well
+    as the logging file and the files used as input and output for the backend server.
+    Please provide here a valid folder path, on a drive which has enough space for storing TVB data.
+    This field will be present on the settings page later on, but you won't be able to change it.
+    In case you are forced to change this path/folder, we recommend that you export your
+    existing projects, stop |TVB|, start it with the clean option (and configure
+    new folder) and then import your projects back into the system.
 
 Max Disk Size (in MB):
-	Is the amount of disk space that you (as administrator) can specify as the 
-	limit for each user, to occupy with |TVB| data. When a user exceeds this limit, 
-	they are no longer allowed to run simulations or other operations producing 
-	data. When this limit is exceeded, the user will still be able to 
-	visualize their previously created data, and, if desired, to remove data for making space for new results.
-	For instance:
-	 
-	    - A default region level simulation with length 1000 ms takes 
-	      approximatively 1 MB of disk space.
-	    - A surface level simulation, with Local Connectivity pre-computed, 
-	      Raw monitor and length of 10 ms takes 280 MB.
+    Is the amount of disk space that you (as administrator) can specify as the
+    limit for each user, to occupy with |TVB| data. When a user exceeds this limit,
+    they are no longer allowed to run simulations or other operations producing
+    data. When this limit is exceeded, the user will still be able to
+    visualize their previously created data, and, if desired, to remove data for making space for new results.
+    For instance:
+
+        - A default region level simulation with length 1000 ms takes
+          approximatively 1 MB of disk space.
+        - A surface level simulation, with Local Connectivity pre-computed,
+          Raw monitor and length of 10 ms takes 280 MB.
 
     Default value here is 5GB. We validate upon setup that a value not greater than the available physical
     disk free space is specified. In case you later get errors when running simulations (with `disk full`
@@ -62,40 +62,40 @@ Max Disk Size (in MB):
     increase this value of space allocated to |TVB|.
 
 DB engine:
-	For benchmarking purposes currently supported are *sqlite* and *postgresql* 
-	databases. You will need to provide a valid database URL in case you choose 
-	postgresql. In the case of sqlite a default `tvb-database.db` will always 
-	be used. Please take into consideration that when switching to a new database 
-	**your existing data will be lost**.
+    For benchmarking purposes currently supported are *sqlite* and *postgresql*
+    databases. You will need to provide a valid database URL in case you choose
+    postgresql. In the case of sqlite a default `tvb-database.db` will always
+    be used. Please take into consideration that when switching to a new database
+    **your existing data will be lost**.
 
 Server name:
-	usually the IP of the server that will run |TVB|. You can also leave it as the default
-	if you are just running |TVB| locally.
+    usually the IP of the server that will run |TVB|. You can also leave it as the default
+    if you are just running |TVB| locally.
 
 Cherrypy port:
-	the port used by cherrypy. You need to make sure this port is not used by some other
-	application otherwise |TVB| will not start.
+    the port used by cherrypy. You need to make sure this port is not used by some other
+    application otherwise |TVB| will not start.
 
 Matplotlib port:
-	the port used by matplotlib. You need to make sure this port is not used by some other
-	application otherwise some visualizers will not work.
+    the port used by matplotlib. You need to make sure this port is not used by some other
+    application otherwise some visualizers will not work.
 
 Deploy on cluster:
-	set true if you want to run |TVB| on a cluster environment.
+    set true if you want to run |TVB| on a cluster environment.
 
 RPC server:
-	if you are not running on a cluster, this will be the port used by the backend server. If
-	`Deploy on cluster` is checked this will not be used.
+    if you are not running on a cluster, this will be the port used by the backend server. If
+    `Deploy on cluster` is checked this will not be used.
 
 Maximum number of vertices: 
-	maximum number of vertices for a surface. 
+    maximum number of vertices for a surface.
 
 
 After selecting your desired settings press the `Apply` button. This will restart |TVB| with the
 new settings. The restart could take a few minutes.
 
 Login
-.........
+.....
 
 In order to access |TVB|, you need to have a user account.
 
@@ -116,7 +116,7 @@ With the Administrator account you will be able to later validate other TVB acco
 
 
 Register
-.........
+........
 
 If you want to create a new user in |TVB|, you should `register` using the corresponding link
 (available on the `User Login` page), which takes you further to the following form:
@@ -136,7 +136,7 @@ be able to use the new accounts. For details on how `validation` is done, see th
 
 
 User Profile
-..............
+............
 
 This area is available after you login and gives you some basic information, such as:
 
@@ -148,7 +148,7 @@ This area is available after you login and gives you some basic information, suc
 
 .. figure:: screenshots/user_profile.jpg
    :width: 90%
-   :align: centerd
+   :align: center
 
    The User details page (also called `User Profile`)
 
