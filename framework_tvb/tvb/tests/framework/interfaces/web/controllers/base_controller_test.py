@@ -40,16 +40,13 @@ from tvb.tests.framework.core.test_factory import TestFactory
 
 class BaseControllersTest(BaseTestCase):
     class CherrypySession(EnhancedDictionary):
-
         data = {}
-
-
+        # mock methods
         def acquire_lock(self):
             pass
 
+        clear = clean_up = release_lock = acquire_lock
 
-        def release_lock(self):
-            pass
 
     def _expect_redirect(self, page, method, *args, **kwargs):
         """

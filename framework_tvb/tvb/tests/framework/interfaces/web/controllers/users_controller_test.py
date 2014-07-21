@@ -121,6 +121,8 @@ class UsersControllerTest(TransactionalTestCase, BaseControllersTest):
         """
         Test that a logout removes the user from session.
         """
+        cherrypy.request.config = {'tools.sessions.name': 'session_id'}
+        cherrypy.serving.response.cookie['session_id'] = 1
         self._expect_redirect('/user', self.user_c.logout)
         self.assertTrue(common.KEY_USER not in cherrypy.session, "User should be removed after logout.")
         
