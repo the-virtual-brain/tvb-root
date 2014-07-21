@@ -148,15 +148,20 @@ This area is available after you login and gives you some basic information, suc
 
 .. figure:: screenshots/user_profile.jpg
    :width: 90%
-   :align: center
+   :align: centerd
 
    The User details page (also called `User Profile`)
 
 You have also functionality on this page:
 
-- `Manage other users` (available on the left column, only when logged with Administrator account), takes you to a page for validating or invalidating other user accounts (accounts created with the `register` function)
+- `Manage other users` (available on the left column, only when logged with Administrator account), takes you to a page
+  for validating or invalidating other user accounts (accounts created with the `register` function)
 - access `TVB Settings` (same settings as in the first setup iof TVB; although some of the fields become read-only after the first setup)
 - change the password and the email address for current logged user (also links on the left column)
-- enable or disable `Online Help` for current user. By `Online Help` we mean a bunch of question marks spread all over the application which can display a tooltip when clicked). In case you find the question marks annoying, feel free to disable them for your user from this page.
+- enable or disable `Online Help` for current user. By `Online Help` we mean a bunch of question marks spread all over
+  the application which can display a tooltip when clicked).
+  In case you find the question marks annoying, feel free to disable them for your user from this page.
+  Some pages will take longer to load when `Online Help` is on.
+  You might want to disable it once you feel confident with the interface.
 - logout function (button on the right side)
 
