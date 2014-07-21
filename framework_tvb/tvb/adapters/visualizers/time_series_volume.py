@@ -61,7 +61,8 @@ class TimeSeriesVolumeVisualiser(ABCDisplayer):
 
         dataUrls = [self.paths2url(time_series_volume, "get_rotated_volume_slice", parameter=""),
                     self.paths2url(time_series_volume, "get_volume_shape", parameter=""),
-                    self.paths2url(time_series_volume, "get_volume_view", parameter="")]
+                    self.paths2url(time_series_volume, "get_volume_view", parameter=""),
+                    self.paths2url(time_series_volume, "get_voxel_time_series", parameter="")]
         minValue, maxValue = time_series_volume.get_min_max_values()
         volume = time_series_volume.volume
 
