@@ -35,24 +35,19 @@
 
 import json
 from copy import deepcopy
-
 import cherrypy
 
 from tvb.basic.traits import traited_interface
 from tvb.basic.logger.builder import get_logger
-from tvb.basic.traits.parameters_factory import get_traited_instance_for_name
 from tvb.core.adapters.abcadapter import ABCAdapter
-from tvb.core.entities.model import RANGE_PARAMETER_1, RANGE_PARAMETER_2, PARAM_MODEL, PARAM_INTEGRATOR
-from tvb.core.entities.model import PARAM_CONNECTIVITY, PARAM_SURFACE
+from tvb.core.entities.model import PARAM_SURFACE
+from tvb.core.services.burst_config_serialization import SerializationManager
+
 from tvb.core.services.flow_service import FlowService
 from tvb.interfaces.web.controllers import common
 from tvb.interfaces.web.controllers.base_controller import BaseController
 from tvb.interfaces.web.controllers.decorators import settings, expose_page
 from tvb.interfaces.web.controllers.flow_controller import SelectedAdapterContext
-from tvb.simulator.models import Model
-from tvb.simulator.integrators import Integrator
-from tvb.config import SIMULATOR_CLASS, SIMULATOR_MODULE
-from tvb.datatypes import noise_framework
 
 
 MODEL_PARAMETERS = 'model_parameters'
@@ -89,52 +84,23 @@ class SpatioTemporalController(BaseController):
         """
         Returns the model, integrator, connectivity and surface instances from the burst configuration.
         """
+        des = SerializationManager(common.get_from_session(common.KEY_BURST_CONFIG))
         ### Read from session current burst-configuration
-        burst_configuration = common.get_from_session(common.KEY_BURST_CONFIG)
-        if burst_configuration is None:
+        if des.conf is None:
             return None, None, None, None
-        first_range = burst_configuration.get_simulation_parameter_value(RANGE_PARAMETER_1)
-        second_range = burst_configuration.get_simulation_parameter_value(RANGE_PARAMETER_2)
-        if ((first_range is not None and str(first_range).startswith(MODEL_PARAMETERS)) or
-                (second_range is not None and str(second_range).startswith(MODEL_PARAMETERS))):
+        if des.has_model_pse_ranges():
             common.set_error_message("When configuring model parameters you are not allowed to specify range values.")
             raise cherrypy.HTTPRedirect("/burst/")
-        group = self.flow_service.get_algorithm_by_module_and_class(SIMULATOR_MODULE, SIMULATOR_CLASS)[1]
-        simulator_adapter = self.flow_service.build_adapter_instance(group)
+
         try:
-            params_dict = simulator_adapter.convert_ui_inputs(burst_configuration.get_all_simulator_values()[0], False)
+            model, integrator = des.make_model_and_integrator()
         except Exception:
             self.logger.exception("Some of the provided parameters have an invalid value.")
             common.set_error_message("Some of the provided parameters have an invalid value.")
             raise cherrypy.HTTPRedirect("/burst/")
-        ### Prepare Model instance
-        model = burst_configuration.get_simulation_parameter_value(PARAM_MODEL)
-        model_parameters = params_dict[MODEL_PARAMETERS]
-        noise_framework.build_noise(model_parameters)
-        try:
-            model = get_traited_instance_for_name(model, Model, model_parameters)
-        except Exception:
-            self.logger.exception("Could not create the model instance with the given parameters. "
-                                  "A new model instance will be created with the default values.")
-            model = get_traited_instance_for_name(model, Model, {})
-        ### Prepare Integrator instance
-        integrator = burst_configuration.get_simulation_parameter_value(PARAM_INTEGRATOR)
-        integrator_parameters = params_dict[INTEGRATOR_PARAMETERS]
-        noise_framework.build_noise(integrator_parameters)
-        try:
-            integrator = get_traited_instance_for_name(integrator, Integrator, integrator_parameters)
-        except Exception:
-            self.logger.exception("Could not create the integrator instance with the given parameters. "
-                                  "A new integrator instance will be created with the default values.")
-            integrator = get_traited_instance_for_name(integrator, Integrator, {})
-        ### Prepare Connectivity
-        connectivity_gid = burst_configuration.get_simulation_parameter_value(PARAM_CONNECTIVITY)
-        connectivity = ABCAdapter.load_entity_by_gid(connectivity_gid)
-        ### Prepare Surface
-        surface_gid = burst_configuration.get_simulation_parameter_value(PARAM_SURFACE)
-        surface = None
-        if surface_gid is not None and len(surface_gid):
-            surface = ABCAdapter.load_entity_by_gid(surface_gid)
+
+        connectivity = des.get_connectivity()
+        surface = des.get_surface()
         return model, integrator, connectivity, surface
 
 

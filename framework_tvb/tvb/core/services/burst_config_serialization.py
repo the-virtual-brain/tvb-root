@@ -1,0 +1,142 @@
+# -*- coding: utf-8 -*-
+#
+#
+# TheVirtualBrain-Framework Package. This package holds all Data Management, and 
+# Web-UI helpful to run brain-simulations. To use it, you also need do download
+# TheVirtualBrain-Scientific Package (for simulators). See content of the
+# documentation-folder for more details. See also http://www.thevirtualbrain.org
+#
+# (c) 2012-2013, Baycrest Centre for Geriatric Care ("Baycrest")
+#
+# This program is free software; you can redistribute it and/or modify it under 
+# the terms of the GNU General Public License version 2 as published by the Free
+# Software Foundation. This program is distributed in the hope that it will be
+# useful, but WITHOUT ANY WARRANTY; without even the implied warranty of 
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU General Public
+# License for more details. You should have received a copy of the GNU General 
+# Public License along with this program; if not, you can download it here
+# http://www.gnu.org/licenses/old-licenses/gpl-2.0
+#
+#
+# CITATION:
+# When using The Virtual Brain for scientific publications, please cite it as follows:
+#
+#   Paula Sanz Leon, Stuart A. Knock, M. Marmaduke Woodman, Lia Domide,
+#   Jochen Mersmann, Anthony R. McIntosh, Viktor Jirsa (2013)
+#       The Virtual Brain: a simulator of primate brain network dynamics.
+#   Frontiers in Neuroinformatics (7:10. doi: 10.3389/fninf.2013.00010)
+#
+#
+
+"""
+module docstring
+.. moduleauthor:: Mihai Andrei <mihai.andrei@codemart.ro>
+"""
+from tvb.basic.logger.builder import get_logger
+from tvb.basic.traits.parameters_factory import get_traited_instance_for_name
+from tvb.config import SIMULATOR_MODULE, SIMULATOR_CLASS
+from tvb.core.adapters.abcadapter import ABCAdapter
+from tvb.core.entities.model import RANGE_PARAMETER_1, RANGE_PARAMETER_2, PARAMS_MODEL_PATTERN
+from tvb.core.entities.model import  PARAM_MODEL, PARAM_INTEGRATOR, PARAM_CONNECTIVITY, PARAM_SURFACE
+from tvb.core.services.flow_service import FlowService
+from tvb.datatypes import noise_framework
+from tvb.simulator.integrators import Integrator
+from tvb.simulator.models import Model
+
+MODEL_PARAMETERS = 'model_parameters'
+INTEGRATOR_PARAMETERS = 'integrator_parameters'
+
+
+class SerializationManager(object):
+    """
+    Constructs data types based on a burst configuration.
+    Updates the burst configuration.
+    """
+    def __init__(self, conf):
+        """
+        :param conf: burst configuration entity
+        """
+        self.logger = get_logger(__name__)
+        self.flow_service = FlowService()
+        self.conf = conf
+
+
+    def _build_simulator_adapter(self):
+        # TODO: a utility method like this should be more widely available as this adapter is constructed in many places
+        _, group = self.flow_service.get_algorithm_by_module_and_class(SIMULATOR_MODULE, SIMULATOR_CLASS)
+        return self.flow_service.build_adapter_instance(group)
+
+
+    def has_model_pse_ranges(self):
+        """ Returns True if the burst configuration describes a range on a model parameter """
+        first_range = self.conf.get_simulation_parameter_value(RANGE_PARAMETER_1)
+        second_range = self.conf.get_simulation_parameter_value(RANGE_PARAMETER_2)
+        first_range_on = first_range is not None and str(first_range).startswith(MODEL_PARAMETERS)
+        second_range_on = second_range is not None and str(second_range).startswith(MODEL_PARAMETERS)
+        return first_range_on or second_range_on
+
+
+    def _get_params_dict(self):
+        """ Convert ui inputs from the configuration to python types """
+        simulator_adapter = self._build_simulator_adapter()
+        return simulator_adapter.convert_ui_inputs(self.conf.get_all_simulator_values()[0], False)
+
+
+    def __make_instance_from_burst_config(self, params_dict, parent_class, class_name_key, params_key):
+        """ This is used internally to create a model or an integrator based on the burst config """
+        class_name = self.conf.get_simulation_parameter_value(class_name_key)
+        parameters = params_dict[params_key]
+        noise_framework.build_noise(parameters)
+        try:
+            return get_traited_instance_for_name(class_name, parent_class, parameters)
+        except Exception:
+            self.logger.exception("Could not create an instance of %s with the given parameters. "
+                                  "A new instance will be created with the default values." % class_name)
+            return get_traited_instance_for_name(class_name, parent_class, {})
+
+
+    def make_model_and_integrator(self):
+        """
+        :return: A model and an integrator.
+        :rtype: Model, Integrator
+        """
+        params_dict = self._get_params_dict()
+        model = self.__make_instance_from_burst_config(params_dict, Model, PARAM_MODEL, MODEL_PARAMETERS)
+        integrator = self.__make_instance_from_burst_config(params_dict, Integrator, PARAM_INTEGRATOR, INTEGRATOR_PARAMETERS)
+        return model, integrator
+
+
+    def get_connectivity(self):
+        """ Prepare Connectivity """
+        connectivity_gid = self.conf.get_simulation_parameter_value(PARAM_CONNECTIVITY)
+        return ABCAdapter.load_entity_by_gid(connectivity_gid)
+
+
+    def get_surface(self):
+        """ Prepare Surface """
+        surface_gid = self.conf.get_simulation_parameter_value(PARAM_SURFACE)
+        if surface_gid:
+            return ABCAdapter.load_entity_by_gid(surface_gid)
+        return None
+
+
+    def write_model_parameters(self, model_name, model_parameters):
+        """
+        Update model parameters in burst config.
+        :param model_name: This model will be selected in burst
+        :param model_parameters: A map from model parameter name to their values. Ex. {'omega': [1, 2,..., 74]}
+        """
+        for param_name, param_vals in model_parameters.iteritems():
+            full_name = PARAMS_MODEL_PATTERN % (model_name, param_name)
+            self.conf.update_simulation_parameter(full_name, str(param_vals))
+
+
+    def write_noise_parameters(self, node_noise_dispersions):
+        """
+        Set noise dispersions in burst config.
+        It will set all nsig fields it can find in the config (at least 1 per stochastic integrator).
+        :param node_noise_dispersions: A list of shape (state_variable, connectivity_nodes)
+        """
+        simulator_adapter = self._build_simulator_adapter()
+        for param_name in simulator_adapter.noise_configurable_parameters():
+            self.conf.update_simulation_parameter(param_name, node_noise_dispersions)
