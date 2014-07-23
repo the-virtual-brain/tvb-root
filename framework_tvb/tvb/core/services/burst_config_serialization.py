@@ -126,6 +126,9 @@ class SerializationManager(object):
         :param model_name: This model will be selected in burst
         :param model_parameters: A map from model parameter name to their values. Ex. {'omega': [1, 2,..., 74]}
         """
+        # change selected model in burst config
+        self.conf.update_simulation_parameter(PARAM_MODEL, model_name)
+
         for param_name, param_vals in model_parameters.iteritems():
             full_name = PARAMS_MODEL_PATTERN % (model_name, param_name)
             self.conf.update_simulation_parameter(full_name, str(param_vals))

@@ -1,4 +1,4 @@
-<div id="main" class="columnized colscheme-2-even" xmlns:xi="http://www.w3.org/2001/XInclude">
+<div id="main" class="columnized colscheme-2-even" xmlns:xi="http://www.w3.org/2001/XInclude" xmlns:py="http://genshi.edgewall.org/">
     <link rel="stylesheet" type="text/css" href="/static/style/section_stimulus.css?$currentVersionJS"/>
     <script type="text/javascript" src="/static/js/canvas2image.js"></script>
     <script type="text/javascript" src="/static/js/bursts_model_parameters.js" ></script>
@@ -8,8 +8,7 @@
         <xi:include href="../visualizers/connectivity/left_template_connectivity_view.html"/>
     </section>
 
-    <section xmlns:xi="http://www.w3.org/2001/XInclude" xmlns:py="http://genshi.edgewall.org/"
-         class="configure-stimulus-shape view-column col-1">
+    <section class="configure-stimulus-shape view-column col-1">
 
         <h4><mark>Configure</mark> Node Parameters</h4>
         <xi:include href="../visualizers/commons/channel_selector.html" />
@@ -77,7 +76,7 @@
                 return false;
             });
 
-            modelParam.main($dynamics_json, "${measurePointsSelectionGID}");
+            modelParam.main($dynamics_json, $initial_dynamic_ids, "${measurePointsSelectionGID}");
         });
     </script>
 

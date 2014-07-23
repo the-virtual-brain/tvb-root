@@ -38,11 +38,12 @@
 import json
 import cherrypy
 from tvb.adapters.visualizers.connectivity import ConnectivityViewer
-from tvb.core.adapters.abcadapter import ABCAdapter
-from tvb.core.entities.model import PARAM_CONNECTIVITY, PARAMS_MODEL_PATTERN, PARAM_MODEL
+from tvb.core.entities.model import PARAMS_MODEL_PATTERN, PARAM_MODEL
 from tvb.core.entities.storage import dao
+from tvb.core.services.burst_config_serialization import SerializationManager
 from tvb.interfaces.web.controllers import common
 from tvb.interfaces.web.controllers.burst.base_controller import BurstBaseController
+
 from tvb.interfaces.web.controllers.decorators import expose_page, handle_error, check_user
 
 
@@ -63,18 +64,16 @@ class RegionsModelParametersController(BurstBaseController):
             }
         return json.dumps(ret)
 
-    @staticmethod
-    def get_connectivity_from_burst_configuration():
-        burst_configuration = common.get_from_session(common.KEY_BURST_CONFIG)
-        connectivity_gid = burst_configuration.get_simulation_parameter_value(PARAM_CONNECTIVITY)
-        return ABCAdapter.load_entity_by_gid(connectivity_gid)
-
     @expose_page
     def index(self):
         current_user_id = common.get_logged_user().id
+        # In case the number of dynamics gets big we should add a filter in the ui.
         dynamics = dao.get_dynamics_for_user(current_user_id)
 
-        connectivity = self.get_connectivity_from_burst_configuration()
+        burst_config = common.get_from_session(common.KEY_BURST_CONFIG)
+        des = SerializationManager(burst_config)
+
+        connectivity = des.get_connectivity()
         params = ConnectivityViewer.get_connectivity_parameters(connectivity)
 
         params.update({
@@ -83,7 +82,8 @@ class RegionsModelParametersController(BurstBaseController):
             'isSingleMode': True,
             'submit_parameters_url': '/burst/modelparameters/regions/submit_model_parameters',
             'dynamics': dynamics,
-            'dynamics_json': self._dynamics_json(dynamics)
+            'dynamics_json': self._dynamics_json(dynamics),
+            'initial_dynamic_ids': json.dumps(burst_config.dynamic_ids)
         })
 
         return self.fill_default_attributes(params)
@@ -97,27 +97,25 @@ class RegionsModelParametersController(BurstBaseController):
         Collects the model parameters values from all the models used for the connectivity nodes.
         Assumes that the array indices are consistent with the node order.
         """
-        dynamics = []
-
-        for dynamic_id in json.loads(dynamic_ids):
-            dynamics.append(dao.get_dynamic(dynamic_id))
+        dynamic_ids = json.loads(dynamic_ids)
+        dynamics = [dao.get_dynamic(did) for did in dynamic_ids]
 
         for dynamic in dynamics[1:]:
             if dynamic.model_class != dynamics[0].model_class:
                 raise Exception("All dynamics must have the same model type")
 
         model_name = dynamics[0].model_class
-        burst_configuration = common.get_from_session(common.KEY_BURST_CONFIG)
-        model_parameters = self.group_parameter_values_by_name(json.loads(d.model_parameters) for d in dynamics)
-
-        # change selected model in burst config
-        burst_configuration.update_simulation_parameter(PARAM_MODEL, model_name)
+        burst_config = common.get_from_session(common.KEY_BURST_CONFIG)
 
         # update model parameters in burst config
-        for param_name, param_vals in model_parameters.iteritems():
-            full_name = PARAMS_MODEL_PATTERN % (model_name, param_name)
-            burst_configuration.update_simulation_parameter(full_name, str(param_vals))
+        des = SerializationManager(common.get_from_session(common.KEY_BURST_CONFIG))
+        model_parameters = self.group_parameter_values_by_name(json.loads(d.model_parameters) for d in dynamics)
+        des.write_model_parameters(model_name, model_parameters)
 
-        ### Update in session BURST configuration for burst-page.
-        common.add2session(common.KEY_BURST_CONFIG, burst_configuration.clone())
+        # update dynamic ids in burst config
+        burst_config.dynamic_ids = dynamic_ids
+
+        # Update in session BURST configuration for burst-page.
+        # todo was this needed? as the burst config in session has already been changed
+        #common.add2session(common.KEY_BURST_CONFIG, burst_config.clone())
         raise cherrypy.HTTPRedirect("/burst/")

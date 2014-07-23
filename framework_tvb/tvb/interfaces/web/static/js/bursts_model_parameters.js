@@ -38,7 +38,7 @@ var modelParam = {
 
 (function(){
 
-function initSelector(selectionGID){
+function createSelector(selectionGID){
     var selector = TVBUI.textGridRegionSelector("#channelSelector", {filterGid: selectionGID, emptyValue:''});
     TVBUI.quickSelector(selector, "#selection-text-area", "#loadSelectionFromTextBtn");
 
@@ -48,9 +48,8 @@ function initSelector(selectionGID){
             GVAR_interestAreaNodeIndexes.push(parseInt(value[i], 10));
         }
     });
-
     selector.checkAll();
-    modelParam.selector = selector;
+    return selector;
 }
 
 
@@ -115,16 +114,24 @@ function onShowDynamicDetails(){
     });
 }
 
-function main(dynamics, selectionGID){
-    initSelector(selectionGID);
-
+function _setInitialDynamics(initialDynamicIds){
     var nodeIds = modelParam.selector._allValues;
+    var texts = [];
 
-    for (var i = 0; i < nodeIds.length; i++){
+    for(var i = 0; i < initialDynamicIds.length; i++){
+        var dynamic_id = initialDynamicIds[i];
+        var dynamic = modelParam.dynamics[dynamic_id];
         var nodeId = nodeIds[i];
-        modelParam.modelsInNodes[nodeId] = null;
+        modelParam.modelsInNodes[nodeId] = dynamic;
+        texts.push(dynamic.name);
     }
+    modelParam.selector.setGridText(texts);
+}
+
+function main(dynamics, initialDynamicIds, selectionGID){
+    modelParam.selector = createSelector(selectionGID);
     modelParam.dynamics = dynamics;
+    _setInitialDynamics(initialDynamicIds);
 
     $('#put-model').click(putModelInSelectedNodes);
     $('#base_spatio_temporal_form').submit(onSubmit);

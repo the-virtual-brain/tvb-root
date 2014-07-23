@@ -72,7 +72,8 @@ class BurstConfiguration(Base, Exportable):
     already launched.
     
     - simulator_configuration - hold a dictionary with what entries were displayed in the simulator part
-    
+    - dynamic_ids - A list of dynamic id's associated with the connectivity nodes. Used by the region parameters page
+
     """
     __tablename__ = "BURST_CONFIGURATIONS"
 
@@ -119,6 +120,7 @@ class BurstConfiguration(Base, Exportable):
         self.name = name
         self.selected_tab = 0
         self.status = status
+        self.dynamic_ids = []
 
 
     def from_dict(self, dictionary):
