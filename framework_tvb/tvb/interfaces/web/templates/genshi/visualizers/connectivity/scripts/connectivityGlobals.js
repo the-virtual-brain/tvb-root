@@ -378,104 +378,6 @@ function GFUNC_toggleNodeInInterestArea(nodeIndex){
     }
 }
 /*
- * ------------------------------------------------------------------------------------------------
- * ------ Global functions related to selection handling, like saving loading etc. ----------------
- * ------------------------------------------------------------------------------------------------
- */
-/**
- * @deprecated
- */
-function GFUNC_doSelectionSave() {
-    var selectionName = $("#currentSelectionName").val();
-    var connectivityGid = $("#connectivityGid").val();
-
-    if (selectionName.length > 0) {
-        doAjaxCall({
-            type: "POST",
-            url: '/flow/store_measure_points_selection/' + selectionName,
-            data: {"selection": JSON.stringify(GVAR_interestAreaNodeIndexes),
-                   "datatype_gid": connectivityGid},
-            success: function(r) {
-                var response = $.parseJSON(r);
-                if (response[0]) {
-                    SEL_populateAvailableSelections();
-                    displayMessage(response[1], "infoMessage");
-                    var selectionDropdown = document.getElementById('availableSelectionsList');
-                    for (var i = 0; i < selectionDropdown.options.length; i++) {
-                        if (selectionDropdown.options[i].text == selectionName) {
-                            selectionDropdown.selectedIndex = i;
-                            break;
-                        }
-                    }
-                } else {
-                    displayMessage(response[1], "errorMessage");
-                }
-            } ,
-            error: function() {
-                displayMessage("Selection was not saved properly.", "errorMessage");
-            }
-        });
-    } else {
-        displayMessage("Selection name must not be empty.", "errorMessage");
-    }
-}
-
-/**
- * @deprecated
- */
-function GFUNC_refreshWithNewSelection(selectComp) {
-    var selectedOption = selectComp.options[selectComp.selectedIndex];
-    var selectionNodes = selectedOption.value.replace('{', '').replace('}', '').split(',');
-    for (var i = 0; i < NO_POSITIONS; i++) {
-        GFUNC_removeNodeFromInterestArea(i);
-    }
-    for (var ii = 0; ii < selectionNodes.length; ii++) {
-        var idx = GVAR_pointsLabels.indexOf(selectionNodes[ii]);
-        if (idx >= 0) {
-            GFUNC_addNodeToInterestArea(idx);
-        }
-    }
-    if (selectComp.selectedIndex == 0) {
-        //TODO: this could be done differently in case the 'New selection' value is not at first index
-        //However in current generation of select component this will always be the case
-        document.getElementById('currentSelectionName').value = '';
-    } else {
-        document.getElementById('currentSelectionName').value = selectedOption.text;
-    }
-    refreshTableInterestArea();
-    GFUNC_refreshOnContextChange();
-    SEL_refreshSelectionTable();
-}
-
-/**
- * Methods to add/remove the entire connectivity matrix to the interest area.
- * @deprecated
- */
-function GFUNC_addAllMatrixToInterestArea() {
-    for (var i = 0; i < NO_POSITIONS; i++) {
-        if (!GFUNC_isNodeAddedToInterestArea(i)) {
-            GFUNC_addNodeToInterestArea(i);
-        }
-    }
-    refreshTableInterestArea();
-    GFUNC_refreshOnContextChange();
-    SEL_refreshSelectionTable();
-}
-
-/**
- * @deprecated
- */
-function GFUNC_removeAllMatrixFromInterestArea() {
-    for (var i = 0; i < NO_POSITIONS; i++) {
-        if (GFUNC_isNodeAddedToInterestArea(i)) {
-            GFUNC_removeNodeFromInterestArea(i);
-        }
-    }
-    refreshTableInterestArea();
-    GFUNC_refreshOnContextChange();
-    SEL_refreshSelectionTable();
-}
-/*
  * --------------------------------------------------------------------------------------------------
  * -------------Only functions related to changing the tabs are below this point.--------------------
  * --------------------------------------------------------------------------------------------------
@@ -542,16 +444,6 @@ function GFUNC_updateLeftSideVisualization() {
     if (SELECTED_TAB === CONNECTIVITY_SPACE_TIME_TAB) {
         drawSceneSpaceTime();
     }
-}
-/**
- * @deprecated
- */
-function GFUNC_refreshOnContextChange() {
-     GFUNC_updateLeftSideVisualization();
-     var selection_button = $("#save-selection-button");
-     selection_button.unbind('click');
-     selection_button.bind('click', function() {GFUNC_doSelectionSave()});
-     selection_button.removeClass('action-idle');
 }
 
 function hideLeftSideTabs(selectedHref) {
