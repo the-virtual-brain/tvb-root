@@ -95,6 +95,12 @@ class SerializationManager(object):
             return get_traited_instance_for_name(class_name, parent_class, {})
 
 
+    def __make_shallow_model(self):
+        """ Creates a model of the type present in the config without setting any parameters on it """
+        class_name = self.conf.get_simulation_parameter_value(PARAM_MODEL)
+        return get_traited_instance_for_name(class_name, Model, {})
+
+
     def make_model_and_integrator(self):
         """
         :return: A model and an integrator.
@@ -119,13 +125,34 @@ class SerializationManager(object):
             return ABCAdapter.load_entity_by_gid(surface_gid)
         return None
 
+    @staticmethod
+    def group_parameter_values_by_name(model_parameters_list):
+        """
+        Given a list of model parameters like this:
+            [{"a", 2.0}, {'b', 1.0}
+             {"a", 3.0}, {'b', 7.0}]
+        Group them by param name to get:
+        {'a': [2.0, 3.0], 'b': [1.0, 7.0]}
+        """
+        ret = {}
+        for model_parameters in model_parameters_list:
+            for param_name, param_val in model_parameters.iteritems():
+                if param_name not in ret:
+                    ret[param_name] = []
+                ret[param_name].append(param_val)
+        return ret
 
-    def write_model_parameters(self, model_name, model_parameters):
+
+    def write_model_parameters(self, model_name, model_parameters_list):
         """
         Update model parameters in burst config.
         :param model_name: This model will be selected in burst
-        :param model_parameters: A map from model parameter name to their values. Ex. {'omega': [1, 2,..., 74]}
+        :param model_parameters_list: A list of model parameter configurations. One for each connectivity node.
+               Ex. [{'a': 1, 'b': 2}, ...]
         """
+        self.logger.warning(model_parameters_list)
+        model_parameters = self.group_parameter_values_by_name(model_parameters_list)
+        self.logger.warning(model_parameters)
         # change selected model in burst config
         self.conf.update_simulation_parameter(PARAM_MODEL, model_name)
 
@@ -134,12 +161,19 @@ class SerializationManager(object):
             self.conf.update_simulation_parameter(full_name, str(param_vals))
 
 
-    def write_noise_parameters(self, node_noise_dispersions):
+    def write_noise_parameters(self, noise_dispersions):
         """
         Set noise dispersions in burst config.
         It will set all nsig fields it can find in the config (at least 1 per stochastic integrator).
-        :param node_noise_dispersions: A list of shape (state_variable, connectivity_nodes)
+        :param noise_dispersions: A list of noise dispersions. One for each connectivity node. Ex [{'V': 1, 'W':2}, ...]
         """
+        self.logger.warning(noise_dispersions)
+        noise_dispersions = self.group_parameter_values_by_name(noise_dispersions)
+        self.logger.warning(noise_dispersions)
+        # Flatten the dict to an array of shape (state_vars, nodes)
+        state_vars = self.__make_shallow_model().state_variables
+        noise_arr = [noise_dispersions[sv] for sv in state_vars]
+
         simulator_adapter = self._build_simulator_adapter()
         for param_name in simulator_adapter.noise_configurable_parameters():
-            self.conf.update_simulation_parameter(param_name, node_noise_dispersions)
+            self.conf.update_simulation_parameter(param_name, noise_arr)

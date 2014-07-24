@@ -38,7 +38,6 @@
 import json
 import cherrypy
 from tvb.adapters.visualizers.connectivity import ConnectivityViewer
-from tvb.core.entities.model import PARAMS_MODEL_PATTERN, PARAM_MODEL
 from tvb.core.entities.storage import dao
 from tvb.core.services.burst_config_serialization import SerializationManager
 from tvb.interfaces.web.controllers import common
@@ -92,12 +91,12 @@ class RegionsModelParametersController(BurstBaseController):
     @cherrypy.expose
     @handle_error(redirect=True)
     @check_user
-    def submit_model_parameters(self, dynamic_ids):
+    def submit_model_parameters(self, node_values):
         """
         Collects the model parameters values from all the models used for the connectivity nodes.
         Assumes that the array indices are consistent with the node order.
         """
-        dynamic_ids = json.loads(dynamic_ids)
+        dynamic_ids = json.loads(node_values)
         dynamics = [dao.get_dynamic(did) for did in dynamic_ids]
 
         for dynamic in dynamics[1:]:
@@ -109,7 +108,7 @@ class RegionsModelParametersController(BurstBaseController):
 
         # update model parameters in burst config
         des = SerializationManager(common.get_from_session(common.KEY_BURST_CONFIG))
-        model_parameters = self.group_parameter_values_by_name(json.loads(d.model_parameters) for d in dynamics)
+        model_parameters = [dict(json.loads(d.model_parameters)) for d in dynamics]
         des.write_model_parameters(model_name, model_parameters)
 
         # update dynamic ids in burst config

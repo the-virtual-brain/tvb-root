@@ -318,7 +318,7 @@ class DynamicModelController(BurstBaseController):
         model_parameters = []
 
         for name in model.ui_configurable_parameters:
-            value = getattr(model, name).tolist()
+            value = getattr(model, name)[0]
             model_parameters.append((name, value))
 
         entity = tvb.core.entities.model.Dynamic(
@@ -337,5 +337,5 @@ class DynamicModelController(BurstBaseController):
     @expose_fragment('burst/dynamic_minidetail')
     def dynamic_detail(self, dynamic_id):
         dynamic = dao.get_dynamic(dynamic_id)
-        model_parameters = self.group_parameter_values_by_name([json.loads(dynamic.model_parameters)])
+        model_parameters = dict(json.loads(dynamic.model_parameters))
         return {'model_parameters': model_parameters}

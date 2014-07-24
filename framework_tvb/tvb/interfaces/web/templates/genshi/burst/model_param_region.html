@@ -1,12 +1,15 @@
 <div id="main" class="columnized colscheme-2-even" xmlns:xi="http://www.w3.org/2001/XInclude" xmlns:py="http://genshi.edgewall.org/">
     <link rel="stylesheet" type="text/css" href="/static/style/section_stimulus.css?$currentVersionJS"/>
     <script type="text/javascript" src="/static/js/canvas2image.js"></script>
-    <script type="text/javascript" src="/static/js/bursts_model_parameters.js" ></script>
 
     <section class="configure-stimulus-equation view-column col-2"  xmlns:xi="http://www.w3.org/2001/XInclude">
         <h4><mark>Select</mark> Connectivity Region</h4>
+        <!-- todo this includes more functionality than required: full connectivity matrix and associated js-->
         <xi:include href="../visualizers/connectivity/left_template_connectivity_view.html"/>
     </section>
+
+    <script type="text/javascript" src="/static/js/region_associator.js"></script>
+    <script type="text/javascript" src="/static/js/bursts_model_parameters.js" ></script>
 
     <section class="configure-stimulus-shape view-column col-1">
 
@@ -66,7 +69,7 @@
 	            </div>
 	        </div>
 	    </aside>
-        <input type="hidden" name="dynamic_ids" />
+        <input type="hidden" name="node_values" />
 	</form>
 
 	<script type="text/javascript">
