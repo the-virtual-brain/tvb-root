@@ -10,7 +10,7 @@
     </py:def>
 
     <py:def function="hole_js()">
-        <script type="text/javascript" src="/static/js/bursts_noise.js?" ></script>
+        <script type="text/javascript" src="/static/js/bursts_noise.js?$currentVersionJS" ></script>
         <script type="text/javascript">
             $(document).ready(function () {
                 noiseParam.main(${stateVarsJson}, ${initialNoiseValues}, "${measurePointsSelectionGID}");

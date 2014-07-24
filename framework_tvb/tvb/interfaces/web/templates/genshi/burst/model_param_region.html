@@ -21,7 +21,7 @@
     </py:def>
 
     <py:def function="hole_js()">
-        <script type="text/javascript" src="/static/js/bursts_model_parameters.js" ></script>
+        <script type="text/javascript" src="/static/js/bursts_model_parameters.js?$currentVersionJS" ></script>
         <script type="text/javascript">
             $(document).ready(function () {
                 modelParam.main($dynamics_json, $initial_dynamic_ids, "${measurePointsSelectionGID}");
