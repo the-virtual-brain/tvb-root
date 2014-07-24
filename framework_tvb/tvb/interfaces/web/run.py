@@ -89,7 +89,7 @@ from tvb.interfaces.web.controllers.spatial.surface_model_parameters_controller 
 from tvb.interfaces.web.controllers.spatial.region_stimulus_controller import RegionStimulusController
 from tvb.interfaces.web.controllers.spatial.surface_stimulus_controller import SurfaceStimulusController
 from tvb.interfaces.web.controllers.spatial.local_connectivity_controller import LocalConnectivityController
-from tvb.interfaces.web.controllers.spatial.noise_configuration_controller import NoiseConfigurationController
+from tvb.interfaces.web.controllers.burst.noise_configuration_controller import NoiseConfigurationController
 from tvb.interfaces.web.controllers.api.simulator_controller import SimulatorController
 
 
@@ -127,7 +127,7 @@ def init_cherrypy(arguments=None):
     cherrypy.tree.mount(RegionStimulusController(), "/spatial/stimulus/region/", config=CONFIGUER)
     cherrypy.tree.mount(SurfaceStimulusController(), "/spatial/stimulus/surface/", config=CONFIGUER)
     cherrypy.tree.mount(LocalConnectivityController(), "/spatial/localconnectivity/", config=CONFIGUER)
-    cherrypy.tree.mount(NoiseConfigurationController(), "/spatial/noiseconfiguration/", config=CONFIGUER)
+    cherrypy.tree.mount(NoiseConfigurationController(), "/burst/noise/", config=CONFIGUER)
     cherrypy.tree.mount(SimulatorController(), "/api/simulator/", config=CONFIGUER)
 
     cherrypy.config.update(CONFIGUER)

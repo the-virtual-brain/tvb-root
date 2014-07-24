@@ -473,7 +473,7 @@ function configureModelParamsOnSurface() {
 }
 
 function configureNoiseParameters() {
-    configureModel("/spatial/noiseconfiguration/edit_noise_parameters")
+    configureModel("/burst/noise/");
 }
 
 function toggleConfigSurfaceModelParamsButton() {
