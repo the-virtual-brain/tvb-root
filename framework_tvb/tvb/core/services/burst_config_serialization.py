@@ -150,9 +150,7 @@ class SerializationManager(object):
         :param model_parameters_list: A list of model parameter configurations. One for each connectivity node.
                Ex. [{'a': 1, 'b': 2}, ...]
         """
-        self.logger.warning(model_parameters_list)
         model_parameters = self.group_parameter_values_by_name(model_parameters_list)
-        self.logger.warning(model_parameters)
         # change selected model in burst config
         self.conf.update_simulation_parameter(PARAM_MODEL, model_name)
 
@@ -167,13 +165,11 @@ class SerializationManager(object):
         It will set all nsig fields it can find in the config (at least 1 per stochastic integrator).
         :param noise_dispersions: A list of noise dispersions. One for each connectivity node. Ex [{'V': 1, 'W':2}, ...]
         """
-        self.logger.warning(noise_dispersions)
         noise_dispersions = self.group_parameter_values_by_name(noise_dispersions)
-        self.logger.warning(noise_dispersions)
         # Flatten the dict to an array of shape (state_vars, nodes)
         state_vars = self.__make_shallow_model().state_variables
         noise_arr = [noise_dispersions[sv] for sv in state_vars]
 
         simulator_adapter = self._build_simulator_adapter()
         for param_name in simulator_adapter.noise_configurable_parameters():
-            self.conf.update_simulation_parameter(param_name, noise_arr)
+            self.conf.update_simulation_parameter(param_name, str(noise_arr))
