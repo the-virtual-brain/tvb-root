@@ -35,9 +35,10 @@
 import json
 import unittest
 import cherrypy
-import tvb.interfaces.web.controllers.common as common
-from tvb.interfaces.web.controllers.spatial.noise_configuration_controller import NoiseConfigurationController, KEY_CONTEXT_NC
+from tvb.core.entities.model import PARAM_INTEGRATOR, PARAM_MODEL
+from tvb.interfaces.web.controllers import common
 from tvb.interfaces.web.controllers.burst.burst_controller import BurstController
+from tvb.interfaces.web.controllers.burst.noise_configuration_controller import NoiseConfigurationController
 from tvb.simulator.integrators import EulerStochastic
 from tvb.simulator.models import Generic2dOscillator
 from tvb.simulator.noise import Additive
@@ -45,7 +46,7 @@ from tvb.tests.framework.datatypes.datatypes_factory import DatatypesFactory
 from tvb.tests.framework.core.base_testcase import TransactionalTestCase
 from tvb.tests.framework.interfaces.web.controllers.base_controller_test import BaseControllersTest
 from tvb.tests.framework.adapters.simulator.simulator_adapter_test import SIMULATOR_PARAMETERS
-from tvb.interfaces.web.controllers.spatial.base_spatio_temporal_controller import PARAM_INTEGRATOR, PARAM_MODEL, INTEGRATOR_PARAMETERS
+from tvb.interfaces.web.controllers.spatial.base_spatio_temporal_controller import INTEGRATOR_PARAMETERS
 
 class NoiseConfigurationControllerTest(TransactionalTestCase, BaseControllersTest):
     """
@@ -86,7 +87,7 @@ class NoiseConfigurationControllerTest(TransactionalTestCase, BaseControllersTes
                                             for _ in Generic2dOscillator().state_variables ]
 
         #initialize the noise controller
-        self.noise_c.edit_noise_parameters()
+        self.noise_c.index()
 
 
 
@@ -95,30 +96,11 @@ class NoiseConfigurationControllerTest(TransactionalTestCase, BaseControllersTes
         BaseControllersTest.cleanup(self)
 
 
-    def test_edit_noise_parameters(self):
-        values = cherrypy.session[KEY_CONTEXT_NC].noise_values
-        self.assertEquals(values, self.default_noise_config_value)
-
-
-    def test_load_initial_values(self):
-        """
-        Default initial values should be in session
-        """
-        values = json.loads(self.noise_c.load_initial_values())
-        self.assertEquals(values, self.default_noise_config_value)
-
-
-    def test_load_noise_values_for_connectivity_node(self):
-        values = json.loads(self.noise_c.load_noise_values_for_connectivity_node(0))
-        self.assertEquals(values, {'0': self.default_noise_config_value[0][0],
-                                   '1': self.default_noise_config_value[0][1]})
-
-
     def test_submit_noise_configuration(self):
         """
         Submit noise configuration writes the noise array on the required key in the burst configuration
         """
-        self._expect_redirect('/burst/', self.noise_c.submit_noise_configuration)
+        self._expect_redirect('/burst/', self.noise_c.submit)
         simulator_configuration = cherrypy.session[common.KEY_BURST_CONFIG].simulator_configuration
 
         some_key = 'integrator_parameters_option_EulerStochastic_noise_parameters_option_Additive_nsig'
@@ -126,31 +108,6 @@ class NoiseConfigurationControllerTest(TransactionalTestCase, BaseControllersTes
              json.loads(simulator_configuration[some_key]['value']),
              self.default_noise_config_value)
 
-
-    def test_update_noise_configuration(self):
-        noise_values = json.dumps({0:7, 1:11})
-        selected_nodes = json.dumps([0, 3])
-        self.noise_c.update_noise_configuration(noiseValues=noise_values, selectedNodes=selected_nodes)
-        values = cherrypy.session[KEY_CONTEXT_NC].noise_values
-        expected = self.default_noise_config_value[:]
-        expected[0][0] = 7
-        expected[1][0] = 11
-        expected[0][3] = 7
-        expected[1][3] = 11
-        self.assertEquals(values, expected)
-
-
-    def test_copy_configuration(self):
-        values = cherrypy.session[KEY_CONTEXT_NC].noise_values
-        values[0][0] = 7
-        values[1][0] = 11
-        self.noise_c.copy_configuration("0", "[3]")
-        expected = self.default_noise_config_value[:]
-        expected[0][0] = 7
-        expected[1][0] = 11
-        expected[0][3] = 7
-        expected[1][3] = 11
-        self.assertEquals(values, expected)
 
 
 def suite():
