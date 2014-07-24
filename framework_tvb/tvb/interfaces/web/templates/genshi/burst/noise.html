@@ -1,63 +1,25 @@
-<div id="main" class="columnized colscheme-2-even" xmlns:xi="http://www.w3.org/2001/XInclude" xmlns:py="http://genshi.edgewall.org/">
-    <link rel="stylesheet" type="text/css" href="/static/style/section_stimulus.css?$currentVersionJS"/>
+<div xmlns:xi="http://www.w3.org/2001/XInclude" xmlns:py="http://genshi.edgewall.org/"
+     py:strip="True">
 
-    <section class="configure-stimulus-equation view-column col-2"  xmlns:xi="http://www.w3.org/2001/XInclude">
-        <h4><mark>Select</mark> Connectivity Region</h4>
-        <!-- todo: this includes does more than necessary -->
-        <xi:include href="../visualizers/connectivity/left_template_connectivity_view.html"/>
-    </section>
+    <py:def function="hole_form()">
+        <li py:for="idx, sv in enumerate(stateVars)">
+            <label>${sv}
+                <input type="text" id="noisevalue_${idx}" value="${noiseInputValues[sv]}" style="width:50px;"/>
+            </label>
+        </li>
+    </py:def>
 
-    <script type="text/javascript" src="/static/js/region_associator.js?"></script>
-    <script type="text/javascript" src="/static/js/bursts_noise.js?" ></script>
+    <py:def function="hole_js()">
+        <script type="text/javascript" src="/static/js/bursts_noise.js?" ></script>
+        <script type="text/javascript">
+            $(document).ready(function () {
+                noiseParam.main(${stateVarsJson}, ${initialNoiseValues}, "${measurePointsSelectionGID}");
+            });
+        </script>
+    </py:def>
 
-    <section class="configure-stimulus-shape view-column col-1">
-
-        <h4><mark>Configure</mark> noise dispersion for state variables</h4>
-        <xi:include href="../visualizers/commons/channel_selector.html" />
-        <xi:include href="../visualizers/commons/channel_selector_quick.html" />
-
-        <ul class="toolbar-inline">
-
-            <li py:for="idx, sv in enumerate(stateVars)">
-                <label>${sv}
-                    <input type="text" id="noisevalue_${idx}" value="${noiseInputValues[sv]}" style="width:50px;"/>
-                </label>
-            </li>
-
-            <li>
-                <button id="put-model" class="action action-store" title="Put into selected nodes">Put into selected nodes</button>
-            </li>
-
-            <!-- Quick-Select -->
-            <li class="selector-storage">
-                ${drawQuickSelector("selection-text-area", "loadSelectionFromTextBtn")}
-            </li>
-        </ul>
-
-        ${drawRegionSelector(connectivity_entity.display_name, "channelSelector", groupedLabels, initialSelection)}
-    </section>
-
-    <form id="base_spatio_temporal_form" action="${submit_parameters_url}" method="POST">
-	    <aside class="header-component toolbar can-extend auto-extends">
-	    	<h3>SpatioTemporal Entities</h3>
-		  <div class="extension">
-		   <div class="dropdown-pane">
-	        <ul>
-	        	<li>
-                    <button class="action action-confirm">
-                    	Submit Noise Configuration
-                    </button>
-                </li>
-	        </ul>
-	       </div>
-	      </div>
-	    </aside>
-        <input type="hidden" name="node_values"/>
-	 </form>
-
-    <script type="text/javascript">
-        $(document).ready(function () {
-            noiseParam.main(${stateVarsJson}, ${initialNoiseValues}, "${measurePointsSelectionGID}");
-        });
-    </script>
+    <!--! the above functions will be used by the template below to draw the form and execute startup js-->
+    <xi:include href="region_associator.html"
+        py:with="section2title='noise dispersion for state variables';
+                 sumbitText='Noise Configuration'"/>
 </div>
