@@ -45,7 +45,7 @@ class BurstBaseController(BaseController):
             {'link' : '/burst', 'subsection': 'burst',
              'title' : 'Simulation Cockpit', 'description':'Manage simulations'},
             {'link' : '/burst/dynamic', 'subsection': 'dynamic',
-             'title' : 'Model configurations', 'description':'Create model configurations'}
+             'title' : 'Phase plane', 'description':'Configure model dynamics'}
         ]
         template_dictionary[common.KEY_PARAMETERS_CONFIG] = False
 
