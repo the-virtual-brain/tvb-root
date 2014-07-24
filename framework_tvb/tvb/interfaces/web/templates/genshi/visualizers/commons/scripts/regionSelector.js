@@ -89,7 +89,7 @@ RegionSelectComponent.prototype.defaults = {
     boxesSelector: 'input[type=checkbox]',
     textboxSelector : 'input[type=text]',
     saveSelectionButtonSelector : '.action-store',
-    selectionDropdown: 'selection-toolbar > select'
+    selectionDropdown: '.selection-toolbar > select'
 };
 
 /**
