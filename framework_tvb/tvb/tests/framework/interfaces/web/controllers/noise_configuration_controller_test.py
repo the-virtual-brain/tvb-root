@@ -39,6 +39,7 @@ from tvb.core.entities.model import PARAM_INTEGRATOR, PARAM_MODEL
 from tvb.interfaces.web.controllers import common
 from tvb.interfaces.web.controllers.burst.burst_controller import BurstController
 from tvb.interfaces.web.controllers.burst.noise_configuration_controller import NoiseConfigurationController
+from tvb.interfaces.web.controllers.spatial.base_spatio_temporal_controller import INTEGRATOR_PARAMETERS
 from tvb.simulator.integrators import EulerStochastic
 from tvb.simulator.models import Generic2dOscillator
 from tvb.simulator.noise import Additive
@@ -46,20 +47,14 @@ from tvb.tests.framework.datatypes.datatypes_factory import DatatypesFactory
 from tvb.tests.framework.core.base_testcase import TransactionalTestCase
 from tvb.tests.framework.interfaces.web.controllers.base_controller_test import BaseControllersTest
 from tvb.tests.framework.adapters.simulator.simulator_adapter_test import SIMULATOR_PARAMETERS
-from tvb.interfaces.web.controllers.spatial.base_spatio_temporal_controller import INTEGRATOR_PARAMETERS
+
 
 class NoiseConfigurationControllerTest(TransactionalTestCase, BaseControllersTest):
-    """
-        Unit tests for NoiseConfigurationController
-        Initialisation for ContextNoiseParameters is arcane, cannot obviously set the underlying array.
-        Assuming observed value [[1] * 74, [1] * 74] and asserting based on that.
-    """
 
     def setUp(self):
         """
-        Sets up the environment for testing;
-        creates a `NoiseConfigurationController` ;
-        and calls edit_noise_parameters which initializes the controller!
+        Sets up the environment for testing
+        creates a `NoiseConfigurationController`
         """
         BaseControllersTest.init(self)
         self.noise_c = NoiseConfigurationController()
@@ -79,35 +74,32 @@ class NoiseConfigurationControllerTest(TransactionalTestCase, BaseControllersTes
         new_params[INTEGRATOR_PARAMETERS + '_option_EulerStochastic_noise'] = {'value': Additive.__name__}
         stored_burst.simulator_configuration = new_params
 
-        nr_nodes = len(self.connectivity.centres)
-        default_noise_values = EulerStochastic().noise.nsig.tolist()
-        self.assertIsInstance(default_noise_values, list)
-        self.assertEquals(1, len(default_noise_values))
-        self.default_noise_config_value = [ default_noise_values * nr_nodes
-                                            for _ in Generic2dOscillator().state_variables ]
-
-        #initialize the noise controller
         self.noise_c.index()
-
-
 
     def tearDown(self):
         """ Cleans the testing environment """
         BaseControllersTest.cleanup(self)
 
 
-    def test_submit_noise_configuration(self):
+    def test_submit_noise_configuration_happy(self):
         """
         Submit noise configuration writes the noise array on the required key in the burst configuration
         """
-        self._expect_redirect('/burst/', self.noise_c.submit)
+        # a noise configuration in the format expected by submit. Assumes Generic2dOscillator model.
+        nodes_range = range(self.connectivity.number_of_regions)
+        noise_in = [{'V': 1.0, 'W': 2.0} for _ in nodes_range]
+        noise_in = json.dumps(noise_in)
+
+        # expected noise array in burst config
+        expected_noise_arr = [[1.0 for _ in nodes_range], [2.0 for _ in nodes_range]]
+
+        self._expect_redirect('/burst/', self.noise_c.submit, noise_in)
+
         simulator_configuration = cherrypy.session[common.KEY_BURST_CONFIG].simulator_configuration
+        nsig_key = 'integrator_parameters_option_EulerStochastic_noise_parameters_option_Additive_nsig'
+        actual_noise_arr = json.loads(simulator_configuration[nsig_key]['value'])
 
-        some_key = 'integrator_parameters_option_EulerStochastic_noise_parameters_option_Additive_nsig'
-        self.assertEquals(
-             json.loads(simulator_configuration[some_key]['value']),
-             self.default_noise_config_value)
-
+        self.assertEquals(expected_noise_arr, actual_noise_arr)
 
 
 def suite():
