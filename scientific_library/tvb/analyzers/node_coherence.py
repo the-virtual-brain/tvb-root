@@ -29,9 +29,10 @@
 #
 
 """
-Calculate a ... on a .. datatype and return a ...
+Compute cross coherence between all nodes in a time series.
 
 .. moduleauthor:: Stuart A. Knock <Stuart@tvb.invalid>
+.. moduleauthor:: Marmaduke Woodman <maramduke.woodman@univ-amu.fr>
 
 """
 
@@ -53,10 +54,30 @@ LOG = get_logger(__name__)
 #      the complex coherence spectra, then supporting magnitude squared
 #      coherence, etc in a similar fashion to the FourierSpectrum datatype...
 
+try:
+    from scipy.signal import hamming
+except ImportError:
+    # from scipy.signal
+    def hamming(M, sym=True):
+        """The M-point Hamming window.
+
+        """
+        if M < 1:
+            return np.array([])
+        if M == 1:
+            return np.ones(1, 'd')
+        odd = M % 2
+        if not sym and not odd:
+            M = M + 1
+        n = np.arange(0, M)
+        w = 0.54 - 0.46 * np.cos(2.0 * np.pi * n / (M - 1))
+        if not sym and not odd:
+            w = w[:-1]
+        return w
 
 
 class NodeCoherence(core.Type):
-    """
+    """Compute cross coherence between nodes.
     """
     
     time_series = time_series.TimeSeries(
@@ -112,24 +133,41 @@ class NodeCoherence(core.Type):
                                                use_storage = False)
         
         return coherence
-    
-    
+
+    def _new_evaluate(self):
+        "New implementation of cross-coherence w/o for loops"
+        # TODO: adapt to tvb timeseries shape
+        t, Y = unknown
+        nfft = self.nfft
+        imag = False
+        fs = np.fft.fftfreq(nfft, t[1] - t[0])
+        # shape [ch_i, ch_j, ..., window, time]
+        wY = Y.reshape((Y.shape[0], -1, nfft)) * hamming(nfft)
+        F = np.fft.fft(wY)
+        G = F[:, np.newaxis]*F
+        if imag:
+            G = G.imag
+        dG = np.array([G[i, i] for i in range(G.shape[0])])
+        C = (np.abs(G)**2 / (dG[:, np.newaxis] * dG)).mean(axis=-2)
+        mask = fs>0.0
+        C_ = np.abs(C.mean(axis=0).mean(axis=0))
+        return fs[mask], C_[mask], C[..., mask]
+
     def result_shape(self, input_shape):
         """Returns the shape of the main result of NodeCoherence."""
         freq_len = self.nfft/2 + 1
         freq_shape = (freq_len,)
         result_shape = (freq_len, input_shape[2], input_shape[2], input_shape[1], input_shape[3])
         return [result_shape, freq_shape]
-    
-    
+
     def result_size(self, input_shape):
         """
         Returns the storage size in Bytes of the main result of NodeCoherence.
         """
+        # TODO This depends on input array dtype!
         result_size = numpy.sum(map(numpy.prod, self.result_shape(input_shape))) * 8.0 #Bytes
         return result_size
-    
-    
+
     def extended_result_size(self, input_shape):
         """
         Returns the storage size in Bytes of the extended result of the FFT.
