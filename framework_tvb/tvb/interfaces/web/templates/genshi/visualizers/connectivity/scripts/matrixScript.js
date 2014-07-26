@@ -337,7 +337,7 @@ function cutOutgoingLines(index) {
 function refreshTableInterestArea() {
     if ($('#div-matrix-tracts').length > 0) {  // why this check?
         for (var i = 0; i < NO_POSITIONS; i++) {
-            updateNodeInterest(i);
+            _updateNodeInterest(i);
         }
     }
 }
@@ -374,8 +374,10 @@ function _get_header_buttons(nodeIdx){
 
 /**
  * For a given node index update the style of the table correspondingly.
+ * This is function is now indended for bulk table updates.
+ * @private used by refreshTableInterestArea
  */
-function updateNodeInterest(nodeIdx) {
+function _updateNodeInterest(nodeIdx) {
     var isInInterest = GFUNC_isNodeAddedToInterestArea(nodeIdx);
     // todo: these two queries are very expensive on the big dom that we have. This function is called for each node. 400ms
     // construct the id's and select by id
@@ -403,16 +405,13 @@ function updateNodeInterest(nodeIdx) {
     
     for (var i=0; i<NO_POSITIONS; i++){	
         var horiz_table_data_id = 'td_' + prefix + '_' + nodeIdx + '_' + i;
-        var vertical_table_data_id = 'td_' + prefix + '_' + i + '_' + nodeIdx;
+
         var horiz_table_element = document.getElementById(horiz_table_data_id);
-        var vertical_table_element = document.getElementById(vertical_table_data_id);
 
         if (isInInterest && GFUNC_isNodeAddedToInterestArea(i)) {
-            vertical_table_element.className = 'selected';
             horiz_table_element.className = 'selected';
         }
         else {
-            vertical_table_element.className = '';
             horiz_table_element.className = '';
         }
     }
@@ -420,7 +419,7 @@ function updateNodeInterest(nodeIdx) {
 
 function _toggleNode(index){
     GFUNC_toggleNodeInInterestArea(index);
-    //updateNodeInterest(index); the selection comp will trigger a bulk table update
+    // The selection comp will trigger a change event. We subscribe to that and do a bulk table update
     GFUN_updateSelectionComponent();
 }
 /**
