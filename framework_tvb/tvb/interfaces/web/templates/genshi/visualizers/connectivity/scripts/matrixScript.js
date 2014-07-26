@@ -483,5 +483,24 @@ function saveSubConnectivity() {
     $("#experimentFormId").submit();
 }
 
+/**
+ * Bind events for connectivity matrix tables
+ */
+function initializeMatrix(){
+    function handle_click(el){
+        var sid = el.id.split('_');
+        var prefix = sid[1], i = sid[2], j = sid[3];
+        if (prefix != null && i != null && j != null){
+            changeSingleCell(el, sid[2], sid[3]);
+        }
+    }
 
-
+    var dom = $('#div-matrix-weights').add('#div-matrix-tracts');
+    dom.click(function(ev){
+        handle_click(ev.target);
+    }).keypress(function(ev){
+        if (ev.keyCode === 13){
+            handle_click(ev.target);
+        }
+    });
+}

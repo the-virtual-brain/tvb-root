@@ -87,6 +87,7 @@ function GFUN_initializeConnectivityFull() {
 
     $('#leftSideDefaultSelectedTabId').click();   // enable only the first tab so others don't get exported
     $('#rightSideDefaultSelectedTabId').click();
+    initializeMatrix();
 }
 
 /**

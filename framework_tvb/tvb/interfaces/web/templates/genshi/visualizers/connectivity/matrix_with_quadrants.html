@@ -41,11 +41,8 @@
               scope="row" class="identifier" title="${'0' + str(i) if i &lt; 10 else str(i)}" tabindex="9" onkeypress="fireOnClick(this)">
               <a href="#" title="${'0' + str(i) if i &lt; 10 else str(i)}" tabindex='-1' class="action-select select-row">${pointsLabels[i]}</a>
           </td>
-
           <!--! Actual node cells -->
-          <py:for each="j in range(startHemisphereIdx, endHemisphereIdx)">
-              <td id='td_${prefix}_${i}_${j}' class="node" onclick="changeSingleCell(this, $i, $j)" tabindex="9" onkeypress="fireOnClick(this)"></td>
-          </py:for>
+          <td py:for="j in range(startHemisphereIdx, endHemisphereIdx)" id='td_${prefix}_${i}_${j}' class="node" tabindex="9"></td>
         </tr>
       </tbody>
     </table>

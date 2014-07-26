@@ -488,6 +488,8 @@ function getLinesIndexes() {
 
 function highlightPoint() {
     //todo: attaching events to this many elements is expensive: ~1000ms
+    //todo expensive query & overselecting
+    //todo called for each tab change!
     $("td[id^='td_']").hover(
                             function () {
                                 var indexes = (this.id.split("td_")[1]).split("_");
@@ -832,7 +834,7 @@ function connectivity_startGL(isSingleMode) {
     gl.depthFunc(gl.LEQUAL);
 
     if (!isSingleMode) {
-        selectHemisphere(0);
+        selectHemisphere(0);//mark is the gl init the right place for this??
     }
     GL_initColorPickFrameBuffer();
     drawScene();
