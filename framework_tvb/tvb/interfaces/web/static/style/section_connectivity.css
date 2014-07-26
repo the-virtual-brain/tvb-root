@@ -415,13 +415,17 @@ letter-spacing: 1px;
 
 .ss-connectivity .matrix th[scope="col"].selected a,
 .ss-connectivity .matrix th[scope="col"].selected a:hover,
+
+.ss-connectivity .matrix td.identifier.selected{
+border: none;
+}
 .ss-connectivity .matrix td.identifier.selected a, 
 .ss-connectivity .matrix td.identifier.selected a:hover {
 color: #2E2D26;
 }
 
 /* Currently, colors are set within the app on-the-fly so some settings here will be overridden! */
-.ss-connectivity .matrix .node {
+.ss-connectivity .matrix td {
 background: rgba(250, 247, 228, 0.2);
 /* This looks a little bit too heavy...
 border-right: 1px solid rgb(250, 247, 228);
@@ -437,7 +441,7 @@ border-left: 1px solid rgb(50, 50, 50);
 background: rgba(250, 247, 228, 0.5);
 }
 
-.ss-connectivity .matrix td.node.selected {
+.ss-connectivity .matrix td.selected {
 border-top: 1px solid rgb(250, 247, 228);
 border-left: 1px solid rgb(250, 247, 228);
 border-right: 1px solid rgb(50, 50, 50);

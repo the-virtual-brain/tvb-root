@@ -42,7 +42,7 @@
               <a href="#" title="${'0' + str(i) if i &lt; 10 else str(i)}" tabindex='-1' class="action-select select-row">${pointsLabels[i]}</a>
           </td>
           <!--! Actual node cells -->
-          <td py:for="j in range(startHemisphereIdx, endHemisphereIdx)" id='td_${prefix}_${i}_${j}' class="node" tabindex="9"></td>
+          <td py:for="j in range(startHemisphereIdx, endHemisphereIdx)" id='td_${prefix}_${i}_${j}' tabindex="9"></td>
         </tr>
       </tbody>
     </table>

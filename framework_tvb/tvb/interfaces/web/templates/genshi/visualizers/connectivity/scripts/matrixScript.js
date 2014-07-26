@@ -100,7 +100,7 @@ function changeSingleCell(table_elem, i, j) {
     }
     lastEditedElement = table_elem;
     lastElementClass = table_elem.className;
-    table_elem.className = "node edited";
+    table_elem.className = "edited";
     var element_position = getMenuPosition(table_elem, inputDiv);
     inputDiv.style.position = 'fixed';
     inputDiv.style.left = element_position.x + 'px';
@@ -377,12 +377,12 @@ function updateNodeInterest(nodeIdx) {
         var vertical_table_element = document.getElementById(vertical_table_data_id);
 
         if (isInInterest && GFUNC_isNodeAddedToInterestArea(i)) {
-            vertical_table_element.className = 'node selected';
-            horiz_table_element.className = 'node selected';
+            vertical_table_element.className = 'selected';
+            horiz_table_element.className = 'selected';
         }
         else {
-            vertical_table_element.className = 'node';
-            horiz_table_element.className = 'node';
+            vertical_table_element.className = '';
+            horiz_table_element.className = '';
         }
     }
 }
