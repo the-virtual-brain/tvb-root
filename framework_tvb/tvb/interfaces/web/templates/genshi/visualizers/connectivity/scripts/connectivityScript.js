@@ -485,24 +485,6 @@ function getLinesIndexes() {
     return lines;
 }
 
-
-function highlightPoint() {
-    //todo: attaching events to this many elements is expensive: ~1000ms
-    //todo expensive query & overselecting
-    //todo called for each tab change!
-    $("td[id^='td_']").hover(
-                            function () {
-                                var indexes = (this.id.split("td_")[1]).split("_");
-                                highlightedPointIndex1 = indexes[1];
-                                highlightedPointIndex2 = indexes[2];
-                            },
-                            function () {
-                                highlightedPointIndex1 = -1;
-                                highlightedPointIndex2 = -1;
-                            });
-}
-
-
 function _drawLines(linesBuffers) {
     gl.uniform1i(shaderProgram.colorIndex, NO_COLOR_INDEX);
     gl.uniform1i(shaderProgram.useLightingUniform, false);
@@ -787,7 +769,6 @@ function selectHemisphere(index) {
     $("#" + hemispheres[index]+'Tracts').show();
     var inputDiv = document.getElementById('editNodeValues');
     inputDiv.style.display = 'none';
-    highlightPoint();
 }
 
 

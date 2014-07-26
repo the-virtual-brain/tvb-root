@@ -518,11 +518,20 @@ function saveSubConnectivity() {
  * Bind events for connectivity matrix tables
  */
 function initializeMatrix(){
-    function handle_click(el){
+    function tdInfo(el){
         var sid = el.id.split('_');
-        var prefix = sid[1], i = sid[2], j = sid[3];
-        if (prefix != null && i != null && j != null){
-            changeSingleCell(el, sid[2], sid[3]);
+        return {
+            prefix : sid[1],
+            i : sid[2],
+            j : sid[3],
+            isNode : el.tagName == 'TD' && sid[1] != null && sid[2] != null && sid[3] != null
+        }
+    }
+
+    function handle_click(el){
+        var nfo = tdInfo(el);
+        if (nfo.isNode){
+            changeSingleCell(el, nfo.i, nfo.j);
         }
     }
 
@@ -534,4 +543,19 @@ function initializeMatrix(){
             handle_click(ev.target);
         }
     });
+
+    // this binds quite a number of handlers
+    dom.find('td').hover(
+        function (ev) {
+            var nfo = tdInfo(event.target);
+            if (nfo.isNode){
+                highlightedPointIndex1 = nfo.i;
+                highlightedPointIndex2 = nfo.j;
+            }
+        },
+        function () {
+            highlightedPointIndex1 = -1;
+            highlightedPointIndex2 = -1;
+        }
+    );
 }
