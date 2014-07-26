@@ -80,7 +80,9 @@
 	</section>
 		
 	<!-- Matrix viewer and controls -->
-	<section id="scrollable-matrix-section" class="view-column matrix-controller col-2">
+	<section id="scrollable-matrix-section" class="view-column matrix-controller col-2"
+            py:with="nodeCount=len(pointsLabels);halfNodeCount=int(nodeCount / 2)">
+
 		<form id="experimentFormId" action="$submitURL" method="post">
 			<hgroup>
 				<h4><mark>Control</mark> Large Scale Matrices</h4>
@@ -146,48 +148,42 @@
                 <xi:include href="../commons/channel_selector_quick.html"/>
                 ${drawQuickSelector("selection-text-area", "loadSelectionFromTextBtn")}
             </li>
-
 		</ul>
 
 		<xi:include href="matrix_with_quadrants.html"/>
 		<!-- Matrices: Weights -->
 		<div id="div-matrix-weights" class="matrix-viewer">
-
-			<!-- The actual matrix -->
 			<div class="matrix-table">
-	        	${draw2DConnectivityMatrix('leftHemisphere', 0, pointsLabels, 0, int(len(pointsLabels) / 2), 0, int(len(pointsLabels) / 2), 'w')}
-	        	${draw2DConnectivityMatrix('leftRightQuarter', 2, pointsLabels, 0, int(len(pointsLabels) / 2), int(len(pointsLabels) / 2), len(pointsLabels), 'w')}
-	        	${draw2DConnectivityMatrix('rightLeftQuarter', 1, pointsLabels, int(len(pointsLabels) / 2), len(pointsLabels), 0, int(len(pointsLabels) / 2), 'w')}
-	    		${draw2DConnectivityMatrix('rightHemisphere', 3, pointsLabels, int(len(pointsLabels) / 2), len(pointsLabels), int(len(pointsLabels) / 2), len(pointsLabels), 'w')}
+	        	${draw2DConnectivityMatrix('leftHemisphere', 0, pointsLabels, 0, halfNodeCount, 0, halfNodeCount, 'w')}
+	        	${draw2DConnectivityMatrix('leftRightQuarter', 2, pointsLabels, 0, halfNodeCount, halfNodeCount, nodeCount, 'w')}
+	        	${draw2DConnectivityMatrix('rightLeftQuarter', 1, pointsLabels, halfNodeCount, nodeCount, 0, halfNodeCount, 'w')}
+	    		${draw2DConnectivityMatrix('rightHemisphere', 3, pointsLabels, halfNodeCount, nodeCount, halfNodeCount, nodeCount, 'w')}
 			</div>
-			
+
 			${drawMatrixLegendArea('weights-legend')}
 	    </div>
-
 		<!-- Matrices: Tracts -->
 	    <div id="div-matrix-tracts" class="matrix-viewer">
-	    	
-			<!-- The actual matrix -->
 	    	<div class="matrix-table">
-	        	${draw2DConnectivityMatrix('leftHemisphereTracts', 0, pointsLabels, 0, int(len(pointsLabels) / 2), 0, int(len(pointsLabels) / 2), 't')}
-	        	${draw2DConnectivityMatrix('leftRightQuarterTracts', 2, pointsLabels, 0, int(len(pointsLabels) / 2), int(len(pointsLabels) / 2), len(pointsLabels), 't')}
-	        	${draw2DConnectivityMatrix('rightLeftQuarterTracts', 1, pointsLabels, int(len(pointsLabels) / 2), len(pointsLabels), 0, int(len(pointsLabels) / 2), 't')}
-	    		${draw2DConnectivityMatrix('rightHemisphereTracts', 3, pointsLabels, int(len(pointsLabels) / 2), len(pointsLabels), int(len(pointsLabels) / 2), len(pointsLabels), 't')}
+	        	${draw2DConnectivityMatrix('leftHemisphereTracts', 0, pointsLabels, 0, halfNodeCount, 0, halfNodeCount, 't')}
+	        	${draw2DConnectivityMatrix('leftRightQuarterTracts', 2, pointsLabels, 0, halfNodeCount, halfNodeCount, nodeCount, 't')}
+	        	${draw2DConnectivityMatrix('rightLeftQuarterTracts', 1, pointsLabels, halfNodeCount, nodeCount, 0, halfNodeCount, 't')}
+	    		${draw2DConnectivityMatrix('rightHemisphereTracts', 3, pointsLabels, halfNodeCount, nodeCount, halfNodeCount, nodeCount, 't')}
 			</div>
-			
+
 			${drawMatrixLegendArea('tracts-legend')}
 	    </div>
 
     </div>
     
-    <py:with vars="start_points_x= '[0, ' + str(int(len(pointsLabels)/2)) + ', 0, ' + str(int(len(pointsLabels)/2)) + ']' ">
-	<py:with vars="end_points_x= '[' + str(int(len(pointsLabels)/2)) + ', ' + str(int(len(pointsLabels))) + ', ' + str(int(len(pointsLabels) / 2)) + ', ' + str(len(pointsLabels)) + ']' ">
-	<py:with vars="start_points_y= '[0, ' + str(int(len(pointsLabels)/2)) + ', ' + str(int(len(pointsLabels)/2)) + ', 0]' ">
-	<py:with vars="end_points_y= '[' + str(int(len(pointsLabels)/2)) + ', ' + str(int(len(pointsLabels))) + ', ' + str(len(pointsLabels)) + ', ' + str(len(pointsLabels)/2)+ ']' ">
+    <py:with vars="start_points_x= str([0, halfNodeCount, 0, halfNodeCount]);
+	               end_points_x= str([halfNodeCount, nodeCount, halfNodeCount, nodeCount]);
+	               start_points_y= str([0, halfNodeCount, halfNodeCount, 0]);
+	               end_points_y= str([halfNodeCount, nodeCount, nodeCount, halfNodeCount]) ">
 
     <script type="text/javascript">    	
         $(document).ready(function() {
-
+            // todo: warning the jsons below are huge, practically the whole connectivity in json
             prepareConnectivity2D(${leftHemisphereJson}, ${bothHemisphereJson}, ${rightHemisphereJson});
             mplh5_figureNo = $figureNumber;
             //Do all the required initializations and draw the right table view of the connectivity matrix
@@ -206,9 +202,7 @@
 
     </script>
     </py:with>
-	</py:with>
-	</py:with>
-	</py:with>
+
 	<input type="hidden" id="currentlyEditedNode"/>
 
     <xi:include href="context_menu_table.html"/>
