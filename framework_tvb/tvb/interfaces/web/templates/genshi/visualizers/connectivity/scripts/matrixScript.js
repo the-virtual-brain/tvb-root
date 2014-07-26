@@ -335,11 +335,41 @@ function cutOutgoingLines(index) {
 
 
 function refreshTableInterestArea() {
-    if ($('#div-matrix-tracts').length > 0) {
+    if ($('#div-matrix-tracts').length > 0) {  // why this check?
         for (var i = 0; i < NO_POSITIONS; i++) {
             updateNodeInterest(i);
         }
     }
+}
+
+/**
+ * Efficiently get header buttons by constructing their id's instead of searching the dom
+ * This replaces $("th[id^='upper_change_" + nodeIdx + "_']"); $("td[id^='left_change_" + nodeIdx + "_']");
+ */
+function _get_header_buttons(nodeIdx){
+    function addExistingEl(list, id){
+        var el = document.getElementById(id);
+        if (el != null){
+            list.push(el);
+        }
+    }
+
+    var hemisphereSuffixes = ['leftHemisphere', 'leftRightQuarter', 'rightLeftQuarter', 'rightHemisphere']
+    var upperSideButtons = [];
+    var leftSideButtons = [];
+    var upperBtnIds = [];
+
+    for (var i = 0; i < hemisphereSuffixes.length; i++){
+        var wuBtnId = 'upper_change_' + nodeIdx + '_' + hemisphereSuffixes[i];
+        var wlBtnId = 'left_change_' + nodeIdx + '_' + hemisphereSuffixes[i];
+
+        addExistingEl(upperSideButtons, wuBtnId);
+        addExistingEl(leftSideButtons, wlBtnId);
+        addExistingEl(upperSideButtons, wuBtnId + 'Tracts');
+        addExistingEl(leftSideButtons, wlBtnId + 'Tracts');
+    }
+
+    return {'u': upperSideButtons, 'l': leftSideButtons};
 }
 
 /**
@@ -349,8 +379,9 @@ function updateNodeInterest(nodeIdx) {
     var isInInterest = GFUNC_isNodeAddedToInterestArea(nodeIdx);
     // todo: these two queries are very expensive on the big dom that we have. This function is called for each node. 400ms
     // construct the id's and select by id
-    var upperSideButtons = $("th[id^='upper_change_" + nodeIdx + "_']");
-    var leftSideButtons = $("td[id^='left_change_" + nodeIdx + "_']");
+    var hb = _get_header_buttons(nodeIdx);
+    var upperSideButtons = hb.u;
+    var leftSideButtons = hb.l;
 
     var prefix = GVAR_interestAreaVariables[GVAR_selectedAreaType].prefix;
 
@@ -389,7 +420,7 @@ function updateNodeInterest(nodeIdx) {
 
 function _toggleNode(index){
     GFUNC_toggleNodeInInterestArea(index);
-    updateNodeInterest(index);
+    //updateNodeInterest(index); the selection comp will trigger a bulk table update
     GFUN_updateSelectionComponent();
 }
 /**
