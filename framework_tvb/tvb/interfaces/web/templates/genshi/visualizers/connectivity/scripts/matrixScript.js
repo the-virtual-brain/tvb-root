@@ -17,6 +17,16 @@
  *
  **/
 
+/* globals  GVAR_connectivityMatrix, GVAR_interestAreaVariables, GVAR_selectedAreaType,
+            GVAR_pointsLabels, GVAR_interestAreaNodeIndexes, HLPR_removeByElement,
+            GFUNC_updateLeftSideVisualization, GFUNC_isNodeAddedToInterestArea,
+            GFUN_updateSelectionComponent, GFUNC_toggleNodeInInterestArea,
+            displayMessage,
+            CONN_getLineWidthValue, CONN_lineWidthsBins, CONN_comingInLinesIndices, CONN_comingOutLinesIndices, CONN_initLinesHistorgram,
+            NO_POSITIONS, highlightedPointIndex1, highlightedPointIndex2,
+            ColSch_updateLegendColors, ColSch_updateLegendLabels
+*/
+
 /*
  * This file handles the display and functionality of the 2d table view
  */
@@ -223,7 +233,7 @@ function _getIndexes(){
     return hiddenNodeField.value.split("td_" + prefix + '_')[1].split("_");
 }
 
-function _toggleCell(i, j){
+function _toggleCell(values, i, j){
     if (values[i][j] > 0) {
         if (GVAR_connectivityMatrix[i][j] === 1) {
             GVAR_connectivityMatrix[i][j] = 0;
@@ -240,7 +250,7 @@ function _toggleCell(i, j){
  * aside a edited element.
  * 
  * @param index - specified which of the two nodes is the one for which to make the toggle,
- * 				  0 = source node, 1 = destination node
+ *              0 = source node, 1 = destination node
  */
 function toggleIngoingLines(index) {
     var values = GVAR_interestAreaVariables[GVAR_selectedAreaType].values;
@@ -257,7 +267,7 @@ function toggleIngoingLines(index) {
  * aside a edited element.
  * 
  * @param index - specified which of the two nodes is the one for which to make the toggle,
- * 				  0 = source node, 1 = destination node
+ *        0 = source node, 1 = destination node
  */
 function toggleOutgoingLines(index) {
     var values = GVAR_interestAreaVariables[GVAR_selectedAreaType].values;
@@ -277,6 +287,7 @@ function toggleOutgoingLines(index) {
  *                0 = source node, 1 = destination node
  */
 function cutIngoingLines(index) {
+    var values = GVAR_interestAreaVariables[GVAR_selectedAreaType].values;
     var idx = _getIndexes()[index];
     var i;
 
@@ -299,9 +310,10 @@ function cutIngoingLines(index) {
  * aside a edited element.
  * 
  * @param index - specified which of the two nodes is the one for which to make the cut,
- * 				  0 = source node, 1 = destination node
+ *                0 = source node, 1 = destination node
  */
 function cutOutgoingLines(index) {
+    var values = GVAR_interestAreaVariables[GVAR_selectedAreaType].values;
     var idx = _getIndexes()[index];
 
     for (var i=0; i<NO_POSITIONS; i++) {
@@ -338,10 +350,9 @@ function _get_header_buttons(nodeIdx){
         }
     }
 
-    var hemisphereSuffixes = ['leftHemisphere', 'leftRightQuarter', 'rightLeftQuarter', 'rightHemisphere']
+    var hemisphereSuffixes = ['leftHemisphere', 'leftRightQuarter', 'rightLeftQuarter', 'rightHemisphere'];
     var upperSideButtons = [];
     var leftSideButtons = [];
-    var upperBtnIds = [];
 
     for (var i = 0; i < hemisphereSuffixes.length; i++){
         var wuBtnId = 'upper_change_' + nodeIdx + '_' + hemisphereSuffixes[i];
@@ -363,15 +374,14 @@ function _get_header_buttons(nodeIdx){
  */
 function _updateNodeInterest(nodeIdx) {
     var isInInterest = GFUNC_isNodeAddedToInterestArea(nodeIdx);
-    // todo: these two queries are very expensive on the big dom that we have. This function is called for each node. 400ms
-    // construct the id's and select by id
     var hb = _get_header_buttons(nodeIdx);
     var upperSideButtons = hb.u;
     var leftSideButtons = hb.l;
 
     var prefix = GVAR_interestAreaVariables[GVAR_selectedAreaType].prefix;
+    var k;
 
-    for (var k = 0; k < upperSideButtons.length; k++) {
+    for (k = 0; k < upperSideButtons.length; k++) {
         if (isInInterest) {
             upperSideButtons[k].className = 'selected';
         } else {
@@ -379,7 +389,7 @@ function _updateNodeInterest(nodeIdx) {
         }
     }
     
-    for (var k = 0; k < leftSideButtons.length; k++) {
+    for (k = 0; k < leftSideButtons.length; k++) {
         if (isInInterest) {
             leftSideButtons[k].className = 'identifier selected';
         } else {
@@ -387,15 +397,13 @@ function _updateNodeInterest(nodeIdx) {
         }
     }    
     
-    for (var i=0; i<NO_POSITIONS; i++){	
+    for (var i = 0; i < NO_POSITIONS; i++){
         var horiz_table_data_id = 'td_' + prefix + '_' + nodeIdx + '_' + i;
-
         var horiz_table_element = document.getElementById(horiz_table_data_id);
 
         if (isInInterest && GFUNC_isNodeAddedToInterestArea(i)) {
             horiz_table_element.className = 'selected';
-        }
-        else {
+        } else {
             horiz_table_element.className = '';
         }
     }
@@ -449,14 +457,14 @@ function TBL_storeHemisphereDetails(newStartPointsX, newEndPointsX, newStartPoin
  * @private
  */
 function _updateLegendColors(){
-    var div_id = GVAR_interestAreaVariables[GVAR_selectedAreaType]['legend_div_id'];
+    var selectedMatrix = GVAR_interestAreaVariables[GVAR_selectedAreaType];
+    var div_id = selectedMatrix.legend_div_id;
     var legendDiv = document.getElementById(div_id);
 
     var height = Math.max($("#div-matrix-weights")[0].clientHeight, $("#div-matrix-tracts")[0].clientHeight);
     ColSch_updateLegendColors(legendDiv, height);
 
-    ColSch_updateLegendLabels('#table-' + div_id, GVAR_interestAreaVariables[GVAR_selectedAreaType]['min_val'],
-                              GVAR_interestAreaVariables[GVAR_selectedAreaType]['max_val'], height);
+    ColSch_updateLegendLabels('#table-' + div_id, selectedMatrix.min_val, selectedMatrix.max_val, height);
 }
 
 
@@ -491,8 +499,8 @@ function MATRIX_colorTable() {
 
 function saveSubConnectivity() {
     // clone the weights matrix
-    $("#newWeightsId").val($.toJSON(GVAR_interestAreaVariables[1]['values']));
-    $("#newTractsId").val($.toJSON(GVAR_interestAreaVariables[2]['values']));
+    $("#newWeightsId").val($.toJSON(GVAR_interestAreaVariables[1].values));
+    $("#newTractsId").val($.toJSON(GVAR_interestAreaVariables[2].values));
     $("#interestAreaNodeIndexesId").val($.toJSON(GVAR_interestAreaNodeIndexes));
     $("#experimentFormId").submit();
 }
@@ -507,8 +515,8 @@ function initializeMatrix(){
             prefix : sid[1],
             i : sid[2],
             j : sid[3],
-            isNode : el.tagName == 'TD' && sid[1] != null && sid[2] != null && sid[3] != null
-        }
+            isNode : el.tagName === 'TD' && sid[1] != null && sid[2] != null && sid[3] != null
+        };
     }
 
     function handle_click(el){
@@ -529,7 +537,7 @@ function initializeMatrix(){
 
     // this binds quite a number of handlers
     dom.find('td').hover(
-        function (ev) {
+        function () {
             var nfo = tdInfo(event.target);
             if (nfo.isNode){
                 highlightedPointIndex1 = nfo.i;
