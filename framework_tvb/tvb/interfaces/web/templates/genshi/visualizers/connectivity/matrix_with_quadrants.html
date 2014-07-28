@@ -24,9 +24,9 @@
             </th>
 
             <!--! Horizontal column headers -->
-            <py:for each="i in range(startHemisphereIdx, endHemisphereIdx)">
+            <py:for each="i in xrange(startHemisphereIdx, endHemisphereIdx)">
                 <th id="upper_change_${i}_${hemisphereId}" onclick="changeEntireColumn(this)"
-                    scope="col" class="" tabindex="8" onkeypress="fireOnClick(this)" title='${pointsLabels[i]}'>
+                    scope="col" tabindex="8" onkeypress="fireOnClick(this)" title='${pointsLabels[i]}'>
                     <a href="#" tabindex='-1' title='${pointsLabels[i]}' class="action-select select-col">${pointsLabels[i]}</a>
                 </th>
             </py:for>
@@ -35,14 +35,14 @@
 
       <!--! Table rows -->
       <tbody>
-        <tr py:for="i in range(startHemisphereIdy, endHemisphereIdy)">
+        <tr py:for="i in xrange(startHemisphereIdy, endHemisphereIdy)">
           <!--! Header cell -->
           <td id="left_change_${i}_${hemisphereId}" onclick="changeEntireRow(this, ${startHemisphereIdx}, ${endHemisphereIdx})"
-              scope="row" class="identifier" title="${'0' + str(i) if i &lt; 10 else str(i)}" tabindex="9" onkeypress="fireOnClick(this)">
-              <a href="#" title="${'0' + str(i) if i &lt; 10 else str(i)}" tabindex='-1' class="action-select select-row">${pointsLabels[i]}</a>
+              scope="row" class="identifier" title="'%02d' % i" tabindex="9" onkeypress="fireOnClick(this)">
+              <a href="#" title="'%02d' % i" tabindex='-1' class="action-select select-row">${pointsLabels[i]}</a>
           </td>
           <!--! Actual node cells -->
-          <td py:for="j in range(startHemisphereIdx, endHemisphereIdx)" id='td_${prefix}_${i}_${j}' tabindex="9"></td>
+          <td py:for="j in xrange(startHemisphereIdx, endHemisphereIdx)" id='td_${prefix}_${i}_${j}' tabindex="9"></td>
         </tr>
       </tbody>
     </table>
