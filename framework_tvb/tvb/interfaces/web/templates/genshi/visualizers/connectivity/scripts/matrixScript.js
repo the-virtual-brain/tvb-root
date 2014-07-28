@@ -217,6 +217,24 @@ function hideNodeDetails() {
     }
 }
 
+function _getIndexes(){
+    var prefix = GVAR_interestAreaVariables[GVAR_selectedAreaType].prefix;
+    var hiddenNodeField = document.getElementById('currentlyEditedNode');
+    return hiddenNodeField.value.split("td_" + prefix + '_')[1].split("_");
+}
+
+function _toggleCell(i, j){
+    if (values[i][j] > 0) {
+        if (GVAR_connectivityMatrix[i][j] === 1) {
+            GVAR_connectivityMatrix[i][j] = 0;
+        } else {
+            GVAR_connectivityMatrix[i][j] = 1;
+        }
+    } else {
+        GVAR_connectivityMatrix[i][j] = 0;
+    }
+}
+
 /**
  * Method used to toggle between show/hide in-going lines. Used from the details context menu 
  * aside a edited element.
@@ -226,22 +244,10 @@ function hideNodeDetails() {
  */
 function toggleIngoingLines(index) {
     var values = GVAR_interestAreaVariables[GVAR_selectedAreaType].values;
-    var prefix = GVAR_interestAreaVariables[GVAR_selectedAreaType].prefix;
-
-    var hiddenNodeField = document.getElementById('currentlyEditedNode');
-    var indexes = hiddenNodeField.value.split("td_" + prefix + '_')[1].split("_");
-    var idx = indexes[index];
+    var idx = _getIndexes()[index];
 
     for (var i=0; i < NO_POSITIONS; i++) {
-        if (values[i][indexes[index]] > 0) {
-            if (GVAR_connectivityMatrix[i][idx] === 1) {
-                GVAR_connectivityMatrix[i][idx] = 0;
-            } else {
-                GVAR_connectivityMatrix[i][idx] = 1;
-            }
-        } else {
-            GVAR_connectivityMatrix[i][idx] = 0;
-        }
+        _toggleCell(values, i, idx);
     }
     GFUNC_updateLeftSideVisualization();
 }
@@ -255,22 +261,10 @@ function toggleIngoingLines(index) {
  */
 function toggleOutgoingLines(index) {
     var values = GVAR_interestAreaVariables[GVAR_selectedAreaType].values;
-    var prefix = GVAR_interestAreaVariables[GVAR_selectedAreaType].prefix;
-
-    var hiddenNodeField = document.getElementById('currentlyEditedNode');
-    var indexes = hiddenNodeField.value.split("td_" + prefix + '_')[1].split("_");
-    var idx = indexes[index];
+    var idx = _getIndexes()[index];
 
     for (var i=0; i<NO_POSITIONS; i++) {
-        if (values[idx][i] > 0 ) {
-            if (GVAR_connectivityMatrix[idx][i] === 1) {
-                GVAR_connectivityMatrix[idx][i] = 0;
-            } else {
-                GVAR_connectivityMatrix[idx][i] = 1;
-            }
-        } else {
-            GVAR_connectivityMatrix[idx][i] = 0;
-        }
+        _toggleCell(values, idx, i);
     }
     GFUNC_updateLeftSideVisualization();
 }
@@ -283,12 +277,7 @@ function toggleOutgoingLines(index) {
  *                0 = source node, 1 = destination node
  */
 function cutIngoingLines(index) {
-    var values = GVAR_interestAreaVariables[GVAR_selectedAreaType].values;
-    var prefix = GVAR_interestAreaVariables[GVAR_selectedAreaType].prefix;
-
-    var hiddenNodeField = document.getElementById('currentlyEditedNode');
-    var indexes = hiddenNodeField.value.split("td_" + prefix + '_')[1].split("_");
-    var idx = indexes[index];
+    var idx = _getIndexes()[index];
     var i;
 
     for (i=0; i<NO_POSITIONS; i++) {
@@ -313,12 +302,7 @@ function cutIngoingLines(index) {
  * 				  0 = source node, 1 = destination node
  */
 function cutOutgoingLines(index) {
-    var values = GVAR_interestAreaVariables[GVAR_selectedAreaType].values;
-    var prefix = GVAR_interestAreaVariables[GVAR_selectedAreaType].prefix;
-
-    var hiddenNodeField = document.getElementById('currentlyEditedNode');
-    var indexes = hiddenNodeField.value.split("td_" + prefix + '_')[1].split("_");
-    var idx = indexes[index];
+    var idx = _getIndexes()[index];
 
     for (var i=0; i<NO_POSITIONS; i++) {
         if (values[idx][i] > 0){
