@@ -129,8 +129,8 @@ class SerializationManager(object):
     def group_parameter_values_by_name(model_parameters_list):
         """
         Given a list of model parameters like this:
-            [{"a", 2.0}, {'b', 1.0}
-             {"a", 3.0}, {'b', 7.0}]
+            [{"a": 2.0, 'b': 1.0},
+             {"a": 3.0, 'b': 7.0}])
         Group them by param name to get:
         {'a': [2.0, 3.0], 'b': [1.0, 7.0]}
         """
