@@ -150,13 +150,19 @@ class SerializationManager(object):
         :param model_parameters_list: A list of model parameter configurations. One for each connectivity node.
                Ex. [{'a': 1, 'b': 2}, ...]
         """
+        def format_param_vals(vals):
+            # contract constant array
+            if len(set(vals)) == 1:
+                vals = [ vals[0] ]
+            return str(vals)
+
         model_parameters = self.group_parameter_values_by_name(model_parameters_list)
         # change selected model in burst config
         self.conf.update_simulation_parameter(PARAM_MODEL, model_name)
 
         for param_name, param_vals in model_parameters.iteritems():
             full_name = PARAMS_MODEL_PATTERN % (model_name, param_name)
-            self.conf.update_simulation_parameter(full_name, str(param_vals))
+            self.conf.update_simulation_parameter(full_name, format_param_vals(param_vals))
 
 
     def write_noise_parameters(self, noise_dispersions):
