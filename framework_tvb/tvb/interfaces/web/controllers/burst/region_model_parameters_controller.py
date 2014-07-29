@@ -63,11 +63,21 @@ class RegionsModelParametersController(BurstBaseController):
             }
         return json.dumps(ret)
 
+    def no_dynamics_page(self):
+        params = ({
+            'title': 'Model parameters',
+            'mainContent': 'burst/model_param_region_empty',
+        })
+        return self.fill_default_attributes(params)
+
     @expose_page
     def index(self):
         current_user_id = common.get_logged_user().id
         # In case the number of dynamics gets big we should add a filter in the ui.
         dynamics = dao.get_dynamics_for_user(current_user_id)
+
+        if not dynamics:
+            return self.no_dynamics_page()
 
         burst_config = common.get_from_session(common.KEY_BURST_CONFIG)
         des = SerializationManager(burst_config)
@@ -107,7 +117,7 @@ class RegionsModelParametersController(BurstBaseController):
         burst_config = common.get_from_session(common.KEY_BURST_CONFIG)
 
         # update model parameters in burst config
-        des = SerializationManager(common.get_from_session(common.KEY_BURST_CONFIG))
+        des = SerializationManager(burst_config)
         model_parameters = [dict(json.loads(d.model_parameters)) for d in dynamics]
         des.write_model_parameters(model_name, model_parameters)
 
