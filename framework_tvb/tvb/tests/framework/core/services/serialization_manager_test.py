@@ -125,18 +125,51 @@ class SerializationManagerTest(TransactionalTestCase):
         self.assertEqual({'a': [2.0, 3.0], 'b': [1.0, 7.0]}, gp)
 
 
-    def test_write_model_parameters(self):
+    def test_write_model_parameters_one_dynamic(self):
         m_name = Generic2dOscillator.__name__
         m_parms = {'I': 0.0, 'a': 1.75, 'alpha': 1.0, 'b': -10.0, 'beta': 1.0, 'c': 0.0,
                'd': 0.02, 'e': 3.0, 'f': 1.0, 'g': 0.0, 'gamma': 1.0, 'tau': 1.47}
+
         self.s_manager.write_model_parameters(m_name, [m_parms.copy() for _ in xrange(self.connectivity.number_of_regions)])
 
         sc = self.s_manager.conf.simulator_configuration
-
+        # Default model in these tests is Hopfield. Test if the model was changed to Generic2dOscillator
         self.assertEqual(Generic2dOscillator.__name__, sc['model']['value'])
 
-        expected = [1.75] * self.connectivity.number_of_regions
+        # a modified parameter
+        expected = [[1.75]]  # we expect same value arrays to contract to 1 element
         actual = json.loads(sc['model_parameters_option_Generic2dOscillator_a']['value'])
+        self.assertEqual(expected, actual)
+        # one with the same value as the default
+        expected = [[-10.0]]
+        actual = json.loads(sc['model_parameters_option_Generic2dOscillator_b']['value'])
+        self.assertEqual(expected, actual)
+
+
+    def test_write_model_parameters_two_dynamics(self):
+        m_name = Generic2dOscillator.__name__
+        m_parms_1 = {'I': 0.0, 'a': 1.75, 'alpha': 1.0, 'b': -10.0, 'beta': 1.0, 'c': 0.0,
+               'd': 0.02, 'e': 3.0, 'f': 1.0, 'g': 0.0, 'gamma': 1.0, 'tau': 1.47}
+        m_parms_2 = {'I': 0.0, 'a': 1.75, 'alpha': 1.0, 'b': -5.0, 'beta': 1.0, 'c': 0.0,
+               'd': 0.02, 'e': 3.0, 'f': 1.0, 'g': 0.0, 'gamma': 1.0, 'tau': 1.47}
+        # all nodes except the first have dynamic 1
+        model_parameter_list = [m_parms_1.copy() for _ in xrange(self.connectivity.number_of_regions)]
+        model_parameter_list[0] = m_parms_2
+
+        self.s_manager.write_model_parameters(m_name, model_parameter_list)
+
+        sc = self.s_manager.conf.simulator_configuration
+        # Default model in these tests is Hopfield. Test if the model was changed to Generic2dOscillator
+        self.assertEqual(Generic2dOscillator.__name__, sc['model']['value'])
+
+        expected = [[1.75]]  # array contracted to one value
+        actual = json.loads(sc['model_parameters_option_Generic2dOscillator_a']['value'])
+        self.assertEqual(expected, actual)
+
+        # b is not the same across models. We will have a full array
+        expected = [-10.0 for _ in xrange(self.connectivity.number_of_regions)]
+        expected[0] = -5.0
+        actual = json.loads(sc['model_parameters_option_Generic2dOscillator_b']['value'])
         self.assertEqual(expected, actual)
 
 
