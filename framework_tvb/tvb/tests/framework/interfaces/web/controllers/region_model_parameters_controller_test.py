@@ -65,22 +65,26 @@ class RegionsModelParametersControllerTest(TransactionalTestCase, BaseController
             new_params[key] = {'value': val}
         new_params['connectivity'] = {'value': self.connectivity.gid}
         stored_burst.simulator_configuration = new_params
+        self._setup_dynamic()
+
 
     def _setup_dynamic(self):
         dynamic_g = Dynamic("test_dyn", self.test_user.id,
                           Generic2dOscillator.__name__,
-                          '[["tau", [1.0]], ["a", [5.0]], ["b", [-10.0]], ["c", [10.0]], ["I", [0.0]], ["d", [0.02]], ["e", [3.0]], ["f", [1.0]], ["g", [0.0]], ["alpha", [1.0]], ["beta", [5.0]], ["gamma", [1.0]]]',
+                          '[["tau", 1.0], ["a", 5.0], ["b", -10.0], ["c", 10.0], ["I", 0.0], ["d", 0.02], '
+                          '["e", 3.0], ["f", 1.0], ["g", 0.0], ["alpha", 1.0], ["beta", 5.0], ["gamma", 1.0]]',
                           HeunDeterministic.__name__,
                           None)
 
         dynamic_k = Dynamic("test_dyn_kura", self.test_user.id,
                           Kuramoto.__name__,
-                          '[["omega", [1.0]]]',
+                          '[["omega", 1.0]]',
                           HeunDeterministic.__name__,
                           None)
 
         self.dynamic_g = dao.store_entity(dynamic_g)
         self.dynamic_k = dao.store_entity(dynamic_k)
+
 
     def tearDown(self):
         """ Clean the testing environment """
@@ -109,7 +113,6 @@ class RegionsModelParametersControllerTest(TransactionalTestCase, BaseController
         """
         Verifies call to `submit_model_parameters(...)` correctly redirects to '/burst/'
         """
-        self._setup_dynamic()
         self.region_m_p_c.index()
 
         dynamic_ids = json.dumps([self.dynamic_g.id for _ in range(self.connectivity.number_of_regions)])
@@ -118,7 +121,6 @@ class RegionsModelParametersControllerTest(TransactionalTestCase, BaseController
         
 
     def test_submit_model_parameters_inconsistent_models(self):
-        self._setup_dynamic()
         self.region_m_p_c.index()
 
         dynamic_ids = [self.dynamic_g.id for _ in range(self.connectivity.number_of_regions)]

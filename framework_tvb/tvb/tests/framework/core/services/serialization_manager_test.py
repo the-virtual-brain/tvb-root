@@ -137,11 +137,11 @@ class SerializationManagerTest(TransactionalTestCase):
         self.assertEqual(Generic2dOscillator.__name__, sc['model']['value'])
 
         # a modified parameter
-        expected = [[1.75]]  # we expect same value arrays to contract to 1 element
+        expected = [1.75]  # we expect same value arrays to contract to 1 element
         actual = json.loads(sc['model_parameters_option_Generic2dOscillator_a']['value'])
         self.assertEqual(expected, actual)
         # one with the same value as the default
-        expected = [[-10.0]]
+        expected = [-10.0]
         actual = json.loads(sc['model_parameters_option_Generic2dOscillator_b']['value'])
         self.assertEqual(expected, actual)
 
@@ -162,7 +162,7 @@ class SerializationManagerTest(TransactionalTestCase):
         # Default model in these tests is Hopfield. Test if the model was changed to Generic2dOscillator
         self.assertEqual(Generic2dOscillator.__name__, sc['model']['value'])
 
-        expected = [[1.75]]  # array contracted to one value
+        expected = [1.75]  # array contracted to one value
         actual = json.loads(sc['model_parameters_option_Generic2dOscillator_a']['value'])
         self.assertEqual(expected, actual)
 
