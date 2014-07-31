@@ -24,13 +24,26 @@ var STEP_INPUT_SUFFIX = "_stepInput";
 var RANGE_LABELS_TD_SUFFIX = "_rangeLabelsTd";
 var HIDDEN_SUFFIX = "_hidden";
 var BUTTON_EXPAND_SUFFIX = "_buttonExpand";
-var BUTTON_COLLAPSE_SUFFIX = "_buttonCollapse";
 var INPUT_FROM_RANGE = "_FromIdx";
 var INPUT_TO_RANGE = "_ToIdx";
-var RANGE_VALUES_SPAN = "_interval_span";
 
 var ONE_HUNDRED = 1000;
 var NORMALIZATION_VALUES = {};
+
+function toggleRangeComponent(containerTableId, minValue, maxValue, stepValue, inputName){
+    var first_ranger = document.getElementById(RANGE_PARAMETER_1);
+    var second_ranger = document.getElementById(RANGE_PARAMETER_2);
+    var notActive =  [first_ranger.value, second_ranger.value].indexOf(inputName) === -1;
+    var btn = $('#' + containerTableId + BUTTON_EXPAND_SUFFIX);
+
+    if (notActive){
+        initRangeComponent(containerTableId, minValue, maxValue, stepValue, inputName);
+        btn.val('Collapse Range');
+    }else{
+        disableRangeComponent(containerTableId, inputName);
+        btn.val('Expand Range');
+    }
+}
 
 /**
  * The maxValue and the minValue will be normalized when we create the slider. All the time when we want to display the
@@ -64,9 +77,7 @@ function initRangeComponent(containerTableId, minValue, maxValue, stepValue, inp
     document.getElementById(containerTableId).style.display = 'block';
     document.getElementById(rangeComponentId).style.display = 'block';
 
-    $('#' + containerTableId + HIDDEN_SUFFIX).removeAttr('disabled');
-    $("#" + containerTableId + BUTTON_EXPAND_SUFFIX).attr('disabled', 'disabled');
-    $("#" + containerTableId + BUTTON_COLLAPSE_SUFFIX).removeAttr('disabled');
+    $('#' + containerTableId + HIDDEN_SUFFIX).removeAttr('disabled');    
     $('#' + containerTableId + INPUT_FROM_RANGE).removeAttr('disabled');
     $('#' + containerTableId + INPUT_TO_RANGE).removeAttr('disabled');
     $('#' + containerTableId + STEP_INPUT_SUFFIX).removeAttr('disabled');
@@ -122,6 +133,7 @@ function _validateInput(htmlComponent, minValue, maxValue) {
  */
 function updateRangeInterval(containerDivId) {
     var fromComponent = document.getElementById(containerDivId + INPUT_FROM_RANGE);
+    // mark
     var minMax = [parseFloat(fromComponent.min), parseFloat(fromComponent.max)];
     var fromValue = _validateInput(fromComponent, minMax[0], minMax[1]);
 
@@ -162,32 +174,32 @@ function updateRangeValues(rangeValues) {
             var topContainerId = topDiv[0].id;
             $("input[id$='"+ rangeValue + "_RANGER_buttonExpand'][type='button']").click();
             $("input[name='"  + rangeValue + "'][type='text']").each(function () {
-                    var previous_json = $.parseJSON(this.value);
-                    var minValue = previous_json.minValue;
-                    var maxValue = previous_json.maxValue;
-                    var step = previous_json.step;
-                    var normalMin = _getNormalizedValue(minValue, topContainerId);
-                    var normalMax = _getNormalizedValue(maxValue, topContainerId);
+                var previous_json = $.parseJSON(this.value);
+                var minValue = previous_json.minValue;
+                var maxValue = previous_json.maxValue;
+                var step = previous_json.step;
+                var normalMin = _getNormalizedValue(minValue, topContainerId);
+                var normalMax = _getNormalizedValue(maxValue, topContainerId);
 
-                    this.value = minValue;
-                    this.defaultValue = minValue;
+                this.value = minValue;
+                this.defaultValue = minValue;
 
-                    var rangeSliderRef = $("div[id$='"+ rangeValue + "_RANGER_slider']");
-                    rangeSliderRef.slider("option", "step", _getNormalizedValue(step, topContainerId));
-                    rangeSliderRef.slider("option", "values", [normalMin, normalMax]);
+                var rangeSliderRef = $("div[id$='"+ rangeValue + "_RANGER_slider']");
+                rangeSliderRef.slider("option", "step", _getNormalizedValue(step, topContainerId));
+                rangeSliderRef.slider("option", "values", [normalMin, normalMax]);
 
-                    var spinner_component = $("input[id$='"+ rangeValue + "_RANGER" + STEP_INPUT_SUFFIX + "']")[0];
-                    var fromInputField = $("input[id$='"+ rangeValue + "_RANGER" + INPUT_FROM_RANGE + "']")[0];
-                    var toInputField = $("input[id$='"+ rangeValue + "_RANGER" + INPUT_TO_RANGE + "']")[0];
-                    fromInputField.value = minValue;
-                    toInputField.value = maxValue;
-                    spinner_component.value = step;
+                var spinner_component = $("input[id$='"+ rangeValue + "_RANGER" + STEP_INPUT_SUFFIX + "']")[0];
+                var fromInputField = $("input[id$='"+ rangeValue + "_RANGER" + INPUT_FROM_RANGE + "']")[0];
+                var toInputField = $("input[id$='"+ rangeValue + "_RANGER" + INPUT_TO_RANGE + "']")[0];
+                fromInputField.value = minValue;
+                toInputField.value = maxValue;
+                spinner_component.value = step;
 
-                    _displayRangeLabels(parseFloat(fromInputField.min), parseFloat(fromInputField.max),
-                        topContainerId, [normalMin, normalMax], topContainerId + RANGE_LABELS_TD_SUFFIX);
+                _displayRangeLabels(parseFloat(fromInputField.min), parseFloat(fromInputField.max),
+                    topContainerId, [normalMin, normalMax], topContainerId + RANGE_LABELS_TD_SUFFIX);
 
-                    var sliderValues = $("#" + topContainerId + SLIDER_SUFFIX).slider("option", "values");
-                    _prepareDataForSubmit(topContainerId, sliderValues);
+                var sliderValues = $("#" + topContainerId + SLIDER_SUFFIX).slider("option", "values");
+                _prepareDataForSubmit(topContainerId, sliderValues);
             });
         }
     }
@@ -311,13 +323,8 @@ function disableRangeComponent(containerTableId, inputName) {
     // Disable all input fields in the ranger
     topTable.find('input').attr('disabled', 'disabled');
 
-    $('#' + containerTableId + STEP_INPUT_SUFFIX).spinner('disable');
-    $('#' + containerTableId + SLIDER_SUFFIX).attr('disabled', 'disabled');
-
     $("#" + inputName).removeAttr('disabled').css('display', 'block');
-
-    $('#' + containerTableId + BUTTON_COLLAPSE_SUFFIX).attr('disabled', 'disabled');
-    $('#' + containerTableId + BUTTON_EXPAND_SUFFIX).removeAttr('disabled');
+    $('#' + containerTableId + BUTTON_EXPAND_SUFFIX).val('Expand Range');
 
     _computeNrOfOps();
 }
@@ -348,8 +355,8 @@ function _getOpsForRanger(rangerValue) {
     }
 }
 
-THREASHOLD_WARNING = 500;
-THREASHOLD_ERROR = 50000;
+var THREASHOLD_WARNING = 500;
+var THREASHOLD_ERROR = 50000;
 
 function _computeNrOfOps() {
     /*

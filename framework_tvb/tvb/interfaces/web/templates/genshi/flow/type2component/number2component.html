@@ -42,14 +42,11 @@
             </tr>
         </table>
         <p class="field-adapters">
-            <input tabindex='1' type="button" class="right-display" value="Expand Range" id="${containerDivId}_buttonExpand"
-                   disabled="${'disabled' if disabled else None}"
-                   title="Expand Range for current parameter. This will launch multiple simulations!"
-                   onclick="initRangeComponent('$containerDivId', ${minValue}, ${maxValue}, ${stepValue}, '$submitName');" />
-
-	        <input tabindex='1' type="button" class="right-display" value="Hide Range" id="${containerDivId}_buttonCollapse" disabled='disabled'
-	        	   title="Colapse Ranger"
-	        	   onclick="disableRangeComponent('$containerDivId', '$submitName')" />
+            <input tabindex='1' type="button" class="ranger-button right-display"
+                   value="Expand Range"
+                   id="${containerDivId}_buttonExpand"
+                   title="Toggle Range for current parameter. This will launch multiple simulations!"
+                   onclick="toggleRangeComponent('$containerDivId', ${minValue}, ${maxValue}, ${stepValue}, '$submitName');" />
         </p>
     </py:def>
 
