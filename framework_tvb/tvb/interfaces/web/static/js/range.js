@@ -256,16 +256,16 @@ function _getValues(minValue, maxValue, stepSpinnerId) {
 function _displayRangeLabels(minValue, maxValue, containerTableId, sliderValues, rangeLabelsTdId) {
     var stepSpinnerId = containerTableId + STEP_INPUT_SUFFIX;
     var rangeValues = _getValues(minValue, maxValue, stepSpinnerId);
-    var step = parseFloat($("#" + stepSpinnerId).val());
-    var rest = (maxValue - minValue) % step;
     var row =   "<table width='100%'><tr>";
     var cellWidth = parseFloat(100 / rangeValues.length);
-    for (var i in rangeValues) {
+
+    for (var i = 0; i < rangeValues.length; i++) {
         row = row +  "<td style='width:" + cellWidth + "%;";
-        if ((rangeValues[i] >= _getUnnormalizedValue(sliderValues[0], containerTableId)) && (rangeValues[i] <= _getUnnormalizedValue(sliderValues[1], containerTableId))) {
-            row = row + " background-color:orange;"
+        if ((rangeValues[i] >= _getUnnormalizedValue(sliderValues[0], containerTableId)) &&
+            (rangeValues[i] <= _getUnnormalizedValue(sliderValues[1], containerTableId))) {
+            row = row + " background-color:orange;";
         }
-        if (i == 0) {
+        if (i === 0) {
             row = row + "' align='left'>" + rangeValues[i] + "</td>";
         } else {
             row = row + "' align='center'>" + rangeValues[i] + "</td>";
@@ -273,9 +273,7 @@ function _displayRangeLabels(minValue, maxValue, containerTableId, sliderValues,
     }
     row += "</tr></table>";
 
-    var container = $("#" + rangeLabelsTdId);
-    container.html("");
-    container.append(row);
+    $("#" + rangeLabelsTdId).empty().append(row);
 }
 
 function _prepareDataForSubmit(containerDivId, sliderValues) {
@@ -293,10 +291,11 @@ function _prepareDataForSubmit(containerDivId, sliderValues) {
 function _getUnnormalizedValue(number, containerRangeId) {
     var val = parseFloat(number / NORMALIZATION_VALUES[containerRangeId]);
     var nrDecimals = ('' + val).split('.');
-    if (nrDecimals.length == 1)
+    if (nrDecimals.length === 1) {
         return parseFloat(val.toFixed(2));
-    else
+    }else {
         return parseFloat(val.toFixed(nrDecimals[1].length));
+    }
 }
 
 function _getNormalizedValue(number, containerTableId) {
@@ -349,8 +348,9 @@ function _getOpsForRanger(rangerValue) {
         var toVal = parseFloat($("[id$='" + toSelect + "']").val());
         var stepVal = parseFloat($("[id$='" + stepValue + "']").val());
         var nrOps = Math.ceil((toVal - fromVal) / stepVal);
-        if ((toVal - fromVal) % stepVal == 0)
+        if ((toVal - fromVal) % stepVal === 0) {
             nrOps += 1;
+        }
         return nrOps;
     }
 }
