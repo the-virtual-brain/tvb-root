@@ -239,31 +239,6 @@ class GenshiTestSimple(GenshiTest):
         self.assertEqual(len(ranger2), 1, "Second ranger generated wrong")
 
 
-    def test_checkbox_range_component(self):
-        """
-        Check that a range component is generated for the 'coupling method'
-        since the type is select and it does not have any sub-attributes,
-        nor are it's options dataTypes. Only two options are declared.
-        """
-        range_id = self.soup.findAll('table',
-                                     attrs=dict(id='data_groupSIMgroup_parameters_option_SIM_coupling_methodrange'))
-        select_input = self.soup.findAll('input',
-                                         attrs=dict(name="group_parameters_option_SIM_coupling_method", type="radio"))
-        self.assertEqual(2, len(select_input))
-        linear_checkbox = self.soup.findAll('input', attrs=dict(type="checkbox", value="Linear"))
-        nonlinear_checkbox = self.soup.findAll('input', attrs=dict(type="checkbox", value="NonLinear"))
-        hidden_value_field = self.soup.findAll('input', attrs=dict(type="hidden",
-                                                                   name="group_parameters_option_SIM_coupling_method"))
-        fail_message = "Something went wrong with generating the range checkboxes component"
-        self.assertTrue(len(range_id) == 1, fail_message)
-        self.assertEqual(linear_checkbox[0]['id'],
-                         "data_groupSIMgroup_parameters_option_SIM_coupling_methodrangeLinearcheck", fail_message)
-        self.assertEqual(nonlinear_checkbox[0]['id'],
-                         "data_groupSIMgroup_parameters_option_SIM_coupling_methodrangeNonLinearcheck", fail_message)
-        self.assertEqual(hidden_value_field[0]['id'],
-                         "data_groupSIMgroup_parameters_option_SIM_coupling_methodrange_hidden", fail_message)
-
-
     def test_sub_algorithms(self):
         """
         Check that the correct number of sub-algorithms is created
@@ -272,8 +247,9 @@ class GenshiTestSimple(GenshiTest):
         fail_message = "Something went wrong with generating the sub-algorithms."
         exp = re.compile('data_group_parameters_option_SIM_model*')
         enabled_algo = self.soup.findAll('div', attrs=dict(id=exp, style="display:block"))
-        all_algo_disabled = self.soup.findAll('div', attrs=dict(id=exp, disabled='disabled'))
-        self.assertTrue(len(enabled_algo) == 1 and len(all_algo_disabled) == 6, fail_message)
+        all_algo_disabled = self.soup.findAll('div', attrs=dict(id=exp, style="display:none"))
+        self.assertEqual(1, len(enabled_algo))
+        self.assertEqual(6, len(all_algo_disabled))
         self.assertFalse(enabled_algo[0] in all_algo_disabled, fail_message)
 
 
@@ -375,8 +351,8 @@ class GenshiTestGroup(GenshiTest):
         self.assertEqual(2, len(sub_algos))
         disabled = 0
         for one_entry in sub_algos:
-            ## Replacing with IN won't work
-            if one_entry.has_key('disabled'):
+            style = one_entry.attrMap.get('style')
+            if style and 'display:none' in style:
                 disabled += 1
         self.assertEqual(1, disabled)
 

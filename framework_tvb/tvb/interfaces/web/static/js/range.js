@@ -202,7 +202,7 @@ function updateRangeValues(rangeValues) {
         }
     }
     var first_ranger = document.getElementById(RANGE_PARAMETER_1);
-    if (first_ranger != null && first_ranger != undefined) {
+    if (first_ranger != null) {
         //TODO: fix for chrome back problem. Should be removed after permanent fix.
         first_ranger.value = rangeValues[0];
         var second_ranger = document.getElementById(RANGE_PARAMETER_2);
@@ -214,8 +214,8 @@ function updateRangeValues(rangeValues) {
 function _getDataSelectRangeComponent(containerDivId){
     //Get actual data from the checkboxes.
     var allOptions = $('div[id^="' + containerDivId + '"] input').filter(function() {
-                return (this.id.indexOf("check") != -1);
-            });
+        return (this.id.indexOf("check") !== -1);
+    });
     var data ={};
     for (var i=0; i<allOptions.length; ++i){
          data[allOptions[i].value] = allOptions[i].checked;
