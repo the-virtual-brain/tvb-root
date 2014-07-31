@@ -1331,6 +1331,13 @@ margin: 5px 5px 0 0;
 width: auto;
 }
 
+fieldset .field-adapters .ranger-button{
+margin:0;
+position: absolute;
+right:4px;
+top: 8px;
+}
+
 /* --- Button vectors below a form */
 .form-action {
 background: rgba(0, 0, 0, 0.2);
@@ -2586,7 +2593,8 @@ float: none;
 
 fieldset input[type="button"]
 {
-    background-color: gray;
+    background-color: #ddd;
+    color: #222;
     font-size: 10px;
     padding: 0 2px;
 }

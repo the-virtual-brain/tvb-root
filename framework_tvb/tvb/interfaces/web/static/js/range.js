@@ -34,14 +34,11 @@ function toggleRangeComponent(containerTableId, minValue, maxValue, stepValue, i
     var first_ranger = document.getElementById(RANGE_PARAMETER_1);
     var second_ranger = document.getElementById(RANGE_PARAMETER_2);
     var notActive =  [first_ranger.value, second_ranger.value].indexOf(inputName) === -1;
-    var btn = $('#' + containerTableId + BUTTON_EXPAND_SUFFIX);
 
     if (notActive){
         initRangeComponent(containerTableId, minValue, maxValue, stepValue, inputName);
-        btn.val('Collapse Range');
     }else{
         disableRangeComponent(containerTableId, inputName);
-        btn.val('Expand Range');
     }
 }
 
@@ -77,7 +74,8 @@ function initRangeComponent(containerTableId, minValue, maxValue, stepValue, inp
     document.getElementById(containerTableId).style.display = 'block';
     document.getElementById(rangeComponentId).style.display = 'block';
 
-    $('#' + containerTableId + HIDDEN_SUFFIX).removeAttr('disabled');    
+    $('#' + containerTableId + BUTTON_EXPAND_SUFFIX).val('Collapse Range');
+    $('#' + containerTableId + HIDDEN_SUFFIX).removeAttr('disabled');
     $('#' + containerTableId + INPUT_FROM_RANGE).removeAttr('disabled');
     $('#' + containerTableId + INPUT_TO_RANGE).removeAttr('disabled');
     $('#' + containerTableId + STEP_INPUT_SUFFIX).removeAttr('disabled');
