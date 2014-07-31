@@ -201,33 +201,6 @@ function updateRangeValues(rangeValues) {
 }
 
 
-function prepareSelectRangeComponent(containerTableId, inputName){
-    //At every change of a checkbox, modify the contents of the hidden
-    //field holding the actual inputs
-    $("#" + containerTableId).change(function(){  _getDataSelectRangeComponent(containerTableId); });
-
-    var first_ranger = document.getElementById(RANGE_PARAMETER_1);
-    var second_ranger = document.getElementById(RANGE_PARAMETER_2);
-    if (first_ranger.value == '0'){
-        first_ranger.value = inputName;
-    } else if (second_ranger.value == '0'){
-        second_ranger.value = inputName;
-    } else {
-        displayMessage("TVB has reached the maximum number of supported parameters for Parameter Space Exploration!", 'warningMessage');
-        return;
-    }
-
-    $("input[name='"+ inputName + "']").each(function() {
-        this.style.display = 'none';
-        this.disabled = true;
-    });
-    document.getElementById(containerTableId).style.display = 'block';
-    $('#' + containerTableId + HIDDEN_SUFFIX).removeAttr('disabled');
-    $("#" + containerTableId + BUTTON_EXPAND_SUFFIX).attr('disabled', 'disabled');
-    $("#" + containerTableId + BUTTON_COLLAPSE_SUFFIX).removeAttr('disabled');
-}
-
-
 function _getDataSelectRangeComponent(containerDivId){
     //Get actual data from the checkboxes.
     var allOptions = $('div[id^="' + containerDivId + '"] input').filter(function() {
@@ -402,4 +375,5 @@ function _computeNrOfOps() {
     displayMessage(msg, className);
 }
 
-
+// this script is loaded dynamically. The comment below is a source map. This is to see the file in js tools
+//@ sourceURL=range.js

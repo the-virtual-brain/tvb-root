@@ -18,7 +18,7 @@
                 <input required="True">
                     <name value="coupling_method"/>
                     <label value="Coupling Method:"/>
-                    <type value="select" default="Linear" display_ranger="True">
+                    <type value="select" default="Linear">
                         <options>
                             <option name="Linear" value="Linear"/>
                             <option name="NonLinear" value="NonLinear"/>
