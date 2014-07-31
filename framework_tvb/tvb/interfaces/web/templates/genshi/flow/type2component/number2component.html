@@ -2,15 +2,14 @@
 	
      <py:def function="draw_number_component(inputRow, disabled, parentDivId)">
         <!--! Draw Input field for a number  (input text). -->
-     	<py:with vars="add_attrs={'readonly': 'readonly'} if ('locked' in inputRow and inputRow.locked) else {};
-     				   add_attrs2={'disabled':'disabled'} if disabled else {};
-     				   x=add_attrs.update(add_attrs2);">
-			<input type="text" tabindex='1' name="$inputRow.name" id="$inputRow.name" 
-				   value="${inputRow.default if ('default' in inputRow) else ''}" py:attrs="add_attrs" />
-     	</py:with>        
+        <input type="text" tabindex='1' name="$inputRow.name" id="$inputRow.name"
+               value="${inputRow.default if ('default' in inputRow) else ''}"
+               readonly="${'readonly' if 'locked' in inputRow and inputRow.locked else None}"
+               disabled="${'disabled' if disabled else None}" />
+
         ${add_checkbox_control(inputRow)}
         
-   		<py:if test="('minValue' in inputRow) and ('maxValue' in inputRow) and ('stepValue' in inputRow) and (param_checkbox_config != True)">	
+   		<py:if test="'minValue' in inputRow and 'maxValue' in inputRow and 'stepValue' in inputRow and not param_checkbox_config">
        		${drawRangeComponent(parentDivId+inputRow.name + "_RANGER", float(inputRow.minValue), float(inputRow.maxValue), float(inputRow.stepValue), inputRow.name, disabled)}
 		</py:if>
      </py:def>
@@ -19,11 +18,11 @@
         <!--!    Function to generate the UI component for a Range parameter. (for FLOAT/INT/ARRAY attributes) -->
         <table id="${containerDivId}" class="ranger-div-class" style="display: none;">
         	<tr>
-	            <td><label for='${containerDivId}_interval_span'>Available Interval:</label></td>
+	            <td><label>Available Interval:</label></td>
 	            <td><span id='${containerDivId}_interval_span' class="ranger-value">${minValue} - ${maxValue}</span></td>
             </tr>
             <tr>
-	            <td><label for='${containerDivId}_span'>Current Selected Range:</label></td>
+	            <td><label>Current Selected Range:</label></td>
 				<td><input type="number" step="0.0001" min="${minValue}" max="${maxValue}" id="${containerDivId}_FromIdx" onblur="updateRangeInterval('${containerDivId}')"/>
 					<input type="number" step="0.0001" min="${minValue}" max="${maxValue}" id="${containerDivId}_ToIdx" onblur="updateRangeInterval('${containerDivId}')"/></td>
             </tr>
@@ -43,12 +42,11 @@
             </tr>
         </table>
         <p class="field-adapters">
-        	<py:with vars="add_attrs={'disabled': 'disabled'} if disabled else {}">
-		        <input tabindex='1' type="button" class="right-display" value="Expand Range" id="${containerDivId}_buttonExpand" py:attrs="add_attrs"
-		        	   title="Expand Range for current parameter. This will launch multiple simulations!"
-		    		   onclick="initRangeComponent('$containerDivId', ${minValue}, ${maxValue}, ${stepValue}, '$submitName');" />
-	        </py:with>
-	        	   
+            <input tabindex='1' type="button" class="right-display" value="Expand Range" id="${containerDivId}_buttonExpand"
+                   disabled="${'disabled' if disabled else None}"
+                   title="Expand Range for current parameter. This will launch multiple simulations!"
+                   onclick="initRangeComponent('$containerDivId', ${minValue}, ${maxValue}, ${stepValue}, '$submitName');" />
+
 	        <input tabindex='1' type="button" class="right-display" value="Hide Range" id="${containerDivId}_buttonCollapse" disabled='disabled'
 	        	   title="Colapse Ranger"
 	        	   onclick="disableRangeComponent('$containerDivId', '$submitName')" />
