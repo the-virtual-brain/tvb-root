@@ -767,30 +767,6 @@ class FlowController(BaseController):
         return names, sel_values
 
 
-    # todo: deprecated. try to replace this, the template and the SEL_ functions with the channel selection component
-    @expose_fragment('visualizers/connectivity/connectivity_selections_display')
-    def get_available_selections_connectivity(self, **data):
-        """
-        Get all the saved selections for the current project and Connectivity
-        """
-        connectivity_gid = data['datatype_gid']
-        connectivity = self.flow_service.get_generic_entity("tvb.datatypes.connectivity.Connectivity",
-                                                            connectivity_gid, "gid")[0]
-        current_connectivity_labels = connectivity.region_labels
-
-        selection_name_list, selected_nodes_list = self._get_available_selections(connectivity_gid)
-        selected_labels_list = []
-
-        for selected_nodes in selected_nodes_list:
-            selected_labels = []
-            for idx in json.loads(selected_nodes):
-                selected_labels.append(current_connectivity_labels[idx])
-            selected_labels_list.append(','.join(selected_labels))
-
-        return dict(namedSelections=zip(selection_name_list, selected_labels_list),
-                    noneSelectionVal=','.join(current_connectivity_labels))
-
-
     @expose_fragment('visualizers/commons/channel_selector_opts')
     def get_available_selections(self, **data):
         sel_names, sel_values = self._get_available_selections(data['datatype_gid'])
