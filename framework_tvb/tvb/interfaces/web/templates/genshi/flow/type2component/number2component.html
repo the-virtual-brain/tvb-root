@@ -17,7 +17,6 @@
     <py:if test="'minValue' in inputRow and 'maxValue' in inputRow and 'stepValue' in inputRow and not param_checkbox_config">
         <py:with vars="containerDivId=parentDivId+inputRow.name + '_RANGER';
                        minValue=float(inputRow.minValue);maxValue=float(inputRow.maxValue);stepValue=float(inputRow.stepValue)">
-
         <table id="${containerDivId}" class="ranger-div-class" style="display: none;">
             <tr>
                 <td><label>Available Interval:</label></td>
@@ -25,13 +24,13 @@
             </tr>
             <tr>
                 <td><label>Current Selected Range:</label></td>
-                <td><input type="number" step="0.0001" min="${minValue}" max="${maxValue}" id="${containerDivId}_FromIdx" onblur="updateRangeInterval('${containerDivId}')"/>
-                    <input type="number" step="0.0001" min="${minValue}" max="${maxValue}" id="${containerDivId}_ToIdx" onblur="updateRangeInterval('${containerDivId}')"/></td>
+                <td><input type="number" step="0.0001" min="${minValue}" max="${maxValue}" id="${containerDivId}_FromIdx"/>
+                    <input type="number" step="0.0001" min="${minValue}" max="${maxValue}" id="${containerDivId}_ToIdx"/></td>
             </tr>
             <tr>
                 <td><label for='${containerDivId}_stepInput' title='The step used for the range'>Step:</label></td>
                 <td><input type='number' id='${containerDivId}_stepInput' value='${stepValue}' min="0" max="${maxValue - minValue}" step="0.0001"
-                           title='The step used for the range' tabindex="1" disabled="disabled" onblur="updateRangeInterval('${containerDivId}')"/></td>
+                           title='The step used for the range' tabindex="1" disabled="disabled"/></td>
             </tr>
             <tr>
                 <td colspan="2">
@@ -39,18 +38,14 @@
                     <input id='${containerDivId}_hidden' type='hidden' name='${inputRow.name}' disabled="disabled"/>
                 </td>
             </tr>
-            <tr>
-                <td colspan="2" id="${containerDivId}_rangeLabelsTd"> </td>
-            </tr>
+            <tr> <td colspan="2" id="${containerDivId}_rangeLabelsTd"> </td> </tr>
         </table>
         <p class="field-adapters">
             <input tabindex='1' type="button" class="ranger-button right-display"
-                   value="Expand Range"
-                   id="${containerDivId}_buttonExpand"
+                   value="Expand Range" id="${containerDivId}_buttonExpand"
                    title="Toggle Range for current parameter. This will launch multiple simulations!"
-                   onclick="toggleRangeComponent('$containerDivId', ${minValue}, ${maxValue}, ${stepValue}, '${inputRow.name}');" />
+                   onclick="toggleRange('$containerDivId', ${minValue}, ${maxValue}, ${stepValue}, '${inputRow.name}');" />
         </p>
-
         </py:with>
     </py:if>
 </py:def>

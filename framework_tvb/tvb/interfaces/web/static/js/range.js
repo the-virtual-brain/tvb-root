@@ -30,7 +30,7 @@ var INPUT_TO_RANGE = "_ToIdx";
 var ONE_HUNDRED = 1000;
 var NORMALIZATION_VALUES = {};
 
-function toggleRangeComponent(containerTableId, minValue, maxValue, stepValue, inputName){
+function toggleRange(containerTableId, minValue, maxValue, stepValue, inputName){
     var first_ranger = document.getElementById(RANGE_PARAMETER_1);
     var second_ranger = document.getElementById(RANGE_PARAMETER_2);
     var notActive =  [first_ranger.value, second_ranger.value].indexOf(inputName) === -1;
@@ -79,6 +79,8 @@ function initRangeComponent(containerTableId, minValue, maxValue, stepValue, inp
     $('#' + containerTableId + INPUT_FROM_RANGE).removeAttr('disabled');
     $('#' + containerTableId + INPUT_TO_RANGE).removeAttr('disabled');
     $('#' + containerTableId + STEP_INPUT_SUFFIX).removeAttr('disabled');
+
+    $("#" + containerTableId).find('input[type=number]').on('blur', function(){updateRangeInterval(containerTableId);});
 
     //create the slider
     var rangerComponentRef = $("#" + rangeComponentId);
@@ -322,7 +324,7 @@ function disableRangeComponent(containerTableId, inputName) {
 
     $("#" + inputName).removeAttr('disabled').css('display', 'block');
     $('#' + containerTableId + BUTTON_EXPAND_SUFFIX).val('Expand Range');
-
+    $("#" + containerTableId).find('input[type=number]').off('blur');
     _computeNrOfOps();
 }
 
