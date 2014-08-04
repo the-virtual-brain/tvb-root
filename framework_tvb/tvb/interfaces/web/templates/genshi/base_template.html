@@ -19,13 +19,13 @@
 		http://www.gnu.org/licenses/old-licenses/gpl-2.0
 	-->
 
-    <!-- ========================================================== -->
-    <!-- TEMPLATE CODE: The Virtual Brain / System -->
-    <!-- SECTION: Base template for all sections -->
-    <!-- VERSION: 1.0.1 -->
-    <!-- ========================================================== -->
-    <!-- Page Manifest -->
-    <!-- ========================================================== -->
+    <!--! ========================================================== -->
+    <!--! TEMPLATE CODE: The Virtual Brain / System -->
+    <!--! SECTION: Base template for all sections -->
+    <!--! VERSION: 1.0.1 -->
+    <!--! ========================================================== -->
+    <!--! Page Manifest -->
+    <!--! ========================================================== -->
     <head>
         <title>$title | $currentVersion The Virtual Brain</title>
 
@@ -49,6 +49,7 @@
         <link rel="stylesheet" type="text/css" href="/static/style/overlay.css?$currentVersionJS"/>
         <link rel="stylesheet" type="text/css" href="/static/jquery/jquery.css" />
         <script type="text/javascript" src="/static/jquery/jquery.js"></script>
+        <script type="text/javascript" src="/static/jquery/jquery.json-2.2.min.js"></script>
         <script type="text/javascript" src="/static/js/genericTVB.js?$currentVersionJS"></script>
 
         <!--include specific resources per section-->
@@ -68,8 +69,7 @@
         <py:if test="not defined('isAdapter') or not isAdapter">
         	<xi:include href="${mainContent}.html" py:if="'project_submenu' not in mainContent and 'header_menu' not in mainContent"/>
         </py:if>
-        <div id="main" class="columnized colscheme-generic" py:if="defined('isAdapter') and isAdapter"
-             xmlns:py="http://genshi.edgewall.org/" xmlns:xi="http://www.w3.org/2001/XInclude">
+        <div id="main" class="columnized colscheme-generic" py:if="defined('isAdapter') and isAdapter">
             <xi:include href="flow/call_out_control.html" py:if="defined('displayControl') and displayControl"/>
             <xi:include href="${mainContent}.html" py:if="'header_menu' not in mainContent"/>
         </div>

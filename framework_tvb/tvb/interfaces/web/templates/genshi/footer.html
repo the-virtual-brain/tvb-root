@@ -1,17 +1,17 @@
-<!-- ========================================================== --> 
-<!--    Main Navigation - Common footer for all pages           --> 
-<!-- ========================================================== --> 
+<!--! ========================================================== -->
+<!--!    Main Navigation - Common footer for all pages           -->
+<!--! ========================================================== -->
 <footer>
     <nav> 
         <ul> 
-            <li tabindex='99' onkeypress="redirectToHrefChild(this)" id="nav-user" class="${'active ' if (currentTab=='nav-user' and first_run == False) else ''}${'enabled' if first_run == False else 'idle'}">
+            <li tabindex='99' onkeypress="redirectToHrefChild(this)" id="nav-user" class="${'active ' if (currentTab=='nav-user' and not first_run) else ''}${'enabled' if not first_run else 'idle'}">
                 <span class="left"></span>
-                <a href="${'/user/profile' if (user and first_run == False) else '/user' if first_run == False else '#'}" tabindex='-1' title="">User</a>
+                <a href="${'/user/profile' if (user and not first_run) else '/user' if not first_run else '#'}" tabindex='-1' title="">User</a>
                 <span class="right"></span>
             </li> 
-            <li tabindex='99' onkeypress="redirectToHrefChild(this)" id="nav-project" class="${'active ' if (currentTab=='nav-project' and first_run == False) else ''}${'enabled' if (user and first_run == False) else 'idle'}">
+            <li tabindex='99' onkeypress="redirectToHrefChild(this)" id="nav-project" class="${'active ' if (currentTab=='nav-project' and not first_run) else ''}${'enabled' if (user and not first_run) else 'idle'}">
                 <span class="left"></span>
-                <a href="${'/project/' if (user and first_run == False) else '#'}" tabindex='-1' title="">Project</a>
+                <a href="${'/project/' if (user and not first_run) else '#'}" tabindex='-1' title="">Project</a>
                 <span class="right"></span>
             </li>  
             <li tabindex='99' onkeypress="redirectToHrefChild(this)" id="nav-burst" class="${'active ' if currentTab=='nav-burst' else ''}${'enabled' if selectedProject else 'idle'}"
