@@ -98,10 +98,10 @@ class _InputTreeFragment(core.Type):
     This trait-ed class is used to build the input tree for the integrator.
     """
     dynamic_name = types_basic.String(
-        label = "Dynamic name",
+        label = "Parameter configuration name",
         required = True,
         order=1,
-        doc = """The name of the dynamic""")
+        doc = """The name of this parameter configuration""")
 
     integrator = integrators.Integrator(
         label = "integrator",
