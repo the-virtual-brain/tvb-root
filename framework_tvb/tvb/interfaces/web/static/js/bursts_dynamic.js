@@ -109,6 +109,7 @@ function _fetchSlidersFromServer(){
 
 function onModelChanged(name){
     doAjaxCall({
+        showBlockerOverlay: true,
         url: _url('model_changed', name) ,
         success: function(data){
             dynamicPage.sliderDefaultState = JSON.parse(data).options;
@@ -119,6 +120,7 @@ function onModelChanged(name){
 
 function onParameterChanged(name, value){
     doAjaxCall({
+        showBlockerOverlay: true,
         url: _url('parameter_changed'),
         data: {'name' : name, 'value': value},
         success: function(data){
@@ -144,12 +146,14 @@ function onSubmit(event){
 
 function onIntegratorChanged(state){
     doAjaxCall({
+        showBlockerOverlay: true,
         url: _url('integrator_changed'),
         data: state
     });
 }
 
-var debouncedOnIntegratorChanged = $.debounce( 250, onIntegratorChanged);
+// Event debouncing makes less sense now that the requests have been made blocking.
+var debouncedOnIntegratorChanged = $.debounce( 50, onIntegratorChanged);
 
 // Detect changes by doing a tree diff. This diff is simple but relies on a specific tree structure.
 function onTreeChange(){
