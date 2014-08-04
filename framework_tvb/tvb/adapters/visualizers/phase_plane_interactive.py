@@ -31,7 +31,7 @@
 .. moduleauthor:: Ionel Ortelecan <ionel.ortelecan@codemart.ro>
 .. moduleauthor:: Mihai Andrei <mihai.andrei@codemart.ro>
 """
-
+import threading
 import numpy
 import pylab
 import colorsys
@@ -75,81 +75,89 @@ class PhasePlaneInteractive(object):
 
         self.ipp_fig = None
         self.pp_splt = None
+        # Concurrent access to the drawing routines is breaking this viewer
+        # Concurrency happens despite the GIL because the drawing calls do socket io
+        # Lock must be re-entrant because refresh is used in event handling
+        self.lock = threading.RLock()
+
 
     def reset(self, model, integrator):
         """
         Resets the state associated with the model and integrator.
         Redraws plot.
         """
-        self.model = model
-        self.integrator = integrator
-        self.draw_phase_plane()
+        with self.lock:
+            self.model = model
+            self.integrator = integrator
+            self.draw_phase_plane()
 
 
     def refresh(self):
-        self._set_mesh_grid()
-        self._calc_phase_plane()
-        self._update_phase_plane()
+        with self.lock:
+            self._set_mesh_grid()
+            self._calc_phase_plane()
+            self._update_phase_plane()
 
 
     def draw_phase_plane(self):
-        """Generate the interactive phase-plane figure."""
-        self.log.debug("Plot started...")
+        with self.lock:
+            """Generate the interactive phase-plane figure."""
+            self.log.debug("Plot started...")
 
-        model_name = self.model.__class__.__name__
-        msg = "Generating an interactive phase-plane plot for %s"
-        self.log.info(msg % model_name)
+            model_name = self.model.__class__.__name__
+            msg = "Generating an interactive phase-plane plot for %s"
+            self.log.info(msg % model_name)
 
-        self.svx = self.model.state_variables[0]  # x-axis: 1st state variable
-        if self.model.nvar > 1:
-            self.svy = self.model.state_variables[1]  # y-axis: 2nd state variable
-        else:
-            self.svy = self.model.state_variables[0]
-        self.mode = 0
+            self.svx = self.model.state_variables[0]  # x-axis: 1st state variable
+            if self.model.nvar > 1:
+                self.svy = self.model.state_variables[1]  # y-axis: 2nd state variable
+            else:
+                self.svy = self.model.state_variables[0]
+            self.mode = 0
 
-        self._set_state_vector()
+            self._set_state_vector()
 
-        #TODO: see how we can get the figure size from the UI to better 'fit' the encompassing div
-        if self.ipp_fig is None:
-            self.ipp_fig = pylab.figure(figsize=(10, 8))
-            # add mouse handler for trajectory clicking
-            self.ipp_fig.canvas.mpl_connect('button_press_event', self._click_trajectory)
+            #TODO: see how we can get the figure size from the UI to better 'fit' the encompassing div
+            if self.ipp_fig is None:
+                self.ipp_fig = pylab.figure(figsize=(10, 8))
+                # add mouse handler for trajectory clicking
+                self.ipp_fig.canvas.mpl_connect('button_press_event', self._click_trajectory)
 
-        pylab.clf()
-        self.pp_ax = self.ipp_fig.add_axes([0.265, 0.2, 0.7, 0.75])
+            pylab.clf()
+            self.pp_ax = self.ipp_fig.add_axes([0.265, 0.2, 0.7, 0.75])
 
-        self.pp_splt = self.ipp_fig.add_subplot(212)
-        self.ipp_fig.subplots_adjust(left=0.265, bottom=0.02, right=0.75, top=0.3, wspace=0.1, hspace=None)
-        self.pp_splt.set_color_cycle(get_color(self.model.nvar))
-        self.pp_splt.plot(numpy.arange(TRAJ_STEPS + 1) * self.integrator.dt,
-                          numpy.zeros((TRAJ_STEPS + 1, self.model.nvar)))
-        if hasattr(self.pp_splt, 'autoscale'):
-            self.pp_splt.autoscale(enable=True, axis='y', tight=True)
-        self.pp_splt.legend(self.model.state_variables)
+            self.pp_splt = self.ipp_fig.add_subplot(212)
+            self.ipp_fig.subplots_adjust(left=0.265, bottom=0.02, right=0.75, top=0.3, wspace=0.1, hspace=None)
+            self.pp_splt.set_color_cycle(get_color(self.model.nvar))
+            self.pp_splt.plot(numpy.arange(TRAJ_STEPS + 1) * self.integrator.dt,
+                              numpy.zeros((TRAJ_STEPS + 1, self.model.nvar)))
+            if hasattr(self.pp_splt, 'autoscale'):
+                self.pp_splt.autoscale(enable=True, axis='y', tight=True)
+            self.pp_splt.legend(self.model.state_variables)
 
-        #Selectors
-        self._add_state_variable_selector()
-        self._add_mode_selector()
+            #Selectors
+            self._add_state_variable_selector()
+            self._add_mode_selector()
 
-        #Sliders
-        self._add_axes_range_sliders()
-        self._add_state_variable_sliders()
+            #Sliders
+            self._add_axes_range_sliders()
+            self._add_state_variable_sliders()
 
-        #Reset buttons
-        #self._add_reset_param_button()
-        self._add_reset_sv_button()
-        self._add_reset_axes_button()
+            #Reset buttons
+            #self._add_reset_param_button()
+            self._add_reset_sv_button()
+            self._add_reset_axes_button()
 
-        #Calculate the phase plane
-        self._set_mesh_grid()
-        self._calc_phase_plane()
+            #Calculate the phase plane
+            self._set_mesh_grid()
+            self._calc_phase_plane()
 
-        #Plot phase plane
-        self._plot_phase_plane()
+            #Plot phase plane
+            self._plot_phase_plane()
 
-        self.ipp_fig.canvas.draw()
+            self.ipp_fig.canvas.draw()
 
-        return dict(mplh5ServerURL=config.MPLH5_SERVER_URL, figureNumber=self.ipp_fig.number, showFullToolbar=False)
+            return dict(mplh5ServerURL=config.MPLH5_SERVER_URL, figureNumber=self.ipp_fig.number, showFullToolbar=False)
 
 
     def _add_state_variable_selector(self):
@@ -509,9 +517,8 @@ class PhasePlaneInteractive(object):
 
 
     def _click_trajectory(self, event):
-        """
-        """
-        if event.inaxes is self.pp_ax:
-            x, y = event.xdata, event.ydata
-            self.log.info('trajectory starting at (%f, %f)', x, y)
-            self._plot_trajectory(x, y)
+        with self.lock:
+            if event.inaxes is self.pp_ax:
+                x, y = event.xdata, event.ydata
+                self.log.info('trajectory starting at (%f, %f)', x, y)
+                self._plot_trajectory(x, y)
