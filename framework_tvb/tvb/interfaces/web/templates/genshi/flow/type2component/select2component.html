@@ -13,7 +13,7 @@
             <py:for each="option in inputRow.options">
                 <input type="radio" name="$inputRow.name" value="${option.value}" onchange="updateDivContent('data_$inputRow.name', null, '$parentDivId', this);"
                        id="${inputRow.name + '_' + option.value}"
-                       checked="${'checked'} if 'default' in inputRow and str(option.value) in str(inputRow.default) else None"/>
+                       checked="${'checked' if 'default' in inputRow and str(option.value) in str(inputRow.default) else None}"/>
                 <label for="${inputRow.name + '_' + option.value}">${option.name}</label>
             </py:for>
         </py:otherwise>
