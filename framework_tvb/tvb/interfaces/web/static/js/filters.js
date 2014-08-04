@@ -17,6 +17,8 @@
  *
  **/
 
+/* globals doAjaxCall, displayMessage */
+
 //Used since calendars need an input field with an id.
 var nextId = 0;
 
@@ -86,7 +88,7 @@ function addFilter(div_id, filters) {
         calendarImg.src = "/static/style/img/calendar.png";
         calendarImg.onclick = function () {
             NewCssCal(input.id);
-        }
+        };
     }
 
 
@@ -176,7 +178,7 @@ function refreshData(parentDivId, divSufix, name, sessionStoredTreeKey, gathered
                 }
             }
         }
-        if (fields.length == 0 && operations.length == 0 && values.length == 0) {
+        if (fields.length === 0 && operations.length === 0 && values.length === 0) {
             displayMessage("Cleared filters");
         }
 
@@ -184,7 +186,7 @@ function refreshData(parentDivId, divSufix, name, sessionStoredTreeKey, gathered
             'fields': fields,
             'operations': operations,
             'values': values
-        }
+        };
     }
     var elements = document.getElementsByName(name);
     if (elements.length < 1) {
@@ -193,7 +195,7 @@ function refreshData(parentDivId, divSufix, name, sessionStoredTreeKey, gathered
         return;
     }
     //Make a request to get new data
-    doAjaxCall({ async: false,
+    doAjaxCall({ async: false,  //todo: Is this sync really needed? It slows down the page.
         type: 'GET',
         url: "/flow/getfiltereddatatypes/" + name + "/ " + parentDivId + '/' + sessionStoredTreeKey + '/' + $.toJSON(gatheredData),
         success: function (r) {
@@ -207,17 +209,17 @@ function refreshData(parentDivId, divSufix, name, sessionStoredTreeKey, gathered
                     var parent = elements[i].parentNode;
                     //In case more components with the same name exist look for the
                     //parent's div id
-                    while (parent.id == '' || parent.id == undefined) {
+                    while (parent.id == '' || parent.id == null) {
                         parent = parent.parentNode;
                     }
-                    if (divId != null && divId.indexOf(parent.id) != -1) {
+                    if (divId != null && divId.indexOf(parent.id) !== -1) {
                         //Remove the childs from this div and then recreate the components
                         //using the html returned by the ajax call
                         parentDiv = elements[i].parentNode;
                         replaceSelect(parentDiv, r, name);
                     }
                 }
-            } else if (elements.length == 1) {
+            } else if (elements.length === 1) {
                 parentDiv = elements[0].parentNode;
                 replaceSelect(parentDiv, r, name);
             } else {
@@ -263,38 +265,37 @@ function filterLinked(linkedDataList, currentSelectedGID, treeSessionKey) {
         return;
     }
     for (var i = 0; i < linkedDataList.length; i++) {
-        var filterField = linkedDataList[i]['linked_elem_field'];
+        var linkedData = linkedDataList[i];
+        var elemName = linkedData.linked_elem_name;
+
+        var filterField = linkedData.linked_elem_field;
         var filterData = {'fields': [filterField],
             'operations': ["in"],
             'values': [currentSelectedGID.split(' ')]};
 
 
-        if (!linkedDataList[i]['linked_elem_parent_name'] && !linkedDataList[i]['linked_elem_parent_option']) {
-            refreshData("", linkedDataList[i]['linked_elem_name'] + 'data_select', linkedDataList[i]['linked_elem_name'], treeSessionKey, filterData);
+        if (!linkedData.linked_elem_parent_name && !linkedData.linked_elem_parent_option) {
+            refreshData("", elemName + 'data_select', elemName, treeSessionKey, filterData);
         }
 
-        var linkedInputName = linkedDataList[i]['linked_elem_parent_name'] + "_parameters_option_";
-        var parentDivID = 'data_' + linkedDataList[i]['linked_elem_parent_name'];
+        var linkedInputName = linkedData.linked_elem_parent_name + "_parameters_option_";
+        var parentDivID = 'data_' + linkedData.linked_elem_parent_name;
 
-        if (linkedDataList[i]['linked_elem_parent_option']) {
-            linkedInputName = linkedInputName + linkedDataList[i]['linked_elem_parent_option'] + "_" + linkedDataList[i]['linked_elem_name'];
-            parentDivID = parentDivID + linkedDataList[i]['linked_elem_parent_option'];
+        if (linkedData.linked_elem_parent_option) {
+            linkedInputName = linkedInputName + linkedData.linked_elem_parent_option + "_" + elemName;
+            parentDivID += linkedData.linked_elem_parent_option;
             refreshData(parentDivID, linkedInputName + 'data_select', linkedInputName, treeSessionKey, filterData);
         } else {
             $("select[id^='" + linkedInputName + "']").each(function () {
-                if ($(this)[0].id.indexOf("_" + linkedDataList[i]['linked_elem_name']) < 0) {
+                if ($(this)[0].id.indexOf("_" + elemName) < 0) {
                     return;
                 }
 
-                var option_name = $(this)[0].id.replace("_" + linkedDataList[i]['linked_elem_name'], '').replace(linkedInputName, '');
+                var option_name = $(this)[0].id.replace("_" + elemName, '').replace(linkedInputName, '');
                 linkedInputName = $(this)[0].id;
-                parentDivID = parentDivID + option_name;
+                parentDivID += option_name;
                 refreshData(parentDivID, linkedInputName + 'data_select', linkedInputName, treeSessionKey, filterData);
             });
         }
     }
 }
-
-
-
-
