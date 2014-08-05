@@ -27,10 +27,11 @@
 		<hgroup>
 			<h4><span id="title-simulation"><mark>Configure</mark> New simulation core</span></h4>
 		 
-			<input type="text" id="input-burst-name-id" name="burstName" value="${burstConfig.name if burstConfig.name else ''}" title="Simulation name" onkeypress="user_edited_title=true;"/>
+			<input type="text" id="input-burst-name-id" name="burstName" value="${burstConfig.name if burstConfig.name else ''}"
+                   title="Simulation name" onkeypress="user_edited_title=true;"/>
 		</hgroup>
 		
-		<!-- <a id="button-continue-burst" href="#" onclick="launchNewBurst('continue'); alert('Not yet implemented!')" style="display: none;"
+		<!--! <a id="button-continue-burst" href="#" onclick="launchNewBurst('continue'); alert('Not yet implemented!')" style="display: none;"
 			title="Continue burst" class="column-control-prev action action-big-continue">Continue</a> -->
 			
 		<a id="button-branch-burst" href="#" onclick="launchNewBurst('branch');" style="display: none;"
@@ -41,22 +42,28 @@
 		
 		<ul class="toolbar-inline">
 			<li>
-				<a href="#" title="Configure simulator visible parameters" class="action action-edit" onclick="configureSimulator(this);" id="configure-simulator-button">Configure Interface</a>
+				<a href="#" title="Configure simulator visible parameters" class="action action-edit"
+                   onclick="configureSimulator(this);" id="configure-simulator-button">Configure Interface</a>
 			</li>
 			<li>
-				<a href="#" title="Set up model parameters for region-based simulations" class="action action-analyze" onclick="configureModelParamsOnRegions();" id="configRegionModelParam">Set up region Model</a>
+				<a href="#" title="Set up model parameters for region-based simulations" class="action action-analyze"
+                   onclick="configureModelParamsOnRegions();" id="configRegionModelParam">Set up region Model</a>
 			</li>
 			<li>
-				<a href="#" title="Configure noise for region-based simulations" class="action action-analyze" onclick="configureNoiseParameters();" id="configNoiseValues">Configure noise</a>
+				<a href="#" title="Configure noise for region-based simulations" class="action action-analyze"
+                   onclick="configureNoiseParameters();" id="configNoiseValues">Configure noise</a>
 			</li>
 			<li>
-				<a href="#" title="Set up model parameters fro surface-based simulations	" class="action action-analyze" onclick="configureModelParamsOnSurface();" id="configSurfaceModelParam">Set up surface model</a>
+				<a href="#" title="Set up model parameters fro surface-based simulations	" class="action action-analyze"
+                   onclick="configureModelParamsOnSurface();" id="configSurfaceModelParam">Set up surface model</a>
 			</li>
 			<li>
-				<a href="#" title="Uncheck all parameters" class="action action-toggle action-all-off" onclick="toggleSimulatorParametersChecks(false);" id="button-uncheck-all-params" style="display:none;">Uncheck All</a>
+				<a href="#" title="Uncheck all parameters" class="action action-toggle action-all-off"
+                   onclick="toggleSimulatorParametersChecks(false);" id="button-uncheck-all-params" style="display:none;">Uncheck All</a>
 			</li>
 			<li>
-				<a href="#" title="Check all parameters to appear visible" class="action action-toggle action-all-on" onclick="toggleSimulatorParametersChecks(true);" id="button-check-all-params" style="display:none;">Check All</a>
+				<a href="#" title="Check all parameters to appear visible" class="action action-toggle action-all-on"
+                   onclick="toggleSimulatorParametersChecks(true);" id="button-check-all-params" style="display:none;">Check All</a>
 			</li>
 		</ul>
 		
@@ -75,14 +82,10 @@
 			onclick="toggleMaximizeBurst(this);">Maximize</a>
 		<ul id="section-portlets-ul" class="view-switcher tabswitcher">
 			<li id="pse-flot" class="active">
-				<a href="#" onclick="changePSETab(this, 'flot');">
-					View Parameter Space Discrete
-				</a>
+				<a href="#" onclick="changePSETab(this, 'flot');"> View Parameter Space Discrete </a>
 			</li>
 			<li id="pse-iso">
-				<a href="#" onclick="changePSETab(this, 'iso');">
-					View Parameter Space Continous
-				</a>
+				<a href="#" onclick="changePSETab(this, 'iso');"> View Parameter Space Continous </a>
 			</li>
 		</ul>
 		<div class="flex-wrapper" id="burst-pse-flot"></div>
@@ -98,35 +101,51 @@
 		<ul id="section-portlets-ul" class="view-switcher tabswitcher">
 			<py:for each="tab_idx in range(burstConfig.nr_of_tabs)">
         		<py:if test="str(tab_idx) == str(burstConfig.selected_tab)">
-        			<li class="active"><a href="#" id="portletTab_${tab_idx}" onclick="changeBurstTile(this);">View ${tab_idx+1}</a></li>
+        			<li class="active">
+                        <a href="#" id="portletTab_${tab_idx}"
+                           onclick="changeBurstTile(this);">View ${tab_idx+1}</a>
+                    </li>
         		</py:if>
         		<py:if test="str(tab_idx) != str(burstConfig.selected_tab)">
-        			<li><a href="#" id="portletTab_${tab_idx}" onclick="changeBurstTile(this);">View ${tab_idx+1}</a></li>
+        			<li><a href="#" id="portletTab_${tab_idx}"
+                           onclick="changeBurstTile(this);">View ${tab_idx+1}</a>
+                    </li>
         		</py:if>
         	</py:for>
         	<py:if test="'-1' != str(burstConfig.selected_tab)">
-        		<li><a href="#" id="tab-burst-tree" onclick="displayBurstTree(this, ${selectedProject.id}, '${baseUrl}');">Results</a></li>
+        		<li>
+                    <a href="#" id="tab-burst-tree"
+                       onclick="displayBurstTree(this, ${selectedProject.id}, '${baseUrl}');">Results</a>
+                </li>
         	</py:if>
         	<py:if test="'-1' == str(burstConfig.selected_tab)">
-        		<li class="active"><a href="#" id="tab-burst-tree" onclick="displayBurstTree(this, ${selectedProject.id}, '${baseUrl}');">Results</a></li>
+        		<li class="active">
+                    <a href="#" id="tab-burst-tree"
+                       onclick="displayBurstTree(this, ${selectedProject.id}, '${baseUrl}');">Results</a>
+                </li>
         	</py:if>
 		</ul>
 		        	
 		<ul class="toolbar-inline standard-portlets-toolbar" id="portlets-toolbar">
 			<li>
-				<a href="#" id="configure-tabs-button" class="action action-edit hideable" onclick="selectPortlets(false);">Configure View</a>
+				<a href="#" id="configure-tabs-button" class="action action-edit hideable"
+                   onclick="selectPortlets(false);">Configure View</a>
 			</li>
 			<li>
-				<a href="#" id="save-configure-tabs-button" class="action action-edit hideable" onclick="selectPortlets(true);">Save choices</a>
+				<a href="#" id="save-configure-tabs-button" class="action action-edit hideable"
+                   onclick="selectPortlets(true);">Save choices</a>
 			</li>
 			<li>
-		        <a href="#" id="cancel-configure-tabs-button" class="action action-reset hideable" onclick="returnToSessionPortletConfiguration()">Cancel</a>
+		        <a href="#" id="cancel-configure-tabs-button" class="action action-reset hideable"
+                   onclick="returnToSessionPortletConfiguration()">Cancel</a>
 			</li>
 			<li>
-				<a href="#" id="save-portlet-params-button" class="action action-store hideable" onclick="savePortletParams()">Save portlet parameters</a>
+				<a href="#" id="save-portlet-params-button" class="action action-store hideable"
+                   onclick="savePortletParams()">Save portlet parameters</a>
 			</li>
 			<li>
-				<a href="#" id="cancel-configure-portlet-params-button" class="action action-reset hideable" onclick="cancelPortletConfig()">Cancel</a>
+				<a href="#" id="cancel-configure-portlet-params-button" class="action action-reset hideable"
+                   onclick="cancelPortletConfig()">Cancel</a>
 			</li>
 		</ul>
 		
