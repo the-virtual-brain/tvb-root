@@ -316,12 +316,14 @@ function _fillSimulatorParametersArea(htmlContent, isConfigure) {
         document.getElementById("configure-simulator-button").innerHTML = "Save Configuration";
         $("#configRegionModelParam").hide();
         $("#configSurfaceModelParam").hide();
+        $("#configNoiseValues").hide();
         $("#button-uncheck-all-params").show();
         $("#button-check-all-params").show();
         setSimulatorChangeListener('div-simulator-parameters');
     } else {
         document.getElementById("configure-simulator-button").innerHTML = "Configure Interface";
         $("#configRegionModelParam").show();
+        $("#configNoiseValues").show();
         $("#configSurfaceModelParam").hide();
         toggleConfigSurfaceModelParamsButton();
         // Do this before ranger expand since otherwise on FF the ranger is hidden.
@@ -415,7 +417,7 @@ function configureSimulator(configureHref) {
             data: {'simulator_parameters' : JSON.stringify(submitableData)},
             url: '/burst/save_simulator_configuration?exclude_ranges=True',
             success: function() {
-                loadSimulatorInterface()
+                loadSimulatorInterface();
             } ,
             error: function() {
                 displayMessage("Error during saving configuration.", "errorMessage");
