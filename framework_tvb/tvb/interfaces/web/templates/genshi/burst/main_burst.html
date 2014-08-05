@@ -54,7 +54,7 @@
                    onclick="configureNoiseParameters();" id="configNoiseValues">Configure noise</a>
 			</li>
 			<li>
-				<a href="#" title="Set up model parameters fro surface-based simulations	" class="action action-analyze"
+				<a href="#" title="Set up model parameters for surface-based simulations" class="action action-analyze"
                    onclick="configureModelParamsOnSurface();" id="configSurfaceModelParam">Set up surface model</a>
 			</li>
 			<li>
@@ -85,7 +85,7 @@
 				<a href="#" onclick="changePSETab(this, 'flot');"> View Parameter Space Discrete </a>
 			</li>
 			<li id="pse-iso">
-				<a href="#" onclick="changePSETab(this, 'iso');"> View Parameter Space Continous </a>
+				<a href="#" onclick="changePSETab(this, 'iso');"> View Parameter Space Continuous </a>
 			</li>
 		</ul>
 		<div class="flex-wrapper" id="burst-pse-flot"></div>
@@ -99,31 +99,18 @@
 			onclick="toggleMaximizeColumn(this, 'section-portlets');">Maximize</a>
 		
 		<ul id="section-portlets-ul" class="view-switcher tabswitcher">
-			<py:for each="tab_idx in range(burstConfig.nr_of_tabs)">
-        		<py:if test="str(tab_idx) == str(burstConfig.selected_tab)">
-        			<li class="active">
-                        <a href="#" id="portletTab_${tab_idx}"
-                           onclick="changeBurstTile(this);">View ${tab_idx+1}</a>
-                    </li>
-        		</py:if>
-        		<py:if test="str(tab_idx) != str(burstConfig.selected_tab)">
-        			<li><a href="#" id="portletTab_${tab_idx}"
-                           onclick="changeBurstTile(this);">View ${tab_idx+1}</a>
-                    </li>
-        		</py:if>
+			<py:for each="tab_idx in range(burstConfig.nr_of_tabs)"
+                    py:with="activeTab = str(tab_idx) == str(burstConfig.selected_tab)">
+                <li class="${'active' if activeTab else None}">
+                    <a href="#" id="portletTab_${tab_idx}"
+                       onclick="changeBurstTile(this);">View ${tab_idx+1}</a>
+                </li>
         	</py:for>
-        	<py:if test="'-1' != str(burstConfig.selected_tab)">
-        		<li>
-                    <a href="#" id="tab-burst-tree"
-                       onclick="displayBurstTree(this, ${selectedProject.id}, '${baseUrl}');">Results</a>
-                </li>
-        	</py:if>
-        	<py:if test="'-1' == str(burstConfig.selected_tab)">
-        		<li class="active">
-                    <a href="#" id="tab-burst-tree"
-                       onclick="displayBurstTree(this, ${selectedProject.id}, '${baseUrl}');">Results</a>
-                </li>
-        	</py:if>
+
+            <li class="${'active' if '-1' == str(burstConfig.selected_tab) else None}">
+                <a href="#" id="tab-burst-tree"
+                   onclick="displayBurstTree(this, ${selectedProject.id}, '${baseUrl}');">Results</a>
+            </li>
 		</ul>
 		        	
 		<ul class="toolbar-inline standard-portlets-toolbar" id="portlets-toolbar">
@@ -153,7 +140,7 @@
 			No visualizers configured for this tab yet.
 		</div>
 		<div class="portlet-container portlet-edit visible-2-2" id="portlets-configure" style="display: none;">
-			<xi:include href="portlets_select.html"></xi:include>
+			<xi:include href="portlets_select.html"/>
 		    ${drawPortletConfiguration(portletList, 0)}
 	        ${drawPortletConfiguration(portletList, 1)}
 	        ${drawPortletConfiguration(portletList, 2)}
