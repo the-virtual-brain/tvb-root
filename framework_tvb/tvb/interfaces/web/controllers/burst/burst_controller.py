@@ -519,12 +519,15 @@ class BurstController(BurstBaseController):
         ### Add simulator tree to session to be available in filters
         self.context.add_adapter_to_session(self.cached_simulator_algo_group, simulator_input_tree, default_values)
 
-        template_specification = {"inputList": simulator_input_tree,
-                                  common.KEY_PARAMETERS_CONFIG: True,
-                                  'none_checked': not any_checked,
-                                  'selectedParametersDictionary': burst_config.simulator_configuration}
-        ## Setting this to true means check-boxes are displayed next to all inputs ##
-        return self.fill_default_attributes(template_specification)
+        template_vars = {}
+        self.fill_default_attributes(template_vars)
+        template_vars.update({
+            "inputList": simulator_input_tree,
+            common.KEY_PARAMETERS_CONFIG: True,
+            'none_checked': not any_checked,
+            'selectedParametersDictionary': burst_config.simulator_configuration
+        })
+        return template_vars
 
 
     @expose_fragment("flow/genericAdapterFormFields")
