@@ -24,12 +24,16 @@
  *  - Show progress.
  */
 
+/* globals displayMessage*/
+
 // Object holding current burst ID/ NAME / STATE
-var EMPTY_BURST = {id: "", 
-                   name: "",
-                   isFinished: false,
-                   isRange: false
-                   };
+var EMPTY_BURST = {
+    id: "",
+    name: "",
+    isFinished: false,
+    isRange: false
+};
+
 var sessionStoredBurst = clone(EMPTY_BURST);
 
 //A list of selected portlets id. Used to correctly change/update the portlet checkboxes for each tab.
@@ -59,9 +63,9 @@ function clone(object_) {
  * 			HISTORY COLUMN
  *************************************************************************************************************************/
 
-  /*
-   * When clicking on the New Burst Button reset to defaults for simulator interface and portlets. 
-   */
+/*
+* When clicking on the New Burst Button reset to defaults for simulator interface and portlets.
+*/
 function resetToNewBurst() {
     doAjaxCall({
         type: "POST",
@@ -127,7 +131,6 @@ function loadBurstHistory() {
  * Periodically look for updates in burst history status and update their classes accordingly.
  */
 function updateBurstHistoryStatus() {
-
     var burst_ids = [];
     $("#burst-history").find("li").each(function () {
         if (this.className.indexOf('burst-started') >= 0) {
@@ -187,7 +190,6 @@ function _updateBurstHistoryElapsedTime(result){
  * If "withFullUpdate" is true, then a full history section replacement happens before the periodical update.
  */
 function scheduleNewUpdate(withFullUpdate, refreshCurrent) {
-
     if ($('#burst-history').length !== 0) {
         if (withFullUpdate) {
             loadBurstHistory();
@@ -204,7 +206,6 @@ function scheduleNewUpdate(withFullUpdate, refreshCurrent) {
  * Cancel or Remove the burst entity given by burst_id. Also update the history column accordingly.
  */
 function cancelOrRemoveBurst(burst_id) {
-
     doAjaxCall({
         type: "POST",
         url: '/burst/cancel_or_remove_burst/' + burst_id,
@@ -238,7 +239,6 @@ function cancelOrRemoveBurst(burst_id) {
  * entity.
  */
 function renameBurstEntry(burst_id, new_name_id) {
-
     var newValue = document.getElementById(new_name_id).value;
     doAjaxCall({
         type: "POST",
@@ -247,14 +247,14 @@ function renameBurstEntry(burst_id, new_name_id) {
         success: function(r) {
             var result = $.parseJSON(r);
             if ('success' in result) {
-                displayMessage(result['success']);
+                displayMessage(result.success);
                 $("#burst_id_" + burst_id + " a").html(newValue);
                 if (sessionStoredBurst.id == burst_id + "") {
                     sessionStoredBurst.name = newValue;
                     fill_burst_name(newValue, true, false);
                 }
             } else {
-                displayMessage(result['error'], "errorMessage");
+                displayMessage(result.error, "errorMessage");
             }
         } ,
         error: function() {
@@ -267,9 +267,10 @@ function renameBurstEntry(burst_id, new_name_id) {
  * Load a given burst entry from history. 
  */
 function changeBurstHistory(burst_id) {
-
     var clickedBurst = document.getElementById("burst_id_" + burst_id);
-    if ((clickedBurst.className.indexOf(ACTIVE_BURST_CLASS) >= 0) && (clickedBurst.className.indexOf(GROUP_BURST_CLASS) < 0)) {
+    // todo : do not store app state in css classes
+    if (clickedBurst.className.indexOf(ACTIVE_BURST_CLASS) >= 0 &&
+        clickedBurst.className.indexOf(GROUP_BURST_CLASS) < 0) {
         displayMessage("Simulation already loaded...", "warningMessage");
         return;
     }
@@ -285,29 +286,13 @@ function changeBurstHistory(burst_id) {
  * 			MIDDLE COLUMN (SIMULATION PARAMETERS)
  *************************************************************************************************************************/
 
-
 function _toggleLaunchButtons(beActiveLaunch, beActiveRest) {
-    var launchButton = $("#button-launch-new-burst");
-    //var continueButton = $("#button-continue-burst");
-    var branchButton = $("#button-branch-burst");
-
-    if (beActiveLaunch) {
-        launchButton.show();
-    } else {
-        launchButton.hide();
-    }
-
-    if (beActiveRest) {
-        //continueButton.show();
-        branchButton.show();
-    } else {
-        //continueButton.hide();
-        branchButton.hide();
-    }
+    $("#button-launch-new-burst").toggle(beActiveLaunch);
+    $("#button-branch-burst").toggle(beActiveRest);
 }
 
 function _fillSimulatorParametersArea(htmlContent, isConfigure) {
-
+    // todo jq toggle
     var simParamElem = $("#div-simulator-parameters");
     simParamElem.empty();
     simParamElem.append(htmlContent);
@@ -332,7 +317,8 @@ function _fillSimulatorParametersArea(htmlContent, isConfigure) {
         $("#button-uncheck-all-params").hide();
         $("#button-check-all-params").hide();
     }
-    _toggleLaunchButtons(!isConfigure && sessionStoredBurst.id=='', !isConfigure && sessionStoredBurst.id!='' && sessionStoredBurst.isFinished && !sessionStoredBurst.isRange);
+    _toggleLaunchButtons(!isConfigure && sessionStoredBurst.id=='',
+            !isConfigure && sessionStoredBurst.id!='' && sessionStoredBurst.isFinished && !sessionStoredBurst.isRange);
 
     MathJax.Hub.Queue(["Typeset", MathJax.Hub, "div-simulator-parameters"]);
     // Bind the menu events for the online help pop-ups. Needed for the new dom created
@@ -1018,67 +1004,68 @@ function loadBurst(burst_id) {
     // This is updated immediately after this function exits so we need to make
     // sure AJAX response is loaded by then
 
+    //todo: button not showing might be a race here
     doAjaxCall({
         type: "POST",
         url: '/burst/load_burst/' + burst_id,
         showBlockerOverlay : true,
         success: function(r) {
-                var result = $.parseJSON(r);
-                selectedTab = result['selected_tab'];
-                var groupGID = result['group_gid'];
-                var selectedBurst = $("#burst_id_" + burst_id)[0];
-                // This is for the back-button issue with Chrome. Should be removed after permanent solution.
-                if (selectedBurst != null) {
-                    selectedBurst.className = selectedBurst.className + ' ' + ACTIVE_BURST_CLASS;
-                    sessionStoredBurst.isFinished = (result['status']=='finished');
-                    sessionStoredBurst.isRange = (groupGID != null && groupGID != "None");
-                    fill_burst_name(selectedBurst.children[0].text, true, false);
-                    updatePortletsToolbar(3);
-                }
-                // Now load simulator interface and the corresponding right side div depending
-                // on the condition if the burst was a group launch or not.
-                loadSimulatorInterface();
-                if (groupGID != null && groupGID != "None") {
-                    loadGroup(groupGID);
-                } else if (selectedTab == -1) {
-                    switch_top_level_visibility();
-                    $("#section-portlets").show();
-                    $("#tab-burst-tree").click();
-                } else {
-                    switch_top_level_visibility();
-                    var sectionPortletsElem = $("#section-portlets");
-                    sectionPortletsElem.show();
-                    var portletsDisplay = $("#portlets-display")[0];
-                    var fullWidth = Math.floor(portletsDisplay.clientWidth);
-                    var fullHeight = Math.floor(sectionPortletsElem[0].clientHeight - 95);
-                    doAjaxCall({
-                        type: "POST",
-                        url: '/burst/load_configured_visualizers/' + fullWidth + '/' + fullHeight,
-                        showBlockerOverlay : true,
-                        success: function(portlets) {
-                            doAjaxCall({
-                                    type: "POST",
-                                    async: false,
-                                    url: '/burst/get_selected_portlets',
-                                    showBlockerOverlay : true,
-                                    success: function(rr) {
-                                        selectedPortlets = $.parseJSON(rr);
-                                    } ,
-                                    error: function() {
-                                        displayMessage("Viewers not loaded completely...", "errorMessage");
-                                    }
-                                });
-                            $("#portlets-display").replaceWith(portlets);
-                            _setPortletRefreshTimeouts();
-                            MathJax.Hub.Queue(["Typeset", MathJax.Hub, "portlets-display"]);
-                            displayMessage("Simulation successfully loaded!");
-                        } ,
-                        error: function() {
-                            displayMessage("Viewers not loaded properly...", "errorMessage");
-                        }
-                    });
-                }
-            },
+            var result = $.parseJSON(r);
+            selectedTab = result['selected_tab'];
+            var groupGID = result['group_gid'];
+            var selectedBurst = $("#burst_id_" + burst_id)[0];
+            // This is for the back-button issue with Chrome. Should be removed after permanent solution.
+            if (selectedBurst != null) {
+                selectedBurst.className = selectedBurst.className + ' ' + ACTIVE_BURST_CLASS;
+                sessionStoredBurst.isFinished = (result['status']=='finished');
+                sessionStoredBurst.isRange = (groupGID != null && groupGID != "None");
+                fill_burst_name(selectedBurst.children[0].text, true, false);
+                updatePortletsToolbar(3);
+            }
+            // Now load simulator interface and the corresponding right side div depending
+            // on the condition if the burst was a group launch or not.
+            loadSimulatorInterface();//mark
+            if (groupGID != null && groupGID != "None") {
+                loadGroup(groupGID);
+            } else if (selectedTab == -1) {
+                switch_top_level_visibility();
+                $("#section-portlets").show();
+                $("#tab-burst-tree").click();
+            } else {
+                switch_top_level_visibility();
+                var sectionPortletsElem = $("#section-portlets");
+                sectionPortletsElem.show();
+                var portletsDisplay = $("#portlets-display")[0];
+                var fullWidth = Math.floor(portletsDisplay.clientWidth);
+                var fullHeight = Math.floor(sectionPortletsElem[0].clientHeight - 95);
+                doAjaxCall({
+                    type: "POST",
+                    url: '/burst/load_configured_visualizers/' + fullWidth + '/' + fullHeight,
+                    showBlockerOverlay : true,
+                    success: function(portlets) {
+                        doAjaxCall({
+                            type: "POST",
+                            async: false,
+                            url: '/burst/get_selected_portlets',
+                            showBlockerOverlay : true,
+                            success: function(rr) {
+                                selectedPortlets = $.parseJSON(rr);
+                            } ,
+                            error: function() {
+                                displayMessage("Viewers not loaded completely...", "errorMessage");
+                            }
+                        });
+                        $("#portlets-display").replaceWith(portlets);
+                        _setPortletRefreshTimeouts();
+                        MathJax.Hub.Queue(["Typeset", MathJax.Hub, "portlets-display"]);
+                        displayMessage("Simulation successfully loaded!");
+                    } ,
+                    error: function() {
+                        displayMessage("Viewers not loaded properly...", "errorMessage");
+                    }
+                });
+            }
+        },
         error: function() {
             displayMessage("Simulation was not loaded properly...", "errorMessage");
         }
@@ -1174,22 +1161,21 @@ function launchNewBurst(launchMode) {
     var submitableData = getSubmitableData('div-simulator-parameters', false);
     doAjaxCall({
         type: "POST",
-        async: true,
         url: '/burst/launch_burst/' + launchMode + '/' + newBurstName,
         data: { 'simulator_parameters' : JSON.stringify(submitableData) },
         traditional: true,
         success: function(r) {
-                    loadBurstHistory();
-                    var result = $.parseJSON(r);
-                    if ('id' in result) {
-                        changeBurstHistory(result['id']);
-                    }
-                    if ('error' in result){
-                        displayMessage(result['error'], "errorMessage");
-                    }
+            loadBurstHistory();
+            var result = $.parseJSON(r);
+            if ('id' in result) {
+                changeBurstHistory(result.id);
+            }
+            if ('error' in result){
+                displayMessage(result.error, "errorMessage");
+            }
         } ,
         error: function() {
-                    displayMessage("Error when launching simulation. Please check te logs or contact your administrator.", "errorMessage");
+            displayMessage("Error when launching simulation. Please check te logs or contact your administrator.", "errorMessage");
         }
     });
 }
