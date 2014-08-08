@@ -96,6 +96,7 @@ class BurstController(BurstBaseController):
     @context_selected
     def index(self):
         """Get on burst main page"""
+        # todo : reuse load_burst here for consistency.
         template_specification = dict(mainContent="burst/main_burst", title="Simulation Cockpit",
                                       baseUrl=cfg.BASE_URL, includedResources='project/included_resources')
         portlets_list = self.burst_service.get_available_portlets()
@@ -356,10 +357,19 @@ class BurstController(BurstBaseController):
         of a range launch (OperationGroup) or not.
         """
         try:
+            burst_id = int(burst_id)
             old_burst = common.get_from_session(common.KEY_BURST_CONFIG)
-            burst, group_gid = self.burst_service.load_burst(burst_id)
-            burst.selected_tab = old_burst.selected_tab
-            common.add2session(common.KEY_BURST_CONFIG, burst)
+            db_burst, group_gid = self.burst_service.load_burst(burst_id)
+
+            if old_burst.id != burst_id :
+                # this function was called to load a different burst
+                burst = db_burst
+                burst.selected_tab = old_burst.selected_tab
+                common.add2session(common.KEY_BURST_CONFIG, burst)
+            else:
+                # this function was called to reload the current burst page. The model parameter or noise page did it.
+                burst = old_burst
+
             return {'status': burst.status, 'group_gid': group_gid, 'selected_tab': burst.selected_tab}
         except Exception:
             ### Most probably Burst was removed. Delete it from session, so that client 
