@@ -29,24 +29,20 @@
 #
 
 """
-Change of DB structure from TVB version 1.2 to 1.2.1
+Change of DB structure from TVB version 1.2.2 to 1.2.3
 
-.. moduleauthor:: Lia Domide <lia.domide@codemart.ro>
+.. moduleauthor:: Mihai Andrei <mihai.andrei@codemart.ro>
+
 """
 
-from sqlalchemy import Column, Integer, String
-from sqlalchemy.sql import text
+from sqlalchemy import Column, String
 from migrate.changeset.schema import create_column, drop_column
 from tvb.core.entities import model
-from tvb.core.entities.storage import SA_SESSIONMAKER
 
 
 meta = model.Base.metadata
 
-COL_OLD = Column('_unidirectional', Integer)
-COL_NEW = Column('_undirected', Integer)
-COL_NOSE_CORRECTION = Column('_nose_correction', String)
-
+COL_NEW = Column('_dynamic_ids', String, default="[]")
 
 def upgrade(migrate_engine):
     """
@@ -54,31 +50,14 @@ def upgrade(migrate_engine):
     Don't create your own engine; bind migrate_engine to your metadata.
     """
     meta.bind = migrate_engine
-    table1 = meta.tables['MAPPED_CONNECTIVITY_DATA']
+    table1 = meta.tables['BURST_CONFIGURATIONS']
 
     create_column(COL_NEW, table1)
-
-    session = SA_SESSIONMAKER()
-    session.execute(text("UPDATE \"MAPPED_CONNECTIVITY_DATA\" set _undirected=_unidirectional"))
-    session.commit()
-    session.close()
-
-    drop_column(COL_OLD, table1)
-    drop_column(COL_NOSE_CORRECTION, table1)
-
 
 
 def downgrade(migrate_engine):
     """Operations to reverse the above upgrade go here."""
     meta.bind = migrate_engine
-    table1 = meta.tables['MAPPED_CONNECTIVITY_DATA']
 
-    create_column(COL_OLD, table1)
-
-    session = SA_SESSIONMAKER()
-    session.execute(text("UPDATE \"MAPPED_CONNECTIVITY_DATA\" set _unidirectional=_undirected"))
-    session.commit()
-    session.close()
-
+    table1 = meta.tables['BURST_CONFIGURATIONS']
     drop_column(COL_NEW, table1)
-    create_column(COL_NOSE_CORRECTION, table1)
