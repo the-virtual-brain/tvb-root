@@ -238,3 +238,20 @@ path {
 .longTitle dd{
 	width: 60%;
 }
+.brush{
+	background-color: white;
+}
+.brush .extent {
+    stroke: #fff;
+    fill-opacity: .125;
+    shape-rendering: crispEdges;
+}
+.line {
+  clip-path: url(#clip);
+}
+.brusher .tick line{
+	display: none;
+}
+svg{
+	display: inherit;
+}

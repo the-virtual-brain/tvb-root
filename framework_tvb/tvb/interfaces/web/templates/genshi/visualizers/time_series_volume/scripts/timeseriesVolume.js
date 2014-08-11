@@ -1075,6 +1075,12 @@ function updateMoviePlayerSlider(){
     d3.select(".timeVerticalLine").attr("transform", function(){
                 var width = $(".graph-timeSeries-rect").attr("width");
                 var pos = (tsVol.currentTimePoint*width)/(tsVol.timeLength);
+                var bMin = Math.max(0,tsVol.currentTimePoint-30);
+                var bMax = Math.min(tsVol.currentTimePoint+30,tsVol.timeLength);
+                d3.select('.brush').transition()
+                  .delay(0)
+                  .call(tsFrag.brush.extent([bMin, bMax]))
+                  .call(tsFrag.brush.event);
                 return "translate(" + pos + ", 0)";
             });
 }
@@ -1142,6 +1148,12 @@ function moviePlayerMove(event, ui){
         d3.select(".timeVerticalLine").attr("transform", function(){
                 var width = $(".graph-timeSeries-rect").attr("width");
                 var pos = (ui.value*width)/(tsVol.timeLength);
+                var bMin = Math.max(0,ui.value-30);
+                var bMax = Math.min(ui.value+30,tsVol.timeLength);
+                d3.select('.brush').transition()
+                    .delay(0)
+                    .call(tsFrag.brush.extent([bMin, bMax]))
+                    .call(tsFrag.brush.event);
                 return "translate(" + pos + ", 0)";
             });
 }
