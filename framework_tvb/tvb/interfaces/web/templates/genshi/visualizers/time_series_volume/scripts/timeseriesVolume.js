@@ -1140,6 +1140,8 @@ function tryGraph(){
     var tmp = new tsDataObj({});
     if(!contains(tsVol.tsDataArray, tmp)){
         tsVol.tsDataArray.push(tmp);
+        var pvt = {x: tsVol.selectedEntity[0], y:  tsVol.selectedEntity[1],z:  tsVol.selectedEntity[2]};
+        sortTsGraphs($("#sortingSelector").val(), pvt);
     }
 
     // X scale will fit all values from data[] within pixels 0-w
@@ -1380,6 +1382,31 @@ function tryGraph(){
                 else break; //position found
             }
         });
+
+        /*
+        * Moves element in arr[old_index] to arr[new_index]
+        * @param arr The array to be modified
+        * @param old_index The index of the element to be moved
+        * @param new_index The index where to move the element
+        * @returns Nothig, it modifies arr directly
+        */
+        function move(arr, old_index, new_index) {
+            while (old_index < 0) {
+                old_index += arr.length;
+            }
+            while (new_index < 0) {
+                new_index += arr.length;
+            }
+            if (new_index >= arr.length) {
+                var k = new_index - arr.length;
+                while ((k--) + 1) {
+                    arr.push(undefined);
+                }
+            }
+            arr.splice(new_index, 0, arr.splice(old_index, 1)[0]);
+        };
+
+
         /*
             This is what allow us to manually sort the svg blocks.
             The draging is smot because of the <li> tags on HTML, do not remove.
@@ -1387,7 +1414,40 @@ function tryGraph(){
             structure. (easy)
         */
         $(function() {
-            $( "#mini-container" ).sortable();
+            //$( "#mini-container" ).sortable({ 
+            var originalPosition, destination;
+            $( ".sortable" ).sortable({ 
+                cursor: "move",
+                connectWith: '#sortable-delete',
+                axis: "y",
+                start: function(event,ui){
+                    originalPosition = ui.item.index();
+                    console.log("came from", ui.item.index());
+                },
+                update: function(event, ui) {
+                    if(this.id == 'sortable-delete'){
+                        // Remove the element dropped on #sortable-delete
+                        if(tsVol.tsDataArray.length > 1){
+                            var deleteLabel = ui.item[0].__data__.label;
+                            tsVol.tsDataArray = tsVol.tsDataArray.filter(function(obj){
+                                return obj.label != deleteLabel;
+                            })
+                            ui.item.remove();
+                            console.log(deleteLabel, "erased");
+                        }
+                        tryGraph();
+                    }else{
+                        // move element in the main array too.
+                        destination = ui.item.index();
+                        move(tsVol.tsDataArray, originalPosition, destination);
+                        // redraw the graph and set the moved element as selected.
+                        tryGraph();
+                        selectLineData("", destination);
+                        // Change the sorting selector value to manual
+                        $("#sortingSelector").val('manual');
+                    }          
+                }            
+            });
             $( "#mini-container" ).disableSelection();
           });
 }
@@ -1427,14 +1487,14 @@ function sortTsGraphs(filter, pivot){
     else {
         return
     }
-    // redraw the graph
-    tryGraph();
 }
 
+// Attach sorting listener to sorting selector
 $(function(){
     $("#sortingSelector").change(function(e){
-        console.log(e.currentTarget.value)
         sortTsGraphs(e.currentTarget.value, {x: tsVol.selectedEntity[0], y:  tsVol.selectedEntity[1],z:  tsVol.selectedEntity[2]});
+        // redraw the graph
+        tryGraph();
     });
 })
 
