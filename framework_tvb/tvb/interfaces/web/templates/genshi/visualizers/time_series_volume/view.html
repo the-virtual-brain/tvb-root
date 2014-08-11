@@ -28,15 +28,24 @@
         </div>
     </section>
     <section class="view-column">
+        <div id="ts-trash-can" class="trash-hidden">
+            <h1>Drop the time series here to remove it</h1>
+        </div>
         <ul class="toolbar-inline sortable" id="sortable-delete">
-            <!--<div id="ts-trash-can"></div>-->
-            <fieldset>
-                <select id="sortingSelector" name="sortingSelector">
-                    <option value="ascending">Ascending Sort</option>
-                    <option value="descending">Descending Sort</option>
-                    <option value="manhattan">Manhattan Distance Sort</option>
-                    <option value="manual" selected="selected">Manual Sorting</option>
-                </select>
+            <fieldset class="pin">
+                <dl>
+                    <dt>
+                        <label for="sortingSelector">Time Series Sorting:</label>
+                    </dt>
+                    <dd>
+                        <select id="sortingSelector" name="sortingSelector">
+                            <option value="ascending">Ascending</option>
+                            <option value="descending" selected="selected">Descending</option>
+                            <option value="manhattan">Manhattan Distance</option>
+                            <option value="manual">Manual</option>
+                        </select>
+                    </dd>
+                </dl>
             </fieldset>
         </ul>
         <div id="ts-graph-parent">

@@ -1149,9 +1149,6 @@ function drawGraphs(){
     if(tsVol.tsDataArray.length < 1){
         return;
     }
-    if($("#mini-container").children().length < 2){
-        $("#mini-container").sortable( "disable" );
-    }
 
     // X scale will fit all values from data[] within pixels 0-w
     var x = d3.scale.linear().domain([0, tsVol.timeLength]).range([0, w]);
@@ -1177,302 +1174,320 @@ function drawGraphs(){
             return y(d); 
         });
 
-        // Add an SVG element with the desired dimensions and margin.
-        var graph = d3.select("#graph").append("svg:svg")
-              .attr("width", w + m[1] + m[3])
-              .attr("height", h + m[0] + m[2])
-              .attr("class", "graph-svg-component")
-            .append("svg:g")
-              .attr("transform", "translate(" + m[3] + "," + m[0] + ")");
+    // Add an SVG element with the desired dimensions and margin.
+    var graph = d3.select("#graph").append("svg:svg")
+          .attr("width", w + m[1] + m[3])
+          .attr("height", h + m[0] + m[2])
+          .attr("class", "graph-svg-component")
+        .append("svg:g")
+          .attr("transform", "translate(" + m[3] + "," + m[0] + ")");
 
-        var rect = graph.append("rect")
-            .attr('w',0)
-            .attr('h',0)
-            .attr('width',w)
-            .attr('height',h)
-            .attr('fill', "#ffffff")
-            .attr("class", "graph-timeSeries-rect")
+    var rect = graph.append("rect")
+        .attr('w',0)
+        .attr('h',0)
+        .attr('width',w)
+        .attr('height',h)
+        .attr('fill', "#ffffff")
+        .attr("class", "graph-timeSeries-rect")
 
-        graph.append("rect")
-            .attr("class", "overlay")
-            .attr("width", w)
-            .attr("height", h)
-            .attr('fill', "#ffffff")
-            .on("mouseover", function() { focus.style("display", null); })
-            .on("mouseout", function() { focus.style("display", "none"); })
-            .on("mousemove", mousemove);
+    graph.append("rect")
+        .attr("class", "overlay")
+        .attr("width", w)
+        .attr("height", h)
+        .attr('fill', "#ffffff")
+        .on("mouseover", function() { focus.style("display", null); })
+        .on("mouseout", function() { focus.style("display", "none"); })
+        .on("mousemove", mousemove);
 
-        // create xAxis
-        var xAxixScale = d3.scale.linear().domain([0, tsVol.timeLength*tsVol.samplePeriod]).range([0, w]);
-        var xAxis = d3.svg.axis().scale(xAxixScale).tickSize(-h).tickSubdivide(true);
-        // Add the x-axis.
-        graph.append("svg:g")
-            .attr("class", "x axis")
-            .attr("transform", "translate(0," + h + ")")
-            .call(xAxis);
+    // create xAxis
+    var xAxixScale = d3.scale.linear().domain([0, tsVol.timeLength*tsVol.samplePeriod]).range([0, w]);
+    var xAxis = d3.svg.axis().scale(xAxixScale).tickSize(-h).tickSubdivide(true);
+    // Add the x-axis.
+    graph.append("svg:g")
+        .attr("class", "x axis")
+        .attr("transform", "translate(0," + h + ")")
+        .call(xAxis);
 
-        var timeUnit = tsVol.samplePeriodUnit=="sec" ? "Seconds" : tsVol.samplePeriodUnit;
-        graph.append("text")
-            .attr("class", "x axis")
-            .attr("text-anchor", "end")
-            .attr("x", w)
-            .attr("y", h -8 )
-            .text("Time in " + timeUnit); 
+    var timeUnit = tsVol.samplePeriodUnit=="sec" ? "Seconds" : tsVol.samplePeriodUnit;
+    graph.append("text")
+        .attr("class", "x axis")
+        .attr("text-anchor", "end")
+        .attr("x", w)
+        .attr("y", h -8 )
+        .text("Time in " + timeUnit);
 
-        // create left yAxis
-        var yAxisLeft = d3.svg.axis().scale(y).ticks(4).orient("left");
-        // Add the y-axis to the left
-        graph.append("svg:g")
-              .attr("class", "y axis")
-              .attr("transform", "translate(-25,0)")
-              .call(yAxisLeft);
-        //
-        graph.append("text")
-            .attr("class", "y axis")
-            .attr("text-anchor", "end")
-            .attr("x", "1em")
-            .attr("y", "-1em")
-            .attr("dy", ".75em")
-            //.attr("transform", "rotate(-90)")
-            .text("Measurements");
+    // create left yAxis
+    var yAxisLeft = d3.svg.axis().scale(y).ticks(4).orient("left");
+    // Add the y-axis to the left
+    graph.append("svg:g")
+          .attr("class", "y axis")
+          .attr("transform", "translate(-25,0)")
+          .call(yAxisLeft);
+    //
+    graph.append("text")
+        .attr("class", "y axis")
+        .attr("text-anchor", "end")
+        .attr("x", "1em")
+        .attr("y", "-1em")
+        .attr("dy", ".75em")
+        //.attr("transform", "rotate(-90)")
+        .text("Measurements");
 
-        graph.selectAll('.line')
-            .data(tsVol.tsDataArray)
-            .enter()
-            .append("path")
-                .attr("class", "line")
-                //.attr("clip-path", "url(#clip)")
-                .attr("d", function(d){return line(d.data);})
-                .attr('class', 'line colored-line')
-                .attr("style", function(d){console.log(getGradientColorString(d.mean, tsVol.minimumValue, tsVol.maximumValue));return "stroke:" + getGradientColorString(d.mean, tsVol.minimumValue, tsVol.maximumValue);} )
-                .on("mouseover", selectLineData);
-
-        // Add an SVG element for each symbol, with the desired dimensions and margin.
-        d3.select("#graph").append("ul")
-            .attr("id", "mini-container")
-            .attr("class", "sortable");
-        var svg = d3.select("#mini-container").selectAll("svg")
-            .data(tsVol.tsDataArray)
+    graph.selectAll('.line')
+        .data(tsVol.tsDataArray)
         .enter()
-        .append("li")
-        .append("svg")
-            .attr("width", width + smallMargin.left + smallMargin.right)
-            .attr("height", height + smallMargin.top + smallMargin.bottom)
-            .attr("class", "graph-svg-component")
-            .attr("style", function(d){return "background-color:" + getGradientColorString(d.mean, tsVol.minimumValue, tsVol.maximumValue);} )
-            .attr("display", "block")
-            .on("click", selectLineData)
-        .append("g")
-            .attr("transform", "translate(" + smallMargin.left + "," + smallMargin.top + ")")
-            .attr('height', height)
-
-        svg.append("rect")
-            .attr("class", "graph-timeSeries-rect overlay")
-            .attr("width", width)
-            .attr("height", height)
-            .attr('fill', "#ffffff")
-            .on("mouseover", function() { focus.style("display", null); })
-            .on("mouseout", function() { focus.style("display", "none"); })
-            .on("mousemove", mousemove);
-
-        svg.append("path")
+        .append("path")
             .attr("class", "line")
-            .attr("d", function(d) { y = d3.scale.linear().domain([d.min, d.max]).range([height, 0]); return line(d.data); })
-            .attr('class', 'line colored-line mini')
-            .attr("style", function(d){return "stroke:" + getGradientColorString(d.mean, tsVol.minimumValue, tsVol.maximumValue);} )
+            //.attr("clip-path", "url(#clip)")
+            .attr("d", function(d){return line(d.data);})
+            .attr('class', 'line colored-line')
+            .attr("style", function(d){console.log(getGradientColorString(d.mean, tsVol.minimumValue, tsVol.maximumValue));return "stroke:" + getGradientColorString(d.mean, tsVol.minimumValue, tsVol.maximumValue);} )
+            .on("mouseover", selectLineData);
 
-        svg.append("text")
-            .attr("class", "y label")
-            .attr("text-anchor", "end")
-            .attr("y", 6)
-            .attr("dy", ".75em")
-            .attr("transform", "translate(-5,0)")
-            .text(function(d){return d.label;});
+    // Add an SVG element for each symbol, with the desired dimensions and margin.
+    d3.select("#graph").append("ul")
+        .attr("id", "mini-container")
+        .attr("class", "sortable");
+    var svg = d3.select("#mini-container").selectAll("svg")
+        .data(tsVol.tsDataArray)
+    .enter()
+    .append("li")
+    .append("svg")
+        .attr("width", width + smallMargin.left + smallMargin.right)
+        .attr("height", height + smallMargin.top + smallMargin.bottom)
+        .attr("class", "graph-svg-component")
+        .attr("style", function(d){return "background-color:" + getGradientColorString(d.mean, tsVol.minimumValue, tsVol.maximumValue);} )
+        .attr("display", "block")
+        .on("click", selectLineData)
+    .append("g")
+        .attr("transform", "translate(" + smallMargin.left + "," + smallMargin.top + ")")
+        .attr('height', height)
 
-        var focus = graph.append("g")
-            .attr("class", "focus")
-            .style("display", "none");  
+    svg.append("rect")
+        .attr("class", "graph-timeSeries-rect overlay")
+        .attr("width", width)
+        .attr("height", height)
+        .attr('fill', "#ffffff")
+        .on("mouseover", function() { focus.style("display", null); })
+        .on("mouseout", function() { focus.style("display", "none"); })
+        .on("mousemove", mousemove);
 
-        focus.append("circle")
-            .attr("r", 4.5);
+    svg.append("path")
+        .attr("class", "line")
+        .attr("d", function(d) { y = d3.scale.linear().domain([d.min, d.max]).range([height, 0]); return line(d.data); })
+        .attr('class', 'line colored-line mini')
+        .attr("style", function(d){return "stroke:" + getGradientColorString(d.mean, tsVol.minimumValue, tsVol.maximumValue);} )
 
-        focus.append("text")
-            .attr("x", 9)
-            .attr("dy", ".35em")
-            .attr("style","background-color: aliceblue");  
+    svg.append("text")
+        .attr("class", "y label")
+        .attr("text-anchor", "end")
+        .attr("y", 6)
+        .attr("dy", ".75em")
+        .attr("transform", "translate(-5,0)")
+        .text(function(d){return d.label;});
 
-        function mousemove() {
-            var x0 = x.invert(d3.mouse(this)[0]),
-                i = Math.floor(x0),
-                data = tsVol.tsDataArray[selected].data,
-                d0 = data[i - 1 ],
-                d1 = data[i],
-                d = x0 - d0 > d1 - x0 ? d1 : d0;
+    var focus = graph.append("g")
+        .attr("class", "focus")
+        .style("display", "none");
 
-            var selectedLine = d3.select("path.colored-line:nth-of-type(" + (selected+1) +")");
+    focus.append("circle")
+        .attr("r", 4.5);
 
-            focus.attr("transform", "translate(" + d3.mouse(this)[0] + "," + y(data[i]) + ")");
-            focus.select("text").text(d1);
+    focus.append("text")
+        .attr("x", 9)
+        .attr("dy", ".35em")
+        .attr("style","background-color: aliceblue");
 
-            //Move blue line following the mouse
-            var xPos = d3.mouse(this)[0];
-            // the +-3 lets us click the graph and not the line
-            var pathLength = selectedLine.node().getTotalLength();
+    function mousemove() {
+        var x0 = x.invert(d3.mouse(this)[0]),
+            i = Math.floor(x0),
+            data = tsVol.tsDataArray[selected].data,
+            d0 = data[i - 1 ],
+            d1 = data[i],
+            d = x0 - d0 > d1 - x0 ? d1 : d0;
 
-            xPos = xPos > ( pathLength / 2 ) ? Math.min(xPos+3, pathLength) : Math.max(xPos-3, 0);
-            d3.select(".verticalLine").attr("transform", function(){
-                return "translate(" + xPos + ",0)";
-            });
+        var selectedLine = d3.select("path.colored-line:nth-of-type(" + (selected+1) +")");
 
-            var X = xPos;
-            var beginning = X,
-                end = pathLength,
-                target;
-            while (true) {
-                target = Math.floor((beginning + end) / 2);
-                pos = selectedLine.node().getPointAtLength(target);
-                if ((target === end || target === beginning) && pos.x !== X) {
-                    break;
-                }
-                if (pos.x > X) end = target;
-                else if (pos.x < X) beginning = target;
-                else break; //position found
-            }
-            circle.attr("opacity", 1)
-                .attr("cx", X)
-                .attr("cy", pos.y);
+        focus.attr("transform", "translate(" + d3.mouse(this)[0] + "," + y(data[i]) + ")");
+        focus.select("text").text(d1);
 
-            focus.attr("transform", "translate(" + X + "," + pos.y + ")");
-        }              
+        //Move blue line following the mouse
+        var xPos = d3.mouse(this)[0];
+        // the +-3 lets us click the graph and not the line
+        var pathLength = selectedLine.node().getTotalLength();
 
-        function selectLineData(d, i) {
-            //We need to include "d", since the index will 
-            //always be the second value passed in to the function
-            selected = i;
-            //remove the highlight class
-            d3.selectAll(".highlight")
-                .classed("highlight", false);
-            d3.selectAll(".text-highlight")
-                .classed("text-highlight", false);
-
-            //add the highlight class
-            d3.select("path.colored-line:nth-of-type(" + (i+1) +")")
-                .classed("highlight", true);
-            d3.select("#graph li:nth-of-type(" + (i+1) +") text")
-                .classed("text-highlight", true);
-        }
-
-        var verticalLine = graph.append('line')
-            .attr('x1', 0)
-            .attr('y1', 0)
-            .attr('x2', 0)
-            .attr('y2', h)
-            .attr("stroke", "steelblue")
-            .attr('class', 'verticalLine');
-
-        var timeVerticalLine = graph.append('line')
-            .attr('x1', 0)
-            .attr('y1', 0)
-            .attr('x2', 0)
-            .attr('y2', h)
-            .attr("stroke", "red")
-            .attr('class', 'timeVerticalLine');
-
-        var circle = graph.append("circle")
-            .attr("opacity", 0)
-            .attr('r', 2)
-            //.attr('fill', 'darkred');
-
-        $("#time-position").on("slide change", function(){
-            //Move blue line following the mouse
-            var wdt = $(".graph-timeSeries-rect").attr("width");
-            var xPos = (tsVol.currentTimePoint*wdt)/(tsVol.timeLength);
-
-            var pathLength = mainLine.node().getTotalLength();
-            var X = xPos;
-            var beginning = X,
-                end = pathLength,
-                target;
-            while (true) {
-                target = Math.floor((beginning + end) / 2);
-                pos = mainLine.node().getPointAtLength(target);
-                if ((target === end || target === beginning) && pos.x !== X) {
-                    break;
-                }
-                if (pos.x > X) end = target;
-                else if (pos.x < X) beginning = target;
-                else break; //position found
-            }
+        xPos = xPos > ( pathLength / 2 ) ? Math.min(xPos+3, pathLength) : Math.max(xPos-3, 0);
+        d3.select(".verticalLine").attr("transform", function(){
+            return "translate(" + xPos + ",0)";
         });
 
-        /*
-        * Moves element in arr[old_index] to arr[new_index]
-        * @param arr The array to be modified
-        * @param old_index The index of the element to be moved
-        * @param new_index The index where to move the element
-        * @returns Nothig, it modifies arr directly
-        */
-        function move(arr, old_index, new_index) {
-            while (old_index < 0) {
-                old_index += arr.length;
+        var X = xPos;
+        var beginning = X,
+            end = pathLength,
+            target;
+        while (true) {
+            target = Math.floor((beginning + end) / 2);
+            pos = selectedLine.node().getPointAtLength(target);
+            if ((target === end || target === beginning) && pos.x !== X) {
+                break;
             }
-            while (new_index < 0) {
-                new_index += arr.length;
+            if (pos.x > X) end = target;
+            else if (pos.x < X) beginning = target;
+            else break; //position found
+        }
+        circle.attr("opacity", 1)
+            .attr("cx", X)
+            .attr("cy", pos.y);
+
+        focus.attr("transform", "translate(" + X + "," + pos.y + ")");
+    }
+
+    function selectLineData(d, i) {
+        //We need to include "d", since the index will
+        //always be the second value passed in to the function
+        selected = i;
+        //remove the highlight class
+        d3.selectAll(".highlight")
+            .classed("highlight", false);
+        d3.selectAll(".text-highlight")
+            .classed("text-highlight", false);
+
+        //add the highlight class
+        d3.select("path.colored-line:nth-of-type(" + (i+1) +")")
+            .classed("highlight", true);
+        d3.select("#graph li:nth-of-type(" + (i+1) +") text")
+            .classed("text-highlight", true);
+    }
+
+    var verticalLine = graph.append('line')
+        .attr('x1', 0)
+        .attr('y1', 0)
+        .attr('x2', 0)
+        .attr('y2', h)
+        .attr("stroke", "steelblue")
+        .attr('class', 'verticalLine');
+
+    var timeVerticalLine = graph.append('line')
+        .attr('x1', 0)
+        .attr('y1', 0)
+        .attr('x2', 0)
+        .attr('y2', h)
+        .attr("stroke", "red")
+        .attr('class', 'timeVerticalLine');
+
+    var circle = graph.append("circle")
+        .attr("opacity", 0)
+        .attr('r', 2)
+        //.attr('fill', 'darkred');
+
+    $("#time-position").on("slide change", function(){
+        //Move blue line following the mouse
+        var wdt = $(".graph-timeSeries-rect").attr("width");
+        var xPos = (tsVol.currentTimePoint*wdt)/(tsVol.timeLength);
+
+        var pathLength = mainLine.node().getTotalLength();
+        var X = xPos;
+        var beginning = X,
+            end = pathLength,
+            target;
+        while (true) {
+            target = Math.floor((beginning + end) / 2);
+            pos = mainLine.node().getPointAtLength(target);
+            if ((target === end || target === beginning) && pos.x !== X) {
+                break;
             }
-            if (new_index >= arr.length) {
-                var k = new_index - arr.length;
-                while ((k--) + 1) {
-                    arr.push(undefined);
+            if (pos.x > X) end = target;
+            else if (pos.x < X) beginning = target;
+            else break; //position found
+        }
+    });
+
+    /*
+    * Moves element in arr[old_index] to arr[new_index]
+    * @param arr The array to be modified
+    * @param old_index The index of the element to be moved
+    * @param new_index The index where to move the element
+    * @returns Nothig, it modifies arr directly
+    */
+    function move(arr, old_index, new_index) {
+        while (old_index < 0) {
+            old_index += arr.length;
+        }
+        while (new_index < 0) {
+            new_index += arr.length;
+        }
+        if (new_index >= arr.length) {
+            var k = new_index - arr.length;
+            while ((k--) + 1) {
+                arr.push(undefined);
+            }
+        }
+        arr.splice(new_index, 0, arr.splice(old_index, 1)[0]);
+    };
+
+
+    /*
+        This is what allow us to manually sort the svg blocks.
+        The draging is smot because of the <li> tags on HTML, do not remove.
+        TODO: Make the manual sorting consistent with the array
+        structure. (easy)
+    */
+    $(function() {
+        var originalPosition, destination;
+        $( ".sortable" ).sortable({
+            items: '> li:not(.pin)', // this is used to avoid dragging UI elementstime
+            cursor: "move",
+            connectWith: '#sortable-delete',
+            axis: "y",
+            revert: 250,
+            start: function(event,ui){
+                originalPosition = ui.item.index();
+                d3.selectAll("#ts-trash-can")
+                    .classed("trash-hidden", false);
+                d3.selectAll("#ts-trash-can")
+                    .classed("trash-show", true);
+            },
+            stop: function(event,ui){
+                d3.selectAll("#ts-trash-can")
+                    .classed("trash-show", false);
+                d3.selectAll("#ts-trash-can")
+                    .classed("trash-hidden", true);
+            },
+            update: function(event, ui) {
+                asd = ui;
+                if(this.id == 'sortable-delete'){
+                    // Remove the element dropped on #sortable-delete
+                    if(tsVol.tsDataArray.length > 1){
+                        var deleteLabel = ui.item[0].__data__.label;
+                        tsVol.tsDataArray = tsVol.tsDataArray.filter(function(obj){
+                            return obj.label != deleteLabel;
+                        })
+                        ui.item.remove();
+                        console.log(deleteLabel, "erased");
+                    }
+                    drawGraphs();
+                }else{
+                    // move element in the main array too.
+                    destination = ui.item.index();
+                    move(tsVol.tsDataArray, originalPosition, destination);
+                    // redraw the graph and set the moved element as selected.
+                    drawGraphs();
+                    selectLineData("", destination);
+                    // Change the sorting selector value to manual
+                    $("#sortingSelector").val('manual');
                 }
             }
-            arr.splice(new_index, 0, arr.splice(old_index, 1)[0]);
-        };
+        });
+        $("#mini-container").disableSelection();
+      });
 
-
-        /*
-            This is what allow us to manually sort the svg blocks.
-            The draging is smot because of the <li> tags on HTML, do not remove.
-            TODO: Make the manual sorting consistent with the array
-            structure. (easy)
-        */
-        $(function() {
-            //$( "#mini-container" ).sortable({ 
-            var originalPosition, destination;
-            $( ".sortable" ).sortable({ 
-                cursor: "move",
-                connectWith: '#sortable-delete',
-                axis: "y",
-                revert: 250,
-                start: function(event,ui){
-                    originalPosition = ui.item.index();
-                    console.log("came from", ui.item.index());
-                },
-                update: function(event, ui) {
-                    if(this.id == 'sortable-delete'){
-                        // Remove the element dropped on #sortable-delete
-                        if(tsVol.tsDataArray.length > 1){
-                            var deleteLabel = ui.item[0].__data__.label;
-                            tsVol.tsDataArray = tsVol.tsDataArray.filter(function(obj){
-                                return obj.label != deleteLabel;
-                            })
-                            ui.item.remove();
-                            console.log(deleteLabel, "erased");
-                        }
-                        drawGraphs();
-                    }else{
-                        // move element in the main array too.
-                        destination = ui.item.index();
-                        move(tsVol.tsDataArray, originalPosition, destination);
-                        // redraw the graph and set the moved element as selected.
-                        drawGraphs();
-                        selectLineData("", destination);
-                        // Change the sorting selector value to manual
-                        $("#sortingSelector").val('manual');
-                    }          
-                }            
-            });
-            $("#mini-container").disableSelection();
-          });
+    $("#sortable-delete").width()
+    if($("#mini-container").children().length < 2){
+        $("#mini-container").sortable( "disable" );
+        console.log("dio")
+    }else{
+        console.log("santissimo")
+    }
 }
 
 
@@ -1519,6 +1534,11 @@ $(function(){
         // redraw the graph
         drawGraphs();
     });
+})
+
+$(function(){
+    $("#ts-trash-can").height($("#sortable-delete").height()+17);
+    $("#ts-trash-can").width($("#sortable-delete").width()+17);
 })
 
 

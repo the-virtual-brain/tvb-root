@@ -200,11 +200,25 @@ path {
     max-height: 530px;
 }
 #ts-trash-can{
-	position: relative;
-	width: 100%;
-	height: 100%;
+	position: absolute;
+	text-align: center;
+	vertical-align: middle;
+	color: #c8d4de;
+	text-shadow: rgba(0, 0, 0, 0.9) 1px 1px 0px;
 	top: 0;
 	left: 0;
 	background: #333;
-	opacity: 0.8;
+	opacity: 0.9;
+	z-index: 999;
+}
+.trash-hidden{
+	display: none;
+}
+.trash-show{
+	display: block;
+}
+#sortable-delete{
+    height: 51px;
+    max-height: 51px;
+    overflow: hidden;
 }
