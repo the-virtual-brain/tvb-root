@@ -36,11 +36,27 @@
             fill: none;                 
             stroke: url(#line-gradient);    
             stroke-width: 2px;
-            stroke-opacity: 0.2;          
+            stroke-opacity: 0.15;          
         }
         .colored-line.highlight {
-            stroke-width: 4px;
+            stroke-width: 3px;
             stroke-opacity: 1;
+        }
+        .colored-line.mini {
+            stroke-width: 3px;
+            stroke-opacity: 1;
+        }
+        .text-highlight {
+            fill: red;
+            font-weight: bold;
+        }
+        #graph {
+            overflow: hidden;
+        }
+        #mini-container{
+            overflow-y: scroll;
+            overflow-x: hidden; 
+            max-height: 530px;
         }
     </style>
 
@@ -49,24 +65,28 @@
     <script type="text/javascript" src="/static/js/d3.v2.min.js?$currentVersionJS"></script>
     <script type="text/javascript" src="/static/colorScheme/js/colorSchemeComponent.js?$currentVersionJS"></script>
     <link rel="stylesheet" type="text/css" href="/static/style/subsection_timeseries.css?$currentVersionJS"/>
-
-    <div class="volumetric-ts-ui">
-        <div id="buttons"></div>
-        <div id="sliders" title="space in $voxelUnit">
-            <span id="x-slider"></span>
-            <span id="y-slider"></span>
-            <span id="z-slider"></span>
-            (in $voxelUnit)
+    <div id="volumetric-ts-parent">
+        <div class="volumetric-ts-ui">
+            <div id="buttons"></div>
+            <div id="sliders" title="space in $voxelUnit">
+                <span id="x-slider"></span>
+                <span id="y-slider"></span>
+                <span id="z-slider"></span>
+                (in $voxelUnit)
+            </div>
+        </div>
+        <div id="volumetric-ts-canvas-parent">
+            <canvas id="volumetric-ts-canvas"></canvas>
+        </div>
+        <div class="volumetric-ts-ui">
+            <div id="time-position">
+                <span id="time-slider"></span>
+            </div>
         </div>
     </div>
-    <canvas id="volumetric-ts-canvas"></canvas>
-    <div class="volumetric-ts-ui">
-        <div id="time-position">
-            <span id="time-slider"></span>
-        </div>
+    <div id="ts-graph-parent">
+        <div id="graph" class="aGraph"></div>
     </div>
-    <div id="graph" class="aGraph"></div>
-    <div id="chart1" class="chart"></div>
 
     <script type="text/javascript">
         $().ready(function() {

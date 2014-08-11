@@ -46,11 +46,19 @@ color: #000;
 /* !-------------------------------------------- */
 /* !COMPONENT: Volume Time Series Visualizer GUI */
 /* !-------------------------------------------- */
+#volumetric-ts-parent{
+	position: relative;
+	width: 50%;
+	height: 100%;
+	float: left;
+}
 .volumetric-ts-ui {
 	height: 8%;
 	padding: 1px;
 }
-
+#volumetric-ts-canvas-parent{
+	height: 83%;
+}
 #buttons {
 	height: 50px;
     float: left;
@@ -116,4 +124,11 @@ color: #000;
 	position: relative;
 	left: 101%; 
 	top: -3px;
+}
+
+
+#ts-graph-parent{
+	position: relative;
+	width: 48%;
+	float: left;
 }
