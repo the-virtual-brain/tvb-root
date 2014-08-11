@@ -533,29 +533,26 @@ class FlowController(BaseController):
         :param kwargs: extra parameters to be passed when dataset_name is method.
 
         """
-        try:
-            self.logger.debug("Starting to read HDF5: " + entity_gid + "/" + dataset_name + "/" + str(kwargs))
-            entity = ABCAdapter.load_entity_by_gid(entity_gid)
-            datatype_kwargs = json.loads(datatype_kwargs)
-            if datatype_kwargs:
-                for key, value in datatype_kwargs.iteritems():
-                    kwargs[key] = ABCAdapter.load_entity_by_gid(value)
-            dataset = getattr(entity, dataset_name)
-            if not kwargs:
-                # why the deep copy?
-                result = copy.deepcopy(dataset)
-            else:
-                result = dataset(**kwargs)
+        self.logger.debug("Starting to read HDF5: " + entity_gid + "/" + dataset_name + "/" + str(kwargs))
+        entity = ABCAdapter.load_entity_by_gid(entity_gid)
+        datatype_kwargs = json.loads(datatype_kwargs)
+        if datatype_kwargs:
+            for key, value in datatype_kwargs.iteritems():
+                kwargs[key] = ABCAdapter.load_entity_by_gid(value)
+        dataset = getattr(entity, dataset_name)
+        if not kwargs:
+            # why the deep copy?
+            result = copy.deepcopy(dataset)
+        else:
+            result = dataset(**kwargs)
 
-            if isinstance(result, numpy.ndarray):
-                # for ndarrays honor the flatten kwarg and convert to lists as ndarrs are not json-able
-                if flatten is True or flatten == "True":
-                    result = result.flatten()
-                return result.tolist()
-            else:
-                return result
-        except Exception:
-            self.logger.exception("Could not retrieve complex entity field: %s / %s" % (entity_gid, dataset_name))
+        if isinstance(result, numpy.ndarray):
+            # for ndarrays honor the flatten kwarg and convert to lists as ndarrs are not json-able
+            if flatten is True or flatten == "True":
+                result = result.flatten()
+            return result.tolist()
+        else:
+            return result
 
 
     @expose_page

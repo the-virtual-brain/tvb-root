@@ -86,6 +86,9 @@ function HLPR_readJSONfromFile(fileName, staticFiles) {
         mimeType:"text/plain",
         success:function(r){
             fileData = r;
+        },
+        error: function(){
+            displayMessage("Could not retrieve data from the server!", "warningMessage");
         }
     });
 
