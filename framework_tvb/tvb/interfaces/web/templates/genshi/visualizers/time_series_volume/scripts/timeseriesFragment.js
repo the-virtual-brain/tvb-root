@@ -8,7 +8,8 @@ var tsFrag = {
     height: 0,                          // Sortable time series height
     tsDataArray: [],                    // Array containing all the time series data
     selectedIndex: 0,                   // Selected time series line index
-    relevantFeature: "mean",            // Stores what feature do we care about when sorting the time series.
+    relevantSortingFeature: "mean",     // Stores what feature to consider while sorting the time series.
+    relevantColoringFeature: "mean",    // Stores what feature to consider while coloring the time series.
     timeLength: 0,
     samplePeriod: 0,
     samplePeriodUnit: "",
@@ -261,7 +262,7 @@ function drawGobalTimeseries(){
             //.attr("clip-path", "url(#clip)")
             .attr("d", function(d){return tsFrag.line(d.data);})
             .attr('class', 'line colored-line')
-            .attr("style", function(d){return "stroke:" + getGradientColorString(d.mean, tsFrag.minimumValue, tsFrag.maximumValue);} )
+            .attr("style", function(d){return "stroke:" + getGradientColorString(d[tsFrag.relevantColoringFeature], tsFrag.minimumValue, tsFrag.maximumValue);} )
             .on("mouseover", selectLineData);
     var focus = graph.append("g")
         .attr("class", "focus")
@@ -335,7 +336,7 @@ function drawSortableGraph(){
         .attr("width", tsFrag.width + tsFrag.smallMargin.left + tsFrag.smallMargin.right)
         .attr("height", tsFrag.height + tsFrag.smallMargin.top + tsFrag.smallMargin.bottom)
         .attr("class", "graph-svg-component")
-        .attr("style", function(d){return "background-color:" + getGradientColorString(d.mean, tsFrag.minimumValue, tsFrag.maximumValue);} )
+        .attr("style", function(d){return "background-color:" + getGradientColorString(d[tsFrag.relevantColoringFeature], tsFrag.minimumValue, tsFrag.maximumValue);} )
         .attr("display", "block")
         .on("click", selectLineData)
     .append("g")
@@ -355,7 +356,7 @@ function drawSortableGraph(){
         .attr("class", "line")
         .attr("d", function(d) { tsFrag.y = d3.scale.linear().domain([d.min, d.max]).range([tsFrag.height, 0]); return tsFrag.line(d.data); })
         .attr('class', 'line colored-line mini')
-        .attr("style", function(d){return "stroke:" + getGradientColorString(d.mean, tsFrag.minimumValue, tsFrag.maximumValue);} )
+        .attr("style", function(d){return "stroke:" + getGradientColorString(d[tsFrag.relevantColoringFeature], tsFrag.minimumValue, tsFrag.maximumValue);} )
 
     svg.append("text")
         .attr("class", "y label")
@@ -427,7 +428,7 @@ function drawGraphs(){
         var tmp = new tsDataObj({}, getPerVoxelTimeSeries(tsFrag.selectedEntity[0], tsFrag.selectedEntity[1], tsFrag.selectedEntity[2]));
         tsFrag.tsDataArray.push(tmp);
         var pvt = {x: tsFrag.selectedEntity[0], y:  tsFrag.selectedEntity[1],z:  tsFrag.selectedEntity[2]};
-        sortTsGraphs($("#sortingSelector").val(), tsFrag.relevantFeature, pvt);
+        sortTsGraphs($("#sortingSelector").val(), tsFrag.relevantSortingFeature, pvt);
     }
     if(tsFrag.tsDataArray.length < 1){
         return;
@@ -504,31 +505,34 @@ function sortTsGraphs(order, by, pivot){
     }
 }
 
-// Attach sorting listener to Sorting Selector
 $(function(){
+    // Attach sorting listener to Sorting Selector
     $("#sortingSelector").change(function(e){
         var pvt = {x: tsFrag.selectedEntity[0], y: tsFrag.selectedEntity[1], z: tsFrag.selectedEntity[2]};
-        sortTsGraphs(e.currentTarget.value, tsFrag.relevantFeature, pvt);
+        sortTsGraphs(e.currentTarget.value, tsFrag.relevantSortingFeature, pvt);
         // redraw the graph
         drawGraphs();
     });
-});
 
-// Attach sorting listener to Relevant Feature Selector
-$(function(){
+    // Attach sorting listener to Relevant Feature Selector
     $("#relevantFeatureSelector").change(function(e){
-        tsFrag.relevantFeature = e.currentTarget.value;
+        tsFrag.relevantSortingFeature = e.currentTarget.value;
         var pvt = {x: tsFrag.selectedEntity[0], y: tsFrag.selectedEntity[1], z: tsFrag.selectedEntity[2]};
-        sortTsGraphs($("#sortingSelector").val(), tsFrag.relevantFeature, pvt);
+        sortTsGraphs($("#sortingSelector").val(), tsFrag.relevantSortingFeature, pvt);
         // redraw the graph
         drawGraphs();
     });
-});
 
-$(function(){
+    // Attach sorting listener to Relevant Color Selector
+    $("#colorBySelector").change(function(e){
+        tsFrag.relevantColoringFeature = e.currentTarget.value;
+        // redraw the graph
+        drawGraphs();
+    });
+
     $("#ts-trash-can").height($("#sortable-delete").height()+17);
     $("#ts-trash-can").width($("#sortable-delete").width()+17);
-})
+});
 
 
 

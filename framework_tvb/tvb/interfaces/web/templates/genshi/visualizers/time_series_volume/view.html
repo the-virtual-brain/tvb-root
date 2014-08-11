@@ -9,13 +9,13 @@
         <div id="volumetric-ts-parent">
             <ul class="toolbar-inline">
                 <div class="volumetric-ts-ui">
-                    <div id="buttons"></div>
                     <div id="sliders" title="space in $voxelUnit">
                         <span id="x-slider"></span>
                         <span id="y-slider"></span>
                         <span id="z-slider"></span>
+                        (in $voxelUnit)
                     </div>
-                    (in $voxelUnit)
+                    <div id="buttons"></div>
                 </div>
             </ul>
             <div id="volumetric-ts-canvas-parent">
@@ -34,9 +34,9 @@
         </div>
         <ul class="toolbar-inline sortable" id="sortable-delete">
             <fieldset class="pin">
-                <dl>
+                <dl class="ui-half-left">
                     <dt>
-                        <label for="sortingSelector">Time Series Sorting Order:</label>
+                        <label for="sortingSelector">Sorting Order:</label>
                     </dt>
                     <dd>
                         <select id="sortingSelector" name="sortingSelector">
@@ -47,18 +47,31 @@
                         </select>
                     </dd>
                 </dl>
-                <dl>
+                <dl class="ui-half-right longTitle">
                     <dt>
-                        <label for="relevantFeatureSelector">Time Series Relevant Feature:</label>
+                        <label for="relevantFeatureSelector">Relevant Sorting Feature:</label>
                     </dt>
                     <dd>
                         <select id="relevantFeatureSelector" name="relevantFeatureSelector">
                             <option value="mean" selected="selected">Mean</option>
+                            <option value="median">Median</option>
                             <option value="max">Maximun</option>
                             <option value="min">Minimun</option>
-                            <option value="median">Median</option>
                             <option value="variance">Variance</option>
                             <option value="deviation">Standard Deviation</option>
+                        </select>
+                    </dd>
+                </dl>
+                <dl class="ui-half-left">
+                    <dt>
+                        <label for="colorBy">Color Lines by:</label>
+                    </dt>
+                    <dd>
+                        <select id="colorBySelector" name="colorBySelector">
+                            <option value="mean" selected="selected">Mean</option>
+                            <option value="median">Median</option>
+                            <option value="min">Minimun</option>
+                            <option value="max">Maximun</option>
                         </select>
                     </dd>
                 </dl>
