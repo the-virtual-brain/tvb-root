@@ -30,8 +30,8 @@ var tsVol = {
     lookAhead: 100,             // How many sets of buffers should be loaded ahead of us each time?
     data: {},                   // The actual data to be drawn to canvas.
     sliceArray: [],             // A helper variable to draw the data on the canvas.
-    bufferL2: {},               // Cotains all data loaded and preloaded, limited by memory.
-    bufferL3: {},               // Cotains all data from loaded views, limited by memory.
+    bufferL2: {},               // Contains all data loaded and preloaded, limited by memory.
+    bufferL3: {},               // Contains all data from loaded views, limited by memory.
     dataAddress: "",            // Used to contain the python URL for each time point.
     dataView: "",               // Used to store the call for get_volume_view server function.
     dataSize: "",               // Used first to contain the file ID and then it's dimension.
@@ -39,7 +39,7 @@ var tsVol = {
     parserBlob: null,           // Used to store the JSON Parser Blob for web-workers.
     slidersClicked: false,      // Used to handle the status of the sliders.
     batchID: 0,                 // Used to ignore useless incoming ajax responses.
-    dataTimeSeries: "",         // Contains the address to query the time series of a voxel.
+    dataTimeSeries: "",         // Contains the address to query the time series of a specific voxel.
     tsDataArray: [],
     samplePeriod: 0,
     samplePeriodUnit: "",
@@ -138,6 +138,7 @@ function TSV_initVisualizer(dataUrls, minValue, maxValue, volOrigin, sizeOfVoxel
 
     startBuffering();
     window.setInterval(freeBuffer, tsVol.playbackRate*10);
+    TSF_initVisualizer();
     drawGraphs();
 }
 

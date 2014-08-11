@@ -1,4 +1,30 @@
+var tsFrag = {
+    dataTimeSeries: "",                 // Contains the address to query the time series of a specific voxel.
+    m: [],                              // Global preview margin sizes
+    w: 0,                               // Global preview width
+    h: 0,                               // Global preview width
+    smallMargin: {},                    // Sortable time series margins
+    width: 0,                           // Sortable time series width
+    height: 0,                          // Sortable time series height
+    tsDataArray: [],                    // Array containing all the time series data
+    selectedInex: 0,                    // Selected time series line index
+    relevantFeature: "mean",            // Stores what feature do we care about when sorting the time series.
+    timeLength: 0,
+    samplePeriod: 0,
+    samplePeriodUnit: "",
+};
+
+function TSF_initVisualizer(){
+    tsFrag.timeLength = tsVol.timeLength;
+    tsFrag.samplePeriod = tsVol.samplePeriod;
+    tsFrag.samplePeriodUnit = tsVol.samplePeriodUnit;
+    tsFrag.dataTimeSeries = tsVol.dataTimeSeries;
+    tsFrag.minimumValue = tsVol.minimumValue;
+    tsFrag.maximumValue = tsVol.maximumValue;
+}
+
 // ==================================== PER VOXEL TIMESERIES START ===========================================
+
 function getPerVoxelTimeSeries(x,y,z){
     x = "x=" + x;
     y = ";y=" + y;
@@ -29,11 +55,11 @@ function variance(arr, mean) {
     mean = mean || d3.mean(arr);
     var i = -1;
     var s = 0;
-  while (++i < n){
-    var v = arr[i] - mean;
-    s += v * v;
-  }
-  return s / (n - 1);
+    while (++i < n){
+        var v = arr[i] - mean;
+        s += v * v;
+    }
+    return s / (n - 1);
 };
 
 function covariance(tsA, tsB){
@@ -48,6 +74,20 @@ function covariance(tsA, tsB){
     return sum / tsA.length;
 }
 
+var tsDataObj = function(params, data){
+    this.x = params.x || tsVol.selectedEntity[0],
+    this.y =  params.y || tsVol.selectedEntity[1],
+    this.z = params.z || tsVol.selectedEntity[2],
+    this.label = params.label || "["+this.x+","+this.y+","+this.z+"]",
+    this.data = params.data || data,
+    this.max = params.max || d3.max(data),
+    this.min = params.min || d3.min(data),
+    this.mean = params.mean || d3.mean(data),
+    this.median = params.median || d3.median(data),
+    this.variance = params.variance || variance(data, this.mean),
+    this.deviation = params.deviation || Math.sqrt(this.variance)
+}
+
 /* implementation heavily influenced by http://bl.ocks.org/1166403 */
 function drawGraphs(){
     var selected = 0;
@@ -60,40 +100,24 @@ function drawGraphs(){
     var w = $('#graph').width() - m[1] - m[3]; // width
     var h = 240 - m[0] - m[2]; // height
 
-    // create a simple data array that we'll plot with a line (this array represents only the Y values, X will just be the index location)
-    var data = getPerVoxelTimeSeries(tsVol.selectedEntity[0], tsVol.selectedEntity[1], tsVol.selectedEntity[2]);
-    var tsDataObj = function(params, data){
-        this.x = params.x || tsVol.selectedEntity[0],
-        this.y =  params.y || tsVol.selectedEntity[1],
-        this.z = params.z || tsVol.selectedEntity[2],
-        this.label = params.label || "["+this.x+","+this.y+","+this.z+"]",
-        this.data = params.data || data,
-        this.max = params.max || d3.max(data),
-        this.min = params.min || d3.min(data),
-        this.mean = params.mean || d3.mean(data),
-        this.median = params.median || d3.median(data),
-        this.variance = params.variance || variance(data, this.mean),
-        this.deviation = params.deviation || Math.sqrt(this.variance)
-    }
-
     var label = "["+tsVol.selectedEntity[0]+","+tsVol.selectedEntity[1]+","+tsVol.selectedEntity[2]+"]";
-    if(!containsByLabel(tsVol.tsDataArray, label)){
+    if(!containsByLabel(tsFrag.tsDataArray, label)){
         var tmp = new tsDataObj({}, getPerVoxelTimeSeries(tsVol.selectedEntity[0], tsVol.selectedEntity[1], tsVol.selectedEntity[2]));
-        tsVol.tsDataArray.push(tmp);
+        tsFrag.tsDataArray.push(tmp);
         var pvt = {x: tsVol.selectedEntity[0], y:  tsVol.selectedEntity[1],z:  tsVol.selectedEntity[2]};
-        sortTsGraphs($("#sortingSelector").val(), tsVol.relevantFeature, pvt);
+        sortTsGraphs($("#sortingSelector").val(), tsFrag.relevantFeature, pvt);
     }
-    if(tsVol.tsDataArray.length < 1){
+    if(tsFrag.tsDataArray.length < 1){
         return;
     }
 
     // X scale will fit all values from data[] within pixels 0-w
-    var x = d3.scale.linear().domain([0, tsVol.timeLength]).range([0, w]);
+    var x = d3.scale.linear().domain([0, tsFrag.timeLength]).range([0, w]);
 
-    var localMax = d3.max(tsVol.tsDataArray, function(array) {
+    var localMax = d3.max(tsFrag.tsDataArray, function(array) {
       return array.max;
     });
-    var localMin = d3.min(tsVol.tsDataArray, function(array) {
+    var localMin = d3.min(tsFrag.tsDataArray, function(array) {
       return array.min;
     });
     var y = d3.scale.linear().domain([localMin, localMax]).range([h, 0]);
@@ -137,7 +161,7 @@ function drawGraphs(){
         .on("mousemove", mousemove);
 
     // create xAxis
-    var xAxixScale = d3.scale.linear().domain([0, tsVol.timeLength*tsVol.samplePeriod]).range([0, w]);
+    var xAxixScale = d3.scale.linear().domain([0, tsFrag.timeLength*tsFrag.samplePeriod]).range([0, w]);
     var xAxis = d3.svg.axis().scale(xAxixScale).tickSize(-h).tickSubdivide(true);
     // Add the x-axis.
     graph.append("svg:g")
@@ -145,7 +169,7 @@ function drawGraphs(){
         .attr("transform", "translate(0," + h + ")")
         .call(xAxis);
 
-    var timeUnit = tsVol.samplePeriodUnit=="sec" ? "Seconds" : tsVol.samplePeriodUnit;
+    var timeUnit = tsFrag.samplePeriodUnit=="sec" ? "Seconds" : tsFrag.samplePeriodUnit;
     graph.append("text")
         .attr("class", "x axis")
         .attr("text-anchor", "end")
@@ -171,14 +195,14 @@ function drawGraphs(){
         .text("Measurements");
 
     graph.selectAll('.line')
-        .data(tsVol.tsDataArray)
+        .data(tsFrag.tsDataArray)
         .enter()
         .append("path")
             .attr("class", "line")
             //.attr("clip-path", "url(#clip)")
             .attr("d", function(d){return line(d.data);})
             .attr('class', 'line colored-line')
-            .attr("style", function(d){return "stroke:" + getGradientColorString(d.mean, tsVol.minimumValue, tsVol.maximumValue);} )
+            .attr("style", function(d){return "stroke:" + getGradientColorString(d.mean, tsFrag.minimumValue, tsFrag.maximumValue);} )
             .on("mouseover", selectLineData);
 
     // Add an SVG element for each symbol, with the desired dimensions and margin.
@@ -186,14 +210,14 @@ function drawGraphs(){
         .attr("id", "mini-container")
         .attr("class", "sortable");
     var svg = d3.select("#mini-container").selectAll("svg")
-        .data(tsVol.tsDataArray)
+        .data(tsFrag.tsDataArray)
     .enter()
     .append("li")
     .append("svg")
         .attr("width", width + smallMargin.left + smallMargin.right)
         .attr("height", height + smallMargin.top + smallMargin.bottom)
         .attr("class", "graph-svg-component")
-        .attr("style", function(d){return "background-color:" + getGradientColorString(d.mean, tsVol.minimumValue, tsVol.maximumValue);} )
+        .attr("style", function(d){return "background-color:" + getGradientColorString(d.mean, tsFrag.minimumValue, tsFrag.maximumValue);} )
         .attr("display", "block")
         .on("click", selectLineData)
     .append("g")
@@ -213,7 +237,7 @@ function drawGraphs(){
         .attr("class", "line")
         .attr("d", function(d) { y = d3.scale.linear().domain([d.min, d.max]).range([height, 0]); return line(d.data); })
         .attr('class', 'line colored-line mini')
-        .attr("style", function(d){return "stroke:" + getGradientColorString(d.mean, tsVol.minimumValue, tsVol.maximumValue);} )
+        .attr("style", function(d){return "stroke:" + getGradientColorString(d.mean, tsFrag.minimumValue, tsFrag.maximumValue);} )
 
     svg.append("text")
         .attr("class", "y label")
@@ -238,7 +262,7 @@ function drawGraphs(){
     function mousemove() {
         var x0 = x.invert(d3.mouse(this)[0]),
             i = Math.floor(x0),
-            data = tsVol.tsDataArray[selected].data,
+            data = tsFrag.tsDataArray[selected].data,
             d0 = data[i - 1 ],
             d1 = data[i],
             d = x0 - d0 > d1 - x0 ? d1 : d0;
@@ -318,18 +342,22 @@ function drawGraphs(){
         //.attr('fill', 'darkred');
 
     $("#time-position").on("slide change", function(){
-        //Move blue line following the mouse
+        //Move red line following the mouse
         var wdt = $(".graph-timeSeries-rect").attr("width");
-        var xPos = (tsVol.currentTimePoint*wdt)/(tsVol.timeLength);
+        var xPos = (tsVol.currentTimePoint*wdt)/(tsFrag.timeLength);
 
-        var pathLength = mainLine.node().getTotalLength();
+        var selectedLine = d3.select("path.highlight");
+        if(selectedLine[0][0] == null){
+            selectedLine = d3.select("path.colored-line:nth-of-type(1)")
+        }
+        var pathLength = selectedLine.node().getTotalLength();
         var X = xPos;
         var beginning = X,
             end = pathLength,
             target;
         while (true) {
             target = Math.floor((beginning + end) / 2);
-            pos = mainLine.node().getPointAtLength(target);
+            pos = selectedLine.node().getPointAtLength(target);
             if ((target === end || target === beginning) && pos.x !== X) {
                 break;
             }
@@ -394,9 +422,9 @@ function drawGraphs(){
                 asd = ui;
                 if(this.id == 'sortable-delete'){
                     // Remove the element dropped on #sortable-delete
-                    if(tsVol.tsDataArray.length > 1){
+                    if(tsFrag.tsDataArray.length > 1){
                         var deleteLabel = ui.item[0].__data__.label;
-                        tsVol.tsDataArray = tsVol.tsDataArray.filter(function(obj){
+                        tsFrag.tsDataArray = tsFrag.tsDataArray.filter(function(obj){
                             return obj.label != deleteLabel;
                         })
                         ui.item.remove();
@@ -405,7 +433,7 @@ function drawGraphs(){
                 }else{
                     // move element in the main array too.
                     destination = ui.item.index();
-                    move(tsVol.tsDataArray, originalPosition, destination);
+                    move(tsFrag.tsDataArray, originalPosition, destination);
                     // redraw the graph and set the moved element as selected.
                     drawGraphs();
                     selectLineData("", destination);
@@ -437,20 +465,20 @@ function sortTsGraphs(order, by, pivot){
     } 
     // sorting from biggest to smallest
     if(order == "descending"){
-        tsVol.tsDataArray.sort(function(a, b){
+        tsFrag.tsDataArray.sort(function(a, b){
           return a[by] == b[by] ? 0 : +(a[by] < b[by]) || -1;
         });
     }
     // sorting from smallest to biggest
     else if(order == "ascending"){
-        tsVol.tsDataArray.sort(function(a, b){
+        tsFrag.tsDataArray.sort(function(a, b){
           return a[by] == b[by] ? 0 : +(a[by] > b[by]) || -1;
         });
     }
     // sorting based on manhattan distance from the pivot coordinate
     else if(order == "manhattan"){
         pivot = pivot || {x:0,y:0,z:0};
-        tsVol.tsDataArray.sort(function(a, b){
+        tsFrag.tsDataArray.sort(function(a, b){
             a = md3d(a, pivot);
             b = md3d(b, pivot);
           return a == b ? 0 : +(a > b) || -1;
@@ -464,8 +492,8 @@ function sortTsGraphs(order, by, pivot){
 // Attach sorting listener to sorting selectors
 $(function(){
     $("#sortingSelector").change(function(e){
-        var pvt = {x: tsVol.selectedEntity[0], y:  tsVol.selectedEntity[1],z:  tsVol.selectedEntity[2]};
-        sortTsGraphs(e.currentTarget.value, tsVol.relevantFeature, pvt);
+        var pvt = {x: tsVol.selectedEntity[0], y: tsVol.selectedEntity[1], z: tsVol.selectedEntity[2]};
+        sortTsGraphs(e.currentTarget.value, tsFrag.relevantFeature, pvt);
         // redraw the graph
         drawGraphs();
     });
@@ -474,9 +502,9 @@ $(function(){
 // Attach sorting listener to sorting selector
 $(function(){
     $("#relevantFeatureSelector").change(function(e){
-        tsVol.relevantFeature = e.currentTarget.value;
-        var pvt = {x: tsVol.selectedEntity[0], y:  tsVol.selectedEntity[1],z:  tsVol.selectedEntity[2]};
-        sortTsGraphs($("#sortingSelector").val(), tsVol.relevantFeature, pvt);
+        tsFrag.relevantFeature = e.currentTarget.value;
+        var pvt = {x: tsVol.selectedEntity[0], y: tsVol.selectedEntity[1], z: tsVol.selectedEntity[2]};
+        sortTsGraphs($("#sortingSelector").val(), tsFrag.relevantFeature, pvt);
         // redraw the graph
         drawGraphs();
     });
