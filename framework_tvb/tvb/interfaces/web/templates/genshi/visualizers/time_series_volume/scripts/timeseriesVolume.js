@@ -320,6 +320,7 @@ function drawSceneFunctional(tIndex){
         drawSceneFunctionalFromCube(tIndex)
     }
     drawLegend();
+    drawLabels();
 }
 /**
  * Necessary for the color picking function
@@ -530,16 +531,16 @@ function drawLegend(){
     // set the context on the legend quadrant
     tsVol.ctx.setTransform(1, 0, 0, 1, 0, 0);  // reset the transformation
     tsVol.ctx.translate( tsVol.quadrantWidth + tmp, tsVol.focusQuadrantHeight);
-    tsVol.ctx.font = 'italic 18px Arial';
+    tsVol.ctx.font = '16px Helvetica';
     tsVol.ctx.textAlign = 'center';
     tsVol.ctx. textBaseline = 'middle';
     tsVol.ctx.fillStyle = 'white';  // a color name or by using rgb/rgba/hex values
-    tsVol.ctx.fillText(nFormatter(tsVol.minimumValue), 0, tsVol.legendHeight - 10); // text and position
+    tsVol.ctx.fillText(tsVol.minimumValue.toExponential(2), 0, tsVol.legendHeight - 10); // text and position
     tsVol.ctx.fillText("|", 1, tsVol.legendHeight/2);
     var midValue = (tsVol.maximumValue - tsVol.minimumValue)/2;
-    tsVol.ctx.fillText(nFormatter(midValue), tsVol.legendWidth/2, tsVol.legendHeight - 10); // text and position
+    tsVol.ctx.fillText(midValue.toExponential(2), tsVol.legendWidth/2, tsVol.legendHeight - 10); // text and position
     tsVol.ctx.fillText("|", tsVol.legendWidth/2, tsVol.legendHeight/2);
-    tsVol.ctx.fillText(nFormatter(tsVol.maximumValue), tsVol.legendWidth, tsVol.legendHeight - 10); // text and position
+    tsVol.ctx.fillText(tsVol.maximumValue.toExponential(2), tsVol.legendWidth, tsVol.legendHeight - 10); // text and position
     tsVol.ctx.fillText("|", tsVol.legendWidth-1, tsVol.legendHeight/2);
 
     for(var i = 0; i< tsVol.legendWidth; i++){
@@ -553,20 +554,16 @@ function drawLegend(){
     tmp = (tmp*tsVol.legendWidth);
     tsVol.ctx.fillRect(tmp, 1, 3, tsVol.legendHeight/2);
 }
-/**
- * Formats numbers in the 'K', 'M', 'G' notation, e.g. 2300 becomes 2.3K.
- */
-function nFormatter(num){
-     if (num >= 1000000000){
-        return (num / 1000000000).toFixed(1).replace(/\.0$/, '') + 'G';
-     }
-     if (num >= 1000000){
-        return (num / 1000000).toFixed(1).replace(/\.0$/, '') + 'M';
-     }
-     if (num >= 1000){
-        return (num / 1000).toFixed(1).replace(/\.0$/, '') + 'K';
-     }
-     return num;
+
+function drawLabels(){
+    tsVol.ctx.font = '17px Helvetica';
+    tsVol.ctx. textBaseline = 'middle';
+    _setCtxOnQuadrant(0);
+    tsVol.ctx.fillText("Axial", tsVol.quadrantWidth/5, tsVol.quadrantHeight - 13);
+    _setCtxOnQuadrant(1);
+    tsVol.ctx.fillText("Sagittal", tsVol.quadrantWidth/5, tsVol.quadrantHeight - 13);
+    _setCtxOnQuadrant(2);
+    tsVol.ctx.fillText("Coronal", tsVol.quadrantWidth/5, tsVol.quadrantHeight - 13);
 }
 
 /**
@@ -978,22 +975,30 @@ function playNextTimePoint(){
     tsVol.currentTimePoint++;
     tsVol.currentTimePoint = tsVol.currentTimePoint%(tsVol.timeLength);
     drawSceneFunctionalFromView(tsVol.currentTimePoint)
+    drawLegend();
+    drawLabels();
 }
 
 function playPreviousTimePoint(){
     if(tsVol.currentTimePoint === 0)
         tsVol.currentTimePoint = tsVol.timeLength + 1;
     drawSceneFunctionalFromView(--tsVol.currentTimePoint)
+    drawLegend();
+    drawLabels();
 }
 
 function seekFirst(){
     tsVol.currentTimePoint = 0;
     drawSceneFunctionalFromView(tsVol.currentTimePoint);
+    drawLegend();
+    drawLabels();
 }
 
 function seekEnd(){
     tsVol.currentTimePoint = tsVol.timeLength - 1;
     drawSceneFunctionalFromView(tsVol.currentTimePoint - 1);
+    drawLegend();
+    drawLabels();
 }
 
 // Updates the position and values of the x,y,z navigation sliders when we click the canvas.
@@ -1092,6 +1097,7 @@ function moviePlayerMoveEnd(event, ui){
     tsVol.currentTimePoint = ui.value;
     drawSceneFunctionalFromView(tsVol.currentTimePoint);
     drawLegend();
+    drawLabels();
 }
 
 // ==================================== CALLBACK FUNCTIONS END ===============================================
