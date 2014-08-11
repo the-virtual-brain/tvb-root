@@ -8,18 +8,18 @@ var tsVol = {
     voxelSize: null,
     volumeOrigin: null,         // volumeOrigin is not used for now. if needed, use it in _setQuadrant
     selectedEntity: [0, 0, 0],  // the selected voxel; [i, j, k].
-    entitySize: [0, 0, 0],
-    quadrantHeight: null,
-    quadrantWidth: null,
-    focusQuadrantHeight: null,
-    focusQuadrantWidth: null,
-    legendHeight: 0,
-    legendWidth: 0,
-    legendQuadrant: null,
-    selectedQuad: 0,
-    highlightedQuad: {},
+    entitySize: [0, 0, 0],      // the size of each plane
+    quadrantHeight: null,       // the height of the three small left quadrants
+    quadrantWidth: null,        // the width of the three small left quadrants
+    focusQuadrantHeight: null,  // the height of the focus quadrant
+    focusQuadrantWidth: null,   // the width of the focus quadrant
+    legendHeight: 0,            // the height of the legend quadrant
+    legendWidth: 0,             // the width of the legend quadrant
+    legendQuadrant: null,       // the object tat will contain the legend quadrant
+    selectedQuad: 0,            // the quadrant selected by the user every time
+    highlightedQuad: {},        // the plane to be displayed on the focus quadrant
     timeLength: 0,              // number of timepoints in the Volume.
-    currentTimePoint: 0,
+    currentTimePoint: 0,        
     playbackRate: 66,           // This is a not acurate lower limit for playback speed.
     playerIntervalID: null,     // ID from the player's setInterval().
     streamToBufferID: null,     // ID from the buffering system's setInterval().
@@ -715,35 +715,6 @@ function customMouseMove(e){
     }
     e.preventDefault();
     TSV_pick(e);
-}
-
-/**
- * Implements picking and redraws the scene. Updates sliders too.
- */
-function TSV_pick_old(e){
-    tsVol.bufferL3 = {};
-    stopBuffering();
-    if(tsVol.playerIntervalID){
-        stopPlayback();
-        tsVol.resumePlayer = true;
-    }
-    //fix for Firefox
-    var offset = $('#volumetric-ts-canvas').offset();
-    var xpos = e.pageX - offset.left;
-    var ypos = e.pageY - offset.top;
-    tsVol.selectedQuad = tsVol.quadrants[Math.floor(xpos / tsVol.quadrantWidth)];
-    // check if it's inside the quadrant but outside the drawing
-    if (ypos < tsVol.selectedQuad.offsetY || ypos >= tsVol.quadrantHeight - tsVol.selectedQuad.offsetY ||
-        xpos < tsVol.quadrantWidth * tsVol.selectedQuad.index + tsVol.selectedQuad.offsetX ||
-        xpos >= tsVol.quadrantWidth * (tsVol.selectedQuad.index + 1) - tsVol.selectedQuad.offsetX){
-        return;
-    }
-    var selectedEntityOnX = Math.floor((xpos % tsVol.quadrantWidth) / tsVol.selectedQuad.entityWidth);
-    var selectedEntityOnY = Math.floor((ypos - tsVol.selectedQuad.offsetY) / tsVol.selectedQuad.entityHeight);
-    tsVol.selectedEntity[tsVol.selectedQuad.axes.x] = selectedEntityOnX;
-    tsVol.selectedEntity[tsVol.selectedQuad.axes.y] = selectedEntityOnY;
-    updateSliders();
-    drawSceneFunctional(tsVol.currentTimePoint);
 }
 
 /**
