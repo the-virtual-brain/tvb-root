@@ -16,12 +16,12 @@ var tsVol = {
     selectedQuad: 0,
     timeLength: 0,              // number of timepoints in the Volume.
     currentTimePoint: 0,
-    playbackRate: 66,          // This is a not acurate lower limit for playback speed.
+    playbackRate: 66,           // This is a not acurate lower limit for playback speed.
     playerIntervalID: null,     // ID from the player's setInterval().
     streamToBufferID: null,     // ID from the buffering system's setInterval().
     bufferSize: 1,              // How many time points do we load each time?
     bufferL2Size: 1,            // How many sets of buffers can we keep at the same time?
-    lookAhead: 100,              // How many sets of buffers should be loaded ahead of us each time?
+    lookAhead: 100,             // How many sets of buffers should be loaded ahead of us each time?
     data: {},                   // The actual data to be drawn to canvas.
     bufferL2: {},               // Cotains all data loaded and preloaded, limited by memory.
     bufferL3: {},               // Cotains all data from loaded views, limited by memory.
@@ -32,8 +32,10 @@ var tsVol = {
     parserBlob: null,           // Used to store the JSON Parser Blob for web-workers.
     slidersClicked: false,      // Used to handle the status of the sliders.
     batchID: 0,                 // Used to ignore useless incoming ajax responses.
-    dataTimeSeries: "",          // Contains the address to query the time series of a voxel.
-    tsDataArray: []
+    dataTimeSeries: "",         // Contains the address to query the time series of a voxel.
+    tsDataArray: [],
+    samplePeriod: 0,
+    semplePeriodUnit: ""
 };
 
 var Quadrant = function (params){                // this keeps all necessary data for drawing
@@ -98,6 +100,10 @@ function TSV_initVisualizer(dataUrls, minValue, maxValue, volOrigin, sizeOfVoxel
     tsVol.dataView = dataUrls[2];
     tsVol.dataSize = HLPR_readJSONfromFile(dataUrls[1]);
     tsVol.dataTimeSeries = dataUrls[3];
+    
+    var tmp = HLPR_readJSONfromFile(dataUrls[4]);
+    tsVol.samplePeriod = tmp[0];
+    tsVol.semplePeriodUnit = tmp[1];
 
     tsVol.minimumValue = minValue;
     tsVol.maximumValue = maxValue;
@@ -821,7 +827,9 @@ function startMovieSlider(){
             var el = $('<label id="time-slider-min">' + opts.min + '</label>');
             $(this).append(el);
             // The actual time point we are seeing
-            el = $('<label id="time-slider-value">' + value + '/' + (tsVol.timeLength - 1) +'</label>');
+            var actualTime = value * tsVol.samplePeriod;
+            var totalTime = (tsVol.timeLength - 1) * tsVol.samplePeriod;
+            el = $('<label id="time-slider-value">' + actualTime.toFixed(2) + '/' + totalTime.toFixed(2) + " (in "+ tsVol.semplePeriodUnit +')</label>');
             $(this).append(el);
         });
     });
@@ -893,7 +901,9 @@ function updateSliders(){
 function updateMoviePlayerSlider(){
     $("#time-position").find("> span").each(function(){
         $(this).slider("option", "value", tsVol.currentTimePoint);
-        $('#time-slider-value').empty().text( tsVol.currentTimePoint + '/' + (tsVol.timeLength - 1) );
+        var actualTime = tsVol.currentTimePoint * tsVol.samplePeriod;
+        var totalTime = (tsVol.timeLength - 1) * tsVol.samplePeriod;
+        $('#time-slider-value').empty().text( actualTime.toFixed(2) + '/' + totalTime.toFixed(2) + (" (in "+ tsVol.semplePeriodUnit +")") );
     });
     d3.select(".timeVerticalLine").attr("transform", function(){
                 var width = $(".graph-timeSeries-rect").attr("width");
@@ -952,7 +962,9 @@ function slideMoved(event, ui){
 // Updates the value at the end of the player bar when we move the handle.
 function moviePlayerMove(event, ui){
     $("#time-position").find("> span").each(function(){
-        $('#time-slider-value').empty().text( ui.value + '/' + (tsVol.timeLength - 1) );
+        var actualTime = ui.value * tsVol.samplePeriod;
+        var totalTime = (tsVol.timeLength - 1) * tsVol.samplePeriod;
+        $('#time-slider-value').empty().text( actualTime.toFixed(2) + '/' + totalTime.toFixed(2) + (" (in "+ tsVol.semplePeriodUnit +")") );
     });
         d3.select(".timeVerticalLine").attr("transform", function(){
                 var width = $(".graph-timeSeries-rect").attr("width");
@@ -1110,7 +1122,9 @@ function tryGraph(){
             .attr("class", "sortable");
         var svg = d3.select("#mini-container").selectAll("svg")
             .data(tsVol.tsDataArray)
-        .enter().append("li").append("svg")
+        .enter()
+        .append("li")
+        .append("svg")
             .attr("width", width + smallMargin.left + smallMargin.right)
             .attr("height", height + smallMargin.top + smallMargin.bottom)
             .attr("class", "graph-svg-component")
