@@ -515,8 +515,6 @@ function drawLegend(){
         tsVol.ctx.fillStyle = getGradientColorString(val, tsVol.minimumValue, tsVol.maximumValue);
         tsVol.ctx.fillRect(i, 0, 1.5, tsVol.legendHeight);
     }
-    //throw "navigation is faster with an error here. TODO: find out WHY??";
-    //asd.ewq;
 }
 
 /**
@@ -994,9 +992,9 @@ function slideMove(event, ui){
 }
 
 // After the navigation sliders are changed, this redraws the scene accordingly.
-function slideMoved(event, ui){   
+function slideMoved(event, ui){
     if(tsVol.slidersClicked){
-        tryGraph();
+        //tryGraph();
         startBuffering();
         tsVol.slidersClicked = false;
     
@@ -1015,7 +1013,6 @@ function slideMoved(event, ui){
         tsVol.selectedEntity[selectedQuad.axes.x] = ui.value;
     else
         tsVol.selectedEntity[selectedQuad.axes.y] = ui.value;
-    drawSceneFunctional(tsVol.currentTimePoint);
 }
 
 // Updates the value at the end of the player bar when we move the handle.
