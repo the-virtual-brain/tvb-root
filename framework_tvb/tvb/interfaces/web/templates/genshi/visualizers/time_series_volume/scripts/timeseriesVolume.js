@@ -134,7 +134,7 @@ function TSV_initVisualizer(dataUrls, minValue, maxValue, volOrigin, sizeOfVoxel
 
     ColSch_initColorSchemeParams(minValue, maxValue, colorRedraw);
     tsVol.currentTimePoint = 0;
-    //tsVol.highlightedQuad.index = 0;
+    updateTSFragment();
 
     startBuffering();
     window.setInterval(freeBuffer, tsVol.playbackRate*10);
@@ -341,7 +341,7 @@ function drawSceneFunctionalFromCube(tIndex){
         tsVol.currentTimePoint++;
         tsVol.currentTimePoint = tsVol.currentTimePoint % tsVol.timeLength;
     }
-
+    updateTSFragment();
     tsVol.data = getSliceAtTime(tIndex);
     _setCtxOnQuadrant(0);
     tsVol.ctx.fillStyle = getGradientColorString(tsVol.minimumValue, tsVol.minimumValue, tsVol.maximumValue);
@@ -411,6 +411,7 @@ function drawSceneFunctionalFromView(tIndex){
         tsVol.currentTimePoint++;
         tsVol.currentTimePoint = tsVol.currentTimePoint % tsVol.timeLength;
     }
+    updateTSFragment();
     // An array containing the view for each plane.
     tsVol.sliceArray = getViewAtTime(tIndex);
 
@@ -828,6 +829,7 @@ function TSV_pick(e){
     }
     tsVol.selectedEntity[tsVol.selectedQuad.axes.x] = selectedEntityOnX;
     tsVol.selectedEntity[tsVol.selectedQuad.axes.y] = selectedEntityOnY;
+    updateTSFragment();
     updateSliders();
     drawSceneFunctional(tsVol.currentTimePoint);
 }
@@ -1039,6 +1041,7 @@ function slideMove(event, ui){
         tsVol.selectedEntity[selectedQuad.axes.x] = ui.value;
     else
         tsVol.selectedEntity[selectedQuad.axes.y] = ui.value;
+    updateTSFragment();
     drawSceneFunctional(tsVol.currentTimePoint);
 }
 
@@ -1063,6 +1066,7 @@ function slideMoved(event, ui){
         tsVol.selectedEntity[selectedQuad.axes.x] = ui.value;
     else
         tsVol.selectedEntity[selectedQuad.axes.y] = ui.value;
+    updateTSFragment();
 }
 
 // Updates the value at the end of the player bar when we move the handle.

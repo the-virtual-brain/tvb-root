@@ -7,11 +7,12 @@ var tsFrag = {
     width: 0,                           // Sortable time series width
     height: 0,                          // Sortable time series height
     tsDataArray: [],                    // Array containing all the time series data
-    selectedInex: 0,                    // Selected time series line index
+    selectedIndex: 0,                   // Selected time series line index
     relevantFeature: "mean",            // Stores what feature do we care about when sorting the time series.
     timeLength: 0,
     samplePeriod: 0,
     samplePeriodUnit: "",
+    selectedEntity: []
 };
 
 function TSF_initVisualizer(){
@@ -21,6 +22,11 @@ function TSF_initVisualizer(){
     tsFrag.dataTimeSeries = tsVol.dataTimeSeries;
     tsFrag.minimumValue = tsVol.minimumValue;
     tsFrag.maximumValue = tsVol.maximumValue;
+}
+
+function updateTSFragment(){
+    tsFrag.selectedEntity = tsVol.selectedEntity;
+    tsFrag.currentTimePoint = tsVol.currentTimePoint;
 }
 
 // ==================================== PER VOXEL TIMESERIES START ===========================================
@@ -75,9 +81,9 @@ function covariance(tsA, tsB){
 }
 
 var tsDataObj = function(params, data){
-    this.x = params.x || tsVol.selectedEntity[0],
-    this.y =  params.y || tsVol.selectedEntity[1],
-    this.z = params.z || tsVol.selectedEntity[2],
+    this.x = params.x || tsFrag.selectedEntity[0],
+    this.y =  params.y || tsFrag.selectedEntity[1],
+    this.z = params.z || tsFrag.selectedEntity[2],
     this.label = params.label || "["+this.x+","+this.y+","+this.z+"]",
     this.data = params.data || data,
     this.max = params.max || d3.max(data),
@@ -100,11 +106,11 @@ function drawGraphs(){
     var w = $('#graph').width() - m[1] - m[3]; // width
     var h = 240 - m[0] - m[2]; // height
 
-    var label = "["+tsVol.selectedEntity[0]+","+tsVol.selectedEntity[1]+","+tsVol.selectedEntity[2]+"]";
+    var label = "["+tsFrag.selectedEntity[0]+","+tsFrag.selectedEntity[1]+","+tsFrag.selectedEntity[2]+"]";
     if(!containsByLabel(tsFrag.tsDataArray, label)){
-        var tmp = new tsDataObj({}, getPerVoxelTimeSeries(tsVol.selectedEntity[0], tsVol.selectedEntity[1], tsVol.selectedEntity[2]));
+        var tmp = new tsDataObj({}, getPerVoxelTimeSeries(tsFrag.selectedEntity[0], tsFrag.selectedEntity[1], tsFrag.selectedEntity[2]));
         tsFrag.tsDataArray.push(tmp);
-        var pvt = {x: tsVol.selectedEntity[0], y:  tsVol.selectedEntity[1],z:  tsVol.selectedEntity[2]};
+        var pvt = {x: tsFrag.selectedEntity[0], y:  tsFrag.selectedEntity[1],z:  tsFrag.selectedEntity[2]};
         sortTsGraphs($("#sortingSelector").val(), tsFrag.relevantFeature, pvt);
     }
     if(tsFrag.tsDataArray.length < 1){
@@ -344,7 +350,7 @@ function drawGraphs(){
     $("#time-position").on("slide change", function(){
         //Move red line following the mouse
         var wdt = $(".graph-timeSeries-rect").attr("width");
-        var xPos = (tsVol.currentTimePoint*wdt)/(tsFrag.timeLength);
+        var xPos = (tsFrag.currentTimePoint*wdt)/(tsFrag.timeLength);
 
         var selectedLine = d3.select("path.highlight");
         if(selectedLine[0][0] == null){
@@ -492,7 +498,7 @@ function sortTsGraphs(order, by, pivot){
 // Attach sorting listener to sorting selectors
 $(function(){
     $("#sortingSelector").change(function(e){
-        var pvt = {x: tsVol.selectedEntity[0], y: tsVol.selectedEntity[1], z: tsVol.selectedEntity[2]};
+        var pvt = {x: tsFrag.selectedEntity[0], y: tsFrag.selectedEntity[1], z: tsFrag.selectedEntity[2]};
         sortTsGraphs(e.currentTarget.value, tsFrag.relevantFeature, pvt);
         // redraw the graph
         drawGraphs();
@@ -503,7 +509,7 @@ $(function(){
 $(function(){
     $("#relevantFeatureSelector").change(function(e){
         tsFrag.relevantFeature = e.currentTarget.value;
-        var pvt = {x: tsVol.selectedEntity[0], y: tsVol.selectedEntity[1], z: tsVol.selectedEntity[2]};
+        var pvt = {x: tsFrag.selectedEntity[0], y: tsFrag.selectedEntity[1], z: tsFrag.selectedEntity[2]};
         sortTsGraphs($("#sortingSelector").val(), tsFrag.relevantFeature, pvt);
         // redraw the graph
         drawGraphs();
