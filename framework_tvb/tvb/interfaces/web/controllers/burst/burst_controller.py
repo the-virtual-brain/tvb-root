@@ -376,7 +376,6 @@ class BurstController(BurstBaseController):
                 # Merge session config into the db config. Overwrite all transient fields
                 burst.simulator_configuration = old_burst.simulator_configuration
                 burst.dynamic_ids = old_burst.dynamic_ids
-                burst.tabs = old_burst.tabs
 
             burst.selected_tab = old_burst.selected_tab
             common.add2session(common.KEY_BURST_CONFIG, burst)
