@@ -137,7 +137,7 @@ function TSV_initVisualizer(dataUrls, minValue, maxValue, volOrigin, sizeOfVoxel
 
     startBuffering();
     window.setInterval(freeBuffer, tsVol.playbackRate*10);
-    tryGraph();
+    drawGraphs();
 }
 
 /**
@@ -752,7 +752,7 @@ function customMouseUp(e){
         tsVol.resumePlayer = false;
     }
     if(tsVol.selectedQuad.index == 3){
-        tryGraph();
+        drawGraphs();
     }
 }
 
@@ -1103,8 +1103,18 @@ function getPerVoxelTimeSeries(x,y,z){
 }
 
 
+    //Check if an array of objects contains another object with a given 'label' attribute.
+    function containsByLabel(a, label) {
+        for (var i = 0; i < a.length; i++) {
+            if (a[i].label === label) {
+                return true;
+            }
+        }
+        return false;
+    }
+
 /* implementation heavily influenced by http://bl.ocks.org/1166403 */
-function tryGraph(){
+function drawGraphs(){
     var selected = 0;
     $('#graph').empty();
     // define dimensions of graph
@@ -1116,9 +1126,8 @@ function tryGraph(){
     var h = 240 - m[0] - m[2]; // height
 
     // create a simple data array that we'll plot with a line (this array represents only the Y values, X will just be the index location)
-
     var data = getPerVoxelTimeSeries(tsVol.selectedEntity[0], tsVol.selectedEntity[1], tsVol.selectedEntity[2]);
-    var tsDataObj = function(params){
+    var tsDataObj = function(params, data){
         this.x = params.x || tsVol.selectedEntity[0],
         this.y =  params.y || tsVol.selectedEntity[1],
         this.z = params.z || tsVol.selectedEntity[2],
@@ -1129,19 +1138,19 @@ function tryGraph(){
         this.mean = params.mean || d3.mean(data)
     }
 
-    function contains(a, obj) {
-        for (var i = 0; i < a.length; i++) {
-            if (a[i].label === obj.label) {
-                return true;
-            }
-        }
-        return false;
-    }
-    var tmp = new tsDataObj({});
-    if(!contains(tsVol.tsDataArray, tmp)){
+    var label = "["+tsVol.selectedEntity[0]+","+tsVol.selectedEntity[1]+","+tsVol.selectedEntity[2]+"]";
+    if(!containsByLabel(tsVol.tsDataArray, label)){
+        console.log("asdasasdasd")
+        var tmp = new tsDataObj({}, getPerVoxelTimeSeries(tsVol.selectedEntity[0], tsVol.selectedEntity[1], tsVol.selectedEntity[2]));
         tsVol.tsDataArray.push(tmp);
         var pvt = {x: tsVol.selectedEntity[0], y:  tsVol.selectedEntity[1],z:  tsVol.selectedEntity[2]};
         sortTsGraphs($("#sortingSelector").val(), pvt);
+    }
+    if(tsVol.tsDataArray.length < 1){
+        return;
+    }
+    if($("#mini-container").children().length < 2){
+        $("#mini-container").sortable( "disable" );
     }
 
     // X scale will fit all values from data[] within pixels 0-w
@@ -1194,12 +1203,21 @@ function tryGraph(){
             .on("mousemove", mousemove);
 
         // create xAxis
-        var xAxis = d3.svg.axis().scale(x).tickSize(-h).tickSubdivide(true);
+        var xAxixScale = d3.scale.linear().domain([0, tsVol.timeLength*tsVol.samplePeriod]).range([0, w]);
+        var xAxis = d3.svg.axis().scale(xAxixScale).tickSize(-h).tickSubdivide(true);
         // Add the x-axis.
         graph.append("svg:g")
             .attr("class", "x axis")
             .attr("transform", "translate(0," + h + ")")
-            .call(xAxis);  
+            .call(xAxis);
+
+        var timeUnit = tsVol.samplePeriodUnit=="sec" ? "Seconds" : tsVol.samplePeriodUnit;
+        graph.append("text")
+            .attr("class", "x axis")
+            .attr("text-anchor", "end")
+            .attr("x", w)
+            .attr("y", h -8 )
+            .text("Time in " + timeUnit); 
 
         // create left yAxis
         var yAxisLeft = d3.svg.axis().scale(y).ticks(4).orient("left");
@@ -1208,11 +1226,15 @@ function tryGraph(){
               .attr("class", "y axis")
               .attr("transform", "translate(-25,0)")
               .call(yAxisLeft);
-        
-        // Add the line by appending an svg:path element with the data line we created above
-        // do this AFTER the axes above so that the line is above the tick-lines
-        var mainLine = graph.append("svg:path").attr("d", line(data)).attr('class', 'line colored-line');
-        //var mainLine = graph.append("svg:path").attr("d", line(data));
+        //
+        graph.append("text")
+            .attr("class", "y axis")
+            .attr("text-anchor", "end")
+            .attr("x", "1em")
+            .attr("y", "-1em")
+            .attr("dy", ".75em")
+            //.attr("transform", "rotate(-90)")
+            .text("Measurements");
 
         graph.selectAll('.line')
             .data(tsVol.tsDataArray)
@@ -1222,7 +1244,7 @@ function tryGraph(){
                 //.attr("clip-path", "url(#clip)")
                 .attr("d", function(d){return line(d.data);})
                 .attr('class', 'line colored-line')
-                .attr("style", function(d){return "stroke:" + getGradientColorString(d.mean, tsVol.minimumValue, tsVol.maximumValue);} )
+                .attr("style", function(d){console.log(getGradientColorString(d.mean, tsVol.minimumValue, tsVol.maximumValue));return "stroke:" + getGradientColorString(d.mean, tsVol.minimumValue, tsVol.maximumValue);} )
                 .on("mouseover", selectLineData);
 
         // Add an SVG element for each symbol, with the desired dimensions and margin.
@@ -1420,6 +1442,7 @@ function tryGraph(){
                 cursor: "move",
                 connectWith: '#sortable-delete',
                 axis: "y",
+                revert: 250,
                 start: function(event,ui){
                     originalPosition = ui.item.index();
                     console.log("came from", ui.item.index());
@@ -1435,20 +1458,20 @@ function tryGraph(){
                             ui.item.remove();
                             console.log(deleteLabel, "erased");
                         }
-                        tryGraph();
+                        drawGraphs();
                     }else{
                         // move element in the main array too.
                         destination = ui.item.index();
                         move(tsVol.tsDataArray, originalPosition, destination);
                         // redraw the graph and set the moved element as selected.
-                        tryGraph();
+                        drawGraphs();
                         selectLineData("", destination);
                         // Change the sorting selector value to manual
                         $("#sortingSelector").val('manual');
                     }          
                 }            
             });
-            $( "#mini-container" ).disableSelection();
+            $("#mini-container").disableSelection();
           });
 }
 
@@ -1494,7 +1517,7 @@ $(function(){
     $("#sortingSelector").change(function(e){
         sortTsGraphs(e.currentTarget.value, {x: tsVol.selectedEntity[0], y:  tsVol.selectedEntity[1],z:  tsVol.selectedEntity[2]});
         // redraw the graph
-        tryGraph();
+        drawGraphs();
     });
 })
 
