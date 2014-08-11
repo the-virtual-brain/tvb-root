@@ -373,10 +373,12 @@ function drawFocusCrossHair(x, y){
 }
 
 /**
- * Draws a canvas legend at the bottom of th volume visualizer:
- * - Written min, mean and max values for the data, in scientific notation.
- * - Displays the color range for the data.
- * - Displays a white bar in to show the currently selected entity value.
+ * Draws a canvas legend at the bottom of the volume visualizer:
+ * <ul>
+ * <li>Written min, mean and max values for the data, in scientific notation.
+ * <li>Displays the color range for the data.
+ * <li>Displays a white bar in to show the currently selected entity value.
+ * </ul>
  */
 function drawLegend(){
     var tmp = tsVol.legendPadding / 2;
