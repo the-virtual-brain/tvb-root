@@ -294,30 +294,24 @@ function _toggleLaunchButtons(beActiveLaunch, beActiveRest) {
 }
 
 function _fillSimulatorParametersArea(htmlContent, isConfigure) {
-    // todo jq toggle
     var simParamElem = $("#div-simulator-parameters");
-    simParamElem.empty();
-    simParamElem.append(htmlContent);
+    simParamElem.html(htmlContent);
+
+    $("#configRegionModelParam").toggle(!isConfigure);
+    $("#configSurfaceModelParam").hide();
+    $("#configNoiseValues").toggle(!isConfigure);
+    $("#button-uncheck-all-params").toggle(isConfigure);
+    $("#button-check-all-params").toggle(isConfigure);
 
     if (isConfigure) {
-        document.getElementById("configure-simulator-button").innerHTML = "Save Configuration";
-        $("#configRegionModelParam").hide();
-        $("#configSurfaceModelParam").hide();
-        $("#configNoiseValues").hide();
-        $("#button-uncheck-all-params").show();
-        $("#button-check-all-params").show();
+        $("#configure-simulator-button").html("Save Configuration");
         setSimulatorChangeListener('div-simulator-parameters');
     } else {
-        document.getElementById("configure-simulator-button").innerHTML = "Configure Interface";
-        $("#configRegionModelParam").show();
-        $("#configNoiseValues").show();
-        $("#configSurfaceModelParam").hide();
+        $("#configure-simulator-button").html("Configure Interface");
         toggleConfigSurfaceModelParamsButton();
         // Do this before ranger expand since otherwise on FF the ranger is hidden.
         setSimulatorChangeListener('div-simulator-parameters');
         tryExpandRangers();
-        $("#button-uncheck-all-params").hide();
-        $("#button-check-all-params").hide();
     }
 
     _toggleLaunchButtons(!isConfigure && sessionStoredBurst.id=='',
@@ -472,11 +466,8 @@ function toggleConfigSurfaceModelParamsButton() {
     selectorSurfaceElem.unbind('change.configureSurfaceModelParameters');
     selectorSurfaceElem.bind('change.configureSurfaceModelParameters', function () {
         var selectedValue = this.value;
-        if (selectedValue == null || selectedValue == 'None' || selectedValue.length == 0) {
-            $("#configSurfaceModelParam").hide();
-        } else {
-            $("#configSurfaceModelParam").show();
-        }
+        var show = selectedValue != null && selectedValue != 'None' && selectedValue.length !== 0 ;
+        $("#configSurfaceModelParam").toggle(show);
     });
     selectorSurfaceElem.trigger("change");
     if (selectorSurfaceElem.length < 1) {
@@ -492,7 +483,7 @@ function switch_top_level_visibility(currentVisibleSelection) {
     $("#section-portlets").hide();
     $("#section-pse").hide();
     if (currentVisibleSelection) {
-        $("" + currentVisibleSelection).show();
+        $(currentVisibleSelection).show();
     }
     var maximize_flot = $('#button-maximize-flot')[0];
     var maximize_iso = $('#button-maximize-iso')[0];
@@ -512,9 +503,8 @@ function loadGroup(groupGID) {
     // Hide both divs
     $('#burst-pse-flot').hide();
     $('#burst-pse-iso').hide();
-    $("#section-portlets-ul").find("li").each(function () {
-        $(this).removeClass('active');
-    });
+    $("#section-portlets-ul").find("li").removeClass('active');
+
     doAjaxCall({
         type: "POST",
         async: false,
@@ -545,9 +535,8 @@ function loadGroup(groupGID) {
 
 
 function changePSETab(clickedHref, toShow) {
-    $("#section-portlets-ul").find("li").each(function () {
-        $(this).removeClass('active');
-    });
+    $("#section-portlets-ul").find("li").removeClass('active');
+
     $(clickedHref).parent().addClass('active');
     if (toShow == 'flot') {
         $('#burst-pse-flot').show();
@@ -868,9 +857,7 @@ function _clearAllTimeouts() {
 function changeBurstTile(selectedHref) {
     _clearAllTimeouts();
     $("#div-burst-tree").hide();
-    $("#section-portlets-ul, #section-portlets-ul").find("li").each(function () {
-        $(this).removeClass('active');
-    });
+    $("#section-portlets-ul, #section-portlets-ul").find("li").removeClass('active');
     $(selectedHref).parent().addClass('active');
     // Refresh buttons
     returnToSessionPortletConfiguration();
@@ -923,9 +910,7 @@ function displayBurstTree(selectedHref, selectedProjectID, baseURL) {
     returnToSessionPortletConfiguration();
 
     updatePortletsToolbar(0);
-    $("#section-portlets-ul").find("li").each(function () {
-        $(this).removeClass('active');
-    });
+    $("#section-portlets-ul").find("li").removeClass('active');
     $(selectedHref).parent().addClass('active');
     // Also update selected tab on cherryPy session.
     doAjaxCall({
@@ -1071,10 +1056,7 @@ function loadBurst(burst_id) {
  */
 function setNewBurstActive() {
     switch_top_level_visibility("#section-portlets");
-    $("#burst-history").find("li").each(function () {
-        $(this).removeClass(ACTIVE_BURST_CLASS);
-        $(this).removeClass(GROUP_BURST_CLASS);
-    });
+    $("#burst-history").find("li").removeClass(ACTIVE_BURST_CLASS).removeClass(GROUP_BURST_CLASS);
 
     if (selectedTab === -1) {
         sessionStoredBurst.id = "";
