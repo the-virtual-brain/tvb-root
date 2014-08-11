@@ -366,7 +366,7 @@ class BurstServiceTest(BaseTestCase):
         Test the branching of an existing burst.
         """
         burst_config = self._prepare_and_launch_async_burst(wait_to_finish=60)
-        burst_config.tabs = []
+        burst_config.prepare_after_load()
 
         algo_id, connectivity = self._burst_create_connectivity()
         launch_params = copy.deepcopy(SIMULATOR_PARAMETERS)

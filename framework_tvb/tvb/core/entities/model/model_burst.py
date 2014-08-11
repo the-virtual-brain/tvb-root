@@ -95,7 +95,7 @@ class BurstConfiguration(Base, Exportable):
     disk_size = Column(Integer)
 
     _simulator_configuration = Column(String)
-    _dynamic_ids = Column(String)
+    _dynamic_ids = Column(String, default='[]', nullable=False)
 
     ### Transient attributes start from bellow
     simulator_configuration = {}
@@ -121,6 +121,7 @@ class BurstConfiguration(Base, Exportable):
         self.name = name
         self.selected_tab = 0
         self.status = status
+        self._dynamic_ids = '[]'
         self.dynamic_ids = []
 
 
