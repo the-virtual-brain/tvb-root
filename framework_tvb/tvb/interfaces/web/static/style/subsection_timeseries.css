@@ -196,7 +196,7 @@ path {
 #mini-container{
     overflow-y: scroll;
     overflow-x: hidden;
-    max-height: 530px;
+    max-height: 480px;
 }
 #ts-trash-can{
 	position: absolute;

@@ -12,17 +12,17 @@ var tsFrag = {
     selectedIndex: 0,                   // Selected time series line index
     relevantSortingFeature: "mean",     // Stores what feature to consider while sorting the time series.
     relevantColoringFeature: "mean",    // Stores what feature to consider while coloring the time series.
-    timeLength: 0,
-    samplePeriod: 0,
-    samplePeriodUnit: "",
-    selectedEntity: [],
-    line: null,
-    sortableline: null,
-    x: null,
-    y: null,
-    sortableY: null,
-    xAxisScale:null,
-    brush: null
+    timeLength: 0,                      // The lenght of the data in frames
+    samplePeriod: 0,                    // Meta data. The sampling period of the time series
+    samplePeriodUnit: "",               // Meta data. The time unit of the sample period
+    selectedEntity: [],                 // The selected voxel; [i, j, k].
+    line: null,                         // A d3.line() for the global graph.
+    sortableline: null,                 // A d3.line() for the sortable graph.
+    x: null,                            // A d3.scale() for the x axis
+    y: null,                            // A d3.scale() for the y axis
+    sortableY: null,                    // Y axis labels for the sortable graph
+    xAxisScale:null,                    // X axis labels for the global graph
+    brush: null                         // A d3.brush()
 };
 
 var tsDataObj = function(params, data){             // this keeps all the data about a specific time series
@@ -120,6 +120,7 @@ function drawGobalTimeseries(){
     var x2   = d3.scale.linear().range([0, tsFrag.w]);
     var y2 = d3.scale.linear().range([tsFrag.h, 0]);
 
+    // Prepare the brush for later
     tsFrag.brush = d3.svg.brush()
         .x(x2)
         .on("brush", brush);
@@ -128,11 +129,11 @@ function drawGobalTimeseries(){
 
     function brush() {
         tsFrag.x.domain(tsFrag.brush.empty() ? x2.domain() : tsFrag.brush.extent());
-        //graph.selectAll(".line").attr("d", function(d){return tsFrag.line(d.data);});
-
         d3.select("#mini-container").selectAll(".line")
-        .attr("d", function(d){ tsFrag.sortableY = d3.scale.linear().domain([d.min, d.max]).range([tsFrag.height, 0]); return tsFrag.sortableline(d.data); });
-
+        .attr("d", function(d){
+            tsFrag.sortableY = d3.scale.linear().domain([d.min, d.max]).range([tsFrag.height, 0]);
+            return tsFrag.sortableline(d.data);
+        });
 
        d3.select("#mini-container").selectAll(".x.axis").call(xAxis());
        d3.select(".brusher").selectAll(".x.axis").call(xAxis());
@@ -149,13 +150,10 @@ function drawGobalTimeseries(){
     // create a line function that can convert data[] into x and y points
     tsFrag.line = d3.svg.line()
         //.interpolate("basis") //basis for spline interpolation
-        // assign the X function to plot our line as we wish
         .x(function(d,i){
-            // return the X coordinate where we want to plot this datapoint
             return tsFrag.x(i);
         })
         .y(function(d){
-            // return the Y coordinate where we want to plot this datapoint
             return tsFrag.y(d);
         });
 
@@ -166,13 +164,6 @@ function drawGobalTimeseries(){
           .attr("class", "graph-svg-component global-graph")
         .append("svg:g")
           .attr("transform", "translate(" + tsFrag.m[3] + "," + tsFrag.m[0] + ")");
-
-    // Clip path necessary to hide the stretched lines created by the brushing function.
-    graph.append("defs").append("clipPath")
-        .attr("id", "clip")
-        .append("rect")
-            .attr("width", tsFrag.w)
-            .attr("height", tsFrag.h);
 
     var rect = graph.append("rect")
         .attr('w',0)
@@ -194,7 +185,6 @@ function drawGobalTimeseries(){
 
     // create xAxis
     tsFrag.xAxisScale = d3.scale.linear().domain([0, tsFrag.timeLength*tsFrag.samplePeriod]).range([0, tsFrag.w]);
-    //var xAxis = d3.svg.axis().scale(tsFrag.xAxisScale).tickSize(-tsFrag.h).tickSubdivide(true);
     var xAxis = function(){
         tsFrag.x.domain(tsFrag.brush.empty() ? x2.domain() : tsFrag.brush.extent());
         tsFrag.xAxisScale = tsFrag.x;
@@ -202,12 +192,14 @@ function drawGobalTimeseries(){
         tsFrag.xAxisScale.domain()[1] *= tsFrag.samplePeriod;
         return d3.svg.axis().scale(tsFrag.xAxisScale).tickSize(-tsFrag.h).tickSubdivide(true);
     }
+
     // Add the x-axis.
     graph.append("svg:g")
         .attr("class", "x axis")
         .attr("transform", "translate(0," + tsFrag.h + ")")
         .call(xAxis());
 
+    // Add info about the time unit as a label
     var timeUnit = tsFrag.samplePeriodUnit=="sec" ? "Seconds" : tsFrag.samplePeriodUnit;
     graph.append("text")
         .attr("class", "x axis")
@@ -272,7 +264,12 @@ function drawGobalTimeseries(){
         .attr('x2', 0)
         .attr('y2', tsFrag.h)
         .attr("stroke", "red")
-        .attr('class', 'timeVerticalLine');
+        .attr('class', 'timeVerticalLine')
+        .attr("transform", function(){
+                var width = $(".graph-timeSeries-rect").attr("width");
+                var pos = (tsVol.currentTimePoint*width)/(tsVol.timeLength);
+                return "translate(" + pos + ", 0)";
+            });
 
     var circle = graph.append("circle")
         .attr("opacity", 0)
@@ -330,7 +327,7 @@ function drawGobalTimeseries(){
         .style("stroke", "black")
         .attr("class", "brush-rect")
 
-
+    /* We draw no lines on the brush selector. */
     // brusher.selectAll('path')
     //     .data(tsFrag.tsDataArray)
     //     .enter()
@@ -338,10 +335,13 @@ function drawGobalTimeseries(){
     //         .attr("class", "line colored-line")
     //         .attr("d", function(d){return tsFrag.line(d.data);});
 
+    // Align brush with other graphs
     brusher.append("g")
         .attr("class", "x axis")
         .attr("transform", "translate(0," + (tsFrag.height+3) + ")")
         .call(xAxis());
+
+    // Add y label to brush
     brusher.append("text")
         .attr("class", "y label")
         .attr("text-anchor", "end")
@@ -350,16 +350,13 @@ function drawGobalTimeseries(){
         .attr("transform", "translate(-5,0)")
         .text("Focus");
 
+    // Add transparent overlay to display selection on brush
     brusher.append("g")
       .attr("class", "x brush")
       .call(tsFrag.brush)
     .selectAll("rect")
       .attr("y", -6)
       .attr("height", tsFrag.height + 6);
-
-    // brusher.append("g")
-    //     .attr("class", "y axis")
-    //     .call(yAxis);
 }
 
 /**
@@ -370,14 +367,10 @@ function drawGobalTimeseries(){
 function drawSortableGraph(){
     tsFrag.sortableY = tsFrag.y;
     tsFrag.sortableline = d3.svg.line()
-        //.interpolate("basis") //basis for spline interpolation
-        // assign the X function to plot our line as we wish
         .x(function(d,i){
-            // return the X coordinate where we want to plot this datapoint
             return tsFrag.x(i);
         })
         .y(function(d){
-            // return the Y coordinate where we want to plot this datapoint
             return tsFrag.sortableY(d);
         });
     d3.select("#graph").append("ul")
@@ -730,11 +723,11 @@ function sortTsGraphs(order, by, pivot){
     }
 }
 /**
- * Updates the brushes based on the current time point
+ * Update the brushes based on the current time point
  */
 function updateBrush(){
-    var bMin = Math.max(0,tsVol.currentTimePoint-30);
-    var bMax = Math.min(tsVol.currentTimePoint+30,tsVol.timeLength);
+    var bMin = Math.max(0,tsFrag.currentTimePoint-30);
+    var bMax = Math.min(tsFrag.currentTimePoint+30,tsFrag.timeLength);
     d3.select('.brush').transition()
       .delay(0)
       .call(tsFrag.brush.extent([bMin, bMax]))
