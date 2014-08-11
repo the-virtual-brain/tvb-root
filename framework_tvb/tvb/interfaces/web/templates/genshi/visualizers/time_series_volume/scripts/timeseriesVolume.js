@@ -238,7 +238,7 @@ function streamToBuffer(){
             var toBufferSection = Math.min( currentSection + i, maxSections );
             if(!tsVol.bufferL3[toBufferSection] && tsVol.requestQueue.indexOf(toBufferSection) < 0){
                 var from = toBufferSection*tsVol.bufferSize;
-                var to = from+tsVol.bufferSize;
+                var to = Math.min(from+tsVol.bufferSize, tsVol.timeLength);
                 from = "from_idx=" + from;
                 to = ";to_idx=" + to;
                 var query = tsVol.dataView + from + to + xPlane + yPlane + zPlane;
@@ -981,7 +981,7 @@ function playNextTimePoint(){
 
 function playPreviousTimePoint(){
     if(tsVol.currentTimePoint === 0)
-        tsVol.currentTimePoint = tsVol.timeLength + 1;
+        tsVol.currentTimePoint = tsVol.timeLength;
     drawSceneFunctionalFromView(--tsVol.currentTimePoint)
     drawLegend();
     drawLabels();
