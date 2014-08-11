@@ -1,6 +1,52 @@
 <div>
+    <style>
+        /* tell the SVG path to be a thin blue line without any area fill */
+        path {
+            stroke: steelblue;
+            stroke-width: 1;
+            fill: none;
+        }
+        
+        .axis {
+          shape-rendering: crispEdges;
+        }
+
+        .x.axis line {
+          stroke: lightgrey;
+        }
+
+        .x.axis .minor {
+          stroke-opacity: .5;
+        }
+
+        .x.axis path {
+          display: none;
+        }
+
+        .y.axis line, .y.axis path {
+          fill: none;
+          stroke: #000;
+        }
+
+        .graph-svg-component{
+            background-color: white;
+        }
+
+        .colored-line {                         
+            fill: none;                 
+            stroke: url(#line-gradient);    
+            stroke-width: 2px;
+            stroke-opacity: 0.2;          
+        }
+        .colored-line.highlight {
+            stroke-width: 4px;
+            stroke-opacity: 1;
+        }
+    </style>
+
     <script type="text/javascript" src="/static_view/time_series_volume/scripts/timeseriesVolume.js?$currentVersionJS"></script>
     <script type="text/javascript" src="/static/js/webGL_Connectivity.js?$currentVersionJS"></script>
+    <script type="text/javascript" src="/static/js/d3.v2.min.js?$currentVersionJS"></script>
     <script type="text/javascript" src="/static/colorScheme/js/colorSchemeComponent.js?$currentVersionJS"></script>
     <link rel="stylesheet" type="text/css" href="/static/style/subsection_timeseries.css?$currentVersionJS"/>
 
@@ -19,6 +65,8 @@
             <span id="time-slider"></span>
         </div>
     </div>
+    <div id="graph" class="aGraph"></div>
+    <div id="chart1" class="chart"></div>
 
     <script type="text/javascript">
         $().ready(function() {
@@ -28,5 +76,14 @@
                                       .mousemove(customMouseMove);
             TSV_startUserInterface();
         })
+    </script>
+    <script type="text/javascript">
+      // graph = new SimpleGraph("chart1", {
+      //     "xmax": 60, "xmin": 0,
+      //     "ymax": 40, "ymin": 0, 
+      //     "title": "Simple Graph1",
+      //     "xlabel": "X Axis",
+      //     "ylabel": "Y Axis"  
+      //   });
     </script>
 </div>

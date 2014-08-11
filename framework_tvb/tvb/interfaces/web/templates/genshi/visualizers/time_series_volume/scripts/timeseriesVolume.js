@@ -29,7 +29,8 @@ var tsVol = {
     parserBlob: null,           // Used to store the JSON Parser Blob for web-workers.
     slidersClicked: false,      // Used to handle the status of the sliders.
     batchID: 0,                 // Used to ignore useless incoming ajax responses.
-    dataTimeSeries: ""          // Contains the address to query the time series of a voxel.
+    dataTimeSeries: "",          // Contains the address to query the time series of a voxel.
+    tsDataArray: []
 };
 
 var Quadrant = function (params){                // this keeps all necessary data for drawing
@@ -111,6 +112,7 @@ function TSV_initVisualizer(dataUrls, minValue, maxValue, volOrigin, sizeOfVoxel
 
     startBuffering();
     window.setInterval(freeBuffer, tsVol.playbackRate*10);
+    tryGraph();
 }
 
 /**
@@ -527,6 +529,7 @@ function customMouseUp(e){
         window.setTimeout(playBack, tsVol.playbackRate*5);
         tsVol.resumePlayer = false;
     }
+    tryGraph();
 }
 
 function customMouseMove(e){
@@ -741,7 +744,12 @@ function updateMoviePlayerSlider(){
     $("#time-position").find("> span").each(function(){
         $(this).slider("option", "value", tsVol.currentTimePoint);
         $('#time-slider-value').empty().text( tsVol.currentTimePoint + '/' + (tsVol.timeLength - 1) );
-    })
+    });
+    d3.select(".timeVerticalLine").attr("transform", function(){
+                var width = $("#graph-timeSeries-rect").attr("width");
+                var pos = (tsVol.currentTimePoint*width)/(tsVol.timeLength);
+                return "translate(" + pos + ", 0)";
+            });
 }
 
 // While the navigation sliders are moved, this redraws the scene accordingly.
@@ -769,6 +777,7 @@ function slideMove(event, ui){
 // After the navigation sliders are changed, this redraws the scene accordingly.
 function slideMoved(event, ui){   
     if(tsVol.slidersClicked){
+        tryGraph();
         startBuffering();
         tsVol.slidersClicked = false;
     
@@ -794,17 +803,22 @@ function slideMoved(event, ui){
 function moviePlayerMove(event, ui){
     $("#time-position").find("> span").each(function(){
         $('#time-slider-value').empty().text( ui.value + '/' + (tsVol.timeLength - 1) );
-    })
+    });
+        d3.select(".timeVerticalLine").attr("transform", function(){
+                var width = $("#graph-timeSeries-rect").attr("width");
+                var pos = (ui.value*width)/(tsVol.timeLength);
+                return "translate(" + pos + ", 0)";
+            });
 }
 
 /*
 * Redraws the scene at the selected time-point at the end of a slide action.
-* Calling this during the the whole slide showed to be too expensive.
+* Calling this during the whole slide showed to be too expensive.
 * Thus, the new time-point is drawn only when the user releases the click from the handler
 */
 function moviePlayerMoveEnd(event, ui){
     tsVol.currentTimePoint = ui.value;
-    drawSceneFunctionalFromView(tsVol.currentTimePoint)
+    drawSceneFunctionalFromView(tsVol.currentTimePoint);
 }
 
 // ==================================== CALLBACK FUNCTIONS END ===============================================
@@ -818,4 +832,341 @@ function getPerVoxelTimeSeries(x,y,z){
     var query = tsVol.dataTimeSeries + x + y + z;
     return HLPR_readJSONfromFile(query);;
 }
+
+
+
+var asd = 0;
+/* implementation heavily influenced by http://bl.ocks.org/1166403 */
+function tryGraph(){
+    var selected = 0;
+    $('#graph').empty();
+    // define dimensions of graph
+    var m = [80, 80, 80, 80]; // margins
+    var smallMargin = {top: 0, right: 10, bottom: 0, left: 10};
+    var width = 1000 - smallMargin.left - smallMargin.right;
+    var height = 30 - smallMargin.top - smallMargin.bottom;
+    var w = 1000 - m[1] - m[3]; // width
+    var h = 300 - m[0] - m[2]; // height
+
+    // create a simple data array that we'll plot with a line (this array represents only the Y values, X will just be the index location)
+
+    var data = getPerVoxelTimeSeries(tsVol.selectedEntity[0], tsVol.selectedEntity[1], tsVol.selectedEntity[2]);
+    tsDataObj = {
+        x: tsVol.selectedEntity[0],
+        y: tsVol.selectedEntity[1],
+        z: tsVol.selectedEntity[2],
+        label: "["+this.x+","+this.y+","+this.z+"]",
+        data: data,
+        max: d3.max(data),
+        min: d3.min(data),
+        mean: d3.mean(data)
+    }
+    tsVol.tsDataArray.push(data);
+
+    // X scale will fit all values from data[] within pixels 0-w
+    var x = d3.scale.linear().domain([0, data.length]).range([0, w]);
+    // Y scale will fit values from 0-10 within pixels h-0 (Note the inverted domain for the y-scale: bigger is up!)
+    //var y = d3.scale.linear().domain([0, 10]).range([h, 0]);
+        // automatically determining max range can work something like this
+    //var y = d3.scale.linear().domain([d3.min(data) , d3.max(data)]).range([h, 0]);
+
+    //var y = d3.scale.linear().domain([tsVol.minimumValue , tsVol.maximumValue]).range([h, 0]);
+    var y = d3.scale.linear().domain([tsVol.minimumValue , tsVol.maximumValue]).range([h, 0]);
+
+    // create a line function that can convert data[] into x and y points
+    var line = d3.svg.line()
+        //.interpolate("basis") //basis for spline interpolation
+        // assign the X function to plot our line as we wish
+        .x(function(d,i) { 
+            // return the X coordinate where we want to plot this datapoint
+            return x(i); 
+        })
+        .y(function(d) { 
+            // return the Y coordinate where we want to plot this datapoint
+            return y(d); 
+        });
+
+        // Add an SVG element with the desired dimensions and margin.
+        var graph = d3.select("#graph").append("svg:svg")
+              .attr("width", w + m[1] + m[3])
+              .attr("height", h + m[0] + m[2])
+              .attr("class", "graph-svg-component")
+            .append("svg:g")
+              .attr("transform", "translate(" + m[3] + "," + m[0] + ")");
+
+        graph.append("linearGradient")                
+            .attr("id", "line-gradient")            
+            .attr("gradientUnits", "userSpaceOnUse")    
+            .attr("x1", 0).attr("y1", y(tsVol.minimumValue))         
+            .attr("x2", 0).attr("y2", y(tsVol.maximumValue))
+        .selectAll("stop")                             
+            .data([  
+                {offset: "0%", color: "#0000ff"},
+                {offset: "10%", color: "#0033ff"},
+                {offset: "20%", color: "#0066ff"},
+                {offset: "30%", color: "#0099ff"},
+                {offset: "40%", color: "#00ccff"},
+                {offset: "50%", color: "#00ffff"},
+                {offset: "60%", color: "#33cccc"},
+                {offset: "70%", color: "#669999"},
+                {offset: "80%", color: "#996666"},
+                {offset: "90%", color: "#cc3333"},
+                {offset: "100%", color: "#cc3333"} 
+                ])   
+        .enter().append("stop")         
+            .attr("offset", function(d) { return d.offset; })   
+            .attr("stop-color", function(d) { return d.color; });
+
+        var rect = graph.append("rect")
+            .attr('w',0)
+            .attr('h',0)
+            .attr('width',w)
+            .attr('height',h)
+            .attr('fill', "#ffffff")
+            .attr("id", "graph-timeSeries-rect")
+
+        graph.append("rect")
+            .attr("class", "overlay")
+            .attr("width", w)
+            .attr("height", h)
+            .attr('fill', "#ffffff")
+            .on("mouseover", function() { focus.style("display", null); })
+            .on("mouseout", function() { focus.style("display", "none"); })
+            .on("mousemove", mousemove);
+
+        // create yAxis
+        var xAxis = d3.svg.axis().scale(x).tickSize(-h).tickSubdivide(true);
+        // Add the x-axis.
+        graph.append("svg:g")
+            .attr("class", "x axis")
+            .attr("transform", "translate(0," + h + ")")
+            .call(xAxis);  
+
+        // create left yAxis
+        var yAxisLeft = d3.svg.axis().scale(y).ticks(4).orient("left");
+        // Add the y-axis to the left
+        /*
+        graph.append("svg:g")
+              .attr("class", "y axis")
+              .attr("transform", "translate(-25,0)")
+              .call(yAxisLeft);
+        */
+        
+        // Add the line by appending an svg:path element with the data line we created above
+        // do this AFTER the axes above so that the line is above the tick-lines
+        var mainLine = graph.append("svg:path").attr("d", line(data)).attr('class', 'line colored-line');
+        //var mainLine = graph.append("svg:path").attr("d", line(data));
+
+        graph.selectAll('.line')
+            .data(tsVol.tsDataArray)
+            .enter()
+            .append("path")
+                .attr("class", "line")
+                .attr("clip-path", "url(#clip)")
+                .attr("d", line)
+                .attr('class', 'line colored-line')
+                .on("mouseover", selectLineData);
+
+        /********/
+
+        // Add an SVG element for each symbol, with the desired dimensions and margin.
+        var svg = d3.select("#graph").selectAll("svg")
+            .data(tsVol.tsDataArray)
+        .enter().append("svg")
+            .attr("width", width + smallMargin.left + smallMargin.right)
+            .attr("height", height + smallMargin.top + smallMargin.bottom)
+        .append("g")
+            .attr("transform", "translate(" + smallMargin.left + "," + smallMargin.top + ")");
+
+        // Add the line path elements. Note: the y-domain is set per element.
+        /*svg.append("path")
+            .attr('class', 'line colored-line')
+            .attr("class", "line")
+            .attr("d", function(d) { y.domain([0, d3.max(d)]); return line(d); });
+        */
+        var rect2 = svg.append("rect")
+            .attr('w',0)
+            .attr('h',0)
+            .attr('width',w)
+            .attr('height',h)
+            .attr('fill', "#ffffff")
+            .attr("id", "graph-timeSeries-rect");
+
+        svg.append("rect")
+            .attr("class", "overlay")
+            .attr("width", w)
+            .attr("height", h)
+            .attr('fill', "#ffffff")
+            .on("mouseover", function() { focus.style("display", null); })
+            .on("mouseout", function() { focus.style("display", "none"); })
+            .on("mousemove", mousemove);
+
+        svg.append("path")
+            .attr("class", "line")
+            .attr("clip-path", "url(#clip)")
+            //.attr("d", line)
+            .attr("d", function(d) { y.domain([ 0, d3.max(d)]); return line(d); })
+            .attr('class', 'line colored-line')
+            .on("mouseover", selectLineData);
+
+        svg.append("linearGradient")                
+            .attr("id", "line-gradient")            
+            .attr("gradientUnits", "userSpaceOnUse")    
+            .attr("x1", 0).attr("y1", y(tsVol.minimumValue))         
+            .attr("x2", 0).attr("y2", y(tsVol.maximumValue))
+        .selectAll("stop")                             
+            .data([  
+                {offset: "0%", color: "#0000ff"},
+                {offset: "10%", color: "#0033ff"},
+                {offset: "20%", color: "#0066ff"},
+                {offset: "30%", color: "#0099ff"},
+                {offset: "40%", color: "#00ccff"},
+                {offset: "50%", color: "#00ffff"},
+                {offset: "60%", color: "#33cccc"},
+                {offset: "70%", color: "#669999"},
+                {offset: "80%", color: "#996666"},
+                {offset: "90%", color: "#cc3333"},
+                {offset: "100%", color: "#cc3333"} 
+                ])   
+        .enter().append("stop")         
+            .attr("offset", function(d) { return d.offset; })   
+            .attr("stop-color", function(d) { return d.color; });
+
+        /********/
+
+        var focus = graph.append("g")
+            .attr("class", "focus")
+            .style("display", "none");  
+
+        focus.append("circle")
+            .attr("r", 4.5);
+
+        focus.append("text")
+            .attr("x", 9)
+            .attr("dy", ".35em")
+            .attr("style","background-color: aliceblue");  
+
+        function mousemove() {
+            var x0 = x.invert(d3.mouse(this)[0]),
+                i = Math.floor(x0),
+                data = tsVol.tsDataArray[selected]
+                d0 = data[i - 1 ],
+                d1 = data[i],
+                d = x0 - d0 > d1 - x0 ? d1 : d0;
+            focus.attr("transform", "translate(" + d3.mouse(this)[0] + "," + y(data[i]) + ")");
+            focus.select("text").text(d1);
+        }              
+
+        function selectLineData(d, i) {
+            //We need to include "d", since the index will 
+            //always be the second value passed in to the function
+            selected = i;
+            console.log(selected);
+            d3.selectAll(".highlight")
+                .classed("highlight", false);
+            //remove the highlight class 
+            //without changing any other classes 
+
+            d3.select("path.colored-line:nth-of-type(" + (i+1) +")")
+                .classed("highlight", true);
+            //add the highlight class 
+            //without changing any other classes 
+        }
+
+        // .attr('transform', 'translate(100, 50)')
+        var verticalLine = graph.append('line')
+            .attr('x1', 0)
+            .attr('y1', 0)
+            .attr('x2', 0)
+            .attr('y2', h)
+            .attr("stroke", "steelblue")
+            .attr('class', 'verticalLine');
+
+        var timeVerticalLine = graph.append('line')
+            .attr('x1', 0)
+            .attr('y1', 0)
+            .attr('x2', 0)
+            .attr('y2', h)
+            .attr("stroke", "red")
+            .attr('class', 'timeVerticalLine');
+
+        var circle = graph.append("circle")
+            .attr("opacity", 0)
+            .attr('r', 2)
+            //.attr('fill', 'darkred');
+
+        var redCircle = graph.append("circle")
+            .attr("id", 'redCircle')
+            .attr('stroke', 'red')
+            .attr("opacity", 0)
+            .attr('r', 3);
+
+        rect.on('mousemove', function () {
+            //Move blue line following the mouse
+            var xPos = d3.mouse(this)[0];
+            
+            // the +-3 lets us click the graph and not the line
+            var pathLength = mainLine.node().getTotalLength();
+
+            xPos = xPos > ( pathLength / 2 ) ? Math.min(xPos+3, pathLength) : Math.max(xPos-3, 0);
+
+            d3.select(".verticalLine").attr("transform", function(){
+                return "translate(" + xPos + ",0)";
+            });
+
+            var X = xPos;
+            var beginning = X,
+                end = pathLength,
+                target;
+            while (true) {
+                target = Math.floor((beginning + end) / 2);
+                pos = mainLine.node().getPointAtLength(target);
+                if ((target === end || target === beginning) && pos.x !== X) {
+                    break;
+                }
+                if (pos.x > X) end = target;
+                else if (pos.x < X) beginning = target;
+                else break; //position found
+            }
+            circle.attr("opacity", 1)
+                .attr("cx", X)
+                .attr("cy", pos.y);
+           
+            //console.log("x and y coordinate where vertical line intersects graph: " + [pos.x, pos.y]);
+            //console.log("data where vertical line intersects graph: " + [x.invert(pos.x), y.invert(pos.y)]);
+        });
+        $("#time-position").on("slide change", function(){
+            //Move blue line following the mouse
+            var wdt = $("#graph-timeSeries-rect").attr("width");
+            var xPos = (tsVol.currentTimePoint*wdt)/(tsVol.timeLength);
+
+            /*d3.select(".verticalLine").attr("transform", function(){
+                return "translate(" + xPos + ",0)";
+            });*/
+
+
+            var pathLength = mainLine.node().getTotalLength();
+            var X = xPos;
+            var beginning = X,
+                end = pathLength,
+                target;
+            while (true) {
+                target = Math.floor((beginning + end) / 2);
+                pos = mainLine.node().getPointAtLength(target);
+                if ((target === end || target === beginning) && pos.x !== X) {
+                    break;
+                }
+                if (pos.x > X) end = target;
+                else if (pos.x < X) beginning = target;
+                else break; //position found
+            }
+            redCircle.attr("opacity", 1)
+                .attr("cx", X)
+                .attr("cy", pos.y);
+           
+            //console.log("x and y coordinate where vertical line intersects graph: " + [pos.x, pos.y]);
+            //console.log("data where vertical line intersects graph: " + [x.invert(pos.x), y.invert(pos.y)]);
+        });
+}
+
 // ==================================== PER VOXEL TIMESERIES END =============================================
