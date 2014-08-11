@@ -1,5 +1,5 @@
 
-var tsVol = { 
+var tsVol = {
     ctx: null,                  // the context for drawing on current canvas.
     currentQuadrant: 0,         // the quadrant we're in.
     quadrants: [],              // the quadrants array.
@@ -21,7 +21,7 @@ var tsVol = {
     selectedQuad: 0,            // the quadrant selected by the user every time
     highlightedQuad: {},        // the plane to be displayed on the focus quadrant
     timeLength: 0,              // number of timepoints in the Volume.
-    currentTimePoint: 0,        
+    currentTimePoint: 0,
     playbackRate: 66,           // This is a not acurate lower limit for playback speed.
     playerIntervalID: null,     // ID from the player's setInterval().
     streamToBufferID: null,     // ID from the buffering system's setInterval().
@@ -71,7 +71,7 @@ function TSV_initVisualizer(dataUrls, minValue, maxValue, volOrigin, sizeOfVoxel
     }
 
     // This will be our JSON parser web-worker blob
-    tsVol.parserBlob = inlineWebWorkerWrapper( 
+    tsVol.parserBlob = inlineWebWorkerWrapper(
             function(){
                 self.addEventListener( 'message', function (e){
                     // Parse JSON, send it to main thread, close the worker
@@ -110,7 +110,7 @@ function TSV_initVisualizer(dataUrls, minValue, maxValue, volOrigin, sizeOfVoxel
     tsVol.dataView = dataUrls[2];
     tsVol.dataSize = HLPR_readJSONfromFile(dataUrls[1]);
     tsVol.dataTimeSeries = dataUrls[3];
-    
+
     var tmp = HLPR_readJSONfromFile(dataUrls[4]);
     tsVol.samplePeriod = tmp[0];
     tsVol.samplePeriodUnit = tmp[1];
@@ -138,7 +138,7 @@ function TSV_initVisualizer(dataUrls, minValue, maxValue, volOrigin, sizeOfVoxel
 
     startBuffering();
     window.setInterval(freeBuffer, tsVol.playbackRate*10);
-    TSF_initVisualizer();
+    TSF_initVisualizer(tsVol.dataTimeSeries);
     drawGraphs();
 }
 
@@ -162,7 +162,7 @@ function asyncRequest(fileName, sect){
                         idx = tsVol.requestQueue.indexOf(sect);
                         if (idx > -1){
                             tsVol.requestQueue.splice(idx, 1);
-                        }   
+                        }
                     });
                 }
             }
@@ -207,7 +207,7 @@ function parseAsync(data, callback){
 
 /**
  *  This function is called to erase some elements from bufferL3 array and avoid
- *  consuming too much memory. 
+ *  consuming too much memory.
  */
 function freeBuffer(){
     var section = Math.floor(tsVol.currentTimePoint/tsVol.bufferSize);
@@ -233,7 +233,7 @@ function streamToBuffer(){
         var xPlane = ";x_plane=" + (tsVol.selectedEntity[0]);
         var yPlane = ";y_plane=" + (tsVol.selectedEntity[1]);
         var zPlane = ";z_plane=" + (tsVol.selectedEntity[2]);
-        
+
         for( var i = 0; i <= tsVol.lookAhead; i++ ){
             var toBufferSection = Math.min( currentSection + i, maxSections );
             if(!tsVol.bufferL3[toBufferSection] && tsVol.requestQueue.indexOf(toBufferSection) < 0){
@@ -264,7 +264,7 @@ function getSliceAtTime(t){
     var buffer;
     var from = "from_idx=" + t;
     var to = ";to_idx=" + (t +1);
-    var query = tsVol.dataAddress + from + to; 
+    var query = tsVol.dataAddress + from + to;
 
     if(tsVol.bufferL2[t]){
         buffer = tsVol.bufferL2[t];
@@ -290,7 +290,7 @@ function getViewAtTime(t){
 
     var query;
 
-    var section = Math.floor(t/tsVol.bufferSize); 
+    var section = Math.floor(t/tsVol.bufferSize);
 
     if(tsVol.bufferL3[section]){ //We have that slice in memory
         buffer = tsVol.bufferL3[section];
@@ -395,7 +395,7 @@ function drawFocusQuadrantFromCube(tIndex){
             for (ii = 0; ii < tsVol.dataSize[1]; ++ii)
                 drawVoxel(kk, ii, tsVol.data[ii][tsVol.selectedEntity[1]][kk]);
     }
-    drawMargin();   
+    drawMargin();
 }
 
 /**
@@ -403,7 +403,7 @@ function drawFocusQuadrantFromCube(tIndex){
  */
 function drawSceneFunctionalFromView(tIndex){
     var i, j, k, ii, jj, kk;
-    
+
     // if we pass no tIndex the function will play
     // from the tsVol.currentTimePoint and increment it
     if(tIndex == null){
@@ -459,12 +459,12 @@ function drawFocusQuadrantFromView(tIndex){
             for (ii = 0; ii < tsVol.dataSize[1]; ++ii)
                 drawVoxel(kk, ii, tsVol.sliceArray[2][ii][kk]);
     }
-    drawMargin();   
+    drawMargin();
 }
 
 /**
  * Draws the voxel set at (line, col) in the current quadrant, and colors it according to its value.
- * This function now nothing about the time point. 
+ * This function now nothing about the time point.
  */
 function drawVoxel(line, col, value){
     tsVol.ctx.fillStyle = getGradientColorString(value, tsVol.minimumValue, tsVol.maximumValue);
@@ -620,7 +620,7 @@ function _setCtxOnQuadrant(quadIdx){
     //tsVol.ctx.translate(quadIdx * tsVol.quadrantWidth + tsVol.currentQuadrant.offsetX, tsVol.currentQuadrant.offsetY);
     // Vertical Mode
     if(quadIdx == 3){
-       tsVol.ctx.translate(1 * tsVol.quadrantWidth + tsVol.currentQuadrant.offsetX, tsVol.currentQuadrant.offsetY); 
+       tsVol.ctx.translate(1 * tsVol.quadrantWidth + tsVol.currentQuadrant.offsetX, tsVol.currentQuadrant.offsetY);
     }
     else{
         tsVol.ctx.translate( tsVol.currentQuadrant.offsetX, quadIdx * tsVol.quadrantHeight +  tsVol.currentQuadrant.offsetY);
@@ -719,7 +719,7 @@ function _setupLegendQuadrant(){
     tsVol.legendQuadrant.offsetX = tsVol.focusQuadrantWidth;
 }
 
-/** 
+/**
  * Automathically determine optimal bufferSizer, depending on data dimensions.
  */
 function _setupBuffersSize(){
@@ -896,7 +896,7 @@ function startPositionSliders(){
                         animate: true,
                         orientation: "horizontal",
                         change: slideMoved, // call this function *after* the slide is moved OR the value changes
-                        slide: slideMove  //  we use this to keep it smooth.   
+                        slide: slideMove  //  we use this to keep it smooth.
                     };
         $(this).slider(opts).each(function(){
             // The starting time point. Supposing it is always ZERO.
@@ -1050,7 +1050,7 @@ function slideMoved(event, ui){
     if(tsVol.slidersClicked){
         startBuffering();
         tsVol.slidersClicked = false;
-    
+
         if(tsVol.resumePlayer){
             window.setTimeout(playBack, tsVol.playbackRate * 5);
             tsVol.resumePlayer = false;
