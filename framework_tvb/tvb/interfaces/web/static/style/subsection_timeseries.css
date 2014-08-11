@@ -222,3 +222,6 @@ path {
     max-height: 51px;
     overflow: hidden;
 }
+.pin dd{
+	margin: 0px;
+}

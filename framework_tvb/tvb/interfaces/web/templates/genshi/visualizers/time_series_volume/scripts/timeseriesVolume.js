@@ -42,7 +42,8 @@ var tsVol = {
     dataTimeSeries: "",         // Contains the address to query the time series of a voxel.
     tsDataArray: [],
     samplePeriod: 0,
-    samplePeriodUnit: ""
+    samplePeriodUnit: "",
+    relevantFeature: "mean"
 };
 
 var Quadrant = function (params){                // this keeps all necessary data for drawing
@@ -1165,7 +1166,7 @@ function drawGraphs(){
         var tmp = new tsDataObj({}, getPerVoxelTimeSeries(tsVol.selectedEntity[0], tsVol.selectedEntity[1], tsVol.selectedEntity[2]));
         tsVol.tsDataArray.push(tmp);
         var pvt = {x: tsVol.selectedEntity[0], y:  tsVol.selectedEntity[1],z:  tsVol.selectedEntity[2]};
-        sortTsGraphs($("#sortingSelector").val(), pvt);
+        sortTsGraphs($("#sortingSelector").val(), tsVol.relevantFeature, pvt);
     }
     if(tsVol.tsDataArray.length < 1){
         return;
@@ -1514,28 +1515,29 @@ function drawGraphs(){
 
 /**
  * Sort the time-series array using different sorting functions
- * @param filter    String, can be desc, asc, xyz. The sorting paradigm we want to use.  
- * @param pivot     Object with x,y,z coordinates. Used only by "xyz" sort.
+ * @param order    String, can be desc, asc, xyz. The sorting order we want to use.
+ * @param by       String, name of the attribute we should consider when sorting.
+ * @param pivot    Object with x,y,z coordinates. Used only by "xyz" sort.
  */
-function sortTsGraphs(filter, pivot){
+function sortTsGraphs(order, by, pivot){
     // manhattan distance helper for xyz sorting.
     function md3d(a, b){
         return Math.abs(a.x - b.x) + Math.abs(a.y - b.y)+Math.abs(a.z - b.z);
     } 
     // sorting from biggest to smallest
-    if(filter == "descending"){
+    if(order == "descending"){
         tsVol.tsDataArray.sort(function(a, b){
-          return a.mean == b.mean ? 0 : +(a.mean < b.mean) || -1;
+          return a[by] == b[by] ? 0 : +(a[by] < b[by]) || -1;
         });
     }
     // sorting from smallest to biggest
-    else if(filter == "ascending"){
+    else if(order == "ascending"){
         tsVol.tsDataArray.sort(function(a, b){
-          return a.mean == b.mean ? 0 : +(a.mean > b.mean) || -1;
+          return a[by] == b[by] ? 0 : +(a[by] > b[by]) || -1;
         });
     }
     // sorting based on manhattan distance from the pivot coordinate
-    else if(filter == "manhattan"){
+    else if(order == "manhattan"){
         pivot = pivot || {x:0,y:0,z:0};
         tsVol.tsDataArray.sort(function(a, b){
             a = md3d(a, pivot);
@@ -1548,14 +1550,26 @@ function sortTsGraphs(filter, pivot){
     }
 }
 
-// Attach sorting listener to sorting selector
+// Attach sorting listener to sorting selectors
 $(function(){
     $("#sortingSelector").change(function(e){
-        sortTsGraphs(e.currentTarget.value, {x: tsVol.selectedEntity[0], y:  tsVol.selectedEntity[1],z:  tsVol.selectedEntity[2]});
+        var pvt = {x: tsVol.selectedEntity[0], y:  tsVol.selectedEntity[1],z:  tsVol.selectedEntity[2]};
+        sortTsGraphs(e.currentTarget.value, tsVol.relevantFeature, pvt);
         // redraw the graph
         drawGraphs();
     });
-})
+});
+
+// Attach sorting listener to sorting selector
+$(function(){
+    $("#relevantFeatureSelector").change(function(e){
+        tsVol.relevantFeature = e.currentTarget.value;
+        var pvt = {x: tsVol.selectedEntity[0], y:  tsVol.selectedEntity[1],z:  tsVol.selectedEntity[2]};
+        sortTsGraphs($("#sortingSelector").val(), tsVol.relevantFeature, pvt);
+        // redraw the graph
+        drawGraphs();
+    });
+});
 
 $(function(){
     $("#ts-trash-can").height($("#sortable-delete").height()+17);

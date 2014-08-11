@@ -35,7 +35,7 @@
             <fieldset class="pin">
                 <dl>
                     <dt>
-                        <label for="sortingSelector">Time Series Sorting:</label>
+                        <label for="sortingSelector">Time Series Sorting Order:</label>
                     </dt>
                     <dd>
                         <select id="sortingSelector" name="sortingSelector">
@@ -43,6 +43,21 @@
                             <option value="descending" selected="selected">Descending</option>
                             <option value="manhattan">Manhattan Distance</option>
                             <option value="manual">Manual</option>
+                        </select>
+                    </dd>
+                </dl>
+                <dl>
+                    <dt>
+                        <label for="relevantFeatureSelector">Time Series Relevant Feature:</label>
+                    </dt>
+                    <dd>
+                        <select id="relevantFeatureSelector" name="relevantFeatureSelector">
+                            <option value="mean" selected="selected">Mean</option>
+                            <option value="max">Maximun</option>
+                            <option value="min">Minimun</option>
+                            <option value="median">Median</option>
+                            <option value="variance">Variance</option>
+                            <option value="deviation">Standard Deviation</option>
                         </select>
                     </dd>
                 </dl>
