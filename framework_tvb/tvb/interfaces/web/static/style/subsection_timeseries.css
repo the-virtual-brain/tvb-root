@@ -169,7 +169,6 @@ path {
 
 .colored-line {
     fill: none;
-	stroke: url(#line-gradient);
     stroke-width: 2px;
     stroke-opacity: 0.15;
 }

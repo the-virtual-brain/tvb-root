@@ -1055,29 +1055,6 @@ function tryGraph(){
             .append("svg:g")
               .attr("transform", "translate(" + m[3] + "," + m[0] + ")");
 
-        graph.append("linearGradient")                
-            .attr("id", "line-gradient")            
-            .attr("gradientUnits", "userSpaceOnUse")    
-            .attr("x1", 0).attr("y1", y(tsVol.minimumValue))         
-            .attr("x2", 0).attr("y2", y(tsVol.maximumValue))
-        .selectAll("stop")                             
-            .data([  
-                {offset: "0%", color: "#0000ff"},
-                {offset: "10%", color: "#0033ff"},
-                {offset: "20%", color: "#0066ff"},
-                {offset: "30%", color: "#0099ff"},
-                {offset: "40%", color: "#00ccff"},
-                {offset: "50%", color: "#00ffff"},
-                {offset: "60%", color: "#33cccc"},
-                {offset: "70%", color: "#669999"},
-                {offset: "80%", color: "#996666"},
-                {offset: "90%", color: "#cc3333"},
-                {offset: "100%", color: "#cc3333"} 
-                ])   
-        .enter().append("stop")         
-            .attr("offset", function(d) { return d.offset; })   
-            .attr("stop-color", function(d) { return d.color; });
-
         var rect = graph.append("rect")
             .attr('w',0)
             .attr('h',0)
@@ -1121,7 +1098,7 @@ function tryGraph(){
             .enter()
             .append("path")
                 .attr("class", "line")
-                .attr("clip-path", "url(#clip)")
+                //.attr("clip-path", "url(#clip)")
                 .attr("d", function(d){return line(d.data);})
                 .attr('class', 'line colored-line')
                 .attr("style", function(d){return "stroke:" + getGradientColorString(d.mean, tsVol.minimumValue, tsVol.maximumValue);} )
@@ -1157,6 +1134,7 @@ function tryGraph(){
             .attr("class", "line")
             .attr("d", function(d) { y = d3.scale.linear().domain([d.min, d.max]).range([height, 0]); return line(d.data); })
             .attr('class', 'line colored-line mini')
+            .attr("style", function(d){return "stroke:" + getGradientColorString(d.mean, tsVol.minimumValue, tsVol.maximumValue);} )
 
         svg.append("text")
             .attr("class", "y label")
