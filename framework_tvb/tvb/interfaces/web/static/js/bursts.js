@@ -16,7 +16,9 @@
  * http://www.gnu.org/licenses/old-licenses/gpl-2.0
  *
  **/
-/* global doAjaxCall */
+
+/* global doAjaxCall, displayMessage, minimizeColumn, MathJax, redrawPlot */
+
 /*
  * SIMULATOR (BURST) related JS calls.
  *  - Configure and launch a new burst; 
@@ -24,7 +26,6 @@
  *  - Show progress.
  */
 
-/* globals displayMessage*/
 
 // Object holding current burst ID/ NAME / STATE
 var EMPTY_BURST = {
@@ -60,7 +61,7 @@ function clone(object_) {
 }
 
 /*************************************************************************************************************************
- * 			HISTORY COLUMN
+ *            HISTORY COLUMN
  *************************************************************************************************************************/
 
 /*
@@ -132,6 +133,7 @@ function loadBurstHistory() {
  */
 function updateBurstHistoryStatus() {
     var burst_ids = [];
+    // todo: do not store app state in css classes
     $("#burst-history").find("li").each(function () {
         if (this.className.indexOf('burst-started') >= 0) {
             if (this.id.indexOf('burst_id_') >= 0) {
@@ -283,7 +285,7 @@ function changeBurstHistory(burst_id) {
 }
 
 /*************************************************************************************************************************
- * 			MIDDLE COLUMN (SIMULATION PARAMETERS)
+ *          MIDDLE COLUMN (SIMULATION PARAMETERS)
  *************************************************************************************************************************/
 
 function _toggleLaunchButtons(beActiveLaunch, beActiveRest) {
@@ -317,6 +319,7 @@ function _fillSimulatorParametersArea(htmlContent, isConfigure) {
         $("#button-uncheck-all-params").hide();
         $("#button-check-all-params").hide();
     }
+
     _toggleLaunchButtons(!isConfigure && sessionStoredBurst.id=='',
             !isConfigure && sessionStoredBurst.id!='' && sessionStoredBurst.isFinished && !sessionStoredBurst.isRange);
 
@@ -343,7 +346,8 @@ function loadSimulatorInterface() {
 }
 
 function tryExpandRangers() {
-    doAjaxCall({type: "GET",
+    doAjaxCall({
+        type: "GET",
         url: '/burst/get_previous_selected_rangers',
         success: function(r) {
             var result = $.parseJSON(r);
@@ -382,7 +386,7 @@ function setSimulatorChangeListener(parentDivId) {
  * entries to the normal mode only with a reduce set of parameters.
  */
 function configureSimulator(configureHref) {
-
+    // todo: do not keep app state in dom
     if (configureHref.text == "Configure Interface") {
         doAjaxCall({
             type: "GET",
@@ -430,7 +434,6 @@ function toggleSimulatorParametersChecks(beChecked) {
  * For Model-Visual-Setter important are: Connectivity and Model.
  */
 function configureModel(actionUrl) {
-
     var submitableData = getSubmitableData("div-simulator-parameters", false);
     doAjaxCall({
         type: "POST",
@@ -482,7 +485,7 @@ function toggleConfigSurfaceModelParamsButton() {
 }
 
 /*************************************************************************************************************************
- * 			PORTLETS COLUMN (3rd COLUMN)
+ *           PORTLETS COLUMN (3rd COLUMN)
  *************************************************************************************************************************/
 
 function switch_top_level_visibility(currentVisibleSelection) {
@@ -510,40 +513,41 @@ function loadGroup(groupGID) {
     $('#burst-pse-flot').hide();
     $('#burst-pse-iso').hide();
     $("#section-portlets-ul").find("li").each(function () {
-            $(this).removeClass('active');
-        });
+        $(this).removeClass('active');
+    });
     doAjaxCall({
         type: "POST",
         async: false,
         url: '/burst/explore/get_default_pse_viewer/' + groupGID,
         success: function(r) {
-                if (r == 'FLOT') {
-                    $('#burst-pse-flot').show();
-                    $('#pse-flot').addClass('active');
-                } else if (r == 'ISO') {
-                    $('#burst-pse-iso').show();
-                    $('#pse-iso').addClass('active');
-                } else {
-                    displayMessage("None of the parameter exploration viewers are compatible with range.", "warningMessage");
-                }
+            if (r == 'FLOT') {
+                $('#burst-pse-flot').show();
+                $('#pse-flot').addClass('active');
+            } else if (r == 'ISO') {
+                $('#burst-pse-iso').show();
+                $('#pse-iso').addClass('active');
+            } else {
+                displayMessage("None of the parameter exploration viewers are compatible with range.", "warningMessage");
+            }
 
-                switch_top_level_visibility("#section-pse");
-                var pseElem = $('#section-pse');
-                var isoWidth = pseElem.width();
-                var isoHeight = pseElem.height();
-                PSE_mainDraw('burst-pse-flot', 'burst', groupGID);
-                Isocline_MainDraw(groupGID, 'burst-pse-iso', isoWidth, isoHeight)
-            },
+            switch_top_level_visibility("#section-pse");
+            var pseElem = $('#section-pse');
+            var isoWidth = pseElem.width();
+            var isoHeight = pseElem.height();
+            PSE_mainDraw('burst-pse-flot', 'burst', groupGID);
+            Isocline_MainDraw(groupGID, 'burst-pse-iso', isoWidth, isoHeight);
+        },
         error: function() {
             displayMessage("Error while loading burst.", "errorMessage");
-        }});
+        }
+    });
 }
 
 
 function changePSETab(clickedHref, toShow) {
     $("#section-portlets-ul").find("li").each(function () {
-            $(this).removeClass('active');
-        });
+        $(this).removeClass('active');
+    });
     $(clickedHref).parent().addClass('active');
     if (toShow == 'flot') {
         $('#burst-pse-flot').show();
@@ -569,11 +573,11 @@ function resizeIsoFigures() {
 }
 
 
+/*
+ * Maximize or minimize the left side div on a group burst. Also resize
+ * plot for the tab that is currently selected.
+ */
 function toggleMaximizeBurst(hrefElement) {
-    /*
-     * Maximize or minimize the left side div on a group burst. Also resize
-     * plot for the tab that is currently selected.
-     */
     toggleMaximizeColumn(hrefElement, 'section-pse');
     if ($('#pse-iso').hasClass('active')) {
         resizeIsoFigures();
@@ -606,7 +610,6 @@ function updatePortletsToolbar(state) {
  * Update the selected portlets. Used when changing any of the select combos.
  */
 function updatePortletSelection(selectComponent, indexInTab) {
-
     if (selectedPortlets != null) {
         var selectedOption = selectComponent.options[selectComponent.selectedIndex];
         var portletId = selectedOption.value;
@@ -621,7 +624,6 @@ function updatePortletSelection(selectComponent, indexInTab) {
  * Switch between portlets selection and portlet preview/results display.
  */
 function selectPortlets(isSave) {
-
     if (!isSave) {
         updatePortletConfiguration();
         $("#portlets-display").hide();
@@ -679,7 +681,6 @@ function setPortletsStaticPreviews() {
  * Update the select inputs for portlet configurations.
  */
 function updatePortletConfiguration() {
-
     var selectedPortletsForThisTab = selectedPortlets[selectedTab];
     for (var i = 0; i < selectedPortletsForThisTab.length; i++) {
         var selectComponent = document.getElementById('selectportlet-' + i);
@@ -700,7 +701,6 @@ function updatePortletConfiguration() {
  * Save the inputs for the currently selected portlet.
  */
 function savePortletParams() {
-
     var submitableData = getSubmitableData('portlet-param-config', false);
     doAjaxCall({
         type: "GET",
@@ -756,7 +756,6 @@ function savePortletParams() {
  * Then get the configurable interface for the portlet.
  */
 function showPortletParametersPage(tabIdx) {
-
     // The tabIdx received is just a relative number (the n-th portlet in this tab)
     // but the configuration stored is in the form [ [id, name], [-1, None], [-1, None], [id, name]]
     // so go through this to find out the absolute index in this tab for this portlet
@@ -793,7 +792,6 @@ function showPortletParametersPage(tabIdx) {
  * tab from server session, and update the selected portlets by that.
  */
 function returnToSessionPortletConfiguration() {
-
     cancelPortletConfig();
     $("#portlets-configure").hide();
     doAjaxCall({
@@ -801,10 +799,10 @@ function returnToSessionPortletConfiguration() {
         async: false,
         url: '/burst/get_portlet_session_configuration',
         success: function(r) {
-                selectedPortlets = $.parseJSON(r);
+            selectedPortlets = $.parseJSON(r);
         } ,
         error: function() {
-                displayMessage("Error during retrieving viewer configuration.", "errorMessage");
+            displayMessage("Error during retrieving viewer configuration.", "errorMessage");
         }
     });
 }
@@ -813,7 +811,6 @@ function returnToSessionPortletConfiguration() {
  * Cancel the configuration of a portlet. Just hide the configuration DIV and show the display one.
  */
 function cancelPortletConfig() {
-
     updatePortletsToolbar(3);
     $("#portlet-param-config").hide();
     $("#portlets-configure").hide();
@@ -824,7 +821,6 @@ function cancelPortletConfig() {
  * Check for each portlet that is in running status if it is done or not.
  */
 function checkIfPortletDone(portlet_element_id, timedSelectedTab, timedTabIndex) {
-
     var portlet_element = $("#" + portlet_element_id);
     if (portlet_element.length > 0) {
         var width = Math.floor(portlet_element[0].clientWidth);
@@ -853,10 +849,10 @@ function checkIfPortletDone(portlet_element_id, timedSelectedTab, timedTabIndex)
 
 function _setPortletRefreshTimeouts() {
     $("input[id^='running-portlet-']").each(function () {
-            var parent_div_id = 'portlet-view-'+$(this).val();
-            var tabIndex = $(this)[0].id.replace('running-portlet-', '');
-            var timeout = setTimeout("checkIfPortletDone('" + parent_div_id + "', " + selectedTab + ", " + tabIndex + ")", 3000);
-            refreshTimeouts.push(timeout);
+        var parent_div_id = 'portlet-view-'+$(this).val();
+        var tabIndex = $(this)[0].id.replace('running-portlet-', '');
+        var timeout = setTimeout("checkIfPortletDone('" + parent_div_id + "', " + selectedTab + ", " + tabIndex + ")", 3000);
+        refreshTimeouts.push(timeout);
     });
 }
 
@@ -873,8 +869,8 @@ function changeBurstTile(selectedHref) {
     _clearAllTimeouts();
     $("#div-burst-tree").hide();
     $("#section-portlets-ul, #section-portlets-ul").find("li").each(function () {
-            $(this).removeClass('active');
-        });
+        $(this).removeClass('active');
+    });
     $(selectedHref).parent().addClass('active');
     // Refresh buttons
     returnToSessionPortletConfiguration();
@@ -886,10 +882,11 @@ function changeBurstTile(selectedHref) {
     }
     selectedTab = selectedHref.id.split('_')[1];
     // Also update selected tab on cherryPy session.
-    doAjaxCall({type: "POST",
-                async: false,
-                url: '/burst/change_selected_tab/' + selectedTab
-            });
+    doAjaxCall({
+        type: "POST",
+        async: false,
+        url: '/burst/change_selected_tab/' + selectedTab
+    });
     // Next update the checked check-boxes for this newly selected tab
     updatePortletConfiguration();
 
@@ -922,20 +919,20 @@ function changeBurstTile(selectedHref) {
  * Hide portlet DIVs and display Burst-Tree section.
  */
 function displayBurstTree(selectedHref, selectedProjectID, baseURL) {
-
     _clearAllTimeouts();
     returnToSessionPortletConfiguration();
 
     updatePortletsToolbar(0);
     $("#section-portlets-ul").find("li").each(function () {
-            $(this).removeClass('active');
-        });
+        $(this).removeClass('active');
+    });
     $(selectedHref).parent().addClass('active');
     // Also update selected tab on cherryPy session.
-    doAjaxCall({type: "POST",
-                async: false,
-                url: '/burst/change_selected_tab/-1'
-            });
+    doAjaxCall({
+        type: "POST",
+        async: false,
+        url: '/burst/change_selected_tab/-1'
+    });
     var filterValue = {'type' : 'from_burst', 'value' : sessionStoredBurst.id};
     if (filterValue.value == '') {
         filterValue = {'type' : 'from_burst', 'value' : "0"};
@@ -994,37 +991,33 @@ function initBurstConfiguration(sessionPortlets, selectedTab) {
  * Given a burst id, make all the required AJAX calls to populate the right and the left side.
  */
 function loadBurst(burst_id) {
-
     sessionStoredBurst.id = burst_id;
     // If left side was on portlet config phase, cancel that.
     cancelPortletConfig();
     _clearAllTimeouts();
-
     // Call ASYNC since it returns a HTML that contains the burst status
     // This is updated immediately after this function exits so we need to make
     // sure AJAX response is loaded by then
-
-    //todo: button not showing might be a race here
     doAjaxCall({
         type: "POST",
         url: '/burst/load_burst/' + burst_id,
         showBlockerOverlay : true,
         success: function(r) {
             var result = $.parseJSON(r);
-            selectedTab = result['selected_tab'];
-            var groupGID = result['group_gid'];
+            selectedTab = result.selected_tab;
+            var groupGID = result.group_gid;
             var selectedBurst = $("#burst_id_" + burst_id)[0];
             // This is for the back-button issue with Chrome. Should be removed after permanent solution.
             if (selectedBurst != null) {
                 selectedBurst.className = selectedBurst.className + ' ' + ACTIVE_BURST_CLASS;
-                sessionStoredBurst.isFinished = (result['status']=='finished');
+                sessionStoredBurst.isFinished = (result.status == 'finished');
                 sessionStoredBurst.isRange = (groupGID != null && groupGID != "None");
                 fill_burst_name(selectedBurst.children[0].text, true, false);
                 updatePortletsToolbar(3);
             }
             // Now load simulator interface and the corresponding right side div depending
             // on the condition if the burst was a group launch or not.
-            loadSimulatorInterface();//mark
+            loadSimulatorInterface();
             if (groupGID != null && groupGID != "None") {
                 loadGroup(groupGID);
             } else if (selectedTab == -1) {
@@ -1077,7 +1070,6 @@ function loadBurst(burst_id) {
  * Set the new burst entry from the burst history column as active. Update visualization accordingly.
  */
 function setNewBurstActive() {
-
     switch_top_level_visibility("#section-portlets");
     $("#burst-history").find("li").each(function () {
         $(this).removeClass(ACTIVE_BURST_CLASS);
@@ -1116,7 +1108,6 @@ function markBurstChanged() {
  * @param {bool} addPrefix
  */
 function fill_burst_name(burstName, isReadOnly, addPrefix) {
-
     var inputBurstName = $("#input-burst-name-id");
     var titleSimulation = $("#title-simulation");
     var titlePortlets = $("#title-visualizers");
@@ -1152,7 +1143,6 @@ function fill_burst_name(burstName, isReadOnly, addPrefix) {
  * @param launchMode: 'new' 'branch' or 'continue'
  */
 function launchNewBurst(launchMode) {
-
     var newBurstName = document.getElementById('input-burst-name-id').value;
     if (newBurstName.length === 0) {
         newBurstName = "none_undefined";
