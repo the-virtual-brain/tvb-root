@@ -352,24 +352,34 @@ class BurstController(BurstBaseController):
     @expose_json
     def load_burst(self, burst_id):
         """
-        Given a clicked burst from the history and the selected tab, load all 
-        the required data from that burst. Return a value specifying if it was a result
-        of a range launch (OperationGroup) or not.
+        Given a burst id return its running status, weather it was a operation group and the selected tab.
+        This is called when a burst is selected in the history,
+        when returning from a burst config page (model param or noise)
+        and when the status of running simulations is polled.
+        Besides returning these values it updates the session stored burst.
+
+        A burst configuration has 2 meanings.
+        It is a staging configuration for a new burst (stored in transients in the session).
+        It is the configuration used to launch a simulation and it's running status (stored in the db).
+        This method has to merge the two meanings.
+        If the requested burst_id is different from the one held in the session,
+        then the burst config is loaded from the db, discarding any session stored config.
+        If the id is the same then the session config is kept.
         """
         try:
             burst_id = int(burst_id)
             old_burst = common.get_from_session(common.KEY_BURST_CONFIG)
-            db_burst, group_gid = self.burst_service.load_burst(burst_id)
+            burst, group_gid = self.burst_service.load_burst(burst_id)
 
-            if old_burst.id != burst_id :
-                # this function was called to load a different burst
-                burst = db_burst
-                burst.selected_tab = old_burst.selected_tab
-                common.add2session(common.KEY_BURST_CONFIG, burst)
-            else:
-                # this function was called to reload the current burst page. The model parameter or noise page did it.
-                burst = old_burst
+            if old_burst.id == burst_id :
+                # This function was called to reload the current burst.
+                # Merge session config into the db config. Overwrite all transient fields
+                burst.simulator_configuration = old_burst.simulator_configuration
+                burst.dynamic_ids = old_burst.dynamic_ids
+                burst.tabs = old_burst.tabs
 
+            burst.selected_tab = old_burst.selected_tab
+            common.add2session(common.KEY_BURST_CONFIG, burst)
             return {'status': burst.status, 'group_gid': group_gid, 'selected_tab': burst.selected_tab}
         except Exception:
             ### Most probably Burst was removed. Delete it from session, so that client 
