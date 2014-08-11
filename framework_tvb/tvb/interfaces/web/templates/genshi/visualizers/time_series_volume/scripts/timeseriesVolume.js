@@ -1103,15 +1103,33 @@ function getPerVoxelTimeSeries(x,y,z){
 }
 
 
-    //Check if an array of objects contains another object with a given 'label' attribute.
-    function containsByLabel(a, label) {
-        for (var i = 0; i < a.length; i++) {
-            if (a[i].label === label) {
-                return true;
-            }
+//Check if an array of objects contains another object with a given 'label' attribute.
+function containsByLabel(a, label) {
+    for (var i = 0; i < a.length; i++) {
+        if (a[i].label === label) {
+            return true;
         }
-        return false;
     }
+    return false;
+}
+
+function variance(arr, mean) {
+    var n = arr.length;
+    if(n < 1){
+        return NaN;
+    }
+    if(n === 1){
+        return 0;
+    }
+    mean = mean || d3.mean(arr);
+    var i = -1;
+    var s = 0;
+  while (++i < n){
+    var v = arr[i] - mean;
+    s += v * v;
+  }
+  return s / (n - 1);
+};
 
 /* implementation heavily influenced by http://bl.ocks.org/1166403 */
 function drawGraphs(){
@@ -1135,7 +1153,10 @@ function drawGraphs(){
         this.data = params.data || data,
         this.max = params.max || d3.max(data),
         this.min = params.min || d3.min(data),
-        this.mean = params.mean || d3.mean(data)
+        this.mean = params.mean || d3.mean(data),
+        this.median = params.median || d3.median(data),
+        this.variance = params.variance || variance(data, this.mean),
+        this.deviation = params.deviation || Math.sqrt(this.variance)
     }
 
     var label = "["+tsVol.selectedEntity[0]+","+tsVol.selectedEntity[1]+","+tsVol.selectedEntity[2]+"]";
