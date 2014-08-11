@@ -59,7 +59,13 @@ Basic
     This tutorial covers using the "phase_plane_interactive" plotting tool to
     investigate the dynamic properties of a Model and at the same time set the
     parameters of a specific instance for use in a simulation.
-
+    
+* `Exploring A Model Reduced Wong Wang <https://github.com/the-virtual-brain/tvb-library/blob/trunk/tvb/simulator/doc/tutorials/Tutorial_Exploring_A_Model_ReducedWongWang/Tutorial_Exploring_A_Model_ReducedWongWang.ipynb>`_
+    This tutorial explores how the graph, and the dynamics, of this one-
+    dimensional model changes a function of local recurrent connections and
+    external input. These two parameters determine the multistability of the
+    system.
+    
 * `Exploring The Bold Monitor <http://nbviewer.ipython.org/github/the-virtual-brain/tvb-library/blob/trunk/tvb/simulator/doc/tutorials/Tutorial_Exploring_The_Bold_Monitor/Tutorial_Exploring_The_Bold_Monitor.ipynb>`_
     This tutotrial covers the basic overview of the Bold monitor to investigate
     its parameters and the influence on the HRF (Haemodynamic Response Function)
