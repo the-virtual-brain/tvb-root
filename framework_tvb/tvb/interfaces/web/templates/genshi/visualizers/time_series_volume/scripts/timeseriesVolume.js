@@ -13,7 +13,11 @@ var tsVol = {
     quadrantWidth: null,
     focusQuadrantHeight: null,
     focusQuadrantWidth: null,
+    legendHeight: 0,
+    legendWidt: 0,
+    legendQuadrant: null,
     selectedQuad: 0,
+    highlightedQuad: {},
     timeLength: 0,              // number of timepoints in the Volume.
     currentTimePoint: 0,
     playbackRate: 66,           // This is a not acurate lower limit for playback speed.
@@ -86,7 +90,7 @@ function TSV_initVisualizer(dataUrls, minValue, maxValue, volOrigin, sizeOfVoxel
     tsVol.quadrantHeight = canvas.height / 3;               // quadrants are squares
     tsVol.quadrantWidth = tsVol.quadrantHeight;
     tsVol.focusQuadrantWidth = canvas.width - tsVol.quadrantWidth;
-    tsVol.focusQuadrantHeight = canvas.height;
+    tsVol.focusQuadrantHeight = canvas.height - tsVol.legendHeight;
 
     tsVol.ctx = canvas.getContext("2d");
     tsVol.ctx.beginPath();
@@ -124,6 +128,7 @@ function TSV_initVisualizer(dataUrls, minValue, maxValue, volOrigin, sizeOfVoxel
 
     ColSch_initColorSchemeParams(minValue, maxValue, colorRedraw);
     tsVol.currentTimePoint = 0;
+    //tsVol.highlightedQuad.index = 0;
 
     startBuffering();
     window.setInterval(freeBuffer, tsVol.playbackRate*10);
@@ -357,17 +362,17 @@ function drawSceneFunctionalFromCube(tIndex){
 
 function drawFocusQuadrantFromCube(tIndex){
     _setCtxOnQuadrant(3);
-    if(tsVol.selectedQuad.index == 0){
+    if(tsVol.highlightedQuad.index == 0){
         for (j = 0; j < tsVol.dataSize[2]; ++j)
             for (i = 0; i < tsVol.dataSize[1]; ++i)
                 drawVoxel(i, j, tsVol.data[i][j][tsVol.selectedEntity[2]]);
     }
-    else if(tsVol.selectedQuad.index == 1){
+    else if(tsVol.highlightedQuad.index == 1){
         for (k = 0; k < tsVol.dataSize[3]; ++k)
             for (jj = 0; jj < tsVol.dataSize[2]; ++jj)
                 drawVoxel(k, jj, tsVol.data[tsVol.selectedEntity[0]][jj][k]);
     }
-    else{
+    else if(tsVol.highlightedQuad.index == 2){
         for (kk = 0; kk < tsVol.dataSize[3]; ++kk)
             for (ii = 0; ii < tsVol.dataSize[1]; ++ii)
                 drawVoxel(kk, ii, tsVol.data[ii][tsVol.selectedEntity[1]][kk]);
@@ -419,17 +424,17 @@ function drawSceneFunctionalFromView(tIndex){
 
 function drawFocusQuadrantFromView(tIndex, sliceArray){
     _setCtxOnQuadrant(3);
-    if(tsVol.selectedQuad.index == 0){
+    if(tsVol.highlightedQuad.index == 0){
         for (j = 0; j < tsVol.dataSize[2]; ++j)
             for (i = 0; i < tsVol.dataSize[1]; ++i)
                 drawVoxel(i, j, sliceArray[0][i][j]);
     }
-    else if(tsVol.selectedQuad.index == 1){
+    else if(tsVol.highlightedQuad.index == 1){
         for (k = 0; k < tsVol.dataSize[3]; ++k)
             for (jj = 0; jj < tsVol.dataSize[2]; ++jj)
                 drawVoxel(k, jj, sliceArray[1][jj][k]);
     }
-    else{
+    else if(tsVol.highlightedQuad.index == 2){
         for (kk = 0; kk < tsVol.dataSize[3]; ++kk)
             for (ii = 0; ii < tsVol.dataSize[1]; ++ii)
                 drawVoxel(kk, ii, sliceArray[2][ii][kk]);
@@ -465,6 +470,19 @@ function drawNavigator(){
     tsVol.ctx.lineWidth = 3;
     tsVol.ctx.stroke();
     tsVol.ctx.restore();
+
+    tsVol.ctx.save();
+    tsVol.ctx.beginPath();
+
+    _setCtxOnQuadrant(3);
+    var x = tsVol.selectedEntity[tsVol.currentQuadrant.axes.x] * tsVol.currentQuadrant.entityWidth + tsVol.currentQuadrant.entityWidth / 2;
+    var y = tsVol.selectedEntity[tsVol.currentQuadrant.axes.y] * tsVol.currentQuadrant.entityHeight + tsVol.currentQuadrant.entityHeight / 2;
+    drawFocusCrossHair(x, y);
+
+    tsVol.ctx.strokeStyle = "blue";
+    tsVol.ctx.lineWidth = 3;
+    tsVol.ctx.stroke();
+    tsVol.ctx.restore();
 }
 
 /**
@@ -475,6 +493,15 @@ function drawCrossHair(x, y){
     tsVol.ctx.lineTo(Math.min(x + 20, tsVol.quadrantWidth), y);
     tsVol.ctx.moveTo(x, Math.max(y - 20, 0));                              // the vertical line
     tsVol.ctx.lineTo(x, Math.min(y + 20, tsVol.quadrantHeight));
+}
+/**
+ * Draws a cross hair on the bigger focus quadrant, at the specified x and y
+ */
+function drawFocusCrossHair(x, y){
+    tsVol.ctx.moveTo(Math.max(x - tsVol.focusQuadrantWidth, 0), y);                              // the horizontal line
+    tsVol.ctx.lineTo(Math.min(x + tsVol.focusQuadrantWidth, tsVol.focusQuadrantWidth), y);
+    tsVol.ctx.moveTo(x, Math.max(y - tsVol.focusQuadrantHeight, 0));                              // the vertical line
+    tsVol.ctx.lineTo(x, Math.min(y + tsVol.focusQuadrantHeight, tsVol.focusQuadrantHeight));
 }
 
 /**
@@ -494,7 +521,11 @@ function drawMargin(){
     //tsVol.ctx.rect(2.5, 0, tsVol.quadrantWidth-2, tsVol.quadrantHeight);
     tsVol.ctx.rect(2.5, 0, marginWidth-2, marginHeight-2);
     tsVol.ctx.lineWidth = 5;
-    if(tsVol.currentQuadrant.index == tsVol.selectedQuad.index){
+    if(tsVol.currentQuadrant.index == tsVol.selectedQuad.index && tsVol.currentQuadrant.index != 3){
+        tsVol.ctx.strokeStyle = 'white';
+        tsVol.highlightedQuad = tsVol.currentQuadrant;
+    }
+    if(tsVol.currentQuadrant.index == tsVol.highlightedQuad.index){
         tsVol.ctx.strokeStyle = 'white';
     }
     else{
@@ -587,6 +618,8 @@ function _setupQuadrants(){
         tsVol.quadrants[quadIdx].offsetY = 0;
         tsVol.quadrants[quadIdx].offsetX = 0;
     }
+    tsVol.selectedQuad = tsVol.quadrants[0];
+    tsVol.highlightedQuad = tsVol.selectedQuad;
     _setupFocusQuadrant();
 }
 
@@ -626,7 +659,7 @@ function _setupBuffersSize(){
     while(tsVol.bufferSize * tpSize * tsVol.bufferL2Size <= 157286400){
         tsVol.bufferL2Size *= 2;
     }
-    tsVol.bufferL2Size/= 2
+    tsVol.bufferL2Size /= 2;
 }
 
 // ==================================== PRIVATE FUNCTIONS  END  =============================================
@@ -645,7 +678,9 @@ function customMouseUp(e){
         window.setTimeout(playBack, tsVol.playbackRate*5);
         tsVol.resumePlayer = false;
     }
-    tryGraph();
+    if(tsVol.selectedQuad.index == 3){
+        tryGraph();
+    }
 }
 
 function customMouseMove(e){
@@ -699,25 +734,51 @@ function TSV_pick(e){
     var xpos = e.pageX - offset.left;
     var ypos = e.pageY - offset.top;
     //var selectedQuad = tsVol.quadrants[Math.floor(xpos / tsVol.quadrantWidth)];
-    tsVol.selectedQuad = tsVol.quadrants[Math.floor(ypos / tsVol.quadrantHeight)];
-    _setupFocusQuadrant();
-    // check if it's inside the quadrant but outside the drawing
-    if (ypos < tsVol.selectedQuad.offsetY ){
-        return;
+    if(Math.floor(xpos / tsVol.quadrantWidth) >= 1){
+        tsVol.selectedQuad = tsVol.quadrants[3];
+        // check if it's inside the quadrant but outside the drawing
+        if (ypos < tsVol.selectedQuad.offsetY ){
+            return;
+        }
+        else if(ypos >= tsVol.focusQuadrantHeight * (tsVol.selectedQuad.index + 1) - tsVol.selectedQuad.offsetY){
+            return;
+        }
+        else if(xpos < tsVol.offsetX){
+            return;
+        }
+        else if(xpos >= tsVol.focusQuadrantWidth - tsVol.selectedQuad.offsetX + tsVol.quadrantWidth){
+            return;
+        }
     }
-    if(ypos >= tsVol.quadrantHeight * (tsVol.selectedQuad.index + 1) - tsVol.selectedQuad.offsetY){
-        return;
+    else{
+        tsVol.selectedQuad = tsVol.quadrants[Math.floor(ypos / tsVol.quadrantHeight)];
+        _setupFocusQuadrant();
+        // check if it's inside the quadrant but outside the drawing
+        if (ypos < tsVol.selectedQuad.offsetY ){
+            return;
+        }
+        else if(ypos >= tsVol.quadrantHeight * (tsVol.selectedQuad.index + 1) - tsVol.selectedQuad.offsetY){
+            return;
+        }
+        else if(xpos < tsVol.offsetX){
+            return;
+        }
+        else if(xpos >= tsVol.quadrantWidth - tsVol.selectedQuad.offsetX){
+            return;
+        }
     }
-    if(xpos < tsVol.offsetX){
-        return;
-    }
-    if(xpos >= tsVol.quadrantWidth - tsVol.selectedQuad.offsetX){
-        return;
-    }
+
     //var selectedEntityOnX = Math.floor((xpos % tsVol.quadrantWidth) / selectedQuad.entityWidth);
     //var selectedEntityOnY = Math.floor((ypos - selectedQuad.offsetY) / selectedQuad.entityHeight);
-    var selectedEntityOnX = Math.floor((xpos - tsVol.selectedQuad.offsetX) / tsVol.selectedQuad.entityWidth);
-    var selectedEntityOnY = Math.floor((ypos % tsVol.quadrantHeight) / tsVol.selectedQuad.entityHeight);
+    if(tsVol.selectedQuad.index == 3){
+        var selectedEntityOnX = Math.floor(((xpos - tsVol.quadrantWidth) % tsVol.focusQuadrantWidth) / tsVol.selectedQuad.entityWidth);
+        //var selectedEntityOnY = Math.floor((ypos - tsVol.selectedQuad.offsetY) / tsVol.selectedQuad.entityHeight);
+        var selectedEntityOnY = Math.floor(((ypos - tsVol.selectedQuad.offsetY) % tsVol.focusQuadrantHeight) / tsVol.selectedQuad.entityHeight);
+    }
+    else{
+        var selectedEntityOnX = Math.floor((xpos - tsVol.selectedQuad.offsetX) / tsVol.selectedQuad.entityWidth);
+        var selectedEntityOnY = Math.floor((ypos % tsVol.quadrantHeight) / tsVol.selectedQuad.entityHeight);
+    }
     tsVol.selectedEntity[tsVol.selectedQuad.axes.x] = selectedEntityOnX;
     tsVol.selectedEntity[tsVol.selectedQuad.axes.y] = selectedEntityOnY;
     updateSliders();
@@ -1275,6 +1336,7 @@ function tryGraph(){
         });
         /*
             This is what allow us to manually sort the svg blocks.
+            The draging is smot because of the <li> tags on HTML, do not remove.
             TODO: Make the manual sorting consistent with the array
             structure. (easy)
         */
