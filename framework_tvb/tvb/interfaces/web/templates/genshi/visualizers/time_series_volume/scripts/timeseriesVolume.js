@@ -8,6 +8,7 @@ var tsVol = {
     voxelSize: null,
     volumeOrigin: null,         // volumeOrigin is not used for now. if needed, use it in _setQuadrant
     selectedEntity: [0, 0, 0],  // the selected voxel; [i, j, k].
+    selectedEntityValue: 0,
     entitySize: [0, 0, 0],      // the size of each plane
     quadrantHeight: null,       // the height of the three small left quadrants
     quadrantWidth: null,        // the width of the three small left quadrants
@@ -16,6 +17,7 @@ var tsVol = {
     legendHeight: 0,            // the height of the legend quadrant
     legendWidth: 0,             // the width of the legend quadrant
     legendQuadrant: null,       // the object tat will contain the legend quadrant
+    legendPadding:80*2,
     selectedQuad: 0,            // the quadrant selected by the user every time
     highlightedQuad: {},        // the plane to be displayed on the focus quadrant
     timeLength: 0,              // number of timepoints in the Volume.
@@ -27,6 +29,7 @@ var tsVol = {
     bufferL2Size: 1,            // How many sets of buffers can we keep at the same time?
     lookAhead: 100,             // How many sets of buffers should be loaded ahead of us each time?
     data: {},                   // The actual data to be drawn to canvas.
+    sliceArray: [],             // A helper variable to draw the data on the canvas.
     bufferL2: {},               // Cotains all data loaded and preloaded, limited by memory.
     bufferL3: {},               // Cotains all data from loaded views, limited by memory.
     dataAddress: "",            // Used to contain the python URL for each time point.
@@ -39,7 +42,7 @@ var tsVol = {
     dataTimeSeries: "",         // Contains the address to query the time series of a voxel.
     tsDataArray: [],
     samplePeriod: 0,
-    semplePeriodUnit: ""
+    samplePeriodUnit: ""
 };
 
 var Quadrant = function (params){                // this keeps all necessary data for drawing
@@ -85,13 +88,13 @@ function TSV_initVisualizer(dataUrls, minValue, maxValue, volOrigin, sizeOfVoxel
     // canvas.height = canvasWidth / 3;                      // three quadrants
 
     canvas.height = $(canvas).parent().height();
-    canvas.width  = ($(canvas).parent().width());                         
+    canvas.width  = $(canvas).parent().width();
 
     tsVol.quadrantHeight = canvas.height / 3;               // quadrants are squares
     tsVol.quadrantWidth = tsVol.quadrantHeight;
     tsVol.focusQuadrantWidth = canvas.width - tsVol.quadrantWidth;
     tsVol.legendHeight = canvas.height / 13;
-    tsVol.legendWidth = tsVol.focusQuadrantWidth;
+    tsVol.legendWidth = tsVol.focusQuadrantWidth - tsVol.legendPadding;
     tsVol.focusQuadrantHeight = canvas.height - tsVol.legendHeight;
 
     tsVol.ctx = canvas.getContext("2d");
@@ -109,7 +112,7 @@ function TSV_initVisualizer(dataUrls, minValue, maxValue, volOrigin, sizeOfVoxel
     
     var tmp = HLPR_readJSONfromFile(dataUrls[4]);
     tsVol.samplePeriod = tmp[0];
-    tsVol.semplePeriodUnit = tmp[1];
+    tsVol.samplePeriodUnit = tmp[1];
 
     tsVol.minimumValue = minValue;
     tsVol.maximumValue = maxValue;
@@ -361,6 +364,16 @@ function drawSceneFunctionalFromCube(tIndex){
     drawFocusQuadrantFromCube(tIndex);
     drawNavigator();
     updateMoviePlayerSlider();
+    setSelectedEntityValue(tsVol.data);
+}
+
+function setSelectedEntityValue(data){
+    if(data.length == 3){
+        tsVol.selectedEntityValue = data[0][tsVol.selectedEntity[0]][tsVol.selectedEntity[1]];
+    }
+    else{
+        tsVol.selectedEntityValue = data[tsVol.selectedEntity[0]][tsVol.selectedEntity[1]][tsVol.selectedEntity[2]];
+    }
 }
 
 function drawFocusQuadrantFromCube(tIndex){
@@ -387,7 +400,7 @@ function drawFocusQuadrantFromCube(tIndex){
  * Draws the current scene only from the three visible planes data.
  */
 function drawSceneFunctionalFromView(tIndex){
-    var i, j, k, ii, jj, kk, sliceArray;
+    var i, j, k, ii, jj, kk;
     
     // if we pass no tIndex the function will play
     // from the tsVol.currentTimePoint and increment it
@@ -397,7 +410,7 @@ function drawSceneFunctionalFromView(tIndex){
         tsVol.currentTimePoint = tsVol.currentTimePoint % tsVol.timeLength;
     }
     // An array containing the view for each plane.
-    sliceArray = getViewAtTime(tIndex);
+    tsVol.sliceArray = getViewAtTime(tIndex);
 
     _setCtxOnQuadrant(0);
     tsVol.ctx.fillStyle = getGradientColorString(tsVol.minimumValue, tsVol.minimumValue, tsVol.maximumValue);
@@ -405,42 +418,43 @@ function drawSceneFunctionalFromView(tIndex){
 
     for (j = 0; j < tsVol.dataSize[2]; ++j)
         for (i = 0; i < tsVol.dataSize[1]; ++i)
-            drawVoxel(i, j, sliceArray[0][i][j])
+            drawVoxel(i, j, tsVol.sliceArray[0][i][j])
     drawMargin();
 
     _setCtxOnQuadrant(1);
     for (k = 0; k < tsVol.dataSize[3]; ++k)
         for (jj = 0; jj < tsVol.dataSize[2]; ++jj)
-            drawVoxel(k, jj, sliceArray[1][jj][k])
+            drawVoxel(k, jj, tsVol.sliceArray[1][jj][k])
     drawMargin();
 
     _setCtxOnQuadrant(2);
     for (kk = 0; kk < tsVol.dataSize[3]; ++kk)
         for (ii = 0; ii < tsVol.dataSize[1]; ++ii)
-            drawVoxel(kk, ii, sliceArray[2][ii][kk])
+            drawVoxel(kk, ii, tsVol.sliceArray[2][ii][kk])
 
     drawMargin();
-    drawFocusQuadrantFromView(tIndex, sliceArray);
+    drawFocusQuadrantFromView(tIndex);
     drawNavigator();
-    updateMoviePlayerSlider();  
+    updateMoviePlayerSlider();
+    setSelectedEntityValue(tsVol.sliceArray);
 }
 
-function drawFocusQuadrantFromView(tIndex, sliceArray){
+function drawFocusQuadrantFromView(tIndex){
     _setCtxOnQuadrant(3);
     if(tsVol.highlightedQuad.index == 0){
         for (j = 0; j < tsVol.dataSize[2]; ++j)
             for (i = 0; i < tsVol.dataSize[1]; ++i)
-                drawVoxel(i, j, sliceArray[0][i][j]);
+                drawVoxel(i, j, tsVol.sliceArray[0][i][j]);
     }
     else if(tsVol.highlightedQuad.index == 1){
         for (k = 0; k < tsVol.dataSize[3]; ++k)
             for (jj = 0; jj < tsVol.dataSize[2]; ++jj)
-                drawVoxel(k, jj, sliceArray[1][jj][k]);
+                drawVoxel(k, jj, tsVol.sliceArray[1][jj][k]);
     }
     else if(tsVol.highlightedQuad.index == 2){
         for (kk = 0; kk < tsVol.dataSize[3]; ++kk)
             for (ii = 0; ii < tsVol.dataSize[1]; ++ii)
-                drawVoxel(kk, ii, sliceArray[2][ii][kk]);
+                drawVoxel(kk, ii, tsVol.sliceArray[2][ii][kk]);
     }
     drawMargin();   
 }
@@ -460,6 +474,7 @@ function drawVoxel(line, col, value){
  * Draws the cross-hair on each quadrant, on the <code>tsVol.selectedEntity</code>
  */
 function drawNavigator(){
+    // Preview quadrans navigators
     tsVol.ctx.save();
     tsVol.ctx.beginPath();
 
@@ -474,6 +489,7 @@ function drawNavigator(){
     tsVol.ctx.stroke();
     tsVol.ctx.restore();
 
+    // Focus quadrant Navigator
     tsVol.ctx.save();
     tsVol.ctx.beginPath();
 
@@ -501,20 +517,53 @@ function drawCrossHair(x, y){
  * Draws a cross hair on the bigger focus quadrant, at the specified x and y
  */
 function drawFocusCrossHair(x, y){
-    tsVol.ctx.moveTo(Math.max(x - tsVol.focusQuadrantWidth, 0), y);                              // the horizontal line
-    tsVol.ctx.lineTo(Math.min(x + tsVol.focusQuadrantWidth, tsVol.focusQuadrantWidth), y);
-    tsVol.ctx.moveTo(x, Math.max(y - tsVol.focusQuadrantHeight, 0));                              // the vertical line
-    tsVol.ctx.lineTo(x, Math.min(y + tsVol.focusQuadrantHeight, tsVol.focusQuadrantHeight));
+    tsVol.ctx.moveTo(Math.max(x - 20, 0), y);                              // the horizontal line
+    tsVol.ctx.lineTo(Math.min(x + 20, tsVol.focusQuadrantWidth), y);
+    tsVol.ctx.moveTo(x, Math.max(y - 20, 0));                              // the vertical line
+    tsVol.ctx.lineTo(x, Math.min(y + 20, tsVol.focusQuadrantHeight));
 }
 function drawLegend(){
+    var tmp = tsVol.legendPadding / 2;
     // set the context on the legend quadrant
     tsVol.ctx.setTransform(1, 0, 0, 1, 0, 0);  // reset the transformation
-    tsVol.ctx.translate( tsVol.quadrantWidth, tsVol.focusQuadrantHeight);
+    tsVol.ctx.translate( tsVol.quadrantWidth + tmp, tsVol.focusQuadrantHeight);
+    tsVol.ctx.font = 'italic 18px Arial';
+    tsVol.ctx.textAlign = 'center';
+    tsVol.ctx. textBaseline = 'middle';
+    tsVol.ctx.fillStyle = 'white';  // a color name or by using rgb/rgba/hex values
+    tsVol.ctx.fillText(nFormatter(tsVol.minimumValue), 0, tsVol.legendHeight - 10); // text and position
+    tsVol.ctx.fillText("|", 1, tsVol.legendHeight/2);
+    var midValue = (tsVol.maximumValue - tsVol.minimumValue)/2;
+    tsVol.ctx.fillText(nFormatter(midValue), tsVol.legendWidth/2, tsVol.legendHeight - 10); // text and position
+    tsVol.ctx.fillText("|", tsVol.legendWidth/2, tsVol.legendHeight/2);
+    tsVol.ctx.fillText(nFormatter(tsVol.maximumValue), tsVol.legendWidth, tsVol.legendHeight - 10); // text and position
+    tsVol.ctx.fillText("|", tsVol.legendWidth-1, tsVol.legendHeight/2);
+
     for(var i = 0; i< tsVol.legendWidth; i++){
-        var val = tsVol.minimumValue+((i/tsVol.legendWidth)*(tsVol.maximumValue-tsVol.minimumValue));
+        var val = tsVol.minimumValue + ((i/tsVol.legendWidth)*(tsVol.maximumValue-tsVol.minimumValue));
         tsVol.ctx.fillStyle = getGradientColorString(val, tsVol.minimumValue, tsVol.maximumValue);
-        tsVol.ctx.fillRect(i, 0, 1.5, tsVol.legendHeight);
+        tsVol.ctx.fillRect(i, 1, 1.5, tsVol.legendHeight/2);
     }
+    tsVol.ctx.fillStyle = "white";
+    tmp = tsVol.selectedEntityValue;
+    tmp = tmp / (tsVol.maximumValue-tsVol.minimumValue);
+    tmp = (tmp*tsVol.legendWidth);
+    tsVol.ctx.fillRect(tmp, 1, 3, tsVol.legendHeight/2);
+}
+/**
+ * Formats numbers in the 'K', 'M', 'G' notation, e.g. 2300 becomes 2.3K.
+ */
+function nFormatter(num){
+     if (num >= 1000000000){
+        return (num / 1000000000).toFixed(1).replace(/\.0$/, '') + 'G';
+     }
+     if (num >= 1000000){
+        return (num / 1000000).toFixed(1).replace(/\.0$/, '') + 'M';
+     }
+     if (num >= 1000){
+        return (num / 1000).toFixed(1).replace(/\.0$/, '') + 'K';
+     }
+     return num;
 }
 
 /**
@@ -538,7 +587,7 @@ function drawMargin(){
         tsVol.ctx.strokeStyle = 'white';
         tsVol.highlightedQuad = tsVol.currentQuadrant;
     }
-    if(tsVol.currentQuadrant.index == tsVol.highlightedQuad.index){
+    else if(tsVol.currentQuadrant.index == tsVol.highlightedQuad.index && tsVol.selectedQuad.index == 3){
         tsVol.ctx.strokeStyle = 'white';
     }
     else{
@@ -734,9 +783,11 @@ function TSV_pick(e){
         tsVol.selectedQuad = tsVol.quadrants[3];
         // check if it's inside the focus quadrant but outside the drawing
         if (ypos < tsVol.selectedQuad.offsetY ){
+            console.log("1")
             return;
         }
-        else if(ypos >= tsVol.focusQuadrantHeight * (tsVol.selectedQuad.index + 1) - tsVol.selectedQuad.offsetY){
+        else if(ypos >= tsVol.focusQuadrantHeight - tsVol.selectedQuad.offsetY){
+            console.log("2")
             return;
         }
         else if(xpos < tsVol.offsetX){
@@ -886,7 +937,7 @@ function startMovieSlider(){
             // The actual time point we are seeing
             var actualTime = value * tsVol.samplePeriod;
             var totalTime = (tsVol.timeLength - 1) * tsVol.samplePeriod;
-            el = $('<label id="time-slider-value">' + actualTime.toFixed(2) + '/' + totalTime.toFixed(2) + " (in "+ tsVol.semplePeriodUnit +')</label>');
+            el = $('<label id="time-slider-value">' + actualTime.toFixed(2) + '/' + totalTime.toFixed(2) + " (in "+ tsVol.samplePeriodUnit +')</label>');
             $(this).append(el);
         });
     });
@@ -960,7 +1011,7 @@ function updateMoviePlayerSlider(){
         $(this).slider("option", "value", tsVol.currentTimePoint);
         var actualTime = tsVol.currentTimePoint * tsVol.samplePeriod;
         var totalTime = (tsVol.timeLength - 1) * tsVol.samplePeriod;
-        $('#time-slider-value').empty().text( actualTime.toFixed(2) + '/' + totalTime.toFixed(2) + (" (in "+ tsVol.semplePeriodUnit +")") );
+        $('#time-slider-value').empty().text( actualTime.toFixed(2) + '/' + totalTime.toFixed(2) + (" (in "+ tsVol.samplePeriodUnit +")") );
     });
     d3.select(".timeVerticalLine").attr("transform", function(){
                 var width = $(".graph-timeSeries-rect").attr("width");
@@ -994,7 +1045,6 @@ function slideMove(event, ui){
 // After the navigation sliders are changed, this redraws the scene accordingly.
 function slideMoved(event, ui){
     if(tsVol.slidersClicked){
-        //tryGraph();
         startBuffering();
         tsVol.slidersClicked = false;
     
@@ -1020,7 +1070,7 @@ function moviePlayerMove(event, ui){
     $("#time-position").find("> span").each(function(){
         var actualTime = ui.value * tsVol.samplePeriod;
         var totalTime = (tsVol.timeLength - 1) * tsVol.samplePeriod;
-        $('#time-slider-value').empty().text( actualTime.toFixed(2) + '/' + totalTime.toFixed(2) + (" (in "+ tsVol.semplePeriodUnit +")") );
+        $('#time-slider-value').empty().text( actualTime.toFixed(2) + '/' + totalTime.toFixed(2) + (" (in "+ tsVol.samplePeriodUnit +")") );
     });
         d3.select(".timeVerticalLine").attr("transform", function(){
                 var width = $(".graph-timeSeries-rect").attr("width");
@@ -1037,6 +1087,7 @@ function moviePlayerMove(event, ui){
 function moviePlayerMoveEnd(event, ui){
     tsVol.currentTimePoint = ui.value;
     drawSceneFunctionalFromView(tsVol.currentTimePoint);
+    drawLegend();
 }
 
 // ==================================== CALLBACK FUNCTIONS END ===============================================
@@ -1353,19 +1404,19 @@ function sortTsGraphs(filter, pivot){
         return Math.abs(a.x - b.x) + Math.abs(a.y - b.y)+Math.abs(a.z - b.z);
     } 
     // sorting from biggest to smallest
-    if(filter == "desc"){
+    if(filter == "descending"){
         tsVol.tsDataArray.sort(function(a, b){
           return a.mean == b.mean ? 0 : +(a.mean < b.mean) || -1;
         });
     }
     // sorting from smallest to biggest
-    else if(filter == "asc"){
+    else if(filter == "ascending"){
         tsVol.tsDataArray.sort(function(a, b){
           return a.mean == b.mean ? 0 : +(a.mean > b.mean) || -1;
         });
     }
     // sorting based on manhattan distance from the pivot coordinate
-    else if(filter == "xyz"){
+    else if(filter == "manhattan"){
         pivot = pivot || {x:0,y:0,z:0};
         tsVol.tsDataArray.sort(function(a, b){
             a = md3d(a, pivot);
@@ -1373,8 +1424,20 @@ function sortTsGraphs(filter, pivot){
           return a == b ? 0 : +(a > b) || -1;
         });
     }
+    else {
+        return
+    }
     // redraw the graph
     tryGraph();
 }
+
+$(function(){
+    $("#sortingSelector").change(function(e){
+        console.log(e.currentTarget.value)
+        sortTsGraphs(e.currentTarget.value, {x: tsVol.selectedEntity[0], y:  tsVol.selectedEntity[1],z:  tsVol.selectedEntity[2]});
+    });
+})
+
+
 
 // ==================================== PER VOXEL TIMESERIES END =============================================

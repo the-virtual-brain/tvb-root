@@ -4,28 +4,44 @@
     <script src="/static/js/d3.v2.min.js?$currentVersionJS"></script>
     <script src="/static/colorScheme/js/colorSchemeComponent.js?$currentVersionJS"></script>
     <link rel="stylesheet" type="text/css" href="/static/style/subsection_timeseries.css?$currentVersionJS"/>
-    <div id="volumetric-ts-parent">
-        <div class="volumetric-ts-ui">
-            <div id="buttons"></div>
-            <div id="sliders" title="space in $voxelUnit">
-                <span id="x-slider"></span>
-                <span id="y-slider"></span>
-                <span id="z-slider"></span>
-                (in $voxelUnit)
+    <section class="view-column">
+        <div id="volumetric-ts-parent">
+            <ul class="toolbar-inline">
+                <div class="volumetric-ts-ui">
+                    <div id="buttons"></div>
+                    <div id="sliders" title="space in $voxelUnit">
+                        <span id="x-slider"></span>
+                        <span id="y-slider"></span>
+                        <span id="z-slider"></span>
+                    </div>
+                    (in $voxelUnit)
+                </div>
+            </ul>
+            <div id="volumetric-ts-canvas-parent">
+                <canvas id="volumetric-ts-canvas"></canvas>
+            </div>
+            <div class="volumetric-ts-ui">
+                <div id="time-position">
+                    <span id="time-slider"></span>
+                </div>
             </div>
         </div>
-        <div id="volumetric-ts-canvas-parent">
-            <canvas id="volumetric-ts-canvas"></canvas>
+    </section>
+    <section class="view-column">
+        <ul class="toolbar-inline">
+        <fieldset>
+            <select id="sortingSelector" name="sortingSelector">
+                <option value="ascending">Ascending Sort</option>
+                <option value="descending">Descending Sort</option>
+                <option value="manhattan">Manhattan Distance Sort</option>
+                <option value="value4" selected="selected">Manual Sorting</option>
+            </select>
+        </fieldset>
+        </ul>
+        <div id="ts-graph-parent">
+            <div id="graph" class="aGraph"></div>
         </div>
-        <div class="volumetric-ts-ui">
-            <div id="time-position">
-                <span id="time-slider"></span>
-            </div>
-        </div>
-    </div>
-    <div id="ts-graph-parent">
-        <div id="graph" class="aGraph"></div>
-    </div>
+    </section>
 
     <script type="text/javascript">
         $().ready(function() {
