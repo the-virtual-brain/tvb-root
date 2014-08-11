@@ -14,7 +14,7 @@ var tsVol = {
     focusQuadrantHeight: null,
     focusQuadrantWidth: null,
     legendHeight: 0,
-    legendWidt: 0,
+    legendWidth: 0,
     legendQuadrant: null,
     selectedQuad: 0,
     highlightedQuad: {},
@@ -90,6 +90,8 @@ function TSV_initVisualizer(dataUrls, minValue, maxValue, volOrigin, sizeOfVoxel
     tsVol.quadrantHeight = canvas.height / 3;               // quadrants are squares
     tsVol.quadrantWidth = tsVol.quadrantHeight;
     tsVol.focusQuadrantWidth = canvas.width - tsVol.quadrantWidth;
+    tsVol.legendHeight = canvas.height / 13;
+    tsVol.legendWidth = tsVol.focusQuadrantWidth;
     tsVol.focusQuadrantHeight = canvas.height - tsVol.legendHeight;
 
     tsVol.ctx = canvas.getContext("2d");
@@ -312,6 +314,7 @@ function drawSceneFunctional(tIndex){
     else{
         drawSceneFunctionalFromCube(tIndex)
     }
+    drawLegend();
 }
 /**
  * Necessary for the color picking function
@@ -503,6 +506,18 @@ function drawFocusCrossHair(x, y){
     tsVol.ctx.moveTo(x, Math.max(y - tsVol.focusQuadrantHeight, 0));                              // the vertical line
     tsVol.ctx.lineTo(x, Math.min(y + tsVol.focusQuadrantHeight, tsVol.focusQuadrantHeight));
 }
+function drawLegend(){
+    // set the context on the legend quadrant
+    tsVol.ctx.setTransform(1, 0, 0, 1, 0, 0);  // reset the transformation
+    tsVol.ctx.translate( tsVol.quadrantWidth, tsVol.focusQuadrantHeight);
+    for(var i = 0; i< tsVol.legendWidth; i++){
+        var val = tsVol.minimumValue+((i/tsVol.legendWidth)*(tsVol.maximumValue-tsVol.minimumValue));
+        tsVol.ctx.fillStyle = getGradientColorString(val, tsVol.minimumValue, tsVol.maximumValue);
+        tsVol.ctx.fillRect(i, 0, 1.5, tsVol.legendHeight);
+    }
+    //throw "navigation is faster with an error here. TODO: find out WHY??";
+    //asd.ewq;
+}
 
 /**
  * Draws a 5px rectangle around the <code>tsVol.currentQuadrant</code>
@@ -621,6 +636,7 @@ function _setupQuadrants(){
     tsVol.selectedQuad = tsVol.quadrants[0];
     tsVol.highlightedQuad = tsVol.selectedQuad;
     _setupFocusQuadrant();
+    _setupLegendQuadrant();
 }
 
 function _setupFocusQuadrant(){
@@ -645,6 +661,14 @@ function _setupFocusQuadrant(){
     tsVol.quadrants[3].offsetX = 0;
 }
 
+function _setupLegendQuadrant(){
+    tsVol.legendQuadrant = new Quadrant({index:4});
+    tsVol.legendQuadrant.entityHeight = tsVol.legendHeight;
+    tsVol.legendQuadrant.entityWidth  = tsVol.legendWidth;
+    tsVol.legendQuadrant.offsetY = tsVol.focusQuadrantHeight;
+    tsVol.legendQuadrant.offsetX = tsVol.focusQuadrantWidth;
+}
+
 /** 
  * Automathically determine optimal bufferSizer, depending on data dimensions.
  */
@@ -667,11 +691,13 @@ function _setupBuffersSize(){
 // ==================================== PICKING RELATED CODE START ==========================================
 
 function customMouseDown(e){
+    e.preventDefault();
     this.mouseDown = true;            // `this` is the canvas
     TSV_pick(e)
 }
 
 function customMouseUp(e){
+    e.preventDefault();
     this.mouseDown = false;
     startBuffering();
     if(tsVol.resumePlayer){
@@ -687,6 +713,7 @@ function customMouseMove(e){
     if (!this.mouseDown){
         return;
     }
+    e.preventDefault();
     TSV_pick(e);
 }
 
@@ -736,7 +763,7 @@ function TSV_pick(e){
     //var selectedQuad = tsVol.quadrants[Math.floor(xpos / tsVol.quadrantWidth)];
     if(Math.floor(xpos / tsVol.quadrantWidth) >= 1){
         tsVol.selectedQuad = tsVol.quadrants[3];
-        // check if it's inside the quadrant but outside the drawing
+        // check if it's inside the focus quadrant but outside the drawing
         if (ypos < tsVol.selectedQuad.offsetY ){
             return;
         }
