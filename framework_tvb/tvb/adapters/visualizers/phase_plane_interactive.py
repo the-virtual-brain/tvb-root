@@ -100,8 +100,8 @@ class PhasePlaneInteractive(object):
 
 
     def draw_phase_plane(self):
+        """Generate the interactive phase-plane figure."""
         with self.lock:
-            """Generate the interactive phase-plane figure."""
             self.log.debug("Plot started...")
 
             model_name = self.model.__class__.__name__
@@ -265,7 +265,7 @@ class PhasePlaneInteractive(object):
 
     def _add_reset_axes_button(self):
         """
-        Add a button to the figure for reseting the phase-plane axes to their
+        Add a button to the figure for resetting the phase-plane axes to their
         default ranges.
         """
         bax = self.ipp_fig.add_axes([0.04, 0.87, 0.125, 0.04])

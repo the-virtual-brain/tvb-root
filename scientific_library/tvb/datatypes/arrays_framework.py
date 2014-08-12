@@ -40,6 +40,7 @@ import numpy
 import tvb.datatypes.arrays_data as arrays_data
 from tvb.basic.traits.types_mapped import Array
 from tvb.basic.traits.types_mapped import MappedType
+from tvb.basic.traits.exceptions import ValidationException
 
 
 class BaseArrayFramework(Array):
@@ -160,7 +161,7 @@ class MappedArrayFramework(arrays_data.MappedArrayData):
                     dim -= 1
             if dim != required_dimension:
                 self.logger.debug("Dimension for selected array is incorrect")
-                raise Exception("Dimension for selected array is incorrect!")
+                raise ValidationException("Dimension for selected array is incorrect!")
 
         result = self.array_data
         full = slice(0, None)
@@ -193,11 +194,11 @@ class MappedArrayFramework(arrays_data.MappedArrayData):
                            ". The actual size of dimension " + str(i + 1) 
                            + " is " + str(result_shape[i]) + ".")
                     self.logger.debug(msg)
-                    raise Exception(msg)
+                    raise ValidationException(msg)
 
         if required_dimension is not None and 1 <= required_dimension != len(result.shape):
             self.logger.debug("Dimensions of the selected array are incorrect")
-            raise Exception("Dimensions of the selected array are incorrect!")
+            raise ValidationException("Dimensions of the selected array are incorrect!")
 
         return result
 
