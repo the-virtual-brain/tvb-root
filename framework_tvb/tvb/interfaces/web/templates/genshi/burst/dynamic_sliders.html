@@ -5,17 +5,26 @@
         <td class="paramName">${par.label}</td>
         <td class="paramHelp"> ${generate_help_tooltip(par)}</td>
         <td class="paramSlider"><div id="slider_${par.name}"></div></td>
-        <td class="paramValue"><input type="text" value="${par.default}" id="value_${par.name}"/></td>
+        <td class="paramValue">
+            <input type="number" id="value_${par.name}"
+                   value="${par.default}" min="${par.min}" max="${par.max}" step="${par.step}"/>
+        </td>
     </py:def>
 
-    <button id="reset_sliders">Reset parameters</button>
+    <py:def function="drawSliderGroup(parameters, btn_id, title)">
+        <div class="sliderGroup">
+            <button id="${btn_id}">Reset</button>
+            <h3>$title</h3>
+            <table class="paramSlidersTable" py:with="step=(1 + len(parameters))/2">
+                <tr py:for="i in xrange(step)">
+                    ${drawSlider(parameters[i])}
+                    <py:if test="i + step &lt; len(parameters)">
+                        ${drawSlider(parameters[i + step])}
+                    </py:if>
+                </tr>
+            </table>
+        </div>
+    </py:def>
 
-    <table class="paramSlidersTable" py:with="step=(1 + len(parameters))/2">
-        <tr py:for="i in xrange(step)">
-            ${drawSlider(parameters[i])}
-            <py:if test="i + step &lt; len(parameters)">
-                ${drawSlider(parameters[i + step])}
-            </py:if>
-        </tr>
-    </table>
+    ${drawSliderGroup(parameters, "reset_sliders", "Model parameters")}
 </div>

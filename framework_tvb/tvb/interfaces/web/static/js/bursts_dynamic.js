@@ -29,14 +29,14 @@
 /* globals doAjaxCall, displayMessage, MathJax, getSubmitableData */
 
 var dynamicPage = {
-    sliderDefaultState : {},
+    paramDefaults : {},
     treeState: {},
     dynamic_gid: null
 };
 
 (function(){
 
-function _initSliders (){
+function initSliderGroup (states, onChange){
     function _initSlider(slider, input, option){
         slider.slider({
             value: option.default,
@@ -50,7 +50,7 @@ function _initSliders (){
 
             change: function(ev, target){
                 input.val(target.value);
-                onParameterChanged(option.name, target.value);
+                onChange(option.name, target.value);
             }
         });
 
@@ -65,19 +65,17 @@ function _initSliders (){
         });
     }
 
-    for (var i = 0; i < dynamicPage.sliderDefaultState.length; i++){
-        var option = dynamicPage.sliderDefaultState[i];
+    for (var i = 0; i < states.length; i++){
+        var option = states[i];
         var slider = $("#slider_" + option.name);
         var input = $("#value_" + option.name);
-
         _initSlider(slider, input, option);
-
     }
 }
 
-function onSliderReset(){
-    for (var i = 0; i < dynamicPage.sliderDefaultState.length; i++) {
-        var option = dynamicPage.sliderDefaultState[i];
+function resetSliderGroup(states){
+    for (var i = 0; i < states.length; i++) {
+        var option = states[i];
         var slider = $("#slider_" + option.name);
         slider.slider('value', option.default);
     }
@@ -99,9 +97,11 @@ function _fetchSlidersFromServer(){
         url: _url('sliders_fragment'),
         success: function(fragment) {
             sliderContainer.html(fragment);
-            $('#reset_sliders').click(onSliderReset);
+            $('#reset_sliders').click(function(){
+                resetSliderGroup(dynamicPage.paramDefaults);
+            });
             MathJax.Hub.Queue(["Typeset", MathJax.Hub, 'div_spatial_model_params']);
-            _initSliders();
+            initSliderGroup(dynamicPage.paramDefaults, onParameterChanged);
             setupMenuEvents(sliderContainer);
         }
     });
@@ -112,7 +112,7 @@ function onModelChanged(name){
         showBlockerOverlay: true,
         url: _url('model_changed', name) ,
         success: function(data){
-            dynamicPage.sliderDefaultState = JSON.parse(data).options;
+            dynamicPage.paramDefaults = JSON.parse(data).options;
             _fetchSlidersFromServer();
         }
     });

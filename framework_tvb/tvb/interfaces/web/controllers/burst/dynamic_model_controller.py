@@ -222,11 +222,15 @@ class DynamicModelController(BurstBaseController):
 
     @expose_json
     def model_changed(self, dynamic_gid, name):
+        """
+        Resets the phase plane and returns the ui model for the slider area.
+        """
         dynamic = self.get_cached_dynamic(dynamic_gid)
         dynamic.model = self.available_models[name]()
 
         dynamic.phase_plane.reset(dynamic.model, dynamic.integrator)
-        return self.slider_options(dynamic.model)
+        mp_params = DynamicModelController._get_model_parameters_ui_model(dynamic.model)
+        return {'options' : mp_params}
 
 
     @expose_json
@@ -275,38 +279,35 @@ class DynamicModelController(BurstBaseController):
         model.configure()
         dynamic.phase_plane.refresh()
 
-
-    @expose_fragment('burst/dynamic_sliders')
-    def sliders_fragment(self, dynamic_gid):
-        dynamic = self.get_cached_dynamic(dynamic_gid)
-        model = dynamic.model
-        ret = []
-        for name in model.ui_configurable_parameters:
-            trait_kwd = model.trait[name].trait.inits.kwd
-            ret.append({
-                'name': name,
-                'label': trait_kwd.get('label'),
-                'default': trait_kwd.get('default'),
-                'description': trait_kwd.get('doc'),
-            })
-        return {'parameters' : ret, 'showOnlineHelp' : True}
-
     @staticmethod
-    def slider_options(model):
+    def _get_model_parameters_ui_model(model):
+        """
+        For each model parameter return the representation used by the ui (template & js)
+        """
         ret = []
         for name in model.ui_configurable_parameters:
             parameter_trait = model.trait[name].trait
             ranger = parameter_trait.range_interval
             default = float(parameter_trait.inits.kwd.get('default'))
+            trait_kwd = parameter_trait.inits.kwd
 
             ret.append({
                 'name': name,
+                'label': trait_kwd.get('label'),
+                'description': trait_kwd.get('doc'),
                 'min': ranger.lo,
                 'max': ranger.hi,
                 'step': ranger.step,
                 'default': default
             })
-        return {'options' : ret}
+        return ret
+
+    @expose_fragment('burst/dynamic_sliders')
+    def sliders_fragment(self, dynamic_gid):
+        dynamic = self.get_cached_dynamic(dynamic_gid)
+        model = dynamic.model
+        mp_params = self._get_model_parameters_ui_model(model)
+        return {'parameters' : mp_params, 'showOnlineHelp' : True}
 
 
     @expose_json

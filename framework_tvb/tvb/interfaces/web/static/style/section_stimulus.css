@@ -249,13 +249,19 @@ margin-left: 5%;
     max-width: 1000px;
 }
 
+#div_spatial_model_params input{
+    font-size: 12px;
+}
+
 #div_spatial_model_params button{
     margin: 0 10px 5px 0;
     float:right;
+    font-size: 10px;
 }
 
 .paramSlidersTable {
     width: 100%;
+    border-spacing: 1px;
 }
 
 .paramSlidersTable td{
@@ -281,6 +287,10 @@ margin-left: 5%;
     padding:0;
 }
 
+.sliderGroup{
+    padding: 4px 0;
+    border-top: 1px solid #999;
+}
 /* !------------------------------------------------ */
 /* !CSS for divs used for displaying the brain pick  */
 /* !------------------------------------------------ */
