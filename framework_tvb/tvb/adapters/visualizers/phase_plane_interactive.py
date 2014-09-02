@@ -160,6 +160,22 @@ class PhasePlaneInteractive(object):
             return dict(mplh5ServerURL=config.MPLH5_SERVER_URL, figureNumber=self.ipp_fig.number, showFullToolbar=False)
 
 
+    def _get_axes_ranges(self, sv):
+        lo, hi = self.model.state_variable_range[sv]
+        default_range = hi - lo
+        min_val = lo - 4.0 * default_range
+        max_val = hi + 4.0 * default_range
+        return min_val, max_val, lo, hi
+
+
+    def axis_range(self):
+        min_val_x, max_val_x, lo_x, hi_x = self._get_axes_ranges(self.svx)
+        min_val_y, max_val_y, lo_y, hi_y = self._get_axes_ranges(self.svy)
+        xaxis_range = {'min':min_val_x, 'max':max_val_x, 'lo':lo_x, 'hi':hi_x}
+        yaxis_range = {'min':min_val_y, 'max':max_val_y, 'lo':lo_y, 'hi':hi_y}
+        return xaxis_range, yaxis_range
+
+
     def _add_state_variable_selector(self):
         """
         Generate radio selector buttons to set which state variable is

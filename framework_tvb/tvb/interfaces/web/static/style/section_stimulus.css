@@ -291,6 +291,19 @@ margin-left: 5%;
     padding: 4px 0;
     border-top: 1px solid #999;
 }
+
+.axisSlidersTable{
+    width:100%;
+}
+
+.axisSlidersTable td{
+    padding: 0 5px;
+}
+
+.axisSlidersTable .c3{
+    width: 50%;
+}
+
 /* !------------------------------------------------ */
 /* !CSS for divs used for displaying the brain pick  */
 /* !------------------------------------------------ */

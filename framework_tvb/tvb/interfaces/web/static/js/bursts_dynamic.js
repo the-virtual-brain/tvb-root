@@ -30,6 +30,7 @@
 
 var dynamicPage = {
     paramDefaults : {},
+    graphDefaults:{},
     treeState: {},
     dynamic_gid: null
 };
@@ -81,6 +82,15 @@ function resetSliderGroup(states){
     }
 }
 
+function _initAxisSlider(sel, opt){
+    $(sel).slider({
+        range:true,
+        min: opt.min,
+        max: opt.max, values:[opt.lo, opt.hi],
+        step: (opt.max - opt.min)/1000
+    });
+}
+
 function _url(func, tail){
     var url = '/burst/dynamic/' + func + '/' + dynamicPage.dynamic_gid;
     if (tail != null){
@@ -100,8 +110,14 @@ function _fetchSlidersFromServer(){
             $('#reset_sliders').click(function(){
                 resetSliderGroup(dynamicPage.paramDefaults);
             });
+            $('#reset_state_variables').click(function(){
+                resetSliderGroup(dynamicPage.graphDefaults.state_variables);
+            });
             MathJax.Hub.Queue(["Typeset", MathJax.Hub, 'div_spatial_model_params']);
             initSliderGroup(dynamicPage.paramDefaults, onParameterChanged);
+            initSliderGroup(dynamicPage.graphDefaults.state_variables, onGraphChanged);
+            _initAxisSlider('#slider_x_axis', dynamicPage.graphDefaults.x_axis);
+            _initAxisSlider('#slider_y_axis', dynamicPage.graphDefaults.y_axis);
             setupMenuEvents(sliderContainer);
         }
     });
@@ -112,7 +128,9 @@ function onModelChanged(name){
         showBlockerOverlay: true,
         url: _url('model_changed', name) ,
         success: function(data){
-            dynamicPage.paramDefaults = JSON.parse(data).options;
+            data = JSON.parse(data);
+            dynamicPage.paramDefaults = data.params;
+            dynamicPage.graphDefaults = data.graph_params;
             _fetchSlidersFromServer();
         }
     });
@@ -127,6 +145,10 @@ function onParameterChanged(name, value){
 
         }
     });
+}
+
+function onGraphChanged(){
+
 }
 
 function onSubmit(event){

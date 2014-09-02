@@ -230,7 +230,8 @@ class DynamicModelController(BurstBaseController):
 
         dynamic.phase_plane.reset(dynamic.model, dynamic.integrator)
         mp_params = DynamicModelController._get_model_parameters_ui_model(dynamic.model)
-        return {'options' : mp_params}
+        graph_params = DynamicModelController._get_graph_ui_model(dynamic)
+        return {'params' : mp_params, 'graph_params':graph_params}
 
 
     @expose_json
@@ -302,12 +303,46 @@ class DynamicModelController(BurstBaseController):
             })
         return ret
 
+    @staticmethod
+    def _get_state_variables_ui_model(model):
+        ret = []
+        for sv in range(model.nvar):
+            name = model.state_variables[sv]
+            sv_range = model.state_variable_range[name]
+            lo, hi = sv_range
+            ret.append({
+                'name': name,
+                'label': ':math:`%s`' % name,
+                'description': 'state variable ' + name,
+                'min': lo,
+                'max': hi,
+                'step': (hi - lo) / 1000.0,  # todo check if reasonable
+                'default': sv_range.mean()
+            })
+        return ret
+
+
+    @staticmethod
+    def _get_graph_ui_model(dynamic):
+        """ specific to navigating the phase space """
+        xaxis_range, yaxis_range = dynamic.phase_plane.axis_range()
+        return {
+            'modes': range(dynamic.model.number_of_modes),
+            'state_variables': DynamicModelController._get_state_variables_ui_model(dynamic.model),
+            'x_axis': xaxis_range,
+            'y_axis': yaxis_range,
+        }
+
+
     @expose_fragment('burst/dynamic_sliders')
     def sliders_fragment(self, dynamic_gid):
         dynamic = self.get_cached_dynamic(dynamic_gid)
         model = dynamic.model
         mp_params = self._get_model_parameters_ui_model(model)
-        return {'parameters' : mp_params, 'showOnlineHelp' : True}
+        ps_params = self._get_graph_ui_model(dynamic)
+        templ_var = ps_params
+        templ_var.update({'parameters' : mp_params, 'showOnlineHelp' : True})
+        return templ_var
 
 
     @expose_json
