@@ -82,12 +82,32 @@ function resetSliderGroup(states){
     }
 }
 
-function _initAxisSlider(sel, opt){
+function getSliderGroupValues(states) {
+    var name2val = {};
+    for (var i = 0; i < states.length; i++) {
+        var option = states[i];
+        var slider = $("#slider_" + option.name);
+        name2val[option.name] = slider.slider('value');
+    }
+    return name2val;
+}
+
+function _initAxisSlider(sel, span_sel, opt){
+    function update_span(r){
+        $(span_sel).text(r[0] + ' .. ' + r[1]);
+    }
     $(sel).slider({
         range:true,
         min: opt.min,
         max: opt.max, values:[opt.lo, opt.hi],
-        step: (opt.max - opt.min)/1000
+        step: (opt.max - opt.min)/1000,
+        slide: function(ev, target) {
+            update_span(target.values);
+        },
+        change : function(ev, target){
+            update_span(target.values);
+            onGraphChanged();
+        }
     });
 }
 
@@ -113,11 +133,25 @@ function _fetchSlidersFromServer(){
             $('#reset_state_variables').click(function(){
                 resetSliderGroup(dynamicPage.graphDefaults.state_variables);
             });
+            $('#reset_axes').click(function() {
+                //not nice
+                var opt = dynamicPage.graphDefaults.x_axis;
+                $('#slider_x_axis').slider({ min: opt.min, max: opt.max, values: [opt.lo, opt.hi] });
+                opt = dynamicPage.graphDefaults.y_axis;
+                $('#slider_y_axis').slider({ min: opt.min, max: opt.max, values: [opt.lo, opt.hi] });
+                //reset mode and state var selection as well
+                $('#mode').val(0).change(); // change events do not fire when select's are changed by val()
+                $('#svx').val(dynamicPage.graphDefaults.state_variables[0].name).change();
+                $('#svy').val(dynamicPage.graphDefaults.state_variables[1].name).change();
+            });
             MathJax.Hub.Queue(["Typeset", MathJax.Hub, 'div_spatial_model_params']);
             initSliderGroup(dynamicPage.paramDefaults, onParameterChanged);
             initSliderGroup(dynamicPage.graphDefaults.state_variables, onGraphChanged);
-            _initAxisSlider('#slider_x_axis', dynamicPage.graphDefaults.x_axis);
-            _initAxisSlider('#slider_y_axis', dynamicPage.graphDefaults.y_axis);
+            $('#mode').change(onGraphChanged);
+            $('#svx').change(onGraphChanged);
+            $('#svy').change(onGraphChanged);
+            _initAxisSlider('#slider_x_axis', '#x_range_span', dynamicPage.graphDefaults.x_axis);
+            _initAxisSlider('#slider_y_axis', '#y_range_span', dynamicPage.graphDefaults.y_axis);
             setupMenuEvents(sliderContainer);
         }
     });
@@ -148,7 +182,20 @@ function onParameterChanged(name, value){
 }
 
 function onGraphChanged(){
+    var graph_state = {
+        mode: $('#mode').val(),
+        svx: $('#svx').val(),
+        svy: $('#svy').val(),
+        state_vars: getSliderGroupValues(dynamicPage.graphDefaults.state_variables),
+        x_range: $('#slider_x_axis').slider('values'),
+        y_range: $('#slider_y_axis').slider('values')
+    };
 
+    doAjaxCall({
+        showBlockerOverlay: true,
+        url: _url('graph_changed'),
+        data: { graph_state: JSON.stringify(graph_state)}
+    });
 }
 
 function onSubmit(event){

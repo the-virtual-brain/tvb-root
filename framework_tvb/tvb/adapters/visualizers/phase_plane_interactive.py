@@ -426,6 +426,22 @@ class PhasePlaneInteractive(object):
         self._update_phase_plane()
 
 
+    def update_axis(self, mode, svx, svy, x_range, y_range, sv):
+        self.mode = mode
+        self.svx = svx
+        self.svy = svy
+        msv_range = self.model.state_variable_range
+        msv_range[self.svx][0] = x_range[0]
+        msv_range[self.svx][1] = x_range[1]
+        msv_range[self.svy][0] = y_range[0]
+        msv_range[self.svy][1] = y_range[1]
+
+        for name, val in sv.iteritems():
+            k = self.model.state_variables.index(name)
+            self.default_sv[k] = val
+        self.refresh()
+
+
     def _set_mesh_grid(self):
         """
         Generate the phase-plane gridding based on currently selected statevariables

@@ -280,6 +280,15 @@ class DynamicModelController(BurstBaseController):
         model.configure()
         dynamic.phase_plane.refresh()
 
+
+    @expose_json
+    def graph_changed(self, dynamic_gid, graph_state):
+        graph_state = json.loads(graph_state)
+        dynamic = self.get_cached_dynamic(dynamic_gid)
+        dynamic.phase_plane.update_axis(graph_state['mode'], graph_state['svx'], graph_state['svy'],
+                                        graph_state['x_range'], graph_state['y_range'], graph_state['state_vars'])
+
+
     @staticmethod
     def _get_model_parameters_ui_model(model):
         """
