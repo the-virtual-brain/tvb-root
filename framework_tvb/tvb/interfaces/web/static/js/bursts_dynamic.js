@@ -35,10 +35,27 @@ var dynamicPage = {
     dynamic_gid: null
 };
 
+/** @module ui components module */
 (function(){
+    /**
+     * Handles events for a group of sliders
+     * @constructor
+     */
+    function SliderGroup(states, resetBtn, onChange){
+        var self = this;
+        self.onChange = onChange;
+        self.states = states;
+        for (var i = 0; i < states.length; i++){
+            self._initSlider(states[i]);
+        }
+        $(resetBtn).click(function(){ self.reset(); });
+    }
 
-function initSliderGroup (states, onChange){
-    function _initSlider(slider, input, option){
+    SliderGroup.prototype._initSlider = function(option){
+        var self = this;
+        var slider = $("#slider_" + option.name);
+        var input = $("#value_" + option.name);
+
         slider.slider({
             value: option.default,
             min: option.min,
@@ -51,7 +68,7 @@ function initSliderGroup (states, onChange){
 
             change: function(ev, target){
                 input.val(target.value);
-                onChange(option.name, target.value);
+                self.onChange(option.name, target.value);
             }
         });
 
@@ -64,52 +81,95 @@ function initSliderGroup (states, onChange){
         }).click(function(){
             input.select();
         });
-    }
+    };
 
-    for (var i = 0; i < states.length; i++){
-        var option = states[i];
-        var slider = $("#slider_" + option.name);
-        var input = $("#value_" + option.name);
-        _initSlider(slider, input, option);
-    }
-}
-
-function resetSliderGroup(states){
-    for (var i = 0; i < states.length; i++) {
-        var option = states[i];
-        var slider = $("#slider_" + option.name);
-        slider.slider('value', option.default);
-    }
-}
-
-function getSliderGroupValues(states) {
-    var name2val = {};
-    for (var i = 0; i < states.length; i++) {
-        var option = states[i];
-        var slider = $("#slider_" + option.name);
-        name2val[option.name] = slider.slider('value');
-    }
-    return name2val;
-}
-
-function _initAxisSlider(sel, span_sel, opt){
-    function update_span(r){
-        $(span_sel).text(r[0] + ' .. ' + r[1]);
-    }
-    $(sel).slider({
-        range:true,
-        min: opt.min,
-        max: opt.max, values:[opt.lo, opt.hi],
-        step: (opt.max - opt.min)/1000,
-        slide: function(ev, target) {
-            update_span(target.values);
-        },
-        change : function(ev, target){
-            update_span(target.values);
-            onGraphChanged();
+    SliderGroup.prototype.reset = function(){
+        for (var i = 0; i < this.states.length; i++) {
+            var option = this.states[i];
+            var slider = $("#slider_" + option.name);
+            slider.slider('value', option.default);
         }
-    });
-}
+    };
+
+    SliderGroup.prototype.getValues = function(){
+        var name2val = {};
+        for (var i = 0; i < this.states.length; i++) {
+            var option = this.states[i];
+            var slider = $("#slider_" + option.name);
+            name2val[option.name] = slider.slider('value');
+        }
+        return name2val;
+    };
+
+    /**
+     * Dom selectors are hard coded so only one instance makes sense.
+     * @constructor
+     */
+    function AxisGroup(state, onChange){
+        var self = this;
+        self.onChange = onChange;
+        self.state = state;
+        self.$mode = $('#mode');
+        self.$svx = $('#svx');
+        self.$svy = $('#svy');
+        self.$slider_x = $('#slider_x_axis');
+        self.$slider_y = $('#slider_y_axis');
+
+        self.$mode.add(self.$svx).add(self.$svy).change(onChange);
+        self._initAxisSlider(self.$slider_x, $('#x_range_span'), self.state.x_axis);
+        self._initAxisSlider(self.$slider_y, $('#y_range_span'), self.state.y_axis);
+        $('#reset_axes').click(function() { self.reset();});
+    }
+
+    AxisGroup.prototype._initAxisSlider = function(sel, span, opt){
+        var self = this;
+        function update_span(r) {
+            span.text(r[0] + ' .. ' + r[1]);
+        }
+        sel.slider({
+            range:true,
+            min: opt.min,
+            max: opt.max,
+            values:[opt.lo, opt.hi],
+            step: (opt.max - opt.min)/1000,
+            slide: function(ev, target) {
+                update_span(target.values);
+            },
+            change : function(ev, target){
+                update_span(target.values);
+                self.onChange();
+            }
+        });
+    };
+
+    AxisGroup.prototype.reset = function(){
+        var opt = this.state.x_axis;
+        this.$slider_x.slider({ min: opt.min, max: opt.max, values: [opt.lo, opt.hi] });
+        opt = this.state.y_axis;
+        this.$slider_y.slider({ min: opt.min, max: opt.max, values: [opt.lo, opt.hi] });
+        //reset mode and state var selection as well
+        this.$mode.val(0).change(); // change events do not fire when select's are changed by val()
+        this.$svx.val(this.state.state_variables[0].name).change();
+        this.$svy.val(this.state.state_variables[1].name).change();
+    };
+
+    AxisGroup.prototype.getValue = function(){
+        return {
+            mode: this.$mode.val(),
+            svx: this.$svx.val(),
+            svy: this.$svy.val(),
+            x_range: this.$slider_x.slider('values'),
+            y_range: this.$slider_y.slider('values')
+        };
+    };
+
+    dynamicPage.SliderGroup = SliderGroup;
+    dynamicPage.AxisGroup = AxisGroup;
+})();
+
+
+/** @module main */
+(function(){
 
 function _url(func, tail){
     var url = '/burst/dynamic/' + func + '/' + dynamicPage.dynamic_gid;
@@ -127,32 +187,12 @@ function _fetchSlidersFromServer(){
         url: _url('sliders_fragment'),
         success: function(fragment) {
             sliderContainer.html(fragment);
-            $('#reset_sliders').click(function(){
-                resetSliderGroup(dynamicPage.paramDefaults);
-            });
-            $('#reset_state_variables').click(function(){
-                resetSliderGroup(dynamicPage.graphDefaults.state_variables);
-            });
-            $('#reset_axes').click(function() {
-                //not nice
-                var opt = dynamicPage.graphDefaults.x_axis;
-                $('#slider_x_axis').slider({ min: opt.min, max: opt.max, values: [opt.lo, opt.hi] });
-                opt = dynamicPage.graphDefaults.y_axis;
-                $('#slider_y_axis').slider({ min: opt.min, max: opt.max, values: [opt.lo, opt.hi] });
-                //reset mode and state var selection as well
-                $('#mode').val(0).change(); // change events do not fire when select's are changed by val()
-                $('#svx').val(dynamicPage.graphDefaults.state_variables[0].name).change();
-                $('#svy').val(dynamicPage.graphDefaults.state_variables[1].name).change();
-            });
             MathJax.Hub.Queue(["Typeset", MathJax.Hub, 'div_spatial_model_params']);
-            initSliderGroup(dynamicPage.paramDefaults, onParameterChanged);
-            initSliderGroup(dynamicPage.graphDefaults.state_variables, onGraphChanged);
-            $('#mode').change(onGraphChanged);
-            $('#svx').change(onGraphChanged);
-            $('#svy').change(onGraphChanged);
-            _initAxisSlider('#slider_x_axis', '#x_range_span', dynamicPage.graphDefaults.x_axis);
-            _initAxisSlider('#slider_y_axis', '#y_range_span', dynamicPage.graphDefaults.y_axis);
             setupMenuEvents(sliderContainer);
+
+            dynamicPage.paramSliders = new dynamicPage.SliderGroup(dynamicPage.paramDefaults, '#reset_sliders', onParameterChanged);
+            dynamicPage.stateVarsSliders = new dynamicPage.SliderGroup(dynamicPage.graphDefaults.state_variables, '#reset_state_variables', onGraphChanged);
+            dynamicPage.axisControls = new dynamicPage.AxisGroup(dynamicPage.graphDefaults, onGraphChanged);
         }
     });
 }
@@ -174,7 +214,7 @@ function _onParameterChanged(){
     doAjaxCall({
         showBlockerOverlay: true,
         url: _url('parameters_changed'),
-        data: {params: JSON.stringify(getSliderGroupValues(dynamicPage.paramDefaults))}
+        data: {params: JSON.stringify(dynamicPage.paramSliders.getValues())}
     });
 }
 
@@ -182,14 +222,8 @@ function _onParameterChanged(){
 var onParameterChanged = $.debounce(50, _onParameterChanged);
 
 function _onGraphChanged(){
-    var graph_state = {
-        mode: $('#mode').val(),
-        svx: $('#svx').val(),
-        svy: $('#svy').val(),
-        state_vars: getSliderGroupValues(dynamicPage.graphDefaults.state_variables),
-        x_range: $('#slider_x_axis').slider('values'),
-        y_range: $('#slider_y_axis').slider('values')
-    };
+    var graph_state = dynamicPage.axisControls.getValue();
+    graph_state.state_vars = dynamicPage.stateVarsSliders.getValues();
 
     doAjaxCall({
         showBlockerOverlay: true,
