@@ -273,10 +273,12 @@ class DynamicModelController(BurstBaseController):
 
 
     @expose_json
-    def parameter_changed(self, dynamic_gid, name, value):
+    def parameters_changed(self, dynamic_gid, params):
+        params = json.loads(params)
         dynamic = self.get_cached_dynamic(dynamic_gid)
         model = dynamic.model
-        setattr(model, name, numpy.array([float(value)]))
+        for name, value in params.iteritems():
+            setattr(model, name, numpy.array([float(value)]))
         model.configure()
         dynamic.phase_plane.refresh()
 

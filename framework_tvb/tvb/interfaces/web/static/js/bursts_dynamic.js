@@ -29,9 +29,9 @@
 /* globals doAjaxCall, displayMessage, MathJax, getSubmitableData */
 
 var dynamicPage = {
-    paramDefaults : {},
-    graphDefaults:{},
-    treeState: {},
+    paramDefaults : {}, // information about the model parameters and their default values
+    graphDefaults:{},   // information about the graph: shown state variables, state variable and axis ranges
+    treeState: {},      // the state of the left input tree. Used to detect changes
     dynamic_gid: null
 };
 
@@ -170,18 +170,18 @@ function onModelChanged(name){
     });
 }
 
-function onParameterChanged(name, value){
+function _onParameterChanged(){
     doAjaxCall({
         showBlockerOverlay: true,
-        url: _url('parameter_changed'),
-        data: {'name' : name, 'value': value},
-        success: function(data){
-
-        }
+        url: _url('parameters_changed'),
+        data: {params: JSON.stringify(getSliderGroupValues(dynamicPage.paramDefaults))}
     });
 }
 
-function onGraphChanged(){
+// Resetting a slider group will trigger change events for each slider. The handler does a slow ajax so debounce the handler
+var onParameterChanged = $.debounce(50, _onParameterChanged);
+
+function _onGraphChanged(){
     var graph_state = {
         mode: $('#mode').val(),
         svx: $('#svx').val(),
@@ -197,6 +197,9 @@ function onGraphChanged(){
         data: { graph_state: JSON.stringify(graph_state)}
     });
 }
+
+// see onParameterChanged
+var onGraphChanged = $.debounce(50, _onGraphChanged);
 
 function onSubmit(event){
     var name = $('#dynamic_name').val().trim();

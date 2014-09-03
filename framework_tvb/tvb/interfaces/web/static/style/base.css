@@ -1911,6 +1911,8 @@ color: #000;
 /* inline description boxes */
 nav.inline-description{
 max-width: 600px;
+max-height: 120px;
+overflow-y: auto;
 }
 /* !-------------------------------------------- */
 /* !COMPONENT: Tab switcher */
