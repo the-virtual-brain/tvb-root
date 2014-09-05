@@ -304,6 +304,49 @@ margin-left: 5%;
     width: 50%;
 }
 
+/* Used by the phase plane */
+svg.dynamicChart {
+    width: 100%;
+    height: 99%;
+    padding: 5px;
+    box-sizing: border-box;
+    background-color: #fafafd;
+}
+
+svg .phasePlane line{
+    stroke: #88A;
+    stroke-width: 1;
+    /*marker-start: url(#markerCircle);*/
+    marker-end: url(#markerArrow);
+}
+
+svg .overlay{
+    fill:none;
+    cursor: crosshair;
+    pointer-events:all;
+}
+
+svg .traj{
+    fill: none;
+    stroke-width: 2;
+}
+
+svg #markerArrow{
+    stroke: #88B;
+}
+
+svg .axis line, svg .axis path{
+    shape-rendering: crispEdges;
+    fill: none;
+    stroke: black;
+}
+
+svg .axis text{
+
+}
+
+
+
 /* !------------------------------------------------ */
 /* !CSS for divs used for displaying the brain pick  */
 /* !------------------------------------------------ */
