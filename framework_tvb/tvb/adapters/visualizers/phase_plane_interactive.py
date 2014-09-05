@@ -320,3 +320,55 @@ class PhasePlaneInteractive(PhasePlane):
                 x, y = event.xdata, event.ydata
                 self.log.info('trajectory starting at (%f, %f)', x, y)
                 self._plot_trajectory(x, y)
+
+
+
+class PhasePlaneD3(PhasePlane):
+    """
+    Provides data for a d3 client
+    """
+
+    def __init__(self, model, integrator):
+        PhasePlane.__init__(self, model, integrator)
+
+    def compute_phase_plane(self):
+        self._set_state_vector()
+        self._set_mesh_grid()
+
+        self._calc_phase_plane()
+        u = self.U[..., self.mode]
+        v = self.V[..., self.mode]
+        x, y = numpy.meshgrid(self.X, self.Y)
+
+        d = numpy.dstack((x, y, u, v))
+        d = d.reshape((NUMBEROFGRIDPOINTS**2, 4)).tolist()
+
+        xnull = self.nullcline(x, y, u).tolist()
+        ynull = self.nullcline(x, y, v).tolist()
+        return {'plane': d, 'nullclines': [xnull, ynull]}
+
+
+    def reset(self, model, integrator):
+        PhasePlane.__init__(self, model, integrator)
+
+
+    @staticmethod
+    def nullcline(x, y, z):
+        c = _cntr.Cntr(x, y, z)
+        # trace a contour
+        res = c.trace(0.0)
+        # result is a list of arrays of vertices and path codes
+        # (see docs for matplotlib.path.Path)
+        nseg = len(res)//2
+        segments, codes = res[:nseg], res[nseg:]
+        return segments[0]
+
+
+    def trajectory(self, x, y):
+        svx_ind = self.model.state_variables.index(self.svx)
+        svy_ind = self.model.state_variables.index(self.svy)
+        traj = self._compute_trajectory(x, y)
+
+        signal = zip(numpy.arange(TRAJ_STEPS + 1) * self.integrator.dt, traj[:, :, 0, self.mode].tolist())
+        trajectory = zip(traj[:, svx_ind, 0, self.mode], traj[:, svy_ind, 0, self.mode])
+        return trajectory, signal
