@@ -37,21 +37,139 @@ import pylab
 import colorsys
 from tvb.basic.config.settings import TVBSettings as config
 from tvb.basic.logger.builder import get_logger
+from matplotlib import _cntr
 
 #Set the resolution of the phase-plane and sample trajectories.
 NUMBEROFGRIDPOINTS = 42
 TRAJ_STEPS = 1024
 
 
-def get_color(num_colours):
-    for hue in range(num_colours):
-        hue = 1.0 * hue / num_colours
-        col = [int(x) for x in colorsys.hsv_to_rgb(hue, 1.0, 230)]
-        yield "#{0:02x}{1:02x}{2:02x}".format(*col)
+class PhasePlane(object):
+    """
+    Class responsible with computing the phase plane and trajectories.
+    This is view independent.
+    """
+    def __init__(self, model, integrator):
+        self.model = model
+        self.integrator = integrator
+
+        self.svx = self.model.state_variables[0] #x-axis: 1st state variable
+        if self.model.nvar > 1:
+            self.svy = self.model.state_variables[1]  # y-axis: 2nd state variable
+        else:
+            self.svy = self.model.state_variables[0]
+        self.mode = 0
+        self.log = get_logger(self.__class__.__module__)
+
+
+    def _set_state_vector(self):
+        """
+        Set up a vector containing the default state-variable values and create
+        a filler(all zeros) for the coupling arg of the Model's dfun method.
+        This method is called once at initialisation (show()).
+        """
+        #import pdb; pdb.set_trace()
+        svr = self.model.state_variable_range
+        sv_mean = numpy.array([svr[key].mean() for key in self.model.state_variables])
+        sv_mean = sv_mean.reshape((self.model.nvar, 1, 1))
+        self.default_sv = sv_mean.repeat(self.model.number_of_modes, axis=2)
+        self.no_coupling = numpy.zeros((self.model.nvar, 1, self.model.number_of_modes))
+
+
+    def _set_mesh_grid(self):
+        """
+        Generate the phase-plane gridding based on currently selected
+        state-variables and their range values.
+        """
+        xlo = self.model.state_variable_range[self.svx][0]
+        xhi = self.model.state_variable_range[self.svx][1]
+        ylo = self.model.state_variable_range[self.svy][0]
+        yhi = self.model.state_variable_range[self.svy][1]
+
+        self.X = numpy.mgrid[xlo:xhi:(NUMBEROFGRIDPOINTS*1j)]
+        self.Y = numpy.mgrid[ylo:yhi:(NUMBEROFGRIDPOINTS*1j)]
+
+
+    def _calc_phase_plane(self):
+        """ Calculate the vector field. """
+        svx_ind = self.model.state_variables.index(self.svx)
+        svy_ind = self.model.state_variables.index(self.svy)
+
+        #Calculate the vector field discretely sampled at a grid of points
+        grid_point = self.default_sv.copy()
+        self.U = numpy.zeros((NUMBEROFGRIDPOINTS, NUMBEROFGRIDPOINTS, self.model.number_of_modes))
+        self.V = numpy.zeros((NUMBEROFGRIDPOINTS, NUMBEROFGRIDPOINTS, self.model.number_of_modes))
+        for ii in xrange(NUMBEROFGRIDPOINTS):
+            grid_point[svy_ind] = self.Y[ii]
+            for jj in xrange(NUMBEROFGRIDPOINTS):
+                #import pdb; pdb.set_trace()
+                grid_point[svx_ind] = self.X[jj]
+                d = self.model.dfun(grid_point, self.no_coupling)
+
+                for kk in range(self.model.number_of_modes):
+                    self.U[ii, jj, kk] = d[svx_ind, 0, kk]
+                    self.V[ii, jj, kk] = d[svy_ind, 0, kk]
+
+        #self.UVmag = numpy.sqrt(self.U**2 + self.V**2)
+        #import pdb; pdb.set_trace()
+        if numpy.isnan(self.U).any() or numpy.isnan(self.V).any():
+            self.log.error("NaN")
+
+
+    def _get_axes_ranges(self, sv):
+        lo, hi = self.model.state_variable_range[sv]
+        default_range = hi - lo
+        min_val = lo - 4.0 * default_range
+        max_val = hi + 4.0 * default_range
+        return min_val, max_val, lo, hi
+
+
+    def axis_range(self):
+        min_val_x, max_val_x, lo_x, hi_x = self._get_axes_ranges(self.svx)
+        min_val_y, max_val_y, lo_y, hi_y = self._get_axes_ranges(self.svy)
+        xaxis_range = {'min':min_val_x, 'max':max_val_x, 'lo':lo_x, 'hi':hi_x}
+        yaxis_range = {'min':min_val_y, 'max':max_val_y, 'lo':lo_y, 'hi':hi_y}
+        return xaxis_range, yaxis_range
+
+
+    def update_axis(self, mode, svx, svy, x_range, y_range, sv):
+        self.mode = mode
+        self.svx = svx
+        self.svy = svy
+        msv_range = self.model.state_variable_range
+        msv_range[self.svx][0] = x_range[0]
+        msv_range[self.svx][1] = x_range[1]
+        msv_range[self.svy][0] = y_range[0]
+        msv_range[self.svy][1] = y_range[1]
+
+        for name, val in sv.iteritems():
+            k = self.model.state_variables.index(name)
+            self.default_sv[k] = val
+
+
+    def _compute_trajectory(self, x, y):
+        """
+        Calculate a sample trajectory, starting at the position x,y in the phase-plane.
+        """
+        svx_ind = self.model.state_variables.index(self.svx)
+        svy_ind = self.model.state_variables.index(self.svy)
+
+        state = self.default_sv.copy()
+        state[svx_ind] = x
+        state[svy_ind] = y
+        scheme = self.integrator.scheme
+        traj = numpy.zeros((TRAJ_STEPS + 1, self.model.nvar, 1, self.model.number_of_modes))
+        traj[0, :] = state
+
+        for step in xrange(TRAJ_STEPS):
+            state = scheme(state, self.model.dfun, self.no_coupling, 0.0, 0.0)
+            traj[step + 1, :] = state
+
+        return traj
 
 
 
-class PhasePlaneInteractive(object):
+class PhasePlaneInteractive(PhasePlane):
     """
     An interactive phase-plane plot generated from a TVB model object.
 
@@ -62,9 +180,7 @@ class PhasePlaneInteractive(object):
 
 
     def __init__(self, model, integrator):
-        self.log = get_logger(self.__class__.__module__)
-        self._init_model(model, integrator)
-
+        PhasePlane.__init__(self, model, integrator)
         self.ipp_fig = None
         self.pp_splt = None
         # Concurrent access to the drawing routines is breaking this viewer
@@ -73,15 +189,12 @@ class PhasePlaneInteractive(object):
         self.lock = threading.RLock()
 
 
-    def _init_model(self, model, integrator):
-        self.model = model
-        self.integrator = integrator
-        self.svx = self.model.state_variables[0]  # x-axis: 1st state variable
-        if self.model.nvar > 1:
-            self.svy = self.model.state_variables[1]  # y-axis: 2nd state variable
-        else:
-            self.svy = self.model.state_variables[0]
-        self.mode = 0
+    @staticmethod
+    def get_color(num_colours):
+        for hue in range(num_colours):
+            hue = 1.0 * hue / num_colours
+            col = [int(x) for x in colorsys.hsv_to_rgb(hue, 1.0, 230)]
+            yield "#{0:02x}{1:02x}{2:02x}".format(*col)
 
 
     def reset(self, model, integrator):
@@ -90,7 +203,7 @@ class PhasePlaneInteractive(object):
         Redraws plot.
         """
         with self.lock:
-            self._init_model(model, integrator)
+            PhasePlane.__init__(self, model, integrator)
             self.draw_phase_plane()
 
 
@@ -123,7 +236,7 @@ class PhasePlaneInteractive(object):
 
             self.pp_splt = self.ipp_fig.add_subplot(212)
             self.ipp_fig.subplots_adjust(left=0.07, bottom=0.03, right=0.97, top=0.3, wspace=0.1, hspace=None)
-            self.pp_splt.set_color_cycle(get_color(self.model.nvar))
+            self.pp_splt.set_color_cycle(self.get_color(self.model.nvar))
             self.pp_splt.plot(numpy.arange(TRAJ_STEPS + 1) * self.integrator.dt,
                               numpy.zeros((TRAJ_STEPS + 1, self.model.nvar)))
             if hasattr(self.pp_splt, 'autoscale'):
@@ -142,101 +255,19 @@ class PhasePlaneInteractive(object):
             return dict(mplh5ServerURL=config.MPLH5_SERVER_URL, figureNumber=self.ipp_fig.number, showFullToolbar=False)
 
 
-    def _get_axes_ranges(self, sv):
-        lo, hi = self.model.state_variable_range[sv]
-        default_range = hi - lo
-        min_val = lo - 4.0 * default_range
-        max_val = hi + 4.0 * default_range
-        return min_val, max_val, lo, hi
-
-
-    def axis_range(self):
-        min_val_x, max_val_x, lo_x, hi_x = self._get_axes_ranges(self.svx)
-        min_val_y, max_val_y, lo_y, hi_y = self._get_axes_ranges(self.svy)
-        xaxis_range = {'min':min_val_x, 'max':max_val_x, 'lo':lo_x, 'hi':hi_x}
-        yaxis_range = {'min':min_val_y, 'max':max_val_y, 'lo':lo_y, 'hi':hi_y}
-        return xaxis_range, yaxis_range
-
     ##------------------- Functions for updating the figure ------------------##
 
     def _update_phase_plane(self):
         """ Clear the axes and redraw the phase-plane. """
         self.pp_ax.clear()
         self.pp_splt.clear()
-        self.pp_splt.set_color_cycle(get_color(self.model.nvar))
+        self.pp_splt.set_color_cycle(self.get_color(self.model.nvar))
         self.pp_splt.plot(numpy.arange(TRAJ_STEPS + 1) * self.integrator.dt,
                           numpy.zeros((TRAJ_STEPS + 1, self.model.nvar)))
         if hasattr(self.pp_splt, 'autoscale'):
             self.pp_splt.autoscale(enable=True, axis='y', tight=True)
         self.pp_splt.legend(self.model.state_variables)
         self._plot_phase_plane()
-
-
-    def update_axis(self, mode, svx, svy, x_range, y_range, sv):
-        self.mode = mode
-        self.svx = svx
-        self.svy = svy
-        msv_range = self.model.state_variable_range
-        msv_range[self.svx][0] = x_range[0]
-        msv_range[self.svx][1] = x_range[1]
-        msv_range[self.svy][0] = y_range[0]
-        msv_range[self.svy][1] = y_range[1]
-
-        for name, val in sv.iteritems():
-            k = self.model.state_variables.index(name)
-            self.default_sv[k] = val
-        self.refresh()
-
-
-    def _set_mesh_grid(self):
-        """
-        Generate the phase-plane gridding based on currently selected statevariables
-        and their range values.
-        """
-        xlo = self.model.state_variable_range[self.svx][0]
-        xhi = self.model.state_variable_range[self.svx][1]
-        ylo = self.model.state_variable_range[self.svy][0]
-        yhi = self.model.state_variable_range[self.svy][1]
-
-        self.X = numpy.mgrid[xlo:xhi:(NUMBEROFGRIDPOINTS * 1j)]
-        self.Y = numpy.mgrid[ylo:yhi:(NUMBEROFGRIDPOINTS * 1j)]
-
-
-    def _set_state_vector(self):
-        """
-        """
-        #import pdb; pdb.set_trace()
-        svr = self.model.state_variable_range
-        sv_mean = numpy.array([svr[key].mean() for key in self.model.state_variables])
-        sv_mean = sv_mean.reshape((self.model.nvar, 1, 1))
-        self.default_sv = sv_mean.repeat(self.model.number_of_modes, axis=2)
-        self.no_coupling = numpy.zeros((self.model.nvar, 1, self.model.number_of_modes))
-
-
-    def _calc_phase_plane(self):
-        """ Calculate the vector field. """
-        svx_ind = self.model.state_variables.index(self.svx)
-        svy_ind = self.model.state_variables.index(self.svy)
-
-        #Calculate the vector field discretely sampled at a grid of points
-        grid_point = self.default_sv.copy()
-        self.U = numpy.zeros((NUMBEROFGRIDPOINTS, NUMBEROFGRIDPOINTS, self.model.number_of_modes))
-        self.V = numpy.zeros((NUMBEROFGRIDPOINTS, NUMBEROFGRIDPOINTS, self.model.number_of_modes))
-        for ii in xrange(NUMBEROFGRIDPOINTS):
-            grid_point[svy_ind] = self.Y[ii]
-            for jj in xrange(NUMBEROFGRIDPOINTS):
-                #import pdb; pdb.set_trace()
-                grid_point[svx_ind] = self.X[jj]
-                d = self.model.dfun(grid_point, self.no_coupling)
-
-                for kk in range(self.model.number_of_modes):
-                    self.U[ii, jj, kk] = d[svx_ind, 0, kk]
-                    self.V[ii, jj, kk] = d[svy_ind, 0, kk]
-
-        #self.UVmag = numpy.sqrt(self.U**2 + self.V**2)
-        #import pdb; pdb.set_trace()
-        if numpy.isnan(self.U).any() or numpy.isnan(self.V).any():
-            self.log.error("NaN")
 
 
     def _plot_phase_plane(self):
@@ -272,18 +303,7 @@ class PhasePlaneInteractive(object):
         svx_ind = self.model.state_variables.index(self.svx)
         svy_ind = self.model.state_variables.index(self.svy)
 
-        #Calculate an example trajectory
-        state = self.default_sv.copy()
-        state[svx_ind] = x
-        state[svy_ind] = y
-        scheme = self.integrator.scheme
-        traj = numpy.zeros((TRAJ_STEPS + 1, self.model.nvar, 1,
-                            self.model.number_of_modes))
-        traj[0, :] = state
-        for step in range(TRAJ_STEPS):
-            #import pdb; pdb.set_trace()
-            state = scheme(state, self.model.dfun, self.no_coupling, 0.0, 0.0)
-            traj[step + 1, :] = state
+        traj = self._compute_trajectory(x, y)
 
         self.pp_ax.scatter(x, y, s=42, c='g', marker='o', edgecolor=None)
         self.pp_ax.plot(traj[:, svx_ind, 0, self.mode], traj[:, svy_ind, 0, self.mode])
