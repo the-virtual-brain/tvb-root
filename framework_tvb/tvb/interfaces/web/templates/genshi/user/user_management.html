@@ -42,7 +42,7 @@
             </td>
             <td>
                 <input tabindex='$tabindex' name="validate_$user.id" type="checkbox"
-                       checked="{'true' if user.validated==1 else None}" />
+                       checked="${'checked' if user.validated else None}" />
             </td>
         </tr>
 	</table>
