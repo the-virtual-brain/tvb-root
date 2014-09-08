@@ -165,3 +165,34 @@ You have also functionality on this page:
   You might want to disable it once you feel confident with the interface.
 - logout function (button on the right side)
 
+
+.. tip::
+
+    TVB is a web application, which gets deployed on every computer where TVB_Distribution is downloaded and
+    *tvb_start* command is executed. This happens usually in a local environment; which means that the user and
+    resource management will be done locally, in that instance, and not in a centralised manner.
+
+    When TVB is started for the first time, you will see a settings page, where you can define the administrator
+    account of that TVB instance. Default that is: **admin / pass** (exactly these words).
+
+    If you are using TVB in a single-user manner (not shared with other colleagues), feel free to use only this
+    user while working with TVB; you do not need to bother with creating/registering other accounts.
+    It is although recommended for you to change the password and the email address for this administrator account,
+    especially if you are working in a LAN and your computer is not having a strong firewall.
+
+        .. figure:: screenshots/user_change_account.jpg
+            :width: 90%
+            :align: center
+
+            Changing current user's email address and password
+
+    If you are using TVB in a shared environment (e.g. installed on a server and accessed from remote by multiple
+    people), you could follow the following steps:
+
+        - register accounts (optional)
+        - login with administrator
+        - check admin's profile page, link *Manage other users*
+        - in case you haven't registered accounts (step 1) you can now create new accounts using the button on the right
+        - check the *validate* checkbox for new users that you want active, and click *Save* to apply
+        - from this very same page you can also invalidate some old users which you want to no longer be able to use TVB
+
