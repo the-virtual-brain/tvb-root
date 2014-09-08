@@ -25,18 +25,22 @@ var tsFrag = {
     brush: null                         // A d3.brush()
 };
 
-var tsDataObj = function(params, data){             // this keeps all the data about a specific time series
+/**
+ * We can pass just the time series array as the second element or an Object
+ * with all the relevant data, including the array itself.
+ */
+var tsDataObj = function(params, dataArray){             // this keeps all the data about a specific time series
     this.x = params.x || tsFrag.selectedEntity[0],                      // The X coordinate
     this.y =  params.y || tsFrag.selectedEntity[1],                     // The Y coordinate
     this.z = params.z || tsFrag.selectedEntity[2],                      // The Z coordinate
     this.label = params.label || "["+this.x+","+this.y+","+this.z+"]",  // The string used as a label for this Object
-    this.data = params.data || data,                                    // The actual data
-    this.max = parseFloat(params.max) || d3.max(data),                              // The maximum value on the data
-    this.min = parseFloat(params.min) || d3.min(data),                              // The minimum value on the data
-    this.mean = parseFloat(params.mean) || d3.mean(data),                           // The mean values on the data
-    this.median = parseFloat(params.median) || d3.median(data),                     // The median value on the data
-    this.variance = parseFloat(params.variance) || variance(data, this.mean),       // The variance of the data
-    this.deviation = parseFloat(params.deviation) || Math.sqrt(this.variance)       // The std deviation of the data
+    this.data = params.data || dataArray,                               // The actual data
+    this.max = params.max || d3.max(dataArray),                         // The maximum value on the data
+    this.min = params.min || d3.min(dataArray),                         // The minimum value on the data
+    this.mean = params.mean || d3.mean(dataArray),                      // The mean values on the data
+    this.median = params.median || d3.median(dataArray),                // The median value on the data
+    this.variance = params.variance || variance(dataArray, this.mean),  // The variance of the data
+    this.deviation = params.deviation || Math.sqrt(this.variance)       // The std deviation of the data
 }
 
 /**
