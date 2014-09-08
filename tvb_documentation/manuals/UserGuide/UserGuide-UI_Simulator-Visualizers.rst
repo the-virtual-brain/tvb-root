@@ -37,7 +37,59 @@ Time Series Visualizer (svg/d3)
 Time Series Volume Visualizer
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-This visualizer is still work in progress.
+.. figure:: screenshots/time_series_volume_visualizer.jpg
+   :width: 90%
+   :align: center
+
+This visualizer displays time series of volumetric data, like fMRI.
+There are three navigation quadrants on the left and one main "focus quadrant". 
+It is also possible to navigate in space using the slide controls on the
+top-left toolbar.
+
+The playback function is activated by clicking the play button; The time
+series data is buffered from the server according to the currently selected
+view.
+
+A different color map can be selected by clicked the Brain button in the
+top-right of the screen.
+
+Time Series Fragment
+~~~~~~~~~~~~~~~~~~~~
+
+.. figure:: screenshots/time_series_fragment.jpg
+   :width: 90%
+   :align: center
+
+This is an alternative time series visualizer written using D3.js.
+
+It displays time series information about the selected nodes. If it is coupled
+with the Time Series Volume Visualizer it displays signal values in time for
+each selected voxel.
+This visualizer is composed of three main parts:
+
+*Global Time Series Graph:*
+All previously selected lines are shown here. Some transparency is applied to
+the lines and only one line is highlighted each time. Highlighting can be done
+be passing the mouse over the line on the global graph or by clicking the
+selected line in the sortable graph. Vertical scaling is done based only on the
+selected values and not on the complete data set. A red vertical line shows the
+current time point. A blue line follows the mouse showing the value of the
+highlighted line at each point.
+
+*Brush section:*
+The brush function is used to display only a portion of the
+data, zooming on it if possible. The user can manually select the brushing
+extent while it will automatically set itself around the current time point
+with a default extent during playback.
+
+*Sortable Graph:*
+Every selected time series is shown on each line and labeled
+based on its coordinates. The lines are colored following the selected feature
+in "Color Lines by" at the top of the screen. They are then sorted automatically
+by one of the selected methods or manually, by dragging and dropping each line
+in the desired position, as seen on the above picture. Lines can be removed by
+dragging them to the top "trash bin area" that appear every time a line is
+dragged.
 
 
 Animated Time Series Visualizer
