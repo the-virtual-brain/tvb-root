@@ -352,11 +352,13 @@ class PhasePlaneD3(PhasePlane):
         PhasePlane.__init__(self, model, integrator)
 
 
-    @staticmethod
-    def nullcline(x, y, z):
+    # @staticmethod
+    def nullcline(self,x, y, z):
         c = _cntr.Cntr(x, y, z)
         # trace a contour
         res = c.trace(0.0)
+        if not res:
+            return numpy.array([])
         # result is a list of arrays of vertices and path codes
         # (see docs for matplotlib.path.Path)
         nseg = len(res)//2
