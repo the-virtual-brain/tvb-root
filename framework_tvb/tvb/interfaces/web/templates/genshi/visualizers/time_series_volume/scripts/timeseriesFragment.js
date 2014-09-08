@@ -31,12 +31,12 @@ var tsDataObj = function(params, data){             // this keeps all the data a
     this.z = params.z || tsFrag.selectedEntity[2],                      // The Z coordinate
     this.label = params.label || "["+this.x+","+this.y+","+this.z+"]",  // The string used as a label for this Object
     this.data = params.data || data,                                    // The actual data
-    this.max = params.max || d3.max(data),                              // The maximum value on the data
-    this.min = params.min || d3.min(data),                              // The minimum value on the data
-    this.mean = params.mean || d3.mean(data),                           // The mean values on the data
-    this.median = params.median || d3.median(data),                     // The median value on the data
-    this.variance = params.variance || variance(data, this.mean),       // The variance of the data
-    this.deviation = params.deviation || Math.sqrt(this.variance)       // The std deviation of the data
+    this.max = parseFloat(params.max) || d3.max(data),                              // The maximum value on the data
+    this.min = parseFloat(params.min) || d3.min(data),                              // The minimum value on the data
+    this.mean = parseFloat(params.mean) || d3.mean(data),                           // The mean values on the data
+    this.median = parseFloat(params.median) || d3.median(data),                     // The median value on the data
+    this.variance = parseFloat(params.variance) || variance(data, this.mean),       // The variance of the data
+    this.deviation = parseFloat(params.deviation) || Math.sqrt(this.variance)       // The std deviation of the data
 }
 
 /**
@@ -92,7 +92,7 @@ function drawGraphs(){
     var selectedVoxelIsNotPresent = !tsFrag.tsDataArray.some(function(ts){ return ts.label == this[0]}, [label]);
 
     if( selectedVoxelIsNotPresent ){
-        var tmp = new tsDataObj({}, getPerVoxelTimeSeries(tsFrag.selectedEntity[0], tsFrag.selectedEntity[1], tsFrag.selectedEntity[2]));
+        var tmp = new tsDataObj(getPerVoxelTimeSeries(tsFrag.selectedEntity[0], tsFrag.selectedEntity[1], tsFrag.selectedEntity[2]));
         tsFrag.tsDataArray.push(tmp);
         var pvt = {x: tsFrag.selectedEntity[0], y:  tsFrag.selectedEntity[1],z:  tsFrag.selectedEntity[2]};
         sortTsGraphs($("#sortingSelector").val(), tsFrag.relevantSortingFeature, pvt);
