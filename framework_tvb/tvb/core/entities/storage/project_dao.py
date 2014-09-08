@@ -106,20 +106,39 @@ class CaseDAO(RootDAO):
             if is_count:
                 result = query.count()
             else:
-                result = query.offset(max(page_start, 0)).limit(max(page_end, 0)).all()
+                result = query.order_by(model.User.username).offset(max(page_start, 0)).limit(max(page_end, 0)).all()
             return result
         except NoResultFound:
             self.logger.warning("No users found. Maybe database is empty.")
             raise
 
 
-    def get_user_by_name_email(self, email):
-        """For a username and a email reset the password to a random one"""
+    def get_user_by_name_email(self, email, name_hint=""):
+        """
+        Find a user by email address and name.
+
+        :param email: Valid email address string, to search for its exact match in DB
+        :param name_hint: string for a user's name; to search with like in DB
+
+        :return: None if none or more than one users matches the criteria.
+        """
         user = None
-        try:
-            user = self.session.query(model.User).filter_by(email=email).one()
-        except SQLAlchemyError:
-            self.logger.exception("Could not get user by email " + email)
+
+        if name_hint:
+            try:
+                ### In case of multiple users: first try to find exact match for the given username
+                user = self.session.query(model.User).filter_by(email=email).filter_by(username=name_hint).one()
+            except SQLAlchemyError:
+                ### Ignore
+                pass
+
+        if user is None:
+            try:
+                user = self.session.query(model.User).filter_by(email=email
+                                ).filter(model.User.username.ilike('%' + name_hint + '%')).one()
+            except SQLAlchemyError:
+                self.logger.exception("Could not get a single user by email " + email + " and name " + name_hint)
+
         return user
 
 

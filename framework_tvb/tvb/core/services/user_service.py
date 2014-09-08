@@ -53,9 +53,11 @@ FROM_ADDRESS = 'donotreply@thevirtualbrain.org'
 SUBJECT_REGISTER = '[TVB] Registration Confirmation'
 SUBJECT_VALIDATE = '[TVB] Account validated'
 SUBJECT_RECOVERY = '[TVB] Recover password'
-TEXT_RECOVERY = 'A new password was generated for you. Please login with \
-the below password and change it to one you can easily remember as soon as \
-possible.\n Thank you.\n\n Password: %s'
+TEXT_RECOVERY = 'Hi %s,\n\n' \
+                'According to your recent request, a new password was generated for your user, by the system.\n' \
+                'Please login with the below password and change it into one you can easily remember.\n\n ' \
+                'The new password is: %s\n\n' \
+                'TVB Team.'
 TEXT_DISPLAY = "Thank you! Please check your email for further details!"
 TEXT_CREATE = (',\n\nYour registration has been notified to the administrators '
                + 'of The Virtual Brain Project; you will receive an mail as '
@@ -136,16 +138,17 @@ class UserService:
         old_pass, user = None, None
         try:
             email = data[KEY_EMAIL]
-            user = dao.get_user_by_name_email(email)
+            name_hint = data[KEY_USERNAME]
+            user = dao.get_user_by_name_email(email, name_hint)
             if user is None:
-                raise UsernameException("Given credentials don't match!")
+                raise UsernameException("No singular user could be found for the given data!")
 
             old_pass = user.password
             new_pass = ''.join(chr(randint(48, 122)) for _ in range(DEFAULT_PASS_LENGTH))
             user.password = md5(new_pass).hexdigest()
             self.edit_user(user, old_pass)
             self.logger.info("Resetting password for email : " + email)
-            email_sender.send(FROM_ADDRESS, email, SUBJECT_RECOVERY, TEXT_RECOVERY % (new_pass,))
+            email_sender.send(FROM_ADDRESS, email, SUBJECT_RECOVERY, TEXT_RECOVERY % (user.username, new_pass))
             return TEXT_DISPLAY
         except Exception, excep:
             if old_pass and len(old_pass) > 1 and user:
@@ -262,8 +265,8 @@ class UserService:
 
 
     def delete_user(self, user_id):
-        """ 
-        Delete a user with a given ID. 
+        """
+        Delete a user with a given ID.
         Return True when successfully, or False."""
         try:
             dao.delete_user(user_id)
