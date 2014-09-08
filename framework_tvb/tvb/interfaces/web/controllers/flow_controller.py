@@ -786,7 +786,3 @@ class FlowController(BaseController):
         else:
             error_msg = self.NEW_SELECTION_NAME + " or empty name are not  valid as selection names."
             return [False, error_msg]
-        
-        
- 
-    

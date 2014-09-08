@@ -618,6 +618,9 @@ function asyncRequest(fileName, sect){
                         }
                     });
                 }
+            },
+            error: function(){
+                displayMessage("Could not retrieve data from the server!", "warningMessage");
             }
         });
     }
@@ -754,9 +757,9 @@ function getViewAtTime(t){
 
     var section = Math.floor(t/tsVol.bufferSize);
 
-    if(tsVol.bufferL3[section]){ //We have that slice in memory
+    if(tsVol.bufferL3[section]){ // We have that slice in memory
         buffer = tsVol.bufferL3[section];
-    }else{ // We need to load that slice from
+    }else{ // We need to load that slice from the server
         from = "from_idx=" + t;
         to = ";to_idx=" + Math.min(1 + t, tsVol.timeLength);
         query = tsVol.dataView + from + to + xPlane + yPlane + zPlane;
