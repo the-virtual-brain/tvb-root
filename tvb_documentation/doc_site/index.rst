@@ -16,6 +16,9 @@ To download it, check out the |official_site|.
 
 To get in touch with other users and developers, please head over to the |mailing_list|.
 
+Some more documents and artefacts for TVB can be found in this |sharing_area|
+(e.g. documentation from TVB Node# meetings, some team pictures).
+
 
 .. |official_site| raw:: html
 
@@ -24,3 +27,7 @@ To get in touch with other users and developers, please head over to the |mailin
 .. |mailing_list| raw:: html
 
    <a href="https://groups.google.com/forum/#!forum/tvb-users" target="_blank">mailing list</a>
+
+.. |sharing_area| raw:: html
+
+    <a href="http://www.thevirtualbrain.org/tvb/zwei/client-area/public" target="_blank">share area</a>
