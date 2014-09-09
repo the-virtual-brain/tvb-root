@@ -33,7 +33,7 @@
 """
 import json
 import numpy
-from tvb.adapters.visualizers.phase_plane_interactive import PhasePlaneInteractive
+from tvb.adapters.visualizers.phase_plane_interactive import PhasePlaneD3
 from tvb.basic.traits import core, types_basic, traited_interface
 from tvb.basic.traits.parameters_factory import get_traited_subclasses
 from tvb.basic.traits.util import multiline_math_directives_to_matjax
@@ -44,7 +44,7 @@ import tvb.core.entities.model
 from tvb.datatypes import noise_framework
 from tvb.interfaces.web.controllers import common
 from tvb.interfaces.web.controllers.burst.base_controller import BurstBaseController
-from tvb.interfaces.web.controllers.decorators import expose_page, expose_json, expose_fragment, profile_func
+from tvb.interfaces.web.controllers.decorators import expose_page, expose_json, expose_fragment
 from tvb.simulator import models, integrators
 
 
@@ -62,10 +62,9 @@ class Dynamic(object):
         self.model = model
         self.integrator = integrator
 
-        # The phase plane holds a global reference to a mplh5 figure
         # Only one instance should exist for a browser page.
         # To achieve something close to that we store it here
-        self.phase_plane = PhasePlaneInteractive(model, integrator)
+        self.phase_plane = PhasePlaneD3(model, integrator)
 
 
 class SessionCache(object):
@@ -212,7 +211,6 @@ class DynamicModelController(BurstBaseController):
 
         dynamic = self.get_cached_dynamic(dynamic_gid)
         self._configure_integrator_noise(dynamic.integrator, dynamic.model)
-        params.update(dynamic.phase_plane.draw_phase_plane())
         return params
 
 
@@ -262,8 +260,6 @@ class DynamicModelController(BurstBaseController):
         Should the Integrator __init__ not take care of this? Or noise_framework.buildnoise?
         Should I call noise.configure() as well?
         """
-        #todo: When refactoring phase_plane_interactive.py let it use this.
-
         if isinstance(integrator, integrators.IntegratorStochastic):
             shape = (1, model.nvar, 1, model.number_of_modes)
             if integrator.noise.ntau > 0.0:
@@ -280,7 +276,7 @@ class DynamicModelController(BurstBaseController):
         for name, value in params.iteritems():
             setattr(model, name, numpy.array([float(value)]))
         model.configure()
-        dynamic.phase_plane.refresh()
+        return dynamic.phase_plane.compute_phase_plane()
 
 
     @expose_json
@@ -289,6 +285,13 @@ class DynamicModelController(BurstBaseController):
         dynamic = self.get_cached_dynamic(dynamic_gid)
         dynamic.phase_plane.update_axis(graph_state['mode'], graph_state['svx'], graph_state['svy'],
                                         graph_state['x_range'], graph_state['y_range'], graph_state['state_vars'])
+        return dynamic.phase_plane.compute_phase_plane()
+
+
+    @expose_json
+    def trajectory(self, dynamic_gid, x, y):
+        dynamic = self.get_cached_dynamic(dynamic_gid)
+        return dynamic.phase_plane.trajectory(x, y)
 
 
     @staticmethod
@@ -313,6 +316,7 @@ class DynamicModelController(BurstBaseController):
                 'default': default
             })
         return ret
+
 
     @staticmethod
     def _get_state_variables_ui_model(model):

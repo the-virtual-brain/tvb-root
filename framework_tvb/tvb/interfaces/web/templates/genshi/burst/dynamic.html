@@ -3,7 +3,9 @@
 
     <xi:include href="../flow/genericAdapterTemplateFunctions.html"/>
 
-    <!--!<script type="text/javascript" src="/static/js/d3.v2.min.js"></script>-->
+    <script type="text/javascript" src="/static/js/d3.v3.min.js"></script>
+    <script type="text/javascript" src="/static/js/phase_plane_d3.js"></script>
+
     <script type="text/javascript" src="/static/js/jquery.ba-throttle-debounce.min.js"></script>
     <script type="text/javascript" src="/static/js/canvas2image.js"></script>
     <script type="text/javascript" src="/static/js/bursts_dynamic.js"></script>
@@ -12,18 +14,25 @@
         <div id="left_input_tree">
             ${generateDisplay(input_tree, False, "")}
         </div>
-    </section>
-
-    <section class="configure-stimulus-shape view-column">
         <fieldset>
             <div id='div_spatial_model_params'>
 
             </div>
         </fieldset>
+    </section>
 
-        <div class="dynamicChart">
-           <xi:include href="../visualizers/mplh5/figure.html"/>
-        </div>
+    <section class="configure-stimulus-shape view-column">
+        <svg class="dynamicChart">
+            <defs>
+                <marker id="markerCircle" markerWidth="8" markerHeight="8" refx="5" refy="5">
+                    <circle cx="5" cy="5" r="2"/>
+                </marker>
+                <marker id="markerArrow" markerWidth="5" markerHeight="5" refx="1" refy="2"
+                       orient="auto">
+                    <path d="M0,0 L0,4 L4,2 L0,0" />
+                </marker>
+            </defs>
+        </svg>
     </section>
 
     <form id="base_spatio_temporal_form">

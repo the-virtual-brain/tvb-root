@@ -193,6 +193,7 @@ function _fetchSlidersFromServer(){
             dynamicPage.paramSliders = new dynamicPage.SliderGroup(dynamicPage.paramDefaults, '#reset_sliders', onParameterChanged);
             dynamicPage.stateVarsSliders = new dynamicPage.SliderGroup(dynamicPage.graphDefaults.state_variables, '#reset_state_variables', onGraphChanged);
             dynamicPage.axisControls = new dynamicPage.AxisGroup(dynamicPage.graphDefaults, onGraphChanged);
+            _onParameterChanged();
         }
     });
 }
@@ -210,11 +211,21 @@ function onModelChanged(name){
     });
 }
 
+function _redrawPhasePlane(data){
+    data = JSON.parse(data);
+    dynamicPage.phasePlane.draw(data);
+    dynamicPage.phasePlane.clearTrajectories();
+    var axisState = dynamicPage.axisControls.getValue();
+    dynamicPage.phasePlane.setLabels(axisState.svx, axisState.svy);
+    dynamicPage.phasePlane.setPlotLabels($.map(dynamicPage.graphDefaults.state_variables, function(d){return d.name;}) );
+}
+
 function _onParameterChanged(){
     doAjaxCall({
         showBlockerOverlay: true,
         url: _url('parameters_changed'),
-        data: {params: JSON.stringify(dynamicPage.paramSliders.getValues())}
+        data: {params: JSON.stringify(dynamicPage.paramSliders.getValues())},
+        success : _redrawPhasePlane
     });
 }
 
@@ -228,12 +239,26 @@ function _onGraphChanged(){
     doAjaxCall({
         showBlockerOverlay: true,
         url: _url('graph_changed'),
-        data: { graph_state: JSON.stringify(graph_state)}
+        data: { graph_state: JSON.stringify(graph_state)},
+        success : _redrawPhasePlane
     });
 }
 
 // see onParameterChanged
 var onGraphChanged = $.debounce(50, _onGraphChanged);
+
+function onTrajectory(x, y){
+    doAjaxCall({
+        showBlockerOverlay: true,
+        url: _url('trajectory'),
+        data: {x:x, y:y},
+        success:function(data){
+            data = JSON.parse(data);
+            dynamicPage.phasePlane.drawTrajectory(data[0]);
+            dynamicPage.phasePlane.drawSignal(data[1]);
+        }
+    });
+}
 
 function onSubmit(event){
     var name = $('#dynamic_name').val().trim();
@@ -254,7 +279,10 @@ function onIntegratorChanged(state){
     doAjaxCall({
         showBlockerOverlay: true,
         url: _url('integrator_changed'),
-        data: state
+        data: state,
+        success:function(){
+            dynamicPage.phasePlane.clearTrajectories();
+        }
     });
 }
 
@@ -281,6 +309,7 @@ function main(dynamic_gid){
     $('#left_input_tree').find('input').add('select').change(onTreeChange);
     $('#base_spatio_temporal_form').submit(onSubmit);
     onTreeChange();
+    dynamicPage.phasePlane = new TVBUI.PhasePlane(onTrajectory);
 }
 
 dynamicPage.main = main;
