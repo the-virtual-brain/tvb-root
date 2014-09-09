@@ -371,6 +371,8 @@ class PhasePlaneD3(PhasePlane):
         svy_ind = self.model.state_variables.index(self.svy)
         traj = self._compute_trajectory(x, y)
 
-        signal = zip(numpy.arange(TRAJ_STEPS + 1) * self.integrator.dt, traj[:, :, 0, self.mode].tolist())
+        signal_x = numpy.arange(TRAJ_STEPS + 1) * self.integrator.dt
+
+        signals = [ zip(signal_x, traj[:, i, 0, self.mode].tolist()) for i in xrange(traj.shape[1])]
         trajectory = zip(traj[:, svx_ind, 0, self.mode], traj[:, svy_ind, 0, self.mode])
-        return trajectory, signal
+        return trajectory, signals
