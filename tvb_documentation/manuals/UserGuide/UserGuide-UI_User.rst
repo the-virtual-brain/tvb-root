@@ -166,6 +166,14 @@ You have also functionality on this page:
 - logout function (button on the right side)
 
 
+    .. figure:: screenshots/users_management.jpg
+        :width: 90%
+        :align: center
+
+        User's Management Page (available for admin only)
+
+
+
 .. tip::
 
     TVB is a web application, which gets deployed on every computer where TVB_Distribution is downloaded and
@@ -193,6 +201,6 @@ You have also functionality on this page:
         - login with administrator
         - check admin's profile page, link *Manage other users*
         - in case you haven't registered accounts (step 1) you can now create new accounts using the button on the right
-        - check the *validate* checkbox for new users that you want active, and click *Save* to apply
+        - check the *validate* checkbox for new users that you want active, and click *Save* to apply (see figure from previous page)
         - from this very same page you can also invalidate some old users which you want to no longer be able to use TVB
 
