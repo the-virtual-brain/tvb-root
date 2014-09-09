@@ -41,7 +41,7 @@ from matplotlib import _cntr
 
 #Set the resolution of the phase-plane and sample trajectories.
 NUMBEROFGRIDPOINTS = 42
-TRAJ_STEPS = 1024
+TRAJ_STEPS = 512
 
 
 class PhasePlane(object):
@@ -88,6 +88,26 @@ class PhasePlane(object):
 
         self.X = numpy.mgrid[xlo:xhi:(NUMBEROFGRIDPOINTS*1j)]
         self.Y = numpy.mgrid[ylo:yhi:(NUMBEROFGRIDPOINTS*1j)]
+
+
+    def _calc_phase_plane_fast(self):
+        """ A vectorized version. Evaluate all grid points at once as if they were connectivity nodes  """
+        svx_ind = self.model.state_variables.index(self.svx)
+        svy_ind = self.model.state_variables.index(self.svy)
+
+        state_variables = numpy.tile(self.default_sv, (NUMBEROFGRIDPOINTS**2, 1))
+        xg, yg = numpy.meshgrid(self.X, self.Y)
+
+        for mode_idx in xrange(self.model.number_of_modes):
+            state_variables[svx_ind, :, mode_idx] = xg.flat
+            state_variables[svy_ind, :, mode_idx] = yg.flat
+
+        d_grid = self.model.dfun(state_variables, self.no_coupling)
+
+        flat_uv_grid = d_grid[ [svx_ind, svy_ind], :, :]  # subset of the state variables to be displayed
+        self.U, self.V = flat_uv_grid.reshape((2, NUMBEROFGRIDPOINTS, NUMBEROFGRIDPOINTS, self.model.number_of_modes))
+        if numpy.isnan(self.U).any() or numpy.isnan(self.V).any():
+            self.log.error("NaN")
 
 
     def _calc_phase_plane(self):
@@ -335,7 +355,7 @@ class PhasePlaneD3(PhasePlane):
         self._set_state_vector()
         self._set_mesh_grid()
 
-        self._calc_phase_plane()
+        self._calc_phase_plane_fast()
         u = self.U[..., self.mode]
         v = self.V[..., self.mode]
         x, y = numpy.meshgrid(self.X, self.Y)
