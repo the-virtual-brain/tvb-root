@@ -35,9 +35,8 @@ var TVBUI = TVBUI || {};
  */
 (function(){
     "use strict";
-    // from colorbrewer
-    var dark2 = ["#1b9e77","#d95f02","#7570b3","#e7298a","#66a61e","#e6ab02","#a6761d","#666666"];
-    var spectral = ["#9e0142","#d53e4f","#f46d43","#fdae61","#fee08b","#ffffbf","#e6f598","#abdda4","#66c2a5","#3288bd","#5e4fa2"];
+    // from colorbrewer dark2
+    var trajColors = ["#1b9e77","#d95f02","#7570b3","#e7298a","#66a61e","#e6ab02","#a6761d","#666666"];
 
     // The logical coordinate space. All dimensions are in this space. Mapping to screen space is done by svg keeping aspect ration.
     var viewBox = "0 0 1000 1000";
@@ -65,8 +64,7 @@ var TVBUI = TVBUI || {};
         this.svg.append("text")     // title
             .attr("x", 500)
             .attr("y", 10)
-            .attr("font-size","30")
-            .attr("text-anchor", "middle")
+            .attr("class", "title")
             .text("Phase plane");
 
         // --- phase plane structure ---
@@ -87,12 +85,12 @@ var TVBUI = TVBUI || {};
             .attr("transform", "translate(825, 300)");
 
         this.xLabel = this.plane_with_axis.append("text")
-            .attr("class", "xlabel")
+            .attr("class", "axislabel")
             .attr("x", planeWidth + 20)
             .attr("y", planeHeight);
 
         this.yLabel = this.plane_with_axis.append("text")
-            .attr("class", "ylabel")
+            .attr("class", "axislabel")
             .attr("text-anchor", "end")
             .attr("y", -15);
 
@@ -102,6 +100,7 @@ var TVBUI = TVBUI || {};
 
         var overlay = this.plane_with_axis.append("rect")   // this is a transparent rect used for receiving mouse events
             .attr("class", "overlay")
+            .attr("pointer-events", "all")
             .attr("width", planeWidth)
             .attr("height", planeHeight)
             .on("click", function(){
@@ -121,14 +120,12 @@ var TVBUI = TVBUI || {};
 
         this.xAxis_plot_g = this.plot_with_axis.append('g').attr('class', 'axis').attr("transform", "translate(0, 100)");
         this.yAxis_plot_g = this.plot_with_axis.append('g').attr('class', 'axis');
-
+        this.plot_legend_g = this.plot_with_axis.append('g').attr("transform", "translate(820, 0)");
         this.lineBuilder = d3.svg.line()
                 .x(function(d) { return self.xScale(d[0]); })
                 .y(function(d) { return self.yScale(d[1]); })
                 .interpolate("linear");
     }
-
-    PhasePlane.prototype.colors = dark2;
 
     /**
      * Computes
@@ -213,43 +210,93 @@ var TVBUI = TVBUI || {};
                 return self.lineBuilder(d);
             })
             .attr('stroke', function(d, i){
-                return self.colors[i  % self.colors.length];
+                return trajColors[i  % trajColors.length];
             });
     };
 
-    PhasePlane.prototype.drawSignal = function(data){
+    PhasePlane.prototype._computePlotScales = function(signal){
+        // compute scale
+        var xrange = d3.extent(signal[0], function (d) {return d[0];});
+        var yrange = d3.extent(signal[0], function (d) {return d[1];});
+
+        for (var i = 1; i < signal.length; i++) {
+            var current = d3.extent(signal[i], function (d) {return d[1];});
+            yrange[0] = Math.min(yrange[0], current[0]);
+            yrange[1] = Math.max(yrange[1], current[1]);
+        }
+
+        var xS = d3.scale.linear().domain(xrange).range([0, planeWidth]);
+        var yS = d3.scale.linear().domain(yrange).range([100, 0]);
+        return [xS, yS];
+    };
+
+    /**
+     * Draws the state variable signals for just one trajectory.
+     * @param data [[x,y], ... ] for each state variable
+     * @param idx If present plot the signal for the idx'th trajectory instead of the last
+     */
+    PhasePlane.prototype.drawSignal = function(data, idx){
         var self = this;
         this.signals.push(data);
+        var signal;
 
-        var xrange = d3.extent(data, function(d){return d[0];});
-        var yrange = d3.extent(data, function(d){return d[1][0];});
-        var xS = d3.scale.linear().domain(xrange).range([0, 800]);
-        var yS = d3.scale.linear().domain(yrange).range([100, 0]);
+        if (idx == null){
+            signal = data;
+        }else{
+            signal = this.signals[idx];
+        }
 
-        var xAxis = d3.svg.axis().scale(xS).orient('bottom');
-        var yAxis = d3.svg.axis().scale(yS).orient("left");
-        this.xAxis_plot_g.call(xAxis);
-        this.yAxis_plot_g.call(yAxis);
+        if (signal.length !== 0) {
+            var scales = this._computePlotScales(signal);
+            var xAxis = d3.svg.axis().scale(scales[0]).orient('bottom');
+            var yAxis = d3.svg.axis().scale(scales[1]).orient("left");
 
-        var lineFn = d3.svg.line()
-                        .x(function(d) { return xS(d[0]); })
-                        .y(function(d) { return yS(d[1][0]); })
-                        .interpolate("linear");
+            this.xAxis_plot_g.call(xAxis);
+            this.yAxis_plot_g.call(yAxis);
 
-        var p = this.plot_g.selectAll('path').data(this.signals);
+            var lineBuilder = d3.svg.line()
+                .x(function (d) {
+                    return scales[0](d[0]);
+                })
+                .y(function (d) {
+                    return scales[1](d[1]);
+                })
+                .interpolate("linear");
+            var colorS = d3.scale.category10().domain(d3.range(signal.length));
+        }else{
+//            this.xAxis_plot_g.
+//            this.yAxis_plot_g.call(yAxis);
+        }
+
+        var p = this.plot_g.selectAll('path').data(signal);
         p.enter().append('path');
         p.exit().remove();
+
         p.attr('d', function(d){
-                return lineFn(d);
+                return lineBuilder(d);
             })
             .attr('stroke', function(d, i){
-                return self.colors[i  % self.colors.length];
+                return colorS(i);
             });
     };
 
     PhasePlane.prototype.setLabels = function(xlabel, ylabel) {
         this.xLabel.text(xlabel);
         this.yLabel.text(ylabel);
+    };
+
+    PhasePlane.prototype.setPlotLabels = function (labels){
+        var colorS = d3.scale.category10().domain(d3.range(labels.length));
+        var labels_el = this.plot_legend_g.selectAll('text').data(labels);
+        labels_el.enter().append('text');
+        labels_el.exit().remove();
+        labels_el.attr('transform', function(d, i){
+                return 'translate(0, ' + i * 20 + ')';
+            })
+            .attr('stroke', function(d, i){
+                return colorS(i);
+            })
+            .text(function(d){return d;});
     };
 
     PhasePlane.prototype.clearTrajectories = function(){
