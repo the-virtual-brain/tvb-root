@@ -313,6 +313,11 @@ svg.dynamicChart {
     background-color: #fafafd;
 }
 
+svg .title{
+    text-anchor: middle;
+    font-size: 20px;
+}
+
 svg .phasePlane line{
     stroke: #88A;
     stroke-width: 1;
@@ -323,7 +328,6 @@ svg .phasePlane line{
 svg .overlay{
     fill:none;
     cursor: crosshair;
-    pointer-events:all;
 }
 
 svg .traj{
@@ -341,8 +345,11 @@ svg .axis line, svg .axis path{
     stroke: black;
 }
 
-svg .axis text{
+svg .axislabel{
+    font-size: 15px;
+}
 
+svg .axis text{
 }
 
 
