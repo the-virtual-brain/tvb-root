@@ -171,6 +171,8 @@ var dynamicPage = {
 /** @module main */
 (function(){
 
+var DEBOUNCE_DELAY = 25;
+
 function _url(func, tail){
     var url = '/burst/dynamic/' + func + '/' + dynamicPage.dynamic_gid;
     if (tail != null){
@@ -200,7 +202,6 @@ function _fetchSlidersFromServer(){
 
 function onModelChanged(name){
     doAjaxCall({
-        showBlockerOverlay: true,
         url: _url('model_changed', name) ,
         success: function(data){
             data = JSON.parse(data);
@@ -222,7 +223,6 @@ function _redrawPhasePlane(data){
 
 function _onParameterChanged(){
     doAjaxCall({
-        showBlockerOverlay: true,
         url: _url('parameters_changed'),
         data: {params: JSON.stringify(dynamicPage.paramSliders.getValues())},
         success : _redrawPhasePlane
@@ -230,14 +230,13 @@ function _onParameterChanged(){
 }
 
 // Resetting a slider group will trigger change events for each slider. The handler does a slow ajax so debounce the handler
-var onParameterChanged = $.debounce(50, _onParameterChanged);
+var onParameterChanged = $.debounce(DEBOUNCE_DELAY, _onParameterChanged);
 
 function _onGraphChanged(){
     var graph_state = dynamicPage.axisControls.getValue();
     graph_state.state_vars = dynamicPage.stateVarsSliders.getValues();
 
     doAjaxCall({
-        showBlockerOverlay: true,
         url: _url('graph_changed'),
         data: { graph_state: JSON.stringify(graph_state)},
         success : _redrawPhasePlane
@@ -245,11 +244,10 @@ function _onGraphChanged(){
 }
 
 // see onParameterChanged
-var onGraphChanged = $.debounce(50, _onGraphChanged);
+var onGraphChanged = $.debounce(DEBOUNCE_DELAY, _onGraphChanged);
 
 function onTrajectory(x, y){
     doAjaxCall({
-        showBlockerOverlay: true,
         url: _url('trajectory'),
         data: {x:x, y:y},
         success:function(data){
@@ -277,7 +275,6 @@ function onSubmit(event){
 
 function onIntegratorChanged(state){
     doAjaxCall({
-        showBlockerOverlay: true,
         url: _url('integrator_changed'),
         data: state,
         success:function(){
@@ -287,7 +284,7 @@ function onIntegratorChanged(state){
 }
 
 // Event debouncing makes less sense now that the requests have been made blocking.
-var debouncedOnIntegratorChanged = $.debounce( 50, onIntegratorChanged);
+var debouncedOnIntegratorChanged = $.debounce( DEBOUNCE_DELAY, onIntegratorChanged);
 
 // Detect changes by doing a tree diff. This diff is simple but relies on a specific tree structure.
 function onTreeChange(){

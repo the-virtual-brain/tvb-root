@@ -45,6 +45,7 @@ var TVBUI = TVBUI || {};
 
     function PhasePlane(onClick){
         var self = this;
+        this.VECTOR_RANGE = 80;
         this.onClick = onClick;
         this.trajs = [];        // keeps the trajectories/signals raw data
         this.signals = [];
@@ -144,7 +145,7 @@ var TVBUI = TVBUI || {};
         var dxmax = d3.max(data, function(d){return Math.abs(d[2]);});
         var dymax = d3.max(data, function(d){return Math.abs(d[3]);});
         var max_delta = Math.max(dxmax, dymax);
-        this.vectorScale = d3.scale.linear().domain([-max_delta, max_delta]).range([-50, 50]);
+        this.vectorScale = d3.scale.linear().domain([-max_delta, max_delta]).range([-this.VECTOR_RANGE/2, this.VECTOR_RANGE/2]);
     };
 
     /**
@@ -159,9 +160,9 @@ var TVBUI = TVBUI || {};
         var xAxis = d3.svg.axis().scale(this.xScale).orient('bottom');
         var yAxis = d3.svg.axis().scale(this.yScale).orient("left");
         var vectorAxis = d3.svg.axis().scale(this.vectorScale).orient("right").ticks(5);
-        this.xAxis_g.call(xAxis);
-        this.yAxis_g.call(yAxis);
-        this.vectorAxis_g.call(vectorAxis);
+        this.xAxis_g.transition().call(xAxis);
+        this.yAxis_g.transition().call(yAxis);
+        this.vectorAxis_g.transition().call(vectorAxis);
 
         // vectors
         var p = this.plane_g.selectAll('line').data(data.plane);
@@ -185,8 +186,7 @@ var TVBUI = TVBUI || {};
         // nullclines
         var nc = this.plane_g.selectAll('path').data(data.nullclines);
         nc.enter().append('path');
-        nc.transition()
-            .attr('d', function(d){
+        nc.attr('d', function(d){
                 return self.lineBuilder(d);
             })
             .attr('stroke', function(d, i){
