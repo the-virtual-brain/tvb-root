@@ -5,87 +5,105 @@
     <script src="/static/js/d3.v3.min.js?$currentVersionJS"></script>
     <script src="/static/colorScheme/js/colorSchemeComponent.js?$currentVersionJS"></script>
     <link rel="stylesheet" type="text/css" href="/static/style/subsection_timeseries.css?$currentVersionJS"/>
-    <section class="view-column">
-        <div id="volumetric-ts-parent">
-            <ul class="toolbar-inline">
-                <div class="volumetric-ts-ui">
-                    <div id="sliders" title="space in $voxelUnit">
-                        <span id="x-slider"></span>
-                        <span id="y-slider"></span>
-                        <span id="z-slider"></span>
-                        (in $voxelUnit)
-                    </div>
-                    <div id="buttons"></div>
-                </div>
-            </ul>
-            <div id="volumetric-ts-canvas-parent">
-                <canvas id="volumetric-ts-canvas"></canvas>
-            </div>
-            <div class="volumetric-ts-ui">
-                <div id="time-position">
-                    <span id="time-slider"></span>
-                </div>
-            </div>
+
+    <py:def function="drawSliderForAxis(axisName)" xmlns:py="http://genshi.edgewall.org/">
+        <div class="slider-div">
+            <label class="slider-axis-name">${axisName.upper()} Axis</label>
+            <br/>
+
+            <span id="sliderForAxis${axisName}"></span>
+            <br/>
+
+            <label class="min-slider-coord">0</label>
+            <label class="current-slider-coord" id="labelCurrentValueAxis${axisName}"></label>
+            <label class="max-slider-coord" id="labelMaxValueAxis${axisName}"></label>
         </div>
+    </py:def>
+
+    <section class="view-column">
+
+        <ul class="toolbar-inline toolbar-with-sliders">
+            <li class="toolbar-li-with-slider">  ${drawSliderForAxis('X')} </li>
+            <li class="toolbar-li-with-slider">  ${drawSliderForAxis('Y')} </li>
+            <li class="toolbar-li-with-slider">  ${drawSliderForAxis('Z')} </li>
+            <li class="toolbar-small-li"> <label>(in $voxelUnit)</label></li>
+            <li class="toolbar-large-li">
+                <button class="action action-go-first" onclick="seekFirst()" title="Navigate to the begining of TS"></button>
+                <button class="action action-page-back" onclick="playPreviousTimePoint()" title="Go back one time step"></button>
+                <button class="action action-run" onclick="togglePlayback()" title="Start / Stop the Movie" id="btnPlay"></button>
+                <button class="action action-page-fwd" onclick="playNextTimePoint()" title="Go forward one time step"></button>
+                <button class="action action-go-last" onclick="seekEnd()" title="Navigate to the end of the TS movie"></button>
+            </li>
+        </ul>
+
+        <div class="canvas-parent">
+            <canvas id="canvasVolumes"></canvas>
+        </div>
+
+        <div class="movie-slider-parent">
+            <span id="movieSlider"></span>
+            <br/>
+
+            <label class="min-slider-coord">0</label>
+            <label class="current-slider-coord" id="labelCurrentTimeStep"></label>
+            <label class="max-slider-time" id="labelMaxTimeStep"></label>
+        </div>
+
     </section>
+
     <section class="view-column">
+
         <div id="ts-trash-can" class="trash-hidden">
-            <h1>Drop the time series here to remove it</h1>
+            <h1>Drop selected time series here to be removed from selection</h1>
         </div>
-        <ul class="toolbar-inline sortable" id="sortable-delete">
-            <fieldset class="pin">
-                <dl class="ui-half-left">
-                    <dt>
-                        <label for="sortingSelector">Sorting Order:</label>
-                    </dt>
-                    <dd>
-                        <select id="sortingSelector" name="sortingSelector">
-                            <option value="ascending">Ascending</option>
-                            <option value="descending" selected="selected">Descending</option>
-                            <option value="manhattan">Manhattan Distance</option>
-                            <option value="manual">Manual</option>
-                        </select>
-                    </dd>
-                </dl>
-                <dl class="ui-half-right longTitle">
-                    <dt>
-                        <label for="relevantFeatureSelector">Relevant Sorting Feature:</label>
-                    </dt>
-                    <dd>
-                        <select id="relevantFeatureSelector" name="relevantFeatureSelector">
-                            <option value="mean" selected="selected">Mean</option>
-                            <option value="median">Median</option>
-                            <option value="max">Maximun</option>
-                            <option value="min">Minimun</option>
-                            <option value="variance">Variance</option>
-                            <option value="deviation">Standard Deviation</option>
-                        </select>
-                    </dd>
-                </dl>
-                <dl class="ui-half-left">
-                    <dt>
-                        <label for="colorBy">Color Lines by:</label>
-                    </dt>
-                    <dd>
-                        <select id="colorBySelector" name="colorBySelector">
-                            <option value="mean" selected="selected">Mean</option>
-                            <option value="median">Median</option>
-                            <option value="min">Minimun</option>
-                            <option value="max">Maximun</option>
-                        </select>
-                    </dd>
-                </dl>
-            </fieldset>
+
+        <ul class="toolbar-inline toolbar-with-sliders sortable pin" id="sortable-delete">
+            <li>
+                <label for="relevantFeatureSelector">Relevant Sorting Feature:</label>
+
+                <select id="relevantFeatureSelector" name="relevantFeatureSelector">
+                    <option value="mean" selected="selected">Mean</option>
+                    <option value="median">Median</option>
+                    <option value="max">Maximun</option>
+                    <option value="min">Minimun</option>
+                    <option value="variance">Variance</option>
+                    <option value="deviation">Standard Deviation</option>
+                </select>
+            </li>
+
+            <li>
+                <label for="sortingSelector">Sorting Order:</label>
+
+                <select id="sortingSelector" name="sortingSelector">
+                    <option value="ascending">Ascending</option>
+                    <option value="descending" selected="selected">Descending</option>
+                    <option value="manhattan">Manhattan Distance</option>
+                    <option value="manual">Manual</option>
+                </select>
+            </li>
+
+            <li>
+                <label for="colorBySelector">Color Lines by:</label>
+
+                <select id="colorBySelector" name="colorBySelector">
+                    <option value="mean" selected="selected">Mean</option>
+                    <option value="median">Median</option>
+                    <option value="min">Minimun</option>
+                    <option value="max">Maximun</option>
+                </select>
+            </li>
         </ul>
         <div id="ts-graph-parent">
-            <div id="graph" class="aGraph"></div>
+            <div id="graph"></div>
         </div>
     </section>
 
     <script type="text/javascript">
         $().ready(function() {
-            TSV_initVisualizer('${dataUrls}', ${minValue}, ${maxValue}, '${volumeOrigin}', '${voxelSize}');
-            $("#volumetric-ts-canvas").mousedown(customMouseDown)
+            $("#main").addClass("colscheme-2-even brain-extended");
+            TSV_initVisualizer('${dataUrls}', ${minValue}, ${maxValue}, ${samplePeriod}, '${samplePeriodUnit}',
+                               '${volumeShape}', '${volumeOrigin}', '${voxelSize}');
+            $("#canvasVolumes").mousedown(customMouseDown)
                                       .mouseup(customMouseUp)
                                       .mousemove(customMouseMove);
             TSV_startUserInterface();

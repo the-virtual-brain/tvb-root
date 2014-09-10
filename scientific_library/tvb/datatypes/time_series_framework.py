@@ -47,11 +47,12 @@ import tvb.basic.traits.exceptions as exceptions
 
 
 class TimeSeriesFramework(time_series_data.TimeSeriesData):
+    """
+    This class exists to add framework methods to TimeSeriesData (base framework functionality).
+    """
 
-    """
-    This class exists to add framework methods to TimeSeriesData.
-    """
     __tablename__ = None
+
 
     def configure(self):
         """
@@ -61,8 +62,10 @@ class TimeSeriesFramework(time_series_data.TimeSeriesData):
         data_shape = self.read_data_shape()
         self.nr_dimensions = len(data_shape)
         self.sample_rate = 1.0 / self.sample_period
+
         for i in range(min(self.nr_dimensions, 4)):
             setattr(self, 'length_%dd' % (i + 1), int(data_shape[i]))
+
 
     def read_data_shape(self):
         """
@@ -70,11 +73,13 @@ class TimeSeriesFramework(time_series_data.TimeSeriesData):
         """
         return self.get_data_shape('data')
 
+
     def read_data_slice(self, data_slice):
         """
         Expose chunked-data access.
         """
         return self.get_data('data', data_slice)
+
 
     def read_time_page(self, current_page, page_size, max_size=None):
         """
@@ -83,15 +88,18 @@ class TimeSeriesFramework(time_series_data.TimeSeriesData):
         """
         current_page = int(current_page)
         page_size = int(page_size)
+
         if max_size is None:
             max_size = page_size
         else:
             max_size = int(max_size)
+
         page_real_size = page_size * self.sample_period
         start_time = self.start_time + current_page * page_real_size
-        end_time = start_time + \
-            min(page_real_size, max_size * self.sample_period)
+        end_time = start_time + min(page_real_size, max_size * self.sample_period)
+
         return numpy.arange(start_time, end_time, self.sample_period)
+
 
     def read_channels_page(self, from_idx, to_idx, step=None, specific_slices=None, channels_list=None):
         """
@@ -120,18 +128,20 @@ class TimeSeriesFramework(time_series_data.TimeSeriesData):
         else:
             return data_page[:, channel_slice]
 
+
     def read_data_page(self, from_idx, to_idx, step=None, specific_slices=None):
         """
         Retrieve one page of data (paging done based on time).
         """
-        from_idx = int(from_idx)
-        to_idx = int(to_idx)
+        from_idx, to_idx = int(from_idx), int(to_idx)
+
         if isinstance(specific_slices, basestring):
             specific_slices = json.loads(specific_slices)
         if step is None:
             step = 1
         else:
             step = int(step)
+
         slices = []
         overall_shape = self.read_data_shape()
         for i in xrange(len(overall_shape)):
@@ -147,8 +157,8 @@ class TimeSeriesFramework(time_series_data.TimeSeriesData):
             if specific_slices is None:
                 slices.append(slice(0, 1))
             else:
-                slices.append(
-                    slice(specific_slices[i], min(specific_slices[i] + 1, overall_shape[i]), 1))
+                slices.append(slice(specific_slices[i], min(specific_slices[i] + 1, overall_shape[i]), 1))
+
         data = self.read_data_slice(tuple(slices))
         if len(data) == 1:
             # Do not allow time dimension to get squeezed, a 2D result need to
@@ -157,21 +167,23 @@ class TimeSeriesFramework(time_series_data.TimeSeriesData):
             data = data.reshape((1, len(data)))
         else:
             data = data.squeeze()
+
         return data
+
 
     def write_time_slice(self, partial_result):
         """
         Append a new value to the ``time`` attribute.
         """
-        self.store_data_chunk(
-            "time", partial_result, grow_dimension=0, close_file=False)
+        self.store_data_chunk("time", partial_result, grow_dimension=0, close_file=False)
+
 
     def write_data_slice(self, partial_result, grow_dimension=0):
         """
         Append a chunk of time-series data to the ``data`` attribute.
         """
-        self.store_data_chunk(
-            "data", partial_result, grow_dimension=grow_dimension, close_file=False)
+        self.store_data_chunk("data", partial_result, grow_dimension=grow_dimension, close_file=False)
+
 
     def get_min_max_values(self):
         """
@@ -180,6 +192,7 @@ class TimeSeriesFramework(time_series_data.TimeSeriesData):
         """
         metadata = self.get_metadata('data')
         return metadata["Minimum"], metadata["Maximum"]
+
 
     def get_space_labels(self):
         """
@@ -193,6 +206,7 @@ class TimeSeriesFramework(time_series_data.TimeSeriesData):
         else:
             return []
 
+
     def get_grouped_space_labels(self):
         """
         :return: A list of label groups. A label group is a tuple (name, [(label_idx, label)...]).
@@ -200,11 +214,13 @@ class TimeSeriesFramework(time_series_data.TimeSeriesData):
         """
         return [('', list(enumerate(self.get_space_labels())))]
 
+
     def get_default_selection(self):
         """
         :return: The measure point indices that have to be shown by default. By default show all.
         """
         return range(len(self.get_space_labels()))
+
 
     def get_measure_points_selection_gid(self):
         """
@@ -212,6 +228,7 @@ class TimeSeriesFramework(time_series_data.TimeSeriesData):
                  We have to decide if the default should be all selections or none
         """
         return ''
+
 
     @staticmethod
     def accepted_filters():
@@ -227,10 +244,10 @@ class TimeSeriesFramework(time_series_data.TimeSeriesData):
         return filters
 
 
-class TimeSeriesSensorsFramework(TimeSeriesFramework):
 
+class TimeSeriesSensorsFramework(TimeSeriesFramework):
     """
-    Base class for all sensor TS-datatypes
+    Add framework related functionality for TS Sensor classes
     """
 
     def get_space_labels(self):
@@ -241,10 +258,12 @@ class TimeSeriesSensorsFramework(TimeSeriesFramework):
             return list(self.sensors.labels)
         return []
 
+
     def get_measure_points_selection_gid(self):
         if self.sensors is not None:
             return self.sensors.gid
         return ''
+
 
     def get_default_selection(self):
         if self.sensors is not None:
@@ -253,8 +272,8 @@ class TimeSeriesSensorsFramework(TimeSeriesFramework):
         return []
 
 
-class TimeSeriesRegionFramework(time_series_data.TimeSeriesRegionData, TimeSeriesFramework):
 
+class TimeSeriesRegionFramework(time_series_data.TimeSeriesRegionData, TimeSeriesFramework):
     """
     This class exists to add framework methods to TimeSeriesRegionData.
     """
@@ -267,6 +286,7 @@ class TimeSeriesRegionFramework(time_series_data.TimeSeriesRegionData, TimeSerie
             return list(self.connectivity.region_labels)
         return []
 
+
     def get_grouped_space_labels(self):
         """
         :return: A structure of this form [('left', [(idx, lh_label)...]), ('right': [(idx, rh_label) ...])]
@@ -275,6 +295,7 @@ class TimeSeriesRegionFramework(time_series_data.TimeSeriesRegionData, TimeSerie
             return self.connectivity.get_grouped_space_labels()
         else:
             return super(TimeSeriesRegionFramework, self).get_grouped_space_labels()
+
 
     def get_default_selection(self):
         """
@@ -286,6 +307,7 @@ class TimeSeriesRegionFramework(time_series_data.TimeSeriesRegionData, TimeSerie
         else:
             return super(TimeSeriesRegionFramework, self).get_default_selection()
 
+
     def get_measure_points_selection_gid(self):
         """
         :return: the associated connectivity gid
@@ -296,9 +318,10 @@ class TimeSeriesRegionFramework(time_series_data.TimeSeriesRegionData, TimeSerie
             return super(TimeSeriesRegionFramework, self).get_measure_points_selection_gid()
 
 
-class TimeSeriesSurfaceFramework(time_series_data.TimeSeriesSurfaceData, TimeSeriesFramework):
 
+class TimeSeriesSurfaceFramework(time_series_data.TimeSeriesSurfaceData, TimeSeriesFramework):
     """ This class exists to add framework methods to TimeSeriesSurfaceData. """
+
     SELECTION_LIMIT = 200
 
     def get_space_labels(self):
@@ -308,51 +331,59 @@ class TimeSeriesSurfaceFramework(time_series_data.TimeSeriesSurfaceData, TimeSer
         return ['signal-%d' % i for i in xrange(min(self._length_3d, self.SELECTION_LIMIT))]
 
 
-class TimeSeriesVolumeFramework(time_series_data.TimeSeriesVolumeData, TimeSeriesFramework):
 
-    """ This class exists to add framework methods to TimeSeriesVolumeData. """
+class TimeSeriesVolumeFramework(time_series_data.TimeSeriesVolumeData, TimeSeriesFramework):
+    """
+    This class exists to add framework methods to TimeSeriesVolume DataType.
+    These methods will be later used by TS-Volume Viewer.
+    """
 
     def get_rotated_volume_slice(self, from_idx, to_idx):
         """
-        :input: int from_idx, int to_idx.
-        :return: Multidimensional matrix with its last dimension rotated to get a better view of the brain.
+        :param from_idx: int This will be the limit on the first dimension (time)
+        :param to_idx: int Also limit on the first Dimension (time)
+        :return: Multidimensional matrix (4D). Represents a part from the entire TS, cut over the first
+                dimension (time) by the bounds given as inputs, and with the last dimension rotated to get
+                a better view of the brain.
         """
-        from_idx, to_idx = int(from_idx), int(to_idx)
 
+        from_idx, to_idx = int(from_idx), int(to_idx)
         overall_shape = self.read_data_shape()
+
         if from_idx > to_idx or to_idx > overall_shape[0] or from_idx < 0:
             msg = "Bad time indexes: From {0} to {1}".format(from_idx, to_idx)
             raise exceptions.ValidationException(msg)
 
-        slices = (slice(from_idx, to_idx), slice(overall_shape[1]), slice(
-            overall_shape[2]), slice(overall_shape[3]))
+        slices = (slice(from_idx, to_idx), slice(overall_shape[1]), slice(overall_shape[2]), slice(overall_shape[3]))
         slices = self.read_data_slice(tuple(slices))
         slices = slices[..., ::-1]
         return slices
 
+
     def get_volume_view(self, from_idx, to_idx, x_plane, y_plane, z_plane):
         """
-        :input: int from_idx, int to_idx, int x_plane, int y_plane, int z_plane.
-        :return: An array of 3 elements containing the planes xy, yz and xy.
+        :param from_idx: int This will be the limit on the first dimension (time)
+        :param to_idx: int Also limit on the first Dimension (time)
+        :param x_plane: int
+        :param y_plane: int
+        :param z_plane: int
+
+        :return: An array of 3 Matrices 2D, each containing the values to display in planes xy, yz and xy.
         """
-        from_idx = int(from_idx)
-        to_idx = int(to_idx)
-        x_plane = int(x_plane)
-        y_plane = int(y_plane)
-        z_plane = int(z_plane)
 
+        from_idx, to_idx = int(from_idx), int(to_idx)
+        x_plane, y_plane, z_plane = int(x_plane), int(y_plane), int(z_plane)
         overall_shape = self.read_data_shape()
+
         if from_idx > to_idx or to_idx > overall_shape[0] or from_idx < 0:
-            msg = "Time indexes out of boundaries: from {0} to {1}".format(
-                from_idx, to_idx)
-            raise exceptions.ValidationException(msg)
-        if x_plane > overall_shape[1] or y_plane > overall_shape[2] or z_plane > overall_shape[3]:
-            msg = "Coordinates out of boundaries: {0}, {1}, {2}".format(
-                x_plane, y_plane, z_plane)
+            msg = "Time indexes out of boundaries: from {0} to {1}".format(from_idx, to_idx)
             raise exceptions.ValidationException(msg)
 
-        slices = (slice(from_idx, to_idx), slice(overall_shape[1]), slice(
-            overall_shape[2]), slice(overall_shape[3]))
+        if x_plane > overall_shape[1] or y_plane > overall_shape[2] or z_plane > overall_shape[3]:
+            msg = "Coordinates out of boundaries: {0}, {1}, {2}".format(x_plane, y_plane, z_plane)
+            raise exceptions.ValidationException(msg)
+
+        slices = (slice(from_idx, to_idx), slice(overall_shape[1]), slice(overall_shape[2]), slice(overall_shape[3]))
         slices = self.read_data_slice(tuple(slices))
         slices = slices[..., ::-1]
         slicex = slices[..., z_plane].tolist()
@@ -360,47 +391,33 @@ class TimeSeriesVolumeFramework(time_series_data.TimeSeriesVolumeData, TimeSerie
         slicez = slices[..., y_plane, :].tolist()
         return [slicex, slicey, slicez]
 
+
     def get_voxel_time_series(self, x, y, z):
         """
-        :input: int x, y, z as coodinates.
-        :return: An array containing all the values of the x,y,z coordinate in time.
+        :param x: int coordinate
+        :param y: int coordinate
+        :param z: int coordinate
+
+        :return: A complex dictionary with information about current voxel.
+                The main part will be a vector with all the values from the x,y,z coordinates, in time.
         """
         x, y, z = int(x), int(y), int(z)
         overall_shape = self.read_data_shape()
 
         if x > overall_shape[1] or y > overall_shape[2] or z > overall_shape[3]:
-            msg = "Coordinates out of boundaries: [x,y,z] = [{0}, {1}, {2}]".format(
-                x, y, z)
+            msg = "Coordinates out of boundaries: [x,y,z] = [{0}, {1}, {2}]".format(x, y, z)
             raise exceptions.ValidationException(msg)
 
-        slices = slice(overall_shape[0]), slice(
-            x, x + 1), slice(y, y + 1), slice(overall_shape[3])
+        slices = slice(overall_shape[0]), slice(x, x + 1), slice(y, y + 1), slice(overall_shape[3])
         slices = self.read_data_slice(slices)
         slices = slices[..., ::-1]
         slices = slices[..., z].flatten()
-        result = dict(x=x,
-                      y=y,
-                      z=z,
-                      data=slices.tolist(),
+
+        result = dict(data=slices.tolist(),
                       max=float(max(slices)),
                       min=float(min(slices)),
                       mean=float(numpy.mean(slices)),
                       median=float(numpy.median(slices)),
                       variance=float(numpy.var(slices)),
-                      deviation=float(numpy.std(slices))
-                      )
+                      deviation=float(numpy.std(slices)))
         return result
-
-    @property
-    def get_volume_shape(self):
-        """
-        :return: Data size for each dimension. [Time, X, Y, Z]
-        """
-        return self.read_data_shape()
-
-    @property
-    def get_time_meta_data(self):
-        """
-        :return: an array containing [(int)_sample_period, (string)_sample_period_unit]
-        """
-        return [self._sample_period, self._sample_period_unit]

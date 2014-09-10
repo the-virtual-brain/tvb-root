@@ -29,42 +29,42 @@ var tsFrag = {
  * We can pass just the time series array as the second element or an Object
  * with all the relevant data, including the array itself.
  */
-var tsDataObj = function(params, dataArray){             // this keeps all the data about a specific time series
-    this.x = params.x || tsFrag.selectedEntity[0],                      // The X coordinate
-    this.y =  params.y || tsFrag.selectedEntity[1],                     // The Y coordinate
-    this.z = params.z || tsFrag.selectedEntity[2],                      // The Z coordinate
-    this.label = params.label || "["+this.x+","+this.y+","+this.z+"]",  // The string used as a label for this Object
-    this.data = params.data || dataArray,                               // The actual data
-    this.max = params.max || d3.max(dataArray),                         // The maximum value on the data
-    this.min = params.min || d3.min(dataArray),                         // The minimum value on the data
-    this.mean = params.mean || d3.mean(dataArray),                      // The mean values on the data
-    this.median = params.median || d3.median(dataArray),                // The median value on the data
-    this.variance = params.variance || variance(dataArray, this.mean),  // The variance of the data
-    this.deviation = params.deviation || Math.sqrt(this.variance)       // The std deviation of the data
-}
+var tsDataObj = function(params, dataArray) {             // this keeps all the data about a specific time series
+    this.x = params.x || tsFrag.selectedEntity[0];                      // The X coordinate
+    this.y =  params.y || tsFrag.selectedEntity[1];                     // The Y coordinate
+    this.z = params.z || tsFrag.selectedEntity[2];                      // The Z coordinate
+    this.label = params.label || "["+this.x+","+this.y+","+this.z+"]";  // The string used as a label for this Object
+    this.data = params.data || dataArray;                               // The actual data
+    this.max = params.max || d3.max(this.data);                         // The maximum value on the data
+    this.min = params.min || d3.min(this.data);                         // The minimum value on the data
+    this.mean = params.mean || d3.mean(this.data);                      // The mean values on the data
+    this.median = params.median || d3.median(this.data);                // The median value on the data
+    this.variance = params.variance || variance(this.data, this.mean);  // The variance of the data
+    this.deviation = params.deviation || Math.sqrt(this.variance);       // The std deviation of the data
+};
 
 /**
  * Make all the necessary initialisations
  * @param tsDataRequest URLs of the dataset we're working on
  */
 function TSF_initVisualizer(tsDataRequest){
-    tsFrag.dataAddress = tsDataRequest;
+    tsFrag.urlTSData = tsDataRequest;
 
     // take all the necessary data from the time series volume visualizer
     tsFrag.timeLength = tsVol.timeLength;
     tsFrag.samplePeriod = tsVol.samplePeriod;
     tsFrag.samplePeriodUnit = tsVol.samplePeriodUnit;
-    tsFrag.dataTimeSeries = tsVol.dataTimeSeries;
     tsFrag.minimumValue = tsVol.minimumValue;
     tsFrag.maximumValue = tsVol.maximumValue;
 
     // tsFrag own data
     // define dimensions of graph
+    var graphWidth = $('#graph').width();
     tsFrag.m = [30, 80, 30, 80]; // margins
     tsFrag.smallMargin = {top: 0, right: 80, bottom: 0, left: 80};
-    tsFrag.width = $('#graph').width() - tsFrag.smallMargin.left - tsFrag.smallMargin.right;
+    tsFrag.width = graphWidth - tsFrag.smallMargin.left - tsFrag.smallMargin.right;
     tsFrag.height = 30 - tsFrag.smallMargin.top - tsFrag.smallMargin.bottom;
-    tsFrag.w = $('#graph').width() - tsFrag.m[1] - tsFrag.m[3]; // width
+    tsFrag.w = graphWidth - tsFrag.m[1] - tsFrag.m[3]; // width
     tsFrag.h = 240 - tsFrag.m[0] - tsFrag.m[2]; // height
 
     attachUIListeners();
@@ -84,6 +84,7 @@ function updateTSFragment(){
 }
 
 // ====================================    INITIALIZATION CODE END   =========================================
+
 // ====================================    DRAWING FUNCTIONS START ===========================================
 
 /**
@@ -108,11 +109,10 @@ function drawGraphs(){
     updateBrush();
     drawSortableGraph();
 
-
-    if($("#mini-container").children().length < 2){
-        $("#mini-container").sortable( "disable" );
-        d3.selectAll("#mini-container li")
-        .classed("pin", true);
+    var miniContainer = $("#mini-container");
+    if(miniContainer.children().length < 2) {
+        miniContainer.sortable( "disable" );
+        d3.selectAll("#mini-container li").classed("pin", true);
     }
 }
 
@@ -153,7 +153,6 @@ function drawGobalTimeseries(){
 
     // create a line function that can convert data[] into x and y points
     tsFrag.line = d3.svg.line()
-        //.interpolate("basis") //basis for spline interpolation
         .x(function(d,i){
             return tsFrag.x(i);
         })
@@ -175,7 +174,7 @@ function drawGobalTimeseries(){
         .attr('width', tsFrag.w)
         .attr('height', tsFrag.h)
         .attr('fill', "#ffffff")
-        .attr("class", "graph-timeSeries-rect")
+        .attr("class", "graph-timeSeries-rect");
 
     // Add an overlay layer that will listen to most mouse events
     graph.append("rect")
@@ -189,13 +188,13 @@ function drawGobalTimeseries(){
 
     // create xAxis
     tsFrag.xAxisScale = d3.scale.linear().domain([0, tsFrag.timeLength*tsFrag.samplePeriod]).range([0, tsFrag.w]);
-    var xAxis = function(){
+    var xAxis = function() {
         tsFrag.x.domain(tsFrag.brush.empty() ? x2.domain() : tsFrag.brush.extent());
         tsFrag.xAxisScale = tsFrag.x;
         tsFrag.xAxisScale.domain()[0] *= tsFrag.samplePeriod;
         tsFrag.xAxisScale.domain()[1] *= tsFrag.samplePeriod;
         return d3.svg.axis().scale(tsFrag.xAxisScale).tickSize(-tsFrag.h).tickSubdivide(true);
-    }
+    };
 
     // Add the x-axis.
     graph.append("svg:g")
@@ -204,14 +203,12 @@ function drawGobalTimeseries(){
         .call(xAxis());
 
     // Add info about the time unit as a label
-    var timeUnit = tsFrag.samplePeriodUnit=="sec" ? "Seconds" : tsFrag.samplePeriodUnit;
     graph.append("text")
         .attr("class", "x axis")
         .attr("text-anchor", "end")
-        .attr("x", tsFrag.w+70)
-        //.attr("y", tsFrag.h - 8 )
-        .attr("y", tsFrag.h )
-        .text("Time in " + timeUnit);
+        .attr("x", tsFrag.w + 60)
+        .attr("y", tsFrag.h + 10)
+        .text("Time (" + tsFrag.samplePeriodUnit + ")");
 
     // create left yAxis
     var yAxisLeft = d3.svg.axis().scale(tsFrag.y).ticks(4).orient("left");
@@ -225,7 +222,7 @@ function drawGobalTimeseries(){
         .attr("class", "y axis")
         .attr("text-anchor", "end")
         .attr("x", "1em")
-        .attr("y", "-1.5em")
+        .attr("y", "-2em")
         .attr("dy", ".75em")
         .text("Measurements");
 
@@ -238,7 +235,9 @@ function drawGobalTimeseries(){
             //.attr("clip-path", "url(#clip)")
             .attr("d", function(d){return tsFrag.line(d.data);})
             .attr('class', 'line colored-line')
-            .attr("style", function(d){return "stroke:" + getGradientColorString(d[tsFrag.relevantColoringFeature], tsFrag.minimumValue, tsFrag.maximumValue);} )
+            .attr("style", function(d){
+                            return "stroke:" + getGradientColorString(d[tsFrag.relevantColoringFeature],
+                                                                      tsFrag.minimumValue, tsFrag.maximumValue);} )
             .on("mouseover", selectLineData);
 
     // The focus will show the numeric value of a time series on a certain point
@@ -281,7 +280,7 @@ function drawGobalTimeseries(){
         .attr("id", "mouseLineCircle");
 
     // Add listener so that the red line moves together with the main visualizer slider
-    $("#time-position").on("slide change", function(){
+    $("#movieSlider").on("slide change", function(){
         // Move blue line following the mouse
         var wdt = $(".graph-timeSeries-rect").attr("width");
         var xPos = (tsFrag.currentTimePoint*wdt)/(tsFrag.timeLength);
@@ -291,20 +290,20 @@ function drawGobalTimeseries(){
             selectedLine = d3.select("path.colored-line:nth-of-type(1)")
         }
         var pathLength = selectedLine.node().getTotalLength();
-        var X = xPos;
-        var beginning = X,
+        var beginning = xPos,
             end = pathLength,
             target;
+
         while(true){
             target = Math.floor((beginning + end) / 2);
-            pos = selectedLine.node().getPointAtLength(target);
-            if((target === end || target === beginning) && pos.x !== X){
+            var pos = selectedLine.node().getPointAtLength(target);
+            if((target === end || target === beginning) && pos.x !== xPos){
                 break;
             }
-            if(pos.x > X){
+            if(pos.x > xPos){
                 end = target;
             }
-            else if(pos.x < X){
+            else if(pos.x < xPos){
                 beginning = target;
             }
             else break; //position found
@@ -320,8 +319,8 @@ function drawGobalTimeseries(){
             .attr("width", tsFrag.width + tsFrag.smallMargin.left + tsFrag.smallMargin.right)
             .attr("height", tsFrag.height + tsFrag.smallMargin.top + tsFrag.smallMargin.bottom)
             .attr("id","brush")
-            .attr("transform", "translate(" + tsFrag.smallMargin.left + "," + tsFrag.smallMargin.top + ")")
-        //.attr("transform", "translate(" + tsFrag.m[1] + "," + tsFrag.m[1] + ")");
+            .attr("transform", "translate(" + tsFrag.smallMargin.left + "," + tsFrag.smallMargin.top + ")");
+
     brusher.append("rect")
         .attr('w',0)
         .attr('h',0)
@@ -329,15 +328,7 @@ function drawGobalTimeseries(){
         .attr("height", tsFrag.height)
         .attr('fill', "#ffffff")
         .style("stroke", "black")
-        .attr("class", "brush-rect")
-
-    /* We draw no lines on the brush selector. */
-    // brusher.selectAll('path')
-    //     .data(tsFrag.tsDataArray)
-    //     .enter()
-    //         .append("path")
-    //         .attr("class", "line colored-line")
-    //         .attr("d", function(d){return tsFrag.line(d.data);});
+        .attr("class", "brush-rect");
 
     // Align brush with other graphs
     brusher.append("g")
@@ -399,6 +390,7 @@ function drawSortableGraph(){
         .append("g")
             .attr("transform", "translate(" + tsFrag.smallMargin.left + "," + tsFrag.smallMargin.top + ")")
             .attr('height', tsFrag.height);
+
     // Add an overlay rect to listen to mouse events
     svg.append("rect")
         .attr("class", "graph-timeSeries-rect overlay")
@@ -414,7 +406,7 @@ function drawSortableGraph(){
         .attr("class", "line")
         .attr("d", function(d){ tsFrag.sortableY = d3.scale.linear().domain([d.min, d.max]).range([tsFrag.height, 0]); return tsFrag.sortableline(d.data); })
         .attr('class', 'line colored-line mini')
-        .attr("style", function(d){return "stroke:" + getGradientColorString(d[tsFrag.relevantColoringFeature], tsFrag.minimumValue, tsFrag.maximumValue);} )
+        .attr("style", function(d){return "stroke:" + getGradientColorString(d[tsFrag.relevantColoringFeature], tsFrag.minimumValue, tsFrag.maximumValue);});
 
     svg.append("text")
         .attr("class", "y label")
@@ -424,12 +416,12 @@ function drawSortableGraph(){
         .attr("transform", "translate(-5,0)")
         .text(function(d){return d.label;});
 
-    var xAxis = function(){
+    var xAxis = function() {
         tsFrag.xAxisScale = tsFrag.x;
         tsFrag.xAxisScale.domain()[0] *= tsFrag.samplePeriod;
         tsFrag.xAxisScale.domain()[1] *= tsFrag.samplePeriod;
         return d3.svg.axis().scale(tsFrag.xAxisScale).tickSize(-tsFrag.h).tickSubdivide(true);
-    }
+    };
 
     // Add the x-axis.
     svg.append("g")
@@ -441,7 +433,7 @@ function drawSortableGraph(){
         .call(xAxis());
 
     // Make the svg blocks sortable with jQuery
-    // The draging is smoot because of the '<li>' tags on HTML, do not remove them.
+    // The dragging is smooth because of the '<li>' tags on HTML, do not remove them.
     $(function(){
         var originalPosition, destination;
         $( ".sortable" ).sortable({
@@ -464,18 +456,19 @@ function drawSortableGraph(){
                     .classed("trash-hidden", true);
             },
             update: function(event, ui){
-                if(this.id == 'sortable-delete'){
+                if (this.id == 'sortable-delete') {
                     // Remove the element dropped on #sortable-delete
                     if(tsFrag.tsDataArray.length > 1){
                         var deleteLabel = ui.item[0].__data__.label;
-                        tsFrag.tsDataArray = tsFrag.tsDataArray.filter(function(obj){
+                        tsFrag.tsDataArray = tsFrag.tsDataArray.filter(function(obj) {
                             return obj.label != deleteLabel;
-                        })
+                        });
                         ui.item.remove();
                         tsFrag.selectedIndex = 0;
                     }
                     drawGraphs();
-                }else{
+
+                } else {
                     // move element in the main array too.
                     destination = ui.item.index();
                     move(tsFrag.tsDataArray, originalPosition, destination);
@@ -496,25 +489,25 @@ function drawSortableGraph(){
 /**
  * Get an array containing the time series for the specified [x,y,z] voxel.
  * Out of bound indexes are checked only on the server side.
- * @params x Integer, the x coordinate.
- * @params y Integer, the y coordinate.
- * @params z Integer, the z coordinate.
+ * @param x Integer, the x coordinate.
+ * @param y Integer, the y coordinate.
+ * @param z Integer, the z coordinate.
  * @returns Array of length <code>tsFra.timeLength</code> with the requested time series values
  */
-function getPerVoxelTimeSeries(x,y,z){
+function getPerVoxelTimeSeries(x, y, z){
     x = "x=" + x;
     y = ";y=" + y;
     z = ";z=" + z;
-    var query = tsFrag.dataAddress + x + y + z;
+    var query = tsFrag.urlTSData + x + y + z;
     return HLPR_readJSONfromFile(query);
 }
 
 /**
  * Compute the variance of an array. The mean can be pre-computed.
  * Based on the same function from science.js at www.github.com/jasondavies/science.js
- * @params arr {Array} The array containing the time series we want to analyze
- * @params mean {number} Optional. The mean of the array.
- * @returns The variance of the array.
+ * @param arr {Array} The array containing the time series we want to analyze
+ * @param mean {number} Optional. The mean of the array.
+ * @returns Number - The variance of the array.
  */
 function variance(arr, mean){
     var n = arr.length;
@@ -532,15 +525,15 @@ function variance(arr, mean){
         sum += v * v;
     }
     return sum / (n - 1);
-};
+}
 
 /**
  * Compute the covariance of an array.
- * @params tsA {Array} The first array containing the time series we want to analyze
- * @params tsB {Array} The second array containing the time series we want to analyze
- * @params meanA {number} Optional. The mean of the tsA.
- * @params meanB {number} Optional. The mean of the tsB.
- * @returns The covariance between the two arrays.
+ * @param tsA {Array} The first array containing the time series we want to analyze
+ * @param tsB {Array} The second array containing the time series we want to analyze
+ * @param meanA {number} Optional. The mean of the tsA.
+ * @param meanB {number} Optional. The mean of the tsB.
+ * @returns Number - The covariance between the two arrays.
  */
 function covariance(tsA, tsB, meanA, meanB){
     var n = tsA.length;
@@ -564,8 +557,8 @@ function covariance(tsA, tsB, meanA, meanB){
 
 /**
  * Select a graph line and mark it as highlighted
- * @params d Data. We need it here because d3 always passes data as the first parameter.
- * @params i The clicked line index. D3 always passes this variable as second parameter.
+ * @param d Data. We need it here because d3 always passes data as the first parameter.
+ * @param i The clicked line index. D3 always passes this variable as second parameter.
  */
 function selectLineData(d, i){
     tsFrag.selectedIndex = i;
@@ -612,20 +605,20 @@ function attachUIListeners(){
     });
 
     // Set the proper trash bin dimensions
-    $("#ts-trash-can").height($("#sortable-delete").height()+17);
-    $("#ts-trash-can").width($("#sortable-delete").width()+17);
+    var trashElem = $("#ts-trash-can");
+    var sortableElem = $("#sortable-delete");
+    trashElem.height(sortableElem.height() + 17);
+    trashElem.width(sortableElem.width() + 17);
 }
 
 /**
- * Calback function for the onmousemove event
+ * Callback function for the on-mouse-move event
  */
 function TSF_mousemove(){
     var x0 = tsFrag.x.invert(d3.mouse(this)[0]),
         i = Math.floor(x0),
         data = tsFrag.tsDataArray[tsFrag.selectedIndex].data,
-        d0 = data[i - 1],
-        d1 = data[i],
-        d = x0 - d0 > d1 - x0 ? d1 : d0;
+        d1 = data[i];
     var selectedLine = d3.select("path.colored-line:nth-of-type(" + (tsFrag.selectedIndex+1) +")");
 
     var focus = d3.select(".focus");
@@ -647,7 +640,9 @@ function TSF_mousemove(){
     var beginning = X,
         end = pathLength,
         target;
-    while(true){
+    var pos;
+
+    while(true) {
         target = Math.floor((beginning + end) / 2);
         pos = selectedLine.node().getPointAtLength(target);
         if((target === end || target === beginning) && pos.x !== X){
@@ -657,6 +652,7 @@ function TSF_mousemove(){
         else if(pos.x < X) beginning = target;
         else break; //position found
     }
+
     var circle = d3.select("#mouseLineCircle");
     circle.attr("opacity", 1)
         .attr("cx", X)
@@ -665,14 +661,14 @@ function TSF_mousemove(){
     focus.attr("transform", "translate(" + X + "," + pos.y + ")");
 }
 
-/*
+/**
 * Moves element in arr[old_index] to arr[new_index]. It allows for negative indexes so
 * moving he last element to the nth position can be written as <code>move(arr, -1, n)</code>
 * while moving the nth element to the last position can be <code>move(arr, n, -1)</code>
+*
 * @param arr The array to be modified
 * @param old_index The index of the element to be moved
 * @param new_index The index where to move the element
-* @returns Nothig, it modifies arr directly
 */
 function move(arr, old_index, new_index){
     while(old_index < 0){
@@ -688,7 +684,7 @@ function move(arr, old_index, new_index){
         }
     }
     arr.splice(new_index, 0, arr.splice(old_index, 1)[0]);
-};
+}
 
 /**
  * Sort the time-series array using different sorting functions
@@ -702,19 +698,19 @@ function sortTsGraphs(order, by, pivot){
         return Math.abs(a.x - b.x) + Math.abs(a.y - b.y) + Math.abs(a.z - b.z);
     }
     // sorting from biggest to smallest
-    if(order == "descending"){
+    if (order == "descending"){
         tsFrag.tsDataArray.sort(function(a, b){
           return a[by] == b[by] ? 0 : + (a[by] < b[by]) || -1;
         });
     }
     // sorting from smallest to biggest
-    else if(order == "ascending"){
+    else if (order == "ascending") {
         tsFrag.tsDataArray.sort(function(a, b){
           return a[by] == b[by] ? 0 : + (a[by] > b[by]) || -1;
         });
     }
     // sorting based on manhattan distance from the pivot coordinate
-    else if(order == "manhattan"){
+    else if (order == "manhattan") {
         pivot = pivot || {x:0,y:0,z:0};
         tsFrag.tsDataArray.sort(function(a, b){
             a = md3d(a, pivot);
@@ -722,14 +718,11 @@ function sortTsGraphs(order, by, pivot){
           return a == b ? 0 : +(a > b) || -1;
         });
     }
-    else{
-        return;
-    }
 }
 /**
  * Update the brushes based on the current time point
  */
-function updateBrush(){
+function updateBrush() {
     var bMin = Math.max(0,tsFrag.currentTimePoint-30);
     var bMax = Math.min(tsFrag.currentTimePoint+30,tsFrag.timeLength);
     d3.select('.brush').transition()

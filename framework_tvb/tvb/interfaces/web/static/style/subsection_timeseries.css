@@ -17,129 +17,127 @@
  *
  **/
 
-/* -------------------------------------------- */
-/* The Virtual Brain: System */
-/* -------------------------------------------- */
-/* Created by @twotribes, Stuttgart */
-/* -------------------------------------------- */
-/* StyleSheet Scope: SUBSECTION TIMESERIES VIEW */
-/* Version: Odinson / 2.0.0 */
-/* -------------------------------------------- */
-
-/* !-------------------------------------------- */
-/* !LAYOUT: General */
-/* !-------------------------------------------- */
-/* We're setting up our own columns here as we get no guidance from base.css and flow-control */
-
 .timeseries-display {
-width: 100%;
+    width: 100%;
 }
-
-/* !-------------------------------------------- */
-/* !COMPONENT: Toolbar */
-/* !-------------------------------------------- */
 
 .toolbar-inline .extension p {
-color: #000;
+    color: #000;
 }
 
-/* !-------------------------------------------- */
-/* !COMPONENT: Volume Time Series Visualizer GUI */
-/* !-------------------------------------------- */
-.view-column{
-	width: 49%;
+/* !------------------------------------------------------- */
+/* ! COMPONENT: Volume Time Series Visualizer LEFT COLUMN   */
+/* !------------------------------------------------------- */
+
+.toolbar-with-sliders {
+    border-top: none;
 }
-#volumetric-ts-parent{
-    position: relative;
-    width: 100%;
-    height: 100%;
+
+.toolbar-li-with-slider {
+    width: 20%;
 }
-.volumetric-ts-ui {
+
+.toolbar-small-li {
+    width: 6%;
+    padding-top: 5%;
+}
+
+.toolbar-large-li {
+    width: 27%;
+    padding-top: 2%;
+}
+
+.toolbar-with-sliders li span {
+    float: left;
+    width: 90%;
+    margin: 3%;
+}
+
+.toolbar-with-sliders label,
+.movie-slider-parent label {
+    color: white;
+    font-size: 12px;
+}
+
+.slider-axis-name {
+    padding-left: 35%;
+}
+
+.min-slider-coord {
+    padding-left: 5px;
+}
+
+.current-slider-coord {
+    padding-left: 33%;
+}
+
+.max-slider-coord {
+    padding-left: 27%;
+}
+
+.canvas-parent {
+    height: 80%;
+    width: 99%;
+}
+
+.movie-slider-parent {
     height: 8%;
     padding: 1px;
-}
-#volumetric-ts-canvas-parent{
-    height: 83%;
+    position: absolute;
+    bottom: 0;
     width: 100%;
 }
-#buttons {
-    height: 50px;
-    width: :30%;
+
+#movieSlider {
+    width: 97%;
     float: left;
-}
-#buttons > button {
-    height: inherit;
+    margin: 10px;
 }
 
-#sliders{
-	position: relative;
-	top: 0.6em;
-    float: left;
-    width:68%;
+.max-slider-time {
+    position: absolute;
+    right: 15px;
 }
 
-#sliders > span {
-    width: 28%;
-    float: left;
-    margin: 1%;
-}
+/* !------------------------------------------------------- */
+/* ! COMPONENT: Volume Time Series Visualizer RIGHT COLUMN  */
+/* !------------------------------------------------------- */
 
-.min-coord {
-    position: relative;
-    left: 0%;
-    top: 17px;
+#ts-trash-can {
+	position: absolute;
+	text-align: center;
+	vertical-align: middle;
+	color: #c8d4de;
+	text-shadow: rgba(0, 0, 0, 0.9) 1px 1px 0;
+	top: 0;
+	left: 0;
+	background: #333;
+	opacity: 0.9;
+	z-index: 999;
 }
-
-.axis-name {
-    position: relative;
-    left: 30%;
-    bottom: 21px;
+.trash-hidden {
+	display: none;
 }
-
-.slider-value {
-    position: relative;
-    left: 8%;
-    top: 17px;
+.trash-show {
+	display: block;
 }
-
-.max-coord {
-    position: relative;
-    left: 30%;
-    top: 17px;
-}
-
-#time-position {
-    float: left;
-    width: 80%;
-}
-
-#time-position > span {
-    width: 100%;
-    float: left;
-    margin: 15px;
-    margin-bottom: 40px;
-}
-
-#time-slider-min {
-    position: relative;
-    left: 0px;
-    top: 19px;
-}
-
-#time-slider-value {
-    position: relative;
-    left: 96%; 
-    top: 19px;
+#sortable-delete {
+    height: 30px;
+    max-height: 30px;
+    overflow: hidden;
 }
 
 /* !-------------------------------------------- */
 /* !COMPONENT: Time Series SVG section           */
 /* !-------------------------------------------- */
+
 /* tell the SVG path to be a thin blue line without any area fill */
+
 #ts-graph-parent{
     position: relative;
-    width: 100%;
+    width: 99%;
     float: left;
+    padding-left: 3px;
 }
 
 path {
@@ -175,70 +173,32 @@ path {
 
 .colored-line {
     fill: none;
-    stroke-width: 2px;
-    stroke-opacity: 0.15;
+    stroke-width: 1px;
+    stroke-opacity: 0.3;
 }
 .colored-line.highlight {
-    stroke-width: 3px;
+    stroke-width: 2px;
     stroke-opacity: 1;
 }
 .colored-line.mini {
-    stroke-width: 3px;
+    stroke-width: 1px;
     stroke-opacity: 1;
 }
 .text-highlight {
-    fill: red;
+    fill: lightgray;
     font-weight: bold;
+    font-style: italic;
+    font-size: medium;
 }
 #graph {
     overflow: hidden;
 }
-#mini-container{
+#mini-container {
     overflow-y: scroll;
     overflow-x: hidden;
     max-height: 480px;
 }
-#ts-trash-can{
-	position: absolute;
-	text-align: center;
-	vertical-align: middle;
-	color: #c8d4de;
-	text-shadow: rgba(0, 0, 0, 0.9) 1px 1px 0px;
-	top: 0;
-	left: 0;
-	background: #333;
-	opacity: 0.9;
-	z-index: 999;
-}
-.trash-hidden{
-	display: none;
-}
-.trash-show{
-	display: block;
-}
-#sortable-delete{
-    height: 51px;
-    max-height: 51px;
-    overflow: hidden;
-}
-.pin dd{
-	margin: 0px;
-}
-.ui-half-left{
-	width:49%;
-	float: left;
-}
-.ui-half-right{
-	width:49%;
-	float: right;
-}
-.longTitle dt{
-	width: 35%;
-}
-.longTitle dd{
-	width: 60%;
-}
-.brush{
+.brush {
 	background-color: white;
 }
 .brush .extent {
@@ -249,9 +209,9 @@ path {
 .line {
   clip-path: url(#clip);
 }
-.brusher .tick line{
+.brusher .tick line {
 	display: none;
 }
-svg{
+svg {
 	display: inherit;
 }

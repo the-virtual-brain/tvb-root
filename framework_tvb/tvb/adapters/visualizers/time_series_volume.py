@@ -29,8 +29,12 @@
 #
 
 """
+Backend-side for TS Visualizer of TS Volume DataTypes.
+
 .. moduleauthor:: Robert Parcus <betoparcus@gmail.com>
+.. moduleauthor:: Lia Domide <lia.domide@codemart.ro>
 .. moduleauthor:: Ciprian Tomoiaga <ciprian.tomoiaga@codemart.ro>
+
 """
 
 import json
@@ -59,18 +63,21 @@ class TimeSeriesVolumeVisualiser(ABCDisplayer):
 
     def launch(self, time_series_volume):
 
-        dataUrls = [self.paths2url(time_series_volume, "get_rotated_volume_slice", parameter=""),
-                    self.paths2url(time_series_volume, "get_volume_shape", parameter=""),
-                    self.paths2url(time_series_volume, "get_volume_view", parameter=""),
-                    self.paths2url(time_series_volume, "get_voxel_time_series", parameter=""),
-                    self.paths2url(time_series_volume, "get_time_meta_data", parameter="")
-                    ]
-        minValue, maxValue = time_series_volume.get_min_max_values()
         volume = time_series_volume.volume
+        minValue, maxValue = time_series_volume.get_min_max_values()
+        dataUrls = [self.paths2url(time_series_volume, "get_rotated_volume_slice", parameter=""),
+                    self.paths2url(time_series_volume, "get_volume_view", parameter=""),
+                    self.paths2url(time_series_volume, "get_voxel_time_series", parameter="")
+                    ]
 
-        params = dict(title="Volumetric Time Series", minValue=minValue, maxValue=maxValue,
-                      dataUrls=json.dumps(dataUrls), voxelUnit=volume.voxel_unit,
+        params = dict(title="Volumetric Time Series",
+                      minValue=minValue, maxValue=maxValue,
+                      dataUrls=json.dumps(dataUrls),
+                      samplePeriod=time_series_volume.sample_period,
+                      samplePeriodUnit=time_series_volume.sample_period_unit,
+                      volumeShape=json.dumps(time_series_volume.read_data_shape()),
                       volumeOrigin=json.dumps(volume.origin.tolist()),
+                      voxelUnit=volume.voxel_unit,
                       voxelSize=json.dumps(volume.voxel_size.tolist()))
 
         return self.build_display_result("time_series_volume/view", params,

@@ -31,16 +31,16 @@ var tsVol = {
     sliceArray: [],             // A helper variable to draw the data on the canvas.
     bufferL2: {},               // Contains all data loaded and preloaded, limited by memory.
     bufferL3: {},               // Contains all data from loaded views, limited by memory.
-    dataAddress: "",            // Used to contain the python URL for each time point.
-    dataView: "",               // Used to store the call for get_volume_view server function.
+    urlMainData: "",            // Used to contain the python URL for each time point.
+    urlVolumeData: "",          // Used to store the call for get_volume_view server function.
     dataSize: "",               // Used first to contain the file ID and then it's dimension.
     requestQueue: [],           // Used to avoid requesting a time point set while we are waiting for it.
     parserBlob: null,           // Used to store the JSON Parser Blob for web-workers.
     slidersClicked: false,      // Used to handle the status of the sliders.
     batchID: 0,                 // Used to ignore useless incoming ajax responses.
-    dataTimeSeries: "",         // Contains the address to query the time series of a specific voxel.
+    urlTimeSeriesData: "",      // Contains the address to query the time series of a specific voxel.
     samplePeriod: 0,            // Meta data. The sampling period of the time series
-    samplePeriodUnit: "",       // Meta data. The time unit of the sample period
+    samplePeriodUnit: ""        // Meta data. The time unit of the sample period
 };
 
 var Quadrant = function (params){                // this keeps all necessary data for drawing
@@ -52,16 +52,24 @@ var Quadrant = function (params){                // this keeps all necessary dat
     this.offsetY = params.offsetY || 0;
 };
 
+var SLIDERS = ["X", "Y", "Z"];
+var SLIDERIDS = ["sliderForAxisX", "sliderForAxisY", "sliderForAxisZ"];
+
 /**
  * Make all the necessary initialisations and draws the default view, with the center voxel selected
- * @param dataUrls  Urls containing data slices from server
- * @param minValue  The minimum value for all the slices
- * @param maxValue  The maximum value for all the slices
- * @param volOrigin The origin of the rendering; irrelevant in 2D, for now
- * @param sizeOfVoxel   How the voxel is sized on each axis; [xScale, yScale, zScale]
+ * @param dataUrls          Urls containing data slices from server
+ * @param minValue          The minimum value for all the slices
+ * @param maxValue          The maximum value for all the slices
+ * @param samplePeriod      Number representing how frequent the signal was being measured
+ * @param samplePeriodUnit  Unit-Measure for the sampling period (e.g. ms, s)
+ * @param volumeShape       Json with the shape of the full TS
+ * @param volOrigin         The origin of the rendering; irrelevant in 2D, for now
+ * @param sizeOfVoxel       How the voxel is sized on each axis; [xScale, yScale, zScale]
  */
-function TSV_initVisualizer(dataUrls, minValue, maxValue, volOrigin, sizeOfVoxel){
-    var canvas = document.getElementById("volumetric-ts-canvas");
+function TSV_initVisualizer(dataUrls, minValue, maxValue, samplePeriod, samplePeriodUnit,
+                            volumeShape, volOrigin, sizeOfVoxel) {
+
+    var canvas = document.getElementById("canvasVolumes");
     if (!canvas.getContext){
         displayMessage('You need a browser with canvas capabilities, to see this demo fully!', "errorMessage");
         return;
@@ -78,9 +86,9 @@ function TSV_initVisualizer(dataUrls, minValue, maxValue, volOrigin, sizeOfVoxel
     tsVol.parserBlob = inlineWebWorkerWrapper(
             function(){
                 self.addEventListener( 'message', function (e){
-                    // Parse JSON, send it to main thread, close the worker
-                    self.postMessage(JSON.parse(e.data));
-                    self.close();
+                            // Parse JSON, send it to main thread, close the worker
+                            self.postMessage(JSON.parse(e.data));
+                            self.close();
                 }, false );
             }
         );
@@ -91,8 +99,9 @@ function TSV_initVisualizer(dataUrls, minValue, maxValue, volOrigin, sizeOfVoxel
     canvas.height = $(canvas).parent().height();
     canvas.width  = $(canvas).parent().width();
 
-    tsVol.quadrantHeight = canvas.height / 3;       // quadrants are squares
-    tsVol.quadrantWidth = tsVol.quadrantHeight;
+    var tmp = canvas.height / 3;
+    tsVol.quadrantHeight = tmp;       // quadrants are squares
+    tsVol.quadrantWidth = tmp;
     tsVol.focusQuadrantWidth = canvas.width - tsVol.quadrantWidth;
     tsVol.legendHeight = canvas.height / 13;
     tsVol.legendWidth = tsVol.focusQuadrantWidth - tsVol.legendPadding;
@@ -101,14 +110,13 @@ function TSV_initVisualizer(dataUrls, minValue, maxValue, volOrigin, sizeOfVoxel
     tsVol.ctx = canvas.getContext("2d");
 
     dataUrls = $.parseJSON(dataUrls);
-    tsVol.dataAddress = dataUrls[0];
-    tsVol.dataView = dataUrls[2];
-    tsVol.dataSize = HLPR_readJSONfromFile(dataUrls[1]);
-    tsVol.dataTimeSeries = dataUrls[3];
+    tsVol.urlMainData = dataUrls[0];
+    tsVol.urlVolumeData = dataUrls[1];
+    tsVol.urlTimeSeriesData = dataUrls[2];
 
-    var tmp = HLPR_readJSONfromFile(dataUrls[4]);
-    tsVol.samplePeriod = tmp[0];
-    tsVol.samplePeriodUnit = tmp[1];
+    tsVol.dataSize = $.parseJSON(volumeShape);
+    tsVol.samplePeriod = samplePeriod;
+    tsVol.samplePeriodUnit = samplePeriodUnit;
 
     tsVol.minimumValue = minValue;
     tsVol.maximumValue = maxValue;
@@ -140,7 +148,7 @@ function TSV_initVisualizer(dataUrls, minValue, maxValue, volOrigin, sizeOfVoxel
     window.setInterval(freeBuffer, tsVol.playbackRate*10);
 
     // Start the SVG Time Series Fragment and draw it.
-    TSF_initVisualizer(tsVol.dataTimeSeries);
+    TSF_initVisualizer(tsVol.urlTimeSeriesData);
     drawGraphs();
 }
 // ==================================== INITIALIZATION CODE END =============================================
@@ -217,18 +225,18 @@ function drawSceneFunctionalFromCube(tIndex){
 function drawFocusQuadrantFromCube(tIndex){
     _setCtxOnQuadrant(3);
     if(tsVol.highlightedQuad.index == 0){
-        for (j = 0; j < tsVol.dataSize[2]; ++j)
-            for (i = 0; i < tsVol.dataSize[1]; ++i)
+        for (var j = 0; j < tsVol.dataSize[2]; ++j)
+            for (var i = 0; i < tsVol.dataSize[1]; ++i)
                 drawVoxel(i, j, tsVol.data[i][j][tsVol.selectedEntity[2]]);
     }
     else if(tsVol.highlightedQuad.index == 1){
-        for (k = 0; k < tsVol.dataSize[3]; ++k)
-            for (jj = 0; jj < tsVol.dataSize[2]; ++jj)
+        for (var k = 0; k < tsVol.dataSize[3]; ++k)
+            for (var jj = 0; jj < tsVol.dataSize[2]; ++jj)
                 drawVoxel(k, jj, tsVol.data[tsVol.selectedEntity[0]][jj][k]);
     }
     else if(tsVol.highlightedQuad.index == 2){
-        for (kk = 0; kk < tsVol.dataSize[3]; ++kk)
-            for (ii = 0; ii < tsVol.dataSize[1]; ++ii)
+        for (var kk = 0; kk < tsVol.dataSize[3]; ++kk)
+            for (var ii = 0; ii < tsVol.dataSize[1]; ++ii)
                 drawVoxel(kk, ii, tsVol.data[ii][tsVol.selectedEntity[1]][kk]);
     }
     drawMargin();
@@ -286,18 +294,18 @@ function drawSceneFunctionalFromView(tIndex){
 function drawFocusQuadrantFromView(tIndex){
     _setCtxOnQuadrant(3);
     if(tsVol.highlightedQuad.index == 0){
-        for (j = 0; j < tsVol.dataSize[2]; ++j)
-            for (i = 0; i < tsVol.dataSize[1]; ++i)
+        for (var j = 0; j < tsVol.dataSize[2]; ++j)
+            for (var i = 0; i < tsVol.dataSize[1]; ++i)
                 drawVoxel(i, j, tsVol.sliceArray[0][i][j]);
     }
     else if(tsVol.highlightedQuad.index == 1){
-        for (k = 0; k < tsVol.dataSize[3]; ++k)
-            for (jj = 0; jj < tsVol.dataSize[2]; ++jj)
+        for (var k = 0; k < tsVol.dataSize[3]; ++k)
+            for (var jj = 0; jj < tsVol.dataSize[2]; ++jj)
                 drawVoxel(k, jj, tsVol.sliceArray[1][jj][k]);
     }
     else if(tsVol.highlightedQuad.index == 2){
-        for (kk = 0; kk < tsVol.dataSize[3]; ++kk)
-            for (ii = 0; ii < tsVol.dataSize[1]; ++ii)
+        for (var kk = 0; kk < tsVol.dataSize[3]; ++kk)
+            for (var ii = 0; ii < tsVol.dataSize[1]; ++ii)
                 drawVoxel(kk, ii, tsVol.sliceArray[2][ii][kk]);
     }
     drawMargin();
@@ -307,9 +315,9 @@ function drawFocusQuadrantFromView(tIndex){
  * Draws the voxel set at (line, col) in the current quadrant, and colors it
  * according to its value.
  * This function know nothing about the time point.
- * @params line THe vertical line of the grid we wish to draw on
- * @params col The horizontal line of the grir we wish to draw on
- * @params value The value of the voxel that will be converted into color
+ * @param line THe vertical line of the grid we wish to draw on
+ * @param col The horizontal line of the grid we wish to draw on
+ * @param value The value of the voxel that will be converted into color
  */
 function drawVoxel(line, col, value){
     tsVol.ctx.fillStyle = getGradientColorString(value, tsVol.minimumValue, tsVol.maximumValue);
@@ -342,9 +350,9 @@ function drawNavigator(){
     tsVol.ctx.beginPath();
 
     _setCtxOnQuadrant(3);
-    var x = tsVol.selectedEntity[tsVol.currentQuadrant.axes.x] * tsVol.currentQuadrant.entityWidth + tsVol.currentQuadrant.entityWidth / 2;
-    var y = tsVol.selectedEntity[tsVol.currentQuadrant.axes.y] * tsVol.currentQuadrant.entityHeight + tsVol.currentQuadrant.entityHeight / 2;
-    drawFocusCrossHair(x, y);
+    var xx = tsVol.selectedEntity[tsVol.currentQuadrant.axes.x] * tsVol.currentQuadrant.entityWidth + tsVol.currentQuadrant.entityWidth / 2;
+    var yy = tsVol.selectedEntity[tsVol.currentQuadrant.axes.y] * tsVol.currentQuadrant.entityHeight + tsVol.currentQuadrant.entityHeight / 2;
+    drawFocusCrossHair(xx, yy);
 
     tsVol.ctx.strokeStyle = "blue";
     tsVol.ctx.lineWidth = 3;
@@ -386,9 +394,9 @@ function drawLegend(){
     tsVol.ctx.setTransform(1, 0, 0, 1, 0, 0);  // reset the transformation
     tsVol.ctx.translate( tsVol.quadrantWidth + tmp, tsVol.focusQuadrantHeight);
     // set the font properties
-    tsVol.ctx.font = '16px Helvetica';
+    tsVol.ctx.font = '12px Helvetica';
     tsVol.ctx.textAlign = 'center';
-    tsVol.ctx. textBaseline = 'middle';
+    tsVol.ctx.textBaseline = 'middle';
     tsVol.ctx.fillStyle = 'white';
     // write min, mean, max values on the canvas
     tsVol.ctx.fillText(tsVol.minimumValue.toExponential(2), 0, tsVol.legendHeight - 10);
@@ -409,8 +417,8 @@ function drawLegend(){
     // Draw the selected entity value marker on the color bar
     tsVol.ctx.fillStyle = "white";
     tmp = tsVol.selectedEntityValue;
-    tmp = tmp / (tsVol.maximumValue-tsVol.minimumValue);
-    tmp = (tmp*tsVol.legendWidth);
+    tmp = tmp / (tsVol.maximumValue - tsVol.minimumValue);
+    tmp = (tmp * tsVol.legendWidth);
     tsVol.ctx.fillRect(tmp, 1, 3, tsVol.legendHeight/2);
 }
 
@@ -418,8 +426,8 @@ function drawLegend(){
  * Add spatial labels to the navigation quadrants
  */
 function drawLabels(){
-    tsVol.ctx.font = '17px Helvetica';
-    tsVol.ctx. textBaseline = 'middle';
+    tsVol.ctx.font = '15px Helvetica';
+    tsVol.ctx.textBaseline = 'middle';
     _setCtxOnQuadrant(0);
     tsVol.ctx.fillText("Axial", tsVol.quadrantWidth/5, tsVol.quadrantHeight - 13);
     _setCtxOnQuadrant(1);
@@ -442,8 +450,8 @@ function drawMargin(){
         marginHeight = tsVol.quadrantHeight;
     }
     tsVol.ctx.beginPath();
-    tsVol.ctx.rect(2.5, 0, marginWidth-2, marginHeight-2);
-    tsVol.ctx.lineWidth = 5;
+    tsVol.ctx.rect(2, 0, marginWidth - 3, marginHeight - 2);
+    tsVol.ctx.lineWidth = 2;
     if(tsVol.currentQuadrant.index == tsVol.selectedQuad.index && tsVol.currentQuadrant.index != 3){
         tsVol.ctx.strokeStyle = 'white';
         tsVol.highlightedQuad = tsVol.currentQuadrant;
@@ -452,7 +460,7 @@ function drawMargin(){
         tsVol.ctx.strokeStyle = 'white';
     }
     else{
-        tsVol.ctx.strokeStyle = 'black';
+        tsVol.ctx.strokeStyle = 'gray';
     }
     tsVol.ctx.stroke();
 }
@@ -478,10 +486,10 @@ function _setCtxOnQuadrant(quadIdx){
     //tsVol.ctx.translate(quadIdx * tsVol.quadrantWidth + tsVol.currentQuadrant.offsetX, tsVol.currentQuadrant.offsetY);
     // Vertical Mode
     if(quadIdx == 3){
-       tsVol.ctx.translate(1 * tsVol.quadrantWidth + tsVol.currentQuadrant.offsetX, tsVol.currentQuadrant.offsetY);
+       tsVol.ctx.translate(tsVol.quadrantWidth + tsVol.currentQuadrant.offsetX, tsVol.currentQuadrant.offsetY);
     }
     else{
-        tsVol.ctx.translate( tsVol.currentQuadrant.offsetX, quadIdx * tsVol.quadrantHeight +  tsVol.currentQuadrant.offsetY);
+        tsVol.ctx.translate(tsVol.currentQuadrant.offsetX, quadIdx * tsVol.quadrantHeight +  tsVol.currentQuadrant.offsetY);
     }
 }
 
@@ -572,11 +580,11 @@ function _setupFocusQuadrant(){
 }
 
 /**
- * Automathically determine optimal bufferSizer, depending on data dimensions.
+ * Automatically determine optimal bufferSizer, depending on data dimensions.
  */
-function _setupBuffersSize(){
+function _setupBuffersSize() {
     var tpSize = Math.max(tsVol.entitySize[0], tsVol.entitySize[1], tsVol.entitySize[2]);
-    var tpSize = tpSize * tpSize;
+    tpSize = tpSize * tpSize;
     //enough to avoid waisting bandwidth and to parse the json smoothly
     while(tsVol.bufferSize * tpSize <= 50000){
         tsVol.bufferSize++;
@@ -600,6 +608,7 @@ function _setupBuffersSize(){
 function asyncRequest(fileName, sect){
     var index = tsVol.requestQueue.indexOf(sect);
     var privateID = tsVol.batchID;
+
     if (index < 0){
         tsVol.requestQueue.push(sect);
         doAjaxCall({
@@ -628,19 +637,14 @@ function asyncRequest(fileName, sect){
 
 /**
  * Build a worker from an anonymous function body. Returns and URL Blob
- * @param workerBody The anonymous function to converto to URL BLOB
+ * @param workerBody The anonymous function to convert into URL BLOB
  * @returns URL Blob that can be used to invoke a web worker
  */
 function inlineWebWorkerWrapper(workerBody){
-    var retBlob = URL.createObjectURL(
-        new Blob([
-            '(',
-                workerBody.toString(),
-            ')()' ],
-        { type: 'application/javascript' }
+    return URL.createObjectURL(
+        new Blob(['(', workerBody.toString(), ')()' ], { type: 'application/javascript' }
         )
     );
-    return retBlob;
 }
 
 /**
@@ -685,7 +689,7 @@ function streamToBuffer(){
                 var to = Math.min(from+tsVol.bufferSize, tsVol.timeLength);
                 from = "from_idx=" + from;
                 to = ";to_idx=" + to;
-                var query = tsVol.dataView + from + to + xPlane + yPlane + zPlane;
+                var query = tsVol.urlVolumeData + from + to + xPlane + yPlane + zPlane;
                 asyncRequest(query, toBufferSection);
                 return; // break out of the loop
             }
@@ -703,8 +707,7 @@ function freeBuffer(){
     if(bufferedElements > tsVol.bufferL2Size){
         tsVol.bufferL2 = {};
         for(var idx in tsVol.bufferL3){
-            if ( idx < (section - tsVol.bufferL2Size/2) % tsVol.timeLength ||
-                 idx > (section + tsVol.bufferL2Size/2) % tsVol.timeLength){
+            if (idx < (section - tsVol.bufferL2Size/2) % tsVol.timeLength || idx > (section + tsVol.bufferL2Size/2) % tsVol.timeLength) {
                 delete tsVol.bufferL3[idx];
             }
         }
@@ -729,7 +732,7 @@ function getSliceAtTime(t){
     var buffer;
     var from = "from_idx=" + t;
     var to = ";to_idx=" + (t +1);
-    var query = tsVol.dataAddress + from + to;
+    var query = tsVol.urlMainData + from + to;
 
     if(tsVol.bufferL2[t]){
         buffer = tsVol.bufferL2[t];
@@ -762,7 +765,7 @@ function getViewAtTime(t){
     }else{ // We need to load that slice from the server
         from = "from_idx=" + t;
         to = ";to_idx=" + Math.min(1 + t, tsVol.timeLength);
-        query = tsVol.dataView + from + to + xPlane + yPlane + zPlane;
+        query = tsVol.urlVolumeData + from + to + xPlane + yPlane + zPlane;
 
         buffer = HLPR_readJSONfromFile(query);
         return [buffer[0][0],buffer[1][0],buffer[2][0]];
@@ -819,7 +822,7 @@ function customMouseMove(e){
 
 /**
  * Implements picking and redraws the scene. Updates sliders too.
- * @params e The click event
+ * @param e The click event
  */
 function TSV_pick(e){
     tsVol.bufferL3 = {};
@@ -829,7 +832,7 @@ function TSV_pick(e){
         tsVol.resumePlayer = true;
     }
     //fix for Firefox
-    var offset = $('#volumetric-ts-canvas').offset();
+    var offset = $('#canvasVolumes').offset();
     var xpos = e.pageX - offset.left;
     var ypos = e.pageY - offset.top;
     //var selectedQuad = tsVol.quadrants[Math.floor(xpos / tsVol.quadrantWidth)];
@@ -848,8 +851,7 @@ function TSV_pick(e){
         else if(xpos >= tsVol.focusQuadrantWidth - tsVol.selectedQuad.offsetX + tsVol.quadrantWidth){
             return;
         }
-    }
-    else{
+    } else{
         tsVol.selectedQuad = tsVol.quadrants[Math.floor(ypos / tsVol.quadrantHeight)];
         _setupFocusQuadrant();
         // check if it's inside the quadrant but outside the drawing
@@ -866,13 +868,16 @@ function TSV_pick(e){
             return;
         }
     }
+
+    var selectedEntityOnX = 0;
+    var selectedEntityOnY = 0;
+
     if(tsVol.selectedQuad.index == 3){
-        var selectedEntityOnX = Math.floor(((xpos - tsVol.quadrantWidth) % tsVol.focusQuadrantWidth) / tsVol.selectedQuad.entityWidth);
-        var selectedEntityOnY = Math.floor(((ypos - tsVol.selectedQuad.offsetY) % tsVol.focusQuadrantHeight) / tsVol.selectedQuad.entityHeight);
-    }
-    else{
-        var selectedEntityOnX = Math.floor((xpos - tsVol.selectedQuad.offsetX) / tsVol.selectedQuad.entityWidth);
-        var selectedEntityOnY = Math.floor((ypos % tsVol.quadrantHeight) / tsVol.selectedQuad.entityHeight);
+        selectedEntityOnX = Math.floor(((xpos - tsVol.quadrantWidth) % tsVol.focusQuadrantWidth) / tsVol.selectedQuad.entityWidth);
+        selectedEntityOnY = Math.floor(((ypos - tsVol.selectedQuad.offsetY) % tsVol.focusQuadrantHeight) / tsVol.selectedQuad.entityHeight);
+    } else{
+        selectedEntityOnX = Math.floor((xpos - tsVol.selectedQuad.offsetX) / tsVol.selectedQuad.entityWidth);
+        selectedEntityOnY = Math.floor((ypos % tsVol.quadrantHeight) / tsVol.selectedQuad.entityHeight);
     }
     tsVol.selectedEntity[tsVol.selectedQuad.axes.x] = selectedEntityOnX;
     tsVol.selectedEntity[tsVol.selectedQuad.axes.y] = selectedEntityOnY;
@@ -887,87 +892,41 @@ function TSV_pick(e){
 /**
  * Functions that calls all the setup functions for the main UI of the time series volume visualizer.
  */
-function TSV_startUserInterface(){
-    startButtonSet();
+function TSV_startUserInterface() {
     startPositionSliders();
     startMovieSlider();
 }
 
 /**
- * Function that creates all the buttons for playing, stopping and seeking time points.
- */
-function startButtonSet(){
-	// we setup every button
-    var container = $('#buttons');
-    var first = $('<button id="first">').button({icons:{primary:"ui-icon-seek-first"}});
-    var prev = $('<button id="prev">').button({icons:{primary:"ui-icon-seek-prev"}});
-    var playButton = $('<button id="play">').button({icons:{primary:"ui-icon-play"}});
-    var stopButton = $('<button id="stop">').button({icons:{primary:"ui-icon-stop"}});
-    var next = $('<button id="next">').button({icons:{primary:"ui-icon-seek-next"}});
-    var end = $('<button id="end">').button({icons:{primary:"ui-icon-seek-end"}});
-
-    // put the buttons on an array for easier manipulation
-    var buttonsArray = [first, prev, playButton, stopButton, next, end];
-
-    //we attach event listeners to buttons as needed
-    playButton.click(playBack);
-    stopButton.click(stopPlayback);
-    prev.click(playPreviousTimePoint);
-    next.click(playNextTimePoint);
-    first.click(seekFirst);
-    end.click(seekEnd);
-
-    // we setup the DOM element that will contain the buttons
-    container.buttonset();
-
-    // add every button to the container and refresh it afterwards
-    buttonsArray.forEach(function(entry){
-        container.append(entry)
-    });
-    container.buttonset('refresh');
-}
-
-/**
  * Code for the navigation slider. Creates the x,y,z sliders and adds labels
  */
-function startPositionSliders(){
-    var i = 0;
-    var axArray = ["X", "Y", "Z"];
+function startPositionSliders() {
+
     // We loop trough every slider
-    $( "#sliders").find("> span" ).each(function(){
-        var value = tsVol.selectedEntity[i];
-        var opts = {
-                        value: value,
-                        min: 0,
-                        max: tsVol.entitySize[i]-1, // yeah.. if we start from zero we need to subtract 1
-                        animate: true,
-                        orientation: "horizontal",
-                        change: slideMoved, // call this function *after* the slide is moved OR the value changes
-                        slide: slideMove  //  we use this to keep it smooth.
-                    };
-        $(this).slider(opts).each(function(){
-            // The starting time point. Supposing it is always ZERO.
-            var el = $('<label class="min-coord">' + opts.min + '</label>');
-            $(this).append(el);
-            // The name of the slider
-            el = $('<label class="axis-name">' + axArray[i] + ' Axis' + '</label>');
-            $(this).append(el);
-            // The current value of the slider
-            el = $('<label class="slider-value" id="slider-' + axArray[i] + '-value">[' + value + ']</label>');
-            $(this).append(el);
-            // The maximum value for the slider
-            el = $('<label class="max-coord">' + opts.max + '</label>');
-            $(this).append(el);
-            i++; // let's do the same on the next slider now..
-        })
-    });
+    for(var i = 0; i < 3; i++) {
+        $("#sliderForAxis" + SLIDERS[i]).each(function() {
+            var value = tsVol.selectedEntity[i];
+            var opts = {
+                            value: value,
+                            min: 0,
+                            max: tsVol.entitySize[i] - 1, // yeah.. if we start from zero we need to subtract 1
+                            animate: true,
+                            orientation: "horizontal",
+                            change: slideMoved, // call this function *after* the slide is moved OR the value changes
+                            slide: slideMove  //  we use this to keep it smooth.
+                        };
+            $(this).slider(opts);
+            $("#labelCurrentValueAxis" + SLIDERS[i]).empty().text("[" + value + "]");
+            $("#labelMaxValueAxis" + SLIDERS[i]).empty().text(opts.max);
+        });
+    }
 }
 
 /**
  * Code for "movie player" slider. Creates the slider and adds labels
  */
 function startMovieSlider(){
-	    $("#time-position").find("> span").each(function(){
+    $("#movieSlider").each(function() {
         var value = 0;
         var opts = {
                     value: value,
@@ -979,16 +938,12 @@ function startMovieSlider(){
                     stop: moviePlayerMoveEnd,
                     slide: moviePlayerMove
                     };
-        $(this).slider(opts).each(function(){
-            // The starting point. Supposing it is always ZERO.
-            var el = $('<label id="time-slider-min">' + opts.min + '</label>');
-            $(this).append(el);
-            // The actual time point we are seeing
-            var actualTime = value * tsVol.samplePeriod;
-            var totalTime = (tsVol.timeLength - 1) * tsVol.samplePeriod;
-            el = $('<label id="time-slider-value">' + actualTime.toFixed(2) + '/' + totalTime.toFixed(2) + " (in "+ tsVol.samplePeriodUnit +')</label>');
-            $(this).append(el);
-        });
+        $(this).slider(opts);
+
+        var actualTime = value * tsVol.samplePeriod;
+        var totalTime = (tsVol.timeLength - 1) * tsVol.samplePeriod;
+        $("#labelCurrentTimeStep").empty().text("[" + actualTime.toFixed(2)+ "]");
+        $("#labelMaxTimeStep").empty().text(totalTime.toFixed(2) + " ("+ tsVol.samplePeriodUnit + ")");
     });
 }
 
@@ -997,11 +952,21 @@ function startMovieSlider(){
 function playBack(){
     if(!tsVol.playerIntervalID)
         tsVol.playerIntervalID = window.setInterval(drawSceneFunctional, tsVol.playbackRate);
+        $("#btnPlay")[0].setAttribute("class", "action action-pause");
 }
 
 function stopPlayback(){
     window.clearInterval(tsVol.playerIntervalID);
     tsVol.playerIntervalID = null;
+    $("#btnPlay")[0].setAttribute("class", "action action-run");
+}
+
+function togglePlayback() {
+    if(!tsVol.playerIntervalID) {
+        playBack();
+    } else {
+        stopPlayback();
+    }
 }
 
 function startBuffering(){
@@ -1024,7 +989,7 @@ function stopBuffering(){
 function playNextTimePoint(){
     tsVol.currentTimePoint++;
     tsVol.currentTimePoint = tsVol.currentTimePoint%(tsVol.timeLength);
-    drawSceneFunctionalFromView(tsVol.currentTimePoint)
+    drawSceneFunctionalFromView(tsVol.currentTimePoint);
     drawLegend();
     drawLabels();
 }
@@ -1032,7 +997,7 @@ function playNextTimePoint(){
 function playPreviousTimePoint(){
     if(tsVol.currentTimePoint === 0)
         tsVol.currentTimePoint = tsVol.timeLength;
-    drawSceneFunctionalFromView(--tsVol.currentTimePoint)
+    drawSceneFunctionalFromView(--tsVol.currentTimePoint);
     drawLegend();
     drawLabels();
 }
@@ -1052,28 +1017,25 @@ function seekEnd(){
 }
 
 /**
- * Updates the position and values of the x,y,z navigation sliders when
- * we click the canvas.
+ * Updates the position and values of the x,y,z navigation sliders when we click the canvas.
  */
-function updateSliders(){
-    var axArray = ["X", "Y", "Z"];
-    var i = 0;
-    $( "#sliders").find("> span" ).each(function(){
-        $(this).slider("option", "value", tsVol.selectedEntity[i]); //update the handle
-        $('slider-' + axArray[i] + '-value').empty().text( '[' + tsVol.selectedEntity[i] + ']' ); //update the label
-        i += 1;
-    });
+function updateSliders() {
+    for(var i = 0; i < 3; i++) {
+        $("#sliderForAxis" + SLIDERS[i]).each(function() {
+            $(this).slider("option", "value", tsVol.selectedEntity[i]);                 //Update the slider value
+        });
+        $('#labelCurrentValueAxis' + SLIDERS[i]).empty().text('[' + tsVol.selectedEntity[i] + ']' ); //update label
+    }
 }
 
 /**
  * Updated the player slider bar while playback is on.
  */
 function updateMoviePlayerSlider(){
-    $("#time-position").find("> span").each(function(){
+    $("#movieSlider").each(function(){
         $(this).slider("option", "value", tsVol.currentTimePoint);
         var actualTime = tsVol.currentTimePoint * tsVol.samplePeriod;
-        var totalTime = (tsVol.timeLength - 1) * tsVol.samplePeriod;
-        $('#time-slider-value').empty().text( actualTime.toFixed(2) + '/' + totalTime.toFixed(2) + (" (in "+ tsVol.samplePeriodUnit +")") );
+        $('#labelCurrentTimeStep').empty().text("[" + actualTime.toFixed(2) + "]");
     });
     d3.select(".timeVerticalLine").attr("transform", function(){
                 var width = $(".graph-timeSeries-rect").attr("width");
@@ -1099,17 +1061,7 @@ function slideMove(event, ui){
         tsVol.resumePlayer = true;
     }
     tsVol.slidersClicked = true;
-    var quadID = ["x-slider", "y-slider", "z-slider"].indexOf(event.target.id);
-    var selectedQuad = tsVol.quadrants[quadID];
-
-    //  Updates the label value on the slider.
-    $(event.target.children[3]).empty().text( '[' + ui.value + ']' );
-    //  Setup things to draw the scene pointing to the right voxel and redraw it.
-    if(quadID == 1)
-        tsVol.selectedEntity[selectedQuad.axes.x] = ui.value;
-    else
-        tsVol.selectedEntity[selectedQuad.axes.y] = ui.value;
-    updateTSFragment();
+    _coreMoveSliderAxis(event, ui);
     drawSceneFunctional(tsVol.currentTimePoint);
 }
 
@@ -1126,39 +1078,43 @@ function slideMoved(event, ui){
             tsVol.resumePlayer = false;
         }
     }
-    var quadID = ["x-slider", "y-slider", "z-slider"].indexOf(event.target.id);
+   _coreMoveSliderAxis(event, ui);
+}
+
+function _coreMoveSliderAxis(event, ui) {
+    var quadID = SLIDERIDS.indexOf(event.target.id);
     var selectedQuad = tsVol.quadrants[quadID];
 
     //  Updates the label value on the slider.
-    $(event.target.children[3]).empty().text( '[' + ui.value + ']' );
+    $("#labelCurrentValueAxis" + SLIDERS[quadID]).empty().text( '[' + ui.value + ']' );
     //  Setup things to draw the scene pointing to the right voxel and redraw it.
-    if(quadID == 1)
+    if(quadID == 1) {
         tsVol.selectedEntity[selectedQuad.axes.x] = ui.value;
-    else
+    } else {
         tsVol.selectedEntity[selectedQuad.axes.y] = ui.value;
+    }
     updateTSFragment();
 }
 
 /**
  * Updates the value at the end of the player bar when we move the handle.
  */
-function moviePlayerMove(event, ui){
-    $("#time-position").find("> span").each(function(){
+function moviePlayerMove(event, ui) {
+    $("#movieSlider").each(function() {
         var actualTime = ui.value * tsVol.samplePeriod;
-        var totalTime = (tsVol.timeLength - 1) * tsVol.samplePeriod;
-        $('#time-slider-value').empty().text( actualTime.toFixed(2) + '/' + totalTime.toFixed(2) + (" (in "+ tsVol.samplePeriodUnit +")") );
+        $('#labelCurrentTimeStep').empty().text("[" + actualTime.toFixed(2) +"]");
     });
-        d3.select(".timeVerticalLine").attr("transform", function(){
-                var width = $(".graph-timeSeries-rect").attr("width");
-                var pos = (ui.value*width)/(tsVol.timeLength);
-                var bMin = Math.max(0,ui.value-30);
-                var bMax = Math.min(ui.value+30,tsVol.timeLength);
-                d3.select('.brush').transition()
-                    .delay(0)
-                    .call(tsFrag.brush.extent([bMin, bMax]))
-                    .call(tsFrag.brush.event);
-                return "translate(" + pos + ", 0)";
-            });
+    d3.select(".timeVerticalLine").attr("transform", function(){
+            var width = $(".graph-timeSeries-rect").attr("width");
+            var pos = (ui.value*width)/(tsVol.timeLength);
+            var bMin = Math.max(0,ui.value-30);
+            var bMax = Math.min(ui.value+30,tsVol.timeLength);
+            d3.select('.brush').transition()
+                .delay(0)
+                .call(tsFrag.brush.extent([bMin, bMax]))
+                .call(tsFrag.brush.event);
+            return "translate(" + pos + ", 0)";
+        });
 }
 
 /*

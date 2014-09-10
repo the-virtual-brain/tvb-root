@@ -1667,6 +1667,8 @@ action-pause
 action-stop
 action-page-back
 action-page-fwd
+action-go-first
+action-go-last
 */
 
 #main .view-column .action-toggle,
@@ -1689,7 +1691,13 @@ action-page-fwd
 #overlay .action-page-back, 
 #main .view-column .action-page-fwd,
 #main .controller .action-page-fwd,
-#overlay .action-page-fwd, 
+#overlay .action-page-fwd,
+#main .view-column .action-go-first,
+#main .controller .action-go-first,
+#overlay .action-go-first,
+#main .view-column .action-go-last,
+#main .controller .action-go-last,
+#overlay .action-go-last,
 #main .view-column .action-relevancy,
 #main .controller .action-relevancy,
 #overlay .action-relevancy,
@@ -1746,6 +1754,16 @@ background-position: 0 -413px;
 #main .controller .action-page-fwd:before,
 #overlay .action-page-fwd:before {
 background-position: 0 -496px;
+}
+#main .view-column .action-go-first:before,
+#main .controller .action-go-first:before,
+#overlay .action-go-first:before {
+background-position: 0 -2517px;
+}
+#main .view-column .action-go-last:before,
+#main .controller .action-go-last:before,
+#overlay .action-go-last:before {
+background-position: 0 -2462px;
 }
 
 /* --- Special action buttons for column & viewer control */
