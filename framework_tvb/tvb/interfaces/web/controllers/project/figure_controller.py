@@ -29,8 +29,9 @@
 #
 
 """
-Controller class for Resulting Figures from TVB.
+Controller class for managing Figures saved in TVB.
 
+.. moduleauthor:: Ciprian Tomoiaga <ciprian.tomoiaga@codemart.ro>
 .. moduleauthor:: Lia Domide <lia.domide@codemart.ro>
 """
 
@@ -44,13 +45,14 @@ from tvb.core import utils
 from tvb.core.entities.file.files_helper import FilesHelper
 from tvb.core.services.figure_service import FigureService
 from tvb.interfaces.web.controllers import common
-from tvb.interfaces.web.controllers.decorators import context_selected, check_user, handle_error, using_template, expose_page
+from tvb.interfaces.web.controllers.decorators import context_selected, check_user, handle_error
+from tvb.interfaces.web.controllers.decorators import using_template, expose_page
 from tvb.interfaces.web.controllers.project.project_controller import ProjectController
 
 
 class FigureController(ProjectController):
     """
-    Resulting Figures are user-saved figures with specific visualizers which are considered important.
+    Resulting Figures are user-saved figures with specific visualizers or TVB pages which are considered important.
     """
 
     def __init__(self):
@@ -127,7 +129,7 @@ class FigureController(ProjectController):
                     common.set_info_message("The session was successfully updated!")
                 else:
                     common.set_error_message("The session was not successfully updated! "
-                                           "There could be some figures that still refer to the old session.")
+                                             "There could be some figures that still refer to the old session.")
         elif cherrypy.request.method == 'POST' and remove_session:
             successfully_removed = True
             if "old_session_name" in data:

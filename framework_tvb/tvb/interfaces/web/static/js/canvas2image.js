@@ -52,7 +52,7 @@ function __storeSVG(svgElement, kwargs) {
 	var data = wrap.innerHTML;
 
     // get the styles for the svg
-    $.get( "/static/style/tvbviz.css", function (stylesheet) {
+    $.get( "/static/style/sections_svg.css", function (stylesheet) {
                                                                          // strip all
         var re = new RegExp("[\\s\\n^]*\\/\\*(.|[\\r\\n])*?\\*\\/" +     // block style comments
                             "|([\\s\\n]*\\/\\/.*)" +                     // single line comments
