@@ -48,7 +48,6 @@ var TVBUI = TVBUI || {};
         this.VECTOR_RANGE = 80;
         this.onClick = onClick;
         this.trajs = [];        // keeps the trajectories/signals raw data
-        this.signals = [];
         // --- declarations and global structure ---
         this.svg = d3.select('.dynamicChart').attr('viewBox', viewBox);
 
@@ -246,20 +245,11 @@ var TVBUI = TVBUI || {};
     };
 
     /**
-     * Draws the state variable signals for just one trajectory.
-     * @param data [[x,y], ... ] for each state variable
-     * @param idx If present plot the signal for the idx'th trajectory instead of the last
+     * Draws the state variable signals. It is used to draw the signals for the last trajectory.
+     * @param signal [[x,y], ... ] for each state variable
      */
-    PhasePlane.prototype.drawSignal = function(data, idx){
+    PhasePlane.prototype.drawSignal = function(signal){
         var self = this;
-        this.signals.push(data);
-        var signal;
-
-        if (idx == null){
-            signal = data;
-        }else{
-            signal = this.signals[idx];
-        }
 
         if (signal.length !== 0) {
             var scales = this._computePlotScales(signal);
@@ -318,7 +308,6 @@ var TVBUI = TVBUI || {};
 
     PhasePlane.prototype.clearTrajectories = function(){
         this.trajs = [];
-        this.signals = [];
         this.drawTrajectory([]);
         this.drawSignal([]);
     };
