@@ -36,32 +36,33 @@
                 <td class="paramName">mode</td>
                 <td class="paramValue">
                     <select id="mode">
-                        <option py:for="idx in modes" value="${idx}">$idx</option>
+                        <option py:for="idx in modes" value="${idx}"
+                                selected="${'selected' if idx == default_mode else None}">$idx</option>
                     </select>
                 </td>
                 <td class="c3"></td>
             </tr>
-             <tr>
+            <tr>
                 <td class="paramName">:math:`x`</td>
                 <td class="paramValue">
                     <select id="svx">
-                        <option py:for="sv in state_variables" value="${sv.name}">
-                            ${sv.label}</option>
+                        <option py:for="sv in state_variables" value="${sv.name}"
+                                selected="${'selected' if sv.name == default_sv[0] else None}">${sv.label}</option>
                     </select>
                 </td>
                  <td class="c3"><div id="slider_x_axis"></div></td>
-                 <td><span id="x_range_span"> ${x_axis.lo} .. ${x_axis.hi}</span></td>
+                 <td><span id="x_range_span"> </span></td>
             </tr>
             <tr>
                 <td class="paramName">:math:`y`</td>
                 <td class="paramValue">
                     <select id="svy">
-                        <option py:for="i, sv in enumerate(state_variables)" value="${sv.name}"
-                                selected="${'selected' if i==1 else None}">${sv.label}</option>
+                        <option py:for="sv in state_variables" value="${sv.name}"
+                                selected="${'selected' if sv.name == default_sv[1] else None}">${sv.label}</option>
                     </select>
                 </td>
                 <td class="c3"><div id="slider_y_axis"></div></td>
-                <td><span id="y_range_span">${y_axis.lo} .. ${y_axis.hi}</span></td>
+                <td><span id="y_range_span"> </span></td>
             </tr>
         </table>
     </div>

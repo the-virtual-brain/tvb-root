@@ -326,33 +326,28 @@ class DynamicModelController(BurstBaseController):
 
 
     @staticmethod
-    def _get_state_variables_ui_model(model):
-        ret = []
-        for sv in range(model.nvar):
-            name = model.state_variables[sv]
-            sv_range = model.state_variable_range[name]
-            lo, hi = sv_range
-            ret.append({
+    def _get_graph_ui_model(dynamic):
+        sv_model = []
+        for sv in range(dynamic.model.nvar):
+            name = dynamic.model.state_variables[sv]
+            min_val, max_val, lo, hi = dynamic.phase_plane.get_axes_ranges(name)
+            sv_model.append({
                 'name': name,
                 'label': ':math:`%s`' % name,
                 'description': 'state variable ' + name,
-                'min': lo,
-                'max': hi,
+                'lo': lo,
+                'hi': hi,
+                'min': min_val,
+                'max': max_val,
                 'step': (hi - lo) / 1000.0,  # todo check if reasonable
-                'default': sv_range.mean()
+                'default': (hi + lo) / 2
             })
-        return ret
 
-
-    @staticmethod
-    def _get_graph_ui_model(dynamic):
-        """ specific to navigating the phase space """
-        xaxis_range, yaxis_range = dynamic.phase_plane.axis_range()
         return {
             'modes': range(dynamic.model.number_of_modes),
-            'state_variables': DynamicModelController._get_state_variables_ui_model(dynamic.model),
-            'x_axis': xaxis_range,
-            'y_axis': yaxis_range,
+            'state_variables': sv_model,
+            'default_mode' : dynamic.phase_plane.mode,
+            'default_sv': [dynamic.phase_plane.svx, dynamic.phase_plane.svy]
         }
 
 
