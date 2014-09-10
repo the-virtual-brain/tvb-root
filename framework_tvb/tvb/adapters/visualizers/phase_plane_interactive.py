@@ -185,6 +185,9 @@ class PhasePlane(object):
             state = scheme(state, self.model.dfun, self.no_coupling, 0.0, 0.0)
             traj[step + 1, :] = state
 
+        if numpy.isnan(traj).any():
+            self.log.warn("NaN in trajectory")
+
         return traj
 
 

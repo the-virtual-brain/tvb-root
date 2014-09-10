@@ -252,11 +252,20 @@ function onTrajectory(x, y){
         data: {x:x, y:y},
         success:function(data){
             data = JSON.parse(data);
-            dynamicPage.phasePlane.drawTrajectory(data[0]);
-            dynamicPage.phasePlane.drawSignal(data[1]);
+            if (data.finite) {
+                dynamicPage.phasePlane.drawTrajectory(data.trajectory);
+                dynamicPage.phasePlane.drawSignal(data.signals);
+            }else{
+                displayMessage('Trajectory contains infinities. Try to decrease the integration step.', 'warningMessage');
+            }
         }
     });
 }
+
+
+// Throttle the rate of trajectory creation. In a burst of mouse clicks some will be ignored.
+// Ignore trailing events. Without this throttling the server overwhelms and numexpr occasionally segfaults.
+var onTrajectory = $.throttle(500, true, onTrajectory);
 
 function onSubmit(event){
     var name = $('#dynamic_name').val().trim();

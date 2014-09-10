@@ -79,11 +79,18 @@ var TVBUI = TVBUI || {};
         this.xAxis_g = this.plane_with_axis.append('g')
             .attr('class', 'axis')
             .attr("transform", "translate(0, 800)");
+
         this.yAxis_g = this.plane_with_axis.append('g')
             .attr('class', 'axis');
+
         this.vectorAxis_g = this.plane_with_axis.append('g')
             .attr('class', 'axis')
             .attr("transform", "translate(825, 300)");
+
+        this.plane_with_axis.append('text')
+            .attr('class', 'axis')
+            .text('vector magnitude')
+            .attr("transform", "translate(880, 250) rotate(90)");
 
         this.xLabel = this.plane_with_axis.append("text")
             .attr("class", "axislabel")
@@ -115,6 +122,13 @@ var TVBUI = TVBUI || {};
         this.plot_with_axis = this.svg.append('g')
             .attr("transform", "translate(100, 860)");
 
+        this.plot_nodata = this.svg.append('text')
+            .attr("class", "title")
+            .attr("x", 500)
+            .attr("y", 890)
+            .text('click in the phase plane to show signals for the last trajectory')
+            .attr('display', 'none');
+
         this.plot_g = this.plot_with_axis.append('g')
             .attr('class', 'traj')
             .attr("clip-path", "url(#clip_plot)");
@@ -122,6 +136,7 @@ var TVBUI = TVBUI || {};
         this.xAxis_plot_g = this.plot_with_axis.append('g').attr('class', 'axis').attr("transform", "translate(0, 100)");
         this.yAxis_plot_g = this.plot_with_axis.append('g').attr('class', 'axis');
         this.plot_legend_g = this.plot_with_axis.append('g').attr("transform", "translate(820, 0)");
+
         this.lineBuilder = d3.svg.line()
                 .x(function(d) { return self.xScale(d[0]); })
                 .y(function(d) { return self.yScale(d[1]); })
@@ -249,10 +264,12 @@ var TVBUI = TVBUI || {};
         if (signal.length !== 0) {
             var scales = this._computePlotScales(signal);
             var xAxis = d3.svg.axis().scale(scales[0]).orient('bottom');
-            var yAxis = d3.svg.axis().scale(scales[1]).orient("left");
+            var yAxis = d3.svg.axis().scale(scales[1]).orient('left').ticks(5);
 
             this.xAxis_plot_g.call(xAxis);
             this.yAxis_plot_g.call(yAxis);
+            this.plot_nodata.attr('display', 'none');
+            this.plot_with_axis.attr('display', null);
 
             var lineBuilder = d3.svg.line()
                 .x(function (d) {
@@ -264,8 +281,8 @@ var TVBUI = TVBUI || {};
                 .interpolate("linear");
             var colorS = d3.scale.category10().domain(d3.range(signal.length));
         }else{
-//            this.xAxis_plot_g.
-//            this.yAxis_plot_g.call(yAxis);
+            this.plot_nodata.attr('display', null);
+            this.plot_with_axis.attr('display', 'none');
         }
 
         var p = this.plot_g.selectAll('path').data(signal);

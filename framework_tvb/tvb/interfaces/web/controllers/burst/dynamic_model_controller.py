@@ -291,7 +291,14 @@ class DynamicModelController(BurstBaseController):
     @expose_json
     def trajectory(self, dynamic_gid, x, y):
         dynamic = self.get_cached_dynamic(dynamic_gid)
-        return dynamic.phase_plane.trajectory(x, y)
+        trajectory, signals = dynamic.phase_plane.trajectory(x, y)
+
+        for p in trajectory:
+            if not numpy.isfinite(p).all():
+                self.logger.warn('Denaturated point %s on trajectory starting at %s.' % (p, (x,y)))
+                return {'finite':False}
+
+        return {'trajectory': trajectory, 'signals': signals, 'finite':True}
 
 
     @staticmethod
