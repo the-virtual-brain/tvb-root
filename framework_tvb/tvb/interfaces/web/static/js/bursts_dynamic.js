@@ -114,12 +114,29 @@ var dynamicPage = {
         self.$svy = $('#svy');
         self.$slider_x = $('#slider_x_axis');
         self.$slider_y = $('#slider_y_axis');
+        self.$mode.change(onChange);
 
-        self.$mode.add(self.$svx).add(self.$svy).change(onChange);
-        self._initAxisSlider(self.$slider_x, $('#x_range_span'), self.state.x_axis);
-        self._initAxisSlider(self.$slider_y, $('#y_range_span'), self.state.y_axis);
+        self.$svx.add(self.$svy).change(function(){
+            self._initSliders();
+            onChange();
+        });
         $('#reset_axes').click(function() { self.reset();});
+        this._initSliders();
     }
+
+    AxisGroup.prototype._initSliders = function(){
+        var x_axis_sv = this._getStateVarByName(this.$svx.val());
+        var y_axis_sv = this._getStateVarByName(this.$svy.val());
+
+        this._initAxisSlider(this.$slider_x, $('#x_range_span'), x_axis_sv);
+        this._initAxisSlider(this.$slider_y, $('#y_range_span'), y_axis_sv);
+    };
+
+    AxisGroup.prototype._getStateVarByName = function(name){
+        return $.grep(this.state.state_variables, function(n){
+            return n.name === name;
+        })[0];
+    };
 
     AxisGroup.prototype._initAxisSlider = function(sel, span, opt){
         var self = this;
@@ -140,17 +157,21 @@ var dynamicPage = {
                 self.onChange();
             }
         });
+        update_span([opt.lo, opt.hi]);
     };
 
     AxisGroup.prototype.reset = function(){
-        var opt = this.state.x_axis;
+        var x_axis_sv = this._getStateVarByName(this.state.default_sv[0]);
+        var y_axis_sv = this._getStateVarByName(this.state.default_sv[1]);
+
+        var opt = x_axis_sv;
         this.$slider_x.slider({ min: opt.min, max: opt.max, values: [opt.lo, opt.hi] });
-        opt = this.state.y_axis;
+        opt = y_axis_sv;
         this.$slider_y.slider({ min: opt.min, max: opt.max, values: [opt.lo, opt.hi] });
         //reset mode and state var selection as well
-        this.$mode.val(0).change(); // change events do not fire when select's are changed by val()
-        this.$svx.val(this.state.state_variables[0].name).change();
-        this.$svy.val(this.state.state_variables[1].name).change();
+        this.$mode.val(this.state.default_mode).change(); // change events do not fire when select's are changed by val()
+        this.$svx.val(this.state.default_sv[0]).change();
+        this.$svy.val(this.state.default_sv[1]).change();
     };
 
     AxisGroup.prototype.getValue = function(){
