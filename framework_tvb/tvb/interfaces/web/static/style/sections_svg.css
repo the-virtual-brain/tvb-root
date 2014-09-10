@@ -54,7 +54,7 @@
 .slice-info { margin-top: 10px; }
 
 /************** START -- TS from TSVolume Viewer ********/
-
+/* TODO namepace these. The path and svg styles interfere with other viewers */
 #ts-graph-parent{
     position: relative;
     width: 99%;
@@ -149,3 +149,56 @@ svg {
 }
 
 /************** END -- TS from TSVolume Viewer ********/
+
+
+/************** START -- Phase plane ********/
+
+.dynamicChart {
+    width: 100%;
+    height: 99%;
+    padding: 5px;
+    box-sizing: border-box;
+    background-color: #fafafd;
+}
+
+.dynamicChart .title{
+    text-anchor: middle;
+    font-size: 20px;
+}
+
+.phasePlane line{
+    stroke: #88A;
+    stroke-width: 1;
+    /*marker-start: url(#markerCircle);*/
+    marker-end: url(#markerArrow);
+}
+
+.dynamicChart .overlay{
+    fill:none;
+    cursor: crosshair;
+}
+
+.dynamicChart .traj{
+    fill: none;
+    stroke-width: 2;
+}
+
+.dynamicChart #markerArrow{
+    stroke: #88B;
+}
+
+.dynamicChart .axis line, .dynamicChart .axis path{
+    shape-rendering: crispEdges;
+    fill: none;
+    stroke: black;
+}
+
+.dynamicChart .axislabel{
+    font-size: 15px;
+}
+
+.dynamicChart .axis text{
+}
+
+
+/************** END -- Phase plane ********/

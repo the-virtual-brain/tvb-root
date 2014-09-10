@@ -86,14 +86,21 @@ class FigureService:
         figureSvg = dom.getElementsByTagName('svg')[0]                          # get the original image
 
         dom = xml.dom.minidom.parse(FigureService._BRANDING_BAR_SVG)
-        brandingSvg = dom.getElementsByTagName('svg')[0]                        # get the branding bar
-        brandingSvg.setAttribute("y", figureSvg.getAttribute("height"))         # position it below the figure
+
+        try:
+            width = float(figureSvg.getAttribute('width').replace('px', ''))
+            height = float(figureSvg.getAttribute('height').replace('px', ''))
+        except ValueError:                                                      # defaults when dimensions are not given
+            width = 1024
+            height = 768
+            figureSvg.setAttribute("width", str(width))
+            figureSvg.setAttribute("height", str(height))
 
         finalSvg = dom.createElement('svg')                                     # prepare the final svg
-        width = figureSvg.getAttribute('width').replace('px', '')               # same width as original figure
-        finalSvg.setAttribute("width", width)
-        height = float(figureSvg.getAttribute('height').replace('px', ''))      # increase original height with
-        height += float(brandingSvg.getAttribute('height').replace('px', ''))   # branding bar's height
+        brandingSvg = dom.getElementsByTagName('svg')[0]                        # get the branding bar
+        brandingSvg.setAttribute("y", str(height))                              # position it below the figure
+        height += float(brandingSvg.getAttribute('height').replace('px', ''))   # increase original height with branding bar's height
+        finalSvg.setAttribute("width", str(width))                              # same width as original figure
         finalSvg.setAttribute("height", str(height))
 
         finalSvg.appendChild(figureSvg)                                         # add the image
