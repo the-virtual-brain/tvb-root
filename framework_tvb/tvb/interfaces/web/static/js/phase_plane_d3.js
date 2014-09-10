@@ -49,6 +49,7 @@ var TVBUI = TVBUI || {};
         this.onClick = onClick;
         this.trajs = [];        // keeps the trajectories/signals raw data
         // --- declarations and global structure ---
+        // We create the svg dom in js. Alternatively this could be written declarative in svg and retrieved here by .select()
         this.svg = d3.select('.dynamicChart').attr('viewBox', viewBox);
 
         this.svg.append("clipPath").attr("id", "clip")      // clip all phase plane geometry
@@ -63,13 +64,13 @@ var TVBUI = TVBUI || {};
 
         this.svg.append("text")     // title
             .attr("x", 500)
-            .attr("y", 10)
+            .attr("y", 20)
             .attr("class", "title")
             .text("Phase plane");
 
         // --- phase plane structure ---
         this.plane_with_axis = this.svg.append('g')     // groups phase plane, axis, labels trajectories and overlay
-            .attr("transform", "translate(100, 20)");
+            .attr("transform", "translate(100, 40)");
 
         this.plane_g = this.plane_with_axis.append('g') // the vectors are drawn here
             .attr('class', 'phasePlane')
@@ -119,12 +120,12 @@ var TVBUI = TVBUI || {};
 
         // --- signals plot ---
         this.plot_with_axis = this.svg.append('g')
-            .attr("transform", "translate(100, 860)");
+            .attr("transform", "translate(100, 880)");
 
         this.plot_nodata = this.svg.append('text')
             .attr("class", "title")
             .attr("x", 500)
-            .attr("y", 890)
+            .attr("y", 920)
             .text('click in the phase plane to show signals for the last trajectory')
             .attr('display', 'none');
 

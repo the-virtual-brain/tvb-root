@@ -170,7 +170,7 @@ svg {
     stroke: #88A;
     stroke-width: 1;
     /*marker-start: url(#markerCircle);*/
-    marker-end: url(#markerArrow);
+    marker-end: url("/burst/dynamic/#markerArrow");
 }
 
 .dynamicChart .overlay{
