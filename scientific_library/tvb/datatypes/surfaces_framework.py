@@ -281,6 +281,7 @@ class SurfaceFramework(surfaces_data.SurfaceData):
             LOG.warn("Could not access slice indices, possibly due to an incompatibility with code update!")
             return 0, min(SPLIT_BUFFER_SIZE, self.number_of_vertices)
 
+
     def _get_slice_triangle_boundaries(self, slice_idx):
         if str(slice_idx) in self.split_slices:
             start_idx = max(0, self.split_slices[str(slice_idx)][KEY_TRIANGLES][KEY_START])
@@ -290,11 +291,20 @@ class SurfaceFramework(surfaces_data.SurfaceData):
             LOG.warn("Could not access slice indices, possibly due to an incompatibility with code update!")
             return 0, self.number_of_triangles
 
+
     def _get_slices_number(self, vertices_number):
-        slices_number = vertices_number // SPLIT_MAX_SIZE
-        if vertices_number % SPLIT_MAX_SIZE > SPLIT_BUFFER_SIZE:
+        """
+        Slices are for vertices [SPLIT_MAX_SIZE * i ... SPLIT_MAX_SIZE * (i + 1) + SPLIT_BUFFER_SIZE]
+        Slices will overlap :
+        |........SPLIT_MAX_SIZE|...SPLIT_BUFFER_SIZE|                           <-- split 1
+                               |......... SPLIT_MAX_SIZE|...SPLIT_BUFFER_SIZE|  <-- split 2
+        If we have trailing data smaller than the SPLIT_BUFFER_SIZE then we no longer split but we need to have at least 1 slice.
+        """
+        slices_number, trailing = divmod(vertices_number, SPLIT_MAX_SIZE)
+        if trailing > SPLIT_BUFFER_SIZE or (slices_number == 0 and trailing > 0):
             slices_number += 1
         return slices_number
+
 
     def _find_slice(self, triangle):
         mn = min(triangle)
