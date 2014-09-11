@@ -42,6 +42,7 @@ from tvb.basic.traits.parameters_factory import get_traited_instance_for_name
 from tvb.core.adapters.abcadapter import ABCAdapter
 from tvb.core.adapters.abcadapter import KEY_EQUATION, KEY_FOCAL_POINTS
 from tvb.core.entities.model import PARAMS_MODEL_PATTERN
+from tvb.core.services.burst_config_serialization import SerializationManager
 from tvb.datatypes import equations
 from tvb.interfaces.web.controllers import common
 from tvb.interfaces.web.controllers.base_controller import BaseController
@@ -70,13 +71,36 @@ class SurfaceModelParametersController(SpatioTemporalController):
         self.plotted_equations_prefixes = ['model_param', 'min_x', 'max_x']
 
 
+    def get_data_from_burst_configuration(self):
+        """
+        Returns the model and surface instances from the burst configuration.
+        """
+        des = SerializationManager(common.get_from_session(common.KEY_BURST_CONFIG))
+        ### Read from session current burst-configuration
+        if des.conf is None:
+            return None, None
+        if des.has_model_pse_ranges():
+            common.set_error_message("When configuring model parameters you are not allowed to specify range values.")
+            raise cherrypy.HTTPRedirect("/burst/")
+
+        try:
+            model, integrator = des.make_model_and_integrator()
+        except Exception:
+            self.logger.exception("Some of the provided parameters have an invalid value.")
+            common.set_error_message("Some of the provided parameters have an invalid value.")
+            raise cherrypy.HTTPRedirect("/burst/")
+
+        surface = des.get_surface()
+        return model, surface
+
+
     @expose_page
     def edit_model_parameters(self):
         """
         Main method, to initialize Model-Parameter visual-set.
         """
-        model, integrator, connectivity, surface = self.get_data_from_burst_configuration()
-        context_model_parameters = SurfaceContextModelParameters(surface, connectivity, model, integrator)
+        model, surface = self.get_data_from_burst_configuration()
+        context_model_parameters = SurfaceContextModelParameters(surface, model)
         common.add2session(KEY_CONTEXT_MPS, context_model_parameters)
 
         template_specification = dict(title="Spatio temporal - Model parameters")

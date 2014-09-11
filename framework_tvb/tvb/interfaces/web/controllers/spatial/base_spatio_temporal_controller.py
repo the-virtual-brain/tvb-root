@@ -35,13 +35,11 @@
 
 import json
 from copy import deepcopy
-import cherrypy
 
 from tvb.basic.traits import traited_interface
 from tvb.basic.logger.builder import get_logger
 from tvb.core.adapters.abcadapter import ABCAdapter
 from tvb.core.entities.model import PARAM_SURFACE
-from tvb.core.services.burst_config_serialization import SerializationManager
 
 from tvb.core.services.flow_service import FlowService
 from tvb.interfaces.web.controllers import common
@@ -79,29 +77,6 @@ class SpatioTemporalController(BaseController):
         template_specification = {'title': "Spatio temporal", 'data': data, 'mainContent': 'header_menu'}
         return self.fill_default_attributes(template_specification)
 
-
-    def get_data_from_burst_configuration(self):
-        """
-        Returns the model, integrator, connectivity and surface instances from the burst configuration.
-        """
-        des = SerializationManager(common.get_from_session(common.KEY_BURST_CONFIG))
-        ### Read from session current burst-configuration
-        if des.conf is None:
-            return None, None, None, None
-        if des.has_model_pse_ranges():
-            common.set_error_message("When configuring model parameters you are not allowed to specify range values.")
-            raise cherrypy.HTTPRedirect("/burst/")
-
-        try:
-            model, integrator = des.make_model_and_integrator()
-        except Exception:
-            self.logger.exception("Some of the provided parameters have an invalid value.")
-            common.set_error_message("Some of the provided parameters have an invalid value.")
-            raise cherrypy.HTTPRedirect("/burst/")
-
-        connectivity = des.get_connectivity()
-        surface = des.get_surface()
-        return model, integrator, connectivity, surface
 
 
     @staticmethod

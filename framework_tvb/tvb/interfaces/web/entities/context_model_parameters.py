@@ -37,24 +37,35 @@ from copy import deepcopy
 from tvb.basic.traits.core import Type
 from tvb.core.adapters.abcadapter import KEY_EQUATION, KEY_FOCAL_POINTS, KEY_SURFACE_GID, ABCAdapter
 from tvb.datatypes.equations import SpatialApplicableEquation, Gaussian
-from tvb.interfaces.web.entities.context_spatial import BaseSpatialContext
+from tvb.basic.logger.builder import get_logger
+from tvb.simulator.models import Generic2dOscillator
 
 
 KEY_FOCAL_POINTS_TRIANGLES = "focal_points_triangles"
 
 
-class SurfaceContextModelParameters(BaseSpatialContext):
+class SurfaceContextModelParameters(object):
     """
     This class contains methods which allows you to edit the model
     parameters for each vertex of the given surface.
     """
+    def __init__(self, surface, default_model=None):
+        self.logger = get_logger(self.__class__.__module__)
 
+        if default_model is not None:
+            self.default_model = default_model
+        else:
+            self.default_model = Generic2dOscillator()
 
-    def __init__(self, surface, connectivity, default_model=None, default_integrator=None):
-        BaseSpatialContext.__init__(self, connectivity, default_model, default_integrator)
+        self.model_name = self.default_model.__class__.__name__
+        self.model_parameter_names = self.default_model.ui_configurable_parameters[:]
+
+        if not self.model_parameter_names:
+            self.logger.warning("The 'ui_configurable_parameters' list of the current model is empty!")
+
         self.prepared_model_parameter_names = self._prepare_parameter_names(self.model_parameter_names)
         self.surface = surface
-        self.applied_equations = dict()
+        self.applied_equations = {}
 
 
     @staticmethod
