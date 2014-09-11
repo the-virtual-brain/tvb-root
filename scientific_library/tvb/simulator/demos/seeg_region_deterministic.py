@@ -61,7 +61,6 @@ heunint = integrators.HeunDeterministic(dt=2 ** -6)
 momo = monitors.Raw()
 mama = monitors.TemporalAverage(period=2 ** -2)
 mon_seeg = monitors.SEEG(sensors=sens, period=2 ** -2)
-mon_seeg.sensors = sensors.SensorsInternal()
 
 #Bundle them
 what_to_watch = (momo, mama, mon_seeg)
