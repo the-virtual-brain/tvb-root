@@ -115,15 +115,24 @@
 	opacity: 0.9;
 	z-index: 999;
 }
+
 .trash-hidden {
 	display: none;
 }
+
 .trash-show {
 	display: block;
 }
+
 #sortable-delete {
     height: 30px;
     max-height: 30px;
     overflow: hidden;
 }
 
+.ts-graph-parent{
+    position: relative;
+    width: 99%;
+    float: left;
+    padding-left: 3px;
+}

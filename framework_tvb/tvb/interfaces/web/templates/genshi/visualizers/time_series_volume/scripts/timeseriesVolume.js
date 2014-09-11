@@ -108,6 +108,8 @@ function TSV_initVisualizer(dataUrls, minValue, maxValue, samplePeriod, samplePe
     tsVol.focusQuadrantHeight = canvas.height - tsVol.legendHeight;
 
     tsVol.ctx = canvas.getContext("2d");
+    // TODO maybe in the future we will find a solution to make image bigger before saving
+    canvas.drawForImageExport = function() {};
 
     dataUrls = $.parseJSON(dataUrls);
     tsVol.urlMainData = dataUrls[0];
@@ -1029,28 +1031,6 @@ function updateSliders() {
 }
 
 /**
- * Updated the player slider bar while playback is on.
- */
-function updateMoviePlayerSlider(){
-    $("#movieSlider").each(function(){
-        $(this).slider("option", "value", tsVol.currentTimePoint);
-        var actualTime = tsVol.currentTimePoint * tsVol.samplePeriod;
-        $('#labelCurrentTimeStep').empty().text("[" + actualTime.toFixed(2) + "]");
-    });
-    d3.select(".timeVerticalLine").attr("transform", function(){
-                var width = $(".graph-timeSeries-rect").attr("width");
-                var pos = (tsVol.currentTimePoint*width)/(tsVol.timeLength);
-                var bMin = Math.max(0,tsVol.currentTimePoint-30);
-                var bMax = Math.min(tsVol.currentTimePoint+30,tsVol.timeLength);
-                d3.select('.brush').transition()
-                  .delay(0)
-                  .call(tsFrag.brush.extent([bMin, bMax]))
-                  .call(tsFrag.brush.event);
-                return "translate(" + pos + ", 0)";
-            });
-}
-
-/**
  * While the navigation sliders are moved, this redraws the scene accordingly.
  */
 function slideMove(event, ui){
@@ -1097,24 +1077,38 @@ function _coreMoveSliderAxis(event, ui) {
 }
 
 /**
+ * Updated the player slider bar while playback is on.
+ */
+function updateMoviePlayerSlider() {
+    _coreUpdateMovieSlider(tsVol.currentTimePoint, true);
+}
+
+/**
  * Updates the value at the end of the player bar when we move the handle.
  */
 function moviePlayerMove(event, ui) {
+    _coreUpdateMovieSlider(ui.value, false);
+}
+
+function _coreUpdateMovieSlider(timePoint, updateSlider) {
     $("#movieSlider").each(function() {
-        var actualTime = ui.value * tsVol.samplePeriod;
-        $('#labelCurrentTimeStep').empty().text("[" + actualTime.toFixed(2) +"]");
+        if (updateSlider) {
+            $(this).slider("option", "value", tsVol.currentTimePoint);
+        }
+        var actualTime = timePoint * tsVol.samplePeriod;
+        $('#labelCurrentTimeStep').empty().text("[" + actualTime.toFixed(2) + "]");
     });
     d3.select(".timeVerticalLine").attr("transform", function(){
-            var width = $(".graph-timeSeries-rect").attr("width");
-            var pos = (ui.value*width)/(tsVol.timeLength);
-            var bMin = Math.max(0,ui.value-30);
-            var bMax = Math.min(ui.value+30,tsVol.timeLength);
-            d3.select('.brush').transition()
-                .delay(0)
-                .call(tsFrag.brush.extent([bMin, bMax]))
-                .call(tsFrag.brush.event);
-            return "translate(" + pos + ", 0)";
-        });
+                var width = $(".graph-timeSeries-rect").attr("width");
+                var pos = (timePoint * width) / (tsVol.timeLength);
+                var bMin = Math.max(0, timePoint - 30);
+                var bMax = Math.min(timePoint + 30, tsVol.timeLength);
+                d3.select('.brush').transition()
+                  .delay(0)
+                  .call(tsFrag.brush.extent([bMin, bMax]))
+                  .call(tsFrag.brush.event);
+                return "translate(" + pos + ", 0)";
+            });
 }
 
 /*
