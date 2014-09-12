@@ -41,7 +41,7 @@ function drawHistogram(canvasDivId, data, labels, colorsPy) {
 
 
     // Prepare functions for Export Canvas as Image
-    var canvas = $("#histogramCanvasId .flot-base")[0];
+    var canvas = $("#histogramCanvasId.flot-base")[0];
     canvas.drawForImageExport = function () {
                 /* this canvas is drawn by FLOT library so resizing it directly has no influence;
                  * therefore, its parent needs resizing before redrawing;
@@ -77,7 +77,7 @@ function computeColors(colorsArray) {
     var maxColor = parseFloat($('#colorMaxId').val());
     var result = [];
     for (var i = 0; i < colorsArray.length; i++) {
-        var color = getGradientColorString(colorsArray[i], minColor, maxColor);
+        var color = ColSch_getGradientColorString(colorsArray[i], minColor, maxColor);
         result.push(color);
     }
     return result;

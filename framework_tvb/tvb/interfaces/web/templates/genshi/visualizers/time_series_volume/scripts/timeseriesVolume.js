@@ -195,7 +195,7 @@ function drawSceneFunctionalFromCube(tIndex){
     updateTSFragment();
     tsVol.data = getSliceAtTime(tIndex);
     _setCtxOnQuadrant(0);
-    tsVol.ctx.fillStyle = getGradientColorString(tsVol.minimumValue, tsVol.minimumValue, tsVol.maximumValue);
+    tsVol.ctx.fillStyle = ColSch_getGradientColorString(tsVol.minimumValue, tsVol.minimumValue, tsVol.maximumValue);
     tsVol.ctx.fillRect(0, 0, tsVol.ctx.canvas.width, tsVol.ctx.canvas.height);
 
     for (j = 0; j < tsVol.dataSize[2]; ++j)
@@ -263,7 +263,7 @@ function drawSceneFunctionalFromView(tIndex){
     tsVol.sliceArray = getViewAtTime(tIndex);
 
     _setCtxOnQuadrant(0);
-    tsVol.ctx.fillStyle = getGradientColorString(tsVol.minimumValue, tsVol.minimumValue, tsVol.maximumValue);
+    tsVol.ctx.fillStyle = ColSch_getGradientColorString(tsVol.minimumValue, tsVol.minimumValue, tsVol.maximumValue);
     tsVol.ctx.fillRect(0, 0, tsVol.ctx.canvas.width, tsVol.ctx.canvas.height);
 
     for (j = 0; j < tsVol.dataSize[2]; ++j)
@@ -322,7 +322,7 @@ function drawFocusQuadrantFromView(tIndex){
  * @param value The value of the voxel that will be converted into color
  */
 function drawVoxel(line, col, value){
-    tsVol.ctx.fillStyle = getGradientColorString(value, tsVol.minimumValue, tsVol.maximumValue);
+    tsVol.ctx.fillStyle = ColSch_getGradientColorString(value, tsVol.minimumValue, tsVol.maximumValue);
     // col increases horizontally and line vertically, so col represents the X drawing axis, and line the Y
 	tsVol.ctx.fillRect(col * tsVol.currentQuadrant.entityWidth, line * tsVol.currentQuadrant.entityHeight,
 	                   tsVol.currentQuadrant.entityWidth + 1, tsVol.currentQuadrant.entityHeight + 1);
@@ -412,7 +412,7 @@ function drawLegend(){
     // Draw a color bar from min to max value based on the selected color coding
     for(var i = 0; i< tsVol.legendWidth; i++){
         var val = tsVol.minimumValue + ((i/tsVol.legendWidth)*(tsVol.maximumValue-tsVol.minimumValue));
-        tsVol.ctx.fillStyle = getGradientColorString(val, tsVol.minimumValue, tsVol.maximumValue);
+        tsVol.ctx.fillStyle = ColSch_getGradientColorString(val, tsVol.minimumValue, tsVol.maximumValue);
         tsVol.ctx.fillRect(i, 1, 1.5, tsVol.legendHeight/2);
     }
 

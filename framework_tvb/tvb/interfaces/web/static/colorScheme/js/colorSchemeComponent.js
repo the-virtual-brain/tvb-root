@@ -87,9 +87,9 @@ function drawColorPickerComponent(startColorComponentId, endColorComponentId) {
     $('#' + endColorComponentId + ' div').css('backgroundColor', end_color_css);
 }
 
-function getGradientColorString(pointValue, min, max) {
+function ColSch_getGradientColorString(pointValue, min, max) {
     var rgb_values = getGradientColor(pointValue, min, max);
-    return "rgb("+Math.round(rgb_values[0]*255)+","+ Math.round(rgb_values[1]*255)+","+ Math.round(rgb_values[2]*255)+")";
+    return "rgb(" + Math.round(rgb_values[0]*255) + "," + Math.round(rgb_values[1]*255) + "," + Math.round(rgb_values[2]*255) + ")";
 }
 
 function getStartColor() {
@@ -554,7 +554,7 @@ function ColSch_updateLegendColors(containerDiv, height) {
     var lingrad = ctx.createLinearGradient(0, height, 0, 0);
 
     for (var i = 0; i <= height ; i += step){
-        lingrad.addColorStop(i / height, getGradientColorString(i, 0, height));
+        lingrad.addColorStop(i / height, ColSch_getGradientColorString(i, 0, height));
     }
     ctx.fillStyle = lingrad;                            // Fill a rect using the gradient
     ctx.fillRect(0, 0, canvas.clientWidth, canvas.clientHeight);

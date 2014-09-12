@@ -240,7 +240,7 @@ function changeColors() {
         var indexes = series[i].datapoints.points;
         var dataInfo = PSE_nodesInfo[indexes[0]][indexes[1]];
         var colorWeight = dataInfo['color_weight'];
-        var color = getGradientColorString(colorWeight, _PSE_minColor, _PSE_maxColor);
+        var color = ColSch_getGradientColorString(colorWeight, _PSE_minColor, _PSE_maxColor);
         series[i].points.fillColor = color;
         series[i].color = color;
     }

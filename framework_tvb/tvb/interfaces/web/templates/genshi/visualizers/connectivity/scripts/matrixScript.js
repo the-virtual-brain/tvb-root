@@ -52,7 +52,7 @@ var lastElementClass = null;
  * 
  * @param elem - the element for which you want the absolute position in the page
  * 
- * @return a dictionary of the form {x: 'value of x offset', y: 'value of y offset'}
+ * @return {x: Number, y: Number} - a dictionary with the offset numbers
  */
 function getMenuPosition(elem, contextMenuDiv){  
    
@@ -73,7 +73,7 @@ function getMenuPosition(elem, contextMenuDiv){
     //posX -= $w.scrollLeft()
 
     var mh = 214; //$(contextMenuDiv).height();
-    var mw = 200; //$(contextMenuDiv).width()
+    //var mw = 200; //$(contextMenuDiv).width()
     var ww = $("body").width() - 15;
     var wh = Math.max($(window).height(), $w.height());
 
@@ -96,6 +96,8 @@ function getMenuPosition(elem, contextMenuDiv){
  * Method called on the click event of a table box that represents a certain node from the connectivity matrix
  *
  * @param table_elem the dom element which fired the click event
+ * @param i
+ * @param j
  */
 function changeSingleCell(table_elem, i, j) {
 
@@ -489,7 +491,7 @@ function MATRIX_colorTable() {
                 var tableDataID = 'td_' + prefix_id + '_' + i + '_' + j;
                 var tableElement = document.getElementById(tableDataID);
                 if (dataValues){
-                    tableElement.style.backgroundColor = getGradientColorString(dataValues[i][j], minValue, maxValue);
+                    tableElement.style.backgroundColor = ColSch_getGradientColorString(dataValues[i][j], minValue, maxValue);
                 }
             }
         }
