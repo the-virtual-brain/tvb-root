@@ -12,7 +12,7 @@ var tsFrag = {
     selectedIndex: 0,                   // Selected time series line index
     relevantSortingFeature: "mean",     // Stores what feature to consider while sorting the time series.
     relevantColoringFeature: "mean",    // Stores what feature to consider while coloring the time series.
-    timeLength: 0,                      // The lenght of the data in frames
+    timeLength: 0,                      // The length of the data in frames
     samplePeriod: 0,                    // Meta data. The sampling period of the time series
     samplePeriodUnit: "",               // Meta data. The time unit of the sample period
     selectedEntity: [],                 // The selected voxel; [i, j, k].
@@ -112,7 +112,7 @@ function drawGraphs(){
     var miniContainer = $("#mini-container");
     if(miniContainer.children().length < 2) {
         miniContainer.sortable( "disable" );
-        d3.selectAll("#mini-container li").classed("pin", true);
+        d3.selectAll("#mini-container g.list-item").classed("pin", true);
     }
 }
 
@@ -133,14 +133,14 @@ function drawGobalTimeseries(){
 
     function brush() {
         tsFrag.x.domain(tsFrag.brush.empty() ? x2.domain() : tsFrag.brush.extent());
-        d3.select("#mini-container").selectAll(".line")
+        d3.select("#mini-container").selectAll(".tsv-line")
         .attr("d", function(d){
             tsFrag.sortableY = d3.scale.linear().domain([d.min, d.max]).range([tsFrag.height, 0]);
             return tsFrag.sortableline(d.data);
         });
 
-       d3.select("#mini-container").selectAll(".x.axis").call(xAxis());
-       d3.select(".brusher").selectAll(".x.axis").call(xAxis());
+       d3.select("#mini-container").selectAll(".tsv-x.tsv-axis").call(xAxis(tsFrag.height * tsFrag.tsDataArray.length));
+       d3.select(".brusher").selectAll(".tsv-x.tsv-axis").call(xAxis(tsFrag.height));
     }
 
     var localMax = d3.max(tsFrag.tsDataArray, function(array){
@@ -163,8 +163,9 @@ function drawGobalTimeseries(){
     // Add an SVG element with the desired dimensions and margin.
     var graph = d3.select("#graph").append("svg:svg")
           .attr("width", tsFrag.w + tsFrag.m[1] + tsFrag.m[3])
-          .attr("height", tsFrag.h + tsFrag.m[0] + tsFrag.m[2])
-          .attr("class", "graph-svg-component global-graph")
+          .attr("height", tsFrag.h + tsFrag.m[0] + tsFrag.m[2] + tsFrag.smallMargin.top + tsFrag.smallMargin.bottom
+                        + tsFrag.height * (tsFrag.tsDataArray.length + 2))
+          .attr("class", "tsv-svg-component")
         .append("svg:g")
           .attr("transform", "translate(" + tsFrag.m[3] + "," + tsFrag.m[0] + ")");
 
@@ -188,38 +189,38 @@ function drawGobalTimeseries(){
 
     // create xAxis
     tsFrag.xAxisScale = d3.scale.linear().domain([0, tsFrag.timeLength*tsFrag.samplePeriod]).range([0, tsFrag.w]);
-    var xAxis = function() {
+    var xAxis = function(lineHeight) {
         tsFrag.x.domain(tsFrag.brush.empty() ? x2.domain() : tsFrag.brush.extent());
         tsFrag.xAxisScale = tsFrag.x;
         tsFrag.xAxisScale.domain()[0] *= tsFrag.samplePeriod;
         tsFrag.xAxisScale.domain()[1] *= tsFrag.samplePeriod;
-        return d3.svg.axis().scale(tsFrag.xAxisScale).tickSize(-tsFrag.h).tickSubdivide(true);
+        return d3.svg.axis().scale(tsFrag.xAxisScale).tickSize(-lineHeight).tickSubdivide(true);
     };
 
     // Add the x-axis.
     graph.append("svg:g")
-        .attr("class", "x axis")
+        .attr("class", "tsv-x tsv-axis")
         .attr("transform", "translate(0," + tsFrag.h + ")")
-        .call(xAxis());
+        .call(xAxis(tsFrag.h));
 
     // Add info about the time unit as a label
     graph.append("text")
-        .attr("class", "x axis")
+        .attr("class", "tsv-x tsv-axis")
         .attr("text-anchor", "end")
         .attr("x", tsFrag.w + 60)
-        .attr("y", tsFrag.h + 10)
+        .attr("y", tsFrag.h + 12)
         .text("Time (" + tsFrag.samplePeriodUnit + ")");
 
     // create left yAxis
     var yAxisLeft = d3.svg.axis().scale(tsFrag.y).ticks(4).orient("left");
     // Add the y-axis to the left
     graph.append("svg:g")
-          .attr("class", "y axis")
+          .attr("class", "tsv-y tsv-axis")
           .attr("transform", "translate(-25,0)")
           .call(yAxisLeft);
 
     graph.append("text")
-        .attr("class", "y axis")
+        .attr("class", "tsv-y tsv-axis")
         .attr("text-anchor", "end")
         .attr("x", "1em")
         .attr("y", "-2em")
@@ -227,16 +228,16 @@ function drawGobalTimeseries(){
         .text("Measurements");
 
     // Draw the time series lines on the main graph. Each one with it's own color
-    graph.selectAll('.line')
+    graph.selectAll('.tsv-line')
         .data(tsFrag.tsDataArray)
         .enter()
         .append("path")
-            .attr("class", "line")
+            .attr("class", "tsv-line")
             //.attr("clip-path", "url(#clip)")
             .attr("d", function(d){return tsFrag.line(d.data);})
-            .attr('class', 'line colored-line')
+            .attr('class', 'tsv-line tsv-colored-line')
             .attr("style", function(d){
-                            return "stroke:" + getGradientColorString(d[tsFrag.relevantColoringFeature],
+                            return "stroke:" + ColSch_getGradientColorString(d[tsFrag.relevantColoringFeature],
                                                                       tsFrag.minimumValue, tsFrag.maximumValue);} )
             .on("mouseover", selectLineData);
 
@@ -285,9 +286,9 @@ function drawGobalTimeseries(){
         var wdt = $(".graph-timeSeries-rect").attr("width");
         var xPos = (tsFrag.currentTimePoint*wdt)/(tsFrag.timeLength);
 
-        var selectedLine = d3.select("path.highlight");
+        var selectedLine = d3.select("path.tsv-highlight");
         if(selectedLine[0][0] == null){
-            selectedLine = d3.select("path.colored-line:nth-of-type(1)")
+            selectedLine = d3.select("path.tsv-colored-line:nth-of-type(1)")
         }
         var pathLength = selectedLine.node().getTotalLength();
         var beginning = xPos,
@@ -310,16 +311,12 @@ function drawGobalTimeseries(){
         }
     });
 
-    var brusher = d3.select("#graph").append("svg:svg")
-        .attr("class", "graph-svg-component global-graph")
-        .attr("width", tsFrag.width + tsFrag.smallMargin.left + tsFrag.smallMargin.right)
-        .attr("height", tsFrag.height + tsFrag.smallMargin.top + tsFrag.smallMargin.bottom+20)
-        .append("g")
-            .attr("class", "brusher graph-svg-component")
+    var brusher = d3.select("#graph svg.tsv-svg-component").append("g")
+            .attr("class", "brusher tsv-svg-component")
             .attr("width", tsFrag.width + tsFrag.smallMargin.left + tsFrag.smallMargin.right)
             .attr("height", tsFrag.height + tsFrag.smallMargin.top + tsFrag.smallMargin.bottom)
             .attr("id","brush")
-            .attr("transform", "translate(" + tsFrag.smallMargin.left + "," + tsFrag.smallMargin.top + ")");
+            .attr("transform", "translate(" + tsFrag.smallMargin.left + "," + (tsFrag.smallMargin.top + tsFrag.h + tsFrag.m[0] + tsFrag.m[2]) + ")");
 
     brusher.append("rect")
         .attr('w',0)
@@ -332,13 +329,13 @@ function drawGobalTimeseries(){
 
     // Align brush with other graphs
     brusher.append("g")
-        .attr("class", "x axis")
-        .attr("transform", "translate(0," + (tsFrag.height+3) + ")")
-        .call(xAxis());
+        .attr("class", "tsv-x tsv-axis")
+        .attr("transform", "translate(0," + tsFrag.height + ")")
+        .call(xAxis(tsFrag.height));
 
     // Add y label to brush
     brusher.append("text")
-        .attr("class", "y label")
+        .attr("class", "tsv-y label")
         .attr("text-anchor", "end")
         .attr("y", 6)
         .attr("dy", ".75em")
@@ -347,7 +344,7 @@ function drawGobalTimeseries(){
 
     // Add transparent overlay to display selection on brush
     brusher.append("g")
-      .attr("class", "x brush")
+      .attr("class", "x tsv-brush")
       .call(tsFrag.brush)
     .selectAll("rect")
       .attr("y", -6)
@@ -368,118 +365,155 @@ function drawSortableGraph(){
         .y(function(d){
             return tsFrag.sortableY(d);
         });
-    d3.select("#graph").append("ul")
+    d3.select("#graph svg.tsv-svg-component").append("g")
         .attr("id", "mini-container")
+        .attr("transform", "translate(0, 300)")
         .attr("class", "sortable");
 
-    // Draw an svg block as a background for each time series
-    var svg = d3.select("#mini-container").selectAll("svg")
+    // Draw all TS lines
+    var i = 0;
+    var miniLines = d3.select("#mini-container")
+        .selectAll("g")
         .data(tsFrag.tsDataArray)
-        .enter()
-        .append("li")
-        .append("svg")
-            .attr("width", tsFrag.width + tsFrag.smallMargin.left + tsFrag.smallMargin.right)
-            .attr("height", tsFrag.height + tsFrag.smallMargin.top + tsFrag.smallMargin.bottom)
-            .attr("class", "graph-svg-component")
-            .attr("style", function(d){
-                var bgCol = getGradientColorString(d[tsFrag.relevantColoringFeature], tsFrag.minimumValue, tsFrag.maximumValue);
-                return "background-color:" + bgCol;
-            })
-            .attr("display", "block")
-            .on("click", selectLineData)
+        .enter()                                // Virtual Collection
         .append("g")
-            .attr("transform", "translate(" + tsFrag.smallMargin.left + "," + tsFrag.smallMargin.top + ")")
-            .attr('height', tsFrag.height);
+        .attr("class", "list-item")
+        .attr("transform", function() { return "translate(0, " + (tsFrag.height * i++) + ")";})
+        .attr("width", tsFrag.width + tsFrag.smallMargin.left + tsFrag.smallMargin.right)
+        .attr("height", tsFrag.height + tsFrag.smallMargin.top + tsFrag.smallMargin.bottom)
+        .on("click", selectLineData);
+
+    miniLines.append("rect")
+        .attr("width", tsFrag.width + tsFrag.smallMargin.left + tsFrag.smallMargin.right)
+        .attr("height", tsFrag.height)
+        .attr('fill', function(d) { return ColSch_getGradientColorString(d[tsFrag.relevantColoringFeature], tsFrag.minimumValue, tsFrag.maximumValue); });
+
+    miniLines = miniLines.append("g")
+        .attr("transform", "translate(" + tsFrag.smallMargin.left + "," + tsFrag.smallMargin.top + ")")
+        .attr('height', tsFrag.height);
 
     // Add an overlay rect to listen to mouse events
-    svg.append("rect")
+    miniLines.append("rect")
         .attr("class", "graph-timeSeries-rect overlay")
         .attr("width", tsFrag.width)
         .attr("height", tsFrag.height)
-        .attr('fill', "#ffffff")
-        .on("mouseover", function(){ d3.select(".focus").style("display", null); })
-        .on("mouseout", function(){ d3.select(".focus").style("display", "none"); })
-        .on("mousemove", TSF_mousemove);
+        .attr('fill', "#ffffff");
 
     // Draw the actual lines and set a scaling factor for each one of them.
-    svg.append("path")
-        .attr("class", "line")
-        .attr("d", function(d){ tsFrag.sortableY = d3.scale.linear().domain([d.min, d.max]).range([tsFrag.height, 0]); return tsFrag.sortableline(d.data); })
-        .attr('class', 'line colored-line mini')
-        .attr("style", function(d){return "stroke:" + getGradientColorString(d[tsFrag.relevantColoringFeature], tsFrag.minimumValue, tsFrag.maximumValue);});
+    miniLines.append("path")
+        .attr("class", "tsv-line")
+        .attr("d", function(d) { tsFrag.sortableY = d3.scale.linear().domain([d.min, d.max]).range([tsFrag.height, 0]); return tsFrag.sortableline(d.data); })
+        .attr('class', 'tsv-line tsv-colored-line mini')
+        .attr("style", function(d) { return "stroke:" + ColSch_getGradientColorString(d[tsFrag.relevantColoringFeature], tsFrag.minimumValue, tsFrag.maximumValue); });
 
-    svg.append("text")
-        .attr("class", "y label")
+    miniLines.append("text")
+        .attr("class", "tsv-y tsv-label")
         .attr("text-anchor", "end")
         .attr("y", 6)
         .attr("dy", ".75em")
         .attr("transform", "translate(-5,0)")
-        .text(function(d){return d.label;});
+        .text(function(d) {return d.label});
 
-    var xAxis = function() {
+
+    var xAxisForMinis = function() {
         tsFrag.xAxisScale = tsFrag.x;
         tsFrag.xAxisScale.domain()[0] *= tsFrag.samplePeriod;
         tsFrag.xAxisScale.domain()[1] *= tsFrag.samplePeriod;
-        return d3.svg.axis().scale(tsFrag.xAxisScale).tickSize(-tsFrag.h).tickSubdivide(true);
+        return d3.svg.axis().scale(tsFrag.xAxisScale).tickSize(-tsFrag.height * tsFrag.tsDataArray.length).tickSubdivide(true);
     };
 
     // Add the x-axis.
-    svg.append("g")
-        .attr("class", "x axis")
+    d3.select("#mini-container").append("g")
+        .attr("class", "tsv-x tsv-axis")
         .attr("width", tsFrag.width)
-        .attr("height", tsFrag.height)
+        .attr("height", tsFrag.height * tsFrag.tsDataArray.length)
         .attr('fill', "#ffffff")
-        .attr("transform", "translate(0," + tsFrag.height + ")")
-        .call(xAxis());
+        .attr("transform", "translate(80, " + (tsFrag.height * tsFrag.tsDataArray.length) + ")")
+        .call(xAxisForMinis());
 
     // Make the svg blocks sortable with jQuery
-    // The dragging is smooth because of the '<li>' tags on HTML, do not remove them.
-    $(function(){
+    $(function() {
         var originalPosition, destination;
-        $( ".sortable" ).sortable({
-            items: '> li:not(.pin)', // this is used to avoid dragging UI elements.
-            cursor: "move",
-            connectWith: '#sortable-delete',
-            axis: "y",
-            revert: 250,
-            start: function(event,ui){
-                originalPosition = ui.item.index();
-                d3.selectAll("#ts-trash-can")
-                    .classed("trash-hidden", false);
-                d3.selectAll("#ts-trash-can")
-                    .classed("trash-show", true);
-            },
-            stop: function(event,ui){
-                d3.selectAll("#ts-trash-can")
-                    .classed("trash-show", false);
-                d3.selectAll("#ts-trash-can")
-                    .classed("trash-hidden", true);
-            },
-            update: function(event, ui){
-                if (this.id == 'sortable-delete') {
-                    // Remove the element dropped on #sortable-delete
-                    if(tsFrag.tsDataArray.length > 1){
-                        var deleteLabel = ui.item[0].__data__.label;
-                        tsFrag.tsDataArray = tsFrag.tsDataArray.filter(function(obj) {
-                            return obj.label != deleteLabel;
-                        });
-                        ui.item.remove();
-                        tsFrag.selectedIndex = 0;
-                    }
-                    drawGraphs();
 
-                } else {
-                    // move element in the main array too.
-                    destination = ui.item.index();
-                    move(tsFrag.tsDataArray, originalPosition, destination);
-                    // redraw the graph and set the moved element as selected.
-                    drawGraphs();
-                    selectLineData("", destination);
-                    // Change the sorting selector value to manual
-                    $("#sortingSelector").val('manual');
+        function cleanupSVGTemps(trashVisible){
+            d3.selectAll("#ts-trash-can").classed("trash-show", trashVisible);
+            d3.selectAll("#ts-trash-can").classed("trash-hidden", !trashVisible);
+
+            if (window.tsvDragElement) {
+                window.tsvDragElement.draggable("destroy");
+                window.tsvDragElement.remove();
+            }
+
+            destination = null;
+        }
+
+        function dropInTrash(ui){
+            // Remove the element dropped on #sortable-delete
+            if(tsFrag.tsDataArray.length > 1){
+                var deleteLabel = ui.item[0].__data__.label;
+                tsFrag.tsDataArray = tsFrag.tsDataArray.filter(function(obj) {
+                    return obj.label != deleteLabel;
+                });
+                ui.item.remove();
+                tsFrag.selectedIndex = 0;
+            }
+            drawGraphs();
+        }
+
+        function dropInList(destinationPosition) {
+            // move element in the main array too.
+            move(tsFrag.tsDataArray, originalPosition, destinationPosition);
+            // redraw the graph and set the moved element as selected.
+            drawGraphs();
+            selectLineData("", destinationPosition);
+            // Change the sorting selector value to manual
+            $("#sortingSelector").val('manual');
+        }
+
+        $(".sortable").sortable({
+            items: '> g.list-item', // this is used to avoid dragging UI elements.
+            cursor: "move",
+            connectWith: '#sortable-delete,g#mini-container',
+            start: function(e, ui) {
+                    originalPosition = ui.item.index();
+                    cleanupSVGTemps(true);
+//                    window.tsvDragElement = $("<div/>")
+//                        .prop('id', 'tsvDragElement')
+//                        .prop('class', 'tsv-draged')
+//                        .css({
+//                            left: e.pageX - 2,
+//                            top: e.pageY - 2,
+//                            width: $(e.target).attr("width")
+//                            })
+//                        .draggable();
+//
+//                    $('body').append(tsvDragElement);
+            },
+            stop: function(e, ui) {
+                if (destination != null) {
+                    dropInList(destination);
+                }
+                cleanupSVGTemps(false);
+            },
+            receive: function(e, ui) {
+                if (this.id == 'sortable-delete') {
+                    dropInTrash(ui);
+                    destination = null;
                 }
             }
         });
+
+        $("g.list-item").bind("mouseover", function() {
+            destination = $(this).index();
+            if (destination > originalPosition) {
+                destination = destination -1;
+            }
+        });
+
+        $("#tsMoveArea").bind("mouseleave", function() {
+            cleanupSVGTemps(false);
+            $(".sortable").sortable( "cancel" );
+        })
       });
 }
 
@@ -563,17 +597,19 @@ function covariance(tsA, tsB, meanA, meanB){
 function selectLineData(d, i){
     tsFrag.selectedIndex = i;
 
-    //remove the highlight class
-    d3.selectAll(".highlight")
-        .classed("highlight", false);
-    d3.selectAll(".text-highlight")
-        .classed("text-highlight", false);
+    //remove the highlight classes
+    d3.selectAll(".tsv-highlight")
+        .classed("tsv-highlight", false);
+    d3.selectAll(".tsv-text-highlight")
+        .classed("tsv-text-highlight", false);
 
     //add the highlight class
-    d3.select("path.colored-line:nth-of-type(" + (i+1) +")")
-        .classed("highlight", true);
-    d3.select("#graph li:nth-of-type(" + (i+1) +") text")
-        .classed("text-highlight", true);
+    d3.select("path.tsv-colored-line:nth-of-type(" + (i + 1) +")")
+        .classed("tsv-highlight", true);
+    d3.select("path.tsv-colored-line.mini:nth-of-type(" + (i + 1) +")")
+        .classed("tsv-highlight", true);
+    d3.select("#graph g.list-item:nth-of-type(" + (i + 1) +") text")
+        .classed("tsv-text-highlight", true);
 }
 
 /**
@@ -614,12 +650,12 @@ function attachUIListeners(){
 /**
  * Callback function for the on-mouse-move event
  */
-function TSF_mousemove(){
+function TSF_mousemove() {
     var x0 = tsFrag.x.invert(d3.mouse(this)[0]),
         i = Math.floor(x0),
         data = tsFrag.tsDataArray[tsFrag.selectedIndex].data,
         d1 = data[i];
-    var selectedLine = d3.select("path.colored-line:nth-of-type(" + (tsFrag.selectedIndex+1) +")");
+    var selectedLine = d3.select("path.tsv-colored-line:nth-of-type(" + (tsFrag.selectedIndex+1) +")");
 
     var focus = d3.select(".focus");
 
@@ -725,7 +761,7 @@ function sortTsGraphs(order, by, pivot){
 function updateBrush() {
     var bMin = Math.max(0,tsFrag.currentTimePoint-30);
     var bMax = Math.min(tsFrag.currentTimePoint+30,tsFrag.timeLength);
-    d3.select('.brush').transition()
+    d3.select('.tsv-brush').transition()
       .delay(0)
       .call(tsFrag.brush.extent([bMin, bMax]))
       .call(tsFrag.brush.event);

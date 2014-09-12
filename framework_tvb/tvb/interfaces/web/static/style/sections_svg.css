@@ -54,100 +54,70 @@
 .slice-info { margin-top: 10px; }
 
 /************** START -- TS from TSVolume Viewer ********/
-/* TODO namepace these. The path and svg styles interfere with other viewers */
-#ts-graph-parent{
-    position: relative;
-    width: 99%;
-    float: left;
-    padding-left: 3px;
-}
 
-path {
-    stroke: steelblue;
-    stroke-width: 1;
-    fill: none;
-}
-
-.axis {
+.tsv-axis {
 	shape-rendering: crispEdges;
 }
 
-.x.axis line {
+.tsv-x.tsv-axis line {
     stroke: lightgrey;
 }
 
-.x.axis .minor {
+.tsv-x.tsv-axis .minor {
 	stroke-opacity: 0.5;
 }
 
-.x.axis path {
+.tsv-x.tsv-axis path {
 	display: none;
 }
 
-.y.axis line, .y.axis path {
+.tsv-y.tsv-axis line,
+.tsv-y.tsv-axis path {
     fill: none;
     stroke: #000;
 }
 
-.graph-svg-component{
-    background-color: white;
+.tsv-svg-component {
+    background-color: #d3d3d3;
 }
 
-.colored-line {
+.tsv-colored-line {
     fill: none;
     stroke-width: 1px;
     stroke-opacity: 0.3;
 }
 
-.colored-line.highlight {
+.tsv-colored-line.tsv-highlight {
     stroke-width: 2px;
     stroke-opacity: 1;
 }
 
-.colored-line.mini {
+.tsv-colored-line.mini {
     stroke-width: 1px;
     stroke-opacity: 1;
 }
 
-.text-highlight {
-    fill: lightgray;
-    font-weight: bold;
-    font-style: italic;
-    font-size: medium;
+.tsv-text-highlight {
+    fill: white;
+    text-shadow: 2px 2px #1122aa;
 }
 
-#graph {
-    overflow: hidden;
-}
-
-#mini-container {
-    overflow-y: scroll;
-    overflow-x: hidden;
-    max-height: 480px;
-}
-
-.brush {
+.tsv-brush {
 	background-color: white;
 }
 
-.brush .extent {
+.tsv-brush .extent {
     stroke: #fff;
-    fill-opacity: .125;
+    fill-opacity: .5;
     shape-rendering: crispEdges;
 }
 
-.line {
-  clip-path: url(#clip);
+.tsv-line {
+    stroke: steelblue;
+    stroke-width: 1;
+    fill: none;
+    clip-path: url(#clip);
 }
-
-.brusher .tick line {
-	display: none;
-}
-
-svg {
-	display: inherit;
-}
-
 /************** END -- TS from TSVolume Viewer ********/
 
 
