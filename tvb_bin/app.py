@@ -38,7 +38,7 @@ your preferences.It also has the option to stop the application.
 Usage:
     'python app.py start web [reset]'     - will start web client with/without database reset
     'python app.py start desktop [reset]' - will start desktop client with/without database reset
-    'python app.py console [headless] [reset]' - will start client with/without database reset
+    'python app.py command [headless] [reset]' - will start client with/without database reset
     'python app.py library [headless] [reset]' - will start  client with/without database reset
     'python app.py stop'                  - will stop all running processes related to TVB
     'python app.py clean'                 - will stop all running processes and cleans TVB data
@@ -62,10 +62,10 @@ except ImportError:
 PARAM_START = "start"
 PARAM_STOP = "stop"
 PARAM_CLEAN = "clean"
-PARAM_CONSOLE = "console"
+PARAM_COMMAND = "command"
 PARAM_LIBRARY = "library"
 PARAM_MODEL_VALIDATION = "validate"
-EXPECTED_ARGS = {PARAM_START, PARAM_STOP, PARAM_MODEL_VALIDATION, PARAM_CLEAN, PARAM_CONSOLE, PARAM_LIBRARY}
+EXPECTED_ARGS = {PARAM_START, PARAM_STOP, PARAM_MODEL_VALIDATION, PARAM_CLEAN, PARAM_COMMAND, PARAM_LIBRARY}
 
 
 ### This is a TVB Framework initialization call. Make sure a good default profile gets set.
@@ -257,16 +257,16 @@ def execute_start_console(console_profile_set):
         TVB.wait()
 
 
-def execute_model_validation():
-    from tvb.core.model_validations import main
-    sys.argv.remove(PARAM_MODEL_VALIDATION)
-    if TvbProfile.CONSOLE_PROFILE in sys.argv:
-        sys.argv.remove(TvbProfile.CONSOLE_PROFILE)
-    if TvbProfile.SUBPARAM_PROFILE in sys.argv:
-        sys.argv.remove(TvbProfile.SUBPARAM_PROFILE)
-    if len(sys.argv) < 2:
-        raise Exception("Validation settings file needs to be provided!")
-    main(sys.argv[1])
+# def execute_model_validation():
+#     from tvb.core.model_validations import main
+#     sys.argv.remove(PARAM_MODEL_VALIDATION)
+#     if TvbProfile.CONSOLE_PROFILE in sys.argv:
+#         sys.argv.remove(TvbProfile.CONSOLE_PROFILE)
+#     if TvbProfile.SUBPARAM_PROFILE in sys.argv:
+#         sys.argv.remove(TvbProfile.SUBPARAM_PROFILE)
+#     if len(sys.argv) < 2:
+#         raise Exception("Validation settings file needs to be provided!")
+#     main(sys.argv[1])
 
 
 def wait_for_tvb_process(tvb_process):
@@ -321,11 +321,11 @@ if __name__ == "__main__":
         #Probably missing or wrong parameters, so start with default web interface:
         sys.argv.append(PARAM_START)
         sys.argv.append(SUBPARAM_WEB)
+    #
+    # if PARAM_MODEL_VALIDATION in sys.argv:
+    #    execute_model_validation()
     
-    if PARAM_MODEL_VALIDATION in sys.argv:
-       execute_model_validation()
-    
-    elif PARAM_CONSOLE in sys.argv:
+    if PARAM_COMMAND in sys.argv:
         execute_start_console(CONSOLE_PROFILE_SET)
         
     elif PARAM_LIBRARY in sys.argv:

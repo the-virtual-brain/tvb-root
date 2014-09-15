@@ -44,7 +44,7 @@ check for updates on our web site: http://www.thevirtualbrain.org.
 
 
 Installing the Application
-===========================
+==========================
 
 As |TVB| redefines what's possible in neuroscience utilizing off-the-shelf computer hardware, a few requirements are essential when using the software.
 
@@ -113,8 +113,6 @@ you should find a sub-folder `bin` with a number of scripts:
 - tvb_start.sh
 - tvb_clean.sh
 - tvb_stop.sh
-- tvb_command.sh
-- tvb_library.sh
 - contributor_setup.sh
  
 
@@ -126,7 +124,7 @@ ALL folders and their content created by |TVB|. Be careful!
 To make sure that no processes will remain open after you use the application,
 you should always close |TVB| by running the `tvb_stop.sh` script.
 
-To access the console interface, on a terminal, run `tvb_command.sh` or `tvb_library.sh`.
+To access the console interface, run in a terminal `tvb_start.sh command` or `tvb_start.sh library`.
 The interactive Python shell will appear. See the Shell and User Interface sections in this document for
 more details on how to use the different interfaces of |TVB|.
 
@@ -143,8 +141,9 @@ Unzip the package and it will create a folder: TVB_Distribution. In this folder
 you should find a number of scripts (in `bin` sub-folder) and an application package (`tvb.app`).
 
 To start |TVB| in your web browser you should double-click on the `tvb.app` 
-application. If you would rather use the shell interface, then execute one of the files
-`tvb_command` or `tvb_library` from the `bin` folder. See the Shell and User Interface sections in this document for
+application. If you would rather use the shell interface you will need to run the
+`tvb_start.sh` script from the `bin` from a terminal. Type in `tvb_start.sh command` or `tvb_start.sh library`.
+See the Shell and User Interface sections in this document for
 more details on how to use the different interfaces of |TVB|.
 
 Double click on `tvb.app` will launch the TVB software as a background process and will also try to
@@ -168,8 +167,9 @@ In this folder you should find sub-folder `bin` with a number of .bat scripts.
 
 To start |TVB| you should use `tvb_start.bat`. This will launch the TVB software with a console 
 process for debugging, and will also try to fire a browser window for you to start working with TVB web interface.
-If you rather use the shell interface, then execute one of the files
-`tvb_command` or `tvb_library` from the `bin` folder. See the Shell and User Interface sections in this document for
+If you would rather use the shell interface you will need to run the
+`tvb_start.bat` script from the `bin` from a terminal. Type in `tvb_start.bat command` or `tvb_start.bat library`.
+See the Shell and User Interface sections in this document for
 more details on how to use the different interfaces of |TVB|.
 
 You can at any time run `tvb_clean.bat` which will start tvb in a clean state, resetting
@@ -180,6 +180,45 @@ you should close |TVB| by running `tvb_stop.bat`, or close the previous opened c
 
 This version was tested on Windows XP (x32), Windows Server 2008 (x64) and Windows 7 (x64).
 
+
+Configuring TVB from the command line
+=====================================
+
+The preferred method to configure |TVB| is from the web interface. See `TVB Settings`_.
+However if |TVB| is installed on a headless server then the web interface might not be available remotely.
+Create a file named .tvb.configuration in the home directory of the user that will launch |TVB|.
+Copy the following configuration and edit it to suit your needs. ::
+
+    MAXIMUM_NR_OF_OPS_IN_RANGE=2000
+    URL_WEB=http://127.0.0.1:8080/
+    ADMINISTRATOR_EMAIL=jira.tvb@gmail.com
+    MATLAB_EXECUTABLE=/usr/bin/octave
+    MAXIMUM_NR_OF_THREADS=4
+    WEB_SERVER_PORT=8080
+    URL_MPLH5=ws://127.0.0.1:9000/
+    LAST_CHECKED_CODE_VERSION=6507
+    USR_DISK_SPACE=5242880
+    DEPLOY_CLUSTER=False
+    ADMINISTRATOR_NAME=admin
+    LAST_CHECKED_FILE_VERSION=2
+    URL_VALUE=sqlite:////home/tvb_user/TVB/tvb-database.db
+    ADMINISTRATOR_PASSWORD=1a1dc91c907325c69271ddf0c944bc72
+    SELECTED_DB=sqlite
+    MAXIMUM_NR_OF_VERTICES_ON_SURFACE=300000
+    MPLH5_SERVER_PORT=9000
+    TVB_STORAGE=/home/tvb_user/TVB
+
+Usually one would change the web server port and domain.
+Finally run the appropriate script for your platform to launch |TVB| with the new settings.
+
+
+Upgrading the Application
+=========================
+
+To upgrade to a new version of |TVB| stop the server with `tvb_stop.sh`, then delete the old distribution
+and finally install the new distribution by unzipping the package.
+Finally run the appropriate script for your platform to launch |TVB|.
+The first run after update will migrate your projects to the new version.
 
 
 .. raw:: pdf

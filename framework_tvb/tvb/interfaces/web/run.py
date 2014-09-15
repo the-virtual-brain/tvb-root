@@ -41,7 +41,6 @@ import os
 import sys
 import cherrypy
 import webbrowser
-from copy import copy
 from cherrypy import Tool
 from sys import platform, argv
 
@@ -209,8 +208,4 @@ def run_browser():
 if __name__ == '__main__':
     #### Prepare parameters and fire CherryPy
     #### Remove not-relevant parameter, 0 should point towards this "run.py" file
-    DUPLICATE_ARGV = copy(argv)
-    DUPLICATE_ARGV.remove(DUPLICATE_ARGV[0])
-
-    start_tvb(DUPLICATE_ARGV)
-
+    start_tvb(argv[1:])

@@ -3,7 +3,7 @@ Shell Interface of |TVB|
 
 
 Getting started with Python IDLE 
----------------------------------
+--------------------------------
 
 .. figure:: screenshots/linux_shell.jpg
    :width: 90%
@@ -62,3 +62,18 @@ To work interactively in the Python shell you need a few modules::
 
 This will import all the scientific simulator modules as well as some datatypes
 that wrap important data as the `Connectivity` matrix and cortical `Surface`.
+
+
+Terminal Interface of |TVB|
+===========================
+If you are using |TVB| on a headless machine then Python IDLE is not an option.
+To launch a python terminal in the command profile use ::
+
+    tvb_start.sh command headless
+
+And in the library profile ::
+
+    tvb_start.sh library headless
+
+On windows use tvb_start.bat instead of tvb_start.sh
+The scripts are located in the `bin` folder.
