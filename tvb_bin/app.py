@@ -38,6 +38,8 @@ your preferences.It also has the option to stop the application.
 Usage:
     'python app.py start web [reset]'     - will start web client with/without database reset
     'python app.py start desktop [reset]' - will start desktop client with/without database reset
+    'python app.py console [headless] [reset]' - will start client with/without database reset
+    'python app.py library [headless] [reset]' - will start  client with/without database reset
     'python app.py stop'                  - will stop all running processes related to TVB
     'python app.py clean'                 - will stop all running processes and cleans TVB data
     'python app.py start web -profile $a_tvb_profile$' - will start with a specific profile
@@ -63,6 +65,7 @@ PARAM_CLEAN = "clean"
 PARAM_CONSOLE = "console"
 PARAM_LIBRARY = "library"
 PARAM_MODEL_VALIDATION = "validate"
+EXPECTED_ARGS = {PARAM_START, PARAM_STOP, PARAM_MODEL_VALIDATION, PARAM_CLEAN, PARAM_CONSOLE, PARAM_LIBRARY}
 
 
 ### This is a TVB Framework initialization call. Make sure a good default profile gets set.
@@ -93,6 +96,7 @@ PYTHON_EXE_PATH = SETTER.get_python_path()
 SUBPARAM_WEB = "web"
 SUBPARAM_DESKTOP = "desktop"
 SUBPARAM_RESET = "reset"
+SUBPARAM_HEADLESS = "headless"
 SUBPARAM_PROFILE = TvbProfile.SUBPARAM_PROFILE
 
 CONSOLE_TVB = 'tvb_bin.run_IDLE'
@@ -229,7 +233,7 @@ def execute_start_desktop(pid_file_reference):
         tvb_process = subprocess.Popen(desktop_args_list, shell=False)
     else:
         tvb_process = subprocess.Popen(desktop_args_list, shell=False)
-    pid_file_reference.write(str(TVB.pid) + "\n")
+    pid_file_reference.write(str(tvb_process.pid) + "\n")
 
     return tvb_process
 
@@ -283,8 +287,7 @@ if __name__ == "__main__":
         except Exception, excep:
             sys.exit("You do not have enough rights to use TVB storage folder:" + str(TVBSettings.TVB_STORAGE))
             
-    if (PARAM_START not in sys.argv and PARAM_STOP not in sys.argv and PARAM_MODEL_VALIDATION not in sys.argv and
-            PARAM_CLEAN not in sys.argv and PARAM_CONSOLE not in sys.argv and PARAM_LIBRARY not in sys.argv):
+    if EXPECTED_ARGS & set(sys.argv) == set():
         #Probably missing or wrong parameters, so start with default web interface:
         sys.argv.append(PARAM_START)
         sys.argv.append(SUBPARAM_WEB)
@@ -300,19 +303,19 @@ if __name__ == "__main__":
             raise Exception("Validation settings file needs to be provided!")
         main(sys.argv[1])
     
-    if PARAM_CONSOLE in sys.argv:
+    elif PARAM_CONSOLE in sys.argv:
         PID_FILE = open(TVB_PID_FILE, 'a')
         sys.argv.remove(PARAM_CONSOLE)
         TVB = subprocess.Popen([PYTHON_EXE_PATH, '-m', CONSOLE_TVB, '-c', CONSOLE_PROFILE_SET], shell=False)
         PID_FILE.write(str(TVB.pid) + "\n")
         
-    if PARAM_LIBRARY in sys.argv:
+    elif PARAM_LIBRARY in sys.argv:
         PID_FILE = open(TVB_PID_FILE, 'a')
         sys.argv.remove(PARAM_LIBRARY)
         TVB = subprocess.Popen([PYTHON_EXE_PATH, '-m', CONSOLE_TVB, '-c', LIBRARY_PROFILE_SET], shell=False)
         PID_FILE.write(str(TVB.pid) + "\n")
     
-    if PARAM_START in sys.argv:
+    elif PARAM_START in sys.argv:
         execute_stop()
         sys.argv.remove(PARAM_START)
         PID_FILE = open(TVB_PID_FILE, 'a')
