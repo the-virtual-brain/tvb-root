@@ -238,6 +238,37 @@ def execute_start_desktop(pid_file_reference):
     return tvb_process
 
 
+def execute_start_console(console_profile_set):
+    PID_FILE = open(TVB_PID_FILE, 'a')
+    if SUBPARAM_HEADLESS in sys.argv:
+        # Launch a python interactive shell.
+        # We use a new process to make sure that the initialization of TVB is straightforward and
+        # not influenced by this launcher.
+        TVB = subprocess.Popen([PYTHON_EXE_PATH, '-i', '-c', console_profile_set])
+    else:
+        TVB = subprocess.Popen([PYTHON_EXE_PATH, '-m', CONSOLE_TVB, '-c', console_profile_set])
+
+    PID_FILE.write(str(TVB.pid) + "\n")
+    PID_FILE.close()
+
+    if SUBPARAM_HEADLESS in sys.argv:
+        # The child inherits the stdin stdout descriptors of the launcher so we keep the launcher alive
+        # by calling wait. It would be good if this could be avoided.
+        TVB.wait()
+
+
+def execute_model_validation():
+    from tvb.core.model_validations import main
+    sys.argv.remove(PARAM_MODEL_VALIDATION)
+    if TvbProfile.CONSOLE_PROFILE in sys.argv:
+        sys.argv.remove(TvbProfile.CONSOLE_PROFILE)
+    if TvbProfile.SUBPARAM_PROFILE in sys.argv:
+        sys.argv.remove(TvbProfile.SUBPARAM_PROFILE)
+    if len(sys.argv) < 2:
+        raise Exception("Validation settings file needs to be provided!")
+    main(sys.argv[1])
+
+
 def wait_for_tvb_process(tvb_process):
     """
     On MAC devices do not let this process die, to keep TVB icon in the dock bar.
@@ -278,7 +309,6 @@ def wait_for_tvb_process(tvb_process):
 
 
 if __name__ == "__main__":
-    ### Execute main
     ARGS_PROFILE = TvbProfile.get_profile(sys.argv)
 
     if not os.path.exists(TVBSettings.TVB_STORAGE):
@@ -293,27 +323,13 @@ if __name__ == "__main__":
         sys.argv.append(SUBPARAM_WEB)
     
     if PARAM_MODEL_VALIDATION in sys.argv:
-        from tvb.core.model_validations import main
-        sys.argv.remove(PARAM_MODEL_VALIDATION)
-        if TvbProfile.CONSOLE_PROFILE in sys.argv:
-            sys.argv.remove(TvbProfile.CONSOLE_PROFILE)
-        if TvbProfile.SUBPARAM_PROFILE in sys.argv:
-            sys.argv.remove(TvbProfile.SUBPARAM_PROFILE)
-        if len(sys.argv) < 2:
-            raise Exception("Validation settings file needs to be provided!")
-        main(sys.argv[1])
+       execute_model_validation()
     
     elif PARAM_CONSOLE in sys.argv:
-        PID_FILE = open(TVB_PID_FILE, 'a')
-        sys.argv.remove(PARAM_CONSOLE)
-        TVB = subprocess.Popen([PYTHON_EXE_PATH, '-m', CONSOLE_TVB, '-c', CONSOLE_PROFILE_SET], shell=False)
-        PID_FILE.write(str(TVB.pid) + "\n")
+        execute_start_console(CONSOLE_PROFILE_SET)
         
     elif PARAM_LIBRARY in sys.argv:
-        PID_FILE = open(TVB_PID_FILE, 'a')
-        sys.argv.remove(PARAM_LIBRARY)
-        TVB = subprocess.Popen([PYTHON_EXE_PATH, '-m', CONSOLE_TVB, '-c', LIBRARY_PROFILE_SET], shell=False)
-        PID_FILE.write(str(TVB.pid) + "\n")
+        execute_start_console(LIBRARY_PROFILE_SET)
     
     elif PARAM_START in sys.argv:
         execute_stop()
