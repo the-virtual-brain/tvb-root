@@ -432,26 +432,20 @@ function drawSortableGraph(){
         .call(xAxisForMinis());
 
     // Make the svg blocks sortable with jQuery
-    $(function() {
+    $(function () {
         var originalPosition, destination;
 
-        function cleanupSVGTemps(trashVisible){
+        function cleanupSVGTemps(trashVisible) {
             d3.selectAll("#ts-trash-can").classed("trash-show", trashVisible);
             d3.selectAll("#ts-trash-can").classed("trash-hidden", !trashVisible);
-
-            if (window.tsvDragElement) {
-                window.tsvDragElement.draggable("destroy");
-                window.tsvDragElement.remove();
-            }
-
             destination = null;
         }
 
-        function dropInTrash(ui){
+        function dropInTrash(ui) {
             // Remove the element dropped on #sortable-delete
-            if(tsFrag.tsDataArray.length > 1){
+            if (tsFrag.tsDataArray.length > 1) {
                 var deleteLabel = ui.item[0].__data__.label;
-                tsFrag.tsDataArray = tsFrag.tsDataArray.filter(function(obj) {
+                tsFrag.tsDataArray = tsFrag.tsDataArray.filter(function (obj) {
                     return obj.label != deleteLabel;
                 });
                 ui.item.remove();
@@ -472,30 +466,21 @@ function drawSortableGraph(){
 
         $(".sortable").sortable({
             items: '> g.list-item', // this is used to avoid dragging UI elements.
-            cursor: "move",
+            cursor: "url(/static/style/img/control/cursor_move_ts.png), move",
             connectWith: '#sortable-delete,g#mini-container',
-            start: function(e, ui) {
-                    originalPosition = ui.item.index();
-                    cleanupSVGTemps(true);
-//                    window.tsvDragElement = $("<div/>")
-//                        .prop('id', 'tsvDragElement')
-//                        .prop('class', 'tsv-draged')
-//                        .css({
-//                            left: e.pageX - 2,
-//                            top: e.pageY - 2,
-//                            width: $(e.target).attr("width")
-//                            })
-//                        .draggable();
-//
-//                    $('body').append(tsvDragElement);
+            start: function (e, ui) {
+                originalPosition = ui.item.index();
+                cleanupSVGTemps(true);
+                d3.select("g.list-item:nth-of-type(" + (originalPosition + 1) + ")")
+                    .classed("tsv-moving", true);
             },
-            stop: function(e, ui) {
+            stop: function () {
                 if (destination != null) {
                     dropInList(destination);
                 }
                 cleanupSVGTemps(false);
             },
-            receive: function(e, ui) {
+            receive: function (e, ui) {
                 if (this.id == 'sortable-delete') {
                     dropInTrash(ui);
                     destination = null;
@@ -503,18 +488,18 @@ function drawSortableGraph(){
             }
         });
 
-        $("g.list-item").bind("mouseover", function() {
+        $("g.list-item").bind("mouseover", function () {
             destination = $(this).index();
             if (destination > originalPosition) {
-                destination = destination -1;
+                destination = destination - 1;
             }
         });
 
-        $("#tsMoveArea").bind("mouseleave", function() {
+        $("#tsMoveArea").bind("mouseleave", function () {
             cleanupSVGTemps(false);
-            $(".sortable").sortable( "cancel" );
+            $(".sortable").sortable("cancel");
         })
-      });
+    });
 }
 
 // ====================================    DRAWING FUNCTIONS END   ===========================================

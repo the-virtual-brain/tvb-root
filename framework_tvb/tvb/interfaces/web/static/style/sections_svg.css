@@ -92,6 +92,10 @@
     stroke-opacity: 1;
 }
 
+g.tsv-moving {
+    opacity: 0.1;
+}
+
 .tsv-colored-line.mini {
     stroke-width: 1px;
     stroke-opacity: 1;
