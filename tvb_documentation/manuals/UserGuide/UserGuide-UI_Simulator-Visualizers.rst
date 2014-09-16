@@ -91,7 +91,8 @@ Time Series Volume Visualizer
    TimeSeries Volume with selections
 
 This visualizer displays time series of volumetric data, like fMRI.
-There are 3 navigation an viewing quadrants on the left and one main "focus quadrant".
+
+There are 3 navigation and viewing quadrants on the left and one main "focus quadrant" (left-central).
 It is  possible to navigate in space using the slide controls on the
 top-left toolbar or by clicking on the 3 navigation quadrants on the most left part of the screen.
 So clicking in the 3 left squares will change the X, Y, Z of the planes slicing through the currently displayed volume
@@ -105,19 +106,9 @@ The time series data is buffered from the server according to the currently sect
 A different color map can be selected by clicked the Brain call-out in the top-right side of the screen.
 
 
-Time Series Line Fragments
-~~~~~~~~~~~~~~~~~~~~~~~~~~~
+**Time Series Line Fragments**
 
-.. figure:: screenshots/visualizer_tsv_fragment.jpg
-   :width: 70%
-   :align: center
-
-   This is an alternative TS visualizer
-
-It displays time series information about the selected nodes. If it is coupled
-with the Time Series Volume Visualizer it displays signal values in time for
-each selected voxel.
-This visualizer is composed of three main parts:
+This is the right part of the TimeSeries Volume visualizer and is composed of three main parts:
 
 *Global Time Series Graph*
 All selected lines are shown here (top area), with the same scaling. Some transparency is applied to
@@ -128,22 +119,29 @@ selected values and not on the complete data set. A red vertical line shows the
 current time point (correlated with the movie in TimeSeries Volume section).
 A blue line follows the mouse showing the value of the highlighted line at each point.
 
-*Time slice section:*
-This function can be used to display only a portion of the
-data, zooming on it if possible. The user can manually define the time selection with the mouse actions
+*Time slice selection (focus):*
+This function can be used to display only a portion of the data, zooming on it bellow.
+The user can manually define the time slice with the mouse actions
 ,while it will automatically set itself around the current time point
 with a default extent during playback.
 
 *Sortable Graphs:*
-Every selected time series is shown on each line and labeled
-based on its coordinates from the 3D space of the TimeSeries Volume.
+Every selected time series from the volume is shown on a separate line and labeled
+based on its coordinates from the 3D space.
 Adding lines in this section can be done by clicking in the left area on the main quadrant.
 The lines are colored following the selected feature
 in "Color Lines by" at the top of the screen. They are then sorted automatically
 by one of the selected methods or manually, by dragging and dropping each line
-in the desired position, as seen on the above picture. Lines can be removed by
+in the desired position, as seen on the picture bellow. Lines can be removed by
 dragging them to the top "trash bin area" that appear every time a line is
 selected to be dragged.
+
+
+.. figure:: screenshots/visualizer_tsv_fragment.jpg
+   :width: 70%
+   :align: center
+
+   TimeSeries Fragment
 
 
 Connectivity Measure Visualizer
