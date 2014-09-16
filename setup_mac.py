@@ -130,7 +130,7 @@ print "Running post-py2app build operations:"
 print "- Start creating startup scripts..."
 
 os.mkdir('dist/bin')
-_create_command_file('tvb_start', './tvb.app/Contents/MacOS/tvb  $@', 'Starting TVB Web Interface')
+_create_command_file('tvb_start', './tvb.app/Contents/MacOS/tvb start $@', 'Starting TVB Web Interface')
 _create_command_file('tvb_clean', './tvb.app/Contents/MacOS/tvb clean', 'Cleaning up old TVB data.', True)
 _create_command_file('tvb_stop', './tvb.app/Contents/MacOS/tvb stop', 'Stopping TVB related processes.', True)
 # _create_command_file('tvb_command', './tvb.app/Contents/MacOS/tvb console', 'Starting TVB Scripting Interface')

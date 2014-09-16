@@ -79,7 +79,7 @@ def create_start_scripts(base_folder, data_folder, python_exe):
         command_file.close()
         os.chmod(os.path.join(bin_folder, file_name + '.bat'), 0775)
     
-    _create_script_file(bin_folder, 'tvb_start', data_folder, app_name + ' %1 %2', "Starting...")
+    _create_script_file(bin_folder, 'tvb_start', data_folder, app_name + ' start %1 %2', "Starting...")
     _create_script_file(bin_folder, 'tvb_clean', data_folder, app_name + ' clean')
     _create_script_file(bin_folder, 'tvb_stop', data_folder, app_name + ' stop')
     #_create_script_file(bin_folder, 'tvb_command', data_folder, app_name + ' console')

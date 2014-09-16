@@ -94,7 +94,7 @@ cd exe
         command_file.close()
         os.chmod(os.path.join(bin_folder, command_file_name + ".sh"), 0775)
     
-    _create_command_file(bin_folder, data_folder, 'tvb_start', app_name + ' $@')
+    _create_command_file(bin_folder, data_folder, 'tvb_start', app_name + ' start $@')
     _create_command_file(bin_folder, data_folder, 'tvb_clean', app_name + ' clean')
     _create_command_file(bin_folder, data_folder, 'tvb_stop', app_name + ' stop')
     #_create_command_file(bin_folder, data_folder, 'tvb_command', app_name + ' console')
