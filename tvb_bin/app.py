@@ -29,13 +29,17 @@
 #
 
 """
+
+This script will start TVB using a given profile, stop all TVB processes or clean a TVB installation.
+
+Usage: Run python app.py --help
+
+.. moduleauthor:: Mihai Andrei <mihai.andrei@codemart.ro>
 .. moduleauthor:: Ciprian Tomoiaga <ciprian.tomoiaga@codemart.ro>
 .. moduleauthor:: Bogdan Neacsa <bogdan.neacsa@codemart.ro>
 .. moduleauthor:: Lia Domide <lia.domide@codemart.ro>
-
-This script will start TVB using a given profile, stop all TVB processes or clean a TVB installation.
-Usage: Run python app.py --help
 """
+
 import argparse
 import os
 import subprocess
@@ -47,19 +51,14 @@ import logging
 from tvb.basic.profile import TvbProfile
 
 try:
+    # Needed for build
     import psycopg2
 except ImportError:
     print "Could not find compatible psycopg2/postgresql bindings. Postgresql support not available."
 
-if TvbProfile.is_mac_deployment() or TvbProfile.is_windows_deployment():
-    ## Import libraries to be found by the introspection.
-    import imghdr
-    import sndhdr
-
-# will happen when a mac build is done
+# Needed for the Mac build
 if 'py2app' in sys.argv:
     import tvb.interfaces.web.run
-
 
 RUN_WEB_PROFILES = [TvbProfile.DEPLOYMENT_PROFILE, TvbProfile.DEVELOPMENT_PROFILE,
                     TvbProfile.TEST_POSTGRES_PROFILE, TvbProfile.TEST_SQLITE_PROFILE]
@@ -73,16 +72,17 @@ LIBRARY_PROFILE_SET = ('from tvb.basic.profile import TvbProfile; '
 
 WEB_TVB = 'tvb.interfaces.web.run'
 DESKTOP_TVB = 'tvb.interfaces.desktop.run'
-SUBPARAM_RESET = "reset"
+SUB_PARAMETER_RESET = "reset"
+
 
 
 def parse_commandline():
     def add_profile_arg(com):
-        help = 'Use a specific profile. Allowed values are: '
-        help += ' '.join(TvbProfile.ALL) + '. '
-        help += 'These profiles will launch the web interface : '
-        help += ' '.join(RUN_WEB_PROFILES)
-        com.add_argument('profile', metavar='profile', nargs='?', help=help,
+        helpMsg = 'Use a specific profile. Allowed values are: '
+        helpMsg += ' '.join(TvbProfile.ALL) + '. '
+        helpMsg += 'These profiles will launch the web interface : '
+        helpMsg += ' '.join(RUN_WEB_PROFILES)
+        com.add_argument('profile', metavar='profile', nargs='?', help=helpMsg,
                          choices=TvbProfile.ALL, default=TvbProfile.DEPLOYMENT_PROFILE)
 
     parser = argparse.ArgumentParser(description="Control TVB instances.", prog='tvb_start')
@@ -102,6 +102,7 @@ def parse_commandline():
     add_profile_arg(clean)
 
     return parser.parse_args()
+
 
 
 def find_free_port(tested_port):
@@ -128,8 +129,9 @@ def find_free_port(tested_port):
     else:
         sys.exit("Could not find a free port for back-end to start!")
     return tested_port
-      
-      
+
+
+
 def execute_clean():
     """
     Remove TVB folder, TVB File DB, and log files.
@@ -141,15 +143,16 @@ def execute_clean():
             os.remove(TVBSettings.TVB_STORAGE)
     except Exception, excep1:
         sys.stdout.write("Could not remove TVB folder!")
-        sys.stdout.write(str(excep1)) 
- 
- 
-def execute_stop(): 
+        sys.stdout.write(str(excep1))
+
+
+
+def execute_stop():
     """
     Stop registered TVB processes in .tvb file
-    """  
+    """
     logging.shutdown()
-    if os.path.exists(TVB_PID_FILE):  
+    if os.path.exists(TVB_PID_FILE):
         pid_file = open(TVB_PID_FILE, 'r')
         has_processes = False
         for pid in pid_file.read().split('\n'):
@@ -161,14 +164,15 @@ def execute_stop():
                         ctypes.windll.kernel32.TerminateProcess(handle, -1)
                         ctypes.windll.kernel32.CloseHandle(handle)
                     else:
-                        os.kill(int(pid), signal.SIGKILL) 
+                        os.kill(int(pid), signal.SIGKILL)
                 except Exception:
                     has_processes = True
         if has_processes:
-            sys.stdout.write("Some old PIDs were still registered. They have been stopped.")                    
+            sys.stdout.write("Some old PIDs were still registered. They have been stopped.")
         pid_file.close()
     pid_file = open(TVB_PID_FILE, "w")
     pid_file.close()
+
 
 
 def execute_start_web(profile, reset):
@@ -187,7 +191,7 @@ def execute_start_web(profile, reset):
     web_args_list.extend([TvbProfile.SUBPARAM_PROFILE, profile])
 
     if reset:
-        web_args_list.append(SUBPARAM_RESET)
+        web_args_list.append(SUB_PARAMETER_RESET)
         pid_file_reference.close()
         execute_clean()
         if not os.path.exists(TVBSettings.TVB_STORAGE):
@@ -199,6 +203,7 @@ def execute_start_web(profile, reset):
     pid_file_reference.write(str(cherrypy_process.pid) + "\n")
     pid_file_reference.close()
     return cherrypy_process
+
 
 
 def execute_start_desktop(profile, reset):
@@ -213,7 +218,7 @@ def execute_start_desktop(profile, reset):
     desktop_args_list.extend([TvbProfile.SUBPARAM_PROFILE, profile])
 
     if reset:
-        desktop_args_list.append(SUBPARAM_RESET)
+        desktop_args_list.append(SUB_PARAMETER_RESET)
         pid_file_reference.close()
         execute_clean()
         if not os.path.exists(TVBSettings.TVB_STORAGE):
@@ -226,6 +231,7 @@ def execute_start_desktop(profile, reset):
     pid_file_reference.write(str(tvb_process.pid) + "\n")
     pid_file_reference.close()
     return tvb_process
+
 
 
 def execute_start_console(console_profile_set, headless):
@@ -247,6 +253,7 @@ def execute_start_console(console_profile_set, headless):
         TVB.wait()
 
 
+
 def wait_for_tvb_process(tvb_process):
     """
     On MAC devices do not let this process die, to keep TVB icon in the dock bar.
@@ -266,7 +273,7 @@ def wait_for_tvb_process(tvb_process):
                 """ Register a checking to follow TVB subprocess """
                 start_time = Foundation.NSDate.date()
                 self.check_tvb = AppKit.NSTimer.alloc().initWithFireDate_interval_target_selector_userInfo_repeats_(
-                                        start_time, 2.0, self, 'tick:', None, True)
+                    start_time, 2.0, self, 'tick:', None, True)
                 AppKit.NSRunLoop.currentRunLoop().addTimer_forMode_(self.check_tvb, AppKit.NSDefaultRunLoopMode)
                 self.check_tvb.fire()
 
@@ -285,7 +292,9 @@ def wait_for_tvb_process(tvb_process):
         AppHelper.runEventLoop()
 
 
+
 if __name__ == "__main__":
+
     ARGS = parse_commandline()
     TvbProfile.set_profile([TvbProfile.SUBPARAM_PROFILE, ARGS.profile])
     # Initialize TVBSettings only after a profile was set
@@ -302,11 +311,10 @@ if __name__ == "__main__":
 
     if ARGS.subcommand == 'start':
         if ARGS.profile == TvbProfile.COMMAND_PROFILE:
-            # warn: not executing stop overwrites prev pid!
             execute_start_console(COMMAND_PROFILE_SET, ARGS.headless)
         elif ARGS.profile == TvbProfile.LIBRARY_PROFILE:
             execute_start_console(LIBRARY_PROFILE_SET, ARGS.headless)
-        elif ARGS.profile in RUN_WEB_PROFILES :
+        elif ARGS.profile in RUN_WEB_PROFILES:
             execute_stop()
             TVB_PROCESS = execute_start_web(ARGS.profile, ARGS.reset)
             wait_for_tvb_process(TVB_PROCESS)
@@ -314,13 +322,14 @@ if __name__ == "__main__":
             execute_stop()
             TVB_PROCESS = execute_start_desktop(ARGS.profile, ARGS.reset)
             wait_for_tvb_process(TVB_PROCESS)
+
     elif ARGS.subcommand == 'stop':
         # Kill all Python processes which have their PID registered in .tvb file
         execute_stop()
+
     elif ARGS.subcommand == 'clean':
+        # Stop TVB and then Remove TVB folder, TVB File DB, and log files.
         execute_stop()
-        # Remove TVB folder, TVB File DB, and log file.
-        # ignore clean for console profiles
         execute_clean()
         if os.path.exists(TVBSettings.TVB_CONFIG_FILE):
             os.remove(TVBSettings.TVB_CONFIG_FILE)
