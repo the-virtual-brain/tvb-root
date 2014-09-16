@@ -26,18 +26,18 @@ run a simulation.
 
 To run any demo use the `execfile` command::
 
-	execfile('/home/user/Downloads/TVB_Distribution/tvb_data/tvb/simulator/demos/region_deterministic.py')
+    execfile('/home/user/Downloads/TVB_Distribution/tvb_data/tvb/simulator/demos/region_deterministic.py')
 
 The above command should work on Linux and Windows, as long as you replace '/home/user/Downloads/TVB_Distribution'
 with your personal path towards the folder where TVB was being downloaded.
 On Mac OS the path is just a little different::
 
-	execfile('../Resources/lib/python2.7/tvb/simulator/demos/region_deterministic.py')
+    execfile('../Resources/lib/python2.7/tvb/simulator/demos/region_deterministic.py')
 
 
 .. figure:: screenshots/linux_shell_run_demo.jpg
-   :width: 90%
-   :align: center
+    :width: 90%
+    :align: center
 
    Run a demo
    
@@ -57,7 +57,7 @@ from the Run menu. The script will be executed.
 
 To work interactively in the Python shell you need a few modules::
 
-	from tvb.simulator.lab import *
+    from tvb.simulator.lab import *
 
 
 This will import all the scientific simulator modules as well as some datatypes
@@ -69,11 +69,11 @@ Terminal Interface of |TVB|
 If you are using |TVB| on a headless machine then Python IDLE is not an option.
 To launch a python terminal in the command profile use ::
 
-    tvb_start.sh command headless
+    tvb_start.sh COMMAND_PROFILE -headless [-reset]
 
 And in the library profile ::
 
-    tvb_start.sh library headless
+    tvb_start.sh LIBRARY_PROFILE -headless
 
 On windows use tvb_start.bat instead of tvb_start.sh
 The scripts are located in the `bin` folder.

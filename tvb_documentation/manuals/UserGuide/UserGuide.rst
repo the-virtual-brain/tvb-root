@@ -124,7 +124,8 @@ ALL folders and their content created by |TVB|. Be careful!
 To make sure that no processes will remain open after you use the application,
 you should always close |TVB| by running the `tvb_stop.sh` script.
 
-To access the console interface, run in a terminal `tvb_start.sh command` or `tvb_start.sh library`.
+To access the console interface, run in a terminal
+`tvb_start.sh COMMAND_PROFILE [-headless] [-reset]` or `tvb_start.sh LIBRARY_PROFILE [-headless]`.
 The interactive Python shell will appear. See the Shell and User Interface sections in this document for
 more details on how to use the different interfaces of |TVB|.
 
@@ -142,7 +143,8 @@ you should find a number of scripts (in `bin` sub-folder) and an application pac
 
 To start |TVB| in your web browser you should double-click on the `tvb.app` 
 application. If you would rather use the shell interface you will need to run the
-`tvb_start.sh` script from the `bin` from a terminal. Type in `tvb_start.sh command` or `tvb_start.sh library`.
+`tvb_start.command` script from the `bin` from a terminal. Type in
+`tvb_start.command COMMAND_PROFILE [-headless] [-reset]` or `tvb_start.command LIBRARY_PROFILE [-headless]`.
 See the Shell and User Interface sections in this document for
 more details on how to use the different interfaces of |TVB|.
 
@@ -168,7 +170,8 @@ In this folder you should find sub-folder `bin` with a number of .bat scripts.
 To start |TVB| you should use `tvb_start.bat`. This will launch the TVB software with a console 
 process for debugging, and will also try to fire a browser window for you to start working with TVB web interface.
 If you would rather use the shell interface you will need to run the
-`tvb_start.bat` script from the `bin` from a terminal. Type in `tvb_start.bat command` or `tvb_start.bat library`.
+`tvb_start.bat` script from the `bin` from a terminal. Type in
+`tvb_start.bat COMMAND_PROFILE [-headless] [-reset]` or `tvb_start.bat LIBRARY_PROFILE [-headless]`.
 See the Shell and User Interface sections in this document for
 more details on how to use the different interfaces of |TVB|.
 
