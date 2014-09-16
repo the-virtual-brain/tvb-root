@@ -41,6 +41,7 @@ import tvb_bin
 import tvb.interfaces.web as tvb_web
 from subprocess import Popen
 from build_base import DIST_FOLDER
+from tvb.basic.profile import TvbProfile
 from tvb.basic.config.settings import TVBSettings
 
 
@@ -58,7 +59,7 @@ BASE_EXCLUDE_FILES = []
 
 BASE_EXCLUDE_DIRS = ['lib2to3', 'test', 'config_d', 'config']
 # This will be the name under which we copy the actual python interpreter
-PYTHON_EXE = TVBSettings().get_python_exe_name()
+PYTHON_EXE = TvbProfile.get_python_exe_name()
 
 
 class PyInstallerPacker():

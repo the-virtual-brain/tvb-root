@@ -105,12 +105,12 @@ from tvb.basic.config.settings import TVBSettings
 
 
 SETTER = TVBSettings()
-if SETTER.is_mac() or SETTER.is_windows():
+if TvbProfile.is_mac_deployment() or TvbProfile.is_windows_deployment():
     ## Import libraries to be found by the introspection.
     import imghdr
     import sndhdr  
 
-# todo: check this
+# will happen when a mac build is done
 if 'py2app' in sys.argv:
     import tvb.interfaces.web.run
     
@@ -289,7 +289,7 @@ def wait_for_tvb_process(tvb_process):
     On MAC devices do not let this process die, to keep TVB icon in the dock bar.
     :param tvb_process: TVB sub process, to wait until it finishes.
     """
-    if (tvb_process is not None) and (not SETTER.is_development()) and (sys.platform == "darwin"):
+    if tvb_process is not None and TvbProfile.is_mac_deployment():
 
         import AppKit
         import Foundation

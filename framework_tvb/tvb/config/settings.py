@@ -686,77 +686,30 @@ class BaseProfile():
     KEY_LAST_CHECKED_FILE_VERSION = 'LAST_CHECKED_FILE_VERSION'
     KEY_LAST_CHECKED_CODE_VERSION = 'LAST_CHECKED_CODE_VERSION'
     KEY_FILE_STORAGE_UPDATE_STATUS = 'FILE_STORAGE_UPDATE_STATUS'
-    # Keep a mapping of how the python executable will look on different os versions
-    PYTHON_EXE_MAPPING = {'windows': 'python.exe',
-                          'linux': 'python',
-                          'macos': 'python'}
-
-
-    @staticmethod
-    def is_development():
-        """
-        Return True when TVB  is used with Python installed natively.
-        """
-        tvb_root = os.path.dirname(BaseProfile.CURRENT_DIR)
-        return (os.path.exists(os.path.join(tvb_root, 'AUTHORS'))
-                and os.path.exists(os.path.join(os.path.dirname(tvb_root), 'third_party_licenses'))
-                and os.path.exists(os.path.join(os.path.dirname(tvb_root), 'externals'))
-                and os.path.exists(os.path.join(os.path.dirname(tvb_root), 'tvb_documentation')))
-
-
-    def is_windows(self):
-        """
-        Return True if current run is not development and is running on Windows.
-        """
-        return platform.startswith('win') and not self.is_development()
-
-
-    def is_linux(self):
-        """ 
-        Return True if current run is not development and is running on Linux.
-        """
-        return not (platform.startswith('win') or platform == 'darwin' or self.is_development())
-
-
-    def is_mac(self):
-        """
-        Return True if current run is not development and is running on Mac OS X
-        """
-        return platform == 'darwin' and not self.is_development()
-
-
-    def get_python_exe_name(self):
-        """ Returns the name of the python executable depending on the specific OS """
-        if platform.startswith('win'):
-            return self.PYTHON_EXE_MAPPING['windows']
-        elif platform == 'darwin':
-            return self.PYTHON_EXE_MAPPING['macos']
-        else:
-            return self.PYTHON_EXE_MAPPING['linux']
 
 
     def get_library_folder(self):
         """ Return top level library folder """
-        if self.is_windows():
+        if TvbProfile.is_windows_deployment():
             return os.path.dirname(os.path.dirname(sys.executable))
-        if self.is_mac():
+        if TvbProfile.is_mac_deployment():
             return os.path.dirname(self.BIN_FOLDER)
-        if self.is_linux():
+        if TvbProfile.is_linux_deployment():
             return os.path.dirname(os.path.dirname(sys.executable))
         
 
     def get_python_path(self):
         """Get Python path, based on running options."""
-
-        if self.is_development():
+        python_exe_name = TvbProfile.get_python_exe_name()
+        if TvbProfile.is_development():
             python_path = 'python'
-        elif self.is_windows():
-            python_path = os.path.join(os.path.dirname(FrameworkSettings.BIN_FOLDER), 'exe', self.get_python_exe_name())
-        elif self.is_mac():
+        elif TvbProfile.is_windows():
+            python_path = os.path.join(os.path.dirname(FrameworkSettings.BIN_FOLDER), 'exe', python_exe_name)
+        elif TvbProfile.is_mac():
             root_dir = os.path.dirname(os.path.dirname(os.path.dirname(os.path.dirname(FrameworkSettings.BIN_FOLDER))))
-            python_path = os.path.join(root_dir, 'MacOS', self.get_python_exe_name())
-        elif self.is_linux():
-            python_path = os.path.join(os.path.dirname(FrameworkSettings.BIN_FOLDER), 'exe', self.get_python_exe_name())
+            python_path = os.path.join(root_dir, 'MacOS', python_exe_name)
+        elif TvbProfile.is_linux():
+            python_path = os.path.join(os.path.dirname(FrameworkSettings.BIN_FOLDER), 'exe', python_exe_name)
         else:
             python_path = 'python'
 
@@ -901,7 +854,7 @@ class DeploymentProfile(BaseProfile):
         warnings.simplefilter("ignore", category=sa_exc.SAWarning)
         cfg = FrameworkSettings()
         data_path = cfg.get_library_folder()
-        if cfg.is_windows():
+        if TvbProfile.is_windows_deployment():
             # Add root folder as first in PYTHONPATH so we can find TVB there in case of GIT contributors
             new_python_path = cfg.TVB_PATH + os.pathsep
             new_python_path += data_path + os.pathsep + os.path.join(data_path, 'lib-tk')
@@ -909,7 +862,7 @@ class DeploymentProfile(BaseProfile):
             os.environ['PATH'] = data_path + os.pathsep + os.environ.get('PATH', '')
             setup_tk_tcl_environ(data_path)
 
-        if cfg.is_mac():
+        if TvbProfile.is_mac_deployment():
             # MacOS package structure is in the form:
             # Contents/Resorces/lib/python2.7/tvb . PYTHONPATH needs to be set
             # at the level Contents/Resources/lib/python2.7/ and the root path
@@ -923,7 +876,7 @@ class DeploymentProfile(BaseProfile):
             new_python_path = cfg.TVB_PATH + os.pathsep + new_python_path
             os.environ['PYTHONPATH'] = new_python_path
 
-        if cfg.is_linux():
+        if TvbProfile.is_linux_deployment():
             # Note that for the Linux package some environment variables like LD_LIBRARY_PATH,
             # LD_RUN_PATH, PYTHONPATH and PYTHONHOME are set also in the startup scripts.
             # Add root folder as first in PYTHONPATH so we can find TVB there in case of GIT contributors
@@ -962,7 +915,7 @@ elif TvbProfile.CURRENT_SELECTED_PROFILE == TvbProfile.TEST_SQLITE_PROFILE:
 elif TvbProfile.CURRENT_SELECTED_PROFILE == TvbProfile.CONSOLE_PROFILE:
     FrameworkSettings = ConsoleProfile
 
-elif BaseProfile.is_development() or TvbProfile.CURRENT_SELECTED_PROFILE == TvbProfile.DEVELOPMENT_PROFILE:
+elif TvbProfile.is_development() or TvbProfile.CURRENT_SELECTED_PROFILE == TvbProfile.DEVELOPMENT_PROFILE:
     FrameworkSettings = DevelopmentProfile
 
 else:
