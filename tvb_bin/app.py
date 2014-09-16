@@ -44,13 +44,22 @@ import shutil
 import sys
 import socket
 import logging
+from tvb.basic.profile import TvbProfile
 
 try:
     import psycopg2
 except ImportError:
     print "Could not find compatible psycopg2/postgresql bindings. Postgresql support not available."
-        
-from tvb.basic.profile import TvbProfile
+
+if TvbProfile.is_mac_deployment() or TvbProfile.is_windows_deployment():
+    ## Import libraries to be found by the introspection.
+    import imghdr
+    import sndhdr
+
+# will happen when a mac build is done
+if 'py2app' in sys.argv:
+    import tvb.interfaces.web.run
+
 
 PARAM_START = "start"
 PARAM_STOP = "stop"
@@ -67,13 +76,23 @@ SUBPARAM_PROFILE = TvbProfile.SUBPARAM_PROFILE
 RUN_WEB_PROFILES = [TvbProfile.DEPLOYMENT_PROFILE, TvbProfile.DEVELOPMENT_PROFILE,
                     TvbProfile.TEST_POSTGRES_PROFILE, TvbProfile.TEST_SQLITE_PROFILE]
 
+CONSOLE_TVB = 'tvb_bin.run_IDLE'
+VALIDATE_TVB = 'tvb.core.model_validations'
+CONSOLE_PROFILE_SET = ('from tvb.basic.profile import TvbProfile; '
+                       'TvbProfile.set_profile(["-profile", "CONSOLE_PROFILE"], try_reload=False);')
+LIBRARY_PROFILE_SET = ('from tvb.basic.profile import TvbProfile; '
+                       'TvbProfile.set_profile(["-profile", "LIBRARY_PROFILE"], try_reload=False);')
+
+WEB_TVB = 'tvb.interfaces.web.run'
+DESKTOP_TVB = 'tvb.interfaces.desktop.run'
+
 
 def parse_commandline():
     def add_profile_arg(com):
         help = 'Use a specific profile. Allowed values are: '
-        help += ', '.join(TvbProfile.ALL) + '. '
+        help += ' '.join(TvbProfile.ALL) + '. '
         help += 'These profiles will launch the web interface : '
-        help += ', '.join(RUN_WEB_PROFILES)
+        help += ' '.join(RUN_WEB_PROFILES)
         com.add_argument('profile', metavar='profile', nargs='?', help=help,
                          choices=TvbProfile.ALL, default=TvbProfile.DEPLOYMENT_PROFILE)
 
@@ -93,40 +112,6 @@ def parse_commandline():
     add_profile_arg(clean)
 
     return parser.parse_args()
-
-
-ARGS = parse_commandline()
-
-### This is a TVB Framework initialization call. Make sure a good default profile gets set.
-TvbProfile.set_profile([TvbProfile.SUBPARAM_PROFILE, ARGS.profile])
-
-### Initialize TVBSettings only after a profile was set
-from tvb.basic.config.settings import TVBSettings
-
-
-SETTER = TVBSettings()
-if TvbProfile.is_mac_deployment() or TvbProfile.is_windows_deployment():
-    ## Import libraries to be found by the introspection.
-    import imghdr
-    import sndhdr  
-
-# will happen when a mac build is done
-if 'py2app' in sys.argv:
-    import tvb.interfaces.web.run
-    
-PYTHON_EXE_PATH = SETTER.get_python_path()
-
-CONSOLE_TVB = 'tvb_bin.run_IDLE'
-VALIDATE_TVB = 'tvb.core.model_validations'
-CONSOLE_PROFILE_SET = ('from tvb.basic.profile import TvbProfile as tvb_profile; '
-                       'tvb_profile.set_profile(["-profile", "CONSOLE_PROFILE"], try_reload=False);')
-LIBRARY_PROFILE_SET = ('from tvb.basic.profile import TvbProfile as tvb_profile; '
-                       'tvb_profile.set_profile(["-profile", "LIBRARY_PROFILE"], try_reload=False);')
-
-WEB_TVB = 'tvb.interfaces.web.run'
-DESKTOP_TVB = 'tvb.interfaces.desktop.run'
-
-TVB_PID_FILE = os.path.join(TVBSettings.TVB_STORAGE, "pid.tvb")
 
 
 def find_free_port(tested_port):
@@ -323,6 +308,14 @@ def wait_for_tvb_process(tvb_process):
 
 
 if __name__ == "__main__":
+    ARGS = parse_commandline()
+    TvbProfile.set_profile([TvbProfile.SUBPARAM_PROFILE, ARGS.profile])
+    # Initialize TVBSettings only after a profile was set
+    from tvb.basic.config.settings import TVBSettings
+
+    PYTHON_EXE_PATH = TVBSettings.get_python_path()
+    TVB_PID_FILE = os.path.join(TVBSettings.TVB_STORAGE, "pid.tvb")
+
     if not os.path.exists(TVBSettings.TVB_STORAGE):
         try:
             os.makedirs(TVBSettings.TVB_STORAGE)

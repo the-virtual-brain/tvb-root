@@ -39,7 +39,7 @@ import threading
 import subprocess
 from time import sleep
 from formencode import validators
-from tvb.basic.config.settings import TVBSettings as cfg
+from tvb.basic.config.settings import TVBSettings
 from tvb.core.utils import check_matlab_version
 from tvb.core.services.settings_service import SettingsService
 from tvb.core.services.exceptions import InvalidSettingsException
@@ -94,9 +94,9 @@ class SettingsController(UserController):
         """
         Restart CherryPy and Backend.
         """
-        if cfg.MPLH5_Server_Thread is not None:
-            cfg.MPLH5_Server_Thread.shutdown()
-            cfg.MPLH5_Server_Thread.server_close()
+        if TVBSettings.MPLH5_Server_Thread is not None:
+            TVBSettings.MPLH5_Server_Thread.shutdown()
+            TVBSettings.MPLH5_Server_Thread.server_close()
         else:
             self.logger.warning('For some reason the mplh5 never started.')
         cherrypy.engine.exit()
@@ -105,7 +105,7 @@ class SettingsController(UserController):
 
         sleep(5)
 
-        python_path = cfg().get_python_path()
+        python_path = TVBSettings.get_python_path()
         proc_params = [python_path, '-m', 'tvb_bin.app', 'start', 'web']
         if should_reset:
             proc_params.append('reset')

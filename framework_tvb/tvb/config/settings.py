@@ -698,7 +698,8 @@ class BaseProfile():
             return os.path.dirname(os.path.dirname(sys.executable))
         
 
-    def get_python_path(self):
+    @staticmethod
+    def get_python_path():
         """Get Python path, based on running options."""
         python_exe_name = TvbProfile.get_python_exe_name()
         if TvbProfile.is_development():
