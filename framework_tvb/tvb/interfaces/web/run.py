@@ -42,12 +42,11 @@ import sys
 import cherrypy
 import webbrowser
 from cherrypy import Tool
-from sys import platform, argv
 
 ### This will set running profile from arguments.
 ### Reload modules, only when running, thus avoid problems when sphinx generates documentation
 from tvb.basic.profile import TvbProfile
-TvbProfile.set_profile(argv, True, try_reload=(__name__ == '__main__'))
+TvbProfile.set_profile(sys.argv, True, try_reload=(__name__ == '__main__'))
 
 ### For Linux Distribution, correctly set MatplotLib Path, before start.
 from tvb.basic.config.settings import TVBSettings
@@ -185,9 +184,9 @@ def start_tvb(arguments, browser=True):
 @user_environment_execution
 def run_browser():
     try:
-        if platform.startswith('win'):
+        if TvbProfile.is_windows():
             browser_app = webbrowser.get('windows-default')
-        elif platform == 'darwin':
+        elif TvbProfile.is_mac():
             browser_app = webbrowser.get('macosx')
         else:
             browser_app = webbrowser
@@ -208,4 +207,4 @@ def run_browser():
 if __name__ == '__main__':
     #### Prepare parameters and fire CherryPy
     #### Remove not-relevant parameter, 0 should point towards this "run.py" file
-    start_tvb(argv[1:])
+    start_tvb(sys.argv[1:])

@@ -34,6 +34,7 @@
 import sys
 import os
 from tvb.core.decorators import user_environment_execution
+from tvb.basic.profile import TvbProfile
 from tvb.basic.config.settings import TVBSettings as cfg
 
 
@@ -67,7 +68,7 @@ if os.system('git --version') != 0:
     raise Exception("You need to have git installed in order to set up TVB for contributions.")
 
 
-if sys.platform == 'darwin':
+if TvbProfile.is_mac():
     parent_folder = os.path.split(os.path.dirname(os.path.abspath(__file__)))[0]
     sys.path = [parent_folder, os.path.join(parent_folder, 'site-packages.zip'),
                 os.path.join(parent_folder, 'lib-dynload')] + sys.path
