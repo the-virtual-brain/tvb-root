@@ -8,5 +8,5 @@ python app.py start DEVELOPMENT_PROFILE
 
 # Starts a IDLE console with the correct environment set
 # python app.py LIBRARY_PROFILE
-# python app.py CONSOLE_PROFILE
+# python app.py COMMAND_PROFILE
 

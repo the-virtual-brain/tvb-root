@@ -80,11 +80,8 @@ def create_start_scripts(base_folder, data_folder, python_exe):
         os.chmod(os.path.join(bin_folder, file_name + '.bat'), 0775)
     
     _create_script_file(bin_folder, 'tvb_start', data_folder, app_name + ' start %1 %2', "Starting...")
-    _create_script_file(bin_folder, 'tvb_clean', data_folder, app_name + ' clean')
+    _create_script_file(bin_folder, 'tvb_clean', data_folder, app_name + ' clean %1')
     _create_script_file(bin_folder, 'tvb_stop', data_folder, app_name + ' stop')
-    #_create_script_file(bin_folder, 'tvb_command', data_folder, app_name + ' console')
-    #_create_script_file(bin_folder, 'tvb_library', data_folder, app_name + ' library')
-    #_create_script_file(bin_folder, 'tvb_model_validation', data_folder, app_name + ' validate %1\n')
     _create_script_file(bin_folder, 'contributor_setup', data_folder, python_exe + ' -m tvb_bin.git_setup %1\n')
    
 

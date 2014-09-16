@@ -95,11 +95,8 @@ cd exe
         os.chmod(os.path.join(bin_folder, command_file_name + ".sh"), 0775)
     
     _create_command_file(bin_folder, data_folder, 'tvb_start', app_name + ' start $@')
-    _create_command_file(bin_folder, data_folder, 'tvb_clean', app_name + ' clean')
+    _create_command_file(bin_folder, data_folder, 'tvb_clean', app_name + ' clean $@')
     _create_command_file(bin_folder, data_folder, 'tvb_stop', app_name + ' stop')
-    #_create_command_file(bin_folder, data_folder, 'tvb_command', app_name + ' console')
-    #_create_command_file(bin_folder, data_folder, 'tvb_library', app_name + ' library')
-    #_create_command_file(bin_folder, data_folder, 'tvb_model_validation', app_name + ' validate $1')
     _create_command_file(bin_folder, data_folder, 'contributor_setup', './' + python_exe + ' -m tvb_bin.git_setup $1')
     
     if arg_cluster in os.environ:
