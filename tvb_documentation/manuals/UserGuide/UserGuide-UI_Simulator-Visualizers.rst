@@ -91,11 +91,15 @@ Time Series Volume Visualizer
    TimeSeries Volume with selections
 
 This visualizer displays time series of volumetric data, like fMRI.
-There are three navigation an viewing quadrants on the left and one main "focus quadrant".
+There are 3 navigation an viewing quadrants on the left and one main "focus quadrant".
 It is  possible to navigate in space using the slide controls on the
-top-left toolbar or by clicking on the navigation quadrants on the most left part of the screen.
+top-left toolbar or by clicking on the 3 navigation quadrants on the most left part of the screen.
+So clicking in the 3 left squares will change the X, Y, Z of the planes slicing through the currently displayed volume
+(as the sliders on top are doing), while clicking in the main (central) square will select the clicked point for display
+of details on the right.
 
-The playback function is activated by clicking the play button, and it will then change the display with time;
+The playback function is activated by clicking the play button on the top bar,
+and it will then change the display with time (left and right areas);
 The time series data is buffered from the server according to the currently section of view.
 
 A different color map can be selected by clicked the Brain call-out in the top-right side of the screen.
