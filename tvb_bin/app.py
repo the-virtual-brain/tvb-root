@@ -59,23 +59,28 @@ try:
 except ImportError:
     print "Could not find compatible psycopg2/postgresql bindings. Postgresql support not available."
         
+from tvb.basic.profile import TvbProfile
+
 PARAM_START = "start"
 PARAM_STOP = "stop"
 PARAM_CLEAN = "clean"
 PARAM_COMMAND = "command"
 PARAM_LIBRARY = "library"
 PARAM_MODEL_VALIDATION = "validate"
+SUBPARAM_WEB = "web"
+SUBPARAM_DESKTOP = "desktop"
+SUBPARAM_RESET = "reset"
+SUBPARAM_HEADLESS = "headless"
+SUBPARAM_PROFILE = TvbProfile.SUBPARAM_PROFILE
 EXPECTED_ARGS = {PARAM_START, PARAM_STOP, PARAM_MODEL_VALIDATION, PARAM_CLEAN, PARAM_COMMAND, PARAM_LIBRARY}
 
-
-### This is a TVB Framework initialization call. Make sure a good default profile gets set.
-from tvb.basic.profile import TvbProfile
 
 ARGS_PROFILE = TvbProfile.get_profile(sys.argv)
 if ARGS_PROFILE is None and PARAM_MODEL_VALIDATION not in sys.argv:
     sys.argv.append(TvbProfile.SUBPARAM_PROFILE)
     sys.argv.append(TvbProfile.DEPLOYMENT_PROFILE)
 
+### This is a TVB Framework initialization call. Make sure a good default profile gets set.
 TvbProfile.set_profile(sys.argv)
 
 ### Initialize TVBSettings only after a profile was set
@@ -92,12 +97,6 @@ if 'py2app' in sys.argv:
     import tvb.interfaces.web.run
     
 PYTHON_EXE_PATH = SETTER.get_python_path()
-
-SUBPARAM_WEB = "web"
-SUBPARAM_DESKTOP = "desktop"
-SUBPARAM_RESET = "reset"
-SUBPARAM_HEADLESS = "headless"
-SUBPARAM_PROFILE = TvbProfile.SUBPARAM_PROFILE
 
 CONSOLE_TVB = 'tvb_bin.run_IDLE'
 VALIDATE_TVB = 'tvb.core.model_validations'
@@ -180,12 +179,12 @@ def execute_stop():
     pid_file.close()
 
 
-def execute_start_web(pid_file_reference):
+def execute_start_web(profile, reset):
     """
     Start the web server on a free port.
-    :param pid_file_reference: file reference where to write the PID of the newly launched process
     :return: reference towards CherryPy process
     """
+    pid_file_reference = open(TVB_PID_FILE, 'a')
     free_ports = {}
     cherrypy_port = find_free_port(TVBSettings.WEB_SERVER_PORT)
     if not os.path.isfile(TVBSettings.TVB_CONFIG_FILE) or TVBSettings.WEB_SERVER_PORT != cherrypy_port:
@@ -193,11 +192,9 @@ def execute_start_web(pid_file_reference):
         TVBSettings.update_config_file(free_ports)
 
     web_args_list = [PYTHON_EXE_PATH, '-m', WEB_TVB, 'tvb.config']
-    if ARGS_PROFILE is not None:
-        web_args_list.extend([SUBPARAM_PROFILE, ARGS_PROFILE])
-    sys.argv.remove(SUBPARAM_WEB)
+    web_args_list.extend([SUBPARAM_PROFILE, profile])
 
-    if SUBPARAM_RESET in sys.argv:
+    if reset:
         web_args_list.append(SUBPARAM_RESET)
         pid_file_reference.close()
         execute_clean()
@@ -208,22 +205,22 @@ def execute_start_web(pid_file_reference):
     cherrypy_process = subprocess.Popen(web_args_list, shell=False)
 
     pid_file_reference.write(str(cherrypy_process.pid) + "\n")
-
+    pid_file_reference.close()
     return cherrypy_process
 
 
-def execute_start_desktop(pid_file_reference):
+def execute_start_desktop(profile, reset):
     """
     Fire TVB with Desktop interface.
-    :param pid_file_reference: file reference where to write the PID of the newly launched process
     :return: reference towards tvb new started process
     """
-    desktop_args_list = [PYTHON_EXE_PATH, '-m', DESKTOP_TVB, 'tvb.config']
-    if ARGS_PROFILE is not None:
-        desktop_args_list.extend([SUBPARAM_PROFILE, ARGS_PROFILE])
-    sys.argv.remove(SUBPARAM_DESKTOP)
+    pid_file_reference = open(TVB_PID_FILE, 'a')
 
-    if SUBPARAM_RESET in sys.argv:
+    desktop_args_list = [PYTHON_EXE_PATH, '-m', DESKTOP_TVB, 'tvb.config']
+
+    desktop_args_list.extend([SUBPARAM_PROFILE, profile])
+
+    if reset:
         desktop_args_list.append(SUBPARAM_RESET)
         pid_file_reference.close()
         execute_clean()
@@ -233,14 +230,15 @@ def execute_start_desktop(pid_file_reference):
         tvb_process = subprocess.Popen(desktop_args_list, shell=False)
     else:
         tvb_process = subprocess.Popen(desktop_args_list, shell=False)
-    pid_file_reference.write(str(tvb_process.pid) + "\n")
 
+    pid_file_reference.write(str(tvb_process.pid) + "\n")
+    pid_file_reference.close()
     return tvb_process
 
 
-def execute_start_console(console_profile_set):
+def execute_start_console(console_profile_set, headless):
     PID_FILE = open(TVB_PID_FILE, 'a')
-    if SUBPARAM_HEADLESS in sys.argv:
+    if headless:
         # Launch a python interactive shell.
         # We use a new process to make sure that the initialization of TVB is straightforward and
         # not influenced by this launcher.
@@ -251,7 +249,7 @@ def execute_start_console(console_profile_set):
     PID_FILE.write(str(TVB.pid) + "\n")
     PID_FILE.close()
 
-    if SUBPARAM_HEADLESS in sys.argv:
+    if headless:
         # The child inherits the stdin stdout descriptors of the launcher so we keep the launcher alive
         # by calling wait. It would be good if this could be avoided.
         TVB.wait()
@@ -326,21 +324,19 @@ if __name__ == "__main__":
     #    execute_model_validation()
     
     if PARAM_COMMAND in sys.argv:
-        execute_start_console(CONSOLE_PROFILE_SET)
+        execute_start_console(CONSOLE_PROFILE_SET, SUBPARAM_HEADLESS in sys.argv)
         
     elif PARAM_LIBRARY in sys.argv:
-        execute_start_console(LIBRARY_PROFILE_SET)
+        execute_start_console(LIBRARY_PROFILE_SET, SUBPARAM_HEADLESS in sys.argv)
     
     elif PARAM_START in sys.argv:
         execute_stop()
         sys.argv.remove(PARAM_START)
-        PID_FILE = open(TVB_PID_FILE, 'a')
         TVB_PROCESS = None
         if SUBPARAM_WEB in sys.argv:
-            TVB_PROCESS = execute_start_web(PID_FILE)
+            TVB_PROCESS = execute_start_web(ARGS_PROFILE, SUBPARAM_RESET in sys.argv)
         elif SUBPARAM_DESKTOP in sys.argv:
-            TVB_PROCESS = execute_start_desktop(PID_FILE)
-        PID_FILE.close()
+            TVB_PROCESS = execute_start_desktop(ARGS_PROFILE, SUBPARAM_RESET in sys.argv)
         wait_for_tvb_process(TVB_PROCESS)
         
     elif PARAM_STOP in sys.argv:
