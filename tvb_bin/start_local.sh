@@ -7,6 +7,6 @@ python app.py start DEVELOPMENT_PROFILE
 # python app.py start DESKTOP_PROFILE
 
 # Starts a IDLE console with the correct environment set
-# python app.py LIBRARY_PROFILE
-# python app.py COMMAND_PROFILE
+# python app.py start LIBRARY_PROFILE
+# python app.py start COMMAND_PROFILE
 
