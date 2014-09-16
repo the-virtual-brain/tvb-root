@@ -66,8 +66,8 @@ RUN_WEB_PROFILES = [TvbProfile.DEPLOYMENT_PROFILE, TvbProfile.DEVELOPMENT_PROFIL
 
 CONSOLE_TVB = 'tvb_bin.run_IDLE'
 
-CONSOLE_PROFILE_SET = ('from tvb.basic.profile import TvbProfile; '
-                       'TvbProfile.set_profile(["-profile", "CONSOLE_PROFILE"], try_reload=False);')
+COMMAND_PROFILE_SET = ('from tvb.basic.profile import TvbProfile; '
+                       'TvbProfile.set_profile(["-profile", "COMMAND_PROFILE"], try_reload=False);')
 LIBRARY_PROFILE_SET = ('from tvb.basic.profile import TvbProfile; '
                        'TvbProfile.set_profile(["-profile", "LIBRARY_PROFILE"], try_reload=False);')
 
@@ -301,9 +301,9 @@ if __name__ == "__main__":
             sys.exit("You do not have enough rights to use TVB storage folder:" + str(TVBSettings.TVB_STORAGE))
 
     if ARGS.subcommand == 'start':
-        if ARGS.profile == TvbProfile.CONSOLE_PROFILE:
+        if ARGS.profile == TvbProfile.COMMAND_PROFILE:
             # warn: not executing stop overwrites prev pid!
-            execute_start_console(CONSOLE_PROFILE_SET, ARGS.headless)
+            execute_start_console(COMMAND_PROFILE_SET, ARGS.headless)
         elif ARGS.profile == TvbProfile.LIBRARY_PROFILE:
             execute_start_console(LIBRARY_PROFILE_SET, ARGS.headless)
         elif ARGS.profile in RUN_WEB_PROFILES :

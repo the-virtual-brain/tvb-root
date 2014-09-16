@@ -35,7 +35,7 @@ This is intended to be a Benchmarking  and Validator script.
 """
 
 from tvb.basic.profile import TvbProfile as tvb_profile
-tvb_profile.set_profile(["-profile", "CONSOLE_PROFILE"], try_reload=False)
+tvb_profile.set_profile(["-profile", "COMMAND_PROFILE"], try_reload=False)
 
 import sys
 from time import sleep

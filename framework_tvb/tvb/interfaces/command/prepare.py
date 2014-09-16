@@ -41,7 +41,7 @@ Provides convenient access to framework from the console.
 ## Select the profile with storage enabled, but without web interface:
 
 from tvb.basic.profile import TvbProfile as tvb_profile
-tvb_profile.set_profile(["-profile", "CONSOLE_PROFILE"], try_reload=False)
+tvb_profile.set_profile(["-profile", "COMMAND_PROFILE"], try_reload=False)
 
 from tvb.basic.logger.builder import get_logger
 from tvb.core.traits import db_events

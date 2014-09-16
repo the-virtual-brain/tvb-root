@@ -898,7 +898,7 @@ class DeploymentProfile(BaseProfile):
         return default_configuration
 
 
-class ConsoleProfile(DeploymentProfile):
+class CommandProfile(DeploymentProfile):
     """
     Profile which allows you to work with tvb in console mode.
     """
@@ -913,8 +913,8 @@ if TvbProfile.CURRENT_SELECTED_PROFILE == TvbProfile.TEST_POSTGRES_PROFILE:
 elif TvbProfile.CURRENT_SELECTED_PROFILE == TvbProfile.TEST_SQLITE_PROFILE:
     FrameworkSettings = TestSQLiteProfile
 
-elif TvbProfile.CURRENT_SELECTED_PROFILE == TvbProfile.CONSOLE_PROFILE:
-    FrameworkSettings = ConsoleProfile
+elif TvbProfile.CURRENT_SELECTED_PROFILE == TvbProfile.COMMAND_PROFILE:
+    FrameworkSettings = CommandProfile
 
 elif TvbProfile.is_development() or TvbProfile.CURRENT_SELECTED_PROFILE == TvbProfile.DEVELOPMENT_PROFILE:
     FrameworkSettings = DevelopmentProfile
