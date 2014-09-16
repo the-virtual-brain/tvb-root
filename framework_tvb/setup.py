@@ -47,7 +47,7 @@ TVB_TEAM = "Lia Domide, Ionel Ortelecan, Bogdan Neacsa, Calin Pavel, "
 TVB_TEAM += "Stuart Knock, Marmaduke Woodman, Paula Sansz Leon, "
 
 TVB_INSTALL_REQUIREMENTS = ["apscheduler", "beautifulsoup", "cherrypy", "genshi", "cfflib", "formencode==1.3.0a1",
-                            "lxml", "minixsv", "mod_pywebsocket", "networkx", "nibabel", "numpy",
+                            "h5py", "lxml", "minixsv", "mod_pywebsocket", "networkx", "nibabel", "numpy",
                             "numexpr", "psutil", "scikit-learn", "scipy", "simplejson", "PIL>=1.1.7",
                             "sqlalchemy==0.7", "sqlalchemy-migrate==0.7.2", "matplotlib==1.2.1"]
 

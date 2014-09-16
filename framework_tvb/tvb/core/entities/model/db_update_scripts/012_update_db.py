@@ -29,7 +29,7 @@
 #
 
 """
-Change of DB structure from TVB version 1.2.2 to 1.2.3
+Change of DB structure from TVB version 1.2.1 to 1.2.2
 
 .. moduleauthor:: Mihai Andrei <mihai.andrei@codemart.ro>
 
@@ -43,6 +43,7 @@ from tvb.core.entities import model
 meta = model.Base.metadata
 
 COL_NEW = Column('_dynamic_ids', String, default="[]")
+
 
 def upgrade(migrate_engine):
     """
