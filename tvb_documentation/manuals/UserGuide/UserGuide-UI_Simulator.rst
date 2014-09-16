@@ -192,8 +192,9 @@ There are 4 tabs:
   - three `View` tabs you can set up by selecting:
 
       - TVB time-series `Visualizers` that directly plot the resulting time-series or
-      - `TVB-Visualizers` associated with a `TVB-Analyzer`. In this case, simulation 
-	results undergo two steps: they are first analyzed and those secondary results 
+
+      - `TVB-Visualizers` associated with a `TVB-Analyzer`. In this case, simulation
+        results undergo two steps: they are first analyzed and those secondary results
         are shown in a corresponding visualizer.
 
   - one `Results` tab containing the current simulation data structure tree. You
@@ -219,10 +220,10 @@ There are 4 tabs:
         different time-series.
 
       .. figure:: screenshots/visualizer_save_figure.jpg
-	  :width: 90%
-	  :align: center
-            
-	  Preview for Full Visualizer mode.
+        :width: 90%
+        :align: center
+
+        Preview for Full Visualizer mode.
 
 
 All the snapshots you save can be managed in  `Projects` --> `Image Archive` 
