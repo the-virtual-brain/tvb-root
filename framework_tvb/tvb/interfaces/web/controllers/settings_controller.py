@@ -40,6 +40,7 @@ import subprocess
 from time import sleep
 from formencode import validators
 from tvb.basic.config.settings import TVBSettings
+from tvb.basic.profile import TvbProfile
 from tvb.core.utils import check_matlab_version
 from tvb.core.services.settings_service import SettingsService
 from tvb.core.services.exceptions import InvalidSettingsException
@@ -106,9 +107,9 @@ class SettingsController(UserController):
         sleep(5)
 
         python_path = TVBSettings.get_python_path()
-        proc_params = [python_path, '-m', 'tvb_bin.app', 'start', 'web']
+        proc_params = [python_path, '-m', 'tvb_bin.app', 'start', TvbProfile.CURRENT_SELECTED_PROFILE]
         if should_reset:
-            proc_params.append('reset')
+            proc_params.append('-reset')
 
         self.logger.info("Starting CherryPy again ... ")
         subprocess.Popen(proc_params, shell=False)
