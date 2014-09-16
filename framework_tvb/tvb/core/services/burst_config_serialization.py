@@ -29,7 +29,8 @@
 #
 
 """
-module docstring
+Service for serianlizing a Burst (Simulator) configuration.
+
 .. moduleauthor:: Mihai Andrei <mihai.andrei@codemart.ro>
 """
 from tvb.basic.logger.builder import get_logger
@@ -37,7 +38,7 @@ from tvb.basic.traits.parameters_factory import get_traited_instance_for_name
 from tvb.config import SIMULATOR_MODULE, SIMULATOR_CLASS
 from tvb.core.adapters.abcadapter import ABCAdapter
 from tvb.core.entities.model import RANGE_PARAMETER_1, RANGE_PARAMETER_2, PARAMS_MODEL_PATTERN
-from tvb.core.entities.model import  PARAM_MODEL, PARAM_INTEGRATOR, PARAM_CONNECTIVITY, PARAM_SURFACE
+from tvb.core.entities.model import PARAM_MODEL, PARAM_INTEGRATOR, PARAM_CONNECTIVITY, PARAM_SURFACE
 from tvb.core.services.flow_service import FlowService
 from tvb.datatypes import noise_framework
 from tvb.simulator.integrators import Integrator
@@ -62,7 +63,6 @@ class SerializationManager(object):
 
 
     def _build_simulator_adapter(self):
-        # TODO: a utility method like this should be more widely available as this adapter is constructed in many places
         _, group = self.flow_service.get_algorithm_by_module_and_class(SIMULATOR_MODULE, SIMULATOR_CLASS)
         return self.flow_service.build_adapter_instance(group)
 
@@ -108,7 +108,8 @@ class SerializationManager(object):
         """
         params_dict = self._get_params_dict()
         model = self.__make_instance_from_burst_config(params_dict, Model, PARAM_MODEL, MODEL_PARAMETERS)
-        integrator = self.__make_instance_from_burst_config(params_dict, Integrator, PARAM_INTEGRATOR, INTEGRATOR_PARAMETERS)
+        integrator = self.__make_instance_from_burst_config(params_dict, Integrator,
+                                                            PARAM_INTEGRATOR, INTEGRATOR_PARAMETERS)
         return model, integrator
 
 
@@ -128,11 +129,12 @@ class SerializationManager(object):
     @staticmethod
     def group_parameter_values_by_name(model_parameters_list):
         """
-        Given a list of model parameters like this:
-            [{"a": 2.0, 'b': 1.0},
-             {"a": 3.0, 'b': 7.0}])
-        Group them by param name to get:
-        {'a': [2.0, 3.0], 'b': [1.0, 7.0]}
+        @:param model_parameters_list: Given a list of model parameters like this:
+                [{"a": 2.0, 'b': 1.0},
+                 {"a": 3.0, 'b': 7.0}])
+
+        @:return: This method will group them by param name to get:
+                {'a': [2.0, 3.0], 'b': [1.0, 7.0]}
         """
         ret = {}
         for model_parameters in model_parameters_list:
@@ -146,14 +148,17 @@ class SerializationManager(object):
     def write_model_parameters(self, model_name, model_parameters_list):
         """
         Update model parameters in burst config.
+
         :param model_name: This model will be selected in burst
         :param model_parameters_list: A list of model parameter configurations. One for each connectivity node.
-               Ex. [{'a': 1, 'b': 2}, ...]
+                Ex. [{'a': 1, 'b': 2}, ...]
         """
+
+
         def format_param_vals(vals):
             # contract constant array
             if len(set(vals)) == 1:
-                vals = [ vals[0] ]
+                vals = [vals[0]]
             return str(vals)
 
         model_parameters = self.group_parameter_values_by_name(model_parameters_list)
