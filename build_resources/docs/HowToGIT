@@ -49,3 +49,8 @@
 
 ## Clean unreferences branches:
     git remote prune origin
+
+## See some status
+    git svn info
+    git ls-remote --heads
+    git push -f ## Should not be done unless major problems at rebase are happening
