@@ -1,0 +1,4 @@
+include geodesic_library/*
+README
+gdist.pyx
+setup.py
