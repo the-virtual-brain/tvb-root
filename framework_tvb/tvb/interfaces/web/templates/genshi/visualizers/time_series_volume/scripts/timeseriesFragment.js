@@ -121,15 +121,13 @@ function drawGraphs(){
  */
 function drawGobalTimeseries(){
     tsFrag.x = d3.scale.linear().domain([0, tsFrag.timeLength]).range([0, tsFrag.w]);
-    var x2   = d3.scale.linear().range([0, tsFrag.w]);
+    var x2   = d3.scale.linear().domain([0, tsFrag.timeLength]).range([0, tsFrag.w]);
     var y2 = d3.scale.linear().range([tsFrag.h, 0]);
 
     // Prepare the brush for later
     tsFrag.brush = d3.svg.brush()
         .x(x2)
         .on("brush", brush);
-
-    x2.domain(tsFrag.x.domain());
 
     function brush() {
         tsFrag.x.domain(tsFrag.brush.empty() ? x2.domain() : tsFrag.brush.extent());
@@ -439,6 +437,9 @@ function drawSortableGraph(){
             d3.selectAll("#ts-trash-can").classed("trash-show", trashVisible);
             d3.selectAll("#ts-trash-can").classed("trash-hidden", !trashVisible);
             destination = null;
+            if (!trashVisible) {
+                d3.selectAll(".tsv-moving").classed("tsv-moving", false);
+            }
         }
 
         function dropInTrash(ui) {
@@ -636,24 +637,22 @@ function attachUIListeners(){
  * Callback function for the on-mouse-move event
  */
 function TSF_mousemove() {
-    var x0 = tsFrag.x.invert(d3.mouse(this)[0]),
-        i = Math.floor(x0),
-        data = tsFrag.tsDataArray[tsFrag.selectedIndex].data,
-        d1 = data[i];
-    var selectedLine = d3.select("path.tsv-colored-line:nth-of-type(" + (tsFrag.selectedIndex+1) +")");
+    var xPos = d3.mouse(this)[0];
+    // Reset X Domain, to get a correct reading:
+    tsFrag.x.domain([0, tsFrag.timeLength]);
+    var arrayIdx = Math.floor(tsFrag.x.invert(xPos));
+    var currentValue = tsFrag.tsDataArray[tsFrag.selectedIndex].data[arrayIdx];
+    var selectedLine = d3.select("path.tsv-colored-line:nth-of-type(" + (tsFrag.selectedIndex + 1) + ")");
 
-    var focus = d3.select(".focus");
-
-    focus.attr("transform", "translate(" + d3.mouse(this)[0] + "," + tsFrag.y(data[i]) + ")");
-    focus.select("text").text(d1);
+    var mouseOverTooltipValue = d3.select(".focus");
+    mouseOverTooltipValue.attr("transform", "translate(" + xPos + "," + tsFrag.y(currentValue) + ")");
+    mouseOverTooltipValue.select("text").text(currentValue);
 
     //Move blue line following the mouse
-    var xPos = d3.mouse(this)[0];
-    // the +-3 lets us click the graph and not the line
     var pathLength = selectedLine.node().getTotalLength();
-
-    xPos = xPos > ( pathLength / 2 ) ? Math.min(xPos+3, pathLength) : Math.max(xPos-3, 0);
-    d3.select(".verticalLine").attr("transform", function(){
+    // the +-3 lets us click the graph and not the line
+    xPos = xPos > ( pathLength / 2 ) ? Math.min(xPos + 3, pathLength) : Math.max(xPos - 3, 0);
+    d3.select(".verticalLine").attr("transform", function () {
         return "translate(" + xPos + ",0)";
     });
 
@@ -663,23 +662,27 @@ function TSF_mousemove() {
         target;
     var pos;
 
-    while(true) {
+    while (true) {
         target = Math.floor((beginning + end) / 2);
         pos = selectedLine.node().getPointAtLength(target);
-        if((target === end || target === beginning) && pos.x !== X){
+        if ((target === end || target === beginning) && pos.x !== X) {
             break;
         }
-        if(pos.x > X) end = target;
-        else if(pos.x < X) beginning = target;
-        else break; //position found
+        if (pos.x > X) {
+            end = target;
+        } else if (pos.x < X) {
+            beginning = target;
+        } else {
+            break; //position found
+        }
     }
 
-    var circle = d3.select("#mouseLineCircle");
-    circle.attr("opacity", 1)
+    var mouseCircle = d3.select("#mouseLineCircle");
+    mouseCircle.attr("opacity", 1)
         .attr("cx", X)
         .attr("cy", pos.y);
 
-    focus.attr("transform", "translate(" + X + "," + pos.y + ")");
+    mouseOverTooltipValue.attr("transform", "translate(" + X + "," + pos.y + ")");
 }
 
 /**
