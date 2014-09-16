@@ -61,23 +61,11 @@ if 'py2app' in sys.argv:
     import tvb.interfaces.web.run
 
 
-PARAM_START = "start"
-PARAM_STOP = "stop"
-PARAM_CLEAN = "clean"
-PARAM_COMMAND = "command"
-PARAM_LIBRARY = "library"
-PARAM_MODEL_VALIDATION = "validate"
-SUBPARAM_WEB = "web"
-SUBPARAM_DESKTOP = "desktop"
-SUBPARAM_RESET = "reset"
-SUBPARAM_HEADLESS = "headless"
-SUBPARAM_PROFILE = TvbProfile.SUBPARAM_PROFILE
-
 RUN_WEB_PROFILES = [TvbProfile.DEPLOYMENT_PROFILE, TvbProfile.DEVELOPMENT_PROFILE,
                     TvbProfile.TEST_POSTGRES_PROFILE, TvbProfile.TEST_SQLITE_PROFILE]
 
 CONSOLE_TVB = 'tvb_bin.run_IDLE'
-VALIDATE_TVB = 'tvb.core.model_validations'
+
 CONSOLE_PROFILE_SET = ('from tvb.basic.profile import TvbProfile; '
                        'TvbProfile.set_profile(["-profile", "CONSOLE_PROFILE"], try_reload=False);')
 LIBRARY_PROFILE_SET = ('from tvb.basic.profile import TvbProfile; '
@@ -85,6 +73,7 @@ LIBRARY_PROFILE_SET = ('from tvb.basic.profile import TvbProfile; '
 
 WEB_TVB = 'tvb.interfaces.web.run'
 DESKTOP_TVB = 'tvb.interfaces.desktop.run'
+SUBPARAM_RESET = "reset"
 
 
 def parse_commandline():
@@ -96,7 +85,7 @@ def parse_commandline():
         com.add_argument('profile', metavar='profile', nargs='?', help=help,
                          choices=TvbProfile.ALL, default=TvbProfile.DEPLOYMENT_PROFILE)
 
-    parser = argparse.ArgumentParser(description="Control TVB instances.", prog='tvb_start.sh')
+    parser = argparse.ArgumentParser(description="Control TVB instances.", prog='tvb_start')
     subparsers = parser.add_subparsers(title='subcommands', dest='subcommand')
 
     start = subparsers.add_parser('start', help='launch a TVB interface')
@@ -106,6 +95,7 @@ def parse_commandline():
     start.add_argument('-headless', action='store_true', help='launch python instead of IDLE')
 
     stop = subparsers.add_parser('stop', help='stop all TVB processes')
+    # all subcommands are expected to have a profile not necessarily entered by the user.
     stop.set_defaults(profile=TvbProfile.DEPLOYMENT_PROFILE)
 
     clean = subparsers.add_parser('clean', help='stop all TVB processes and delete all TVB data')
@@ -194,7 +184,7 @@ def execute_start_web(profile, reset):
         TVBSettings.update_config_file(free_ports)
 
     web_args_list = [PYTHON_EXE_PATH, '-m', WEB_TVB, 'tvb.config']
-    web_args_list.extend([SUBPARAM_PROFILE, profile])
+    web_args_list.extend([TvbProfile.SUBPARAM_PROFILE, profile])
 
     if reset:
         web_args_list.append(SUBPARAM_RESET)
@@ -220,7 +210,7 @@ def execute_start_desktop(profile, reset):
 
     desktop_args_list = [PYTHON_EXE_PATH, '-m', DESKTOP_TVB, 'tvb.config']
 
-    desktop_args_list.extend([SUBPARAM_PROFILE, profile])
+    desktop_args_list.extend([TvbProfile.SUBPARAM_PROFILE, profile])
 
     if reset:
         desktop_args_list.append(SUBPARAM_RESET)
@@ -255,18 +245,6 @@ def execute_start_console(console_profile_set, headless):
         # The child inherits the stdin stdout descriptors of the launcher so we keep the launcher alive
         # by calling wait. It would be good if this could be avoided.
         TVB.wait()
-
-
-# def execute_model_validation():
-#     from tvb.core.model_validations import main
-#     sys.argv.remove(PARAM_MODEL_VALIDATION)
-#     if TvbProfile.CONSOLE_PROFILE in sys.argv:
-#         sys.argv.remove(TvbProfile.CONSOLE_PROFILE)
-#     if TvbProfile.SUBPARAM_PROFILE in sys.argv:
-#         sys.argv.remove(TvbProfile.SUBPARAM_PROFILE)
-#     if len(sys.argv) < 2:
-#         raise Exception("Validation settings file needs to be provided!")
-#     main(sys.argv[1])
 
 
 def wait_for_tvb_process(tvb_process):
@@ -343,7 +321,6 @@ if __name__ == "__main__":
         execute_stop()
         # Remove TVB folder, TVB File DB, and log file.
         # ignore clean for console profiles
-        if not ARGS.profile.lower().startswith('test'): # todo: check this
-            execute_clean()
-            if os.path.exists(TVBSettings.TVB_CONFIG_FILE):
-                os.remove(TVBSettings.TVB_CONFIG_FILE)
+        execute_clean()
+        if os.path.exists(TVBSettings.TVB_CONFIG_FILE):
+            os.remove(TVBSettings.TVB_CONFIG_FILE)
