@@ -33,19 +33,10 @@
 .. moduleauthor:: Bogdan Neacsa <bogdan.neacsa@codemart.ro>
 .. moduleauthor:: Lia Domide <lia.domide@codemart.ro>
 
-This will start TVB either as desktop stand-alone or as web depending on 
-your preferences.It also has the option to stop the application. 
-Usage:
-    'python app.py start web [reset]'     - will start web client with/without database reset
-    'python app.py start desktop [reset]' - will start desktop client with/without database reset
-    'python app.py command [headless] [reset]' - will start client with/without database reset
-    'python app.py library [headless] [reset]' - will start  client with/without database reset
-    'python app.py stop'                  - will stop all running processes related to TVB
-    'python app.py clean'                 - will stop all running processes and cleans TVB data
-    'python app.py start web -profile $a_tvb_profile$' - will start with a specific profile
-
+This script will start TVB using a given profile, stop all TVB processes or clean a TVB installation.
+Usage: Run python app.py --help
 """
-
+import argparse
 import os
 import subprocess
 import signal
@@ -72,16 +63,42 @@ SUBPARAM_DESKTOP = "desktop"
 SUBPARAM_RESET = "reset"
 SUBPARAM_HEADLESS = "headless"
 SUBPARAM_PROFILE = TvbProfile.SUBPARAM_PROFILE
-EXPECTED_ARGS = {PARAM_START, PARAM_STOP, PARAM_MODEL_VALIDATION, PARAM_CLEAN, PARAM_COMMAND, PARAM_LIBRARY}
+
+RUN_WEB_PROFILES = [TvbProfile.DEPLOYMENT_PROFILE, TvbProfile.DEVELOPMENT_PROFILE,
+                    TvbProfile.TEST_POSTGRES_PROFILE, TvbProfile.TEST_SQLITE_PROFILE]
 
 
-ARGS_PROFILE = TvbProfile.get_profile(sys.argv)
-if ARGS_PROFILE is None and PARAM_MODEL_VALIDATION not in sys.argv:
-    sys.argv.append(TvbProfile.SUBPARAM_PROFILE)
-    sys.argv.append(TvbProfile.DEPLOYMENT_PROFILE)
+def parse_commandline():
+    def add_profile_arg(com):
+        help = 'Use a specific profile. Allowed values are: '
+        help += ', '.join(TvbProfile.ALL) + '. '
+        help += 'These profiles will launch the web interface : '
+        help += ', '.join(RUN_WEB_PROFILES)
+        com.add_argument('profile', metavar='profile', nargs='?', help=help,
+                         choices=TvbProfile.ALL, default=TvbProfile.DEPLOYMENT_PROFILE)
+
+    parser = argparse.ArgumentParser(description="Control TVB instances.", prog='tvb_start.sh')
+    subparsers = parser.add_subparsers(title='subcommands', dest='subcommand')
+
+    start = subparsers.add_parser('start', help='launch a TVB interface')
+    add_profile_arg(start)
+
+    start.add_argument('-reset', action='store_true', help='reset database')
+    start.add_argument('-headless', action='store_true', help='launch python instead of IDLE')
+
+    stop = subparsers.add_parser('stop', help='stop all TVB processes')
+    stop.set_defaults(profile=TvbProfile.DEPLOYMENT_PROFILE)
+
+    clean = subparsers.add_parser('clean', help='stop all TVB processes and delete all TVB data')
+    add_profile_arg(clean)
+
+    return parser.parse_args()
+
+
+ARGS = parse_commandline()
 
 ### This is a TVB Framework initialization call. Make sure a good default profile gets set.
-TvbProfile.set_profile(sys.argv)
+TvbProfile.set_profile([TvbProfile.SUBPARAM_PROFILE, ARGS.profile])
 
 ### Initialize TVBSettings only after a profile was set
 from tvb.basic.config.settings import TVBSettings
@@ -92,7 +109,8 @@ if SETTER.is_mac() or SETTER.is_windows():
     ## Import libraries to be found by the introspection.
     import imghdr
     import sndhdr  
-    
+
+# todo: check this
 if 'py2app' in sys.argv:
     import tvb.interfaces.web.run
     
@@ -141,7 +159,6 @@ def execute_clean():
     """
     Remove TVB folder, TVB File DB, and log files.
     """
-    TvbProfile.set_profile(sys.argv)
     try:
         if os.path.isdir(TVBSettings.TVB_STORAGE):
             shutil.rmtree(TVBSettings.TVB_STORAGE, ignore_errors=True)
@@ -305,49 +322,35 @@ def wait_for_tvb_process(tvb_process):
         AppHelper.runEventLoop()
 
 
-
 if __name__ == "__main__":
-    ARGS_PROFILE = TvbProfile.get_profile(sys.argv)
-
     if not os.path.exists(TVBSettings.TVB_STORAGE):
         try:
             os.makedirs(TVBSettings.TVB_STORAGE)
-        except Exception, excep:
+        except Exception:
             sys.exit("You do not have enough rights to use TVB storage folder:" + str(TVBSettings.TVB_STORAGE))
-            
-    if EXPECTED_ARGS & set(sys.argv) == set():
-        #Probably missing or wrong parameters, so start with default web interface:
-        sys.argv.append(PARAM_START)
-        sys.argv.append(SUBPARAM_WEB)
-    #
-    # if PARAM_MODEL_VALIDATION in sys.argv:
-    #    execute_model_validation()
-    
-    if PARAM_COMMAND in sys.argv:
-        execute_start_console(CONSOLE_PROFILE_SET, SUBPARAM_HEADLESS in sys.argv)
-        
-    elif PARAM_LIBRARY in sys.argv:
-        execute_start_console(LIBRARY_PROFILE_SET, SUBPARAM_HEADLESS in sys.argv)
-    
-    elif PARAM_START in sys.argv:
-        execute_stop()
-        sys.argv.remove(PARAM_START)
-        TVB_PROCESS = None
-        if SUBPARAM_WEB in sys.argv:
-            TVB_PROCESS = execute_start_web(ARGS_PROFILE, SUBPARAM_RESET in sys.argv)
-        elif SUBPARAM_DESKTOP in sys.argv:
-            TVB_PROCESS = execute_start_desktop(ARGS_PROFILE, SUBPARAM_RESET in sys.argv)
-        wait_for_tvb_process(TVB_PROCESS)
-        
-    elif PARAM_STOP in sys.argv:
+
+    if ARGS.subcommand == 'start':
+        if ARGS.profile == TvbProfile.CONSOLE_PROFILE:
+            # warn: not executing stop overwrites prev pid!
+            execute_start_console(CONSOLE_PROFILE_SET, ARGS.headless)
+        elif ARGS.profile == TvbProfile.LIBRARY_PROFILE:
+            execute_start_console(LIBRARY_PROFILE_SET, ARGS.headless)
+        elif ARGS.profile in RUN_WEB_PROFILES :
+            execute_stop()
+            TVB_PROCESS = execute_start_web(ARGS.profile, ARGS.reset)
+            wait_for_tvb_process(TVB_PROCESS)
+        elif ARGS.profile == TvbProfile.DESKTOP_PROFILE:
+            execute_stop()
+            TVB_PROCESS = execute_start_desktop(ARGS.profile, ARGS.reset)
+            wait_for_tvb_process(TVB_PROCESS)
+    elif ARGS.subcommand == 'stop':
         # Kill all Python processes which have their PID registered in .tvb file
         execute_stop()
-
-    elif PARAM_CLEAN in sys.argv:
+    elif ARGS.subcommand == 'clean':
         execute_stop()
         # Remove TVB folder, TVB File DB, and log file.
         # ignore clean for console profiles
-        if ARGS_PROFILE is None or not ARGS_PROFILE.lower().startswith('test'):
+        if not ARGS.profile.lower().startswith('test'): # todo: check this
             execute_clean()
             if os.path.exists(TVBSettings.TVB_CONFIG_FILE):
                 os.remove(TVBSettings.TVB_CONFIG_FILE)
