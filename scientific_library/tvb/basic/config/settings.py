@@ -37,6 +37,7 @@ Also the generic TVB-Configuration gets set from this point
 """
 
 import os
+import sys
 from tvb.basic.config.utils import ClassProperty, EnhancedDictionary
 from tvb.basic.profile import TvbProfile
 
@@ -97,7 +98,11 @@ class LibraryProfile():
     def initialize_profile(cls):
         """No initialization needed for this particular profile. But useful in general"""
         pass
-    
+
+    @classmethod
+    def get_python_path(cls):
+        return sys.executable
+
 
     
 ###

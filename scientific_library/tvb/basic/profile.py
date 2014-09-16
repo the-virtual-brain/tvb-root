@@ -170,5 +170,61 @@ class TvbProfile():
 
         return TvbProfile.CURRENT_SELECTED_PROFILE == TvbProfile.LIBRARY_PROFILE or not framework_present     
             
-            
-            
+
+    @staticmethod
+    def is_development():
+        """
+        Return True when TVB is used with Python installed natively.
+        """
+        dirname = os.path.dirname
+        tvb_root = dirname(dirname(dirname(dirname(os.path.abspath(__file__)))))
+        expected = ['third_party_licenses', 'externals', 'tvb_documentation']
+        return all(os.path.exists(os.path.join(tvb_root, pth)) for pth in expected)
+
+
+    @staticmethod
+    def is_windows_deployment():
+        """
+        Return True if current run is not development and is running on Windows.
+        """
+        return TvbProfile.is_windows() and not TvbProfile.is_development()
+
+
+    @staticmethod
+    def is_linux_deployment():
+        """
+        Return True if current run is not development and is running on Linux.
+        """
+        return TvbProfile.is_linux() and not TvbProfile.is_development()
+
+
+    @staticmethod
+    def is_mac_deployment():
+        """
+        Return True if current run is not development and is running on Mac OS X
+        """
+        return TvbProfile.is_mac() and not TvbProfile.is_development()
+
+
+    @staticmethod
+    def is_windows():
+        return sys.platform.startswith('win')
+
+
+    @staticmethod
+    def is_linux():
+        return not TvbProfile.is_windows() and not TvbProfile.is_mac()
+
+
+    @staticmethod
+    def is_mac():
+        return sys.platform == 'darwin'
+
+
+    @staticmethod
+    def get_python_exe_name():
+        """ Returns the name of the python executable depending on the specific OS """
+        if TvbProfile.is_windows():
+            return 'python.exe'
+        else:
+            return 'python'
