@@ -57,7 +57,6 @@ function _updatePlotPSE(canvasId, xLabels, yLabels, seriesArray, data_info, min_
             min: -1,
             max: xLabels.length,
             tickSize: 1,
-            shouldRotateLabels: true,
             tickFormatter: function(val) {
                 if (val < 0 || val >= xLabels.length) {
                     return "";

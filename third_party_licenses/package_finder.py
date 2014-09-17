@@ -120,10 +120,10 @@ EXCLUDES_FRAMEWORK = ['python.framework']
 
 INIT = ['__init__.py', '__init__.pyc']
 EXTRA_SEARCH_FOLDERS = ['site-packages', 'site-packages.zip']
-EXTRA_MODULES = {'jquery': '1.7.2', 
-                 'flot': '0.8.2',
+EXTRA_MODULES = {'jquery': '2.1.1',
+                 'flot': '0.8.3',
                  'jit': '2.0.1',
-                 'd3': '2',
+                 'd3': '3',
                  'bct': '1.0',
                  'python': PYTHON_VERSION,
                  'zlib': '1.0',

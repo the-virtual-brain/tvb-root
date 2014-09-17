@@ -669,3 +669,12 @@ ul#portlets-toolbar li a.hideable.action {
 .edit-simulator  > .toolbar-inline{
     margin-bottom: 0;
 }
+
+/* Rotate Axis Labels in PSE */
+.flot-x-axis div.flot-tick-label {
+    transform: rotate(15deg);
+    -ms-transform: rotate(15deg);
+    -moz-transform: rotate(15deg);
+    -webkit-transform: rotate(15deg);
+    -o-transform: rotate(15deg);
+}

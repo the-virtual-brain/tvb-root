@@ -73,17 +73,17 @@
     <dependency env="[win32,linux64,macos32,win64,linux32,macos64]" name="d3">
         <full-name value="D3 JS"/>
         <project-home value="http://d3js.org/"/>
-        <version value="2"/>
+        <version value="3"/>
         <usage value="dynamic linking"/>
-        <license value="LICENSE_d3_2.txt"/>
+        <license value="LICENSE_d3.txt"/>
         <license-type value="BSD_"/>
-        <copyright-notice value="Copyright (c) 2012, Michael Bostock"/>
+        <copyright-notice value="Copyright (c) 2013, Michael Bostock"/>
         <description value="JS library."/>
     </dependency>
     <dependency env="[win32,linux64,macos32,win64,linux32,macos64]" name="flot">
         <full-name value="Flot"/>
         <project-home value="http://www.flotcharts.org/"/>
-        <version value="0.8.2"/>
+        <version value="0.8.3"/>
         <usage value="dynamic linking"/>
         <license value="LICENSE_FLOT.txt"/>
         <license-type value="MIT_"/>
@@ -183,7 +183,7 @@
     <dependency env="[win32,linux64,macos32,win64,linux32,macos64]" name="jquery">
         <full-name value="JQuery"/>
         <project-home value="http://jquery.org/license"/>
-        <version value="1.7.2"/>
+        <version value="2.1.1"/>
         <usage value="dynamic linking"/>
         <license value="LICENSE_MIT_jquery.txt"/>
         <license-type value="MIT_"/>

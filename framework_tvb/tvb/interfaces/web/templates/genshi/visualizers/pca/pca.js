@@ -20,7 +20,7 @@
 
 /*
  * REQUIRES:
- * 		- /static/js/d3.v2.min.js : for d3 specific functions used for visualization
+ * 		- /static/js/d3.v3.js : for d3 specific functions used for visualization
  * 		- /static/js/tvbviz.js : for tv.util.ndar and operations on those kind of data
  */
 PCAViewer = function (root, fractionsDataUrl, weightsDataUrl, labelsData, width, height) {
