@@ -28,9 +28,6 @@
 #
 #
 
-
-# __future__ import must be kept at the beginning of the file
-from __future__ import with_statement
 """
 Usage should be `python pyinstaller.py setup_windows.spec`
 You can also set 'cluster' as an environmental variable beforehand 
@@ -61,28 +58,28 @@ def create_start_scripts(base_folder, data_folder, python_exe):
     if not os.path.exists(bin_folder):
         os.mkdir(bin_folder)
     
-    def _create_script_file(bin_folder, file_name, data_folder, command, end_message="Done"):
+    def _create_script_file(file_name, command, end_message="Done"):
         """
         Private script which adds the common part of a command file.
         Unfortunately it can not be defined outside this function, or else it's not visible.
         """
-        command_file = open(os.path.join(bin_folder, file_name + '.bat'), 'w')
-        command_file.write('@echo off \n')
-        command_file.write('rem Executing ' + file_name + ' \n')
-        command_file.write('cd ..\\' + data_folder + ' \n')
-        command_file.write('set PATH=%cd%;%path%; \n')
-        command_file.write('set PYTHONPATH=%cd%; \n')
-        command_file.write('set PYTHONHOME=%cd%; \n')
-        command_file.write('cd exe \n')
-        command_file.write(command + ' \n')
-        command_file.write('echo "' + end_message + '" \n')
-        command_file.close()
-        os.chmod(os.path.join(bin_folder, file_name + '.bat'), 0775)
+        pth = os.path.join(bin_folder, file_name + '.bat')
+        with open(pth, 'w') as f:
+            f.write('@echo off \n')
+            f.write('rem Executing ' + file_name + ' \n')
+            f.write('cd ..\\' + data_folder + ' \n')
+            f.write('set PATH=%cd%;%path%; \n')
+            f.write('set PYTHONPATH=%cd%; \n')
+            f.write('set PYTHONHOME=%cd%; \n')
+            f.write('cd exe \n')
+            f.write(command + ' \n')
+            f.write('echo "' + end_message + '" \n')
+        os.chmod(pth, 0775)
     
-    _create_script_file(bin_folder, 'tvb_start', data_folder, app_name + ' start %1 %2', "Starting...")
-    _create_script_file(bin_folder, 'tvb_clean', data_folder, app_name + ' clean %1')
-    _create_script_file(bin_folder, 'tvb_stop', data_folder, app_name + ' stop')
-    _create_script_file(bin_folder, 'contributor_setup', data_folder, python_exe + ' -m tvb_bin.git_setup %1\n')
+    _create_script_file('tvb_start', app_name + ' start %1 %2', "Starting...")
+    _create_script_file('tvb_clean', app_name + ' clean %1')
+    _create_script_file('tvb_stop', app_name + ' stop')
+    _create_script_file('contributor_setup', python_exe + ' -m tvb_bin.git_setup %1\n')
    
 
 #--------------------------- Setup variable declarations for PyInstaller starts here   --------------------------------

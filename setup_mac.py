@@ -37,7 +37,6 @@ Execute:
 """
 
 #Prepare TVB code and dependencies.
-from __future__ import with_statement
 import os
 import sys
 import shutil
@@ -51,15 +50,15 @@ def _create_command_file(command_file_name, command, before_message, done_messag
     """
     Private script which adds the common part of a command file.
     """
-    command_file = open(os.path.join(DIST_FOLDER, "bin", command_file_name + ".command"), 'w')
-    command_file.write('#!/bin/bash\n')
-    command_file.write('cd "$(dirname "$0")"\n')
-    command_file.write('cd ..\n')
-    command_file.write('echo "' + before_message + '"\n')
-    command_file.write(command + "\n")
-    if done_message:
-        command_file.write('echo "Done."\n')
-    command_file.close()
+    pth = os.path.join(DIST_FOLDER, "bin", command_file_name + ".command")
+    with open(pth, 'w') as f:
+        f.write('#!/bin/bash\n')
+        f.write('cd "$(dirname "$0")"\n')
+        f.write('cd ..\n')
+        f.write('echo "' + before_message + '"\n')
+        f.write(command + "\n")
+        if done_message:
+            f.write('echo "Done."\n')
 
 
 #--------------------------- PY2APP specific configurations--------------------------------------------
