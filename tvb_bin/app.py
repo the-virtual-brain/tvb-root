@@ -95,12 +95,16 @@ def parse_commandline():
     start.add_argument('-headless', action='store_true', help='launch python instead of IDLE')
 
     stop = subparsers.add_parser('stop', help='stop all TVB processes')
-    # all subcommands are expected to have a profile not necessarily entered by the user.
+    # all sub-commands are expected to have a profile not necessarily entered by the user.
     stop.set_defaults(profile=TvbProfile.DEPLOYMENT_PROFILE)
 
     clean = subparsers.add_parser('clean', help='stop all TVB processes and delete all TVB data')
     add_profile_arg(clean)
 
+    if len(sys.argv) < 2:
+        # No sub-command specified
+        # With sub-commands, there is not direct way, in argparse, to specify a default
+        return parser.parse_args(['start'])
     return parser.parse_args()
 
 
