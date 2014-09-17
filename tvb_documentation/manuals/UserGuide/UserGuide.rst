@@ -219,7 +219,7 @@ Upgrading the Application
 =========================
 
 To upgrade to a new version of |TVB| stop the server with `tvb_stop.sh`, then delete the old distribution
-and finally install the new distribution by unzipping the package.
+and install the new distribution by unzipping the new TVB downloaded package.
 Finally run the appropriate script for your platform to launch |TVB|.
 The first run after update will migrate your projects to the new version.
 
