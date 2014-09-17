@@ -60,8 +60,8 @@ except ImportError:
 if 'py2app' in sys.argv:
     import tvb.interfaces.web.run
 
-RUN_WEB_PROFILES = [TvbProfile.DEPLOYMENT_PROFILE, TvbProfile.DEVELOPMENT_PROFILE,
-                    TvbProfile.TEST_POSTGRES_PROFILE, TvbProfile.TEST_SQLITE_PROFILE]
+RUN_WEB_PROFILES = [TvbProfile.DEPLOYMENT_PROFILE, TvbProfile.DEVELOPMENT_PROFILE]
+TEST_PROFILES = [TvbProfile.TEST_POSTGRES_PROFILE, TvbProfile.TEST_SQLITE_PROFILE]
 
 CONSOLE_TVB = 'tvb_bin.run_IDLE'
 
@@ -77,19 +77,19 @@ SUB_PARAMETER_RESET = "reset"
 
 
 def parse_commandline():
-    def add_profile_arg(com):
+    def add_profile_arg(com, allowed, help_footer=''):
         helpMsg = 'Use a specific profile. Allowed values are: '
-        helpMsg += ' '.join(TvbProfile.ALL) + '. '
-        helpMsg += 'These profiles will launch the web interface : '
-        helpMsg += ' '.join(RUN_WEB_PROFILES)
+        helpMsg += ' '.join(allowed) + '. '
+        helpMsg += help_footer
         com.add_argument('profile', metavar='profile', nargs='?', help=helpMsg,
-                         choices=TvbProfile.ALL, default=TvbProfile.DEPLOYMENT_PROFILE)
+                         choices=allowed, default=TvbProfile.DEPLOYMENT_PROFILE)
 
     parser = argparse.ArgumentParser(description="Control TVB instances.", prog='tvb_start')
     subparsers = parser.add_subparsers(title='subcommands', dest='subcommand')
 
     start = subparsers.add_parser('start', help='launch a TVB interface')
-    add_profile_arg(start)
+    add_profile_arg(start, set(TvbProfile.ALL) - set(TEST_PROFILES),
+                    'These profiles will launch the web interface : ' + ' '.join(RUN_WEB_PROFILES))
 
     start.add_argument('-reset', action='store_true', help='reset database')
     start.add_argument('-headless', action='store_true', help='launch python instead of IDLE')
@@ -99,7 +99,7 @@ def parse_commandline():
     stop.set_defaults(profile=TvbProfile.DEPLOYMENT_PROFILE)
 
     clean = subparsers.add_parser('clean', help='stop all TVB processes and delete all TVB data')
-    add_profile_arg(clean)
+    add_profile_arg(clean, TvbProfile.ALL)
 
     if len(sys.argv) < 2:
         # No sub-command specified
@@ -326,6 +326,8 @@ if __name__ == "__main__":
             execute_stop()
             TVB_PROCESS = execute_start_desktop(ARGS.profile, ARGS.reset)
             wait_for_tvb_process(TVB_PROCESS)
+        else:
+            sys.exit('TVB cannot start with the %s profile' % ARGS.profile)
 
     elif ARGS.subcommand == 'stop':
         # Kill all Python processes which have their PID registered in .tvb file
