@@ -1,5 +1,5 @@
 <!DOCTYPE html> 
-<html lang="en" class="${'user-authorized ss-account' if mainContent=='profile' else 'user-anon ss-login'} style-default v-odinson" id="s-user"
+<html lang="en" class="${'user-authorized ss-account' if mainContent in ['profile', 'user_management'] else 'user-anon ss-login'} style-default v-odinson" id="s-user"
       xmlns:py="http://genshi.edgewall.org/" xmlns:xi="http://www.w3.org/2001/XInclude">
     <!-- 
 		TheVirtualBrain-Framework Package. This package holds all Data Management, and 
@@ -44,8 +44,6 @@
         <link rel="stylesheet" type="text/css" href="/static/style/base.css?$currentVersionJS" />
         <link rel="stylesheet" type="text/css" href="/static/style/section_user.css?$currentVersionJS" />
         <link rel="stylesheet" type="text/css" href="/static/style/overlay.css?$currentVersionJS"/>
-        <!-- JQuery Library Files -->
-        <link rel="stylesheet" type="text/css" href="/static/jquery/themes/base/jquery.ui.all.css"/>
         <script type="text/javascript" src="/static/jquery/jquery.js"></script>
         <script type="text/javascript" src="/static/js/genericTVB.js?$currentVersionJS"></script>
         <!-- MathJax files and config -->

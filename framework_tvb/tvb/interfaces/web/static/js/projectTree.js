@@ -125,7 +125,7 @@ function updateTree(treeSelector, projectId, baseUrl, visibilityFilter) {
 		                    "theme": "default",
 		                    "dots": true,
 		                    "icons": true,
-		                    "url": baseUrl + "static/jquery/themes/default/style.css"
+		                    "url": baseUrl + "static/jquery/jquery-ui.theme.css"
 		                },
 		                "json_data": {
 		                    "ajax": { url: url,

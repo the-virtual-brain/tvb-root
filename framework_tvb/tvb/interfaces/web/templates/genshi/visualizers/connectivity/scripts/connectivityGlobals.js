@@ -74,9 +74,6 @@ function GFUN_mapNodeIdsToIndices(ids){
  * Function called when Connectivity Page is loaded and ready for initialization.
  */
 function GFUN_initializeConnectivityFull() {
-    //Set the mouse listeners for the 3d visualizers: Top DIV, WebGL-edges (div & canvas), WebGL-3D (div & canvas).
-    $('#monitorDiv').mousewheel(function(event, delta) { return _customMouseWheelEvent(delta); });
-    $('#canvasDiv').mousewheel(function(event, delta) { return _customMouseWheelEvent(delta); });
     $('#GLcanvas').mousewheel(function(event, delta) { return _customMouseWheelEvent(delta); });
 
     //Draw any additional elements like color picking and hide all tabs but the default one
