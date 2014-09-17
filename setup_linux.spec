@@ -75,26 +75,35 @@ export PYTHONPATH=`pwd`
 
 cd exe
 """
-    app_name = './' + python_exe + ' -m tvb_bin.app'
+
+    def _create_script_file(command_file_name, contents):
+        pth = os.path.join(bin_folder, command_file_name + ".sh")
+        with open(pth, 'w') as command_file:
+            command_file.write('#!/bin/bash\n')
+            command_file.write('cd "$(dirname "$0")"\n')
+            command_file.write(contents + '\n')
+        os.chmod(pth, 0775)
+
 
     def _create_command_file(command_file_name, command):
-        """ 
+        """
         Private script which adds the common part of a script file.
         Unfortunately it can not be defined outside this function, or else it's not visible.
         """
-        pth = os.path.join(bin_folder, command_file_name + ".sh")
-        with open(pth, 'w') as f:
-            f.write('#!/bin/bash\n')
-            f.write('cd "$(dirname "$0")"\n')
-            f.write('cd ../' + data_folder + '\n')
-            f.write(SCRIPT_PREPARE_TEXT + '\n')
-            f.write(command + '\n')
-        os.chmod(pth, 0775)
-    
-    _create_command_file('tvb_start', app_name + ' start $@')
-    _create_command_file('tvb_clean', app_name + ' clean $@')
-    _create_command_file('tvb_stop', app_name + ' stop')
+        _create_script_file(command_file_name,
+            'cd ../' + data_folder + '\n' +
+            SCRIPT_PREPARE_TEXT + '\n' +
+            command + '\n'
+        )
+
+
+    _create_command_file('distribution', './' + python_exe + ' -m tvb_bin.app $@')
     _create_command_file('contributor_setup', './' + python_exe + ' -m tvb_bin.git_setup $1')
+
+    _create_script_file('tvb_start', 'source distribution.sh start')
+    _create_script_file('tvb_clean', 'source distribution.sh clean')
+    _create_script_file('tvb_stop', 'source distribution.sh stop')
+
     
     if arg_cluster in os.environ:
         COMMAND = open(os.path.join(bin_folder, 'clusterLauncher'), 'w')

@@ -75,9 +75,10 @@ def create_start_scripts(base_folder, data_folder, python_exe):
             f.write(command + ' \n')
             f.write('echo "' + end_message + '" \n')
         os.chmod(pth, 0775)
-    
-    _create_script_file('tvb_start', app_name + ' start %1 %2', "Starting...")
-    _create_script_file('tvb_clean', app_name + ' clean %1')
+
+    _create_script_file('distribution', app_name + ' %1 %2 %3 %4 %5 %6', "")
+    _create_script_file('tvb_start', app_name + ' start', "Starting...")
+    _create_script_file('tvb_clean', app_name + ' clean')
     _create_script_file('tvb_stop', app_name + ' stop')
     _create_script_file('contributor_setup', python_exe + ' -m tvb_bin.git_setup %1\n')
    

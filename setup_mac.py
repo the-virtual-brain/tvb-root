@@ -129,9 +129,10 @@ print "Running post-py2app build operations:"
 print "- Start creating startup scripts..."
 
 os.mkdir('dist/bin')
-_create_command_file('tvb_start', './tvb.app/Contents/MacOS/tvb start $@', 'Starting TVB Web Interface')
-_create_command_file('tvb_clean', './tvb.app/Contents/MacOS/tvb clean $@', 'Cleaning up old TVB data.', True)
-_create_command_file('tvb_stop', './tvb.app/Contents/MacOS/tvb stop', 'Stopping TVB related processes.', True)
+_create_command_file('distribution', './tvb.app/Contents/MacOS/tvb $@', '')
+_create_command_file('tvb_start', 'source ./tvb.app/Contents/MacOS/distribution start', 'Starting TVB Web Interface')
+_create_command_file('tvb_clean', 'source ./tvb.app/Contents/MacOS/distribution clean', 'Cleaning up old TVB data.', True)
+_create_command_file('tvb_stop', 'source ./tvb.app/Contents/MacOS/distribution stop', 'Stopping TVB related processes.', True)
 _create_command_file('contributor_setup', 'export PYTHONPATH=tvb.app/Contents/Resources/lib/python2.7:'
                                           'tvb.app/Contents/Resources/lib/python2.7/site-packages.zip:'
                                           'tvb.app/Contents/Resources/lib/python2.7/lib-dynload\n'
