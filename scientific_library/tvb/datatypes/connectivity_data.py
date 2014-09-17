@@ -67,7 +67,7 @@ class ConnectivityData(MappedType):
 
     undirected = basic.Integer(
         default=0, required=False,
-        doc="1, when the weights matrix is square and symmetric over the main diagonal, 0 when bi-directional matrix.")
+        doc="1, when the weights matrix is square and symmetric over the main diagonal, 0 when directed graph.")
 
     tract_lengths = arrays.FloatArray(
         label="Tract lengths",

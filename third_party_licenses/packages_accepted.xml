@@ -13,7 +13,7 @@
     <dependency env="[win32,linux64,macos32,win64,linux32,macos64]" name="bct">
         <full-name value="Brain Connectivity Toolbox (BCT)"/>
         <project-home value="https://sites.google.com/site/bctnet/"/>
-        <version value="1.0"/>
+        <version value="43"/>
         <usage value="static linking"/>
         <license value="LICENSE_bct.txt"/>
         <license-type value="MIT_"/>

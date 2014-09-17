@@ -124,7 +124,7 @@ EXTRA_MODULES = {'jquery': '2.1.1',
                  'flot': '0.8.3',
                  'jit': '2.0.1',
                  'd3': '3',
-                 'bct': '1.0',
+                 'bct': '43',
                  'python': PYTHON_VERSION,
                  'zlib': '1.0',
                  'mathjax': '2.0'}

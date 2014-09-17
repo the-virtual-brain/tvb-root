@@ -28,19 +28,19 @@ function [Ppos Pneg]=participation_coef_sign(W,Ci)
 
 n=length(W);                                %number of vertices
 
-Ppos = pcoef( W.*(W>0));
-Pneg = pcoef(-W.*(W<0));
+Ppos = pcoef( W.*(W>0), Ci, n);
+Pneg = pcoef(-W.*(W<0), Ci, n);
 
-    function P=pcoef(W_)
+    function P = pcoef(W_, Ci_, n_)
         S   = sum(W_,2);                    %strength
-        Gc  = (W_~=0)*diag(Ci);             %neighbor community affiliation
-        Sc2 = zeros(n,1);                   %community-specific neighbors
+        Gc  = (W_~=0)*diag(Ci_);             %neighbor community affiliation
+        Sc2 = zeros(n_, 1);                   %community-specific neighbors
 
-        for i = 1:max(Ci);
+        for i = 1:max(Ci_);
             Sc2 = Sc2 + (sum(W_.*(Gc==i),2).^2);
         end
 
-        P = ones(n,1) - Sc2./(S.^2);
+        P = ones(n_, 1) - Sc2./(S.^2);
         P(isnan(P)) = 0;
         P(~P) = 0;                            %p_ind=0 if no (out)neighbors
     end

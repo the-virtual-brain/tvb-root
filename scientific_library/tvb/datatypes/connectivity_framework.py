@@ -205,3 +205,13 @@ class ConnectivityFramework(connectivity_data.ConnectivityData):
         """
         return self.gid
 
+
+    @property
+    def binarized_weights(self):
+        """
+        :return: a matrix of he same size as weights, with 1 where weight > 0, and 0 in rest
+        """
+        result = numpy.zeros_like(self.weights)
+        result = numpy.where(self.weights > 0, 1, result)
+        return result
+
