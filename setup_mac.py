@@ -54,7 +54,6 @@ def _create_command_file(command_file_name, command, before_message, done_messag
     with open(pth, 'w') as f:
         f.write('#!/bin/bash\n')
         f.write('cd "$(dirname "$0")"\n')
-        f.write('cd ..\n')
         f.write('echo "' + before_message + '"\n')
         f.write(command + "\n")
         if done_message:
@@ -129,11 +128,12 @@ print "Running post-py2app build operations:"
 print "- Start creating startup scripts..."
 
 os.mkdir('dist/bin')
-_create_command_file('distribution', './tvb.app/Contents/MacOS/tvb $@', '')
-_create_command_file('tvb_start', 'source ./tvb.app/Contents/MacOS/distribution start', 'Starting TVB Web Interface')
-_create_command_file('tvb_clean', 'source ./tvb.app/Contents/MacOS/distribution clean', 'Cleaning up old TVB data.', True)
-_create_command_file('tvb_stop', 'source ./tvb.app/Contents/MacOS/distribution stop', 'Stopping TVB related processes.', True)
-_create_command_file('contributor_setup', 'export PYTHONPATH=tvb.app/Contents/Resources/lib/python2.7:'
+_create_command_file('distribution', '../tvb.app/Contents/MacOS/tvb $@', '')
+_create_command_file('tvb_start', 'source ./distribution.command start', 'Starting TVB Web Interface')
+_create_command_file('tvb_clean', 'source ./distribution.command clean', 'Cleaning up old TVB data.', True)
+_create_command_file('tvb_stop', 'source ./distribution.command stop', 'Stopping TVB related processes.', True)
+_create_command_file('contributor_setup', 'cd ..\n'
+                                          'export PYTHONPATH=tvb.app/Contents/Resources/lib/python2.7:'
                                           'tvb.app/Contents/Resources/lib/python2.7/site-packages.zip:'
                                           'tvb.app/Contents/Resources/lib/python2.7/lib-dynload\n'
                                           './tvb.app/Contents/MacOS/python  '
