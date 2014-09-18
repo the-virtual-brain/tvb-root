@@ -78,11 +78,11 @@ def create_start_scripts(base_folder, data_folder, python_exe):
         Private script which adds the common part of a script TVB file.
         Unfortunately it can not be defined outside this function, or else it's not visible with PyInstaller.
         """
-        tvb_command_text = 'cd ..\\' + data_folder + ' \n' +
-                            'set PATH=%cd%;%path%; \n' +
-                            'set PYTHONPATH=%cd%; \n'+
-                            'set PYTHONHOME=%cd%; \n' +
-                            'cd exe \n' +
+        tvb_command_text = 'cd ..\\' + data_folder + ' \n' + \
+                            'set PATH=%cd%;%path%; \n' + \
+                            'set PYTHONPATH=%cd%; \n' + \
+                            'set PYTHONHOME=%cd%; \n' + \
+                            'cd exe \n' + \
                             command + '\n'
         _create_script_file(command_file_name, tvb_command_text, end_message)
 

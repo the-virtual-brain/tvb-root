@@ -94,8 +94,8 @@ cd exe
         Private script which adds the common part of a script TVB file.
         Unfortunately it can not be defined outside this function, or else it's not visible with PyInstaller.
         """
-        tvb_command_text = 'cd ../' + data_folder + '\n' +
-                            SCRIPT_PREPARE_TEXT + '\n' +
+        tvb_command_text = 'cd ../' + data_folder + '\n' + \
+                            SCRIPT_PREPARE_TEXT + '\n' + \
                             command + '\n'
         _create_script_file(command_file_name, tvb_command_text)
 
