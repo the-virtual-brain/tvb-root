@@ -84,7 +84,7 @@ def parse_commandline():
         com.add_argument('profile', metavar='profile', nargs='?', help=helpMsg,
                          choices=allowed, default=TvbProfile.DEPLOYMENT_PROFILE)
 
-    parser = argparse.ArgumentParser(description="Control TVB instances.", prog='tvb_start')
+    parser = argparse.ArgumentParser(description="Control TVB instances.", prog='distribution')
     subparsers = parser.add_subparsers(title='subcommands', dest='subcommand')
 
     start = subparsers.add_parser('start', help='launch a TVB interface')

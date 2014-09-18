@@ -46,47 +46,10 @@ check for updates on our web site: http://www.thevirtualbrain.org.
 Installing the Application
 ==========================
 
-As |TVB| redefines what's possible in neuroscience utilizing off-the-shelf computer hardware, a few requirements are essential when using the software.
-
-Requirements for front-end visualization:
-
-- **High definition monitor** -
-  Your monitor should be capable of displaying at least 1600 x 1000 pixels. Some views might be truncated if TVB is run on smaller monitors.
-
-- **WebGL and WebSockets compatible browser** -
-  We've tested the software on Mozilla Firefox 14+, Apple Safari 5.1+ and Google Chrome 20+.
-  Using a different, less capable browser might result in some features not working or the user interface looking awkward at times.
-
-- **WebGL-compatible graphics card** - 
-  The graphic card has to support OpenGL version 2.0 or higher. The operating system needs to have a proper card driver as well to expose the graphic card towards WebGL.
-  This requirement only affects PCs, not (somewhat recent) Macs.
-
-
-Requirements for computation/storage power, dependent on the number of parallel simulations that will be executed concurrently:
-
-- **CPU power** - 
-  1 CPU core is needed for one simulation. When launching more simulations than the number of available cores, a serialization is recommended.
-  This can be done by setting the "maximum number of parallel threads" (in TVB settings) to the same value as the number of cores. 
-
-- **Memory** - 
-  For a single simulation 8GB of RAM should be sufficient but 16GB are recommended.
-
-- **Disk space** is also important, as simulating only 10 ms on surface level will occupy 280MB of disk space. A minimum of 50GB of space per user is a rough approximation.
-   
-- 32 bit packages will work fine, also when running on a 64 bit architecture.
-  Please take note that some simulations on surface level might require more memory that 32 bit programs can address, 
-  at which point the TVB software will notify you about this with a "Memory Error".
-
-- Optional **MatLab or Octave** -
-  A special feature in TVB is utilizing functions from the Brain Connectivity Toolbox.
-  This feature thus requires a MatLab or Octave package on your computer (installed, activated and added to your OS' global PATH variable).
-  The Brain Connectivity Toolbox doesn't need to be installed or enabled separately in any way, as TVB will temporarily append it to your MatLab/Octave path.
-
-
 The TVB software package can be used in 3 different configurations:
 
 - on a single machine (personal usage).
-  This machine will need to meet the technical requirements from above for both the visualization and the computation/storage part.
+  This machine will need to meet the `Application requirements`_ for both the visualization and the computation/storage part.
   Any operation launched will use resources from current machine (graphic card, CPU, disk and RAM).
   
 - in a client/server configuration, where TVB is installed on a server and made accessible to an unlimited number of users.
@@ -100,94 +63,53 @@ The TVB software package can be used in 3 different configurations:
   
 - using a cluster (similar with server installation, but with parallelization support).
   Please note that for cluster installations, OAR is expected to be configured separately from TVB and accessible to the user for which the TVB software is launched.
-     
-      
-Launching the application is described in the next paragraphs, on all supported platforms.
 
-On Linux
---------
 
-Unzip the package and it will create a folder TVB_Distribution. In this folder
-you should find a sub-folder `bin` with a number of scripts:
+To install |TVB| unzip the package and it will create a folder TVB_Distribution.
 
-- tvb_start.sh
-- tvb_clean.sh
-- tvb_stop.sh
-- contributor_setup.sh
- 
 
-To start |TVB| graphical interface in your web-browser, run the
-`tvb_start.sh` script. You can run at any time `tvb_clean.sh` which
-will start |TVB| in a clean state, resetting your program database and deleting
-ALL folders and their content created by |TVB|. Be careful!
+Launching the application
+-------------------------
+
+In the TVB_Distribution folder you should find a sub-folder `bin` with a number of scripts:
+
+- tvb_start
+- tvb_clean
+- tvb_stop
+- contributor_setup
+- distribution
+
+On Linux these scripts will have the `.sh` termination, on Mac the `.command` termination and on Windows the `.bat` termination.
+We will omit the termination in this manual. For example if you are using Windows and tvb_start is mentioned
+in this document then tvb_start.bat is meant.
+
+For Mac users the `bin` folder contains an application package `tvb.app`.
+To start |TVB| in your web browser double click `tvb.app`.
+Please be patient, as depending on your computer resources, the startup process might take about 1-2 minutes.
+
+For Linux and Windows users, to start |TVB| in your web-browser, run the `tvb_start` script.
 
 To make sure that no processes will remain open after you use the application,
-you should always close |TVB| by running the `tvb_stop.sh` script.
+you should always close |TVB| by running the `tvb_stop` script.
 
-To access the console interface, run in a terminal
-`tvb_start.sh COMMAND_PROFILE [-headless] [-reset]` or `tvb_start.sh LIBRARY_PROFILE [-headless]`.
+The `tvb_clean` which will reset your TVB database and delete **all** data stored by |TVB|. Be careful!
+Use this to get to a clean state as if |TVB| had just been installed.
+
+The `distribution` script is used from a terminal to control the |TVB| distribution.
+Run `distribution -h` too get help with this command.
+
+To access the console interface, run in a terminal `distribution start COMMAND_PROFILE` or `distribution start LIBRARY_PROFILE`.
 The interactive Python shell will appear. See the Shell and User Interface sections in this document for
 more details on how to use the different interfaces of |TVB|.
 
-The current |TVB| package was tested on Debian Squeeze and Fedora 16. 
-Other Linux flavors might also work as long as you have installed a glibc 
-version of 2.11 or higher.
-
 For details on script `contributor_setup`, please read document `ContributorsManual.pdf`.
 
-On MacOS
---------
 
-Unzip the package and it will create a folder: TVB_Distribution. In this folder
-you should find a number of scripts (in `bin` sub-folder) and an application package (`tvb.app`).
-
-To start |TVB| in your web browser you should double-click on the `tvb.app` 
-application. If you would rather use the shell interface you will need to run the
-`tvb_start.command` script from the `bin` from a terminal. Type in
-`tvb_start.command COMMAND_PROFILE [-headless] [-reset]` or `tvb_start.command LIBRARY_PROFILE [-headless]`.
-See the Shell and User Interface sections in this document for
-more details on how to use the different interfaces of |TVB|.
-
-Double click on `tvb.app` will launch the TVB software as a background process and will also try to
-fire a browser window for you to start working with TVB. Please be patient, as depending on your computer
-resources, the startup process might take about 1-2 minutes.
-
-You can at any time run the `tvb_clean.command` which will reset
-your TVB database and delete all folders created by |TVB|.
-
-To make sure that no processes will remain open after you use the application,
-you should always close |TVB| by running the `tvb_stop.command` script.
-
-The current |TVB| version was tested on Mac OS X 10.5.8 (Leopard), 10.6.8 (Snow Leopard) and 10.7.2 (Lion)
-but should also run smoothly on subsequent versions.
-
-On Windows
-----------
-
-Unzip the package and it will create a folder TVB_Distribution. 
-In this folder you should find sub-folder `bin` with a number of .bat scripts. 
-
-To start |TVB| you should use `tvb_start.bat`. This will launch the TVB software with a console 
-process for debugging, and will also try to fire a browser window for you to start working with TVB web interface.
-If you would rather use the shell interface you will need to run the
-`tvb_start.bat` script from the `bin` from a terminal. Type in
-`tvb_start.bat COMMAND_PROFILE [-headless] [-reset]` or `tvb_start.bat LIBRARY_PROFILE [-headless]`.
-See the Shell and User Interface sections in this document for
-more details on how to use the different interfaces of |TVB|.
-
-You can at any time run `tvb_clean.bat` which will start tvb in a clean state, resetting
-your program database and deleting all folders created by |TVB|.
-
-To make sure that no processes will remain open after you use the application,
-you should close |TVB| by running `tvb_stop.bat`, or close the previous opened console.
-
-This version was tested on Windows XP (x32), Windows Server 2008 (x64) and Windows 7 (x64).
-
-
-Configuring TVB from the command line
-=====================================
+Configuring TVB
+---------------
 
 The preferred method to configure |TVB| is from the web interface. See `TVB Settings`_.
+
 However if |TVB| is installed on a headless server then the web interface might not be available remotely.
 Create a file named .tvb.configuration in the home directory of the user that will launch |TVB|.
 Copy the following configuration and edit it to suit your needs. ::
@@ -212,16 +134,74 @@ Copy the following configuration and edit it to suit your needs. ::
     TVB_STORAGE=/home/tvb_user/TVB
 
 Usually one would change the web server port and domain.
+|TVB| will create a folder with project data named TVB. By default it is located in the users home directory.
+You can change the TVB_STORAGE to point to a different path.
+
 Finally run the appropriate script for your platform to launch |TVB| with the new settings.
 
 
 Upgrading the Application
-=========================
+-------------------------
 
-To upgrade to a new version of |TVB| stop the server with `tvb_stop.sh`, then delete the old distribution
+To upgrade to a new version, stop the server with `tvb_stop`, then delete the old distribution
 and install the new distribution by unzipping the new TVB downloaded package.
 Finally run the appropriate script for your platform to launch |TVB|.
 The first run after update will migrate your projects to the new version.
+
+
+Supported operating systems
+---------------------------
+
+The current |TVB| package was tested on :
+
+Debian Squeeze and Fedora 16.
+Other Linux flavors might also work as long as you have installed a glibc
+version of 2.11 or higher.
+
+Mac OS X 10.5.8 (Leopard), 10.6.8 (Snow Leopard) and 10.7.2 (Lion)
+but should also run smoothly on subsequent versions.
+
+Windows XP (x32), Windows Server 2008 (x64) and Windows 7 (x64).
+
+
+Application requirements
+------------------------
+
+As |TVB| redefines what's possible in neuroscience utilizing off-the-shelf computer hardware, a few requirements are essential when using the software.
+
+Requirements for front-end visualization:
+
+- **High definition monitor** -
+  Your monitor should be capable of displaying at least 1600 x 1000 pixels. Some views might be truncated if TVB is run on smaller monitors.
+
+- **WebGL and WebSockets compatible browser** -
+  We've tested the software on Mozilla Firefox 14+, Apple Safari 5.1+ and Google Chrome 20+.
+  Using a different, less capable browser might result in some features not working or the user interface looking awkward at times.
+
+- **WebGL-compatible graphics card** -
+  The graphic card has to support OpenGL version 2.0 or higher. The operating system needs to have a proper card driver as well to expose the graphic card towards WebGL.
+  This requirement only affects PCs, not (somewhat recent) Macs.
+
+
+Requirements for computation/storage power, dependent on the number of parallel simulations that will be executed concurrently:
+
+- **CPU power** -
+  1 CPU core is needed for one simulation. When launching more simulations than the number of available cores, a serialization is recommended.
+  This can be done by setting the "maximum number of parallel threads" (in TVB settings) to the same value as the number of cores.
+
+- **Memory** -
+  For a single simulation 8GB of RAM should be sufficient but 16GB are recommended.
+
+- **Disk space** is also important, as simulating only 10 ms on surface level will occupy 280MB of disk space. A minimum of 50GB of space per user is a rough approximation.
+
+- 32 bit packages will work fine, also when running on a 64 bit architecture.
+  Please take note that some simulations on surface level might require more memory that 32 bit programs can address,
+  at which point the TVB software will notify you about this with a "Memory Error".
+
+- Optional **MatLab or Octave** -
+  A special feature in TVB is utilizing functions from the Brain Connectivity Toolbox.
+  This feature thus requires a MatLab or Octave package on your computer (installed, activated and added to your OS' global PATH variable).
+  The Brain Connectivity Toolbox doesn't need to be installed or enabled separately in any way, as TVB will temporarily append it to your MatLab/Octave path.
 
 
 .. raw:: pdf

@@ -71,11 +71,20 @@ Terminal Interface of |TVB|
 If you are using |TVB| on a headless machine then Python IDLE is not an option.
 To launch a python terminal in the command profile use ::
 
-    tvb_start.sh COMMAND_PROFILE -headless [-reset]
+   distribution start COMMAND_PROFILE -headless
 
 And in the library profile ::
 
-    tvb_start.sh LIBRARY_PROFILE -headless
+   distribution start LIBRARY_PROFILE -headless
 
-On windows use tvb_start.bat instead of tvb_start.sh
-The scripts are located in the `bin` folder.
+The scripts are located in the `bin` folder and they have platform specific terminations.
+
+The `distribution` script can be used to launch other profiles as well.
+The `DEPLOYMENT_PROFILE` will start the web interface. The following has the same effect as `tvb_start` ::
+
+    distribution start DEPLOYMENT_PROFILE
+
+Using the distribution script allows you to give additional options.
+The `-reset` option will clean the |TVB| folder before starting the web interface ::
+
+    distribution start DEPLOYMENT_PROFILE -reset
