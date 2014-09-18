@@ -312,13 +312,14 @@ class PyInstallerPacker():
         @param package_name: this will be used in the final zip name. Resulting package will have the 
             name generated as {package_name}{version}_x[32|64]_web.zip
         """
+        PyInstallerPacker.add_sitecustomize(PyInstallerPacker.RESULT_BASE_FOLDER, PyInstallerPacker.DATA_FOLDER_NAME)
+
         dist_folder = os.path.join(os.path.dirname(PyInstallerPacker.RESULT_BASE_FOLDER), DIST_FOLDER)
         if os.path.exists(dist_folder):
             shutil.rmtree(dist_folder)
         os.rename(PyInstallerPacker.RESULT_BASE_FOLDER, dist_folder)
         shutil.rmtree('temp', True)
 
-        PyInstallerPacker.add_sitecustomize(PyInstallerPacker.RESULT_BASE_FOLDER, PyInstallerPacker.DATA_FOLDER_NAME)
         PyInstallerPacker.generate_final_zip(package_name, PyInstallerPacker.DATA_FOLDER_NAME)
 
 
