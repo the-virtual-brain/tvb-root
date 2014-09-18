@@ -178,10 +178,15 @@ class TvbProfile():
         """
         Return True when TVB is used with Python installed natively.
         """
-        dirname = os.path.dirname
-        tvb_root = dirname(dirname(dirname(dirname(os.path.abspath(__file__)))))
-        expected = ['third_party_licenses', 'externals', 'tvb_documentation']
-        return all(os.path.exists(os.path.join(tvb_root, pth)) for pth in expected)
+        try:
+            import tvb_bin
+            bin_folder = os.path.dirname(os.path.abspath(tvb_bin.__file__))
+            tvb_version_file = os.path.join(bin_folder, "tvb.version")
+            if os.path.exists(tvb_version_file):
+                return False
+            return True
+        except ImportError:
+            return True
 
 
     @staticmethod
