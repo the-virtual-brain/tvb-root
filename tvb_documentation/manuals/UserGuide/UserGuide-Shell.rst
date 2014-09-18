@@ -15,7 +15,7 @@ IDLE font size, syntax higlighting and keys can be configured according to your
 needs. Go to the Options menu in the menu bar and select `Configure IDLE`.
 
 .. figure:: screenshots/linux_shell_idle_options.jpg
-   :width: 90%
+   :width: 70%
    :align: center
 
    Configure IDLE options.
@@ -33,13 +33,15 @@ with your personal path towards the folder where TVB was being downloaded.
 On Mac OS the path is just a little different::
 
     execfile('../Resources/lib/python2.7/tvb/simulator/demos/region_deterministic.py')
+    execfile('/home/user/Downloads/TVB_Distribution/tvb.app/Contents/Resources/lib/python2.7/tvb/simulator/demos/region_deterministic.py')
 
+Here is an illustration for the above.
 
 .. figure:: screenshots/linux_shell_run_demo.jpg
-    :width: 90%
-    :align: center
+   :width: 90%
+   :align: center
 
-   Run a demo
+   Run a demo with execfile
    
    
 Another way to run a script, that also allows to see and edit the code, is opening 
@@ -51,7 +53,7 @@ from the Run menu. The script will be executed.
    :width: 90%
    :align: center
 
-   Run a demo from the Run Module
+   Run a demo from the Run Menu option
 
 
 
