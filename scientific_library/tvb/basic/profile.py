@@ -129,8 +129,10 @@ class TvbProfile():
         ### Ensure Python is using UTF-8 encoding (otherwise default encoding is ASCII)
         ### We should make sure UTF-8 gets set before reading from any TVB files
         ### e.g. TVB_STORAGE will differ if the .tvb.configuration file contains non-ascii bytes
-        reload(sys)
-        sys.setdefaultencoding('utf-8')
+        ### most of the comments in the simulator are having pieces outside of ascii coverage
+        if TvbProfile.is_development() and sys.getdefaultencoding().lower() != 'utf-8':
+            reload(sys)
+            sys.setdefaultencoding('utf-8')
 
         selected_profile = TvbProfile.get_profile(script_argv)
         

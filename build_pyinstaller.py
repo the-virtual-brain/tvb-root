@@ -241,6 +241,15 @@ class PyInstallerPacker():
 
 
     @staticmethod
+    def add_sitecustomize(destination_folder):
+        full_path = os.path.join(destination_folder, "sitecustomize.py")
+        with open(full_path, 'w') as sc_file:
+            sc_file.write("# -*- coding: utf-8 -*-\n\n")
+            sc_file.write("import sys\n")
+            sc_file.write("sys.setdefaultencoding('utf-8')\n")
+
+
+    @staticmethod
     def copy_additional_libraries(python_exe_path, extra_includes=None):
         """
         Add the Python executable into the package. Also copy any additional required packages that 
@@ -308,6 +317,8 @@ class PyInstallerPacker():
             shutil.rmtree(dist_folder)
         os.rename(PyInstallerPacker.RESULT_BASE_FOLDER, dist_folder)
         shutil.rmtree('temp', True)
+
+        PyInstallerPacker.add_sitecustomize(PyInstallerPacker.DATA_FOLDER_NAME)
         PyInstallerPacker.generate_final_zip(package_name, PyInstallerPacker.DATA_FOLDER_NAME)
 
 
