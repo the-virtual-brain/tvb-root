@@ -83,17 +83,17 @@ On Linux these scripts will have the `.sh` termination, on Mac the `.command` te
 We will omit the termination in this manual. For example if you are using Windows and tvb_start is mentioned
 in this document then tvb_start.bat is meant.
 
-For Mac users the `bin` folder contains an application package `tvb.app`.
+For Mac users the `TVB_Distribution` folder contains an application file `tvb.app`.
 To start |TVB| in your web browser double click `tvb.app`.
 Please be patient, as depending on your computer resources, the startup process might take about 1-2 minutes.
 
-For Linux and Windows users, to start |TVB| in your web-browser, run the `tvb_start` script.
+For Linux and Windows users, to start |TVB| in your web-browser, run the `tvb_start` script in `TVB_Distribution\bin`.
 
 To make sure that no processes will remain open after you use the application,
 you should always close |TVB| by running the `tvb_stop` script.
 
-The `tvb_clean` which will reset your TVB database and delete **all** data stored by |TVB|. Be careful!
-Use this to get to a clean state as if |TVB| had just been installed.
+The `tvb_clean` script will reset your TVB database and delete **all** data stored by |TVB|. Be careful!
+Use this to get to a clean state, as if |TVB| had just been installed and never configured.
 
 The `distribution` script is used from a terminal to control the |TVB| distribution.
 Run `distribution -h` too get help with this command.
@@ -110,9 +110,10 @@ Configuring TVB
 
 The preferred method to configure |TVB| is from the web interface. See `TVB Settings`_.
 
-However if |TVB| is installed on a headless server then the web interface might not be available remotely.
-Create a file named .tvb.configuration in the home directory of the user that will launch |TVB|.
-Copy the following configuration and edit it to suit your needs. ::
+However if |TVB| is installed on a headless server (no GUI), then the web interface might not be available remotely.
+In order to configure TVB in a headless environment, create a file named `.tvb.configuration` in the home directory
+of the current OS user which is launching |TVB|.
+Copy the following content and edit it to suit your needs. ::
 
     MAXIMUM_NR_OF_OPS_IN_RANGE=2000
     URL_WEB=http://127.0.0.1:8080/
@@ -134,10 +135,11 @@ Copy the following configuration and edit it to suit your needs. ::
     TVB_STORAGE=/home/tvb_user/TVB
 
 Usually one would change the web server port and domain.
-|TVB| will create a folder with project data named TVB. By default it is located in the users home directory.
-You can change the TVB_STORAGE to point to a different path.
+|TVB| will create a folder with project data named TVB (at the path specified by line starting with `TVB_STORAGE`).
+By default it is located in the users home directory.
+You can change the `TVB_STORAGE` to point to a different location.
 
-Finally run the appropriate script for your platform to launch |TVB| with the new settings.
+Finally run the appropriate script for your platform (as described in the previous chapter), to launch |TVB| with the new settings.
 
 
 Upgrading the Application
@@ -154,14 +156,12 @@ Supported operating systems
 
 The current |TVB| package was tested on :
 
-Debian Squeeze and Fedora 16.
-Other Linux flavors might also work as long as you have installed a glibc
-version of 2.11 or higher.
+- Debian Squeeze and Fedora 16.
+  Other Linux flavors might also work as long as you have installed a glibc version of 2.11 or higher.
 
-Mac OS X 10.5.8 (Leopard), 10.6.8 (Snow Leopard) and 10.7.2 (Lion)
-but should also run smoothly on subsequent versions.
+- Mac OS X greater than 10.7 are supported.
 
-Windows XP (x32), Windows Server 2008 (x64) and Windows 7 (x64).
+- Windows XP (x32), Windows Server 2008 (x64) and Windows 7 (x64).
 
 
 Application requirements
@@ -175,7 +175,7 @@ Requirements for front-end visualization:
   Your monitor should be capable of displaying at least 1600 x 1000 pixels. Some views might be truncated if TVB is run on smaller monitors.
 
 - **WebGL and WebSockets compatible browser** -
-  We've tested the software on Mozilla Firefox 14+, Apple Safari 5.1+ and Google Chrome 20+.
+  We've tested the software on Mozilla Firefox 30+, Apple Safari 7+ and Google Chrome 30+.
   Using a different, less capable browser might result in some features not working or the user interface looking awkward at times.
 
 - **WebGL-compatible graphics card** -
@@ -190,13 +190,16 @@ Requirements for computation/storage power, dependent on the number of parallel 
   This can be done by setting the "maximum number of parallel threads" (in TVB settings) to the same value as the number of cores.
 
 - **Memory** -
-  For a single simulation 8GB of RAM should be sufficient but 16GB are recommended.
+  For a single simulation 8GB of RAM should be sufficient for region level simulations, but 16GB are recommended, especially if you are to run complex simulations.
 
 - **Disk space** is also important, as simulating only 10 ms on surface level will occupy 280MB of disk space. A minimum of 50GB of space per user is a rough approximation.
 
-- 32 bit packages will work fine, also when running on a 64 bit architecture.
+- For Linux and Mac, we are only supporting x64 architectures.
+  Due to licensing and packaging, for Windows we are currently distributing an x32 package.
   Please take note that some simulations on surface level might require more memory that 32 bit programs can address,
   at which point the TVB software will notify you about this with a "Memory Error".
+  So for complex operations, on Windows, you might need to install TVB from sources (see our repositories on GitHub),
+  but this requires separate installation of Python x64 and all the other TVB dependencies.
 
 - Optional **MatLab or Octave** -
   A special feature in TVB is utilizing functions from the Brain Connectivity Toolbox.
