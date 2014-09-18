@@ -33,10 +33,7 @@
 """
 
 import os
-try:
-    import unittest2 as unittest
-except ImportError:
-    import unittest
+import unittest
 from tvb.basic.config.settings import TVBSettings as cfg
 from tvb.basic.traits.types_mapped import MappedType
 from tvb.core.entities.file.xml_metadata_handlers import XMLReader

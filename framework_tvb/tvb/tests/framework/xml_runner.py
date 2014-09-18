@@ -13,10 +13,7 @@ __version__ = "0.1"
 import sys
 import time
 import traceback
-try:
-    import unittest2 as unittest
-except Exception:
-    import unittest
+import unittest
 from xml.sax.saxutils import escape
 try:
     from StringIO import StringIO

@@ -33,10 +33,7 @@
 .. moduleauthor:: Calin Pavel <calin.pavel@codemart.ro>
 """
 
-try:
-    import unittest2 as unittest
-except ImportError:
-    import unittest
+import unittest
 import os
 import shutil
 from functools import wraps

@@ -36,11 +36,7 @@ if __name__ == "__main__":
     from tvb.tests.library import setup_test_console_env
     setup_test_console_env()
 
-try:
-    import unittest2 as unittest
-except Exception:
-    import unittest
-
+import unittest
 import sys
 import numpy
 import tvb.datatypes.surfaces_data as surfaces_data

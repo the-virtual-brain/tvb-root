@@ -32,10 +32,7 @@
 .. moduleauthor:: Lia Domide <lia.domide@codemart.ro>
 """
 
-try:
-    import unittest2 as unittest
-except Exception:
-    import unittest
+import unittest
 from tvb.core.utils import get_matlab_executable
 from tvb.core.entities import model
 from tvb.core.entities.storage import dao
@@ -52,7 +49,7 @@ class BCTTest(TransactionalTestCase):
     Test that all BCT analyzers are executed without error.
     We do not verify that the algorithms are correct, because that is outside the purpose of TVB framework.
     """
-    EXPECTED_TO_FAIL_VALIDATION = ["CCBU", "CCWU", "TBU", "TWU"]
+    EXPECTED_TO_FAIL_VALIDATION = ["CCBU", "CCWU", "EIGUN", "KCCBU", "TBU", "TWU"]
 
 
     @unittest.skipIf(get_matlab_executable() is None, "Matlab or Octave not installed!")
