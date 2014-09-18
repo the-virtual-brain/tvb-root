@@ -1,12 +1,12 @@
 <!-- ============================= --> 
 <!--        User Profile Page      --> 
 <!-- ============================= -->
-<div id="main" xmlns:xi="http://www.w3.org/2001/XInclude" xmlns:py="http://genshi.edgewall.org/">
+<div id="main" xmlns:py="http://genshi.edgewall.org/">
     <script type="application/javascript">
 		$(document).ready(function() {
 			if (${'true' if len(errors) > 0 else 'false'}) {
 				show_hide(".shouldShow", ".shouldHide");
-			};
+			}
 			upgradeFileStorage();
 		});
 	</script>
@@ -51,7 +51,7 @@
             <dt>E-Mail</dt>
             <dd class='shouldHide' id='email_display'>
             	<div id='email_label'>$user.email</div>
-            	<a id='displayPassChangeForm' href='#' onclick='show_hide(".shouldShow", ".shouldHide")' tabindex="-1"><u>edit</u></a>
+            	<a href='#' onclick='show_hide(".shouldShow", ".shouldHide")' tabindex="-1"><u>edit</u></a>
             </dd>
             <dd style='display:none;' class='shouldShow'>
             	<input name='email' type='text' value='$user.email'/>
@@ -61,7 +61,7 @@
             
             <dt class='shouldHide'>Password</dt>
             <dd class='shouldHide' tabindex='4' onkeypress="redirectToHrefChild(this)">
-            	<a id='displayPassChangeForm' href='#' onclick='show_hide(".shouldShow", ".shouldHide")' tabindex="-1"><u>Change password</u></a>
+            	<a href='#' onclick='show_hide(".shouldShow", ".shouldHide")' tabindex="-1"><u>Change password</u></a>
             </dd> 
             
 			<dt style='display:none;' class='shouldShow'>Old Password</dt>

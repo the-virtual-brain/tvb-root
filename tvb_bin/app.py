@@ -41,17 +41,17 @@ Usage: Run python app.py --help
 """
 
 import argparse
-import os
-import subprocess
-import signal
-import shutil
-import sys
-import socket
 import logging
+import os
+import shutil
+import signal
+import socket
+import subprocess
+import sys
 from tvb.basic.profile import TvbProfile
 
 try:
-    # Needed for build
+    # Needed for builds
     import psycopg2
 except ImportError:
     print "Could not find compatible psycopg2/postgresql bindings. Postgresql support not available."
@@ -60,18 +60,17 @@ except ImportError:
 if 'py2app' in sys.argv:
     import tvb.interfaces.web.run
 
+RUN_CONSOLE_PROFILES = [TvbProfile.LIBRARY_PROFILE, TvbProfile.COMMAND_PROFILE]
 RUN_WEB_PROFILES = [TvbProfile.DEPLOYMENT_PROFILE, TvbProfile.DEVELOPMENT_PROFILE]
-TEST_PROFILES = [TvbProfile.TEST_POSTGRES_PROFILE, TvbProfile.TEST_SQLITE_PROFILE]
+RUN_TEST_PROFILES = [TvbProfile.TEST_POSTGRES_PROFILE, TvbProfile.TEST_SQLITE_PROFILE]
 
-CONSOLE_TVB = 'tvb_bin.run_IDLE'
+SCRIPT_FOR_CONSOLE = 'tvb_bin.run_IDLE'
+SCRIPT_FOR_WEB = 'tvb.interfaces.web.run'
+SCRIPT_FOR_DESKTOP = 'tvb.interfaces.desktop.run'
 
-COMMAND_PROFILE_SET = ('from tvb.basic.profile import TvbProfile; '
-                       'TvbProfile.set_profile(["-profile", "COMMAND_PROFILE"], try_reload=False);')
-LIBRARY_PROFILE_SET = ('from tvb.basic.profile import TvbProfile; '
-                       'TvbProfile.set_profile(["-profile", "LIBRARY_PROFILE"], try_reload=False);')
+CONSOLE_PROFILE_SET = ('from tvb.basic.profile import TvbProfile; '
+                       'TvbProfile.set_profile(["-profile", "%s"], try_reload=False);')
 
-WEB_TVB = 'tvb.interfaces.web.run'
-DESKTOP_TVB = 'tvb.interfaces.desktop.run'
 SUB_PARAMETER_RESET = "reset"
 
 
@@ -88,7 +87,7 @@ def parse_commandline():
     subparsers = parser.add_subparsers(title='subcommands', dest='subcommand')
 
     start = subparsers.add_parser('start', help='launch a TVB interface')
-    add_profile_arg(start, set(TvbProfile.ALL) - set(TEST_PROFILES),
+    add_profile_arg(start, set(TvbProfile.ALL) - set(RUN_TEST_PROFILES),
                     'These profiles will launch the web interface : ' + ' '.join(RUN_WEB_PROFILES))
 
     start.add_argument('-reset', action='store_true', help='reset database')
@@ -191,7 +190,7 @@ def execute_start_web(profile, reset):
         free_ports['WEB_SERVER_PORT'] = cherrypy_port
         TVBSettings.update_config_file(free_ports)
 
-    web_args_list = [PYTHON_EXE_PATH, '-m', WEB_TVB, 'tvb.config']
+    web_args_list = [PYTHON_EXE_PATH, '-m', SCRIPT_FOR_WEB, 'tvb.config']
     web_args_list.extend([TvbProfile.SUBPARAM_PROFILE, profile])
 
     if reset:
@@ -217,8 +216,7 @@ def execute_start_desktop(profile, reset):
     """
     pid_file_reference = open(TVB_PID_FILE, 'a')
 
-    desktop_args_list = [PYTHON_EXE_PATH, '-m', DESKTOP_TVB, 'tvb.config']
-
+    desktop_args_list = [PYTHON_EXE_PATH, '-m', SCRIPT_FOR_DESKTOP, 'tvb.config']
     desktop_args_list.extend([TvbProfile.SUBPARAM_PROFILE, profile])
 
     if reset:
@@ -238,23 +236,28 @@ def execute_start_desktop(profile, reset):
 
 
 
-def execute_start_console(console_profile_set, headless):
-    PID_FILE = open(TVB_PID_FILE, 'a')
+def execute_start_console(console_profile_name, headless):
+    """
+    :param console_profile_name: one of the strings in RUN_CONSOLE_PROFILES
+    :param headless: boolean
+    """
+    pid_file_reference = open(TVB_PID_FILE, 'a')
+    console_profile_set = CONSOLE_PROFILE_SET % console_profile_name
     if headless:
         # Launch a python interactive shell.
         # We use a new process to make sure that the initialization of TVB is straightforward and
         # not influenced by this launcher.
-        TVB = subprocess.Popen([PYTHON_EXE_PATH, '-i', '-c', console_profile_set])
+        tvb_process = subprocess.Popen([PYTHON_EXE_PATH, '-i', '-c', console_profile_set])
     else:
-        TVB = subprocess.Popen([PYTHON_EXE_PATH, '-m', CONSOLE_TVB, '-c', console_profile_set])
+        tvb_process = subprocess.Popen([PYTHON_EXE_PATH, '-m', SCRIPT_FOR_CONSOLE, '-c', console_profile_set])
 
-    PID_FILE.write(str(TVB.pid) + "\n")
-    PID_FILE.close()
+    pid_file_reference.write(str(tvb_process.pid) + "\n")
+    pid_file_reference.close()
 
     if headless:
         # The child inherits the stdin stdout descriptors of the launcher so we keep the launcher alive
         # by calling wait. It would be good if this could be avoided.
-        TVB.wait()
+        tvb_process.wait()
 
 
 
@@ -314,18 +317,20 @@ if __name__ == "__main__":
             sys.exit("You do not have enough rights to use TVB storage folder:" + str(TVBSettings.TVB_STORAGE))
 
     if ARGS.subcommand == 'start':
-        if ARGS.profile == TvbProfile.COMMAND_PROFILE:
-            execute_start_console(COMMAND_PROFILE_SET, ARGS.headless)
-        elif ARGS.profile == TvbProfile.LIBRARY_PROFILE:
-            execute_start_console(LIBRARY_PROFILE_SET, ARGS.headless)
+        # Start one of TVB interfaces
+        if ARGS.profile in RUN_CONSOLE_PROFILES:
+            execute_start_console(ARGS.profile, ARGS.headless)
+
         elif ARGS.profile in RUN_WEB_PROFILES:
             execute_stop()
             TVB_PROCESS = execute_start_web(ARGS.profile, ARGS.reset)
             wait_for_tvb_process(TVB_PROCESS)
+
         elif ARGS.profile == TvbProfile.DESKTOP_PROFILE:
             execute_stop()
             TVB_PROCESS = execute_start_desktop(ARGS.profile, ARGS.reset)
             wait_for_tvb_process(TVB_PROCESS)
+
         else:
             sys.exit('TVB cannot start with the %s profile' % ARGS.profile)
 
