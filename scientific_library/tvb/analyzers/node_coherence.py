@@ -57,20 +57,20 @@ LOG = get_logger(__name__)
 try:
     from scipy.signal import hamming
 except ImportError:
-    # from scipy.signal
     def hamming(M, sym=True):
-        """The M-point Hamming window.
-
+        """
+        The M-point Hamming window.
+        From scipy.signal
         """
         if M < 1:
-            return np.array([])
+            return numpy.array([])
         if M == 1:
-            return np.ones(1, 'd')
+            return numpy.ones(1, 'd')
         odd = M % 2
         if not sym and not odd:
             M = M + 1
-        n = np.arange(0, M)
-        w = 0.54 - 0.46 * np.cos(2.0 * np.pi * n / (M - 1))
+        n = numpy.arange(0, M)
+        w = 0.54 - 0.46 * numpy.cos(2.0 * numpy.pi * n / (M - 1))
         if not sym and not odd:
             w = w[:-1]
         return w
@@ -134,23 +134,47 @@ class NodeCoherence(core.Type):
         
         return coherence
 
-    def _new_evaluate(self):
+    def evaluate_new(self):
+        import pydevd
+        pydevd.settrace('localhost', port=51234, stdoutToServer=True, stderrToServer=True)
+        data = self.time_series.data
+        sample_period = self.time_series.sample_period
+        nfft = self.nfft
+
+        result_shape = (nfft/2 - 1, data.shape[2], data.shape[2], data.shape[1], data.shape[3])
+        LOG.info("result shape will be: %s" % str(result_shape))
+
+        result = numpy.zeros(result_shape)
+        for mode in range(data.shape[3]):
+            for var in range(data.shape[1]):
+                data = self.time_series.data[:, var, :, mode]
+                freq, _, cxy = self._new_evaluate_inner(data.T, nfft, sample_period)
+                result[..., var, mode] = cxy.transpose(2, 0, 1)
+
+        coherence = spectral.CoherenceSpectrum(source = self.time_series,
+                                               nfft = self.nfft,
+                                               array_data = result,
+                                               frequency = freq,
+                                               use_storage = False)
+
+        return coherence
+
+    @staticmethod
+    def _new_evaluate_inner(Y, nfft, sample_period):
         "New implementation of cross-coherence w/o for loops"
         # TODO: adapt to tvb timeseries shape
-        t, Y = unknown
-        nfft = self.nfft
         imag = False
-        fs = np.fft.fftfreq(nfft, t[1] - t[0])
+        fs = numpy.fft.fftfreq(nfft, sample_period)
         # shape [ch_i, ch_j, ..., window, time]
         wY = Y.reshape((Y.shape[0], -1, nfft)) * hamming(nfft)
-        F = np.fft.fft(wY)
-        G = F[:, np.newaxis]*F
+        F = numpy.fft.fft(wY)
+        G = F[:, numpy.newaxis]*F
         if imag:
             G = G.imag
-        dG = np.array([G[i, i] for i in range(G.shape[0])])
-        C = (np.abs(G)**2 / (dG[:, np.newaxis] * dG)).mean(axis=-2)
+        dG = numpy.array([G[i, i] for i in range(G.shape[0])])
+        C = (numpy.abs(G)**2 / (dG[:, numpy.newaxis] * dG)).mean(axis=-2)
         mask = fs>0.0
-        C_ = np.abs(C.mean(axis=0).mean(axis=0))
+        C_ = numpy.abs(C.mean(axis=0).mean(axis=0))
         return fs[mask], C_[mask], C[..., mask]
 
     def result_shape(self, input_shape):
