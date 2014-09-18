@@ -241,8 +241,8 @@ class PyInstallerPacker():
 
 
     @staticmethod
-    def add_sitecustomize(destination_folder):
-        full_path = os.path.join(destination_folder, "sitecustomize.py")
+    def add_sitecustomize(base_folder, destination_folder):
+        full_path = os.path.join(base_folder, destination_folder, "sitecustomize.py")
         with open(full_path, 'w') as sc_file:
             sc_file.write("# -*- coding: utf-8 -*-\n\n")
             sc_file.write("import sys\n")
@@ -318,7 +318,7 @@ class PyInstallerPacker():
         os.rename(PyInstallerPacker.RESULT_BASE_FOLDER, dist_folder)
         shutil.rmtree('temp', True)
 
-        PyInstallerPacker.add_sitecustomize(PyInstallerPacker.DATA_FOLDER_NAME)
+        PyInstallerPacker.add_sitecustomize(PyInstallerPacker.RESULT_BASE_FOLDER, PyInstallerPacker.DATA_FOLDER_NAME)
         PyInstallerPacker.generate_final_zip(package_name, PyInstallerPacker.DATA_FOLDER_NAME)
 
 

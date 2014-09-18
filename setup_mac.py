@@ -147,7 +147,7 @@ for entry in EXCLUDED_DYNAMIC_LIBS:
         os.remove(path)
 
 DESTINATION_SOURCES = os.path.join("tvb.app", "Contents", "Resources", "lib", "python2.7")
-PyInstallerPacker.add_sitecustomize(DESTINATION_SOURCES)
+PyInstallerPacker.add_sitecustomize(DIST_FOLDER, DESTINATION_SOURCES)
 PyInstallerPacker.add_tvb_bin_folder(DIST_FOLDER, DESTINATION_SOURCES)
 PyInstallerPacker.generate_final_zip("TVB_MacOS", DESTINATION_SOURCES)
 
