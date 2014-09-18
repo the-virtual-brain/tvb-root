@@ -77,6 +77,10 @@ cd exe
 """
 
     def _create_script_file(command_file_name, contents):
+        """
+        Private script which generated a command file inside tvb-bin distribution folder.
+        Unfortunately it can not be defined outside this function, or else it's not visible with PyInstaller.
+        """
         pth = os.path.join(bin_folder, command_file_name + ".sh")
         with open(pth, 'w') as command_file:
             command_file.write('#!/bin/bash\n')
@@ -85,20 +89,19 @@ cd exe
         os.chmod(pth, 0775)
 
 
-    def _create_command_file(command_file_name, command):
+    def _create_file_with_tvb_paths(command_file_name, command):
         """
-        Private script which adds the common part of a script file.
-        Unfortunately it can not be defined outside this function, or else it's not visible.
+        Private script which adds the common part of a script TVB file.
+        Unfortunately it can not be defined outside this function, or else it's not visible with PyInstaller.
         """
-        _create_script_file(command_file_name,
-            'cd ../' + data_folder + '\n' +
-            SCRIPT_PREPARE_TEXT + '\n' +
-            command + '\n'
-        )
+        tvb_command_text = 'cd ../' + data_folder + '\n' +
+                            SCRIPT_PREPARE_TEXT + '\n' +
+                            command + '\n'
+        _create_script_file(command_file_name, tvb_command_text)
 
 
-    _create_command_file('distribution', './' + python_exe + ' -m tvb_bin.app $@')
-    _create_command_file('contributor_setup', './' + python_exe + ' -m tvb_bin.git_setup $1')
+    _create_file_with_tvb_paths('distribution', './' + python_exe + ' -m tvb_bin.app $@')
+    _create_file_with_tvb_paths('contributor_setup', './' + python_exe + ' -m tvb_bin.git_setup $1')
 
     _create_script_file('tvb_start', 'source distribution.sh start')
     _create_script_file('tvb_clean', 'source distribution.sh clean')

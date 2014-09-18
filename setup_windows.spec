@@ -58,29 +58,40 @@ def create_start_scripts(base_folder, data_folder, python_exe):
     if not os.path.exists(bin_folder):
         os.mkdir(bin_folder)
     
-    def _create_script_file(file_name, command, end_message="Done"):
+    def _create_script_file(file_name, contents, end_message="Done"):
         """
-        Private script which adds the common part of a command file.
-        Unfortunately it can not be defined outside this function, or else it's not visible.
+        Private script which generated a command file inside tvb-bin distribution folder.
+        Unfortunately it can not be defined outside this function, or else it's not visible with PyInstaller.
         """
         pth = os.path.join(bin_folder, file_name + '.bat')
         with open(pth, 'w') as f:
             f.write('@echo off \n')
             f.write('rem Executing ' + file_name + ' \n')
-            f.write('cd ..\\' + data_folder + ' \n')
-            f.write('set PATH=%cd%;%path%; \n')
-            f.write('set PYTHONPATH=%cd%; \n')
-            f.write('set PYTHONHOME=%cd%; \n')
-            f.write('cd exe \n')
-            f.write(command + ' \n')
-            f.write('echo "' + end_message + '" \n')
+            f.write(contents + ' \n')
+            if end_message:
+                f.write('echo "' + end_message + '" \n')
         os.chmod(pth, 0775)
 
-    _create_script_file('distribution', app_name + ' %1 %2 %3 %4 %5 %6', "")
-    _create_script_file('tvb_start', app_name + ' start', "Starting...")
-    _create_script_file('tvb_clean', app_name + ' clean')
-    _create_script_file('tvb_stop', app_name + ' stop')
-    _create_script_file('contributor_setup', python_exe + ' -m tvb_bin.git_setup %1\n')
+
+    def _create_file_with_tvb_paths(command_file_name, command, end_message="Done"):
+        """
+        Private script which adds the common part of a script TVB file.
+        Unfortunately it can not be defined outside this function, or else it's not visible with PyInstaller.
+        """
+        tvb_command_text = 'cd ..\\' + data_folder + ' \n' +
+                            'set PATH=%cd%;%path%; \n' +
+                            'set PYTHONPATH=%cd%; \n'+
+                            'set PYTHONHOME=%cd%; \n' +
+                            'cd exe \n' +
+                            command + '\n'
+        _create_script_file(command_file_name, tvb_command_text, end_message)
+
+    _create_file_with_tvb_paths('contributor_setup', python_exe + ' -m tvb_bin.git_setup %1\n')
+    _create_file_with_tvb_paths('distribution', app_name + ' %1 %2 %3 %4 %5 %6', None)
+
+    _create_script_file('tvb_start', 'distribution start', "Starting...")
+    _create_script_file('tvb_clean', 'distribution clean')
+    _create_script_file('tvb_stop', 'distribution stop')
    
 
 #--------------------------- Setup variable declarations for PyInstaller starts here   --------------------------------
