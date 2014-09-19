@@ -43,6 +43,7 @@ Usage: Run python app.py --help
 import argparse
 import logging
 import os
+import time
 import shutil
 import signal
 import socket
@@ -153,11 +154,13 @@ def execute_clean():
 def execute_stop():
     """
     Stop registered TVB processes in .tvb file
+    :return True when there was at least one PID to be stopped in the TVB_PID_FILE
     """
     logging.shutdown()
+    has_processes = False
+
     if os.path.exists(TVB_PID_FILE):
         pid_file = open(TVB_PID_FILE, 'r')
-        has_processes = False
         for pid in pid_file.read().split('\n'):
             if len(pid.strip()):
                 try:
@@ -168,13 +171,16 @@ def execute_stop():
                         ctypes.windll.kernel32.CloseHandle(handle)
                     else:
                         os.kill(int(pid), signal.SIGKILL)
-                except Exception:
                     has_processes = True
+                except Exception:
+                    pass
         if has_processes:
             sys.stdout.write("Some old PIDs were still registered. They have been stopped.")
         pid_file.close()
+    # Empty TVB_PID_FILE
     pid_file = open(TVB_PID_FILE, "w")
     pid_file.close()
+    return has_processes
 
 
 
@@ -322,7 +328,8 @@ if __name__ == "__main__":
             execute_start_console(ARGS.profile, ARGS.headless)
 
         elif ARGS.profile in RUN_WEB_PROFILES:
-            execute_stop()
+            if execute_stop():
+                time.sleep(2)
             TVB_PROCESS = execute_start_web(ARGS.profile, ARGS.reset)
             wait_for_tvb_process(TVB_PROCESS)
 
