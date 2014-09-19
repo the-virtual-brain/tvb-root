@@ -513,12 +513,11 @@ function saveSubConnectivity() {
 function initializeMatrix(){
     function tdInfo(el){
         var sid = el.id.split('_');
-        return {
-            prefix : sid[1],
-            i : sid[2],
-            j : sid[3],
-            isNode : el.tagName === 'TD' && sid[1] != null && sid[2] != null && sid[3] != null
-        };
+        var isNode = el.tagName === 'TD' && sid[1] != null && sid[2] != null && sid[3] != null;
+        var prefix = sid[1],
+                 i = parseInt(sid[2], 10),
+                 j = parseInt(sid[3], 10);
+        return { prefix : prefix, i : i, j : j, isNode : isNode};
     }
 
     function handle_click(el){
