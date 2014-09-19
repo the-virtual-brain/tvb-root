@@ -1,9 +1,9 @@
-User Interface of |TVB|
-=======================
+Web User Interface of |TVB|
+============================
 
 
-Main Interface Description and Typical Workflow
------------------------------------------------
+Main Web Interface Description and Typical Workflow
+----------------------------------------------------
 
 On the right, the `login` button has changed to a `logout` button with obvious
 functionality.

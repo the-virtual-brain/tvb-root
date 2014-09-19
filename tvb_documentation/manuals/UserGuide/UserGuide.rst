@@ -99,7 +99,7 @@ The `distribution` script is used from a terminal to control the |TVB| distribut
 Run `distribution -h` too get help with this command.
 
 To access the console interface, run in a terminal `distribution start COMMAND_PROFILE` or `distribution start LIBRARY_PROFILE`.
-The interactive Python shell will appear. See the Shell and User Interface sections in this document for
+The interactive Python shell will appear. See the Console and Web User Interface sections in this document for
 more details on how to use the different interfaces of |TVB|.
 
 For details on script `contributor_setup`, please read document `ContributorsManual.pdf`.
@@ -211,10 +211,10 @@ Requirements for computation/storage power, dependent on the number of parallel 
 
    PageBreak
 
-.. SHELL INTERFACE
+.. CONSOLE INTERFACE
 .. include:: UserGuide-Shell.rst
    
-.. GRAPHICAL USER INTERFACE
+.. WEB USER INTERFACE
 
 .. include:: UserGuide-UI.rst
 

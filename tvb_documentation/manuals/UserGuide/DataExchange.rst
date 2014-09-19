@@ -25,7 +25,7 @@ at different levels and formats:
 .. admonition:: Important
 
     .. image:: icons/important.png
-	:align: left
+        :align: left
 
     During export and import operations |TVB| does not apply any space 
     transformation, so users have to ensure their data (especially in case 
@@ -122,7 +122,7 @@ Export/Import Data
 
 Apart from exchanging projects between |TVB| instances, there is another option to
 transfer data, but at a lower level - that is to exchange only **datatypes**
-(generated during 'Simulation' or 'Analyze').
+(generated during 'Simulation' or 'Analyze' steps).
 
 
 
@@ -130,15 +130,9 @@ Export Data
 ...........
 
 Using |TVB| interface, users can view all data types associated with a project and
-choose to export any of them in different formats. Below you can see supported 
-export formats and file formats for each of them.
+choose to export individual pieces of data.
 
-
-
-Export Data in |TVB| Format
-~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-This export operation results in a file with a format specific to |TVB|; it is not
+The *Export Datatype* operation results in a file with a format specific to |TVB|; it is not
 a standard format that can be used automatically by other software. This is 
 basically HDF5/H5 format
 [`http://www.hdfgroup.org/HDF5 <http://www.hdfgroup.org/HDF5>`_] which, for each
@@ -154,8 +148,13 @@ documentation here:
     The HDF5 functionality referenced above was only introduced in Matlab 2011a.
 
 
+.. NOTE::
+    In the future other data formats might be supported as export format from TVB,
+    but for now, the HDF5 is the only format available at export time.
+
+
 File Format
-***********
+~~~~~~~~~~~~~
 
 As a result of a Simulation or Analyze function, |TVB| can generate either a data
 type or a group of data types. Each of such structures can be exported as follows:
@@ -170,22 +169,6 @@ type or a group of data types. Each of such structures can be exported as follow
      group. Each file has structure/details as described above in the case of
      simple data type export. *This format applies to any |TVB| data type.*
 
-|
-
-
-Export Data in CIFTI Format
-~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-This operation is not implemented yet. The goal is to generate a CIFTI file 
-according to format described here:
-    
-    http://www.nitrc.org/projects/cifti/
-
-
-File Format
-***********
-
-Will be defined when export implemented.
 
 
 Import Data
@@ -200,7 +183,7 @@ tries to support as many as possible for an improved user experience.
 .. admonition:: Important
 
     .. image:: icons/important.png
-	:align: left
+        :align: left
     
     In case the imported data includes/represents a surface, |TVB| does an extra
     check regarding the number of vertices of that surface. Basically you can 
