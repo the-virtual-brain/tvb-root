@@ -3076,7 +3076,7 @@ class LarterBreakspear(Model):
             \dot{V}_k & = - (g_{Ca} + (1 - C) \, r_{NMDA} \, a_{ee} \, Q_V + C \, r_{NMDA} \, a_{ee} \, \langle Q_V\rangle^{k}) \, m_{Ca} \, (V - VCa) \\
                            & \,\,- g_K \, W \, (V - VK) -  g_L \, (V - VL) \\
                            & \,\,- (g_{Na} \, m_{Na} + (1 - C) \, a_{ee} \, Q_V + C \, a_{ee} \, \langle Q_V\rangle^{k}) \,(V - VNa) \\
-                           & \,\,- a_{ei} \, Z \, Q_Z + a_{ne} \, I, \\
+                           & \,\,- a_{ie} \, Z \, Q_Z + a_{ne} \, I, \\
                            & \\
             \dot{W}_k & = \phi \, \dfrac{m_K - W}{\tau_{K}},\\
                            & \nonumber\\
@@ -3339,7 +3339,7 @@ class LarterBreakspear(Model):
             \dot{V}_k & = - (g_{Ca} + (1 - C) \, r_{NMDA} \, a_{ee} \, Q_V + C \, r_{NMDA} \, a_{ee} \, \langle Q_V\rangle^{k}) \, m_{Ca} \, (V - VCa) \\
                            & \,\,- g_K \, W \, (V - VK) -  g_L \, (V - VL) \\
                            & \,\,- (g_{Na} \, m_{Na} + (1 - C) \, a_{ee} \, Q_V + C \, a_{ee} \, \langle Q_V\rangle^{k}) \,(V - VNa) \\
-                           & \,\,- a_{ei} \, Z \, Q_Z + a_{ne} \, I, \\
+                           & \,\,- a_{ie} \, Z \, Q_Z + a_{ne} \, I, \\
                            & \\
             \dot{W}_k & = \phi \, \dfrac{m_K - W}{\tau_{K}},\\
                            & \nonumber\\
@@ -3366,7 +3366,7 @@ class LarterBreakspear(Model):
         lc_0  = local_coupling * QV
 
 
-        dV = (- (self.gCa + (1.0 - self.C) * (self.rNMDA * self.aee) * (QV + lc_0)+ self.C * self.rNMDA * self.aee * c_0) * m_Ca * (V - self.VCa) - self.gK * W * (V - self.VK) -  self.gL * (V - self.VL) - (self.gNa * m_Na + (1.0 - self.C) * self.aee * (QV  + lc_0) + self.C * self.aee * c_0) * (V - self.VNa) - self.aei * Z * QZ + self.ane * self.Iext)
+        dV = (- (self.gCa + (1.0 - self.C) * (self.rNMDA * self.aee) * (QV + lc_0)+ self.C * self.rNMDA * self.aee * c_0) * m_Ca * (V - self.VCa) - self.gK * W * (V - self.VK) -  self.gL * (V - self.VL) - (self.gNa * m_Na + (1.0 - self.C) * self.aee * (QV  + lc_0) + self.C * self.aee * c_0) * (V - self.VNa) - self.aie * Z * QZ + self.ane * self.Iext)
 
         dW = (self.phi * (m_K - W) / self.tau_K)
 
