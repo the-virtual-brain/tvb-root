@@ -25,25 +25,21 @@ Long Range Connectivity
 
        Large Scale Connectivity configuration page
 
+This page is split in two columns.
 
-From this page you can access: 
+The left `View` column contains several Long Range Connectivity visualizations:
 
-  - an interactive display tool on the `Control` right column and 
-  - several Long Range Connectivity visualizations on the left `View` column.
+    - a 3D view of the nodes and edges
+    - 2D Projections of the connectivity graph
 
-      - 3D Views
+        - Left
+        - Right
+        - Top
 
-	- Edges
-	- Nodes
+    - a MPLH5 plot of the connectivity weights matrix
+    - a 3D view showing the time evolution of the connectivity matrix
 
-      - 2D Projections
-
-	- Left
-	- Right
-	- Top
-
-      - a MPLH5 matrix plot
-
+The right column contains the connectivity matrix editor.
 
 
 Connectivity Matrix Editor
@@ -55,14 +51,14 @@ Connectivity Matrix Editor
 
    Preview for the Matrix Editor
 
-From this interactive 2D display you can:
+The matrix editor allows you to :
 
-  - easily edit the connectivity weights or tract lengths matrix; 
-  - select a subset of the available nodes;
+  - easily edit the connectivity weights or tract lengths
+  - select a subset of the available nodes
   - perform basic algebraic operations on that group; and
   - save the new version as a new connectivity matrix.
 
-  The Connectivity datatype will be available in the Simulator area. 
+The Connectivity datatype will be available in the Simulator area.
 
 
 .. hint:: 
@@ -78,16 +74,19 @@ From this interactive 2D display you can:
     - and quadrants 2 and 3 will be the inter-hemispheric connections. 
 
 
-      .. figure:: screenshots/connectivity_quadrants.jpg
-	:width: 50%
-	:align: center
+    .. figure:: screenshots/connectivity_quadrants.jpg
+       :width: 50%
+       :align: center
 
-      Preview for Quadrant Selection
+       Preview for Quadrant Selection
 
 
 
-You can create a smaller selection by clicking on the `Quick-select` button and
-editing the list of node names. 
+You can create a smaller selection using three methods:
+
+     1. Click on the `Quick-select` button and edit the list of node names.
+     2. Click on the node labels in the matrix to toggle nodes.
+     3. Use the node selection dropdown by clicking the `Select Nodes` button.
 
 .. figure:: screenshots/connectivity_quick_select.jpg
    :width: 90%
@@ -95,15 +94,21 @@ editing the list of node names.
 
    Preview for `Quick-select` list
 
+.. figure:: screenshots/connectivity_select_nodes.jpg
+   :width: 90%
+   :align: center
+
+   Preview for `Select Nodes` list
+
 
 .. |savetick| image:: icons/save_tick.png
 .. |staricon| image:: icons/star_icon.png
 
-TVB enables you to save:
- 
-  - a particular selection by entering a name and clicking on |savetick| or,
-  - a new `Connectivity` object by clicking on |staricon|. This entity can be 
-    used later on in |TVB| `Simulator`.
+TVB enables you to save a new `Connectivity` object by clicking on |staricon|.
+This entity can be used later on in |TVB| `Simulator`.
+
+You can save a particular selection. Click the `Select Nodes` button and the selection component will be shown.
+Enter a name for the selection and click save.
 
 
 The **Weights** button opens a menu to perform basic algebraic operations on
@@ -146,7 +151,7 @@ Click on the `Apply weight change` button to perform the selected operation on a
 
 Example: **HOW TO REMOVE INTER-HEMISPHERIC CONNECTIONS**
 
-1. Select multiple nodes from the Connectivity, for instance those from the left hemisphere. 
+1. Using the `Quick select` remove all nodes from the right hemisphere.
 
 
     .. figure:: screenshots/connectivityeditor_SelectASetOfNodes_a.jpg
@@ -175,12 +180,10 @@ Example: **HOW TO REMOVE INTER-HEMISPHERIC CONNECTIONS**
       Save node selection
 
 
+4. Move to the third quadrant (Q3).
 
-4. The Connectivity editor will be aware of two sets of nodes: the ones in your
-selection (green nodes) and the ones that are not selected (white nodes).
-
-
-5. Move to the third quadrant (Q3) for instance. 
+    The Connectivity editor will be aware of two sets of nodes: the ones in your
+    selection (green nodes) and the ones that are not selected (white nodes).
 
 
     .. figure:: screenshots/connectivityeditor_ShowConnections.jpg
@@ -193,71 +196,56 @@ selection (green nodes) and the ones that are not selected (white nodes).
 
 5. Then you can proceed to perform some operations on the edge values.
 
-    .. figure:: screenshots/connectivityeditor_EdgeOperations.jpg
-      :width: 90%
-      :align: center
-
-      Edge operations 
-
-
-
-The four categories of edges in this particular case are:
+    The four categories of edges in this particular case are:
 
   - edges IN-IN: intrahemispheric edges from the left hemisphere.
-  - edges OUT-OUT: intrahemispheric edges from the right.  
-  - edges IN-OUT:  interhemispheric edges in quadrant 2 (Q2)   
+  - edges OUT-OUT: intrahemispheric edges from the right.
+  - edges IN-OUT:  interhemispheric edges in quadrant 2 (Q2)
   - edges OUT-IN:  interhemispheric edges in quadrant 3 (Q3)
-  
+
 
 6. Select operation "Set(n)" for edges **OUT-IN**, set the value to 0 and then press Apply.
 
 
-.. figure:: screenshots/connectivityeditor_SetInOut.jpg
-    :width: 90%
-    :align: center
+    .. figure:: screenshots/connectivityeditor_SetOutIn.jpg
+        :width: 90%
+        :align: center
 
-    Set IN-OUT edges to 0
- 
-
-7. Repeat for edges **IN-OUT**
+        Set IN-OUT edges to 0
 
 
-.. figure:: screenshots/connectivityeditor_SetOutIn.jpg
-    :width: 90%
-    :align: center
-
-    Set OUT-IN edges to 0
+7. Repeat for edges **IN-OUT** .
 
 
-The inter-hemispheric connections are gone. Do not forget to select all the nodes again before saving your new matrix.
+    The inter-hemispheric connections are gone. Do not forget to select all the nodes again before saving your new matrix.
+    To do so click the select all button in the selection dropdown.
 
+    .. figure:: screenshots/connectivityeditor_NewMatrix.jpg
+        :width: 90%
+        :align: center
 
-.. figure:: screenshots/connectivityeditor_NewMatrix.jpg
-    :width: 90%
-    :align: center
-
-    New matrix
+        Select all nodes.
 
 
 8. Save your new matrix 
 
 
-.. figure:: screenshots/connectivityeditor_SaveNewConenctivity.jpg
-    :width: 90%
-    :align: center
+    .. figure:: screenshots/connectivityeditor_SaveNewConenctivity.jpg
+        :width: 90%
+        :align: center
 
-    Save new matrix
+        Save new matrix
 
 
 9. Once you have your new matrix, you can launch the connectivity visualizers and
 check that these connections are not there any more.
 
 
-.. figure:: screenshots/connectivityeditor_ReloadView.jpg
-    :width: 90%
-    :align: center
+    .. figure:: screenshots/connectivityeditor_ReloadView.jpg
+        :width: 90%
+        :align: center
 
-    Reload view
+        Reload view
 
 
 
@@ -275,15 +263,6 @@ check that these connections are not there any more.
       - If your connectivity matrix contains negative values, such as -1 values
         you should either set these values to zero or an estimated value based 
         on your research assumptions. 
- 
-
-By default the set of selected nodes includes all the available nodes in the connectivity matrix.
-
-.. figure:: screenshots/connectivity3d_newselection.jpg
-    :width: 90%
-    :align: center
-
-    Preview for New Selection
 
 
 |
