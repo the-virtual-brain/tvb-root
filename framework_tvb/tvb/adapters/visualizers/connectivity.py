@@ -293,8 +293,8 @@ class Connectivity2DViewer(object):
     the viewer will build the required parameter dictionary that will be 
     sent to the HTML/JS 2D representation of the connectivity matrix.
     """
-    DEFAULT_COLOR = '#cc0000'
-    OTHER_COLOR = '#ffff00'
+    DEFAULT_COLOR = '#d73027'
+    OTHER_COLOR = '#1a9850'
     MIN_RAY = 4
     MAX_RAY = 40
     MIN_WEIGHT_VALUE = 0.0

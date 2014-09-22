@@ -329,33 +329,57 @@ There are three main views (projections):
 
 |
 
-The node size can be defined using a ConnectivityMeasure datatype 
-(e.g. the output of a BCT Analyzer). Additionally, a threshold can be set for
-the node color. The nodes with values above the threshold will be red and those
-whose value are below the threshold will be yellow.
+Nodes are drawn as circles and the connections as lines.
+Only the selected nodes are shown.
 
-To display the changes, click on the `Show details` button.
+
+Visualizing Connectivity Measures
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+The 3D and 2D Views can be used to visualize two ConnectivityMeasure datatypes.
+These measures can be the output of a BCT Analyzer.
+If given, they will determine the size and colors of the nodes in the views.
+
+
+You can choose these connectivity measures before launching the Large Scale Connectivity visualizer, or from the brain menu (see tip below).
+
+
+To display the measures in the 3D view check the `Metrics details` checkbox.
+Nodes will be displayed as colored spheres. The size of the sphere is proportional to the measure labeled `Shapes Dimensions`.
+The color comes from the current color scheme and is determined by the measure labeled `Node Colors`.
+
+.. figure:: screenshots/connectivity3d_metrics.jpg
+   :width: 50%
+   :align: center
+
+   3D view of a connectivity measure. Node size is defined
+   by the Indegree. Node color is defined by node strength.
+
+
+To display the measures in the 2D views click the `Show all` button.
+
+Nodes are draws as circles, their size proportional to the measure labeled `Shapes Dimensions`.
+Their color is determined by a threshold and the measure labeled `Node Colors`.
+Nodes with values above the threshold will be red and those whose value are below the threshold will be green.
 
 .. figure:: screenshots/connectivity2d_left_metrics.jpg
    :width: 50%
    :align: center
    
    Preview of 2D Connectivity Viewer (left lateral view). Node size is defined
-   by the Participation Coefficient. Color threshold is 1.8; this values is based 
-   on the the Clustering Coefficient (BU) of the default Connectivity matrix.
-
+   by the Indegree. Node color is defined by node strength, threshold is 40.
 
 
 .. tip::
 
     If you wish to change: 
 
-                            - the color threshold,
-                            - the metrics used to define the node features,
-                            - the colormap used in the Connectivity Matrix Editor, or
-                            - the Connectivity entity
+        - the color threshold,
+        - the metrics used to define the node features,
+        - the colormap used in the Connectivity Matrix Editor, or
+        - the Connectivity entity
 
-   go to the `brain` menu on the top right corner
+    go to the `brain` menu on the top right corner
    
    .. figure:: screenshots/connectivity_context_menu.jpg
       :width: 50%
@@ -367,7 +391,7 @@ To display the changes, click on the `Show details` button.
 |
 
 Matrix Overview
-~~~~~~~~~~~~~~~~
+~~~~~~~~~~~~~~~
 
 A 2D matrix plot to have a complete overview of the initially selected weighted
 connectivity matrix.
@@ -383,7 +407,7 @@ connectivity matrix.
 |
 
 Space-Time
-~~~~~~~~~~~
+~~~~~~~~~~
 
 This is a three-dimensional representation of the delayed-connectivity
 structure (space-time) when combined with spatial separation and a finite
