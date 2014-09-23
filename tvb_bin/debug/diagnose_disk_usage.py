@@ -94,10 +94,12 @@ class DiagnoseDiskUsage(object):
 
             dt_actual_disk_size = self.get_file_kib_size(dt_pth)
 
-            op_disk_size += dt_actual_disk_size
-            op_db_size += dt.disk_size
+            db_disk_size = dt.disk_size or 0
 
-            self.print_usage_line(dt.gid[:12], dt.type, dt_actual_disk_size , dt.disk_size)
+            op_disk_size += dt_actual_disk_size
+            op_db_size += db_disk_size
+
+            self.print_usage_line(dt.gid[:12], dt.type, dt_actual_disk_size , db_disk_size)
             self.expected_files.add(dt_pth)
 
         op_xml = self.file_helper.get_operation_meta_file_path(self.project.name, op.id)
@@ -120,7 +122,7 @@ class DiagnoseDiskUsage(object):
         print 'Unexpected project files :'
         for f in unexpected:
             print f
-        else:
+        if not unexpected:
             print 'yey! none found'
 
 
