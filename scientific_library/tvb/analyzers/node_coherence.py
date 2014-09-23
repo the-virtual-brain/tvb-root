@@ -54,128 +54,102 @@ LOG = get_logger(__name__)
 #      the complex coherence spectra, then supporting magnitude squared
 #      coherence, etc in a similar fashion to the FourierSpectrum datatype...
 
-try:
-    from scipy.signal import hamming
-except ImportError:
-    def hamming(M, sym=True):
-        """
-        The M-point Hamming window.
-        From scipy.signal
-        """
-        if M < 1:
-            return numpy.array([])
-        if M == 1:
-            return numpy.ones(1, 'd')
-        odd = M % 2
-        if not sym and not odd:
-            M = M + 1
-        n = numpy.arange(0, M)
-        w = 0.54 - 0.46 * numpy.cos(2.0 * numpy.pi * n / (M - 1))
-        if not sym and not odd:
-            w = w[:-1]
-        return w
+
+def hamming(M, sym=True):
+    """
+    The M-point Hamming window.
+    From scipy.signal
+    """
+    if M < 1:
+        return numpy.array([])
+    if M == 1:
+        return numpy.ones(1, 'd')
+    odd = M % 2
+    if not sym and not odd:
+        M = M + 1
+    n = numpy.arange(0, M)
+    w = 0.54 - 0.46 * numpy.cos(2.0 * numpy.pi * n / (M - 1))
+    if not sym and not odd:
+        w = w[:-1]
+    return w
+
+
+def coherence_mlab(data, sample_rate, nfft=256):
+    _, nsvar, nnode, nmode = data.shape
+    # (frequency, nodes, nodes, state-variables, modes)
+    coh_shape = nfft/2 + 1, nnode, nnode, nsvar, nmode
+    LOG.info("coh shape will be: %s" % (coh_shape, ))
+    coh = numpy.zeros(coh_shape)
+    for mode in range(nmode):
+        for var in range(nsvar):
+            data = data[:, var, :, mode].copy()
+            data -= data.mean(axis=0)[numpy.newaxis, :]
+            for n1 in range(nnode):
+                for n2 in range(nnode):
+                    cxy, freq = mlab.cohere(data[:, n1], data[:, n2],
+                                            NFFT=nfft,
+                                            Fs=sample_rate,
+                                            detrend=detrend_linear,
+                                            window=mlab.window_none)
+                    coh[:, n1, n2, var, mode] = cxy
+    return coh, freq
+
+
+def coherence(data, sample_rate, nfft=256, imag=False):
+    "Vectorized coherence calculation by windowed FFT"
+    nt, ns, nn, nm = data.shape
+    nwin = nt / nfft
+    if nwin < 1:
+        raise ValueError(
+            "Not enough time points ({0}) to compute an FFT, given a "
+            "window size of nfft={1}.".format(nt, nfft))
+    # ignore leftover data; need shape (nn, ... , nwin, nfft)
+    wins = data[:nwin * nfft]\
+        .copy()\
+        .transpose((2, 1, 3, 0))\
+        .reshape((nn, ns, nm, nwin, nfft))
+    wins *= hamming(nfft)
+    F = numpy.fft.fft(wins)
+    fs = numpy.fft.fftfreq(nfft, 1e3 / sample_rate)
+    # broadcasts to [node_i, node_j, ..., window, time]
+    G = F[:, numpy.newaxis] * F
+    if imag:
+        G = G.imag
+    dG = numpy.array([G[i, i] for i in range(nn)])
+    C = (numpy.abs(G)**2 / (dG[:, numpy.newaxis] * dG)).mean(axis=-2)
+    mask = fs > 0.0
+    # C_ = numpy.abs(C.mean(axis=0).mean(axis=0))
+    return numpy.transpose(C[..., mask], (4, 0, 1, 2, 3)), fs[mask]
 
 
 class NodeCoherence(core.Type):
-    """Compute cross coherence between nodes.
-    """
-    
+    "Adapter for cross-coherence algorithm(s)"
+
     time_series = time_series.TimeSeries(
-        label = "Time Series",
-        required = True,
-        doc = """The timeseries to which the FFT is to be applied.""")
-        
+        label="Time Series",
+        required=True,
+        doc="""The timeseries to which the FFT is to be applied.""")
+
     nfft = basic.Integer(
         label="Data-points per block",
-        default = 256,
+        default=256,
         doc="""Should be a power of 2...""")
-    
 
     def evaluate(self):
-        """ 
-        Coherence function.  Matplotlib.mlab implementation.
-        """
+        "Evaluate coherence on time series."
         cls_attr_name = self.__class__.__name__+".time_series"
-        self.time_series.trait["data"].log_debug(owner = cls_attr_name)
-        
-        data_shape = self.time_series.data.shape
-        
-        #(frequency, nodes, nodes, state-variables, modes)
-        result_shape = (self.nfft/2 + 1, data_shape[2], data_shape[2], data_shape[1], data_shape[3])
-        LOG.info("result shape will be: %s" % str(result_shape))
-        
-        result = numpy.zeros(result_shape)
-        
-        #TODO: For region level, 4s, 2000Hz, this takes ~2min... (which is stupidly slow) 
-        #One inter-node coherence, across frequencies for each state-var & mode.
-        for mode in range(data_shape[3]):
-            for var in range(data_shape[1]):
-                data = self.time_series.data[:, var, :, mode]
-                data = data - data.mean(axis=0)[numpy.newaxis, :]
-                #TODO: Work out a way around the 4 level loop,
-                #TODO: coherence isn't directional, so, get rid of redundancy...
-                for n1 in range(data_shape[2]):
-                    for n2 in range(data_shape[2]):
-                        cxy, freq = mlab.cohere(data[:, n1], data[:, n2],
-                                                NFFT = self.nfft,
-                                                Fs = self.time_series.sample_rate,
-                                                detrend = detrend_linear,
-                                                window = mlab.window_none)
-                        result[:, n1, n2, var, mode] = cxy
-        
-        util.log_debug_array(LOG, result, "result")
+        self.time_series.trait["data"].log_debug(owner=cls_attr_name)
+        srate = self.time_series.sample_rate
+        coh, freq = coherence(self.time_series.data, srate, nfft=self.nfft)
+        util.log_debug_array(LOG, coh, "coherence")
         util.log_debug_array(LOG, freq, "freq")
-        
-        coherence = spectral.CoherenceSpectrum(source = self.time_series,
-                                               nfft = self.nfft,
-                                               array_data = result,
-                                               frequency = freq,
-                                               use_storage = False)
-        
-        return coherence
-
-    def evaluate_new(self):
-        import pydevd
-        pydevd.settrace('localhost', port=51234, stdoutToServer=True, stderrToServer=True)
-        data = self.time_series.data
-        sample_period = self.time_series.sample_period
-        nfft = self.nfft
-
-        result_shape = (nfft/2 - 1, data.shape[2], data.shape[2], data.shape[1], data.shape[3])
-        LOG.info("result shape will be: %s" % str(result_shape))
-
-        result = numpy.zeros(result_shape)
-        for mode in range(data.shape[3]):
-            for var in range(data.shape[1]):
-                data = self.time_series.data[:, var, :, mode]
-                freq, _, cxy = self._new_evaluate_inner(data.T, nfft, sample_period)
-                result[..., var, mode] = cxy.transpose(2, 0, 1)
-
-        coherence = spectral.CoherenceSpectrum(source = self.time_series,
-                                               nfft = self.nfft,
-                                               array_data = result,
-                                               frequency = freq,
-                                               use_storage = False)
-
-        return coherence
-
-    @staticmethod
-    def _new_evaluate_inner(Y, nfft, sample_period):
-        "New implementation of cross-coherence w/o for loops"
-        # TODO: adapt to tvb timeseries shape
-        imag = False
-        fs = numpy.fft.fftfreq(nfft, sample_period)
-        # shape [ch_i, ch_j, ..., window, time]
-        wY = Y.reshape((Y.shape[0], -1, nfft)) * hamming(nfft)
-        F = numpy.fft.fft(wY)
-        G = F[:, numpy.newaxis]*F
-        if imag:
-            G = G.imag
-        dG = numpy.array([G[i, i] for i in range(G.shape[0])])
-        C = (numpy.abs(G)**2 / (dG[:, numpy.newaxis] * dG)).mean(axis=-2)
-        mask = fs>0.0
-        C_ = numpy.abs(C.mean(axis=0).mean(axis=0))
-        return fs[mask], C_[mask], C[..., mask]
+        spec = spectral.CoherenceSpectrum(
+            source=self.time_series,
+            nfft=self.nfft,
+            array_data=coh,
+            frequency=freq,
+            use_storage=False)
+        return spec
 
     def result_shape(self, input_shape):
         """Returns the shape of the main result of NodeCoherence."""
