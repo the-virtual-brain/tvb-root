@@ -149,6 +149,7 @@ class Introspector:
                 category_instance = dao.filter_category(category_name, rawinput, display, launchable, order_nr)
                 if category_instance is not None:
                     category_instance.last_introspection_check = datetime.datetime.now()
+                    category_instance.removed = False
                 else:
                     category_state = category_details[STATE] if STATE in category_details else ''
                     category_instance = model.AlgorithmCategory(category_name, launchable, rawinput, display,
@@ -334,6 +335,7 @@ class Introspector:
                 group.subsection_name = getattr(adapter, "_ui_subsection")
             group.ui_display = adapter._ui_display
             group.displayname = ui_name
+            group.removed = False
             group.last_introspection_check = datetime.datetime.now()
             group_inst_from_db = dao.store_entity(group)
             self.__store_algorithms_for_group(group_inst_from_db, adapter, has_sub_algorithms)
@@ -483,7 +485,7 @@ class Introspector:
         :param category_key: the algorithm group category for which we match the algorithms found
             in the db with those we recently validated on introspection
         """
-        db_groups = dao.get_groups_by_categories([category_key])
+        db_groups = dao.get_groups_by_categories([category_key], filter_removed=False)
         for group in db_groups:
             for curr_group in current_groups:
                 if group.module == curr_group.module and group.classname == curr_group.classname:

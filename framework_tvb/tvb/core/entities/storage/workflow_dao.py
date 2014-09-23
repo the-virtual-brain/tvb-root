@@ -50,6 +50,7 @@ class WorkflowDAO(RootDAO):
         """
         Get a list of all categories, portlets and algorithm groups that were not found valid since the reference_time.
         Used in initializer on each start to filter out any entities that for some reason became invalid.
+        :return tuple (list of entities to get invalidated) (list of entities to be removed)
         """
         try:
             algo_groups = self.session.query(model.AlgorithmGroup
@@ -58,11 +59,11 @@ class WorkflowDAO(RootDAO):
                                         ).filter(model.AlgorithmCategory.last_introspection_check<reference_time).all()
             portlets = self.session.query(model.Portlet
                                         ).filter(model.Portlet.last_introspection_check < reference_time).all()
-            all_invalid_entities = algo_groups + categories + portlets
+            result = algo_groups + categories, portlets
         except SQLAlchemyError, ex:
             self.logger.exception(ex)
-            all_invalid_entities = []
-        return all_invalid_entities
+            result = [], []
+        return result
 
 
     def get_bursts_for_project(self, project_id, page_start=0, page_end=None, count=False):

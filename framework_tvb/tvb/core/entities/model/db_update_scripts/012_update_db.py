@@ -35,14 +35,17 @@ Change of DB structure from TVB version 1.2.1 to 1.2.2
 
 """
 
-from sqlalchemy import Column, String
+from sqlalchemy import Column, String, Boolean
 from migrate.changeset.schema import create_column, drop_column
 from tvb.core.entities import model
 
 
 meta = model.Base.metadata
 
-COL_NEW = Column('_dynamic_ids', String, default="[]")
+COLUMN_BURST = Column('_dynamic_ids', String, default="[]")
+COLUMN_GROUP = Column("removed", Boolean, default=False)
+COLUMN_CATEGORY = Column("removed", Boolean, default=False)
+
 
 
 def upgrade(migrate_engine):
@@ -51,9 +54,17 @@ def upgrade(migrate_engine):
     Don't create your own engine; bind migrate_engine to your metadata.
     """
     meta.bind = migrate_engine
-    table1 = meta.tables['BURST_CONFIGURATIONS']
 
-    create_column(COL_NEW, table1)
+    table1 = meta.tables['BURST_CONFIGURATIONS']
+    create_column(COLUMN_BURST, table1)
+
+    table2 = meta.tables['ALGORITHM_CATEGORIES']
+    create_column(COLUMN_CATEGORY, table2)
+
+    table3 = meta.tables['ALGORITHM_GROUPS']
+    create_column(COLUMN_GROUP, table3)
+
+
 
 
 def downgrade(migrate_engine):
@@ -61,4 +72,10 @@ def downgrade(migrate_engine):
     meta.bind = migrate_engine
 
     table1 = meta.tables['BURST_CONFIGURATIONS']
-    drop_column(COL_NEW, table1)
+    drop_column(COLUMN_BURST, table1)
+
+    table2 = meta.tables['ALGORITHM_CATEGORIES']
+    drop_column(COLUMN_CATEGORY, table2)
+
+    table3 = meta.tables['ALGORITHM_GROUPS']
+    drop_column(COLUMN_GROUP, table3)

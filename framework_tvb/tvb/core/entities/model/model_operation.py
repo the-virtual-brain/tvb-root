@@ -69,11 +69,11 @@ class AlgorithmCategory(Base):
     defaultdatastate = Column(String)
     order_nr = Column(Integer)
     last_introspection_check = Column(DateTime)
+    removed = Column(Boolean, default=False)
 
 
-    def __init__(self, displayname, launchable=False, rawinput=False,
-                 display=False, defaultdatastate='', order_nr='999',
-                 last_introspection_check=None):
+    def __init__(self, displayname, launchable=False, rawinput=False, display=False, defaultdatastate='',
+                 order_nr='999', last_introspection_check=None):
         self.displayname = displayname
         self.launchable = launchable
         self.rawinput = rawinput
@@ -81,12 +81,13 @@ class AlgorithmCategory(Base):
         self.defaultdatastate = defaultdatastate
         self.order_nr = order_nr
         self.last_introspection_check = last_introspection_check
+        self.removed = False
 
 
     def __repr__(self):
-        return "<AlgorithmCategory('%s', '%s', '%s', '%s', '%s')>" % (self.displayname, self.launchable,
-                                                                      self.rawinput, self.display,
-                                                                      self.defaultdatastate)
+        return "<AlgorithmCategory('%d', '%s', '%s', '%s', '%s', '%s', '%d', '%s', '%d')>" % (
+            self.id, self.displayname, self.launchable, self.rawinput, self.display,
+            self.defaultdatastate, self.order_nr, self.last_introspection_check, self.removed)
 
 
     def __hash__(self):
@@ -95,12 +96,9 @@ class AlgorithmCategory(Base):
 
 
     def __eq__(self, other):
-        return (isinstance(other, AlgorithmCategory) and
-                self.displayname == other.displayname and
-                self.launchable == other.launchable
-                and self.rawinput == other.rawinput
-                and self.display == other.display
-                and self.defaultdatastate == other.defaultdatastate)
+        return (isinstance(other, AlgorithmCategory) and self.displayname == other.displayname and
+                self.launchable == other.launchable and self.rawinput == other.rawinput and
+                self.display == other.display and self.defaultdatastate == other.defaultdatastate)
 
 
 
@@ -123,6 +121,7 @@ class AlgorithmGroup(Base):
     ui_display = Column(Integer)        # When negative the algorithm will not be displayed on the STEPS page.
     init_parameter = Column(String)
     last_introspection_check = Column(DateTime)
+    removed = Column(Boolean, default=False)
 
     group_category = relationship(AlgorithmCategory, backref=backref('ALGORITHM_GROUPS',
                                                                      order_by=id, cascade="delete, all"))
@@ -137,10 +136,13 @@ class AlgorithmGroup(Base):
         self.algorithm_param_name = algorithm_param_name
         self.init_parameter = init_parameter
         self.last_introspection_check = last_introspection_check
+        self.removed = False
+
         if description is None:
             self.description = ""
         else:
             self.description = description
+
         if subsection_name is not None:
             self.subsection_name = subsection_name
         else:
@@ -148,9 +150,9 @@ class AlgorithmGroup(Base):
 
 
     def __repr__(self):
-        return "<Group('%s', '%s', '%s', '%s', '%s', '%s')>" % (self.classname,
-                                                                self.module, self.fk_category, self.displayname,
-                                                                self.algorithm_param_name, self.init_parameter)
+        return "<Group('%d', '%s', '%s', '%d', '%s', '%s', '%s', '%s', '%d')>" % (
+            self.id, self.module, self.classname, self.fk_category, self.displayname,
+            self.subsection_name, self.algorithm_param_name, self.init_parameter, self.removed)
 
 
 
@@ -180,18 +182,19 @@ class Algorithm(Base):
                  output='', datatype_filter='', description=''):
         self.fk_algo_group = group_id
         self.identifier = identifier
+        self.name = name
         self.required_datatype = req_data
         self.parameter_name = param_name
         self.outputlist = output
-        self.name = name
         self.datatype_filter = datatype_filter
         self.description = description
 
 
     def __repr__(self):
-        return "<Group('%d', '%s', '%s', %s', '%s', '%s')>" % (self.fk_algo_group, self.identifier, self.name,
-                                                               self.required_datatype, self.parameter_name,
-                                                               self.outputlist)
+        return "<Group('%d', '%s', '%s', %s', '%s', '%s', '%s', '%s')>" % (
+            self.fk_algo_group, self.identifier, self.name, self.required_datatype,
+            self.parameter_name, self.outputlist, self.datatype_filter, self.description)
+
 
 
 RANGE_MISSING_STRING = "-"

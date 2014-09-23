@@ -75,9 +75,13 @@ def initialize(introspected_modules, load_xml_events=True):
         event_path = introspector.get_events_path()
         if event_path:
             event_folders.append(event_path)
-    # Now remove any unverified Algo-Groups, categories or Portlets
-    invalid_stored_entities = dao.get_non_validated_entities(start_introspection_time)
-    for entity in invalid_stored_entities:
+
+    # Now remove or mark as removed any unverified Algo-Group, Algo-Category or Portlet
+    to_invalidate, to_remove = dao.get_non_validated_entities(start_introspection_time)
+    for entity in to_invalidate:
+        entity.removed = True
+    dao.store_entities(to_invalidate)
+    for entity in to_remove:
         dao.remove_entity(entity.__class__, entity.id)
    
     ## Populate events

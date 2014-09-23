@@ -479,6 +479,7 @@ class OperationDAO(RootDAO):
         try:
             # Filter only groups with applicable algorithms for current DataType
             groups_list = self.session.query(model.AlgorithmGroup).join(model.Algorithm
+                                        ).filter(model.AlgorithmGroup.removed == False
                                         ).filter(model.AlgorithmGroup.fk_category.in_(launch_categ)
                                         ).filter(model.Algorithm.required_datatype.in_(compatible_class_names)).all()
         except SQLAlchemyError, excep:
@@ -496,17 +497,20 @@ class OperationDAO(RootDAO):
         return result
 
 
-    def get_groups_by_categories(self, categories):
+    def get_groups_by_categories(self, categories, filter_removed=True):
         """
         Retrieve a list of algorithm groups in a given category.
         """
         try:
-            algos_list = self.session.query(model.AlgorithmGroup
-                                            ).filter(model.AlgorithmGroup.fk_category.in_(categories)
-                                                     ).order_by(model.AlgorithmGroup.displayname).all()
+            query = self.session.query(model.AlgorithmGroup).filter(model.AlgorithmGroup.fk_category.in_(categories))
+            if filter_removed:
+                query = query.filter(model.AlgorithmGroup.removed == False)
+            algos_list = query.order_by(model.AlgorithmGroup.displayname).all()
+
         except SQLAlchemyError, excep:
             self.logger.exception(excep)
             algos_list = []
+
         return algos_list
 
 
