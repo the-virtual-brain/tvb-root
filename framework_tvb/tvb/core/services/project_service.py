@@ -69,11 +69,10 @@ def initialize_storage():
     try:
         helper = FilesHelper()
         helper.check_created()
-    except FileStructureException, excep:
+    except FileStructureException:
         # Do nothing, because we do not have any UI to display exception
         logger = get_logger("tvb.core.services.initialize_storage")
-        logger.error("Could not make sure the root folder exists!")
-        logger.exception(excep)
+        logger.exception("Could not make sure the root folder exists!")
 
 
 ## TODO move this page sizes into User-Settings once we have a UI table to set it.
@@ -119,8 +118,7 @@ class ProjectService:
             try:
                 current_proj = dao.get_project_by_id(selected_id)
             except Exception, excep:
-                self.logger.error("An error has occurred!")
-                self.logger.exception(excep)
+                self.logger.exception("An error has occurred!")
                 raise ProjectServiceException(str(excep))
             if current_proj.name != new_name:
                 self.structure_helper.rename_project_structure(current_proj.name, new_name)
@@ -160,8 +158,7 @@ class ProjectService:
         try:
             return dao.get_project_by_id(project_id)
         except Exception, excep:
-            self.logger.error("Given Project ID was not found in DB!")
-            self.logger.exception(excep)
+            self.logger.exception("Given Project ID was not found in DB!")
             raise ProjectServiceException(str(excep))
 
 
@@ -281,9 +278,8 @@ class ProjectService:
                 else:
                     result['results'] = None
                 operations.append(result)
-            except Exception, excep:
+            except Exception:
                 ## We got an exception when processing one Operation Row. We will continue with the rest of the rows.
-                self.logger.error(excep)
                 self.logger.exception("Could not prepare operation for display:" + str(one_op))
         return selected_project, total_ops_nr, started_ops, operations, pages_no
 
@@ -346,15 +342,15 @@ class ProjectService:
         try:
             project2delete = dao.get_project_by_id(project_id)
             project_bursts = dao.get_bursts_for_project(project_id)
+            self.logger.info("Deleting project: id=" + str(project_id) + ' name=' + project2delete.name)
             for burst in project_bursts:
                 dao.remove_entity(burst.__class__, burst.id)
             project_datatypes = dao.get_datatypes_info_for_project(project_id)
             for one_data in project_datatypes:
                 self.remove_datatype(project_id, one_data[9], True)
             self.structure_helper.remove_project_structure(project2delete.name)
-            name = project2delete.name
             dao.delete_project(project_id)
-            self.logger.debug("Deleted project: id=" + str(project_id) + ' name=' + name)
+            self.logger.info("Deleted project: id=" + str(project_id) + ' name=' + project2delete.name)
 
         except RemoveDataTypeException, excep:
             self.logger.exception("Could not execute operation Node Remove!")
@@ -638,12 +634,11 @@ class ProjectService:
                 specific_remover.remove_datatype(skip_validation)
                 self.structure_helper.remove_datatype(datatype)
 
-        except RemoveDataTypeException, excep:
-            self.logger.error("Could not execute operation Node Remove!")
-            self.logger.exception(excep)
-            raise excep
-        except FileStructureException, excep:
-            self.logger.exception(excep)
+        except RemoveDataTypeException:
+            self.logger.exception("Could not execute operation Node Remove!")
+            raise
+        except FileStructureException:
+            self.logger.exception("Remove operation failed")
             raise StructureException("Remove operation failed for unknown reasons.Please contact system administrator.")
 
 
@@ -653,10 +648,12 @@ class ProjectService:
         """
         operation = dao.get_operation_by_id(operation_id)
         if operation is not None:
+            self.logger.info("Deleting operation %s " % operation)
             datatypes_for_op = dao.get_results_for_operation(operation_id)
             for dt in reversed(datatypes_for_op):
                 self.remove_datatype(operation.project.id, dt.gid, False)
             dao.remove_entity(model.Operation, operation.id)
+            self.logger.info("Finished deleting operation %s " % operation)
         else:
             self.logger.warning("Attempt to delete operation with id=%s which no longer exists." % operation_id)
 
@@ -665,12 +662,11 @@ class ProjectService:
         """
         Method used for removing a dataType. If the given dataType is a DatatypeGroup
         or a dataType from a DataTypeGroup than this method will remove the entire group.
-        The operation(s) used for creating the dataType(s) will also be removed also.
+        The operation(s) used for creating the dataType(s) will also be removed.
         """
         datatype = dao.get_datatype_by_gid(datatype_gid)
         if datatype is None:
             return
-        user = dao.get_user_for_datatype(datatype.id)
         freed_space = datatype.disk_size or 0
         is_datatype_group = False
         if dao.is_datatype_group(datatype_gid):
@@ -686,6 +682,7 @@ class ProjectService:
         correct = True
 
         if is_datatype_group:
+            self.logger.info("Removing datatype group %s" % datatype)
             data_list = dao.get_datatypes_from_datatype_group(datatype.id)
             for adata in data_list:
                 self._remove_project_node_files(project_id, adata.gid, skip_validation)
@@ -695,8 +692,8 @@ class ProjectService:
             datatype_group = dao.get_datatype_group_by_gid(datatype.gid)
             dao.remove_datatype(datatype_gid)
             correct = correct and dao.remove_entity(model.OperationGroup, datatype_group.fk_operation_group)
-
         else:
+            self.logger.info("Removing datatype %s" % datatype)
             self._remove_project_node_files(project_id, datatype.gid, skip_validation)
 
         ## Remove Operation entity in case no other DataType needs them.
@@ -712,9 +709,10 @@ class ProjectService:
 
         if not correct:
             raise RemoveDataTypeException("Could not remove DataType " + str(datatype_gid))
-        else:
-            user.used_disk_space = user.used_disk_space - freed_space
-            dao.store_entity(user)
+
+        user = dao.get_user_for_datatype(datatype.id)
+        user.used_disk_space = user.used_disk_space - freed_space
+        dao.store_entity(user)
 
 
     def retrieve_launchers(self, datatype_gid, inspect_group=False, include_categories=None):
