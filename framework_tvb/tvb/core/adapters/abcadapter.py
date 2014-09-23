@@ -248,13 +248,22 @@ class ABCAdapter(object):
             self.user_id = operation.fk_launched_by
 
             self.configure(**kwargs)
-            total_free_memory = psutil.virtual_memory().free + psutil.swap_memory().free
-            adapter_required_memory = self.get_required_memory_size(**kwargs)
-            if adapter_required_memory > total_free_memory:
-                raise NoMemoryAvailableException("Machine does not have enough RAM memory to launch the operation "
-                                                 "(expected %.2g GB free, found %.2g)." % (
-                                                 adapter_required_memory / 2 ** 30, total_free_memory / 2 ** 30))
 
+            # Compare the amount of memory the current algorithms states it needs,
+            # with the average between the RAM available on the OS and the free memory at the current moment.
+            # We do not consider only the free memory, because some OSs are freeing late and on-demand only.
+            total_free_memory = psutil.virtual_memory().free + psutil.swap_memory().free
+            total_existent_memory = psutil.virtual_memory().total + psutil.swap_memory().total
+            memory_reference = (total_free_memory + total_existent_memory) / 2
+            adapter_required_memory = self.get_required_memory_size(**kwargs)
+
+            if adapter_required_memory > memory_reference:
+                raise NoMemoryAvailableException("Machine does not have enough RAM memory to launch the operation "
+                                                 "(expected %.2g GB, but were found %.2g GB)." % (
+                                                 adapter_required_memory / 2 ** 30, memory_reference / 2 ** 30))
+
+            # Compare the expected size of the operation results with the HDD space currently available for the user
+            # TVB defines a quota per user.
             required_disk_space = self.get_required_disk_size(**kwargs)
             if available_disk_space < 0:
                 raise NoMemoryAvailableException("You have exceeded you HDD space quota"
