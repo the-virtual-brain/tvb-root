@@ -257,7 +257,7 @@ class FilesHelper():
                 self.logger.warning("Data file already removed:" + str(datatype.get_storage_file_path()))
 
         except Exception, excep:
-            self.logger.error(excep)
+            self.logger.exception(excep)
             raise FileStructureException("Could not remove " + str(datatype))
             
             
