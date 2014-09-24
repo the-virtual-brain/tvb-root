@@ -87,6 +87,9 @@ class SurfaceScientific(surfaces_data.SurfaceData):
         """
         super(SurfaceScientific, self).configure()
 
+        # do a basic surface validation before attempting the expensive normal computation.
+        self.check()
+
         self.number_of_vertices = self.vertices.shape[0]
         self.number_of_triangles = self.triangles.shape[0]
 
@@ -99,6 +102,9 @@ class SurfaceScientific(surfaces_data.SurfaceData):
             LOG.debug("Vertex normals not available. Start to compute them.")
             self.compute_vertex_normals()
             LOG.debug("End computing vertex normals")
+
+        # Set this flag if the surface may be used in simulations.
+        self.valid_for_simulations, self.user_tag_3 = self.has_valid_topology_for_simulations()
 
 
     def _find_summary_info(self):
@@ -498,60 +504,76 @@ class SurfaceScientific(surfaces_data.SurfaceData):
         return triangles
 
 
-    def check(self):
+    def compute_topological_constants(self):
         """
-        Check the surface under the assumption of topologically spherical closed
-        triangular mesh. Returns a 5 element tuple: 1) A boolean, True if no 
-        checks failed False otherwise; 2) The Euler characteristic number for
-        the mesh surface, this should be 2 or 4 -- meaning one or two closed
-        topologically spherical surfaces; 3) a list of indices for any isolated
-        vertices; 4) a list of indices of edges where the surface is pinched; 
-        and 5) a list of indices of edges that border holes in the surface.
+        Returns a 4 tuple:
+         * the Euler characteristic number
+         * indices for any isolated vertices
+         * indices of edges where the surface is pinched
+         * indices of edges that border holes in the surface
+        """
+        euler = self.number_of_vertices + self.number_of_triangles - self.number_of_edges
+        triangles_per_vertex = numpy.array(map(len, self.vertex_triangles))
+        isolated = numpy.nonzero(triangles_per_vertex < 3)
+        triangles_per_edge = numpy.array(map(len, self.edge_triangles))
+        pinched_off = numpy.nonzero(triangles_per_edge > 2)
+        holes = numpy.nonzero(triangles_per_edge < 2)
+        return euler, isolated[0], pinched_off[0], holes[0]
 
+
+    def has_valid_topology_for_simulations(self):
+        """
+        Validates if this surface can be used in simulations.
+        The surface should be topologically equivalent to one or two closed spheres.
+        It should not contain isolated vertices.
+        It should not be pinched or have holes: all edges must belong to 2 triangles.
         The allowance for one or two closed surfaces is because the skull/etc
-        should be represented by a single closed surface and we typically 
+        should be represented by a single closed surface and we typically
         represent the cortex as one closed surface per hemisphere.
 
+        :return: (is_valid, error_summary_string)
         """
-        is_good = True
-        isolated = []
-        pinched_off = []
-        holes = []
-        error_message = ""
+        # import pydevd
+        # pydevd.settrace('localhost', port=51234, stdoutToServer=True, stderrToServer=True)
+        error_summary = ""
+        euler, isolated, pinched_off, holes = self.compute_topological_constants()
 
-        #The Euler characteristic for a 2D sphere embedded in a 3D space is 2.
-        euler = self.number_of_vertices + self.number_of_triangles - self.number_of_edges
+        # The Euler characteristic for a 2D sphere embedded in a 3D space is 2.
+        # This should be 2 or 4 -- meaning one or two closed topologically spherical surfaces
         if euler not in (2, 4):
-            error_message = "The surface is expected to be 1 or 2 closed spheres."
-            LOG.error(error_message)
-            is_good = False
+            msg = "Topologically not 1 or 2 spheres."
+            LOG.error(msg + "Euler characteristic: " + str(euler))
+            error_summary += msg
+
+        if len(isolated):
+            msg = "Has isolated vertices."
+            LOG.error(msg + "Offending indices: \n" + str(isolated) )
+            error_summary += msg
+
+        if len(pinched_off):
+            msg = "Surface is pinched off."
+            LOG.error(msg + "These are edges with more than 2 triangles: \n" + str(pinched_off))
+            error_summary += msg
+
+        if len(holes):
+            msg = "Has holes."
+            LOG.error(msg + "Free boundaries: \n" + str(holes))
+            error_summary += msg
+
+        return error_summary == "", error_summary
+
+
+    def check(self):
+        """
+        Check basic surface validity.
+        """
+        msg = ""
 
         if self.triangles.max() >= self.number_of_vertices:
-            error_message = "There are triangles that index nonexistent vertices."
-            LOG.error(error_message)
-            is_good = False
+            msg = "There are triangles that index nonexistent vertices."
+            LOG.error(msg)
 
-        triangles_per_vertex = numpy.array(map(len, self.vertex_triangles))
-        if numpy.any(triangles_per_vertex < 3):
-            error_message = "The surface contains isolated vertices."
-            LOG.error(error_message)
-            is_good = False
-            isolated = numpy.nonzero(triangles_per_vertex < 3)
-
-        triangles_per_edge = numpy.array(map(len, self.edge_triangles))
-        if numpy.any(triangles_per_edge > 2):
-            error_message = "There are edges with more than 2 triangles, part of the surface is pinched off."
-            LOG.error(error_message)
-            is_good = False
-            pinched_off = numpy.nonzero(triangles_per_edge > 2)
-
-        if numpy.any(triangles_per_edge < 2):
-            error_message = "Free boundaries, there are holes in the surface."
-            LOG.error(error_message)
-            is_good = False
-            holes = numpy.nonzero(triangles_per_edge < 2)
-
-        return is_good, euler, isolated, pinched_off, holes, error_message
+        return msg == "", msg
 
 
     def compute_equation(self, focal_points, equation):

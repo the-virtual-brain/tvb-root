@@ -127,7 +127,7 @@ class Surface(surfaces_scientific.SurfaceScientific, surfaces_framework.SurfaceF
             raise exceptions.ValidationException(msg)
 
         # Now check if the surface is compatible with TVB
-        is_good, _, _, _, _, error_message = self.check()
+        is_good, error_message = self.check()
         if not is_good:
             msg = "Could not import surface because it's not compatible with TVB. %s" \
                   "Please correct the problem and upload again." % error_message
