@@ -285,15 +285,12 @@ class ExportManager:
     def _gather_project_datatypes(self, project, only_visible):
 
         project_datatypes = []
-        datatypes_count = dao.get_datatypes_for_project(project.id, count=True, only_visible=only_visible)
 
-        for start_idx in range(0, datatypes_count, DATAYPES_PAGE_SIZE):
-            dts = dao.get_datatypes_for_project(project.id, page_start=start_idx,
-                                                page_end=start_idx + DATAYPES_PAGE_SIZE, only_visible=only_visible)
-            for dt in dts:
-                project_datatypes.append({KEY_DT_GID: dt.gid,
-                                          KEY_BURST_ID: dt.fk_parent_burst,
-                                          KEY_OPERATION_ID: dt.fk_from_operation})
+        dts = dao.get_datatypes_in_project(project.id, only_visible=only_visible)
+        for dt in dts:
+            project_datatypes.append({KEY_DT_GID: dt.gid,
+                                      KEY_BURST_ID: dt.fk_parent_burst,
+                                      KEY_OPERATION_ID: dt.fk_from_operation})
         return project_datatypes
 
     

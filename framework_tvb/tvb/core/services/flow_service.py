@@ -342,14 +342,15 @@ class FlowService:
         for data in data_ids:
             link = model.Links(data, project_id)
             dao.store_entity(link)
-    
+
+
     @staticmethod
     def remove_link(dt_id, project_id):
         """
         Remove the link from the datatype given by dt_id to project given by project_id.
         """
         link = dao.get_link(dt_id, project_id)
-        dao.remove_link(link)
+        dao.remove_entity(model.Links, link.id)
     
         
     def fire_operation(self, adapter_instance, current_user, project_id,  

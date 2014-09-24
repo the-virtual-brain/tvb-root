@@ -35,13 +35,11 @@ DAO operations related to generic DataTypes are defined here.
 .. moduleauthor:: Bogdan Neacsa <bogdan.neacsa@codemart.ro>
 """
 
-from sqlalchemy import func as func
-from sqlalchemy import or_, not_, and_, Integer
+from sqlalchemy import func, or_, not_, and_
 from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy.sql import text
+from sqlalchemy.orm import aliased
 from sqlalchemy.sql.expression import desc, cast
-from sqlalchemy.sql.expression import case as case_
-from sqlalchemy.sql.expression import literal_column as literal_
 from sqlalchemy.types import Text
 from sqlalchemy.orm.exc import NoResultFound
 from tvb.core.entities import model
@@ -115,6 +113,21 @@ class DatatypeDAO(RootDAO):
             return None
 
 
+    def count_datatypes_in_burst(self, burst_id):
+        """
+        Returns the number of DataTypes from the specified DataTypeGroup ID.
+        """
+        try:
+            result = self.session.query(model.DataType
+                                        ).filter(model.DataType.fk_parent_burst == burst_id
+                                                 ).filter(model.DataType.type != self.EXCEPTION_DATATYPE_SIMULATION
+                                                          ).count()
+            return result
+        except SQLAlchemyError, excep:
+            self.logger.exception(excep)
+            return None
+
+
     def get_disk_size_for_operation(self, operation_id):
         """
         Return the disk size for the operation by summing over the disk space of the resulting DataTypes.
@@ -122,6 +135,35 @@ class DatatypeDAO(RootDAO):
         try:
             disk_size = self.session.query(func.sum(model.DataType.disk_size)
                                            ).filter(model.DataType.fk_from_operation == operation_id).scalar() or 0
+        except SQLAlchemyError, excep:
+            self.logger.exception(excep)
+            disk_size = 0
+        return disk_size
+
+
+    def get_summary_for_group(self, datatype_group_id):
+        """
+        :return (disk_size SUM, subject)
+        """
+        result = 0, ""
+        try:
+            result = self.session.query(func.sum(model.DataType.disk_size), func.max(model.DataType.subject)
+                                        ).filter(model.DataType.fk_datatype_group == datatype_group_id).all()[0] or result
+        except SQLAlchemyError, excep:
+            self.logger.exception(excep)
+
+        return result
+
+
+    def get_disk_size_for_burst(self, burst_id):
+        """
+        :return the disk size occupied for a burst. Do not count DataType Groups,
+            as those already include the size of the entities inside the group.
+        """
+        try:
+            disk_size = self.session.query(func.sum(model.DataType.disk_size)
+                                           ).filter(model.DataType.type != "DataTypeGroup"
+                                           ).filter(model.DataType.fk_parent_burst == burst_id).scalar() or 0
         except SQLAlchemyError, excep:
             self.logger.exception(excep)
             disk_size = 0
@@ -201,30 +243,6 @@ class DatatypeDAO(RootDAO):
         return count
 
 
-    def get_datatypes_for_project(self, project_id, page_start=0, page_end=20, count=False, only_visible=False):
-        """
-        Return a list of datatypes for this project, paginated between page_start and start_end.
-        :param project_id: the id of the project for which you want the datatypes count
-        :param page_start: the index from which to start adding datatypes to the result list
-        :param page_end: the index up until which you add datatypes to the result list
-        :param count: boolean. When true, return the count
-        :param only_visible: when true, filter and return or count only visible datatypes in project
-        """
-        resulted_data = []
-        try:
-            query = self.session.query(model.DataType).join(model.Operation).join(model.Project
-                                        ).filter(model.Project.id == project_id)
-            if only_visible:
-                query = query.filter(model.DataType.visible == True)
-            if count:
-                return query.count()
-            resulted_data = query.order_by(model.DataType.fk_from_operation
-                                           ).offset(max(page_start, 0)).limit(max(page_end, 0)).all()
-        except SQLAlchemyError, excep:
-            self.logger.exception(excep)
-
-        return resulted_data
-
     def get_linked_datatypes_for_project(self, project_id):
         """
         Return a list of datatypes linked into this project
@@ -246,78 +264,113 @@ class DatatypeDAO(RootDAO):
         return datatypes.values()
 
 
-    def get_datatypes_info_for_project(self, project_id, visibility_filter=None, filter_value=None):
+    def get_datatypes_in_project(self, project_id, only_visible=False):
         """
-        Get all the dataTypes for a given project, including linked data.
-    
-        If filter_value is not None then it will be returned only the
-        dataTypes which contains in the $filter_value value in one of the
-        following fields: model.DataType.id, model.DataType.type,
-        model.DataType.subject,model.DataType.state, model.DataType.gid
+        Get all the DataTypes for a given project with no other filter apart from the projectId
+        """
+        query = self.session.query(model.DataType
+                    ).join((model.Operation, model.Operation.id == model.DataType.fk_from_operation)
+                    ).filter(model.Operation.fk_launched_in == project_id).order_by(model.DataType.id)
+
+        if only_visible:
+            query = query.filter(model.DataType.visible == True)
+
+        return query.all()
+
+
+    def get_data_in_project(self, project_id, visibility_filter=None, filter_value=None):
+        """
+        Get all the DataTypes for a given project, including Linked Entities and DataType Groups.
+
+        :param visibility_filter: when not None, will filter by DataTye fields
+        :param filter_value: when not None, will filter with ilike multiple DataType string attributes
         """
         resulted_data = []
         try:
-            query = self.session.query(func.max(model.DataType.type),
-                                       func.max(model.DataType.state),
-                                       func.max(model.DataType.subject),
-                                       func.max(model.AlgorithmCategory.displayname),
-                                       func.max(model.AlgorithmGroup.displayname),
-                                       func.max(model.Algorithm.name),
-                                       func.max(model.User.username),
-                                       func.max(model.Operation.fk_operation_group),
-                                       func.max(model.Operation.user_group),
-                                       func.max(model.DataType.gid),
-                                       func.max(model.Operation.completion_date),
-                                       func.max(model.DataType.id),
-                                       func.sum(case_([(model.Links.fk_to_project > 0, literal_('1', Integer))],
-                                                      else_=literal_('0', Integer))),
-                                       func.max(case_([(model.DataType.invalid, literal_('1', Integer))],
-                                                      else_=literal_('0', Integer))),
-                                       func.max(model.DataType.fk_datatype_group),
-                                       func.max(model.BurstConfiguration.name),
-                                       func.max(model.DataType.user_tag_1), func.max(model.DataType.user_tag_2),
-                                       func.max(model.DataType.user_tag_3), func.max(model.DataType.user_tag_4),
-                                       func.max(model.DataType.user_tag_5),
-                                       func.max(case_([(model.DataType.visible, 1)], else_=0))
+            ## First Query DT, DT_gr, Lk_DT and Lk_DT_gr
+            query = self.session.query(model.DataType
                         ).join((model.Operation, model.Operation.id == model.DataType.fk_from_operation)
-                        ).join((model.User, model.Operation.fk_launched_by == model.User.id)
                         ).join(model.Algorithm).join(model.AlgorithmGroup).join(model.AlgorithmCategory
                         ).outerjoin((model.Links, and_(model.Links.fk_from_datatype == model.DataType.id,
                                                        model.Links.fk_to_project == project_id))
                         ).outerjoin(model.BurstConfiguration,
                                     model.DataType.fk_parent_burst == model.BurstConfiguration.id
-                        ).outerjoin(model.DataTypeGroup,
-                                    model.DataType.fk_datatype_group == model.DataTypeGroup.id
+                        ).filter(model.DataType.fk_datatype_group == None
                         ).filter(or_(model.Operation.fk_launched_in == project_id,
                                      model.Links.fk_to_project == project_id))
+
             if visibility_filter:
                 filter_str = visibility_filter.get_sql_filter_equivalent()
                 if filter_str is not None:
                     query = query.filter(eval(filter_str))
+
             if filter_value is not None:
-                query = query.filter(or_(cast(model.DataType.id, Text).like('%' + filter_value + '%'),
-                                         model.DataType.type.ilike('%' + filter_value + '%'),
-                                         model.DataType.subject.ilike('%' + filter_value + '%'),
-                                         model.DataType.state.ilike('%' + filter_value + '%'),
-                                         model.DataType.user_tag_1.ilike('%' + filter_value + '%'),
-                                         model.DataType.user_tag_2.ilike('%' + filter_value + '%'),
-                                         model.DataType.user_tag_3.ilike('%' + filter_value + '%'),
-                                         model.DataType.user_tag_4.ilike('%' + filter_value + '%'),
-                                         model.DataType.user_tag_5.ilike('%' + filter_value + '%'),
-                                         model.Operation.user_group.ilike('%' + filter_value + '%'),
-                                         model.AlgorithmCategory.displayname.ilike('%' + filter_value + '%'),
-                                         model.AlgorithmGroup.displayname.ilike('%' + filter_value + '%'),
-                                         model.Algorithm.name.ilike('%' + filter_value + '%'),
-                                         model.BurstConfiguration.name.ilike('%' + filter_value + '%'),
-                                         model.DataType.gid.like('%' + filter_value + '%')))
-            #            resulted_data = query.group_by(case_([(model.Operation.fk_operation_group > 0,
-            #                                                   - model.Operation.fk_operation_group)],
-            #                                               else_=model.DataType.id)).all()
-            resulted_data = query.group_by(model.DataType.id).all()
+                query = query.filter(self._compose_filter_datatype_ilike(filter_value))
+
+            resulted_data = query.all()
+
+            ## Now query what it was not covered before:
+            ## Links of DT which are part of a group, but the entire group is not linked
+
+            links = aliased(model.Links)
+            query2 = self.session.query(model.DataType
+                        ).join((model.Operation, model.Operation.id == model.DataType.fk_from_operation)
+                        ).join(model.Algorithm).join(model.AlgorithmGroup).join(model.AlgorithmCategory
+                        ).join((model.Links, and_(model.Links.fk_from_datatype == model.DataType.id,
+                                                  model.Links.fk_to_project == project_id))
+                        ).outerjoin(links, and_(links.fk_from_datatype == model.DataType.fk_datatype_group,
+                                                links.fk_to_project == project_id)
+                        ).outerjoin(model.BurstConfiguration,
+                                    model.DataType.fk_parent_burst == model.BurstConfiguration.id
+                        ).filter(model.DataType.fk_datatype_group != None
+                        ).filter(links.id == None)
+
+            if visibility_filter:
+                filter_str = visibility_filter.get_sql_filter_equivalent()
+                if filter_str is not None:
+                    query2 = query2.filter(eval(filter_str))
+
+            if filter_value is not None:
+                query2 = query2.filter(self._compose_filter_datatype_ilike(filter_value))
+
+            resulted_data.extend(query2.all())
+
+            # Load lazy fields for future usage
+            for dt in resulted_data:
+                dt._parent_burst
+                dt.parent_operation.algorithm
+                dt.parent_operation.algorithm.algo_group
+                dt.parent_operation.algorithm.algo_group.group_category
+                dt.parent_operation.project
+                dt.parent_operation.operation_group
+                dt.parent_operation.user
+
         except Exception, excep:
             self.logger.exception(excep)
 
         return resulted_data
+
+
+    def _compose_filter_datatype_ilike(self, filter_string):
+        """
+        :param filter_string: String to be search for with ilike.
+        :return: SqlAlchemy filtering clause
+        """
+        return or_(cast(model.DataType.id, Text).like('%' + filter_string + '%'),
+                   model.DataType.gid.like('%' + filter_string + '%'),
+                   model.DataType.type.ilike('%' + filter_string + '%'),
+                   model.DataType.subject.ilike('%' + filter_string + '%'),
+                   model.DataType.state.ilike('%' + filter_string + '%'),
+                   model.DataType.user_tag_1.ilike('%' + filter_string + '%'),
+                   model.DataType.user_tag_2.ilike('%' + filter_string + '%'),
+                   model.DataType.user_tag_3.ilike('%' + filter_string + '%'),
+                   model.DataType.user_tag_4.ilike('%' + filter_string + '%'),
+                   model.DataType.user_tag_5.ilike('%' + filter_string + '%'),
+                   model.Operation.user_group.ilike('%' + filter_string + '%'),
+                   model.AlgorithmCategory.displayname.ilike('%' + filter_string + '%'),
+                   model.AlgorithmGroup.displayname.ilike('%' + filter_string + '%'),
+                   model.Algorithm.name.ilike('%' + filter_string + '%'),
+                   model.BurstConfiguration.name.ilike('%' + filter_string + '%'))
 
 
     def get_datatype_details(self, datatype_gid):

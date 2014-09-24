@@ -127,16 +127,17 @@ class WorkflowTest(TransactionalTestCase):
         are actually ran by checking that two operations are created and that
         one dataType is stored.
         """
-        workflow_step_list = [TestFactory.create_workflow_step("tvb.tests.framework.adapters.testadapter2", "TestAdapter2",
-                                                               static_kwargs={"test2": 2}, step_index=1),
-                              TestFactory.create_workflow_step("tvb.tests.framework.adapters.testadapter1", "TestAdapter1",
-                                                               static_kwargs={"test1_val1": 1, "test1_val2": 1},
-                                                               step_index=2)]
+        workflow_step_list = [TestFactory.create_workflow_step("tvb.tests.framework.adapters.testadapter2",
+                                                               "TestAdapter2", step_index=1,
+                                                               static_kwargs={"test2": 2}),
+                              TestFactory.create_workflow_step("tvb.tests.framework.adapters.testadapter1",
+                                                               "TestAdapter1", step_index=2,
+                                                               static_kwargs={"test1_val1": 1, "test1_val2": 1})]
         self.__create_complex_workflow(workflow_step_list)
-        stored_datatypes = dao.get_datatypes_info_for_project(self.test_project.id)
+        stored_datatypes = dao.get_datatypes_in_project(self.test_project.id)
         self.assertTrue(len(stored_datatypes) == 2, "DataType from second step was not stored.")
-        self.assertTrue(stored_datatypes[0][0] == 'Datatype1', "Wrong type was stored.")
-        self.assertTrue(stored_datatypes[1][0] == 'Datatype1', "Wrong type was stored.")
+        self.assertTrue(stored_datatypes[0].type == 'Datatype1', "Wrong type was stored.")
+        self.assertTrue(stored_datatypes[1].type == 'Datatype1', "Wrong type was stored.")
 
         finished, started, error, _ = dao.get_operation_numbers(self.test_project.id)
         self.assertEqual(finished, 3, "Didnt start operations for both adapters in workflow.")
@@ -155,19 +156,20 @@ class WorkflowTest(TransactionalTestCase):
         We check that the steps are actually ran by checking that two operations 
         are created and that two dataTypes are stored.
         """
-        workflow_step_list = [TestFactory.create_workflow_step("tvb.tests.framework.adapters.testadapter1", "TestAdapter1",
-                                                               static_kwargs={"test1_val1": 1, "test1_val2": 1},
-                                                               step_index=1),
-                              TestFactory.create_workflow_step("tvb.tests.framework.adapters.testadapter3", "TestAdapter3",
+        workflow_step_list = [TestFactory.create_workflow_step("tvb.tests.framework.adapters.testadapter1",
+                                                               "TestAdapter1", step_index=1,
+                                                               static_kwargs={"test1_val1": 1, "test1_val2": 1}),
+                              TestFactory.create_workflow_step("tvb.tests.framework.adapters.testadapter3",
+                                                               "TestAdapter3", step_index=2,
                                                                dynamic_kwargs={
                                                                    "test": {wf_cfg.DATATYPE_INDEX_KEY: 0,
-                                                                            wf_cfg.STEP_INDEX_KEY: 1}}, step_index=2)]
+                                                                            wf_cfg.STEP_INDEX_KEY: 1}})]
 
         self.__create_complex_workflow(workflow_step_list)
-        stored_datatypes = dao.get_datatypes_info_for_project(self.test_project.id)
+        stored_datatypes = dao.get_datatypes_in_project(self.test_project.id)
         self.assertTrue(len(stored_datatypes) == 3, "DataType from all step were not stored.")
         for result_row in stored_datatypes:
-            self.assertTrue(result_row[0] in ['Datatype1', 'Datatype2'], "Wrong type was stored.")
+            self.assertTrue(result_row.type in ['Datatype1', 'Datatype2'], "Wrong type was stored.")
 
         finished, started, error, _ = dao.get_operation_numbers(self.test_project.id)
         self.assertEqual(finished, 3, "Didn't start operations for both adapters in workflow.")
@@ -177,7 +179,7 @@ class WorkflowTest(TransactionalTestCase):
 
     def test_configuration2workflow(self):
         """
-        Test that building a WorflowStep from a WorkflowStepConfiguration. Make sure all the data is 
+        Test that building a WorkflowStep from a WorkflowStepConfiguration. Make sure all the data is
         correctly passed. Also check that any base_wf_step is incremented to dynamic parameters step index.
         """
         workflow_step = TestFactory.create_workflow_step("tvb.tests.framework.adapters.testadapter1", "TestAdapter1",
@@ -196,11 +198,12 @@ class WorkflowTest(TransactionalTestCase):
         """
         Test that a workflow with all the associated workflow steps is actually created.
         """
-        workflow_step_list = [TestFactory.create_workflow_step("tvb.tests.framework.adapters.testadapter2", "TestAdapter2",
-                                                               static_kwargs={"test2": 2}, step_index=1),
-                              TestFactory.create_workflow_step("tvb.tests.framework.adapters.testadapter1", "TestAdapter1",
-                                                               static_kwargs={"test1_val1": 1, "test1_val2": 1},
-                                                               step_index=2)]
+        workflow_step_list = [TestFactory.create_workflow_step("tvb.tests.framework.adapters.testadapter2",
+                                                               "TestAdapter2", step_index=1,
+                                                               static_kwargs={"test2": 2}),
+                              TestFactory.create_workflow_step("tvb.tests.framework.adapters.testadapter1",
+                                                               "TestAdapter1", step_index=2,
+                                                               static_kwargs={"test1_val1": 1, "test1_val2": 1})]
         burst_id = self.__create_complex_workflow(workflow_step_list)
         workflow_entities = dao.get_workflows_for_burst(burst_id)
         self.assertTrue(len(workflow_entities) == 1, "For some reason workflow was not stored in database.")

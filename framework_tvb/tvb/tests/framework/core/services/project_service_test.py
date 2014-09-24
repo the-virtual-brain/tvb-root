@@ -520,7 +520,7 @@ class ProjectServiceTest(TransactionalTestCase):
         encoder = JSONEncoder()
         encoder.iterencode(node_json)
         # No exceptions were raised so far.
-        project_dts = dao.get_datatypes_for_project(dt_factory.project.id)
+        project_dts = dao.get_datatypes_in_project(dt_factory.project.id)
         for dt in project_dts:
             self.assertTrue(dt.gid in node_json, "Should have all DataTypes present in resulting JSON.")
             

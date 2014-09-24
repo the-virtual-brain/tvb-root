@@ -206,32 +206,20 @@ class WorkflowService:
         :param cancel: When True, burst will be marked as user-canceled.
         """
         try:
-            linked_ops_number = dao.get_operations_in_burst(burst_entity.id, is_count=True)
-            linked_datatypes = dao.get_generic_entity(model.DataType, burst_entity.id, "fk_parent_burst")
-            
-            disk_size = linked_ops_number   # 1KB for each dataType, considered for operation.xml files
-            dt_group_sizes = dict()
-            for dtype in linked_datatypes:
-                if dtype.disk_size is not None:
-                    disk_size = disk_size + dtype.disk_size
-                    ### Prepare and compute DataTypeGroup sizes, in case of ranges.
-                    if dtype.fk_datatype_group:
-                        previous_group_size = dt_group_sizes[dtype.fk_datatype_group] if (dtype.fk_datatype_group 
-                                                                                          in dt_group_sizes) else 0
-                        dt_group_sizes[dtype.fk_datatype_group] = previous_group_size + dtype.disk_size
                              
             ### If there are any DataType Groups in current Burst, update their counter.
             burst_dt_groups = dao.get_generic_entity(model.DataTypeGroup, burst_entity.id, "fk_parent_burst")
-            if len(burst_dt_groups) > 0:
-                for dt_group in burst_dt_groups:
-                    dt_group.count_results = dao.count_datatypes_in_group(dt_group.id)
-                    dt_group.disk_size = dt_group_sizes[dt_group.id] if (dt_group.id in dt_group_sizes) else 0
-                    dao.store_entity(dt_group)
+            for dt_group in burst_dt_groups:
+                dt_group.count_results = dao.count_datatypes_in_group(dt_group.id)
+                dt_group.disk_size, dt_group.subject = dao.get_summary_for_group(dt_group.id)
+                dao.store_entity(dt_group)
                     
-            ### Update actual Burst entity fields    
-            burst_entity.disk_size = disk_size          # In KB
-            burst_entity.datatypes_number = len(linked_datatypes) 
-            burst_entity.workflows_number = len(dao.get_workflows_for_burst(burst_entity.id))  
+            ### Update actual Burst entity fields
+            ##  1KB for each dataType, considered for operation.xml files
+            linked_ops_number = dao.get_operations_in_burst(burst_entity.id, is_count=True)
+            burst_entity.disk_size = linked_ops_number + dao.get_disk_size_for_burst(burst_entity.id)        # In KB
+            burst_entity.datatypes_number = dao.count_datatypes_in_burst(burst_entity.id)
+            burst_entity.workflows_number = dao.get_workflows_for_burst(burst_entity.id, is_count=True)
             burst_entity.mark_status(success=success, error=error, cancel=cancel)
             burst_entity.error_message = error_message
             

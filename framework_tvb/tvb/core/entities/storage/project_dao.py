@@ -262,19 +262,21 @@ class CaseDAO(RootDAO):
             return None
 
 
+    def get_links_for_project(self, project_id):
+        """
+        :return all links refering to a given project_id
+        """
+        result = self.session.query(model.Links).filter(model.Links.fk_to_project == project_id).all()
+        return result
+
+
     def get_link(self, dt_id, project_id):
         """
-        Return the link from DataType given by dt_id and project given by project_id.
+        :return link between a given DT and a given project id
         """
         result = self.session.query(model.Links).filter(model.Links.fk_from_datatype == dt_id
                                                         ).filter(model.Links.fk_to_project == project_id).one()
         return result
-
-
-    def remove_link(self, link):
-        """Remove a link entity."""
-        self.session.delete(link)
-        self.session.commit()
 
 
     def get_linkable_projects_for_user(self, user_id, data_id):

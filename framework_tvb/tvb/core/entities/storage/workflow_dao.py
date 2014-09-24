@@ -155,15 +155,16 @@ class WorkflowDAO(RootDAO):
             return None
 
 
-    def get_workflows_for_burst(self, burst_id):
+    def get_workflows_for_burst(self, burst_id, is_count=False):
         """Returns all the workflows that were launched for this burst id"""
-        workflows = []
-        try:
-            workflows = self.session.query(model.Workflow).filter_by(fk_burst=burst_id).all()
-        except SQLAlchemyError, excep:
-            self.logger.exception(excep)
+        query = self.session.query(model.Workflow).filter_by(fk_burst=burst_id)
 
-        return workflows
+        if is_count:
+            result = query.count()
+        else:
+            result = query.all()
+
+        return result
 
 
     def get_workflow_by_id(self, workflow_id):

@@ -341,13 +341,20 @@ class ProjectService:
         """
         try:
             project2delete = dao.get_project_by_id(project_id)
-            project_bursts = dao.get_bursts_for_project(project_id)
+
             self.logger.debug("Deleting project: id=" + str(project_id) + ' name=' + project2delete.name)
+            project_bursts = dao.get_bursts_for_project(project_id)
             for burst in project_bursts:
                 dao.remove_entity(burst.__class__, burst.id)
-            project_datatypes = dao.get_datatypes_info_for_project(project_id)
+
+            project_datatypes = dao.get_datatypes_in_project(project_id)
             for one_data in project_datatypes:
-                self.remove_datatype(project_id, one_data[9], True)
+                self.remove_datatype(project_id, one_data.gid, True)
+
+            links = dao.get_links_for_project(project_id)
+            for one_link in links:
+                dao.remove_entity(model.Links, one_link.id)
+
             self.structure_helper.remove_project_structure(project2delete.name)
             dao.delete_project(project_id)
             self.logger.debug("Deleted project: id=" + str(project_id) + ' name=' + project2delete.name)
@@ -497,80 +504,62 @@ class ProjectService:
 
     def get_project_structure(self, project, visibility_filter, first_level, second_level, filter_value):
         """
-        Find through introspection the inside structure for a given Project.
+        Find all DataTypes (including the linked ones and the groups) relevant for the current project.
         In case of a problem, will return an empty list.
         """
-        datas = dao.get_datatypes_info_for_project(project.id, visibility_filter, filter_value)
-        dt_ids = [row[11] for row in datas]
-        groups_collapsed_data = []
-        full_groups = []
-        # No longer make group by operation group at SQL level so we can handle situation where
-        # we have link from one datatype in a group but not the whole group
-        for entry in datas:
-            if entry[0] == model.DataTypeGroup.__name__:
-                # Do nothing for groups sice we will get more info for the first datatype we found in each group
-                continue
-            if entry[14] not in dt_ids:
-                # entry[14] = fk_datatype_group - if we are not part of a group just append to data
-                groups_collapsed_data.append(entry)
-            else:
-                if entry[14] not in full_groups:
-                    # If we are part of a group just store the first found datatype since we dont need rest
-                    full_groups.append(entry[14])
-                    groups_collapsed_data.append(entry)
-        metadatas = []
-        for row in groups_collapsed_data:
-            metadatas.append(self.__datatype2metastructure(row, dt_ids))
-        return StructureNode.metadata2tree(metadatas, first_level, second_level, project.id, project.name)
+        metadata_list = []
+        dt_list = dao.get_data_in_project(project.id, visibility_filter, filter_value)
 
+        for dt in dt_list:
+            # Prepare the DT results from DB, for usage in controller, by converting into DataTypeMetaData objects
+            data = {}
+            is_group = False
+            group_op = None
+            dt_entity = dao.get_datatype_by_gid(dt.gid)
+            ## Filter by dt.type, otherwise Links to individual DT inside a group will be mistaken
+            if dt.type == "DataTypeGroup" and dt.parent_operation.operation_group is not None:
+                is_group = True
+                group_op = dt.parent_operation.operation_group
 
-    @staticmethod
-    def __datatype2metastructure(row, dt_ids):
-        """
-        Convert a list of data retrieved from DB and create a DataTypeMetaData object.
-        """
-        data = {}
-        is_group = False
-        group = None
-        if row[7] is not None and row[7] and row[14] in dt_ids:
-            is_group = True
-            group = dao.get_generic_entity(model.OperationGroup, row[7])
-            if group and len(group):
-                group = group[0]
-            else:
-                is_group = False
-        datatype_group = None
-        if row[14] is not None and row[14] in dt_ids:
-            datatype_group = dao.get_datatype_by_id(row[14])
-        dt_entity = dao.get_datatype_by_gid(row[9])
-        data[DataTypeMetaData.KEY_TITLE] = dt_entity.display_name
-        ## All these fields are necessary here for dynamic Tree levels.
-        data[DataTypeMetaData.KEY_NODE_TYPE] = datatype_group.type if datatype_group is not None else row[0]
-        data[DataTypeMetaData.KEY_STATE] = row[1]
-        data[DataTypeMetaData.KEY_SUBJECT] = str(row[2])
-        operation_name = CommonDetails.compute_operation_name(row[3], row[4], row[5])
-        data[DataTypeMetaData.KEY_OPERATION_TYPE] = operation_name
-        data[DataTypeMetaData.KEY_AUTHOR] = row[6]
-        data[DataTypeMetaData.KEY_OPERATION_TAG] = group.name if is_group else row[8]
-        data[DataTypeMetaData.KEY_OP_GROUP_ID] = group.id if is_group else None
-        data[DataTypeMetaData.KEY_GID] = datatype_group.gid if datatype_group is not None else row[9]
-        data[DataTypeMetaData.KEY_DATE] = date2string(row[10]) if (row[10] is not None) else ''
-        data[DataTypeMetaData.KEY_DATATYPE_ID] = datatype_group.id if datatype_group is not None else row[11]
-        data[DataTypeMetaData.KEY_LINK] = row[12]
-        data[DataTypeMetaData.KEY_OPERATION_ALGORITHM] = row[5]
-        date_string = row[10].strftime(MONTH_YEAR_FORMAT) if row[10] is not None else ""
-        data[DataTypeMetaData.KEY_CREATE_DATA_MONTH] = date_string
-        date_string = row[10].strftime(DAY_MONTH_YEAR_FORMAT) if row[10] is not None else ""
-        data[DataTypeMetaData.KEY_CREATE_DATA_DAY] = date_string
-        data[DataTypeMetaData.KEY_BURST] = row[15] if row[15] is not None else '-None-'
-        data[DataTypeMetaData.KEY_TAG_1] = row[16] if row[16] else ''
-        data[DataTypeMetaData.KEY_TAG_2] = row[17] if row[17] else ''
-        data[DataTypeMetaData.KEY_TAG_3] = row[18] if row[18] else ''
-        data[DataTypeMetaData.KEY_TAG_4] = row[19] if row[19] else ''
-        data[DataTypeMetaData.KEY_TAG_5] = row[20] if row[20] else ''
-        data[DataTypeMetaData.KEY_RELEVANCY] = True if row[21] > 0 else False
-        invalid = True if row[13] else False
-        return DataTypeMetaData(data, invalid)
+            # All these fields are necessary here for dynamic Tree levels.
+            data[DataTypeMetaData.KEY_DATATYPE_ID] = dt.id
+            data[DataTypeMetaData.KEY_GID] = dt.gid
+            data[DataTypeMetaData.KEY_NODE_TYPE] = dt.type
+            data[DataTypeMetaData.KEY_STATE] = dt.state
+            data[DataTypeMetaData.KEY_SUBJECT] = str(dt.subject)
+            data[DataTypeMetaData.KEY_TITLE] = dt_entity.display_name
+            data[DataTypeMetaData.KEY_RELEVANCY] = dt.visible
+            data[DataTypeMetaData.KEY_LINK] = dt.parent_operation.fk_launched_in != project.id
+
+            data[DataTypeMetaData.KEY_TAG_1] = dt.user_tag_1 if dt.user_tag_1 else ''
+            data[DataTypeMetaData.KEY_TAG_2] = dt.user_tag_2 if dt.user_tag_2 else ''
+            data[DataTypeMetaData.KEY_TAG_3] = dt.user_tag_3 if dt.user_tag_3 else ''
+            data[DataTypeMetaData.KEY_TAG_4] = dt.user_tag_4 if dt.user_tag_4 else ''
+            data[DataTypeMetaData.KEY_TAG_5] = dt.user_tag_5 if dt.user_tag_5 else ''
+
+            # Operation related fields:
+            operation_name = CommonDetails.compute_operation_name(
+                dt.parent_operation.algorithm.algo_group.group_category.displayname,
+                dt.parent_operation.algorithm.algo_group.displayname,
+                dt.parent_operation.algorithm.name)
+            data[DataTypeMetaData.KEY_OPERATION_TYPE] = operation_name
+            data[DataTypeMetaData.KEY_OPERATION_ALGORITHM] = dt.parent_operation.algorithm.name
+            data[DataTypeMetaData.KEY_AUTHOR] = dt.parent_operation.user.username
+            data[DataTypeMetaData.KEY_OPERATION_TAG] = group_op.name if is_group else dt.parent_operation.user_group
+            data[DataTypeMetaData.KEY_OP_GROUP_ID] = group_op.id if is_group else None
+
+            completion_date = dt.parent_operation.completion_date
+            string_year = completion_date.strftime(MONTH_YEAR_FORMAT) if completion_date is not None else ""
+            string_month = completion_date.strftime(DAY_MONTH_YEAR_FORMAT) if completion_date is not None else ""
+            data[DataTypeMetaData.KEY_DATE] = date2string(completion_date) if (completion_date is not None) else ''
+            data[DataTypeMetaData.KEY_CREATE_DATA_MONTH] = string_year
+            data[DataTypeMetaData.KEY_CREATE_DATA_DAY] = string_month
+
+            data[DataTypeMetaData.KEY_BURST] = dt._parent_burst.name if dt._parent_burst is not None else '-None-'
+
+            metadata_list.append(DataTypeMetaData(data, dt.invalid))
+
+        return StructureNode.metadata2tree(metadata_list, first_level, second_level, project.id, project.name)
 
 
     @staticmethod
@@ -605,7 +594,7 @@ class ProjectService:
                 for link in links:
                     #This means it's only a link and we need to remove it
                     if link.fk_from_datatype == datatype.id and link.fk_to_project == project.id:
-                        dao.remove_link(link)
+                        dao.remove_entity(model.Links, link.id)
                         was_link = True
                 if not was_link:
                     # Create a clone of the operation
@@ -628,7 +617,7 @@ class ProjectService:
                     datatype.set_operation_id(new_op.id)
                     datatype.parent_operation = new_op
                     dao.store_entity(datatype)
-                    dao.remove_link(links[0])
+                    dao.remove_entity(model.Links, links[0].id)
             else:
                 specific_remover = get_remover(datatype.type)(datatype)
                 specific_remover.remove_datatype(skip_validation)
