@@ -794,7 +794,7 @@ class BurstServiceTest(BaseTestCase):
         self.assertEqual(len(remaining_bursts), 0, "Burst was not deleted")
         ops_number, _, _, _ = dao.get_operation_numbers(self.test_project.id)
         self.assertEqual(ops_number, 0, "Operations were not deleted.")
-        datatypes = dao.get_datatypes_info_for_project(self.test_project.id)
+        datatypes = dao.get_datatypes_in_project(self.test_project.id)
         self.assertEqual(len(datatypes), 0, "Still have %s datatypes, expected %s." % (len(datatypes), 0))
 
         wf_steps = self.get_all_entities(model.WorkflowStep)
