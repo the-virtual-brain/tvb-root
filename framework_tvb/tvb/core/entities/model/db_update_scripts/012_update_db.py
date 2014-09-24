@@ -45,7 +45,7 @@ meta = model.Base.metadata
 COLUMN_BURST = Column('_dynamic_ids', String, default="[]")
 COLUMN_GROUP = Column("removed", Boolean, default=False)
 COLUMN_CATEGORY = Column("removed", Boolean, default=False)
-
+COLUMN_VALID_SURFACE = Column("valid_for_simulations", Boolean, default=True)
 
 
 def upgrade(migrate_engine):
@@ -64,7 +64,8 @@ def upgrade(migrate_engine):
     table3 = meta.tables['ALGORITHM_GROUPS']
     create_column(COLUMN_GROUP, table3)
 
-
+    table4 = meta.tables['MAPPED_SURFACE_DATA']
+    create_column(COLUMN_VALID_SURFACE, table4)
 
 
 def downgrade(migrate_engine):
@@ -79,3 +80,6 @@ def downgrade(migrate_engine):
 
     table3 = meta.tables['ALGORITHM_GROUPS']
     drop_column(COLUMN_GROUP, table3)
+
+    table4 = meta.tables['MAPPED_SURFACE_DATA']
+    drop_column(COLUMN_VALID_SURFACE, table4)

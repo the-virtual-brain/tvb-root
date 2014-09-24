@@ -126,6 +126,8 @@ class SurfaceData(MappedType):
 
     surface_type = basic.String
 
+    valid_for_simulations = basic.Bool()
+
     __mapper_args__ = {'polymorphic_on': 'surface_type'}
 
 
@@ -341,8 +343,8 @@ class LocalConnectivityData(MappedType):
 
         # Sparse Matrix is required so we should check if there is any data stored for it
         if self.matrix is None:
-            msg = " ".join(("LocalConnectivity can not be stored because it",
-                            "has no SparseMatrix attached."))
+            msg = ("LocalConnectivity can not be stored because it "
+                   "has no SparseMatrix attached.")
             raise exceptions.ValidationException(msg)
 
 
