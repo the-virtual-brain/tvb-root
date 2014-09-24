@@ -274,9 +274,14 @@ class CaseDAO(RootDAO):
         """
         :return link between a given DT and a given project id
         """
-        result = self.session.query(model.Links).filter(model.Links.fk_from_datatype == dt_id
+        try:
+            result = self.session.query(model.Links).filter(model.Links.fk_from_datatype == dt_id
                                                         ).filter(model.Links.fk_to_project == project_id).one()
-        return result
+            return result
+        except SQLAlchemyError, excep:
+            self.logger.exception(excep)
+            return None
+
 
 
     def get_linkable_projects_for_user(self, user_id, data_id):

@@ -350,7 +350,8 @@ class FlowService:
         Remove the link from the datatype given by dt_id to project given by project_id.
         """
         link = dao.get_link(dt_id, project_id)
-        dao.remove_entity(model.Links, link.id)
+        if link is not None:
+            dao.remove_entity(model.Links, link.id)
     
         
     def fire_operation(self, adapter_instance, current_user, project_id,  

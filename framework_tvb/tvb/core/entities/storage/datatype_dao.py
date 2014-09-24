@@ -73,18 +73,6 @@ class DatatypeDAO(RootDAO):
             return None
 
 
-    def get_group_by_op_group_id(self, op_group_id):
-        """
-        Returns the DataTypeGroup with the specified operation group id.
-        """
-        try:
-            result = self.session.query(model.DataTypeGroup).filter_by(fk_operation_group=op_group_id).one()
-            return result
-        except SQLAlchemyError, excep:
-            self.logger.exception(excep)
-            return None
-
-
     def is_datatype_group(self, datatype_gid):
         """
         Used to check if the DataType with the specified GID is a DataTypeGroup.
@@ -303,7 +291,6 @@ class DatatypeDAO(RootDAO):
                 filter_str = visibility_filter.get_sql_filter_equivalent()
                 if filter_str is not None:
                     query = query.filter(eval(filter_str))
-
             if filter_value is not None:
                 query = query.filter(self._compose_filter_datatype_ilike(filter_value))
 
@@ -311,7 +298,6 @@ class DatatypeDAO(RootDAO):
 
             ## Now query what it was not covered before:
             ## Links of DT which are part of a group, but the entire group is not linked
-
             links = aliased(model.Links)
             query2 = self.session.query(model.DataType
                         ).join((model.Operation, model.Operation.id == model.DataType.fk_from_operation)
@@ -329,7 +315,6 @@ class DatatypeDAO(RootDAO):
                 filter_str = visibility_filter.get_sql_filter_equivalent()
                 if filter_str is not None:
                     query2 = query2.filter(eval(filter_str))
-
             if filter_value is not None:
                 query2 = query2.filter(self._compose_filter_datatype_ilike(filter_value))
 
@@ -377,41 +362,35 @@ class DatatypeDAO(RootDAO):
         """
         Returns the details for the dataType with the given GID.
         """
-        datatype_instance = self.session.query(model.DataType).filter_by(gid=datatype_gid).one()
-        classname = datatype_instance.type
-        data_class = __import__(datatype_instance.module, globals(), locals(), [classname])
-        data_class = eval("data_class." + classname)
-        data_type = data_class
-        result_dt = self.session.query(data_type).filter_by(gid=datatype_gid).one()
+        result_dt = self.get_datatype_by_gid(datatype_gid)
 
         if isinstance(result_dt, model.DataTypeGroup) and result_dt.count_results is None:
             result_dt.count_results = self.count_datatypes_in_group(result_dt.id)
-            self.session.add(result_dt)
-            self.session.commit()
-            result_dt = self.session.query(data_type).filter_by(gid=datatype_gid).one()
+            self.store_entity(result_dt)
+            result_dt = self.get_datatype_by_gid(datatype_gid)
 
-        result_dt.parent_operation.user
-        result_dt.parent_operation.algorithm.algo_group.group_category
-        result_dt.parent_operation.operation_group
-
-        parent_burst = None
-        if result_dt.fk_parent_burst is not None:
-            parent_burst = self.get_generic_entity(model.BurstConfiguration, result_dt.fk_parent_burst, "id")[0]
-
-        return result_dt, parent_burst
+        return result_dt
 
 
     def get_datatype_by_gid(self, gid):
-        """Retrieve a DataType DB reference by a global identifier."""
+        """
+        Retrieve a DataType DB reference by a global identifier.
+        """
         try:
             datatype_instance = self.session.query(model.DataType).filter_by(gid=gid).one()
             classname = datatype_instance.type
             data_class = __import__(datatype_instance.module, globals(), locals(), [classname])
             data_class = eval("data_class." + classname)
             data_type = data_class
-            result = self.session.query(data_type).filter_by(gid=gid).one()
-            result.parent_operation.project
-            return result
+            result_dt = self.session.query(data_type).filter_by(gid=gid).one()
+
+            result_dt.parent_operation.project
+            result_dt.parent_operation.user
+            result_dt.parent_operation.algorithm.algo_group.group_category
+            result_dt.parent_operation.operation_group
+            result_dt._parent_burst
+
+            return result_dt
         except NoResultFound, excep:
             self.logger.debug("No results found for gid=%s" % (gid,))
         except Exception, excep:
@@ -429,15 +408,19 @@ class DatatypeDAO(RootDAO):
             return None
 
 
-    def get_datatype_in_group(self, op_group_id):
+    def get_datatype_in_group(self, datatype_group_id=None, operation_group_id=None):
         """
-        Return a list of id-s of the DataTypes in the given operation group.
+        Return a list of id-s of the DataTypes in the given dt group.
         """
         try:
             resulted_data = []
             result = self.session.query(model.DataType).join(model.Operation
-                                        ).filter(model.Operation.fk_operation_group == op_group_id
-                                        ).filter(model.DataType.type != self.EXCEPTION_DATATYPE_GROUP).all()
+                                        ).filter(model.DataType.type != self.EXCEPTION_DATATYPE_GROUP)
+            if datatype_group_id is not None:
+                result = result.filter(model.DataType.fk_datatype_group == datatype_group_id)
+            if operation_group_id is not None:
+                result = result.filter(model.Operation.fk_operation_group == operation_group_id)
+            result = result.all()
             [data.parent_operation.project for data in result]
             for row in result:
                 resulted_data.append(row)

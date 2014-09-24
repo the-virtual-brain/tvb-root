@@ -110,7 +110,7 @@ class OperationServiceTest(BaseTestCase):
         self.operation_service.launch_operation(all_operations[0][0], False)
         self.operation_service.launch_operation(all_operations[0][1], False)
 
-        resulted_datatypes = dao.get_datatype_in_group(operation_group_id)
+        resulted_datatypes = dao.get_datatype_in_group(operation_group_id=operation_group_id)
         self.assertTrue(len(resulted_datatypes) >= 2, "Expected at least 2, but: " + str(len(resulted_datatypes)))
 
         dt = dao.get_datatype_by_id(resulted_datatypes[0].id)

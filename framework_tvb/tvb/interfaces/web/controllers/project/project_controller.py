@@ -36,7 +36,6 @@ This represents the Controller part (from MVC).
 .. moduleauthor:: Bogdan Neacsa <bogdan.neacsa@codemart.ro>
 """
 
-import json
 import cherrypy
 import formencode
 
@@ -342,15 +341,13 @@ class ProjectController(BaseController):
         if not entity.invalid:
             categories = self._get_algorithms_for_datatype(str(datatype_gid))
 
-        datatype_id = datatype_details.data_type_id
         is_group = False
         if datatype_details.operation_group_id is not None:
             ## Is a DataTypeGroup
-            datatype_id = datatype_details.operation_group_id
             is_group = True
 
         ### Retrieve links
-        linkable_projects_dict = self._get_linkable_projects_dict(datatype_id)
+        linkable_projects_dict = self._get_linkable_projects_dict(entity.id)
         ### Load all exporters
         exporters = {}
         if not entity.invalid:
@@ -363,7 +360,7 @@ class ProjectController(BaseController):
                                   "project": selected_project,
                                   "categories": categories,
                                   "exporters": exporters,
-                                  "datatype_id": datatype_id,
+                                  "datatype_id": entity.id,
                                   "isGroup": is_group,
                                   "isRelevant": is_relevant,
                                   "nodeType": 'datatype',
@@ -450,12 +447,21 @@ class ProjectController(BaseController):
 
     def _get_linkable_projects_dict(self, datatype_id):
         """" UI ready dictionary with projects in which current DataType can be linked."""
-        projectsforlink, linked_projects = self.readprojectsforlink(datatype_id, True)
-        if projectsforlink is not None:
-            projectsforlink = json.loads(projectsforlink)
-        else:
-            projectsforlink = {}
-        template_specification = {self.PRROJECTS_FOR_LINK_KEY: projectsforlink,
+        self.logger.debug("Searching projects to link for DT " + str(datatype_id))
+        for_link, linked = self.project_service.get_linkable_projects_for_user(common.get_logged_user().id, datatype_id)
+
+        projects_for_link, linked_projects = None, None
+        if for_link:
+            projects_for_link = {}
+            for project in for_link:
+                projects_for_link[project.id] = project.name
+
+        if linked:
+            linked_projects = {}
+            for project in linked:
+                linked_projects[project.id] = project.name
+
+        template_specification = {self.PRROJECTS_FOR_LINK_KEY: projects_for_link,
                                   self.PRROJECTS_LINKED_KEY: linked_projects,
                                   "datatype_id": datatype_id}
         return template_specification
@@ -623,31 +629,6 @@ class ProjectController(BaseController):
     @cherrypy.expose
     @handle_error(redirect=False)
     @check_user
-    def readprojectsforlink(self, data_id, return_both=False):
-        """ For a given user return a dictionary in form {project_ID: project_Name}. """
-        for_link, linked = self.project_service.get_linkable_projects_for_user(common.get_logged_user().id, data_id)
-
-        to_link_result, linked_result = None, None
-        current_project = common.get_current_project()
-        if for_link:
-            to_link_result = {}
-            for project in for_link:
-                if project.id != current_project.id:
-                    to_link_result[project.id] = project.name
-            to_link_result = json.dumps(to_link_result)
-
-        if return_both:
-            if linked:
-                linked_result = {}
-                for project in linked:
-                    linked_result[project.id] = project.name
-            return to_link_result, linked_result
-        return to_link_result
-
-
-    @cherrypy.expose
-    @handle_error(redirect=False)
-    @check_user
     def readjsonstructure(self, project_id, visibility_filter=StaticFiltersFactory.FULL_VIEW,
                           first_level=None, second_level=None, filter_value=None):
         """
@@ -683,12 +664,10 @@ class ProjectController(BaseController):
             self.flow_service.create_link([link_data], project_id)
         else:
             all_data = self.project_service.get_datatype_in_group(link_data)
-            # Link all datatypes in group
+            # Link all Dts in group and the DT_Group entity
             data_ids = [data.id for data in all_data]
             data_ids.append(int(link_data))
             self.flow_service.create_link(data_ids, project_id)
-            group = self.project_service.get_group_by_op_group_id(link_data)
-            self.flow_service.create_link([group.id], project_id)
 
 
     @cherrypy.expose
@@ -704,8 +683,6 @@ class ProjectController(BaseController):
             all_data = self.project_service.get_datatype_in_group(link_data)
             for data in all_data:
                 self.flow_service.remove_link(data.id, project_id)
-            group = self.project_service.get_group_by_op_group_id(link_data)
-            self.flow_service.remove_link(group.id, project_id)
             self.flow_service.remove_link(int(link_data), project_id)
 
 

@@ -375,9 +375,9 @@ class ProjectService:
     @staticmethod
     def get_datatype_in_group(group):
         """
-        Return all dataTypes that are the result of the same group of operations.
+        Return all dataTypes that are the result of the same DTgroup.
         """
-        return dao.get_datatype_in_group(group)
+        return dao.get_datatype_in_group(datatype_group_id=group)
 
 
     @staticmethod
@@ -572,8 +572,8 @@ class ProjectService:
         meta_atts = DataTypeOverlayDetails()
         states = DataTypeMetaData.STATES
         try:
-            datatype_result, parent_burst = dao.get_datatype_details(datatype_gid)
-            meta_atts.fill_from_datatype(datatype_result, parent_burst)
+            datatype_result = dao.get_datatype_details(datatype_gid)
+            meta_atts.fill_from_datatype(datatype_result, datatype_result._parent_burst)
             return meta_atts, states, datatype_result
         except Exception:
             ## We ignore exception here (it was logged above, and we want to return no details).
@@ -813,7 +813,8 @@ class ProjectService:
                     and new_data[CommonDetails.CODE_OPERATION_GROUP_ID]
                     and new_data[CommonDetails.CODE_OPERATION_GROUP_ID] != ''):
                 # We need to edit a group
-                all_data_in_group = dao.get_datatype_in_group(new_data[CommonDetails.CODE_OPERATION_GROUP_ID])
+                all_data_in_group = dao.get_datatype_in_group(operation_group_id=
+                                                              new_data[CommonDetails.CODE_OPERATION_GROUP_ID])
                 if len(all_data_in_group) < 1:
                     raise StructureException("Inconsistent group, can not be updated!")
                 datatype_group = dao.get_generic_entity(model.DataTypeGroup, all_data_in_group[0].fk_datatype_group)[0]
@@ -984,12 +985,6 @@ class ProjectService:
     def get_datatype_by_id(datatype_id):
         """Retrieve a DataType DB reference by its id."""
         return dao.get_datatype_by_id(datatype_id)
-
-
-    @staticmethod
-    def get_group_by_op_group_id(opgroup_id):
-        """ Returns the DataTypeGroup with the specified id. """
-        return dao.get_group_by_op_group_id(opgroup_id)
 
 
     @staticmethod

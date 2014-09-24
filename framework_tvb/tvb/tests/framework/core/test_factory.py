@@ -171,7 +171,7 @@ class TestFactory():
         service.launch_operation(operations[0].id, False, adapter_inst)
         service.launch_operation(operations[1].id, False, adapter_inst)
         
-        resulted_dts = dao.get_datatype_in_group(operations[0].fk_operation_group)
+        resulted_dts = dao.get_datatype_in_group(operation_group_id=operations[0].fk_operation_group)
         return resulted_dts, operations[0].fk_operation_group
         
     
