@@ -96,11 +96,13 @@ class SurfacesTest(BaseTestCase):
         self.assertTrue(abs(dt.edge_length_min - 0.663807567201) < 0.00000001)
         self.assertTrue(abs(dt.edge_length_max - 7.75671853782) < 0.00000001)
         self.assertEqual(len(dt.edge_triangles), 49140)
-        self.assertEqual(dt.compute_topological_constants(), (4, [], [], []))
         self.assertEqual(dt.has_valid_topology_for_simulations(), (True, ""))
         self.assertEqual(dt.get_data_shape('vertices'), (16384, 3))
         self.assertEqual(dt.get_data_shape('vertex_normals'), (16384, 3))
         self.assertEqual(dt.get_data_shape('triangles'), (32760, 3))
+        topologicals = dt.compute_topological_constants()
+        self.assertEqual(topologicals[0], 4)
+        self.assertTrue(all([a.size == 0 for a in topologicals[1:]]))
 
 
     def test_skinair(self):
