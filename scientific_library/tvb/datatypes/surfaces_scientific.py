@@ -511,6 +511,7 @@ class SurfaceScientific(surfaces_data.SurfaceData):
          * indices for any isolated vertices
          * indices of edges where the surface is pinched
          * indices of edges that border holes in the surface
+        We call isolated vertices those who do not belong to at least 3 triangles.
         """
         euler = self.number_of_vertices + self.number_of_triangles - self.number_of_edges
         triangles_per_vertex = numpy.array(map(len, self.vertex_triangles))
