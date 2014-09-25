@@ -206,7 +206,7 @@ function VS_StartPortletPreview(baseDatatypeURL, urlVerticesList, urlTrianglesLi
     var canvas = document.getElementById(BRAIN_CANVAS_ID);
     customInitGL(canvas);
     initShaders();
-    if ($.parseJSON(urlVerticesList)) {
+    if (urlVerticesList) {
         brainBuffers = initBuffers($.parseJSON(urlVerticesList), $.parseJSON(urlNormalsList), $.parseJSON(urlTrianglesList), 
                                $.parseJSON(urlAlphasList), $.parseJSON(urlAlphasIndicesList), false);
     }
@@ -417,7 +417,7 @@ function _initViewerGL(canvas, urlVerticesList, urlNormalsList, urlTrianglesList
         LEG_generateLegendBuffers();
     }
 
-    if ($.parseJSON(urlVerticesList)) {
+    if (urlVerticesList) {
         brainBuffers = initBuffers($.parseJSON(urlVerticesList), $.parseJSON(urlNormalsList), $.parseJSON(urlTrianglesList), 
                                    $.parseJSON(urlAlphasList), $.parseJSON(urlAlphasIndicesList), isDoubleView);
     }
