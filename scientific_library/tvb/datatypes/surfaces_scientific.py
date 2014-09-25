@@ -534,8 +534,6 @@ class SurfaceScientific(surfaces_data.SurfaceData):
 
         :return: (is_valid, error_summary_string)
         """
-        # import pydevd
-        # pydevd.settrace('localhost', port=51234, stdoutToServer=True, stderrToServer=True)
         error_summary = ""
         euler, isolated, pinched_off, holes = self.compute_topological_constants()
 
