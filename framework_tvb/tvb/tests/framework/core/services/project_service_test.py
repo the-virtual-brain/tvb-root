@@ -35,9 +35,8 @@ import tvb_data
 import os
 import unittest
 import shutil
-from simplejson import JSONEncoder
 import tvb.config as config
-from tvb.basic.config.settings import TVBSettings as cfg
+from tvb.basic.config.settings import TVBSettings
 from tvb.core.entities import model
 from tvb.core.entities.storage import dao
 from tvb.core.entities.transient.context_overlay import DataTypeOverlayDetails
@@ -102,8 +101,8 @@ class ProjectServiceTest(TransactionalTestCase):
             users_for_project = dao.get_members_of_project(project.id)
             for user in users_for_project:
                 self.assertTrue(user.id in [user1.id, user2.id], "Users not stored properly.")
-        self.assertTrue(os.path.exists(os.path.join(cfg.TVB_STORAGE, FilesHelper.PROJECTS_FOLDER, "test_project")), 
-                        "Folder for project was not created")
+        self.assertTrue(os.path.exists(os.path.join(TVBSettings.TVB_STORAGE, FilesHelper.PROJECTS_FOLDER,
+                                                    "test_project")), "Folder for project was not created")
    
    
     def test_create_project_empty_name(self):
@@ -254,8 +253,9 @@ class ProjectServiceTest(TransactionalTestCase):
             self.assertEqual(len(projects), exp_proj_per_page, "Projects not retrieved properly! Expected:" +
                              str(exp_proj_per_page) + "but got:" + str(len(projects)))
             self.assertEqual(pages, expected_pages, "Pages not retrieved properly!")
-        for folder in os.listdir(cfg.TVB_STORAGE):
-            full_path = os.path.join(cfg.TVB_STORAGE, folder)
+
+        for folder in os.listdir(TVBSettings.TVB_STORAGE):
+            full_path = os.path.join(TVBSettings.TVB_STORAGE, folder)
             if os.path.isdir(full_path) and folder.startswith('Generated'): 
                 shutil.rmtree(full_path)
         
@@ -510,18 +510,61 @@ class ProjectServiceTest(TransactionalTestCase):
         """
         Tests project structure is as expected and contains all datatypes
         """
-        dt_factory = datatypes_factory.DatatypesFactory()
-        self._create_datatypes(dt_factory, 3)
-        node_json = self.project_service.get_project_structure(dt_factory.project, None,
-                                                               'Data_State', 'Data_Subject', None)
-        encoder = JSONEncoder()
-        encoder.iterencode(node_json)
-        # No exceptions were raised so far.
-        project_dts = dao.get_datatypes_in_project(dt_factory.project.id)
+        SELF_DTS_NUMBER = 3
+        dt_factory_1 = datatypes_factory.DatatypesFactory()
+        self._create_datatypes(dt_factory_1, SELF_DTS_NUMBER)
+        dt_group = dt_factory_1.create_datatype_group()
+
+        link_ids, expected_links = [], []
+        # Prepare link towards a simple DT
+        dt_factory_2 = datatypes_factory.DatatypesFactory()
+        dt_to_link = dt_factory_2.create_simple_datatype()
+        link_ids.append(dt_to_link.id)
+        expected_links.append(dt_to_link.gid)
+
+        # Prepare links towards a full DT Group, but expecting only the DT_Group in the final tree
+        link_gr = dt_factory_2.create_datatype_group()
+        dts = dao.get_datatype_in_group(datatype_group_id=link_gr.id)
+        link_ids.extend([dt_to_link.id for dt_to_link in dts])
+        link_ids.append(link_gr.id)
+        expected_links.append(link_gr.gid)
+
+        # Prepare link towards a single DT inside a group, and expecting to find the DT in the final tree
+        link_gr = dt_factory_2.create_datatype_group()
+        dt_to_link = dao.get_datatype_in_group(datatype_group_id=link_gr.id)[0]
+        link_ids.append(dt_to_link.id)
+        expected_links.append(dt_to_link.gid)
+
+        # Actually create the links from Prj2 into Prj1
+        FlowService().create_link(link_ids, dt_factory_1.project.id)
+
+        # Retrieve the raw data used to compose the tree (for easy parsing)
+        dts_in_tree = dao.get_data_in_project(dt_factory_1.project.id)
+        dts_in_tree = [dt.gid for dt in dts_in_tree]
+        # Retrieve the tree json (for trivial validations only, as we can not decode)
+        node_json = self.project_service.get_project_structure(dt_factory_1.project, None, DataTypeMetaData.KEY_STATE,
+                                                               DataTypeMetaData.KEY_SUBJECT, None)
+
+        self.assertEqual(len(expected_links) + SELF_DTS_NUMBER + 2, len(dts_in_tree), "invalid number of nodes in tree")
+        self.assertFalse(link_gr.gid in dts_in_tree, "DT_group where a single DT is linked is not expected.")
+        self.assertTrue(dt_group.gid in dts_in_tree, "DT_Group should be in the Project Tree!")
+        self.assertTrue(dt_group.gid in node_json, "DT_Group should be in the Project Tree JSON!")
+
+        project_dts = dao.get_datatypes_in_project(dt_factory_1.project.id)
         for dt in project_dts:
-            self.assertTrue(dt.gid in node_json, "Should have all DataTypes present in resulting JSON.")
+            if dt.fk_datatype_group is not None:
+                self.assertFalse(dt.gid in node_json, "DTs part of a group should not be")
+                self.assertFalse(dt.gid in dts_in_tree, "DTs part of a group should not be")
+            else:
+                self.assertTrue(dt.gid in node_json, "Simple DTs and DT_Groups should be")
+                self.assertTrue(dt.gid in dts_in_tree, "Simple DTs and DT_Groups should be")
+
+        for link_gid in expected_links:
+            self.assertTrue(link_gid in node_json, "Expected Link not present")
+            self.assertTrue(link_gid in dts_in_tree, "Expected Link not present")
             
-            
+
+
 def suite():
     """
     Gather all the tests in a test suite.

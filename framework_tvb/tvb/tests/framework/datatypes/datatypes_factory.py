@@ -310,11 +310,12 @@ class DatatypesFactory():
         return conn_measure
 
 
-    def create_datatype_measure(self, analyzed_entity):
+    def create_datatype_measure(self, analyzed_entity, operation=None, storage_path=None):
         """
         :return: persisted DatatypeMeasure
         """
-        operation, _, storage_path = self.__create_operation()
+        if operation is None:
+            operation, _, storage_path = self.__create_operation()
         measure = DatatypeMeasure(storage_path=storage_path, metrics=self.DATATYPE_MEASURE_METRIC)
         measure.analyzed_datatype = analyzed_entity
         adapter_instance = StoreAdapter([measure])
@@ -347,11 +348,18 @@ class DatatypesFactory():
         """
         group = model.OperationGroup(self.project.id, ranges=[json.dumps(self.RANGE_1), json.dumps(self.RANGE_2)])
         group = dao.store_entity(group)
+        group_ms = model.OperationGroup(self.project.id, ranges=[json.dumps(self.RANGE_1), json.dumps(self.RANGE_2)])
+        group_ms = dao.store_entity(group_ms)
 
         datatype_group = model.DataTypeGroup(group, subject=subject, state=state, operation_id=self.operation.id)
         # Set storage path, before setting data
         datatype_group.storage_path = self.files_helper.get_project_folder(self.project, str(self.operation.id))
         datatype_group = dao.store_entity(datatype_group)
+
+        dt_group_ms = model.DataTypeGroup(group_ms, subject=subject, state=state, operation_id=self.operation.id)
+        # Set storage path, before setting data
+        dt_group_ms.storage_path = self.files_helper.get_project_folder(self.project, str(self.operation.id))
+        dao.store_entity(dt_group_ms)
 
         # Now create some data types and add them to group
         for range_val1 in self.RANGE_1[1]:
@@ -369,6 +377,15 @@ class DatatypesFactory():
                 datatype.fk_datatype_group = datatype_group.id
                 datatype.set_operation_id(operation.id)
                 dao.store_entity(datatype)
-                self.create_datatype_measure(datatype)
+
+                op_ms = model.Operation(self.user.id, self.project.id, self.algorithm.id, 'test parameters',
+                                        meta=json.dumps(self.meta), status=model.STATUS_FINISHED,
+                                        method_name=ABCAdapter.LAUNCH_METHOD,
+                                        range_values=json.dumps({self.RANGE_1[0]: range_val1,
+                                                                 self.RANGE_2[0]: range_val2}))
+                op_ms.fk_operation_group = group_ms.id
+                op_ms = dao.store_entity(op_ms)
+                self.create_datatype_measure(datatype, op_ms,
+                                             FilesHelper().get_project_folder(self.project, str(op_ms.id)))
 
         return datatype_group
