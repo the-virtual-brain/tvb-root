@@ -126,7 +126,7 @@ class SurfaceData(MappedType):
 
     surface_type = basic.String
 
-    valid_for_simulations = basic.Bool()
+    valid_for_simulations = basic.Bool(order=-1)
 
     __mapper_args__ = {'polymorphic_on': 'surface_type'}
 

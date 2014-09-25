@@ -141,6 +141,8 @@ class Simulator(core.Type):
         default = None,
         order = 3,
         required = False,
+        filters_backend = FilterChain(fields=[FilterChain.datatype + '._valid_for_simulations'],
+                                        operations=["=="], values=[True]),
         filters_ui = [UIFilter(linked_elem_name="projection_matrix_data", 
                                linked_elem_field=FilterChain.datatype + "._sources", 
                                linked_elem_parent_name="monitors", 
