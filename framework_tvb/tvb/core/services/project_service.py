@@ -190,7 +190,9 @@ class ProjectService:
         started_ops = 0
         if current_ops is None:
             return selected_project, [], 0
+
         operations = []
+        view_categ = dao.get_visualisers_categories()[0]
         for one_op in current_ops:
             try:
                 result = {}
@@ -209,19 +211,17 @@ class ProjectService:
                         result["group"] = result["group"].replace("_", " ")
                         result["operation_group_id"] = operation_group.id
                         datatype_group = dao.get_datatypegroup_by_op_group_id(one_op[3])
-                        datatype = dao.get_datatype_by_id(datatype_group.id)
-                        result["datatype_group_gid"] = datatype.gid
+                        result["datatype_group_gid"] = datatype_group.gid
                         result["gid"] = operation_group.gid
 
-                        ## Filter only viewers for DataTypeGroup
-                        view_categ = dao.get_visualisers_categories()[0]
-                        launcher = self.retrieve_launchers(datatype.gid, include_categories=[view_categ.id]).values()[0]
-
+                        ## Filter only viewers for current DataTypeGroup entity:
+                        launcher = self.retrieve_launchers(datatype_group.gid,
+                                                           include_categories=[view_categ.id]).values()[0]
                         view_groups = []
                         for launcher in launcher.values():
                             url = '/flow/' + str(launcher['category']) + '/' + str(launcher['id'])
                             if launcher['part_of_group']:
-                                url = '/flow/prepare_group_launch/' + datatype.gid + '/' + \
+                                url = '/flow/prepare_group_launch/' + datatype_group.gid + '/' + \
                                       str(launcher['category']) + '/' + str(launcher['id'])
                             view_groups.append(dict(name=launcher["displayName"],
                                                     url=url,
@@ -229,9 +229,8 @@ class ProjectService:
                                                     part_of_group=launcher['part_of_group']))
                         result["view_groups"] = view_groups
 
-                    except Exception, excep:
-                        self.logger.error(excep)
-                        self.logger.warning("Will ignore group on entity:" + str(one_op))
+                    except Exception:
+                        self.logger.exception("We will ignore group on entity:" + str(one_op))
                         result["datatype_group_gid"] = None
                 else:
                     result['group'] = None

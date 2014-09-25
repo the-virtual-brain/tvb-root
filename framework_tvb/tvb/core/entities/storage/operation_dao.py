@@ -172,39 +172,49 @@ class OperationDAO(RootDAO):
         return expected_hdd_size or 0
 
 
-    def get_filtered_operations(self, proj_id, filters, page_start=0, page_end=20, is_count=False):
-        """Retrieve Operations for a given project, filtered from UI."""
+    def get_filtered_operations(self, project_id, filter_chain, page_start=0, page_end=20, is_count=False):
+        """
+        :param project_id: current project ID
+        :param filter_chain: instance of FilterChain
+        :param is_count: when True, return a number, otherwise the list of operation entities
+        :return a list of filtered operation in current project, page by page, or the total count for them.
+        """
         try:
-            query = self.session.query(func.min(model.Operation.id), func.max(model.Operation.id),
-                                       func.count(model.Operation.id), func.max(model.Operation.fk_operation_group),
-                                       func.min(model.Operation.fk_from_algo), func.max(model.Operation.method_name),
-                                       func.max(model.Operation.fk_launched_by),
-                                       func.min(model.Operation.create_date), func.min(model.Operation.start_date),
-                                       func.max(model.Operation.completion_date),
-                                       func.min(model.Operation.status), func.max(model.Operation.additional_info),
-                                       func.min(case_([(model.Operation.visible, 1)], else_=0)),
-                                       func.min(model.Operation.user_group),
-                                       func.min(model.Operation.gid)
-                                ).join(model.Algorithm).join(model.AlgorithmGroup).join(model.AlgorithmCategory)
+            select_clause = self.session.query(func.min(model.Operation.id))
+            if not is_count:
+                # Do not add select columns in case of COUNT, as they will be ignored anyway
+                select_clause = self.session.query(func.min(model.Operation.id), func.max(model.Operation.id),
+                                                   func.count(model.Operation.id),
+                                                   func.max(model.Operation.fk_operation_group),
+                                                   func.min(model.Operation.fk_from_algo),
+                                                   func.max(model.Operation.method_name),
+                                                   func.max(model.Operation.fk_launched_by),
+                                                   func.min(model.Operation.create_date),
+                                                   func.min(model.Operation.start_date),
+                                                   func.max(model.Operation.completion_date),
+                                                   func.min(model.Operation.status),
+                                                   func.max(model.Operation.additional_info),
+                                                   func.min(case_([(model.Operation.visible, 1)], else_=0)),
+                                                   func.min(model.Operation.user_group),
+                                                   func.min(model.Operation.gid))
 
-            if (filters is None) or (filters.fields is None) or len(filters.fields) == 0:
-                query = query.filter(model.Operation.fk_launched_in == proj_id)
-            else:
-                filter_string = filters.get_sql_filter_equivalent()
-                query = query.filter(model.Operation.fk_launched_in == proj_id)
+            query = select_clause.join(model.Algorithm).join(model.AlgorithmGroup).join(
+                model.AlgorithmCategory).filter(model.Operation.fk_launched_in == project_id)
+
+            if filter_chain is not None:
+                filter_string = filter_chain.get_sql_filter_equivalent()
                 query = query.filter(eval(filter_string))
             query = query.group_by(case_([(model.Operation.fk_operation_group > 0,
-                                           - model.Operation.fk_operation_group)], else_=model.Operation.id),
-                                   ).order_by(desc(func.max(model.Operation.id)))
+                                           - model.Operation.fk_operation_group)], else_=model.Operation.id))
 
             if is_count:
-                result = query.count()
-            else:
-                result = query.offset(page_start).limit(page_end).all()
+                return query.count()
+
+            return query.order_by(desc(func.max(model.Operation.id))).offset(page_start).limit(page_end).all()
+
         except SQLAlchemyError, excep:
             self.logger.exception(excep)
-            result = 0 if is_count else None
-        return result
+            return 0 if is_count else None
 
 
     def get_results_for_operation(self, operation_id, filters=None):

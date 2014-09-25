@@ -176,7 +176,7 @@
 										<!-- Remove burst button. TODO: Once TVB-926 is finished we should have a new icon here. -->
 										<py:with vars="ok_callback = 'deleteBurstOperation(' + str(op_id) + ', ' + str(is_group) + ');'">
 											<button type="submit" class="action action-remove" title="Remove burst"
-											onclick="showQuestionOverlay('Are you sure you want to delete this simulation?', '${ok_callback}'); return false;">
+											onclick="showQuestionOverlay('Are you sure you want to delete this entire Simulation?', '${ok_callback}'); return false;">
 											O
 											</button>
 										</py:with>
