@@ -196,8 +196,8 @@ function refreshData(parentDivId, divSufix, name, sessionStoredTreeKey, gathered
     }
     //Make a request to get new data
     doAjaxCall({ async: false,  //todo: Is this sync really needed? It slows down the page.
-        type: 'GET',
-        url: "/flow/getfiltereddatatypes/" + name + "/ " + parentDivId + '/' + sessionStoredTreeKey + '/' + $.toJSON(gatheredData),
+        type: 'GET', //todo: why is this a get? a post with the json seems better.
+        url: "/flow/getfiltereddatatypes/" + name + "/" + parentDivId + '/' + sessionStoredTreeKey + '/' + $.toJSON(gatheredData),
         success: function (r) {
             var elements = document.getElementsByName(name);
             //Look for the previous select input whose data needs to be refreshed
