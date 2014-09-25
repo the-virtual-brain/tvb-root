@@ -1133,7 +1133,7 @@ function tick() {
         }
         meanFrameTime = meanFrameTime / framestime.length;
         document.getElementById("FramesPerSecond").innerHTML = Math.floor(1000/meanFrameTime).toFixed();
-        if (! sliderSel) {
+        if (! sliderSel && ! AG_isStopped) {
             $("#slider").slider("option", "value", currentTimeValue);
         }
     }
