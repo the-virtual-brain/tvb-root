@@ -192,7 +192,7 @@ class ProjectService:
             return selected_project, [], 0
 
         operations = []
-        view_categ = dao.get_visualisers_categories()[0]
+        view_categ_id = dao.get_visualisers_categories()[0].id
         for one_op in current_ops:
             try:
                 result = {}
@@ -216,7 +216,7 @@ class ProjectService:
 
                         ## Filter only viewers for current DataTypeGroup entity:
                         launcher = self.retrieve_launchers(datatype_group.gid,
-                                                           include_categories=[view_categ.id]).values()[0]
+                                                           include_categories=[view_categ_id]).values()[0]
                         view_groups = []
                         for launcher in launcher.values():
                             url = '/flow/' + str(launcher['category']) + '/' + str(launcher['id'])
@@ -725,6 +725,8 @@ class ProjectService:
                 if issubclass(one_class, MappedType) and one_class.__name__ not in all_compatible_classes:
                     all_compatible_classes.append(one_class.__name__)
 
+            self.logger.debug("Searching in categories: " + str(len(launch_categ)) + " - " +
+                              str(launch_categ.keys()) + "-" + str(include_categories))
             launchable_groups = dao.get_apliable_algo_groups(all_compatible_classes, launch_categ.keys())
 
             to_remove = []
@@ -757,7 +759,7 @@ class ProjectService:
                     categories_for_small_type = [categ.id for categ in all_launch_categ
                                                  if categ.id != views_categ_id and (include_categories is None or
                                                                                     categ.id in include_categories)]
-                    if categories_for_small_type is not None:
+                    if categories_for_small_type:
                         specific_launchers = self.retrieve_launchers(datatype.gid, True, categories_for_small_type)
                         for key in specific_launchers:
                             if key in launchers:
