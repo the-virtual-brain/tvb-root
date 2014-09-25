@@ -139,7 +139,7 @@ class UserService:
         try:
             email = data[KEY_EMAIL]
             name_hint = data[KEY_USERNAME]
-            user = dao.get_user_by_name_email(email, name_hint)
+            user = dao.get_user_by_email(email, name_hint)
             if user is None:
                 raise UsernameException("No singular user could be found for the given data!")
 
@@ -269,7 +269,7 @@ class UserService:
         Delete a user with a given ID.
         Return True when successfully, or False."""
         try:
-            dao.delete_user(user_id)
+            dao.remove_entity(model.User, user_id)
             return True
         except Exception, excep:
             self.logger.exception(excep)

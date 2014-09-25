@@ -51,13 +51,17 @@ class CaseDAO(RootDAO):
     """
 
 
+    #
+    # USER RELATED METHODS
+    #
+
     def get_user_by_id(self, user_id):
-        """Retrieve USER entity by name."""
+        """Retrieve USER entity by ID."""
         user = None
         try:
             user = self.session.query(model.User).filter_by(id=user_id).one()
         except SQLAlchemyError:
-            pass
+            self.logger.exception("Could not retrieve user for id " + str(user_id))
         return user
 
 
@@ -67,17 +71,17 @@ class CaseDAO(RootDAO):
         try:
             user = self.session.query(model.User).filter_by(username=name).one()
         except SQLAlchemyError:
-            pass
+            self.logger.exception("Could not retrieve user for name " + str(name))
         return user
 
 
     def get_system_user(self):
-        """Retrieve System user by name."""
+        """Retrieve System user from DB."""
         user = None
         try:
             user = self.session.query(model.User).filter_by(username=cfg.SYSTEM_USER_NAME).one()
         except SQLAlchemyError:
-            pass
+            self.logger.exception("Could not retrieve system user " + str(cfg.SYSTEM_USER_NAME))
         return user
 
 
@@ -88,12 +92,8 @@ class CaseDAO(RootDAO):
 
 
     def get_administrators(self):
-        """Retrieve System user by name."""
-        admins = None
-        try:
-            admins = self.session.query(model.User).filter_by(role=model.ROLE_ADMINISTRATOR).all()
-        except SQLAlchemyError:
-            pass
+        """Retrieve all users with Admin role"""
+        admins = self.session.query(model.User).filter_by(role=model.ROLE_ADMINISTRATOR).all()
         return admins
 
 
@@ -113,7 +113,7 @@ class CaseDAO(RootDAO):
             raise
 
 
-    def get_user_by_name_email(self, email, name_hint=""):
+    def get_user_by_email(self, email, name_hint=""):
         """
         Find a user by email address and name.
 
@@ -142,27 +142,18 @@ class CaseDAO(RootDAO):
         return user
 
 
-    def delete_user(self, user_id):
-        """Remove USER entity by ID."""
-        user = self.session.query(model.User).filter_by(id=user_id).one()
-        self.session.delete(user)
-        self.session.commit()
-
-
     def get_user_for_datatype(self, dt_id):
-        """Get the user for the datatype id"""
+        """Get the user who created a DT"""
         try:
             datatype = self.session.query(model.DataType).filter_by(id=dt_id).one()
-            datatype.parent_operation
-            user = datatype.parent_operation.user
+            return datatype.parent_operation.user
         except SQLAlchemyError, ex:
             self.logger.exception(ex)
-            user = None
-        return user
+        return None
 
 
     #
-    # PROJECT RELATED OPERATIONS
+    # PROJECT RELATED METHODS
     #
 
     def get_project_by_id(self, project_id):

@@ -92,7 +92,7 @@ class ProjectControllerTest(TransactionalTestCase, BaseControllersTest):
         result = self.project_c.viewall(selected_project_id=project1.id)
         projects_list = result['projectsList']
         ## Use this old version of SET builder, otherwise it will fain on Python 2.6
-        self.assertEqual(set([prj.name for prj in projects_list]), set(['prj1', 'prj2', 'prj3', 'Test']))
+        self.assertEqual(set([prj.name for prj in projects_list]), {'prj1', 'prj2', 'prj3', 'Test'})
         self.assertEqual(result['page_number'], 1)
         self.assertEqual(result[common.KEY_PROJECT].name, 'prj1')
 
@@ -258,20 +258,6 @@ class ProjectControllerTest(TransactionalTestCase, BaseControllersTest):
         self.assertEqual(result_dict['mainContent'], 'project/structure')
         self.assertEqual(result_dict['firstLevelSelection'], 'Data_State')
         self.assertEqual(result_dict['secondLevelSelection'], 'Data_Subject')
-
-
-    def test_readprojectsforlink(self):
-        """
-        Check that the dictionary of linkable projects is returned properly.
-        """
-        dt_factory = DatatypesFactory()
-        cherrypy.session[common.KEY_USER] = dt_factory.user
-        datatype = dt_factory.create_datatype_with_storage()
-        result = self.project_c.readprojectsforlink(datatype.id)
-        self.assertTrue(result is None)     # No projects to link into
-        new_project = TestFactory.create_project(dt_factory.user)
-        result = self.project_c.readprojectsforlink(datatype.id)
-        self.assertEqual(result, '{"%s": "%s"}' % (new_project.id, new_project.name))
 
 
 

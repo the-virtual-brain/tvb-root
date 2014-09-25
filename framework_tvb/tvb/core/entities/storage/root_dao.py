@@ -34,6 +34,7 @@ Base DAO behavior.
 .. moduleauthor:: bogdan.neacsa <bogdan.neacsa@codemart.ro>
 .. moduleauthor:: Lia Domide <lia.domide@codemart.ro>
 """
+
 from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy.orm.exc import NoResultFound
 from tvb.basic.logger.builder import get_logger
@@ -45,7 +46,7 @@ from tvb.config import SIMULATION_DATATYPE_CLASS
 
 class RootDAO(object):
     """
-    GLOBAL OPERATIONS
+    GLOBAL METHODS
     """
 
     __metaclass__ = SESSION_META_CLASS
@@ -57,7 +58,9 @@ class RootDAO(object):
 
 
     def store_entity(self, entity):
-        """Store in DB one generic entity."""
+        """
+        Store in DB one generic entity.
+        """
         self.logger.debug("We will store entity of type: %s with id %s" % (entity.__class__.__name__, str(entity.id)))
 
         self.session.add(entity)
@@ -70,7 +73,9 @@ class RootDAO(object):
 
 
     def store_entities(self, entities_list):
-        """Store in DB a list of generic entities."""
+        """
+        Store in DB a list of generic entities.
+        """
         self.session.add_all(entities_list)
         self.session.commit()
 
@@ -81,7 +86,9 @@ class RootDAO(object):
 
 
     def get_generic_entity(self, entity_type, filter_value, select_field="id"):
-        """Retrieve an entity from a generic table,filtered by a generic field."""
+        """
+        Retrieve an entity of entity_type, filtered by select_field = filter_value.
+        """
         if isinstance(entity_type, (str, unicode)):
             classname = entity_type[entity_type.rfind(".") + 1:]
             entity_class = __import__(entity_type[0: entity_type.rfind(".")], globals(), locals(), classname)
@@ -116,11 +123,13 @@ class RootDAO(object):
 
 
     #
-    # DATA_TYPE RELATED METHODS
+    # DATA_TYPE BUT GENERIC METHODS
     #
 
     def remove_datatype(self, gid):
-        """When removing dataType, remove from all tables referenced."""
+        """
+        When removing dataType, load fully so that sql-alchemy removes from all tables referenced.
+        """
         data = self.session.query(model.DataType).filter(model.DataType.gid == gid).all()
         for entity in data:
             extended_ent = self.get_generic_entity(entity.module + "." + entity.type, entity.id)
@@ -129,7 +138,9 @@ class RootDAO(object):
 
 
     def get_datatype_by_id(self, data_id):
-        """Retrieve DataType entity by ID."""
+        """
+        Retrieve DataType entity by ID.
+        """
         result = self.session.query(model.DataType).filter_by(id=data_id).one()
         result.parent_operation.project
         return result

@@ -332,12 +332,9 @@ class ProjectServiceTest(TransactionalTestCase):
             test_proj.append(TestFactory.create_project(self.test_user if i < 3 else user1, 'test_proj' + str(i)))
 
         project_storage = self.structure_helper.get_project_folder(test_proj[0])
-        
-        entity = dao.store_entity(model.AlgorithmCategory("category"))
-        entity = dao.store_entity(model.AlgorithmGroup("module", "classname", entity.id))
-        entity = dao.store_entity(model.Algorithm(entity.id, "algo"))
-        operation = model.Operation(self.test_user.id, test_proj[0].id, entity.id, "")
-        operation = dao.store_entity(operation)   
+
+        operation = TestFactory.create_operation(test_user=self.test_user, test_project=test_proj[0])
+
         project_storage = os.path.join(project_storage, str(operation.id))
         os.makedirs(project_storage)
         datatype = dao.store_entity(model.DataType(module="test_data", subject="subj1", 
