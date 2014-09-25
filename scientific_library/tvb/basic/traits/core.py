@@ -81,6 +81,7 @@ KWARG_AVOID_SUBCLASSES = 'fixed_type'   # When set on a traited attr, no subclas
 KWARG_FILE_STORAGE = 'file_storage'
 KWARG_REQUIRED = 'required'
 KWARG_FILTERS_UI = 'filters_ui'
+KWARG_FILTERS_BACKEND = 'filters_backend'
 KWARG_OPTIONS = 'options'               # Used for Enumerate basic type
 KWARG_STORAGE_PATH = 'storage_path'
 KWARS_USE_STORAGE = 'use_storage'
@@ -94,7 +95,7 @@ FILE_STORAGE_NONE = 'None'
 SPECIAL_KWDS = ['bind',                 # set and used internally by the traiting mechanism
                 'doc', 'label', KWARG_REQUIRED, 'locked', 'default', 'range',
                 'configurable_noise', KWARG_OPTIONS, KWARS_STORED_METADATA,
-                KWARG_AVOID_SUBCLASSES, KWARG_FILTERS_UI, KWARG_SELECT_MULTIPLE, KWARG_ORDER,
+                KWARG_AVOID_SUBCLASSES, KWARG_FILTERS_UI, KWARG_FILTERS_BACKEND, KWARG_SELECT_MULTIPLE, KWARG_ORDER,
                 KWARG_FILE_STORAGE, KWARS_USE_STORAGE, KWARGS_LOAD_DEFAULT]
 
 

@@ -43,7 +43,7 @@ import numpy
 import json
 from tvb.basic.logger.builder import get_logger
 from tvb.basic.traits.util import get, str_class_name, multiline_math_directives_to_matjax
-from tvb.basic.traits.core import KWARG_AVOID_SUBCLASSES, TYPE_REGISTER, KWARG_FILTERS_UI
+from tvb.basic.traits.core import KWARG_AVOID_SUBCLASSES, TYPE_REGISTER, KWARG_FILTERS_UI, KWARG_FILTERS_BACKEND
 
 LOG = get_logger(__name__)
 
@@ -92,6 +92,8 @@ class TraitedInterfaceGenerator(object):
         if KWARG_FILTERS_UI in obj.trait.inits.kwd:
             intr[KWARG_FILTERS_UI] = json.dumps([ui_filter.to_dict() for ui_filter in
                                                  obj.trait.inits.kwd[KWARG_FILTERS_UI]])
+        if KWARG_FILTERS_BACKEND in obj.trait.inits.kwd:
+            intr["conditions"] = obj.trait.inits.kwd[KWARG_FILTERS_BACKEND]
 
         if hasattr(obj, 'dtype'):
             intr['elementType'] = getattr(obj, 'dtype')
