@@ -194,6 +194,12 @@ function refreshData(parentDivId, divSufix, name, sessionStoredTreeKey, gathered
         displayMessage("Filter could not be applied! " + name, "infoMessage");
         return;
     }
+
+    // This argument is required by the server.
+    // If absent set a falsy default as updateDivContent() checks for it. Has to be a string because it's in the url.
+    if (parentDivId === ""){
+        parentDivId = " ";
+    }
     //Make a request to get new data
     doAjaxCall({ async: false,  //todo: Is this sync really needed? It slows down the page.
         type: 'GET', //todo: why is this a get? a post with the json seems better.
