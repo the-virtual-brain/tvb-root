@@ -56,6 +56,7 @@ from tvb.core.entities.file.files_helper import FilesHelper
 from tvb.core.entities.file.hdf5_storage_manager import HDF5StorageManager
 from tvb.core.entities.file.files_update_manager import FilesUpdateManager
 from tvb.core.entities.file.exceptions import FileStructureException, MissingDataSetException
+from tvb.core.entities.file.exceptions import IncompatibleFileManagerException
 from tvb.core.entities.transient.burst_export_entities import BurstInformation
 from tvb.core.entities.transient.structure_entities import DataTypeMetaData
 
@@ -331,10 +332,15 @@ class ImportService():
         all_datatypes = []
         for file_name in os.listdir(op_path):
             if file_name.endswith(FilesHelper.TVB_STORAGE_FILE_EXTENSION):
-                file_update_manager = FilesUpdateManager()
-                file_update_manager.upgrade_file(os.path.join(op_path, file_name))
-                datatype = self.load_datatype_from_file(op_path, file_name, operation_entity.id, datatype_group)
-                all_datatypes.append(datatype)
+                try:
+                    file_update_manager = FilesUpdateManager()
+                    file_update_manager.upgrade_file(os.path.join(op_path, file_name))
+                    datatype = self.load_datatype_from_file(op_path, file_name, operation_entity.id, datatype_group)
+                    all_datatypes.append(datatype)
+
+                except IncompatibleFileManagerException:
+                    self.logger.exception("We had a problem importing dataType %s" % os.path.join(op_path, file_name))
+
         all_datatypes.sort(key=lambda dt: dt.create_date)
         for dt in all_datatypes:
             self.logger.debug("Import order %s: %s" % (dt.type, dt.gid))
@@ -386,7 +392,7 @@ class ImportService():
             old_operation_folder, _ = os.path.split(operation.import_file)
             operation_entity, datatype_group = self.__import_operation(operation)
 
-            # Rename operation folder with the ID of the stored operation 
+            # Rename operation folder with the ID of the stored operation
             new_operation_path = FilesHelper().get_operation_folder(project.name, operation_entity.id)
             if old_operation_folder != new_operation_path:
                 # Delete folder of the new operation, otherwise move will fail

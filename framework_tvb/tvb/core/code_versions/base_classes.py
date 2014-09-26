@@ -75,7 +75,8 @@ class UpdateManager(object):
                     unprocessed_scripts.append(file_n)
 
         result = sorted(unprocessed_scripts, key=lambda x: int(x.split('_')[0]))
-        self.log.info("Found unprocessed code update scripts: %s." % result)
+        if result:
+            self.log.info("Found unprocessed code update scripts: %s." % result)
         return result
 
 
