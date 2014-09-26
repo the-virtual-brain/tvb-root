@@ -9,9 +9,19 @@ This area offers a set of techniques for data analysis.
 
    Current available analyzers
 
+The Analyzers in |TVB| are not always the best implementations of the algorithms in
+terms of performance, neither are we offering a complete analysis spectrum,
+because analysis is not considered the focus feature of |TVB| and we do not intend
+to offer a replacement for tools already existent and successful in this area.
+We are merely offering some handy tools for people who want to directly process simulation
+results inside |TVB|, although the advised long term strategy is to export simulated data
+from |TVB| and analyze it intensively with specialized tools for your area of interest.
+We advise you not to run our analysis algorithms with long timeseries, as some might take a
+lot of time to finish.
+
 
 The `Analysis` area has several interfaces that support the following operations 
-for time-series analysis:
+for time-series analysis (and not only):
 
  - Cross-correlation of nodes
  - Fourier Spectral Analysis
