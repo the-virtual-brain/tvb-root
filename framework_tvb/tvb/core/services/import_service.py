@@ -332,14 +332,16 @@ class ImportService():
         all_datatypes = []
         for file_name in os.listdir(op_path):
             if file_name.endswith(FilesHelper.TVB_STORAGE_FILE_EXTENSION):
+                h5_file = os.path.join(op_path, file_name)
                 try:
                     file_update_manager = FilesUpdateManager()
-                    file_update_manager.upgrade_file(os.path.join(op_path, file_name))
+                    file_update_manager.upgrade_file(h5_file)
                     datatype = self.load_datatype_from_file(op_path, file_name, operation_entity.id, datatype_group)
                     all_datatypes.append(datatype)
 
                 except IncompatibleFileManagerException:
-                    self.logger.exception("We had a problem importing dataType %s" % os.path.join(op_path, file_name))
+                    os.remove(h5_file)
+                    self.logger.exception("We had a problem importing dataType %s" % h5_file)
 
         all_datatypes.sort(key=lambda dt: dt.create_date)
         for dt in all_datatypes:
