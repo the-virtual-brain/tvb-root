@@ -31,6 +31,7 @@
 """
 Change of DB structure from TVB version 1.2.1 to 1.2.2
 
+.. moduleauthor:: Lia Domide <lia.domide@codemart.ro>
 .. moduleauthor:: Mihai Andrei <mihai.andrei@codemart.ro>
 
 """
@@ -45,7 +46,7 @@ meta = model.Base.metadata
 COLUMN_BURST = Column('_dynamic_ids', String, default="[]")
 COLUMN_GROUP = Column("removed", Boolean, default=False)
 COLUMN_CATEGORY = Column("removed", Boolean, default=False)
-COLUMN_VALID_SURFACE = Column("valid_for_simulations", Boolean, default=True)
+COLUMN_VALID_SURFACE = Column("_valid_for_simulations", Boolean, default=True)
 
 
 def upgrade(migrate_engine):

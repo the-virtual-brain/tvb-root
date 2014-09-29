@@ -39,19 +39,22 @@ from tvb.tests.framework.core.test_factory import TestFactory
 
 
 class BaseControllersTest(BaseTestCase):
+
+    """
+    Mock CherryPy session
+    """
     class CherrypySession(EnhancedDictionary):
-        data = {}
-        # mock methods
+
         def acquire_lock(self):
             pass
 
+        data = {}
         clear = clean_up = release_lock = acquire_lock
 
 
     def _expect_redirect(self, page, method, *args, **kwargs):
         """
-        A generic mechanism that calls a method with some arguments and expects a redirect
-        to a given page.
+        A generic mechanism that calls a method with some arguments and expects a redirect to a given page.
         """
         try:
             method(*args, **kwargs)
@@ -61,7 +64,7 @@ class BaseControllersTest(BaseTestCase):
             self.assertTrue(url.endswith(page), "Should be redirect to %s not %s" % (page, url))
 
 
-    def init(self):
+    def init(self, user_role="test"):
         """
         Have a different name than setUp so we can use it safely in transactions and it will
         not be called before running actual test.
@@ -70,7 +73,7 @@ class BaseControllersTest(BaseTestCase):
         cfg.add_entries_to_config_file({'test': 'test',
                                         'test1': 'test1',
                                         'test2': 'test2'})
-        self.test_user = TestFactory.create_user(username="CtrlTstUsr")
+        self.test_user = TestFactory.create_user(username="CtrlTstUsr", role=user_role)
         self.test_project = TestFactory.create_project(self.test_user, "Test")
         cherrypy.session = BaseControllersTest.CherrypySession()
         cherrypy.session[KEY_USER] = self.test_user

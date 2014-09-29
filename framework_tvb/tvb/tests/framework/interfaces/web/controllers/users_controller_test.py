@@ -56,7 +56,7 @@ class UsersControllerTest(TransactionalTestCase, BaseControllersTest):
         Sets up the testing environment;
         creates a `UserController`
         """
-        BaseControllersTest.init(self)
+        BaseControllersTest.init(self, model.ROLE_ADMINISTRATOR)
         self.user_c = UserController()
 
     
@@ -71,8 +71,7 @@ class UsersControllerTest(TransactionalTestCase, BaseControllersTest):
         """
         Tests for a valid redirect on user login
         """
-        user = model.User('valid_user', md5('valid_pass').hexdigest(), 
-                          'mail@mail.com', True, 'CLINICIAN')
+        user = model.User('valid_user', md5('valid_pass').hexdigest(), 'mail@mail.com', True, 'CLINICIAN')
         dao.store_entity(user)
         login_data = {'username': 'valid_user', 'password': 'valid_pass'}
         cherrypy.request.method = "POST"
@@ -102,7 +101,7 @@ class UsersControllerTest(TransactionalTestCase, BaseControllersTest):
         """
         cherrypy.request.method = "GET"
         template_dict = self.user_c.profile()
-        self._check_default_attributes(template_dict)
+        self._check_default_attributes(template_dict, {}, {})
         self.assertEqual(template_dict[common.KEY_USER].id, self.test_user.id)
         
     
@@ -201,6 +200,7 @@ class UsersControllerTest(TransactionalTestCase, BaseControllersTest):
         """
         Since we need to be admin to access this, we should get redirect to /tvb.
         """
+        self.test_user.role = "TEST"
         self._expect_redirect('/tvb', self.user_c.usermanagement)
         self.assertEqual(cherrypy.session[common.KEY_MESSAGE_TYPE], common.TYPE_ERROR)
         
@@ -285,7 +285,7 @@ class UsersControllerTest(TransactionalTestCase, BaseControllersTest):
         self.assertTrue(cherrypy.session[common.KEY_MESSAGE_TYPE] == common.TYPE_ERROR)
     
     
-    def _check_default_attributes(self, template_dict, data={}, errors={}):
+    def _check_default_attributes(self, template_dict, data, errors):
         """
         Check that all the defaults are present in the template dictionary.
         """
