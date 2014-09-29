@@ -364,6 +364,11 @@ class ImportService():
             datatype_allready_in_tvb = dao.get_datatype_by_gid(datatype.gid)
 
             if not datatype_allready_in_tvb:
+                # Compute disk size. Similar to ABCAdapter._capture_operation_results.
+                # No need to close the h5 as we have not written to it.
+                associated_file = os.path.join(datatype.storage_path, datatype.get_storage_file_name())
+                datatype.disk_size = FilesHelper.compute_size_on_disk(associated_file)
+
                 self.store_datatype(datatype)
             else:
                 FlowService.create_link([datatype_allready_in_tvb.id], project.id)
