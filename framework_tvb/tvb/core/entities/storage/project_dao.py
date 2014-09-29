@@ -242,20 +242,17 @@ class CaseDAO(RootDAO):
     def get_project_for_operation(self, operation_id):
         """
         Find parent project for current operation.
+        THROW SqlException when not found.
         """
-        try:
-            result = self.session.query(model.Project
-                                        ).filter(model.Operation.fk_launched_in == model.Project.id
-                                                 ).filter(model.Operation.id == operation_id).one()
-            return result
-        except SQLAlchemyError, excep:
-            self.logger.exception(excep)
-            return None
+        result = self.session.query(model.Project
+                                    ).filter(model.Operation.fk_launched_in == model.Project.id
+                                             ).filter(model.Operation.id == operation_id).one()
+        return result
 
 
     def get_links_for_project(self, project_id):
         """
-        :return all links refering to a given project_id
+        :return all links referring to a given project_id
         """
         result = self.session.query(model.Links).filter(model.Links.fk_to_project == project_id).all()
         return result
@@ -319,6 +316,12 @@ class CaseDAO(RootDAO):
         users_members = self.session.query(model.User).join(model.User_to_Project
                                            ).filter(model.User_to_Project.fk_project == proj_id).all()
         return users_members
+
+
+    def add_members_to_project(self, proj_id, selected_user_ids):
+        """Add link between Users and Project."""
+        for u_id in selected_user_ids:
+            self.store_entity(model.User_to_Project(u_id, proj_id))
 
 
     def get_operation_numbers(self, proj_id):

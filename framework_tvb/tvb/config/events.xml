@@ -5,86 +5,25 @@
 	xsi:noNamespaceSchemaLocation="../core/schema/events.xsd">
 
 	<!-- Supported variables to be available from runtime are so far $$CURRENT_USER$$ and $$CURRENT_PROJECT$$-->
- 	<event hookpoint="UserService.create_user" type="generic">
-        <launcher module="tvb.core.services.project_service" class="ProjectService" instance="True"/>
-        <method name="store_project"/>
+
+ 	<event hookpoint="UserService.create_admin" type="generic">
+        <launcher module="tvb.core.services.import_service" class="ImportService" instance="True"/>
+        <method name="import_project_structure"/>
         <args>
-            <arg name='is_create' value="True" type="primitive"/>
-            <arg name='selected_id' value="None" type="primitive"/>
-            <arg name="current_user" value="$$CURRENT_USER$$" type="runtime"/>
-            <arg name='name' value="'Default_Project_' + $$CURRENT_USER$$.username" type="runtime"/>
-            <arg name='description' value='This is a default project created for you upon registration'/>
-            <arg name='users' value='[]' type='primitive'/>
+            <arg name='uploaded' value="Default_Project.zip" module='tvb_data' type="file" />
+            <arg name="user_id" value="$$CURRENT_USER$$.id" type="runtime"/>
         </args>
     </event>
 
-  	<event hookpoint="ProjectService.store_project" type="adapter">
-        <adapter module="tvb.adapters.uploaders.cff_importer" class="CFF_Importer" uid="cff_74k"/>
-        <method name="launch"/>
+    <event hookpoint="UserService.create_user" type="generic">
+        <launcher module="tvb.core.services.project_service" class="ProjectService" instance="True"/>
+        <method name="add_member_to_project"/>
         <args>
-            <arg name='cff' value="dataset_74.cff" module='tvb_data.cff' type="file" />
+            <arg name="project_gid" value="3ccbe88a-47ca-11e4-809c-3c075431bf56" type="str"/>
+            <arg name="user_id" value="$$CURRENT_USER$$.id" type="runtime"/>
         </args>
     </event>
-    <event hookpoint="ProjectService.store_project" type="adapter" delay="1">
-        <adapter module="tvb.adapters.uploaders.sensors_importer" class="Sensors_Importer" uid="62_sensors"/>
-        <method name="launch"/>
-        <args>
-            <arg name='sensors_file' value="EEG_unit_vectors_BrainProducts_62.txt.bz2" module='tvb_data.sensors' type="file" />
-            <arg name='sensors_type' value='EEG Sensors' type='str' />  
-        </args>
-    </event>
-    <event hookpoint="ProjectService.store_project" type="adapter" delay="2">
-        <adapter module="tvb.adapters.uploaders.sensors_importer" class="Sensors_Importer"/>
-        <method name="launch"/>
-        <args>
-            <arg name='sensors_file' value="meg_channels_reg13.txt.bz2" module='tvb_data.sensors' type="file" />
-            <arg name='sensors_type' value='MEG sensors' type='str' />  
-        </args>
-    </event>
-    <event hookpoint="ProjectService.store_project" type="adapter" delay="3">
-        <adapter module="tvb.adapters.uploaders.sensors_importer" class="Sensors_Importer"/>
-        <method name="launch"/>
-        <args>
-            <arg name='sensors_file' value="internal_39.txt.bz2" module='tvb_data.sensors' type="file" />
-            <arg name='sensors_type' value='Internal Sensors' type='str' />  
-        </args>
-    </event>
-    <event hookpoint="ProjectService.store_project" type="adapter" delay="4">
-        <adapter module="tvb.adapters.uploaders.zip_surface_importer" class="ZIPSurfaceImporter"/>
-        <method name="launch" operation-hidden="true"/>
-        <args>
-            <arg name='uploaded' value="eeg_skin_surface.zip" module='tvb_data.surfaceData' type="file" />
-            <arg name='surface_type' value='EEG Cap' type='str' /> 
-            <arg name='zero_based_triangles' value='1' type='int' />  
-        </args>
-    </event>
-    <event hookpoint="ProjectService.store_project" type="adapter" delay="6">
-         <adapter module="tvb.adapters.uploaders.obj_importer" class="ObjSurfaceImporter"/>
-        <method name="launch" operation-hidden="true"/>
-        <args>
-            <arg name='data_file' value="face_surface.obj" module='tvb_data.obj' type="file" />
-            <arg name='surface_type' value='Face' type='str' />
-        </args>
-    </event>
-    <event hookpoint="ProjectService.store_project" type="adapter" delay="12">
-        <adapter module="tvb.adapters.uploaders.projection_matrix_importer" class="ProjectionMatrixRegionEEGImporter"/>
-        <method name="launch" operation-hidden="true"/>
-        <args>
-            <arg name='projection_file' value="region_conn_74_eeg_1020_62.mat" module='tvb_data.projectionMatrix' type="file" />
-            <arg name='sensors' value='62_sensors' type='uid' />
-            <arg name='connectivity' value='conn_74' type='uid' />
-        </args>
-    </event>
-    <event hookpoint="ProjectService.store_project" type="adapter" delay="13">
-        <adapter module="tvb.adapters.uploaders.projection_matrix_importer" class="ProjectionMatrixSurfaceEEGImporter"/>
-        <method name="launch" operation-hidden="true"/>
-        <args>
-            <arg name='projection_file' value="surface_reg_13_eeg_62.mat" module='tvb_data.projectionMatrix' type="file" />
-            <arg name='sensors' value='62_sensors' type='uid' />
-            <arg name='surface' value='srf_reg13' type='uid' />
-        </args>
-    </event>
-    
+
 
     <event hookpoint="CodeVersionsManager.update.4455" type="adapter">
         <adapter module="tvb.adapters.uploaders.zip_surface_importer" class="ZIPSurfaceImporter"/>
@@ -114,12 +53,23 @@
         </args>
     </event>
 
+
     <event hookpoint="CodeVersionsManager.update.6093" type="adapter">
         <adapter module="tvb.adapters.uploaders.obj_importer" class="ObjSurfaceImporter"/>
         <method name="launch" />
         <args>
             <arg name='data_file' value="face_surface.obj" module='tvb_data.obj' type="file" />
             <arg name='surface_type' value='Face' type='str' />
+        </args>
+    </event>
+
+
+    <event hookpoint="CodeVersionsManager.update.6600" type="generic">
+        <launcher module="tvb.core.services.import_service" class="ImportService" instance="True"/>
+        <method name="import_project_structure"/>
+        <args>
+            <arg name='uploaded' value="Default_Project.zip" module='tvb_data' type="file" />
+            <arg name="user_id" value="$$CURRENT_USER$$.id" type="runtime"/>
         </args>
     </event>
 

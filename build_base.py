@@ -126,21 +126,20 @@ def generate_distribution(final_name, library_path, version, extra_licensing_che
 def copy_distribution_dataset(dist_path, library_path):
     """
     Copy the required data file from tvb_data folder:
-        - inside TVB library package (for internal usage).
-        Will be used during TVB functioning at default-project create action.
-        - in tvb_data folder, as example for users.
+    - inside TVB library package (for internal usage).
+        Will be used during TVB functioning: import default project,
+        load default for console profile, or code update events
+    - in tvb_data folder, as example for users.
     """
     included_data = [("__init__.py", "$INSIDE.__init__.py"),
+                     ("Default_Project.zip", "$INSIDE.Default_Project.zip"),
+
                      ("cff.dataset_74.cff", "$OUTSIDE.dataset_74.cff"),
                      ("connectivity.connectivity_96.zip", "$OUTSIDE.connectivity_regions_96.zip"),
                      ("sensors.EEG_unit_vectors_BrainProducts_62.txt.bz2", "$OUTSIDE.EEG_Sensors.txt.bz2"),
                      ("sensors.meg_channels_reg13.txt.bz2", "$OUTSIDE.MEG_Sensors.txt.bz2"),
 
-                     ("cff.dataset_74.cff", "$INSIDE.cff.dataset_74.cff"),
-                     ("cff.__init__.py", "$INSIDE.cff.__init__.py"),
-
                      ("connectivity.connectivity_74.zip", "$INSIDE.connectivity.connectivity_74.zip"),
-                     ("connectivity.dti_pipeline_regions.txt", "$INSIDE.connectivity.dti_pipeline_regions.txt"),
                      ("connectivity.__init__.py", "$INSIDE.connectivity.__init__.py"),
 
                      ("projectionMatrix.surface_reg_13_eeg_62.mat", "$INSIDE.projectionMatrix.surface_reg_13_eeg_62.mat"),

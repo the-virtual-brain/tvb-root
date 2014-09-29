@@ -119,7 +119,10 @@ class UserService:
                 email_sender.send(FROM_ADDRESS, email, SUBJECT_REGISTER, email_msg)
                 self.logger.debug("Email sent to:" + email + " for notifying new user:" + username + " !")
             user = dao.store_entity(user)
-            if not SettingsService.is_first_run():
+
+            if role == model.ROLE_ADMINISTRATOR:
+                handle_event(".".join([self.__class__.__name__, "create_admin"]), user)
+            else:
                 handle_event(".".join([self.__class__.__name__, stack()[0][3]]), user)
             return TEXT_DISPLAY
         except Exception, excep:

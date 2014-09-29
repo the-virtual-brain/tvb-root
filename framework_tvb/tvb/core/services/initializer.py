@@ -90,17 +90,17 @@ def initialize(introspected_modules, load_xml_events=True):
     
     ## Make sure DB events are linked.
     db_events.attach_db_events()
-    
-    ## Create default users.
-    if is_db_empty:
-        dao.store_entity(model.User(cfg.SYSTEM_USER_NAME, None, None, True, None))
-        UserService().create_user(username=cfg.ADMINISTRATOR_NAME, password=cfg.ADMINISTRATOR_PASSWORD,
-                                  email=cfg.ADMINISTRATOR_EMAIL, role=model.ROLE_ADMINISTRATOR)
-        
-    ## In case actions related to latest code-changes are needed, make sure they are executed.
-    CodeUpdateManager().run_all_updates()
 
-    ## Clean tvb-first-time-run temporary folder, if we are no longer at the first run:
     if not SettingsService.is_first_run():
+        ## Create default users.
+        if is_db_empty:
+            dao.store_entity(model.User(cfg.SYSTEM_USER_NAME, None, None, True, None))
+            UserService().create_user(username=cfg.ADMINISTRATOR_NAME, password=cfg.ADMINISTRATOR_PASSWORD,
+                                      email=cfg.ADMINISTRATOR_EMAIL, role=model.ROLE_ADMINISTRATOR)
+        
+        ## In case actions related to latest code-changes are needed, make sure they are executed.
+        CodeUpdateManager().run_all_updates()
+
+        ## Clean tvb-first-time-run temporary folder, as we are no longer at the first run:
         shutil.rmtree(cfg.FIRST_RUN_STORAGE, True)
             

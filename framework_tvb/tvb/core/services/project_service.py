@@ -144,11 +144,27 @@ class ProjectService:
             members = [m.id for m in members]
             dao.delete_members_for_project(current_proj.id, members)
         selected_user_ids = data["users"]
-        for u_id in selected_user_ids:
-            dao.store_entity(model.User_to_Project(u_id, current_proj.id))
+        dao.add_members_to_project(current_proj.id, selected_user_ids)
         #Finish operation
         self.logger.debug("Edit/Save OK for project:" + str(current_proj.id) + ' by user:' + current_user.username)
         return current_proj
+
+
+    def add_member_to_project(self, project_gid, user_id):
+        """
+        Create a link between Project and User
+        :param project_gid: GID to identify a project uniquely
+        :param user_id: ID for the user we want to be able to access the Project
+        :return: True is the link was created, False otherwise
+        """
+        try:
+            default_prj = dao.get_project_by_gid(project_gid)
+            default_prj_id = default_prj.id
+            dao.add_members_to_project(default_prj_id, [user_id])
+            return True
+        except Exception:
+            self.logger.warning("Could not link user_id: %d with project_gid: %s " % (user_id, project_gid))
+            return False
 
 
     def find_project(self, project_id):
