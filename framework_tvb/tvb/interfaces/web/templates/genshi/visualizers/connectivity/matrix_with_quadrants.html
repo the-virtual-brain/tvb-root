@@ -38,8 +38,8 @@
         <tr py:for="i in xrange(startHemisphereIdy, endHemisphereIdy)">
           <!--! Header cell -->
           <td id="left_change_${i}_${hemisphereId}" onclick="changeEntireRow(this, ${startHemisphereIdx}, ${endHemisphereIdx})"
-              scope="row" class="identifier" title="'%02d' % i" tabindex="9" onkeypress="fireOnClick(this)">
-              <a href="#" title="'%02d' % i" tabindex='-1' class="action-select select-row">${pointsLabels[i]}</a>
+              scope="row" class="identifier" tabindex="9" onkeypress="fireOnClick(this)">
+              <a href="#" title="${'%02d' % i}" tabindex='-1' class="action-select select-row">${pointsLabels[i]}</a>
           </td>
           <!--! Actual node cells -->
           <td py:for="j in xrange(startHemisphereIdx, endHemisphereIdx)" id='td_${prefix}_${i}_${j}' tabindex="9"></td>
