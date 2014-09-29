@@ -36,7 +36,7 @@ Class responsible for all TVB exports (datatype or project).
 
 import os
 import json
-from datetime import datetime
+from datetime import datetime, timedelta
 from tvb.adapters.exporters.tvb_export import TVBExporter 
 from tvb.adapters.exporters.cifti_export import CIFTIExporter 
 from tvb.adapters.exporters.exceptions import ExportException, InvalidExportDataException
@@ -57,6 +57,7 @@ DATAYPES_PAGE_SIZE = 100
 KEY_DT_GID = 'gid'
 KEY_OPERATION_ID = 'operation'
 KEY_BURST_ID = 'burst'
+KEY_DT_DATE = "dt_date"
 
 
 
@@ -171,7 +172,7 @@ class ExportManager:
         return paths
 
 
-    def _export_linked_datatypes(self, project, zip_file):
+    def _export_linked_datatypes(self, project, zip_file, min_date):
         files_helper = FilesHelper()
         linked_paths = self._get_linked_datatypes_storage_path(project)
 
@@ -182,7 +183,7 @@ class ExportManager:
         # Make a import operation which will contain links to other projects
         alg_group = dao.find_group(TVB_IMPORTER_MODULE, TVB_IMPORTER_CLASS)
         algo = dao.get_algorithm_by_group(alg_group.id)
-        op = model.Operation(None, project.id, algo.id, '', start_date=datetime.now())
+        op = model.Operation(None, project.id, algo.id, '', start_date=min_date - timedelta(days=1))
         op.project = project
         op.algorithm = algo
         op.id = 'links-to-external-projects'
@@ -242,6 +243,7 @@ class ExportManager:
         project_datatypes = self._gather_project_datatypes(project, optimize_size)
         to_be_exported_folders = []
         considered_op_ids = []
+        min_dt_date = datetime.now()
 
         if optimize_size:
             ## take only the DataType with visibility flag set ON
@@ -251,9 +253,13 @@ class ExportManager:
                                                                                              str(dt[KEY_OPERATION_ID])),
                                                    'archive_path_prefix': str(dt[KEY_OPERATION_ID]) + os.sep})
                     considered_op_ids.append(dt[KEY_OPERATION_ID])
+                    if min_dt_date > dt[KEY_DT_DATE]:
+                        min_dt_date = dt[KEY_DT_DATE]
         else:
             to_be_exported_folders.append({'folder': project_folder,
                                            'archive_path_prefix': '', 'exclude': ["TEMP"]})
+            if project_datatypes:
+                min_dt_date = min([dt[KEY_DT_DATE] for dt in project_datatypes])
 
         # Compute path and name of the zip file
         now = datetime.now()
@@ -272,7 +278,7 @@ class ExportManager:
             LOG.debug("Done exporting files, now we will write the burst configurations...")
             self._export_bursts(project, project_datatypes, zip_file)
             LOG.debug("Done exporting burst configurations, now we will export linked DTs")
-            self._export_linked_datatypes(project, zip_file)
+            self._export_linked_datatypes(project, zip_file, min_dt_date)
             ## Make sure the Project.xml file gets copied:
             if optimize_size:
                 LOG.debug("Done linked, now we write the project xml")
@@ -290,7 +296,8 @@ class ExportManager:
         for dt in dts:
             project_datatypes.append({KEY_DT_GID: dt.gid,
                                       KEY_BURST_ID: dt.fk_parent_burst,
-                                      KEY_OPERATION_ID: dt.fk_from_operation})
+                                      KEY_OPERATION_ID: dt.fk_from_operation,
+                                      KEY_DT_DATE: dt.create_date})
         return project_datatypes
 
     
