@@ -35,8 +35,11 @@
 import os
 import unittest
 import tvb_data.cff as dataset
+from tvb.core.adapters.abcadapter import ABCAdapter
+from tvb.core.services.exceptions import OperationException
 from tvb.core.services.flow_service import FlowService
 from tvb.core.entities.storage import dao
+from tvb.core.entities.transient.structure_entities import DataTypeMetaData
 from tvb.tests.framework.core.test_factory import TestFactory
 from tvb.tests.framework.core.base_testcase import TransactionalTestCase
 
@@ -47,14 +50,35 @@ class CFFUploadTest(TransactionalTestCase):
     """
     INVALID_CFF = ''
     VALID_CFF = os.path.join(os.path.dirname(dataset.__file__), 'dataset_74.cff')
-    
+
+
     def setUp(self):
         """
         Reset the database before each test.
         """
         self.test_user = TestFactory.create_user('CFF_User')
         self.test_project = TestFactory.create_project(self.test_user, "CFF_Project")
-        
+
+
+    def _run_cff_importer(self, cff_path):
+        ### Retrieve Adapter instance
+        group = dao.find_group('tvb.adapters.uploaders.cff_importer', 'CFF_Importer')
+        importer = ABCAdapter.build_adapter(group)
+        args = {'cff': cff_path, DataTypeMetaData.KEY_SUBJECT: DataTypeMetaData.DEFAULT_SUBJECT}
+
+        ### Launch Operation
+        FlowService().fire_operation(importer, self.test_user, self.test_project.id, **args)
+
+
+    def test_invalid_input(self):
+        """
+        Test that an empty CFF path does not import anything
+        """
+        all_dt = self.get_all_datatypes()
+        self.assertEqual(0, len(all_dt))
+
+        self.assertRaises(OperationException, self._run_cff_importer, self.INVALID_CFF)
+
     
     def test_happy_flow_import(self):
         """
@@ -62,40 +86,13 @@ class CFFUploadTest(TransactionalTestCase):
         """
         all_dt = self.get_all_datatypes()
         self.assertEqual(0, len(all_dt))
-        TestFactory.import_cff(cff_path=self.VALID_CFF)
+
+        self._run_cff_importer(self.VALID_CFF)
+
         all_dt = self.get_all_datatypes()
         self.assertTrue(0 < len(all_dt))
-    
-        
-    def test_full_import(self):
-        """
-        Test that importing a CFF generates at least one DataType in DB.
-        """
-        all_dt = self.get_all_datatypes()
-        self.assertEqual(0, len(all_dt))
-        TestFactory.import_cff(cff_path=self.VALID_CFF, test_user=self.test_user, test_project=self.test_project)
-        flow_service = FlowService()
-        ### Check that at one Connectivity was persisted
-        count = flow_service.get_available_datatypes(self.test_project.id, 'tvb.datatypes.connectivity.Connectivity')[1]
-        self.assertEquals(count, 1)
-        ### Check that at one RegionMapping was persisted
-        count = flow_service.get_available_datatypes(self.test_project.id, 'tvb.datatypes.surfaces.RegionMapping')[1]
-        self.assertEquals(count, 1)
-        ### Check that at one LocalConnectivity was persisted
-        gids = flow_service.get_available_datatypes(self.test_project.id, 'tvb.datatypes.surfaces.LocalConnectivity')[0]
-        self.assertEquals(len(gids), 1)
-        connectivity = dao.get_datatype_by_gid(gids[0][2])
-        metadata = connectivity.get_metadata()
-        self.assertEqual(metadata['Cutoff'], '40.0')
-        self.assertEqual(metadata['Equation'], 'null')
-        self.assertFalse(metadata['Invalid'])
-        self.assertFalse(metadata['Is_nan'])
-        self.assertEqual(metadata['Type'], 'LocalConnectivity')
-        ### Check that at 2 Surfaces were persisted
-        count = flow_service.get_available_datatypes(self.test_project.id, 'tvb.datatypes.surfaces_data.SurfaceData')[1]
-        self.assertEquals(count, 2)
-        
-     
+
+
      
      
 def suite():
@@ -112,11 +109,4 @@ if __name__ == "__main__":
     TEST_RUNNER = unittest.TextTestRunner()
     TEST_SUITE = suite()
     TEST_RUNNER.run(TEST_SUITE)
-    
-    
-    
-       
-        
-        
-        
     
