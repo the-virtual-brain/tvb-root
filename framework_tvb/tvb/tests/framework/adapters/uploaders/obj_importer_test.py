@@ -35,7 +35,6 @@ module docstring
 
 import unittest
 import os
-from tvb.adapters.uploaders.constants import OPTION_SURFACE_FACE
 from tvb.core.entities.file.files_helper import FilesHelper
 from tvb.tests.framework.datatypes.datatypes_factory import DatatypesFactory
 from tvb.tests.framework.core.base_testcase import TransactionalTestCase
@@ -43,7 +42,7 @@ from tvb.core.entities.storage import dao
 from tvb.core.entities.transient.structure_entities import DataTypeMetaData
 from tvb.core.services.flow_service import FlowService
 from tvb.core.adapters.abcadapter import ABCAdapter
-from tvb.datatypes.surfaces import FaceSurface
+from tvb.datatypes.surfaces import FaceSurface, FACE
 
 import tvb_data.obj
 
@@ -74,7 +73,7 @@ class ObjSurfaceImporterTest(TransactionalTestCase):
         importer = ABCAdapter.build_adapter(group)
 
         args = {'data_file': import_file_path,
-                "surface_type": OPTION_SURFACE_FACE,
+                "surface_type": FACE,
                 DataTypeMetaData.KEY_SUBJECT: "John"}
 
         ### Launch import Operation
