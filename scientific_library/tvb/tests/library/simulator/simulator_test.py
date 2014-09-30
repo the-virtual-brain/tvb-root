@@ -112,7 +112,7 @@ class Simulator(object):
             #     sphmeg_data.append(sphmeg)
                 
 
-    def configure(self, dt=2 ** -4, model="Generic2dOscillator", speed=4.0,
+    def configure(self, dt=2 ** -3, model="Generic2dOscillator", speed=4.0,
                   coupling_strength=0.00042, method="HeunDeterministic", 
                   surface_sim=False,
                   default_connectivity=True):
