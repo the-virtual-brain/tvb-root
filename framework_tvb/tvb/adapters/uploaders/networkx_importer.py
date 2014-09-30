@@ -34,10 +34,11 @@
 
 import networkx
 from tvb.adapters.uploaders.abcuploader import ABCUploader
-from tvb.adapters.uploaders.handler_connectivity import networkx_cmt_2connectivity
+from tvb.adapters.uploaders.networkx.parser import NetworkxParser
 from tvb.core.adapters.exceptions import ParseException, LaunchException
 from tvb.core.entities.storage import transactional
 from tvb.datatypes.connectivity import Connectivity
+
 
 class NetworkxConnectivityImporter(ABCUploader):
     """
@@ -60,9 +61,11 @@ class NetworkxConnectivityImporter(ABCUploader):
     @transactional
     def launch(self, data_file):
         try:
+            parser = NetworkxParser(self.storage_path)
             net = networkx.read_gpickle(data_file)
-            conn = networkx_cmt_2connectivity(net, self.storage_path)
-            return [conn]
+            connectivity = parser.parse(net)
+            return [connectivity]
         except ParseException, excep:
-            self.log.exception(excep)
+            self.log.exception("Could not process Connectivity")
             raise LaunchException(excep)
+
