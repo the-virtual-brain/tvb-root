@@ -32,7 +32,7 @@
 """
 from tvb.adapters.uploaders.abcuploader import ABCUploader
 from tvb.core.adapters.exceptions import LaunchException, ParseException
-from tvb.adapters.uploaders.gifti.gifti_parser import GIFTIParser
+from tvb.adapters.uploaders.gifti.parser import GIFTIParser
 from tvb.basic.logger.builder import get_logger
 from tvb.datatypes.time_series import TimeSeriesSurface
 from tvb.datatypes.surfaces import CorticalSurface

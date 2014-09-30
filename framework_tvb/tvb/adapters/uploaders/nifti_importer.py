@@ -33,7 +33,7 @@
 """
 
 from tvb.adapters.uploaders.abcuploader import ABCUploader
-from tvb.adapters.uploaders.nifti.nifti_parser import NIFTIParser
+from tvb.adapters.uploaders.nifti.parser import NIFTIParser
 from tvb.basic.logger.builder import get_logger
 from tvb.core.adapters.exceptions import ParseException, LaunchException
 from tvb.core.entities.storage import transactional

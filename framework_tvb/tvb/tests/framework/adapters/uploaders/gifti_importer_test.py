@@ -41,7 +41,7 @@ from tvb.core.services.flow_service import FlowService
 from tvb.core.adapters.abcadapter import ABCAdapter
 from tvb.datatypes.surfaces import CorticalSurface
 from tvb.core.services.exceptions import OperationException
-from tvb.adapters.uploaders.gifti.gifti_parser import GIFTIParser
+from tvb.adapters.uploaders.gifti.parser import GIFTIParser
 
 import tvb_data.gifti as demo_data
 

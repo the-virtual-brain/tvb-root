@@ -34,7 +34,7 @@
 """
 
 from tvb.adapters.uploaders.abcuploader import ABCUploader
-from tvb.adapters.uploaders.gifti.gifti_parser import GIFTIParser, OPTION_READ_METADATA
+from tvb.adapters.uploaders.gifti.parser import GIFTIParser, OPTION_READ_METADATA
 from tvb.basic.logger.builder import get_logger
 from tvb.core.adapters.exceptions import LaunchException, ParseException
 from tvb.datatypes.surfaces import Surface, ALL_SURFACES_SELECTION

@@ -34,7 +34,7 @@
 
 import numpy
 from tvb.adapters.uploaders.abcuploader import ABCUploader
-from tvb.adapters.uploaders.mat.mat_parser import read_nested_mat_file
+from tvb.adapters.uploaders.mat.parser import read_nested_mat_file
 from tvb.core.adapters.exceptions import ParseException, LaunchException
 from tvb.core.entities.storage import transactional
 from tvb.core.utils import parse_slice
