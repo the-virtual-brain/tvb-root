@@ -33,7 +33,6 @@
 """
 
 from tvb.adapters.uploaders.abcuploader import ABCUploader
-from tvb.adapters.uploaders.constants import DATA_NAME_PROJECTION
 from tvb.basic.filters.chain import FilterChain
 from tvb.basic.logger.builder import get_logger
 from tvb.core.adapters.exceptions import LaunchException
@@ -44,6 +43,7 @@ from tvb.datatypes.sensors import SensorsEEG
 from tvb.datatypes.projections import ProjectionSurfaceEEG, ProjectionRegionEEG
 from tvb.datatypes.projections import ProjectionSurfaceMEG, ProjectionRegionMEG
 
+DEFAULT_DATASET_NAME = "ProjectionMatrix"
 
 
 class ProjectionMatrixRegionEEGImporter(ABCUploader):
@@ -65,7 +65,7 @@ class ProjectionMatrixRegionEEGImporter(ABCUploader):
                  'description': 'Expected a mat file containing projection matrix values.'},
 
                 {'name': 'dataset_name', 'type': 'str', 'required': True,
-                 'label': 'Matlab dataset name', 'default': DATA_NAME_PROJECTION,
+                 'label': 'Matlab dataset name', 'default': DEFAULT_DATASET_NAME,
                  'description': 'Name of the MATLAB dataset where data is stored'},
 
                 {'name': 'connectivity', 'label': 'Large Scale Connectivity',
@@ -173,7 +173,7 @@ class ProjectionMatrixSurfaceEEGImporter(ProjectionMatrixRegionEEGImporter):
         return [ProjectionSurfaceEEG, ProjectionSurfaceMEG]
 
     
-    def launch(self, projection_file, surface, sensors, dataset_name=DATA_NAME_PROJECTION):
+    def launch(self, projection_file, surface, sensors, dataset_name=DEFAULT_DATASET_NAME):
         """
         Creates ProjectionMatrix entity from uploaded data.
         """

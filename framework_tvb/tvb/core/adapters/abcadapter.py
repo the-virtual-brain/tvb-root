@@ -289,9 +289,9 @@ class ABCAdapter(object):
         return self._capture_operation_results(result, uid)
 
 
-    def _capture_operation_results(self, result, unique_id=None):
+    def _capture_operation_results(self, result, user_tag=None):
         """
-         After an operation was finished, make sure the results are stored 
+        After an operation was finished, make sure the results are stored
         in DB storage and the correct meta-data,IDs are set.
         """
         results_to_store = []
@@ -320,7 +320,7 @@ class ABCAdapter(object):
             res.fk_parent_burst = burst_reference
             res.fk_from_operation = self.operation_id
             res.framework_metadata = self.meta_data
-            res.user_tag_1 = unique_id if unique_id is not None else perpetuated_identifier
+            res.user_tag_1 = user_tag if user_tag is not None else perpetuated_identifier
             res.fk_datatype_group = data_type_group_id
             ## Compute size-on disk, in case file-storage is used
             if hasattr(res, 'storage_path') and hasattr(res, 'get_storage_file_name'):

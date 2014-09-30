@@ -331,7 +331,9 @@ class RegionMapping(surfaces_framework.RegionMappingFramework, surfaces_scientif
     """
 
     @staticmethod
-    def from_file(source_file=os.path.join("cortex_reg13", "region_mapping", "o52r00_irp2008_hemisphere_both_subcortical_false_regions_74.txt.bz2"), instance=None):
+    def from_file(source_file=os.path.join("cortex_reg13", "region_mapping",
+                                           "o52r00_irp2008_hemisphere_both_subcortical_false_regions_74.txt.bz2"),
+                  instance=None):
 
         if instance is None:
             result = RegionMapping()
@@ -436,13 +438,13 @@ def make_surface(surface_type):
     :param surface_type: one of the supported surface types
     :return: Instance of the corresponding surface lass, or None
     """
-    if surface_type == CORTICAL:
+    if surface_type in [CORTICAL, "Pial"] or surface_type.startswith("Cortex"):
         return CorticalSurface()
     elif surface_type == INNER_SKULL:
         return BrainSkull()
     elif surface_type == OUTER_SKULL:
         return SkullSkin()
-    elif surface_type == OUTER_SKIN:
+    elif surface_type in [OUTER_SKIN, "SkinAir"]:
         return SkinAir()
     elif surface_type == EEG_CAP:
         return EEGCap()
@@ -450,3 +452,20 @@ def make_surface(surface_type):
         return FaceSurface()
 
     return None
+
+
+def center_vertices(vertices):
+    """
+    Centres the vertices using means along axes.
+    :param vertices: a numpy array of shape (n, 3)
+    :returns: the centered array
+    """
+    return vertices - numpy.mean(vertices, axis=0).reshape((1, 3))
+
+
+ALL_SURFACES_SELECTION = [{'name': 'Cortical Surface', 'value': CORTICAL},
+                          {'name': 'Brain Skull', 'value': INNER_SKULL},
+                          {'name': 'Skull Skin', 'value': OUTER_SKULL},
+                          {'name': 'Skin Air', 'value': OUTER_SKIN},
+                          {'name': 'EEG Cap', 'value': EEG_CAP},
+                          {'name': 'Face Surface', 'value': FACE}]

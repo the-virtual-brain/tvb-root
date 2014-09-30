@@ -34,14 +34,11 @@
 """
 
 import numpy
-
 from tvb.adapters.uploaders.abcuploader import ABCUploader
-from tvb.adapters.uploaders.handler_surface import center_vertices
 from tvb.adapters.uploaders.zip_surface.parser import ZipSurfaceParser
 from tvb.basic.logger.builder import get_logger
 from tvb.core.adapters.exceptions import LaunchException
-from tvb.datatypes.surfaces import Surface, make_surface
-from tvb.datatypes.surfaces_data import CORTICAL, OUTER_SKIN, OUTER_SKULL, INNER_SKULL, EEG_CAP, FACE
+from tvb.datatypes.surfaces import ALL_SURFACES_SELECTION, Surface, make_surface, center_vertices
 
 
 class ZIPSurfaceImporter(ABCUploader):
@@ -60,12 +57,7 @@ class ZIPSurfaceImporter(ABCUploader):
         return [{'name': 'uploaded', 'type': 'upload', 'required_type': 'application/zip',
                  'label': 'Surface file (zip)', 'required': True},
                 {'name': 'surface_type', 'type': 'select', 'label': 'Surface type', 'required': True,
-                 'options': [{'name': 'Cortical Surface', 'value': CORTICAL},
-                             {'name': 'Brain Skull', 'value': INNER_SKULL},
-                             {'name': 'Skull Skin', 'value': OUTER_SKULL},
-                             {'name': 'Skin Air', 'value': OUTER_SKIN},
-                             {'name': 'EEG Cap', 'value': EEG_CAP},
-                             {'name': 'Face Surface', 'value': FACE}]},
+                 'options': ALL_SURFACES_SELECTION},
                 {'name': 'zero_based_triangles', 'label': 'Zero based triangles', 'type': 'bool', 'default': True},
                 {'name': 'should_center', 'type': 'bool', 'default': False,
                  'label': 'Center surface using vertex means along axes'}]

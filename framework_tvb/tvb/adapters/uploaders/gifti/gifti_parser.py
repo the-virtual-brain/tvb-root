@@ -37,10 +37,9 @@ import os
 import numpy as np
 from nibabel.gifti import giftiio
 from nibabel.nifti1 import intent_codes, data_type_codes
-from tvb.adapters.uploaders.handler_surface import create_surface_of_type, center_vertices
 from tvb.basic.logger.builder import get_logger
 from tvb.core.adapters.exceptions import ParseException
-from tvb.datatypes.surfaces import CorticalSurface
+from tvb.datatypes.surfaces import CorticalSurface, center_vertices, make_surface
 from tvb.datatypes.time_series import TimeSeriesSurface
 
 
@@ -106,7 +105,9 @@ class GIFTIParser(object):
         if surface_type is None:
             raise ParseException("Please specify the type of the surface")
 
-        surface = create_surface_of_type(surface_type)
+        surface = make_surface(surface_type)
+        if surface is None:
+            raise ParseException("Could not determine surface type! %s" % surface_type)
 
         # Now fill TVB data type with metadata
         if gid is not None:

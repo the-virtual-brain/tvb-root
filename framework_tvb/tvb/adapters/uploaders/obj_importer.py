@@ -33,12 +33,10 @@
 """
 
 from tvb.adapters.uploaders.abcuploader import ABCUploader
-from tvb.adapters.uploaders.constants import OPTION_SURFACE_CORTEX, OPTION_SURFACE_SKINAIR, OPTION_SURFACE_FACE
-from tvb.adapters.uploaders.handler_surface import create_surface_of_type, center_vertices
 from tvb.adapters.uploaders.obj.surface import ObjSurface
 from tvb.core.adapters.exceptions import ParseException, LaunchException
 from tvb.core.entities.storage import transactional
-from tvb.datatypes.surfaces import CorticalSurface, SkinAir, FaceSurface
+from tvb.datatypes.surfaces import ALL_SURFACES_SELECTION, FACE, Surface, make_surface, center_vertices
 
 
 class ObjSurfaceImporter(ABCUploader):
@@ -56,10 +54,8 @@ class ObjSurfaceImporter(ABCUploader):
         """
         return [{'name': 'surface_type', 'type': 'select',
                  'label': 'Specify file type : ', 'required': True,
-                 'options': [{'name': 'Cortex', 'value': OPTION_SURFACE_CORTEX},
-                             {'name': 'Outer Skin', 'value': OPTION_SURFACE_SKINAIR},
-                             {'name': 'Face Shade', 'value': OPTION_SURFACE_FACE}],
-                 'default': OPTION_SURFACE_FACE},
+                 'options': ALL_SURFACES_SELECTION,
+                 'default': FACE},
 
                 {'name': 'data_file', 'type': 'upload', 'required_type': '.obj',
                  'label': 'Please select file to import', 'required': True},
@@ -69,7 +65,7 @@ class ObjSurfaceImporter(ABCUploader):
         
         
     def get_output(self):
-        return [CorticalSurface, SkinAir, FaceSurface]
+        return [Surface]
 
 
     @transactional
@@ -78,7 +74,10 @@ class ObjSurfaceImporter(ABCUploader):
         Execute import operations:
         """
         try:
-            surface = create_surface_of_type(surface_type)
+            surface = make_surface(surface_type)
+            if surface is None:
+                raise ParseException("Could not determine surface type! %s" % surface_type)
+
             surface.storage_path = self.storage_path
             surface.set_operation_id(self.operation_id)
             surface.zero_based_triangles = True

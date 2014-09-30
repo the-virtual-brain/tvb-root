@@ -74,47 +74,52 @@ class NetworkxParser():
         # Read all nodes
         graph_size = len(network.nodes())
 
-        for node in network.nodes():
-            node_data = network.node[node]
-            positions.append(list(node_data[self.KEY_CMT_COORDINATES]))
+        try:
+            for node in network.nodes():
+                node_data = network.node[node]
+                positions.append(list(node_data[self.KEY_CMT_COORDINATES]))
 
-            label = self._find_value(node_data, self.KEY_CMT_LABEL)
-            labels_vector.append(str(label))
+                label = self._find_value(node_data, self.KEY_CMT_LABEL)
+                labels_vector.append(str(label))
 
-            weights_matrix.append([0.0] * graph_size)
-            tract_matrix.append([0.0] * graph_size)
+                weights_matrix.append([0.0] * graph_size)
+                tract_matrix.append([0.0] * graph_size)
 
-            if self.KEY_CMT_REGION_CORTICAL == node_data[self.KEY_CMT_REGION]:
-                cortical.append(1)
-            else:
-                cortical.append(0)
+                if self.KEY_CMT_REGION_CORTICAL == node_data[self.KEY_CMT_REGION]:
+                    cortical.append(1)
+                else:
+                    cortical.append(0)
 
-            if self.KEY_CMT_HEMISPHERE_RIGHT == node_data[self.KEY_CMT_HEMISPHERE]:
-                hemisphere.append(True)
-            else:
-                hemisphere.append(False)
+                if self.KEY_CMT_HEMISPHERE_RIGHT == node_data[self.KEY_CMT_HEMISPHERE]:
+                    hemisphere.append(True)
+                else:
+                    hemisphere.append(False)
 
 
-        # Read all edges (and make the matrix square
-        for edge in network.edges():
-            start = edge[0]
-            end = edge[1]
-            weights_matrix[start - 1][end - 1] = network.adj[start][end][self.KEY_CMT_WEIGHT]
-            weights_matrix[end - 1][start - 1] = weights_matrix[start - 1][end - 1]
-            tract_matrix[start - 1][end - 1] = network.adj[start][end][self.KEY_CMT_TRACT]
-            tract_matrix[end - 1][start - 1] = tract_matrix[start - 1][end - 1]
+            # Read all edges (and make the matrix square
+            for edge in network.edges():
+                start = edge[0]
+                end = edge[1]
+                weights_matrix[start - 1][end - 1] = network.adj[start][end][self.KEY_CMT_WEIGHT]
+                weights_matrix[end - 1][start - 1] = weights_matrix[start - 1][end - 1]
+                tract_matrix[start - 1][end - 1] = network.adj[start][end][self.KEY_CMT_TRACT]
+                tract_matrix[end - 1][start - 1] = tract_matrix[start - 1][end - 1]
 
-        result = Connectivity()
-        result.storage_path = self.storage_path
-        result.region_labels = labels_vector
-        result.centres = positions
-        result.set_metadata({'description': 'Array Columns: labels, X, Y, Z'}, 'centres')
-        result.hemispheres = hemisphere
-        result.cortical = cortical
-        result.weights = weights_matrix
-        result.tract_lengths = tract_matrix
-        return result
+            result = Connectivity()
+            result.storage_path = self.storage_path
+            result.region_labels = labels_vector
+            result.centres = positions
+            result.set_metadata({'description': 'Array Columns: labels, X, Y, Z'}, 'centres')
+            result.hemispheres = hemisphere
+            result.cortical = cortical
+            result.weights = weights_matrix
+            result.tract_lengths = tract_matrix
+            return result
 
+        except KeyError, err:
+            self.logger.exception("Could not parse Connectivity")
+            raise ParseException(err)
+        
 
     def _find_value(self, node_data, candidate_keys):
         """

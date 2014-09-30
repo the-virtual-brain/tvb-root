@@ -34,11 +34,10 @@
 """
 
 from tvb.adapters.uploaders.abcuploader import ABCUploader
-from tvb.adapters.uploaders.constants import OPTION_SURFACE_CORTEX, OPTION_SURFACE_SKINAIR, OPTION_SURFACE_FACE
 from tvb.adapters.uploaders.gifti.gifti_parser import GIFTIParser, OPTION_READ_METADATA
 from tvb.basic.logger.builder import get_logger
 from tvb.core.adapters.exceptions import LaunchException, ParseException
-from tvb.datatypes.surfaces import CorticalSurface, SkinAir, FaceSurface
+from tvb.datatypes.surfaces import Surface, ALL_SURFACES_SELECTION
 
 
 
@@ -55,12 +54,12 @@ class GIFTISurfaceImporter(ABCUploader):
         """
         Take as input a .GII file.
         """
+        surface_options = [{'name': 'Specified in the file metadata', 'value': OPTION_READ_METADATA}]
+        surface_options.extend(ALL_SURFACES_SELECTION)
+
         return [{'name': 'file_type', 'type': 'select',
                  'label': 'Specify file type : ', 'required': True,
-                 'options': [{'name': 'Specified in the file metadata', 'value': OPTION_READ_METADATA},
-                             {'name': 'Cortex', 'value': OPTION_SURFACE_CORTEX},
-                             {'name': 'Outer Skin', 'value': OPTION_SURFACE_SKINAIR},
-                             {'name': 'Face Shade', 'value': OPTION_SURFACE_FACE}],
+                 'options': surface_options,
                  'default': OPTION_READ_METADATA},
 
                 {'name': 'data_file', 'type': 'upload', 'required_type': '.gii', 'required': True,
@@ -75,7 +74,7 @@ class GIFTISurfaceImporter(ABCUploader):
 
 
     def get_output(self):
-        return [CorticalSurface, SkinAir, FaceSurface]
+        return [Surface]
 
 
     def launch(self, file_type, data_file, data_file_part2, should_center=False):

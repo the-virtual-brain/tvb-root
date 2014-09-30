@@ -362,11 +362,6 @@ class FlowService:
         """
         operation_name = str(adapter_instance.__class__.__name__) + "." + method_name
         try:
-#            if OperationService.ATT_UID in data:
-#                existent = dao.get_last_data_with_uid(data[OperationService.ATT_UID])
-#                if existent is not None:
-#                    self.create_link(existent, project_id)
-#                    return "Created required links."
             self.logger.info("Starting operation " + operation_name)
             project = dao.get_project_by_id(project_id)
             tmp_folder = self.file_helper.get_project_folder(project, self.file_helper.TEMP_FOLDER)
