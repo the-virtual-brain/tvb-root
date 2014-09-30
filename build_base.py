@@ -134,7 +134,6 @@ def copy_distribution_dataset(dist_path, library_path):
     included_data = [("__init__.py", "$INSIDE.__init__.py"),
                      ("Default_Project.zip", "$INSIDE.Default_Project.zip"),
 
-                     ("cff.dataset_74.cff", "$OUTSIDE.dataset_74.cff"),
                      ("connectivity.connectivity_96.zip", "$OUTSIDE.connectivity_regions_96.zip"),
                      ("sensors.EEG_unit_vectors_BrainProducts_62.txt.bz2", "$OUTSIDE.EEG_Sensors.txt.bz2"),
                      ("sensors.meg_channels_reg13.txt.bz2", "$OUTSIDE.MEG_Sensors.txt.bz2"),
