@@ -49,7 +49,7 @@ class CFFUploadTest(TransactionalTestCase):
     Unit-tests for CFF-importer.
     """
     INVALID_CFF = ''
-    VALID_CFF = os.path.join(os.path.dirname(dataset.__file__), 'dataset_74.cff')
+    VALID_CFF = os.path.join(os.path.dirname(dataset.__file__), 'connectivities.cff')
 
 
     def setUp(self):

@@ -36,7 +36,6 @@ import unittest
 import tvb_data.sensors as sensors_dataset
 from tvb.core.entities.file.files_helper import FilesHelper
 from tvb.adapters.visualizers.eeg_monitor import EegMonitor
-from tvb.datatypes.surfaces import CorticalSurface
 from tvb.datatypes.connectivity import Connectivity
 from tvb.datatypes.sensors import SensorsEEG
 from tvb.tests.framework.core.test_factory import TestFactory
@@ -61,8 +60,7 @@ class EEGMonitorTest(TransactionalTestCase):
         TestFactory.import_cff(test_user=self.test_user, test_project=self.test_project)
         self.connectivity = TestFactory.get_entity(self.test_project, Connectivity())
         self.assertTrue(self.connectivity is not None)
-        self.surface = TestFactory.get_entity(self.test_project, CorticalSurface())
-        self.assertTrue(self.surface is not None)
+
                 
     def tearDown(self):
         """
@@ -84,8 +82,8 @@ class EEGMonitorTest(TransactionalTestCase):
         viewer = EegMonitor()
         result = viewer.launch(time_series)
         expected_keys = ['tsNames', 'groupedLabels', 'tsModes', 'tsStateVars', 'longestChannelLength',
-                          'label_x', 'entities', 'page_size', 'number_of_visible_points',
-                          'extended_view', 'initialSelection', 'ag_settings', 'ag_settings']
+                         'label_x', 'entities', 'page_size', 'number_of_visible_points',
+                         'extended_view', 'initialSelection', 'ag_settings', 'ag_settings']
 
         for key in expected_keys:
             self.assertTrue(key in result, "key not found %s" % key)
@@ -99,7 +97,8 @@ class EEGMonitorTest(TransactionalTestCase):
 
         for key in expected_ag_settings:
             self.assertTrue(key in ag_settings, "ag_settings should have the key %s" % key)
-    
+
+
 def suite():
     """
     Gather all the tests in a test suite.

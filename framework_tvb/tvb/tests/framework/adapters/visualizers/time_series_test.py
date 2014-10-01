@@ -35,7 +35,6 @@
 import unittest
 from tvb.core.entities.file.files_helper import FilesHelper
 from tvb.adapters.visualizers.time_series import TimeSeries
-from tvb.datatypes.surfaces import CorticalSurface
 from tvb.datatypes.connectivity import Connectivity
 from tvb.tests.framework.core.test_factory import TestFactory
 from tvb.tests.framework.datatypes.datatypes_factory import DatatypesFactory
@@ -62,8 +61,6 @@ class TimeSeriesTest(TransactionalTestCase):
         TestFactory.import_cff(test_user=self.test_user, test_project=self.test_project)
         self.connectivity = TestFactory.get_entity(self.test_project, Connectivity())
         self.assertTrue(self.connectivity is not None)
-        self.surface = TestFactory.get_entity(self.test_project, CorticalSurface())
-        self.assertTrue(self.surface is not None)
 
 
     def tearDown(self):

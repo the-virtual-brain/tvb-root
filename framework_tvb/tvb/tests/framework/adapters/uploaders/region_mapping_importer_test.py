@@ -44,7 +44,6 @@ from tvb.core.services.exceptions import OperationException
 from tvb.core.adapters.abcadapter import ABCAdapter
 from tvb.datatypes.surfaces import RegionMapping, CorticalSurface  
 from tvb.datatypes.connectivity import Connectivity
-from tvb.tests.framework.datatypes.datatypes_factory import DatatypesFactory
 from tvb.tests.framework.core.base_testcase import TransactionalTestCase
 from tvb.tests.framework.core.test_factory import TestFactory
 
@@ -69,20 +68,19 @@ class RegionMappingImporterTest(TransactionalTestCase):
         creates a test user, a test project, a connectivity and a surface;
         imports a CFF data-set
         """
-        self.datatypeFactory = DatatypesFactory()
-        self.test_project = self.datatypeFactory.get_project()
-        self.test_user = self.datatypeFactory.get_user()
-        
-        TestFactory.import_cff(test_user=self.test_user, test_project=self.test_project)
+        self.test_user = TestFactory.create_user("UserRM")
+        self.test_project = TestFactory.import_default_project(self.test_user)
         self.connectivity = self._get_entity(Connectivity())
         self.surface = self._get_entity(CorticalSurface())
-                
+
+
     def tearDown(self):
         """
         Clean-up tests data
         """
         FilesHelper().remove_project_structure(self.test_project.name)
-    
+
+
     def _get_entity(self, expected_data, filters=None):
         """
         Checks there is exactly one datatype with required specifications and returns it
@@ -99,7 +97,8 @@ class RegionMappingImporterTest(TransactionalTestCase):
         self.assertTrue(entity is not None, "Instance should not be none")
         
         return entity
-                   
+
+
     def _import(self, import_file_path, surface_gid, connectivity_gid):
         """
         This method is used for importing region mappings
@@ -151,11 +150,13 @@ class RegionMappingImporterTest(TransactionalTestCase):
         """
         self._import_from_file(self.TXT_FILE) 
 
+
     def test_import_from_zip(self):
         """
             This method tests import of region mapping from TXT file
         """
         self._import_from_file(self.ZIP_FILE) 
+
 
     def test_import_from_bz2(self):
         """
@@ -176,7 +177,8 @@ class RegionMappingImporterTest(TransactionalTestCase):
         array_data = region_mapping.array_data
         self.assertTrue(array_data is not None)
         self.assertEqual(16384, len(array_data))
-    
+
+
     def test_import_wrong_file_content(self):
         """
             This method tests import of region mapping with:

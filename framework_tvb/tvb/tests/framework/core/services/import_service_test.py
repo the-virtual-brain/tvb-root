@@ -84,7 +84,7 @@ class ImportServiceTest(TransactionalTestCase):
             shutil.rmtree(cfg.TVB_TEMP_FOLDER)
         
         ### Delete folder where data was exported
-        if os.path.exists(self.zip_path):
+        if self.zip_path and os.path.exists(self.zip_path):
             shutil.rmtree(os.path.split(self.zip_path)[0])
             
         self.delete_project_folders()
@@ -105,16 +105,18 @@ class ImportServiceTest(TransactionalTestCase):
         OperationService().initiate_prelaunch(self.operation, self.adapter_instance, {}, **data)
         inserted = self.flow_service.get_available_datatypes(self.test_project.id,
                                                              "tvb.datatypes.arrays.MappedArray")[1]
-        self.assertEqual(inserted, 2, "Problems when inserting data")
+        self.assertEqual(1, inserted, "Problems when inserting data")
         
         #create a value wrapper
         value_wrapper = self._create_value_wrapper()
-        result = dao.get_filtered_operations(self.test_project.id, None)
-        self.assertEqual(len(result), 2, "Should be two operations before export and not " + str(len(result)) + " !")
+        count_operations = dao.get_filtered_operations(self.test_project.id, None, is_count=True)
+        self.assertEqual(2, count_operations, "Invalid ops number before export!")
+
+        # Export project as ZIP
         self.zip_path = ExportManager().export_project(self.test_project)
         self.assertTrue(self.zip_path is not None, "Exported file is none")
         
-        # Now remove the original project
+        # Remove the original project
         self.project_service.remove_project(self.test_project.id)
         result, lng_ = self.project_service.retrieve_projects_for_user(self.test_user.id)
         self.assertEqual(0, len(result), "Project Not removed!")
@@ -128,10 +130,10 @@ class ImportServiceTest(TransactionalTestCase):
         self.assertEqual(result[0].description, "test_desc", "The project description is not correct.")
         self.test_project = result[0]
         
-        result = dao.get_filtered_operations(self.test_project.id, None)
+        count_operations = dao.get_filtered_operations(self.test_project.id, None, is_count=True)
         
-        #1 op. - import project; 1 op. - save the array wrapper
-        self.assertEqual(len(result), 2, "Should be two operations after export and not " + str(len(result)) + " !")
+        #1 op. - import cff; 2 op. - save the array wrapper;
+        self.assertEqual(2, count_operations, "Invalid ops number after export and import !")
         for gid in expected_results:
             datatype = dao.get_datatype_by_gid(gid)
             self.assertEqual(datatype.module, expected_results[gid][0], 'DataTypes not imported correctly')
@@ -139,7 +141,7 @@ class ImportServiceTest(TransactionalTestCase):
         #check the value wrapper
         new_val = self.flow_service.get_available_datatypes(self.test_project.id, 
                                                             "tvb.datatypes.mapped_values.ValueWrapper")[0]
-        self.assertEqual(len(new_val), 1, "One !=" + str(len(new_val)))
+        self.assertEqual(1, len(new_val), "One !=" + str(len(new_val)))
         new_val = ABCAdapter.load_entity_by_gid(new_val[0][2])
         self.assertEqual(value_wrapper.data_value, new_val.data_value, "Data value incorrect")
         self.assertEqual(value_wrapper.data_type, new_val.data_type, "Data type incorrect")
@@ -151,31 +153,14 @@ class ImportServiceTest(TransactionalTestCase):
         Test the import/export mechanism for a project structure.
         The project contains the following data types: Connectivity, Surface, MappedArray and ValueWrapper.
         """
-        result = self.get_all_datatypes()
-        expected_results = {}
-        for one_data in result:
-            expected_results[one_data.gid] = (one_data.module, one_data.type)
-        
-        #create an array mapped in DB
-        data = {'param_1': 'some value'}
-        OperationService().initiate_prelaunch(self.operation, self.adapter_instance, {}, **data)
-        inserted = self.flow_service.get_available_datatypes(self.test_project.id,
-                                                             "tvb.datatypes.arrays.MappedArray")[1]
-        self.assertEqual(inserted, 2, "Problems when inserting data")
-        
-        #create a value wrapper
-        self._create_value_wrapper()
-        result = dao.get_filtered_operations(self.test_project.id, None)
-        self.assertEqual(len(result), 2, "Should be two operations before export and not " + str(len(result)) + " !")
+        count_operations = dao.get_filtered_operations(self.test_project.id, None, is_count=True)
+        self.assertEqual(2, count_operations, "Invalid ops before export!")
+
         self.zip_path = ExportManager().export_project(self.test_project)
         self.assertTrue(self.zip_path is not None, "Exported file is none")
-        
-        try:
-            self.import_service.import_project_structure(self.zip_path, self.test_user.id)
-            self.fail("Invalid import as the project already exists!")
-        except ProjectImportException:
-            #OK, do nothing. The project already exists.
-            pass
+
+        self.assertRaises(ProjectImportException, self.import_service.import_project_structure,
+                          self.zip_path, self.test_user.id)
 
 
     def _create_timeseries(self):

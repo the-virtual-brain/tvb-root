@@ -37,7 +37,6 @@ from tvb.adapters.visualizers.surface_view import SurfaceViewer, RegionMappingVi
 from tvb.core.entities.file.files_helper import FilesHelper
 from tvb.datatypes.surfaces import CorticalSurface, RegionMapping
 from tvb.tests.framework.core.test_factory import TestFactory
-from tvb.tests.framework.datatypes.datatypes_factory import DatatypesFactory
 from tvb.tests.framework.core.base_testcase import TransactionalTestCase
 
 
@@ -57,11 +56,8 @@ class SurfaceViewersTest(TransactionalTestCase):
         creates a test user, a test project, a connectivity and a surface;
         imports a CFF data-set
         """
-        self.datatypeFactory = DatatypesFactory()
-        self.test_project = self.datatypeFactory.get_project()
-        self.test_user = self.datatypeFactory.get_user()
-
-        TestFactory.import_cff(test_user=self.test_user, test_project=self.test_project)
+        self.test_user = TestFactory.create_user()
+        self.test_project = TestFactory.import_default_project(self.test_user)
 
         self.surface = TestFactory.get_entity(self.test_project, CorticalSurface())
         self.assertTrue(self.surface is not None)

@@ -41,13 +41,13 @@ from cfflib import load
 from tempfile import gettempdir
 from zipfile import ZipFile, ZIP_DEFLATED
 from tvb.adapters.uploaders.abcuploader import ABCUploader
-from nibabel.gifti import giftiio
-from tvb.adapters.uploaders.handler_connectivity import networkx2connectivity
+from tvb.adapters.uploaders.networkx.parser import NetworkxParser
+from tvb.adapters.uploaders.gifti.parser import GIFTIParser
 from tvb.basic.logger.builder import get_logger
-from tvb.core.adapters.exceptions import LaunchException
+from tvb.core.adapters.exceptions import LaunchException, ParseException
 from tvb.core.entities.storage import dao, transactional
-import tvb.adapters.uploaders.handler_surface as handler_surface
-import tvb.adapters.uploaders.constants as ct
+from tvb.datatypes.connectivity import Connectivity
+import tvb.datatypes.surfaces as surfaces
 
 
 
@@ -56,6 +56,7 @@ class CFF_Importer(ABCUploader):
     """
     Upload Connectivity Matrix from a CFF archive.
     """
+
     _ui_name = "CFF"
     _ui_subsection = "cff_importer"
     _ui_description = "Import from CFF archive one or multiple datatypes."
@@ -68,24 +69,17 @@ class CFF_Importer(ABCUploader):
         """
         return [{'name': 'cff', 'type': 'upload', 'required_type': '.cff',
                  'label': 'CFF archive', 'required': True,
-                 'description': 'Connectome File Format archive expected, with GraphML, Timeseries or GIFTI inside.'}]
+                 'description': 'Connectome File Format archive expected'},
+                {'name': 'should_center', 'type': 'bool', 'default': False,
+                 'label': 'Center surfaces (if any) using vertex means along axes'}]
 
 
     def get_output(self):
-        return []
-
-
-    def _prelaunch(self, operation, uid=None, available_disk_space=0, **kwargs):
-        """
-        Overwrite method in order to return the correct number of stored dataTypes.
-        """
-        self.nr_of_datatypes = 0
-        msg, _ = ABCUploader._prelaunch(self, operation, uid=None, **kwargs)
-        return msg, self.nr_of_datatypes
+        return [Connectivity, surfaces.Surface]
 
 
     @transactional
-    def launch(self, cff):
+    def launch(self, cff, should_center=False):
         """
         Process the uploaded CFF and convert read data into our internal DataTypes.
         :param cff: CFF uploaded file to process.
@@ -104,32 +98,26 @@ class CFF_Importer(ABCUploader):
             conn_obj = load(cff)
             network = conn_obj.get_connectome_network()
             surfaces = conn_obj.get_connectome_surface()
-            cdatas = conn_obj.get_connectome_data()
-
             warning_message = ""
+            results = []
 
             if network:
-                try:
-                    self._parse_connectome_network(network)
-                except Exception, excep:
-                    self.log.exception(excep)
-                    warning_message += "Problem when importing a Connectivity!! \n"
-
+                partial = self._parse_connectome_network(network, warning_message)
+                results.extend(partial)
             if surfaces:
-                try:
-                    self._parse_connectome_surfaces(surfaces, cdatas)
-                except Exception, excep:
-                    self.log.exception(excep)
-                    warning_message += "Problem when importing Surface (or related attributes: " \
-                                       "LocalConnectivity/RegionMapping) !! \n"
+                partial = self._parse_connectome_surfaces(surfaces, warning_message, should_center)
+                results.extend(partial)
 
             self._cleanup_after_cfflib(conn_obj)
 
             current_op = dao.get_operation_by_id(self.operation_id)
             current_op.user_group = conn_obj.get_connectome_meta().title
-            if len(warning_message) > 0:
+            if warning_message:
                 current_op.additional_info = warning_message
             dao.store_entity(current_op)
+
+            return results
+
         finally:
             # Make sure to set sys.stdout back to it's default value so this won't
             # have any influence on the rest of TVB.
@@ -137,74 +125,133 @@ class CFF_Importer(ABCUploader):
             sys.stdout = default_stdout
             custom_stdout.close()
             # Now log everything that cfflib2 outputes with `print` statements using TVB logging
-            self.logger.info("Output from cfflib2 library: %s" % (print_output,))
+            self.logger.debug("Output from cfflib2 library: %s" % print_output)
 
 
-    def _parse_connectome_network(self, connectome_network):
+    def _parse_connectome_network(self, connectome_network, warning_message):
         """
         Parse data from a NetworkX object and save it in Connectivity DataTypes.
         """
+        connectivities = []
         for net in connectome_network:
-            net.load()
-            meta = net.get_metadata_as_dict()
-            conn = networkx2connectivity(net.data, self.storage_path)
-            self.nr_of_datatypes += 1
-            self._capture_operation_results([conn], meta.get(ct.KEY_UID))
+            try:
+                net.load()
+                parser = NetworkxParser(self.storage_path)
+                connectivity = parser.parse(net.data)
+                connectivity.user_tag_1 = connectivity.weights.shape[0]
+                connectivities.append(connectivity)
+
+            except ParseException:
+                self.logger.exception("Could not process Connectivity")
+                warning_message += "Problem when importing a Connectivities!! \n"
+
+        return connectivities
 
 
-    def _parse_connectome_surfaces(self, connectome_surface, connectome_data):
+    def _parse_connectome_surfaces(self, connectome_surface, warning_message, should_center):
         """
         Parse data from a CSurface object and save it in our internal Surface DataTypes
         """
+        surfaces, processed_files = [], []
+        parser = GIFTIParser(self.storage_path, self.operation_id)
+
         for c_surface in connectome_surface:
-            # create a meaningful but unique temporary path to extract
-            tmpdir = os.path.join(gettempdir(), c_surface.parent_cfile.get_unique_cff_name())
-            self.log.debug("Using temporary folder for CFF import:" + tmpdir)
-            _zipfile = ZipFile(c_surface.parent_cfile.src, 'r', ZIP_DEFLATED)
-            gifti_file = _zipfile.extract(c_surface.src, tmpdir)
-            gifti_img = giftiio.read(gifti_file)
-            surface_meta = gifti_img.meta.get_metadata()
-            res, uid = None, None
+            if c_surface.src in processed_files:
+                continue
 
-            if surface_meta.get(ct.SURFACE_CLASS) == ct.CLASS_SURFACE:
-                vertices, normals, triangles = None, None, None
-                for one_data in connectome_data:
-                    cd_meta = one_data.get_metadata_as_dict()
-                    if ct.KEY_UID in cd_meta and surface_meta[ct.KEY_UID] == cd_meta[ct.KEY_UID]:
-                        if cd_meta[ct.KEY_ROLE] == ct.ROLE_VERTICES:
-                            vertices = one_data
-                        if cd_meta[ct.KEY_ROLE] == ct.ROLE_NORMALS:
-                            normals = one_data
-                        if cd_meta[ct.KEY_ROLE] == ct.ROLE_TRIANGLES:
-                            triangles = one_data
-                res, uid = handler_surface.gifti2surface(gifti_img, vertices, normals,
-                                                         triangles, self.storage_path)
-                self.nr_of_datatypes += 1
-                self._capture_operation_results([res], uid)
-
-            elif surface_meta.get(ct.SURFACE_CLASS) == ct.CLASS_CORTEX:
-                for one_data in connectome_data:
-                    cd_meta = one_data.get_metadata_as_dict()
-                    if ct.KEY_UID in cd_meta and surface_meta[ct.KEY_UID] == cd_meta[ct.KEY_UID]:
-                        if cd_meta[ct.KEY_ROLE] == ct.ROLE_REGION_MAP:
-                            res, uid = handler_surface.cdata2region_mapping(one_data, surface_meta, self.storage_path)
-                        if cd_meta[ct.KEY_ROLE] == ct.ROLE_LOCAL_CON:
-                            res, uid = handler_surface.cdata2local_connectivity(one_data, surface_meta,
-                                                                                self.storage_path)
-                        if res is not None:
-                            self.nr_of_datatypes += 1
-                            self._capture_operation_results([res], uid)
             try:
+                # create a meaningful but unique temporary path to extract
+                tmpdir = os.path.join(gettempdir(), c_surface.parent_cfile.get_unique_cff_name())
+                self.log.debug("Extracting %s[%s] into %s ..." % (c_surface.src, c_surface.name, tmpdir))
+                _zipfile = ZipFile(c_surface.parent_cfile.src, 'r', ZIP_DEFLATED)
+                gifti_file_1 = _zipfile.extract(c_surface.src, tmpdir)
+
+                gifti_file_2 = None
+                surface_name, pair_surface = self._find_pair_file(c_surface, connectome_surface)
+                if pair_surface:
+                    self.log.debug("Extracting pair %s[%s] into %s ..." % (pair_surface.src, pair_surface.name, tmpdir))
+                    gifti_file_2 = _zipfile.extract(pair_surface.src, tmpdir)
+
+                surface_type = self._guess_surface_type(c_surface.src.lower())
+                self.logger.info("We will import surface %s as type %s" % (c_surface.src, surface_type))
+                surface = parser.parse(gifti_file_1, gifti_file_2, surface_type, should_center)
+                surface.user_tag_1 = surface_name
+                surfaces.append(surface)
+
+                if pair_surface:
+                    processed_files.append(pair_surface.src)
+                processed_files.append(c_surface.src)
+
                 if os.path.exists(tmpdir):
                     shutil.rmtree(tmpdir)
+
+            except ParseException:
+                self.logger.exception("Could not import a Surface entity.")
+                warning_message += "Problem when importing Surfaces!! \n"
             except OSError:
                 self.log.exception("could not clean up temp file")
+
+        return surfaces
+
+
+    def _find_pair_file(self, current_surface, all_surfaces):
+        """
+        :param current_surface: CSurface instance
+        :param all_surfaces: Iterable over CSurface objects
+        :return: (string: surface_name based on the 1-2 pair files, CSurface: pair_surface or None)
+        """
+        surface_name = current_surface.name
+        pair_surface = None
+        pair_expected_name = self._is_hemisphere_file(current_surface.src)
+
+        for srf in all_surfaces:
+            if srf.src == pair_expected_name:
+                pair_surface = srf
+                surface_name = surface_name.replace('lh', '').replace('rh', '').replace('left', '').replace('right', '')
+                break
+
+        return surface_name, pair_surface
+
+
+    def _is_hemisphere_file(self, file_name):
+        """
+        :param file_name: File Name to analyze
+        :return: expected pair file name (replace left <--> right) or None is the file can not be parsed
+        """
+        if file_name:
+
+            if file_name.count('lh') == 1:
+                return file_name.replace('lh', 'rh')
+
+            if file_name.count('left') == 1:
+                return file_name.replace('left', 'right')
+
+            if file_name.count('rh') == 1:
+                return file_name.replace('rh', 'lh')
+
+            if file_name.count('right') == 1:
+                return file_name.replace('right', 'left')
+
+        return None
+
+
+    def _guess_surface_type(self, file_name):
+        """
+        Based on file_name, try to guess the surface type.
+        e.g. when "pial" is found we guess Cortical Surface
+        """
+        guessed_type = surfaces.FACE
+
+        if 'pial' in file_name or 'cortical' in file_name or 'cortex' in file_name:
+            return surfaces.CORTICAL
+
+        # TODO fill this guessing when we get more details
+        return guessed_type
 
 
     def _cleanup_after_cfflib(self, conn_obj):
         """
-        !! CFF doesn't delete temporary folders created,
-           so we need to track and delete them manually!!
+        CFF doesn't delete temporary folders created, so we need to track and delete them manually!!
         """
         temp_files = []
         root_folder = gettempdir()

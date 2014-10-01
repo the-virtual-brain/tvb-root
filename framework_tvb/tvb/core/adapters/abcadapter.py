@@ -320,7 +320,10 @@ class ABCAdapter(object):
             res.fk_parent_burst = burst_reference
             res.fk_from_operation = self.operation_id
             res.framework_metadata = self.meta_data
-            res.user_tag_1 = user_tag if user_tag is not None else perpetuated_identifier
+            if not res.user_tag_1:
+                res.user_tag_1 = user_tag if user_tag is not None else perpetuated_identifier
+            else:
+                res.user_tag_2 = user_tag if user_tag is not None else perpetuated_identifier
             res.fk_datatype_group = data_type_group_id
             ## Compute size-on disk, in case file-storage is used
             if hasattr(res, 'storage_path') and hasattr(res, 'get_storage_file_name'):

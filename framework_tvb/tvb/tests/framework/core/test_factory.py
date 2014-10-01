@@ -51,6 +51,7 @@ from tvb.core.entities.transient.burst_configuration_entities import WorkflowSte
 from tvb.core.entities.transient.structure_entities import DataTypeMetaData
 from tvb.core.services.project_service import ProjectService
 from tvb.core.services.flow_service import FlowService
+from tvb.core.services.import_service import ImportService
 from tvb.core.services.operation_service import OperationService
 from tvb.core.adapters.abcadapter import ABCAdapter
 
@@ -227,7 +228,19 @@ class TestFactory():
                                           static_param=static_params, dynamic_param=dynamic_params)
         return model.WorkflowStep(algorithm_id=algorithm.id, step_index=step_index, tab_index=tab_index,
                                   index_in_tab=index_in_tab, static_param=static_params, dynamic_param=dynamic_params)
-    
+
+
+    @staticmethod
+    def import_default_project(admin_user=None):
+
+        if not admin_user:
+            admin_user = TestFactory.create_user()
+
+        project_path = os.path.join(os.path.dirname(os.path.dirname(cff_dataset.__file__)), 'Default_Project.zip')
+        import_service = ImportService()
+        import_service.import_project_structure(project_path, admin_user.id)
+        return import_service.created_projects[0]
+
                  
     @staticmethod
     def import_cff(cff_path=None, test_user=None, test_project=None):
@@ -239,7 +252,7 @@ class TestFactory():
         """
         ### Prepare Data
         if cff_path is None:
-            cff_path = os.path.join(os.path.dirname(cff_dataset.__file__), 'dataset_74.cff')
+            cff_path = os.path.join(os.path.dirname(cff_dataset.__file__), 'connectivities.cff')
         if test_user is None:
             test_user = TestFactory.create_user()  
         if test_project is None:

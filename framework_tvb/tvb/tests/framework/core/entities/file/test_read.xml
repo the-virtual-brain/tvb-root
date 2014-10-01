@@ -12,7 +12,7 @@
 		497b3d59-b3c1-11e1-b2e4-68a86d1bd4fa
 	</gid>
 	<parameters>
-		{&quot;cff&quot;: &quot;/WORK/TVB/tvb-root/distributionDataset/dataset_74.cff&quot;, &quot;uid&quot;: &quot;cff_74k&quot;}
+		{&quot;cff&quot;: &quot;/WORK/TVB/tvb-root/tvb_data/tvb_data/cff/connectivities.cff&quot;, &quot;uid&quot;: &quot;demoCFF&quot;}
 	</parameters>
 	<fk_launched_in>
 		496e1b21-b3c1-11e1-9818-68a86d1bd4fa

@@ -44,6 +44,7 @@ class ConnectivityViewerTest(TransactionalTestCase):
     """
     Unit-tests for Connectivity Viewer.
     """
+
     def setUp(self):
         """
         Sets up the environment for running the tests;
@@ -57,8 +58,7 @@ class ConnectivityViewerTest(TransactionalTestCase):
         TestFactory.import_cff(test_user=self.test_user, test_project=self.test_project)
         self.connectivity = TestFactory.get_entity(self.test_project, Connectivity())
         self.assertTrue(self.connectivity is not None)
-        self.surface = TestFactory.get_entity(self.test_project, CorticalSurface())
-        self.assertTrue(self.surface is not None)
+
                 
     def tearDown(self):
         """

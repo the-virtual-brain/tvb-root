@@ -63,15 +63,14 @@ class RemoveTest(TransactionalTestCase):
         self.import_service = ImportService()
         self.flow_service = FlowService()
         self.project_service = ProjectService()
-
         self.test_user = TestFactory.create_user()
-        self.test_project = TestFactory.create_project(self.test_user)
-        self.operation = TestFactory.create_operation(test_user=self.test_user, test_project=self.test_project)
-        self.adapter_instance = TestFactory.create_adapter(test_project=self.test_project)
 
         result = self.get_all_datatypes()
         self.assertEqual(len(result), 0, "There should be no data type in DB")
-        TestFactory.import_cff(test_user=self.test_user, test_project=self.test_project)
+
+        self.test_project = TestFactory.import_default_project(self.test_user)
+        self.operation = TestFactory.create_operation(test_user=self.test_user, test_project=self.test_project)
+        self.adapter_instance = TestFactory.create_adapter(test_project=self.test_project)
 
 
     def tearDown(self):
@@ -147,7 +146,7 @@ class RemoveTest(TransactionalTestCase):
         self._remove_entity("tvb.datatypes.surfaces.RegionMapping", 1)
         ### Remove Surfaces
         # SqlAlchemy has no uniform way to retrieve Surface as base (wild-character for polymorphic_identity)
-        self._remove_entity("tvb.datatypes.surfaces_data.SurfaceData", 2)
+        self._remove_entity("tvb.datatypes.surfaces_data.SurfaceData", 4)
         ### Remove a Connectivity
         self._remove_entity("tvb.datatypes.connectivity.Connectivity", 1)
 

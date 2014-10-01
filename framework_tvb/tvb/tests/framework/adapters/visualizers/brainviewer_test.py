@@ -27,15 +27,14 @@
 #   Frontiers in Neuroinformatics (7:10. doi: 10.3389/fninf.2013.00010)
 #
 #
+
 """
 .. moduleauthor:: Bogdan Neacsa <bogdan.neacsa@codemart.ro>
 """
-import os
+
 import unittest
-import tvb_data.surfaceData as surface_dataset
-import tvb_data.sensors as sensors_dataset
 from tvb.core.entities.file.files_helper import FilesHelper
-from tvb.datatypes.surfaces import CorticalSurface, FaceSurface, EEGCap
+from tvb.datatypes.surfaces import FaceSurface, EEGCap
 from tvb.datatypes.connectivity import Connectivity
 from tvb.datatypes.sensors import SensorsEEG
 from tvb.adapters.visualizers.brain import BrainViewer, BrainEEG
@@ -56,22 +55,17 @@ class BrainViewerTest(TransactionalTestCase):
         imports a CFF data-set
         """
         self.datatypeFactory = DatatypesFactory()
-        self.test_project = self.datatypeFactory.get_project()
         self.test_user = self.datatypeFactory.get_user()
-        
-        TestFactory.import_cff(test_user=self.test_user, test_project=self.test_project)
-        zip_path = os.path.join(os.path.dirname(surface_dataset.__file__), 'face_surface_old.zip')
-        TestFactory.import_surface_zip(self.test_user, self.test_project, zip_path, 'Face', 1)
-        zip_path = os.path.join(os.path.dirname(surface_dataset.__file__), 'eeg_skin_surface.zip')
-        TestFactory.import_surface_zip(self.test_user, self.test_project, zip_path, 'EEG Cap', 1)
+        self.test_project = TestFactory.import_default_project(self.test_user)
+        self.datatypeFactory.project = self.test_project
+
         self.connectivity = TestFactory.get_entity(self.test_project, Connectivity())
         self.assertTrue(self.connectivity is not None)
-        self.surface = TestFactory.get_entity(self.test_project, CorticalSurface())
-        self.assertTrue(self.surface is not None)
         self.face_surface = TestFactory.get_entity(self.test_project, FaceSurface())
         self.assertTrue(self.face_surface is not None)
         self.assertTrue(TestFactory.get_entity(self.test_project, EEGCap()) is not None)
-                
+
+
     def tearDown(self):
         """
         Clean-up tests data
@@ -121,9 +115,6 @@ class BrainViewerTest(TransactionalTestCase):
         """
         Tests successful launch of a BrainEEG and that all required keys are present in returned template dictionary
         """
-        zip_path = os.path.join(os.path.dirname(sensors_dataset.__file__), 'EEG_unit_vectors_BrainProducts_62.txt.bz2')
-        
-        TestFactory.import_sensors(self.test_user, self.test_project, zip_path, 'EEG Sensors')
         sensors = TestFactory.get_entity(self.test_project, SensorsEEG())
         time_series = self.datatypeFactory.create_timeseries(self.connectivity, 'EEG', sensors)
         time_series.configure()
