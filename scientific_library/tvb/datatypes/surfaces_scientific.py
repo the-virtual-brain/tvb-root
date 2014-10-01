@@ -534,32 +534,30 @@ class SurfaceScientific(surfaces_data.SurfaceData):
 
         :return: (is_valid, error_summary_string)
         """
-        error_summary = ""
+        error_summary = []
+
+        def report_error(msg, msg_detail):
+            error_summary.append(msg)
+            LOG.warn(msg)
+            LOG.debug(msg_detail)
+
         euler, isolated, pinched_off, holes = self.compute_topological_constants()
 
         # The Euler characteristic for a 2D sphere embedded in a 3D space is 2.
         # This should be 2 or 4 -- meaning one or two closed topologically spherical surfaces
         if euler not in (2, 4):
-            msg = "Topologically not 1 or 2 spheres."
-            LOG.error(msg + "Euler characteristic: " + str(euler))
-            error_summary += msg
+            report_error("Topologically not 1 or 2 spheres.", "Euler characteristic: " + str(euler))
 
         if len(isolated):
-            msg = "Has isolated vertices."
-            LOG.error(msg + "Offending indices: \n" + str(isolated) )
-            error_summary += msg
+            report_error("Has isolated vertices.", "Offending indices: \n" + str(isolated) )
 
         if len(pinched_off):
-            msg = "Surface is pinched off."
-            LOG.error(msg + "These are edges with more than 2 triangles: \n" + str(pinched_off))
-            error_summary += msg
+            report_error("Surface is pinched off.", "These are edges with more than 2 triangles: \n" + str(pinched_off))
 
         if len(holes):
-            msg = "Has holes."
-            LOG.error(msg + "Free boundaries: \n" + str(holes))
-            error_summary += msg
+            report_error("Has holes.", "Free boundaries: \n" + str(holes))
 
-        return error_summary == "", error_summary
+        return error_summary == [], ' '.join(error_summary)
 
 
     def check(self):
