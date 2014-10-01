@@ -83,7 +83,8 @@ def create_start_scripts(base_folder, data_folder, python_exe):
                             'set PYTHONPATH=%cd%; \n' + \
                             'set PYTHONHOME=%cd%; \n' + \
                             'cd exe \n' + \
-                            command + '\n'
+                            command + '\n' + \
+                            'cd ..\\..\\bin'
         _create_script_file(command_file_name, tvb_command_text, end_message)
 
     _create_file_with_tvb_paths('contributor_setup', python_exe + ' -m tvb_bin.git_setup %1\n')
