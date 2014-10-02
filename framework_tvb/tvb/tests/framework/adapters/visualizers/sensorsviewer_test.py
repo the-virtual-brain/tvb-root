@@ -32,10 +32,6 @@
 .. moduleauthor:: Lia Domide <lia.domide@codemart.ro>
 """
 
-if __name__ == "__main__":
-    from tvb.basic.profile import TvbProfile
-    TvbProfile.set_profile(["-profile", TvbProfile.TEST_SQLITE_PROFILE], try_reload=False)
-
 import os
 import unittest
 import tvb_data.surfaceData as surfaces_dataset

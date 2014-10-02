@@ -81,7 +81,7 @@ class OperationExecutor(threading.Thread):
         run_params = [TVBSettings.get_python_path(), '-m', 'tvb.core.operation_async_launcher', str(operation_id)]
 
         if tvb_profile.CURRENT_SELECTED_PROFILE is not None:
-            run_params.extend([tvb_profile.SUBPARAM_PROFILE, tvb_profile.CURRENT_SELECTED_PROFILE])
+            run_params.append(tvb_profile.CURRENT_SELECTED_PROFILE)
 
         # In the exceptional case where the user pressed stop while the Thread startup is done,
         # We should no longer launch the operation.

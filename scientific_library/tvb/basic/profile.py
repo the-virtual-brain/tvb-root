@@ -68,8 +68,6 @@ class TvbProfile():
     ENUM-like class with current TVB profile values.
     """
 
-    SUBPARAM_PROFILE = "-profile"
-
     # Existing profiles:
     DEVELOPMENT_PROFILE = "DEVELOPMENT_PROFILE"
     DEPLOYMENT_PROFILE = "DEPLOYMENT_PROFILE"
@@ -87,43 +85,15 @@ class TvbProfile():
 
 
     @staticmethod
-    def get_profile(script_argv):
-        """
-        Returns the user given profile or None if the user didn't specify a profile.
-
-        :param script_argv: represents a list of string arguments.
-                If the script_argv contains the string '-profile',
-                than TVB profile will be set to the next element.
-
-        E.g.: if script_argv=['$param1', ..., '-profile', 'TEST_SQLITE_PROFILE', ...] 
-               than TVB profile will be set to 'TEST_SQLITE_PROFILE'
-        """
-        if TvbProfile.SUBPARAM_PROFILE in script_argv:
-            index = script_argv.index(TvbProfile.SUBPARAM_PROFILE)
-
-            if len(script_argv) > index + 1:
-                return script_argv[index + 1]
-
-        return None
-
-
-    @staticmethod
-    def set_profile(script_argv, remove_from_args=False, try_reload=True):
+    def set_profile(selected_profile, try_reload=True):
         """
         Sets TVB profile from script_argv and specify UTF-8 and encoding.
 
-        :param script_argv: represents a list of string arguments.
-                      If the script_argv contains the string '-profile' 
-                      than the TVB profile will be set to the next element.
-        :param remove_from_args: when True, script_argv will get stripped of profile strings.
-
+        :param selected_profile: String representing profile to be set.
         :param try_reload: When set to true, try to reload all tvb.* modules
                         This is needed when setting a profile different that default requires previously loaded tvb
                         modules to get different (e.g. from deployment to developer we have a different
                         tvb.interface path, already loaded as the starting point is tvb.interfaces.run)
-        
-        E.g.: if script_argv = ['$param1', ..., '-profile', 'TEST_SQLITE_PROFILE', ...] 
-              than the  profile will be set to 'TEST_SQLITE_PROFILE'
         """
 
         ### Ensure Python is using UTF-8 encoding (otherwise default encoding is ASCII)
@@ -133,8 +103,6 @@ class TvbProfile():
         if TvbProfile.is_development() and sys.getdefaultencoding().lower() != 'utf-8':
             reload(sys)
             sys.setdefaultencoding('utf-8')
-
-        selected_profile = TvbProfile.get_profile(script_argv)
         
         if try_reload:
             # To make sure in case of contributor setup the external TVB is the one
@@ -147,10 +115,6 @@ class TvbProfile():
 
         if selected_profile is not None:
             TvbProfile.CURRENT_SELECTED_PROFILE = selected_profile
-
-            if remove_from_args:
-                script_argv.remove(selected_profile)
-                script_argv.remove(TvbProfile.SUBPARAM_PROFILE)
                 
             if selected_profile == TvbProfile.LIBRARY_PROFILE:
                 sys.meta_path.append(LibraryModulesFinder())

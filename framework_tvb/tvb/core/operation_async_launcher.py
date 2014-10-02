@@ -47,7 +47,8 @@ from tvb.basic.profile import TvbProfile as tvb_profile
 
 ## Make sure selected profile is propagated when launching an operation.
 ### Reload modules, only when running, thus avoid problems when sphinx generates documentation
-tvb_profile.set_profile(sys.argv, try_reload=(__name__ == '__main__'))
+if len(sys.argv) > 1:
+    tvb_profile.set_profile(sys.argv[2], try_reload=(__name__ == '__main__'))
 
 ### Overwrite PostgreSQL number of connections when executed in the context of a node
 from tvb.basic.config.settings import TVBSettings

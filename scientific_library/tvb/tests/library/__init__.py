@@ -38,5 +38,5 @@ def setup_test_console_env():
 
     from tvb.basic.profile import TvbProfile
     # Set the current environment to the test setup
-    TvbProfile.set_profile(["-profile", "LIBRARY_PROFILE"], try_reload=False)
+    TvbProfile.set_profile(TvbProfile.LIBRARY_PROFILE, try_reload=False)
 

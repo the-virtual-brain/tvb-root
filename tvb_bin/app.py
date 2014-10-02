@@ -70,7 +70,7 @@ SCRIPT_FOR_WEB = 'tvb.interfaces.web.run'
 SCRIPT_FOR_DESKTOP = 'tvb.interfaces.desktop.run'
 
 CONSOLE_PROFILE_SET = ('from tvb.basic.profile import TvbProfile; '
-                       'TvbProfile.set_profile(["-profile", "%s"], try_reload=False);')
+                       'TvbProfile.set_profile("%s", try_reload=False);')
 
 SUB_PARAMETER_RESET = "reset"
 
@@ -196,8 +196,7 @@ def execute_start_web(profile, reset):
         free_ports['WEB_SERVER_PORT'] = cherrypy_port
         TVBSettings.update_config_file(free_ports)
 
-    web_args_list = [PYTHON_EXE_PATH, '-m', SCRIPT_FOR_WEB, 'tvb.config']
-    web_args_list.extend([TvbProfile.SUBPARAM_PROFILE, profile])
+    web_args_list = [PYTHON_EXE_PATH, '-m', SCRIPT_FOR_WEB, profile, 'tvb.config']
 
     if reset:
         web_args_list.append(SUB_PARAMETER_RESET)
@@ -221,9 +220,7 @@ def execute_start_desktop(profile, reset):
     :return: reference towards tvb new started process
     """
     pid_file_reference = open(TVB_PID_FILE, 'a')
-
-    desktop_args_list = [PYTHON_EXE_PATH, '-m', SCRIPT_FOR_DESKTOP, 'tvb.config']
-    desktop_args_list.extend([TvbProfile.SUBPARAM_PROFILE, profile])
+    desktop_args_list = [PYTHON_EXE_PATH, '-m', SCRIPT_FOR_DESKTOP, profile, 'tvb.config']
 
     if reset:
         desktop_args_list.append(SUB_PARAMETER_RESET)
@@ -309,7 +306,7 @@ def wait_for_tvb_process(tvb_process):
 if __name__ == "__main__":
 
     ARGS = parse_commandline()
-    TvbProfile.set_profile([TvbProfile.SUBPARAM_PROFILE, ARGS.profile])
+    TvbProfile.set_profile(ARGS.profile)
     # Initialize TVBSettings only after a profile was set
     from tvb.basic.config.settings import TVBSettings
 

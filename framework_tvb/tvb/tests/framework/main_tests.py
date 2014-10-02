@@ -35,11 +35,11 @@ Entry point for all tests.
 """
 
 import os
-from sys import argv
+import sys
 from coverage import coverage
 from tvb.basic.profile import TvbProfile
 #set the current environment to the test setup
-TvbProfile.set_profile(argv)
+TvbProfile.set_profile(sys.argv[1])
 
 KEY_CONSOLE = 'console'
 KEY_COVERAGE = 'coverage'
@@ -69,7 +69,7 @@ def generage_excludes(root_folders):
 
 if __name__ == "__main__":
     #Start all TVB tests (if in Coverage mode)
-    if KEY_COVERAGE in argv:
+    if KEY_COVERAGE in sys.argv:
         import tvb.interfaces as intf
 
         SOURCE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(intf.__file__)))
@@ -110,12 +110,12 @@ if __name__ == "__main__":
     #Start all TVB tests
     START_TIME = datetime.datetime.now()
 
-    if KEY_CONSOLE in argv:
+    if KEY_CONSOLE in sys.argv:
         TEST_RUNNER = unittest.TextTestRunner()
         TEST_SUITE = suite()
         TEST_RUNNER.run(TEST_SUITE)
 
-    if KEY_XML in argv:
+    if KEY_XML in sys.argv:
         XML_STREAM = file(os.path.join(TVBSettings.TVB_LOG_FOLDER, "TEST-RESULTS.xml"), "w")
         OUT_STREAM = file(os.path.join(TVBSettings.TVB_LOG_FOLDER, "TEST.out"), "w")
         TEST_RUNNER = XMLTestRunner(XML_STREAM, OUT_STREAM)
@@ -126,7 +126,7 @@ if __name__ == "__main__":
 
     print 'It run tests for %d sec.' % (datetime.datetime.now() - START_TIME).seconds
 
-    if KEY_COVERAGE in argv:
+    if KEY_COVERAGE in sys.argv:
         COVERAGE.stop()
         COVERAGE.html_report(directory=os.path.join(os.path.dirname(__file__), 'test_coverage_html'))
 

@@ -10,7 +10,7 @@ if [ "$1" ]; then
 	python app.py clean TEST_POSTGRES_PROFILE
 	
 	echo 'Starting TVB tests on PostgreSQL DB ...'
-	python -m tvb.tests.framework.main_tests xml -profile TEST_POSTGRES_PROFILE
+	python -m tvb.tests.framework.main_tests TEST_POSTGRES_PROFILE xml
 	
 else
     # Make sure TVB application is not running....
@@ -20,7 +20,7 @@ else
 	python app.py clean TEST_SQLITE_PROFILE
 	
 	echo 'Starting TVB tests on SQLite DB ...'
-	python -m tvb.tests.framework.main_tests xml -profile TEST_SQLITE_PROFILE
+	python -m tvb.tests.framework.main_tests TEST_SQLITE_PROFILE xml
 fi
 
 echo 'Starting TVB Scientific Library tests'
