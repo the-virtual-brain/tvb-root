@@ -1,7 +1,5 @@
 THE VIRTUAL BRAIN SCIENTIFIC LIBRARY
 
-[![Build Status](https://travis-ci.org/maedoc/tvb-library.svg?branch=trunk)](https://travis-ci.org/maedoc/tvb-library) [![Coverage Status](https://coveralls.io/repos/maedoc/tvb-library/badge.png)](https://coveralls.io/r/maedoc/tvb-library)
-
 
 The Virtual Brain Project (TVB Project) has the purpose of offering some modern tools to the Neurosciences community, for computing, simulating and analyzing functional and structural data of human brains.
 
