@@ -161,6 +161,24 @@ class BaseTestCase(unittest.TestCase):
         return int(round(total_size / 1024.)), n_files
 
 
+    def count_all_entities(self, entity_type):
+        """
+        Count all entities of a given type currently stored in DB.
+        """
+        result = 0
+        session = None
+        try:
+            session = SessionMaker()
+            session.open_session()
+            result = session.query(entity_type).count()
+        except Exception, excep:
+            LOGGER.warning(excep)
+        finally:
+            if session:
+                session.close_session()
+        return result
+
+
     def get_all_entities(self, entity_type):
         """
         Retrieve all entities of a given type.

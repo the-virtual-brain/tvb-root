@@ -109,9 +109,8 @@ class FilteringTest(TransactionalTestCase):
         test_filter_4 = FilterChain(fields=[FilterChain.datatype + '._row1', FilterChain.datatype + '._row2'],
                                     operations=['==', 'in'], values=["value1", ['value5', 'value6']])
         
-        all_stored_dts = self.get_all_entities(Datatype1)
-        self.assertTrue(len(all_stored_dts) == 3, "Expected 3 DTs to be stored for "
-                        "test_filte_sql_equivalent. Got %s instead." % len(all_stored_dts))
+        all_stored_dts = self.count_all_entities(Datatype1)
+        self.assertEqual(3, all_stored_dts)
         
         self._evaluate_db_filter(test_filter_1, 2)
         self._evaluate_db_filter(test_filter_2, 0)
