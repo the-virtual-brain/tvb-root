@@ -233,18 +233,18 @@ class BurstContollerTest(BaseControllersTest):
         Launch a burst and check that it finishes correctly and before timeout (100)
         """
         self.burst_c.index()
-        _, connectivity = self._burst_create_connectivity()
+        connectivity = self._burst_create_connectivity()
         launch_params = copy.deepcopy(SIMULATOR_PARAMETERS)
-        launch_params['connectivity'] = dao.get_datatype_by_id(connectivity.id).gid
-        launch_params['simulation_length'] = '100'
+        launch_params['connectivity'] = connectivity.gid
+        launch_params['simulation_length'] = '10'
         launch_params = {"simulator_parameters": json.dumps(launch_params)}
         burst_id = json.loads(self.burst_c.launch_burst("new", "test_burst", **launch_params))['id']
         waited = 1
         timeout = 100
         burst_config = dao.get_burst_by_id(burst_id)
         while burst_config.status == BurstConfiguration.BURST_RUNNING and waited <= timeout:
-            sleep(1)
-            waited += 1
+            sleep(0.5)
+            waited += 0.5
             burst_config = dao.get_burst_by_id(burst_config.id)
         if waited > timeout:
             self.fail("Timed out waiting for simulations to finish.")
@@ -330,7 +330,7 @@ class BurstContollerTest(BaseControllersTest):
         connectivity.centres = numpy.ones((74, 3))
         adapter_instance = StoreAdapter([connectivity])
         OperationService().initiate_prelaunch(self.operation, adapter_instance, {})
-        return algorithm.id, connectivity
+        return connectivity
 
 
 
