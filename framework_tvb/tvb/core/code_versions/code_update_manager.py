@@ -32,7 +32,7 @@
 .. moduleauthor:: Bogdan Neacsa <bogdan.neacsa@codemart.ro>
 """
 
-from tvb.basic.config.settings import TVBSettings as cfg
+from tvb.basic.config.settings import TVBSettings
 from tvb.core.code_versions.base_classes import UpdateManager
 import tvb.core.code_versions.code_update_scripts as code_versions
 
@@ -46,7 +46,8 @@ class CodeUpdateManager(UpdateManager):
 
 
     def __init__(self):
-        super(CodeUpdateManager, self).__init__(code_versions, cfg.CODE_CHECKED_TO_VERSION, cfg.SVN_VERSION)
+        super(CodeUpdateManager, self).__init__(code_versions, TVBSettings.CODE_CHECKED_TO_VERSION,
+                                                TVBSettings.SVN_VERSION)
 
 
     def run_update_script(self, script_name):
@@ -56,7 +57,7 @@ class CodeUpdateManager(UpdateManager):
         super(CodeUpdateManager, self).run_update_script(script_name)
         # After each update mark the update in cfg file. 
         # In case one update script fails, the ones before will not be repeated.
-        cfg.add_entries_to_config_file({cfg.KEY_LAST_CHECKED_CODE_VERSION: script_name.split('_')[0]})
+        TVBSettings.add_entries_to_config_file({TVBSettings.KEY_LAST_CHECKED_CODE_VERSION: script_name.split('_')[0]})
 
 
     def run_all_updates(self):
@@ -64,15 +65,14 @@ class CodeUpdateManager(UpdateManager):
         Upgrade the code to current version. 
         Go through all update scripts with lower SVN version than the current running version.
         """
-        file_dict = cfg.read_config_file()
-        if file_dict is None or len(file_dict) <= 2:
+        if TVBSettings.is_first_run():
             ## We've just started with a clean TVB. No need to upgrade anything.
             return
 
         super(CodeUpdateManager, self).run_all_updates()
 
         if self.checked_version < self.current_version:
-            cfg.add_entries_to_config_file({cfg.KEY_LAST_CHECKED_CODE_VERSION: cfg.SVN_VERSION})
+            TVBSettings.add_entries_to_config_file({TVBSettings.KEY_LAST_CHECKED_CODE_VERSION: TVBSettings.SVN_VERSION})
         
         
         
