@@ -66,7 +66,7 @@ class LoggerBuilder(object):
         package_path = package.__path__[0]
 
         #Specify logging configuration file for current package. 
-        logging.config.fileConfig(os.path.join(package_path, config_file_name), disable_existing_loggers=True)
+        logging.config.fileConfig(os.path.join(package_path, config_file_name), disable_existing_loggers=False)
 
 
     @staticmethod
