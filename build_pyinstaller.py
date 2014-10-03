@@ -59,7 +59,7 @@ BASE_EXCLUDE_FILES = []
 
 BASE_EXCLUDE_DIRS = ['lib2to3', 'test', 'config_d', 'config']
 # This will be the name under which we copy the actual python interpreter
-PYTHON_EXE = TvbProfile.get_python_exe_name()
+PYTHON_EXE = TvbProfile.env.get_python_exe_name()
 
 
 class PyInstallerPacker():

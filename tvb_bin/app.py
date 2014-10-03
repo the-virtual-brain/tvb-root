@@ -269,7 +269,7 @@ def wait_for_tvb_process(tvb_process):
     On MAC devices do not let this process die, to keep TVB icon in the dock bar.
     :param tvb_process: TVB sub process, to wait until it finishes.
     """
-    if tvb_process is not None and TvbProfile.is_mac_deployment():
+    if tvb_process is not None and TvbProfile.env.is_mac_deployment():
 
         import AppKit
         import Foundation

@@ -60,7 +60,7 @@ WINDOWS_USAGE = "Usage is 'contributor_setup.bat your.github.repository.link'"
 UNIX_USAGE = "Usage is 'sh contributor_setup.sh your.github.repository.link'"
 
 if len(sys.argv) < 2:
-    if sys.platform == 'win32':
+    if TvbProfile.env.is_windows():
         raise Exception(WINDOWS_USAGE)
     raise Exception(UNIX_USAGE)
 
@@ -68,7 +68,7 @@ if os.system('git --version') != 0:
     raise Exception("You need to have git installed in order to set up TVB for contributions.")
 
 
-if TvbProfile.is_mac():
+if TvbProfile.env.is_mac_deployment():
     parent_folder = os.path.split(os.path.dirname(os.path.abspath(__file__)))[0]
     sys.path = [parent_folder, os.path.join(parent_folder, 'site-packages.zip'),
                 os.path.join(parent_folder, 'lib-dynload')] + sys.path

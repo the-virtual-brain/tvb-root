@@ -50,7 +50,7 @@ TvbProfile.set_profile(sys.argv[1], try_reload=(__name__ == '__main__'))
 
 ### For Linux Distribution, correctly set MatplotLib Path, before start.
 from tvb.basic.config.settings import TVBSettings
-if TvbProfile.is_linux_deployment():
+if TvbProfile.env.is_linux_deployment():
     mpl_data_path_maybe = os.path.join(TVBSettings().get_library_folder(), 'mpl-data')
     try:
         os.stat(mpl_data_path_maybe)
@@ -183,9 +183,9 @@ def start_tvb(arguments, browser=True):
 @user_environment_execution
 def run_browser():
     try:
-        if TvbProfile.is_windows():
+        if TvbProfile.env.is_windows():
             browser_app = webbrowser.get('windows-default')
-        elif TvbProfile.is_mac():
+        elif TvbProfile.env.is_mac():
             browser_app = webbrowser.get('macosx')
         else:
             browser_app = webbrowser
