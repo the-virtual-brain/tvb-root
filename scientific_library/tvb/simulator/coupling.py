@@ -31,10 +31,49 @@
 """
 Coupling functions
 
-The activity (state-variables) that
-have been propagated over the long-range Connectivity pass through these
-functions before entering the equations (Model.dfun()) describing the local
-dynamics.
+The activity (state-variables) that have been propagated over the long-range
+Connectivity pass through these functions before entering the equations
+(Model.dfun()) describing the local dynamics.
+
+The state-variable vector for the $k$-th node or region in the network can be expressed as:
+Derivative = Noise + Local dynamics + Coupling(time delays).
+
+More formally:
+
+.. math::
+
+         \\dot{\\Psi}_{k} = - \\Lambda\\left(\\Psi_{k}\\right) + Z \\left(\\Xi_{k} + \\sum_{j=1}^{l} u_{kj} \\Gamma_{v=2}[\\left(\\Psi_{k}(t),  \\Psi_{j}(t-\\tau_{kj}\\right)]\\right).
+
+
+Here we compute the term Coupling(time delays) or 
+:math:`\\sum_{j=1}^{l} u_{kj} \\Gamma_{v=2}[\\left(\\Psi_{k}(t),  \\Psi_{j}(t-\\tau_{kj}\\right)]`, 
+where :math:`u_{kj}` are the elements of the weights matrix from a Connectivity datatype.
+
+This term is equivalent to the dot product between the weights matrix (on the
+left) and the delayed state vector. This order is important in the case 
+case of an asymmetric connectivity matrix, where the
+convention to distinguish target ($k$) and source ($j$) nodes is the
+following:
+
+.. math::
+
+.. math::
+  \left(\begin{matrix} a & b \\
+    c & d \end{matrix}\right)
+
+
+         C_{kj}  &= \left(\begin{matrix} ^\mathrm{To}/_\mathrm{from} & 0 & 1 & 2 & \cdots & l \\
+                                                           0         & 1  & 1  &  0 & 1  &  0 \\
+                                                           1         & 1  & 1  &  0 & 1  &  0 \\
+                                                           2         & 1  & 0  &  0 & 1  &  0 \\
+                                                     \vdots          & 1  & 0  &  1 & 0  &  1 \\
+                                                           l         & 0  & 0  &  0 & 0  &  0 \\
+                                                           \end{matrix}\right)
+
+.. NOTE: Our convention is the inverse of the BCT toolbox. Furthermore, this
+         convention is consistent with the notation used in Physics and in our
+         equation, ie, :math:`u_{kj}` matches row-column indexing and describes the
+         connection strength from node j to node k
 
 
 .. moduleauthor:: Stuart A. Knock <Stuart@tvb.invalid>
@@ -199,7 +238,7 @@ class Linear(Coupling):
 
 
         """
-        coupled_input = (g_ij * x_j).sum(axis=0)
+        coupled_input = (g_ij * x_j).sum(axis=1)
         return self.a * coupled_input + self.b
 
     device_info = coupling_device_info(
@@ -252,7 +291,7 @@ class Scaling(Coupling):
 
 
         """
-        coupled_input = (g_ij * x_j).sum(axis=0)
+        coupled_input = (g_ij * x_j).sum(axis=1)
         return self.a * coupled_input
 
     device_info = coupling_device_info(
@@ -329,9 +368,9 @@ class HyperbolicTangent(Coupling):
             in_strength[in_strength==0] = numpy.inf
             temp *= (g_ij / in_strength) #region mode normalisation
 
-            coupled_input = temp.mean(axis=0)
+            coupled_input = temp.mean(axis=1)
         else:
-            coupled_input = (g_ij*temp).mean(axis=0)
+            coupled_input = (g_ij*temp).mean(axis=1)
 
         return coupled_input
 
@@ -404,7 +443,7 @@ class Sigmoidal(Coupling):
 
 
         """
-        coupled_input = (g_ij * x_j).sum(axis=0)
+        coupled_input = (g_ij * x_j).sum(axis=1)
         sig = self.cmin + ((self.cmax - self.cmin) / (1.0 + numpy.exp(-self.a *((coupled_input - self.midpoint) / self.sigma))))
         return sig
 
@@ -477,7 +516,7 @@ class SigmoidalJansenRit(Sigmoidal):
         diff_input = x_j[:, 0, numpy.newaxis, :, :] - x_j[:, 1, numpy.newaxis, :, :]        
         temp       = self.r * (self.midpoint - (diff_input))
         sigm_y1_y2 = numpy.where(temp > magic_exp_number, self.cmax / (1.0 + numpy.exp(temp)), self.cmax / (1.0 + numpy.exp(temp)))     
-        coupled_input = self.a * ( g_ij * sigm_y1_y2).sum(axis=0)
+        coupled_input = self.a * ( g_ij * sigm_y1_y2).sum(axis=1)
 
         return coupled_input
 
@@ -598,7 +637,7 @@ class PreSigmoidal(Coupling):
         A_j = self.H * (self.Q + numpy.tanh(self.G * (self.P * x_j[:,0,:,:] \
             - x_j[:,1,self.sliceT,:])[:,numpy.newaxis,:,:]))
         
-        c_0 = (g_ij[:,0] * A_j[:,0]).sum(axis=0)
+        c_0 = (g_ij[:,0] * A_j[:,0]).sum(axis=1)
         c_1 = self.meanOrNot(A_j)
         return numpy.array([c_0, c_1])
 
@@ -624,7 +663,7 @@ class Difference(Coupling):
 
         """
 
-        return self.a*(g_ij*(x_j - x_i)).sum(axis=0)
+        return self.a*(g_ij*(x_j - x_i)).sum(axis=1)
 
     device_info = coupling_device_info(
         pars = ['a'],
@@ -666,7 +705,7 @@ class Kuramoto(Coupling):
         """
         number_of_regions = g_ij.shape[0]
 
-        return (self.a / number_of_regions)*(g_ij*sin(x_j-x_i)).sum(axis=0)
+        return (self.a / number_of_regions)*(g_ij*sin(x_j-x_i)).sum(axis=1)
 
     device_info = coupling_device_info(
         pars = ['a'],
