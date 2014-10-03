@@ -117,25 +117,26 @@ class TvbProfile():
             if selected_profile == TvbProfile.LIBRARY_PROFILE:
                 sys.meta_path.append(LibraryModulesFinder())
 
-
-    @staticmethod
-    def is_library_mode():
-        """
-        Fall-back to LibraryProfile either if this was the profile passed as argument or if TVB Framework is not found.
-        
-        :return: True when currently selected profile is LibraryProfile, 
-                 or when the framework classes are not present, and we should enforce the library profile.
-        """
-        framework_present = True
-        try:
-            from tvb.config.settings import FrameworkSettings
-        except ImportError:
-            framework_present = False
-
-        return TvbProfile.CURRENT_SELECTED_PROFILE == TvbProfile.LIBRARY_PROFILE or not framework_present     
             
 
     class env():
+
+        @staticmethod
+        def is_library_mode():
+            """
+            Fall-back to LibraryProfile either if this was the profile passed as argument or if TVB Framework is not found.
+
+            :return: True when currently selected profile is LibraryProfile,
+                     or when the framework classes are not present, and we should enforce the library profile.
+            """
+            framework_present = True
+            try:
+                from tvb.config.settings import FrameworkSettings
+            except ImportError:
+                framework_present = False
+
+            return TvbProfile.CURRENT_SELECTED_PROFILE == TvbProfile.LIBRARY_PROFILE or not framework_present
+
 
         @staticmethod
         def is_development():
@@ -158,7 +159,7 @@ class TvbProfile():
             """
             Return True if current run is not development and is running on Windows.
             """
-            return TvbProfile.is_windows() and not TvbProfile.env.is_development()
+            return TvbProfile.env.is_windows() and not TvbProfile.env.is_development()
 
 
         @staticmethod

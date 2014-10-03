@@ -109,7 +109,7 @@ class LibraryProfile():
 ###  Dependent of the selected profile and framework classes being present or not, load the correct configuration.
 ###    
     
-if TvbProfile.is_library_mode():
+if TvbProfile.env.is_library_mode():
     ## TVB-Simulator-Library is used stand-alone.
     TVBSettings = LibraryProfile
     

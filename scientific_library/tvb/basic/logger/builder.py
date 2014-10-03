@@ -80,7 +80,7 @@ class LoggerBuilder(object):
 ### We make sure a single instance of logger-builder is created.
 if "GLOBAL_LOGGER_BUILDER" not in globals():
 
-    if TvbProfile.is_library_mode():
+    if TvbProfile.env.is_library_mode():
         GLOBAL_LOGGER_BUILDER = LoggerBuilder('tvb.basic.logger')
     else:
         GLOBAL_LOGGER_BUILDER = LoggerBuilder('tvb.config.logger')
