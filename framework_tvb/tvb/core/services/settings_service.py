@@ -76,10 +76,11 @@ class SettingsService():
 
     def __init__(self):
         self.logger = get_logger(__name__)
+        first_run = cfg.is_first_run()
         self.configurable_keys = {
             self.KEY_STORAGE: {'label': 'Root folder for all projects',
-                               'value': cfg.TVB_STORAGE if not self.is_first_run() else cfg.DEFAULT_STORAGE,
-                               'readonly': not self.is_first_run(), 'type': 'text'},
+                               'value': cfg.TVB_STORAGE if not first_run else cfg.DEFAULT_STORAGE,
+                               'readonly': not first_run, 'type': 'text'},
             self.KEY_MAX_DISK_SPACE_USR: {'label': 'Max hard disk space per user (MBytes)',
                                           'value': cfg.MAX_DISK_SPACE / 2 ** 10, 'type': 'text'},
             self.KEY_MATLAB_EXECUTABLE: {'label': 'Optional Matlab or Octave path', 'type': 'text',
@@ -87,7 +88,7 @@ class SettingsService():
                                          'description': 'Some analyzers will not be available when '
                                                         'matlab/octave are not found'},
             self.KEY_SELECTED_DB: {'label': 'Select one DB engine', 'value': cfg.SELECTED_DB,
-                                   'type': 'select', 'readonly': not self.is_first_run(),
+                                   'type': 'select', 'readonly': not first_run,
                                    'options': cfg.ACEEPTED_DBS},
             self.KEY_DB_URL: {'label': "DB connection URL", 'value': cfg.ACEEPTED_DBS[cfg.SELECTED_DB],
                               'type': 'text', 'readonly': cfg.SELECTED_DB == 'sqlite'},
@@ -112,15 +113,15 @@ class SettingsService():
                                'description': 'Check this only if on the web-server machine OARSUB command is enabled.',
                                'dtype': 'primitive', 'type': 'boolean'},
             self.KEY_ADMIN_NAME: {'label': 'Administrator User Name', 'value': cfg.ADMINISTRATOR_NAME,
-                                  'type': 'text', 'readonly': not self.is_first_run(),
+                                  'type': 'text', 'readonly': not first_run,
                                   'description': ('Password and Email can be edited after first run, '
                                                   'from the profile page directly.')},
             self.KEY_ADMIN_PWD: {'label': 'Password',
-                                 'value': cfg.ADMINISTRATOR_BLANK_PWD if self.is_first_run()
+                                 'value': cfg.ADMINISTRATOR_BLANK_PWD if first_run
                                  else cfg.ADMINISTRATOR_PASSWORD,
-                                 'type': 'password', 'readonly': not self.is_first_run()},
+                                 'type': 'password', 'readonly': not first_run},
             self.KEY_ADMIN_EMAIL: {'label': 'Administrator Email', 'value': cfg.ADMINISTRATOR_EMAIL,
-                                   'readonly': not self.is_first_run(), 'type': 'text'}}
+                                   'readonly': not first_run, 'type': 'text'}}
 
 
     def check_db_url(self, url):
@@ -132,15 +133,6 @@ class SettingsService():
         except Exception, excep:
             self.logger.exception(excep)
             raise InvalidSettingsException('Could not connect to DB! ' 'Invalid URL:' + str(url))
-
-
-    @staticmethod
-    def is_first_run():
-        """
-        Check if this is the first time TVB was started.
-        """
-        file_dict = cfg.read_config_file()
-        return file_dict is None or len(file_dict) <= 2
 
 
     @staticmethod
@@ -206,7 +198,7 @@ class SettingsService():
         data[self.KEY_MAX_DISK_SPACE_USR] = kb_value
 
         #Save data to file, all while checking if any data has changed
-        first_run = self.is_first_run()
+        first_run = cfg.is_first_run()
         if first_run:
             data[cfg.KEY_LAST_CHECKED_FILE_VERSION] = cfg.DATA_VERSION
             data[cfg.KEY_LAST_CHECKED_CODE_VERSION] = cfg.SVN_VERSION
@@ -229,9 +221,7 @@ class SettingsService():
                     file_data[key] = data[key]
         # Write in file new data
         if anything_changed:
-            with open(cfg.TVB_CONFIG_FILE, 'w') as file_writer:
-                for key in file_data:
-                    file_writer.write(key + '=' + str(file_data[key]) + '\n')
+            cfg.write_config_data(file_data)
             os.chmod(cfg.TVB_CONFIG_FILE, 0644)
         return anything_changed, first_run or db_changed
 

@@ -263,8 +263,8 @@ class UserService:
             user.preferences[key] = value
         dao.store_entity(user)
         if user.is_administrator():
-            cfg.update_config_file({SettingsService.KEY_ADMIN_EMAIL: user.email,
-                                    SettingsService.KEY_ADMIN_PWD: user.password})
+            cfg.add_entries_to_config_file({SettingsService.KEY_ADMIN_EMAIL: user.email,
+                                            SettingsService.KEY_ADMIN_PWD: user.password})
 
 
     def delete_user(self, user_id):

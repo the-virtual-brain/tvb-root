@@ -194,7 +194,7 @@ def execute_start_web(profile, reset):
     cherrypy_port = find_free_port(TVBSettings.WEB_SERVER_PORT)
     if not os.path.isfile(TVBSettings.TVB_CONFIG_FILE) or TVBSettings.WEB_SERVER_PORT != cherrypy_port:
         free_ports['WEB_SERVER_PORT'] = cherrypy_port
-        TVBSettings.update_config_file(free_ports)
+        TVBSettings.add_entries_to_config_file(free_ports)
 
     web_args_list = [PYTHON_EXE_PATH, '-m', SCRIPT_FOR_WEB, profile, 'tvb.config']
 

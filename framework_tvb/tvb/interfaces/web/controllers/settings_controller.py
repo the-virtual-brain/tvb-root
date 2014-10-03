@@ -87,7 +87,7 @@ class SettingsController(UserController):
                 common.set_error_message(excep.message)
         template_specification.update({'keys_order': self.settingsservice.KEYS_DISPLAY_ORDER,
                                        'config_data': self.settingsservice.configurable_keys,
-                                       common.KEY_FIRST_RUN: self.settingsservice.is_first_run()})
+                                       common.KEY_FIRST_RUN: TVBSettings.is_first_run()})
         return self.fill_default_attributes(template_specification)
 
 

@@ -35,7 +35,6 @@ TVB global configurations are predefined/read from here.
 import os
 import sys
 from copy import copy
-from sys import platform
 from subprocess import Popen, PIPE
 from tvb.basic.profile import TvbProfile
 from tvb.basic.config.utils import ClassProperty, EnhancedDictionary
@@ -629,21 +628,19 @@ class BaseProfile():
 
 
     @classmethod
-    def update_config_file(cls, data_dict):
+    def write_config_data(cls, config_dict):
         """
-        Update data from configuration file, without restart. Used by
-        methods like change password, or change email.
+        overwrite anything already existent in the config file
         """
-        config_dict = FrameworkSettings.read_config_file()
-        if config_dict is None:
-            config_dict = data_dict
-        else:
-            for key in config_dict:
-                if key in data_dict:
-                    config_dict[key] = data_dict[key]
         with open(cls.TVB_CONFIG_FILE, 'w') as file_writer:
             for key in config_dict:
                 file_writer.write(key + '=' + str(config_dict[key]) + '\n')
+
+
+    @staticmethod
+    def is_first_run():
+        file_dict = FrameworkSettings.read_config_file()
+        return file_dict is None or len(file_dict) <= 2
 
 
     @staticmethod

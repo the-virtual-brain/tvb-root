@@ -110,7 +110,7 @@ class SettingsServiceTest(unittest.TestCase):
         """
         initial_configurations = self.settings_service.configurable_keys
         updated = self.settings_service.configurable_keys
-        first_run = self.settings_service.is_first_run()
+        first_run = cfg.is_first_run()
         self.assertEqual(initial_configurations, updated, "Configuration changed even with no config file.")
         self.assertTrue(first_run, "Invalid First_Run flag!!")
         
@@ -130,7 +130,7 @@ class SettingsServiceTest(unittest.TestCase):
         
         self._write_cfg_file(test_dict)
         updated_cfg = self.settings_service.configurable_keys
-        isfirst = self.settings_service.is_first_run()
+        isfirst = cfg.is_first_run()
         self.assertFalse(isfirst, "Invalid First_Run flag!!")
         for key in updated_cfg:
             if key in test_dict:

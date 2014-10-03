@@ -67,7 +67,6 @@ if __name__ == "__main__":
 
 from tvb.core.adapters.abcdisplayer import ABCDisplayer
 from tvb.core.decorators import user_environment_execution
-from tvb.core.services.settings_service import SettingsService
 from tvb.core.services.initializer import initialize, reset
 from tvb.core.services.exceptions import InvalidSettingsException
 from tvb.interfaces.web.request_handler import RequestHandler
@@ -92,7 +91,7 @@ from tvb.interfaces.web.controllers.api.simulator_controller import SimulatorCon
 
 
 LOGGER = get_logger('tvb.interfaces.web.run')
-CONFIG_EXISTS = not SettingsService.is_first_run()
+CONFIG_EXISTS = not TVBSettings.is_first_run()
 PARAM_RESET_DB = "reset"
 LOGGER.info("TVB application will be running using encoding: " + sys.getdefaultencoding())
 
