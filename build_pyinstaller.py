@@ -70,7 +70,7 @@ class PyInstallerPacker():
 
     START_TIME = datetime.datetime.now()
 
-    VERSION = TvbProfile.current.BASE_VERSION
+    VERSION = TvbProfile.current.version.BASE_VERSION
 
     BIN_FOLDER = os.path.dirname(tvb_bin.__file__)
 
