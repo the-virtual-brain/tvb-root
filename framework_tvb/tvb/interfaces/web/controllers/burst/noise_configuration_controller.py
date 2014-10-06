@@ -65,7 +65,7 @@ class NoiseConfigurationController(BurstBaseController):
             'noiseInputValues' : initial_noise[0],
             'initialNoiseValues': json.dumps(initial_noise)
         })
-        return self.fill_default_attributes(params)
+        return self.fill_default_attributes(params, 'regionmodel')
 
     @cherrypy.expose
     @handle_error(redirect=True)

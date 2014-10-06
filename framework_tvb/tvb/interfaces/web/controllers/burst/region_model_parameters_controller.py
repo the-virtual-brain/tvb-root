@@ -95,7 +95,7 @@ class RegionsModelParametersController(BurstBaseController):
             'initial_dynamic_ids': json.dumps(burst_config.dynamic_ids)
         })
 
-        return self.fill_default_attributes(params)
+        return self.fill_default_attributes(params, 'regionmodel')
 
 
     @cherrypy.expose

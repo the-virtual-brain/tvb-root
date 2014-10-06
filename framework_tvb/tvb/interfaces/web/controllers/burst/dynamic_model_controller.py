@@ -215,7 +215,7 @@ class DynamicModelController(BurstBaseController):
 
 
     def fill_default_attributes(self, param):
-        return BurstBaseController.fill_default_attributes(self, param, subsection='dynamic')
+        return BurstBaseController.fill_default_attributes(self, param, subsection='phaseplane')
 
 
     @expose_json

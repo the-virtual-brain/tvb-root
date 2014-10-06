@@ -33,6 +33,7 @@ On the top of this column there is:
     - region model configuration
     - region noise configuration
     - surface level configuration (available for surface simulations)
+
 |
 
     .. image:: screenshots/simulator_configuration_buttons.jpg

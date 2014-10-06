@@ -93,6 +93,8 @@ class HelpConfig:
         self._add_mapping(WebStructure.SECTION_BURST, WebStructure.SUB_SECTION_BURST, self.BURST_HELP_PAGE, None)
         self._add_mapping(WebStructure.SECTION_BURST, WebStructure.SUB_SECTION_MODEL_REGIONS, self.BURST_HELP_PAGE, "region-based-simulations")
         self._add_mapping(WebStructure.SECTION_BURST, WebStructure.SUB_SECTION_MODEL_SURFACE, self.BURST_HELP_PAGE, "surface-based-simulations")
+        self._add_mapping(WebStructure.SECTION_BURST, WebStructure.SUB_SECTION_PHASE_PLANE, self.BURST_HELP_PAGE, "the-phase-plane-page")
+
         for subsection, paragraph in WebStructure.VISUALIZERS_ONLINE_HELP_SHORTCUTS.iteritems():
             self._add_mapping(WebStructure.SECTION_BURST, subsection, self.BURST_HELP_PAGE, paragraph)
 
