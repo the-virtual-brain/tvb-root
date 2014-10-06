@@ -38,7 +38,7 @@ import numpy
 import shutil
 import unittest
 import tvb.core.entities.file.hdf5_storage_manager as hdf5
-from tvb.basic.config.settings import TVBSettings as cfg
+from tvb.basic.profile import TvbProfile
 from tvb.core.entities.file.exceptions import FileStructureException, MissingDataSetException
 from tvb.core.entities.file.exceptions import IncompatibleFileManagerException
 
@@ -64,7 +64,7 @@ class HDF5StorageTest(unittest.TestCase):
         """
         Set up the context needed by the tests.
         """
-        self.storage_folder = os.path.join(cfg.TVB_TEMP_FOLDER, "test_hdf5")
+        self.storage_folder = os.path.join(TvbProfile.current.TVB_TEMP_FOLDER, "test_hdf5")
 
         if os.path.exists(self.storage_folder):
             shutil.rmtree(self.storage_folder)
@@ -474,7 +474,8 @@ class HDF5StorageTest(unittest.TestCase):
 
         # Now read meta data for root node
         read_data = self.storage.get_metadata()
-        self.assertArrayEqual(cfg.DATA_VERSION, read_data[cfg.DATA_VERSION_ATTRIBUTE])
+        self.assertArrayEqual(TvbProfile.current.version.DATA_VERSION,
+                              read_data[TvbProfile.current.version.DATA_VERSION_ATTRIBUTE])
 
 
 

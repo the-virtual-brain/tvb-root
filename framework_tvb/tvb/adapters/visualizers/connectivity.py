@@ -38,7 +38,7 @@ import math
 import numpy
 import pylab
 from copy import copy
-from tvb.basic.config.settings import TVBSettings as config
+from tvb.basic.profile import TvbProfile
 from tvb.core.adapters.abcdisplayer import ABCDisplayer
 from tvb.core.adapters.exceptions import LaunchException
 from tvb.basic.filters.chain import FilterChain
@@ -530,7 +530,8 @@ class MPLH5Connectivity():
         axes.set_xticklabels(list(labels[order]), fontsize=8, rotation=90)
 
         figure.canvas.draw()
-        parameters = dict(mplh5ServerURL=config.MPLH5_SERVER_URL, figureNumber=figure.number, showFullToolbar=False)
+        parameters = dict(mplh5ServerURL=TvbProfile.current.web.MPLH5_SERVER_URL,
+                          figureNumber=figure.number, showFullToolbar=False)
         return parameters, {}
     
     

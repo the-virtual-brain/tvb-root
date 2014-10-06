@@ -36,7 +36,6 @@ Adapter that uses the traits module to generate interfaces for BalloonModel Anal
 """
 
 import numpy
-from tvb.basic.config.settings import TVBSettings
 from tvb.analyzers.fmri_balloon import BalloonModel
 from tvb.datatypes.time_series import TimeSeries
 from tvb.datatypes.time_series import TimeSeriesRegion
@@ -120,7 +119,7 @@ class BalloonModelAdapter(ABCAsynchronous):
         Returns the required disk size to be able to run the adapter.(in kB)
         """
         used_shape = (self.input_shape[0], self.input_shape[1], self.input_shape[2], self.input_shape[3])
-        return self.algorithm.result_size(used_shape) * TVBSettings.MAGIC_NUMBER / 8 / 2 ** 10
+        return self.array_size2kb(self.algorithm.result_size(used_shape))
 
 
     def launch(self, time_series, dt=None, bold_model=None, RBM=None, neural_input_transformation=None):

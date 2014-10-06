@@ -36,7 +36,7 @@ Created on Apr 27, 2012
 import os
 import unittest
 from tvb.core.entities import model
-from tvb.basic.config.settings import TVBSettings as cfg
+from tvb.basic.profile import TvbProfile
 from tvb.core.entities.storage import dao
 from tvb.core.entities.file.files_helper import FilesHelper
 from tvb.core.portlets.portlet_configurer import PortletConfigurer
@@ -57,8 +57,8 @@ class PythonPortletsTest(TransactionalTestCase):
         project = model.Project("test_proj", self.test_user.id, "description")
         self.test_project = dao.store_entity(project) 
         import tvb.tests.framework
-        self.old_config_file = cfg.CURRENT_DIR
-        cfg.CURRENT_DIR = os.path.dirname(tvb.tests.framework.__file__)
+        self.old_config_file = TvbProfile.current.web.CURRENT_DIR
+        TvbProfile.current.web.CURRENT_DIR = os.path.dirname(tvb.tests.framework.__file__)
         
         
     def tearDown(self):
@@ -67,7 +67,7 @@ class PythonPortletsTest(TransactionalTestCase):
         """
         FilesHelper().remove_project_structure(self.test_project.name)
 #        self.clean_database()
-        cfg.CURRENT_DIR = self.old_config_file
+        TvbProfile.current.web.CURRENT_DIR = self.old_config_file
         
         
     def test_portlet_configurable_interface(self):

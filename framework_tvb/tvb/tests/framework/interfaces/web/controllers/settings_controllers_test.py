@@ -36,7 +36,8 @@ import os
 import json
 import unittest
 from tvb.interfaces.web.controllers.settings_controller import SettingsController
-from tvb.basic.config.settings import TVBSettings as cfg
+from tvb.basic.profile import TvbProfile
+from tvb.basic.config import stored
 from tvb.tests.framework.core.base_testcase import TransactionalTestCase
 from tvb.tests.framework.interfaces.web.controllers.base_controller_test import BaseControllersTest
 
@@ -51,8 +52,8 @@ class SettingsControllerTest(TransactionalTestCase, BaseControllersTest):
         """
         BaseControllersTest.init(self)
         self.settings_c = SettingsController()
-        if os.path.exists(cfg.TVB_CONFIG_FILE):
-            os.remove(cfg.TVB_CONFIG_FILE)
+        if os.path.exists(TvbProfile.current.TVB_CONFIG_FILE):
+            os.remove(TvbProfile.current.TVB_CONFIG_FILE)
     
     
     def tearDown(self):
@@ -60,7 +61,8 @@ class SettingsControllerTest(TransactionalTestCase, BaseControllersTest):
         BaseControllersTest.cleanup(self)
 
             
-#    TODO: This sees settings as being changed so it will restart a tvb process. See if there is any way around else drop test.
+#    TODO: This sees settings as being changed so it will restart a tvb process.
+# See if there is any way around else drop test.
 #    def test_settings(self):
 #        """
 #        Test that settings are indeed saved in config file.
@@ -103,8 +105,8 @@ class SettingsControllerTest(TransactionalTestCase, BaseControllersTest):
         """
         Test that for a valid url the correct status is returned.
         """
-        valid_db_data = {cfg.KEY_STORAGE : cfg.TVB_STORAGE, 
-                         cfg.KEY_DB_URL : cfg.DB_URL}
+        valid_db_data = {stored.KEY_STORAGE: TvbProfile.current.TVB_STORAGE,
+                         stored.KEY_DB_URL: TvbProfile.current.db.DB_URL}
         result = json.loads(self.settings_c.check_db_url(**valid_db_data))
         self.assertEqual(result['status'], 'ok')
         
@@ -113,8 +115,8 @@ class SettingsControllerTest(TransactionalTestCase, BaseControllersTest):
         """
         Test that for invalid url the proper message is returned.
         """
-        valid_db_data = {cfg.KEY_STORAGE : cfg.TVB_STORAGE, 
-                         cfg.KEY_DB_URL : "this URL should be invalid"}
+        valid_db_data = {stored.KEY_STORAGE: TvbProfile.current.TVB_STORAGE,
+                         stored.KEY_DB_URL: "this URL should be invalid"}
         result = json.loads(self.settings_c.check_db_url(**valid_db_data))
         self.assertEqual(result['status'], 'not ok')
         

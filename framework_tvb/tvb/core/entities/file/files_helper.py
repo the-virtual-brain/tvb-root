@@ -38,7 +38,7 @@ import json
 import zipfile
 from contextlib import closing
 from zipfile import ZipFile, ZIP_DEFLATED, BadZipfile
-from tvb.basic.config.settings import TVBSettings
+from tvb.basic.profile import TvbProfile
 from tvb.basic.logger.builder import get_logger
 from tvb.core.decorators import synchronized
 from tvb.core.entities.transient.structure_entities import DataTypeMetaData, GenericMetaData
@@ -72,7 +72,7 @@ class FilesHelper():
     ############# PROJECT RELATED methods ##################################
     
     @synchronized(LOCK_CREATE_FOLDER)
-    def check_created(self, path=TVBSettings.TVB_STORAGE):
+    def check_created(self, path=TvbProfile.current.TVB_STORAGE):
         """
         Check that the given folder exists, otherwise create it, with the entire tree of parent folders.
         This method is synchronized, for parallel access from events, to avoid conflicts.
@@ -81,8 +81,8 @@ class FilesHelper():
             # if this is meant to be used concurrently it might be better to catch OSError 17 then checking exists
             if not os.path.exists(path):
                 self.logger.debug("Creating folder:" + str(path))
-                os.makedirs(path, mode=TVBSettings.ACCESS_MODE_TVB_FILES)
-                os.chmod(path, TVBSettings.ACCESS_MODE_TVB_FILES)
+                os.makedirs(path, mode=TvbProfile.current.ACCESS_MODE_TVB_FILES)
+                os.chmod(path, TvbProfile.current.ACCESS_MODE_TVB_FILES)
         except OSError, excep:
             self.logger.error("COULD NOT CREATE FOLDER! CHECK ACCESS ON IT!")
             self.logger.exception(excep)
@@ -96,7 +96,7 @@ class FilesHelper():
         """
         if hasattr(project, 'name'):
             project = project.name
-        complete_path = os.path.join(TVBSettings.TVB_STORAGE, self.PROJECTS_FOLDER, project)
+        complete_path = os.path.join(TvbProfile.current.TVB_STORAGE, self.PROJECTS_FOLDER, project)
         if sub_folders is not None:
             complete_path = os.path.join(complete_path, *sub_folders)
         if not os.path.exists(complete_path):
@@ -158,7 +158,7 @@ class FilesHelper():
         project_cfg_file = os.path.join(project_path, self.TVB_PROJECT_FILE)
         meta_entity = GenericMetaData(meta_dictionary)
         XMLWriter(meta_entity).write(project_cfg_file)
-        os.chmod(project_path, TVBSettings.ACCESS_MODE_TVB_FILES)
+        os.chmod(project_path, TvbProfile.current.ACCESS_MODE_TVB_FILES)
 
 
     def write_project_metadata(self, project):
@@ -204,7 +204,7 @@ class FilesHelper():
         _, equivalent_dict = operation.to_dict()
         meta_entity = GenericMetaData(equivalent_dict)
         XMLWriter(meta_entity).write(op_path)
-        os.chmod(op_path, TVBSettings.ACCESS_MODE_TVB_FILES)
+        os.chmod(op_path, TvbProfile.current.ACCESS_MODE_TVB_FILES)
         
         
     def update_operation_metadata(self, project_name, new_group_name, operation_id, is_group=False):
@@ -307,11 +307,11 @@ class FilesHelper():
         """
         name = figure.file_path.split('.')[0]
         images_folder = self.get_images_folder(figure.project.name)
-        return os.path.join(TVBSettings.TVB_STORAGE, images_folder, name + XMLWriter.FILE_EXTENSION)
+        return os.path.join(TvbProfile.current.TVB_STORAGE, images_folder, name + XMLWriter.FILE_EXTENSION)
     
     
     @staticmethod
-    def find_relative_path(full_path, root_path=TVBSettings.TVB_STORAGE):
+    def find_relative_path(full_path, root_path=TvbProfile.current.TVB_STORAGE):
         """
         :param full_path: Absolute full path
         :root_path: find relative path from param full_path to this root.

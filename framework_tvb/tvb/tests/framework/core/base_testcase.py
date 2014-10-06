@@ -38,7 +38,7 @@ import os
 import shutil
 from functools import wraps
 from types import FunctionType
-from tvb.basic.config.settings import TVBSettings
+from tvb.basic.profile import TvbProfile
 from tvb.basic.logger.builder import get_logger
 from tvb.core.utils import get_matlab_executable
 from tvb.core.entities.storage import dao
@@ -56,11 +56,11 @@ def init_test_env():
     """
     This method prepares all necessary data for tests execution
     """
-    default_mlab_exe = TVBSettings.MATLAB_EXECUTABLE
-    TVBSettings.MATLAB_EXECUTABLE = get_matlab_executable()
+    default_mlab_exe = TvbProfile.current.MATLAB_EXECUTABLE
+    TvbProfile.current.MATLAB_EXECUTABLE = get_matlab_executable()
     reset_database()
     initialize(["tvb.config", "tvb.tests.framework"], load_xml_events=False)
-    TVBSettings.MATLAB_EXECUTABLE = default_mlab_exe
+    TvbProfile.current.MATLAB_EXECUTABLE = default_mlab_exe
 
 
 # Following code is executed once / tests execution to reduce time spent in tests.
@@ -116,7 +116,7 @@ class BaseTestCase(unittest.TestCase):
         # Now if the database is clean we can delete also project folders on disk
         if delete_folders:
             self.delete_project_folders()
-        dao.store_entity(model.User(TVBSettings.SYSTEM_USER_NAME, None, None, True, None))
+        dao.store_entity(model.User(TvbProfile.current.web.admin.SYSTEM_USER_NAME, None, None, True, None))
 
 
     def cancel_all_operations(self):
@@ -136,9 +136,9 @@ class BaseTestCase(unittest.TestCase):
         This method deletes folders for all projects from TVB folder.
         This is done without any check on database. You might get projects in DB but no folder for them on disk.
         """
-        if os.path.exists(TVBSettings.TVB_STORAGE):
-            for current_file in os.listdir(TVBSettings.TVB_STORAGE):
-                full_path = os.path.join(TVBSettings.TVB_STORAGE, current_file)
+        if os.path.exists(TvbProfile.current.TVB_STORAGE):
+            for current_file in os.listdir(TvbProfile.current.TVB_STORAGE):
+                full_path = os.path.join(TvbProfile.current.TVB_STORAGE, current_file)
                 if current_file != "db_repo" and os.path.isdir(full_path):
                     shutil.rmtree(full_path, ignore_errors=True)
 
@@ -230,10 +230,10 @@ def transactional_test(func, callback=None):
         @wraps(func)
         def dec(*args, **kwargs):
             session_maker = SessionMaker()
-            TVBSettings.ALLOW_NESTED_TRANSACTIONS = True
-            default_dir = TVBSettings.CURRENT_DIR
-            default_mlab_exe = TVBSettings.MATLAB_EXECUTABLE
-            TVBSettings.MATLAB_EXECUTABLE = get_matlab_executable()
+            TvbProfile.current.db.ALLOW_NESTED_TRANSACTIONS = True
+            default_dir = TvbProfile.current.web.CURRENT_DIR
+            default_mlab_exe = TvbProfile.current.MATLAB_EXECUTABLE
+            TvbProfile.current.MATLAB_EXECUTABLE = get_matlab_executable()
             session_maker.start_transaction()
             try:
                 try:
@@ -251,9 +251,9 @@ def transactional_test(func, callback=None):
             finally:
                 session_maker.rollback_transaction()
                 session_maker.close_transaction()
-                TVBSettings.ALLOW_NESTED_TRANSACTIONS = False
-                TVBSettings.MATLAB_EXECUTABLE = default_mlab_exe
-                TVBSettings.CURRENT_DIR = default_dir
+                TvbProfile.current.db.ALLOW_NESTED_TRANSACTIONS = False
+                TvbProfile.current.MATLAB_EXECUTABLE = default_mlab_exe
+                TvbProfile.current.web.CURRENT_DIR = default_dir
 
             if callback is not None:
                 callback(*args, **kwargs)

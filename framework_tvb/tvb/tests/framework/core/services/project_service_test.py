@@ -36,7 +36,7 @@ import os
 import unittest
 import shutil
 import tvb.config as config
-from tvb.basic.config.settings import TVBSettings
+from tvb.basic.profile import TvbProfile
 from tvb.core.entities import model
 from tvb.core.entities.storage import dao
 from tvb.core.entities.transient.context_overlay import DataTypeOverlayDetails
@@ -101,7 +101,7 @@ class ProjectServiceTest(TransactionalTestCase):
             users_for_project = dao.get_members_of_project(project.id)
             for user in users_for_project:
                 self.assertTrue(user.id in [user1.id, user2.id], "Users not stored properly.")
-        self.assertTrue(os.path.exists(os.path.join(TVBSettings.TVB_STORAGE, FilesHelper.PROJECTS_FOLDER,
+        self.assertTrue(os.path.exists(os.path.join(TvbProfile.current.TVB_STORAGE, FilesHelper.PROJECTS_FOLDER,
                                                     "test_project")), "Folder for project was not created")
    
    
@@ -254,8 +254,8 @@ class ProjectServiceTest(TransactionalTestCase):
                              str(exp_proj_per_page) + "but got:" + str(len(projects)))
             self.assertEqual(pages, expected_pages, "Pages not retrieved properly!")
 
-        for folder in os.listdir(TVBSettings.TVB_STORAGE):
-            full_path = os.path.join(TVBSettings.TVB_STORAGE, folder)
+        for folder in os.listdir(TvbProfile.current.TVB_STORAGE):
+            full_path = os.path.join(TvbProfile.current.TVB_STORAGE, folder)
             if os.path.isdir(full_path) and folder.startswith('Generated'): 
                 shutil.rmtree(full_path)
         

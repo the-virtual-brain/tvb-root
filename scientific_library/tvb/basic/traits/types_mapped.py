@@ -37,9 +37,9 @@ Initialize MappedType base class, based on current environment:
 
 """
 
-from tvb.basic.config.settings import TVBSettings
+from tvb.basic.profile import TvbProfile
 
-if TVBSettings.TRAITS_CONFIGURATION.use_storage:
+if TvbProfile.current.TRAITS_CONFIGURATION.use_storage:
     import tvb.core.traits.types_mapped as mapped
     MappedType = mapped.MappedType
     Array = mapped.Array

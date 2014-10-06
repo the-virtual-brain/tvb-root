@@ -43,7 +43,7 @@ from cherrypy._cpreqbody import Part
 from sqlalchemy.orm.attributes import manager_of_class
 from sqlalchemy.exc import IntegrityError, SQLAlchemyError
 from tvb.config import ADAPTERS
-from tvb.basic.config.settings import TVBSettings as cfg
+from tvb.basic.profile import TvbProfile
 from tvb.basic.logger.builder import get_logger
 from tvb.core.entities import model
 from tvb.core.entities.storage import dao, transactional
@@ -103,7 +103,7 @@ class ImportService():
         date_str = "%d-%d-%d_%d-%d-%d_%d" % (now.year, now.month, now.day, now.hour,
                                              now.minute, now.second, now.microsecond)
         uq_name = "%s-ImportProject" % date_str
-        return os.path.join(cfg.TVB_TEMP_FOLDER, uq_name)
+        return os.path.join(TvbProfile.current.TVB_TEMP_FOLDER, uq_name)
 
 
     @transactional
@@ -139,7 +139,7 @@ class ImportService():
             # Removing from DB is not necessary because in transactional env a simple exception throw
             # will erase everything to be inserted.
             for project in self.created_projects:
-                project_path = os.path.join(cfg.TVB_STORAGE, FilesHelper.PROJECTS_FOLDER, project.name)
+                project_path = os.path.join(TvbProfile.current.TVB_STORAGE, FilesHelper.PROJECTS_FOLDER, project.name)
                 shutil.rmtree(project_path)
             raise ProjectImportException(str(excep))
 
@@ -198,7 +198,8 @@ class ImportService():
             project_entity = self.__populate_project(project_path)
 
             # Compute the path where to store files of the imported project
-            new_project_path = os.path.join(cfg.TVB_STORAGE, FilesHelper.PROJECTS_FOLDER, project_entity.name)
+            new_project_path = os.path.join(TvbProfile.current.TVB_STORAGE,
+                                            FilesHelper.PROJECTS_FOLDER, project_entity.name)
             if project_path != new_project_path:
                 shutil.move(project_path, new_project_path)
 

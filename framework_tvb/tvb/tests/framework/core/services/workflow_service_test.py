@@ -35,7 +35,7 @@
 import os
 import unittest
 import tvb.tests.framework
-from tvb.basic.config.settings import TVBSettings as cfg
+from tvb.basic.profile import TvbProfile
 from tvb.core.entities.storage import dao
 from tvb.core.entities.file.files_helper import FilesHelper
 from tvb.core.entities.transient.structure_entities import DataTypeMetaData
@@ -66,8 +66,8 @@ class WorkflowTest(TransactionalTestCase):
         """
         self.test_user = TestFactory.create_user()
         self.test_project = TestFactory.create_project(self.test_user)
-        self.old_config_file = cfg.CURRENT_DIR
-        cfg.CURRENT_DIR = os.path.dirname(tvb.tests.framework.__file__)
+        self.old_config_file = TvbProfile.current.web.CURRENT_DIR
+        TvbProfile.current.web.CURRENT_DIR = os.path.dirname(tvb.tests.framework.__file__)
         self.workflow_service = WorkflowService()
         self.burst_service = BurstService()
         self.operation_service = OperationService()
@@ -80,7 +80,7 @@ class WorkflowTest(TransactionalTestCase):
         """
         FilesHelper().remove_project_structure(self.test_project.name)
         self.delete_project_folders()
-        cfg.CURRENT_DIR = self.old_config_file
+        TvbProfile.current.web.CURRENT_DIR = self.old_config_file
 
 
     def __create_complex_workflow(self, workflow_step_list):

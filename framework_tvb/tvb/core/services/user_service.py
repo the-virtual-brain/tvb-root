@@ -37,7 +37,7 @@ import threading
 from random import randint
 from hashlib import md5
 from inspect import stack
-from tvb.basic.config.settings import TVBSettings as cfg
+from tvb.basic.profile import TvbProfile
 from tvb.basic.logger.builder import get_logger
 from tvb.core.decorators import synchronized
 from tvb.core.entities import model
@@ -106,13 +106,13 @@ class UserService:
             user = model.User(username, password, email, user_validated, role)
             if email_msg is None:
                 email_msg = 'Hello ' + username + TEXT_CREATE
-            admin_msg = (TEXT_CREATE_TO_ADMIN + username + ' :\n ' + cfg.BASE_URL +
+            admin_msg = (TEXT_CREATE_TO_ADMIN + username + ' :\n ' + TvbProfile.current.web.BASE_URL +
                          'user/validate/' + username + '\n\n"' + str(comment) + '"')
             self.logger.info("Registering user " + username + " !")
             if role != 'ADMINISTRATOR' and email is not None:
                 admins = UserService.get_administrators()
                 admin = admins[randint(0, len(admins) - 1)]
-                if admin.email is not None and (admin.email != cfg.DEFAULT_ADMIN_EMAIL):
+                if admin.email is not None and (admin.email != TvbProfile.current.web.admin.DEFAULT_ADMIN_EMAIL):
                     # Do not send validation email in case default admin email remained unchanged
                     email_sender.send(FROM_ADDRESS, admin.email, SUBJECT_REGISTER, admin_msg)
                     self.logger.debug("Email sent to:" + admin.email + " for validating user:" + username + " !")
@@ -188,7 +188,7 @@ class UserService:
             user = dao.store_entity(user)
             self.logger.debug("Sending validation email for userName=" + name + " to address=" + user.email)
             email_sender.send(FROM_ADDRESS, user.email, SUBJECT_VALIDATE,
-                              "Hello " + name + TEXT_VALIDATED + cfg.BASE_URL + "user/")
+                              "Hello " + name + TEXT_VALIDATED + TvbProfile.current.web.BASE_URL + "user/")
             self.logger.info("User:" + name + " was validated successfully" + " and notification email sent!")
             return True
         except Exception, excep:
@@ -263,8 +263,8 @@ class UserService:
             user.preferences[key] = value
         dao.store_entity(user)
         if user.is_administrator():
-            cfg.add_entries_to_config_file({SettingsService.KEY_ADMIN_EMAIL: user.email,
-                                            SettingsService.KEY_ADMIN_PWD: user.password})
+            TvbProfile.current.manager.add_entries_to_config_file({SettingsService.KEY_ADMIN_EMAIL: user.email,
+                                                                   SettingsService.KEY_ADMIN_PWD: user.password})
 
 
     def delete_user(self, user_id):
@@ -314,7 +314,7 @@ class UserService:
         """
         status = None
         message = ''
-        if cfg.DATA_CHECKED_TO_VERSION < cfg.DATA_VERSION:
+        if TvbProfile.current.version.DATA_CHECKED_TO_VERSION < TvbProfile.current.version.DATA_VERSION:
             self.logger.info("Starting to upgrade all DataType file storage.")
             status, message = FilesUpdateManager().upgrade_all_files_from_storage()
         return status, message

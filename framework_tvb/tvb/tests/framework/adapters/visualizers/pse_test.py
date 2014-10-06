@@ -34,7 +34,7 @@
 """
 
 import unittest
-from tvb.basic.config.settings import TVBSettings as config
+from tvb.basic.profile import TvbProfile
 from tvb.adapters.visualizers.pse_discrete import DiscretePSEAdapter
 from tvb.adapters.visualizers.pse_isocline import IsoclinePSEAdapter
 from tvb.tests.framework.datatypes.datatypes_factory import DatatypesFactory
@@ -81,7 +81,7 @@ class PSETest(TransactionalTestCase):
         viewer = IsoclinePSEAdapter()
         result = viewer.launch(self.group)
         self.assertEqual(viewer._ui_name, result["title"])
-        self.assertEqual(config.MPLH5_SERVER_URL, result["mplh5ServerURL"])
+        self.assertEqual(TvbProfile.current.web.MPLH5_SERVER_URL, result["mplh5ServerURL"])
         self.assertEqual(1, len(result["figureNumbers"]))
         self.assertEqual(1, len(result["metrics"]))
 

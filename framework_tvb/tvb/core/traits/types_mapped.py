@@ -46,7 +46,7 @@ from tvb.basic.traits.util import get
 from tvb.basic.traits.core import FILE_STORAGE_NONE, KWARG_STORAGE_PATH, FILE_STORAGE_DEFAULT
 from tvb.basic.traits.exceptions import ValidationException, MissingEntityException, StorageException
 from tvb.basic.logger.builder import get_logger
-from tvb.basic.config.settings import TVBSettings
+from tvb.basic.profile import TvbProfile
 from tvb.core.traits.core import compute_table_name
 from tvb.core.entities import model
 from tvb.core.entities.storage import dao
@@ -251,7 +251,7 @@ class MappedType(model.DataType, mapped.MappedTypeLight):
             :param where: represents the path where dataset is stored (e.g. /data/info)
             :returns: a shape tuple
         """
-        if TVBSettings.TRAITS_CONFIGURATION.use_storage and self.trait.use_storage:
+        if TvbProfile.current.TRAITS_CONFIGURATION.use_storage and self.trait.use_storage:
             try:
                 store_manager = self._get_file_storage_mng()
                 return store_manager.get_data_shape(data_name, where)
@@ -271,7 +271,8 @@ class MappedType(model.DataType, mapped.MappedTypeLight):
         result = dict()
 
         try:
-            if TVBSettings.TRAITS_CONFIGURATION.use_storage and self.trait.use_storage and mask_array_name is None:
+            if (TvbProfile.current.TRAITS_CONFIGURATION.use_storage
+                    and self.trait.use_storage and mask_array_name is None):
                 summary = self._get_summary_info(array_name, included_info, mask_array_name, key_suffix)
             else:
                 summary = mapped.MappedTypeLight._get_summary_info(self, array_name, included_info,
@@ -561,7 +562,7 @@ class Array(mapped.Array):
         """
         super(Array, self).__set__(inst, value)
         value = getattr(inst, '__' + self.trait.name)
-        if (TVBSettings.TRAITS_CONFIGURATION.use_storage and inst.trait.use_storage and value is not None
+        if (TvbProfile.current.TRAITS_CONFIGURATION.use_storage and inst.trait.use_storage and value is not None
             and (inst is not None and isinstance(inst, mapped.MappedTypeLight)
                  and self.trait.file_storage != FILE_STORAGE_NONE) and value.size > 0):
 
@@ -578,7 +579,7 @@ class Array(mapped.Array):
         cached_data = get(inst, '__' + self.trait.name, None)
 
         if ((cached_data is None or cached_data.size == 0) and self.trait.file_storage != FILE_STORAGE_NONE
-            and TVBSettings.TRAITS_CONFIGURATION.use_storage and inst.trait.use_storage
+            and TvbProfile.current.TRAITS_CONFIGURATION.use_storage and inst.trait.use_storage
             and isinstance(inst, mapped.MappedTypeLight)):
             ### Data not already loaded, and storage usage
             cached_data = self._read_from_storage(inst)

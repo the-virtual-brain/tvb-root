@@ -39,7 +39,7 @@ import json
 import numpy
 import tvb.datatypes.surfaces_data as surfaces_data
 import tvb.basic.traits.exceptions as exceptions
-from tvb.basic.config.settings import TVBSettings as cfg
+from tvb.basic.profile import TvbProfile
 from tvb.basic.logger.builder import get_logger
 
 LOG = get_logger(__name__)
@@ -53,10 +53,10 @@ def paths2url(datatype_entity, attribute_name, flatten=False, parameter=None, da
     Prepare a File System Path for passing into an URL.
     """
     if parameter is None:
-        return (cfg.WEB_VISUALIZERS_URL_PREFIX + datatype_entity.gid + '/' + attribute_name +
+        return (TvbProfile.current.web.VISUALIZERS_URL_PREFIX + datatype_entity.gid + '/' + attribute_name +
                 '/' + str(flatten) + '/' + json.dumps(datatype_kwargs))
 
-    return (cfg.WEB_VISUALIZERS_URL_PREFIX + datatype_entity.gid + '/' + attribute_name + 
+    return (TvbProfile.current.web.VISUALIZERS_URL_PREFIX + datatype_entity.gid + '/' + attribute_name +
             '/' + str(flatten) + '/' + json.dumps(datatype_kwargs) + "?" + str(parameter))
 
 
@@ -540,8 +540,8 @@ class OpenSurfaceFramework(surfaces_data.OpenSurfaceData, SurfaceFramework):
         In case data is not valid a ValidationException is thrown.
         """
         # Check if the surface has a valid number of vertices (not more than the configured maximum).
-        if self.number_of_vertices > cfg.MAX_SURFACE_VERTICES_NUMBER:
-            msg = "This surface has too many vertices (max allowed: %d)." % cfg.MAX_SURFACE_VERTICES_NUMBER
+        if self.number_of_vertices > TvbProfile.current.MAX_SURFACE_VERTICES_NUMBER:
+            msg = "This surface has too many vertices (max: %d)." % TvbProfile.current.MAX_SURFACE_VERTICES_NUMBER
             msg += " Please upload a new surface or change max number in application settings."
             raise exceptions.ValidationException(msg)
 

@@ -35,7 +35,7 @@
 import os
 import logging
 from logging.handlers import MemoryHandler
-from tvb.basic.config.settings import TVBSettings
+from tvb.basic.profile import TvbProfile
 from tvb.basic.logger.simple_handler import SimpleTimedRotatingFileHandler
 
 
@@ -62,16 +62,16 @@ class ClusterTimedRotatingFileHandler(MemoryHandler):
         """
         # Formatting string
         format_str = '%(asctime)s - %(levelname)s'
-        if TVBSettings.OPERATION_EXECUTION_PROCESS:
-            log_file = os.path.join(TVBSettings.TVB_LOG_FOLDER, self.CLUSTER_NODES_LOG_FILE)
-            if TVBSettings.RUNNING_ON_CLUSTER_NODE:
-                node_name = TVBSettings.CLUSTER_NODE_NAME
+        if TvbProfile.current.cluster.IN_OPERATION_EXECUTION_PROCESS:
+            log_file = os.path.join(TvbProfile.current.TVB_LOG_FOLDER, self.CLUSTER_NODES_LOG_FILE)
+            if TvbProfile.current.cluster.IS_RUNNING_ON_CLUSTER_NODE:
+                node_name = TvbProfile.current.cluster.CLUSTER_NODE_NAME
                 if node_name is not None:
                     format_str += ' [node:' + str(node_name) + '] '
             else:
                 format_str += ' [proc:' + str(os.getpid()) + '] '
         else:
-            log_file = os.path.join(TVBSettings.TVB_LOG_FOLDER, self.WEB_LOG_FILE)
+            log_file = os.path.join(TvbProfile.current.TVB_LOG_FOLDER, self.WEB_LOG_FILE)
 
         format_str += ' - %(name)s - %(message)s'
 

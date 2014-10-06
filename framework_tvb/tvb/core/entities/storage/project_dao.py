@@ -39,7 +39,7 @@ from sqlalchemy import or_, and_, func
 from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy.sql.expression import desc
 from sqlalchemy.orm.exc import NoResultFound
-from tvb.basic.config.settings import TVBSettings as cfg
+from tvb.basic.profile import TvbProfile
 from tvb.core.entities import model
 from tvb.core.entities.storage.root_dao import RootDAO
 
@@ -78,10 +78,11 @@ class CaseDAO(RootDAO):
     def get_system_user(self):
         """Retrieve System user from DB."""
         user = None
+        sys_name = TvbProfile.current.web.admin.SYSTEM_USER_NAME
         try:
-            user = self.session.query(model.User).filter_by(username=cfg.SYSTEM_USER_NAME).one()
+            user = self.session.query(model.User).filter_by(username=sys_name).one()
         except SQLAlchemyError:
-            self.logger.exception("Could not retrieve system user " + str(cfg.SYSTEM_USER_NAME))
+            self.logger.exception("Could not retrieve system user " + str(sys_name))
         return user
 
 
@@ -100,9 +101,10 @@ class CaseDAO(RootDAO):
     def get_all_users(self, different_name=' ', page_start=0, page_end=20, is_count=False):
         """Retrieve all USERS in DB, except current user and system user."""
         try:
+            sys_name = TvbProfile.current.web.admin.SYSTEM_USER_NAME
             query = self.session.query(model.User
                                        ).filter(model.User.username != different_name
-                                                ).filter(model.User.username != cfg.SYSTEM_USER_NAME)
+                                                ).filter(model.User.username != sys_name)
             if is_count:
                 result = query.count()
             else:

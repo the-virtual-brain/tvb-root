@@ -44,8 +44,8 @@ extensions = ['sphinx.ext.autodoc', 'sphinx.ext.doctest', 'sphinx.ext.intersphin
 templates_path = ['_templates']
 
 #CUSTOM CODE TO GET OUR DATA FROM TVB
-from tvb.basic.config.settings import TVBSettings as config
-tvb_version = config.CURRENT_VERSION.split('-')[0].strip()
+from tvb.basic.profile import TvbProfile
+tvb_version = TvbProfile.current.version.CURRENT_VERSION.split('-')[0].strip()
 
 # The suffix of source filenames.
 source_suffix = '.rst'

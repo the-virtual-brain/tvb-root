@@ -39,7 +39,6 @@ Adapter that uses the traits module to generate interfaces for ... Analyzer.
 import numpy
 from tvb.core.adapters.abcadapter import ABCAsynchronous
 from tvb.core.adapters.exceptions import LaunchException
-from tvb.basic.config.settings import TVBSettings
 from tvb.basic.logger.builder import get_logger
 from tvb.basic.filters.chain import FilterChain
 from tvb.basic.traits.util import log_debug_array
@@ -100,14 +99,16 @@ class CrossCorrelateAdapter(ABCAsynchronous):
         input_size = numpy.prod(used_shape) * 8.0
         output_size = self.algorithm.result_size(used_shape)
         return input_size + output_size
-    
+
+
     def get_required_disk_size(self, **kwargs):
         """
         Returns the required disk size to be able to run the adapter (in kB).
         """
         used_shape = (self.input_shape[0], 1, self.input_shape[2], self.input_shape[3])
-        return self.algorithm.result_size(used_shape) * TVBSettings.MAGIC_NUMBER / 8 / 2 ** 10
-    
+        return self.array_size2kb(self.algorithm.result_size(used_shape))
+
+
     def launch(self, time_series):
         """ 
         Launch algorithm and build results.
@@ -198,7 +199,7 @@ class PearsonCorrelationCoefficientAdapter(ABCAsynchronous):
         Returns the required disk size to be able to run the adapter (in kB).
         """
         output_size = self.algorithm.result_size(self.input_shape)
-        return output_size * TVBSettings.MAGIC_NUMBER / 8 / 2 ** 10
+        return self.array_size2kb(output_size)
 
 
     def launch(self, time_series, t_start, t_end):

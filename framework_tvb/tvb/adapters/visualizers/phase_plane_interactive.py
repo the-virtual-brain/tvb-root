@@ -35,7 +35,7 @@ import threading
 import numpy
 import pylab
 import colorsys
-from tvb.basic.config.settings import TVBSettings as config
+from tvb.basic.profile import TvbProfile
 from tvb.basic.logger.builder import get_logger
 from matplotlib import _cntr
 
@@ -53,7 +53,7 @@ class PhasePlane(object):
         self.model = model
         self.integrator = integrator
 
-        self.svx = self.model.state_variables[0] #x-axis: 1st state variable
+        self.svx = self.model.state_variables[0]    # x-axis: 1st state variable
         if self.model.nvar > 1:
             self.svy = self.model.state_variables[1]  # y-axis: 2nd state variable
         else:
@@ -86,8 +86,8 @@ class PhasePlane(object):
         ylo = self.model.state_variable_range[self.svy][0]
         yhi = self.model.state_variable_range[self.svy][1]
 
-        self.X = numpy.mgrid[xlo:xhi:(NUMBEROFGRIDPOINTS*1j)]
-        self.Y = numpy.mgrid[ylo:yhi:(NUMBEROFGRIDPOINTS*1j)]
+        self.X = numpy.mgrid[xlo:xhi:(NUMBEROFGRIDPOINTS * 1j)]
+        self.Y = numpy.mgrid[ylo:yhi:(NUMBEROFGRIDPOINTS * 1j)]
 
 
     def _calc_phase_plane_fast(self):
@@ -95,7 +95,7 @@ class PhasePlane(object):
         svx_ind = self.model.state_variables.index(self.svx)
         svy_ind = self.model.state_variables.index(self.svy)
 
-        state_variables = numpy.tile(self.default_sv, (NUMBEROFGRIDPOINTS**2, 1))
+        state_variables = numpy.tile(self.default_sv, (NUMBEROFGRIDPOINTS ** 2, 1))
         xg, yg = numpy.meshgrid(self.X, self.Y)
 
         for mode_idx in xrange(self.model.number_of_modes):
@@ -104,7 +104,7 @@ class PhasePlane(object):
 
         d_grid = self.model.dfun(state_variables, self.no_coupling)
 
-        flat_uv_grid = d_grid[ [svx_ind, svy_ind], :, :]  # subset of the state variables to be displayed
+        flat_uv_grid = d_grid[[svx_ind, svy_ind], :, :]  # subset of the state variables to be displayed
         self.U, self.V = flat_uv_grid.reshape((2, NUMBEROFGRIDPOINTS, NUMBEROFGRIDPOINTS, self.model.number_of_modes))
         if numpy.isnan(self.U).any() or numpy.isnan(self.V).any():
             self.log.error("NaN")
@@ -267,7 +267,8 @@ class PhasePlaneInteractive(PhasePlane):
 
             self.ipp_fig.canvas.draw()
 
-            return dict(mplh5ServerURL=config.MPLH5_SERVER_URL, figureNumber=self.ipp_fig.number, showFullToolbar=False)
+            return dict(mplh5ServerURL=TvbProfile.current.web.MPLH5_SERVER_URL,
+                        figureNumber=self.ipp_fig.number, showFullToolbar=False)
 
 
     ##------------------- Functions for updating the figure ------------------##
@@ -356,7 +357,7 @@ class PhasePlaneD3(PhasePlane):
         x, y = numpy.meshgrid(self.X, self.Y)
 
         d = numpy.dstack((x, y, u, v))
-        d = d.reshape((NUMBEROFGRIDPOINTS**2, 4)).tolist()
+        d = d.reshape((NUMBEROFGRIDPOINTS ** 2, 4)).tolist()
 
         xnull = self.nullcline(x, y, u).tolist()
         ynull = self.nullcline(x, y, v).tolist()
@@ -368,7 +369,7 @@ class PhasePlaneD3(PhasePlane):
 
 
     # @staticmethod
-    def nullcline(self,x, y, z):
+    def nullcline(self, x, y, z):
         c = _cntr.Cntr(x, y, z)
         # trace a contour
         res = c.trace(0.0)
@@ -376,7 +377,7 @@ class PhasePlaneD3(PhasePlane):
             return numpy.array([])
         # result is a list of arrays of vertices and path codes
         # (see docs for matplotlib.path.Path)
-        nseg = len(res)//2
+        nseg = len(res) // 2
         segments, codes = res[:nseg], res[nseg:]
         return segments[0]
 

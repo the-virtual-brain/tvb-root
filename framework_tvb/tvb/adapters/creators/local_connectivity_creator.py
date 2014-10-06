@@ -32,7 +32,6 @@
 .. Ionel Ortelecan <ionel.ortelecan@codemart.ro>
 """
 
-from tvb.basic.config.settings import TVBSettings
 from tvb.core.adapters.abcadapter import ABCAsynchronous
 from tvb.datatypes.surfaces import LocalConnectivity
 from tvb.datatypes.equations import Equation
@@ -91,7 +90,7 @@ class LocalConnectivityCreator(ABCAsynchronous):
             surface = kwargs['surface']
             points_no = float(kwargs['cutoff']) / surface.edge_length_mean
             disk_size_b = surface.number_of_vertices * points_no * points_no * 8
-            return disk_size_b * TVBSettings.MAGIC_NUMBER / 2 ** 10
+            return self.array_size2kb(disk_size_b)
         return 0
 
 

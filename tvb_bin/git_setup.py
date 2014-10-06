@@ -35,7 +35,7 @@ import sys
 import os
 from tvb.core.decorators import user_environment_execution
 from tvb.basic.profile import TvbProfile
-from tvb.basic.config.settings import TVBSettings as cfg
+from tvb.basic.config import stored
 
 
 @user_environment_execution
@@ -47,12 +47,12 @@ def _checkout_git():
     os.system('git clone %s %s' % (git_repo, destination_folder))
     os.chdir(destination_folder)
     os.system('git checkout trunk')
-    TVB_PATH = cfg.TVB_PATH
+    TVB_PATH = TvbProfile.current.TVB_PATH
     if TVB_PATH:
         TVB_PATH = TVB_PATH + os.pathsep + os.getcwd()
     else:
         TVB_PATH = os.getcwd()
-    cfg.add_entries_to_config_file({cfg.KEY_TVB_PATH: TVB_PATH})
+    TvbProfile.current.manager.add_entries_to_config_file({stored.KEY_TVB_PATH: TVB_PATH})
 
 
 

@@ -36,7 +36,7 @@ import os
 import shutil
 import unittest
 from tvb.adapters.exporters.export_manager import ExportManager
-from tvb.basic.config.settings import TVBSettings as cfg
+from tvb.basic.profile import TvbProfile
 from tvb.core.entities.file.files_helper import FilesHelper
 from tvb.core.entities.storage import dao
 from tvb.core.services.exceptions import OperationException
@@ -70,8 +70,8 @@ class TVBImporterTest(TransactionalTestCase):
         # Copy H5 file to another location since the original one / exported 
         # will be deleted with the project
         _, h5_file_name = os.path.split(exported_h5_file)
-        shutil.copy(exported_h5_file, cfg.TVB_TEMP_FOLDER)
-        self.h5_file_path = os.path.join(cfg.TVB_TEMP_FOLDER, h5_file_name)
+        shutil.copy(exported_h5_file, TvbProfile.current.TVB_TEMP_FOLDER)
+        self.h5_file_path = os.path.join(TvbProfile.current.TVB_TEMP_FOLDER, h5_file_name)
 
         self.assertTrue(os.path.exists(self.h5_file_path), "Simple data type was not exported correct")
 
@@ -142,7 +142,7 @@ class TVBImporterTest(TransactionalTestCase):
             pass
 
         # Now try to generate a file on disk with wrong format and import that
-        file_path = os.path.join(cfg.TVB_TEMP_FOLDER, "dummy_file.txt")
+        file_path = os.path.join(TvbProfile.current.TVB_TEMP_FOLDER, "dummy_file.txt")
         with open(file_path, "w") as f:
             f.write("dummy text")
 

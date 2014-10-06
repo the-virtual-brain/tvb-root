@@ -29,68 +29,61 @@
 #
 
 """
-ENUM used for choosing current TVB Profile.
+TVB Profile.
 
-Contains functionality which allows a user to set a certain profile for TVB.
+This class is responsible for referring towards application settings, based on running environment or developer choice.
+
+.. moduleauthor:: Lia Domide <lia.domide@codemart.ro>
+.. moduleauthor:: Mihai Andrei <mihai.andrei@codemart.ro>
+.. moduleauthor:: Bogdan Neacsa <bogdan.neacsa@codemart.ro>
+
 """
+
 import os
 import sys
+import copy
+from tvb.basic.config.utils import LibraryImportError
+from tvb.basic.config.environment import Environment
+from tvb.basic.config.settings import BaseSettingsProfile
 
-
-class LibraryModulesFinder():
-    """
-    In case users run TVB in 'library' profile access should be restricted
-    to some parts of tvb.
-    """
-    restricted_modules = ['tvb.interfaces',
-                          'tvb.datatype_removers',
-                          'tvb.core',
-                          'tvb.config',
-                          'tvb.adapters']
-    
-    
-    def find_module(self, fullname, path=None):
-        if fullname in self.restricted_modules:
-            return self
-        
-        
-    def load_module(self, module_name):
-        info_message = str("You are trying to import the module `%s` in library mode."
-                           "The library profile is a lightweight version of TVB and you "
-                           "only have access to the simulator, analyzers and datatypes packages."
-                           "If you want to use the entire TVB Framework start it either in command "
-                           "or web interface profile." % module_name)
-        raise ImportError(info_message)
-    
 
 
 class TvbProfile():
     """
     ENUM-like class with current TVB profile and accepted values.
     """
+
     DEVELOPMENT_PROFILE = "DEVELOPMENT_PROFILE"
     DEPLOYMENT_PROFILE = "DEPLOYMENT_PROFILE"
     LIBRARY_PROFILE = "LIBRARY_PROFILE"
     COMMAND_PROFILE = "COMMAND_PROFILE"
+    TEST_LIBRARY_PROFILE = "TEST_LIBRARY_PROFILE"
     TEST_POSTGRES_PROFILE = "TEST_POSTGRES_PROFILE"
     TEST_SQLITE_PROFILE = "TEST_SQLITE_PROFILE"
     DESKTOP_PROFILE = "DESKTOP_PROFILE"
 
     ALL = [DEVELOPMENT_PROFILE, DEPLOYMENT_PROFILE, LIBRARY_PROFILE, COMMAND_PROFILE,
-           TEST_POSTGRES_PROFILE, TEST_SQLITE_PROFILE, DESKTOP_PROFILE]
+           TEST_POSTGRES_PROFILE, TEST_SQLITE_PROFILE, TEST_LIBRARY_PROFILE, DESKTOP_PROFILE]
 
-    CURRENT_SELECTED_PROFILE = None
+    REGISTERED_PROFILES = {}
+
+    CURRENT_PROFILE_NAME = None
+
+    current = BaseSettingsProfile(False)
+    env = Environment()
+
+    _old_meta_path = copy.deepcopy(sys.meta_path)
 
 
-    @staticmethod
-    def set_profile(selected_profile, try_reload=True):
+    @classmethod
+    def set_profile(cls, selected_profile, try_reload=False):
         """
         Sets TVB profile from script_argv and specify UTF-8 and encoding.
 
         :param selected_profile: String representing profile to be set.
         :param try_reload: When set to true, try to reload all tvb.* modules
                         This is needed when setting a profile different that default requires previously loaded tvb
-                        modules to get different (e.g. from deployment to developer we have a different
+                        modules to get different (e.g. from deployment to contributor we have a different
                         tvb.interface path, already loaded as the starting point is tvb.interfaces.run)
         """
 
@@ -98,107 +91,68 @@ class TvbProfile():
         ### We should make sure UTF-8 gets set before reading from any TVB files
         ### e.g. TVB_STORAGE will differ if the .tvb.configuration file contains non-ascii bytes
         ### most of the comments in the simulator are having pieces outside of ascii coverage
-        if TvbProfile.env.is_development() and sys.getdefaultencoding().lower() != 'utf-8':
+        if cls.env.is_development() and sys.getdefaultencoding().lower() != 'utf-8':
             reload(sys)
             sys.setdefaultencoding('utf-8')
-        
+
+        if selected_profile is not None:
+            ## Restore sys.meta_path, as some profiles (Library) are adding something
+            sys.meta_path = copy.deepcopy(cls._old_meta_path)
+            cls._load_framework_profiles(selected_profile)
+            if selected_profile in cls.REGISTERED_PROFILES:
+                current_class = cls.REGISTERED_PROFILES[selected_profile]
+                cls.current = current_class()
+                cls.current.initialize_profile()
+            else:
+                raise Exception("Invalid profile %s" % selected_profile)
+
+            cls.CURRENT_PROFILE_NAME = selected_profile
+
         if try_reload:
             # To make sure in case of contributor setup the external TVB is the one
             # we get, we need to reload all tvb related modules, since any call done
             # python -m will always consider the current folder as the first to search in.
             sys.path = os.environ.get("PYTHONPATH", "").split(os.pathsep) + sys.path
             for key in sys.modules.keys():
-                if key.startswith("tvb") and sys.modules[key]:
-                    reload(sys.modules[key])
+                if key.startswith("tvb") and sys.modules[key] and not key.startswith("tvb.basic.profile"):
+                    try:
+                        reload(sys.modules[key])
+                    except LibraryImportError:
+                        pass
 
-        if selected_profile is not None:
-            TvbProfile.CURRENT_SELECTED_PROFILE = selected_profile
-                
-            if selected_profile == TvbProfile.LIBRARY_PROFILE:
-                sys.meta_path.append(LibraryModulesFinder())
 
-            
+    @classmethod
+    def _load_framework_profiles(cls, new_profile):
 
-    class env():
+        from tvb.basic.config.settings import LibrarySettingsProfile, TestLibrarySettingsProfile
+        cls.REGISTERED_PROFILES[TvbProfile.LIBRARY_PROFILE] = LibrarySettingsProfile
+        cls.REGISTERED_PROFILES[TvbProfile.TEST_LIBRARY_PROFILE] = TestLibrarySettingsProfile
 
-        @staticmethod
-        def is_library_mode():
-            """
-            Fall-back to LibraryProfile either if this was the profile passed as argument or if TVB Framework is not found.
-
-            :return: True when currently selected profile is LibraryProfile,
-                     or when the framework classes are not present, and we should enforce the library profile.
-            """
-            framework_present = True
+        if not cls.is_library_mode(new_profile):
             try:
-                from tvb.config.settings import FrameworkSettings
+                from tvb.config.settings import CommandProfile, DeploymentProfile, DevelopmentProfile
+                from tvb.config.settings import TestPostgresProfile, TestSQLiteProfile
+
+                cls.REGISTERED_PROFILES[TvbProfile.COMMAND_PROFILE] = CommandProfile
+                cls.REGISTERED_PROFILES[TvbProfile.DEPLOYMENT_PROFILE] = DeploymentProfile
+                cls.REGISTERED_PROFILES[TvbProfile.DEVELOPMENT_PROFILE] = DevelopmentProfile
+                cls.REGISTERED_PROFILES[TvbProfile.TEST_POSTGRES_PROFILE] = TestPostgresProfile
+                cls.REGISTERED_PROFILES[TvbProfile.TEST_SQLITE_PROFILE] = TestSQLiteProfile
+
             except ImportError:
-                framework_present = False
-
-            return TvbProfile.CURRENT_SELECTED_PROFILE == TvbProfile.LIBRARY_PROFILE or not framework_present
+                pass
 
 
-        @staticmethod
-        def is_development():
-            """
-            Return True when TVB is used with Python installed natively.
-            """
-            try:
-                import tvb_bin
-                bin_folder = os.path.dirname(os.path.abspath(tvb_bin.__file__))
-                tvb_version_file = os.path.join(bin_folder, "tvb.version")
-                if os.path.exists(tvb_version_file):
-                    return False
-                return True
-            except ImportError:
-                return True
+    @staticmethod
+    def is_library_mode(new_profile=None):
+
+        lib_profiles = [TvbProfile.LIBRARY_PROFILE, TvbProfile.TEST_LIBRARY_PROFILE]
+        return (new_profile in lib_profiles
+                or (new_profile is None and TvbProfile.CURRENT_PROFILE_NAME in lib_profiles)
+                or not TvbProfile.env.is_framework_present())
 
 
-        @staticmethod
-        def is_windows_deployment():
-            """
-            Return True if current run is not development and is running on Windows.
-            """
-            return TvbProfile.env.is_windows() and not TvbProfile.env.is_development()
+    @staticmethod
+    def is_first_run():
 
-
-        @staticmethod
-        def is_linux_deployment():
-            """
-            Return True if current run is not development and is running on Linux.
-            """
-            return TvbProfile.env.is_linux() and not TvbProfile.env.is_development()
-
-
-        @staticmethod
-        def is_mac_deployment():
-            """
-            Return True if current run is not development and is running on Mac OS X
-            """
-            return TvbProfile.env.is_mac() and not TvbProfile.env.is_development()
-
-
-        @staticmethod
-        def is_windows():
-            return sys.platform.startswith('win')
-
-
-        @staticmethod
-        def is_linux():
-            return not TvbProfile.env.is_windows() and not TvbProfile.env.is_mac()
-
-
-        @staticmethod
-        def is_mac():
-            return sys.platform == 'darwin'
-
-
-        @staticmethod
-        def get_python_exe_name():
-            """
-            Returns the name of the python executable depending on the specific OS
-            """
-            if TvbProfile.env.is_windows():
-                return 'python.exe'
-            else:
-                return 'python'
+        return TvbProfile.current.manager.is_first_run()

@@ -39,7 +39,7 @@ from hashlib import md5
 from tvb.core import utils
 from tvb.interfaces.web.controllers import common
 from tvb.interfaces.web.controllers.users_controller import UserController
-from tvb.basic.config.settings import TVBSettings as cfg
+from tvb.basic.profile import TvbProfile
 from tvb.core.entities import model
 from tvb.core.entities.storage import dao
 from tvb.core.entities.model import UserPreferences
@@ -90,7 +90,8 @@ class UsersControllerTest(TransactionalTestCase, BaseControllersTest):
         """
         Delete the dummy tvb settings file and make sure we are redirected to the settings page.
         """
-        os.remove(cfg.TVB_CONFIG_FILE)
+        os.remove(TvbProfile.current.TVB_CONFIG_FILE)
+        TvbProfile.current.manager.stored_settings = None
         self._expect_redirect('/settings/settings', self.user_c.profile)
 
         

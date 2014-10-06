@@ -40,7 +40,7 @@ import numpy
 import cherrypy
 from BeautifulSoup import BeautifulSoup
 from genshi.template.loader import TemplateLoader
-from tvb.basic.config.settings import TVBSettings as cfg
+from tvb.basic.profile import TvbProfile
 import tvb.basic.traits as trait
 import tvb.interfaces.web.templates.genshi.flow as root_html
 from tvb.interfaces.web.controllers import common
@@ -127,11 +127,11 @@ class GenshiTest(BaseTestCase):
                                        'treeSessionKey': SelectedAdapterContext.KEY_TREE_DEFAULT,
                                        common.KEY_PARAMETERS_CONFIG: False,
                                        common.KEY_CURRENT_JS_VERSION: 1}
-        cfg.RENDER_HTML = True
+        TvbProfile.current.web.RENDER_HTML = True
 
 
     def tearDown(self):
-        cfg.RENDER_HTML = False
+        TvbProfile.current.web.RENDER_HTML = False
 
 
 
@@ -185,8 +185,8 @@ class GenshiTestSimple(GenshiTest):
         """
         super(GenshiTestSimple, self).setUp()
         core_path = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-        self.old_path = cfg.CURRENT_DIR
-        cfg.CURRENT_DIR = os.path.dirname(core_path)
+        self.old_path = TvbProfile.current.web.CURRENT_DIR
+        TvbProfile.current.web.CURRENT_DIR = os.path.dirname(core_path)
         adapters_init.__xml_folders__ = [os.path.join('interfaces', 'web')]
         self.introspector = Introspector("tvb.tests.framework")
         self.introspector.introspect(True)
@@ -208,7 +208,7 @@ class GenshiTestSimple(GenshiTest):
 
 
     def tearDown(self):
-        cfg.CURRENT_DIR = self.old_path
+        TvbProfile.current.web.CURRENT_DIR = self.old_path
         del adapters_init.__xml_folders__
         self.reset_database()
 
@@ -307,8 +307,8 @@ class GenshiTestGroup(GenshiTest):
         super(GenshiTestGroup, self).setUp()
 
         core_path = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-        self.old_path = cfg.CURRENT_DIR
-        cfg.CURRENT_DIR = os.path.dirname(core_path)
+        self.old_path = TvbProfile.current.web.CURRENT_DIR
+        TvbProfile.current.web.CURRENT_DIR = os.path.dirname(core_path)
 
         adapters_init.__xml_folders__ = [os.path.join('interfaces', 'web')]
         self.introspector = Introspector("tvb.tests.framework")
@@ -326,7 +326,7 @@ class GenshiTestGroup(GenshiTest):
 
 
     def tearDown(self):
-        cfg.CURRENT_DIR = self.old_path
+        TvbProfile.current.web.CURRENT_DIR = self.old_path
         del adapters_init.__xml_folders__
         self.reset_database()
 

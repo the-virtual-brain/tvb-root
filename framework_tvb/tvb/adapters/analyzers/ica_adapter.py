@@ -43,7 +43,6 @@ from tvb.datatypes.mode_decompositions import IndependentComponents
 from tvb.basic.traits.util import log_debug_array
 from tvb.basic.filters.chain import FilterChain
 from tvb.basic.logger.builder import get_logger
-from tvb.basic.config.settings import TVBSettings
 LOG = get_logger(__name__)
 
 
@@ -104,7 +103,7 @@ class ICAAdapter(ABCAsynchronous):
         Returns the required disk size to be able to run the adapter (in kB).
         """
         used_shape = (self.input_shape[0], 1, self.input_shape[2], self.input_shape[3])
-        return self.algorithm.result_size(used_shape) * TVBSettings.MAGIC_NUMBER / 8 / 2 ** 10
+        return self.array_size2kb(self.algorithm.result_size(used_shape))
     
     def launch(self, time_series, n_components=None):
         """ 

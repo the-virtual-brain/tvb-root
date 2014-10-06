@@ -35,7 +35,7 @@
 import unittest
 from hashlib import md5
 from tvb.core.entities import model
-from tvb.basic.config.settings import TVBSettings as cfg
+from tvb.basic.profile import TvbProfile
 from tvb.core.entities.storage import dao
 from tvb.core.services.exceptions import UsernameException
 from tvb.core.services.user_service import UserService, USERS_PAGE_SIZE
@@ -75,8 +75,10 @@ class UserServiceTest(TransactionalTestCase):
         """
         self.clean_database()
         self.user_service = UserService()
-        self.user_service.create_user(username=cfg.ADMINISTRATOR_NAME, password=cfg.ADMINISTRATOR_PASSWORD,
-                                      email=cfg.ADMINISTRATOR_EMAIL, role=model.ROLE_ADMINISTRATOR)
+        self.user_service.create_user(username=TvbProfile.current.web.admin.ADMINISTRATOR_NAME,
+                                      password=TvbProfile.current.web.admin.ADMINISTRATOR_PASSWORD,
+                                      email=TvbProfile.current.web.admin.ADMINISTRATOR_EMAIL,
+                                      role=model.ROLE_ADMINISTRATOR)
         available_users = dao.get_all_users()
         if len(available_users) != 1:
             self.fail("Something went wrong with database initialization!")

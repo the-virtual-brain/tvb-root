@@ -39,14 +39,9 @@ simulation and the method for running the simulation.
 
 """
 
-# From standard python libraries
-
-# Third party python libraries
 import numpy
 import scipy.sparse as sparse
-
-# From "The Virtual Brain"
-from tvb.basic.config.settings import TVBSettings
+from tvb.basic.profile import TvbProfile
 import tvb.basic.traits.core as core
 import tvb.basic.traits.types_basic as basic
 from tvb.basic.filters.chain import UIFilter, FilterChain
@@ -827,7 +822,7 @@ class Simulator(core.Type):
         LOG.info("Calculating storage requirement for ...")
         strgreq = 0
         for monitor in self.monitors:
-            strgreq += (TVBSettings.MAGIC_NUMBER * self.simulation_length  * 
+            strgreq += (TvbProfile.current.MAGIC_NUMBER * self.simulation_length  *
                         self.number_of_nodes * self.model.nvar * 
                         self.model.number_of_modes / monitor.period)
         self._storage_requirement = int(strgreq)

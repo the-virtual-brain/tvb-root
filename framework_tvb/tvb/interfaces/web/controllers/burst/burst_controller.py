@@ -40,7 +40,7 @@ import cherrypy
 import formencode
 from formencode import validators
 from tvb.config import SIMULATOR_MODULE, SIMULATOR_CLASS, MEASURE_METRICS_MODULE, MEASURE_METRICS_CLASS
-from tvb.basic.config.settings import TVBSettings as cfg
+from tvb.basic.profile import TvbProfile
 from tvb.core.utils import generate_guid, string2bool
 from tvb.core.adapters.abcadapter import ABCAdapter
 from tvb.core.services.burst_service import BurstService, KEY_PARAMETER_CHECKED, LAUNCH_NEW
@@ -98,7 +98,8 @@ class BurstController(BurstBaseController):
         """Get on burst main page"""
         # todo : reuse load_burst here for consistency.
         template_specification = dict(mainContent="burst/main_burst", title="Simulation Cockpit",
-                                      baseUrl=cfg.BASE_URL, includedResources='project/included_resources')
+                                      baseUrl=TvbProfile.current.web.BASE_URL,
+                                      includedResources='project/included_resources')
         portlets_list = self.burst_service.get_available_portlets()
         session_stored_burst = common.get_from_session(common.KEY_BURST_CONFIG)
         if session_stored_burst is None or session_stored_burst.id is None:
@@ -371,7 +372,7 @@ class BurstController(BurstBaseController):
             old_burst = common.get_from_session(common.KEY_BURST_CONFIG)
             burst, group_gid = self.burst_service.load_burst(burst_id)
 
-            if old_burst.id == burst_id :
+            if old_burst.id == burst_id:
                 # This function was called to reload the current burst.
                 # Merge session config into the db config. Overwrite all transient fields
                 burst.simulator_configuration = old_burst.simulator_configuration

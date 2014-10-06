@@ -70,7 +70,7 @@ class DeclarativeMetaType(DeclarativeMeta, MetaType):
         that is used
 
     If it is desired that no sql/db is used, import traits.core and set
-    TVBSettings.TRAITS_CONFIGURATION.use_storage = False. This will have the (hopefully
+    TRAITS_CONFIGURATION.use_storage = False. This will have the (hopefully
     desired) effect that all sql and db keyword args are ignored.
 
     """

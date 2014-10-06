@@ -42,21 +42,8 @@ import sys
 import cherrypy
 import webbrowser
 from cherrypy import Tool
-
-### This will set running profile from arguments.
-### Reload modules, only when running, thus avoid problems when sphinx generates documentation
 from tvb.basic.profile import TvbProfile
 TvbProfile.set_profile(sys.argv[1], try_reload=(__name__ == '__main__'))
-
-### For Linux Distribution, correctly set MatplotLib Path, before start.
-from tvb.basic.config.settings import TVBSettings
-if TvbProfile.env.is_linux_deployment():
-    mpl_data_path_maybe = os.path.join(TVBSettings().get_library_folder(), 'mpl-data')
-    try:
-        os.stat(mpl_data_path_maybe)
-        os.environ['MATPLOTLIBDATA'] = mpl_data_path_maybe
-    except:
-        pass
 
 ### Import MPLH5 asap, to have the back-end Thread started before other pylab/matplotlib import
 from tvb.basic.logger.builder import get_logger
@@ -91,7 +78,7 @@ from tvb.interfaces.web.controllers.api.simulator_controller import SimulatorCon
 
 
 LOGGER = get_logger('tvb.interfaces.web.run')
-CONFIG_EXISTS = not TVBSettings.is_first_run()
+CONFIG_EXISTS = not TvbProfile.is_first_run()
 PARAM_RESET_DB = "reset"
 LOGGER.info("TVB application will be running using encoding: " + sys.getdefaultencoding())
 
@@ -99,7 +86,7 @@ LOGGER.info("TVB application will be running using encoding: " + sys.getdefaulte
 def init_cherrypy(arguments=None):
     #### Mount static folders from modules marked for introspection
     arguments = arguments or []
-    CONFIGUER = TVBSettings.CHERRYPY_CONFIGURATION
+    CONFIGUER = TvbProfile.current.web.CHERRYPY_CONFIGURATION
     for module in arguments:
         module_inst = __import__(str(module), globals(), locals(), ["__init__"])
         module_path = os.path.dirname(os.path.abspath(module_inst.__file__))
@@ -151,11 +138,11 @@ def start_tvb(arguments, browser=True):
         reset()
         arguments.remove(PARAM_RESET_DB)
 
-    if not os.path.exists(TVBSettings.TVB_STORAGE):
+    if not os.path.exists(TvbProfile.current.TVB_STORAGE):
         try:
-            os.makedirs(TVBSettings.TVB_STORAGE)
+            os.makedirs(TvbProfile.current.TVB_STORAGE)
         except Exception:
-            sys.exit("You do not have enough rights to use TVB storage folder:" + str(TVBSettings.TVB_STORAGE))
+            sys.exit("You do not have enough rights to use TVB storage folder:" + str(TvbProfile.current.TVB_STORAGE))
 
     try:
         initialize(arguments)
@@ -164,8 +151,8 @@ def start_tvb(arguments, browser=True):
         sys.exit()
 
     #### Mark that the interface is Web
-    ABCDisplayer.VISUALIZERS_ROOT = TVBSettings.WEB_VISUALIZERS_ROOT
-    ABCDisplayer.VISUALIZERS_URL_PREFIX = TVBSettings.WEB_VISUALIZERS_URL_PREFIX
+    ABCDisplayer.VISUALIZERS_ROOT = TvbProfile.current.web.VISUALIZERS_ROOT
+    ABCDisplayer.VISUALIZERS_URL_PREFIX = TvbProfile.current.web.VISUALIZERS_URL_PREFIX
 
     init_cherrypy(arguments)
 
@@ -174,7 +161,8 @@ def start_tvb(arguments, browser=True):
         run_browser()
 
     ## Launch CherryPy loop forever.
-    LOGGER.info("Finished starting TVB version %s in %.3f s", TVBSettings.CURRENT_VERSION, time.time() - STARTUP_TIC)
+    LOGGER.info("Finished starting TVB version %s in %.3f s",
+                TvbProfile.current.version.CURRENT_VERSION, time.time() - STARTUP_TIC)
     cherrypy.engine.block()
     cherrypy.log.error_log
 
@@ -190,7 +178,7 @@ def run_browser():
         else:
             browser_app = webbrowser
 
-        url_to_open = TVBSettings.BASE_LOCAL_URL
+        url_to_open = TvbProfile.current.web.BASE_LOCAL_URL
         if not CONFIG_EXISTS:
             url_to_open += 'settings/settings'
 
@@ -199,7 +187,7 @@ def run_browser():
 
     except Exception:
         LOGGER.warning("Browser could not be fired!  Please manually type in your "
-                       "preferred browser: %s" % TVBSettings.BASE_LOCAL_URL)
+                       "preferred browser: %s" % TvbProfile.current.web.BASE_LOCAL_URL)
 
 
 

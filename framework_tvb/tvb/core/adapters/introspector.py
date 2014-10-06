@@ -38,7 +38,7 @@ import inspect
 import datetime
 import tvb.core.removers_factory as removers
 from types import ModuleType
-from tvb.basic.config.settings import TVBSettings as cfg
+from tvb.basic.profile import TvbProfile
 from tvb.basic.logger.builder import get_logger
 from tvb.basic.traits.types_mapped import MappedType
 from tvb.core.entities import model
@@ -73,7 +73,7 @@ class Introspector:
     def __init__(self, introspected_module):
         self.module_name = introspected_module
         self.logger = get_logger(self.__class__.__module__)
-        self.matlab_executable = cfg.MATLAB_EXECUTABLE
+        self.matlab_executable = TvbProfile.current.MATLAB_EXECUTABLE
 
 
     def get_events_path(self):
@@ -287,7 +287,7 @@ class Introspector:
 
         xml_folders = Introspector.__get_variable(module_name, XML_FOLDERS_VARIABLE)
         for folder in xml_folders:
-            folder_path = os.path.join(cfg.CURRENT_DIR, folder)
+            folder_path = os.path.join(TvbProfile.current.web.CURRENT_DIR, folder)
             files = os.listdir(folder_path)
             for file_ in files:
                 if file_.endswith(".xml"):

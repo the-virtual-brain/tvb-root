@@ -43,7 +43,7 @@ from tvb.datatypes import surfaces_scientific
 from tvb.datatypes import surfaces_framework
 from tvb.datatypes import surfaces_data
 from tvb.basic.traits import exceptions
-from tvb.basic.config.settings import TVBSettings as cfg
+from tvb.basic.profile import TvbProfile
 from tvb.basic.readers import FileReader, ZipReader, try_get_absolute_path
 
 
@@ -121,8 +121,8 @@ class Surface(surfaces_scientific.SurfaceScientific, surfaces_framework.SurfaceF
         super(Surface, self).validate()
 
         # First check if the surface has a valid number of vertices
-        if self.number_of_vertices > cfg.MAX_SURFACE_VERTICES_NUMBER:
-            msg = "This surface has too many vertices (max allowed: %d)." % cfg.MAX_SURFACE_VERTICES_NUMBER
+        if self.number_of_vertices > TvbProfile.current.MAX_SURFACE_VERTICES_NUMBER:
+            msg = "This surface has too many vertices (max: %d)." % TvbProfile.current.MAX_SURFACE_VERTICES_NUMBER
             msg += " Please upload a new surface or change max number in application settings."
             raise exceptions.ValidationException(msg)
 

@@ -32,7 +32,8 @@
 The convention for adding a new update script is to just add a file starting with the
 project version at which the script is updating data, followed by '_update_project.py'.
 
-To make sure the latest script gets executed, we need to manually change in TVBSettings.PROJECT_VERSION
+To make sure the latest script gets executed, we need to manually change in
+tvb.basic.config.settings.VersionSettings.PROJECT_VERSION
 
 The update script should have a module level function 'def update()' that does the actual
 updates.

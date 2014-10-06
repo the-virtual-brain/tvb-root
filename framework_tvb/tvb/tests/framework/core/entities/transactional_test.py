@@ -34,7 +34,7 @@
 import unittest
 import threading
 import tvb.config as config
-from tvb.basic.config.settings import TVBSettings as cfg
+from tvb.basic.profile import TvbProfile
 from tvb.core.entities import model
 from tvb.core.entities.storage import dao, transactional
 from tvb.core.entities.storage.session_maker import add_session, SessionMaker
@@ -180,11 +180,11 @@ class TransactionalTests(BaseTestCase):
         an exception is raised when a nested transaction is attempted. This will be default behaviour in TVB, only
         overwritten for transactional tests.
         """    
-        cfg.ALLOW_NESTED_TRANSACTIONS = False
+        TvbProfile.current.db.ALLOW_NESTED_TRANSACTIONS = False
         try:
             self.assertRaises(NestedTransactionUnsupported, self._store_users_nested, 4, self._store_users_happy_flow)
         finally:
-            cfg.ALLOW_NESTED_TRANSACTIONS = True
+            TvbProfile.current.db.ALLOW_NESTED_TRANSACTIONS = True
 
     def _run_transaction_multiple_threads(self, n_of_threads, n_of_users_per_thread):
         """

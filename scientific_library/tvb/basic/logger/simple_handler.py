@@ -36,7 +36,7 @@ for different parts of application.
 
 import os
 from logging.handlers import TimedRotatingFileHandler
-from tvb.basic.config.settings import TVBSettings
+from tvb.basic.profile import TvbProfile
 
 
 
@@ -51,7 +51,7 @@ class SimpleTimedRotatingFileHandler(TimedRotatingFileHandler):
         """
         Only set our logging path, and call superclass.
         """
-        log_file = os.path.join(TVBSettings.TVB_LOG_FOLDER, filename)
+        log_file = os.path.join(TvbProfile.current.TVB_LOG_FOLDER, filename)
         TimedRotatingFileHandler.__init__(self, log_file, when, interval, backupCount)
     
     

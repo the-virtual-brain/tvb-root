@@ -37,7 +37,7 @@ import numpy
 import os
 import shutil
 from tvb.basic.traits.types_mapped import MappedType
-from tvb.basic.config.settings import TVBSettings as config
+from tvb.basic.profile import TvbProfile
 
 
 class MappedTypeStorageTests(unittest.TestCase):
@@ -50,7 +50,7 @@ class MappedTypeStorageTests(unittest.TestCase):
         """
         Prepare data for tests
         """
-        storage_folder = os.path.join(config.TVB_STORAGE, "test_hdf5")
+        storage_folder = os.path.join(TvbProfile.current.TVB_STORAGE, "test_hdf5")
 
         if os.path.exists(storage_folder):
             shutil.rmtree(storage_folder)

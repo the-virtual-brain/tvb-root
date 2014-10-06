@@ -42,7 +42,7 @@ import cherrypy
 
 from tvb.interfaces.web.controllers import common
 from tvb.config import CONNECTIVITY_CLASS, CONNECTIVITY_MODULE
-from tvb.basic.config.settings import TVBSettings as cfg
+from tvb.basic.profile import TvbProfile
 from tvb.basic.logger.builder import get_logger
 from tvb.core.services.user_service import UserService
 from tvb.core.services.flow_service import FlowService
@@ -280,8 +280,8 @@ class BaseController(object):
         if common.KEY_SUBMENU_LIST not in template_dictionary:
             template_dictionary[common.KEY_SUBMENU_LIST] = None
 
-        template_dictionary[common.KEY_CURRENT_VERSION] = cfg.BASE_VERSION
-        template_dictionary[common.KEY_CURRENT_JS_VERSION] = cfg.BASE_VERSION.replace(".", "")
+        template_dictionary[common.KEY_CURRENT_VERSION] = TvbProfile.current.version.BASE_VERSION
+        template_dictionary[common.KEY_CURRENT_JS_VERSION] = TvbProfile.current.version.BASE_VERSION.replace(".", "")
         return template_dictionary
 
 

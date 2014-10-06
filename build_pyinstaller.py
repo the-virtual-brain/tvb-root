@@ -42,7 +42,6 @@ import tvb.interfaces.web as tvb_web
 from subprocess import Popen
 from build_base import DIST_FOLDER
 from tvb.basic.profile import TvbProfile
-from tvb.basic.config.settings import TVBSettings
 
 
 # The required packages for TVB. 
@@ -59,7 +58,7 @@ BASE_EXCLUDE_FILES = []
 
 BASE_EXCLUDE_DIRS = ['lib2to3', 'test', 'config_d', 'config']
 # This will be the name under which we copy the actual python interpreter
-PYTHON_EXE = TvbProfile.env.get_python_exe_name()
+PYTHON_EXE = TvbProfile.current.PYTHON_EXE_NAME
 
 
 class PyInstallerPacker():
@@ -71,7 +70,7 @@ class PyInstallerPacker():
 
     START_TIME = datetime.datetime.now()
 
-    VERSION = TVBSettings.BASE_VERSION
+    VERSION = TvbProfile.current.BASE_VERSION
 
     BIN_FOLDER = os.path.dirname(tvb_bin.__file__)
 

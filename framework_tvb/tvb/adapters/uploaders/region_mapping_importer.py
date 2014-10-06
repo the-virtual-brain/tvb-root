@@ -39,7 +39,7 @@ import zipfile
 import tempfile
 from tvb.adapters.uploaders.abcuploader import ABCUploader
 from tvb.basic.logger.builder import get_logger
-from tvb.basic.config.settings import TVBSettings as cfg
+from tvb.basic.profile import TvbProfile
 from tvb.core.adapters.exceptions import LaunchException
 from tvb.core.entities.file.files_helper import FilesHelper
 from tvb.datatypes.surfaces import RegionMapping, CorticalSurface
@@ -104,7 +104,7 @@ class RegionMapping_Importer(ABCUploader):
         self.logger.debug("Reading mappings from uploaded file")
 
         if zipfile.is_zipfile(mapping_file):
-            tmp_folder = tempfile.mkdtemp(prefix='region_mapping_zip_', dir=cfg.TVB_TEMP_FOLDER)
+            tmp_folder = tempfile.mkdtemp(prefix='region_mapping_zip_', dir=TvbProfile.current.TVB_TEMP_FOLDER)
             try:
                 files = FilesHelper().unpack_zip(mapping_file, tmp_folder)
                 if len(files) > 1:

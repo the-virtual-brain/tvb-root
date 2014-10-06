@@ -38,7 +38,6 @@ ContinuousWaveletTransform Analyzer.
 """
 
 import numpy
-from tvb.basic.config.settings import TVBSettings
 from tvb.analyzers.wavelet import ContinuousWaveletTransform
 from tvb.datatypes.time_series import TimeSeries
 from tvb.datatypes.spectral import WaveletCoefficients
@@ -126,7 +125,7 @@ class ContinuousWaveletTransformAdapter(ABCAsynchronous):
         Returns the required disk size to be able to run the adapter.(in kB)
         """
         used_shape = (self.input_shape[0], self.input_shape[1], 1, self.input_shape[3])
-        return self.algorithm.result_size(used_shape) * TVBSettings.MAGIC_NUMBER / 8 / 2 ** 10
+        return self.array_size2kb(self.algorithm.result_size(used_shape))
 
 
     def launch(self, time_series, mother=None, sample_period=None, normalisation=None, q_ratio=None,

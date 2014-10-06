@@ -42,7 +42,7 @@ from tvb.core.entities.storage import dao
 from tvb.core.adapters.abcdisplayer import ABCMPLH5Displayer
 from tvb.core.adapters.exceptions import LaunchException
 from tvb.datatypes.mapped_values import DatatypeMeasure
-from tvb.basic.config.settings import TVBSettings
+from tvb.basic.profile import TvbProfile
 from tvb.basic.filters.chain import FilterChain
 
 
@@ -240,8 +240,9 @@ class IsoclinePSEAdapter(ABCMPLH5Displayer):
             # Separate plot for each metric.
             self._create_plot(model, metric, figsize, figure_nrs)
 
-        parameters = dict(title=self._ui_name, showFullToolbar=True, mplh5ServerURL=TVBSettings.MPLH5_SERVER_URL,
-                          figureNumbers=figure_nrs, metrics=model.metrics, figuresJSON=json.dumps(figure_nrs))
+        parameters = dict(title=self._ui_name, showFullToolbar=True, figuresJSON=json.dumps(figure_nrs),
+                          mplh5ServerURL=TvbProfile.current.web.MPLH5_SERVER_URL,
+                          figureNumbers=figure_nrs, metrics=model.metrics)
 
         return self.build_display_result("pse_isocline/view", parameters)
 

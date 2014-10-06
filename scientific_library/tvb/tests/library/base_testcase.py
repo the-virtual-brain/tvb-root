@@ -32,7 +32,7 @@
 .. moduleauthor:: Bogdan Neacsa <bogdan.neacsa@codemart.ro>
 """
 import unittest
-from tvb.basic.config.settings import TVBSettings as cfg
+from tvb.basic.profile import TvbProfile
 
 
 
@@ -43,7 +43,7 @@ class BaseTestCase(unittest.TestCase):
 
 
     def setUp(self):
-        self.assertFalse(cfg.TRAITS_CONFIGURATION.use_storage)
+        self.assertFalse(TvbProfile.current.TRAITS_CONFIGURATION.use_storage)
 
 
     def assertEqual(self, expected, actual, message=""):

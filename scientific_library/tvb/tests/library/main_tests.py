@@ -83,7 +83,6 @@ if __name__ == "__main__":
 
 import unittest
 import datetime
-from tvb.basic.config.settings import TVBSettings
 from tvb.tests.library.basic import basic_test_main
 from tvb.tests.library.datatypes import datatypes_test_main
 from tvb.tests.library.simulator import simulator_test_main

@@ -41,7 +41,7 @@ import cProfile
 from datetime import datetime
 from functools import wraps
 from genshi.template import TemplateLoader
-from tvb.basic.config.settings import TVBSettings
+from tvb.basic.profile import TvbProfile
 from tvb.basic.logger.builder import get_logger
 from tvb.interfaces.web.controllers import common
 
@@ -54,14 +54,14 @@ def using_template(template_name):
     """
     Decorator that renders a template
     """
-    template_path = os.path.join(TVBSettings.TEMPLATE_ROOT, template_name + '.html')
+    template_path = os.path.join(TvbProfile.current.web.TEMPLATE_ROOT, template_name + '.html')
 
     def dec(func):
 
         @wraps(func)
         def deco(*a, **b):
             template_dict = func(*a, **b)
-            if not TVBSettings.RENDER_HTML:
+            if not TvbProfile.current.web.RENDER_HTML:
                 return template_dict
 
             ### Generate HTML given the path to the template and the data dictionary.
@@ -162,7 +162,7 @@ def check_admin(func):
     def deco(*a, **b):
         if hasattr(cherrypy, common.KEY_SESSION):
             user = common.get_logged_user()
-            if user is not None and user.is_administrator() or TVBSettings.is_first_run():
+            if user is not None and user.is_administrator() or TvbProfile.is_first_run():
                 return func(*a, **b)
         raise common.NotAuthenticated('Only Administrators can access this application area!', redirect_url='/tvb')
 
@@ -192,7 +192,7 @@ def settings(func):
 
     @wraps(func)
     def deco(*a, **b):
-        if not TVBSettings.is_first_run():
+        if not TvbProfile.is_first_run():
             return func(*a, **b)
         raise common.NotAllowed('You should first set up tvb', redirect_url='/settings/settings')
 

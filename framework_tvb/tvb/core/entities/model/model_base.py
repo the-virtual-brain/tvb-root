@@ -32,9 +32,9 @@
 Common parts for all classes in Model. 
 """
 
-from tvb.basic.config.settings import TVBSettings
+from tvb.basic.profile import TvbProfile
 
-if TVBSettings.TRAITS_CONFIGURATION.use_storage:
+if TvbProfile.current.TRAITS_CONFIGURATION.use_storage:
     from tvb.core.traits.core import TypeBase as Base
 else:
     from tvb.basic.traits.core import TypeBase as Base

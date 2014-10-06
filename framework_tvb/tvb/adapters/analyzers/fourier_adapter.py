@@ -38,7 +38,6 @@ Adapter that uses the traits module to generate interfaces for FFT Analyzer.
 import psutil
 import numpy
 import math
-from tvb.basic.config.settings import TVBSettings
 import tvb.analyzers.fft as fft
 import tvb.core.adapters.abcadapter as abcadapter
 import tvb.basic.filters.chain as entities_filter
@@ -128,7 +127,7 @@ class FourierAdapter(abcadapter.ABCAsynchronous):
         input_shape = self.algorithm.time_series.read_data_shape()
         output_size = self.algorithm.result_size(input_shape, self.algorithm.segment_length,
                                                  self.algorithm.time_series.sample_period)
-        return output_size * TVBSettings.MAGIC_NUMBER / 8 / 2 ** 10
+        return self.array_size2kb(output_size)
 
 
     def launch(self, time_series, segment_length=None, window_function=None):

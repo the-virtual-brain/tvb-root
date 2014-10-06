@@ -43,7 +43,7 @@ import numpy as numpy
 import tvb.core.utils as utils
 from datetime import datetime
 from tvb.basic.logger.builder import get_logger
-from tvb.basic.config.settings import TVBSettings as cfg
+from tvb.basic.profile import TvbProfile
 from tvb.core.entities.file.exceptions import FileStructureException, MissingDataSetException
 from tvb.core.entities.file.exceptions import IncompatibleFileManagerException, MissingDataFileException
 from tvb.core.entities.transient.structure_entities import GenericMetaData
@@ -434,11 +434,12 @@ class HDF5StorageManager(object):
 
         if self.is_valid_hdf5_file():
             metadata = self.get_metadata()
-            if cfg.DATA_VERSION_ATTRIBUTE in metadata:
-                return metadata[cfg.DATA_VERSION_ATTRIBUTE]
+            data_version = TvbProfile.current.version.DATA_VERSION_ATTRIBUTE
+            if data_version in metadata:
+                return metadata[data_version]
             else:
                 raise IncompatibleFileManagerException("Could not find TVB specific data version attribute %s in file: "
-                                                       "%s." % (cfg.DATA_VERSION_ATTRIBUTE, self.__storage_full_name))
+                                                       "%s." % (data_version, self.__storage_full_name))
         raise IncompatibleFileManagerException("File %s is not a hdf5 format file. Are you using the correct "
                                                "manager for this file?" % (self.__storage_full_name,))
 
@@ -607,9 +608,9 @@ class HDF5StorageManager(object):
 
                 # If this is the first time we access file, write data version
                 if not file_exists:
-                    os.chmod(self.__storage_full_name, cfg.ACCESS_MODE_TVB_FILES)
+                    os.chmod(self.__storage_full_name, TvbProfile.current.ACCESS_MODE_TVB_FILES)
                     self.__hfd5_file['/'].attrs[self.TVB_ATTRIBUTE_PREFIX +
-                                                cfg.DATA_VERSION_ATTRIBUTE] = cfg.DATA_VERSION
+                            TvbProfile.current.version.DATA_VERSION_ATTRIBUTE] = TvbProfile.current.version.DATA_VERSION
         except (IOError, OSError), err:
             LOG.exception("Could not open storage file.")
             raise FileStructureException("Could not open storage file. %s" % err)

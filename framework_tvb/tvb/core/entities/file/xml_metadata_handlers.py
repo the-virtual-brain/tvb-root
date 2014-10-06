@@ -42,7 +42,7 @@ import json
 import xml.dom.minidom
 from xml.dom.minidom import Node, Document
 from tvb.core.entities.transient.structure_entities import GenericMetaData
-from tvb.basic.config.settings import TVBSettings as cfg
+from tvb.basic.profile import TvbProfile
 from tvb.basic.logger.builder import get_logger
 
 
@@ -159,7 +159,8 @@ class XMLWriter(object):
         root_node = doc.createElement(self.ELEM_ROOT)
         
         # Add information about version of the stored data
-        root_node.setAttribute(cfg.DATA_VERSION_ATTRIBUTE, str(cfg.DATA_VERSION))
+        root_node.setAttribute(TvbProfile.current.version.DATA_VERSION_ATTRIBUTE,
+                               str(TvbProfile.current.version.DATA_VERSION))
         
         # Add each attribute GenericMetaData, as XML node-elements.
         for att_name, att_value in self.entity.items():

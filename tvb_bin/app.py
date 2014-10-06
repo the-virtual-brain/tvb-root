@@ -119,7 +119,7 @@ def find_free_port(tested_port):
     try_no = 0
     while port_in_use and try_no < 1000:
         try:
-            test_socket.connect((TVBSettings.LOCALHOST, tested_port))
+            test_socket.connect((TvbProfile.current.web.LOCALHOST, tested_port))
             test_socket.close()
             sys.stdout.write('Port ' + str(tested_port) + ' seems to be in use.\n')
             tested_port += 1
@@ -141,10 +141,12 @@ def execute_clean():
     Remove TVB folder, TVB File DB, and log files.
     """
     try:
-        if os.path.isdir(TVBSettings.TVB_STORAGE):
-            shutil.rmtree(TVBSettings.TVB_STORAGE, ignore_errors=True)
-        elif os.path.exists(TVBSettings.TVB_STORAGE):
-            os.remove(TVBSettings.TVB_STORAGE)
+        for tvb_storage in [TvbProfile.current.TVB_STORAGE, TvbProfile.current.TVB_LOG_FOLDER]:
+            if os.path.isdir(tvb_storage):
+                shutil.rmtree(tvb_storage, ignore_errors=True)
+            elif os.path.exists(tvb_storage):
+                os.remove(tvb_storage)
+
     except Exception, excep1:
         sys.stdout.write("Could not remove TVB folder!")
         sys.stdout.write(str(excep1))
@@ -191,10 +193,10 @@ def execute_start_web(profile, reset):
     """
     pid_file_reference = open(TVB_PID_FILE, 'a')
     free_ports = {}
-    cherrypy_port = find_free_port(TVBSettings.WEB_SERVER_PORT)
-    if not os.path.isfile(TVBSettings.TVB_CONFIG_FILE) or TVBSettings.WEB_SERVER_PORT != cherrypy_port:
+    cherrypy_port = find_free_port(TvbProfile.current.web.SERVER_PORT)
+    if not os.path.isfile(TvbProfile.current.TVB_CONFIG_FILE) or TvbProfile.current.web.SERVER_PORT != cherrypy_port:
         free_ports['WEB_SERVER_PORT'] = cherrypy_port
-        TVBSettings.add_entries_to_config_file(free_ports)
+        TvbProfile.current.manager.add_entries_to_config_file(free_ports)
 
     web_args_list = [PYTHON_EXE_PATH, '-m', SCRIPT_FOR_WEB, profile, 'tvb.config']
 
@@ -202,8 +204,8 @@ def execute_start_web(profile, reset):
         web_args_list.append(SUB_PARAMETER_RESET)
         pid_file_reference.close()
         execute_clean()
-        if not os.path.exists(TVBSettings.TVB_STORAGE):
-            os.mkdir(TVBSettings.TVB_STORAGE)
+        if not os.path.exists(TvbProfile.current.TVB_STORAGE):
+            os.mkdir(TvbProfile.current.TVB_STORAGE)
         pid_file_reference = open(TVB_PID_FILE, 'a')
 
     cherrypy_process = subprocess.Popen(web_args_list, shell=False)
@@ -226,8 +228,8 @@ def execute_start_desktop(profile, reset):
         desktop_args_list.append(SUB_PARAMETER_RESET)
         pid_file_reference.close()
         execute_clean()
-        if not os.path.exists(TVBSettings.TVB_STORAGE):
-            os.mkdir(TVBSettings.TVB_STORAGE)
+        if not os.path.exists(TvbProfile.current.TVB_STORAGE):
+            os.mkdir(TvbProfile.current.TVB_STORAGE)
         pid_file_reference = open(TVB_PID_FILE, 'a')
         tvb_process = subprocess.Popen(desktop_args_list, shell=False)
     else:
@@ -307,17 +309,16 @@ if __name__ == "__main__":
 
     ARGS = parse_commandline()
     TvbProfile.set_profile(ARGS.profile)
-    # Initialize TVBSettings only after a profile was set
-    from tvb.basic.config.settings import TVBSettings
 
-    PYTHON_EXE_PATH = TVBSettings.get_python_path()
-    TVB_PID_FILE = os.path.join(TVBSettings.TVB_STORAGE, "pid.tvb")
+    PYTHON_EXE_PATH = TvbProfile.current.PYTHON_PATH
+    tvb_storage = TvbProfile.current.TVB_STORAGE
+    TVB_PID_FILE = os.path.join(tvb_storage, "pid.tvb")
 
-    if not os.path.exists(TVBSettings.TVB_STORAGE):
+    if not os.path.exists(tvb_storage):
         try:
-            os.makedirs(TVBSettings.TVB_STORAGE)
+            os.makedirs(tvb_storage)
         except Exception:
-            sys.exit("You do not have enough rights to use TVB storage folder:" + str(TVBSettings.TVB_STORAGE))
+            sys.exit("You do not have enough rights to use TVB storage folder:" + str(tvb_storage))
 
     if ARGS.subcommand == 'start':
         # Start one of TVB interfaces
@@ -346,5 +347,5 @@ if __name__ == "__main__":
         # Stop TVB and then Remove TVB folder, TVB File DB, and log files.
         execute_stop()
         execute_clean()
-        if os.path.exists(TVBSettings.TVB_CONFIG_FILE):
-            os.remove(TVBSettings.TVB_CONFIG_FILE)
+        if os.path.exists(TvbProfile.current.TVB_CONFIG_FILE):
+            os.remove(TvbProfile.current.TVB_CONFIG_FILE)

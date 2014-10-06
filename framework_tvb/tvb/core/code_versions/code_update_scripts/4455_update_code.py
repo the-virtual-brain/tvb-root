@@ -33,7 +33,8 @@
 """
 
 from tvb.basic.logger.builder import get_logger
-from tvb.basic.config.settings import TVBSettings as cfg
+from tvb.basic.config import stored
+from tvb.basic.profile import TvbProfile
 from tvb.core.utils import get_matlab_executable
 from tvb.core.services.event_handlers import handle_event
 from tvb.core.entities.storage import dao
@@ -61,7 +62,7 @@ def update():
             except Exception, excep:
                 LOGGER.exception(excep)
                 
-    cfg.add_entries_to_config_file({cfg.KEY_MATLAB_EXECUTABLE: get_matlab_executable()})
+    TvbProfile.current.manager.add_entries_to_config_file({stored.KEY_MATLAB_EXECUTABLE: get_matlab_executable()})
     
     
     

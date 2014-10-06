@@ -42,7 +42,7 @@ import formencode
 from formencode import validators
 from hashlib import md5
 from urllib2 import urlopen
-from tvb.basic.config.settings import TVBSettings as cfg
+from tvb.basic.profile import TvbProfile
 from tvb.core.services.user_service import UserService, KEY_PASSWORD, KEY_EMAIL, KEY_USERNAME, KEY_COMMENT
 from tvb.core.services.project_service import ProjectService
 from tvb.core.services.exceptions import UsernameException
@@ -387,10 +387,10 @@ class UserController(BaseController):
         content = ""
         if self.version_info is None:
             try:
-                content = urlopen(cfg.URL_TVB_VERSION, timeout=7).read()
+                content = urlopen(TvbProfile.current.web.URL_TVB_VERSION, timeout=7).read()
                 self.version_info = json.loads(content)
-                pos = cfg.URL_TVB_VERSION.find('/tvb')
-                self.version_info['url'] = cfg.URL_TVB_VERSION[:pos]
+                pos = TvbProfile.current.web.URL_TVB_VERSION.find('/tvb')
+                self.version_info['url'] = TvbProfile.current.web.URL_TVB_VERSION[:pos]
                 self.logger.debug("Read version: " + json.dumps(self.version_info))
             except Exception, excep:
                 self.logger.warning("Could not read current version from remote server!")
@@ -398,7 +398,7 @@ class UserController(BaseController):
                 self.logger.exception(excep)
                 self.version_info = {}
         template_dictionary[KEY_SERVER_VERSION] = self.version_info
-        template_dictionary[KEY_CURRENT_VERSION_FULL] = cfg.CURRENT_VERSION
+        template_dictionary[KEY_CURRENT_VERSION_FULL] = TvbProfile.current.version.CURRENT_VERSION
         return template_dictionary
 
 

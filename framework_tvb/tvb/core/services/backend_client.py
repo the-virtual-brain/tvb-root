@@ -40,8 +40,7 @@ import signal
 import Queue
 import threading
 from subprocess import Popen, PIPE
-from tvb.basic.profile import TvbProfile as tvb_profile
-from tvb.basic.config.settings import TVBSettings
+from tvb.basic.profile import TvbProfile
 from tvb.basic.logger.builder import get_logger
 from tvb.core.utils import parse_json_parameters
 from tvb.core.entities import model
@@ -54,7 +53,7 @@ LOGGER = get_logger(__name__)
 CURRENT_ACTIVE_THREADS = []
 
 LOCKS_QUEUE = Queue.Queue(0)
-for i in range(TVBSettings.MAX_THREADS_NUMBER):
+for i in range(TvbProfile.current.MAX_THREADS_NUMBER):
     LOCKS_QUEUE.put(1)
 
 
@@ -78,10 +77,8 @@ class OperationExecutor(threading.Thread):
         #Try to get a spot to launch own operation.
         LOCKS_QUEUE.get(True)
         operation_id = self.operation_id
-        run_params = [TVBSettings.get_python_path(), '-m', 'tvb.core.operation_async_launcher', str(operation_id)]
-
-        if tvb_profile.CURRENT_SELECTED_PROFILE is not None:
-            run_params.append(tvb_profile.CURRENT_SELECTED_PROFILE)
+        run_params = [TvbProfile.current.PYTHON_PATH, '-m', 'tvb.core.operation_async_launcher',
+                      str(operation_id), TvbProfile.CURRENT_PROFILE_NAME]
 
         # In the exceptional case where the user pressed stop while the Thread startup is done,
         # We should no longer launch the operation.
@@ -247,7 +244,7 @@ class ClusterSchedulerClient(object):
                 hours = str(hours)
             walltime = "%s:%s:%s" % (hours, str(minutes), str(seconds))
 
-        call_arg = TVBSettings.CLUSTER_SCHEDULE_COMMAND % (walltime, operation_identifier, user_name_label)
+        call_arg = TvbProfile.current.cluster.SCHEDULE_COMMAND % (walltime, operation_identifier, user_name_label)
         LOGGER.info(call_arg)
         process_ = Popen([call_arg], stdout=PIPE, shell=True)
         job_id = process_.stdout.read().replace('\n', '').split('OAR_JOB_ID=')[-1]
@@ -280,7 +277,7 @@ class ClusterSchedulerClient(object):
         result = 0
         ## Try to kill only if operation job process is not None
         if operation_process is not None:
-            stop_command = TVBSettings.CLUSTER_STOP_COMMAND % operation_process.job_id
+            stop_command = TvbProfile.current.cluster.STOP_COMMAND % operation_process.job_id
             LOGGER.info("Stopping cluster operation: %s" % stop_command)
             result = os.system(stop_command)
             if result != 0:
@@ -294,7 +291,7 @@ class ClusterSchedulerClient(object):
 
 
 
-if TVBSettings.DEPLOY_CLUSTER:
+if TvbProfile.current.cluster.IS_DEPLOY:
     #Return an entity capable to submit jobs to the cluster.
     BACKEND_CLIENT = ClusterSchedulerClient()
 else:

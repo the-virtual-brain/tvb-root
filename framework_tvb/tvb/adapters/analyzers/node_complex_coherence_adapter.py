@@ -37,7 +37,6 @@ Adapter that uses the traits module to generate interfaces for FFT Analyzer.
 """
 
 import numpy
-from tvb.basic.config.settings import TVBSettings
 from tvb.analyzers.node_complex_coherence import NodeComplexCoherence
 from tvb.core.adapters.abcadapter import ABCAsynchronous
 from tvb.datatypes.time_series import TimeSeries
@@ -99,13 +98,14 @@ class NodeComplexCoherenceAdapter(ABCAsynchronous):
         Returns the required disk size to be able to run the adapter (in kB).
         """
         used_shape = self.algorithm.time_series.read_data_shape()
-        return self.algorithm.result_size(used_shape, self.algorithm.max_freq,
-                                          self.algorithm.epoch_length,
-                                          self.algorithm.segment_length,
-                                          self.algorithm.segment_shift,
-                                          self.algorithm.time_series.sample_period,
-                                          self.algorithm.zeropad,
-                                          self.algorithm.average_segments) * TVBSettings.MAGIC_NUMBER / 8 / 2 ** 10
+        result = self.algorithm.result_size(used_shape, self.algorithm.max_freq,
+                                            self.algorithm.epoch_length,
+                                            self.algorithm.segment_length,
+                                            self.algorithm.segment_shift,
+                                            self.algorithm.time_series.sample_period,
+                                            self.algorithm.zeropad,
+                                            self.algorithm.average_segments)
+        return self.array_size2kb(result)
         
         
     def configure(self, time_series):

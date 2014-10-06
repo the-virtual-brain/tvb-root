@@ -40,7 +40,7 @@ from datetime import datetime, timedelta
 from tvb.adapters.exporters.tvb_export import TVBExporter 
 from tvb.adapters.exporters.cifti_export import CIFTIExporter 
 from tvb.adapters.exporters.exceptions import ExportException, InvalidExportDataException
-from tvb.basic.config.settings import TVBSettings as cfg
+from tvb.basic.profile import TvbProfile
 from tvb.config import TVB_IMPORTER_MODULE, TVB_IMPORTER_CLASS
 from tvb.core.entities import model
 from tvb.core.entities.model.model_burst import BURST_INFO_FILE, BURSTS_DICT_KEY, DT_BURST_MAP
@@ -75,7 +75,7 @@ class ExportManager:
         # If new exporters supported, they should be added here
         self.__registerExporter(TVBExporter()) 
         self.__registerExporter(CIFTIExporter())
-        self.export_folder = os.path.join(cfg.TVB_STORAGE, self.EXPORT_FOLDER_NAME)
+        self.export_folder = os.path.join(TvbProfile.current.TVB_STORAGE, self.EXPORT_FOLDER_NAME)
 
     
     def __registerExporter(self, exporter):

@@ -37,7 +37,7 @@ import shutil
 import migrate.versioning.api as migratesqlapi
 from sqlalchemy.sql import text
 from sqlalchemy.engine import reflection
-from tvb.basic.config.settings import TVBSettings as cfg
+from tvb.basic.profile import TvbProfile
 from tvb.core.entities import model
 from tvb.core.entities.storage import SA_SESSIONMAKER
 from tvb.basic.logger.builder import get_logger
@@ -58,13 +58,15 @@ def initialize_startup():
         is_db_empty = True
     session.close()
 
+    versions_repo = TvbProfile.current.db.DB_VERSIONING_REPO
     if is_db_empty:
         LOGGER.info("Initializing Database")
-        if os.path.exists(cfg.DB_VERSIONING_REPO):
-            shutil.rmtree(cfg.DB_VERSIONING_REPO)
-        migratesqlapi.create(cfg.DB_VERSIONING_REPO, os.path.split(cfg.DB_VERSIONING_REPO)[1])
+        if os.path.exists(versions_repo):
+            shutil.rmtree(versions_repo)
+        migratesqlapi.create(versions_repo, os.path.split(versions_repo)[1])
         _update_sql_scripts()
-        migratesqlapi.version_control(cfg.DB_URL, cfg.DB_VERSIONING_REPO, version=cfg.DB_CURRENT_VERSION)
+        migratesqlapi.version_control(TvbProfile.current.db.DB_URL, versions_repo,
+                                      version=TvbProfile.current.version.DB_STRUCTURE_VERSION)
         session = SA_SESSIONMAKER()
         model.Base.metadata.create_all(bind=session.connection())
         session.commit()
@@ -72,7 +74,8 @@ def initialize_startup():
         LOGGER.info("Database Default Tables created successfully!")
     else:
         _update_sql_scripts()
-        migratesqlapi.upgrade(cfg.DB_URL, cfg.DB_VERSIONING_REPO, version=cfg.DB_CURRENT_VERSION)
+        migratesqlapi.upgrade(TvbProfile.current.db.DB_URL, versions_repo,
+                              version=TvbProfile.current.version.DB_STRUCTURE_VERSION)
         LOGGER.info("Database already has some data, will not be re-created!")
     return is_db_empty
 
@@ -111,7 +114,7 @@ def _update_sql_scripts():
     When a new release is done, make sure old DB scripts are updated.
     """
     scripts_folder = os.path.dirname(scripts.__file__)
-    versions_folder = os.path.join(cfg.DB_VERSIONING_REPO, 'versions')
+    versions_folder = os.path.join(TvbProfile.current.db.DB_VERSIONING_REPO, 'versions')
     if os.path.exists(versions_folder):
         shutil.rmtree(versions_folder)
     ignore_patters = shutil.ignore_patterns('.svn')

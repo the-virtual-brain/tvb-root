@@ -41,7 +41,7 @@ from tvb.core.entities.file.files_helper import FilesHelper
 from tvb.adapters.exporters.export_manager import ExportManager
 from tvb.adapters.exporters.exceptions import ExportException, InvalidExportDataException
 from tvb.tests.framework.datatypes.datatypes_factory import DatatypesFactory
-from tvb.basic.config.settings import TVBSettings as cfg
+from tvb.basic.profile import TvbProfile
 from tvb.tests.framework.core.base_testcase import TransactionalTestCase
 
 
@@ -67,7 +67,7 @@ class ExportersTest(TransactionalTestCase):
         FilesHelper().remove_project_structure(project.name)
         
         # Remove EXPORT folder
-        export_folder = os.path.join(cfg.TVB_STORAGE, ExportManager.EXPORT_FOLDER_NAME)
+        export_folder = os.path.join(TvbProfile.current.TVB_STORAGE, ExportManager.EXPORT_FOLDER_NAME)
         if os.path.exists(export_folder):
             shutil.rmtree(export_folder)
         

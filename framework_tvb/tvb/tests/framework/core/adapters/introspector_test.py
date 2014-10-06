@@ -36,10 +36,10 @@ Created on Jul 21, 2011
 
 import os
 import unittest
+from tvb.basic.profile import TvbProfile
 from tvb.core.entities.storage import dao
 from tvb.core.adapters.introspector import Introspector
 from tvb.core.services.project_service import initialize_storage
-from tvb.basic.config.settings import TVBSettings as cfg
 from tvb.tests.framework.core.base_testcase import BaseTestCase
 
 
@@ -55,8 +55,8 @@ class IntrospectorTest(BaseTestCase):
         self.reset_database()
         #tvb.tests.framework path
         core_path = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-        self.old_path = cfg.CURRENT_DIR
-        cfg.CURRENT_DIR = os.path.dirname(core_path)
+        self.old_path = TvbProfile.current.web.CURRENT_DIR
+        TvbProfile.current.web.CURRENT_DIR = os.path.dirname(core_path)
         self.introspector = Introspector("tvb.tests.framework")
         
         
@@ -64,7 +64,7 @@ class IntrospectorTest(BaseTestCase):
         """
         Reset the database when test is done.
         """
-        cfg.CURRENT_DIR = self.old_path
+        TvbProfile.current.web.CURRENT_DIR = self.old_path
         self.reset_database()
         
     def test_introspect(self):
@@ -81,7 +81,8 @@ class IntrospectorTest(BaseTestCase):
         self.assertEqual(10, len(groups), "Introspection failed!")
         nr_adapters_mod2 = 0
         for algorithm in groups:
-            self.assertTrue(algorithm.module in ['tvb.tests.framework.adapters.testadapter1', 'tvb.tests.framework.adapters.testadapter2',
+            self.assertTrue(algorithm.module in ['tvb.tests.framework.adapters.testadapter1',
+                                                 'tvb.tests.framework.adapters.testadapter2',
                                                  'tvb.tests.framework.adapters.testadapter3',
                                                  'tvb.tests.framework.adapters.ndimensionarrayadapter',
                                                  "tvb.adapters.analyzers.group_python_adapter",
@@ -94,7 +95,7 @@ class IntrospectorTest(BaseTestCase):
                             "Unknown Adapter Class:" + str(algorithm.classname))
             if algorithm.module == 'tvb.tests.framework.adapters.testadapter2':
                 nr_adapters_mod2 += 1
-        self.assertEqual(nr_adapters_mod2, 2, "Two adapters should have been loaded from module tvb.tests.framework.adapters2!")
+        self.assertEqual(nr_adapters_mod2, 2)
 
 
     def test_xml_introspection(self):

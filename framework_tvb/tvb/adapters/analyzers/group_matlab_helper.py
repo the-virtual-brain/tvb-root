@@ -43,7 +43,7 @@ import time
 import random
 import tempfile
 from scipy.io import loadmat, savemat
-from tvb.basic.config.settings import TVBSettings as cfg
+from tvb.basic.profile import TvbProfile
 from tvb.core.utils import MATLAB, OCTAVE, matlab_cmd
 from tvb.core.adapters.abcadapter import ABCAsynchronous
 
@@ -63,7 +63,7 @@ class MatlabAnalyzer(ABCAsynchronous):
 
     def __init__(self):
         ABCAsynchronous.__init__(self)
-        self.mlab_exe = cfg.MATLAB_EXECUTABLE
+        self.mlab_exe = TvbProfile.current.MATLAB_EXECUTABLE
         self.hex = hex(random.randint(0, 2 ** 32))
         self.script_name = "script%s" % self.hex
         self.script_fname = self.script_name + '.m'

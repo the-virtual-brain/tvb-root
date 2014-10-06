@@ -57,7 +57,7 @@ from tvb.core.entities.file.files_helper import FilesHelper
 from tvb.core.adapters.abcadapter import ABCAdapter, ABCSynchronous
 from tvb.core.services.backend_client import BACKEND_CLIENT
 from tvb.core.adapters.exceptions import LaunchException
-from tvb.basic.config.settings import TVBSettings as cfg
+from tvb.basic.profile import TvbProfile
 from tvb.basic.logger.builder import get_logger
 
 try:
@@ -216,9 +216,9 @@ class OperationService:
         operations = []
 
         available_args, group = self._prepare_group(project_id, kwargs)
-        if len(available_args) > cfg.MAX_RANGE_NUMBER:
+        if len(available_args) > TvbProfile.current.MAX_RANGE_NUMBER:
             raise LaunchException("Too big range specified. You should limit the"
-                                  " resulting operations to %d" % cfg.MAX_RANGE_NUMBER)
+                                  " resulting operations to %d" % TvbProfile.current.MAX_RANGE_NUMBER)
         else:
             self.logger.debug("Launching a range with %d operations..." % len(available_args))
         group_id = None
@@ -328,7 +328,7 @@ class OperationService:
             for k, value_ in filtered_kwargs.items():
                 params[str(k)] = value_
 
-            disk_space_per_user = cfg.MAX_DISK_SPACE
+            disk_space_per_user = TvbProfile.current.MAX_DISK_SPACE
             pending_op_disk_space = dao.compute_disk_size_for_started_ops(operation.fk_launched_by)
             user_disk_space = dao.get_user_by_id(operation.fk_launched_by).used_disk_space  # Transform from kB to Bytes
             available_space = disk_space_per_user - pending_op_disk_space - user_disk_space

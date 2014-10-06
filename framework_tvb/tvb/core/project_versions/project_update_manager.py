@@ -34,7 +34,7 @@ Main controller for the updates related to the Project entity.
 .. moduleauthor:: Lia Domide <lia.domide@codemart.ro>
 """
 
-from tvb.basic.config.settings import TVBSettings
+from tvb.basic.profile import TvbProfile
 from tvb.core.code_versions.base_classes import UpdateManager
 from tvb.core.entities.file.files_helper import FilesHelper
 import tvb.core.project_versions.project_update_scripts as project_versions
@@ -54,7 +54,8 @@ class ProjectUpdateManager(UpdateManager):
         self.project_meta = self.files_helper.read_project_metadata(project_path)
         from_version = self.project_meta.get('version', 0)
 
-        super(ProjectUpdateManager, self).__init__(project_versions, from_version, TVBSettings.PROJECT_VERSION)
+        super(ProjectUpdateManager, self).__init__(project_versions, from_version,
+                                                   TvbProfile.current.version.PROJECT_VERSION)
 
 
     def run_all_updates(self):

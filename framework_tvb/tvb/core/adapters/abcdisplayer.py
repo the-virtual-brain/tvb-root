@@ -35,7 +35,7 @@ import os
 import sys
 import pylab
 from abc import ABCMeta, abstractmethod
-from tvb.basic.config.settings import TVBSettings as config
+from tvb.basic.profile import TvbProfile
 from tvb.core.decorators import synchronized
 from tvb.core.adapters.abcadapter import ABCSynchronous
 from tvb.core.adapters.exceptions import LaunchException
@@ -241,7 +241,7 @@ class ABCMPLH5Displayer(ABCDisplayer):
         parameters = dict(title=self._ui_name,
                           figureNumber=self.figure.number,
                           showFullToolbar=show_full_toolbar,
-                          mplh5ServerURL=config.MPLH5_SERVER_URL)
+                          mplh5ServerURL=TvbProfile.current.web.MPLH5_SERVER_URL)
 
         return self.build_display_result("mplh5/figure", parameters)
 

@@ -45,7 +45,7 @@ from tvb.core import utils
 from tvb.core.entities.exportable import Exportable
 from tvb.core.entities.model.model_base import Base
 from tvb.basic.logger.builder import get_logger
-from tvb.basic.config.settings import TVBSettings
+from tvb.basic.profile import TvbProfile
 from tvb.core.entities.transient.structure_entities import DataTypeMetaData
 
 LOG = get_logger(__name__)
@@ -189,7 +189,7 @@ class Project(Base, Exportable):
         self.fk_admin = fk_admin
         self.description = description
         self.gid = utils.generate_guid()
-        self.version = TVBSettings.PROJECT_VERSION
+        self.version = TvbProfile.current.version.PROJECT_VERSION
 
 
     def refresh_update_date(self):

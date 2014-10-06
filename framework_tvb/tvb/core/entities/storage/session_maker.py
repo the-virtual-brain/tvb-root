@@ -39,7 +39,7 @@ from sqlalchemy import create_engine, event
 from sqlalchemy.orm import sessionmaker
 from sqlalchemy.orm.exc import NoResultFound
 
-from tvb.basic.config.settings import TVBSettings as cfg
+from tvb.basic.profile import TvbProfile
 from tvb.basic.logger.builder import get_logger
 from tvb.core.entities.storage.exceptions import NestedTransactionUnsupported, InvalidTransactionAccess
 
@@ -50,13 +50,14 @@ from tvb.core.entities.storage.exceptions import NestedTransactionUnsupported, I
 
 LOGGER = get_logger(__name__)
 
-if cfg.SELECTED_DB == 'postgres':
+if TvbProfile.current.db.SELECTED_DB == 'postgres':
     ### Control the pool size for PostgreSQL, otherwise we might end with multiple 
     ### concurrent Python processes failing because of too many opened connections.
-    DB_ENGINE = create_engine(cfg.DB_URL, pool_recycle=5, max_overflow=1, pool_size=cfg.MAX_DB_CONNECTIONS)
+    DB_ENGINE = create_engine(TvbProfile.current.db.DB_URL, pool_recycle=5, max_overflow=1,
+                              pool_size=TvbProfile.current.db.MAX_CONNECTIONS)
 else:
     ### SqlLite does not support pool-size
-    DB_ENGINE = create_engine(cfg.DB_URL, pool_recycle=5)
+    DB_ENGINE = create_engine(TvbProfile.current.db.DB_URL, pool_recycle=5)
 
     def __have_journal_in_memory(con, con_record):
         con.execute("PRAGMA journal_mode = MEMORY")
@@ -67,7 +68,7 @@ else:
     def __have_journal_WAL(con, con_record):
         con.execute("PRAGMA journal_mode=WAL")
 
-    if getattr(cfg, "TRADE_CRASH_SAFETY_FOR_SPEED", False):
+    if getattr(TvbProfile.current, "TRADE_CRASH_SAFETY_FOR_SPEED", False):
         # use for speed, but without crash safety; use only in development
         LOGGER.warn("TRADE_CRASH_SAFETY_FOR_SPEED is on")
         event.listen(DB_ENGINE, 'connect', __have_journal_in_memory)
@@ -199,7 +200,7 @@ class SessionsStack(object):
             transaction = SA_SESSIONMAKER()
         else:
             # We are part of a nested transaction.
-            if cfg.ALLOW_NESTED_TRANSACTIONS:
+            if TvbProfile.current.db.ALLOW_NESTED_TRANSACTIONS:
                 transaction = SA_SESSIONMAKER(bind=self.sessions_stack[-1].connection())
             else:
                 raise NestedTransactionUnsupported("We do not support nested transaction in TVB.")

@@ -38,13 +38,11 @@ This represents the Controller part (from MVC).
 
 import cherrypy
 import formencode
-
 from formencode import validators
 from simplejson import JSONEncoder
 from cherrypy.lib.static import serve_file
-
 from tvb.adapters.exporters.export_manager import ExportManager
-from tvb.basic.config.settings import TVBSettings as cfg
+from tvb.basic.profile import TvbProfile
 from tvb.config import SIMULATOR_CLASS, SIMULATOR_MODULE
 from tvb.core.entities.transient import graph_structures
 from tvb.core.entities.transient.filtering import StaticFiltersFactory
@@ -409,7 +407,7 @@ class ProjectController(BaseController):
         template_specification = self.fill_overlay_attributes(template_specification, "DataType Details",
                                                               overlay_title, "project/details_datatype_overlay",
                                                               overlay_class, tabs, overlay_indexes)
-        template_specification['baseUrl'] = cfg.BASE_URL
+        template_specification['baseUrl'] = TvbProfile.current.web.BASE_URL
         #template_specification[c.KEY_OVERLAY_PAGINATION] = True
         #template_specification[c.KEY_OVERLAY_PREVIOUS] = "alert(1);"
         #template_specification[c.KEY_OVERLAY_NEXT] = "alert(2);"
@@ -555,7 +553,7 @@ class ProjectController(BaseController):
         self._mark_selected(selected_project)
         data = self.project_service.get_filterable_meta()
         filters = StaticFiltersFactory.build_datatype_filters(selected=visibility_filter)
-        template_specification = dict(mainContent="project/structure", baseUrl=cfg.BASE_URL,
+        template_specification = dict(mainContent="project/structure", baseUrl=TvbProfile.current.web.BASE_URL,
                                       title=selected_project.name,
                                       project=selected_project, data=data,
                                       lastSelectedTab=last_selected_tab, firstLevelSelection=first_level,

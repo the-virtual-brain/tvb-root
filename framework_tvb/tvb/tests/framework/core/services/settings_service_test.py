@@ -36,7 +36,7 @@
 import os
 import shutil
 import unittest
-from tvb.basic.config.settings import TVBSettings as cfg
+from tvb.basic.profile import TvbProfile
 from tvb.core.services.settings_service import SettingsService, InvalidSettingsException
 
 
@@ -50,11 +50,11 @@ class SettingsServiceTest(unittest.TestCase):
     
     def _write_cfg_file(self, initial_data):
         """ Write in CFG file, a dictionary of properties"""
-        with open(cfg.TVB_CONFIG_FILE, 'w') as file_writer:
+        with open(TvbProfile.current.TVB_CONFIG_FILE, 'w') as file_writer:
             for key in initial_data:
                 file_writer.write(key + '=' + str(initial_data[key]) + '\n')
             file_writer.close()
-        cfg.read_config_file()
+        #cfg.read_config_file()
         self.settings_service = SettingsService()
     
     
@@ -65,10 +65,10 @@ class SettingsServiceTest(unittest.TestCase):
         creates initial TVB settings and a `SettingsService`
         """
         self.initial_settings = {}
-        self.old_config_file = cfg.TVB_CONFIG_FILE
-        cfg.TVB_CONFIG_FILE = TEST_CONFIG_FILE
-        if os.path.exists(cfg.TVB_CONFIG_FILE):
-            os.remove(cfg.TVB_CONFIG_FILE)
+        self.old_config_file = TvbProfile.current.TVB_CONFIG_FILE
+        TvbProfile.current.TVB_CONFIG_FILE = TEST_CONFIG_FILE
+        if os.path.exists(TEST_CONFIG_FILE):
+            os.remove(TEST_CONFIG_FILE)
         for key in dir(cfg):
             self.initial_settings[key] = getattr(cfg, key)
         self.settings_service = SettingsService()
@@ -79,10 +79,10 @@ class SettingsServiceTest(unittest.TestCase):
         Clean up after testing is done;
         restore config file
         """
-        if os.path.exists(cfg.TVB_CONFIG_FILE):
-            os.remove(cfg.TVB_CONFIG_FILE)
-        cfg.FILE_SETTINGS = None
-        cfg.TVB_CONFIG_FILE = self.old_config_file
+        if os.path.exists(TvbProfile.current.TVB_CONFIG_FILE):
+            os.remove(TvbProfile.current.TVB_CONFIG_FILE)
+        #cfg.FILE_SETTINGS = None
+        TvbProfile.current.TVB_CONFIG_FILE = self.old_config_file
     
     
     def test_check_db_url_invalid(self):
@@ -98,7 +98,7 @@ class SettingsServiceTest(unittest.TestCase):
         Also do a check that returned value is greater than 0. Not most precise check but other
         does not seem possible so far.
         """
-        disk_space = self.settings_service.get_disk_free_space(cfg.TVB_STORAGE)
+        disk_space = self.settings_service.get_disk_free_space(TvbProfile.current.TVB_STORAGE)
         self.assertTrue(disk_space > 0, "Disk space should never be negative.")
     
             
@@ -110,7 +110,7 @@ class SettingsServiceTest(unittest.TestCase):
         """
         initial_configurations = self.settings_service.configurable_keys
         updated = self.settings_service.configurable_keys
-        first_run = cfg.is_first_run()
+        first_run = TvbProfile.is_first_run()
         self.assertEqual(initial_configurations, updated, "Configuration changed even with no config file.")
         self.assertTrue(first_run, "Invalid First_Run flag!!")
         
@@ -122,7 +122,8 @@ class SettingsServiceTest(unittest.TestCase):
         """
         initial_configurations = self.settings_service.configurable_keys
         #Simulate the encrypted value is stored
-        initial_configurations[self.settings_service.KEY_ADMIN_PWD] = {'value': cfg.ADMINISTRATOR_PASSWORD}
+        initial_configurations[self.settings_service.KEY_ADMIN_PWD] = \
+            {'value': TvbProfile.current.web.admin.ADMINISTRATOR_PASSWORD}
         test_dict = {self.settings_service.KEY_ADMIN_NAME: 'test_name',
                      self.settings_service.KEY_ADMIN_EMAIL: 'my@yahoo.com',
                      self.settings_service.KEY_PORT: 8081,
@@ -130,7 +131,7 @@ class SettingsServiceTest(unittest.TestCase):
         
         self._write_cfg_file(test_dict)
         updated_cfg = self.settings_service.configurable_keys
-        isfirst = cfg.is_first_run()
+        isfirst = TvbProfile.is_first_run()
         self.assertFalse(isfirst, "Invalid First_Run flag!!")
         for key in updated_cfg:
             if key in test_dict:
@@ -144,7 +145,7 @@ class SettingsServiceTest(unittest.TestCase):
         Test that the config.py entries are updated accordingly when a 
         configuration file is present.
         """
-        test_storage = os.path.join(cfg.TVB_STORAGE, 'test_storage')
+        test_storage = os.path.join(TvbProfile.current.TVB_STORAGE, 'test_storage')
         test_dict = {self.settings_service.KEY_STORAGE: test_storage,
                      self.settings_service.KEY_ADMIN_NAME: 'test_name',
                      self.settings_service.KEY_ADMIN_EMAIL: 'my@yahoo.com',
@@ -166,12 +167,12 @@ class SettingsServiceTest(unittest.TestCase):
         Test than when nothing changes in the settings file, the correct flags
         are returned.
         """
-        test_storage = os.path.join(cfg.TVB_STORAGE, 'test_storage')
+        test_storage = os.path.join(TvbProfile.current.TVB_STORAGE, 'test_storage')
         disk_storage = 100
         initial_data = {self.settings_service.KEY_STORAGE: test_storage,
                         self.settings_service.KEY_ADMIN_NAME: 'test_name',
-                        self.settings_service.KEY_SELECTED_DB: cfg.SELECTED_DB,
-                        self.settings_service.KEY_DB_URL: cfg.DB_URL,
+                        self.settings_service.KEY_SELECTED_DB: TvbProfile.current.db.SELECTED_DB,
+                        self.settings_service.KEY_DB_URL: TvbProfile.current.db.DB_URL,
                         self.settings_service.KEY_ADMIN_EMAIL: 'my@yahoo.com',
                         self.settings_service.KEY_MAX_DISK_SPACE_USR: disk_storage * (2 ** 10),
                         self.settings_service.KEY_PORT: 8081,
@@ -189,8 +190,8 @@ class SettingsServiceTest(unittest.TestCase):
         Test than storage is changed, the data is copied in proper place.
         """
         #Add some additional entries that would normaly come from the UI.
-        old_storage = os.path.join(cfg.TVB_STORAGE, 'tvb.tests.framework_old')
-        new_storage = os.path.join(cfg.TVB_STORAGE, 'tvb.tests.framework_new')
+        old_storage = os.path.join(TvbProfile.current.TVB_STORAGE, 'tvb.tests.framework_old')
+        new_storage = os.path.join(TvbProfile.current.TVB_STORAGE, 'tvb.tests.framework_new')
         test_data = 'tvb.tests.framework_data'
         if os.path.exists(old_storage):
             shutil.rmtree(old_storage)
@@ -200,8 +201,8 @@ class SettingsServiceTest(unittest.TestCase):
         file_writer.close() 
         initial_data = {self.settings_service.KEY_STORAGE: old_storage,
                         self.settings_service.KEY_ADMIN_NAME: 'test_name',
-                        self.settings_service.KEY_SELECTED_DB: cfg.SELECTED_DB,
-                        self.settings_service.KEY_DB_URL: cfg.DB_URL,
+                        self.settings_service.KEY_SELECTED_DB: TvbProfile.current.db.SELECTED_DB,
+                        self.settings_service.KEY_DB_URL: TvbProfile.current.db.DB_URL,
                         self.settings_service.KEY_MAX_DISK_SPACE_USR: 100,
                         self.settings_service.KEY_MATLAB_EXECUTABLE: 'test'}
         self._write_cfg_file(initial_data)

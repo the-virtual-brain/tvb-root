@@ -43,7 +43,7 @@ from functools import wraps
 from datetime import datetime
 from copy import copy
 from abc import ABCMeta, abstractmethod
-from tvb.basic.config.settings import TVBSettings as cfg
+from tvb.basic.profile import TvbProfile
 from tvb.basic.logger.builder import get_logger
 from tvb.basic.traits.types_mapped import MappedType
 from tvb.basic.traits.exceptions import TVBException
@@ -1109,7 +1109,7 @@ class ABCGroupAdapter(ABCAdapter):
     def __init__(self, xml_file_path):
         ABCAdapter.__init__(self)
         if not os.path.isabs(xml_file_path):
-            xml_file_path = os.path.join(cfg.CURRENT_DIR, xml_file_path)
+            xml_file_path = os.path.join(TvbProfile.current.web.CURRENT_DIR, xml_file_path)
         ### Find the XML reader (it loads only once in the system per XML file).
         self.xml_reader = xml_reader.XMLGroupReader.get_instance(xml_file_path)
 
@@ -1275,6 +1275,13 @@ class ABCAsynchronous(ABCAdapter):
       on Cluster.
     """
     __metaclass__ = ABCMeta
+
+    def array_size2kb(self, size):
+        """
+        :param size: size in bytes
+        :return: size in kB
+        """
+        return size * TvbProfile.current.MAGIC_NUMBER / 8 / 2 ** 10
 
 
 

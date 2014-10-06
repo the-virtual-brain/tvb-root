@@ -39,7 +39,6 @@ import threading
 import subprocess
 from time import sleep
 from formencode import validators
-from tvb.basic.config.settings import TVBSettings
 from tvb.basic.profile import TvbProfile
 from tvb.core.utils import check_matlab_version
 from tvb.core.services.settings_service import SettingsService
@@ -87,7 +86,7 @@ class SettingsController(UserController):
                 common.set_error_message(excep.message)
         template_specification.update({'keys_order': self.settingsservice.KEYS_DISPLAY_ORDER,
                                        'config_data': self.settingsservice.configurable_keys,
-                                       common.KEY_FIRST_RUN: TVBSettings.is_first_run()})
+                                       common.KEY_FIRST_RUN: TvbProfile.is_first_run()})
         return self.fill_default_attributes(template_specification)
 
 
@@ -95,9 +94,10 @@ class SettingsController(UserController):
         """
         Restart CherryPy and Backend.
         """
-        if TVBSettings.MPLH5_Server_Thread is not None:
-            TVBSettings.MPLH5_Server_Thread.shutdown()
-            TVBSettings.MPLH5_Server_Thread.server_close()
+        mplh5 = TvbProfile.current.web.MPLH5_Server_Thread
+        if mplh5 is not None:
+            mplh5.shutdown()
+            mplh5.server_close()
         else:
             self.logger.warning('For some reason the mplh5 never started.')
         cherrypy.engine.exit()
@@ -106,8 +106,8 @@ class SettingsController(UserController):
 
         sleep(5)
 
-        python_path = TVBSettings.get_python_path()
-        proc_params = [python_path, '-m', 'tvb_bin.app', 'start', TvbProfile.CURRENT_SELECTED_PROFILE]
+        python_path = TvbProfile.current.PYTHON_PATH
+        proc_params = [python_path, '-m', 'tvb_bin.app', 'start', TvbProfile.CURRENT_PROFILE_NAME]
         if should_reset:
             proc_params.append('-reset')
 

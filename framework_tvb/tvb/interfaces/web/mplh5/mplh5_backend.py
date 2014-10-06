@@ -36,7 +36,7 @@ Html5 Backend for Matplotlib.
 
 import thread
 import mplh5canvas.simple_server as simple_server
-from tvb.basic.config.settings import TVBSettings as cfg
+from tvb.basic.profile import TvbProfile
 from mplh5canvas.backend_h5canvas import web_socket_transfer_data
 from mplh5canvas.backend_h5canvas import FigureManagerH5Canvas
 
@@ -45,13 +45,14 @@ from mplh5canvas.backend_h5canvas import new_figure_manager
 from mplh5canvas.backend_h5canvas import draw_if_interactive
 
 try:
-    FIGURES_SERVER = simple_server.WebSocketServer(('', cfg.MPLH5_SERVER_PORT),
+    FIGURES_SERVER = simple_server.WebSocketServer(('', TvbProfile.current.web.MPLH5_SERVER_PORT),
                                                    web_socket_transfer_data,
                                                    simple_server.WebSocketRequestHandler)
     THREAD = thread.start_new_thread(FIGURES_SERVER.serve_forever, ())
-    cfg.MPLH5_Server_Thread = FIGURES_SERVER
+    TvbProfile.current.web.MPLH5_Server_Thread = FIGURES_SERVER
+
 except Exception, excep:
-    print "Error WebSocketServer %i(%s)" % (cfg.MPLH5_SERVER_PORT, str(excep))
+    print "Error WebSocketServer %i(%s)" % (TvbProfile.current.web.MPLH5_SERVER_PORT, str(excep))
 
 FigureManager = FigureManagerH5Canvas
 

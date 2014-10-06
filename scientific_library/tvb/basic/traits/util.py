@@ -39,7 +39,7 @@ All the little functions that make life nicer in the Traits package.
 import numpy
 import collections
 import inspect
-from tvb.basic.config.settings import TVBSettings
+from tvb.basic.profile import TvbProfile
 
 
 # returns true if key is, by convention, public
@@ -83,7 +83,7 @@ def log_debug_array(log, array, array_name, owner=""):
     """
     Simple access to debugging info on an array.
     """
-    if TVBSettings.TRAITS_CONFIGURATION.use_storage:
+    if TvbProfile.current.TRAITS_CONFIGURATION.use_storage:
         return
         # Hide this logs in web-mode, with storage, because we have multiple storage exceptions
 

@@ -38,7 +38,8 @@ Manager for the file storage versioning updates.
 
 import os
 import tvb.core.entities.file.file_update_scripts as file_update_scripts
-from tvb.basic.config.settings import TVBSettings as cfg
+from tvb.basic.config import stored
+from tvb.basic.profile import TvbProfile
 from tvb.basic.traits.types_mapped import MappedType
 from tvb.core.code_versions.base_classes import UpdateManager
 from tvb.core.entities.file.hdf5_storage_manager import HDF5StorageManager
@@ -62,7 +63,9 @@ class FilesUpdateManager(UpdateManager):
     
     
     def __init__(self):
-        super(FilesUpdateManager, self).__init__(file_update_scripts, cfg.DATA_CHECKED_TO_VERSION, cfg.DATA_VERSION)
+        super(FilesUpdateManager, self).__init__(file_update_scripts,
+                                                 TvbProfile.current.version.DATA_CHECKED_TO_VERSION,
+                                                 TvbProfile.current.version.DATA_VERSION)
 
 
     def get_file_data_version(self, file_path):
@@ -90,7 +93,7 @@ class FilesUpdateManager(UpdateManager):
             self.log.exception(ex)
             return False
 
-        if file_version == cfg.DATA_VERSION:
+        if file_version == TvbProfile.current.version.DATA_VERSION:
             return True
         return False
 
@@ -143,7 +146,7 @@ class FilesUpdateManager(UpdateManager):
             the upgrade was successfully for all DataTypes and False otherwise, and message is a status
             update message.
         """
-        if cfg.DATA_CHECKED_TO_VERSION < cfg.DATA_VERSION:
+        if TvbProfile.current.version.DATA_CHECKED_TO_VERSION < TvbProfile.current.version.DATA_VERSION:
             datatype_total_count = dao.count_all_datatypes()
             # Keep track of how many DataTypes were properly updated and how many 
             # were marked as invalid due to missing files or invalid manager.
@@ -171,23 +174,23 @@ class FilesUpdateManager(UpdateManager):
                 current_datatype_page += 1
                 
             # Now update the configuration file since update was done
-            config_file_update_dict = {cfg.KEY_LAST_CHECKED_FILE_VERSION: cfg.DATA_VERSION}
+            config_file_update_dict = {stored.KEY_LAST_CHECKED_FILE_VERSION: TvbProfile.current.version.DATA_VERSION}
             if nr_of_dts_upgraded_fault == 0:
                 # Everything went fine
-                config_file_update_dict[cfg.KEY_FILE_STORAGE_UPDATE_STATUS] = FILE_STORAGE_VALID
+                config_file_update_dict[stored.KEY_FILE_STORAGE_UPDATE_STATUS] = FILE_STORAGE_VALID
                 return_status = True
                 return_message = ("File upgrade finished successfully for all %s entries. "
                                   "Thank you for your patience" % nr_of_dts_upgraded_fine)
                 self.log.info(return_message)
             else:
                 # Something went wrong
-                config_file_update_dict[cfg.KEY_FILE_STORAGE_UPDATE_STATUS] = FILE_STORAGE_INVALID
+                config_file_update_dict[stored.KEY_FILE_STORAGE_UPDATE_STATUS] = FILE_STORAGE_INVALID
                 return_status = False
                 return_message = ("Out of %s stored DataTypes, %s were upgraded successfully "
                                   "and %s had faults and were marked invalid" % (datatype_total_count, 
                                   nr_of_dts_upgraded_fine, nr_of_dts_upgraded_fault))
                 self.log.warning(return_message)
-            cfg.add_entries_to_config_file(config_file_update_dict)
+            TvbProfile.current.manager.add_entries_to_config_file(config_file_update_dict)
             return return_status, return_message
      
 

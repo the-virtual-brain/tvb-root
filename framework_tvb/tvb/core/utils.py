@@ -39,7 +39,7 @@ import json
 import datetime
 import uuid
 import numpy
-from tvb.basic.config.settings import TVBSettings as configFile
+from tvb.basic.profile import TvbProfile
 from tvb.basic.logger.builder import get_logger
 from tvb.core.decorators import user_environment_execution
 
@@ -65,7 +65,7 @@ def path2url_part(file_path):
     Prepare a File System Path for passing into an URL.
     """
     if not os.path.isabs(file_path):
-        file_path = os.path.join(configFile.TVB_STORAGE, file_path)
+        file_path = os.path.join(TvbProfile.current.TVB_STORAGE, file_path)
     return file_path.replace(os.sep, CHAR_SEPARATOR).replace(" ", CHAR_SPACE).replace(DRIVE_SEP, CHAR_DRIVE)
 
 

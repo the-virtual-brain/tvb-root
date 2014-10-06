@@ -34,7 +34,7 @@
 
 import os
 import unittest
-from tvb.basic.config.settings import TVBSettings as cfg
+from tvb.basic.profile import TvbProfile
 from tvb.basic.traits.types_mapped import MappedType
 from tvb.core.entities.file.xml_metadata_handlers import XMLReader
 from tvb.core.entities import model
@@ -45,7 +45,7 @@ from tvb.tests.framework.core.base_testcase import TransactionalTestCase
 from tvb.tests.framework.core.test_factory import TestFactory
 
 
-root_storage = cfg.TVB_STORAGE
+root_storage = TvbProfile.current.TVB_STORAGE
 
 
 class FilesHelperTest(TransactionalTestCase):

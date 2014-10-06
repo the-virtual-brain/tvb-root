@@ -37,7 +37,7 @@ import json
 import numpy
 import pylab
 from tvb.basic.filters.chain import FilterChain
-from tvb.basic.config.settings import TVBSettings
+from tvb.basic.profile import TvbProfile
 from tvb.core.utils import parse_slice, slice_str
 from tvb.datatypes.arrays import MappedArray
 from tvb.core.adapters.abcdisplayer import ABCDisplayer
@@ -135,7 +135,8 @@ class MappedArrayMplVisualizer(object):
         axes.set_title(plot_title)
         figure.colorbar(img)
         figure.canvas.draw()
-        return dict(mplh5ServerURL=TVBSettings.MPLH5_SERVER_URL, figureNumber=figure.number, showFullToolbar=True)
+        return dict(mplh5ServerURL=TvbProfile.current.web.MPLH5_SERVER_URL,
+                    figureNumber=figure.number, showFullToolbar=True)
 
 
 

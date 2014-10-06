@@ -43,11 +43,11 @@ from sqlalchemy.orm import sessionmaker
 #from sqlalchemy.ext.declarative import declarative_base
 from tvb.basic.traits.core import TypeBase as BASE
 from tvb.basic.logger.builder import get_logger
-from tvb.basic.config.settings import TVBSettings as cfg
+from tvb.basic.profile import TvbProfile
 
 
 #BASE = declarative_base()
-ENGINE = create_engine(cfg.DB_URL, pool_recycle=5, echo=True)
+ENGINE = create_engine(TvbProfile.current.db.DB_URL, pool_recycle=5, echo=True)
 #TODO: Should this also use our new singleton SessionMaker class ?
 SESSION = sessionmaker(bind=ENGINE)
 LOGGER = get_logger(__name__)

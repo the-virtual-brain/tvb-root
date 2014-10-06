@@ -39,7 +39,7 @@ import Queue
 import xml.dom.minidom
 from time import sleep
 from xml.dom.minidom import Node
-from tvb.basic.config.settings import TVBSettings as config
+from tvb.basic.profile import TvbProfile
 from tvb.basic.logger.builder import get_logger
 from tvb.core.entities import model
 from tvb.core.entities.storage import dao
@@ -50,7 +50,7 @@ from tvb.core.services.operation_service import OperationService
 
 
 LOCKS_QUEUE = Queue.Queue(0)
-for i in max(2, range(config.MAX_THREADS_NUMBER)):
+for i in max(2, range(TvbProfile.current.MAX_THREADS_NUMBER)):
     LOCKS_QUEUE.put(1)
 #Global variable to store events as read from XML files.
 EXECUTORS_DICT = {}

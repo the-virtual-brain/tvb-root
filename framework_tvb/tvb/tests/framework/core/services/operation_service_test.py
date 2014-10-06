@@ -35,7 +35,7 @@
 import unittest
 import json
 import numpy
-from tvb.basic.config.settings import TVBSettings
+from tvb.basic.profile import TvbProfile
 from tvb.core.utils import string2array
 from tvb.core.entities import model
 from tvb.core.entities.storage import dao
@@ -70,14 +70,14 @@ class OperationServiceTest(BaseTestCase):
         self.test_user = TestFactory.create_user()
         self.test_project = TestFactory.create_project(self.test_user)
         self.operation_service = OperationService()
-        self.backup_hdd_size = TVBSettings.MAX_DISK_SPACE
+        self.backup_hdd_size = TvbProfile.current.MAX_DISK_SPACE
 
 
     def tearDown(self):
         """
         Reset the database when test is done.
         """
-        TVBSettings.MAX_DISK_SPACE = self.backup_hdd_size
+        TvbProfile.current.MAX_DISK_SPACE = self.backup_hdd_size
         self.clean_database()
 
 
@@ -155,7 +155,7 @@ class OperationServiceTest(BaseTestCase):
         output = adapter.get_output()
         output_type = output[0].__name__
         data = {"test": 100}
-        TVBSettings.MAX_DISK_SPACE = float(adapter.get_required_disk_size(**data))
+        TvbProfile.current.MAX_DISK_SPACE = float(adapter.get_required_disk_size(**data))
         tmp_folder = FilesHelper().get_project_folder(self.test_project, "TEMP")
 
         dts = dao.get_values_of_datatype(self.test_project.id, Datatype2)[0]
@@ -195,7 +195,7 @@ class OperationServiceTest(BaseTestCase):
         output = adapter.get_output()
         output_type = output[0].__name__
         data = {"test": 100}
-        TVBSettings.MAX_DISK_SPACE = 2 * float(adapter.get_required_disk_size(**data))
+        TvbProfile.current.MAX_DISK_SPACE = 2 * float(adapter.get_required_disk_size(**data))
         tmp_folder = FilesHelper().get_project_folder(self.test_project, "TEMP")
         self.operation_service.initiate_operation(self.test_user, self.test_project.id, adapter,
                                                   tmp_folder, method_name=ABCAdapter.LAUNCH_METHOD, **data)
@@ -206,7 +206,7 @@ class OperationServiceTest(BaseTestCase):
         self.assertEqual(datatype.type, output_type, "Wrong data stored.")
         #Now update the maximum disk size to be the size of the previously resulted datatypes (transform from kB to MB)
         #plus what is estimated to be required from the next one (transform from B to MB)
-        TVBSettings.MAX_DISK_SPACE = float(datatype.disk_size) + float(adapter.get_required_disk_size(**data))
+        TvbProfile.current.MAX_DISK_SPACE = float(datatype.disk_size) + float(adapter.get_required_disk_size(**data))
 
         self.operation_service.initiate_operation(self.test_user, self.test_project.id, adapter,
                                                   tmp_folder, method_name=ABCAdapter.LAUNCH_METHOD, **data)
@@ -229,7 +229,7 @@ class OperationServiceTest(BaseTestCase):
         output = adapter.get_output()
         output_type = output[0].__name__
         data = {"test": 100}
-        TVBSettings.MAX_DISK_SPACE = (1 + float(adapter.get_required_disk_size(**data)))
+        TvbProfile.current.MAX_DISK_SPACE = (1 + float(adapter.get_required_disk_size(**data)))
         tmp_folder = FilesHelper().get_project_folder(self.test_project, "TEMP")
         self.operation_service.initiate_operation(self.test_user, self.test_project.id, adapter,
                                                   tmp_folder, method_name=ABCAdapter.LAUNCH_METHOD, **data)
@@ -240,7 +240,8 @@ class OperationServiceTest(BaseTestCase):
         self.assertEqual(datatype.type, output_type, "Wrong data stored.")
         #Now update the maximum disk size to be less than size of the previously resulted datatypes (transform kB to MB)
         #plus what is estimated to be required from the next one (transform from B to MB)
-        TVBSettings.MAX_DISK_SPACE = float(datatype.disk_size - 1) + float(adapter.get_required_disk_size(**data) - 1)
+        TvbProfile.current.MAX_DISK_SPACE = float(datatype.disk_size - 1) + \
+                                                float(adapter.get_required_disk_size(**data) - 1)
 
         self.assertRaises(NoMemoryAvailableException, self.operation_service.initiate_operation, self.test_user,
                           self.test_project.id, adapter,
@@ -260,7 +261,7 @@ class OperationServiceTest(BaseTestCase):
         output = adapter.get_output()
         output_type = output[0].__name__
         data = {"test": 100}
-        TVBSettings.MAX_DISK_SPACE = float(adapter.get_required_disk_size(**data))
+        TvbProfile.current.MAX_DISK_SPACE = float(adapter.get_required_disk_size(**data))
         tmp_folder = FilesHelper().get_project_folder(self.test_project, "TEMP")
         self.operation_service.initiate_operation(self.test_user, self.test_project.id, adapter,
                                                   tmp_folder, method_name=ABCAdapter.LAUNCH_METHOD, **data)
@@ -286,7 +287,7 @@ class OperationServiceTest(BaseTestCase):
         output = adapter.get_output()
         output_type = output[0].__name__
         data = {"test": 100}
-        TVBSettings.MAX_DISK_SPACE = float(adapter.get_required_disk_size(**data) + space_taken_by_started)
+        TvbProfile.current.MAX_DISK_SPACE = float(adapter.get_required_disk_size(**data) + space_taken_by_started)
         tmp_folder = FilesHelper().get_project_folder(self.test_project, "TEMP")
         self.operation_service.initiate_operation(self.test_user, self.test_project.id, adapter,
                                                   tmp_folder, method_name=ABCAdapter.LAUNCH_METHOD, **data)
@@ -306,7 +307,7 @@ class OperationServiceTest(BaseTestCase):
         group = dao.find_group(module, class_name)
         adapter = FlowService().build_adapter_instance(group)
         data = {"test": 100}
-        TVBSettings.MAX_DISK_SPACE = float(adapter.get_required_disk_size(**data) - 1)
+        TvbProfile.current.MAX_DISK_SPACE = float(adapter.get_required_disk_size(**data) - 1)
         tmp_folder = FilesHelper().get_project_folder(self.test_project, "TEMP")
         self.assertRaises(NoMemoryAvailableException, self.operation_service.initiate_operation, self.test_user,
                           self.test_project.id, adapter,
@@ -328,7 +329,7 @@ class OperationServiceTest(BaseTestCase):
         dao.store_entity(started_operation)
         adapter = FlowService().build_adapter_instance(group)
         data = {"test": 100}
-        TVBSettings.MAX_DISK_SPACE = float(adapter.get_required_disk_size(**data) + space_taken_by_started - 1)
+        TvbProfile.current.MAX_DISK_SPACE = float(adapter.get_required_disk_size(**data) + space_taken_by_started - 1)
         tmp_folder = FilesHelper().get_project_folder(self.test_project, "TEMP")
         self.assertRaises(NoMemoryAvailableException, self.operation_service.initiate_operation, self.test_user,
                           self.test_project.id, adapter,

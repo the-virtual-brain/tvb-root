@@ -36,7 +36,7 @@ import os
 import shutil
 import unittest
 import numpy
-from tvb.basic.config.settings import TVBSettings as cfg
+from tvb.basic.profile import TvbProfile
 from tvb.core.entities.storage import dao
 from tvb.core.entities.file.files_helper import FilesHelper
 from tvb.core.services.import_service import ImportService
@@ -80,8 +80,8 @@ class ImportServiceTest(TransactionalTestCase):
         Reset the database when test is done.
         """
         ### Delete TEMP folder
-        if os.path.exists(cfg.TVB_TEMP_FOLDER):
-            shutil.rmtree(cfg.TVB_TEMP_FOLDER)
+        if os.path.exists(TvbProfile.current.TVB_TEMP_FOLDER):
+            shutil.rmtree(TvbProfile.current.TVB_TEMP_FOLDER)
         
         ### Delete folder where data was exported
         if self.zip_path and os.path.exists(self.zip_path):
