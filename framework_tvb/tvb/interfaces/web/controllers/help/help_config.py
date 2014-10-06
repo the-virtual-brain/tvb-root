@@ -83,7 +83,7 @@ class HelpConfig:
         # Add mappings for PROJECT subsections
         self._add_mapping(WebStructure.SECTION_PROJECT, WebStructure.SUB_SECTION_OPERATIONS, self.PROJECT_HELP_PAGE, "operations")
         self._add_mapping(WebStructure.SECTION_PROJECT, WebStructure.SUB_SECTION_DATA_STRUCTURE, self.PROJECT_HELP_PAGE, "data-structure")
-        self._add_mapping(WebStructure.SECTION_PROJECT, WebStructure.SUB_SECTION_LIST_PROJECTS, self.PROJECT_HELP_PAGE, "view-all-projects")
+        self._add_mapping(WebStructure.SECTION_PROJECT, WebStructure.SUB_SECTION_LIST_PROJECTS, self.PROJECT_HELP_PAGE, "list-of-all-projects")
         self._add_mapping(WebStructure.SECTION_PROJECT, WebStructure.SUB_SECTION_PROPERTIES_PROJECT, self.PROJECT_HELP_PAGE, "basic-properties")
         self._add_mapping(WebStructure.SECTION_PROJECT, WebStructure.SUB_SECTION_FIGURES, self.PROJECT_HELP_PAGE, "image-archive")
         for subsection, paragraph in WebStructure.VISUALIZERS_ONLINE_HELP_SHORTCUTS.iteritems():
