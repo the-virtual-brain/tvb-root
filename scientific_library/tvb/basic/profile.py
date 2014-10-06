@@ -96,17 +96,7 @@ class TvbProfile():
             sys.setdefaultencoding('utf-8')
 
         if selected_profile is not None:
-            ## Restore sys.meta_path, as some profiles (Library) are adding something
-            sys.meta_path = copy.deepcopy(cls._old_meta_path)
-            cls._load_framework_profiles(selected_profile)
-            if selected_profile in cls.REGISTERED_PROFILES:
-                current_class = cls.REGISTERED_PROFILES[selected_profile]
-                cls.current = current_class()
-                cls.current.initialize_profile()
-            else:
-                raise Exception("Invalid profile %s" % selected_profile)
-
-            cls.CURRENT_PROFILE_NAME = selected_profile
+            cls._build_profile_class(selected_profile)
 
         if try_reload:
             # To make sure in case of contributor setup the external TVB is the one
@@ -119,6 +109,26 @@ class TvbProfile():
                         reload(sys.modules[key])
                     except LibraryImportError:
                         pass
+
+
+    @classmethod
+    def _build_profile_class(cls, selected_profile):
+        """
+        :param selected_profile: Profile name to be loaded.
+        """
+        ## Restore sys.meta_path, as some profiles (Library) are adding something
+        sys.meta_path = copy.deepcopy(cls._old_meta_path)
+
+        cls._load_framework_profiles(selected_profile)
+
+        if selected_profile in cls.REGISTERED_PROFILES:
+            current_class = cls.REGISTERED_PROFILES[selected_profile]
+            cls.current = current_class()
+            cls.current.initialize_profile()
+        else:
+            raise Exception("Invalid profile %s" % selected_profile)
+
+        cls.CURRENT_PROFILE_NAME = selected_profile
 
 
     @classmethod

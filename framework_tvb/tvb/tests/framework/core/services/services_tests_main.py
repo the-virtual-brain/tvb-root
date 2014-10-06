@@ -38,7 +38,7 @@ from tvb.tests.framework.core.services import burst_service_test
 from tvb.tests.framework.core.services import user_service_test
 from tvb.tests.framework.core.services import event_handler_test
 from tvb.tests.framework.core.services import flow_service_test
-#from tvb.tests.framework.core.services import settings_service_test
+from tvb.tests.framework.core.services import settings_service_test
 from tvb.tests.framework.core.services import import_service_test
 from tvb.tests.framework.core.services import workflow_service_test
 from tvb.tests.framework.core.services import operation_service_test
@@ -57,7 +57,7 @@ def suite():
     test_suite.addTest(event_handler_test.suite())
     test_suite.addTest(user_service_test.suite())
     test_suite.addTest(flow_service_test.suite())
-    #test_suite.addTest(settings_service_test.suite())
+    test_suite.addTest(settings_service_test.suite())
     test_suite.addTest(burst_service_test.suite())
     test_suite.addTest(import_service_test.suite())
     test_suite.addTest(workflow_service_test.suite())
