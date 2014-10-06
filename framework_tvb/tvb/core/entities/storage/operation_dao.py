@@ -177,6 +177,7 @@ class OperationDAO(RootDAO):
         :param project_id: current project ID
         :param filter_chain: instance of FilterChain
         :param is_count: when True, return a number, otherwise the list of operation entities
+
         :return a list of filtered operation in current project, page by page, or the total count for them.
         """
         try:
