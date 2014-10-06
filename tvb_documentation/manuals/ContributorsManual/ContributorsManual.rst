@@ -131,14 +131,11 @@ The following is a demo script for using TVB Command mode for various operations
     ## Import necessary libraries
 	import numpy
     from tvb.basic.filters.chain import FilterChain
-    from tvb.core.traits import db_events
     from tvb.core.entities import model
     from tvb.core.entities.storage import dao
     from tvb.core.services.operation_service import OperationService
     from tvb.core.adapters.abcadapter import ABCAdapter
     from tvb.simulator import simulator, models, coupling, integrators, monitors, noise
-	
-    db_events.attach_db_events()
 	
     ## We need a user and a project in order to run operations and store results
 	## A default user named 'admin' should already exist in the system.

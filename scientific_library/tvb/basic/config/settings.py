@@ -425,6 +425,14 @@ class BaseSettingsProfile(object):
             return sys.executable
 
 
+    def prepare_for_operation_mode(self):
+        """
+        Overwrite PostgreSQL number of connections when executed in the context of a node.
+        """
+        self.db.MAX_CONNECTIONS = self.db.MAX_ASYNC_CONNECTIONS
+        self.cluster.IN_OPERATION_EXECUTION_PROCESS = True
+
+
     def initialize_profile(self):
         """
         Make sure tvb folders are created.

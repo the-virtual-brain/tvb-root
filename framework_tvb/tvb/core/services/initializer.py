@@ -42,7 +42,6 @@ from tvb.core.services.user_service import UserService
 from tvb.core.services.settings_service import SettingsService
 from tvb.core.services.event_handlers import read_events
 from tvb.core.adapters.introspector import Introspector
-from tvb.core.traits import db_events
 
 
 def reset():
@@ -87,9 +86,6 @@ def initialize(introspected_modules, load_xml_events=True):
     ## Populate events
     if load_xml_events:
         read_events(event_folders)
-    
-    ## Make sure DB events are linked.
-    db_events.attach_db_events()
 
     if not TvbProfile.is_first_run():
         ## Create default users.

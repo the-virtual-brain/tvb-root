@@ -39,10 +39,8 @@ This class is responsible for referring towards application settings, based on r
 
 """
 
-import os
 import sys
 import copy
-from tvb.basic.config.utils import LibraryImportError
 from tvb.basic.config.environment import Environment
 from tvb.basic.config.settings import BaseSettingsProfile
 
@@ -76,15 +74,9 @@ class TvbProfile():
 
 
     @classmethod
-    def set_profile(cls, selected_profile, try_reload=False):
+    def set_profile(cls, selected_profile):
         """
-        Sets TVB profile from script_argv and specify UTF-8 and encoding.
-
-        :param selected_profile: String representing profile to be set.
-        :param try_reload: When set to true, try to reload all tvb.* modules
-                        This is needed when setting a profile different that default requires previously loaded tvb
-                        modules to get different (e.g. from deployment to contributor we have a different
-                        tvb.interface path, already loaded as the starting point is tvb.interfaces.run)
+        Sets TVB profile and do related initializations.
         """
 
         ### Ensure Python is using UTF-8 encoding (otherwise default encoding is ASCII)
@@ -97,18 +89,6 @@ class TvbProfile():
 
         if selected_profile is not None:
             cls._build_profile_class(selected_profile)
-
-        if try_reload:
-            # To make sure in case of contributor setup the external TVB is the one
-            # we get, we need to reload all tvb related modules, since any call done
-            # python -m will always consider the current folder as the first to search in.
-            sys.path = os.environ.get("PYTHONPATH", "").split(os.pathsep) + sys.path
-            for key in sys.modules.keys():
-                if key.startswith("tvb") and sys.modules[key] and not key.startswith("tvb.basic.profile"):
-                    try:
-                        reload(sys.modules[key])
-                    except LibraryImportError:
-                        pass
 
 
     @classmethod

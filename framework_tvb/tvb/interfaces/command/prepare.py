@@ -41,16 +41,13 @@ Provides convenient access to framework from the console.
 ## Select the profile with storage enabled, but without web interface:
 
 from tvb.basic.profile import TvbProfile
-TvbProfile.set_profile(TvbProfile.COMMAND_PROFILE, try_reload=False)
+TvbProfile.set_profile(TvbProfile.COMMAND_PROFILE)
 
 from tvb.basic.logger.builder import get_logger
-from tvb.core.traits import db_events
 from tvb.core.entities import model
 from tvb.core.entities.storage import dao
 from tvb.core.services.flow_service import FlowService
 from tvb.core.services.operation_service import OperationService
 
-# Hook DB events (like prepare json attributes on traited DataTypes):
-db_events.attach_db_events()
 
 LOG = get_logger(__name__)

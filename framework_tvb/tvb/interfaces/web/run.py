@@ -43,15 +43,10 @@ import cherrypy
 import webbrowser
 from cherrypy import Tool
 from tvb.basic.profile import TvbProfile
-TvbProfile.set_profile(sys.argv[1], try_reload=(__name__ == '__main__'))
+if __name__ == '__main__':
+    TvbProfile.set_profile(sys.argv[1])
 
-### Import MPLH5 asap, to have the back-end Thread started before other pylab/matplotlib import
 from tvb.basic.logger.builder import get_logger
-if __name__ == "__main__":
-    from tvb.interfaces.web.mplh5 import mplh5_server
-    LOGGER = get_logger('tvb.interfaces.web.mplh5.mplh5_server')
-    mplh5_server.start_server(LOGGER)
-
 from tvb.core.adapters.abcdisplayer import ABCDisplayer
 from tvb.core.decorators import user_environment_execution
 from tvb.core.services.initializer import initialize, reset

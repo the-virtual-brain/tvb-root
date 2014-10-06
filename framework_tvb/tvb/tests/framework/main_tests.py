@@ -78,11 +78,8 @@ if __name__ == "__main__":
 
 import unittest
 import datetime
-import matplotlib
-
 from tvb.basic.profile import TvbProfile
 TvbProfile.set_profile(sys.argv[1])
-matplotlib.use('module://tvb.interfaces.web.mplh5.mplh5_backend')
 
 from tvb.tests.framework.xml_runner import XMLTestRunner
 from tvb.tests.framework.core import core_tests_main

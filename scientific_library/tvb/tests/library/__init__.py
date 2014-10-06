@@ -38,5 +38,5 @@ def setup_test_console_env():
     sys.path = [path for path in sys.path if not path.endswith('framework_tvb')]
 
     from tvb.basic.profile import TvbProfile
-    TvbProfile.set_profile(TvbProfile.TEST_LIBRARY_PROFILE, try_reload=False)
+    TvbProfile.set_profile(TvbProfile.TEST_LIBRARY_PROFILE)
 

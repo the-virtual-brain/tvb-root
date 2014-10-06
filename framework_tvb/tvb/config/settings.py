@@ -35,11 +35,32 @@ TVB global configurations are predefined/read from here.
 import os
 import sys
 from tvb.basic.config import stored
+from tvb.basic.config.utils import LibraryImportError
 from tvb.basic.config.settings import BaseSettingsProfile
 
 
 
-class DevelopmentProfile(BaseSettingsProfile):
+class BaseFrameworkSettingsProfile(BaseSettingsProfile):
+
+
+    def initialize_profile(self):
+        """
+        Specific initialization for the current profile
+        """
+        super(BaseFrameworkSettingsProfile, self).initialize_profile()
+
+        ## Make sure DB events are linked.
+        from tvb.core.traits import db_events
+        db_events.attach_db_events()
+
+        from tvb.basic.logger.builder import get_logger
+        from tvb.interfaces.web.mplh5 import mplh5_server
+        log = get_logger('tvb.interfaces.web.mplh5.mplh5_server')
+        mplh5_server.start_server(log)
+
+
+
+class DevelopmentProfile(BaseFrameworkSettingsProfile):
     """
     Custom settings for development profile.
     """
@@ -48,7 +69,7 @@ class DevelopmentProfile(BaseSettingsProfile):
 
 
 
-class TestSQLiteProfile(BaseSettingsProfile):
+class TestSQLiteProfile(BaseFrameworkSettingsProfile):
     """
     Defines settings for running tests on an SQLite database.
     """
@@ -91,7 +112,7 @@ class TestPostgresProfile(TestSQLiteProfile):
 
 
 
-class DeploymentProfile(BaseSettingsProfile):
+class DeploymentProfile(BaseFrameworkSettingsProfile):
     """
     Profile for deployed TVB packages.
     """
@@ -147,8 +168,7 @@ class DeploymentProfile(BaseSettingsProfile):
 
     def initialize_profile(self):
         """
-        This method is called at the time the config.py module is first imported. Any specific
-        initializations for the profile should be placed here.
+        Specific initialization fo current profile
         """
         super(DeploymentProfile, self).initialize_profile()
 
@@ -197,6 +217,18 @@ class DeploymentProfile(BaseSettingsProfile):
                 os.environ['MATPLOTLIBDATA'] = mpl_data_path_maybe
             except:
                 pass
+
+        if self.TVB_PATH:
+            # In case of contributor setup, we want to make sure that all dev files are loaded first, so
+            # we need to reload all tvb related modules, since any call done with
+            # 'python -m ...' will consider the current folder as the first to search in.
+            sys.path = os.environ.get("PYTHONPATH", "").split(os.pathsep) + sys.path
+            for key in sys.modules.keys():
+                if key.startswith("tvb") and sys.modules[key] and not key.startswith("tvb.basic.profile"):
+                    try:
+                        reload(sys.modules[key])
+                    except LibraryImportError:
+                        pass
 
 
 

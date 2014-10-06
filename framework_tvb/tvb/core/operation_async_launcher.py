@@ -44,17 +44,14 @@ The results of the computation will be stored by the adapter itself.
 
 import sys
 from tvb.basic.profile import TvbProfile
-
-TvbProfile.set_profile(sys.argv[2])
-### Overwrite PostgreSQL number of connections when executed in the context of a node
-TvbProfile.current.db.MAX_DB_CONNECTIONS = TvbProfile.current.db.MAX_ASYNC_CONNECTIONS
-TvbProfile.current.cluster.IN_OPERATION_EXECUTION_PROCESS = True
+if __name__ == '__main__':
+    TvbProfile.set_profile(sys.argv[2])
+    TvbProfile.current.prepare_for_operation_mode()
 
 from tvb.basic.logger.builder import get_logger
 from tvb.core.adapters.abcadapter import ABCAdapter
 from tvb.core.entities.storage import dao
 from tvb.core.utils import parse_json_parameters
-from tvb.core.traits import db_events
 from tvb.core.services.operation_service import OperationService
 from tvb.core.services.workflow_service import WorkflowService
 
@@ -64,6 +61,8 @@ def do_operation_launch(operation_id):
     """
     Event attached to the local queue for executing an operation, when we will have resources available.
     """
+    LOGGER = get_logger('tvb.core.operation_async_launcher')
+
     try:
         LOGGER.debug("Loading operation with id=%s" % operation_id)
         curent_operation = dao.get_operation_by_id(operation_id)
@@ -93,15 +92,7 @@ def do_operation_launch(operation_id):
 
 if __name__ == '__main__':
 
-    import matplotlib
-    # Specify backend only when actually running (to avoid sphinx errors)
-    LOGGER = get_logger('tvb.core.operation_async_launcher')
-    matplotlib.use('module://tvb.interfaces.web.mplh5.mplh5_backend')
-
     OPERATION_ID = sys.argv[1]
-    # Make sure DB events are linked.
-    db_events.attach_db_events()
     do_operation_launch(OPERATION_ID)
-    sys.exit(0)
     
 
