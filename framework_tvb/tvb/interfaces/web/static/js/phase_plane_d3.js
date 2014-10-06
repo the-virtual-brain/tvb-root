@@ -202,12 +202,13 @@ var TVBUI = TVBUI || {};
         var nc = this.plane_g.selectAll('path').data(data.nullclines);
         nc.enter().append('path');
         nc.attr('d', function(d){
-                return self.lineBuilder(d);
+                return self.lineBuilder(d.path);
             })
-            .attr('stroke', function(d, i){
-                return ['#d73027', '#1a9850'][i];
+            .attr('stroke', function(d){
+                return ['#d73027', '#1a9850'][d.nullcline_index];
             })
             .attr('class', 'traj');
+        nc.exit().remove();
     };
 
     /**

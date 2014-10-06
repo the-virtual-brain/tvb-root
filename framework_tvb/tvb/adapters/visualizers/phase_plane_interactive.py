@@ -60,6 +60,7 @@ class PhasePlane(object):
             self.svy = self.model.state_variables[0]
         self.mode = 0
         self.log = get_logger(self.__class__.__module__)
+        self._set_state_vector()
 
 
     def _set_state_vector(self):
@@ -348,7 +349,9 @@ class PhasePlaneD3(PhasePlane):
         PhasePlane.__init__(self, model, integrator)
 
     def compute_phase_plane(self):
-        self._set_state_vector()
+        """
+        :return: A json representation of the phase plane.
+        """
         self._set_mesh_grid()
 
         self._calc_phase_plane_fast()
@@ -359,9 +362,9 @@ class PhasePlaneD3(PhasePlane):
         d = numpy.dstack((x, y, u, v))
         d = d.reshape((NUMBEROFGRIDPOINTS ** 2, 4)).tolist()
 
-        xnull = self.nullcline(x, y, u).tolist()
-        ynull = self.nullcline(x, y, v).tolist()
-        return {'plane': d, 'nullclines': [xnull, ynull]}
+        xnull = [{'path': segment.tolist(), 'nullcline_index': 0} for segment in self.nullcline(x, y, u)]
+        ynull = [{'path': segment.tolist(), 'nullcline_index': 1} for segment in self.nullcline(x, y, v)]
+        return {'plane': d, 'nullclines': xnull + ynull}
 
 
     def reset(self, model, integrator):
@@ -379,7 +382,7 @@ class PhasePlaneD3(PhasePlane):
         # (see docs for matplotlib.path.Path)
         nseg = len(res) // 2
         segments, codes = res[:nseg], res[nseg:]
-        return segments[0]
+        return segments
 
 
     def trajectory(self, x, y):
