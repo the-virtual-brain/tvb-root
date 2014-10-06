@@ -15,18 +15,24 @@ and visualization capabilities.
 
 
 Configure a Simulation
-.......................
+......................
 
 .. |interrogationicon| image:: icons/online_help_green.png
 
 |
+
+A simulation is configured from the middle column.
 
 On the top of this column there is:
   - a field to enter the new simulation name,
   - the `Launch` button on the top right to start the simulation, and
   - the `Configure Interface` button to select which of the simulation 
     components are visible.
+  - links to pages that allow detailed configuration
 
+    - region model configuration
+    - region noise configuration
+    - surface level configuration (available for surface simulations)
 |
 
     .. image:: screenshots/simulator_configuration_buttons.jpg
@@ -35,8 +41,7 @@ On the top of this column there is:
 
 |
 
-Via this column, you have access to all the simulator components configurable 
-settings:
+In this column you can change all the configurable parameters of a simulation:
 
   - Long Range Connectivity
   - Long Range Coupling Function
@@ -44,11 +49,15 @@ settings:
   - Cortical Surface
   - Stimulus
   - Local Dynamics Model
+
     - State Variable Range
     - State Variables to be recorded
     - Initial Conditions
+
   - Integration Scheme
+
     - Integration Step Size
+
   - Monitors
   - Simulation Length
 
@@ -70,8 +79,46 @@ icon next to each element.
     * this ca also be used in the context of Parameter Space Exploration of |TVB|
 
 
-.. note:: 
-  
+The `Phase plane` page
+~~~~~~~~~~~~~~~~~~~~~~
+
+It is used to explore and define parameter configurations.
+It is accessible from the top menu:
+
+.. figure:: screenshots/simulator_phase_plane_link.jpg
+      :width: 90%
+      :align: center
+
+
+This page allows you to observe how the dynamics of the physical model change as a
+function of its parameters.
+
+On the left column you select the `model` you want to explore and set it's parameters.
+
+The selected model will generally have a n-dimensional phase space.
+The right column shows a 2-dimensional axis cut of this space. Gradients are shown and nullclines if they exist.
+To control this cut use the `Axes` and `State variables` regions in the left column.
+There you can select what state variables should be shown and their ranges.
+Also you can set values for the variables that are not shown.
+
+If you click in the phase plane a state trajectory will be computed.
+The integration method for this trajectory is configured on the left column.
+To make trajectories longer increase the integration step. This will not influence the simulation.
+For stochastic integrators decreasing the dispersion usually makes sense.
+Below the phase graph you will see the signals for all state variables. These signals belong to the latest trajectory.
+
+Finally to save a parameter configuration give it a name and click `Save new parameter configuration`.
+This saved configuration can be used in `Region-based simulations`_
+
+    .. figure:: screenshots/simulator_phase_plane_interactive.jpg
+      :width: 90%
+      :align: center
+
+      The phase plane.
+
+
+.. note::
+
   **TVB performs region-based and surface-based simulations**
 
   You can access specific configuration pages for both types of simulation.
@@ -80,20 +127,25 @@ icon next to each element.
 Region-based simulations
 ~~~~~~~~~~~~~~~~~~~~~~~~
 
-The `Set up region Model` button leads you to an interactive phase-plane display. 
-This tool shows the 2-dimensional planes of the general n-dimensional 
-phase space of the local dynamics model. 
+The `Set up region Model` button leads you to the region model page.
+Here you can associate model parameter configurations to connectivity nodes.
 
-It allows you to observe how the dynamics of the physical model change as a 
-function of its parameters. (See the API documentation for more details about 
-this interactive display)
-
-    .. figure:: screenshots/simulator_phase_plane_interactive.jpg
+.. figure:: screenshots/simulator_region_model.jpg
       :width: 90%
       :align: center
 
-      Preview for region model configuration.
+      Region model configuration.
 
+The `Configure noise` button leads to the region noise page.
+Here you can associate noise dispersions to connectivity nodes.
+Select some nodes using any of the selection components or the 3d view.
+Choose dispersions for all state variables then place those values in the selected nodes.
+
+.. figure:: screenshots/simulator_region_noise.jpg
+      :width: 90%
+      :align: center
+
+      Region noise configuration.
 
 Surface-based simulations
 ~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -175,7 +227,7 @@ Each simulation has a color label that represents its current status:
 .. VIEW COLUMN
 
 Display Simulation Results
-...........................
+..........................
 
 On the right column you will find an area where you can configure displays to exhibit
 your simulation results.
