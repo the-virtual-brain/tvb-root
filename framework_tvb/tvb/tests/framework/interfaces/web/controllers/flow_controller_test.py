@@ -36,6 +36,7 @@ import json
 import unittest
 import cherrypy
 from time import sleep
+from tvb.tests.framework.interfaces.web.controllers.base_controller_test import BaseControllersTest
 from tvb.core.entities import model
 from tvb.core.entities.storage import dao
 from tvb.core.adapters.abcadapter import ABCAdapter
@@ -46,7 +47,6 @@ from tvb.interfaces.web.controllers.flow_controller import FlowController
 from tvb.interfaces.web.controllers.burst.burst_controller import BurstController
 from tvb.tests.framework.adapters.testadapter1 import TestAdapter1
 from tvb.tests.framework.datatypes.datatypes_factory import DatatypesFactory
-from tvb.tests.framework.interfaces.web.controllers.base_controller_test import BaseControllersTest
 from tvb.tests.framework.adapters.simulator.simulator_adapter_test import SIMULATOR_PARAMETERS
 
 
@@ -66,8 +66,7 @@ class FlowContollerTest(BaseControllersTest):
     
     def tearDown(self):
         """ Cleans up the testing environment """
-        BaseControllersTest.cleanup(self)
-        self.reset_database()
+        self.clean_database()
             
             
     def test_context_selected(self):

@@ -35,10 +35,10 @@
 import copy
 import json
 import numpy
-
 import unittest
 import cherrypy
 from time import sleep
+from tvb.tests.framework.interfaces.web.controllers.base_controller_test import BaseControllersTest
 from tvb.config import SIMULATOR_MODULE, SIMULATOR_CLASS
 from tvb.interfaces.web.controllers import common
 from tvb.interfaces.web.controllers.burst.burst_controller import BurstController
@@ -54,7 +54,6 @@ from tvb.core.services.burst_service import BurstService
 from tvb.core.services.operation_service import OperationService
 from tvb.core.services.flow_service import FlowService
 from tvb.tests.framework.adapters.storeadapter import StoreAdapter
-from tvb.tests.framework.interfaces.web.controllers.base_controller_test import BaseControllersTest
 from tvb.tests.framework.adapters.simulator.simulator_adapter_test import SIMULATOR_PARAMETERS
 
 
@@ -74,11 +73,9 @@ class BurstContollerTest(BaseControllersTest):
 
     def tearDown(self):
         """
-        Cleans up the environment after testing is done;
-        resets the database
+        Cleans up the environment after testing is done
         """
-        BaseControllersTest.cleanup(self)
-        self.reset_database()
+        self.clean_database()
 
 
     def test_index(self):
