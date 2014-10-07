@@ -32,15 +32,13 @@
 .. moduleauthor:: bogdan.neacsa <bogdan.neacsa@codemart.ro>
 """
 
-import os
 import copy
 import unittest
-import tvb.tests.framework
 import numpy
 import json
 from time import sleep
+from tvb.tests.framework.core.base_testcase import BaseTestCase
 from tvb.config import SIMULATOR_MODULE, SIMULATOR_CLASS
-from tvb.basic.profile import TvbProfile
 from tvb.datatypes.connectivity import Connectivity
 from tvb.datatypes.mapped_values import DatatypeMeasure
 from tvb.datatypes.time_series import TimeSeriesRegion
@@ -60,7 +58,6 @@ from tvb.core.services.exceptions import InvalidPortletConfiguration
 from tvb.core.portlets.xml_reader import KEY_DYNAMIC
 from tvb.core.portlets.portlet_configurer import ADAPTER_PREFIX_ROOT
 from tvb.core.adapters.abcadapter import ABCAdapter
-from tvb.tests.framework.core.base_testcase import BaseTestCase
 from tvb.tests.framework.core.test_factory import TestFactory
 from tvb.tests.framework.datatypes.datatype1 import Datatype1
 from tvb.tests.framework.datatypes.datatype2 import Datatype2
@@ -99,8 +96,6 @@ class BurstServiceTest(BaseTestCase):
         self.clean_database()
         self.test_user = TestFactory.create_user()
         self.test_project = TestFactory.create_project(self.test_user)
-        self.old_config_file = TvbProfile.current.web.CURRENT_DIR
-        TvbProfile.current.web.CURRENT_DIR = os.path.dirname(tvb.tests.framework.__file__)
 
 
     def tearDown(self):
@@ -109,7 +104,6 @@ class BurstServiceTest(BaseTestCase):
         """
         FilesHelper().remove_project_structure(self.test_project.name)
         self.clean_database()
-        TvbProfile.current.web.CURRENT_DIR = self.old_config_file
 
 
     def test_new_portlet_configuration(self):
