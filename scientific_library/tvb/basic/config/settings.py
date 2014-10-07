@@ -70,6 +70,9 @@ class VersionSettings(object):
 
     def __init__(self, manager, bin_folder):
 
+        # Used for reading the version file from it
+        self.BIN_FOLDER = bin_folder
+
         # Concatenate BASE_VERSION with svn revision number
         self.CURRENT_VERSION = self.BASE_VERSION + '-' + str(self.SVN_VERSION)
 
@@ -78,9 +81,6 @@ class VersionSettings(object):
 
         # The version up until we done the upgrade properly for the file data storage.
         self.CODE_CHECKED_TO_VERSION = manager.get_attribute(stored.KEY_LAST_CHECKED_CODE_VERSION, -1, int)
-
-        # Used for reading the version file from it
-        self.BIN_FOLDER = bin_folder
 
 
     @property
