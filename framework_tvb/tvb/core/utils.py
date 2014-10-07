@@ -174,7 +174,7 @@ def date2string(date_input, complex_format=True, date_format=None):
 
 
 
-def timedelta2string(timedelta, most_significant2=True):
+def format_timedelta(timedelta, most_significant2=True):
     """
     Format a datetime.timedelta.
     :param most_significant2: Will show only the 2 most significant units (ex: hours, minutes). Default True.
@@ -463,3 +463,21 @@ def generate_guid():
     return str(uuid.uuid1())
 
 
+def format_bytes_human(size, si=False):
+    """
+    :param size: size in kilobytes
+    :param si: if True use SI units (multiple of 1000 not 1024)
+    :return: a String with [number] [memory unit measure]
+    """
+    if si:
+        m = ['kB', 'MB', 'GB']
+        base = 1000.0
+    else:
+        m = ['KiB', 'MiB', 'GiB']
+        base = 1024.0
+
+    exp = 0
+    while size >= base and exp < len(m) - 1:
+        size /= base
+        exp += 1
+    return "%.1f %s" % (size, m[exp])

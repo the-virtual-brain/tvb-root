@@ -46,7 +46,7 @@ from tvb.basic.traits.types_mapped import MappedType
 from tvb.basic.logger.builder import get_logger
 from tvb.basic.filters.chain import FilterChain
 from tvb.core.entities.model import DataTypeGroup
-from tvb.core.utils import string2date, date2string, timedelta2string
+from tvb.core.utils import string2date, date2string, format_timedelta, format_bytes_human
 from tvb.core.removers_factory import get_remover
 from tvb.core.entities import model
 from tvb.core.entities.storage import dao, transactional
@@ -268,7 +268,7 @@ class ProjectService:
                     result["complete"] = one_op[9]
 
                 if result["complete"] is not None and result["start"] is not None:
-                    result["duration"] = timedelta2string(result["complete"] - result["start"])
+                    result["duration"] = format_timedelta(result["complete"] - result["start"])
                 result["status"] = one_op[10]
                 if result["status"] == model.STATUS_STARTED:
                     started_ops += 1
@@ -315,30 +315,9 @@ class ProjectService:
             prj.operations_error = err
             prj.operations_canceled = canceled
             prj.disk_size = dao.get_project_disk_size(prj.id)
-            prj.disk_size_human = self._get_human_disk_size(prj.disk_size)
+            prj.disk_size_human = format_bytes_human(prj.disk_size)
         self.logger.debug("Displaying " + str(len(available_projects)) + " projects in UI for user " + str(user_id))
         return available_projects, pages_no
-
-
-    @staticmethod
-    def _get_human_disk_size(size, si=False):
-        """
-        :param size: size in kilobytes
-        :param si: if True use SI units (multiple of 1000 not 1024)
-        :return: a String with [number] [memory unit measure]
-        """
-        if si:
-            m = ['kB', 'MB', 'GB']
-            base = 1000.0
-        else:
-            m = ['KiB', 'MiB', 'GiB']
-            base = 1024.0
-
-        exp = 0
-        while size >= base and exp < len(m) - 1:
-            size /= base
-            exp += 1
-        return "%.1f %s" % (size, m[exp])
 
 
     @staticmethod

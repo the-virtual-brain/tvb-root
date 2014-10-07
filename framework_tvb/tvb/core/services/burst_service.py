@@ -55,7 +55,7 @@ from tvb.core.services.workflow_service import WorkflowService
 from tvb.core.services.project_service import ProjectService
 from tvb.core.services.exceptions import RemoveDataTypeException, InvalidPortletConfiguration, BurstServiceException
 from tvb.core.portlets.portlet_configurer import PortletConfigurer
-from tvb.core.utils import timedelta2string
+from tvb.core.utils import format_timedelta
 
 
 MAX_BURSTS_DISPLAYED = 50
@@ -490,7 +490,7 @@ class BurstService():
                     running_time = datetime.now() - burst.start_time
                 else:
                     running_time = burst.finish_time - burst.start_time
-                running_time = timedelta2string(running_time, most_significant2=False)
+                running_time = format_timedelta(running_time, most_significant2=False)
 
                 if burst.status == burst.BURST_ERROR:
                     msg = 'Check Operations page for error Message'

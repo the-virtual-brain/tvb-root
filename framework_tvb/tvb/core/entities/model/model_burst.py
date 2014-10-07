@@ -43,7 +43,7 @@ from tvb.core.entities.exportable import Exportable
 from tvb.core.entities.model.model_base import Base
 from tvb.core.entities.model.model_project import Project
 from tvb.basic.traits.types_basic import MapAsJson
-from tvb.core.utils import parse_json_parameters, timedelta2string
+from tvb.core.utils import parse_json_parameters, format_timedelta
 
 
 NUMBER_OF_PORTLETS_PER_TAB = 4
@@ -186,7 +186,7 @@ class BurstConfiguration(Base, Exportable):
                   'error': self.error_message}
 
         if self.finish_time is not None and self.start_time is not None:
-            result['process_time'] = timedelta2string(self.finish_time - self.start_time)
+            result['process_time'] = format_timedelta(self.finish_time - self.start_time)
 
         return result
 
