@@ -174,37 +174,29 @@ def date2string(date_input, complex_format=True, date_format=None):
 
 
 
-def timedelta2string(timedelta):
+def timedelta2string(timedelta, most_significant2=True):
     """
-    Convert a datetime.timedelta object into a nice string, to be displayed in UI.
+    Format a datetime.timedelta.
+    :param most_significant2: Will show only the 2 most significant units (ex: hours, minutes). Default True.
     """
-    if timedelta is None:
-        return None
-    result = str(timedelta)
+    days = timedelta.days
+    hours, remainder = divmod(timedelta.seconds, 3600)
+    minutes, seconds = divmod(remainder, 60)
+    fragments = [str(days) + 'd', str(hours) + 'h', str(minutes) + 'm', str(seconds) + 's']
 
-    days = 0
-    if 'days,' in result:
-        result = result.split('days,')
-        days = int(result[0])
-        result = result[1].split(':')
-    elif 'day,' in result:
-        result = result.split('day,')
-        days = int(result[0])
-        result = result[1].split(':')
+    if days:
+        fragments = fragments[0:]
+    elif hours:
+        fragments = fragments[1:]
+    elif minutes:
+        fragments = fragments[2:]
     else:
-        result = result.split(':')
+        fragments = fragments[3:]
 
-    hours = int(result[0])
-    minutes = int(result[1])
-    seconds = int(float(result[2]))
-    if days > 0:
-        return str(days) + "d " + str(hours) + "h"
-    if hours > 0:
-        return str(hours) + "h " + str(minutes) + "m"
-    if minutes > 0:
-        return str(minutes) + "m " + str(seconds) + "s"
-    return str(seconds) + "s"
+    if most_significant2:
+        fragments = fragments[:2]
 
+    return ' '.join(fragments)
 
 
 def string2bool(string_input):
