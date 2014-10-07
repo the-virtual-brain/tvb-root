@@ -36,7 +36,7 @@ import os
 import sys
 from tvb.basic.config import stored
 from tvb.basic.config.utils import LibraryImportError
-from tvb.basic.config.settings import BaseSettingsProfile
+from tvb.basic.config.settings import BaseSettingsProfile, DBSettings
 
 
 
@@ -93,7 +93,9 @@ class TestSQLiteProfile(BaseFrameworkSettingsProfile):
         self.TVB_STORAGE = self.manager.get_attribute(stored.KEY_STORAGE, self.DEFAULT_STORAGE, unicode)
         # For tests we will place logs in workspace, to have them visible from Hudson.
         self.TVB_LOG_FOLDER = os.path.join(self.BIN_FOLDER, "TEST_OUTPUT")
+        self.TVB_TEMP_FOLDER = os.path.join(self.TVB_STORAGE, "TEMP")
 
+        self.db = DBSettings(self.manager, self.DEFAULT_STORAGE, self.TVB_STORAGE)
         self.db.DB_URL = 'sqlite:///' + os.path.join(self.TVB_STORAGE, "tvb-database.db")
         self.db.SELECTED_DB = 'sqlite'
 
