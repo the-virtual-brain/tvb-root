@@ -37,6 +37,7 @@ import os
 import numpy
 import unittest
 from datetime import datetime
+from tvb.tests.framework.core.base_testcase import TransactionalTestCase
 from tvb.datatypes.arrays import MappedArray
 from tvb.basic.filters.chain import FilterChain
 from tvb.core.entities import model
@@ -48,7 +49,6 @@ from tvb.core.services.exceptions import OperationException
 from tvb.core.services.flow_service import FlowService
 from tvb.tests.framework.datatypes.datatype1 import Datatype1
 from tvb.tests.framework.datatypes.datatype2 import Datatype2
-from tvb.tests.framework.core.base_testcase import TransactionalTestCase
 from tvb.tests.framework.core.test_factory import TestFactory
 
 
@@ -106,7 +106,7 @@ class FlowServiceTest(TransactionalTestCase):
 
 
     def setUp(self):
-        """ Clean the database before each test. """
+        """ Prepare some entities to work with during tests:"""
 
         self.flow_service = FlowService()
         self.test_user = TestFactory.create_user()
@@ -117,29 +117,32 @@ class FlowServiceTest(TransactionalTestCase):
         categ2 = model.AlgorithmCategory('two', rawinput=True)
         self.categ2 = dao.store_entity(categ2)
 
-        algo = model.AlgorithmGroup("test_module1", "classname1", categ1.id)
-        self.algo1 = dao.store_entity(algo)
-        algo = model.AlgorithmGroup("test_module2", "classname2", categ2.id)
-        dao.store_entity(algo)
-        algo = model.AlgorithmGroup(TEST_ADAPTER_VALID_MODULE, TEST_ADAPTER_VALID_CLASS, categ2.id)
-        adapter = dao.store_entity(algo)
+        group1 = model.AlgorithmGroup("test_module1", "classname1", categ1.id)
+        self.algo_group1 = dao.store_entity(group1)
+        group2 = model.AlgorithmGroup("test_module2", "classname2", categ2.id)
+        self.algo_group2 = dao.store_entity(group2)
+        group3 = model.AlgorithmGroup("test_module3", "classname3", categ1.id)
+        self.algo_group3 = dao.store_entity(group3)
 
-        algo = model.Algorithm(adapter.id, 'ident', name='', req_data='', param_name='', output='')
-        self.algo_inst = dao.store_entity(algo)
-        algo = model.AlgorithmGroup("test_module3", "classname3", categ1.id)
-        dao.store_entity(algo)
-        algo = model.Algorithm(self.algo1.id, 'id', name='', req_data='', param_name='', output='')
-        self.algo_inst = dao.store_entity(algo)
+        group_v = model.AlgorithmGroup(TEST_ADAPTER_VALID_MODULE, TEST_ADAPTER_VALID_CLASS, categ2.id)
+        self.algo_group_v = dao.store_entity(group_v)
+
+        algo_v = model.Algorithm(self.algo_group_v.id, 'ident', name='', req_data='', param_name='', output='')
+        self.algorithm_v = dao.store_entity(algo_v)
+
+        algo1 = model.Algorithm(self.algo_group1.id, 'id', name='', req_data='', param_name='', output='')
+        self.algorithm1 = dao.store_entity(algo1)
 
 
-    def test_read_algorithm_categories(self):
-        """
-        Read algorithm categories when they exist in the database.
-        """
-        categories = self.flow_service.read_algorithm_categories()
-        self.assertEqual(len(categories), 8)
-        self.assertTrue(self.categ1 in categories, "Missing category")
-        self.assertTrue(self.categ2 in categories, "Missing category")
+    def tearDown(self):
+        for algo in [self.algorithm1, self.algorithm_v]:
+            dao.remove_entity(model.Algorithm, algo.id)
+
+        for group in [self.algo_group1, self.algo_group2, self.algo_group3, self.algorithm_v]:
+            dao.remove_entity(model.AlgorithmGroup, group.id)
+
+        for categ in [self.categ1, self.categ2]:
+            dao.remove_entity(model.AlgorithmCategory, categ.id)
 
 
     def test_groups_for_categories(self):
@@ -148,29 +151,33 @@ class FlowServiceTest(TransactionalTestCase):
         """
         category1 = self.flow_service.get_groups_for_categories([self.categ1])
         category2 = self.flow_service.get_groups_for_categories([self.categ2])
+
         dummy = model.AlgorithmCategory('dummy', rawinput=True)
         dummy.id = 999
         unexisting_cat = self.flow_service.get_groups_for_categories([dummy])
+
         self.assertEqual(len(category1), 2)
-        for algorithm in category1:
-            if algorithm.module not in ["test_module1", "test_module3"]:
-                self.fail("Some invalid data retrieved")
-        for algorithm in category2:
-            if algorithm.module not in ["test_module2", TEST_ADAPTER_VALID_MODULE]:
-                self.fail("Some invalid data retrieved")
         self.assertEqual(len(category2), 2)
         self.assertEqual(len(unexisting_cat), 0)
+
+        for group in category1:
+            if group.module not in ["test_module1", "test_module3"]:
+                self.fail("Some invalid data retrieved")
+        for group in category2:
+            if group.module not in ["test_module2", TEST_ADAPTER_VALID_MODULE]:
+                self.fail("Some invalid data retrieved")
+
 
 
     def test_get_broup_by_identifier(self):
         """
         Test for the get_algorithm_by_identifier.
         """
-        algo_ret = self.flow_service.get_algo_group_by_identifier(self.algo1.id)
-        self.assertEqual(algo_ret.id, self.algo1.id, "ID-s are different!")
-        self.assertEqual(algo_ret.module, self.algo1.module, "Modules are different!")
-        self.assertEqual(algo_ret.fk_category, self.algo1.fk_category, "Categories are different!")
-        self.assertEqual(algo_ret.classname, self.algo1.classname, "Class names are different!")
+        algo_ret = self.flow_service.get_algo_group_by_identifier(self.algo_group1.id)
+        self.assertEqual(algo_ret.id, self.algo_group1.id, "ID-s are different!")
+        self.assertEqual(algo_ret.module, self.algo_group1.module, "Modules are different!")
+        self.assertEqual(algo_ret.fk_category, self.algo_group1.fk_category, "Categories are different!")
+        self.assertEqual(algo_ret.classname, self.algo_group1.classname, "Class names are different!")
 
 
     def test_build_adapter_instance(self):
@@ -289,7 +296,7 @@ class FlowServiceTest(TransactionalTestCase):
                      datetime.strptime("08-12-2011", "%m-%d-%Y"),
                      datetime.strptime("08-12-2011", "%m-%d-%Y")]
         for i in range(5):
-            operation = model.Operation(self.test_user.id, self.test_project.id, self.algo_inst.id, 'test params',
+            operation = model.Operation(self.test_user.id, self.test_project.id, self.algorithm1.id, 'test params',
                                         status=model.STATUS_FINISHED, start_date=start_dates[i],
                                         completion_date=end_dates[i])
             operation = dao.store_entity(operation)
@@ -312,8 +319,7 @@ class FlowServiceTest(TransactionalTestCase):
                     datatype_inst.set_operation_id(operation.id)
                     dao.store_entity(datatype_inst)
 
-        returned_data = self.flow_service.get_available_datatypes(self.test_project.id,
-                                                                "tvb.tests.framework.datatypes.datatype1.Datatype1")[0]
+        returned_data = self.flow_service.get_available_datatypes(self.test_project.id, Datatype1)[0]
         for row in returned_data:
             if row[1] != 'Datatype1':
                 self.fail("Some invalid data was returned!")
@@ -321,9 +327,7 @@ class FlowServiceTest(TransactionalTestCase):
 
         filter_op = FilterChain(fields=[FilterChain.datatype + ".state", FilterChain.operation + ".start_date"],
                                 values=["RAW", datetime.strptime("08-01-2010", "%m-%d-%Y")], operations=["==", ">"])
-        returned_data = self.flow_service.get_available_datatypes(self.test_project.id,
-                                                                  "tvb.tests.framework.datatypes.datatype1.Datatype1",
-                                                                  filter_op)[0]
+        returned_data = self.flow_service.get_available_datatypes(self.test_project.id, Datatype1, filter_op)[0]
         returned_subjects = [one_data[3] for one_data in returned_data]
 
         if "John Doe0" not in returned_subjects or "John Doe1" not in returned_subjects or len(returned_subjects) != 2:

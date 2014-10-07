@@ -68,15 +68,6 @@ class FlowService:
         self.file_helper = FilesHelper()
     
     
-    @staticmethod
-    def read_algorithm_categories():
-        """
-        Retrieve from DB all categories of adapters that were previously stored
-        by introspection into a Python module-given as parameter at startup.
-        """
-        return dao.get_algorithm_categories()
-    
-    
     def get_category_by_id(self, identifier):
         """ Pass to DAO the retrieve of category by ID operation."""
         try:
