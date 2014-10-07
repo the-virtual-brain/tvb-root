@@ -28,8 +28,6 @@
 #
 #
 """
-Created on Jul 21, 2011
-
 .. moduleauthor:: Ionel Ortelecan <ionel.ortelecan@codemart.ro>
 .. moduleauthor:: Bogdan Neacsa <bogdan.neacsa@codemart.ro>
 """
@@ -38,6 +36,7 @@ import os
 import unittest
 from tvb.tests.framework.core.base_testcase import BaseTestCase
 from tvb.basic.profile import TvbProfile
+from tvb.core.entities import model
 from tvb.core.entities.storage import dao
 from tvb.core.adapters.introspector import Introspector
 import tvb.tests.framework.adapters as adapters_init
@@ -49,7 +48,8 @@ class IntrospectorTest(BaseTestCase):
     """
     old_current_dir = TvbProfile.current.web.CURRENT_DIR
     old_xml_path = adapters_init.__xml_folders__
-    
+
+
     def setUp(self):
         """
         Introspect supplementary folder:
@@ -64,10 +64,13 @@ class IntrospectorTest(BaseTestCase):
         
     def tearDown(self):
         """
-        Reset the database when test is done.
+        Revert changes settings and remove recently imported algorithms
         """
         TvbProfile.current.web.CURRENT_DIR = self.old_current_dir
         adapters_init.__xml_folders__ = self.old_xml_path
+
+        for group in dao.get_generic_entity(model.AlgorithmGroup, "simple", "algorithm_param_name"):
+            dao.remove_entity(model.AlgorithmGroup, group.id)
 
 
     def test_introspect(self):
@@ -81,22 +84,26 @@ class IntrospectorTest(BaseTestCase):
         groups = dao.get_groups_by_categories(category_ids)
         self.assertEqual(12, len(groups), "Introspection failed!")
         nr_adapters_mod2 = 0
+        nr_from_xml = 0
         for algorithm in groups:
             self.assertTrue(algorithm.module in ['tvb.tests.framework.adapters.testadapter1',
                                                  'tvb.tests.framework.adapters.testadapter2',
                                                  'tvb.tests.framework.adapters.testadapter3',
                                                  'tvb.tests.framework.adapters.ndimensionarrayadapter',
-                                                 "tvb.adapters.analyzers.group_python_adapter",
-                                                 "tvb.tests.framework.adapters.testgroupadapter"],
+                                                 'tvb.tests.framework.adapters.testgroupadapter'],
                             "Unknown Adapter module:" + str(algorithm.module))
-            self.assertTrue(algorithm.classname in ["TestAdapter1", "TestAdapterDatatypeInput", "TestAdapter2",
-                                                    "TestAdapter22", "TestAdapter3", "TestGroupAdapter",
-                                                    "NDimensionArrayAdapter", "PythonAdapter", "TestAdapterHDDRequired",
-                                                    "TestAdapterHugeMemoryRequired"],
+            self.assertTrue(algorithm.classname in ["TestAdapter1", "TestAdapterDatatypeInput",
+                                                    "TestAdapter2", "TestAdapter22", "TestAdapterHugeMemoryRequired",
+                                                    "TestAdapter3", "TestAdapterHDDRequired",
+                                                    "NDimensionArrayAdapter", "TestGroupAdapter"
+                                                    ],
                             "Unknown Adapter Class:" + str(algorithm.classname))
             if algorithm.module == 'tvb.tests.framework.adapters.testadapter2':
                 nr_adapters_mod2 += 1
+            if algorithm.module == 'tvb.tests.framework.adapters.testgroupadapter':
+                nr_from_xml += 1
         self.assertEqual(nr_adapters_mod2, 2)
+        self.assertEqual(nr_from_xml, 4)
 
 
     def test_xml_introspection(self):

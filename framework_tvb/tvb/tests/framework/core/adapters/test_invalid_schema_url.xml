@@ -4,7 +4,7 @@
 <tvb xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
      xsi:noNamespaceSchemaLocation="http://www.missing-host.org/schema/tvb.xsd">
 
-    <algorithm_group name="simple" type="tvb.adapters.analyzers.group_python_adapter.PythonAdapter"
+    <algorithm_group name="simple" type="tvb.tests.framework.adapters.testgroupadapter.TestGroupAdapter"
                      uiName="Simple Python Analyzers" label="Analysis Algorithm:">
         <algorithm name="Cross Correlation" identifier="CC">
             <code value="cross_correlation(data1, data2, chan1, chan2, mode)"

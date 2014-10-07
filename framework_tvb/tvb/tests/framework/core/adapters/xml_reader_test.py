@@ -37,10 +37,11 @@ import os
 import unittest
 from tvb.tests.framework.core.base_testcase import TransactionalTestCase
 from tvb.basic.profile import TvbProfile
+from tvb.core.entities import model
+from tvb.core.entities.storage import dao
 from tvb.core.adapters import xml_reader
 from tvb.core.adapters.introspector import Introspector
 from tvb.core.adapters.exceptions import XmlParserException
-from tvb.core.entities.storage import dao
 from tvb.core.adapters.abcadapter import ABCAdapter
 import tvb.tests.framework.adapters as adapters_init
 
@@ -75,10 +76,13 @@ class XML_Reader_Test(TransactionalTestCase):
 
     def tearDown(self):
         """
-        Clean-up tests data (xml folders)
+        Revert changes settings and remove recently imported algorithms
         """
         TvbProfile.current.web.CURRENT_DIR = self.old_current_dir
         adapters_init.__xml_folders__ = self.old_xml_path
+
+        for group in dao.get_generic_entity(model.AlgorithmGroup, "simple", "algorithm_param_name"):
+            dao.remove_entity(model.AlgorithmGroup, group.id)
 
 
     def test_algorithm_group_attributes(self):
