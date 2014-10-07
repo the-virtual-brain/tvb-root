@@ -160,6 +160,29 @@ class PhasePlane(object):
             self.default_sv[k] = val
 
 
+    def _compute_trajectories(self, x, y):
+        """ A vectorized method of computing a number of trajectories in parallel """
+        scheme = self.integrator.scheme
+        svx_ind = self.model.state_variables.index(self.svx)
+        svy_ind = self.model.state_variables.index(self.svy)
+
+        state = numpy.tile(self.default_sv, (len(x), 1))
+        state[svx_ind, :] = x
+        state[svy_ind, :] = y
+
+        trajs = numpy.zeros((TRAJ_STEPS + 1, self.model.nvar, len(x), self.model.number_of_modes))
+        trajs[0, :] = state
+
+        for step in xrange(TRAJ_STEPS):
+            state = scheme(state, self.model.dfun, self.no_coupling, 0.0, 0.0)
+            trajs[step + 1, :] = state
+
+        if numpy.isnan(trajs).any():
+            self.log.warn("NaN in trajectories")
+
+        return trajs[:, svx_ind, :, self.mode], trajs[:, svy_ind, :, self.mode]
+
+
     def _compute_trajectory(self, x, y):
         """
         Calculate a sample trajectory, starting at the position x,y in the phase-plane.
