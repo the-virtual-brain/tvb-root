@@ -36,7 +36,10 @@ __main__ will contain the code.
 .. moduleauthor:: Lia Domide <lia.domide@codemart.ro>
 """
 
-import tvb.interfaces.command.prepare
+if __name__ == "__main__":
+    from tvb.basic.profile import TvbProfile
+    TvbProfile.set_profile(TvbProfile.COMMAND_PROFILE)
+
 from time import sleep
 from tvb.basic.logger.builder import get_logger
 from tvb.core.adapters.abcadapter import ABCAdapter

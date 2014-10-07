@@ -33,9 +33,9 @@ This is intended to be a Benchmarking  and Validator script.
 
 .. moduleauthor:: bogdan.neacsa
 """
-
-from tvb.basic.profile import TvbProfile
-TvbProfile.set_profile(TvbProfile.COMMAND_PROFILE)
+if __name__ == '__main__':
+    from tvb.basic.profile import TvbProfile
+    TvbProfile.set_profile(TvbProfile.COMMAND_PROFILE)
 
 import sys
 from time import sleep

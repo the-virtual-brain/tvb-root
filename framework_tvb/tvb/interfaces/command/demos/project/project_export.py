@@ -37,7 +37,10 @@ After running this script, you should have a message in the console telling wher
 
 """
 
-import tvb.interfaces.command.prepare
+if __name__ == "__main__":
+    from tvb.basic.profile import TvbProfile
+    TvbProfile.set_profile(TvbProfile.COMMAND_PROFILE)
+
 from tvb.core.services.project_service import ProjectService
 from tvb.adapters.exporters.export_manager import ExportManager
 from sys import argv

@@ -34,7 +34,10 @@ Launch an operation from the command line
 .. moduleauthor:: Lia Domide <lia.domide@codemart.ro>
 """
 
-import tvb.interfaces.command.prepare
+if __name__ == "__main__":
+    from tvb.basic.profile import TvbProfile
+    TvbProfile.set_profile(TvbProfile.COMMAND_PROFILE)
+
 from tvb.core.entities.model import AlgorithmGroup, Algorithm
 from tvb.core.entities.storage import dao
 from tvb.core.services.flow_service import FlowService

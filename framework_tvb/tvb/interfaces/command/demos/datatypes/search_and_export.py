@@ -34,8 +34,10 @@ Demo script on how to filter datatypes and later export them.
 .. moduleauthor:: Lia Domide <lia.domide@codemart.ro>
 """
 
-import os
-import tvb.interfaces.command.prepare
+if __name__ == "__main__":
+    from tvb.basic.profile import TvbProfile
+    TvbProfile.set_profile(TvbProfile.COMMAND_PROFILE)
+
 from tvb.basic.filters.chain import FilterChain
 from tvb.core.entities.file.files_helper import FilesHelper
 from tvb.core.entities.storage import dao
@@ -43,6 +45,7 @@ from tvb.core.entities.transient.structure_entities import DataTypeMetaData
 from tvb.datatypes.time_series import TimeSeriesRegion
 from tvb.datatypes.connectivity import Connectivity
 from sys import argv
+import os
 
 
 TVB_EXPORTER = "TVBExporter"

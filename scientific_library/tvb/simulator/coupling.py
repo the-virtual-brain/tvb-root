@@ -55,20 +55,19 @@ case of an asymmetric connectivity matrix, where the
 convention to distinguish target ($k$) and source ($j$) nodes is the
 following:
 
-.. math::
 
 .. math::
-  \left(\begin{matrix} a & b \\
-    c & d \end{matrix}\right)
 
+    \\left(\\begin{matrix} a & b \\
+        c & d \end{matrix}\\right)
 
-         C_{kj}  &= \left(\begin{matrix} ^\mathrm{To}/_\mathrm{from} & 0 & 1 & 2 & \cdots & l \\
+         C_{kj}  &= \left(\\begin{matrix} ^\mathrm{To}/_\mathrm{from} & 0 & 1 & 2 & \cdots & l \\
                                                            0         & 1  & 1  &  0 & 1  &  0 \\
                                                            1         & 1  & 1  &  0 & 1  &  0 \\
                                                            2         & 1  & 0  &  0 & 1  &  0 \\
-                                                     \vdots          & 1  & 0  &  1 & 0  &  1 \\
+                                                     \\vdots          & 1  & 0  &  1 & 0  &  1 \\
                                                            l         & 0  & 0  &  0 & 0  &  0 \\
-                                                           \end{matrix}\right)
+                                                           \end{matrix}\\right)
 
 .. NOTE: Our convention is the inverse of the BCT toolbox. Furthermore, this
          convention is consistent with the notation used in Physics and in our
