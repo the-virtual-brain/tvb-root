@@ -474,7 +474,7 @@ class ABCAdapter(object):
 
             if eq_flat_interface_name is not None:
                 is_datatype = False
-                if self.KEY_DATATYPE in field_dict and field_dict[self.KEY_DATATYPE]:
+                if field_dict.get(self.KEY_DATATYPE):
                     eq_datatype = ABCAdapter.load_entity_by_gid(parameters.get(str(eq_flat_interface_name)))
                     if eq_datatype is not None:
                         inputs_datatypes.append(eq_datatype)
@@ -1011,21 +1011,24 @@ class ABCAdapter(object):
             new_param = copy(param)
             new_param[self.KEY_ATTRIBUTES] = None
             new_param[self.KEY_OPTIONS] = None
-            if (prefix is not None) and (self.KEY_TYPE in param):
-                new_param[ABCAdapter.KEY_NAME] = prefix + param[self.KEY_NAME]
+
+            param_name = param[ABCAdapter.KEY_NAME]
+
+            if prefix is not None and self.KEY_TYPE in param:
+                new_param[self.KEY_NAME] = prefix + param_name
             result.append(new_param)
 
             if param.get(self.KEY_OPTIONS) is not None:
                 for option in param[self.KEY_OPTIONS]:
                     ### SELECT or SELECT_MULTIPLE attributes
                     if option.get(self.KEY_ATTRIBUTES) is not None:
-                        new_prefix = ABCAdapter.form_prefix(param[ABCAdapter.KEY_NAME], prefix, option[self.KEY_VALUE])
+                        new_prefix = ABCAdapter.form_prefix(param_name, prefix, option[self.KEY_VALUE])
                         extra_list = self._flaten(option[self.KEY_ATTRIBUTES], new_prefix)
                         result.extend(extra_list)
 
             if param.get(self.KEY_ATTRIBUTES) is not None:
                 ### DATATYPE attributes
-                new_prefix = ABCAdapter.form_prefix(param[ABCAdapter.KEY_NAME], prefix, None)
+                new_prefix = ABCAdapter.form_prefix(param_name, prefix, None)
                 extra_list = self._flaten(param[self.KEY_ATTRIBUTES], new_prefix)
                 result.extend(extra_list)
         return result
@@ -1042,15 +1045,13 @@ class ABCAdapter(object):
         for param in attributes_list:
             prepared_param = copy(param)
             new_name = param[ABCAdapter.KEY_NAME]
-            if (prefix is not None) and (ABCAdapter.KEY_TYPE in param):
+            if prefix is not None and ABCAdapter.KEY_TYPE in param:
                 new_name = prefix + param[ABCAdapter.KEY_NAME]
                 prepared_param[ABCAdapter.KEY_NAME] = new_name
 
             if ((ABCAdapter.KEY_TYPE not in param or param[ABCAdapter.KEY_TYPE] in ABCAdapter.STATIC_ACCEPTED_TYPES)
                     and param.get(ABCAdapter.KEY_OPTIONS) is not None):
-                add_prefix_option = ((ABCAdapter.KEY_TYPE in param) and
-                                     (param[ABCAdapter.KEY_TYPE] == xml_reader.TYPE_MULTIPLE
-                                      or param[ABCAdapter.KEY_TYPE] == xml_reader.TYPE_SELECT))
+                add_prefix_option = param.get(ABCAdapter.KEY_TYPE) in [xml_reader.TYPE_MULTIPLE, xml_reader.TYPE_SELECT]
                 new_prefix = ABCAdapter.form_prefix(param[ABCAdapter.KEY_NAME], prefix)
                 prepared_param[ABCAdapter.KEY_OPTIONS] = ABCAdapter.prepare_param_names(param[ABCAdapter.KEY_OPTIONS],
                                                                                         new_prefix, add_prefix_option)
