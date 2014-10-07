@@ -34,7 +34,9 @@
 """
 
 import os
+import shutil
 import unittest
+from tvb.tests.framework.core.base_testcase import BaseTestCase
 from tvb.basic.profile import TvbProfile
 from tvb.core.services.settings_service import SettingsService, InvalidSettingsException
 
@@ -42,7 +44,7 @@ from tvb.core.services.settings_service import SettingsService, InvalidSettingsE
 TEST_CONFIG_FILE = os.path.expanduser(os.path.join("~", 'tvb.tests.framework.configuration'))
 
 
-class SettingsServiceTest(unittest.TestCase):
+class SettingsServiceTest(BaseTestCase):
     """
     This class contains tests for the tvb.core.services.settings_service module.
     """
@@ -185,6 +187,9 @@ class SettingsServiceTest(unittest.TestCase):
         # Check that the file was correctly moved:
         data = open(os.path.join(TvbProfile.current.TVB_STORAGE, 'RENAMED', "test_rename-xxx43"), 'r').read()
         self.assertEqual(data, 'test-content')
+
+        shutil.rmtree(os.path.join(TvbProfile.current.TVB_STORAGE, 'RENAMED'))
+        os.remove(os.path.join(TvbProfile.current.TVB_STORAGE, "test_rename-xxx43"))
 
 
 
