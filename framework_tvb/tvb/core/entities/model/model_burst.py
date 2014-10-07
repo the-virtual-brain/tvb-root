@@ -38,7 +38,7 @@ from datetime import datetime
 from sqlalchemy import Integer, String, DateTime, Column, ForeignKey
 from sqlalchemy.orm import relationship, backref
 
-from tvb.core.utils import string2date
+from tvb.core.utils import string2date, format_bytes_human
 from tvb.core.entities.exportable import Exportable
 from tvb.core.entities.model.model_base import Base
 from tvb.core.entities.model.model_project import Project
@@ -180,7 +180,7 @@ class BurstConfiguration(Base, Exportable):
         """
         result = {'process_time': None,
                   'datatypes_number': self.datatypes_number,
-                  'disk_size': str(self.disk_size) + " KB" if self.disk_size is not None else None,
+                  'disk_size': format_bytes_human(self.disk_size) if self.disk_size is not None else None,
                   'number_of_workflows': self.workflows_number,
                   'start_time': self.start_time,
                   'error': self.error_message}

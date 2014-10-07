@@ -46,6 +46,7 @@ from tvb.basic.profile import TvbProfile
 from tvb.core.services.user_service import UserService, KEY_PASSWORD, KEY_EMAIL, KEY_USERNAME, KEY_COMMENT
 from tvb.core.services.project_service import ProjectService
 from tvb.core.services.exceptions import UsernameException
+from tvb.core.utils import format_bytes_human
 from tvb.interfaces.web.controllers import common
 from tvb.interfaces.web.controllers.base_controller import BaseController
 from tvb.interfaces.web.controllers.decorators import handle_error, using_template, settings
@@ -113,17 +114,18 @@ class UserController(BaseController):
         if cherrypy.request.method == 'POST' and logout:
             raise cherrypy.HTTPRedirect('/user/logout')
         template_specification = dict(mainContent="profile", title="User Profile")
+        user = common.get_logged_user()
+
         if cherrypy.request.method == 'POST' and save:
             try:
                 form = EditUserForm()
                 data = form.to_python(data)
-                user = common.get_logged_user()
-                if KEY_PASSWORD in data and data[KEY_PASSWORD]:
+                if data.get(KEY_PASSWORD):
                     user.password = md5(data[KEY_PASSWORD]).hexdigest()
-                if KEY_EMAIL in data and data[KEY_EMAIL]:
+                if data.get(KEY_EMAIL):
                     user.email = data[KEY_EMAIL]
                 old_password = None
-                if 'old_password' in data and data['old_password']:
+                if data.get('old_password'):
                     old_password = md5(data['old_password']).hexdigest()
                 self.user_service.edit_user(user, old_password)
                 if old_password:
@@ -138,10 +140,11 @@ class UserController(BaseController):
                 common.add2session(common.KEY_USER, self.user_service.get_user_by_id(user.id))
                 common.set_error_message("Could not save changes. Probably wrong old password!!")
         else:
-            user = common.get_logged_user()
             #Update session user since disk size might have changed from last time to profile.
             user = self.user_service.get_user_by_id(user.id)
             common.add2session(common.KEY_USER, user)
+
+        template_specification['user_used_disk_human'] = format_bytes_human(user.used_disk_space)
         return self.fill_default_attributes(template_specification)
 
 
