@@ -107,6 +107,8 @@ class SettingsServiceTest(unittest.TestCase):
         self.assertTrue(len(TvbProfile.current.manager.stored_settings) == 0)
 
         to_store_data = {key: value['value'] for key, value in initial_configurations.iteritems()}
+        for key, value in self.TEST_SETTINGS.iteritems():
+            to_store_data[key] = value
         _, shoud_reset = self.settings_service.save_settings(**to_store_data)
 
         self.assertTrue(shoud_reset)

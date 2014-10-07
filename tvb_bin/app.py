@@ -231,9 +231,8 @@ def execute_start_desktop(profile, reset):
         if not os.path.exists(TvbProfile.current.TVB_STORAGE):
             os.mkdir(TvbProfile.current.TVB_STORAGE)
         pid_file_reference = open(TVB_PID_FILE, 'a')
-        tvb_process = subprocess.Popen(desktop_args_list, shell=False)
-    else:
-        tvb_process = subprocess.Popen(desktop_args_list, shell=False)
+
+    tvb_process = subprocess.Popen(desktop_args_list, shell=False)
 
     pid_file_reference.write(str(tvb_process.pid) + "\n")
     pid_file_reference.close()
