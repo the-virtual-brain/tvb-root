@@ -528,17 +528,15 @@ class ABCAdapter(object):
 
         for entry in algorithm_inputs:
             ## First handle this level of the tree, adding defaults where required
-            if (entry[self.KEY_NAME] not in kwargs and self.KEY_REQUIRED in entry
-                    and entry[self.KEY_REQUIRED] is True and self.KEY_DEFAULT in entry
+            if (entry[self.KEY_NAME] not in kwargs
+                    and entry.get(self.KEY_REQUIRED)
+                    and self.KEY_DEFAULT in entry
                     and entry[self.KEY_TYPE] != xml_reader.TYPE_DICT):
-
                 kwargs[entry[self.KEY_NAME]] = entry[self.KEY_DEFAULT]
 
         for entry in algorithm_inputs:
             ## Now that first level was handled, go recursively on selected options only          
-            if (self.KEY_REQUIRED in entry and entry[self.KEY_REQUIRED] is True
-                    and ABCAdapter.KEY_OPTIONS in entry and entry[ABCAdapter.KEY_OPTIONS] is not None):
-
+            if entry.get(self.KEY_REQUIRED) and entry.get(ABCAdapter.KEY_OPTIONS) is not None:
                 for option in entry[ABCAdapter.KEY_OPTIONS]:
                     #Only go recursive on option that was submitted
                     if option[self.KEY_VALUE] == kwargs[entry[self.KEY_NAME]]:
@@ -915,10 +913,9 @@ class ABCAdapter(object):
                 short_parent_name = level1_name[0: level1_name.find(ABCAdapter.KEYWORD_PARAMS) - 10]
                 if (parent + short_parent_name) in simple_select_list:
                     # simple select
-                    if isinstance(result[level1_name[0: level1_name.find(ABCAdapter.KEYWORD_PARAMS) - 10]],
-                                  (str, unicode)):
+                    if isinstance(result[short_parent_name], (str, unicode)):
                         parent_prefix = level1_name + ABCAdapter.KEYWORD_SEPARATOR + ABCAdapter.KEYWORD_OPTION
-                        parent_prefix += result[level1_name[0:level1_name.find(ABCAdapter.KEYWORD_PARAMS) - 10]]
+                        parent_prefix += result[short_parent_name]
                         parent_prefix += ABCAdapter.KEYWORD_SEPARATOR
                         # Ignore options in case of simple selects
                         # Take only attributes for current selected option.
@@ -935,8 +932,8 @@ class ABCAdapter(object):
                 elif short_parent_name in result:
                     # multiple select
                     for level2_name, level2_params in level1_params.items():
-                        parent_prefix = (level1_name + ABCAdapter.KEYWORD_SEPARATOR +
-                                         ABCAdapter.KEYWORD_OPTION + level2_name + ABCAdapter.KEYWORD_SEPARATOR)
+                        parent_prefix = level1_name + ABCAdapter.KEYWORD_SEPARATOR + ABCAdapter.KEYWORD_OPTION
+                        parent_prefix += level2_name + ABCAdapter.KEYWORD_SEPARATOR
                         transformed_params = ABCAdapter.collapse_arrays(level2_params, simple_select_list,
                                                                         parent + parent_prefix)
                         result[level1_name][level2_name] = transformed_params
