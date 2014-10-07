@@ -89,8 +89,8 @@ var TVBUI = TVBUI || {};
 
         this.plane_with_axis.append('text')
             .attr('class', 'axis')
-            .text('vector magnitude')
-            .attr("transform", "translate(880, 250) rotate(90)");
+            .text('arrow scale')
+            .attr("transform", "translate(880, 260) rotate(90)");
 
         this.xLabel = this.plane_with_axis.append("text")
             .attr("class", "axislabel")
@@ -132,6 +132,12 @@ var TVBUI = TVBUI || {};
         this.plot_g = this.plot_with_axis.append('g')
             .attr('class', 'traj')
             .attr("clip-path", "url(#clip_plot)");
+
+        this.plot_with_axis.append("text")
+            .attr("class", "axislabel")
+            .text("time[ms]")
+            .attr("x", planeWidth + 10)
+            .attr("y", 120);
 
         this.xAxis_plot_g = this.plot_with_axis.append('g').attr('class', 'axis').attr("transform", "translate(0, 100)");
         this.yAxis_plot_g = this.plot_with_axis.append('g').attr('class', 'axis');
@@ -302,7 +308,7 @@ var TVBUI = TVBUI || {};
         labels_el.attr('transform', function(d, i){
                 return 'translate(0, ' + i * 20 + ')';
             })
-            .attr('stroke', function(d, i){
+            .attr('fill', function(d, i){
                 return colorS(i);
             })
             .text(function(d){return d;});
