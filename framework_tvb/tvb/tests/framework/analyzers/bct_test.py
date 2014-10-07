@@ -33,6 +33,7 @@
 """
 
 import unittest
+from tvb.tests.framework.core.base_testcase import TransactionalTestCase
 from tvb.core.utils import get_matlab_executable
 from tvb.core.entities import model
 from tvb.core.entities.storage import dao
@@ -40,7 +41,6 @@ from tvb.core.services.operation_service import OperationService
 from tvb.core.adapters.exceptions import InvalidParameterException
 from tvb.datatypes.connectivity import Connectivity
 from tvb.tests.framework.core.test_factory import TestFactory
-from tvb.tests.framework.core.base_testcase import TransactionalTestCase
 
 
 
@@ -65,7 +65,7 @@ class BCTTest(TransactionalTestCase):
         TestFactory.import_cff(test_user=self.test_user, test_project=self.test_project)
         self.connectivity = dao.get_generic_entity(Connectivity, 'John Doe', 'subject')[0]
 
-        self.algo_groups = dao.get_generic_entity(model.AlgorithmGroup, 'bct', 'algorithm_param_name')
+        self.algo_groups = dao.get_generic_entity(model.AlgorithmGroup, 'MatlabAdapter', 'classname')
 
         self.assertTrue(self.algo_groups is not None)
         self.assertEquals(6, len(self.algo_groups))

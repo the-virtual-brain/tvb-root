@@ -32,13 +32,10 @@
 .. moduleauthor:: bogdan.neacsa <bogdan.neacsa@codemart.ro>
 """
 
-import os
-import tvb.tests.framework
 import numpy
 import unittest
 import json
 from tvb.config import SIMULATOR_MODULE, SIMULATOR_CLASS
-from tvb.basic.profile import TvbProfile
 from tvb.core.entities import model
 from tvb.core.entities.storage import dao
 from tvb.core.entities.file.files_helper import FilesHelper
@@ -49,7 +46,6 @@ from tvb.datatypes.mapped_values import DatatypeMeasure
 from tvb.core.entities.transient.structure_entities import DataTypeMetaData
 from tvb.core.services.operation_service import OperationService
 from tvb.core.services.flow_service import FlowService
-
 from tvb.tests.framework.core.test_factory import TestFactory
 from tvb.tests.framework.core.base_testcase import TransactionalTestCase
 from tvb.tests.framework.adapters.storeadapter import StoreAdapter
@@ -69,8 +65,6 @@ class TimeSeriesMetricsAdapterTest(TransactionalTestCase):
         """
         self.test_user = TestFactory.create_user()
         self.test_project = TestFactory.create_project(self.test_user)
-        self.old_config_file = TvbProfile.current.web.CURRENT_DIR
-        TvbProfile.current.web.CURRENT_DIR = os.path.dirname(tvb.tests.framework.__file__)
         TestFactory.import_cff(test_user=self.test_user, test_project=self.test_project)
 
 
@@ -79,7 +73,6 @@ class TimeSeriesMetricsAdapterTest(TransactionalTestCase):
         Remove project folders and clean up database.
         """
         FilesHelper().remove_project_structure(self.test_project.name)
-        TvbProfile.current.web.CURRENT_DIR = self.old_config_file
 
 
     def test_adapter_launch(self):

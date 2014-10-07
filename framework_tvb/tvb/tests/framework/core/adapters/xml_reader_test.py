@@ -35,13 +35,13 @@
 
 import os
 import unittest
+from tvb.tests.framework.core.base_testcase import TransactionalTestCase
 from tvb.basic.profile import TvbProfile
 from tvb.core.adapters import xml_reader
 from tvb.core.adapters.introspector import Introspector
 from tvb.core.adapters.exceptions import XmlParserException
 from tvb.core.entities.storage import dao
 from tvb.core.adapters.abcadapter import ABCAdapter
-from tvb.tests.framework.core.base_testcase import TransactionalTestCase
 import tvb.tests.framework.adapters as adapters_init
 
 
@@ -50,6 +50,8 @@ class XML_Reader_Test(TransactionalTestCase):
     """
     This is a test class for the tvb.core.adapters.xml_reader module.
     """
+    old_current_dir = TvbProfile.current.web.CURRENT_DIR
+    old_xml_path = adapters_init.__xml_folders__
 
 
     def setUp(self):
@@ -57,13 +59,14 @@ class XML_Reader_Test(TransactionalTestCase):
         This method sets up the necessary paths for testing.
         """
         self.folder_path = os.path.dirname(__file__)
-        #tvb.tests.framework path
+
         core_path = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-        self.old_path = TvbProfile.current.web.CURRENT_DIR
         TvbProfile.current.web.CURRENT_DIR = os.path.dirname(core_path)
         adapters_init.__xml_folders__ = [os.path.join('core', 'adapters')]
+
         self.introspector = Introspector("tvb.tests.framework")
         self.introspector.introspect(True)
+
         xml_group_path = os.path.join('core', 'adapters', "test_group.xml")
         algo_group = dao.find_group('tvb.tests.framework.adapters.testgroupadapter', 'TestGroupAdapter', xml_group_path)
         self.xml_group_adapter = ABCAdapter.build_adapter(algo_group)
@@ -74,11 +77,8 @@ class XML_Reader_Test(TransactionalTestCase):
         """
         Clean-up tests data (xml folders)
         """
-        TvbProfile.current.web.CURRENT_DIR = self.old_path
-        if hasattr(adapters_init, '__xml_folders__'):
-            # Since TransactionalTestCase makes sure the tearDown is called even in setUp or test fails we need
-            # to check if this was really added.
-            del adapters_init.__xml_folders__
+        TvbProfile.current.web.CURRENT_DIR = self.old_current_dir
+        adapters_init.__xml_folders__ = self.old_xml_path
 
 
     def test_algorithm_group_attributes(self):

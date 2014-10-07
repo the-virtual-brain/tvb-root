@@ -250,7 +250,6 @@ def transactional_test(func, callback=None):
         def dec(*args, **kwargs):
             session_maker = SessionMaker()
             TvbProfile.current.db.ALLOW_NESTED_TRANSACTIONS = True
-            default_dir = TvbProfile.current.web.CURRENT_DIR
             default_mlab_exe = TvbProfile.current.MATLAB_EXECUTABLE
             TvbProfile.current.MATLAB_EXECUTABLE = get_matlab_executable()
             session_maker.start_transaction()
@@ -272,7 +271,6 @@ def transactional_test(func, callback=None):
                 session_maker.close_transaction()
                 TvbProfile.current.db.ALLOW_NESTED_TRANSACTIONS = False
                 TvbProfile.current.MATLAB_EXECUTABLE = default_mlab_exe
-                TvbProfile.current.web.CURRENT_DIR = default_dir
 
             if callback is not None:
                 callback(*args, **kwargs)

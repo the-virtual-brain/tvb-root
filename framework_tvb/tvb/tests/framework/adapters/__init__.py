@@ -35,4 +35,4 @@ import os
 
 __all__ = ["testadapter1", "testadapter2", "testadapter3", "ndimensionarrayadapter"]
 
-__xml_folders__ = [os.path.join('core', 'adapters')]
+__xml_folders__ = [os.path.join('tests', 'framework', 'interfaces', 'web')]

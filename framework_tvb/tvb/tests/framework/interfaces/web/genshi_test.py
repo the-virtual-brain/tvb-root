@@ -40,21 +40,20 @@ import numpy
 import cherrypy
 from BeautifulSoup import BeautifulSoup
 from genshi.template.loader import TemplateLoader
+from tvb.tests.framework.core.base_testcase import BaseTestCase
 from tvb.basic.profile import TvbProfile
 import tvb.basic.traits as trait
 import tvb.interfaces.web.templates.genshi.flow as root_html
 from tvb.interfaces.web.controllers import common
 from tvb.core.adapters.abcadapter import ABCAdapter
-from tvb.core.adapters.introspector import Introspector
 from tvb.core.entities.storage import dao
 from tvb.core.services.flow_service import FlowService
 from tvb.core.services.operation_service import OperationService, RANGE_PARAMETER_1, RANGE_PARAMETER_2
+from tvb.datatypes.arrays import MappedArray
 from tvb.interfaces.web.controllers.flow_controller import FlowController
 from tvb.interfaces.web.entities.context_selected_adapter import SelectedAdapterContext
 from tvb.tests.framework.adapters.ndimensionarrayadapter import NDimensionArrayAdapter
-from tvb.tests.framework.core.base_testcase import BaseTestCase
 from tvb.tests.framework.core.test_factory import TestFactory
-import tvb.tests.framework.adapters as adapters_init
 
 
 
@@ -140,13 +139,6 @@ class GenthiTraitTest(GenshiTest):
     Test HTML generation for a trait based interface.
     """
 
-    def setUp(self):
-        """
-        Set up any additionally needed parameters.
-        """
-        super(GenthiTraitTest, self).setUp()
-
-
     def test_multidimensional_array(self):
         """
         Test the generation of a multi-dimensional array.
@@ -184,14 +176,8 @@ class GenshiTestSimple(GenshiTest):
         Set up any additionally needed parameters.
         """
         super(GenshiTestSimple, self).setUp()
-        core_path = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-        self.old_path = TvbProfile.current.web.CURRENT_DIR
-        TvbProfile.current.web.CURRENT_DIR = os.path.dirname(core_path)
-        adapters_init.__xml_folders__ = [os.path.join('interfaces', 'web')]
-        self.introspector = Introspector("tvb.tests.framework")
-        self.introspector.introspect(True)
 
-        xml_group_path = os.path.join('interfaces', 'web', "test_simple.xml")
+        xml_group_path = os.path.join('tests', 'framework', 'interfaces', 'web', "test_simple.xml")
         algo_group = dao.find_group('tvb.tests.framework.adapters.testgroupadapter', 'TestGroupAdapter', xml_group_path)
         self.xml_group_adapter = ABCAdapter.build_adapter(algo_group)
         input_tree = self.xml_group_adapter.get_input_tree()
@@ -208,8 +194,7 @@ class GenshiTestSimple(GenshiTest):
 
 
     def tearDown(self):
-        TvbProfile.current.web.CURRENT_DIR = self.old_path
-        del adapters_init.__xml_folders__
+        super(GenshiTestSimple, self).tearDown()
         self.reset_database()
 
 
@@ -306,15 +291,7 @@ class GenshiTestGroup(GenshiTest):
         """
         super(GenshiTestGroup, self).setUp()
 
-        core_path = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-        self.old_path = TvbProfile.current.web.CURRENT_DIR
-        TvbProfile.current.web.CURRENT_DIR = os.path.dirname(core_path)
-
-        adapters_init.__xml_folders__ = [os.path.join('interfaces', 'web')]
-        self.introspector = Introspector("tvb.tests.framework")
-        self.introspector.introspect(True)
-
-        xml_group_path = os.path.join('interfaces', 'web', "test_group.xml")
+        xml_group_path = os.path.join('tests', 'framework', 'interfaces', 'web', "test_group.xml")
         algo_group = dao.find_group('tvb.tests.framework.adapters.testgroupadapter', 'TestGroupAdapter', xml_group_path)
         self.xml_group_adapter = ABCAdapter.build_adapter(algo_group)
         input_tree = self.xml_group_adapter.get_input_tree()
@@ -326,8 +303,7 @@ class GenshiTestGroup(GenshiTest):
 
 
     def tearDown(self):
-        TvbProfile.current.web.CURRENT_DIR = self.old_path
-        del adapters_init.__xml_folders__
+        super(GenshiTestGroup, self).tearDown()
         self.reset_database()
 
 
@@ -380,6 +356,7 @@ class GenshiTestNDimensionArray(GenshiTest):
         """
         Reset the database when test is done.
         """
+        super(GenshiTestNDimensionArray, self).tearDown()
         self.clean_database()
 
 
@@ -389,15 +366,13 @@ class GenshiTestNDimensionArray(GenshiTest):
         to select one dimension from a multi dimension array
         """
         flow_service = FlowService()
-        insert_count = flow_service.get_available_datatypes(self.test_project.id,
-                                                            "tvb.datatypes.arrays.MappedArray")[1]
-        self.assertEqual(insert_count, 0, "Expected to find no data")
+        array_count = self.count_all_entities(MappedArray)
+        self.assertEqual(0, array_count, "Expected to find no data")
         adapter_instance = NDimensionArrayAdapter()
         PARAMS = {}
         OperationService().initiate_prelaunch(self.operation, adapter_instance, {}, **PARAMS)
-        inserted_data = flow_service.get_available_datatypes(self.test_project.id,
-                                                             "tvb.datatypes.arrays.MappedArray")[0]
-        self.assertEqual(len(inserted_data), 1, "Problems when inserting data")
+        inserted_arrays, array_count = flow_service.get_available_datatypes(self.test_project.id, MappedArray)
+        self.assertEqual(1, array_count, "Problems when inserting data")
 
         algogroup = dao.find_group('tvb.tests.framework.adapters.ndimensionarrayadapter', 'NDimensionArrayAdapter')
         _, interface = flow_service.prepare_adapter(self.test_project.id, algogroup)
@@ -408,7 +383,7 @@ class GenshiTestNDimensionArray(GenshiTest):
         found_divs = self.soup.findAll('p', attrs=dict(id="dimensionsDiv_input_data"))
         self.assertEqual(len(found_divs), 1, "Data generated incorrect")
 
-        gid = inserted_data[0][2]
+        gid = inserted_arrays[0][2]
         cherrypy.session = {'user': self.test_user}
         entity = dao.get_datatype_by_gid(gid)
         component_content = FlowController().gettemplatefordimensionselect(gid, "input_data")

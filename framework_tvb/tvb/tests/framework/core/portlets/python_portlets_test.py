@@ -29,14 +29,11 @@
 #
 
 """
-Created on Apr 27, 2012
-
 .. moduleauthor:: bogdan.neacsa <bogdan.neacsa@codemart.ro>
 """
-import os
+
 import unittest
 from tvb.core.entities import model
-from tvb.basic.profile import TvbProfile
 from tvb.core.entities.storage import dao
 from tvb.core.entities.file.files_helper import FilesHelper
 from tvb.core.portlets.portlet_configurer import PortletConfigurer
@@ -55,10 +52,7 @@ class PythonPortletsTest(TransactionalTestCase):
         user = model.User("test_user", "test_pass", "test_mail@tvb.org", True, "user")
         self.test_user = dao.store_entity(user) 
         project = model.Project("test_proj", self.test_user.id, "description")
-        self.test_project = dao.store_entity(project) 
-        import tvb.tests.framework
-        self.old_config_file = TvbProfile.current.web.CURRENT_DIR
-        TvbProfile.current.web.CURRENT_DIR = os.path.dirname(tvb.tests.framework.__file__)
+        self.test_project = dao.store_entity(project)
         
         
     def tearDown(self):
@@ -66,8 +60,6 @@ class PythonPortletsTest(TransactionalTestCase):
         Remove project folders and restore config file
         """
         FilesHelper().remove_project_structure(self.test_project.name)
-#        self.clean_database()
-        TvbProfile.current.web.CURRENT_DIR = self.old_config_file
         
         
     def test_portlet_configurable_interface(self):

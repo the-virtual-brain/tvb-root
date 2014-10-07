@@ -36,27 +36,31 @@ Created on Jul 21, 2011
 
 import os
 import unittest
+from tvb.tests.framework.core.base_testcase import BaseTestCase
 from tvb.basic.profile import TvbProfile
 from tvb.core.entities.storage import dao
 from tvb.core.adapters.introspector import Introspector
 from tvb.core.services.project_service import initialize_storage
-from tvb.tests.framework.core.base_testcase import BaseTestCase
+import tvb.tests.framework.adapters as adapters_init
 
 
 class IntrospectorTest(BaseTestCase):
     """
     Test class for the introspection module.
     """
+    old_current_dir = TvbProfile.current.web.CURRENT_DIR
+    old_xml_path = adapters_init.__xml_folders__
     
     def setUp(self):
         """
         Reset the database before each test.
         """
         self.reset_database()
-        #tvb.tests.framework path
+
         core_path = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-        self.old_path = TvbProfile.current.web.CURRENT_DIR
         TvbProfile.current.web.CURRENT_DIR = os.path.dirname(core_path)
+        adapters_init.__xml_folders__ = [os.path.join("core", "adapters")]
+
         self.introspector = Introspector("tvb.tests.framework")
         
         
@@ -64,9 +68,11 @@ class IntrospectorTest(BaseTestCase):
         """
         Reset the database when test is done.
         """
-        TvbProfile.current.web.CURRENT_DIR = self.old_path
+        TvbProfile.current.web.CURRENT_DIR = self.old_current_dir
+        adapters_init.__xml_folders__ = self.old_xml_path
         self.reset_database()
-        
+
+
     def test_introspect(self):
         """
         Test the actual introspect module on a test structure created in:
@@ -78,7 +84,7 @@ class IntrospectorTest(BaseTestCase):
         all_categories = dao.get_algorithm_categories()
         category_ids = [cat.id for cat in all_categories if cat.displayname == "AdaptersTest"]
         groups = dao.get_groups_by_categories(category_ids)
-        self.assertEqual(10, len(groups), "Introspection failed!")
+        self.assertEqual(12, len(groups), "Introspection failed!")
         nr_adapters_mod2 = 0
         for algorithm in groups:
             self.assertTrue(algorithm.module in ['tvb.tests.framework.adapters.testadapter1',
