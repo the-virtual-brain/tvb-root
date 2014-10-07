@@ -179,7 +179,6 @@ class ABCAdapter(object):
         """
         Describes inputs and outputs of the launch method.
         """
-        pass
 
 
     @abstractmethod
@@ -187,7 +186,6 @@ class ABCAdapter(object):
         """
         Describes inputs and outputs of the launch method.
         """
-        pass
 
 
     def configure(self, **kwargs):
@@ -195,7 +193,6 @@ class ABCAdapter(object):
         To be implemented in each Adapter that requires any specific configurations
         before the actual launch.
         """
-        pass
 
 
     @abstractmethod
@@ -204,7 +201,6 @@ class ABCAdapter(object):
         Abstract method to be implemented in each adapter. Should return the required memory
         for launching the adapter.
         """
-        pass
 
 
     @abstractmethod
@@ -213,8 +209,7 @@ class ABCAdapter(object):
         Abstract method to be implemented in each adapter. Should return the required memory
         for launching the adapter in kilo-Bytes.
         """
-        pass
-        
+
 
     def get_execution_time_approximation(self, **kwargs):
         """
@@ -231,7 +226,6 @@ class ABCAdapter(object):
          Will contain the logic of the Adapter.
          Any returned DataType will be stored in DB, by the Framework.
         """
-        pass
 
 
     @nan_not_allowed()
@@ -258,21 +252,20 @@ class ABCAdapter(object):
             adapter_required_memory = self.get_required_memory_size(**kwargs)
 
             if adapter_required_memory > memory_reference:
-                raise NoMemoryAvailableException("Machine does not have enough RAM memory to launch the operation "
-                                                 "(expected %.2g GB, but were found %.2g GB)." % (
-                                                 adapter_required_memory / 2 ** 30, memory_reference / 2 ** 30))
+                msg = "Machine does not have enough RAM memory to launch the operation (expected %.2g GB, but were found %.2g GB)."
+                raise NoMemoryAvailableException(msg % (adapter_required_memory / 2 ** 30, memory_reference / 2 ** 30))
 
             # Compare the expected size of the operation results with the HDD space currently available for the user
             # TVB defines a quota per user.
             required_disk_space = self.get_required_disk_size(**kwargs)
             if available_disk_space < 0:
-                raise NoMemoryAvailableException("You have exceeded you HDD space quota"
-                                                 " by %.2f MB Stopping execution." % (- available_disk_space / 2 ** 10))
-            if available_disk_space - required_disk_space < 0:
-                raise NoMemoryAvailableException("You only have %.2f GB of disk space available but the operation you "
-                                                 "launched might require %.2f "
-                                                 "Stopping execution..." % (available_disk_space / 2 ** 20,
-                                                                            required_disk_space / 2 ** 20))
+                msg = "You have exceeded you HDD space quota by %.2f MB Stopping execution."
+                raise NoMemoryAvailableException(msg % (- available_disk_space / 2 ** 10))
+            if available_disk_space < required_disk_space:
+                msg = ("You only have %.2f GB of disk space available but the operation you "
+                       "launched might require %.2f Stopping execution...")
+                raise NoMemoryAvailableException(msg % (available_disk_space / 2 ** 20, required_disk_space / 2 ** 20))
+
             operation.start_now()
             operation.result_disk_size = required_disk_space
             dao.store_entity(operation)
@@ -566,11 +559,8 @@ class ABCAdapter(object):
             ## If required attribute was submitted empty no point to continue, so just raise exception
             if (validation_required and row.get(xml_reader.ATT_REQUIRED, False)
                     and row_attr in kwargs and kwargs[row_attr] == ""):
-
-                raise InvalidParameterException("Parameter %s [%s] is required for %s but no value was submitted! "
-                                                "Please relaunch with valid parameters." % (row[self.KEY_LABEL],
-                                                                                            row[self.KEY_NAME],
-                                                                                            self.__class__.__name__))
+                msg = "Parameter %s [%s] is required for %s but no value was submitted! Please relaunch with valid parameters."
+                raise InvalidParameterException(msg % (row[self.KEY_LABEL], row[self.KEY_NAME], self.__class__.__name__))
 
             try:
                 if row_type == xml_reader.TYPE_DICT:
@@ -592,7 +582,6 @@ class ABCAdapter(object):
                         continue
                     kwargs[row_attr] = kwargs[kwa_name]
                     ## del kwargs[kwa_name] don't remove the original param, as it is useful for retrieving op.input DTs
-
                 elif self.__is_parent_not_submitted(row, kwargs):
                     ## Also do not populate sub-attributes from options not selected
                     del kwargs[row_attr]
@@ -607,21 +596,18 @@ class ABCAdapter(object):
                         kwa[row_attr] = json.loads(kwargs[row_attr])
                 elif row_type == xml_reader.TYPE_BOOL:
                     kwa[row_attr] = bool(kwargs[row_attr])
-
                 elif row_type == xml_reader.TYPE_INT:
-                    if kwargs[row_attr] is None or kwargs[row_attr] in ['', 'None']:
+                    if kwargs[row_attr] in [None, '', 'None']:
                         kwa[row_attr] = None
                     else:
-                        val = int(kwargs[row_attr])
-                        kwa[row_attr] = val
+                        kwa[row_attr] = int(kwargs[row_attr])
                         if xml_reader.ATT_MINVALUE in row and xml_reader.ATT_MAXVALUE:
                             self.__validate_range_for_value_input(kwa[row_attr], row)
                 elif row_type == xml_reader.TYPE_FLOAT:
                     if kwargs[row_attr] in ['', 'None']:
                         kwa[row_attr] = None
                     else:
-                        val = float(kwargs[row_attr])
-                        kwa[row_attr] = val
+                        kwa[row_attr] = float(kwargs[row_attr])
                         if xml_reader.ATT_MINVALUE in row and xml_reader.ATT_MAXVALUE:
                             self.__validate_range_for_value_input(kwa[row_attr], row)
                 elif row_type == xml_reader.TYPE_STR:
@@ -634,8 +620,7 @@ class ABCAdapter(object):
                     if row_type == xml_reader.TYPE_SELECT:
                         simple_select_list.append(row_attr)
                 elif row_type == xml_reader.TYPE_UPLOAD:
-                    val = kwargs[row_attr]
-                    kwa[row_attr] = val
+                    kwa[row_attr] = kwargs[row_attr]
                 else:
                     ## DataType parameter to be processed:
                     simple_select_list.append(row_attr)
@@ -656,33 +641,22 @@ class ABCAdapter(object):
 
 
     def __validate_range_for_value_input(self, value, row):
-
         if value < row[xml_reader.ATT_MINVALUE] or value > row[xml_reader.ATT_MAXVALUE]:
-
             warning_message = "Field %s [%s] should be between %s and %s but provided value was %s." % (
                 row[self.KEY_LABEL], row[self.KEY_NAME], row[xml_reader.ATT_MINVALUE],
                 row[xml_reader.ATT_MAXVALUE], value)
-
             self.log.warning(warning_message)
-
-            #raise InvalidParameterException(warning_message)
-            # As described in TVB-1295, we do no longer raise exception, but only log a warning
 
 
     def __validate_range_for_array_input(self, array, row):
-
         min_val = numpy.min(array)
         max_val = numpy.max(array)
 
         if min_val < row[xml_reader.ATT_MINVALUE] or max_val > row[xml_reader.ATT_MAXVALUE]:
-
             warning_message = "Field %s [%s] should have values between %s and %s but provided array contains min-" \
                               "max:(%s, %s)." % (row[self.KEY_LABEL], row[self.KEY_NAME], row[xml_reader.ATT_MINVALUE],
                                                  row[xml_reader.ATT_MAXVALUE], min_val, max_val)
             self.log.warning(warning_message)
-
-            #raise InvalidParameterException(warning_message)
-            # As described in TVB-1295, we do no longer raise exception, but only log a warning
 
 
     def __convert_to_array(self, input_data, row):
@@ -693,8 +667,7 @@ class ABCAdapter(object):
         value of that parameter will be a dictionary which contains all the data
         needed for computing that parameter for each vertex from the used surface.
         """
-        if KEY_EQUATION in str(input_data) and KEY_FOCAL_POINTS in str(input_data) \
-                and KEY_SURFACE_GID in str(input_data):
+        if KEY_EQUATION in str(input_data) and KEY_FOCAL_POINTS in str(input_data) and KEY_SURFACE_GID in str(input_data):
             try:
                 input_data = eval(str(input_data))
                 # TODO move at a different level
@@ -1006,8 +979,8 @@ class ABCAdapter(object):
         """ Change the default values in the Input Interface Tree."""
         result = []
         for param in adapter_interface:
-            if param[ABCAdapter.KEY_NAME] == 'integrator':
-                pass
+            # if param[ABCAdapter.KEY_NAME] == 'integrator':
+            #     pass
             new_p = copy(param)
             if param[ABCAdapter.KEY_NAME] in data:
                 new_p[ABCAdapter.KEY_DEFAULT] = data[param[ABCAdapter.KEY_NAME]]
