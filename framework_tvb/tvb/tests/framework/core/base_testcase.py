@@ -53,15 +53,11 @@ def init_test_env():
         if os.path.exists(db_file):
             os.remove(db_file)
 
-    from tvb.core.utils import get_matlab_executable
     from tvb.core.entities.model_manager import reset_database
     from tvb.core.services.initializer import initialize
 
-    default_mlab_exe = TvbProfile.current.MATLAB_EXECUTABLE
-    TvbProfile.current.MATLAB_EXECUTABLE = get_matlab_executable()
     reset_database()
     initialize(["tvb.config", "tvb.tests.framework"], load_xml_events=False)
-    TvbProfile.current.MATLAB_EXECUTABLE = default_mlab_exe
 
 
 # Following code is executed once / tests execution to reduce time spent in tests.
@@ -77,7 +73,6 @@ from tvb.core.entities.file.files_helper import FilesHelper
 from tvb.core.entities.storage import dao
 from tvb.core.entities.storage.session_maker import SessionMaker
 from tvb.core.entities import model
-from tvb.core.utils import get_matlab_executable
 
 LOGGER = get_logger(__name__)
 
@@ -250,8 +245,6 @@ def transactional_test(func, callback=None):
         def dec(*args, **kwargs):
             session_maker = SessionMaker()
             TvbProfile.current.db.ALLOW_NESTED_TRANSACTIONS = True
-            default_mlab_exe = TvbProfile.current.MATLAB_EXECUTABLE
-            TvbProfile.current.MATLAB_EXECUTABLE = get_matlab_executable()
             session_maker.start_transaction()
             try:
                 try:
@@ -270,7 +263,6 @@ def transactional_test(func, callback=None):
                 session_maker.rollback_transaction()
                 session_maker.close_transaction()
                 TvbProfile.current.db.ALLOW_NESTED_TRANSACTIONS = False
-                TvbProfile.current.MATLAB_EXECUTABLE = default_mlab_exe
 
             if callback is not None:
                 callback(*args, **kwargs)

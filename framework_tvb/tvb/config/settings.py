@@ -100,6 +100,13 @@ class TestSQLiteProfile(BaseFrameworkSettingsProfile):
         self.db.SELECTED_DB = 'sqlite'
 
 
+    def initialize_profile(self):
+        super(TestSQLiteProfile, self).initialize_profile()
+
+        from tvb.core.utils import get_matlab_executable
+        self.MATLAB_EXECUTABLE = get_matlab_executable()
+
+
 
 class TestPostgresProfile(TestSQLiteProfile):
     """
