@@ -101,6 +101,18 @@ var dynamicPage = {
         return name2val;
     };
 
+    SliderGroup.prototype.hide = function(sv_to_disable){
+        for (var i = 0; i < this.states.length; i++) {
+            var option = this.states[i];
+            var slider = $("#slider_" + option.name);
+            var input = $("#value_" + option.name);
+            var enabled = sv_to_disable.indexOf(option.name) === -1;
+
+            slider.slider(enabled? 'enable':'disable');
+            input.toggle(enabled);
+        }
+    };
+
     /**
      * Dom selectors are hard coded so only one instance makes sense.
      * @constructor
@@ -217,6 +229,7 @@ function _fetchSlidersFromServer(){
             dynamicPage.stateVarsSliders = new dynamicPage.SliderGroup(dynamicPage.graphDefaults.state_variables, '#reset_state_variables', onGraphChanged);
             dynamicPage.axisControls = new dynamicPage.AxisGroup(dynamicPage.graphDefaults, onGraphChanged);
             _onParameterChanged();
+            _disable_active_sv_slider();
         }
     });
 }
@@ -253,10 +266,15 @@ function _onParameterChanged(){
 // Resetting a slider group will trigger change events for each slider. The handler does a slow ajax so debounce the handler
 var onParameterChanged = $.debounce(DEBOUNCE_DELAY, _onParameterChanged);
 
+function _disable_active_sv_slider(){
+    var axis_state = dynamicPage.axisControls.getValue();
+    dynamicPage.stateVarsSliders.hide([axis_state.svx, axis_state.svy]);
+}
+
 function _onGraphChanged(){
     var graph_state = dynamicPage.axisControls.getValue();
     graph_state.state_vars = dynamicPage.stateVarsSliders.getValues();
-
+    _disable_active_sv_slider();
     doAjaxCall({
         url: _url('graph_changed'),
         data: { graph_state: JSON.stringify(graph_state)},
