@@ -39,7 +39,7 @@ import h5py
 import numpy
 from datetime import datetime
 from tvb.basic.profile import TvbProfile
-from tvb.core.utils import string2date, date2string, string2bool, bool2string
+from tvb.core.utils import string2date, date2string, string2bool
 from tvb.core.entities.file.exceptions import FileVersioningException
 
 PYTHON_EXE_PATH = TvbProfile.current.PYTHON_PATH
@@ -77,7 +77,7 @@ def _serialize_value(value):
         return str(value)
     # Transform boolean to string and prefix it
     elif isinstance(value, bool):
-        return BOOL_VALUE_PREFIX + bool2string(value)
+        return BOOL_VALUE_PREFIX + str(value)
     # Transform date to string and append prefix
     elif isinstance(value, datetime):
         return DATETIME_VALUE_PREFIX + date2string(value, date_format=DATE_TIME_FORMAT)

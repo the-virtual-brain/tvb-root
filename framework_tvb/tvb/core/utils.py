@@ -212,12 +212,6 @@ def string2bool(string_input):
 
 
 
-def bool2string(bool_value):
-    """ Convert boolean value to string """
-    return str(bool_value)
-
-
-
 def parse_slice(slice_string):
     """
     Parse a slicing expression
@@ -312,10 +306,8 @@ def _custom_string2array(input_data_str, split_char, dtype=None):
     From a long string, parse a NumPy array.
     """
 
-    class HelperData():
+    class HelperData:
         """Helper for parsing arrays"""
-
-
         def __init__(self, data, type_):
             self.data = data
             self.type = type_

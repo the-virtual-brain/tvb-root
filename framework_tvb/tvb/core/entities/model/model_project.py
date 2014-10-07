@@ -114,8 +114,7 @@ class User(Base):
         """
         This method changes the state of the OnlineHelp Active flag.
         """
-        new_state = utils.bool2string(not self.is_online_help_active())
-        self.preferences[UserPreferences.ONLINE_HELP_ACTIVE] = new_state
+        self.preferences[UserPreferences.ONLINE_HELP_ACTIVE] = str(not self.is_online_help_active())
 
 
     def set_viewers_color_scheme(self, color_scheme):

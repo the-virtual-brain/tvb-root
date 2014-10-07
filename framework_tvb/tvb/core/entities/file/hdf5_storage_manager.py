@@ -330,7 +330,7 @@ class HDF5StorageManager(object):
             return str(value)
         # Transform boolean to string and prefix it
         elif isinstance(value, bool):
-            return self.BOOL_VALUE_PREFIX + utils.bool2string(value)
+            return self.BOOL_VALUE_PREFIX + str(value)
         # Transform date to string and append prefix
         elif isinstance(value, datetime):
             return self.DATETIME_VALUE_PREFIX + utils.date2string(value, date_format=self.DATE_TIME_FORMAT)
