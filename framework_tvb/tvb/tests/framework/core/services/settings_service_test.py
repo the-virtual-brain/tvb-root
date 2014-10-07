@@ -50,7 +50,7 @@ class SettingsServiceTest(unittest.TestCase):
                      SettingsService.KEY_ADMIN_EMAIL: 'my@yahoo.com',
                      SettingsService.KEY_PORT: 8081,
                      SettingsService.KEY_URL_WEB: "http://192.168.123.11:8081/",
-                     SettingsService.KEY_MAX_DISK_SPACE_USR: 2 ** 10}
+                     SettingsService.KEY_MAX_DISK_SPACE_USR: 2 ** 8}
 
 
     def setUp(self):

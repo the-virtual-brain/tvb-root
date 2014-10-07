@@ -97,8 +97,8 @@ class SettingsService():
 
             self.KEY_PORT: {'label': 'Port to run Cherrypy on',
                             'value': TvbProfile.current.web.SERVER_PORT, 'dtype': 'primitive', 'type': 'text'},
-            self.KEY_PORT_MPLH5: {'label': 'Port to run Matplotlib on',
-                                  'value': TvbProfile.current.web.MPLH5_SERVER_PORT, 'type': 'text', 'dtype': 'primitive'},
+            self.KEY_PORT_MPLH5: {'label': 'Port to run Matplotlib on', 'type': 'text', 'dtype': 'primitive',
+                                  'value': TvbProfile.current.web.MPLH5_SERVER_PORT},
             self.KEY_URL_WEB: {'label': 'URL for accessing web',
                                'value': TvbProfile.current.web.BASE_URL, 'type': 'text', 'dtype': 'primitive'},
             self.KEY_URL_MPLH5: {'label': 'URL for accessing MPLH5 visualizers', 'type': 'text',
@@ -196,10 +196,8 @@ class SettingsService():
         available_mem_kb = SettingsService.get_disk_free_space(new_storage)
         kb_value = int(max_space) * 2 ** 10
         if not (0 < kb_value < available_mem_kb):
-            raise InvalidSettingsException(
-                "Not enough disk space. There is a maximum of %d MB available "
-                "on this disk or partition." % (available_mem_kb >> 10, )
-            )
+            raise InvalidSettingsException("Not enough disk space. There is a maximum of %d MB available on this disk "
+                                           "or partition. Wanted %d" % (available_mem_kb / (2 ** 10), max_space))
         data[self.KEY_MAX_DISK_SPACE_USR] = kb_value
 
         #Save data to file, all while checking if any data has changed
