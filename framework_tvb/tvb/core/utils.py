@@ -201,15 +201,8 @@ def format_timedelta(timedelta, most_significant2=True):
 
 def string2bool(string_input):
     """ Convert given string into boolean value."""
-    if string_input is not None:
-        if isinstance(string_input, unicode):
-            string_input = str(string_input)
-
-        if isinstance(string_input, str):
-            return string_input.lower() in ("yes", "true", "t", "1")
-
-    return False
-
+    string_input = str(string_input).lower()
+    return string_input in ("yes", "true", "t", "1")
 
 
 def parse_slice(slice_string):
@@ -295,8 +288,8 @@ def string2array(input_data_str, split_char, dtype=None):
         return numpy.array(array)
     except ValueError:
         logger = get_logger(__name__)
-        logger.warning("Received input array %s is poorly formated and could not be evaluated by Python."
-                       "Falling back to _custom_string2array." % prepared_input_data_str)
+        logger.debug("Received input array %s is poorly formated and could not be evaluated by Python."
+                     "Falling back to _custom_string2array." % prepared_input_data_str)
         return _custom_string2array(input_data_str, split_char, dtype)
 
 
