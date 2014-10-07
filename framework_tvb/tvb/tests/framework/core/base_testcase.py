@@ -41,6 +41,7 @@ from types import FunctionType
 from tvb.basic.profile import TvbProfile
 from tvb.basic.logger.builder import get_logger
 from tvb.core.utils import get_matlab_executable
+from tvb.core.entities.file.files_helper import FilesHelper
 from tvb.core.entities.storage import dao
 from tvb.core.entities.storage.session_maker import SessionMaker
 from tvb.core.entities import model
@@ -136,10 +137,11 @@ class BaseTestCase(unittest.TestCase):
         This method deletes folders for all projects from TVB folder.
         This is done without any check on database. You might get projects in DB but no folder for them on disk.
         """
-        if os.path.exists(TvbProfile.current.TVB_STORAGE):
-            for current_file in os.listdir(TvbProfile.current.TVB_STORAGE):
+        projects_folder = os.path.join(TvbProfile.current.TVB_STORAGE, FilesHelper.PROJECTS_FOLDER)
+        if os.path.exists(projects_folder):
+            for current_file in os.listdir(projects_folder):
                 full_path = os.path.join(TvbProfile.current.TVB_STORAGE, current_file)
-                if current_file != "db_repo" and os.path.isdir(full_path):
+                if os.path.isdir(full_path):
                     shutil.rmtree(full_path, ignore_errors=True)
 
 
