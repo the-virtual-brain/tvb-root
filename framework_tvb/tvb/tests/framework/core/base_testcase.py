@@ -39,24 +39,24 @@ import shutil
 from functools import wraps
 from types import FunctionType
 from tvb.basic.profile import TvbProfile
-from tvb.basic.logger.builder import get_logger
-from tvb.core.utils import get_matlab_executable
-from tvb.core.entities.file.files_helper import FilesHelper
-from tvb.core.entities.storage import dao
-from tvb.core.entities.storage.session_maker import SessionMaker
-from tvb.core.entities import model
-from tvb.core.entities.model_manager import reset_database
-from tvb.core.services.initializer import initialize
-from tvb.core.services.operation_service import OperationService
-
-LOGGER = get_logger(__name__)
-MATLAB_EXECUTABLE = get_matlab_executable()
 
 
 def init_test_env():
     """
     This method prepares all necessary data for tests execution
     """
+    # Set a default test profile, for when running tests from dev-env.
+    if TvbProfile.CURRENT_PROFILE_NAME is None:
+        TvbProfile.set_profile(TvbProfile.TEST_SQLITE_PROFILE)
+        print "Not expected to happen except from PyCharm: setting profile", TvbProfile.CURRENT_PROFILE_NAME
+        db_file = TvbProfile.current.db.DB_URL.replace('sqlite:///', '')
+        if os.path.exists(db_file):
+            os.remove(db_file)
+
+    from tvb.core.utils import get_matlab_executable
+    from tvb.core.entities.model_manager import reset_database
+    from tvb.core.services.initializer import initialize
+
     default_mlab_exe = TvbProfile.current.MATLAB_EXECUTABLE
     TvbProfile.current.MATLAB_EXECUTABLE = get_matlab_executable()
     reset_database()
@@ -69,6 +69,17 @@ if "TEST_INITIALIZATION_DONE" not in globals():
     init_test_env()
     TEST_INITIALIZATION_DONE = True
 
+
+from tvb.adapters.exporters.export_manager import ExportManager
+from tvb.basic.logger.builder import get_logger
+from tvb.core.services.operation_service import OperationService
+from tvb.core.entities.file.files_helper import FilesHelper
+from tvb.core.entities.storage import dao
+from tvb.core.entities.storage.session_maker import SessionMaker
+from tvb.core.entities import model
+from tvb.core.utils import get_matlab_executable
+
+LOGGER = get_logger(__name__)
 
 
 class BaseTestCase(unittest.TestCase):
@@ -140,9 +151,15 @@ class BaseTestCase(unittest.TestCase):
         projects_folder = os.path.join(TvbProfile.current.TVB_STORAGE, FilesHelper.PROJECTS_FOLDER)
         if os.path.exists(projects_folder):
             for current_file in os.listdir(projects_folder):
-                full_path = os.path.join(TvbProfile.current.TVB_STORAGE, current_file)
+                full_path = os.path.join(TvbProfile.current.TVB_STORAGE, FilesHelper.PROJECTS_FOLDER, current_file)
                 if os.path.isdir(full_path):
                     shutil.rmtree(full_path, ignore_errors=True)
+
+        for folder in [os.path.join(TvbProfile.current.TVB_STORAGE, ExportManager.EXPORT_FOLDER_NAME),
+                       os.path.join(TvbProfile.current.TVB_STORAGE, FilesHelper.TEMP_FOLDER)]:
+            if os.path.exists(folder):
+                shutil.rmtree(folder, ignore_errors=True)
+            os.makedirs(folder)
 
 
     @staticmethod
