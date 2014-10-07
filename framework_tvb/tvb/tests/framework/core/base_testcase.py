@@ -29,6 +29,7 @@
 #
 
 """
+.. moduleauthor:: Lia Domide <lia.domide@codemart.ro>
 .. moduleauthor:: Bogdan Neacsa <bogdan.neacsa@codemart.ro>
 .. moduleauthor:: Calin Pavel <calin.pavel@codemart.ro>
 """

@@ -29,37 +29,47 @@
 #
 
 """
-Created on Jul 20, 2011
-
 .. moduleauthor:: Bogdan Neacsa <bogdan.neacsa@codemart.ro>
 """
+
+import os
 import unittest
-from tvb.core.entities.storage import dao
-from tvb.core.entities.model_manager import initialize_startup
-from tvb.core.entities.model_manager import reset_database
 from tvb.tests.framework.core.base_testcase import BaseTestCase, init_test_env
+from tvb.basic.profile import TvbProfile
+from tvb.core.entities.storage import dao
+from tvb.core.entities.model_manager import initialize_startup, reset_database
+
+
 
 class ModelManagerTests(BaseTestCase):
     """
     This class contains tests for the tvb.core.entities.modelmanager module.
     """
+
     def tearDown(self):
         init_test_env()
-      
+
+
     def test_initialize_startup(self):
         """
-        After initialization only sys user should be in USERS table.
+        Test "reset_database" and "initialize_startup" calls.
         """
         reset_database()
+        # Table USERS should not exist:
         self.assertRaises(Exception, dao.get_all_users)
         
         initialize_startup()
-        self.assertEqual(len(dao.get_all_users()), 0, "Fault in initialization!")
+        # Table exists, but no rows
+        self.assertEqual(0, len(dao.get_all_users()))
+        self.assertEqual(None, dao.get_system_user())
+        # DB revisions folder should exist:
+        self.assertTrue(os.path.exists(TvbProfile.current.db.DB_VERSIONING_REPO))
     
+
 
 def suite():
     """
-        Gather all the tests in a test suite.
+    Gather all the tests in a test suite.
     """
     test_suite = unittest.TestSuite()
     test_suite.addTest(unittest.makeSuite(ModelManagerTests))
