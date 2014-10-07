@@ -37,6 +37,7 @@ category of usage (e.g. cluster related, web related, etc).
 
 import os
 import sys
+import shutil
 from subprocess import Popen, PIPE
 from tvb.basic.config import stored
 from tvb.basic.config.environment import Environment
@@ -440,6 +441,11 @@ class BaseSettingsProfile(object):
         if not os.path.exists(self.TVB_LOG_FOLDER):
             os.makedirs(self.TVB_LOG_FOLDER)
 
+        if os.path.exists(self.TVB_TEMP_FOLDER):
+            if os.path.isdir(self.TVB_TEMP_FOLDER):
+                shutil.rmtree(self.TVB_TEMP_FOLDER)
+            else:
+                os.remove(self.TVB_TEMP_FOLDER)
         if not os.path.exists(self.TVB_TEMP_FOLDER):
             os.makedirs(self.TVB_TEMP_FOLDER)
 
