@@ -55,6 +55,7 @@ from tvb.core.services.workflow_service import WorkflowService
 from tvb.core.services.project_service import ProjectService
 from tvb.core.services.exceptions import RemoveDataTypeException, InvalidPortletConfiguration, BurstServiceException
 from tvb.core.portlets.portlet_configurer import PortletConfigurer
+from tvb.core.utils import timedelta2string
 
 
 MAX_BURSTS_DISPLAYED = 50
@@ -486,17 +487,16 @@ class BurstService():
             burst.prepare_after_load()
             if burst is not None:
                 if burst.status == burst.BURST_RUNNING:
-                    seconds_running = (datetime.now() - burst.start_time).total_seconds()
+                    running_time = datetime.now() - burst.start_time
                 else:
-                    seconds_running = (burst.finish_time - burst.start_time).total_seconds()
+                    running_time = burst.finish_time - burst.start_time
+                running_time = timedelta2string(running_time, most_significant2=False)
 
                 if burst.status == burst.BURST_ERROR:
-                    msg = "Check Operations page for error Message"
+                    msg = 'Check Operations page for error Message'
                 else:
                     msg = ''
-
-                result.append([burst.id, burst.status, burst.is_group, msg, seconds_running])
-
+                result.append([burst.id, burst.status, burst.is_group, msg, running_time])
             else:
                 self.logger.debug("Could not find burst with id=" + str(b_id) + ". Might have been deleted by user!!")
         return result

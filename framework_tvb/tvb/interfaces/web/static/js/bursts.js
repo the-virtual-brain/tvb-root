@@ -178,11 +178,7 @@ function _updateBurstHistoryElapsedTime(result){
     for (var i = 0; i < result.length; i++) {
         if (result[i][1] === 'running') {
             var el = $('#burst-history').find(' li .burst-prop-processtime span')[i];
-            var elapsed_since_burst_start = result[i][4];
-            var seconds = Math.floor(elapsed_since_burst_start % 60);
-            var minutes = Math.floor(elapsed_since_burst_start / 60);
-            var hours = Math.floor(minutes / 60);
-            $(el).text(' ~ '  + hours + 'h:' + minutes + 'm.' + seconds +'s');
+            $(el).text(' ~ '  + result[i][4]);
         }
     }
 }
