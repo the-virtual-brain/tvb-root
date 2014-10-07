@@ -193,11 +193,6 @@ class GenshiTestSimple(GenshiTest):
         #file.close()
 
 
-    def tearDown(self):
-        super(GenshiTestSimple, self).tearDown()
-        self.reset_database()
-
-
     def test_sub_algo_inputs(self):
         """
         Check the name of inputs generated for each sub-algorithm is done 
@@ -300,11 +295,6 @@ class GenshiTestGroup(GenshiTest):
         self.template_specification[common.KEY_PARAMETERS_CONFIG] = False
         resulted_html = _template2string(self.template_specification)
         self.soup = BeautifulSoup(resulted_html)
-
-
-    def tearDown(self):
-        super(GenshiTestGroup, self).tearDown()
-        self.reset_database()
 
 
     def test_algorithm_select_is_first(self):
