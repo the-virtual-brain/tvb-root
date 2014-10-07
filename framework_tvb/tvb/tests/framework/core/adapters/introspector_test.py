@@ -40,7 +40,6 @@ from tvb.tests.framework.core.base_testcase import BaseTestCase
 from tvb.basic.profile import TvbProfile
 from tvb.core.entities.storage import dao
 from tvb.core.adapters.introspector import Introspector
-from tvb.core.services.project_service import initialize_storage
 import tvb.tests.framework.adapters as adapters_init
 
 
@@ -53,15 +52,14 @@ class IntrospectorTest(BaseTestCase):
     
     def setUp(self):
         """
-        Reset the database before each test.
+        Introspect supplementary folder:
         """
-        self.reset_database()
-
         core_path = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
         TvbProfile.current.web.CURRENT_DIR = os.path.dirname(core_path)
         adapters_init.__xml_folders__ = [os.path.join("core", "adapters")]
 
         self.introspector = Introspector("tvb.tests.framework")
+        self.introspector.introspect(True)
         
         
     def tearDown(self):
@@ -70,16 +68,13 @@ class IntrospectorTest(BaseTestCase):
         """
         TvbProfile.current.web.CURRENT_DIR = self.old_current_dir
         adapters_init.__xml_folders__ = self.old_xml_path
-        self.reset_database()
 
 
     def test_introspect(self):
         """
-        Test the actual introspect module on a test structure created in:
-        tvb.tests.framework.dummy_adapters and tvb.tests.framework.dummy_datatypes
-        """ 
-        self.introspector.introspect(True)
-        initialize_storage()
+        Test that expected categories and groups are found in DB after introspection.
+        We also check algorithms introspected during base_testcase.init_test_env
+        """
         
         all_categories = dao.get_algorithm_categories()
         category_ids = [cat.id for cat in all_categories if cat.displayname == "AdaptersTest"]
@@ -106,11 +101,9 @@ class IntrospectorTest(BaseTestCase):
 
     def test_xml_introspection(self):
         """
-        Check the XML introspection. The folders which are introspected
-        are defined in the variable __xml_folders__ from tvb.tests.framework/adapters/_init.py
+        Check that the new xml specified in setUp was correctly introspected.
         """
-        self.introspector.introspect(True)
-        initialize_storage()
+
         init_parameter = os.path.join("core", "adapters", "test_group.xml")
         group = dao.find_group("tvb.tests.framework.adapters.testgroupadapter", "TestGroupAdapter", init_parameter)
         self.assertTrue(group is not None, "The group was not found")

@@ -218,10 +218,6 @@ class BaseTestCase(unittest.TestCase):
         return self.get_all_entities(model.DataType)
 
 
-    def reset_database(self):
-        init_test_env()
-
-
     def assert_compliant_dictionary(self, expected, found_dict):
         """
         Compare two dictionaries, especially as keys.
