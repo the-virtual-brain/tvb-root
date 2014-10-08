@@ -529,20 +529,19 @@ class ABCAdapter(object):
         for entry in algorithm_inputs:
             ## First handle this level of the tree, adding defaults where required
             if (entry[self.KEY_NAME] not in kwargs
-                    and entry.get(self.KEY_REQUIRED)
+                    and entry.get(self.KEY_REQUIRED) is True
                     and self.KEY_DEFAULT in entry
                     and entry[self.KEY_TYPE] != xml_reader.TYPE_DICT):
                 kwargs[entry[self.KEY_NAME]] = entry[self.KEY_DEFAULT]
 
         for entry in algorithm_inputs:
             ## Now that first level was handled, go recursively on selected options only          
-            if entry.get(self.KEY_REQUIRED) and entry.get(ABCAdapter.KEY_OPTIONS) is not None:
+            if entry.get(self.KEY_REQUIRED) is True and entry.get(ABCAdapter.KEY_OPTIONS) is not None:
                 for option in entry[ABCAdapter.KEY_OPTIONS]:
                     #Only go recursive on option that was submitted
-                    if option[self.KEY_VALUE] == kwargs[entry[self.KEY_NAME]]:
-                        if ABCAdapter.KEY_ATTRIBUTES in option:
-                            option[ABCAdapter.KEY_ATTRIBUTES] = self._append_required_defaults(kwargs,
-                                                                                            option[self.KEY_ATTRIBUTES])
+                    if option[self.KEY_VALUE] == kwargs[entry[self.KEY_NAME]] and ABCAdapter.KEY_ATTRIBUTES in option:
+                        # todo: possible bug: we always assign None here
+                        option[ABCAdapter.KEY_ATTRIBUTES] = self._append_required_defaults(kwargs, option[self.KEY_ATTRIBUTES])
 
 
     def convert_ui_inputs(self, kwargs, validation_required=True):
@@ -587,7 +586,7 @@ class ABCAdapter(object):
 
                 if row_type == xml_reader.TYPE_ARRAY:
                     kwa[row_attr] = self.__convert_to_array(kwargs[row_attr], row)
-                    if xml_reader.ATT_MINVALUE in row and xml_reader.ATT_MAXVALUE:
+                    if xml_reader.ATT_MINVALUE in row and xml_reader.ATT_MAXVALUE:  #todo: probable bug: ATT_MAXVALUE is always true
                         self.__validate_range_for_array_input(kwa[row_attr], row)
                 elif row_type == xml_reader.TYPE_LIST:
                     if not isinstance(kwargs[row_attr], list):
@@ -599,14 +598,14 @@ class ABCAdapter(object):
                         kwa[row_attr] = None
                     else:
                         kwa[row_attr] = int(kwargs[row_attr])
-                        if xml_reader.ATT_MINVALUE in row and xml_reader.ATT_MAXVALUE:
+                        if xml_reader.ATT_MINVALUE in row and xml_reader.ATT_MAXVALUE: #todo
                             self.__validate_range_for_value_input(kwa[row_attr], row)
                 elif row_type == xml_reader.TYPE_FLOAT:
                     if kwargs[row_attr] in ['', 'None']:
                         kwa[row_attr] = None
                     else:
                         kwa[row_attr] = float(kwargs[row_attr])
-                        if xml_reader.ATT_MINVALUE in row and xml_reader.ATT_MAXVALUE:
+                        if xml_reader.ATT_MINVALUE in row and xml_reader.ATT_MAXVALUE: #todo
                             self.__validate_range_for_value_input(kwa[row_attr], row)
                 elif row_type == xml_reader.TYPE_STR:
                     kwa[row_attr] = kwargs[row_attr]
