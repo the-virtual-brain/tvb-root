@@ -31,12 +31,11 @@
 .. moduleauthor:: Bogdan Neacsa <bogdan.neacsa@codemart.ro>
 """
 import unittest
+from tvb.tests.framework.interfaces.web.controllers.base_controller_test import BaseTransactionalControllerTest
 from tvb.interfaces.web.controllers.spatial.region_stimulus_controller import RegionStimulusController
-from tvb.tests.framework.core.base_testcase import TransactionalTestCase
-from tvb.tests.framework.interfaces.web.controllers.base_controller_test import BaseControllersTest
 
 
-class RegionsStimulusControllerTest(TransactionalTestCase, BaseControllersTest):
+class RegionsStimulusControllerTest(BaseTransactionalControllerTest):
     """ Unit tests for RegionStimulusController """
     
     def setUp(self):
@@ -44,15 +43,15 @@ class RegionsStimulusControllerTest(TransactionalTestCase, BaseControllersTest):
         Sets up the environment for testing;
         creates a `RegionStimulusController`
         """
-        BaseControllersTest.init(self)
+        self.init()
         self.region_s_c = RegionStimulusController()
-    
-    
+
+
     def tearDown(self):
         """ Cleans the testing environment """
-        BaseControllersTest.cleanup(self)
+        self.cleanup()
 
-    
+
     def test_step_1(self):
         """
         Verifies that result dictionary has the expected keys / values after call to

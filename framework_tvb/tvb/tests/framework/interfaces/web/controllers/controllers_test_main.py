@@ -31,7 +31,6 @@
 .. moduleauthor:: Bogdan Neacsa <bogdan.neacsa@codemart.ro>
 """
 import unittest
-
 from tvb.tests.framework.interfaces.web.controllers import burst_controller_test
 from tvb.tests.framework.interfaces.web.controllers import exploration_controller_test
 from tvb.tests.framework.interfaces.web.controllers import figure_controller_test
@@ -46,6 +45,7 @@ from tvb.tests.framework.interfaces.web.controllers import surface_model_paramet
 from tvb.tests.framework.interfaces.web.controllers import surface_stimulus_controller_test
 from tvb.tests.framework.interfaces.web.controllers import users_controller_test
 from tvb.tests.framework.interfaces.web.controllers import noise_configuration_controller_test
+
 
 def suite():
     """

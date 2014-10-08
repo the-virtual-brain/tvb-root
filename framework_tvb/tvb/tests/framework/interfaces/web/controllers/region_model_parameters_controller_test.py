@@ -28,34 +28,35 @@
 #
 #
 """
-.. moduleauthor:: Bogdan Neacsa <bogdan.neacsa@codemart.ro>
 .. moduleauthor:: Mihai Andrei <mihai.andrei@codemart.ro>
+.. moduleauthor:: Bogdan Neacsa <bogdan.neacsa@codemart.ro>
 """
+
 import json
 import unittest
 import cherrypy
+from tvb.tests.framework.interfaces.web.controllers.base_controller_test import BaseTransactionalControllerTest
 from tvb.core.entities.model import Dynamic
 from tvb.core.entities.storage import dao
-import tvb.interfaces.web.controllers.common as common
 from tvb.interfaces.web.controllers.burst.region_model_parameters_controller import RegionsModelParametersController
 from tvb.interfaces.web.controllers.burst.burst_controller import BurstController
 from tvb.simulator.integrators import HeunDeterministic
 from tvb.simulator.models import Generic2dOscillator, Kuramoto
-from tvb.tests.framework.core.base_testcase import TransactionalTestCase
-from tvb.tests.framework.interfaces.web.controllers.base_controller_test import BaseControllersTest
 from tvb.tests.framework.datatypes.datatypes_factory import DatatypesFactory
 from tvb.tests.framework.adapters.simulator.simulator_adapter_test import SIMULATOR_PARAMETERS
+import tvb.interfaces.web.controllers.common as common
 
 
-class RegionsModelParametersControllerTest(TransactionalTestCase, BaseControllersTest):
+class RegionsModelParametersControllerTest(BaseTransactionalControllerTest):
     """ Unit tests for RegionsModelParametersController """
-    
+
+
     def setUp(self):
         """
         Sets up the environment for testing;
         creates a `RegionsModelParametersController` and a connectivity
         """
-        BaseControllersTest.init(self)
+        self.init()
         self.region_m_p_c = RegionsModelParametersController()
         BurstController().index()
         stored_burst = cherrypy.session[common.KEY_BURST_CONFIG]
@@ -67,28 +68,22 @@ class RegionsModelParametersControllerTest(TransactionalTestCase, BaseController
         stored_burst.simulator_configuration = new_params
         self._setup_dynamic()
 
+    def tearDown(self):
+        """ Cleans the testing environment """
+        self.cleanup()
+
 
     def _setup_dynamic(self):
-        dynamic_g = Dynamic("test_dyn", self.test_user.id,
-                          Generic2dOscillator.__name__,
-                          '[["tau", 1.0], ["a", 5.0], ["b", -10.0], ["c", 10.0], ["I", 0.0], ["d", 0.02], '
-                          '["e", 3.0], ["f", 1.0], ["g", 0.0], ["alpha", 1.0], ["beta", 5.0], ["gamma", 1.0]]',
-                          HeunDeterministic.__name__,
-                          None)
+        dynamic_g = Dynamic("test_dyn", self.test_user.id, Generic2dOscillator.__name__,
+                            '[["tau", 1.0], ["a", 5.0], ["b", -10.0], ["c", 10.0], ["I", 0.0], ["d", 0.02], '
+                            '["e", 3.0], ["f", 1.0], ["g", 0.0], ["alpha", 1.0], ["beta", 5.0], ["gamma", 1.0]]',
+                            HeunDeterministic.__name__, None)
 
-        dynamic_k = Dynamic("test_dyn_kura", self.test_user.id,
-                          Kuramoto.__name__,
-                          '[["omega", 1.0]]',
-                          HeunDeterministic.__name__,
-                          None)
+        dynamic_k = Dynamic("test_dyn_kura", self.test_user.id, Kuramoto.__name__,
+                            '[["omega", 1.0]]', HeunDeterministic.__name__, None)
 
         self.dynamic_g = dao.store_entity(dynamic_g)
         self.dynamic_k = dao.store_entity(dynamic_k)
-
-
-    def tearDown(self):
-        """ Clean the testing environment """
-        BaseControllersTest.cleanup(self)
     
     
     def test_index(self):
@@ -127,7 +122,7 @@ class RegionsModelParametersControllerTest(TransactionalTestCase, BaseController
         dynamic_ids[-1] = self.dynamic_k.id
         dynamic_ids = json.dumps(dynamic_ids)
 
-        self.assertRaises(Exception,  self.region_m_p_c.submit_model_parameters, dynamic_ids)
+        self.assertRaises(Exception, self.region_m_p_c.submit_model_parameters, dynamic_ids)
 
 
 def suite():

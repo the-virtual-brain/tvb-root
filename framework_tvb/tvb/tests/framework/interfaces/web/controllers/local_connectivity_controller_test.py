@@ -34,14 +34,13 @@
 
 import unittest
 import cherrypy
+from tvb.tests.framework.interfaces.web.controllers.base_controller_test import BaseTransactionalControllerTest
 from tvb.core.entities.transient.context_local_connectivity import ContextLocalConnectivity
 from tvb.interfaces.web.controllers.spatial.local_connectivity_controller import LocalConnectivityController
 from tvb.interfaces.web.controllers.spatial.local_connectivity_controller import KEY_LCONN_CONTEXT
-from tvb.tests.framework.core.base_testcase import TransactionalTestCase
-from tvb.tests.framework.interfaces.web.controllers.base_controller_test import BaseControllersTest
 
 
-class LocalConnectivityControllerTest(TransactionalTestCase, BaseControllersTest):
+class LocalConnectivityControllerTest(BaseTransactionalControllerTest):
     """ Unit tests for LocalConnectivityController """
     
     def setUp(self):
@@ -49,14 +48,14 @@ class LocalConnectivityControllerTest(TransactionalTestCase, BaseControllersTest
         Sets up the environment for testing;
         creates a `LolcalConnectivityController`
         """
-        BaseControllersTest.init(self)
+        self.init()
         self.local_p_c = LocalConnectivityController()
 
-    
+
     def tearDown(self):
         """ Cleans the testing environment """
-        BaseControllersTest.cleanup(self)
-          
+        self.cleanup()
+
             
     def _default_checks(self, result_dict):
         """

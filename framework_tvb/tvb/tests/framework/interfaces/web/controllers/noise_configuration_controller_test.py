@@ -35,6 +35,9 @@
 import json
 import unittest
 import cherrypy
+from tvb.tests.framework.interfaces.web.controllers.base_controller_test import BaseTransactionalControllerTest
+from tvb.tests.framework.datatypes.datatypes_factory import DatatypesFactory
+from tvb.tests.framework.adapters.simulator.simulator_adapter_test import SIMULATOR_PARAMETERS
 from tvb.core.entities.model import PARAM_INTEGRATOR, PARAM_MODEL
 from tvb.interfaces.web.controllers import common
 from tvb.interfaces.web.controllers.burst.burst_controller import BurstController
@@ -43,20 +46,16 @@ from tvb.interfaces.web.controllers.spatial.base_spatio_temporal_controller impo
 from tvb.simulator.integrators import EulerStochastic
 from tvb.simulator.models import Generic2dOscillator
 from tvb.simulator.noise import Additive
-from tvb.tests.framework.datatypes.datatypes_factory import DatatypesFactory
-from tvb.tests.framework.core.base_testcase import TransactionalTestCase
-from tvb.tests.framework.interfaces.web.controllers.base_controller_test import BaseControllersTest
-from tvb.tests.framework.adapters.simulator.simulator_adapter_test import SIMULATOR_PARAMETERS
 
 
-class NoiseConfigurationControllerTest(TransactionalTestCase, BaseControllersTest):
+class NoiseConfigurationControllerTest(BaseTransactionalControllerTest):
 
     def setUp(self):
         """
         Sets up the environment for testing
         creates a `NoiseConfigurationController`
         """
-        BaseControllersTest.init(self)
+        self.init()
         self.noise_c = NoiseConfigurationController()
         _, self.connectivity = DatatypesFactory().create_connectivity()
         BurstController().index()
@@ -69,7 +68,7 @@ class NoiseConfigurationControllerTest(TransactionalTestCase, BaseControllersTes
         new_params['connectivity'] = {'value': self.connectivity.gid}
 
         # Simulate selection of a specific integration  from the ui
-        new_params[PARAM_INTEGRATOR] = {'value':EulerStochastic.__name__}
+        new_params[PARAM_INTEGRATOR] = {'value': EulerStochastic.__name__}
         new_params[PARAM_MODEL] = {'value': Generic2dOscillator.__name__}
         new_params[INTEGRATOR_PARAMETERS + '_option_EulerStochastic_noise'] = {'value': Additive.__name__}
         stored_burst.simulator_configuration = new_params
@@ -78,7 +77,7 @@ class NoiseConfigurationControllerTest(TransactionalTestCase, BaseControllersTes
 
     def tearDown(self):
         """ Cleans the testing environment """
-        BaseControllersTest.cleanup(self)
+        self.cleanup()
 
 
     def test_submit_noise_configuration_happy(self):

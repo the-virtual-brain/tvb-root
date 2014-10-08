@@ -163,7 +163,7 @@ class DiskSpaceValidator(formencode.FancyValidator):
     """
 
     def _convert_to_python(self, value, _):
-        """ 
+        """
         Validation required method.
         :param value is user-specified value, in MB
         """
@@ -205,7 +205,7 @@ class ThreadNrValidator(formencode.FancyValidator):
         try:
             value = int(value)
         except ValueError:
-            raise formencode.Invalid('Invalid number %d. Should be number between 1 and 16.' % value, value, None)
+            raise formencode.Invalid('Invalid number %s. Should be number between 1 and 16.' % value, value, None)
         if 0 < value < 17:
             return value
         else:
@@ -224,16 +224,15 @@ class SurfaceVerticesNrValidator(formencode.FancyValidator):
         """ 
         Validation required method.
         """
-        msg = 'Invalid value: %d. Should be a number between 1 and %d.'
+        msg = 'Invalid value: %s. Should be a number between 1 and %d.'
         try:
             value = int(value)
             if 0 < value < self.MAX_VALUE:
                 return value
             else:
-                raise formencode.Invalid(msg % (value, self.MAX_VALUE), value, None)
+                raise formencode.Invalid(msg % (str(value), self.MAX_VALUE), value, None)
         except ValueError:
             raise formencode.Invalid(msg % (value, self.MAX_VALUE), value, None)
-
 
 
 class MatlabValidator(formencode.FancyValidator):
@@ -275,19 +274,22 @@ class SettingsForm(formencode.Schema):
     ADMINISTRATOR_NAME = formencode.All(validators.UnicodeString(not_empty=True), validators.PlainText())
     ADMINISTRATOR_PASSWORD = validators.UnicodeString(not_empty=True)
     ADMINISTRATOR_EMAIL = validators.Email(not_empty=True)
-    TVB_STORAGE = AsciiValidator(not_empty=True)
-    USR_DISK_SPACE = DiskSpaceValidator()
-    MATLAB_EXECUTABLE = MatlabValidator()
-    SELECTED_DB = validators.UnicodeString(not_empty=True)
-    URL_VALUE = validators.UnicodeString(not_empty=True)
+
     WEB_SERVER_PORT = PortValidator()
     MPLH5_SERVER_PORT = PortValidator()
     URL_WEB = validators.URL(not_empty=True, require_tld=False)
     URL_MPLH5 = AsciiValidator(not_empty=True)
+
+    SELECTED_DB = validators.UnicodeString(not_empty=True)
+    URL_VALUE = validators.UnicodeString(not_empty=True)
+    DEPLOY_CLUSTER = validators.Bool()
+
+    TVB_STORAGE = AsciiValidator(not_empty=True)
+    USR_DISK_SPACE = DiskSpaceValidator(not_empty=True)
+    MATLAB_EXECUTABLE = MatlabValidator()
     MAXIMUM_NR_OF_THREADS = ThreadNrValidator()
     MAXIMUM_NR_OF_VERTICES_ON_SURFACE = SurfaceVerticesNrValidator()
     MAXIMUM_NR_OF_OPS_IN_RANGE = validators.Int(min=5, max=5000, not_empty=True)
-    DEPLOY_CLUSTER = validators.Bool()
 
 
 

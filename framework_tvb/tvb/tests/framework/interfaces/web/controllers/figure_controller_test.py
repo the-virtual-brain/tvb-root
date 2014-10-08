@@ -34,32 +34,33 @@
 
 import unittest
 import cherrypy
-from tvb.interfaces.web.controllers.project.figure_controller import FigureController
-from tvb.core.entities.storage import dao
-from tvb.tests.framework.core.base_testcase import TransactionalTestCase
-from tvb.tests.framework.interfaces.web.controllers.base_controller_test import BaseControllersTest
+from tvb.tests.framework.interfaces.web.controllers.base_controller_test import BaseTransactionalControllerTest
 from tvb.tests.framework.core.test_factory import TestFactory
+from tvb.core.entities.storage import dao
+from tvb.interfaces.web.controllers.project.figure_controller import FigureController
 
 
-class FigureControllerTest(TransactionalTestCase, BaseControllersTest):
+
+class FigureControllerTest(BaseTransactionalControllerTest):
     """ Unit tests for FigureController """
-    
+
+
     def setUp(self):
         """
         Sets up the environment for running the tests;
         creates a `FigureController` and an operation
         """
-        BaseControllersTest.init(self)
+        self.init()
         self.figure_c = FigureController()
         self.operation = TestFactory.create_operation(test_user=self.test_user,
                                                       test_project=self.test_project)
-    
-    
+            
+            
     def tearDown(self):
-        """ Cleans up the testing environment """
-        BaseControllersTest.cleanup(self)
-            
-            
+        """ Cleans the testing environment """
+        self.cleanup()
+
+
     def test_displayresultfigures(self):
         """
         Tests result dictionary for the expected key/value
@@ -70,10 +71,10 @@ class FigureControllerTest(TransactionalTestCase, BaseControllersTest):
         figure2 = TestFactory.create_figure(self.operation.id, self.test_user.id, 
                                             self.test_project.id, name="figure2", 
                                             path="path-to-figure2", session_name="test")
+
         result_dict = self.figure_c.displayresultfigures()
         figures = result_dict['selected_sessions_data']['test']
-        ## We still use the old form of set() constructor, due to Python 2.6 on Linux x32 build machine
-        self.assertEqual(set([fig.id for fig in figures]), set([figure1.id, figure2.id]))
+        self.assertEqual(set([fig.id for fig in figures]), {figure1.id, figure2.id})
         
         
     def test_editresultfigures_remove_fig(self):

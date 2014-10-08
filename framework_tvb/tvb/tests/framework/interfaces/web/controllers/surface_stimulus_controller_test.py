@@ -33,28 +33,28 @@
 """
 
 import unittest
+from tvb.tests.framework.interfaces.web.controllers.base_controller_test import BaseTransactionalControllerTest
+from tvb.tests.framework.datatypes.datatypes_factory import DatatypesFactory
 from tvb.interfaces.web.controllers.common import get_from_session
 from tvb.interfaces.web.controllers.spatial.surface_stimulus_controller import SurfaceStimulusController
 from tvb.interfaces.web.controllers.spatial.surface_stimulus_controller import KEY_SURFACE_CONTEXT
 from tvb.core.entities.transient.context_stimulus import SURFACE_PARAMETER
-from tvb.tests.framework.datatypes.datatypes_factory import DatatypesFactory
-from tvb.tests.framework.core.base_testcase import TransactionalTestCase
-from tvb.tests.framework.interfaces.web.controllers.base_controller_test import BaseControllersTest
 
 
 
-class SurfaceStimulusControllerTest(TransactionalTestCase, BaseControllersTest):
+class SurfaceStimulusControllerTest(BaseTransactionalControllerTest):
     """ Unit tests for SurfaceStimulusController """
     
     def setUp(self):
-        BaseControllersTest.init(self)
+        self.init()
         self.surface_s_c = SurfaceStimulusController()
-    
-    
+
+
     def tearDown(self):
-        BaseControllersTest.cleanup(self)
-    
-    
+        """ Cleans the testing environment """
+        self.cleanup()
+
+
     def test_step_1(self):
         self.surface_s_c.step_1_submit(1, 1)
         result_dict = self.surface_s_c.step_1()

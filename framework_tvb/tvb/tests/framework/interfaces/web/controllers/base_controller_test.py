@@ -30,11 +30,11 @@
 
 import os
 import cherrypy
-from tvb.tests.framework.core.base_testcase import BaseTestCase
+from tvb.tests.framework.core.base_testcase import BaseTestCase, TransactionalTestCase
+from tvb.tests.framework.core.test_factory import TestFactory
 from tvb.basic.profile import TvbProfile
 from tvb.basic.config.utils import EnhancedDictionary
 from tvb.interfaces.web.controllers.common import KEY_PROJECT, KEY_USER
-from tvb.tests.framework.core.test_factory import TestFactory
 
 
 
@@ -64,27 +64,42 @@ class BaseControllersTest(BaseTestCase):
             self.assertTrue(url.endswith(page), "Should be redirect to %s not %s" % (page, url))
 
 
-    def init(self, user_role="test"):
+    def init(self, with_data=True, user_role="test"):
         """
         Have a different name than setUp so we can use it safely in transactions and it will
         not be called before running actual test.
+        Using setUp inheritance here won't WORK!! See TransactionalTest
         """
-        # Add 3 entries so we no longer consider this the first run.
-        TvbProfile.current.manager.add_entries_to_config_file({'test': 'test',
-                                                               'test1': 'test1',
-                                                               'test2': 'test2'})
-        self.test_user = TestFactory.create_user(username="CtrlTstUsr", role=user_role)
-        self.test_project = TestFactory.create_project(self.test_user, "Test")
         cherrypy.session = BaseControllersTest.CherrypySession()
-        cherrypy.session[KEY_USER] = self.test_user
-        cherrypy.session[KEY_PROJECT] = self.test_project
+
+        if with_data:
+            # Add 3 entries so we no longer consider this the first run.
+            TvbProfile.current.manager.add_entries_to_config_file({'test': 'test',
+                                                                   'test1': 'test1',
+                                                                   'test2': 'test2'})
+            self.test_user = TestFactory.create_user(username="CtrlTstUsr", role=user_role)
+            self.test_project = TestFactory.create_project(self.test_user, "Test")
+
+            cherrypy.session[KEY_USER] = self.test_user
+            cherrypy.session[KEY_PROJECT] = self.test_project
 
 
     def cleanup(self):
         """
         Have a different name than tearDown so we can use it safely in transactions and it will
         not be called after running actual test.
+        Using tearDown here won't WORK!! See TransactionalTest
         """
         if os.path.exists(TvbProfile.current.TVB_CONFIG_FILE):
             os.remove(TvbProfile.current.TVB_CONFIG_FILE)
-            
+
+        TvbProfile._build_profile_class(TvbProfile.CURRENT_PROFILE_NAME)
+        # let for the other test the env clean, with is_first_run returning True
+
+
+
+class BaseTransactionalControllerTest(TransactionalTestCase, BaseControllersTest):
+    """
+    Flag class, for assuring inheritance from both the TransactionalTestCase and BaseControllerTest
+    """
+    pass

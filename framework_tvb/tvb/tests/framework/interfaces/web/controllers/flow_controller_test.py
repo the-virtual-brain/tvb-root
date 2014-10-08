@@ -58,7 +58,7 @@ class FlowContollerTest(BaseControllersTest):
         Sets up the environment for testing;
         creates a `FlowController`
         """
-        BaseControllersTest.init(self)
+        self.init()
         self.flow_c = FlowController()
         self.burst_c = BurstController()
         self.operation_service = OperationService()
@@ -66,6 +66,7 @@ class FlowContollerTest(BaseControllersTest):
     
     def tearDown(self):
         """ Cleans up the testing environment """
+        self.cleanup()
         self.clean_database()
             
             

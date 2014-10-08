@@ -35,17 +35,16 @@
 import unittest
 import cherrypy
 from sqlalchemy.orm.exc import NoResultFound
+from tvb.tests.framework.interfaces.web.controllers.base_controller_test import BaseTransactionalControllerTest
 import tvb.interfaces.web.controllers.common as common
 from tvb.core.entities.storage import dao
 from tvb.interfaces.web.controllers.project.project_controller import ProjectController
 from tvb.tests.framework.core.test_factory import TestFactory
-from tvb.tests.framework.core.base_testcase import TransactionalTestCase
-from tvb.tests.framework.interfaces.web.controllers.base_controller_test import BaseControllersTest
 from tvb.tests.framework.datatypes.datatypes_factory import DatatypesFactory
 
 
 
-class ProjectControllerTest(TransactionalTestCase, BaseControllersTest):
+class ProjectControllerTest(BaseTransactionalControllerTest):
     """ Unit tests for ProjectController """
 
 
@@ -54,13 +53,13 @@ class ProjectControllerTest(TransactionalTestCase, BaseControllersTest):
         Sets up the environment for testing;
         creates a `ProjectController`
         """
-        BaseControllersTest.init(self)
+        self.init()
         self.project_c = ProjectController()
 
 
     def tearDown(self):
         """ Cleans the testing environment """
-        BaseControllersTest.cleanup(self)
+        self.cleanup()
 
 
     def test_index_no_project(self):

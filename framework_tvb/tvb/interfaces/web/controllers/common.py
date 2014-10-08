@@ -166,6 +166,7 @@ def remove_from_session(key):
     cherrypy.session.release_lock()
     return None
 
+
 def expire_session():
     """
     Expires and cleans current session.

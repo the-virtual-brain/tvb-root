@@ -34,32 +34,30 @@
 
 import json
 import unittest
-from tvb.interfaces.web.controllers.burst.exploration_controller import ParameterExplorationController
-from tvb.tests.framework.core.base_testcase import TransactionalTestCase
-from tvb.tests.framework.interfaces.web.controllers.base_controller_test import BaseControllersTest
+from tvb.tests.framework.interfaces.web.controllers.base_controller_test import BaseTransactionalControllerTest
 from tvb.tests.framework.datatypes.datatypes_factory import DatatypesFactory
+from tvb.interfaces.web.controllers.burst.exploration_controller import ParameterExplorationController
 
 
 
-class ExplorationControllerTest(TransactionalTestCase, BaseControllersTest):
+class ExplorationControllerTest(BaseTransactionalControllerTest):
     """
     Unit tests ParameterExplorationController
     """
-
 
     def setUp(self):
         """
         Sets up the environment for testing;
         creates a datatype group and a Parameter Exploration Controller
         """
-        BaseControllersTest.init(self)
+        self.init()
         self.dt_group = DatatypesFactory().create_datatype_group()
         self.controller = ParameterExplorationController()
 
 
     def tearDown(self):
         """ Cleans the testing environment """
-        BaseControllersTest.cleanup(self)
+        self.cleanup()
 
 
     def test_draw_discrete_exploration(self):

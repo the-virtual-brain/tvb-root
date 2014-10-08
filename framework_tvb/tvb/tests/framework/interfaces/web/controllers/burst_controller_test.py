@@ -75,6 +75,7 @@ class BurstContollerTest(BaseControllersTest):
         """
         Cleans up the environment after testing is done
         """
+        self.cleanup()
         self.clean_database()
 
 

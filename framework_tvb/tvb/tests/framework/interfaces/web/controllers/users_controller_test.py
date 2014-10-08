@@ -36,6 +36,8 @@ import os
 import unittest
 import cherrypy
 from hashlib import md5
+from tvb.tests.framework.interfaces.web.controllers.base_controller_test import BaseTransactionalControllerTest
+from tvb.tests.framework.core.test_factory import TestFactory
 from tvb.core import utils
 from tvb.interfaces.web.controllers import common
 from tvb.interfaces.web.controllers.users_controller import UserController
@@ -43,12 +45,10 @@ from tvb.basic.profile import TvbProfile
 from tvb.core.entities import model
 from tvb.core.entities.storage import dao
 from tvb.core.entities.model import UserPreferences
-from tvb.tests.framework.core.base_testcase import TransactionalTestCase
-from tvb.tests.framework.interfaces.web.controllers.base_controller_test import BaseControllersTest
-from tvb.tests.framework.core.test_factory import TestFactory
 
 
-class UsersControllerTest(TransactionalTestCase, BaseControllersTest): 
+
+class UsersControllerTest(BaseTransactionalControllerTest):
     """Unit test for UserController"""
     
     def setUp(self):
@@ -56,16 +56,14 @@ class UsersControllerTest(TransactionalTestCase, BaseControllersTest):
         Sets up the testing environment;
         creates a `UserController`
         """
-        BaseControllersTest.init(self, model.ROLE_ADMINISTRATOR)
+        self.init(user_role=model.ROLE_ADMINISTRATOR)
         self.user_c = UserController()
 
-    
+
     def tearDown(self):
-        """
-        Clean and remove any changes and created data
-        """
-        BaseControllersTest.cleanup(self)
-    
+        """ Cleans the testing environment """
+        self.cleanup()
+
     
     def test_index_valid_post(self):
         """

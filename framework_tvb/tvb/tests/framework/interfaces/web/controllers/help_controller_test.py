@@ -31,13 +31,12 @@
 .. moduleauthor:: Bogdan Neacsa <bogdan.neacsa@codemart.ro>
 """
 import unittest
+from tvb.tests.framework.interfaces.web.controllers.base_controller_test import BaseTransactionalControllerTest
 from tvb.interfaces.web.structure import WebStructure
 from tvb.interfaces.web.controllers.help.help_controller import HelpController
-from tvb.tests.framework.core.base_testcase import TransactionalTestCase
-from tvb.tests.framework.interfaces.web.controllers.base_controller_test import BaseControllersTest
 
 
-class HelpControllerTest(TransactionalTestCase, BaseControllersTest):
+class HelpControllerTest(BaseTransactionalControllerTest):
     """ Unit tests for HelpController """
     
     def setUp(self):
@@ -45,14 +44,14 @@ class HelpControllerTest(TransactionalTestCase, BaseControllersTest):
         Sets up the environment for testing;
         creates a `HelpController`
         """
-        BaseControllersTest.init(self)
+        self.init()
         self.help_c = HelpController()
-    
-    
+
+
     def tearDown(self):
         """ Cleans the testing environment """
-        BaseControllersTest.cleanup(self)
-            
+        self.cleanup()
+
             
     def test_show_online_help(self):
         """
