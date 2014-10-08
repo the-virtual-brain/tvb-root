@@ -112,21 +112,23 @@ function updateTree(treeSelector, projectId, baseUrl, visibilityFilter) {
         }
     }
 
-    $(treeSelector).jstree({//contextmenu: { "items" : createDefaultMenu, "select_node" : true },
-		                "plugins": ["themes", "json_data", "ui", "crrm"], //, "contextmenu"
-		                "themes": {
-		                    "theme": "default",
-		                    "dots": true,
-		                    "icons": true,
-		                    "url": baseUrl + "static/jquery/jquery-ui.theme.css"
-		                },
-		                "json_data": {
-		                    "ajax": { url: url,
-		                        success: function (d) {
-		                            return eval(d);
-		                        }
-		                    }}
-		            });
+    $(treeSelector).jstree({
+        //contextmenu: { "items" : createDefaultMenu, "select_node" : true },
+        "plugins": ["themes", "json_data", "ui", "crrm"], //, "contextmenu"
+        "themes": {
+            "theme": "default",
+            "dots": true,
+            "icons": true,
+            "url": baseUrl + "static/jquery/jstree-theme/style.css"
+        },
+        "json_data": {
+            "ajax": { url: url,
+                success: function (d) {
+                    return eval(d);
+                }
+            }
+        }
+    });
     _postInitializeTree(treeSelector);
     if (filterValue !=null && filterValue.length <= 2) {
         if (filterValue.length > 0) {
