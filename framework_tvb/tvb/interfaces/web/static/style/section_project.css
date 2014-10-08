@@ -633,12 +633,16 @@ span.name {
   cursor: pointer;
 }
 
+#tabWorkflow{
+    position:relative;
+}
+
 #workflowCanvasDiv {
     position:relative;
     height:600px;
     margin:auto;
     overflow:hidden;
-    background-color: #000000;
+    background-color: #111;
 }
 
 /*TOOLTIPS Graph Canvas*/
