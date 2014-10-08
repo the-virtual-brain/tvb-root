@@ -147,6 +147,7 @@ class SettingsService():
         """
         if sys.platform.startswith('win'):
             import ctypes
+            storage_path = os.path.abspath(storage_path)
             drive = unicode(storage_path.split(':')[0] + ':')
             freeuser = ctypes.c_int64()
             total = ctypes.c_int64()
