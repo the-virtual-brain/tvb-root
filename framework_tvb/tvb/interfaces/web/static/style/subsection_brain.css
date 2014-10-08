@@ -64,7 +64,7 @@ position: relative;
 /*background: -webkit-gradient(radial, center 30%, 0, center 30%, 600, from(rgba(60, 60, 60, 1)), to(rgba(0, 0, 0, 1)));*/
 background-image: -moz-radial-gradient(center 30%, circle farthest-corner, rgba(60, 60, 60, 1) 0%, rgba(0, 0, 0, 1) 100%);
 float: left;
-height: 80%;
+height: 85%;
 width: 65%;
 }
 
@@ -199,12 +199,6 @@ position: absolute;
     position: relative;
 }
 
-.usecaseClass {
-   text-align: left;
-   padding:5px;
-   float: left;
-   font-size: 11px;
-}
 .lastChild {
     content: "";
     display: table;

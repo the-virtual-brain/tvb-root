@@ -7,11 +7,24 @@ Simple Visualizers
 Brain Activity Visualizer
 ~~~~~~~~~~~~~~~~~~~~~~~~~
 
-A 3D scene of the brain activity:
+A 3D scene of the brain activity.
+Use the mouse to rotate the brain and the mouse wheel to zoom in/out.
+The SPACE key will show a top view. The CURSOR Keys will show axis aligned views.
 
 
-- at the region level: the brain is represented by a coarse granularity - each 
-  region is represented with only one color.
+For region level time series the brain is represented by a coarse granularity - each
+region is represented with only one color. For surface level time series each vertex
+has an individual measure.
+
+
+The color coding is determined by the current color scheme. A legend of it is on the right side of the brain view.
+You can change this color scheme and other viewer parameters from the brain menu in the upper right corner.
+
+
+From the visualizer toolbar you can pause and resume the activity movie.
+For region level time series there is a selection component in the toolbar.
+Use it to show activity only for the selected regions.
+
 
 .. figure:: screenshots/visualizer_brain.jpg
    :width: 90%
@@ -19,13 +32,26 @@ A 3D scene of the brain activity:
 
    Preview for Brain Activity Visualizer at the region level
 
-- at the surface level: the brain is represented by a fine granularity - each 
-  surface vertex has an individual measure.
-
 
 
 Time Series Visualizer (svg/d3)
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+In the center area you click and drag to zoom, click once to reset zoom and use the scroll wheel to scroll signals.
+
+
+The horizontal bottom part is the temporal context. Here the solid line marks the mean across channels, in time.
+The shaded area marks standard deviation across channels, in time.
+You Click and drag to select a subset of signals. The selection can be changed again by dragging it.
+Click outside selection box to cancel and reset view.
+You can resize the view by dragging blue box in the bottom right corner.
+
+
+The vertical left part is the signal context. Here solid lines show each signal. Selection works like in the temporal context.
+
+
+In the brain menu there is a slider you use to change the signal scaling.
+
 
 .. figure:: screenshots/visualizer_timeseries_svgd3.jpg
    :width: 90%
@@ -36,7 +62,7 @@ Time Series Visualizer (svg/d3)
 
 
 Animated Time Series Visualizer
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 .. figure:: screenshots/visualizer_timeseries_animated.jpg
    :width: 90%
@@ -45,12 +71,28 @@ Animated Time Series Visualizer
    Preview for Animated Time Series Visualizer
 
 
-This is an alternative of TVB for displaying signal lines in a 2D display.
+This is an alternative for the `Time Series Visualizer (svg/d3)`_.
+It is used to display signal lines in 2D.
+
 
 The label "animated" comes from the red line which will pass the entire signal step by step, at a configurable
 speed. In single mode, this red-line might not be very useful, but it makes more sense when the same 2D display
 gets reused in the Dual Visualizers (combined with the 3D display on a surface) where the red-line shows the
 current step displayed in the 3D movie on the left.
+
+
+Select zoom area with your mouse (you may do that several times to zoom in further).
+From the toolbar you can pause resume the activity and zoom out.
+
+
+This viewer can display multiple time series.
+On the right side of the toolbar there will be a selection component for each signal source.
+These selection components determine what signals are shown in the viewer.
+To select additional time series use the brain menu in the upper left corner.
+From that menu you can change viewer settings. The page size determines how much data should appear at once in the viewer.
+The spacing determines the space between the horizontal axis of each signal. Setting it to 0 will plot all signals in the same coordinate system.
+A side effect of this setting is that as you decrease this axis separation the amplitude of signals is scaled up.
+
 
 .. figure:: screenshots/visualizer_timeseries_channel_selection.jpg
    :width: 90%
@@ -60,7 +102,7 @@ current step displayed in the 3D movie on the left.
    
    
 Dual Brain Activity Visualizer
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 This visualizer combines the brain activity movie shown in a 3D display on the left,
 with the explicit channels recording lines on the right.
@@ -82,7 +124,7 @@ Movie start/stop, speed control, color schema change, channel selection are some
 
 
 Time Series Volume Visualizer
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 .. figure:: screenshots/visualizer_tsv.jpg
    :width: 90%
