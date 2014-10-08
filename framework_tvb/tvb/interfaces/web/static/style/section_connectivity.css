@@ -125,30 +125,6 @@ outline: none !important; /* fixing a side effect from having tabindex on this *
 }
 
 /* -- Color legend for 3D edges */
-.ss-connectivity .specialviewer .monitor-legend {
-left: 10px;
-position: absolute;
-top: 10px;
-z-index: 10;
-}
-
-.ss-connectivity .specialviewer .monitor-legend .extension {
-left: 0;
-right: auto;
-}
-
-.ss-connectivity .specialviewer .monitor-legend .dropdown-pane {
-min-width: 240px;
-}
-
-.ss-connectivity .monitor-legend ul {
-margin-bottom: 10px;
-}
-
-.ss-connectivity .monitor-legend li {
-margin-bottom: 2px;
-}
-
 .ss-connectivity .monitor-legend li:before {
 background: #000;
 border: 1px solid #000;

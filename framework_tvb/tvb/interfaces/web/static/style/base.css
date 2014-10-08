@@ -2618,3 +2618,31 @@ fieldset input[type="button"]
     font-size: 10px;
     padding: 0 2px;
 }
+
+/**
+ * Styling for the overlay legends used by viewers.
+ */
+
+.specialviewer .monitor-legend {
+left: 10px;
+position: absolute;
+top: 10px;
+z-index: 10;
+}
+
+.specialviewer .monitor-legend .extension {
+left: 0;
+right: auto;
+}
+
+.monitor-legend .dropdown-pane {
+min-width: 240px;
+}
+
+.monitor-legend ul {
+margin-bottom: 10px;
+}
+
+.monitor-legend li {
+margin-bottom: 2px;
+}
