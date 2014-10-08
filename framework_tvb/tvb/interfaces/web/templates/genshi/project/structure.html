@@ -66,29 +66,23 @@
             <li id="graphTab"><a href="#" onclick="showGraph()">Graph</a></li>
         </ul>
 
-        <ul class="toolbar-inline">
-            <li>
-                ${drawLevelSelect(1, data, firstLevelSelection, project.id, baseUrl)}
-            </li>
-            <li>
-                ${drawLevelSelect(2, data, secondLevelSelection, project.id, baseUrl)}
-            </li>
-        </ul>
-
         <div class="specialviewer">
-            <div id="workflowCanvasDiv" class="hide-element left-cell-structure"></div>
-            <div id="treeStructure" class="hide-element left-cell-structure"></div>
-            <table id="graph-related-table">
-                <tr>
-                    <td>Legend:</td>
-                </tr>
-                <tr>
-                    <td>* move node - click on the node and drag it</td>
-                </tr>
-                <tr>
-                    <td>* navigate/select node - click on the node label</td>
-                </tr>
-            </table>
+            <div id="tabTree" class="hide-element">
+                <ul class="toolbar-inline">
+                    <li>
+                        ${drawLevelSelect(1, data, firstLevelSelection, project.id, baseUrl)}
+                    </li>
+                    <li>
+                        ${drawLevelSelect(2, data, secondLevelSelection, project.id, baseUrl)}
+                    </li>
+                </ul>
+
+                <div id="treeStructure" class="left-cell-structure"></div>
+            </div>
+
+            <div id="tabWorkflow" class="hide-element">
+                <div id="workflowCanvasDiv" class="left-cell-structure"></div>
+            </div>
         </div>
 
 	    <script type="text/javascript" src="/static/js/projectTree.js?$currentVersionJS"></script>

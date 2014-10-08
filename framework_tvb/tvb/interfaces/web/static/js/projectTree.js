@@ -49,21 +49,14 @@ function displaySelectedTab() {
 
 function showTree() {
     $("#lastVisibleTab").val(TREE_TAB);
-    
+    $("#tabTree").show();
+    $("#tabWorkflow").hide();
+
     $("#tree-related-li").show();
-    $("#treeStructure").show();
-    $("#levelTree_1").show();
-    $("#levelTree_2").show();
-    $("#label_levelTree_1").show();
-    $("#label_levelTree_2").show();
-    
-    $("#graph-related-table").hide();
-    $("#workflowCanvasDiv").hide();
-    
+
     $("#" + TREE_TAB).addClass("active");
     $("#" + GRAPH_TAB).removeClass("active");
     select_tree_node();
-    //$("#tree4").jstree('refresh');
 }
 
 
@@ -182,17 +175,11 @@ function _postInitializeTree(treeSelector) {
 
 function showGraph() {
     $("#lastVisibleTab").val(GRAPH_TAB);
-    
+    $("#tabWorkflow").show();
+    $("#tabTree").hide();
+
     $("#tree-related-li").hide();
-    $("#treeStructure").hide();
-    $("#levelTree_1").hide();
-    $("#levelTree_2").hide();
-    $("#label_levelTree_1").hide();
-    $("#label_levelTree_2").hide();
-    
-    $("#graph-related-table").show();
-    $("#workflowCanvasDiv").show();
-    
+
     $("#" + TREE_TAB).removeClass("active");
     $("#" + GRAPH_TAB).addClass("active");
     update_workflow_graph('workflowCanvasDiv', TREE_lastSelectedNode, TREE_lastSelectedNodeType);
