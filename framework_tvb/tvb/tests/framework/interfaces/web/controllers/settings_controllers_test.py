@@ -56,6 +56,9 @@ class SettingsControllerTest(BaseTransactionalControllerTest):
     """
 
     was_reset = False
+    accepted_db_url = ('sqlite:///TestFolder' + os.path.sep + 'tvb-database.db'
+                       if TvbProfile.current.db.SELECTED_DB == 'sqlite'
+                       else TvbProfile.current.db.DB_URL)
 
     VALID_SETTINGS = {'TVB_STORAGE': "TestFolder",
                       'USR_DISK_SPACE': 1,
@@ -66,7 +69,7 @@ class SettingsControllerTest(BaseTransactionalControllerTest):
 
                       'DEPLOY_CLUSTER': 'True',
                       'SELECTED_DB': TvbProfile.current.db.SELECTED_DB,  # Not changeable,due to test profile overwrites
-                      'URL_VALUE': 'sqlite:///TestFolder/tvb-database.db',
+                      'URL_VALUE': accepted_db_url,
 
                       'URL_WEB': "http://localhost:9999/",
                       'URL_MPLH5': "ws://localhost:8888/",
