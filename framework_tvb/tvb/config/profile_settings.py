@@ -106,7 +106,7 @@ class TestSQLiteProfile(BaseSettingsProfile):
 
     SVN_VERSION = 1
     CODE_CHECKED_TO_VERSION = sys.maxint
-    TRADE_CRASH_SAFETY_FOR_SPEED = False
+    TRADE_CRASH_SAFETY_FOR_SPEED = True
 
 
     def __init__(self):
