@@ -95,6 +95,7 @@ def parse_commandline():
     stop = subparsers.add_parser('stop', help='stop all TVB processes')
     # all sub-commands are expected to have a profile not necessarily entered by the user.
     stop.set_defaults(profile=TvbProfile.WEB_PROFILE)
+    add_profile_arg(stop, TvbProfile.ALL)
 
     clean = subparsers.add_parser('clean', help='stop all TVB processes and delete all TVB data')
     add_profile_arg(clean, TvbProfile.ALL)

@@ -4,7 +4,7 @@
 echo 'Executing clean before tests...'
 if [ "$1" ]; then
     # Make sure TVB application is not running....
-    python app.py stop
+    python app.py stop TEST_POSTGRES_PROFILE
 
 	# Run tests using PostgreSQL DB
 	python app.py clean TEST_POSTGRES_PROFILE
@@ -14,7 +14,7 @@ if [ "$1" ]; then
 	
 else
     # Make sure TVB application is not running....
-    python app.py stop
+    python app.py stop TEST_SQLITE_PROFILE
 
 	# Run tests using SQLite as DB
 	python app.py clean TEST_SQLITE_PROFILE
