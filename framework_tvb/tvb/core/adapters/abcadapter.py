@@ -252,7 +252,7 @@ class ABCAdapter(object):
             adapter_required_memory = self.get_required_memory_size(**kwargs)
 
             if adapter_required_memory > memory_reference:
-                msg = "Machine does not have enough RAM memory to launch the operation (expected %.2g GB, but were found %.2g GB)."
+                msg = "Machine does not have enough RAM memory for the operation (expected %.2g GB, but found %.2g GB)."
                 raise NoMemoryAvailableException(msg % (adapter_required_memory / 2 ** 30, memory_reference / 2 ** 30))
 
             # Compare the expected size of the operation results with the HDD space currently available for the user
@@ -586,7 +586,7 @@ class ABCAdapter(object):
 
                 if row_type == xml_reader.TYPE_ARRAY:
                     kwa[row_attr] = self.__convert_to_array(kwargs[row_attr], row)
-                    if xml_reader.ATT_MINVALUE in row and xml_reader.ATT_MAXVALUE:  #todo: probable bug: ATT_MAXVALUE is always true
+                    if xml_reader.ATT_MINVALUE in row and xml_reader.ATT_MAXVALUE in row:
                         self.__validate_range_for_array_input(kwa[row_attr], row)
                 elif row_type == xml_reader.TYPE_LIST:
                     if not isinstance(kwargs[row_attr], list):
@@ -598,14 +598,14 @@ class ABCAdapter(object):
                         kwa[row_attr] = None
                     else:
                         kwa[row_attr] = int(kwargs[row_attr])
-                        if xml_reader.ATT_MINVALUE in row and xml_reader.ATT_MAXVALUE: #todo
+                        if xml_reader.ATT_MINVALUE in row and xml_reader.ATT_MAXVALUE in row:
                             self.__validate_range_for_value_input(kwa[row_attr], row)
                 elif row_type == xml_reader.TYPE_FLOAT:
                     if kwargs[row_attr] in ['', 'None']:
                         kwa[row_attr] = None
                     else:
                         kwa[row_attr] = float(kwargs[row_attr])
-                        if xml_reader.ATT_MINVALUE in row and xml_reader.ATT_MAXVALUE: #todo
+                        if xml_reader.ATT_MINVALUE in row and xml_reader.ATT_MAXVALUE in row:
                             self.__validate_range_for_value_input(kwa[row_attr], row)
                 elif row_type == xml_reader.TYPE_STR:
                     kwa[row_attr] = kwargs[row_attr]
@@ -650,6 +650,7 @@ class ABCAdapter(object):
         max_val = numpy.max(array)
 
         if min_val < row[xml_reader.ATT_MINVALUE] or max_val > row[xml_reader.ATT_MAXVALUE]:
+            # As described in TVB-1295, we do no longer raise exception, but only log a warning
             warning_message = "Field %s [%s] should have values between %s and %s but provided array contains min-" \
                               "max:(%s, %s)." % (row[self.KEY_LABEL], row[self.KEY_NAME], row[xml_reader.ATT_MINVALUE],
                                                  row[xml_reader.ATT_MAXVALUE], min_val, max_val)
