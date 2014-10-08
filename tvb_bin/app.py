@@ -69,7 +69,7 @@ SCRIPT_FOR_WEB = 'tvb.interfaces.web.run'
 SCRIPT_FOR_DESKTOP = 'tvb.interfaces.desktop.run'
 
 CONSOLE_PROFILE_SET = ('from tvb.basic.profile import TvbProfile; '
-                       'TvbProfile.set_profile("%s", try_reload=False);')
+                       'TvbProfile.set_profile("%s");')
 
 SUB_PARAMETER_RESET = "reset"
 
