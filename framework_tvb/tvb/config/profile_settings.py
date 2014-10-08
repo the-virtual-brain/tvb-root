@@ -49,13 +49,13 @@ class WebSettingsProfile(BaseSettingsProfile):
     """
 
 
-    def initialize_profile(self):
+    def initialize_profile(self, change_logger_in_dev=True):
         """
         Specific initialization when functioning with storage
         """
         super(WebSettingsProfile, self).initialize_profile()
 
-        if self.env.is_development():
+        if change_logger_in_dev and self.env.is_development():
             self.LOGGER_CONFIG_FILE_NAME = "dev_logger_config.conf"
 
         ## Make sure DB events are linked.
@@ -94,7 +94,7 @@ class CommandSettingsProfile(WebSettingsProfile):
 
 
 
-class TestSQLiteProfile(BaseSettingsProfile):
+class TestSQLiteProfile(WebSettingsProfile):
     """
     Defines settings for running tests on an SQLite database.
     """
@@ -125,12 +125,8 @@ class TestSQLiteProfile(BaseSettingsProfile):
         self.db.SELECTED_DB = 'sqlite'
 
 
-    def initialize_profile(self):
-        super(TestSQLiteProfile, self).initialize_profile()
-
-        ## Make sure DB events are linked.
-        from tvb.core.traits import db_events
-        db_events.attach_db_events()
+    def initialize_profile(self, change_logger_in_dev=False):
+        super(TestSQLiteProfile, self).initialize_profile(change_logger_in_dev=change_logger_in_dev)
 
         from tvb.core.utils import get_matlab_executable
         self.MATLAB_EXECUTABLE = get_matlab_executable()
