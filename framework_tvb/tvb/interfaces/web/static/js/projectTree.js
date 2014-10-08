@@ -33,7 +33,7 @@ var skipReload = false;
  * Function selecting previously selected TAB between TREE / GRAPH, on pahe refresh.
  */
 function displaySelectedTab() {
-	
+
     var lastSelectedTab = $("#lastVisibleTab").val();
     if (lastSelectedTab == GRAPH_TAB) {
         showGraph();
@@ -44,7 +44,7 @@ function displaySelectedTab() {
 
 
 //-----------------------------------------------------------------------
-// 						TREE Section starts here
+//                   TREE Section starts here
 //-----------------------------------------------------------------------
 
 function showTree() {
@@ -84,15 +84,15 @@ function select_tree_node(treeId) {
  * Used for updating the tree structure.
  */
 function updateTree(treeSelector, projectId, baseUrl, visibilityFilter) {
-	
-	if (!projectId) {
-		projectId = $("#hiddenProjectId").val();
-	}
-	if (!baseUrl) {
-		baseUrl = $("#hiddenBaseURL").val();
-	}
-	if (!visibilityFilter) {
-    	visibilityFilter = _getSelectedVisibilityFilter();
+
+    if (!projectId) {
+        projectId = $("#hiddenProjectId").val();
+    }
+    if (!baseUrl) {
+        baseUrl = $("#hiddenBaseURL").val();
+    }
+    if (!visibilityFilter) {
+        visibilityFilter = _getSelectedVisibilityFilter();
     }
     var firstLevel = $("#levelTree_1").val();
     var secondLevel = $("#levelTree_2").val();
@@ -144,7 +144,7 @@ function updateTree(treeSelector, projectId, baseUrl, visibilityFilter) {
  * Main function for specifying JSTree attributes.
  */
 function _postInitializeTree(treeSelector) {
-	$(treeSelector).bind("select_node.jstree", function (event, data) {
+    $(treeSelector).bind("select_node.jstree", function (event, data) {
           if ($("#lastVisibleTab").val() == GRAPH_TAB) {
               return;
           }
@@ -158,21 +158,21 @@ function _postInitializeTree(treeSelector) {
           skipReload = false;
           
           var backPage = 'data';
-		  if ($("body")[0].id == "s-burst") {
-				backPage = 'burst';
-		  }
+          if ($("body")[0].id == "s-burst") {
+                backPage = 'burst';
+          }
           displayNodeDetails(TREE_lastSelectedNode, TVB_NODE_DATATYPE_TYPE, backPage);
     }).bind("loaded.jstree", function () {
         select_tree_node();
     });
 }
 //-----------------------------------------------------------------------
-// 						TREE Section ends here
+//                   TREE Section ends here
 //-----------------------------------------------------------------------
 
 
 //-----------------------------------------------------------------------
-// 						GRAPH Section starts here
+//                   GRAPH Section starts here
 //-----------------------------------------------------------------------
 
 function showGraph() {
@@ -217,168 +217,172 @@ function update_workflow_graph(containerDivId, nodeGid, nodeType) {
 function _draw_graph(containerDivId, json) {
     // init ForceDirected
     var fd = new $jit.ForceDirected({
-                //id of the visualization container
-                injectInto: containerDivId,
-                //Enable zooming and panning with scrolling and DnD
-                Navigation: {
-                    enable: true,
-                    //Enable panning events only if we're dragging the empty canvas (and not a node).
-                    panning: 'avoid nodes',
-                    zooming: 10
-                },
-                // Change node and edge styles such as color and width.
-                // These properties are also set per node with dollar prefixed data-properties in the JSON structure.
-                Node: {
-                    overridable: true
-                },
-                Edge: {
-                    overridable: true,
-                    type: 'arrow',
-                    color: '#23A4FF',
-                    lineWidth: 0.4
-                },
-                Tips: {
-                    enable: true,
-                    type: 'Native',
-                    onShow: function(tip, node) {
-                        if (node.id != "fakeRootNode") {
-                            tip.innerHTML = "<div class=\"tip-title\">" +
-		                                            node.name +
-		                                    "</div></br>" +
-		                                    "<div class=\"tip-text\">" +
-		                                            "<b>Id:</b> " + node.data.entity_id + "</br>" +
-		                                            "<b>Type:</b> " + node.data.dataType + "</br>" +
-		                                            "<b>Display Name:</b> " + node.data.subtitle + "</br>" +
-		                                    "</div>";
-                            }
+        //id of the visualization container
+        injectInto: containerDivId,
+        //Enable zooming and panning with scrolling and DnD
+        Navigation: {
+            enable: true,
+            //Enable panning events only if we're dragging the empty canvas (and not a node).
+            panning: 'avoid nodes',
+            zooming: 10
+        },
+        // Change node and edge styles such as color and width.
+        // These properties are also set per node with dollar prefixed data-properties in the JSON structure.
+        Node: {
+            overridable: true
+        },
+        Edge: {
+            overridable: true,
+            type: 'arrow',
+            color: '#23A4FF',
+            lineWidth: 0.4
+        },
+        Tips: {
+            enable: true,
+            type: 'Native',
+            onShow: function(tip, node) {
+                if (node.id != "fakeRootNode") {
+                    tip.innerHTML = "<div class=\"tip-title\">" +
+                                            node.name +
+                                    "</div></br>" +
+                                    "<div class=\"tip-text\">" +
+                                            "<b>Id:</b> " + node.data.entity_id + "</br>" +
+                                            "<b>Type:</b> " + node.data.dataType + "</br>" +
+                                            "<b>Display Name:</b> " + node.data.subtitle + "</br>" +
+                                    "</div>";
                     }
-                },
-                // Add node events
-                Events: { 	enable: true,
-		                    type: 'Native',
-		                    //Change cursor style when hovering a node
-		                    onMouseEnter: function(node, eventInfo, e) {
-		                        fd.canvas.getElement().style.cursor = 'move';
-		                    },
-		                    onMouseLeave: function(node, eventInfo, e) {
-		                        fd.canvas.getElement().style.cursor = '';
-		                    },
-		                    //Update node positions when dragged
-		                    onDragMove: function(node, eventInfo, e) {
-		                        var pos = eventInfo.getPos();
-		                        node.pos.setc(pos.x, pos.y);
-		                        fd.plot();
-		                    },
-		                    //Implement the same handler for touchscreens
-		                    onTouchMove: function(node, eventInfo, e) {
-		                        //stop default touchmove event
-		                        $jit.util.event.stop(e);
-		                        this.onDragMove(node, eventInfo, e);
-		                    }
-                },
-                // This method is only triggered
-                // on label creation and only for DOM labels (not native canvas ones).
-                onCreateLabel: function(domElement, node) {
-                    var nameContainer = document.createElement('span');
-                    var style = nameContainer.style;
+            }
+        },
+        // Add node events
+        Events: {
+            enable: true,
+            type: 'Native',
+            //Change cursor style when hovering a node
+            onMouseEnter: function(node, eventInfo, e) {
+                fd.canvas.getElement().style.cursor = 'move';
+            },
+            onMouseLeave: function(node, eventInfo, e) {
+                fd.canvas.getElement().style.cursor = '';
+            },
+            //Update node positions when dragged
+            onDragMove: function(node, eventInfo, e) {
+                var pos = eventInfo.getPos();
+                node.pos.setc(pos.x, pos.y);
+                fd.plot();
+            },
+            //Implement the same handler for touchscreens
+            onTouchMove: function(node, eventInfo, e) {
+                //stop default touchmove event
+                $jit.util.event.stop(e);
+                this.onDragMove(node, eventInfo, e);
+            }
+        },
+        // This method is only triggered
+        // on label creation and only for DOM labels (not native canvas ones).
+        onCreateLabel: function(domElement, node) {
+            var nameContainer = document.createElement('span');
+            var style = nameContainer.style;
 
-                    //1 character is drawn on 3 points
-                    var nodeName = node.name;
-                    if (node.data.$dim < 30) {
-                        nodeName = nodeName.substr(0, 3) + "...";
-                    } else {
-                        if (nodeName.length * 3 > node.data.$dim) {
-                            nodeName = nodeName.substr(0, (node.data.$dim / 3) - 3);
-                            nodeName += "...";
-                        }
-                    }
+            //1 character is drawn on 3 points
+            var nodeName = node.name;
+            if (node.data.$dim < 30) {
+                nodeName = nodeName.substr(0, 3) + "...";
+            } else {
+                if (nodeName.length * 3 > node.data.$dim) {
+                    nodeName = nodeName.substr(0, (node.data.$dim / 3) - 3);
+                    nodeName += "...";
+                }
+            }
 
-                    if (node.id == "fakeRootNode") {
-                        node.setData('alpha', 0);
-                        node.eachAdjacency(function(adj) {
-                            adj.setData('alpha', 0);
-                        });
-                        return;
-                    }
-                    nameContainer.className = 'name';
-                    nameContainer.innerHTML = nodeName;
-                    domElement.appendChild(nameContainer);
+            if (node.id == "fakeRootNode") {
+                node.setData('alpha', 0);
+                node.eachAdjacency(function(adj) {
+                    adj.setData('alpha', 0);
+                });
+                return;
+            }
+            nameContainer.className = 'name';
+            nameContainer.innerHTML = nodeName;
+            domElement.appendChild(nameContainer);
 
-                    style.fontSize = "1.0em";
-                    style.color = "#ddd";
-                    if (node.id == TREE_lastSelectedNode) {
-                        node.setData('color', "#ff0000");
-                    }
+            style.fontSize = "1.0em";
+            style.color = "#ddd";
+            if (node.id == TREE_lastSelectedNode) {
+                node.setData('color', "#ff0000");
+            }
 
-                    nameContainer.onclick = function() {
-                        //skipReload = true;
-                        //displayNodeDetails(node.id, node.data.dataType, 'data');
-                        update_workflow_graph(containerDivId, node.id, node.data.dataType);
-                    };
-                },
-                // Change node styles when DOM labels are placed or moved.
-                onPlaceLabel: function(domElement, node) {
-				                    var style = domElement.style;
-				                    var left = parseInt(style.left);
-				                    var top = parseInt(style.top);
-				                    var w = domElement.offsetWidth;
-				                    style.left = (left - w / 2) + 'px';
-				                    style.top = (top - 5) + 'px';
-				                    style.display = '';
-                				}
-            });
+            nameContainer.onclick = function() {
+                //skipReload = true;
+                //displayNodeDetails(node.id, node.data.dataType, 'data');
+                update_workflow_graph(containerDivId, node.id, node.data.dataType);
+            };
+        },
+        // Change node styles when DOM labels are placed or moved.
+        onPlaceLabel: function(domElement, node) {
+            var style = domElement.style;
+            var left = parseInt(style.left);
+            var top = parseInt(style.top);
+            var w = domElement.offsetWidth;
+            style.left = (left - w / 2) + 'px';
+            style.top = (top - 5) + 'px';
+            style.display = '';
+        }
+    });
     // load JSON data.
     fd.loadJSON(json);
     // compute positions incrementally and animate.
-    fd.computeIncremental({ property: 'end',
-			                onComplete: function() {
-							                    fd.animate({
-							                                modes: ['linear'],
-							                                transition: $jit.Trans.Elastic.easeOut,
-							                                duration: 1500
-							                            });
-			                					}
-			            	});
+    fd.computeIncremental({
+        property: 'end',
+        onComplete: function() {
+            fd.animate({
+                modes: ['linear'],
+                transition: $jit.Trans.Elastic.easeOut,
+                duration: 1500
+            });
+        }
+    });
 }
 
 //-----------------------------------------------------------------------
-// 						GRAPH Section ends here
+//                   GRAPH Section ends here
 //-----------------------------------------------------------------------
 
 
 //-----------------------------------------------------------------------
-// 					More GENERIC functions from here
+//                More GENERIC functions from here
 //-----------------------------------------------------------------------
 
 function createLink(dataId, projectId, isGroup) {
-	doAjaxCall({ async : false,
-		     type: 'GET',
-		     url: "/project/createlink/" + dataId +"/" + projectId + "/" + isGroup,
-		     success: function(r) {if(r) displayMessage(r,'warningMessage'); },
-		     error:   function(r) {if(r) displayMessage(r,'warningMessage'); }
-	      });
+    doAjaxCall({
+        async : false,
+        type: 'GET',
+        url: "/project/createlink/" + dataId +"/" + projectId + "/" + isGroup,
+        success: function(r) {if(r) displayMessage(r,'warningMessage'); },
+        error:   function(r) {if(r) displayMessage(r,'warningMessage'); }
+    });
 }
 
 function removeLink(dataId, projectId, isGroup) {
-	doAjaxCall({ async : false,
-		     type: 'GET',
-		     url: "/project/removelink/" + dataId +"/" + projectId + "/" + isGroup,
-		     success: function(r) {if(r) displayMessage(r,'warningMessage'); },
-		     error:   function(r) {if(r) displayMessage(r,'warningMessage'); }
-	      });
+    doAjaxCall({
+        async : false,
+        type: 'GET',
+        url: "/project/removelink/" + dataId +"/" + projectId + "/" + isGroup,
+        success: function(r) {if(r) displayMessage(r,'warningMessage'); },
+        error:   function(r) {if(r) displayMessage(r,'warningMessage'); }
+    });
 }
 
 function updateLinkableProjects(datatype_id, isGroup, entity_gid) {
     doAjaxCall({
-                async : false,
-                type: 'GET',
-                url: "/project/get_linkable_projects/" + datatype_id + "/" + isGroup + "/" + entity_gid,
-                success: function(data) {
-                	var linkedDiv = $("#linkable_projects_div_" + entity_gid);
-                    linkedDiv.empty();
-                    linkedDiv.append(data);
-                }
-            });
+        async : false,
+        type: 'GET',
+        url: "/project/get_linkable_projects/" + datatype_id + "/" + isGroup + "/" + entity_gid,
+        success: function(data) {
+            var linkedDiv = $("#linkable_projects_div_" + entity_gid);
+            linkedDiv.empty();
+            linkedDiv.append(data);
+        }
+    });
 }
 
 /**
@@ -406,9 +410,9 @@ function tvbSubmitPage(action, params){
         }
     }
     document.body.appendChild(form);
-	TVB_pageSubmitted = true;
+    TVB_pageSubmitted = true;
     form.submit();
-	document.body.removeChild(form);
+    document.body.removeChild(form);
 }
 
 function tvbSubmitPageAsync(action, params){
@@ -446,9 +450,8 @@ function launchAdapter(adapter_url, param_name, param_val, param_algo, algo_iden
  * @param projectId a project id.
  */
 function changedVisibilityFilter(projectId, baseUrl, filterElemId) {
-	
-	// Activate visibility filter
-	$("#visibilityFiltersId > li[class='active']").each(function () {
+    // Activate visibility filter
+    $("#visibilityFiltersId > li[class='active']").each(function () {
         $(this).removeClass('active');
     });
     //do NOT use jquery ($("#" + filterElemId)) to select the element because its id may contain spaces
