@@ -101,7 +101,7 @@ class FilesUpdateManager(UpdateManager):
     def upgrade_file(self, input_file_name):
         """
         Upgrades the given file to the latest data version. The file will be upgraded
-        sequencially up until the current version from tvb.basic.config.settings.
+        sequentially, up until the current version from tvb.basic.config.settings.VersionSettings.DB_STRUCTURE_VERSION
         
         :param input_file_name: the path to the file which needs to be upgraded
         """

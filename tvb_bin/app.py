@@ -62,8 +62,7 @@ if 'py2app' in sys.argv:
     import tvb.interfaces.web.run
 
 RUN_CONSOLE_PROFILES = [TvbProfile.LIBRARY_PROFILE, TvbProfile.COMMAND_PROFILE]
-RUN_WEB_PROFILES = [TvbProfile.DEPLOYMENT_PROFILE, TvbProfile.DEVELOPMENT_PROFILE]
-RUN_TEST_PROFILES = [TvbProfile.TEST_POSTGRES_PROFILE, TvbProfile.TEST_SQLITE_PROFILE]
+RUN_TEST_PROFILES = [TvbProfile.TEST_POSTGRES_PROFILE, TvbProfile.TEST_SQLITE_PROFILE, TvbProfile.TEST_LIBRARY_PROFILE]
 
 SCRIPT_FOR_CONSOLE = 'tvb_bin.run_IDLE'
 SCRIPT_FOR_WEB = 'tvb.interfaces.web.run'
@@ -82,21 +81,20 @@ def parse_commandline():
         helpMsg += ' '.join(allowed) + '. '
         helpMsg += help_footer
         com.add_argument('profile', metavar='profile', nargs='?', help=helpMsg,
-                         choices=allowed, default=TvbProfile.DEPLOYMENT_PROFILE)
+                         choices=allowed, default=TvbProfile.WEB_PROFILE)
 
     parser = argparse.ArgumentParser(description="Control TVB instances.", prog='distribution')
     subparsers = parser.add_subparsers(title='subcommands', dest='subcommand')
 
     start = subparsers.add_parser('start', help='launch a TVB interface')
-    add_profile_arg(start, set(TvbProfile.ALL) - set(RUN_TEST_PROFILES),
-                    'These profiles will launch the web interface : ' + ' '.join(RUN_WEB_PROFILES))
+    add_profile_arg(start, set(TvbProfile.ALL) - set(RUN_TEST_PROFILES))
 
     start.add_argument('-reset', action='store_true', help='reset database')
-    start.add_argument('-headless', action='store_true', help='launch python instead of IDLE')
+    start.add_argument('-headless', action='store_true', help='launch python instead of IDLE when scripting profiles')
 
     stop = subparsers.add_parser('stop', help='stop all TVB processes')
     # all sub-commands are expected to have a profile not necessarily entered by the user.
-    stop.set_defaults(profile=TvbProfile.DEPLOYMENT_PROFILE)
+    stop.set_defaults(profile=TvbProfile.WEB_PROFILE)
 
     clean = subparsers.add_parser('clean', help='stop all TVB processes and delete all TVB data')
     add_profile_arg(clean, TvbProfile.ALL)
@@ -324,7 +322,7 @@ if __name__ == "__main__":
         if ARGS.profile in RUN_CONSOLE_PROFILES:
             execute_start_console(ARGS.profile, ARGS.headless)
 
-        elif ARGS.profile in RUN_WEB_PROFILES:
+        elif ARGS.profile == TvbProfile.WEB_PROFILE:
             if execute_stop():
                 time.sleep(2)
             TVB_PROCESS = execute_start_web(ARGS.profile, ARGS.reset)

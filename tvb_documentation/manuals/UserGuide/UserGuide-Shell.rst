@@ -80,12 +80,12 @@ And in the library profile ::
 The scripts are located in the `bin` folder and they have platform specific terminations.
 
 The `distribution` script can be used to launch other profiles as well.
-The `DEPLOYMENT_PROFILE` will start the web interface. The following has the same effect as `tvb_start` ::
+The `WEB_PROFILE` will start the web interface. The following has the same effect as `tvb_start` ::
 
-    distribution start DEPLOYMENT_PROFILE
+    distribution start WEB_PROFILE
 
 Using the distribution script allows you to give additional options.
 The `-reset` option will clean the |TVB| folder before starting the web interface ::
 
-    distribution start DEPLOYMENT_PROFILE -reset
+    distribution start WEB_PROFILE -reset
 

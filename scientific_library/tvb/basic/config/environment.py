@@ -29,7 +29,7 @@
 #
 
 """
-Environment related checks are to be done here.
+Environment related checks or operations are to be defined here.
 
 .. moduleauthor:: Lia Domide <lia.domide@codemart.ro>
 .. moduleauthor:: Mihai Andrei <mihai.andrei@codemart.ro>
@@ -48,7 +48,7 @@ class Environment():
         """
         framework_present = True
         try:
-            from tvb.config.settings import DevelopmentProfile
+            from tvb.config.profile_settings import WebSettingsProfile
         except ImportError:
             framework_present = False
 
@@ -104,3 +104,63 @@ class Environment():
     @staticmethod
     def is_windows():
         return sys.platform.startswith('win')
+
+
+    def get_library_folder(self, default_mac):
+        """
+        Return top level library folder. Will be use for setting paths
+        """
+        if self.is_windows_deployment():
+            return os.path.dirname(os.path.dirname(sys.executable))
+        if self.is_mac_deployment():
+            return os.path.dirname(default_mac)
+        if self.is_linux_deployment():
+            return os.path.dirname(os.path.dirname(sys.executable))
+
+
+    def setup_tk_tcl_environ(self, root_folder):
+        """
+        Given a root folder to look in, find the required configuration files for TCL/TK and set the proper
+        environmental variables so everything works fine in the distribution package.
+
+        :param root_folder: the top folder from which to start looking for the required configuration files
+        """
+        tk_folder = self._find_file('tk.tcl', root_folder)
+        if tk_folder:
+            os.environ['TK_LIBRARY'] = tk_folder
+
+        tcl_folder = self._find_file('init.tcl', root_folder)
+        if tcl_folder:
+            os.environ['TCL_LIBRARY'] = tcl_folder
+
+
+    def _find_file(self, target_file, root_folder):
+        """
+        Search for a file in a folder directory. Return the folder in which the file can be found.
+
+        :param target_file: the name of the file that is searched
+        :param root_folder: the top lever folder from which to start searching in all it's subdirectories
+        :returns: the name of the folder in which the file can be found
+        """
+        for root, _, files in os.walk(root_folder):
+            for file_n in files:
+                if file_n == target_file:
+                    return root
+
+
+    def setup_python_path(self, *paths):
+        """
+        Set PYTHONPATH
+        :param paths: list of absolute folder paths to join.
+        """
+        os.environ['PYTHONPATH'] = os.pathsep.join(paths)
+
+
+    def append_to_path(self, *paths):
+        """
+        Set PATH
+        :param paths: list of absolute folder paths to join and add BEFORE the current PATH
+        """
+        paths = list(paths)
+        paths.append(os.environ.get('PATH', ''))
+        os.environ['PATH'] = os.pathsep.join(paths)

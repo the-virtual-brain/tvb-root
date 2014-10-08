@@ -40,7 +40,7 @@ The purpose of this entities is to be used in Genshi UI, or for populating visua
 import sys
 import json
 import math
-from tvb.basic.config.settings import EnhancedDictionary
+from tvb.basic.config.utils import EnhancedDictionary
 from tvb.core.entities import model
 
 

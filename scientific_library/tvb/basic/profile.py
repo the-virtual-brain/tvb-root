@@ -29,9 +29,10 @@
 #
 
 """
-TVB Profile.
+TVB Profile Manager (top level in TVB profile & settings).
 
-This class is responsible for referring towards application settings, based on running environment or developer choice.
+This class is responsible for referring towards application settings,
+based on current running environment (e.g. dev vs deployment), or developer profile choice (e.g. web vs console).
 
 .. moduleauthor:: Lia Domide <lia.domide@codemart.ro>
 .. moduleauthor:: Mihai Andrei <mihai.andrei@codemart.ro>
@@ -42,7 +43,7 @@ This class is responsible for referring towards application settings, based on r
 import sys
 import copy
 from tvb.basic.config.environment import Environment
-from tvb.basic.config.settings import BaseSettingsProfile
+from tvb.basic.config.profile_settings import BaseSettingsProfile
 
 
 
@@ -51,17 +52,17 @@ class TvbProfile():
     ENUM-like class with current TVB profile and accepted values.
     """
 
-    DEVELOPMENT_PROFILE = "DEVELOPMENT_PROFILE"
-    DEPLOYMENT_PROFILE = "DEPLOYMENT_PROFILE"
     LIBRARY_PROFILE = "LIBRARY_PROFILE"
     COMMAND_PROFILE = "COMMAND_PROFILE"
+    WEB_PROFILE = "WEB_PROFILE"
+    DESKTOP_PROFILE = "DESKTOP_PROFILE"
+
     TEST_LIBRARY_PROFILE = "TEST_LIBRARY_PROFILE"
     TEST_POSTGRES_PROFILE = "TEST_POSTGRES_PROFILE"
     TEST_SQLITE_PROFILE = "TEST_SQLITE_PROFILE"
-    DESKTOP_PROFILE = "DESKTOP_PROFILE"
 
-    ALL = [DEVELOPMENT_PROFILE, DEPLOYMENT_PROFILE, LIBRARY_PROFILE, COMMAND_PROFILE,
-           TEST_POSTGRES_PROFILE, TEST_SQLITE_PROFILE, TEST_LIBRARY_PROFILE, DESKTOP_PROFILE]
+    ALL = [LIBRARY_PROFILE, COMMAND_PROFILE, WEB_PROFILE, DESKTOP_PROFILE,
+           TEST_POSTGRES_PROFILE, TEST_SQLITE_PROFILE, TEST_LIBRARY_PROFILE]
 
     REGISTERED_PROFILES = {}
 
@@ -88,6 +89,10 @@ class TvbProfile():
             sys.setdefaultencoding('utf-8')
 
         if selected_profile is not None:
+            ## Restore sys.meta_path, as some profiles (Library) are adding something
+            sys.meta_path = copy.deepcopy(cls._old_meta_path)
+
+            cls._load_framework_profiles(selected_profile)
             cls._build_profile_class(selected_profile)
 
 
@@ -96,15 +101,15 @@ class TvbProfile():
         """
         :param selected_profile: Profile name to be loaded.
         """
-        ## Restore sys.meta_path, as some profiles (Library) are adding something
-        sys.meta_path = copy.deepcopy(cls._old_meta_path)
-
-        cls._load_framework_profiles(selected_profile)
 
         if selected_profile in cls.REGISTERED_PROFILES:
             current_class = cls.REGISTERED_PROFILES[selected_profile]
+
             cls.current = current_class()
             cls.current.initialize_profile()
+            if not cls.env.is_development():
+                cls.current.initialize_for_deployment()
+
         else:
             raise Exception("Invalid profile %s" % selected_profile)
 
@@ -114,18 +119,17 @@ class TvbProfile():
     @classmethod
     def _load_framework_profiles(cls, new_profile):
 
-        from tvb.basic.config.settings import LibrarySettingsProfile, TestLibrarySettingsProfile
+        from tvb.basic.config.profile_settings import LibrarySettingsProfile, TestLibraryProfile
         cls.REGISTERED_PROFILES[TvbProfile.LIBRARY_PROFILE] = LibrarySettingsProfile
-        cls.REGISTERED_PROFILES[TvbProfile.TEST_LIBRARY_PROFILE] = TestLibrarySettingsProfile
+        cls.REGISTERED_PROFILES[TvbProfile.TEST_LIBRARY_PROFILE] = TestLibraryProfile
 
         if not cls.is_library_mode(new_profile):
             try:
-                from tvb.config.settings import CommandProfile, DeploymentProfile, DevelopmentProfile
-                from tvb.config.settings import TestPostgresProfile, TestSQLiteProfile
+                from tvb.config.profile_settings import CommandSettingsProfile, WebSettingsProfile
+                from tvb.config.profile_settings import TestPostgresProfile, TestSQLiteProfile
 
-                cls.REGISTERED_PROFILES[TvbProfile.COMMAND_PROFILE] = CommandProfile
-                cls.REGISTERED_PROFILES[TvbProfile.DEPLOYMENT_PROFILE] = DeploymentProfile
-                cls.REGISTERED_PROFILES[TvbProfile.DEVELOPMENT_PROFILE] = DevelopmentProfile
+                cls.REGISTERED_PROFILES[TvbProfile.COMMAND_PROFILE] = CommandSettingsProfile
+                cls.REGISTERED_PROFILES[TvbProfile.WEB_PROFILE] = WebSettingsProfile
                 cls.REGISTERED_PROFILES[TvbProfile.TEST_POSTGRES_PROFILE] = TestPostgresProfile
                 cls.REGISTERED_PROFILES[TvbProfile.TEST_SQLITE_PROFILE] = TestSQLiteProfile
 

@@ -29,18 +29,15 @@
 #
 
 """
-Basic TVB Settings are defined here, some are grouped by they
-category of usage (e.g. cluster related, web related, etc).
+TVB Raw Settings are defined here, grouped by their category of usage (e.g. cluster related, web related, etc).
+Do not instantiate these classes directly, but rather use them through TvpProfile.current instance.
 
 .. moduleauthor:: Lia Domide <lia.domide@codemart.ro>
 """
 
 import os
-import sys
 from subprocess import Popen, PIPE
 from tvb.basic.config import stored
-from tvb.basic.config.environment import Environment
-from tvb.basic.config.utils import EnhancedDictionary, LibraryModulesFinder
 
 
 
@@ -321,163 +318,3 @@ class DBSettings(object):
         self.DB_VERSIONING_REPO = os.path.join(current_storage, 'db_repo')
 
 
-
-
-class BaseSettingsProfile(object):
-
-    TVB_CONFIG_FILE = os.path.expanduser(os.path.join("~", '.tvb.configuration'))
-
-    DEFAULT_STORAGE = os.path.expanduser(os.path.join('~', 'TVB' + os.sep))
-    FIRST_RUN_STORAGE = os.path.expanduser(os.path.join('~', '.tvb-temp'))
-
-    LOGGER_CONFIG_FILE_NAME = "logger_config.conf"
-
-    # Access rights for TVB generated files/folders.
-    ACCESS_MODE_TVB_FILES = 0744
-
-    ## Number used for estimation of TVB used storage space
-    MAGIC_NUMBER = 9
-
-
-    def __init__(self, web_enabled=True):
-
-        self.manager = stored.SettingsManager(self.TVB_CONFIG_FILE)
-
-        ## Actual storage of all TVB related files
-        self.TVB_STORAGE = self.manager.get_attribute(stored.KEY_STORAGE, self.FIRST_RUN_STORAGE, unicode)
-        self.TVB_LOG_FOLDER = os.path.join(self.TVB_STORAGE, "logs")
-        self.TVB_TEMP_FOLDER = os.path.join(self.TVB_STORAGE, "TEMP")
-        self.TVB_PATH = self.manager.get_attribute(stored.KEY_TVB_PATH, '')
-        self.EXTERNALS_FOLDER_PARENT = os.path.dirname(self.BIN_FOLDER)
-
-        self.env = Environment()
-        self.cluster = ClusterSettings(self.manager)
-        self.web = WebSettings(self.manager, web_enabled)
-        self.db = DBSettings(self.manager, self.DEFAULT_STORAGE, self.TVB_STORAGE)
-        self.version = VersionSettings(self.manager, self.BIN_FOLDER)
-
-        #The path to the matlab executable (if existent). Otherwise just return an empty string.
-        value = self.manager.get_attribute(stored.KEY_MATLAB_EXECUTABLE, '', str) or ''
-        if value == 'None':
-            value = ''
-        self.MATLAB_EXECUTABLE = value
-
-        # Maximum number of vertices acceptable o be part of a surface at import time.
-        self.MAX_SURFACE_VERTICES_NUMBER = self.manager.get_attribute(stored.KEY_MAX_NR_SURFACE_VERTEX, 300000, int)
-        # Max number of ops that can be scheduled from UI in a PSE. To be correlated with the oarsub limitations
-        self.MAX_RANGE_NUMBER = self.manager.get_attribute(stored.KEY_MAX_RANGE_NR, 2000, int)
-        # Max number of threads in the pool of ops running in parallel. TO be correlated with CPU cores
-        self.MAX_THREADS_NUMBER = self.manager.get_attribute(stored.KEY_MAX_THREAD_NR, 4, int)
-        #The maximum disk space that can be used by one single user, in KB.
-        self.MAX_DISK_SPACE = self.manager.get_attribute(stored.KEY_MAX_DISK_SPACE_USR, 5 * 1024 * 1024, int)
-
-        ## Configure Traits
-        self.TRAITS_CONFIGURATION = EnhancedDictionary()
-        self.TRAITS_CONFIGURATION.interface_method_name = 'interface'
-        self.TRAITS_CONFIGURATION.use_storage = True
-
-
-    @property
-    def BIN_FOLDER(self):
-        """
-        Return path towards tvb_bin location. It will be used in some environment for determining the starting point
-        """
-        try:
-            import tvb_bin
-            return os.path.dirname(os.path.abspath(tvb_bin.__file__))
-        except ImportError:
-            return "."
-
-
-    @property
-    def PYTHON_EXE_NAME(self):
-        """
-        Returns the name of the python executable depending on the specific OS
-        """
-        if self.env.is_windows():
-            return 'python.exe'
-        else:
-            return 'python'
-
-
-    @property
-    def PYTHON_PATH(self):
-        """
-        Get Python path, based on current environment.
-        """
-        exe_name = self.PYTHON_EXE_NAME
-        if self.env.is_development():
-            python_path = 'python'
-        elif self.env.is_windows_deployment() or self.env.is_linux_deployment():
-            python_path = os.path.join(os.path.dirname(self.BIN_FOLDER), 'exe', exe_name)
-        elif self.env.is_mac_deployment():
-            root_dir = os.path.dirname(os.path.dirname(os.path.dirname(os.path.dirname(self.BIN_FOLDER))))
-            python_path = os.path.join(root_dir, 'MacOS', exe_name)
-        else:
-            python_path = 'python'
-
-        try:
-            # check if file actually exists
-            os.stat(python_path)
-            return python_path
-        except:
-            # otherwise best guess is the current interpreter!
-            return sys.executable
-
-
-    def prepare_for_operation_mode(self):
-        """
-        Overwrite PostgreSQL number of connections when executed in the context of a node.
-        """
-        self.db.MAX_CONNECTIONS = self.db.MAX_ASYNC_CONNECTIONS
-        self.cluster.IN_OPERATION_EXECUTION_PROCESS = True
-
-
-    def initialize_profile(self):
-        """
-        Make sure tvb folders are created.
-        """
-        if not os.path.exists(self.TVB_LOG_FOLDER):
-            os.makedirs(self.TVB_LOG_FOLDER)
-
-        if not os.path.exists(self.TVB_TEMP_FOLDER):
-            os.makedirs(self.TVB_TEMP_FOLDER)
-
-        if not os.path.exists(self.TVB_STORAGE):
-            os.makedirs(self.TVB_STORAGE)
-
-
-
-class LibrarySettingsProfile(BaseSettingsProfile):
-    """
-    Profile used when scientifical library is used without storage and without web UI.
-    """
-
-    TVB_STORAGE = os.path.expanduser(os.path.join("~", "TVB" + os.sep))
-    LOGGER_CONFIG_FILE_NAME = "library_logger.conf"
-
-
-    def __init__(self):
-
-        super(LibrarySettingsProfile, self).__init__(False)
-
-        ## Configure Traits
-        self.TRAITS_CONFIGURATION = EnhancedDictionary()
-        self.TRAITS_CONFIGURATION.interface_method_name = 'interface'
-        self.TRAITS_CONFIGURATION.use_storage = False
-
-
-    def initialize_profile(self):
-        """
-        Make sure some warning are thrown when trying to import from framework.
-        """
-        super(LibrarySettingsProfile, self).initialize_profile()
-        sys.meta_path.append(LibraryModulesFinder())
-
-
-class TestLibrarySettingsProfile(LibrarySettingsProfile):
-    """
-    Profile for library unit-tests.
-    """
-
-    LOGGER_CONFIG_FILE_NAME = "library_logger_test.conf"

@@ -34,7 +34,7 @@
 """
 
 import json
-from tvb.basic.config.settings import EnhancedDictionary
+from tvb.basic.config.utils import EnhancedDictionary
 
 
 
@@ -261,8 +261,9 @@ class GenericMetaData(EnhancedDictionary):
     
     def __init__(self, data=None):
         """
-        :param data: THe actual dictionary to be wrapped by current entity. 
+        :param data: The actual dictionary to be wrapped by current entity.
         """
+        super(GenericMetaData, self).__init__()
         if data is not None:
             self.update(data)
         

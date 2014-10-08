@@ -34,7 +34,7 @@ Entities to be used with an overlay on Operation or DataType, are defined here.
 """
 
 import numpy
-from tvb.basic.config.settings import EnhancedDictionary
+from tvb.basic.config.utils import EnhancedDictionary
 from tvb.core.entities import model
 from tvb.core.utils import date2string
 
