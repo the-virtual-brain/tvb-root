@@ -63,7 +63,7 @@ pars = {'a': 1.05,
 
 oscillator = models.Generic2dOscillator(**pars)
 
-white_matter = connectivity.Connectivity.default()
+white_matter = connectivity.Connectivity(load_default=True)
 white_matter.speed = numpy.array([4.0])
 white_matter_coupling = coupling.Linear(a=0.033)
 

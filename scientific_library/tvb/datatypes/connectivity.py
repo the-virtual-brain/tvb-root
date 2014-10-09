@@ -100,7 +100,3 @@ class Connectivity(connectivity_scientific.ConnectivityScientific, connectivity_
         return result
 
 
-    @classmethod
-    def default(cls):
-        return cls.from_file()
-
