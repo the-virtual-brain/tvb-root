@@ -393,9 +393,12 @@ class Cortex(surfaces_scientific.CortexScientific, surfaces_framework.CortexFram
     
     """
 
+
     @classmethod
     def from_file(cls, source_file=os.path.join("cortex_reg13", "surface_cortex_reg13.zip"),
-                  region_mapping_file=None, local_connectivity_file=None, eeg_projection_file=None, instance=None):
+                  region_mapping_file=os.path.join("cortex_reg13", "region_mapping",
+                                                   "o52r00_irp2008_hemisphere_both_subcortical_false_regions_74.txt.bz2"),
+                  local_connectivity_file=None, eeg_projection_file=None, instance=None):
 
         result = super(Cortex, cls).from_file(source_file, instance)
 
