@@ -64,7 +64,7 @@ def initialize_on_load(target, _):
     for key, attr in all_class_traits.iteritems():
         kwd = attr.trait.inits.kwd
         if (kwd.get('db', True) and (MappedType in attr.__class__.mro()) 
-            and hasattr(target, '__' + key) and getattr(target, '__' + key) is not None):
+                and hasattr(target, '__' + key) and getattr(target, '__' + key) is not None):
             ### This attribute has a relationship associated
             loaded_entity = getattr(target, '__' + key)
             loaded_entity.trait.value = loaded_entity.initialize()
@@ -85,7 +85,8 @@ def fill_before_insert(_, _ignored, target):
     if MappedType not in target.__class__.mro():
         return
 
-    # Call apply_compute
+    # enforce that the H5 file gets created
+    target.set_metadata({})
     target.configure()
         
     # Fix object references
@@ -98,8 +99,8 @@ def fill_before_insert(_, _ignored, target):
             and (hasattr(target, '_' + key) 
                  and getattr(target, '_' + key) is not None)
             and (hasattr(target, '__' + key) 
-                 and getattr(target, '__' + key) is None)
-                ):
+                 and getattr(target, '__' + key) is None)):
+
             ref_entity = getattr(target, '_' + key)
             setattr(target, key, ref_entity)
 

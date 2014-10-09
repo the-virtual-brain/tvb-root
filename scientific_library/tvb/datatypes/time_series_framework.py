@@ -44,6 +44,10 @@ import json
 import numpy
 import tvb.datatypes.time_series_data as time_series_data
 import tvb.basic.traits.exceptions as exceptions
+from tvb.basic.logger.builder import get_logger
+
+
+LOG = get_logger(__name__)
 
 
 class TimeSeriesFramework(time_series_data.TimeSeriesData):
@@ -71,7 +75,12 @@ class TimeSeriesFramework(time_series_data.TimeSeriesData):
         """
         Expose shape read on field data.
         """
-        return self.get_data_shape('data')
+        try:
+            return self.get_data_shape('data')
+        except exceptions.TVBException:
+            self.logger.exception("Could not read data shape for TS!")
+            raise exceptions.TVBException("Invalid empty TimeSeries!")
+
 
 
     def read_data_slice(self, data_slice):
