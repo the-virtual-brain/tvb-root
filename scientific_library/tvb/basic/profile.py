@@ -75,7 +75,7 @@ class TvbProfile():
 
 
     @classmethod
-    def set_profile(cls, selected_profile):
+    def set_profile(cls, selected_profile, in_operation=False):
         """
         Sets TVB profile and do related initializations.
         """
@@ -93,11 +93,11 @@ class TvbProfile():
             sys.meta_path = copy.deepcopy(cls._old_meta_path)
 
             cls._load_framework_profiles(selected_profile)
-            cls._build_profile_class(selected_profile)
+            cls._build_profile_class(selected_profile, in_operation)
 
 
     @classmethod
-    def _build_profile_class(cls, selected_profile):
+    def _build_profile_class(cls, selected_profile, in_operation=False):
         """
         :param selected_profile: Profile name to be loaded.
         """
@@ -106,6 +106,11 @@ class TvbProfile():
             current_class = cls.REGISTERED_PROFILES[selected_profile]
 
             cls.current = current_class()
+
+            if in_operation:
+                # set flags IN_OPERATION,  before initialize** calls, to avoid LoggingBuilder being created there
+                cls.current.prepare_for_operation_mode()
+
             if not cls.env.is_development():
                 # initialize deployment first, because in case of a contributor setup this tried to reload
                 # and initialize_profile loads already too many tvb modules,

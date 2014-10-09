@@ -45,8 +45,7 @@ The results of the computation will be stored by the adapter itself.
 import sys
 from tvb.basic.profile import TvbProfile
 if __name__ == '__main__':
-    TvbProfile.set_profile(sys.argv[2])
-    TvbProfile.current.prepare_for_operation_mode()
+    TvbProfile.set_profile(sys.argv[2], True)
 
 from tvb.basic.logger.builder import get_logger
 from tvb.core.adapters.abcadapter import ABCAdapter
