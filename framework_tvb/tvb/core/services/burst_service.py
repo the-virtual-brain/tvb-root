@@ -62,6 +62,7 @@ MAX_BURSTS_DISPLAYED = 50
 LAUNCH_NEW = 'new'
 LAUNCH_BRANCH = 'branch'
 
+
 class BurstService():
     """
     Service layer for Burst related entities.
@@ -551,6 +552,8 @@ class BurstService():
         ## Remove all Operations remained.
         correct = True
         remaining_op_groups = set()
+        project = dao.get_project_by_id(burst_entity.fk_project)
+
         for oper in remaining_ops:
             is_remaining = dao.get_generic_entity(oper.__class__, oper.id)
             if len(is_remaining) == 0:
@@ -562,6 +565,7 @@ class BurstService():
                     remaining_op_groups.add(oper.fk_operation_group)
                     correct = correct and dao.remove_entity(model.OperationGroup, oper.fk_operation_group)
             correct = correct and dao.remove_entity(oper.__class__, oper.id)
+            service.structure_helper.remove_operation_data(project.name, oper.id)
          
         if not correct:
             raise RemoveDataTypeException("Could not remove Burst because a linked operation could not be dropped!!")

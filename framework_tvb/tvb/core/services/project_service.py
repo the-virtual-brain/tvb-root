@@ -649,6 +649,7 @@ class ProjectService:
         """
         datatype = dao.get_datatype_by_gid(datatype_gid)
         if datatype is None:
+            self.logger.warning("Attempt to delete DT[%s] which no longer exists." % datatype_gid)
             return
         user = dao.get_user_for_datatype(datatype.id)
         freed_space = datatype.disk_size or 0

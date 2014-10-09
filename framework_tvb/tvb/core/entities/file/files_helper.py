@@ -236,9 +236,10 @@ class FilesHelper():
         """
         try:
             complete_path = self.get_operation_folder(project_name, operation_id)
+            self.logger.debug("Removing: " + str(complete_path))
             if os.path.isdir(complete_path):
                 shutil.rmtree(complete_path)
-            else:
+            elif os.path.exists(complete_path):
                 os.remove(complete_path)
         except Exception, excep:
             self.logger.error(excep)

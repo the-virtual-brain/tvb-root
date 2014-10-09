@@ -104,7 +104,7 @@ class DataType(Base):
     # ID of a burst in which current dataType was generated
     # Native burst-results are referenced from a workflowSet as well
     # But we also have results generated afterwards from TreeBurst tab.
-    fk_parent_burst = Column(Integer, ForeignKey('BURST_CONFIGURATIONS.id', ondelete="CASCADE"))
+    fk_parent_burst = Column(Integer, ForeignKey('BURST_CONFIGURATIONS.id', ondelete="SET NULL"))
     _parent_burst = relationship(BurstConfiguration)
 
     #it should be a reference to a DataTypeGroup, but we can not create that FK
