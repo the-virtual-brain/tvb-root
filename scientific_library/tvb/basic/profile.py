@@ -106,9 +106,12 @@ class TvbProfile():
             current_class = cls.REGISTERED_PROFILES[selected_profile]
 
             cls.current = current_class()
-            cls.current.initialize_profile()
             if not cls.env.is_development():
+                # initialize deployment first, because in case of a contributor setup this tried to reload
+                # and initialize_profile loads already too many tvb modules,
+                # making the reload difficult and prone to more failures
                 cls.current.initialize_for_deployment()
+            cls.current.initialize_profile()
 
         else:
             raise Exception("Invalid profile %s" % selected_profile)

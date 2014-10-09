@@ -206,7 +206,8 @@ class BaseSettingsProfile(object):
             # 'python -m ...' will consider the current folder as the first to search in.
             sys.path = os.environ.get("PYTHONPATH", "").split(os.pathsep) + sys.path
             for key in sys.modules.keys():
-                if key.startswith("tvb") and sys.modules[key] and not key.startswith("tvb.basic.profile"):
+                if (key.startswith("tvb") and sys.modules[key] and
+                        not key.startswith("tvb.basic.profile") and not 'profile_settings' in key):
                     try:
                         reload(sys.modules[key])
                     except LibraryImportError:
