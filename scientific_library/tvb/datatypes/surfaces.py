@@ -95,14 +95,6 @@ class Surface(surfaces_scientific.SurfaceScientific, surfaces_framework.SurfaceF
         return result
 
 
-    @classmethod
-    def default(cls):
-        """
-        Construct a Surface from the default cortex surface
-        """
-        return cls.from_file()
-
-
     def configure(self):
         """
         Make sure both Scientific and Framework configure methods are called.
@@ -402,13 +394,30 @@ class Cortex(surfaces_scientific.CortexScientific, surfaces_framework.CortexFram
     """
 
     @classmethod
-    def from_file(cls, source_file=os.path.join("cortex_reg13", "surface_cortex_reg13.zip"), instance=None):
+    def from_file(cls, source_file=os.path.join("cortex_reg13", "surface_cortex_reg13.zip"),
+                  region_mapping_file=None, local_connectivity_file=None, eeg_projection_file=None, instance=None):
 
         result = super(Cortex, cls).from_file(source_file, instance)
 
-        result.region_mapping_data = RegionMapping.from_file()
-        result.eeg_projection = Cortex.from_file_projection_array()
-        #result.meg_projection = Cortex.from_file_projection_array()
+        if instance is not None:
+            # Called through constructor directly
+            if result.region_mapping is None:
+                result.region_mapping_data = RegionMapping.from_file()
+
+            if result.eeg_projection is None:
+                result.eeg_projection = Cortex.from_file_projection_array()
+
+            if result.local_connectivity is None:
+                result.local_connectivity = LocalConnectivity.from_file()
+
+        if region_mapping_file is not None:
+            result.region_mapping_data = RegionMapping.from_file(region_mapping_file)
+
+        if local_connectivity_file is not None:
+            result.local_connectivity = LocalConnectivity.from_file(local_connectivity_file)
+
+        if eeg_projection_file is not None:
+            result.eeg_projection = Cortex.from_file_projection_array(eeg_projection_file)
 
         return result
 
