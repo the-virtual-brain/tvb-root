@@ -51,15 +51,6 @@ class WebSettingsProfile(BaseSettingsProfile):
     LOGGER_CONFIG_FILE_NAME = "logger_config.conf"
 
 
-    def __init__(self):
-        super(WebSettingsProfile, self).__init__()
-
-        ## Configure Traits
-        self.TRAITS_CONFIGURATION = EnhancedDictionary()
-        self.TRAITS_CONFIGURATION.interface_method_name = 'interface'
-        self.TRAITS_CONFIGURATION.use_storage = False
-
-
     def initialize_profile(self, change_logger_in_dev=True):
         """
         Specific initialization when functioning with storage

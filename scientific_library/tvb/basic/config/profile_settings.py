@@ -48,7 +48,7 @@ class BaseSettingsProfile(object):
     DEFAULT_STORAGE = os.path.expanduser(os.path.join('~', 'TVB' + os.sep))
     FIRST_RUN_STORAGE = os.path.expanduser(os.path.join('~', '.tvb-temp'))
 
-    LOGGER_CONFIG_FILE_NAME = "library_logger.conf"
+    LOGGER_CONFIG_FILE_NAME = "logger_config.conf"
 
     # Access rights for TVB generated files/folders.
     ACCESS_MODE_TVB_FILES = 0744
@@ -92,7 +92,7 @@ class BaseSettingsProfile(object):
         ## Configure Traits
         self.TRAITS_CONFIGURATION = EnhancedDictionary()
         self.TRAITS_CONFIGURATION.interface_method_name = 'interface'
-        self.TRAITS_CONFIGURATION.use_storage = False
+        self.TRAITS_CONFIGURATION.use_storage = True
 
 
     @property
@@ -223,6 +223,16 @@ class LibrarySettingsProfile(BaseSettingsProfile):
 
     TVB_STORAGE = os.path.expanduser(os.path.join("~", "TVB" + os.sep))
     LOGGER_CONFIG_FILE_NAME = "library_logger.conf"
+
+
+    def __init__(self):
+
+        super(LibrarySettingsProfile, self).__init__(False)
+
+        ## Configure Traits
+        self.TRAITS_CONFIGURATION = EnhancedDictionary()
+        self.TRAITS_CONFIGURATION.interface_method_name = 'interface'
+        self.TRAITS_CONFIGURATION.use_storage = False
 
 
     def initialize_profile(self):
