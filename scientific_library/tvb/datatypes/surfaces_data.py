@@ -330,22 +330,18 @@ class LocalConnectivityData(MappedType):
         self.matrix = homogenious_conn
 
 
-    def validate(self, ignore_list=None):
+    def _validate_before_store(self):
         """
-        This method checks if the data stored into this entity is valid, and 
-        ready to be stored in DB.
-        Method automatically called just before saving entity in DB.
-        In case data is not valid an Exception should be thrown.
-        :param ignore_list: list of strings representing names of the attributes
-                            to not be validated.
+        Overrides MappedType._validate_before_store to use a custom error for missing matrix.
         """
-        super(LocalConnectivityData, self).validate(ignore_list=["matrix"])
-
         # Sparse Matrix is required so we should check if there is any data stored for it
         if self.matrix is None:
             msg = ("LocalConnectivity can not be stored because it "
                    "has no SparseMatrix attached.")
             raise exceptions.ValidationException(msg)
+
+        super(LocalConnectivityData, self)._validate_before_store()
+
 
 
 

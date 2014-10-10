@@ -144,20 +144,14 @@ class MappedType(model.DataType, mapped.MappedTypeLight):
         return self
 
 
-    def validate(self, ignore_list=None):
+    def _validate_before_store(self):
         """
         This method checks if the data stored into this entity is valid, 
         and ready to be stored in DB.
-        Method automatically called just before saving entity in DB.
+        Method automatically called just before saving entity in DB after Type.configure was called.
         In case data is not valid an Exception should be thrown.
-        :param ignore_list: list of strings representing names of the attributes to not be 
-                            validated.   
         """
         for key, attr in self.trait.iteritems():
-            # Skip attribute
-            if ignore_list is not None and key in ignore_list:
-                break
-
             if attr.trait.required:
                 # In case of fields with data stored on disk check shape
                 if isinstance(attr, mapped.Array):

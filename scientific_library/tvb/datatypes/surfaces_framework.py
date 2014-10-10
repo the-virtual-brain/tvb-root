@@ -241,7 +241,15 @@ class SurfaceFramework(surfaces_data.SurfaceData):
             LOG.warning("Ignored triangles from multiple hemispheres: " + str(ignored_triangles_counter))
         LOG.debug("End compute surface split triangles and vertices " + str(self.split_slices))
        
-       
+
+    def validate(self):
+        # First check if the surface has a valid number of vertices
+        if self.number_of_vertices > TvbProfile.current.MAX_SURFACE_VERTICES_NUMBER:
+            msg = "This surface has too many vertices (max: %d)." % TvbProfile.current.MAX_SURFACE_VERTICES_NUMBER
+            msg += " Please upload a new surface or change max number in application settings."
+            raise exceptions.ValidationException(msg)
+
+
     def get_urls_for_rendering(self, include_alphas=False, region_mapping=None): 
         """
         Compose URLs for the JS code to retrieve a surface from the UI for rendering.
@@ -532,18 +540,7 @@ class SkullSkinFramework(surfaces_data.SkullSkinData, SurfaceFramework):
 
 class OpenSurfaceFramework(surfaces_data.OpenSurfaceData, SurfaceFramework):
     """ This class exists to add framework methods to OpenSurfaceData """
-    
-    def validate(self):
-        """
-        This method checks if the data stored into this entity is valid, and is ready to be stored in DB.
-        Method automatically called just before saving entity in DB.
-        In case data is not valid a ValidationException is thrown.
-        """
-        # Check if the surface has a valid number of vertices (not more than the configured maximum).
-        if self.number_of_vertices > TvbProfile.current.MAX_SURFACE_VERTICES_NUMBER:
-            msg = "This surface has too many vertices (max: %d)." % TvbProfile.current.MAX_SURFACE_VERTICES_NUMBER
-            msg += " Please upload a new surface or change max number in application settings."
-            raise exceptions.ValidationException(msg)
+
 
 
 class EEGCapFramework(surfaces_data.EEGCapData, OpenSurfaceFramework):

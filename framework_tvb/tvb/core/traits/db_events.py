@@ -105,7 +105,7 @@ def fill_before_insert(_, _ignored, target):
             setattr(target, key, ref_entity)
 
     # Validate if the object can be stored
-    target.validate()
+    target._validate_before_store()
 
     # Fix String attributes                
     # This HAVE to be executed LAST because any get() for Json attribute will 

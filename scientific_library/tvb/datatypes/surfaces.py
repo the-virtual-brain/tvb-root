@@ -105,25 +105,10 @@ class Surface(surfaces_scientific.SurfaceScientific, surfaces_framework.SurfaceF
 
     def validate(self):
         """
-        This method checks if the data stored into this entity is valid, and ready to be stored in DB.
-        Method automatically called just before saving entity in DB.
-        In case data is not valid an Exception should be thrown.
-        We implement this method here, because the "check" method is in scientific class.
+        Combines scientific and framework surface validations.
         """
-        super(Surface, self).validate()
-
-        # First check if the surface has a valid number of vertices
-        if self.number_of_vertices > TvbProfile.current.MAX_SURFACE_VERTICES_NUMBER:
-            msg = "This surface has too many vertices (max: %d)." % TvbProfile.current.MAX_SURFACE_VERTICES_NUMBER
-            msg += " Please upload a new surface or change max number in application settings."
-            raise exceptions.ValidationException(msg)
-
-        # Now check if the surface is compatible with TVB
-        is_good, error_message = self.check()
-        if not is_good:
-            msg = "Could not import surface because it's not compatible with TVB. %s" \
-                  "Please correct the problem and upload again." % error_message
-            raise exceptions.ValidationException(msg)
+        surfaces_scientific.SurfaceScientific.validate(self)
+        surfaces_framework.SurfaceFramework.validate(self)
 
 
 

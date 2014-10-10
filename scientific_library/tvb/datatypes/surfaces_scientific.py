@@ -40,9 +40,9 @@ Scientific methods for the Surfaces datatype.
 """
 
 import numpy
-import scipy.sparse as sparse
-import tvb.datatypes.surfaces_data as surfaces_data
-import tvb.basic.traits.util as util
+from scipy import sparse
+from tvb.datatypes import surfaces_data
+from tvb.basic.traits import util, exceptions
 from tvb.basic.logger.builder import get_logger
 import collections
 
@@ -87,9 +87,6 @@ class SurfaceScientific(surfaces_data.SurfaceData):
         """
         super(SurfaceScientific, self).configure()
 
-        # do a basic surface validation before attempting the expensive normal computation.
-        self.check()
-
         self.number_of_vertices = self.vertices.shape[0]
         self.number_of_triangles = self.triangles.shape[0]
 
@@ -102,9 +99,6 @@ class SurfaceScientific(surfaces_data.SurfaceData):
             LOG.debug("Vertex normals not available. Start to compute them.")
             self.compute_vertex_normals()
             LOG.debug("End computing vertex normals")
-
-        # Set this flag if the surface may be used in simulations.
-        self.valid_for_simulations, self.user_tag_3 = self.has_valid_topology_for_simulations()
 
 
     def _find_summary_info(self):
@@ -560,17 +554,9 @@ class SurfaceScientific(surfaces_data.SurfaceData):
         return error_summary == [], ' '.join(error_summary)
 
 
-    def check(self):
-        """
-        Check basic surface validity.
-        """
-        msg = ""
-
+    def validate(self):
         if self.triangles.max() >= self.number_of_vertices:
-            msg = "There are triangles that index nonexistent vertices."
-            LOG.error(msg)
-
-        return msg == "", msg
+            raise exceptions.ValidationException("There are triangles that index nonexistent vertices.")
 
 
     def compute_equation(self, focal_points, equation):
