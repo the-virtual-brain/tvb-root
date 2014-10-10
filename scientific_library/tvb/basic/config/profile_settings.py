@@ -92,7 +92,7 @@ class BaseSettingsProfile(object):
         ## Configure Traits
         self.TRAITS_CONFIGURATION = EnhancedDictionary()
         self.TRAITS_CONFIGURATION.interface_method_name = 'interface'
-        self.TRAITS_CONFIGURATION.use_storage = True
+        self.TRAITS_CONFIGURATION.use_storage = False
 
 
     @property
@@ -223,16 +223,6 @@ class LibrarySettingsProfile(BaseSettingsProfile):
 
     TVB_STORAGE = os.path.expanduser(os.path.join("~", "TVB" + os.sep))
     LOGGER_CONFIG_FILE_NAME = "library_logger.conf"
-
-
-    def __init__(self):
-
-        super(LibrarySettingsProfile, self).__init__(False)
-
-        ## Configure Traits
-        self.TRAITS_CONFIGURATION = EnhancedDictionary()
-        self.TRAITS_CONFIGURATION.interface_method_name = 'interface'
-        self.TRAITS_CONFIGURATION.use_storage = False
 
 
     def initialize_profile(self):

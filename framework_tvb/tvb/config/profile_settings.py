@@ -38,6 +38,7 @@ import os
 import sys
 from tvb.basic.config import stored
 from tvb.basic.config.settings import DBSettings
+from tvb.basic.config.utils import EnhancedDictionary
 from tvb.basic.config.profile_settings import BaseSettingsProfile
 
 
@@ -47,6 +48,16 @@ class WebSettingsProfile(BaseSettingsProfile):
     """
     Setting for working with storage and web interface
     """
+    LOGGER_CONFIG_FILE_NAME = "logger_config.conf"
+
+
+    def __init__(self):
+        super(WebSettingsProfile, self).__init__()
+
+        ## Configure Traits
+        self.TRAITS_CONFIGURATION = EnhancedDictionary()
+        self.TRAITS_CONFIGURATION.interface_method_name = 'interface'
+        self.TRAITS_CONFIGURATION.use_storage = False
 
 
     def initialize_profile(self, change_logger_in_dev=True):
