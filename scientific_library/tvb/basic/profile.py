@@ -154,10 +154,6 @@ class TvbProfile():
                   or (new_profile is None and TvbProfile.CURRENT_PROFILE_NAME is None)
                   or not TvbProfile.env.is_framework_present())
 
-        # Make sure we are having a profile set, or else we might end up with not desired defaults
-        if new_profile is None and TvbProfile.CURRENT_PROFILE_NAME is None:
-            TvbProfile.set_profile(TvbProfile.LIBRARY_PROFILE)
-
         return result
 
 

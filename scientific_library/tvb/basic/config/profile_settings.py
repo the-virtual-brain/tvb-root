@@ -48,7 +48,7 @@ class BaseSettingsProfile(object):
     DEFAULT_STORAGE = os.path.expanduser(os.path.join('~', 'TVB' + os.sep))
     FIRST_RUN_STORAGE = os.path.expanduser(os.path.join('~', '.tvb-temp'))
 
-    LOGGER_CONFIG_FILE_NAME = "logger_config.conf"
+    LOGGER_CONFIG_FILE_NAME = "library_logger.conf"
 
     # Access rights for TVB generated files/folders.
     ACCESS_MODE_TVB_FILES = 0744
