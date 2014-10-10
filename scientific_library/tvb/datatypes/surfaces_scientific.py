@@ -485,17 +485,10 @@ class SurfaceScientific(surfaces_data.SurfaceData):
 
 
     def _find_edge_triangles(self):
-        """
-        .
-        """
-        triangles = [[] for _ in xrange(self.number_of_edges)]
+        triangles = [None] * self.number_of_edges
         for k in xrange(self.number_of_edges):
-            tris = set.intersection(set(self.vertex_triangles[self.edges[k][0]]),
-                                    set(self.vertex_triangles[self.edges[k][1]]))
-            triangles[k] = tris
-
-        triangles = map(frozenset, triangles)
-
+            triangles[k] = (frozenset(self.vertex_triangles[self.edges[k][0]]) &
+                            frozenset(self.vertex_triangles[self.edges[k][1]]) )
         return triangles
 
 
