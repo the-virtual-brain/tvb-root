@@ -319,11 +319,13 @@ class SurfaceFramework(surfaces_data.SurfaceData):
 
 
     def _find_slice(self, triangle):
+        split_slices = self.split_slices  # because of performance: 1.5 times slower without this
         mn = min(triangle)
         mx = max(triangle)
         for i in xrange(self.number_of_split_slices):
-            slice_start = self.split_slices[i][KEY_VERTICES][KEY_START]
-            if slice_start <= mn and mx < self.split_slices[i][KEY_VERTICES][KEY_END]:
+            v = split_slices[i][KEY_VERTICES]   # extracted for performance
+            slice_start = v[KEY_START]
+            if slice_start <= mn and mx < v[KEY_END]:
                 return i, [triangle[j] - slice_start for j in range(3)]
         return None, triangle
 
