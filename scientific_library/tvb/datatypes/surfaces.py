@@ -107,8 +107,13 @@ class Surface(surfaces_scientific.SurfaceScientific, surfaces_framework.SurfaceF
         """
         Combines scientific and framework surface validations.
         """
-        surfaces_scientific.SurfaceScientific.validate(self)
-        surfaces_framework.SurfaceFramework.validate(self)
+        result_sci = surfaces_scientific.SurfaceScientific.validate(self)
+        result_fr = surfaces_framework.SurfaceFramework.validate(self)
+
+        validation_result = result_sci.merge(result_fr)
+
+        self.user_tag_3 = validation_result.summary()
+        return validation_result
 
 
 

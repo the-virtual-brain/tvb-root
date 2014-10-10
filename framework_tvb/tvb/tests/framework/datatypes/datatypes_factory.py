@@ -293,6 +293,7 @@ class DatatypesFactory():
         surface.triangle_normals = numpy.ones((4, 3))
         surface.vertex_normals = numpy.ones((4, 3))
         surface.zero_based_triangles = True
+        surface.validate()
         adapter_instance = StoreAdapter([surface])
         OperationService().initiate_prelaunch(operation, adapter_instance, {})
         return algo_id, surface

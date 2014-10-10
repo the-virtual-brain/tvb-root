@@ -45,6 +45,7 @@ from tvb.datatypes import surfaces_data
 from tvb.basic.traits import util, exceptions
 from tvb.basic.logger.builder import get_logger
 import collections
+from tvb.datatypes.surfaces_data import ValidationResult
 
 
 LOG = get_logger(__name__)
@@ -516,7 +517,7 @@ class SurfaceScientific(surfaces_data.SurfaceData):
         return euler, isolated[0], pinched_off[0], holes[0]
 
 
-    def has_valid_topology_for_simulations(self):
+    def validate_topology_for_simulations(self):
         """
         Validates if this surface can be used in simulations.
         The surface should be topologically equivalent to one or two closed spheres.
@@ -526,37 +527,41 @@ class SurfaceScientific(surfaces_data.SurfaceData):
         should be represented by a single closed surface and we typically
         represent the cortex as one closed surface per hemisphere.
 
-        :return: (is_valid, error_summary_string)
+        :return: a ValidationResult
         """
-        error_summary = []
-
-        def report_error(msg, msg_detail):
-            error_summary.append(msg)
-            LOG.warn(msg)
-            LOG.debug(msg_detail)
+        r = ValidationResult()
 
         euler, isolated, pinched_off, holes = self.compute_topological_constants()
 
         # The Euler characteristic for a 2D sphere embedded in a 3D space is 2.
         # This should be 2 or 4 -- meaning one or two closed topologically spherical surfaces
         if euler not in (2, 4):
-            report_error("Topologically not 1 or 2 spheres.", "Euler characteristic: " + str(euler))
+            r.add_warning("Topologically not 1 or 2 spheres.", "Euler characteristic: " + str(euler))
 
         if len(isolated):
-            report_error("Has isolated vertices.", "Offending indices: \n" + str(isolated) )
+            r.add_warning("Has isolated vertices.", "Offending indices: \n" + str(isolated) )
 
         if len(pinched_off):
-            report_error("Surface is pinched off.", "These are edges with more than 2 triangles: \n" + str(pinched_off))
+            r.add_warning("Surface is pinched off.", "These are edges with more than 2 triangles: \n" + str(pinched_off))
 
         if len(holes):
-            report_error("Has holes.", "Free boundaries: \n" + str(holes))
+            r.add_warning("Has holes.", "Free boundaries: \n" + str(holes))
 
-        return error_summary == [], ' '.join(error_summary)
+        return r
 
 
     def validate(self):
+        self.number_of_vertices = self.vertices.shape[0]
+        self.number_of_triangles = self.triangles.shape[0]
+
         if self.triangles.max() >= self.number_of_vertices:
             raise exceptions.ValidationException("There are triangles that index nonexistent vertices.")
+
+        validation_result = self.validate_topology_for_simulations()
+
+        self.valid_for_simulations = len(validation_result.warnings) == 0
+
+        return validation_result
 
 
     def compute_equation(self, focal_points, equation):

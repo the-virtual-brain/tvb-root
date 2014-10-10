@@ -244,10 +244,14 @@ class SurfaceFramework(surfaces_data.SurfaceData):
 
     def validate(self):
         # First check if the surface has a valid number of vertices
+        self.number_of_vertices = self.vertices.shape[0]
+        self.number_of_triangles = self.triangles.shape[0]
+
         if self.number_of_vertices > TvbProfile.current.MAX_SURFACE_VERTICES_NUMBER:
             msg = "This surface has too many vertices (max: %d)." % TvbProfile.current.MAX_SURFACE_VERTICES_NUMBER
             msg += " Please upload a new surface or change max number in application settings."
             raise exceptions.ValidationException(msg)
+        return surfaces_data.ValidationResult()
 
 
     def get_urls_for_rendering(self, include_alphas=False, region_mapping=None): 

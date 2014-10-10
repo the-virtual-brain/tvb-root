@@ -440,4 +440,26 @@ class CortexData(CorticalSurfaceData):
         return self.region_mapping_data.array_data
 
 
+class ValidationResult(object):
+    """
+    Used by surface validate methods to report non-fatal failed validations
+    """
+    def __init__(self):
+        self.warnings = []
 
+    def add_warning(self, msg, data):
+        self.warnings.append((msg, data))
+        self._log(msg, data)
+
+    def _log(self, msg, data):
+        LOG.warn(msg)
+        if data:
+            LOG.debug(data)
+
+    def merge(self, other):
+        r = ValidationResult()
+        r.warnings = self.warnings + other.warnings
+        return r
+
+    def summary(self):
+        return '\n'.join(msg for msg, _ in self.warnings)
