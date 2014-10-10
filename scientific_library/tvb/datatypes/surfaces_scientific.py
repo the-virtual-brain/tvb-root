@@ -232,14 +232,14 @@ class SurfaceScientific(surfaces_data.SurfaceData):
 
 
     def _find_vertex_triangles(self):
-        """
-        .
-        """
-        triangles = [[] for _ in xrange(self.number_of_vertices)]
+        # self.attr calls __get__@type_mapped which is performance sensitive here
+        triangles = self.triangles
+
+        vertex_triangles = [[] for _ in xrange(self.number_of_vertices)]
         for k in xrange(self.number_of_triangles):
-            triangles[self.triangles[k, 0]].append(k)
-            triangles[self.triangles[k, 1]].append(k)
-            triangles[self.triangles[k, 2]].append(k)
+            vertex_triangles[triangles[k, 0]].append(k)
+            vertex_triangles[triangles[k, 1]].append(k)
+            vertex_triangles[triangles[k, 2]].append(k)
 
         triangles = map(frozenset, triangles)
 
@@ -372,19 +372,21 @@ class SurfaceScientific(surfaces_data.SurfaceData):
         Calculates the inner angles of all the triangles which make up a surface
         """
         verts = self.vertices
+        triangles = self.triangles
         # TODO: Should be possible with arrays, ie not nested loops...
         # A short profile indicates this function takes 95% of the time to compute normals
         # (this was a direct translation of some old matlab code)
         angles = numpy.zeros((self.number_of_triangles, 3))
         for tt in xrange(self.number_of_triangles):
-            triangle = self.triangles[tt, :]
+            triangle = triangles[tt, :]
             for ta in xrange(3):
                 ang = numpy.roll(triangle, -ta)
+                la = verts[ang[1], :] - verts[ang[0], :]
+                lb = verts[ang[2], :] - verts[ang[0], :]
+
                 angles[tt, ta] = numpy.arccos(numpy.dot(
-                    (verts[ang[1], :] - verts[ang[0], :]) /
-                    numpy.sqrt(numpy.sum((verts[ang[1], :] - verts[ang[0], :]) ** 2, axis=0)),
-                    (verts[ang[2], :] - verts[ang[0], :]) /
-                    numpy.sqrt(numpy.sum((verts[ang[2], :] - verts[ang[0], :]) ** 2, axis=0))))
+                    la / numpy.sqrt(numpy.sum(la ** 2, axis=0)),   # almost certainly same as numpy.sqrt(numpy.dot(la, la))
+                    lb / numpy.sqrt(numpy.sum(lb ** 2, axis=0))))
 
         util.log_debug_array(LOG, angles, "triangle_angles", owner=self.__class__.__name__)
         return angles
