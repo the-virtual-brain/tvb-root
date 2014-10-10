@@ -37,6 +37,7 @@ from tvb.adapters.uploaders.abcuploader import ABCUploader
 from tvb.adapters.uploaders.gifti.parser import GIFTIParser, OPTION_READ_METADATA
 from tvb.basic.logger.builder import get_logger
 from tvb.core.adapters.exceptions import LaunchException, ParseException
+from tvb.core.entities.storage import dao
 from tvb.datatypes.surfaces import Surface, ALL_SURFACES_SELECTION
 
 
@@ -85,6 +86,10 @@ class GIFTISurfaceImporter(ABCUploader):
         try:
             surface = parser.parse(data_file, data_file_part2, file_type, should_center=should_center)
             validation_result = surface.validate()
+
+            if validation_result.warnings:
+                current_op = dao.get_operation_by_id(self.operation_id)
+                current_op.additional_info = validation_result.summary()
 
             return [surface]             
         except ParseException, excep:

@@ -35,7 +35,7 @@
 from tvb.adapters.uploaders.abcuploader import ABCUploader
 from tvb.adapters.uploaders.obj.surface import ObjSurface
 from tvb.core.adapters.exceptions import ParseException, LaunchException
-from tvb.core.entities.storage import transactional
+from tvb.core.entities.storage import transactional, dao
 from tvb.datatypes.surfaces import ALL_SURFACES_SELECTION, FACE, Surface, make_surface, center_vertices
 
 
@@ -100,9 +100,13 @@ class ObjSurfaceImporter(ABCUploader):
                 self.log.warning("OBJ came without normals. We will try to compute them...")
 
             validation_result = surface.validate()
-            # show warnings in ui
+
+            if validation_result.warnings:
+                current_op = dao.get_operation_by_id(self.operation_id)
+                current_op.additional_info = validation_result.summary()
 
             return [surface]
+
         except ParseException, excep:
             self.log.exception(excep)
             raise LaunchException(excep)

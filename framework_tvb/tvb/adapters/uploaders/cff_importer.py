@@ -176,6 +176,13 @@ class CFF_Importer(ABCUploader):
                 self.logger.info("We will import surface %s as type %s" % (c_surface.src, surface_type))
                 surface = parser.parse(gifti_file_1, gifti_file_2, surface_type, should_center)
                 surface.user_tag_1 = surface_name
+
+                validation_result = surface.validate()
+
+                if validation_result.warnings:
+                    current_op = dao.get_operation_by_id(self.operation_id)
+                    current_op.additional_info = validation_result.summary()
+
                 surfaces.append(surface)
 
                 if pair_surface:

@@ -38,6 +38,7 @@ from tvb.adapters.uploaders.abcuploader import ABCUploader
 from tvb.adapters.uploaders.zip_surface.parser import ZipSurfaceParser
 from tvb.basic.logger.builder import get_logger
 from tvb.core.adapters.exceptions import LaunchException
+from tvb.core.entities.storage import dao
 from tvb.datatypes.surfaces import ALL_SURFACES_SELECTION, Surface, make_surface, center_vertices
 
 
@@ -144,6 +145,10 @@ class ZIPSurfaceImporter(ABCUploader):
                 raise LaunchException("Your triangles contain an invalid vertex index: %d." % triangles_max_vertex)
 
         validation_result = surface.validate()
+
+        if validation_result.warnings:
+            current_op = dao.get_operation_by_id(self.operation_id)
+            current_op.additional_info = validation_result.summary()
 
         self.logger.debug("Surface ready to be stored")
         return surface
