@@ -154,7 +154,8 @@ class TvbProfile():
                   or not TvbProfile.env.is_framework_present())
 
         # Make sure default settings are not failing because we are not finding some modules
-        if new_profile is None and not TvbProfile.env.is_framework_present():
+        if (new_profile is None and TvbProfile.CURRENT_PROFILE_NAME is None and
+                not TvbProfile.env.is_framework_present()):
             TvbProfile.set_profile(TvbProfile.LIBRARY_PROFILE)
 
         return result
