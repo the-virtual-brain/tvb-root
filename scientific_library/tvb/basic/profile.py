@@ -106,6 +106,7 @@ class TvbProfile():
             current_class = cls.REGISTERED_PROFILES[selected_profile]
 
             cls.current = current_class()
+            cls.CURRENT_PROFILE_NAME = selected_profile
 
             if in_operation:
                 # set flags IN_OPERATION,  before initialize** calls, to avoid LoggingBuilder being created there
@@ -121,7 +122,6 @@ class TvbProfile():
         else:
             raise Exception("Invalid profile %s" % selected_profile)
 
-        cls.CURRENT_PROFILE_NAME = selected_profile
 
 
     @classmethod
