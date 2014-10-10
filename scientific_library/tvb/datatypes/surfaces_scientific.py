@@ -241,9 +241,9 @@ class SurfaceScientific(surfaces_data.SurfaceData):
             vertex_triangles[triangles[k, 1]].append(k)
             vertex_triangles[triangles[k, 2]].append(k)
 
-        triangles = map(frozenset, triangles)
+        vertex_triangles = map(frozenset, vertex_triangles)
 
-        return triangles
+        return vertex_triangles
 
 
     def nth_ring(self, vertex, neighbourhood=2, contains=False):
@@ -379,14 +379,16 @@ class SurfaceScientific(surfaces_data.SurfaceData):
         angles = numpy.zeros((self.number_of_triangles, 3))
         for tt in xrange(self.number_of_triangles):
             triangle = triangles[tt, :]
-            for ta in xrange(3):
+            for ta in xrange(2):
                 ang = numpy.roll(triangle, -ta)
                 la = verts[ang[1], :] - verts[ang[0], :]
                 lb = verts[ang[2], :] - verts[ang[0], :]
 
                 angles[tt, ta] = numpy.arccos(numpy.dot(
-                    la / numpy.sqrt(numpy.sum(la ** 2, axis=0)),   # almost certainly same as numpy.sqrt(numpy.dot(la, la))
-                    lb / numpy.sqrt(numpy.sum(lb ** 2, axis=0))))
+                    la / numpy.sqrt(numpy.dot(la, la)),
+                    lb / numpy.sqrt(numpy.dot(lb, lb))))
+
+            angles[tt, 2] = 2 * numpy.pi - angles[tt, 0] - angles[tt, 1]
 
         util.log_debug_array(LOG, angles, "triangle_angles", owner=self.__class__.__name__)
         return angles
