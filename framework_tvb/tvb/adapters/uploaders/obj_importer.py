@@ -98,6 +98,10 @@ class ObjSurfaceImporter(ABCUploader):
                 surface.vertex_normals = obj.normals
             else:
                 self.log.warning("OBJ came without normals. We will try to compute them...")
+
+            validation_result = surface.validate()
+            # show warnings in ui
+
             return [surface]
         except ParseException, excep:
             self.log.exception(excep)

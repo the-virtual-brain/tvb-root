@@ -84,6 +84,8 @@ class GIFTISurfaceImporter(ABCUploader):
         parser = GIFTIParser(self.storage_path, self.operation_id)
         try:
             surface = parser.parse(data_file, data_file_part2, file_type, should_center=should_center)
+            validation_result = surface.validate()
+
             return [surface]             
         except ParseException, excep:
             logger = get_logger(__name__)

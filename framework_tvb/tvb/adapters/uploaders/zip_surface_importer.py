@@ -143,5 +143,7 @@ class ZIPSurfaceImporter(ABCUploader):
             else:
                 raise LaunchException("Your triangles contain an invalid vertex index: %d." % triangles_max_vertex)
 
+        validation_result = surface.validate()
+
         self.logger.debug("Surface ready to be stored")
         return surface
