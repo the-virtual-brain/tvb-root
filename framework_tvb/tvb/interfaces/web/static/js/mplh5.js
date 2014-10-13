@@ -146,7 +146,11 @@ function connect_manager(server_url, id) {
                                     } catch (err) {
                                         displayMessage(err, "errorMessage");
                                     }
-                              }
+                              };
+    canvas_socket[id].onerror = function(e) {
+                                    closeBlockerOverlay();
+                                    displayMessage(e, "errorMessage");
+                                }
 }
 
 function waitOnConnection(id, commandStr, timeIncrements, maximumAttempts) {

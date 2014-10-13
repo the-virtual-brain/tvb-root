@@ -75,7 +75,7 @@ class TvbProfile():
 
 
     @classmethod
-    def set_profile(cls, selected_profile, in_operation=False):
+    def set_profile(cls, selected_profile, in_operation=False, run_init=True):
         """
         Sets TVB profile and do related initializations.
         """
@@ -93,11 +93,11 @@ class TvbProfile():
             sys.meta_path = copy.deepcopy(cls._old_meta_path)
 
             cls._load_framework_profiles(selected_profile)
-            cls._build_profile_class(selected_profile, in_operation)
+            cls._build_profile_class(selected_profile, in_operation, run_init)
 
 
     @classmethod
-    def _build_profile_class(cls, selected_profile, in_operation=False):
+    def _build_profile_class(cls, selected_profile, in_operation=False, run_init=True):
         """
         :param selected_profile: Profile name to be loaded.
         """
@@ -117,7 +117,8 @@ class TvbProfile():
                 # and initialize_profile loads already too many tvb modules,
                 # making the reload difficult and prone to more failures
                 cls.current.initialize_for_deployment()
-            cls.current.initialize_profile()
+            if run_init:
+                cls.current.initialize_profile()
 
         else:
             raise Exception("Invalid profile %s" % selected_profile)

@@ -193,8 +193,12 @@ def execute_start_web(profile, reset):
     pid_file_reference = open(TVB_PID_FILE, 'a')
     free_ports = {}
     cherrypy_port = find_free_port(TvbProfile.current.web.SERVER_PORT)
-    if not os.path.isfile(TvbProfile.current.TVB_CONFIG_FILE) or TvbProfile.current.web.SERVER_PORT != cherrypy_port:
-        free_ports['WEB_SERVER_PORT'] = cherrypy_port
+    mplh5_port = find_free_port(TvbProfile.current.web.MPLH5_SERVER_PORT)
+    if (not os.path.isfile(TvbProfile.current.TVB_CONFIG_FILE) or TvbProfile.current.web.SERVER_PORT != cherrypy_port
+            or TvbProfile.current.web.MPLH5_SERVER_PORT != mplh5_port):
+        from tvb.basic.config import stored
+        free_ports[stored.KEY_PORT] = cherrypy_port
+        free_ports[stored.KEY_PORT_MPLH5] = mplh5_port
         TvbProfile.current.manager.add_entries_to_config_file(free_ports)
 
     web_args_list = [PYTHON_EXE_PATH, '-m', SCRIPT_FOR_WEB, profile, 'tvb.config']
@@ -306,7 +310,8 @@ def wait_for_tvb_process(tvb_process):
 if __name__ == "__main__":
 
     ARGS = parse_commandline()
-    TvbProfile.set_profile(ARGS.profile)
+    # Do not run BaseSettingsProfile.initialize_profile(..) as we do not want MPLH5 do be started.
+    TvbProfile.set_profile(ARGS.profile, run_init=False)
 
     PYTHON_EXE_PATH = TvbProfile.current.PYTHON_PATH
     tvb_storage = TvbProfile.current.TVB_STORAGE
