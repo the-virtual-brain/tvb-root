@@ -51,11 +51,13 @@ class PhasePlane(object):
         self.integrator = integrator
 
         self.mode = 0
-        self.svx = self.model.state_variables[0]    # x-axis: 1st state variable
+        self.svx_ind = 0    # x-axis: 1st state variable
         if self.model.nvar > 1:
-            self.svy = self.model.state_variables[1]  # y-axis: 2nd state variable
+            self.svy_ind = 1  # y-axis: 2nd state variable
         else:
-            self.svy = self.model.state_variables[0]
+            self.svy_ind = 0
+        self.svx = self.model.state_variables[self.svx_ind]
+        self.svy = self.model.state_variables[self.svy_ind]
         self._set_state_vector()
 
 
@@ -91,18 +93,15 @@ class PhasePlane(object):
         Computes the vector field. It takes a x, y coordinate mesh and returns a u, v vector field.
         Vectorized function, it evaluate all grid points at once as if they were connectivity nodes
         """
-        svx_ind = self.model.state_variables.index(self.svx)
-        svy_ind = self.model.state_variables.index(self.svy)
-
         state_variables = numpy.tile(self.default_sv, (NUMBEROFGRIDPOINTS ** 2, 1))
 
         for mode_idx in xrange(self.model.number_of_modes):
-            state_variables[svx_ind, :, mode_idx] = xg.flat
-            state_variables[svy_ind, :, mode_idx] = yg.flat
+            state_variables[self.svx_ind, :, mode_idx] = xg.flat
+            state_variables[self.svy_ind, :, mode_idx] = yg.flat
 
         d_grid = self.model.dfun(state_variables, self.no_coupling)
 
-        flat_uv_grid = d_grid[[svx_ind, svy_ind], :, :]  # subset of the state variables to be displayed
+        flat_uv_grid = d_grid[[self.svx_ind, self.svy_ind], :, :]  # subset of the state variables to be displayed
         u, v = flat_uv_grid.reshape((2, NUMBEROFGRIDPOINTS, NUMBEROFGRIDPOINTS, self.model.number_of_modes))
         if numpy.isnan(u).any() or numpy.isnan(v).any():
             self.log.error("NaN")
@@ -121,6 +120,8 @@ class PhasePlane(object):
         self.mode = mode
         self.svx = svx
         self.svy = svy
+        self.svx_ind = self.model.state_variables.index(svx)
+        self.svy_ind = self.model.state_variables.index(svy)
         svr = self.model.state_variable_range
         svr[svx][:] = x_range
         svr[svy][:] = y_range
@@ -133,12 +134,10 @@ class PhasePlane(object):
     def _compute_trajectories(self, x, y):
         """ A vectorized method of computing a number of trajectories in parallel """
         scheme = self.integrator.scheme
-        svx_ind = self.model.state_variables.index(self.svx)
-        svy_ind = self.model.state_variables.index(self.svy)
 
         state = numpy.tile(self.default_sv, (len(x), 1))
-        state[svx_ind, :] = x
-        state[svy_ind, :] = y
+        state[self.svx_ind, :] = x
+        state[self.svy_ind, :] = y
 
         trajs = numpy.zeros((TRAJ_STEPS + 1, self.model.nvar, len(x), self.model.number_of_modes))
         trajs[0, :] = state
@@ -192,13 +191,10 @@ class PhasePlaneD3(PhasePlane):
 
 
     def trajectory(self, x, y):
-        svx_ind = self.model.state_variables.index(self.svx)
-        svy_ind = self.model.state_variables.index(self.svy)
-
         traj = self._compute_trajectories([x], [y])
+        trajectory = zip(traj[:, self.svx_ind, 0, self.mode], traj[:, self.svy_ind, 0, self.mode])
 
         signal_x = numpy.arange(TRAJ_STEPS + 1) * self.integrator.dt
-
         signals = [ zip(signal_x, traj[:, i, 0, self.mode].tolist()) for i in xrange(traj.shape[1])]
-        trajectory = zip(traj[:, svx_ind, 0, self.mode], traj[:, svy_ind, 0, self.mode])
+
         return trajectory, signals
