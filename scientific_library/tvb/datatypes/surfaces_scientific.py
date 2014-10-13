@@ -383,21 +383,15 @@ class SurfaceScientific(surfaces_data.SurfaceData):
         """
         Calculates the inner angles of all the triangles which make up a surface
         """
-        angles = numpy.zeros((self.number_of_triangles, 3))
+        def _angle(a, b):
+            """ Angle between normalized vectors. <a|b> = cos(alpha)"""
+            return numpy.arccos(numpy.sum(a * b, axis=1, keepdims=True))
+
         edges = self._normalized_edge_vectors()
-
-        # TODO: this could be vectorized as well
-        for tt in xrange(self.number_of_triangles):
-            for ta in xrange(2):
-                if ta == 0:
-                    la = edges[tt, 1, :]
-                    lb = edges[tt, 2, :]
-                else:
-                    la = edges[tt, 0, :]
-                    lb = - edges[tt, 1, :]
-                angles[tt, ta] = numpy.arccos(numpy.dot(la , lb))
-
-        angles[:, 2] = 2 * numpy.pi - angles[:, 0] - angles[:, 1]
+        a0 = _angle(edges[:, 1, :], edges[:, 2, :])
+        a1 = _angle(edges[:, 0, :], - edges[:, 1, :])
+        a2 = 2 * numpy.pi - a0 - a1
+        angles = numpy.hstack([a0, a1, a2])
         util.log_debug_array(LOG, angles, "triangle_angles", owner=self.__class__.__name__)
         return angles
 
