@@ -73,8 +73,8 @@ class CFF_Importer(ABCUploader):
 
         tree.extend(NetworkxParser.prepare_input_params_tree(prefix="CNetwork: "))
 
-        tree.append({'name': 'should_center', 'type': 'bool', 'default': False,
-                     'label': 'CSurface: Center surfaces using vertex means along axes'})
+        tree.append({'name': 'should_center', 'type': 'bool', 'default': False, 'label': 'CSurface: Center surfaces',
+                     'description': 'Center surfaces using vertices positions mean along axes'})
         return tree
 
 
