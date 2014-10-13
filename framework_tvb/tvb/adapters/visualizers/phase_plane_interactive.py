@@ -46,16 +46,16 @@ class PhasePlane(object):
     This is view independent.
     """
     def __init__(self, model, integrator):
+        self.log = get_logger(self.__class__.__module__)
         self.model = model
         self.integrator = integrator
 
+        self.mode = 0
         self.svx = self.model.state_variables[0]    # x-axis: 1st state variable
         if self.model.nvar > 1:
             self.svy = self.model.state_variables[1]  # y-axis: 2nd state variable
         else:
             self.svy = self.model.state_variables[0]
-        self.mode = 0
-        self.log = get_logger(self.__class__.__module__)
         self._set_state_vector()
 
 
@@ -72,7 +72,7 @@ class PhasePlane(object):
         self.no_coupling = numpy.zeros((self.model.nvar, 1, self.model.number_of_modes))
 
 
-    def _set_mesh_grid(self):
+    def _get_mesh_grid(self):
         """
         Generate the phase-plane gridding based on currently selected
         state-variables and their range values.
@@ -81,17 +81,20 @@ class PhasePlane(object):
         xlo, xhi = svr[self.svx]
         ylo, yhi = svr[self.svy]
 
-        self.X = numpy.mgrid[xlo:xhi:(NUMBEROFGRIDPOINTS * 1j)]
-        self.Y = numpy.mgrid[ylo:yhi:(NUMBEROFGRIDPOINTS * 1j)]
+        xg = numpy.mgrid[xlo:xhi:(NUMBEROFGRIDPOINTS * 1j)]
+        yg = numpy.mgrid[ylo:yhi:(NUMBEROFGRIDPOINTS * 1j)]
+        return numpy.meshgrid(xg, yg)
 
 
-    def _calc_phase_plane_fast(self):
-        """ A vectorized version. Evaluate all grid points at once as if they were connectivity nodes  """
+    def _calc_phase_plane(self, xg, yg):
+        """
+        Computes the vector field. It takes a x, y coordinate mesh and returns a u, v vector field.
+        Vectorized function, it evaluate all grid points at once as if they were connectivity nodes
+        """
         svx_ind = self.model.state_variables.index(self.svx)
         svy_ind = self.model.state_variables.index(self.svy)
 
         state_variables = numpy.tile(self.default_sv, (NUMBEROFGRIDPOINTS ** 2, 1))
-        xg, yg = numpy.meshgrid(self.X, self.Y)
 
         for mode_idx in xrange(self.model.number_of_modes):
             state_variables[svx_ind, :, mode_idx] = xg.flat
@@ -100,9 +103,10 @@ class PhasePlane(object):
         d_grid = self.model.dfun(state_variables, self.no_coupling)
 
         flat_uv_grid = d_grid[[svx_ind, svy_ind], :, :]  # subset of the state variables to be displayed
-        self.U, self.V = flat_uv_grid.reshape((2, NUMBEROFGRIDPOINTS, NUMBEROFGRIDPOINTS, self.model.number_of_modes))
-        if numpy.isnan(self.U).any() or numpy.isnan(self.V).any():
+        u, v = flat_uv_grid.reshape((2, NUMBEROFGRIDPOINTS, NUMBEROFGRIDPOINTS, self.model.number_of_modes))
+        if numpy.isnan(u).any() or numpy.isnan(v).any():
             self.log.error("NaN")
+        return u, v
 
 
     def get_axes_ranges(self, sv):
@@ -118,8 +122,8 @@ class PhasePlane(object):
         self.svx = svx
         self.svy = svy
         svr = self.model.state_variable_range
-        svr[svx] = x_range
-        svr[svy] = y_range
+        svr[svx][:] = x_range
+        svr[svy][:] = y_range
 
         for name, val in sv.iteritems():
             k = self.model.state_variables.index(name)
@@ -155,19 +159,15 @@ class PhasePlaneD3(PhasePlane):
     Provides data for a d3 client
     """
 
-    def __init__(self, model, integrator):
-        PhasePlane.__init__(self, model, integrator)
-
     def compute_phase_plane(self):
         """
         :return: A json representation of the phase plane.
         """
-        self._set_mesh_grid()
+        x, y = self._get_mesh_grid()
 
-        self._calc_phase_plane_fast()
-        u = self.U[..., self.mode]
-        v = self.V[..., self.mode]
-        x, y = numpy.meshgrid(self.X, self.Y)
+        u, v = self._calc_phase_plane(x, y)
+        u = u[..., self.mode]
+        v = v[..., self.mode]
 
         d = numpy.dstack((x, y, u, v))
         d = d.reshape((NUMBEROFGRIDPOINTS ** 2, 4)).tolist()
