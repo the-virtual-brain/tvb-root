@@ -29,22 +29,20 @@
 #
 
 """
-module docstring
 .. moduleauthor:: Mihai Andrei <mihai.andrei@codemart.ro>
 """
 
-import unittest
 import os
-from tvb.core.entities.file.files_helper import FilesHelper
-from tvb.tests.framework.datatypes.datatypes_factory import DatatypesFactory
+import unittest
 from tvb.tests.framework.core.base_testcase import TransactionalTestCase
+from tvb.tests.framework.datatypes.datatypes_factory import DatatypesFactory
+from tvb.core.entities.file.files_helper import FilesHelper
 from tvb.core.entities.storage import dao
 from tvb.core.entities.transient.structure_entities import DataTypeMetaData
 from tvb.core.services.flow_service import FlowService
 from tvb.core.adapters.abcadapter import ABCAdapter
 from tvb.datatypes.surfaces import SkullSkin
 from tvb.datatypes.surfaces_data import OUTER_SKULL
-
 import tvb_data.surfaceData
 
 
@@ -80,9 +78,7 @@ class ZIPSurfaceImporterTest(TransactionalTestCase):
         ### Launch import Operation
         FlowService().fire_operation(importer, self.test_user, self.test_project.id, **args)
 
-        surface = SkullSkin()
-        data_types = FlowService().get_available_datatypes(self.test_project.id,
-                                                           surface.module + "." + surface.type)[0]
+        data_types = FlowService().get_available_datatypes(self.test_project.id, SkullSkin)[0]
         self.assertEqual(1, len(data_types), "Project should contain only one data type.")
 
         surface = ABCAdapter.load_entity_by_gid(data_types[0][2])
@@ -90,10 +86,14 @@ class ZIPSurfaceImporterTest(TransactionalTestCase):
         return surface
 
 
-    def test_import_surf80k(self):
+    def test_import_surf_zip(self):
         surface = self._importSurface(self.surf_skull)
         self.assertEqual(4096, len(surface.vertices))
-        self.assertEqual(7062, len(surface.triangles))
+        self.assertEqual(4096, surface.number_of_vertices)
+        self.assertEqual(8188, len(surface.triangles))
+        self.assertEqual(8188, surface.number_of_triangles)
+        self.assertEqual('', surface.user_tag_3)
+        self.assertTrue(surface.valid_for_simulations)
 
 
 def suite():
@@ -110,3 +110,4 @@ if __name__ == "__main__":
     TEST_RUNNER = unittest.TextTestRunner()
     TEST_SUITE = suite()
     TEST_RUNNER.run(TEST_SUITE)
+

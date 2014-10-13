@@ -29,15 +29,14 @@
 #
 
 """
-module docstring
 .. moduleauthor:: Mihai Andrei <mihai.andrei@codemart.ro>
 """
 
-import unittest
 import os
-from tvb.core.entities.file.files_helper import FilesHelper
-from tvb.tests.framework.datatypes.datatypes_factory import DatatypesFactory
+import unittest
 from tvb.tests.framework.core.base_testcase import TransactionalTestCase
+from tvb.tests.framework.datatypes.datatypes_factory import DatatypesFactory
+from tvb.core.entities.file.files_helper import FilesHelper
 from tvb.core.entities.storage import dao
 from tvb.core.entities.transient.structure_entities import DataTypeMetaData
 from tvb.core.services.flow_service import FlowService
@@ -54,7 +53,7 @@ class ObjSurfaceImporterTest(TransactionalTestCase):
     """
 
     torrus = os.path.join(os.path.dirname(tvb_data.obj.__file__), 'test_torus.obj')
-    ball = os.path.join(os.path.dirname(tvb_data.obj.__file__), 'Test_Ball.obj')
+    face = os.path.join(os.path.dirname(tvb_data.obj.__file__), 'face_surface.obj')
 
 
     def setUp(self):
@@ -79,9 +78,7 @@ class ObjSurfaceImporterTest(TransactionalTestCase):
         ### Launch import Operation
         FlowService().fire_operation(importer, self.test_user, self.test_project.id, **args)
 
-        surface = FaceSurface()
-        data_types = FlowService().get_available_datatypes(self.test_project.id,
-                                                           surface.module + "." + surface.type)[0]
+        data_types = FlowService().get_available_datatypes(self.test_project.id, FaceSurface)[0]
         self.assertEqual(1, len(data_types), "Project should contain only one data type.")
 
         surface = ABCAdapter.load_entity_by_gid(data_types[0][2])
@@ -93,17 +90,21 @@ class ObjSurfaceImporterTest(TransactionalTestCase):
         """
         Test that import works with a file which contains quads and no normals
         """
-        surface = self._importSurface(self.ball)
-        self.assertEqual(4902, len(surface.vertices))
-        self.assertEqual(9800, len(surface.triangles))
+        surface = self._importSurface(self.face)
+        self.assertEqual(8614, len(surface.vertices))
+        self.assertEqual(8614, len(surface.vertex_normals))
+        self.assertEqual(17224, len(surface.triangles))
+
 
     def test_import_simple_with_normals(self):
         """
-        Test that import works with a simple file contaning normals
+        Test that import works with an OBJ file which included normals
         """
         surface = self._importSurface(self.torrus)
-        self.assertEqual(441, len(surface.vertices))
-        self.assertEqual(800, len(surface.triangles))
+        self.assertEqual(441, surface.number_of_vertices)
+        self.assertEqual(441, len(surface.vertex_normals))
+        self.assertEqual(800, surface.number_of_triangles)
+
 
 
 def suite():
