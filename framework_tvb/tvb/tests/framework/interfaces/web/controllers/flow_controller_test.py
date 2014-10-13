@@ -233,7 +233,7 @@ class FlowContollerTest(BaseControllersTest):
         operation = dao.get_operations_in_burst(burst_config.id)[0]
         self.assertEqual(operation.status, model.STATUS_STARTED)
         self.flow_c.stop_burst_operation(operation.id, 0, True)
-        operation = dao.get_operation_by_id(operation.id)
+        operation = dao.try_get_operation_by_id(operation.id)
         self.assertTrue(operation is None)
         
         
@@ -253,7 +253,7 @@ class FlowContollerTest(BaseControllersTest):
             operations_group_id = operation.fk_operation_group
         self.flow_c.stop_burst_operation(operations_group_id, 1, True)
         for operation in operations:
-            operation = dao.get_operation_by_id(operation.id)
+            operation = dao.try_get_operation_by_id(operation.id)
             self.assertTrue(operation is None)
             
             
