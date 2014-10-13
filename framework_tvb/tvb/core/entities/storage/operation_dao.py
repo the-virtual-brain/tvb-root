@@ -53,16 +53,29 @@ class OperationDAO(RootDAO):
 
     def get_operation_by_id(self, operation_id):
         """Retrieve OPERATION entity for a given Identifier."""
-        try:
-            operation = self.session.query(model.Operation).filter_by(id=operation_id).one()
-            operation.user
-            operation.project
-            operation.operation_group
-            operation.algorithm.algo_group
-        except SQLAlchemyError:
-            self.logger.error("Operation not found for ID %s, we will return None." % operation_id)
-            operation = None
+
+        operation = self.session.query(model.Operation).filter_by(id=operation_id).one()
+        # Load lazy fields:
+        operation.user
+        operation.project
+        operation.operation_group
+        operation.algorithm.algo_group
+
         return operation
+
+
+    def try_get_operation_by_id(self, operation_id):
+        """
+        Try to call self.get_operation_by_id, but when operation was not found, instead of failing, return None.
+        This could be called from situations like: stopping & removing op.
+        A check for None is compulsory after this call!
+        """
+
+        try:
+            return self.get_operation_by_id(operation_id)
+        except SQLAlchemyError:
+            self.logger.exception("Operation not found for ID %s, we will return None" % operation_id)
+            return None
 
 
     def get_operation_by_gid(self, operation_gid):

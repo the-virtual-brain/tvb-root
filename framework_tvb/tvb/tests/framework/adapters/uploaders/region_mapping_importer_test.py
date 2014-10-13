@@ -33,6 +33,7 @@
 import unittest
 import os
 import datetime
+from tvb.tests.framework.core.base_testcase import TransactionalTestCase
 import tvb_data.regionMapping as demo_data
 import tvb.tests.framework.adapters.uploaders.test_data as test_data
 from tvb.basic.filters.chain import FilterChain
@@ -44,7 +45,6 @@ from tvb.core.services.exceptions import OperationException
 from tvb.core.adapters.abcadapter import ABCAdapter
 from tvb.datatypes.surfaces import RegionMapping, CorticalSurface  
 from tvb.datatypes.connectivity import Connectivity
-from tvb.tests.framework.core.base_testcase import TransactionalTestCase
 from tvb.tests.framework.core.test_factory import TestFactory
 
 

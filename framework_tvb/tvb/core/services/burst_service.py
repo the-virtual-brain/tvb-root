@@ -458,7 +458,7 @@ class BurstService():
             referred_workflow_step = dao.get_workflow_step_by_step_index(visualization.fk_workflow, step_index)
             referred_operation_id = referred_workflow_step.fk_operation
             referred_operation = dao.get_operation_by_id(referred_operation_id)
-            current_project_id = referred_operation.project.id
+            current_project_id = referred_operation.fk_launched_in
             if type(datatype_index) is IntType:
                 ## Entry is the output of a previous step ##
                 datatypes = dao.get_results_for_operation(referred_operation_id)
@@ -581,7 +581,7 @@ class BurstService():
         error_msg = ''
         if len(portlet_cfg.analyzers):
             for analyze_step in portlet_cfg.analyzers:
-                operation = dao.get_operation_by_id(analyze_step.fk_operation)
+                operation = dao.try_get_operation_by_id(analyze_step.fk_operation)
                 if operation is None:
                     status = model.BurstConfiguration.BURST_ERROR
                     error_msg = "Operation has been removed"
@@ -606,7 +606,7 @@ class BurstService():
                     break
             if wait_on_outputs:
                 simulator_step = dao.get_workflow_step_by_step_index(visualizer.fk_workflow, 0)
-                operation = dao.get_operation_by_id(simulator_step.fk_operation)
+                operation = dao.try_get_operation_by_id(simulator_step.fk_operation)
                 if operation is None:
                     status = model.BurstConfiguration.BURST_ERROR
                     error_msg = ("At least one simulation result was not found, it might have been removed. <br\>"

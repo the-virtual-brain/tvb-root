@@ -629,7 +629,7 @@ class ProjectService:
         """
         Remove a given operation
         """
-        operation = dao.get_operation_by_id(operation_id)
+        operation = dao.try_get_operation_by_id(operation_id)
         if operation is not None:
             self.logger.debug("Deleting operation %s " % operation)
             datatypes_for_op = dao.get_results_for_operation(operation_id)

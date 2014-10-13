@@ -108,9 +108,8 @@ class TVBImporter(ABCUploader):
                 if manager.is_valid_hdf5_file():
                     datatype = None
                     try:
-                        current_op = dao.get_operation_by_id(self.operation_id)
                         service = ImportService()
-                        datatype = service.load_datatype_from_file(folder, h5file, current_op.id)
+                        datatype = service.load_datatype_from_file(folder, h5file, self.operation_id)
                         service.store_datatype(datatype)
                         self.nr_of_datatypes += 1
                     except Exception, excep:

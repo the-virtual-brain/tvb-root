@@ -181,7 +181,7 @@ class StandAloneClient(object):
         """
         Stop a thread for a given operation id
         """
-        operation = dao.get_operation_by_id(operation_id)
+        operation = dao.try_get_operation_by_id(operation_id)
         if not operation or operation.status != model.STATUS_STARTED:
             LOGGER.warning("Operation already stopped or not found is given to stop job: %s" % operation_id)
             return True
@@ -268,7 +268,7 @@ class ClusterSchedulerClient(object):
         """
         Stop a thread for a given operation id
         """
-        operation = dao.get_operation_by_id(operation_id)
+        operation = dao.try_get_operation_by_id(operation_id)
         if not operation or operation.status != model.STATUS_STARTED:
             LOGGER.warning("Operation already stopped or not found is given to stop job: %s" % operation_id)
             return True
