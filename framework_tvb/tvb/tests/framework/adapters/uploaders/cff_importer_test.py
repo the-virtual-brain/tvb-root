@@ -35,13 +35,13 @@
 import os
 import unittest
 import tvb_data.cff as dataset
+from tvb.tests.framework.core.base_testcase import TransactionalTestCase
 from tvb.core.adapters.abcadapter import ABCAdapter
 from tvb.core.services.exceptions import OperationException
 from tvb.core.services.flow_service import FlowService
 from tvb.core.entities.storage import dao
 from tvb.core.entities.transient.structure_entities import DataTypeMetaData
 from tvb.tests.framework.core.test_factory import TestFactory
-from tvb.tests.framework.core.base_testcase import TransactionalTestCase
 
 
 class CFFUploadTest(TransactionalTestCase):
