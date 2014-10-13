@@ -226,7 +226,7 @@ class DynamicModelController(BurstBaseController):
         dynamic = self.get_cached_dynamic(dynamic_gid)
         dynamic.model = self.available_models[name]()
 
-        dynamic.phase_plane.reset(dynamic.model, dynamic.integrator)
+        dynamic.phase_plane = PhasePlaneD3(dynamic.model, dynamic.integrator)
         mp_params = DynamicModelController._get_model_parameters_ui_model(dynamic.model)
         graph_params = DynamicModelController._get_graph_ui_model(dynamic)
         return {'params' : mp_params, 'graph_params':graph_params}
@@ -248,7 +248,7 @@ class DynamicModelController(BurstBaseController):
         dynamic.model.configure()
         self._configure_integrator_noise(integrator, dynamic.model)
 
-        dynamic.phase_plane.reset(dynamic.model, dynamic.integrator)
+        dynamic.phase_plane = PhasePlaneD3(dynamic.model, dynamic.integrator)
 
 
     @staticmethod
