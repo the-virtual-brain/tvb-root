@@ -29,41 +29,46 @@
 #
 
 """
-.. moduleauthor:: Bogdan Neacs <lia.domide@codemart.ro>
+.. moduleauthor:: Bogdan Neacsa <bogdan.neacsa@codemart.ro>
 """
 
 import unittest
 from tvb.tests.framework.adapters.uploaders import cff_importer_test
-from tvb.tests.framework.adapters.uploaders import tvb_importer_test
-from tvb.tests.framework.adapters.uploaders import nifti_importer_test
-from tvb.tests.framework.adapters.uploaders import gifti_importer_test
-from tvb.tests.framework.adapters.uploaders import sensors_importer_test
-from tvb.tests.framework.adapters.uploaders import region_mapping_importer_test
-from tvb.tests.framework.adapters.uploaders import projection_matrix_importer_test
-from tvb.tests.framework.adapters.uploaders import connectivity_zip_importer_test
-from tvb.tests.framework.adapters.uploaders import lookuptable_importer_test
 from tvb.tests.framework.adapters.uploaders import csv_importer_test
 from tvb.tests.framework.adapters.uploaders import connectivity_measure_importer_test
+from tvb.tests.framework.adapters.uploaders import connectivity_zip_importer_test
+from tvb.tests.framework.adapters.uploaders import gifti_importer_test
+from tvb.tests.framework.adapters.uploaders import lookuptable_importer_test
 from tvb.tests.framework.adapters.uploaders import mat_timeseries_importer_test
+from tvb.tests.framework.adapters.uploaders import networkx_importer_test
+from tvb.tests.framework.adapters.uploaders import nifti_importer_test
+from tvb.tests.framework.adapters.uploaders import projection_matrix_importer_test
+from tvb.tests.framework.adapters.uploaders import region_mapping_importer_test
+from tvb.tests.framework.adapters.uploaders import sensors_importer_test
+from tvb.tests.framework.adapters.uploaders import tvb_importer_test
+
+
 
 def suite():
     """
-    Gather all the tests in package 'adapters' in a test suite.
+    Gather all the tests in package 'uploaders' in a test suite.
     """
     test_suite = unittest.TestSuite()
     test_suite.addTest(cff_importer_test.suite())
-    test_suite.addTest(tvb_importer_test.suite())
-    test_suite.addTest(nifti_importer_test.suite())
-    test_suite.addTest(gifti_importer_test.suite())
-    test_suite.addTest(sensors_importer_test.suite())
-    test_suite.addTest(region_mapping_importer_test.suite())
-    test_suite.addTest(projection_matrix_importer_test.suite())
-    test_suite.addTest(connectivity_zip_importer_test.suite())
-    test_suite.addTest(lookuptable_importer_test.suite())
     test_suite.addTest(csv_importer_test.suite())
     test_suite.addTest(connectivity_measure_importer_test.suite())
+    test_suite.addTest(connectivity_zip_importer_test.suite())
+    test_suite.addTest(gifti_importer_test.suite())
+    test_suite.addTest(lookuptable_importer_test.suite())
     test_suite.addTest(mat_timeseries_importer_test.suite())
+    test_suite.addTest(networkx_importer_test.suite())
+    test_suite.addTest(nifti_importer_test.suite())
+    test_suite.addTest(projection_matrix_importer_test.suite())
+    test_suite.addTest(region_mapping_importer_test.suite())
+    test_suite.addTest(sensors_importer_test.suite())
+    test_suite.addTest(tvb_importer_test.suite())
     return test_suite
+
 
 
 if __name__ == "__main__":
