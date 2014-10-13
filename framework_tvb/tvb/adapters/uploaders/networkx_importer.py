@@ -34,7 +34,7 @@
 
 import networkx
 from tvb.adapters.uploaders.abcuploader import ABCUploader
-from tvb.adapters.uploaders.networkx.parser import NetworkxParser
+from tvb.adapters.uploaders.networkx_connectivity.parser import NetworkxParser
 from tvb.core.adapters.exceptions import ParseException, LaunchException
 from tvb.core.entities.storage import transactional
 from tvb.datatypes.connectivity import Connectivity
@@ -50,8 +50,12 @@ class NetworkxConnectivityImporter(ABCUploader):
 
 
     def get_upload_input_tree(self):
-        return [{'name': 'data_file', 'type': 'upload', 'required_type': '.gpickle',
+
+        tree = [{'name': 'data_file', 'type': 'upload', 'required_type': '.gpickle',
                  'label': 'Please select file to import', 'required': True}]
+
+        tree.extend(NetworkxParser.prepare_input_params_tree())
+        return tree
         
         
     def get_output(self):
@@ -59,9 +63,9 @@ class NetworkxConnectivityImporter(ABCUploader):
 
 
     @transactional
-    def launch(self, data_file):
+    def launch(self, data_file, **kwargs):
         try:
-            parser = NetworkxParser(self.storage_path)
+            parser = NetworkxParser(self.storage_path, **kwargs)
             net = networkx.read_gpickle(data_file)
             connectivity = parser.parse(net)
             return [connectivity]

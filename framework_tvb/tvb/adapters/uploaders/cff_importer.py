@@ -41,7 +41,7 @@ from cfflib import load
 from tempfile import gettempdir
 from zipfile import ZipFile, ZIP_DEFLATED
 from tvb.adapters.uploaders.abcuploader import ABCUploader
-from tvb.adapters.uploaders.networkx.parser import NetworkxParser
+from tvb.adapters.uploaders.networkx_connectivity.parser import NetworkxParser
 from tvb.adapters.uploaders.gifti.parser import GIFTIParser
 from tvb.basic.logger.builder import get_logger
 from tvb.core.adapters.exceptions import LaunchException, ParseException
@@ -67,11 +67,15 @@ class CFF_Importer(ABCUploader):
         """
         Define as input parameter, a CFF archive.
         """
-        return [{'name': 'cff', 'type': 'upload', 'required_type': '.cff',
+        tree = [{'name': 'cff', 'type': 'upload', 'required_type': '.cff',
                  'label': 'CFF archive', 'required': True,
-                 'description': 'Connectome File Format archive expected'},
-                {'name': 'should_center', 'type': 'bool', 'default': False,
-                 'label': 'Center surfaces (if any) using vertex means along axes'}]
+                 'description': 'Connectome File Format archive expected'}]
+
+        tree.extend(NetworkxParser.prepare_input_params_tree(prefix="CNetwork: "))
+
+        tree.append({'name': 'should_center', 'type': 'bool', 'default': False,
+                     'label': 'CSurface: Center surfaces using vertex means along axes'})
+        return tree
 
 
     def get_output(self):
@@ -79,7 +83,7 @@ class CFF_Importer(ABCUploader):
 
 
     @transactional
-    def launch(self, cff, should_center=False):
+    def launch(self, cff, should_center=False, **kwargs):
         """
         Process the uploaded CFF and convert read data into our internal DataTypes.
         :param cff: CFF uploaded file to process.
@@ -102,7 +106,7 @@ class CFF_Importer(ABCUploader):
             results = []
 
             if network:
-                partial = self._parse_connectome_network(network, warning_message)
+                partial = self._parse_connectome_network(network, warning_message, **kwargs)
                 results.extend(partial)
             if surfaces:
                 partial = self._parse_connectome_surfaces(surfaces, warning_message, should_center)
@@ -125,25 +129,26 @@ class CFF_Importer(ABCUploader):
             sys.stdout = default_stdout
             custom_stdout.close()
             # Now log everything that cfflib2 outputes with `print` statements using TVB logging
-            self.logger.debug("Output from cfflib2 library: %s" % print_output)
+            self.logger.debug("Output from cfflib library: %s" % print_output)
 
 
-    def _parse_connectome_network(self, connectome_network, warning_message):
+    def _parse_connectome_network(self, connectome_network, warning_message, **kwargs):
         """
         Parse data from a NetworkX object and save it in Connectivity DataTypes.
         """
         connectivities = []
+        parser = NetworkxParser(self.storage_path, **kwargs)
+
         for net in connectome_network:
             try:
                 net.load()
-                parser = NetworkxParser(self.storage_path)
                 connectivity = parser.parse(net.data)
                 connectivity.user_tag_1 = connectivity.weights.shape[0]
                 connectivities.append(connectivity)
 
             except ParseException:
                 self.logger.exception("Could not process Connectivity")
-                warning_message += "Problem when importing a Connectivities!! \n"
+                warning_message += "Problem when importing Connectivities!! \n"
 
         return connectivities
 
@@ -178,10 +183,8 @@ class CFF_Importer(ABCUploader):
                 surface.user_tag_1 = surface_name
 
                 validation_result = surface.validate()
-
                 if validation_result.warnings:
-                    current_op = dao.get_operation_by_id(self.operation_id)
-                    current_op.additional_info = validation_result.summary()
+                    warning_message += validation_result.summary() + "\n"
 
                 surfaces.append(surface)
 
@@ -196,7 +199,7 @@ class CFF_Importer(ABCUploader):
                 self.logger.exception("Could not import a Surface entity.")
                 warning_message += "Problem when importing Surfaces!! \n"
             except OSError:
-                self.log.exception("could not clean up temp file")
+                self.log.exception("Could not clean up temporary file(s).")
 
         return surfaces
 
