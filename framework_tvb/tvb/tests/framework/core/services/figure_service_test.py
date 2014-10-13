@@ -29,20 +29,21 @@
 #
 
 """
-module docstring
 .. moduleauthor:: Mihai Andrei <mihai.andrei@codemart.ro>
 """
+
+import os
 import unittest
 import Image
-import os
-
 if not hasattr(Image, 'open'):
     from Image import Image
+
+from tvb.tests.framework.core.base_testcase import TransactionalTestCase
 from tvb.core.entities.file.files_helper import FilesHelper
 from tvb.core.entities.storage import dao
 from tvb.core.services.figure_service import FigureService
-from tvb.tests.framework.core.base_testcase import TransactionalTestCase
 from tvb.tests.framework.core.test_factory import TestFactory
+
 
 IMG_DATA = ("iVBORw0KGgoAAAANSUhEUgAAAAgAAAAICAYAAADED76LAAAAJElEQVQYV2Pcv3"
             "//fwYk4OjoyIjMZ6SDAmT7QGx0K1EcRBsFAFAcHPlrTpAmAAAAAElFTkSuQmCC")

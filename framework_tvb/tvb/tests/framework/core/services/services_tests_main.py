@@ -31,40 +31,44 @@
 """
 .. moduleauthor:: Bogdan Neacsa <bogdan.neacsa@codemart.ro>
 """
+
 import unittest
+from tvb.tests.framework.core.services import burst_service_test
+from tvb.tests.framework.core.services import event_handler_test
+from tvb.tests.framework.core.services import figure_service_test
+from tvb.tests.framework.core.services import flow_service_test
+from tvb.tests.framework.core.services import import_service_test
+from tvb.tests.framework.core.services import links_test
+from tvb.tests.framework.core.services import operation_service_test
 from tvb.tests.framework.core.services import project_service_test
 from tvb.tests.framework.core.services import project_structure_test
-from tvb.tests.framework.core.services import burst_service_test
-from tvb.tests.framework.core.services import user_service_test
-from tvb.tests.framework.core.services import event_handler_test
-from tvb.tests.framework.core.services import flow_service_test
-from tvb.tests.framework.core.services import settings_service_test
-from tvb.tests.framework.core.services import import_service_test
-from tvb.tests.framework.core.services import workflow_service_test
-from tvb.tests.framework.core.services import operation_service_test
 from tvb.tests.framework.core.services import remove_test
-from tvb.tests.framework.core.services import links_test
 from tvb.tests.framework.core.services import serialization_manager_test
+from tvb.tests.framework.core.services import settings_service_test
+from tvb.tests.framework.core.services import user_service_test
+from tvb.tests.framework.core.services import workflow_service_test
+
 
 
 def suite():
     """
-    Gather all the tests in a test suite.
+    Gather all the service tests in a test suite.
     """
     test_suite = unittest.TestSuite()
+    test_suite.addTest(burst_service_test.suite())
+    test_suite.addTest(event_handler_test.suite())
+    test_suite.addTest(figure_service_test.suite())
+    test_suite.addTest(flow_service_test.suite())
+    test_suite.addTest(import_service_test.suite())
+    test_suite.addTest(links_test.suite())
+    test_suite.addTest(operation_service_test.suite())
     test_suite.addTest(project_service_test.suite())
     test_suite.addTest(project_structure_test.suite())
-    test_suite.addTest(event_handler_test.suite())
-    test_suite.addTest(user_service_test.suite())
-    test_suite.addTest(flow_service_test.suite())
-    test_suite.addTest(settings_service_test.suite())
-    test_suite.addTest(burst_service_test.suite())
-    test_suite.addTest(import_service_test.suite())
-    test_suite.addTest(workflow_service_test.suite())
-    test_suite.addTest(operation_service_test.suite())
     test_suite.addTest(remove_test.suite())
-    test_suite.addTest(links_test.suite())
     test_suite.addTest(serialization_manager_test.suite())
+    test_suite.addTest(settings_service_test.suite())
+    test_suite.addTest(user_service_test.suite())
+    test_suite.addTest(workflow_service_test.suite())
     return test_suite
 
 
