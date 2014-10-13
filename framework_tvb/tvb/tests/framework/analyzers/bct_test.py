@@ -32,6 +32,7 @@
 .. moduleauthor:: Lia Domide <lia.domide@codemart.ro>
 """
 
+import numpy
 import unittest
 from tvb.tests.framework.core.base_testcase import TransactionalTestCase
 from tvb.core.utils import get_matlab_executable
@@ -64,6 +65,10 @@ class BCTTest(TransactionalTestCase):
         ### Make sure Connectivity is in DB
         TestFactory.import_cff(test_user=self.test_user, test_project=self.test_project)
         self.connectivity = dao.get_generic_entity(Connectivity, 'John Doe', 'subject')[0]
+
+        # make weights matrix symmetric, or else some BCT algorithms will run infinitely:
+        w = self.connectivity.weights
+        self.connectivity.weights = w + w.T - numpy.diag(w.diagonal())
 
         self.algo_groups = dao.get_generic_entity(model.AlgorithmGroup, 'MatlabAdapter', 'classname')
 
