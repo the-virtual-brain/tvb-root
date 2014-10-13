@@ -36,16 +36,17 @@
 import os
 import unittest
 import tvb_data.projectionMatrix as dataset
+from tvb.tests.framework.core.base_testcase import TransactionalTestCase
+from tvb.tests.framework.core.test_factory import TestFactory
+from tvb.core.entities.storage import dao
+from tvb.core.adapters.abcadapter import ABCAdapter
+from tvb.core.services.flow_service import FlowService
+from tvb.core.entities.file.files_helper import FilesHelper
+from tvb.core.entities.transient.structure_entities import DataTypeMetaData
 from tvb.datatypes.projections import ProjectionRegionEEG, ProjectionSurfaceEEG
 from tvb.datatypes.connectivity import Connectivity
 from tvb.datatypes.sensors import SensorsEEG
 from tvb.datatypes.surfaces import CorticalSurface
-from tvb.core.entities.storage import dao
-from tvb.core.adapters.abcadapter import ABCAdapter
-from tvb.core.services.flow_service import FlowService
-from tvb.core.entities.transient.structure_entities import DataTypeMetaData
-from tvb.tests.framework.core.test_factory import TestFactory
-from tvb.tests.framework.core.base_testcase import TransactionalTestCase
 
 
 class ProjectionMatrixTest(TransactionalTestCase):
@@ -66,7 +67,14 @@ class ProjectionMatrixTest(TransactionalTestCase):
         self.assertTrue(self.surface is not None)
         self.sensors = TestFactory.get_entity(self.test_project, SensorsEEG())
         self.assertTrue(self.sensors is not None)
-        
+
+
+    def tearDown(self):
+        """
+        Clean-up tests data
+        """
+        FilesHelper().remove_project_structure(self.test_project.name)
+
     
     def test_happy_flow_region_import(self):
         """

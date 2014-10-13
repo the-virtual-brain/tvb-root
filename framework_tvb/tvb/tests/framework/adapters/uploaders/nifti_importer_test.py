@@ -30,20 +30,20 @@
 """
 .. moduleauthor:: Calin Pavel <calin.pavel@codemart.ro>
 """
-import unittest
+
 import os
-import numpy as numpy
-from tvb.core.entities.file.files_helper import FilesHelper
-from tvb.tests.framework.datatypes.datatypes_factory import DatatypesFactory
+import numpy
+import unittest
+import tvb_data.nifti as demo_data
 from tvb.tests.framework.core.base_testcase import TransactionalTestCase
+from tvb.tests.framework.datatypes.datatypes_factory import DatatypesFactory
+from tvb.core.entities.file.files_helper import FilesHelper
 from tvb.core.entities.storage import dao
 from tvb.core.entities.transient.structure_entities import DataTypeMetaData
 from tvb.core.services.flow_service import FlowService
+from tvb.core.services.exceptions import OperationException
 from tvb.core.adapters.abcadapter import ABCAdapter
 from tvb.datatypes.time_series import TimeSeries
-from tvb.core.services.exceptions import OperationException
-
-import tvb_data.nifti as demo_data
 
 
 

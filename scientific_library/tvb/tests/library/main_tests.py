@@ -121,7 +121,7 @@ if __name__ == "__main__":
     
     if KEY_COVERAGE in argv:
         COVERAGE.stop()
-        COVERAGE.html_report(directory = os.path.join(os.path.dirname(__file__), 'test_coverage_html'))
+        COVERAGE.html_report(directory=os.path.join(os.path.dirname(__file__), 'test_coverage_html'))
 
 
 
