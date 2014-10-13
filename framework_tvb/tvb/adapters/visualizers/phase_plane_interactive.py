@@ -65,7 +65,6 @@ class PhasePlane(object):
         a filler(all zeros) for the coupling arg of the Model's dfun method.
         This method is called once at initialisation (show()).
         """
-        #import pdb; pdb.set_trace()
         svr = self.model.state_variable_range
         sv_mean = numpy.array([svr[key].mean() for key in self.model.state_variables])
         sv_mean = sv_mean.reshape((self.model.nvar, 1, 1))
@@ -78,10 +77,9 @@ class PhasePlane(object):
         Generate the phase-plane gridding based on currently selected
         state-variables and their range values.
         """
-        xlo = self.model.state_variable_range[self.svx][0]
-        xhi = self.model.state_variable_range[self.svx][1]
-        ylo = self.model.state_variable_range[self.svy][0]
-        yhi = self.model.state_variable_range[self.svy][1]
+        svr = self.model.state_variable_range
+        xlo, xhi = svr[self.svx]
+        ylo, yhi = svr[self.svy]
 
         self.X = numpy.mgrid[xlo:xhi:(NUMBEROFGRIDPOINTS * 1j)]
         self.Y = numpy.mgrid[ylo:yhi:(NUMBEROFGRIDPOINTS * 1j)]
@@ -119,11 +117,9 @@ class PhasePlane(object):
         self.mode = mode
         self.svx = svx
         self.svy = svy
-        msv_range = self.model.state_variable_range
-        msv_range[self.svx][0] = x_range[0]
-        msv_range[self.svx][1] = x_range[1]
-        msv_range[self.svy][0] = y_range[0]
-        msv_range[self.svy][1] = y_range[1]
+        svr = self.model.state_variable_range
+        svr[svx] = x_range
+        svr[svy] = y_range
 
         for name, val in sv.iteritems():
             k = self.model.state_variables.index(name)
@@ -179,10 +175,6 @@ class PhasePlaneD3(PhasePlane):
         xnull = [{'path': segment.tolist(), 'nullcline_index': 0} for segment in self.nullcline(x, y, u)]
         ynull = [{'path': segment.tolist(), 'nullcline_index': 1} for segment in self.nullcline(x, y, v)]
         return {'plane': d, 'nullclines': xnull + ynull}
-
-
-    def reset(self, model, integrator):
-        PhasePlane.__init__(self, model, integrator)
 
 
     # @staticmethod
