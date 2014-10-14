@@ -59,6 +59,7 @@ class FigureServiceTest(TransactionalTestCase):
         self.project = TestFactory.create_project(admin=self.user)
         self.files_helper = FilesHelper()
 
+
     def tearDown(self):
         self.delete_project_folders()
 
@@ -69,8 +70,10 @@ class FigureServiceTest(TransactionalTestCase):
         except (IOError, ValueError):
             self.fail("Could not open %s as a image" % image_path)
 
+
     def store_test_png(self):
         self.figure_service.store_result_figure(self.project, self.user, "png", IMG_DATA, image_name="test-figure")
+
 
     def retrieve_images(self):
         figures_by_session, _ = self.figure_service.retrieve_result_figures(self.project, self.user)
@@ -84,6 +87,7 @@ class FigureServiceTest(TransactionalTestCase):
     def test_store_image(self):
         self.store_test_png()
 
+
     def test_store_image_from_operation(self):
         # test that image can be retrieved from operation
         test_operation = TestFactory.create_operation(test_user=self.user, test_project=self.project)
@@ -96,17 +100,20 @@ class FigureServiceTest(TransactionalTestCase):
         image_path = os.path.join(image_path, figures[0].file_path)
         self.assertCanReadImage(image_path)
 
+
     def test_store_and_retrieve_image(self):
         self.store_test_png()
         figures = self.retrieve_images()
         self.assertEqual(1, len(figures))
-        image_path = figures[0].file_path.replace('__', '/')
+        image_path = figures[0].file_path.replace('__', os.path.sep)
         self.assertCanReadImage(image_path)
+
 
     def test_load_figure(self):
         self.store_test_png()
         figures = self.retrieve_images()
         self.figure_service.load_figure(figures[0].id)
+
 
     def test_edit_figure(self):
         session_name = 'the altered ones'
@@ -118,6 +125,7 @@ class FigureServiceTest(TransactionalTestCase):
         self.assertEqual([session_name], figures_by_session.keys())
         self.assertEqual(name, figures_by_session.values()[0][0].name)
 
+
     def test_remove_figure(self):
         self.store_test_png()
         figures = self.retrieve_images()
@@ -125,6 +133,7 @@ class FigureServiceTest(TransactionalTestCase):
         self.figure_service.remove_result_figure(figures[0].id)
         figures = self.retrieve_images()
         self.assertEqual(0, len(figures))
+
 
 
 def suite():
