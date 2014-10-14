@@ -232,11 +232,9 @@ function _fetchSlidersFromServer(){
             dynamicPage.paramSliders = new dynamicPage.SliderGroup(dynamicPage.paramDefaults, '#reset_sliders', onParameterChanged);
             dynamicPage.stateVarsSliders = new dynamicPage.SliderGroup(dynamicPage.graphDefaults.state_variables, '#reset_state_variables', onGraphChanged);
             dynamicPage.axisControls = new dynamicPage.AxisGroup(dynamicPage.graphDefaults, onGraphChanged);
+            $('#reset_trajectories').click(_deleteTrajectories);
             //clear all trajectories
-            dynamicPage.trajectories = [];
-            dynamicPage.traj_starts = [];
-            dynamicPage.phasePlane.drawTrajectories([]);
-            dynamicPage.phasePlane.drawSignal([]);
+            _deleteTrajectories();
             _onParameterChanged();
             _disable_active_sv_slider();
         }
@@ -258,7 +256,6 @@ function onModelChanged(name){
 function _redrawPhasePlane(data){
     data = JSON.parse(data);
     dynamicPage.phasePlane.draw(data);
-    _redrawTrajectories();
     var axisState = dynamicPage.axisControls.getValue();
     dynamicPage.phasePlane.setLabels(axisState.svx, axisState.svy);
     dynamicPage.phasePlane.setPlotLabels($.map(dynamicPage.graphDefaults.state_variables, function(d){return d.name;}) );
@@ -268,7 +265,10 @@ function _onParameterChanged(){
     doAjaxCall({
         url: _url('parameters_changed'),
         data: {params: JSON.stringify(dynamicPage.paramSliders.getValues())},
-        success : _redrawPhasePlane
+        success : function(data){
+            _redrawPhasePlane(data);
+            _redrawTrajectories();
+        }
     });
 }
 
@@ -287,16 +287,23 @@ function _onGraphChanged(){
     doAjaxCall({
         url: _url('graph_changed'),
         data: { graph_state: JSON.stringify(graph_state)},
-        success : _redrawPhasePlane
+        success : function(data){
+            _redrawPhasePlane(data);
+            _deleteTrajectories();
+        }
     });
 }
 
 // see onParameterChanged
 var onGraphChanged = $.debounce(DEBOUNCE_DELAY, _onGraphChanged);
 
-/**
- * calls the trajectories rpc
- */
+function _deleteTrajectories(){
+    dynamicPage.trajectories = [];
+    dynamicPage.traj_starts = [];
+    dynamicPage.phasePlane.drawTrajectories([]);
+    dynamicPage.phasePlane.drawSignal([]);
+}
+
 function _trajectories_rpc(starting_points, success){
     doAjaxCall({
         url: _url('trajectories'),
