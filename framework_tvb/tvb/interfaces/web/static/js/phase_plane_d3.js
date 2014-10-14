@@ -47,7 +47,6 @@ var TVBUI = TVBUI || {};
         var self = this;
         this.VECTOR_RANGE = 80;
         this.onClick = onClick;
-        this.trajs = [];        // keeps the trajectories/signals raw data
         // --- declarations and global structure ---
         // We create the svg dom in js. Alternatively this could be written declarative in svg and retrieved here by .select()
         this.svg = d3.select('.dynamicChart').attr('viewBox', viewBox);
@@ -218,14 +217,12 @@ var TVBUI = TVBUI || {};
     };
 
     /**
-     * Adds a new trajectory to the list of trajectories to be drawn and draws them all.
-     * @param data [[x,y], ...] in the same space as the vectors!
+     * Draws a family of trajectories
+     * @param trajectories. array shaped trajectory, point, xy [[[x,y], ...], ...] in the same space as the vectors!
      */
-    PhasePlane.prototype.drawTrajectory = function(data){
+    PhasePlane.prototype.drawTrajectories = function(trajectories){
         var self = this;
-        this.trajs.push(data);
-
-        var p = this.trajectories_g.selectAll('path').data(this.trajs);
+        var p = this.trajectories_g.selectAll('path').data(trajectories);
         p.enter().append('path');
         p.exit().remove();
         p.attr('d', function(d){
@@ -312,12 +309,6 @@ var TVBUI = TVBUI || {};
                 return colorS(i);
             })
             .text(function(d){return d;});
-    };
-
-    PhasePlane.prototype.clearTrajectories = function(){
-        this.trajs = [];
-        this.drawTrajectory([]);
-        this.drawSignal([]);
     };
 
     TVBUI.PhasePlane = PhasePlane;
