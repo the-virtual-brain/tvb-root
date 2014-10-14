@@ -439,7 +439,7 @@ class ImportService():
         self.files_helper.write_image_metadata(figure)
 
 
-    def load_datatype_from_file(self, storage_folder, file_name, op_id, datatype_group=None):
+    def load_datatype_from_file(self, storage_folder, file_name, op_id, datatype_group=None, move=True):
         """
         Creates an instance of datatype from storage / H5 file 
         :returns: datatype
@@ -471,7 +471,7 @@ class ImportService():
         # Now move storage file into correct folder if necessary
         current_file = os.path.join(storage_folder, file_name)
         new_file = type_instance.get_storage_file_path()
-        if new_file != current_file:
+        if new_file != current_file and move:
             shutil.move(current_file, new_file)
 
         return type_instance
