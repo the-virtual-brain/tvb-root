@@ -59,6 +59,7 @@ class PhasePlane(object):
         self.svx = self.model.state_variables[self.svx_ind]
         self.svy = self.model.state_variables[self.svy_ind]
         self._set_state_vector()
+        self._create_mesh_jitter()
 
 
     def _set_state_vector(self):
@@ -74,7 +75,13 @@ class PhasePlane(object):
         self.no_coupling = numpy.zeros((self.model.nvar, 1, self.model.number_of_modes))
 
 
-    def _get_mesh_grid(self):
+    def _create_mesh_jitter(self):
+        shape = NUMBEROFGRIDPOINTS, NUMBEROFGRIDPOINTS
+        d =  1.0 / (4 * NUMBEROFGRIDPOINTS)
+        self._jitter =  numpy.random.normal(0, d, shape), numpy.random.normal(0, d, shape)
+
+
+    def _get_mesh_grid(self, noisy=True):
         """
         Generate the phase-plane gridding based on currently selected
         state-variables and their range values.
@@ -85,7 +92,12 @@ class PhasePlane(object):
 
         xg = numpy.mgrid[xlo:xhi:(NUMBEROFGRIDPOINTS * 1j)]
         yg = numpy.mgrid[ylo:yhi:(NUMBEROFGRIDPOINTS * 1j)]
-        return numpy.meshgrid(xg, yg)
+        xgr, ygr = numpy.meshgrid(xg, yg)
+        if noisy:
+            # add scaled noise
+            xgr += self._jitter[0] * (xhi - xlo)
+            ygr += self._jitter[1] * (yhi - ylo)
+        return xgr, ygr
 
 
     def _calc_phase_plane(self, xg, yg):
@@ -164,7 +176,7 @@ class PhasePlaneD3(PhasePlane):
         """
         :return: A json representation of the phase plane.
         """
-        x, y = self._get_mesh_grid()
+        x, y = self._get_mesh_grid(noisy=True)
 
         u, v = self._calc_phase_plane(x, y)
         u = u[..., self.mode]
