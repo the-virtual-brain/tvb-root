@@ -102,8 +102,7 @@ class ObjSurfaceImporter(ABCUploader):
             validation_result = surface.validate()
 
             if validation_result.warnings:
-                current_op = dao.get_operation_by_id(self.operation_id)
-                current_op.additional_info = validation_result.summary()
+                self.add_operation_additional_info(validation_result.summary())
 
             return [surface]
 
