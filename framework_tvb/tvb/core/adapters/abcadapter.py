@@ -834,7 +834,7 @@ class ABCAdapter(object):
             ## Link just towards the last Burst identified.
             self.meta_data[DataTypeMetaData.KEY_BURST] = entity.fk_parent_burst
 
-        if entity.user_tag_1:
+        if entity.user_tag_1 and DataTypeMetaData.KEY_TAG_1 not in self.meta_data:
             self.meta_data[DataTypeMetaData.KEY_TAG_1] = entity.user_tag_1
 
         current_subject = self.meta_data[DataTypeMetaData.KEY_SUBJECT]
@@ -853,7 +853,7 @@ class ABCAdapter(object):
             raise InvalidParameterException("Field %s [%s] did not pass filters." % (row[self.KEY_LABEL],
                                                                                      row[self.KEY_NAME]))
 
-    # In case a specific field in entity is to be used, use it
+        # In case a specific field in entity is to be used, use it
         if xml_reader.ATT_FIELD in row:
             val = eval("entity." + row[xml_reader.ATT_FIELD])
             result = val
