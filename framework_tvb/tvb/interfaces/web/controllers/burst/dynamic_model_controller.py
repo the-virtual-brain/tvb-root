@@ -289,8 +289,8 @@ class DynamicModelController(BurstBaseController):
 
 
     @expose_json
-    def trajectory(self, dynamic_gid, x, y):
-        starting_points = [[x, y]]
+    def trajectories(self, dynamic_gid, starting_points):
+        starting_points = json.loads(starting_points)
         dynamic = self.get_cached_dynamic(dynamic_gid)
         trajectories, signals = dynamic.phase_plane.trajectories(starting_points)
 
@@ -299,7 +299,7 @@ class DynamicModelController(BurstBaseController):
                 self.logger.warn('Denaturated point %s on a trajectory')
                 return {'finite':False}
 
-        return {'trajectory': trajectories[0], 'signals': signals, 'finite':True}
+        return {'trajectories': trajectories, 'signals': signals, 'finite':True}
 
 
     @staticmethod

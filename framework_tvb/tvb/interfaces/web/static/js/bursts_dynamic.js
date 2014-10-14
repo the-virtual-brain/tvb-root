@@ -32,7 +32,11 @@ var dynamicPage = {
     paramDefaults : {}, // information about the model parameters and their default values
     graphDefaults:{},   // information about the graph: shown state variables, state variable and axis ranges
     treeState: {},      // the state of the left input tree. Used to detect changes
-    dynamic_gid: null
+    dynamic_gid: null,
+    traj_starts: [],    // trajectory starting points. Kept to resubmit trajectory computation if model params change
+    trajectories:[]     // the trajectories/signals raw data.
+                        // It is idiomatic in d3 not to draw incrementally but to update the data set.
+                        // Thus we keep the dataset because we have to update if a new traj is added.
 };
 
 /** @module ui components module */
@@ -228,6 +232,11 @@ function _fetchSlidersFromServer(){
             dynamicPage.paramSliders = new dynamicPage.SliderGroup(dynamicPage.paramDefaults, '#reset_sliders', onParameterChanged);
             dynamicPage.stateVarsSliders = new dynamicPage.SliderGroup(dynamicPage.graphDefaults.state_variables, '#reset_state_variables', onGraphChanged);
             dynamicPage.axisControls = new dynamicPage.AxisGroup(dynamicPage.graphDefaults, onGraphChanged);
+            //clear all trajectories
+            dynamicPage.trajectories = [];
+            dynamicPage.traj_starts = [];
+            dynamicPage.phasePlane.drawTrajectories([]);
+            dynamicPage.phasePlane.drawSignal([]);
             _onParameterChanged();
             _disable_active_sv_slider();
         }
@@ -249,7 +258,7 @@ function onModelChanged(name){
 function _redrawPhasePlane(data){
     data = JSON.parse(data);
     dynamicPage.phasePlane.draw(data);
-    dynamicPage.phasePlane.clearTrajectories();
+    _redrawTrajectories();
     var axisState = dynamicPage.axisControls.getValue();
     dynamicPage.phasePlane.setLabels(axisState.svx, axisState.svy);
     dynamicPage.phasePlane.setPlotLabels($.map(dynamicPage.graphDefaults.state_variables, function(d){return d.name;}) );
@@ -285,15 +294,17 @@ function _onGraphChanged(){
 // see onParameterChanged
 var onGraphChanged = $.debounce(DEBOUNCE_DELAY, _onGraphChanged);
 
-function onTrajectory(x, y){
+/**
+ * calls the trajectories rpc
+ */
+function _trajectories_rpc(starting_points, success){
     doAjaxCall({
-        url: _url('trajectory'),
-        data: {x:x, y:y},
+        url: _url('trajectories'),
+        data: {starting_points: JSON.stringify(starting_points)},
         success:function(data){
             data = JSON.parse(data);
             if (data.finite) {
-                dynamicPage.phasePlane.drawTrajectory(data.trajectory);
-                dynamicPage.phasePlane.drawSignal(data.signals);
+                success(data);
             }else{
                 displayMessage('Trajectory contains infinities. Try to decrease the integration step.', 'warningMessage');
             }
@@ -301,6 +312,25 @@ function onTrajectory(x, y){
     });
 }
 
+function onTrajectory(x, y){
+    _trajectories_rpc([[x, y]], function(data){
+        dynamicPage.traj_starts.push([x,y]);
+        dynamicPage.trajectories.push(data.trajectories[0]);
+        dynamicPage.phasePlane.drawTrajectories(dynamicPage.trajectories);
+        dynamicPage.phasePlane.drawSignal(data.signals);
+    });
+}
+
+function _redrawTrajectories(){
+    if (dynamicPage.traj_starts.length === 0){
+        return;
+    }
+    _trajectories_rpc(dynamicPage.traj_starts, function(data){
+        dynamicPage.trajectories = data.trajectories;
+        dynamicPage.phasePlane.drawTrajectories(dynamicPage.trajectories);
+        dynamicPage.phasePlane.drawSignal(data.signals);
+    });
+}
 
 // Throttle the rate of trajectory creation. In a burst of mouse clicks some will be ignored.
 // Ignore trailing events. Without this throttling the server overwhelms and numexpr occasionally segfaults.
@@ -325,9 +355,7 @@ function onIntegratorChanged(state){
     doAjaxCall({
         url: _url('integrator_changed'),
         data: state,
-        success:function(){
-            dynamicPage.phasePlane.clearTrajectories();
-        }
+        success: _redrawTrajectories
     });
 }
 
