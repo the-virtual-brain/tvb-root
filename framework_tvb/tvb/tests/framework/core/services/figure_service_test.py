@@ -39,6 +39,7 @@ if not hasattr(Image, 'open'):
     from Image import Image
 
 from tvb.tests.framework.core.base_testcase import TransactionalTestCase
+from tvb.core import utils
 from tvb.core.entities.file.files_helper import FilesHelper
 from tvb.core.entities.storage import dao
 from tvb.core.services.figure_service import FigureService
@@ -105,7 +106,7 @@ class FigureServiceTest(TransactionalTestCase):
         self.store_test_png()
         figures = self.retrieve_images()
         self.assertEqual(1, len(figures))
-        image_path = figures[0].file_path.replace('__', os.path.sep)
+        image_path = utils.url2path(figures[0].file_path)
         self.assertCanReadImage(image_path)
 
 
