@@ -131,24 +131,26 @@ class PhasePlane(object):
             self.default_sv[k] = val
 
 
-    def _compute_trajectories(self, x, y):
-        """ A vectorized method of computing a number of trajectories in parallel """
+    def _compute_trajectories(self, xy):
+        """
+        A vectorized method of computing a number of trajectories in parallel
+        :param xy: starting points for all trajectories. shape = starts * 2
+        """
         scheme = self.integrator.scheme
+        state = numpy.tile(self.default_sv, (len(xy), 1)) # repeat the initial state for all starting points
+        # now set the x, y starting points
+        state[self.svx_ind, :] = xy[:, 0, numpy.newaxis]  # slice xy column wise
+        state[self.svy_ind, :] = xy[:, 1, numpy.newaxis]
 
-        state = numpy.tile(self.default_sv, (len(x), 1))
-        state[self.svx_ind, :] = x
-        state[self.svy_ind, :] = y
-
-        trajs = numpy.zeros((TRAJ_STEPS + 1, self.model.nvar, len(x), self.model.number_of_modes))
+        trajs = numpy.zeros((TRAJ_STEPS + 1, self.model.nvar, len(xy), self.model.number_of_modes))
         trajs[0, :] = state
-
+        # grow trajectories step by step
         for step in xrange(TRAJ_STEPS):
             state = scheme(state, self.model.dfun, self.no_coupling, 0.0, 0.0)
             trajs[step + 1, :] = state
 
         if numpy.isnan(trajs).any():
             self.log.warn("NaN in trajectories")
-
         return trajs
 
 
@@ -190,11 +192,14 @@ class PhasePlaneD3(PhasePlane):
         return segments
 
 
-    def trajectory(self, x, y):
-        traj = self._compute_trajectories([x], [y])
-        trajectory = zip(traj[:, self.svx_ind, 0, self.mode], traj[:, self.svy_ind, 0, self.mode])
+    def trajectories(self, starting_points):
+        traj = self._compute_trajectories(numpy.array(starting_points)) # point_on_traj_idx, sv_idx, traj_idx, mode
+        # reshape it
+        traj = traj.transpose(2, 0, 1, 3) # traj_idx, point, sv_idx, mode
+        trajectory = traj[:, :, [self.svx_ind, self.svy_ind], self.mode] # traj_idx, points, x, y
 
+        # signals for last trajectory
         signal_x = numpy.arange(TRAJ_STEPS + 1) * self.integrator.dt
-        signals = [ zip(signal_x, traj[:, i, 0, self.mode].tolist()) for i in xrange(traj.shape[1])]
+        signals = [ zip(signal_x, traj[-1, :, i, self.mode].tolist()) for i in xrange(self.model.nvar)]
 
-        return trajectory, signals
+        return trajectory.tolist(), signals
