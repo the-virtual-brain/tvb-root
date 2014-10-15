@@ -1116,10 +1116,6 @@ function tick() {
         if (lastTime !== 0) {
             framestime.shift();
             framestime.push(elapsed);
-            if (GL_zoomSpeed !== 0){
-                GL_zTranslation -= GL_zoomSpeed * elapsed;
-                GL_zoomSpeed = 0;
-            }
             document.getElementById("TimeStep").innerHTML = elapsed;
         }
 

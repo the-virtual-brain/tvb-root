@@ -108,14 +108,17 @@ function GL_handleKeyUp(event) {
 	return false;
 }
 
-
-GL_zoomSpeed = 0;
 function GL_handleMouseWeel(delta) {
+    var GL_zoomSpeed = 0;
 	if (delta < 0) {
         GL_zoomSpeed = 0.2;
     } else if (delta > 0) {
         GL_zoomSpeed = -0.2;
     }
+    GL_zTranslation -= GL_zoomSpeed * GL_zTranslation;
+    loadIdentity();
+    mvTranslate([0.0, -5.0, -GL_zTranslation]);
+    multMatrix(GL_currentRotationMatrix);
 }
 // ------ KEY FUNCTIONS END -----------------------------------------------------
 

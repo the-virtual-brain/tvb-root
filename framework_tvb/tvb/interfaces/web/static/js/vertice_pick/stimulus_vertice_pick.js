@@ -202,11 +202,6 @@ function tick() {
 
 
 function drawScene() {
-	if (GL_zoomSpeed != 0) {
-		// Handle the zoom event before drawing the brain.
-        GL_zTranslation -= GL_zoomSpeed * GL_zTranslation;
-        GL_zoomSpeed = 0;
-    }
     var theme = ColSchGetTheme().surfaceViewer;
     gl.clearColor(theme.backgroundColor[0], theme.backgroundColor[1], theme.backgroundColor[2], theme.backgroundColor[3]);
     // Use function offered by base_vertice_pick.js to draw the brain:

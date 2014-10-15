@@ -31,10 +31,6 @@
  * 'Overwrite' the drawScene function here to add extra functionality for drawing the legend
  */
 function drawScene() {
-    if (GL_zoomSpeed != 0) {		// Handle the zoom event before drawing the brain.
-        GL_zTranslation -= GL_zoomSpeed * GL_zTranslation;
-        GL_zoomSpeed = 0;
-    }
     // Use function offered by base_vertice_pick.js to draw the brain.
 	BASE_PICK_drawBrain(BASE_PICK_brainDisplayBuffers, noOfUnloadedBrainDisplayBuffers);
 

@@ -50,7 +50,6 @@ var BASE_PICK_isMovieMode = false;
 var surfaceFocalPoints = {};
 
 var drawingMode;
-GL_zoomSpeed = 0;
 
 var BRAIN_CANVAS_ID = "GLcanvas";
 var BASE_PICK_pinBuffers = [];
@@ -128,11 +127,6 @@ function BASE_PICK_webGLStart(urlVerticesPickList, urlTrianglesPickList, urlNorm
  * Simplest drawScene
  */
 function drawScene() {
-
-	if (GL_zoomSpeed != 0) {
-        GL_zTranslation -= GL_zoomSpeed * GL_zTranslation;
-        GL_zoomSpeed = 0;
-    }
     BASE_PICK_drawBrain(BASE_PICK_brainDisplayBuffers, noOfUnloadedBrainDisplayBuffers);
 }
 
