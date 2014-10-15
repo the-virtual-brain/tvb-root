@@ -106,6 +106,12 @@ class SurfaceData(MappedType):
         order=-1,
         doc="""The number of triangles making up this surface.""")
 
+    edge_mean_length = basic.Float(order=-1)
+
+    edge_min_length = basic.Float(order=-1)
+
+    edge_max_length = basic.Float(order=-1)
+
     ##--------------------- FRAMEWORK ATTRIBUTES -----------------------------##
 
     hemisphere_mask = arrays.BoolArray(

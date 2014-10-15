@@ -47,10 +47,9 @@ Important:
 .. moduleauthor:: Paula Sanz-Leon <paula.sanz-leon@univ-amu.fr>
 """
 
-import numpy
-import math
-from decimal import Decimal
 import json
+import numpy
+from decimal import Decimal
 import tvb.basic.traits.core as core
 from tvb.basic.logger.builder import get_logger
 

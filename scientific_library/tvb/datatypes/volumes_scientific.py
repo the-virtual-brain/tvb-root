@@ -48,11 +48,12 @@ class VolumeScientific(volumes_data.VolumeData):
         Gather scientifically interesting summary information from an instance
         of this datatype.
         """
-        summary = {"Volume type": self.__class__.__name__}
-        summary["Origin"] = self.origin
-        summary["Voxel size"] = self.voxel_size
-        summary["Units"] = self.voxel_unit
+        summary = {"Volume type": self.__class__.__name__,
+                   "Origin": self.origin,
+                   "Voxel size": self.voxel_size,
+                   "Units": self.voxel_unit}
         return summary
+
 
 
 class ParcellationMaskScientific(volumes_data.ParcellationMaskData,

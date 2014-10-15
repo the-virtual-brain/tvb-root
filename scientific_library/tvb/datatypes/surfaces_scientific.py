@@ -101,6 +101,9 @@ class SurfaceScientific(surfaces_data.SurfaceData):
             self.compute_vertex_normals()
             LOG.debug("End computing vertex normals")
 
+        if self._edge_lengths is None:
+            self._find_edge_lengths()
+
 
     def _find_summary_info(self):
         """
@@ -453,31 +456,36 @@ class SurfaceScientific(surfaces_data.SurfaceData):
         #TODO: Would a Sparse matrix be a more useful data structure for these??? 
         elem = numpy.sqrt(((self.vertices[self.edges, :][:, 0, :] -
                             self.vertices[self.edges, :][:, 1, :]) ** 2).sum(axis=1))
+
+        self.edge_mean_length = float(elem.mean())
+        self.edge_min_length = float(elem.min())
+        self.edge_max_length = float(elem.max())
+
         return elem
 
 
     @property
     def edge_length_mean(self):
         """The mean length of the edges of the mesh."""
-        if self._edge_length_mean is None:
-            self._edge_length_mean = self.edge_lengths.mean()
-        return self._edge_length_mean
+        if self.edge_mean_length is None:
+            self._find_edge_lengths()
+        return self.edge_mean_length
 
 
     @property
     def edge_length_min(self):
         """The length of the shortest edge in the mesh."""
-        if self._edge_length_min is None:
-            self._edge_length_min = self.edge_lengths.min()
-        return self._edge_length_min
+        if self.edge_min_length is None:
+            self._find_edge_lengths()
+        return self.edge_min_length
 
 
     @property
     def edge_length_max(self):
         """The length of the longest edge in the mesh."""
-        if self._edge_length_max is None:
-            self._edge_length_max = self.edge_lengths.max()
-        return self._edge_length_max
+        if self.edge_max_length is None:
+            self._find_edge_lengths()
+        return self.edge_max_length
 
 
     @property
