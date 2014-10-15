@@ -39,8 +39,10 @@ function drawScene() {
 	BASE_PICK_drawBrain(BASE_PICK_brainDisplayBuffers, noOfUnloadedBrainDisplayBuffers);
 
    if (noOfUnloadedBrainDisplayBuffers == 0) {      // wait for the data to be loaded, then draw the legend
-        loadIdentity();
-        if (LEG_legendBuffers.length) drawBuffers(gl.TRIANGLES, [LEG_legendBuffers]);
+       mvPushMatrix();
+       loadIdentity();
+       if (LEG_legendBuffers.length) drawBuffers(gl.TRIANGLES, [LEG_legendBuffers]);
+       mvPopMatrix();
    }
 }
 

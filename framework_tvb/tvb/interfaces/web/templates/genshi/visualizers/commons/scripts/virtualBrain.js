@@ -1151,12 +1151,9 @@ function drawScene() {
     // View angle is 45, we want to see object from near up to 800 distance from camera
     perspective(45, gl.viewportWidth / gl.viewportHeight, near, 800.0);
 
-    loadIdentity();
     mvPushMatrix();
-    // Translate to get a good view.
-    mvTranslate([0.0, -5.0, -GL_zTranslation]);
-    multMatrix(GL_currentRotationMatrix);
-    mvRotate(180, [0, 0, 1]);
+
+    //mvRotate(180, [0, 0, 1]);
 
     if (!doPick) {
         gl.uniform1f(shaderProgram.isPicking, 0);
@@ -1204,7 +1201,10 @@ function drawScene() {
         }
 
         if(drawNavigator){
+            mvPushMatrix();
+            mvTranslate([NAV_navigatorX, NAV_navigatorY, NAV_navigatorZ]);
             NAV_draw_navigator();
+            mvPopMatrix();
         }
 
     } else {

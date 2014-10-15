@@ -176,7 +176,7 @@ function basicAddLight(s){
 
 // ------ MATRIX FUNCTIONS -----------------------------------------------------
 
-var GL_mvMatrix;
+var GL_mvMatrix = Matrix.I(4);;
 function loadIdentity() {
     GL_mvMatrix = Matrix.I(4);
 }

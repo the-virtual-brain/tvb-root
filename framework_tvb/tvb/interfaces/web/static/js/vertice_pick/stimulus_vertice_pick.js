@@ -226,9 +226,11 @@ function drawScene() {
             $("#slider").slider("option", "value", totalTimeStep);
         }
 		// Draw the legend for the stimulus now.
+        mvPushMatrix();
 		loadIdentity();
 	    basicAddLight(defaultLightSettings);
 		drawBuffers(gl.TRIANGLES, [LEG_legendBuffers]);
+        mvPopMatrix();
 	} else {
 		// We are not in movie mode. The drawScene was called from some ui event (e.g.
 		// mouse over). Here we can afford to update the 2D slices because performance is

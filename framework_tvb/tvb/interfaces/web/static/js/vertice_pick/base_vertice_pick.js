@@ -161,12 +161,9 @@ function BASE_PICK_drawBrain(brainBuffers, noOfUnloadedBuffers) {
 	// View angle is 45, we want to see object from 0.1 up to 800 distance from viewer
 	var aspect = gl.viewportWidth / gl.viewportHeight;
 	perspective(45, aspect , near, 800.0);
-	loadIdentity();
 
-    // Translate to get a good view.
-    mvTranslate([0.0, -5.0, -GL_zTranslation]);
-    multMatrix(GL_currentRotationMatrix);
-    mvRotate(180, [0, 0, 1]);
+    mvPushMatrix();
+    // mvRotate(180, [0, 0, 1]);
 
     drawBuffers(drawingMode, brainBuffers);
 
@@ -188,6 +185,7 @@ function BASE_PICK_drawBrain(brainBuffers, noOfUnloadedBuffers) {
     	drawBuffers(gl.TRIANGLES, [BASE_PICK_pinBuffers]);
     	mvPopMatrix();
     }
+    mvPopMatrix();
 }
 
 
@@ -434,14 +432,11 @@ function BASE_PICK_doVerticePick() {
 	// View angle is 45, we want to see object from 0.1 up to 800 distance from viewer
 	var aspect = gl.viewportWidth / gl.viewportHeight;
 	perspective(45, aspect , near, 800.0);
-	loadIdentity();
 	
 	gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
 	
 	mvPushMatrix();
-	mvTranslate([0.0, -5.0, -GL_zTranslation]);
-    multMatrix(GL_currentRotationMatrix);
-    mvRotate(180, [0, 0, 1]);
+    //mvRotate(180, [0, 0, 1]);
     
     //Draw the brain in picking mode
     BASE_PICK_doPick = true;

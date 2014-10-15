@@ -61,6 +61,9 @@ function GL_handleMouseMove(event) {
     var newRotationMatrix = createRotationMatrix(deltaX / 10, [0, 1, 0]);
     newRotationMatrix = newRotationMatrix.x(createRotationMatrix(deltaY / 10, [1, 0, 0]));
     GL_currentRotationMatrix = newRotationMatrix.x(GL_currentRotationMatrix);
+    loadIdentity();
+    mvTranslate([0.0, -5.0, -GL_zTranslation]);
+    multMatrix(GL_currentRotationMatrix);
 }
 
 // ------ MOUSE FUNCTIONS END -----------------------------------------------------
@@ -92,6 +95,9 @@ function GL_handleKeyDown(event) {
     if (event.keyCode == 40) {
         GL_currentRotationMatrix = Matrix.I(4);
     }
+    loadIdentity();
+    mvTranslate([0.0, -5.0, -GL_zTranslation]);
+    multMatrix(GL_currentRotationMatrix);
     event.preventDefault();
 	return false;
 }

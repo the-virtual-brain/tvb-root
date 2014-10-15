@@ -111,7 +111,6 @@ function NAV_customMouseUp(event) {
 ////////////////////////////////////~~~~~~~~END BRAIN NAVIGATOR RELATED CODE~~~~~~~~~~~/////////////////////////////
 
 function NAV_draw_navigator() {
-	mvTranslate([NAV_navigatorX, NAV_navigatorY, NAV_navigatorZ]);
 	if (_redrawSectionView || NAV_inTimeRefresh) {
         drawSectionView('x', false);
         drawSectionView('y', false);
@@ -144,9 +143,10 @@ function drawSectionView(axis, first) {
     gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
 
     perspective(fov, gl.viewportWidth / gl.viewportHeight, 250 + sectionValue - 1, 250 + sectionValue);
-    loadIdentity();
-    mvTranslate([0.0, -5.0, -250.0]);
+
     mvPushMatrix();
+    loadIdentity(); //sure bout this?
+    mvTranslate([0.0, -5.0, -250.0]);
     multMatrix(sectionViewRotationMatrix);
     drawBuffers(gl.TRIANGLES, brainBuffers);
     mvPopMatrix();
@@ -286,12 +286,12 @@ function _handleAxePick(event, axe) {
         GL_mouseYRelToCanvas = (GL_mouseYRelToCanvasImg * glCanvasElem.height()) / 172.0;
 
     	perspective(45, gl.viewportWidth / gl.viewportHeight, near, 800.0);
-        loadIdentity();
+
+        mvPushMatrix();
+
         basicAddLight(lightSettings);
 
-        // Translate to get a good view.
-        mvTranslate([0.0, -5.0, -GL_DEFAULT_Z_POS]);
-        mvRotate(180, [0, 0, 1]);
+        //mvRotate(180, [0, 0, 1]);
 
         var sectionViewRotationMatrix, result;
         if (axe == 'x') {
@@ -314,7 +314,9 @@ function _handleAxePick(event, axe) {
             NAV_navigatorY = result[1];
         }
 		_redrawSectionView = true;
+        mvTranslate([NAV_navigatorX, NAV_navigatorY, NAV_navigatorZ]);
 		NAV_draw_navigator();
+        mvPopMatrix();
     }
 }
 
