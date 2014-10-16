@@ -18,6 +18,24 @@
  **/
 
 // ------ MOUSE FUNCTIONS -----------------------------------------------------
+var TRANSLATION_SENSITIVITY = 4; // screen pixels for a unit
+var ROTATION_SENSITIVITY = 20;   // screen pixel per degree
+var WHEEL_SENSITIVITY = 0.1;
+
+// -- Globals implementing the Trackball style navigation. --
+// The math is camera * trackBall * model * x.  trackball = R2*T2*R1*T1...
+// The "view" rotations happen in the trackball matrix. Why?
+// We want translations to happen in camera space. This variation: camera = R2R1.. trackball = T2T1..
+// will rotate the camera around fine but the translations will happen in model space.
+// This is not intuitive. Dragging to the right will move in model +x but model +x can point in arbitrary
+// directions (including left) in camera space.
+
+// From model space to trackball space. Modified by mouse left and right button drags.
+var GL_trackBallMatrix = Matrix.I(4);
+// From trackball space to camera space; Modified by mouse scrolls and middle button drags.
+var GL_cameraMatrix = Matrix.Translation($V([0, 0, -200]));
+
+GL_mvMatrix = GL_cameraMatrix.x(GL_trackBallMatrix);
 
 var GL_mouseDown = false;
 var GL_lastMouseX = null;
@@ -47,6 +65,13 @@ function GL_handleMouseUp(event) {
     GL_mouseDown = false;
 }
 
+/**
+ * Implements a trackball-ish navigation for the scene.
+ * Left button rotates in trackball space. Right one translates.
+ * Middle mouse moves camera closer/ further from model.
+ * Shift + left mouse == right mouse
+ * Ctrl will rotate/translate in model space.
+ */
 function GL_handleMouseMove(event) {
     if (!GL_mouseDown) {
         return;
@@ -58,67 +83,74 @@ function GL_handleMouseMove(event) {
     GL_lastMouseX = newX;
     GL_lastMouseY = newY;
 
-    var newRotationMatrix = createRotationMatrix(deltaX / 10, [0, 1, 0]);
-    newRotationMatrix = newRotationMatrix.x(createRotationMatrix(deltaY / 10, [1, 0, 0]));
-    GL_currentRotationMatrix = newRotationMatrix.x(GL_currentRotationMatrix);
-    loadIdentity();
-    mvTranslate([0.0, -5.0, -GL_zTranslation]);
-    multMatrix(GL_currentRotationMatrix);
+    var shouldZoomCamera  = event.button === 1;  // middle click
+    var movement;
+
+    if(shouldZoomCamera) { //camera input
+        movement = Matrix.Translation($V([0, 0, -deltaY / TRANSLATION_SENSITIVITY]));
+        GL_cameraMatrix = movement.x(GL_cameraMatrix);
+    }else{ // trackball input
+        var shouldTranslateXY = event.button === 2 || event.shiftKey; // right click or shift
+        var inModelSpace = event.ctrlKey;
+
+        if (shouldTranslateXY) {
+            movement = Matrix.Translation($V([deltaX / TRANSLATION_SENSITIVITY, -deltaY / TRANSLATION_SENSITIVITY, 0]));
+        }else{ // rotate
+            movement = createRotationMatrix(deltaX / ROTATION_SENSITIVITY, [0, 1, 0]);
+            movement = movement.x(createRotationMatrix(deltaY / ROTATION_SENSITIVITY, [1, 0, 0]));
+}
+
+        if (!inModelSpace){ // Normal mode. In camera space
+            GL_trackBallMatrix = movement.x(GL_trackBallMatrix);
+        }else{ // model space
+            GL_trackBallMatrix = GL_trackBallMatrix.x(movement);
+        }
+    }
+
+    GL_mvMatrix = GL_cameraMatrix.x(GL_trackBallMatrix);
 }
 
 // ------ MOUSE FUNCTIONS END -----------------------------------------------------
 
 // ------ KEY FUNCTIONS -----------------------------------------------------------
-var GL_DEFAULT_Z_POS = 0;
-var GL_zTranslation = 0;
-var _GL_currentlyPressedKeys = Object();
+var GL_DEFAULT_Z_POS = 0; //DEPRECATED
+var GL_zTranslation = 0;  //DEPRECATED
 
 function GL_handleKeyDown(event) {
-    _GL_currentlyPressedKeys[event.keyCode] = true;
+    var processed = true;
     if (String.fromCharCode(event.keyCode) == " ") {
-        GL_currentRotationMatrix = Matrix.I(4);
-        GL_zoomSpeed = 0;
-        GL_zTranslation = GL_DEFAULT_Z_POS;
-    }
-    if (event.keyCode == 37) {
+        GL_trackBallMatrix = Matrix.I(4);
+    }else if (event.keyCode === 37) {
         //Left cursor key
-        GL_currentRotationMatrix = createRotationMatrix(270, [1, 0, 0]).x(createRotationMatrix(270, [0, 0, 1]));
-    }
-    if (event.keyCode == 39) {
+        GL_trackBallMatrix = createRotationMatrix(270, [1, 0, 0]).x(createRotationMatrix(270, [0, 0, 1]));
+    }else if (event.keyCode === 39) {
         //Right cursor key
-        GL_currentRotationMatrix = createRotationMatrix(270, [1, 0, 0]).x(createRotationMatrix(90, [0, 0, 1]));
-    }
-    if (event.keyCode == 38) {
+        GL_trackBallMatrix = createRotationMatrix(270, [1, 0, 0]).x(createRotationMatrix(90, [0, 0, 1]));
+    }else if (event.keyCode === 38) {
         // Up cursor key
-        GL_currentRotationMatrix = createRotationMatrix(180, [1, 0, 0]).x(Matrix.I(4));
+        GL_trackBallMatrix = createRotationMatrix(180, [1, 0, 0]);
+    }else if (event.keyCode === 40) {
+        GL_trackBallMatrix = Matrix.I(4);
+    }else{
+        processed = false;
     }
-    if (event.keyCode == 40) {
-        GL_currentRotationMatrix = Matrix.I(4);
-    }
-    loadIdentity();
-    mvTranslate([0.0, -5.0, -GL_zTranslation]);
-    multMatrix(GL_currentRotationMatrix);
+
+    if(processed){
+        GL_cameraMatrix = Matrix.Translation($V([0, 0, -200]));
+        GL_mvMatrix = GL_cameraMatrix.x(GL_trackBallMatrix);
+
     event.preventDefault();
 	return false;
+}
 }
 
 function GL_handleKeyUp(event) {
-    _GL_currentlyPressedKeys[event.keyCode] = false;
-    event.preventDefault();
-	return false;
 }
 
 function GL_handleMouseWeel(delta) {
-    var GL_zoomSpeed = 0;
-	if (delta < 0) {
-        GL_zoomSpeed = 0.2;
-    } else if (delta > 0) {
-        GL_zoomSpeed = -0.2;
-    }
-    GL_zTranslation -= GL_zoomSpeed * GL_zTranslation;
-    loadIdentity();
-    mvTranslate([0.0, -5.0, -GL_zTranslation]);
-    multMatrix(GL_currentRotationMatrix);
+    var movement = Matrix.Translation($V([0, 0, delta/WHEEL_SENSITIVITY]));
+    GL_cameraMatrix = movement.x(GL_cameraMatrix);
+    GL_mvMatrix = GL_cameraMatrix.x(GL_trackBallMatrix);
 }
 // ------ KEY FUNCTIONS END -----------------------------------------------------
 
