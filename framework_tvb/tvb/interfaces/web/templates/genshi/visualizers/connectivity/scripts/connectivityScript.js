@@ -297,43 +297,32 @@ function drawScene() {
     // View angle is 45, we want to see object from 0.1 up to 800 distance from viewer
     perspective(45, gl.viewportWidth / gl.viewportHeight, near, 800.0);
 
-    loadIdentity();
+    mvPushMatrix();
 
     if (!doPick) {
         createLinesBuffer(getLinesIndexes());
         gl.uniform1f(shaderProgram.isPicking, 0);
         gl.uniform3f(shaderProgram.pickingColor, 1, 1, 1);
-        if (GL_zoomSpeed != 0) {
-            GL_zTranslation += GL_zoomSpeed * GL_zTranslation;
-            GL_zoomSpeed = 0;
-        }
 
         gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
         addLight();
 
         //draw the lines between the checked points
         mvPushMatrix();
-        // Translate to get a good view.
-        mvTranslate([0.0, 0.0, GL_zTranslation]);
-        multMatrix(GL_currentRotationMatrix);
         mvTranslate([GVAR_additionalXTranslationStep, GVAR_additionalYTranslationStep, 0]);
         _drawLines(linesBuffer);
         mvPopMatrix();
 
         //draw the points
         mvPushMatrix();
-        // Translate to get a good view.
-        mvTranslate([0.0, 0.0, GL_zTranslation]);
-        multMatrix(GL_currentRotationMatrix);
         mvTranslate([GVAR_additionalXTranslationStep, GVAR_additionalYTranslationStep, 0]);
         displayPoints();
         mvPopMatrix();
 
-       ORIENTATION_draw_nose_and_ears();
+       //ORIENTATION_draw_nose_and_ears();
 
         // draw the brain cortical surface
         if (noOfBuffersToLoad === 0) {
-            mvTranslate([0.0, 0.0, GL_zTranslation]);
             mvPushMatrix();
 
             // Blending function for alpha: transparent pix blended over opaque -> opaque pix
@@ -342,7 +331,6 @@ function drawScene() {
             gl.blendFuncSeparate(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA, gl.ONE, gl.ONE_MINUS_SRC_ALPHA);
             gl.enable(gl.CULL_FACE);
             addLightForCorticalSurface();
-            multMatrix(GL_currentRotationMatrix);
             mvTranslate([GVAR_additionalXTranslationStep, GVAR_additionalYTranslationStep, 0]);
 
             // Draw the transparent object twice, to get a correct rendering
@@ -368,8 +356,6 @@ function drawScene() {
         }
 
         mvPushMatrix();
-        mvTranslate([0.0, 0.0, GL_zTranslation]);
-        multMatrix(GL_currentRotationMatrix);
         mvTranslate([GVAR_additionalXTranslationStep, GVAR_additionalYTranslationStep, 0]);
 
         for (var i = 0; i < NO_POSITIONS; i++){
@@ -394,6 +380,7 @@ function drawScene() {
         gl.bindFramebuffer(gl.FRAMEBUFFER, null);
         drawScene();
     }
+    mvPopMatrix();
 }
 
 /**
@@ -802,10 +789,6 @@ function drawHemispheres(drawingMode) {
  * be drawn alone, without widths and tracts.
  */
 function connectivity_startGL(isSingleMode) {
-    GL_DEFAULT_Z_POS = -310.0;
-    if (!GL_zTranslation)       // set it to default only if it's not set, in order to keep the zoom when switching tabs
-        GL_zTranslation = GL_DEFAULT_Z_POS;
-
     for (var i = 0; i < COLORS.length; i++) {
         gl.uniform3f(shaderProgram.colorsArray[i], COLORS[i][0], COLORS[i][1], COLORS[i][2]);
     }
@@ -844,6 +827,7 @@ function connectivity_initCanvas() {
     canvas.onmousedown = customMouseDown;
     document.onmouseup = GL_handleMouseUp;
     document.onmousemove = customMouseMove;
+    canvas.oncontextmenu = function(){return false;};
     canvas.redrawFunctionRef = drawScene;
 }
 

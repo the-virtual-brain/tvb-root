@@ -40,7 +40,6 @@ GL_mvMatrix = GL_cameraMatrix.x(GL_trackBallMatrix);
 var GL_mouseDown = false;
 var GL_lastMouseX = null;
 var GL_lastMouseY = null;
-var GL_currentRotationMatrix = Matrix.I(4);
 
 var GL_mouseXRelToCanvas = null;
 var GL_mouseYRelToCanvas = null;
@@ -113,8 +112,6 @@ function GL_handleMouseMove(event) {
 // ------ MOUSE FUNCTIONS END -----------------------------------------------------
 
 // ------ KEY FUNCTIONS -----------------------------------------------------------
-var GL_DEFAULT_Z_POS = 0; //DEPRECATED
-var GL_zTranslation = 0;  //DEPRECATED
 
 function GL_handleKeyDown(event) {
     var processed = true;

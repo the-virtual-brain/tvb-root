@@ -94,10 +94,6 @@ function BASE_PICK_webGLStart(urlVerticesPickList, urlTrianglesPickList, urlNorm
     initBrainNavigatorBuffers();
     createStimulusPinBuffers();
     
-    //Used for reset to default position by pressing space key
-    GL_DEFAULT_Z_POS = 250;
-    GL_zTranslation = GL_DEFAULT_Z_POS;
-
     var theme = ColSchGetTheme().surfaceViewer;
     gl.clearColor(theme.backgroundColor[0], theme.backgroundColor[1], theme.backgroundColor[2], theme.backgroundColor[3]);
     gl.clearDepth(1.0);
@@ -111,6 +107,7 @@ function BASE_PICK_webGLStart(urlVerticesPickList, urlTrianglesPickList, urlNorm
     canvas.onmouseup = customMouseUp;
     canvas.onmousemove = customMouseMove;
     canvas.onmouseout = handleMouseOut;
+    canvas.oncontextmenu = function(){return false;};
 
     $(canvas).mousewheel(function(event, delta) {
             BASE_PICK_handleMouseWeel(delta);

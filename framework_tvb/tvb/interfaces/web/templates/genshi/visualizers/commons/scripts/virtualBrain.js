@@ -163,7 +163,6 @@ var VS_selectedRegions = [];
  */
 var near = 0.1;
 var fov = 45;
-GL_DEFAULT_Z_POS = 250;
 
 var lightSettings = defaultLightSettings;
 
@@ -194,7 +193,6 @@ function VS_SetHemisphere(h){
 function VS_StartPortletPreview(baseDatatypeURL, urlVerticesList, urlTrianglesList, urlNormalsList,
                                 urlAlphasList, urlAlphasIndicesList, minActivity, maxActivity, oneToOneMapping) {
     isPreview = true;
-    GL_zTranslation = GL_DEFAULT_Z_POS;
     pageSize = 1;
     urlBase = baseDatatypeURL;
     activitiesData = HLPR_readJSONfromFile(readDataPageURL(urlBase, 0, 1, selectedStateVar, selectedMode, TIME_STEP));
@@ -223,6 +221,7 @@ function VS_StartPortletPreview(baseDatatypeURL, urlVerticesList, urlTrianglesLi
     canvas.onkeydown = GL_handleKeyDown;
     canvas.onkeyup = GL_handleKeyUp;
     canvas.onmousedown = customMouseDown;
+    canvas.oncontextmenu = function(){return false;};
     document.onmouseup = NAV_customMouseUp;
     document.onmousemove = GL_handleMouseMove;
 
@@ -284,8 +283,6 @@ function _VS_static_entrypoint(urlVerticesList, urlLinesList, urlTrianglesList, 
         VS_selectedRegions.push(i);
     }
 
-    GL_zTranslation = GL_DEFAULT_Z_POS;
-    
     var canvas = document.getElementById(BRAIN_CANVAS_ID);
     _initViewerGL(canvas, urlVerticesList, urlNormalsList, urlTrianglesList, urlAlphasList, 
                   urlAlphasIndicesList, urlLinesList, boundaryURL, shelfObject, hemisphereChunkMask);
@@ -320,12 +317,9 @@ function _VS_movie_entrypoint(baseDatatypeURL, onePageSize, urlTimeList, urlVert
     initActivityData();
 
     if (isDoubleView) {
-        GL_currentRotationMatrix = createRotationMatrix(270, [1, 0, 0]).x(createRotationMatrix(270, [0, 0, 1]));
-        GL_DEFAULT_Z_POS = 300;
         $("#displayFaceChkId").trigger('click');
     }
     drawNavigator = $("#showNavigator").prop('checked');
-    GL_zTranslation = GL_DEFAULT_Z_POS;
 
     var canvas = document.getElementById(BRAIN_CANVAS_ID);
 
@@ -444,6 +438,7 @@ function _bindEvents(canvas){
     canvas.onkeydown = GL_handleKeyDown;
     canvas.onkeyup = GL_handleKeyUp;
     canvas.onmousedown = customMouseDown;
+    canvas.oncontextmenu = function(){return false;};
     document.onmouseup = NAV_customMouseUp;
     document.onmousemove = GL_handleMouseMove;
 
@@ -569,15 +564,15 @@ function VS_multipleImageExport(saveFigure){
     var canvas = this;
 
     function saveFrontBack(nameFront, nameBack){
-        var originalRotation = GL_currentRotationMatrix ;
+        mvPushMatrix();
         // front
         canvas.drawForImageExport();
         saveFigure({suggestedName: nameFront});
         // back
-        GL_currentRotationMatrix = createRotationMatrix(180, [0, 1, 0]).x(originalRotation);
+        mvRotate(180, [0, 1, 0]);
         canvas.drawForImageExport();
         saveFigure({suggestedName: nameBack});
-        GL_currentRotationMatrix  = originalRotation;
+        mvPopMatrix();
     }
 
     // using drawForImageExport because it handles resizing canvas for export

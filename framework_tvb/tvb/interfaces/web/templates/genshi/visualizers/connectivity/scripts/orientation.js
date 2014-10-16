@@ -28,28 +28,30 @@ var ORIENTATION_Buffers;
 function ORIENTATION_draw_nose_and_ears() {
 	 //draw the nose
     mvPushMatrix();
+
+    loadIdentity();
     gl.uniform1i(shaderProgram.colorIndex, YELLOW_COLOR_INDEX);
-    
+
+    mvPushMatrix();
     mvTranslate([0.0, -20.0, -55.0]);
     mvRotate(180, [1, 0, 0]);
-    multMatrix(GL_currentRotationMatrix);
     drawPyramid(ORIENTATION_Buffers[0], ORIENTATION_Buffers[1], ORIENTATION_Buffers[2]);
     mvPopMatrix();
 
     //draw the left ear
     mvPushMatrix();
     gl.uniform1i(shaderProgram.colorIndex, BLUE_COLOR_INDEX);
-    mvTranslate([-17.0, 0.0, gl.viewportWidth * 0.091 - 112]);      // precalculated magic numbers to put the ears at
-    multMatrix(GL_currentRotationMatrix);                           // the margins of canvas
+    mvTranslate([-17.0, 0.0, gl.viewportWidth * 0.091 - 112]);      // precalculated magic numbers to put the ears at the margins of canvas
     drawPyramid(ORIENTATION_Buffers[3], ORIENTATION_Buffers[4], ORIENTATION_Buffers[5]);
     mvPopMatrix();
 
     //draw the right ear
     mvPushMatrix();
     gl.uniform1i(shaderProgram.colorIndex, RED_COLOR_INDEX);
-    mvTranslate([17.0, 0.0, gl.viewportWidth * 0.091 - 112]);       // precalculated magic numbers to put the ears at
-    multMatrix(GL_currentRotationMatrix);                           // the margins of canvas
+    mvTranslate([17.0, 0.0, gl.viewportWidth * 0.091 - 112]);       // precalculated magic numbers to put the ears at the margins of canvas
     drawPyramid(ORIENTATION_Buffers[6], ORIENTATION_Buffers[7], ORIENTATION_Buffers[8]);
+    mvPopMatrix();
+
     mvPopMatrix();
 }
 
