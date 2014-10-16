@@ -8,7 +8,19 @@ Brain Activity Visualizer
 ~~~~~~~~~~~~~~~~~~~~~~~~~
 
 A 3D scene of the brain activity.
-Use the mouse to rotate the brain and the mouse wheel to zoom in/out.
+
+Mouse interaction:
+
+You can change the view by pressing a mouse button and dragging it.
+
+* the left button rotates the brain around the center of the screen.
+* the right button translates the brain.
+* the middle button and the scroll wheel zoom towards the center of the screen.
+
+Pressing the shift key and the left button has the same effect as the right button.
+
+Pressing the control key will rotate or translate in the model space.
+
 The SPACE key will show a top view. The CURSOR Keys will show axis aligned views.
 
 
@@ -215,11 +227,12 @@ Instead of a discrete view, this time, we can have a continous display (with gra
 
 
 Surface Visualizer
-~~~~~~~~~~~~~~~~~~~~
+~~~~~~~~~~~~~~~~~~
 
 This visualizer can be used for displaying various Brain Surface. It is a static view,
 mainly for visual inspecting imported surfaces in TVB.
 Optionally it can display associated RegionMapping entities for a given surface.
+Navigate the 3D scene like in the `Brain Activity Visualizer`_.
 
 .. figure:: screenshots/visualizer_surface.jpg
    :width: 90%
@@ -229,7 +242,7 @@ Optionally it can display associated RegionMapping entities for a given surface.
 
 
 Sensor Visualizer
-~~~~~~~~~~~~~~~~~~~~
+~~~~~~~~~~~~~~~~~
 
 This visualizer can be used for displaying EEG, MEEG, and internal sensors .
 It is a static view, intended for visual inspecting imported sensors in TVB.
@@ -240,6 +253,8 @@ To show sensors displaying on a Cap, check the call-out on the top-right corner.
 When displaying the EEG sensors on a EEG Cap surface, we are automatically computing a "parcellation".
 Currently this parcellation has no anatomical meaning, it is only based on distance (a vertex gets coloured as
 the closest sensor).
+
+Navigate the 3D scene like in the `Brain Activity Visualizer`_.
 
 .. figure:: screenshots/sensors_eeg_meg.jpg
    :width: 90%
