@@ -413,6 +413,8 @@ class SurfaceFramework(surfaces_data.SurfaceData):
         boundary_vertices = []
         boundary_lines = []
         boundary_normals = []
+        array_data = region_mapping.array_data
+
         for slice_idx in xrange(self.number_of_split_slices):
             # Generate the boundaries sliced for the off case where we might overflow the buffer capacity
             slice_triangles = self.get_triangles_slice(slice_idx)
@@ -431,22 +433,22 @@ class SurfaceFramework(surfaces_data.SurfaceData):
                 # Check if there are two points from a triangles that are in separate regions
                 # then send this to further processing that will generate the corresponding
                 # region separation lines depending on the 3rd point from the triangle
-                if region_mapping.array_data[triangle[0]] - region_mapping.array_data[triangle[1]]:
-                    lines_vert, lines_ind, lines_norm = self._process_triangle(triangle, 0, 1, 2, first_index_in_slice, 
-                                                                   region_mapping, slice_vertices, slice_normals)
-                elif region_mapping.array_data[triangle[1]] - region_mapping.array_data[triangle[2]]:
-                    lines_vert, lines_ind, lines_norm = self._process_triangle(triangle, 1, 2, 0, first_index_in_slice, 
-                                                                   region_mapping, slice_vertices, slice_normals)
-                elif region_mapping.array_data[triangle[2]] - region_mapping.array_data[triangle[0]]:
-                    lines_vert, lines_ind, lines_norm = self._process_triangle(triangle, 2, 0, 1, first_index_in_slice, 
-                                                                   region_mapping, slice_vertices, slice_normals)
+                if array_data[triangle[0]] - array_data[triangle[1]]:
+                     reg_idx1, reg_idx2, dangling_idx = 0, 1, 2
+                elif array_data[triangle[1]] - array_data[triangle[2]]:
+                     reg_idx1, reg_idx2, dangling_idx = 1, 2, 0
+                elif array_data[triangle[2]] - array_data[triangle[0]]:
+                    reg_idx1, reg_idx2, dangling_idx = 2, 0, 1
                 else:
                     continue
+
+                lines_vert, lines_ind, lines_norm = self._process_triangle(triangle, reg_idx1, reg_idx2, dangling_idx,
+                                                                first_index_in_slice, array_data,
+                                                                slice_vertices, slice_normals)
                 ind_offset = len(processed_vertices) / 3
                 processed_vertices.extend(lines_vert)
                 processed_normals.extend(lines_norm)
-                for ind in lines_ind:
-                    processed_triangles.append(ind + ind_offset)
+                processed_triangles.append([ind + ind_offset for ind in lines_ind])
             boundary_vertices.append(processed_vertices)
             boundary_lines.append(processed_triangles)
             boundary_normals.append(processed_normals)
@@ -455,7 +457,7 @@ class SurfaceFramework(surfaces_data.SurfaceData):
                     
             
     def _process_triangle(self, triangle, reg_idx1, reg_idx2, dangling_idx, indices_offset,
-                          region_mapping, vertices, normals):
+                          region_mapping_array, vertices, normals):
         """
         Process a triangle and generate the required data for a region separation.
         :param triangle: the actual triangle as a 3 element vector
@@ -464,7 +466,7 @@ class SurfaceFramework(surfaces_data.SurfaceData):
         :param dangling_idx: the third vector for which we know nothing yet.
                     Depending on this we might generate a line, or a 3 star centered in the triangle
         :param indices_offset: to take into account the slicing
-        :param region_mapping: the region mapping for which the regions are computed
+        :param region_mapping_array: the region mapping raw array for which the regions are computed
         :param vertices: the current vertex slice
         :param normals: the current normals slice
         """
@@ -499,14 +501,14 @@ class SurfaceFramework(surfaces_data.SurfaceData):
         result_vertices = []
         result_normals = []
 
-        if (region_mapping.array_data[triangle[dangling_idx]] != region_mapping.array_data[triangle[reg_idx1]]
-                and region_mapping.array_data[triangle[dangling_idx]] != region_mapping.array_data[triangle[reg_idx2]]):
+        if (region_mapping_array[triangle[dangling_idx]] != region_mapping_array[triangle[reg_idx1]]
+                and region_mapping_array[triangle[dangling_idx]] != region_mapping_array[triangle[reg_idx2]]):
             # Triangle is actually spanning 3 regions. Create a vertex in the center of the triangle, which connects to
             # the middle of each edge
             _star_triangle(p0, p1, p2, result_vertices)
             _star_triangle(n0, n1, n2, result_normals)
             result_lines = [0, 1, 0, 2, 0, 3]
-        elif region_mapping.array_data[triangle[dangling_idx]] == region_mapping.array_data[triangle[reg_idx1]]:
+        elif region_mapping_array[triangle[dangling_idx]] == region_mapping_array[triangle[reg_idx1]]:
             # Triangle spanning only 2 regions, draw a line through the middle of the triangle
             _slice_triangle(p1, p0, p2, result_vertices)
             _slice_triangle(n1, n0, n2, result_normals)
