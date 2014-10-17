@@ -169,6 +169,6 @@ class RegionMappingViewer(SurfaceViewer):
         base_tree.pop(0)
         return base_tree
 
-    def launch(self, region_map, connectivity_measure=None):
+    def launch(self, region_map, connectivity_measure=None, shell_surface=None):
 
-        return SurfaceViewer.launch(self, region_map.surface, region_map, connectivity_measure)
+        return SurfaceViewer.launch(self, region_map.surface, region_map, connectivity_measure, shell_surface)
