@@ -427,17 +427,16 @@ class SurfaceFramework(surfaces_data.SurfaceData):
             processed_triangles = []
             processed_normals = []
             for triangle in slice_triangles:
-                triangle[0] += first_index_in_slice
-                triangle[1] += first_index_in_slice
-                triangle[2] += first_index_in_slice
+                triangle += first_index_in_slice
                 # Check if there are two points from a triangles that are in separate regions
                 # then send this to further processing that will generate the corresponding
                 # region separation lines depending on the 3rd point from the triangle
-                if array_data[triangle[0]] - array_data[triangle[1]]:
+                rt0, rt1, rt2 = array_data[triangle]
+                if rt0 - rt1:
                      reg_idx1, reg_idx2, dangling_idx = 0, 1, 2
-                elif array_data[triangle[1]] - array_data[triangle[2]]:
+                elif rt1 - rt2:
                      reg_idx1, reg_idx2, dangling_idx = 1, 2, 0
-                elif array_data[triangle[2]] - array_data[triangle[0]]:
+                elif rt2 - rt0:
                     reg_idx1, reg_idx2, dangling_idx = 2, 0, 1
                 else:
                     continue
@@ -491,7 +490,9 @@ class SurfaceFramework(surfaces_data.SurfaceData):
             mid_line2 = [(point0[i] + point2[i]) / 2 for i in xrange(3)]
             result_array.extend(mid_line1)
             result_array.extend(mid_line2)
-        
+
+        # performance opportunity: we are computing some values available in caller
+
         p0 = vertices[triangle[reg_idx1] - indices_offset]
         p1 = vertices[triangle[reg_idx2] - indices_offset]
         p2 = vertices[triangle[dangling_idx] - indices_offset]
@@ -501,14 +502,17 @@ class SurfaceFramework(surfaces_data.SurfaceData):
         result_vertices = []
         result_normals = []
 
-        if (region_mapping_array[triangle[dangling_idx]] != region_mapping_array[triangle[reg_idx1]]
-                and region_mapping_array[triangle[dangling_idx]] != region_mapping_array[triangle[reg_idx2]]):
+        dangling_reg = region_mapping_array[triangle[dangling_idx]]
+        reg_1 = region_mapping_array[triangle[reg_idx1]]
+        reg_2 = region_mapping_array[triangle[reg_idx2]]
+
+        if dangling_reg != reg_1 and dangling_reg != reg_2:
             # Triangle is actually spanning 3 regions. Create a vertex in the center of the triangle, which connects to
             # the middle of each edge
             _star_triangle(p0, p1, p2, result_vertices)
             _star_triangle(n0, n1, n2, result_normals)
             result_lines = [0, 1, 0, 2, 0, 3]
-        elif region_mapping_array[triangle[dangling_idx]] == region_mapping_array[triangle[reg_idx1]]:
+        elif dangling_reg == reg_1:
             # Triangle spanning only 2 regions, draw a line through the middle of the triangle
             _slice_triangle(p1, p0, p2, result_vertices)
             _slice_triangle(n1, n0, n2, result_normals)
