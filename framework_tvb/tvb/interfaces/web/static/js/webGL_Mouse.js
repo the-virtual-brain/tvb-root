@@ -81,15 +81,15 @@ function GL_handleMouseMove(event) {
     var deltaY = newY - GL_lastMouseY;
     GL_lastMouseX = newX;
     GL_lastMouseY = newY;
-
-    var shouldZoomCamera  = event.button === 1;  // middle click
+    // event.buttons not event.button. Latter is 0 in mouse moves in the w3c and mozilla
+    var shouldZoomCamera  = event.buttons === 4;  // middle click
     var movement;
 
     if(shouldZoomCamera) { //camera input
         movement = Matrix.Translation($V([0, 0, -deltaY / TRANSLATION_SENSITIVITY]));
         GL_cameraMatrix = movement.x(GL_cameraMatrix);
     }else{ // trackball input
-        var shouldTranslateXY = event.button === 2 || event.shiftKey; // right click or shift
+        var shouldTranslateXY = event.buttons === 2 || event.shiftKey; // right click or shift
         var inModelSpace = event.ctrlKey;
 
         if (shouldTranslateXY) {
