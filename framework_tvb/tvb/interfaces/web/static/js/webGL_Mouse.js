@@ -37,7 +37,6 @@ var GL_cameraMatrix = Matrix.Translation($V([0, 0, -200]));
 
 GL_mvMatrix = GL_cameraMatrix.x(GL_trackBallMatrix);
 
-var GL_mouseDown = false;
 var GL_lastMouseX = null;
 var GL_lastMouseY = null;
 
@@ -45,11 +44,10 @@ var GL_mouseXRelToCanvas = null;
 var GL_mouseYRelToCanvas = null;
 
 function GL_handleMouseDown(event, canvas) {
-    GL_mouseDown = true;
     GL_lastMouseX = event.clientX;
     GL_lastMouseY = event.clientY;
 
-   // // Get the mouse position relative to the canvas element.
+   // Get the mouse position relative to the canvas element.
     var canvasOffset = $(canvas).offset();
     GL_mouseXRelToCanvas = GL_lastMouseX + document.body.scrollLeft + document.documentElement.scrollLeft - Math.floor(canvasOffset.left);
     GL_mouseYRelToCanvas = GL_lastMouseY + document.body.scrollTop + document.documentElement.scrollTop - Math.floor(canvasOffset.top) + 1;
@@ -61,7 +59,6 @@ function GL_handleMouseDown(event, canvas) {
 }
 
 function GL_handleMouseUp(event) {
-    GL_mouseDown = false;
 }
 
 /**
@@ -72,7 +69,7 @@ function GL_handleMouseUp(event) {
  * Ctrl will rotate/translate in model space.
  */
 function GL_handleMouseMove(event) {
-    if (!GL_mouseDown) {
+    if (event.buttons === 0) {
         return;
     }
     var newX = event.clientX;
@@ -136,9 +133,9 @@ function GL_handleKeyDown(event) {
         GL_cameraMatrix = Matrix.Translation($V([0, 0, -200]));
         GL_mvMatrix = GL_cameraMatrix.x(GL_trackBallMatrix);
 
-    event.preventDefault();
-	return false;
-}
+        event.preventDefault();
+        return false;
+    }
 }
 
 function GL_handleKeyUp(event) {

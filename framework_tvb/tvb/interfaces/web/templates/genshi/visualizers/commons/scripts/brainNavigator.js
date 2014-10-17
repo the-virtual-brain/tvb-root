@@ -291,7 +291,7 @@ function _handleAxePick(event, axe) {
 
         basicAddLight(lightSettings);
 
-        //mvRotate(180, [0, 0, 1]);
+        mvRotate(180, [0, 0, 1]);
 
         var sectionViewRotationMatrix, result;
         if (axe == 'x') {

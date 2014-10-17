@@ -154,7 +154,7 @@ function BASE_PICK_drawBrain(brainBuffers, noOfUnloadedBuffers) {
 	perspective(45, aspect , near, 800.0);
 
     mvPushMatrix();
-    // mvRotate(180, [0, 0, 1]);
+    mvRotate(180, [0, 0, 1]);
 
     drawBuffers(drawingMode, brainBuffers);
 
@@ -427,7 +427,7 @@ function BASE_PICK_doVerticePick() {
 	gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
 	
 	mvPushMatrix();
-    //mvRotate(180, [0, 0, 1]);
+    mvRotate(180, [0, 0, 1]);
     
     //Draw the brain in picking mode
     BASE_PICK_doPick = true;

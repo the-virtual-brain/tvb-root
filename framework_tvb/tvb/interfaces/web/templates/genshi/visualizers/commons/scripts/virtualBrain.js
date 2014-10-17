@@ -1144,7 +1144,7 @@ function drawScene() {
 
     mvPushMatrix();
 
-    //mvRotate(180, [0, 0, 1]);
+    mvRotate(180, [0, 0, 1]);
 
     if (!doPick) {
         gl.uniform1f(shaderProgram.isPicking, 0);
