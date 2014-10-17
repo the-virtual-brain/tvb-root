@@ -37,6 +37,10 @@ var GL_cameraMatrix = Matrix.Translation($V([0, 0, -200]));
 
 GL_mvMatrix = GL_cameraMatrix.x(GL_trackBallMatrix);
 
+// Which mouse button is pressed 0,1,2,3 none, left, middle, right.
+// Here because mouse move event properties (button, buttons, which) are not reliable. Set on mousedown, unset to 0 on mouseup
+// Also it enables us to register document wide mouse move event to handle dragging outside the canvas.
+var GL_mouseDown = 0;
 var GL_lastMouseX = null;
 var GL_lastMouseY = null;
 
@@ -44,10 +48,11 @@ var GL_mouseXRelToCanvas = null;
 var GL_mouseYRelToCanvas = null;
 
 function GL_handleMouseDown(event, canvas) {
+    GL_mouseDown = event.which;
     GL_lastMouseX = event.clientX;
     GL_lastMouseY = event.clientY;
 
-   // Get the mouse position relative to the canvas element.
+    // Get the mouse position relative to the canvas element.
     var canvasOffset = $(canvas).offset();
     GL_mouseXRelToCanvas = GL_lastMouseX + document.body.scrollLeft + document.documentElement.scrollLeft - Math.floor(canvasOffset.left);
     GL_mouseYRelToCanvas = GL_lastMouseY + document.body.scrollTop + document.documentElement.scrollTop - Math.floor(canvasOffset.top) + 1;
@@ -59,6 +64,7 @@ function GL_handleMouseDown(event, canvas) {
 }
 
 function GL_handleMouseUp(event) {
+    GL_mouseDown = 0;
 }
 
 /**
@@ -69,7 +75,7 @@ function GL_handleMouseUp(event) {
  * Ctrl will rotate/translate in model space.
  */
 function GL_handleMouseMove(event) {
-    if (event.buttons === 0) {
+    if (!GL_mouseDown) {
         return;
     }
     var newX = event.clientX;
@@ -79,14 +85,14 @@ function GL_handleMouseMove(event) {
     GL_lastMouseX = newX;
     GL_lastMouseY = newY;
     // event.buttons not event.button. Latter is 0 in mouse moves in the w3c and mozilla
-    var shouldZoomCamera  = event.buttons === 4;  // middle click
+    var shouldZoomCamera  = GL_mouseDown === 2;  // middle click
     var movement;
 
     if(shouldZoomCamera) { //camera input
         movement = Matrix.Translation($V([0, 0, -deltaY / TRANSLATION_SENSITIVITY]));
         GL_cameraMatrix = movement.x(GL_cameraMatrix);
     }else{ // trackball input
-        var shouldTranslateXY = event.buttons === 2 || event.shiftKey; // right click or shift
+        var shouldTranslateXY = GL_mouseDown === 3 || event.shiftKey; // right click or shift
         var inModelSpace = event.ctrlKey;
 
         if (shouldTranslateXY) {
@@ -133,9 +139,9 @@ function GL_handleKeyDown(event) {
         GL_cameraMatrix = Matrix.Translation($V([0, 0, -200]));
         GL_mvMatrix = GL_cameraMatrix.x(GL_trackBallMatrix);
 
-        event.preventDefault();
-        return false;
-    }
+    event.preventDefault();
+	return false;
+}
 }
 
 function GL_handleKeyUp(event) {
