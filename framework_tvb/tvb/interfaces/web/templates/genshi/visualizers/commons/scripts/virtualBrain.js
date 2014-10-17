@@ -568,8 +568,9 @@ function VS_multipleImageExport(saveFigure){
         // front
         canvas.drawForImageExport();
         saveFigure({suggestedName: nameFront});
-        // back
-        mvRotate(180, [0, 1, 0]);
+        // back: rotate model around the vertical y axis in trackball space (almost camera space: camera has a z translation)
+        var r  = createRotationMatrix(180, [0, 1, 0]);
+        GL_mvMatrix = GL_cameraMatrix.x(r.x(GL_trackBallMatrix));
         canvas.drawForImageExport();
         saveFigure({suggestedName: nameBack});
         mvPopMatrix();
