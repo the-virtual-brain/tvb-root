@@ -330,12 +330,14 @@ class CaseDAO(RootDAO):
         """
         Count total number of operations started for current project.
         """
-        fns = self.session.query(model.Operation).filter_by(fk_launched_in=proj_id
-                                 ).filter_by(status=model.STATUS_FINISHED).count()
-        sta = self.session.query(model.Operation).filter_by(fk_launched_in=proj_id
-                                 ).filter_by(status=model.STATUS_STARTED).count()
-        err = self.session.query(model.Operation).filter_by(fk_launched_in=proj_id
-                                 ).filter_by(status=model.STATUS_ERROR).count()
-        canceled = self.session.query(model.Operation).filter_by(fk_launched_in=proj_id
-                                      ).filter_by(status=model.STATUS_CANCELED).count()
-        return fns, sta, err, canceled
+        stats = self.session.query(model.Operation.status, func.count(model.Operation.id)
+                                    ).filter_by(fk_launched_in=proj_id
+                                    ).group_by(model.Operation.status).all()
+        stats = dict(stats)
+        finished = stats.get(model.STATUS_FINISHED, 0)
+        started = stats.get(model.STATUS_STARTED, 0)
+        failed = stats.get(model.STATUS_ERROR, 0)
+        canceled = stats.get(model.STATUS_CANCELED, 0)
+        #pending = stats.get(model.STATUS_PENDING, 0)
+
+        return finished, started, failed, canceled#, pending
