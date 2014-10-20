@@ -89,7 +89,7 @@ class PseIsoModel(object):
 
         for operation in operations:
 
-            if operation.status == STATUS_STARTED:
+            if not operation.has_finished:
                 raise LaunchException("Can not display until all operations from this range are finished!")
 
             op_results = dao.get_results_for_operation(operation.id)

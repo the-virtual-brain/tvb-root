@@ -586,7 +586,7 @@ class BurstService():
                     status = model.BurstConfiguration.BURST_ERROR
                     error_msg = "Operation has been removed"
                     break
-                if operation.status == model.STATUS_STARTED:
+                if not operation.has_finished:
                     status = model.BurstConfiguration.BURST_RUNNING
                     break
                 if operation.status == model.STATUS_ERROR:

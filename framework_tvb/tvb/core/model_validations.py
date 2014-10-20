@@ -119,7 +119,7 @@ class ModelValidator(object):
         while last_verified_index < len(self.launched_operations):
             operation_to_check = self.launched_operations[last_verified_index]
             operation = dao.get_operation_by_id(operation_to_check.id)
-            if operation.status == STATUS_STARTED:
+            if not operation.has_finished:
                 sleep(10)
             if operation.status == STATUS_ERROR:
                 sys.stdout.write("E(" + str(operation_to_check.id) + ")")
