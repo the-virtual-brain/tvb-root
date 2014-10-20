@@ -36,9 +36,10 @@ Change of DB structure from TVB version 1.2.2 to 1.2.3
 """
 
 from sqlalchemy import Column, Float
+from sqlalchemy.sql import text
 from migrate.changeset.schema import create_column, drop_column
 from tvb.core.entities import model
-
+from tvb.core.entities.storage import SA_SESSIONMAKER
 
 meta = model.Base.metadata
 
@@ -59,6 +60,11 @@ def upgrade(migrate_engine):
     create_column(COLUMN_N2, table)
     create_column(COLUMN_N3, table)
 
+    session = SA_SESSIONMAKER()
+    session.execute(text("""UPDATE OPERATIONS SET status='5-FINISHED' WHERE status = '4-FINISHED' """))
+    session.commit()
+    session.close()
+
 
 def downgrade(migrate_engine):
     """Operations to reverse the above upgrade go here."""
@@ -68,4 +74,10 @@ def downgrade(migrate_engine):
     drop_column(COLUMN_N1, table)
     drop_column(COLUMN_N2, table)
     drop_column(COLUMN_N3, table)
+
+    session = SA_SESSIONMAKER()
+    session.execute(text("""UPDATE OPERATIONS SET status='4-FINISHED' WHERE status = '5-FINISHED' """))
+    session.execute(text("""UPDATE OPERATIONS SET status='3-STARTED' WHERE status = '4-PENDING' """))
+    session.commit()
+    session.close()
 

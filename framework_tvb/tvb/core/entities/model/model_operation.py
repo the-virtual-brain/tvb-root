@@ -287,11 +287,11 @@ class OperationGroup(Base, Exportable):
 
 
 #Possible values for Operation.status field
+STATUS_FINISHED = "5-FINISHED"
+STATUS_PENDING = "4-PENDING"
 STATUS_STARTED = "3-STARTED"
-STATUS_FINISHED = "4-FINISHED"
 STATUS_CANCELED = "2-CANCELED"
 STATUS_ERROR = "1-ERROR"
-
 
 
 class Operation(Base, Exportable):
@@ -326,7 +326,7 @@ class Operation(Base, Exportable):
 
 
     def __init__(self, fk_launched_by, fk_launched_in, fk_from_algo, parameters, meta='', method_name='',
-                 status=STATUS_STARTED, start_date=None, completion_date=None, op_group_id=None, additional_info='',
+                 status=STATUS_PENDING, start_date=None, completion_date=None, op_group_id=None, additional_info='',
                  user_group=None, range_values=None, result_disk_size=0):
         self.fk_launched_by = fk_launched_by
         self.fk_launched_in = fk_launched_in
@@ -368,9 +368,14 @@ class Operation(Base, Exportable):
         self.status = status
 
 
-    def mark_cancelled(self):
+    def mark_cancelled(self):  # todo why not mark_complete(STATUS_CANCELED) ?
         """Update status into CANCELED"""
         self.status = STATUS_CANCELED
+
+
+    @property
+    def has_finished(self):
+        return self.status in [STATUS_ERROR, STATUS_CANCELED, STATUS_FINISHED]
 
 
     def to_dict(self):
@@ -472,7 +477,7 @@ class Operation(Base, Exportable):
         return self
     
     
-    def _parse_status(self, status):
+    def _parse_status(self, status):   #todo mihai : is this a concern if the status codes change?
         """
         To keep backwards compatibility, when we import an operation that did not have new 
         operation status.
