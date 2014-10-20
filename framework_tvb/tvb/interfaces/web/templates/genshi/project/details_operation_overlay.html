@@ -29,10 +29,9 @@
 	</fieldset>
 
     <input type="hidden" name="nodeType" value="${nodeType}"/>
-    
-	<fieldset py:for="i in xrange(len(nodeFields))">
-	<py:with vars="fields_dictionary = nodeFields[i]">
-	
+    <div class="metadata-body">
+	<fieldset py:for="i, fields_dictionary in enumerate(nodeFields)">
+
 		<legend py:if="i &gt; 0 or len(nodeFields) == 1">Generic Metadata</legend>
 		<legend py:if="i == 0 and len(nodeFields) &gt; 1 and 'operation' not in nodeType">Scientific Metadata</legend>
 		<legend py:if="i == 0 and len(nodeFields) &gt; 1 and 'operation' in nodeType">Changed Input Parameters</legend>
@@ -73,7 +72,7 @@
             </py:with>
 			</py:for>
 		</dl>
-	</py:with>	
 	</fieldset>
+	</div>
 </form>
 
