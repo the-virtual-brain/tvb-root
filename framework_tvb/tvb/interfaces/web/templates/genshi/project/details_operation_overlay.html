@@ -40,34 +40,27 @@
 			<py:for each="field_key in sorted(fields_dictionary.iterkeys())">
 			<py:with vars="field_def = fields_dictionary[field_key]">
 			
-				<py:if test="field_def and not ('hidden' in field_def and field_def['hidden']=='True')">
+				<py:if test="field_def and not field_def.get('hidden')=='True'">
 					<dt class="">
 						<label for="$field_key">${field_def['name']} :</label>
 					</dt>
 					<dd>
 						<p class="field-data">
-							<input id="$field_key" type="text" name="$field_key" class="inputField" tabindex="3" value="${field_def['value'] if 'value' in field_def else ''}"
-                                   py:if="field_key != 'data_state' and (('readonly' not in field_def or field_def['readonly'] != 'True') and ('disabled' not in field_def or field_def['disabled'] != 'True'))"/>
-                            
-                            <input type="text" id="$field_key" name="$field_key" class="inputField"
-                                   readonly="readonly" value="${field_def['value'] if 'value' in field_def else ''}"
-                                   py:if="field_key != 'data_state' and 'readonly' in field_def and field_def['readonly'] == 'True'"/>
-                                   
-                            <input type="text" id="$field_key" name="$field_key" class="inputField"
-                                   disabled="disabled" value="${field_def['value'] if 'value' in field_def else ''}"
-                                   py:if="field_key != 'data_state' and 'disabled' in field_def and field_def['disabled'] == 'True'"/>
+							<input id="$field_key" type="text" name="$field_key" class="inputField" tabindex="3"
+								   value="${field_def.get('value', '')}"
+								   readonly="${'readonly' if field_def.get('readonly') == 'True' else None}"
+								   disabled="${'disabled' if field_def.get('disabled') == 'True' else None}"
+                                   py:if="field_key != 'data_state'"/>
                                    
                             <select id="$field_key" name="$field_key" class="inputField" py:if="field_key=='data_state'" tabindex="3">
-                                <py:for each="state in allStates">
-                                    <option value="${state}" selected="selected" py:if="state == field_def['value']">${allStates[state]}</option>
-                                    <option value="${state}" py:if="state != field_def['value']">${allStates[state]}</option>
-                                </py:for>
+								<option value="${state}" py:for="state in allStates"
+									selected="${'selected' if state == field_def['value'] else None}">${allStates[state]}</option>
                             </select>
 						</p>
 					</dd>
 				</py:if>
-                <py:if test="field_def and 'hidden' in field_def and field_def['hidden'] == 'True'">
-                    <input id="$field_key" type="hidden" name="$field_key" value="${field_def['value'] if 'value' in field_def else ''}"/>
+                <py:if test="field_def and field_def.get('hidden') == 'True'">
+                    <input id="$field_key" type="hidden" name="$field_key" value="${field_def.get('value', '')}"/>
                 </py:if>
             </py:with>
 			</py:for>
