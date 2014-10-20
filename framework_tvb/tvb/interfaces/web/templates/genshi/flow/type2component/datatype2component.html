@@ -43,7 +43,6 @@
                 <div id="data_$inputRow.name$option.value" py:attrs="add_attrs">
                     <py:if test="'attributes' in option and option.attributes">
                         ${generateDisplay(option.attributes, not isEnabled or disabled, "data_" + inputRow.name + str(option.value), treeSessionKey)}
-                        <hr/>
                     </py:if>
                 </div>
             </py:with>
