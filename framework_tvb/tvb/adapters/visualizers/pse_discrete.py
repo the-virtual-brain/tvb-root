@@ -152,7 +152,7 @@ class DiscretePSEAdapter(ABCDisplayer):
         operations = dao.get_operations_in_group(operation_group.id)
 
         for operation_ in operations:
-            if operation_.status == model.STATUS_STARTED:
+            if not operation_.has_finished:
                 pse_context.has_started_ops = True
             range_values = eval(operation_.range_values)
             key_1 = range_values[range1_name]

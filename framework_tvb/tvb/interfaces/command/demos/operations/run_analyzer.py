@@ -79,7 +79,7 @@ if __name__ == "__main__":
                                                      project.id, **launch_args)[0]
 
     ## wait for the operation to finish
-    while launched_operation.status == model.STATUS_STARTED:
+    while not launched_operation.has_finished:
         sleep(5)
         launched_operation = dao.get_operation_by_id(launched_operation.id)
 
