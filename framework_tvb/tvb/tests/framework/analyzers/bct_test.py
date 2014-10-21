@@ -34,6 +34,7 @@
 
 import numpy
 import unittest
+from tvb.core.entities.model import STATUS_FINISHED
 from tvb.tests.framework.core.base_testcase import TransactionalTestCase
 from tvb.core.utils import get_matlab_executable
 from tvb.core.entities import model
@@ -110,7 +111,7 @@ class BCTTest(TransactionalTestCase):
 
                     operation = dao.get_operation_by_id(operation.id)
                     ### Check that operation status after execution is success.
-                    self.assertEqual("4-FINISHED", operation.status)
+                    self.assertEqual(STATUS_FINISHED, operation.status)
                     ### Make sure at least one result exists for each BCT algorithm
                     results = dao.get_generic_entity(model.DataType, operation.id, 'fk_from_operation')
                     self.assertTrue(len(results) > 0)
