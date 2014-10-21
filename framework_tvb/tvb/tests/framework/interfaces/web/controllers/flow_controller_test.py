@@ -258,7 +258,7 @@ class FlowContollerTest(BaseControllersTest):
 
     def test_stop_operations(self):
         data = {"test1_val1": 5, 'test1_val2': 5}
-        operations = self._launch_test_algo_on_cluster(data)
+        operations = self._launch_test_algo_on_cluster(**data)
         operation = dao.get_operation_by_id(operations[0].id)
         self.assertFalse(operation.has_finished)
         self.flow_c.stop_operation(operation.id, 0, False)
@@ -268,7 +268,7 @@ class FlowContollerTest(BaseControllersTest):
         
     def test_stop_operations_group(self):
         data = {model.RANGE_PARAMETER_1: "test1_val1", "test1_val1": '5,6,7', 'test1_val2': 5}
-        operations = self._launch_test_algo_on_cluster(data)
+        operations = self._launch_test_algo_on_cluster(**data)
         operation_group_id = 0
         for operation in operations:
             operation = dao.get_operation_by_id(operation.id)
