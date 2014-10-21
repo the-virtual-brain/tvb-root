@@ -35,6 +35,7 @@
 import os
 import unittest
 import json
+from tvb.core.entities import model
 from tvb.core.entities.transient.structure_entities import GenericMetaData
 from tvb.core.entities.file.xml_metadata_handlers import XMLReader, XMLWriter
 
@@ -47,7 +48,7 @@ class MetaDataReadXMLTest(unittest.TestCase):
     """   
     TO_BE_READ_FILE = "test_read.xml"
     #Values expected to be read from file
-    EXPECTED_DICTIONARY = {'status': '4-FINISHED',
+    EXPECTED_DICTIONARY = {'status': model.STATUS_FINISHED,
                            'gid': '497b3d59-b3c1-11e1-b2e4-68a86d1bd4fa',
                            'method_name': 'launch',
                            'user_group': 'cff_74',

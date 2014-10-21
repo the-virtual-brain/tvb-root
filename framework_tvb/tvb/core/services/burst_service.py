@@ -577,6 +577,7 @@ class BurstService():
         """ 
         Get the status of a portlet configuration. 
         """
+        # todo: return operation status and refactor templates
         status = model.BurstConfiguration.BURST_FINISHED
         error_msg = ''
         if len(portlet_cfg.analyzers):
@@ -612,7 +613,7 @@ class BurstService():
                     error_msg = ("At least one simulation result was not found, it might have been removed. <br\>"
                                  "You can copy and relaunch current simulation, if you are interested in having "
                                  "your results re-computed.")
-                elif operation.status == model.STATUS_STARTED:
+                elif not operation.has_finished:
                     status = model.BurstConfiguration.BURST_RUNNING
                 elif operation.status == model.STATUS_ERROR:
                     status = model.BurstConfiguration.BURST_ERROR

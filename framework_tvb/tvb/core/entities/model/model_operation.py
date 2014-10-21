@@ -477,18 +477,21 @@ class Operation(Base, Exportable):
         return self
     
     
-    def _parse_status(self, status):   #todo mihai : is this a concern if the status codes change?
+    def _parse_status(self, status):
         """
         To keep backwards compatibility, when we import an operation that did not have new 
         operation status.
         """
-        if status in (STATUS_FINISHED, 'FINISHED'):
+        if 'FINISHED' in status:
             return STATUS_FINISHED
-        elif status in (STATUS_ERROR, 'ERROR'):
+        elif 'ERROR' in status:
             return STATUS_ERROR
-        elif status in (STATUS_CANCELED, 'CANCELED'):
+        elif 'CANCELED' in status:
             return STATUS_CANCELED
-        return STATUS_STARTED
+        elif 'STARTED' in status:
+            return STATUS_STARTED
+
+        return STATUS_PENDING
 
 
 
