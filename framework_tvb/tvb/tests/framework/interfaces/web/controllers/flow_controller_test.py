@@ -183,10 +183,10 @@ class FlowContollerTest(BaseControllersTest):
         launch_params = {"simulator_parameters": json.dumps(launch_params)}
         burst_id = json.loads(self.burst_c.launch_burst("new", "test_burst", **launch_params))['id']
         return dao.get_burst_by_id(burst_id)
-        
-            
-    def test_stop_burst_operation(self):
-        burst_config = self._long_burst_launch()
+
+
+    def _wait_for_burst_ops(self, burst_config):
+        """ sleeps until some operation of the burst is created"""
         waited = 1
         timeout = 50
         operations = dao.get_operations_in_burst(burst_config.id)
@@ -194,7 +194,13 @@ class FlowContollerTest(BaseControllersTest):
             sleep(1)
             waited += 1
             operations = dao.get_operations_in_burst(burst_config.id)
-        operation = dao.get_operations_in_burst(burst_config.id)[0]
+        operations = dao.get_operations_in_burst(burst_config.id)
+        return operations
+
+
+    def test_stop_burst_operation(self):
+        burst_config = self._long_burst_launch()
+        operation = self._wait_for_burst_ops(burst_config)[0]
         self.assertFalse(operation.has_finished)
         self.flow_c.stop_burst_operation(operation.id, 0, False)
         operation = dao.get_operation_by_id(operation.id)
@@ -203,14 +209,7 @@ class FlowContollerTest(BaseControllersTest):
         
     def test_stop_burst_operation_group(self):
         burst_config = self._long_burst_launch(True)
-        waited = 1
-        timeout = 50
-        operations = dao.get_operations_in_burst(burst_config.id)
-        while not len(operations) and waited <= timeout:
-            sleep(1)
-            waited += 1
-            operations = dao.get_operations_in_burst(burst_config.id)
-        operations = dao.get_operations_in_burst(burst_config.id)
+        operations = self._wait_for_burst_ops(burst_config)
         operations_group_id = 0
         for operation in operations:
             self.assertFalse(operation.has_finished)
@@ -223,14 +222,7 @@ class FlowContollerTest(BaseControllersTest):
         
     def test_remove_burst_operation(self):
         burst_config = self._long_burst_launch()
-        waited = 1
-        timeout = 50
-        operations = dao.get_operations_in_burst(burst_config.id)
-        while not len(operations) and waited <= timeout:
-            sleep(1)
-            waited += 1
-            operations = dao.get_operations_in_burst(burst_config.id)
-        operation = dao.get_operations_in_burst(burst_config.id)[0]
+        operation = self._wait_for_burst_ops(burst_config)[0]
         self.assertFalse(operation.has_finished)
         self.flow_c.stop_burst_operation(operation.id, 0, True)
         operation = dao.try_get_operation_by_id(operation.id)
@@ -239,14 +231,7 @@ class FlowContollerTest(BaseControllersTest):
         
     def test_remove_burst_operation_group(self):
         burst_config = self._long_burst_launch(True)
-        waited = 1
-        timeout = 50
-        operations = dao.get_operations_in_burst(burst_config.id)
-        while not len(operations) and waited <= timeout:
-            sleep(1)
-            waited += 1
-            operations = dao.get_operations_in_burst(burst_config.id)
-        operations = dao.get_operations_in_burst(burst_config.id)
+        operations = self._wait_for_burst_ops(burst_config)
         operations_group_id = 0
         for operation in operations:
             self.assertFalse(operation.has_finished)
@@ -255,20 +240,25 @@ class FlowContollerTest(BaseControllersTest):
         for operation in operations:
             operation = dao.try_get_operation_by_id(operation.id)
             self.assertTrue(operation is None)
-            
-            
-    def test_stop_operations(self):
+
+
+    def _launch_test_algo_on_cluster(self, **data):
         module = "tvb.tests.framework.adapters.testadapter1"
         class_name = "TestAdapter1"
         group = dao.find_group(module, class_name)
         adapter = FlowService().build_adapter_instance(group)
-        data = {"test1_val1": 5, 'test1_val2': 5}
         algo_group = adapter.algorithm_group
         algo_category = dao.get_category_by_id(algo_group.fk_category)
         algo = dao.get_algorithm_by_group(algo_group.id)
         operations, _ = self.operation_service.prepare_operations(self.test_user.id, self.test_project.id, algo,
                                                                   algo_category, {}, ABCAdapter.LAUNCH_METHOD, **data)
         self.operation_service._send_to_cluster(operations, adapter)
+        return operations
+
+
+    def test_stop_operations(self):
+        data = {"test1_val1": 5, 'test1_val2': 5}
+        operations = self._launch_test_algo_on_cluster(data)
         operation = dao.get_operation_by_id(operations[0].id)
         self.assertFalse(operation.has_finished)
         self.flow_c.stop_operation(operation.id, 0, False)
@@ -277,17 +267,8 @@ class FlowContollerTest(BaseControllersTest):
         
         
     def test_stop_operations_group(self):
-        module = "tvb.tests.framework.adapters.testadapter1"
-        class_name = "TestAdapter1"
-        group = dao.find_group(module, class_name)
-        adapter = FlowService().build_adapter_instance(group)
         data = {model.RANGE_PARAMETER_1: "test1_val1", "test1_val1": '5,6,7', 'test1_val2': 5}
-        algo_group = adapter.algorithm_group
-        algo_category = dao.get_category_by_id(algo_group.fk_category)
-        algo = dao.get_algorithm_by_group(algo_group.id)
-        operations, _ = self.operation_service.prepare_operations(self.test_user.id, self.test_project.id, algo,
-                                                                  algo_category, {}, ABCAdapter.LAUNCH_METHOD, **data)
-        self.operation_service._send_to_cluster(operations, adapter)
+        operations = self._launch_test_algo_on_cluster(data)
         operation_group_id = 0
         for operation in operations:
             operation = dao.get_operation_by_id(operation.id)
