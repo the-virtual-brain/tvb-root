@@ -61,6 +61,7 @@
 						<ul>
 							<li class="ops-finished ${'ops-zero' if int(proj.operations_finished)==0 else ''}" title="Finished operations">${proj.operations_finished}</li>
 							<li class="ops-started ${'ops-zero' if int(proj.operations_started)==0 else ''}" title="Started operations">${proj.operations_started}</li>
+							<li class="ops-submitted ${'ops-zero' if int(proj.operations_pending)==0 else ''}" title="Pending operations">${proj.operations_pending}</li>
 							<li class="ops-error ${'ops-zero' if int(proj.operations_error)==0 else ''}" title="Failed operations">${proj.operations_error}</li>
 							<li class="ops-cancelled ${'ops-zero' if int(proj.operations_canceled)==0 else ''}" title="Cancelled operations">${proj.operations_canceled}</li>
 						</ul>

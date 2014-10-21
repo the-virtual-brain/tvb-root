@@ -591,6 +591,14 @@ width: 4ex;
 color: rgba(250, 247, 228, 0.5);
 }
 
+.ss-list td.ops li.ops-submitted{
+background-position: 0 -476px;
+}
+
+.ss-list td.ops li.ops-started{
+background-position: 0 0;
+}
+
 .ss-list td.ops li.ops-paused {
 background-position: 0 -354px;
 }
