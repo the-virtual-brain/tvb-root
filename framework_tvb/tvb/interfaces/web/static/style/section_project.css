@@ -232,7 +232,7 @@ white-space: nowrap;
 }
 
 .ss-operations .ops-submitted td.id {
-background-position: 0 0;
+background-position: 0 -476px;
 }
 
 .ss-operations .ops-started td.id {
