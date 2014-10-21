@@ -107,7 +107,8 @@ class StaticFiltersFactory():
         filtered_statuses = {model.STATUS_STARTED: "Only Running",
                              model.STATUS_ERROR: "Only with Errors",
                              model.STATUS_CANCELED: "Only Canceled",
-                             model.STATUS_FINISHED: "Only Finished"}
+                             model.STATUS_FINISHED: "Only Finished",
+                             model.STATUS_PENDING: "Only Pending" }
         for status, title in filtered_statuses.iteritems():
             new_filter = FilterChain(title, [FilterChain.operation + '.status'], [status], operations=["=="])
             new_filters.append(new_filter)

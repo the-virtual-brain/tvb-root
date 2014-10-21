@@ -1,6 +1,3 @@
-<!-- ============================= --> 
-<!--     Main Content              --> 
-<!-- ============================= -->
 <div id="main" class="columnized colscheme-2-1st-narrow" xmlns:xi="http://www.w3.org/2001/XInclude" xmlns:py="http://genshi.edgewall.org/">
 
     <script type="text/javascript" src="/static/js/projectTree.js?$currentVersionJS"></script>
@@ -8,7 +5,7 @@
     <xi:include href="pagination.html"/>
    
     <py:def function="displayOperationResults(operation_row)">
-		<!-- Function for displaying a given Operation's result column: 
+		<!--! Function for displaying a given Operation's result column:
 			  - list of icons for results, 
 			  - expand button in case of a group, or 
 			  - figures in case of Visualizers with saved images.
@@ -82,7 +79,6 @@
 		<h4><mark>Manage</mark> Operations</h4>
 
 		<table>
-			<!-- Table header -->
 			<thead>
 				${displayPaginationControls(page_number, total_pages, 11, 'operationsForm')}
 				<input type="hidden" name="page" value="$page_number" id="currentPage"/>
@@ -101,96 +97,94 @@
 				</tr>
 			</thead>
 			
-			<!-- Table footer -->
 			<tfoot>
 				${displayPaginationControls(page_number, total_pages, 11, 'operationsForm')}
 			</tfoot>
 			
 			<tbody py:if="operationsList">
+			<!--todo hardcoded operation status-->
 				<tr py:for="operation in operationsList" class="${'ops-group' if operation['group'] else 'ops-single'} ${'ops-finished' if operation['status']=='4-FINISHED' else 'ops-error' if operation['status']=='1-ERROR' else 'ops-cancelled' if operation['status']=='2-CANCELED' else 'ops-started'} ${'ops-relevant' if operation['visible'] else 'ops-irrelevant'} ops-type-${operation['algorithm'].algo_group.group_category.displayname.lower()}" >
 					<td class="id" title="${operation['operation_tag']}">
 						${operation['id']}
 					</td>
-					<py:with vars="op_ui_status = operation['status'].split('-')[1].title()">
-						<td class="state"> 
-							<a py:if="operation['additional'] == ''"  class="action action-mini-zoom-in"  onclick="displayNodeDetails('${operation['gid']}', '${'operationGroup' if operation['group'] else 'operation'}', 'operations');" title="Show details...">${op_ui_status}</a> 
-							
-							<nav class="inline-menu" py:if="operation['additional'] != ''">
-								<button tabindex='3' class="action action-menu" onclick="return false;"><mark>${op_ui_status}</mark></button>
-								
-								<div class="extension">
-									<div class="dropdown-pane">
-										<mark>Retrieved ${'error' if operation['status']== "1-ERROR" else 'warning'} message:</mark>
-										<p>${operation['additional']}</p>
-										
-										<a class="action action-mini-zoom-in"  onclick="displayNodeDetails('${operation['gid']}', '${'operationGroup' if operation['group'] else 'operation'}', 'operations');" title="Show details...">Show operation details</a>
-									</div>
+
+					<td class="state" py:with="op_ui_status = operation['status'].split('-')[1].title()">
+						<a py:if="operation['additional'] == ''"  class="action action-mini-zoom-in"  onclick="displayNodeDetails('${operation['gid']}', '${'operationGroup' if operation['group'] else 'operation'}', 'operations');" title="Show details...">${op_ui_status}</a>
+
+						<nav class="inline-menu" py:if="operation['additional'] != ''">
+							<button tabindex='3' class="action action-menu" onclick="return false;"><mark>${op_ui_status}</mark></button>
+
+							<div class="extension">
+								<div class="dropdown-pane">
+									<mark>Retrieved ${'error' if operation['status']== "1-ERROR" else 'warning'} message:</mark> <!--todo hardcoded-->
+									<p>${operation['additional']}</p>
+
+									<a class="action action-mini-zoom-in"  onclick="displayNodeDetails('${operation['gid']}', '${'operationGroup' if operation['group'] else 'operation'}', 'operations');" title="Show details...">Show operation details</a>
 								</div>
-							</nav>
-						</td>
-					</py:with>
-					<td class="control">
+							</div>
+						</nav>
+					</td>
+
+					<td class="control" py:with="op_id = operation['id'] if not operation['group'] else operation['operation_group_id']; is_group = 1 if operation['group'] else 0">
 						<div class="action-block block-player">
-							<py:with vars="op_id = operation['id'] if not operation['group'] else operation['operation_group_id']; is_group = 1 if operation['group'] else 0">
-								<py:choose test="not operation['burst_name']=='-'">
-									<py:when test="True">
-										<!-- Part of a burst. Redirect to burst page with this one as selected -->
-										<button tabindex='3' type="submit" class="action action-run" onclick="reloadBurstOperation('${op_id}', ${is_group}, 'operationsForm')">
-											Reload
+							<py:choose test="not operation['burst_name']=='-'">
+								<py:when test="True">
+									<!-- Part of a burst. Redirect to burst page with this one as selected -->
+									<button tabindex='3' type="submit" class="action action-run" onclick="reloadBurstOperation('${op_id}', ${is_group}, 'operationsForm')">
+										Reload
+									</button>
+								</py:when>
+								<py:otherwise>
+									<py:choose test="(not operation['group']) and (not operation['algorithm'].algo_group.group_category.displayname == 'Create') and (not operation['algorithm'].algo_group.group_category.rawinput)">
+										<py:when test="True">
+											<!-- Normal operation reload -->
+											<button tabindex='3' type="submit" class="action action-run" onclick="reloadOperation(${operation['id']}, 'operationsForm')">Reload</button>
+										</py:when>
+										<py:otherwise>
+											<!-- Upload or non-burst group which we can't reload -->
+											<button tabindex='3' type="submit" class="action action-run action-idle" disabled="disabled">Reload</button>
+										</py:otherwise>
+									</py:choose>
+								</py:otherwise>
+							</py:choose>
+							<py:choose test="operation['status'] == '3-STARTED'"><!--todo hardcode-->
+								<py:when test="True">
+									<py:choose test="operation['burst_name']!='-'">
+										<py:when test="True">
+											<button tabindex='3' type="submit" class="action action-stop" onclick="stopBurstOperation('${op_id}', ${is_group})">
+												Stop
+											</button>
+										</py:when>
+										<py:otherwise>
+											<button tabindex='3' type="submit" class="action action-stop" onclick="stopOperation('${op_id}', ${is_group})">
+												Stop
+											</button>
+										</py:otherwise>
+									</py:choose>
+								</py:when>
+								<py:otherwise>
+									<button tabindex='3' type="submit" class="action action-stop action-idle" disabled="disabled">Stop</button>
+								</py:otherwise>
+							</py:choose>
+							<py:choose test="operation['burst_name']!='-'">
+								<py:when test="True">
+									<!-- Remove burst button. TODO: Once TVB-926 is finished we should have a new icon here. -->
+									<py:with vars="ok_callback = 'deleteBurstOperation(' + str(op_id) + ', ' + str(is_group) + ');'">
+										<button type="submit" class="action action-remove" title="Remove burst"
+										onclick="showQuestionOverlay('Are you sure you want to delete this entire Simulation?', '${ok_callback}'); return false;">
+										O
 										</button>
-									</py:when>
-	  								<py:otherwise>
-	  									<py:choose test="(not operation['group']) and (not operation['algorithm'].algo_group.group_category.displayname == 'Create') and (not operation['algorithm'].algo_group.group_category.rawinput)">
-	  										<py:when test="True">
-												<!-- Normal operation reload -->
-	  											<button tabindex='3' type="submit" class="action action-run" onclick="reloadOperation(${operation['id']}, 'operationsForm')">Reload</button>
-	  										</py:when>
-	  										<py:otherwise>
-	  											<!-- Upload or non-burst group which we can't reload -->
-	  											<button tabindex='3' type="submit" class="action action-run action-idle" disabled="disabled">Reload</button>
-	  										</py:otherwise>
-	  									</py:choose>
-	  								</py:otherwise>
-								</py:choose>
-								<py:choose test="operation['status'] == '3-STARTED'">
-								  	<py:when test="True">
-								  		<py:choose test="operation['burst_name']!='-'">
-								  			<py:when test="True">
-								  				<button tabindex='3' type="submit" class="action action-stop" onclick="stopBurstOperation('${op_id}', ${is_group})">
-								  					Stop
-								  				</button>
-								  			</py:when>
-								  			<py:otherwise>
-								  				<button tabindex='3' type="submit" class="action action-stop" onclick="stopOperation('${op_id}', ${is_group})">
-								  					Stop
-								  				</button>
-								  			</py:otherwise>
-								  		</py:choose>
-								  	</py:when>
-								  	<py:otherwise>
-								  		<button tabindex='3' type="submit" class="action action-stop action-idle" disabled="disabled">Stop</button>
-								  	</py:otherwise>
-								</py:choose>
-								<py:choose test="operation['burst_name']!='-'">
-						  			<py:when test="True">
-										<!-- Remove burst button. TODO: Once TVB-926 is finished we should have a new icon here. -->
-										<py:with vars="ok_callback = 'deleteBurstOperation(' + str(op_id) + ', ' + str(is_group) + ');'">
-											<button type="submit" class="action action-remove" title="Remove burst"
-											onclick="showQuestionOverlay('Are you sure you want to delete this entire Simulation?', '${ok_callback}'); return false;">
-											O
-											</button>
-										</py:with>
-						  			</py:when>
-						  			<py:otherwise>
-										<py:with vars="ok_callback = 'deleteOperation(' + str(op_id) + ', ' + str(is_group) + ');'">
-											<button type="submit" class="action action-remove" title="Remove operation"
-											onclick="showQuestionOverlay('Are you sure you want to delete the operation?', '${ok_callback}'); return false;">
-											B
-											</button>
-										</py:with>
-						  			</py:otherwise>
-						  		</py:choose>
-					  		</py:with>
+									</py:with>
+								</py:when>
+								<py:otherwise>
+									<py:with vars="ok_callback = 'deleteOperation(' + str(op_id) + ', ' + str(is_group) + ');'">
+										<button type="submit" class="action action-remove" title="Remove operation"
+										onclick="showQuestionOverlay('Are you sure you want to delete the operation?', '${ok_callback}'); return false;">
+										B
+										</button>
+									</py:with>
+								</py:otherwise>
+							</py:choose>
 						</div>
 					</td>
 					
