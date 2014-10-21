@@ -102,24 +102,33 @@
 			</tfoot>
 			
 			<tbody py:if="operationsList">
-			<!--todo hardcoded operation status-->
-				<tr py:for="operation in operationsList" class="${'ops-group' if operation['group'] else 'ops-single'} ${'ops-finished' if operation['status']=='4-FINISHED' else 'ops-error' if operation['status']=='1-ERROR' else 'ops-cancelled' if operation['status']=='2-CANCELED' else 'ops-started'} ${'ops-relevant' if operation['visible'] else 'ops-irrelevant'} ops-type-${operation['algorithm'].algo_group.group_category.displayname.lower()}" >
+				<tr py:for="operation in operationsList"
+					py:with="status_class={model.STATUS_FINISHED:'ops-finished', model.STATUS_ERROR:'ops-error', model.STATUS_CANCELED:'ops-cancelled',
+				   						  model.STATUS_STARTED:'ops-started', model.STATUS_PENDING:'ops-submitted'}[operation['status']]"
+					class="${'ops-group' if operation['group'] else 'ops-single'}
+					       ${status_class}
+					       ${'ops-relevant' if operation['visible'] else 'ops-irrelevant'}
+					       ops-type-${operation['algorithm'].algo_group.group_category.displayname.lower()}" >
 					<td class="id" title="${operation['operation_tag']}">
 						${operation['id']}
 					</td>
 
 					<td class="state" py:with="op_ui_status = operation['status'].split('-')[1].title()">
-						<a py:if="operation['additional'] == ''"  class="action action-mini-zoom-in"  onclick="displayNodeDetails('${operation['gid']}', '${'operationGroup' if operation['group'] else 'operation'}', 'operations');" title="Show details...">${op_ui_status}</a>
+						<a py:if="operation['additional'] == ''"  class="action action-mini-zoom-in"
+						   onclick="displayNodeDetails('${operation['gid']}', '${'operationGroup' if operation['group'] else 'operation'}', 'operations');"
+						   title="Show details...">${op_ui_status}</a>
 
 						<nav class="inline-menu" py:if="operation['additional'] != ''">
 							<button tabindex='3' class="action action-menu" onclick="return false;"><mark>${op_ui_status}</mark></button>
 
 							<div class="extension">
 								<div class="dropdown-pane">
-									<mark>Retrieved ${'error' if operation['status']== "1-ERROR" else 'warning'} message:</mark> <!--todo hardcoded-->
+									<mark>Retrieved ${'error' if operation['status']== model.STATUS_ERROR else 'warning'} message:</mark>
 									<p>${operation['additional']}</p>
 
-									<a class="action action-mini-zoom-in"  onclick="displayNodeDetails('${operation['gid']}', '${'operationGroup' if operation['group'] else 'operation'}', 'operations');" title="Show details...">Show operation details</a>
+									<a class="action action-mini-zoom-in"
+									   onclick="displayNodeDetails('${operation['gid']}', '${'operationGroup' if operation['group'] else 'operation'}', 'operations');"
+									   title="Show details...">Show operation details</a>
 								</div>
 							</div>
 						</nav>
@@ -147,7 +156,7 @@
 									</py:choose>
 								</py:otherwise>
 							</py:choose>
-							<py:choose test="operation['status'] == '3-STARTED'"><!--todo hardcode-->
+							<py:choose test="operation['status'] == model.STATUS_STARTED">
 								<py:when test="True">
 									<py:choose test="operation['burst_name']!='-'">
 										<py:when test="True">

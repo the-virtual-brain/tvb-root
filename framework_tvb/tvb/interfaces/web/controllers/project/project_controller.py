@@ -44,6 +44,7 @@ from cherrypy.lib.static import serve_file
 from tvb.adapters.exporters.export_manager import ExportManager
 from tvb.basic.profile import TvbProfile
 from tvb.config import SIMULATOR_CLASS, SIMULATOR_MODULE
+from tvb.core.entities import model
 from tvb.core.entities.transient import graph_structures
 from tvb.core.entities.transient.filtering import StaticFiltersFactory
 from tvb.core.adapters.abcadapter import ABCAdapter
@@ -280,7 +281,7 @@ class ProjectController(BaseController):
         template_specification = dict(mainContent="project/viewoperations", project=project, started_count=started_ops,
                                       title='Past operations for " ' + project.name + '"', operationsList=filtered_ops,
                                       total_op_count=total_op_count, total_pages=pages_no, page_number=page,
-                                      filters=filters, no_filter_selected=(selected_filters is None))
+                                      filters=filters, no_filter_selected=(selected_filters is None), model=model)
         return self.fill_default_attributes(template_specification, 'operations')
     
     
