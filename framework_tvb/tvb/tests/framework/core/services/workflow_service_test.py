@@ -133,7 +133,7 @@ class WorkflowTest(TransactionalTestCase):
         self.assertTrue(stored_datatypes[0].type == 'Datatype1', "Wrong type was stored.")
         self.assertTrue(stored_datatypes[1].type == 'Datatype1', "Wrong type was stored.")
 
-        finished, started, error, _ = dao.get_operation_numbers(self.test_project.id)
+        finished, started, error, _, _ = dao.get_operation_numbers(self.test_project.id)
         self.assertEqual(finished, 3, "Didnt start operations for both adapters in workflow.")
         self.assertEqual(started, 0, "Some operations from workflow didnt finish.")
         self.assertEqual(error, 0, "Some operations finished with error status.")
@@ -165,7 +165,7 @@ class WorkflowTest(TransactionalTestCase):
         for result_row in stored_datatypes:
             self.assertTrue(result_row.type in ['Datatype1', 'Datatype2'], "Wrong type was stored.")
 
-        finished, started, error, _ = dao.get_operation_numbers(self.test_project.id)
+        finished, started, error, _, _ = dao.get_operation_numbers(self.test_project.id)
         self.assertEqual(finished, 3, "Didn't start operations for both adapters in workflow.")
         self.assertEqual(started, 0, "Some operations from workflow didn't finish.")
         self.assertEqual(error, 0, "Some operations finished with error status.")

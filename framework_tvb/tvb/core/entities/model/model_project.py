@@ -178,9 +178,14 @@ class Project(Base, Exportable):
     administrator = relationship(User)
 
     ### Transient Attributes
+    # todo: remove these as they are used only to transfer info to the templates. Have incorrect values prior to the templating phase.
+    # send the status to the templates differently
     operations_finished = 0
     operations_started = 0
     operations_error = 0
+    operations_canceled = 0
+    operations_pending = 0
+
     members = []
 
     def __init__(self, name, fk_admin, description=''):

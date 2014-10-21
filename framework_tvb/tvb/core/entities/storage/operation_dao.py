@@ -664,3 +664,20 @@ class OperationDAO(RootDAO):
         except SQLAlchemyError, excep:
             self.logger.exception(excep)
             return {}
+
+
+    def get_operation_numbers(self, proj_id):
+        """
+        Count total number of operations started for current project.
+        """
+        stats = self.session.query(model.Operation.status, func.count(model.Operation.id)
+                                    ).filter_by(fk_launched_in=proj_id
+                                    ).group_by(model.Operation.status).all()
+        stats = dict(stats)
+        finished = stats.get(model.STATUS_FINISHED, 0)
+        started = stats.get(model.STATUS_STARTED, 0)
+        failed = stats.get(model.STATUS_ERROR, 0)
+        canceled = stats.get(model.STATUS_CANCELED, 0)
+        pending = stats.get(model.STATUS_PENDING, 0)
+
+        return finished, started, failed, canceled, pending

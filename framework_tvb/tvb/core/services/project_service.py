@@ -309,11 +309,12 @@ class ProjectService:
         available_projects = dao.get_projects_for_user(user_id, start_idx, end_idx)
         pages_no = total // PROJECTS_PAGE_SIZE + (1 if total % PROJECTS_PAGE_SIZE else 0)
         for prj in available_projects:
-            fns, sta, err, canceled = dao.get_operation_numbers(prj.id)
+            fns, sta, err, canceled, pending = dao.get_operation_numbers(prj.id)
             prj.operations_finished = fns
             prj.operations_started = sta
             prj.operations_error = err
             prj.operations_canceled = canceled
+            prj.operations_pending = pending
             prj.disk_size = dao.get_project_disk_size(prj.id)
             prj.disk_size_human = format_bytes_human(prj.disk_size)
         self.logger.debug("Displaying " + str(len(available_projects)) + " projects in UI for user " + str(user_id))

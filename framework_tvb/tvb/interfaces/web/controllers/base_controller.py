@@ -331,11 +331,12 @@ class BaseController(object):
         """
         project = common.get_current_project()
         if project is not None:
-            fns, sta, err, canceled = self.flow_service.get_operation_numbers(project.id)
+            fns, sta, err, canceled, pending = self.flow_service.get_operation_numbers(project.id)
             project.operations_finished = fns
             project.operations_started = sta
             project.operations_error = err
             project.operations_canceled = canceled
+            project.operations_pending = pending
             common.add2session(common.KEY_PROJECT, project)
             
                     

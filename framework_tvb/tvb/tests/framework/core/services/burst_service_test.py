@@ -440,7 +440,7 @@ class BurstServiceTest(BaseTestCase):
         status updates corresponding to final operation status.
         """
         loaded_burst, workflow_step_list = self._prepare_and_launch_sync_burst()
-        finished, started, error, _ = dao.get_operation_numbers(self.test_project.id)
+        finished, started, error, _, _ = dao.get_operation_numbers(self.test_project.id)
         self.assertEqual(finished, 1, "One operations should have been generated for this burst.")
         self.assertEqual(started, 0, "No operations should remain started since workflow was launched synchronous.")
         self.assertEqual(error, 0, "No operations should return error status.")
