@@ -412,8 +412,13 @@ function _initViewerGL(canvas, urlVerticesList, urlNormalsList, urlTrianglesList
     }
 
     if (urlVerticesList) {
-        brainBuffers = initBuffers($.parseJSON(urlVerticesList), $.parseJSON(urlNormalsList), $.parseJSON(urlTrianglesList), 
-                                   $.parseJSON(urlAlphasList), $.parseJSON(urlAlphasIndicesList), isDoubleView);
+        var parsedAlphas = '', parsedIndices = "";
+        if (urlAlphasList) {
+            parsedAlphas = $.parseJSON(urlAlphasList);
+            parsedIndices = $.parseJSON(urlAlphasIndicesList);
+        }
+        brainBuffers = initBuffers($.parseJSON(urlVerticesList), $.parseJSON(urlNormalsList),
+                                   $.parseJSON(urlTrianglesList), parsedAlphas, parsedIndices, isDoubleView);
     }
 
     VS_init_hemisphere_mask(hemisphere_chunk_mask);
