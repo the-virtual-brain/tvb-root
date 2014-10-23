@@ -577,26 +577,13 @@ class BurstService():
         """ 
         Get the status of a portlet configuration. 
         """
-        # todo: return operation status and refactor templates
-        status = model.BurstConfiguration.BURST_FINISHED
-        error_msg = ''
-        if len(portlet_cfg.analyzers):
+        if portlet_cfg.analyzers:
             for analyze_step in portlet_cfg.analyzers:
                 operation = dao.try_get_operation_by_id(analyze_step.fk_operation)
                 if operation is None:
-                    status = model.BurstConfiguration.BURST_ERROR
-                    error_msg = "Operation has been removed"
-                    break
-                if not operation.has_finished:
-                    status = model.BurstConfiguration.BURST_RUNNING
-                    break
-                if operation.status == model.STATUS_ERROR:
-                    status = model.BurstConfiguration.BURST_ERROR
-                    error_msg = operation.additional_info
-                    break
-                if operation.status == model.STATUS_CANCELED:
-                    status = model.BurstConfiguration.BURST_CANCELED
-                    break
+                    return model.STATUS_ERROR, "Operation has been removed"
+                if operation.status != model.STATUS_FINISHED:
+                    return operation.status, operation.additional_info or ''
         else:
             ## Simulator is first step so now decide if we are waiting for input or output ##
             visualizer = portlet_cfg.visualizer
@@ -609,18 +596,13 @@ class BurstService():
                 simulator_step = dao.get_workflow_step_by_step_index(visualizer.fk_workflow, 0)
                 operation = dao.try_get_operation_by_id(simulator_step.fk_operation)
                 if operation is None:
-                    status = model.BurstConfiguration.BURST_ERROR
                     error_msg = ("At least one simulation result was not found, it might have been removed. <br\>"
                                  "You can copy and relaunch current simulation, if you are interested in having "
                                  "your results re-computed.")
-                elif not operation.has_finished:
-                    status = model.BurstConfiguration.BURST_RUNNING
-                elif operation.status == model.STATUS_ERROR:
-                    status = model.BurstConfiguration.BURST_ERROR
-                    error_msg = operation.additional_info
-                elif operation.status == model.STATUS_CANCELED:
-                    status = model.BurstConfiguration.BURST_CANCELED
-        return status, error_msg
+                    return model.STATUS_ERROR, error_msg
+                else:
+                    return operation.status, operation.additional_info or ''
+        return model.STATUS_FINISHED, ''
             
             
     def select_simulator_inputs(self, full_tree, selection_dictionary, prefix=''):

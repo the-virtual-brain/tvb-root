@@ -1,11 +1,11 @@
 <div id="portlets-display" class="portlet-container portlet-run visible-${'2-2' if len(portlet_tab_list)==4 else '2-1' if len(portlet_tab_list)==3 else '1-1' if len(portlet_tab_list)==2 else '1'}" 
 	 xmlns:py="http://genshi.edgewall.org/" xmlns:xi="http://www.w3.org/2001/XInclude">
 	
-	<py:if test="len(portlet_tab_list) == 0 and status=='running'">
+	<py:if test="len(portlet_tab_list) == 0 and not model.has_finished(status)">
 		<p>Simulation is still running....</p>
 		<p>Visualizers will be loaded when computation has finished!</p>
 	</py:if>
-	<py:if test="len(portlet_tab_list) == 0 and status!='running'">
+	<py:if test="len(portlet_tab_list) == 0 and model.has_finished(status)">
 		<p>No visualizers configured for this tab to display.</p>
 	</py:if>
 	

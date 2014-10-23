@@ -41,6 +41,7 @@ import formencode
 from formencode import validators
 from tvb.config import SIMULATOR_MODULE, SIMULATOR_CLASS, MEASURE_METRICS_MODULE, MEASURE_METRICS_CLASS
 from tvb.basic.profile import TvbProfile
+import tvb.core.entities.model
 from tvb.core.utils import generate_guid, string2bool
 from tvb.core.adapters.abcadapter import ABCAdapter
 from tvb.core.services.burst_service import BurstService, KEY_PARAMETER_CHECKED, LAUNCH_NEW
@@ -462,7 +463,7 @@ class BurstController(BurstBaseController):
             if portlet_cfg is not None:
                 tab_portlet_list.append(self.__portlet_config2portlet_entity(portlet_cfg))
         return {'status': burst.status, 'portlet_tab_list': tab_portlet_list,
-                'max_width': int(width), 'max_height': int(height)}
+                'max_width': int(width), 'max_height': int(height), 'model':tvb.core.entities.model}
 
 
     @expose_fragment("burst/portlet_visualization_template")
@@ -474,7 +475,7 @@ class BurstController(BurstBaseController):
         burst = common.get_from_session(common.KEY_BURST_CONFIG)
         target_portlet = burst.tabs[int(selected_tab)].portlets[int(index_in_tab)]
         target_portlet = self.__portlet_config2portlet_entity(target_portlet)
-        template_dict = {'portlet_entity': target_portlet, 'width': int(width), 'height': int(height)}
+        template_dict = {'portlet_entity': target_portlet, 'width': int(width), 'height': int(height), 'model':tvb.core.entities.model}
         return template_dict
 
 

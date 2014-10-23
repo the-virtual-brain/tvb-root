@@ -3,22 +3,21 @@
 	
 	<h5>${portlet_entity.name}</h5>
 	
-	<a href="/burst/launch_full_visualizer/${portlet_entity.index_in_tab}" py:if="portlet_entity.status == 'finished'"
+	<a href="/burst/launch_full_visualizer/${portlet_entity.index_in_tab}" py:if="portlet_entity.status == model.STATUS_FINISHED"
 	   title="Launch full visualizer" class="action action-view">View full screen</a>
 	<a href="#" title="Configure this view's parameters..." class="action action-edit" 
 	   onclick="showPortletParametersPage(${portlet_entity.index_in_tab})">Configure</a>
 	
 	<div class="specialviewer" >
 		<iframe width="100%" height="${height}px" src="/burst/launch_visualization/${portlet_entity.index_in_tab}/${width}/${height}" 
-			    py:if="portlet_entity.status == 'finished'"
+			    py:if="portlet_entity.status == model.STATUS_FINISHED"
 				onload="this.contentWindow.launchViewer(this.clientWidth, this.clientHeight);"></iframe>
 				
-		<div class="errorMessage" py:if="portlet_entity.status == 'error'">ERROR: ${portlet_entity.error_msg}</div>
-		<div class="warningMessage" py:if="portlet_entity.status == 'canceled'">STATUS: Operation canceled by user!</div>
-		<div class="infoMessage" py:if="portlet_entity.status == 'running'">
-			STATUS: Operation is still running!
-		</div>
+		<div class="errorMessage" py:if="portlet_entity.status == model.STATUS_ERROR">ERROR: ${portlet_entity.error_msg}</div>
+		<div class="warningMessage" py:if="portlet_entity.status == model.STATUS_CANCELED">STATUS: Operation canceled by user!</div>
+		<div class="infoMessage" py:if="portlet_entity.status == model.STATUS_STARTED">STATUS: Operation is still running!</div>
+		<div class="infoMessage" py:if="portlet_entity.status == model.STATUS_PENDING">STATUS: Operation is pending!</div>
 	</div>
-	<input type="hidden" id="running-portlet-${portlet_entity.index_in_tab}" value="${portlet_entity.td_gid}" py:if="portlet_entity.status == 'running'"/>
+	<input type="hidden" id="running-portlet-${portlet_entity.index_in_tab}" value="${portlet_entity.td_gid}" py:if="not model.has_finished(portlet_entity.status)"/>
 </div>
 

@@ -294,6 +294,11 @@ STATUS_CANCELED = "2-CANCELED"
 STATUS_ERROR = "1-ERROR"
 
 
+def has_finished(status):
+    """ Is the given status indicating a finished operation? """
+    return status in [STATUS_ERROR, STATUS_CANCELED, STATUS_FINISHED]
+
+
 class Operation(Base, Exportable):
     """
     The class used to log any action executed in Projects.
@@ -375,7 +380,7 @@ class Operation(Base, Exportable):
 
     @property
     def has_finished(self):
-        return self.status in [STATUS_ERROR, STATUS_CANCELED, STATUS_FINISHED]
+        return has_finished(self.status)
 
 
     def to_dict(self):
