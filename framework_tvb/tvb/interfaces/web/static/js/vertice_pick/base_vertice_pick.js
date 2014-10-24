@@ -109,10 +109,9 @@ function BASE_PICK_webGLStart(urlVerticesPickList, urlTrianglesPickList, urlNorm
     canvas.onkeydown = customKeyDown;
     canvas.onkeyup = customKeyUp;
     canvas.onmousedown = customMouseDown;
-    canvas.onmouseup = customMouseUp;
-    canvas.onmousemove = customMouseMove;
-    canvas.onmouseout = handleMouseOut;
     canvas.oncontextmenu = function(){return false;};
+    document.onmouseup = customMouseUp;
+    document.onmousemove = customMouseMove;
 
     $(canvas).mousewheel(function(event, delta) {
             BASE_PICK_handleMouseWeel(delta);
@@ -409,10 +408,6 @@ function customMouseMove(event) {
     if (!BASE_PICK_isMovieMode) {
         drawScene();
     }
-}
-
-function handleMouseOut() {
-    document.getElementById(BRAIN_CANVAS_ID).blur();
 }
 
 function BASE_PICK_handleMouseWeel(event) {
