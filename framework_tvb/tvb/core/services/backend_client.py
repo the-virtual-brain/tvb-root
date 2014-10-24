@@ -206,7 +206,7 @@ class StandAloneClient(object):
                 LOGGER.debug("Stopped OperationExecutor process for %d" % operation_id)
 
         ## Mark operation as canceled in DB.
-        operation.mark_cancelled()
+        operation.mark_complete(model.STATUS_CANCELED)
         dao.store_entity(operation)
         return stopped
 
@@ -284,7 +284,7 @@ class ClusterSchedulerClient(object):
                 LOGGER.error("Stopping cluster operation was unsuccessful. "
                              "Try following with 'oarstat' for job ID: %s" % operation_process.job_id)
 
-        operation.mark_cancelled()
+        operation.mark_complete(model.STATUS_CANCELED)
         dao.store_entity(operation)
 
         return result == 0

@@ -373,11 +373,6 @@ class Operation(Base, Exportable):
         self.status = status
 
 
-    def mark_cancelled(self):  # todo why not mark_complete(STATUS_CANCELED) ?
-        """Update status into CANCELED"""
-        self.status = STATUS_CANCELED
-
-
     @property
     def has_finished(self):
         return has_finished(self.status)
