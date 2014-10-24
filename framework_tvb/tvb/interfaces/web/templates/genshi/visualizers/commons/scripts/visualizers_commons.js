@@ -38,3 +38,21 @@ function readDataChannelURL(baseDatatypeMethodURL, fromIdx, toIdx, stateVariable
 }
 
 // ------ Datatype methods mappings end here
+
+
+// ------ Common movie data and functions
+
+var AG_isStopped = false;
+
+/**
+ * Movie interaction
+ */
+function pauseMovie() {
+    AG_isStopped = !AG_isStopped;
+    var pauseButton = $("#ctrl-action-pause");
+    if (AG_isStopped) {
+        pauseButton.attr("class", "action action-controller-launch");
+    } else {
+        pauseButton.attr("class", "action action-controller-pause");
+    }
+}

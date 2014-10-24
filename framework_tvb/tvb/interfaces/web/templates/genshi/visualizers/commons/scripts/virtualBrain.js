@@ -92,7 +92,6 @@ var elapsedTicksPerTimeStep = 0;
  */
 var ACTIVITY_FRAMES_IN_TIME_LINE_AT_MAX_SPEED = 32;
 
-var AG_isStopped = false;
 var sliderSel = false;
 
 var isPreview = false;
@@ -529,6 +528,9 @@ function _initSliders(){
     _updateSpeedSliderValue(timeStepsPerTick);
 
     $('#TimeNow').click(function(){
+        if (!AG_isStopped){
+            pauseMovie();
+        }
         $(this).select();
     }).change(function(ev){
         var val = parseFloat(ev.target.value);
@@ -725,20 +727,6 @@ function wireFrame() {
         drawingMode = gl.TRIANGLES;
     } else {
         drawingMode = gl.POINTS;
-    }
-}
-
-
-/**
- * Movie interaction
- */
-function pauseMovie() {
-    AG_isStopped = !AG_isStopped;
-    var pauseButton = $("#ctrl-action-pause");
-    if (AG_isStopped) {
-        pauseButton.attr("class", "action action-controller-launch");
-    } else {
-        pauseButton.attr("class", "action action-controller-pause");
     }
 }
 
