@@ -110,8 +110,8 @@ function BASE_PICK_webGLStart(urlVerticesPickList, urlTrianglesPickList, urlNorm
     canvas.onkeyup = customKeyUp;
     canvas.onmousedown = customMouseDown;
     canvas.oncontextmenu = function(){return false;};
-    document.onmouseup = customMouseUp;
-    document.onmousemove = customMouseMove;
+    $(document).on('mouseup', customMouseUp);
+    $(document).on('mousemove', customMouseMove);
 
     $(canvas).mousewheel(function(event, delta) {
             BASE_PICK_handleMouseWeel(delta);

@@ -825,8 +825,8 @@ function connectivity_initCanvas() {
     canvas.onkeydown = customKeyDown;
     canvas.onkeyup = GL_handleKeyUp;
     canvas.onmousedown = customMouseDown;
-    document.onmouseup = GL_handleMouseUp;
-    document.onmousemove = customMouseMove;
+    $(document).on('mouseup', GL_handleMouseUp);
+    $(document).on('mousemove', customMouseMove);
     canvas.oncontextmenu = function(){return false;};
     canvas.redrawFunctionRef = drawScene;
 }
