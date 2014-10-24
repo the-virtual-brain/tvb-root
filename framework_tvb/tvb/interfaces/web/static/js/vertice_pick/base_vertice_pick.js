@@ -423,15 +423,38 @@ function BASE_PICK_handleMouseWeel(event) {
 }
 
 /**
+ * Returns the TRIANGLE_pickedIndex of the "nearest" picked vertex index.
+ * This should be 'fail-safe in case the clicked color is neither (0,0,0) nor in the picking dictionary. In this case just
+ * start looking at adjacent pixels in pseudo-circular order until a proper one is found.
+ */
+function _BASE_PICK_find_picked_vertex(){
+    var orig_x = GL_mouseXRelToCanvas;
+    var orig_y = GL_mouseYRelToCanvas;
+    var directions = [[1, 0], [1, 1], [0, 1], [-1, 1], [-1, 0], [-1, -1], [0, -1], [1, -1]];
+    for(var inc=0; inc <=20; inc++){
+        for(var di=0; di < directions.length; di++){
+            var dir = directions[di];
+            GL_mouseXRelToCanvas = orig_x + inc * dir[0];
+            GL_mouseYRelToCanvas = orig_y + inc * dir[1];
+            TRIANGLE_pickedIndex = GL_getPickedIndex();
+            if(TRIANGLE_pickedIndex != GL_NOTFOUND){
+                console.debug('found at delta ' + inc);
+                return TRIANGLE_pickedIndex;
+            }
+        }
+    }
+    return TRIANGLE_pickedIndex;
+}
+
+/**
  * Draws the brain in picking mode, then finds the picked vertex. Also centers the navigator in that vertex.
  */
 function BASE_PICK_doVerticePick() {
-    //Drawing will be done to back buffer and all 'eye candy' is disabled to get pure color
-
     if (noOfUnloadedBrainPickingBuffers != 0 || noOfUnloadedBrainDisplayBuffers != 0) {
         displayMessage("The load operation for the surface data is not completed yet!", "infoMessage");
         return;
     }
+    //Drawing will be done to back buffer and all 'eye candy' is disabled to get pure color
     gl.bindFramebuffer(gl.FRAMEBUFFER, GL_colorPickerBuffer);
 
     //Draw the brain in picking mode: swap normal display colors with picking colors and draw the 'colored' version to a back buffer
@@ -440,65 +463,11 @@ function BASE_PICK_doVerticePick() {
     TRIANGLE_pickedIndex = GL_getPickedIndex();
     
     if (TRIANGLE_pickedIndex != GL_BACKGROUND) {
-    /*
-     * This should be 'fail-safe in case the clicked color is neither (0,0,0) nor in the picking dictionary. In this case just
-     * start looking at adjacent pixels in pseudo-circular order until a proper one is found.
-     */
-        var x_inc = 0;
-        var y_inc = 0;
-        var orig_x = GL_mouseXRelToCanvas;
-        var orig_y = GL_mouseYRelToCanvas;
-
-        while (TRIANGLE_pickedIndex == GL_NOTFOUND && x_inc <= 20) {
-
-            GL_mouseXRelToCanvas = orig_x + x_inc;
-            GL_mouseYRelToCanvas = orig_y;
-            TRIANGLE_pickedIndex = GL_getPickedIndex();
-            if (TRIANGLE_pickedIndex != GL_NOTFOUND) { break; }
-
-            GL_mouseXRelToCanvas = orig_x + x_inc;
-            GL_mouseYRelToCanvas = orig_y + y_inc;
-            TRIANGLE_pickedIndex = GL_getPickedIndex();
-            if (TRIANGLE_pickedIndex != GL_NOTFOUND) { break; }
-
-            GL_mouseXRelToCanvas = orig_x;
-            GL_mouseYRelToCanvas = orig_y + y_inc;
-            TRIANGLE_pickedIndex = GL_getPickedIndex();
-            if (TRIANGLE_pickedIndex != GL_NOTFOUND) { break; }
-
-            GL_mouseXRelToCanvas = orig_x - x_inc;
-            GL_mouseYRelToCanvas = orig_y + y_inc;
-            TRIANGLE_pickedIndex = GL_getPickedIndex();
-            if (TRIANGLE_pickedIndex != GL_NOTFOUND) { break; }
-
-            GL_mouseXRelToCanvas = orig_x - x_inc;
-            GL_mouseYRelToCanvas = orig_y;
-            TRIANGLE_pickedIndex = GL_getPickedIndex();
-            if (TRIANGLE_pickedIndex != GL_NOTFOUND) { break; }
-
-            GL_mouseXRelToCanvas = orig_x - x_inc;
-            GL_mouseYRelToCanvas = orig_y - y_inc;
-            TRIANGLE_pickedIndex = GL_getPickedIndex();
-            if (TRIANGLE_pickedIndex != GL_NOTFOUND) { break; }
-
-            GL_mouseXRelToCanvas = orig_x;
-            GL_mouseYRelToCanvas = orig_y - y_inc;
-            TRIANGLE_pickedIndex = GL_getPickedIndex();
-            if (TRIANGLE_pickedIndex != GL_NOTFOUND) { break; }
-
-            GL_mouseXRelToCanvas = orig_x + x_inc;
-            GL_mouseYRelToCanvas = orig_y - y_inc;
-            TRIANGLE_pickedIndex = GL_getPickedIndex();
-            if (TRIANGLE_pickedIndex != GL_NOTFOUND) { break; }
-
-            x_inc += 1;
-            y_inc += 1;
-        }
+        TRIANGLE_pickedIndex = _BASE_PICK_find_picked_vertex();
         BASE_PICK_moveBrainNavigator(false);
     }
     
     gl.bindFramebuffer(gl.FRAMEBUFFER, null);
-
     BASE_PICK_doPick = false;
 }
 
