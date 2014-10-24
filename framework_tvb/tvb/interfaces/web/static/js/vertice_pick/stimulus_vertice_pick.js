@@ -29,10 +29,11 @@
 /* globals gl, displayMessage */
 var BUFFER_TIME_STEPS = 8;
 var DATA_CHUNK_SIZE = null;
-var TICK_STEP = 200;
+var TICK_STEP = 33; // 30Hz
 var maxValue = 0;
 var minValue = 0;
 var drawTickInterval = null;
+var AG_isStopped = false;
 var sliderSel = false;
 var minTime = 0;
 var maxTime = 0;
@@ -201,45 +202,45 @@ function tick() {
 
         updateColors(displayedStep);
 
+        if (! AG_isStopped ) {
+            // We are in movie mode so drawScene was called automatically. We don't
+            // want to update the slices here to improve performance. Increse the timestep.
+            displayedStep += 1;
+            totalTimeStep += 1;
+            if (currentStimulusData.length < (maxTime - minTime) &&
+                displayedStep + BUFFER_TIME_STEPS >= currentStimulusData.length &&
+                nextStimulusData == null && !asyncLoadStarted) {
+                STIM_PICK_loadNextStimulusChunk();
+            }
+        }
+
         drawScene();
-    } else {
-        //We had reached the end of the movie mode.
-        STIM_PICK_stopDataVisualization();
-        buttonRun.className = buttonRun.className.replace('action-idle', '');
-        buttonStop.className = buttonStop.className + " action-idle";
-    }
+
+        // update Movie timeline
+        if (!sliderSel && ! AG_isStopped) {
+            document.getElementById("TimeNow").innerHTML = "Time: " + totalTimeStep + " ms";
+            $("#slider").slider("option", "value", totalTimeStep);
+        }
+   } else {
+       //We had reached the end of the movie mode.
+       STIM_PICK_stopDataVisualization();
+       buttonRun.className = buttonRun.className.replace('action-idle', '');
+       buttonStop.className = buttonStop.className + " action-idle";
+   }
 }
 
 
 function drawScene() {
     var theme = ColSchGetTheme().surfaceViewer;
     gl.clearColor(theme.backgroundColor[0], theme.backgroundColor[1], theme.backgroundColor[2], theme.backgroundColor[3]);
-    // Use function offered by base_vertice_pick.js to draw the brain:
-    BASE_PICK_drawBrain();
     if (BASE_PICK_isMovieMode) {
-        // We are in movie mode so drawScene was called automatically. We don't
-        // want to update the slices here to improve performance. Increse the timestep.
-        displayedStep += 1;
-        totalTimeStep += 1;
-        if (currentStimulusData.length < (maxTime - minTime) &&
-            displayedStep + BUFFER_TIME_STEPS >= currentStimulusData.length &&
-            nextStimulusData == null && ! asyncLoadStarted ) {
-            STIM_PICK_loadNextStimulusChunk();
-        }
-        if (!sliderSel) {
-            document.getElementById("TimeNow").innerHTML = "Time: " + totalTimeStep + " ms";
-            $("#slider").slider("option", "value", totalTimeStep);
-        }
+        basicAddLight(defaultLightSettings);
         // Draw the legend for the stimulus now.
         mvPushMatrix();
         loadIdentity();
-        basicAddLight(defaultLightSettings);
         drawBuffers(gl.TRIANGLES, [LEG_legendBuffers]);
         mvPopMatrix();
-    } else {
-        // We are not in movie mode. The drawScene was called from some ui event (e.g.
-        // mouse over). Here we can afford to update the 2D slices because performance is
-        // not that much of an issue.
-        BASE_PICK_drawBrain();
     }
+    // Use function offered by base_vertice_pick.js to draw the brain:
+    BASE_PICK_drawBrain();
 }
