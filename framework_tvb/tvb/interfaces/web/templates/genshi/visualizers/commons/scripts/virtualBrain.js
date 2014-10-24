@@ -516,6 +516,7 @@ function _initSliders(){
             slide: function(event, target) {
                 sliderSel = true;
                 currentTimeValue = target.value;
+                $('#TimeNow').val(currentTimeValue);
             },
             stop: function(event, target) {
                 sliderSel = false;
@@ -526,7 +527,18 @@ function _initSliders(){
         $("#divForSliderSpeed").hide();
     }
     _updateSpeedSliderValue(timeStepsPerTick);
-    $("#Infobox").html("");
+
+    $('#TimeNow').click(function(){
+        $(this).select();
+    }).change(function(ev){
+        var val = parseFloat(ev.target.value);
+        if (val == null || val < 0 || val > MAX_TIME){
+            val = 0;
+            ev.target.value = 0;
+        }
+        $('#slider').slider('value', val);
+        loadFromTimeStep(val);
+    });
 }
 
 function _initChannelSelection(selectionGID){
@@ -724,10 +736,8 @@ function pauseMovie() {
     AG_isStopped = !AG_isStopped;
     var pauseButton = $("#ctrl-action-pause");
     if (AG_isStopped) {
-        pauseButton.html("Play activity");
         pauseButton.attr("class", "action action-controller-launch");
     } else {
-        pauseButton.html("Pause activity");
         pauseButton.attr("class", "action action-controller-pause");
     }
 }
@@ -1117,12 +1127,11 @@ function tick() {
         if (lastTime !== 0) {
             framestime.shift();
             framestime.push(elapsed);
-            document.getElementById("TimeStep").innerHTML = elapsed;
         }
 
         lastTime = timeNow;
-        if (timeData.length > 0) {
-            document.getElementById("TimeNow").innerHTML = toSignificantDigits(timeData[currentTimeValue], 2);
+        if (timeData.length > 0 && ! AG_isStopped) {
+            document.getElementById("TimeNow").value = toSignificantDigits(timeData[currentTimeValue], 2);
         }
         var meanFrameTime = 0;
         for(var i=0; i < framestime.length; i++){

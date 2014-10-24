@@ -195,7 +195,7 @@ position: absolute;
     width: 65%;
     height: 20px;
     left: 0;
-    padding-top: 10px;
+    padding: 6px 0;
     position: relative;
 }
 
@@ -249,3 +249,29 @@ position: absolute;
     border: none;
 }
 
+/* Backend devs */
+/* These styles move the movie timeline near the play pause button. They also style the time input */
+
+#main .view-column .slider-div .action{
+    position: absolute;
+    left: 0;
+    top:4px;
+}
+
+.slider-div #slider{
+    position:absolute;
+    left:52px;
+    right:90px;
+    top:8px;
+    border-radius: 0;
+}
+
+.slider-div .movie-time{
+    position:absolute;width:80px;right:0
+}
+
+.slider-div .movie-time #TimeNow{
+    width:40px;
+    border:none;
+    font-size:12px
+}

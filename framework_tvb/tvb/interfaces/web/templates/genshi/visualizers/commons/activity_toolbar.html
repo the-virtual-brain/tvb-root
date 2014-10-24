@@ -1,9 +1,10 @@
 <ul class="toolbar-inline" xmlns:py="http://genshi.edgewall.org/" xmlns:xi="http://www.w3.org/2001/XInclude">
-    <li>
+    <div class="slider-div lastChild">
         <button id="ctrl-action-pause" class="action action-controller-pause" title="Pause/Start Drawing"
-                onclick="pauseMovie();" tabindex="1">Pause activity</button>
-    </li>
-
+                onclick="pauseMovie();" tabindex="1"></button>
+        <div id="slider"></div>
+        <div class="movie-time"> <input type="text" id="TimeNow" value="0" /> ms </div>
+    </div>
     <li class="channel-selector can-extend" py:if="not isOneToOneMapping and not extended_view">
         <xi:include href="timeseries_selector_button.html" />
         ${drawTimeseriesSelectorButton(measurePointsTitle,labelsStateVar, labelsModes, groupedLabels, initialSelection)}
