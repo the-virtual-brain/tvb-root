@@ -74,22 +74,46 @@ function STIM_PICK_setVisualizedData(data) {
         ColSch_initColorSchemeParams(minValue, maxValue, LEG_updateLegendColors);
     }
 
-    //Create the slider to display the total time.
-    var sliderDiv = document.createElement('DIV');
-    sliderDiv.className = "shadow";
-    sliderDiv.id = "slider";
-    document.getElementById("slider-div").appendChild(sliderDiv);
+    if (AG_isStopped){ // unpause movie
+        pauseMovie();  // this should be called toggle ...
+    }
 
+    $(".slider-div").show();
+    $(".action-run").hide();
+
+    // todo: The initialisation of the time line is very similar to the one in virtualbrain.js. The globals are different and some update conditions.
+    // Initialize slider for timeLine
     $("#slider").slider({
         min:minTime, max: maxTime, disabled: true,
         slide: function() {
             sliderSel = true;
             totalTimeStep = $("#slider").slider("option", "value");
             displayedStep = parseInt((totalTimeStep - minTime) % DATA_CHUNK_SIZE);
+            $('#TimeNow').val(totalTimeStep);
         },
-        stop: function() {
+        stop: function(event, target) {
             sliderSel = false;
+            totalTimeStep = target.value;
+            displayedStep = parseInt((totalTimeStep - minTime) % DATA_CHUNK_SIZE);
+            $('#TimeNow').val(totalTimeStep);
+            //loadFromTimeStep(target.value);
         }
+    });
+
+    // init the go to time input.
+    $('#TimeNow').click(function(){
+        if (!AG_isStopped){
+            pauseMovie();
+        }
+        $(this).select();
+    }).change(function(ev){
+        var val = parseFloat(ev.target.value);
+        if (val == null || val < minTime || val > maxTime){
+            val = 0;
+            ev.target.value = 0;
+        }
+        $('#slider').slider('value', val);
+        //loadFromTimeStep(val);
     });
 }
 
@@ -109,8 +133,8 @@ function STIM_PICK_stopDataVisualization() {
     if (drawTickInterval != null) {
         clearInterval(drawTickInterval);
     }
-    document.getElementById("slider-div").innerHTML = '';
-    document.getElementById("TimeNow").innerHTML = '';
+    $(".slider-div").hide();
+    $(".action-run").show();
     asyncLoadStarted = false;
     BASE_PICK_buffer_default_color();
     drawScene();
@@ -207,7 +231,7 @@ function tick() {
             // want to update the slices here to improve performance. Increse the timestep.
             displayedStep += 1;
             totalTimeStep += 1;
-            if (currentStimulusData.length < (maxTime - minTime) &&
+            if (currentStimulusData.length < (maxTime - minTime) &&    // todo : this condition has to change. Now we can jump using the timeline in arbitrary chunks.
                 displayedStep + BUFFER_TIME_STEPS >= currentStimulusData.length &&
                 nextStimulusData == null && !asyncLoadStarted) {
                 STIM_PICK_loadNextStimulusChunk();
@@ -218,7 +242,7 @@ function tick() {
 
         // update Movie timeline
         if (!sliderSel && ! AG_isStopped) {
-            document.getElementById("TimeNow").innerHTML = "Time: " + totalTimeStep + " ms";
+            document.getElementById("TimeNow").value = toSignificantDigits(totalTimeStep, 2);
             $("#slider").slider("option", "value", totalTimeStep);
         }
    } else {

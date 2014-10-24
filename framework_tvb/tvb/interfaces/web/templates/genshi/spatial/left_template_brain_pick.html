@@ -20,8 +20,8 @@
                 <a href="#" title="Add focal point…" class="action action-plus addFocalPoint"
                    onclick="BS_addSurfaceFocalPoint()">Add focal point</a>
                 <div class="action-block block-player">
-                    <button class="action action-run" onclick="BS_startSignalVisualization()">Play</button>
                     <button class="action action-stop action-idle" onclick="BS_stopSignalVisualization()">Stop</button>
+                    <button class="action action-run" onclick="BS_startSignalVisualization()">Play</button>
                 </div>
             </py:if>
             <py:if test="subsection_name == 'surfacemodel'">
@@ -34,11 +34,13 @@
             <xi:include href="../visualizers/commons/brain_component.html"/>
             ${draw_brain_component("GLcanvas", None)}
         </div>
-        <div class="helper">
-            <span id="TimeNow"></span>
-            <br/>
+
+        <div class="slider-div lastChild" style="display: none;left:100px;top:-4px">
+            <button id="ctrl-action-pause" class="action action-controller-pause" title="Pause/Start Drawing"
+                    onclick="pauseMovie();" tabindex="1"></button>
+            <div id="slider"></div>
+            <div class="movie-time"> <input type="text" disabled="disabled" id="TimeNow" value="0" /> ms </div>
         </div>
-        <div id="slider-div" class="shadow"></div>
     </div>
         
     <script type="text/javascript">
