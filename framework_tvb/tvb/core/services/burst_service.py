@@ -428,13 +428,13 @@ class BurstService():
                 except Exception, excep:
                     self.logger.error(excep)
                     wf_errs += 1
-                    self.workflow_service.mark_burst_finished(burst_config, error=True, error_message=str(excep))
+                    self.workflow_service.mark_burst_finished(burst_config, error_message=str(excep))
                     
             self.logger.debug("Finished launching workflows. " + str(len(operation_ids) - wf_errs) +
                               " were launched successfully, " + str(wf_errs) + " had error on pre-launch steps")
         except Exception, excep:
             self.logger.error(excep)
-            self.workflow_service.mark_burst_finished(burst_config, error=True, error_message=str(excep))
+            self.workflow_service.mark_burst_finished(burst_config, error_message=str(excep))
             
         
                 
@@ -517,7 +517,7 @@ class BurstService():
                     any_stopped = self.operation_service.stop_operation(step.fk_operation) or any_stopped
 
         if any_stopped and burst_entity.status != burst_entity.BURST_CANCELED:
-            self.workflow_service.mark_burst_finished(burst_entity, cancel=True)
+            self.workflow_service.mark_burst_finished(burst_entity, model.BurstConfiguration.BURST_CANCELED)
             return True
         return False
         

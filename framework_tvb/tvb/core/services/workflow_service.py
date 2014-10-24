@@ -32,6 +32,7 @@
 .. moduleauthor:: Ionel Ortelecan <ionel.ortelecan@codemart.ro>
 """
 import json
+from datetime import datetime
 from tvb.basic.logger.builder import get_logger
 from tvb.core.entities.storage import dao
 from tvb.core.entities import model
@@ -135,7 +136,7 @@ class WorkflowService:
                         if workflow.status == workflow.STATUS_STARTED:
                             all_finished = False
                     if all_finished:
-                        self.mark_burst_finished(burst_entity, success=True)
+                        self.mark_burst_finished(burst_entity)
                         disk_size = dao.get_burst_disk_size(burst_entity.id)  # Transform from kB to MB
                         if disk_size > 0:
                             user = dao.get_project_by_id(burst_entity.fk_project).administrator
@@ -177,7 +178,7 @@ class WorkflowService:
                         dao.store_entity(unreached_operation)
             workflow = dao.get_workflow_by_id(executed_step.fk_workflow)
             burst = dao.get_burst_by_id(workflow.fk_burst)
-            self.mark_burst_finished(burst, error=True, error_message=operation.additional_info)
+            self.mark_burst_finished(burst, error_message=operation.additional_info)
             dao.store_entity(burst)
 
 
@@ -195,42 +196,42 @@ class WorkflowService:
             return None, None
         
         
-    def mark_burst_finished(self, burst_entity, error=False, success=False, cancel=False, error_message=None):
+    def mark_burst_finished(self, burst_entity, burst_status=None, error_message=None):
         """
         Mark Burst status field.
         Also compute 'weight' for current burst: no of operations inside, estimate time on disk...
         
         :param burst_entity: BurstConfiguration to be updated, at finish time.
-        :param error: When True, burst will be marked as finished with error.
-        :param success: When True, burst will be marked successfully.
-        :param cancel: When True, burst will be marked as user-canceled.
+        :param burst_status: BurstConfiguration status. By default BURST_FINISHED
+        :param error_message: If given, set the status to error and perpetuate the message.
         """
+        if burst_status is None:
+            burst_status = model.BurstConfiguration.BURST_FINISHED
+        if error_message is not None:
+            burst_status = model.BurstConfiguration.BURST_ERROR
+
         try:
-                             
             ### If there are any DataType Groups in current Burst, update their counter.
             burst_dt_groups = dao.get_generic_entity(model.DataTypeGroup, burst_entity.id, "fk_parent_burst")
             for dt_group in burst_dt_groups:
                 dt_group.count_results = dao.count_datatypes_in_group(dt_group.id)
                 dt_group.disk_size, dt_group.subject = dao.get_summary_for_group(dt_group.id)
                 dao.store_entity(dt_group)
-                    
+
             ### Update actual Burst entity fields
             ##  1KB for each dataType, considered for operation.xml files
             linked_ops_number = dao.get_operations_in_burst(burst_entity.id, is_count=True)
             burst_entity.disk_size = linked_ops_number + dao.get_disk_size_for_burst(burst_entity.id)        # In KB
             burst_entity.datatypes_number = dao.count_datatypes_in_burst(burst_entity.id)
             burst_entity.workflows_number = dao.get_workflows_for_burst(burst_entity.id, is_count=True)
-            burst_entity.mark_status(success=success, error=error, cancel=cancel)
+
+            burst_entity.status = burst_status
             burst_entity.error_message = error_message
-            
+            burst_entity.finish_time = datetime.now()
             dao.store_entity(burst_entity)
-        except Exception, excep:
-            self.logger.error(excep)
+        except Exception:
             self.logger.exception("Could not correctly update Burst status and meta-data!")
-            burst_entity.mark_status(error=True)
+            burst_entity.status = burst_status
             burst_entity.error_message = "Error when updating Burst Status"
+            burst_entity.finish_time = datetime.now()
             dao.store_entity(burst_entity)
-                
-                
-        
-        

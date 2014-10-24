@@ -117,7 +117,7 @@ class OperationExecutor(threading.Thread):
                 burst_entity = dao.get_burst_for_operation_id(self.operation_id)
                 if burst_entity:
                     message = "Error in operation process! Possibly segmentation fault."
-                    WorkflowService().mark_burst_finished(burst_entity, error=True, error_message=message)
+                    WorkflowService().mark_burst_finished(burst_entity, error_message=message)
 
             del launched_process
 

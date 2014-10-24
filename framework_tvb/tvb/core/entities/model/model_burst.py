@@ -191,21 +191,6 @@ class BurstConfiguration(Base, Exportable):
         return result
 
 
-    def mark_status(self, error=False, success=False, cancel=False):
-        """
-        Mark current burst as finished with error.
-        Prepare entity for DB storage (e.g. populate JSON semi-transient attributes).
-        DO NOT directly set status to error on Burst entity and save in DB,a s you might ruin some data.
-        """
-        if error:
-            self.status = self.BURST_ERROR
-        elif success:
-            self.status = self.BURST_FINISHED
-        elif cancel:
-            self.status = self.BURST_CANCELED
-        self.finish_time = datetime.now()
-
-
     def update_simulator_configuration(self, new_values):
         """
         Update the stored simulator configuration given the input dictionary 

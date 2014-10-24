@@ -85,7 +85,7 @@ def do_operation_launch(operation_id):
         LOGGER.exception(excep)
         parent_burst = dao.get_burst_for_operation_id(operation_id)
         if parent_burst is not None:
-            WorkflowService().mark_burst_finished(parent_burst, error=True, error_message=str(excep))
+            WorkflowService().mark_burst_finished(parent_burst, error_message=str(excep))
 
 
 
