@@ -17,85 +17,16 @@
  *
  **/
 
-// -------------------------------------------------------------
-//              Channel selector methods start from here
-// -------------------------------------------------------------
-
-/*
- * Add all channels to the channelsArray list and make sure that
- * all of the checkbox are checked.
- */
-function checkAll(entryArray, channelsArray) {
-
-	var divId = 'table_' + entryArray;
-    $('div[id^="'+ divId + '"] input').each(function () {
-        if (this.type == "checkbox") {
-            var channelId = parseInt(this.id.split("channelChk_")[1]);
-            var elemIdx = $.inArray(channelId, channelsArray);
-		    if (elemIdx == -1) {
-		        channelsArray.push(channelId);
-		    }
-		    $("#channelChk_" + channelId).attr('checked', true);
-        }
-    });
-}
-
-/*
- * Remove all channels to the channelsArray list and make sure that
- * none of the checkbox are checked.
- */
-function clearAll(entryArray, channelsArray) {
-
-	var divId = 'table_' + entryArray;
-    $('div[id^="'+ divId + '"] input').each(function () {
-        if (this.type == "checkbox") {
-            var channelId = this.id.split("channelChk_")[1];
-            var elemIdx = $.inArray(parseInt(channelId), channelsArray);
-		    if (elemIdx != -1) {
-		        channelsArray.splice(elemIdx, 1);
-		    }
-        }
-        $("#channelChk_" + channelId).attr('checked', false);
-    });
-}
-
-/*
- * Update the channelsArray array whenever a checkbox is clicked.
- */
-function updateChannelsList(domElem, channelsArray) {
-
-    var channelId = parseInt(domElem.id.split("channelChk_")[1]);
-    var elemIdx;
-    if (domElem.checked) {
-        elemIdx = $.inArray(channelId, channelsArray);
-	    if (elemIdx == -1) {
-	        channelsArray.push(channelId);
-	    }
-    } else {
-        elemIdx = $.inArray(channelId, channelsArray);
-	    if (elemIdx != -1) {
-	        channelsArray.splice(elemIdx, 1);
-	    }
-    }
-}
-
-// -------------------------------------------------------------
-//              Channel selector methods end here
-// -------------------------------------------------------------
-
-
-// -------------------------------------------------------------
-//              Datatype methods mappings start from here
-// -------------------------------------------------------------
+// ----- Datatype methods mappings start from here
 
 function readDataPageURL(baseDatatypeMethodURL, fromIdx, toIdx, stateVariable, mode, step) {
-	if (stateVariable == undefined || stateVariable == null) {
+	if (stateVariable == null) {
 		stateVariable = 0;
 	}
-	if (mode == undefined || stateVariable == null) {
+	if (stateVariable == null) {
 		mode = 0;
 	}
-	if (step == undefined || step == null) {
+	if (step == null) {
 		step = 1;
 	}
 	return baseDatatypeMethodURL + '/read_data_page/False?from_idx=' + fromIdx +";to_idx=" + toIdx + ";step=" + step + ";specific_slices=[null," + stateVariable + ",null," + mode +"]";
@@ -105,7 +36,5 @@ function readDataChannelURL(baseDatatypeMethodURL, fromIdx, toIdx, stateVariable
 	var baseURL = readDataPageURL(baseDatatypeMethodURL, fromIdx, toIdx, stateVariable, mode, step);
 	return baseURL.replace('read_data_page', 'read_channels_page') + ';channels_list=' + channels;
 }
- 
-// -------------------------------------------------------------
-//              Datatype methods mappings end here
-// -------------------------------------------------------------
+
+// ------ Datatype methods mappings end here
