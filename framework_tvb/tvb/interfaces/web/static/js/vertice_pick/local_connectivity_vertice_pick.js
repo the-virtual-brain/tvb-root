@@ -32,7 +32,7 @@
  */
 function drawScene() {
     // Use function offered by base_vertice_pick.js to draw the brain.
-	BASE_PICK_drawBrain(BASE_PICK_brainDisplayBuffers, noOfUnloadedBrainDisplayBuffers);
+	BASE_PICK_drawBrain();
 
    if (noOfUnloadedBrainDisplayBuffers == 0) {      // wait for the data to be loaded, then draw the legend
        mvPushMatrix();

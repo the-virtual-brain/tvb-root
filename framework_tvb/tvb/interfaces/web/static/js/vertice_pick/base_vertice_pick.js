@@ -126,22 +126,32 @@ function BASE_PICK_webGLStart(urlVerticesPickList, urlTrianglesPickList, urlNorm
 
 
 /**
- * Simplest drawScene
+ * Simplest drawScene. A default overwritten in local conn viewer and stimulus viewer.
  */
 function drawScene() {
-    BASE_PICK_drawBrain(BASE_PICK_brainDisplayBuffers, noOfUnloadedBrainDisplayBuffers);
+    BASE_PICK_drawBrain();
 }
 
 /**
  * Draw from buffers.
  */
-function BASE_PICK_drawBrain(brainBuffers, noOfUnloadedBuffers) {
+function BASE_PICK_drawBrain() {
+    var brainBuffers, noOfUnloadedBuffers;
+
+    if (BASE_PICK_doPick){
+        brainBuffers = BASE_PICK_brainPickingBuffers;
+        noOfUnloadedBuffers = noOfUnloadedBrainPickingBuffers;
+    }else{
+        brainBuffers = BASE_PICK_brainDisplayBuffers;
+        noOfUnloadedBuffers = noOfUnloadedBrainDisplayBuffers;
+    }
+
     if (noOfUnloadedBuffers != 0) {
         displayMessage("The load operation for the surface data is not completed yet!", "infoMessage");
         return;
     }
 
-    if (BASE_PICK_doPick ) {
+    if (BASE_PICK_doPick) {
         gl.disable(gl.BLEND);
         gl.disable(gl.DITHER);
         gl.uniform1f(shaderProgram.isPicking, 1);
@@ -424,11 +434,9 @@ function BASE_PICK_doVerticePick() {
     }
     gl.bindFramebuffer(gl.FRAMEBUFFER, GL_colorPickerBuffer);
 
-    //Draw the brain in picking mode
+    //Draw the brain in picking mode: swap normal display colors with picking colors and draw the 'colored' version to a back buffer
     BASE_PICK_doPick = true;
-    
-    //Swap normal display colors with picking colors and draw the 'colored' version to a back buffer
-    BASE_PICK_drawBrain(BASE_PICK_brainPickingBuffers, noOfUnloadedBrainPickingBuffers);
+    BASE_PICK_drawBrain();
     TRIANGLE_pickedIndex = GL_getPickedIndex();
     
     if (TRIANGLE_pickedIndex != GL_BACKGROUND) {
@@ -501,15 +509,14 @@ function BASE_PICK_doVerticePick() {
  * Remove the focal point given by triangle index.
  */
 function BASE_PICK_removeFocalPoint(triangleIndex) {
-
     delete surfaceFocalPoints[triangleIndex];
-    BASE_PICK_drawBrain(BASE_PICK_brainDisplayBuffers, noOfUnloadedBrainDisplayBuffers);
+    BASE_PICK_drawBrain();
 }
 
 
 function BASE_PICK_clearFocalPoints() {
     surfaceFocalPoints = {};
-    BASE_PICK_drawBrain(BASE_PICK_brainDisplayBuffers, noOfUnloadedBrainDisplayBuffers);
+    BASE_PICK_drawBrain();
 }
 
 /*
@@ -520,7 +527,7 @@ function BASE_PICK_addFocalPoint(triangleIndex) {
     var x_rot = (360 - Math.atan2(navigatorY - BRAIN_CENTER[1], navigatorZ - BRAIN_CENTER[2]) * 180 / Math.PI) % 360;
     var y_rot = Math.atan2(navigatorX - BRAIN_CENTER[0], Math.sqrt((navigatorZ - BRAIN_CENTER[2]) * (navigatorZ - BRAIN_CENTER[2]) + (navigatorY - BRAIN_CENTER[1]) * (navigatorY - BRAIN_CENTER[1]))) * 180 / Math.PI;
     surfaceFocalPoints[triangleIndex] = {'xRotation' : x_rot, 'yRotation' : y_rot, 'position' : [navigatorX, navigatorY, navigatorZ]};
-    BASE_PICK_drawBrain(BASE_PICK_brainDisplayBuffers, noOfUnloadedBrainDisplayBuffers);
+    BASE_PICK_drawBrain();
 }
 
 function createStimulusPinBuffers() {
