@@ -360,13 +360,15 @@ function customMouseUp(event) {
 	var canvasOffset = $("#" + BRAIN_CANVAS_ID).offset();
     var final_x_val = GL_lastMouseX + document.body.scrollLeft + document.documentElement.scrollLeft - Math.floor(canvasOffset.left);
     var final_y_val = GL_lastMouseY + document.body.scrollTop + document.documentElement.scrollTop - Math.floor(canvasOffset.top) + 1;
-	
-    if ((Math.abs(final_x_val - GL_mouseXRelToCanvas) > 5) || (Math.abs(final_y_val - GL_mouseYRelToCanvas) > 5)) {
-    	if (BASE_PICK_isMovieMode == false) {
-    		drawScene();
-    	}
-    } else {
-    	BASE_PICK_doVerticePick();
+    var delta_x = Math.abs(final_x_val - GL_mouseXRelToCanvas);
+    var delta_y = Math.abs(final_y_val - GL_mouseYRelToCanvas);
+
+    if (delta_x <= 5 && delta_y <= 5) {
+        BASE_PICK_doVerticePick();
+    }
+
+    if (BASE_PICK_isMovieMode == false) {
+        drawScene();
     }
 }
 
@@ -406,7 +408,7 @@ function BASE_PICK_handleMouseWeel(event) {
 }
 
 /**
- * This function should draw the brain navigator to a selected vertex using a color picking scheme
+ * Draws the brain in picking mode, then finds the picked vertex. Also centers the navigator in that vertex.
  */
 function BASE_PICK_doVerticePick() {
 	//Drawing will be done to back buffer and all 'eye candy' is disabled to get pure color
@@ -416,19 +418,7 @@ function BASE_PICK_doVerticePick() {
         return;
     }
     gl.bindFramebuffer(gl.FRAMEBUFFER, GL_colorPickerBuffer);
-	gl.disable(gl.BLEND);
-    gl.disable(gl.DITHER);
-    gl.viewport(0, 0, gl.viewportWidth, gl.viewportHeight);
-	gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
-	// View angle is 45, we want to see object from 0.1 up to 800 distance from viewer
-	var aspect = gl.viewportWidth / gl.viewportHeight;
-	perspective(45, aspect , near, 800.0);
-	
-	gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
-	
-	mvPushMatrix();
-    mvRotate(180, [0, 0, 1]);
-    
+
     //Draw the brain in picking mode
     BASE_PICK_doPick = true;
     
@@ -495,14 +485,8 @@ function BASE_PICK_doVerticePick() {
     }
     
     gl.bindFramebuffer(gl.FRAMEBUFFER, null);
-    
-    //We found out pickedx inde now just draw again as normal
-    mvPopMatrix();		 
+
 	BASE_PICK_doPick = false;
-	
-	if (BASE_PICK_isMovieMode == false) {
-		drawScene();
-	}
 }
 
 ///////////////////////////////////////~~~~~~~~END MOUSE RELATED CODE~~~~~~~~~~~//////////////////////////////////
