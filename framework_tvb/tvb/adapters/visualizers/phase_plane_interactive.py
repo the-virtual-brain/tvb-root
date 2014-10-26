@@ -56,8 +56,6 @@ class PhasePlane(object):
             self.svy_ind = 1  # y-axis: 2nd state variable
         else:
             self.svy_ind = 0
-        self.svx = self.model.state_variables[self.svx_ind]
-        self.svy = self.model.state_variables[self.svy_ind]
         self._set_state_vector()
         self._create_mesh_jitter()
 
@@ -87,8 +85,8 @@ class PhasePlane(object):
         state-variables and their range values.
         """
         svr = self.model.state_variable_range
-        xlo, xhi = svr[self.svx]
-        ylo, yhi = svr[self.svy]
+        xlo, xhi = svr[self.model.state_variables[self.svx_ind]]
+        ylo, yhi = svr[self.model.state_variables[self.svy_ind]]
 
         xg = numpy.mgrid[xlo:xhi:(NUMBEROFGRIDPOINTS * 1j)]
         yg = numpy.mgrid[ylo:yhi:(NUMBEROFGRIDPOINTS * 1j)]
@@ -130,12 +128,10 @@ class PhasePlane(object):
 
     def update_axis(self, mode, svx, svy, x_range, y_range, sv):
         self.mode = mode
-        self.svx = svx
-        self.svy = svy
         self.svx_ind = self.model.state_variables.index(svx)
         self.svy_ind = self.model.state_variables.index(svy)
         svr = self.model.state_variable_range
-        svr[svx][:] = x_range
+        svr[svx][:] = x_range #todo is it ok to update the model?
         svr[svy][:] = y_range
 
         for name, val in sv.iteritems():

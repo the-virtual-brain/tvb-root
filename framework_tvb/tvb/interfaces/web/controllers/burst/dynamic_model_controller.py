@@ -344,11 +344,14 @@ class DynamicModelController(BurstBaseController):
                 'default': (hi + lo) / 2
             })
 
+        svx_name = dynamic.model.state_variables[dynamic.phase_plane.svx_ind]
+        svy_name = dynamic.model.state_variables[dynamic.phase_plane.svy_ind]
+
         return {
             'modes': range(dynamic.model.number_of_modes),
             'state_variables': sv_model,
             'default_mode' : dynamic.phase_plane.mode,
-            'default_sv': [dynamic.phase_plane.svx, dynamic.phase_plane.svy]
+            'default_sv': [svx_name, svy_name]
         }
 
 
