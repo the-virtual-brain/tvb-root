@@ -74,8 +74,6 @@ function GFUN_mapNodeIdsToIndices(ids){
  * Function called when Connectivity Page is loaded and ready for initialization.
  */
 function GFUN_initializeConnectivityFull() {
-    $('#GLcanvas').mousewheel(function(event, delta) { return _customMouseWheelEvent(delta); });
-
     //Draw any additional elements like color picking and hide all tabs but the default one
     ColSch_initColorSchemeParams(GVAR_interestAreaVariables[GVAR_selectedAreaType]['min_val'],
                                  GVAR_interestAreaVariables[GVAR_selectedAreaType]['max_val'], _onColorSchemeChanged);
@@ -135,12 +133,6 @@ function _onColorSchemeChanged(){
     }else if(SELECTED_TAB === CONNECTIVITY_SPACE_TIME_TAB){
         ConnStepPlotInitColorBuffers();
     }
-}
-
-function _customMouseWheelEvent(delta) {
-    GL_handleMouseWeel(delta);
-    GFUNC_updateLeftSideVisualization();
-    return false; // prevent default
 }
 
 /*
@@ -491,7 +483,6 @@ function GFUNC_bind_gl_resize_handler(){
 function startConnectivity() {
     SELECTED_TAB = CONNECTIVITY_TAB;
     $("#monitor-3Dedges-id").show();
-    document.getElementById(CONNECTIVITY_CANVAS_ID).redrawFunctionRef = drawScene;         // interface-like function used in HiRes image exporting
     connectivity_initCanvas();
     connectivity_startGL(false);
     GFUNC_bind_gl_resize_handler();

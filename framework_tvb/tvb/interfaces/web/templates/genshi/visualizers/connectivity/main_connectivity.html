@@ -189,9 +189,6 @@
             GFUNC_storeMinMax('${weightsMin}', '${weightsNonZeroMin}', '${weightsMax}', '${tractsMin}', '${tractsNonZeroMin}', '${tractsMax}');
             TBL_storeHemisphereDetails(${start_points_x}, ${end_points_x}, ${start_points_y}, ${end_points_y});
 
-            patchContextMenu();
-            $('#GLcanvas').contextMenu('#contextMenuDiv', {'appendTo': ".connectivity-viewer", 'shadow': false, 'offsetY': -13, 'offsetX': 0});
-
 			prepareConnectivity('$urlWeights', '$urlTracts', '$urlPositions', '$urlVertices', '$urlTriangles',
                     '$urlNormals', '$urlLabels', false, '$conductionSpeed', '$raysArray', '$colorsArray');
             GVAR_baseSelection = '$base_selection';

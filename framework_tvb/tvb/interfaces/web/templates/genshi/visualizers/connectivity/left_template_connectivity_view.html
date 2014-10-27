@@ -2,6 +2,7 @@
 
 <div xmlns:xi="http://www.w3.org/2001/XInclude" id="s-connectivity">
 	<script type="text/javascript" src="/static/jquery/jquery.mousewheel.js"></script>
+    <script type="text/javascript" src="/static/jquery/jquery.contextmenu.js" ></script>
 	<script type="text/javascript" src="/static/js/sylvester.js"></script>
 	<script type="text/javascript" src="/static/js/glUtils.js"></script>
     <script type="text/javascript" src="/static/js/zoom.js" ></script>
@@ -23,14 +24,6 @@
         $(document).ready(function() {
             prepareConnectivity('$urlWeights', '$urlTracts', '$urlPositions', '$urlVertices', '$urlTriangles',
                                 '$urlNormals', '$urlLabels', true, '$conductionSpeed');
-
-            $('#GLcanvas').mousewheel(function(event, delta) {
-                GL_handleMouseWeel(delta);
-                GFUNC_updateLeftSideVisualization();
-                return false; // prevent default
-            });
-
-            $("#GLcanvas").click(displayNameForPickedNode);
         });
     </script>
 </div>

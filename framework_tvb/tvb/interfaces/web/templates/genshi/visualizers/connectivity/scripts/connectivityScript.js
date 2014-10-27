@@ -152,6 +152,13 @@ function customMouseMove(event) {
     GFUNC_updateLeftSideVisualization();
 }
 
+function _customMouseWheelEvent(delta) {
+    GL_handleMouseWeel(delta);
+    GFUNC_updateLeftSideVisualization();
+    return false; // prevent default
+}
+
+
 /**
  * Display the name for the selected connectivity node.
  */
@@ -827,7 +834,11 @@ function connectivity_initCanvas() {
     canvas.onmousedown = customMouseDown;
     $(document).on('mouseup', GL_handleMouseUp);
     $(document).on('mousemove', customMouseMove);
-    canvas.oncontextmenu = function(){return false;};
+
+    patchContextMenu();
+    $(canvas).contextMenu('#contextMenuDiv', {'appendTo': ".connectivity-viewer", 'shadow': false, 'offsetY': -13, 'offsetX': 0});
+    $(canvas).click(displayNameForPickedNode);
+    $(canvas).mousewheel(function(event, delta) { return _customMouseWheelEvent(delta); });
     canvas.redrawFunctionRef = drawScene;
 }
 
