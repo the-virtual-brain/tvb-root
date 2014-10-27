@@ -128,6 +128,16 @@
 				</py:if>
 
 		        <canvas id="GLcanvas"  tabindex='1'></canvas>
+
+				<py:if test="isSingleMode">
+					<aside class="menu-node" id="contextMenuDiv" style="display:none">
+						<mark id='nodeNameId'></mark>
+					</aside>
+				</py:if>
+
+				<py:if test="not isSingleMode">
+					<xi:include href="context_menu_canvas.html"/>
+				</py:if>
 			</div>
 		</div>
 	</py:def>
