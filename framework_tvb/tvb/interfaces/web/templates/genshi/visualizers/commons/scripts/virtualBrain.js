@@ -437,6 +437,15 @@ function _initViewerGL(canvas, urlVerticesList, urlNormalsList, urlTrianglesList
     gl.depthFunc(gl.LEQUAL);
 }
 
+// todo: refactor common behaviour between all measure point viewers
+function displayNameForPickedNode() {
+    if (CONN_pickedIndex === undefined || CONN_pickedIndex < 0) {
+        displayMessage("No node is currently selected selected.", "warningMessage");
+    } else {
+        displayMessage("The selected node is " + measurePointsLabels[CONN_pickedIndex], "infoMessage");
+    }
+}
+
 function _bindEvents(canvas){
     // Enable keyboard and mouse interaction
     canvas.onkeydown = GL_handleKeyDown;
@@ -445,6 +454,7 @@ function _bindEvents(canvas){
     canvas.oncontextmenu = function(){return false;};
     document.onmouseup = NAV_customMouseUp;
     document.onmousemove = GL_handleMouseMove;
+    $(canvas).click(displayNameForPickedNode);
 
     $(canvas).mousewheel(function(event, delta) {
         GL_handleMouseWeel(delta);
@@ -651,7 +661,7 @@ var doPick = false;
 function customMouseDown(event) {
     GL_handleMouseDown(event, $("#" + BRAIN_CANVAS_ID));
     NAV_inTimeRefresh = false;
-    if (displayMeasureNodes && isDoubleView) {
+    if (displayMeasureNodes) {
         doPick = true;
     }
 }
@@ -1219,6 +1229,7 @@ function drawScene() {
             drawBuffer(gl.TRIANGLES, measurePointsBuffers[i]);
         }
         var pickedIndex = GL_getPickedIndex();
+        CONN_pickedIndex = pickedIndex;
         if (pickedIndex != null && pickedIndex !== GL_NOTFOUND) {
             if (isDoubleView) {
                 EX_onPickedMeasurePoint(pickedIndex);
