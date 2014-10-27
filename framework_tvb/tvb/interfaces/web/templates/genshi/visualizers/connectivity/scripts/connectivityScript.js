@@ -164,9 +164,9 @@ function _customMouseWheelEvent(delta) {
  */
 function displayNameForPickedNode() {
     if (CONN_pickedIndex === undefined || CONN_pickedIndex < 0) {
-        displayMessage("No node is currently selected selected.", "warningMessage");
+        displayMessage("No node is currently highlighted.", "infoMessage");
     } else {
-        displayMessage("The selected node is " + GVAR_pointsLabels[CONN_pickedIndex], "infoMessage");
+        displayMessage("The highlighted node is " + GVAR_pointsLabels[CONN_pickedIndex], "infoMessage");
     }
 }
 
