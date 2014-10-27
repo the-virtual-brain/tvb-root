@@ -275,3 +275,14 @@ position: absolute;
     border:none;
     font-size:12px
 }
+
+/** measure point context menu */
+aside.menu-node {
+background: rgb(255, 254, 246);
+font-size: 12px;
+padding: 5px;
+position: absolute;
+-webkit-box-shadow: 2px 2px 10px 0 rgba(0, 0, 0, 0.7);
+-moz-box-shadow: 2px 2px 10px 0 rgba(0, 0, 0, 0.7);
+box-shadow: 2px 2px 10px 0 rgba(0, 0, 0, 0.7);
+}

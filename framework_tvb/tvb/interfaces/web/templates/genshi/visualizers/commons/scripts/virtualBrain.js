@@ -165,6 +165,9 @@ var fov = 45;
 
 var lightSettings = defaultLightSettings;
 
+// index of the currently selected node. This is equivalent to CONN_pickedIndex
+var VS_pickedIndex = -1;
+
 
 function VS_init_hemisphere_mask(hemisphere_chunk_mask){
     VS_hemisphere_chunk_mask = hemisphere_chunk_mask;
@@ -437,24 +440,15 @@ function _initViewerGL(canvas, urlVerticesList, urlNormalsList, urlTrianglesList
     gl.depthFunc(gl.LEQUAL);
 }
 
-// todo: refactor common behaviour between all measure point viewers
-function displayNameForPickedNode() {
-    if (CONN_pickedIndex === undefined || CONN_pickedIndex < 0) {
-        displayMessage("No node is currently selected selected.", "warningMessage");
-    } else {
-        displayMessage("The selected node is " + measurePointsLabels[CONN_pickedIndex], "infoMessage");
-    }
-}
 
 function _bindEvents(canvas){
     // Enable keyboard and mouse interaction
     canvas.onkeydown = GL_handleKeyDown;
     canvas.onkeyup = GL_handleKeyUp;
     canvas.onmousedown = customMouseDown;
-    canvas.oncontextmenu = function(){return false;};
+    $(canvas).on('contextmenu', _onContextMenu);
     document.onmouseup = NAV_customMouseUp;
     document.onmousemove = GL_handleMouseMove;
-    $(canvas).click(displayNameForPickedNode);
 
     $(canvas).mousewheel(function(event, delta) {
         GL_handleMouseWeel(delta);
@@ -656,10 +650,23 @@ function initShaders() {
 
 ///////////////////////////////////////~~~~~~~~START MOUSE RELATED CODE~~~~~~~~~~~//////////////////////////////////
 
+
+function _onContextMenu(){
+    if( !displayMeasureNodes || VS_pickedIndex === -1) {
+        return false;
+    }
+    doPick = true;
+    drawScene();
+    $('#nodeNameId').text(measurePointsLabels[VS_pickedIndex]);
+    $('#contextMenuDiv').css('left', event.offsetX).css('top', event.offsetY).show();
+    return false;
+}
+
 var doPick = false;
 
 function customMouseDown(event) {
     GL_handleMouseDown(event, $("#" + BRAIN_CANVAS_ID));
+    $('#contextMenuDiv').hide();
     NAV_inTimeRefresh = false;
     if (displayMeasureNodes) {
         doPick = true;
@@ -1228,13 +1235,7 @@ function drawScene() {
                                                      GL_colorPickerInitColors[i][2]);
             drawBuffer(gl.TRIANGLES, measurePointsBuffers[i]);
         }
-        var pickedIndex = GL_getPickedIndex();
-        CONN_pickedIndex = pickedIndex;
-        if (pickedIndex != null && pickedIndex !== GL_NOTFOUND) {
-            if (isDoubleView) {
-                EX_onPickedMeasurePoint(pickedIndex);
-            }
-        }
+        VS_pickedIndex = GL_getPickedIndex();
         doPick = false;
         gl.bindFramebuffer(gl.FRAMEBUFFER, null);
     }

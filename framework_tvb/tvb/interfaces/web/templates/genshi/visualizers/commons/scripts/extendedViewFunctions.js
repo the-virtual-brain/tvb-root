@@ -49,16 +49,21 @@ function _EX_commonChannelInit(updateColorBufferForMeasurePoint){
         // assuming previous brain selection was void update selected buffers
         updateColorBufferForMeasurePoint(val, true);
     }
+
+    // "subscribe" to measure point selection.
+    // For consistency with other 3d connectivity views the brain sets this global variable when a measure point is selected.
+    $('#GLcanvas').click(function(){
+        if (VS_pickedIndex != null && VS_pickedIndex !== -1){
+            _EX_onPickedMeasurePoint(VS_pickedIndex);
+        }
+    });
 }
 
 function EX_initializeChannels() {
     _EX_commonChannelInit(EX_changeColorBufferForMeasurePoint);
 }
 
-/**
- * Called by virtualbrain.js on pick
- */
-function EX_onPickedMeasurePoint(measurePointIndex){
+function _EX_onPickedMeasurePoint(measurePointIndex){
     // assumes that the index is the same with the value of the checkboxes
     var idx = AG_submitableSelectedChannels.indexOf(measurePointIndex);
     if(idx != -1){
