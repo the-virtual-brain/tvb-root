@@ -139,6 +139,7 @@ var drawingMode;
 var VS_showLegend = true;
 var isInternalSensorView = false;
 var displayMeasureNodes = false;
+var isFaceToDisplay = false;
 
 var drawNavigator = false;
 var drawTriangleLines = false;
@@ -720,18 +721,9 @@ function updateColors(currentTimeInFrame) {
 
 function toggleMeasureNodes() {
     displayMeasureNodes = ! displayMeasureNodes;
-    if (displayMeasureNodes && isDoubleView) {
-        $("input[type=checkbox][id^='channelChk_']").each(function () {
-            if (this.checked) {
-                var index = this.id.split("channelChk_")[1];
-                EX_changeColorBufferForMeasurePoint(index, true);
-            }
-        });
-    }
 }
 
 
-var isFaceToDisplay = false;
 function switchFaceObject() {
     isFaceToDisplay = !isFaceToDisplay;
 }
