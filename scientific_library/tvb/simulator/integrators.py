@@ -340,11 +340,14 @@ class HeunStochastic(IntegratorStochastic):
             raise Exception(msg)
 
         m_dx_tn = dfun(X, coupling, local_coupling)
-        inter = X + self.dt * m_dx_tn + noise_gfun * noise + self.dt * stimulus
+
+        noise *= noise_gfun
+
+        inter = X + self.dt * m_dx_tn + noise + self.dt * stimulus
 
         dX = (m_dx_tn + dfun(inter, coupling, local_coupling)) * self.dt / 2.0
 
-        return X + dX + self.noise.gfun(X) * noise + self.dt * stimulus
+        return X + dX + noise + self.dt * stimulus
 
     device_info = integrator_device_info(
         pars = ['dt'],
