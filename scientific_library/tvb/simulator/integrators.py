@@ -262,10 +262,10 @@ class HeunDeterministic(Integrator):
 
         """
         #import pdb; pdb.set_trace()
-        inter = X + self.dt * (dfun(X, coupling, local_coupling)  + stimulus)
+        m_dx_tn = dfun(X, coupling, local_coupling)
+        inter = X + self.dt * (m_dx_tn  + stimulus)
 
-        dX = (dfun(X, coupling, local_coupling) +
-              dfun(inter, coupling, local_coupling)) * self.dt / 2.0
+        dX = (m_dx_tn + dfun(inter, coupling, local_coupling)) * self.dt / 2.0
 
         return X + dX + self.dt * stimulus
 
@@ -339,11 +339,10 @@ class HeunStochastic(IntegratorStochastic):
                        noise_gfun.shape, (noise.shape[0], noise.shape[1])))
             raise Exception(msg)
 
-        inter = (X + self.dt * dfun(X, coupling, local_coupling) +
-                 noise_gfun * noise + self.dt * stimulus)
+        m_dx_tn = dfun(X, coupling, local_coupling)
+        inter = X + self.dt * m_dx_tn + noise_gfun * noise + self.dt * stimulus
 
-        dX = (dfun(X, coupling, local_coupling) + 
-              dfun(inter, coupling, local_coupling)) * self.dt / 2.0
+        dX = (m_dx_tn + dfun(inter, coupling, local_coupling)) * self.dt / 2.0
 
         return X + dX + self.noise.gfun(X) * noise + self.dt * stimulus
 
