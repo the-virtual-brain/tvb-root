@@ -10,8 +10,8 @@
 		<p>No visualizers configured for this tab to display.</p>
 	</py:if>
 
-	<py:for each="i, portlet_entity in enumerate(portlet_tab_list)"
-			py:with="width= max_width if (portlets_len==1 or portlets_len==3 and i==2) else max_width/2;
+	<py:for each="portlet_idx, portlet_entity in enumerate(portlet_tab_list)"
+			py:with="width= max_width if (portlets_len==1 or portlets_len==3 and portlet_idx==2) else max_width/2;
 					 height=max_height/2 - 38 if (portlets_len &gt; 1) else max_height - 38;">
 
 		<xi:include href="portlet_visualization_template.html"/>
