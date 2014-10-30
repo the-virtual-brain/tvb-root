@@ -461,7 +461,11 @@ class Simulator(core.Type):
         #if any(outputi is not None for outputi in output):
         #    yield output
 
-        for step in range(self.current_step+1, self.current_step+int_steps+1):
+        # the vertex mapping array is huge but sparse.
+        # csr because I expect the row to have one value and I expect the dot to proceed row wise.
+        vertex_mapping = sparse.csr_matrix(self.surface.vertex_mapping)
+
+        for step in xrange(self.current_step+1, self.current_step+int_steps+1):
             if self.surface is None:
                 delayed_state = history[(step-1-idelays) % horizon, cvar, node_ids, :]
                 #coupling._set_pattern(npsum(delayed_state * weights, axis=0))
@@ -472,7 +476,14 @@ class Simulator(core.Type):
                 #coupling._set_pattern(npsum(delayed_state * weights, axis=0))
                 #region_coupling = coupling.pattern
                 region_coupling = coupling(weights, region_history[(step - 1) % horizon, self.model.cvar], delayed_state)
-                node_coupling = npdot(self.surface.vertex_mapping, region_coupling)
+
+                node_coupling = numpy.empty((vertex_mapping.shape) + (self.model.number_of_modes,))
+                # sparse matrices cannot multiply with 3d arrays so we use a loop over the modes
+                # For 3d arrays numpy.dot has the effect of multiplying row by row.
+                # To replicate this we have to transpose the normal matrix multiplication
+                for mi in xrange(self.model.number_of_modes):
+                    node_coupling[..., mi] = vertex_mapping.dot(region_coupling[..., mi].T)
+
                 node_coupling = node_coupling.transpose((1, 0, 2))
                 #import pdb; pdb.set_trace()
             if self.stimulus is not None:
