@@ -255,16 +255,14 @@ function tick() {
 
 
 function drawScene() {
-    var theme = ColSchGetTheme().surfaceViewer;
-    gl.clearColor(theme.backgroundColor[0], theme.backgroundColor[1], theme.backgroundColor[2], theme.backgroundColor[3]);
+    // Use function offered by base_vertice_pick.js to draw the brain:
+    BASE_PICK_drawBrain();
+
+    // Draw the legend for the stimulus now.
     if (BASE_PICK_isMovieMode) {
-        basicAddLight(defaultLightSettings);
-        // Draw the legend for the stimulus now.
         mvPushMatrix();
         loadIdentity();
         drawBuffers(gl.TRIANGLES, [LEG_legendBuffers]);
         mvPopMatrix();
     }
-    // Use function offered by base_vertice_pick.js to draw the brain:
-    BASE_PICK_drawBrain();
 }
