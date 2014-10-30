@@ -461,9 +461,10 @@ class Simulator(core.Type):
         #if any(outputi is not None for outputi in output):
         #    yield output
 
-        # the vertex mapping array is huge but sparse.
-        # csr because I expect the row to have one value and I expect the dot to proceed row wise.
-        vertex_mapping = sparse.csr_matrix(self.surface.vertex_mapping)
+        if self.surface is not None:
+            # the vertex mapping array is huge but sparse.
+            # csr because I expect the row to have one value and I expect the dot to proceed row wise.
+            vertex_mapping = sparse.csr_matrix(self.surface.vertex_mapping)
 
         for step in xrange(self.current_step+1, self.current_step+int_steps+1):
             if self.surface is None:
@@ -495,6 +496,8 @@ class Simulator(core.Type):
             history[step % horizon, :] = state
 
             if self.surface is not None:
+                # todo: optimisation. Use a sparse matrix for region_average.
+                # Multiply by a for loop over modes similar to the node_coupling computation
                 region_history[step % horizon, :] = npdot(region_average, state).transpose((1, 0, 2))
 
             # monitor.things e.g. raw, average, eeg, meg, fmri...
