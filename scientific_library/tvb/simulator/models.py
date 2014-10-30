@@ -2875,15 +2875,19 @@ class Generic2dOscillator(Model):
         #if not hasattr(self, 'derivative'):
         #    self.derivative = numpy.empty((2,)+V.shape)
 
-        ## numexpr
-        dV = ev('d * tau * (alpha * W - f * V**3 + e * V**2 + g * V + gamma * I + gamma *c_0 + lc_0)')
-        dW = ev('d * (a + b * V + c * V**2 - beta * W) / tau')
+        ## numexpr pre-allocate
+        # Pre-allocate the result array then instruct numexpr to use it as output.
+        # This avoids an expensive array concatenation
+        deriv = numpy.empty_like(state_variables)
+
+        ev('d * tau * (alpha * W - f * V**3 + e * V**2 + g * V + gamma * I + gamma *c_0 + lc_0)', out=deriv[0])
+        ev('d * (a + b * V + c * V**2 - beta * W) / tau', out=deriv[1])
 
         ## regular ndarray operation
         ##dV = tau * (W - 0.5* V**3.0 + 3.0 * V**2 + I + c_0 + lc_0)
         ##dW = d * (a + b * V + c * V**2 - W) / tau
 
-        self.derivative = numpy.array([dV, dW])
+        self.derivative = deriv  #why ?
 
         return self.derivative
 
