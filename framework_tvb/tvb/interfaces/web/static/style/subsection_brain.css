@@ -130,17 +130,15 @@ position: absolute;
     font-size: small;
 }
 
-
-.titleClass { 
-   margin: auto auto; 
-   margin-top:0; 
-   width: 800px; 
-   height: 22px; 
-   text-align: right; 
-   font-size:20px; 
-   color: #fff;
-   text-shadow: 1px 1px 1px #000; 
-   font-style: italic;
+.titleClass {
+    margin: 0 auto auto;
+    width: 800px;
+    height: 22px;
+    text-align: right;
+    font-size: 20px;
+    color: #fff;
+    text-shadow: 1px 1px 1px #000;
+    font-style: italic;
 }
 
 .glCanvasClass {
@@ -235,7 +233,7 @@ position: absolute;
 }
 
 .brainLegendContent tr{
-    vertical-align:bottom;
+    vertical-align: bottom;
 }
 
 .brainLegendContent tr:first-child{
@@ -252,26 +250,33 @@ position: absolute;
 /* Backend devs */
 /* These styles move the movie timeline near the play pause button. They also style the time input */
 
-#main .view-column .slider-div .action{
+#main .view-column .slider-div .action {
     position: absolute;
     left: 0;
-    top:4px;
+    top: 4px;
 }
 
-.slider-div #slider{
-    position:absolute;
-    left:52px;
-    right:90px;
-    top:8px;
+.slider-div #slider {
+    position: absolute;
+    left: 52px;
+    right: 90px;
+    top: 8px;
     border-radius: 0;
 }
 
-.slider-div .movie-time{
-    position:absolute;width:80px;right:0
+.slider-div .movie-time {
+    position: absolute;
+    width: 80px;
+    right: 0
 }
 
-.slider-div .movie-time #TimeNow{
-    width:40px;
-    border:none;
-    font-size:12px
+.slider-div .movie-time #TimeNow {
+    width: 40px;
+    border: none;
+    font-size: 12px
+}
+
+.slider-div-right {
+    left: 38px;
+    top: -4px
 }
