@@ -82,6 +82,11 @@ function STIM_PICK_setVisualizedData(data) {
     $(".action-run").hide();
 
     // todo: The initialisation of the time line is very similar to the one in virtualbrain.js. The globals are different and some update conditions.
+
+    // The slider is disabled because seeking is buggy.
+    // Seeking outside the current chunk should immediately load a new chunk and pause until the load has finished.
+    // todo: create a movie module that supports seeking by extracting movie stuff from virtualbrain.js
+
     // Initialize slider for timeLine
     $("#slider").slider({
         min:minTime, max: maxTime, disabled: true,
@@ -231,7 +236,7 @@ function tick() {
             // want to update the slices here to improve performance. Increse the timestep.
             displayedStep += 1;
             totalTimeStep += 1;
-            if (currentStimulusData.length < (maxTime - minTime) &&    // todo : this condition has to change. Now we can jump using the timeline in arbitrary chunks.
+            if (currentStimulusData.length < (maxTime - minTime) &&    // todo : this condition has to change to support seeking
                 displayedStep + BUFFER_TIME_STEPS >= currentStimulusData.length &&
                 nextStimulusData == null && !asyncLoadStarted) {
                 STIM_PICK_loadNextStimulusChunk();
