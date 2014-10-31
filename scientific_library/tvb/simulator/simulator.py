@@ -465,20 +465,22 @@ class Simulator(core.Type):
             # the vertex mapping array is huge but sparse.
             # csr because I expect the row to have one value and I expect the dot to proceed row wise.
             vertex_mapping = sparse.csr_matrix(self.surface.vertex_mapping)
+            # this is big a well. same shape as the vertex mapping.
+            region_average = sparse.csr_matrix(region_average)
 
         for step in xrange(self.current_step+1, self.current_step+int_steps+1):
             if self.surface is None:
-                delayed_state = history[(step-1-idelays) % horizon, cvar, node_ids, :]
+                delayed_state = history[(step-1-idelays) % horizon, cvar, node_ids, :]   #for region simulations this is the bottleneck
                 #coupling._set_pattern(npsum(delayed_state * weights, axis=0))
                 #node_coupling = coupling.pattern
                 node_coupling = coupling(weights, state[self.model.cvar], delayed_state)
             else:
-                delayed_state = region_history[(step-1-idelays) % horizon, cvar, node_ids, :]
+                delayed_state = region_history[(step-1-idelays) % horizon, cvar, node_ids, :] #expensive as well
                 #coupling._set_pattern(npsum(delayed_state * weights, axis=0))
                 #region_coupling = coupling.pattern
                 region_coupling = coupling(weights, region_history[(step - 1) % horizon, self.model.cvar], delayed_state)
 
-                node_coupling = numpy.empty((vertex_mapping.shape) + (self.model.number_of_modes,))
+                node_coupling = numpy.empty(vertex_mapping.shape + (self.model.number_of_modes,))
                 # sparse matrices cannot multiply with 3d arrays so we use a loop over the modes
                 # For 3d arrays numpy.dot has the effect of multiplying row by row.
                 # To replicate this we have to transpose the normal matrix multiplication
@@ -496,9 +498,12 @@ class Simulator(core.Type):
             history[step % horizon, :] = state
 
             if self.surface is not None:
-                # todo: optimisation. Use a sparse matrix for region_average.
-                # Multiply by a for loop over modes similar to the node_coupling computation
-                region_history[step % horizon, :] = npdot(region_average, state).transpose((1, 0, 2))
+                # this optimisation is similar to the one done for vertex_mapping above
+                step_avg = numpy.empty( (number_of_regions, state.shape[0], self.model.number_of_modes) )
+                for mi in xrange(self.model.number_of_modes):
+                    step_avg[..., mi] = region_average.dot(state[..., mi].T)
+
+                region_history[step % horizon, :] = step_avg.transpose((1, 0, 2))
 
             # monitor.things e.g. raw, average, eeg, meg, fmri...
             output = [monitor.record(step, state) for monitor in self.monitors]
