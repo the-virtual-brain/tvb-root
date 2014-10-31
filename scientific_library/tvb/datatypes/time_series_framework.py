@@ -331,7 +331,7 @@ class TimeSeriesRegionFramework(time_series_data.TimeSeriesRegionData, TimeSerie
 class TimeSeriesSurfaceFramework(time_series_data.TimeSeriesSurfaceData, TimeSeriesFramework):
     """ This class exists to add framework methods to TimeSeriesSurfaceData. """
 
-    SELECTION_LIMIT = 200
+    SELECTION_LIMIT = 100
 
     def get_space_labels(self):
         """

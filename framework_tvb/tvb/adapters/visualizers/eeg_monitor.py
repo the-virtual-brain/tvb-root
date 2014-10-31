@@ -206,7 +206,6 @@ class EegMonitor(ABCDisplayer):
             no_of_lines += shape[self.selected_dimensions[1]]
             max_length = max(max_length, shape[0])
 
-            space_labels = timeseries.get_space_labels()
             self._fill_graph_labels(timeseries, graph_labels, multiple_inputs)
 
             ts_name = timeseries.display_name + " [id:" + str(timeseries.id) + "]"
@@ -233,7 +232,12 @@ class EegMonitor(ABCDisplayer):
         shape = timeseries.read_data_shape()
         space_labels = timeseries.get_space_labels()
         for j in range(shape[self.selected_dimensions[1]]):
-            if len(space_labels) > 0:
+            if space_labels:
+                if j >= len(space_labels):
+                    # for surface time series get_space_labels will return labels up to a limit, not a label for each signal
+                    # to honor that behaviour we break the loop if we run out of labels.
+                    # todo a robust cap on signals. 
+                    break
                 this_label = str(space_labels[j])
             else:
                 this_label = "channel_" + str(j)
