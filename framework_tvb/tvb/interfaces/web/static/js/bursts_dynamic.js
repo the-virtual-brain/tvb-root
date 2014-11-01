@@ -289,7 +289,7 @@ function _onGraphChanged(){
         data: { graph_state: JSON.stringify(graph_state)},
         success : function(data){
             _redrawPhasePlane(data);
-            _deleteTrajectories();
+            _redrawTrajectories();
         }
     });
 }
@@ -320,8 +320,13 @@ function _trajectories_rpc(starting_points, success){
 }
 
 function onTrajectory(x, y){
-    _trajectories_rpc([[x, y]], function(data){
-        dynamicPage.traj_starts.push([x,y]);
+    var start_state = dynamicPage.stateVarsSliders.getValues();
+    var axis_state = dynamicPage.axisControls.getValue();
+    start_state[axis_state.svx] = x;
+    start_state[axis_state.svy] = y;
+
+    _trajectories_rpc([start_state], function(data){
+        dynamicPage.traj_starts.push(start_state);
         dynamicPage.trajectories.push(data.trajectories[0]);
         dynamicPage.phasePlane.drawTrajectories(dynamicPage.trajectories);
         dynamicPage.phasePlane.drawSignal(data.signals);
