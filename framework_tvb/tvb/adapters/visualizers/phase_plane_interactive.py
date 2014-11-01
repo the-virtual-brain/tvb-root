@@ -139,23 +139,20 @@ class PhasePlane(object):
             self.default_sv[k] = val
 
 
-    def _compute_trajectories(self, xy):
+    def _compute_trajectories(self, states):
         """
-        A vectorized method of computing a number of trajectories in parallel
-        :param xy: starting points for all trajectories. shape = starts * 2
+        A vectorized method of computing a number of trajectories in parallel.
+        The trajectories will be projected on the plane defined by svx_ind, svy_ind.
         """
         scheme = self.integrator.scheme
-        state = numpy.tile(self.default_sv, (len(xy), 1)) # repeat the initial state for all starting points
-        # now set the x, y starting points
-        state[self.svx_ind, :] = xy[:, 0, numpy.newaxis]  # slice xy column wise
-        state[self.svy_ind, :] = xy[:, 1, numpy.newaxis]
-
-        trajs = numpy.zeros((TRAJ_STEPS + 1, self.model.nvar, len(xy), self.model.number_of_modes))
-        trajs[0, :] = state
+        trajs = numpy.zeros((TRAJ_STEPS + 1, self.model.nvar, len(states), self.model.number_of_modes))
+        # reshape to what dfun expects: from n, sv to sv, n, mode
+        states = numpy.tile(states.T[:, :, numpy.newaxis], self.model.number_of_modes)
+        trajs[0, :] = states
         # grow trajectories step by step
         for step in xrange(TRAJ_STEPS):
-            state = scheme(state, self.model.dfun, self.no_coupling, 0.0, 0.0)
-            trajs[step + 1, :] = state
+            states = scheme(states, self.model.dfun, self.no_coupling, 0.0, 0.0)
+            trajs[step + 1, :] = states
 
         if numpy.isnan(trajs).any():
             self.log.warn("NaN in trajectories")
@@ -200,9 +197,22 @@ class PhasePlaneD3(PhasePlane):
         return segments
 
 
+    def _state_dict_to_array(self, state):
+        arr = numpy.zeros(len(self.model.state_variables))
+        for svn, v in state.iteritems():
+            svn_idx = self.model.state_variables.index(svn)
+            arr[svn_idx] = v
+        return arr
+
+
     def trajectories(self, starting_points):
-        traj = self._compute_trajectories(numpy.array(starting_points)) # point_on_traj_idx, sv_idx, traj_idx, mode
-        # reshape it
+        """
+        :param starting_points: A list of starting points represented as dicts of state_var_name to value
+        :return: a tuple of trajectories and signals
+        """
+        starting_points = numpy.array([self._state_dict_to_array(s) for s in starting_points])
+        traj = self._compute_trajectories(starting_points) # point_on_traj_idx, sv_idx, traj_idx, mode
+        # reshape it and project it on the plane defined  by the current axis state vars
         traj = traj.transpose(2, 0, 1, 3) # traj_idx, point, sv_idx, mode
         trajectory = traj[:, :, [self.svx_ind, self.svy_ind], self.mode] # traj_idx, points, x, y
 
