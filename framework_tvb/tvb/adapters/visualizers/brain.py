@@ -144,14 +144,13 @@ class BrainViewer(ABCDisplayer):
 
         _, _, measure_points_no = self.retrieve_measure_points(time_series)
         min_val, max_val = time_series.get_min_max_values()
-        legend_labels = self._compute_legend_labels(min_val, max_val)
 
         return dict(urlVertices=json.dumps(url_vertices), urlTriangles=json.dumps(url_triangles),
                     urlLines=json.dumps(url_lines), urlNormals=json.dumps(url_normals),
                     alphas=json.dumps(alphas), alphas_indices=json.dumps(alphas_indices),
                     base_activity_url=ABCDisplayer.VISUALIZERS_URL_PREFIX + time_series.gid,
                     isOneToOneMapping=one_to_one_map, minActivity=min_val, maxActivity=max_val,
-                    minActivityLabels=legend_labels, noOfMeasurePoints=measure_points_no)
+                    noOfMeasurePoints=measure_points_no)
 
 
     @staticmethod

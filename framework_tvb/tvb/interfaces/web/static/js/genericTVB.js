@@ -46,10 +46,14 @@ function displayMessage(msg, className) {
         $(messageDivParent.parentNode).html($(messageDivParent.parentNode).html());
 
     } else {
-        //  We are on the base_user template
+
         messageDivParent = $("#generic-message");
-        messageDivParent.removeClass('no-message');
-        messageDivParent[0].className = 'generic-message ' + className;
+        if (messageDivParent.length) {
+            //  We are on the base_user template
+            messageDivParent.removeClass('no-message');
+            messageDivParent[0].className = 'generic-message ' + className;
+        }
+        // else we are in the portlets
     }
 }
 

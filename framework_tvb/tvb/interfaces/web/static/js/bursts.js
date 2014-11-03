@@ -906,7 +906,7 @@ function displayBurstTree(selectedHref, selectedProjectID, baseURL) {
     returnToSessionPortletConfiguration();
 
     updatePortletsToolbar(0);
-    $("#section-portlets-ul").find("li").removeClass('active');
+    $("#section-portlets-ul, #section-portlets-ul").find("li").removeClass('active');
     $(selectedHref).parent().addClass('active');
     // Also update selected tab on cherryPy session.
     doAjaxCall({
