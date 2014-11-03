@@ -702,7 +702,9 @@ function showOverlay(url, allowClose, message_data) {
                 parentDiv = bodyElem;
             }
             parentDiv.prepend(htmlResult);
-            MathJax.Hub.Queue(["Typeset", MathJax.Hub, "overlay"]);
+            if (typeof MathJax !== 'undefined') {
+                MathJax.Hub.Queue(["Typeset", MathJax.Hub, "overlay"]);
+            }
         },
         error:function (r) {
             if (r) {
