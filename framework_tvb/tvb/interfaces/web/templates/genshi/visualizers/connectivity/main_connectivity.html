@@ -1,4 +1,4 @@
-<!-- Visualizer Large Scale Connectivity Matrix -->
+<!--! Visualizer Large Scale Connectivity Matrix -->
 
 <div xmlns:xi="http://www.w3.org/2001/XInclude" xmlns:py="http://genshi.edgewall.org/">
 	<script type="text/javascript" src="/static/jquery/jquery.mousewheel.js"></script>
@@ -26,7 +26,6 @@
 	<link rel="stylesheet" type="text/css" href="/static/style/section_connectivity.css?$currentVersionJS"/>
 	
 	<py:def function="drawMatrixLegendArea(canvasContainerID)">
-		<!-- The matrix' legend -->
 		<div class="matrix-legend" id="$canvasContainerID"></div>
 		
 		<div class="matrix-legend"> 
@@ -43,7 +42,7 @@
 		</div> 
 	</py:def>
 	
-	<!-- Connectivity viewer -->
+	<!--! Connectivity viewer -->
 	<section class="view-column connectivity-viewer col-1">
 	<h4><mark>View</mark> Large Scale Connectivity</h4>
 	<a id="showConnectivityDetailsBtn" href="#" onclick='displayNodeDetails("${connectivity_entity.gid}", "${connectivity_entity.type}", null, "Visualizers");'
@@ -78,7 +77,7 @@
 	</div>	        
 	</section>
 		
-	<!-- Matrix viewer and controls -->
+	<!--! Matrix viewer and controls -->
 	<section id="scrollable-matrix-section" class="view-column matrix-controller col-2"
             py:with="nodeCount=len(pointsLabels);halfNodeCount=int(nodeCount / 2)">
 
@@ -100,13 +99,12 @@
 			<li><a href="#" onclick="hideRightSideTabs(this); showTractsTable();">Tracts Matrix</a></li>
 		</ul>
 
-		<!-- Toolbar -->
+		<!--! Toolbar -->
     	<ul class="toolbar-inline matrix-control">
 
-			<!-- Selection controls -->
     		<li>Selection</li>
     		
-			<!-- Node/Edge operations -->
+			<!--! Node/Edge operations -->
 			<li class="selection-ops">
 				<nav class="inline-menu">
 					<button class="action action-menu">Edge Operations</button>
@@ -150,7 +148,7 @@
 		</ul>
 
 		<xi:include href="matrix_with_quadrants.html"/>
-		<!-- Matrices: Weights -->
+		<!--! Matrices: Weights -->
 		<div id="div-matrix-weights" class="matrix-viewer">
 			<div class="matrix-table">
 	        	${draw2DConnectivityMatrix('leftHemisphere', 0, pointsLabels, 0, halfNodeCount, 0, halfNodeCount, 'w')}
@@ -161,7 +159,7 @@
 
 			${drawMatrixLegendArea('weights-legend')}
 	    </div>
-		<!-- Matrices: Tracts -->
+		<!--! Matrices: Tracts -->
 	    <div id="div-matrix-tracts" class="matrix-viewer">
 	    	<div class="matrix-table">
 	        	${draw2DConnectivityMatrix('leftHemisphereTracts', 0, pointsLabels, 0, halfNodeCount, 0, halfNodeCount, 't')}

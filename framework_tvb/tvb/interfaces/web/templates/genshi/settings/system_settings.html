@@ -1,7 +1,7 @@
 <!-- ============================= --> 
 <!--     Settings Page Content     --> 
 <!-- ============================= -->
-<tvb xmlns:py="http://genshi.edgewall.org/" xmlns:xi="http://www.w3.org/2001/XInclude">
+<tvb xmlns:py="http://genshi.edgewall.org/">
 	<div id="main" class="main-settings" xmlns:py="http://genshi.edgewall.org/">
     	<form method="post"> 
 			<table summary="Config data" class="contentTable">	
@@ -29,7 +29,7 @@
                               	 			 ${option} </option>
                         			</py:for>            
                     			</select>
-                                <!--The select tag doesn't have the readonly attribute.-->
+                                <!--! The select tag doesn't have the readonly attribute.-->
                     			<select name="$key" id='$key' class="inputField" disabled="disabled" py:if="data.type=='select' and ('readonly' in data and data.readonly)">
                         			<py:for each="option in data.options">
                                         <py:if test="option == data.value">

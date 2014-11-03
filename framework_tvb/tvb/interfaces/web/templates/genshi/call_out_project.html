@@ -1,5 +1,5 @@
-<div xmlns:py="http://genshi.edgewall.org/" xmlns:xi="http://www.w3.org/2001/XInclude" py:strip="True">
-	<!-- === Box: Project call-out --> 
+<div xmlns:py="http://genshi.edgewall.org/" py:strip="True">
+	<!--! === Box: Project call-out -->
 	<h3><mark>Project ID</mark>${selectedProject.id if selectedProject else '-'}</h3>
 	   
 	<p class="ops-beacon ${'ops-pending' if (selectedProject and selectedProject.operations_started > 0) else ''}"

@@ -1,4 +1,4 @@
-<div id="s-brain" class="brain" xmlns:py="http://genshi.edgewall.org/" xmlns:xi="http://www.w3.org/2001/XInclude">
+<div id="s-brain" class="brain" xmlns:xi="http://www.w3.org/2001/XInclude">
     <xi:include href="../commons/gl_view_header.html" />
     <script type="text/javascript" src="/static/js/vertice_pick/base_vertice_pick.js?$currentVersionJS"></script>
     <script type="text/javascript" src="/static/js/vertice_pick/local_connectivity_vertice_pick.js?$currentVersionJS"></script>
@@ -7,7 +7,7 @@
     <xi:include href="../commons/fragment_shader.html" />
     <xi:include href="../commons/surface_pick_vertex_shader.html" />
 
-    <!--Draw brain-->
+    <!--! Draw brain-->
     <xi:include href="../commons/brain_component.html"/>
     ${draw_brain_component("GLcanvas", None)}
 
@@ -21,6 +21,5 @@
             });
         });
     </script>
-
 </div>
 

@@ -31,7 +31,7 @@
 		</tr>
 		<tr>
 			<td><label for="role">Role *</label></td>
-			<!-- TODO make this two values dymanic, retrieved from code. -->
+			<!--! TODO make this two values dynamic, retrieved them from the server-side. -->
 			<td><select tabindex='5' id="role" name="role" class="inputField" value="${data.role if ('role' in data) else ''}">
 					<option value="RESEARCHER">Researcher</option>
 					<option value="CLINICIAN" selected="${'SELECTED' if ('role' in data and data.role=='CLINICIAN') else ''}">Clinician</option>

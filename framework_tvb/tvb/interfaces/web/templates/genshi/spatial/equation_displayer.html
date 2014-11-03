@@ -1,4 +1,4 @@
-<div xmlns:xi="http://www.w3.org/2001/XInclude" xmlns:py="http://genshi.edgewall.org/">
+<div xmlns:py="http://genshi.edgewall.org/">
     <py:def function="plotEquations(allSeries, prefix, message)">
         <div id="equationCanvasId_${prefix}" class="specialviewer equationDisplay"></div>
 
@@ -10,7 +10,7 @@
         </script>
 
         <py:if test="message">
-            <!--if the message is empty we don't want to clear the other messages-->
+            <!--! if the message is empty we don't want to clear the other messages-->
             <script type="text/javascript">
                 displayMessage("$message", "warningMessage");
             </script>

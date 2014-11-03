@@ -26,13 +26,13 @@
 				</tr>
 			</thead>
 			
-			<!-- Table footer w/ pagination controls -->
+			<!--! Table footer w/ pagination controls -->
 			<tfoot>
 				${displayPaginationControls(page_number, total_pages, 6, 'projectsForm')}
 			</tfoot>
 	
 			<tbody>
-		        <!-- Potential selection errors -->
+		        <!--! Potential selection errors -->
 				<tr class="selector-error" py:if="len(projectsList) == 0">
 					<td colspan="5"> You have no project to work in. Please create a new one with the button on the right. </td>
 				</tr>
@@ -41,7 +41,7 @@
 					<td colspan="6"> You haven't selected a project yet. Please do so below. </td>
 				</tr>
 		
-		        <!-- Loop through all projects -->
+		        <!--! Loop through all projects -->
 		        <tr py:for="proj in projectsList" id="li_prj_$proj.id" class="${'project-active' if selectedProject and int(selectedProject.id)==proj.id else ''} project-owned">
 					<td class="id" tabindex="1" onkeypress="redirectToHrefChild(this)">
 						<a href="#" title="Select this project to work with..." class="action action-relevancy ${'action-make-irrelevant' if selectedProject and int(selectedProject.id)==proj.id else 'action-make-relevant'}" 
@@ -79,8 +79,8 @@
 	    </table>
 	</section>
 
-	<!-- Toolbar for project creation --> 
-	<!-- Usually, this should go right after div#main but here we only have a single column --> 
+	<!--! Toolbar for project creation -->
+	<!--! Usually, this should go right after div#main but here we only have a single column -->
     <aside class="header-component toolbar can-extend auto-extends">
       <h3>View All Projects</h3>
 	  <div class="extension">

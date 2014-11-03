@@ -1,5 +1,6 @@
 <div xmlns:py="http://genshi.edgewall.org/">
-    <!--data parameter wil be of form [[[l1,l2,l3,..], [v1,v2,v3,...], dict()],[],...]; where l1,l2,l3,.. are the
+    <!--!
+    data parameter wil be of form [[[l1,l2,l3,..], [v1,v2,v3,...], dict()],[],...]; where l1,l2,l3,.. are the
     labels of the options and the v1,v2,v3,... represents the values of the options; dict() represents a
     dictionary which contains the allowed aggregation functions on each dimension-->
     <py:def function="drawReduceComponent(select_name, data, parameters_prefix, required_dimension, selected_items, selected_functions, expected_shape, operations)">

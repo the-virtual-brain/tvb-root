@@ -4,7 +4,7 @@
     <script type="text/javascript" src="/static/flot/jquery.flot.js"></script>
     <script type="text/javascript" src="/static/flot/jquery.flot.navigate.js"></script>
     <script type="text/javascript" src="/static/flot/jquery.flot.selection.js"></script>
-    <!--we use the method HLPR_readJSONfromFile-->
+    <!--! we use the method HLPR_readJSONfromFile-->
     <script type="text/javascript" src="/static/js/webGL_Connectivity.js?$currentVersionJS"></script>
     <script type="text/javascript" src="/static_view/eeg/scripts/animated_graph.js?$currentVersionJS" ></script>
     <script type="text/javascript" src="/static_view/eeg/scripts/graph_events.js?$currentVersionJS"></script>
@@ -18,7 +18,7 @@
     </script>
 	
 	<section id="eegSectionId" class="view-column eeg-display col-1">
-		<!-- Inner visualizer controls and legend -->
+		<!--! Inner visualizer controls and legend -->
 		<ul class="toolbar-inline">
             <py:if test="not extended_view">
                 <li>
@@ -26,7 +26,7 @@
                             onclick="stopAnimation();" tabindex="1">Pause</button>
                 </li>
 
-                <!-- Zoom action buttons -->
+                <!--! Zoom action buttons -->
                 <li class="zoom-control">
                     <button class="action action-mini-zoom-out" onclick='resetToDefaultView()'>Zoom out to 100%</button>
                 </li>
@@ -35,7 +35,7 @@
                     <button class="action action-reset" onclick='zoomBack()'>Zoom out one level</button>
                 </li>
 
-                <!-- Value inspector -->
+                <!--! Value inspector -->
                 <li class="value-inspector value-channel">
                     <mark>Channel</mark>
                     <span id="info-channel">0</span>
@@ -52,7 +52,7 @@
                 </li>
             </py:if>
 
-			<!-- Channel selector -->
+			<!--! Channel selector -->
             <xi:include href="${channelsPage}"/>
             <xi:include href="../commons/timeseries_selector_button.html" />
 
@@ -67,7 +67,7 @@
             </li>
 		</ul>
 		
-		<!-- Actual visualizer -->
+		<!--! Actual visualizer -->
 		<div id="EEGcanvasDiv" class="mainCanvas ${'canvasExtended' if extended_view else ''}">
 	    </div>
 

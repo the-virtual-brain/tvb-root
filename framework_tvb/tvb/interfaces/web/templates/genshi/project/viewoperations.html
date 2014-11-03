@@ -53,28 +53,26 @@
 	</py:def>
     
 <form id="operationsForm" method="post" action="/project/viewoperations/${selectedProject.id}">
-	<!-- Column w/ filters for the operation list -->
+	<!--! Column w/ filters for the operation list -->
 	<section class="ops-filter view-column col-1">
 		<h4><mark>Filter</mark></h4>
 		
 		<ul>
 			 <li class="${'active' if no_filter_selected else ''}">
 				<a href="#" title="Reset all filters" onclick="resetOperationFilters('operationsForm')">Display All (${total_op_count})</a>
-				<!-- <p class="counter">-</p> -->
 			 </li>
 			 <py:for each="f in filters">
 				 <li class="${'active' if f.selected else ''}">
 					<a href="#" title="${'Disable' if f.selected else 'Enable'} this filter" onclick="applyOperationFilter('${f.display_name}', 'operationsForm')">
 						${f.display_name} <py:if test="f.passes_count">(${f.passes_count})</py:if>
 					</a>
-					<!-- <p class="counter">-</p> -->
 				</li>
             </py:for>
 			<input type="hidden" name="filtername" id="filtername"/>
 		</ul>
 	</section>
 	
-	<!-- Column displaying the operation list -->
+	<!--! Column displaying the operation list -->
 	<section class="ops-list view-column col-2">
 		<h4><mark>Manage</mark> Operations</h4>
 
@@ -138,7 +136,7 @@
 						<div class="action-block block-player">
 							<py:choose test="not operation['burst_name']=='-'">
 								<py:when test="True">
-									<!-- Part of a burst. Redirect to burst page with this one as selected -->
+									<!--! Part of a burst. Redirect to burst page with this one as selected -->
 									<button tabindex='3' type="submit" class="action action-run" onclick="reloadBurstOperation('${op_id}', ${is_group}, 'operationsForm')">
 										Reload
 									</button>
@@ -146,11 +144,11 @@
 								<py:otherwise>
 									<py:choose test="(not operation['group']) and (not operation['algorithm'].algo_group.group_category.displayname == 'Create') and (not operation['algorithm'].algo_group.group_category.rawinput)">
 										<py:when test="True">
-											<!-- Normal operation reload -->
+											<!--! Normal operation reload -->
 											<button tabindex='3' type="submit" class="action action-run" onclick="reloadOperation(${operation['id']}, 'operationsForm')">Reload</button>
 										</py:when>
 										<py:otherwise>
-											<!-- Upload or non-burst group which we can't reload -->
+											<!--! Upload or non-burst group which we can't reload -->
 											<button tabindex='3' type="submit" class="action action-run action-idle" disabled="disabled">Reload</button>
 										</py:otherwise>
 									</py:choose>
@@ -177,7 +175,7 @@
 							</py:choose>
 							<py:choose test="operation['burst_name']!='-'">
 								<py:when test="True">
-									<!-- Remove burst button. TODO: Once TVB-926 is finished we should have a new icon here. -->
+									<!--! Remove burst button. TODO: Once TVB-926 is finished we should have a new icon here. -->
 									<py:with vars="ok_callback = 'deleteBurstOperation(' + str(op_id) + ', ' + str(is_group) + ');'">
 										<button type="submit" class="action action-remove" title="Remove burst"
 										onclick="showQuestionOverlay('Are you sure you want to delete this entire Simulation?', '${ok_callback}'); return false;">

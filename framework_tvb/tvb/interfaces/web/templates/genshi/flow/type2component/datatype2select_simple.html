@@ -1,7 +1,7 @@
 <div xmlns:py="http://genshi.edgewall.org/" py:strip="True">
 
 	<py:def function="draw_datatype_select(inputRow, disabled, parentDivId, treeSessionKey)">
-		<!-- 	Redraw A DataType select when drawing full interface or after filtering from UI (AJAX call).	 -->
+		<!--! 	Redraw A DataType select when drawing full interface or after filtering from UI (AJAX call).	 -->
 		
 		<py:with vars="linkedFilter='filterLinked(' + inputRow.filters_ui + ', \'\'+this.value, \'' + treeSessionKey + '\')' if 'filters_ui' in inputRow else '';
 					   add_attrs= {'disabled': 'disabled'} if disabled else {};

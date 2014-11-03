@@ -2,7 +2,7 @@
 
 	<py:with vars="tab_names = [tab.name for tab in overlay_tabs_horizontal]">
 
-		<!-- Overlay: Metadata -->
+		<!--! Overlay: Metadata -->
 		<section id="overlayTabContent_0" class="node-data node-metadata active">
 			<xi:include href="details_operation_overlay.html"/>
 	    </section>
@@ -32,7 +32,7 @@
             </py:with>
         </py:def>
 
-	    <!-- Overlay: Analyzers -->
+	    <!--! Overlay: Analyzers -->
 		<section id="overlayTabContent_1" class="node-data node-analyze ">
 			<div py:if="categories and 'Analyze' in categories">
 				<py:for each="group_dict in sorted(categories['Analyze'].values(), key=lambda k: k['displayName'])">
@@ -41,7 +41,7 @@
 			</div>
 		</section>  
 		
-		<!-- Overlay: Visualizers -->
+		<!--! Overlay: Visualizers -->
 		<section id="overlayTabContent_2" class="node-data node-view ">
 			<py:if test="categories and 'View' in categories">
 				<div py:if="categories and 'View' in categories">
@@ -52,14 +52,14 @@
 			</py:if>
 		</section>
 	        
-		<!-- Overlay: Project Links -->
+		<!--! Overlay: Project Links -->
 		<section id="overlayTabContent_3" class="node-data node-link ">
 			<div id="linkable_projects_div_${entity_gid}" class="link-incoming">
 		    	<xi:include href="linkable_projects.html"/>
 			</div>
 		</section>
 		
-		<!-- Overlay: Data Exporters -->
+		<!--! Overlay: Data Exporters -->
 		<section id="overlayTabContent_4" class="node-data node-export ">
 			<ul py:if="exporters">
 				<li py:for="exporter in exporters">
@@ -69,7 +69,7 @@
 			<label py:if="not exporters">No exporters are currently available for this DataType.</label>
 		</section>
 		
-		<!-- Overlay: Data Exporters -->
+		<!--! Overlay: Data Exporters -->
 		<section id="overlayTabContent_5" class="node-data node-chain-dts ">
 			<div id="div-burst-tree">
 				<div id="treeOverlay"></div>

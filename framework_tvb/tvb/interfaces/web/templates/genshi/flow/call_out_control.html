@@ -1,30 +1,29 @@
-<!-- === Box: Control call-out --> 
-<aside id="control-view" class="header-component controller can-extend" xmlns:xi="http://www.w3.org/2001/XInclude" xmlns:py="http://genshi.edgewall.org/" 
+<!--! === Box: Control call-out -->
+<aside id="control-view" class="header-component controller can-extend"
+       xmlns:xi="http://www.w3.org/2001/XInclude" xmlns:py="http://genshi.edgewall.org/"
 	   tabindex="1" onkeypress="redirectToHrefChild(this)">
-	<h3>$title controls</h3>
-  <div class="extension">
-  <div class="dropdown-pane">
-	<!-- this file is deprecated: It should be relatively safe to be taken out. See also TVB-703 on this.
-    <link rel="stylesheet" href="/static/style/subsection_view.css" />
-    -->
-        
-	<xi:include href="${controlPage}.html" py:if="controlPage"/> 
+    <h3>$title controls</h3>
 
-	<div id="div_adapter_interface"/>
-    
-    <script type="text/javascript">
+    <div class="extension">
+        <div class="dropdown-pane">
 
-        $(document).ready(function() {
-            includeAdapterInterface("div_adapter_interface", $selectedProject.id, $currentAlgoId,
-                                    '${"" if ("back_page=" not in submitLink) else submitLink.split("back_page=")[-1]}');
-            var saveFigureBtn = document.getElementById("ctrl-action-export");
+            <xi:include href="${controlPage}.html" py:if="controlPage"/>
 
-            saveFigureBtn.onclick = function() {
-                C2I_exportFigures({operationId:'$currentOperationId'});
-                return false;
-            };
-        });
-    </script>
-  </div>
-  </div>
+            <div id="div_adapter_interface"/>
+
+            <script type="text/javascript">
+
+                $(document).ready(function() {
+                    includeAdapterInterface("div_adapter_interface", $selectedProject.id, $currentAlgoId,
+                                            '${"" if ("back_page=" not in submitLink) else submitLink.split("back_page=")[-1]}');
+                    var saveFigureBtn = document.getElementById("ctrl-action-export");
+
+                    saveFigureBtn.onclick = function() {
+                        C2I_exportFigures({operationId:'$currentOperationId'});
+                        return false;
+                    };
+                });
+            </script>
+        </div>
+    </div>
 </aside>
