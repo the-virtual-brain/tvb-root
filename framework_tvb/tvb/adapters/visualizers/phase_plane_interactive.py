@@ -40,82 +40,119 @@ NUMBEROFGRIDPOINTS = 42
 TRAJ_STEPS = 512
 
 
-class PhasePlane(object):
+class PhaseSpace(object):
     """
-    Class responsible with computing the phase plane and trajectories.
-    This is view independent.
+    Responsible with computing phase space slices and trajectories.
+    A collection of math-y utilities it is view independent (holds no state related to views).
     """
     def __init__(self, model, integrator):
         self.log = get_logger(self.__class__.__module__)
         self.model = model
         self.integrator = integrator
+        #create a filler(all zeros) for the coupling arg of the Model's dfun method.
+        self.no_coupling = numpy.zeros((self.model.nvar, 1, self.model.number_of_modes))
 
+
+    @staticmethod
+    def _create_mesh_jitter():
+        shape = NUMBEROFGRIDPOINTS, NUMBEROFGRIDPOINTS
+        d =  1.0 / (4 * NUMBEROFGRIDPOINTS)
+        return numpy.random.normal(0, d, shape), numpy.random.normal(0, d, shape)
+
+
+    def _compute_trajectories(self, states):
+        """
+        A vectorized method of computing a number of trajectories in parallel.
+        Returns a collection of nvar-dimensional trajectories.
+        """
+        scheme = self.integrator.scheme
+        trajs = numpy.zeros((TRAJ_STEPS + 1, self.model.nvar, len(states), self.model.number_of_modes))
+        # reshape to what dfun expects: from n, sv to sv, n, mode
+        states = numpy.tile(states.T[:, :, numpy.newaxis], self.model.number_of_modes)
+        trajs[0, :] = states
+        # grow trajectories step by step
+        for step in xrange(TRAJ_STEPS):
+            states = scheme(states, self.model.dfun, self.no_coupling, 0.0, 0.0)
+            trajs[step + 1, :] = states
+
+        if numpy.isnan(trajs).any():
+            self.log.warn("NaN in trajectories")
+        return trajs
+
+
+    def _get_mesh_grid(self, svx_ind, svy_ind, noise=None):
+        """
+        Generate the phase-plane gridding based on the given
+        state-variable indices and their range values.
+        """
+        svr = self.model.state_variable_range
+        xlo, xhi = svr[self.model.state_variables[svx_ind]]
+        ylo, yhi = svr[self.model.state_variables[svy_ind]]
+
+        xg = numpy.mgrid[xlo:xhi:(NUMBEROFGRIDPOINTS * 1j)]
+        yg = numpy.mgrid[ylo:yhi:(NUMBEROFGRIDPOINTS * 1j)]
+        xgr, ygr = numpy.meshgrid(xg, yg)
+        if noise:
+            # add scaled noise
+            xgr += noise[0] * (xhi - xlo)
+            ygr += noise[1] * (yhi - ylo)
+        return xgr, ygr
+
+
+    def _calc_phase_plane(self, state, svx_ind, svy_ind,  xg, yg):
+        """
+        Computes a 2d axis aligned rectangle of the vector field returning a u, v vector field.
+        The slice passes through the `state` point and varies along the axes given by svx_ind and svy_ind.
+        The last 2 parameters specify the mesh in the varying directions. To be computed by _get_mesh_grid
+        Vectorized function, it evaluate all grid points at once as if they were connectivity nodes.
+        """
+        state_variables = numpy.tile(state, (NUMBEROFGRIDPOINTS ** 2, 1))
+
+        for mode_idx in xrange(self.model.number_of_modes):
+            state_variables[svx_ind, :, mode_idx] = xg.flat
+            state_variables[svy_ind, :, mode_idx] = yg.flat
+
+        d_grid = self.model.dfun(state_variables, self.no_coupling)
+
+        flat_uv_grid = d_grid[[svx_ind, svy_ind], :, :]  # subset of the state variables to be displayed
+        u, v = flat_uv_grid.reshape((2, NUMBEROFGRIDPOINTS, NUMBEROFGRIDPOINTS, self.model.number_of_modes))
+        if numpy.isnan(u).any() or numpy.isnan(v).any():
+            self.log.error("NaN")
+        return u, v
+
+
+    # @staticmethod
+    def nullcline(self, x, y, z):
+        c = _cntr.Cntr(x, y, z)
+        # trace a contour
+        res = c.trace(0.0)
+        if not res:
+            return numpy.array([])
+        # result is a list of arrays of vertices and path codes
+        # (see docs for matplotlib.path.Path)
+        nseg = len(res) // 2
+        segments, codes = res[:nseg], res[nseg:]
+        return segments
+
+
+class PhasePlaneD3(PhaseSpace):
+    """
+    Provides data for a d3 client
+    """
+    def __init__(self, model, integrator):
+        PhaseSpace.__init__(self, model, integrator)
         self.mode = 0
         self.svx_ind = 0    # x-axis: 1st state variable
         if self.model.nvar > 1:
             self.svy_ind = 1  # y-axis: 2nd state variable
         else:
             self.svy_ind = 0
-        self._set_state_vector()
-        self._create_mesh_jitter()
-
-
-    def _set_state_vector(self):
-        """
-        Set up a vector containing the default state-variable values and create
-        a filler(all zeros) for the coupling arg of the Model's dfun method.
-        This method is called once at initialisation (show()).
-        """
+        # Set up a vector containing the default state-variable values
         svr = self.model.state_variable_range
         sv_mean = numpy.array([svr[key].mean() for key in self.model.state_variables])
         sv_mean = sv_mean.reshape((self.model.nvar, 1, 1))
         self.default_sv = sv_mean.repeat(self.model.number_of_modes, axis=2)
-        self.no_coupling = numpy.zeros((self.model.nvar, 1, self.model.number_of_modes))
-
-
-    def _create_mesh_jitter(self):
-        shape = NUMBEROFGRIDPOINTS, NUMBEROFGRIDPOINTS
-        d =  1.0 / (4 * NUMBEROFGRIDPOINTS)
-        self._jitter =  numpy.random.normal(0, d, shape), numpy.random.normal(0, d, shape)
-
-
-    def _get_mesh_grid(self, noisy=True):
-        """
-        Generate the phase-plane gridding based on currently selected
-        state-variables and their range values.
-        """
-        svr = self.model.state_variable_range
-        xlo, xhi = svr[self.model.state_variables[self.svx_ind]]
-        ylo, yhi = svr[self.model.state_variables[self.svy_ind]]
-
-        xg = numpy.mgrid[xlo:xhi:(NUMBEROFGRIDPOINTS * 1j)]
-        yg = numpy.mgrid[ylo:yhi:(NUMBEROFGRIDPOINTS * 1j)]
-        xgr, ygr = numpy.meshgrid(xg, yg)
-        if noisy:
-            # add scaled noise
-            xgr += self._jitter[0] * (xhi - xlo)
-            ygr += self._jitter[1] * (yhi - ylo)
-        return xgr, ygr
-
-
-    def _calc_phase_plane(self, xg, yg):
-        """
-        Computes the vector field. It takes a x, y coordinate mesh and returns a u, v vector field.
-        Vectorized function, it evaluate all grid points at once as if they were connectivity nodes
-        """
-        state_variables = numpy.tile(self.default_sv, (NUMBEROFGRIDPOINTS ** 2, 1))
-
-        for mode_idx in xrange(self.model.number_of_modes):
-            state_variables[self.svx_ind, :, mode_idx] = xg.flat
-            state_variables[self.svy_ind, :, mode_idx] = yg.flat
-
-        d_grid = self.model.dfun(state_variables, self.no_coupling)
-
-        flat_uv_grid = d_grid[[self.svx_ind, self.svy_ind], :, :]  # subset of the state variables to be displayed
-        u, v = flat_uv_grid.reshape((2, NUMBEROFGRIDPOINTS, NUMBEROFGRIDPOINTS, self.model.number_of_modes))
-        if numpy.isnan(u).any() or numpy.isnan(v).any():
-            self.log.error("NaN")
-        return u, v
+        self._jitter = self._create_mesh_jitter()
 
 
     def get_axes_ranges(self, sv):
@@ -139,40 +176,14 @@ class PhasePlane(object):
             self.default_sv[k] = val
 
 
-    def _compute_trajectories(self, states):
-        """
-        A vectorized method of computing a number of trajectories in parallel.
-        The trajectories will be projected on the plane defined by svx_ind, svy_ind.
-        """
-        scheme = self.integrator.scheme
-        trajs = numpy.zeros((TRAJ_STEPS + 1, self.model.nvar, len(states), self.model.number_of_modes))
-        # reshape to what dfun expects: from n, sv to sv, n, mode
-        states = numpy.tile(states.T[:, :, numpy.newaxis], self.model.number_of_modes)
-        trajs[0, :] = states
-        # grow trajectories step by step
-        for step in xrange(TRAJ_STEPS):
-            states = scheme(states, self.model.dfun, self.no_coupling, 0.0, 0.0)
-            trajs[step + 1, :] = states
-
-        if numpy.isnan(trajs).any():
-            self.log.warn("NaN in trajectories")
-        return trajs
-
-
-
-class PhasePlaneD3(PhasePlane):
-    """
-    Provides data for a d3 client
-    """
-
     def compute_phase_plane(self):
         """
         :return: A json representation of the phase plane.
         """
-        x, y = self._get_mesh_grid(noisy=True)
+        x, y = self._get_mesh_grid(self.svx_ind, self.svy_ind, noise=self._jitter)
 
-        u, v = self._calc_phase_plane(x, y)
-        u = u[..., self.mode]
+        u, v = self._calc_phase_plane(self.default_sv, self.svx_ind, self.svy_ind, x, y)
+        u = u[..., self.mode]   # project on active mode
         v = v[..., self.mode]
 
         d = numpy.dstack((x, y, u, v))
@@ -181,20 +192,6 @@ class PhasePlaneD3(PhasePlane):
         xnull = [{'path': segment.tolist(), 'nullcline_index': 0} for segment in self.nullcline(x, y, u)]
         ynull = [{'path': segment.tolist(), 'nullcline_index': 1} for segment in self.nullcline(x, y, v)]
         return {'plane': d, 'nullclines': xnull + ynull}
-
-
-    # @staticmethod
-    def nullcline(self, x, y, z):
-        c = _cntr.Cntr(x, y, z)
-        # trace a contour
-        res = c.trace(0.0)
-        if not res:
-            return numpy.array([])
-        # result is a list of arrays of vertices and path codes
-        # (see docs for matplotlib.path.Path)
-        nseg = len(res) // 2
-        segments, codes = res[:nseg], res[nseg:]
-        return segments
 
 
     def _state_dict_to_array(self, state):
