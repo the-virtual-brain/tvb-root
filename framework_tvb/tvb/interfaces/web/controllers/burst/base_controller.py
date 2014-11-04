@@ -29,25 +29,29 @@
 #
 
 """
-module docstring
 .. moduleauthor:: Mihai Andrei <mihai.andrei@codemart.ro>
 """
+
 from tvb.interfaces.web.controllers import common
 from tvb.interfaces.web.controllers.base_controller import BaseController
+
 
 
 class BurstBaseController(BaseController):
 
     def fill_default_attributes(self, template_dictionary, subsection='burst'):
-        template_dictionary[common.KEY_SECTION] = 'burst'
-        template_dictionary[common.KEY_SUB_SECTION] = subsection
-        template_dictionary[common.KEY_SUBMENU_LIST] = [
-            {'link' : '/burst', 'subsection': 'burst',
-             'title' : 'Simulation Cockpit', 'description':'Manage simulations'},
-            {'link' : '/burst/dynamic', 'subsection': 'dynamic',
-             'title' : 'Phase plane', 'description':'Configure model dynamics'}
-        ]
+
         template_dictionary[common.KEY_PARAMETERS_CONFIG] = False
+        template_dictionary[common.KEY_SECTION] = 'burst'
+        if common.KEY_SUB_SECTION not in template_dictionary:
+            template_dictionary[common.KEY_SUB_SECTION] = subsection
+
+        template_dictionary[common.KEY_SUBMENU_LIST] = [
+            {'link': '/burst', 'subsection': 'burst',
+             'title': 'Simulation Cockpit', 'description': 'Manage simulations'},
+            {'link': '/burst/dynamic', 'subsection': 'dynamic',
+             'title': 'Phase plane', 'description': 'Configure model dynamics'}
+        ]
 
         BaseController.fill_default_attributes(self, template_dictionary)
         return template_dictionary

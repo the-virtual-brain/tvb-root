@@ -663,7 +663,7 @@ background: transparent url("./img/nav/back_header_message_left.png") 0 0 no-rep
 content: "";
 display: block;
 height: 60px;
-left: 0px;
+left: 0;
 position: absolute;
 top: 0;
 width: 26px;
@@ -675,7 +675,7 @@ background: transparent url("./img/nav/back_header_message_right.png") 0 0 no-re
 content: "";
 display: block;
 height: 60px;
-right: 0px;
+right: 0;
 position: absolute;
 top: 0;
 width: 26px;
@@ -2628,7 +2628,7 @@ fieldset input[type="button"]
 left: 10px;
 position: absolute;
 top: 10px;
-z-index: 10;
+z-index: 2;
 }
 
 .specialviewer .monitor-legend .extension {
