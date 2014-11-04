@@ -85,7 +85,7 @@ class SimulationState(MappedType):
         self.current_step = simulator_algorithm.current_step
 
         for i, monitor in enumerate(simulator_algorithm.monitors):
-            field_name = "monitor_stock_" + str(i)
+            field_name = "monitor_stock_" + str(i + 1)
             setattr(self, field_name, monitor._stock)
 
             if hasattr(monitor, "_ui_name"):
@@ -102,7 +102,7 @@ class SimulationState(MappedType):
         simulator_algorithm.current_step = self.current_step
 
         for i, monitor in enumerate(simulator_algorithm.monitors):
-            monitor._stock = getattr(self, "monitor_stock_" + str(i))
+            monitor._stock = getattr(self, "monitor_stock_" + str(i + 1))
   
     
  
