@@ -36,6 +36,7 @@ Entities for Generic DataTypes, Links and Groups of DataTypes are defined here.
 .. moduleauthor:: Yann Gordon <yann@tvb.invalid>
 """
 
+import string
 from copy import copy
 from datetime import datetime
 from sqlalchemy.orm import relationship, backref
@@ -156,7 +157,9 @@ class DataType(Base):
         name = self.type
         for tag in [self.user_tag_1, self.user_tag_2, self.user_tag_3, self.user_tag_4, self.user_tag_5]:
             if tag is not None and len(tag) > 0:
-                name = name + " - " + str(tag)
+                ## Do not allow special characters, as they might interfere with our JSON encode/decode
+                tag = filter(lambda x: x in string.digits + string.ascii_letters + string.punctuation + ' ', str(tag))
+                name = name + " - " + tag
         return name
 
 

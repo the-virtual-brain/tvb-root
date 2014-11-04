@@ -468,4 +468,4 @@ class ValidationResult(object):
         return r
 
     def summary(self):
-        return '\n'.join(msg for msg, _ in self.warnings)
+        return '  |  '.join(msg for msg, _ in self.warnings)
