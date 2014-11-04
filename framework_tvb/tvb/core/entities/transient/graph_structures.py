@@ -27,7 +27,9 @@
 #   Frontiers in Neuroinformatics (7:10. doi: 10.3389/fninf.2013.00010)
 #
 #
+
 """
+.. moduleauthor:: Lia Domide <lia.domide@codemart.ro>
 .. moduleauthor:: Ionel Ortelecan <ionel.ortelecan@codemart.ro>
 """
 
@@ -36,284 +38,230 @@ from tvb.core.entities.storage import dao
 MAX_SHAPE_SIZE = 50
 MIN_SHAPE_SIZE = 10
 
-NODE_OPERATION_GROUP_TYPE = "operationGroup"
-NODE_OPERATION_TYPE = "operation"
 NODE_DATATYPE_TYPE = "datatype"
-
-DATATYPE_GROUP_SHAPE = "circlesGroup"
-DATATYPE_SHAPE = "circle"
-DATATYPE_SHAPE_COLOR = "#83548B"
-OPERATION_SHAPE = "square"
-OPERATION_SHAPE_COLOR = "#660033"
-OPERATION_GROUP_SHAPE = "squaresGroup"
-OPERATION_GROUP_SHAPE_COLOR = "#660033"
-
-DT_INPUTS_KEY = "dt_inputs"
-PARENT_OP_KEY = "parent_op"
-DT_OUTPUTS_KEY = "dt_outputs"
-OP_INPUTS_KEY = "op_inputs"
+NODE_OPERATION_TYPE = "operation"
+NODE_OPERATION_GROUP_TYPE = "operationGroup"
 
 
-class NodeData():
+
+class NodeData(object):
     """
-    Contains the data that will be set on each node.
+    Contains the meta-data that will be set on each GRAPH node.
     """
+
     shape_size = None
     shape_color = None
     shape_type = None
-    #aditional data
-    dataType = None
-    entity_id = None
-    subtitle = None
+    node_type = None
+    node_entity_id = None
+    node_subtitle = None
 
-    def __init__(self, shape_size, shape_color, shape_type, dataType, entity_id, subtitle):
+
+    def __init__(self, shape_size, shape_color, shape_type, node_type, node_entity_id, node_subtitle):
         self.shape_size = shape_size
         self.shape_color = shape_color
         self.shape_type = shape_type
-        self.dataType = dataType
-        self.entity_id = entity_id
-        self.subtitle = subtitle
+        self.node_type = node_type
+        self.node_entity_id = node_entity_id
+        self.node_subtitle = node_subtitle
 
 
     def to_json(self):
         """
-        Returns the JSON representation of this NodeData.
+        Returns the JSON-ready representation of this NodeData instance.
         """
-        json = "{"
-        json += "  \"$dim\": \"" + str(self.shape_size) + "\""
-        json += ", \"$color\": \"" + self.shape_color + "\""
-        json += ", \"$type\": \"" + self.shape_type + "\""
-        json += ", \"dataType\": \"" + self.dataType + "\""
-        json += ", \"entity_id\": \"" + str(self.entity_id) + "\""
-        json += ", \"subtitle\": \"" + str(self.subtitle) + "\""
-        json += "}"
-        return json
+        instance_json = {"$dim": self.shape_size,
+                         "$color": self.shape_color,
+                         "$type": self.shape_type,
+                         "node_type": self.node_type,
+                         "node_entity_id": self.node_entity_id,
+                         "node_subtitle": self.node_subtitle}
+        return instance_json
+
+
+    @staticmethod
+    def build_node_for_datatype(datatype_id, node_subtitle, shape_size=MAX_SHAPE_SIZE, is_group=False):
+
+        shape = "circlesGroup" if is_group else "circle"
+        return NodeData(shape_size, "#83548B", shape, NODE_DATATYPE_TYPE, datatype_id, node_subtitle)
+
+
+    @staticmethod
+    def build_node_for_operation(operation, group_id=None):
+
+        if group_id:
+            entity_id = group_id
+            node_type = NODE_OPERATION_GROUP_TYPE
+            shape = "squaresGroup"
+        else:
+            entity_id = operation.id
+            node_type = NODE_OPERATION_TYPE
+            shape = "square"
+
+        return NodeData(MAX_SHAPE_SIZE, "#660033", shape, node_type, entity_id, str(operation.start_date))
 
 
 
-
-class NodeStructure():
+class NodeStructure(object):
     """
-    Define the structure of a graph node.
-
-    id - the graph node id. It is set to an entity GID.
-    name - the name of the node
-    data - it should be an instance of NodeData or None
-    adjacencies - a list of graph nodes IDs
-    selected - True if this node is the selected one.
+    Define the full structure of a graph NODE (including meta-data of type NodeData and node Adjiacences)
     """
-    id = None
+
+    node_gid = None
     name = None
     data = None
     adjacencies = []
     selected = False
 
 
-    def __init__(self, node_id, node_name):
-        self.id = node_id
+    def __init__(self, node_gid, node_name):
+        self.node_gid = node_gid
         self.name = node_name
-
-
-    def __create_adjacencies_json(self):
-        """
-        Creates the adjacencies for this node.
-        """
-        if not len(self.adjacencies):
-            return "[]"
-        json = "["
-        for i, adjacency in enumerate(self.adjacencies):
-            if i:
-                json += ","
-            json += "{"
-            json += "  \"nodeFrom\": \"" + str(self.id) + "\""
-            json += ", \"nodeTo\": \"" + str(adjacency) + "\""
-            json += ", \"data\": {}"
-            json += "}"
-        json += "]"
-        return json
 
 
     def to_json(self):
         """
-        Returns the JSON representation of this node.
+        Returns the JSON-ready representation of this NodeStructure instance.
         """
-        json = "{"
-        json += "  \"id\": \"" + str(self.id) + "\""
-        json += ", \"name\":\"" + str(self.name) + "\""
-
-        json += ", \"data\":"
-        if self.data is not None:
-            json += self.data.to_json()
-        else:
-            json += "{}"
-
-        json += ", \"adjacencies\": " + self.__create_adjacencies_json()
-
-        json += "}"
-        return json
+        instance_json = {"id": self.node_gid,
+                         "name": self.name,
+                         "data": self.data.to_json() if self.data is not None else {},
+                         "adjacencies": [{"nodeFrom": self.node_gid, "nodeTo": adj,
+                                          "data": {}} for adj in self.adjacencies]}
+        return instance_json
 
 
+    @staticmethod
+    def build_structure_for_datatype(datatype_gid):
 
-class DatatypeNodeStructure(NodeStructure):
-    """
-    This class knows how to create a NodeStructure for a given DataType.
-    """
-    def __init__(self, datatype_gid):
-        NodeStructure.__init__(self, datatype_gid, "")
-
-        datatype_shape = DATATYPE_SHAPE
-        if dao.is_datatype_group(datatype_gid):
-            datatype_shape = DATATYPE_GROUP_SHAPE
         datatype = dao.get_datatype_by_gid(datatype_gid)
+        is_group = dao.is_datatype_group(datatype_gid)
 
-        node_data = NodeData(MAX_SHAPE_SIZE, DATATYPE_SHAPE_COLOR, datatype_shape,
-                             NODE_DATATYPE_TYPE, datatype.id, datatype.display_name)
-
-        self.name = str(datatype.type)
-        self.data = node_data
-
+        structure = NodeStructure(datatype_gid, datatype.type)
+        structure.data = NodeData.build_node_for_datatype(datatype.id, datatype.display_name, is_group=is_group)
+        return structure
 
 
-class OperationNodeStructure(NodeStructure):
-    """
-    This class knows how to create a NodeStructure for a given Operation.
-    """
-    def __init__(self, operation_gid):
-        NodeStructure.__init__(self, operation_gid, "")
+    @staticmethod
+    def build_structure_for_operation(operation):
 
-        operation = dao.get_operation_by_gid(operation_gid)
         algo = dao.get_algorithm_by_id(operation.fk_from_algo)
-        node_data = NodeData(MAX_SHAPE_SIZE, OPERATION_SHAPE_COLOR, OPERATION_SHAPE,
-                             NODE_OPERATION_TYPE, operation.id, str(operation.start_date))
 
-        self.name = algo.name
-        self.data = node_data
-
+        structure = NodeStructure(operation.gid, algo.name)
+        structure.data = NodeData.build_node_for_operation(operation)
+        return structure
 
 
-class OperationGroupNodeStructure(NodeStructure):
-    """
-    This class knows how to create a NodeStructure for a given OperationGroup.
-    """
-    def __init__(self, operation_group_gid):
-        NodeStructure.__init__(self, operation_group_gid, "")
+    @staticmethod
+    def build_structure_for_operation_group(operation_group_gid):
 
         group = dao.get_operationgroup_by_gid(operation_group_gid)
         operation = dao.get_operations_in_group(group.id, only_first_operation=True)
         algo = dao.get_algorithm_by_id(operation.fk_from_algo)
-        node_data = NodeData(MAX_SHAPE_SIZE, OPERATION_GROUP_SHAPE_COLOR, OPERATION_GROUP_SHAPE,
-                             NODE_OPERATION_GROUP_TYPE, group.id, str(operation.start_date))
 
-        self.name = algo.name
-        self.data = node_data
-
-
-
-class GraphBranch():
-    """
-    Class used for representing a branch of the graph.
-    If we have executed more than one upload operation than the graph
-    will have more branches, one for each of those operations.
-
-    dt_inputs, parent_op, dt_outputs, op_inputs - should be lists of NodeStructure instances.
-
-    A branch will have the following structure::
-
-                            dt_input ... dt_input
-                                \\         /
-                                 \\       /
-                                 parent_op
-                                  /       \\
-                                /          \\
-                            dt_output ... dt_output(if selected)
-                                               /         \\
-                                             /            \\
-                                          op_input ... op_input
-    
-    """
-    dt_inputs = []
-    parent_op = []
-    dt_outputs = []
-    op_inputs = []
-
-
-    def __init__(self, dt_inputs, parent_op, dt_outputs, op_inputs):
-        self.dt_inputs = dt_inputs
-        self.parent_op = parent_op
-        self.dt_outputs = dt_outputs
-        self.op_inputs = op_inputs
-
-
-    def get_branch_levels(self):
-        return {DT_INPUTS_KEY: self.dt_inputs, PARENT_OP_KEY: self.parent_op,
-                DT_OUTPUTS_KEY: self.dt_outputs, OP_INPUTS_KEY: self.op_inputs}
-
-
-
-
-class GraphStructure():
-    """
-    This class contains information for the entire graph.
-
-    graph_branches - represents a list of GraphBranch
-    """
-
-    graph_branches = []
-
-    def __init__(self, graph_branches):
-        self.graph_branches = graph_branches
-        self._set_shapes_size()
-        self._set_adjacencies()
-
-
-    def to_json(self):
-        """
-        Returns the json representation of the graph.
-        """
-        fake_root_adjacencies = []
-        for branch in self.graph_branches:
-            branch_levels = branch.get_branch_levels()
-            if len(branch_levels[DT_INPUTS_KEY]):
-                fake_root_adjacencies.extend(self._get_nodes_ids(branch_levels[DT_INPUTS_KEY]))
-            else:
-                fake_root_adjacencies.extend(self._get_nodes_ids(branch_levels[PARENT_OP_KEY]))
-
-        final_json = "["
-        final_json += self._create_fake_root(fake_root_adjacencies).to_json()
-        for branch in self.graph_branches:
-            branch_levels = branch.get_branch_levels()
-
-            for node in branch_levels[DT_INPUTS_KEY]:
-                final_json += "," + node.to_json()
-            for node in branch_levels[PARENT_OP_KEY]:
-                final_json += "," + node.to_json()
-            for node in branch_levels[DT_OUTPUTS_KEY]:
-                final_json += "," + node.to_json()
-            for node in branch_levels[OP_INPUTS_KEY]:
-                final_json += "," + node.to_json()
-
-        final_json += "]"
-        return final_json
-
-
-    def _set_adjacencies(self):
-        """
-        Sets adjacencies for the entire graph.
-        """
-        for branch in self.graph_branches:
-            branch_levels = branch.get_branch_levels()
-
-            parent_ops_ids = self._get_nodes_ids(branch_levels[PARENT_OP_KEY])
-            dt_outputs_ids = self._get_nodes_ids(branch_levels[DT_OUTPUTS_KEY])
-            op_inputs_ids = self._get_nodes_ids(branch_levels[OP_INPUTS_KEY])
-
-            self.__set_nodes_adjacencies(branch_levels[DT_INPUTS_KEY], parent_ops_ids)
-            self.__set_nodes_adjacencies(branch_levels[PARENT_OP_KEY], dt_outputs_ids)
-            self.__set_nodes_adjacencies(branch_levels[DT_OUTPUTS_KEY], op_inputs_ids, True)
+        structure = NodeStructure(operation_group_gid, algo.name)
+        structure.data = NodeData.build_node_for_operation(operation, group.id)
+        return structure
 
 
     @staticmethod
-    def __set_nodes_adjacencies(list_of_nodes, adjacencies, only_for_selected_node=False):
+    def build_artificial_root_structure(adjacencies_nodes):
+
+        root_structure = NodeStructure("fakeRootNode", "fakeRootNode")
+        root_structure.data = NodeData.build_node_for_datatype("fakeRootNode", "Fake root",
+                                                               shape_size=MAX_SHAPE_SIZE / 2)
+        root_structure.adjacencies = adjacencies_nodes
+        return root_structure
+
+
+
+class GraphComponent():
+    """
+    Class used for representing a single component of the graph.
+    One GraphComponent holds multiple lists of NodeStructure instances (for multiple layers).
+
+    A GraphComponent will have the following structure::
+
+        input_datatypes             operation_parent
+            |                               |
+            |                               |
+            V                               V
+        [operation_parent]          [output_datatypes]             * Currently Selected node
+            |                               |
+            |                               |
+            V                               V
+        output_datatypes            in_operations
+
+    """
+    input_datatypes = []
+    operation_parent = []
+    output_datatypes = []
+    in_operations = []
+
+
+    def __init__(self, dt_inputs, parent_op, dt_outputs, op_inputs):
+        self.input_datatypes = dt_inputs
+        self.operation_parent = parent_op
+        self.output_datatypes = dt_outputs
+        self.in_operations = op_inputs
+
+
+
+class FullGraphStructure():
+    """
+    This class contains information for the entire graph to be displayed in UI.
+    It holds a list of GraphBranch instances (e.g. multiple UPLOAD ops).
+    """
+
+    graph_components = []
+
+
+    def __init__(self, components):
+        self.graph_components = components
+        self._fill_shape_size()
+        self._fill_all_graph_adjiacences()
+
+
+    def prepare_for_json(self):
+        """
+        Returns a list of NodeStructure instances to be serialized for browser-client rendering.
+        """
+        artificial_root_adj = []
+        for component in self.graph_components:
+            if len(component.input_datatypes):
+                artificial_root_adj.extend(self._get_nodes_gids(component.input_datatypes))
+            else:
+                artificial_root_adj.extend(self._get_nodes_gids(component.operation_parent))
+
+        result_to_serialize = [NodeStructure.build_artificial_root_structure(artificial_root_adj)]
+        for component in self.graph_components:
+            for level in [component.input_datatypes, component.operation_parent,
+                          component.output_datatypes, component.in_operations]:
+                for node_structure in level:
+                    result_to_serialize.append(node_structure)
+
+        return result_to_serialize
+
+
+    def _fill_all_graph_adjiacences(self):
+
+        for branch in self.graph_components:
+            parent_ops_gids = self._get_nodes_gids(branch.operation_parent)
+            dt_outputs_gids = self._get_nodes_gids(branch.output_datatypes)
+            op_inputs_gids = self._get_nodes_gids(branch.in_operations)
+
+            self._set_nodes_adjacencies(branch.input_datatypes, parent_ops_gids)
+            self._set_nodes_adjacencies(branch.operation_parent, dt_outputs_gids)
+            self._set_nodes_adjacencies(branch.output_datatypes, op_inputs_gids, True)
+
+
+    @staticmethod
+    def _get_nodes_gids(list_of_nodes):
+        return [node.node_gid for node in list_of_nodes]
+
+
+    @staticmethod
+    def _set_nodes_adjacencies(list_of_nodes, adjacencies, only_for_selected_node=False):
         """
         Sets adjacencies for a list of nodes.
         """
@@ -328,7 +276,7 @@ class GraphStructure():
                 node.adjacencies = adjacencies
 
 
-    def _set_shapes_size(self):
+    def _fill_shape_size(self):
         """
         Sets the correct size for each node from this graph.
         """
@@ -336,30 +284,27 @@ class GraphStructure():
         no_of_parent_op = 0
         no_of_dt_outputs = 0
         no_of_op_inputs = 0
-        for branch in self.graph_branches:
-            branch_levels = branch.get_branch_levels()
 
-            no_of_dt_inputs += len(branch_levels[DT_INPUTS_KEY])
-            no_of_parent_op += len(branch_levels[PARENT_OP_KEY])
-            no_of_dt_outputs += len(branch_levels[DT_OUTPUTS_KEY])
-            no_of_op_inputs += len(branch_levels[OP_INPUTS_KEY])
+        for branch in self.graph_components:
+            no_of_dt_inputs += len(branch.input_datatypes)
+            no_of_parent_op += len(branch.operation_parent)
+            no_of_dt_outputs += len(branch.output_datatypes)
+            no_of_op_inputs += len(branch.in_operations)
 
         dt_input_size = self._compute_shape_size(no_of_dt_inputs)
         parent_op_size = self._compute_shape_size(no_of_parent_op)
         dt_output_size = self._compute_shape_size(no_of_dt_outputs)
         op_input = self._compute_shape_size(no_of_op_inputs)
 
-        for branch in self.graph_branches:
-            branch_levels = branch.get_branch_levels()
-
-            self.__set_nodes_size(branch_levels[DT_INPUTS_KEY], dt_input_size)
-            self.__set_nodes_size(branch_levels[PARENT_OP_KEY], parent_op_size)
-            self.__set_nodes_size(branch_levels[DT_OUTPUTS_KEY], dt_output_size)
-            self.__set_nodes_size(branch_levels[OP_INPUTS_KEY], op_input)
+        for branch in self.graph_components:
+            self._set_nodes_size(branch.input_datatypes, dt_input_size)
+            self._set_nodes_size(branch.operation_parent, parent_op_size)
+            self._set_nodes_size(branch.output_datatypes, dt_output_size)
+            self._set_nodes_size(branch.in_operations, op_input)
 
 
     @staticmethod
-    def __set_nodes_size(list_of_nodes, shape_size):
+    def _set_nodes_size(list_of_nodes, shape_size):
         """
         Sets the size for each node from the given list of nodes.
         """
@@ -370,15 +315,6 @@ class GraphStructure():
             if node.data is None:
                 continue
             node.data.shape_size = shape_size
-
-
-    @staticmethod
-    def _get_nodes_ids(list_of_nodes):
-        """Compute IDs for nodes"""
-        nodes_ids = []
-        for node in list_of_nodes:
-            nodes_ids.append(node.id)
-        return nodes_ids
 
 
     @staticmethod
@@ -405,17 +341,5 @@ class GraphStructure():
             return MIN_SHAPE_SIZE
         else:
             return shape_size
-
-
-    @staticmethod
-    def _create_fake_root(adjacencies_nodes):
-        """In case no root exists, create one, for JS limitations"""
-        node_data = NodeData(7, DATATYPE_SHAPE_COLOR, DATATYPE_SHAPE, 
-                             NODE_DATATYPE_TYPE, "fakeRootNode", "Fake root")
-        fake_root = NodeStructure("fakeRootNode", "fakeRootNode")
-        fake_root.data = node_data
-        fake_root.adjacencies = adjacencies_nodes
-        return fake_root
-
 
 

@@ -761,30 +761,27 @@ class ProjectController(BaseController):
 
     #methods related to data structure - graph
 
-    @cherrypy.expose
-    @handle_error(redirect=False)
-    @check_user
+    @expose_json
     def create_json(self, item_gid, item_type, visibility_filter):
         """
         Method used for creating a JSON representation of a graph.
         """
         selected_filter = StaticFiltersFactory.build_datatype_filters(single_filter=visibility_filter)
-
-        graph_branches = []
         project = common.get_current_project()
 
         is_upload_operation = (item_type == graph_structures.NODE_OPERATION_TYPE) and \
                               (self.project_service.is_upload_operation(item_gid) or item_gid == "firstOperation")
         if is_upload_operation:
+            graph_branches = []
             uploader_operations = self.project_service.get_all_operations_for_uploaders(project.id)
             for operation in uploader_operations:
                 dt_outputs = self.project_service.get_results_for_operation(operation.id, selected_filter)
                 dt_outputs = self._create_datatype_nodes(dt_outputs)
                 parent_op = self._create_operation_nodes([operation], item_gid)
-                branch = graph_structures.GraphBranch([], parent_op, dt_outputs, [])
+                branch = graph_structures.GraphComponent([], parent_op, dt_outputs, [])
                 graph_branches.append(branch)
-            graph = graph_structures.GraphStructure(graph_branches)
-            return graph.to_json()
+            graph = graph_structures.FullGraphStructure(graph_branches)
+            return graph.prepare_for_json()
 
         dt_inputs, parent_op, dt_outputs, op_inputs = [], [], [], []
         if item_type == graph_structures.NODE_OPERATION_TYPE:
@@ -803,7 +800,7 @@ class ProjectController(BaseController):
             datatype = self.project_service.get_datatype_by_id(datatype_group.id)
 
             dt_inputs = self._create_datatype_nodes(dt_inputs)
-            parent_op = graph_structures.OperationGroupNodeStructure(parent_op_group.gid)
+            parent_op = graph_structures.NodeStructure.build_structure_for_operation_group(parent_op_group.gid)
             parent_op.selected = True
             parent_op = [parent_op]
             if selected_filter.display_name == StaticFiltersFactory.RELEVANT_VIEW and datatype.visible is False:
@@ -825,7 +822,7 @@ class ProjectController(BaseController):
                 #create graph nodes
                 dt_inputs, parent_op, dt_outputs, op_inputs = self._create_nodes(dt_inputs, [], [selected_dt],
                                                                                  op_inputs, item_gid)
-                parent_op = [graph_structures.OperationGroupNodeStructure(parent_op_group.gid)]
+                parent_op = [graph_structures.NodeStructure.build_structure_for_operation_group(parent_op_group.gid)]
                 op_inputs_in_groups = self._create_operation_group_nodes(op_inputs_in_groups)
                 op_inputs.extend(op_inputs_in_groups)
             else:
@@ -846,10 +843,9 @@ class ProjectController(BaseController):
             self.logger.error("Invalid item type: " + str(item_type))
             raise Exception("Invalid item type.")
 
-        branch = graph_structures.GraphBranch(dt_inputs, parent_op, dt_outputs, op_inputs)
-        graph_branches.append(branch)
-        graph = graph_structures.GraphStructure(graph_branches)
-        return graph.to_json()
+        branch = graph_structures.GraphComponent(dt_inputs, parent_op, dt_outputs, op_inputs)
+        graph = graph_structures.FullGraphStructure([branch])
+        return graph.prepare_for_json()
 
 
     def _create_nodes(self, dt_inputs, parent_op, dt_outputs, op_inputs, item_gid=None):
@@ -868,7 +864,7 @@ class ProjectController(BaseController):
         if datatypes_list is None:
             return nodes
         for data_type in datatypes_list:
-            node = graph_structures.DatatypeNodeStructure(data_type.gid)
+            node = graph_structures.NodeStructure.build_structure_for_datatype(data_type.gid)
             if data_type.gid == selected_item_gid:
                 node.selected = True
             nodes.append(node)
@@ -882,7 +878,7 @@ class ProjectController(BaseController):
         """
         nodes = []
         for operation in operations_list:
-            node = graph_structures.OperationNodeStructure(operation.gid)
+            node = graph_structures.NodeStructure.build_structure_for_operation(operation)
             if operation.gid == selected_item_gid:
                 node.selected = True
             nodes.append(node)
@@ -900,7 +896,7 @@ class ProjectController(BaseController):
                 groups[group.id] = group.gid
         nodes = []
         for _, group in groups.iteritems():
-            node = graph_structures.OperationGroupNodeStructure(group)
+            node = graph_structures.NodeStructure.build_structure_for_operation_group(group)
             if group == selected_item_gid:
                 node.selected = True
             nodes.append(node)

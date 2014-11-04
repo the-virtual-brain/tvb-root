@@ -358,6 +358,18 @@ def _custom_string2array(input_data_str, split_char, dtype=None):
     return numpy.array(data_stack[0].data)
 
 
+
+class TVBJSONEncoder(json.JSONEncoder):
+    """
+    Custom encoder class. Referring towards "to_json" method, when found, or default behaviour otherwise.
+    """
+
+    def default(self, obj):
+        if hasattr(obj, "to_json"):
+            return obj.to_json()
+
+        return json.JSONEncoder.default(self, obj)
+
 ################## CONVERT related methods end here ###############
 
 

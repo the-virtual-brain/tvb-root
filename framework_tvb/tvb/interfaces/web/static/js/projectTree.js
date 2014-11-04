@@ -242,13 +242,11 @@ function _draw_graph(containerDivId, json) {
             type: 'Native',
             onShow: function(tip, node) {
                 if (node.id != "fakeRootNode") {
-                    tip.innerHTML = "<div class=\"tip-title\">" +
-                                            node.name +
-                                    "</div></br>" +
+                    tip.innerHTML = "<div class=\"tip-title\">" + node.name + "</div></br>" +
                                     "<div class=\"tip-text\">" +
-                                            "<b>Id:</b> " + node.data.entity_id + "</br>" +
-                                            "<b>Type:</b> " + node.data.dataType + "</br>" +
-                                            "<b>Display Name:</b> " + node.data.subtitle + "</br>" +
+                                            "<b>Id:</b> " + node.data.node_entity_id + "</br>" +
+                                            "<b>Type:</b> " + node.data.node_type + "</br>" +
+                                            "<b>Display Name:</b> " + node.data.node_subtitle + "</br>" +
                                     "</div>";
                     }
             }
@@ -312,9 +310,7 @@ function _draw_graph(containerDivId, json) {
             }
 
             nameContainer.onclick = function() {
-                //skipReload = true;
-                //displayNodeDetails(node.id, node.data.dataType, 'data');
-                update_workflow_graph(containerDivId, node.id, node.data.dataType);
+                update_workflow_graph(containerDivId, node.id, node.data.node_type);
             };
         },
         // Change node styles when DOM labels are placed or moved.

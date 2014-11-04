@@ -43,6 +43,7 @@ from functools import wraps
 from genshi.template import TemplateLoader
 from tvb.basic.profile import TvbProfile
 from tvb.basic.logger.builder import get_logger
+from tvb.core.utils import TVBJSONEncoder
 from tvb.interfaces.web.controllers import common
 
 # some of these decorators could be cherrypy tools
@@ -82,7 +83,7 @@ def jsonify(func):
     @wraps(func)
     def deco(*a, **b):
         result = func(*a, **b)
-        return json.dumps(result)
+        return json.dumps(result, cls=TVBJSONEncoder)
 
     return deco
 
