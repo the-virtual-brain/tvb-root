@@ -1196,8 +1196,7 @@ content: ":";
 /* All of them are full-screen visualizers, fired up by Project/Operations or Burst */
 /* !-------------------------------------------- */
 
-#s-project[class*="ss-view_"] #main, 
-#s-burst[class*="ss-view_"] #main {
+html[class*="ss-view_"] #main {
 right: 15px;
 }
 
