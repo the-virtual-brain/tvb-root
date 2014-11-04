@@ -160,9 +160,7 @@ class SimulatorAdapter(ABCAsynchronous):
         self.simulation_length = simulation_length
         self.log.debug("%s: Initializing storage..." % str(self))
         try:
-            self.algorithm.configure()
-            if simulation_state is not None:
-                simulation_state.fill_into(self.algorithm)
+            self.algorithm.preconfigure()
         except ValueError, err:
             raise LaunchException("Failed to configure simulator due to invalid Input Values. It could be because "
                                   "of an incompatibility between different version of TVB code.", err)
@@ -225,6 +223,10 @@ class SimulatorAdapter(ABCAsynchronous):
         """
         result_datatypes = dict()
         start_time = self.algorithm.current_step * self.algorithm.integrator.dt
+
+        self.algorithm.configure()
+        if simulation_state is not None:
+            simulation_state.fill_into(self.algorithm)
 
         for monitor in self.algorithm.monitors:
             m_name = monitor.__class__.__name__

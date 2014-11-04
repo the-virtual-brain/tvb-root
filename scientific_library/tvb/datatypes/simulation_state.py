@@ -33,21 +33,23 @@ DataType for storing a simulator's state in files and as DB reference.
 .. moduleauthor:: Lia Domide <lia.domide@codemart.ro>
 """
 
-
 import tvb.basic.traits.types_basic as basic
 import tvb.datatypes.arrays as arrays
 from tvb.basic.traits.types_mapped import MappedType
 
 
+
 class SimulationState(MappedType):
     """
     Simulation State, prepared for H5 file storage.
-    """  
-    
+    """
+
     # History Array
     history = arrays.FloatArray(required=False)
-    # Simulator step number
+
+    # Simulator's current step number (in time)
     current_step = basic.Integer()
+
     # Array with _stock array for every monitor configured in current simulation.
     # As the monitors are dynamic, we prepare a bunch of arrays for storage in H5 file.
     monitor_stock_1 = arrays.FloatArray(required=False)
@@ -65,45 +67,42 @@ class SimulationState(MappedType):
     monitor_stock_13 = arrays.FloatArray(required=False)
     monitor_stock_14 = arrays.FloatArray(required=False)
     monitor_stock_15 = arrays.FloatArray(required=False)
-    
-    
+
+
     def __init__(self, **kwargs):
         """ 
         Constructor for Simulator State
         """
         super(SimulationState, self).__init__(**kwargs)
         self.visible = False
-    
-    
+
+
     def populate_from(self, simulator_algorithm):
         """
         Prepare a state for storage from a Simulator object.
         """
         self.history = simulator_algorithm.history
         self.current_step = simulator_algorithm.current_step
-        
-        i = 1
-        for monitor in simulator_algorithm.monitors:
+
+        for i, monitor in enumerate(simulator_algorithm.monitors):
             field_name = "monitor_stock_" + str(i)
             setattr(self, field_name, monitor._stock)
+
             if hasattr(monitor, "_ui_name"):
                 self.set_metadata({'monitor_name': monitor._ui_name}, field_name)
             else:
                 self.set_metadata({'monitor_name': monitor.__class__.__name__}, field_name)
-            i = i + 1
-        
-    
+
+
     def fill_into(self, simulator_algorithm):
         """
         Populate a Simulator object from current stored-state.
         """
-        simulator_algorithm.history = self.history 
+        simulator_algorithm.history = self.history
         simulator_algorithm.current_step = self.current_step
-        
-        i = 1
-        for monitor in simulator_algorithm.monitors:
+
+        for i, monitor in enumerate(simulator_algorithm.monitors):
             monitor._stock = getattr(self, "monitor_stock_" + str(i))
-            i = i + 1
   
     
  
