@@ -71,10 +71,6 @@ class DiscretePSEAdapter(ABCDisplayer):
                                            values=[2, 1, MAX_NUMBER_OF_POINT_TO_SUPPORT])}]
 
 
-    def __init__(self):
-        ABCDisplayer.__init__(self)
-
-
     def get_required_memory_size(self, **kwargs):
         """
         Return the required memory to run this algorithm.
@@ -108,7 +104,6 @@ class DiscretePSEAdapter(ABCDisplayer):
 
         if contains_numbers is None:
             return None, range_values, range_values
-
 
         if contains_numbers:
             range_labels = range_values
@@ -148,7 +143,7 @@ class DiscretePSEAdapter(ABCDisplayer):
 
         pse_context = ContextDiscretePSE(datatype_group_gid, color_metric, size_metric, back_page)
         pse_context.setRanges(range1_name, range1_values, range1_labels, range2_name, range2_values, range2_labels)
-        final_dict = dict()
+        final_dict = {}
         operations = dao.get_operations_in_group(operation_group.id)
 
         for operation_ in operations:
@@ -169,9 +164,9 @@ class DiscretePSEAdapter(ABCDisplayer):
                     pse_context.prepare_metrics_datatype(measures, datatype)
 
             if key_1 not in final_dict:
-                final_dict[key_1] = {key_2: pse_context.build_node_info(operation_, datatype)}
-            else:
-                final_dict[key_1][key_2] = pse_context.build_node_info(operation_, datatype)
+                final_dict[key_1] = {}
+
+            final_dict[key_1][key_2] = pse_context.build_node_info(operation_, datatype)
 
         pse_context.fill_object(final_dict)
         ## datatypes_dict is not actually used in the drawing of the PSE and actually

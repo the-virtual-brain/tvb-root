@@ -168,34 +168,34 @@ class ContextDiscretePSE(EnhancedDictionary):
         for i, key_1 in enumerate(self.values_x):
             for j, key_2 in enumerate(self.values_y):
                 datatype_gid = None
-                if self.KEY_GID in final_dict[key_1][key_2]:
+                current = final_dict[key_1][key_2]
+                if self.KEY_GID in current:
                     #This means the operation was finished
-                    datatype_gid = final_dict[key_1][key_2][self.KEY_GID]
+                    datatype_gid = current[self.KEY_GID]
                 series_data = [[i, j]]
                 color_weight, shape_type_1 = self.__get_color_weight(self.datatypes_dict, datatype_gid, 
                                                                      self.color_metric)
                 if (shape_type_1 is not None) and (datatype_gid is not None):
-                    final_dict[key_1][key_2][self.KEY_TOOLTIP] = (final_dict[key_1][key_2][self.KEY_TOOLTIP] +
-                                                                  self.LINE_SEPARATOR + " Color metric has NaN values")
+                    current[self.KEY_TOOLTIP] += self.LINE_SEPARATOR + " Color metric has NaN values"
                 shape_size, shape_type_2 = self.__get_node_size(self.datatypes_dict, datatype_gid, len(self.labels_x), 
                                                                 len(self.labels_y), self.size_metric)
                 if (shape_type_2 is not None) and (datatype_gid is not None):
-                    final_dict[key_1][key_2][self.KEY_TOOLTIP] = (final_dict[key_1][key_2][self.KEY_TOOLTIP] +
-                                                                  self.LINE_SEPARATOR + " Size metric has NaN values")
+                    current[self.KEY_TOOLTIP] += self.LINE_SEPARATOR + " Size metric has NaN values"
                 #If either of the shape_types is not none use that
                 shape_type = shape_type_1 or shape_type_2
                 series = self.__get_node_json(series_data, shape_type, shape_size)
-                final_dict[key_1][key_2]['color_weight'] = color_weight
+                current['color_weight'] = color_weight
                 all_series.append(series)
 
         #each shape from the UI corresponds to a dataType. In this matrix we
         #keep information about those dataTypes.
         matrix = []
-        for i, x_label in enumerate(self.values_x):
-            matrix.append([])
+        for x_label in self.values_x:
+            r = []
             for y_label in self.values_y:
-                matrix[i].append(final_dict[x_label][y_label])
-        
+                r.append(final_dict[x_label][y_label])
+            matrix.append(r)
+
         self.data = matrix
         self.series_array = self.__build_series_json(all_series)
         self.status = 'started' if self.has_started_ops else 'finished'
@@ -304,8 +304,8 @@ class ContextDiscretePSE(EnhancedDictionary):
         max_length = max([range1_length, range2_length])
         if max_length <= intervals[0]:
             return values[0]
-        elif max_length >= intervals[len(intervals) - 1]:
-            return values[len(values) - 1]
+        elif max_length >= intervals[-1]:
+            return values[-1]
         else:
             for i, interval in enumerate(intervals):
                 if max_length <= interval:
