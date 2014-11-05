@@ -37,7 +37,6 @@ Data for Parameter Space Exploration view will be defined here.
 The purpose of this entities is to be used in Genshi UI, or for populating visualizer.
 """
 
-import sys
 import json
 import math
 from tvb.basic.config.utils import EnhancedDictionary
@@ -60,10 +59,10 @@ class ContextDiscretePSE(EnhancedDictionary):
         super(ContextDiscretePSE, self).__init__()
 
         self.datatype_group_gid = datatype_group_gid
-        self.min_color = sys.float_info.max
-        self.max_color = sys.float_info.min
-        self.min_shape_size_weight = sys.float_info.max
-        self.max_shape_size_weight = sys.float_info.min
+        self.min_color = float('inf')
+        self.max_color = - float('inf')
+        self.min_shape_size = float('inf')
+        self.max_shape_size = - float('inf')
         self.has_started_ops = False
         self.status = 'started'
         self.title_x, self.title_y = "", ""
@@ -76,7 +75,6 @@ class ContextDiscretePSE(EnhancedDictionary):
 
 
     def setRanges(self, title_x, values_x, labels_x, title_y, values_y, labels_y):
-
         self.title_x = title_x
         self.values_x = values_x
         self.labels_x = labels_x
@@ -156,24 +154,16 @@ class ContextDiscretePSE(EnhancedDictionary):
 
             if self.size_metric is not None:
                 size_value = measure.metrics[self.size_metric]
-                if size_value < self.min_shape_size_weight:
-                    self.min_shape_size_weight = size_value
-                if size_value > self.max_shape_size_weight:
-                    self.max_shape_size_weight = size_value
+                if size_value < self.min_shape_size:
+                    self.min_shape_size = size_value
+                if size_value > self.max_shape_size:
+                    self.max_shape_size = size_value
                 dt_info[self.size_metric] = size_value
         self.datatypes_dict[datatype.gid] = dt_info
         
     
     def fill_object(self, final_dict):
         """ Populate current entity with attributes required for visualizer"""
-        
-        ## Make sure that current form on MIN/MAX attributes is consistent
-        ## MIN and MAX  should not be equal, to get a division by 0 (on their difference) after this step.
-        if self.min_shape_size_weight == self.max_shape_size_weight:
-            self.max_shape_size_weight += 1
-        if self.min_color == self.max_color:
-            self.max_color += 1
-            
         all_series = []
         for i, key_1 in enumerate(self.values_x):
             for j, key_2 in enumerate(self.values_y):
@@ -289,9 +279,12 @@ class ContextDiscretePSE(EnhancedDictionary):
 
             if valid_metric:
                 shape_weight = node_info[metric]
-                return (min_size + ((shape_weight - self.min_shape_size_weight) /
-                                    float((self.max_shape_size_weight - self.min_shape_size_weight))) *
-                        (max_size - min_size)), None
+                values_range = self.max_shape_size - self.min_shape_size
+                shape_range = max_size - min_size
+                if values_range != 0:
+                    return min_size + (shape_weight - self.min_shape_size) / float(values_range) * shape_range, None
+                else:
+                    return min_size, None
             else:
                 return max_size / 2.0, "cross"
         return max_size / 2.0, None
@@ -317,7 +310,3 @@ class ContextDiscretePSE(EnhancedDictionary):
             for i, interval in enumerate(intervals):
                 if max_length <= interval:
                     return values[i - 1]    
-       
-       
-        
-        

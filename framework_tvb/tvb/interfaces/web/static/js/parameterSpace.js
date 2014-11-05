@@ -154,12 +154,24 @@ function PSEDiscreteInitialize(labelsXJson, labelsYJson, series_array, dataJson,
     var labels_y = $.parseJSON(labelsYJson);
     var data = $.parseJSON(dataJson);
 
-    _updatePlotPSE('main_div_pse', labels_x, labels_y, series_array, data, min_color, max_color, backPage);
+    min_color = parseFloat(min_color);
+    max_color = parseFloat(max_color);
+    min_size = parseFloat(min_size);
+    max_size = parseFloat(max_size);
 
-    $('#minColorLabel').html(min_color.toPrecision(2));
-    $('#maxColorLabel').html(max_color.toPrecision(2));
-    $('#minShapeLabel').html(min_size.toPrecision(2));
-    $('#maxShapeLabel').html(max_size.toPrecision(2));
+    function _fmt_lbl(sel, v){
+        $(sel).html( Number.isNaN(v) ? 'not available': toSignificantDigits(v, 3));
+    }
+
+    _fmt_lbl('#minColorLabel', min_color);
+    _fmt_lbl('#maxColorLabel', max_color);
+    _fmt_lbl('#minShapeLabel', min_size);
+    _fmt_lbl('#maxShapeLabel', max_size);
+
+    if (Number.isNaN(min_color)){
+        min_color = 0; max_color = 1;
+    }
+    _updatePlotPSE('main_div_pse', labels_x, labels_y, series_array, data, min_color, max_color, backPage);
 
     // Prepare functions for Export Canvas as Image
     var canvas = $("#main_div_pse").find(".flot-base")[0];
