@@ -61,7 +61,7 @@
 <!-- 1 -->
 <g id="node2" class="node"><title>1</title>
 <polygon fill="none" stroke="black" points="222.538,-373.2 222.538,-766.8 427.462,-766.8 427.462,-373.2 222.538,-373.2"/>
-<text text-anchor="middle" x="325" y="-748.8" font-family="Times,serif" font-size="14.00">Epileptor_permittivity_coupling</text>
+<text text-anchor="middle" x="325" y="-748.8" font-family="Times,serif" font-size="14.00">EpileptorPermittivityCoupling</text>
 <polyline fill="none" stroke="black" points="222.538,-742 427.462,-742 "/>
 <text text-anchor="start" x="230.538" y="-724" font-family="Times,serif" font-size="14.00">cvar</text>
 <text text-anchor="start" x="230.538" y="-707.2" font-family="Times,serif" font-size="14.00">slope : FloatArray</text>
@@ -124,26 +124,25 @@
 </g>
 <!-- 3 -->
 <g id="node4" class="node"><title>3</title>
-<polygon fill="none" stroke="black" points="668.538,-448.8 668.538,-691.2 873.462,-691.2 873.462,-448.8 668.538,-448.8"/>
-<text text-anchor="middle" x="771" y="-673.2" font-family="Times,serif" font-size="14.00">Hopfield</text>
-<polyline fill="none" stroke="black" points="668.538,-666.4 873.462,-666.4 "/>
-<text text-anchor="start" x="676.538" y="-648.4" font-family="Times,serif" font-size="14.00">variables_of_interest : list</text>
-<text text-anchor="start" x="676.538" y="-631.6" font-family="Times,serif" font-size="14.00">cvar</text>
-<text text-anchor="start" x="676.538" y="-614.8" font-family="Times,serif" font-size="14.00">dfun</text>
-<text text-anchor="start" x="676.538" y="-598" font-family="Times,serif" font-size="14.00">state_variable_range : Dict</text>
-<text text-anchor="start" x="676.538" y="-581.2" font-family="Times,serif" font-size="14.00">variables_of_interest : Enumerate</text>
-<text text-anchor="start" x="676.538" y="-564.4" font-family="Times,serif" font-size="14.00">dynamic : IntegerArray</text>
-<text text-anchor="start" x="676.538" y="-547.6" font-family="Times,serif" font-size="14.00">tauT : FloatArray</text>
-<text text-anchor="start" x="676.538" y="-530.8" font-family="Times,serif" font-size="14.00">ui_configurable_parameters : list</text>
-<text text-anchor="start" x="676.538" y="-514" font-family="Times,serif" font-size="14.00">taux : FloatArray</text>
-<polyline fill="none" stroke="black" points="668.538,-507.2 873.462,-507.2 "/>
-<text text-anchor="start" x="676.538" y="-489.2" font-family="Times,serif" font-size="14.00">dfun()</text>
-<text text-anchor="start" x="676.538" y="-472.4" font-family="Times,serif" font-size="14.00">configure()</text>
-<text text-anchor="start" x="676.538" y="-455.6" font-family="Times,serif" font-size="14.00">dfunDyn()</text>
+<polygon fill="none" stroke="black" points="668.538,-457.2 668.538,-682.8 873.462,-682.8 873.462,-457.2 668.538,-457.2"/>
+<text text-anchor="middle" x="771" y="-664.8" font-family="Times,serif" font-size="14.00">Hopfield</text>
+<polyline fill="none" stroke="black" points="668.538,-658 873.462,-658 "/>
+<text text-anchor="start" x="676.538" y="-640" font-family="Times,serif" font-size="14.00">cvar</text>
+<text text-anchor="start" x="676.538" y="-623.2" font-family="Times,serif" font-size="14.00">dfun</text>
+<text text-anchor="start" x="676.538" y="-606.4" font-family="Times,serif" font-size="14.00">state_variable_range : Dict</text>
+<text text-anchor="start" x="676.538" y="-589.6" font-family="Times,serif" font-size="14.00">variables_of_interest : Enumerate</text>
+<text text-anchor="start" x="676.538" y="-572.8" font-family="Times,serif" font-size="14.00">dynamic : IntegerArray</text>
+<text text-anchor="start" x="676.538" y="-556" font-family="Times,serif" font-size="14.00">tauT : FloatArray</text>
+<text text-anchor="start" x="676.538" y="-539.2" font-family="Times,serif" font-size="14.00">ui_configurable_parameters : list</text>
+<text text-anchor="start" x="676.538" y="-522.4" font-family="Times,serif" font-size="14.00">taux : FloatArray</text>
+<polyline fill="none" stroke="black" points="668.538,-515.6 873.462,-515.6 "/>
+<text text-anchor="start" x="676.538" y="-497.6" font-family="Times,serif" font-size="14.00">dfun()</text>
+<text text-anchor="start" x="676.538" y="-480.8" font-family="Times,serif" font-size="14.00">configure()</text>
+<text text-anchor="start" x="676.538" y="-464" font-family="Times,serif" font-size="14.00">dfunDyn()</text>
 </g>
 <!-- 3&#45;&gt;8 -->
 <g id="edge8" class="edge"><title>3&#45;&gt;8</title>
-<path fill="none" stroke="black" d="M782.971,-691.557C796.232,-763.898 824.167,-852.697 883,-910 988.495,-1012.75 1161.28,-1045.92 1273.83,-1056.43"/>
+<path fill="none" stroke="black" d="M781.463,-683.038C794.067,-756.812 821.836,-850.427 883,-910 988.495,-1012.75 1161.28,-1045.92 1273.83,-1056.43"/>
 <polygon fill="none" stroke="black" points="1273.58,-1059.92 1283.85,-1057.32 1274.2,-1052.95 1273.58,-1059.92"/>
 </g>
 <!-- 4 -->
