@@ -179,10 +179,12 @@ class FlowController(BaseController):
             raise cherrypy.HTTPRedirect(back_page_link)
 
         submit_link = self.get_url_adapter(step_key, adapter_key, back_page)
+        is_burst = back_page not in ['operations', 'data']
         if cherrypy.request.method == 'POST':
             data[common.KEY_ADAPTER] = adapter_key
             template_specification = self.execute_post(project.id, submit_link,
                                                        step_key, algo_group, **data)
+            self._populate_section(algo_group, template_specification, is_burst)
         else:
             if (('Referer' not in cherrypy.request.headers or
                 ('Referer' in cherrypy.request.headers and 'step' not in cherrypy.request.headers['Referer']))
@@ -191,7 +193,7 @@ class FlowController(BaseController):
                 # might be enforced by MPLH5 on FF.
                 not_reset = True
             template_specification = self.get_template_for_adapter(project.id, step_key, algo_group,
-                                                                   submit_link, not not_reset)
+                                                                   submit_link, not not_reset, is_burst=is_burst)
         if template_specification is None:
             raise cherrypy.HTTPRedirect('/tvb')
 
@@ -208,9 +210,7 @@ class FlowController(BaseController):
 
         template_specification[common.KEY_ADAPTER] = adapter_key
         template_specification[ABCDisplayer.KEY_IS_ADAPTER] = True
-        self.fill_default_attributes(template_specification, algo_group)
-        if back_page in ['operations', 'data'] and template_specification.get(common.KEY_SECTION) != 'connectivity':
-            template_specification[common.KEY_SECTION] = 'project'
+        self.fill_default_attributes(template_specification, algo_group.displayname)
         return template_specification
 
 
@@ -467,7 +467,7 @@ class FlowController(BaseController):
         return template_specification
 
 
-    def get_template_for_adapter(self, project_id, step_key, algo_group, submit_url, session_reset=True):
+    def get_template_for_adapter(self, project_id, step_key, algo_group, submit_url, session_reset=True, is_burst=True):
         """ Get Input HTML Interface template or a given adapter """
         try:
             if session_reset:
@@ -494,7 +494,7 @@ class FlowController(BaseController):
                 adapter_interface = ABCAdapter.fill_defaults(adapter_interface, current_defaults)
 
             template_specification = dict(submitLink=submit_url, inputList=adapter_interface, title=title)
-            self._populate_section(algo_group, template_specification)
+            self._populate_section(algo_group, template_specification, is_burst)
             return template_specification
         except OperationException, oexc:
             self.logger.error("Inconsistent Adapter")
@@ -575,7 +575,8 @@ class FlowController(BaseController):
                 result[common.KEY_ADAPTER] = adapter_id
                 if KEY_CONTROLLS not in result:
                     result[KEY_CONTROLLS] = None
-                return self.fill_default_attributes(result, algo_group)
+                self._populate_section(algo_group, result)
+                return self.fill_default_attributes(result, algo_group.displayname)
 
         except OperationException, excep:
             common.set_warning_message('Problem when submitting data!')
@@ -722,22 +723,17 @@ class FlowController(BaseController):
             return False
 
 
-    def fill_default_attributes(self, template_dictionary, algo_group=None):
+    def fill_default_attributes(self, template_dictionary, title='-'):
         """
         Overwrite base controller to add required parameters for adapter templates.
         """
         if common.KEY_TITLE not in template_dictionary:
-            if algo_group is not None:
-                template_dictionary[common.KEY_TITLE] = algo_group.displayname
-            else:
-                template_dictionary[common.KEY_TITLE] = '-'
+            template_dictionary[common.KEY_TITLE] = title
 
         if common.KEY_PARENT_DIV not in template_dictionary:
             template_dictionary[common.KEY_PARENT_DIV] = ''
         if common.KEY_PARAMETERS_CONFIG not in template_dictionary:
             template_dictionary[common.KEY_PARAMETERS_CONFIG] = False
-        if algo_group is not None:
-            self._populate_section(algo_group, template_dictionary)
 
         template_dictionary[common.KEY_INCLUDE_RESOURCES] = 'flow/included_resources'
         BaseController.fill_default_attributes(self, template_dictionary)

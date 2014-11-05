@@ -463,7 +463,7 @@ class BurstController(BurstBaseController):
             if portlet_cfg is not None:
                 tab_portlet_list.append(self.__portlet_config2portlet_entity(portlet_cfg))
         return {'status': burst.status, 'portlet_tab_list': tab_portlet_list,
-                'max_width': int(width), 'max_height': int(height), 'model':tvb.core.entities.model}
+                'max_width': int(width), 'max_height': int(height), 'model': tvb.core.entities.model}
 
 
     @expose_fragment("burst/portlet_visualization_template")
@@ -475,7 +475,8 @@ class BurstController(BurstBaseController):
         burst = common.get_from_session(common.KEY_BURST_CONFIG)
         target_portlet = burst.tabs[int(selected_tab)].portlets[int(index_in_tab)]
         target_portlet = self.__portlet_config2portlet_entity(target_portlet)
-        template_dict = {'portlet_entity': target_portlet, 'width': int(width), 'height': int(height), 'model':tvb.core.entities.model}
+        template_dict = {'portlet_entity': target_portlet, 'model': tvb.core.entities.model,
+                         'width': int(width), 'height': int(height)}
         return template_dict
 
 
@@ -647,7 +648,7 @@ class BurstController(BurstBaseController):
             result[common.KEY_PARENT_DIV] = ''
         self.context.add_adapter_to_session(algorithm.algo_group, None, copy.deepcopy(input_data))
 
-        self._populate_section(algorithm.algo_group, result)
+        self._populate_section(algorithm.algo_group, result, True)
         result[common.KEY_DISPLAY_MENU] = True
         result[common.KEY_BACK_PAGE] = "/burst"
         result[common.KEY_SUBMIT_LINK] = self.get_url_adapter(algorithm.algo_group.group_category.id,

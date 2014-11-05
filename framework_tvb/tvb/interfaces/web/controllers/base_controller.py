@@ -75,14 +75,16 @@ class BaseController(object):
         conn_id = self.flow_service.get_algorithm_by_module_and_class(CONNECTIVITY_MODULE, CONNECTIVITY_CLASS)[1].id
         connectivity_link = self.get_url_adapter(view_category.id, conn_id)
 
-        local_connectivity_link = '/spatial/localconnectivity/step_1/1'
-
-        connectivity_submenu = [dict(title="Large Scale Connectivity", subsection="connectivity",
-                                     description="View Connectivity Regions. Perform Connectivity lesions",
-                                     link=connectivity_link),
-                                dict(title="Local Connectivity", subsection="local", link=local_connectivity_link,
-                                     description="Create or view existent Local Connectivity entities.")]
-        self.connectivity_submenu = connectivity_submenu
+        self.connectivity_submenu = [dict(title="Large Scale Connectivity", subsection="connectivity",
+                                          description="View Connectivity Regions. Perform Connectivity lesions",
+                                          link=connectivity_link),
+                                     dict(title="Local Connectivity", subsection="local",
+                                          link='/spatial/localconnectivity/step_1/1',
+                                          description="Create or view existent Local Connectivity entities.")]
+        self.burst_submenu = [dict(link='/burst', subsection='burst',
+                                   title='Simulation Cockpit', description='Manage simulations'),
+                              dict(link='/burst/dynamic', subsection='dynamic',
+                                   title='Phase plane', description='Configure model dynamics')]
 
 
     @staticmethod
@@ -224,7 +226,7 @@ class BaseController(object):
         return template_dictionary
 
 
-    def _populate_section(self, algo_group, result_template):
+    def _populate_section(self, algo_group, result_template, is_burst=True):
         """
         Populate Section and Sub-Section fields from current Algorithm-Group.
         """
@@ -232,19 +234,26 @@ class BaseController(object):
             result_template[common.KEY_SECTION] = 'connectivity'
             result_template[common.KEY_SUB_SECTION] = 'connectivity'
             result_template[common.KEY_SUBMENU_LIST] = self.connectivity_submenu
+
         elif algo_group.group_category.display:
-            ### Visualizers on the Burst Page
-            result_template[common.KEY_SECTION] = 'burst'
+            ## We are having a visualizer:
+            if is_burst:
+                result_template[common.KEY_SECTION] = 'burst'
+                result_template[common.KEY_SUBMENU_LIST] = self.burst_submenu
+            else:
+                result_template[common.KEY_SECTION] = 'project'
             result_template[common.KEY_SUB_SECTION] = 'view_' + algo_group.subsection_name
 
         elif algo_group.group_category.rawinput:
             ### Upload algorithms
             result_template[common.KEY_SECTION] = 'project'
             result_template[common.KEY_SUB_SECTION] = 'data'
+
         elif 'RAW_DATA' in algo_group.group_category.defaultdatastate:
             ### Creators
             result_template[common.KEY_SECTION] = 'stimulus'
             result_template[common.KEY_SUB_SECTION] = 'stimulus'
+
         else:
             ### Analyzers
             result_template[common.KEY_SECTION] = algo_group.group_category.displayname.lower()

@@ -43,15 +43,10 @@ class BurstBaseController(BaseController):
 
         template_dictionary[common.KEY_PARAMETERS_CONFIG] = False
         template_dictionary[common.KEY_SECTION] = 'burst'
+        template_dictionary[common.KEY_SUBMENU_LIST] = self.burst_submenu
+
         if common.KEY_SUB_SECTION not in template_dictionary:
             template_dictionary[common.KEY_SUB_SECTION] = subsection
-
-        template_dictionary[common.KEY_SUBMENU_LIST] = [
-            {'link': '/burst', 'subsection': 'burst',
-             'title': 'Simulation Cockpit', 'description': 'Manage simulations'},
-            {'link': '/burst/dynamic', 'subsection': 'dynamic',
-             'title': 'Phase plane', 'description': 'Configure model dynamics'}
-        ]
 
         BaseController.fill_default_attributes(self, template_dictionary)
         return template_dictionary
