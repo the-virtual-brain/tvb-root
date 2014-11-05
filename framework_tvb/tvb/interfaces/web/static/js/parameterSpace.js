@@ -107,18 +107,17 @@ function redrawPlot(plotCanvasId) {
  * Fire DataType overlay when clicking on a node in PSE.
  */
 function applyClickEvent(canvasId, backPage) {
-
     var currentCanvas = $("#"+canvasId);
     currentCanvas.unbind("plotclick");
     currentCanvas.bind("plotclick", function (event, pos, item) {
-                if (item != null) {
-                        var dataPoint = item.datapoint;
-                        var dataInfo = PSE_nodesInfo[dataPoint[0]][dataPoint[1]];
-                        if (dataInfo['dataType'] != undefined) {
-                            displayNodeDetails(dataInfo['Gid'], dataInfo['dataType'], backPage);
-                        }
-                }
-            });
+        if (item != null) {
+            var dataPoint = item.datapoint;
+            var dataInfo = PSE_nodesInfo[dataPoint[0]][dataPoint[1]];
+            if (dataInfo['dataType'] != undefined) {
+                displayNodeDetails(dataInfo['Gid'], dataInfo['dataType'], backPage);
+            }
+        }
+    });
 }
 
 var previousPoint = null;
@@ -126,7 +125,6 @@ var previousPoint = null;
  * On hover display few additional information about this node.
  */
 function applyHoverEvent(canvasId) {
-
     $("#" + canvasId).bind("plothover", function (event, pos, item) {
         if (item) {
             if (previousPoint != item.dataIndex) {
@@ -152,40 +150,38 @@ function applyHoverEvent(canvasId) {
 function PSEDiscreteInitialize(labelsXJson, labelsYJson, series_array, dataJson, backPage, hasStartedOperations,
                                min_color, max_color, min_size, max_size) {
 
-    //ColSch_initColorSchemeParams(min_color, max_color, changeColors);
-
     var labels_x = $.parseJSON(labelsXJson);
     var labels_y = $.parseJSON(labelsYJson);
     var data = $.parseJSON(dataJson);
 
     _updatePlotPSE('main_div_pse', labels_x, labels_y, series_array, data, min_color, max_color, backPage);
 
-    $('#minColorLabel')[0].innerHTML = '<mark>Minimum color metric</mark> ' + Math.round(min_color * 1000) / 1000;
-    $('#maxColorLabel')[0].innerHTML = '<mark>Maximum color metris</mark> ' + Math.round(max_color * 1000) / 1000;
-    $('#minShapeLabel')[0].innerHTML = '<mark>Minimum shape</mark> ' + Math.round(min_size * 1000) / 1000;
-    $('#maxShapeLabel')[0].innerHTML = '<mark>Maximum shape</mark> ' + Math.round(max_size * 1000) / 1000;
+    $('#minColorLabel').html(min_color.toPrecision(2));
+    $('#maxColorLabel').html(max_color.toPrecision(2));
+    $('#minShapeLabel').html(min_size.toPrecision(2));
+    $('#maxShapeLabel').html(max_size.toPrecision(2));
 
     // Prepare functions for Export Canvas as Image
     var canvas = $("#main_div_pse").find(".flot-base")[0];
     canvas.drawForImageExport = function () {
-                /* this canvas is drawn by FLOT library so resizing it directly has no influence;
-                 * therefore, its parent needs resizing before redrawing;
-                 * canvas.afterImageExport() is used to bring is back to original size */
-                 var canvasDiv = $("#main_div_pse");
-                 var oldHeight = canvasDiv.height();
-                 var scale = C2I_EXPORT_HEIGHT / oldHeight;
-                 canvas.oldStyle = canvasDiv.attr('style');
+        /* this canvas is drawn by FLOT library so resizing it directly has no influence;
+         * therefore, its parent needs resizing before redrawing;
+         * canvas.afterImageExport() is used to bring is back to original size */
+         var canvasDiv = $("#main_div_pse");
+         var oldHeight = canvasDiv.height();
+         var scale = C2I_EXPORT_HEIGHT / oldHeight;
+         canvas.oldStyle = canvasDiv.attr('style');
 
-                 canvasDiv.css("display", "inline-block");
-                 canvasDiv.width(canvasDiv.width() * scale);
-                 canvasDiv.height(oldHeight * scale);
-                 redrawPlot('main_div_pse');
+         canvasDiv.css("display", "inline-block");
+         canvasDiv.width(canvasDiv.width() * scale);
+         canvasDiv.height(oldHeight * scale);
+         redrawPlot('main_div_pse');
     };
     canvas.afterImageExport = function() {
-                // bring it back to original size and redraw
-                var canvasDiv = $("#main_div_pse");
-                canvasDiv.attr('style', canvas.oldStyle);
-                redrawPlot('main_div_pse');
+        // bring it back to original size and redraw
+        var canvasDiv = $("#main_div_pse");
+        canvasDiv.attr('style', canvas.oldStyle);
+        redrawPlot('main_div_pse');
     };
 
     if (hasStartedOperations) {
@@ -219,14 +215,15 @@ function PSE_mainDraw(parametersCanvasId, backPage, groupGID) {
     }
 
     doAjaxCall({
-            type: "POST",
-            url: url,
-            success: function(r) { 
-                    $('#' + parametersCanvasId).html(r);
-                },
-            error: function() {
-                displayMessage("Could not refresh with the new metrics.", "errorMessage");
-            }});
+        type: "POST",
+        url: url,
+        success: function(r) {
+            $('#' + parametersCanvasId).html(r);
+        },
+        error: function() {
+            displayMessage("Could not refresh with the new metrics.", "errorMessage");
+        }
+    });
 }
 
 
@@ -261,7 +258,6 @@ var currentFigure = null;
  * Do the actual resize on currentFigure global var, and a given width and height.
  */
 function resizePlot(width, height) {
-
     if (currentFigure != null) {
         MPLH5_resize = currentFigure;
         do_resize(currentFigure, width, height);
@@ -273,7 +269,6 @@ function resizePlot(width, height) {
  * Store all needed data as js variables so we can use later on.
  */
 function initISOData(metric, figDict, servURL) {
-
     figuresDict = $.parseJSON(figDict);
     serverURL = servURL;
     currentFigure = figuresDict[metric];
@@ -286,7 +281,6 @@ function initISOData(metric, figDict, servURL) {
  * On plot change update metric and do any required changes like resize on new selected plot.
  */
 function updateMetric(selectComponent) {
-
     var newMetric = $(selectComponent).find(':selected').val();
     showMetric(newMetric);
     var pseElem = $('#section-pse');
@@ -299,7 +293,6 @@ function updateMetric(selectComponent) {
  * Update html to show the new metric. Also connect to backend mplh5 for this new image.
  */
 function showMetric(newMetric) {
-
     for (var key in figuresDict) {
         $('#' + key).hide()
             .find('canvas').each(function () {
@@ -318,7 +311,6 @@ function showMetric(newMetric) {
  * This is the callback that will get evaluated by an onClick event on the canvas through the mplh5 backend.
  */
 function clickedDatatype(datatypeGid) {
-
     displayNodeDetails(datatypeGid);
 }
 
@@ -326,8 +318,7 @@ function clickedDatatype(datatypeGid) {
  * Update info on mouse over. This event is passed as a callback from the isocline python adapter.
  */
 function hoverPlot(id, x, y, val) {
-
-    document.getElementById('cursor_info_' + id).innerHTML = 'x axis:' + x + ' y axis:' + y + ' value:' + val;
+    $('#cursor_info_' + id).html('x axis:' + x + ' y axis:' + y + ' value:' + val);
 }
 
 
@@ -336,14 +327,15 @@ function Isocline_MainDraw(groupGID, divId, width, height) {
     height = Math.floor(height);
     $('#' + divId).html('');
     doAjaxCall({
-            type: "POST",
-            url: '/burst/explore/draw_isocline_exploration/' + groupGID + '/' + width + '/' + height,
-            success: function(r) {
-                    $('#' + divId).html(r);
-                },
-            error: function() {
-                displayMessage("Could not refresh with the new metrics.", "errorMessage");
-    }});
+        type: "POST",
+        url: '/burst/explore/draw_isocline_exploration/' + groupGID + '/' + width + '/' + height,
+        success: function(r) {
+            $('#' + divId).html(r);
+        },
+        error: function() {
+            displayMessage("Could not refresh with the new metrics.", "errorMessage");
+        }
+    });
 }
 
 
