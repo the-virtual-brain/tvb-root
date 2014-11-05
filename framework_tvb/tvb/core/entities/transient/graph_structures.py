@@ -210,7 +210,7 @@ class GraphComponent():
 class FullGraphStructure():
     """
     This class contains information for the entire graph to be displayed in UI.
-    It holds a list of GraphBranch instances (e.g. multiple UPLOAD ops).
+    It holds a list of GraphComponent instances (e.g. multiple UPLOAD ops).
     """
 
     graph_components = []
@@ -218,8 +218,8 @@ class FullGraphStructure():
 
     def __init__(self, components):
         self.graph_components = components
-        self._fill_shape_size()
-        self._fill_all_graph_adjiacences()
+        self.fill_shape_size()
+        self.fill_all_graph_adjiacences()
 
 
     def prepare_for_json(self):
@@ -243,7 +243,7 @@ class FullGraphStructure():
         return result_to_serialize
 
 
-    def _fill_all_graph_adjiacences(self):
+    def fill_all_graph_adjiacences(self):
 
         for branch in self.graph_components:
             parent_ops_gids = self._get_nodes_gids(branch.operation_parent)
@@ -276,7 +276,7 @@ class FullGraphStructure():
                 node.adjacencies = adjacencies
 
 
-    def _fill_shape_size(self):
+    def fill_shape_size(self):
         """
         Sets the correct size for each node from this graph.
         """

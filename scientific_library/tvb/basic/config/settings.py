@@ -232,9 +232,10 @@ class WebSettings(object):
                                              'tools.encode.encoding': 'utf-8',
                                              'tools.decode.on': True,
                                              'tools.gzip.on': True,
+                                             # 'tools.gzip.mime_types': ['text/*'],
                                              'tools.sessions.on': True,
                                              'tools.sessions.storage_type': 'ram',
-                                             'tools.sessions.timeout': 6000,  # 100 hours
+                                             'tools.sessions.timeout': 600,  # 10 hours
                                              'response.timeout': 1000000,
                                              'tools.sessions.locking': 'explicit',
                                              'tools.upload.on': True,    # Tool to check upload content size
