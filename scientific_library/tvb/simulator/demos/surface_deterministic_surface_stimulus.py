@@ -71,7 +71,7 @@ grey_matter = surfaces.LocalConnectivity(equation=equations.Gaussian(),
 grey_matter.equation.parameters['sigma'] = 10.0
 grey_matter.equation.parameters['amp'] = 1.0
 
-default_cortex = surfaces.Cortex.from_file()
+default_cortex = surfaces.Cortex.from_file(eeg_projection_file="surface_reg_13_eeg_62.mat")
 default_cortex.local_connectivity = grey_matter
 default_cortex.coupling_strength = local_coupling_strength
 

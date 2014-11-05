@@ -65,9 +65,8 @@ mon_eeg = monitors.EEG(period=2 ** -2)
 #Bundle them
 what_to_watch = (mon_tavg, mon_savg, mon_eeg)
 
-#Initialise a surface
-default_cortex = surfaces.Cortex.from_file()
-default_cortex.local_connectivity = surfaces.LocalConnectivity(load_default=True)
+#Initialise a surface fully loaded
+default_cortex = surfaces.Cortex(load_default=True)
 
 #Initialise Simulator -- Model, Connectivity, Integrator, Monitors, and surface.
 sim = simulator.Simulator(model=rfhn, connectivity=white_matter,

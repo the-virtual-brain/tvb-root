@@ -42,8 +42,6 @@ import numpy
 from tvb.datatypes import surfaces_scientific
 from tvb.datatypes import surfaces_framework
 from tvb.datatypes import surfaces_data
-from tvb.basic.traits import exceptions
-from tvb.basic.profile import TvbProfile
 from tvb.basic.readers import FileReader, ZipReader, try_get_absolute_path
 
 
@@ -397,7 +395,7 @@ class Cortex(surfaces_scientific.CortexScientific, surfaces_framework.CortexFram
             if result.region_mapping is None:
                 result.region_mapping_data = RegionMapping.from_file()
 
-            if result.eeg_projection is None:
+            if not result.eeg_projection:
                 result.eeg_projection = Cortex.from_file_projection_array()
 
             if result.local_connectivity is None:

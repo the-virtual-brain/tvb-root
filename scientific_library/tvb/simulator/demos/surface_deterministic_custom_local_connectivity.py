@@ -40,7 +40,6 @@ integration.
 
 """
 
-from pygments.styles import default
 from tvb.simulator.lab import *
 
 ##----------------------------------------------------------------------------##
@@ -76,7 +75,7 @@ grey_matter.equation.parameters['amp'] = 1.0
 local_coupling_strength = numpy.array([-0.0115])
 
 #finally, create a default cortex that includes the custom local connectivity.
-default_cortex = surfaces.Cortex.from_file()
+default_cortex = surfaces.Cortex.from_file(eeg_projection_file="surface_reg_13_eeg_62.mat")
 default_cortex.local_connectivity = grey_matter
 default_cortex.coupling_strength = local_coupling_strength
 

@@ -73,7 +73,7 @@ what_to_watch = (mon_tavg, mon_savg, mon_eeg, mon_seeg)
 
 #Initialise a surface
 local_coupling_strength = numpy.array([2 ** -10])
-default_cortex = surfaces.Cortex.from_file()
+default_cortex = surfaces.Cortex(load_default=True)
 default_cortex.coupling_strength = local_coupling_strength
 
 #Initialise Simulator -- Model, Connectivity, Integrator, Monitors, and surface.
