@@ -1,17 +1,19 @@
 ======================================================================================================================================
  The Virtual Brain (TVB)
- Version: 1.3 - build 6***
- Release Date: Nov 2014
+ Version: 1.3 - build 6850
+ Release Date: 10 Nov 2014
  Description: Reviewed and improved usability
 ======================================================================================================================================
+    * About 40 tasks on usability, 34 improvement issues and 30 bugs fixed
+    * Improved speed on surface level simulations with a factor of 8
+    * A new Phase-Plane page
     * Changed mechanism to upload tvb-default data
     * New importers for NetworkX and MAT format
     * Allow import of Surfaces with problems (holes, pinched edges) but filter them out from simulations
-    * A new phase-plane page
-    * TimeSeries Volume visualizer
+    * TimeSeries Volume visualizer completed
     * Improved channel selection in visualizers
     * Static surface viewers can now display parcellation as well
-    * Small updates in documentation
+    * Updates in documentation
 
 ======================================================================================================================================
  The Virtual Brain (TVB)
