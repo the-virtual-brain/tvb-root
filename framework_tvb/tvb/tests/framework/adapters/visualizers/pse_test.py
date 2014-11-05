@@ -64,9 +64,9 @@ class PSETest(TransactionalTestCase):
         viewer = DiscretePSEAdapter()
         result = viewer.launch(self.group)
 
-        expected_keys = ['status', 'size_metric', 'series_array', 'min_shape_size_weight', 'min_color', 'data',
-                         'max_shape_size_weight', 'max_color', 'mainContent', 'labels_y', 'labels_x', 'isAdapter',
-                         'has_started_ops', 'datatype_group_gid', 'datatypes_dict', 'color_metric', 'size_metric']
+        expected_keys = ['status', 'size_metric', 'series_array', 'min_shape_size', 'min_color', 'data',
+                         'max_shape_size', 'max_color', 'mainContent', 'labels_y', 'labels_x', 'isAdapter',
+                         'has_started_ops', 'datatype_group_gid', 'datatypes_dict', 'color_metric']
         for key in expected_keys:
             self.assertTrue(key in result)
         self.assertEqual(self.group.gid, result["datatype_group_gid"])
