@@ -5,7 +5,8 @@
  Description: Reviewed and improved usability
 ======================================================================================================================================
     * About 40 tasks on usability, 34 improvement issues and 30 bugs fixed
-    * Improved speed on surface level simulations with a factor of 8
+    * Surface level simulations are between 2 and 8 times faster. Speedup dependent on model and simulation length.
+      Longer simulations and the Generic2dOscillator have improved the most.
     * A new Phase-Plane page
     * Changed mechanism to upload tvb-default data
     * New importers for NetworkX and MAT format

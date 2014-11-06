@@ -430,7 +430,7 @@ class Simulator(core.Type):
             local_coupling = 0.0
         else:
             region_average = self.surface.region_average
-            region_history = npdot(region_average, history) 
+            region_history = npdot(region_average, history) # this may be very expensive ~60sec for epileptor (many states and modes ...)
             region_history = region_history.transpose((1, 2, 0, 3))
             if self.surface.coupling_strength.size == 1:
                 local_coupling = (self.surface.coupling_strength[0] *

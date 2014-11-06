@@ -219,8 +219,8 @@ class Model(core.Type):
         nsig = numpy.zeros(nvar)
         loc = numpy.zeros(nvar)
 
-        for tpt in range(tpts):
-            for var in range(nvar):
+        for tpt in xrange(tpts):
+            for var in xrange(nvar):
                 loc[var] = self.state_variable_range[self.state_variables[var]].mean()
                 nsig[var] = (self.state_variable_range[self.state_variables[var]][1] -
                              self.state_variable_range[self.state_variables[var]][0]) / 2.0
@@ -231,11 +231,12 @@ class Model(core.Type):
                 hi = self.state_variable_range[self.state_variables[var]][1]
                 lo_bound, up_bound = (lo - loc[var]) / nsig[var], (hi - loc[var]) / nsig[var]
 
-                noise[tpt, var, :] = self.noise.generate(history_shape, truncate=True,
+                noise[tpt, var, :] = self.noise.generate(history_shape, truncate=True,    # this is expensive for many state vars and long tpts
                                                          lo=lo_bound, hi=up_bound)
 
-        for var in range(nvar):
-                # TODO: Hackery, validate me...-noise.mean(axis=0) ... self.noise.nsig
+        for var in xrange(nvar):
+            # TODO: Hackery, validate me...-noise.mean(axis=0) ... self.noise.nsig
+            # perf hint: cumsum is expensive
             initial_conditions[:, var, :] = numpy.sqrt(2.0 * nsig[var]) * numpy.cumsum(noise[:, var, :],axis=0) + loc[var]
 
         return initial_conditions
@@ -1090,7 +1091,7 @@ class ReducedSetFitzHughNagumo(Model):
 
         dbeta = (alpha - self.b * beta + self.n_i) / self.tau
 
-        derivative = numpy.array([dxi, deta, dalpha, dbeta])
+        derivative = numpy.array([dxi, deta, dalpha, dbeta])  # todo: avoid this allocation
         # import pdb; pdb.set_trace()
         return derivative
 
@@ -1567,7 +1568,7 @@ class ReducedSetHindmarshRose(Model):
 
         dgamma = self.r * self.s * alpha - self.r * gamma - self.n_i
 
-        derivative = numpy.array([dxi, deta, dtau, dalpha, dbeta, dgamma])
+        derivative = numpy.array([dxi, deta, dtau, dalpha, dbeta, dgamma])  #todo: remove this allocation
 
         return derivative
 
@@ -2053,6 +2054,7 @@ class JansenRit(Model):
         #p = p_min + (p_max - p_min) * numpy.random.uniform()
 
         #NOTE: We were getting numerical overflow in the three exp()s below...
+        # todo: factor out common subexpressions: python is not optimizing
         temp       = self.r * (self.v0 - (y1 - y2))
         sigm_y1_y2 = numpy.where(temp > magic_exp_number,2.0 * self.nu_max / (1.0 + numpy.exp(temp)), 2.0 * self.nu_max / (1.0 + numpy.exp(temp)))
 
@@ -2069,6 +2071,7 @@ class JansenRit(Model):
         dy2 = y5
         dy5 = self.B * self.b * (self.a_4 * self.J * sigm_y0_3) - 2.0 * self.b * y5 - self.b ** 2 * y2
 
+        # todo avoid this allocation by pre-allocating
         derivative = numpy.array([dy0, dy1, dy2, dy3, dy4, dy5])
 
         return derivative
@@ -2460,7 +2463,7 @@ class ZetterbergJansen(Model):
         dv6 = y2 - y3
         # inhibitory cells
         dv7 = y4 - y5
-
+        #todo: remove this massive reallocation
         derivative = numpy.array([dv1, dy1, dv2, dy2, dv3, dy3, dv4, dy4, dv5, dy5, dv6, dv7])
 
         return derivative
@@ -3376,7 +3379,7 @@ class LarterBreakspear(Model):
 
         dZ = (self.b * (self.ani * self.Iext + self.aei * V * QV))
 
-        derivative = numpy.array([dV, dW, dZ])
+        derivative = numpy.array([dV, dW, dZ])  # todo: avoid allocation
 
         return derivative
 
@@ -3823,6 +3826,7 @@ class Hopfield(Model):
         x = state_variables[0, :]
         dx = (- x + coupling[0]) / self.taux
 
+        # todo: display dependent hack
         # We return 2 arrays here, because we have 2 possible state Variable, even if not dynamic
         # Otherwise the phase-plane display will fail.
         derivative = numpy.array([dx, dx])
@@ -4127,7 +4131,7 @@ class Epileptor(Model):
         # filter
         ydot5 = -0.01*(y[5] - 0.1*y[0])
 
-        #
+        #todo: expensive allocation: preallocate ydot
         ydot = numpy.array([ydot0, ydot1, ydot2, ydot3, ydot4, ydot5])
 
         return ydot
