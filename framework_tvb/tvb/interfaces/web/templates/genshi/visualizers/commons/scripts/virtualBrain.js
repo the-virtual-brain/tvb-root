@@ -24,10 +24,9 @@
  */
 
 /* globals gl, displayMessage, HLPR_readJSONfromFile, readDataPageURL,
-    GL_handleKeyDown, GL_handleKeyUp, NAV_customMouseUp, GL_handleMouseMove, GL_handleMouseWeel,
-    handleXLocale, handleYLocale, handleZLocale,
+    GL_handleKeyDown, GL_handleKeyUp, GL_handleMouseMove, GL_handleMouseWeel,
     initGL, updateGLCanvasSize, LEG_updateLegendVerticesBuffers,
-    basicInitShaders, basicInitSurfaceLighting, GL_initColorPickFrameBuffer, NAV_initBrainNavigatorBuffers,
+    basicInitShaders, basicInitSurfaceLighting, GL_initColorPickFrameBuffer,
     ColSch_loadInitialColorScheme, ColSchGetTheme, LEG_generateLegendBuffers, LEG_initMinMax
     */
 
@@ -95,8 +94,6 @@ var ACTIVITY_FRAMES_IN_TIME_LINE_AT_MAX_SPEED = 32;
 var sliderSel = false;
 
 var isPreview = false;
-
-var pointPosition = 75.0;
 
 var brainBuffers = [];
 var brainLinesBuffers = [];
@@ -169,6 +166,9 @@ var lightSettings = defaultLightSettings;
 var VS_pickedIndex = -1;
 
 
+var VB_BrainNavigator;
+
+
 function VS_init_hemisphere_mask(hemisphere_chunk_mask){
     VS_hemisphere_chunk_mask = hemisphere_chunk_mask;
     if (hemisphere_chunk_mask != null){
@@ -223,8 +223,8 @@ function VS_StartPortletPreview(baseDatatypeURL, urlVerticesList, urlTrianglesLi
     canvas.onkeydown = GL_handleKeyDown;
     canvas.onkeyup = GL_handleKeyUp;
     canvas.onmousedown = customMouseDown;
-    canvas.oncontextmenu = function(){return false;};
-    $(document).on('mouseup', NAV_customMouseUp);
+    canvas.onmouseup = customMouseUp;
+    canvas.oncontextmenu = function() { return false;};
     $(document).on('mousemove', GL_handleMouseMove);
 
     // We use drawScene instead of tick because tick's performance is worse.
@@ -406,7 +406,6 @@ function _initViewerGL(canvas, urlVerticesList, urlNormalsList, urlTrianglesList
     customInitGL(canvas);
     GL_initColorPickFrameBuffer();
     initShaders();
-    NAV_initBrainNavigatorBuffers();
 
     if(VS_showLegend){
         LEG_initMinMax(activityMin, activityMax);
@@ -433,6 +432,8 @@ function _initViewerGL(canvas, urlVerticesList, urlNormalsList, urlTrianglesList
         shelfBuffers = initBuffers(shelfObject[0], shelfObject[1], shelfObject[2], false, false, true);
     }
 
+    VB_BrainNavigator = new NAV_BrainNavigator(isOneToOneMapping, brainBuffers, measurePoints, measurePointsLabels);
+
     var theme = ColSchGetTheme().surfaceViewer;
     gl.clearColor(theme.backgroundColor[0], theme.backgroundColor[1], theme.backgroundColor[2], theme.backgroundColor[3]);
     gl.clearDepth(1.0);
@@ -446,8 +447,8 @@ function _bindEvents(canvas){
     canvas.onkeydown = GL_handleKeyDown;
     canvas.onkeyup = GL_handleKeyUp;
     canvas.onmousedown = customMouseDown;
+    canvas.onmouseup = customMouseUp;
     $(canvas).on('contextmenu', _onContextMenu);
-    document.onmouseup = NAV_customMouseUp;
     document.onmousemove = GL_handleMouseMove;
 
     $(canvas).mousewheel(function(event, delta) {
@@ -457,11 +458,17 @@ function _bindEvents(canvas){
 
     if (!isDoubleView) {
         var canvasX = document.getElementById('brain-x');
-        if (canvasX) { canvasX.onmousedown = handleXLocale; }
+        if (canvasX) {
+            canvasX.onmousedown = function (event) { VB_BrainNavigator.moveInXSection(event)};
+        }
         var canvasY = document.getElementById('brain-y');
-        if (canvasY) { canvasY.onmousedown = handleYLocale; }
+        if (canvasY) {
+            canvasY.onmousedown = function (event) { VB_BrainNavigator.moveInYSection(event)};
+        }
         var canvasZ = document.getElementById('brain-z');
-        if (canvasZ) { canvasZ.onmousedown = handleZLocale; }
+        if (canvasZ) {
+            canvasZ.onmousedown = function (event) { VB_BrainNavigator.moveInZSection(event)};
+        }
     }
 }
 
@@ -667,12 +674,16 @@ var doPick = false;
 function customMouseDown(event) {
     GL_handleMouseDown(event, $("#" + BRAIN_CANVAS_ID));
     $('#contextMenuDiv').hide();
-    NAV_inTimeRefresh = false;
+    VB_BrainNavigator.temporaryDisableInTimeRefresh();
     if (displayMeasureNodes) {
         doPick = true;
     }
 }
 
+function customMouseUp(event) {
+    GL_handleMouseUp(event);
+    VB_BrainNavigator.endTemporaryDisableInTimeRefresh();
+}
 
 /////////////////////////////////////////~~~~~~~~END MOUSE RELATED CODE~~~~~~~~~~~//////////////////////////////////
 
@@ -830,7 +841,7 @@ function computeAlphas(vertices, measurePoints) {
         var currentAlphasIndices = [];
         for (var j = 0; j < vertices[i].length/3; j++) {
             var currentVertex = vertices[i].slice(j * 3, (j + 1) * 3);
-            var closestPosition = _findClosestPosition(currentVertex, measurePoints);
+            var closestPosition = NAV_BrainNavigator.findClosestPosition(currentVertex, measurePoints);
             currentAlphas.push(1, 0);
             currentAlphasIndices.push(closestPosition, 0, 0);
         }
@@ -1197,13 +1208,13 @@ function drawScene() {
         if (isFaceToDisplay) {
             var faceDrawMode = isInternalSensorView ? drawingMode : gl.TRIANGLES;
             mvPushMatrix();
-            mvTranslate([NAV_navigatorX, NAV_navigatorY, NAV_navigatorZ]);
+            mvTranslate(VB_BrainNavigator.getPosition());
             drawBuffers(faceDrawMode, shelfBuffers, null, true, gl.FRONT);
             mvPopMatrix();
         }
 
-        if(drawNavigator){
-            NAV_draw_navigator();
+        if (drawNavigator) {
+            VB_BrainNavigator.drawNavigator();
         }
 
     } else {
