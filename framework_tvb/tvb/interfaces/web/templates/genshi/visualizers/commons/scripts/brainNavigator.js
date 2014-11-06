@@ -112,49 +112,53 @@ function NAV_customMouseUp(event) {
 
 function NAV_draw_navigator() {
 	if (_redrawSectionView || NAV_inTimeRefresh) {
-        drawSectionView('x', false);
-        drawSectionView('y', false);
-        drawSectionView('z', false);
+        drawSectionView('x');
+        drawSectionView('y');
+        drawSectionView('z');
         _redrawSectionView = false;
     }
+
+    mvPushMatrix();
+    mvTranslate([NAV_navigatorX, NAV_navigatorY, NAV_navigatorZ]);
 	drawBuffers(gl.TRIANGLES, [NAV_navigatorBuffers], null, true);
+    mvPopMatrix();
 }
 
 ////////////////////////////////////~~~~~~~~START BRAIN SECTION VIEW RELATED CODE~~~~~~~~~~~///////////////////////////
 
-function drawSectionView(axis, first) {
+function drawSectionView(axis) {
     var sectionViewRotationMatrix = Matrix.I(4);
     var sectionValue;
-    if (axis != undefined) {
-        if (axis == 'x') {
-            sectionViewRotationMatrix = createRotationMatrix(90, [0, 1, 0]).x(createRotationMatrix(270, [1, 0, 0]));
-            sectionValue = NAV_navigatorX;
-        }
-        if (axis == 'y') {
-            sectionViewRotationMatrix = createRotationMatrix(90, [1, 0, 0]).x(createRotationMatrix(180, [1, 0, 0]));
-            sectionValue = NAV_navigatorY;
-        }
-        if (axis == 'z') {
-            sectionViewRotationMatrix = createRotationMatrix(180, [0, 1, 0]).x(Matrix.I(4));
-            sectionValue = NAV_navigatorZ;
-        }
+    if (axis == 'x') {
+        sectionViewRotationMatrix = createRotationMatrix(90, [0, 1, 0]).x(createRotationMatrix(270, [1, 0, 0]));
+        sectionValue = NAV_navigatorX;
     }
-    gl.viewport(0, 0, gl.viewportWidth, gl.viewportHeight);
+    if (axis == 'y') {
+        sectionViewRotationMatrix = createRotationMatrix(90, [1, 0, 0]).x(createRotationMatrix(180, [1, 0, 0]));
+        sectionValue = NAV_navigatorY;
+    }
+    if (axis == 'z') {
+        sectionViewRotationMatrix = createRotationMatrix(180, [0, 1, 0]).x(Matrix.I(4));
+        sectionValue = NAV_navigatorZ;
+    }
+
     gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
 
-    perspective(fov, gl.viewportWidth / gl.viewportHeight, 250 + sectionValue - 1, 250 + sectionValue);
+    perspective(45, gl.viewportWidth / gl.viewportHeight, 250 + sectionValue - 1, 250 + sectionValue);
 
+    // We do not care about current scene or camera rotations,
+    // we just want to draw the brain around the navigator's position
     mvPushMatrix();
-    loadIdentity(); //sure bout this?
+    loadIdentity();
     mvTranslate([0.0, -5.0, -250.0]);
     multMatrix(sectionViewRotationMatrix);
     drawBuffers(gl.TRIANGLES, brainBuffers);
     mvPopMatrix();
-    displaySection(BRAIN_CANVAS_ID, 'brain-' + axis, axis, first);
+
+    displaySection(BRAIN_CANVAS_ID, 'brain-' + axis, axis);
 
     var brainAreaLabel = NAV_getAreaLabel([NAV_navigatorX, NAV_navigatorY, NAV_navigatorZ], measurePoints, measurePointsLabels);
     $(".brainArea").text("Brain area: " + brainAreaLabel);
-    //gl.bindFramebuffer(gl.FRAMEBUFFER, null);
 }
 
 ////////////////////////////////////~~~~~~~~END BRAIN SECTION VIEW RELATED CODE~~~~~~~~~~~/////////////////////////////
@@ -279,21 +283,22 @@ function _handleAxePick(event, axe) {
        GL_mouseXRelToCanvasImg = event.layerX;
        GL_mouseYRelToCanvasImg = event.layerY;
     }
-    if ((event.originalTarget != undefined && event.originalTarget.nodeName == 'IMG') || (
-    	event.srcElement != undefined && event.srcElement.nodeName == 'IMG')) {
+
+    if (event.originalTarget && event.originalTarget.nodeName == 'IMG' || event.srcElement && event.srcElement.nodeName == 'IMG') {
+
         var glCanvasElem = $('#GLcanvas');
         GL_mouseXRelToCanvas = (GL_mouseXRelToCanvasImg * glCanvasElem.width()) / 250.0;
         GL_mouseYRelToCanvas = (GL_mouseYRelToCanvasImg * glCanvasElem.height()) / 172.0;
 
     	perspective(45, gl.viewportWidth / gl.viewportHeight, near, 800.0);
-
-        mvPushMatrix();
-
         basicAddLight(lightSettings);
 
+        mvPushMatrix();
+        loadIdentity();
         mvRotate(180, [0, 0, 1]);
+        mvTranslate([0.0, -5.0, -250.0]);
 
-        var sectionViewRotationMatrix, result;
+        var sectionViewRotationMatrix, result, fov = 45;
         if (axe == 'x') {
             sectionViewRotationMatrix = createRotationMatrix(90, [0, 1, 0]).x(createRotationMatrix(270, [1, 0, 0]));
             multMatrix(sectionViewRotationMatrix);
@@ -313,10 +318,10 @@ function _handleAxePick(event, axe) {
             NAV_navigatorX = -result[0];
             NAV_navigatorY = result[1];
         }
-		_redrawSectionView = true;
-        mvTranslate([NAV_navigatorX, NAV_navigatorY, NAV_navigatorZ]);
-		NAV_draw_navigator();
         mvPopMatrix();
+
+		_redrawSectionView = true;
+		NAV_draw_navigator();
     }
 }
 

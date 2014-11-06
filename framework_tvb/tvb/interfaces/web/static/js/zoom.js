@@ -44,7 +44,6 @@ function zoom(sourceCanvasId, destinationDivId, zoomFactor) {
     img.style.top = 0 + 'px';
     img.style.backgroundColor = 'white';
     img.style.cursor = 'move';
-    //img.style.zIndex = 99;
     img.src = dataUrl;
 
     document.getElementById(destinationDivId).appendChild(img);
@@ -59,7 +58,7 @@ function removeElementOnDbClick(elementId) {
     });
 }
 
-function displaySection(sourceCanvasId, destinationDivId, axis, firstTime) {
+function displaySection(sourceCanvasId, destinationDivId, axis) {
     var sourceCanvas = document.getElementById(sourceCanvasId);
     var dataUrl = sourceCanvas.toDataURL();
     var imgId = 'zoomedImg' + '_' + axis;
@@ -77,11 +76,8 @@ function displaySection(sourceCanvasId, destinationDivId, axis, firstTime) {
     img.style.top = 0 + 'px';
     img.style.float = "right";
     img.style.position = "absolute";
-    if (firstTime) {
-        img.style.backgroundColor = 'white';
-    } else {
-        img.style.backgroundColor = 'black';
-    }
+    img.style.backgroundColor = 'black';
+
     img.src = dataUrl;
     if (document.getElementById(destinationDivId)) {
     	document.getElementById(destinationDivId).appendChild(img);

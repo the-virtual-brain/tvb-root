@@ -162,7 +162,6 @@ var VS_selectedRegions = [];
  * camera settings
  */
 var near = 0.1;
-var fov = 45;
 
 var lightSettings = defaultLightSettings;
 
@@ -1204,10 +1203,7 @@ function drawScene() {
         }
 
         if(drawNavigator){
-            mvPushMatrix();
-            mvTranslate([NAV_navigatorX, NAV_navigatorY, NAV_navigatorZ]);
             NAV_draw_navigator();
-            mvPopMatrix();
         }
 
     } else {

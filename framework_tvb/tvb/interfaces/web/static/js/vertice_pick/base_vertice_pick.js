@@ -20,7 +20,6 @@
 
 var BASE_PICK_doPick = false;
 var near = 0.1;
-var fov = 45;
 
 var TRIANGLE_pickedIndex = -1;
 var VERTEX_pickedIndex = -1;
@@ -137,7 +136,7 @@ function drawScene() {
 function BASE_PICK_drawBrain() {
     var brainBuffers, noOfUnloadedBuffers;
 
-    if (BASE_PICK_doPick){
+    if (BASE_PICK_doPick) {
         brainBuffers = BASE_PICK_brainPickingBuffers;
         noOfUnloadedBuffers = noOfUnloadedBrainPickingBuffers;
     }else{
