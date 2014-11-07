@@ -82,6 +82,7 @@ PY2APP_OPTIONS = {'iconfile': 'build_resources/icon.icns',
                   'frameworks': ['Tcl', 'Tk'],
                   'resources': [],
                   'excludes': PY2APP_EXCLUDES,
+                  'argv_emulation': True,
                   'strip': True,  # TRUE is the default
                   'optimize': '0'}
 
