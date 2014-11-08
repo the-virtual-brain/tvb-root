@@ -31,6 +31,7 @@
 """
 Change of DB structure from TVB version 1.2.2 to 1.2.3
 
+.. moduleauthor:: Mihai Andrei <mihai.andrei@codemart.ro>
 .. moduleauthor:: Lia Domide <lia.domide@codemart.ro>
 
 """
@@ -61,7 +62,7 @@ def upgrade(migrate_engine):
     create_column(COLUMN_N3, table)
 
     session = SA_SESSIONMAKER()
-    session.execute(text("""UPDATE OPERATIONS SET status='5-FINISHED' WHERE status = '4-FINISHED' """))
+    session.execute(text("""UPDATE "OPERATIONS" SET status='5-FINISHED' WHERE status = '4-FINISHED' """))
     session.commit()
     session.close()
 
@@ -76,8 +77,8 @@ def downgrade(migrate_engine):
     drop_column(COLUMN_N3, table)
 
     session = SA_SESSIONMAKER()
-    session.execute(text("""UPDATE OPERATIONS SET status='4-FINISHED' WHERE status = '5-FINISHED' """))
-    session.execute(text("""UPDATE OPERATIONS SET status='3-STARTED' WHERE status = '4-PENDING' """))
+    session.execute(text("""UPDATE "OPERATIONS" SET status='4-FINISHED' WHERE status = '5-FINISHED' """))
+    session.execute(text("""UPDATE "OPERATIONS" SET status='3-STARTED' WHERE status = '4-PENDING' """))
     session.commit()
     session.close()
 
