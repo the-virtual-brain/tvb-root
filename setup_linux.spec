@@ -103,9 +103,9 @@ cd exe
     _create_file_with_tvb_paths('distribution', './' + python_exe + ' -m tvb_bin.app $@')
     _create_file_with_tvb_paths('contributor_setup', './' + python_exe + ' -m tvb_bin.git_setup $1')
 
-    _create_script_file('tvb_start', 'source distribution.sh start')
-    _create_script_file('tvb_clean', 'source distribution.sh clean')
-    _create_script_file('tvb_stop', 'source distribution.sh stop')
+    _create_script_file('tvb_start', 'sh distribution.sh start')
+    _create_script_file('tvb_clean', 'sh distribution.sh clean')
+    _create_script_file('tvb_stop', 'sh distribution.sh stop')
 
     
     if arg_cluster in os.environ:
