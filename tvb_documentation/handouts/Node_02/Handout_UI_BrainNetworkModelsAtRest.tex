@@ -156,14 +156,10 @@ definining a synapse efficacy like metric (weights) and the axonal delays (due t
 
 \section{Objectives}\label{sec:objectives}
 
-\newthought{This tutorial presents} the basic anatomy of a large-scale brain network model, that is, the building blocks required to run whole brian simulations using The
-Virtual Brain's (TVB's) graphical interface. You are not expected to launch all the simulations. However, following these steps you should
-be able to reproduce the results from the simulations in the project Building 
-Your Own Brain Network Model At Rest. Describing the building blocks of a brain network model
-Learn about the basic principles and assumptions underlying a brain network model, recent studies using different local models, cortical connectivity and dynamical units. Understand how to approximate neural fields. Make sure you are working with a version of TVB > 1.2. If you are using version 1.2 or older version there might be some features that are not available. Also it is possible that you cannot import the projects into TVB. 
+\newthought{This tutorial presents} the basic anatomy of a large-scale brain network model, that is, the building blocks required to run whole brian simulations using The Virtual Brain's (TVB's) graphical interface. You are not expected to launch all the simulations. However, following these steps you should be able to reproduce the results from the simulations in the project Brain Network Model At Rest. You will learn about the basic principles and assumptions underlying a brain network model, recent studies using different local models and cortical connectivity. We will also give you an overview on how to approximate neural fields. Make sure you are working with at least TVB 1.3. If you are using version 1.2.X or older version there might be some features that are not available. Also it is possible that you cannot import the projects we have shared with you into TVB. 
 
 
-\section{Project:  Session\_I\_BuildingYourOwnBrainNetworkModelAtRest}\label{sec:project_data}
+\section{Project:  Session\_I\_BrainNetworkModelAtRest}\label{sec:project_data}
 
 \begin{margintable}
   \centering
@@ -213,8 +209,8 @@ Learn about the basic principles and assumptions underlying a brain network mode
 \subsection{Building A Discrete Brain Network Model}\label{sec:region_simulations}
 
 \newthought{A basic simulation} at the region level uses a coarse representation of the brain and consists of
-five main components, each of these components is a configurable object in
-TVB:
+five main components, each of these components is a configurable object in TVB:
+
 \begin{blah}
 \begin{itemize}
 \item \underline{Model} or \underline{Local population model}, which is, at its core, a set of differential equations describing the local neuronal dynamic;
@@ -231,9 +227,10 @@ TVB:
   \label{fig:fig}%
 \end{figure}
 
-In this example, \textit{AnatomyOfARegionSimulation\_a}, we will change the default parameters and configure some
-visualizers on the right column to have a quick idea of some properties of the
-simulated data.
+In this example, \textit{AnatomyOfARegionSimulation\_a}, we will change the
+default parameters and configure some visualizers on the right column to have
+a quick idea of some properties of the simulated data.
+
 \begin{simulation}
 \begin{enumerate}
 \item Go to the \textsc{simulator} page. (Fig.~\ref{fig:fig})
@@ -265,19 +262,19 @@ simulated data.
   \fontfamily{ppl}\selectfont
   \begin{tabular}{ll}
     \toprule
-    Model parameter & Value \\
+    Model parameter       & Value    \\
     \midrule
              $a$          &   1.05   \\
              $b$          &  -1.0    \\
-             $c$           &   0        \\
-             $d$           &   0.1    \\
-             $e$           &   0        \\
-             $f$            &   1/3    \\
-             $g$           &   1        \\
-             $I$            &   0        \\
-             $\alpha$   &   1        \\
-             $\beta$     &   0.2     \\
-             $\gamma$&  -1       \\
+             $c$          &   0      \\
+             $d$          &   0.1    \\
+             $e$          &   0      \\
+             $f$          &   1/3    \\
+             $g$          &   1      \\
+             $I$          &   0      \\
+             $\alpha$     &   1      \\
+             $\beta$      &   0.2    \\
+             $\gamma$     &  -1      \\
              $\tau$       &   1.25   \\
     \bottomrule
   \end{tabular}
@@ -315,9 +312,9 @@ data returned can become prohibitively large.}
     \toprule
     Window & Visualizer/Analyzer \\
     \midrule
-             top-left        &   Brain Viewer\\
-             top-right    &   Fourier Transform        \\
-             bottom   &   Wavelet Spectrogram \\
+             top-left        &   Brain Viewer             \\
+             top-right       &   Fourier Transform        \\
+             bottom          &   Wavelet Spectrogram      \\
     \bottomrule
   \end{tabular}
   \caption{Selected visualizers. It is possible to configure up to 12 different windows. }
@@ -337,12 +334,12 @@ simulation (see Fig. \ref{fig:time_series}) is a result of the imperfectly set i
 \end{figure}
  
 \begin{blah}
-The initial history (i.e., initial conditions) is
-merely set by default to be random walks within the general \underline{range of state-variable values} expected from the model. 
-As the current simulation is
-configured with fixed point dynamics, if we were to set the initial conditions
-exactly to the values corresponding to that fixed point there would be no such
-initial transient (we will see how to achieve that later on).
+The initial history (i.e., initial conditions), by default, is merely set to be
+random walks within the general \underline{range of state-variable values}
+expected from the model.  As the current simulation is configured with fixed
+point dynamics, if we were to set the initial conditions exactly to the values
+corresponding to that fixed point there would be no such initial transient (we
+will see how to achieve that later on).
 \end{blah}
 
 
@@ -387,11 +384,11 @@ oscillations.
 \end{figure}
 
 
-A frequent question is at which value of coupling strength this
-"bifurcation" occurs. Well, we can easily set up a parameter search by defining a
-range of values that will be explored. We'll see how to do this in the next section.
+A frequent question is at which value of coupling strength this "bifurcation"
+occurs. Well, we can easily set up a parameter search by defining a range of
+values that will be explored. We'll see how to do this in the next section.
 
- \newpage
+\newpage
 \subsection{Parameter Space Exploration (PSE)}\label{sec:pse}
 
 \newthought{TVB will launch a simulation} for
@@ -420,13 +417,19 @@ two dimensions.} The example is set up in \textit{AnatomyOfARegionSimulation\_ps
   \label{fig:pse_continuous}%
 \end{marginfigure}
 
-All the 150 simulations are presented as a discrete 2D map in \underline{Parameter Space Discrete} \sidenote{Each point represents a simulation. The size and the colour of the marker correspond to one of a few variance metrics implemented to have an idea of the network node and temporal variability.} (Fig. \ref{fig:pse_discrete}) or a continous pseudocolor map in \underline{Parameter Space Continous}\sidenote{The colour scale  corresponds to one of the variance metrics} (Fig. \ref{fig:pse_continuous}). 
+All the 150 simulations are presented as a discrete 2D map in
+\underline{Parameter Space Discrete} \sidenote{Each point represents a
+simulation. The size and the colour of the marker correspond to one of a few
+variance metrics implemented to have an idea of the network node and temporal
+variability.} (Fig. \ref{fig:pse_discrete}) or a continous pseudocolor map in
+\underline{Parameter Space Continous}\sidenote{The colour scale  corresponds
+to one of the variance metrics} (Fig. \ref{fig:pse_continuous}).
 
 
 
 
 \begin{blah}
- These results are those presented in \citep{Ghosh_2008} and \citep{Knock_2009}. 
+These results are those presented in \citep{Ghosh_2008} and \citep{Knock_2009}. 
 \end{blah}
 
 \subsection{Simulation continuation or Branching}\label{sec:results}
@@ -442,7 +445,10 @@ overcome this issue we have a couple of alternatives. First, we could narrow the
 \end{simulation}
 
 
-In this area there's a an interactive tool, the \underline{Phase Plane}, which allows you to understand the local dynamics, that is the dynamics of a single isolated node, by observing how the model parameters change its phase plane. (See Fig. \ref{fig:ppi}).
+In this area there's a an interactive tool, the \underline{Phase Plane}, which
+allows you to understand the local dynamics, that is the dynamics of a single
+isolated node, by observing how the model parameters change its phase plane.
+(See Fig. \ref{fig:ppi}).
 
 \begin{marginfigure}%
   \includegraphics[width=\linewidth]{Handout_UI_BuildingYourOwnBrainNetworkModel_PhasePlane}%
@@ -486,12 +492,13 @@ remain unchanged (e.g., the number of nodes, conduction speed, the recorded stat
 
 
 As a last point, we will show the basics of running a simulation driven by
-noise (i.e., using a stochastic integration scheme \sidenote{We can choose between \underline{Additive} and \underline{Multiplicative Noise} functions when defining
-the way noise enters our simulation. In the case of \underline{Multiplicative Noise} the
-function depends on the state of the system.}). Here we'll also use a region
-level simulation, but the considerations for surface simulations are the same.
-In a stochastic integration scheme \underline{Noise} enters through the integration
-scheme. 
+noise (i.e., using a stochastic integration scheme \sidenote{We can choose
+between \underline{Additive} and \underline{Multiplicative Noise} functions
+when defining the way noise enters our simulation. In the case of
+\underline{Multiplicative Noise} the function depends on the state of the
+system.}). Here we'll also use a region level simulation, but the
+considerations for surface simulations are the same. In a stochastic
+integration scheme \underline{Noise} enters through the integration scheme.
 
 \begin{blah}
 \begin{itemize}
@@ -509,19 +516,20 @@ nodes, thus emulating a very crude model of external inputs to the brain.
 \end{enumerate}
 \end{simulation}
 
-The \underline{Noise} functions are fed by a
-random process generated by a pseudo-random number generator (PRNG). The random
-processes used have Gaussian amplitude and can potentially be given a temporal
-correlation. The random process is defined using two
-parameters plus the seed of the PRNG. The two parameters are: $\mathbf{D}$ \sidenote{As a general rule of thumb, the noise
+The \underline{Noise} functions are fed by a random process generated by a
+pseudo-random number generator (PRNG). The random processes used have Gaussian
+amplitude and can potentially be given a temporal correlation. The random
+process is defined using two parameters plus the seed of the PRNG. The two
+parameters are: $\mathbf{D}$ \sidenote{As a general rule of thumb, the noise
 amplitude, when being applied to all nodes and all state-variables, should be
 much less than 1\% of the expected state-variable range if you don't want the
-noise to dominate the intrinsic dynamics of the system.
-If you are not sure about the level of noise, using the Phase Plane
-Interactive tool for plotting noisy trajectories is a good place to start. See Fig. \ref{fig:ppi_noise}}, defining the
-standard deviation of the noise amplitude; and $\boldsymbol{\tau}$ which defines the
-correlation time of the noise source, with $\boldsymbol{\tau = 0}$ corresponding to white
-noise and any value greater than zero producing coloured noise. 
+noise to dominate the intrinsic dynamics of the system. If you are not sure
+about the level of noise, using the Phase Plane Interactive tool for plotting
+noisy trajectories is a good place to start. See Fig. \ref{fig:ppi_noise}},
+defining the standard deviation of the noise amplitude; and
+$\boldsymbol{\tau}$ which defines the correlation time of the noise source,
+with $\boldsymbol{\tau = 0}$ corresponding to white noise and any value
+greater than zero producing coloured noise.
 
 \begin{marginfigure}%
 \includegraphics[width=\linewidth]{Handout_UI_BuildingYourOwnBrainNetworkModel_PPI}%
@@ -585,11 +593,16 @@ Observe the differences using the \underline{Spectrogram of the Wavelet Transfor
 \newpage
 \subsection{Modelling the Neural Activity on the Folded Cortex}\label{sec:surface_simulations}
 
-This extends the basic region simulation to include the folded cortical surface to the anatomical structure on which the simulation is based. If you haven't read or followed was written above you probably should do that now as here we only really discuss in detail the extra components that are specific to a simulation on the cortical surface.
+This extends the basic region simulation to include the folded cortical
+surface to the anatomical structure on which the simulation is based. If you
+haven't read or followed what was written above you probably should do that now as
+here we only really discuss in detail the extra components that are specific
+to a simulation on the cortical surface.
 
 \begin{blah}
-In addition to the components discussed for a
-region simulation here we introduce two major components, that is:
+In addition to the components discussed for a region simulation here we
+introduce two major components, that is:
+
 \begin{itemize}
 \item \underline{Cortical Surface}, which is a mesh surface defining
 a 2d representation of the convoluted cortical surface embedded in 3d space.
@@ -742,13 +755,13 @@ This data structure is saved under the name \\
     \toprule
     Parameter & Value \\
     \midrule
-             midpoint\_1          &   \unit[0]{mm}\\
+             midpoint\_1          &   \unit[0]{mm}   \\
              midpoint\_2          &   \unit[0]{mm}   \\
-             amp\_1                 &   \unit[2]{au}        \\
-             amp\_2                 &   \unit[1]{au}        \\
-             sigma\_1          &   \unit[5]{mm}   \\
-             sigma\_2          &   \unit[15]{mm}   \\
-             cutoff distance & \unit[40]{mm}\\
+             amp\_1               &   \unit[2]{au}   \\
+             amp\_2               &   \unit[1]{au}   \\
+             sigma\_1             &   \unit[5]{mm}   \\
+             sigma\_2             &   \unit[15]{mm}  \\
+             cutoff distance      & \unit[40]{mm}    \\
     \bottomrule
   \end{tabular}
   \caption{\textit{LocalConnectivity\_MexicanHat\_zc\_40} parameters. }
@@ -789,13 +802,15 @@ For questions and bug reports we have a users group \url{https://groups.google.c
 
 \subsection{License}
 
-This tutorial is Licensed under the Creative Commons Attribution-NonCommercial-ShareAlike 3.0 Unported
-License (the ``License''). You may not use this file except in compliance with
-the License. You may obtain a copy of the License at \url{https://creativecommons.org/licenses/by-nc-sa/3.0/}. 
-Unless required by applicable law or agreed to in writing, software distributed under the License
-is distributed on an \textsc{``as is'' basis, without warranties or conditions
-of any kind}, either express or implied. See the License for the specific
-language governing permissions and limitations under the License. Copyright 2014 Paula M. Sanz-Leon.
+This tutorial is Licensed under the Creative Commons Attribution-
+NonCommercial-ShareAlike 3.0 Unported License (the ``License''). You may not
+use this file except in compliance with the License. You may obtain a copy of
+the License at \url{https://creativecommons.org/licenses/by-nc-sa/3.0/}.
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an \textsc{``as is'' basis,
+without warranties or conditions of any kind}, either express or implied. See
+the License for the specific language governing permissions and limitations
+under the License. Copyright 2014 Paula M. Sanz-Leon.
 
 
 \bibliography{tvb_references}
