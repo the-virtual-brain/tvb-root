@@ -156,10 +156,22 @@ definining a synapse efficacy like metric (weights) and the axonal delays (due t
 
 \section{Objectives}\label{sec:objectives}
 
-\newthought{This tutorial presents} the basic anatomy of a large-scale brain network model, that is, the building blocks required to run whole brian simulations using The Virtual Brain's (TVB's) graphical interface. You are not expected to launch all the simulations. However, following these steps you should be able to reproduce the results from the simulations in the project Brain Network Model At Rest. You will learn about the basic principles and assumptions underlying a brain network model, recent studies using different local models and cortical connectivity. We will also give you an overview on how to approximate neural fields. Make sure you are working with at least TVB 1.3. If you are using version 1.2.X or older version there might be some features that are not available. Also it is possible that you cannot import the projects we have shared with you into TVB. 
+\newthought{This tutorial presents} 
+the basic anatomy of a large-scale brain network model, that is, the building
+blocks required to run whole brian simulations using The Virtual Brain's
+(TVB's) graphical interface. You are not expected to launch all the
+simulations. However, following these steps you should be able to reproduce
+the results from the simulations in the project Brain Network Model At Rest.
+You will learn about the basic principles and assumptions underlying a brain
+network model, recent studies using different local models and cortical
+connectivity. We will also give you an overview on how to approximate neural
+fields. Make sure you are working with at least TVB 1.3. If you are using
+version 1.2.X or older version there might be some features that are not
+available. Also it is possible that you cannot import the projects we have
+shared with you into TVB.
 
 
-\section{Project:  Session\_I\_BrainNetworkModelAtRest}\label{sec:project_data}
+\section{Project I: BrainNetworkModelsAtRest}\label{sec:project_data}
 
 \begin{margintable}
   \centering
@@ -202,14 +214,18 @@ definining a synapse efficacy like metric (weights) and the axonal delays (due t
 \end{margintable}
 
 
-% let's start a new thought -- a new section
-\newthought{In this project}, all the data were already generated. We'll only go through the necessary steps required to reproduce some simulations listed in Table~\ref{tab:normaltab}. You can always start over, click along and/or try to change parameters.
+\newthought{In this project}, 
+the data were already generated. We'll only go through the necessary steps
+required to reproduce some simulations listed in Table~\ref{tab:normaltab}.
+You can always start over, click along and/or try to change parameters.
 
 
 \subsection{Building A Discrete Brain Network Model}\label{sec:region_simulations}
 
-\newthought{A basic simulation} at the region level uses a coarse representation of the brain and consists of
-five main components, each of these components is a configurable object in TVB:
+\newthought{A basic simulation} 
+at the region level uses a coarse representation of the brain and consists of
+five main components, each of these components is a configurable object in
+TVB:
 
 \begin{blah}
 \begin{itemize}
