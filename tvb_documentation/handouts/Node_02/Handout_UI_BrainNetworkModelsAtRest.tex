@@ -145,8 +145,7 @@
 \begin{abstract}
 \noindent TVB allows for a systematic exploration and manipulation of every
 underlying component of a large-scale brain network model, such as the neural
-mass model governing the local dynamics \sidenote{There are a number of predefined models available in TVB} or the structural connectivity
-definining a synapse efficacy like metric (weights) and the axonal delays (due to finite conduction speeds).
+mass model governing the local dynamics \sidenote{There are a number of predefined models available in TVB} or the structural connectivity definining a synapse efficacy like metric (weights) and the axonal delays (due to finite conduction speeds).
 \begin{marginfigure}%
   %\includegraphics[width=\linewidth]{tvb_logo_transparent_square}
   %\caption{TVB evil logo}
@@ -171,7 +170,7 @@ available. Also it is possible that you cannot import the projects we have
 shared with you into TVB.
 
 
-\section{Project I: BrainNetworkModelsAtRest}\label{sec:project_data}
+\section{Project I: Brain Network Models At Rest}\label{sec:project_data}
 
 \begin{margintable}
   \centering
@@ -438,10 +437,10 @@ All the 150 simulations are presented as a discrete 2D map in
 simulation. The size and the colour of the marker correspond to one of a few
 variance metrics implemented to have an idea of the network node and temporal
 variability.} (Fig. \ref{fig:pse_discrete}) or a continous pseudocolor map in
-\underline{Parameter Space Continous}\sidenote{The colour scale  corresponds
-to one of the variance metrics} (Fig. \ref{fig:pse_continuous}).
-
-
+\underline{Parameter Space Continous}\sidenote{The colour scale corresponds
+to one of the variance metrics} (Fig. \ref{fig:pse_continuous}). 
+You can potentially visualize the underlying time series. However, to keep the project size to a minimum we have not include them.
+To obtain the time-series you can copy \textit{AnatomyOfARegionSimulation\_pse} and re-run the PSE.
 
 
 \begin{blah}
@@ -528,7 +527,8 @@ nodes, thus emulating a very crude model of external inputs to the brain.
 
 \begin{simulation}
 \begin{enumerate}
-\item After configuring a model similar to the one presented in  \textit{AnatomyOfARegionSimulation\_b}, we select \textbf{HeunStochastic} as an integration scheme.  
+\item Copy \textit{AnatomyOfARegionSimulation\_b}, and rename it to Copy \textit{AnatomyOfARegionSimulation\_stochastic}.
+Then select the \textbf{HeunStochastic} method as the integration scheme.  
 \end{enumerate}
 \end{simulation}
 
@@ -562,7 +562,7 @@ greater than zero producing coloured noise.
 \end{enumerate}
 \end{simulation}
 %\newpage
-\textit{AnatomyOfARegionSimulation\_b} and \textit{AnatomyOfARegionSimulation\_stochastic} have the same parameters but the latter has an extra background noisy input. 
+So, \textit{AnatomyOfARegionSimulation\_b} and \textit{AnatomyOfARegionSimulation\_stochastic} have the same parameters but the latter has an extra background noisy input. 
 
 \begin{formal}
 \begin{enumerate}
@@ -632,7 +632,7 @@ a 2d representation of the convoluted cortical surface embedded in 3d space.
 \item The \underline{connectivity}, \underline{speed}, \underline{coupling strength} and \underline{local model} and its parameters are the same described in  \textit{AnatomyOfARegionSimulation\_b} and Table \ref{tab:modeltab}.
 \item Select the \textbf{TVB's default Cortical Surface}, which has 16384 nodes. 
 \item We rely on \textbf{TVB's default Local Connectivity}.
-\item Rescale the \underline{Local Connectivity} with \underline{Local coupling strength} equal to $\mathbf{0.1}$.
+\item Rescale the \underline{Local Connectivity} with \underline{Local coupling strength} equal to $\mathbf{-0.01}$.
 \item For the integration we'll use \textbf{HeunDeterministic}.  Here, integration time step size is the default: $\mathbf{dt=}$\textbf{\unit[0.1220703125]{ms}}.
 \end{enumerate}
 \end{simulation}
@@ -719,18 +719,17 @@ experiment. See Fig. \ref{fig:potato_head}
 \subsection{Define Your Own Local Connectivity}\label{sec:local_connectivity}
 
 The regularized mesh can support, in principle, arbitrary forms for the
-\underline{local connectivity kernel}. Coupled across the realistic surface geometry this
-allows for a detailed investigation of the local connectivity's effects on
-larger scale dynamics modelled by neural fields.
+\underline{local connectivity kernel}. Coupled across the realistic surface
+geometry this allows for a detailed investigation of the local connectivity's
+effects on larger scale dynamics modelled by neural fields.
 
 
 
 \begin{formal}
 \begin{enumerate}
 \item Go to \textsc{Connectivity} $\rightarrow$ \textsc{Local Connectivity}. 
-In this area we'll build two different kernels: a Gaussian and a Mexican Hat kernel. 
-We'll start with the Gaussian kernel. 
-\item Select the \underline{equation defining the spatial profile} of your \underline{local connectivity}. Here, we'll set \textbf{sigma} to \textbf{\unit[15]{mm}}.
+In this area we'll build a kernel slightly different to the default one. 
+\item Select the Gaussian \underline{equation defining the spatial profile} of your \underline{local connectivity}. Here, we'll set \textbf{sigma} to \textbf{\unit[15]{mm}}.
 \item Ideally, you want the function to have essentially dropped to zero by the \textbf{cutoff distance}. The \underline{cutoff distance}, that is, the distance up to which a given node is connected to its neighbourhood \citep{Spiegler_2013, Sanz-Leon_2014} is set to \textbf{\unit[40]{mm}}. See Fig. \ref{fig:lc_gaussian}.
 \item Name your \underline{Local connectivity} and save it by clicking on \underline{Create new Local Connectivity} on the bottom left corner. 
 \end{enumerate}
@@ -739,64 +738,31 @@ This data structure is saved under the name \textit{LocalConnectivity\_Gaussian\
 
 \begin{figure}[h]
   \includegraphics[width=\linewidth]{Handout_UI_BuildingYourOwnBrainNetworkModel_YourOwnLocalConnectivity}%
-  \caption{Gaussian local connectivity. We have on the right a representation of the kernel for a quick idea of how
-the \underline{Local Connectivity} we've just specified will be represented on the
-surface. This plots the local connectivity function with different sampling
-based on the distribution of edge lengths in your mesh surface. If all the
-lines don't, at least mostly, overlap then you've probably specified a
-function with structure that is too fine for the resolution of your mesh
-surface. }%
+  \caption{Gaussian local connectivity. On the right we have a representation of the
+kernel for a quick idea of how the \underline{Local Connectivity} we've just
+specified will look like on the surface. This plots the local connectivity
+function with different sampling based on the distribution of edge lengths in
+your mesh surface. If all the lines don't, at least mostly, overlap then
+you've probably specified a function with structure that is too fine for the
+resolution of your mesh surface.}%
   \label{fig:lc_gaussian}%
 \end{figure}
 
 
+Finally, we will run one extra simulations using the local connectivity kernel
+we just built. Set the local coupling strength to -0.001. 
 
-
-\begin{formal}
-\begin{enumerate}[resume]
-\setcounter{enumi}{4}
-\item Select the \underline{Mexican Hat equation}. Here, we changed the default parameters. See the values in Table \ref{tab:mexicanstab}.
-\item Save your new local connectivity.
-\end{enumerate}
-\end{formal}
-
-This data structure is saved under the name \\
-\textit{LocalConnectivity\_MexicanHat\_zc\_40}.
-
-
-\begin{margintable}
-  \centering
-  \fontfamily{ppl}\selectfont
-  \begin{tabular}{ll}
-    \toprule
-    Parameter & Value \\
-    \midrule
-             midpoint\_1          &   \unit[0]{mm}   \\
-             midpoint\_2          &   \unit[0]{mm}   \\
-             amp\_1               &   \unit[2]{au}   \\
-             amp\_2               &   \unit[1]{au}   \\
-             sigma\_1             &   \unit[5]{mm}   \\
-             sigma\_2             &   \unit[15]{mm}  \\
-             cutoff distance      & \unit[40]{mm}    \\
-    \bottomrule
-  \end{tabular}
-  \caption{\textit{LocalConnectivity\_MexicanHat\_zc\_40} parameters. }
-  \label{tab:mexicanstab}
-\end{margintable}
-
-Finally, we will run two  more simulations using different local connectivity kernels. 
 
 \begin{simulation}
 \begin{enumerate}[resume]
 \setcounter{enumi}{4}
 \item Copy \textit{AnatomyOfASurfaceSimulation}.
-\item Change the \textbf{local connectivity} to \textbf{\textit{LocalConnectivity\_Gaussian\_zc\_40}} and set the \textbf{local connectivity strength} to \textbf{0.001}. Run the simulation.
-\item Copy again \textit{AnatomyOfASurfaceSimulation}. 
-\item This time select \textbf{\textit{LocalConnectivity\_MexicanHat\_zc\_40}}. The \textbf{local connectivity strength} is set to \textbf{-0.001}. Run the simulation. 
+\item Change the \textbf{local connectivity} to \textbf{\textit{LocalConnectivity\_Gaussian\_zc\_40}} and set the \textbf{local connectivity strength} to \textbf{-0.001}. Also, set up the
+Fourier Spectrum analyser and visualiser.. Run the simulation.
 \end{enumerate}
 \end{simulation}
 
-These results are those of \textit{SurfaceSimulation\_MexicanHatLocalConnectivity} and \textit{SurfaceSimulation\_GaussianLocalConnectivity} respectively.
+These results are those of \textit{SurfaceSimulation\_GaussianLocalConnectivity}.
  
 
 \section{More Documentation}\label{sec:more-doc}
