@@ -46,13 +46,13 @@ from tvb.adapters.exporters.export_manager import ExportManager
 from sys import argv
 
 
-def run_export(project_id):
+def run_export(project_id, loose_irrelevant=False):
 
     s = ProjectService()
     mng = ExportManager()
 
     project = s.find_project(project_id)
-    export_file = mng.export_project(project)
+    export_file = mng.export_project(project, loose_irrelevant)
     print ("Check the exported file: %s" % export_file)
 
 
