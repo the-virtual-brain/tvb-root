@@ -33,6 +33,7 @@
 """
 import json
 import numpy
+import numexpr
 from tvb.adapters.visualizers.phase_plane_interactive import PhasePlaneD3
 from tvb.basic.traits import core, types_basic, traited_interface
 from tvb.basic.traits.parameters_factory import get_traited_subclasses
@@ -179,6 +180,8 @@ class DynamicModelController(BurstBaseController):
         self.available_models = get_traited_subclasses(models.Model)
         self.available_integrators = get_traited_subclasses(integrators.Integrator)
         self.cache = SessionCache()
+        # Work around a numexpr thread safety issue. See TVB-1639. We expect this setting to be process wide.
+        numexpr.set_num_threads(1)
 
     def get_cached_dynamic(self, dynamic_gid):
         """
