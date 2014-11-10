@@ -213,13 +213,12 @@ We will use the default subject connectivity matrix and surface.
 \subsection{Exploring the Epileptor model}\label{sec:epileptor}
 
 
-\newthought{Before doing} any simulations, we would like to have a look at the phase space of the Epileptor model
-to understand better its dynamics. We will use the interactive tool that you have seen in Session \#4.
+\newthought{Before launching} any simulations, we will have a look at the phase space of the Epileptor model
+to understand better its dynamics. We will use the interactive tool that you have seen in Session \#1.
 
 \begin{formal}
   \begin{enumerate}[resume]
-  \item Go to \textsc{simulator} and select the $\mathbf{Epileptor}$ model
-  \item Click on \underline{Set Up Region Model}.
+  \item Go to \textsc{simulator} $\rightarrow$  \textsc{Phase plane} and select the $\mathbf{Epileptor}$ model
   \item Look at the phase space (Fig. \ref{fig:phase_space}). We have here the first population (variables $y_0$ in abscissa and 
   $y_1$ in ordinate).
   The left most intersection of the nullcline defines a stable fixed point whereas the rightmost intersection 
@@ -232,25 +231,28 @@ to understand better its dynamics. We will use the interactive tool that you hav
 
 
 \begin{figure}[h]
-  \includegraphics[width=\linewidth]{Handout_UI_ModellingAnEpilepticPatient_PhaseSpace}%
+  \includegraphics[width=\linewidth]{Handout_UI_ModellingEpilepsy_PhaseSpace}%
   \caption{phase space for the first population}%
   \label{fig:phase_space}%
 \end{figure}
 \subsection{Region based simulation of an epileptic patient}
 
-\newthought{We are going} to model a patient with temporal lobe epilepsy (TLE). We will choose different values of
-epileptogenicity ($x_0$ parameters in the Epileptor) according to the region positions, thereby introducing heterogeneities in
-the model parameters (Session \#4). We set the right limbic areas 
-(right hippocampus (rHC), parahippocampus (rPHC) and amygdala (rAMYG)) as epileptic zones. We also add two lesser epileptogenic regions: 
-the superior temporal cortex (rTS) and the ventral temporal cortex (rTV).
+\newthought{We will model} 
+a patient with temporal lobe epilepsy (TLE). Here, we will set different
+values of epileptogenicity ($x_0$ parameter in the Epileptor) according to
+the region positions, thereby introducing heterogeneities in the model
+parameters. We set the right limbic areas  (right hippocampus (rHC),
+parahippocampus (rPHC) and amygdala (rAMYG)) as epileptic zones. We also add
+two lesser epileptogenic regions:  the superior temporal cortex (rTCS) and the
+ventral temporal cortex (rTCV).
 
 \begin{simulation}
   \begin{enumerate}
   \item Stay in the same page; all nodes are selected by default, give them the value $\mathbf{-2.2}$ for the $\mathbf{x_0}$ parameter.
-  \item \underline{Remove all} selected nodes, select lHC, lAMYG and lPHC, save the selection with a name
-	and set the parameter $\mathbf{x_0}$ to the value $\mathbf{-1.6}$. \underline{Submit Region Parameters} values.
-  \item \underline{Configure the Visualizers} and add a \underline{Brain Viewer} and a \underline{Fourier Spectrum}, 
-  then \underline{Save your choices}.
+  \item \underline{Remove all} selected nodes, select rHC, rAMYG and rPHC, save the selection with a name
+	and set the parameter $\mathbf{x_0}$ to the value $\mathbf{-1.6}$. Click on \underline{Submit Region Parameters} values.
+  \item \underline{Configure the Visualizers} and select the \underline{Brain Viewer}. 
+  \underline{Save your choices}.
   \item Choose an $\mathbf{integration\:step\:size}$ of \textbf{\unit[0.1]{ms}}, a $\mathbf{Temporal\:average\:monitor}$ with a \textbf{sampling period} of \textbf{\unit[1]{ms}} and \textbf{\unit[6000]{ms}} as a simulation length. 
   All the other parameters are
   given in the table \ref{tab:modeltab}.
@@ -264,10 +266,10 @@ the superior temporal cortex (rTS) and the ventral temporal cortex (rTV).
     \toprule
     Model parameter & Value \\
     \midrule
-             $Iext$          &   3.1  \\
+             $Iext$           &   3.1  \\
              $Iext2$          &  0.45   \\
-             $R$           &   0.00035        \\
-             $slope$           &   0.0   \\
+             $R$              &   0.00035        \\
+             $slope$          &   0.0   \\
     \bottomrule
   \end{tabular}
   \caption{Parameters for the Epileptor model	 }
@@ -287,10 +289,10 @@ The results are already computed for you in \textit{Region\_TemporalLobe}
 \begin{simulation}
   \begin{enumerate}
   \setcounter{enumi}{4}
-  \item Visualize the time series. Click on \underline{Select channels} and select all the channels. 
-	You will need to increase the scaling by clicking on \includegraphics[width=0.08\textwidth]{butt_brain_menu}(Fig. \ref{fig:brain_menu}). Visualize 
-	the $y_0$ (Fig. \ref{fig:first_pop}) then the $y_3$ state variable (Fig. \ref{fig:second_pop}) by 
-	changing it in \includegraphics[width=0.08\textwidth]{butt_brain_menu}. You can see a succession of 3 seizures, use the mouse
+  \item Visualize the time series. Click on \underline{Select Input Signals} and select all the regions. 
+  From this same menu you can select which state variables of interest will be displayed. For instance, visualize 
+  $y_0$ (Fig. \ref{fig:first_pop}) and then $y_3$ state (Fig. \ref{fig:second_pop}). 
+	You will need to increase the scaling by clicking on \includegraphics[width=0.08\textwidth]{butt_brain_menu}(Fig. \ref{fig:brain_menu}).  You can see a succession of 3 seizures, use the mouse
 	 to zoom in and out in the time series area.
   \item Visualize the results in the \underline{Brain Viewer}, you will need to increase the rendering speed 
 	(timesteps per Frame) by clicking on \includegraphics[width=0.08\textwidth]{butt_brain_menu}.
@@ -430,18 +432,18 @@ We set the whole brain to non-epileptogenic but close to the threshold
     \toprule
     Space stimulation parameters & Value \\
     \midrule
-             $amp$          &   1.0  \\
-             $radius$          &  5.0   \\
-             $sigma$           &   1.0        \\
-             $offset$           &   0.0   \\
+             $amp$              &   1.0  \\
+             $radius$           &   5.0   \\
+             $sigma$            &   1.0  \\
+             $offset$           &   0.0  \\
     \midrule
     \midrule
     Time stimulation parameters & Value \\
     \midrule
-             $onset$          &   2000.0 \\
-             $tau$          &  20.0   \\
-             $T$           &   4000.0        \\
-             $amp$           &   10.0   \\
+             $onset$          &   2000.0  \\
+             $tau$            &   20.0    \\
+             $T$              &   4000.0  \\
+             $amp$            &   10.0    \\
     \bottomrule
   \end{tabular}
   \caption{Space and time parameters for the stimulus}
@@ -453,7 +455,7 @@ We set the whole brain to non-epileptogenic but close to the threshold
   \item Go to \textsc{stimulus} $\rightarrow$ \textsc{Surface Stimulus}
   \item Give a name to the new stimulus
   \item Choose a \underline{Sigmoid} stimulation in space with the parameters given in Table \ref{tab:stimtab}
-  \item Choose a \underline{PulseTrain} stimulation in time with parameters given in table \ref{tab:stimtab} (Fig. \ref{fig:stim_st})
+  \item Choose a \underline{PulseTrain} stimulation in time with parameters given in Table \ref{tab:stimtab} (Fig. \ref{fig:stim_st})
   \item Click on \underline{Edit Focal Points and View}
   \item Choose a focal point (Fig. \ref{fig:stim_foc})
   \item \underline{Save the new stimulus on surface}
@@ -533,12 +535,12 @@ the parahippocampal cortex) and  we are going to simulate that.
 \begin{simulation}
   \begin{enumerate}
   \item Go to \textsc{connectivity} $\rightarrow$ \textsc{Large scale Connectivity}.
-  \item As you learned in session \#3, select the nodes lAMYG, lHC and lPHC via your former selection, delete all their in-out and out-in connections
+  \item Select the nodes rAMYG, rHC and rPHC via the \textit{RightLimbicAreas} selection, delete all their in-out and out-in connections
   with the other nodes, give a name to the selection and save it. (Fig. \ref{fig:resec})
   \item As we choose the same regional parameters that in the first simulation, we are going to copy them directly from our
   former setting. Go to the \textit{Region\_TemporalLobe} simulation, select and copy the values for the parameter  $x_0$. 
   \item Copy the surface simulation \textit{Surface\_TemporalLobe\_sEEG\_EEG} and paste the array of values in the parameter $\mathbf{x_0}$.
-  With this direct copy-paste method, we avoid to redo the work previously done via the \underline{Set Up Region Model} panel.
+  With this direct copy-paste method, we avoid the step previously done via the \underline{Set Up Region Model} panel.
   You can also use you own vector, as long as the length of this vector correspond to the number of regions.
   Change the values $\mathbf{-1.6}$ by $\mathbf{-2.2}$ in this array (i.e. we replace the dynamics of the resected node by a stable node).
   \item Choose only a \textbf{Spatial average} monitor with a \textbf{sampling period} of \textbf{\unit[1]{ms}}.
@@ -593,6 +595,7 @@ Unless required by applicable law or agreed to in writing, software distributed 
 is distributed on an \textsc{``as is'' basis, without warranties or conditions
 of any kind}, either express or implied. See the License for the specific
 language governing permissions and limitations under the License.
+Copyright Timothée Proix and Paula Sanz-Leon 2014.
 
 \bibliography{tvb_references}
 \bibliographystyle{plainnat}
