@@ -307,7 +307,7 @@ class Simulator(core.Type):
         self._guesstimate_memory_requirement()
 
 
-    def configure(self):
+    def configure(self, full_configure=True):
         """
         The first step of configuration is to run the configure methods of all
         the Simulator's components, ie its traited attributes.
@@ -319,7 +319,9 @@ class Simulator(core.Type):
         Converts delays from physical time units into integration steps
         and updates attributes that depend on combinations of the 6 inputs.
         """
-        self.preconfigure()
+        if full_configure:
+            # When run from GUI, preconfigure is run separately, and we want to avoid running that part twice
+            self.preconfigure()
 
         #Configure spatial component of any stimuli
         self.configure_stimuli()
@@ -795,7 +797,11 @@ class Simulator(core.Type):
         LOG.info("Calculating storage requirement for ...")
         strgreq = 0
         for monitor in self.monitors:
+            # Avoid division by zero for monitor not yet configured
+            # (in framework this is executed, when only preconfigure has been called):
+            current_period = monitor.period or self.integrator.dt
             strgreq += (TvbProfile.current.MAGIC_NUMBER * self.simulation_length *
                         self.number_of_nodes * self.model.nvar *
-                        self.model.number_of_modes / monitor.period)
+                        self.model.number_of_modes / current_period)
+        LOG.info("Calculated storage requirement for simulation: %d " % int(strgreq))
         self._storage_requirement = int(strgreq)

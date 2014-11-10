@@ -224,7 +224,7 @@ class SimulatorAdapter(ABCAsynchronous):
         result_datatypes = dict()
         start_time = self.algorithm.current_step * self.algorithm.integrator.dt
 
-        self.algorithm.configure()
+        self.algorithm.configure(full_configure=False)
         if simulation_state is not None:
             simulation_state.fill_into(self.algorithm)
 
