@@ -111,11 +111,11 @@ class Environment():
         Return top level library folder. Will be use for setting paths
         """
         if self.is_windows_deployment():
-            return os.path.dirname(os.path.dirname(sys.executable))
+            return os.path.dirname(sys.executable)
         if self.is_mac_deployment():
             return os.path.dirname(default_mac)
         if self.is_linux_deployment():
-            return os.path.dirname(os.path.dirname(sys.executable))
+            return os.path.dirname(sys.executable)
 
 
     def setup_tk_tcl_environ(self, root_folder):

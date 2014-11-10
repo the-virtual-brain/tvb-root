@@ -265,8 +265,7 @@ class PyInstallerPacker():
         if not os.path.exists(os.path.join(base_folder, data_folder)):
             os.makedirs(os.path.join(base_folder, data_folder))
 
-        os.mkdir(os.path.join(base_folder, data_folder, 'exe'))
-        shutil.copy(python_exe_path, os.path.join(base_folder, data_folder, 'exe', PYTHON_EXE))
+        shutil.copy(python_exe_path, os.path.join(base_folder, data_folder, PYTHON_EXE))
         PyInstallerPacker.add_tvb_bin_folder(base_folder, data_folder)
         PyInstallerPacker.__copy_matplotlib_code(base_folder, data_folder)
         PyInstallerPacker.__copy_pkg_resources(base_folder, data_folder)

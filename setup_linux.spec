@@ -73,7 +73,6 @@ fi
 export PYTHONHOME=`pwd`
 export PYTHONPATH=`pwd`
 
-cd exe
 """
 
     def _create_script_file(command_file_name, contents):
