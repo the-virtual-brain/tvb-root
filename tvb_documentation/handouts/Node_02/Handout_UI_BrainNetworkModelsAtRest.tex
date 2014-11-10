@@ -192,7 +192,7 @@ shared with you into TVB.
      $\quad$\textit{AnatomyOfARegionSimulation\_a\_branch1} \\
     \\
     \multicolumn{1}{l}{Stochastic Simulations}\\
-     $\quad$\textit{AnatomyOfARegionSimulation\_c}  \\
+     $\quad$\textit{AnatomyOfARegionSimulation\_stochastic}  \\
 %    \\
 %    \multicolumn{1}{l}{Extra}\\
 %     $\quad$\textit{AnatomyOfARegionSimulation\_bold}  \\ 
@@ -205,7 +205,6 @@ shared with you into TVB.
     \\
     \multicolumn{1}{l}{Define Your Own Local Connectivity}\\
       $\quad$\textit{SurfaceSimulation\_GaussianLocalConnectivity} \\
-      $\quad$\textit{SurfaceSimulation\_MexicanHatLocalConnectivity}\\
     \bottomrule
   \end{tabular}
   \caption{Simulations in this project.}
@@ -449,26 +448,46 @@ These results are those presented in \citep{Ghosh_2008} and \citep{Knock_2009}.
 
 \subsection{Simulation continuation or Branching}\label{sec:results}
 
-\newthought{Other parameters could be} adjusted as well. We mentioned before
-that the big transient at the beginning of the time-series is due to the initial conditions. To
-overcome this issue we have a couple of alternatives. First, we could narrow the range of the state variables around the values of a fixed point. How can we know this value?. \sidenote{go back to the \textsc{simulator} page and load either \textit{AnatomyOfARegionSimulation\_a} or \textit{AnatomyOfARegionSimulation\_b}}.
+\newthought{Other parameters could be} 
+adjusted as well. We mentioned before that the big transient at the beginning
+of the time-series is due to the initial conditions. To overcome this issue we
+have a couple of alternatives. First, we could narrow the range of the state
+variables around the values of a fixed point. How can we know this value?.
+\sidenote{go back to the \textsc{simulator} page and load either
+\textit{AnatomyOfARegionSimulation\_a} or
+\textit{AnatomyOfARegionSimulation\_b}}.
 
 \begin{simulation}
 \begin{enumerate}
-\item  Clik on \underline{Set up region model}, you'll be redirected to a new working area. 
+\item  Clik on \underline{Set up region model}. If this is the first time you do it you'll see a message as shown in Fig. \ref{fig:to_phase_plane_a}.
+From that message you will be redirected to a new working area: the Phase Plane. This area can also be reached from the upper menu tab in the \textsc{Simulator} page. (See Fig. \ref{fig:to_phase_plane_b}) 
+
 \end{enumerate}
 \end{simulation}
 
+\begin{marginfigure}
+  \includegraphics[width=\linewidth]{Handout_UI_BrainNetworkModelsAtRest_ToPhasePlane_a}%
+  \caption{Warning message shown the first time users try to configure the model parameters for region-based simulations.}%
+  \label{fig:to_phase_plane_a}%
+\end{marginfigure}
 
-In this area there's a an interactive tool, the \underline{Phase Plane}, which
-allows you to understand the local dynamics, that is the dynamics of a single
-isolated node, by observing how the model parameters change its phase plane.
-(See Fig. \ref{fig:ppi}).
+
+In this area the interactive \underline{Phase Plane} tool allows you to
+understand the local dynamics, that is the dynamics of a single isolated node.
+Here you can observe how the model parameters affect the geometry of the phase
+plane. (See Fig. \ref{fig:ppi}).
 
 \begin{marginfigure}%
-  \includegraphics[width=\linewidth]{Handout_UI_BuildingYourOwnBrainNetworkModel_PhasePlane}%
+  \includegraphics[width=\linewidth]{Handout_UI_BrainNetworkModelsAtRest_PhasePlane}%
   \caption{Phase Plane Interactive}%
   \label{fig:ppi}%
+\end{marginfigure}%
+
+
+\begin{marginfigure}%
+  \includegraphics[width=\linewidth]{Handout_UI_BrainNetworkModelsAtRest_ToPhasePlane_b}%
+  \caption{How to reach the Phase Plane Interactive tool from the \textsc{Simulator} page.}%
+  \label{fig:to_phase_plane_b}%
 \end{marginfigure}%
 
 \begin{simulation}
@@ -478,7 +497,6 @@ isolated node, by observing how the model parameters change its phase plane.
 We see that the fixed point is approx (V, W) = (1.5, -0.6)
 \end{enumerate}
 \end{simulation}
-
 
 However, there certainly is a more elegant way. 
 
@@ -649,7 +667,7 @@ The first significant thing to note about surface simulations is that certain \u
 
 \begin{marginfigure}
   \includegraphics[width=\linewidth]{Handout_UI_BuildingYourOwnBrainNetworkModel_MexicanLocalConnectivityPotatoHead.png}%
-  \caption{EEG signals from \textit{SurfaceSimulation\_MexicanHatLocalConnectivity}}%
+  \caption{EEG signals from a surface simulation.}%
   \label{fig:potato_head}%
 \end{marginfigure}
 
@@ -670,7 +688,6 @@ biophysical measurement process, is called \textbf{EEG}. The third will be the \
 
 
 These simulations are \textit{AnatomyOfASurfaceSimulation} and \textit{AnatomyOfASurfaceSimulation\_branch1}. 
-
 
 
 The first of these new \underline{Monitors},  will average over the
@@ -772,7 +789,7 @@ anatomy of a simulation within TVB and many of the configurable parameters and
 output modalities. In the web interface the help is available by clicking on
 the \includegraphics[width=0.05\textwidth]{butt_green_help} icons next to each
 entry. For more documentation on The Virtual Brain, please see the following
-articles \citep{Sanz-Leon_2013, Spiegler_2013, Woodman_2014, Sanz_Leon_2014a,
+articles \citep{Sanz-Leon_2013, Spiegler_2013, Woodman_2014, Sanz-Leon_2014a,
 Jirsa_2010b}
 
 \section{Support}\label{sec:support}
@@ -795,7 +812,7 @@ the License for the specific language governing permissions and limitations
 under the License. Copyright 2014 Paula M. Sanz-Leon.
 
 
-\bibliography{tvb_references}
+\bibliography{../tvb_references.bib}
 \bibliographystyle{plainnat}
 
 \end{document}
