@@ -160,7 +160,11 @@ class DiscretePSEAdapter(ABCDisplayer):
                 datatypes = dao.get_results_for_operation(operation_.id)
                 if len(datatypes) > 0:
                     datatype = datatypes[0]
-                    measures = dao.get_generic_entity(DatatypeMeasure, datatype.gid, '_analyzed_datatype')
+                    if datatype.type == "DatatypeMeasure":
+                        ## Load proper entity class from DB.
+                        measures = dao.get_generic_entity(DatatypeMeasure, datatype.id)
+                    else:
+                        measures = dao.get_generic_entity(DatatypeMeasure, datatype.gid, '_analyzed_datatype')
                     pse_context.prepare_metrics_datatype(measures, datatype)
 
             if key_1 not in final_dict:
