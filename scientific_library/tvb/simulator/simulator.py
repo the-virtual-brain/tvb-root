@@ -462,28 +462,28 @@ class Simulator(core.Type):
             vertex_mapping = sparse.csr_matrix(self.surface.vertex_mapping)
             # this is big a well. same shape as the vertex mapping.
             region_average = sparse.csr_matrix(region_average)
+            
+            node_coupling_shape = (vertex_mapping.shape[0], ncvar, self.model.number_of_modes)
 
         for step in xrange(self.current_step + 1, self.current_step+int_steps+1):
             if self.surface is None:
                 delayed_state = history[(step - 1 - idelays) % horizon, cvar, node_ids, :]   # for region simulations this is the bottleneck
                 node_coupling = coupling(weights, state[self.model.cvar], delayed_state)
             else:
-                delayed_state = region_history[(step - 1 - idelays) % horizon, cvar, node_ids, :]  # expensive as well
+                delayed_state   = region_history[(step - 1 - idelays) % horizon, cvar, node_ids, :]  # expensive as well
                 region_coupling = coupling(weights, region_history[(step - 1) % horizon, self.model.cvar], delayed_state)
+                node_coupling = numpy.empty(node_coupling_shape)
 
-                node_coupling = numpy.empty(vertex_mapping.shape + (self.model.number_of_modes,))
-                # sparse matrices cannot multiply with 3d arrays so we use a loop over the modes
-                # For 3d arrays numpy.dot has the effect of multiplying row by row.
-                # To replicate this we have to transpose the normal matrix multiplication
+                # sparse matrices cannot multiply with 3d arrays so we use a loop over the modes                
                 for mi in xrange(self.model.number_of_modes):
-                    node_coupling[..., mi] = vertex_mapping.dot(region_coupling[..., mi].T)
+                    node_coupling[..., mi] = vertex_mapping * region_coupling[..., mi].T
 
                 node_coupling = node_coupling.transpose((1, 0, 2))
 
             if self.stimulus is not None:
                 stimulus[self.model.cvar, :, :] = numpy.reshape(self.stimulus(step - (self.current_step + 1)),
                                                                 (1, -1, 1))
-
+            #import pdb; pdb.set_trace()
             state = scheme(state, dfun, node_coupling, local_coupling, stimulus)
             history[step % horizon, :] = state
 
