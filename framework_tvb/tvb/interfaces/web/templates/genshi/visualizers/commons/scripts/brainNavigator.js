@@ -172,36 +172,11 @@ function NAV_BrainNavigator(isOneToOneMapping, brainBuffers, measurePoints, meas
     };
 
 
-    this.findClosestPosition = function (point, positions) {
-        /**
-         * @param point a point of form [x, y, z]
-         * @param positions represents a list of 3D points (current measurePoints)
-         */
-
-        if (positions == undefined || positions.length == 0) {
-            displayMessage("Invalid position parameters passed...", "warningMessage");
-        }
-        var euclidean = function (point1, point2) {
-                                return Math.sqrt((point1[0] - point2[0]) * (point1[0] - point2[0]) +
-                                    (point1[1] - point2[1]) * (point1[1] - point2[1]) +
-                                    (point1[2] - point2[2]) * (point1[2] - point2[2]));
-                            };
-        var closestPosition = 0, minDistance = euclidean(point, positions[0]);
-        for (var pp = 1; pp < positions.length; pp++) {
-            var dist = euclidean(point, positions[pp]);
-            if (dist <= minDistance) {
-                minDistance = dist;
-                closestPosition = pp;
-            }
-        }
-        return closestPosition;
-    };
-
     this._findClosestAreaName = function (point) {
         if (!this.measurePointsLabels_REF || this.measurePointsLabels_REF.length == 0) {
             return "Area undefined";
         }
-        var idx = this.findClosestPosition(point, this.measurePoints_REF);
+        var idx = NAV_BrainNavigator.findClosestPosition(point, this.measurePoints_REF);
         return this.measurePointsLabels_REF[idx];
     };
 
@@ -312,3 +287,29 @@ function NAV_BrainNavigator(isOneToOneMapping, brainBuffers, measurePoints, meas
 
     this._init(isOneToOneMapping);
 }
+
+
+NAV_BrainNavigator.findClosestPosition = function (point, positions) {
+        /**
+         * @param point a point of form [x, y, z]
+         * @param positions represents a list of 3D points (current measurePoints)
+         */
+
+        if (positions == undefined || positions.length == 0) {
+            displayMessage("Invalid position parameters passed...", "warningMessage");
+        }
+        var euclidean = function (point1, point2) {
+                                return Math.sqrt((point1[0] - point2[0]) * (point1[0] - point2[0]) +
+                                    (point1[1] - point2[1]) * (point1[1] - point2[1]) +
+                                    (point1[2] - point2[2]) * (point1[2] - point2[2]));
+                            };
+        var closestPosition = 0, minDistance = euclidean(point, positions[0]);
+        for (var pp = 1; pp < positions.length; pp++) {
+            var dist = euclidean(point, positions[pp]);
+            if (dist <= minDistance) {
+                minDistance = dist;
+                closestPosition = pp;
+            }
+        }
+        return closestPosition;
+    };
