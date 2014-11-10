@@ -99,6 +99,7 @@ class UpdateManager(object):
         """
         if self.checked_version < self.current_version:
             for script_name in self.get_update_scripts():
+                self.log.info("We will run update %s" % script_name)
                 self.run_update_script(script_name, **kwargs)
                 
         
