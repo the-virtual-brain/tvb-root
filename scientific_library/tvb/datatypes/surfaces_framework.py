@@ -89,6 +89,13 @@ class SurfaceFramework(surfaces_data.SurfaceData):
     """
     __tablename__ = None
 
+    def load_from_metadata(self, meta_dictionary):
+        self.edge_mean_length = 0
+        self.edge_min_length = 0
+        self.edge_max_length = 0
+        self.valid_for_simulations = True
+        super(SurfaceFramework, self).load_from_metadata(meta_dictionary)
+
      
     def get_vertices_slice(self, slice_number=0):
         """
