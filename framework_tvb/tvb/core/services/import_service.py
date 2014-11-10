@@ -85,7 +85,7 @@ class ImportService():
             with open(uq_file_name, 'wb') as file_obj:
                 file_obj.write(uploaded.file.read())
         else:
-            shutil.copyfile(uploaded, uq_file_name)
+            shutil.copy2(uploaded, uq_file_name)
 
         try:
             self.files_helper.unpack_zip(uq_file_name, temp_folder)

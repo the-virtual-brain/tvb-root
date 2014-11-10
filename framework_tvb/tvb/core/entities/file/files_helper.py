@@ -394,24 +394,25 @@ class FilesHelper():
         """ Simple method to unpack ZIP archive in a given folder. """
         EXCLUDED_FOLDERS = ["__MACOSX" + os.path.sep, ".DS_Store" + os.path.sep]
         try:
-            zip_arch = zipfile.ZipFile(uploaded_zip)
-            result = []
-            for filename in zip_arch.namelist():
-                to_be_excluded = False
-                for excluded in EXCLUDED_FOLDERS:
-                    if filename.startswith(excluded) or filename.find(os.path.sep + excluded) >= 0:
-                        to_be_excluded = True
-                        break
-                if to_be_excluded:
-                    continue
-                new_file_name = os.path.join(folder_path, filename)
-                src = zip_arch.open(filename, 'rU')
-                if new_file_name.endswith('/'):
-                    if not os.path.exists(new_file_name):
-                        os.makedirs(new_file_name)
-                else:
-                    FilesHelper.copy_file(src, new_file_name)
-                result.append(new_file_name)
+            with zipfile.ZipFile(uploaded_zip) as zip_arch:
+                result = []
+                for filename in zip_arch.namelist():
+                    to_be_excluded = False
+                    for excluded in EXCLUDED_FOLDERS:
+                        if filename.startswith(excluded) or filename.find(os.path.sep + excluded) >= 0:
+                            to_be_excluded = True
+                            break
+                    if to_be_excluded:
+                        continue
+
+                    new_file_name = os.path.join(folder_path, filename)
+                    with zip_arch.open(filename, 'rU') as src:
+                        if new_file_name.endswith('/'):
+                            if not os.path.exists(new_file_name):
+                                os.makedirs(new_file_name)
+                        else:
+                            FilesHelper.copy_file(src, new_file_name)
+                    result.append(new_file_name)
             return result
         except BadZipfile, excep:
             self.logger.exception("Could not process zip file")
