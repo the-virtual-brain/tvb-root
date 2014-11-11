@@ -158,7 +158,7 @@ class ZipReader():
             self.logger.warning("File %s not found in ZIP." % file_name)
             raise ReaderException("File %s not found in ZIP." % file_name)
 
-        zip_entry = self.zip_archive.open(matching_file_name, 'rU')
+        zip_entry = self.zip_archive.open(matching_file_name, 'rb')
 
         if matching_file_name.endswith(".bz2"):
             temp_file = copy_zip_entry_into_temp(zip_entry, matching_file_name)
