@@ -33,7 +33,7 @@
 """
 import json
 import numpy
-import numexpr
+import threading
 from tvb.adapters.visualizers.phase_plane_interactive import PhasePlaneD3
 from tvb.basic.traits import core, types_basic, traited_interface
 from tvb.basic.traits.parameters_factory import get_traited_subclasses
@@ -180,8 +180,9 @@ class DynamicModelController(BurstBaseController):
         self.available_models = get_traited_subclasses(models.Model)
         self.available_integrators = get_traited_subclasses(integrators.Integrator)
         self.cache = SessionCache()
-        # Work around a numexpr thread safety issue. See TVB-1639. We expect this setting to be process wide.
-        numexpr.set_num_threads(1)
+        # Work around a numexpr thread safety issue. See TVB-1639.
+        self.traj_lock = threading.Lock()
+
 
     def get_cached_dynamic(self, dynamic_gid):
         """
@@ -273,36 +274,39 @@ class DynamicModelController(BurstBaseController):
 
     @expose_json
     def parameters_changed(self, dynamic_gid, params):
-        params = json.loads(params)
-        dynamic = self.get_cached_dynamic(dynamic_gid)
-        model = dynamic.model
-        for name, value in params.iteritems():
-            setattr(model, name, numpy.array([float(value)]))
-        model.configure()
-        return dynamic.phase_plane.compute_phase_plane()
+        with self.traj_lock:
+            params = json.loads(params)
+            dynamic = self.get_cached_dynamic(dynamic_gid)
+            model = dynamic.model
+            for name, value in params.iteritems():
+                setattr(model, name, numpy.array([float(value)]))
+            model.configure()
+            return dynamic.phase_plane.compute_phase_plane()
 
 
     @expose_json
     def graph_changed(self, dynamic_gid, graph_state):
-        graph_state = json.loads(graph_state)
-        dynamic = self.get_cached_dynamic(dynamic_gid)
-        dynamic.phase_plane.update_axis(graph_state['mode'], graph_state['svx'], graph_state['svy'],
-                                        graph_state['x_range'], graph_state['y_range'], graph_state['state_vars'])
-        return dynamic.phase_plane.compute_phase_plane()
+        with self.traj_lock:
+            graph_state = json.loads(graph_state)
+            dynamic = self.get_cached_dynamic(dynamic_gid)
+            dynamic.phase_plane.update_axis(graph_state['mode'], graph_state['svx'], graph_state['svy'],
+                                            graph_state['x_range'], graph_state['y_range'], graph_state['state_vars'])
+            return dynamic.phase_plane.compute_phase_plane()
 
 
     @expose_json
     def trajectories(self, dynamic_gid, starting_points):
-        starting_points = json.loads(starting_points)
-        dynamic = self.get_cached_dynamic(dynamic_gid)
-        trajectories, signals = dynamic.phase_plane.trajectories(starting_points)
+        with self.traj_lock:
+            starting_points = json.loads(starting_points)
+            dynamic = self.get_cached_dynamic(dynamic_gid)
+            trajectories, signals = dynamic.phase_plane.trajectories(starting_points)
 
-        for t in trajectories:
-            if not numpy.isfinite(t).all():
-                self.logger.warn('Denaturated point %s on a trajectory')
-                return {'finite':False}
+            for t in trajectories:
+                if not numpy.isfinite(t).all():
+                    self.logger.warn('Denaturated point %s on a trajectory')
+                    return {'finite':False}
 
-        return {'trajectories': trajectories, 'signals': signals, 'finite':True}
+            return {'trajectories': trajectories, 'signals': signals, 'finite':True}
 
 
     @staticmethod
