@@ -38,6 +38,7 @@ import sys
 import json
 import datetime
 import uuid
+import urllib
 import numpy
 from tvb.basic.profile import TvbProfile
 from tvb.basic.logger.builder import get_logger
@@ -66,7 +67,8 @@ def path2url_part(file_path):
     """
     if not os.path.isabs(file_path):
         file_path = os.path.join(TvbProfile.current.TVB_STORAGE, file_path)
-    return file_path.replace(os.sep, CHAR_SEPARATOR).replace(" ", CHAR_SPACE).replace(DRIVE_SEP, CHAR_DRIVE)
+    result = file_path.replace(os.sep, CHAR_SEPARATOR).replace(" ", CHAR_SPACE).replace(DRIVE_SEP, CHAR_DRIVE)
+    return urllib.quote(result)
 
 
 
