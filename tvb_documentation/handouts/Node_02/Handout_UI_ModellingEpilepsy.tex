@@ -6,16 +6,15 @@
 % Handout_ModelingStructuralLesions.tex
 % A handout to follow during the hands-on sessions 
 % 
-% Authors: Timothée Proix
-% 
+% Authors: 
+% 2014-06-XX : Timothée Proix - Design project and wrote handout
+% 2014-11-XX : Paula Sanz-Leon - Update text and figures to macthc TVB 1.3 functionalities.
 % 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % based on the tufte-latex template                                  %
 
 \documentclass{tufte-handout}
-
 %\geometry{showframe}% for debugging purposes -- displays the margins
-
 \usepackage{amsmath}
 
 % Set up the images/graphics \underline{\textbf{Analysis}}
@@ -28,7 +27,6 @@
 
 % The following package makes prettier tables.  
 \usepackage{booktabs}
-
 
 % The units package provides nice, non-stacked fractions and better spacing
 % for units.
@@ -148,37 +146,48 @@
 
 
 \begin{abstract}
-\noindent It is possible to use TVB to model a specific subject such as an epileptic patient. Using relevant neural
-mass models, TVB allows to ask multiple questions such as the localisation of the epileptogenic zone or the validity
-of different neuroimaging modalities to assess the epileptogenicity of a brain structure. Here we will present a example of
-such a modelisation.
+\noindent 
+It is possible to use TVB to model a specific subject such as an epileptic
+patient. Using relevant neural mass models, TVB allows to ask multiple
+questions such as the localisation of the epileptogenic zone or the validity
+of different neuroimaging modalities to assess the epileptogenicity of a brain
+structure. Here we will present a example of such a modelisation.
 \end{abstract}
-
-%\printclassoptions
 
 %\begin{fullwidth} % uncomment this environment to get full texwidth paragraphs 
  
 %\end{fullwidth}
 
 \section{Objectives}\label{sec:objectives}
-\newthought{The main goal} of this session is to provide a clear understanding of how we can reproduce clinically
-relevant scenarios such as stimulation, modelisation of forward solution of sEEG and EEG during a seizure; and, modelisation of surgery with resection of a part of the brain.
-Make sure you are working with a version of \textbf{TVB > 1.2}. If you are using TVB 1.2.X or older versions there might be some features that are not available. Also it is possible that you cannot import the projects.
+\newthought{The main goal} 
+of this session is to provide a clear understanding of how we can reproduce
+clinically relevant scenarios such as stimulation, modelisation of forward
+solution of sEEG and EEG during a seizure; and, modelisation of surgery with
+resection of a part of the brain. Make sure you are working with at least TVB
+1.3. If you are using version 1.2.X or older versions, there might be some
+features that are not available you experiencie difficulties importing the
+projects we have just shared with you.
 
 \begin{blah}
-Another important step is to process data from neuroimaging modalities into TVB. We are currently developing a pipeline (github.com/timpx/scripts) that will let you easily prepare your data in a format suitable for import
-into TVB. All you will need for this pipeline will be a T1 MRI and a Diffusion MRI from the subject. You can find these data
-in database such as the Human Connectome project. At the end of the pipeline, you will have a connectivity, a surface and a region mapping,
-i.e. you will be able to do region based and surface based simulations.
-We will use the different functionalities that you have learned in the previous sessions.
+Another important step is to process data from neuroimaging modalities into
+TVB. \href{There is a pipeline written by Timothée
+Proix}{https://github.com/timpx/scripts} that let you easily prepare your data
+in a format suitable for import into TVB. All you will need for this pipeline
+will be a T1 MRI and a Diffusion MRI from the subject. You can find these data
+in databases such as the Human Connectome project. At the end of the pipeline,
+you will have a connectivity, a surface and a region mapping, i.e. you will be
+able to do region based and surface based simulations. We will use the
+different functionalities that you have learned in the previous sessions.
 \end{blah}
 
-\subsection{Project: Session\_V\_ModellingEpilepticPatient }\label{sec:project_data}
+\subsection{Project II: Modelling Epilepsy}\label{sec:project_data}
 
-\newthought{In this project}, all the data were already generated. We'll only go through the necessary steps 
-required to reproduce the simulations listed in Table~\ref{tab:simtab}, along with the relevant outline.
-You can always start over, click along and/or try to change parameters.
-We will use the default subject connectivity matrix and surface.
+\newthought{In this project}, 
+all the data were already generated. We'll only go through the necessary steps
+required to reproduce the simulations listed in Table~\ref{tab:simtab}, along
+with the relevant outline. You can always start over, click along and/or try
+to change parameters. We will use the default subject connectivity matrix and
+surface.
 
 
 \begin{margintable}
@@ -213,12 +222,14 @@ We will use the default subject connectivity matrix and surface.
 \subsection{Exploring the Epileptor model}\label{sec:epileptor}
 
 
-\newthought{Before launching} any simulations, we will have a look at the phase space of the Epileptor model
-to understand better its dynamics. We will use the interactive tool that you have seen in Session \#1.
+\newthought{Before launching} 
+any simulations, we will have a look at the phase space of the Epileptor model
+to understand better its dynamics. We will use the phase plane interactive tool that you
+have seen in probably in Session \#1.
 
 \begin{formal}
   \begin{enumerate}[resume]
-  \item Go to \textsc{simulator} $\rightarrow$  \textsc{Phase plane} and select the $\mathbf{Epileptor}$ model
+  \item Go to \textsc{simulator} $\rightarrow$ \textsc{Phase plane} and select the $\mathbf{Epileptor}$ model.
   \item Look at the phase space (Fig. \ref{fig:phase_space}). We have here the first population (variables $y_0$ in abscissa and 
   $y_1$ in ordinate).
   The left most intersection of the nullcline defines a stable fixed point whereas the rightmost intersection 
@@ -232,30 +243,35 @@ to understand better its dynamics. We will use the interactive tool that you hav
 
 \begin{figure}[h]
   \includegraphics[width=\linewidth]{Handout_UI_ModellingEpilepsy_PhaseSpace}%
-  \caption{phase space for the first population}%
+  \caption{$y_0-y_1$ phase plane of the first population.}%
   \label{fig:phase_space}%
 \end{figure}
 \subsection{Region based simulation of an epileptic patient}
 
 \newthought{We will model} 
-a patient with temporal lobe epilepsy (TLE). Here, we will set different
-values of epileptogenicity ($x_0$ parameter in the Epileptor) according to
-the region positions, thereby introducing heterogeneities in the model
-parameters. We set the right limbic areas  (right hippocampus (rHC),
-parahippocampus (rPHC) and amygdala (rAMYG)) as epileptic zones. We also add
-two lesser epileptogenic regions:  the superior temporal cortex (rTCS) and the
-ventral temporal cortex (rTCV).
+a patient with temporal lobe epilepsy (TLE). Here, using the tools in
+\underline{Set up Region model} we will set different values of
+epileptogenicity ($x_0$ parameter in the Epileptor) according to the region
+positions, thereby introducing heterogeneities in the network parameters. We
+set the right limbic areas  (right hippocampus (rHC), parahippocampus (rPHC)
+and amygdala (rAMYG)) as epileptic zones. We also add two lesser epileptogenic
+regions: the superior temporal cortex (rTCS) and the ventral temporal cortex
+(rTCV). 
+
+%% Steps:
+%1) Go to phase plane, save two par configs. One epileptic one non epileptic. 
+%2) Got to set up region model. Set the all the nodes to non epileptic
+%3) Set the limbic regions to epileptic. 
+%4) Select all the nodes. Submit.
 
 \begin{simulation}
   \begin{enumerate}
-  \item Stay in the same page; all nodes are selected by default, give them the value $\mathbf{-2.2}$ for the $\mathbf{x_0}$ parameter.
-  \item \underline{Remove all} selected nodes, select rHC, rAMYG and rPHC, save the selection with a name
-	and set the parameter $\mathbf{x_0}$ to the value $\mathbf{-1.6}$. Click on \underline{Submit Region Parameters} values.
-  \item \underline{Configure the Visualizers} and select the \underline{Brain Viewer}. 
+  \item In other words, in \underline{Set up Region model} assign to all the nodes the \underline{Dynamics} for which $\mathbf{x_0}$ has a value of value of $\mathbf{-2.2}$. Apply the non-epileptogenic configuration ($\mathbf{x_0}=\mathbf{-1.6}$) to the \underline{RigtLimbicAreas} selection. Select all the nodes and click on \underline{Submit Region Parameters} values.
+  All the other model parameters are given in Table \ref{tab:modeltab}.
+
+  \item Once back in the \textsc{Simulator} playground \underline{Configure the Visualizers} and select the \underline{Brain Viewer}. 
   \underline{Save your choices}.
-  \item Choose an $\mathbf{integration\:step\:size}$ of \textbf{\unit[0.1]{ms}}, a $\mathbf{Temporal\:average\:monitor}$ with a \textbf{sampling period} of \textbf{\unit[1]{ms}} and \textbf{\unit[6000]{ms}} as a simulation length. 
-  All the other parameters are
-  given in the table \ref{tab:modeltab}.
+  \item Set the $\mathbf{integration\:step\:size}$ to \textbf{\unit[0.1]{ms}}, select the $\mathbf{Temporal\:average\:monitor}$ with a \textbf{sampling period} of \textbf{\unit[1]{ms}} and set \textbf{\unit[6000]{ms}} as the simulation length. 
  \end{enumerate}
 \end{simulation}
 
@@ -266,24 +282,23 @@ ventral temporal cortex (rTCV).
     \toprule
     Model parameter & Value \\
     \midrule
-             $Iext$           &   3.1  \\
-             $Iext2$          &  0.45   \\
-             $R$              &   0.00035        \\
-             $slope$          &   0.0   \\
+             $Iext$           &   3.1     \\
+             $Iext2$          &   0.45    \\
+             $R$              &   0.00035 \\
+             $slope$          &   0.0     \\
     \bottomrule
   \end{tabular}
-  \caption{Parameters for the Epileptor model	 }
+  \caption{Parameters for the Epileptor model}
   \label{tab:modeltab}
 \end{margintable}
 
 \begin{marginfigure}
-  \includegraphics[width=\linewidth]{Handout_UI_ModellingAnEpilepticPatient_BrainMenu}%
-  \caption{Brain menu: you can increase the scaling and change the variable to be displayed.}%
+  \includegraphics[width=\linewidth]{Handout_UI_ModellingEpilepsy_BrainMenuScaling}%
+  \caption{Brain menu: you can increase the scaling of the signals.}%
   \label{fig:brain_menu}%
 \end{marginfigure}
 
 The results are already computed for you in \textit{Region\_TemporalLobe}
-
 
 
 \begin{simulation}
@@ -292,15 +307,15 @@ The results are already computed for you in \textit{Region\_TemporalLobe}
   \item Visualize the time series. Click on \underline{Select Input Signals} and select all the regions. 
   From this same menu you can select which state variables of interest will be displayed. For instance, visualize 
   $y_0$ (Fig. \ref{fig:first_pop}) and then $y_3$ state (Fig. \ref{fig:second_pop}). 
-	You will need to increase the scaling by clicking on \includegraphics[width=0.08\textwidth]{butt_brain_menu}(Fig. \ref{fig:brain_menu}).  You can see a succession of 3 seizures, use the mouse
+	You will need to increase the scaling by clicking on \includegraphics[width=0.08\textwidth]{butt_brain_menu}(Fig. \ref{fig:brain_menu}). You can see a succession of 3 seizures, use the mouse
 	 to zoom in and out in the time series area.
-  \item Visualize the results in the \underline{Brain Viewer}, you will need to increase the rendering speed 
+  \item Go back to the \textsc{Simulator} page and visualize the results in the \underline{Brain Viewer}, you will need to increase the rendering speed 
 	(timesteps per Frame) by clicking on \includegraphics[width=0.08\textwidth]{butt_brain_menu}.
 \end{enumerate}
 \end{simulation}
   
 \begin{figure}[h]
-  \includegraphics[width=\linewidth]{Handout_UI_ModellingAnEpilepticPatient_FirstPopulationTimeSeries}%
+  \includegraphics[width=\linewidth]{Handout_UI_ModellingEpilepsy_TSPop1}%
   \caption{Time series for the first population}%
   \label{fig:first_pop}%
 \end{figure}
@@ -308,7 +323,7 @@ The results are already computed for you in \textit{Region\_TemporalLobe}
 
 
 \begin{figure}[h]
-  \includegraphics[width=\linewidth]{Handout_UI_ModellingAnEpilepticPatient_SecondPopulationTimeSeries}%
+  \includegraphics[width=\linewidth]{Handout_UI_ModellingEpilepsy_TSPop2}%
   \caption{Time series for the second population}%
   \label{fig:second_pop}%
 \end{figure}
@@ -324,7 +339,7 @@ We now are going to run this simulation again, but with intracranial electrodes 
 \begin{simulation}
   \begin{enumerate}
   \item Copy the former simulation.
-  \item Add two new monitors (EEG and sEEG) with a \textbf{sampling period} of \textbf{\unit[1]{ms}} by hitting Ctrl and at the same time clicking on the monitor you want to add.
+  \item Unselect the Temporal average monitor and select two new monitors (EEG and sEEG) with a \textbf{sampling period} of \textbf{\unit[1]{ms}} by hitting *Ctrl* (*Cmd* for Mac users) and at the same time clicking on the monitor you want to add.
   \item For this simulation, we will not use the \underline{Brain Viewer} so reconfigure the \underline{View} tabs accordingly.
 \end{enumerate}
 \end{simulation}
@@ -494,7 +509,7 @@ You can see the result of this simulation in \textit{surface stimulation}
 
 \begin{marginfigure}
   \includegraphics[width=\linewidth]{Handout_UI_ModellingAnEpilepticPatient_ChooseChannelsStimulation}%
-  \caption{Channel selection menu: you can choose the channels of interest. }%
+  \caption{Signals Input menu: you can choose the sources of interest.}%
   \label{fig:choose_channels}%
 \end{marginfigure}
 
