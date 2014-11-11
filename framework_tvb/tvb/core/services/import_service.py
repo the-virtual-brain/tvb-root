@@ -83,7 +83,7 @@ class ImportService():
             if not uploaded.file:
                 raise ProjectImportException("Please select the archive which contains the project structure.")
             with open(uq_file_name, 'wb') as file_obj:
-                file_obj.write(uploaded.file.read())
+                self.files_helper.copy_file(uploaded.file, file_obj)
         else:
             shutil.copy2(uploaded, uq_file_name)
 
