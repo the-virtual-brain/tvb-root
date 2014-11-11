@@ -406,7 +406,7 @@ class FilesHelper():
                         continue
 
                     new_file_name = os.path.join(folder_path, filename)
-                    with zip_arch.open(filename, 'rb') as src:
+                    with zip_arch.open(filename, 'rU') as src:
                         if new_file_name.endswith('/'):
                             if not os.path.exists(new_file_name):
                                 os.makedirs(new_file_name)
