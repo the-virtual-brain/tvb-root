@@ -263,9 +263,10 @@ class DynamicModelController(BurstBaseController):
 
         Should the Integrator __init__ not take care of this? Or noise_framework.buildnoise?
         Should I call noise.configure() as well?
+        similar to simulator.configure_integrator_noise
         """
         if isinstance(integrator, integrators.IntegratorStochastic):
-            shape = (1, model.nvar, 1, model.number_of_modes)
+            shape = (model.nvar, 1, model.number_of_modes)
             if integrator.noise.ntau > 0.0:
                 integrator.noise.configure_coloured(integrator.dt, shape)
             else:
