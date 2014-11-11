@@ -140,7 +140,7 @@ class CSVConnectivityImporter(ABCUploader):
         Read a CSV file, arrange rows/columns in the correct order,
         to obtain Weight/Tract data in TVB compatible format.
         """
-        with open(csv_file) as f:
+        with open(csv_file, 'rU') as f:
             result_conn = CSVConnectivityParser(f).result_conn
             self.logger.debug("Read Connectivity file of size %d" % len(result_conn))
             return numpy.array(result_conn)
@@ -162,9 +162,9 @@ class CSVConnectivityImporter(ABCUploader):
 
         FilesHelper.remove_files([weights, tracts])
 
-        if weights_matrix.shape[0] != input_data.orientations.shape[0]:
+        if weights_matrix.shape[0] != input_data.number_of_regions:
             raise LaunchException("The csv files define %s nodes but the connectivity you selected as reference "
-                                  "has only %s nodes." % (weights_matrix.shape[0], input_data.orientations.shape[0]))
+                                  "has only %s nodes." % (weights_matrix.shape[0], input_data.number_of_regions))
         result = Connectivity()
         result.storage_path = self.storage_path
         result.centres = input_data.centres
