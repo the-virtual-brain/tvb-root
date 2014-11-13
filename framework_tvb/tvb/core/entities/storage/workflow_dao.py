@@ -71,7 +71,7 @@ class WorkflowDAO(RootDAO):
         try:
             bursts = self.session.query(model.BurstConfiguration
                                         ).filter_by(fk_project=project_id
-                                                    ).order_by(desc(model.BurstConfiguration.id))
+                                                    ).order_by(desc(model.BurstConfiguration.start_time))
             if count:
                 return bursts.count()
             if page_end is not None:
