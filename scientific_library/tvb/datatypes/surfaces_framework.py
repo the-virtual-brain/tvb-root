@@ -454,7 +454,8 @@ class SurfaceFramework(surfaces_data.SurfaceData):
                 ind_offset = len(processed_vertices) / 3
                 processed_vertices.extend(lines_vert)
                 processed_normals.extend(lines_norm)
-                processed_triangles.append([ind + ind_offset for ind in lines_ind])
+                for ind in lines_ind:
+                    processed_triangles.append(ind + ind_offset)
             boundary_vertices.append(processed_vertices)
             boundary_lines.append(processed_triangles)
             boundary_normals.append(processed_normals)
