@@ -97,9 +97,8 @@ function BASE_PICK_webGLStart(urlVerticesPickList, urlTrianglesPickList, urlNorm
     initDrawingBrainBuffers(urlVerticesDisplayList, urlTrianglesDisplayList, urlNormalsDisplayList, callback);
     initBrainNavigatorBuffers();
     createStimulusPinBuffers();
-    
-    var theme = ColSchGetTheme().surfaceViewer;
-    gl.clearColor(theme.backgroundColor[0], theme.backgroundColor[1], theme.backgroundColor[2], theme.backgroundColor[3]);
+
+    ColSch_loadInitialColorScheme();
     gl.clearDepth(1.0);
     gl.enable(gl.DEPTH_TEST);
     gl.depthFunc(gl.LEQUAL);
@@ -159,7 +158,8 @@ function BASE_PICK_drawBrain() {
         basicAddLight(defaultLightSettings);
         gl.uniform1f(shaderProgram.isPicking, 0);
     }
-
+    var theme = ColSchGetTheme().surfaceViewer;
+    gl.clearColor(theme.backgroundColor[0], theme.backgroundColor[1], theme.backgroundColor[2], theme.backgroundColor[3]);
     gl.viewport(0, 0, gl.viewportWidth, gl.viewportHeight);
     gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
     // View angle is 45, we want to see object from 0.1 up to 800 distance from viewer

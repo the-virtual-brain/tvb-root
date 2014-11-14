@@ -17,6 +17,8 @@
  *
  **/
 
+/* globals displayMessage, doAjaxCall */
+
 // this array will contain all the focal points selected by the user
 var BS_addedSurfaceFocalPoints = [];
 // this array will contain all the triangles for the defined focal points
@@ -75,25 +77,6 @@ function BS_stopSignalVisualization() {
     $('.action-run').removeClass('action-idle');
     $('.action-stop').addClass('action-idle');
     LEG_legendBuffers = [];
-}
-
-
-/**
- * Method used for selecting/unselecting a connectivity node. This method will
- * also select/unselect the node from the 'hemispheres' component.
- * @deprecated
- * @param nodeIndex the index of the node that hast to be toggled.
- */
-function BS_toggleNodeSelection(nodeIndex) {
-    if (nodeIndex >= 0) {
-        if (GFUNC_isNodeAddedToInterestArea(nodeIndex)) {
-            GFUNC_removeNodeFromInterestArea(nodeIndex);
-            $("#nodeSelection" + nodeIndex).removeClass('selected');
-        } else {
-            GFUNC_addNodeToInterestArea(nodeIndex);
-            $("#nodeSelection" + nodeIndex).addClass('selected');
-        }
-    }
 }
 
 
