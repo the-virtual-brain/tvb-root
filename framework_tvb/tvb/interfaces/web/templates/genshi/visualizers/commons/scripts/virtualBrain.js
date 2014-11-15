@@ -223,10 +223,9 @@ function VS_StartPortletPreview(baseDatatypeURL, urlVerticesList, urlTrianglesLi
     canvas.onkeydown = GL_handleKeyDown;
     canvas.onkeyup = GL_handleKeyUp;
     canvas.onmousedown = customMouseDown;
-    canvas.onmouseup = customMouseUp;
     canvas.oncontextmenu = function() { return false;};
     $(document).on('mousemove', GL_handleMouseMove);
-
+    $(document).on('mouseup', customMouseUp);
     // We use drawScene instead of tick because tick's performance is worse.
     // Portlet previews are static, not movies. Tick's movie update is not required.
     // A call to updateColors has to be made to initialize the color buffer.
@@ -447,7 +446,7 @@ function _bindEvents(canvas){
     canvas.onkeydown = GL_handleKeyDown;
     canvas.onkeyup = GL_handleKeyUp;
     canvas.onmousedown = customMouseDown;
-    canvas.onmouseup = customMouseUp;
+    $(document).on('mouseup', customMouseUp);
     $(canvas).on('contextmenu', _onContextMenu);
     document.onmousemove = GL_handleMouseMove;
 
