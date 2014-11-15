@@ -1,0 +1,68 @@
+<script id="shader-fs" type="x-shader/x-fragment">
+    precision mediump float;
+    uniform vec3 uAmbientColor;
+    uniform vec3 uLightingDirection;
+    uniform vec3 uDirectionalColor;
+    uniform vec3 uLinesColor;
+
+    uniform bool uUseBlending;
+    uniform bool uDrawLines;
+    uniform bool uUseVertexLineColor;
+
+    uniform float uMaterialShininess;
+    uniform vec3 uPointLightingLocation;
+    uniform vec3 uPointLightingSpecularColor;
+
+    // this is used to draw whole objects in a specific picking color.
+    // for vertex level picking special color buffers are used.
+    uniform float isPicking;
+    uniform vec3 pickingColor;
+
+    varying vec4 vColor;
+    varying vec3 posInterp;
+    varying vec3 normInterp;
+
+    void main(void) {
+        vec3 normal = normalize(normInterp);
+        // ignore uPointLightingLocation. Make the camera (0,0,0) the point light source
+        vec3 lightDirection = normalize(vec3(0.0, 0.0, 0.0) - posInterp);
+        vec3 reflectionDirection = reflect(-lightDirection, normal);
+        vec3 eyeDirection = normalize(-posInterp);
+
+        float directionalLightWeighting = max(dot(normal, uLightingDirection), 0.0);
+        float specularLightWeighting = pow(max(dot(reflectionDirection, eyeDirection), 0.0), uMaterialShininess);
+
+        // these are here to emphasise that the conditionals below do not belong in the shader.
+        vec3 ambientColor = uAmbientColor * 0.60; //compensate overexposures
+        vec3 difuseColor = uDirectionalColor * 0.80;
+        vec3 specularColor = uPointLightingSpecularColor;
+        vec4 materialColor = vColor;
+
+        if (isPicking == 0.0) {
+            if (uUseVertexLineColor || !uDrawLines) {
+                if (uUseBlending) {
+                    ambientColor = vec3(0.4, 0.4, 0.4);
+                    difuseColor = vec3(0.4, 0.4, 0.4);
+                    specularColor = vec3(0.0, 0.0, 0.0);
+                    materialColor = vec4(0.95, 0.95, 0.95, 0.29);
+                }
+            } else {
+                if (uDrawLines) {
+                    ambientColor = vec3(1.0, 1.0, 1.0);
+                    difuseColor = vec3(0.1, 0.1, 0.1);
+                    specularColor = vec3(0.0, 0.0, 0.0);
+					materialColor = vec4(uLinesColor, 1.0);
+                }
+            }
+        } else {
+            ambientColor = vec3(1.0, 1.0, 1.0);
+            difuseColor = vec3(0.0, 0.0, 0.0);
+            specularColor = vec3(0.0, 0.0, 0.0);
+            materialColor = vec4(pickingColor, 1.0);
+        }
+
+        vec3 diffuse = materialColor.rgb * (ambientColor + difuseColor * directionalLightWeighting);
+        vec3 light = diffuse + specularColor * specularLightWeighting;
+        gl_FragColor = vec4(light, materialColor.a);
+    }
+</script>

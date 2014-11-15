@@ -1,0 +1,44 @@
+<script id="shader-vs" type="x-shader/x-vertex" xmlns:py="http://genshi.edgewall.org/">
+    attribute vec3 aVertexPosition;
+    attribute vec3 aVertexNormal;
+
+    <py:choose test="">
+        <py:when test="isOneToOneMapping">
+            attribute vec4 aVertexColor;
+        </py:when>
+        <py:otherwise>
+            attribute vec3 alphaIndices;
+            attribute vec2 alpha;
+
+            uniform vec4 uVertexColors[${abs(noOfMeasurePoints) + 2} + 127];
+        </py:otherwise>
+    </py:choose>
+
+    uniform mat4 uPMatrix;
+    uniform mat4 uMVMatrix;
+    uniform mat4 uNMatrix;
+
+    varying vec4 vColor;
+    varying vec3 posInterp;
+    varying vec3 normInterp;
+
+    void main(void) {
+
+        vec4 mvPosition = uMVMatrix * vec4(aVertexPosition, 1.0);
+        vec4 transformedNormal = uNMatrix * vec4(aVertexNormal, 1.0);
+        posInterp = vec3(mvPosition) / mvPosition.w;
+        normInterp = vec3(transformedNormal);
+
+        gl_Position = uPMatrix * mvPosition;
+
+        <py:choose test="">
+            <py:when test="isOneToOneMapping">
+                vColor = aVertexColor;
+            </py:when>
+            <py:otherwise>
+                vColor = uVertexColors[int(alphaIndices[0])] * alpha[0] + uVertexColors[int(alphaIndices[1])] * alpha[1] +
+                     uVertexColors[int(alphaIndices[2])] * (1.0 - alpha[0] - alpha[1]);
+            </py:otherwise>
+        </py:choose>
+    }
+</script>
