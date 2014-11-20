@@ -118,6 +118,56 @@ var dynamicPage = {
     };
 
     /**
+     * @constructor
+     */
+    function AxisControls(state, svDrop, slider, span, onChange){
+        var self = this;
+        self.onChange = onChange;
+        self.state = state;
+        self.$sv = $(svDrop);
+        self.$slider = $(slider);
+        self.$span = $(span);
+
+        self.$sv.change(function(){
+            self.val(self.$sv.val());
+            onChange();
+        });
+
+        self.$slider.slider({
+            range:true,
+            slide: function(ev, target) {
+                self._updateSpan(target.values);
+            },
+            change : function(ev, target){
+                self._updateSpan(target.values);
+                self.onChange();
+            }
+        });
+    }
+
+    AxisControls.prototype._getStateVarByName = function(name){
+        return $.grep(this.state.state_variables, function(n){
+            return n.name === name;
+        })[0];
+    };
+
+    AxisControls.prototype._updateSpan = function(r){
+        this.$span.text(r[0] + ' .. ' + r[1]);
+    };
+
+    AxisControls.prototype.val = function(sv){
+        if (sv == null) {
+            return {sv: this.$sv.val(), range: this.$slider.slider('values')};
+        }else{
+            var opt = this._getStateVarByName(sv);
+            this.$sv.val(sv);
+            this.$slider.slider({ min: opt.min, max: opt.max, values: [opt.lo, opt.hi], step: (opt.max - opt.min)/1000 });
+            this._updateSpan([opt.lo, opt.hi]);
+        }
+    };
+
+
+    /**
      * Dom selectors are hard coded so only one instance makes sense.
      * @constructor
      */
@@ -126,77 +176,27 @@ var dynamicPage = {
         self.onChange = onChange;
         self.state = state;
         self.$mode = $('#mode');
-        self.$svx = $('#svx');
-        self.$svy = $('#svy');
-        self.$slider_x = $('#slider_x_axis');
-        self.$slider_y = $('#slider_y_axis');
+        self.ax = new AxisControls(state, '#svx', '#slider_x_axis', '#x_range_span', onChange);
+        self.ay = new AxisControls(state, '#svy', '#slider_y_axis', '#y_range_span', onChange);
+        self.ax.val(this.state.default_sv[0]);
+        self.ay.val(this.state.default_sv[1]);
         self.$mode.change(onChange);
-
-        self.$svx.add(self.$svy).change(function(){
-            self._initSliders();
-            onChange();
-        });
         $('#reset_axes').click(function() { self.reset();});
-        this._initSliders();
     }
 
-    AxisGroup.prototype._initSliders = function(){
-        var x_axis_sv = this._getStateVarByName(this.$svx.val());
-        var y_axis_sv = this._getStateVarByName(this.$svy.val());
-
-        this._initAxisSlider(this.$slider_x, $('#x_range_span'), x_axis_sv);
-        this._initAxisSlider(this.$slider_y, $('#y_range_span'), y_axis_sv);
-    };
-
-    AxisGroup.prototype._getStateVarByName = function(name){
-        return $.grep(this.state.state_variables, function(n){
-            return n.name === name;
-        })[0];
-    };
-
-    AxisGroup.prototype._initAxisSlider = function(sel, span, opt){
-        var self = this;
-        function update_span(r) {
-            span.text(r[0] + ' .. ' + r[1]);
-        }
-        sel.slider({
-            range:true,
-            min: opt.min,
-            max: opt.max,
-            values:[opt.lo, opt.hi],
-            step: (opt.max - opt.min)/1000,
-            slide: function(ev, target) {
-                update_span(target.values);
-            },
-            change : function(ev, target){
-                update_span(target.values);
-                self.onChange();
-            }
-        });
-        update_span([opt.lo, opt.hi]);
-    };
-
     AxisGroup.prototype.reset = function(){
-        var x_axis_sv = this._getStateVarByName(this.state.default_sv[0]);
-        var y_axis_sv = this._getStateVarByName(this.state.default_sv[1]);
-
-        var opt = x_axis_sv;
-        this.$slider_x.slider({ min: opt.min, max: opt.max, values: [opt.lo, opt.hi] });
-        opt = y_axis_sv;
-        this.$slider_y.slider({ min: opt.min, max: opt.max, values: [opt.lo, opt.hi] });
-        //reset mode and state var selection as well
-        this.$mode.val(this.state.default_mode).change(); // change events do not fire when select's are changed by val()
-        this.$svx.val(this.state.default_sv[0]).change();
-        this.$svy.val(this.state.default_sv[1]).change();
+        this.$mode.val(this.state.default_mode);
+        this.ax.val(this.state.default_sv[0]);
+        this.ay.val(this.state.default_sv[1]);
     };
 
     AxisGroup.prototype.getValue = function(){
+        var axv = this.ax.val();
+        var ayv = this.ay.val();
         return {
             mode: this.$mode.val(),
-            svx: this.$svx.val(),
-            svy: this.$svy.val(),
-            x_range: this.$slider_x.slider('values'),
-            y_range: this.$slider_y.slider('values')
+            svx: axv.sv, svy: ayv.sv,
+            x_range: axv.range, y_range: ayv.range
         };
     };
 
