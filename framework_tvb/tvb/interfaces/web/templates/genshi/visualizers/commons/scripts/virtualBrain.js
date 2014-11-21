@@ -1158,21 +1158,22 @@ function drawScene() {
 
     var theme = ColSchGetTheme().surfaceViewer;
     gl.clearColor(theme.backgroundColor[0], theme.backgroundColor[1], theme.backgroundColor[2], theme.backgroundColor[3]);
-
     gl.viewport(0, 0, gl.viewportWidth, gl.viewportHeight);
+
+    // Draw sections before setting the correct draw perspective, to work with "rel-time refresh of sections"
+    basicAddLight(lightSettings);
+    VB_BrainNavigator.maybeRefreshSections();
+
     // View angle is 45, we want to see object from near up to 800 distance from camera
     perspective(45, gl.viewportWidth / gl.viewportHeight, near, 800.0);
 
     mvPushMatrix();
-
     mvRotate(180, [0, 0, 1]);
 
     if (!doPick) {
         gl.uniform1f(shaderProgram.isPicking, 0);
         gl.uniform3f(shaderProgram.pickingColor, 1, 1, 1);
         gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
-
-        basicAddLight(lightSettings);
 
         if(VS_showLegend){
             mvPushMatrix();

@@ -123,6 +123,7 @@ function NAV_BrainNavigator(isOneToOneMapping, brainBuffers, measurePoints, meas
 
     this.setInTimeRefresh = function (checkbox) {
         this.isInTimeRefresh = checkbox.checked;
+        this.cacheInTimeRefreshValue = this.isInTimeRefresh;
     };
 
     this.temporaryDisableInTimeRefresh = function() {
@@ -135,7 +136,7 @@ function NAV_BrainNavigator(isOneToOneMapping, brainBuffers, measurePoints, meas
     };
 
 
-    this.drawNavigator = function () {
+    this.maybeRefreshSections = function () {
         if (this.shouldRedrawSections || this.isInTimeRefresh) {
             for(var i = 0; i < 3; i++) {
                 this._drawSection(i);
@@ -144,7 +145,9 @@ function NAV_BrainNavigator(isOneToOneMapping, brainBuffers, measurePoints, meas
             $(".brainArea").text("Brain area: " + closestArea);
             this.shouldRedrawSections = false;
         }
+    };
 
+    this.drawNavigator = function () {
         mvPushMatrix();
         mvTranslate(this.getPosition());
         drawBuffers(gl.TRIANGLES, [this.drawingBuffers], null, true);
@@ -268,6 +271,7 @@ function NAV_BrainNavigator(isOneToOneMapping, brainBuffers, measurePoints, meas
             mvPopMatrix();
 
             this.shouldRedrawSections = true;
+            this.maybeRefreshSections();
             this.drawNavigator();
         }
     };
