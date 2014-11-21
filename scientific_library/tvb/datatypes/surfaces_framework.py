@@ -146,7 +146,8 @@ class SurfaceFramework(surfaces_data.SurfaceData):
         return result
 
 
-    def _triangles_to_lines(self, triangles):
+    @staticmethod
+    def _triangles_to_lines(triangles):
         lines_array = []
         for a, b, c in triangles:
             lines_array.extend([a, b, b, c, c, a])
@@ -311,13 +312,15 @@ class SurfaceFramework(surfaces_data.SurfaceData):
             return 0, self.number_of_triangles
 
 
-    def _get_slices_number(self, vertices_number):
+    @staticmethod
+    def _get_slices_number(vertices_number):
         """
         Slices are for vertices [SPLIT_MAX_SIZE * i ... SPLIT_MAX_SIZE * (i + 1) + SPLIT_BUFFER_SIZE]
         Slices will overlap :
         |........SPLIT_MAX_SIZE|...SPLIT_BUFFER_SIZE|                           <-- split 1
                                |......... SPLIT_MAX_SIZE|...SPLIT_BUFFER_SIZE|  <-- split 2
-        If we have trailing data smaller than the SPLIT_BUFFER_SIZE then we no longer split but we need to have at least 1 slice.
+        If we have trailing data smaller than the SPLIT_BUFFER_SIZE,
+        then we no longer split but we need to have at least 1 slice.
         """
         slices_number, trailing = divmod(vertices_number, SPLIT_MAX_SIZE)
         if trailing > SPLIT_BUFFER_SIZE or (slices_number == 0 and trailing > 0):
@@ -344,7 +347,8 @@ class SurfaceFramework(surfaces_data.SurfaceData):
         """
         slice_number = int(slice_number)
         slice_triangles = self.get_data('triangles', slice(slice_number * SPLIT_PICK_MAX_TRIANGLE,
-                                    min(self.number_of_triangles, (slice_number + 1) * SPLIT_PICK_MAX_TRIANGLE)))
+                                                           min(self.number_of_triangles,
+                                                               (slice_number + 1) * SPLIT_PICK_MAX_TRIANGLE)))
         result_vertices = []
         for triang in slice_triangles:
             result_vertices.append(self.vertices[triang[0]])
@@ -359,7 +363,8 @@ class SurfaceFramework(surfaces_data.SurfaceData):
         """
         slice_number = int(slice_number)
         slice_triangles = self.get_data('triangles', slice(slice_number * SPLIT_PICK_MAX_TRIANGLE,
-                                    min(self.number_of_triangles, (slice_number + 1) * SPLIT_PICK_MAX_TRIANGLE)))
+                                                           min(self.number_of_triangles,
+                                                               (slice_number + 1) * SPLIT_PICK_MAX_TRIANGLE)))
         result_normals = []
         for triang in slice_triangles:
             result_normals.append(self.vertex_normals[triang[0]])
@@ -440,22 +445,21 @@ class SurfaceFramework(surfaces_data.SurfaceData):
                 # region separation lines depending on the 3rd point from the triangle
                 rt0, rt1, rt2 = array_data[triangle]
                 if rt0 - rt1:
-                     reg_idx1, reg_idx2, dangling_idx = 0, 1, 2
+                    reg_idx1, reg_idx2, dangling_idx = 0, 1, 2
                 elif rt1 - rt2:
-                     reg_idx1, reg_idx2, dangling_idx = 1, 2, 0
+                    reg_idx1, reg_idx2, dangling_idx = 1, 2, 0
                 elif rt2 - rt0:
                     reg_idx1, reg_idx2, dangling_idx = 2, 0, 1
                 else:
                     continue
 
                 lines_vert, lines_ind, lines_norm = self._process_triangle(triangle, reg_idx1, reg_idx2, dangling_idx,
-                                                                first_index_in_slice, array_data,
-                                                                slice_vertices, slice_normals)
+                                                                           first_index_in_slice, array_data,
+                                                                           slice_vertices, slice_normals)
                 ind_offset = len(processed_vertices) / 3
                 processed_vertices.extend(lines_vert)
                 processed_normals.extend(lines_norm)
-                for ind in lines_ind:
-                    processed_triangles.append(ind + ind_offset)
+                processed_triangles.extend([ind + ind_offset for ind in lines_ind])
             boundary_vertices.append(processed_vertices)
             boundary_lines.append(processed_triangles)
             boundary_normals.append(processed_normals)
@@ -463,7 +467,8 @@ class SurfaceFramework(surfaces_data.SurfaceData):
                     
                     
             
-    def _process_triangle(self, triangle, reg_idx1, reg_idx2, dangling_idx, indices_offset,
+    @staticmethod
+    def _process_triangle(triangle, reg_idx1, reg_idx2, dangling_idx, indices_offset,
                           region_mapping_array, vertices, normals):
         """
         Process a triangle and generate the required data for a region separation.
