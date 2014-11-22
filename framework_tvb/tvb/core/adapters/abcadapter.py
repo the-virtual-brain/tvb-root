@@ -228,6 +228,15 @@ class ABCAdapter(object):
         """
 
 
+    def add_operation_additional_info(self, message):
+        """
+        Adds additional info on the operation to be displayed in the UI. Usually a warning message.
+        """
+        current_op = dao.get_operation_by_id(self.operation_id)
+        current_op.additional_info = message
+        dao.store_entity(current_op)
+
+
     @nan_not_allowed()
     def _prelaunch(self, operation, uid=None, available_disk_space=0, **kwargs):
         """

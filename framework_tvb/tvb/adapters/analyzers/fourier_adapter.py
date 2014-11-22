@@ -144,8 +144,7 @@ class FourierAdapter(abcadapter.ABCAsynchronous):
 
         """
         shape = time_series.read_data_shape()
-        block_size = int(math.floor(time_series.read_data_shape()[2]
-                                    / self.memory_factor))
+        block_size = int(math.floor(time_series.read_data_shape()[2] / self.memory_factor))
         blocks = int(math.ceil(time_series.read_data_shape()[2] / block_size))
         
         ##----------- Prepare a FourierSpectrum object for result ------------##
@@ -165,6 +164,10 @@ class FourierAdapter(abcadapter.ABCAsynchronous):
             small_ts.data = time_series.read_data_slice(tuple(node_slice))
             self.algorithm.time_series = small_ts
             partial_result = self.algorithm.evaluate()
+            if blocks <= 1 and len(partial_result.array_data) == 0:
+                self.add_operation_additional_info(
+                    "Fourier produced empty result (most probably due to a very short input TimeSeries).")
+                return None
             spectra.write_data_slice(partial_result)
         
         LOG.debug("partial segment_length is %s" % (str(partial_result.segment_length)))

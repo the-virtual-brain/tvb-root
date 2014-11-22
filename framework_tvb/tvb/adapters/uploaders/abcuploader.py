@@ -149,11 +149,3 @@ class ABCUploader(ABCSynchronous):
             available = [s for s in matlab_data if not double__(s)]
             raise KeyError("Could not find dataset named %s. Available datasets: %s" % (matlab_data_name, available))
 
-
-    def add_operation_additional_info(self, message):
-        """
-        Adds additional info on the operation to be displayed in the UI. Usually a warning message.
-        """
-        current_op = dao.get_operation_by_id(self.operation_id)
-        current_op.additional_info = message
-        dao.store_entity(current_op)

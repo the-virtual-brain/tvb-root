@@ -542,7 +542,8 @@ class HDF5StorageManager(object):
             # append mode and just want to write the whole data.
             max_leng_dim = data_shape.index(max(data_shape))
             for dim in data_shape:
-                nr_elems_per_block = nr_elems_per_block / dim
+                if dim != 0:
+                    nr_elems_per_block = nr_elems_per_block / dim
             nr_elems_per_block = nr_elems_per_block * data_shape[max_leng_dim]
             if nr_elems_per_block < 1:
                 nr_elems_per_block = 1
@@ -550,7 +551,7 @@ class HDF5StorageManager(object):
             return tuple(data_shape)
         else:
             for idx, dim in enumerate(data_shape):
-                if idx != grow_dim:
+                if idx != grow_dim and dim != 0:
                     nr_elems_per_block = nr_elems_per_block / dim
             if nr_elems_per_block < 1:
                 nr_elems_per_block = 1
