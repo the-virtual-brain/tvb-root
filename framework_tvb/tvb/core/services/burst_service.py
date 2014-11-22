@@ -316,7 +316,8 @@ class BurstService():
             simulation_state = dao.get_generic_entity(SIMULATION_DATATYPE_MODULE + "." + SIMULATION_DATATYPE_CLASS,
                                                       burst_config.id, "fk_parent_burst")
             if simulation_state is None or len(simulation_state) < 1:
-                exc = BurstServiceException("Simulation state not found for burst_id %s" % burst_config.id)
+                exc = BurstServiceException("Simulation State not found for %s, "
+                                            "thus we are unable to branch from it!" % burst_config.name)
                 self.logger.error(exc)
                 raise exc
             

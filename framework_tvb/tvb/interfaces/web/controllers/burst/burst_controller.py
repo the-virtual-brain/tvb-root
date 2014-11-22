@@ -38,12 +38,13 @@ import json
 import copy
 import cherrypy
 import formencode
+import tvb.core.entities.model
 from formencode import validators
 from tvb.config import SIMULATOR_MODULE, SIMULATOR_CLASS, MEASURE_METRICS_MODULE, MEASURE_METRICS_CLASS
 from tvb.basic.profile import TvbProfile
-import tvb.core.entities.model
 from tvb.core.utils import generate_guid, string2bool
 from tvb.core.adapters.abcadapter import ABCAdapter
+from tvb.core.services.exceptions import BurstServiceException
 from tvb.core.services.burst_service import BurstService, KEY_PARAMETER_CHECKED, LAUNCH_NEW
 from tvb.core.services.workflow_service import WorkflowService
 from tvb.core.services.operation_service import RANGE_PARAMETER_1, RANGE_PARAMETER_2
@@ -346,9 +347,13 @@ class BurstController(BurstBaseController):
         burst_config.fk_project = common.get_current_project().id
 
         ## Do the asynchronous launch
-        burst_id, burst_name = self.burst_service.launch_burst(burst_config, 0, self.cached_simulator_algorithm_id,
-                                                               user_id, launch_mode)
-        return {'id': burst_id, 'name': burst_name}
+        try:
+            burst_id, burst_name = self.burst_service.launch_burst(burst_config, 0, self.cached_simulator_algorithm_id,
+                                                                   user_id, launch_mode)
+            return {'id': burst_id, 'name': burst_name}
+        except BurstServiceException, e:
+            self.logger.exception("Could not launch burst!")
+            return {'error': e.message}
 
 
     @expose_json
