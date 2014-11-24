@@ -109,6 +109,7 @@ class ObjWriter(object):
     def _write_face(self, v_info, write_normals):
         fs = []
         for info in v_info:
+            info += 1
             if not write_normals:
                 s = '%d' % info
             else:
@@ -134,5 +135,5 @@ class ObjWriter(object):
                 self._write_vector('vn', v)
             self.file.write('\n')
 
-        for v_idx in faces:
-            self._write_face(v_idx + 1  , normals is not None)
+        for f in faces:
+            self._write_face(f, normals is not None)

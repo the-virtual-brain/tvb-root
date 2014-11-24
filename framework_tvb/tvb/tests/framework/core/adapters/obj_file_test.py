@@ -33,7 +33,7 @@
 """
 
 from unittest import TestCase
-from tvb.core.adapters.obj_file import ObjWriter
+from tvb.core.adapters.obj_file import ObjWriter, ObjParser
 from StringIO import StringIO
 
 class ObjFilesTest(TestCase):
@@ -53,12 +53,18 @@ class ObjFilesTest(TestCase):
                 comment="exported from test")
         self.assertTrue(len(f.getvalue()) > 15)
 
-    #todo write these tests
-    def _test_parse_simple(self):
-        pass
+    def test_write_parse_cycle(self):
+        f = StringIO()
+        w = ObjWriter(f)
+        vertices = [(0,0,0),(1,0,0), (0,1,0), (0,0,1)]
+        normals = [(0,0,1),(0,0,1), (0,0,1), (0,0,1)]
+        triangles = [(0,1, 2), (0,1,3)]
+        w.write(vertices, triangles, normals)
 
-    def _test_parse_normals(self):
-        pass
+        f.seek(0)
 
-    def _test_write_parse_cycle(self):
-        pass
+        p = ObjParser()
+        p.read(f)
+        self.assertEqual(vertices, p.vertices)
+        self.assertEqual(normals, p.normals)
+        # self.assertEqual(triangles, p.faces)
