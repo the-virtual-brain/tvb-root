@@ -37,9 +37,7 @@ Class responsible for all TVB exports (datatype or project).
 import os
 import json
 from datetime import datetime, timedelta
-from tvb.adapters.exporters.obj_export import ObjSurfaceExporter
-from tvb.adapters.exporters.tvb_export import TVBExporter 
-from tvb.adapters.exporters.cifti_export import CIFTIExporter 
+from tvb.adapters.exporters.tvb_export import TVBExporter
 from tvb.adapters.exporters.exceptions import ExportException, InvalidExportDataException
 from tvb.basic.profile import TvbProfile
 from tvb.config import TVB_IMPORTER_MODULE, TVB_IMPORTER_CLASS
@@ -75,13 +73,12 @@ class ExportManager:
         # Here we register all available data type exporters
         # If new exporters supported, they should be added here
         # Todo: uploaders and visualizers are registered using a different method.
-        self.__registerExporter(TVBExporter()) 
-        self.__registerExporter(CIFTIExporter())
-        self.__registerExporter(ObjSurfaceExporter())
+        self._registerExporter(TVBExporter())
+        #self._registerExporter(ObjSurfaceExporter())
         self.export_folder = os.path.join(TvbProfile.current.TVB_STORAGE, self.EXPORT_FOLDER_NAME)
 
     
-    def __registerExporter(self, exporter):
+    def _registerExporter(self, exporter):
         """
         This method register into an internal format available exporters.
         :param exporter: Instance of a data type exporter (extends ABCExporter)
@@ -291,7 +288,8 @@ class ExportManager:
         return result_path
 
 
-    def _gather_project_datatypes(self, project, only_visible):
+    @staticmethod
+    def _gather_project_datatypes(project, only_visible):
 
         project_datatypes = []
 
@@ -303,8 +301,9 @@ class ExportManager:
                                       KEY_DT_DATE: dt.create_date})
         return project_datatypes
 
-    
-    def _build_workflow_step_info(self, workflow):
+
+    @staticmethod
+    def _build_workflow_step_info(workflow):
         """
         For the input workflow, get all workflow steps and return a list with information
         that can be then exported.
@@ -312,18 +311,18 @@ class ExportManager:
         wf_steps = []
         view_steps = []
         for wf_step in dao.get_workflow_steps(workflow.id):
-            
+
             if wf_step.fk_operation is None:
                 ## Avoid exporting old form of View Steps.
                 continue
             # Get all basic information for this workflow step
             wf_step_info = WorkflowStepInformation(wf_step.to_dict()[1])
-            # We need to store the gid for the operation since the id might be 
+            # We need to store the gid for the operation since the id might be
             # different in case of a project export / import
             linked_operation = dao.get_operation_by_id(wf_step.fk_operation)
             wf_step_info.set_operation(linked_operation)
             # We also need to keep info about algorithm in the form of module
-            # and classname because that id might also be different in case 
+            # and classname because that id might also be different in case
             # of project export / import.
             linked_algorithm = dao.get_algorithm_by_id(wf_step.fk_algorithm)
             wf_step_info.set_algorithm(linked_algorithm)
@@ -336,14 +335,14 @@ class ExportManager:
             portlet = dao.get_portlet_by_id(view_step.fk_portlet)
             view_step_info.set_portlet(portlet)
             # We also need to keep info about algorithm in the form of module
-            # and classname because that id might also be different in case 
+            # and classname because that id might also be different in case
             # of project export / import.
             linked_algorithm = dao.get_algorithm_by_id(view_step.fk_algorithm)
             view_step_info.set_algorithm(linked_algorithm)
             view_steps.append(view_step_info)
         return wf_steps, view_steps
-            
-    
+
+
     def _build_burst_export_dict(self, burst, bursts_dict):
         """
         Compute needed info and add them to burst_dict for export.

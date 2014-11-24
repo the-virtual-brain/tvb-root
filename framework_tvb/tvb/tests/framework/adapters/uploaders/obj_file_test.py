@@ -32,33 +32,38 @@
 .. moduleauthor:: Mihai Andrei <mihai.andrei@codemart.ro>
 """
 
-from unittest import TestCase
-from tvb.core.adapters.obj_file import ObjWriter, ObjParser
+import unittest
 from StringIO import StringIO
+from tvb.adapters.uploaders.obj.parser import ObjWriter, ObjParser
 
-class ObjFilesTest(TestCase):
+
+
+class ObjFilesTest(unittest.TestCase):
+
     def test_write_simple(self):
         f = StringIO()
         w = ObjWriter(f)
-        w.write([[0,0,0],[1,0,0], [0,1,0], [0,0,1]],
-                [[0,1,2], [0,1,3]])
+        w.write([[0, 0, 0], [1, 0, 0], [0, 1, 0], [0, 0, 1]],
+                [[0, 1, 2], [0, 1, 3]])
         self.assertTrue(len(f.getvalue()) > 15)
+
 
     def test_write_with_normals(self):
         f = StringIO()
         w = ObjWriter(f)
-        w.write([[0,0,0],[1,0,0], [0,1,0], [0,0,1]],
-                [[0,1, 2], [0,1,3]],
-                [[0,0,1],[0,0,1], [0,0,1], [0,0,1]],
+        w.write([[0, 0, 0], [1, 0, 0], [0, 1, 0], [0, 0, 1]],
+                [[0, 1, 2], [0, 1, 3]],
+                [[0, 0, 1], [0, 0, 1], [0, 0, 1], [0, 0, 1]],
                 comment="exported from test")
         self.assertTrue(len(f.getvalue()) > 15)
+
 
     def test_write_parse_cycle(self):
         f = StringIO()
         w = ObjWriter(f)
-        vertices = [(0,0,0),(1,0,0), (0,1,0), (0,0,1)]
-        normals = [(0,0,1),(0,0,1), (0,0,1), (0,0,1)]
-        triangles = [(0,1, 2), (0,1,3)]
+        vertices = [(0, 0, 0), (1, 0, 0), (0, 1, 0), (0, 0, 1)]
+        normals = [(0, 0, 1), (0, 0, 1), (0, 0, 1), (0, 0, 1)]
+        triangles = [(0, 1, 2), (0, 1, 3)]
         w.write(vertices, triangles, normals)
 
         f.seek(0)
@@ -68,3 +73,20 @@ class ObjFilesTest(TestCase):
         self.assertEqual(vertices, p.vertices)
         self.assertEqual(normals, p.normals)
         # self.assertEqual(triangles, p.faces)
+
+
+
+def suite():
+    """
+    Gather all the tests in a test suite.
+    """
+    test_suite = unittest.TestSuite()
+    test_suite.addTest(unittest.makeSuite(ObjFilesTest))
+    return test_suite
+
+
+
+if __name__ == "__main__":
+    #To run tests individually.
+    unittest.main()
+

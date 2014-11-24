@@ -34,8 +34,9 @@
 
 import os
 from tvb.adapters.exporters.abcexporter import ABCExporter
-from tvb.core.adapters.obj_file import ObjWriter
+from tvb.adapters.uploaders.obj.parser import ObjWriter
 from tvb.datatypes.surfaces import Surface
+
 
 
 class ObjSurfaceExporter(ABCExporter):
@@ -43,12 +44,15 @@ class ObjSurfaceExporter(ABCExporter):
     Exports a tvb surface geometry in the obj format.
     """
 
+
     def get_supported_types(self):
         return [Surface]
-    
+
+
     def get_label(self):
         return "Obj Format"
-    
+
+
     def export(self, data, export_folder, project):
         download_file_name = self.get_export_file_name(data)
         data_file = os.path.join(export_folder, download_file_name)
@@ -58,6 +62,7 @@ class ObjSurfaceExporter(ABCExporter):
             w.write(data.vertices, data.triangles, data.vertex_normals, comment="exported from %s" % str(data))
 
         return download_file_name, data_file, False
+
 
     def get_export_file_extension(self, data):
         return "obj"

@@ -29,10 +29,14 @@
 #
 
 """
+Handlers for reading/writing from/into OBJ format Surfaces are defined in this module.
+
 .. moduleauthor:: Mihai Andrei <mihai.andrei@codemart.ro>
 """
 
 from tvb.basic.logger.builder import get_logger
+
+
 
 class ObjParser(object):
     """
@@ -41,6 +45,8 @@ class ObjParser(object):
     ``self.faces`` is a list of faces. A face is a list of vertex info.
     Vertex info is a tuple vertex_index, tex_index, normal_index.
     """
+
+
     def __init__(self):
         self.logger = get_logger(__name__)
         self.vertices = []
@@ -48,14 +54,18 @@ class ObjParser(object):
         self.tex_coords = []
         self.faces = []
 
+
     def parse_v(self, args):
         self.vertices.append(tuple(float(x) for x in args[:3]))
+
 
     def parse_vn(self, args):
         self.normals.append(tuple(float(x) for x in args[:3]))
 
+
     def parse_vt(self, args):
         self.tex_coords.append(tuple(float(x) for x in args[:3]))
+
 
     def parse_f(self, args):
         if len(args) < 3:
@@ -78,7 +88,9 @@ class ObjParser(object):
             face.append(indices)
         self.faces.append(face)
 
+
     def read(self, obj_file):
+        line_nr = -1
         try:
             for line_nr, line in enumerate(obj_file):
                 line = line.strip()
@@ -98,13 +110,16 @@ class ObjParser(object):
 
 
 class ObjWriter(object):
+
     def __init__(self, obj_file):
         self.logger = get_logger(__name__)
         self.file = obj_file
 
+
     def _write_vector(self, type_code, v):
         v_str = ' '.join(str(e) for e in v)
         self.file.write('%s %s\n' % (type_code, v_str))
+
 
     def _write_face(self, v_info, write_normals):
         fs = []
@@ -116,6 +131,7 @@ class ObjWriter(object):
                 s = '%d//%d' % (info, info)
             fs.append(s)
         self.file.write('f %s \n' % ' '.join(fs))
+
 
     def write(self, vertices, faces, normals=None, comment=''):
         """

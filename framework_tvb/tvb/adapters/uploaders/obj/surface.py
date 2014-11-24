@@ -33,7 +33,7 @@
 """
 
 import numpy as np
-from tvb.core.adapters.obj_file import ObjParser
+from tvb.adapters.uploaders.obj.parser import ObjParser
 from tvb.basic.logger.builder import get_logger
 from tvb.core.adapters.exceptions import ParseException
 

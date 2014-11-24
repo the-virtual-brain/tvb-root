@@ -42,7 +42,7 @@ from tvb.tests.framework.adapters.uploaders import lookuptable_importer_test
 from tvb.tests.framework.adapters.uploaders import mat_timeseries_importer_test
 from tvb.tests.framework.adapters.uploaders import networkx_importer_test
 from tvb.tests.framework.adapters.uploaders import nifti_importer_test
-from tvb.tests.framework.adapters.uploaders import obj_importer_test
+from tvb.tests.framework.adapters.uploaders import obj_file_test, obj_importer_test
 from tvb.tests.framework.adapters.uploaders import projection_matrix_importer_test
 from tvb.tests.framework.adapters.uploaders import region_mapping_importer_test
 from tvb.tests.framework.adapters.uploaders import sensors_importer_test
@@ -65,6 +65,7 @@ def suite():
     test_suite.addTest(mat_timeseries_importer_test.suite())
     test_suite.addTest(networkx_importer_test.suite())
     test_suite.addTest(nifti_importer_test.suite())
+    test_suite.addTest(obj_file_test.suite())
     test_suite.addTest(obj_importer_test.suite())
     test_suite.addTest(projection_matrix_importer_test.suite())
     test_suite.addTest(region_mapping_importer_test.suite())
