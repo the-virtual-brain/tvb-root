@@ -34,13 +34,13 @@
 
 from tvb.basic.logger.builder import get_logger
 
-
+#todo move this module in core.adapters as obj_surf.py
 class ObjParser(object):
     """
     This class reads geometry from a simple wavefront obj file.
     ``self.vertices``, ``self.tex_coords``, ``self.normals`` are lists of vectors represented as tuples
     ``self.faces`` is a list of faces. A face is a list of vertex info.
-    Vertex info is a tuple vertex_idex, tex_index, normal_index.
+    Vertex info is a tuple vertex_index, tex_index, normal_index.
     """
     def __init__(self):
         self.logger = get_logger(__name__)
@@ -54,7 +54,6 @@ class ObjParser(object):
 
     def parse_vn(self, args):
         self.normals.append(tuple(float(x) for x in args[:3]))
-
 
     def parse_vt(self, args):
         self.tex_coords.append(tuple(float(x) for x in args[:3]))
@@ -97,3 +96,54 @@ class ObjParser(object):
         except ValueError as ex:
             raise ValueError("%s at line %d" % (ex, line_nr))
 
+
+
+class ObjWriter(object):
+    def __init__(self, obj_file):
+        self.logger = get_logger(__name__)
+        self.file = obj_file
+
+    def _write_vector(self, type_code, v):
+        v_str = ' '.join(str(e) for e in v)
+        self.file.write('%s %s\n' % (type_code, v_str))
+
+    def _write_face(self, v_info, write_normals):
+        fs = []
+        for info in v_info:
+            if not write_normals:
+                s = '%d' % info
+            else:
+                s = '%d//%d' % (info, info)
+            fs.append(s)
+        self.file.write('f %s \n' % ' '.join(fs))
+
+    def write(self, vertices, faces, normals=None, comment=''):
+        """
+        :param vertices:, :param normals: are lists of vectors or ndarrays of shape (n,3)
+        :param faces: A face is a list of 3 vertex indices.
+        Normal indices not supported. Texture uv's not supported.
+        This method does not yet validate the input, so send valid data.
+        """
+        self.file.write('# %s\n' % comment)
+        for v in vertices:
+            self._write_vector('v', v)
+
+        self.file.write('\n')
+
+        if normals is not None:
+            for v in normals:
+                self._write_vector('vn', v)
+            self.file.write('\n')
+
+        for v_idx in faces:
+            self._write_face(v_idx + 1  , normals is not None)
+
+# todo : write tests
+# w = ObjWriter(f)
+# w.write([[0,0,0],[1,0,0], [0,1,0], [0,0,1]],
+#         [[0,1,2], [0,1,3]],
+#         comment="exported from %s" % str(data))
+# w.write([[0,0,0],[1,0,0], [0,1,0], [0,0,1]],
+#         [[0,1, 2], [0,1,3]],
+#         [[0,0,1],[0,0,1], [0,0,1], [0,0,1]],
+#         comment="exported from %s" % str(data))

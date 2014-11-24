@@ -37,6 +37,7 @@ Class responsible for all TVB exports (datatype or project).
 import os
 import json
 from datetime import datetime, timedelta
+from tvb.adapters.exporters.obj_export import ObjSurfaceExporter
 from tvb.adapters.exporters.tvb_export import TVBExporter 
 from tvb.adapters.exporters.cifti_export import CIFTIExporter 
 from tvb.adapters.exporters.exceptions import ExportException, InvalidExportDataException
@@ -73,8 +74,10 @@ class ExportManager:
     def __init__(self):
         # Here we register all available data type exporters
         # If new exporters supported, they should be added here
+        # Todo: uploaders and visualizers are registered using a different method.
         self.__registerExporter(TVBExporter()) 
         self.__registerExporter(CIFTIExporter())
+        self.__registerExporter(ObjSurfaceExporter())
         self.export_folder = os.path.join(TvbProfile.current.TVB_STORAGE, self.EXPORT_FOLDER_NAME)
 
     
