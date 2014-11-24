@@ -32,10 +32,10 @@
 .. moduleauthor:: Mihai Andrei <mihai.andrei@codemart.ro>
 """
 
-from tvb.adapters.uploaders.obj.parser import ObjParser
+import numpy as np
+from tvb.core.adapters.obj_file import ObjParser
 from tvb.basic.logger.builder import get_logger
 from tvb.core.adapters.exceptions import ParseException
-import numpy as np
 
 
 class ObjSurface(object):

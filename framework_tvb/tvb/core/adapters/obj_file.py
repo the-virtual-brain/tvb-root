@@ -34,7 +34,6 @@
 
 from tvb.basic.logger.builder import get_logger
 
-#todo move this module in core.adapters as obj_surf.py
 class ObjParser(object):
     """
     This class reads geometry from a simple wavefront obj file.
@@ -137,13 +136,3 @@ class ObjWriter(object):
 
         for v_idx in faces:
             self._write_face(v_idx + 1  , normals is not None)
-
-# todo : write tests
-# w = ObjWriter(f)
-# w.write([[0,0,0],[1,0,0], [0,1,0], [0,0,1]],
-#         [[0,1,2], [0,1,3]],
-#         comment="exported from %s" % str(data))
-# w.write([[0,0,0],[1,0,0], [0,1,0], [0,0,1]],
-#         [[0,1, 2], [0,1,3]],
-#         [[0,0,1],[0,0,1], [0,0,1], [0,0,1]],
-#         comment="exported from %s" % str(data))

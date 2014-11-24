@@ -18,7 +18,7 @@
 # http://www.gnu.org/licenses/old-licenses/gpl-2.0
 #
 #
-#   CITATION:
+# CITATION:
 # When using The Virtual Brain for scientific publications, please cite it as follows:
 #
 #   Paula Sanz Leon, Stuart A. Knock, M. Marmaduke Woodman, Lia Domide,
@@ -32,32 +32,33 @@
 .. moduleauthor:: Mihai Andrei <mihai.andrei@codemart.ro>
 """
 
-import os
-from tvb.adapters.exporters.abcexporter import ABCExporter
+from unittest import TestCase
 from tvb.core.adapters.obj_file import ObjWriter
-from tvb.datatypes.surfaces import Surface
+from StringIO import StringIO
 
+class ObjFilesTest(TestCase):
+    def test_write_simple(self):
+        f = StringIO()
+        w = ObjWriter(f)
+        w.write([[0,0,0],[1,0,0], [0,1,0], [0,0,1]],
+                [[0,1,2], [0,1,3]])
+        self.assertTrue(len(f.getvalue()) > 15)
 
-class ObjSurfaceExporter(ABCExporter):
-    """ 
-    Exports a tvb surface geometry in the obj format.
-    """
+    def test_write_with_normals(self):
+        f = StringIO()
+        w = ObjWriter(f)
+        w.write([[0,0,0],[1,0,0], [0,1,0], [0,0,1]],
+                [[0,1, 2], [0,1,3]],
+                [[0,0,1],[0,0,1], [0,0,1], [0,0,1]],
+                comment="exported from test")
+        self.assertTrue(len(f.getvalue()) > 15)
 
-    def get_supported_types(self):
-        return [Surface]
-    
-    def get_label(self):
-        return "Obj Format"
-    
-    def export(self, data, export_folder, project):
-        download_file_name = self.get_export_file_name(data)
-        data_file = os.path.join(export_folder, download_file_name)
+    #todo write these tests
+    def _test_parse_simple(self):
+        pass
 
-        with open(data_file, 'w') as f:
-            w = ObjWriter(f)
-            w.write(data.vertices, data.triangles, data.vertex_normals, comment="exported from %s" % str(data))
+    def _test_parse_normals(self):
+        pass
 
-        return download_file_name, data_file, False
-
-    def get_export_file_extension(self, data):
-        return "obj"
+    def _test_write_parse_cycle(self):
+        pass
