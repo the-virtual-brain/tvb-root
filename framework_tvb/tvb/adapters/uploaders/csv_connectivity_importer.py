@@ -50,8 +50,8 @@ class CSVConnectivityParser(object):
     If a header is present the matrices columns and rows are permuted
     so that the header ordinals would be in ascending order
     """
-    def __init__(self, csv_file):
-        self.rows = list(csv.reader(csv_file))
+    def __init__(self, csv_file, delimiter=','):
+        self.rows = list(csv.reader(csv_file, delimiter=str(delimiter)))
         self.connectivity_size = len(self.rows[0])
         self.line = 0
         self.permutation = range(self.connectivity_size)
@@ -64,7 +64,7 @@ class CSVConnectivityParser(object):
         elif rows_count == self.connectivity_size:
             pass  # we have no header
         else:
-            raise LaunchException("Invalid Connectivity size! %d != %d " %
+            raise LaunchException("Could not parse a number matrix. Check field delimiter. Found %d rows and %d columns" %
                                   (rows_count, self.connectivity_size))
         self._parse_body()
 
@@ -113,7 +113,13 @@ class CSVConnectivityImporter(ABCUploader):
     _ui_description = "Import a Connectivity from two CSV files as result from the DTI pipeline"
     WEIGHTS_FILE = "weights.txt"
     TRACT_FILE = "tract_lengths.txt"
-
+    DELIMITER_OPTIONS = [
+        {'name': 'comma', 'value': ','},
+        {'name': 'semicolon', 'value': ';'},
+        {'name': 'tab', 'value': '\t'},
+        {'name': 'space', 'value': ' '},
+        {'name': 'colon', 'value': ':'}
+    ]
 
     def __init__(self):
         ABCUploader.__init__(self)
@@ -124,8 +130,14 @@ class CSVConnectivityImporter(ABCUploader):
         return [{'name': 'weights', 'type': 'upload', 'required_type': '.csv',
                  'label': 'Weights file (csv)', 'required': True},
 
+                {'name': 'weights_delimiter', 'type': 'select', 'label': 'Field delimiter : ',
+                         'required': True, 'options': self.DELIMITER_OPTIONS, 'default': ','},
+
                 {'name': 'tracts', 'type': 'upload', 'required_type': '.csv',
                  'label': 'Tracts file (csv)', 'required': True},
+
+                {'name': 'tracts_delimiter', 'type': 'select', 'label': 'Field delimiter : ',
+                         'required': True, 'options': self.DELIMITER_OPTIONS, 'default': ','},
 
                 {'name': 'input_data', 'label': 'Reference Connectivity Matrix (for node labels, 3d positions etc.)',
                  'type': Connectivity, 'required': True}]
@@ -135,18 +147,18 @@ class CSVConnectivityImporter(ABCUploader):
         return [Connectivity]
 
 
-    def _read_csv_file(self, csv_file):
+    def _read_csv_file(self, csv_file, delimiter):
         """
         Read a CSV file, arrange rows/columns in the correct order,
         to obtain Weight/Tract data in TVB compatible format.
         """
         with open(csv_file, 'rU') as f:
-            result_conn = CSVConnectivityParser(f).result_conn
+            result_conn = CSVConnectivityParser(f, delimiter).result_conn
             self.logger.debug("Read Connectivity file of size %d" % len(result_conn))
             return numpy.array(result_conn)
 
 
-    def launch(self, weights, tracts, input_data):
+    def launch(self, weights, weights_delimiter, tracts, tracts_delimiter, input_data):
         """
         Execute import operations: process the weights and tracts csv files, then use
         the reference connectivity passed as input_data for the rest of the attributes.
@@ -157,8 +169,8 @@ class CSVConnectivityImporter(ABCUploader):
 
         :raises LaunchException: when the number of nodes in CSV files doesn't match the one in the connectivity
         """
-        weights_matrix = self._read_csv_file(weights)
-        tract_matrix = self._read_csv_file(tracts)
+        weights_matrix = self._read_csv_file(weights, weights_delimiter)
+        tract_matrix = self._read_csv_file(tracts, tracts_delimiter)
 
         FilesHelper.remove_files([weights, tracts])
 
