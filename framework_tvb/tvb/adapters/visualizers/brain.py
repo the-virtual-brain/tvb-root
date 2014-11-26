@@ -100,48 +100,35 @@ class BrainViewer(ABCDisplayer):
         return self.build_display_result("brain/portlet_preview", params)
 
 
-    def _prepare_surface_urls(self, time_series):
-        """
-        Prepares the urls from which the client may read the data needed for drawing the surface.
-        """
-        one_to_one_map = isinstance(time_series, TimeSeriesSurface)
-        if not one_to_one_map:
-            region_map = dao.get_generic_entity(RegionMapping, time_series.connectivity.gid, '_connectivity')
-            if len(region_map) < 1:
-                raise Exception("No Mapping Surface found for display!")
-            region_map = region_map[0]
-            surface = region_map.surface
-        else:
-            region_map = None
+    def _populate_surface(self, time_series):
+
+        self.one_to_one_map = isinstance(time_series, TimeSeriesSurface)
+
+        if self.one_to_one_map:
             self.PAGE_SIZE /= 10
-            surface = time_series.surface
-
-        if surface is None:
-            raise Exception("No not-none Mapping Surface found for display!")
-
-        rendering_urls = surface.get_urls_for_rendering(True, region_map)
-        hemisphere_chunk_mask = surface.get_slices_to_hemisphere_mask()
-        return (one_to_one_map, ) + rendering_urls + (hemisphere_chunk_mask, surface.bi_hemispheric)
-
-
-    def _get_url_for_region_boundaries(self, time_series):
-        one_to_one_map = isinstance(time_series, TimeSeriesSurface)
-        if not one_to_one_map and hasattr(time_series, 'connectivity'):
-            region_map = dao.get_generic_entity(RegionMapping, time_series.connectivity.gid, '_connectivity')
+            self.surface = time_series.surface
+            region_map = dao.get_generic_entity(RegionMapping, self.surface.gid, '_surface')
+            if len(region_map) < 1:
+                self.region_map = None
+                self.connectivity = None
+            else:
+                self.region_map = region_map[0]
+                self.connectivity = self.region_map.connectivity
+        else:
+            self.connectivity = time_series.connectivity
+            region_map = dao.get_generic_entity(RegionMapping, self.connectivity.gid, '_connectivity')
             if len(region_map) < 1:
                 raise Exception("No Mapping Surface found for display!")
-            region_map = region_map[0]
-            surface = region_map.surface
-            return surface.get_url_for_region_boundaries(region_map)
-        else:
-            return ''
+            self.region_map = region_map[0]
+            self.surface = self.region_map.surface
 
 
     def compute_preview_parameters(self, time_series):
 
-        one_to_one_map, url_vertices, url_normals, url_lines, url_triangles, \
-            alphas, alphas_indices, _, _ = self._prepare_surface_urls(time_series)
+        self._populate_surface(time_series)
 
+        url_vertices, url_normals, url_lines, url_triangles, \
+            alphas, alphas_indices = self.surface.get_urls_for_rendering(True, self.region_map)
         _, _, measure_points_no = self.retrieve_measure_points(time_series)
         min_val, max_val = time_series.get_min_max_values()
 
@@ -149,7 +136,7 @@ class BrainViewer(ABCDisplayer):
                     urlLines=json.dumps(url_lines), urlNormals=json.dumps(url_normals),
                     alphas=json.dumps(alphas), alphas_indices=json.dumps(alphas_indices),
                     base_activity_url=ABCDisplayer.VISUALIZERS_URL_PREFIX + time_series.gid,
-                    isOneToOneMapping=one_to_one_map, minActivity=min_val, maxActivity=max_val,
+                    isOneToOneMapping=self.one_to_one_map, minActivity=min_val, maxActivity=max_val,
                     noOfMeasurePoints=measure_points_no)
 
 
@@ -178,11 +165,14 @@ class BrainViewer(ABCDisplayer):
                     * a Face object cannot be found in database
 
         """
-        one_to_one_map, url_vertices, url_normals, url_lines, url_triangles, \
-            alphas, alphas_indices, hemisphere_chunk_mask, biHemispheres = self._prepare_surface_urls(time_series)
+        self._populate_surface(time_series)
+
+        url_vertices, url_normals, url_lines, url_triangles, \
+            alphas, alphas_indices = self.surface.get_urls_for_rendering(True, self.region_map)
+        hemisphere_chunk_mask = self.surface.get_slices_to_hemisphere_mask()
 
         measure_points, measure_points_labels, measure_points_no = self.retrieve_measure_points(time_series)
-        if not one_to_one_map and measure_points_no > MAX_MEASURE_POINTS_LENGTH:
+        if not self.one_to_one_map and measure_points_no > MAX_MEASURE_POINTS_LENGTH:
             raise Exception("Max number of measure points " + str(MAX_MEASURE_POINTS_LENGTH) + " exceeded.")
 
         base_activity_url, time_urls = self._prepare_data_slices(time_series)
@@ -194,9 +184,12 @@ class BrainViewer(ABCDisplayer):
         data_shape = time_series.read_data_shape()
         state_variables = time_series.labels_dimensions.get(time_series.labels_ordering[1], [])
 
-        boundary_url = self._get_url_for_region_boundaries(time_series)
+        if self.surface and self.region_map:
+            boundary_url = self.surface.get_url_for_region_boundaries(self.region_map)
+        else:
+            boundary_url = ''
 
-        retu = dict(title=self._get_subtitle(time_series), isOneToOneMapping=one_to_one_map,
+        retu = dict(title=self._get_subtitle(time_series), isOneToOneMapping=self.one_to_one_map,
                     urlVertices=json.dumps(url_vertices), urlTriangles=json.dumps(url_triangles),
                     urlLines=json.dumps(url_lines), urlNormals=json.dumps(url_normals),
                     urlMeasurePointsLabels=measure_points_labels, measure_points=measure_points,
@@ -205,8 +198,8 @@ class BrainViewer(ABCDisplayer):
                     time=json.dumps(time_urls), minActivity=min_val, maxActivity=max_val,
                     minActivityLabels=legend_labels, labelsStateVar=state_variables, labelsModes=range(data_shape[3]),
                     extended_view=False, shelfObject=face_object,
-                    biHemispheric=biHemispheres, hemisphereChunkMask=json.dumps(hemisphere_chunk_mask),
-                    time_series=time_series, pageSize=self.PAGE_SIZE, boundary_url=boundary_url,
+                    biHemispheric=self.surface.bi_hemispheric, hemisphereChunkMask=json.dumps(hemisphere_chunk_mask),
+                    time_series=time_series, pageSize=self.PAGE_SIZE, urlRegionBoundaries=boundary_url,
                     measurePointsLabels=time_series.get_space_labels(),
                     measurePointsTitle=time_series.title)
 
@@ -368,36 +361,27 @@ class BrainEEG(BrainViewer):
         Overwrite Brain Visualizer launch and extend functionality,
         by adding a Monitor set of parameters near.
         """
-        self.eeg_cap = eeg_cap
+        self.surface = eeg_cap
         params = BrainViewer.compute_parameters(self, surface_activity, shell_surface)
         params.update(EegMonitor().compute_parameters(surface_activity, is_extended_view=True))
-        params['biHemispheric'] = False
-        params['isOneToOneMapping'] = False
         params['brainViewerTemplate'] = 'view.html'
-        params['title'] = self._get_subtitle(surface_activity)
         return self.build_display_result("brain/extendedview", params,
                                          pages=dict(controlPage="brain/extendedcontrols",
                                                     channelsPage="commons/channel_selector.html"))
 
 
-    def _prepare_surface_urls(self, time_series):
+    def _populate_surface(self, time_series):
         """
         Prepares the urls from which the client may read the data needed for drawing the surface.
         """
-        one_to_one_map = False
-        if self.eeg_cap is None:
+        self.one_to_one_map = False
+        self.region_map = None
+        self.connectivity = None
+        if self.surface is None:
             eeg_cap = dao.get_generic_entity(EEGCap, "EEGCap", "type")
             if len(eeg_cap) < 1:
                 raise Exception("No EEG Cap Surface found for display!")
-            self.eeg_cap = eeg_cap[0]
-        url_vertices, url_normals, url_lines, url_triangles = self.eeg_cap.get_urls_for_rendering()
-        alphas = []
-        alphas_indices = []
-        hemispheres_mask = None
-        bi_hemisphere = False
-
-        return one_to_one_map, url_vertices, url_normals, url_lines, url_triangles, \
-            alphas, alphas_indices, hemispheres_mask, bi_hemisphere
+            self.surface = eeg_cap[0]
 
 
 
