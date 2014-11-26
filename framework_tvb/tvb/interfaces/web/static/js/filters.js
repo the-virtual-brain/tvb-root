@@ -39,14 +39,6 @@ function sortOnKeys(dict) {
 }
 
 function addFilter(div_id, filters) {
-    var div = document.getElementById(div_id);
-    //Create a new div for the filter
-    var newDiv = document.createElement("div");
-    //Create a label
-    var label = document.createElement("label");
-    var text = document.createTextNode("Filter : ");
-    label.appendChild(text);
-
     //This will be the operation select item
     var operation = document.createElement("select");
 
@@ -98,6 +90,13 @@ function addFilter(div_id, filters) {
     button.onclick = function () {
         div.removeChild(newDiv);
     };
+    var div = document.getElementById(div_id);
+    //Create a new div for the filter
+    var newDiv = document.createElement("div");
+    //Create a label
+    var label = document.createElement("label");
+    var text = document.createTextNode("Filter : ");
+    label.appendChild(text);
 
     //Add all components to div
     newDiv.insertBefore(button, newDiv.firstChild);
@@ -130,7 +129,9 @@ function addFilter(div_id, filters) {
             }
         }
         if (filters[this.value]['type'] != "date") {
-            this.parentNode.removeChild(calendar);
+            if (calendar != null) {
+                this.parentNode.removeChild(calendar);
+            }
             input.readOnly = false;
         }
         else {
