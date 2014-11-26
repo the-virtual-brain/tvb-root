@@ -57,7 +57,7 @@ function addFilter(div_id, filters) {
     var pos = 0;
     //Is it a date field or not. So far validation is if 'date' appears in name
     //To be replaced with an 'expected type' received from the controllers
-    var isDate = 0;
+    var isDate = false;
     //Order dictionary, to always keep the same display order.
     filters = sortOnKeys(filters);
     //Iterate over the filters dictionary and create the possible values
@@ -70,7 +70,7 @@ function addFilter(div_id, filters) {
                 operation.options[j] = new Option(available_ops[j], available_ops[j]);
             }
             if (filters[i]['type'] == 'date') {
-                isDate = 1;
+                isDate = true;
             }
         }
         pos++;
@@ -82,7 +82,7 @@ function addFilter(div_id, filters) {
     nextId++;
     input.name = "values";
 
-    if (isDate == 1) {
+    if (isDate) {
         input.readOnly = true;
         var calendarImg = new Image();
         calendarImg.src = "/static/style/img/calendar.png";
@@ -91,6 +91,24 @@ function addFilter(div_id, filters) {
         };
     }
 
+    //Remove button
+    var button = document.createElement("input");
+    button.type = "button";
+    button.value = " Drop Filter ";
+    button.onclick = function () {
+        div.removeChild(newDiv);
+    };
+
+    //Add all components to div
+    newDiv.insertBefore(button, newDiv.firstChild);
+    if (isDate) {
+        newDiv.insertBefore(calendarImg, newDiv.firstChild);
+    }
+    newDiv.insertBefore(input, newDiv.firstChild);
+    newDiv.insertBefore(operation, newDiv.firstChild);
+    newDiv.insertBefore(filter, newDiv.firstChild);
+    newDiv.insertBefore(label, newDiv.firstChild);
+    div.appendChild(newDiv);
 
     filter.onchange = function () {
         operation.options.length = 0;
@@ -100,7 +118,6 @@ function addFilter(div_id, filters) {
             operation.options[j] = new Option(newOptions[j], newOptions[j]);
         }
         //Now check if date is needed or not. If not remove from parent.
-        var div_parent = this.parentNode.parentNode;
         var siblings = this.parentNode.childNodes;
         var inputWithId = null;
         var calendar = null;
@@ -130,24 +147,6 @@ function addFilter(div_id, filters) {
         }
         $(input).val("");
     };
-    //Remove button
-    var button = document.createElement("input");
-    button.type = "button";
-    button.value = " Drop Filter ";
-    button.onclick = function () {
-        div.removeChild(newDiv);
-    };
-
-    //Add all components to div
-    newDiv.insertBefore(button, newDiv.firstChild);
-    if (isDate == 1) {
-        newDiv.insertBefore(calendarImg, newDiv.firstChild);
-    }
-    newDiv.insertBefore(input, newDiv.firstChild);
-    newDiv.insertBefore(operation, newDiv.firstChild);
-    newDiv.insertBefore(filter, newDiv.firstChild);
-    newDiv.insertBefore(label, newDiv.firstChild);
-    div.appendChild(newDiv);
 }
 
 
