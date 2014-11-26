@@ -37,11 +37,11 @@ We are grateful to:
         :width: 35%
 
     .. image:: styles/logo_svn.png
+        :width: 30%
+    .. image:: styles/logo_github.png
         :width: 25%
     .. image:: styles/logo_hudson.png
         :width: 30%
-    .. image:: styles/logo_github.png
-        :width: 23%
 
 
 
