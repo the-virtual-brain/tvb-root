@@ -499,7 +499,7 @@ class ProjectServiceTest(TransactionalTestCase):
         """
         dt_factory = datatypes_factory.DatatypesFactory()
         self._create_datatypes(dt_factory, 3)
-        _, ops_nr, _, operations, pages_no = self.project_service.retrieve_project_full(dt_factory.project.id)
+        _, ops_nr, operations, pages_no = self.project_service.retrieve_project_full(dt_factory.project.id)
         self.assertEqual(ops_nr, 1, "DataType Factory should only use one operation to store all it's datatypes.")
         self.assertEqual(pages_no, 1, "DataType Factory should only use one operation to store all it's datatypes.")
         resulted_dts = operations[0]['results']

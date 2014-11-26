@@ -273,12 +273,12 @@ class ProjectController(BaseController):
                 my_filter.passes_count = ''
 
         page = int(page)
-        project, total_op_count, started_ops, filtered_ops, pages_no = self.project_service.retrieve_project_full(
+        project, total_op_count, filtered_ops, pages_no = self.project_service.retrieve_project_full(
             project_id, selected_filters, page)
         ## Select current project
         self._mark_selected(project)
 
-        template_specification = dict(mainContent="project/viewoperations", project=project, started_count=started_ops,
+        template_specification = dict(mainContent="project/viewoperations", project=project,
                                       title='Past operations for " ' + project.name + '"', operationsList=filtered_ops,
                                       total_op_count=total_op_count, total_pages=pages_no, page_number=page,
                                       filters=filters, no_filter_selected=(selected_filters is None), model=model)

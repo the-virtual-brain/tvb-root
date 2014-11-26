@@ -203,9 +203,8 @@ class ProjectService:
         pages_no = total_filtered // OPERATIONS_PAGE_SIZE + (1 if total_filtered % OPERATIONS_PAGE_SIZE else 0)
         total_ops_nr = self.count_filtered_operations(project_id)
         current_ops = dao.get_filtered_operations(project_id, applied_filters, start_idx, end_idx)
-        started_ops = 0
         if current_ops is None:
-            return selected_project, [], 0
+            return selected_project, 0, [], 0
 
         operations = []
         view_categ_id = dao.get_visualisers_categories()[0].id
@@ -270,8 +269,6 @@ class ProjectService:
                 if result["complete"] is not None and result["start"] is not None:
                     result["duration"] = format_timedelta(result["complete"] - result["start"])
                 result["status"] = one_op[10]
-                if result["status"] == model.STATUS_STARTED:
-                    started_ops += 1
                 result["additional"] = one_op[11]
                 result["visible"] = True if one_op[12] > 0 else False
                 result['operation_tag'] = one_op[13]
@@ -296,7 +293,7 @@ class ProjectService:
             except Exception:
                 ## We got an exception when processing one Operation Row. We will continue with the rest of the rows.
                 self.logger.exception("Could not prepare operation for display:" + str(one_op))
-        return selected_project, total_ops_nr, started_ops, operations, pages_no
+        return selected_project, total_ops_nr, operations, pages_no
 
 
     def retrieve_projects_for_user(self, user_id, current_page=1):
