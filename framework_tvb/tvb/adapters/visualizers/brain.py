@@ -348,9 +348,10 @@ class BrainEEG(BrainViewer):
             return measure_points, measure_points_labels, measure_points_no
 
 
-    def retrieve_measure_points(self, surface_activity, eeg_cap=None):
+    def retrieve_measure_points(self, surface_activity):
         measure_point_info = BrainEEG.compute_sensor_surfacemapped_measure_points(self.current_project_id,
-                                                                                  surface_activity.sensors, eeg_cap)
+                                                                                  surface_activity.sensors,
+                                                                                  self.surface)
         if measure_point_info is None:
             measure_point_info = BrainEEG.get_sensor_measure_points(surface_activity.sensors)
         return measure_point_info
