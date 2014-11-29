@@ -316,7 +316,7 @@ class BrainEEG(BrainViewer):
     @staticmethod
     def get_sensor_measure_points(sensors):
         """
-            Returns urls from where to fetch the measure points and their labels
+        Returns urls from where to fetch the measure points and their labels
         """
         measure_points = ABCDisplayer.paths2url(sensors, 'locations')
         measure_points_no = sensors.number_of_sensors
@@ -347,14 +347,12 @@ class BrainEEG(BrainViewer):
             measure_points_labels = ABCDisplayer.paths2url(sensors, 'labels')
             return measure_points, measure_points_labels, measure_points_no
 
+        return BrainEEG.get_sensor_measure_points(sensors)
+
 
     def retrieve_measure_points(self, surface_activity):
-        measure_point_info = BrainEEG.compute_sensor_surfacemapped_measure_points(self.current_project_id,
-                                                                                  surface_activity.sensors,
-                                                                                  self.surface)
-        if measure_point_info is None:
-            measure_point_info = BrainEEG.get_sensor_measure_points(surface_activity.sensors)
-        return measure_point_info
+        return BrainEEG.compute_sensor_surfacemapped_measure_points(self.current_project_id,
+                                                                    surface_activity.sensors, self.surface)
 
 
     def launch(self, surface_activity, eeg_cap=None, shell_surface=None):

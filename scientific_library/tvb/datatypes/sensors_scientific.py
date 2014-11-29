@@ -122,20 +122,22 @@ class SensorsScientific(sensors_data.SensorsData):
                                     (0 <= (tuv[:, 1] + tuv[:, 2])) * ((tuv[:, 1] + tuv[:, 2]) < 2)).nonzero()[0]
 
             if len(local_triangle_index) == 1:
-                #Scale sensor unit vector by t so that it lies on the surface.
+                # Scale sensor unit vector by t so that it lies on the surface.
                 sensor_locations[k] = current_sensor * tuv[local_triangle_index[0], 0]
 
-            else:
-                if len(local_triangle_index) < 1:
-                    LOG.warning("Could not find a proper position on the given surface for sensor %d:%s. "
-                                "with direction %s" % (k, self.labels[k], str(self.locations[k])))
-
-                # More than one triangle was found in proximity. Pick one of the closest.
-                # No triangle was found in proximity. Draw the sensor somehow in the surface extenssion area
+            elif len(local_triangle_index) < 1:
+                # No triangle was found in proximity. Draw the sensor somehow in the surface extension area
+                LOG.warning("Could not find a proper position on the given surface for sensor %d:%s. "
+                            "with direction %s" % (k, self.labels[k], str(self.locations[k])))
                 distances = (abs(tuv[:, 1] + tuv[:, 2]))
                 local_triangle_index = distances.argmin()
-                #Scale sensor unit vector by t so that it lies on the surface.
+                # Scale sensor unit vector by t so that it lies on the surface.
                 sensor_locations[k] = current_sensor * tuv[local_triangle_index, 0]
+
+            else:
+                # More than one triangle was found in proximity. Pick the first.
+                # Scale sensor unit vector by t so that it lies on the surface.
+                sensor_locations[k] = current_sensor * tuv[local_triangle_index[0], 0]
 
         return sensor_locations
 
