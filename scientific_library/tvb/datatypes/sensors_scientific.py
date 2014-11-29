@@ -78,75 +78,65 @@ class SensorsScientific(sensors_data.SensorsData):
         Assumes coordinate systems are aligned, i.e. common x,y,z and origin.
         
         """
-        #TODO: Think I did this assuming zero centered head, if so need to 
-        #      change to support coordinate origins not in the center... Should
-        #      just require a check with offset included in calculus though as it
-        #      won't be center of mass, getting the correct offset will be a pain.
-        #SK  : Works but it's a bit of a mess, cleanup...
-        
         #Normalize sensor and vertex locations to unit vectors
         norm_sensors = numpy.sqrt(numpy.sum(self.locations ** 2, axis=1))
         unit_sensors = self.locations / norm_sensors[:, numpy.newaxis]
         norm_verts = numpy.sqrt(numpy.sum(surface_to_map.vertices ** 2, axis=1))
         unit_vertices = surface_to_map.vertices / norm_verts[:, numpy.newaxis]
-        
-        sensor_tri = numpy.zeros((self.number_of_sensors, 1), dtype=numpy.int32)
+
         sensor_locations = numpy.zeros((self.number_of_sensors, 3))
-        for k in range(self.number_of_sensors):
+        for k in xrange(self.number_of_sensors):
             #Find the surface vertex most closely aligned with current sensor.
-            sensor_loc = unit_sensors[k]
-            allignment = numpy.dot(sensor_loc, unit_vertices.T)
+            current_sensor = unit_sensors[k]
+            alignment = numpy.dot(current_sensor, unit_vertices.T)
             one_ring = []
+
             while not one_ring:
-                closest_vertex = allignment.argmax()
-                
+                closest_vertex = alignment.argmax()
                 #Get the set of triangles in the neighbourhood of that vertex.
                 #NOTE: Intersection doesn't always fall within the 1-ring, so, all 
                 #      triangles contained in the 2-ring are considered.
                 one_ring = surface_to_map.vertex_neighbours[closest_vertex]
                 if not one_ring:
-                    allignment[closest_vertex] = min(allignment)
-            local_tri = [surface_to_map.vertex_triangles[vertex] for vertex in one_ring]
+                    alignment[closest_vertex] = min(alignment)
+
+            local_tri = [surface_to_map.vertex_triangles[v] for v in one_ring]
             local_tri = list(set([tri for subar in local_tri for tri in subar]))
             
-            #Calculate a parameterized plane line intersection [t,u,v] for the
+            #Calculate a parametrized plane line intersection [t,u,v] for the
             #set of local triangles, which are considered as defining a plane.
             tuv = numpy.zeros((len(local_tri), 3))
-            i = 0
-            for tri in local_tri:
+            for i, tri in enumerate(local_tri):
                 edge_01 = (surface_to_map.vertices[surface_to_map.triangles[tri, 0]] - 
                            surface_to_map.vertices[surface_to_map.triangles[tri, 1]])
                 edge_02 = (surface_to_map.vertices[surface_to_map.triangles[tri, 0]] - 
                            surface_to_map.vertices[surface_to_map.triangles[tri, 2]])
-                see_mat = numpy.vstack((sensor_loc, edge_01, edge_02))
+                see_mat = numpy.vstack((current_sensor, edge_01, edge_02))
                 
                 tuv[i] = numpy.linalg.solve(see_mat.T, surface_to_map.vertices[surface_to_map.triangles[tri, 0].T])
-                i += 1
-            #import pdb; pdb.set_trace()
-            #Find find which line-plane intersection falls within its triangle 
-            #by imposing the condition that u, v, & u+v are contained in [0 1]
-            local_triangle_index = ((0 < tuv[:, 1]) * (tuv[:, 1] < 1) *
-                                    (0 < tuv[:, 2]) * (tuv[:, 2] < 1) *
-                                    (0 < (tuv[:, 1] + tuv[:, 2])) *
-                                    ((tuv[:, 1] + tuv[:, 2]) < 1)).nonzero()[0]
-            #TODO: add checks for no or multiple intersections...
-            #      no: surface incomplete, misaligned, irregular triangulation
-            #      multiple: surface possibly too folded or misaligned...
 
-            if len(local_triangle_index) > 0:
-                sensor_tri[k] = local_tri[local_triangle_index[0]]
+            # Find  which line-plane intersection falls within its triangle
+            # by imposing the condition that u, v, & u+v are contained in [0 1]
+            local_triangle_index = ((0 <= tuv[:, 1]) * (tuv[:, 1] < 1) *
+                                    (0 <= tuv[:, 2]) * (tuv[:, 2] < 1) *
+                                    (0 <= (tuv[:, 1] + tuv[:, 2])) * ((tuv[:, 1] + tuv[:, 2]) < 2)).nonzero()[0]
+
+            if len(local_triangle_index) == 1:
                 #Scale sensor unit vector by t so that it lies on the surface.
-                sensor_locations[k] = sensor_loc * tuv[local_triangle_index, 0]
-            else:
-                ## TODO: is this a wrong default?
-                sensor_tri[k] = local_tri[0]
-                sensor_locations[k] = self.locations[k]
-                LOG.warning("Could not find a proper position on the given surface for sensor %d:%s. "
-                            "It will appear in %s" % (k, self.labels[k], str(self.locations[k])))
+                sensor_locations[k] = current_sensor * tuv[local_triangle_index[0], 0]
 
-        # sensor_tri seems to be unused
-        # commented to make async data retrieval easy from the ui
-        #return sensor_tri, sensor_locations
+            else:
+                if len(local_triangle_index) < 1:
+                    LOG.warning("Could not find a proper position on the given surface for sensor %d:%s. "
+                                "with direction %s" % (k, self.labels[k], str(self.locations[k])))
+
+                # More than one triangle was found in proximity. Pick one of the closest.
+                # No triangle was found in proximity. Draw the sensor somehow in the surface extenssion area
+                distances = (abs(tuv[:, 1] + tuv[:, 2]))
+                local_triangle_index = distances.argmin()
+                #Scale sensor unit vector by t so that it lies on the surface.
+                sensor_locations[k] = current_sensor * tuv[local_triangle_index, 0]
+
         return sensor_locations
 
 
