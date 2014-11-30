@@ -229,7 +229,7 @@ Instead of a discrete view, this time, we can have a continous display (with gra
 Surface Visualizer
 ~~~~~~~~~~~~~~~~~~
 
-This visualizer can be used for displaying various Brain Surface. It is a static view,
+This visualizer can be used for displaying various Brain Surfaces. It is a static view,
 mainly for visual inspecting imported surfaces in TVB.
 Optionally it can display associated RegionMapping entities for a given surface.
 Navigate the 3D scene like in the `Brain Activity Visualizer`_.
@@ -239,6 +239,12 @@ Navigate the 3D scene like in the `Brain Activity Visualizer`_.
    :align: center
 
    Surface Visualizer.
+
+.. figure:: screenshots/visualizer_surface_with_regions.jpg
+   :width: 90%
+   :align: center
+
+   Cortical Surface Visualizer with Region Mapping applied.
 
 
 Sensor Visualizer
