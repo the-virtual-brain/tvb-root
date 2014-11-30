@@ -34,13 +34,12 @@
 """
 
 import json
-
 import cherrypy
 from tvb.adapters.visualizers.connectivity import ConnectivityViewer
-
 from tvb.core.adapters.abcadapter import ABCAdapter
 from tvb.core.entities.transient.structure_entities import DataTypeMetaData
-from tvb.core.entities.transient.context_stimulus import RegionStimulusContext, SCALING_PARAMETER, CONNECTIVITY_PARAMETER
+from tvb.core.entities.transient.context_stimulus import RegionStimulusContext
+from tvb.core.entities.transient.context_stimulus import SCALING_PARAMETER, CONNECTIVITY_PARAMETER
 from tvb.datatypes.equations import Equation
 from tvb.datatypes.patterns import StimuliRegion
 from tvb.interfaces.web.controllers import common
@@ -55,6 +54,7 @@ LOAD_EXISTING_URL = '/spatial/stimulus/region/load_region_stimulus'
 RELOAD_DEFAULT_PAGE_URL = '/spatial/stimulus/region/reset_region_stimulus'
 
 KEY_REGION_CONTEXT = "stim-region-ctx"
+
 
 
 class RegionStimulusController(SpatioTemporalController):
@@ -89,6 +89,7 @@ class RegionStimulusController(SpatioTemporalController):
         template_specification['next_step_url'] = '/spatial/stimulus/region/step_1_submit'
         template_specification['anyScaling'] = any_scaling
         return self.fill_default_attributes(template_specification)
+
 
     def step_2(self):
         """
@@ -156,7 +157,8 @@ class RegionStimulusController(SpatioTemporalController):
         return self.do_step(next_step, 2)
 
 
-    def display_connectivity(self, connectivity_gid):
+    @staticmethod
+    def display_connectivity(connectivity_gid):
         """
         Generates the html for displaying the connectivity matrix.
         """
@@ -182,7 +184,7 @@ class RegionStimulusController(SpatioTemporalController):
         common.set_important_message("The operation for creating the stimulus was successfully launched.")
 
 
-    def _get_stimulus_interface(self, default_connectivity_gid=None):
+    def _get_stimulus_interface(self):
         """
         Returns a dictionary which contains the data needed
         for creating the interface for a stimulus.
@@ -197,7 +199,8 @@ class RegionStimulusController(SpatioTemporalController):
         return self._add_extra_fields_to_interface(template_specification), any_scaling
 
 
-    def _remove_scaling(self, input_list):
+    @staticmethod
+    def _remove_scaling(input_list):
         """
         Remove the scaling entry from the UI since we no longer use them in the first step.
         """
@@ -208,8 +211,8 @@ class RegionStimulusController(SpatioTemporalController):
                 result.append(entry)
             if entry[ABCAdapter.KEY_NAME] == SCALING_PARAMETER:
                 scaling_values = entry[ABCAdapter.KEY_DEFAULT]
-                for entry in scaling_values:
-                    if float(entry) > 0:
+                for scaling in scaling_values:
+                    if float(scaling) > 0:
                         any_scaling = True
                         break
         return result, any_scaling
@@ -318,9 +321,11 @@ class RegionStimulusController(SpatioTemporalController):
         """
         temporal_iface = []
         min_x = {'name': 'min_x', 'label': 'Temporal Start Time(ms)', 'type': 'str', "disabled": "False", "default": 0,
-                 "description": "The minimum value of the x-axis for temporal equation plot."}
+                 "description": "The minimum value of the x-axis for temporal equation plot. "
+                                "Not persisted, used only for visualization."}
         max_x = {'name': 'max_x', 'label': 'Temporal End Time(ms)', 'type': 'str', "disabled": "False", "default": 100,
-                 "description": "The maximum value of the x-axis for temporal equation plot."}
+                 "description": "The maximum value of the x-axis for temporal equation plot. "
+                                "Not persisted, used only for visualization."}
         temporal_iface.append(min_x)
         temporal_iface.append(max_x)
 
@@ -333,19 +338,13 @@ class RegionStimulusController(SpatioTemporalController):
         Overwrite base controller to add required parameters for adapter templates.
         """
         context = common.get_from_session(KEY_REGION_CONTEXT)
-        template_dictionary["entitiySavedName"] = [{'name': DataTypeMetaData.KEY_TAG_1,
-                                                    'label': 'Display name', 'type': 'str',
-                                                    "disabled": "False",
-                                                "default": context.equation_kwargs.get(DataTypeMetaData.KEY_TAG_1, '')}]
+        default = context.equation_kwargs.get(DataTypeMetaData.KEY_TAG_1, '')
+        template_dictionary["entitiySavedName"] = [{'name': DataTypeMetaData.KEY_TAG_1, "disabled": "False",
+                                                    'label': 'Display name', 'type': 'str', "default": default}]
         template_dictionary['loadExistentEntityUrl'] = LOAD_EXISTING_URL
         template_dictionary['resetToDefaultUrl'] = RELOAD_DEFAULT_PAGE_URL
         msg, msg_type = common.get_message_from_session()
         template_dictionary['displayedMessage'] = msg
         template_dictionary['messageType'] = msg_type
         return SpatioTemporalController.fill_default_attributes(self, template_dictionary, subsection='regionstim')
-    
-    
-    
-    
-    
     

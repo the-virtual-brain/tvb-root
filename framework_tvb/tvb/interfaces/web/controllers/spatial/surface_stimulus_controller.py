@@ -33,7 +33,6 @@
 .. moduleauthor:: Ionel Ortelecan <ionel.ortelecan@codemart.ro>
 """
 
-import cherrypy
 import json
 import numpy
 import copy
@@ -299,6 +298,7 @@ class SurfaceStimulusController(SpatioTemporalController):
         return super(SurfaceStimulusController, self).fill_default_attributes(template_specification,
                                                                               subsection='surfacestim')
 
+
     @expose_json
     def get_stimulus_chunk(self, chunk_idx):
         """
@@ -319,8 +319,7 @@ class SurfaceStimulusController(SpatioTemporalController):
     @expose_fragment('spatial/equation_displayer')
     def get_temporal_equation_chart(self, **form_data):
         """
-        Returns the html which contains the chart in which
-        is plotted the temporal equation.
+        Returns the HTML which contains the chart in which is plotted the temporal equation.
         """
         try:
             min_x, max_x, ui_message = self.get_x_axis_range(form_data['min_tmp_x'], form_data['max_tmp_x'])
@@ -349,8 +348,7 @@ class SurfaceStimulusController(SpatioTemporalController):
     @expose_fragment('spatial/equation_displayer')
     def get_spatial_equation_chart(self, **form_data):
         """
-        Returns the HTML which contains the chart in which
-        is plotted the temporal equation.
+        Returns the HTML which contains the chart in which is plotted the temporal equation.
         """
         try:
             min_x, max_x, ui_message = self.get_x_axis_range(form_data['min_space_x'], form_data['max_space_x'])
@@ -391,7 +389,9 @@ class SurfaceStimulusController(SpatioTemporalController):
         input_list['selectedFocalPoints'] = focal_points_list
         return self._add_extra_fields_to_interface(input_list)
 
-    def _remove_focal_points(self, input_list):
+
+    @staticmethod
+    def _remove_focal_points(input_list):
         """
         Remove the focal points entries from the UI since we no longer use them in the first step.
         """
@@ -404,6 +404,7 @@ class SurfaceStimulusController(SpatioTemporalController):
                 focal_points_triangles = json.loads(entry[ABCAdapter.KEY_DEFAULT])
         return result, focal_points_triangles
 
+
     @staticmethod
     def _add_extra_fields_to_interface(input_list):
         """
@@ -415,10 +416,12 @@ class SurfaceStimulusController(SpatioTemporalController):
         temporal_iface = []
         min_tmp_x = {'name': 'min_tmp_x', 'label': 'Temporal Start Time(ms)', 'type': 'str', "disabled": "False",
                      "default": context.equation_kwargs.get('min_tmp_x', 0),
-                     "description": "The minimum value of the x-axis for temporal equation plot."}
+                     "description": "The minimum value of the x-axis for temporal equation plot. "
+                                    "Not persisted, used only for visualization."}
         max_tmp_x = {'name': 'max_tmp_x', 'label': 'Temporal End Time(ms)', 'type': 'str', "disabled": "False",
                      "default": context.equation_kwargs.get('max_tmp_x', 100),
-                     "description": "The maximum value of the x-axis for temporal equation plot."}
+                     "description": "The maximum value of the x-axis for temporal equation plot. "
+                                    "Not persisted, used only for visualization."}
         temporal_iface.append(min_tmp_x)
         temporal_iface.append(max_tmp_x)
 
