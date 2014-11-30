@@ -34,12 +34,63 @@
 """
 
 import json
-from tvb.adapters.visualizers.brain import BrainEEG, BrainViewer
+from tvb.adapters.visualizers.surface_view import prepare_shell_surface_urls
 from tvb.core.adapters.abcdisplayer import ABCDisplayer
 from tvb.core.adapters.exceptions import LaunchException
+from tvb.core.entities.storage import dao
 from tvb.datatypes.sensors_data import SensorsData
 from tvb.datatypes.sensors import SensorsInternal, SensorsEEG, SensorsMEG
 from tvb.datatypes.surfaces_data import SurfaceData
+from tvb.datatypes.surfaces import EEGCap
+
+
+
+def prepare_sensors_as_measure_points_params(sensors):
+    """
+    Returns urls from where to fetch the measure points and their labels
+    """
+    sensor_locations = ABCDisplayer.paths2url(sensors, 'locations')
+    sensor_no = sensors.number_of_sensors
+    sensor_labels = ABCDisplayer.paths2url(sensors, 'labels')
+
+    return {'urlMeasurePoints': sensor_locations,
+            'urlMeasurePointsLabels': sensor_labels,
+            'noOfMeasurePoints': sensor_no,
+            'minMeasure': 0,
+            'maxMeasure': sensor_no,
+            'urlMeasure': ''}
+
+
+
+def prepare_mapped_sensors_as_measure_points_params(project_id, sensors, eeg_cap=None):
+    """
+    Compute sensors positions by mapping them to the ``eeg_cap`` surface
+    If ``eeg_cap`` is not specified the mapping will use a default EEGCal DataType in current project.
+    If no default EEGCap is found, return sensors as they are (not projected)
+
+    :returns: dictionary to be used in Viewers for rendering measure_points
+    :rtype: dict
+    """
+
+    if eeg_cap is None:
+        eeg_cap = dao.get_values_of_datatype(project_id, EEGCap)[0]
+        if eeg_cap:
+            eeg_cap = ABCDisplayer.load_entity_by_gid(eeg_cap[-1][2])
+
+    if eeg_cap:
+        datatype_kwargs = json.dumps({'surface_to_map': eeg_cap.gid})
+        sensor_locations = ABCDisplayer.paths2url(sensors, 'sensors_to_surface') + '/' + datatype_kwargs
+        sensor_no = sensors.number_of_sensors
+        sensor_labels = ABCDisplayer.paths2url(sensors, 'labels')
+
+        return {'urlMeasurePoints': sensor_locations,
+                'urlMeasurePointsLabels': sensor_labels,
+                'noOfMeasurePoints': sensor_no,
+                'minMeasure': 0,
+                'maxMeasure': sensor_no,
+                'urlMeasure': ''}
+
+    return prepare_sensors_as_measure_points_params(sensors)
 
 
 
@@ -68,7 +119,10 @@ class SensorsViewer(ABCDisplayer):
 
     def launch(self, sensors, projection_surface=None, shell_surface=None):
         """
-        Prepare visualizer parameters
+        Prepare visualizer parameters.
+
+        We support viewing all sensor types through a single viewer, so that a user doesn't need to
+        go back to the data-page, for loading a different type of sensor.
         """
         if isinstance(sensors, SensorsInternal):
             return self._params_internal_sensors(sensors, shell_surface)
@@ -77,24 +131,15 @@ class SensorsViewer(ABCDisplayer):
             return self._params_eeg_sensors(sensors, projection_surface, shell_surface)
 
         if isinstance(sensors, SensorsMEG):
-            return self._params_meeg_sensors(sensors, projection_surface, shell_surface)
+            return self._params_meg_sensors(sensors, projection_surface, shell_surface)
 
         raise LaunchException("Unknown sensors type!")
 
 
     def _params_internal_sensors(self, internal_sensors, shell_surface=None):
 
-        sensor_locations, sensor_labels, sensor_no = BrainEEG.get_sensor_measure_points(internal_sensors)
-
-        params = {
-            'shelfObject': BrainViewer.get_shell_surface_urls(shell_surface, self.current_project_id),
-            'urlMeasurePoints': sensor_locations,
-            'urlMeasurePointsLabels': sensor_labels,
-            'noOfMeasurePoints': sensor_no,
-            'minMeasure': 0,
-            'maxMeasure': sensor_no,
-            'urlMeasure': ''
-        }
+        params = prepare_sensors_as_measure_points_params(internal_sensors)
+        params['shelfObject'] = prepare_shell_surface_urls(self.current_project_id, shell_surface)
 
         return self.build_display_result('sensors/sensors_internal', params,
                                          pages={'controlPage': 'sensors/sensors_controls'})
@@ -102,22 +147,13 @@ class SensorsViewer(ABCDisplayer):
 
     def _params_eeg_sensors(self, eeg_sensors, eeg_cap=None, shell_surface=None):
 
-        measure_points_info = BrainEEG.compute_sensor_surfacemapped_measure_points(self.current_project_id,
-                                                                                   eeg_sensors, eeg_cap)
+        params = prepare_mapped_sensors_as_measure_points_params(self.current_project_id, eeg_sensors, eeg_cap)
 
-        measure_points_nr = measure_points_info[2]
-        params = {
-            'shelfObject': BrainViewer.get_shell_surface_urls(shell_surface, self.current_project_id),
-            'urlVertices': '', 'urlTriangles': '',
-            'urlLines': '[]', 'urlNormals': '',
+        params.update({
+            'shelfObject': prepare_shell_surface_urls(self.current_project_id, shell_surface),
+            'urlVertices': '', 'urlTriangles': '', 'urlLines': '[]', 'urlNormals': '',
             'boundaryURL': '', 'urlAlphas': '', 'urlAlphasIndices': '',
-            'urlMeasurePoints': measure_points_info[0],
-            'urlMeasurePointsLabels': measure_points_info[1],
-            'noOfMeasurePoints': measure_points_nr,
-            'minMeasure': 0,
-            'maxMeasure': measure_points_nr,
-            'urlMeasure': ''
-        }
+        })
 
         if eeg_cap is not None:
             params.update(self._compute_surface_params(eeg_cap))
@@ -126,22 +162,14 @@ class SensorsViewer(ABCDisplayer):
                                          pages={"controlPage": "sensors/sensors_controls"})
 
 
-    def _params_meeg_sensors(self, meg_sensors, projection_surface=None, shell_surface=None):
+    def _params_meg_sensors(self, meg_sensors, projection_surface=None, shell_surface=None):
 
-        sensor_locations, sensor_labels, sensor_no = BrainEEG.get_sensor_measure_points(meg_sensors)
+        params = prepare_sensors_as_measure_points_params(meg_sensors)
 
-        params = {
-            'shelfObject': BrainViewer.get_shell_surface_urls(shell_surface, self.current_project_id),
-            'urlVertices': '', 'urlTriangles': '',
-            'urlLines': '[]', 'urlNormals': '',
-            'boundaryURL': '', 'urlAlphas': '', 'urlAlphasIndices': '',
-            'urlMeasurePoints': sensor_locations,
-            'urlMeasurePointsLabels': sensor_labels,
-            'noOfMeasurePoints': sensor_no,
-            'minMeasure': 0,
-            'maxMeasure': sensor_no,
-            'urlMeasure': ''
-        }
+        params.update({
+            'shelfObject': prepare_shell_surface_urls(self.current_project_id, shell_surface),
+            'urlVertices': '', 'urlTriangles': '', 'urlLines': '[]', 'urlNormals': '',
+            'boundaryURL': '', 'urlAlphas': '', 'urlAlphasIndices': ''})
 
         if projection_surface is not None:
             params.update(self._compute_surface_params(projection_surface))
@@ -152,8 +180,10 @@ class SensorsViewer(ABCDisplayer):
 
     @staticmethod
     def _compute_surface_params(surface):
+
         rendering_urls = [json.dumps(url) for url in surface.get_urls_for_rendering()]
         url_vertices, url_normals, url_lines, url_triangles = rendering_urls
+
         return {'urlVertices': url_vertices,
                 'urlTriangles': url_triangles,
                 'urlLines': url_lines,

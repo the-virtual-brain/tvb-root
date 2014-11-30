@@ -34,13 +34,28 @@
 
 import json
 import numpy
-from tvb.adapters.visualizers.brain import BrainViewer
 from tvb.basic.filters.chain import UIFilter, FilterChain
 from tvb.basic.traits.core import KWARG_FILTERS_UI
 from tvb.core.adapters.abcdisplayer import ABCDisplayer
+from tvb.core.entities.storage import dao
 from tvb.datatypes.graph import ConnectivityMeasure
-from tvb.datatypes.surfaces import RegionMapping
+from tvb.datatypes.surfaces import RegionMapping, FaceSurface
 from tvb.datatypes.surfaces_data import SurfaceData
+
+
+def prepare_shell_surface_urls(project_id, shell_surface=None):
+
+    if shell_surface is None:
+        shell_surface = dao.get_values_of_datatype(project_id, FaceSurface)[0]
+
+        if not shell_surface:
+            raise Exception('No Face object found in current project.')
+
+        shell_surface = ABCDisplayer.load_entity_by_gid(shell_surface[0][2])
+
+    face_vertices, face_normals, _, face_triangles = shell_surface.get_urls_for_rendering()
+    return json.dumps([face_vertices, face_normals, face_triangles])
+
 
 
 class SurfaceViewer(ABCDisplayer):
@@ -142,7 +157,7 @@ class SurfaceViewer(ABCDisplayer):
         params.update(self._compute_measure_param(connectivity_measure, params['noOfMeasurePoints']))
 
         try:
-            params['shelfObject'] = BrainViewer.get_shell_surface_urls(shell_surface, self.current_project_id)
+            params['shelfObject'] = prepare_shell_surface_urls(self.current_project_id, shell_surface)
         except Exception:
             params['shelfObject'] = None
 
