@@ -2867,25 +2867,15 @@ class Generic2dOscillator(Model):
 
         lc_0 = local_coupling * V
 
-
-        #if not hasattr(self, 'derivative'):
-        #    self.derivative = numpy.empty((2,)+V.shape)
-
-        ## numexpr pre-allocate
         # Pre-allocate the result array then instruct numexpr to use it as output.
         # This avoids an expensive array concatenation
-        deriv = numpy.empty_like(state_variables)
+        derivative = numpy.empty_like(state_variables)
 
-        ev('d * tau * (alpha * W - f * V**3 + e * V**2 + g * V + gamma * I + gamma *c_0 + lc_0)', out=deriv[0])
-        ev('d * (a + b * V + c * V**2 - beta * W) / tau', out=deriv[1])
+        ev('d * tau * (alpha * W - f * V**3 + e * V**2 + g * V + gamma * I + gamma *c_0 + lc_0)', out=derivative[0])
+        ev('d * (a + b * V + c * V**2 - beta * W) / tau', out=derivative[1])
 
-        ## regular ndarray operation
-        ##dV = tau * (W - 0.5* V**3.0 + 3.0 * V**2 + I + c_0 + lc_0)
-        ##dW = d * (a + b * V + c * V**2 - W) / tau
 
-        self.derivative = deriv  #why ?
-
-        return self.derivative
+        return derivative
 
     device_info = model_device_info(
         pars=['tau', 'a', 'b', 'c', 'd', 'I'],
@@ -3094,7 +3084,7 @@ class LarterBreakspear(Model):
                                   'TNa', 'VCa', 'VK', 'VL', 'VNa', 'd_K', 'tau_K',
                                   'd_Na', 'd_Ca', 'aei', 'aie', 'b', 'C', 'ane',
                                   'ani', 'aee', 'Iext', 'rNMDA', 'VT', 'd_V', 'ZT',
-                                  'd_Z', 'QV_max', 'QZ_max']
+                                  'd_Z', 'QV_max', 'QZ_max', 't_scale']
 
     #Define traited attributes for this model, these represent possible kwargs.
     gCa = arrays.FloatArray(
@@ -3256,7 +3246,7 @@ class LarterBreakspear(Model):
         default = numpy.array([0.0]),
         range = basic.Range(lo = 0.0, hi = 0.7, step = 0.01),
         doc = """Threshold potential (mean) for excitatory neurons.
-        In [Breaksetal_2003_b]_ this values is 0.""")
+        In [Breaksetal_2003_b]_ this value is 0.""")
 
     d_V = arrays.FloatArray(
         label = r":math:`\delta_{V}`",
@@ -3289,6 +3279,13 @@ class LarterBreakspear(Model):
         default = numpy.array([1.0]),
         range = basic.Range(lo = 0.1, hi = 1., step = 0.001),
         doc = """Maximal firing rate for excitatory populations (kHz)""")
+
+
+    t_scale = arrays.FloatArray(
+        label = ":math:`t_{scale}`",
+        default = numpy.array([1.0]),
+        range = basic.Range(lo = 0.1, hi = 1., step = 0.001),
+        doc = """Time scale factor""")
 
 
     variables_of_interest = basic.Enumerate(
@@ -3367,16 +3364,16 @@ class LarterBreakspear(Model):
         lc_0  = local_coupling * QV
 
 
-        derivative[0] = (- (self.gCa + (1.0 - self.C) * (self.rNMDA * self.aee) * (QV + lc_0)+ self.C * self.rNMDA * self.aee * c_0) * m_Ca * (V - self.VCa)
+        derivative[0] = t_scale * (- (self.gCa + (1.0 - self.C) * (self.rNMDA * self.aee) * (QV + lc_0)+ self.C * self.rNMDA * self.aee * c_0) * m_Ca * (V - self.VCa)
                          - self.gK * W * (V - self.VK)
                          - self.gL * (V - self.VL)
                          - (self.gNa * m_Na + (1.0 - self.C) * self.aee * (QV  + lc_0) + self.C * self.aee * c_0) * (V - self.VNa)
                          - self.aie * Z * QZ
                          + self.ane * self.Iext)
 
-        derivative[1] = self.phi * (m_K - W) / self.tau_K
+        derivative[1] = t_scale * self.phi * (m_K - W) / self.tau_K
 
-        derivative[2] = self.b * (self.ani * self.Iext + self.aei * V * QV)
+        derivative[2] = t_scale * self.b * (self.ani * self.Iext + self.aei * V * QV)
 
         return derivative
 
