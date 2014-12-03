@@ -68,12 +68,21 @@ function addFilter(div_id, filters) {
         pos++;
     }
     //Input field
-    var input = document.createElement("input");
-    input.type = "text";
-    input.id = "calendar" + nextId;
-    nextId++;
-    input.name = "values";
+    var input = $('<input type="text" name="values"/>').attr('id', "calendar" + nextId);
+    //Remove button
+    var button = $('<input type="button" value=" Drop Filter "/>');
+    //Create a new div for the filter
+    var newDiv = $('<div> <label> Filter : </label> </div>');
+    $('#' + div_id).append(newDiv);
 
+    button.click(function () {
+        newDiv.remove();
+    });
+
+    nextId++;
+
+    //Add all components to div
+    newDiv.append(filter, operation, input, button);
     if (isDate) {
         input.readOnly = true;
         var calendarImg = new Image();
@@ -81,33 +90,8 @@ function addFilter(div_id, filters) {
         calendarImg.onclick = function () {
             NewCssCal(input.id);
         };
+        input.after(calendarImg);
     }
-
-    //Remove button
-    var button = document.createElement("input");
-    button.type = "button";
-    button.value = " Drop Filter ";
-    button.onclick = function () {
-        div.removeChild(newDiv);
-    };
-    var div = document.getElementById(div_id);
-    //Create a new div for the filter
-    var newDiv = document.createElement("div");
-    //Create a label
-    var label = document.createElement("label");
-    var text = document.createTextNode("Filter : ");
-    label.appendChild(text);
-
-    //Add all components to div
-    newDiv.insertBefore(button, newDiv.firstChild);
-    if (isDate) {
-        newDiv.insertBefore(calendarImg, newDiv.firstChild);
-    }
-    newDiv.insertBefore(input, newDiv.firstChild);
-    newDiv.insertBefore(operation, newDiv.firstChild);
-    newDiv.insertBefore(filter, newDiv.firstChild);
-    newDiv.insertBefore(label, newDiv.firstChild);
-    div.appendChild(newDiv);
 
     filter.onchange = function () {
         operation.options.length = 0;
@@ -132,12 +116,12 @@ function addFilter(div_id, filters) {
             if (calendar != null) {
                 this.parentNode.removeChild(calendar);
             }
-            input.readOnly = false;
+            input.prop('readOnly', false);
         }
         else {
             //If calendar is needed but was deleted, create a new one.
             if (calendar == null) {
-                input.readOnly = true;
+                input.prop('readOnly', true);
                 var calendarImg = new Image();
                 calendarImg.src = "/static/style/img/calendar.png";
                 calendarImg.onclick = function () {
@@ -146,7 +130,7 @@ function addFilter(div_id, filters) {
                 this.parentNode.insertBefore(calendarImg, inputWithId.nextSibling);
             }
         }
-        $(input).val("");
+        input.val("");
     };
 }
 
