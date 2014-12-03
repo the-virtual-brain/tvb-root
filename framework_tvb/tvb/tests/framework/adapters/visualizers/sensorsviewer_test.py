@@ -37,7 +37,7 @@ import unittest
 import tvb_data.surfaceData as surfaces_dataset
 import tvb_data.sensors as sensors_dataset
 from tvb.adapters.uploaders.sensors_importer import Sensors_Importer
-from tvb.adapters.visualizers.sensors import EegSensorViewer, MEGSensorViewer, InternalSensorViewer
+from tvb.adapters.visualizers.sensors import SensorsViewer
 from tvb.core.entities.file.files_helper import FilesHelper
 from tvb.datatypes.sensors import SensorsEEG, SensorsMEG, SensorsInternal
 from tvb.datatypes.surfaces import EEGCap, EEG_CAP, FACE
@@ -100,7 +100,7 @@ class SensorViewersTest(TransactionalTestCase):
         TestFactory.import_surface_zip(self.test_user, self.test_project, zip_path, EEG_CAP, True)
         eeg_cap_surface = TestFactory.get_entity(self.test_project, EEGCap())
 
-        viewer = EegSensorViewer()
+        viewer = SensorsViewer()
         viewer.current_project_id = self.test_project.id
 
         ## Launch with EEG Cap selected
@@ -126,7 +126,7 @@ class SensorViewersTest(TransactionalTestCase):
         TestFactory.import_sensors(self.test_user, self.test_project, zip_path, Sensors_Importer.MEG_SENSORS)
         sensors = TestFactory.get_entity(self.test_project, SensorsMEG())
 
-        viewer = MEGSensorViewer()
+        viewer = SensorsViewer()
         viewer.current_project_id = self.test_project.id
 
         result = viewer.launch(sensors)
@@ -141,7 +141,7 @@ class SensorViewersTest(TransactionalTestCase):
         TestFactory.import_sensors(self.test_user, self.test_project, zip_path, Sensors_Importer.INTERNAL_SENSORS)
         sensors = TestFactory.get_entity(self.test_project, SensorsInternal())
 
-        viewer = InternalSensorViewer()
+        viewer = SensorsViewer()
         viewer.current_project_id = self.test_project.id
 
         result = viewer.launch(sensors)

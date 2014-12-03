@@ -37,7 +37,7 @@ from tvb.core.entities.file.files_helper import FilesHelper
 from tvb.datatypes.surfaces import FaceSurface, EEGCap
 from tvb.datatypes.connectivity import Connectivity
 from tvb.datatypes.sensors import SensorsEEG
-from tvb.adapters.visualizers.brain import BrainViewer, BrainEEG
+from tvb.adapters.visualizers.brain import BrainViewer, DualBrainViewer
 from tvb.tests.framework.core.test_factory import TestFactory
 from tvb.tests.framework.datatypes.datatypes_factory import DatatypesFactory
 from tvb.tests.framework.core.base_testcase import TransactionalTestCase
@@ -47,6 +47,13 @@ class BrainViewerTest(TransactionalTestCase):
     """
     Unit-tests for BrainViewer.
     """
+
+    EXPECTED_KEYS = ['urlVertices', 'urlNormals', 'urlTriangles', 'urlLines', 'alphas', 'alphas_indices',
+                     'base_activity_url', 'isOneToOneMapping', 'minActivity', 'maxActivity',
+                     'noOfMeasurePoints', 'isAdapter']
+    EXPECTED_EXTRA_KEYS = ['urlMeasurePointsLabels', 'urlMeasurePoints', 'time_series', 'pageSize', 'shelfObject',
+                           'extended_view', 'minActivityLabels', 'labelsStateVar', 'labelsModes', 'title']
+
 
     def setUp(self):
         """
@@ -81,11 +88,8 @@ class BrainViewerTest(TransactionalTestCase):
         viewer = BrainViewer()
         viewer.current_project_id = self.test_project.id
         result = viewer.launch(time_series=time_series)
-        expected_keys = ['urlVertices', 'urlNormals', 'urlTriangles', 'urlMeasurePointsLabels', 'title', 
-                         'time_series', 'shelfObject', 'pageSize', 'labelsStateVar', 'labelsModes',
-                         'minActivityLabels', 'minActivity', 'measure_points', 'maxActivity', 'isOneToOneMapping',
-                         'isAdapter', 'extended_view', 'base_activity_url', 'alphas_indices']
-        for key in expected_keys:
+
+        for key in BrainViewerTest.EXPECTED_KEYS + BrainViewerTest.EXPECTED_EXTRA_KEYS:
             self.assertTrue(key in result and result[key] is not None)
         self.assertFalse(result['extended_view'])
 
@@ -104,11 +108,9 @@ class BrainViewerTest(TransactionalTestCase):
         """
         time_series = self.datatypeFactory.create_timeseries(self.connectivity)
         viewer = BrainViewer()
-        result = viewer.generate_preview(time_series, (500, 200))
-        expected_keys = ['urlVertices', 'urlNormals', 'urlTriangles', 'minActivity', 'maxActivity',
-                         'isOneToOneMapping', 'isAdapter', 'base_activity_url', 'alphas_indices']
-        for key in expected_keys:
-            self.assertTrue(key in result and result[key] is not None)
+        result = viewer.generate_preview(time_series, figure_size=(500, 200))
+        for key in BrainViewerTest.EXPECTED_KEYS:
+            self.assertTrue(key in result and result[key] is not None, key)
         
         
     def test_launch_eeg(self):
@@ -118,14 +120,10 @@ class BrainViewerTest(TransactionalTestCase):
         sensors = TestFactory.get_entity(self.test_project, SensorsEEG())
         time_series = self.datatypeFactory.create_timeseries(self.connectivity, 'EEG', sensors)
         time_series.configure()
-        viewer = BrainEEG()
+        viewer = DualBrainViewer()
         viewer.current_project_id = self.test_project.id
         result = viewer.launch(time_series)
-        expected_keys = ['urlVertices', 'urlNormals', 'urlTriangles', 'urlMeasurePointsLabels', 'title', 
-                         'time_series', 'shelfObject', 'pageSize', 'labelsStateVar', 'labelsModes',
-                         'minActivityLabels', 'minActivity', 'measure_points', 'maxActivity', 'isOneToOneMapping',
-                         'isAdapter', 'extended_view', 'base_activity_url', 'alphas_indices']
-        for key in expected_keys:
+        for key in BrainViewerTest.EXPECTED_KEYS + BrainViewerTest.EXPECTED_EXTRA_KEYS:
             self.assertTrue(key in result and result[key] is not None)
         self.assertTrue(result['extended_view'])
     

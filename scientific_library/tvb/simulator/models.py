@@ -3364,16 +3364,16 @@ class LarterBreakspear(Model):
         lc_0  = local_coupling * QV
 
 
-        derivative[0] = t_scale * (- (self.gCa + (1.0 - self.C) * (self.rNMDA * self.aee) * (QV + lc_0)+ self.C * self.rNMDA * self.aee * c_0) * m_Ca * (V - self.VCa)
+        derivative[0] = self.t_scale * (- (self.gCa + (1.0 - self.C) * (self.rNMDA * self.aee) * (QV + lc_0)+ self.C * self.rNMDA * self.aee * c_0) * m_Ca * (V - self.VCa)
                          - self.gK * W * (V - self.VK)
                          - self.gL * (V - self.VL)
                          - (self.gNa * m_Na + (1.0 - self.C) * self.aee * (QV  + lc_0) + self.C * self.aee * c_0) * (V - self.VNa)
                          - self.aie * Z * QZ
                          + self.ane * self.Iext)
 
-        derivative[1] = t_scale * self.phi * (m_K - W) / self.tau_K
+        derivative[1] = self.t_scale * self.phi * (m_K - W) / self.tau_K
 
-        derivative[2] = t_scale * self.b * (self.ani * self.Iext + self.aei * V * QV)
+        derivative[2] = self.t_scale * self.b * (self.ani * self.Iext + self.aei * V * QV)
 
         return derivative
 
