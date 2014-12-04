@@ -22,6 +22,36 @@
 //Used since calendars need an input field with an id.
 var nextId = 0;
 
+/**
+ * Creates the operation select, the input and the drop button
+ */
+function _FIL_createUiForFilterType(filter, newDiv, isDate){
+    var operation = $('<select></select>');
+    for (var j = 0; j < filter.operations.length; j++) {
+        var op = filter.operations[j];
+        operation.append(new Option(op, op));
+    }
+    var input = $('<input type="text" name="values"/>');
+    var dropButton = $('<input type="button" value=" Drop Filter "/>');
+    newDiv.append(operation, input, dropButton);
+
+    dropButton.click(function () {
+        newDiv.remove();
+    });
+
+    if (isDate){
+        input.datepicker({
+            changeMonth: true,
+            changeYear: true,
+            showOn: "both",
+            buttonImage: "/static/style/img/calendar.png",
+            buttonImageOnly: true,
+            dateFormat : "mm-dd-yy",
+            buttonText: "pick a date"
+        });
+    }
+}
+
 function addFilter(div_id, filters) {
     //This will be the operation select item
     var operation = document.createElement("select");
