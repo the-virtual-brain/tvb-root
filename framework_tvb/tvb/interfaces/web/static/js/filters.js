@@ -22,22 +22,6 @@
 //Used since calendars need an input field with an id.
 var nextId = 0;
 
-function sortOnKeys(dict) {
-
-    var sorted = [];
-    for (var key in dict) {
-        sorted[sorted.length] = key;
-    }
-    sorted.sort();
-
-    var tempDict = {};
-    for (var i = 0; i < sorted.length; i++) {
-        tempDict[sorted[i]] = dict[sorted[i]];
-    }
-
-    return tempDict;
-}
-
 function addFilter(div_id, filters) {
     //This will be the operation select item
     var operation = document.createElement("select");
@@ -50,8 +34,7 @@ function addFilter(div_id, filters) {
     //Is it a date field or not. So far validation is if 'date' appears in name
     //To be replaced with an 'expected type' received from the controllers
     var isDate = false;
-    //Order dictionary, to always keep the same display order.
-    filters = sortOnKeys(filters);
+
     //Iterate over the filters dictionary and create the possible values
     for (var i in filters) {
         filter.options[pos] = new Option(filters[i]['display'], i);
