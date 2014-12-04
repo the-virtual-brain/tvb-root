@@ -80,46 +80,45 @@ function addFilter(div_id, filters) {
     });
 }
 
+/** gather all the data from the filters */
+function _FIL_gatherData(divId){
+    var children = $('#'+divId).children('div');
+    var fields = [];
+    var operations = [];
+    var values = [];
+
+    for (var i = 0; i < children.length; i++) {
+        var elem = children[i].children;
+        //Get info about the filters.
+        if (elem[3].value.trim().length > 0) {
+            fields.push(elem[1].value);
+            operations.push(elem[2].value);
+            values.push(elem[3].value.trim());
+            displayMessage("Filters processed");
+        } else {
+            displayMessage("Please set a value for all the filters.", "errorMessage");
+            return;
+        }
+    }
+    if (fields.length === 0 && operations.length === 0 && values.length === 0) {
+        displayMessage("Cleared filters");
+    }
+
+    return { fields: fields, operations: operations, values: values};
+}
 
 function refreshData(parentDivId, divSufix, name, sessionStoredTreeKey, gatheredData) {
     var divId = parentDivId + divSufix;
     if (!gatheredData) {
-        //Thiw will gather all the data from the filters and make an
+        //gather all the data from the filters and make an
         //ajax request to get new data
-        var filterDiv = document.getElementById(divId);
-        var children = filterDiv.childNodes;
-        var fields = [];
-        var operations = [];
-        var values = [];
-        //First gather all the information
-        for (var i = 0; i < children.length; i++) {
-            //There is a new div for each filter.
-            if (children[i].tagName == "DIV") {
-                var informations = children[i].children;
-                //Get info about the filters.
-                if (informations[3].value.trim().length > 0) {
-                    fields.push(informations[1].value);
-                    operations.push(informations[2].value);
-                    values.push(informations[3].value.trim());
-                    displayMessage("Filters processed");
-                } else {
-                    displayMessage("Please set a value for all the filters.", "errorMessage");
-                    return;
-                }
-            }
+        gatheredData = _FIL_gatherData(divId);
+        if (gatheredData == null) {
+            return;
         }
-        if (fields.length === 0 && operations.length === 0 && values.length === 0) {
-            displayMessage("Cleared filters");
-        }
-
-        gatheredData = {
-            'fields': fields,
-            'operations': operations,
-            'values': values
-        };
     }
-    var elements = document.getElementsByName(name);
-    if (elements.length < 1) {
+
+    if (document.getElementsByName(name).length < 1) {
         // Hidden elements from simulator interface or missing parameters will be ignored.
         displayMessage("Filter could not be applied! " + name, "infoMessage");
         return;
@@ -131,13 +130,13 @@ function refreshData(parentDivId, divSufix, name, sessionStoredTreeKey, gathered
         parentDivId = " ";
     }
     //Make a request to get new data
-    doAjaxCall({ async: false,  //todo: Is this sync really needed? It slows down the page.
+    doAjaxCall({
+        async: false,  //todo: Is this sync really needed? It slows down the page.
         type: 'GET', //todo: why is this a get? a post with the json seems better.
         url: "/flow/getfiltereddatatypes/" + name + "/" + parentDivId + '/' + sessionStoredTreeKey + '/' + $.toJSON(gatheredData),
         success: function (r) {
             var elements = document.getElementsByName(name);
             //Look for the previous select input whose data needs to be refreshed
-            var parentDiv;
             if (elements.length > 1) {
                 //If more than one was found it's because of multiple algorithms
                 //We need to get only the one corresponding to the current algorithm
@@ -151,13 +150,11 @@ function refreshData(parentDivId, divSufix, name, sessionStoredTreeKey, gathered
                     if (divId != null && divId.indexOf(parent.id) !== -1) {
                         //Remove the childs from this div and then recreate the components
                         //using the html returned by the ajax call
-                        parentDiv = elements[i].parentNode;
-                        replaceSelect(parentDiv, r, name);
+                        replaceSelect(elements[i].parentNode, r, name);
                     }
                 }
             } else if (elements.length === 1) {
-                parentDiv = elements[0].parentNode;
-                replaceSelect(parentDiv, r, name);
+                replaceSelect(elements[0].parentNode, r, name);
             } else {
                 displayMessage("Filter could not be applied!" + name, "infoMessage");
                 return;
@@ -205,10 +202,11 @@ function filterLinked(linkedDataList, currentSelectedGID, treeSessionKey) {
         var elemName = linkedData.linked_elem_name;
 
         var filterField = linkedData.linked_elem_field;
-        var filterData = {'fields': [filterField],
+        var filterData = {
+            'fields': [filterField],
             'operations': ["in"],
-            'values': [currentSelectedGID.split(' ')]};
-
+            'values': [currentSelectedGID.split(' ')]
+        };
 
         if (!linkedData.linked_elem_parent_name && !linkedData.linked_elem_parent_option) {
             refreshData("", elemName + 'data_select', elemName, treeSessionKey, filterData);
@@ -226,10 +224,9 @@ function filterLinked(linkedDataList, currentSelectedGID, treeSessionKey) {
                 if ($(this)[0].id.indexOf("_" + elemName) < 0) {
                     return;
                 }
-
                 var option_name = $(this)[0].id.replace("_" + elemName, '').replace(linkedInputName, '');
                 linkedInputName = $(this)[0].id;
-                parentDivID += option_name;
+                parentDivID += option_name; // todo : possible bug. option names will be concatenated many times if this each runs more than once
                 refreshData(parentDivID, linkedInputName + 'data_select', linkedInputName, treeSessionKey, filterData);
             });
         }
