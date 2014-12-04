@@ -19,8 +19,6 @@
 
 /* globals doAjaxCall, displayMessage */
 
-//Used since calendars need an input field with an id.
-var nextId = 0;
 
 /**
  * Creates the operation select, the input and the drop button
@@ -53,98 +51,33 @@ function _FIL_createUiForFilterType(filter, newDiv, isDate){
 }
 
 function addFilter(div_id, filters) {
-    //This will be the operation select item
-    var operation = document.createElement("select");
-
-    //This will be the select row to filter by
-    var filter = document.createElement("select");
-    //On change update the possible operations
-
-    var pos = 0;
-    //Is it a date field or not. So far validation is if 'date' appears in name
-    //To be replaced with an 'expected type' received from the controllers
-    var isDate = false;
-
-    //Iterate over the filters dictionary and create the possible values
-    for (var i in filters) {
-        filter.options[pos] = new Option(filters[i]['display'], i);
-        //Fill default options for the operation select
-        if (pos == 0) {
-            var available_ops = filters[i]['operations'];
-            for (var j = 0; j < available_ops.length; j++) {
-                operation.options[j] = new Option(available_ops[j], available_ops[j]);
-            }
-            if (filters[i]['type'] == 'date') {
-                isDate = true;
-            }
-        }
-        pos++;
-    }
-    //Input field
-    var input = $('<input type="text" name="values"/>').attr('id', "calendar" + nextId);
-    //Remove button
-    var button = $('<input type="button" value=" Drop Filter "/>');
     //Create a new div for the filter
     var newDiv = $('<div> <label> Filter : </label> </div>');
     $('#' + div_id).append(newDiv);
 
-    button.click(function () {
-        newDiv.remove();
-    });
+    //This will be the select row to filter by
+    var filter = $('<select></select>');
 
-    nextId++;
-
-    //Add all components to div
-    newDiv.append(filter, operation, input, button);
-    if (isDate) {
-        input.readOnly = true;
-        var calendarImg = new Image();
-        calendarImg.src = "/static/style/img/calendar.png";
-        calendarImg.onclick = function () {
-            NewCssCal(input.id);
-        };
-        input.after(calendarImg);
+    //Iterate over the filters dictionary and create the possible values
+    var filter_names = Object.keys(filters).sort();
+    for (var i = 0; i < filter_names.length; i++) {
+        var k = filter_names[i];
+        filter.append( new Option(filters[k].display, k));
     }
 
-    filter.onchange = function () {
-        operation.options.length = 0;
-        //Get new operations to display
-        var newOptions = filters[this.value]['operations'];
-        for (var j = 0; j < newOptions.length; j++) {
-            operation.options[j] = new Option(newOptions[j], newOptions[j]);
+    newDiv.append(filter);
+    var first_filter = filters[filter_names[0]];
+    _FIL_createUiForFilterType(first_filter, newDiv, first_filter.type === 'date');
+
+    filter.change(function () {
+        // remove all nodes to the right of filter
+        var children = newDiv.children();
+        for (var i = 2; i < children.length; i++){
+            $(children[i]).remove();
         }
-        //Now check if date is needed or not. If not remove from parent.
-        var siblings = this.parentNode.childNodes;
-        var inputWithId = null;
-        var calendar = null;
-        for (var j = 0; j < siblings.length; j++) {
-            if (siblings[j].id != '' && siblings[j].id != null) {
-                inputWithId = siblings[j];
-            }
-            if (siblings[j].tagName == 'IMG') {
-                calendar = siblings[j];
-            }
-        }
-        if (filters[this.value]['type'] != "date") {
-            if (calendar != null) {
-                this.parentNode.removeChild(calendar);
-            }
-            input.prop('readOnly', false);
-        }
-        else {
-            //If calendar is needed but was deleted, create a new one.
-            if (calendar == null) {
-                input.prop('readOnly', true);
-                var calendarImg = new Image();
-                calendarImg.src = "/static/style/img/calendar.png";
-                calendarImg.onclick = function () {
-                    NewCssCal(inputWithId.id);
-                };
-                this.parentNode.insertBefore(calendarImg, inputWithId.nextSibling);
-            }
-        }
-        input.val("");
-    };
+        // recreate them
+        _FIL_createUiForFilterType(filters[this.value], newDiv, filters[this.value].type === 'date');
+    });
 }
 
 
