@@ -53,7 +53,7 @@
                  <td class="c3"><div id="slider_x_axis"></div></td>
                  <td><span id="x_range_span"> </span></td>
             </tr>
-            <tr>
+            <tr py:if="not one_dimensional">
                 <td class="paramName">:math:`y`</td>
                 <td class="paramValue">
                     <select id="svy">
@@ -66,11 +66,12 @@
             </tr>
         </table>
     </div>
+    <py:if test="not one_dimensional">
+        ${drawSliderGroup(state_variables, "reset_state_variables", "Off graph state variables")}
 
-    ${drawSliderGroup(state_variables, "reset_state_variables", "Off graph state variables")}
-
-    <div class="sliderGroup">
-        <h3>Trajectories</h3>
-        <button id="reset_trajectories">Delete all</button>
-    </div>
+        <div class="sliderGroup">
+            <h3>Trajectories</h3>
+            <button id="reset_trajectories">Delete all</button>
+        </div>
+    </py:if>
 </div>

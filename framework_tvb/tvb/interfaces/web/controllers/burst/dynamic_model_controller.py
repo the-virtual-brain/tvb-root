@@ -370,7 +370,8 @@ class DynamicModelController(BurstBaseController):
         mp_params = self._get_model_parameters_ui_model(model)
         ps_params = self._get_graph_ui_model(dynamic)
         templ_var = ps_params
-        templ_var.update({'parameters' : mp_params, 'showOnlineHelp' : True})
+        templ_var.update({'parameters' : mp_params, 'showOnlineHelp' : True,
+                          'one_dimensional':len(model.state_variables) == 1 })
         return templ_var
 
 

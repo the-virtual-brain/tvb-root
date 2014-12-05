@@ -22,7 +22,18 @@
     </section>
 
     <section class="configure-stimulus-shape view-column">
-        <svg class="dynamicChart">
+        <svg class="dynamicChart" id="phasePlane" >
+            <defs>
+                <marker id="markerCircle" markerWidth="8" markerHeight="8" refx="5" refy="5">
+                    <circle cx="5" cy="5" r="2"/>
+                </marker>
+                <marker id="markerArrow" markerWidth="5" markerHeight="5" refx="1" refy="2"
+                       orient="auto">
+                    <path d="M0,0 L0,4 L4,2 L0,0" />
+                </marker>
+            </defs>
+        </svg>
+        <svg class="dynamicChart" id="phaseGraph" display="none">
             <defs>
                 <marker id="markerCircle" markerWidth="8" markerHeight="8" refx="5" refy="5">
                     <circle cx="5" cy="5" r="2"/>
