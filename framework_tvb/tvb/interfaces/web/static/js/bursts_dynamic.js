@@ -233,11 +233,24 @@ function PhasePlaneController(graph_defaults, phasePlane) {
     this.stateVarsSliders = new dynamicPage.SliderGroup(graph_defaults.state_variables, '#reset_state_variables', onGraphChanged);
     this.axisControls = new dynamicPage.AxisGroup(graph_defaults, onGraphChanged);
     $('#reset_trajectories').click(function(){self._deleteTrajectories();});
+    // Throttle the rate of trajectory creation. In a burst of mouse clicks some will be ignored.
+    // Ignore trailing events. Without this throttling the server overwhelms and numexpr occasionally segfaults.
+    var onTrajectory = $.throttle(500, true, function(x, y){self.onTrajectory(x, y);});
+    this.phasePlane.onClick = onTrajectory;
     //clear all trajectories
     this._deleteTrajectories();
     this._disable_active_sv_slider();
     // xxx work in progress
 }
+
+PhasePlaneController.prototype.draw = function(data){
+    this._redrawPhasePlane(data);
+    this._redrawTrajectories();
+};
+
+PhasePlaneController.prototype.onIntegratorChanged = function(){
+    this._redrawTrajectories();
+};
 
 PhasePlaneController.prototype._redrawPhasePlane = function(data){
     data = JSON.parse(data);
@@ -289,6 +302,21 @@ function _trajectories_rpc(starting_points, success){
     });
 }
 
+PhasePlaneController.prototype.onTrajectory = function(x, y){
+    var self = this;
+    var start_state = this.stateVarsSliders.getValues();
+    var axis_state = this.axisControls.getValue();
+    start_state[axis_state.svx] = x;
+    start_state[axis_state.svy] = y;
+
+    _trajectories_rpc([start_state], function(data){
+        self.traj_starts.push(start_state);
+        self.trajectories.push(data.trajectories[0]);
+        self.phasePlane.drawTrajectories(self.trajectories);
+        self.phasePlane.drawSignal(data.signals);
+    });
+};
+
 PhasePlaneController.prototype._redrawTrajectories = function(){
     var self = this;
     if (this.traj_starts.length === 0){
@@ -330,40 +358,18 @@ function onModelChanged(name){
     });
 }
 
-
 function _onParameterChanged(){
     doAjaxCall({
         url: _url('parameters_changed'),
         data: {params: JSON.stringify(dynamicPage.paramSliders.getValues())},
         success : function(data){
-            dynamicPage.grafic._redrawPhasePlane(data);
-            dynamicPage.grafic._redrawTrajectories();
+            dynamicPage.grafic.draw(data);
         }
     });
 }
 
 // Resetting a slider group will trigger change events for each slider. The handler does a slow ajax so debounce the handler
 var onParameterChanged = $.debounce(DEBOUNCE_DELAY, _onParameterChanged);
-
-
-function onTrajectory(x, y){
-    var start_state = dynamicPage.grafic.stateVarsSliders.getValues();
-    var axis_state = dynamicPage.grafic.axisControls.getValue();
-    start_state[axis_state.svx] = x;
-    start_state[axis_state.svy] = y;
-
-    _trajectories_rpc([start_state], function(data){
-        dynamicPage.grafic.traj_starts.push(start_state);
-        dynamicPage.grafic.trajectories.push(data.trajectories[0]);
-        dynamicPage.phasePlane.drawTrajectories(dynamicPage.grafic.trajectories);
-        dynamicPage.phasePlane.drawSignal(data.signals);
-    });
-}
-
-
-// Throttle the rate of trajectory creation. In a burst of mouse clicks some will be ignored.
-// Ignore trailing events. Without this throttling the server overwhelms and numexpr occasionally segfaults.
-var onTrajectory = $.throttle(500, true, onTrajectory);
 
 function onSubmit(event){
     var name = $('#dynamic_name').val().trim();
@@ -384,7 +390,7 @@ function onIntegratorChanged(state){
     doAjaxCall({
         url: _url('integrator_changed'),
         data: state,
-        success: function(){dynamicPage.grafic._redrawTrajectories();}
+        success: function(){ dynamicPage.grafic.onIntegratorChanged();}
     });
 }
 
@@ -412,7 +418,6 @@ function main(dynamic_gid){
     $('#base_spatio_temporal_form').submit(onSubmit);
     onTreeChange();
     dynamicPage.phasePlane = new TVBUI.PhasePlane('#phasePlane');
-    dynamicPage.phasePlane.onClick = onTrajectory;
 }
 
 dynamicPage.main = main;
