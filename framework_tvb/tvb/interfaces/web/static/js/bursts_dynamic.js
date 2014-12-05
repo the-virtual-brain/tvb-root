@@ -29,14 +29,8 @@
 /* globals doAjaxCall, displayMessage, MathJax, getSubmitableData */
 
 var dynamicPage = {
-    paramDefaults : {}, // information about the model parameters and their default values
-    graphDefaults:{},   // information about the graph: shown state variables, state variable and axis ranges
     treeState: {},      // the state of the left input tree. Used to detect changes
-    dynamic_gid: null,
-    traj_starts: [],    // trajectory starting points. Kept to resubmit trajectory computation if model params change
-    trajectories:[]     // the trajectories/signals raw data.
-                        // It is idiomatic in d3 not to draw incrementally but to update the data set.
-                        // Thus we keep the dataset because we have to update if a new traj is added.
+    dynamic_gid: null
 };
 
 /** @module ui components module */
@@ -169,6 +163,7 @@ var dynamicPage = {
 
     /**
      * Dom selectors are hard coded so only one instance makes sense.
+     * deprecated: move logic to plane controller
      * @constructor
      */
     function AxisGroup(state, onChange){
@@ -202,6 +197,7 @@ var dynamicPage = {
 
     dynamicPage.SliderGroup = SliderGroup;
     dynamicPage.AxisGroup = AxisGroup;
+    dynamicPage.AxisControls = AxisControls;
 })();
 
 
@@ -218,7 +214,24 @@ function _url(func, tail){
     return url;
 }
 
-function _fetchSlidersFromServer(){
+/**
+ * Server connected phase view.
+ * Handles graph state and trajectories.
+ * @constructor
+ */
+function PhasePlaneController(graph_defaults) {
+    var self = this;
+    this.graph_defaults = graph_defaults;  // information about the graph: shown state variables, state variable and axis ranges
+    this.traj_starts = [];                 // trajectory starting points. Kept to resubmit trajectory computation if model params change
+    // the trajectories/signals raw data.
+    // It is idiomatic in d3 not to draw incrementally but to update the data set.
+    // Thus we keep the dataset because we have to update if a new traj is added.
+    this.trajectories = [];
+
+    // xxx work in progress
+}
+
+function _fetchSlidersFromServer(paramDefaults, graphDefaults){
     var sliderContainer = $('#div_spatial_model_params');
     sliderContainer.empty();
 
@@ -228,10 +241,11 @@ function _fetchSlidersFromServer(){
             sliderContainer.html(fragment);
             MathJax.Hub.Queue(["Typeset", MathJax.Hub, 'div_spatial_model_params']);
             setupMenuEvents(sliderContainer);
+            dynamicPage.grafic = new PhasePlaneController(graphDefaults);
 
-            dynamicPage.paramSliders = new dynamicPage.SliderGroup(dynamicPage.paramDefaults, '#reset_sliders', onParameterChanged);
-            dynamicPage.stateVarsSliders = new dynamicPage.SliderGroup(dynamicPage.graphDefaults.state_variables, '#reset_state_variables', onGraphChanged);
-            dynamicPage.axisControls = new dynamicPage.AxisGroup(dynamicPage.graphDefaults, onGraphChanged);
+            dynamicPage.paramSliders = new dynamicPage.SliderGroup(paramDefaults, '#reset_sliders', onParameterChanged);
+            dynamicPage.stateVarsSliders = new dynamicPage.SliderGroup(graphDefaults.state_variables, '#reset_state_variables', onGraphChanged);
+            dynamicPage.axisControls = new dynamicPage.AxisGroup(graphDefaults, onGraphChanged);
             $('#reset_trajectories').click(_deleteTrajectories);
             //clear all trajectories
             _deleteTrajectories();
@@ -246,9 +260,7 @@ function onModelChanged(name){
         url: _url('model_changed', name) ,
         success: function(data){
             data = JSON.parse(data);
-            dynamicPage.paramDefaults = data.params;
-            dynamicPage.graphDefaults = data.graph_params;
-            _fetchSlidersFromServer();
+            _fetchSlidersFromServer(data.params, data.graph_params);
         }
     });
 }
@@ -258,7 +270,7 @@ function _redrawPhasePlane(data){
     dynamicPage.phasePlane.draw(data);
     var axisState = dynamicPage.axisControls.getValue();
     dynamicPage.phasePlane.setLabels(axisState.svx, axisState.svy);
-    dynamicPage.phasePlane.setPlotLabels($.map(dynamicPage.graphDefaults.state_variables, function(d){return d.name;}) );
+    dynamicPage.phasePlane.setPlotLabels($.map(dynamicPage.grafic.graph_defaults.state_variables, function(d){return d.name;}) );
 }
 
 function _onParameterChanged(){
@@ -298,8 +310,8 @@ function _onGraphChanged(){
 var onGraphChanged = $.debounce(DEBOUNCE_DELAY, _onGraphChanged);
 
 function _deleteTrajectories(){
-    dynamicPage.trajectories = [];
-    dynamicPage.traj_starts = [];
+    dynamicPage.grafic.trajectories = [];
+    dynamicPage.grafic.traj_starts = [];
     dynamicPage.phasePlane.drawTrajectories([]);
     dynamicPage.phasePlane.drawSignal([]);
 }
@@ -326,20 +338,20 @@ function onTrajectory(x, y){
     start_state[axis_state.svy] = y;
 
     _trajectories_rpc([start_state], function(data){
-        dynamicPage.traj_starts.push(start_state);
-        dynamicPage.trajectories.push(data.trajectories[0]);
-        dynamicPage.phasePlane.drawTrajectories(dynamicPage.trajectories);
+        dynamicPage.grafic.traj_starts.push(start_state);
+        dynamicPage.grafic.trajectories.push(data.trajectories[0]);
+        dynamicPage.phasePlane.drawTrajectories(dynamicPage.grafic.trajectories);
         dynamicPage.phasePlane.drawSignal(data.signals);
     });
 }
 
 function _redrawTrajectories(){
-    if (dynamicPage.traj_starts.length === 0){
+    if (dynamicPage.grafic.traj_starts.length === 0){
         return;
     }
-    _trajectories_rpc(dynamicPage.traj_starts, function(data){
-        dynamicPage.trajectories = data.trajectories;
-        dynamicPage.phasePlane.drawTrajectories(dynamicPage.trajectories);
+    _trajectories_rpc(dynamicPage.grafic.traj_starts, function(data){
+        dynamicPage.grafic.trajectories = data.trajectories;
+        dynamicPage.phasePlane.drawTrajectories(dynamicPage.grafic.trajectories);
         dynamicPage.phasePlane.drawSignal(data.signals);
     });
 }
