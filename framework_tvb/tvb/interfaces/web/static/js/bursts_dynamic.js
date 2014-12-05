@@ -237,6 +237,7 @@ function PhasePlaneController(graph_defaults, phasePlane) {
     // Ignore trailing events. Without this throttling the server overwhelms and numexpr occasionally segfaults.
     var onTrajectory = $.throttle(500, true, function(x, y){self.onTrajectory(x, y);});
     this.phasePlane.onClick = onTrajectory;
+    $(this.phasePlane.svg[0]).show();
     //clear all trajectories
     this._deleteTrajectories();
     this._disable_active_sv_slider();
@@ -329,6 +330,21 @@ PhasePlaneController.prototype._redrawTrajectories = function(){
     });
 };
 
+PhasePlaneController.prototype.destroy = function(){
+    $(this.phasePlane.svg[0]).hide();
+};
+
+function PhaseGraphController(graph_defaults, phaseGraph) {
+    var self = this;
+    this.graph_defaults = graph_defaults;
+    this.phaseGraph = phaseGraph;
+    $(this.phaseGraph.svg[0]).show();
+}
+
+PhaseGraphController.prototype.destroy = function(){
+    $(this.phaseGraph.svg[0]).hide();
+};
+
 function _fetchSlidersFromServer(paramDefaults, graphDefaults){
     var sliderContainer = $('#div_spatial_model_params');
     sliderContainer.empty();
@@ -339,11 +355,20 @@ function _fetchSlidersFromServer(paramDefaults, graphDefaults){
             sliderContainer.html(fragment);
             MathJax.Hub.Queue(["Typeset", MathJax.Hub, 'div_spatial_model_params']);
             setupMenuEvents(sliderContainer);
-            dynamicPage.grafic = new PhasePlaneController(graphDefaults, dynamicPage.phasePlane);
+            if (dynamicPage.grafic != null){
+                dynamicPage.grafic.destroy();
+            }
+            if (graphDefaults.state_variables.length > 1) {
+                dynamicPage.grafic = new PhasePlaneController(graphDefaults, dynamicPage.phasePlane);
+            }else{
+                dynamicPage.grafic = new PhaseGraphController(graphDefaults, dynamicPage.phaseGraph);
+            }
 
+            if (paramDefaults.length) {
             dynamicPage.paramSliders = new dynamicPage.SliderGroup(paramDefaults, '#reset_sliders', onParameterChanged);
-
-            _onParameterChanged();
+            }else{
+                //model has no params; schedule a draw
+            }
         }
     });
 }
@@ -418,6 +443,7 @@ function main(dynamic_gid){
     $('#base_spatio_temporal_form').submit(onSubmit);
     onTreeChange();
     dynamicPage.phasePlane = new TVBUI.PhasePlane('#phasePlane');
+    dynamicPage.phaseGraph = new TVBUI.PhaseGraph('#phaseGraph');
 }
 
 dynamicPage.main = main;

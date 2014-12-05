@@ -311,5 +311,78 @@ var TVBUI = TVBUI || {};
             .text(function(d){return d;});
     };
 
+
+     // this is temporary ; plenty of code duplication with phaseplane
+    function PhaseGraph(selector){
+        var self = this;
+        // --- declarations and global structure ---
+        // We create the svg dom in js. Alternatively this could be written declarative in svg and retrieved here by .select()
+        this.svg = d3.select(selector).attr('viewBox', viewBox);
+
+        this.plane_with_axis = this.svg.append('g')     // groups phase plane, axis, labels trajectories and overlay
+            .attr("transform", "translate(100, 40)");
+
+        this.trajectories_g = this.plane_with_axis.append('g')
+            .attr('class', 'traj')
+            .attr('stroke', trajColors[3]);
+
+        this.plane_g = this.plane_with_axis.append('g');
+
+        this.xAxis_g = this.plane_with_axis.append('g')
+            .attr('class', 'axis');
+
+        this.yAxis_g = this.plane_with_axis.append('g')
+            .attr('class', 'axis');
+
+        this.lineBuilder = d3.svg.line()
+                .x(function(d) {return self.xScale(d[0]);})
+                .y(function(d) {return self.yScale(d[1]);})
+                .interpolate("linear");
+    }
+
+    PhaseGraph.prototype._computePhasePlaneScales = function(data) {
+        var xrange = d3.extent(data, function (d) {return d[0];});
+        var yrange = d3.extent(data, function (d) {return d[1];});
+        this.xScale = d3.scale.linear().domain(xrange).range([0, planeWidth]);
+        this.yScale = d3.scale.linear().domain(yrange).range([planeHeight, 0]);  // reverse range to compensate 4 y axis direction
+    };
+
+    PhaseGraph.prototype.draw = function(data){
+        var self = this;
+        this._computePhasePlaneScales(data);
+
+        var xAxis = d3.svg.axis().scale(this.xScale).orient('bottom');
+        var yAxis = d3.svg.axis().scale(this.yScale).orient("left");
+
+        this.xAxis_g.transition().call(xAxis).attr("transform", "translate(0, "+ this.yScale(0) + ")");
+        this.yAxis_g.transition().call(yAxis);
+
+        var p = this.trajectories_g.selectAll('path').data([data]);
+        p.enter().append('path');
+        p.attr('d', self.lineBuilder(data));
+        p.exit().remove();
+    };
+
+    PhaseGraph.prototype.drawPhase = function(zeros){
+        var self = this;
+        var p = this.plane_g.selectAll('circle').data(zeros);
+        p.enter().append('circle');
+        p.attr('r', 8)
+            .attr('cy', self.yScale(0))
+            .attr('cx', function(d){return self.xScale(d);})
+            .attr('fill', trajColors[5]);
+        p.exit().remove();
+
+        p = this.plane_g.selectAll('text').data(zeros);
+        p.enter().append('text');
+        p.text(function(d){return d.toFixed(2);})
+            .attr('y', self.yScale(0) - 20)
+            .attr('x', function(d){return self.xScale(d);})
+            .attr('dy', 5);
+        p.exit().remove();
+    };
+
+
     TVBUI.PhasePlane = PhasePlane;
+    TVBUI.PhaseGraph = PhaseGraph;
 })();
