@@ -43,13 +43,13 @@ var TVBUI = TVBUI || {};
     var planeWidth = 800;
     var planeHeight = 800;
 
-    function PhasePlane(onClick){
+    function PhasePlane(selector){
         var self = this;
         this.VECTOR_RANGE = 80;
-        this.onClick = onClick;
+        this.onClick = function(){};
         // --- declarations and global structure ---
         // We create the svg dom in js. Alternatively this could be written declarative in svg and retrieved here by .select()
-        this.svg = d3.select('.dynamicChart').attr('viewBox', viewBox);
+        this.svg = d3.select(selector).attr('viewBox', viewBox);
 
         this.svg.append("clipPath").attr("id", "clip")      // clip all phase plane geometry
             .append("rect")

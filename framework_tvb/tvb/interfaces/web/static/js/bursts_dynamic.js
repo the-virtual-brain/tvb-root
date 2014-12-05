@@ -394,7 +394,8 @@ function main(dynamic_gid){
     $('#left_input_tree').find('input').add('select').change(onTreeChange);
     $('#base_spatio_temporal_form').submit(onSubmit);
     onTreeChange();
-    dynamicPage.phasePlane = new TVBUI.PhasePlane(onTrajectory);
+    dynamicPage.phasePlane = new TVBUI.PhasePlane('#phasePlane');
+    dynamicPage.phasePlane.onClick = onTrajectory;
 }
 
 dynamicPage.main = main;
