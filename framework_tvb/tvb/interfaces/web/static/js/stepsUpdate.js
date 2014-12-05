@@ -84,7 +84,7 @@ function updateDivContent(divID, component, parentDIV, radioComponent) {
     //a range component, remove the disable attribute and set display style to inline
     var selector_name = 'div[id^="dict"]';
     var dicts;
-    if (parentDIV) {
+    if (parentDIV && parentDIV.trim()) {
         dicts = $('#'+ parentDIV).find(selector_name);
     }else{
         dicts = $(selector_name);
