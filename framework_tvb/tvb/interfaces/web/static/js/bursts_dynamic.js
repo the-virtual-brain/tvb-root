@@ -219,7 +219,7 @@ function _url(func, tail){
  * Handles graph state and trajectories.
  * @constructor
  */
-function PhasePlaneController(graph_defaults) {
+function PhasePlaneController(graph_defaults, phasePlane) {
     var self = this;
     this.graph_defaults = graph_defaults;  // information about the graph: shown state variables, state variable and axis ranges
     this.traj_starts = [];                 // trajectory starting points. Kept to resubmit trajectory computation if model params change
@@ -227,9 +227,43 @@ function PhasePlaneController(graph_defaults) {
     // It is idiomatic in d3 not to draw incrementally but to update the data set.
     // Thus we keep the dataset because we have to update if a new traj is added.
     this.trajectories = [];
+    this.phasePlane = phasePlane;
+    // see onParameterChanged
+    var onGraphChanged = $.debounce(DEBOUNCE_DELAY, function(){self._onGraphChanged();});
+    this.stateVarsSliders = new dynamicPage.SliderGroup(graph_defaults.state_variables, '#reset_state_variables', onGraphChanged);
+    this.axisControls = new dynamicPage.AxisGroup(graph_defaults, onGraphChanged);
 
+    this._disable_active_sv_slider();
     // xxx work in progress
 }
+
+PhasePlaneController.prototype._redrawPhasePlane = function(data){
+    data = JSON.parse(data);
+    this.phasePlane.draw(data);
+    var axis_state = this.axisControls.getValue();
+    this.phasePlane.setLabels(axis_state.svx, axis_state.svy);
+    this.phasePlane.setPlotLabels($.map(this.graph_defaults.state_variables, function(d){return d.name;}) );
+};
+
+PhasePlaneController.prototype._disable_active_sv_slider = function(){
+    var axis_state = this.axisControls.getValue();
+    this.stateVarsSliders.hide([axis_state.svx, axis_state.svy]);
+};
+
+PhasePlaneController.prototype._onGraphChanged = function(){
+    var self = this;
+    var axis_state = this.axisControls.getValue();
+    axis_state.state_vars = this.stateVarsSliders.getValues();
+    this._disable_active_sv_slider();
+    doAjaxCall({
+        url: _url('graph_changed'),
+        data: { graph_state: JSON.stringify(axis_state)},
+        success : function(data){
+            self._redrawPhasePlane(data);
+            //self._redrawTrajectories();
+        }
+    });
+};
 
 function _fetchSlidersFromServer(paramDefaults, graphDefaults){
     var sliderContainer = $('#div_spatial_model_params');
@@ -241,16 +275,14 @@ function _fetchSlidersFromServer(paramDefaults, graphDefaults){
             sliderContainer.html(fragment);
             MathJax.Hub.Queue(["Typeset", MathJax.Hub, 'div_spatial_model_params']);
             setupMenuEvents(sliderContainer);
-            dynamicPage.grafic = new PhasePlaneController(graphDefaults);
+            dynamicPage.grafic = new PhasePlaneController(graphDefaults, dynamicPage.phasePlane);
 
             dynamicPage.paramSliders = new dynamicPage.SliderGroup(paramDefaults, '#reset_sliders', onParameterChanged);
-            dynamicPage.stateVarsSliders = new dynamicPage.SliderGroup(graphDefaults.state_variables, '#reset_state_variables', onGraphChanged);
-            dynamicPage.axisControls = new dynamicPage.AxisGroup(graphDefaults, onGraphChanged);
+
             $('#reset_trajectories').click(_deleteTrajectories);
             //clear all trajectories
             _deleteTrajectories();
             _onParameterChanged();
-            _disable_active_sv_slider();
         }
     });
 }
@@ -265,20 +297,13 @@ function onModelChanged(name){
     });
 }
 
-function _redrawPhasePlane(data){
-    data = JSON.parse(data);
-    dynamicPage.phasePlane.draw(data);
-    var axisState = dynamicPage.axisControls.getValue();
-    dynamicPage.phasePlane.setLabels(axisState.svx, axisState.svy);
-    dynamicPage.phasePlane.setPlotLabels($.map(dynamicPage.grafic.graph_defaults.state_variables, function(d){return d.name;}) );
-}
 
 function _onParameterChanged(){
     doAjaxCall({
         url: _url('parameters_changed'),
         data: {params: JSON.stringify(dynamicPage.paramSliders.getValues())},
         success : function(data){
-            _redrawPhasePlane(data);
+            dynamicPage.grafic._redrawPhasePlane(data);
             _redrawTrajectories();
         }
     });
@@ -287,27 +312,6 @@ function _onParameterChanged(){
 // Resetting a slider group will trigger change events for each slider. The handler does a slow ajax so debounce the handler
 var onParameterChanged = $.debounce(DEBOUNCE_DELAY, _onParameterChanged);
 
-function _disable_active_sv_slider(){
-    var axis_state = dynamicPage.axisControls.getValue();
-    dynamicPage.stateVarsSliders.hide([axis_state.svx, axis_state.svy]);
-}
-
-function _onGraphChanged(){
-    var graph_state = dynamicPage.axisControls.getValue();
-    graph_state.state_vars = dynamicPage.stateVarsSliders.getValues();
-    _disable_active_sv_slider();
-    doAjaxCall({
-        url: _url('graph_changed'),
-        data: { graph_state: JSON.stringify(graph_state)},
-        success : function(data){
-            _redrawPhasePlane(data);
-            _redrawTrajectories();
-        }
-    });
-}
-
-// see onParameterChanged
-var onGraphChanged = $.debounce(DEBOUNCE_DELAY, _onGraphChanged);
 
 function _deleteTrajectories(){
     dynamicPage.grafic.trajectories = [];
@@ -332,8 +336,8 @@ function _trajectories_rpc(starting_points, success){
 }
 
 function onTrajectory(x, y){
-    var start_state = dynamicPage.stateVarsSliders.getValues();
-    var axis_state = dynamicPage.axisControls.getValue();
+    var start_state = dynamicPage.grafic.stateVarsSliders.getValues();
+    var axis_state = dynamicPage.grafic.axisControls.getValue();
     start_state[axis_state.svx] = x;
     start_state[axis_state.svy] = y;
 
