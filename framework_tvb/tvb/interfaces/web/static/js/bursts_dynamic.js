@@ -232,7 +232,9 @@ function PhasePlaneController(graph_defaults, phasePlane) {
     var onGraphChanged = $.debounce(DEBOUNCE_DELAY, function(){self._onGraphChanged();});
     this.stateVarsSliders = new dynamicPage.SliderGroup(graph_defaults.state_variables, '#reset_state_variables', onGraphChanged);
     this.axisControls = new dynamicPage.AxisGroup(graph_defaults, onGraphChanged);
-
+    $('#reset_trajectories').click(function(){self._deleteTrajectories();});
+    //clear all trajectories
+    this._deleteTrajectories();
     this._disable_active_sv_slider();
     // xxx work in progress
 }
@@ -260,8 +262,42 @@ PhasePlaneController.prototype._onGraphChanged = function(){
         data: { graph_state: JSON.stringify(axis_state)},
         success : function(data){
             self._redrawPhasePlane(data);
-            //self._redrawTrajectories();
+            self._redrawTrajectories();
         }
+    });
+};
+
+PhasePlaneController.prototype._deleteTrajectories = function(){
+    this.trajectories = [];
+    this.traj_starts = [];
+    this.phasePlane.drawTrajectories([]);
+    this.phasePlane.drawSignal([]);
+};
+
+function _trajectories_rpc(starting_points, success){
+    doAjaxCall({
+        url: _url('trajectories'),
+        data: {starting_points: JSON.stringify(starting_points)},
+        success:function(data){
+            data = JSON.parse(data);
+            if (data.finite) {
+                success(data);
+            }else{
+                displayMessage('Trajectory contains infinities. Try to decrease the integration step.', 'warningMessage');
+            }
+        }
+    });
+}
+
+PhasePlaneController.prototype._redrawTrajectories = function(){
+    var self = this;
+    if (this.traj_starts.length === 0){
+        return;
+    }
+    _trajectories_rpc(this.traj_starts, function(data){
+        self.trajectories = data.trajectories;
+        self.phasePlane.drawTrajectories(self.trajectories);
+        self.phasePlane.drawSignal(data.signals);
     });
 };
 
@@ -279,9 +315,6 @@ function _fetchSlidersFromServer(paramDefaults, graphDefaults){
 
             dynamicPage.paramSliders = new dynamicPage.SliderGroup(paramDefaults, '#reset_sliders', onParameterChanged);
 
-            $('#reset_trajectories').click(_deleteTrajectories);
-            //clear all trajectories
-            _deleteTrajectories();
             _onParameterChanged();
         }
     });
@@ -304,7 +337,7 @@ function _onParameterChanged(){
         data: {params: JSON.stringify(dynamicPage.paramSliders.getValues())},
         success : function(data){
             dynamicPage.grafic._redrawPhasePlane(data);
-            _redrawTrajectories();
+            dynamicPage.grafic._redrawTrajectories();
         }
     });
 }
@@ -312,28 +345,6 @@ function _onParameterChanged(){
 // Resetting a slider group will trigger change events for each slider. The handler does a slow ajax so debounce the handler
 var onParameterChanged = $.debounce(DEBOUNCE_DELAY, _onParameterChanged);
 
-
-function _deleteTrajectories(){
-    dynamicPage.grafic.trajectories = [];
-    dynamicPage.grafic.traj_starts = [];
-    dynamicPage.phasePlane.drawTrajectories([]);
-    dynamicPage.phasePlane.drawSignal([]);
-}
-
-function _trajectories_rpc(starting_points, success){
-    doAjaxCall({
-        url: _url('trajectories'),
-        data: {starting_points: JSON.stringify(starting_points)},
-        success:function(data){
-            data = JSON.parse(data);
-            if (data.finite) {
-                success(data);
-            }else{
-                displayMessage('Trajectory contains infinities. Try to decrease the integration step.', 'warningMessage');
-            }
-        }
-    });
-}
 
 function onTrajectory(x, y){
     var start_state = dynamicPage.grafic.stateVarsSliders.getValues();
@@ -349,16 +360,6 @@ function onTrajectory(x, y){
     });
 }
 
-function _redrawTrajectories(){
-    if (dynamicPage.grafic.traj_starts.length === 0){
-        return;
-    }
-    _trajectories_rpc(dynamicPage.grafic.traj_starts, function(data){
-        dynamicPage.grafic.trajectories = data.trajectories;
-        dynamicPage.phasePlane.drawTrajectories(dynamicPage.grafic.trajectories);
-        dynamicPage.phasePlane.drawSignal(data.signals);
-    });
-}
 
 // Throttle the rate of trajectory creation. In a burst of mouse clicks some will be ignored.
 // Ignore trailing events. Without this throttling the server overwhelms and numexpr occasionally segfaults.
@@ -383,7 +384,7 @@ function onIntegratorChanged(state){
     doAjaxCall({
         url: _url('integrator_changed'),
         data: state,
-        success: _redrawTrajectories
+        success: function(){dynamicPage.grafic._redrawTrajectories();}
     });
 }
 
