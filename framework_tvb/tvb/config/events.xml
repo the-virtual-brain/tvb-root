@@ -26,12 +26,11 @@
 
 
     <event hookpoint="CodeVersionsManager.update.4455" type="adapter">
-        <adapter module="tvb.adapters.uploaders.zip_surface_importer" class="ZIPSurfaceImporter"/>
+        <adapter module="tvb.adapters.uploaders.obj_importer" class="ObjSurfaceImporter"/>
         <method name="launch" operation-hidden="true"/>
         <args>
-            <arg name='uploaded' value="eeg_skin_surface.zip" module='tvb_data.surfaceData' type="file" />
-            <arg name='surface_type' value='EEG Cap' type='str' /> 
-            <arg name='zero_based_triangles' value='1' type='int' />  
+            <arg name='data_file' value="eeg_cap.obj" module='tvb_data.obj' type="file" />
+            <arg name='surface_type' value='EEG Cap' type='str' />
         </args>
     </event>
     <event hookpoint="CodeVersionsManager.update.4455" type="adapter">

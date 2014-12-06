@@ -34,8 +34,8 @@
 
 import os
 import unittest
-import tvb_data.surfaceData as surfaces_dataset
-import tvb_data.sensors as sensors_dataset
+import tvb_data.obj
+import tvb_data.sensors
 from tvb.adapters.uploaders.sensors_importer import Sensors_Importer
 from tvb.adapters.visualizers.sensors import SensorsViewer
 from tvb.core.entities.file.files_helper import FilesHelper
@@ -75,8 +75,8 @@ class SensorViewersTest(TransactionalTestCase):
         self.test_user = self.datatypeFactory.get_user()
 
         ## Import Shelf Face Object
-        zip_path = os.path.join(os.path.dirname(surfaces_dataset.__file__), 'face_surface_old.zip')
-        TestFactory.import_surface_zip(self.test_user, self.test_project, zip_path, FACE, True)
+        face_path = os.path.join(os.path.dirname(tvb_data.obj.__file__), 'face_surface.obj')
+        TestFactory.import_surface_obj(self.test_user, self.test_project, face_path, FACE)
 
 
     def tearDown(self):
@@ -91,13 +91,13 @@ class SensorViewersTest(TransactionalTestCase):
         Check that all required keys are present in output from EegSensorViewer launch.
         """
         ## Import Sensors
-        zip_path = os.path.join(os.path.dirname(sensors_dataset.__file__), 'EEG_unit_vectors_BrainProducts_62.txt.bz2')
+        zip_path = os.path.join(os.path.dirname(tvb_data.sensors.__file__), 'EEG_unit_vectors_BrainProducts_62.txt.bz2')
         TestFactory.import_sensors(self.test_user, self.test_project, zip_path, Sensors_Importer.EEG_SENSORS)
         sensors = TestFactory.get_entity(self.test_project, SensorsEEG())
 
         ## Import EEGCap
-        zip_path = os.path.join(os.path.dirname(surfaces_dataset.__file__), 'eeg_skin_surface.zip')
-        TestFactory.import_surface_zip(self.test_user, self.test_project, zip_path, EEG_CAP, True)
+        cap_path = os.path.join(os.path.dirname(tvb_data.obj.__file__), 'eeg_cap.obj')
+        TestFactory.import_surface_obj(self.test_user, self.test_project, cap_path, EEG_CAP)
         eeg_cap_surface = TestFactory.get_entity(self.test_project, EEGCap())
 
         viewer = SensorsViewer()
@@ -122,7 +122,7 @@ class SensorViewersTest(TransactionalTestCase):
         Check that all required keys are present in output from MEGSensorViewer launch.
         """
 
-        zip_path = os.path.join(os.path.dirname(sensors_dataset.__file__), 'meg_channels_reg13.txt.bz2')
+        zip_path = os.path.join(os.path.dirname(tvb_data.sensors.__file__), 'meg_channels_reg13.txt.bz2')
         TestFactory.import_sensors(self.test_user, self.test_project, zip_path, Sensors_Importer.MEG_SENSORS)
         sensors = TestFactory.get_entity(self.test_project, SensorsMEG())
 
@@ -137,7 +137,7 @@ class SensorViewersTest(TransactionalTestCase):
         """
         Check that all required keys are present in output from InternalSensorViewer launch.
         """
-        zip_path = os.path.join(os.path.dirname(sensors_dataset.__file__), 'internal_39.txt.bz2')
+        zip_path = os.path.join(os.path.dirname(tvb_data.sensors.__file__), 'internal_39.txt.bz2')
         TestFactory.import_sensors(self.test_user, self.test_project, zip_path, Sensors_Importer.INTERNAL_SENSORS)
         sensors = TestFactory.get_entity(self.test_project, SensorsInternal())
 

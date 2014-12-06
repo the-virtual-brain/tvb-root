@@ -258,7 +258,7 @@ class EEGCap(surfaces_scientific.EEGCapScientific, surfaces_framework.EEGCapFram
     __mapper_args__ = {'polymorphic_identity': EEG_CAP}
 
     @classmethod
-    def from_file(cls, source_file="eeg_skin_surface.zip", instance=None):
+    def from_file(cls, source_file="old_eeg_skin_surface.zip", instance=None):
         return super(EEGCap, cls).from_file(source_file, instance)
 
 
@@ -283,7 +283,7 @@ class FaceSurface(surfaces_scientific.FaceSurfaceScientific, surfaces_framework.
     __mapper_args__ = {'polymorphic_identity': FACE}
 
     @classmethod
-    def from_file(cls, source_file="face_surface_old.zip", instance=None):
+    def from_file(cls, source_file="old_face_surface.zip", instance=None):
         return super(FaceSurface, cls).from_file(source_file, instance)
 
 ##--------------------- OPEN SURFACES End Here---------------------------------------##

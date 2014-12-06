@@ -277,6 +277,18 @@ class TestFactory():
         
         ### Launch Operation
         FlowService().fire_operation(importer, user, project.id, **args)
+
+
+    @staticmethod
+    def import_surface_obj(user, project, obj_path, surface_type):
+        ### Retrieve Adapter instance
+        group = dao.find_group('tvb.adapters.uploaders.obj_importer', 'ObjSurfaceImporter')
+        importer = ABCAdapter.build_adapter(group)
+        args = {'data_file': obj_path,
+                'surface_type': surface_type}
+
+        ### Launch Operation
+        FlowService().fire_operation(importer, user, project.id, **args)
         
         
     @staticmethod
