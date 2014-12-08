@@ -338,8 +338,48 @@ function PhaseGraphController(graph_defaults, phaseGraph) {
     var self = this;
     this.graph_defaults = graph_defaults;
     this.phaseGraph = phaseGraph;
+
+    var onGraphChanged = $.debounce(DEBOUNCE_DELAY, function(){self._onGraphChanged();});
+
+    self.$mode = $('#mode');
+    self.ax = new dynamicPage.AxisControls(graph_defaults, '#svx', '#slider_x_axis', '#x_range_span', onGraphChanged);
+    self.ax.val(graph_defaults.default_sv[0]);
+    self.$mode.change(onGraphChanged);
+    $('#reset_axes').click(function() {
+        self.$mode.val(graph_defaults.default_mode);
+        self.ax.val(graph_defaults.default_sv[0]);
+    });
+
     $(this.phaseGraph.svg[0]).show();
 }
+
+PhaseGraphController.prototype._onGraphChanged = function(){
+    var self = this;
+    var axv = this.ax.val();
+    var axis_state = {
+        mode: this.$mode.val(),
+        svx: axv.sv,
+        x_range: axv.range
+    };
+
+    doAjaxCall({
+        url: _url('graph_changed'),
+        data: { graph_state: JSON.stringify(axis_state)},
+        success : function(data){
+            self.draw(data);
+        }
+    });
+};
+
+PhaseGraphController.prototype.draw = function(data){
+    data = JSON.parse(data);
+    this.phaseGraph.draw(data.signal);
+    //this.phaseGraph.drawPhase(data.z);
+};
+
+PhaseGraphController.prototype.onIntegratorChanged = function(){
+
+};
 
 PhaseGraphController.prototype.destroy = function(){
     $(this.phaseGraph.svg[0]).hide();
@@ -360,7 +400,7 @@ function _initialize_grafic(paramDefaults, graphDefaults){
     }else{
         //model has no params; schedule a draw
         //this is a mocup have to get data from server;
-        dynamicPage.grafic.draw();
+        //dynamicPage.grafic.draw();
     }
 }
 
