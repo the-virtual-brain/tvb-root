@@ -163,7 +163,7 @@ class PhasePlaneD3(PhaseSpace):
         return min_val, max_val, lo, hi
 
 
-    def update_axis(self, mode, svx, svy, x_range, y_range, sv):
+    def update_axis(self, mode, svx, svy, x_range, y_range, state_vars):
         self.mode = mode
         self.svx_ind = self.model.state_variables.index(svx)
         self.svy_ind = self.model.state_variables.index(svy)
@@ -171,7 +171,7 @@ class PhasePlaneD3(PhaseSpace):
         svr[svx][:] = x_range #todo is it ok to update the model?
         svr[svy][:] = y_range
 
-        for name, val in sv.iteritems():
+        for name, val in state_vars.iteritems():
             k = self.model.state_variables.index(name)
             self.default_sv[k] = val
 

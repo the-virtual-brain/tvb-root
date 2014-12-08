@@ -229,7 +229,7 @@ class DynamicModelController(BurstBaseController):
         """
         dynamic = self.get_cached_dynamic(dynamic_gid)
         dynamic.model = self.available_models[name]()
-
+        dynamic.model.configure()
         dynamic.phase_plane = PhasePlaneD3(dynamic.model, dynamic.integrator)
         mp_params = DynamicModelController._get_model_parameters_ui_model(dynamic.model)
         graph_params = DynamicModelController._get_graph_ui_model(dynamic)
@@ -290,8 +290,7 @@ class DynamicModelController(BurstBaseController):
         with self.traj_lock:
             graph_state = json.loads(graph_state)
             dynamic = self.get_cached_dynamic(dynamic_gid)
-            dynamic.phase_plane.update_axis(graph_state['mode'], graph_state['svx'], graph_state['svy'],
-                                            graph_state['x_range'], graph_state['y_range'], graph_state['state_vars'])
+            dynamic.phase_plane.update_axis(**graph_state)
             return dynamic.phase_plane.compute_phase_plane()
 
 
