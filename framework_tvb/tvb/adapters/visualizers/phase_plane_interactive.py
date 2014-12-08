@@ -227,14 +227,42 @@ class PhasePlaneD3(PhasePlane):
 class PhaseLineD3(_PhaseSpace):
     def __init__(self, model, integrator):
         _PhaseSpace.__init__(self, model, integrator)
+        self.mode = 0
+
+
+    def _grid(self):
+        svr = self.model.state_variable_range
+        xlo, xhi = svr[self.model.state_variables[0]]
+        return numpy.linspace(xlo, xhi, NUMBEROFGRIDPOINTS)
 
 
     def compute_phase_plane(self):
-        pass
+        xg = self._grid()
+        # dfun modifies state in place so we need to copy xg
+        state = xg.reshape((1, NUMBEROFGRIDPOINTS, 1)).copy()  # will broadcast to modes
+        u = self.model.dfun(state, self.no_coupling)
+        u = u[0, :, self.mode]
+
+        d = numpy.vstack((xg, u)).T
+
+        if numpy.isnan(d).any():
+            self.log.error("NaN")
+
+        return {'signal': d.tolist()}
 
 
     def update_axis(self, mode, svx, x_range):
-        pass
+        self.mode = mode
+        svr = self.model.state_variable_range
+        svr[svx][:] = x_range
+
+
+
+def phase_space_d3(model, integrator):
+    if model.nvar == 1:
+        return PhaseLineD3(model, integrator)
+    else:
+        return PhasePlaneD3(model, integrator)
 
 
 

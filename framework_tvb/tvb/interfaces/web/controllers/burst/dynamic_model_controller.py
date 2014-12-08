@@ -335,9 +335,10 @@ class DynamicModelController(BurstBaseController):
 
     @staticmethod
     def _get_graph_ui_model(dynamic):
+        model = dynamic.model
         sv_model = []
-        for sv in range(dynamic.model.nvar):
-            name = dynamic.model.state_variables[sv]
+        for sv in range(model.nvar):
+            name = model.state_variables[sv]
             min_val, max_val, lo, hi = dynamic.phase_plane.get_axes_ranges(name)
             sv_model.append({
                 'name': name,
@@ -351,15 +352,19 @@ class DynamicModelController(BurstBaseController):
                 'default': (hi + lo) / 2
             })
 
-        svx_name = dynamic.model.state_variables[dynamic.phase_plane.svx_ind]
-        svy_name = dynamic.model.state_variables[dynamic.phase_plane.svy_ind]
 
-        return {
-            'modes': range(dynamic.model.number_of_modes),
+        ret = {
+            'modes': range(model.number_of_modes),
             'state_variables': sv_model,
-            'default_mode' : dynamic.phase_plane.mode,
-            'default_sv': [svx_name, svy_name]
+            'default_mode' : dynamic.phase_plane.mode
         }
+
+        if model.nvar > 1:
+            ret['default_sv'] = [ model.state_variables[dynamic.phase_plane.svx_ind],
+                                  model.state_variables[dynamic.phase_plane.svy_ind]]
+        else:
+            ret['default_sv'] = [ model.state_variables[0] ]
+        return ret
 
 
     @using_template('burst/dynamic_sliders')
