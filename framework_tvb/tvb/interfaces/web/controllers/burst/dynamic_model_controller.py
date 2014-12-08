@@ -34,7 +34,7 @@
 import json
 import numpy
 import threading
-from tvb.adapters.visualizers.phase_plane_interactive import PhasePlaneD3
+from tvb.adapters.visualizers.phase_plane_interactive import phase_space_d3
 from tvb.basic.traits import core, types_basic, traited_interface
 from tvb.basic.traits.parameters_factory import get_traited_subclasses
 from tvb.basic.traits.util import multiline_math_directives_to_matjax
@@ -65,7 +65,7 @@ class Dynamic(object):
 
         # Only one instance should exist for a browser page.
         # To achieve something close to that we store it here
-        self.phase_plane = PhasePlaneD3(model, integrator)
+        self.phase_plane = phase_space_d3(model, integrator)
 
 
 class SessionCache(object):
@@ -230,7 +230,7 @@ class DynamicModelController(BurstBaseController):
         dynamic = self.get_cached_dynamic(dynamic_gid)
         dynamic.model = self.available_models[name]()
         dynamic.model.configure()
-        dynamic.phase_plane = PhasePlaneD3(dynamic.model, dynamic.integrator)
+        dynamic.phase_plane = phase_space_d3(dynamic.model, dynamic.integrator)
         mp_params = DynamicModelController._get_model_parameters_ui_model(dynamic.model)
         graph_params = DynamicModelController._get_graph_ui_model(dynamic)
         return {'params' : mp_params, 'graph_params':graph_params, 'sliders_fragment': self._sliders_fragment(dynamic_gid)}
@@ -252,7 +252,7 @@ class DynamicModelController(BurstBaseController):
         dynamic.model.configure()
         self._configure_integrator_noise(integrator, dynamic.model)
 
-        dynamic.phase_plane = PhasePlaneD3(dynamic.model, dynamic.integrator)
+        dynamic.phase_plane = phase_space_d3(dynamic.model, dynamic.integrator)
 
 
     @staticmethod

@@ -40,10 +40,9 @@ NUMBEROFGRIDPOINTS = 42
 TRAJ_STEPS = 512
 
 
-class PhaseSpace(object):
+class _PhaseSpace(object):
     """
-    Responsible with computing phase space slices and trajectories.
-    A collection of math-y utilities it is view independent (holds no state related to views).
+    Dimensionality independent code
     """
     def __init__(self, model, integrator):
         self.log = get_logger(self.__class__.__module__)
@@ -51,13 +50,6 @@ class PhaseSpace(object):
         self.integrator = integrator
         #create a filler(all zeros) for the coupling arg of the Model's dfun method.
         self.no_coupling = numpy.zeros((self.model.nvar, 1, self.model.number_of_modes))
-
-
-    @staticmethod
-    def _create_mesh_jitter():
-        shape = NUMBEROFGRIDPOINTS, NUMBEROFGRIDPOINTS
-        d =  1.0 / (4 * NUMBEROFGRIDPOINTS)
-        return numpy.random.normal(0, d, shape), numpy.random.normal(0, d, shape)
 
 
     def _compute_trajectories(self, states):
@@ -78,6 +70,26 @@ class PhaseSpace(object):
         if numpy.isnan(trajs).any():
             self.log.warn("NaN in trajectories")
         return trajs
+
+
+    def get_axes_ranges(self, sv):
+        lo, hi = self.model.state_variable_range[sv]
+        default_range = hi - lo
+        min_val = lo - 4.0 * default_range
+        max_val = hi + 4.0 * default_range
+        return min_val, max_val, lo, hi
+
+
+class PhasePlane(_PhaseSpace):
+    """
+    Responsible with computing phase space slices and trajectories.
+    A collection of math-y utilities it is view independent (holds no state related to views).
+    """
+    @staticmethod
+    def _create_mesh_jitter():
+        shape = NUMBEROFGRIDPOINTS, NUMBEROFGRIDPOINTS
+        d =  1.0 / (4 * NUMBEROFGRIDPOINTS)
+        return numpy.random.normal(0, d, shape), numpy.random.normal(0, d, shape)
 
 
     def _get_mesh_grid(self, svx_ind, svy_ind, noise=None):
@@ -135,12 +147,12 @@ class PhaseSpace(object):
         return segments
 
 
-class PhasePlaneD3(PhaseSpace):
+class PhasePlaneD3(PhasePlane):
     """
     Provides data for a d3 client
     """
     def __init__(self, model, integrator):
-        PhaseSpace.__init__(self, model, integrator)
+        PhasePlane.__init__(self, model, integrator)
         self.mode = 0
         self.svx_ind = 0    # x-axis: 1st state variable
         if self.model.nvar > 1:
@@ -153,14 +165,6 @@ class PhasePlaneD3(PhaseSpace):
         sv_mean = sv_mean.reshape((self.model.nvar, 1, 1))
         self.default_sv = sv_mean.repeat(self.model.number_of_modes, axis=2)
         self._jitter = self._create_mesh_jitter()
-
-
-    def get_axes_ranges(self, sv):
-        lo, hi = self.model.state_variable_range[sv]
-        default_range = hi - lo
-        min_val = lo - 4.0 * default_range
-        max_val = hi + 4.0 * default_range
-        return min_val, max_val, lo, hi
 
 
     def update_axis(self, mode, svx, svy, x_range, y_range, state_vars):
@@ -218,3 +222,27 @@ class PhasePlaneD3(PhaseSpace):
         signals = [ zip(signal_x, traj[-1, :, i, self.mode].tolist()) for i in xrange(self.model.nvar)]
 
         return trajectory.tolist(), signals
+
+
+class PhaseLineD3(_PhaseSpace):
+    def __init__(self, model, integrator):
+        _PhaseSpace.__init__(self, model, integrator)
+
+
+    def compute_phase_plane(self):
+        pass
+
+
+    def update_axis(self, mode, svx, x_range):
+        pass
+
+
+
+def phase_space_d3(model, integrator):
+    """
+    :return: A phase plane or a phase line depending on the dimensionality of the model
+    """
+    if model.nvar == 1:
+        return PhaseLineD3(model, integrator)
+    else:
+        return PhasePlaneD3(model, integrator)
