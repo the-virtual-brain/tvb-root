@@ -345,32 +345,23 @@ PhaseGraphController.prototype.destroy = function(){
     $(this.phaseGraph.svg[0]).hide();
 };
 
-function _fetchSlidersFromServer(paramDefaults, graphDefaults){
-    var sliderContainer = $('#div_spatial_model_params');
-    sliderContainer.empty();
+function _initialize_grafic(paramDefaults, graphDefaults){
+    if (dynamicPage.grafic != null){
+        dynamicPage.grafic.destroy();
+    }
+    if (graphDefaults.state_variables.length > 1) {
+        dynamicPage.grafic = new PhasePlaneController(graphDefaults, dynamicPage.phasePlane);
+    }else{
+        dynamicPage.grafic = new PhaseGraphController(graphDefaults, dynamicPage.phaseGraph);
+    }
 
-    doAjaxCall({
-        url: _url('sliders_fragment'),
-        success: function(fragment) {
-            sliderContainer.html(fragment);
-            MathJax.Hub.Queue(["Typeset", MathJax.Hub, 'div_spatial_model_params']);
-            setupMenuEvents(sliderContainer);
-            if (dynamicPage.grafic != null){
-                dynamicPage.grafic.destroy();
-            }
-            if (graphDefaults.state_variables.length > 1) {
-                dynamicPage.grafic = new PhasePlaneController(graphDefaults, dynamicPage.phasePlane);
-            }else{
-                dynamicPage.grafic = new PhaseGraphController(graphDefaults, dynamicPage.phaseGraph);
-            }
-
-            if (paramDefaults.length) {
-            dynamicPage.paramSliders = new dynamicPage.SliderGroup(paramDefaults, '#reset_sliders', onParameterChanged);
-            }else{
-                //model has no params; schedule a draw
-            }
-        }
-    });
+    if (paramDefaults.length) {
+        dynamicPage.paramSliders = new dynamicPage.SliderGroup(paramDefaults, '#reset_sliders', onParameterChanged);
+    }else{
+        //model has no params; schedule a draw
+        //this is a mocup have to get data from server;
+        dynamicPage.grafic.draw();
+    }
 }
 
 function onModelChanged(name){
@@ -378,7 +369,11 @@ function onModelChanged(name){
         url: _url('model_changed', name) ,
         success: function(data){
             data = JSON.parse(data);
-            _fetchSlidersFromServer(data.params, data.graph_params);
+            var sliderContainer = $('#div_spatial_model_params');
+            sliderContainer.html(data.sliders_fragment);
+            MathJax.Hub.Queue(["Typeset", MathJax.Hub, 'div_spatial_model_params']);
+            setupMenuEvents(sliderContainer);
+            _initialize_grafic(data.params, data.graph_params);
         }
     });
 }

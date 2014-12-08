@@ -45,7 +45,7 @@ import tvb.core.entities.model
 from tvb.datatypes import noise_framework
 from tvb.interfaces.web.controllers import common
 from tvb.interfaces.web.controllers.burst.base_controller import BurstBaseController
-from tvb.interfaces.web.controllers.decorators import expose_page, expose_json, expose_fragment
+from tvb.interfaces.web.controllers.decorators import expose_page, expose_json, expose_fragment, using_template
 from tvb.simulator import models, integrators
 
 
@@ -233,7 +233,7 @@ class DynamicModelController(BurstBaseController):
         dynamic.phase_plane = PhasePlaneD3(dynamic.model, dynamic.integrator)
         mp_params = DynamicModelController._get_model_parameters_ui_model(dynamic.model)
         graph_params = DynamicModelController._get_graph_ui_model(dynamic)
-        return {'params' : mp_params, 'graph_params':graph_params}
+        return {'params' : mp_params, 'graph_params':graph_params, 'sliders_fragment': self._sliders_fragment(dynamic_gid)}
 
 
     @expose_json
@@ -362,8 +362,8 @@ class DynamicModelController(BurstBaseController):
         }
 
 
-    @expose_fragment('burst/dynamic_sliders')
-    def sliders_fragment(self, dynamic_gid):
+    @using_template('burst/dynamic_sliders')
+    def _sliders_fragment(self, dynamic_gid):
         dynamic = self.get_cached_dynamic(dynamic_gid)
         model = dynamic.model
         mp_params = self._get_model_parameters_ui_model(model)
