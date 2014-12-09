@@ -17,6 +17,8 @@
  *
  **/
 
+/* globals displayMessage */
+
 var C2I_EXPORT_HEIGHT = 1080;
 
 /**
@@ -26,18 +28,18 @@ var C2I_EXPORT_HEIGHT = 1080;
  *   suggestedName: A name for the figure
  */
 function C2I_exportFigures(kwargs) {
-    if ($("canvas, svg").length == 0) {
+    if ($("canvas, svg").filter(":visible").length === 0) {
         displayMessage("Invalid action. Please report to your TVB technical contact.", "errorMessage");
         return;
     }
-    $("canvas").each(function () {
-        __storeCanvas(this, kwargs)
+    $("canvas").filter(":visible").each(function () {
+        __storeCanvas(this, kwargs);
     });
 
-    var svgRef = $("svg");
+    var svgRef = $("svg").filter(":visible");
     svgRef.attr({ version: '1.1' , xmlns:"http://www.w3.org/2000/svg"});
     svgRef.each(function () {
-        __storeSVG(this, kwargs)
+        __storeSVG(this, kwargs);
     });
 }
 
@@ -120,37 +122,38 @@ function __tryExport(canvas, kwargs, remainingTrials) {
 
     if (remainingTrials <= 0) {         // only try to export a limited number of times
         displayMessage("Could not export canvas data, sorry!", "warningMessage");
-        return
+        return;
     }
 
-    if (canvas.notReadyForExport)
+    if (canvas.notReadyForExport) {
         // the mplh5 canvases will set this flag to TRUE after they finish resizing, so they can be exported at Hi Res
         // undefined or FALSE means it CAN BE exported
-        setTimeout(function() { __tryExport(canvas, kwargs, remainingTrials - 1) }, 300);
-
-    else {              // canvas is ready for export
+        setTimeout(function () { __tryExport(canvas, kwargs, remainingTrials - 1); }, 300);
+    } else {              // canvas is ready for export
         var data = canvas.toDataURL("image/png");
 
         if (data){       // don't store empty images
             var url = C2IbuildUrlQueryString('/project/figure/storeresultfigure/png', kwargs);
 
-            doAjaxCall({  type: "POST", url: url,
-                        data: {"export_data": data.replace('data:image/png;base64,', '')},
-                        success: function() {
-                            displayMessage("Figure successfully saved!<br/> See Project section, " +
-                                           "Image archive sub-section.", "infoMessage")
-                        } ,
-                        error: function() {
-                            displayMessage("Could not store preview image, sorry!", "warningMessage")
-                        }
-                    });
+            doAjaxCall({
+                type: "POST", url: url,
+                data: {"export_data": data.replace('data:image/png;base64,', '')},
+                success: function() {
+                    displayMessage("Figure successfully saved!<br/> See Project section, " +
+                                   "Image archive sub-section.", "infoMessage");
+                } ,
+                error: function() {
+                    displayMessage("Could not store preview image, sorry!", "warningMessage");
+                }
+            });
         } else {            // there was no image data
             displayMessage("Canvas contains no image data. Try again or report to your TVB technical contact",
                            "warningMessage");
         }
         // restore original canvas size; non-webGL canvases (EEG, mplh5, JIT) have custom resizing methods
-        if (canvas.afterImageExport)
+        if (canvas.afterImageExport) {
             canvas.afterImageExport();
+        }
     }
 }
 
@@ -163,9 +166,9 @@ function __tryExport(canvas, kwargs, remainingTrials) {
  */
 function __storeCanvas(canvas, kwargs) {
 
-    if (!canvas.drawForImageExport)     // canvases which didn't set this method should not be saved
+    if (!canvas.drawForImageExport) {     // canvases which didn't set this method should not be saved
         return;
-
+    }
     // If the canvas wishes to save more images it can define multipleImageExport
     // multipleImageExport receives a function that saves the current scene
     if (canvas.multipleImageExport){
