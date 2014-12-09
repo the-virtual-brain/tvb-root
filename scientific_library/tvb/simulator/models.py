@@ -3404,6 +3404,7 @@ class ReducedWongWang(Model):
 
     """
     _ui_name = "Reduced Wong-Wang"
+    ui_configurable_parameters = ['a', 'b', 'd', 'gamma', 'tau_s', 'w', 'J_N', 'I_o']
 
     #Define traited attributes for this model, these represent possible kwargs.
     a = arrays.FloatArray(
@@ -3458,7 +3459,7 @@ class ReducedWongWang(Model):
     I_o = arrays.FloatArray(
         label=":math:`I_{o}`",
         default=numpy.array([0.33, ]),
-        range=basic.Range(lo=0.0, hi=1.0),
+        range=basic.Range(lo=0.0, hi=1.0, step=0.01),
         doc="""[nA] Effective external input""",
         order=8)
 
