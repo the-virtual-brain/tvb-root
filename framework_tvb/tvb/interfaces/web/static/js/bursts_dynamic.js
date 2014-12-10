@@ -375,6 +375,8 @@ PhaseGraphController.prototype.draw = function(data){
     data = JSON.parse(data);
     this.phaseGraph.draw(data.signal);
     //this.phaseGraph.drawPhase(data.z);
+    var sv = this.ax.val().sv;
+    this.phaseGraph.setLabels(sv, sv + " '");
 };
 
 PhaseGraphController.prototype.onIntegratorChanged = function(){

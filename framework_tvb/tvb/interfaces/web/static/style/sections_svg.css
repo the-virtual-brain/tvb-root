@@ -167,6 +167,12 @@ g.tsv-moving {
     stroke: black;
 }
 
+.dynamicChart .axisZero line, .dynamicChart .axisZero path {
+    shape-rendering: auto;
+    fill: none;
+    stroke: #ddd;
+}
+
 .dynamicChart .axislabel{
     font-size: 15px;
 }

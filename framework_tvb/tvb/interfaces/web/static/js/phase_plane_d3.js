@@ -43,10 +43,8 @@ var TVBUI = TVBUI || {};
     var planeWidth = 800;
     var planeHeight = 800;
 
-    function PhasePlane(selector){
+    function GraphBase(selector){
         var self = this;
-        this.VECTOR_RANGE = 80;
-        this.onClick = function(){};
         // --- declarations and global structure ---
         // We create the svg dom in js. Alternatively this could be written declarative in svg and retrieved here by .select()
         this.svg = d3.select(selector).attr('viewBox', viewBox);
@@ -55,11 +53,6 @@ var TVBUI = TVBUI || {};
             .append("rect")
               .attr("width", planeWidth)
               .attr("height", planeHeight);
-
-        this.svg.append("clipPath").attr("id", "clip_plot")
-            .append("rect")
-              .attr("width", planeWidth)
-              .attr("height", 200);
 
         this.svg.append("text")     // title
             .attr("x", 500)
@@ -82,15 +75,6 @@ var TVBUI = TVBUI || {};
         this.yAxis_g = this.plane_with_axis.append('g')
             .attr('class', 'axis');
 
-        this.vectorAxis_g = this.plane_with_axis.append('g')
-            .attr('class', 'axis')
-            .attr("transform", "translate(825, 300)");
-
-        this.plane_with_axis.append('text')
-            .attr('class', 'axis')
-            .text('arrow scale')
-            .attr("transform", "translate(880, 260) rotate(90)");
-
         this.xLabel = this.plane_with_axis.append("text")
             .attr("class", "axislabel")
             .attr("x", planeWidth + 20)
@@ -101,9 +85,51 @@ var TVBUI = TVBUI || {};
             .attr("text-anchor", "end")
             .attr("y", -15);
 
+        this.vectorAxis_g = this.plane_with_axis.append('g')
+            .attr('class', 'axis')
+            .attr("transform", "translate(825, 300)");
+
+        this.lineBuilder = d3.svg.line()
+                .x(function(d) { return self.xScale(d[0]); })
+                .y(function(d) { return self.yScale(d[1]); })
+                .interpolate("linear");
+
         this.trajectories_g = this.plane_with_axis.append('g')
             .attr('class', 'traj')
             .attr("clip-path", "url(#clip)");
+    }
+
+    GraphBase.prototype.setLabels = function(xlabel, ylabel) {
+        this.xLabel.text(xlabel);
+        this.yLabel.text(ylabel);
+    };
+
+    GraphBase.prototype._computePhasePlaneScales = function(data){
+        var xrange = d3.extent(data, function (d) {return d[0];});
+        var yrange = d3.extent(data, function (d) {return d[1];});
+        this.xScale = d3.scale.linear().domain(xrange).range([0, planeWidth]);
+        this.yScale = d3.scale.linear().domain(yrange).range([planeHeight, 0]);  // reverse range to compensate 4 y axis direction
+    }
+
+    /**
+     * @constructor
+     * @extends RegionSelectComponent
+     */
+    function PhasePlane(selector){
+        GraphBase.call(this, selector);
+        var self = this;
+        this.VECTOR_RANGE = 80;
+        this.onClick = function(){};
+
+        this.svg.append("clipPath").attr("id", "clip_plot")
+            .append("rect")
+              .attr("width", planeWidth)
+              .attr("height", 200);
+
+        this.plane_with_axis.append('text')
+            .attr('class', 'axis')
+            .text('arrow scale')
+            .attr("transform", "translate(880, 260) rotate(90)");
 
         var overlay = this.plane_with_axis.append("rect")   // this is a transparent rect used for receiving mouse events
             .attr("class", "overlay")
@@ -141,12 +167,12 @@ var TVBUI = TVBUI || {};
         this.xAxis_plot_g = this.plot_with_axis.append('g').attr('class', 'axis').attr("transform", "translate(0, 100)");
         this.yAxis_plot_g = this.plot_with_axis.append('g').attr('class', 'axis');
         this.plot_legend_g = this.plot_with_axis.append('g').attr("transform", "translate(820, 0)");
-
-        this.lineBuilder = d3.svg.line()
-                .x(function(d) { return self.xScale(d[0]); })
-                .y(function(d) { return self.yScale(d[1]); })
-                .interpolate("linear");
     }
+
+    // proto chain setup PhasePlane.prototype = {new empty obj} -> GraphBase.prototype
+    // Object.create is needed PhasePlane.prototype = GraphBase.prototype;
+    // would have had the effect that changing PhasePlane.prototype would've changed GraphBase.prototype
+    PhasePlane.prototype = Object.create(GraphBase.prototype);
 
     /**
      * Computes
@@ -154,10 +180,8 @@ var TVBUI = TVBUI || {};
      * this.vectorScale : mapping vector magnitude to reasonable line lengths
      */
     PhasePlane.prototype._computePhasePlaneScales = function(data){
-        var xrange = d3.extent(data, function(d){return d[0];});
-        var yrange = d3.extent(data, function(d){return d[1];});
-        this.xScale = d3.scale.linear().domain(xrange).range([0, planeWidth]);
-        this.yScale = d3.scale.linear().domain(yrange).range([planeHeight, 0]);  // reverse range to compensate 4 y axis direction
+        // call base version
+        GraphBase.prototype._computePhasePlaneScales.call(this, data);
         // scale to normalize the vector lengths
         // Maps from symmetric to symmetric range to ensure that 0 maps to 0.
         // This scaling avoids a mess of lines for big vectors but the lengths of the vectors
@@ -292,10 +316,6 @@ var TVBUI = TVBUI || {};
             });
     };
 
-    PhasePlane.prototype.setLabels = function(xlabel, ylabel) {
-        this.xLabel.text(xlabel);
-        this.yLabel.text(ylabel);
-    };
 
     PhasePlane.prototype.setPlotLabels = function (labels){
         var colorS = d3.scale.category10().domain(d3.range(labels.length));
@@ -312,54 +332,31 @@ var TVBUI = TVBUI || {};
     };
 
 
-     // this is temporary ; plenty of code duplication with phaseplane
     function PhaseGraph(selector){
+        GraphBase.call(this, selector);
         var self = this;
-        // --- declarations and global structure ---
-        // We create the svg dom in js. Alternatively this could be written declarative in svg and retrieved here by .select()
-        this.svg = d3.select(selector).attr('viewBox', viewBox);
 
-        this.plane_with_axis = this.svg.append('g')     // groups phase plane, axis, labels trajectories and overlay
-            .attr("transform", "translate(100, 40)");
+        this.xZeroAxis_g = this.plane_with_axis.append('g')
+            .attr('class', 'axisZero');
 
-        this.trajectories_g = this.plane_with_axis.append('g')
-            .attr('class', 'traj')
-            .attr('stroke', trajColors[3]);
-
-        this.plane_g = this.plane_with_axis.append('g');
-
-        this.xAxis_g = this.plane_with_axis.append('g')
-            .attr('class', 'axis');
-
-        this.yAxis_g = this.plane_with_axis.append('g')
-            .attr('class', 'axis');
-
-        this.lineBuilder = d3.svg.line()
-                .x(function(d) {return self.xScale(d[0]);})
-                .y(function(d) {return self.yScale(d[1]);})
-                .interpolate("linear");
+        this.trajectories_g.attr('stroke', trajColors[3]);
     }
-
-    PhaseGraph.prototype._computePhasePlaneScales = function(data) {
-        var xrange = d3.extent(data, function (d) {return d[0];});
-        var yrange = d3.extent(data, function (d) {return d[1];});
-        this.xScale = d3.scale.linear().domain(xrange).range([0, planeWidth]);
-        this.yScale = d3.scale.linear().domain(yrange).range([planeHeight, 0]);  // reverse range to compensate 4 y axis direction
-    };
+    // proto chain setup
+    PhaseGraph.prototype = Object.create(GraphBase.prototype);
 
     PhaseGraph.prototype.draw = function(data){
         var self = this;
         this._computePhasePlaneScales(data);
-
+        // draw x' vs x graph
         var xAxis = d3.svg.axis().scale(this.xScale).orient('bottom');
         var yAxis = d3.svg.axis().scale(this.yScale).orient("left");
-
-        this.xAxis_g.transition().call(xAxis).attr("transform", "translate(0, "+ this.yScale(0) + ")");
+        this.xZeroAxis_g.transition().call(xAxis).attr("transform", "translate(0, "+ this.yScale(0) + ")");
+        this.xAxis_g.transition().call(xAxis);
         this.yAxis_g.transition().call(yAxis);
 
         var p = this.trajectories_g.selectAll('path').data([data]);
         p.enter().append('path');
-        p.attr('d', self.lineBuilder(data));
+        p.transition().attr('d', self.lineBuilder(data));
         p.exit().remove();
     };
 
