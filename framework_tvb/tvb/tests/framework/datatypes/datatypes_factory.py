@@ -37,7 +37,7 @@ This module contains methods for creating persisted data-types for tests.
 
 import json
 import numpy
-from datetime import datetime
+import time
 from tvb.config import SIMULATOR_MODULE, SIMULATOR_CLASS
 from tvb.core.entities import model
 from tvb.core.entities.storage import dao
@@ -81,8 +81,7 @@ class DatatypesFactory():
 
 
     def __init__(self):
-        now = datetime.now()
-        micro_postfix = "_%d" % now.microsecond
+        micro_postfix = "_%d" % int(time.time() * 1000000)
 
         # Here create all structures needed later for data types creation
         self.files_helper = FilesHelper()
