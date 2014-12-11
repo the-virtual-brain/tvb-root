@@ -173,6 +173,12 @@ g.tsv-moving {
     stroke: #ddd;
 }
 
+.phaseLine line{
+    stroke-width: 4;
+    /*marker-start: url(#markerCircle);*/
+    marker-end: url("/burst/dynamic/#markerArrow");
+}
+
 .dynamicChart .axislabel{
     font-size: 15px;
 }

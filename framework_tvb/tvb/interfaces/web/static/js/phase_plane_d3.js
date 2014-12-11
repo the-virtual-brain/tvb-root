@@ -341,18 +341,29 @@ var TVBUI = TVBUI || {};
     function PhaseGraph(selector){
         GraphBase.call(this, selector);
         var self = this;
-
+        this.VECTOR_RANGE = 40;
         this.xZeroAxis_g = this.plane_with_axis.append('g')
             .attr('class', 'axisZero');
-
+        this.phaseLine_g = this.plane_with_axis.append('g')
+            .attr('class', 'phaseLine');
+        this.plane_with_axis.append('line').attr('x1','0').attr('x2','0').attr('y1','0').attr('y2','800');
         this.trajectories_g.attr('stroke', trajColors[3]);
+        this.vectorAxis_g.attr('transform', 'translate(850, 10)');
     }
     // proto chain setup
     PhaseGraph.prototype = Object.create(GraphBase.prototype);
 
+    PhaseGraph.prototype._computePhasePlaneScales = function(data){
+        GraphBase.prototype._computePhasePlaneScales.call(this, data);
+        this.phaseScale = this.xScale.copy();
+        this.phaseScale.range([planeHeight, 0]);
+        var max_delta  = d3.max(data, function(d){return Math.abs(d[1]);});
+        this.phaseVectorScale = d3.scale.linear().domain([-max_delta, max_delta]).range([-this.VECTOR_RANGE/2, this.VECTOR_RANGE/2]);
+    };
+
     PhaseGraph.prototype.draw = function(data){
         var self = this;
-        this._computePhasePlaneScales(data);
+        this._computePhasePlaneScales(data.signal);
         // draw x' vs x graph
         var xAxis = d3.svg.axis().scale(this.xScale).orient('bottom');
         var yAxis = d3.svg.axis().scale(this.yScale).orient("left");
@@ -360,29 +371,40 @@ var TVBUI = TVBUI || {};
         this.xAxis_g.transition().call(xAxis);
         this.yAxis_g.transition().call(yAxis);
 
-        var p = this.trajectories_g.selectAll('path').data([data]);
+        var p = this.trajectories_g.selectAll('path').data([data.signal]);
         p.enter().append('path');
-        p.transition().attr('d', self.lineBuilder(data));
+        p.transition().attr('d', self.lineBuilder(data.signal));
         p.exit().remove();
-    };
 
-    PhaseGraph.prototype.drawPhase = function(zeros){
-        var self = this;
-        var p = this.plane_g.selectAll('circle').data(zeros);
-        p.enter().append('circle');
-        p.attr('r', 8)
-            .attr('cy', self.yScale(0))
-            .attr('cx', function(d){return self.xScale(d);})
+        // vectors
+        // sub sample
+        var vector_data = [];
+        for (var i = 0; i < data.signal.length; i+=4){
+            vector_data.push(data.signal[i]);
+        }
+        var ph = this.phaseLine_g.selectAll('line').data(vector_data);
+        ph.enter().append('line')
+            .attr('x1', 850).attr('x2', 850);
+
+        // update
+        ph.transition()
+            .attr('y1', function(d){
+                return self.phaseScale(d[0]);
+            })
+            .attr('y2', function(d){
+                return self.phaseScale(d[0]) - self.phaseVectorScale(d[1]);
+            });
+
+        var phaseLineAxis = d3.svg.axis().scale(this.phaseScale).orient("right").ticks(5);
+        this.vectorAxis_g.transition().call(phaseLineAxis);
+
+        var z = this.phaseLine_g.selectAll('circle').data(data.zeroes);
+        z.enter().append('circle');
+        z.attr('r', 8)
+            .attr('cy', function(d){return self.phaseScale(d);})
+            .attr('cx', 850)
             .attr('fill', trajColors[5]);
-        p.exit().remove();
-
-        p = this.plane_g.selectAll('text').data(zeros);
-        p.enter().append('text');
-        p.text(function(d){return d.toFixed(2);})
-            .attr('y', self.yScale(0) - 20)
-            .attr('x', function(d){return self.xScale(d);})
-            .attr('dy', 5);
-        p.exit().remove();
+        z.exit().remove();
     };
 
 

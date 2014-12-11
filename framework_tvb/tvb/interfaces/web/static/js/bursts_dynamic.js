@@ -373,8 +373,7 @@ PhaseGraphController.prototype._onGraphChanged = function(){
 
 PhaseGraphController.prototype.draw = function(data){
     data = JSON.parse(data);
-    this.phaseGraph.draw(data.signal);
-    //this.phaseGraph.drawPhase(data.z);
+    this.phaseGraph.draw(data);
     var sv = this.ax.val().sv;
     this.phaseGraph.setLabels(sv, sv + " '");
 };

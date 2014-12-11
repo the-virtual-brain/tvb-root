@@ -248,22 +248,16 @@ class PhaseLineD3(_PhaseSpace):
         if numpy.isnan(d).any():
             self.log.error("NaN")
 
-        return {'signal': d.tolist()}
+        # find zeroes. This method is not exact
+        zero_crossings = numpy.where(numpy.diff(numpy.sign(u)))[0]
+        zero_crossings = xg[zero_crossings]
+        return {'signal': d.tolist(), 'zeroes': zero_crossings.tolist()}
 
 
     def update_axis(self, mode, svx, x_range):
         self.mode = mode
         svr = self.model.state_variable_range
         svr[svx][:] = x_range
-
-
-
-def phase_space_d3(model, integrator):
-    if model.nvar == 1:
-        return PhaseLineD3(model, integrator)
-    else:
-        return PhasePlaneD3(model, integrator)
-
 
 
 def phase_space_d3(model, integrator):
