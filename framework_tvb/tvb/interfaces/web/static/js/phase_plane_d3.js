@@ -107,9 +107,15 @@ var TVBUI = TVBUI || {};
     GraphBase.prototype._computePhasePlaneScales = function(data){
         var xrange = d3.extent(data, function (d) {return d[0];});
         var yrange = d3.extent(data, function (d) {return d[1];});
+        if (yrange[0] === yrange[1]){
+            // signal is constant. The scale would become singular. So create a fake range.
+            var delta = yrange[0]/4;
+            yrange[0] -= delta;
+            yrange[1] += delta;
+        }
         this.xScale = d3.scale.linear().domain(xrange).range([0, planeWidth]);
         this.yScale = d3.scale.linear().domain(yrange).range([planeHeight, 0]);  // reverse range to compensate 4 y axis direction
-    }
+    };
 
     /**
      * @constructor
