@@ -295,11 +295,11 @@ class DynamicModelController(BurstBaseController):
 
 
     @expose_json
-    def trajectories(self, dynamic_gid, starting_points):
+    def trajectories(self, dynamic_gid, starting_points, integration_steps):
         with self.traj_lock:
             starting_points = json.loads(starting_points)
             dynamic = self.get_cached_dynamic(dynamic_gid)
-            trajectories, signals = dynamic.phase_plane.trajectories(starting_points)
+            trajectories, signals = dynamic.phase_plane.trajectories(starting_points, int(integration_steps))
 
             for t in trajectories:
                 if not numpy.isfinite(t).all():
@@ -362,6 +362,7 @@ class DynamicModelController(BurstBaseController):
         if model.nvar > 1:
             ret['default_sv'] = [ model.state_variables[dynamic.phase_plane.svx_ind],
                                   model.state_variables[dynamic.phase_plane.svy_ind]]
+            ret['integration_steps'] = {'default': 512, 'min': 32, 'max':2048 }
         else:
             ret['default_sv'] = [ model.state_variables[0] ]
         return ret

@@ -37,7 +37,6 @@ from matplotlib import _cntr
 
 #Set the resolution of the phase-plane and sample trajectories.
 NUMBEROFGRIDPOINTS = 42
-TRAJ_STEPS = 512
 
 
 class _PhaseSpace(object):
@@ -52,18 +51,18 @@ class _PhaseSpace(object):
         self.no_coupling = numpy.zeros((self.model.nvar, 1, self.model.number_of_modes))
 
 
-    def _compute_trajectories(self, states):
+    def _compute_trajectories(self, states, n_steps):
         """
         A vectorized method of computing a number of trajectories in parallel.
         Returns a collection of nvar-dimensional trajectories.
         """
         scheme = self.integrator.scheme
-        trajs = numpy.zeros((TRAJ_STEPS + 1, self.model.nvar, len(states), self.model.number_of_modes))
+        trajs = numpy.zeros((n_steps + 1, self.model.nvar, len(states), self.model.number_of_modes))
         # reshape to what dfun expects: from n, sv to sv, n, mode
         states = numpy.tile(states.T[:, :, numpy.newaxis], self.model.number_of_modes)
         trajs[0, :] = states
         # grow trajectories step by step
-        for step in xrange(TRAJ_STEPS):
+        for step in xrange(n_steps):
             states = scheme(states, self.model.dfun, self.no_coupling, 0.0, 0.0)
             trajs[step + 1, :] = states
 
@@ -206,19 +205,19 @@ class PhasePlaneD3(PhasePlane):
         return arr
 
 
-    def trajectories(self, starting_points):
+    def trajectories(self, starting_points, n_steps=512):
         """
         :param starting_points: A list of starting points represented as dicts of state_var_name to value
         :return: a tuple of trajectories and signals
         """
         starting_points = numpy.array([self._state_dict_to_array(s) for s in starting_points])
-        traj = self._compute_trajectories(starting_points) # point_on_traj_idx, sv_idx, traj_idx, mode
+        traj = self._compute_trajectories(starting_points, n_steps) # point_on_traj_idx, sv_idx, traj_idx, mode
         # reshape it and project it on the plane defined  by the current axis state vars
         traj = traj.transpose(2, 0, 1, 3) # traj_idx, point, sv_idx, mode
         trajectory = traj[:, :, [self.svx_ind, self.svy_ind], self.mode] # traj_idx, points, x, y
 
         # signals for last trajectory
-        signal_x = numpy.arange(TRAJ_STEPS + 1) * self.integrator.dt
+        signal_x = numpy.arange(n_steps + 1) * self.integrator.dt
         signals = [ zip(signal_x, traj[-1, :, i, self.mode].tolist()) for i in xrange(self.model.nvar)]
 
         return trajectory.tolist(), signals

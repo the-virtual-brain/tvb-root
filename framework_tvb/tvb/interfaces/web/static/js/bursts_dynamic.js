@@ -241,7 +241,17 @@ function PhasePlaneController(graph_defaults, phasePlane) {
     //clear all trajectories
     this._deleteTrajectories();
     this._disable_active_sv_slider();
-    // xxx work in progress
+
+    this.intStepsSlider = $('#slider_integration_steps');
+    var intStepsSpan = $('#span_integration_steps').text(graph_defaults.integration_steps.default);
+    this.intStepsSlider.slider({
+        value: graph_defaults.integration_steps.default,
+        min: graph_defaults.integration_steps.min,
+        max: graph_defaults.integration_steps.max,
+        step: 5,
+        slide : function(ev, target){intStepsSpan.text(target.value);},
+        change : function(ev, target){self._redrawTrajectories();}
+    });
 }
 
 PhasePlaneController.prototype.draw = function(data){
@@ -288,10 +298,13 @@ PhasePlaneController.prototype._deleteTrajectories = function(){
     this.phasePlane.drawSignal([]);
 };
 
-function _trajectories_rpc(starting_points, success){
+function _trajectories_rpc(starting_points, integration_steps, success){
     doAjaxCall({
         url: _url('trajectories'),
-        data: {starting_points: JSON.stringify(starting_points)},
+        data: {
+            starting_points: JSON.stringify(starting_points),
+            integration_steps: integration_steps
+        },
         success:function(data){
             data = JSON.parse(data);
             if (data.finite) {
@@ -309,8 +322,8 @@ PhasePlaneController.prototype.onTrajectory = function(x, y){
     var axis_state = this.axisControls.getValue();
     start_state[axis_state.svx] = x;
     start_state[axis_state.svy] = y;
-
-    _trajectories_rpc([start_state], function(data){
+    var integration_steps = this.intStepsSlider.slider('value');
+    _trajectories_rpc([start_state], integration_steps, function(data){
         self.traj_starts.push(start_state);
         self.trajectories.push(data.trajectories[0]);
         self.phasePlane.drawTrajectories(self.trajectories);
@@ -323,7 +336,8 @@ PhasePlaneController.prototype._redrawTrajectories = function(){
     if (this.traj_starts.length === 0){
         return;
     }
-    _trajectories_rpc(this.traj_starts, function(data){
+    var integration_steps = this.intStepsSlider.slider('value');
+    _trajectories_rpc(this.traj_starts, integration_steps, function(data){
         self.trajectories = data.trajectories;
         self.phasePlane.drawTrajectories(self.trajectories);
         self.phasePlane.drawSignal(data.signals);
