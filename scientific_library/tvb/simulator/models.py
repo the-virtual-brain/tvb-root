@@ -4108,21 +4108,21 @@ class Epileptor(Model):
         c_pop2 = coupling[1, :]
 
         # population 1
-        if_ydot0 = y[1] - self.a*y[0]**3 + self.b*y[0]**2 - y[2] + Iext + self.Kvf*c_pop1
-        else_ydot0 = y[1] + (self.slope - y[3] + 0.6*(y[2]-4.0)**2)*y[0] - y[2] + Iext + self.Kvf*c_pop1
-        ydot[0] = where(y[0] < 0., if_ydot0, else_ydot0)
+        if_ydot0 = - self.a*y[0]**2 + self.b*y[0]
+        else_ydot0 = self.slope - y[3] + 0.6*(y[2]-4.0)**2
+        ydot[0] = y[1] - y[2] + Iext + self.Kvf*c_pop1 + where(y[0] < 0., if_ydot0, else_ydot0) * y[0]
         ydot[1] = self.c - self.d*y[0]**2 - y[1]
 
         # energy
-        if_ydot2 = self.r*(4*(y[0] - self.x0) - y[2] - 0.1*y[2]**7)
-        else_ydot2 = self.r*(4*(y[0] - self.x0) - y[2])
-        ydot[2] = where(y[2] < 0., if_ydot2, else_ydot2)
+        if_ydot2 = - 0.1*y[2]**7
+        else_ydot2 = 0
+        ydot[2] = self.r * ( 4*(y[0] - self.x0) - y[2] + where(y[2] < 0., if_ydot2, else_ydot2))
 
         # population 2
         ydot[3] = -y[4] + y[3] - y[3]**3 + self.Iext2 + 2*y[5] - 0.3*(y[2] - 3.5) + self.Kf*c_pop2
-        if_ydot4 = -y[4]/self.tau
-        else_ydot4 = (-y[4] + self.aa*(y[3] + 0.25))/self.tau
-        ydot[4] = where(y[3] < -0.25, if_ydot4, else_ydot4)
+        if_ydot4 = 0
+        else_ydot4 = self.aa*(y[3] + 0.25)
+        ydot[4] = (-y[4] + where(y[3] < -0.25, if_ydot4, else_ydot4))/self.tau
 
         # filter
         ydot[5] = -0.01*(y[5] - 0.1*y[0])
@@ -4368,24 +4368,24 @@ class EpileptorPermittivityCoupling(Model):
         c_pop2 = coupling[1, :]
 
         # population 1
-        if_ydot0 = self.tt*(y[1] - self.a*y[0]**3 + self.b*y[0]**2 - y[2] + Iext + self.Kvf*c_pop1)
-        else_ydot0 = self.tt*(y[1] + (self.slope - y[3] + 0.6*(y[2]-4.0)**2)*y[0] - y[2] + Iext + self.Kvf*c_pop1)
-        ydot[0] = where(y[0] < 0., if_ydot0, else_ydot0)
-        ydot[1] = self.tt*(self.c - self.d*y[0]**2 - y[1])
+        if_ydot0 = - self.a*y[0]**2 + self.b*y[0]
+        else_ydot0 = self.slope - y[3] + 0.6*(y[2]-4.0)**2
+        ydot[0] = y[1] - y[2] + Iext + self.Kvf*c_pop1 + where(y[0] < 0., if_ydot0, else_ydot0)*y[0]
+        ydot[1] = self.c - self.d*y[0]**2 - y[1]
 
         # energy
-        ydot[2] = self.tt*(self.r*(3./(1.+numpy.exp(-(y[0]+0.5)/0.2)) + self.x0 - y[2] - self.Ks*c_pop1))
+        ydot[2] = self.r*(3./(1.+numpy.exp(-(y[0]+0.5)/0.2)) + self.x0 - y[2] - self.Ks*c_pop1)
 
         # population 2
-        ydot[3] = self.tt*(-y[4] + y[3] - y[3]**3 + self.Iext2 + 2*y[5] - 0.3*(y[2] - 3.5) + self.Kf*c_pop2)
-        if_ydot4 = self.tt*(-y[4]/self.tau)
-        else_ydot4 = self.tt*((-y[4] + self.aa*(y[3] + 0.25))/self.tau)
-        ydot[4] = where(y[3] < -0.25, if_ydot4, else_ydot4)
+        ydot[3] = -y[4] + y[3] - y[3]**3 + self.Iext2 + 2*y[5] - 0.3*(y[2] - 3.5) + self.Kf*c_pop2
+        if_ydot4 = 0
+        else_ydot4 = self.aa*(y[3] + 0.25)
+        ydot[4] = (-y[4] + where(y[3] < -0.25, if_ydot4, else_ydot4))/self.tau
 
         # filter
-        ydot[5] = self.tt*(-0.01*(y[5] - 0.1*y[0]))
+        ydot[5] = -0.01*(y[5] - 0.1*y[0])
 
         # output time series
         ydot[6] = -ydot[0] + ydot[3]
-
+        ydot *= self.tt
         return ydot
