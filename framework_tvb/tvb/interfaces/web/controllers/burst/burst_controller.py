@@ -148,7 +148,9 @@ class BurstController(BurstBaseController):
         This is one alternative to 'chrome-back problem'.
         """
         session_burst = common.get_from_session(common.KEY_BURST_CONFIG)
-        return {'burst_list': self.burst_service.get_available_bursts(common.get_current_project().id),
+        bursts = self.burst_service.get_available_bursts(common.get_current_project().id)
+        self.burst_service.populate_burst_disk_usage(bursts)
+        return {'burst_list': bursts,
                 'selectedBurst': session_burst.id}
 
 

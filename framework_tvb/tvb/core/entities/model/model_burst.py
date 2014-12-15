@@ -38,7 +38,7 @@ from datetime import datetime
 from sqlalchemy import Integer, String, DateTime, Column, ForeignKey
 from sqlalchemy.orm import relationship, backref
 
-from tvb.core.utils import string2date, format_bytes_human
+from tvb.core.utils import string2date
 from tvb.core.entities.exportable import Exportable
 from tvb.core.entities.model.model_base import Base
 from tvb.core.entities.model.model_project import Project
@@ -92,7 +92,6 @@ class BurstConfiguration(Base, Exportable):
     finish_time = Column(DateTime)
     workflows_number = Column(Integer)
     datatypes_number = Column(Integer)
-    disk_size = Column(Integer)
 
     _simulator_configuration = Column(String)
     _dynamic_ids = Column(String, default='[]', nullable=False)
@@ -133,7 +132,6 @@ class BurstConfiguration(Base, Exportable):
         self.finish_time = string2date(dictionary['finish_time'])
         self.workflows_number = int(dictionary['workflows_number'])
         self.datatypes_number = int(dictionary['datatypes_number'])
-        self.disk_size = int(dictionary['disk_size'])
         self._simulator_configuration = dictionary['_simulator_configuration']
 
 
@@ -177,13 +175,6 @@ class BurstConfiguration(Base, Exportable):
     def process_time(self):
         if self.finish_time is not None and self.start_time is not None:
             return format_timedelta(self.finish_time - self.start_time)
-        return ''
-
-
-    @property
-    def disk_size(self):
-        if self.disk_size is not None:
-            return format_bytes_human(self.disk_size)
         return ''
 
 
