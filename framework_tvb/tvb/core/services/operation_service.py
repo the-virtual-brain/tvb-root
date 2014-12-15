@@ -330,7 +330,7 @@ class OperationService:
 
             disk_space_per_user = TvbProfile.current.MAX_DISK_SPACE
             pending_op_disk_space = dao.compute_disk_size_for_started_ops(operation.fk_launched_by)
-            user_disk_space = dao.get_user_by_id(operation.fk_launched_by).used_disk_space  # Transform from kB to Bytes
+            user_disk_space = dao.compute_owned_projects_disk_size(operation.fk_launched_by)  # Transform from kB to Bytes
             available_space = disk_space_per_user - pending_op_disk_space - user_disk_space
 
             result_msg, nr_datatypes = adapter_instance._prelaunch(operation, unique_id, available_space, **params)
