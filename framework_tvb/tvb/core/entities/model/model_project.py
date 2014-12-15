@@ -73,19 +73,17 @@ class User(Base):
     role = Column(String)
     validated = Column(Boolean)
     selected_project = Column(Integer)
-    used_disk_space = Column(Float)
 
     preferences = association_proxy('user_preferences', 'value',
                                     creator=lambda k, v: UserPreferences(key=k, value=v))
 
 
-    def __init__(self, login, password, email=None, validated=True, role=ROLE_RESEARCHER, used_disk_space=0):
+    def __init__(self, login, password, email=None, validated=True, role=ROLE_RESEARCHER):
         self.username = login
         self.password = password
         self.email = email
         self.validated = validated
         self.role = role
-        self.used_disk_space = used_disk_space
 
 
     def __repr__(self):

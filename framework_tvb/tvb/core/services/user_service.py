@@ -303,6 +303,10 @@ class UserService:
         """
         return dao.get_user_by_id(user_id)
 
+    @staticmethod
+    def compute_owned_projects_disk_size(user_id):
+        return dao.compute_owned_projects_disk_size(user_id)
+
 
     @synchronized(FILE_UPGRADE_LOCK)
     def upgrade_file_storage(self):

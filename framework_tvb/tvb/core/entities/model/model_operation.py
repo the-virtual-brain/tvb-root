@@ -322,7 +322,7 @@ class Operation(Base, Exportable):
     additional_info = Column(String)
     user_group = Column(String, default=None)
     range_values = Column(String, default=None)
-    result_disk_size = Column(Integer)
+    result_disk_size = Column(Integer)   # todo: should be renamed to expected disk size. Do we have to store this in the db?
 
     algorithm = relationship(Algorithm)
     project = relationship(Project, backref=backref('OPERATIONS', order_by=id, cascade="all,delete"))

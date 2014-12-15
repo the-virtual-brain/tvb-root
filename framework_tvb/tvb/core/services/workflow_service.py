@@ -124,31 +124,18 @@ class WorkflowService:
                     operation.parameters = json.dumps(op_params)
                     operation = dao.store_entity(operation)
                 return operation.id
-            else:
-                if current_step is not None:
-                    current_workflow = dao.get_workflow_by_id(current_step.fk_workflow)
-                    current_workflow.status = current_workflow.STATUS_FINISHED
-                    dao.store_entity(current_workflow)
-                    burst_entity = dao.get_burst_by_id(current_workflow.fk_burst)
-                    parallel_workflows = dao.get_workflows_for_burst(burst_entity.id)
-                    all_finished = True
-                    for workflow in parallel_workflows:
-                        if workflow.status == workflow.STATUS_STARTED:
-                            all_finished = False
-                    if all_finished:
-                        self.mark_burst_finished(burst_entity)
-                        disk_size = dao.get_burst_disk_size(burst_entity.id)  # Transform from kB to MB
-                        if disk_size > 0:
-                            user = dao.get_project_by_id(burst_entity.fk_project).administrator
-                            user.used_disk_space = user.used_disk_space + disk_size
-                            dao.store_entity(user)
-                else:
-                    operation = dao.get_operation_by_id(last_executed_op_id)
-                    disk_size = dao.get_disk_size_for_operation(operation.id)  # Transform from kB to MB
-                    if disk_size > 0:
-                        user = dao.get_user_by_id(operation.fk_launched_by)
-                        user.used_disk_space = user.used_disk_space + disk_size
-                        dao.store_entity(user)
+            elif current_step is not None:
+                current_workflow = dao.get_workflow_by_id(current_step.fk_workflow)
+                current_workflow.status = current_workflow.STATUS_FINISHED
+                dao.store_entity(current_workflow)
+                burst_entity = dao.get_burst_by_id(current_workflow.fk_burst)
+                parallel_workflows = dao.get_workflows_for_burst(burst_entity.id)
+                all_finished = True
+                for workflow in parallel_workflows:
+                    if workflow.status == workflow.STATUS_STARTED:
+                        all_finished = False
+                if all_finished:
+                    self.mark_burst_finished(burst_entity)
             return None
         except Exception, excep:
             self.logger.error(excep)

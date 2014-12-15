@@ -649,16 +649,13 @@ class ProjectService:
         if datatype is None:
             self.logger.warning("Attempt to delete DT[%s] which no longer exists." % datatype_gid)
             return
-        user = dao.get_user_for_datatype(datatype.id)
-        freed_space = datatype.disk_size or 0
+
         is_datatype_group = False
         if dao.is_datatype_group(datatype_gid):
             is_datatype_group = True
-            freed_space = dao.get_datatype_group_disk_size(datatype.id)
         elif datatype.fk_datatype_group is not None:
             is_datatype_group = True
             datatype = dao.get_datatype_by_id(datatype.fk_datatype_group)
-            freed_space = dao.get_datatype_group_disk_size(datatype.id)
 
         operations_set = [datatype.fk_from_operation]
 
@@ -692,9 +689,6 @@ class ProjectService:
 
         if not correct:
             raise RemoveDataTypeException("Could not remove DataType " + str(datatype_gid))
-
-        user.used_disk_space = user.used_disk_space - freed_space
-        dao.store_entity(user)
 
 
     def retrieve_launchers(self, datatype_gid, inspect_group=False, include_categories=None):
