@@ -22,17 +22,16 @@
                                     title="Rename with new name from above input-field">Rename</button>
                             <p><button class="action action-copy" onclick="copyBurst(${burst.id})" title="Create a copy of the current simulation configuration.">
                                 Copy</button></p>
-                            <py:if test="burst.current_weight">
-                                <p class="burst-prop-processtime"><mark>Processing time : </mark><span>${burst.current_weight['process_time']}</span></p>
-                                <p class="burst-prop-workflows" py:if="burst.current_weight['number_of_workflows']"><mark>Workflows : </mark> ${burst.current_weight['number_of_workflows']}</p>
-                                <p class="burst-prop-dataweight" py:if="burst.current_weight['datatypes_number']"><mark>Datatypes : </mark> ${burst.current_weight['datatypes_number']}</p>
-                                <p class="burst-prop-datasize" py:if="burst.current_weight['disk_size']"><mark>Size : </mark> ${burst.current_weight['disk_size']}</p>
 
-                                <p class="burst-prop-age"><mark>Created : </mark> ${burst.current_weight['start_time'].strftime('%Y/%m/%d %H:%M')}</p>
-                                <p class="burst-prop-error" py:if="burst.current_weight['error']"><mark>Error message : </mark> ${burst.current_weight['error']}</p>
-                                <p class="burst-prop-cancelled" py:if="burst.status=='canceled'">This simulation was canceled from execution by the user.</p>
-                                <p class="burst-prop-age" py:if="burst.status=='running'">This simulation is still running....</p>
-                            </py:if>
+                            <p class="burst-prop-processtime"><mark>Processing time : </mark><span>${burst.process_time}</span></p>
+                            <p class="burst-prop-workflows" py:if="burst.workflows_number"><mark>Workflows : </mark> ${burst.workflows_number}</p>
+                            <p class="burst-prop-dataweight" py:if="burst.datatypes_number"><mark>Datatypes : </mark> ${burst.datatypes_number}</p>
+                            <p class="burst-prop-datasize" py:if="burst.disk_size"><mark>Size : </mark> ${burst.disk_size}</p>
+
+                            <p class="burst-prop-age"><mark>Created : </mark> ${burst.start_time.strftime('%Y/%m/%d %H:%M')}</p>
+                            <p class="burst-prop-error" py:if="burst.error_message"><mark>Error message : </mark> ${burst.error_message}</p>
+                            <p class="burst-prop-cancelled" py:if="burst.status=='canceled'">This simulation was canceled from execution by the user.</p>
+                            <p class="burst-prop-age" py:if="burst.status=='running'">This simulation is still running....</p>
 
                             <button class="action action-delete" onclick="cancelOrRemoveBurst(${burst.id})" title="Stop/Remove this simulation and all its data">
                                 ${'Cancel' if burst.status == 'running' else 'Delete'}</button>

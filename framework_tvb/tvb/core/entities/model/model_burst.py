@@ -174,21 +174,17 @@ class BurstConfiguration(Base, Exportable):
 
 
     @property
-    def current_weight(self):
-        """
-        Return a dictionary with information about current burst's weight.
-        """
-        result = {'process_time': None,
-                  'datatypes_number': self.datatypes_number,
-                  'disk_size': format_bytes_human(self.disk_size) if self.disk_size is not None else None,
-                  'number_of_workflows': self.workflows_number,
-                  'start_time': self.start_time,
-                  'error': self.error_message}
-
+    def process_time(self):
         if self.finish_time is not None and self.start_time is not None:
-            result['process_time'] = format_timedelta(self.finish_time - self.start_time)
+            return format_timedelta(self.finish_time - self.start_time)
+        return ''
 
-        return result
+
+    @property
+    def disk_size(self):
+        if self.disk_size is not None:
+            return format_bytes_human(self.disk_size)
+        return ''
 
 
     def update_simulator_configuration(self, new_values):
