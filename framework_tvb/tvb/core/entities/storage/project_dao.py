@@ -154,7 +154,7 @@ class CaseDAO(RootDAO):
         return None
 
 
-    def compute_owned_projects_disk_size(self, user_id):
+    def compute_user_generated_disk_size(self, user_id):
         """
         Do a SUM on DATA_TYPES table column DISK_SIZE, for the current user.
         :returns 0 when no DT are found, or SUM from DB.

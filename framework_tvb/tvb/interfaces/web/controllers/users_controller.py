@@ -144,7 +144,7 @@ class UserController(BaseController):
             user = self.user_service.get_user_by_id(user.id)
             common.add2session(common.KEY_USER, user)
 
-        template_specification['user_used_disk_human'] = format_bytes_human(self.user_service.compute_owned_projects_disk_size(user.id))
+        template_specification['user_used_disk_human'] = format_bytes_human(self.user_service.compute_user_generated_disk_size(user.id))
         return self.fill_default_attributes(template_specification)
 
 
