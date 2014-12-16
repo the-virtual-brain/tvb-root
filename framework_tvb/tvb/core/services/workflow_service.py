@@ -206,9 +206,6 @@ class WorkflowService:
                 dao.store_entity(dt_group)
 
             ### Update actual Burst entity fields
-            ##  1KB for each dataType, considered for operation.xml files
-            linked_ops_number = dao.get_operations_in_burst(burst_entity.id, is_count=True)
-            burst_entity.disk_size = linked_ops_number + dao.get_disk_size_for_burst(burst_entity.id)        # In KB
             burst_entity.datatypes_number = dao.count_datatypes_in_burst(burst_entity.id)
             burst_entity.workflows_number = dao.get_workflows_for_burst(burst_entity.id, is_count=True)
 

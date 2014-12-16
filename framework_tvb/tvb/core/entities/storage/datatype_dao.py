@@ -143,19 +143,19 @@ class DatatypeDAO(RootDAO):
         return result
 
 
-    def get_disk_size_for_burst(self, burst_id):
+    def compute_burst_disk_size(self, burst_id):
         """
         :return the disk size occupied for a burst. Do not count DataType Groups,
             as those already include the size of the entities inside the group.
         """
         try:
-            disk_size = self.session.query(func.sum(model.DataType.disk_size)
-                                           ).filter(model.DataType.type != "DataTypeGroup"
-                                           ).filter(model.DataType.fk_parent_burst == burst_id).scalar() or 0
+            query = self.session.query(func.sum(model.DataType.disk_size)
+                        ).filter(model.DataType.type != "DataTypeGroup"
+                        ).filter(model.DataType.fk_parent_burst == burst_id)
+            return query.scalar() or 0
         except SQLAlchemyError, excep:
             self.logger.exception(excep)
-            disk_size = 0
-        return disk_size
+            return -1
 
 
     #
@@ -508,19 +508,6 @@ class DatatypeDAO(RootDAO):
         try:
             hdd_size = self.session.query(func.sum(model.DataType.disk_size)
                                           ).filter(model.DataType.fk_datatype_group == dt_group_id).scalar() or 0
-        except SQLAlchemyError, ex:
-            self.logger.exception(ex)
-            hdd_size = 0
-        return hdd_size
-
-
-    def get_burst_disk_size(self, burst_id):
-        """
-        Return the size of all the DataTypes that resulted from this burst.
-        """
-        try:
-            hdd_size = self.session.query(func.sum(model.DataType.disk_size)
-                                          ).filter(model.DataType.fk_parent_burst == burst_id).scalar() or 0
         except SQLAlchemyError, ex:
             self.logger.exception(ex)
             hdd_size = 0
