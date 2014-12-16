@@ -176,7 +176,7 @@ class OperationDAO(RootDAO):
     def compute_disk_size_for_started_ops(self, user_id):
         """ Get all the disk space that should be reserved for the started operations of this user. """
         try:
-            expected_hdd_size = self.session.query(func.sum(model.Operation.result_disk_size)
+            expected_hdd_size = self.session.query(func.sum(model.Operation.estimated_disk_size)
                                                    ).filter(model.Operation.fk_launched_by == user_id
                                                    ).filter(model.Operation.status == model.STATUS_STARTED).scalar()
         except SQLAlchemyError, excep:

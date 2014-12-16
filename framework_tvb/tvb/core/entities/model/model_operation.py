@@ -322,7 +322,7 @@ class Operation(Base, Exportable):
     additional_info = Column(String)
     user_group = Column(String, default=None)
     range_values = Column(String, default=None)
-    result_disk_size = Column(Integer)   # todo: should be renamed to expected disk size. Do we have to store this in the db?
+    estimated_disk_size = Column(Integer)
 
     algorithm = relationship(Algorithm)
     project = relationship(Project, backref=backref('OPERATIONS', order_by=id, cascade="all,delete"))
@@ -332,7 +332,7 @@ class Operation(Base, Exportable):
 
     def __init__(self, fk_launched_by, fk_launched_in, fk_from_algo, parameters, meta='', method_name='',
                  status=STATUS_PENDING, start_date=None, completion_date=None, op_group_id=None, additional_info='',
-                 user_group=None, range_values=None, result_disk_size=0):
+                 user_group=None, range_values=None, estimated_disk_size=0):
         self.fk_launched_by = fk_launched_by
         self.fk_launched_in = fk_launched_in
         self.fk_from_algo = fk_from_algo
@@ -349,7 +349,7 @@ class Operation(Base, Exportable):
         self.user_group = user_group
         self.additional_info = additional_info
         self.gid = generate_guid()
-        self.result_disk_size = result_disk_size
+        self.estimated_disk_size = estimated_disk_size
 
 
     def __repr__(self):

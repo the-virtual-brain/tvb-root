@@ -276,7 +276,7 @@ class ABCAdapter(object):
                 raise NoMemoryAvailableException(msg % (available_disk_space / 2 ** 20, required_disk_space / 2 ** 20))
 
             operation.start_now()
-            operation.result_disk_size = required_disk_space
+            operation.estimated_disk_size = required_disk_space
             dao.store_entity(operation)
 
             result = self.launch(**kwargs)

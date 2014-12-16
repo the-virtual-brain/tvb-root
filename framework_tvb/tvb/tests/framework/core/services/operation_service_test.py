@@ -281,7 +281,7 @@ class OperationServiceTest(BaseTestCase):
         class_name = "TestAdapterHDDRequired"
         group = dao.find_group(module, class_name)
         started_operation = model.Operation(self.test_user.id, self.test_project.id, group.id, "",
-                                            status=model.STATUS_STARTED, result_disk_size=space_taken_by_started)
+                                            status=model.STATUS_STARTED, estimated_disk_size=space_taken_by_started)
         dao.store_entity(started_operation)
         adapter = FlowService().build_adapter_instance(group)
         output = adapter.get_output()
@@ -325,7 +325,7 @@ class OperationServiceTest(BaseTestCase):
         class_name = "TestAdapterHDDRequired"
         group = dao.find_group(module, class_name)
         started_operation = model.Operation(self.test_user.id, self.test_project.id, group.id, "",
-                                            status=model.STATUS_STARTED, result_disk_size=space_taken_by_started)
+                                            status=model.STATUS_STARTED, estimated_disk_size=space_taken_by_started)
         dao.store_entity(started_operation)
         adapter = FlowService().build_adapter_instance(group)
         data = {"test": 100}

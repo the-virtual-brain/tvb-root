@@ -36,7 +36,7 @@ Change of DB structure from TVB version 1.2.3 to 1.2.4
 """
 
 from sqlalchemy import Column, Float, Integer
-from migrate.changeset.schema import create_column, drop_column
+from migrate.changeset.schema import create_column, drop_column, alter_column
 from tvb.core.entities import model
 
 meta = model.Base.metadata
@@ -44,6 +44,8 @@ meta = model.Base.metadata
 COLUMN_N1 = Column('used_disk_space', Float)
 COLUMN_N2 = Column('disk_size', Integer)
 
+COLUMN_N3_OLD = Column('result_disk_size', Integer)
+COLUMN_N3_NEW = Column('estimated_disk_size', Integer)
 
 def upgrade(migrate_engine):
     """
@@ -56,6 +58,8 @@ def upgrade(migrate_engine):
     drop_column(COLUMN_N1, table)
     table = meta.tables['BURST_CONFIGURATIONS']
     drop_column(COLUMN_N2, table)
+    table = meta.tables['OPERATIONS']
+    alter_column(COLUMN_N3_OLD, table=table, name=COLUMN_N3_NEW.name)
 
 
 def downgrade(migrate_engine):
@@ -66,4 +70,6 @@ def downgrade(migrate_engine):
     create_column(COLUMN_N1, table)
     table = meta.tables['BURST_CONFIGURATIONS']
     create_column(COLUMN_N2, table)
+    table = meta.tables['OPERATIONS']
+    alter_column(COLUMN_N3_NEW, table=table, name=COLUMN_N3_OLD.name)
 
