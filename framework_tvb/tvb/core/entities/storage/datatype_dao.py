@@ -149,16 +149,23 @@ class DatatypeDAO(RootDAO):
         Do not count DataType Groups as those already include the size of the entities inside the group.
         :returns a map from burst id to disk size
         """
+        # do not execute a query that will return []
+        if not burst_ids:
+            return {}
+        # The query might return less results than burst_ids.
+        # This happens if a burst entity has not been persisted yet.
+        # For those bursts the size will be zero
+        ret = {b_id: 0 for b_id in burst_ids}
         try:
             query = self.session.query(model.DataType.fk_parent_burst, func.sum(model.DataType.disk_size)
                         ).group_by(model.DataType.fk_parent_burst
                         ).filter(model.DataType.type != "DataTypeGroup"
                         ).filter(model.DataType.fk_parent_burst.in_(burst_ids))
-
-            return {b_id: size or 0 for b_id, size in query.all()}
+            for b_id, size in query.all():
+                ret[b_id] = size or 0
         except SQLAlchemyError, excep:
             self.logger.exception(excep)
-            return {b_id: 0 for b_id in burst_ids}
+        return ret
 
     #
     # DATA_TYPE RELATED METHODS
