@@ -58,15 +58,15 @@ class _BaseLinksTest(TransactionalTestCase):
         Project dest_project will be empty.
         Initializes a flow and a project service
         """
-        datatype_factory = DatatypesFactory()
-        self.user = datatype_factory.user
-        self.src_project = datatype_factory.project
+        self.datatype_factory = DatatypesFactory()
+        self.src_project = self.datatype_factory.project
 
-        self.red_datatype = datatype_factory.create_simple_datatype(subject=self.GEORGE1st)
-        self.blue_datatype = datatype_factory.create_datatype_with_storage(subject=self.GEORGE2nd)
+        self.red_datatype = self.datatype_factory.create_simple_datatype(subject=self.GEORGE1st)
+        self.blue_datatype = self.datatype_factory.create_datatype_with_storage(subject=self.GEORGE2nd)
 
         # create the destination project
-        self.dest_project = TestFactory.create_project(admin=datatype_factory.user, name="destination")
+        self.datatype_factory_dest = DatatypesFactory()
+        self.dest_project = self.datatype_factory_dest.project
 
         self.flow_service = FlowService()
         self.project_service = ProjectService()
@@ -156,7 +156,7 @@ class ImportExportProjectWithLinksTest(_BaseLinksTest):
         return export_file
 
     def _import_dest(self, export_file):
-        self.import_service.import_project_structure(export_file, self.user.id)
+        self.import_service.import_project_structure(export_file,  self.datatype_factory.user.id)
         return self.import_service.created_projects[0].id
 
     def test_links_recreated_on_import(self):
@@ -190,6 +190,29 @@ class ImportExportProjectWithLinksTest(_BaseLinksTest):
         links = dao.get_linked_datatypes_for_project(imported_proj_id)
         self.assertEqual(1, len(links))
         self.assertEquals(self.red_datatype.gid, links[0].gid)
+
+    def test_linked_datatype_dependencies_restored_on_import(self):
+        # add a connectivity to src project and link it to dest project
+        _, conn = self.datatype_factory.create_connectivity()
+        self.flow_service.create_link([conn.id], self.dest_project.id)
+        # in dest derive a time series from the linked conn
+        ts = self.datatype_factory_dest.create_timeseries(conn)
+        # then link the time series in the src project
+        self.flow_service.create_link([ts.id], self.src_project.id)
+
+        # export both then remove them
+        export_file_src = self.export_mng.export_project(self.src_project)
+        export_file_dest = self.export_mng.export_project(self.dest_project)
+        self.project_service.remove_project(self.src_project.id)
+        self.project_service.remove_project(self.dest_project.id)
+
+        # importing both projects should work
+        self.import_service.import_project_structure(export_file_src, self.datatype_factory.user.id)
+        self.import_service.import_project_structure(export_file_dest, self.datatype_factory_dest.user.id)
+
+        self.assertEqual(2 + 2, len(dao.get_datatypes_in_project(self.src_project.id)))  # the first 2 are the red and green dts introduced by setup
+        self.assertEqual(0, len(dao.get_datatypes_in_project(self.dest_project.id)))
+        self.assertEqual(2, len(dao.get_linked_datatypes_for_project(self.dest_project.id)))
 
 
 def suite():
