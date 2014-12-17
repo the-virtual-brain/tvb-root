@@ -351,16 +351,21 @@ class ImportService():
 
 
     def _store_imported_datatypes_in_db(self, project, all_datatypes, dt_burst_mappings, burst_ids_mapping):
+        def by_time(dt):
+            return dt.create_date or datetime.now()
+
         if burst_ids_mapping is None:
             burst_ids_mapping = {}
         if dt_burst_mappings is None:
             dt_burst_mappings = {}
 
+        all_datatypes.sort(key=by_time)
+
         for datatype in all_datatypes:
-            if datatype.gid in dt_burst_mappings:
-                old_burst_id = dt_burst_mappings[datatype.gid]
-                if old_burst_id is not None:
-                    datatype.fk_parent_burst = burst_ids_mapping[old_burst_id]
+            old_burst_id = dt_burst_mappings.get(datatype.gid)
+
+            if old_burst_id is not None:
+                datatype.fk_parent_burst = burst_ids_mapping[old_burst_id]
 
             datatype_allready_in_tvb = dao.get_datatype_by_gid(datatype.gid)
 
@@ -394,6 +399,7 @@ class ImportService():
         operations = self._load_operations_from_paths(project, op_paths)
 
         imported_operations = []
+        datatypes = []
 
         # Here we process each operation found
         for operation in operations:
@@ -407,12 +413,12 @@ class ImportService():
                 shutil.rmtree(new_operation_path)
                 shutil.move(old_operation_folder, new_operation_path)
 
-            all_datatypes = self._load_datatypes_from_operation_folder(new_operation_path,
+            operation_datatypes = self._load_datatypes_from_operation_folder(new_operation_path,
                                                                        operation_entity, datatype_group)
-            self._store_imported_datatypes_in_db(project, all_datatypes, dt_burst_mappings, burst_ids_mapping)
-
             imported_operations.append(operation_entity)
+            datatypes.extend(operation_datatypes)
 
+        self._store_imported_datatypes_in_db(project, datatypes, dt_burst_mappings, burst_ids_mapping)
         return imported_operations
 
 
