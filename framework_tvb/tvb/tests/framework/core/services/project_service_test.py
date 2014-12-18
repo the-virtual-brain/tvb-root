@@ -434,16 +434,17 @@ class ProjectServiceTest(TransactionalTestCase):
         self.project_service._remove_project_node_files(inserted_project.id, gid)
         sub_files = os.listdir(op_folder)
         self.assertEqual(1, len(sub_files))
-        ### Validate that Operation GID_file is still there.
+        ### operation.xml file should still be there
         
         op_folder = self.structure_helper.get_project_folder("Link", str(operation_id + 1)) 
         sub_files = os.listdir(op_folder)
-        self.assertEqual(1, len(sub_files)) 
-        self.assertTrue(dao.get_datatype_by_gid(gid) is not None, "Data should still be there because of links")
+        self.assertEqual(2, len(sub_files))
+        self.assertTrue(dao.get_datatype_by_gid(gid) is not None, "Data should still be in DB, because of links")
         self.project_service._remove_project_node_files(project_to_link.id, gid)
         self.assertTrue(dao.get_datatype_by_gid(gid) is None)  
         sub_files = os.listdir(op_folder)
-        self.assertEqual(0, len(sub_files))
+        self.assertEqual(1, len(sub_files))
+        ### operation.xml file should still be there
         
         
     def test_update_meta_data_simple(self):
