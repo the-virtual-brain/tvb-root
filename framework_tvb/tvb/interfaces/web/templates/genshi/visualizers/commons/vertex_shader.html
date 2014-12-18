@@ -50,38 +50,45 @@
 
         gl_Position = uPMatrix * mvPosition;
 
+        vec3 ambientColor = uAmbientColor;
+        vec3 difuseColor = uDirectionalColor;
+        vec3 specularColor = uPointLightingSpecularColor;
+        vec4 materialColor;
+
         <py:choose test="">
             <py:when test="isOneToOneMapping">
-                vec4 materialColor = aVertexColor;
+                materialColor = aVertexColor;
             </py:when>
             <py:otherwise>
-                vec4 materialColor = uVertexColors[int(alphaIndices[0])] * alpha[0] + uVertexColors[int(alphaIndices[1])] * alpha[1] +
+                materialColor = uVertexColors[int(alphaIndices[0])] * alpha[0] + uVertexColors[int(alphaIndices[1])] * alpha[1] +
                      uVertexColors[int(alphaIndices[2])] * (1.0 - alpha[0] - alpha[1]);
             </py:otherwise>
         </py:choose>
 
-        vec3 vLightWeighting;
-
         if (isPicking == 0.0) {
             if (uUseVertexLineColor || !uDrawLines) {
                 if (uUseBlending) {
-                    vLightWeighting = vec3(0.4, 0.4, 0.4) + vec3(0.4, 0.4, 0.4) * directionalLightWeighting;
+                    ambientColor = vec3(0.4, 0.4, 0.4);
+                    difuseColor = vec3(0.4, 0.4, 0.4);
+                    specularColor = vec3(0.0, 0.0, 0.0);
                     materialColor = vec4(0.95, 0.95, 0.95, 0.29);
-                } else {
-                    vLightWeighting = uAmbientColor + uDirectionalColor * directionalLightWeighting  + uPointLightingSpecularColor * specularLightWeighting;
                 }
             } else {
                 if (uDrawLines) {
-                    vLightWeighting = vec3(0.2, 0.2, 0.2) + vec3(0.1, 0.1, 0.1) * directionalLightWeighting;
-                    materialColor = vec4(uLinesColor, 1.0);
+                    ambientColor = vec3(0.2, 0.2, 0.2);
+                    difuseColor = vec3(0.1, 0.1, 0.1);
+                    specularColor = vec3(0.0, 0.0, 0.0);
+					materialColor = vec4(uLinesColor, 1.0);
                 }
             }
         } else {
+            ambientColor = vec3(1.0, 1.0, 1.0);
+            difuseColor = vec3(0.0, 0.0, 0.0);
+            specularColor = vec3(0.0, 0.0, 0.0);
             materialColor = vec4(pickingColor, 1.0);
-            vLightWeighting = vec3(1, 1, 1);
         }
 
-        vec3 light = materialColor.rgb * vLightWeighting;
+        vec3 light = materialColor.rgb * ( ambientColor + difuseColor * directionalLightWeighting + specularColor * specularLightWeighting);
         vColor = vec4(light, materialColor.a);
     }
 </script>
