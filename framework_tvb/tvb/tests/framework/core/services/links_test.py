@@ -148,43 +148,43 @@ class ImportExportProjectWithLinksTest(_BaseLinksTest):
         with TvbZip(export_file) as z:
             self.assertTrue('links-to-external-projects/Operation.xml' in z.namelist())
 
-    def _export_and_remove_dest(self):
-        """export the destination project and remove it"""
-        dest_id = self.dest_project.id
-        export_file = self.export_mng.export_project(self.dest_project)
-        self.project_service.remove_project(dest_id)
+    def _export_and_remove(self, project):
+        """export the project and remove it"""
+        export_file = self.export_mng.export_project(project)
+        self.project_service.remove_project(project.id)
         return export_file
 
-    def _import_dest(self, export_file):
+    def _import(self, export_file, user):
+        """ import a project zip for a user """
         # instantiated for every use because it is stateful
         import_service = ImportService()
-        import_service.import_project_structure(export_file,  self.datatype_factory_src.user.id)
+        import_service.import_project_structure(export_file,  user.id)
         return import_service.created_projects[0].id
 
     def test_links_recreated_on_import(self):
-        export_file = self._export_and_remove_dest()
-        imported_proj_id = self._import_dest(export_file)
+        export_file = self._export_and_remove(self.dest_project)
+        imported_proj_id = self._import(export_file, self.dest_usr_id)
         self.assertEqual(1, self.red_datatypes_in(imported_proj_id))
         self.assertEqual(1, self.blue_datatypes_in(imported_proj_id))
         links = dao.get_linked_datatypes_for_project(imported_proj_id)
         self.assertEqual(2, len(links))
 
     def test_datatypes_recreated_on_import(self):
-        export_file = self._export_and_remove_dest()
+        export_file = self._export_and_remove(self.dest_project)
         self.project_service.remove_project(self.src_project.id)
         # both projects have been deleted
         # import should recreate links as datatypes
-        imported_proj_id = self._import_dest(export_file)
+        imported_proj_id = self._import(export_file, self.dest_usr_id)
         self.assertEqual(1, self.red_datatypes_in(imported_proj_id))
         self.assertEqual(1, self.blue_datatypes_in(imported_proj_id))
         links = dao.get_linked_datatypes_for_project(imported_proj_id)
         self.assertEqual(0, len(links))
 
     def test_datatypes_and_links_recreated_on_import(self):
-        export_file = self._export_and_remove_dest()
+        export_file = self._export_and_remove(self.dest_project)
         # remove datatype 2 from source project
         self.project_service.remove_datatype(self.src_project.id, self.blue_datatype.gid)
-        imported_proj_id = self._import_dest(export_file)
+        imported_proj_id = self._import(export_file, self.dest_usr_id)
         # both datatypes should be recreated
         self.assertEqual(1, self.red_datatypes_in(imported_proj_id))
         self.assertEqual(1, self.blue_datatypes_in(imported_proj_id))
@@ -203,19 +203,16 @@ class ImportExportProjectWithLinksTest(_BaseLinksTest):
         self.flow_service.create_link([ts.id], self.src_project.id)
 
         # export both then remove them
-        export_file_src = self.export_mng.export_project(self.src_project)
-        export_file_dest = self.export_mng.export_project(self.dest_project)
-        self.project_service.remove_project(self.src_project.id)
-        self.project_service.remove_project(self.dest_project.id)
+        export_file_src = self._export_and_remove(self.src_project)
+        export_file_dest = self._export_and_remove(self.dest_project)
 
-        import_service = ImportService()
         # importing both projects should work
-        import_service.import_project_structure(export_file_src, self.datatype_factory_src.user.id)
-        import_service.import_project_structure(export_file_dest, self.datatype_factory_dest.user.id)
+        imported_id_1 = self._import(export_file_src, self.src_usr_id)
+        imported_id_2 =self._import(export_file_dest, self.dest_usr_id)
 
-        self.assertEqual(2 + 2, len(dao.get_datatypes_in_project(self.src_project.id)))  # the first 2 are the red and green dts introduced by setup
-        self.assertEqual(0, len(dao.get_datatypes_in_project(self.dest_project.id)))
-        self.assertEqual(2, len(dao.get_linked_datatypes_for_project(self.dest_project.id)))
+        self.assertEqual(2 + 2, len(dao.get_datatypes_in_project(imported_id_1)))  # the first 2 are the red and green dts introduced by setup
+        self.assertEqual(0, len(dao.get_datatypes_in_project(imported_id_2)))
+        self.assertEqual(2, len(dao.get_linked_datatypes_for_project(imported_id_2)))
 
 
 def suite():
