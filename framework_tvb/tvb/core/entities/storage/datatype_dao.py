@@ -240,25 +240,23 @@ class DatatypeDAO(RootDAO):
         return count
 
 
-    def get_linked_datatypes_for_project(self, project_id):
+    def get_linked_datatypes_in_project(self, project_id):
         """
         Return a list of datatypes linked into this project
         :param project_id: the id of the project
         """
-        datatypes = {}
+        datatypes = []
         try:
-            query = self.session.query(model.DataType).join(model.Links).join(model.Project
-                                        ).filter(model.Project.id == project_id)
+            query = self.session.query(model.DataType).join(model.Links).filter(model.Links.fk_to_project == project_id)
             for dt in query.all():
                 if dt.type == model.DataTypeGroup.__name__:
-                    for subdt in self.get_datatypes_from_datatype_group(dt.id):
-                        datatypes[subdt.gid] = subdt
+                    datatypes.extend(self.get_datatypes_from_datatype_group(dt.id))
                 else:
-                    datatypes[dt.gid] = dt
+                    datatypes.append(dt)
         except SQLAlchemyError, excep:
             self.logger.exception(excep)
 
-        return datatypes.values()
+        return datatypes
 
 
     def get_datatypes_in_project(self, project_id, only_visible=False):

@@ -605,6 +605,8 @@ class ProjectService:
                                              datatype.parent_operation.range_values)
                     new_op = dao.store_entity(new_op)
                     to_project = self.find_project(links[0].fk_to_project).name
+                    new_op_loaded = dao.get_operation_by_id(new_op.id)
+                    self.structure_helper.write_operation_metadata(new_op_loaded)
                     self.structure_helper.move_datatype(datatype, to_project, str(new_op.id))
                     datatype.set_operation_id(new_op.id)
                     datatype.parent_operation = new_op

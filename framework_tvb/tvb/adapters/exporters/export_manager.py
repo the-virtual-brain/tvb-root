@@ -162,7 +162,7 @@ class ExportManager:
         :return: the file paths to the datatypes that are linked in `project`
         """
         paths = []
-        for lnk_dt in dao.get_linked_datatypes_for_project(project.id):
+        for lnk_dt in dao.get_linked_datatypes_in_project(project.id):
             # get datatype as a mapped type
             lnk_dt = dao.get_datatype_by_gid(lnk_dt.gid)
             if lnk_dt.storage_path is not None:
@@ -183,10 +183,11 @@ class ExportManager:
         # Make a import operation which will contain links to other projects
         alg_group = dao.find_group(TVB_IMPORTER_MODULE, TVB_IMPORTER_CLASS)
         algo = dao.get_algorithm_by_group(alg_group.id)
-        op = model.Operation(None, project.id, algo.id, '', start_date=min_date - timedelta(days=1))
+        op = model.Operation(None, project.id, algo.id, '')
         op.project = project
         op.algorithm = algo
         op.id = 'links-to-external-projects'
+        op.start_now()
         op.mark_complete(model.STATUS_FINISHED)
 
         # write operation.xml to disk
