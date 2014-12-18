@@ -154,11 +154,11 @@ class ImportExportProjectWithLinksTest(_BaseLinksTest):
         self.project_service.remove_project(project.id)
         return export_file
 
-    def _import(self, export_file, user):
+    def _import(self, export_file, user_id):
         """ import a project zip for a user """
         # instantiated for every use because it is stateful
         import_service = ImportService()
-        import_service.import_project_structure(export_file,  user.id)
+        import_service.import_project_structure(export_file,  user_id)
         return import_service.created_projects[0].id
 
     def test_links_recreated_on_import(self):
