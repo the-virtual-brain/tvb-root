@@ -41,7 +41,6 @@ from tvb.core.services.project_service import ProjectService
 from tvb.core.services.import_service import ImportService
 from tvb.core.entities.transient.structure_entities import DataTypeMetaData
 from tvb.tests.framework.core.base_testcase import TransactionalTestCase
-from tvb.tests.framework.core.test_factory import TestFactory
 from tvb.tests.framework.datatypes.datatypes_factory import DatatypesFactory
 from tvb.tests.framework.datatypes.datatype1 import Datatype1
 from tvb.tests.framework.datatypes.datatype2 import Datatype2
@@ -58,15 +57,17 @@ class _BaseLinksTest(TransactionalTestCase):
         Project dest_project will be empty.
         Initializes a flow and a project service
         """
-        self.datatype_factory = DatatypesFactory()
-        self.src_project = self.datatype_factory.project
+        self.datatype_factory_src = DatatypesFactory()
+        self.src_project = self.datatype_factory_src.project
+        self.src_usr_id = self.datatype_factory_src.user.id
 
-        self.red_datatype = self.datatype_factory.create_simple_datatype(subject=self.GEORGE1st)
-        self.blue_datatype = self.datatype_factory.create_datatype_with_storage(subject=self.GEORGE2nd)
+        self.red_datatype = self.datatype_factory_src.create_simple_datatype(subject=self.GEORGE1st)
+        self.blue_datatype = self.datatype_factory_src.create_datatype_with_storage(subject=self.GEORGE2nd)
 
         # create the destination project
         self.datatype_factory_dest = DatatypesFactory()
         self.dest_project = self.datatype_factory_dest.project
+        self.dest_usr_id = self.datatype_factory_dest.user.id
 
         self.flow_service = FlowService()
         self.project_service = ProjectService()
@@ -141,7 +142,6 @@ class ImportExportProjectWithLinksTest(_BaseLinksTest):
         self.flow_service.create_link([self.red_datatype.id], dest_id)
         self.flow_service.create_link([self.blue_datatype.id], dest_id)
         self.export_mng = ExportManager()
-        self.import_service = ImportService()
 
     def test_export(self):
         export_file = self.export_mng.export_project(self.dest_project)
@@ -156,8 +156,10 @@ class ImportExportProjectWithLinksTest(_BaseLinksTest):
         return export_file
 
     def _import_dest(self, export_file):
-        self.import_service.import_project_structure(export_file,  self.datatype_factory.user.id)
-        return self.import_service.created_projects[0].id
+        # instantiated for every use because it is stateful
+        import_service = ImportService()
+        import_service.import_project_structure(export_file,  self.datatype_factory_src.user.id)
+        return import_service.created_projects[0].id
 
     def test_links_recreated_on_import(self):
         export_file = self._export_and_remove_dest()
@@ -193,7 +195,7 @@ class ImportExportProjectWithLinksTest(_BaseLinksTest):
 
     def test_linked_datatype_dependencies_restored_on_import(self):
         # add a connectivity to src project and link it to dest project
-        _, conn = self.datatype_factory.create_connectivity()
+        _, conn = self.datatype_factory_src.create_connectivity()
         self.flow_service.create_link([conn.id], self.dest_project.id)
         # in dest derive a time series from the linked conn
         ts = self.datatype_factory_dest.create_timeseries(conn)
@@ -206,9 +208,10 @@ class ImportExportProjectWithLinksTest(_BaseLinksTest):
         self.project_service.remove_project(self.src_project.id)
         self.project_service.remove_project(self.dest_project.id)
 
+        import_service = ImportService()
         # importing both projects should work
-        self.import_service.import_project_structure(export_file_src, self.datatype_factory.user.id)
-        self.import_service.import_project_structure(export_file_dest, self.datatype_factory_dest.user.id)
+        import_service.import_project_structure(export_file_src, self.datatype_factory_src.user.id)
+        import_service.import_project_structure(export_file_dest, self.datatype_factory_dest.user.id)
 
         self.assertEqual(2 + 2, len(dao.get_datatypes_in_project(self.src_project.id)))  # the first 2 are the red and green dts introduced by setup
         self.assertEqual(0, len(dao.get_datatypes_in_project(self.dest_project.id)))
