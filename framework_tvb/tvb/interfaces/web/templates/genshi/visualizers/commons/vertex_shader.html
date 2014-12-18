@@ -33,8 +33,6 @@
     uniform float isPicking;
     uniform vec3 pickingColor;
 
-    varying float picked;
-    varying vec3 vLightWeighting;
     varying vec4 vColor;
 
     void main(void) {
@@ -62,7 +60,8 @@
             </py:otherwise>
         </py:choose>
 
-        picked = isPicking;
+        vec3 vLightWeighting;
+
         if (isPicking == 0.0) {
             if (uUseVertexLineColor || !uDrawLines) {
                 if (uUseBlending) {
@@ -82,6 +81,7 @@
             vLightWeighting = vec3(1, 1, 1);
         }
 
-        vColor = materialColor;
+        vec3 light = materialColor.rgb * vLightWeighting;
+        vColor = vec4(light, materialColor.a);
     }
 </script>
