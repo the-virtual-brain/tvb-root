@@ -146,12 +146,27 @@ var defaultLightSettings = {
 
 // Use these settings if you prefer more accurate activity colors instead of better lighting
 var noSpecularLightSettings = {
-    ambientColor : [0.6, 0.6, 0.5],
     directionalColor : [0.5, 0.5, 0.5],
-    lightDirection : Vector.create([0.5, 0, 1]).toUnitVector().flatten(),
-    specularColor: [0.0, 0.0, 0.0],
-    materialShininess : 30.0,
-    pointLocation : [0, -10, -400]
+    specularColor: [0.0, 0.0, 0.0]
+};
+
+// With this settings all triangles will have the pure ambient color, it removes lighting.
+var pickingLightSettings = {
+    ambientColor: [1.0, 1.0, 1.0],
+    directionalColor : [0.0, 0.0, 0.0],
+    specularColor : [0.0, 0.0, 0.0]
+};
+
+var linesLightSettings = {
+    ambientColor: [0.2, 0.2, 0.2],
+    directionalColor : [0.1, 0.1, 0.1],
+    specularColor : [0.0, 0.0, 0.0]
+};
+
+var blendingLightSettings = {
+    ambientColor: [0.4, 0.4, 0.4],
+    directionalColor : [0.4, 0.4, 0.4],
+    specularColor : [0.0, 0.0, 0.0]
 };
 
 var _GL_currentLighting = defaultLightSettings;
