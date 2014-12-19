@@ -141,6 +141,8 @@ var isFaceToDisplay = false;
 var drawNavigator = false;
 var drawTriangleLines = false;
 var drawBoundaries = false;
+
+var drawSpeculars = true;
 /**
  * Used to determine which buffer chunks belong to a hemisphere.
  * The chunks are used to limit geometry size for a draw call.
@@ -159,8 +161,6 @@ var VS_selectedRegions = [];
  * camera settings
  */
 var near = 0.1;
-
-var lightSettings = defaultLightSettings;
 
 // index of the currently selected node. This is equivalent to CONN_pickedIndex
 var VS_pickedIndex = -1;
@@ -781,11 +781,7 @@ function toggleDrawBoundaries() {
 }
 
 function setSpecularHighLights(enable){
-    if(enable){
-        lightSettings = defaultLightSettings;
-    }else{
-        lightSettings = noSpecularLightSettings;
-    }
+    drawSpeculars = enable;
 }
 
 /**
@@ -1161,8 +1157,13 @@ function drawScene() {
     gl.clearColor(theme.backgroundColor[0], theme.backgroundColor[1], theme.backgroundColor[2], theme.backgroundColor[3]);
     gl.viewport(0, 0, gl.viewportWidth, gl.viewportHeight);
 
+    if (drawSpeculars){
+        setLighting();
+    }else{
+        setLighting(noSpecularLightSettings);
+    }
+
     // Draw sections before setting the correct draw perspective, to work with "rel-time refresh of sections"
-    setLighting(lightSettings);
     VB_BrainNavigator.maybeRefreshSections();
 
     // View angle is 45, we want to see object from near up to 800 distance from camera

@@ -47,7 +47,8 @@
             materialColor = vec4(aVertexColor.rgb, 1.0);
         }
 
-        vec3 light = materialColor.rgb * ( ambientColor + difuseColor * directionalLightWeighting + specularColor * specularLightWeighting);
+        vec3 diffuse = ambientColor + difuseColor * directionalLightWeighting;
+        vec3 light = materialColor.rgb * diffuse + specularColor * specularLightWeighting;
         vColor = vec4(light, materialColor.a);
     }
 </script>
