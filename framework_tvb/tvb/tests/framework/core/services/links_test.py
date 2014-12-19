@@ -217,7 +217,12 @@ class ImportExportProjectWithLinksTest(_BaseLinksTest):
         self.assertEquals(self.red_datatype.gid, links[0].gid)
 
 
-    def test_linked_datatype_dependencies_restored_on_import(self):
+    def _create_interlinked_projects(self):
+        """
+        Extend the two projects created in setup.
+        Project src will have 3 datatypes, one a connectivity, and a link to the time series from the dest project.
+        Project dest will have 3 links to the datatypes in src and a time series derived from the linked connectivity
+        """
         # add a connectivity to src project and link it to dest project
         _, conn = self.datatype_factory_src.create_connectivity()
         self.flow_service.create_link([conn.id], self.dest_project.id)
@@ -231,6 +236,13 @@ class ImportExportProjectWithLinksTest(_BaseLinksTest):
         self.assertEqual(1, len(dao.get_datatypes_in_project(self.dest_project.id)))
         self.assertEqual(3, len(dao.get_linked_datatypes_in_project(self.dest_project.id)))
 
+
+    def test_create_interlinked_projects(self):
+        self._create_interlinked_projects()
+
+
+    def test_linked_datatype_dependencies_restored_on_import(self):
+        self._create_interlinked_projects()
         # export both then remove them
         export_file_src = self._export_and_remove(self.src_project)
         self.assertEqual(4, len(dao.get_datatypes_in_project(self.dest_project.id)))
@@ -246,6 +258,23 @@ class ImportExportProjectWithLinksTest(_BaseLinksTest):
         self.assertEqual(0, len(dao.get_datatypes_in_project(imported_id_2)))
         self.assertEqual(4, len(dao.get_linked_datatypes_in_project(imported_id_2)))
 
+
+    def test_linked_datatype_dependencies_restored_on_import_inverse_order(self):
+        self._create_interlinked_projects()
+        # export both then remove them
+        export_file_src = self._export_and_remove(self.src_project)
+        self.assertEqual(4, len(dao.get_datatypes_in_project(self.dest_project.id)))
+        self.assertEqual(0, len(dao.get_linked_datatypes_in_project(self.dest_project.id)))
+        export_file_dest = self._export_and_remove(self.dest_project)
+
+        # importing dest before src should work
+        imported_id_2 = self._import(export_file_dest, self.dest_usr_id)
+        self.assertEqual(4, len(dao.get_datatypes_in_project(imported_id_2)))
+        self.assertEqual(0, len(dao.get_linked_datatypes_in_project(imported_id_2)))
+
+        imported_id_1 = self._import(export_file_src, self.src_usr_id)
+        self.assertEqual(0, len(dao.get_datatypes_in_project(imported_id_1)))
+        self.assertEqual(4, len(dao.get_linked_datatypes_in_project(imported_id_1)))
 
 
 def suite():
