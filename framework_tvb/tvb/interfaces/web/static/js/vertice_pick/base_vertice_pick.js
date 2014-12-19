@@ -63,7 +63,7 @@ var picking_triangles_number = [];
 /* globals gl, shaderProgram, isOneToOneMapping, defaultLightSettings, GL_colorPickerInitColors,
            updateGLCanvasSize, LEG_updateLegendVerticesBuffers, initGL, basicInitShaders,
            basicInitSurfaceLighting, ColSchGetTheme, displayMessage, perspective, mvRotate, mvTranslate, mvPushMatrix, mvPopMatrix,
-           basicAddLight, HLPR_createWebGlBuffer, GL_handleMouseUp
+           setLighting, HLPR_createWebGlBuffer, GL_handleMouseUp
            */
 
 function BASE_PICK_customInitGL(canvas) {
@@ -155,7 +155,7 @@ function BASE_PICK_drawBrain() {
     } else {
         gl.enable(gl.BLEND);
         gl.enable(gl.DITHER);
-        basicAddLight(defaultLightSettings);
+        setLighting();
         gl.uniform1f(shaderProgram.isPicking, 0);
     }
     var theme = ColSchGetTheme().surfaceViewer;

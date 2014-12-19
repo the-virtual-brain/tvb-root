@@ -154,11 +154,21 @@ var noSpecularLightSettings = {
     pointLocation : [0, -10, -400]
 };
 
+var _GL_currentLighting = defaultLightSettings;
+
 /**
- * Sets the light uniforms
- * @param s : a light settings object
+ * Sets the light uniforms.
+ * @param {object} [s] A object like defaultLightSettings. All keys are optional.
+ * @returns {object} The previous light settings
+ * Missing values are taken from the defaults NOT from the current lighting settings!
  */
-function basicAddLight(s){
+function setLighting(s){
+    s = s || {};
+    for(var k in defaultLightSettings){
+        if (s[k] == null){
+            s[k] = defaultLightSettings[k];
+        }
+    }
     gl.uniform3f(shaderProgram.ambientColorUniform,
                 s.ambientColor[0], s.ambientColor[1], s.ambientColor[2]);
     gl.uniform3f(shaderProgram.lightingDirectionUniform,
@@ -171,6 +181,10 @@ function basicAddLight(s){
                 s.specularColor[0], s.specularColor[1], s.specularColor[2]);
     gl.uniform1f(shaderProgram.materialShininessUniform,
                 s.materialShininess);
+
+    var prev = _GL_currentLighting;
+    _GL_currentLighting = s;
+    return prev;
 }
 // ------ COMMON LIGHTING FUNCTIONS END ----------------------------------------
 

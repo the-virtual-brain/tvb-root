@@ -1162,7 +1162,7 @@ function drawScene() {
     gl.viewport(0, 0, gl.viewportWidth, gl.viewportHeight);
 
     // Draw sections before setting the correct draw perspective, to work with "rel-time refresh of sections"
-    basicAddLight(lightSettings);
+    setLighting(lightSettings);
     VB_BrainNavigator.maybeRefreshSections();
 
     // View angle is 45, we want to see object from near up to 800 distance from camera
