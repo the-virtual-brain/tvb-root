@@ -23,16 +23,12 @@
     uniform vec3 uDirectionalColor;
     uniform vec3 uLinesColor;
 
-    uniform bool uUseBlending;
-    uniform bool uDrawLines;
-    uniform bool uUseVertexLineColor;
-
     uniform float uMaterialShininess;
     uniform vec3 uPointLightingLocation;
     uniform vec3 uPointLightingSpecularColor;
 
-    uniform float isPicking;
-    uniform vec3 pickingColor;
+    uniform bool uUseVertexColors;
+    uniform vec4 uMaterialColor;
 
     varying vec4 vColor;
 
@@ -56,6 +52,7 @@
         vec3 specularColor = uPointLightingSpecularColor;
         vec4 materialColor;
 
+        if (uUseVertexColors){
         <py:choose test="">
             <py:when test="isOneToOneMapping">
                 materialColor = aVertexColor;
@@ -65,28 +62,8 @@
                      uVertexColors[int(alphaIndices[2])] * (1.0 - alpha[0] - alpha[1]);
             </py:otherwise>
         </py:choose>
-
-        if (isPicking == 0.0) {
-            if (uUseVertexLineColor || !uDrawLines) {
-                if (uUseBlending) {
-                    ambientColor = vec3(0.4, 0.4, 0.4);
-                    difuseColor = vec3(0.4, 0.4, 0.4);
-                    specularColor = vec3(0.0, 0.0, 0.0);
-                    materialColor = vec4(0.95, 0.95, 0.95, 0.29);
-                }
-            } else {
-                if (uDrawLines) {
-                    ambientColor = vec3(0.2, 0.2, 0.2);
-                    difuseColor = vec3(0.1, 0.1, 0.1);
-                    specularColor = vec3(0.0, 0.0, 0.0);
-					materialColor = vec4(uLinesColor, 1.0);
-                }
-            }
         } else {
-            ambientColor = vec3(1.0, 1.0, 1.0);
-            difuseColor = vec3(0.0, 0.0, 0.0);
-            specularColor = vec3(0.0, 0.0, 0.0);
-            materialColor = vec4(pickingColor, 1.0);
+            materialColor = uMaterialColor;
         }
 
         vec3 diffuse = ambientColor + difuseColor * directionalLightWeighting;

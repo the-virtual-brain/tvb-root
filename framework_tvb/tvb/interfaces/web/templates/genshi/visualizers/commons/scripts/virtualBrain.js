@@ -646,15 +646,18 @@ function initShaders() {
         }
     }
 
-    shaderProgram.useBlending = gl.getUniformLocation(shaderProgram, "uUseBlending");
-    shaderProgram.linesColor = gl.getUniformLocation(shaderProgram, "uLinesColor");
-    shaderProgram.drawLines = gl.getUniformLocation(shaderProgram, "uDrawLines");
-    shaderProgram.vertexLineColor = gl.getUniformLocation(shaderProgram, "uUseVertexLineColor");
-
-    shaderProgram.isPicking = gl.getUniformLocation(shaderProgram, "isPicking");
-    shaderProgram.pickingColor = gl.getUniformLocation(shaderProgram, "pickingColor");
+    shaderProgram.useVertexColors = gl.getUniformLocation(shaderProgram, "uUseVertexColors");
+    shaderProgram.materialColor = gl.getUniformLocation(shaderProgram, "uMaterialColor");
 }
 
+function setLighting(settings){
+    var useVertexColors = settings.materialColor == null;
+    gl.uniform1i(shaderProgram.useVertexColors, useVertexColors);
+    if (! useVertexColors){
+        gl.uniform4fv(shaderProgram.materialColor, settings.materialColor);
+    }
+    return basicSetLighting(settings);
+}
 ///////////////////////////////////////~~~~~~~~START MOUSE RELATED CODE~~~~~~~~~~~//////////////////////////////////
 
 
@@ -994,7 +997,7 @@ function drawBuffer(drawMode, buffers){
  */
 function drawBuffers(drawMode, buffersSets, bufferSetsMask, useBlending, cullFace) {
     if (useBlending) {
-        gl.uniform1i(shaderProgram.useBlending, true);
+        var lightSettings = setLighting(blendingLightSettings);
         gl.enable(gl.BLEND);
         gl.blendEquationSeparate(gl.FUNC_ADD, gl.FUNC_ADD);
         gl.blendFuncSeparate(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA, gl.ONE, gl.ONE_MINUS_SRC_ALPHA);
@@ -1003,6 +1006,7 @@ function drawBuffers(drawMode, buffersSets, bufferSetsMask, useBlending, cullFac
             gl.enable(gl.CULL_FACE);
             gl.cullFace(cullFace);
         }
+        // todo review this
         // Add gray color for semi-transparent objects;
         var lightingDirection = Vector.create([-0.25, -0.25, -1]);
         var adjustedLD = lightingDirection.toUnitVector().x(-1);
@@ -1020,7 +1024,7 @@ function drawBuffers(drawMode, buffersSets, bufferSetsMask, useBlending, cullFac
     if (useBlending) {
         gl.disable(gl.BLEND);
         gl.disable(gl.CULL_FACE);
-        gl.uniform1i(shaderProgram.useBlending, false);
+        setLighting(lightSettings);
         // Draw the same transparent object the second time
         if (cullFace === gl.FRONT) {
             drawBuffers(drawMode, buffersSets, bufferSetsMask, useBlending, gl.BACK);
@@ -1031,8 +1035,10 @@ function drawBuffers(drawMode, buffersSets, bufferSetsMask, useBlending, cullFac
 
 function drawRegionBoundaries() {
     if (boundaryVertexBuffers && boundaryEdgesBuffers) {
-        gl.uniform1i(shaderProgram.drawLines, true);
-        gl.uniform3f(shaderProgram.linesColor, 0.7, 0.7, 0.1);
+        if (drawingMode !== gl.POINTS) {
+            // Usually draw the boundaries with the same color. But in points mode draw them with the vertex colors.
+            var lightSettings = setLighting(regionLinesLightSettings);
+        }
         gl.lineWidth(3.0);
         // replace the vertex, normal and element buffers from the brain buffer set. Keep the alpha buffers
         var bufferSets = [];
@@ -1044,7 +1050,9 @@ function drawRegionBoundaries() {
             bufferSets.push(chunk);
         }
         drawBuffers(gl.LINES, bufferSets, bufferSetsMask);
-        gl.uniform1i(shaderProgram.drawLines, false);
+        if (drawingMode !== gl.POINTS) {
+            setLighting(lightSettings); // we've drawn solid colors, now restore previous lighting
+        }
     } else {
         displayMessage('Boundaries data not yet loaded. Display will refresh automatically when load is finished.', 'infoMessage');
     }
@@ -1052,8 +1060,10 @@ function drawRegionBoundaries() {
 
 
 function drawBrainLines(linesBuffers, brainBuffers, bufferSetsMask) {
-    gl.uniform1i(shaderProgram.drawLines, true);
-    gl.uniform3f(shaderProgram.linesColor, 0.3, 0.1, 0.3);
+    if (drawingMode !== gl.POINTS) {
+        // Usually draw the wireframe with the same color. But in points mode draw with the vertex colors.
+        var lightSettings = setLighting(linesLightSettings);
+    }
     gl.lineWidth(1.0);
     // we want all the brain buffers in this set except the element array buffer (at index 2)
     var bufferSets = [];
@@ -1063,7 +1073,9 @@ function drawBrainLines(linesBuffers, brainBuffers, bufferSetsMask) {
         bufferSets.push(chunk);
     }
     drawBuffers(gl.LINES, bufferSets, bufferSetsMask);
-    gl.uniform1i(shaderProgram.drawLines, false);
+    if (drawingMode !== gl.POINTS) {
+        setLighting(lightSettings);
+    }
 }
 
 /**
@@ -1157,12 +1169,6 @@ function drawScene() {
     gl.clearColor(theme.backgroundColor[0], theme.backgroundColor[1], theme.backgroundColor[2], theme.backgroundColor[3]);
     gl.viewport(0, 0, gl.viewportWidth, gl.viewportHeight);
 
-    if (drawSpeculars){
-        setLighting();
-    }else{
-        setLighting(noSpecularLightSettings);
-    }
-
     // Draw sections before setting the correct draw perspective, to work with "rel-time refresh of sections"
     VB_BrainNavigator.maybeRefreshSections();
 
@@ -1173,9 +1179,13 @@ function drawScene() {
     mvRotate(180, [0, 0, 1]);
 
     if (!doPick) {
-        gl.uniform1f(shaderProgram.isPicking, 0);
-        gl.uniform3f(shaderProgram.pickingColor, 1, 1, 1);
         gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
+
+        if (drawSpeculars){
+            basicSetLighting();
+        }else{
+            basicSetLighting(noSpecularLightSettings);
+        }
 
         if(VS_showLegend){
             mvPushMatrix();
@@ -1191,17 +1201,12 @@ function drawScene() {
             // draw surface
             drawBuffers(drawingMode, brainBuffers, bufferSetsMask);
 
-            if (drawingMode === gl.POINTS) {
-                gl.uniform1i(shaderProgram.vertexLineColor, true);
-            }
             if (drawBoundaries) {
                 drawRegionBoundaries();
             }
             if (drawTriangleLines) {
                 drawBrainLines(brainLinesBuffers, brainBuffers, bufferSetsMask);
             }
-            gl.uniform1i(shaderProgram.vertexLineColor, false);
-
             if (displayMeasureNodes) {
                 drawBuffers(gl.TRIANGLES, measurePointsBuffers);
             }
@@ -1223,17 +1228,16 @@ function drawScene() {
         gl.bindFramebuffer(gl.FRAMEBUFFER, GL_colorPickerBuffer);
         gl.disable(gl.BLEND);
         gl.disable(gl.DITHER);
-        gl.uniform1f(shaderProgram.isPicking, 1);
         gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
+        setLighting(pickingLightSettings);
 
         if (GL_colorPickerInitColors.length === 0) {
             GL_initColorPickingData(NO_OF_MEASURE_POINTS);
         }    
 
         for (var i = 0; i < NO_OF_MEASURE_POINTS; i++){
-            gl.uniform3f(shaderProgram.pickingColor, GL_colorPickerInitColors[i][0],
-                                                     GL_colorPickerInitColors[i][1],
-                                                     GL_colorPickerInitColors[i][2]);
+            var mpColor = GL_colorPickerInitColors[i];
+            gl.uniform4fv(shaderProgram.materialColor, mpColor);
             drawBuffer(gl.TRIANGLES, measurePointsBuffers[i]);
         }
         VS_pickedIndex = GL_getPickedIndex();
