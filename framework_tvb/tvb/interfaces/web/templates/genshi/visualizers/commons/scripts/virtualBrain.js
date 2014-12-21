@@ -1007,12 +1007,6 @@ function drawBuffers(drawMode, buffersSets, bufferSetsMask, useBlending, cullFac
             gl.enable(gl.CULL_FACE);
             gl.cullFace(cullFace);
         }
-        // todo review this
-        // Add gray color for semi-transparent objects;
-        var lightingDirection = Vector.create([-0.25, -0.25, -1]);
-        var adjustedLD = lightingDirection.toUnitVector().x(-1);
-        var flatLD = adjustedLD.flatten();
-        gl.uniform3f(shaderProgram.lightingDirectionUniform, flatLD[0], flatLD[1], flatLD[2]);
     }
 
     for (var i = 0; i < buffersSets.length; i++) {
