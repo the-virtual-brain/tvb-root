@@ -27,6 +27,7 @@
     uniform vec3 uPointLightingLocation;
     uniform vec3 uPointLightingSpecularColor;
 
+    // these are used to draw whole objects in a specific color ignoring vertex attributes.
     uniform bool uUseVertexColors;
     uniform vec4 uMaterialColor;
 
@@ -47,9 +48,6 @@
 
         gl_Position = uPMatrix * mvPosition;
 
-        vec3 ambientColor = uAmbientColor;
-        vec3 difuseColor = uDirectionalColor;
-        vec3 specularColor = uPointLightingSpecularColor;
         vec4 materialColor;
 
         if (uUseVertexColors){
@@ -66,8 +64,8 @@
             materialColor = uMaterialColor;
         }
 
-        vec3 diffuse = ambientColor + difuseColor * directionalLightWeighting;
-        vec3 light = materialColor.rgb * diffuse + specularColor * specularLightWeighting;
+        vec3 diffuse = uAmbientColor + uDirectionalColor * directionalLightWeighting;
+        vec3 light = materialColor.rgb * diffuse + uPointLightingSpecularColor * specularLightWeighting;
         vColor = vec4(light, materialColor.a);
     }
 </script>

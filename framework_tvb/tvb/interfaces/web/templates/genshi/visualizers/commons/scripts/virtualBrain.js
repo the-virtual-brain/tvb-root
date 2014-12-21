@@ -651,6 +651,7 @@ function initShaders() {
 }
 
 function setLighting(settings){
+    settings = settings || {};
     var useVertexColors = settings.materialColor == null;
     gl.uniform1i(shaderProgram.useVertexColors, useVertexColors);
     if (! useVertexColors){
@@ -1182,9 +1183,9 @@ function drawScene() {
         gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
 
         if (drawSpeculars){
-            basicSetLighting();
+            setLighting();
         }else{
-            basicSetLighting(noSpecularLightSettings);
+            setLighting(noSpecularLightSettings);
         }
 
         if(VS_showLegend){
