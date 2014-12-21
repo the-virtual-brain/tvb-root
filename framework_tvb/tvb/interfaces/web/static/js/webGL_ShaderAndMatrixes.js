@@ -154,19 +154,30 @@ var noSpecularLightSettings = {
 var pickingLightSettings = {
     ambientColor: [1.0, 1.0, 1.0],
     directionalColor : [0.0, 0.0, 0.0],
-    specularColor : [0.0, 0.0, 0.0]
+    specularColor : [0.0, 0.0, 0.0],
+    materialColor : [0.0, 0.0, 0.0, 0.0]
 };
 
+// Settings below are specific to virtualBrain.js
 var linesLightSettings = {
     ambientColor: [0.2, 0.2, 0.2],
     directionalColor : [0.1, 0.1, 0.1],
-    specularColor : [0.0, 0.0, 0.0]
+    specularColor : [0.0, 0.0, 0.0],
+    materialColor: [ 0.3, 0.1, 0.3, 1.0]
+};
+
+var regionLinesLightSettings = {
+    ambientColor: [0.2, 0.2, 0.2],
+    directionalColor : [0.1, 0.1, 0.1],
+    specularColor : [0.0, 0.0, 0.0],
+    materialColor: [0.7, 0.7, 0.1, 1.0]
 };
 
 var blendingLightSettings = {
     ambientColor: [0.4, 0.4, 0.4],
     directionalColor : [0.4, 0.4, 0.4],
-    specularColor : [0.0, 0.0, 0.0]
+    specularColor : [0.0, 0.0, 0.0],
+    materialColor: [0.95, 0.95, 0.95, 0.29]
 };
 
 var _GL_currentLighting = defaultLightSettings;
@@ -177,7 +188,7 @@ var _GL_currentLighting = defaultLightSettings;
  * @returns {object} The previous light settings
  * Missing values are taken from the defaults NOT from the current lighting settings!
  */
-function setLighting(s){
+function basicSetLighting(s){
     s = s || {};
     for(var k in defaultLightSettings){
         if (s[k] == null){
