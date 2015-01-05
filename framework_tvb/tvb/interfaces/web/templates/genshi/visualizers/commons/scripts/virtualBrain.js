@@ -648,6 +648,29 @@ function initShaders() {
 
     shaderProgram.useVertexColors = gl.getUniformLocation(shaderProgram, "uUseVertexColors");
     shaderProgram.materialColor = gl.getUniformLocation(shaderProgram, "uMaterialColor");
+
+    var g_texture = gl.createTexture();
+
+    gl.activeTexture(gl.TEXTURE0);
+    gl.bindTexture(gl.TEXTURE_2D, g_texture);
+
+
+    var img = new Image();
+    img.src = '/static/style/img/cb.png';
+
+    img.onload = function(){
+        // filtering is not needed for this lookup texture
+        gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.NEAREST);
+        gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.NEAREST);
+        // clamp to edge
+        gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
+        gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
+        // upload texture
+        gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, img);
+        gl.uniform1i(gl.getUniformLocation(shaderProgram, "uSampler"), 0);
+    };
+
+    gl.uniform1i(gl.getUniformLocation(shaderProgram, "uSampler"), 0);
 }
 
 function setLighting(settings){
