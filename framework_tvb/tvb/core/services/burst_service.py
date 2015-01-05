@@ -462,7 +462,6 @@ class BurstService():
         static_params = visualization.static_param
         parameters_dict = static_params
         current_project_id = 0
-        operation_id = 0
         ## Current operation id needed for export mechanism. So far just use ##
         ## the operation of the workflow_step from which the inputs are taken    ####
         for param in dynamic_params:
@@ -488,7 +487,7 @@ class BurstService():
         if isinstance(adapter_instance, ABCMPLH5Displayer) and is_preview is True:
             prepared_inputs[ABCMPLH5Displayer.SHOW_FULL_TOOLBAR] = False
         result = eval("adapter_instance." + method_name + "(**prepared_inputs)")
-        return result, parameters_dict, operation_id
+        return result, parameters_dict
     
     
     def update_history_status(self, id_list):

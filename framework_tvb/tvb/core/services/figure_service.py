@@ -143,10 +143,11 @@ class FigureService:
         elif img_type == FigureService._TYPE_SVG:          # SVG file from svg viewer
             self._write_svg(store_path, export_data)
 
-        if operation_id is None:
-            operation = None
-        else:
+        if operation_id:
             operation = dao.get_operation_by_id(operation_id)
+        else:
+            operation = None
+            operation_id = None
 
         image_name = self._generate_image_name(project, user, operation, image_name)
 

@@ -638,14 +638,14 @@ class BurstController(BurstBaseController):
         burst = common.get_from_session(common.KEY_BURST_CONFIG)
         selected_tab = burst.selected_tab
         visualizer = burst.tabs[selected_tab].portlets[int(index_in_tab)].visualizer
-        result, input_data, operation_id = self.burst_service.launch_visualization(visualizer, is_preview=False)
+        result, input_data = self.burst_service.launch_visualization(visualizer, is_preview=False)
         algorithm = self.flow_service.get_algorithm_by_identifier(visualizer.fk_algorithm)
 
         if common.KEY_TITLE not in result:
             result[common.KEY_TITLE] = algorithm.name
 
         result[common.KEY_ADAPTER] = algorithm.algo_group.id
-        result[common.KEY_OPERATION_ID] = operation_id
+        result[common.KEY_OPERATION_ID] = None
         result[common.KEY_INCLUDE_RESOURCES] = 'flow/included_resources'
         ## Add required field to input dictionary and return it so that it can be used ##
         ## for top right control.                                                    ####
