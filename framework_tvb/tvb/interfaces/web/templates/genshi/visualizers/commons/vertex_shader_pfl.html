@@ -2,15 +2,17 @@
     attribute vec3 aVertexPosition;
     attribute vec3 aVertexNormal;
 
+    uniform vec2 activityRange;
     <py:choose test="">
         <py:when test="isOneToOneMapping">
-            attribute vec4 aVertexColor;
+            attribute float aActivity;
+            uniform float uColorScheme;
         </py:when>
         <py:otherwise>
             attribute vec3 alphaIndices;
             attribute vec2 alpha;
 
-            uniform vec4 uVertexColors[${abs(noOfMeasurePoints) + 2} + 127];
+            uniform vec2 uActivity[${abs(noOfMeasurePoints) + 2} + 127];
         </py:otherwise>
     </py:choose>
 
@@ -18,7 +20,7 @@
     uniform mat4 uMVMatrix;
     uniform mat4 uNMatrix;
 
-    varying vec4 vColor;
+    varying vec2 vTex;
     varying vec3 posInterp;
     varying vec3 normInterp;
 
@@ -33,12 +35,14 @@
 
         <py:choose test="">
             <py:when test="isOneToOneMapping">
-                vColor = aVertexColor;
+                vec2 uv = vec2(aActivity, uColorScheme);
             </py:when>
             <py:otherwise>
-                vColor = uVertexColors[int(alphaIndices[0])] * alpha[0] + uVertexColors[int(alphaIndices[1])] * alpha[1] +
-                     uVertexColors[int(alphaIndices[2])] * (1.0 - alpha[0] - alpha[1]);
+                vec2 uv = uActivity[int(alphaIndices[0])] * alpha[0] + uActivity[int(alphaIndices[1])] * alpha[1] +
+                     uActivity[int(alphaIndices[2])] * (1.0 - alpha[0] - alpha[1]);
             </py:otherwise>
         </py:choose>
+        uv[0] = (uv[0] - activityRange[0] ) / (activityRange[1] - activityRange[0]);
+        vTex = uv;
     }
 </script>

@@ -15,7 +15,9 @@
     uniform bool uUseVertexColors;
     uniform vec4 uMaterialColor;
 
-    varying vec4 vColor;
+    uniform sampler2D uSampler;
+
+    varying vec2 vTex;
     varying vec3 posInterp;
     varying vec3 normInterp;
 
@@ -32,7 +34,7 @@
         vec4 materialColor;
 
         if (uUseVertexColors){
-            materialColor = vColor;
+            materialColor = texture2D(uSampler, vTex);
         } else {
             materialColor = uMaterialColor;
         }

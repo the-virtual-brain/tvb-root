@@ -63,9 +63,9 @@
                 vec2 uv = uActivity[int(alphaIndices[0])] * alpha[0] + uActivity[int(alphaIndices[1])] * alpha[1] +
                      uActivity[int(alphaIndices[2])] * (1.0 - alpha[0] - alpha[1]);
             </py:otherwise>
+        </py:choose>
             uv[0] = (uv[0] - activityRange[0] ) / (activityRange[1] - activityRange[0]);
             materialColor = texture2D(uSampler, uv);
-        </py:choose>
         } else {
             materialColor = uMaterialColor;
         }
