@@ -16,7 +16,7 @@
  * http://www.gnu.org/licenses/old-licenses/gpl-2.0
  *
  **/
-
+/* globals gl, NO_OF_MEASURE_POINTS*/
 ////////////////////////////////////~~~~~~~~~~~~START LEGEND RELATED CODE~~~~~~~~~~~~~~~~///////////////////////////
 var legendXMin = 80;
 var legendXMax = 83;
@@ -33,8 +33,8 @@ var legendMin = 0;
 var legendMax = 1;
 
 function LEG_initMinMax(minVal, maxVal) {
-	legendMin = minVal;
-	legendMax = maxVal;
+    legendMin = minVal;
+    legendMax = maxVal;
     ColSch_initColorSchemeParams(minVal, maxVal, LEG_updateLegendColors);
 }
 
@@ -64,67 +64,67 @@ function LEG_updateLegendVerticesBuffers() {
 function LEG_generateLegendBuffers() {
     LEG_updateLegendXMinAndXMax();
 
-	var vertices = [];
-	var normals = [];
-	var indices = [];
+    var vertices = [];
+    var normals = [];
+    var indices = [];
 
-	var inc = (legendYMax - legendYMin) / legendGranularity;
-	var activityDiff = legendMax - legendMin;
+    var inc = (legendYMax - legendYMin) / legendGranularity;
+    var activityDiff = legendMax - legendMin;
     legend_activity_values = [];        // empty the set, or the gradient will get higher on subsequent calls
-	for (var i=legendYMin; i<=legendYMax; i=i+inc) {
-		vertices = vertices.concat([legendXMax, i, legendZ]);
-		vertices = vertices.concat([legendXMin, i, legendZ]);
-		normals = normals.concat([0, 0, 1, 0, 0, 1]);
-		var activityValue = legendMin + activityDiff * ((i - legendYMin) / (legendYMax - legendYMin));
-		legend_activity_values = legend_activity_values.concat([activityValue, activityValue]);
-	}
-	for (var i=0; i<vertices.length/3 - 2; i++) {
-		indices = indices.concat([i, i+1, i+2]);
-	}
-	LEG_legendBuffers[0] = gl.createBuffer();
-	gl.bindBuffer(gl.ARRAY_BUFFER, LEG_legendBuffers[0]);
-	gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(vertices), gl.STATIC_DRAW);
-	LEG_legendBuffers[0].itemSize = 3;
-	LEG_legendBuffers[0].numItems = vertices.length / 3;
-	
-	LEG_legendBuffers[1] = gl.createBuffer();
-	gl.bindBuffer(gl.ARRAY_BUFFER, LEG_legendBuffers[1]);
-	gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(normals), gl.STATIC_DRAW);
-	LEG_legendBuffers[1].itemSize = 3;
-	LEG_legendBuffers[1].numItems = normals.length / 3;
-	
-	LEG_legendBuffers[2] = gl.createBuffer();
+    for (var i=legendYMin; i<=legendYMax; i=i+inc) {
+        vertices = vertices.concat([legendXMax, i, legendZ]);
+        vertices = vertices.concat([legendXMin, i, legendZ]);
+        normals = normals.concat([0, 0, 1, 0, 0, 1]);
+        var activityValue = legendMin + activityDiff * ((i - legendYMin) / (legendYMax - legendYMin));
+        legend_activity_values = legend_activity_values.concat([activityValue, activityValue]);
+    }
+    for (var i=0; i<vertices.length/3 - 2; i++) {
+        indices = indices.concat([i, i+1, i+2]);
+    }
+    LEG_legendBuffers[0] = gl.createBuffer();
+    gl.bindBuffer(gl.ARRAY_BUFFER, LEG_legendBuffers[0]);
+    gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(vertices), gl.STATIC_DRAW);
+    LEG_legendBuffers[0].itemSize = 3;
+    LEG_legendBuffers[0].numItems = vertices.length / 3;
+
+    LEG_legendBuffers[1] = gl.createBuffer();
+    gl.bindBuffer(gl.ARRAY_BUFFER, LEG_legendBuffers[1]);
+    gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(normals), gl.STATIC_DRAW);
+    LEG_legendBuffers[1].itemSize = 3;
+    LEG_legendBuffers[1].numItems = normals.length / 3;
+
+    LEG_legendBuffers[2] = gl.createBuffer();
     gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, LEG_legendBuffers[2]);
     gl.bufferData(gl.ELEMENT_ARRAY_BUFFER, new Uint16Array(indices), gl.STATIC_DRAW);
     LEG_legendBuffers[2].itemSize = 1;
     LEG_legendBuffers[2].numItems = indices.length;
     
     if (isOneToOneMapping) {
-    	var colors = []
+        var colors = [];
         for (var i=0; i < LEG_legendBuffers[0].numItems; i++) {
-        	colors.push(1);
+            colors.push(1);
         }
-    	LEG_legendBuffers[3] = gl.createBuffer();
+        LEG_legendBuffers[3] = gl.createBuffer();
         gl.bindBuffer(gl.ARRAY_BUFFER, LEG_legendBuffers[3]);
         gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(colors), gl.STATIC_DRAW);
         
     } else {
-    	var alphas = [];
-    	var alphasIndices = [];
-    	for (var i=0; i<legend_activity_values.length/2; i++) {
-    		alphas = alphas.concat([1.0, 0.0, 1.0, 0.0]);
-    		alphasIndices = alphasIndices.concat([i + NO_OF_MEASURE_POINTS + 2, 1, 1, i + NO_OF_MEASURE_POINTS + 2, 1, 1])
-    	}
-    	
-    	LEG_legendBuffers[3] = gl.createBuffer();
-	    gl.bindBuffer(gl.ARRAY_BUFFER, LEG_legendBuffers[3]);
-	    gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(alphas), gl.STATIC_DRAW);
-	    
-	    LEG_legendBuffers[4] = gl.createBuffer();
-	    gl.bindBuffer(gl.ARRAY_BUFFER, LEG_legendBuffers[4]);
-	    gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(alphasIndices), gl.STATIC_DRAW);    
-	}	
-    LEG_updateLegendColors()
+        var alphas = [];
+        var alphasIndices = [];
+        for (var i=0; i<legend_activity_values.length/2; i++) {
+            alphas = alphas.concat([1.0, 0.0, 1.0, 0.0]);
+            alphasIndices = alphasIndices.concat([i + NO_OF_MEASURE_POINTS + 2, 1, 1, i + NO_OF_MEASURE_POINTS + 2, 1, 1]);
+        }
+
+        LEG_legendBuffers[3] = gl.createBuffer();
+        gl.bindBuffer(gl.ARRAY_BUFFER, LEG_legendBuffers[3]);
+        gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(alphas), gl.STATIC_DRAW);
+
+        LEG_legendBuffers[4] = gl.createBuffer();
+        gl.bindBuffer(gl.ARRAY_BUFFER, LEG_legendBuffers[4]);
+        gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(alphasIndices), gl.STATIC_DRAW);
+    }
+    LEG_updateLegendColors();
 }
 
 /**
@@ -132,16 +132,15 @@ function LEG_generateLegendBuffers() {
  */
 function LEG_updateLegendColors() {
     if (isOneToOneMapping) {
-    	var upperBorder = legend_activity_values.length
-    	var colors = new Float32Array(legend_activity_values)
+        var colors = new Float32Array(legend_activity_values);
         LEG_legendBuffers[3] = gl.createBuffer();
         gl.bindBuffer(gl.ARRAY_BUFFER, LEG_legendBuffers[3]);
         gl.bufferData(gl.ARRAY_BUFFER, colors, gl.STATIC_DRAW);
-    }
-    else
+    }else{
         for (var i = 0; i < legend_activity_values.length / 2; i++) {
-            var idx = i + NO_OF_MEASURE_POINTS + 2
+            var idx = i + NO_OF_MEASURE_POINTS + 2;
             gl.uniform2f(shaderProgram.activityUniform[idx], legend_activity_values[i * 2], colorSchemeId);
+        }
     }
 }
 /////////////////////////////////////////~~~~~~~~END LEGEND RELATED CODE~~~~~~~~~~~//////////////////////////////////
