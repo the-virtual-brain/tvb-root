@@ -101,8 +101,8 @@ function LEG_generateLegendBuffers() {
     
     if (isOneToOneMapping) {
     	var colors = []
-        for (var i=0; i < LEG_legendBuffers[0].numItems* 4; i++) {
-        	colors = colors.concat(0, 0, 1, 1.0);
+        for (var i=0; i < LEG_legendBuffers[0].numItems; i++) {
+        	colors.push(1);
         }
     	LEG_legendBuffers[3] = gl.createBuffer();
         gl.bindBuffer(gl.ARRAY_BUFFER, LEG_legendBuffers[3]);
@@ -133,8 +133,7 @@ function LEG_generateLegendBuffers() {
 function LEG_updateLegendColors() {
     if (isOneToOneMapping) {
     	var upperBorder = legend_activity_values.length
-    	var colors = new Float32Array(upperBorder * 4)
-        getGradientColorArray(legend_activity_values, legendMin, legendMax, colors)
+    	var colors = new Float32Array(legend_activity_values)
         LEG_legendBuffers[3] = gl.createBuffer();
         gl.bindBuffer(gl.ARRAY_BUFFER, LEG_legendBuffers[3]);
         gl.bufferData(gl.ARRAY_BUFFER, colors, gl.STATIC_DRAW);
@@ -142,8 +141,7 @@ function LEG_updateLegendColors() {
     else
         for (var i = 0; i < legend_activity_values.length / 2; i++) {
             var idx = i + NO_OF_MEASURE_POINTS + 2
-            var rgb = getGradientColor(legend_activity_values[i * 2], legendMin, legendMax)
-            gl.uniform4f(shaderProgram.colorsUniform[idx], rgb[0], rgb[1], rgb[2], 1);
+            gl.uniform2f(shaderProgram.activityUniform[idx], legend_activity_values[i * 2], colorSchemeId);
     }
 }
 /////////////////////////////////////////~~~~~~~~END LEGEND RELATED CODE~~~~~~~~~~~//////////////////////////////////

@@ -325,6 +325,12 @@ function ColSchGetTheme(){
     }[_colorScheme||'linear'];
 }
 
+//texture coordinates of a color band
+//todo these are very temporary. integrate into themes
+var colorSchemeId = 0.3;
+var mutedColorSchemeId = 0.5;
+var measurePointsColorSchemeId = 0.2;
+
 /**
  * Factory function which computes the colors for a whole array of values in interval (min, max)
  * according to the current <code>_colorScheme</code>

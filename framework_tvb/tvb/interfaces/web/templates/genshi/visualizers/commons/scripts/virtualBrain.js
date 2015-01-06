@@ -632,20 +632,22 @@ function initShaders() {
     basicInitSurfaceLighting();
 
     if (isOneToOneMapping) {
-        shaderProgram.vertexColorAttribute = gl.getAttribLocation(shaderProgram, "aVertexColor");
-        gl.enableVertexAttribArray(shaderProgram.vertexColorAttribute);
+        shaderProgram.colorSchemeUniform = gl.getUniformLocation(shaderProgram, "uColorScheme");
+        shaderProgram.activityAttribute = gl.getAttribLocation(shaderProgram, "aActivity");
+        gl.enableVertexAttribArray(shaderProgram.activityAttribute);
     } else {
         shaderProgram.vertexAlphaAttribute = gl.getAttribLocation(shaderProgram, "alpha");
         gl.enableVertexAttribArray(shaderProgram.vertexAlphaAttribute);
         shaderProgram.vertexColorIndicesAttribute = gl.getAttribLocation(shaderProgram, "alphaIndices");
         gl.enableVertexAttribArray(shaderProgram.vertexColorIndicesAttribute);
 
-        shaderProgram.colorsUniform = [];
+        shaderProgram.activityUniform = [];
         for (var i = 0; i <= NO_OF_MEASURE_POINTS + 1 + legendGranularity; i++) {
-            shaderProgram.colorsUniform[i] = gl.getUniformLocation(shaderProgram, "uVertexColors[" + i + "]");
+            shaderProgram.activityUniform[i] = gl.getUniformLocation(shaderProgram, "uActivity[" + i + "]");
         }
     }
 
+    shaderProgram.activityRange = gl.getUniformLocation(shaderProgram, "activityRange");
     shaderProgram.useVertexColors = gl.getUniformLocation(shaderProgram, "uUseVertexColors");
     shaderProgram.materialColor = gl.getUniformLocation(shaderProgram, "uMaterialColor");
 
@@ -721,38 +723,36 @@ function customMouseUp(event) {
  */
 
 function updateColors(currentTimeInFrame) {
-
     var currentActivity = activitiesData[currentTimeInFrame];
     var theme = ColSchGetTheme().surfaceViewer;
+    gl.uniform2f(shaderProgram.activityRange, activityMin+0, activityMax-0);
     if (isOneToOneMapping) {
         for (var i = 0; i < brainBuffers.length; i++) {
             // Reset color buffers at each step.
             brainBuffers[i][3] = null;
             var upperBorder = brainBuffers[i][0].numItems / 3;
-            var colors = new Float32Array(upperBorder * 4);
             var offset_start = i * 40000;
             var currentActivitySlice = currentActivity.slice(offset_start, offset_start + upperBorder);
+            var colors = new Float32Array(currentActivitySlice);
 
-            getGradientColorArray(currentActivitySlice, activityMin, activityMax, colors);
             brainBuffers[i][3] = gl.createBuffer();
             gl.bindBuffer(gl.ARRAY_BUFFER, brainBuffers[i][3]);
             gl.bufferData(gl.ARRAY_BUFFER, colors, gl.STATIC_DRAW);
             colors = null;
+            gl.uniform1f(shaderProgram.colorSchemeUniform, colorSchemeId);
         }
     } else {
         for (var ii = 0; ii < NO_OF_MEASURE_POINTS; ii++) {
             if(VS_selectedRegions.indexOf(ii) !== -1){
-                var rgb = getGradientColor(currentActivity[ii], activityMin, activityMax);
-                gl.uniform4f(shaderProgram.colorsUniform[ii], rgb[0], rgb[1], rgb[2], 1);
+                gl.uniform2f(shaderProgram.activityUniform[ii], currentActivity[ii], colorSchemeId);
             }else{
-                gl.uniform4f(shaderProgram.colorsUniform[ii],
-                    theme.mutedRegionColor[0], theme.mutedRegionColor[1], theme.mutedRegionColor[2], 1);
+                gl.uniform2f(shaderProgram.activityUniform[ii], currentActivity[ii], mutedColorSchemeId);
             }
         }
         // default color for a measure point
-        gl.uniform4f(shaderProgram.colorsUniform[NO_OF_MEASURE_POINTS], 0.34, 0.95, 0.37, 1.0);
+        gl.uniform2f(shaderProgram.activityUniform[NO_OF_MEASURE_POINTS], activityMin, measurePointsColorSchemeId);
         // color used for a picked measure point
-        gl.uniform4f(shaderProgram.colorsUniform[NO_OF_MEASURE_POINTS + 1], 0.99, 0.99, 0.0, 1.0);
+        gl.uniform2f(shaderProgram.activityUniform[NO_OF_MEASURE_POINTS + 1], (activityMax + activityMin)/2, measurePointsColorSchemeId);
     }
 }
 
@@ -952,10 +952,10 @@ function initBuffers(urlVertices, urlNormals, urlTriangles, urlAlphas, urlAlphas
     var result = [];
     for (var i=0; i< vertices.length; i++) {
         if (isOneToOneMapping) {
-            var fakeColorBuffer = gl.createBuffer();
-            gl.bindBuffer(gl.ARRAY_BUFFER, fakeColorBuffer);
-            gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(vertices[i].numItems * 4), gl.STATIC_DRAW);
-            result.push([vertices[i], normals[i], indexes[i], fakeColorBuffer]);
+            var activityBuffer = gl.createBuffer();
+            gl.bindBuffer(gl.ARRAY_BUFFER, activityBuffer);
+            gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(vertices[i].numItems), gl.STATIC_DRAW);
+            result.push([vertices[i], normals[i], indexes[i], activityBuffer]);
         } else {
             result.push([vertices[i], normals[i], indexes[i], alphas[i], alphasIndices[i]]);
         }
@@ -998,7 +998,7 @@ function drawBuffer(drawMode, buffers){
     gl.vertexAttribPointer(shaderProgram.vertexNormalAttribute, 3, gl.FLOAT, false, 0, 0);
     if (isOneToOneMapping) {
         gl.bindBuffer(gl.ARRAY_BUFFER, buffers[3]);
-        gl.vertexAttribPointer(shaderProgram.vertexColorAttribute, 4, gl.FLOAT, false, 0, 0);
+        gl.vertexAttribPointer(shaderProgram.activityAttribute, 1, gl.FLOAT, false, 0, 0);
     } else {
         gl.bindBuffer(gl.ARRAY_BUFFER, buffers[3]);
         gl.vertexAttribPointer(shaderProgram.vertexAlphaAttribute, 2, gl.FLOAT, false, 0, 0);
