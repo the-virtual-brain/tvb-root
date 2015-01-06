@@ -728,17 +728,13 @@ function updateColors(currentTimeInFrame) {
     gl.uniform2f(shaderProgram.activityRange, activityMin+0, activityMax-0);
     if (isOneToOneMapping) {
         for (var i = 0; i < brainBuffers.length; i++) {
-            // Reset color buffers at each step.
-            brainBuffers[i][3] = null;
             var upperBorder = brainBuffers[i][0].numItems / 3;
             var offset_start = i * 40000;
             var currentActivitySlice = currentActivity.slice(offset_start, offset_start + upperBorder);
             var colors = new Float32Array(currentActivitySlice);
 
-            brainBuffers[i][3] = gl.createBuffer();
             gl.bindBuffer(gl.ARRAY_BUFFER, brainBuffers[i][3]);
             gl.bufferData(gl.ARRAY_BUFFER, colors, gl.STATIC_DRAW);
-            colors = null;
             gl.uniform1f(shaderProgram.colorSchemeUniform, colorSchemeId);
         }
     } else {
