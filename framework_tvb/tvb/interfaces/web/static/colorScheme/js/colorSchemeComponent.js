@@ -1,5 +1,5 @@
 var startColorRGB = [192, 192, 192];
-var endColorRGB = [255, 0, 0];
+
 var nodeColorRGB = [255, 255, 255];
 var normalizedStartColorRGB = normalizeColorArray(startColorRGB);   // keep the normalized version to avoid
 var normalizedEndColorRGB = [1, 0, 0];                              // function calls on every color computation
@@ -37,67 +37,9 @@ function getNewNodeColor() {
 	return nodeColorRGB;
 }
 
-/**
- * @param startColorComponentId id of the container in which will be drawn the color picker for the start color
- * @param endColorComponentId id of the container in which will be drawn the color picker for the end color
- */
-function drawColorPickerComponent(startColorComponentId, endColorComponentId) {
-	var start_color_css = 'rgb(' + startColorRGB[0] + ',' + startColorRGB[1] + ',' + startColorRGB[2] + ')';
-	var end_color_css = 'rgb(' + endColorRGB[0] + ',' + endColorRGB[1] + ',' + endColorRGB[2] + ')';
-    $('#' + startColorComponentId).ColorPicker({
-        color: start_color_css,
-        onShow: function (colpkr) {
-            $(colpkr).fadeIn(500);
-            return false;
-        },
-        onHide: function (colpkr) {
-            $(colpkr).fadeOut(500);
-            return false;
-        },
-        onChange: function (hsb, hex, rgb) {
-            $('#' + startColorComponentId + ' div').css('backgroundColor', '#' + hex);
-            startColorRGB = [parseInt(rgb.r), parseInt(rgb.g), parseInt(rgb.b)];
-            normalizedStartColorRGB = normalizeColorArray(startColorRGB);
-            if (_refreshCallback) {
-                 _refreshCallback();
-            }
-        }
-    });
-
-    $('#' + endColorComponentId).ColorPicker({
-        color: end_color_css,
-        onShow: function (colpkr) {
-            $(colpkr).fadeIn(500);
-            return false;
-        },
-        onHide: function (colpkr) {
-            $(colpkr).fadeOut(500);
-            return false;
-        },
-        onChange: function (hsb, hex, rgb) {
-            $('#' + endColorComponentId + ' div').css('backgroundColor', '#' + hex);
-            endColorRGB = [parseInt(rgb.r), parseInt(rgb.g), parseInt(rgb.b)];
-            normalizedEndColorRGB = normalizeColorArray(endColorRGB);
-            if (_refreshCallback) {
-                _refreshCallback();
-            }
-        }
-    });
-    $('#' + startColorComponentId + ' div').css('backgroundColor', start_color_css);
-    $('#' + endColorComponentId + ' div').css('backgroundColor', end_color_css);
-}
-
 function ColSch_getGradientColorString(pointValue, min, max) {
     var rgb_values = getGradientColor(pointValue, min, max);
     return "rgb(" + Math.round(rgb_values[0]*255) + "," + Math.round(rgb_values[1]*255) + "," + Math.round(rgb_values[2]*255) + ")";
-}
-
-function getStartColor() {
-	return startColorRGB;
-}
-
-function getEndColor() {
-	return endColorRGB;
 }
 
 function normalizeColor(color) {
@@ -200,7 +142,6 @@ function ColSch_initColorSchemeParams(minValue, maxValue, refreshFunction) {
     $("#sliderMaxValue").html(maxValue.toFixed(3));
     _linearGradientStart = 0;            // on start the whole interval is selected
     _linearGradientEnd   = 1;
-    drawColorPickerComponent('startColorSelector', 'endColorSelector');
 
     // initialise the sparse params
     var colorNoUIElem = $("#ColSch_colorNo");                    // cache the jQuery selector
