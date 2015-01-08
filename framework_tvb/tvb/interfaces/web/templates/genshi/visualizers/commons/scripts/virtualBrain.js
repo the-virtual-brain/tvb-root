@@ -658,7 +658,7 @@ function initShaders() {
 
 
     var img = new Image();
-    img.src = '/static/style/img/cb.png';
+    img.src = '/static/colorScheme/color_schemes.png';
 
     img.onload = function(){
         // filtering is not needed for this lookup texture
