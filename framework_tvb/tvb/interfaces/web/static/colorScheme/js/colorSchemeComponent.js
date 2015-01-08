@@ -1,13 +1,10 @@
-var startColorRGB = [192, 192, 192];
-
 var nodeColorRGB = [255, 255, 255];
-var normalizedStartColorRGB = normalizeColorArray(startColorRGB);   // keep the normalized version to avoid
-var normalizedEndColorRGB = [1, 0, 0];                              // function calls on every color computation
-var normalizedNodeColorRGB = [1, 1, 1];
+
 var _colorScheme = null;                                             // the color scheme to be used for current drawing
 var _linearGradientStart = 0, _linearGradientEnd = 1 ;               // keep the interest interval
 var _sparseColorNo = 50;
 var _refreshCallback = null ;                                        // this is called when color scheme changes update the visualiser
+var SPARSE_COLORS_LENGTH = 80;
 
 function drawSimpleColorPicker(divId, refreshFunction) {
     $('#' + divId).ColorPicker({
@@ -23,7 +20,6 @@ function drawSimpleColorPicker(divId, refreshFunction) {
         onChange: function (hsb, hex, rgb) {
             $('#' + divId + ' div').css('backgroundColor', '#' + hex);
             nodeColorRGB = [parseInt(rgb.r), parseInt(rgb.g), parseInt(rgb.b)];
-            normalizedNodeColorRGB = normalizeColorArray(nodeColorRGB);
             if (refreshFunction) {
                  refreshFunction();
             }
@@ -40,21 +36,6 @@ function getNewNodeColor() {
 function ColSch_getGradientColorString(pointValue, min, max) {
     var rgb_values = getGradientColor(pointValue, min, max);
     return "rgb(" + Math.round(rgb_values[0]*255) + "," + Math.round(rgb_values[1]*255) + "," + Math.round(rgb_values[2]*255) + ")";
-}
-
-function normalizeColor(color) {
-    return color / 255.0;
-}
-
-/**
- * Returns a copy of the given array, with all the colors normalized, i.e. from (0, 255) to (0, 1)
- * @param colorArray The colors to normalize
- */
-function normalizeColorArray(colorArray) {
-    var normalizedColorArray = [];
-    for (var i = 0; i < colorArray.length; ++i)
-        normalizedColorArray[i] = colorArray[i] / 255.0
-    return normalizedColorArray
 }
 
 function clampValue(value) {
@@ -147,15 +128,16 @@ function ColSch_initColorSchemeParams(minValue, maxValue, refreshFunction) {
     var colorNoUIElem = $("#ColSch_colorNo");                    // cache the jQuery selector
     colorNoUIElem.html(_sparseColorNo);
     $("#sliderForSparseColSch").slider({
-        min: 2, max: SPARSE_COLORS.length, step: 1, values: [_sparseColorNo],
-        slide: function (event, ui) { colorNoUIElem.html(ui.value) },
+        min: 2, max: SPARSE_COLORS_LENGTH, step: 1, values: [_sparseColorNo],
+        slide: function (event, ui) { colorNoUIElem.html(ui.value); },
         change: function (event, ui) {
             _sparseColorNo = ui.value;
-            if (_refreshCallback) { _refreshCallback() }
+            if (_refreshCallback) { _refreshCallback(); }
         }
     });
-    if (!_colorScheme)                      // on very first call, set the default color scheme
+    if (!_colorScheme) {                      // on very first call, set the default color scheme
         ColSch_loadInitialColorScheme(true);
+    }
 }
 
 /**
@@ -170,24 +152,15 @@ function ColSch_initColorSchemeParams(minValue, maxValue, refreshFunction) {
  */
 function getGradientColor(pointValue, min, max) {
     if (min == max)         // the interval is empty, so start color is the only possible one
-        return [normalizedStartColorRGB[0], normalizedStartColorRGB[1], normalizedStartColorRGB[2]];
+        return getRainbowColor(0);
     if (pointValue < min)
         pointValue = min;   // avoid rounding problems
     if (pointValue > max)
         pointValue = max;
-    var result = [];
+
     var normalizedValue = (pointValue - min) / (max - min);
-    if (!_colorScheme || _colorScheme == "linear")                // default is "linear"
-        result =  getLinearGradientColor(normalizedValue);
-    else if (_colorScheme == "rainbow")
-        result = getRainbowColor(normalizedValue);
-    else if (_colorScheme == "hotcold" || _colorScheme == "lightHotcold" || _colorScheme == "transparentHotCold")
-        result = getHotColdColor(normalizedValue);
-    else if (_colorScheme == "TVB" || _colorScheme == "lightTVB")
-        result = getTvbColor(normalizedValue);
-    else if (_colorScheme == "sparse")
-        result = getSparseColor(normalizedValue);
-    return result
+
+    return getRainbowColor(normalizedValue);
 }
 
 /**
@@ -293,28 +266,10 @@ function getGradientColorArray(values, min, max, outputArray) {
         if (outputArray)
             outputArray.set(color, i * 4);
         else
-            result.concat(color)
+            result.concat(color);
     }
 
     return result;
-}
-
-/**
- * Returns an [r, g, b] color in a linear transition from <code>startColorRGB</code> to <code>endColorRGB</code>
- * If <code>normalizedValue</code> lays outside (_linearGradientStart, _linearGradientEnd) interval, the opposite color
- * to the closes end is returned
- */
-function getLinearGradientColor(normalizedValue) {
-    if (normalizedValue < _linearGradientStart)                                         // clamp to selected range
-        return [1 - normalizedStartColorRGB[0], 1 - normalizedStartColorRGB[1], 1 - normalizedStartColorRGB[2]];
-    if (normalizedValue > _linearGradientEnd)
-        return [1 - normalizedEndColorRGB[0], 1 - normalizedEndColorRGB[1], 1 - normalizedEndColorRGB[2]];
-
-    var r = normalizedStartColorRGB[0] + normalizedValue * (normalizedEndColorRGB[0] - normalizedStartColorRGB[0]);
-    var g = normalizedStartColorRGB[1] + normalizedValue * (normalizedEndColorRGB[1] - normalizedStartColorRGB[1]);
-    var b = normalizedStartColorRGB[2] + normalizedValue * (normalizedEndColorRGB[2] - normalizedStartColorRGB[2]);
-
-    return [clampValue(r), clampValue(g), clampValue(b)]
 }
 
 /**
@@ -326,127 +281,8 @@ function getRainbowColor(normalizedValue) {
     var g = Math.min(normalizedValue - 0.5, - normalizedValue + 3.5);
     var b = Math.min(normalizedValue + 0.5, - normalizedValue + 2.5);
 
-    return [clampValue(r), clampValue(g), clampValue(b)]
+    return [clampValue(r), clampValue(g), clampValue(b)];
 }
-
-/**
- * Returns an [r, g, b] color from a smooth transition: icy blue to hot red
- */
-function getHotColdColor(normalizedValue) {
-    var r = 4 * (normalizedValue - 0.25);
-    var g = 4 * Math.abs(normalizedValue - 0.5) - 1;
-    var b = 4 * (0.75 - normalizedValue);
-
-    return [clampValue(r), clampValue(g), clampValue(b)]
-}
-
-TVB_BRANDING_COLORS = [
-    [76, 85, 94],
-    [97, 124, 139],
-    [63, 23, 46],
-    [79, 23, 100],
-    [146, 84, 151],
-    [87, 180, 59],
-    [32, 118, 53],
-    [23, 57, 66],
-    [29, 96, 88],
-    [46, 153, 151],
-    [138, 190, 234],
-    [79, 169, 230],
-    [45, 135, 171],
-    [37, 101, 170],
-    [229, 130, 33],
-    [205, 67, 34],
-    [182, 4, 49]
-];
-
-/**
- * Returns an [r, g, b] color from TVB_BRANDING_COLORS
- * Resulting color scheme is segmented among these colors
- */
-function getTvbColor(normalizedValue) {
-    normalizedValue = __convert_to_open(normalizedValue);
-    var selectedInterval = Math.floor(normalizedValue * TVB_BRANDING_COLORS.length);
-    return normalizeColorArray(TVB_BRANDING_COLORS[selectedInterval])
-}
-
-SPARSE_COLORS = [
-0xFFC0CB, /* Pink */
-0xCD5C5C, /* IndianRed */
-0xFF0000, /* Red */
-0x8B0000, /* DarkRed */
-0xFF4500, /* OrangeRed */
-0xFFA500, /* Orange */
-0xFFFF00, /* Yellow */
-0xADFF2F, /* GreenYellow */
-0x32CD32, /* LimeGreen */
-0x008000, /* Green */
-0x8FBC8F, /* DarkSeaGreen */
-0xE0FFFF, /* LightCyan */
-0x00FFFF, /* Cyan */
-0x008B8B, /* DarkCyan */
-0x0000FF, /* Blue */
-0x000080, /* Navy Blue */
-0xFF00FF, /* Magenta */
-0x9400D3, /* DarkViolet */
-0x4B0082, /* Indigo */
-0xF0E68C, /* Khaki */
-0xBDB76B, /* DarkKhaki */
-0x808000, /* Olive */
-0xBC8F8F, /* RosyBrown */
-0xB8860B, /* DarkGoldenrod */
-0xD2691E, /* Chocolate */
-0xDEB887, /* BurlyWood */
-0x8B4513, /* SaddleBrown */
-0xF0F0F0, /* Black */
-0xE5E4E2, /* White Platinum */
-0x736F6E, /* Smokey Gray */
-0x4C4646, /* Black Cow */
-0xD1D0CE, /* Gray Goose */
-0xBCC6CC, /* Metallic Silver */
-0x566D7E, /* Marble Blue */
-0x737CA1, /* Slate Blue */
-0x151B54, /* Midnight Blue */
-0x2B3856, /* Dark Slate Blue */
-0x2B60DE, /* Royal Blue */
-0x6960EC, /* Blue Lotus */
-0x95B9C7, /* Baby Blue */
-0x6698FF, /* Sky Blue */
-0xB7CEEC, /* Blue Angel */
-0x50EBEC, /* Celeste */
-0x81B8D0, /* Tiffany Blue */
-0x92C7C7, /* Cyan Opaque */
-0x77BFC7, /* Blue Hosta */
-0x46C7C7, /* Jellyfish Green */
-0x3EA99F, /* Light Sea Green */
-0x3B9C9C, /* Dark Turquoise */
-0x4C787E, /* Beetle Green */
-0x78866B, /* Camouflage Green */
-0x728C00, /* Venom Green */
-0x52D017, /* Yellow Green */
-0xA1C935, /* Salad Green */
-0xC3FDB8, /* Light Jade */
-0xCCFB5D, /* Tea Green */
-0xF3E5AB, /* Vanilla */
-0xE9AB17, /* Beer Yellow */
-0xFFCBA4, /* Deep Peach */
-0xC2B280, /* Sand */
-0xC68E17, /* Caramel */
-0xB5A642, /* Brass */
-0x827839, /* Moccasin */
-0x785D26, /* Sandstone */
-0x7F462C, /* Sepia */
-0xDC381F, /* Grapefruit */
-0x990012, /* Red Whine */
-0x7E3817, /* Sangria */
-0x7D0541, /* Plum Pie */
-0xC48793, /* Lipstick Pink  */
-0xFDD7E4, /* Pig Pink */
-0xF535AA, /* Neon Pink */
-0xC25A7C, /* Tulip Pink  */
-0x7E587E, /* Viola Purple */
-0x7D1B7E, /* Dark Orchid */
-0x9172EC /* Crocus Purple */];
 
 /**
  * Used by discrete color schemes. This makes the color interval open at the right end.
@@ -460,20 +296,6 @@ function __convert_to_open(normalizedValue){
         normalizedValue = 1.0 - epsilon;
     }
     return normalizedValue;
-}
-/**
- * Returns an [r, g, b] color the first <code>_sparseColorNo</code> colors in SPARSE COLORS
- * Resulting color scheme is segmented among these colors
- */
-function getSparseColor(normalizedValue) {
-    normalizedValue = __convert_to_open(normalizedValue);
-    var selectedInterval = Math.floor(normalizedValue * _sparseColorNo);
-    var color = SPARSE_COLORS[selectedInterval];
-    var r = color >> (4 * 4);                // discard green and blue, i.e. four hex positions
-    var g = (color & 0xFF00) >> (2 * 4);     // sample green and discard blue, i.e. 2 hex positions
-    var b = color & 0xFF;                    // only take the blue
-
-    return [normalizeColor(r), normalizeColor(g), normalizeColor(b)]
 }
 
 // ================================= COLOR SCHEME FUNCTIONS  END  =================================
