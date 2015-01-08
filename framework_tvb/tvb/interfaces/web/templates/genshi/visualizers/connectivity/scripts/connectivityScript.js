@@ -912,6 +912,7 @@ function prepareConnectivity(fileWeights, fileTracts, filePositions, urlVertices
     connectivity_initCanvas();
     saveRequiredInputs_con(fileWeights, fileTracts, filePositions, urlVerticesList , urlTrianglesList,
                            urlNormalsList, urlLabels, conductionSpeed, rays, colors);
+    ColSch_initColorSchemeComponent();
     connectivity_startGL(isSingleMode);
 }
 

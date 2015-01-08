@@ -724,7 +724,7 @@ function customMouseUp(event) {
 
 function updateColors(currentTimeInFrame) {
     var currentActivity = activitiesData[currentTimeInFrame];
-    var tv = ColSchGetTexVs();
+    var col = ColSchInfo();
     var activityRange = ColSchGetBounds();
     gl.uniform2f(shaderProgram.activityRange, activityRange.min, activityRange.max);
     if (isOneToOneMapping) {
@@ -736,20 +736,20 @@ function updateColors(currentTimeInFrame) {
 
             gl.bindBuffer(gl.ARRAY_BUFFER, brainBuffers[i][3]);
             gl.bufferData(gl.ARRAY_BUFFER, colors, gl.STATIC_DRAW);
-            gl.uniform1f(shaderProgram.colorSchemeUniform, tv.colorSchemeId);
+            gl.uniform1f(shaderProgram.colorSchemeUniform, col.tex_v);
         }
     } else {
         for (var ii = 0; ii < NO_OF_MEASURE_POINTS; ii++) {
             if(VS_selectedRegions.indexOf(ii) !== -1){
-                gl.uniform2f(shaderProgram.activityUniform[ii], currentActivity[ii], tv.colorSchemeId);
+                gl.uniform2f(shaderProgram.activityUniform[ii], currentActivity[ii], col.tex_v);
             }else{
-                gl.uniform2f(shaderProgram.activityUniform[ii], currentActivity[ii], tv.mutedColorSchemeId);
+                gl.uniform2f(shaderProgram.activityUniform[ii], currentActivity[ii], col.muted_tex_v);
             }
         }
         // default color for a measure point
-        gl.uniform2f(shaderProgram.activityUniform[NO_OF_MEASURE_POINTS], activityMin, tv.measurePointsColorSchemeId);
+        gl.uniform2f(shaderProgram.activityUniform[NO_OF_MEASURE_POINTS], activityMin, col.measurePoints_tex_v);
         // color used for a picked measure point
-        gl.uniform2f(shaderProgram.activityUniform[NO_OF_MEASURE_POINTS + 1], (activityMax + activityMin)/2, tv.measurePointsColorSchemeId);
+        gl.uniform2f(shaderProgram.activityUniform[NO_OF_MEASURE_POINTS + 1], (activityMax + activityMin)/2, col.measurePoints_tex_v);
     }
 }
 

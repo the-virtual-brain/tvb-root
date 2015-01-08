@@ -1,10 +1,103 @@
 var nodeColorRGB = [255, 255, 255];
-
+var _colorSchemeColors;
 var _colorScheme = null;                                             // the color scheme to be used for current drawing
 var _minActiv, _maxActiv;               // keep the interest interval
 var _sparseColorNo = 50;
 var _refreshCallback = null ;                                        // this is called when color scheme changes update the visualiser
 var SPARSE_COLORS_LENGTH = 80;
+
+// ================================= COLOR SCHEME STRUCTURES START =================================
+/**
+ * 3d viewer styling
+ * Css class like idea. In the future we might move these to css
+ * class -> prop value list
+ */
+var ColSchDarkTheme = {
+    connectivityStepPlot : {
+        lineColor: [0.1, 0.1, 0.2],
+        noValueColor: [0.0, 0.0, 0.0],
+        backgroundColor: [0.05, 0.05, 0.05, 1.0],
+        outlineColor: [0.3, 0.3, 0.3],
+        selectedOutlineColor: [0.2, 0.2, 0.8]
+    },
+    connectivityPlot : {
+        backgroundColor: [0.05, 0.05, 0.05, 1.0]
+    },
+    surfaceViewer : {
+        backgroundColor: [0.05, 0.05, 0.05, 1.0],
+        mutedRegionColor : [0.1, 0.1, 0.1]
+        //, boundaryLineColor
+        //, navigatorColor
+    }
+};
+
+var ColSchLightTheme = {
+    connectivityStepPlot : {
+        lineColor: [0.7, 0.7, 0.8],
+        noValueColor: [0.9, 0.9, 0.9],
+        backgroundColor: [1.0, 1.0, 1.0, 1.0],
+        outlineColor: [0.5, 0.5, 0.5],
+        selectedOutlineColor: [0.4, 0.4, 0.7]
+    },
+    connectivityPlot : {
+        backgroundColor: [1.0, 1.0, 1.0, 1.0]
+    },
+    surfaceViewer : {
+        backgroundColor: [1.0, 1.0, 1.0, 1.0],
+        mutedRegionColor : [0.8, 0.8, 0.8]
+    }
+};
+
+var ColSchTransparentTheme = {
+    connectivityStepPlot : {
+        lineColor: [0.7, 0.7, 0.8],
+        noValueColor: [0.9, 0.9, 0.9],
+        backgroundColor: [0.0, 0.0, 0.0, 0.0],
+        outlineColor: [0.5, 0.5, 0.5],
+        selectedOutlineColor: [0.4, 0.4, 0.7]
+    },
+    connectivityPlot : {
+        backgroundColor: [0.0, 0.0, 0.0, 0.0]
+    },
+    surfaceViewer : {
+        backgroundColor: [0.0, 0.0, 0.0, 0.0],
+        mutedRegionColor : [0.8, 0.8, 0.8]
+    }
+};
+
+/**
+ * A table of color scheme objects
+ */
+var _ColSchemesInfo = {
+    linear:  { theme: ColSchDarkTheme, tex_v: 0.5 * 8/256, muted_tex_v : 0.5, measurePoints_tex_v : 0.2, _data_idx: 0},
+    TVB:     { theme: ColSchDarkTheme, tex_v: 3.5 * 8/256, muted_tex_v : 0.5, measurePoints_tex_v : 0.2, _data_idx: 3},
+    rainbow: { theme: ColSchDarkTheme, tex_v: 1.5 * 8/256, muted_tex_v : 0.5, measurePoints_tex_v : 0.2, _data_idx: 1},
+    hotcold: { theme: ColSchDarkTheme, tex_v: 2.5 * 8/256, muted_tex_v : 0.5, measurePoints_tex_v : 0.2, _data_idx: 2},
+    sparse:  { theme: ColSchDarkTheme, tex_v: 4.5 * 8/256, muted_tex_v : 0.5, measurePoints_tex_v : 0.2, _data_idx: 4},
+    lightHotcold:   { theme: ColSchLightTheme, tex_v: 10.5 * 8/256, muted_tex_v : 0.5, measurePoints_tex_v : 0.2, _data_idx: 10},
+    lightTVB:       { theme: ColSchLightTheme, tex_v: 9.5 * 8/256, muted_tex_v : 0.5, measurePoints_tex_v : 0.2, _data_idx: 9},
+    transparentHotCold: { theme: ColSchTransparentTheme, tex_v: 11.5 * 8/256, muted_tex_v : 0.5, measurePoints_tex_v : 0.2, _data_idx: 11}
+};
+
+/**
+ * Returns the current color scheme object
+ */
+function ColSchInfo(){
+    return _ColSchemesInfo[_colorScheme||'linear'];
+}
+
+/**
+ * For each color scheme return a 3d theme
+ */
+function ColSchGetTheme(){
+    return ColSchInfo().theme;
+}
+
+function ColSchGetBounds(){
+    return { min: _minActiv, max:_maxActiv };
+}
+// ================================= COLOR SCHEME STRUCTURES END =================================
+
 
 function drawSimpleColorPicker(divId, refreshFunction) {
     $('#' + divId).ColorPicker({
@@ -31,11 +124,6 @@ function drawSimpleColorPicker(divId, refreshFunction) {
 
 function getNewNodeColor() {
 	return nodeColorRGB;
-}
-
-function ColSch_getGradientColorString(pointValue, min, max) {
-    var rgb_values = getGradientColor(pointValue, min, max);
-    return "rgb(" + Math.round(rgb_values[0]*255) + "," + Math.round(rgb_values[1]*255) + "," + Math.round(rgb_values[2]*255) + ")";
 }
 
 function clampValue(value) {
@@ -87,6 +175,19 @@ function ColSch_loadInitialColorScheme(async){
         error: function(jqXHR, textStatus, error){
             console.warn(error);
             ColSch_setColorScheme(null, false);
+        }
+    });
+}
+
+function ColSch_initColorSchemeComponent(){
+    if(_colorSchemeColors != null){
+        return;
+    }
+    doAjaxCall({
+        url: '/user/get_color_schemes_json',
+        async: false,
+        success: function(data){
+            _colorSchemeColors = JSON.parse(data);
         }
     });
 }
@@ -151,117 +252,28 @@ function ColSch_initColorSchemeParams(minValue, maxValue, refreshFunction) {
  * NOTE: The following condition should be true: <code> min <= pointValue <= max </code>
  */
 function getGradientColor(pointValue, min, max) {
+    // The color array for the current scheme
+    var colors = _colorSchemeColors[ColSchInfo()._data_idx];
+
     if (min == max)         // the interval is empty, so start color is the only possible one
-        return getRainbowColor(0);
+        return colors[0];
     if (pointValue < min)
         pointValue = min;   // avoid rounding problems
     if (pointValue > max)
         pointValue = max;
 
     var normalizedValue = (pointValue - min) / (max - min);
-
-    return getRainbowColor(normalizedValue);
+    normalizedValue = clampValue(normalizedValue);
+    // from 0..1 to 0..255 the color array range
+    var idx = Math.floor(normalizedValue * 255);
+    var col = colors[idx];  // nearest neighbour interpolation
+    // this function returns float colors
+    return [col[0]/255, col[1]/255, col[2]/255];
 }
 
-/**
- * 3d viewer styling
- * Css class like idea. In the future we might move these to css
- * class -> prop value list
- */
-var ColSchDarkTheme = {
-    connectivityStepPlot : {
-        lineColor: [0.1, 0.1, 0.2],
-        noValueColor: [0.0, 0.0, 0.0],
-        backgroundColor: [0.05, 0.05, 0.05, 1.0],
-        outlineColor: [0.3, 0.3, 0.3],
-        selectedOutlineColor: [0.2, 0.2, 0.8]
-    },
-    connectivityPlot : {
-        backgroundColor: [0.05, 0.05, 0.05, 1.0]
-    },
-    surfaceViewer : {
-        backgroundColor: [0.05, 0.05, 0.05, 1.0],
-        mutedRegionColor : [0.1, 0.1, 0.1]
-            //, boundaryLineColor
-    //, navigatorColor
-    //, faceColor
-    //, ambientLight
-    }
-};
-
-var ColSchLightTheme = {
-    connectivityStepPlot : {
-        lineColor: [0.7, 0.7, 0.8],
-        noValueColor: [0.9, 0.9, 0.9],
-        backgroundColor: [1.0, 1.0, 1.0, 1.0],
-        outlineColor: [0.5, 0.5, 0.5],
-        selectedOutlineColor: [0.4, 0.4, 0.7]
-    },
-    connectivityPlot : {
-        backgroundColor: [1.0, 1.0, 1.0, 1.0]
-    },
-    surfaceViewer : {
-        backgroundColor: [1.0, 1.0, 1.0, 1.0],
-        mutedRegionColor : [0.8, 0.8, 0.8]
-    }
-};
-
-var ColSchTransparentTheme = {
-    connectivityStepPlot : {
-        lineColor: [0.7, 0.7, 0.8],
-        noValueColor: [0.9, 0.9, 0.9],
-        backgroundColor: [0.0, 0.0, 0.0, 0.0],
-        outlineColor: [0.5, 0.5, 0.5],
-        selectedOutlineColor: [0.4, 0.4, 0.7]
-    },
-    connectivityPlot : {
-        backgroundColor: [0.0, 0.0, 0.0, 0.0]
-    },
-    surfaceViewer : {
-        backgroundColor: [0.0, 0.0, 0.0, 0.0],
-        mutedRegionColor : [0.8, 0.8, 0.8]
-    }
-};
-
-/**
- * For each color scheme return a 3d theme
- */
-function ColSchGetTheme(){
-    return {
-        linear : ColSchDarkTheme,
-        TVB : ColSchDarkTheme,
-        rainbow : ColSchDarkTheme,
-        hotcold : ColSchDarkTheme,
-        sparse: ColSchDarkTheme,
-        lightHotcold : ColSchLightTheme,
-        lightTVB : ColSchLightTheme,
-        transparentHotCold : ColSchTransparentTheme
-    }[_colorScheme||'linear'];
-}
-
-function ColSchGetTexVs(){
-    //texture coordinates of a color band
-    var v = {
-        linear : 1.5,
-        TVB : 2.5,
-        rainbow : 3.5,
-        hotcold : 4.5,
-        sparse: 5.5,
-        lightHotcold : 6.5,
-        lightTVB : 7.5,
-        transparentHotCold : 8.5
-    }[_colorScheme||'linear'];
-    v *= 8/256;
-
-    return {
-         colorSchemeId : v,
-         mutedColorSchemeId : 0.5,
-         measurePointsColorSchemeId : 0.2
-    };
-}
-
-function ColSchGetBounds(){
-    return { min: _minActiv, max:_maxActiv };
+function ColSch_getGradientColorString(pointValue, min, max) {
+    var rgb_values = getGradientColor(pointValue, min, max);
+    return "rgb(" + Math.round(rgb_values[0]*255) + "," + Math.round(rgb_values[1]*255) + "," + Math.round(rgb_values[2]*255) + ")";
 }
 
 /**

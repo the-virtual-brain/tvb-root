@@ -9,6 +9,7 @@
 
     <script type="text/javascript">
         $(document).ready(function() {
+            ColSch_initColorSchemeComponent();
             drawHistogram('histogramCanvasId', ${data}, ${labels}, ${colors}, '${xposition}');
             ColSch_initColorSchemeParams(${minColor}, ${maxColor}, changeColors);
             $(window).resize(function() {
