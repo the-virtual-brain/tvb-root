@@ -134,12 +134,22 @@ function basicInitSurfaceLighting(){
     shaderProgram.pointLightingLocationUniform = gl.getUniformLocation(shaderProgram, "uPointLightingLocation");
     shaderProgram.pointLightingSpecularColorUniform = gl.getUniformLocation(shaderProgram, "uPointLightingSpecularColor");
 }
-
+// light coordinates are in camera space
+// A directional light and a point light shine from top left quadrant.
 var defaultLightSettings = {
-    ambientColor : [0.6, 0.6, 0.5],
-    directionalColor : [0.7, 0.7, 0.7],
-    lightDirection : Vector.create([0.5, 0, 1]).toUnitVector().flatten(),
-    specularColor: [0.8, 0.8, 0.8],
+    ambientColor : [0.5, 0.5, 0.5],
+    directionalColor : [0.5, 0.5, 0.5],
+    lightDirection : Vector.create([-0.2, 0.2, 1]).toUnitVector().flatten(),
+    specularColor: [0.5, 0.5, 0.5],
+    materialShininess : 32.0,
+    pointLocation : [-20, 20, 0]
+};
+
+var minimalLighting = {
+    ambientColor : [0.9, 0.9, 0.9],
+    directionalColor : [0.1, 0.1, 0.1],
+    lightDirection : Vector.create([-0.2, 0.2, 1]).toUnitVector().flatten(),
+    specularColor: [0.02, 0.02, 0.02],
     materialShininess : 30.0,
     pointLocation : [0, -10, -400]
 };

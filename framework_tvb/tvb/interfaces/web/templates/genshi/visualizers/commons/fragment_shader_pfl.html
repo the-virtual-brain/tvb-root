@@ -21,8 +21,7 @@
 
     void main(void) {
         vec3 normal = normalize(normInterp);
-        // ignore uPointLightingLocation. Make the camera (0,0,0) the point light source
-        vec3 lightDirection = normalize(vec3(0.0, 0.0, 0.0) - posInterp);
+        vec3 lightDirection = normalize(uPointLightingLocation - posInterp);
         vec3 reflectionDirection = reflect(-lightDirection, normal);
         vec3 eyeDirection = normalize(-posInterp);
 
