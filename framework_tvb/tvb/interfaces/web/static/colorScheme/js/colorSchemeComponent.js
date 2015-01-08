@@ -74,9 +74,13 @@ var _ColSchemesInfo = {
     rainbow: { theme: ColSchDarkTheme, tex_v: 1.5 * 8/256, muted_tex_v : 0.5, measurePoints_tex_v : 0.2, _data_idx: 1},
     hotcold: { theme: ColSchDarkTheme, tex_v: 2.5 * 8/256, muted_tex_v : 0.5, measurePoints_tex_v : 0.2, _data_idx: 2},
     sparse:  { theme: ColSchDarkTheme, tex_v: 4.5 * 8/256, muted_tex_v : 0.5, measurePoints_tex_v : 0.2, _data_idx: 4},
-    lightHotcold:   { theme: ColSchLightTheme, tex_v: 10.5 * 8/256, muted_tex_v : 0.5, measurePoints_tex_v : 0.2, _data_idx: 10},
-    lightTVB:       { theme: ColSchLightTheme, tex_v: 9.5 * 8/256, muted_tex_v : 0.5, measurePoints_tex_v : 0.2, _data_idx: 9},
-    transparentHotCold: { theme: ColSchTransparentTheme, tex_v: 11.5 * 8/256, muted_tex_v : 0.5, measurePoints_tex_v : 0.2, _data_idx: 11}
+    lightHotcold:   { theme: ColSchLightTheme, tex_v: 2.5 * 8/256, muted_tex_v : 0.5, measurePoints_tex_v : 0.2, _data_idx: 10},
+    lightTVB:       { theme: ColSchLightTheme, tex_v: 3.5 * 8/256, muted_tex_v : 0.5, measurePoints_tex_v : 0.2, _data_idx: 9},
+    transparentHotCold: { theme: ColSchTransparentTheme, tex_v: 2.5 * 8/256, muted_tex_v : 0.5, measurePoints_tex_v : 0.2, _data_idx: 11},
+    marteli: { theme: ColSchDarkTheme, tex_v: 10.5 * 8/256, muted_tex_v : 0.5, measurePoints_tex_v : 0.2, _data_idx: 11},
+    cubehelix: { theme: ColSchDarkTheme, tex_v: 11.5 * 8/256, muted_tex_v : 0.5, measurePoints_tex_v : 0.2, _data_idx: 11},
+    termal: { theme: ColSchDarkTheme, tex_v: 12.5 * 8/256, muted_tex_v : 0.5, measurePoints_tex_v : 0.2, _data_idx: 11},
+    brewer1: { theme: ColSchDarkTheme, tex_v: 9.5 * 8/256, muted_tex_v : 0.5, measurePoints_tex_v : 0.2, _data_idx: 11},
 };
 
 /**
