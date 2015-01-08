@@ -1,7 +1,7 @@
 var nodeColorRGB = [255, 255, 255];
 
 var _colorScheme = null;                                             // the color scheme to be used for current drawing
-var _linearGradientStart = 0, _linearGradientEnd = 1 ;               // keep the interest interval
+var _minActiv, _maxActiv;               // keep the interest interval
 var _sparseColorNo = 50;
 var _refreshCallback = null ;                                        // this is called when color scheme changes update the visualiser
 var SPARSE_COLORS_LENGTH = 80;
@@ -114,15 +114,15 @@ function ColSch_initColorSchemeParams(minValue, maxValue, refreshFunction) {
                 $("#sliderMaxValue").html(ui.values[1].toFixed(3));
         },
         change: function(event, ui) {
-            _linearGradientStart = (ui.values[0] - minValue) / (maxValue - minValue);    // keep the interest interval
-            _linearGradientEnd   = (ui.values[1] - minValue) / (maxValue - minValue) ;   // as normalized dist from min
-            if (_refreshCallback) { _refreshCallback() }
+            _minActiv = ui.values[0];
+            _maxActiv = ui.values[1];
+            if (_refreshCallback) { _refreshCallback(); }
         }
     });
     $("#sliderMinValue").html(minValue.toFixed(3));
     $("#sliderMaxValue").html(maxValue.toFixed(3));
-    _linearGradientStart = 0;            // on start the whole interval is selected
-    _linearGradientEnd   = 1;
+    _minActiv = minValue;            // on start the whole interval is selected
+    _maxActiv = maxValue;
 
     // initialise the sparse params
     var colorNoUIElem = $("#ColSch_colorNo");                    // cache the jQuery selector
@@ -239,11 +239,30 @@ function ColSchGetTheme(){
     }[_colorScheme||'linear'];
 }
 
-//texture coordinates of a color band
-//todo these are very temporary. integrate into themes
-var colorSchemeId = 0.3;
-var mutedColorSchemeId = 0.5;
-var measurePointsColorSchemeId = 0.2;
+function ColSchGetTexVs(){
+    //texture coordinates of a color band
+    var v = {
+        linear : 1.5,
+        TVB : 2.5,
+        rainbow : 3.5,
+        hotcold : 4.5,
+        sparse: 5.5,
+        lightHotcold : 6.5,
+        lightTVB : 7.5,
+        transparentHotCold : 8.5
+    }[_colorScheme||'linear'];
+    v *= 8/256;
+
+    return {
+         colorSchemeId : v,
+         mutedColorSchemeId : 0.5,
+         measurePointsColorSchemeId : 0.2
+    };
+}
+
+function ColSchGetBounds(){
+    return { min: _minActiv, max:_maxActiv };
+}
 
 /**
  * Factory function which computes the colors for a whole array of values in interval (min, max)

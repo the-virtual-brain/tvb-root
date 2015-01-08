@@ -137,9 +137,10 @@ function LEG_updateLegendColors() {
         gl.bindBuffer(gl.ARRAY_BUFFER, LEG_legendBuffers[3]);
         gl.bufferData(gl.ARRAY_BUFFER, colors, gl.STATIC_DRAW);
     }else{
+        var tv = ColSchGetTexVs();
         for (var i = 0; i < legend_activity_values.length / 2; i++) {
             var idx = i + NO_OF_MEASURE_POINTS + 2;
-            gl.uniform2f(shaderProgram.activityUniform[idx], legend_activity_values[i * 2], colorSchemeId);
+            gl.uniform2f(shaderProgram.activityUniform[idx], legend_activity_values[i * 2], tv.colorSchemeId);
         }
     }
 }

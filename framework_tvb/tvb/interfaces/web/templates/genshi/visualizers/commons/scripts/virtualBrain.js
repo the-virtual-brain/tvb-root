@@ -724,8 +724,9 @@ function customMouseUp(event) {
 
 function updateColors(currentTimeInFrame) {
     var currentActivity = activitiesData[currentTimeInFrame];
-    var theme = ColSchGetTheme().surfaceViewer;
-    gl.uniform2f(shaderProgram.activityRange, activityMin+0, activityMax-0);
+    var tv = ColSchGetTexVs();
+    var activityRange = ColSchGetBounds();
+    gl.uniform2f(shaderProgram.activityRange, activityRange.min, activityRange.max);
     if (isOneToOneMapping) {
         for (var i = 0; i < brainBuffers.length; i++) {
             var upperBorder = brainBuffers[i][0].numItems / 3;
@@ -735,20 +736,20 @@ function updateColors(currentTimeInFrame) {
 
             gl.bindBuffer(gl.ARRAY_BUFFER, brainBuffers[i][3]);
             gl.bufferData(gl.ARRAY_BUFFER, colors, gl.STATIC_DRAW);
-            gl.uniform1f(shaderProgram.colorSchemeUniform, colorSchemeId);
+            gl.uniform1f(shaderProgram.colorSchemeUniform, tv.colorSchemeId);
         }
     } else {
         for (var ii = 0; ii < NO_OF_MEASURE_POINTS; ii++) {
             if(VS_selectedRegions.indexOf(ii) !== -1){
-                gl.uniform2f(shaderProgram.activityUniform[ii], currentActivity[ii], colorSchemeId);
+                gl.uniform2f(shaderProgram.activityUniform[ii], currentActivity[ii], tv.colorSchemeId);
             }else{
-                gl.uniform2f(shaderProgram.activityUniform[ii], currentActivity[ii], mutedColorSchemeId);
+                gl.uniform2f(shaderProgram.activityUniform[ii], currentActivity[ii], tv.mutedColorSchemeId);
             }
         }
         // default color for a measure point
-        gl.uniform2f(shaderProgram.activityUniform[NO_OF_MEASURE_POINTS], activityMin, measurePointsColorSchemeId);
+        gl.uniform2f(shaderProgram.activityUniform[NO_OF_MEASURE_POINTS], activityMin, tv.measurePointsColorSchemeId);
         // color used for a picked measure point
-        gl.uniform2f(shaderProgram.activityUniform[NO_OF_MEASURE_POINTS + 1], (activityMax + activityMin)/2, measurePointsColorSchemeId);
+        gl.uniform2f(shaderProgram.activityUniform[NO_OF_MEASURE_POINTS + 1], (activityMax + activityMin)/2, tv.measurePointsColorSchemeId);
     }
 }
 
