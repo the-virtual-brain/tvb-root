@@ -24,8 +24,7 @@ var ColSchDarkTheme = {
         backgroundColor: [0.05, 0.05, 0.05, 1.0]
     },
     surfaceViewer : {
-        backgroundColor: [0.05, 0.05, 0.05, 1.0],
-        mutedRegionColor : [0.1, 0.1, 0.1]
+        backgroundColor: [0.05, 0.05, 0.05, 1.0]
         //, boundaryLineColor
         //, navigatorColor
     }
@@ -43,8 +42,7 @@ var ColSchLightTheme = {
         backgroundColor: [1.0, 1.0, 1.0, 1.0]
     },
     surfaceViewer : {
-        backgroundColor: [1.0, 1.0, 1.0, 1.0],
-        mutedRegionColor : [0.8, 0.8, 0.8]
+        backgroundColor: [1.0, 1.0, 1.0, 1.0]
     }
 };
 
@@ -60,28 +58,47 @@ var ColSchTransparentTheme = {
         backgroundColor: [0.0, 0.0, 0.0, 0.0]
     },
     surfaceViewer : {
-        backgroundColor: [0.0, 0.0, 0.0, 0.0],
-        mutedRegionColor : [0.8, 0.8, 0.8]
+        backgroundColor: [0.0, 0.0, 0.0, 0.0]
     }
 };
 
 /**
  * A table of color scheme objects
+ * Fields:
+ *     theme: a theme object containing colors of various objects
+ *     tex_v: the v texture coordinate of the color scheme
+ *     muted_tex_v: the v texture coordinate for the scheme used to paint deselected regions
+ *     measurePoints_tex_v: the v texture coordinate for the scheme used to paint measure points
+ *     _data_idx: the index in _colorSchemeColors of the theme
  */
 var _ColSchemesInfo = {
-    linear:  { theme: ColSchDarkTheme, tex_v: 0.5 * 8/256, muted_tex_v : 0.5, measurePoints_tex_v : 1.0, _data_idx: 0},
-    TVB:     { theme: ColSchDarkTheme, tex_v: 3.5 * 8/256, muted_tex_v : 0.5, measurePoints_tex_v : 1.0, _data_idx: 3},
-    rainbow: { theme: ColSchDarkTheme, tex_v: 1.5 * 8/256, muted_tex_v : 0.5, measurePoints_tex_v : 1.0, _data_idx: 1},
-    hotcold: { theme: ColSchDarkTheme, tex_v: 2.5 * 8/256, muted_tex_v : 0.5, measurePoints_tex_v : 1.0, _data_idx: 2},
-    sparse:  { theme: ColSchDarkTheme, tex_v: 4.5 * 8/256, muted_tex_v : 0.5, measurePoints_tex_v : 1.0, _data_idx: 4},
-    lightHotcold:   { theme: ColSchLightTheme, tex_v: 2.5 * 8/256, muted_tex_v : 0.5, measurePoints_tex_v : 1.0, _data_idx: 2},
-    lightTVB:       { theme: ColSchLightTheme, tex_v: 3.5 * 8/256, muted_tex_v : 0.5, measurePoints_tex_v : 1.0, _data_idx: 3},
-    transparentHotCold: { theme: ColSchTransparentTheme, tex_v: 2.5 * 8/256, muted_tex_v : 0.5, measurePoints_tex_v : 1.0, _data_idx: 2},
-    marteli: { theme: ColSchDarkTheme, tex_v: 10.5 * 8/256, muted_tex_v : 0.5, measurePoints_tex_v : 1.0, _data_idx: 10},
-    cubehelix: { theme: ColSchDarkTheme, tex_v: 11.5 * 8/256, muted_tex_v : 0.5, measurePoints_tex_v : 1.0, _data_idx: 11},
-    termal: { theme: ColSchDarkTheme, tex_v: 12.5 * 8/256, muted_tex_v : 0.5, measurePoints_tex_v : 1.0, _data_idx: 12},
-    brewer1: { theme: ColSchDarkTheme, tex_v: 9.5 * 8/256, muted_tex_v : 0.5, measurePoints_tex_v : 1.0, _data_idx: 9}
+    linear:  { theme: ColSchDarkTheme, _data_idx: 0},
+    TVB:     { theme: ColSchDarkTheme, _data_idx: 3},
+    rainbow: { theme: ColSchDarkTheme, _data_idx: 1},
+    hotcold: { theme: ColSchDarkTheme, _data_idx: 2},
+    sparse:  { theme: ColSchDarkTheme, _data_idx: 4},
+    lightHotcold:   { theme: ColSchLightTheme, _data_idx: 2},
+    lightTVB:       { theme: ColSchLightTheme, _data_idx: 3},
+    transparentHotCold: { theme: ColSchTransparentTheme, _data_idx: 2},
+    marteli: { theme: ColSchDarkTheme, _data_idx: 10},
+    cubehelix: { theme: ColSchDarkTheme, _data_idx: 11},
+    termal: { theme: ColSchDarkTheme, _data_idx: 12},
+    brewer1: { theme: ColSchDarkTheme, _data_idx: 9}
 };
+
+// Add texture v coordinates to _ColSchemesInfo based on the _data_idx
+// Auto executed function so we do not pollute globals
+(function() {
+    var bandHeight = 8;
+    var textureSize = 256;
+    for (var n in _ColSchemesInfo) {
+        // band indices are the same as the indices in the _colorSchemeColors
+        var scheme = _ColSchemesInfo[n];
+        scheme.tex_v = (scheme._data_idx + 0.5) * bandHeight/textureSize;
+        scheme.muted_tex_v = 0.5;
+        scheme.measurePoints_tex_v = 1.0;
+    }
+})();
 
 /**
  * Returns the current color scheme object
@@ -136,7 +153,6 @@ function clampValue(value) {
     } else if (value < 0) {
         return 0;
     }
-
     return value;
 }
 
@@ -144,8 +160,7 @@ function clampValue(value) {
 
 /**
  * Sets the current color scheme to the given one
- * @param scheme The color scheme to use; currently supported: 'linear', 'rainbow', 'hotcold', 'TVB', 'sparse'
- *               'light-hotcold', 'light-TVB'
+ * @param scheme The name of the color scheme. See _ColSchemesInfo for supported schemes.
  * @param notify_server When TRUE, trigger an ajax call to store on the server changed setting.
  */
 function ColSch_setColorScheme(scheme, notify_server) {
@@ -299,39 +314,13 @@ function getGradientColorArray(values, min, max, outputArray) {
     for (var i = 0; i < values.length; ++i) {
         color = getGradientColor(values[i], min, max);
         color.push(1);                               // add the alpha value
-        if (outputArray)
+        if (outputArray) {
             outputArray.set(color, i * 4);
-        else
+        } else {
             result.concat(color);
+        }
     }
-
     return result;
-}
-
-/**
- * Returns an [r, g, b] color in the rainbow color scheme
- */
-function getRainbowColor(normalizedValue) {
-    normalizedValue *= 4;
-    var r = Math.min(normalizedValue - 1.5, - normalizedValue + 4.5);
-    var g = Math.min(normalizedValue - 0.5, - normalizedValue + 3.5);
-    var b = Math.min(normalizedValue + 0.5, - normalizedValue + 2.5);
-
-    return [clampValue(r), clampValue(g), clampValue(b)];
-}
-
-/**
- * Used by discrete color schemes. This makes the color interval open at the right end.
- * The effect is that the maximal value will map to the one below it. Otherwise we have
- * the corner case that a color is used by a single value leading to special handling.
- * @returns: a number within [0,1[
- */
-function __convert_to_open(normalizedValue){
-    var epsilon = 0.00001; // This assumes that the sparse color scheme has less than 10**6 colors.
-    if (normalizedValue == 1.0) {
-        normalizedValue = 1.0 - epsilon;
-    }
-    return normalizedValue;
 }
 
 // ================================= COLOR SCHEME FUNCTIONS  END  =================================
@@ -367,23 +356,26 @@ function ColSch_updateLegendColors(containerDiv, height) {
 
 function ColSch_updateLegendLabels(container, minValue, maxValue, height) {
     var table = $(container).is("table") ? $(container) : $(container).find("table");    // get the table
-    if (!table.length)
+    if (!table.length) {
         table = $("<table>").appendTo(container);                            // create one if it doesn't exist
+    }
     table.height(height);                                                    // set its height
     var legendLabels = $(table).find("td");                                  // search for td
-    if (!legendLabels.length)                                               // if none is found, assume tr also don't exist
+    if (!legendLabels.length) {                                               // if none is found, assume tr also don't exist
         legendLabels = $(table).append("<tr><tr><tr><tr><tr><tr>")          // so add 6 rows
-            .find("tr").each(function(idx, elem) {                          // get them and set their style
-                if (idx == 0)   elem.style.height = "20px";                  // the first one should stay at the top
-                else {
+            .find("tr").each(function (idx, elem) {                          // get them and set their style
+                if (idx === 0) {                                            // the first one should stay at the top
+                    elem.style.height = "20px";
+                } else {
                     elem.style.height = "20%";                               // the other 5 are equally spread
                     elem.style.verticalAlign = 'bottom';                     // and stick the text at the bottom of cell
                 }
             }).append("<td>").find("td");                                    // add td in each row and return them
+    }
     var step = (maxValue - minValue) / (legendLabels.length - 1);            // -1 because it includes min and max
     legendLabels.each(function(idx, elem) {
         elem.innerHTML = (maxValue - idx * step).toFixed(3)
-    })
+    });
 }
 // ================================= LEGEND UPDATING FUNCTION  END   =================================
 

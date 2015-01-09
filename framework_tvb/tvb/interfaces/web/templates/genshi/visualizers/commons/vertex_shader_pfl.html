@@ -21,6 +21,7 @@
     uniform mat4 uNMatrix;
 
     uniform sampler2D uSampler;
+    const float textureSize = 256.0;
 
     varying vec4 vColor;
     varying vec3 posInterp;
@@ -44,8 +45,10 @@
                      uActivity[int(alphaIndices[2])] * (1.0 - alpha[0] - alpha[1]);
             </py:otherwise>
         </py:choose>
+        //scale activity within given range to [0,1]
         uv[0] = (uv[0] - activityRange[0] ) / (activityRange[1] - activityRange[0]);
-        uv[0] = uv[0] * 253.0/255.0 + 1.0/255.0;
+        //scale [0,1] to an interval that will sample the interior of the texture
+        uv[0] = uv[0] * (textureSize - 3.0)/(textureSize - 1.0) + 1.0/(textureSize - 1.0);
         vColor = texture2D(uSampler, uv);
     }
 </script>
