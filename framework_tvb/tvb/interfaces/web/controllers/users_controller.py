@@ -36,13 +36,15 @@ but also user related annotation (checked-logged).
 .. moduleauthor:: Lia Domide <lia.domide@codemart.ro>
 """
 
-import os
 import json
+from hashlib import md5
+from urllib2 import urlopen
+
+import os
 import cherrypy
 import formencode
 from formencode import validators
-from hashlib import md5
-from urllib2 import urlopen
+
 from tvb.basic.profile import TvbProfile
 from tvb.core.services.user_service import UserService, KEY_PASSWORD, KEY_EMAIL, KEY_USERNAME, KEY_COMMENT
 from tvb.core.services.project_service import ProjectService
@@ -53,7 +55,7 @@ from tvb.interfaces.web.controllers import common
 from tvb.interfaces.web.controllers.base_controller import BaseController
 from tvb.interfaces.web.controllers.decorators import handle_error, using_template, settings
 from tvb.interfaces.web.controllers.decorators import check_user, expose_json, check_admin
-from tvb.interfaces.web.controllers.texture_to_json import tex_to_list
+from tvb.core.services.texture_to_json import color_texture_to_list
 
 
 KEY_SERVER_VERSION = "versionInfo"
@@ -201,7 +203,7 @@ class UserController(BaseController):
     @expose_json
     def get_color_schemes_json(self):
         pth = os.path.join(os.path.dirname(tvb.interfaces.web.__file__), 'static', 'colorScheme', 'color_schemes.png')
-        return tex_to_list(pth)
+        return color_texture_to_list(pth, 255, 8, 16)
 
 
     @cherrypy.expose

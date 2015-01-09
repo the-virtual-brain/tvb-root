@@ -36,19 +36,22 @@ converts a color scheme texture image to json arrays
 import Image
 import numpy
 
-H = 8  # height of a color band
-W = 256  # texture size
-TEX_VS = [(i*H+0.5)/W for i in xrange(14)]  # the tex coordinates of the color schemes
-
-def tex_to_list(img_pth):
+def color_texture_to_list(img_pth, img_width, band_height, bands_number):
+    """
+    :param img_pth: Path to the texure
+    :param img_width: Texture width
+    :param band_height: Height of a color scheme band
+    :param bands_number: The number of bands to serialize
+    :return: A list of bands_number color schemes. A scheme is a list of img_width colors
+    """
     im = Image.open(img_pth)
     ima = numpy.asarray(im)
 
-    if ima.shape != (W, W, 4):
+    if ima.shape != (img_width, img_width, 4):
         raise ValueError("unexpected image shape " + str(ima.shape))
-
+    tex_vs = [(i * band_height + 0.5)/img_width for i in xrange(bands_number)]
     color_schemes = []
-    for v in TEX_VS:
-        idx = int(v * W)
+    for v in tex_vs:
+        idx = int(v * img_width)
         color_schemes.append(ima[idx, :, :3].tolist())
     return color_schemes
