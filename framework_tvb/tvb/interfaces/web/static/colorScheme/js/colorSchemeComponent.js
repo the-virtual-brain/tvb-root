@@ -149,7 +149,6 @@ function clampValue(value) {
  * @param notify_server When TRUE, trigger an ajax call to store on the server changed setting.
  */
 function ColSch_setColorScheme(scheme, notify_server) {
-    $('fieldset[id^="colorSchemeFieldSet_"]').hide();
     if(notify_server){
         //could throttle this
         doAjaxCall({
@@ -162,7 +161,6 @@ function ColSch_setColorScheme(scheme, notify_server) {
         $("#setColorSchemeSelId").val(scheme);
     }
     _colorScheme = scheme;
-    $("#colorSchemeFieldSet_" + scheme).show();
     if (_refreshCallback) {
         _refreshCallback();
     }
@@ -267,10 +265,13 @@ function getGradientColor(pointValue, min, max) {
         pointValue = max;
 
     var normalizedValue = (pointValue - min) / (max - min);
+    // We sample the interior of the array. If normalizedValue is between [0..1] we will obtain colors[1] and colors[254]
+    // This linear transform implements it. The shader version does the same.
+    normalizedValue = normalizedValue * 253.0/255.0 + 1.0/255.0;
     normalizedValue = clampValue(normalizedValue);
     // from 0..1 to 0..255 the color array range
-    var idx = Math.floor(normalizedValue * 255);
-    var col = colors[idx];  // nearest neighbour interpolation
+    var idx = Math.round(normalizedValue * 255); // nearest neighbour interpolation
+    var col = colors[idx];
     // this function returns float colors
     return [col[0]/255, col[1]/255, col[2]/255];
 }

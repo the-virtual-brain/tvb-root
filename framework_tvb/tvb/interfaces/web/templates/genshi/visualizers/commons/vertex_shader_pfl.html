@@ -45,6 +45,7 @@
             </py:otherwise>
         </py:choose>
         uv[0] = (uv[0] - activityRange[0] ) / (activityRange[1] - activityRange[0]);
+        uv[0] = uv[0] * 253.0/255.0 + 1.0/255.0;
         vColor = texture2D(uSampler, uv);
     }
 </script>
