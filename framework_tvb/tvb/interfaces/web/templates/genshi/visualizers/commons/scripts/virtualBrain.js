@@ -142,7 +142,7 @@ var drawNavigator = false;
 var drawTriangleLines = false;
 var drawBoundaries = false;
 
-var drawSpeculars = true;
+var drawSpeculars = false;
 /**
  * Used to determine which buffer chunks belong to a hemisphere.
  * The chunks are used to limit geometry size for a draw call.
