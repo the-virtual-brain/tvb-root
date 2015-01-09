@@ -352,7 +352,7 @@ function VS_StartSurfaceViewer(urlVerticesList, urlLinesList, urlTrianglesList, 
                        noOfMeasurePoints, urlAlphasList, urlAlphasIndicesList, urlMeasurePointsLabels,
                        boundaryURL, shelveObject, hemisphereChunkMask, false, false, false, minMeasure, maxMeasure, urlMeasure);
     _VS_init_cubicalMeasurePoints();
-    ColSch_initColorSchemeParams(minMeasure, maxMeasure);
+    ColSch_initColorSchemeParams(activityMin, activityMax);
 }
 
 function VS_StartEEGSensorViewer(urlVerticesList, urlLinesList, urlTrianglesList, urlNormalsList, urlMeasurePoints,
@@ -364,7 +364,7 @@ function VS_StartEEGSensorViewer(urlVerticesList, urlLinesList, urlTrianglesList
                                '', shelfObject, null, false, true, true, minMeasure, maxMeasure, urlMeasure);
     _VS_init_cubicalMeasurePoints();
     if (urlVerticesList) {
-        ColSch_initColorSchemeParams(minMeasure, maxMeasure);
+        ColSch_initColorSchemeParams(activityMin, activityMax);
     }
 }
 
@@ -749,7 +749,7 @@ function updateColors(currentTimeInFrame) {
         // default color for a measure point
         gl.uniform2f(shaderProgram.activityUniform[NO_OF_MEASURE_POINTS], activityMin, col.measurePoints_tex_v);
         // color used for a picked measure point
-        gl.uniform2f(shaderProgram.activityUniform[NO_OF_MEASURE_POINTS + 1], (activityMax + activityMin)/2, col.measurePoints_tex_v);
+        gl.uniform2f(shaderProgram.activityUniform[NO_OF_MEASURE_POINTS + 1], activityMax, col.measurePoints_tex_v);
     }
 }
 
