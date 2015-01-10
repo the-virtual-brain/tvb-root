@@ -203,7 +203,7 @@ class UserController(BaseController):
     @expose_json
     def get_color_schemes_json(self):
         pth = os.path.join(os.path.dirname(tvb.interfaces.web.__file__), 'static', 'colorScheme', 'color_schemes.png')
-        return color_texture_to_list(pth, 255, 8, 16)
+        return color_texture_to_list(pth, 256, 8, 16)
 
 
     @cherrypy.expose
