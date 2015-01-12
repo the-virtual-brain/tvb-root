@@ -1,19 +1,19 @@
 # -*- coding: utf-8 -*-
 #
 #
-#  TheVirtualBrain-Scientific Package. This package holds all simulators, and 
+#  TheVirtualBrain-Scientific Package. This package holds all simulators, and
 # analysers necessary to run brain-simulations. You can use it stand alone or
 # in conjunction with TheVirtualBrain-Framework Package. See content of the
 # documentation-folder for more details. See also http://www.thevirtualbrain.org
 #
 # (c) 2012-2013, Baycrest Centre for Geriatric Care ("Baycrest")
 #
-# This program is free software; you can redistribute it and/or modify it under 
+# This program is free software; you can redistribute it and/or modify it under
 # the terms of the GNU General Public License version 2 as published by the Free
 # Software Foundation. This program is distributed in the hope that it will be
-# useful, but WITHOUT ANY WARRANTY; without even the implied warranty of 
+# useful, but WITHOUT ANY WARRANTY; without even the implied warranty of
 # MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU General Public
-# License for more details. You should have received a copy of the GNU General 
+# License for more details. You should have received a copy of the GNU General
 # Public License along with this program; if not, you can download it here
 # http://www.gnu.org/licenses/old-licenses/gpl-2.0
 #
@@ -32,11 +32,11 @@
 A collection of noise related classes and functions.
 
 Specific noises inherit from the abstract class Noise, with each instance having
-its own RandomStream attribute -- which is itself a Traited wrapper of Numpy's 
+its own RandomStream attribute -- which is itself a Traited wrapper of Numpy's
 RandomState.
 
 .. moduleauthor:: Stuart A. Knock <Stuart@tvb.invalid>
-.. moduleauthor:: Paula Sanz Leon <Paula@tvb.invalid> 
+.. moduleauthor:: Paula Sanz Leon <Paula@tvb.invalid>
 .. moduleauthor:: Noelia Montejo <Noelia@tvb.invalid>
 
 """
@@ -169,7 +169,7 @@ class noise_device_info(object):
 class Noise(core.Type):
     """
     Defines a base class for noise. Specific noises are derived from this class
-    for use in stochastic integrations. 
+    for use in stochastic integrations.
 
     .. [KloedenPlaten_1995] Kloeden and Platen, Springer 1995, *Numerical
         solution of stochastic differential equations.*
@@ -199,8 +199,8 @@ class Noise(core.Type):
     """
     _base_classes = ['Noise', 'MultiplicativeSimple']
 
-    #NOTE: nsig is not declared here because we use this class directly as the 
-    #      inital conditions noise source, and in that use the job of nsig is 
+    #NOTE: nsig is not declared here because we use this class directly as the
+    #      inital conditions noise source, and in that use the job of nsig is
     #      filled by the state_variable_range attribute of the Model.
 
     ntau = basic.Float(
@@ -222,7 +222,7 @@ class Noise(core.Type):
         default parameter set should be provided via the trait mechanism.
 
         """
-        super(Noise, self).__init__(**kwargs) 
+        super(Noise, self).__init__(**kwargs)
         LOG.debug(str(kwargs))
 
         self.dt = None
@@ -247,7 +247,7 @@ class Noise(core.Type):
 
     def __repr__(self):
         """A formal, executable, representation of a Noise object."""
-        class_name = self.__class__.__name__ 
+        class_name = self.__class__.__name__
         traited_kwargs = self.trait.keys()
         formal = class_name + "(" + "=%s, ".join(traited_kwargs) + "=%s)"
         return formal % eval("(self." + ", self.".join(traited_kwargs) + ")")
@@ -255,7 +255,7 @@ class Noise(core.Type):
 
     def __str__(self):
         """An informal, human readable, representation of a Noise object."""
-        class_name = self.__class__.__name__ 
+        class_name = self.__class__.__name__
         traited_kwargs = self.trait.keys()
         informal = class_name + "(" + ", ".join(traited_kwargs) + ")"
         return informal
@@ -269,10 +269,10 @@ class Noise(core.Type):
     def configure_coloured(self, dt, shape):
         r"""
         One of the simplest forms for coloured noise is exponentially correlated
-        Gaussian noise [KloedenPlaten_1995]_. 
+        Gaussian noise [KloedenPlaten_1995]_.
 
         We give the initial conditions for coloured noise using the integral
-        algorith for simulating exponentially correlated noise proposed by 
+        algorith for simulating exponentially correlated noise proposed by
         [FoxVemuri_1988]_
 
         To start the simulation, an initial value for :math:`\eta` is needed.
@@ -284,7 +284,7 @@ class Noise(core.Type):
                 \eta &= \sqrt{-2D\lambda\ln(m)}\,\cos(2\pi\,n)
 
         where :math:`D` is standard deviation of the noise amplitude and
-        :math:`\lambda = \frac{1}{\tau_n}` is the inverse of the noise 
+        :math:`\lambda = \frac{1}{\tau_n}` is the inverse of the noise
         correlation time. Then we set :math:`E = \exp{-\lambda\,\delta\,t}`
         where :math:`\delta\,t` is the integration time step.
 
@@ -299,7 +299,7 @@ class Noise(core.Type):
         """
         #TODO: Probably best to change the docstring to be consistent with the
         #      below, ie, factoring out the explicit Box-Muller.
-        #NOTE: The actual implementation factors out the explicit Box-Muller, 
+        #NOTE: The actual implementation factors out the explicit Box-Muller,
         #      using numpy's normal() instead.
         self.dt = dt
         self._E = numpy.exp(-self.dt / self.ntau)
@@ -350,7 +350,8 @@ class Noise(core.Type):
         http://docs.scipy.org/doc/scipy-0.7.x/reference/generated/scipy.stats.truncnorm.html
 
         """
-
+        # Set the default or used defined seed for the PRNG
+        numpy.random.seed(self.random_stream.get_state()[1][0])
         noise = numpy.sqrt(self.dt) * scipy_stats.truncnorm.rvs(lo, hi, size=shape)
         return noise
 
@@ -358,7 +359,7 @@ class Noise(core.Type):
 
 class Additive(Noise):
     """
-    Additive noise which, assuming the source noise is Gaussian with unit 
+    Additive noise which, assuming the source noise is Gaussian with unit
     variance, will result in noise with a standard deviation of nsig.
 
     .. #Currently there seems to be a clash betwen traits and autodoc, autodoc
@@ -416,7 +417,7 @@ class Additive(Noise):
 
 class Multiplicative(Noise):
     r"""
-    With "external" fluctuations the intensity of the noise often depends on 
+    With "external" fluctuations the intensity of the noise often depends on
     the state of the system. This results in the (general) stochastic
     differential formulation:
 
@@ -466,13 +467,13 @@ class Multiplicative(Noise):
         """
         Scale the noise by the noise dispersion and the diffusion coefficient.
         By default, the diffusion coefficient :math:`b` is a constant.
-        It reduces to the simplest scheme of a linear SDE with Multiplicative 
+        It reduces to the simplest scheme of a linear SDE with Multiplicative
         Noise: homogeneous constant coefficients. See [KloedenPlaten_1995]_,
         Equation 4.6, page 119.
 
         """
         self.b.pattern = state_variables
-        g_x = numpy.sqrt(2.0 * self.nsig) * self.b.pattern  
+        g_x = numpy.sqrt(2.0 * self.nsig) * self.b.pattern
 
         return g_x
 
@@ -495,6 +496,3 @@ class MultiplicativeSimple(Multiplicative):
         }
         """
     )
-
-
-
