@@ -52,15 +52,15 @@ function drawScene() {
 function LCONN_PICK_updateBrainDrawing(data_from_server) {
     data_from_server = $.parseJSON(data_from_server);
 
-    var data = $.parseJSON(data_from_server['data']);
-    var minValue = data_from_server['min_value'];
-    var maxValue = data_from_server['max_value'];
+    var data = $.parseJSON(data_from_server.data);
+    var minValue = data_from_server.min_value;
+    var maxValue = data_from_server.max_value;
 
     BASE_PICK_initLegendInfo(maxValue, minValue);     // setup the legend
     ColSch_initColorSchemeParams(minValue, maxValue, function() {
         LEG_updateLegendColors();
         _updateBrainColors(data, minValue, maxValue);
-        drawScene()
+        drawScene();
     });
 
     if (BASE_PICK_brainDisplayBuffers.length != data.length) {
@@ -68,7 +68,7 @@ function LCONN_PICK_updateBrainDrawing(data_from_server) {
         return;
     }
 
-    _updateBrainColors(data_from_server);
+    _updateBrainColors(data, minValue, maxValue);
     drawScene();
     displayMessage("Displaying Local Connectivity profile for selected focal point ..." )
 }
