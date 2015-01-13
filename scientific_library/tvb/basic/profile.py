@@ -121,7 +121,9 @@ class TvbProfile():
                 cls.current.initialize_profile()
 
         else:
-            raise Exception("Invalid profile %s" % selected_profile)
+            msg = "Invalid profile name %r, expected one of %r"
+            msg %= (selected_profile, cls.ALL)
+            raise Exception(msg)
 
 
 
