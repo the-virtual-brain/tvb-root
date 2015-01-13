@@ -2,9 +2,9 @@ var nodeColorRGB = [255, 255, 255];
 var _colorSchemeColors;
 var _colorScheme = null;                                             // the color scheme to be used for current drawing
 var _minActiv, _maxActiv;               // keep the interest interval
-var _sparseColorNo = 50;
 var _refreshCallback = null ;                                        // this is called when color scheme changes update the visualiser
-var SPARSE_COLORS_LENGTH = 80;
+var SPARSE_COLORS_LENGTH = 256;
+var _sparseColorNo = SPARSE_COLORS_LENGTH;
 
 // ================================= COLOR SCHEME STRUCTURES START =================================
 /**
@@ -115,7 +115,7 @@ function ColSchGetTheme(){
 }
 
 function ColSchGetBounds(){
-    return { min: _minActiv, max:_maxActiv };
+    return { min: _minActiv, max:_maxActiv, bins: _sparseColorNo };
 }
 // ================================= COLOR SCHEME STRUCTURES END =================================
 
@@ -246,10 +246,13 @@ function ColSch_initColorSchemeParams(minValue, maxValue, refreshFunction) {
     var colorNoUIElem = $("#ColSch_colorNo");                    // cache the jQuery selector
     colorNoUIElem.html(_sparseColorNo);
     $("#sliderForSparseColSch").slider({
-        min: 2, max: SPARSE_COLORS_LENGTH, step: 1, values: [_sparseColorNo],
-        slide: function (event, ui) { colorNoUIElem.html(ui.value); },
+        min: 1, max: 8, step: 1, value: 8,
+        slide: function (event, ui) {
+            var nbins = Math.pow(2, ui.value);
+            colorNoUIElem.html(nbins);
+        },
         change: function (event, ui) {
-            _sparseColorNo = ui.value;
+            _sparseColorNo = Math.pow(2, ui.value);
             if (_refreshCallback) { _refreshCallback(); }
         }
     });

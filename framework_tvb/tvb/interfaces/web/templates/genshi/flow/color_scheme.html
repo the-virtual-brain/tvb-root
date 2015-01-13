@@ -22,29 +22,26 @@
             <option value="termal">Termal</option>
             <option value="brewer1">Brewer</option>
         </select>
-        <fieldset id="colorSchemeFieldSet_linear">
+        <fieldset>
             <dl>
                 <dt>
-                    <label>Trim marginal values</label>
-                </dt>
-                <dd>
-                    <label id="sliderMinValue"></label>
-                    <div id="rangerForLinearColSch" title="By moving margins here, some values are ignored from the colored display and shown black-ish"></div>
-                    <label id="sliderMaxValue"></label>
-                </dd>
-            </dl>
-        </fieldset>
-
-        <fieldset id="colorSchemeFieldSet_sparse" style="display:none;">
-            <dl>
-                <dt>
-                    <label for="sliderForSparseColSch">Using</label>
-                    <span class="slider-value" id="ColSch_colorNo"></span>
-                    <span class="slider-value"> colors.</span>
+                    <label>Color range</label>
                 </dt>
                 <dd>
                     <div class="sliderStepDiv">
-                        <div id="sliderForSparseColSch" class="shadow"></div>
+                        <div id="rangerForLinearColSch" title="Set the active color range "></div>
+                    </div>
+                    [ <label id="sliderMinValue"></label> , <label id="sliderMaxValue"></label> ]
+                </dd>
+            </dl>
+            <dl>
+                <dt>
+                    <span class="slider-value" id="ColSch_colorNo"></span>
+                    <span class="slider-value"> colors</span>
+                </dt>
+                <dd>
+                    <div class="sliderStepDiv">
+                        <div id="sliderForSparseColSch" title="Set the number of color bins"></div>
                     </div>
                 </dd>
             </dl>

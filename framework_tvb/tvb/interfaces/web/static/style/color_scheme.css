@@ -1,5 +1,5 @@
 #rangerForLinearColSch {
-    width: 140px;
+    width: 100%;
     display: inline-table;
 }
 
@@ -16,9 +16,9 @@
 }
 
 #sliderMinValue {
-    padding-right: 10px;
+    padding: 10px;
 }
 
 #sliderMaxValue {
-    padding-left: 10px;
+    padding: 10px;
 }

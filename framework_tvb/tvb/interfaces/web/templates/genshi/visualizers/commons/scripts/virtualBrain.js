@@ -648,6 +648,7 @@ function initShaders() {
     }
 
     shaderProgram.activityRange = gl.getUniformLocation(shaderProgram, "activityRange");
+    shaderProgram.activityBins = gl.getUniformLocation(shaderProgram, "activityBins");
     shaderProgram.useVertexColors = gl.getUniformLocation(shaderProgram, "uUseVertexColors");
     shaderProgram.materialColor = gl.getUniformLocation(shaderProgram, "uMaterialColor");
 
@@ -727,6 +728,8 @@ function updateColors(currentTimeInFrame) {
     var col = ColSchInfo();
     var activityRange = ColSchGetBounds();
     gl.uniform2f(shaderProgram.activityRange, activityRange.min, activityRange.max);
+    gl.uniform1f(shaderProgram.activityBins, activityRange.bins);
+
     if (isOneToOneMapping) {
         for (var i = 0; i < brainBuffers.length; i++) {
             var upperBorder = brainBuffers[i][0].numItems / 3;
