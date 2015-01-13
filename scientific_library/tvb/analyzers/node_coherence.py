@@ -112,7 +112,7 @@ def coherence(data, sample_rate, nfft=256, imag=False):
     F = numpy.fft.fft(wins)
     fs = numpy.fft.fftfreq(nfft, 1e3 / sample_rate)
     # broadcasts to [node_i, node_j, ..., window, time]
-    G = F[:, numpy.newaxis] * F
+    G = F[:, numpy.newaxis] * F.conj()
     if imag:
         G = G.imag
     dG = numpy.array([G[i, i] for i in range(nn)])
