@@ -37,6 +37,7 @@
 
 /* globals gl*/
 
+//TODO rename this into SHADING_Context
 var shading = shading || {};
 
 (function(){

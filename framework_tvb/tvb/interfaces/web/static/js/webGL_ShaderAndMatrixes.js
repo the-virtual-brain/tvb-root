@@ -63,6 +63,7 @@ function safeMath(number1, number2) {
 
 // ------ SHADER FUNCTIONS --------------------------------------------------
 
+//TODO rename this into GL_shaderProgram, and possibly hve it moved in commons/shading
 var shaderProgram;
 function createAndUseShader(fsShader, vsShader) {
     var fragmentShader = getShader(gl, fsShader);
