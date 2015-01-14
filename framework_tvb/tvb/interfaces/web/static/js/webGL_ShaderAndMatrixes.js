@@ -119,11 +119,12 @@ var defaultLightSettings = {
     ambientColor : [0.5, 0.5, 0.5],
     directionalColor : [0.5, 0.5, 0.5],
     lightDirection : Vector.create([-0.2, 0.2, 1]).toUnitVector().flatten(),
-    specularColor: [0.5, 0.5, 0.5],
+    specularColor: [0.0, 0.0, 0.0],
     materialShininess : 32.0,
     pointLocation : [-20, 20, 0]
 };
 
+// Use these settings if you prefer more accurate activity colors instead of better lighting
 var minimalLighting = {
     ambientColor : [0.9, 0.9, 0.9],
     directionalColor : [0.1, 0.1, 0.1],
@@ -133,10 +134,8 @@ var minimalLighting = {
     pointLocation : [0, -10, -400]
 };
 
-// Use these settings if you prefer more accurate activity colors instead of better lighting
-var noSpecularLightSettings = {
-    directionalColor : [0.5, 0.5, 0.5],
-    specularColor: [0.0, 0.0, 0.0]
+var specularLightSettings = {
+    specularColor: [0.5, 0.5, 0.5]
 };
 
 // With this settings all triangles will have the pure ambient color, it removes lighting.

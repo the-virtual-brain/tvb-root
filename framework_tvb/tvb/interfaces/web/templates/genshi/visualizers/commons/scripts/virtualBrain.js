@@ -1160,9 +1160,9 @@ function drawScene() {
         gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
 
         if (drawSpeculars){
-            setLighting();
+            setLighting(specularLightSettings);
         }else{
-            setLighting(noSpecularLightSettings);
+            setLighting();
         }
 
         if(VS_showLegend){

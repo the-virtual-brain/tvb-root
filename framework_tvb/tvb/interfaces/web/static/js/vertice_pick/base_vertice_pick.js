@@ -79,12 +79,11 @@ function BASE_PICK_customInitGL(canvas) {
 
 function BASE_PICK_initShaders() {
     createAndUseShader("shader-fs", "shader-vs");
-    shading.basic_program_init(shaderProgram);
-    shading.light_init(shaderProgram);
+    shading.surface_pick_init(shaderProgram);
 
-    shaderProgram.isPicking = gl.getUniformLocation(shaderProgram, "isPicking");
     shaderProgram.vertexColorAttribute = gl.getAttribLocation(shaderProgram, "aVertexColor");
     gl.enableVertexAttribArray(shaderProgram.vertexColorAttribute);
+    gl.uniform1i(shaderProgram.useVertexColors, true);
 }
 
 
@@ -153,12 +152,11 @@ function BASE_PICK_drawBrain() {
     if (BASE_PICK_doPick) {
         gl.disable(gl.BLEND);
         gl.disable(gl.DITHER);
-        gl.uniform1f(shaderProgram.isPicking, 1);
+        basicSetLighting(pickingLightSettings);
     } else {
         gl.enable(gl.BLEND);
         gl.enable(gl.DITHER);
         basicSetLighting();
-        gl.uniform1f(shaderProgram.isPicking, 0);
     }
     var theme = ColSchGetTheme().surfaceViewer;
     gl.clearColor(theme.backgroundColor[0], theme.backgroundColor[1], theme.backgroundColor[2], theme.backgroundColor[3]);

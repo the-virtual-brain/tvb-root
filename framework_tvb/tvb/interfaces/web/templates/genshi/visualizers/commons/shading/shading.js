@@ -144,4 +144,11 @@ shading.region_progam_init = function(shader, measure_point_nr, legendGranularit
     }
 };
 
+shading.surface_pick_init = function(shader){
+    shading._init_geometric_attributes(shader);
+    shading.transform_init(shader);
+    shading.light_init(shaderProgram);
+    shading._init_whole_scene_coloring(shaderProgram);
+};
+
 })();
