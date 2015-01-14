@@ -86,6 +86,8 @@ function GL_initColorPickFrameBuffer() {
     rttFramebuffer.height = gl.viewportHeight;
 
     var rttTexture = gl.createTexture();
+    // Bind to the second texture unit because the first one is used by the color map texture.
+    gl.activeTexture(gl.TEXTURE1);
     gl.bindTexture(gl.TEXTURE_2D, rttTexture);
     gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
     gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR);
@@ -103,6 +105,7 @@ function GL_initColorPickFrameBuffer() {
     gl.bindTexture(gl.TEXTURE_2D, null);
     gl.bindRenderbuffer(gl.RENDERBUFFER, null);
     gl.bindFramebuffer(gl.FRAMEBUFFER, null);
+    gl.activeTexture(gl.TEXTURE0);
     GL_colorPickerBuffer = rttFramebuffer;
     GL_colorPickerInitColors = [];
 }

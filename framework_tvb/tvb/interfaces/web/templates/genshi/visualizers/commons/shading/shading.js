@@ -145,11 +145,14 @@ shading.region_progam_init = function(shader, measure_point_nr, legendGranularit
     }
 };
 
+/** Init the program that uses both a vertex activity and a vertex color */
 shading.surface_pick_init = function(shader){
-    shading._init_geometric_attributes(shader);
-    shading.transform_init(shader);
-    shading.light_init(shaderProgram);
-    shading._init_whole_scene_coloring(shaderProgram);
+    // vertex activity part
+    shading.one_to_one_program_init(shaderProgram);
+    // vertex color part
+    shaderProgram.useActivity =  gl.getUniformLocation(shaderProgram, "uUseActivity");
+    shaderProgram.vertexColorAttribute = gl.getAttribLocation(shaderProgram, "aVertexColor");
+    gl.enableVertexAttribArray(shaderProgram.vertexColorAttribute);
 };
 
 })();
