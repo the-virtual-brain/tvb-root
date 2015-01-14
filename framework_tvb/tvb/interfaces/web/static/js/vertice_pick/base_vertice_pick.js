@@ -62,7 +62,7 @@ var picking_triangles_number = [];
 
 /* globals gl, shaderProgram, isOneToOneMapping, defaultLightSettings, GL_colorPickerInitColors,
            updateGLCanvasSize, LEG_updateLegendVerticesBuffers, initGL, basicInitShaders,
-           basicInitSurfaceLighting, ColSchGetTheme, displayMessage, perspective, mvRotate, mvTranslate, mvPushMatrix, mvPopMatrix,
+           ColSchGetTheme, displayMessage, perspective, mvRotate, mvTranslate, mvPushMatrix, mvPopMatrix,
            basicSetLighting, HLPR_createWebGlBuffer, GL_handleMouseUp
            */
 
@@ -78,8 +78,10 @@ function BASE_PICK_customInitGL(canvas) {
 
 
 function BASE_PICK_initShaders() {
-    basicInitShaders("shader-fs", "shader-vs");
-    basicInitSurfaceLighting();
+    createAndUseShader("shader-fs", "shader-vs");
+    shading.basic_program_init(shaderProgram);
+    shading.light_init(shaderProgram);
+
     shaderProgram.isPicking = gl.getUniformLocation(shaderProgram, "isPicking");
     shaderProgram.vertexColorAttribute = gl.getAttribLocation(shaderProgram, "aVertexColor");
     gl.enableVertexAttribArray(shaderProgram.vertexColorAttribute);

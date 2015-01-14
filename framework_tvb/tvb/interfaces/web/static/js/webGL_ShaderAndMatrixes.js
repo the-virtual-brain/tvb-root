@@ -64,9 +64,9 @@ function safeMath(number1, number2) {
 // ------ SHADER FUNCTIONS --------------------------------------------------
 
 var shaderProgram;
-function basicInitShaders(fsShader, vsShader) {
-    var fragmentShader = getShader(gl, fsShader); 
-    var vertexShader = getShader(gl, vsShader); 
+function createAndUseShader(fsShader, vsShader) {
+    var fragmentShader = getShader(gl, fsShader);
+    var vertexShader = getShader(gl, vsShader);
 
     shaderProgram = gl.createProgram();
     gl.attachShader(shaderProgram, vertexShader);
@@ -77,15 +77,6 @@ function basicInitShaders(fsShader, vsShader) {
         displayMessage("Could not initialise shaders", "errorMessage");
     }
     gl.useProgram(shaderProgram);
-
-    shaderProgram.vertexPositionAttribute = gl.getAttribLocation(shaderProgram, "aVertexPosition");
-    gl.enableVertexAttribArray(shaderProgram.vertexPositionAttribute);
-    shaderProgram.vertexNormalAttribute = gl.getAttribLocation(shaderProgram, "aVertexNormal");
-	gl.enableVertexAttribArray(shaderProgram.vertexNormalAttribute);
-
-    shaderProgram.pMatrixUniform = gl.getUniformLocation(shaderProgram, "uPMatrix");
-    shaderProgram.mvMatrixUniform = gl.getUniformLocation(shaderProgram, "uMVMatrix");
-    shaderProgram.nMatrixUniform = gl.getUniformLocation(shaderProgram, "uNMatrix");
 }
 
 function getShader(gl, id) {
@@ -122,18 +113,6 @@ function getShader(gl, id) {
 
 // ------ COMMON LIGHTING FUNCTIONS --------------------------------------------
 
-/**
- * Initializes light uniforms for the standard shader. Used by surface viewers.
- * Ambient light, a directional light and a point light with specular highlights
- */
-function basicInitSurfaceLighting(){
-    shaderProgram.ambientColorUniform = gl.getUniformLocation(shaderProgram, "uAmbientColor");
-    shaderProgram.lightingDirectionUniform = gl.getUniformLocation(shaderProgram, "uLightingDirection");
-    shaderProgram.directionalColorUniform = gl.getUniformLocation(shaderProgram, "uDirectionalColor");
-    shaderProgram.materialShininessUniform = gl.getUniformLocation(shaderProgram, "uMaterialShininess");
-    shaderProgram.pointLightingLocationUniform = gl.getUniformLocation(shaderProgram, "uPointLightingLocation");
-    shaderProgram.pointLightingSpecularColorUniform = gl.getUniformLocation(shaderProgram, "uPointLightingSpecularColor");
-}
 // light coordinates are in camera space
 // A directional light and a point light shine from top left quadrant.
 var defaultLightSettings = {

@@ -628,52 +628,12 @@ function VS_multipleImageExport(saveFigure){
 }
 
 function initShaders() {
-    basicInitShaders("shader-fs", "shader-vs");
-    basicInitSurfaceLighting();
-
+    createAndUseShader("shader-fs", "shader-vs");
     if (isOneToOneMapping) {
-        shaderProgram.colorSchemeUniform = gl.getUniformLocation(shaderProgram, "uColorScheme");
-        shaderProgram.activityAttribute = gl.getAttribLocation(shaderProgram, "aActivity");
-        gl.enableVertexAttribArray(shaderProgram.activityAttribute);
-    } else {
-        shaderProgram.vertexAlphaAttribute = gl.getAttribLocation(shaderProgram, "alpha");
-        gl.enableVertexAttribArray(shaderProgram.vertexAlphaAttribute);
-        shaderProgram.vertexColorIndicesAttribute = gl.getAttribLocation(shaderProgram, "alphaIndices");
-        gl.enableVertexAttribArray(shaderProgram.vertexColorIndicesAttribute);
-
-        shaderProgram.activityUniform = [];
-        for (var i = 0; i <= NO_OF_MEASURE_POINTS + 1 + legendGranularity; i++) {
-            shaderProgram.activityUniform[i] = gl.getUniformLocation(shaderProgram, "uActivity[" + i + "]");
-        }
+        shading.one_to_one_program_init(shaderProgram);
+    }else {
+        shading.region_progam_init(shaderProgram, NO_OF_MEASURE_POINTS, legendGranularity);
     }
-
-    shaderProgram.activityRange = gl.getUniformLocation(shaderProgram, "activityRange");
-    shaderProgram.activityBins = gl.getUniformLocation(shaderProgram, "activityBins");
-    shaderProgram.useVertexColors = gl.getUniformLocation(shaderProgram, "uUseVertexColors");
-    shaderProgram.materialColor = gl.getUniformLocation(shaderProgram, "uMaterialColor");
-
-    var g_texture = gl.createTexture();
-
-    gl.activeTexture(gl.TEXTURE0);
-    gl.bindTexture(gl.TEXTURE_2D, g_texture);
-
-
-    var img = new Image();
-    img.src = '/static/colorScheme/color_schemes.png';
-
-    img.onload = function(){
-        // filtering is not needed for this lookup texture
-        gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.NEAREST);
-        gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.NEAREST);
-        // clamp to edge
-        gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
-        gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
-        // upload texture
-        gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, img);
-        gl.uniform1i(gl.getUniformLocation(shaderProgram, "uSampler"), 0);
-    };
-
-    gl.uniform1i(gl.getUniformLocation(shaderProgram, "uSampler"), 0);
 }
 
 function setLighting(settings){

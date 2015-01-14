@@ -30,7 +30,9 @@ var CONNECTIVITY_CANVAS_ID = "GLcanvas";
 
 function initShaders() {	
     //INIT NORMAL SHADER
-    basicInitShaders("shader-fs", "shader-vs");
+    createAndUseShader("shader-fs", "shader-vs");
+    shading.basic_program_init(shaderProgram);
+
     shaderProgram.colorAttribute = gl.getAttribLocation(shaderProgram, "aColor");
     gl.enableVertexAttribArray(shaderProgram.colorAttribute);
 

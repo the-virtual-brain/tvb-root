@@ -61,8 +61,9 @@ function initColorsForPicking() {
  * Custom shader initializations specific for the space-time connectivity plot
  */
 function initShaders_SPACETIME() {
-	basicInitShaders("shader-plot-fs", "shader-plot-vs");
-    
+    createAndUseShader("shader-plot-fs", "shader-plot-vs");
+    shading.basic_program_init(shaderProgram);
+
     shaderProgram.drawLines = gl.getUniformLocation(shaderProgram, "uDrawLines");
     shaderProgram.alphaValue = gl.getUniformLocation(shaderProgram, "uAlpha");
     shaderProgram.lineColor = gl.getUniformLocation(shaderProgram, "uLineColor");
