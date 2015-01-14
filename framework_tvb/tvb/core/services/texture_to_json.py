@@ -29,12 +29,18 @@
 #
 
 """
-converts a color scheme texture image to json arrays
+Converts a color scheme texture image to json arrays
+
 .. moduleauthor:: Mihai Andrei <mihai.andrei@codemart.ro>
 """
 
-import Image
+
 import numpy
+import Image
+# See TVB-985
+if not hasattr(Image, 'open'):
+    from Image import Image
+
 
 def color_texture_to_list(img_pth, img_width, band_height, bands_number):
     """
