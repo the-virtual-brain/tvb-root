@@ -176,19 +176,16 @@ function STIM_PICK_loadNextStimulusChunk() {
 /** Update color buffers for the current movie
  todo: this is almost the same as virtualbrain.js:updateColors */
 function updateColors(currentTimeInFrame){
-    var thisStepData = currentStimulusData[currentTimeInFrame];
+    var currentActivity = currentStimulusData[currentTimeInFrame];
     // Compute the colors for this current step:
-    for (var i=0; i<BASE_PICK_brainDisplayBuffers.length;i++) {
-        BASE_PICK_brainDisplayBuffers[i][3] = null;
+    for (var i=0; i < BASE_PICK_brainDisplayBuffers.length;i++) {
         var upperBorder = BASE_PICK_brainDisplayBuffers[i][0].numItems / 3;
-        var thisBufferColors = new Float32Array(upperBorder * 4);
         var offset_start = i * 40000;
-        getGradientColorArray(thisStepData.slice(offset_start, offset_start + upperBorder),
-                              minValue, maxValue, thisBufferColors);
-        BASE_PICK_brainDisplayBuffers[i][3] = gl.createBuffer();
+        var currentActivitySlice = currentActivity.slice(offset_start, offset_start + upperBorder);
+        var activity = new Float32Array(currentActivitySlice);
+
         gl.bindBuffer(gl.ARRAY_BUFFER, BASE_PICK_brainDisplayBuffers[i][3]);
-        gl.bufferData(gl.ARRAY_BUFFER, thisBufferColors, gl.STATIC_DRAW);
-        thisBufferColors = null;
+        gl.bufferData(gl.ARRAY_BUFFER, activity, gl.STATIC_DRAW);
     }
 }
 

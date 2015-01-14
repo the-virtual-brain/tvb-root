@@ -107,7 +107,12 @@ function LEG_generateLegendBuffers() {
         LEG_legendBuffers[3] = gl.createBuffer();
         gl.bindBuffer(gl.ARRAY_BUFFER, LEG_legendBuffers[3]);
         gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(colors), gl.STATIC_DRAW);
-        
+
+        // if (is surface pick do yet another init)
+        LEG_legendBuffers[4] = gl.createBuffer();
+        LEG_legendBuffers[4].numItems = LEG_legendBuffers[0].numItems*4;
+        gl.bindBuffer(gl.ARRAY_BUFFER, LEG_legendBuffers[4]);
+        gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(LEG_legendBuffers[0].numItems*4), gl.STATIC_DRAW);
     } else {
         var alphas = [];
         var alphasIndices = [];

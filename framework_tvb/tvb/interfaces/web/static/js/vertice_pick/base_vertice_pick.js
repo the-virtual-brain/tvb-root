@@ -81,8 +81,6 @@ function BASE_PICK_initShaders() {
     createAndUseShader("shader-fs", "shader-vs");
     shading.surface_pick_init(shaderProgram);
 
-    shaderProgram.vertexColorAttribute = gl.getAttribLocation(shaderProgram, "aVertexColor");
-    gl.enableVertexAttribArray(shaderProgram.vertexColorAttribute);
     gl.uniform1i(shaderProgram.useVertexColors, true);
 }
 
@@ -169,9 +167,16 @@ function BASE_PICK_drawBrain() {
     mvPushMatrix();
     mvRotate(180, [0, 0, 1]);
 
+    gl.uniform1i(shaderProgram.useActivity, !BASE_PICK_doPick);
+    var col = ColSchInfo();
+    var activityRange = ColSchGetBounds();
+    gl.uniform2f(shaderProgram.activityRange, activityRange.min, activityRange.max);
+    gl.uniform1f(shaderProgram.activityBins, activityRange.bins);
+    gl.uniform1f(shaderProgram.colorSchemeUniform, col.tex_v);
     drawBuffers(drawingMode, brainBuffers);
 
-    if (! BASE_PICK_isMovieMode) {
+    gl.uniform1i(shaderProgram.useActivity, false);
+    if (! BASE_PICK_isMovieMode) { // todo does this navigator ever render? should it?
         mvPushMatrix();
         mvTranslate([navigatorX, navigatorY, navigatorZ]);
         mvRotate(navigatorXrot, [1, 0, 0]);
@@ -190,6 +195,7 @@ function BASE_PICK_drawBrain() {
         mvPopMatrix();
     }
     mvPopMatrix();
+    gl.uniform1i(shaderProgram.useActivity, true);
 }
 
 
@@ -199,8 +205,10 @@ function drawBuffers(drawMode, buffersSets) {
         gl.vertexAttribPointer(shaderProgram.vertexPositionAttribute, 3, gl.FLOAT, false, 0, 0);
         gl.bindBuffer(gl.ARRAY_BUFFER, buffersSets[i][1]);
         gl.vertexAttribPointer(shaderProgram.vertexNormalAttribute, 3, gl.FLOAT, false, 0, 0);
-        gl.bindBuffer(gl.ARRAY_BUFFER, buffersSets[i][3]);
+        gl.bindBuffer(gl.ARRAY_BUFFER, buffersSets[i][4]);
         gl.vertexAttribPointer(shaderProgram.vertexColorAttribute, 4, gl.FLOAT, false, 0, 0);
+        gl.bindBuffer(gl.ARRAY_BUFFER, buffersSets[i][3]);
+        gl.vertexAttribPointer(shaderProgram.activityAttribute, 1, gl.FLOAT, false, 0, 0);
         gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, buffersSets[i][2]);
         setMatrixUniforms();
         gl.drawElements(drawMode, buffersSets[i][2].numItems, gl.UNSIGNED_SHORT, 0);
@@ -265,10 +273,15 @@ function __createPickingColorBuffers() {
         }
         gl.bufferData(gl.ARRAY_BUFFER, thisBufferColors, gl.STATIC_DRAW);
 
+        var fakeActivityBuffer = gl.createBuffer();
+        gl.bindBuffer(gl.ARRAY_BUFFER, fakeActivityBuffer);
+        thisBufferColors = new Float32Array(pickingBrainVertices[i].numItems / 3);
+        gl.bufferData(gl.ARRAY_BUFFER, thisBufferColors, gl.STATIC_DRAW);
+
         picking_triangles_number.push(pickingBrainIndexes[i].numItems);
         total_picking_triangles_number = total_picking_triangles_number + pickingBrainIndexes[i].numItems/3;
 
-        BASE_PICK_brainPickingBuffers.push([pickingBrainVertices[i], pickingBrainNormals[i], pickingBrainIndexes[i], fakeColorBuffer]);
+        BASE_PICK_brainPickingBuffers.push([pickingBrainVertices[i], pickingBrainNormals[i], pickingBrainIndexes[i], fakeActivityBuffer, fakeColorBuffer]);
     }
 
     GL_initColorPickFrameBuffer();
@@ -300,7 +313,7 @@ function __createPickingColorBuffers() {
     }
 
     for (var jj = 0; jj < picking_triangles_number.length; jj++) {
-        BASE_PICK_brainPickingBuffers[jj][3] = colorPickingBuffer[jj];
+        BASE_PICK_brainPickingBuffers[jj][4] = colorPickingBuffer[jj];
     }
 }
 
@@ -321,9 +334,9 @@ function initDrawingBrainBuffersAsynchronous(urlList, resultBuffers, isIndex, ca
             // Finished downloading buffer data. Initialize BASE_PICK_brainDisplayBuffers
             for (var i = 0; i < drawingBrainVertices.length; i++) {
                 BASE_PICK_brainDisplayBuffers.push([drawingBrainVertices[i], drawingBrainNormals[i],
-                                                    drawingBrainIndexes[i], null]);
+                                                    drawingBrainIndexes[i], null, null]);
             }
-            // Now fill the color buffer (at index 3) with the default
+            // Now fill the color buffer (at index 4) with the default
             BASE_PICK_buffer_default_color();
             displayMessage("Finished loading surface data!", "infoMessage");
             executeCallback(callback);
@@ -342,21 +355,21 @@ function initDrawingBrainBuffersAsynchronous(urlList, resultBuffers, isIndex, ca
 
 /**
  * Buffers the default gray surface color to the GPU
- * And updates BASE_PICK_brainDisplayBuffers[i][3]
+ * And updates BASE_PICK_brainDisplayBuffers[i] at indices 3 and 4
  */
 function BASE_PICK_buffer_default_color(){
     for (var i = 0; i < drawingBrainVertices.length; i++) {
         var colorBuffer = gl.createBuffer();
         gl.bindBuffer(gl.ARRAY_BUFFER, colorBuffer);
         var colors = new Float32Array(drawingBrainVertices[i].numItems / 3 * 4);
-        for (var j = 0; j < drawingBrainVertices[i].numItems / 3 * 4; j+=4) {
-            colors[j] = 0.5;
-            colors[j + 1] = 0.5;
-            colors[j + 2] = 0.5;
-            colors[j + 3] = 1.0;
-        }
         gl.bufferData(gl.ARRAY_BUFFER, colors, gl.STATIC_DRAW);
-        BASE_PICK_brainDisplayBuffers[i][3] = colorBuffer;
+        BASE_PICK_brainDisplayBuffers[i][4] = colorBuffer;
+
+        var activityBuffer = gl.createBuffer();
+        gl.bindBuffer(gl.ARRAY_BUFFER, activityBuffer);
+        var activity = new Float32Array(drawingBrainVertices[i].numItems / 3);
+        gl.bufferData(gl.ARRAY_BUFFER, activity, gl.STATIC_DRAW);
+        BASE_PICK_brainDisplayBuffers[i][3] = activityBuffer;
     }
 }
 
@@ -455,12 +468,12 @@ function BASE_PICK_doVerticePick() {
     BASE_PICK_doPick = true;
     BASE_PICK_drawBrain();
     TRIANGLE_pickedIndex = GL_getPickedIndex();
-    
+
     if (TRIANGLE_pickedIndex != GL_BACKGROUND) {
         TRIANGLE_pickedIndex = _BASE_PICK_find_picked_vertex();
         BASE_PICK_moveBrainNavigator(false);
     }
-    
+
     gl.bindFramebuffer(gl.FRAMEBUFFER, null);
     BASE_PICK_doPick = false;
 }
@@ -516,10 +529,10 @@ function createStimulusPinBuffers() {
     gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(vertices), gl.STATIC_DRAW);
     BASE_PICK_pinBuffers[0].itemSize = 3;
     BASE_PICK_pinBuffers[0].numItems = 17;
-    
+
     BASE_PICK_pinBuffers[1] = gl.createBuffer();
     gl.bindBuffer(gl.ARRAY_BUFFER, BASE_PICK_pinBuffers[1]);
-    var vertexNormals = [ 
+    var vertexNormals = [
                         0.0,  0.0,  1.0,
                         0.0,  0.0,  1.0,
                         0.0,  0.0,  1.0,
@@ -541,10 +554,10 @@ function createStimulusPinBuffers() {
     gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(vertexNormals), gl.STATIC_DRAW);
     BASE_PICK_pinBuffers[1].itemSize = 3;
     BASE_PICK_pinBuffers[1].numItems = 17;
-    
+
     BASE_PICK_pinBuffers[2] = gl.createBuffer();
     gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, BASE_PICK_pinBuffers[2]);
-    var cubeVertexIndices = [   0, 1, 5,      1, 2, 5,    
+    var cubeVertexIndices = [   0, 1, 5,      1, 2, 5,
                                 2, 3, 5,      3, 4, 5,
                                 6, 7, 5,      0, 7, 5,
                                 0, 1, 8,      1, 2, 8,
@@ -561,14 +574,18 @@ function createStimulusPinBuffers() {
     gl.bufferData(gl.ELEMENT_ARRAY_BUFFER, new Uint16Array(cubeVertexIndices), gl.STATIC_DRAW);
     BASE_PICK_pinBuffers[2].itemSize = 1;
     BASE_PICK_pinBuffers[2].numItems = 75;
-    
+
     var same_color = [];
     for (var i = 0; i < BASE_PICK_pinBuffers[0].numItems * 4; i++) {
         same_color = same_color.concat(1.0, 0.6, 0.0, 1.0);
     }
+    BASE_PICK_pinBuffers[4] = gl.createBuffer();
+    gl.bindBuffer(gl.ARRAY_BUFFER, BASE_PICK_pinBuffers[4]);
+    gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(same_color), gl.STATIC_DRAW);
+    // fake activity buffer
     BASE_PICK_pinBuffers[3] = gl.createBuffer();
     gl.bindBuffer(gl.ARRAY_BUFFER, BASE_PICK_pinBuffers[3]);
-    gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(same_color), gl.STATIC_DRAW);
+    gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(BASE_PICK_pinBuffers[0].numItems ), gl.STATIC_DRAW);
 }
 
 
@@ -601,7 +618,7 @@ function initBrainNavigatorBuffers() {
 
     BASE_PICK_navigatorBuffers[1] = gl.createBuffer();
     gl.bindBuffer(gl.ARRAY_BUFFER, BASE_PICK_navigatorBuffers[1]);
-    var vertexNormals = [ 
+    var vertexNormals = [
                         0.0,  0.0,  1.0,
                         0.0,  0.0,  1.0,
                         0.0,  0.0,  1.0,
@@ -642,9 +659,13 @@ function initBrainNavigatorBuffers() {
     for (var i=0; i<BASE_PICK_navigatorBuffers[0].numItems* 4; i++) {
         same_color = same_color.concat(0.0, 0.0, 1.0, 1.0);
     }
+    BASE_PICK_navigatorBuffers[4] = gl.createBuffer();
+    gl.bindBuffer(gl.ARRAY_BUFFER, BASE_PICK_navigatorBuffers[4]);
+    gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(same_color), gl.STATIC_DRAW);
+    // fake activity
     BASE_PICK_navigatorBuffers[3] = gl.createBuffer();
     gl.bindBuffer(gl.ARRAY_BUFFER, BASE_PICK_navigatorBuffers[3]);
-    gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(same_color), gl.STATIC_DRAW);
+    gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(BASE_PICK_navigatorBuffers[0].numItems), gl.STATIC_DRAW);
 }
 
 /**
