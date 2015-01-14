@@ -380,7 +380,7 @@ class BurstController(BurstBaseController):
             old_burst = common.get_from_session(common.KEY_BURST_CONFIG)
             burst, group_gid = self.burst_service.load_burst(burst_id)
 
-            if old_burst.id == burst_id:
+            if old_burst and old_burst.id == burst_id:
                 # This function was called to reload the current burst.
                 # Merge session config into the db config. Overwrite all transient fields
                 burst.simulator_configuration = old_burst.simulator_configuration

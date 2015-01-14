@@ -154,6 +154,7 @@ function PSEDiscreteInitialize(labelsXJson, labelsYJson, series_array, dataJson,
     var labels_y = $.parseJSON(labelsYJson);
     var data = $.parseJSON(dataJson);
 
+    ColSch_initColorSchemeComponent();
     min_color = parseFloat(min_color);
     max_color = parseFloat(max_color);
     min_size = parseFloat(min_size);
