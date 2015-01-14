@@ -63,21 +63,21 @@ function safeMath(number1, number2) {
 
 // ------ SHADER FUNCTIONS --------------------------------------------------
 
-//TODO rename this into GL_shaderProgram, and possibly hve it moved in commons/shading
-var shaderProgram;
+var GL_shaderProgram;
+
 function createAndUseShader(fsShader, vsShader) {
     var fragmentShader = getShader(gl, fsShader);
     var vertexShader = getShader(gl, vsShader);
 
-    shaderProgram = gl.createProgram();
-    gl.attachShader(shaderProgram, vertexShader);
-    gl.attachShader(shaderProgram, fragmentShader);
-    gl.linkProgram(shaderProgram);
+    GL_shaderProgram = gl.createProgram();
+    gl.attachShader(GL_shaderProgram, vertexShader);
+    gl.attachShader(GL_shaderProgram, fragmentShader);
+    gl.linkProgram(GL_shaderProgram);
 
-    if (!gl.getProgramParameter(shaderProgram, gl.LINK_STATUS)) {
+    if (!gl.getProgramParameter(GL_shaderProgram, gl.LINK_STATUS)) {
         displayMessage("Could not initialise shaders", "errorMessage");
     }
-    gl.useProgram(shaderProgram);
+    gl.useProgram(GL_shaderProgram);
 }
 
 function getShader(gl, id) {
@@ -184,17 +184,17 @@ function basicSetLighting(s){
             s[k] = defaultLightSettings[k];
         }
     }
-    gl.uniform3f(shaderProgram.ambientColorUniform,
+    gl.uniform3f(GL_shaderProgram.ambientColorUniform,
                 s.ambientColor[0], s.ambientColor[1], s.ambientColor[2]);
-    gl.uniform3f(shaderProgram.lightingDirectionUniform,
+    gl.uniform3f(GL_shaderProgram.lightingDirectionUniform,
                 s.lightDirection[0], s.lightDirection[1], s.lightDirection[2]);
-    gl.uniform3f(shaderProgram.directionalColorUniform,
+    gl.uniform3f(GL_shaderProgram.directionalColorUniform,
                 s.directionalColor[0], s.directionalColor[1], s.directionalColor[2]);
-    gl.uniform3f(shaderProgram.pointLightingLocationUniform,
+    gl.uniform3f(GL_shaderProgram.pointLightingLocationUniform,
                 s.pointLocation[0], s.pointLocation[1], s.pointLocation[2]);
-    gl.uniform3f(shaderProgram.pointLightingSpecularColorUniform,
+    gl.uniform3f(GL_shaderProgram.pointLightingSpecularColorUniform,
                 s.specularColor[0], s.specularColor[1], s.specularColor[2]);
-    gl.uniform1f(shaderProgram.materialShininessUniform,
+    gl.uniform1f(GL_shaderProgram.materialShininessUniform,
                 s.materialShininess);
 
     var prev = _GL_currentLighting;
@@ -241,12 +241,12 @@ function perspective(fovy, aspect, znear, zfar) {
 }
 
 function setMatrixUniforms() {
-    gl.uniformMatrix4fv(shaderProgram.pMatrixUniform, false, new Float32Array(_GL_pMatrix.flatten()));
-    gl.uniformMatrix4fv(shaderProgram.mvMatrixUniform, false, new Float32Array(GL_mvMatrix.flatten()));
+    gl.uniformMatrix4fv(GL_shaderProgram.pMatrixUniform, false, new Float32Array(_GL_pMatrix.flatten()));
+    gl.uniformMatrix4fv(GL_shaderProgram.mvMatrixUniform, false, new Float32Array(GL_mvMatrix.flatten()));
 
     var normalMatrix = GL_mvMatrix.inverse();
     normalMatrix = normalMatrix.transpose();
-    gl.uniformMatrix4fv(shaderProgram.nMatrixUniform, false, new Float32Array(normalMatrix.flatten()));
+    gl.uniformMatrix4fv(GL_shaderProgram.nMatrixUniform, false, new Float32Array(normalMatrix.flatten()));
 }
 
 var _GL_mvMatrixStack = [];

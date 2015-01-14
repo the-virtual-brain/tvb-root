@@ -23,7 +23,7 @@
  * ( Global state is not in this list except gl; let them be warnings )
  */
 
-/* globals gl, displayMessage, HLPR_readJSONfromFile, readDataPageURL,
+/* globals gl, GL_shaderProgram, displayMessage, HLPR_readJSONfromFile, readDataPageURL,
     GL_handleKeyDown, GL_handleKeyUp, GL_handleMouseMove, GL_handleMouseWeel,
     initGL, updateGLCanvasSize, LEG_updateLegendVerticesBuffers,
     basicInitShaders, basicInitSurfaceLighting, GL_initColorPickFrameBuffer,
@@ -630,18 +630,18 @@ function VS_multipleImageExport(saveFigure){
 function initShaders() {
     createAndUseShader("shader-fs", "shader-vs");
     if (isOneToOneMapping) {
-        shading.one_to_one_program_init(shaderProgram);
+        SHADING_Context.one_to_one_program_init(GL_shaderProgram);
     }else {
-        shading.region_progam_init(shaderProgram, NO_OF_MEASURE_POINTS, legendGranularity);
+        SHADING_Context.region_progam_init(GL_shaderProgram, NO_OF_MEASURE_POINTS, legendGranularity);
     }
 }
 
 function setLighting(settings){
     settings = settings || {};
     var useVertexColors = settings.materialColor == null;
-    gl.uniform1i(shaderProgram.useVertexColors, useVertexColors);
+    gl.uniform1i(GL_shaderProgram.useVertexColors, useVertexColors);
     if (! useVertexColors){
-        gl.uniform4fv(shaderProgram.materialColor, settings.materialColor);
+        gl.uniform4fv(GL_shaderProgram.materialColor, settings.materialColor);
     }
     return basicSetLighting(settings);
 }
@@ -687,8 +687,8 @@ function updateColors(currentTimeInFrame) {
     var currentActivity = activitiesData[currentTimeInFrame];
     var col = ColSchInfo();
     var activityRange = ColSchGetBounds();
-    gl.uniform2f(shaderProgram.activityRange, activityRange.min, activityRange.max);
-    gl.uniform1f(shaderProgram.activityBins, activityRange.bins);
+    gl.uniform2f(GL_shaderProgram.activityRange, activityRange.min, activityRange.max);
+    gl.uniform1f(GL_shaderProgram.activityBins, activityRange.bins);
 
     if (isOneToOneMapping) {
         for (var i = 0; i < brainBuffers.length; i++) {
@@ -699,20 +699,20 @@ function updateColors(currentTimeInFrame) {
 
             gl.bindBuffer(gl.ARRAY_BUFFER, brainBuffers[i][3]);
             gl.bufferData(gl.ARRAY_BUFFER, activity, gl.STATIC_DRAW);
-            gl.uniform1f(shaderProgram.colorSchemeUniform, col.tex_v);
+            gl.uniform1f(GL_shaderProgram.colorSchemeUniform, col.tex_v);
         }
     } else {
         for (var ii = 0; ii < NO_OF_MEASURE_POINTS; ii++) {
             if(VS_selectedRegions.indexOf(ii) !== -1){
-                gl.uniform2f(shaderProgram.activityUniform[ii], currentActivity[ii], col.tex_v);
+                gl.uniform2f(GL_shaderProgram.activityUniform[ii], currentActivity[ii], col.tex_v);
             }else{
-                gl.uniform2f(shaderProgram.activityUniform[ii], currentActivity[ii], col.muted_tex_v);
+                gl.uniform2f(GL_shaderProgram.activityUniform[ii], currentActivity[ii], col.muted_tex_v);
             }
         }
         // default color for a measure point
-        gl.uniform2f(shaderProgram.activityUniform[NO_OF_MEASURE_POINTS], activityMin, col.measurePoints_tex_v);
+        gl.uniform2f(GL_shaderProgram.activityUniform[NO_OF_MEASURE_POINTS], activityMin, col.measurePoints_tex_v);
         // color used for a picked measure point
-        gl.uniform2f(shaderProgram.activityUniform[NO_OF_MEASURE_POINTS + 1], activityMax, col.measurePoints_tex_v);
+        gl.uniform2f(GL_shaderProgram.activityUniform[NO_OF_MEASURE_POINTS + 1], activityMax, col.measurePoints_tex_v);
     }
 }
 
@@ -945,7 +945,7 @@ function initRegionBoundaries(boundariesURL) {
 }
 
 /**
- * Make a draw call towards the shaderProgram compiled from common/vertex_shader common_fragment_shader
+ * Make a draw call towards the GL_shaderProgram compiled from common/vertex_shader common_fragment_shader
  * Note: all attributes have to be bound even if the shader does not explicitly use them (ex picking mode)
  * @param drawMode Triangles / Points
  * @param buffers Buffers to be drawn. Array of (vertices, normals, triangles, colors) for one to one mappings
@@ -953,17 +953,17 @@ function initRegionBoundaries(boundariesURL) {
  */
 function drawBuffer(drawMode, buffers){
     gl.bindBuffer(gl.ARRAY_BUFFER, buffers[0]);
-    gl.vertexAttribPointer(shaderProgram.vertexPositionAttribute, 3, gl.FLOAT, false, 0, 0);
+    gl.vertexAttribPointer(GL_shaderProgram.vertexPositionAttribute, 3, gl.FLOAT, false, 0, 0);
     gl.bindBuffer(gl.ARRAY_BUFFER, buffers[1]);
-    gl.vertexAttribPointer(shaderProgram.vertexNormalAttribute, 3, gl.FLOAT, false, 0, 0);
+    gl.vertexAttribPointer(GL_shaderProgram.vertexNormalAttribute, 3, gl.FLOAT, false, 0, 0);
     if (isOneToOneMapping) {
         gl.bindBuffer(gl.ARRAY_BUFFER, buffers[3]);
-        gl.vertexAttribPointer(shaderProgram.activityAttribute, 1, gl.FLOAT, false, 0, 0);
+        gl.vertexAttribPointer(GL_shaderProgram.activityAttribute, 1, gl.FLOAT, false, 0, 0);
     } else {
         gl.bindBuffer(gl.ARRAY_BUFFER, buffers[3]);
-        gl.vertexAttribPointer(shaderProgram.vertexAlphaAttribute, 2, gl.FLOAT, false, 0, 0);
+        gl.vertexAttribPointer(GL_shaderProgram.vertexAlphaAttribute, 2, gl.FLOAT, false, 0, 0);
         gl.bindBuffer(gl.ARRAY_BUFFER, buffers[4]);
-        gl.vertexAttribPointer(shaderProgram.vertexColorIndicesAttribute, 3, gl.FLOAT, false, 0, 0);
+        gl.vertexAttribPointer(GL_shaderProgram.vertexColorIndicesAttribute, 3, gl.FLOAT, false, 0, 0);
     }
     gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, buffers[2]);
     setMatrixUniforms();
@@ -1215,7 +1215,7 @@ function drawScene() {
 
         for (var i = 0; i < NO_OF_MEASURE_POINTS; i++){
             var mpColor = GL_colorPickerInitColors[i];
-            gl.uniform4fv(shaderProgram.materialColor, mpColor);
+            gl.uniform4fv(GL_shaderProgram.materialColor, mpColor);
             drawBuffer(gl.TRIANGLES, measurePointsBuffers[i]);
         }
         VS_pickedIndex = GL_getPickedIndex();

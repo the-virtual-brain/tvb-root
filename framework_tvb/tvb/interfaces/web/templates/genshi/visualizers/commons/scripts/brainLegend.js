@@ -105,10 +105,11 @@ function LEG_generateLegendBuffers() {
             colors.push(1);
         }
         LEG_legendBuffers[3] = gl.createBuffer();
+        LEG_legendBuffers[3].numItems = LEG_legendBuffers[0].numItems;
         gl.bindBuffer(gl.ARRAY_BUFFER, LEG_legendBuffers[3]);
         gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(colors), gl.STATIC_DRAW);
 
-        // if (is surface pick do yet another init)
+        // This buffer is a color buffer. It is used by the surface pick vertex shader.
         LEG_legendBuffers[4] = gl.createBuffer();
         LEG_legendBuffers[4].numItems = LEG_legendBuffers[0].numItems*4;
         gl.bindBuffer(gl.ARRAY_BUFFER, LEG_legendBuffers[4]);
@@ -145,7 +146,7 @@ function LEG_updateLegendColors() {
         var col = ColSchInfo();
         for (var i = 0; i < legend_activity_values.length / 2; i++) {
             var idx = i + NO_OF_MEASURE_POINTS + 2;
-            gl.uniform2f(shaderProgram.activityUniform[idx], legend_activity_values[i * 2], col.tex_v);
+            gl.uniform2f(GL_shaderProgram.activityUniform[idx], legend_activity_values[i * 2], col.tex_v);
         }
     }
 }

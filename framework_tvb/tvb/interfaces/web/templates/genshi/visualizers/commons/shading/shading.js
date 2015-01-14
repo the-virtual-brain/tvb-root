@@ -37,20 +37,19 @@
 
 /* globals gl*/
 
-//TODO rename this into SHADING_Context
-var shading = shading || {};
+var SHADING_Context = SHADING_Context || {};
 
 (function(){
 
 /*** fragments ***/
 
-shading.transform_init = function(shader){
+SHADING_Context.transform_init = function(shader){
     shader.pMatrixUniform = gl.getUniformLocation(shader, "uPMatrix");
     shader.mvMatrixUniform = gl.getUniformLocation(shader, "uMVMatrix");
     shader.nMatrixUniform = gl.getUniformLocation(shader, "uNMatrix");
 };
 
-shading.light_init = function(shader){
+SHADING_Context.light_init = function(shader){
     shader.ambientColorUniform = gl.getUniformLocation(shader, "uAmbientColor");
     shader.lightingDirectionUniform = gl.getUniformLocation(shader, "uLightingDirection");
     shader.directionalColorUniform = gl.getUniformLocation(shader, "uDirectionalColor");
@@ -59,7 +58,7 @@ shading.light_init = function(shader){
     shader.pointLightingSpecularColorUniform = gl.getUniformLocation(shader, "uPointLightingSpecularColor");
 };
 
-shading.colorscheme_init = function (shader) {
+SHADING_Context.colorscheme_init = function (shader) {
     shader.activityRange = gl.getUniformLocation(shader, "activityRange");
     shader.activityBins = gl.getUniformLocation(shader, "activityBins");
 
@@ -88,7 +87,7 @@ shading.colorscheme_init = function (shader) {
 
 /*** programs ***/
 
-shading._init_geometric_attributes = function(shader){
+SHADING_Context._init_geometric_attributes = function(shader){
     shader.vertexPositionAttribute = gl.getAttribLocation(shader, "aVertexPosition");
     gl.enableVertexAttribArray(shader.vertexPositionAttribute);
     shader.vertexNormalAttribute = gl.getAttribLocation(shader, "aVertexNormal");
@@ -99,17 +98,17 @@ shading._init_geometric_attributes = function(shader){
  * For vertex level picking special color buffers are used.
  * This behaviour is used for measure point picking and to draw transparents and brain lines.
  */
-shading._init_whole_scene_coloring = function(shader){
+SHADING_Context._init_whole_scene_coloring = function(shader){
     shader.useVertexColors = gl.getUniformLocation(shader, "uUseVertexColors");
     shader.materialColor = gl.getUniformLocation(shader, "uMaterialColor");
 };
 
-shading._brain_common = function(shader){
-    shading._init_geometric_attributes(shader);
-    shading.transform_init(shader);
-    shading.light_init(shader);
-    shading.colorscheme_init(shader);
-    shading._init_whole_scene_coloring(shader);
+SHADING_Context._brain_common = function(shader){
+    SHADING_Context._init_geometric_attributes(shader);
+    SHADING_Context.transform_init(shader);
+    SHADING_Context.light_init(shader);
+    SHADING_Context.colorscheme_init(shader);
+    SHADING_Context._init_whole_scene_coloring(shader);
 };
 
 /**
@@ -118,22 +117,22 @@ shading._brain_common = function(shader){
  * Used by connectivity views.
  * @deprecated
  */
-shading.basic_program_init = function(shader){
-    shading._init_geometric_attributes(shader);
-    shading.transform_init(shader);
+SHADING_Context.basic_program_init = function(shader){
+    SHADING_Context._init_geometric_attributes(shader);
+    SHADING_Context.transform_init(shader);
 };
 
 /** Init the program that uses per vertex activity and a color scheme */
-shading.one_to_one_program_init = function(shader){
-    shading._brain_common(shader);
+SHADING_Context.one_to_one_program_init = function(shader){
+    SHADING_Context._brain_common(shader);
     shader.colorSchemeUniform = gl.getUniformLocation(shader, "uColorScheme");
     shader.activityAttribute = gl.getAttribLocation(shader, "aActivity");
     gl.enableVertexAttribArray(shader.activityAttribute);
 };
 
 /** Init the program that uses per region activity and a color scheme */
-shading.region_progam_init = function(shader, measure_point_nr, legendGranularity){
-    shading._brain_common(shader);
+SHADING_Context.region_progam_init = function(shader, measure_point_nr, legendGranularity){
+    SHADING_Context._brain_common(shader);
     shader.vertexAlphaAttribute = gl.getAttribLocation(shader, "alpha");
     gl.enableVertexAttribArray(shader.vertexAlphaAttribute);
     shader.vertexColorIndicesAttribute = gl.getAttribLocation(shader, "alphaIndices");
@@ -146,13 +145,13 @@ shading.region_progam_init = function(shader, measure_point_nr, legendGranularit
 };
 
 /** Init the program that uses both a vertex activity and a vertex color */
-shading.surface_pick_init = function(shader){
+SHADING_Context.surface_pick_init = function(shader){
     // vertex activity part
-    shading.one_to_one_program_init(shaderProgram);
+    SHADING_Context.one_to_one_program_init(shader);
     // vertex color part
-    shaderProgram.useActivity =  gl.getUniformLocation(shaderProgram, "uUseActivity");
-    shaderProgram.vertexColorAttribute = gl.getAttribLocation(shaderProgram, "aVertexColor");
-    gl.enableVertexAttribArray(shaderProgram.vertexColorAttribute);
+    shader.useActivity =  gl.getUniformLocation(shader, "uUseActivity");
+    shader.vertexColorAttribute = gl.getAttribLocation(shader, "aVertexColor");
+    gl.enableVertexAttribArray(shader.vertexColorAttribute);
 };
 
 })();

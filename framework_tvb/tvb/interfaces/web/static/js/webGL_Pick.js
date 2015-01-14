@@ -30,19 +30,19 @@ GL_NOTFOUND = -1;
 //A dummy coordinates array that should fill the whole screen with a color. Used to 
 //get the returned color values from a click on a specific color
 var _DUMMY_COLOR_PICKING_ARRAY = [
-                                0.0,  1000.0,  0.0,
-                                    -1000.0, -1000.0,  1000.0,
-                                  1000.0, -1000.0,  1000.0,
-                                  0.0,  1000.0,  0.0,
-                                  1000.0, -1000.0,  1000.0,
-                                  1000.0, -1000.0, -1000.0,
-                                  0.0,  100.0,  0.0,
-                                  1000.0, -1000.0, -1000.0,
-                                 -1000.0, -1000.0, -1000.0,
-                                  0.0,  1000.0,  0.0,
-                                 -1000.0, -1000.0, -1000.0,
-                                 -1000.0, -1000.0,  1000.0
-                                ];
+    0.0,  1000.0,  0.0,
+    -1000.0, -1000.0,  1000.0,
+    1000.0, -1000.0,  1000.0,
+    0.0,  1000.0,  0.0,
+    1000.0, -1000.0,  1000.0,
+    1000.0, -1000.0, -1000.0,
+    0.0,  100.0,  0.0,
+    1000.0, -1000.0, -1000.0,
+   -1000.0, -1000.0, -1000.0,
+    0.0,  1000.0,  0.0,
+   -1000.0, -1000.0, -1000.0,
+   -1000.0, -1000.0,  1000.0
+];
 //color array that holds for each node a unique color                 				
 var GL_colorPickerInitColors = [];
 //color dictionary used for quick lookups that gives the node index for a given color
@@ -57,7 +57,7 @@ function GL_initColorPickingData(numberOfObjects) {
     var buffer = gl.createBuffer();
     gl.bindBuffer(gl.ARRAY_BUFFER, buffer);
     gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(_DUMMY_COLOR_PICKING_ARRAY), gl.STATIC_DRAW);
-    gl.vertexAttribPointer(shaderProgram.vertexPositionAttribute, 3, gl.FLOAT, false, 0, 0);
+    gl.vertexAttribPointer(GL_shaderProgram.vertexPositionAttribute, 3, gl.FLOAT, false, 0, 0);
     //Compute a increment that will allow to optimally 'spread' the range of available colors
     var TOTAL_COLOR_NR = 255 * 255 * 255;
     var inc = (TOTAL_COLOR_NR - 1)/ numberOfObjects;

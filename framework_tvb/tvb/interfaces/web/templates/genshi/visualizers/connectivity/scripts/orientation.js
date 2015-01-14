@@ -26,11 +26,11 @@ var ORIENTATION_Buffers;
 
 
 function ORIENTATION_draw_nose_and_ears() {
-	 //draw the nose
+     //draw the nose
     mvPushMatrix();
 
     loadIdentity();
-    gl.uniform1i(shaderProgram.colorIndex, YELLOW_COLOR_INDEX);
+    gl.uniform1i(GL_shaderProgram.colorIndex, YELLOW_COLOR_INDEX);
 
     mvPushMatrix();
     mvTranslate([0.0, -20.0, -55.0]);
@@ -40,14 +40,14 @@ function ORIENTATION_draw_nose_and_ears() {
 
     //draw the left ear
     mvPushMatrix();
-    gl.uniform1i(shaderProgram.colorIndex, BLUE_COLOR_INDEX);
+    gl.uniform1i(GL_shaderProgram.colorIndex, BLUE_COLOR_INDEX);
     mvTranslate([-17.0, 0.0, gl.viewportWidth * 0.091 - 112]);      // precalculated magic numbers to put the ears at the margins of canvas
     drawPyramid(ORIENTATION_Buffers[3], ORIENTATION_Buffers[4], ORIENTATION_Buffers[5]);
     mvPopMatrix();
 
     //draw the right ear
     mvPushMatrix();
-    gl.uniform1i(shaderProgram.colorIndex, RED_COLOR_INDEX);
+    gl.uniform1i(GL_shaderProgram.colorIndex, RED_COLOR_INDEX);
     mvTranslate([17.0, 0.0, gl.viewportWidth * 0.091 - 112]);       // precalculated magic numbers to put the ears at the margins of canvas
     drawPyramid(ORIENTATION_Buffers[6], ORIENTATION_Buffers[7], ORIENTATION_Buffers[8]);
     mvPopMatrix();
@@ -58,9 +58,9 @@ function ORIENTATION_draw_nose_and_ears() {
 
 function drawPyramid(vertexPositionBuffer, vertexPositionBufferForBottomOfPyramid, normals) {
     gl.bindBuffer(gl.ARRAY_BUFFER, vertexPositionBuffer);
-    gl.vertexAttribPointer(shaderProgram.vertexPositionAttribute, vertexPositionBuffer.itemSize, gl.FLOAT, false, 0, 0);
+    gl.vertexAttribPointer(GL_shaderProgram.vertexPositionAttribute, vertexPositionBuffer.itemSize, gl.FLOAT, false, 0, 0);
     gl.bindBuffer(gl.ARRAY_BUFFER, normals);
-    gl.vertexAttribPointer(shaderProgram.vertexNormalAttribute, normals.itemSize, gl.FLOAT, false, 0, 0);
+    gl.vertexAttribPointer(GL_shaderProgram.vertexNormalAttribute, normals.itemSize, gl.FLOAT, false, 0, 0);
     setMatrixUniforms();
     gl.drawArrays(gl.TRIANGLES, 0, vertexPositionBuffer.numItems);
     //draw the bottom of the pyramid
@@ -69,10 +69,10 @@ function drawPyramid(vertexPositionBuffer, vertexPositionBufferForBottomOfPyrami
 
 
 function drawSquare(vertexPositionBuffer) {
-    gl.uniform1i(shaderProgram.colorIndex, GREEN_COLOR_INDEX);
+    gl.uniform1i(GL_shaderProgram.colorIndex, GREEN_COLOR_INDEX);
     gl.bindBuffer(gl.ARRAY_BUFFER, vertexPositionBuffer);
-    gl.vertexAttribPointer(shaderProgram.vertexPositionAttribute, vertexPositionBuffer.itemSize, gl.FLOAT, false, 0, 0);
-    setMatrixUniforms(shaderProgram);
+    gl.vertexAttribPointer(GL_shaderProgram.vertexPositionAttribute, vertexPositionBuffer.itemSize, gl.FLOAT, false, 0, 0);
+    setMatrixUniforms(GL_shaderProgram);
     gl.drawArrays(gl.TRIANGLE_STRIP, 0, vertexPositionBuffer.numItems);
 }
 
@@ -262,6 +262,6 @@ function ORIENTATION_initOrientationBuffers() {
     noseBottom.numItems = 4;
 
     ORIENTATION_Buffers = [noseVertexPositionBuffer, noseBottom, noseNormals,
-    					   leftEarVertexPositionBuffer, leftEarBottom, leftEarNormals,
-    					   rightEarVertexPositionBuffer, rightEarBottom, rightEarNormals];
+                           leftEarVertexPositionBuffer, leftEarBottom, leftEarNormals,
+                           rightEarVertexPositionBuffer, rightEarBottom, rightEarNormals];
 }

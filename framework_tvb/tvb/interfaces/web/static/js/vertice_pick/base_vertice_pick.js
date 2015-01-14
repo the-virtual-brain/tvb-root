@@ -60,7 +60,7 @@ var verticesPoints = [];
 
 var picking_triangles_number = [];
 
-/* globals gl, shaderProgram, isOneToOneMapping, defaultLightSettings, GL_colorPickerInitColors,
+/* globals gl, GL_shaderProgram, isOneToOneMapping, defaultLightSettings, GL_colorPickerInitColors,
            updateGLCanvasSize, LEG_updateLegendVerticesBuffers, initGL, basicInitShaders,
            ColSchGetTheme, displayMessage, perspective, mvRotate, mvTranslate, mvPushMatrix, mvPopMatrix,
            basicSetLighting, HLPR_createWebGlBuffer, GL_handleMouseUp
@@ -79,9 +79,9 @@ function BASE_PICK_customInitGL(canvas) {
 
 function BASE_PICK_initShaders() {
     createAndUseShader("shader-fs", "shader-vs");
-    shading.surface_pick_init(shaderProgram);
+    SHADING_Context.surface_pick_init(GL_shaderProgram);
 
-    gl.uniform1i(shaderProgram.useVertexColors, true);
+    gl.uniform1i(GL_shaderProgram.useVertexColors, true);
 }
 
 
@@ -167,15 +167,19 @@ function BASE_PICK_drawBrain() {
     mvPushMatrix();
     mvRotate(180, [0, 0, 1]);
 
-    gl.uniform1i(shaderProgram.useActivity, !BASE_PICK_doPick);
     var col = ColSchInfo();
     var activityRange = ColSchGetBounds();
-    gl.uniform2f(shaderProgram.activityRange, activityRange.min, activityRange.max);
-    gl.uniform1f(shaderProgram.activityBins, activityRange.bins);
-    gl.uniform1f(shaderProgram.colorSchemeUniform, col.tex_v);
+
+    gl.uniform2f(GL_shaderProgram.activityRange, activityRange.min, activityRange.max);
+    gl.uniform1f(GL_shaderProgram.activityBins, activityRange.bins);
+    gl.uniform1f(GL_shaderProgram.colorSchemeUniform, col.tex_v);
+
+    gl.uniform1i(GL_shaderProgram.useActivity, !BASE_PICK_doPick);
+
     drawBuffers(drawingMode, brainBuffers);
 
-    gl.uniform1i(shaderProgram.useActivity, false);
+    gl.uniform1i(GL_shaderProgram.useActivity, false);
+
     if (! BASE_PICK_isMovieMode) { // todo does this navigator ever render? should it?
         mvPushMatrix();
         mvTranslate([navigatorX, navigatorY, navigatorZ]);
@@ -195,20 +199,20 @@ function BASE_PICK_drawBrain() {
         mvPopMatrix();
     }
     mvPopMatrix();
-    gl.uniform1i(shaderProgram.useActivity, true);
+    gl.uniform1i(GL_shaderProgram.useActivity, true);
 }
 
 
 function drawBuffers(drawMode, buffersSets) {
     for (var i = 0; i < buffersSets.length; i++) {
         gl.bindBuffer(gl.ARRAY_BUFFER, buffersSets[i][0]);
-        gl.vertexAttribPointer(shaderProgram.vertexPositionAttribute, 3, gl.FLOAT, false, 0, 0);
+        gl.vertexAttribPointer(GL_shaderProgram.vertexPositionAttribute, 3, gl.FLOAT, false, 0, 0);
         gl.bindBuffer(gl.ARRAY_BUFFER, buffersSets[i][1]);
-        gl.vertexAttribPointer(shaderProgram.vertexNormalAttribute, 3, gl.FLOAT, false, 0, 0);
+        gl.vertexAttribPointer(GL_shaderProgram.vertexNormalAttribute, 3, gl.FLOAT, false, 0, 0);
         gl.bindBuffer(gl.ARRAY_BUFFER, buffersSets[i][4]);
-        gl.vertexAttribPointer(shaderProgram.vertexColorAttribute, 4, gl.FLOAT, false, 0, 0);
+        gl.vertexAttribPointer(GL_shaderProgram.vertexColorAttribute, 4, gl.FLOAT, false, 0, 0);
         gl.bindBuffer(gl.ARRAY_BUFFER, buffersSets[i][3]);
-        gl.vertexAttribPointer(shaderProgram.activityAttribute, 1, gl.FLOAT, false, 0, 0);
+        gl.vertexAttribPointer(GL_shaderProgram.activityAttribute, 1, gl.FLOAT, false, 0, 0);
         gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, buffersSets[i][2]);
         setMatrixUniforms();
         gl.drawElements(drawMode, buffersSets[i][2].numItems, gl.UNSIGNED_SHORT, 0);
@@ -300,10 +304,11 @@ function __createPickingColorBuffers() {
         thisBufferColors = new Float32Array(picking_triangles_number[j] * 4);
         //Go trough all the triangles from this set and set the same color for 3 adjacend vertices representing a triangle
         for (var idx = 0; idx < picking_triangles_number[j]; idx++) {
-            thisBufferColors[4 * idx] = GL_colorPickerInitColors[(idx + pointsSoFar - (idx + pointsSoFar) % 3) / 3][0];
-            thisBufferColors[4 * idx + 1] = GL_colorPickerInitColors[(pointsSoFar + idx - (idx + pointsSoFar) % 3) / 3][1];
-            thisBufferColors[4 * idx + 2] = GL_colorPickerInitColors[(pointsSoFar + idx - (idx + pointsSoFar) % 3) / 3][2];
-            thisBufferColors[4 * idx + 3] = GL_colorPickerInitColors[(pointsSoFar + idx - (idx + pointsSoFar) % 3) / 3][3];
+            var color = GL_colorPickerInitColors[(pointsSoFar + idx - (idx + pointsSoFar) % 3) / 3];
+            thisBufferColors[4 * idx] = color[0];
+            thisBufferColors[4 * idx + 1] = color[1];
+            thisBufferColors[4 * idx + 2] = color[2];
+            thisBufferColors[4 * idx + 3] = color[3];
         }
         //Since the colorPickingArray is not split we need to keep track of the absolute index of the triangles
         //considering all the files that were processed before, this pointsSoFar keeps track of this
