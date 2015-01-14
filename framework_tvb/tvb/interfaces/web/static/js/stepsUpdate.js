@@ -65,7 +65,7 @@ function updateDivContent(divID, component, parentDIV, radioComponent) {
         if (second_ranger.value.indexOf(component.name) === 0) {
             second_ranger.value = '0';
         }
-        _computeNrOfOps();
+        RANGE_computeNrOfOps();
     }
 
     var sub_div = $('#' + divID + selectedValue);

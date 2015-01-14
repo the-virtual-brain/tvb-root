@@ -27,16 +27,19 @@
 #   Frontiers in Neuroinformatics (7:10. doi: 10.3389/fninf.2013.00010)
 #
 #
+
 """
 .. moduleauthor:: Ionel Ortelecan <ionel.ortelecan@codemart.ro>
 .. moduleauthor:: Lia Domide <lia.domide@codemart.ro>
 """
+
 import numpy
 import pylab
 from scipy.optimize import leastsq
 from matplotlib.mlab import griddata
 from matplotlib import colors
 from tvb.core.adapters.abcdisplayer import ABCMPLH5Displayer
+from tvb.core.adapters.exceptions import LaunchException
 from tvb.datatypes.graph import ConnectivityMeasure
 from tvb.basic.filters.chain import FilterChain
 
@@ -69,7 +72,7 @@ class BaseTopography():
         """
         Initialize entities for topographic computation.
         """
-        self.topography_data = self.prepare_sensors(sensor_locations, resolution=51)
+        self.topography_data = self.prepare_sensors(sensor_locations)
         self.head_contour = self.compute_head_contour(self.topography_data)
         self.sensor_locations = self.compute_sensors(self.topography_data)
 
@@ -101,8 +104,14 @@ class BaseTopography():
         circle_y = topography_data["circle_y"]
         rad = topography_data["rad"]
 
-        topo = griddata(topography_data["sproj"][:, 0], topography_data["sproj"][:, 1],
-                        numpy.ravel(numpy.array(topography)), x_arr, y_arr)
+
+        try:
+            topo = griddata(topography_data["sproj"][:, 0], topography_data["sproj"][:, 1],
+                            numpy.ravel(numpy.array(topography)), x_arr, y_arr)
+        except KeyError, err:
+            self.log.exception("Could not execute matplotlib.mlab.griddata...")
+            raise LaunchException("The measure points location is not compatible with this viewer "
+                                  "(maybe all on one line)!", err)
 
         non_empty_topo = topo.any()
 

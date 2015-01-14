@@ -284,7 +284,7 @@ function _prepareDataForSubmit(containerDivId, sliderValues) {
 
     var data =  {minValue: _getUnnormalizedValue(sliderValues[0], containerDivId), maxValue: _getUnnormalizedValue(sliderValues[1], containerDivId), step: parseFloat(step)};
     $("#" + hiddenFieldId).val($.toJSON(data));
-    _computeNrOfOps();
+    RANGE_computeNrOfOps();
 }
 
 
@@ -325,7 +325,7 @@ function disableRangeComponent(containerTableId, inputName) {
     $("#" + inputName).removeAttr('disabled').css('display', 'block');
     $('#' + containerTableId + BUTTON_EXPAND_SUFFIX).val('Expand Range');
     $("#" + containerTableId).find('input[type=number]').off('blur');
-    _computeNrOfOps();
+    RANGE_computeNrOfOps();
 }
 
 /*************************************************************************************************************************
@@ -358,7 +358,7 @@ function _getOpsForRanger(rangerValue) {
 var THREASHOLD_WARNING = 500;
 var THREASHOLD_ERROR = 50000;
 
-function _computeNrOfOps() {
+function RANGE_computeNrOfOps() {
     /*
      * Compute the total number of operations that will be launched because of the ranges selected.
      */
@@ -379,7 +379,10 @@ function _computeNrOfOps() {
     if (nrOps > THREASHOLD_ERROR) {
         className = "errorMessage";
     }
-    displayMessage(msg, className);
+    if (nrOps > 1) {
+        // Unless greater than 1, it is not a range, so do not display a possible confusing message.
+        displayMessage(msg, className);
+    }
 }
 
 // this script is loaded dynamically. The comment below is a source map. This is to see the file in js tools
