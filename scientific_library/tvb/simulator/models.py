@@ -3204,10 +3204,10 @@ class LarterBreakspear(Model):
     C = arrays.FloatArray(
         label = ":math:`C`",
         default = numpy.array([0.1]),
-        range = basic.Range(lo = 0.0, hi = 0.2, step = 0.01),
+        range = basic.Range(lo = 0.0, hi = 1.0, step = 0.01),
         doc = """Strength of excitatory coupling. Balance between internal and
         local (and global) coupling strength. C > 0 introduces interdependences between
-        consecutive columns/nodes. C=1 corresponds to maximum coupling.
+        consecutive columns/nodes. C=1 corresponds to maximum coupling between node and no self-coupling.
         This strenght should be set to sensible values when a whole network is connected. """)
 
     ane = arrays.FloatArray(
