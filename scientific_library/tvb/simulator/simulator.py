@@ -485,7 +485,7 @@ class Simulator(core.Type):
             if self.stimulus is not None:
                 stimulus[self.model.cvar, :, :] = numpy.reshape(self.stimulus(step - (self.current_step + 1)),
                                                                 (1, -1, 1))
-            #import pdb; pdb.set_trace()
+
             state = scheme(state, dfun, node_coupling, local_coupling, stimulus)
             history[step % horizon, :] = state
 
@@ -505,7 +505,9 @@ class Simulator(core.Type):
             #TODO: Need to be able to pause and resume a running simulation.
 
         #Update to support continuation
-        self.current_step = self.current_step + int_steps - 1  # TODO: Don't think this -1 should be here, check...
+        # TODO: Don't think this -1 should be here, check...
+        # This was checked and found to be ok. Purpose is not to repeat the point on resume
+        self.current_step = self.current_step + int_steps - 1
         self.history = history
 
 
