@@ -41,7 +41,7 @@ if __name__ == "__main__":
 
 import unittest
 import numpy
-from numpy.testing import assert_array_almost_equal as ArrayAlmostEqual
+from numpy.testing import assert_array_almost_equal
 
 from tvb.tests.library.base_testcase import BaseTestCase
 from tvb.simulator import models
@@ -76,8 +76,8 @@ class ModelsTest(BaseTestCase):
         history_shape = (1, model._nvar, 1, model.number_of_modes)
         model_ic = model.initial(dt, history_shape)
         self.assertEqual(model._nvar, 2)
-        self.assertTrue(ArrayAlmostEqual(model_ic, numpy.array([[[[ 0.49023095]],
-                                                           [[ 0.49023095]]]])) is None)
+        assert_array_almost_equal(model_ic, numpy.array([[[[ 0.49023095]],
+                                                          [[ 0.49023095]]]]))
 
     def test_g2d(self):
         """
@@ -109,9 +109,8 @@ class ModelsTest(BaseTestCase):
         history_shape = (1, model._nvar, 1, model.number_of_modes)
         model_ic = model.initial(dt, history_shape)
         self.assertEqual(model._nvar, 2)
-        self.assertTrue(ArrayAlmostEqual(model_ic, numpy.array([[[[ 0.97607082]],
-                                                                 [[-0.03384097]]]]))
-                                                                 is None)
+        assert_array_almost_equal(model_ic, numpy.array([[[[ 0.97607082]],
+                                                          [[-0.03384097]]]]))
 
 
     def test_jansen_rit(self):
@@ -121,13 +120,12 @@ class ModelsTest(BaseTestCase):
         history_shape = (1, model._nvar, 1, model.number_of_modes)
         model_ic = model.initial(dt, history_shape)
         self.assertEqual(model._nvar, 6)
-        self.assertTrue(ArrayAlmostEqual(model_ic, numpy.array([[[[-0.01381552]],
-                                                                 [[-0.30892439]],
-                                                                 [[-0.09769047]],
-                                                                 [[-0.03384097]],
-                                                                 [[-0.06178488]],
-                                                                 [[-0.30892439]]]]))
-                                                                  is None)
+        assert_array_almost_equal(model_ic, numpy.array([[[[-0.01381552]],
+                                                           [[-0.30892439]],
+                                                           [[-0.09769047]],
+                                                           [[-0.03384097]],
+                                                           [[-0.06178488]],
+                                                           [[-0.30892439]]]]))
 
 
     def test_sj2d(self):
@@ -138,11 +136,10 @@ class ModelsTest(BaseTestCase):
         model_ic = model.initial(dt, history_shape)
         self.assertEqual(model._nvar, 4)
         self.assertEqual(model.number_of_modes, 3)
-        self.assertTrue(ArrayAlmostEqual(model_ic, numpy.array([[[[-0.02763104,  0.14269546,  0.0534609 ]],
-                                                                 [[-0.02392918,  0.12357789,  0.0462985 ]],
-                                                                 [[-0.02763104,  0.14269546,  0.0534609 ]],
-                                                                 [[-0.02392918,  0.12357789,  0.0462985 ]]]]))
-                                                                 is None)
+        assert_array_almost_equal(model_ic, numpy.array([[[[-0.02763104,  0.14269546,  0.0534609 ]],
+                                                          [[-0.02392918,  0.12357789,  0.0462985 ]],
+                                                          [[-0.02763104,  0.14269546,  0.0534609 ]],
+                                                          [[-0.02392918,  0.12357789,  0.0462985 ]]]]))
 
 
     def test_sj3d(self):
@@ -153,13 +150,12 @@ class ModelsTest(BaseTestCase):
         model_ic = model.initial(dt, history_shape)
         self.assertEqual(model._nvar, 6)
         self.assertEqual(model.number_of_modes, 3)
-        self.assertTrue(ArrayAlmostEqual(model_ic, numpy.array([[[[-0.02763104,  0.14269546,  0.0534609 ]],
-                                                                 [[-2.56553276, -2.16156801, -2.37320634]],
-                                                                 [[ 5.97236896,  6.14269546,  6.0534609 ]],
-                                                                 [[-0.02763104,  0.14269546,  0.0534609 ]],
-                                                                 [[-0.06178488,  0.31907674,  0.1195422 ]],
-                                                                 [[ 5.97236896,  6.14269546,  6.0534609 ]]]]))
-                                                                 is None)
+        assert_array_almost_equal(model_ic, numpy.array([[[[-0.02763104,  0.14269546,  0.0534609 ]],
+                                                          [[-2.56553276, -2.16156801, -2.37320634]],
+                                                          [[ 5.97236896,  6.14269546,  6.0534609 ]],
+                                                          [[-0.02763104,  0.14269546,  0.0534609 ]],
+                                                          [[-0.06178488,  0.31907674,  0.1195422 ]],
+                                                          [[ 5.97236896,  6.14269546,  6.0534609 ]]]]))
 
     def test_reduced_wong_wang(self):
         """
@@ -168,29 +164,29 @@ class ModelsTest(BaseTestCase):
         history_shape = (1, model._nvar, 1, model.number_of_modes)
         model_ic = model.initial(dt, history_shape)
         self.assertEqual(model._nvar, 1)
-        self.assertTrue(ArrayAlmostEqual(model_ic, numpy.array([[[[ 0.49023095]]]])) is None)
+        assert_array_almost_equal(model_ic, numpy.array([[[[ 0.49023095]]]]))
 
 
     def test_zetterberg_jansen(self):
-            """
-            """
-            model = models.ZetterbergJansen()
-            history_shape = (1, model._nvar, 1, model.number_of_modes)
-            model_ic = model.initial(dt, history_shape)
-            self.assertEqual(model._nvar, 12)
-            self.assertTrue(ArrayAlmostEqual(model_ic, numpy.array([[[[ -0.13815519]],
-                                                                     [[ -0.30892439]],
-                                                                     [[-25.1196459 ]],
-                                                                     [[-47.10057849]],
-                                                                     [[-47.10057849]],
-                                                                     [[-47.10057849]],
-                                                                     [[-40.10701455]],
-                                                                     [[-40.10701455]],
-                                                                     [[-40.10701455]],
-                                                                     [[ -0.30892439]],
-                                                                     [[-40.10701455]],
-                                                                     [[-40.10701455]]]]))
-                                                                     is None)
+        """
+        """
+        model = models.ZetterbergJansen()
+        history_shape = (1, model._nvar, 1, model.number_of_modes)
+        model_ic = model.initial(dt, history_shape)
+        self.assertEqual(model._nvar, 12)
+        assert_array_almost_equal(model_ic, numpy.array([[[[ -0.13815519]],
+                                                          [[ -0.30892439]],
+                                                          [[-25.1196459 ]],
+                                                          [[-47.10057849]],
+                                                          [[-47.10057849]],
+                                                          [[-47.10057849]],
+                                                          [[-40.10701455]],
+                                                          [[-40.10701455]],
+                                                          [[-40.10701455]],
+                                                          [[ -0.30892439]],
+                                                          [[-40.10701455]],
+                                                          [[-40.10701455]]]]))
+
 
 
 def suite():
