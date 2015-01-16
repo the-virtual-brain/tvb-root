@@ -24,7 +24,7 @@ We are grateful to:
  - our sponsors (check their names on the |our_sponsors_page|
  - all |third_party| tools that we used (licenses are also included in TVB_Distribution)
  - JetBrains for |pycharm_ide|
- - |hudson| team for their continous integration tool
+ - |hudson| team for their continuous integration tool
  - Atlassian company for |jira| software
  - and to you for reading these :-)
 
@@ -88,5 +88,3 @@ We are grateful to:
 .. |jira| raw:: html
 
     <a href="https://www.atlassian.com/software/jira" target="_blank"> Jira </a>
-
-

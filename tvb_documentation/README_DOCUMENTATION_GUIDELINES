@@ -4,7 +4,7 @@ GENERAL GUIDELINES
 
 #. **Installation Manual**
 #. **User's Guide**
-#. **Developer's Reference Manual**    
+#. **Developer's Reference Manual**
 #. **User's Scientific Report**
 
 
@@ -26,15 +26,16 @@ General Guidelines
 Accessibility
 -------------
 Documents developed for the |TVB| will be organized and made available for
-downloading via the SVN repository: https://repo.thevirtualbrain.org/svn/tvb/trunk/docs/manuals.
-Each of the manuals/docs presented below has it's own folder in this structure,
-so all artifacts strict related to that doc (images, styles, ...) should be placed into
-that folder.
+downloading via the SVN repository: https://repo.thevirtualbrain.org/svn/tvb/trunk/tvb-documentation
+or via GitHub https://github.com/the-virtual-brain/tvb-documentation.
+Each of the manuals/docs presented below has its own folder in this structure,
+so all files strictly related to that document (images, styles, ...) should be placed into
+the corresponding folder.
 
 
 File format
 -----------
-Documents should be available in a simple text format. We recommend that they be
+Documents should be available in a simple text format. We recommend that they are
 written in rst (reStructuredText) and based on a set of templates
 RST was chosen because:
 
@@ -61,13 +62,13 @@ There are some common elements for all documents, so we put them into special fo
    					a) template.rst - has content that generates first page (logo, title, ...), table of contents
    					   and header/footer format
    					b) constants.rst - defines some values that are user through all manuals (e.g TVB name, url ...)
-   						 
 
-!!! IMPORTANT: 
+
+!!! IMPORTANT:
 	- please be careful when changing these templates and styles. They apply to **ALL** TVB documents.
 	- constants.rst file is included DYNAMICALLY at build time into all rst files that generates online-help,
 	  so this file MUST NOT be deleted.
-       
+
 
 Documents Structure
 ------------------
@@ -76,7 +77,7 @@ In order to have a consistent structure and format for all documents it's import
 some rules while writing docs:
 1. Each manual/document must have a MAIN document where other RST files can be included.
 
-2. Each MAIN document must start with a section where to define constants for doc title, description, version and revision. 
+2. Each MAIN document must start with a section where to define constants for doc title, description, version and revision.
     .. |TITLE| replace:: Installation Manual
     .. |DESCRIPTION| replace:: Installation Manual for |TVB|
     .. |VERSION| replace:: 1.0
@@ -95,31 +96,31 @@ some rules while writing docs:
    d) ~~~~~~~~~~~~~~~~~~~~~~~~
    e) ************************
    f) ++++++++++++++++++++++++
-   
-5. After any change in TVB documents, please generate at least PDF version to ensure there is no 
+
+5. After any change in TVB documents, please generate at least PDF version to ensure there is no
    error in the document. Next chapter explains how to do that.
 
 Screenshots
 -----------
 
-Most of TVB documents include images and screenshots of the web interface. This is ok, 
+Most of TVB documents include images and screenshots of the web interface. This is ok,
 but we have to consider a few aspects when introducing images in our documentation:
-- image size/resolution: please be aware of the size of the images you are using into documentaion. 
-    In order to introduce them into documentation, any framework/software has to adjust them, which 
-    measn processing time and quality reduction. 
-- image format: current recommended format for storing/using images is png but if there are 
+- image size/resolution: please be aware of the size of the images you are using into documentaion.
+    In order to introduce them into documentation, any framework/software has to adjust them, which
+    measn processing time and quality reduction.
+- image format: current recommended format for storing/using images is png but if there are
 		cases when you don't need a high level of details jpg format can be used too.
 
-IMPORTANT: 
+IMPORTANT:
 In case of UserGuide, from wich we automatically generate Online-Help please use JPG format
-for screenshots. Also, if you have any tools please try to pre-process these images to reduce their 
-size as much as possible, without loosing details. 
+for screenshots. Also, if you have any tools please try to pre-process these images to reduce their
+size as much as possible, without loosing details.
 This is important because it reduces the time to show online help into client browser.
 
 Create PDF & HTML
 -----------------
 
-At build time for all TVB manuals we generate appropriate PDF files and from some parts of 
+At build time for all TVB manuals we generate appropriate PDF files and from some parts of
 User's Guide (related to UI) generate online-help. As a result TVB release (zip files)
 contains into /docs folder all PDF files. HTML content is placed in a folder that
 makes it available through web interface.
@@ -133,14 +134,14 @@ To run these scripts, you need to have the following packages installed:
 
 1. Scripts to generate PDFs
 	- they are placed in trunk/docs/manuals: generate_pdf.bat (Windows) / generate_pdf.sh (Linux)
-		These scripts generate a PDF file for each manual/doc and place them in the same folder where 
+		These scripts generate a PDF file for each manual/doc and place them in the same folder where
 		scripts are placed.
 
 2. Script to generate both PDFs and HTMLs
-	- this script is trunk\doc_gen\doc_generator.py 
+	- this script is trunk\doc_gen\doc_generator.py
 	  Running this Python script will generate PDF files in trunk/dist/docs folder and HTML in
 	  trunk\tvb\interfaces\web\static\help
-	  
+
 	 In case you want to generate only parts of the documentation please run this script with one of the
 	 available options (see them with: python doc_generator.py -h)
 	 a) -o option: generates only online help [this is usefull in case you want to see online help without running a distribution]
@@ -151,18 +152,18 @@ Simulator Documentation
 -----------------------
 
 The entire Simulator documentation can be found in trunk\tvb\simulator\doc. Mainly here you can see
-the RST files with texts and all necessary images are placed into ./img folder. 
+the RST files with texts and all necessary images are placed into ./img folder.
 
 !!! Important: but at this moment images are not generated automatically at build time. So for any
 chage in the documentation or code we have to generate them and commit on SVN using:
 a) to generate class diagrams please run: class_diagrams.sh
 b) to generate model images please run  : python generate_model_phase_plane_images.py
 
-and do not forget to commit on svn images used into RST files. 
+and do not forget to commit on svn images used into RST files.
 
-To check, for missing images you can try to generate PDF for tvb.simulator.rst (with rst2pdf) 
+To check, for missing images you can try to generate PDF for tvb.simulator.rst (with rst2pdf)
 and look for missing image errors.
-	  
+
 
 Available Documents
 ===================
@@ -173,8 +174,8 @@ maintain them as a coherent body of documentation.
 
 Installation Manual
 ---------------------
-Purpose:  This manual should provide detailed description about the steps 
-          to be followed to download & install TVB. 
+Purpose:  This manual should provide detailed description about the steps
+          to be followed to download & install TVB.
 Contents: Installation steps / instructions.
 Created and Maintained by: Lead developer(s) and Web designer.
 File: manuals/InstallationManual/InstallationManual.rst
@@ -182,7 +183,7 @@ File: manuals/InstallationManual/InstallationManual.rst
 
 User's Guide
 ------------
-Purpose:     
+Purpose:
 	Describes the function, interfaces and usage of the software.
 	Describes the overall structure of the |TVB| flow.
 
@@ -199,19 +200,13 @@ Created and Maintained by: Framework and Scientific Development teams
 File: manuals/DeveloperReference/DeveloperReferenceManual.rst
 
 
-User's Scientific Report
+Handouts
 ------------------------
 Purpose: To provide a more detailed and comprehensive description of |TVB|:
-         Scientific motivation and goals.
-Contents:Description of the Theoretical framework and formalisms, the need of a practical implementation
-	and bibliographical references. 
-	A statement of the |TVB| project's scientific objectives, descriptions of major
-        initiatives related to the |TVB| project and their
-        interrelationships, including what groups are involved in
-        development, testing and usage, shall be included. 
-	Expected scientific/clinical benefits.
-        Test cases with clinical/scientific relevance.
-Created and Maintained by: Researchers. Should be updated before SFN meeting or any other major releases.
+         and test cases with clinical/scientific relevance.
+         The handouts are updated before a new |TVB| wsorkshop.
+
+Created and Maintained by: Paula Sanz-Leon.
 File: manuals/ScientificReport/UserScientificReport.rst
 Images: manuals/ScientificReport/images
 
@@ -219,12 +214,12 @@ As general rules:
 ................
 - IMAGES
   * Format: .svg, .jpeg or .png format
-  * It is strongly encouraged to have the code for any figure resulting from a 
+  * It is strongly encouraged to have the code for any figure resulting from a
     simulation/ an analysis. We should offer reproducible figures.
 
-- REFERENCES 
+- REFERENCES
   * MUST be included in manuals/ScientificReport/sci.report.bib.rst (see the example below)
         .. _FitzHugh 1961:
         .. [FH_1961] FitzHugh, R., *Impulses and physiological states in theoretical models of nerve membrane*, Biophysical Journal 1: 445, 1961.
   * To use the reference within any of the sci.report files use the citation label with a trailing underscore (see the example below)
-     Here is a citation reference: (`FitzHugh 1961`_). 
+     Here is a citation reference: (`FitzHugh 1961`_).
