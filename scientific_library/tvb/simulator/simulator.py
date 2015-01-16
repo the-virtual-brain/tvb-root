@@ -284,22 +284,6 @@ class Simulator(core.Type):
             #    msg = "%s: Surface needs region mapping defined... "
             #    LOG.error(msg % (repr(self)))
 
-        #Make sure spatialised model parameters have the right shape (number_of_nodes, 1)
-        excluded_checks = ("state_variable_range", "variables_of_interest", "noise", "psi_table", "nerf_table")
-        params = self.model.trait.keys()
-        for param in excluded_checks:
-            if param in params:
-                params.remove(param)
-        for param in params:
-            #If it's a surface sim and model parameters were provided at the region level
-            if self.surface is not None:
-            #TODO: Once traits are working properly again, the evals and execs here shouldn't be necessary...
-                if eval("self.model." + param + ".size") == self.connectivity.number_of_regions:
-                    exec("self.model." + param + " = self.model." + param +
-                         "[self.surface.region_mapping].reshape((-1, 1))")
-            if eval("self.model." + param + ".size") == self.number_of_nodes:
-                exec("self.model." + param + " = self.model." + param + ".reshape((-1, 1))")
-
         # Estimate of memory usage
         self._guesstimate_memory_requirement()
 
@@ -319,6 +303,23 @@ class Simulator(core.Type):
         if full_configure:
             # When run from GUI, preconfigure is run separately, and we want to avoid running that part twice
             self.preconfigure()
+
+        #Make sure spatialised model parameters have the right shape (number_of_nodes, 1)
+        excluded_params = ("state_variable_range", "variables_of_interest", "noise", "psi_table", "nerf_table")
+
+        for param in self.model.trait.keys():
+            if param in excluded_params:
+                continue
+            #If it's a surface sim and model parameters were provided at the region level
+            region_parameters = getattr(self.model, param)
+            if self.surface is not None:
+                if region_parameters.size == self.connectivity.number_of_regions:
+                    new_parameters = region_parameters[self.surface.region_mapping].reshape((-1, 1))
+                    setattr(self.model, param, new_parameters)
+            region_parameters = getattr(self.model, param)
+            if region_parameters.size == self.number_of_nodes:
+                new_parameters = region_parameters.reshape((-1, 1))
+                setattr(self.model, param, new_parameters)
 
         #Configure spatial component of any stimuli
         self.configure_stimuli()
