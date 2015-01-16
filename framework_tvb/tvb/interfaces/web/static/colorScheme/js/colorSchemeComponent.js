@@ -1,7 +1,8 @@
 var nodeColorRGB = [255, 255, 255];
 var _colorSchemeColors;
 var _colorScheme = null;                // the color scheme to be used for current drawing
-var _minActiv, _maxActiv;               // keep the interest interval
+var _minRange, _maxRange;               // keep the interest interval
+var _minActivity, _maxActivity;         // keep the full range
 var _refreshCallback = null ;           // this is called when color scheme changes update the visualiser
 var _sparseColorNo = 256;
 
@@ -114,7 +115,7 @@ function ColSchGetTheme(){
 }
 
 function ColSchGetBounds(){
-    return { min: _minActiv, max:_maxActiv, bins: _sparseColorNo };
+    return { min: _minRange, max:_maxRange, bins: _sparseColorNo };
 }
 // ================================= COLOR SCHEME STRUCTURES END =================================
 
@@ -228,27 +229,28 @@ function ColSch_initColorSchemeParams(minValue, maxValue, refreshFunction) {
         return;
     }
     elemSliderSelector.slider({
-        range: true, min: minValue, max: maxValue, step: 0.001,
+        range: true, min: minValue, max: maxValue, step: (maxValue - minValue) / 1000, // 1000 steps between max and min
         values: [minValue, maxValue],
-        slide: function(event, ui) {                            // update the UI
-                $("#sliderMinValue").html(ui.values[0].toFixed(3));
-                $("#sliderMaxValue").html(ui.values[1].toFixed(3));
+        slide: function(event, ui) {
+            $("#sliderMinValue").html(ui.values[0].toFixed(3));
+            $("#sliderMaxValue").html(ui.values[1].toFixed(3));
         },
         change: function(event, ui) {
-            _minActiv = ui.values[0];
-            _maxActiv = ui.values[1];
+            _minRange = ui.values[0];
+            _maxRange = ui.values[1];
             if (_refreshCallback) { _refreshCallback(); }
         }
     });
     $("#sliderMinValue").html(minValue.toFixed(3));
     $("#sliderMaxValue").html(maxValue.toFixed(3));
-    _minActiv = minValue;            // on start the whole interval is selected
-    _maxActiv = maxValue;
-
+    _minRange = minValue;            // on start the whole interval is selected
+    _maxRange = maxValue;
+    _minActivity = minValue;
+    _maxActivity = maxValue;
     // initialise the sparse params
-    var colorNoUIElem = $("#ColSch_colorNo");                    // cache the jQuery selector
+    var colorNoUIElem = $("#ColSch_colorNo");
     colorNoUIElem.html(_sparseColorNo);
-    $("#sliderForSparseColSch").slider({
+    $("#sliderForSparseColSch").slider({ // and exponential slider for number of color bins
         min: 1, max: 8, step: 1, value: 8,
         slide: function (event, ui) {
             var nbins = Math.pow(2, ui.value);
@@ -265,14 +267,12 @@ function ColSch_initColorSchemeParams(minValue, maxValue, refreshFunction) {
 }
 
 /**
- * Factory function which returns a color for the given point in interval (min, max),
- * according to the current <code>_colorScheme</code>
+ * Returns a color for the given point in interval (min, max), according to the current <code>_colorScheme</code>
+ * Values outside the interval are clamped
  *
  * @param pointValue The value whose corresponding color is returned
- * @param max   The maximum value of the array, to use for computing gradient
- * @param min   Maximum value in colors array.
- *
- * NOTE: The following condition should be true: <code> min <= pointValue <= max </code>
+ * @param max Upper bound for pointValue
+ * @param min Lower bound for pointValue
  */
 function getGradientColor(pointValue, min, max) {
     // The color array for the current scheme
@@ -283,16 +283,30 @@ function getGradientColor(pointValue, min, max) {
     }
     pointValue = clampValue(pointValue, min, max); // avoid rounding problems
 
-    //scale activity within given range to [0,1]
-    var normalizedValue = (pointValue - min) / (max - min);
-     // bin the activity
-    normalizedValue  = Math.floor(normalizedValue  * _sparseColorNo) / _sparseColorNo;
-    // We sample the interior of the array. If normalizedValue is between [0..1] we will obtain colors[1] and colors[254]
+    // As we are given explicit bounds we have to rescale the value to an activity
+    var normalizedValue = (pointValue - min) / (max - min);  // to 0..1
+    var activity = _minActivity + normalizedValue * (_maxActivity - _minActivity); // to _minActivity.._maxActivity
+
+    return ColSch_getColor(activity);
+}
+
+/**
+ * Looks up an activity value in the current palette. Analog to the color scheme shader.
+ * Takes into account the active range and number of bins.
+ * @returns {[number]} rgb in 0..1 units
+ */
+function ColSch_getColor(activity){
+    // The color array for the current scheme
+    var colors = _colorSchemeColors[ColSchInfo()._data_idx];
+    activity = (activity - _minRange)/(_maxRange - _minRange);
+    // bin the activity
+    activity  = Math.floor(activity  * _sparseColorNo) / _sparseColorNo;
+    // We sample the interior of the array. If activity is between [0..1] we will obtain colors[1] and colors[254]
     // This linear transform implements it. The shader version does the same.
-    normalizedValue = normalizedValue * 253.0/255.0 + 1.0/255.0;
-    normalizedValue = clampValue(normalizedValue);
+    activity = activity * 253.0/255.0 + 1.0/255.0;
+    activity = clampValue(activity);
     // from 0..1 to 0..255 the color array range
-    var idx = Math.round(normalizedValue * 255); // nearest neighbour interpolation
+    var idx = Math.round(activity * 255); // nearest neighbour interpolation
     var col = colors[idx];
     // this function returns float colors
     return [col[0]/255, col[1]/255, col[2]/255];
@@ -301,33 +315,6 @@ function getGradientColor(pointValue, min, max) {
 function ColSch_getGradientColorString(pointValue, min, max) {
     var rgb_values = getGradientColor(pointValue, min, max);
     return "rgb(" + Math.round(rgb_values[0]*255) + "," + Math.round(rgb_values[1]*255) + "," + Math.round(rgb_values[2]*255) + ")";
-}
-
-/**
- * Factory function which computes the colors for a whole array of values in interval (min, max)
- * according to the current <code>_colorScheme</code>
- *
- * @param {Array} values The values for which the colors are generated;
- *                       Condition: min <= values[i] <= max (for every values[i])
- * @param {Float} max   The maximum value of the array, to use for computing gradient
- * @param {Float} min   Maximum value in colors array.
- * @param {Float32Array} outputArray If specified, this is filled with the computed
- *                     Condition: outputArray.length = 4 * values.length (RGBA colors)
- * @returns {Array} If <code>outputArray</code> was not specified, a normal array is returned;
- *                  The empty array is returned otherwise
- */
-function getGradientColorArray(values, min, max, outputArray) {
-    var result = [], color = [];
-    for (var i = 0; i < values.length; ++i) {
-        color = getGradientColor(values[i], min, max);
-        color.push(1);                               // add the alpha value
-        if (outputArray) {
-            outputArray.set(color, i * 4);
-        } else {
-            result.concat(color);
-        }
-    }
-    return result;
 }
 
 // ================================= COLOR SCHEME FUNCTIONS  END  =================================
