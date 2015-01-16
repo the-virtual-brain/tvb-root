@@ -445,7 +445,7 @@ class Simulator(core.Type):
 
         if self.stimulus is None:
             stimulus = 0.0
-        else:  # TODO: Consider changing to absolute time...
+        else:  # TODO: Consider changing to simulator absolute time... This is an open discussion, a matter of interpretation of the stimuli time axis.
             time = numpy.arange(0, simulation_length, self.integrator.dt)
             time = time[numpy.newaxis, :]
             self.stimulus.configure_time(time)
@@ -500,11 +500,7 @@ class Simulator(core.Type):
             if any(outputi is not None for outputi in output):
                 yield output
 
-            #TODO: Need to be able to pause and resume a running simulation.
-
-        #Update to support continuation
-        # TODO: Don't think this -1 should be here, check...
-        # This was checked and found to be ok. Purpose is not to repeat the point on resume
+        # This -1 is here for not repeating the point on resume
         self.current_step = self.current_step + int_steps - 1
         self.history = history
 

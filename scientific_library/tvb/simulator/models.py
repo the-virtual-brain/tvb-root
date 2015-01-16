@@ -197,6 +197,7 @@ class Model(core.Type):
         # TODO: There is an issue of allignment when the current implementation
         #      is used to pad out explicit inital conditions that aren't as long
         #      as the required history...
+        #      This issue is old and possible fixed
         # TODO: We still ideally want to support spatial colour for surfaces --
         #      though this will probably have to be done at the Simulator level
         #      with a linear, strictly-stable, spatially invariant filter
@@ -205,9 +206,11 @@ class Model(core.Type):
         #      temporally coloured noise hasn't un-whitened the spatial noise
         #      distribution to start with... [ie, spatial colour is a longer
         #      term problem to solve...])
+        #      This is a scientific open question.
         #TODO: Ideally we'd like to have a independent random stream for each node.
         #      Currently, if the number of nodes is different we'll get the
         #      slightly different values further in the history array.
+        #      This is a scientific open question.
 
         initial_conditions = numpy.zeros(history_shape)
         tpts = history_shape[0]
@@ -235,7 +238,7 @@ class Model(core.Type):
                                                          lo=lo_bound, hi=up_bound)
 
         for var in xrange(nvar):
-            # TODO: Hackery, validate me...-noise.mean(axis=0) ... self.noise.nsig
+            # TODO: Hackery (because unpublished method), validate me...-noise.mean(axis=0) ... self.noise.nsig.
             # perf hint: cumsum is expensive
             initial_conditions[:, var, :] = numpy.sqrt(2.0 * nsig[var]) * numpy.cumsum(noise[:, var, :],axis=0) + loc[var]
 
@@ -1010,6 +1013,7 @@ class ReducedSetFitzHughNagumo(Model):
 
         # TODO: Hack fix, these cause issues with mapping spatialised parameters
         #      at the region level to the surface for surface sims.
+        #      Setting per region parameters with a surface simulation will break this model.
         # NOTE: Existing modes definition (from the paper) is not properly
         #      normalised, so number_of_modes can't really be changed
         #      meaningfully anyway adnd nu and nv just need to be "large enough"
@@ -1474,6 +1478,7 @@ class ReducedSetHindmarshRose(Model):
 
         # TODO: Hack fix, these cause issues with mapping spatialised parameters
         #      at the region level to the surface for surface sims.
+        #      Setting per region parameters with a surface simulation will break this model.
         # NOTE: Existing modes definition (from the paper) is not properly
         #      normalised, so number_of_modes can't really be changed
         #      meaningfully anyway adnd nu and nv just need to be "large enough"
@@ -3821,7 +3826,7 @@ class Hopfield(Model):
         x = state_variables[0, :]
         dx = (- x + coupling[0]) / self.taux
 
-        # todo: display dependent hack
+        # todo: display dependent hack. It returns dx twice to be compatible with dfunDyn
         # We return 2 arrays here, because we have 2 possible state Variable, even if not dynamic
         # Otherwise the phase-plane display will fail.
         derivative = numpy.array([dx, dx])

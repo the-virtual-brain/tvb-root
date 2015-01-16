@@ -81,14 +81,8 @@ following:
 .. moduleauthor:: Paula Sanz Leon <Paula@tvb.invalid>
 
 """
-
-#TODO: Once the issues around traits and the UI are resolved, this should be
-#      replaced by the datatype version...
-
-# Third party python libraries
 import numpy
 
-#The Virtual Brain
 import tvb.basic.traits.core as core
 import tvb.basic.traits.types_basic as basic
 import tvb.datatypes.arrays as arrays

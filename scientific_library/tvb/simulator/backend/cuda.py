@@ -58,8 +58,8 @@ from . import base
 
 class OccupancyRecord(pycuda.tools.OccupancyRecord):
     def __repr__(self):
-        ret = "Occupancy(tb_per_mp=%d, limited_by=%r, "
-              "warps_per_mp=%d, occupancy=%0.3f)"
+        ret = ("Occupancy(tb_per_mp=%d, limited_by=%r, "
+              "warps_per_mp=%d, occupancy=%0.3f)")
         return ret % (self.tb_per_mp, self.limited_by, 
                       self.warps_per_mp, self.occupancy)
 
@@ -89,15 +89,15 @@ class Global(base.Global):
 
     def __get__(self, inst, ownr):
         self.post_init()
-            buff = array([0]).astype(self.dtype)
-            cuda.memcpy_dtoh(buff, self.ptr)
-            return buff[0]
+        buff = array([0]).astype(self.dtype)
+        cuda.memcpy_dtoh(buff, self.ptr)
+        return buff[0]
 
     def __set__(self, inst, val):
         self.post_init()
-            cuda.memcpy_htod(self.ptr, self.dtype(val))
-            buff = empty((1,)).astype(self.dtype)
-            cuda.memcpy_dtoh(buff, self.ptr)
+        cuda.memcpy_htod(self.ptr, self.dtype(val))
+        buff = empty((1,)).astype(self.dtype)
+        cuda.memcpy_dtoh(buff, self.ptr)
 
 
 class Array(base.Array):

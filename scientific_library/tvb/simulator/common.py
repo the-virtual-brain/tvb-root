@@ -193,26 +193,3 @@ def zip_directory(path, zip_file):
         for filename in files:
             zip_file.write(os.path.join(dirname, filename))
         zip_file.close()
-
-
-# If I need the headers in the positions file
-def add_headers(filename):
-    """ 
-    Add the headers to the positions file.
-
-    This function is really temporary until we have consistent naming of the
-    files required to build a connectivity dtype.
-    #TODO: delete as soon as possible.
-
-    """
-    headers = ['Label', 'X', 'Y', 'Z']
-    tmp = open('TMP', 'w')
-    orig = open(filename, 'r')
-    tmp.write('\t'.join(headers) + '\n')
-    for line in orig.readlines():
-        tmp.write(line)
-    orig.close()
-    tmp.close()
-    os.remove(filename)
-    os.rename('TMP', filename)
-

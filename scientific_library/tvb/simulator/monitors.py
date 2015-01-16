@@ -172,7 +172,7 @@ class Monitor(core.Type):
         LOG.info("%s: variables of interest: %s" % (str(self), str(self.voi)))
 
         # monitor period in integration steps
-        #TODO: Enforce period as integral multiple of dt elsewhere and remove 
+        #TODO: Enforce period as integral multiple of dt elsewhere and remove
         #      round from here, it's weird offset prone...
         self.istep = iround(self.period/ self.dt)
         LOG.info("%s: istep of monitor is %d" % (str(self), self.istep))
@@ -326,8 +326,7 @@ class SpatialAverage(Monitor):
     .. automethod:: SpatialAverage.record
 
     """
-    _ui_name = "Spatial average" #with temporal sub-sample
-    #TODO: Consider modifying to "with temporal-average"
+    _ui_name = "Spatial average with temporal sub-sample"
 
     spatial_mask = arrays.IntegerArray( #TODO: Check it's a vector of length Nodes (like region mapping for surface)
         label = "An index mask of nodes into areas",
@@ -404,8 +403,8 @@ class SpatialAverage(Monitor):
         number_of_areas = len(areas)
         LOG.debug("%s: number_of_areas = %s" % (str(self), number_of_areas))
         if not numpy.all(areas == numpy.arange(number_of_areas)):
-            msg = " ".join(("Areas in the spatial_mask must be specified as a",
-                            "contiguous set of indices starting from zero."))
+            msg = ("Areas in the spatial_mask must be specified as a "
+                    "contiguous set of indices starting from zero.")
             LOG.error(msg)
             raise Exception(msg)
 
@@ -422,7 +421,6 @@ class SpatialAverage(Monitor):
         self.spatial_mean = spatial_sum / nodes_per_area
 
         util.log_debug_array(LOG, self.spatial_mean, "spatial_mean", owner=self.__class__.__name__)
-        #import pdb; pdb.set_trace()
 
 
     def record(self, step, state):
@@ -559,28 +557,7 @@ class EEG(Monitor):
     .. automethod:: EEG.record
 
     """
-    #_ui_name = "EEG (ONLY FOR reg13 SURFACE + o52r00_irp2008 CORTEX-ONLY CONNECTIVITY (74))"
-
-    #TODO: Currently all monitors return a 3D state [variables of interest, nodes, modes],
-    #      resulting in a 4D TimeSeries with time as the zeroth dim, however,
-    #      TimeSeriesEEG is really intended to only be 2D [time, channels]. So,
-    #      we should be summing over variables of interest and Modes, however,
-    #      this will require across the board changes to Analysers their adapters
-    #      and some visualisers so that everything works... In other words, this
-    #      will need to be done in one big step, otherwise it'll break everthing. 
-
-    #TODO: add reference electrode capability, support single point through to 
-    #      grand average -- Should be done offline as an "analyser" or better 
-    #      built into the visualiser...
-
-    #TODO: ?Maybe easier from UI perspective to frame this in terms of sources,
-    #       head geometry, and sensors...?
-
-    #TODO: Probably going to need to make ProjectionMatrix a datatype and then
-    #      use it for projection_matrix in order to be able to access this 
-    #      sensibly via the UI... May need to explicitly define subtypes, ie,
-    #      SurfaceToEEG, SurfaceToMEG, RegionToEEG,  RegionToMEG, etc
-    projection_matrix_data = projections.ProjectionMatrix(required = True, default = None, 
+    projection_matrix_data = projections.ProjectionMatrix(required = True, default = None,
                                                 label = "EEG Projection Matrix",
                                                 doc = """An array that is used to 
                                                 map activity from nodes of the 
@@ -638,7 +615,6 @@ class EEG(Monitor):
         LOG.debug("%s: stock_size is %s" % (str(self), str(stock_size)))
 
         self._stock = numpy.zeros(stock_size)
-        #import pdb; pdb.set_trace()
 
 
     def record(self, step, state):
@@ -683,24 +659,6 @@ class EEG(Monitor):
 #    """
 #    #_ui_name = "MEG (ONLY FOR reg13 SURFACE + o52r00_irp2008 CORTEX-ONLY CONNECTIVITY (74))"
 #
-#    #TODO: Currently all monitors return a 3D state [variables of interest, nodes, modes],
-#    #      resulting in a 4D TimeSeries with time as the zeroth dim, however,
-#    #      TimeSeriesMEG is really intended to only be 2D [time, channels]. So,
-#    #      we should be summing over variables of interest and Modes, however,
-#    #      this will require across the board changes to Analysers their adapters
-#    #      and some visualisers so that everything works... In other words, this
-#    #      will need to be done in one big step, otherwise it'll break everthing.
-#
-#    #TODO: add reference electrode capability, support single point through to
-#    #      grand average
-#
-#    #TODO: ?Maybe easier from UI perspective to frame this in terms of sources,
-#    #       head geometry, and sensors...?
-#
-#    #TODO: Probably going to need to make ProjectionMatrix a datatype and then
-#    #      use it for projection_matrix in order to be able to access this
-#    #      sensibly via the UI... May need to explicitly define subtypes, ie,
-#    #      SurfaceToEEG, SurfaceToMEG, RegionToEEG,  RegionToMEG, etc
 #    projection_matrix = arrays.FloatArray(
 #        label = "Projection matrix",
 #        required = True,
@@ -758,7 +716,7 @@ class EEG(Monitor):
 #            return [time, meg.transpose((1, 0, 2))]
 #
 
-#TODO: Once OpenMEEG is operational, dump the sphericals they're a hacky mess...
+#Note: Once OpenMEEG is operational, dump the sphericals they're a hacky mess...
 
 class SphericalEEG(Monitor):
     """
@@ -780,19 +738,6 @@ class SphericalEEG(Monitor):
 
     """
     _ui_name = "Spherical EEG"
-
-    #TODO: Currently all monitors return a 3D state [variables of interest, nodes, modes],
-    #      resulting in a 4D TimeSeries with time as the zeroth dim, however,
-    #      TimeSeriesEEG is really intended to only be 2D [time, channels]. So,
-    #      we should be summing over variables of interest and Modes, however,
-    #      this will require across the board changes to Analysers their adapters
-    #      and some visualisers so that everything works... In other words, this
-    #      will need to be done in one big step, otherwise it'll break everthing. 
-
-    #TODO: add reference electrode capability, support single point through to 
-    #      grand average
-
-    #TODO: Remove the default load, require sensors to be specified else error.
 
     sigma = basic.Float(label = "conductivity",
                   default = 1.0)
@@ -861,7 +806,6 @@ class SphericalEEG(Monitor):
         for sensor_k in numpy.arange(sensor_locations.shape[0]):
             a = sensor_locations[sensor_k, :] - r_0
             na = numpy.sqrt(numpy.sum(a**2, axis=1))[:, numpy.newaxis]
-            #import pdb; pdb.set_trace()
             V_r[sensor_k, :] = numpy.sum(Q * (a / na**3), axis=1 ) / (4.0 * numpy.pi * sigma)
 
         self.projection_matrix = V_r
@@ -875,7 +819,6 @@ class SphericalEEG(Monitor):
         LOG.debug("%s: stock_size is %s" % (str(self), str(stock_size)))
 
         self._stock = numpy.zeros(stock_size)
-        #import pdb; pdb.set_trace()
 
 
     def record(self, step, state):
@@ -913,17 +856,6 @@ class SphericalMEG(Monitor):
 
     """
     _ui_name = "Spherical MEG"
-
-    #TODO: Currently all monitors return a 3D state [variables of interest, nodes, modes],
-    #      resulting in a 4D TimeSeries with time as the zeroth dim, however,
-    #      TimeSeriesMEG is really intended to only be 2D [time, channels]. So,
-    #      we should be summing over variables of interest and Modes, however,
-    #      this will require across the board changes to Analysers their adapters
-    #      and some visualisers so that everything works... In other words, this
-    #      will need to be done in one big step, otherwise it'll break everthing. 
-
-    #TODO: add reference electrode capability, support single point through to 
-    #      grand average
 
     sensors = sensors_module.SensorsMEG(
         label = "MEG Sensors",
@@ -1164,18 +1096,16 @@ class Bold(Monitor):
 
         LOG.debug("%s: inited." % repr(self))
 
-    def compute_hrf(self):
-        r"""
-        Compute the heamodynamic response function.
 
+    def compute_hrf(self):
+        """
+        Compute the heamodynamic response function.
         """
 
         #TODO: Current traits limitations require this moved to config_for_sim()
         if numpy.mod(self.period, 500.0): #TODO: This is a temporary limit, need to fix configure...
             msg = "%s: BOLD.period must be a multiple of 500.0, period = %s"
             LOG.error(msg % (str(self), str(self.period)))
-
-        
 
         #downsample average over simulator steps to give a fixed sampling rate (256Hz)
         #then (18.75 * tau_s) * 256  ==> 3840 required length of _stock
@@ -1258,7 +1188,6 @@ class Bold(Monitor):
 
         #At stock's period update it with the temporal average of interim-stock
         if step % self._interim_istep == 0:
-            #import pdb; pdb.set_trace()
             avg_interim_stock = numpy.mean(self._interim_stock, axis=0)
             self._stock[((step/self._interim_istep % self._stock_steps) - 1), :] = avg_interim_stock
 
@@ -1273,7 +1202,6 @@ class Bold(Monitor):
                 k1_V0 = self.hrf_kernel.parameters["k_1"] * self.hrf_kernel.parameters["V_0"]
                 bold = (numpy.dot(hrf, self._stock.transpose((1, 2, 0, 3))) - 1.0) * k1_V0
             else:
-                #import pdb; pdb.set_trace()
                 bold = numpy.dot(hrf, self._stock.transpose((1, 2, 0, 3)))
             bold = bold.reshape(self._stock.shape[1:])
             bold = bold.sum(axis=0)[numpy.newaxis,:,:] #state-variables
@@ -1340,7 +1268,6 @@ class BoldMultithreaded(Bold):
     def config_for_sim(self, simulator, n_thr=1):
         """
         Set up stock arrays
-       
         """
         super(BoldMultithreaded, self).config_for_sim(simulator)
         self.compute_hrf()
@@ -1363,7 +1290,6 @@ class BoldMultithreaded(Bold):
         #NOTE: BOLD can have a long (~15s) transient that is mainly due to the
         #      initial dynamic transient from simulations that are started with 
         #      imperfect initlial conditions.
-        #import pdb; pdb.set_trace()
 
 
     def record(self, step, state):
@@ -1378,7 +1304,6 @@ class BoldMultithreaded(Bold):
 
         #At stock's period update it with the temporal average of interim-stock
         if step % self._interim_istep == 0:
-            #import pdb; pdb.set_trace()
             avg_interim_stock = numpy.mean(self._interim_stock, axis=0)
             i_stock = ((step/self._interim_istep % self._stock_steps) - 1)
             self._stock[i_stock, ...] = avg_interim_stock
