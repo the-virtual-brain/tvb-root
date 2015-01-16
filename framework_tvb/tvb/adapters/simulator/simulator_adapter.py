@@ -152,7 +152,12 @@ class SimulatorAdapter(ABCAsynchronous):
             cortex_entity = None
 
         self.log.debug("%s: Instantiating requested simulator..." % str(self))
-        connectivity.configure()
+
+        if conduction_speed not in (0.0, None):
+            connectivity.speed = numpy.array([conduction_speed])
+        else:
+            raise LaunchException("conduction speed cannot be 0 or missing")
+
         self.algorithm = Simulator(connectivity=connectivity, coupling=coupling_inst, surface=cortex_entity,
                                    stimulus=stimulus, model=model_instance, integrator=integr,
                                    monitors=monitors_list, initial_conditions=initial_conditions,

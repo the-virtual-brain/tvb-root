@@ -252,9 +252,6 @@ class Simulator(core.Type):
         """
         Configure just the basic fields, so that memory can be estimated
         """
-        if self.conduction_speed not in (0.0, 3.0, None):
-            LOG.warning("Setting connectivity.speed with conduction_speed provided to simulator.")
-            self.connectivity.speed = numpy.array([self.conduction_speed])
         self.connectivity.configure()
 
         if self.surface:
