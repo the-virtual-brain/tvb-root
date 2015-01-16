@@ -1,10 +1,9 @@
 var nodeColorRGB = [255, 255, 255];
 var _colorSchemeColors;
-var _colorScheme = null;                                             // the color scheme to be used for current drawing
+var _colorScheme = null;                // the color scheme to be used for current drawing
 var _minActiv, _maxActiv;               // keep the interest interval
-var _refreshCallback = null ;                                        // this is called when color scheme changes update the visualiser
-var SPARSE_COLORS_LENGTH = 256;
-var _sparseColorNo = SPARSE_COLORS_LENGTH;
+var _refreshCallback = null ;           // this is called when color scheme changes update the visualiser
+var _sparseColorNo = 256;
 
 // ================================= COLOR SCHEME STRUCTURES START =================================
 /**
@@ -147,11 +146,15 @@ function getNewNodeColor() {
 	return nodeColorRGB;
 }
 
-function clampValue(value) {
-    if (value > 1) {
-        return 1;
-    } else if (value < 0) {
-        return 0;
+function clampValue(value, min, max) {
+    if (min == null) {min = 0;}
+    if (max == null) {max = 1;}
+
+    if (value > max) {
+        return max;
+    }
+    if (value < min) {
+        return min;
     }
     return value;
 }
@@ -275,14 +278,15 @@ function getGradientColor(pointValue, min, max) {
     // The color array for the current scheme
     var colors = _colorSchemeColors[ColSchInfo()._data_idx];
 
-    if (min == max)         // the interval is empty, so start color is the only possible one
+    if (min == max) {         // the interval is empty, so start color is the only possible one
         return colors[0];
-    if (pointValue < min)
-        pointValue = min;   // avoid rounding problems
-    if (pointValue > max)
-        pointValue = max;
+    }
+    pointValue = clampValue(pointValue, min, max); // avoid rounding problems
 
+    //scale activity within given range to [0,1]
     var normalizedValue = (pointValue - min) / (max - min);
+     // bin the activity
+    normalizedValue  = Math.floor(normalizedValue  * _sparseColorNo) / _sparseColorNo;
     // We sample the interior of the array. If normalizedValue is between [0..1] we will obtain colors[1] and colors[254]
     // This linear transform implements it. The shader version does the same.
     normalizedValue = normalizedValue * 253.0/255.0 + 1.0/255.0;
