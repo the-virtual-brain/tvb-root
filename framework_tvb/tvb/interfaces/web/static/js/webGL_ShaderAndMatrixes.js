@@ -257,3 +257,14 @@ function mvPopMatrix() {
 
 // ------ MATRIX FUNCTIONS END -----------------------------------------------------
 
+// ------ BUFFER FUNCTIONS START -----------------------------------------------------
+
+/**
+ * Upload data to the gpu
+ * @param webglBuffer The target gpu buffer
+ * @param arrayBuffer The source ArrayBuffer in memory
+ */
+function uploadBuffer(webglBuffer, arrayBuffer){
+    gl.bindBuffer(gl.ARRAY_BUFFER, webglBuffer);
+    gl.bufferData(gl.ARRAY_BUFFER, arrayBuffer, gl.STATIC_DRAW);
+}

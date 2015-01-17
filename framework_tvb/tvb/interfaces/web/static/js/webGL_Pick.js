@@ -57,7 +57,6 @@ function GL_initColorPickingData(numberOfObjects) {
     var buffer = gl.createBuffer();
     gl.bindBuffer(gl.ARRAY_BUFFER, buffer);
     gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(_DUMMY_COLOR_PICKING_ARRAY), gl.STATIC_DRAW);
-    gl.vertexAttribPointer(GL_shaderProgram.vertexPositionAttribute, 3, gl.FLOAT, false, 0, 0);
     //Compute a increment that will allow to optimally 'spread' the range of available colors
     var TOTAL_COLOR_NR = 255 * 255 * 255;
     var inc = (TOTAL_COLOR_NR - 1)/ numberOfObjects;

@@ -202,18 +202,13 @@ function BASE_PICK_drawBrain() {
 
 
 function drawBuffers(drawMode, buffersSets) {
+    setMatrixUniforms();
     for (var i = 0; i < buffersSets.length; i++) {
-        gl.bindBuffer(gl.ARRAY_BUFFER, buffersSets[i][0]);
-        gl.vertexAttribPointer(GL_shaderProgram.vertexPositionAttribute, 3, gl.FLOAT, false, 0, 0);
-        gl.bindBuffer(gl.ARRAY_BUFFER, buffersSets[i][1]);
-        gl.vertexAttribPointer(GL_shaderProgram.vertexNormalAttribute, 3, gl.FLOAT, false, 0, 0);
-        gl.bindBuffer(gl.ARRAY_BUFFER, buffersSets[i][4]);
-        gl.vertexAttribPointer(GL_shaderProgram.vertexColorAttribute, 4, gl.FLOAT, false, 0, 0);
-        gl.bindBuffer(gl.ARRAY_BUFFER, buffersSets[i][3]);
-        gl.vertexAttribPointer(GL_shaderProgram.activityAttribute, 1, gl.FLOAT, false, 0, 0);
-        gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, buffersSets[i][2]);
-        setMatrixUniforms();
-        gl.drawElements(drawMode, buffersSets[i][2].numItems, gl.UNSIGNED_SHORT, 0);
+        SHADING_Context.surface_pick_draw(GL_shaderProgram,
+            buffersSets[i][0], buffersSets[i][1],
+            buffersSets[i][4], buffersSets[i][3],
+            buffersSets[i][2], drawMode
+        );
     }
 }
 
