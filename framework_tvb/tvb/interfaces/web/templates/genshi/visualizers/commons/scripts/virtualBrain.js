@@ -687,8 +687,7 @@ function updateColors(currentTimeInFrame) {
     var currentActivity = activitiesData[currentTimeInFrame];
     var col = ColSchInfo();
     var activityRange = ColSchGetBounds();
-    gl.uniform2f(GL_shaderProgram.activityRange, activityRange.min, activityRange.max);
-    gl.uniform1f(GL_shaderProgram.activityBins, activityRange.bins);
+    SHADING_Context.colorscheme_set_uniforms(GL_shaderProgram, activityRange.min, activityRange.max, activityRange.bins);
 
     if (isOneToOneMapping) {
         for (var i = 0; i < brainBuffers.length; i++) {
@@ -952,22 +951,12 @@ function initRegionBoundaries(boundariesURL) {
  *                Array of (vertices, normals, triangles, alphas, alphaindices) for region based drawing
  */
 function drawBuffer(drawMode, buffers){
-    gl.bindBuffer(gl.ARRAY_BUFFER, buffers[0]);
-    gl.vertexAttribPointer(GL_shaderProgram.vertexPositionAttribute, 3, gl.FLOAT, false, 0, 0);
-    gl.bindBuffer(gl.ARRAY_BUFFER, buffers[1]);
-    gl.vertexAttribPointer(GL_shaderProgram.vertexNormalAttribute, 3, gl.FLOAT, false, 0, 0);
-    if (isOneToOneMapping) {
-        gl.bindBuffer(gl.ARRAY_BUFFER, buffers[3]);
-        gl.vertexAttribPointer(GL_shaderProgram.activityAttribute, 1, gl.FLOAT, false, 0, 0);
-    } else {
-        gl.bindBuffer(gl.ARRAY_BUFFER, buffers[3]);
-        gl.vertexAttribPointer(GL_shaderProgram.vertexAlphaAttribute, 2, gl.FLOAT, false, 0, 0);
-        gl.bindBuffer(gl.ARRAY_BUFFER, buffers[4]);
-        gl.vertexAttribPointer(GL_shaderProgram.vertexColorIndicesAttribute, 3, gl.FLOAT, false, 0, 0);
-    }
-    gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, buffers[2]);
     setMatrixUniforms();
-    gl.drawElements(drawMode, buffers[2].numItems, gl.UNSIGNED_SHORT, 0);
+    if (isOneToOneMapping) {
+        SHADING_Context.one_to_one_program_draw(GL_shaderProgram, buffers[0], buffers[1], buffers[3], buffers[2], drawMode);
+    } else {
+        SHADING_Context.region_progam_draw(GL_shaderProgram, buffers[0], buffers[1], buffers[3], buffers[4], buffers[2], drawMode);
+    }
 }
 
 /**

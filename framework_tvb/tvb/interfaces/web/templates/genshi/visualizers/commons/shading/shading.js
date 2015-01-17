@@ -31,7 +31,8 @@
  * We decided that glsl fragments contain only functions and uniforms so that
  * in the shaders you can see the referenced attributes/varyings.
  *
- * This file also contains shader initialization.
+ * This file also contains shader initialization, bulk uniform setters
+ * and draw calls for the programs included in this folder.
  * One file to simplify js inclusion.
  */
 
@@ -152,6 +153,61 @@ SHADING_Context.surface_pick_init = function(shader){
     shader.useActivity =  gl.getUniformLocation(shader, "uUseActivity");
     shader.vertexColorAttribute = gl.getAttribLocation(shader, "aVertexColor");
     gl.enableVertexAttribArray(shader.vertexColorAttribute);
+};
+
+/*** end initialization ***/
+
+/*** start uniform setters ***/
+
+SHADING_Context.transform_set_uniforms = function(shader, projectionMatrix, modelMatrix, normalMatrix){
+    gl.uniformMatrix4fv(shader.pMatrixUniform, false, new Float32Array(projectionMatrix));
+    gl.uniformMatrix4fv(shader.mvMatrixUniform, false, new Float32Array(modelMatrix));
+    gl.uniformMatrix4fv(shader.nMatrixUniform, false, new Float32Array(normalMatrix));
+};
+
+SHADING_Context.light_set_uniforms = function(shader, s){
+    gl.uniform3fv(shader.ambientColorUniform, s.ambientColor);
+    gl.uniform3fv(shader.lightingDirectionUniform, s.lightDirection);
+    gl.uniform3fv(shader.directionalColorUniform, s.directionalColor);
+    gl.uniform1f(shader.materialShininessUniform, s.materialShininess);
+    gl.uniform3fv(shader.pointLightingLocationUniform, s.pointLocation);
+    gl.uniform3fv(shader.pointLightingSpecularColorUniform, s.specularColor);
+};
+
+SHADING_Context.colorscheme_set_uniforms = function(shader, min, max, bins) {
+    gl.uniform2f(shader.activityRange, min, max);
+    gl.uniform1f(shader.activityBins, bins);
+};
+
+/*** start draw calls for programs ***/
+/* Note: the draw calls are tied to the shaders hence they are here. Buffer creation and uploading does not belong here */
+
+SHADING_Context._bind_geometric_attributes = function(shader, positionBuffer, normalBuffer) {
+    gl.bindBuffer(gl.ARRAY_BUFFER, positionBuffer);
+    gl.vertexAttribPointer(shader.vertexPositionAttribute, 3, gl.FLOAT, false, 0, 0);
+    gl.bindBuffer(gl.ARRAY_BUFFER, normalBuffer);
+    gl.vertexAttribPointer(shader.vertexNormalAttribute, 3, gl.FLOAT, false, 0, 0);
+};
+
+SHADING_Context.one_to_one_program_draw = function (shader, positionBuffer, normalBuffer,
+                                                    activityBuffer, elementBuffer, drawMode){
+    SHADING_Context._bind_geometric_attributes(shader, positionBuffer, normalBuffer);
+    gl.bindBuffer(gl.ARRAY_BUFFER, activityBuffer);
+    gl.vertexAttribPointer(shader.activityAttribute, 1, gl.FLOAT, false, 0, 0);
+    gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, elementBuffer);
+    gl.drawElements(drawMode, elementBuffer.numItems, gl.UNSIGNED_SHORT, 0);
+};
+
+SHADING_Context.region_progam_draw = function (shader, positionBuffer, normalBuffer, alphaBuffer,
+                                               alphaIndicesBuffer, elementBuffer, drawMode){
+    SHADING_Context._bind_geometric_attributes(shader, positionBuffer, normalBuffer);
+    gl.bindBuffer(gl.ARRAY_BUFFER, alphaBuffer);
+    gl.vertexAttribPointer(shader.vertexAlphaAttribute, 2, gl.FLOAT, false, 0, 0);
+    gl.bindBuffer(gl.ARRAY_BUFFER, alphaIndicesBuffer);
+    gl.vertexAttribPointer(shader.vertexColorIndicesAttribute, 3, gl.FLOAT, false, 0, 0);
+
+    gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, elementBuffer);
+    gl.drawElements(drawMode, elementBuffer.numItems, gl.UNSIGNED_SHORT, 0);
 };
 
 })();

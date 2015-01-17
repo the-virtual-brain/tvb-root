@@ -169,9 +169,7 @@ function BASE_PICK_drawBrain() {
 
     var col = ColSchInfo();
     var activityRange = ColSchGetBounds();
-
-    gl.uniform2f(GL_shaderProgram.activityRange, activityRange.min, activityRange.max);
-    gl.uniform1f(GL_shaderProgram.activityBins, activityRange.bins);
+    SHADING_Context.colorscheme_set_uniforms(GL_shaderProgram, activityRange.min, activityRange.max, activityRange.bins);
     gl.uniform1f(GL_shaderProgram.colorSchemeUniform, col.tex_v);
 
     gl.uniform1i(GL_shaderProgram.useActivity, !BASE_PICK_doPick);

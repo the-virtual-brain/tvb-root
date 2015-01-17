@@ -184,18 +184,7 @@ function basicSetLighting(s){
             s[k] = defaultLightSettings[k];
         }
     }
-    gl.uniform3f(GL_shaderProgram.ambientColorUniform,
-                s.ambientColor[0], s.ambientColor[1], s.ambientColor[2]);
-    gl.uniform3f(GL_shaderProgram.lightingDirectionUniform,
-                s.lightDirection[0], s.lightDirection[1], s.lightDirection[2]);
-    gl.uniform3f(GL_shaderProgram.directionalColorUniform,
-                s.directionalColor[0], s.directionalColor[1], s.directionalColor[2]);
-    gl.uniform3f(GL_shaderProgram.pointLightingLocationUniform,
-                s.pointLocation[0], s.pointLocation[1], s.pointLocation[2]);
-    gl.uniform3f(GL_shaderProgram.pointLightingSpecularColorUniform,
-                s.specularColor[0], s.specularColor[1], s.specularColor[2]);
-    gl.uniform1f(GL_shaderProgram.materialShininessUniform,
-                s.materialShininess);
+    SHADING_Context.light_set_uniforms(GL_shaderProgram, s);
 
     var prev = _GL_currentLighting;
     _GL_currentLighting = s;
@@ -241,12 +230,11 @@ function perspective(fovy, aspect, znear, zfar) {
 }
 
 function setMatrixUniforms() {
-    gl.uniformMatrix4fv(GL_shaderProgram.pMatrixUniform, false, new Float32Array(_GL_pMatrix.flatten()));
-    gl.uniformMatrix4fv(GL_shaderProgram.mvMatrixUniform, false, new Float32Array(GL_mvMatrix.flatten()));
-
     var normalMatrix = GL_mvMatrix.inverse();
     normalMatrix = normalMatrix.transpose();
-    gl.uniformMatrix4fv(GL_shaderProgram.nMatrixUniform, false, new Float32Array(normalMatrix.flatten()));
+    SHADING_Context.transform_set_uniforms( GL_shaderProgram, _GL_pMatrix.flatten(),
+        GL_mvMatrix.flatten(), normalMatrix.flatten()
+    );
 }
 
 var _GL_mvMatrixStack = [];
