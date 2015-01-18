@@ -1,8 +1,8 @@
 var nodeColorRGB = [255, 255, 255];
 var _colorSchemeColors;
 var _colorScheme = null;                // the color scheme to be used for current drawing
-var _minRange, _maxRange;               // keep the interest interval
-var _minActivity, _maxActivity;         // keep the full range
+var _minRange=0, _maxRange=1;               // keep the interest interval
+var _minActivity=0, _maxActivity=1;         // keep the full range
 var _refreshCallback = null ;           // this is called when color scheme changes update the visualiser
 var _sparseColorNo = 256;
 

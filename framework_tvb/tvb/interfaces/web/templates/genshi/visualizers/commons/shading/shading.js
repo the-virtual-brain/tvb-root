@@ -155,6 +155,13 @@ SHADING_Context.surface_pick_init = function(shader){
     gl.enableVertexAttribArray(shader.vertexColorAttribute);
 };
 
+SHADING_Context.connectivity_init = function(shader){
+    SHADING_Context._brain_common(shader);
+    shader.colorAttribute = gl.getAttribLocation(shader, "aColor");
+    gl.enableVertexAttribArray(shader.colorAttribute);
+
+    shader.alphaUniform = gl.getUniformLocation(shader, "uAlpha");
+};
 /*** end initialization ***/
 
 /*** start uniform setters ***/

@@ -31,39 +31,18 @@ var CONNECTIVITY_CANVAS_ID = "GLcanvas";
 function initShaders() {	
     //INIT NORMAL SHADER
     createAndUseShader("shader-fs", "shader-vs");
-    SHADING_Context.basic_program_init(GL_shaderProgram);
-
-    GL_shaderProgram.colorAttribute = gl.getAttribLocation(GL_shaderProgram, "aColor");
-    gl.enableVertexAttribArray(GL_shaderProgram.colorAttribute);
-
-    GL_shaderProgram.useLightingUniform = gl.getUniformLocation(GL_shaderProgram, "uUseLighting");
-    GL_shaderProgram.ambientColorUniform = gl.getUniformLocation(GL_shaderProgram, "uAmbientColor");
-    GL_shaderProgram.lightingDirectionUniform = gl.getUniformLocation(GL_shaderProgram, "uLightingDirection");
-    GL_shaderProgram.directionalColorUniform = gl.getUniformLocation(GL_shaderProgram, "uDirectionalColor");
-    GL_shaderProgram.alphaUniform = gl.getUniformLocation(GL_shaderProgram, "uAlpha");
-    GL_shaderProgram.isPicking = gl.getUniformLocation(GL_shaderProgram, "isPicking");
-    GL_shaderProgram.pickingColor = gl.getUniformLocation(GL_shaderProgram, "pickingColor");
-    GL_shaderProgram.colorUniform = gl.getUniformLocation(GL_shaderProgram, "uColor");
-    GL_shaderProgram.drawNodes = gl.getUniformLocation(GL_shaderProgram, "drawNodes");
-
-    GL_shaderProgram.colorIndex = gl.getUniformLocation(GL_shaderProgram, "uColorIndex");
-    GL_shaderProgram.colorsArray = [];
-
-    for (var i = 0; i < COLORS.length; i++) {
-        GL_shaderProgram.colorsArray[i] = gl.getUniformLocation(GL_shaderProgram, "uColorsArray[" + i + "]");
-    }
-    
+    SHADING_Context.connectivity_init(GL_shaderProgram);
 }
 
 // if you change the no of colors (add/remove) please update also the size of the uniform 'uColorsArray' from 'x-vertex'
 var COLORS = [
-        [1.0, 1.0, 1.0],
-        [1.0, 0.0, 0.0],
-        [0.0, 0.0, 1.0],
-        [1.0, 1.0, 0.0],
-        [0.0, 1.0, 0.0],
-        [0.5, 0.5, 0.5],
-        [0.1, 0.1, 0.1]
+        [1.0, 1.0, 1.0, 1.0],
+        [1.0, 0.0, 0.0, 1.0],
+        [0.0, 0.0, 1.0, 1.0],
+        [1.0, 1.0, 0.0, 1.0],
+        [0.0, 1.0, 0.0, 1.0],
+        [0.5, 0.5, 0.5, 1.0],
+        [0.1, 0.1, 0.1, 1.0]
 ];
 
 var WHITE_COLOR_INDEX = 0;
@@ -221,12 +200,12 @@ function initBuffers() {
 
 
 function displayPoints() {
+    gl.uniform1i(GL_shaderProgram.useVertexColors, false);
     for (var i = 0; i < NO_POSITIONS; i++) {
         // Next line was ADDED FOR PICK
         var currentBuffers;
         if (showMetricDetails) {
             currentBuffers = positionsBuffers_3D[i];
-            gl.uniform1i(GL_shaderProgram.drawNodes, true);
         } else {
             currentBuffers = positionsBuffers[i];
         }
@@ -240,35 +219,35 @@ function displayPoints() {
         if (colorsWeights) {
             // We have some color weights defined (eg. connectivity viewer)
             var color = getGradientColor(colorsWeights[i], parseFloat($('#colorMinId').val()), parseFloat($('#colorMaxId').val()));
-            gl.uniform3f(GL_shaderProgram.colorUniform, color[0], color[1], color[2]);
+            gl.uniform4f(GL_shaderProgram.materialColor, color[0], color[1], color[2], 1.0);
         }
         
         gl.bindBuffer(gl.ARRAY_BUFFER, currentBuffers[0]);
         gl.vertexAttribPointer(GL_shaderProgram.colorAttribute, currentBuffers[0].itemSize, gl.FLOAT, false, 0, 0);
 
         gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, currentBuffers[2]);
-
-        if (i == CONN_pickedIndex) {
-            gl.uniform1i(GL_shaderProgram.colorIndex, YELLOW_COLOR_INDEX);
-        } else if (i == highlightedPointIndex1) {
-            gl.uniform1i(GL_shaderProgram.colorIndex, RED_COLOR_INDEX);
-        } else if (i == highlightedPointIndex2) {
-            gl.uniform1i(GL_shaderProgram.colorIndex, BLUE_COLOR_INDEX);
-        } else if (GFUNC_isNodeAddedToInterestArea(i)) {
-            gl.uniform1i(GL_shaderProgram.colorIndex, GREEN_COLOR_INDEX);
-        } else if (GFUNC_isIndexInNodesWithPositiveWeight(i)) {
-            gl.uniform1i(GL_shaderProgram.colorIndex, BLUE_COLOR_INDEX);
-        } else if (!hasPositiveWeights(i)) {
-            gl.uniform1i(GL_shaderProgram.colorIndex, BLACK_COLOR_INDEX);
-        } else {
-            gl.uniform1i(GL_shaderProgram.colorIndex, WHITE_COLOR_INDEX);
+        if (!showMetricDetails) {
+            if (i == CONN_pickedIndex) {
+                gl.uniform4fv(GL_shaderProgram.materialColor, COLORS[YELLOW_COLOR_INDEX]);
+            } else if (i == highlightedPointIndex1) {
+                gl.uniform4fv(GL_shaderProgram.materialColor, COLORS[RED_COLOR_INDEX]);
+            } else if (i == highlightedPointIndex2) {
+                gl.uniform4fv(GL_shaderProgram.materialColor, COLORS[BLUE_COLOR_INDEX]);
+            } else if (GFUNC_isNodeAddedToInterestArea(i)) {
+                gl.uniform4fv(GL_shaderProgram.materialColor, COLORS[GREEN_COLOR_INDEX]);
+            } else if (GFUNC_isIndexInNodesWithPositiveWeight(i)) {
+                gl.uniform4fv(GL_shaderProgram.materialColor, COLORS[BLUE_COLOR_INDEX]);
+            } else if (!hasPositiveWeights(i)) {
+                gl.uniform4fv(GL_shaderProgram.materialColor, COLORS[BLACK_COLOR_INDEX]);
+            } else {
+                gl.uniform4fv(GL_shaderProgram.materialColor, COLORS[WHITE_COLOR_INDEX]);
+            }
         }
         // End ADDED FOR PICK
         setMatrixUniforms();
         // gl.drawElements(gl.TRIANGLES, 36, gl.UNSIGNED_SHORT, 0);
         gl.drawElements(gl.TRIANGLES, currentBuffers[2].numItems, gl.UNSIGNED_SHORT, 0);
         mvPopMatrix();
-        gl.uniform1i(GL_shaderProgram.drawNodes, false);
     }
     // Next line was ADDED FOR PICK
     doPick = false;
@@ -279,26 +258,12 @@ function displayPoints() {
  * Draw the light
  */
 function addLight() {
-    gl.uniform1i(GL_shaderProgram.useLightingUniform, true);
-    gl.uniform3f(GL_shaderProgram.ambientColorUniform, 0.3, 0.3, 0.2);
-
-    var lightingDirection = Vector.create([0.5, 0.2, 1.0]);
-    var adjustedLD = lightingDirection.toUnitVector();
-    var flatLD = adjustedLD.flatten();
-    gl.uniform3f(GL_shaderProgram.lightingDirectionUniform, flatLD[0], flatLD[1], flatLD[2]);
-    gl.uniform3f(GL_shaderProgram.directionalColorUniform, 1, 1, 1);
+    basicSetLighting();
     gl.uniform1f(GL_shaderProgram.alphaUniform, 1.0);
 }
 
 function addLightForCorticalSurface() {
-    gl.uniform1i(GL_shaderProgram.useLightingUniform, true);
-    gl.uniform3f(GL_shaderProgram.ambientColorUniform, 0.2, 0.2, 0.2);
-
-    var lightingDirection = Vector.create([-0.25, -0.25, -1]);
-    var adjustedLD = lightingDirection.toUnitVector().x(-1);
-    var flatLD = adjustedLD.flatten();
-    gl.uniform3f(GL_shaderProgram.lightingDirectionUniform, flatLD[0], flatLD[1], flatLD[2]);
-    gl.uniform3f(GL_shaderProgram.directionalColorUniform, 0.8, 0.8, 0.8);
+    basicSetLighting();
     gl.uniform1f(GL_shaderProgram.alphaUniform, _alphaValue);
 }
 
@@ -310,9 +275,7 @@ function drawScene() {
     mvPushMatrix();
 
     if (!doPick) {
-        createLinesBuffer(getLinesIndexes());
-        gl.uniform1f(GL_shaderProgram.isPicking, 0);
-        gl.uniform3f(GL_shaderProgram.pickingColor, 1, 1, 1);
+        createLinesBuffer(getLinesIndexes()); // warn we upload new buffer each frame
 
         gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
         addLight();
@@ -343,6 +306,8 @@ function drawScene() {
             addLightForCorticalSurface();
             mvTranslate([GVAR_additionalXTranslationStep, GVAR_additionalYTranslationStep, 0]);
 
+            gl.uniform1i(GL_shaderProgram.useVertexColors, true);
+
             // Draw the transparent object twice, to get a correct rendering
             gl.cullFace(gl.FRONT);
             drawHemispheres(gl.TRIANGLES);
@@ -357,8 +322,8 @@ function drawScene() {
         gl.bindFramebuffer(gl.FRAMEBUFFER, GL_colorPickerBuffer);
         gl.disable(gl.BLEND);
         gl.disable(gl.DITHER);
-        gl.uniform1f(GL_shaderProgram.isPicking, 1);
-
+        gl.uniform1f(GL_shaderProgram.useVertexColors, false);
+        basicSetLighting(pickingLightSettings);
         gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
 
         if (GL_colorPickerInitColors.length == 0) {
@@ -369,9 +334,7 @@ function drawScene() {
         mvTranslate([GVAR_additionalXTranslationStep, GVAR_additionalYTranslationStep, 0]);
 
         for (var i = 0; i < NO_POSITIONS; i++){
-            gl.uniform3f(GL_shaderProgram.pickingColor, GL_colorPickerInitColors[i][0],
-                                                     GL_colorPickerInitColors[i][1],
-                                                     GL_colorPickerInitColors[i][2]);
+            gl.uniform4fv(GL_shaderProgram.materialColor, GL_colorPickerInitColors[i]);
             gl.bindBuffer(gl.ARRAY_BUFFER, positionsBuffers[i][0]);
             gl.vertexAttribPointer(GL_shaderProgram.vertexPositionAttribute, positionsBuffers[i][0].itemSize, gl.FLOAT, false, 0, 0);
             gl.bindBuffer(gl.ARRAY_BUFFER, positionsBuffers[i][1]);
@@ -483,8 +446,8 @@ function getLinesIndexes() {
 }
 
 function _drawLines(linesBuffers) {
-    gl.uniform1i(GL_shaderProgram.colorIndex, NO_COLOR_INDEX);
-    gl.uniform1i(GL_shaderProgram.useLightingUniform, false);
+    gl.uniform1i(GL_shaderProgram.useVertexColors, true);
+
     gl.bindBuffer(gl.ARRAY_BUFFER, positionsPointsBuffer);
     gl.vertexAttribPointer(GL_shaderProgram.vertexPositionAttribute, positionsPointsBuffer.itemSize, gl.FLOAT, false, 0, 0);
 
@@ -502,7 +465,6 @@ function _drawLines(linesBuffers) {
         gl.drawElements(gl.LINES, linesVertexIndicesBuffer.numItems, gl.UNSIGNED_SHORT, 0);
     }
     gl.lineWidth(1.0);
-    gl.uniform1i(GL_shaderProgram.useLightingUniform, true);
 }
 
 /**
@@ -780,9 +742,8 @@ function drawHemispheres(drawingMode) {
         gl.bindBuffer(gl.ARRAY_BUFFER, normalsBuffers[i]);
         gl.vertexAttribPointer(GL_shaderProgram.vertexNormalAttribute, TRI, gl.FLOAT, false, 0, 0);
         //todo-io: hack for colors buffer
-        //there should be passed an buffer of colors indexes not the verticesBuffers;
-        // although we pass the color as a uniform we still have to set the aColorIndex attribute
-        gl.bindBuffer(gl.ARRAY_BUFFER, verticesBuffers[i]);
+        //there should be passed an buffer of colors indexes not the normalBuffers;
+        gl.bindBuffer(gl.ARRAY_BUFFER, normalsBuffers[i]);
         gl.vertexAttribPointer(GL_shaderProgram.colorAttribute, 3, gl.FLOAT, false, 0, 0);
         gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, indexesBuffers[i]);
         setMatrixUniforms();
@@ -799,10 +760,6 @@ function drawHemispheres(drawingMode) {
  * be drawn alone, without widths and tracts.
  */
 function connectivity_startGL(isSingleMode) {
-    for (var i = 0; i < COLORS.length; i++) {
-        gl.uniform3f(GL_shaderProgram.colorsArray[i], COLORS[i][0], COLORS[i][1], COLORS[i][2]);
-    }
-    
     gl.clearDepth(1.0);
     gl.enable(gl.DEPTH_TEST);
     gl.depthFunc(gl.LEQUAL);
@@ -829,6 +786,7 @@ function connectivity_initCanvas() {
     canvas.height = 550;
     initGL(canvas);
     initShaders();
+    ColSch_initColorSchemeComponent();
     var theme = ColSchGetTheme().connectivityPlot;
     gl.clearColor(theme.backgroundColor[0], theme.backgroundColor[1], theme.backgroundColor[2], theme.backgroundColor[3]);
     // Enable keyboard and mouse interaction
