@@ -229,4 +229,12 @@ SHADING_Context.surface_pick_draw = function (shader, positionBuffer, normalBuff
     gl.drawElements(drawMode, elementBuffer.numItems, gl.UNSIGNED_SHORT, 0);
 };
 
+SHADING_Context.connectivity_draw = function(shader, positionBuffer, normalBuffer, colorBuffer, elementBuffer, drawMode){
+    SHADING_Context._bind_geometric_attributes(shader, positionBuffer, normalBuffer);
+    gl.bindBuffer(gl.ARRAY_BUFFER, colorBuffer);
+    gl.vertexAttribPointer(shader.colorAttribute, 3, gl.FLOAT, false, 0, 0);
+    gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, elementBuffer);
+    gl.drawElements(drawMode, elementBuffer.numItems, gl.UNSIGNED_SHORT, 0);
+};
+
 })();

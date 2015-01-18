@@ -211,21 +211,13 @@ function displayPoints() {
         }
         mvPickMatrix = GL_mvMatrix.dup();
         mvPushMatrix();
-        gl.bindBuffer(gl.ARRAY_BUFFER, currentBuffers[0]);
-        gl.vertexAttribPointer(GL_shaderProgram.vertexPositionAttribute, currentBuffers[0].itemSize, gl.FLOAT, false, 0, 0);
-        gl.bindBuffer(gl.ARRAY_BUFFER, currentBuffers[1]);
-        gl.vertexAttribPointer(GL_shaderProgram.vertexNormalAttribute, currentBuffers[1].itemSize, gl.FLOAT, false, 0, 0);
-        
+
         if (colorsWeights) {
             // We have some color weights defined (eg. connectivity viewer)
             var color = getGradientColor(colorsWeights[i], parseFloat($('#colorMinId').val()), parseFloat($('#colorMaxId').val()));
             gl.uniform4f(GL_shaderProgram.materialColor, color[0], color[1], color[2], 1.0);
         }
-        
-        gl.bindBuffer(gl.ARRAY_BUFFER, currentBuffers[0]);
-        gl.vertexAttribPointer(GL_shaderProgram.colorAttribute, currentBuffers[0].itemSize, gl.FLOAT, false, 0, 0);
 
-        gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, currentBuffers[2]);
         if (!showMetricDetails) {
             if (i == CONN_pickedIndex) {
                 gl.uniform4fv(GL_shaderProgram.materialColor, COLORS[YELLOW_COLOR_INDEX]);
@@ -245,8 +237,8 @@ function displayPoints() {
         }
         // End ADDED FOR PICK
         setMatrixUniforms();
-        // gl.drawElements(gl.TRIANGLES, 36, gl.UNSIGNED_SHORT, 0);
-        gl.drawElements(gl.TRIANGLES, currentBuffers[2].numItems, gl.UNSIGNED_SHORT, 0);
+        SHADING_Context.connectivity_draw(GL_shaderProgram, currentBuffers[0], currentBuffers[1],
+            currentBuffers[0], currentBuffers[2], gl.TRIANGLES);
         mvPopMatrix();
     }
     // Next line was ADDED FOR PICK
@@ -335,14 +327,11 @@ function drawScene() {
 
         for (var i = 0; i < NO_POSITIONS; i++){
             gl.uniform4fv(GL_shaderProgram.materialColor, GL_colorPickerInitColors[i]);
-            gl.bindBuffer(gl.ARRAY_BUFFER, positionsBuffers[i][0]);
-            gl.vertexAttribPointer(GL_shaderProgram.vertexPositionAttribute, positionsBuffers[i][0].itemSize, gl.FLOAT, false, 0, 0);
-            gl.bindBuffer(gl.ARRAY_BUFFER, positionsBuffers[i][1]);
-            gl.vertexAttribPointer(GL_shaderProgram.vertexNormalAttribute, positionsBuffers[i][1].itemSize, gl.FLOAT, false, 0, 0);
 
-            gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, positionsBuffers[i][2]);
             setMatrixUniforms();
-            gl.drawElements(gl.TRIANGLES, positionsBuffers[i][2].numItems, gl.UNSIGNED_SHORT, 0);
+
+            SHADING_Context.connectivity_draw(GL_shaderProgram, positionsBuffers[i][0], positionsBuffers[i][1],
+                positionsBuffers[i][1], positionsBuffers[i][2], gl.TRIANGLES);
          }
         var newPicked = GL_getPickedIndex();
         if (newPicked != null) {
@@ -448,21 +437,14 @@ function getLinesIndexes() {
 function _drawLines(linesBuffers) {
     gl.uniform1i(GL_shaderProgram.useVertexColors, true);
 
-    gl.bindBuffer(gl.ARRAY_BUFFER, positionsPointsBuffer);
-    gl.vertexAttribPointer(GL_shaderProgram.vertexPositionAttribute, positionsPointsBuffer.itemSize, gl.FLOAT, false, 0, 0);
-
-    gl.bindBuffer(gl.ARRAY_BUFFER, linesPointsNormalsBuffer);
-    gl.vertexAttribPointer(GL_shaderProgram.vertexNormalAttribute, linesPointsNormalsBuffer.itemSize, gl.FLOAT, false, 0, 0);
-
-    gl.bindBuffer(gl.ARRAY_BUFFER, colorsArrayBuffer);
-    gl.vertexAttribPointer(GL_shaderProgram.colorAttribute, colorsArrayBuffer.itemSize, gl.FLOAT, false, 0, 0);
     setMatrixUniforms();
     
     for (var i = 0; i < linesBuffers.length; i++) {
         var linesVertexIndicesBuffer = linesBuffers[i];
         gl.lineWidth(parseFloat(linesVertexIndicesBuffer.lineWidth));
-        gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, linesVertexIndicesBuffer);
-        gl.drawElements(gl.LINES, linesVertexIndicesBuffer.numItems, gl.UNSIGNED_SHORT, 0);
+
+        SHADING_Context.connectivity_draw(GL_shaderProgram, positionsPointsBuffer, linesPointsNormalsBuffer,
+            colorsArrayBuffer, linesVertexIndicesBuffer, gl.LINES);
     }
     gl.lineWidth(1.0);
 }
@@ -737,17 +719,12 @@ function selectHemisphere(index) {
 function drawHemispheres(drawingMode) {
     gl.uniform1i(GL_shaderProgram.colorIndex, GRAY_COLOR_INDEX);
     for (var i = 0; i < verticesBuffers.length; i++) {
-        gl.bindBuffer(gl.ARRAY_BUFFER, verticesBuffers[i]);
-        gl.vertexAttribPointer(GL_shaderProgram.vertexPositionAttribute, TRI, gl.FLOAT, false, 0, 0);
-        gl.bindBuffer(gl.ARRAY_BUFFER, normalsBuffers[i]);
-        gl.vertexAttribPointer(GL_shaderProgram.vertexNormalAttribute, TRI, gl.FLOAT, false, 0, 0);
         //todo-io: hack for colors buffer
         //there should be passed an buffer of colors indexes not the normalBuffers;
-        gl.bindBuffer(gl.ARRAY_BUFFER, normalsBuffers[i]);
-        gl.vertexAttribPointer(GL_shaderProgram.colorAttribute, 3, gl.FLOAT, false, 0, 0);
-        gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, indexesBuffers[i]);
         setMatrixUniforms();
-        gl.drawElements(drawingMode, indexesBuffers[i].numItems, gl.UNSIGNED_SHORT, 0);
+
+        SHADING_Context.connectivity_draw(GL_shaderProgram, verticesBuffers[i], normalsBuffers[i],
+            normalsBuffers[i], indexesBuffers[i], gl.TRIANGLES);
     }
 }
 
