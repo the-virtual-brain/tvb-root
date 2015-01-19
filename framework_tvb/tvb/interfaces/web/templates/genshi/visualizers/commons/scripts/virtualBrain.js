@@ -210,7 +210,7 @@ function VS_StartPortletPreview(baseDatatypeURL, urlVerticesList, urlTrianglesLi
         brainBuffers = initBuffers($.parseJSON(urlVerticesList), $.parseJSON(urlNormalsList), $.parseJSON(urlTrianglesList), 
                                $.parseJSON(urlAlphasList), $.parseJSON(urlAlphasIndicesList), false);
     }
-    ColSch_loadInitialColorScheme(false);
+    ColSch_initColorSchemeComponent(false);
     LEG_generateLegendBuffers();
     VB_BrainNavigator = new NAV_BrainNavigator(isOneToOneMapping, brainBuffers, measurePoints, measurePointsLabels);
     

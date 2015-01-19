@@ -182,21 +182,6 @@ function ColSch_setColorScheme(scheme, notify) {
     }
 }
 
-function ColSch_loadInitialColorScheme(async){
-
-    doAjaxCall({
-        url:'/user/get_viewer_color_scheme',
-        async: async,
-        success:function(data){
-            ColSch_setColorScheme(JSON.parse(data), false);
-        },
-        error: function(jqXHR, textStatus, error){
-            console.warn(error);
-            ColSch_setColorScheme(null, false);
-        }
-    });
-}
-
 function ColSch_initColorSchemeComponent(){
      // set defaults in case ColSch_initColorSchemeParams will not be called
     _minRange = 0;
@@ -214,7 +199,13 @@ function ColSch_initColorSchemeComponent(){
         });
     }
     if (!_colorScheme) { // on very first call, set the default color scheme
-        ColSch_loadInitialColorScheme(false);
+        doAjaxCall({
+            url:'/user/get_viewer_color_scheme',
+            async: false,
+            success:function(data){
+                ColSch_setColorScheme(JSON.parse(data), false);
+            }
+        });
     }
 }
 

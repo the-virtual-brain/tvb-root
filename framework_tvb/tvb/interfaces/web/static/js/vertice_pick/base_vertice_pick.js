@@ -97,7 +97,7 @@ function BASE_PICK_webGLStart(urlVerticesPickList, urlTrianglesPickList, urlNorm
     initBrainNavigatorBuffers();
     createStimulusPinBuffers();
 
-    ColSch_loadInitialColorScheme();
+    ColSch_initColorSchemeComponent();
     gl.clearDepth(1.0);
     gl.enable(gl.DEPTH_TEST);
     gl.depthFunc(gl.LEQUAL);
