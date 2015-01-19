@@ -208,7 +208,7 @@ function VS_StartPortletPreview(baseDatatypeURL, urlVerticesList, urlTrianglesLi
     initShaders();
     if (urlVerticesList) {
         brainBuffers = initBuffers($.parseJSON(urlVerticesList), $.parseJSON(urlNormalsList), $.parseJSON(urlTrianglesList), 
-                               $.parseJSON(urlAlphasList), $.parseJSON(urlAlphasIndicesList), false);
+                               $.parseJSON(urlAlphasIndicesList), false);
     }
     ColSch_initColorSchemeComponent(false);
     LEG_generateLegendBuffers();
@@ -235,7 +235,7 @@ function VS_StartPortletPreview(baseDatatypeURL, urlVerticesList, urlTrianglesLi
 }
 
 function _VS_static_entrypoint(urlVerticesList, urlLinesList, urlTrianglesList, urlNormalsList, urlMeasurePoints,
-                               noOfMeasurePoints, urlAlphasList, urlAlphasIndicesList, urlMeasurePointsLabels,
+                               noOfMeasurePoints, urlAlphasIndicesList, urlMeasurePointsLabels,
                                boundaryURL, shelfObject, hemisphereChunkMask, showLegend, argDisplayMeasureNodes, argIsFaceToDisplay,
                                minMeasure, maxMeasure, urlMeasure){
     // initialize global configuration
@@ -286,7 +286,7 @@ function _VS_static_entrypoint(urlVerticesList, urlLinesList, urlTrianglesList, 
     }
 
     var canvas = document.getElementById(BRAIN_CANVAS_ID);
-    _initViewerGL(canvas, urlVerticesList, urlNormalsList, urlTrianglesList, urlAlphasList, 
+    _initViewerGL(canvas, urlVerticesList, urlNormalsList, urlTrianglesList,
                   urlAlphasIndicesList, urlLinesList, boundaryURL, shelfObject, hemisphereChunkMask);
 
     _bindEvents(canvas);
@@ -299,7 +299,7 @@ function _VS_static_entrypoint(urlVerticesList, urlLinesList, urlTrianglesList, 
 
 function _VS_movie_entrypoint(baseDatatypeURL, onePageSize, urlTimeList, urlVerticesList, urlLinesList,
                     urlTrianglesList, urlNormalsList, urlMeasurePoints, noOfMeasurePoints,
-                    urlAlphasList, urlAlphasIndicesList, minActivity, maxActivity,
+                    urlAlphasIndicesList, minActivity, maxActivity,
                     oneToOneMapping, doubleView, shelfObject, hemisphereChunkMask, urlMeasurePointsLabels, boundaryURL) {
     // initialize global configuration
     isDoubleView = doubleView;
@@ -325,7 +325,7 @@ function _VS_movie_entrypoint(baseDatatypeURL, onePageSize, urlTimeList, urlVert
 
     var canvas = document.getElementById(BRAIN_CANVAS_ID);
 
-    _initViewerGL(canvas, urlVerticesList, urlNormalsList, urlTrianglesList, urlAlphasList,
+    _initViewerGL(canvas, urlVerticesList, urlNormalsList, urlTrianglesList,
                   urlAlphasIndicesList, urlLinesList, boundaryURL, shelfObject, hemisphereChunkMask);
 
     _bindEvents(canvas);
@@ -349,7 +349,7 @@ function VS_StartSurfaceViewer(urlVerticesList, urlLinesList, urlTrianglesList, 
                                boundaryURL, shelveObject, minMeasure, maxMeasure, urlMeasure, hemisphereChunkMask){
 
     _VS_static_entrypoint(urlVerticesList, urlLinesList, urlTrianglesList, urlNormalsList, urlMeasurePoints,
-                       noOfMeasurePoints, urlAlphasList, urlAlphasIndicesList, urlMeasurePointsLabels,
+                       noOfMeasurePoints, urlAlphasIndicesList, urlMeasurePointsLabels,
                        boundaryURL, shelveObject, hemisphereChunkMask, false, false, false, minMeasure, maxMeasure, urlMeasure);
     _VS_init_cubicalMeasurePoints();
     ColSch_initColorSchemeParams(activityMin, activityMax);
@@ -360,7 +360,7 @@ function VS_StartEEGSensorViewer(urlVerticesList, urlLinesList, urlTrianglesList
                                shelfObject, minMeasure, maxMeasure, urlMeasure){
     isEEGView = true;
     _VS_static_entrypoint(urlVerticesList, urlLinesList, urlTrianglesList, urlNormalsList, urlMeasurePoints,
-                               noOfMeasurePoints, '', '', urlMeasurePointsLabels,
+                               noOfMeasurePoints, '', urlMeasurePointsLabels,
                                '', shelfObject, null, false, true, true, minMeasure, maxMeasure, urlMeasure);
     _VS_init_cubicalMeasurePoints();
     if (urlVerticesList) {
@@ -373,7 +373,11 @@ function VS_StartBrainActivityViewer(baseDatatypeURL, onePageSize, urlTimeList, 
                     urlAlphasList, urlAlphasIndicesList, minActivity, maxActivity,
                     oneToOneMapping, doubleView, shelfObject, hemisphereChunkMask,
                     urlMeasurePointsLabels, boundaryURL, measurePointsSelectionGID) {
-    _VS_movie_entrypoint.apply(this, arguments);
+    _VS_movie_entrypoint(baseDatatypeURL, onePageSize, urlTimeList, urlVerticesList, urlLinesList,
+                    urlTrianglesList, urlNormalsList, urlMeasurePoints, noOfMeasurePoints,
+                    urlAlphasIndicesList, minActivity, maxActivity,
+                    oneToOneMapping, doubleView, shelfObject, hemisphereChunkMask,
+                    urlMeasurePointsLabels, boundaryURL);
     _VS_init_cubicalMeasurePoints();
 
     if (!isDoubleView){
@@ -401,7 +405,7 @@ function _isValidActivityData(){
 /**
  * Scene setup common to all webgl brain viewers
  */
-function _initViewerGL(canvas, urlVerticesList, urlNormalsList, urlTrianglesList, urlAlphasList, 
+function _initViewerGL(canvas, urlVerticesList, urlNormalsList, urlTrianglesList,
                        urlAlphasIndicesList, urlLinesList, boundaryURL, shelfObject, hemisphere_chunk_mask){
     customInitGL(canvas);
     GL_initColorPickFrameBuffer();
@@ -413,13 +417,12 @@ function _initViewerGL(canvas, urlVerticesList, urlNormalsList, urlTrianglesList
     }
 
     if (urlVerticesList) {
-        var parsedAlphas = '', parsedIndices = "";
-        if (urlAlphasList) {
-            parsedAlphas = $.parseJSON(urlAlphasList);
+        var parsedIndices = "";
+        if (parsedIndices) {
             parsedIndices = $.parseJSON(urlAlphasIndicesList);
         }
         brainBuffers = initBuffers($.parseJSON(urlVerticesList), $.parseJSON(urlNormalsList),
-                                   $.parseJSON(urlTrianglesList), parsedAlphas, parsedIndices, isDoubleView);
+                                   $.parseJSON(urlTrianglesList), parsedIndices, isDoubleView);
     }
 
     VS_init_hemisphere_mask(hemisphere_chunk_mask);
@@ -429,7 +432,7 @@ function _initViewerGL(canvas, urlVerticesList, urlNormalsList, urlTrianglesList
     
     if (shelfObject) {
         shelfObject = $.parseJSON(shelfObject);
-        shelfBuffers = initBuffers(shelfObject[0], shelfObject[1], shelfObject[2], false, false, true);
+        shelfBuffers = initBuffers(shelfObject[0], shelfObject[1], shelfObject[2], false, true);
     }
 
     VB_BrainNavigator = new NAV_BrainNavigator(isOneToOneMapping, brainBuffers, measurePoints, measurePointsLabels);
@@ -816,21 +819,17 @@ function readFloatData(data_url_list, staticFiles) {
  * @param measurePoints a list which contains all the measure points. E.g.: [[x0,y0,z0],[x1,y1,z1],...]
  */
 function computeAlphas(vertices, measurePoints) {
-    var alphas = [];
     var alphasIndices = [];
     for (var i = 0; i < vertices.length; i++) {
-        var currentAlphas = [];
         var currentAlphasIndices = [];
         for (var j = 0; j < vertices[i].length/3; j++) {
             var currentVertex = vertices[i].slice(j * 3, (j + 1) * 3);
             var closestPosition = NAV_BrainNavigator.findClosestPosition(currentVertex, measurePoints);
-            currentAlphas.push(1, 0);
             currentAlphasIndices.push(closestPosition, 0, 0);
         }
-        alphas.push(currentAlphas);
         alphasIndices.push(currentAlphasIndices);
     }
-    return [alphas, alphasIndices];
+    return [null, alphasIndices];
 }
 
 
@@ -870,42 +869,33 @@ function bufferAtPoint(p) {
     var bufferVertices= result[0];
     var bufferNormals = result[1];
     var bufferTriangles = result[2];
-    var alphas = [];
-    for (var i = 0; i < 24; i++) {
-        alphas = alphas.concat([1.0, 0.0]);
-    }
 
     if (isOneToOneMapping) {
         return [bufferVertices, bufferNormals, bufferTriangles, createColorBufferForCube(false)];
     } else {
-        var alphaBuffer = gl.createBuffer();
-        gl.bindBuffer(gl.ARRAY_BUFFER, alphaBuffer);
-        gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(alphas), gl.STATIC_DRAW);
-        return [bufferVertices, bufferNormals, bufferTriangles, alphaBuffer, createColorBufferForCube(false)];
+        return [bufferVertices, bufferNormals, bufferTriangles, null, createColorBufferForCube(false)];
     }
 }
 
 
-function initBuffers(urlVertices, urlNormals, urlTriangles, urlAlphas, urlAlphasIndices, staticFiles) {
+function initBuffers(urlVertices, urlNormals, urlTriangles, urlAlphasIndices, staticFiles) {
     var verticesData = readFloatData(urlVertices, staticFiles);
     var vertices = createWebGlBuffers(verticesData);
     var normals = HLPR_getDataBuffers(gl, urlNormals, staticFiles);
     var indexes = HLPR_getDataBuffers(gl, urlTriangles, staticFiles, true);
     
-    var alphas = normals;  // Fake buffers, copy of the normals, in case of transparency, we only need dummy ones.
+    // Fake buffers, copy of the normals, in case of transparency, we only need dummy ones.
     var alphasIndices = normals;
     // warning: these 'fake' buffers will be used and rendered when region colored surfaces are shown.
     // This happens for all static surface viewers. The reason we do not have weird coloring effects
     // is that normals have subunitary components that are truncated to 0 in the shader.
     // todo: accidental use of the fake buffers should be visible. consider uvec3 in shader
-    if (!isOneToOneMapping && urlAlphas && urlAlphasIndices && urlAlphas.length) {
-        alphas = HLPR_getDataBuffers(gl, urlAlphas);
+    if (!isOneToOneMapping && urlAlphasIndices && urlAlphasIndices.length) {
         alphasIndices = HLPR_getDataBuffers(gl, urlAlphasIndices);
     } else if (isEEGView) {
         // if is eeg view than we use the static surface 'eeg_skin_surface' and we have to compute the alphas and alphasIndices;
         // todo: do this on the server to eliminate this special case
         var alphasData = computeAlphas(verticesData, measurePoints);
-        alphas = createWebGlBuffers(alphasData[0]);
         alphasIndices = createWebGlBuffers(alphasData[1]);
     }
     var result = [];
@@ -916,7 +906,7 @@ function initBuffers(urlVertices, urlNormals, urlTriangles, urlAlphas, urlAlphas
             gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(vertices[i].numItems), gl.STATIC_DRAW);
             result.push([vertices[i], normals[i], indexes[i], activityBuffer]);
         } else {
-            result.push([vertices[i], normals[i], indexes[i], alphas[i], alphasIndices[i]]);
+            result.push([vertices[i], normals[i], indexes[i], null, alphasIndices[i]]);
         }
     }
     return result;
