@@ -955,7 +955,7 @@ function drawBuffer(drawMode, buffers){
     if (isOneToOneMapping) {
         SHADING_Context.one_to_one_program_draw(GL_shaderProgram, buffers[0], buffers[1], buffers[3], buffers[2], drawMode);
     } else {
-        SHADING_Context.region_progam_draw(GL_shaderProgram, buffers[0], buffers[1], buffers[3], buffers[4], buffers[2], drawMode);
+        SHADING_Context.region_progam_draw(GL_shaderProgram, buffers[0], buffers[1], buffers[4], buffers[2], drawMode);
     }
 }
 
