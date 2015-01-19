@@ -75,13 +75,11 @@ var linesPointsNormalsBuffer;
 var highlightedPointIndex1 = -1;
 var highlightedPointIndex2 = -1;
 
-// a buffer which contains for each point the index corresponding to the default color (white color)
-var defaultColorIndexesBuffer;
 // a buffer which contains for each point the index of a color that should be used for drawing it
-var colorsArrayBuffer;
-// this array contains a color index for each point from the connectivity matrix. The color corresponding to that index
+var colorsBuffer;
+// this array contains a color for each point from the connectivity matrix. The color corresponding to that index
 // will be used for drawing the lines for that point
-var colorsIndexes =[];
+var lineColors =[];
 var conductionSpeed = 1;
 
 var _alphaValue = 0.1;
@@ -158,24 +156,18 @@ function initBuffers() {
     for (var i = 0; i < NO_POSITIONS; i++) {
         points = points.concat(GVAR_positionsPoints[i]);
         normals = normals.concat(fakeNormal_1);
-        colorsIndexes = colorsIndexes.concat(COLORS[WHITE_COLOR_INDEX]);       
+        lineColors = lineColors.concat(COLORS[WHITE_COLOR_INDEX]);
     }
 
      for (var index = 0; index < 24 ; index++){
             whitePointsColorsIndex = whitePointsColorsIndex.concat(COLORS[WHITE_COLOR_INDEX]);
      }
 
-    defaultColorIndexesBuffer = gl.createBuffer();
-    gl.bindBuffer(gl.ARRAY_BUFFER, defaultColorIndexesBuffer);
-    gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(whitePointsColorsIndex), gl.STATIC_DRAW);
-    defaultColorIndexesBuffer.itemSize = 3;
-    defaultColorIndexesBuffer.numItems = parseInt(whitePointsColorsIndex.length);
-
-    colorsArrayBuffer = gl.createBuffer();
-    gl.bindBuffer(gl.ARRAY_BUFFER, colorsArrayBuffer);
-    gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(colorsIndexes), gl.STATIC_DRAW);
-    colorsArrayBuffer.itemSize = 3;
-    colorsArrayBuffer.numItems = parseInt(colorsIndexes.length);
+    colorsBuffer = gl.createBuffer();
+    gl.bindBuffer(gl.ARRAY_BUFFER, colorsBuffer);
+    gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(lineColors), gl.STATIC_DRAW);
+    colorsBuffer.itemSize = 3;
+    colorsBuffer.numItems = parseInt(lineColors.length);
 
     positionsPointsBuffer = gl.createBuffer();
     gl.bindBuffer(gl.ARRAY_BUFFER, positionsPointsBuffer);
@@ -438,7 +430,7 @@ function _drawLines(linesBuffers) {
         gl.lineWidth(parseFloat(linesVertexIndicesBuffer.lineWidth));
 
         SHADING_Context.connectivity_draw(GL_shaderProgram, positionsPointsBuffer, linesPointsNormalsBuffer,
-            colorsArrayBuffer, linesVertexIndicesBuffer, gl.LINES);
+            colorsBuffer, linesVertexIndicesBuffer, gl.LINES);
     }
     gl.lineWidth(1.0);
 }
@@ -599,15 +591,15 @@ function clearAllSelected() {
  * @param selectedNodeIndex the index of the selected node
  */
 function setCurrentColorForNode(selectedNodeIndex) {
-    colorsIndexes[selectedNodeIndex*3] = getNewNodeColor()[0]/255.0;
-    colorsIndexes[selectedNodeIndex*3+1] = getNewNodeColor()[1]/255.0;
-    colorsIndexes[selectedNodeIndex*3+2] = getNewNodeColor()[2]/255.0;
+    lineColors[selectedNodeIndex*3] = getNewNodeColor()[0]/255.0;
+    lineColors[selectedNodeIndex*3+1] = getNewNodeColor()[1]/255.0;
+    lineColors[selectedNodeIndex*3+2] = getNewNodeColor()[2]/255.0;
 
-    colorsArrayBuffer = gl.createBuffer();
-    gl.bindBuffer(gl.ARRAY_BUFFER, colorsArrayBuffer);
-    gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(colorsIndexes), gl.STATIC_DRAW);
-    colorsArrayBuffer.itemSize = 3;
-    colorsArrayBuffer.numItems = parseInt(colorsIndexes.length);
+    colorsBuffer = gl.createBuffer();
+    gl.bindBuffer(gl.ARRAY_BUFFER, colorsBuffer);
+    gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(lineColors), gl.STATIC_DRAW);
+    colorsBuffer.itemSize = 3;
+    colorsBuffer.numItems = parseInt(lineColors.length);
 }
 
 
