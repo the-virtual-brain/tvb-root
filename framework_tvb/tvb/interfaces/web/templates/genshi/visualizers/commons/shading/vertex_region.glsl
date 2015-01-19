@@ -1,12 +1,15 @@
 {% include transform.glsl %}
 {% include colorscheme.glsl %}
-
+/**
+ * This shader displays region level activity. The activity is stored in the uniform array.
+ * alphaIndices is the mapping from vertices to region indices.
+ */
 attribute vec3 aVertexPosition;
 attribute vec3 aVertexNormal;
 
 attribute vec3 alphaIndices;
 attribute vec2 alpha;
-
+// 127 is the legend granularity
 uniform vec2 uActivity[${abs(noOfMeasurePoints) + 2} + 127];
 
 varying vec4 vColor;

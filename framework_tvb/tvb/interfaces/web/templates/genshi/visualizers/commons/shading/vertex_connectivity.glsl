@@ -1,4 +1,8 @@
 {% include transform.glsl %}
+/**
+ * This shader draws the connectivity.
+ * The cubes and lines are drawn with fixed material colors. Explicit coloring is used for spheres and transparent cortex.
+ */
 attribute vec3 aVertexPosition;
 attribute vec3 aVertexNormal;
 attribute vec3 aColor;

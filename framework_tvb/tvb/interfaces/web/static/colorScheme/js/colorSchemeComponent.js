@@ -1,10 +1,10 @@
 var nodeColorRGB = [255, 255, 255];
 var _colorSchemeColors;
 var _colorScheme = null;                // the color scheme to be used for current drawing
-var _minRange, _maxRange;               // keep the interest interval
-var _minActivity, _maxActivity;         // keep the full range
+var _minRange, _maxRange;               // the interest interval. Set by a slider in the ui
+var _minActivity, _maxActivity;         // the full activity range
 var _refreshCallback = null ;           // this is called when color scheme changes update the visualiser
-var _sparseColorNo = 256;
+var _sparseColorNo = 256;               // the number of discrete colors. Set by a slider in the ui
 
 // ================================= COLOR SCHEME STRUCTURES START =================================
 /**
@@ -223,18 +223,23 @@ function ColSch_initColorSchemeParams(minValue, maxValue, refreshFunction) {
     _minActivity = minValue;
     _maxActivity = maxValue;
     _refreshCallback = refreshFunction;
-    // initialise the linear params
     var elemSliderSelector = $("#rangerForLinearColSch");
+    var elemMin = $("#sliderMinValue");
+    var elemMax = $("#sliderMaxValue");
+    var elemColorNoSlider = $("#sliderForSparseColSch");
+    var elemColorNo = $("#ColSch_colorNo");
+
     if (elemSliderSelector.length < 1){
-        displayMessage("Color scheme component not found for initialization...", "warningMessage");
+        displayMessage("Color scheme DOM not found for initialization.", "warningMessage");
         return;
     }
+    // initialise the range UI
     elemSliderSelector.slider({
         range: true, min: minValue, max: maxValue, step: (maxValue - minValue) / 1000, // 1000 steps between max and min
         values: [minValue, maxValue],
         slide: function(event, ui) {
-            $("#sliderMinValue").html(ui.values[0].toFixed(3));
-            $("#sliderMaxValue").html(ui.values[1].toFixed(3));
+            elemMin.html(ui.values[0].toFixed(3));
+            elemMax.html(ui.values[1].toFixed(3));
         },
         change: function(event, ui) {
             _minRange = ui.values[0];
@@ -242,16 +247,15 @@ function ColSch_initColorSchemeParams(minValue, maxValue, refreshFunction) {
             if (_refreshCallback) { _refreshCallback(); }
         }
     });
-    $("#sliderMinValue").html(minValue.toFixed(3));
-    $("#sliderMaxValue").html(maxValue.toFixed(3));
-    // initialise the sparse params
-    var colorNoUIElem = $("#ColSch_colorNo");
-    colorNoUIElem.html(_sparseColorNo);
-    $("#sliderForSparseColSch").slider({ // and exponential slider for number of color bins
+    elemMin.html(minValue.toFixed(3));
+    elemMax.html(maxValue.toFixed(3));
+    // initialise the number of colors UI
+    elemColorNo.html(_sparseColorNo);
+    elemColorNoSlider.slider({ // and exponential slider for number of color bins
         min: 1, max: 8, step: 1, value: 8,
         slide: function (event, ui) {
             var nbins = Math.pow(2, ui.value);
-            colorNoUIElem.html(nbins);
+            elemColorNo.html(nbins);
         },
         change: function (event, ui) {
             _sparseColorNo = Math.pow(2, ui.value);

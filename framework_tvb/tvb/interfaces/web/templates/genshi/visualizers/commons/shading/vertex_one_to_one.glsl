@@ -1,6 +1,8 @@
 {% include transform.glsl %}
 {% include colorscheme.glsl %}
-
+/**
+ * This shader displays surface level activity.
+ */
 attribute vec3 aVertexPosition;
 attribute vec3 aVertexNormal;
 
