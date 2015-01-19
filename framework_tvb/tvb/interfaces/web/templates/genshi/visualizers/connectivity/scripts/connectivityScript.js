@@ -24,34 +24,20 @@
  */
 var CONNECTIVITY_CANVAS_ID = "GLcanvas";
 
-//NOTE: if <code>uColorIndex</code> has a value grater or equal to zero then the color corresponding to this index will
-//      be used for drawing otherwise the color corresponding to the <code>aColorIndex</code> will be used for drawing
-
-
-function initShaders() {	
-    //INIT NORMAL SHADER
+function initShaders() {
     createAndUseShader("shader-fs", "shader-vs");
     SHADING_Context.connectivity_init(GL_shaderProgram);
 }
 
-// if you change the no of colors (add/remove) please update also the size of the uniform 'uColorsArray' from 'x-vertex'
-var COLORS = [
-        [1.0, 1.0, 1.0, 1.0],
-        [1.0, 0.0, 0.0, 1.0],
-        [0.0, 0.0, 1.0, 1.0],
-        [1.0, 1.0, 0.0, 1.0],
-        [0.0, 1.0, 0.0, 1.0],
-        [0.5, 0.5, 0.5, 1.0],
-        [0.1, 0.1, 0.1, 1.0]
-];
-
-var WHITE_COLOR_INDEX = 0;
-var RED_COLOR_INDEX = 1;
-var BLUE_COLOR_INDEX = 2;
-var YELLOW_COLOR_INDEX = 3;
-var GREEN_COLOR_INDEX = 4;
-var GRAY_COLOR_INDEX = 5;
-var BLACK_COLOR_INDEX = 6;
+var COLORS = {
+    WHITE:  [1.0, 1.0, 1.0, 1.0],
+    RED:    [1.0, 0.0, 0.0, 1.0],
+    BLUE:   [0.0, 0.0, 1.0, 1.0],
+    YELLOW: [1.0, 1.0, 0.0, 1.0],
+    GREEN:  [0.0, 1.0, 0.0, 1.0],
+    GRAY:   [0.5, 0.5, 0.5, 1.0],
+    BLACK:  [0.1, 0.1, 0.1, 1.0]
+};
 
 // the number of the points that were read from the 'position.txt' file (no of points from the connectivity matrix)
 var NO_POSITIONS;
@@ -149,19 +135,14 @@ var linesBuffer;
 function initBuffers() {
     var fakeNormal_1 = [0, 0, 0];
 
-    var whitePointsColorsIndex =[];
     var points = [];
     var normals = [];
 
     for (var i = 0; i < NO_POSITIONS; i++) {
         points = points.concat(GVAR_positionsPoints[i]);
         normals = normals.concat(fakeNormal_1);
-        lineColors = lineColors.concat(COLORS[WHITE_COLOR_INDEX]);
+        lineColors = lineColors.concat(COLORS.WHITE);
     }
-
-     for (var index = 0; index < 24 ; index++){
-            whitePointsColorsIndex = whitePointsColorsIndex.concat(COLORS[WHITE_COLOR_INDEX]);
-     }
 
     colorsBuffer = gl.createBuffer();
     gl.bindBuffer(gl.ARRAY_BUFFER, colorsBuffer);
@@ -206,19 +187,19 @@ function displayPoints() {
 
         if (!showMetricDetails) {
             if (i == CONN_pickedIndex) {
-                gl.uniform4fv(GL_shaderProgram.materialColor, COLORS[YELLOW_COLOR_INDEX]);
+                gl.uniform4fv(GL_shaderProgram.materialColor, COLORS.YELLOW);
             } else if (i == highlightedPointIndex1) {
-                gl.uniform4fv(GL_shaderProgram.materialColor, COLORS[RED_COLOR_INDEX]);
+                gl.uniform4fv(GL_shaderProgram.materialColor, COLORS.RED);
             } else if (i == highlightedPointIndex2) {
-                gl.uniform4fv(GL_shaderProgram.materialColor, COLORS[BLUE_COLOR_INDEX]);
+                gl.uniform4fv(GL_shaderProgram.materialColor, COLORS.BLUE);
             } else if (GFUNC_isNodeAddedToInterestArea(i)) {
-                gl.uniform4fv(GL_shaderProgram.materialColor, COLORS[GREEN_COLOR_INDEX]);
+                gl.uniform4fv(GL_shaderProgram.materialColor, COLORS.GREEN);
             } else if (GFUNC_isIndexInNodesWithPositiveWeight(i)) {
-                gl.uniform4fv(GL_shaderProgram.materialColor, COLORS[BLUE_COLOR_INDEX]);
+                gl.uniform4fv(GL_shaderProgram.materialColor, COLORS.BLUE);
             } else if (!hasPositiveWeights(i)) {
-                gl.uniform4fv(GL_shaderProgram.materialColor, COLORS[BLACK_COLOR_INDEX]);
+                gl.uniform4fv(GL_shaderProgram.materialColor, COLORS.BLACK);
             } else {
-                gl.uniform4fv(GL_shaderProgram.materialColor, COLORS[WHITE_COLOR_INDEX]);
+                gl.uniform4fv(GL_shaderProgram.materialColor, COLORS.WHITE);
             }
         }
         // End ADDED FOR PICK
@@ -269,8 +250,6 @@ function drawScene() {
         mvTranslate([GVAR_additionalXTranslationStep, GVAR_additionalYTranslationStep, 0]);
         displayPoints();
         mvPopMatrix();
-
-       //ORIENTATION_draw_nose_and_ears();
 
         // draw the brain cortical surface
         if (noOfBuffersToLoad === 0) {
@@ -703,7 +682,6 @@ function selectHemisphere(index) {
  * Method which draws the cortical surface
  */
 function drawHemispheres(drawingMode) {
-    gl.uniform1i(GL_shaderProgram.colorIndex, GRAY_COLOR_INDEX);
     for (var i = 0; i < verticesBuffers.length; i++) {
         //todo-io: hack for colors buffer
         //there should be passed an buffer of colors indexes not the normalBuffers;
