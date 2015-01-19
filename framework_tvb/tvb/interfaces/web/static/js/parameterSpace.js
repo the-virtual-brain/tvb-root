@@ -154,11 +154,14 @@ function PSEDiscreteInitialize(labelsXJson, labelsYJson, series_array, dataJson,
     var labels_y = $.parseJSON(labelsYJson);
     var data = $.parseJSON(dataJson);
 
-    ColSch_initColorSchemeComponent();
     min_color = parseFloat(min_color);
     max_color = parseFloat(max_color);
     min_size = parseFloat(min_size);
     max_size = parseFloat(max_size);
+
+    ColSch_initColorSchemeParams(min_color, max_color, function(){
+        _updatePlotPSE('main_div_pse', labels_x, labels_y, series_array, data, min_color, max_color, backPage);
+    });
 
     function _fmt_lbl(sel, v){
         $(sel).html( Number.isNaN(v) ? 'not available': toSignificantDigits(v, 3));

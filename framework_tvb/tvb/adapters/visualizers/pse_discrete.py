@@ -86,7 +86,7 @@ class DiscretePSEAdapter(ABCDisplayer):
         pse_context = self.prepare_parameters(datatype_group.gid, '')
         pse_context.prepare_individual_jsons()
 
-        return self.build_display_result('pse_discrete/view', pse_context)
+        return self.build_display_result('pse_discrete/view', pse_context, pages=dict(controlPage="pse_discrete/controls"))
 
 
     @staticmethod
