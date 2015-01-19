@@ -807,7 +807,6 @@ function saveRequiredInputs_con(fileWeights, fileTracts, filePositions, urlVerti
         positionsBuffers[i] = HLPR_bufferAtPoint(gl, GVAR_positionsPoints[i]);
     }
     initBuffers();
-    ORIENTATION_initOrientationBuffers();
 
     var urlVertices = $.parseJSON(urlVerticesList);
     if (urlVertices.length > 0) {
