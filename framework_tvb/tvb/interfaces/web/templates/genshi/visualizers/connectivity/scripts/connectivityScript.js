@@ -133,7 +133,7 @@ function displayNameForPickedNode() {
 var linesBuffer;
 
 function initBuffers() {
-    var fakeNormal_1 = [0, 0, 0];
+    var fakeNormal_1 = [0, 0, 1];
 
     var points = [];
     var normals = [];
@@ -212,20 +212,6 @@ function displayPoints() {
     doPick = false;
 }
 
-
-/**
- * Draw the light
- */
-function addLight() {
-    basicSetLighting();
-    gl.uniform1f(GL_shaderProgram.alphaUniform, 1.0);
-}
-
-function addLightForCorticalSurface() {
-    basicSetLighting();
-    gl.uniform1f(GL_shaderProgram.alphaUniform, _alphaValue);
-}
-
 function drawScene() {
     gl.viewport(0, 0, gl.viewportWidth, gl.viewportHeight);
     // View angle is 45, we want to see object from 0.1 up to 800 distance from viewer
@@ -237,17 +223,19 @@ function drawScene() {
         createLinesBuffer(getLinesIndexes()); // warn we upload new buffer each frame
 
         gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
-        addLight();
+        gl.uniform1f(GL_shaderProgram.alphaUniform, 1.0);
 
         //draw the lines between the checked points
         mvPushMatrix();
         mvTranslate([GVAR_additionalXTranslationStep, GVAR_additionalYTranslationStep, 0]);
+        basicSetLighting(minimalLighting);
         _drawLines(linesBuffer);
         mvPopMatrix();
 
         //draw the points
         mvPushMatrix();
         mvTranslate([GVAR_additionalXTranslationStep, GVAR_additionalYTranslationStep, 0]);
+        basicSetLighting();
         displayPoints();
         mvPopMatrix();
 
@@ -260,7 +248,10 @@ function drawScene() {
             gl.blendEquationSeparate(gl.FUNC_ADD, gl.FUNC_ADD);
             gl.blendFuncSeparate(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA, gl.ONE, gl.ONE_MINUS_SRC_ALPHA);
             gl.enable(gl.CULL_FACE);
-            addLightForCorticalSurface();
+
+            basicSetLighting();
+            gl.uniform1f(GL_shaderProgram.alphaUniform, _alphaValue);
+
             mvTranslate([GVAR_additionalXTranslationStep, GVAR_additionalYTranslationStep, 0]);
 
             gl.uniform1i(GL_shaderProgram.useVertexColors, true);
