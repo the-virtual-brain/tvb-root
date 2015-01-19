@@ -376,9 +376,9 @@ function drawFullMatrix(doPick, idx) {
     
     // Draw the actual matrix.
     gl.bindBuffer(gl.ARRAY_BUFFER, verticesBuffer);
-    gl.vertexAttribPointer(GL_shaderProgram.vertexPositionAttribute, TRI, gl.FLOAT, false, 0, 0);
+    gl.vertexAttribPointer(GL_shaderProgram.vertexPositionAttribute, 3, gl.FLOAT, false, 0, 0);
 //    gl.bindBuffer(gl.ARRAY_BUFFER, normalsBuffer);
-//    gl.vertexAttribPointer(GL_shaderProgram.vertexNormalAttribute, TRI, gl.FLOAT, false, 0, 0);
+//    gl.vertexAttribPointer(GL_shaderProgram.vertexNormalAttribute, 3, gl.FLOAT, false, 0, 0);
     setMatrixUniforms();
     
     if (doPick) {
@@ -407,9 +407,9 @@ function drawFullMatrix(doPick, idx) {
             gl.lineWidth(2.0);
         }
         gl.bindBuffer(gl.ARRAY_BUFFER, outlineVerticeBuffer);
-        gl.vertexAttribPointer(GL_shaderProgram.vertexPositionAttribute, TRI, gl.FLOAT, false, 0, 0);
+        gl.vertexAttribPointer(GL_shaderProgram.vertexPositionAttribute, 3, gl.FLOAT, false, 0, 0);
 //        gl.bindBuffer(gl.ARRAY_BUFFER, outlineNormalsBuffer);
-//        gl.vertexAttribPointer(GL_shaderProgram.vertexNormalAttribute, TRI, gl.FLOAT, false, 0, 0);
+//        gl.vertexAttribPointer(GL_shaderProgram.vertexNormalAttribute, 3, gl.FLOAT, false, 0, 0);
         gl.uniform1i(GL_shaderProgram.drawLines, true);
         gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, outlineLinesBuffer);
         gl.drawElements(gl.LINES, outlineLinesBuffer.numItems, gl.UNSIGNED_SHORT, 0);

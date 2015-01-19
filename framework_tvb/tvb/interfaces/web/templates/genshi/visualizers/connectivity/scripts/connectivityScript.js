@@ -53,12 +53,6 @@ var GREEN_COLOR_INDEX = 4;
 var GRAY_COLOR_INDEX = 5;
 var BLACK_COLOR_INDEX = 6;
 
-// if we pass this value to the uniform <code>uColorIndex</code> than this means that we will use the color corresponding to the <code>aColorIndex</code> attribute
-var NO_COLOR_INDEX = -1;
-
-var TRI = 3;
-// Size of the cube
-var PS = 3.0;
 // the number of the points that were read from the 'position.txt' file (no of points from the connectivity matrix)
 var NO_POSITIONS;
 // each point from the connectivity matrix will be drawn as a square;
