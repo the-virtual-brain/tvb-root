@@ -165,10 +165,11 @@ function clampValue(value, min, max) {
 /**
  * Sets the current color scheme to the given one
  * @param scheme The name of the color scheme. See _ColSchemesInfo for supported schemes.
- * @param notify_server When TRUE, trigger an ajax call to store on the server changed setting.
+ * @param notify When true, trigger an ajax call to store on the server the changed setting. It will also notify listeners.
  */
-function ColSch_setColorScheme(scheme, notify_server) {
-    if(notify_server){
+function ColSch_setColorScheme(scheme, notify) {
+    _colorScheme = scheme;
+    if(notify){
         //could throttle this
         doAjaxCall({
             url: '/user/set_viewer_color_scheme/' + scheme,
@@ -176,12 +177,11 @@ function ColSch_setColorScheme(scheme, notify_server) {
                 console.warn(error);
             }
         });
+        if (_refreshCallback) {
+            _refreshCallback();
+        }
     } else {
         $("#setColorSchemeSelId").val(scheme);
-    }
-    _colorScheme = scheme;
-    if (_refreshCallback) {
-        _refreshCallback();
     }
 }
 
