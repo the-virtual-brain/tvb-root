@@ -18,37 +18,50 @@
  **/
 
 var gl;
-function initGL(canvas) {
-    try {
-        gl = canvas.getContext("experimental-webgl", {preserveDrawingBuffer: true});
-        var canvasWidth = safeMath(canvas.clientWidth, canvas.width);
-        var canvasHeight = safeMath(canvas.clientHeight, canvas.height);
-        canvas.width = canvasWidth;
-        canvas.height = canvasHeight;
-        gl.viewportWidth = canvasWidth;
-        gl.viewportHeight = canvasHeight;
-        // Used to compute original mouse position in case of canvas resize
-        gl.newCanvasWidth = canvasWidth;
-        gl.newCanvasHeight = canvasHeight;
 
-        // interface-like methods used for HiRes figure exporting
-        var scaleAndRedraw = function(isSmall) {
-            if (isSmall)                            // when it's small, compute the scale to make it big
-                this.scale = C2I_EXPORT_HEIGHT / canvas.height;
-            else                                    // when is not small, invert scale to bring it back to original size
-                this.scale = 1 / this.scale;
-            gl.newCanvasWidth  = gl.viewportWidth  = canvas.width  *= this.scale;
-            gl.newCanvasHeight = gl.viewportHeight = canvas.height *= this.scale;
-            if (canvas.redrawFunctionRef)
-                canvas.redrawFunctionRef();
-        };
-        canvas.drawForImageExport = function() {scaleAndRedraw(true)} ;      // small
-        canvas.afterImageExport   = function() {scaleAndRedraw(false)} ;     // big
-    } catch(e) {
+function _haveRequiredGLCapabilities(){
+    if(gl.getParameter(gl.MAX_VERTEX_TEXTURE_IMAGE_UNITS) < 1){
+        displayMessage("TVB requires at least 1 vertex texture",  "errorMessage");
+        return false;
     }
-    if (!gl) {
+    if( gl.getParameter(gl.MAX_VERTEX_UNIFORM_VECTORS) < 512 ){
+        displayMessage("TVB requires at least 512 wide vertex uniform arrays",  "errorMessage");
+        return false;
+    }
+    return true;
+}
+
+function initGL(canvas) {
+    gl = canvas.getContext("experimental-webgl", {preserveDrawingBuffer: true});
+    if (!gl || ! _haveRequiredGLCapabilities()){
         displayMessage("Could not initialise WebGL, sorry :-(", "errorMessage");
+        // By default we continue running js. Some gl calls will fail. To fail fast uncomment the throw below.
+        // throw "WebGL init";
     }
+
+    var canvasWidth = safeMath(canvas.clientWidth, canvas.width);
+    var canvasHeight = safeMath(canvas.clientHeight, canvas.height);
+    canvas.width = canvasWidth;
+    canvas.height = canvasHeight;
+    gl.viewportWidth = canvasWidth;
+    gl.viewportHeight = canvasHeight;
+    // Used to compute original mouse position in case of canvas resize
+    gl.newCanvasWidth = canvasWidth;
+    gl.newCanvasHeight = canvasHeight;
+
+    // interface-like methods used for HiRes figure exporting
+    var scaleAndRedraw = function(isSmall) {
+        if (isSmall)                            // when it's small, compute the scale to make it big
+            this.scale = C2I_EXPORT_HEIGHT / canvas.height;
+        else                                    // when is not small, invert scale to bring it back to original size
+            this.scale = 1 / this.scale;
+        gl.newCanvasWidth  = gl.viewportWidth  = canvas.width  *= this.scale;
+        gl.newCanvasHeight = gl.viewportHeight = canvas.height *= this.scale;
+        if (canvas.redrawFunctionRef)
+            canvas.redrawFunctionRef();
+    };
+    canvas.drawForImageExport = function() {scaleAndRedraw(true)} ;      // small
+    canvas.afterImageExport   = function() {scaleAndRedraw(false)} ;     // big
 }
 
 function safeMath(number1, number2) {
