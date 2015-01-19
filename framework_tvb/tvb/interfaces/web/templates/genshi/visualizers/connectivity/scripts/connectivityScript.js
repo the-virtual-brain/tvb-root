@@ -217,43 +217,32 @@ function drawScene() {
     // View angle is 45, we want to see object from 0.1 up to 800 distance from viewer
     perspective(45, gl.viewportWidth / gl.viewportHeight, near, 800.0);
 
-    mvPushMatrix();
-
     if (!doPick) {
+        mvPushMatrix();
+        mvTranslate([GVAR_additionalXTranslationStep, GVAR_additionalYTranslationStep, 0]);
+
         createLinesBuffer(getLinesIndexes()); // warn we upload new buffer each frame
 
         gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
         gl.uniform1f(GL_shaderProgram.alphaUniform, 1.0);
 
         //draw the lines between the checked points
-        mvPushMatrix();
-        mvTranslate([GVAR_additionalXTranslationStep, GVAR_additionalYTranslationStep, 0]);
         basicSetLighting(minimalLighting);
         _drawLines(linesBuffer);
-        mvPopMatrix();
 
         //draw the points
-        mvPushMatrix();
-        mvTranslate([GVAR_additionalXTranslationStep, GVAR_additionalYTranslationStep, 0]);
         basicSetLighting();
         displayPoints();
-        mvPopMatrix();
 
         // draw the brain cortical surface
         if (noOfBuffersToLoad === 0) {
-            mvPushMatrix();
-
             // Blending function for alpha: transparent pix blended over opaque -> opaque pix
             gl.enable(gl.BLEND);
             gl.blendEquationSeparate(gl.FUNC_ADD, gl.FUNC_ADD);
             gl.blendFuncSeparate(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA, gl.ONE, gl.ONE_MINUS_SRC_ALPHA);
             gl.enable(gl.CULL_FACE);
 
-            basicSetLighting();
             gl.uniform1f(GL_shaderProgram.alphaUniform, _alphaValue);
-
-            mvTranslate([GVAR_additionalXTranslationStep, GVAR_additionalYTranslationStep, 0]);
-
             gl.uniform1i(GL_shaderProgram.useVertexColors, true);
 
             // Draw the transparent object twice, to get a correct rendering
@@ -264,8 +253,8 @@ function drawScene() {
 
             gl.disable(gl.BLEND);
             gl.disable(gl.CULL_FACE);
-            mvPopMatrix();
         }
+        mvPopMatrix();
     } else {
         gl.bindFramebuffer(gl.FRAMEBUFFER, GL_colorPickerBuffer);
         gl.disable(gl.BLEND);
@@ -298,7 +287,6 @@ function drawScene() {
         gl.bindFramebuffer(gl.FRAMEBUFFER, null);
         drawScene();
     }
-    mvPopMatrix();
 }
 
 /**
