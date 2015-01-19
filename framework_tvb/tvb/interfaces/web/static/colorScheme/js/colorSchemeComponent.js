@@ -1,8 +1,8 @@
 var nodeColorRGB = [255, 255, 255];
 var _colorSchemeColors;
 var _colorScheme = null;                // the color scheme to be used for current drawing
-var _minRange=0, _maxRange=1;               // keep the interest interval
-var _minActivity=0, _maxActivity=1;         // keep the full range
+var _minRange, _maxRange;               // keep the interest interval
+var _minActivity, _maxActivity;         // keep the full range
 var _refreshCallback = null ;           // this is called when color scheme changes update the visualiser
 var _sparseColorNo = 256;
 
@@ -172,10 +172,7 @@ function ColSch_setColorScheme(scheme, notify) {
     if(notify){
         //could throttle this
         doAjaxCall({
-            url: '/user/set_viewer_color_scheme/' + scheme,
-            error: function(jqXHR, textStatus, error){
-                console.warn(error);
-            }
+            url: '/user/set_viewer_color_scheme/' + scheme
         });
         if (_refreshCallback) {
             _refreshCallback();
@@ -201,16 +198,24 @@ function ColSch_loadInitialColorScheme(async){
 }
 
 function ColSch_initColorSchemeComponent(){
-    if(_colorSchemeColors != null){
-        return;
+     // set defaults in case ColSch_initColorSchemeParams will not be called
+    _minRange = 0;
+    _maxRange = 1;
+    _minActivity = 0;
+    _maxActivity = 1;
+
+    if(!_colorSchemeColors) {
+        doAjaxCall({
+            url: '/user/get_color_schemes_json',
+            async: false,
+            success: function (data) {
+                _colorSchemeColors = JSON.parse(data);
+            }
+        });
     }
-    doAjaxCall({
-        url: '/user/get_color_schemes_json',
-        async: false,
-        success: function(data){
-            _colorSchemeColors = JSON.parse(data);
-        }
-    });
+    if (!_colorScheme) { // on very first call, set the default color scheme
+        ColSch_loadInitialColorScheme(false);
+    }
 }
 
 /**
@@ -221,6 +226,11 @@ function ColSch_initColorSchemeComponent(){
  * @param [refreshFunction] A reference to the function which updates the visualiser
  */
 function ColSch_initColorSchemeParams(minValue, maxValue, refreshFunction) {
+    ColSch_initColorSchemeComponent();
+    _minRange = minValue;            // on start the whole interval is selected
+    _maxRange = maxValue;
+    _minActivity = minValue;
+    _maxActivity = maxValue;
     _refreshCallback = refreshFunction;
     // initialise the linear params
     var elemSliderSelector = $("#rangerForLinearColSch");
@@ -243,10 +253,6 @@ function ColSch_initColorSchemeParams(minValue, maxValue, refreshFunction) {
     });
     $("#sliderMinValue").html(minValue.toFixed(3));
     $("#sliderMaxValue").html(maxValue.toFixed(3));
-    _minRange = minValue;            // on start the whole interval is selected
-    _maxRange = maxValue;
-    _minActivity = minValue;
-    _maxActivity = maxValue;
     // initialise the sparse params
     var colorNoUIElem = $("#ColSch_colorNo");
     colorNoUIElem.html(_sparseColorNo);
@@ -261,9 +267,6 @@ function ColSch_initColorSchemeParams(minValue, maxValue, refreshFunction) {
             if (_refreshCallback) { _refreshCallback(); }
         }
     });
-    if (!_colorScheme) {                      // on very first call, set the default color scheme
-        ColSch_loadInitialColorScheme(true);
-    }
 }
 
 /**
