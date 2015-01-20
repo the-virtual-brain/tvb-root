@@ -111,8 +111,7 @@ function NAV_BrainNavigator(isOneToOneMapping, brainBuffers, measurePoints, meas
             gl.bindBuffer(gl.ARRAY_BUFFER, this.drawingBuffers[3]);
             gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(same_color), gl.STATIC_DRAW);
         } else {
-            this.drawingBuffers[3] = null;
-            this.drawingBuffers[4] = this.drawingBuffers[1];
+            this.drawingBuffers[3] = this.drawingBuffers[1];
         }
     };
 

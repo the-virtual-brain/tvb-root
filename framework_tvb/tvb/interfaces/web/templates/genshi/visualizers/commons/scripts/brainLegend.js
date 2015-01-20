@@ -120,10 +120,8 @@ function LEG_generateLegendBuffers() {
             vertexRegion = vertexRegion.concat([i + NO_OF_MEASURE_POINTS + 2, i + NO_OF_MEASURE_POINTS + 2]);
         }
 
-        LEG_legendBuffers[3] = null;
-
-        LEG_legendBuffers[4] = gl.createBuffer();
-        gl.bindBuffer(gl.ARRAY_BUFFER, LEG_legendBuffers[4]);
+        LEG_legendBuffers[3] = gl.createBuffer();
+        gl.bindBuffer(gl.ARRAY_BUFFER, LEG_legendBuffers[3]);
         gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(vertexRegion), gl.STATIC_DRAW);
     }
     LEG_updateLegendColors();

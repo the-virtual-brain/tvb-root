@@ -105,8 +105,7 @@ var measurePointsBuffers = [];
  * arr[i][1] Normals buffer
  * arr[i][2] Triangles indices buffer
  * arr[i][3] Color buffer (same length as vertices /3 * 4) in case of one-to-one mapping
- * arr[i][3] not used
- * arr[i][4] Alpha Indices Buffer Indices of the 3 closest measurement points, in care of not one-to-one mapping
+ * arr[i][3] Region indexes, when not one-to-one mapping
  */
 
 var boundaryVertexBuffers = [];
@@ -873,7 +872,7 @@ function bufferAtPoint(p) {
     if (isOneToOneMapping) {
         return [bufferVertices, bufferNormals, bufferTriangles, createColorBufferForCube(false)];
     } else {
-        return [bufferVertices, bufferNormals, bufferTriangles, null, createColorBufferForCube(false)];
+        return [bufferVertices, bufferNormals, bufferTriangles, createColorBufferForCube(false)];
     }
 }
 
@@ -906,7 +905,7 @@ function initBuffers(urlVertices, urlNormals, urlTriangles, urlRegionMap, static
             gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(vertices[i].numItems), gl.STATIC_DRAW);
             result.push([vertices[i], normals[i], indexes[i], activityBuffer]);
         } else {
-            result.push([vertices[i], normals[i], indexes[i], null, vertexRegionMap[i]]);
+            result.push([vertices[i], normals[i], indexes[i], vertexRegionMap[i]]);
         }
     }
     return result;
@@ -945,7 +944,7 @@ function drawBuffer(drawMode, buffers){
     if (isOneToOneMapping) {
         SHADING_Context.one_to_one_program_draw(GL_shaderProgram, buffers[0], buffers[1], buffers[3], buffers[2], drawMode);
     } else {
-        SHADING_Context.region_progam_draw(GL_shaderProgram, buffers[0], buffers[1], buffers[4], buffers[2], drawMode);
+        SHADING_Context.region_progam_draw(GL_shaderProgram, buffers[0], buffers[1], buffers[3], buffers[2], drawMode);
     }
 }
 
