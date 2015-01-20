@@ -45,7 +45,7 @@ class SurfaceViewersTest(TransactionalTestCase):
     Unit-tests for Surface & RegionMapping viewers.
     """
 
-    EXPECTED_KEYS = {'urlVertices': None, 'urlTriangles': None, 'urlLines': None, 'urlNormals': None, 'urlAlphas': None,
+    EXPECTED_KEYS = {'urlVertices': None, 'urlTriangles': None, 'urlLines': None, 'urlNormals': None,
                      'urlAlphasIndices': None, 'biHemispheric': False, 'hemisphereChunkMask': None,
                      'noOfMeasurePoints': 74, 'urlMeasurePoints': None, 'boundaryURL': None, 'minMeasure': 0,
                      'maxMeasure': 74, 'clientMeasureUrl': None}

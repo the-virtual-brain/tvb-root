@@ -57,7 +57,7 @@ class SensorViewersTest(TransactionalTestCase):
 
     EXPECTED_KEYS_EEG = EXPECTED_KEYS_INTERNAL.copy()
     EXPECTED_KEYS_EEG.update({'urlVertices': None, 'urlTriangles': None, 'urlLines': None, 'urlNormals': None,
-                              'boundaryURL': '', 'urlAlphas': '', 'urlAlphasIndices': '',
+                              'boundaryURL': '', 'urlAlphasIndices': '',
                               'noOfMeasurePoints': 62, 'maxMeasure': 62})
 
     EXPECTED_KEYS_MEG = EXPECTED_KEYS_EEG.copy()

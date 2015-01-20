@@ -106,7 +106,7 @@ class SurfaceViewer(ABCDisplayer):
 
         hemisphere_chunk_mask = surface.get_slices_to_hemisphere_mask()
         return dict(urlVertices=url_vertices, urlTriangles=url_triangles, urlLines=url_lines,
-                    urlNormals=url_normals, urlAlphas=alphas, urlAlphasIndices=alphas_indices,
+                    urlNormals=url_normals, urlAlphasIndices=alphas_indices,
                     biHemispheric=surface.bi_hemispheric, hemisphereChunkMask=json.dumps(hemisphere_chunk_mask))
 
 

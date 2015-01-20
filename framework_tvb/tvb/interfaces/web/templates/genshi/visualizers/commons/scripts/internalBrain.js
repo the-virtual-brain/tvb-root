@@ -23,7 +23,7 @@ function _VSI_bufferAtPoint(p, idx) {
     var bufferNormals = result[1];
     var bufferTriangles = result[2];
     var alphaAndColors = VSI_createColorBufferForSphere(false, idx, bufferVertices.numItems * 3);
-    return [bufferVertices, bufferNormals, bufferTriangles, alphaAndColors[0], alphaAndColors[1]];
+    return [bufferVertices, bufferNormals, bufferTriangles, null, alphaAndColors[1]];
 }
 
 /**

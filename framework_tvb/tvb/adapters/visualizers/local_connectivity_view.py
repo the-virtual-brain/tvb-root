@@ -60,8 +60,6 @@ class LocalConnectivityViewer(ABCDisplayer):
             'urlVertices': json.dumps(url_vertices),
             'urlTriangles': json.dumps(url_triangles),
             'urlNormals': json.dumps(url_normals),
-            'alphas': json.dumps(alphas),
-            'alphas_indices': json.dumps(alphas_indices),
             'brainCenter': json.dumps(surface.center())
         }
 

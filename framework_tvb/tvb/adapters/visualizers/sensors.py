@@ -152,7 +152,7 @@ class SensorsViewer(ABCDisplayer):
         params.update({
             'shelfObject': prepare_shell_surface_urls(self.current_project_id, shell_surface),
             'urlVertices': '', 'urlTriangles': '', 'urlLines': '[]', 'urlNormals': '',
-            'boundaryURL': '', 'urlAlphas': '', 'urlAlphasIndices': '',
+            'boundaryURL': '', 'urlAlphasIndices': '',
         })
 
         if eeg_cap is not None:
@@ -169,7 +169,7 @@ class SensorsViewer(ABCDisplayer):
         params.update({
             'shelfObject': prepare_shell_surface_urls(self.current_project_id, shell_surface),
             'urlVertices': '', 'urlTriangles': '', 'urlLines': '[]', 'urlNormals': '',
-            'boundaryURL': '', 'urlAlphas': '', 'urlAlphasIndices': ''})
+            'boundaryURL': '', 'urlAlphasIndices': ''})
 
         if projection_surface is not None:
             params.update(self._compute_surface_params(projection_surface))

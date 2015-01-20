@@ -193,7 +193,7 @@ function VS_SetHemisphere(h){
 }
 
 function VS_StartPortletPreview(baseDatatypeURL, urlVerticesList, urlTrianglesList, urlNormalsList,
-                                urlAlphasList, urlAlphasIndicesList, minActivity, maxActivity, oneToOneMapping) {
+                                urlAlphasIndicesList, minActivity, maxActivity, oneToOneMapping) {
     isPreview = true;
     pageSize = 1;
     urlBase = baseDatatypeURL;
@@ -345,7 +345,7 @@ function _VS_init_cubicalMeasurePoints(){
 }
 
 function VS_StartSurfaceViewer(urlVerticesList, urlLinesList, urlTrianglesList, urlNormalsList, urlMeasurePoints,
-                               noOfMeasurePoints, urlAlphasList, urlAlphasIndicesList, urlMeasurePointsLabels,
+                               noOfMeasurePoints, urlAlphasIndicesList, urlMeasurePointsLabels,
                                boundaryURL, shelveObject, minMeasure, maxMeasure, urlMeasure, hemisphereChunkMask){
 
     _VS_static_entrypoint(urlVerticesList, urlLinesList, urlTrianglesList, urlNormalsList, urlMeasurePoints,
@@ -370,7 +370,7 @@ function VS_StartEEGSensorViewer(urlVerticesList, urlLinesList, urlTrianglesList
 
 function VS_StartBrainActivityViewer(baseDatatypeURL, onePageSize, urlTimeList, urlVerticesList, urlLinesList,
                     urlTrianglesList, urlNormalsList, urlMeasurePoints, noOfMeasurePoints,
-                    urlAlphasList, urlAlphasIndicesList, minActivity, maxActivity,
+                    urlAlphasIndicesList, minActivity, maxActivity,
                     oneToOneMapping, doubleView, shelfObject, hemisphereChunkMask,
                     urlMeasurePointsLabels, boundaryURL, measurePointsSelectionGID) {
     _VS_movie_entrypoint(baseDatatypeURL, onePageSize, urlTimeList, urlVerticesList, urlLinesList,
@@ -417,8 +417,8 @@ function _initViewerGL(canvas, urlVerticesList, urlNormalsList, urlTrianglesList
     }
 
     if (urlVerticesList) {
-        var parsedIndices = "";
-        if (parsedIndices) {
+        var parsedIndices = [];
+        if (urlAlphasIndicesList) {
             parsedIndices = $.parseJSON(urlAlphasIndicesList);
         }
         brainBuffers = initBuffers($.parseJSON(urlVerticesList), $.parseJSON(urlNormalsList),

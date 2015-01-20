@@ -94,7 +94,7 @@ class BrainViewer(ABCDisplayer):
 
         params = dict(urlVertices=json.dumps(url_vertices), urlTriangles=json.dumps(url_triangles),
                       urlLines=json.dumps(url_lines), urlNormals=json.dumps(url_normals),
-                      alphas=json.dumps(alphas), alphas_indices=json.dumps(alphas_indices),
+                      alphas_indices=json.dumps(alphas_indices),
                       base_activity_url=ABCDisplayer.VISUALIZERS_URL_PREFIX + time_series.gid,
                       isOneToOneMapping=self.one_to_one_map, minActivity=min_val, maxActivity=max_val,
                       noOfMeasurePoints=0)
@@ -197,7 +197,6 @@ class BrainViewer(ABCDisplayer):
         params.update(dict(title="Cerebral Activity: " + time_series.title, isOneToOneMapping=self.one_to_one_map,
                            urlVertices=json.dumps(url_vertices), urlTriangles=json.dumps(url_triangles),
                            urlLines=json.dumps(url_lines), urlNormals=json.dumps(url_normals),
-                           alphas=json.dumps(alphas),
                            alphas_indices=json.dumps(alphas_indices), base_activity_url=base_activity_url,
                            time=json.dumps(time_urls), minActivity=min_val, maxActivity=max_val,
                            minActivityLabels=legend_labels, labelsStateVar=state_variables,
