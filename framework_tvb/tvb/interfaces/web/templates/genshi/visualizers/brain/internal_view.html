@@ -13,7 +13,7 @@
         $(document).ready(function() {
             VSI_StartInternalActivityViewer('${base_activity_url}', ${pageSize}, '${time}', '${urlVertices}',
                     '${urlLines}', '${urlTriangles}', '${urlNormals}', '${urlMeasurePoints}', $noOfMeasurePoints,
-                    '${alphas}', '${alphas_indices}', '${minActivity}', '${maxActivity}', '${isOneToOneMapping}',
+                    '${alphas_indices}', '${minActivity}', '${maxActivity}', '${isOneToOneMapping}',
                      ${'true' if extended_view else 'false'}, ${"'" + shelfObject +"'" if shelfObject else 'null'},
                     '${urlMeasurePointsLabels}', '${urlRegionBoundaries}');
         });

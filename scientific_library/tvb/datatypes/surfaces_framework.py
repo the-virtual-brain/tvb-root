@@ -270,7 +270,6 @@ class SurfaceFramework(surfaces_data.SurfaceData):
         url_triangles = []
         url_normals = []
         url_lines = []
-        alphas = []
         alphas_indices = []
         for i in xrange(self.number_of_split_slices):
             param = "slice_number=" + str(i)
@@ -282,13 +281,11 @@ class SurfaceFramework(surfaces_data.SurfaceData):
                 continue
 
             start_idx, end_idx = self._get_slice_vertex_boundaries(i)
-            alphas.append(paths2url(region_mapping, "get_alpha_array", flatten=True,
-                                    parameter="size=" + str(self.number_of_vertices)))
             alphas_indices.append(paths2url(region_mapping, "get_alpha_indices_array", flatten=True,
                                             parameter="start_idx=" + str(start_idx) + " ;end_idx=" + str(end_idx)))
           
         if include_alphas:  
-            return url_vertices, url_normals, url_lines, url_triangles, alphas, alphas_indices
+            return url_vertices, url_normals, url_lines, url_triangles, alphas_indices
         return url_vertices, url_normals, url_lines, url_triangles
 
 
@@ -587,23 +584,7 @@ class RegionMappingFramework(surfaces_data.RegionMappingData):
     Framework methods regarding RegionMapping DataType.
     """
     __tablename__ = None
-    
-       
-    @staticmethod
-    def get_alpha_array(size):
-        """
-        Compute alpha weights.
-        When displaying region-based results, we need to compute color for each
-        surface vertex based on a gradient of the neighbor region(s).
-        Currently only one vertex is used for determining color (the one 
-        indicated by the RegionMapping).
-        :return: NumPy array with [[1, 0], [1, 0] ....] of length :param size
-        """
-        if isinstance(size, (str, unicode)):
-            size = int(size)
-        return numpy.ones((size, 1)) * numpy.array([1.0, 0.0])
-    
-    
+
     def get_alpha_indices_array(self, start_idx, end_idx):
         """
         Compute alpha indices.

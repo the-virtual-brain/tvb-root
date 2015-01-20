@@ -87,7 +87,7 @@ class SpatioTemporalController(BaseController):
         surface = ABCAdapter.load_entity_by_gid(surface_gid)
         common.add2session(PARAM_SURFACE, surface_gid)
         url_vertices_pick, url_normals_pick, url_triangles_pick = surface.get_urls_for_pick_rendering()
-        url_vertices, url_normals, _, url_triangles, alphas, alphas_indices = surface.get_urls_for_rendering(True, None)
+        url_vertices, url_normals, _, url_triangles, alphas_indices = surface.get_urls_for_rendering(True, None)
 
         return {
             'urlVerticesPick': json.dumps(url_vertices_pick),

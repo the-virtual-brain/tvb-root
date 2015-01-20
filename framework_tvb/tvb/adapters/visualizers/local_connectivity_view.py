@@ -51,7 +51,7 @@ class LocalConnectivityViewer(ABCDisplayer):
 
     def _compute_surface_params(self, surface):
         url_vertices_pick, url_normals_pick, url_triangles_pick = surface.get_urls_for_pick_rendering()
-        url_vertices, url_normals, _, url_triangles, alphas, alphas_indices = surface.get_urls_for_rendering(True, None)
+        url_vertices, url_normals, _, url_triangles = surface.get_urls_for_rendering()
 
         return {
             'urlVerticesPick': json.dumps(url_vertices_pick),

@@ -88,8 +88,8 @@ class BrainViewer(ABCDisplayer):
         """
         self.populate_surface_fields(time_series)
 
-        url_vertices, url_normals, url_lines, url_triangles, \
-        alphas, alphas_indices = self.surface.get_urls_for_rendering(True, self.region_map)
+        url_vertices, url_normals, url_lines, \
+            url_triangles, alphas_indices = self.surface.get_urls_for_rendering(True, self.region_map)
         min_val, max_val = time_series.get_min_max_values()
 
         params = dict(urlVertices=json.dumps(url_vertices), urlTriangles=json.dumps(url_triangles),
@@ -173,8 +173,7 @@ class BrainViewer(ABCDisplayer):
         """
         self.populate_surface_fields(time_series)
 
-        url_vertices, url_normals, url_lines, url_triangles, \
-        alphas, alphas_indices = self.surface.get_urls_for_rendering(True, self.region_map)
+        url_vertices, url_normals, url_lines, url_triangles, alphas_indices = self.surface.get_urls_for_rendering(True, self.region_map)
         hemisphere_chunk_mask = self.surface.get_slices_to_hemisphere_mask()
 
         params = self.retrieve_measure_points_prams(time_series)
