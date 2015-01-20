@@ -101,7 +101,7 @@ function NAV_BrainNavigator(isOneToOneMapping, brainBuffers, measurePoints, meas
         this.drawingBuffers[2].itemSize = 1;
         this.drawingBuffers[2].numItems = 18;
 
-        // IV. Fake buffers (alpha and alpha indices), these won't be used, they only need to be passed
+        // IV. Fake buffers, these won't be used, they only need to be passed
         if (isOneToOneMapping) {
             var same_color = [];
             for (var i=0; i<this.drawingBuffers[0].numItems* 4; i++) {
@@ -111,7 +111,7 @@ function NAV_BrainNavigator(isOneToOneMapping, brainBuffers, measurePoints, meas
             gl.bindBuffer(gl.ARRAY_BUFFER, this.drawingBuffers[3]);
             gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(same_color), gl.STATIC_DRAW);
         } else {
-            this.drawingBuffers[3] = this.drawingBuffers[1];
+            this.drawingBuffers[3] = null;
             this.drawingBuffers[4] = this.drawingBuffers[1];
         }
     };

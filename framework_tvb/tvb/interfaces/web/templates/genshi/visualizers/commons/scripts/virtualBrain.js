@@ -105,7 +105,7 @@ var measurePointsBuffers = [];
  * arr[i][1] Normals buffer
  * arr[i][2] Triangles indices buffer
  * arr[i][3] Color buffer (same length as vertices /3 * 4) in case of one-to-one mapping
- * arr[i][3] Alpha buffer Gradient values for the 2 closest measurement points
+ * arr[i][3] not used
  * arr[i][4] Alpha Indices Buffer Indices of the 3 closest measurement points, in care of not one-to-one mapping
  */
 
@@ -193,7 +193,7 @@ function VS_SetHemisphere(h){
 }
 
 function VS_StartPortletPreview(baseDatatypeURL, urlVerticesList, urlTrianglesList, urlNormalsList,
-                                urlAlphasIndicesList, minActivity, maxActivity, oneToOneMapping) {
+                                urlRegionMapList, minActivity, maxActivity, oneToOneMapping) {
     isPreview = true;
     pageSize = 1;
     urlBase = baseDatatypeURL;
@@ -208,7 +208,7 @@ function VS_StartPortletPreview(baseDatatypeURL, urlVerticesList, urlTrianglesLi
     initShaders();
     if (urlVerticesList) {
         brainBuffers = initBuffers($.parseJSON(urlVerticesList), $.parseJSON(urlNormalsList), $.parseJSON(urlTrianglesList), 
-                               $.parseJSON(urlAlphasIndicesList), false);
+                               $.parseJSON(urlRegionMapList), false);
     }
     ColSch_initColorSchemeComponent(false);
     LEG_generateLegendBuffers();
@@ -235,7 +235,7 @@ function VS_StartPortletPreview(baseDatatypeURL, urlVerticesList, urlTrianglesLi
 }
 
 function _VS_static_entrypoint(urlVerticesList, urlLinesList, urlTrianglesList, urlNormalsList, urlMeasurePoints,
-                               noOfMeasurePoints, urlAlphasIndicesList, urlMeasurePointsLabels,
+                               noOfMeasurePoints, urlRegionMapList, urlMeasurePointsLabels,
                                boundaryURL, shelfObject, hemisphereChunkMask, showLegend, argDisplayMeasureNodes, argIsFaceToDisplay,
                                minMeasure, maxMeasure, urlMeasure){
     // initialize global configuration
@@ -287,7 +287,7 @@ function _VS_static_entrypoint(urlVerticesList, urlLinesList, urlTrianglesList, 
 
     var canvas = document.getElementById(BRAIN_CANVAS_ID);
     _initViewerGL(canvas, urlVerticesList, urlNormalsList, urlTrianglesList,
-                  urlAlphasIndicesList, urlLinesList, boundaryURL, shelfObject, hemisphereChunkMask);
+                  urlRegionMapList, urlLinesList, boundaryURL, shelfObject, hemisphereChunkMask);
 
     _bindEvents(canvas);
 
@@ -818,18 +818,18 @@ function readFloatData(data_url_list, staticFiles) {
  * @param vertices a list which contains lists of vertices. E.g.: [[slice_1_vertices],...,[slice_n_vertices]]
  * @param measurePoints a list which contains all the measure points. E.g.: [[x0,y0,z0],[x1,y1,z1],...]
  */
-function computeAlphas(vertices, measurePoints) {
-    var alphasIndices = [];
+function computeVertexRegionMap(vertices, measurePoints) {
+    var vertexRegionMap = [];
     for (var i = 0; i < vertices.length; i++) {
-        var currentAlphasIndices = [];
+        var reg = [];
         for (var j = 0; j < vertices[i].length/3; j++) {
             var currentVertex = vertices[i].slice(j * 3, (j + 1) * 3);
             var closestPosition = NAV_BrainNavigator.findClosestPosition(currentVertex, measurePoints);
-            currentAlphasIndices.push(closestPosition, 0, 0);
+            reg.push(closestPosition, 0, 0);
         }
-        alphasIndices.push(currentAlphasIndices);
+        vertexRegionMap.push(reg);
     }
-    return [null, alphasIndices];
+    return vertexRegionMap;
 }
 
 
@@ -878,25 +878,25 @@ function bufferAtPoint(p) {
 }
 
 
-function initBuffers(urlVertices, urlNormals, urlTriangles, urlAlphasIndices, staticFiles) {
+function initBuffers(urlVertices, urlNormals, urlTriangles, urlRegionMap, staticFiles) {
     var verticesData = readFloatData(urlVertices, staticFiles);
     var vertices = createWebGlBuffers(verticesData);
     var normals = HLPR_getDataBuffers(gl, urlNormals, staticFiles);
     var indexes = HLPR_getDataBuffers(gl, urlTriangles, staticFiles, true);
     
     // Fake buffers, copy of the normals, in case of transparency, we only need dummy ones.
-    var alphasIndices = normals;
+    var vertexRegionMap = normals;
     // warning: these 'fake' buffers will be used and rendered when region colored surfaces are shown.
     // This happens for all static surface viewers. The reason we do not have weird coloring effects
     // is that normals have subunitary components that are truncated to 0 in the shader.
     // todo: accidental use of the fake buffers should be visible. consider uvec3 in shader
-    if (!isOneToOneMapping && urlAlphasIndices && urlAlphasIndices.length) {
-        alphasIndices = HLPR_getDataBuffers(gl, urlAlphasIndices);
+    if (!isOneToOneMapping && urlRegionMap && urlRegionMap.length) {
+        vertexRegionMap = HLPR_getDataBuffers(gl, urlRegionMap);
     } else if (isEEGView) {
-        // if is eeg view than we use the static surface 'eeg_skin_surface' and we have to compute the alphas and alphasIndices;
+        // if is eeg view than we use the static surface 'eeg_skin_surface' and we have to compute the vertexRegionMap;
         // todo: do this on the server to eliminate this special case
-        var alphasData = computeAlphas(verticesData, measurePoints);
-        alphasIndices = createWebGlBuffers(alphasData[1]);
+        var regionData = computeVertexRegionMap(verticesData, measurePoints);
+        vertexRegionMap = createWebGlBuffers(regionData);
     }
     var result = [];
     for (var i=0; i< vertices.length; i++) {
@@ -906,7 +906,7 @@ function initBuffers(urlVertices, urlNormals, urlTriangles, urlAlphasIndices, st
             gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(vertices[i].numItems), gl.STATIC_DRAW);
             result.push([vertices[i], normals[i], indexes[i], activityBuffer]);
         } else {
-            result.push([vertices[i], normals[i], indexes[i], null, alphasIndices[i]]);
+            result.push([vertices[i], normals[i], indexes[i], null, vertexRegionMap[i]]);
         }
     }
     return result;

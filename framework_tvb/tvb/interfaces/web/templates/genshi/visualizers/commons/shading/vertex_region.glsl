@@ -2,12 +2,12 @@
 {% include colorscheme.glsl %}
 /**
  * This shader displays region level activity. The activity is stored in the uniform array.
- * alphaIndices is the mapping from vertices to region indices.
+ * aVertexRegion is the mapping from vertices to region indices.
  */
 attribute vec3 aVertexPosition;
 attribute vec3 aVertexNormal;
 
-attribute vec3 alphaIndices;
+attribute vec3 aVertexRegion;
 // 127 is the legend granularity
 uniform vec2 uActivity[${abs(noOfMeasurePoints) + 2} + 127];
 
@@ -18,7 +18,7 @@ varying vec3 normInterp;
 void main(void) {
     transformed_pos(aVertexPosition, aVertexNormal, gl_Position, posInterp, normInterp);
 
-    vec2 uv = uActivity[int(alphaIndices[0])];
+    vec2 uv = uActivity[int(aVertexRegion[0])];
 
     vColor = colorSchemeLookup(uv);
 }

@@ -115,20 +115,16 @@ function LEG_generateLegendBuffers() {
         gl.bindBuffer(gl.ARRAY_BUFFER, LEG_legendBuffers[4]);
         gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(LEG_legendBuffers[0].numItems*4), gl.STATIC_DRAW);
     } else {
-        var alphas = [];
-        var alphasIndices = [];
+        var vertexRegion = [];
         for (var i=0; i<legend_activity_values.length/2; i++) {
-            alphas = alphas.concat([1.0, 0.0, 1.0, 0.0]);
-            alphasIndices = alphasIndices.concat([i + NO_OF_MEASURE_POINTS + 2, 1, 1, i + NO_OF_MEASURE_POINTS + 2, 1, 1]);
+            vertexRegion = vertexRegion.concat([i + NO_OF_MEASURE_POINTS + 2, 1, 1, i + NO_OF_MEASURE_POINTS + 2, 1, 1]);
         }
 
-        LEG_legendBuffers[3] = gl.createBuffer();
-        gl.bindBuffer(gl.ARRAY_BUFFER, LEG_legendBuffers[3]);
-        gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(alphas), gl.STATIC_DRAW);
+        LEG_legendBuffers[3] = null;
 
         LEG_legendBuffers[4] = gl.createBuffer();
         gl.bindBuffer(gl.ARRAY_BUFFER, LEG_legendBuffers[4]);
-        gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(alphasIndices), gl.STATIC_DRAW);
+        gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(vertexRegion), gl.STATIC_DRAW);
     }
     LEG_updateLegendColors();
 }

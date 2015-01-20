@@ -134,8 +134,8 @@ SHADING_Context.one_to_one_program_init = function(shader){
 /** Init the program that uses per region activity and a color scheme */
 SHADING_Context.region_progam_init = function(shader, measure_point_nr, legendGranularity){
     SHADING_Context._brain_common(shader);
-    shader.vertexColorIndicesAttribute = gl.getAttribLocation(shader, "alphaIndices");
-    gl.enableVertexAttribArray(shader.vertexColorIndicesAttribute);
+    shader.vertexRegionAttribute = gl.getAttribLocation(shader, "aVertexRegion");
+    gl.enableVertexAttribArray(shader.vertexRegionAttribute);
 
     shader.activityUniform = [];
     for (var i = 0; i <= measure_point_nr + 1 + legendGranularity; i++) {
@@ -204,10 +204,10 @@ SHADING_Context.one_to_one_program_draw = function (shader, positionBuffer, norm
 };
 
 SHADING_Context.region_progam_draw = function (shader, positionBuffer, normalBuffer,
-                                               alphaIndicesBuffer, elementBuffer, drawMode){
+                                               vertexRegionBuffer, elementBuffer, drawMode){
     SHADING_Context._bind_geometric_attributes(shader, positionBuffer, normalBuffer);
-    gl.bindBuffer(gl.ARRAY_BUFFER, alphaIndicesBuffer);
-    gl.vertexAttribPointer(shader.vertexColorIndicesAttribute, 3, gl.FLOAT, false, 0, 0);
+    gl.bindBuffer(gl.ARRAY_BUFFER, vertexRegionBuffer);
+    gl.vertexAttribPointer(shader.vertexRegionAttribute, 3, gl.FLOAT, false, 0, 0);
 
     gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, elementBuffer);
     gl.drawElements(drawMode, elementBuffer.numItems, gl.UNSIGNED_SHORT, 0);

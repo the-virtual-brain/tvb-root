@@ -46,7 +46,7 @@ class SurfaceViewersTest(TransactionalTestCase):
     """
 
     EXPECTED_KEYS = {'urlVertices': None, 'urlTriangles': None, 'urlLines': None, 'urlNormals': None,
-                     'urlAlphasIndices': None, 'biHemispheric': False, 'hemisphereChunkMask': None,
+                     'urlRegionMap': None, 'biHemispheric': False, 'hemisphereChunkMask': None,
                      'noOfMeasurePoints': 74, 'urlMeasurePoints': None, 'boundaryURL': None, 'minMeasure': 0,
                      'maxMeasure': 74, 'clientMeasureUrl': None}
 

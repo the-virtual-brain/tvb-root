@@ -22,34 +22,25 @@ function _VSI_bufferAtPoint(p, idx) {
     var bufferVertices= result[0];
     var bufferNormals = result[1];
     var bufferTriangles = result[2];
-    var alphaAndColors = VSI_createColorBufferForSphere(false, idx, bufferVertices.numItems * 3);
-    return [bufferVertices, bufferNormals, bufferTriangles, null, alphaAndColors[1]];
+    var vertexRegionBuffer = VSI_createColorBufferForSphere(idx, bufferVertices.numItems * 3);
+    return [bufferVertices, bufferNormals, bufferTriangles, null, vertexRegionBuffer];
 }
 
 /**
  * Method used for creating a color buffer for a cube (measure point).
- *
- * @param isPicked If <code>true</code> then the color used will be
- * the one used for drawing the measure points for which the
- * corresponding eeg channels are selected.
  */
-function VSI_createColorBufferForSphere(isPicked, nodeIdx, nrOfVertices) {
-    var alphas = [];
-    var alphaIndices = [];
+function VSI_createColorBufferForSphere(nodeIdx, nrOfVertices) {
+    var regionMap = [];
     var pointAlphaIndex = [nodeIdx, 0, 0];
 
     for (var i = 0; i < nrOfVertices; i++) {
-        alphaIndices = alphaIndices.concat(pointAlphaIndex);
-        alphas = alphas.concat([1.0, 0.0]);
+        regionMap = regionMap.concat(pointAlphaIndex);
     }
 
-    var alphaBuffer = gl.createBuffer();
-    gl.bindBuffer(gl.ARRAY_BUFFER, alphaBuffer);
-    gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(alphas), gl.STATIC_DRAW);
-    var alphaIndicesBuffer = gl.createBuffer();
-    gl.bindBuffer(gl.ARRAY_BUFFER, alphaIndicesBuffer);
-    gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(alphaIndices), gl.STATIC_DRAW);
-    return [alphaBuffer, alphaIndicesBuffer];
+    var vertexRegionBuffer = gl.createBuffer();
+    gl.bindBuffer(gl.ARRAY_BUFFER, vertexRegionBuffer);
+    gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(regionMap), gl.STATIC_DRAW);
+    return vertexRegionBuffer;
 }
 
 

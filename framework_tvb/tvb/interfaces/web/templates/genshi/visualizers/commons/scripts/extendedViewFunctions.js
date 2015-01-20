@@ -104,7 +104,7 @@ function EX_initializeChannelsForSensorsInternal() {
  */
 function _changeColorBufferForMeasurePointSensorInternal(measurePointIndex, isPicked) {
     var colorBufferIndex = measurePointsBuffers[measurePointIndex].length - 1;
-    var alphaAndColors = VSI_createColorBufferForSphere(isPicked, measurePointIndex, measurePointsBuffers[measurePointIndex][0].numItems * 3);
-    measurePointsBuffers[measurePointIndex][colorBufferIndex - 1] = alphaAndColors[0];
-    measurePointsBuffers[measurePointIndex][colorBufferIndex] = alphaAndColors[1];
+    var vertexRegionBuffer = VSI_createColorBufferForSphere(measurePointIndex, measurePointsBuffers[measurePointIndex][0].numItems * 3);
+    measurePointsBuffers[measurePointIndex][colorBufferIndex - 1] = null;
+    measurePointsBuffers[measurePointIndex][colorBufferIndex] = vertexRegionBuffer;
 }
