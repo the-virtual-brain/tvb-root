@@ -117,7 +117,7 @@ function LEG_generateLegendBuffers() {
     } else {
         var vertexRegion = [];
         for (var i=0; i<legend_activity_values.length/2; i++) {
-            vertexRegion = vertexRegion.concat([i + NO_OF_MEASURE_POINTS + 2, 1, 1, i + NO_OF_MEASURE_POINTS + 2, 1, 1]);
+            vertexRegion = vertexRegion.concat([i + NO_OF_MEASURE_POINTS + 2, i + NO_OF_MEASURE_POINTS + 2]);
         }
 
         LEG_legendBuffers[3] = null;

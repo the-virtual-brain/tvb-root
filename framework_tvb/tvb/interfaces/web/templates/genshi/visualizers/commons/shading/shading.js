@@ -207,7 +207,7 @@ SHADING_Context.region_progam_draw = function (shader, positionBuffer, normalBuf
                                                vertexRegionBuffer, elementBuffer, drawMode){
     SHADING_Context._bind_geometric_attributes(shader, positionBuffer, normalBuffer);
     gl.bindBuffer(gl.ARRAY_BUFFER, vertexRegionBuffer);
-    gl.vertexAttribPointer(shader.vertexRegionAttribute, 3, gl.FLOAT, false, 0, 0);
+    gl.vertexAttribPointer(shader.vertexRegionAttribute, 1, gl.FLOAT, false, 0, 0);
 
     gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, elementBuffer);
     gl.drawElements(drawMode, elementBuffer.numItems, gl.UNSIGNED_SHORT, 0);

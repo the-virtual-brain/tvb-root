@@ -590,20 +590,16 @@ class RegionMappingFramework(surfaces_data.RegionMappingData):
         Get a slice of the region mapping as used by the region viewers.
         For each vertex on the surface, alpha-indices will be the closest
         region-index
-
         :param start_idx: vertex index on the surface
         :param end_idx: vertex index on the surface
-        :return: NumPy array with [[colosest_reg_idx, 0, 0] ....]
-
+        :return: NumPy array with [colosest_reg_idx ...]
         """
         if isinstance(start_idx, (str, unicode)):
             start_idx = int(start_idx)
         if isinstance(end_idx, (str, unicode)):
             end_idx = int(end_idx)
-        size = end_idx - start_idx
-        result = numpy.transpose(self.array_data[start_idx: end_idx]).reshape(size, 1) * numpy.array([1.0, 0.0, 0.0])
-        result = result + numpy.ones((size, 1)) * numpy.array([0.0, 1.0, 1.0])
-        return result
+
+        return self.array_data[start_idx: end_idx].T
     
     
     def generate_new_region_mapping(self, connectivity_gid, storage_path):

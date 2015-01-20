@@ -7,7 +7,7 @@
 attribute vec3 aVertexPosition;
 attribute vec3 aVertexNormal;
 
-attribute vec3 aVertexRegion;
+attribute float aVertexRegion;
 // 127 is the legend granularity
 uniform vec2 uActivity[${abs(noOfMeasurePoints) + 2} + 127];
 
@@ -18,7 +18,7 @@ varying vec3 normInterp;
 void main(void) {
     transformed_pos(aVertexPosition, aVertexNormal, gl_Position, posInterp, normInterp);
 
-    vec2 uv = uActivity[int(aVertexRegion[0])];
+    vec2 uv = uActivity[int(aVertexRegion)];
 
     vColor = colorSchemeLookup(uv);
 }

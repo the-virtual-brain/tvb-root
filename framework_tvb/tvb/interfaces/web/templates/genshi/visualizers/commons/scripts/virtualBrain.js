@@ -848,9 +848,9 @@ function createColorBufferForCube(isPicked) {
             pointColor = [0.99, 0.99, 0.0, 1.0];
         }
     } else {
-        pointColor = [NO_OF_MEASURE_POINTS, 0, 0];
+        pointColor = [NO_OF_MEASURE_POINTS];
         if (isPicked) {
-            pointColor = [NO_OF_MEASURE_POINTS + 1, 0, 0];
+            pointColor = [NO_OF_MEASURE_POINTS + 1];
         }
     }
     var colors = [];

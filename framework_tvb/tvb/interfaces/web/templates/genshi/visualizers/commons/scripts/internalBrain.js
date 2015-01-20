@@ -31,10 +31,9 @@ function _VSI_bufferAtPoint(p, idx) {
  */
 function VSI_createColorBufferForSphere(nodeIdx, nrOfVertices) {
     var regionMap = [];
-    var pointAlphaIndex = [nodeIdx, 0, 0];
 
     for (var i = 0; i < nrOfVertices; i++) {
-        regionMap = regionMap.concat(pointAlphaIndex);
+        regionMap = regionMap.push(nodeIdx);
     }
 
     var vertexRegionBuffer = gl.createBuffer();
