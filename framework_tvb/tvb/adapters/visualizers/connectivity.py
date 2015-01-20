@@ -149,8 +149,8 @@ class ConnectivityViewer(ABCDisplayer):
         conn = self.load_entity_by_gid(original_connectivity)
         self.meta_data[DataTypeMetaData.KEY_SUBJECT] = conn.subject
 
-        new_weights = numpy.asarray(json.loads(new_weights))
-        new_tracts = numpy.asarray(json.loads(new_tracts))
+        new_weights = numpy.asarray(json.loads(new_weights), dtype=numpy.float64)
+        new_tracts = numpy.asarray(json.loads(new_tracts), dtype=numpy.float64)
         interest_area_indexes = numpy.asarray(json.loads(interest_area_indexes))
 
         result_connectivity = conn.generate_new_connectivity_from_ordered_arrays(new_weights, interest_area_indexes,
