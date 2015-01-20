@@ -262,7 +262,7 @@ class SurfaceFramework(surfaces_data.SurfaceData):
         return surfaces_data.ValidationResult()
 
 
-    def get_urls_for_rendering(self, include_alphas=False, region_mapping=None): 
+    def get_urls_for_rendering(self, include_region_map=False, region_mapping=None):
         """
         Compose URLs for the JS code to retrieve a surface from the UI for rendering.
         """
@@ -270,22 +270,22 @@ class SurfaceFramework(surfaces_data.SurfaceData):
         url_triangles = []
         url_normals = []
         url_lines = []
-        alphas_indices = []
+        url_region_map = []
         for i in xrange(self.number_of_split_slices):
             param = "slice_number=" + str(i)
             url_vertices.append(paths2url(self, 'get_vertices_slice', parameter=param, flatten=True))
             url_triangles.append(paths2url(self, 'get_triangles_slice', parameter=param, flatten=True))
             url_lines.append(paths2url(self, 'get_lines_slice', parameter=param, flatten=True))
             url_normals.append(paths2url(self, 'get_vertex_normals_slice', parameter=param, flatten=True))
-            if not include_alphas or region_mapping is None:
+            if not include_region_map or region_mapping is None:
                 continue
 
             start_idx, end_idx = self._get_slice_vertex_boundaries(i)
-            alphas_indices.append(paths2url(region_mapping, "get_alpha_indices_array", flatten=True,
+            url_region_map.append(paths2url(region_mapping, "get_region_mapping_slice", flatten=True,
                                             parameter="start_idx=" + str(start_idx) + " ;end_idx=" + str(end_idx)))
           
-        if include_alphas:  
-            return url_vertices, url_normals, url_lines, url_triangles, alphas_indices
+        if include_region_map:
+            return url_vertices, url_normals, url_lines, url_triangles, url_region_map
         return url_vertices, url_normals, url_lines, url_triangles
 
 
@@ -585,13 +585,11 @@ class RegionMappingFramework(surfaces_data.RegionMappingData):
     """
     __tablename__ = None
 
-    def get_alpha_indices_array(self, start_idx, end_idx):
+    def get_region_mapping_slice(self, start_idx, end_idx):
         """
-        Compute alpha indices.
-        When displaying region-based results, we need to compute color for each
-        surface vertex based on a gradient of the neighbor region(s).
+        Get a slice of the region mapping as used by the region viewers.
         For each vertex on the surface, alpha-indices will be the closest
-        region-indices
+        region-index
 
         :param start_idx: vertex index on the surface
         :param end_idx: vertex index on the surface

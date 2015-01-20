@@ -48,7 +48,7 @@ class BrainViewerTest(TransactionalTestCase):
     Unit-tests for BrainViewer.
     """
 
-    EXPECTED_KEYS = ['urlVertices', 'urlNormals', 'urlTriangles', 'urlLines', 'alphas_indices',
+    EXPECTED_KEYS = ['urlVertices', 'urlNormals', 'urlTriangles', 'urlLines', 'urlRegionMap',
                      'base_activity_url', 'isOneToOneMapping', 'minActivity', 'maxActivity',
                      'noOfMeasurePoints', 'isAdapter']
     EXPECTED_EXTRA_KEYS = ['urlMeasurePointsLabels', 'urlMeasurePoints', 'time_series', 'pageSize', 'shelfObject',

@@ -102,11 +102,11 @@ class SurfaceViewer(ABCDisplayer):
         for url in surface.get_urls_for_rendering(True, region_map):
             escaped_url = json.dumps(url).replace('\\', '\\\\')
             rendering_urls.append(escaped_url)
-        url_vertices, url_normals, url_lines, url_triangles, alphas_indices = rendering_urls
+        url_vertices, url_normals, url_lines, url_triangles, url_region_map = rendering_urls
 
         hemisphere_chunk_mask = surface.get_slices_to_hemisphere_mask()
         return dict(urlVertices=url_vertices, urlTriangles=url_triangles, urlLines=url_lines,
-                    urlNormals=url_normals, urlAlphasIndices=alphas_indices,
+                    urlNormals=url_normals, urlRegionMap=url_region_map,
                     biHemispheric=surface.bi_hemispheric, hemisphereChunkMask=json.dumps(hemisphere_chunk_mask))
 
 

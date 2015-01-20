@@ -89,12 +89,12 @@ class BrainViewer(ABCDisplayer):
         self.populate_surface_fields(time_series)
 
         url_vertices, url_normals, url_lines, \
-            url_triangles, alphas_indices = self.surface.get_urls_for_rendering(True, self.region_map)
+            url_triangles, url_region_map = self.surface.get_urls_for_rendering(True, self.region_map)
         min_val, max_val = time_series.get_min_max_values()
 
         params = dict(urlVertices=json.dumps(url_vertices), urlTriangles=json.dumps(url_triangles),
                       urlLines=json.dumps(url_lines), urlNormals=json.dumps(url_normals),
-                      alphas_indices=json.dumps(alphas_indices),
+                      urlRegionMap=json.dumps(url_region_map),
                       base_activity_url=ABCDisplayer.VISUALIZERS_URL_PREFIX + time_series.gid,
                       isOneToOneMapping=self.one_to_one_map, minActivity=min_val, maxActivity=max_val,
                       noOfMeasurePoints=0)
@@ -173,7 +173,7 @@ class BrainViewer(ABCDisplayer):
         """
         self.populate_surface_fields(time_series)
 
-        url_vertices, url_normals, url_lines, url_triangles, alphas_indices = self.surface.get_urls_for_rendering(True, self.region_map)
+        url_vertices, url_normals, url_lines, url_triangles, url_region_map = self.surface.get_urls_for_rendering(True, self.region_map)
         hemisphere_chunk_mask = self.surface.get_slices_to_hemisphere_mask()
 
         params = self.retrieve_measure_points_prams(time_series)
@@ -196,7 +196,7 @@ class BrainViewer(ABCDisplayer):
         params.update(dict(title="Cerebral Activity: " + time_series.title, isOneToOneMapping=self.one_to_one_map,
                            urlVertices=json.dumps(url_vertices), urlTriangles=json.dumps(url_triangles),
                            urlLines=json.dumps(url_lines), urlNormals=json.dumps(url_normals),
-                           alphas_indices=json.dumps(alphas_indices), base_activity_url=base_activity_url,
+                           urlRegionMap=json.dumps(url_region_map), base_activity_url=base_activity_url,
                            time=json.dumps(time_urls), minActivity=min_val, maxActivity=max_val,
                            minActivityLabels=legend_labels, labelsStateVar=state_variables,
                            labelsModes=range(data_shape[3]), extended_view=False,

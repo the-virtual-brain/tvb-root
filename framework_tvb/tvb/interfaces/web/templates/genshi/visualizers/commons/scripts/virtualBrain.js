@@ -299,7 +299,7 @@ function _VS_static_entrypoint(urlVerticesList, urlLinesList, urlTrianglesList, 
 
 function _VS_movie_entrypoint(baseDatatypeURL, onePageSize, urlTimeList, urlVerticesList, urlLinesList,
                     urlTrianglesList, urlNormalsList, urlMeasurePoints, noOfMeasurePoints,
-                    urlAlphasIndicesList, minActivity, maxActivity,
+                    urlRegionMapList, minActivity, maxActivity,
                     oneToOneMapping, doubleView, shelfObject, hemisphereChunkMask, urlMeasurePointsLabels, boundaryURL) {
     // initialize global configuration
     isDoubleView = doubleView;
@@ -326,7 +326,7 @@ function _VS_movie_entrypoint(baseDatatypeURL, onePageSize, urlTimeList, urlVert
     var canvas = document.getElementById(BRAIN_CANVAS_ID);
 
     _initViewerGL(canvas, urlVerticesList, urlNormalsList, urlTrianglesList,
-                  urlAlphasIndicesList, urlLinesList, boundaryURL, shelfObject, hemisphereChunkMask);
+                  urlRegionMapList, urlLinesList, boundaryURL, shelfObject, hemisphereChunkMask);
 
     _bindEvents(canvas);
 
@@ -345,11 +345,11 @@ function _VS_init_cubicalMeasurePoints(){
 }
 
 function VS_StartSurfaceViewer(urlVerticesList, urlLinesList, urlTrianglesList, urlNormalsList, urlMeasurePoints,
-                               noOfMeasurePoints, urlAlphasIndicesList, urlMeasurePointsLabels,
+                               noOfMeasurePoints, urlRegionMapList, urlMeasurePointsLabels,
                                boundaryURL, shelveObject, minMeasure, maxMeasure, urlMeasure, hemisphereChunkMask){
 
     _VS_static_entrypoint(urlVerticesList, urlLinesList, urlTrianglesList, urlNormalsList, urlMeasurePoints,
-                       noOfMeasurePoints, urlAlphasIndicesList, urlMeasurePointsLabels,
+                       noOfMeasurePoints, urlRegionMapList, urlMeasurePointsLabels,
                        boundaryURL, shelveObject, hemisphereChunkMask, false, false, false, minMeasure, maxMeasure, urlMeasure);
     _VS_init_cubicalMeasurePoints();
     ColSch_initColorSchemeParams(activityMin, activityMax);
@@ -370,12 +370,12 @@ function VS_StartEEGSensorViewer(urlVerticesList, urlLinesList, urlTrianglesList
 
 function VS_StartBrainActivityViewer(baseDatatypeURL, onePageSize, urlTimeList, urlVerticesList, urlLinesList,
                     urlTrianglesList, urlNormalsList, urlMeasurePoints, noOfMeasurePoints,
-                    urlAlphasIndicesList, minActivity, maxActivity,
+                    urlRegionMapList, minActivity, maxActivity,
                     oneToOneMapping, doubleView, shelfObject, hemisphereChunkMask,
                     urlMeasurePointsLabels, boundaryURL, measurePointsSelectionGID) {
     _VS_movie_entrypoint(baseDatatypeURL, onePageSize, urlTimeList, urlVerticesList, urlLinesList,
                     urlTrianglesList, urlNormalsList, urlMeasurePoints, noOfMeasurePoints,
-                    urlAlphasIndicesList, minActivity, maxActivity,
+                    urlRegionMapList, minActivity, maxActivity,
                     oneToOneMapping, doubleView, shelfObject, hemisphereChunkMask,
                     urlMeasurePointsLabels, boundaryURL);
     _VS_init_cubicalMeasurePoints();
@@ -406,7 +406,7 @@ function _isValidActivityData(){
  * Scene setup common to all webgl brain viewers
  */
 function _initViewerGL(canvas, urlVerticesList, urlNormalsList, urlTrianglesList,
-                       urlAlphasIndicesList, urlLinesList, boundaryURL, shelfObject, hemisphere_chunk_mask){
+                       urlRegionMapList, urlLinesList, boundaryURL, shelfObject, hemisphere_chunk_mask){
     customInitGL(canvas);
     GL_initColorPickFrameBuffer();
     initShaders();
@@ -418,8 +418,8 @@ function _initViewerGL(canvas, urlVerticesList, urlNormalsList, urlTrianglesList
 
     if (urlVerticesList) {
         var parsedIndices = [];
-        if (urlAlphasIndicesList) {
-            parsedIndices = $.parseJSON(urlAlphasIndicesList);
+        if (urlRegionMapList) {
+            parsedIndices = $.parseJSON(urlRegionMapList);
         }
         brainBuffers = initBuffers($.parseJSON(urlVerticesList), $.parseJSON(urlNormalsList),
                                    $.parseJSON(urlTrianglesList), parsedIndices, isDoubleView);
