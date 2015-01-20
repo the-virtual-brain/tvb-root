@@ -33,7 +33,7 @@ function VSI_createColorBufferForSphere(nodeIdx, nrOfVertices) {
     var regionMap = [];
 
     for (var i = 0; i < nrOfVertices; i++) {
-        regionMap = regionMap.push(nodeIdx);
+        regionMap.push(nodeIdx);
     }
 
     var vertexRegionBuffer = gl.createBuffer();

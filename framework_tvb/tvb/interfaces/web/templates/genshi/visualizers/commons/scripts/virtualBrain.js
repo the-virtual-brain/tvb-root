@@ -339,7 +339,12 @@ function _VS_movie_entrypoint(baseDatatypeURL, onePageSize, urlTimeList, urlVert
 
 function _VS_init_cubicalMeasurePoints(){
     for (var i = 0; i < NO_OF_MEASURE_POINTS; i++) {
-        measurePointsBuffers[i] = bufferAtPoint(measurePoints[i]);
+        var result = HLPR_bufferAtPoint(gl, measurePoints[i]);
+        var bufferVertices= result[0];
+        var bufferNormals = result[1];
+        var bufferTriangles = result[2];
+        var bufferColor = createColorBufferForCube(false);
+        measurePointsBuffers[i] = [bufferVertices, bufferNormals, bufferTriangles, bufferColor];
     }
 }
 
@@ -861,21 +866,6 @@ function createColorBufferForCube(isPicked) {
     gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(colors), gl.STATIC_DRAW);
     return cubeColorBuffer;
 }
-
-
-function bufferAtPoint(p) {
-    var result = HLPR_bufferAtPoint(gl, p);
-    var bufferVertices= result[0];
-    var bufferNormals = result[1];
-    var bufferTriangles = result[2];
-
-    if (isOneToOneMapping) {
-        return [bufferVertices, bufferNormals, bufferTriangles, createColorBufferForCube(false)];
-    } else {
-        return [bufferVertices, bufferNormals, bufferTriangles, createColorBufferForCube(false)];
-    }
-}
-
 
 function initBuffers(urlVertices, urlNormals, urlTriangles, urlRegionMap, staticFiles) {
     var verticesData = readFloatData(urlVertices, staticFiles);
