@@ -119,7 +119,7 @@ class PseIsoModel(object):
         self.datatypes_gids = [[None for _ in self.range2] for _ in self.range1]
 
         for operation in operations:
-            self.log.info("Gathering data from operation : %s" % operation.id)
+            self.log.debug("Gathering data from operation : %s" % operation.id)
             range_values = eval(operation.range_values)
             key_1 = range_values[self.range1_name]
             index_x = self.range1.index(key_1)
