@@ -200,6 +200,7 @@ function ColSch_initColorSchemeComponent(){
     if(!_colorSchemeColors) {
         doAjaxCall({
             url: '/user/get_color_schemes_json',
+            type: 'GET',
             async: false,
             success: function (data) {
                 _colorSchemeColors = JSON.parse(data);
@@ -284,8 +285,9 @@ function getGradientColor(pointValue, min, max) {
     // The color array for the current scheme
     var colors = _colorSchemeColors[ColSchInfo()._data_idx];
 
-    if (min == max) {         // the interval is empty, so start color is the only possible one
-        return colors[0];
+    if (min === max) {         // the interval is empty, so start color is the only possible one
+        var col = colors[0];
+        return [col[0]/255, col[1]/255, col[2]/255];
     }
     pointValue = clampValue(pointValue, min, max); // avoid rounding problems
 

@@ -169,7 +169,6 @@ function initBuffers() {
 function displayPoints() {
     gl.uniform1i(GL_shaderProgram.useVertexColors, false);
     for (var i = 0; i < NO_POSITIONS; i++) {
-        // Next line was ADDED FOR PICK
         var currentBuffers;
         if (showMetricDetails) {
             currentBuffers = positionsBuffers_3D[i];
@@ -202,14 +201,11 @@ function displayPoints() {
                 gl.uniform4fv(GL_shaderProgram.materialColor, COLORS.WHITE);
             }
         }
-        // End ADDED FOR PICK
         setMatrixUniforms();
         SHADING_Context.connectivity_draw(GL_shaderProgram, currentBuffers[0], currentBuffers[1],
             currentBuffers[0], currentBuffers[2], gl.TRIANGLES);
         mvPopMatrix();
     }
-    // Next line was ADDED FOR PICK
-    doPick = false;
 }
 
 function drawScene() {
