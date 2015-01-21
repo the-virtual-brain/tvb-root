@@ -41,6 +41,10 @@
 var SHADING_Context = SHADING_Context || {};
 
 (function(){
+// Change this if it leads to conflict.
+SHADING_Context.colorSchemeTextureUnit = 0;
+// This flag prevents drawing before the color scheme texture has loaded. Might be replaced once we have a better init sequence.
+SHADING_Context.textureComplete = false;
 
 /*** fragments ***/
 
@@ -65,7 +69,7 @@ SHADING_Context.colorscheme_init = function (shader) {
 
     var g_texture = gl.createTexture();
 
-    gl.activeTexture(gl.TEXTURE0);
+    gl.activeTexture(gl.TEXTURE0 + SHADING_Context.colorSchemeTextureUnit);
     gl.bindTexture(gl.TEXTURE_2D, g_texture);
 
     var img = new Image();
@@ -80,10 +84,9 @@ SHADING_Context.colorscheme_init = function (shader) {
         gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
         // upload texture
         gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, img);
-        gl.uniform1i(gl.getUniformLocation(shader, "uSampler"), 0);
+        gl.uniform1i(gl.getUniformLocation(shader, "uSampler"), SHADING_Context.colorSchemeTextureUnit);
+        SHADING_Context.textureComplete = true;
     };
-
-    gl.uniform1i(gl.getUniformLocation(shader, "uSampler"), 0);
 };
 
 /*** programs ***/
@@ -196,6 +199,7 @@ SHADING_Context._bind_geometric_attributes = function(shader, positionBuffer, no
 
 SHADING_Context.one_to_one_program_draw = function (shader, positionBuffer, normalBuffer,
                                                     activityBuffer, elementBuffer, drawMode){
+    if (!SHADING_Context.textureComplete) { return; }
     SHADING_Context._bind_geometric_attributes(shader, positionBuffer, normalBuffer);
     gl.bindBuffer(gl.ARRAY_BUFFER, activityBuffer);
     gl.vertexAttribPointer(shader.activityAttribute, 1, gl.FLOAT, false, 0, 0);
@@ -205,6 +209,7 @@ SHADING_Context.one_to_one_program_draw = function (shader, positionBuffer, norm
 
 SHADING_Context.region_progam_draw = function (shader, positionBuffer, normalBuffer,
                                                vertexRegionBuffer, elementBuffer, drawMode){
+    if (!SHADING_Context.textureComplete) { return; }
     SHADING_Context._bind_geometric_attributes(shader, positionBuffer, normalBuffer);
     gl.bindBuffer(gl.ARRAY_BUFFER, vertexRegionBuffer);
     gl.vertexAttribPointer(shader.vertexRegionAttribute, 1, gl.FLOAT, false, 0, 0);
@@ -215,6 +220,7 @@ SHADING_Context.region_progam_draw = function (shader, positionBuffer, normalBuf
 
 SHADING_Context.surface_pick_draw = function (shader, positionBuffer, normalBuffer, colorBuffer,
                                               activityBuffer, elementBuffer, drawMode){
+    if (!SHADING_Context.textureComplete) { return; }
     SHADING_Context._bind_geometric_attributes(shader, positionBuffer, normalBuffer);
     gl.bindBuffer(gl.ARRAY_BUFFER, colorBuffer);
     gl.vertexAttribPointer(shader.vertexColorAttribute, 4, gl.FLOAT, false, 0, 0);

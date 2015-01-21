@@ -1,0 +1,67 @@
+<!--! Used by the brain viewer and the surface viewer to draw toggle checkboxes -->
+<div py:strip="True" xmlns:py="http://genshi.edgewall.org/" xmlns:xi="http://www.w3.org/2001/XInclude">
+
+    <py:if test="biHemispheric">
+        <dt> View hemispheres </dt>
+        <dd>
+            <input id="hemisphereRadio_1" type="radio" autocomplete="off" name="hemisphereRadio"
+                   onchange="VS_SetHemisphere(null);" checked="checked" />
+            <label for="hemisphereRadio_1">both</label>
+            <br/>
+            <input id="hemisphereRadio_2" type="radio" autocomplete="off" name="hemisphereRadio"
+                   onchange="VS_SetHemisphere('l');" />
+            <label for="hemisphereRadio_2">left</label>
+            <br/>
+            <input id="hemisphereRadio_3" type="radio" autocomplete="off" name="hemisphereRadio"
+                   onchange="VS_SetHemisphere('r');" />
+            <label for="hemisphereRadio_3">right</label>
+        </dd>
+    </py:if>
+
+    <dt>Lighting</dt>
+    <dd><input id="showSpeculars" type="checkbox" onchange="setSpecularHighLights(this.checked);"
+               autocomplete="off"/>
+        <label for="showSpeculars">shiny surface</label>
+    </dd>
+
+    <dt>Show</dt>
+    <dd><input id="displayFaceChkId" type="checkbox" onchange="switchFaceObject();"
+                autocomplete="off" tabindex="1"
+                title="Face approximative will move along with brain navigator."/>
+        <label for="displayFaceChkId" >face</label>
+    </dd>
+
+    <dt></dt>
+    <dd><input id="showNavigator" type="checkbox" onchange="setNavigatorVisibility(this.checked);"
+               autocomplete="off" checked="checked"/>
+        <label for="showNavigator">navigator</label>
+    </dd>
+
+    <py:if test="hasRegionMap">
+        <dt></dt>
+        <dd><input id="showMeasurePoints" type="checkbox" onchange="toggleMeasureNodes();"
+                   autocomplete="off" tabindex="1"/>
+            <label for="showMeasurePoints">measure points</label>
+        </dd>
+    </py:if>
+
+    <py:if test="urlRegionBoundaries">
+        <dt></dt>
+        <dd><input id="showBrainBoundaries" type="checkbox" onchange="toggleDrawBoundaries();"
+                   autocomplete="off" tabindex="1"/>
+            <label for="showBrainBoundaries">region boundaries</label>
+        </dd>
+    </py:if>
+
+    <dt>Toggle</dt>
+    <dd><input id="ctrl-action-points" type="checkbox" onchange="wireFrame();" tabindex="1"
+            autocomplete="off" title="Display only a cloud of points, without triangles"/>
+        <label for="ctrl-action-points">points display</label>
+    </dd>
+
+    <dt></dt>
+    <dd><input id="showBrainLines" type="checkbox" onchange="toggleDrawTriangleLines();"
+               autocomplete="off" tabindex="1"/>
+        <label for="showBrainLines">surface triangles</label>
+    </dd>
+</div>

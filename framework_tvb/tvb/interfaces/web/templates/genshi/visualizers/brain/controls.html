@@ -17,74 +17,8 @@
 
         <xi:include href='../../flow/color_scheme.html'/>
 
-
         <py:if test="not defined('isSEEG')">
-            <py:if test="biHemispheric">
-                <dt> View hemispheres </dt>
-                <dd>
-                    <input id="hemisphereRadio_1" type="radio" autocomplete="off" name="hemisphereRadio"
-                           onchange="VS_SetHemisphere(null);" checked="checked" />
-                    <label for="hemisphereRadio_1">both</label>
-                    <br/>
-                    <input id="hemisphereRadio_2" type="radio" autocomplete="off" name="hemisphereRadio"
-                           onchange="VS_SetHemisphere('l');" />
-                    <label for="hemisphereRadio_2">left</label>
-                    <br/>
-                    <input id="hemisphereRadio_3" type="radio" autocomplete="off" name="hemisphereRadio"
-                           onchange="VS_SetHemisphere('r');" />
-                    <label for="hemisphereRadio_3">right</label>
-                </dd>
-            </py:if>
-
-            <dt>Toggle</dt>
-            <dd><input id="displayFaceChkId" type="checkbox" onchange="switchFaceObject();" tabindex="1"
-                    title="Face approximative will move along with brain navigator."
-                    autocomplete="off" />
-                <label for="displayFaceChkId" >face approximative shade</label>
-            </dd>
-
-            <dt></dt>
-            <dd>
-                <input id="ctrl-action-points" type="checkbox" onchange="wireFrame();" tabindex="1"
-                    title="Display only a cloud of points, without triangles"
-                    autocomplete="off" />
-                <label for="ctrl-action-points">points display</label>
-            </dd>
-
-            <dt></dt>
-            <dd><input id="showBrainLines" type="checkbox" onchange="toggleDrawTriangleLines();"
-                       autocomplete="off" tabindex="1"/>
-                <label for="showBrainLines">surface triangles</label>
-            </dd>
-
-            <dt></dt>
-            <dd><input id="showSpeculars" type="checkbox" onchange="setSpecularHighLights(this.checked);"
-                       autocomplete="off"/>
-                <label for="showSpeculars">shiny surface</label>
-            </dd>
-
-            <dt></dt>
-            <dd><input id="showNavigator" type="checkbox" onchange="setNavigatorVisibility(this.checked);"
-                       autocomplete="off" checked="checked"/>
-                <label for="showNavigator">show navigator</label>
-            </dd>
-
-            <py:if test="not isOneToOneMapping">
-                <dt></dt>
-                <dd><input id="showMeasurePoints" type="checkbox" onchange="toggleMeasureNodes();"
-                           autocomplete="off" tabindex="1"/>
-                    <label for="showMeasurePoints">measure points</label>
-                </dd>
-            </py:if>
-
-            <py:if test="urlRegionBoundaries">
-                <dt></dt>
-                <dd>
-                    <input id="showBrainBoundaries" type="checkbox" onchange="toggleDrawBoundaries();"
-                           autocomplete="off" tabindex="1"/>
-                    <label for="showBrainBoundaries">region boundaries</label>
-                </dd>
-            </py:if>
+            <xi:include href='../commons/brain_toggle_controls.html' py:with="hasRegionMap=not isOneToOneMapping"/>
 
             <py:if test="not extended_view">
                 <dt></dt>
