@@ -79,7 +79,7 @@ width: 99%;
 }
 
 #s-brain .monitor.slave {
-background: black;
+background: rgb(25, 25, 25);
 float: right;
 height: 192px;
 margin-bottom: 10px;

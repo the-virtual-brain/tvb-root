@@ -16,15 +16,15 @@ var ColSchDarkTheme = {
     connectivityStepPlot : {
         lineColor: [0.1, 0.1, 0.2],
         noValueColor: [0.0, 0.0, 0.0],
-        backgroundColor: [0.05, 0.05, 0.05, 1.0],
+        backgroundColor: [0.1, 0.1, 0.1, 1.0],
         outlineColor: [0.3, 0.3, 0.3],
         selectedOutlineColor: [0.2, 0.2, 0.8]
     },
     connectivityPlot : {
-        backgroundColor: [0.05, 0.05, 0.05, 1.0]
+        backgroundColor: [0.1, 0.1, 0.1, 1.0]
     },
     surfaceViewer : {
-        backgroundColor: [0.05, 0.05, 0.05, 1.0]
+        backgroundColor: [0.1, 0.1, 0.1, 1.0]
         //, boundaryLineColor
         //, navigatorColor
     }
@@ -73,17 +73,25 @@ var ColSchTransparentTheme = {
  */
 var _ColSchemesInfo = {
     linear:  { theme: ColSchDarkTheme, _data_idx: 0},
-    TVB:     { theme: ColSchDarkTheme, _data_idx: 3},
     rainbow: { theme: ColSchDarkTheme, _data_idx: 1},
     hotcold: { theme: ColSchDarkTheme, _data_idx: 2},
+    TVB:     { theme: ColSchDarkTheme, _data_idx: 3},
     sparse:  { theme: ColSchDarkTheme, _data_idx: 4},
-    lightHotcold:   { theme: ColSchLightTheme, _data_idx: 2},
-    lightTVB:       { theme: ColSchLightTheme, _data_idx: 3},
-    transparentHotCold: { theme: ColSchTransparentTheme, _data_idx: 2},
-    marteli: { theme: ColSchDarkTheme, _data_idx: 10},
-    cubehelix: { theme: ColSchDarkTheme, _data_idx: 11},
-    termal: { theme: ColSchDarkTheme, _data_idx: 12},
-    brewer1: { theme: ColSchDarkTheme, _data_idx: 9}
+
+    RdYlBu      : { theme: ColSchDarkTheme, _data_idx: 13},
+    Spectral    : { theme: ColSchDarkTheme, _data_idx: 14},
+    YlGnBu      : { theme: ColSchDarkTheme, _data_idx: 15},
+    RdPu        : { theme: ColSchDarkTheme, _data_idx: 16},
+    Grays       : { theme: ColSchDarkTheme, _data_idx: 17},
+    transparentRdYlBu: { theme: ColSchTransparentTheme, _data_idx: 13},
+
+    matteo: { theme: ColSchDarkTheme, _data_idx: 23},
+    cubehelix: { theme: ColSchDarkTheme, _data_idx: 24},
+    termal: { theme: ColSchDarkTheme, _data_idx: 25},
+
+    transparentJet: { theme: ColSchTransparentTheme, _data_idx: 1},
+    transparentTVB: { theme: ColSchTransparentTheme, _data_idx: 3},
+    transparentTermal: { theme: ColSchTransparentTheme, _data_idx: 25}
 };
 
 // Add texture v coordinates to _ColSchemesInfo based on the _data_idx
@@ -95,7 +103,7 @@ var _ColSchemesInfo = {
         // band indices are the same as the indices in the _colorSchemeColors
         var scheme = _ColSchemesInfo[n];
         scheme.tex_v = (scheme._data_idx + 0.5) * bandHeight/textureSize;
-        scheme.muted_tex_v = 0.5;
+        scheme.muted_tex_v = (30 + 0.5)* bandHeight/textureSize;
         scheme.measurePoints_tex_v = 1.0;
     }
 })();
