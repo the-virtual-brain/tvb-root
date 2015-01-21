@@ -9,16 +9,7 @@
 
     <script type="text/javascript">
         $(document).ready(function() {
-            ColSch_initColorSchemeComponent();
-            ColSch_initColorSchemeParams(${minColor}, ${maxColor}, changeColors);
-            drawHistogram('histogramCanvasId', ${data}, ${labels}, ${colors}, '${xposition}');
-            $(window).resize(function() {
-                clearTimeout(this.resizingTimeout);
-                this.resizingTimeout = setTimeout(function() {      // set timeout so it's only resized on finish
-                    drawHistogram('histogramCanvasId', ${data}, ${labels}, ${colors}, '${xposition}');
-                    _drawHistogramLegend();
-                }, 250)
-            })
+            startHistogramView(${minColor}, ${maxColor}, ${data}, ${labels}, ${colors});
         });
         
         function launchViewer(width, height) {

@@ -17,6 +17,8 @@
  *
  **/
 
+// todo: do not use dom (hidden inputs) for data storage
+
 var plot = null;
 
 function drawHistogram(canvasDivId, data, labels, colorsPy) {
@@ -92,4 +94,21 @@ function changeColors() {
     }
     plot.draw();
     _drawHistogramLegend();
+}
+
+function startHistogramView(minColor, maxColor, data, labels, colors){
+    function _draw(){
+        drawHistogram('histogramCanvasId', data, labels, colors, '${xposition}');
+        _drawHistogramLegend();
+    }
+
+    ColSch_initColorSchemeParams(minColor, maxColor, changeColors);
+    _draw();
+
+    $(window).resize(function() {
+        clearTimeout(this.resizingTimeout);
+        this.resizingTimeout = setTimeout(function() {      // set timeout so it's only resized on finish
+            _draw();
+        }, 250);
+    });
 }
