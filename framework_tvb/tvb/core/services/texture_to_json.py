@@ -42,20 +42,19 @@ if not hasattr(Image, 'open'):
     from Image import Image
 
 
-def color_texture_to_list(img_pth, img_width, band_height, bands_number):
+def color_texture_to_list(img_pth, img_width, band_height):
     """
     :param img_pth: Path to the texure
     :param img_width: Texture width
     :param band_height: Height of a color scheme band
-    :param bands_number: The number of bands to serialize
-    :return: A list of bands_number color schemes. A scheme is a list of img_width colors
+    :return: A list of img_width/band_height color schemes. A scheme is a list of img_width colors
     """
     im = Image.open(img_pth)
     ima = numpy.asarray(im)
 
     if ima.shape != (img_width, img_width, 4):
         raise ValueError("unexpected image shape " + str(ima.shape))
-    tex_vs = [(i * band_height + 0.5)/img_width for i in xrange(bands_number)]
+    tex_vs = [(i * band_height + 0.5)/img_width for i in xrange(img_width/band_height)]
     color_schemes = []
     for v in tex_vs:
         idx = int(v * img_width)
