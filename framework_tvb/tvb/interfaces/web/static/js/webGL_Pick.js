@@ -75,10 +75,10 @@ function GL_initColorPickingData(numberOfObjects) {
     }
 }
 
+/**
+ * Do the initializations for a new buffer to be used for color picking/navigator
+ */
 function GL_initColorPickFrameBuffer() {
-    /*
-     * Do the initializations for a new buffer to be used for color picking/navigator
-     */
     var rttFramebuffer = gl.createFramebuffer();
     gl.bindFramebuffer(gl.FRAMEBUFFER, rttFramebuffer);
     rttFramebuffer.width = gl.viewportWidth;
@@ -88,9 +88,12 @@ function GL_initColorPickFrameBuffer() {
     // Bind to the second texture unit because the first one is used by the color map texture.
     gl.activeTexture(gl.TEXTURE1);
     gl.bindTexture(gl.TEXTURE_2D, rttTexture);
-    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
-    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR);
-//    gl.generateMipmap(gl.TEXTURE_2D);
+    // This full screen texture should not need any filtering. Sensible for NPOT off-screen texture.
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.NEAREST);
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.NEAREST);
+    // Clamp to edge. This is a NPOT texture, other modes are not supported.
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
 
     gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, rttFramebuffer.width, rttFramebuffer.height, 0, gl.RGBA, gl.UNSIGNED_BYTE, null);
 
