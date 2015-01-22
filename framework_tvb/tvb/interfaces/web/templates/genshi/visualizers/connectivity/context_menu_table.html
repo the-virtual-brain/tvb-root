@@ -30,14 +30,15 @@
     </aside>
 
 	<script type='text/javascript'>
-		$('html').click(function(e) {
-		  	var ev = arguments[0] || window.event,
-			origEl = ev.target || ev.srcElement;
-			if (origEl.parentNode.parentNode.parentNode.parentNode.className!='menu-cell')
-			 	if (origEl.parentNode.className!='menu-cell') 
-			 		if (origEl.id.indexOf("td_") != 0) {
-						hideNodeDetails()
-					}
+		$('html').click(function(ev) {
+			var el = $(ev.target);
+            if (el.hasClass('menu-cell') || el.parents('.menu-cell').length){
+                return; // clicked on the drop
+            }
+            if (el[0].id.indexOf("td_") === 0) {
+                return; //clicked on another cell
+            }
+            hideNodeDetails();
 		});
 	</script>
 
