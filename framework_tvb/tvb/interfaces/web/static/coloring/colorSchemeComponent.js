@@ -1,4 +1,3 @@
-var nodeColorRGB = [255, 255, 255];
 var _colorSchemeColors;
 var _colorScheme = null;                // the color scheme to be used for current drawing
 var _minRange, _maxRange;               // the interest interval. Set by a slider in the ui
@@ -126,33 +125,18 @@ function ColSchGetBounds(){
     return { min: _minRange, max:_maxRange, bins: _sparseColorNo };
 }
 // ================================= COLOR SCHEME STRUCTURES END =================================
-
-
-function drawSimpleColorPicker(divId, refreshFunction) {
-    $('#' + divId).ColorPicker({
-        color: '#ffffff',
-        onShow: function (colpkr) {
-            $(colpkr).fadeIn(500);
-            return false;
-        },
-        onHide: function (colpkr) {
-            $(colpkr).fadeOut(500);
-            return false;
-        },
-        onChange: function (hsb, hex, rgb) {
-            $('#' + divId + ' div').css('backgroundColor', '#' + hex);
-            nodeColorRGB = [parseInt(rgb.r), parseInt(rgb.g), parseInt(rgb.b)];
-            if (refreshFunction) {
-                 refreshFunction();
-            }
-        }
-    });	
-    $('#' + divId + ' div').css('backgroundColor', '#ffffff');
-}
-
-
-function getNewNodeColor() {
-	return nodeColorRGB;
+/**
+ * Creates a tiled color picker with 12 colors: 10 from the spectral color scheme, a black and a white
+ * @param selector Selector of the <nav> element of this color picker
+ */
+function ColSchCreateTiledColorPicker(selector){
+    var N = 10;
+    var colors = _colorSchemeColors[_ColSchemesInfo.Spectral._data_idx];
+    var tiles = [[255, 255, 255], [5, 5, 5]];
+    for (var i = 0; i < N; i++){
+        tiles.push(colors[1 + Math.floor(i / N * 254)]);
+    }
+     return new TVBUI.ColorTilePicker(selector, tiles);
 }
 
 function clampValue(value, min, max) {

@@ -73,7 +73,7 @@ SHADING_Context.colorscheme_init = function (shader) {
     gl.bindTexture(gl.TEXTURE_2D, g_texture);
 
     var img = new Image();
-    img.src = '/static/colorScheme/color_schemes.png';
+    img.src = '/static/coloring/color_schemes.png';
 
     img.onload = function(){
         // filtering is not needed for this lookup texture

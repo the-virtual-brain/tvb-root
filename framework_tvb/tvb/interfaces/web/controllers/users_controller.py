@@ -203,7 +203,7 @@ class UserController(BaseController):
     @expose_json
     def get_color_schemes_json(self):
         cherrypy.response.headers['Cache-Control'] = 'max-age=86400' # cache for a day
-        pth = os.path.join(os.path.dirname(tvb.interfaces.web.__file__), 'static', 'colorScheme', 'color_schemes.png')
+        pth = os.path.join(os.path.dirname(tvb.interfaces.web.__file__), 'static', 'coloring', 'color_schemes.png')
         return color_texture_to_list(pth, 256, 8)
 
 

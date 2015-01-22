@@ -1,0 +1,27 @@
+.colorTilePicker{
+    position: relative;
+    border: solid #838590 1px;
+    box-shadow: 1px 1px 4px 0 rgba(0, 0, 0, 0.5);
+}
+
+.colorTilePickerSelected{
+    width: 28px;
+    height: 26px;
+}
+
+nav.colorTilePicker .extension{
+    left:-2px;
+}
+
+nav.colorTilePicker .dropdown-pane{
+    background-color: #838590;
+    padding: 0;
+    border: #838590 solid;
+    border-width: 0 2px 2px 2px;
+}
+
+nav.colorTilePicker li{
+    float: left;
+    margin:0;
+    cursor: pointer;
+}

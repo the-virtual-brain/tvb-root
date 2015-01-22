@@ -545,9 +545,10 @@ function clearAllSelected() {
  * @param selectedNodeIndex the index of the selected node
  */
 function setCurrentColorForNode(selectedNodeIndex) {
-    lineColors[selectedNodeIndex*3] = getNewNodeColor()[0]/255.0;
-    lineColors[selectedNodeIndex*3+1] = getNewNodeColor()[1]/255.0;
-    lineColors[selectedNodeIndex*3+2] = getNewNodeColor()[2]/255.0;
+    var col = GVAR_ColorPicker.color;
+    lineColors[selectedNodeIndex*3] = col[0]/250.0;
+    lineColors[selectedNodeIndex*3+1] = col[1]/250.0;
+    lineColors[selectedNodeIndex*3+2] = col[2]/250.0;
 
     colorsBuffer = gl.createBuffer();
     gl.bindBuffer(gl.ARRAY_BUFFER, colorsBuffer);

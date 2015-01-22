@@ -25,7 +25,8 @@
  * The selection component
  */
 var SEL_selector;
-
+/** The color picker*/
+var GVAR_ColorPicker;
 /**
  * A mapping from node indices as stored in GVAR_interestAreaNodeIndexes
  * to node id's, as interpreted by the server and used by the selection component.
@@ -77,7 +78,8 @@ function GFUN_initializeConnectivityFull() {
     //Draw any additional elements like color picking and hide all tabs but the default one
     ColSch_initColorSchemeParams(GVAR_interestAreaVariables[GVAR_selectedAreaType]['min_val'],
                                  GVAR_interestAreaVariables[GVAR_selectedAreaType]['max_val'], _onColorSchemeChanged);
-    drawSimpleColorPicker('nodeColorSelector');
+
+    GVAR_ColorPicker = ColSchCreateTiledColorPicker('#nodeColorSelector');
     SEL_createOperationsTable();
 
     $('#leftSideDefaultSelectedTabId').click();   // enable only the first tab so others don't get exported
