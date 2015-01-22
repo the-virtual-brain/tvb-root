@@ -538,7 +538,7 @@ function initializeMatrix(){
 
     // this binds quite a number of handlers
     dom.find('td').hover(
-        function () {
+        function (event) {
             var nfo = tdInfo(event.target);
             if (nfo.isNode){
                 highlightedPointIndex1 = nfo.i;
