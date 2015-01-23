@@ -20,10 +20,10 @@
 /* The comment below lists the global functions used in this file.
  * It is here to make jshint happy and to document these implicit global dependencies.
  * In the future we might group these into namespace objects.
- * ( Global state is not in this list except gl; let them be warnings )
+ * ( Global state is not in this list except gl and namespaces; let them be warnings )
  */
 
-/* globals gl, GL_shaderProgram, displayMessage, HLPR_readJSONfromFile, readDataPageURL,
+/* globals gl, SHADING_Context, GL_shaderProgram, displayMessage, HLPR_readJSONfromFile, readDataPageURL,
     GL_handleKeyDown, GL_handleKeyUp, GL_handleMouseMove, GL_handleMouseWeel,
     initGL, updateGLCanvasSize, LEG_updateLegendVerticesBuffers,
     basicInitShaders, basicInitSurfaceLighting, GL_initColorPickFrameBuffer,
@@ -221,13 +221,7 @@ function VS_StartPortletPreview(baseDatatypeURL, urlVerticesList, urlTrianglesLi
     LEG_generateLegendBuffers();
 
     VB_BrainNavigator = new NAV_BrainNavigator(isOneToOneMapping, brainBuffers, measurePoints, measurePointsLabels);
-    
-    var theme = ColSchGetTheme().surfaceViewer;
-    gl.clearColor(theme.backgroundColor[0], theme.backgroundColor[1], theme.backgroundColor[2], theme.backgroundColor[3]);
 
-    gl.clearDepth(1.0);
-    gl.enable(gl.DEPTH_TEST);
-    gl.depthFunc(gl.LEQUAL);
     // Enable keyboard and mouse interaction
     canvas.onkeydown = GL_handleKeyDown;
     canvas.onkeyup = GL_handleKeyUp;
@@ -423,8 +417,9 @@ function _initViewerGL(canvas, urlVerticesList, urlNormalsList, urlTrianglesList
     if(VS_showLegend){
         LEG_initMinMax(activityMin, activityMax);
         ColSch_initColorSchemeGUI(activityMin, activityMax, LEG_updateLegendColors);
-
         LEG_generateLegendBuffers();
+    }else{
+        ColSch_initColorSchemeGUI(activityMin, activityMax);
     }
 
     if (urlVerticesList) {
@@ -447,12 +442,6 @@ function _initViewerGL(canvas, urlVerticesList, urlNormalsList, urlTrianglesList
     }
 
     VB_BrainNavigator = new NAV_BrainNavigator(isOneToOneMapping, brainBuffers, measurePoints, measurePointsLabels);
-
-    var theme = ColSchGetTheme().surfaceViewer;
-    gl.clearColor(theme.backgroundColor[0], theme.backgroundColor[1], theme.backgroundColor[2], theme.backgroundColor[3]);
-    gl.clearDepth(1.0);
-    gl.enable(gl.DEPTH_TEST);
-    gl.depthFunc(gl.LEQUAL);
 }
 
 
@@ -463,7 +452,7 @@ function _bindEvents(canvas){
     canvas.onmousedown = customMouseDown;
     $(document).on('mouseup', customMouseUp);
     $(canvas).on('contextmenu', _onContextMenu);
-    document.onmousemove = GL_handleMouseMove;
+    $(document).on('mousemove', GL_handleMouseMove);
 
     $(canvas).mousewheel(function(event, delta) {
         GL_handleMouseWeel(delta);
@@ -601,6 +590,10 @@ function customInitGL(canvas) {
     gl.newCanvasHeight = canvas.clientHeight;
     canvas.redrawFunctionRef = drawScene;            // interface-like function used in HiRes image exporting
     canvas.multipleImageExport = VS_multipleImageExport;
+
+    gl.clearDepth(1.0);
+    gl.enable(gl.DEPTH_TEST);
+    gl.depthFunc(gl.LEQUAL);
 }
 
 /** This callback handles image exporting from this canvas.*/
@@ -836,7 +829,7 @@ function computeVertexRegionMap(vertices, measurePoints) {
         for (var j = 0; j < vertices[i].length/3; j++) {
             var currentVertex = vertices[i].slice(j * 3, (j + 1) * 3);
             var closestPosition = NAV_BrainNavigator.findClosestPosition(currentVertex, measurePoints);
-            reg.push(closestPosition, 0, 0);
+            reg.push(closestPosition);
         }
         vertexRegionMap.push(reg);
     }
