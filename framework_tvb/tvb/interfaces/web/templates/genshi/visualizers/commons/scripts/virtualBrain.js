@@ -217,9 +217,7 @@ function VS_StartPortletPreview(baseDatatypeURL, urlVerticesList, urlTrianglesLi
     }
 
     ColSch_initColorSchemeComponent(activityMin, activityMax);
-    // todo: these are here because LEG_initMinMax wants to initialize the non-existing color scheme dom
-    legendMin = activityMin;
-    legendMax = activityMax;
+    LEG_initMinMax(activityMin, activityMax);
     LEG_generateLegendBuffers();
 
     VB_BrainNavigator = new NAV_BrainNavigator(isOneToOneMapping, brainBuffers, measurePoints, measurePointsLabels);
@@ -367,7 +365,6 @@ function VS_StartSurfaceViewer(urlVerticesList, urlLinesList, urlTrianglesList, 
                        noOfMeasurePoints, urlRegionMapList, urlMeasurePointsLabels,
                        boundaryURL, shelveObject, hemisphereChunkMask, false, false, false, minMeasure, maxMeasure, urlMeasure);
     _VS_init_cubicalMeasurePoints();
-    ColSch_initColorSchemeGUI(activityMin, activityMax);
 }
 
 function VS_StartEEGSensorViewer(urlVerticesList, urlLinesList, urlTrianglesList, urlNormalsList, urlMeasurePoints,
@@ -378,9 +375,6 @@ function VS_StartEEGSensorViewer(urlVerticesList, urlLinesList, urlTrianglesList
                                noOfMeasurePoints, '', urlMeasurePointsLabels,
                                '', shelfObject, null, false, true, true, minMeasure, maxMeasure, urlMeasure);
     _VS_init_cubicalMeasurePoints();
-    if (urlVerticesList) {
-        ColSch_initColorSchemeGUI(activityMin, activityMax);
-    }
 }
 
 function VS_StartBrainActivityViewer(baseDatatypeURL, onePageSize, urlTimeList, urlVerticesList, urlLinesList,
@@ -428,6 +422,8 @@ function _initViewerGL(canvas, urlVerticesList, urlNormalsList, urlTrianglesList
 
     if(VS_showLegend){
         LEG_initMinMax(activityMin, activityMax);
+        ColSch_initColorSchemeGUI(activityMin, activityMax, LEG_updateLegendColors);
+
         LEG_generateLegendBuffers();
     }
 
@@ -880,33 +876,34 @@ function createColorBufferForCube(isPicked) {
 
 function initBuffers(urlVertices, urlNormals, urlTriangles, urlRegionMap, staticFiles) {
     var verticesData = readFloatData(urlVertices, staticFiles);
-    var vertices = createWebGlBuffers(verticesData);
+    var vertexBatches = createWebGlBuffers(verticesData);
     var normals = HLPR_getDataBuffers(gl, urlNormals, staticFiles);
     var indexes = HLPR_getDataBuffers(gl, urlTriangles, staticFiles, true);
-    
-    // Fake buffers, copy of the normals, in case of transparency, we only need dummy ones.
-    var vertexRegionMap = normals;
-    // warning: these 'fake' buffers will be used and rendered when region colored surfaces are shown.
-    // This happens for all static surface viewers. The reason we do not have weird coloring effects
-    // is that normals have subunitary components that are truncated to 0 in the shader.
-    // todo: accidental use of the fake buffers should be visible. consider uvec3 in shader
-    if (!isOneToOneMapping && urlRegionMap && urlRegionMap.length) {
-        vertexRegionMap = HLPR_getDataBuffers(gl, urlRegionMap);
-    } else if (isEEGView) {
-        // if is eeg view than we use the static surface 'eeg_skin_surface' and we have to compute the vertexRegionMap;
-        // todo: do this on the server to eliminate this special case
-        var regionData = computeVertexRegionMap(verticesData, measurePoints);
-        vertexRegionMap = createWebGlBuffers(regionData);
+
+    var vertexRegionMap;
+    if (!isOneToOneMapping){
+        if(urlRegionMap && urlRegionMap.length) {
+            vertexRegionMap = HLPR_getDataBuffers(gl, urlRegionMap);
+        }else if (isEEGView) {
+            // if is eeg view than we use the static surface 'eeg_skin_surface' and we have to compute the vertexRegionMap;
+            // todo: do this on the server to eliminate this special case
+            var regionData = computeVertexRegionMap(verticesData, measurePoints);
+            vertexRegionMap = createWebGlBuffers(regionData);
+        }else{
+            // Fake buffers, copy of the normals, in case of transparency, we only need dummy ones.
+            vertexRegionMap = normals;
+        }
     }
+
     var result = [];
-    for (var i=0; i< vertices.length; i++) {
+    for (var i = 0; i < vertexBatches.length; i++) {
         if (isOneToOneMapping) {
             var activityBuffer = gl.createBuffer();
             gl.bindBuffer(gl.ARRAY_BUFFER, activityBuffer);
-            gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(vertices[i].numItems), gl.STATIC_DRAW);
-            result.push([vertices[i], normals[i], indexes[i], activityBuffer]);
+            gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(vertexBatches[i].numItems), gl.STATIC_DRAW);
+            result.push([vertexBatches[i], normals[i], indexes[i], activityBuffer]);
         } else {
-            result.push([vertices[i], normals[i], indexes[i], vertexRegionMap[i]]);
+            result.push([vertexBatches[i], normals[i], indexes[i], vertexRegionMap[i]]);
         }
     }
     return result;
