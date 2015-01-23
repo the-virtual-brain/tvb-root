@@ -140,7 +140,7 @@ function TSV_initVisualizer(dataUrls, minValue, maxValue, samplePeriod, samplePe
 
     _setupBuffersSize();
 
-    ColSch_initColorSchemeParams(minValue, maxValue, colorRedraw);
+    ColSch_initColorSchemeGUI(minValue, maxValue, colorRedraw);
     tsVol.currentTimePoint = 0;
     // Update the data shared with the SVG Time Series Fragment
     updateTSFragment();

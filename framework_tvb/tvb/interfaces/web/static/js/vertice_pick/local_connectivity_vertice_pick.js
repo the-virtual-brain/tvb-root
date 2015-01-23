@@ -57,7 +57,7 @@ function LCONN_PICK_updateBrainDrawing(data_from_server) {
     var maxValue = data_from_server.max_value;
 
     BASE_PICK_initLegendInfo(maxValue, minValue);     // setup the legend
-    ColSch_initColorSchemeParams(minValue, maxValue, function() {
+    ColSch_initColorSchemeGUI(minValue, maxValue, function() {
         LEG_updateLegendColors();
         _updateBrainColors(data, minValue, maxValue);
         drawScene();

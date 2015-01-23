@@ -76,7 +76,7 @@ function GFUN_mapNodeIdsToIndices(ids){
  */
 function GFUN_initializeConnectivityFull() {
     //Draw any additional elements like color picking and hide all tabs but the default one
-    ColSch_initColorSchemeParams(GVAR_interestAreaVariables[GVAR_selectedAreaType]['min_val'],
+    ColSch_initColorSchemeGUI(GVAR_interestAreaVariables[GVAR_selectedAreaType]['min_val'],
                                  GVAR_interestAreaVariables[GVAR_selectedAreaType]['max_val'], _onColorSchemeChanged);
 
     GVAR_ColorPicker = ColSchCreateTiledColorPicker('#nodeColorSelector');

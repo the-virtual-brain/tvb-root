@@ -35,7 +35,7 @@ var legendMax = 1;
 function LEG_initMinMax(minVal, maxVal) {
     legendMin = minVal;
     legendMax = maxVal;
-    ColSch_initColorSchemeParams(minVal, maxVal, LEG_updateLegendColors);
+    ColSch_initColorSchemeGUI(minVal, maxVal, LEG_updateLegendColors);
 }
 
 function LEG_updateLegendXMinAndXMax() {

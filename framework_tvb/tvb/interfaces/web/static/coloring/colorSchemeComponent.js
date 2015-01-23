@@ -216,7 +216,7 @@ function ColSch_initColorSchemeComponent(minValue, maxValue){
  * @param maxValue The maximum value for the linear slider
  * @param [refreshFunction] A reference to the function which updates the visualiser
  */
-function ColSch_initColorSchemeParams(minValue, maxValue, refreshFunction) {
+function ColSch_initColorSchemeGUI(minValue, maxValue, refreshFunction) {
     ColSch_initColorSchemeComponent(minValue, maxValue);
     _refreshCallback = refreshFunction;
     var elemSliderSelector = $("#rangerForLinearColSch");
@@ -225,10 +225,6 @@ function ColSch_initColorSchemeParams(minValue, maxValue, refreshFunction) {
     var elemColorNoSlider = $("#sliderForSparseColSch");
     var elemColorNo = $("#ColSch_colorNo");
 
-    if (elemSliderSelector.length < 1){
-        displayMessage("Color scheme DOM not found for initialization.", "warningMessage");
-        return;
-    }
     // initialise the range UI
     elemSliderSelector.slider({
         range: true, min: minValue, max: maxValue, step: (maxValue - minValue) / 1000, // 1000 steps between max and min

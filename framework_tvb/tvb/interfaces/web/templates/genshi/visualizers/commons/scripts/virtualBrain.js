@@ -367,7 +367,7 @@ function VS_StartSurfaceViewer(urlVerticesList, urlLinesList, urlTrianglesList, 
                        noOfMeasurePoints, urlRegionMapList, urlMeasurePointsLabels,
                        boundaryURL, shelveObject, hemisphereChunkMask, false, false, false, minMeasure, maxMeasure, urlMeasure);
     _VS_init_cubicalMeasurePoints();
-    ColSch_initColorSchemeParams(activityMin, activityMax);
+    ColSch_initColorSchemeGUI(activityMin, activityMax);
 }
 
 function VS_StartEEGSensorViewer(urlVerticesList, urlLinesList, urlTrianglesList, urlNormalsList, urlMeasurePoints,
@@ -379,7 +379,7 @@ function VS_StartEEGSensorViewer(urlVerticesList, urlLinesList, urlTrianglesList
                                '', shelfObject, null, false, true, true, minMeasure, maxMeasure, urlMeasure);
     _VS_init_cubicalMeasurePoints();
     if (urlVerticesList) {
-        ColSch_initColorSchemeParams(activityMin, activityMax);
+        ColSch_initColorSchemeGUI(activityMin, activityMax);
     }
 }
 

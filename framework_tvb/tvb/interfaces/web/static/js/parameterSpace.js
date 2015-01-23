@@ -159,7 +159,7 @@ function PSEDiscreteInitialize(labelsXJson, labelsYJson, series_array, dataJson,
     min_size = parseFloat(min_size);
     max_size = parseFloat(max_size);
 
-    ColSch_initColorSchemeParams(min_color, max_color, function(){
+    ColSch_initColorSchemeGUI(min_color, max_color, function(){
         _updatePlotPSE('main_div_pse', labels_x, labels_y, series_array, data, min_color, max_color, backPage);
     });
 

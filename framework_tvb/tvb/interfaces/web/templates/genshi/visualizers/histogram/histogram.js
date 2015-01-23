@@ -102,7 +102,7 @@ function startHistogramView(minColor, maxColor, data, labels, colors){
         _drawHistogramLegend();
     }
 
-    ColSch_initColorSchemeParams(minColor, maxColor, changeColors);
+    ColSch_initColorSchemeGUI(minColor, maxColor, changeColors);
     _draw();
 
     $(window).resize(function() {
