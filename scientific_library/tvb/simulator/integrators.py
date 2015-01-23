@@ -565,6 +565,25 @@ class RungeKutta4thOrderDeterministic(Integrator):
         return X + dX + self.dt * stimulus
 
 
+class Identity(Integrator):
+    """
+    The Identity integrator does not apply any scheme to the
+    provided dfun, only returning its results.
 
+    This allows the model to determine its stepping scheme
+    directly, and may be used for difference equations and
+    cellular automata.
 
+    """
 
+    def scheme(self, X, dfun, coupling=None, local_coupling=0.0, stimulus=0.0):
+        """
+        The identity scheme simply returns the results of the dfun and
+        stimulus.
+
+        .. math::
+            x_{n+1} = f(x_{n})
+
+        """
+
+        return dfun(X, coupling, local_coupling) + stimulus

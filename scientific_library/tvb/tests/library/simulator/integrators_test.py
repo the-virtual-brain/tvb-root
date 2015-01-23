@@ -33,6 +33,7 @@ Test for tvb.simulator.coupling module
 # TODO: evaluate equations?
 
 .. moduleauthor:: Paula Sanz Leon <sanzleon.paula@gmail.com>
+.. moduleauthor:: Marmaduke Woodman <mw@eml.cc>
 
 """
 
@@ -85,7 +86,17 @@ class IntegratorsTest(BaseTestCase):
     def test_rk4(self):
         rk4 = integrators.RungeKutta4thOrderDeterministic()
         self.assertEqual(rk4.dt, dt)
-    
+
+    def test_identity_scheme(self):
+        "Verify identity scheme works"
+        x, c, lc, s = 1, 2, 3, 4
+        def dfun(x, c, lc):
+            return x + c - lc
+        integ = integrators.Identity()
+        xp1 = integ.scheme(x, dfun, c, lc, s)
+        self.assertEqual(xp1, 4)
+
+
 def suite():
     """
     Gather all the tests in a test suite.
@@ -99,4 +110,4 @@ if __name__ == "__main__":
     #So you can run tests from this package individually.
     TEST_RUNNER = unittest.TextTestRunner()
     TEST_SUITE = suite()
-    TEST_RUNNER.run(TEST_SUITE) 
+    TEST_RUNNER.run(TEST_SUITE)

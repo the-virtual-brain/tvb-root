@@ -423,7 +423,7 @@ class Simulator(core.Type):
         #Create node index array of shape ...
         node_ids = numpy.tile(numpy.arange(number_of_regions)[:, numpy.newaxis],
                               (1, number_of_regions)).reshape(nsn)
-        node_ids = numpy.tile(node_ids, (1, ncvar, 1))
+        node_ids = numpy.tile(node_ids, (1, ncvar, 1)).T
         LOG.debug("%s: node_ids shape is: %s"%(str(self), str(node_ids.shape)))
 
         if self.surface is None:
