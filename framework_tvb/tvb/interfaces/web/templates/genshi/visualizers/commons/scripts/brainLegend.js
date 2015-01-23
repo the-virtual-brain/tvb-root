@@ -99,14 +99,10 @@ function LEG_generateLegendBuffers() {
     LEG_legendBuffers[2].numItems = indices.length;
     
     if (isOneToOneMapping) {
-        var colors = [];
-        for (var i=0; i < LEG_legendBuffers[0].numItems; i++) {
-            colors.push(1);
-        }
         LEG_legendBuffers[3] = gl.createBuffer();
         LEG_legendBuffers[3].numItems = LEG_legendBuffers[0].numItems;
         gl.bindBuffer(gl.ARRAY_BUFFER, LEG_legendBuffers[3]);
-        gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(colors), gl.STATIC_DRAW);
+        gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(legend_activity_values), gl.STATIC_DRAW);
 
         // This buffer is a color buffer. It is used by the surface pick vertex shader.
         LEG_legendBuffers[4] = gl.createBuffer();
@@ -127,15 +123,10 @@ function LEG_generateLegendBuffers() {
 }
 
 /**
- * Refresh color buffer for legend.
+ * Refresh color uniforms for legend. If isOneToOneMapping it does nothing.
  */
 function LEG_updateLegendColors() {
-    if (isOneToOneMapping) {
-        var colors = new Float32Array(legend_activity_values);
-        LEG_legendBuffers[3] = gl.createBuffer();
-        gl.bindBuffer(gl.ARRAY_BUFFER, LEG_legendBuffers[3]);
-        gl.bufferData(gl.ARRAY_BUFFER, colors, gl.STATIC_DRAW);
-    }else{
+    if (!isOneToOneMapping) {
         var col = ColSchInfo();
         for (var i = 0; i < legend_activity_values.length / 2; i++) {
             var idx = i + NO_OF_MEASURE_POINTS + 2;

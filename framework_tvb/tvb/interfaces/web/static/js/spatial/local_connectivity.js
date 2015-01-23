@@ -43,7 +43,6 @@ function LCON_displayGradientForThePickedVertex(selectedLocalConnectivity) {
         url += selectedLocalConnectivity + "&selected_triangle=" + TRIANGLE_pickedIndex;
         doAjaxCall({
             async:false,
-            type:'POST',
             url:url,
             success: LCONN_PICK_updateBrainDrawing
         });

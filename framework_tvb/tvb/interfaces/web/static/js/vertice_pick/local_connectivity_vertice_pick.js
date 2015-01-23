@@ -58,8 +58,7 @@ function LCONN_PICK_updateBrainDrawing(data_from_server) {
 
     BASE_PICK_initLegendInfo(maxValue, minValue);     // setup the legend
     ColSch_initColorSchemeGUI(minValue, maxValue, function() {
-        LEG_updateLegendColors();
-        _updateBrainColors(data, minValue, maxValue);
+        _updateBrainColors(data);
         drawScene();
     });
 
@@ -68,7 +67,7 @@ function LCONN_PICK_updateBrainDrawing(data_from_server) {
         return;
     }
 
-    _updateBrainColors(data, minValue, maxValue);
+    _updateBrainColors(data);
     drawScene();
     displayMessage("Displaying Local Connectivity profile for selected focal point ..." )
 }
@@ -77,12 +76,11 @@ function LCONN_PICK_updateBrainDrawing(data_from_server) {
  * Updates the buffers for drawing the brain, from the specified data
  * @private
  */
-function _updateBrainColors(data, minValue, maxValue) {
+function _updateBrainColors(data) {
     for (var i = 0; i < data.length; i++) {
         var activityBuffer = gl.createBuffer();
         gl.bindBuffer(gl.ARRAY_BUFFER, activityBuffer);
         var activity = new Float32Array(data[i]);
-        //getGradientColorArray(data[i], minValue, maxValue, thisBufferColors);
         gl.bufferData(gl.ARRAY_BUFFER, activity, gl.STATIC_DRAW);
         BASE_PICK_brainDisplayBuffers[i][3] = activityBuffer;
     }

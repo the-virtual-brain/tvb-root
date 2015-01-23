@@ -71,7 +71,7 @@ function STIM_PICK_setVisualizedData(data) {
 
     BASE_PICK_initLegendInfo(maxValue, minValue);
     if (colorValuesChanged) {
-        ColSch_initColorSchemeGUI(minValue, maxValue, LEG_updateLegendColors);
+        ColSch_initColorSchemeGUI(minValue, maxValue);
     }
 
     if (AG_isStopped){ // unpause movie
