@@ -60,7 +60,7 @@ class FlowService:
     MAXIMUM_DATA_TYPES_DISPLAYED = 50
     KEY_WARNING = "warning"
     WARNING_OVERFLOW = "Too many entities in storage; some of them were not returned, to avoid overcrowding. " \
-                       "Use filters, to make the list small enought to fit in here!"
+                       "Use filters, to make the list small enough to fit in here!"
 
 
     def __init__(self):
@@ -265,12 +265,13 @@ class FlowService:
             transformed_param = copy(param)
 
             if (ABCAdapter.KEY_TYPE in param) and not (param[ABCAdapter.KEY_TYPE] in ABCAdapter.STATIC_ACCEPTED_TYPES):
+
                 if ABCAdapter.KEY_CONDITION in param:
                     filter_condition = param[ABCAdapter.KEY_CONDITION]
-                    filter_condition.add_condition(FilterChain.datatype + ".visible", "==", True)
                 else:
-                    filter_condition = FilterChain('', [FilterChain.datatype + '.visible'], [True], operations=["=="])
-                    
+                    filter_condition = FilterChain('')
+                filter_condition.add_condition(FilterChain.datatype + ".visible", "==", True)
+
                 data_list, total_count = self.get_available_datatypes(project_id, param[ABCAdapter.KEY_TYPE],
                                                                       filter_condition)
 
@@ -286,8 +287,7 @@ class FlowService:
                 
                 if (transformed_param.get(ABCAdapter.KEY_REQUIRED) and len(values) > 0 and
                         transformed_param.get(ABCAdapter.KEY_DEFAULT) in [None, 'None']):
-                    def_val = str(values[-1][ABCAdapter.KEY_VALUE])
-                    transformed_param[ABCAdapter.KEY_DEFAULT] = def_val
+                    transformed_param[ABCAdapter.KEY_DEFAULT] = str(values[-1][ABCAdapter.KEY_VALUE])
                 transformed_param[ABCAdapter.KEY_FILTERABLE] = FilterChain.get_filters_for_type(
                     param[ABCAdapter.KEY_TYPE])
                 transformed_param[ABCAdapter.KEY_TYPE] = ABCAdapter.TYPE_SELECT
@@ -403,5 +403,6 @@ class FlowService:
         dao.store_entity(select_entity)
 
 
-    def get_generic_entity(self, entity_type, filter_value, select_field):
+    @staticmethod
+    def get_generic_entity(entity_type, filter_value, select_field):
         return dao.get_generic_entity(entity_type, filter_value, select_field)

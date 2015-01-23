@@ -46,7 +46,7 @@ from tvb.datatypes.surfaces_data import SurfaceData
 def prepare_shell_surface_urls(project_id, shell_surface=None):
 
     if shell_surface is None:
-        shell_surface = dao.get_values_of_datatype(project_id, FaceSurface)[0]
+        shell_surface = dao.get_values_of_datatype(project_id, FaceSurface, page_end=1)[0]
 
         if not shell_surface:
             raise Exception('No Face object found in current project.')

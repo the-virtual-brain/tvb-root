@@ -73,7 +73,7 @@ def prepare_mapped_sensors_as_measure_points_params(project_id, sensors, eeg_cap
     """
 
     if eeg_cap is None:
-        eeg_cap = dao.get_values_of_datatype(project_id, EEGCap)[0]
+        eeg_cap = dao.get_values_of_datatype(project_id, EEGCap, page_end=1)[0]
         if eeg_cap:
             eeg_cap = ABCDisplayer.load_entity_by_gid(eeg_cap[-1][2])
 
