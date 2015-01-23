@@ -88,16 +88,17 @@ class BrainViewer(ABCDisplayer):
         """
         self.populate_surface_fields(time_series)
 
-        url_vertices, url_normals, url_lines, \
-            url_triangles, url_region_map = self.surface.get_urls_for_rendering(True, self.region_map)
+        url_vertices, url_normals, url_lines, url_triangles, url_region_map = self.surface.get_urls_for_rendering(True, self.region_map)
+        params = self.retrieve_measure_points_prams(time_series)
+
+        base_activity_url, time_urls = self._prepare_data_slices(time_series)
         min_val, max_val = time_series.get_min_max_values()
 
-        params = dict(urlVertices=json.dumps(url_vertices), urlTriangles=json.dumps(url_triangles),
+        params.update(urlVertices=json.dumps(url_vertices), urlTriangles=json.dumps(url_triangles),
                       urlLines=json.dumps(url_lines), urlNormals=json.dumps(url_normals),
                       urlRegionMap=json.dumps(url_region_map),
-                      base_activity_url=ABCDisplayer.VISUALIZERS_URL_PREFIX + time_series.gid,
-                      isOneToOneMapping=self.one_to_one_map, minActivity=min_val, maxActivity=max_val,
-                      noOfMeasurePoints=0)
+                      base_activity_url=base_activity_url,
+                      isOneToOneMapping=self.one_to_one_map, minActivity=min_val, maxActivity=max_val)
 
         normalization_factor = figure_size[0] / 800
         if figure_size[1] / 600 < normalization_factor:

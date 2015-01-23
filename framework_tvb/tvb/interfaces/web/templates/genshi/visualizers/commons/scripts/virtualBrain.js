@@ -27,7 +27,7 @@
     GL_handleKeyDown, GL_handleKeyUp, GL_handleMouseMove, GL_handleMouseWeel,
     initGL, updateGLCanvasSize, LEG_updateLegendVerticesBuffers,
     basicInitShaders, basicInitSurfaceLighting, GL_initColorPickFrameBuffer,
-    ColSch_loadInitialColorScheme, ColSchGetTheme, LEG_generateLegendBuffers, LEG_initMinMax
+    ColSchGetTheme, LEG_generateLegendBuffers, LEG_initMinMax
     */
 
 /**
@@ -192,7 +192,7 @@ function VS_SetHemisphere(h){
 }
 
 function VS_StartPortletPreview(baseDatatypeURL, urlVerticesList, urlTrianglesList, urlNormalsList,
-                                urlRegionMapList, minActivity, maxActivity, oneToOneMapping) {
+                                noOfMeasurePoints, urlRegionMapList, minActivity, maxActivity, oneToOneMapping) {
     isPreview = true;
     pageSize = 1;
     urlBase = baseDatatypeURL;
@@ -202,6 +202,12 @@ function VS_StartPortletPreview(baseDatatypeURL, urlVerticesList, urlTrianglesLi
     }
     activityMin = parseFloat(minActivity);
     activityMax = parseFloat(maxActivity);
+
+    NO_OF_MEASURE_POINTS =  noOfMeasurePoints;
+    for(var i = 0; i < NO_OF_MEASURE_POINTS; i++){
+        VS_selectedRegions.push(i);
+    }
+
     var canvas = document.getElementById(BRAIN_CANVAS_ID);
     customInitGL(canvas);
     initShaders();
@@ -209,8 +215,13 @@ function VS_StartPortletPreview(baseDatatypeURL, urlVerticesList, urlTrianglesLi
         brainBuffers = initBuffers($.parseJSON(urlVerticesList), $.parseJSON(urlNormalsList), $.parseJSON(urlTrianglesList), 
                                $.parseJSON(urlRegionMapList), false);
     }
-    ColSch_initColorSchemeComponent(false);
+
+    ColSch_initColorSchemeComponent(activityMin, activityMax);
+    // todo: these are here because LEG_initMinMax wants to initialize the non-existing color scheme dom
+    legendMin = activityMin;
+    legendMax = activityMax;
     LEG_generateLegendBuffers();
+
     VB_BrainNavigator = new NAV_BrainNavigator(isOneToOneMapping, brainBuffers, measurePoints, measurePointsLabels);
     
     var theme = ColSchGetTheme().surfaceViewer;

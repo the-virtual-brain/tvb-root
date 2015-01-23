@@ -173,13 +173,20 @@ function ColSch_setColorScheme(scheme, notify) {
         $("#setColorSchemeSelId").val(scheme);
     }
 }
-
-function ColSch_initColorSchemeComponent(){
-     // set defaults in case ColSch_initColorSchemeParams will not be called
-    _minRange = 0;
-    _maxRange = 1;
-    _minActivity = 0;
-    _maxActivity = 1;
+/**
+ * Initializes the color scheme component.
+ * The parameters are used to rescale a value to 0..1
+ * Bounds are optional, will default to 0..1
+ * @param [minValue] activity min
+ * @param [maxValue] activity max
+ */
+function ColSch_initColorSchemeComponent(minValue, maxValue){
+    if (minValue == null) {minValue = 0;}
+    if (maxValue == null) {maxValue = 1;}
+    _minActivity = minValue;
+    _maxActivity = maxValue;
+    _minRange = minValue;            // on start the whole interval is selected
+    _maxRange = maxValue;
 
     if(!_colorSchemeColors) {
         doAjaxCall({
@@ -210,11 +217,7 @@ function ColSch_initColorSchemeComponent(){
  * @param [refreshFunction] A reference to the function which updates the visualiser
  */
 function ColSch_initColorSchemeParams(minValue, maxValue, refreshFunction) {
-    ColSch_initColorSchemeComponent();
-    _minRange = minValue;            // on start the whole interval is selected
-    _maxRange = maxValue;
-    _minActivity = minValue;
-    _maxActivity = maxValue;
+    ColSch_initColorSchemeComponent(minValue, maxValue);
     _refreshCallback = refreshFunction;
     var elemSliderSelector = $("#rangerForLinearColSch");
     var elemMin = $("#sliderMinValue");
