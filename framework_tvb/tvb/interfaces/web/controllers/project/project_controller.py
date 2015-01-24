@@ -158,9 +158,17 @@ class ProjectController(BaseController):
             self._mark_selected(saved_project)
 
 
+    def _duplicate_project(self, project_id):
+        try:
+            self.project_service.duplicate_project(project_id)
+        except ServicesBaseException, ex:
+            self.logger.warning(ex.message)
+            common.set_error_message(ex.message)
+
+
     @expose_page
     @settings
-    def editone(self, project_id=None, cancel=False, save=False, delete=False, **data):
+    def editone(self, project_id=None, cancel=False, save=False, delete=False, duplicate=False, **data):
         """
         Create or change Project. When project_id is empty we create a 
         new entity, otherwise we are to edit and existent one.
@@ -170,6 +178,10 @@ class ProjectController(BaseController):
         if cherrypy.request.method == 'POST' and delete:
             self._remove_project(project_id)
             raise cherrypy.HTTPRedirect('/project/viewall')
+        if cherrypy.request.method == 'POST' and duplicate:
+            self._duplicate_project(project_id)
+            raise cherrypy.HTTPRedirect('/project/viewall')
+
 
         current_user = common.get_logged_user()
         is_create = False

@@ -16,6 +16,10 @@
                         value="Delete" name="delete"
                         onclick="showQuestionOverlay('Are you sure you want to delete the project ${data.name}?', 'removeProject(\'$data.project_id\', \'editProjectForm\')'); return false; ">Delete Project</button>
             </li>
+			<li py:if="not isCreate">
+                <button type="submit" tabindex='50' class="action action-new"
+                        value="Duplicate" name="duplicate">Duplicate Project</button>
+            </li>
             <li py:if="not isCreate">
                 <button type="button" tabindex='50' class="action action-download"
                         value="Export" name="export" onclick="exportProject('$data.project_id')">Export Project</button>
