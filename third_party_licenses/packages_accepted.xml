@@ -563,7 +563,7 @@
     <dependency env="[linux32,win32,win64,linux64,macos32,macos64]" name="numexpr">
         <full-name value="NumExpr"/>
         <project-home value="http://code.google.com/p/numexpr/"/>
-        <version value="[2.0.1,2.1,2.2.2]"/>
+        <version value="[2.2.2,2.4]"/>
         <usage value="dynamic linking"/>
         <license value="LICENSE_numexpr.txt"/>
         <license-type value="MIT_"/>
