@@ -34,21 +34,19 @@ Service Layer for the Project entity.
 .. moduleauthor:: Lia Domide <lia.domide@codemart.ro>
 .. moduleauthor:: Bogdan Neacsa <bogdan.neacsa@codemart.ro>
 """
-import datetime
 
 import os
 import copy
 import json
 import formencode
 from inspect import stack, getmro
-from sqlalchemy.orm import make_transient
 
 from tvb.core import utils
 from tvb.basic.traits.types_mapped import MappedType
 from tvb.basic.logger.builder import get_logger
 from tvb.basic.filters.chain import FilterChain
 from tvb.core.entities.model import DataTypeGroup
-from tvb.core.utils import string2date, date2string, format_timedelta, format_bytes_human, generate_guid
+from tvb.core.utils import string2date, date2string, format_timedelta, format_bytes_human
 from tvb.core.removers_factory import get_remover
 from tvb.core.entities import model
 from tvb.core.entities.storage import dao, transactional
@@ -150,84 +148,6 @@ class ProjectService:
         #Finish operation
         self.logger.debug("Edit/Save OK for project:" + str(current_proj.id) + ' by user:' + current_user.username)
         return current_proj
-
-
-    @staticmethod
-    def _generate_new_project_name(project):
-        prefix = 'Copy of '
-        if not project.name.startswith(prefix):
-            name = prefix + project.name
-            if not dao.count_projects_for_name(name, None):
-                return name
-            else:
-                base_name = project.name
-        else:
-            base_name = project.name[len(prefix):]
-
-        suffix = 1
-        while True:
-            name = prefix + base_name + ' (%d)' % suffix
-            if not dao.count_projects_for_name(name, None):
-                return name
-            suffix += 1
-
-
-    def duplicate_project(self, project_id):
-        project = self.find_project(project_id)
-        new_name = self._generate_new_project_name(project)
-        description = project.description
-        description += '\nThis project was copied from %s on %s.' % (project.name, date2string(datetime.datetime.now()))
-        new_proj = model.Project(new_name, project.fk_admin, description)
-        new_proj.last_updated = project.last_updated
-
-        self.structure_helper.write_project_metadata(new_proj)
-        new_proj = dao.store_entity(new_proj)
-
-        ops =  dao.get_operations_in_project(project_id)
-        for op in ops:
-            if not op.has_finished:
-                raise ProjectServiceException('cannot duplicate a project with not finished operations')
-
-        # todo FIXME: review code below. It is a incomplete buggy hack.
-
-        new_ops = []
-
-        #operations
-        for op in ops:
-            # try make_transient
-            new_op = model.Operation(op.fk_launched_by, new_proj.id, op.fk_from_algo, op.parameters,
-                                    op.meta_data, op.method_name, op.status, op.start_date, op.completion_date,
-                                    op.fk_operation_group, op.additional_info,
-                                    op.user_group, op.range_values, op.estimated_disk_size)
-            new_ops.append(new_op)
-
-        new_ops = dao.store_entities(new_ops)
-
-        for new_op in new_ops:
-            new_op = dao.get_operation_by_id(new_op.id)  # because of lazy attributes and out of session
-            self.structure_helper.write_operation_metadata(new_op)
-
-        # datatypes
-        op_id_map = {}
-        for op, new_op in zip(ops, new_ops):
-            op_id_map[op.id] = new_op.id
-
-        for dt in dao.get_datatypes_in_project(project.id):
-            dt = dao.get_datatype_by_gid(dt.gid)
-            new_op_id = op_id_map[dt.fk_from_operation]
-
-            src = dt.get_storage_file_path()
-            make_transient(dt)
-            dt.id = None
-            dt.gid = generate_guid()
-            dt.fk_from_operation = new_op_id
-            dt.storage_path = self.structure_helper.get_operation_folder(new_proj.name, new_op_id)
-            dest = dt.get_storage_file_path()
-
-            self.structure_helper.copy_file(src, dest)
-            dt = dao.store_entity(dt)
-
-        #remaining workflows, equations dynamics
 
 
     def add_member_to_project(self, project_gid, user_id):

@@ -321,11 +321,6 @@ class OperationDAO(RootDAO):
             return []
 
 
-    def get_operations_in_project(self, project_id):
-        return self.session.query(model.Operation
-                            ).filter(model.Operation.fk_launched_in == project_id)
-
-
     @staticmethod
     def _apply_visibility_and_group_filters(query, only_relevant, only_in_groups):
         """
