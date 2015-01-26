@@ -289,7 +289,7 @@ class MappedType(model.DataType, mapped.MappedTypeLight):
         if included_info is None:
             included_info = self.trait[array_name].trait.stored_metadata or self.trait[array_name].stored_metadata
         summary = self.__read_storage_array_metadata(array_name, included_info)
-        if self.METADATA_ARRAY_SHAPE in included_info:
+        if (self.METADATA_ARRAY_SHAPE in included_info) and (self.METADATA_ARRAY_SHAPE not in summary):
             summary[self.METADATA_ARRAY_SHAPE] = self.get_data_shape(array_name)
         return summary
 
@@ -644,7 +644,6 @@ class SparseMatrix(mapped.SparseMatrix, Array):
 
     FORMAT_META = "format"
     DTYPE_META = "dtype"
-    SHAPE_META = "shape"
     DATA_DS = "data"
     INDPTR_DS = "indptr"
     INDICES_DS = "indices"
@@ -661,8 +660,11 @@ class SparseMatrix(mapped.SparseMatrix, Array):
         :param data_name: name of data group which will contain sparse matrix details
         """
         info_dict = {SparseMatrix.DTYPE_META: mtx.dtype.str,
-                     SparseMatrix.SHAPE_META: str(mtx.shape),
-                     SparseMatrix.FORMAT_META: mtx.format}
+                     SparseMatrix.FORMAT_META: mtx.format,
+                     MappedType.METADATA_ARRAY_SHAPE: str(mtx.shape),
+                     MappedType.METADATA_ARRAY_MAX: mtx.max(),
+                     MappedType.METADATA_ARRAY_MIN: mtx.min(),
+                     MappedType.METADATA_ARRAY_MEAN: mtx.mean()}
 
         data_group_path = SparseMatrix.ROOT_PATH + data_name
 
@@ -698,18 +700,20 @@ class SparseMatrix(mapped.SparseMatrix, Array):
             dtype = dtype[0]
 
         constructor = constructors[mtx_format]
+        shape_str = info_dict.get(MappedType.METADATA_ARRAY_SHAPE) or info_dict.get(
+            MappedType.METADATA_ARRAY_SHAPE.lower())
 
         if mtx_format in ['csc', 'csr']:
             data = inst.get_data(SparseMatrix.DATA_DS, where=data_group_path)
             indices = inst.get_data(SparseMatrix.INDICES_DS, where=data_group_path)
             indptr = inst.get_data(SparseMatrix.INDPTR_DS, where=data_group_path)
-            shape = eval(info_dict[SparseMatrix.SHAPE_META])
+            shape = eval(shape_str)
 
             mtx = constructor((data, indices, indptr), shape=shape, dtype=dtype)
             mtx.sort_indices()
         elif mtx_format == 'coo':
             data = inst.get_data(SparseMatrix.DATA_DS, where=data_group_path)
-            shape = eval(info_dict[SparseMatrix.SHAPE_META])
+            shape = eval(shape_str)
             rows = inst.get_data(SparseMatrix.ROWS_DS, where=data_group_path)
             cols = inst.get_data(SparseMatrix.COLS_DS, where=data_group_path)
 

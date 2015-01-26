@@ -56,7 +56,7 @@ class VersionSettings(object):
     # and should be used by next versions to know how to import
     # data in TVB format, in case data structure changes.
     # Value should be updated every time data structure is changed.
-    DATA_VERSION = 2
+    DATA_VERSION = 3
     DATA_VERSION_ATTRIBUTE = "Data_version"
 
     # This is the version of the tvb project.

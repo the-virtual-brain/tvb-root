@@ -646,6 +646,18 @@ class LocalConnectivityScientific(surfaces_data.LocalConnectivityData):
     __tablename__ = None
 
 
+    def _find_summary_info(self):
+        """
+        Gather scientifically interesting summary information from an instance
+        of this datatype.
+        """
+        return self.get_info_about_array('matrix',
+                                         [self.METADATA_ARRAY_MAX,
+                                          self.METADATA_ARRAY_MIN,
+                                          self.METADATA_ARRAY_MEAN,
+                                          self.METADATA_ARRAY_SHAPE])
+
+
     def compute_sparse_matrix(self):
         """
         NOTE: Before calling this method, the surface field

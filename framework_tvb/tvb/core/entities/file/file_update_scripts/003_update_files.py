@@ -29,24 +29,20 @@
 #
 
 """
-Demo script on how to load a TVB DataType by Id and modify metadata
+Upgrade script from H5 version 2 to version 3
 
 .. moduleauthor:: Lia Domide <lia.domide@codemart.ro>
 """
 
-if __name__ == "__main__":
-    from tvb.basic.profile import TvbProfile
-    TvbProfile.set_profile(TvbProfile.COMMAND_PROFILE)
-
-import datetime
-from tvb.core.entities.storage import dao
-from tvb.core.traits.types_mapped import MappedType, SparseMatrix
-from tvb.datatypes.surfaces import LocalConnectivity
+import os
+from tvb.basic.profile import TvbProfile
+from tvb.core.entities.file.exceptions import FileVersioningException
+from tvb.core.services.import_service import ImportService
+from tvb.core.traits.types_mapped import SparseMatrix, MappedType
 
 
 
-def update_localconnectivity_metadata(dt_id):
-    dt = dao.get_generic_entity(LocalConnectivity, dt_id)[0]
+def _update_localconnectivity_metadata(dt):
 
     mtx = dt.matrix
     info_dict = {SparseMatrix.DTYPE_META: mtx.dtype.str,
@@ -61,17 +57,25 @@ def update_localconnectivity_metadata(dt_id):
 
 
 
-def update_dt(dt_id, new_create_date):
-    dt = dao.get_datatype_by_id(dt_id)
-    dt.create_date = new_create_date
-    dao.store_entity(dt)
-    # Update MetaData in H5 as well.
-    dt = dao.get_datatype_by_gid(dt.gid)
-    dt.persist_full_metadata()
+def update(input_file):
+    """
+    In order to avoid segmentation faults when updating a batch of files just
+    start every conversion on a different Python process.
 
+    :param input_file: the file that needs to be converted to a newer file storage version.
+        This should be a file that still uses TVB 2.0 storage
+    """
+    if not os.path.isfile(input_file):
+        raise FileVersioningException("The input path %s received for upgrading from 2 -> 3 is not a "
+                                      "valid file on the disk." % input_file)
 
+    service = ImportService()
+    folder, file_name = os.path.split(input_file)
+    operation_id = int(os.path.split(folder)[1])
+    datatype = service.load_datatype_from_file(folder, file_name, operation_id, move=False)
+    if datatype.type == "LocalConnectivity":
+        _update_localconnectivity_metadata(datatype)
 
-if __name__ == "__main__":
-    update_localconnectivity_metadata(7)
-    update_dt(35, datetime.datetime(2014, 9, 29, 14, 17, 50))
-    update_dt(36, datetime.datetime(2014, 9, 29, 14, 17, 52))
+    root_metadata = datatype.get_metadata()
+    root_metadata[TvbProfile.current.version.DATA_VERSION_ATTRIBUTE] = TvbProfile.current.version.DATA_VERSION
+    datatype.set_metadata(root_metadata)
