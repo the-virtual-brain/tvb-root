@@ -200,7 +200,7 @@ class TimeSeriesFramework(time_series_data.TimeSeriesData):
         :returns: (minimum_value, maximum_value)
         """
         metadata = self.get_metadata('data')
-        return metadata["Minimum"], metadata["Maximum"]
+        return metadata[self.METADATA_ARRAY_MIN], metadata[self.METADATA_ARRAY_MAX]
 
 
     def get_space_labels(self):

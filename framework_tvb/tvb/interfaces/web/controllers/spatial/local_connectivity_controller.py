@@ -34,7 +34,6 @@
 """
 
 import json
-
 import cherrypy
 
 from tvb.datatypes.surfaces import LocalConnectivity
@@ -124,6 +123,9 @@ class LocalConnectivityController(SpatioTemporalController):
             selected_local_conn = ABCAdapter.load_entity_by_gid(context.selected_entity)
             template_specification.update(self.display_surface(selected_local_conn.surface.gid))
             template_specification['no_local_connectivity'] = False
+            min_value, max_value = selected_local_conn.get_min_max_values()
+            template_specification['minValue'] = min_value
+            template_specification['maxValue'] = max_value
         else:
             template_specification['no_local_connectivity'] = True
         template_specification[common.KEY_PARAMETERS_CONFIG] = False
@@ -281,7 +283,7 @@ class LocalConnectivityController(SpatioTemporalController):
         else:
             for start_idx in xrange(0, len(picked_data) - buffer_size, chunk_size):
                 result.append(picked_data[start_idx:start_idx + chunk_size + buffer_size])
-        result = {'min_value': min(picked_data), 'max_value': max(picked_data), 'data': json.dumps(result)}
+        result = {'data': json.dumps(result)}
 
         return result
 

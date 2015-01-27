@@ -69,7 +69,9 @@ class LocalConnectivityViewer(ABCDisplayer):
 
         params.update(self._compute_surface_params(local_conn.surface))
         params['local_connectivity_gid'] = local_conn.gid
-
+        min_value, max_value = local_conn.get_min_max_values()
+        params['minValue'] = min_value
+        params['maxValue'] = max_value
         return self.build_display_result("local_connectivity/view", params,
                                          pages={"controlPage": "local_connectivity/controls"})
 

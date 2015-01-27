@@ -15,16 +15,7 @@
 
 	<script type="text/javascript">
         $(document).ready(function() {
-            ColSch_initColorSchemeComponent();
-        	 $("select[name='existentEntitiesSelect']").change(function () { BS_loadEntity(); });
-             $('#GLcanvas')
-                     .unbind('click.displayIndexForThePickedVertex')
-                     .bind('click.displayIndexForThePickedVertex', function () {
-                                        BS_displayIndexForThePickedVertex();
-                                        LCON_displayGradientForThePickedVertex();
-                                     });
-	         LCONN_disableView('You are already in VIEW mode. If you want to display a different Local Connectivity entity just pick it from the selector menu above the visualizer.');
-	         LCONN_disableCreate('If you want to create a new Local Connectivity entity, go back to the EDIT page to set a new set of parameters.');
+            LCON_page_init(${minValue}, ${maxValue});
         });
     </script>
     

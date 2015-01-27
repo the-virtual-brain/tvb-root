@@ -53,14 +53,6 @@ function LCONN_PICK_updateBrainDrawing(data_from_server) {
     data_from_server = $.parseJSON(data_from_server);
 
     var data = $.parseJSON(data_from_server.data);
-    var minValue = data_from_server.min_value;
-    var maxValue = data_from_server.max_value;
-
-    BASE_PICK_initLegendInfo(maxValue, minValue);     // setup the legend
-    ColSch_initColorSchemeGUI(minValue, maxValue, function() {
-        _updateBrainColors(data);
-        drawScene();
-    });
 
     if (BASE_PICK_brainDisplayBuffers.length != data.length) {
         displayMessage("Could not draw the gradient view. Invalid data received from the server.", "errorMessage");

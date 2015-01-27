@@ -18,17 +18,38 @@
  **/
 
 /**
+ * Initializes the legend buffers, the color scheme component, and binds the click event.
+ * It does not initialize webgl as that is done in the included left_template_brain_pick.html
+ * @param [selectedLocalConnectivity] if absent we are in the local connectivity page step2 and this value is retrieved from the dom
+ */
+function LCON_viewer_init(minValue, maxValue, selectedLocalConnectivity){
+    ColSch_initColorSchemeGUI(minValue, maxValue);
+
+    LEG_initMinMax(minValue, maxValue);
+    LEG_generateLegendBuffers();
+    BASE_PICK_initLegendInfo(maxValue, minValue);
+
+    $('#GLcanvas').click(function(){
+        LCON_displayGradientForThePickedVertex(selectedLocalConnectivity);
+    });
+}
+
+function LCON_page_init(minValue, maxValue){
+    $('#GLcanvas').click(function () {
+        BS_displayIndexForThePickedVertex();
+    });
+    LCON_viewer_init(minValue, maxValue);
+    $("select[name='existentEntitiesSelect']").change(function () { BS_loadEntity(); });
+    LCONN_disableView('You are already in VIEW mode. If you want to display a different Local Connectivity entity just pick it from the selector menu above the visualizer.');
+    LCONN_disableCreate('If you want to create a new Local Connectivity entity, go back to the EDIT page to set a new set of parameters.');
+}
+/**
  * Displays a gradient on the surface used by the selected local connectivity.
  * @param [selectedLocalConnectivity] the gid of the local connectivity
  */
 function LCON_displayGradientForThePickedVertex(selectedLocalConnectivity) {
 
     if (TRIANGLE_pickedIndex >= 0) {
-        if (!LEG_legendBuffers.length) {
-            // only generate them on first pick
-            LEG_generateLegendBuffers();
-        }
-
         if (selectedLocalConnectivity == null){
             selectedLocalConnectivity = $("select[name='existentEntitiesSelect']").val();
         }

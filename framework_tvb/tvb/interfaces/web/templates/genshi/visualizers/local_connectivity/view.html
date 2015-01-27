@@ -13,13 +13,11 @@
 
     <script type="text/javascript">
         $(document).ready(function() {
-            ColSch_initColorSchemeComponent();
+
             BASE_PICK_webGLStart('${urlVerticesPick}', '${urlTrianglesPick}', '${urlNormalsPick}', '${urlVertices}',
                     '${urlTriangles}', '${urlNormals}', '${brainCenter}', "${callback if defined('callback') else ''}");
 
-            $('#GLcanvas').click(function () {
-                    LCON_displayGradientForThePickedVertex('${local_connectivity_gid}');
-            });
+            LCON_viewer_init(${minValue}, ${maxValue}, '${local_connectivity_gid}');
         });
     </script>
 </div>
