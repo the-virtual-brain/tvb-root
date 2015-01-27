@@ -48,8 +48,8 @@ def _update_localconnectivity_metadata(dt):
     info_dict = {SparseMatrix.DTYPE_META: mtx.dtype.str,
                  SparseMatrix.FORMAT_META: mtx.format,
                  MappedType.METADATA_ARRAY_SHAPE: str(mtx.shape),
-                 MappedType.METADATA_ARRAY_MAX: mtx.max(),
-                 MappedType.METADATA_ARRAY_MIN: mtx.min(),
+                 MappedType.METADATA_ARRAY_MAX: mtx.data.max(),
+                 MappedType.METADATA_ARRAY_MIN: mtx.data.min(),
                  MappedType.METADATA_ARRAY_MEAN: mtx.mean()}
 
     data_group_path = SparseMatrix.ROOT_PATH + 'matrix'
