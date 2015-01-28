@@ -46,12 +46,13 @@ class ConnectivityFramework(connectivity_data.ConnectivityData):
     __tablename__ = None
     
 
-    def generate_new_connectivity(self, new_weights, interest_areas, storage_path, new_tracts=None):
+    def branch_connectivity(self, new_weights, interest_areas, storage_path, new_tracts=None):
         """
-        Generate new Connectivity object based on current one, by changing weights (e.g. simulate lesion).
-        :param new_weights: a numpy array of the weights
-        :param interest_areas: a numpy array of the selected node id's
-        :param new_tracts: a numpy array of the tracts.
+        Generate new Connectivity based on current one, by changing weights (e.g. simulate lesion).
+        The returned connectivity has the same number of nodes. The edges of unselected nodes will have weight 0.
+        :param new_weights: weights matrix for the new connectivity
+        :param interest_areas: ndarray of the selected node id's
+        :param new_tracts: tracts matrix for the new connectivity
         """
         if new_tracts is None:
             new_tracts = self.tract_lengths
@@ -77,11 +78,38 @@ class ConnectivityFramework(connectivity_data.ConnectivityData):
         return final_conn
 
 
-    def generate_new_connectivity_from_ordered_arrays(self, new_weights, interest_areas, storage_path, new_tracts=None):
+    def cut_connectivity(self, new_weights, interest_areas, storage_path, new_tracts=None):
         """
-        Similar to :meth:`generate_new_connectivity`.
-        The difference is that the parameters are consistent with the ordered versions of weights, tracts, labels
-        This is used by the connectivity viewer to save a lesion of a connectivity.
+        Generate new Connectivity object based on current one, by removing nodes (e.g. simulate lesion).
+        Only the selected nodes will get used in the result. The order of the indices in interest_areas matters.
+        If indices are not sorted then the nodes will be permuted accordingly.
+        :param new_weights: weights matrix for the new connectivity
+        :param interest_areas: ndarray with the selected node id's.
+        :param new_tracts: tracts matrix for the new connectivity
+        """
+        if new_tracts is None:
+            new_tracts = self.tract_lengths[interest_areas, :][:, interest_areas]
+
+        final_conn = self.__class__()
+        final_conn.parent_connectivity = None
+        final_conn.storage_path = storage_path
+        final_conn.weights = new_weights[interest_areas, :][:, interest_areas]
+        final_conn.centres = self.centres[interest_areas, :]
+        final_conn.region_labels = self.region_labels[interest_areas]
+        final_conn.orientations = self.orientations[interest_areas, :]
+        if len(self.cortical):
+            final_conn.cortical = self.cortical[interest_areas, :]
+        final_conn.hemispheres = self.hemispheres[interest_areas]
+        final_conn.areas = self.areas[interest_areas]
+        final_conn.tract_lengths = new_tracts
+        final_conn.saved_selection = None
+        final_conn.subject = self.subject
+        return final_conn
+
+
+    def _reorder_arrays(self, new_weights, interest_areas, new_tracts=None):
+        """
+        Returns ordered versions of the parameters according to the hemisphere permutation.
         """
         permutation = self.hemisphere_order_indices
         inverse_permutation = numpy.argsort(permutation)  # trick to invert a permutation represented as an array
@@ -92,7 +120,25 @@ class ConnectivityFramework(connectivity_data.ConnectivityData):
         if new_tracts is not None:
             new_tracts = new_tracts[inverse_permutation, :][:, inverse_permutation]
 
-        return self.generate_new_connectivity(new_weights, interest_areas, storage_path, new_tracts)
+        return new_weights, interest_areas, new_tracts
+
+
+    def branch_connectivity_from_ordered_arrays(self, new_weights, interest_areas, storage_path, new_tracts=None):
+        """
+        Similar to :meth:`branch_connectivity` but the parameters are consistent with the ordered versions of weights, tracts, labels
+        Used by the connectivity viewer to save a lesion.
+        """
+        new_weights, interest_areas, new_tracts = self._reorder_arrays(new_weights, interest_areas, new_tracts)
+        return self.branch_connectivity(new_weights, interest_areas, storage_path, new_tracts)
+
+
+    def cut_new_connectivity_from_ordered_arrays(self, new_weights, interest_areas, storage_path, new_tracts=None):
+        """
+        Similar to :meth:`cut_connectivity` but using hemisphere ordered parameters.
+        Used by the connectivity viewer to save a smaller connectivity.
+        """
+        new_weights, interest_areas, new_tracts = self._reorder_arrays(new_weights, interest_areas, new_tracts)
+        return self.cut_connectivity(new_weights, interest_areas, storage_path, new_tracts)
 
 
     @property

@@ -91,7 +91,14 @@
 	    	<input type="hidden" id="newTractsId" name="new_tracts"/>
 	        <input type="hidden" id="interestAreaNodeIndexesId" name="interest_area_indexes"/>
 	        <input type="hidden" id="originalConnectivityId" name="original_connectivity" value="$originalConnectivity"/>
-	    	<a href="#" tabindex='-1' onclick='saveSubConnectivity();' class="action action-big-new column-control" title="Create new connectivity matrix from current selection">Create new</a>
+            <input type="hidden" id="isBranch" name="is_branch"/>
+
+            <a href="#" tabindex='-1' onclick='saveSubConnectivity(false);'
+               class="action action-big-new action-new-connectivity column-control"
+               title="Create a new connectivity from the selected nodes">Create new</a>
+	    	<a href="#" tabindex='-1' onclick='saveSubConnectivity(true);'
+               class="action action-big-branch action-branch-connectivity column-control"
+               title="Clone the connectivity cutting the unselected edges">Branch</a>
 	    </form>
 
     <div id="chkList" class="matrix">

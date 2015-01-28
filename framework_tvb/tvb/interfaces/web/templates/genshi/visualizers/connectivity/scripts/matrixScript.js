@@ -499,11 +499,12 @@ function MATRIX_colorTable() {
     _updateLegendColors();
 }
 
-function saveSubConnectivity() {
+function saveSubConnectivity(isBranch) {
     // clone the weights matrix
     $("#newWeightsId").val($.toJSON(GVAR_interestAreaVariables[1].values));
     $("#newTractsId").val($.toJSON(GVAR_interestAreaVariables[2].values));
     $("#interestAreaNodeIndexesId").val($.toJSON(GVAR_interestAreaNodeIndexes));
+    $("#isBranch").val(isBranch);
     $("#experimentFormId").submit();
 }
 

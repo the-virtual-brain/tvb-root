@@ -140,31 +140,37 @@ class ConnectivityViewer(ABCDisplayer):
         return self.build_display_result("connectivity/portlet_preview", parameters)
 
 
-    def submit_connectivity(self, original_connectivity, new_weights, new_tracts, interest_area_indexes, **_):
+    def submit_connectivity(self, original_connectivity, new_weights, new_tracts, interest_area_indexes, is_branch, **_):
         """
         Method to be called when user submits changes on the 
         Connectivity matrix in the Visualizer.
         """
-        result = []
         conn = self.load_entity_by_gid(original_connectivity)
         self.meta_data[DataTypeMetaData.KEY_SUBJECT] = conn.subject
 
         new_weights = numpy.asarray(json.loads(new_weights), dtype=numpy.float64)
         new_tracts = numpy.asarray(json.loads(new_tracts), dtype=numpy.float64)
         interest_area_indexes = numpy.asarray(json.loads(interest_area_indexes))
+        is_branch = json.loads(is_branch)
 
-        result_connectivity = conn.generate_new_connectivity_from_ordered_arrays(new_weights, interest_area_indexes,
-                                                                                 self.storage_path, new_tracts)
-        result.append(result_connectivity)
+        if not is_branch:
+            result_connectivity = conn.cut_new_connectivity_from_ordered_arrays(new_weights, interest_area_indexes,
+                                                                                            self.storage_path, new_tracts)
+            return [result_connectivity]
+        else:
+            result = []
+            result_connectivity = conn.branch_connectivity_from_ordered_arrays(new_weights, interest_area_indexes,
+                                                                                     self.storage_path, new_tracts)
+            result.append(result_connectivity)
 
-        linked_region_mappings = dao.get_generic_entity(RegionMapping, original_connectivity, '_connectivity')
-        for mapping in linked_region_mappings:
-            result.append(mapping.generate_new_region_mapping(result_connectivity.gid, self.storage_path))
+            linked_region_mappings = dao.get_generic_entity(RegionMapping, original_connectivity, '_connectivity')
+            for mapping in linked_region_mappings:
+                result.append(mapping.generate_new_region_mapping(result_connectivity.gid, self.storage_path))
 
-        linked_projection = dao.get_generic_entity(ProjectionRegionEEG, original_connectivity, '_sources')
-        for projection in linked_projection:
-            result.append(projection.generate_new_projection(result_connectivity.gid, self.storage_path))
-        return result
+            linked_projection = dao.get_generic_entity(ProjectionRegionEEG, original_connectivity, '_sources')
+            for projection in linked_projection:
+                result.append(projection.generate_new_projection(result_connectivity.gid, self.storage_path))
+            return result
 
 
     @staticmethod

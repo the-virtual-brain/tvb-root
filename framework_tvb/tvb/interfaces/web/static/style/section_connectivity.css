@@ -652,4 +652,13 @@ margin-right: 2px;
 .space-time-input {
 	width: 40px;
 }
+/* Style the 2 "new connectivity" buttons. Selectors have to be this specific.
+ * Otherwise more specific styles will cascade them */
+#main .view-column .action.action-new-connectivity{
+    right:40px;
+}
 
+#main .view-column .action.action-branch-connectivity{
+    background-position: -18px -1327px;
+    right: -15px;
+}
