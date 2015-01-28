@@ -131,7 +131,25 @@ The rest of this document will assume that you installed Visual Studio 2008 and 
 	'libraries'     : ['hdf5dll18','hdf5_hldll'] to 'libraries'     : ['hdf5dll','hdf5_hldll']
 		3. Add to the LIB and INCLUDE environmental variables the paths to the lib and include sub-folders from the HDF5 installation
 		4. python setup.py install
-		
+
+4. Installing numexpr
+
+	4.1 Unix
+
+	pip install numexpr
+
+	4.2 Windows 32
+
+	You have to build it from source using the mingw gcc.
+	To work around issue TVB-1632 you have to edit setup.py.
+	    1. download the tar ball from the github page
+	    2. edit setup.py:141. Modify the extension_config_data.
+	        2.1 edit the key 'extra_compile_args' : ['-funroll-all-loops', '-O0', '-static-libgcc', '-static-libstdc++'],
+	        2.1 add the key 'extra_link_args' : ['-static-libgcc', '-static-libstdc++'],
+	    3. python setup.py build
+	    4. python setup.py install
+	    5. python -c "import numexpr;numexpr.test()"
+
 3. TVB externals
 
 	Almost all of the externals installation are straight forward, just go to the specific directory, and do a `python setup.py install`. 
