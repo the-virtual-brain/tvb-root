@@ -32,11 +32,8 @@
 .. moduleauthor:: Mihai Andrei <mihai.andrei@codemart.ro>
 """
 import numpy
-import json
-from tvb.basic.traits import traited_interface
 from tvb.core.adapters.abcadapter import ABCAsynchronous
 from tvb.core.entities.storage import dao
-from tvb.core.entities.transient.structure_entities import DataTypeMetaData
 from tvb.datatypes.connectivity import Connectivity
 from tvb.datatypes.projections import ProjectionRegionEEG
 from tvb.datatypes.surfaces import RegionMapping
@@ -48,56 +45,56 @@ class ConnectivityCreator(ABCAsynchronous):
     """
 
     def get_input_tree(self):
-        connectivity = Connectivity()
-        connectivity.trait.bound = traited_interface.INTERFACE_ATTRIBUTES_ONLY
-        inputList = connectivity.interface[traited_interface.INTERFACE_ATTRIBUTES]
-        return inputList
+        return [{'name': 'original_connectivity', 'label': 'Parent connectivity',
+                 'type': Connectivity, 'required': True, 'quantifier': 'manual'},
+                {'name': 'new_weights', 'label': 'Weights json array',
+                 'type': 'array', 'elementType': 'float', 'required': True, 'quantifier': 'manual'},
+                {'name': 'new_tracts', 'label': 'Tracts json array',
+                 'type': 'array', 'elementType': 'float', 'required': True, 'quantifier': 'manual'},
+                {'name': 'interest_area_indexes', 'label': 'Indices of selected nodes as json array',
+                 'type': 'array', 'elementType': 'int', 'required': True, 'quantifier': 'manual'},
+                {'name': 'is_branch', 'label': 'Is it a branch',
+                 'type': 'bool', 'required': True}]
 
 
     def get_output(self):
-        return [Connectivity]
+        return [Connectivity, RegionMapping, ProjectionRegionEEG]
 
 
-    def get_required_disk_size(self, original_connectivity, new_weights, new_tracts, interest_area_indexes, is_branch, **_):
-        n = len(json.loads(new_weights)) if is_branch else len(json.loads(interest_area_indexes))
+    def get_required_disk_size(self, original_connectivity, new_weights, new_tracts, interest_area_indexes, **kwargs):
+        n = len(new_weights) if kwargs.get('is_branch') else len(interest_area_indexes)
         matrices_nr_elems = 2 * n * n
         arrays_nr_elems = ( 1 + 3 + 1 + 3 ) * n  # areas, centres, hemispheres, orientations
+        matrices_estimate = (matrices_nr_elems + arrays_nr_elems) * numpy.array(0).itemsize
         labels_guesstimate = n * numpy.array(['some label']).nbytes
-        return (matrices_nr_elems + arrays_nr_elems) * numpy.array(0).itemsize + labels_guesstimate
+        return (matrices_estimate + labels_guesstimate)/1024
 
 
-    def get_required_memory_size(self, original_connectivity, new_weights, new_tracts, interest_area_indexes, is_branch, **_):
+    def get_required_memory_size(self, **_):
         return -1  # does not consume significant additional memory beyond the parameters
 
 
-    def launch(self, original_connectivity, new_weights, new_tracts, interest_area_indexes, is_branch, **_):
+    def launch(self, original_connectivity, new_weights, new_tracts, interest_area_indexes, **kwargs):
         """
         Method to be called when user submits changes on the
         Connectivity matrix in the Visualizer.
         """
-        conn = self.load_entity_by_gid(original_connectivity)
-        self.meta_data[DataTypeMetaData.KEY_SUBJECT] = conn.subject
-
-        new_weights = numpy.asarray(json.loads(new_weights), dtype=numpy.float64)
-        new_tracts = numpy.asarray(json.loads(new_tracts), dtype=numpy.float64)
-        interest_area_indexes = numpy.asarray(json.loads(interest_area_indexes))
-        is_branch = json.loads(is_branch)
-
-        if not is_branch:
-            result_connectivity = conn.cut_new_connectivity_from_ordered_arrays(new_weights, interest_area_indexes,
-                                                                                            self.storage_path, new_tracts)
+        # note: is_branch is missing instead of false because browsers only send checked boxes in forms.
+        if not kwargs.get('is_branch'):
+            result_connectivity = original_connectivity.cut_new_connectivity_from_ordered_arrays(
+                                        new_weights, interest_area_indexes, self.storage_path, new_tracts)
             return [result_connectivity]
         else:
             result = []
-            result_connectivity = conn.branch_connectivity_from_ordered_arrays(new_weights, interest_area_indexes,
-                                                                                     self.storage_path, new_tracts)
+            result_connectivity = original_connectivity.branch_connectivity_from_ordered_arrays(
+                                        new_weights, interest_area_indexes, self.storage_path, new_tracts)
             result.append(result_connectivity)
 
-            linked_region_mappings = dao.get_generic_entity(RegionMapping, original_connectivity, '_connectivity')
+            linked_region_mappings = dao.get_generic_entity(RegionMapping, original_connectivity.gid, '_connectivity')
             for mapping in linked_region_mappings:
                 result.append(mapping.generate_new_region_mapping(result_connectivity.gid, self.storage_path))
 
-            linked_projection = dao.get_generic_entity(ProjectionRegionEEG, original_connectivity, '_sources')
+            linked_projection = dao.get_generic_entity(ProjectionRegionEEG, original_connectivity.gid, '_sources')
             for projection in linked_projection:
                 result.append(projection.generate_new_projection(result_connectivity.gid, self.storage_path))
             return result

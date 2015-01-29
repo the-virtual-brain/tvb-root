@@ -499,13 +499,22 @@ function MATRIX_colorTable() {
     _updateLegendColors();
 }
 
-function saveSubConnectivity(isBranch) {
-    // clone the weights matrix
-    $("#newWeightsId").val($.toJSON(GVAR_interestAreaVariables[1].values));
-    $("#newTractsId").val($.toJSON(GVAR_interestAreaVariables[2].values));
-    $("#interestAreaNodeIndexesId").val($.toJSON(GVAR_interestAreaNodeIndexes));
-    $("#isBranch").val(isBranch);
-    $("#experimentFormId").submit();
+function saveSubConnectivity(submitUrl, originalConnectivityId,  isBranch) {
+    var data = {
+        original_connectivity: originalConnectivityId,
+        new_weights: $.toJSON(GVAR_interestAreaVariables[1].values),
+        new_tracts: $.toJSON(GVAR_interestAreaVariables[2].values),
+        interest_area_indexes: $.toJSON(GVAR_interestAreaNodeIndexes),
+        User_Tag_1_Perpetuated: $('#newConnectivityNameTag').val()
+    };
+    // Emulate the way browsers send checkboxes in forms.
+    // They send a value only for the checked ones. All values are true
+    if (isBranch){
+        data.is_branch = 'on';
+    }
+
+    doAjaxCall({ url: submitUrl, data: data });
+    displayMessage("Launched connectivity creator", "importantMessage");
 }
 
 /**

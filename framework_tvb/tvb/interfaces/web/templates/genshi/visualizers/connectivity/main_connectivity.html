@@ -82,24 +82,18 @@
 	<section id="scrollable-matrix-section" class="view-column matrix-controller col-2"
             py:with="nodeCount=len(pointsLabels);halfNodeCount=int(nodeCount / 2)">
 
-		<form id="experimentFormId" action="$submitURL" method="post">
-			<hgroup>
-				<h4><mark>Control</mark> Large Scale Matrices</h4>
-		        <input type="text" name="User_Tag_1_Perpetuated" value="" title="User name for the new Connectivity to be generated"/>
-			</hgroup>
-	    	<input type="hidden" id="newWeightsId" name="new_weights"/>
-	    	<input type="hidden" id="newTractsId" name="new_tracts"/>
-	        <input type="hidden" id="interestAreaNodeIndexesId" name="interest_area_indexes"/>
-	        <input type="hidden" id="originalConnectivityId" name="original_connectivity" value="$originalConnectivity"/>
-            <input type="hidden" id="isBranch" name="is_branch"/>
+        <hgroup>
+            <h4><mark>Control</mark> Large Scale Matrices</h4>
+            <input type="text" id="newConnectivityNameTag" value="" title="User name for the new Connectivity to be generated"/>
+        </hgroup>
 
-            <a href="#" tabindex='-1' onclick='saveSubConnectivity(false);'
-               class="action action-big-new action-new-connectivity column-control"
-               title="Create a new connectivity from the selected nodes">Create new</a>
-	    	<a href="#" tabindex='-1' onclick='saveSubConnectivity(true);'
-               class="action action-big-branch action-branch-connectivity column-control"
-               title="Clone the connectivity cutting the unselected edges">Branch</a>
-	    </form>
+        <a href="#" tabindex='-1' onclick='saveSubConnectivity("$submitURL", "$originalConnectivity", false);'
+           class="action action-big-new action-new-connectivity column-control"
+           title="Create a new connectivity from the selected nodes">Create new</a>
+
+        <a href="#" tabindex='-1' onclick='saveSubConnectivity("$submitURL", "$originalConnectivity", true);'
+           class="action action-big-branch action-branch-connectivity column-control"
+           title="Clone the connectivity cutting the unselected edges">Branch</a>
 
     <div id="chkList" class="matrix">
     	<ul class="matrix-switcher tabswitcher">

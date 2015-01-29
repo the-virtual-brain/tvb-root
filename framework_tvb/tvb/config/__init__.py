@@ -75,6 +75,9 @@ ISOCLINE_PSE_ADAPTER_CLASS = "IsoclinePSEAdapter"
 TVB_IMPORTER_MODULE = "tvb.adapters.uploaders.tvb_importer"
 TVB_IMPORTER_CLASS = "TVBImporter"
 
+CONNECTIVITY_CREATOR_MODULE = 'tvb.adapters.creators.connectivity_creator'
+CONNECTIVITY_CREATOR_CLASS = 'ConnectivityCreator'
+
 #DEFAULT_PORTLETS = {$tab_index: {$select_index_in_tab: '$portlet_identifier'}}
 DEFAULT_PORTLETS = {0: {0: 'TimeSeries'}}
 
