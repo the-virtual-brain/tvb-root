@@ -39,7 +39,8 @@ from tvb.basic.traits.core import KWARG_FILTERS_UI
 from tvb.core.adapters.abcdisplayer import ABCDisplayer
 from tvb.core.entities.storage import dao
 from tvb.datatypes.graph import ConnectivityMeasure
-from tvb.datatypes.surfaces import RegionMapping, FaceSurface
+from tvb.datatypes.surfaces import FaceSurface
+from tvb.datatypes.region_mapping import RegionMapping
 from tvb.datatypes.surfaces_data import SurfaceData
 
 

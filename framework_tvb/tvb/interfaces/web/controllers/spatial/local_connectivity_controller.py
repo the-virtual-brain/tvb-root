@@ -36,7 +36,7 @@
 import json
 import cherrypy
 
-from tvb.datatypes.surfaces import LocalConnectivity
+from tvb.datatypes.local_connectivity import LocalConnectivity
 from tvb.core.adapters.abcadapter import ABCAdapter
 from tvb.datatypes import surfaces_framework
 from tvb.interfaces.web.controllers import common

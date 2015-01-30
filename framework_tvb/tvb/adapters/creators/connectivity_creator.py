@@ -36,7 +36,7 @@ from tvb.core.adapters.abcadapter import ABCAsynchronous
 from tvb.core.entities.storage import dao
 from tvb.datatypes.connectivity import Connectivity
 from tvb.datatypes.projections import ProjectionRegionEEG
-from tvb.datatypes.surfaces import RegionMapping
+from tvb.datatypes.region_mapping import RegionMapping
 
 
 class ConnectivityCreator(ABCAsynchronous):

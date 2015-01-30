@@ -49,7 +49,8 @@ from tvb.datatypes.mapped_values import ValueWrapper
 from tvb.datatypes.time_series import TimeSeries
 from tvb.datatypes.connectivity import Connectivity
 from tvb.datatypes.surfaces_data import SurfaceData
-from tvb.datatypes.surfaces import RegionMapping, LocalConnectivity
+from tvb.datatypes.region_mapping import RegionMapping
+from tvb.datatypes.local_connectivity import LocalConnectivity
 from tvb.tests.framework.core.test_factory import TestFactory
 from tvb.tests.framework.adapters.storeadapter import StoreAdapter
 

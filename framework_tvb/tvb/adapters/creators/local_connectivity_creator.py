@@ -33,7 +33,7 @@
 """
 
 from tvb.core.adapters.abcadapter import ABCAsynchronous
-from tvb.datatypes.surfaces import LocalConnectivity
+from tvb.datatypes.local_connectivity import LocalConnectivity
 from tvb.datatypes.equations import Equation
 import tvb.basic.traits.traited_interface as interface
 

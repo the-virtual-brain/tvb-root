@@ -36,11 +36,14 @@ Framework methods for the Surface DataTypes.
 """
 
 import json
+
 import numpy
+
 import tvb.datatypes.surfaces_data as surfaces_data
 import tvb.basic.traits.exceptions as exceptions
 from tvb.basic.profile import TvbProfile
 from tvb.basic.logger.builder import get_logger
+
 
 LOG = get_logger(__name__)
 
@@ -575,61 +578,3 @@ class FaceSurfaceFramework(surfaces_data.FaceSurfaceData, OpenSurfaceFramework):
     pass
 
 ##--------------------- OPEN SURFACES End Here---------------------------------------##
-
-##--------------------- SURFACES ADJIACENT classes start Here---------------------------------------##
-
-
-class RegionMappingFramework(surfaces_data.RegionMappingData):
-    """ 
-    Framework methods regarding RegionMapping DataType.
-    """
-    __tablename__ = None
-
-    def get_region_mapping_slice(self, start_idx, end_idx):
-        """
-        Get a slice of the region mapping as used by the region viewers.
-        For each vertex on the surface, alpha-indices will be the closest
-        region-index
-        :param start_idx: vertex index on the surface
-        :param end_idx: vertex index on the surface
-        :return: NumPy array with [colosest_reg_idx ...]
-        """
-        if isinstance(start_idx, (str, unicode)):
-            start_idx = int(start_idx)
-        if isinstance(end_idx, (str, unicode)):
-            end_idx = int(end_idx)
-
-        return self.array_data[start_idx: end_idx].T
-    
-    
-    def generate_new_region_mapping(self, connectivity_gid, storage_path):
-        """
-        Generate a new region mapping with the given connectivity gid from an 
-        existing mapping corresponding to the parent connectivity.
-        """
-        new_region_map = self.__class__()
-        new_region_map.storage_path = storage_path
-        new_region_map._connectivity = connectivity_gid
-        new_region_map._surface = self._surface
-        new_region_map.array_data = self.array_data
-        return new_region_map
-    
-    
-class LocalConnectivityFramework(surfaces_data.LocalConnectivityData):
-    """ This class exists to add framework methods to LocalConnectivityData """
-    __tablename__ = None
-
-    def get_min_max_values(self):
-        """
-        Retrieve the minimum and maximum values from the metadata.
-        :returns: (minimum_value, maximum_value)
-        """
-        metadata = self.get_metadata('matrix')
-        return metadata[self.METADATA_ARRAY_MIN], metadata[self.METADATA_ARRAY_MAX]
-    
-    
-class CortexFramework(surfaces_data.CortexData, CorticalSurfaceFramework):
-    """ This class exists to add framework methods to CortexData """
-    __tablename__ = None
-    
-    

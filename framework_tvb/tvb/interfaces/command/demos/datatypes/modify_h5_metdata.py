@@ -41,8 +41,7 @@ if __name__ == "__main__":
 import datetime
 from tvb.core.entities.storage import dao
 from tvb.core.traits.types_mapped import MappedType, SparseMatrix
-from tvb.datatypes.surfaces import LocalConnectivity
-
+from tvb.datatypes.local_connectivity import LocalConnectivity
 
 
 def update_localconnectivity_metadata(dt_id):

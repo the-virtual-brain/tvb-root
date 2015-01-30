@@ -34,11 +34,13 @@ Profiling example for running a stochastic surface simulation with EEG and BOLD.
 .. moduleauthor:: Marmaduke Woodman <mw@eml.cc>
 
 """
+from tvb.datatypes.cortex import Cortex
+from tvb.datatypes.local_connectivity import LocalConnectivity
 
 from tvb.simulator.lab import *
 from time import time
 
-lconn = surfaces.LocalConnectivity(
+lconn = LocalConnectivity(
     equation=equations.Gaussian(),
     cutoff=30.0,
     )
@@ -59,7 +61,7 @@ sim = simulator.Simulator(
             monitors.EEG(period=1e3/2 ** 10), # 1024 Hz
             monitors.Bold(period=500)       # 0.5  Hz
             ),
-        surface      = surfaces.Cortex(
+        surface      = Cortex(
             load_default=True,
             local_connectivity = lconn,
             coupling_strength  = array([0.01])

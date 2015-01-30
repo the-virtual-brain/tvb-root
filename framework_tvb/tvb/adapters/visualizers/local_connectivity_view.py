@@ -34,7 +34,7 @@
 
 import json
 from tvb.core.adapters.abcdisplayer import ABCDisplayer
-from tvb.datatypes.surfaces import LocalConnectivity
+from tvb.datatypes.local_connectivity import LocalConnectivity
 
 
 class LocalConnectivityViewer(ABCDisplayer):

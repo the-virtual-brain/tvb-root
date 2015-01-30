@@ -42,7 +42,8 @@ from tvb.basic.logger.builder import get_logger
 from tvb.basic.profile import TvbProfile
 from tvb.core.adapters.exceptions import LaunchException
 from tvb.core.entities.file.files_helper import FilesHelper
-from tvb.datatypes.surfaces import RegionMapping, CorticalSurface
+from tvb.datatypes.surfaces import CorticalSurface
+from tvb.datatypes.region_mapping import RegionMapping
 from tvb.datatypes.connectivity import Connectivity
 
 

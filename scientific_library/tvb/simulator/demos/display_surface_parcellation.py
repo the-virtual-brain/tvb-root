@@ -33,13 +33,14 @@
 .. moduleauthor:: Stuart A. Knock <stuart.knock@gmail.com>
 
 """
+from tvb.datatypes.cortex import Cortex
 
 from tvb.simulator.lab import *
 from tvb.simulator.region_boundaries import RegionBoundaries
 from tvb.simulator.region_colours import RegionColours 
 
 
-CORTEX = surfaces.Cortex.from_file()
+CORTEX = Cortex.from_file()
 CORTEX_BOUNDARIES = RegionBoundaries(CORTEX)
 
 region_colours = RegionColours(CORTEX_BOUNDARIES.region_neighbours)

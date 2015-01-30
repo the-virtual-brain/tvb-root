@@ -86,8 +86,10 @@ An example for EEG
 import os
 
 #NOTE: Using built in saves, a single run with saved data will require ~10 GB of
-#      free space,.. 
-OM_SAVE_SUFFIX = ".bin"  #NOTE: ".mat" segfaults, ".txt" truncates precision. 
+#      free space,..
+from tvb.datatypes.cortex import Cortex
+
+OM_SAVE_SUFFIX = ".bin"  #NOTE: ".mat" segfaults, ".txt" truncates precision.
 OM_STORAGE_DIR = os.path.expanduser(os.path.join("~", "TVB", "openmeeg"))
 if not os.path.isdir(OM_STORAGE_DIR):
     os.mkdir(OM_STORAGE_DIR)
@@ -148,7 +150,7 @@ class ProjectionMatrix(core.Type):
         required = True,
         doc = """A dictionary representing the conductances of ...""")
 
-    sources = surfaces_module.Cortex(
+    sources = Cortex(
         label = "surface and auxillary for surface sim",
         default = None,
         required = True,
@@ -202,7 +204,7 @@ class ProjectionMatrix(core.Type):
         self.om_sensors = self.create_om_sensors()
 
         # Calculate based on type of sources
-        if isinstance(self.sources, surfaces_module.Cortex):
+        if isinstance(self.sources, Cortex):
             self.om_source_matrix = self.surface_source() #NOTE: ~1 hr
         elif isinstance(self.sources, connectivity_module.Connectivity):
             self.om_source_matrix = self.dipole_source()
@@ -212,7 +214,7 @@ class ProjectionMatrix(core.Type):
             self.om_head2sensor = self.head2eeg()
         elif isinstance(self.sensors, sensors_module.SensorsMEG):
             self.om_head2sensor = self.head2meg()
-            if isinstance(self.sources, surfaces_module.Cortex):
+            if isinstance(self.sources, Cortex):
                 self.om_source2sensor = self.surf2meg()
             elif isinstance(self.sources, connectivity_module.Connectivity):
                 self.om_source2sensor = self.dip2meg()
@@ -286,7 +288,7 @@ class ProjectionMatrix(core.Type):
         if isinstance(self.sources, connectivity_module.Connectivity):
             sources_file = self._tvb_connectivity_to_txt("sources.txt")
             om_sources = om.Matrix()
-        elif isinstance(self.sources, surfaces_module.Cortex):
+        elif isinstance(self.sources, Cortex):
             sources_file = self._tvb_surface_to_tri("sources.tri")
             om_sources = om.Mesh()
         else:

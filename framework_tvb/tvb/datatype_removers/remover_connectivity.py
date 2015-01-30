@@ -37,7 +37,7 @@ Created on Nov 1, 2011
 from tvb.core.entities.storage import dao
 from tvb.core.adapters.abcremover import ABCRemover
 from tvb.datatypes.connectivity import Connectivity
-from tvb.datatypes.surfaces import RegionMapping
+from tvb.datatypes.region_mapping import RegionMapping
 from tvb.datatypes.time_series import TimeSeriesRegion
 from tvb.datatypes.patterns_data import StimuliRegionData
 from tvb.datatypes.graph import ConnectivityMeasure

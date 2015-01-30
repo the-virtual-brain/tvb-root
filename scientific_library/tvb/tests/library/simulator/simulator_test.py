@@ -40,6 +40,9 @@ schemes (region and surface based simulations).
 #TODO: check the defaults of simulator.Simulator() (?)
 #TODO: continuation support or maybe test that particular feature elsewhere
 #TODO: explicitly define a test for each model, integrator and monitor (?)
+from tvb.datatypes.cortex import Cortex
+from tvb.datatypes.local_connectivity import LocalConnectivity
+from tvb.datatypes.region_mapping import RegionMapping
 
 if __name__ == "__main__":
     from tvb.tests.library import setup_test_console_env
@@ -134,10 +137,10 @@ class Simulator(object):
         if default_connectivity:
             white_matter = connectivity.Connectivity(load_default=True)
             # NOTE: This is the default region mapping should consider changing the name.
-            region_mapping = surfaces.RegionMapping.from_file(source_file="cortex_reg13/region_mapping/o52r00_irp2008_hemisphere_both_subcortical_false_regions_74.txt.bz2")
+            region_mapping = RegionMapping.from_file(source_file="cortex_reg13/region_mapping/o52r00_irp2008_hemisphere_both_subcortical_false_regions_74.txt.bz2")
         else:
             white_matter = connectivity.Connectivity.from_file(source_file="connectivity_190.zip")
-            region_mapping = surfaces.RegionMapping.from_file(source_file="cortex_reg13/region_mapping/o52r00_irp2008_hemisphere_both_subcortical_true_regions_190.txt.bz2")
+            region_mapping = RegionMapping.from_file(source_file="cortex_reg13/region_mapping/o52r00_irp2008_hemisphere_both_subcortical_true_regions_190.txt.bz2")
 
             
 
@@ -154,9 +157,9 @@ class Simulator(object):
         
         if surface_sim:
             local_coupling_strength = numpy.array([2 ** -10])
-            default_cortex = surfaces.Cortex(load_default=True, region_mapping_data=region_mapping)
+            default_cortex = Cortex(load_default=True, region_mapping_data=region_mapping)
             default_cortex.coupling_strength = local_coupling_strength
-            default_cortex.local_connectivity = surfaces.LocalConnectivity(load_default=default_connectivity,
+            default_cortex.local_connectivity = LocalConnectivity(load_default=default_connectivity,
                                                                            surface=default_cortex)
         else: 
             default_cortex = None

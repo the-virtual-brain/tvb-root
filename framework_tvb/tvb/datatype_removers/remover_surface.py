@@ -35,7 +35,8 @@
 from tvb.core.entities.storage import dao
 from tvb.core.adapters.abcremover import ABCRemover
 from tvb.datatypes.time_series import TimeSeriesSurface
-from tvb.datatypes.surfaces import LocalConnectivity, RegionMapping
+from tvb.datatypes.region_mapping import RegionMapping
+from tvb.datatypes.local_connectivity import LocalConnectivity
 from tvb.datatypes.patterns_data import StimuliSurfaceData
 from tvb.core.services.exceptions import RemoveDataTypeException
 

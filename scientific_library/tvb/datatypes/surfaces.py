@@ -39,10 +39,11 @@ methods that are associated with the surfaces data.
 
 import os
 import numpy
+
 from tvb.datatypes import surfaces_scientific
 from tvb.datatypes import surfaces_framework
 from tvb.datatypes import surfaces_data
-from tvb.basic.readers import FileReader, ZipReader, try_get_absolute_path
+from tvb.basic.readers import ZipReader, try_get_absolute_path
 
 
 CORTICAL = surfaces_data.CORTICAL
@@ -290,146 +291,6 @@ class FaceSurface(surfaces_scientific.FaceSurfaceScientific, surfaces_framework.
 
 
 ##--------------------- SURFACES ADJIACENT classes start Here---------------------------------------##
-
-
-class RegionMapping(surfaces_framework.RegionMappingFramework, surfaces_scientific.RegionMappingScientific):
-    """ 
-    This class brings together the scientific and framework methods that are
-    associated with the RegionMapping dataType.
-    
-    ::
-        
-                        RegionMappingData
-                                 |
-                                / \\
-          RegionMappingFramework   RegionMappingScientific
-                                \ /
-                                 |
-                          RegionMapping
-        
-    
-    """
-
-    @staticmethod
-    def from_file(source_file=os.path.join("cortex_reg13", "region_mapping",
-                                           "o52r00_irp2008_hemisphere_both_subcortical_false_regions_74.txt.bz2"),
-                  instance=None):
-
-        if instance is None:
-            result = RegionMapping()
-        else:
-            result = instance
-
-        source_full_path = try_get_absolute_path("tvb_data.surfaceData", source_file)
-        reader = FileReader(source_full_path)
-
-        result.array_data = reader.read_array(dtype=numpy.int32)
-        return result
-
-
-
-class LocalConnectivity(surfaces_scientific.LocalConnectivityScientific, surfaces_framework.LocalConnectivityFramework):
-    """ 
-    This class brings together the scientific and framework methods that are
-    associated with the LocalConnectivity dataType.
-    
-    ::
-        
-                       LocalConnectivityData
-                                 |
-                                / \\
-      LocalConnectivityFramework   LocalConnectivityScientific
-                                \ /
-                                 |
-                         LocalConnectivity
-        
-    
-    """
-
-    @staticmethod
-    def from_file(source_file=os.path.join("cortex_reg13", "local_connectivity_surface_cortex_reg13.mat"),
-                  instance=None):
-
-        if instance is None:
-            result = LocalConnectivity()
-        else:
-            result = instance
-
-        source_full_path = try_get_absolute_path("tvb_data.surfaceData", source_file)
-        reader = FileReader(source_full_path)
-
-        result.matrix = reader.read_array(matlab_data_name="LocalCoupling")
-        return result
-
-
-
-class Cortex(surfaces_scientific.CortexScientific, surfaces_framework.CortexFramework, CorticalSurface):
-    """ 
-    This class brings together the scientific and framework methods that are
-    associated with the Cortex dataType.
-    
-    ::
-        
-                             CortexData
-                                 |
-                                / \\
-                 CortexFramework   CortexScientific
-                                \ /
-                                 |
-                               Cortex
-        
-    
-    """
-
-
-    @classmethod
-    def from_file(cls, source_file=os.path.join("cortex_reg13", "surface_cortex_reg13.zip"),
-                  region_mapping_file=os.path.join("cortex_reg13", "region_mapping",
-                                                   "o52r00_irp2008_hemisphere_both_subcortical_false_regions_74.txt.bz2"),
-                  local_connectivity_file=None, eeg_projection_file=None, instance=None):
-
-        result = super(Cortex, cls).from_file(source_file, instance)
-
-        if instance is not None:
-            # Called through constructor directly
-            if result.region_mapping is None:
-                result.region_mapping_data = RegionMapping.from_file()
-
-            if not result.eeg_projection:
-                result.eeg_projection = Cortex.from_file_projection_array()
-
-            if result.local_connectivity is None:
-                result.local_connectivity = LocalConnectivity.from_file()
-
-        if region_mapping_file is not None:
-            result.region_mapping_data = RegionMapping.from_file(region_mapping_file)
-
-        if local_connectivity_file is not None:
-            result.local_connectivity = LocalConnectivity.from_file(local_connectivity_file)
-
-        if eeg_projection_file is not None:
-            result.eeg_projection = Cortex.from_file_projection_array(eeg_projection_file)
-
-        return result
-
-
-    @staticmethod
-    def from_file_projection_array(source_file="surface_reg_13_eeg_62.mat", matlab_data_name="ProjectionMatrix"):
-
-        source_full_path = try_get_absolute_path("tvb_data.projectionMatrix", source_file)
-        reader = FileReader(source_full_path)
-
-        return reader.read_array(matlab_data_name=matlab_data_name)
-
-
-    @staticmethod
-    def from_file_region_mapping_array(source_file=os.path.join("cortex_reg13", "all_regions_cortex_reg13.txt")):
-
-        source_full_path = try_get_absolute_path("tvb_data.surfaceData", source_file)
-        reader = FileReader(source_full_path)
-
-        return reader.read_array(dtype=numpy.int32)
-
 
 
 def make_surface(surface_type):

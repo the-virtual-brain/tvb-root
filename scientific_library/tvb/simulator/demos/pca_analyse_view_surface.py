@@ -38,6 +38,7 @@ PCA analysis and visualisation demo.
 .. moduleauthor:: Stuart A. Knock <stuart.knock@gmail.com>
 
 """
+from tvb.datatypes.cortex import Cortex
 
 from tvb.simulator.lab import *
 from tvb.datatypes.time_series import TimeSeriesSurface
@@ -55,7 +56,7 @@ except IOError:
 period = 0.00048828125  # s
 
 #Initialse a default surface
-default_cortex = surfaces.Cortex.from_file()
+default_cortex = Cortex.from_file()
 
 #Put the data into a TimeSeriesSurface datatype
 tsr = TimeSeriesSurface(surface=default_cortex,

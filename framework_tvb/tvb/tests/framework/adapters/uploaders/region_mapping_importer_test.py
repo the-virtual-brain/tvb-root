@@ -44,7 +44,8 @@ from tvb.core.entities.transient.structure_entities import DataTypeMetaData
 from tvb.core.services.flow_service import FlowService
 from tvb.core.services.exceptions import OperationException
 from tvb.core.adapters.abcadapter import ABCAdapter
-from tvb.datatypes.surfaces import RegionMapping, CorticalSurface  
+from tvb.datatypes.surfaces import CorticalSurface
+from tvb.datatypes.region_mapping import RegionMapping
 from tvb.datatypes.connectivity import Connectivity
 
 

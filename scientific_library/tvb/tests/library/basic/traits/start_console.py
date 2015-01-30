@@ -31,6 +31,8 @@
 """
 .. moduleauthor:: Lia Domide <lia.domide@codemart.ro>
 """
+from tvb.datatypes.cortex import Cortex
+from tvb.datatypes.local_connectivity import LocalConnectivity
 
 if __name__ == "__main__":
     from tvb.tests.library import setup_test_console_env
@@ -50,7 +52,7 @@ class ConsoleTraitedTest(BaseTestCase):
         """
         Test scientific methods are executed
         """
-        default_cortex = surfaces.Cortex.from_file()
+        default_cortex = Cortex.from_file()
         default_cortex.coupling_strength = 0.0121
         self.assertTrue(default_cortex.local_connectivity is None)
 
@@ -58,8 +60,8 @@ class ConsoleTraitedTest(BaseTestCase):
         #default_cortex.compute_local_connectivity()
         #self.assertTrue(default_cortex.local_connectivity is not None)
 
-        default_lc = surfaces.LocalConnectivity(load_default=True, cutoff=2)
-        other_cortex = surfaces.Cortex(local_connectivity=default_lc)
+        default_lc = LocalConnectivity(load_default=True, cutoff=2)
+        other_cortex = Cortex(local_connectivity=default_lc)
         self.assertTrue(other_cortex.local_connectivity is not None)
 
 

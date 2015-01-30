@@ -38,6 +38,7 @@ Demonstrate using the simulator for a surface simulation.
 .. moduleauthor:: Stuart A. Knock <stuart.knock@gmail.com>
 
 """
+from tvb.datatypes.cortex import Cortex
 
 from tvb.simulator.lab import *
 
@@ -66,7 +67,7 @@ what_to_watch = (mon_tavg, mon_savg, mon_eeg)
 
 #Initialise a surface
 local_coupling_strength = numpy.array([2 ** -6])
-default_cortex = surfaces.Cortex(load_default=True)
+default_cortex = Cortex(load_default=True)
 default_cortex.coupling_strength = local_coupling_strength
 
 ##NOTE: THIS IS AN EXAMPLE OF DESCRIBING A SURFACE STIMULUS AT REGIONS LEVEL. 

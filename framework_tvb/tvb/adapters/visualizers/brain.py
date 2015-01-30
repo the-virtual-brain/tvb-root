@@ -43,7 +43,8 @@ from tvb.adapters.visualizers.sensors import prepare_mapped_sensors_as_measure_p
 from tvb.basic.filters.chain import FilterChain
 from tvb.core.entities.storage import dao
 from tvb.core.adapters.abcdisplayer import ABCDisplayer
-from tvb.datatypes.surfaces import RegionMapping, EEGCap
+from tvb.datatypes.surfaces import EEGCap
+from tvb.datatypes.region_mapping import RegionMapping
 from tvb.datatypes.surfaces_data import SurfaceData
 from tvb.datatypes.time_series import TimeSeries, TimeSeriesSurface, TimeSeriesSEEG, TimeSeriesEEG, TimeSeriesRegion
 

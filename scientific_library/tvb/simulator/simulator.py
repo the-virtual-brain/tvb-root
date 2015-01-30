@@ -45,6 +45,7 @@ from tvb.basic.profile import TvbProfile
 import tvb.basic.traits.core as core
 import tvb.basic.traits.types_basic as basic
 from tvb.basic.filters.chain import UIFilter, FilterChain
+from tvb.datatypes.cortex import Cortex
 
 import tvb.simulator.models as models_module
 import tvb.simulator.integrators as integrators_module
@@ -131,7 +132,7 @@ class Simulator(core.Type):
         dynamic equations of the Model. Its primary purpose is to 'rescale' the
         incoming activity to a level appropriate to Model.""")
 
-    surface = surfaces_dtype.Cortex(
+    surface = Cortex(
         label="Cortical surface",
         default=None,
         order=3,

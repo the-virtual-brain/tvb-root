@@ -37,6 +37,7 @@ Upgrade script from H5 version 2 to version 3
 import os
 from tvb.basic.profile import TvbProfile
 from tvb.core.entities.file.exceptions import FileVersioningException
+from tvb.core.entities.transient.structure_entities import DataTypeMetaData
 from tvb.core.services.import_service import ImportService
 from tvb.core.traits.types_mapped import SparseMatrix, MappedType
 
@@ -50,11 +51,16 @@ def _update_localconnectivity_metadata(dt):
                  MappedType.METADATA_ARRAY_SHAPE: str(mtx.shape),
                  MappedType.METADATA_ARRAY_MAX: mtx.data.max(),
                  MappedType.METADATA_ARRAY_MIN: mtx.data.min(),
-                 MappedType.METADATA_ARRAY_MEAN: mtx.mean()}
+                 MappedType.METADATA_ARRAY_MEAN: mtx.mean(),
+                 DataTypeMetaData.KEY_MODULE: "tvb.datatypes.local_connectivity"}
 
     data_group_path = SparseMatrix.ROOT_PATH + 'matrix'
     dt.set_metadata(info_dict, '', True, data_group_path)
 
+
+def _update_region_mapping_metadata(dt):
+    info_dict = {DataTypeMetaData.KEY_MODULE: "tvb.datatypes.region_mapping"}
+    dt.set_metadata(info_dict)
 
 
 def update(input_file):
@@ -75,6 +81,8 @@ def update(input_file):
     datatype = service.load_datatype_from_file(folder, file_name, operation_id, move=False)
     if datatype.type == "LocalConnectivity":
         _update_localconnectivity_metadata(datatype)
+    elif datatype.type == "RegionMapping":
+        _update_region_mapping_metadata(datatype)
 
     root_metadata = datatype.get_metadata()
     root_metadata[TvbProfile.current.version.DATA_VERSION_ATTRIBUTE] = TvbProfile.current.version.DATA_VERSION

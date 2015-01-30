@@ -39,6 +39,7 @@ intergation.
 .. moduleauthor:: Stuart A. Knock <stuart.knock@gmail.com>
 
 """
+from tvb.datatypes.cortex import Cortex
 
 from tvb.simulator.lab import *
 
@@ -66,7 +67,7 @@ mon_eeg = monitors.EEG(period=2 ** -2)
 what_to_watch = (mon_tavg, mon_savg, mon_eeg)
 
 #Initialise a surface fully loaded
-default_cortex = surfaces.Cortex(load_default=True)
+default_cortex = Cortex(load_default=True)
 
 #Initialise Simulator -- Model, Connectivity, Integrator, Monitors, and surface.
 sim = simulator.Simulator(model=rfhn, connectivity=white_matter,

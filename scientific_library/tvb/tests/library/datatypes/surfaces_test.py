@@ -31,6 +31,9 @@
 """
 .. moduleauthor:: Bogdan Neacsa <bogdan.neacsa@codemart.ro>
 """
+from tvb.datatypes.cortex import Cortex
+from tvb.datatypes.local_connectivity import LocalConnectivity
+from tvb.datatypes.region_mapping import RegionMapping
 
 if __name__ == "__main__":
     from tvb.tests.library import setup_test_console_env
@@ -198,24 +201,24 @@ class SurfacesTest(BaseTestCase):
 
 
     def test_regionmapping(self):
-        dt = surfaces.RegionMapping(load_default=True)
-        self.assertTrue(isinstance(dt, surfaces.RegionMapping))
+        dt = RegionMapping(load_default=True)
+        self.assertTrue(isinstance(dt, RegionMapping))
         self.assertEqual(dt.shape, (16384,))
 
 
     def test_localconnectivity_empty(self):
-        dt = surfaces.LocalConnectivity()
+        dt = LocalConnectivity()
         self.assertTrue(dt.surface is None)
 
 
     @unittest.skipIf(sys.maxsize <= 2147483647, "Cannot deal with local connectivity on a 32-bit machine.")
     def test_cortexdata(self):
 
-        dt = surfaces.Cortex(load_default=True)
-        self.assertTrue(isinstance(dt, surfaces.Cortex))
+        dt = Cortex(load_default=True)
+        self.assertTrue(isinstance(dt, Cortex))
         self.assertTrue(dt.region_mapping is not None)
         ## Initialize Local Connectivity, to avoid long computation time.
-        dt.local_connectivity = surfaces.LocalConnectivity(load_default=True)
+        dt.local_connectivity = LocalConnectivity(load_default=True)
 
         dt.configure()
         summary_info = dt.summary_info

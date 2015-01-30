@@ -39,6 +39,8 @@ Generate 8.125 seconds of 2048 Hz data at the surface level, stochastic integrat
 .. moduleauthor:: Stuart A. Knock <stuart.knock@gmail.com>
 
 """
+from tvb.datatypes.cortex import Cortex
+from tvb.datatypes.local_connectivity import LocalConnectivity
 
 from tvb.simulator.lab import *
 
@@ -68,14 +70,14 @@ what_to_watch = monitors.TemporalAverage(period=0.48828125)     # 2048Hz => peri
 #Initialise a surface
 local_coupling_strength = numpy.array([0.0115])
 
-grey_matter = surfaces.LocalConnectivity(load_default=True)
+grey_matter = LocalConnectivity(load_default=True)
 grey_matter.cutoff = 60.0
 grey_matter.equation.parameters['sigma1'] = 10.0
 grey_matter.equation.parameters['sigma2'] = 20.0
 grey_matter.equation.parameters['amp1'] = 1.0
 grey_matter.equation.parameters['amp2'] = 0.5
 
-default_cortex = surfaces.Cortex.from_file()
+default_cortex = Cortex.from_file()
 default_cortex.local_connectivity = grey_matter
 default_cortex.coupling_strength = local_coupling_strength
 

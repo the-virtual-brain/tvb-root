@@ -35,7 +35,8 @@
 import unittest
 from tvb.adapters.visualizers.surface_view import SurfaceViewer, RegionMappingViewer
 from tvb.core.entities.file.files_helper import FilesHelper
-from tvb.datatypes.surfaces import CorticalSurface, RegionMapping
+from tvb.datatypes.surfaces import CorticalSurface
+from tvb.datatypes.region_mapping import RegionMapping
 from tvb.tests.framework.core.test_factory import TestFactory
 from tvb.tests.framework.core.base_testcase import TransactionalTestCase
 

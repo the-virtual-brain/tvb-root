@@ -38,6 +38,8 @@ Demonstrate using the simulator for a surface simulation.
 .. moduleauthor:: Stuart A. Knock <Stuart@tvb.invalid>
 
 """
+from tvb.datatypes.cortex import Cortex
+from tvb.datatypes.local_connectivity import LocalConnectivity
 
 from tvb.simulator.lab import *
 
@@ -67,12 +69,12 @@ what_to_watch = (mon_tavg, mon_savg, mon_eeg)
 #Initialise a surface
 local_coupling_strength = numpy.array([0.0121])
 
-grey_matter = surfaces.LocalConnectivity(equation=equations.Gaussian(),
+grey_matter = LocalConnectivity(equation=equations.Gaussian(),
                                          cutoff=60.0)
 grey_matter.equation.parameters['sigma'] = 10.0
 grey_matter.equation.parameters['amp'] = 0.0
 
-default_cortex = surfaces.Cortex(load_default=True,
+default_cortex = Cortex(load_default=True,
                                  local_connectivity=grey_matter,
                                  coupling_strength=local_coupling_strength)
 

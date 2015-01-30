@@ -49,7 +49,7 @@ from tvb.core.adapters.abcadapter import ABCAsynchronous
 from tvb.core.adapters.exceptions import LaunchException
 from tvb.basic.traits.parameters_factory import get_traited_subclasses
 from tvb.datatypes.equations import HRFKernelEquation
-from tvb.datatypes.surfaces import Cortex
+from tvb.datatypes.cortex import Cortex
 from tvb.datatypes.simulation_state import SimulationState
 from tvb.datatypes import noise_framework
 import tvb.datatypes.time_series as time_series

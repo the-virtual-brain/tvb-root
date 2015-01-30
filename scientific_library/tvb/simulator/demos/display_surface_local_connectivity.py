@@ -38,6 +38,8 @@ Display the local connectivity kernel definining the local coupling strength for
 .. moduleauthor:: Paula Sanz Leon <Paula@tvb.invalid>
 
 """
+from tvb.datatypes.cortex import Cortex
+from tvb.datatypes.local_connectivity import LocalConnectivity
 
 from tvb.simulator.lab import *
 
@@ -48,7 +50,7 @@ from tvb.simulator.lab import *
 LOG.info("Configuring...")
 #Initialise a surface:
 #First define the function describing the "local" connectivity.
-grey_matter = surfaces.LocalConnectivity(cutoff=20.0)
+grey_matter = LocalConnectivity(cutoff=20.0)
 grey_matter.equation.parameters['sigma'] = 10.0
 grey_matter.equation.parameters['amp'] = 1.0
 
@@ -56,7 +58,7 @@ grey_matter.equation.parameters['amp'] = 1.0
 local_coupling_strength = numpy.array([0.0115])
 
 #finally, create a default cortex that includes the custom local connectivity.
-default_cortex = surfaces.Cortex.from_file()
+default_cortex = Cortex.from_file()
 default_cortex.local_connectivity = grey_matter
 default_cortex.coupling_strength = local_coupling_strength
 default_cortex.configure()
