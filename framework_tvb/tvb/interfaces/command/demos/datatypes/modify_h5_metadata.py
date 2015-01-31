@@ -40,7 +40,7 @@ if __name__ == "__main__":
 
 import datetime
 from tvb.core.entities.storage import dao
-from tvb.core.traits.types_mapped import MappedType, SparseMatrix
+from tvb.core.traits.types_mapped import SparseMatrix
 from tvb.datatypes.local_connectivity import LocalConnectivity
 
 
@@ -48,12 +48,7 @@ def update_localconnectivity_metadata(dt_id):
     dt = dao.get_generic_entity(LocalConnectivity, dt_id)[0]
 
     mtx = dt.matrix
-    info_dict = {SparseMatrix.DTYPE_META: mtx.dtype.str,
-                 SparseMatrix.FORMAT_META: mtx.format,
-                 MappedType.METADATA_ARRAY_SHAPE: str(mtx.shape),
-                 MappedType.METADATA_ARRAY_MAX: mtx.data.max(),
-                 MappedType.METADATA_ARRAY_MIN: mtx.data.min(),
-                 MappedType.METADATA_ARRAY_MEAN: mtx.mean()}
+    info_dict = SparseMatrix.extract_sparse_matrix_metadata(mtx)
 
     data_group_path = SparseMatrix.ROOT_PATH + 'matrix'
     dt.set_metadata(info_dict, '', True, data_group_path)

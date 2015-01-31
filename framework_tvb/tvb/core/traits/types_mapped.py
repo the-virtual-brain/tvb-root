@@ -652,6 +652,17 @@ class SparseMatrix(mapped.SparseMatrix, Array):
 
 
     @staticmethod
+    def extract_sparse_matrix_metadata(mtx):
+        info_dict = {SparseMatrix.DTYPE_META: mtx.dtype.str,
+                     SparseMatrix.FORMAT_META: mtx.format,
+                     MappedType.METADATA_ARRAY_SHAPE: str(mtx.shape),
+                     MappedType.METADATA_ARRAY_MAX: mtx.data.max(),
+                     MappedType.METADATA_ARRAY_MIN: mtx.data.min(),
+                     MappedType.METADATA_ARRAY_MEAN: mtx.mean()}
+        return info_dict
+
+
+    @staticmethod
     def _store_sparse_matrix(inst, mtx, data_name):
         """    
         This method stores sparse matrix into H5 file.
@@ -659,13 +670,7 @@ class SparseMatrix(mapped.SparseMatrix, Array):
         :param mtx: sparse matrix to store
         :param data_name: name of data group which will contain sparse matrix details
         """
-        info_dict = {SparseMatrix.DTYPE_META: mtx.dtype.str,
-                     SparseMatrix.FORMAT_META: mtx.format,
-                     MappedType.METADATA_ARRAY_SHAPE: str(mtx.shape),
-                     MappedType.METADATA_ARRAY_MAX: mtx.data.max(),
-                     MappedType.METADATA_ARRAY_MIN: mtx.data.min(),
-                     MappedType.METADATA_ARRAY_MEAN: mtx.mean()}
-
+        info_dict = SparseMatrix.extract_sparse_matrix_metadata(mtx)
         data_group_path = SparseMatrix.ROOT_PATH + data_name
 
         # Store data and additional info

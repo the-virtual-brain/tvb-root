@@ -37,30 +37,21 @@ Upgrade script from H5 version 2 to version 3
 import os
 from tvb.basic.profile import TvbProfile
 from tvb.core.entities.file.exceptions import FileVersioningException
+from tvb.core.entities.file.hdf5_storage_manager import HDF5StorageManager
 from tvb.core.entities.transient.structure_entities import DataTypeMetaData
 from tvb.core.services.import_service import ImportService
-from tvb.core.traits.types_mapped import SparseMatrix, MappedType
+from tvb.core.traits.types_mapped import SparseMatrix
 
 
 
-def _update_localconnectivity_metadata(dt):
+def _update_localconnectivity_metadata(folder, file_name):
 
-    mtx = dt.matrix
-    info_dict = {SparseMatrix.DTYPE_META: mtx.dtype.str,
-                 SparseMatrix.FORMAT_META: mtx.format,
-                 MappedType.METADATA_ARRAY_SHAPE: str(mtx.shape),
-                 MappedType.METADATA_ARRAY_MAX: mtx.data.max(),
-                 MappedType.METADATA_ARRAY_MIN: mtx.data.min(),
-                 MappedType.METADATA_ARRAY_MEAN: mtx.mean(),
-                 DataTypeMetaData.KEY_MODULE: "tvb.datatypes.local_connectivity"}
+    service = ImportService()
+    operation_id = int(os.path.split(folder)[1])
 
-    data_group_path = SparseMatrix.ROOT_PATH + 'matrix'
-    dt.set_metadata(info_dict, '', True, data_group_path)
-
-
-def _update_region_mapping_metadata(dt):
-    info_dict = {DataTypeMetaData.KEY_MODULE: "tvb.datatypes.region_mapping"}
-    dt.set_metadata(info_dict)
+    dt = service.load_datatype_from_file(folder, file_name, operation_id, move=False)
+    info_dict = SparseMatrix.extract_sparse_matrix_metadata(dt.matrix)
+    dt.set_metadata(info_dict, '', True, SparseMatrix.ROOT_PATH + 'matrix')
 
 
 def update(input_file):
@@ -75,15 +66,19 @@ def update(input_file):
         raise FileVersioningException("The input path %s received for upgrading from 2 -> 3 is not a "
                                       "valid file on the disk." % input_file)
 
-    service = ImportService()
     folder, file_name = os.path.split(input_file)
-    operation_id = int(os.path.split(folder)[1])
-    datatype = service.load_datatype_from_file(folder, file_name, operation_id, move=False)
-    if datatype.type == "LocalConnectivity":
-        _update_localconnectivity_metadata(datatype)
-    elif datatype.type == "RegionMapping":
-        _update_region_mapping_metadata(datatype)
+    storage_manager = HDF5StorageManager(folder, file_name)
 
-    root_metadata = datatype.get_metadata()
+    root_metadata = storage_manager.get_metadata()
+    class_name = root_metadata[DataTypeMetaData.KEY_CLASS_NAME]
+
+    if class_name == "LocalConnectivity":
+        root_metadata[DataTypeMetaData.KEY_MODULE] = "tvb.datatypes.local_connectivity"
+        storage_manager.set_metadata(root_metadata)
+        _update_localconnectivity_metadata(folder, file_name)
+
+    elif class_name == "RegionMapping":
+        root_metadata[DataTypeMetaData.KEY_MODULE] = "tvb.datatypes.region_mapping"
+
     root_metadata[TvbProfile.current.version.DATA_VERSION_ATTRIBUTE] = TvbProfile.current.version.DATA_VERSION
-    datatype.set_metadata(root_metadata)
+    storage_manager.set_metadata(root_metadata)
