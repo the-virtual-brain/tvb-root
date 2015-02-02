@@ -14,7 +14,7 @@
 
 ## Initialize new 3rd party SYNCHRONIZATION REPO:
 
-    git svn clone -s -r6000:HEAD --no-minimize-url https://repo.thevirtualbrain.org/svn/tvb/trunk/ --trunk=tvb_documentation --prefix=svn/
+    git svn --authors-file=[authors.txt] clone -s -r6000:HEAD --no-minimize-url https://repo.thevirtualbrain.org/svn/tvb/trunk/ --trunk=tvb_documentation --prefix=svn/
     cd trunk
     git remote add github https://github.com/the-virtual-brain/tvb_documentation-docs.git
     git push github master
@@ -24,7 +24,7 @@
     # The above flag are not working on Windows
 
 ## Synchronize Git and SVN repositories:
-    git svn rebase
+    git svn --authors-file=[authors.txt] rebase
     git pull github [master]
     git push github
     git svn dcommit   (followed by multiple "git rebase --skip" and another "git svn dcommit")
