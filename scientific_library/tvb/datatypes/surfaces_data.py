@@ -51,6 +51,7 @@ OUTER_SKIN = "Skin Air"
 OUTER_SKULL = "Skull Skin"
 INNER_SKULL = "Brain Skull"
 CORTICAL = "Cortical Surface"
+WHITE_MATTER = "White Matter"
 EEG_CAP = "EEG Cap"
 FACE = "Face"
 
@@ -131,6 +132,20 @@ class SurfaceData(MappedType):
 
     __mapper_args__ = {'polymorphic_on': 'surface_type'}
 
+
+class WhiteMatterSurfaceData(SurfaceData):
+    """
+    The boundary between the white and gray matter
+    """
+
+    _ui_name = "A white matter surface"
+
+    surface_type = basic.String(default=WHITE_MATTER)
+
+    ##--------------------- FRAMEWORK ATTRIBUTES -----------------------------##
+    __tablename__ = None
+
+    __mapper_args__ = {'polymorphic_identity': WHITE_MATTER}
 
 
 class CorticalSurfaceData(SurfaceData):

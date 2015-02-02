@@ -44,6 +44,7 @@ from tvb.datatypes import surfaces_scientific
 from tvb.datatypes import surfaces_framework
 from tvb.datatypes import surfaces_data
 from tvb.basic.readers import ZipReader, try_get_absolute_path
+from tvb.datatypes.surfaces_data import WHITE_MATTER
 
 
 CORTICAL = surfaces_data.CORTICAL
@@ -114,6 +115,27 @@ class Surface(surfaces_scientific.SurfaceScientific, surfaces_framework.SurfaceF
         self.user_tag_3 = validation_result.summary()
         return validation_result
 
+
+
+class WhiteMatterSurface(surfaces_scientific.WhiteMatterSurfaceScientific,
+                      surfaces_framework.WhiteMatterSurfaceFramework, Surface):
+    """
+    This class brings together the scientific and framework methods that are
+    associated with the WhiteMatterSurface DataType.
+
+    ::
+
+                        WhiteMatterSurfaceData
+                                 |
+                                / \\
+        WhiteMatterSurfaceFramework   WhiteMatterSurfaceScientific
+                                \ /
+                                 |
+                          WhiteMatterSurface
+
+
+    """
+    __mapper_args__ = {'polymorphic_identity': WHITE_MATTER}
 
 
 class CorticalSurface(surfaces_scientific.CorticalSurfaceScientific,
@@ -311,6 +333,8 @@ def make_surface(surface_type):
         return EEGCap()
     elif surface_type == FACE:
         return FaceSurface()
+    elif surface_type == WHITE_MATTER:
+        return WhiteMatterSurface()
 
     return None
 
@@ -329,4 +353,5 @@ ALL_SURFACES_SELECTION = [{'name': 'Cortical Surface', 'value': CORTICAL},
                           {'name': 'Skull Skin', 'value': OUTER_SKULL},
                           {'name': 'Skin Air', 'value': OUTER_SKIN},
                           {'name': 'EEG Cap', 'value': EEG_CAP},
-                          {'name': 'Face Surface', 'value': FACE}]
+                          {'name': 'Face Surface', 'value': FACE},
+                          {'name': 'White Matter Surface', 'value':WHITE_MATTER}]

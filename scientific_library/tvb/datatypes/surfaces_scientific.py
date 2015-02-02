@@ -582,6 +582,9 @@ class SurfaceScientific(surfaces_data.SurfaceData):
         return equation.pattern
 
 
+class WhiteMatterSurfaceScientific(surfaces_data.WhiteMatterSurfaceData, SurfaceScientific):
+    pass
+
 
 class CorticalSurfaceScientific(surfaces_data.CorticalSurfaceData, SurfaceScientific):
     """ This class exists to add scientific methods to CorticalSurface """

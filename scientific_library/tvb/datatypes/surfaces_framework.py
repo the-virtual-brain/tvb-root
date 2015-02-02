@@ -538,6 +538,9 @@ class SurfaceFramework(surfaces_data.SurfaceData):
         return result_vertices, result_lines, result_normals
     
         
+class WhiteMatterSurfaceFramework(surfaces_data.WhiteMatterSurfaceData, SurfaceFramework):
+    pass
+
 
 class CorticalSurfaceFramework(surfaces_data.CorticalSurfaceData, SurfaceFramework):
     """ This class exists to add framework methods to CorticalSurfaceData """
