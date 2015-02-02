@@ -1,0 +1,9 @@
+lia.domide = liadomide <lia_domide@yahoo.com>
+stuart.knock = stuart-knock
+bogdan.neacsa = bogdanneacsa <bogdan.neacsa@genesys.com>
+marmaduke.woodman = maedoc <mw@eml.cc>
+tim.proix = timpx
+michael.burgstahler = twotribes <mburg@twotribes.de>
+paula.sanz-leon = pausz
+jan.fousek = i-Zaak <izaak@mail.muni.cz>
+mihai.andrei = mihandrei
