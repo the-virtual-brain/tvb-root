@@ -862,7 +862,7 @@ function showHelpOverlay(section, subsection) {
 function upgradeFileStorage() {
     doAjaxCall({
         overlay_timeout: 60 * 1000 * 60 * 4, //Timeout of 4 hours
-        overlay_data: {'message_data': "Due to upgrade from pytables to h5py we need to update all your stored data. Please be patient and don't close TVB during the process."},
+        overlay_data: {'message_data': "Due to upgrade in H5 structures, we need to update all your stored data. Please be patient and don't close TVB during the process."},
         showBlockerOverlay : true,
         type:'GET',
         url:'/user/upgrade_file_storage',
