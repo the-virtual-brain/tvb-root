@@ -224,19 +224,15 @@ class Model(core.Type):
 
         for tpt in xrange(tpts):
             for var in xrange(nvar):
-                loc[var] = self.state_variable_range[self.state_variables[var]].mean()
-                nsig[var] = (self.state_variable_range[self.state_variables[var]][1] -
-                             self.state_variable_range[self.state_variables[var]][0]) / 2.0
-                nsig[var] = nsig[var] / max_history_length
-
+                sv_range = self.state_variable_range[self.state_variables[var]]
+                lo, hi = sv_range
+                loc[var] = sv_range.mean()
+                nsig[var] = (hi - lo) / 2.0 / max_history_length
                 # define lower und upper bounds to truncate the random variates to the sv range.
-                lo = self.state_variable_range[self.state_variables[var]][0]
-                hi = self.state_variable_range[self.state_variables[var]][1]
                 lo_bound, up_bound = (lo - loc[var]) / nsig[var], (hi - loc[var]) / nsig[var]
 
                 noise[tpt, var, :] = self.noise.generate(history_shape, truncate=True,    # this is expensive for many state vars and long tpts
                                                          lo=lo_bound, hi=up_bound)
-
         for var in xrange(nvar):
             # TODO: Hackery (because unpublished method), validate me...-noise.mean(axis=0) ... self.noise.nsig.
             # perf hint: cumsum is expensive

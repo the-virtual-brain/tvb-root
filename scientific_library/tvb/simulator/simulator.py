@@ -404,27 +404,17 @@ class Simulator(core.Type):
         number_of_regions = self.connectivity.number_of_regions
         nsn = (number_of_regions, 1, number_of_regions)
 
-        #Create cvar index array of shape ...
-        cvar = numpy.tile(numpy.ones(nsn, dtype=numpy.int32), (1, ncvar, 1))
-        for k in range(0, ncvar):
-            cvar[:, k, :] = self.model.cvar[k] * cvar[:, k, :]
-        LOG.debug("%s: cvar shape is: %s" % (str(self), str(cvar.shape)))
-        LOG.debug("%s: cvars are : %s" % (str(self), str(numpy.unique(cvar))))
-
-        #reshaped connectivity.idelays for ...
-        idelays = self.connectivity.idelays.reshape(nsn)
-        idelays = numpy.tile(idelays, (1, ncvar, 1))
+        # cvar index array broadcastable to nodes, cvars, nodes
+        cvar = self.model.cvar[numpy.newaxis, :, numpy.newaxis]
+        LOG.debug("%s: cvar is: %s" % (str(self), str(cvar)))
+        # idelays array broadcastable to nodes, cvars, nodes
+        idelays = self.connectivity.idelays[:, numpy.newaxis, :]
         LOG.debug("%s: idelays shape is: %s" % (str(self), str(idelays.shape)))
-
-        #reshaped connectivity.weights for ...
-        weights = self.connectivity.weights.reshape(nsn + (1,))
-        weights = numpy.tile(weights, (1, ncvar, 1, self.model.number_of_modes))
+        # weights array broadcastable to nodes, cva, nodes, modes
+        weights = self.connectivity.weights[:, numpy.newaxis, :, numpy.newaxis]
         LOG.debug("%s: weights shape is: %s" % (str(self), str(weights.shape)))
-
-        #Create node index array of shape ...
-        node_ids = numpy.tile(numpy.arange(number_of_regions)[:, numpy.newaxis],
-                              (1, number_of_regions)).reshape(nsn)
-        node_ids = numpy.tile(node_ids, (1, ncvar, 1)).T
+        # node_ids broadcastable to nodes, cvars, nodes
+        node_ids = numpy.arange(number_of_regions)[numpy.newaxis, numpy.newaxis, :]
         LOG.debug("%s: node_ids shape is: %s"%(str(self), str(node_ids.shape)))
 
         if self.surface is None:
@@ -467,11 +457,12 @@ class Simulator(core.Type):
             node_coupling_shape = (vertex_mapping.shape[0], ncvar, self.model.number_of_modes)
 
         for step in xrange(self.current_step + 1, self.current_step+int_steps+1):
+            time_indices = (step - 1 - idelays) % horizon
             if self.surface is None:
-                delayed_state = history[(step - 1 - idelays) % horizon, cvar, node_ids, :]   # for region simulations this is the bottleneck
+                delayed_state = history[time_indices, cvar, node_ids, :]   # for region simulations this is the bottleneck
                 node_coupling = coupling(weights, state[self.model.cvar], delayed_state)
             else:
-                delayed_state   = region_history[(step - 1 - idelays) % horizon, cvar, node_ids, :]  # expensive as well
+                delayed_state   = region_history[time_indices, cvar, node_ids, :]  # expensive as well
                 region_coupling = coupling(weights, region_history[(step - 1) % horizon, self.model.cvar], delayed_state)
                 node_coupling = numpy.empty(node_coupling_shape)
 
