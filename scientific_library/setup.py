@@ -54,6 +54,7 @@ TVB_INSTALL_REQUIREMENTS = ["networkx", "nibabel", "numpy", "numexpr", "scikit-l
 
 cython_ext = [
     Extension ( "tvb._speedups.history", [ "tvb/_speedups/history.pyx"], include_dirs=[numpy.get_include()] ),
+    Extension ( "tvb._speedups.models", [ "tvb/_speedups/models.pyx"], include_dirs=[numpy.get_include()] ),
 ]
 
 setuptools.setup(

@@ -39,7 +39,7 @@ In the future it makes sense to have classes that encapsulate the history buffer
 import numpy
 
 try:
-    import satvb._speedups.history as chist
+    import tvb._speedups.history as chist
 
     def get_state(history, time_idx, cvar, node_ids, out):
         """
