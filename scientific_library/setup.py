@@ -34,7 +34,16 @@ Mention dependencies for this package.
 """
 
 import setuptools
+from setuptools import Extension
 import shutil
+
+try:
+    import numpy
+    from Cython.Distutils import build_ext
+except ImportError:
+    # It is not easy to make setuptools install them before attempting to install the c extensions
+    raise ImportError("Please install numpy and Cython before TVB library. We depend on them to compile Cython extensions.")
+
 
 
 LIBRARY_VERSION = "1.3"
@@ -42,12 +51,19 @@ TVB_TEAM = "Stuart Knock, Marmaduke Woodman, Paula Sanz Leon, Jan Fousek, Lia Do
            "Bogdan Neacsa, Laurent Pezard, Jochen Mersmann, Anthony R McIntosh, Viktor Jirsa"
 TVB_INSTALL_REQUIREMENTS = ["networkx", "nibabel", "numpy", "numexpr", "scikit-learn", "scipy", "gdist"]
 
+
+cython_ext = [
+    Extension ( "tvb._speedups.history", [ "tvb/_speedups/history.pyx"], include_dirs=[numpy.get_include()] ),
+]
+
 setuptools.setup(
     name='tvb',
     description='A package for performing whole brain simulations',
     url='https://github.com/the-virtual-brain/scientific_library',
     version=LIBRARY_VERSION,
     packages=setuptools.find_packages(),
+    ext_modules = cython_ext,
+    cmdclass    = { "build_ext" : build_ext },
     license='GPL',
     author=TVB_TEAM,
     author_email='tvb-users@googlegroups.com',

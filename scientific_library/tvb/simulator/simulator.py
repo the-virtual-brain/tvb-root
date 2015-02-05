@@ -59,6 +59,8 @@ import tvb.datatypes.connectivity as connectivity_dtype
 import tvb.datatypes.patterns as patterns_dtype
 
 from tvb.simulator.common import psutil, get_logger
+from tvb.simulator.history import get_state
+
 LOG = get_logger(__name__)
 
 
@@ -423,6 +425,7 @@ class Simulator(core.Type):
             region_average = self.surface.region_average
             region_history = npdot(region_average, history) # this may be very expensive ~60sec for epileptor (many states and modes ...)
             region_history = region_history.transpose((1, 2, 0, 3))
+            region_history = numpy.ascontiguousarray(region_history)  # required by the c speedups
             if self.surface.coupling_strength.size == 1:
                 local_coupling = (self.surface.coupling_strength[0] *
                                   self.surface.local_connectivity.matrix)
@@ -456,13 +459,15 @@ class Simulator(core.Type):
             
             node_coupling_shape = (vertex_mapping.shape[0], ncvar, self.model.number_of_modes)
 
+        delayed_state = numpy.zeros((number_of_regions, ncvar, number_of_regions, self.model.number_of_modes))
+
         for step in xrange(self.current_step + 1, self.current_step+int_steps+1):
             time_indices = (step - 1 - idelays) % horizon
             if self.surface is None:
-                delayed_state = history[time_indices, cvar, node_ids, :]   # for region simulations this is the bottleneck
+                get_state(history, time_indices, cvar, node_ids, out=delayed_state)
                 node_coupling = coupling(weights, state[self.model.cvar], delayed_state)
             else:
-                delayed_state   = region_history[time_indices, cvar, node_ids, :]  # expensive as well
+                get_state(region_history, time_indices, cvar, node_ids, out=delayed_state)
                 region_coupling = coupling(weights, region_history[(step - 1) % horizon, self.model.cvar], delayed_state)
                 node_coupling = numpy.empty(node_coupling_shape)
 
