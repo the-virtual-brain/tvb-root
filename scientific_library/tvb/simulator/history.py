@@ -36,10 +36,12 @@ In the future it makes sense to have classes that encapsulate the history buffer
 
 .. moduleauthor:: Mihai Andrei <mihai.andrei@codemart.ro>
 """
-import numpy
+from tvb.simulator.common import get_logger
+LOG = get_logger(__name__)
 
 try:
     import tvb._speedups.history as chist
+    LOG.info('Using C speedups for history')
 
     def get_state(history, time_idx, cvar, node_ids, out):
         """
@@ -53,7 +55,7 @@ try:
 
     def _get_state_mask(history, time_idx, cvar, conn_mask, out):
         """
-        Fetches a delayed state from history. Uses a mask to avoid fetching history for uncoupled nodes.
+        Fetches a delayed state from history. Uses a mask to avoid fetching history for uncoupled nodes. Faster than get_state
         :param history: History array. (time, state_vars, nodes, modes)
         :param time_idx: Delay indices. (nodes, 1 nodes)
         :param cvar: Coupled vars indices. (1, ncvar, 1)
@@ -63,6 +65,7 @@ try:
         chist.get_state_with_mask(history, time_idx, cvar, conn_mask, out)
 
 except ImportError:
+    LOG.info('Using the python reference implementation for history')
 
     def get_state(history, time_idx, cvar, node_ids, out):
         """

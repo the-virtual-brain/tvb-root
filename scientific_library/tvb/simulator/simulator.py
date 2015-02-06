@@ -406,17 +406,18 @@ class Simulator(core.Type):
         number_of_regions = self.connectivity.number_of_regions
         nsn = (number_of_regions, 1, number_of_regions)
 
+        # Exact dtypes and alignment are required by c speedups. Once we have history objects these will be encapsulated
         # cvar index array broadcastable to nodes, cvars, nodes
-        cvar = self.model.cvar[numpy.newaxis, :, numpy.newaxis]
+        cvar = numpy.array(self.model.cvar[numpy.newaxis, :, numpy.newaxis], dtype=numpy.intc)
         LOG.debug("%s: cvar is: %s" % (str(self), str(cvar)))
         # idelays array broadcastable to nodes, cvars, nodes
-        idelays = self.connectivity.idelays[:, numpy.newaxis, :]
+        idelays = numpy.array(self.connectivity.idelays[:, numpy.newaxis, :], dtype=numpy.intc, order='c')
         LOG.debug("%s: idelays shape is: %s" % (str(self), str(idelays.shape)))
         # weights array broadcastable to nodes, cva, nodes, modes
         weights = self.connectivity.weights[:, numpy.newaxis, :, numpy.newaxis]
         LOG.debug("%s: weights shape is: %s" % (str(self), str(weights.shape)))
         # node_ids broadcastable to nodes, cvars, nodes
-        node_ids = numpy.arange(number_of_regions)[numpy.newaxis, numpy.newaxis, :]
+        node_ids = numpy.array(numpy.arange(number_of_regions)[numpy.newaxis, numpy.newaxis, :], dtype=numpy.intc)
         LOG.debug("%s: node_ids shape is: %s"%(str(self), str(node_ids.shape)))
 
         if self.surface is None:

@@ -35,7 +35,7 @@ Mention dependencies for this package.
 
 import setuptools
 from setuptools import Extension
-import shutil
+import os, shutil
 
 try:
     import numpy
@@ -82,5 +82,14 @@ http://www.frontiersin.org/Journal/10.3389/fninf.2013.00010/abstract
 """
 )
 
-## Cleanup after EGG install.
+## Cleanup after EGG install. These are created by running setup.py in the source tree
 shutil.rmtree('tvb.egg-info', True)
+
+# clean up after extension build
+shutil.rmtree('build', True)
+SPEEDUPS_DIR = os.path.join('tvb', '_speedups')
+
+for f in os.listdir(SPEEDUPS_DIR):
+    if f.endswith('.c'):
+        os.remove(os.path.join(SPEEDUPS_DIR, f))
+

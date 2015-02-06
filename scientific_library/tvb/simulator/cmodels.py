@@ -42,6 +42,7 @@ LOG = get_logger(__name__)
 
 try:
     import tvb._speedups.models as cmodels
+    LOG.info('Found C speedups for models')
 
     class CEpileptor(models.Epileptor):
         def dfun(self, state_variables, coupling, local_coupling=0.0):
@@ -51,4 +52,4 @@ try:
                             self.slope, self.x0)
 
 except ImportError:
-    pass
+    LOG.info('No C speedups for models')
