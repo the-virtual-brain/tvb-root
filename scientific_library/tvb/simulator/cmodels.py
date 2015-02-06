@@ -45,6 +45,7 @@ try:
     LOG.info('Found C speedups for models')
 
     class CEpileptor(models.Epileptor):
+        _ui_name = "Epileptor_c_accelerated"
         def dfun(self, state_variables, coupling, local_coupling=0.0):
             return cmodels.epileptor_dfun(state_variables, coupling, local_coupling,
                             self.a, self.b, self.c, self.d, self.aa, self.r,
