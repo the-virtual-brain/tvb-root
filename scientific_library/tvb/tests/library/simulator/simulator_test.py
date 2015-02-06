@@ -37,22 +37,21 @@ schemes (region and surface based simulations).
 .. moduleauthor:: Stuart A. Knock <Stuart@tvb.invalid>
 
 """
+
 #TODO: check the defaults of simulator.Simulator() (?)
 #TODO: continuation support or maybe test that particular feature elsewhere
-#TODO: explicitly define a test for each model, integrator and monitor (?)
-from tvb.datatypes.cortex import Cortex
-from tvb.datatypes.local_connectivity import LocalConnectivity
-from tvb.datatypes.region_mapping import RegionMapping
 
 if __name__ == "__main__":
     from tvb.tests.library import setup_test_console_env
     setup_test_console_env()
 
-import numpy
 import unittest
 import itertools
-from tvb.basic.traits.parameters_factory import get_traited_subclasses
 from tvb.simulator.lab import *
+from tvb.datatypes.cortex import Cortex
+from tvb.datatypes.local_connectivity import LocalConnectivity
+from tvb.datatypes.region_mapping import RegionMapping
+from tvb.basic.traits.parameters_factory import get_traited_subclasses
 from tvb.tests.library.base_testcase import BaseTestCase
 
 
@@ -60,7 +59,7 @@ sens_meg = sensors.SensorsMEG(load_default=True)
 sens_eeg = sensors.SensorsEEG(load_default=True)
 AVAILABLE_MODELS = get_traited_subclasses(models.Model)
 AVAILABLE_METHODS = get_traited_subclasses(integrators.Integrator)
-MODEL_NAMES = AVAILABLE_MODELS.keys()
+MODEL_CLASSES = AVAILABLE_MODELS.values()
 METHOD_NAMES = AVAILABLE_METHODS.keys()
 METHOD_NAMES.append('RungeKutta4thOrderDeterministic')
 
@@ -85,8 +84,7 @@ class Simulator(object):
         #sphmeg  = monitors.SphericalMEG(sensors=sens_meg, period=2 ** -2)
         
         self.monitors = (raw, gavg, subsamp, tavg) 
-        
-        self.model  = None
+
         self.method = None
         self.sim    = None
 
@@ -120,7 +118,7 @@ class Simulator(object):
             #     sphmeg_data.append(sphmeg)
                 
 
-    def configure(self, dt=2 ** -3, model="Generic2dOscillator", speed=4.0,
+    def configure(self, dt=2 ** -3, model=models.Generic2dOscillator, speed=4.0,
                   coupling_strength=0.00042, method="HeunDeterministic", 
                   surface_sim=False,
                   default_connectivity=True):
@@ -130,8 +128,6 @@ class Simulator(object):
         version of Heun's method for the numerical integration.
         
         """
-        
-        self.model = model
         self.method = method
         
         if default_connectivity:
@@ -142,12 +138,11 @@ class Simulator(object):
             white_matter = connectivity.Connectivity.from_file(source_file="connectivity_190.zip")
             region_mapping = RegionMapping.from_file(source_file="cortex_reg13/region_mapping/o52r00_irp2008_hemisphere_both_subcortical_true_regions_190.txt.bz2")
 
-            
 
         white_matter_coupling = coupling.Linear(a=coupling_strength)    
         white_matter.speed = speed
 
-        dynamics = eval("models." + model + "()")
+        dynamics = model()
         
         if method[-10:] == "Stochastic":
             hisss = noise.Additive(nsig=numpy.array([2 ** -11]))
@@ -178,15 +173,12 @@ class Simulator(object):
 class SimulatorTest(BaseTestCase):
 
     def test_simulator_region(self):
-        
-
-        
         #init
         test_simulator = Simulator()
     
         #test cases
-        for model_name, method_name in itertools.product(MODEL_NAMES, METHOD_NAMES):        
-            test_simulator.configure(model=model_name,
+        for model_class, method_name in itertools.product(MODEL_CLASSES, METHOD_NAMES):
+            test_simulator.configure(model=model_class,
                                      method=method_name,
                                      surface_sim=False)
             test_simulator.run_simulation()
