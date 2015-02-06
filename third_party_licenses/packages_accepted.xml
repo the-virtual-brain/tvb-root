@@ -803,7 +803,7 @@
     <dependency env="[win32]" name="libgcc_s_dw2-1.dll">
         <full-name value="Mingw gcc low level runtime"/>
         <project-home value="http://www.mingw.org/"/>
-        <version value="4.6.2"/>
+        <version value="unknown"/>
         <usage value="dynamic linking"/>
         <license value="LICENSE_mingw.txt"/>
         <license-type value="MIT_"/>
@@ -813,7 +813,7 @@
     <dependency env="[win32]" name="libstdc++-6.dll">
         <full-name value="Mingw gcc c++ runtime"/>
         <project-home value="http://www.mingw.org/"/>
-        <version value="4.6.2"/>
+        <version value="unknown"/>
         <usage value="dynamic linking"/>
         <license value="LICENSE_mingw.txt"/>
         <license-type value="MIT_"/>
