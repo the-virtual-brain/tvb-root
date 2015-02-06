@@ -52,8 +52,43 @@ def _get_state_unoptimized(
     """
     delayed_states[...] = history[time_idx, cvar, node_ids, :]  #n ncvar n m
 
+@cython.boundscheck(False)
+@cython.wraparound (False)
+cdef _common_bounds_check(
+        np.ndarray[double, ndim=4] history,
+        np.ndarray[int, ndim=3] time_idx,
+        np.ndarray[int, ndim=3] cvar,
+        np.ndarray[double, ndim=4] delayed_states
+        ):
+    cdef int horizon, nvars, nodes, ncvar, modes
+    cdef int ns, cv, nd
+    cdef int delay, cvar_idx
+    horizon = history.shape[0]
+    nvars = history.shape[1]
+    nodes = history.shape[2]
+    modes = history.shape[3]
+    ncvar = cvar.shape[1]
+    # bounds check time_idx[]
+    if time_idx.shape[0] != nodes or time_idx.shape[1] != 1 or time_idx.shape[2] != nodes:
+        raise IndexError()
+    # bounds check delayed_states[]
+    if (delayed_states.shape[0] != nodes or delayed_states.shape[1] != ncvar or
+        delayed_states.shape[2] != nodes or delayed_states.shape[3] != modes):
+        raise IndexError()
+    # bounds check history[delay, cvar_idx] other dimensions safe by definition
+    for cv in range(ncvar):
+        cvar_idx = cvar[0, cv, 0]   # safe per ncvar definition
+        if not 0 <= cvar_idx < nvars:
+            raise IndexError()
+    for ns in range(nodes):
+        for nd in range(nodes):
+            delay = time_idx[ns, 0, nd]   # time_idx checked above
+            if not 0 <= delay < horizon:
+                raise IndexError()
 
-# @cython.boundscheck(False)
+
+@cython.boundscheck(False)
+@cython.wraparound (False)
 def get_state(
         np.ndarray[double, ndim=4, mode="c"] history not None,
         np.ndarray[int, ndim=3, mode="c"] time_idx not None,
@@ -71,17 +106,21 @@ def get_state(
     modes = history.shape[3]
     ncvar = cvar.shape[1]
 
+    _common_bounds_check(history, time_idx, cvar, delayed_states)
+
+    # fetch the state
     for ns in range(nodes):
         for cv in range(ncvar):
+            cvar_idx = cvar[0, cv, 0]
             for nd in range(nodes):
+                delay = time_idx[ns, 0, nd]
                 for m in range(modes):
-                    delay = time_idx[ns, 0, nd]
-                    cvar_idx = cvar[0, cv, 0]
                     h = history[delay, cvar_idx, nd, m]
                     delayed_states[ns, cv, nd, m] = h
 
 
-# @cython.boundscheck(False)
+@cython.boundscheck(False)
+@cython.wraparound (False)
 def get_state_with_mask(np.ndarray[double, ndim=4, mode="c"] history not None,
               np.ndarray[int, ndim=3, mode="c"] time_idx not None,
               np.ndarray[int, ndim=3] cvar not None,
@@ -100,14 +139,19 @@ def get_state_with_mask(np.ndarray[double, ndim=4, mode="c"] history not None,
     modes = history.shape[3]
     ncvar = cvar.shape[1]
 
+    _common_bounds_check(history, time_idx, cvar, delayed_states)
+    # bounds check conn_mask[]
+    if conn_mask.shape[0] != nodes or conn_mask.shape[1] != nodes:
+        raise IndexError()
+
     for ns in range(nodes):
         for cv in range(ncvar):
+            cvar_idx = cvar[0, cv, 0]
             for nd in range(nodes):
+                delay = time_idx[ns, 0, nd]
                 sp = conn_mask[ns, nd]
                 if sp == 0:
                     continue
                 for m in range(modes):
-                    delay = time_idx[ns, 0, nd]
-                    cvar_idx = cvar[0, cv, 0]
                     h = history[delay, cvar_idx, nd, m]
                     delayed_states[ns, cv, nd, m] = h
