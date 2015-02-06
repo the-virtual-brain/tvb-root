@@ -129,29 +129,7 @@ export PYTHONPATH=`pwd`
 EXTRA_DEPENDENCIES = ['pysqlite2']
 EXTRA_BINARIES = [('libXfixes.so.3', '/usr/lib/libXfixes.so.3', 'BINARY')]
 
-EXCLUDE_FILES = [# Below are *so's from TVB-linux 32-bit IDLE related which don't seem to be needed
-                 'libncursesw.so.5', 'libxcb-render.so.0', 'libxcb-render-util.so.0', 'libXcomposite.so.1',
-                 'libXcursor.so.1', 'libXdamage.so.1', 'libXinerama.so.1', 'libXi.so.6', 'libXrandr.so.2',
-                 # End of TVB 32-bit IDLE related
-                 'audioop.so', 'dbm.so', 'gdbm.so', 'grp.so', 'libamd.so.2.2.0', 'libgdbm.so.3',
-                 'libgdbm_compat.so.3', 'libjpeg.so.62', 'libumfpack.so.5.4.0', 'mx.DateTime.mxDateTime.mxDateTime.so',
-                 # Below here are so files that only appear in old python2.6 packages
-                 'sgmlop.so', 'pango.so', 'pangocairo.so', 'libpangocairo-1.0.so.0', 'libpangoft2-1.0.so.0', 
-                 'libpango-1.0.so.0', 'wx._windows_.so', 'wx._misc_.so', 'wx._gdi_.so', 'wx._core_.so', 
-                 'wx._controls_.so', 'libwx_gtk2u_xrc-2.8.so.0', 'libwx_gtk2u_richtext-2.8.so.0', 
-                 'libwx_gtk2u_qa-2.8.so.0', 'libwx_gtk2u_html-2.8.so.0', 'libwx_gtk2u_core-2.8.so.0', 
-                 'libwx_gtk2u_aui-2.8.so.0', 'libwx_gtk2u_adv-2.8.so.0', 'libwx_baseu_xml-2.8.so.0', 
-                 'libwx_baseu_net-2.8.so.0', 'libwx_baseu-2.8.so.0', 'gtk._gtk.so', 'gtk.glade.so', 
-                 'gobject._gobject.so', 'glib._glib.so', 'gio.unix.so', 'gio._gio.so', 'cairo._cairo.so', 'atk.so', 
-                 'libaudio.so.2', 'libffi.so.5', 'libcairo.so.2', 'libatk-1.0.so.0', 'libgdk-x11-2.0.so.0', 
-                 'libgdk_pixbuf-2.0.so.0', 'libglib-2.0.so.0', 'libgmodule-2.0.so.0', 'libglade-2.0.so.0', 
-                 'libgio-2.0.so.0', 'libICE.so.6', 'libgtk-x11-2.0.so.0', 'libgthread-2.0.so.0', 'libgobject-2.0.so.0',
-                 'libpixman-1.so.0', 'libpcre.so.3', 'libxml2.so.2', 'libtiff.so.4', 'libSM.so.6', 'libselinux.so.1', 
-                 'libpyglib-2.0-python2.6.so.0', 'PyQt4.QtCore.so', 
-                 'PyQt4.QtGui.so', 'sip.so', 'libQt3Support.so.4', 'libQtGui.so.4', 'libQtSql.so.4', 'libQtXml.so.4', 
-                 'libQtCore.so.4', 'libQtNetwork.so.4', 'libQtSvg.so.4'
-                 ]
-
+EXCLUDE_FILES = ['grp.so', 'audioop.so', 'libjpeg.so.62', 'tvb._speedups.history.so', 'tvb._speedups.models.so']
 EXCLUDE_DIRS = ['dist-packages', 'qt4_plugins']
 INCLUDE_FILES = ['decorator', 'cmath']
 ARG_CLUSTER = 'cluster'
