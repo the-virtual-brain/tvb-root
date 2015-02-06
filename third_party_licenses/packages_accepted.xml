@@ -800,4 +800,24 @@
         <copyright-notice value="Copyright (C) 1995-2010 Jean-loup Gailly and Mark Adler"/>
         <description value="Package part of Python's distribution."/>
     </dependency>
+    <dependency env="[win32]" name="libgcc_s_dw2.dll">
+        <full-name value="Mingw gcc low level runtime"/>
+        <project-home value="http://www.mingw.org/"/>
+        <version value="4.6.2"/>
+        <usage value="dynamic linking"/>
+        <license value=""/>
+        <license-type value="GPLv3_"/> <!-- WARNING this is not actually true. See description -->
+        <copyright-notice value="Copyright © 2007 Free Software Foundation, Inc. http://fsf.org/"/>
+        <description value="Runtime library produced by the mingw32 gcc compiler. License terms https://www.gnu.org/licenses/gcc-exception-faq.html"/>
+    </dependency>
+        <dependency env="[win32]" name="libstdc++-6.dll">
+        <full-name value="Mingw gcc c++ runtime"/>
+        <project-home value="http://www.mingw.org/"/>
+        <version value="4.6.2"/>
+        <usage value="dynamic linking"/>
+        <license value=""/>
+        <license-type value="GPLv3_"/> <!-- WARNING this is not actually true. See description -->
+        <copyright-notice value="Copyright © 2007 Free Software Foundation, Inc. http://fsf.org/"/>
+        <description value="Runtime library produced by the mingw32 gcc compiler. License terms https://www.gnu.org/licenses/gcc-exception-faq.html"/>
+    </dependency>
 </tvb>

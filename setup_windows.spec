@@ -109,7 +109,7 @@ EXCLUDE_FILES = [#Additional DLL's that don't seem to be used
                  'wtsapi32.dll', 'gdiplus.dll', 'mfc90.dll', 'mfc90u.dll', 'mfcm90.dll', 'mfcm90u.dll',
                  'wxbase28uh_net_vc.dll', 'wxbase28uh_vc.dll', 'wxmsw28uh_adv_vc.dll',
                  'wxmsw28uh_core_vc.dll', 'wxmsw28uh_html_vc.dll', 'LIBEAY32.dll', 'SSLEAY32.dll',
-                 'perfmon.pyd', 'servicemanager.pyd', 'tvb._speedups.history.so', 'tvb._speedups.models.so',
+                 'perfmon.pyd', 'servicemanager.pyd', 'tvb._speedups.history.pyd', 'tvb._speedups.models.pyd',
                  # wx files probably included after idle dependency but does not seem to be required
                  'wx._windows_.pyd', 'wx._misc_.pyd', 'wx._gdi_.pyd', 'wx._core_.pyd', 'wx._controls_.pyd'
                  ]
