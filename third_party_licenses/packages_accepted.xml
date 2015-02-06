@@ -800,7 +800,7 @@
         <copyright-notice value="Copyright (C) 1995-2010 Jean-loup Gailly and Mark Adler"/>
         <description value="Package part of Python's distribution."/>
     </dependency>
-    <dependency env="[win32]" name="libgcc_s_dw2.dll">
+    <dependency env="[win32]" name="libgcc_s_dw2-1.dll">
         <full-name value="Mingw gcc low level runtime"/>
         <project-home value="http://www.mingw.org/"/>
         <version value="4.6.2"/>
@@ -810,7 +810,7 @@
         <copyright-notice value="Copyright (c) 2012 MinGW.org project"/>
         <description value="Runtime library produced by the mingw32 gcc compiler."/>
     </dependency>
-        <dependency env="[win32]" name="libstdc++-6.dll">
+    <dependency env="[win32]" name="libstdc++-6.dll">
         <full-name value="Mingw gcc c++ runtime"/>
         <project-home value="http://www.mingw.org/"/>
         <version value="4.6.2"/>
