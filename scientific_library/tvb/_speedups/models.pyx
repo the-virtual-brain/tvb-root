@@ -55,7 +55,7 @@ def epileptor_dfun(np.ndarray[double, ndim=3] y, # sv , n , m
     cdef double y0, y1, y2, y3, y4, y5
     cdef double tmp, iext_inner, cpop_1, cpop_2
 
-    cdef np.ndarray[double, ndim=3, mode="c"] ydot
+    cdef np.ndarray[double, ndim=3] ydot
     cdef np.ndarray[double, ndim=2] Iext_nd
 
     ydot = np.empty_like(y)

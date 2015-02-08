@@ -163,12 +163,29 @@ class _LeftFragmentAdapter(ABCAdapter):
         It converts them in html text that will be interpreted by mathjax
         The parsing is simplistic, not a full rst parser.
         """
-        dfun = getattr(model, 'dfun', None)
 
-        if dfun:
-            return multiline_math_directives_to_matjax(dfun.__doc__).replace('&', '&amp;').replace('.. math::','')
-        else:
-            return ''
+        def format_doc(doc):
+            return multiline_math_directives_to_matjax(doc).replace('&', '&amp;').replace('.. math::','')
+
+        try:
+            doc = model.dfun.__doc__
+        except AttributeError:
+            doc = None
+
+        if doc is not None:
+            return format_doc(doc)
+
+        # try the parent __doc__
+        try:
+            doc = model.__mro__[1].dfun.__doc__
+        except (AttributeError, IndexError):
+            doc = None
+
+        if doc is not None:
+            return format_doc('Documentation is missing. Copy-ed from parent\n' + doc)
+
+        return 'Documentation is missing. '
+
 
 
 

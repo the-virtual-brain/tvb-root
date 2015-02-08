@@ -121,21 +121,21 @@ class MyNewModelNameHere(models.Model):
         return derivative
         
         
-        def update_derived_parameters(self):
-            """
-            Calculate coefficients for the neural field model based on [REF_2012].
-            cf. Eqns (X.X) and (Y.Y), page aaa
-           
-            Include equations here
-            
-            .. math::
-                A &= equation
-                B &= equation
-                
-            """
-        
-            self.A = "Insert equation here"
-            self.B = "Insert equation here"
+    def update_derived_parameters(self):
+        """
+        Calculate coefficients for the neural field model based on [REF_2012].
+        cf. Eqns (X.X) and (Y.Y), page aaa
+
+        Include equations here
+
+        .. math::
+            A &= equation
+            B &= equation
+
+        """
+
+        self.A = "Insert equation here"
+        self.B = "Insert equation here"
    
         
 if __name__ == "__main__":

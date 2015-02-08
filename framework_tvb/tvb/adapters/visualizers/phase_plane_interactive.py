@@ -47,8 +47,6 @@ class _PhaseSpace(object):
         self.log = get_logger(self.__class__.__module__)
         self.model = model
         self.integrator = integrator
-        #create a filler(all zeros) for the coupling arg of the Model's dfun method.
-        self.no_coupling = numpy.zeros((self.model.nvar, 1, self.model.number_of_modes))
 
 
     def _compute_trajectories(self, states, n_steps):
@@ -61,9 +59,10 @@ class _PhaseSpace(object):
         # reshape to what dfun expects: from n, sv to sv, n, mode
         states = numpy.tile(states.T[:, :, numpy.newaxis], self.model.number_of_modes)
         trajs[0, :] = states
+        no_coupling = numpy.zeros((self.model.nvar, states.shape[1], self.model.number_of_modes))
         # grow trajectories step by step
         for step in xrange(n_steps):
-            states = scheme(states, self.model.dfun, self.no_coupling, 0.0, 0.0)
+            states = scheme(states, self.model.dfun, no_coupling, 0.0, 0.0)
             trajs[step + 1, :] = states
 
         if numpy.isnan(trajs).any():
@@ -123,7 +122,8 @@ class PhasePlane(_PhaseSpace):
             state_variables[svx_ind, :, mode_idx] = xg.flat
             state_variables[svy_ind, :, mode_idx] = yg.flat
 
-        d_grid = self.model.dfun(state_variables, self.no_coupling)
+        no_coupling = numpy.zeros((self.model.nvar, state_variables.shape[1], self.model.number_of_modes))
+        d_grid = self.model.dfun(state_variables, no_coupling)
 
         flat_uv_grid = d_grid[[svx_ind, svy_ind], :, :]  # subset of the state variables to be displayed
         u, v = flat_uv_grid.reshape((2, NUMBEROFGRIDPOINTS, NUMBEROFGRIDPOINTS, self.model.number_of_modes))
@@ -239,7 +239,8 @@ class PhaseLineD3(_PhaseSpace):
         xg = self._grid()
         # dfun modifies state in place so we need to copy xg
         state = xg.reshape((1, NUMBEROFGRIDPOINTS, 1)).copy()  # will broadcast to modes
-        u = self.model.dfun(state, self.no_coupling)
+        no_coupling = numpy.zeros((self.model.nvar, state.shape[1], self.model.number_of_modes))
+        u = self.model.dfun(state, no_coupling)
         u = u[0, :, self.mode]
 
         d = numpy.vstack((xg, u)).T
