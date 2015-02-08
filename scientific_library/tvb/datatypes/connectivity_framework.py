@@ -89,11 +89,14 @@ class ConnectivityFramework(connectivity_data.ConnectivityData):
         """
         if new_tracts is None:
             new_tracts = self.tract_lengths[interest_areas, :][:, interest_areas]
+        else:
+            new_tracts = new_tracts[interest_areas, :][:, interest_areas]
+        new_weights = new_weights[interest_areas, :][:, interest_areas]
 
         final_conn = self.__class__()
         final_conn.parent_connectivity = None
         final_conn.storage_path = storage_path
-        final_conn.weights = new_weights[interest_areas, :][:, interest_areas]
+        final_conn.weights = new_weights
         final_conn.centres = self.centres[interest_areas, :]
         final_conn.region_labels = self.region_labels[interest_areas]
         final_conn.orientations = self.orientations[interest_areas, :]
