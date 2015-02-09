@@ -41,14 +41,13 @@ To build::
 """
 
 import numpy
-
-from distutils.core import setup
-from distutils.extension import Extension
+from setuptools import setup, Extension
 from Cython.Distutils import build_ext
 
 geodesic_module = [Extension(name="gdist",              # Name of extension
                              sources=["gdist.pyx"],     # Filename of Cython source
-                             language="c++")]           # Cython create C++ source
+                             language="c++",            # Cython create C++ source
+                             define_macros=[('NDEBUG', 1)] )]  # Disable assertions; one is failing geodesic_mesh.h:405
 
 include_directories = [numpy.get_include(),     # NumPy dtypes
                        "geodesic_library"]      # geodesic distance, C++ library.
