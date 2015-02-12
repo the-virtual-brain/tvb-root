@@ -1,9 +1,9 @@
 .. _top_benchmarks:
 
 
-******************************************
+**********
 Benchmarks
-******************************************
+**********
 
 In this section we provide some benchmarks about the execution times for some
 simulation cases. This information is both to give you an idea of how long your
@@ -26,5 +26,6 @@ result in biased results. Also do not forget to provide the system info:
 .. toctree::
    :maxdepth: 2
 
-   tvb_1.2
+   tvb_1.3.1
    tvb_1.3
+   tvb_1.2
