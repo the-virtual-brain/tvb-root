@@ -162,6 +162,7 @@ class ImportService():
                 bursts_info_dict = json.load(f)
             bursts_dict = bursts_info_dict[BURSTS_DICT_KEY]
             dt_mappings_dict = bursts_info_dict[DT_BURST_MAP]
+        os.remove(bursts_file)
         return bursts_dict, dt_mappings_dict
 
 
