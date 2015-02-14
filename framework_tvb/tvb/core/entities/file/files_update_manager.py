@@ -38,6 +38,7 @@ Manager for the file storage versioning updates.
 
 import os
 import tvb.core.entities.file.file_update_scripts as file_update_scripts
+from datetime import datetime
 from tvb.basic.config import stored
 from tvb.basic.profile import TvbProfile
 from tvb.basic.traits.types_mapped import MappedType
@@ -152,19 +153,24 @@ class FilesUpdateManager(UpdateManager):
             update message.
         """
         if TvbProfile.current.version.DATA_CHECKED_TO_VERSION < TvbProfile.current.version.DATA_VERSION:
-            datatype_total_count = dao.count_all_datatypes()
+            total_count = dao.count_all_datatypes()
             # Keep track of how many DataTypes were properly updated and how many 
             # were marked as invalid due to missing files or invalid manager.
             no_ok = 0
             no_error = 0
+            start_time = datetime.now()
 
-            for current_idx in range(0, datatype_total_count, self.DATA_TYPES_PAGE_SIZE):
-                # Read DataTypes in pages to limit the memory consumption
-                self.log.info("Updated H5 files: %d [fine: %d, error:%d]" % (current_idx, no_ok, no_error))
+            # Read DataTypes in pages to limit the memory consumption
+            for current_idx in range(0, total_count, self.DATA_TYPES_PAGE_SIZE):
+
                 datatypes_for_page = dao.get_all_datatypes(current_idx, self.DATA_TYPES_PAGE_SIZE)
                 upgraded_fine_count, upgraded_fault_count = self.__upgrade_datatype_list(datatypes_for_page)
                 no_ok += upgraded_fine_count
                 no_error += upgraded_fault_count
+
+                self.log.info("Updated H5 files so far %d [fine:%d, error:%d, of total:%d, in: %s min]" % (
+                    current_idx + len(datatypes_for_page), no_ok, no_error, total_count,
+                    int((datetime.now() - start_time).seconds / 60)))
                 
             # Now update the configuration file since update was done
             config_file_update_dict = {stored.KEY_LAST_CHECKED_FILE_VERSION: TvbProfile.current.version.DATA_VERSION}
@@ -181,7 +187,7 @@ class FilesUpdateManager(UpdateManager):
                 config_file_update_dict[stored.KEY_FILE_STORAGE_UPDATE_STATUS] = FILE_STORAGE_INVALID
                 return_status = False
                 return_message = ("Out of %s stored DataTypes, %s were upgraded successfully "
-                                  "and %s had faults and were marked invalid" % (datatype_total_count, 
+                                  "and %s had faults and were marked invalid" % (total_count,
                                   no_ok, no_error))
                 self.log.warning(return_message)
 
