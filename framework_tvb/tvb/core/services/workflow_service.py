@@ -27,17 +27,20 @@
 #   Frontiers in Neuroinformatics (7:10. doi: 10.3389/fninf.2013.00010)
 #
 #
+
 """
 .. moduleauthor:: Bogdan Neacsa <bogdan.neacsa@codemart.ro>
 .. moduleauthor:: Ionel Ortelecan <ionel.ortelecan@codemart.ro>
 """
+
 import json
 from datetime import datetime
 from tvb.basic.logger.builder import get_logger
+from tvb.core.entities.file.files_helper import FilesHelper
 from tvb.core.entities.storage import dao
 from tvb.core.entities import model
 from tvb.core.services.exceptions import WorkflowInterStepsException
-from tvb.core.entities.transient.burst_configuration_entities import WorkflowStepConfiguration as wf_cfg
+from tvb.core.entities.transient.burst_configuration_entities import WorkflowStepConfiguration
 from types import IntType
 
 
@@ -53,9 +56,25 @@ class WorkflowService:
 
     def __init__(self):
         self.logger = get_logger(self.__class__.__module__)
-        
-    
-    @staticmethod    
+        self.file_helper = FilesHelper()
+
+
+    def persist_operation_state(self, operation, operation_status, message=None):
+        """
+        Update Operation instance state. Store it in DB and on HDD/
+        :param operation: Operation instance
+        :param operation_status: new status
+        :param message: message in case of error
+        :return: operation instance changed
+        """
+        operation.mark_complete(operation_status, unicode(message))
+        dao.store_entity(operation)
+        operation = dao.get_operation_by_id(operation.id)
+        self.file_helper.write_operation_metadata(operation)
+        return operation
+
+
+    @staticmethod
     def store_workflow_step(workflow_step):
         """
         Store a workflow step entity.
@@ -93,7 +112,7 @@ class WorkflowService:
         """
         dynamic_params = workflow_step.dynamic_param
         for entry in dynamic_params:
-            dynamic_params[entry][wf_cfg.STEP_INDEX_KEY] = step_reference
+            dynamic_params[entry][WorkflowStepConfiguration.STEP_INDEX_KEY] = step_reference
         workflow_step.dynamic_param = dynamic_params
 
 
@@ -113,14 +132,16 @@ class WorkflowService:
                     for param_name in dynamic_param_names:
                         dynamic_param = op_params[param_name]
                         former_step = dao.get_workflow_step_by_step_index(next_workflow_step.fk_workflow,
-                                                                          dynamic_param[wf_cfg.STEP_INDEX_KEY])
-                        if type(dynamic_param[wf_cfg.DATATYPE_INDEX_KEY]) is IntType: 
+                                                                          dynamic_param[
+                                                                              WorkflowStepConfiguration.STEP_INDEX_KEY])
+                        if type(dynamic_param[WorkflowStepConfiguration.DATATYPE_INDEX_KEY]) is IntType:
                             datatypes = dao.get_results_for_operation(former_step.fk_operation)
-                            op_params[param_name] = datatypes[dynamic_param[wf_cfg.DATATYPE_INDEX_KEY]].gid
+                            op_params[param_name] = datatypes[
+                                dynamic_param[WorkflowStepConfiguration.DATATYPE_INDEX_KEY]].gid
                         else:
                             previous_operation = dao.get_operation_by_id(former_step.fk_operation)
                             op_params[param_name] = json.loads(previous_operation.parameters)[
-                                dynamic_param[wf_cfg.DATATYPE_INDEX_KEY]]
+                                dynamic_param[WorkflowStepConfiguration.DATATYPE_INDEX_KEY]]
                     operation.parameters = json.dumps(op_params)
                     operation = dao.store_entity(operation)
                 return operation.id
@@ -143,26 +164,25 @@ class WorkflowService:
             raise WorkflowInterStepsException(excep)
 
 
-    def update_executed_workflow_state(self, operation_id):
+    def update_executed_workflow_state(self, operation):
         """
         Used for updating the state of an executed workflow.
         Only if the operation with the specified id has resulted after the execution
         of an ExecutedWorkflowStep than the state of the ExecutedWorkflow
         to which belongs the step will be updated.
         """
-        executed_step, _ = self._get_data(operation_id)
+        executed_step, _ = self._get_data(operation.id)
         if executed_step is not None:
-            operation = dao.get_operation_by_id(operation_id)
             if operation.status == model.STATUS_ERROR:
                 all_executed_steps = dao.get_workflow_steps(executed_step.fk_workflow)
                 for step in all_executed_steps:
                     if step.step_index > executed_step.step_index:
                         self.logger.debug("Marking unreached operation %s with error." % step.fk_operation)
                         unreached_operation = dao.get_operation_by_id(step.fk_operation)
-                        unreached_operation.mark_complete(model.STATUS_ERROR, 
-                                                          "Blocked by failure in step %s with message: \n\n%s." % (
-                                                          executed_step.step_index, operation.additional_info))
-                        dao.store_entity(unreached_operation)
+                        self.persist_operation_state(unreached_operation, model.STATUS_ERROR,
+                                                     "Blocked by failure in step %s with message: \n\n%s." % (
+                                                         executed_step.step_index, operation.additional_info))
+
             workflow = dao.get_workflow_by_id(executed_step.fk_workflow)
             burst = dao.get_burst_by_id(workflow.fk_burst)
             self.mark_burst_finished(burst, error_message=operation.additional_info)

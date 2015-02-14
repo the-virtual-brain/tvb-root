@@ -106,18 +106,18 @@ class OperationExecutor(threading.Thread):
 
             if returned != 0 and not self.stopped():
                 # Process did not end as expected. (e.g. Segmentation fault)
+                workflow_service = WorkflowService()
                 operation = dao.get_operation_by_id(self.operation_id)
                 LOGGER.error("Operation suffered fatal failure! Exit code: %s Exit message: %s" % (returned,
                                                                                                    subprocess_result))
 
-                operation.mark_complete(model.STATUS_ERROR,
-                                        "Operation failed unexpectedly! Please check the log files.")
-                dao.store_entity(operation)
+                workflow_service.persist_operation_state(operation, model.STATUS_ERROR,
+                                                         "Operation failed unexpectedly! Please check the log files.")
 
                 burst_entity = dao.get_burst_for_operation_id(self.operation_id)
                 if burst_entity:
                     message = "Error in operation process! Possibly segmentation fault."
-                    WorkflowService().mark_burst_finished(burst_entity, error_message=message)
+                    workflow_service.mark_burst_finished(burst_entity, error_message=message)
 
             del launched_process
 
@@ -205,9 +205,9 @@ class StandAloneClient(object):
             else:
                 LOGGER.debug("Stopped OperationExecutor process for %d" % operation_id)
 
-        ## Mark operation as canceled in DB.
-        operation.mark_complete(model.STATUS_CANCELED)
-        dao.store_entity(operation)
+        ## Mark operation as canceled in DB and on disk
+        WorkflowService().persist_operation_state(operation, model.STATUS_CANCELED)
+
         return stopped
 
 
@@ -284,8 +284,7 @@ class ClusterSchedulerClient(object):
                 LOGGER.error("Stopping cluster operation was unsuccessful. "
                              "Try following with 'oarstat' for job ID: %s" % operation_process.job_id)
 
-        operation.mark_complete(model.STATUS_CANCELED)
-        dao.store_entity(operation)
+        WorkflowService().persist_operation_state(operation, model.STATUS_CANCELED)
 
         return result == 0
 

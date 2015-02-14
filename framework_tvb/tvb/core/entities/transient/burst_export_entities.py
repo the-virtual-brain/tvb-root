@@ -27,13 +27,19 @@
 #   Frontiers in Neuroinformatics (7:10. doi: 10.3389/fninf.2013.00010)
 #
 #
+
 """
 Entities transient and related to a Burst Configuration.
 
 .. moduleauthor:: Bogdan Neacsa <bogdan.neacsa@codemart.ro>
 """
+
 from copy import deepcopy
 from tvb.core.entities.storage import dao
+from tvb.basic.logger.builder import get_logger
+
+LOGGER = get_logger(__name__)
+
 
 
 class BaseExportHelp(object):
@@ -41,10 +47,13 @@ class BaseExportHelp(object):
     Base class for all export helper entities. Wraps over a dictionary that is used
     to later convert entities to / from json.
     """
+
+
     def __init__(self, input_data):
         input_data = input_data or {}
         self._data_dict = input_data
-    
+
+
     @property
     def data(self):
         """
@@ -60,30 +69,35 @@ class BurstInformation(BaseExportHelp):
     with all workflows, and workflow steps.
     """
     KEY_BI_WORKFLOWS = "--BI_workflows--"
-    
+
+
     def __init__(self, data_dict):
         super(BurstInformation, self).__init__(data_dict)
         if self.KEY_BI_WORKFLOWS not in self._data_dict:
             self._data_dict[self.KEY_BI_WORKFLOWS] = []
-            
+
+
     def add_workflow(self, workflow):
         """
         Append a WorkflowInformation entity to the list of workflows attached to this burst.
         """
         self._data_dict[self.KEY_BI_WORKFLOWS].append(workflow)
-        
+
+
     def set_workflows(self, wf_list):
         """
         Set the entire list of workflows attached to this burst as WorkflowInformation entities.
         """
         self._data_dict[self.KEY_BI_WORKFLOWS] = wf_list
-    
+
+
     def get_workflows(self):
         """
         Return a list of WorkflowInformation entities.
         """
         return self._data_dict[self.KEY_BI_WORKFLOWS]
-    
+
+
     def to_dict(self):
         """
         Convert this entities to python dictionary ready to be dumped to json. Also make
@@ -94,7 +108,8 @@ class BurstInformation(BaseExportHelp):
         dict_data = deepcopy(self._data_dict)
         dict_data[self.KEY_BI_WORKFLOWS] = workflows
         return dict_data
-    
+
+
     @staticmethod
     def load_from_dict(input_dict):
         """
@@ -106,7 +121,8 @@ class BurstInformation(BaseExportHelp):
                      for data in input_dict[BurstInformation.KEY_BI_WORKFLOWS]]
         input_dict[BurstInformation.KEY_BI_WORKFLOWS] = workflows
         return BurstInformation(input_dict)
-    
+
+
 
 class WorkflowInformation(BaseExportHelp):
     """
@@ -115,50 +131,58 @@ class WorkflowInformation(BaseExportHelp):
     """
     KEY_WF_STEPS = '--WI_workflow_steps--'
     KEY_VIEW_STEPS = '--WI_view_steps--'
-    
+
+
     def __init__(self, data_dict):
         super(WorkflowInformation, self).__init__(data_dict)
         if self.KEY_VIEW_STEPS not in self._data_dict:
             self._data_dict[self.KEY_VIEW_STEPS] = []
         if self.KEY_WF_STEPS not in self._data_dict:
             self._data_dict[self.KEY_WF_STEPS] = []
-            
+
+
     def add_workflow_step(self, wf_step):
         """
         Append a WorkflowStepInformation entity to the list of steps for this workflow.
         """
         self._data_dict[self.KEY_WF_STEPS].append(wf_step)
-        
+
+
     def add_view_step(self, view_step):
         """
         Append a WorkflowViewStepInformation entity to the list of view steps for this workflow.
         """
         self._data_dict[self.KEY_VIEW_STEPS].append(view_step)
-        
+
+
     def set_workflow_steps(self, steps_list):
         """
         Set the list of steps for this workflow as WorkflowStepInformation entities.
         """
         self._data_dict[self.KEY_WF_STEPS] = steps_list
-        
+
+
     def set_view_steps(self, steps_list):
         """
         Set the list of view steps for this workflow as WorkflowViewStepInformation entities.
         """
         self._data_dict[self.KEY_VIEW_STEPS] = steps_list
-        
+
+
     def get_workflow_steps(self):
         """
         Return the list of steps for this workflow as WorkflowStepInformation entities.
         """
         return self._data_dict[self.KEY_WF_STEPS]
-    
+
+
     def get_view_steps(self):
         """
         Return the list of view steps for this workflow as WorkflowViewStepInformation entities.
         """
         return self._data_dict[self.KEY_VIEW_STEPS]
-    
+
+
     def to_dict(self):
         """
         Convert this entities to python dictionary ready to be dumped to json. Also make
@@ -171,7 +195,8 @@ class WorkflowInformation(BaseExportHelp):
         dict_data[self.KEY_VIEW_STEPS] = view_steps
         dict_data[self.KEY_WF_STEPS] = wf_steps
         return dict_data
-    
+
+
     @staticmethod
     def load_from_dict(input_dict):
         """
@@ -186,14 +211,16 @@ class WorkflowInformation(BaseExportHelp):
         input_dict[WorkflowInformation.KEY_VIEW_STEPS] = view_steps
         input_dict[WorkflowInformation.KEY_WF_STEPS] = wf_steps
         return WorkflowInformation(input_dict)
-        
+
+
 
 class StepInfo(BaseExportHelp):
     """
     Base class for workflow steps.
     """
     ALGO_INFO = '--WVSI_algorighm_info--'
-    
+
+
     def __init__(self, data_dict):
         super(StepInfo, self).__init__(data_dict)
 
@@ -208,7 +235,8 @@ class StepInfo(BaseExportHelp):
                                            'class': algorithm.algo_group.classname,
                                            'init_param': algorithm.algo_group.init_parameter,
                                            'identifier': algorithm.identifier}
-        
+
+
     def get_algorithm(self):
         """
         Return the algorithm saved in this entity.
@@ -217,14 +245,15 @@ class StepInfo(BaseExportHelp):
         """
         if self.ALGO_INFO not in self._data_dict:
             return None
-        algo_group = dao.find_group(self._data_dict[self.ALGO_INFO]['module'], 
+        algo_group = dao.find_group(self._data_dict[self.ALGO_INFO]['module'],
                                     self._data_dict[self.ALGO_INFO]['class'],
                                     self._data_dict[self.ALGO_INFO]['init_param'])
         if algo_group:
             algorithm = dao.get_algorithm_by_group(algo_group.id, self._data_dict[self.ALGO_INFO]['identifier'])
             return algorithm
         return None
-    
+
+
     def to_dict(self):
         """
         In case of workflow steps, the to_dict is simply returning it's data dictionary, since
@@ -240,24 +269,28 @@ class StepInfo(BaseExportHelp):
         for the workflow step no longer exists in project we are imported to.
         """
         return self._data_dict.get('tab_index', -1), self._data_dict.get('index_in_tab', -1)
-    
+
+
 
 class WorkflowViewStepInformation(StepInfo):
     """
     Helper entity that hold all the information needed to build a complete workflow step entity
     """
     PORTLET_IDENT = '--WSI_portlet_id--'
-    
+
+
     def __init__(self, input_data):
         super(WorkflowViewStepInformation, self).__init__(input_data)
-    
+
+
     def set_portlet(self, portlet):
         """
         Having as input a model.Portlet entity, store what is required in order to
         later recreate that entity even in 'id' from database differs.
         """
         self._data_dict[self.PORTLET_IDENT] = portlet.algorithm_identifier
-    
+
+
     def get_portlet(self):
         """
         Return the portlet that was saved on this entity. Should only be called if 
@@ -266,40 +299,55 @@ class WorkflowViewStepInformation(StepInfo):
         if self.PORTLET_IDENT not in self._data_dict:
             return None
         return dao.get_portlet_by_identifier(self._data_dict[self.PORTLET_IDENT])
-    
+
+
     @staticmethod
     def load_from_dict(input_dict):
         """
         Just create a new WorkflowViewStepInformation entity with the given input dictionary.
         """
         return WorkflowViewStepInformation(input_dict)
-    
-    
+
+
+
 class WorkflowStepInformation(StepInfo):
     """
     Helper entity that hold all the information needed to build a complete workflow view step entity
     """
     OP_GID = '--WVSI_operation_gid--'
-    
+
+
     def __init__(self, input_data):
         super(WorkflowStepInformation, self).__init__(input_data)
-    
+
+
     def set_operation(self, operation):
         """
         Having a model.Operation entity as input, store it's gid so we can later
         return it even if 'id' in db has changed.
         """
         self._data_dict[self.OP_GID] = operation.gid
-        
-    def get_operagion(self):
+
+
+    def get_operation_id(self):
         """
         Return the operation that was saved on this entity. Should only be called if 
         beforehand 'set_operation' was called on this entity.
         """
         if self.OP_GID not in self._data_dict:
             return None
-        return dao.get_operation_by_gid(self._data_dict.get(self.OP_GID, None))
-    
+
+        operation_gid = self._data_dict.get(self.OP_GID, None)
+        operation = dao.get_operation_by_gid(operation_gid)
+
+        if operation:
+            return operation.id
+
+        LOGGER.warning("When restoring Workflow Step %s, we could not find operation "
+                       "for GID %s" % (self.get_algorithm().name, operation_gid))
+        return None
+
+
     @staticmethod
     def load_from_dict(input_dict):
         """

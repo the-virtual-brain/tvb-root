@@ -158,7 +158,8 @@ class OperationService:
             return self._send_to_cluster(operations, adapter_instance, current_user.username)
 
 
-    def _prepare_metadata(self, initial_metadata, algo_category, operation_group, submit_data):
+    @staticmethod
+    def _prepare_metadata(initial_metadata, algo_category, operation_group, submit_data):
         """
         Gather metadata from submitted fields and current to be execute algorithm.
         Will populate STATE, GROUP in metadata
@@ -330,7 +331,7 @@ class OperationService:
 
             disk_space_per_user = TvbProfile.current.MAX_DISK_SPACE
             pending_op_disk_space = dao.compute_disk_size_for_started_ops(operation.fk_launched_by)
-            user_disk_space = dao.compute_user_generated_disk_size(operation.fk_launched_by)  # Transform from kB to Bytes
+            user_disk_space = dao.compute_user_generated_disk_size(operation.fk_launched_by)    # From kB to Bytes
             available_space = disk_space_per_user - pending_op_disk_space - user_disk_space
 
             result_msg, nr_datatypes = adapter_instance._prelaunch(operation, unique_id, available_space, **params)
@@ -385,12 +386,12 @@ class OperationService:
                 algorithm = operation.algorithm
                 group = dao.get_algo_group_by_id(algorithm.fk_algo_group)
                 adapter_instance = ABCAdapter.build_adapter(group)
-            PARAMS = parse_json_parameters(operation.parameters)
+            parsed_params = parse_json_parameters(operation.parameters)
 
             if send_to_cluster:
                 self._send_to_cluster([operation], adapter_instance, operation.user.username)
             else:
-                self.initiate_prelaunch(operation, adapter_instance, {}, **PARAMS)
+                self.initiate_prelaunch(operation, adapter_instance, {}, **parsed_params)
 
 
     def _handle_exception(self, exception, temp_files, message, operation=None):
@@ -403,9 +404,8 @@ class OperationService:
         self.logger.error(message)
         self.logger.exception(exception)
         if operation is not None:
-            operation.mark_complete(model.STATUS_ERROR, unicode(exception))
-            dao.store_entity(operation)
-            self.workflow_service.update_executed_workflow_state(operation.id)
+            self.workflow_service.persist_operation_state(operation, model.STATUS_ERROR, unicode(exception))
+            self.workflow_service.update_executed_workflow_state(operation)
         self._remove_files(temp_files)
         exception.message = message
         raise exception
@@ -428,7 +428,8 @@ class OperationService:
                 self.logger.exception("Could not cleanup file!")
 
 
-    def _range_name(self, range_no):
+    @staticmethod
+    def _range_name(range_no):
         return model.PARAM_RANGE_PREFIX + str(range_no)
 
 

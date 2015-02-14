@@ -166,7 +166,8 @@ class ImportService():
         return bursts_dict, dt_mappings_dict
 
 
-    def _import_bursts(self, project_entity, bursts_dict):
+    @staticmethod
+    def _import_bursts(project_entity, bursts_dict):
         """
         Re-create old bursts, but keep a mapping between the id it has here and the old-id it had
         in the project where they were exported, so we can re-add the datatypes to them.
@@ -271,7 +272,7 @@ class ImportService():
                 wf_step_entity = model.WorkflowStep(algorithm.id)
                 wf_step_entity.from_dict(wf_step.data)
                 wf_step_entity.fk_workflow = workflow.id
-                wf_step_entity.fk_operation = wf_step.get_operagion().id
+                wf_step_entity.fk_operation = wf_step.get_operation_id()
                 dao.store_entity(wf_step_entity)
             except Exception:
                 # only log exception and ignore this as it is not very important:
@@ -292,7 +293,8 @@ class ImportService():
                 self.logger.exception("Could not restore WorkflowViewStep " + view_step.get_algorithm().name)
 
 
-    def _append_tmp_to_folders_containing_operations(self, import_path):
+    @staticmethod
+    def _append_tmp_to_folders_containing_operations(import_path):
         """
         Find folders containing operations and rename them, return the renamed paths
         """
@@ -343,9 +345,9 @@ class ImportService():
 
                 except IncompatibleFileManagerException:
                     os.remove(h5_file)
-                    self.logger.exception("We had a problem importing dataType %s" % h5_file)
+                    self.logger.warning("Incompatible H5 file will be ignored: %s" % h5_file)
 
-        all_datatypes.sort(key=lambda dt: dt.create_date)
+        all_datatypes.sort(key=lambda dt_date: dt_date.create_date)
         for dt in all_datatypes:
             self.logger.debug("Import order %s: %s" % (dt.type, dt.gid))
         return all_datatypes
@@ -414,8 +416,8 @@ class ImportService():
                 shutil.rmtree(new_operation_path)
                 shutil.move(old_operation_folder, new_operation_path)
 
-            operation_datatypes = self._load_datatypes_from_operation_folder(new_operation_path,
-                                                                       operation_entity, datatype_group)
+            operation_datatypes = self._load_datatypes_from_operation_folder(new_operation_path, operation_entity,
+                                                                             datatype_group)
             imported_operations.append(operation_entity)
             datatypes.extend(operation_datatypes)
 
