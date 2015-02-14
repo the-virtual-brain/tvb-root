@@ -379,7 +379,7 @@ class DatatypeDAO(RootDAO):
         return result_dt
 
 
-    def get_datatype_by_gid(self, gid):
+    def get_datatype_by_gid(self, gid, load_lazy=True):
         """
         Retrieve a DataType DB reference by a global identifier.
         """
@@ -391,11 +391,12 @@ class DatatypeDAO(RootDAO):
             data_type = data_class
             result_dt = self.session.query(data_type).filter_by(gid=gid).one()
 
-            result_dt.parent_operation.project
-            result_dt.parent_operation.user
-            result_dt.parent_operation.algorithm.algo_group.group_category
-            result_dt.parent_operation.operation_group
-            result_dt._parent_burst
+            if load_lazy:
+                result_dt.parent_operation.project
+                result_dt.parent_operation.user
+                result_dt.parent_operation.algorithm.algo_group.group_category
+                result_dt.parent_operation.operation_group
+                result_dt._parent_burst
 
             return result_dt
         except NoResultFound, excep:

@@ -66,6 +66,7 @@ class FilesUpdateManager(UpdateManager):
         super(FilesUpdateManager, self).__init__(file_update_scripts,
                                                  TvbProfile.current.version.DATA_CHECKED_TO_VERSION,
                                                  TvbProfile.current.version.DATA_VERSION)
+        self.files_helper = FilesHelper()
 
 
     def get_file_data_version(self, file_path):
@@ -98,7 +99,7 @@ class FilesUpdateManager(UpdateManager):
         return False
 
 
-    def upgrade_file(self, input_file_name):
+    def upgrade_file(self, input_file_name, datatype=None):
         """
         Upgrades the given file to the latest data version. The file will be upgraded
         sequentially, up until the current version from tvb.basic.config.settings.VersionSettings.DB_STRUCTURE_VERSION
@@ -108,7 +109,11 @@ class FilesUpdateManager(UpdateManager):
         file_version = self.get_file_data_version(input_file_name)
         for script_name in self.get_update_scripts(file_version):
             self.run_update_script(script_name, input_file=input_file_name)
-        self._update_datatype_disk_size(input_file_name)
+
+        if datatype:
+            #Compute and update the disk_size attribute of the DataType in DB:
+            datatype.disk_size = self.files_helper.compute_size_on_disk(input_file_name)
+            dao.store_entity(datatype)
 
 
     def __upgrade_datatype_list(self, datatypes):
@@ -124,10 +129,10 @@ class FilesUpdateManager(UpdateManager):
         nr_of_dts_upgraded_fine = 0
         nr_of_dts_upgraded_fault = 0
         for datatype in datatypes:
-            specific_datatype = dao.get_datatype_by_gid(datatype.gid)
+            specific_datatype = dao.get_datatype_by_gid(datatype.gid, load_lazy=False)
             if isinstance(specific_datatype, MappedType):
                 try:
-                    self.upgrade_file(specific_datatype.get_storage_file_path())
+                    self.upgrade_file(specific_datatype.get_storage_file_path(), specific_datatype)
                     nr_of_dts_upgraded_fine += 1
                 except (MissingDataFileException, FileVersioningException) as ex:
                     # The file is missing for some reason. Just mark the DataType as invalid.
@@ -191,17 +196,5 @@ class FilesUpdateManager(UpdateManager):
         folder, file_name = os.path.split(file_path)
         return HDF5StorageManager(folder, file_name)
 
-
-    def _update_datatype_disk_size(self, file_path):
-        """
-        Computes and updates the disk_size attribute of the DataType, for which was created the given file.
-        """
-        file_handler = FilesHelper()
-        datatype_gid = self._get_manager(file_path).get_gid_attribute()
-        datatype = dao.get_datatype_by_gid(datatype_gid)
-        
-        if datatype is not None:
-            datatype.disk_size = file_handler.compute_size_on_disk(file_path)
-            dao.store_entity(datatype)
             
             
