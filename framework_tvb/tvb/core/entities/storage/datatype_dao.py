@@ -391,8 +391,8 @@ class DatatypeDAO(RootDAO):
             data_type = data_class
             result_dt = self.session.query(data_type).filter_by(gid=gid).one()
 
+            result_dt.parent_operation.project
             if load_lazy:
-                result_dt.parent_operation.project
                 result_dt.parent_operation.user
                 result_dt.parent_operation.algorithm.algo_group.group_category
                 result_dt.parent_operation.operation_group

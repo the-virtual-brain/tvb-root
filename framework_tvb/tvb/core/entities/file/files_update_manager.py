@@ -155,25 +155,26 @@ class FilesUpdateManager(UpdateManager):
             datatype_total_count = dao.count_all_datatypes()
             # Keep track of how many DataTypes were properly updated and how many 
             # were marked as invalid due to missing files or invalid manager.
-            nr_of_dts_upgraded_fine = 0
-            nr_of_dts_upgraded_fault = 0
+            no_ok = 0
+            no_error = 0
 
             for current_idx in range(0, datatype_total_count, self.DATA_TYPES_PAGE_SIZE):
                 # Read DataTypes in pages to limit the memory consumption
+                self.log.info("Updated H5 files: %d [fine: %d, error:%d]" % (current_idx, no_ok, no_error))
                 datatypes_for_page = dao.get_all_datatypes(current_idx, self.DATA_TYPES_PAGE_SIZE)
                 upgraded_fine_count, upgraded_fault_count = self.__upgrade_datatype_list(datatypes_for_page)
-                nr_of_dts_upgraded_fine += upgraded_fine_count
-                nr_of_dts_upgraded_fault += upgraded_fault_count
+                no_ok += upgraded_fine_count
+                no_error += upgraded_fault_count
                 
             # Now update the configuration file since update was done
             config_file_update_dict = {stored.KEY_LAST_CHECKED_FILE_VERSION: TvbProfile.current.version.DATA_VERSION}
 
-            if nr_of_dts_upgraded_fault == 0:
+            if no_error == 0:
                 # Everything went fine
                 config_file_update_dict[stored.KEY_FILE_STORAGE_UPDATE_STATUS] = FILE_STORAGE_VALID
                 return_status = True
                 return_message = ("File upgrade finished successfully for all %s entries. "
-                                  "Thank you for your patience" % nr_of_dts_upgraded_fine)
+                                  "Thank you for your patience" % no_ok)
                 self.log.info(return_message)
             else:
                 # Something went wrong
@@ -181,7 +182,7 @@ class FilesUpdateManager(UpdateManager):
                 return_status = False
                 return_message = ("Out of %s stored DataTypes, %s were upgraded successfully "
                                   "and %s had faults and were marked invalid" % (datatype_total_count, 
-                                  nr_of_dts_upgraded_fine, nr_of_dts_upgraded_fault))
+                                  no_ok, no_error))
                 self.log.warning(return_message)
 
             TvbProfile.current.manager.add_entries_to_config_file(config_file_update_dict)
