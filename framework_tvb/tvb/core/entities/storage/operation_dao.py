@@ -185,7 +185,7 @@ class OperationDAO(RootDAO):
         return expected_hdd_size or 0
 
 
-    def get_filtered_operations(self, project_id, filter_chain, page_start=0, page_end=20, is_count=False):
+    def get_filtered_operations(self, project_id, filter_chain, page_start=0, page_size=20, is_count=False):
         """
         :param project_id: current project ID
         :param filter_chain: instance of FilterChain
@@ -224,7 +224,7 @@ class OperationDAO(RootDAO):
             if is_count:
                 return query.count()
 
-            return query.order_by(desc(func.max(model.Operation.id))).offset(page_start).limit(page_end).all()
+            return query.order_by(desc(func.max(model.Operation.id))).offset(page_start).limit(page_size).all()
 
         except SQLAlchemyError, excep:
             self.logger.exception(excep)

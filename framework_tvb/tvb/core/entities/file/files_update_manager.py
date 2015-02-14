@@ -59,7 +59,7 @@ class FilesUpdateManager(UpdateManager):
 
     UPDATE_SCRIPTS_SUFFIX = "_update_files"
     PROJECTS_PAGE_SIZE = 20
-    DATA_TYPES_PAGE_SIZE = 20
+    DATA_TYPES_PAGE_SIZE = 500
     
     
     def __init__(self):
@@ -152,29 +152,17 @@ class FilesUpdateManager(UpdateManager):
             # were marked as invalid due to missing files or invalid manager.
             nr_of_dts_upgraded_fine = 0
             nr_of_dts_upgraded_fault = 0
-            
-            # Read DataTypes in pages just to spare memory consumption
-            datatypes_nr_of_pages = datatype_total_count // self.DATA_TYPES_PAGE_SIZE
-            if datatype_total_count % self.DATA_TYPES_PAGE_SIZE:
-                datatypes_nr_of_pages += 1
-            current_datatype_page = 1
-            
-            while current_datatype_page <= datatypes_nr_of_pages:
-                
-                datatype_start_idx = self.DATA_TYPES_PAGE_SIZE * (current_datatype_page - 1)
-                if datatype_total_count >= datatype_start_idx + self.DATA_TYPES_PAGE_SIZE:
-                    datatype_end_idx = self.DATA_TYPES_PAGE_SIZE * current_datatype_page  
-                else: 
-                    datatype_end_idx = datatype_total_count - datatype_start_idx
-    
-                datatypes_for_page = dao.get_all_datatypes(datatype_start_idx, datatype_end_idx)
+
+            for current_idx in range(0, datatype_total_count, self.DATA_TYPES_PAGE_SIZE):
+                # Read DataTypes in pages to limit the memory consumption
+                datatypes_for_page = dao.get_all_datatypes(current_idx, self.DATA_TYPES_PAGE_SIZE)
                 upgraded_fine_count, upgraded_fault_count = self.__upgrade_datatype_list(datatypes_for_page)
                 nr_of_dts_upgraded_fine += upgraded_fine_count
                 nr_of_dts_upgraded_fault += upgraded_fault_count
-                current_datatype_page += 1
                 
             # Now update the configuration file since update was done
             config_file_update_dict = {stored.KEY_LAST_CHECKED_FILE_VERSION: TvbProfile.current.version.DATA_VERSION}
+
             if nr_of_dts_upgraded_fault == 0:
                 # Everything went fine
                 config_file_update_dict[stored.KEY_FILE_STORAGE_UPDATE_STATUS] = FILE_STORAGE_VALID
@@ -190,6 +178,7 @@ class FilesUpdateManager(UpdateManager):
                                   "and %s had faults and were marked invalid" % (datatype_total_count, 
                                   nr_of_dts_upgraded_fine, nr_of_dts_upgraded_fault))
                 self.log.warning(return_message)
+
             TvbProfile.current.manager.add_entries_to_config_file(config_file_update_dict)
             return return_status, return_message
      

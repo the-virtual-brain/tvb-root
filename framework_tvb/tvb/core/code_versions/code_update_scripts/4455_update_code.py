@@ -53,8 +53,7 @@ def update():
     projects_count = dao.get_all_projects(is_count=True)
     
     for page_start in range(0, projects_count, PAGE_SIZE):
-        projects_page = dao.get_all_projects(page_start=page_start,
-                                             page_end=min(page_start + PAGE_SIZE, projects_count))
+        projects_page = dao.get_all_projects(page_start=page_start, page_size=PAGE_SIZE)
         
         for project in projects_page:
             try:

@@ -193,16 +193,11 @@ class ProjectService:
         """
         selected_project = self.find_project(project_id)
         total_filtered = self.count_filtered_operations(project_id, applied_filters)
-        start_idx = OPERATIONS_PAGE_SIZE * (current_page - 1)
-
-        if total_filtered >= start_idx + OPERATIONS_PAGE_SIZE:
-            end_idx = OPERATIONS_PAGE_SIZE
-        else:
-            end_idx = total_filtered - start_idx
-
         pages_no = total_filtered // OPERATIONS_PAGE_SIZE + (1 if total_filtered % OPERATIONS_PAGE_SIZE else 0)
         total_ops_nr = self.count_filtered_operations(project_id)
-        current_ops = dao.get_filtered_operations(project_id, applied_filters, start_idx, end_idx)
+
+        start_idx = OPERATIONS_PAGE_SIZE * (current_page - 1)
+        current_ops = dao.get_filtered_operations(project_id, applied_filters, start_idx, OPERATIONS_PAGE_SIZE)
         if current_ops is None:
             return selected_project, 0, [], 0
 
@@ -302,8 +297,7 @@ class ProjectService:
         """
         start_idx = PROJECTS_PAGE_SIZE * (current_page - 1)
         total = dao.get_projects_for_user(user_id, is_count=True)
-        end_idx = (PROJECTS_PAGE_SIZE if total >= start_idx + PROJECTS_PAGE_SIZE else total - start_idx)
-        available_projects = dao.get_projects_for_user(user_id, start_idx, end_idx)
+        available_projects = dao.get_projects_for_user(user_id, start_idx, PROJECTS_PAGE_SIZE)
         pages_no = total // PROJECTS_PAGE_SIZE + (1 if total % PROJECTS_PAGE_SIZE else 0)
         for prj in available_projects:
             fns, sta, err, canceled, pending = dao.get_operation_numbers(prj.id)

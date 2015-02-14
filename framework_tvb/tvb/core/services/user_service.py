@@ -238,8 +238,7 @@ class UserService:
         """
         start_idx = USERS_PAGE_SIZE * (current_page - 1)
         total = dao.get_all_users(username, is_count=True)
-        end_idx = (USERS_PAGE_SIZE if total >= start_idx + USERS_PAGE_SIZE else total - start_idx)
-        user_list = dao.get_all_users(username, start_idx, end_idx)
+        user_list = dao.get_all_users(username, start_idx, USERS_PAGE_SIZE)
         pages_no = total // USERS_PAGE_SIZE + (1 if total % USERS_PAGE_SIZE else 0)
         return user_list, pages_no
 

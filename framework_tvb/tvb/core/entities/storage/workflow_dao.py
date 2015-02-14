@@ -66,7 +66,7 @@ class WorkflowDAO(RootDAO):
         return result
 
 
-    def get_bursts_for_project(self, project_id, page_start=0, page_end=None, count=False):
+    def get_bursts_for_project(self, project_id, page_start=0, page_size=None, count=False):
         """Get latest 50 BurstConfiguration entities for the current project"""
         try:
             bursts = self.session.query(model.BurstConfiguration
@@ -74,8 +74,8 @@ class WorkflowDAO(RootDAO):
                                                     ).order_by(desc(model.BurstConfiguration.start_time))
             if count:
                 return bursts.count()
-            if page_end is not None:
-                bursts = bursts.offset(max(page_start, 0)).limit(page_end)
+            if page_size is not None:
+                bursts = bursts.offset(max(page_start, 0)).limit(page_size)
 
             bursts = bursts.all()
         except SQLAlchemyError, excep:

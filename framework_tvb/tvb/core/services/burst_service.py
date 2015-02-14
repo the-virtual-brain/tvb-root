@@ -170,7 +170,7 @@ class BurstService():
         """
         Return all the burst for the current project.
         """
-        bursts = dao.get_bursts_for_project(project_id, page_end=MAX_BURSTS_DISPLAYED) or []
+        bursts = dao.get_bursts_for_project(project_id, page_size=MAX_BURSTS_DISPLAYED) or []
         for burst in bursts:
             burst.prepare_after_load()
         return bursts

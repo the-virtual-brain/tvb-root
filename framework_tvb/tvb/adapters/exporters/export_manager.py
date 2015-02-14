@@ -36,7 +36,7 @@ Class responsible for all TVB exports (datatype or project).
 
 import os
 import json
-from datetime import datetime, timedelta
+from datetime import datetime
 from tvb.adapters.exporters.tvb_export import TVBExporter
 from tvb.adapters.exporters.exceptions import ExportException, InvalidExportDataException
 from tvb.basic.profile import TvbProfile
@@ -73,12 +73,12 @@ class ExportManager:
         # Here we register all available data type exporters
         # If new exporters supported, they should be added here
         # Todo: uploaders and visualizers are registered using a different method.
-        self._registerExporter(TVBExporter())
-        #self._registerExporter(ObjSurfaceExporter())
+        self._register_exporter(TVBExporter())
+        #self._register_exporter(ObjSurfaceExporter())
         self.export_folder = os.path.join(TvbProfile.current.TVB_STORAGE, self.EXPORT_FOLDER_NAME)
 
     
-    def _registerExporter(self, exporter):
+    def _register_exporter(self, exporter):
         """
         This method register into an internal format available exporters.
         :param exporter: Instance of a data type exporter (extends ABCExporter)
@@ -172,7 +172,7 @@ class ExportManager:
         return paths
 
 
-    def _export_linked_datatypes(self, project, zip_file, min_date):
+    def _export_linked_datatypes(self, project, zip_file):
         files_helper = FilesHelper()
         linked_paths = self._get_linked_datatypes_storage_path(project)
 
@@ -214,7 +214,7 @@ class ExportManager:
 
         bursts_count = dao.get_bursts_for_project(project.id, count=True)
         for start_idx in range(0, bursts_count, BURST_PAGE_SIZE):
-            bursts = dao.get_bursts_for_project(project.id, page_start=start_idx, page_end=start_idx + BURST_PAGE_SIZE)
+            bursts = dao.get_bursts_for_project(project.id, page_start=start_idx, page_size=BURST_PAGE_SIZE)
             for burst in bursts:
                 self._build_burst_export_dict(burst, bursts_dict)
 
@@ -244,7 +244,6 @@ class ExportManager:
         project_datatypes = self._gather_project_datatypes(project, optimize_size)
         to_be_exported_folders = []
         considered_op_ids = []
-        min_dt_date = datetime.now()
 
         if optimize_size:
             ## take only the DataType with visibility flag set ON
@@ -254,13 +253,10 @@ class ExportManager:
                                                                                              str(dt[KEY_OPERATION_ID])),
                                                    'archive_path_prefix': str(dt[KEY_OPERATION_ID]) + os.sep})
                     considered_op_ids.append(dt[KEY_OPERATION_ID])
-                    if min_dt_date > dt[KEY_DT_DATE]:
-                        min_dt_date = dt[KEY_DT_DATE]
+
         else:
             to_be_exported_folders.append({'folder': project_folder,
                                            'archive_path_prefix': '', 'exclude': ["TEMP"]})
-            if project_datatypes:
-                min_dt_date = min([dt[KEY_DT_DATE] for dt in project_datatypes])
 
         # Compute path and name of the zip file
         now = datetime.now()
@@ -279,7 +275,7 @@ class ExportManager:
             LOG.debug("Done exporting files, now we will write the burst configurations...")
             self._export_bursts(project, project_datatypes, zip_file)
             LOG.debug("Done exporting burst configurations, now we will export linked DTs")
-            self._export_linked_datatypes(project, zip_file, min_dt_date)
+            self._export_linked_datatypes(project, zip_file)
             ## Make sure the Project.xml file gets copied:
             if optimize_size:
                 LOG.debug("Done linked, now we write the project xml")

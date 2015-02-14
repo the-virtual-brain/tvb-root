@@ -210,17 +210,17 @@ class DatatypeDAO(RootDAO):
         return count
 
 
-    def get_all_datatypes(self, page_start=0, page_end=20):
+    def get_all_datatypes(self, page_start=0, page_size=20):
         """
         Return a list with all of the datatypes currently available in TVB. Is used by 
         the file storage update manager to upgrade from version to the next.
         
         :param page_start: the index from which to start adding datatypes to the result list
-        :param page_end: the index up until which you add datatypes to the result list
+        :param page_size: maximum number of entities to retrieve
         """
         resulted_data = []
         try:
-            resulted_data = self.session.query(model.DataType).offset(max(page_start, 0)).limit(max(page_end, 0)).all()
+            resulted_data = self.session.query(model.DataType).offset(max(page_start, 0)).limit(max(page_size, 0)).all()
         except SQLAlchemyError, excep:
             self.logger.exception(excep)
         return resulted_data
@@ -453,7 +453,7 @@ class DatatypeDAO(RootDAO):
             return None
 
 
-    def get_values_of_datatype(self, project_id, datatype_class, filters=None, page_end=50):
+    def get_values_of_datatype(self, project_id, datatype_class, filters=None, page_size=50):
         """
         Retrieve a list of dataTypes matching a filter inside a project.
         :returns: (results, total_count) maximum page_end rows are returned, to avoid endless time when loading a page
@@ -490,7 +490,7 @@ class DatatypeDAO(RootDAO):
             #Retrieve the results
             query = query.group_by(datatype_class.id).order_by(desc(datatype_class.id))
 
-            result = query.limit(max(page_end, 0)).all()
+            result = query.limit(max(page_size, 0)).all()
             count = query.count()
         except Exception, excep:
             self.logger.exception(excep)

@@ -98,7 +98,7 @@ class CaseDAO(RootDAO):
         return admins
 
 
-    def get_all_users(self, different_name=' ', page_start=0, page_end=20, is_count=False):
+    def get_all_users(self, different_name=' ', page_start=0, page_size=20, is_count=False):
         """Retrieve all USERS in DB, except current user and system user."""
         try:
             sys_name = TvbProfile.current.web.admin.SYSTEM_USER_NAME
@@ -108,7 +108,7 @@ class CaseDAO(RootDAO):
             if is_count:
                 result = query.count()
             else:
-                result = query.order_by(model.User.username).offset(max(page_start, 0)).limit(max(page_end, 0)).all()
+                result = query.order_by(model.User.username).offset(max(page_start, 0)).limit(max(page_size, 0)).all()
             return result
         except NoResultFound:
             self.logger.warning("No users found. Maybe database is empty.")
@@ -222,7 +222,7 @@ class CaseDAO(RootDAO):
         return number
 
 
-    def get_all_projects(self, page_start=0, page_end=20, is_count=False):
+    def get_all_projects(self, page_start=0, page_size=20, is_count=False):
         """
         Retrieve all Project entities currently in the system.
         WARNING: use this wisely, as it might easily overflow the system.
@@ -231,11 +231,11 @@ class CaseDAO(RootDAO):
         if is_count:
             result = query.count()
         else:
-            result = query.offset(max(page_start, 0)).limit(max(page_end, 0)).all()
+            result = query.offset(max(page_start, 0)).limit(max(page_size, 0)).all()
         return result
 
 
-    def get_projects_for_user(self, user_id, page_start=0, page_end=20, is_count=False):
+    def get_projects_for_user(self, user_id, page_start=0, page_size=20, is_count=False):
         """
         Return all projects a given user can access (administrator or not).
         """
@@ -249,7 +249,7 @@ class CaseDAO(RootDAO):
         if is_count:
             result = query.count()
         else:
-            result = query.offset(max(page_start, 0)).limit(max(page_end, 0)).all()
+            result = query.offset(max(page_start, 0)).limit(max(page_size, 0)).all()
             [project.administrator.username for project in result]
         return result
 
