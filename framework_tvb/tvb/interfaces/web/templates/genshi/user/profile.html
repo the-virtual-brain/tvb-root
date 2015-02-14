@@ -7,7 +7,6 @@
 			if (${'true' if len(errors) > 0 else 'false'}) {
 				show_hide(".shouldShow", ".shouldHide");
 			}
-			upgradeFileStorage();
 		});
 	</script>
 	
@@ -90,7 +89,7 @@
             
             <dt>Online Help</dt>
             <dd tabindex='10' onkeypress="redirectToHrefChild(this)">
-                <a href="/user/switchOnlineHelp" tabindex="-1"><u>${'deactivate' if user.is_online_help_active() else 'activate'}</u></a>
+                <a href="/user/switch_online_help" tabindex="-1"><u>${'deactivate' if user.is_online_help_active() else 'activate'}</u></a>
             </dd>
         </dl>
         </form>

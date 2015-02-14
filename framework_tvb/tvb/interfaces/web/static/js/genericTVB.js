@@ -857,15 +857,15 @@ function showHelpOverlay(section, subsection) {
 
 
 /**
- * Function that opens a loading overlay until the file storage update is done.
+ * Function that opens a blocker overlay until the file storage update is done on the server.
  */
-function upgradeFileStorage() {
+function waitForStorageUpdateToEnd() {
     doAjaxCall({
         overlay_timeout: 60 * 1000 * 60 * 4, //Timeout of 4 hours
         overlay_data: {'message_data': "Due to upgrade in H5 structures, we need to update all your stored data. Please be patient and don't close TVB during the process."},
         showBlockerOverlay : true,
         type:'GET',
-        url:'/user/upgrade_file_storage',
+        url:'/user/is_storage_ready',
         success:function (data) {
             var result = $.parseJSON(data);
             var message = result['message'];

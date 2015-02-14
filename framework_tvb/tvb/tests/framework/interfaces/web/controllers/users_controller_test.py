@@ -127,9 +127,9 @@ class UsersControllerTest(BaseTransactionalControllerTest):
     
     def test_switch_online_help(self):
         """
-        Test the switchOnlineHelp method and make sure it adds corresponding entry to UserPreferences.
+        Test the switch_online_help method and make sure it adds corresponding entry to UserPreferences.
         """
-        self._expect_redirect('/user/profile', self.user_c.switchOnlineHelp)
+        self._expect_redirect('/user/profile', self.user_c.switch_online_help)
         self.assertFalse(utils.string2bool(self.test_user.preferences[UserPreferences.ONLINE_HELP_ACTIVE]),
                          "Online help should be switched to False.")
         

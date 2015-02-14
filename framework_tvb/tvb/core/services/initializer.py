@@ -27,21 +27,25 @@
 #   Frontiers in Neuroinformatics (7:10. doi: 10.3389/fninf.2013.00010)
 #
 #
+
 """
 .. moduleauthor:: Lia Domide <lia.domide@codemart.ro>
 """
-import datetime
+
 import shutil
+import datetime
+import threading
 from tvb.basic.profile import TvbProfile
+from tvb.core.adapters.introspector import Introspector
+from tvb.core.code_versions.code_update_manager import CodeUpdateManager
 from tvb.core.entities import model
+from tvb.core.entities.file.files_update_manager import FilesUpdateManager
 from tvb.core.entities.storage import dao
 from tvb.core.entities.model_manager import initialize_startup, reset_database
-from tvb.core.code_versions.code_update_manager import CodeUpdateManager
 from tvb.core.services.project_service import initialize_storage
 from tvb.core.services.user_service import UserService
 from tvb.core.services.settings_service import SettingsService
 from tvb.core.services.event_handlers import read_events
-from tvb.core.adapters.introspector import Introspector
 
 
 def reset():
@@ -98,6 +102,11 @@ def initialize(introspected_modules, load_xml_events=True):
         
         ## In case actions related to latest code-changes are needed, make sure they are executed.
         CodeUpdateManager().run_all_updates()
+
+        ## In case the H5 version changed, run updates on all DataTypes
+        if TvbProfile.current.version.DATA_CHECKED_TO_VERSION < TvbProfile.current.version.DATA_VERSION:
+            thread = threading.Thread(target=FilesUpdateManager().run_all_updates)
+            thread.start()
 
         ## Clean tvb-first-time-run temporary folder, as we are no longer at the first run:
         shutil.rmtree(TvbProfile.current.FIRST_RUN_STORAGE, True)

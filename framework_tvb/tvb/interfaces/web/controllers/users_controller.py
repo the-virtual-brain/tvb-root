@@ -36,16 +36,16 @@ but also user related annotation (checked-logged).
 .. moduleauthor:: Lia Domide <lia.domide@codemart.ro>
 """
 
-import json
-from hashlib import md5
-from urllib2 import urlopen
-
 import os
+import json
+import time
 import cherrypy
 import formencode
+from hashlib import md5
+from urllib2 import urlopen
 from formencode import validators
-
 from tvb.basic.profile import TvbProfile
+from tvb.core.entities.file.files_update_manager import FilesUpdateManager
 from tvb.core.services.user_service import UserService, KEY_PASSWORD, KEY_EMAIL, KEY_USERNAME, KEY_COMMENT
 from tvb.core.services.project_service import ProjectService
 from tvb.core.services.exceptions import UsernameException
@@ -53,14 +53,15 @@ from tvb.core.utils import format_bytes_human
 import tvb.interfaces.web
 from tvb.interfaces.web.controllers import common
 from tvb.interfaces.web.controllers.base_controller import BaseController
-from tvb.interfaces.web.controllers.decorators import handle_error, using_template, settings
+from tvb.interfaces.web.controllers.decorators import handle_error, using_template, settings, jsonify
 from tvb.interfaces.web.controllers.decorators import check_user, expose_json, check_admin
 from tvb.core.services.texture_to_json import color_texture_to_list
 
 
 KEY_SERVER_VERSION = "versionInfo"
 KEY_CURRENT_VERSION_FULL = "currentVersionLongText"
-KEY_NEED_FILE_STORAGE_UPG = "needFileStorageUpgrade"
+KEY_STORAGE_IN_UPDATE = "isStorageInUpdate"
+
 
 
 class UserController(BaseController):
@@ -149,7 +150,8 @@ class UserController(BaseController):
             user = self.user_service.get_user_by_id(user.id)
             common.add2session(common.KEY_USER, user)
 
-        template_specification['user_used_disk_human'] = format_bytes_human(self.user_service.compute_user_generated_disk_size(user.id))
+        template_specification['user_used_disk_human'] = format_bytes_human(
+            self.user_service.compute_user_generated_disk_size(user.id))
         return self.fill_default_attributes(template_specification)
 
 
@@ -175,7 +177,7 @@ class UserController(BaseController):
     @cherrypy.expose
     @handle_error(redirect=True)
     @check_user
-    def switchOnlineHelp(self):
+    def switch_online_help(self):
         """
         Switch flag that displays online helps
         """
@@ -202,7 +204,7 @@ class UserController(BaseController):
 
     @expose_json
     def get_color_schemes_json(self):
-        cherrypy.response.headers['Cache-Control'] = 'max-age=86400' # cache for a day
+        cherrypy.response.headers['Cache-Control'] = 'max-age=86400'  # cache for a day
         pth = os.path.join(os.path.dirname(tvb.interfaces.web.__file__), 'static', 'coloring', 'color_schemes.png')
         return color_texture_to_list(pth, 256, 8)
 
@@ -345,14 +347,17 @@ class UserController(BaseController):
             return self.fill_default_attributes(template_specification)
 
 
-    @expose_json
-    def upgrade_file_storage(self):
+    @cherrypy.expose
+    @handle_error(redirect=False)
+    @jsonify
+    def is_storage_ready(self):
         """
-        Upgrade the file storage to the latest version if needed.
-        Otherwise just return. This is called on user login.
+        Check if all storage updates are done
         """
-        status, message = self.user_service.upgrade_file_storage()
-        return dict(message=message, status=status)
+        while TvbProfile.current.version.DATA_CHECKED_TO_VERSION < TvbProfile.current.version.DATA_VERSION:
+            time.sleep(2)
+
+        return dict(message=FilesUpdateManager.MESSAGE, status=FilesUpdateManager.STATUS)
 
 
     @cherrypy.expose
@@ -392,6 +397,8 @@ class UserController(BaseController):
         template_dictionary[common.KEY_INCLUDE_TOOLTIP] = True
         template_dictionary[common.KEY_WRAP_CONTENT_IN_MAIN_DIV] = False
         template_dictionary[common.KEY_CURRENT_TAB] = 'nav-user'
+        template_dictionary[KEY_STORAGE_IN_UPDATE] = (TvbProfile.current.version.DATA_CHECKED_TO_VERSION <
+                                                      TvbProfile.current.version.DATA_VERSION)
         return template_dictionary
 
 

@@ -33,16 +33,14 @@ Service layer for USER entities.
    
 .. moduleauthor:: Lia Domide <lia.domide@codemart.ro>
 """
-import threading
+
 from random import randint
 from hashlib import md5
 from inspect import stack
 from tvb.basic.profile import TvbProfile
 from tvb.basic.logger.builder import get_logger
-from tvb.core.decorators import synchronized
 from tvb.core.entities import model
 from tvb.core.entities.storage import dao
-from tvb.core.entities.file.files_update_manager import FilesUpdateManager
 from tvb.core.services import email_sender
 from tvb.core.services.exceptions import UsernameException
 from tvb.core.services.settings_service import SettingsService
@@ -72,7 +70,6 @@ KEY_ROLE = "role"
 KEY_COMMENT = "comment"
 DEFAULT_PASS_LENGTH = 10
 USERS_PAGE_SIZE = 7
-FILE_UPGRADE_LOCK = threading.Lock()
 
 
 
@@ -306,20 +303,5 @@ class UserService:
     def compute_user_generated_disk_size(user_id):
         return dao.compute_user_generated_disk_size(user_id)
 
-
-    @synchronized(FILE_UPGRADE_LOCK)
-    def upgrade_file_storage(self):
-        """
-        For the given user upgrade all DataType files storage.
-        
-        :returns: a two entry tuple (status, message) where status is a boolean that is True in case the upgrade
-             was successful for all DataTypes and False otherwise, and message is a status update message.
-        """
-        status = None
-        message = ''
-        if TvbProfile.current.version.DATA_CHECKED_TO_VERSION < TvbProfile.current.version.DATA_VERSION:
-            self.logger.info("Starting to upgrade all DataType file storage.")
-            status, message = FilesUpdateManager().upgrade_all_files_from_storage()
-        return status, message
          
             

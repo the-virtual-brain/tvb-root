@@ -43,7 +43,7 @@
         <link rel="stylesheet" type="text/css" href="/static/style/overlay.css?$currentVersionJS"/>
         <script type="text/javascript" src="/static/jquery/jquery.js"></script>
         <script type="text/javascript" src="/static/js/genericTVB.js?$currentVersionJS"></script>
-        <script type="text/javascript">checkForIE()</script> 
+        <script type="text/javascript">checkForIE()</script>
     </head>
     
     <!--! ========================================================== -->
@@ -79,5 +79,10 @@
             <xi:include href="../footer.html"/>
         </py:if>
     </body>
+    <script type="application/javascript" py:if="isStorageInUpdate">
+        $(document).ready(function () {
+            waitForStorageUpdateToEnd();
+        });
+    </script>
        
 </html>

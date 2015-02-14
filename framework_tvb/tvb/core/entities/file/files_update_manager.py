@@ -61,6 +61,8 @@ class FilesUpdateManager(UpdateManager):
     UPDATE_SCRIPTS_SUFFIX = "_update_files"
     PROJECTS_PAGE_SIZE = 20
     DATA_TYPES_PAGE_SIZE = 500
+    STATUS = True
+    MESSAGE = "Done"
     
     
     def __init__(self):
@@ -144,7 +146,7 @@ class FilesUpdateManager(UpdateManager):
         return nr_of_dts_upgraded_fine, nr_of_dts_upgraded_fault
                         
                         
-    def upgrade_all_files_from_storage(self):
+    def run_all_updates(self):
         """
         Upgrades all the data types from TVB storage to the latest data version.
         
@@ -154,6 +156,11 @@ class FilesUpdateManager(UpdateManager):
         """
         if TvbProfile.current.version.DATA_CHECKED_TO_VERSION < TvbProfile.current.version.DATA_VERSION:
             total_count = dao.count_all_datatypes()
+
+            self.log.info("Starting to run H5 file updates from %d to %d for %d datatypes" % (
+                TvbProfile.current.version.DATA_CHECKED_TO_VERSION,
+                TvbProfile.current.version.DATA_VERSION, total_count))
+
             # Keep track of how many DataTypes were properly updated and how many 
             # were marked as invalid due to missing files or invalid manager.
             no_ok = 0
@@ -178,21 +185,20 @@ class FilesUpdateManager(UpdateManager):
             if no_error == 0:
                 # Everything went fine
                 config_file_update_dict[stored.KEY_FILE_STORAGE_UPDATE_STATUS] = FILE_STORAGE_VALID
-                return_status = True
-                return_message = ("File upgrade finished successfully for all %s entries. "
-                                  "Thank you for your patience" % no_ok)
-                self.log.info(return_message)
+                FilesUpdateManager.STATUS = True
+                FilesUpdateManager.MESSAGE = ("File upgrade finished successfully for all %s entries. "
+                                              "Thank you for your patience" % no_ok)
+                self.log.info(FilesUpdateManager.MESSAGE)
             else:
                 # Something went wrong
                 config_file_update_dict[stored.KEY_FILE_STORAGE_UPDATE_STATUS] = FILE_STORAGE_INVALID
-                return_status = False
-                return_message = ("Out of %s stored DataTypes, %s were upgraded successfully "
-                                  "and %s had faults and were marked invalid" % (total_count,
-                                  no_ok, no_error))
-                self.log.warning(return_message)
+                FilesUpdateManager.STATUS = False
+                FilesUpdateManager.MESSAGE = ("Out of %s stored DataTypes, %s were upgraded successfully, but %s had "
+                                              "faults and were marked invalid" % (total_count, no_ok, no_error))
+                self.log.warning(FilesUpdateManager.MESSAGE)
 
+            TvbProfile.current.version.DATA_CHECKED_TO_VERSION = TvbProfile.current.version.DATA_VERSION
             TvbProfile.current.manager.add_entries_to_config_file(config_file_update_dict)
-            return return_status, return_message
      
 
     @staticmethod
