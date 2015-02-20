@@ -33,7 +33,7 @@ When creating a new TVB set of release packages you should:
 
     - run TVB unit tests (cd bin sh run_tests.sh) to make sure that everything is correct. 
     - generate distribution packages with http://hudson.codemart.ro/ 
-        * when the release is public, copy the distribution files on [tvb-live-server]:/opt/tvb-public-distributions/
+        * when the release is public, copy the distribution files on [tvb-live-server]:/opt/tvb-public-releases/
     - http://www.thevirtualbrain.org/tvb/zwei/cms#
         admin/zwe1m@rt
         Upload new ZIP with distributions under "Document" entity

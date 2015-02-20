@@ -64,6 +64,16 @@ def generage_excludes(root_folders):
     return excludes
 
 
+def setup_test_env():
+
+    from tvb.basic.profile import TvbProfile
+    if len(sys.argv) > 0:
+        profile = sys.argv[1]
+    else:
+        profile = TvbProfile.TEST_SQLITE_PROFILE
+    TvbProfile.set_profile(profile)
+
+
 
 if __name__ == "__main__":
     #Start all TVB tests (if in Coverage mode)
@@ -75,12 +85,10 @@ if __name__ == "__main__":
         COVERAGE.start()
         ## This needs to be executed before any TVB import.
 
-
+setup_test_env()
 import unittest
 import datetime
 from tvb.basic.profile import TvbProfile
-TvbProfile.set_profile(sys.argv[1])
-
 from tvb.tests.framework.xml_runner import XMLTestRunner
 from tvb.tests.framework.core import core_tests_main
 from tvb.tests.framework.adapters import adapters_tests_main

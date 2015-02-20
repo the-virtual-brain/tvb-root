@@ -79,7 +79,7 @@
             <xi:include href="../footer.html"/>
         </py:if>
     </body>
-    <script type="application/javascript" py:if="isStorageInUpdate">
+    <script type="application/javascript" py:if="not first_run and defined('isStorageInUpdate') and isStorageInUpdate">
         $(document).ready(function () {
             waitForStorageUpdateToEnd();
         });
