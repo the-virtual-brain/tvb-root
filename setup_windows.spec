@@ -102,7 +102,7 @@ EXCLUDE_DIRS = [ #On windows python standard libraries like os, site, runpy are 
                  #as same level as site-packages, so pyinstaller will also add site-packages.
                 'site-packages', 
                  #Standard library for python on windows, not needed
-                 'msilib', 'pydoc_data']
+                 'ensurepip', 'msilib', 'pydoc_data']
 
 EXCLUDE_FILES = [#Additional DLL's that don't seem to be used
                  'msvcp90.dll', 'msvcr100.dll', 'nsi.dll', 'psapi.dll', 'secur32.dll', 'winnsi.dll', 'wldap32.dll', 
@@ -111,9 +111,7 @@ EXCLUDE_FILES = [#Additional DLL's that don't seem to be used
                  'wxmsw28uh_core_vc.dll', 'wxmsw28uh_html_vc.dll', 'LIBEAY32.dll', 'SSLEAY32.dll',
                  'perfmon.pyd', 'servicemanager.pyd', 'tvb._speedups.history.pyd', 'tvb._speedups.models.pyd',
                  # wx files probably included after idle dependency but does not seem to be required
-                 'wx._windows_.pyd', 'wx._misc_.pyd', 'wx._gdi_.pyd', 'wx._core_.pyd', 'wx._controls_.pyd',
-                 # this is new since python 2.7.9 and not used in distribution:
-                 'ensurepip'
+                 'wx._windows_.pyd', 'wx._misc_.pyd', 'wx._gdi_.pyd', 'wx._core_.pyd', 'wx._controls_.pyd'
                  ]
 INCLUDE_FILES = ['decorator']
 

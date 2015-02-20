@@ -108,8 +108,9 @@ if os.path.exists(DIST_FOLDER):
 
 print "PY2APP starting ..."
 # Log everything from py2app in a log file
-REAL_STDOUT = sys.stdout
+REAL_STDOUT, REAL_STDERR = sys.stdout, sys.stderr
 sys.stdout = open('PY2APP.log', 'w')
+sys.stderr = open('PY2APP_ERR.log', 'w')
 
 setuptools.setup(name="tvb",
                  version=PyInstallerPacker.VERSION,
@@ -123,6 +124,7 @@ setuptools.setup(name="tvb",
                  setup_requires=['py2app'])
 
 sys.stdout = REAL_STDOUT
+sys.stderr = REAL_STDERR
 print "PY2APP finished."
 
 print "Running post-py2app build operations:"
