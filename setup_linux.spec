@@ -130,7 +130,7 @@ EXTRA_DEPENDENCIES = ['pysqlite2']
 EXTRA_BINARIES = [('libXfixes.so.3', '/usr/lib/libXfixes.so.3', 'BINARY')]
 
 EXCLUDE_FILES = ['grp.so', 'audioop.so', 'libjpeg.so.62', 'tvb._speedups.history.so', 'tvb._speedups.models.so']
-EXCLUDE_DIRS = ['dist-packages', 'qt4_plugins']
+EXCLUDE_DIRS = ['dist-packages', 'ensurepip', 'qt4_plugins']
 INCLUDE_FILES = ['decorator', 'cmath']
 ARG_CLUSTER = 'cluster'
 
