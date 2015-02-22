@@ -347,28 +347,6 @@ class TimeSeriesVolumeFramework(time_series_data.TimeSeriesVolumeData, TimeSerie
     These methods will be later used by TS-Volume Viewer.
     """
 
-    def get_rotated_volume_slice(self, from_idx, to_idx):
-        """
-        :param from_idx: int This will be the limit on the first dimension (time)
-        :param to_idx: int Also limit on the first Dimension (time)
-        :return: Multidimensional matrix (4D). Represents a part from the entire TS, cut over the first
-                dimension (time) by the bounds given as inputs, and with the last dimension rotated to get
-                a better view of the brain.
-        """
-
-        from_idx, to_idx = int(from_idx), int(to_idx)
-        overall_shape = self.read_data_shape()
-
-        if from_idx > to_idx or to_idx > overall_shape[0] or from_idx < 0:
-            msg = "Bad time indexes: From {0} to {1}".format(from_idx, to_idx)
-            raise exceptions.ValidationException(msg)
-
-        slices = (slice(from_idx, to_idx), slice(overall_shape[1]), slice(overall_shape[2]), slice(overall_shape[3]))
-        slices = self.read_data_slice(tuple(slices))
-        slices = slices[..., ::-1]
-        return slices
-
-
     def get_volume_view(self, from_idx, to_idx, x_plane, y_plane, z_plane):
         """
         :param from_idx: int This will be the limit on the first dimension (time)

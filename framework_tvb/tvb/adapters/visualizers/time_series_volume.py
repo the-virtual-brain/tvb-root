@@ -65,14 +65,13 @@ class TimeSeriesVolumeVisualiser(ABCDisplayer):
 
         volume = time_series_volume.volume
         minValue, maxValue = time_series_volume.get_min_max_values()
-        dataUrls = [self.paths2url(time_series_volume, "get_rotated_volume_slice", parameter=""),
-                    self.paths2url(time_series_volume, "get_volume_view", parameter=""),
-                    self.paths2url(time_series_volume, "get_voxel_time_series", parameter="")
-                    ]
+        urlVolumeData = self.paths2url(time_series_volume, "get_volume_view", parameter="")
+        urlTimeSeriesData = self.paths2url(time_series_volume, "get_voxel_time_series", parameter="")
 
         params = dict(title="Volumetric Time Series",
                       minValue=minValue, maxValue=maxValue,
-                      dataUrls=json.dumps(dataUrls),
+                      urlVolumeData=urlVolumeData,
+                      urlTimeSeriesData =urlTimeSeriesData,
                       samplePeriod=time_series_volume.sample_period,
                       samplePeriodUnit=time_series_volume.sample_period_unit,
                       volumeShape=json.dumps(time_series_volume.read_data_shape()),

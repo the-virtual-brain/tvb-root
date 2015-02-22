@@ -6,9 +6,9 @@ var tsVol = {
     minimumValue: null,         // Minimum value of the dataset.
     maximumValue: null,         // Maximum value of the dataset.
     voxelSize: null,
-    volumeOrigin: null,         // TolumeOrigin is not used for now. if needed, use it in _setQuadrant
+    volumeOrigin: null,         // VolumeOrigin is not used for now. if needed, use it in _setQuadrant
     selectedEntity: [0, 0, 0],  // The selected voxel; [i, j, k].
-    selectedEntityValue: 0,     // he value of voxel[i,j,k]
+    selectedEntityValue: 0,     // the value of voxel[i,j,k]
     entitySize: [0, 0, 0],      // The size of each plane
     quadrantHeight: null,       // The height of the three small left quadrants
     quadrantWidth: null,        // The width of the three small left quadrants
@@ -31,7 +31,6 @@ var tsVol = {
     sliceArray: [],             // A helper variable to draw the data on the canvas.
     bufferL2: {},               // Contains all data loaded and preloaded, limited by memory.
     bufferL3: {},               // Contains all data from loaded views, limited by memory.
-    urlMainData: "",            // Used to contain the python URL for each time point.
     urlVolumeData: "",          // Used to store the call for get_volume_view server function.
     dataSize: "",               // Used first to contain the file ID and then it's dimension.
     requestQueue: [],           // Used to avoid requesting a time point set while we are waiting for it.
@@ -57,7 +56,8 @@ var SLIDERIDS = ["sliderForAxisX", "sliderForAxisY", "sliderForAxisZ"];
 
 /**
  * Make all the necessary initialisations and draws the default view, with the center voxel selected
- * @param dataUrls          Urls containing data slices from server
+ * @param urlVolumeData          Url base for retrieving current slices data (for the left-side)
+ * @param urlTimeSeriesData      URL base for retrieving TS (right side)
  * @param minValue          The minimum value for all the slices
  * @param maxValue          The maximum value for all the slices
  * @param samplePeriod      Number representing how frequent the signal was being measured
@@ -66,7 +66,7 @@ var SLIDERIDS = ["sliderForAxisX", "sliderForAxisY", "sliderForAxisZ"];
  * @param volOrigin         The origin of the rendering; irrelevant in 2D, for now
  * @param sizeOfVoxel       How the voxel is sized on each axis; [xScale, yScale, zScale]
  */
-function TSV_initVisualizer(dataUrls, minValue, maxValue, samplePeriod, samplePeriodUnit,
+function TSV_initVisualizer(urlVolumeData, urlTimeSeriesData, minValue, maxValue, samplePeriod, samplePeriodUnit,
                             volumeShape, volOrigin, sizeOfVoxel) {
 
     var canvas = document.getElementById("canvasVolumes");
@@ -111,10 +111,8 @@ function TSV_initVisualizer(dataUrls, minValue, maxValue, samplePeriod, samplePe
     // TODO maybe in the future we will find a solution to make image bigger before saving
     canvas.drawForImageExport = function() {};
 
-    dataUrls = $.parseJSON(dataUrls);
-    tsVol.urlMainData = dataUrls[0];
-    tsVol.urlVolumeData = dataUrls[1];
-    tsVol.urlTimeSeriesData = dataUrls[2];
+    tsVol.urlVolumeData = urlVolumeData;
+    tsVol.urlTimeSeriesData = urlTimeSeriesData;
 
     tsVol.dataSize = $.parseJSON(volumeShape);
     tsVol.samplePeriod = samplePeriod;
@@ -161,13 +159,8 @@ function TSV_initVisualizer(dataUrls, minValue, maxValue, samplePeriod, samplePe
  * Draws the current view depending on the selected entity
  * @param tIndex The time point we want to draw
  */
-function drawSceneFunctional(tIndex){
-    if(tsVol.playerIntervalID){
-        drawSceneFunctionalFromView(tIndex)
-    }
-    else{
-        drawSceneFunctionalFromCube(tIndex)
-    }
+function drawSceneFunctional(tIndex) {
+    drawSceneFunctionalFromView(tIndex);
     drawLegend();
     drawLabels();
 }
@@ -178,77 +171,12 @@ function colorRedraw(){
     drawSceneFunctional(tsVol.currentTimePoint);
 }
 
-/**
- * Draws the current scene from the whole loaded cube data
- * @param tIndex The time point we want to draw
- */
-function drawSceneFunctionalFromCube(tIndex){
-    var i, j, k, ii, jj, kk;
-
-    // if we pass no tIndex the function will play
-    // from the tsVol.currentTimePoint incrementing it by 1 or going back to 0.
-    if(tIndex == null){
-        tIndex = tsVol.currentTimePoint;
-        tsVol.currentTimePoint++;
-        tsVol.currentTimePoint = tsVol.currentTimePoint % tsVol.timeLength;
-    }
-    updateTSFragment();
-    tsVol.data = getSliceAtTime(tIndex);
-    _setCtxOnQuadrant(0);
-    tsVol.ctx.fillStyle = ColSch_getGradientColorString(tsVol.minimumValue, tsVol.minimumValue, tsVol.maximumValue);
-    tsVol.ctx.fillRect(0, 0, tsVol.ctx.canvas.width, tsVol.ctx.canvas.height);
-
-    for (j = 0; j < tsVol.dataSize[2]; ++j)
-        for (i = 0; i < tsVol.dataSize[1]; ++i)
-            drawVoxel(i, j, tsVol.data[i][j][tsVol.selectedEntity[2]]);
-    drawMargin();
-
-    _setCtxOnQuadrant(1);
-    for (k = 0; k < tsVol.dataSize[3]; ++k)
-        for (jj = 0; jj < tsVol.dataSize[2]; ++jj)
-            drawVoxel(k, jj, tsVol.data[tsVol.selectedEntity[0]][jj][k]);
-    drawMargin();
-
-    _setCtxOnQuadrant(2);
-    for (kk = 0; kk < tsVol.dataSize[3]; ++kk)
-        for (ii = 0; ii < tsVol.dataSize[1]; ++ii)
-            drawVoxel(kk, ii, tsVol.data[ii][tsVol.selectedEntity[1]][kk]);
-    drawMargin();
-    drawFocusQuadrantFromCube(tIndex);
-    drawNavigator();
-    updateMoviePlayerSlider();
-    setSelectedEntityValue(tsVol.data);
-}
-
-/**
- * Draws the selectedQuadrant on Focus Quadrant from the whole cube data
- * @param tIndex The time point we want to draw
- */
-function drawFocusQuadrantFromCube(tIndex){
-    _setCtxOnQuadrant(3);
-    if(tsVol.highlightedQuad.index == 0){
-        for (var j = 0; j < tsVol.dataSize[2]; ++j)
-            for (var i = 0; i < tsVol.dataSize[1]; ++i)
-                drawVoxel(i, j, tsVol.data[i][j][tsVol.selectedEntity[2]]);
-    }
-    else if(tsVol.highlightedQuad.index == 1){
-        for (var k = 0; k < tsVol.dataSize[3]; ++k)
-            for (var jj = 0; jj < tsVol.dataSize[2]; ++jj)
-                drawVoxel(k, jj, tsVol.data[tsVol.selectedEntity[0]][jj][k]);
-    }
-    else if(tsVol.highlightedQuad.index == 2){
-        for (var kk = 0; kk < tsVol.dataSize[3]; ++kk)
-            for (var ii = 0; ii < tsVol.dataSize[1]; ++ii)
-                drawVoxel(kk, ii, tsVol.data[ii][tsVol.selectedEntity[1]][kk]);
-    }
-    drawMargin();
-}
 
 /**
  * Draws the current scene only from the three visible planes data.
  * @param tIndex The time point we want to draw
  */
-function drawSceneFunctionalFromView(tIndex){
+function drawSceneFunctionalFromView(tIndex) {
     var i, j, k, ii, jj, kk;
 
     // if we pass no tIndex the function will play
@@ -283,17 +211,16 @@ function drawSceneFunctionalFromView(tIndex){
             drawVoxel(kk, ii, tsVol.sliceArray[2][ii][kk])
 
     drawMargin();
-    drawFocusQuadrantFromView(tIndex);
+    drawFocusQuadrantFromView();
     drawNavigator();
     updateMoviePlayerSlider();
-    setSelectedEntityValue(tsVol.sliceArray);
+    setSelectedEntityValue();
 }
 
 /**
  * Draws the selectedQuadrant on Focus Quadrant from the xyz planes data.
- * @param tIndex The time point we want to draw
  */
-function drawFocusQuadrantFromView(tIndex){
+function drawFocusQuadrantFromView(){
     _setCtxOnQuadrant(3);
     if(tsVol.highlightedQuad.index == 0){
         for (var j = 0; j < tsVol.dataSize[2]; ++j)
@@ -703,7 +630,7 @@ function streamToBuffer(){
  *  This function is called to erase some elements from bufferL3 array and avoid
  *  consuming too much memory.
  */
-function freeBuffer(){
+function freeBuffer() {
     var section = Math.floor(tsVol.currentTimePoint/tsVol.bufferSize);
     var bufferedElements = Object.keys(tsVol.bufferL3).length;
     if(bufferedElements > tsVol.bufferL2Size){
@@ -725,25 +652,6 @@ function range(len){
     return Array.apply(null, new Array(len)).map(function (_, i){return i;});
 }
 
-/**
- * This functions returns the whole x,y,z cube data at time-point t.
- * @param t The time piont we want to get
- * @returns The whole x,y,z array data at time-point t.
- */
-function getSliceAtTime(t){
-    var buffer;
-    var from = "from_idx=" + t;
-    var to = ";to_idx=" + (t +1);
-    var query = tsVol.urlMainData + from + to;
-
-    if(tsVol.bufferL2[t]){
-        buffer = tsVol.bufferL2[t];
-    }else{
-        tsVol.bufferL2[t] = HLPR_readJSONfromFile(query);
-        buffer = tsVol.bufferL2[t];
-    }
-    return buffer[0];
-}
 
 /**
  *  This functions returns the X,Y,Z data from time-point t.
@@ -777,17 +685,16 @@ function getViewAtTime(t){
 }
 
 /**
- * Sets tsVol.selectedEntityValue, wich represents the selected voxel value
- * @param data A multi dimensional array containing the relevant data
- */
-function setSelectedEntityValue(data){
-    // data comes from plane View
-    if(data.length == 3){
-        tsVol.selectedEntityValue = data[0][tsVol.selectedEntity[0]][tsVol.selectedEntity[1]];
-    }
-    // data comes from Cube
-    else{
-        tsVol.selectedEntityValue = data[tsVol.selectedEntity[0]][tsVol.selectedEntity[1]][tsVol.selectedEntity[2]];
+* Sets tsVol.selectedEntityValue, which represents the selected voxel intensity value, to be highlighted on the legend
+*/
+function setSelectedEntityValue(){
+
+    if(tsVol.highlightedQuad.index == 0) {
+        tsVol.selectedEntityValue = tsVol.sliceArray[0][tsVol.selectedEntity[0]][tsVol.selectedEntity[1]];
+    } else if(tsVol.highlightedQuad.index == 1) {
+        tsVol.selectedEntityValue = tsVol.sliceArray[1][tsVol.selectedEntity[1]][tsVol.selectedEntity[2]];
+    } else {
+        tsVol.selectedEntityValue = tsVol.sliceArray[2][tsVol.selectedEntity[0]][tsVol.selectedEntity[2]];
     }
 }
 
@@ -897,6 +804,7 @@ function TSV_pick(e){
 function TSV_startUserInterface() {
     startPositionSliders();
     startMovieSlider();
+    togglePlayback();
 }
 
 /**

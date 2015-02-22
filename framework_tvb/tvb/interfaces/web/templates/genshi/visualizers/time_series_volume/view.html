@@ -104,13 +104,13 @@
     </section>
 
     <script type="text/javascript">
-        $().ready(function() {
+        $().ready(function () {
             $("#main").addClass("colscheme-2-even brain-extended");
-            TSV_initVisualizer('${dataUrls}', ${minValue}, ${maxValue}, ${samplePeriod}, '${samplePeriodUnit}',
-                               '${volumeShape}', '${volumeOrigin}', '${voxelSize}');
+            TSV_initVisualizer('$urlVolumeData', '$urlTimeSeriesData', ${minValue}, ${maxValue}, ${samplePeriod},
+                    '${samplePeriodUnit}', '${volumeShape}', '${volumeOrigin}', '${voxelSize}');
             $("#canvasVolumes").mousedown(customMouseDown)
-                                      .mouseup(customMouseUp)
-                                      .mousemove(customMouseMove);
+                    .mouseup(customMouseUp)
+                    .mousemove(customMouseMove);
             TSV_startUserInterface();
         })
     </script>
