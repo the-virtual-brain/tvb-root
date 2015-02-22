@@ -232,7 +232,7 @@ class FlowService:
             display_name = ''
             if actual_entity is not None and len(actual_entity) > 0 and isinstance(actual_entity[0], model.DataType):
                 display_name = actual_entity[0].display_name
-            display_name = display_name + ' - ' + value[3]
+            display_name = display_name + ' - ' + (value[3] or "None ")
             if value[5]:
                 display_name = display_name + ' - From: ' + str(value[5])
             else:

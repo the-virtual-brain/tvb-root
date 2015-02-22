@@ -67,7 +67,7 @@ def generage_excludes(root_folders):
 def setup_test_env():
 
     from tvb.basic.profile import TvbProfile
-    if len(sys.argv) > 0:
+    if len(sys.argv) > 1:
         profile = sys.argv[1]
     else:
         profile = TvbProfile.TEST_SQLITE_PROFILE
