@@ -109,8 +109,7 @@
             TSV_initVisualizer('$urlVolumeData', '$urlTimeSeriesData', ${minValue}, ${maxValue}, ${samplePeriod},
                     '${samplePeriodUnit}', '${volumeShape}', '${volumeOrigin}', '${voxelSize}');
             $("#canvasVolumes").mousedown(customMouseDown)
-                    .mouseup(customMouseUp)
-                    .mousemove(customMouseMove);
+                    .mouseup(customMouseUp);
             TSV_startUserInterface();
         })
     </script>

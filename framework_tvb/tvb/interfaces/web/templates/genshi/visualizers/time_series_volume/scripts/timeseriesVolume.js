@@ -655,10 +655,10 @@ function range(len){
 
 /**
  *  This functions returns the X,Y,Z data from time-point t.
- * @param t The time piont we want to get
- * @returns Array whith only the data from the x,y,z plane at time-point t.
+ * @param t The time point we want to get
+ * @returns Array with only the data from the x,y,z plane at time-point t.
  */
-function getViewAtTime(t){
+function getViewAtTime(t) {
     var buffer;
     var from;
     var to;
@@ -719,14 +719,6 @@ function customMouseUp(e){
     if(tsVol.selectedQuad.index == 3){
         drawGraphs();
     }
-}
-
-function customMouseMove(e){
-    if (!this.mouseDown){
-        return;
-    }
-    e.preventDefault();
-    TSV_pick(e);
 }
 
 /**
@@ -804,7 +796,7 @@ function TSV_pick(e){
 function TSV_startUserInterface() {
     startPositionSliders();
     startMovieSlider();
-    togglePlayback();
+    drawSceneFunctional(tsVol.currentTimePoint);
 }
 
 /**
@@ -957,13 +949,13 @@ function slideMove(event, ui){
  * After the navigation sliders are changed, this redraws the scene accordingly.
  */
 function slideMoved(event, ui){
-    if(tsVol.slidersClicked){
+    if(tsVol.slidersClicked) {
         startBuffering();
         tsVol.slidersClicked = false;
 
         if(tsVol.resumePlayer){
-            window.setTimeout(playBack, tsVol.playbackRate * 5);
             tsVol.resumePlayer = false;
+            window.setTimeout(playBack, tsVol.playbackRate * 5);
         }
     }
    _coreMoveSliderAxis(event, ui);
