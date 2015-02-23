@@ -131,5 +131,14 @@ class MappedArrayScientific(arrays_data.MappedArrayData):
     """This class exists to add scientific methods to MappedArrayData"""
     __tablename__ = None
 
+    def _find_summary_info(self):
+        """
+        Gather scientifically interesting summary information from an instance of this datatype.
+        """
+        summary = {"Title:": self.title,
+                   "Dimensions:": self.dimensions_labels}
+        summary.update(self.get_info_about_array('array_data'))
+        return summary
+
 
 

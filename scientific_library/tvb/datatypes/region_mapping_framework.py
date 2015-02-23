@@ -29,10 +29,19 @@
 #
 
 """
-module docstring
+DataTypes for mapping some TVB DataTypes to a Connectivity (regions).
+
+.. moduleauthor:: Lia Domide <lia.domide@codemart.ro>
 .. moduleauthor:: Mihai Andrei <mihai.andrei@codemart.ro>
 """
-from tvb.datatypes.region_mapping_data import RegionMappingData
+
+import numpy
+import tvb.basic.traits.exceptions as exceptions
+from tvb.basic.logger.builder import get_logger
+from tvb.datatypes.region_mapping_data import RegionMappingData, RegionVolumeMappingData
+
+
+LOG = get_logger(__name__)
 
 
 class RegionMappingFramework(RegionMappingData):
@@ -40,6 +49,7 @@ class RegionMappingFramework(RegionMappingData):
     Framework methods regarding RegionMapping DataType.
     """
     __tablename__ = None
+
 
     def get_region_mapping_slice(self, start_idx, end_idx):
         """
@@ -69,3 +79,33 @@ class RegionMappingFramework(RegionMappingData):
         new_region_map._surface = self._surface
         new_region_map.array_data = self.array_data
         return new_region_map
+
+
+
+class RegionVolumeMappingFramework(RegionVolumeMappingData):
+    """
+    Framework methods regarding RegionVolumeMapping DataType.
+    """
+    __tablename__ = None
+    apply_corrections = True
+
+
+    def write_data_slice(self, data):
+        """
+        We are using here the same signature as in TS, just to allow easier parsing code.
+        This method will also validate the data range nd convert it to int, along with writing it is H5.
+
+        :param data: 3D int array
+        """
+
+        LOG.info("Writing RegionVolumeMapping with min=%d, mix=%d" % (data.min(), data.max()))
+        if self.apply_corrections:
+            data = numpy.array(data, dtype=numpy.int32)
+            data = data - 1
+            data[data >= self.connectivity.number_of_regions] = -1
+            LOG.debug("After corrections: RegionVolumeMapping min=%d, mix=%d" % (data.min(), data.max()))
+
+        if data.min() < -1 or data.max() >= self.connectivity.number_of_regions:
+            raise exceptions.ValidationException("Invalid Mapping array: [%d ... %d]" % (data.min(), data.max()))
+
+        self.store_data("array_data", data)

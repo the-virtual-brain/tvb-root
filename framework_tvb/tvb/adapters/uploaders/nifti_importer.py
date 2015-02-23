@@ -29,22 +29,27 @@
 #
 
 """
+.. moduleauthor:: Lia Domide <lia.domide@codemart.ro>
 .. moduleauthor:: Calin Pavel <calin.pavel@codemart.ro>
 """
 
+import os
 from tvb.adapters.uploaders.abcuploader import ABCUploader
 from tvb.adapters.uploaders.nifti.parser import NIFTIParser
 from tvb.basic.logger.builder import get_logger
 from tvb.core.adapters.exceptions import ParseException, LaunchException
 from tvb.core.entities.storage import transactional
+from tvb.datatypes.connectivity import Connectivity
+from tvb.datatypes.region_mapping import RegionVolumeMapping
 from tvb.datatypes.time_series import TimeSeriesVolume
 from tvb.datatypes.volumes import Volume
+
 
 
 class NIFTIImporter(ABCUploader):
     """
     This importer is responsible for loading of data from NIFTI format (nii or nii.gz files)
-    and store them in TVB as TimeSeries.
+    and store them in TVB as TimeSeriesVolume or RegionVolumeMapping.
     """
     _ui_name = "NIFTI"
     _ui_subsection = "nifti_importer"
@@ -53,26 +58,68 @@ class NIFTIImporter(ABCUploader):
 
     def get_upload_input_tree(self):
         """
-            Take as input a GZ archive or NII file.
+        Take as input a GZ archive or NII file.
         """
         return [{'name': 'data_file', 'type': 'upload', 'required_type': '.nii, .gz, application/zip',
-                 'label': 'Please select file to import (gz or nii)', 'required': True}]
-        
-        
+                 'label': 'Please select file to import (gz or nii)', 'required': True},
+
+                {'name': 'apply_corrections', 'label': 'Apply Corrections', 'type': 'bool', 'default': False,
+                 'description': 'Check this when the NII mapping is not zero based'},
+
+                {'name': 'connectivity', 'label': 'Connectivity',
+                 'type': Connectivity, 'required': False, 'datatype': True,
+                 'description': 'Optional Connectivity in case the NII file is a volume2regions mapping.'}]
+
+
     def get_output(self):
-        return [Volume, TimeSeriesVolume]
+        return [Volume, TimeSeriesVolume, RegionVolumeMapping]
 
 
     @transactional
-    def launch(self, data_file):
+    def launch(self, data_file, apply_corrections=False, connectivity=None):
         """
         Execute import operations:
         """
-        parser = NIFTIParser(self.storage_path, self.operation_id)
-        try:
-            time_series = parser.parse(data_file)
 
-            return [time_series.volume, time_series]             
+        try:
+            parser = NIFTIParser(data_file)
+
+            # Create volume DT
+            volume = Volume(storage_path=self.storage_path)
+            volume.set_operation_id(self.operation_id)
+            volume.origin = [[0.0, 0.0, 0.0]]
+            volume.voxel_size = [parser.zooms[0], parser.zooms[1], parser.zooms[2]]
+            if parser.units is not None and len(parser.units) > 0:
+                volume.voxel_unit = parser.units[0]
+
+            if parser.has_time_dimension or not connectivity:
+                # Now create TimeSeries and fill it with data from NIFTI image
+                time_series = TimeSeriesVolume(storage_path=self.storage_path)
+                time_series.set_operation_id(self.operation_id)
+                time_series.volume = volume
+                time_series.title = "NIFTI Import - " + os.path.split(data_file)[1]
+                time_series.labels_ordering = ["Time", "X", "Y", "Z"]
+                time_series.start_time = 0.0
+                time_series.sample_period = float(parser.zooms[3])
+
+                if parser.units is not None and len(parser.units) > 1:
+                    time_series.sample_period_unit = parser.units[1]
+
+                parser.parse(time_series)
+                return [volume, time_series]
+
+            else:
+                region2volume_mapping = RegionVolumeMapping(storage_path=self.storage_path)
+                region2volume_mapping.set_operation_id(self.operation_id)
+                region2volume_mapping.volume = volume
+                region2volume_mapping.connectivity = connectivity
+                region2volume_mapping.title = "NIFTI Import - " + os.path.split(data_file)[1]
+                region2volume_mapping.dimensions_labels = ["X", "Y", "Z"]
+                region2volume_mapping.apply_corrections = apply_corrections
+
+                parser.parse(region2volume_mapping)
+                return [volume, region2volume_mapping]
+
         except ParseException, excep:
             logger = get_logger(__name__)
             logger.exception(excep)

@@ -29,10 +29,13 @@
 #
 
 """
-module docstring
+DataTypes for mapping some TVB DataTypes to a Connectivity (regions).
+
+.. moduleauthor:: Lia Domide <lia.domide@codemart.ro>
 .. moduleauthor:: Mihai Andrei <mihai.andrei@codemart.ro>
 """
-from tvb.datatypes.region_mapping_data import RegionMappingData
+
+from tvb.datatypes.region_mapping_data import RegionMappingData, RegionVolumeMappingData
 
 
 class RegionMappingScientific(RegionMappingData):
@@ -40,3 +43,34 @@ class RegionMappingScientific(RegionMappingData):
     Scientific methods regarding RegionMapping DataType.
     """
     __tablename__ = None
+
+    def _find_summary_info(self):
+        """
+        Gather scientifically interesting summary information from an instance of this datatype.
+        """
+        summary = super(RegionMappingScientific, self)._find_summary_info()
+        summary.update({"Source Surface": self.surface.display_name,
+                        "Source Surface GID": self.surface.gid,
+                        "Connectivity GID": self.connectivity.gid,
+                        "Connectivity": self.connectivity.display_name})
+        return summary
+
+
+
+class RegionVolumeMappingScientific(RegionVolumeMappingData):
+    """
+    Scientific methods regarding RegionVolumeMapping DataType.
+    """
+    __tablename__ = None
+
+
+    def _find_summary_info(self):
+        """
+        Gather scientifically interesting summary information from an instance of this datatype.
+        """
+        summary = super(RegionVolumeMappingScientific, self)._find_summary_info()
+        summary.update({"Source Volume": self.volume.display_name,
+                        "Source Volume GID": self.volume.gid,
+                        "Connectivity GID": self.connectivity.gid,
+                        "Connectivity": self.connectivity.display_name})
+        return summary

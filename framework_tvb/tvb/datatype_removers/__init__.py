@@ -39,10 +39,13 @@ from tvb.datatype_removers.remover_sensor import SensorRemover
 from tvb.datatype_removers.remover_surface import SurfaceRemover
 from tvb.datatype_removers.remover_timeseries import TimeseriesRemover
 from tvb.datatype_removers.remover_volume import VolumeRemover
+from tvb.datatype_removers.remover_region_mapping import RegionMappingRemover, RegionVolumeMappingRemover
 
 
 REMOVERS_FACTORY = {
     'Connectivity': ConnectivityRemover,
+    'RegionMapping': RegionMappingRemover,
+    'RegionVolumeMapping': RegionVolumeMappingRemover,
     'CorticalSurface': SurfaceRemover,
     'SkinAir': SurfaceRemover,
     'BrainSkull': SurfaceRemover,

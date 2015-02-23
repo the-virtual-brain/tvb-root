@@ -27,11 +27,20 @@
 #   Frontiers in Neuroinformatics (7:10. doi: 10.3389/fninf.2013.00010)
 #
 #
+
+"""
+DataTypes for mapping some TVB DataTypes to a Connectivity (regions).
+
+.. moduleauthor:: Lia Domide <lia.domide@codemart.ro>
+.. moduleauthor:: Mihai Andrei <mihai.andrei@codemart.ro>
+"""
+
 import numpy
 import os
 from tvb.basic.readers import try_get_absolute_path, FileReader
-from tvb.datatypes.region_mapping_framework import RegionMappingFramework
-from tvb.datatypes.region_mapping_scientific import RegionMappingScientific
+from tvb.datatypes.region_mapping_framework import RegionMappingFramework, RegionVolumeMappingFramework
+from tvb.datatypes.region_mapping_scientific import RegionMappingScientific, RegionVolumeMappingScientific
+
 
 
 class RegionMapping(RegionMappingFramework, RegionMappingScientific):
@@ -67,3 +76,23 @@ class RegionMapping(RegionMappingFramework, RegionMappingScientific):
 
         result.array_data = reader.read_array(dtype=numpy.int32)
         return result
+
+
+
+class RegionVolumeMapping(RegionVolumeMappingFramework, RegionVolumeMappingScientific):
+    """
+    This class brings together the scientific and framework methods that are
+    associated with the RegionMapping dataType.
+
+    ::
+
+                        RegionVolumeMappingData
+                                 |
+                                / \\
+    RegionVolumeMappingFramework   RegionVolumeMappingScientific
+                                \ /
+                                 |
+                          RegionVolumeMapping
+
+
+    """

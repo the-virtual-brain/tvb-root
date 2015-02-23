@@ -29,17 +29,23 @@
 #
 
 """
-module docstring
+DataTypes for mapping some TVB DataTypes to a Connectivity (regions).
+
+.. moduleauthor:: Lia Domide <lia.domide@codemart.ro>
 .. moduleauthor:: Mihai Andrei <mihai.andrei@codemart.ro>
 """
-from tvb.datatypes import arrays as arrays
+
+import tvb.datatypes.arrays as arrays
 from tvb.datatypes.connectivity import Connectivity
 from tvb.datatypes.surfaces_data import SurfaceData
+from tvb.datatypes.volumes import Volume
+
 
 
 class RegionMappingData(arrays.MappedArray):
     """
-    An array representing a measure of a Connectivity dataType.
+    An array (of length Surface.vertices). Each value is representing the index in Connectivity regions
+    to which the current vertex is mapped.
     """
 
     array_data = arrays.IndexArray()
@@ -47,5 +53,20 @@ class RegionMappingData(arrays.MappedArray):
     connectivity = Connectivity
 
     surface = SurfaceData
+
+    __generate_table__ = True
+
+
+
+class RegionVolumeMappingData(arrays.MappedArray):
+    """
+    Each value is representing the index in Connectivity regions to which the current voxel is mapped.
+    """
+
+    array_data = arrays.IndexArray()
+
+    connectivity = Connectivity
+
+    volume = Volume
 
     __generate_table__ = True
