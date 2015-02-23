@@ -611,7 +611,7 @@ function streamToBuffer(){
         var yPlane = ";y_plane=" + (tsVol.selectedEntity[1]);
         var zPlane = ";z_plane=" + (tsVol.selectedEntity[2]);
 
-        for( var i = 0; i <= tsVol.lookAhead; i++ ){
+        for( var i = 0; i <= tsVol.lookAhead && i < maxSections; i++ ){
             var toBufferSection = Math.min( currentSection + i, maxSections );
             if(!tsVol.bufferL3[toBufferSection] && tsVol.requestQueue.indexOf(toBufferSection) < 0){
                 var from = toBufferSection*tsVol.bufferSize;

@@ -52,7 +52,7 @@ class RegionMappingRemover(ABCRemover):
         """
         if not skip_validation:
             tsr = dao.get_generic_entity(TimeSeriesRegion, self.handled_datatype.gid, self.FIELD_NAME)
-            error_msg = " cannot be removed because is still used by %d TimeSeries Region entities."
+            error_msg = "%s cannot be removed because is still used by %d TimeSeries Region entities."
             if tsr:
                 raise RemoveDataTypeException(error_msg % (self.CLASS_NAME, len(tsr)))
 

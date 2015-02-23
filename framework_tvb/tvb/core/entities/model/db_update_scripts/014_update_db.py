@@ -36,16 +36,22 @@ Change of DB structure from TVB version 1.3 to 1.3.1
 """
 
 from sqlalchemy import Column, Float, Integer
+from sqlalchemy.sql import text
 from migrate.changeset.schema import create_column, drop_column, alter_column
 from tvb.core.entities import model
+from tvb.core.entities.storage import SA_SESSIONMAKER
+from tvb.basic.logger.builder import get_logger
 
 meta = model.Base.metadata
+LOGGER = get_logger(__name__)
 
 COLUMN_N1 = Column('used_disk_space', Float)
 COLUMN_N2 = Column('disk_size', Integer)
 
 COLUMN_N3_OLD = Column('result_disk_size', Integer)
 COLUMN_N3_NEW = Column('estimated_disk_size', Integer)
+
+
 
 def upgrade(migrate_engine):
     """
@@ -61,6 +67,20 @@ def upgrade(migrate_engine):
     table = meta.tables['OPERATIONS']
     alter_column(COLUMN_N3_OLD, table=table, name=COLUMN_N3_NEW.name)
 
+    try:
+        meta.bind = migrate_engine
+        session = SA_SESSIONMAKER()
+        session.execute(text("""UPDATE "DATA_TYPES" SET module='tvb.datatypes.region_mapping' WHERE "type" = 'RegionMapping' """))
+        session.execute(text("""UPDATE "DATA_TYPES" SET module='tvb.datatypes.local_connectivity' WHERE "type" = 'LocalConnectivity' """))
+        session.execute(text("""UPDATE "DATA_TYPES" SET module='tvb.datatypes.cortex' WHERE "type" = 'Cortex' """))
+        session.commit()
+        session.close()
+
+    except Exception:
+        LOGGER.exception("Cold not update datatypes")
+        raise
+
+
 
 def downgrade(migrate_engine):
     """Operations to reverse the above upgrade go here."""
@@ -72,4 +92,16 @@ def downgrade(migrate_engine):
     create_column(COLUMN_N2, table)
     table = meta.tables['OPERATIONS']
     alter_column(COLUMN_N3_NEW, table=table, name=COLUMN_N3_OLD.name)
+
+    try:
+        meta.bind = migrate_engine
+        session = SA_SESSIONMAKER()
+        session.execute(text("""UPDATE "DATA_TYPES" SET module='tvb.datatypes.surfaces' WHERE "type" = 'RegionMapping' """))
+        session.execute(text("""UPDATE "DATA_TYPES" SET module='tvb.datatypes.surfaces' WHERE "type" = 'LocalConnectivity' """))
+        session.execute(text("""UPDATE "DATA_TYPES" SET module='tvb.datatypes.surfaces' WHERE "type" = 'Cortex' """))
+        session.commit()
+        session.close()
+    except Exception:
+        LOGGER.exception("Cold not update datatypes")
+        raise
 
