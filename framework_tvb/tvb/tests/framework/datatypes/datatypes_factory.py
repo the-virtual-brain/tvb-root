@@ -49,6 +49,7 @@ from tvb.core.services.project_service import ProjectService
 from tvb.core.services.operation_service import OperationService
 from tvb.datatypes.connectivity import Connectivity
 from tvb.datatypes.surfaces import CorticalSurface
+from tvb.datatypes.region_mapping import RegionMapping
 from tvb.datatypes.time_series import TimeSeries, TimeSeriesEEG, TimeSeriesRegion
 from tvb.datatypes.graph import Covariance, ConnectivityMeasure
 from tvb.datatypes.spectral import CoherenceSpectrum
@@ -218,14 +219,20 @@ class DatatypesFactory():
         Create a stored TimeSeries entity.
         """
         operation, _, storage_path = self.__create_operation()
+
         if ts_type == "EEG":
             time_series = TimeSeriesEEG(storage_path=storage_path, sensors=sensors)
         else:
-            time_series = TimeSeriesRegion(storage_path=storage_path, connectivity=connectivity)
+            rm = dao.get_generic_entity(RegionMapping, connectivity.gid, '_connectivity')
+            if len(rm) < 1:
+                rm = None
+            else:
+                rm = rm[0]
+            time_series = TimeSeriesRegion(storage_path=storage_path, connectivity=connectivity, region_mapping=rm)
+
         data = numpy.random.random((10, 10, 10, 10))
-        time = numpy.arange(10)
         time_series.write_data_slice(data)
-        time_series.write_time_slice(time)
+        time_series.write_time_slice(numpy.arange(10))
         adapter_instance = StoreAdapter([time_series])
         OperationService().initiate_prelaunch(operation, adapter_instance, {})
         time_series = dao.get_datatype_by_gid(time_series.gid)
