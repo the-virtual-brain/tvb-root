@@ -235,8 +235,7 @@ function drawGobalTimeseries(){
             .attr("d", function(d){return tsFrag.line(d.data);})
             .attr('class', 'tsv-line tsv-colored-line')
             .attr("style", function(d){
-                            return "stroke:" + ColSch_getGradientColorString(d[tsFrag.relevantColoringFeature],
-                                                                      tsFrag.minimumValue, tsFrag.maximumValue);} )
+                            return "stroke:" + ColSch_getAbsoluteGradientColorString(d[tsFrag.relevantColoringFeature]);} )
             .on("mouseover", selectLineData);
 
     // The focus will show the numeric value of a time series on a certain point
@@ -384,7 +383,7 @@ function drawSortableGraph(){
     miniLines.append("rect")
         .attr("width", tsFrag.width + tsFrag.smallMargin.left + tsFrag.smallMargin.right)
         .attr("height", tsFrag.height)
-        .attr('fill', function(d) { return ColSch_getGradientColorString(d[tsFrag.relevantColoringFeature], tsFrag.minimumValue, tsFrag.maximumValue); });
+        .attr('fill', function(d) { return ColSch_getAbsoluteGradientColorString(d[tsFrag.relevantColoringFeature]); });
 
     miniLines = miniLines.append("g")
         .attr("transform", "translate(" + tsFrag.smallMargin.left + "," + tsFrag.smallMargin.top + ")")
@@ -402,7 +401,7 @@ function drawSortableGraph(){
         .attr("class", "tsv-line")
         .attr("d", function(d) { tsFrag.sortableY = d3.scale.linear().domain([d.min, d.max]).range([tsFrag.height, 0]); return tsFrag.sortableline(d.data); })
         .attr('class', 'tsv-line tsv-colored-line mini')
-        .attr("style", function(d) { return "stroke:" + ColSch_getGradientColorString(d[tsFrag.relevantColoringFeature], tsFrag.minimumValue, tsFrag.maximumValue); });
+        .attr("style", function(d) { return "stroke:" + ColSch_getAbsoluteGradientColorString(d[tsFrag.relevantColoringFeature]); });
 
     miniLines.append("text")
         .attr("class", "tsv-y tsv-label")

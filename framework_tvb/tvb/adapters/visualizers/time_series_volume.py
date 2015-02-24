@@ -38,8 +38,9 @@ Backend-side for TS Visualizer of TS Volume DataTypes.
 """
 
 import json
+from tvb.basic.filters.chain import FilterChain
 from tvb.core.adapters.abcdisplayer import ABCDisplayer
-from tvb.datatypes.time_series import TimeSeriesVolume
+from tvb.datatypes.time_series import TimeSeries, TimeSeriesVolume
 
 
 
@@ -50,10 +51,9 @@ class TimeSeriesVolumeVisualiser(ABCDisplayer):
 
 
     def get_input_tree(self):
-        return [{'name': 'time_series_volume',
-                 'label': 'Time Series Volume',
-                 'type': TimeSeriesVolume,
-                 'required': True}]
+        return [{'name': 'time_series', 'label': 'Time Series', 'type': TimeSeries, 'required': True,
+                 'conditions': FilterChain(fields=[FilterChain.datatype + '.has_volume_mapping'],
+                                           operations=["=="], values=[True])}]
 
 
     def get_required_memory_size(self, **kwargs):
@@ -61,20 +61,27 @@ class TimeSeriesVolumeVisualiser(ABCDisplayer):
         return -1
 
 
-    def launch(self, time_series_volume):
+    def launch(self, time_series):
 
-        volume = time_series_volume.volume
-        min_value, max_value = time_series_volume.get_min_max_values()
-        url_volume_data = self.paths2url(time_series_volume, "get_volume_view", parameter="")
-        url_timeseries_data = self.paths2url(time_series_volume, "get_voxel_time_series", parameter="")
+        min_value, max_value = time_series.get_min_max_values()
+        url_volume_data = self.paths2url(time_series, "get_volume_view", parameter="")
+        url_timeseries_data = self.paths2url(time_series, "get_voxel_time_series", parameter="")
+
+        if isinstance(time_series, TimeSeriesVolume):
+            volume = time_series.volume
+            volume_shape = time_series.read_data_shape()
+        else:
+            volume = time_series.region_mapping_volume.volume
+            volume_shape = [time_series.read_data_shape()[0]]
+            volume_shape.extend(time_series.region_mapping_volume.shape)
 
         params = dict(title="Volumetric Time Series",
                       minValue=min_value, maxValue=max_value,
                       urlVolumeData=url_volume_data,
                       urlTimeSeriesData=url_timeseries_data,
-                      samplePeriod=time_series_volume.sample_period,
-                      samplePeriodUnit=time_series_volume.sample_period_unit,
-                      volumeShape=json.dumps(time_series_volume.read_data_shape()),
+                      samplePeriod=time_series.sample_period,
+                      samplePeriodUnit=time_series.sample_period_unit,
+                      volumeShape=json.dumps(volume_shape),
                       volumeOrigin=json.dumps(volume.origin.tolist()),
                       voxelUnit=volume.voxel_unit,
                       voxelSize=json.dumps(volume.voxel_size.tolist()))

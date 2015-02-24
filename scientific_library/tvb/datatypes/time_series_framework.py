@@ -336,6 +336,93 @@ class TimeSeriesRegionFramework(time_series_data.TimeSeriesRegionData, TimeSerie
             return super(TimeSeriesRegionFramework, self).get_measure_points_selection_gid()
 
 
+    def get_volume_view(self, from_idx, to_idx, x_plane, y_plane, z_plane, var=0, mode=0):
+        """
+        Retrieve 3 slices through the Volume TS, at the given X, y and Z coordinates, and in time [from_idx .. to_idx].
+
+        :param from_idx: int This will be the limit on the first dimension (time)
+        :param to_idx: int Also limit on the first Dimension (time)
+        :param x_plane: int coordinate
+        :param y_plane: int coordinate
+        :param z_plane: int coordinate
+
+        :return: An array of 3 Matrices 2D, each containing the values to display in planes xy, yz and xy.
+        """
+
+        if self.region_mapping_volume is None:
+            raise exceptions.TVBException("Invalid method called for TS without Volume Mapping!")
+
+        volume_rm = self.region_mapping_volume
+
+        # Work with space inside Volume:
+        x_plane, y_plane, z_plane = preprocess_space_parameters(x_plane, y_plane, z_plane, volume_rm.length_1d,
+                                                                volume_rm.length_2d, volume_rm.length_3d)
+
+        slices = slice(volume_rm.length_1d), slice(volume_rm.length_2d), slice(z_plane, z_plane + 1)
+        slice_x = volume_rm.read_data_slice(slices)[:, :, 0]  # 2D
+        slice_x = numpy.array(slice_x, dtype=int)
+
+        slices = slice(x_plane, x_plane + 1), slice(volume_rm.length_2d), slice(volume_rm.length_3d)
+        slice_y = volume_rm.read_data_slice(slices)[0, :, :][..., ::-1]
+        slice_y = numpy.array(slice_y, dtype=int)
+
+        slices = slice(volume_rm.length_1d), slice(y_plane, y_plane + 1), slice(volume_rm.length_3d)
+        slice_z = volume_rm.read_data_slice(slices)[:, 0, :][..., ::-1]
+        slice_z = numpy.array(slice_z, dtype=int)
+
+        # Read from the current TS:
+        from_idx, to_idx, current_time_length = preprocess_time_parameters(from_idx, to_idx, self.read_data_shape()[0])
+        no_of_regions = self.read_data_shape()[2]
+        time_slices = slice(from_idx, to_idx), slice(var, var + 1), slice(no_of_regions), slice(mode, mode + 1)
+
+        min_signal = self.get_min_max_values()[0]
+        regions_ts = self.read_data_slice(time_slices)[:, 0, :, 0]
+        regions_ts = numpy.hstack((regions_ts, numpy.ones((current_time_length, 1)) * (min_signal - 1)))
+
+        # Index from TS with the space mapping:
+        result_x, result_y, result_z = [], [], []
+
+        for i in range(0, current_time_length):
+            result_x.append(regions_ts[i][slice_x].tolist())
+            result_y.append(regions_ts[i][slice_y].tolist())
+            result_z.append(regions_ts[i][slice_z].tolist())
+
+        return [result_x, result_y, result_z]
+
+
+    def get_voxel_time_series(self, x, y, z, var=0, mode=0):
+        """
+        Retrieve for a given voxel (x,y,z) the entire timeline.
+
+        :param x: int coordinate
+        :param y: int coordinate
+        :param z: int coordinate
+
+        :return: A complex dictionary with information about current voxel.
+                The main part will be a vector with all the values over time from the x,y,z coordinates.
+        """
+
+        if self.region_mapping_volume is None:
+            raise exceptions.TVBException("Invalid method called for TS without Volume Mapping!")
+
+        volume_rm = self.region_mapping_volume
+        x, y, z = preprocess_space_parameters(x, y, z, volume_rm.length_1d, volume_rm.length_2d, volume_rm.length_3d)
+        idx_slices = slice(x, x + 1), slice(y, y + 1), slice(z, z + 1)
+
+        idx = int(volume_rm.get_data('array_data', idx_slices))
+
+        time_length = self.read_data_shape()[0]
+        voxel_slices = prepare_time_slice(time_length), slice(var, var + 1), slice(idx, idx + 1), slice(mode, mode + 1)
+
+        background, back_min, back_max = None, None, None
+        if idx < 0:
+            back_min, back_max = self.get_min_max_values()
+            background = numpy.ones((time_length, 1)) * (back_min - 1)
+
+        result = postprocess_voxel_ts(self, voxel_slices, background, back_min, back_max)
+        return result
+
+
 
 class TimeSeriesSurfaceFramework(time_series_data.TimeSeriesSurfaceData, TimeSeriesFramework):
     """ This class exists to add framework methods to TimeSeriesSurfaceData. """
@@ -366,70 +453,143 @@ class TimeSeriesVolumeFramework(time_series_data.TimeSeriesVolumeData, TimeSerie
 
     def get_volume_view(self, from_idx, to_idx, x_plane, y_plane, z_plane):
         """
+        Retrieve 3 slices through the Volume TS, at the given X, y and Z coordinates, and in time [from_idx .. to_idx].
+
         :param from_idx: int This will be the limit on the first dimension (time)
         :param to_idx: int Also limit on the first Dimension (time)
-        :param x_plane: int
-        :param y_plane: int
-        :param z_plane: int
+        :param x_plane: int coordinate
+        :param y_plane: int coordinate
+        :param z_plane: int coordinate
 
         :return: An array of 3 Matrices 2D, each containing the values to display in planes xy, yz and xy.
         """
 
-        from_idx, to_idx = int(from_idx), int(to_idx)
-        x_plane, y_plane, z_plane = int(x_plane), int(y_plane), int(z_plane)
         overall_shape = self.read_data_shape()
-
-        if from_idx > to_idx or to_idx > overall_shape[0] or from_idx < 0:
-            msg = "Time indexes out of boundaries: from {0} to {1}".format(from_idx, to_idx)
-            raise exceptions.ValidationException(msg)
-
-        if x_plane > overall_shape[1] or y_plane > overall_shape[2] or z_plane > overall_shape[3]:
-            msg = "Coordinates out of boundaries: {0}, {1}, {2}".format(x_plane, y_plane, z_plane)
-            raise exceptions.ValidationException(msg)
-
-        ## Reverse Z
-        z_plane = overall_shape[3] - z_plane - 1
-        time = max(to_idx - from_idx, 1)
+        from_idx, to_idx, time = preprocess_time_parameters(from_idx, to_idx, overall_shape[0])
+        x_plane, y_plane, z_plane = preprocess_space_parameters(x_plane, y_plane, z_plane,
+                                                                overall_shape[1], overall_shape[2], overall_shape[3])
 
         slices = slice(from_idx, to_idx), slice(overall_shape[1]), slice(overall_shape[2]), slice(z_plane, z_plane + 1)
-        slicex = self.read_data_slice(slices).reshape((time, overall_shape[1], overall_shape[2])).tolist()
+        slicex = self.read_data_slice(slices)[:, :, :, 0].tolist()
 
         slices = slice(from_idx, to_idx), slice(x_plane, x_plane + 1), slice(overall_shape[2]), slice(overall_shape[3])
-        slicey = self.read_data_slice(slices).reshape((time, overall_shape[2], overall_shape[3]))[..., ::-1].tolist()
+        slicey = self.read_data_slice(slices)[:, 0, :, :][..., ::-1].tolist()
 
         slices = slice(from_idx, to_idx), slice(overall_shape[1]), slice(y_plane, y_plane + 1), slice(overall_shape[3])
-        slicez = self.read_data_slice(slices).reshape((time, overall_shape[1], overall_shape[3]))[..., ::-1].tolist()
+        slicez = self.read_data_slice(slices)[:, :, 0, :][..., ::-1].tolist()
 
         return [slicex, slicey, slicez]
 
 
     def get_voxel_time_series(self, x, y, z):
         """
+        Retrieve for a given voxel (x,y,z) the entire timeline.
+
         :param x: int coordinate
         :param y: int coordinate
         :param z: int coordinate
 
         :return: A complex dictionary with information about current voxel.
-                The main part will be a vector with all the values from the x,y,z coordinates, in time.
+                The main part will be a vector with all the values over time from the x,y,z coordinates.
         """
-        x, y, z = int(x), int(y), int(z)
+
         overall_shape = self.read_data_shape()
+        x, y, z = preprocess_space_parameters(x, y, z, overall_shape[1], overall_shape[2], overall_shape[3])
 
-        if x > overall_shape[1] or y > overall_shape[2] or z > overall_shape[3]:
-            msg = "Coordinates out of boundaries: [x,y,z] = [{0}, {1}, {2}]".format(x, y, z)
-            raise exceptions.ValidationException(msg)
+        slices = prepare_time_slice(overall_shape[0]), slice(x, x + 1), slice(y, y + 1), slice(z, z + 1)
 
-        ## Reverse Z
-        z = overall_shape[3] - z - 1
-
-        slices = slice(overall_shape[0]), slice(x, x + 1), slice(y, y + 1), slice(z, z + 1)
-        time_line = self.read_data_slice(slices).flatten()
-
-        result = dict(data=time_line.tolist(),
-                      max=float(max(time_line)),
-                      min=float(min(time_line)),
-                      mean=float(numpy.mean(time_line)),
-                      median=float(numpy.median(time_line)),
-                      variance=float(numpy.var(time_line)),
-                      deviation=float(numpy.std(time_line)))
+        result = postprocess_voxel_ts(self, slices)
         return result
+
+
+
+def preprocess_time_parameters(t1, t2, time_length):
+    """
+    Covert ajax call parameters into numbers and validate them.
+
+    :param t1: start time
+    :param t2: end time
+    :param time_length: maximum time length in current TS
+
+    :return: (t1, t2, t2-t1) as numbers
+    """
+
+    from_idx = int(t1)
+    to_idx = int(t2)
+
+    if not 0 <= from_idx < to_idx <= time_length:
+        msg = "Time indexes out of boundaries: from {0} to {1}".format(from_idx, to_idx)
+        raise exceptions.ValidationException(msg)
+
+    current_time_line = max(to_idx - from_idx, 1)
+
+    return from_idx, to_idx, current_time_line
+
+
+def preprocess_space_parameters(x, y, z, max_x, max_y, max_z):
+    """
+    Covert ajax call parameters into numbers and validate them.
+
+    :param x:  coordinate
+    :param y:  coordinate
+    :param z:  coordinate that will be reversed
+    :param max_x: maximum x accepted value
+    :param max_y: maximum y accepted value
+    :param max_z: maximum z accepted value
+
+    :return: (x, y, z) as integers, Z reversed
+    """
+
+    x, y, z = int(x), int(y), int(z)
+
+    if not 0 <= x <= max_x or not 0 <= y <= max_y or not 0 <= z <= max_z:
+        msg = "Coordinates out of boundaries: [x,y,z] = [{0}, {1}, {2}]".format(x, y, z)
+        raise exceptions.ValidationException(msg)
+
+    # Reverse Z
+    z = max_z - z - 1
+
+    return x, y, z
+
+
+def prepare_time_slice(total_time_length, max_length=10 ** 4):
+    """
+    Limit the time dimension when retrieving from TS.
+    If total time length is greater than MAX, then retrieve only the last part of the TS
+
+    :param total_time_length: TS time dimension
+    :param max_length: limiting number of TS steps
+
+    :return: python slice
+    """
+
+    if total_time_length < max_length:
+        return slice(total_time_length)
+
+    return slice(total_time_length - max_length, total_time_length)
+
+
+def postprocess_voxel_ts(ts, slices, background_value=None, background_min=None, background_max=None):
+    """
+    Read TimeLine from TS and prepare the result for TSVolumeViewer.
+
+    :param ts: TS instance, with read_data_slice method
+    :param slices: slices for reading from H5
+
+    :return: A complex dictionary with information about current voxel.
+    """
+
+    if background_value is not None:
+        time_line = background_value
+    else:
+        time_line = ts.read_data_slice(slices).flatten()
+
+
+    result = dict(data=time_line.tolist(),
+                  min=background_min or float(min(time_line)),
+                  max=background_max or float(max(time_line)),
+                  mean=float(numpy.mean(time_line)),
+                  median=float(numpy.median(time_line)),
+                  variance=float(numpy.var(time_line)),
+                  deviation=float(numpy.std(time_line)))
+    return result

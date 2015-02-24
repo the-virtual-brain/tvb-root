@@ -191,7 +191,7 @@ function drawSceneFunctionalFromView(tIndex) {
     tsVol.sliceArray = getViewAtTime(tIndex);
 
     _setCtxOnQuadrant(0);
-    tsVol.ctx.fillStyle = ColSch_getGradientColorString(tsVol.minimumValue, tsVol.minimumValue, tsVol.maximumValue);
+    tsVol.ctx.fillStyle = ColSch_getAbsoluteGradientColorString(tsVol.minimumValue - 1);
     tsVol.ctx.fillRect(0, 0, tsVol.ctx.canvas.width, tsVol.ctx.canvas.height);
 
     for (j = 0; j < tsVol.dataSize[2]; ++j)
@@ -249,7 +249,7 @@ function drawFocusQuadrantFromView(){
  * @param value The value of the voxel that will be converted into color
  */
 function drawVoxel(line, col, value){
-    tsVol.ctx.fillStyle = ColSch_getGradientColorString(value, tsVol.minimumValue, tsVol.maximumValue);
+    tsVol.ctx.fillStyle = ColSch_getAbsoluteGradientColorString(value);
     // col increases horizontally and line vertically, so col represents the X drawing axis, and line the Y
 	tsVol.ctx.fillRect(col * tsVol.currentQuadrant.entityWidth, line * tsVol.currentQuadrant.entityHeight,
 	                   tsVol.currentQuadrant.entityWidth + 1, tsVol.currentQuadrant.entityHeight + 1);
@@ -317,7 +317,7 @@ function drawFocusCrossHair(x, y){
  * <li>Displays a white bar in to show the currently selected entity value.
  * </ul>
  */
-function drawLegend(){
+function drawLegend() {
     var tmp = tsVol.legendPadding / 2;
     // set the context on the legend quadrant
     tsVol.ctx.setTransform(1, 0, 0, 1, 0, 0);  // reset the transformation
@@ -339,16 +339,14 @@ function drawLegend(){
     // Draw a color bar from min to max value based on the selected color coding
     for(var i = 0; i< tsVol.legendWidth; i++){
         var val = tsVol.minimumValue + ((i/tsVol.legendWidth)*(tsVol.maximumValue-tsVol.minimumValue));
-        tsVol.ctx.fillStyle = ColSch_getGradientColorString(val, tsVol.minimumValue, tsVol.maximumValue);
+        tsVol.ctx.fillStyle = ColSch_getAbsoluteGradientColorString(val);
         tsVol.ctx.fillRect(i, 1, 1.5, tsVol.legendHeight/2);
     }
 
     // Draw the selected entity value marker on the color bar
     tsVol.ctx.fillStyle = "white";
-    tmp = tsVol.selectedEntityValue;
-    tmp = tmp / (tsVol.maximumValue - tsVol.minimumValue);
-    tmp = (tmp * tsVol.legendWidth);
-    tsVol.ctx.fillRect(tmp, 1, 3, tsVol.legendHeight/2);
+    tmp = (tsVol.selectedEntityValue - tsVol.minimumValue) / (tsVol.maximumValue - tsVol.minimumValue);
+    tsVol.ctx.fillRect(tmp * tsVol.legendWidth, 1, 3, tsVol.legendHeight/2);
 }
 
 /**
@@ -604,7 +602,7 @@ function parseAsync(data, callback){
  */
 function streamToBuffer(){
     // we avoid having too many requests at the same time
-    if(tsVol.requestQueue.length < 2){
+    if(tsVol.requestQueue.length < 2) {
         var currentSection = Math.floor(tsVol.currentTimePoint/tsVol.bufferSize);
         var maxSections = Math.floor(tsVol.timeLength/tsVol.bufferSize);
         var xPlane = ";x_plane=" + (tsVol.selectedEntity[0]);
@@ -613,9 +611,10 @@ function streamToBuffer(){
 
         for( var i = 0; i <= tsVol.lookAhead && i < maxSections; i++ ){
             var toBufferSection = Math.min( currentSection + i, maxSections );
+            // If not already requested:
             if(!tsVol.bufferL3[toBufferSection] && tsVol.requestQueue.indexOf(toBufferSection) < 0){
                 var from = toBufferSection*tsVol.bufferSize;
-                var to = Math.min(from+tsVol.bufferSize, tsVol.timeLength);
+                var to = Math.min(from + tsVol.bufferSize, tsVol.timeLength);
                 from = "from_idx=" + from;
                 to = ";to_idx=" + to;
                 var query = tsVol.urlVolumeData + from + to + xPlane + yPlane + zPlane;
@@ -672,7 +671,8 @@ function getViewAtTime(t) {
 
     if(tsVol.bufferL3[section]){ // We have that slice in memory
         buffer = tsVol.bufferL3[section];
-    }else{ // We need to load that slice from the server
+
+    } else{ // We need to load that slice from the server
         from = "from_idx=" + t;
         to = ";to_idx=" + Math.min(1 + t, tsVol.timeLength);
         query = tsVol.urlVolumeData + from + to + xPlane + yPlane + zPlane;
@@ -933,7 +933,7 @@ function updateSliders() {
 /**
  * While the navigation sliders are moved, this redraws the scene accordingly.
  */
-function slideMove(event, ui){
+function slideMove(event, ui) {
     tsVol.bufferL3 = {};
     stopBuffering();
     if(tsVol.playerIntervalID){
@@ -948,7 +948,7 @@ function slideMove(event, ui){
 /**
  * After the navigation sliders are changed, this redraws the scene accordingly.
  */
-function slideMoved(event, ui){
+function slideMoved(event, ui) {
     if(tsVol.slidersClicked) {
         startBuffering();
         tsVol.slidersClicked = false;

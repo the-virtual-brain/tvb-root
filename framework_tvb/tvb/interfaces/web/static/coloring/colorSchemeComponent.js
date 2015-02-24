@@ -303,6 +303,12 @@ function ColSch_getColor(activity){
     return [col[0]/255, col[1]/255, col[2]/255];
 }
 
+
+function ColSch_getAbsoluteGradientColorString(pointValue) {
+    var rgb_values = ColSch_getColor(pointValue);
+    return "rgb(" + Math.round(rgb_values[0]*255) + "," + Math.round(rgb_values[1]*255) + "," + Math.round(rgb_values[2]*255) + ")";
+}
+
 function ColSch_getGradientColorString(pointValue, min, max) {
     var rgb_values = getGradientColor(pointValue, min, max);
     return "rgb(" + Math.round(rgb_values[0]*255) + "," + Math.round(rgb_values[1]*255) + "," + Math.round(rgb_values[2]*255) + ")";
