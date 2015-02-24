@@ -377,7 +377,7 @@ class TimeSeriesRegionFramework(time_series_data.TimeSeriesRegionData, TimeSerie
 
         min_signal = self.get_min_max_values()[0]
         regions_ts = self.read_data_slice(time_slices)[:, 0, :, 0]
-        regions_ts = numpy.hstack((regions_ts, numpy.ones((current_time_length, 1)) * (min_signal - 1)))
+        regions_ts = numpy.hstack((regions_ts, numpy.ones((current_time_length, 1)) * self.out_of_range(min_signal)))
 
         # Index from TS with the space mapping:
         result_x, result_y, result_z = [], [], []
@@ -417,10 +417,15 @@ class TimeSeriesRegionFramework(time_series_data.TimeSeriesRegionData, TimeSerie
         background, back_min, back_max = None, None, None
         if idx < 0:
             back_min, back_max = self.get_min_max_values()
-            background = numpy.ones((time_length, 1)) * (back_min - 1)
+            background = numpy.ones((time_length, 1)) * self.out_of_range(back_min)
 
         result = postprocess_voxel_ts(self, voxel_slices, background, back_min, back_max)
         return result
+
+
+    @staticmethod
+    def out_of_range(min_value):
+        return round(min_value) - 1
 
 
 
