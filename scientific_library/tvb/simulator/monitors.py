@@ -186,7 +186,8 @@ class Monitor(core.Type):
         """
 
 
-    def create_time_series(self, storage_path, connectivity=None, surface=None):
+    def create_time_series(self, storage_path, connectivity=None, surface=None,
+                           region_map=None, region_volume_map=None):
         """
         Create a time series instance that will be populated by this monitor
         :param surface: if present a TimeSeriesSurface is returned
@@ -201,6 +202,8 @@ class Monitor(core.Type):
         if connectivity is not None:
             return TimeSeriesRegion(storage_path=storage_path,
                                     connectivity=connectivity,
+                                    region_mapping=region_map,
+                                    region_mapping_volume=region_volume_map,
                                     sample_period=self.period,
                                     title='Regions ' + self.__class__.__name__)
 
@@ -436,11 +439,14 @@ class SpatialAverage(Monitor):
             monitored_state = numpy.dot(self.spatial_mean, state[self.voi, :])
             return [time, monitored_state.transpose((1, 0, 2))]
 
-    def create_time_series(self, storage_path, connectivity=None, surface=None):
+    def create_time_series(self, storage_path, connectivity=None, surface=None,
+                           region_map=None, region_volume_map=None):
         if self.is_default_special_mask:
             return TimeSeriesRegion(storage_path=storage_path,
                                     sample_period=self.period,
-                                    title = 'Regions ' + self.__class__.__name__,
+                                    region_mapping=region_map,
+                                    region_mapping_volume=region_volume_map,
+                                    title='Regions ' + self.__class__.__name__,
                                     connectivity=connectivity)
         else:
             # mask does not correspond to the number of regions
@@ -479,7 +485,8 @@ class GlobalAverage(Monitor):
             data = numpy.mean(state[self.voi, :], axis=1)[:, numpy.newaxis, :]
             return [time, data]
 
-    def create_time_series(self, storage_path, connectivity=None, surface=None):
+    def create_time_series(self, storage_path, connectivity=None, surface=None,
+                           region_map=None, region_volume_map=None):
         # ignore connectivity and surface and let parent create a TimeSeries
         return super(GlobalAverage, self).create_time_series(storage_path)
 
@@ -635,7 +642,8 @@ class EEG(Monitor):
             return [time, eeg.transpose((1, 0, 2))]
 
 
-    def create_time_series(self, storage_path, connectivity=None, surface=None):
+    def create_time_series(self, storage_path, connectivity=None, surface=None,
+                           region_map=None, region_volume_map=None):
          return TimeSeriesEEG(storage_path=storage_path,
                               sensors=self.sensors,
                               sample_period=self.period,
@@ -835,7 +843,8 @@ class SphericalEEG(Monitor):
             return [time, eeg.transpose((1, 0, 2))]
 
 
-    def create_time_series(self, storage_path, connectivity=None, surface=None):
+    def create_time_series(self, storage_path, connectivity=None, surface=None,
+                           region_map=None, region_volume_map=None):
          return TimeSeriesEEG(storage_path=storage_path,
                               sensors=self.sensors,
                               sample_period=self.period,
@@ -970,7 +979,8 @@ class SphericalMEG(Monitor):
             meg = numpy.dot(self.projection_matrix, avg_stock)
             return [time, meg.transpose((1, 0, 2))]
 
-    def create_time_series(self, storage_path, connectivity=None, surface=None):
+    def create_time_series(self, storage_path, connectivity=None, surface=None,
+                           region_map=None, region_volume_map=None):
         return TimeSeriesMEG(storage_path=storage_path,
                              sensors=self.sensors,
                              sample_period=self.period,
@@ -1512,7 +1522,8 @@ class SEEG(Monitor):
             return [time, eeg.transpose((1, 0, 2))]
 
 
-    def create_time_series(self, storage_path, connectivity=None, surface=None):
+    def create_time_series(self, storage_path, connectivity=None, surface=None,
+                           region_map=None, region_volume_map=None):
         return TimeSeriesSEEG(storage_path=storage_path,
                               sensors=self.sensors,
                               sample_period=self.period,

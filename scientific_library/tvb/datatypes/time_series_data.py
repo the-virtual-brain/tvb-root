@@ -32,14 +32,15 @@
 The Data component of TimeSeries DataTypes.
 
 .. moduleauthor:: Stuart A. Knock <Stuart@tvb.invalid>
-
 """
+
 from tvb.basic.traits.types_mapped import MappedType
 import tvb.basic.traits.types_basic as basic
 import tvb.basic.traits.core as core
 import tvb.datatypes.arrays as arrays
 import tvb.datatypes.sensors as sensors_module
 import tvb.datatypes.connectivity as connectivity_module
+import tvb.datatypes.region_mapping as region_mapping_module
 import tvb.datatypes.surfaces as surfaces
 import tvb.datatypes.volumes as volumes
 
@@ -94,6 +95,9 @@ class TimeSeriesData(MappedType):
         label="Sample rate",
         doc="""The sample rate of the timeseries""")
 
+    has_surface_mapping = basic.Bool(default=True)
+    has_volume_mapping = basic.Bool(default=False)
+
 
 
 class TimeSeriesEEGData(TimeSeriesData):
@@ -110,7 +114,8 @@ class TimeSeriesMEGData(TimeSeriesData):
     sensors = sensors_module.SensorsMEG
     labels_ordering = basic.List(default=["Time", "1", "MEG Sensor", "1"])
     
-    
+
+
 class TimeSeriesSEEGData(TimeSeriesData):
     """ A time series associated with a set of Internal sensors. """
     _ui_name = "Stereo-EEG time-series"
@@ -123,6 +128,8 @@ class TimeSeriesRegionData(TimeSeriesData):
     """ A time-series associated with the regions of a connectivity. """
     _ui_name = "Region time-series"
     connectivity = connectivity_module.Connectivity
+    region_mapping = region_mapping_module.RegionMapping(required=False)
+    region_mapping_volume = region_mapping_module.RegionVolumeMapping(required=False)
     labels_ordering = basic.List(default=["Time", "State Variable", "Region", "Mode"])
 
 

@@ -45,6 +45,7 @@ from tvb.simulator.models import Model
 from tvb.simulator.monitors import Monitor
 from tvb.simulator.integrators import Integrator
 from tvb.simulator.coupling import Coupling
+from tvb.core.entities.storage import dao
 from tvb.core.adapters.abcadapter import ABCAsynchronous
 from tvb.core.adapters.exceptions import LaunchException
 from tvb.basic.traits.parameters_factory import get_traited_subclasses
@@ -53,6 +54,7 @@ from tvb.datatypes.cortex import Cortex
 from tvb.datatypes.simulation_state import SimulationState
 from tvb.datatypes import noise_framework
 import tvb.datatypes.time_series as time_series
+import tvb.datatypes.region_mapping as region_mapping
 
 
 
@@ -233,9 +235,20 @@ class SimulatorAdapter(ABCAsynchronous):
         if simulation_state is not None:
             simulation_state.fill_into(self.algorithm)
 
+        region_map = dao.get_generic_entity(region_mapping.RegionMapping, connectivity.gid, '_connectivity')
+        region_volume_map = dao.get_generic_entity(region_mapping.RegionVolumeMapping, connectivity.gid, '_connectivity')
+        if len(region_map) < 1:
+            region_map = None
+        else:
+            region_map = region_map[0]
+        if len(region_volume_map) < 1:
+            region_volume_map = None
+        else:
+            region_volume_map = region_volume_map[0]
+
         for monitor in self.algorithm.monitors:
             m_name = monitor.__class__.__name__
-            ts = monitor.create_time_series(self.storage_path, connectivity, surface)
+            ts = monitor.create_time_series(self.storage_path, connectivity, surface, region_map, region_volume_map)
             self.log.debug("Monitor %s created the TS %s" % (m_name, ts))
             # Now check if the monitor will return results for each state variable, in which case store
             # the labels for these state variables.

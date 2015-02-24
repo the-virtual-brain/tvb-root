@@ -66,8 +66,10 @@ class BrainViewer(ABCDisplayer):
     def get_input_tree(self):
         return [{'name': 'time_series', 'label': 'Time Series (Region or Surface)',
                  'type': TimeSeries, 'required': True,
-                 'conditions': FilterChain(fields=[FilterChain.datatype + '.type'], operations=["in"],
-                                           values=[['TimeSeriesRegion', 'TimeSeriesSurface']])},
+                 'conditions': FilterChain(fields=[FilterChain.datatype + '.type',
+                                                   FilterChain.datatype + '.has_surface_mapping'],
+                                           operations=["in", "=="],
+                                           values=[['TimeSeriesRegion', 'TimeSeriesSurface'], True])},
 
                 {'name': 'shell_surface', 'label': 'Shell Surface', 'type': SurfaceData, 'required': False,
                  'description': "Surface to be displayed semi-transparently, for visual purposes only."}]
@@ -137,10 +139,7 @@ class BrainViewer(ABCDisplayer):
                 self.connectivity = self.region_map.connectivity
         else:
             self.connectivity = time_series.connectivity
-            region_map = dao.get_generic_entity(RegionMapping, self.connectivity.gid, '_connectivity')
-            if len(region_map) < 1:
-                raise Exception("No Mapping Surface found for display!")
-            self.region_map = region_map[0]
+            self.region_map = time_series.region_mapping
             self.surface = self.region_map.surface
 
 
@@ -148,15 +147,15 @@ class BrainViewer(ABCDisplayer):
         """
         To be overwritten method, for retrieving the measurement points (region centers, EEG sensors).
         """
-        if isinstance(time_series, TimeSeriesSurface):
+        if self.connectivity is None:
             self.measure_points_no = 0
             return {'urlMeasurePoints': [],
                     'urlMeasurePointsLabels': [],
                     'noOfMeasurePoints': 0}
 
-        measure_points = ABCDisplayer.paths2url(time_series.connectivity, 'centres')
-        measure_points_labels = ABCDisplayer.paths2url(time_series.connectivity, 'region_labels')
-        self.measure_points_no = time_series.connectivity.number_of_regions
+        measure_points = ABCDisplayer.paths2url(self.connectivity, 'centres')
+        measure_points_labels = ABCDisplayer.paths2url(self.connectivity, 'region_labels')
+        self.measure_points_no = self.connectivity.number_of_regions
 
         return {'urlMeasurePoints': measure_points,
                 'urlMeasurePointsLabels': measure_points_labels,
@@ -292,9 +291,11 @@ class DualBrainViewer(BrainViewer):
     def get_input_tree(self):
 
         return [{'name': 'time_series', 'label': 'Time Series', 'type': TimeSeries, 'required': True,
-                 'conditions': FilterChain(fields=[FilterChain.datatype + '.type'], operations=["in"],
+                 'conditions': FilterChain(fields=[FilterChain.datatype + '.type',
+                                                   FilterChain.datatype + '.has_surface_mapping'],
+                                           operations=["in", "=="],
                                            values=[['TimeSeriesEEG', 'TimeSeriesSEEG',
-                                                    'TimeSeriesMEG', 'TimeSeriesRegion']])},
+                                                    'TimeSeriesMEG', 'TimeSeriesRegion'], True])},
 
                 {'name': 'projection_surface', 'label': 'Projection Surface', 'type': SurfaceData, 'required': False,
                  'description': 'A surface on which to project the results. When missing, the first EEGCap is taken'

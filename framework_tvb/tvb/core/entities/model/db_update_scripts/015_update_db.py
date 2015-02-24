@@ -29,21 +29,23 @@
 #
 
 """
-Change of DB structure from TVB version 1.1.2 to 1.1.3
+Change of DB structure from TVB version 1.3.1 to 1.3.2
 
 .. moduleauthor:: Lia Domide <lia.domide@codemart.ro>
-.. moduleauthor:: Andrei Mihai <mihai.andrei@codemart.ro>
 """
 
 from sqlalchemy.sql import text
-from tvb.basic.logger.builder import get_logger
+from sqlalchemy import Column, String, Boolean
+from migrate.changeset.schema import create_column, drop_column
 from tvb.core.entities import model
-from tvb.core.entities.storage import SA_SESSIONMAKER, dao
+from tvb.core.entities.storage import SA_SESSIONMAKER
 
 
 meta = model.Base.metadata
-
-LOGGER = get_logger(__name__)
+COL_REG1 = Column('_has_surface_mapping', Boolean)
+COL_REG2 = Column('_has_volume_mapping', Boolean)
+COL_REG3 = Column('_region_mapping', String)
+COL_REG4 = Column('_region_mapping_volume', String)
 
 
 def upgrade(migrate_engine):
@@ -51,32 +53,51 @@ def upgrade(migrate_engine):
     Upgrade operations go here.
     Don't create your own engine; bind migrate_engine to your metadata.
     """
-    try:
-        meta.bind = migrate_engine
-        session = SA_SESSIONMAKER()
-        session.execute(text("""UPDATE "DATA_TYPES" SET module='tvb.datatypes.region_mapping' WHERE "type" = 'RegionMapping' """))
-        session.execute(text("""UPDATE "DATA_TYPES" SET module='tvb.datatypes.local_connectivity' WHERE "type" = 'LocalConnectivity' """))
-        session.execute(text("""UPDATE "DATA_TYPES" SET module='tvb.datatypes.cortex' WHERE "type" = 'Cortex' """))
-        session.commit()
-        session.close()
+    meta.bind = migrate_engine
+    table1 = meta.tables['MAPPED_TIME_SERIES_DATA']
+    table2 = meta.tables['MAPPED_TIME_SERIES_REGION_DATA']
 
-    except Exception:
-        LOGGER.exception("Cold not update datatypes")
-        raise
+    create_column(COL_REG1, table1)
+    create_column(COL_REG2, table1)
+    create_column(COL_REG3, table2)
+    create_column(COL_REG4, table2)
+
+    session = SA_SESSIONMAKER()
+    session.execute(text("""UPDATE "MAPPED_TIME_SERIES_REGION_DATA" tr SET _region_mapping =
+                        (SELECT dt.gid
+                         FROM "MAPPED_REGION_MAPPING_DATA" rm, "DATA_TYPES" dt
+                         WHERE dt.id = rm.id AND tr._connectivity = rm._connectivity);"""))
+    session.execute(text("""UPDATE "MAPPED_TIME_SERIES_REGION_DATA" tr SET _region_mapping_volume =
+                        (SELECT dt.gid
+                         FROM "MAPPED_REGION_VOLUME_MAPPING_DATA" rm, "DATA_TYPES" dt
+                         WHERE dt.id = rm.id AND tr._connectivity = rm._connectivity);"""))
+    session.execute(text("""UPDATE "MAPPED_TIME_SERIES_DATA" ts SET _has_surface_mapping = True
+                        WHERE
+                            EXISTS (SELECT * FROM "DATA_TYPES" dt
+                                    WHERE dt.id=ts.id AND dt.type in ('TimeSeriesSurface', 'TimeSeriesEEG',
+                                            'TimeSeriesSEEG', 'TimeSeriesMEG'))
+                         OR EXISTS (SELECT * from "MAPPED_TIME_SERIES_REGION_DATA" tr
+                                    WHERE tr.id=ts.id AND tr._region_mapping is not NULL);"""))
+    session.execute(text("""UPDATE "MAPPED_TIME_SERIES_DATA" ts SET _has_volume_mapping = True
+                        WHERE
+                            EXISTS (SELECT * FROM "DATA_TYPES" dt
+                                    WHERE dt.id=ts.id AND dt.type in ('TimeSeriesVolume'))
+                         OR EXISTS (SELECT * from "MAPPED_TIME_SERIES_REGION_DATA" tr
+                                    WHERE tr.id=ts.id AND tr._region_mapping_volume is not NULL);"""))
+
+    session.commit()
+    session.close()
 
 
 def downgrade(migrate_engine):
     """
     Operations to reverse the above upgrade go here.
     """
-    try:
-        meta.bind = migrate_engine
-        session = SA_SESSIONMAKER()
-        session.execute(text("""UPDATE "DATA_TYPES" SET module='tvb.datatypes.surfaces' WHERE "type" = 'RegionMapping' """))
-        session.execute(text("""UPDATE "DATA_TYPES" SET module='tvb.datatypes.surfaces' WHERE "type" = 'LocalConnectivity' """))
-        session.execute(text("""UPDATE "DATA_TYPES" SET module='tvb.datatypes.surfaces' WHERE "type" = 'Cortex' """))
-        session.commit()
-        session.close()
-    except Exception:
-        LOGGER.exception("Cold not update datatypes")
-        raise
+    meta.bind = migrate_engine
+    table1 = meta.tables['MAPPED_TIME_SERIES_DATA']
+    table2 = meta.tables['MAPPED_TIME_SERIES_REGION_DATA']
+
+    drop_column(COL_REG1, table1)
+    drop_column(COL_REG2, table1)
+    drop_column(COL_REG3, table2)
+    drop_column(COL_REG4, table2)
