@@ -287,6 +287,15 @@ class TimeSeriesRegionFramework(time_series_data.TimeSeriesRegionData, TimeSerie
     This class exists to add framework methods to TimeSeriesRegionData.
     """
 
+    def configure(self):
+        """
+        After populating few fields, compute the rest of the fields
+        """
+        super(TimeSeriesRegionFramework, self).configure()
+        self.has_surface_mapping = self.region_mapping is not None
+        self.has_volume_mapping = self.region_mapping_volume is not None
+
+
     def get_space_labels(self):
         """
         :return: An array of strings with the connectivity node labels.
@@ -347,6 +356,14 @@ class TimeSeriesVolumeFramework(time_series_data.TimeSeriesVolumeData, TimeSerie
     These methods will be later used by TS-Volume Viewer.
     """
 
+    def configure(self):
+        """
+        After populating few fields, compute the rest of the fields
+        """
+        super(TimeSeriesVolumeFramework, self).configure()
+        self.has_volume_mapping = True
+
+
     def get_volume_view(self, from_idx, to_idx, x_plane, y_plane, z_plane):
         """
         :param from_idx: int This will be the limit on the first dimension (time)
@@ -370,12 +387,19 @@ class TimeSeriesVolumeFramework(time_series_data.TimeSeriesVolumeData, TimeSerie
             msg = "Coordinates out of boundaries: {0}, {1}, {2}".format(x_plane, y_plane, z_plane)
             raise exceptions.ValidationException(msg)
 
-        slices = (slice(from_idx, to_idx), slice(overall_shape[1]), slice(overall_shape[2]), slice(overall_shape[3]))
-        slices = self.read_data_slice(tuple(slices))
-        slices = slices[..., ::-1]
-        slicex = slices[..., z_plane].tolist()
-        slicey = slices[:, x_plane, ...].tolist()
-        slicez = slices[..., y_plane, :].tolist()
+        ## Reverse Z
+        z_plane = overall_shape[3] - z_plane - 1
+        time = max(to_idx - from_idx, 1)
+
+        slices = slice(from_idx, to_idx), slice(overall_shape[1]), slice(overall_shape[2]), slice(z_plane, z_plane + 1)
+        slicex = self.read_data_slice(slices).reshape((time, overall_shape[1], overall_shape[2])).tolist()
+
+        slices = slice(from_idx, to_idx), slice(x_plane, x_plane + 1), slice(overall_shape[2]), slice(overall_shape[3])
+        slicey = self.read_data_slice(slices).reshape((time, overall_shape[2], overall_shape[3]))[..., ::-1].tolist()
+
+        slices = slice(from_idx, to_idx), slice(overall_shape[1]), slice(y_plane, y_plane + 1), slice(overall_shape[3])
+        slicez = self.read_data_slice(slices).reshape((time, overall_shape[1], overall_shape[3]))[..., ::-1].tolist()
+
         return [slicex, slicey, slicez]
 
 
@@ -395,16 +419,17 @@ class TimeSeriesVolumeFramework(time_series_data.TimeSeriesVolumeData, TimeSerie
             msg = "Coordinates out of boundaries: [x,y,z] = [{0}, {1}, {2}]".format(x, y, z)
             raise exceptions.ValidationException(msg)
 
-        slices = slice(overall_shape[0]), slice(x, x + 1), slice(y, y + 1), slice(overall_shape[3])
-        slices = self.read_data_slice(slices)
-        slices = slices[..., ::-1]
-        slices = slices[..., z].flatten()
+        ## Reverse Z
+        z = overall_shape[3] - z - 1
 
-        result = dict(data=slices.tolist(),
-                      max=float(max(slices)),
-                      min=float(min(slices)),
-                      mean=float(numpy.mean(slices)),
-                      median=float(numpy.median(slices)),
-                      variance=float(numpy.var(slices)),
-                      deviation=float(numpy.std(slices)))
+        slices = slice(overall_shape[0]), slice(x, x + 1), slice(y, y + 1), slice(z, z + 1)
+        time_line = self.read_data_slice(slices).flatten()
+
+        result = dict(data=time_line.tolist(),
+                      max=float(max(time_line)),
+                      min=float(min(time_line)),
+                      mean=float(numpy.mean(time_line)),
+                      median=float(numpy.median(time_line)),
+                      variance=float(numpy.var(time_line)),
+                      deviation=float(numpy.std(time_line)))
         return result
