@@ -52,7 +52,7 @@ class TimeSeriesVolumeVisualiser(ABCDisplayer):
 
     def get_input_tree(self):
         return [{'name': 'time_series', 'label': 'Time Series', 'type': TimeSeries, 'required': True,
-                 'conditions': FilterChain(fields=[FilterChain.datatype + '.has_volume_mapping'],
+                 'conditions': FilterChain(fields=[FilterChain.datatype + '._has_volume_mapping'],
                                            operations=["=="], values=[True])}]
 
 

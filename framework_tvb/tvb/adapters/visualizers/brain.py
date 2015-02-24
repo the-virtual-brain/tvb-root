@@ -67,7 +67,7 @@ class BrainViewer(ABCDisplayer):
         return [{'name': 'time_series', 'label': 'Time Series (Region or Surface)',
                  'type': TimeSeries, 'required': True,
                  'conditions': FilterChain(fields=[FilterChain.datatype + '.type',
-                                                   FilterChain.datatype + '.has_surface_mapping'],
+                                                   FilterChain.datatype + '._has_surface_mapping'],
                                            operations=["in", "=="],
                                            values=[['TimeSeriesRegion', 'TimeSeriesSurface'], True])},
 
@@ -292,7 +292,7 @@ class DualBrainViewer(BrainViewer):
 
         return [{'name': 'time_series', 'label': 'Time Series', 'type': TimeSeries, 'required': True,
                  'conditions': FilterChain(fields=[FilterChain.datatype + '.type',
-                                                   FilterChain.datatype + '.has_surface_mapping'],
+                                                   FilterChain.datatype + '._has_surface_mapping'],
                                            operations=["in", "=="],
                                            values=[['TimeSeriesEEG', 'TimeSeriesSEEG',
                                                     'TimeSeriesMEG', 'TimeSeriesRegion'], True])},
