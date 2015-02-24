@@ -24,13 +24,12 @@ var tsVol = {
     playbackRate: 66,           // This is a not acurate lower limit for playback speed.
     playerIntervalID: null,     // ID from the player's setInterval().
     streamToBufferID: null,     // ID from the buffering system's setInterval().
-    bufferSize: 1,              // How many time points do we load each time?
-    bufferL2Size: 1,            // How many sets of buffers can we keep at the same time?
-    lookAhead: 100,             // How many sets of buffers should be loaded ahead of us each time?
+    bufferSize: 1,              // How many time points to get each time. It will be computed automatically, This is only the start value
+    bufferL2Size: 1,            // How many sets of buffers can we keep at the same time in memory
+    lookAhead: 10,             // How many sets of buffers should be loaded ahead of us each time?
     data: {},                   // The actual data to be drawn to canvas.
     sliceArray: [],             // A helper variable to draw the data on the canvas.
-    bufferL2: {},               // Contains all data loaded and preloaded, limited by memory.
-    bufferL3: {},               // Contains all data from loaded views, limited by memory.
+    bufferL2: {},               // Contains all data from loaded views, limited by memory.
     urlVolumeData: "",          // Used to store the call for get_volume_view server function.
     dataSize: "",               // Used first to contain the file ID and then it's dimension.
     requestQueue: [],           // Used to avoid requesting a time point set while we are waiting for it.
@@ -143,9 +142,8 @@ function TSV_initVisualizer(urlVolumeData, urlTimeSeriesData, minValue, maxValue
     // Update the data shared with the SVG Time Series Fragment
     updateTSFragment();
 
-    // Start querying the server for volumetric data
-    startBuffering();
-    window.setInterval(freeBuffer, tsVol.playbackRate*10);
+    // Fire the memory cleaning procedure
+    window.setInterval(freeBuffer, tsVol.playbackRate * 20);
 
     // Start the SVG Time Series Fragment and draw it.
     TSF_initVisualizer(tsVol.urlTimeSeriesData);
@@ -547,7 +545,7 @@ function asyncRequest(fileName, sect){
                 if(privateID == tsVol.batchID){
                     parseAsync(response, function(json){
                         // save the parsed JSON
-                        tsVol.bufferL3[sect] = json;
+                        tsVol.bufferL2[sect] = json;
                         var idx = tsVol.requestQueue.indexOf(sect);
                         if (idx > -1){
                             tsVol.requestQueue.splice(idx, 1);
@@ -603,21 +601,19 @@ function parseAsync(data, callback){
 function streamToBuffer(){
     // we avoid having too many requests at the same time
     if(tsVol.requestQueue.length < 2) {
-        var currentSection = Math.floor(tsVol.currentTimePoint/tsVol.bufferSize);
+        var currentSection = Math.ceil(tsVol.currentTimePoint/tsVol.bufferSize);
         var maxSections = Math.floor(tsVol.timeLength/tsVol.bufferSize);
         var xPlane = ";x_plane=" + (tsVol.selectedEntity[0]);
         var yPlane = ";y_plane=" + (tsVol.selectedEntity[1]);
         var zPlane = ";z_plane=" + (tsVol.selectedEntity[2]);
 
-        for( var i = 0; i <= tsVol.lookAhead && i < maxSections; i++ ){
+        for (var i = 0; i <= tsVol.lookAhead && i < maxSections; i++) {
             var toBufferSection = Math.min( currentSection + i, maxSections );
             // If not already requested:
-            if(!tsVol.bufferL3[toBufferSection] && tsVol.requestQueue.indexOf(toBufferSection) < 0){
-                var from = toBufferSection*tsVol.bufferSize;
+            if(!tsVol.bufferL2[toBufferSection] && tsVol.requestQueue.indexOf(toBufferSection) < 0) {
+                var from = toBufferSection * tsVol.bufferSize;
                 var to = Math.min(from + tsVol.bufferSize, tsVol.timeLength);
-                from = "from_idx=" + from;
-                to = ";to_idx=" + to;
-                var query = tsVol.urlVolumeData + from + to + xPlane + yPlane + zPlane;
+                var query = tsVol.urlVolumeData + "from_idx=" + from + ";to_idx=" + to + xPlane + yPlane + zPlane;
                 asyncRequest(query, toBufferSection);
                 return; // break out of the loop
             }
@@ -626,17 +622,17 @@ function streamToBuffer(){
 }
 
 /**
- *  This function is called to erase some elements from bufferL3 array and avoid
+ *  This function is called to erase some elements from bufferL2 array and avoid
  *  consuming too much memory.
  */
 function freeBuffer() {
     var section = Math.floor(tsVol.currentTimePoint/tsVol.bufferSize);
-    var bufferedElements = Object.keys(tsVol.bufferL3).length;
+    var bufferedElements = Object.keys(tsVol.bufferL2).length;
+
     if(bufferedElements > tsVol.bufferL2Size){
-        tsVol.bufferL2 = {};
-        for(var idx in tsVol.bufferL3){
+        for(var idx in tsVol.bufferL2){
             if (idx < (section - tsVol.bufferL2Size/2) % tsVol.timeLength || idx > (section + tsVol.bufferL2Size/2) % tsVol.timeLength) {
-                delete tsVol.bufferL3[idx];
+                delete tsVol.bufferL2[idx];
             }
         }
     }
@@ -666,13 +662,12 @@ function getViewAtTime(t) {
     var zPlane = ";z_plane=" + (tsVol.selectedEntity[2]);
 
     var query;
-
     var section = Math.floor(t/tsVol.bufferSize);
 
-    if(tsVol.bufferL3[section]){ // We have that slice in memory
-        buffer = tsVol.bufferL3[section];
+    if (tsVol.bufferL2[section]) { // We have that slice in memory
+        buffer = tsVol.bufferL2[section];
 
-    } else{ // We need to load that slice from the server
+    } else { // We need to load that slice from the server
         from = "from_idx=" + t;
         to = ";to_idx=" + Math.min(1 + t, tsVol.timeLength);
         query = tsVol.urlVolumeData + from + to + xPlane + yPlane + zPlane;
@@ -711,9 +706,9 @@ function customMouseDown(e){
 function customMouseUp(e){
     e.preventDefault();
     this.mouseDown = false;
-    startBuffering();
-    if(tsVol.resumePlayer){
-        window.setTimeout(playBack, tsVol.playbackRate*5);
+
+    if(tsVol.resumePlayer) {
+        window.setTimeout(playBack, tsVol.playbackRate * 2);
         tsVol.resumePlayer = false;
     }
     if(tsVol.selectedQuad.index == 3){
@@ -725,9 +720,8 @@ function customMouseUp(e){
  * Implements picking and redraws the scene. Updates sliders too.
  * @param e The click event
  */
-function TSV_pick(e){
-    tsVol.bufferL3 = {};
-    stopBuffering();
+function TSV_pick(e) {
+
     if(tsVol.playerIntervalID){
         stopPlayback();
         tsVol.resumePlayer = true;
@@ -855,12 +849,14 @@ function playBack(){
     if(!tsVol.playerIntervalID)
         tsVol.playerIntervalID = window.setInterval(drawSceneFunctional, tsVol.playbackRate);
         $("#btnPlay")[0].setAttribute("class", "action action-pause");
+        startBuffering();
 }
 
 function stopPlayback(){
     window.clearInterval(tsVol.playerIntervalID);
     tsVol.playerIntervalID = null;
     $("#btnPlay")[0].setAttribute("class", "action action-run");
+    stopBuffering();
 }
 
 function togglePlayback() {
@@ -871,21 +867,20 @@ function togglePlayback() {
     }
 }
 
-function startBuffering(){
-    if(!tsVol.streamToBufferID){
+function startBuffering() {
+    // Only start buffering id the computed buffer length > 1. Whe only 1 step can be retrieved it is not worthy,
+    // and we will have duplicate retrievals generated
+    if(!tsVol.streamToBufferID && tsVol.bufferSize > 1) {
         tsVol.batchID++;
         tsVol.requestQueue = [];
-        tsVol.bufferL3 = {};
+        tsVol.bufferL2 = {};
         tsVol.streamToBufferID = window.setInterval(streamToBuffer, 0);
     }
 }
 
-function stopBuffering(){
+function stopBuffering() {
     window.clearInterval(tsVol.streamToBufferID);
     tsVol.streamToBufferID = null;
-    tsVol.batchID++;
-    tsVol.requestQueue = [];
-    tsVol.bufferL3 = {};
 }
 
 function playNextTimePoint(){
@@ -934,8 +929,7 @@ function updateSliders() {
  * While the navigation sliders are moved, this redraws the scene accordingly.
  */
 function slideMove(event, ui) {
-    tsVol.bufferL3 = {};
-    stopBuffering();
+
     if(tsVol.playerIntervalID){
         stopPlayback();
         tsVol.resumePlayer = true;
@@ -949,13 +943,13 @@ function slideMove(event, ui) {
  * After the navigation sliders are changed, this redraws the scene accordingly.
  */
 function slideMoved(event, ui) {
+
     if(tsVol.slidersClicked) {
-        startBuffering();
         tsVol.slidersClicked = false;
 
-        if(tsVol.resumePlayer){
+        if(tsVol.resumePlayer) {
             tsVol.resumePlayer = false;
-            window.setTimeout(playBack, tsVol.playbackRate * 5);
+            window.setTimeout(playBack, tsVol.playbackRate * 2);
         }
     }
    _coreMoveSliderAxis(event, ui);
