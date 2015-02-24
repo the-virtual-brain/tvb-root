@@ -78,7 +78,7 @@ class NIFTIParser():
 
 
 
-    def parse(self, result_dt):
+    def parse(self, result_dt, keep_result_4d=True):
         """
         Parse NIFTI file and write in result_dt a 4D or 3D array [time*, x, y, z].
         """
@@ -93,7 +93,10 @@ class NIFTIParser():
             for i in range(self.time_dim_size):
                 result_dt.write_data_slice([nifti_data[:, :, :, i, ...]])
         else:
-            result_dt.write_data_slice(nifti_data)
+            if keep_result_4d:
+                result_dt.write_data_slice([nifti_data])
+            else:
+                result_dt.write_data_slice(nifti_data)
 
         result_dt.close_file()  # Force closing HDF5 file
 

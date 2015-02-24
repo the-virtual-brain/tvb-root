@@ -100,12 +100,17 @@ class NIFTIImporter(ABCUploader):
                 time_series.title = "NIFTI Import - " + os.path.split(data_file)[1]
                 time_series.labels_ordering = ["Time", "X", "Y", "Z"]
                 time_series.start_time = 0.0
-                time_series.sample_period = float(parser.zooms[3])
+
+                if len(parser.zooms) > 3:
+                    time_series.sample_period = float(parser.zooms[3])
+                else:
+                    # If no time dim, set sampling to 1 sec
+                    time_series.sample_period = 1
 
                 if parser.units is not None and len(parser.units) > 1:
                     time_series.sample_period_unit = parser.units[1]
 
-                parser.parse(time_series)
+                parser.parse(time_series, True)
                 return [volume, time_series]
 
             else:
@@ -117,7 +122,7 @@ class NIFTIImporter(ABCUploader):
                 region2volume_mapping.dimensions_labels = ["X", "Y", "Z"]
                 region2volume_mapping.apply_corrections = apply_corrections
 
-                parser.parse(region2volume_mapping)
+                parser.parse(region2volume_mapping, False)
                 return [volume, region2volume_mapping]
 
         except ParseException, excep:

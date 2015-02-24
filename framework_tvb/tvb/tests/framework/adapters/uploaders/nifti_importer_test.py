@@ -83,7 +83,8 @@ class NIFTIImporterTest(TransactionalTestCase):
         ### Retrieve Adapter instance 
         group = dao.find_group('tvb.adapters.uploaders.nifti_importer', 'NIFTIImporter')
         importer = ABCAdapter.build_adapter(group)
-        args = {'data_file': import_file_path, DataTypeMetaData.KEY_SUBJECT: "bla bla"}
+        args = {'data_file': import_file_path, DataTypeMetaData.KEY_SUBJECT: "bla bla",
+                'apply_corrections': False, 'connectivity': None}
 
         ### Launch import Operation
         FlowService().fire_operation(importer, self.test_user, self.test_project.id, **args)
@@ -101,7 +102,7 @@ class NIFTIImporterTest(TransactionalTestCase):
 
     def test_import_demo_nii_data(self):
         """
-            This method tests import of a NIFTI file.
+        This method tests import of a NIFTI file.
         """
         time_series = self._import(self.TVB_NII_FILE)
 
@@ -128,7 +129,7 @@ class NIFTIImporterTest(TransactionalTestCase):
 
     def test_import_nii_without_time_dimension(self):
         """
-            This method tests import of a NIFTI file.
+        This method tests import of a NIFTI file.
         """
         time_series = self._import(self.NII_FILE)
 
@@ -154,7 +155,7 @@ class NIFTIImporterTest(TransactionalTestCase):
 
     def test_import_nifti_compressed(self):
         """
-            This method tests import of a NIFTI file compressed in GZ format.
+        This method tests import of a NIFTI file compressed in GZ format.
         """
         time_series = self._import(self.GZ_NII_FILE)
 
@@ -196,7 +197,7 @@ def suite():
     Gather all the tests in a test suite.
     """
     test_suite = unittest.TestSuite()
-    test_suite.addTest(unittest.makeSuite(NIFTIImporterTest, prefix="test_import_demo_nii_data"))
+    test_suite.addTest(unittest.makeSuite(NIFTIImporterTest))
     return test_suite
 
 
