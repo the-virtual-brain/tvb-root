@@ -67,10 +67,10 @@ def upgrade(migrate_engine):
                         (SELECT dt.gid
                          FROM "MAPPED_REGION_MAPPING_DATA" rm, "DATA_TYPES" dt
                          WHERE dt.id = rm.id AND tr._connectivity = rm._connectivity);"""))
-    session.execute(text("""UPDATE "MAPPED_TIME_SERIES_REGION_DATA" tr SET _region_mapping_volume =
-                        (SELECT dt.gid
-                         FROM "MAPPED_REGION_VOLUME_MAPPING_DATA" rm, "DATA_TYPES" dt
-                         WHERE dt.id = rm.id AND tr._connectivity = rm._connectivity);"""))
+    # session.execute(text("""UPDATE "MAPPED_TIME_SERIES_REGION_DATA" tr SET _region_mapping_volume =
+    #                     (SELECT dt.gid
+    #                      FROM "MAPPED_REGION_VOLUME_MAPPING_DATA" rm, "DATA_TYPES" dt
+    #                      WHERE dt.id = rm.id AND tr._connectivity = rm._connectivity);"""))
     session.execute(text("""UPDATE "MAPPED_TIME_SERIES_DATA" ts SET _has_surface_mapping = True
                         WHERE
                             EXISTS (SELECT * FROM "DATA_TYPES" dt
