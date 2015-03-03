@@ -48,7 +48,6 @@ from tvb.basic.filters.chain import UIFilter, FilterChain
 from tvb.datatypes.cortex import Cortex
 
 import tvb.simulator.models as models_module
-import tvb.simulator.cmodels as c_models_module  # required by introspection
 import tvb.simulator.integrators as integrators_module
 import tvb.simulator.monitors as monitors_module
 import tvb.simulator.coupling as coupling_module

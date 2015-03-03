@@ -33,16 +33,18 @@ Mark TVB-Simulator-Library as a Python import.
 Mention dependencies for this package.
 """
 
+import os
+import shutil
 import setuptools
 from setuptools import Extension
-import os, shutil
 
 try:
     import numpy
     from Cython.Distutils import build_ext
 except ImportError:
     # It is not easy to make setuptools install them before attempting to install the c extensions
-    raise ImportError("Please install numpy and Cython before TVB library. We depend on them to compile Cython extensions.")
+    raise ImportError("Please install numpy and Cython before TVB library. "
+                      "We depend on them to compile Cython extensions.")
 
 
 
@@ -53,8 +55,7 @@ TVB_INSTALL_REQUIREMENTS = ["networkx", "nibabel", "numpy", "numexpr", "scikit-l
 
 
 cython_ext = [
-    Extension ( "tvb._speedups.history", [ "tvb/_speedups/history.pyx"], include_dirs=[numpy.get_include()] ),
-    Extension ( "tvb._speedups.models", [ "tvb/_speedups/models.pyx"], include_dirs=[numpy.get_include()] ),
+    Extension("tvb._speedups.history", [ "tvb/_speedups/history.pyx"], include_dirs=[numpy.get_include()])
 ]
 
 setuptools.setup(
@@ -63,8 +64,8 @@ setuptools.setup(
     url='https://github.com/the-virtual-brain/scientific_library',
     version=LIBRARY_VERSION,
     packages=setuptools.find_packages(),
-    ext_modules = cython_ext,
-    cmdclass    = { "build_ext" : build_ext },
+    ext_modules=cython_ext,
+    cmdclass={"build_ext": build_ext},
     license='GPL',
     author=TVB_TEAM,
     author_email='tvb-users@googlegroups.com',
