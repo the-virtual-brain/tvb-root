@@ -45,6 +45,24 @@ import copy
 from tvb.basic.config.environment import Environment
 from tvb.basic.config.profile_settings import BaseSettingsProfile
 
+# avoid deepcopy errors due to six._MetaPathImporter
+class MetaPathCopier(object):
+    def __init__(self):
+        self._deepcopy = None
+        try:
+            import six
+            import copy_reg
+            copy_reg.pickle(six._SixMetaPathImporter,
+                            lambda imp: (six._SixMetaPathImporter, (imp.name,)),
+                            lambda name: six._SixMetaPathImporter(name))
+        except ImportError:
+            pass
+
+    def deepcopy(self):
+        self._deepcopy = copy.deepcopy(sys.meta_path)
+
+    def restore(self):
+        sys.meta_path = copy.deepcopy(self._deepcopy)
 
 
 class TvbProfile():
@@ -71,7 +89,8 @@ class TvbProfile():
     current = BaseSettingsProfile(False)
     env = Environment()
 
-    _old_meta_path = copy.deepcopy(sys.meta_path)
+    _meta_path_copier = MetaPathCopier()
+    _meta_path_copier.deepcopy()
 
 
     @classmethod
@@ -90,7 +109,7 @@ class TvbProfile():
 
         if selected_profile is not None:
             ## Restore sys.meta_path, as some profiles (Library) are adding something
-            sys.meta_path = copy.deepcopy(cls._old_meta_path)
+            cls._meta_path_copier.restore()
 
             cls._load_framework_profiles(selected_profile)
             cls._build_profile_class(selected_profile, in_operation, run_init)
