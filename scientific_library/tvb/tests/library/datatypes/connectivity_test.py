@@ -37,6 +37,12 @@ if __name__ == "__main__":
     from tvb.tests.library import setup_test_console_env
     setup_test_console_env()
 
+try:
+    H5PY_SUPPORT = True
+    import h5py as hdf5
+except Exception:
+    H5PY_SUPPORT = False
+
 import os
 import numpy
 import unittest
@@ -149,6 +155,7 @@ class ConnectivityTest(BaseTestCase):
         self.assertEqual(conn.parent_connectivity, '')
 
 
+    @unittest.skipIf(not H5PY_SUPPORT, "HDF5 and H5PY not found on this system")
     def test_connectivity_h5py_reload(self):
         """
         Reload a connectivity and check that defaults changes accordingly.

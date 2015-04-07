@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 #
 #
-#  TheVirtualBrain-Scientific Package. This package holds all simulators, and
+# TheVirtualBrain-Scientific Package. This package holds all simulators, and
 # analysers necessary to run brain-simulations. You can use it stand alone or
 # in conjunction with TheVirtualBrain-Framework Package. See content of the
 # documentation-folder for more details. See also http://www.thevirtualbrain.org
@@ -33,7 +33,16 @@
 This is the tests folder for TVB project.
 """
 
+import unittest
 from pkgutil import extend_path
 
 __path__ = extend_path(__path__, __name__)
 
+
+
+def run_library():
+    from tvb.tests.library.main_tests import suite as lib_suite
+
+    test_runner = unittest.TextTestRunner()
+    test_suite = lib_suite()
+    test_runner.run(test_suite)

@@ -42,7 +42,6 @@ import unittest
 import tvb.datatypes.api_datatypes
 from tvb.tests.library.datatypes import arrays_test
 from tvb.tests.library.datatypes import connectivity_test
-from tvb.tests.library.datatypes import coupling_test
 from tvb.tests.library.datatypes import equations_test
 from tvb.tests.library.datatypes import graph_test
 from tvb.tests.library.datatypes import mapped_test
@@ -64,7 +63,6 @@ def suite():
     test_suite = unittest.TestSuite()
     test_suite.addTest(arrays_test.suite())
     test_suite.addTest(connectivity_test.suite())
-    test_suite.addTest(coupling_test.suite())
     test_suite.addTest(equations_test.suite())
     test_suite.addTest(graph_test.suite())
     test_suite.addTest(mapped_test.suite())
