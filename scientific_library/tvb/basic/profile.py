@@ -45,6 +45,7 @@ import copy
 from tvb.basic.config.environment import Environment
 from tvb.basic.config.profile_settings import BaseSettingsProfile
 
+
 # avoid deepcopy errors due to six._MetaPathImporter
 class MetaPathCopier(object):
     def __init__(self):
@@ -52,17 +53,22 @@ class MetaPathCopier(object):
         try:
             import six
             import copy_reg
-            copy_reg.pickle(six._SixMetaPathImporter,
-                            lambda imp: (six._SixMetaPathImporter, (imp.name,)),
-                            lambda name: six._SixMetaPathImporter(name))
+
+            if hasattr(six, '_SixMetaPathImporter'):
+                copy_reg.pickle(six._SixMetaPathImporter,
+                                lambda imp: (six._SixMetaPathImporter, (imp.name,)),
+                                lambda name: six._SixMetaPathImporter(name))
         except ImportError:
             pass
+
 
     def deepcopy(self):
         self._deepcopy = copy.deepcopy(sys.meta_path)
 
+
     def restore(self):
         sys.meta_path = copy.deepcopy(self._deepcopy)
+
 
 
 class TvbProfile():
