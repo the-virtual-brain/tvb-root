@@ -77,7 +77,7 @@ following:
 
 .. moduleauthor:: Stuart A. Knock <Stuart@tvb.invalid>
 .. moduleauthor:: Noelia Montejo <Noelia@tvb.invalid>
-.. moduleauthor:: Marmaduke Woodman <mw@eml.cc>
+.. moduleauthor:: Marmaduke Woodman <marmaduke.woodman@univ-amu.fr>
 .. moduleauthor:: Paula Sanz Leon <Paula@tvb.invalid>
 
 """
@@ -91,10 +91,34 @@ from tvb.simulator.common import get_logger
 LOG = get_logger(__name__)
 
 
-
 class Coupling(core.Type):
-    """
+    r"""
     The base class for Coupling functions.
+
+    Instances of the Coupling class are called by the simulator in the
+    following way:
+
+    .. math::
+
+        k_i = coupling(g_ij, x_i, x_j)
+
+    where g_ij is the connectivity weight matrix, x_i is the current state,
+    x_j is the delayed state of the coupling variables chosen for the
+    simulation, and k_i is the input to the ith node due to the coupling
+    between the nodes.
+
+    Coupling functions can all be defined as a combination of a
+    pre-"synaptic" or pre-summation function, the summation over weighted
+    afferents and the post-"synaptic" or post-summation function. Therefore,
+    a Coupling subclass should not define the `__call__` method directly but
+    rather appropriate `pre` and `post` methods, which are used by 
+    `Coupling.__call__` to compute the coupling correctly.
+    
+    Default implementations of `pre` and `post` are provided, which simply
+    apply the connectivity to afferent activity, without scaling or other changes.
+
+    .. automethod:: PreSigmoidal.__call__
+
     """
     _base_classes = ["Coupling"]
 
@@ -111,7 +135,6 @@ class Coupling(core.Type):
     def configure(self):
         """  """
         super(Coupling, self).configure()
-        pass
 
 
     def __repr__(self):
@@ -131,31 +154,16 @@ class Coupling(core.Type):
 
 
     def __call__(self, g_ij, x_i, x_j):
-        """
-        Instances of the Coupling class are called by the simulator in the
-        following way:
+        x_i = x_i[numpy.newaxis].transpose((2, 1, 0, 3)) # (to, ncv, from, m)
+        pre = self.pre(x_i, x_j)
+        sum = (g_ij * pre).sum(axis=2) # (to, ncv, m)
+        return self.post(sum).transpose((1, 0, 2)) # (ncv, to, m)
 
-        ::
+    def pre(self, x_i, x_j):
+        return x_j
 
-            k_i = coupling(g_ij, x_i, x_j)
-
-        where g_ij is the connectivity weight matrix, x_i is the current state,
-        x_j is the delayed state of the coupling variables chosen for the
-        simulation, and k_i is the input to the ith node due to the coupling
-        between the nodes.
-
-        Normally, all Coupling types compute a dot product between some
-        function of current and past state and the connectivity matrix to
-        produce k_i, e.g.
-
-        ::
-
-            (g_ij * x_j).sum(axis=0)
-
-        in the simplest case.
-
-        """
-        pass
+    def post(self, gx):
+        return gx
 
 
 class coupling_device_info(object):
@@ -200,41 +208,31 @@ class coupling_device_info(object):
 
 
 class Linear(Coupling):
-    """
-    Linear Coupling function.
+    r"""
+    Provides a linear coupling function of the following form
+
+    .. math::
+        a x + b
 
     """
 
     a = arrays.FloatArray(
-        label = ":math:`a`",
+        label=":math:`a`",
         default=numpy.array([0.00390625,]),
-        range = basic.Range(lo = 0.0, hi = 1.0, step = 0.01),
-        doc = """Rescales the connection strength while maintaining the ratio
-        between different values.""",
-        order = 1)
+        range=basic.Range(lo=0.0, hi=1.0, step=0.01),
+        doc="Rescales the connection strength while maintaining the ratio "
+            "between different values.",
+        order=1)
 
     b = arrays.FloatArray(
-        label = ":math:`b`",
-        default = numpy.array([0.0,]),
-        doc = """Shifts the base of the connection strength while maintaining
-        the absolute difference between different values.""",
-        order = 2)
+        label=":math:`b`",
+        default=numpy.array([0.0,]),
+        doc="Shifts the base of the connection strength while maintaining "
+            "the absolute difference between different values.",
+        order=2)
 
-
-    def __call__(self, g_ij, x_i, x_j):
-        """
-        Evaluate the Linear function for the arg ``x``. The equation being
-        evaluated has the following form:
-
-            .. math::
-                a x + b
-
-
-        """
-        coupled_input = (g_ij.transpose((2, 1, 0, 3)) * x_j).sum(axis=0)
-
-        return self.a * coupled_input + self.b
-
+    def post(self, gx):
+        return self.a * gx + self.b
 
     device_info = coupling_device_info(
         pars = ['a', 'b'],
@@ -253,41 +251,24 @@ class Linear(Coupling):
         )
 
 
-
-#NOTE: This was primarily created as a work around for the local_connectivity
-#      not being able to have a scaling through the UI...
 class Scaling(Coupling):
-    """
-    Scaling Coupling function.
+    r"""
+    Provides a simple scaling of the connectivity of the form
 
-    .. #Currently there seems to be a clash betwen traits and autodoc, autodoc
-    .. #can't find the methods of the class, the class specific names below get
-    .. #us around this...
-    .. automethod:: Scaling.__init__
-    .. automethod:: Scaling.__call__
+    .. math::
+        a x
 
     """
 
     a = basic.Float(
         label="Scaling factor",
-        default = 0.00390625,
-        range = basic.Range(lo = 0.0, hi = 1.0, step = 0.01),
-        doc = """Rescales the connection strength while maintaining the ratio
-        between different values.""")
+        default=0.00390625,
+        range=basic.Range(lo=0.0, hi=1.0, step=0.01),
+        doc="Rescales the connection strength while maintaining "
+            "the ratio between different values.")
 
-
-    def __call__(self, g_ij, x_i, x_j):
-        """
-        Evaluate the Linear function for the arg ``x``. The equation being
-        evaluated has the following form:
-
-            .. math::
-                a x
-
-
-        """
-        coupled_input = (g_ij.transpose((2, 1, 0, 3)) * x_j).sum(axis=2)
-        return self.a * coupled_input
+    def post(self, gx):
+        return self.a * gx
 
     device_info = coupling_device_info(
         pars = ['a'],
@@ -304,361 +285,264 @@ class Scaling(Coupling):
         )
 
 
-
 class HyperbolicTangent(Coupling):
-    """
-    Hyperbolic tangent.
+    r"""
+    Provides a sigmoidal coupling function of the form
+
+    .. math::
+        a * (1 + tanh((x - midpoint)/sigma))
+
+    NB: This coupling function is applied pre-summation. For a post-summation
+        sigmoidal, see `Sigmoidal`.
 
     """
 
     a = arrays.FloatArray(
-        label = ":math:`a`",
-        default = numpy.array([1.0]),
-        range = basic.Range(lo = -1000.0, hi = 1000.0, step = 10.0),
-        doc = """Minimum of the sigmoid function""",
-        order = 1)
+        label=":math:`a`",
+        default=numpy.array([1.0]),
+        range=basic.Range(lo=-1000.0, hi=1000.0, step=10.0),
+        doc="Minimum of the sigmoid function",
+        order=1)
 
     b = arrays.FloatArray(
-        label = ":math:`b`",
-        default = numpy.array([1.0]),
-        range = basic.Range(lo = -1.0, hi = 1.0, step = 10.0),
-        doc = """Scaling factor for the variable""",
-        order = 2)
+        label=":math:`b`",
+        default=numpy.array([1.0]),
+        range=basic.Range(lo=-1.0, hi=1.0, step=10.0),
+        doc="Scaling factor for the variable",
+        order=2)
 
     midpoint = arrays.FloatArray(
-        label = "midpoint",
-        default = numpy.array([0.0,]),
-        range = basic.Range(lo = -1000.0, hi = 1000.0, step = 10.0),
-        doc = """Midpoint of the linear portion of the sigmoid""",
-        order = 3)
+        label="midpoint",
+        default=numpy.array([0.0,]),
+        range=basic.Range(lo=-1000.0, hi=1000.0, step=10.0),
+        doc="Midpoint of the linear portion of the sigmoid",
+        order=3)
 
     sigma = arrays.FloatArray(
-        label = r":math:`\sigma`",
-        default = numpy.array([1.0,]),
-        range = basic.Range(lo = 0.01, hi = 1000.0, step = 10.0),
-        doc = """Standard deviation of the ...""",
-        order = 4)
+        label=r":math:`\sigma`",
+        default=numpy.array([1.0,]),
+        range=basic.Range(lo=0.01, hi=1000.0, step=10.0),
+        doc="Standard deviation of the coupling",
+        order=4)
 
-    normalise = basic.Bool(
-        label = "normalise by in-strength",
-        default = True,
-        doc = """Normalise the node coupling by the node's in-strenght""",
-        order = 5)
-
-
-    def __call__(self, g_ij, x_i, x_j):
-        r"""
-        Evaluate the Sigmoidal function for the arg ``x``. The equation being
-        evaluated has the following form:
-
-            .. math::
-                        a * (1 + tanh((x - midpoint)/sigma))
-
-        """
-        temp =  self.a * (1 +  numpy.tanh((self.b * x_j - self.midpoint) / self.sigma))
-
-        if self.normalise:
-            #NOTE: normalising by the strength or degrees may yield NaNs, so fill these values with inf
-            in_strength = g_ij.sum(axis=2)[:, :, numpy.newaxis, :]
-            in_strength[in_strength==0] = numpy.inf
-            temp *= (g_ij.transpose((2, 1, 0, 3)) / in_strength) #region mode normalisation
-
-            coupled_input = temp.mean(axis=0)
-        else:
-            coupled_input = (g_ij.transpose((2, 1, 0, 3))*temp).mean(axis=0)
-
-        return coupled_input
-
+    def pre(self, x_i, x_j):
+        return self.a * (1 +  numpy.tanh((self.b * x_j - self.midpoint) / self.sigma))
 
 
 class Sigmoidal(Coupling):
-    """
-    Sigmoidal Coupling function.
+    r"""
+    Provides a sigmoidal coupling function of the form
 
-    .. #Currently there seems to be a clash betwen traits and autodoc, autodoc
-    .. #can't find the methods of the class, the class specific names below get
-    .. #us around this...
-    .. automethod:: Sigmoidal.__init__
-    .. automethod:: Sigmoidal.__call__
+    .. math::
+        c_{min} + (c_{max} - c_{min}) / (1.0 + \exp(-a(x-midpoint)/\sigma))
+
+    NB: using a = numpy.pi / numpy.sqrt(3.0) and the default parameter 
+        produces something close to the current default for
+        Linear (a=0.00390625, b=0) over the linear portion of the sigmoid,
+        with saturation at -1 and 1.
 
     """
-    #NOTE: using a = numpy.pi / numpy.sqrt(3.0) and the default parameter produces something close to the current default for
-    #      Linear (a=0.00390625, b=0) over the linear portion of the sigmoid,
-    #      with saturation at -1 and 1.
 
     cmin = arrays.FloatArray(
-        label = ":math:`c_{min}`",
-        default = numpy.array([-1.0,]),
-        range = basic.Range(lo = -1000.0, hi = 1000.0, step = 10.0),
-        doc = """Minimum of the sigmoid function""",
-        order = 1)
+        label=":math:`c_{min}`",
+        default=numpy.array([-1.0,]),
+        range=basic.Range(lo=-1000.0, hi=1000.0, step=10.0),
+        doc="""Minimum of the sigmoid function""",
+        order=1)
 
     cmax = arrays.FloatArray(
-        label = ":math:`c_{max}`",
-        default = numpy.array([1.0,]),
-        range = basic.Range(lo = -1000.0, hi = 1000.0, step = 10.0),
-        doc = """Maximum of the sigmoid function""",
-        order = 2)
+        label=":math:`c_{max}`",
+        default=numpy.array([1.0,]),
+        range=basic.Range(lo=-1000.0, hi=1000.0, step=10.0),
+        doc="""Maximum of the sigmoid function""",
+        order=2)
 
     midpoint = arrays.FloatArray(
-        label = "midpoint",
-        default = numpy.array([0.0,]),
-        range = basic.Range(lo = -1000.0, hi = 1000.0, step = 10.0),
-        doc = """Midpoint of the linear portion of the sigmoid""",
-        order = 3)
+        label="midpoint",
+        default=numpy.array([0.0,]),
+        range=basic.Range(lo=-1000.0, hi=1000.0, step=10.0),
+        doc="Midpoint of the linear portion of the sigmoid",
+        order=3)
 
     a = arrays.FloatArray(
-        label = r":math:`a`",
-        default = numpy.array([1.0,]),
-        range = basic.Range(lo = 0.01, hi = 1000.0, step = 10.0),
-        doc = """Scaling of .... """,
-        order = 4)
+        label=r":math:`a`",
+        default=numpy.array([1.0,]),
+        range=basic.Range(lo=0.01, hi=1000.0, step=10.0),
+        doc="Scaling of sigmoidal",
+        order=4)
 
     sigma = arrays.FloatArray(
-        label = r":math:`\sigma`",
-        default = numpy.array([230.0,]),
-        range = basic.Range(lo = 0.01, hi = 1000.0, step = 10.0),
-        doc = """Standard deviation of the ...""",
-        order = 5)
+        label=r":math:`\sigma`",
+        default=numpy.array([230.0,]),
+        range=basic.Range(lo=0.01, hi=1000.0, step=10.0),
+        doc="Standard deviation of the sigmoidal",
+        order=5)
 
-
-    def __init__(self, **kwargs):
-        """Precompute a constant after the base __init__"""
-        super(Sigmoidal, self).__init__(**kwargs)
-        self.pi_on_sqrt3 = numpy.pi / numpy.sqrt(3.0)
-
-
-    def __call__(self, g_ij, x_i, x_j):
-        r"""
-        Evaluate the Sigmoidal function for the arg ``x``. The equation being
-        evaluated has the following form:
-
-            .. math::
-                c_{min} + (c_{max} - c_{min}) / (1.0 + \exp(-a(x-midpoint)/\sigma))
-
-
-        """
-        coupled_input = (g_ij * x_j).sum(axis=1)
-        sig = self.cmin + ((self.cmax - self.cmin) / (1.0 + numpy.exp(-self.a *((coupled_input - self.midpoint) / self.sigma))))
-        return sig
+    def post(self, gx):
+        return self.cmin + ((self.cmax - self.cmin) / (1.0 + numpy.exp(-self.a *((gx - self.midpoint) / self.sigma))))
 
 
 class SigmoidalJansenRit(Sigmoidal):
-    """
-    Sigmoidal Coupling function for the Jansen and Rit model.
+    r"""
+    Provides a sigmoidal coupling function as described in the 
+    Jansen and Rit model, of the following form
+
+    .. math::
+        c_{min} + (c_{max} - c_{min}) / (1.0 + \exp(-a(x-midpoint)/\sigma))
+
+    Assumes that x has have two state variables.
 
     """
-
 
     cmin = arrays.FloatArray(
-        label = ":math:`c_{min}`",
-        default = numpy.array([0.0,]),
-        range = basic.Range(lo = -1000.0, hi = 1000.0, step = 10.0),
-        doc = """Minimum of the sigmoid function""",
-        order = 1)
+        label=":math:`c_{min}`",
+        default=numpy.array([0.0,]),
+        range=basic.Range(lo=-1000.0, hi=1000.0, step=10.0),
+        doc="Minimum of the sigmoid function",
+        order=1)
 
     cmax = arrays.FloatArray(
-        label = ":math:`c_{max}`",
-        default = numpy.array([2.0 * 0.0025,]),
-        range = basic.Range(lo = -1000.0, hi = 1000.0, step = 10.0),
-        doc = """Maximum of the sigmoid function""",
-        order = 2)
+        label=":math:`c_{max}`",
+        default=numpy.array([2.0 * 0.0025,]),
+        range=basic.Range(lo=-1000.0, hi=1000.0, step=10.0),
+        doc="Maximum of the sigmoid function",
+        order=2)
 
     midpoint = arrays.FloatArray(
-        label = "midpoint",
-        default = numpy.array([6.0,]),
-        range = basic.Range(lo = -1000.0, hi = 1000.0, step = 10.0),
-        doc = """Midpoint of the linear portion of the sigmoid""",
-        order = 3)
+        label="midpoint",
+        default=numpy.array([6.0,]),
+        range=basic.Range(lo=-1000.0, hi=1000.0, step=10.0),
+        doc="Midpoint of the linear portion of the sigmoid",
+        order=3)
 
     r  = arrays.FloatArray(
-        label = r":math:`r`",
-        default = numpy.array([1.0,]),
-        range = basic.Range(lo = 0.01, hi = 1000.0, step = 10.0),
-        doc = """the steepness of the sigmoidal transformation""",
-        order = 4)
-
+        label=r":math:`r`",
+        default=numpy.array([1.0,]),
+        range=basic.Range(lo=0.01, hi=1000.0, step=10.0),
+        doc="the steepness of the sigmoidal transformation",
+        order=4)
 
     a = arrays.FloatArray(
-        label = r":math:`a`",
-        default = numpy.array([0.56,]),
-        range = basic.Range(lo = 0.01, hi = 1000.0, step = 10.0),
-        doc = """Scaling of the coupling term """,
-        order = 5)
+        label=r":math:`a`",
+        default=numpy.array([0.56,]),
+        range=basic.Range(lo=0.01, hi=1000.0, step=10.0),
+        doc="Scaling of the coupling term",
+        order=5)
 
+    def pre(self, x_i, x_j):
+        return self.cmax / (1.0 + numpy.exp(
+          self.r * (self.midpoint - (x_j[:, 0] - x_j[:, 1]))))
 
-
-
-    def __init__(self, **kwargs):
-        """Precompute a constant after the base __init__"""
-        super(SigmoidalJansenRit, self).__init__(**kwargs)
-
-
-    def __call__(self, g_ij, x_i, x_j):
-        r"""
-        Evaluate the Sigmoidal function for the arg ``x``. The equation being
-        evaluated has the following form:
-
-            .. math::
-                c_{min} + (c_{max} - c_{min}) / (1.0 + \exp(-a(x-midpoint)/\sigma))
-
-        Assumes that x_j has have two state variables.
-
-
-        """
-
-        magic_exp_number = 709
-        diff_input = x_j[:, 0, numpy.newaxis, :, :] - x_j[:, 1, numpy.newaxis, :, :]        
-        temp       = self.r * (self.midpoint - (diff_input))
-        sigm_y1_y2 = numpy.where(temp > magic_exp_number, self.cmax / (1.0 + numpy.exp(temp)), self.cmax / (1.0 + numpy.exp(temp)))     
-        coupled_input = self.a * ( g_ij.transpose((2, 1, 0, 3)) * sigm_y1_y2).sum(axis=0)
-
-        return coupled_input
+    def post(self, gx):
+        return self.a * gx
 
 
 class PreSigmoidal(Coupling):
-    """Pre-Sigmoidal Coupling function (pre-product) with a Static/Dynamic 
-    and Local/Global threshold.
+    r"""
+    Provides a pre-summation sigmoidal coupling function with a static or dynamic
+    and local or global threshold.
 
-    .. automethod:: PreSigmoidal.__init__
-    .. automethod:: PreSigmoidal.configure
-    .. automethod:: PreSigmoidal.__call__
-    .. automethod:: PreSigmoidal.call_static
-    .. automethod:: PreSigmoidal.call_dynamic
+    .. math::
+        H * (Q + \tanh(G * (P*x - \theta)))
+
+    The dynamic threshold as state variable given by the second state variable.
+    With the coupling term, returns the direct node output for the dynamic threshold.
 
     """
-    #NOTE: Different from Sigmoidal coupling where the product is an input of the sigmoid.
-    #      Here the sigmoid is an input of the product.
 
     H = arrays.FloatArray(
-        label = "H",
-        default = numpy.array([0.5,]),
-        range = basic.Range(lo = -100.0, hi = 100.0, step = 1.0),
-        doc = """Global Factor""",
-        order = 1)
+        label="H",
+        default=numpy.array([0.5,]),
+        range=basic.Range(lo=-100.0, hi=100.0, step=1.0),
+        doc="Global Factor.",
+        order=1)
 
     Q = arrays.FloatArray(
-        label = "Q",
-        default = numpy.array([1.,]),
-        range = basic.Range(lo = -100.0, hi = 100.0, step = 1.0),
-        doc = """Average""",
-        order = 2)
+        label="Q",
+        default=numpy.array([1.,]),
+        range=basic.Range(lo=-100.0, hi=100.0, step=1.0),
+        doc="Average.",
+        order=2)
 
     G = arrays.FloatArray(
-        label = "G",
-        default = numpy.array([60.,]),
-        range = basic.Range(lo = -1000.0, hi = 1000.0, step = 1.),
-        doc = """Gain""",
-        order = 3)
+        label="G",
+        default=numpy.array([60.,]),
+        range=basic.Range(lo=-1000.0, hi=1000.0, step=1.),
+        doc="Gain.",
+        order=3)
 
     P = arrays.FloatArray(
-        label = "P",
-        default = numpy.array([1.,]),
-        range = basic.Range(lo = -100.0, hi = 100.0, step = 0.01),
-        doc = """Excitation on Inhibition ratio""",
-        order = 4)
+        label="P",
+        default=numpy.array([1.,]),
+        range=basic.Range(lo=-100.0, hi=100.0, step=0.01),
+        doc="Excitation-Inhibition ratio.",
+        order=4)
 
     theta = arrays.FloatArray(
-        label = ":math:`\\theta`",
-        default = numpy.array([0.5,]),
-        range = basic.Range(lo = -100.0, hi = 100.0, step = 0.01),
-        doc = """Threshold.""",
-        order = 5)
+        label=":math:`\\theta`",
+        default=numpy.array([0.5,]),
+        range=basic.Range(lo=-100.0, hi=100.0, step=0.01),
+        doc="Threshold.",
+        order=5)
 
-    dynamic = arrays.IntegerArray(
-        label = "Dynamic",
-        default = numpy.array([1]),
-        range = basic.Range(lo = 0, hi = 1., step = 1),
-        doc = """Boolean value for static/dynamic threshold for (0/1).""",
-        order = 6)
+    dynamic = basic.Bool(
+        label="Dynamic",
+        default=True,
+        doc="Use dynamic threshold (otherwise static).",
+        order=6)
 
-    globalT = arrays.IntegerArray(
-        label = ":math:`global_{\\theta}`",
-        default = numpy.array([0,]),
-        range = basic.Range(lo = 0, hi = 1., step = 1),
-        doc = """Boolean value for local/global threshold for (0/1).""",
-        order = 7)
-
-
-    def __init__(self, **kwargs):
-        '''Set the default indirect call.'''
-        super(PreSigmoidal, self).__init__(**kwargs)
-        self.rightCall = self.call_static
-        
+    globalT = basic.Bool(
+        label=":math:`global_{\\theta}`",
+        default=False,
+        doc="Use global threshold (otherwise local).",
+        order=7)
 
     def configure(self):
         """Set the right indirect call."""
         super(PreSigmoidal, self).configure()
+        self.sliceT = 0 if self.globalT else slice(None)
 
-        # Dynamic or static threshold
+    # override __call__ directly simpler than pre/post form
+    # TODO check use of arrays dims here
+    def __call__(self, g_ij, x_i, x_j, na=numpy.newaxis):
         if self.dynamic:
-            self.rightCall = self.call_dynamic
-        
-        # Global or local threshold 
-        if self.globalT:
-            self.sliceT = 0
-            self.meanOrNot = lambda arr: numpy.diag(arr[:,0,:,0]).mean() * numpy.ones((arr.shape[1],1))
-
+            _ = (self.P * x_j[:,0] - x_j[:,1,self.sliceT])[:,na]
         else:
-            self.sliceT = slice(None)
-            self.meanOrNot = lambda arr: numpy.diag(arr[:,0,:,0])[:,numpy.newaxis]
-
-
-    def __call__(self, g_ij, x_i, x_j):
-        r"""Evaluate the sigmoidal function for the arg ``x``. The equation being
-        evaluated has the following form:
-
-        .. math::
-                H * (Q + \tanh(G * (P*x - \theta)))
-
-        """
-        return self.rightCall(g_ij, x_i, x_j)
-    
-        
-    def call_static(self, g_ij, x_i, x_j):
-        """Static threshold."""    
-        
-        A_j = self.H * (self.Q + numpy.tanh(self.G * (self.P * x_j \
-            - self.theta[self.sliceT,numpy.newaxis])))
-        
-        return (g_ij.transpose((2, 1, 0, 3)) * A_j).sum(axis=0)
-
-
-    def call_dynamic(self, g_ij, x_i, x_j):
-        """Dynamic threshold as state variable given by the second state variable.
-        With the coupling term, returns the direct node output for the dynamic threshold.
-        """
-        
-        A_j = self.H * (self.Q + numpy.tanh(self.G * (self.P * x_j[:,0,:,:] \
-            - x_j[:,1,self.sliceT,:])[:,numpy.newaxis,:,:]))
-        
-        c_0 = (g_ij[:,0] * A_j[:,0]).sum(axis=0)
-        c_1 = self.meanOrNot(A_j)
-        return numpy.array([c_0, c_1])
-
+            _ = self.P * x_j - self.theta[self.sliceT,na]
+        A_j = self.H * (self.Q + numpy.tanh(self.G * _))
+        if self.dynamic:
+            c_0 = (g_ij[:,0] * A_j[:,0]).sum(axis=0)
+            c_1 = numpy.diag(A_j[:,0,:,0])[:, na]
+            if self.globalT:
+                c_1[:] = c_1.mean()
+            return numpy.array([c_0, c_1])
+        else: # static threshold
+            return (g_ij.transpose((2, 1, 0, 3)) * A_j).sum(axis=0)
 
 
 class Difference(Coupling):
+    r"""
+    Provides a difference coupling function, between pre and post synaptic
+    activity of the form
+
+    .. math::
+
+        a G_ij (x_j - x_i)
+
+    """
 
     a = arrays.FloatArray(
-        label = ":math:`a`",
+        label=":math:`a`",
         default=numpy.array([0.1,]),
-        range = basic.Range(lo = 0.0, hi = 10., step = 0.1),
-        doc = """Rescales the connection strength while maintaining the ratio
-        between different values.""",
-        order = 1)
+        range=basic.Range(lo=0.0, hi=10., step=0.1),
+        doc="Rescales the connection strength.",
+        order=1)
 
+    def pre(self, x_i, x_j):
+        return x_j - x_i
 
-    def __call__(self, g_ij, x_i, x_j):
-        r"""
-        Evaluates a difference coupling:
-
-            .. math::
-                a \sum_j^N g_ij (x_j - x_i)
-
-        """
-
-        return self.a*(g_ij.transpose((2, 1, 0, 3))*(x_j - x_i)).sum(axis=0)
+    def post(self, gx):
+        return a * gx
 
     device_info = coupling_device_info(
         pars = ['a'],
@@ -673,34 +557,28 @@ class Difference(Coupling):
         )
 
 
-
 class Kuramoto(Coupling):
+    r"""
+    Provides a Kuramoto-style coupling, a periodic difference of the form
+    
+    .. math::
+        a / N G_ij sin(x_j - x_i)
+    
+    """
+   
 
     a = arrays.FloatArray(
-        label   = ":math:`a`",
-        default = numpy.array([1.0,]),
-        range   = basic.Range(lo = 0.0, hi = 1.0, step = 0.01),
-        doc = """ Rescales the connection strength while maintaining the ratio between
-        different values. Notice that the coupling term is also automatically
-        rescaled by the number of nodes.""",
-        order = 1)
+        label=":math:`a`",
+        default=numpy.array([1.0,]),
+        range=basic.Range(lo=0.0, hi=1.0, step=0.01),
+        doc="Rescales the connection strength.",
+        order=1)
 
+    def pre(self, x_i, x_j):
+        return numpy.sin(x_j - x_i)
 
-    def __call__(self, g_ij, x_i, x_j, sin=numpy.sin):
-        r"""
-        Evaluates the Kuramoto-style coupling, a periodic difference:
-
-            .. math::
-                a / N \sum_j^N g_ij sin(x_j - x_i - alpha_ij)
-                x_i: current state
-                x_j: past state
-                
-        Assumes heterogenous coupling.        
-
-        """
-        number_of_regions = g_ij.shape[0]
-
-        return (self.a / number_of_regions)*(g_ij.transpose((2, 1, 0, 3))*sin(x_j-x_i)).sum(axis=0)
+    def post(self, gx):
+        return self.a / gx.shape[0] * gx
 
     device_info = coupling_device_info(
         pars = ['a'],
@@ -713,5 +591,3 @@ class Kuramoto(Coupling):
             I += a*GIJ*sin(XJ - XI);
         """
         )
-
-
