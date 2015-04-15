@@ -166,47 +166,6 @@ class Coupling(core.Type):
         return gx
 
 
-class coupling_device_info(object):
-    """
-    Utility class that allows Coupling subclass to annotate their requirements
-    for their gfun to run on a device
-
-    Please see tvb.sim.models.model_device_info
-
-    """
-
-    def __init__(self, pars, kernel=""):
-        self._pars = pars
-        self._kernel = kernel
-
-    @property
-    def n_cfpr(self):
-        return len(self._pars)
-
-    @property
-    def cfpr(self):
-        pars = numpy.zeros((self.n_cfpr,), dtype=numpy.float32)
-        for i, p in enumerate(self._pars):
-            name = p if type(p) in (str, unicode) else p.trait.name
-            pars[i] = getattr(self.inst, name)
-        return pars
-
-    @property
-    def kernel(self):
-        return self._kernel
-
-    def __get__(self, inst, ownr):
-        if inst:
-            self.inst = inst
-            return self
-        else:
-            return None
-
-    def __set__(self, inst, val):
-        raise AttributeError
-
-
-
 class Linear(Coupling):
     r"""
     Provides a linear coupling function of the following form
@@ -234,22 +193,6 @@ class Linear(Coupling):
     def post(self, gx):
         return self.a * gx + self.b
 
-    device_info = coupling_device_info(
-        pars = ['a', 'b'],
-        kernel = """
-
-        // parameters
-        float a = P(0)
-            , b = P(1);
-
-        I = 0.0;
-        for (int j_node=0; j_node<n_node; j_node++, idel++, conn++)
-            I += a*GIJ*XJ;
-        I += b;
-
-        """
-        )
-
 
 class Scaling(Coupling):
     r"""
@@ -269,20 +212,6 @@ class Scaling(Coupling):
 
     def post(self, gx):
         return self.a * gx
-
-    device_info = coupling_device_info(
-        pars = ['a'],
-        kernel = """
-
-        // parameters
-        float a = P(0);
-
-        I = 0.0;
-        for (int j_node=0; j_node<n_node; j_node++, idel++, conn++)
-            I += a*GIJ*XJ;
-
-        """
-        )
 
 
 class HyperbolicTangent(Coupling):
@@ -544,18 +473,6 @@ class Difference(Coupling):
     def post(self, gx):
         return a * gx
 
-    device_info = coupling_device_info(
-        pars = ['a'],
-        kernel = """
-        // load parameters
-        float a = P(0);
-
-        I = 0.0;
-        for (int j_node=0; j_node<n_node; j_node++, idel++, conn++)
-            I += a*GIJ*(XJ - XI);
-        """
-        )
-
 
 class Kuramoto(Coupling):
     r"""
@@ -579,15 +496,3 @@ class Kuramoto(Coupling):
 
     def post(self, gx):
         return self.a / gx.shape[0] * gx
-
-    device_info = coupling_device_info(
-        pars = ['a'],
-        kernel = """
-        // load parameters
-        float a = P(0);
-
-        I = 0.0;
-        for (int j_node=0; j_node<n_node; j_node++, idel++, conn++)
-            I += a*GIJ*sin(XJ - XI);
-        """
-        )

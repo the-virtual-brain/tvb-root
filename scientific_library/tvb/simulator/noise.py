@@ -117,55 +117,6 @@ class RandomStream(core.Type):
         numpy.random.RandomState.__init__(self.value, seed=self.init_seed)
 
 
-class noise_device_info(object):
-    """
-    Utility class that allows Noise subclass to annotate their requirements
-    for their gfun to run on a device
-
-    Please see tvb.sim.models.model_device_info
-
-    """
-
-    def __init__(self, pars=[], kernel=""):
-        self._pars = pars
-        self._kernel = kernel
-
-
-    @property
-    def n_nspr(self):
-        # par1_svar1, par1_svar2... par1_svar1...
-        n = 0
-        for p in self._pars:
-            p_ = p if type(p) in (str, unicode) else p.trait.name
-            attr = getattr(self.inst, p_)
-            n += attr.size
-            # assuming given parameters have correct size
-        return n
-
-
-    @property
-    def nspr(self):
-        pars = []
-        for p in self._pars:
-            p_ = p if type(p) in (str, unicode) else p.trait.name
-            pars.append(getattr(self.inst, p_).flat[:])
-        return numpy.hstack(pars)
-
-    @property
-    def kernel(self):
-        return self._kernel
-
-    def __get__(self, inst, ownr):
-        if inst:
-            self.inst = inst
-            return self
-        else:
-            return None
-
-    def __set__(self, inst, val):
-        raise AttributeError
-
-
 class Noise(core.Type):
     """
     Defines a base class for noise. Specific noises are derived from this class
@@ -402,19 +353,6 @@ class Additive(Noise):
         return g_x
 
 
-    device_info = noise_device_info(
-        pars=['nsig'],
-        kernel="""
-        float nsig;
-        for (int i_svar=0; i_svar<n_svar; i_svar++)
-        {
-            nsig = P(i_svar);
-            GX(i_svar) = sqrt(2.0*nsig);
-        }
-        """
-    )
-
-
 class Multiplicative(Noise):
     r"""
     With "external" fluctuations the intensity of the noise often depends on
@@ -476,23 +414,3 @@ class Multiplicative(Noise):
         g_x = numpy.sqrt(2.0 * self.nsig) * self.b.pattern
 
         return g_x
-
-
-
-class MultiplicativeSimple(Multiplicative):
-    """
-    Demo for device_info -- defines simple multiplicand noise.
-
-    """
-
-    device_info = noise_device_info(
-        pars=['nsig'],
-        kernel="""
-        float nsig;
-        for (int i_svar=0; i_svar<i_nsvar; i_svar++)
-        {
-            nsig = P(i_svar);
-            GX(i_svar) = sqrt(2.0*nsig)*X(i);
-        }
-        """
-    )

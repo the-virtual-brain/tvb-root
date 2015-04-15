@@ -132,42 +132,6 @@ class Integrator(core.Type):
 
         pass
 
-class integrator_device_info(object):
-    """
-    Utility class that allows Integrator subclass to annotate their requirements
-    for their scheme to run on a device
-
-    Please see tvb.sim.models.model_device_info
-
-    """
-
-    def __init__(self, pars=[], kernel=""):
-        self._pars = pars
-        self._kernel = kernel
-
-    @property
-    def n_inpr(self):
-        return len(self._pars)
-
-    @property
-    def inpr(self):
-        pass
-
-    @property
-    def kernel(self):
-        return self._kernel
-
-    def __get__(self, inst, ownr):
-        if inst:
-            self.inst = inst
-            return self
-        else:
-            return None
-
-    def __set__(self, inst, val):
-        raise AttributeError
-
-
 
 class IntegratorStochastic(Integrator):
     r"""
@@ -270,28 +234,6 @@ class HeunDeterministic(Integrator):
         return X + dX + self.dt * stimulus
 
 
-    device_info = integrator_device_info(
-        pars = ['dt'],
-        kernel = """
-        float dt = P(0);
-
-        // first step using DX2/dx2 as intermediate storage
-        model_dfun(dx1, x, mmpr, input);
-        for (int i_svar=0; i_svar<n_svar; i_svar++)
-            DX2(i_svar) = X(i_svar) + dt*(DX1(i_svar) + STIM(i_svar));
-
-        // second step, works assuming pointer aliasing not a problem (i.e. models
-        // with 2+ variables whose dfuns ref each aren't modifying the state
-        // array directly); not a problem w/ current models.
-        model_dfun(dx2, dx2, mmpr, input);
-        
-        // next step
-        for (int i_svar=0; i_svar<n_svar; i_svar++)
-            X(i_svar) += dt*(DX1(i_svar) + DX2(i_svar))/2.0 + dt*STIM(i_svar);
-        """)
-
-
-
 class HeunStochastic(IntegratorStochastic):
     """
     It is a simple example of a predictor-corrector method. It is also known as
@@ -349,31 +291,6 @@ class HeunStochastic(IntegratorStochastic):
 
         return X + dX + noise + self.dt * stimulus
 
-    device_info = integrator_device_info(
-        pars = ['dt'],
-        kernel = """
-        float dt = P(0);
-
-        // compute noise term
-        noise_gfun(gx, x, nspr);
-
-        // first step using DX2/dx2 as intermediate storage
-        model_dfun(dx1, x, mmpr, input);
-        for (int i_svar=0; i_svar<n_svar; i_svar++)
-            DX2(i_svar) = X(i_svar) + dt*(DX1(i_svar) + STIM(i_svar)) + GX(i_svar)*NS(i_svar);
-
-        // second step, works assuming aliasing not a problem (i.e. models
-        // with 2+ variables whose dfuns ref each aren't modifying the state
-        // array directly)
-        model_dfun(dx2, dx2, mmpr, input);
-        
-        // next step
-        for (int i_svar=0; i_svar<n_svar; i_svar++)
-            X(i_svar) += dt*(DX1(i_svar) + DX2(i_svar))/2.0 + dt*STIM(i_svar) + GX(i_svar)*NS(i_svar);
-        """)
-
-
-
 
 class EulerDeterministic(Integrator):
     """
@@ -416,17 +333,6 @@ class EulerDeterministic(Integrator):
         self.dX = dfun(X, coupling, local_coupling) 
 
         return X + self.dt * (self.dX + stimulus)
-
-    device_info = integrator_device_info(
-        pars = ['dt'],
-        kernel = """
-        float dt = P(0);
-        model_dfun(dx1, x, mmpr, input);
-        for (int i_svar=0; i_svar<n_svar; i_svar++)
-            X(i_svar) += dt*(DX1(i_svar) + STIM(i_svar));
-        """)
-
-
 
 
 class EulerStochastic(IntegratorStochastic):
@@ -483,18 +389,6 @@ class EulerStochastic(IntegratorStochastic):
             raise Exception(msg)
 
         return X + dX + noise_gfun * noise + self.dt * stimulus
-
-    device_info = integrator_device_info(
-        pars = ['dt'],
-        kernel = """
-        float dt = P(0);
-        model_dfun(dx1, x, mmpr, input);
-        noise_gfun(gx, x, nspr);
-        for (int i_svar=0; i_svar<n_svar; i_svar++)
-            X(i_svar) += dt*(DX1(i_svar) + STIM(i_svar)) + GX(i_svar)*NS(i_svar);
-        """)
-
-
 
 
 class RungeKutta4thOrderDeterministic(Integrator):
