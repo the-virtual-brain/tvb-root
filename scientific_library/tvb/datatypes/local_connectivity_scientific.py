@@ -28,9 +28,10 @@
 #
 #
 
-import gdist
 import numpy
+
 from tvb.datatypes.local_connectivity_data import LocalConnectivityData, LOG
+from tvb.datatypes.surfaces_scientific import gdist
 
 
 class LocalConnectivityScientific(LocalConnectivityData):

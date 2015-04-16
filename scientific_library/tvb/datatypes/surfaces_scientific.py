@@ -39,6 +39,7 @@ Scientific methods for the Surfaces datatype.
 
 """
 
+import warnings
 import numpy
 
 from tvb.datatypes import surfaces_data
@@ -49,14 +50,13 @@ from tvb.datatypes.surfaces_data import ValidationResult
 
 LOG = get_logger(__name__)
 
-try:  # externals.geodesic_distance.
+try:
     import gdist
-    #NO_GEODESIC_DISTANCE = False
 except ImportError:
-    #NO_GEODESIC_DISTANCE = True
-    LOG.error("Failed to import geodesic distance package from externals...")
-    LOG.error("Check it's configured, externals/geodesic_distance/setup.py")
-
+    gdist = None
+    warnings.warn("could not import gdist module; geodesic distance cannot "
+                  "be computed, and local connectivty & surfaces will be "
+                  "unavailable.")
 
 
 class SurfaceScientific(surfaces_data.SurfaceData):
