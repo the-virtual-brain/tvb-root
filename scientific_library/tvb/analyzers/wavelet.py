@@ -34,7 +34,7 @@ WaveletSpectrum datatype.
 
 .. moduleauthor:: Stuart A. Knock <Stuart@tvb.invalid>
 .. moduleauthor:: Andreas Spiegler <anspiegler@googlemail.com>
-.. moduleauthor:: Marmaduke Woodman <mw@eml.cc>
+.. moduleauthor:: Marmaduke Woodman <marmaduke.woodman@univ-amu.fr>
 .. moduleauthor:: Paula Sanz Leon <Paula@tvb.invalid>
 
 """

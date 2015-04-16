@@ -32,7 +32,7 @@
 tvb.simulator.lab is a umbrella module designed to make console and scripting
 work easier by importing all the simulator pieces at once.
 
-.. moduleauthor:: Marmaduke Woodman <mw@eml.cc>
+.. moduleauthor:: Marmaduke Woodman <marmaduke.woodman@univ-amu.fr>
 
 """
 

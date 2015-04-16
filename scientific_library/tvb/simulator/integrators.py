@@ -40,7 +40,7 @@ will be consistent with Monitor periods corresponding to any of [4096, 2048, 102
 # TODO: error analysis
 
 .. moduleauthor:: Stuart A. Knock <Stuart@tvb.invalid>
-.. moduleauthor:: Marmaduke Woodman <mw@eml.cc>
+.. moduleauthor:: Marmaduke Woodman <marmaduke.woodman@univ-amu.fr>
 .. moduleauthor:: Noelia Montejo <Noelia@tvb.invalid>
 
 """

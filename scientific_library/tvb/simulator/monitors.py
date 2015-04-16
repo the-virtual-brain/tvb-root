@@ -49,7 +49,7 @@ Conversion of power of 2 sample-rates(Hz) to Monitor periods(ms)
 .. moduleauthor:: Stuart A. Knock <Stuart@tvb.invalid>
 .. moduleauthor:: Paula Sanz Leon <Paula@tvb.invalid>
 .. moduleauthor:: Noelia Montejo <Noelia@tvb.invalid>
-.. moduleauthor:: Marmaduke Woodman <mw@eml.cc>
+.. moduleauthor:: Marmaduke Woodman <marmaduke.woodman@univ-amu.fr>
 .. moduleauthor:: Jan Fousek <izaak@mail.muni.cz>
 
 """

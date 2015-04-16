@@ -34,7 +34,7 @@ brings together all the structural and dynamic components necessary to define a
 simulation and the method for running the simulation.
 
 .. moduleauthor:: Stuart A. Knock <Stuart@tvb.invalid>
-.. moduleauthor:: Marmaduke Woodman <mw@eml.cc>
+.. moduleauthor:: Marmaduke Woodman <marmaduke.woodman@univ-amu.fr>
 .. moduleauthor:: Paula Sanz Leon <Paula@tvb.invalid>
 
 """

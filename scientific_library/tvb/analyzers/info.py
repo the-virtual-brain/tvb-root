@@ -34,7 +34,7 @@ This module implements information theoretic analyses.
 TODO: Fix docstring of sampen
 TODO: Convert sampen to a traited class
 
-.. moduleauthor:: Marmaduke Woodman <mw@eml.cc>
+.. moduleauthor:: Marmaduke Woodman <marmaduke.woodman@univ-amu.fr>
 
 """
 import numpy

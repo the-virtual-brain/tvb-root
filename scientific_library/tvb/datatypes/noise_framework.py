@@ -32,7 +32,7 @@
 Module to handle framework specific methods related to noise sources.
 
 
-.. moduleauthor:: Marmaduke Woodman <mw@eml.cc>
+.. moduleauthor:: Marmaduke Woodman <marmaduke.woodman@univ-amu.fr>
 
 """
 

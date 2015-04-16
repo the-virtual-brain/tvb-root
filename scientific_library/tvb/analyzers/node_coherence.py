@@ -32,7 +32,7 @@
 Compute cross coherence between all nodes in a time series.
 
 .. moduleauthor:: Stuart A. Knock <Stuart@tvb.invalid>
-.. moduleauthor:: Marmaduke Woodman <maramduke.woodman@univ-amu.fr>
+.. moduleauthor:: Marmaduke Woodman <marmaduke.woodman@univ-amu.fr>
 
 """
 
