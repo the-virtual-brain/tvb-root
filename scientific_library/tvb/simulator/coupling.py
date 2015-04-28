@@ -471,7 +471,7 @@ class Difference(Coupling):
         return x_j - x_i
 
     def post(self, gx):
-        return a * gx
+        return self.a * gx
 
 
 class Kuramoto(Coupling):
