@@ -3584,6 +3584,12 @@ class Epileptor(Model):
         doc="Permittivity coupling, that is from the fast time scale toward the slow time scale",
         order=-1)
 
+    tt = arrays.FloatArray(
+        label="tt",
+        default=numpy.array([1.0]),
+        range=basic.Range(lo=0.001, hi=10.0, step=0.001),
+        doc="Time scaling of the whole system",
+        order=6)
 
     state_variable_range = basic.Dict(
         label="State variable ranges [lo, hi]",
@@ -3671,21 +3677,21 @@ class Epileptor(Model):
         # population 1
         if_ydot0 = - self.a*y[0]**2 + self.b*y[0]
         else_ydot0 = self.slope - y[3] + 0.6*(y[2]-4.0)**2
-        ydot[0] = y[1] - y[2] + Iext + self.Kvf*c_pop1 + where(y[0] < 0., if_ydot0, else_ydot0) * y[0]
-        ydot[1] = self.c - self.d*y[0]**2 - y[1]
+        ydot[0] = self.tt*(y[1] - y[2] + Iext + self.Kvf*c_pop1 + where(y[0] < 0., if_ydot0, else_ydot0) * y[0])
+        ydot[1] = self.tt*(self.c - self.d*y[0]**2 - y[1])
 
         # energy
         if_ydot2 = - 0.1*y[2]**7
         else_ydot2 = 0
-        ydot[2] = self.r * ( 4*(y[0] - self.x0) - y[2] + where(y[2] < 0., if_ydot2, else_ydot2) + self.Ks*c_pop1)
+        ydot[2] = self.tt*(self.r * ( 4*(y[0] - self.x0) - y[2] + where(y[2] < 0., if_ydot2, else_ydot2) + self.Ks*c_pop1))
 
         # population 2
-        ydot[3] = -y[4] + y[3] - y[3]**3 + self.Iext2 + 2*y[5] - 0.3*(y[2] - 3.5) + self.Kf*c_pop2
+        ydot[3] = self.tt*(-y[4] + y[3] - y[3]**3 + self.Iext2 + 2*y[5] - 0.3*(y[2] - 3.5) + self.Kf*c_pop2)
         if_ydot4 = 0
         else_ydot4 = self.aa*(y[3] + 0.25)
-        ydot[4] = (-y[4] + where(y[3] < -0.25, if_ydot4, else_ydot4))/self.tau
+        ydot[4] = self.tt*((-y[4] + where(y[3] < -0.25, if_ydot4, else_ydot4))/self.tau)
 
         # filter
-        ydot[5] = -0.01*(y[5] - 0.1*y[0])
+        ydot[5] = self.tt*(-0.01*(y[5] - 0.1*y[0]))
 
         return ydot
