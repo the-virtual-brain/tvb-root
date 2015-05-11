@@ -3547,28 +3547,28 @@ class Epileptor(Model):
         default=numpy.array([0.0]),
         range=basic.Range(lo=0.0, hi=4.0, step=0.5),
         doc="Coupling scaling on a very fast time scale.",
-        order=-1)
+        order=6)
 
     Kf = arrays.FloatArray(
         label="K_f",
         default=numpy.array([0.0]),
         range=basic.Range(lo=0.0, hi=4.0, step=0.5),
         doc="Correspond to the coupling scaling on a fast time scale.",
-        order=-1)
+        order=7)
 
     Ks = arrays.FloatArray(
         label="K_s",
         default=numpy.array([0.0]),
         range=basic.Range(lo=-4.0, hi=4.0, step=0.1),
         doc="Permittivity coupling, that is from the fast time scale toward the slow time scale",
-        order=-1)
+        order=8)
 
     tt = arrays.FloatArray(
         label="tt",
         default=numpy.array([1.0]),
         range=basic.Range(lo=0.001, hi=10.0, step=0.001),
         doc="Time scaling of the whole system",
-        order=6)
+        order=9
 
     state_variable_range = basic.Dict(
         label="State variable ranges [lo, hi]",
