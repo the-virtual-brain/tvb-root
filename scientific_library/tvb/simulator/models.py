@@ -3568,7 +3568,7 @@ class Epileptor(Model):
         default=numpy.array([1.0]),
         range=basic.Range(lo=0.001, hi=10.0, step=0.001),
         doc="Time scaling of the whole system",
-        order=9
+        order=9)
 
     state_variable_range = basic.Dict(
         label="State variable ranges [lo, hi]",
