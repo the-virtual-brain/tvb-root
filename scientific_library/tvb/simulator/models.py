@@ -1660,22 +1660,11 @@ class JansenRit(Model):
 
 
         """
-        #NOTE: We could speed up this model by making the number below smaller,
-        #      because the exp() dominate runtime, though we'd need to validate
-        #      the trade-off in numerical accuracy...
-        magic_exp_number = 709
 
-        y0 = state_variables[0, :]
-        y1 = state_variables[1, :]
-        y2 = state_variables[2, :]
-        y3 = state_variables[3, :]
-        y4 = state_variables[4, :]
-        y5 = state_variables[5, :]
-        derivative = numpy.empty_like(state_variables)
+        y0, y1, y2, y3, y4, y5 = state_variables
+
         # NOTE: This is assumed to be \sum_j u_kj * S[y_{1_j} - y_{2_j}]
-
         lrc = coupling[0, :]
-
         short_range_coupling =  local_coupling*(y1 -  y2)
 
         # NOTE: for local couplings
@@ -1687,30 +1676,20 @@ class JansenRit(Model):
         # 1 -> 0,
         # 2 -> 0,
 
-        #p_min = self.p_min
-        #p_max = self.p_max
-        #p = p_min + (p_max - p_min) * numpy.random.uniform()
+        exp = numpy.exp
+        sigm_y1_y2 = 2.0 * self.nu_max / (1.0 + exp(self.r * (self.v0 - (y1 - y2)))) 
+        sigm_y0_1  = 2.0 * self.nu_max / (1.0 + exp(self.r * (self.v0 - (self.a_1 * self.J * y0))))
+        sigm_y0_3  = 2.0 * self.nu_max / (1.0 + exp(self.r * (self.v0 - (self.a_3 * self.J * y0))))
 
-        #NOTE: We were getting numerical overflow in the three exp()s below...
-        # todo: factor out common subexpressions: python is not optimizing
-        # todo: FIXME: the if and else in these wheres are the same!
-        temp       = self.r * (self.v0 - (y1 - y2))
-        sigm_y1_y2 = numpy.where(temp > magic_exp_number,2.0 * self.nu_max / (1.0 + numpy.exp(temp)), 2.0 * self.nu_max / (1.0 + numpy.exp(temp)))
-
-        temp      = self.r * (self.v0 - (self.a_1 * self.J * y0))
-        sigm_y0_1 = numpy.where(temp > magic_exp_number, 2.0 * self.nu_max / (1.0 + numpy.exp(temp)), 2.0 * self.nu_max / (1.0 + numpy.exp(temp)))
-
-        temp      = self.r * (self.v0 - (self.a_3 * self.J * y0))
-        sigm_y0_3 = numpy.where(temp > magic_exp_number, 2.0 * self.nu_max / (1.0 + numpy.exp(temp)), 2.0 * self.nu_max / (1.0 + numpy.exp(temp)))
-
-        derivative[0] = y3
-        derivative[3] = self.A * self.a * sigm_y1_y2 - 2.0 * self.a * y3 - self.a ** 2 * y0
-        derivative[1] = y4
-        derivative[4] = self.A * self.a * (self.mu + self.a_2 * self.J * sigm_y0_1 + lrc + short_range_coupling) - 2.0 * self.a * y4 - self.a ** 2 * y1
-        derivative[2] = y5
-        derivative[5] = self.B * self.b * (self.a_4 * self.J * sigm_y0_3) - 2.0 * self.b * y5 - self.b ** 2 * y2
-
-        return derivative
+        return numpy.array([
+            y3,
+            y4,
+            y5,
+            self.A * self.a * sigm_y1_y2 - 2.0 * self.a * y3 - self.a ** 2 * y0,
+            self.A * self.a * (self.mu + self.a_2 * self.J * sigm_y0_1 + lrc + short_range_coupling) 
+                - 2.0 * self.a * y4 - self.a ** 2 * y1,
+            self.B * self.b * (self.a_4 * self.J * sigm_y0_3) - 2.0 * self.b * y5 - self.b ** 2 * y2,
+        ])
 
 
 class JRFast(JansenRit):
