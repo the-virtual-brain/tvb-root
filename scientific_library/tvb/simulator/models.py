@@ -43,6 +43,7 @@ from the class Trait from the tvb.basic.traits module.
 
 import inspect
 import numpy
+import numpy as np
 import numexpr
 from scipy.integrate import trapz as scipy_integrate_trapz
 from scipy.stats import norm as scipy_stats_norm
@@ -165,80 +166,18 @@ class Model(core.Type):
             self.noise.configure_white(dt, shape)
 
     def initial(self, dt, history_shape):
-        """
-        Defines a set of sensible initial conditions, it is only expected that
-        these initial conditions be guaranteed to be sensible for the default
-        parameter set.
-
-        It is often seen that initial conditions or initial history are filled
-        following ic = nsig * noise + loc, where noise is a stream of random
-        numbers drawn from a uniform or normal distribution.
-
-        Here, the noise is integrated, that is the initial conditions are
-        described by a diffusion process.
-
-        """
-        # NOTE: The following max_history_length factor is set such that it
-        # considers the worst case possible for the history array, that is, low
-        # conduction speed and the longest white matter fibre. With this, plus
-        # drawing the random stream of numbers from a truncated normal
-        # distribution, we expect to bound the diffussion process used to set
-        # the initial history to the state variable ranges. (even for the case
-        # of rate based models)
-
-        # Example:
-        #        + longest fiber: 200 mm (Ref:)
-        #        + min conduction speed: 3 mm/ms (Ref: http://www.scholarpedia.org/article/Axonal_conduction_delays)
-        #          corpus callosum in the macaque monkey.
-        #        + max time delay: tau = longest fibre / speed \approx 67 ms
-        #        + let's hope for the best...
-
-        max_history_length = 67.  # ms
-        # TODO: There is an issue of allignment when the current implementation
-        #      is used to pad out explicit inital conditions that aren't as long
-        #      as the required history...
-        #      This issue is old and possible fixed
-        # TODO: We still ideally want to support spatial colour for surfaces --
-        #      though this will probably have to be done at the Simulator level
-        #      with a linear, strictly-stable, spatially invariant filter
-        #      defined on the mesh surface... and in a way that won't change the
-        #      temporal correllation structure... and I'm also assuming that the
-        #      temporally coloured noise hasn't un-whitened the spatial noise
-        #      distribution to start with... [ie, spatial colour is a longer
-        #      term problem to solve...])
-        #      This is a scientific open question.
-        #TODO: Ideally we'd like to have a independent random stream for each node.
-        #      Currently, if the number of nodes is different we'll get the
-        #      slightly different values further in the history array.
-        #      This is a scientific open question.
-
-        initial_conditions = numpy.zeros(history_shape)
-        tpts = history_shape[0]
-        nvar = history_shape[1]
-        history_shape = history_shape[2:]
-
-        self.configure_initial(dt, history_shape)
-        noise = numpy.zeros((tpts, nvar) + history_shape)
-        nsig = numpy.zeros(nvar)
-        loc = numpy.zeros(nvar)
-
-        for tpt in xrange(tpts):
-            for var in xrange(nvar):
-                sv_range = self.state_variable_range[self.state_variables[var]]
-                lo, hi = sv_range
-                loc[var] = sv_range.mean()
-                nsig[var] = (hi - lo) / 2.0 / max_history_length
-                # define lower und upper bounds to truncate the random variates to the sv range.
-                lo_bound, up_bound = (lo - loc[var]) / nsig[var], (hi - loc[var]) / nsig[var]
-
-                noise[tpt, var, :] = self.noise.generate(history_shape, truncate=True,    # this is expensive for many state vars and long tpts
-                                                         lo=lo_bound, hi=up_bound)
-        for var in xrange(nvar):
-            # TODO: Hackery (because unpublished method), validate me...-noise.mean(axis=0) ... self.noise.nsig.
-            # perf hint: cumsum is expensive
-            initial_conditions[:, var, :] = numpy.sqrt(2.0 * nsig[var]) * numpy.cumsum(noise[:, var, :],axis=0) + loc[var]
-
-        return initial_conditions
+        """Generates uniformly distributed initial conditions,
+        respecting the state variable limits defined by the model."""
+        
+        nt, nvar, nnode, nmode = history_shape
+        ic = np.empty(history_shape)
+        svr = self.state_variable_range
+        sv = self.state_variables
+        rng = self.noise.random_stream
+        block = nt, nnode, nmode
+        for i, (lo, hi) in enumerate([svr[sv[i]] for i in range(nvar)]):
+            ic[:, i] = rng.uniform(low=lo, high=hi, size=block)
+        return ic
 
     def dfun(self, state_variables, coupling, local_coupling=0.0):
         """

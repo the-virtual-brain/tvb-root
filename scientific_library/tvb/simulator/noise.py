@@ -166,7 +166,6 @@ class Noise(core.Type):
         doc="""An instance of numpy's RandomState associated with this
         specific Noise object.""")
 
-
     def __init__(self, **kwargs):
         """
         Initialise the noise with parameters as keywords arguments, a sensible
@@ -184,7 +183,6 @@ class Noise(core.Type):
         self._eta = None
         self._h = None
 
-
     def configure(self):
         """
         Run base classes configure to setup traited attributes, then ensure that
@@ -195,14 +193,12 @@ class Noise(core.Type):
         #self.random_stream.configure()
         self.trait["random_stream"].configure()
 
-
     def __repr__(self):
         """A formal, executable, representation of a Noise object."""
         class_name = self.__class__.__name__
         traited_kwargs = self.trait.keys()
         formal = class_name + "(" + "=%s, ".join(traited_kwargs) + "=%s)"
         return formal % eval("(self." + ", self.".join(traited_kwargs) + ")")
-
 
     def __str__(self):
         """An informal, human readable, representation of a Noise object."""
@@ -211,11 +207,9 @@ class Noise(core.Type):
         informal = class_name + "(" + ", ".join(traited_kwargs) + ")"
         return informal
 
-
     def configure_white(self, dt, shape=None):
         """Set the time step (dt) of noise or integration time"""
         self.dt = dt
-
 
     def configure_coloured(self, dt, shape):
         r"""
@@ -258,7 +252,6 @@ class Noise(core.Type):
         self._eta = self.random_stream.normal(size=shape)
         self._dt_sqrt_lambda = self.dt * numpy.sqrt(1.0 / self.ntau)
 
-
     #TODO: Check performance, if issue, inline coloured and white...
     def generate(self, shape, truncate=False, lo=-1.0, hi=1.0, ):
         """Generate and return some "noise" of the requested ``shape``."""
@@ -271,14 +264,12 @@ class Noise(core.Type):
                 noise = self.white(shape)
         return noise
 
-
     def coloured(self, shape):
         """See, [FoxVemuri_1988]_"""
 
         self._h = self._sqrt_1_E2 * self.random_stream.normal(size=shape)
         self._eta =  self._eta * self._E + self._h
         return self._dt_sqrt_lambda * self._eta
-
 
     def white(self, shape):
         """
@@ -288,7 +279,6 @@ class Noise(core.Type):
         """
         noise = numpy.sqrt(self.dt) * self.random_stream.normal(size=shape)
         return noise
-
 
     def truncated_white(self, shape, lo, hi):
         """
@@ -301,11 +291,7 @@ class Noise(core.Type):
         http://docs.scipy.org/doc/scipy-0.7.x/reference/generated/scipy.stats.truncnorm.html
 
         """
-        # Set the default or used defined seed for the PRNG
-        numpy.random.seed(self.random_stream.get_state()[1][0])
-        noise = numpy.sqrt(self.dt) * scipy_stats.truncnorm.rvs(lo, hi, size=shape)
-        return noise
-
+        raise NotImplementedError
 
 
 class Additive(Noise):
