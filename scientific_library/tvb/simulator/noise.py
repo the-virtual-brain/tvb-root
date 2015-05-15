@@ -41,13 +41,7 @@ RandomState.
 
 """
 
-# Standard python libraries
-
-# Third party python libraries
 import numpy
-import scipy.stats as scipy_stats
-
-#The Virtual Brain
 from tvb.simulator.common import get_logger
 LOG = get_logger(__name__)
 
@@ -253,15 +247,12 @@ class Noise(core.Type):
         self._dt_sqrt_lambda = self.dt * numpy.sqrt(1.0 / self.ntau)
 
     #TODO: Check performance, if issue, inline coloured and white...
-    def generate(self, shape, truncate=False, lo=-1.0, hi=1.0, ):
+    def generate(self, shape):
         """Generate and return some "noise" of the requested ``shape``."""
         if self.ntau > 0.0:
             noise = self.coloured(shape)
         else:
-            if truncate:
-                noise = self.truncated_white(shape, lo, hi)
-            else:
-                noise = self.white(shape)
+            noise = self.white(shape)
         return noise
 
     def coloured(self, shape):
@@ -280,18 +271,6 @@ class Noise(core.Type):
         noise = numpy.sqrt(self.dt) * self.random_stream.normal(size=shape)
         return noise
 
-    def truncated_white(self, shape, lo, hi):
-        """
-
-        Return truncated Gaussian random variates in the range ``[lo, hi]``, as an
-        array of shape ``shape``, with the amplitude scaled by
-        :math:`\\sqrt{dt}`.
-
-        See:
-        http://docs.scipy.org/doc/scipy-0.7.x/reference/generated/scipy.stats.truncnorm.html
-
-        """
-        raise NotImplementedError
 
 
 class Additive(Noise):

@@ -41,9 +41,7 @@ from the class Trait from the tvb.basic.traits module.
 
 """
 
-import inspect
 import numpy
-import numpy as np
 import numexpr
 from scipy.integrate import trapz as scipy_integrate_trapz
 from scipy.stats import norm as scipy_stats_norm
@@ -168,9 +166,9 @@ class Model(core.Type):
     def initial(self, dt, history_shape):
         """Generates uniformly distributed initial conditions,
         respecting the state variable limits defined by the model."""
-        
+
         nt, nvar, nnode, nmode = history_shape
-        ic = np.empty(history_shape)
+        ic = numpy.empty(history_shape)
         svr = self.state_variable_range
         sv = self.state_variables
         rng = self.noise.random_stream
@@ -196,7 +194,7 @@ class Model(core.Type):
                               map=map):
         """
         Computes the state space trajectory of a single mass model system
-        where coupling is static, with a deteministic Euler method.
+        where coupling is static, with a deterministic Euler method.
 
         Models expect coupling of shape (n_cvar, n_node), so if this method
         is called with coupling (:, n_cvar, n_ode), it will compute a

@@ -40,44 +40,44 @@ if __name__ == "__main__":
     setup_test_console_env()
 
 import unittest
-import numpy
-from numpy.testing import assert_array_almost_equal
-
-from tvb.tests.library.base_testcase import BaseTestCase
 from tvb.simulator import models
+from tvb.tests.library.base_testcase import BaseTestCase
 
 
-# NOTE: Comparing arrays of floating point numbers is, to say the least,
-#        akward and generally ill posed. Numpy provides a testing suite to compare
-#        arrays.
-# TODO: use numpy.testing.ssert_array_almost_equal_nulp or assert_array_max_ulp
-# which are built for floating point comparisons.
 
-dt = 2**-4
-
-class ModelsTest(object):#BaseTestCase):
+class ModelsTest(BaseTestCase):
     """
     Define test cases for models:
         - initialise each class
-        - check default parameters
-         (should correspond to those used in the original work with the aim to
+        TODO - check default parameters (should correspond to those used in the original work with the aim to
          reproduce at least one figure)
-        - check that initial conditions are always the same. Fails if seed != 42
-          or sv ranges are changed or intial method is overwritten... mmm
-
+        - check that initial conditions are always in range
 
     """
+
+
+    def _validate_initialization(self, model, expected_sv, expected_models=1):
+
+        dt = 2 ** -4
+        history_shape = (1, model._nvar, 1, model.number_of_modes)
+        model_ic = model.initial(dt, history_shape)
+        self.assertEqual(expected_sv, model._nvar)
+        self.assertEqual(expected_models, model.number_of_modes)
+
+        svr = model.state_variable_range
+        sv = model.state_variables
+        for i, (lo, hi) in enumerate([svr[sv[i]] for i in range(model._nvar)]):
+            for val in model_ic[:, i, :].flatten():
+                self.assertTrue(lo < val < hi)
+
 
     def test_wilson_cowan(self):
         """
         Default parameters are taken from figure 4 of [WC_1972]_, pag. 10
         """
         model = models.WilsonCowan()
-        history_shape = (1, model._nvar, 1, model.number_of_modes)
-        model_ic = model.initial(dt, history_shape)
-        self.assertEqual(model._nvar, 2)
-        assert_array_almost_equal(model_ic, numpy.array([[[[ 0.49023095]],
-                                                          [[ 0.49023095]]]]))
+        self._validate_initialization(model, 2)
+
 
     def test_g2d(self):
         """
@@ -106,82 +106,77 @@ class ModelsTest(object):#BaseTestCase):
 
         """
         model = models.Generic2dOscillator()
-        history_shape = (1, model._nvar, 1, model.number_of_modes)
-        model_ic = model.initial(dt, history_shape)
-        self.assertEqual(model._nvar, 2)
-        assert_array_almost_equal(model_ic, numpy.array([[[[ 0.97607082]],
-                                                          [[-0.03384097]]]]))
+        self._validate_initialization(model, 2)
+
 
     def test_jansen_rit(self):
         """
         """
         model = models.JansenRit()
-        history_shape = (1, model._nvar, 1, model.number_of_modes)
-        model_ic = model.initial(dt, history_shape)
-        self.assertEqual(model._nvar, 6)
-        assert_array_almost_equal(model_ic, numpy.array([[[[-0.01381552]],
-                                                           [[-0.30892439]],
-                                                           [[-0.09769047]],
-                                                           [[-0.03384097]],
-                                                           [[-0.06178488]],
-                                                           [[-0.30892439]]]]))
+        self._validate_initialization(model, 6)
+
+
+    def test_jansen_rit_fast(self):
+        """
+        """
+        model = models.JRFast()
+        self._validate_initialization(model, 6)
+
 
     def test_sj2d(self):
         """
         """
         model = models.ReducedSetFitzHughNagumo()
-        history_shape = (1, model._nvar, 1, model.number_of_modes)
-        model_ic = model.initial(dt, history_shape)
-        self.assertEqual(model._nvar, 4)
-        self.assertEqual(model.number_of_modes, 3)
-        assert_array_almost_equal(model_ic, numpy.array([[[[-0.02763104,  0.14269546,  0.0534609 ]],
-                                                          [[-0.02392918,  0.12357789,  0.0462985 ]],
-                                                          [[-0.02763104,  0.14269546,  0.0534609 ]],
-                                                          [[-0.02392918,  0.12357789,  0.0462985 ]]]]))
+        self._validate_initialization(model, 4, 3)
+
 
     def test_sj3d(self):
         """
         """
         model = models.ReducedSetHindmarshRose()
-        history_shape = (1, model._nvar, 1, model.number_of_modes)
-        model_ic = model.initial(dt, history_shape)
-        self.assertEqual(model._nvar, 6)
-        self.assertEqual(model.number_of_modes, 3)
-        assert_array_almost_equal(model_ic, numpy.array([[[[-0.02763104,  0.14269546,  0.0534609 ]],
-                                                          [[-2.56553276, -2.16156801, -2.37320634]],
-                                                          [[ 5.97236896,  6.14269546,  6.0534609 ]],
-                                                          [[-0.02763104,  0.14269546,  0.0534609 ]],
-                                                          [[-0.06178488,  0.31907674,  0.1195422 ]],
-                                                          [[ 5.97236896,  6.14269546,  6.0534609 ]]]]))
+        self._validate_initialization(model, 6, 3)
+
 
     def test_reduced_wong_wang(self):
         """
         """
         model = models.ReducedWongWang()
-        history_shape = (1, model._nvar, 1, model.number_of_modes)
-        model_ic = model.initial(dt, history_shape)
-        self.assertEqual(model._nvar, 1)
-        assert_array_almost_equal(model_ic, numpy.array([[[[ 0.49023095]]]]))
+        self._validate_initialization(model, 1)
+
 
     def test_zetterberg_jansen(self):
         """
         """
         model = models.ZetterbergJansen()
-        history_shape = (1, model._nvar, 1, model.number_of_modes)
-        model_ic = model.initial(dt, history_shape)
-        self.assertEqual(model._nvar, 12)
-        assert_array_almost_equal(model_ic, numpy.array([[[[ -0.13815519]],
-                                                          [[ -0.30892439]],
-                                                          [[-25.1196459 ]],
-                                                          [[-47.10057849]],
-                                                          [[-47.10057849]],
-                                                          [[-47.10057849]],
-                                                          [[-40.10701455]],
-                                                          [[-40.10701455]],
-                                                          [[-40.10701455]],
-                                                          [[ -0.30892439]],
-                                                          [[-40.10701455]],
-                                                          [[-40.10701455]]]]))
+        self._validate_initialization(model, 12)
+
+
+    def test_epileptor(self):
+        """
+        """
+        model = models.Epileptor()
+        self._validate_initialization(model, 6)
+
+
+    def test_hopfield(self):
+        """
+        """
+        model = models.Hopfield()
+        self._validate_initialization(model, 2)
+
+
+    def test_kuramoto(self):
+        """
+        """
+        model = models.Kuramoto()
+        self._validate_initialization(model, 1)
+
+
+    def test_larter(self):
+        """
+        """
+        model = models.LarterBreakspear()
+        self._validate_initialization(model, 3)
 
 
 
@@ -190,8 +185,9 @@ def suite():
     Gather all the tests in a test suite.
     """
     test_suite = unittest.TestSuite()
-    #test_suite.addTest(unittest.makeSuite(ModelsTest))
+    test_suite.addTest(unittest.makeSuite(ModelsTest))
     return test_suite
+
 
 
 if __name__ == "__main__":
