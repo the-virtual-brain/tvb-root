@@ -73,7 +73,7 @@ PY2APP_INCLUDES = ['apscheduler', 'apscheduler.scheduler', 'cfflib', 'cmath', 'c
                    'xml.dom', 'xml.dom.minidom', 'zlib']
 
 PY2APP_EXCLUDES = ['_markerlib', 'coverage', 'cython', 'Cython', 'tvb_data', 'docutils', 'IPython', 'jinja2',
-                   'lib2to3', 'markupsafe', 'nose', 'pygments', 'PyOpenGL', 'sphinx', 'wx']
+                   'lib2to3', 'markupsafe', 'nose', 'pygments', 'PyOpenGL', 'PyQt4', 'sphinx', 'wx']
 
 PY2APP_OPTIONS = {'iconfile': 'build_resources/icon.icns',
                   'plist': 'build_resources/info.plist',
