@@ -91,7 +91,7 @@ class Connectivity(connectivity_scientific.ConnectivityScientific, connectivity_
             result.weights = reader.read_array_from_file("weights")
             result.centres = reader.read_array_from_file("centres", use_cols=(1, 2, 3))
             result.region_labels = reader.read_array_from_file("centres", dtype=numpy.str, use_cols=(0,))
-            result.orientations = reader.read_array_from_file("average_orientations")
+            result.orientations = reader.read_optional_array_from_file("average_orientations")
             result.cortical = reader.read_optional_array_from_file("cortical", dtype=numpy.bool)
             result.hemispheres = reader.read_optional_array_from_file("hemispheres", dtype=numpy.bool)
             result.areas = reader.read_optional_array_from_file("areas")
