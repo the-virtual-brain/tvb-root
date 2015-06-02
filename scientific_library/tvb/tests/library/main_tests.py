@@ -66,7 +66,10 @@ def generate_excludes(root_folders):
         for root, _, files in os.walk(root):
             for file_n in files:
                 full_path = os.path.join(root, file_n)
-                if full_path.endswith('__init__.py'):
+                if (full_path.endswith('__init__.py') or
+                    os.path.join('tvb', 'tests') in full_path or
+                    os.path.join('simulator', 'demos') in full_path):
+
                     excludes.append(full_path)
     return excludes
 
@@ -122,7 +125,7 @@ if __name__ == "__main__":
     
     if KEY_COVERAGE in argv:
         COVERAGE.stop()
-        COVERAGE.html_report(directory=os.path.join(os.path.dirname(__file__), 'test_coverage_html'))
+        COVERAGE.xml_report(outfile=os.path.join(TvbProfile.current.TVB_LOG_FOLDER, 'coverage_library.xml'))
 
 
 

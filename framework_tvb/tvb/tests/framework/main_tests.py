@@ -55,11 +55,11 @@ def generage_excludes(root_folders):
             for file_n in files:
                 full_path = os.path.join(root, file_n)
                 if (full_path.endswith('__init__.py') or
+                    os.path.join('tvb', 'tests') in full_path or
                     os.path.join('interfaces', 'web', 'mplh5') in full_path or
                     os.path.join('interfaces', 'web', 'static') in full_path or
                     os.path.join('interfaces', 'web', 'templates') in full_path or
-                    os.path.join('entities', 'model', 'db_update_scripts') in full_path or
-                        os.path.join('tvb', 'simulator') in full_path or 'scientific_library' in full_path):
+                    os.path.join('entities', 'model', 'db_update_scripts') in full_path):
                     excludes.append(full_path)
     return excludes
 
@@ -132,5 +132,5 @@ if __name__ == "__main__":
 
     if KEY_COVERAGE in sys.argv:
         COVERAGE.stop()
-        COVERAGE.html_report(directory=os.path.join(os.path.dirname(__file__), 'test_coverage_html'))
+        COVERAGE.xml_report(outfile=os.path.join(TvbProfile.current.TVB_LOG_FOLDER, 'coverage.xml'))
 
