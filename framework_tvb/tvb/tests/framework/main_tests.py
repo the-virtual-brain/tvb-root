@@ -55,7 +55,6 @@ def generage_excludes(root_folders):
             for file_n in files:
                 full_path = os.path.join(root, file_n)
                 if (full_path.endswith('__init__.py') or
-                    os.path.join('tvb', 'tests') in full_path or
                     os.path.join('interfaces', 'web', 'mplh5') in full_path or
                     os.path.join('interfaces', 'web', 'static') in full_path or
                     os.path.join('interfaces', 'web', 'templates') in full_path or
@@ -81,7 +80,9 @@ if __name__ == "__main__":
         import tvb.interfaces as intf
 
         SOURCE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(intf.__file__)))
-        COVERAGE = coverage(source=[SOURCE_DIR], omit=generage_excludes([SOURCE_DIR]), cover_pylib=False, branch=True)
+        COVERAGE = coverage(source=["tvb.adapters", "tvb.analyzers", "tvb.config", "tvb.core", "tvb.datatype_removers",
+                                    "tvb.interfaces.web.controllers", "tvb.interfaces.web.entities"],
+                            omit=generage_excludes([SOURCE_DIR]), cover_pylib=False, branch=True)
         COVERAGE.start()
         ## This needs to be executed before any TVB import.
 

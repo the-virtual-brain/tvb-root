@@ -67,7 +67,6 @@ def generate_excludes(root_folders):
             for file_n in files:
                 full_path = os.path.join(root, file_n)
                 if (full_path.endswith('__init__.py') or
-                    os.path.join('tvb', 'tests') in full_path or
                     os.path.join('simulator', 'demos') in full_path):
 
                     excludes.append(full_path)
@@ -81,7 +80,8 @@ if __name__ == "__main__":
         import tvb.simulator as sim
 
         SOURCE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(sim.__file__)))
-        COVERAGE = coverage(source=[SOURCE_DIR], omit=generate_excludes([SOURCE_DIR]), cover_pylib=False, branch=True)
+        COVERAGE = coverage(source=["tvb.basic", "tvb.datatypes", "tvb.simulator"],
+                            omit=generate_excludes([SOURCE_DIR]), cover_pylib=False, branch=True)
         COVERAGE.start()
         ## This needs to be executed before any TVB import.
 
