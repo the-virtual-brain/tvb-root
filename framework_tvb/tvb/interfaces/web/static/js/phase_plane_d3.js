@@ -124,7 +124,7 @@ var TVBUI = TVBUI || {};
     function PhasePlane(selector){
         GraphBase.call(this, selector);
         var self = this;
-        this.VECTOR_RANGE = 80;
+        this.VECTOR_RANGE = 0.80;
         this.onClick = function(){};
 
         this.svg.append("clipPath").attr("id", "clip_plot")
@@ -227,10 +227,16 @@ var TVBUI = TVBUI || {};
                 return self.yScale(d[1]);
             })
             .attr('x2', function(d){
-                return self.xScale(d[0]) + self.vectorScale(d[2]);
+                // note that this scaling no longer ensures that the maximal vector has a reasonable size in pixels
+                // Previous implementation did that but buggy: vector orientations were bad
+                // todo: properly scale vectors so that the screen length is reasonable
+                // self.vectorScale maps to a fixed hard coded interval
+                var scaled_vector = self.vectorScale(d[2]);
+                return self.xScale(d[0] + scaled_vector);
             })
             .attr('y2', function(d){
-                return self.yScale(d[1]) - self.vectorScale(d[3]); // - for compatibility with the y scale
+                var scaled_vector = self.vectorScale(d[3]);
+                return self.yScale(d[1] + scaled_vector);
             });
 
         // nullclines
