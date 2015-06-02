@@ -81,7 +81,7 @@ if __name__ == "__main__":
         import tvb.simulator as sim
 
         SOURCE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(sim.__file__)))
-        COVERAGE = coverage(source=[SOURCE_DIR], omit=generate_excludes([SOURCE_DIR]), cover_pylib=False)
+        COVERAGE = coverage(source=[SOURCE_DIR], omit=generate_excludes([SOURCE_DIR]), cover_pylib=False, branch=True)
         COVERAGE.start()
         ## This needs to be executed before any TVB import.
 
@@ -126,6 +126,7 @@ if __name__ == "__main__":
     if KEY_COVERAGE in argv:
         COVERAGE.stop()
         COVERAGE.xml_report(outfile=os.path.join(TvbProfile.current.TVB_LOG_FOLDER, 'coverage_library.xml'))
+        #COVERAGE.html_report(directory=os.path.join(TvbProfile.current.TVB_LOG_FOLDER, 'test_coverage_html'))
 
 
 

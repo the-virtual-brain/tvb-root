@@ -81,7 +81,7 @@ if __name__ == "__main__":
         import tvb.interfaces as intf
 
         SOURCE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(intf.__file__)))
-        COVERAGE = coverage(source=[SOURCE_DIR], omit=generage_excludes([SOURCE_DIR]), cover_pylib=False)
+        COVERAGE = coverage(source=[SOURCE_DIR], omit=generage_excludes([SOURCE_DIR]), cover_pylib=False, branch=True)
         COVERAGE.start()
         ## This needs to be executed before any TVB import.
 
