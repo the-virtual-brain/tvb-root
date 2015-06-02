@@ -118,8 +118,8 @@ class TestSQLiteProfile(WebSettingsProfile):
         self.MAX_THREADS_NUMBER = self.manager.get_attribute(stored.KEY_MAX_THREAD_NR, 2, int)
 
         self.TVB_STORAGE = self.manager.get_attribute(stored.KEY_STORAGE, self.DEFAULT_STORAGE, unicode)
-        # For tests we will place logs in workspace, to have them visible from Hudson.
-        self.TVB_LOG_FOLDER = os.path.join(self.BIN_FOLDER, "TEST_OUTPUT")
+        # For tests we will place logs in workspace (current folder), to have them visible from Hudson.
+        self.TVB_LOG_FOLDER = "TEST_OUTPUT"
         self.TVB_TEMP_FOLDER = os.path.join(self.TVB_STORAGE, "TEMP")
 
         self.db = DBSettings(self.manager, self.DEFAULT_STORAGE, self.TVB_STORAGE)

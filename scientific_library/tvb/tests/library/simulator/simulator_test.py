@@ -45,15 +45,19 @@ if __name__ == "__main__":
     from tvb.tests.library import setup_test_console_env
     setup_test_console_env()
 
+import numpy
 import unittest
 import itertools
-from tvb.simulator.lab import *
+from tvb.simulator.common import get_logger
+from tvb.simulator import simulator, models, coupling, integrators, monitors, noise
+from tvb.datatypes import connectivity, sensors
 from tvb.datatypes.cortex import Cortex
 from tvb.datatypes.local_connectivity import LocalConnectivity
 from tvb.datatypes.region_mapping import RegionMapping
 from tvb.basic.traits.parameters_factory import get_traited_subclasses
 from tvb.tests.library.base_testcase import BaseTestCase
 
+LOG = get_logger(__name__)
 
 sens_meg = sensors.SensorsMEG(load_default=True)
 sens_eeg = sensors.SensorsEEG(load_default=True)
@@ -82,6 +86,7 @@ class Simulator(object):
         tavg    = monitors.TemporalAverage(period=2 ** -2)
         #spheeg  = monitors.SphericalEEG(sensors=sens_eeg, period=2 ** -2)
         #sphmeg  = monitors.SphericalMEG(sensors=sens_meg, period=2 ** -2)
+        # TODO test all monitors
         
         self.monitors = (raw, gavg, subsamp, tavg) 
 

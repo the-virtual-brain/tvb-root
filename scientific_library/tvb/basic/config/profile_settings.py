@@ -218,7 +218,7 @@ class BaseSettingsProfile(object):
 
 class LibrarySettingsProfile(BaseSettingsProfile):
     """
-    Profile used when scientifical library is used without storage and without web UI.
+    Profile used when scientific library is used without storage and without web UI.
     """
 
     TVB_STORAGE = os.path.expanduser(os.path.join("~", "TVB" + os.sep))
@@ -252,5 +252,8 @@ class TestLibraryProfile(LibrarySettingsProfile):
 
     LOGGER_CONFIG_FILE_NAME = "library_logger_test.conf"
 
+    def __init__(self):
 
+        super(TestLibraryProfile, self).__init__()
+        self.TVB_LOG_FOLDER = "TEST_OUTPUT"
 

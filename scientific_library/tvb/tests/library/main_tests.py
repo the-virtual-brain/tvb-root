@@ -36,6 +36,7 @@ Entry point for all unit-tests for TVB Scientific Library.
 """
 
 from tvb.tests.library import setup_test_console_env
+from tvb.basic.profile import TvbProfile
 setup_test_console_env()
 
 # Make sure we are in library mode and are not influenced by framework
@@ -109,8 +110,8 @@ if __name__ == "__main__":
         TEST_SUITE = suite()
         TEST_RUNNER.run(TEST_SUITE)
     if KEY_XML in argv:
-        XML_STREAM = file(os.path.join("TEST_OUTPUT", "TEST-LIBRARY-RESULTS.xml"), "w")
-        OUT_STREAM = file(os.path.join("TEST_OUTPUT", "TEST-LIBRARY.out"), "w")
+        XML_STREAM = file(os.path.join(TvbProfile.current.TVB_LOG_FOLDER, "TEST-LIBRARY-RESULTS.xml"), "w")
+        OUT_STREAM = file(os.path.join(TvbProfile.current.TVB_LOG_FOLDER, "TEST-LIBRARY.out"), "w")
         TEST_RUNNER = XMLTestRunner(XML_STREAM, OUT_STREAM)
         TEST_SUITE = suite()
         TEST_RUNNER.run(TEST_SUITE)
