@@ -39,9 +39,10 @@ from tvb.core.adapters.exceptions import LaunchException
 from tvb.datatypes.surfaces import CorticalSurface
 from tvb.datatypes.connectivity import Connectivity
 from tvb.datatypes.sensors_data import SensorsData
-from tvb.datatypes.sensors import SensorsEEG
+from tvb.datatypes.sensors import SensorsEEG, SensorsMEG, SensorsInternal
 from tvb.datatypes.projections import ProjectionSurfaceEEG, ProjectionRegionEEG
 from tvb.datatypes.projections import ProjectionSurfaceMEG, ProjectionRegionMEG
+import scipy.io
 
 DEFAULT_DATASET_NAME = "ProjectionMatrix"
 
@@ -187,6 +188,83 @@ class ProjectionMatrixSurfaceEEGImporter(ProjectionMatrixRegionEEGImporter):
         
         return self.generic_launch(projection_file, dataset_name, surface, sensors, expected_shape, projection_matrix)
    
-   
-    
-    
+
+class BrainstormGainMatrixImporter(ABCUploader):
+    """
+    Import a Brainstorm file containing an sEEG, EEG or MEG gain
+    matrix / lead field / projection matrix.
+
+    Brainstorm calculates the gain matrix for a set of three orthogonally
+    oriented dipoles at each source location. However, we assume that these
+    source points correspond to the cortical surface to which this head model
+    shall be linked, thus we can use the source orientations to weight the
+    three dipoles' gain vectors, to produce a gain matrix whose number of
+    rows matches the number of sensors and number of columns matches the
+    number of vertices in the linked cortical surface.
+
+    """
+
+    _ui_name = "Brainstorm Gain Matrix for s/M/EEG"
+    _ui_description = "Upload a gain matrix from Brainstorm for sEEG, EEG or MEG sensors."
+
+    def get_upload_input_tree(self):
+        "Defines input parameters for this uploader"
+        sens_filt = FilterChain(
+            fields=[FilterChain.datatype + '.type'], operations=["in"],
+            values=[['SensorsEEG', 'SensorsMEG', 'SensorsSEEG']])
+        return [
+            {'name': 'filename', 'type': 'upload', 'required_type': '.mat',
+             'label': 'Head model file (.mat)', 'required': True,
+             'description': 'MATLAB file from Brainstorm database containing '
+                            'a gain matrix description.'},
+            {'name': 'surface', 'label': 'Surface', 'type': Surface,
+             'required': True, 'datatype': True,
+             'description': 'Cortical surface for which this gain matrix was '
+                            'computed.'},
+            {'name': 'sensors', 'label': 'Sensors', 'type': SensorsData,
+             'required': True, 'datatype': True, 'conditions': sens_filt,
+             'description': 'Sensors for which this gain matrix was computed'}]
+
+    def get_output(self):
+        return [ProjectionSurfaceEEG, ProjectionSurfaceMEG]
+
+    def launch(self, filename, surface, sensors):
+        if any(a is None for a in (file, surface, sensors)):
+            raise LaunchException("Please provide a valid filename, surface and sensor set.")
+        if isinstance(sensors, (SensorsEEG, SensorsInternal)):
+            proj = ProjectionSurfaceEEG(storage_path=self.storage_path)
+        else:
+            proj = ProjectionSurfaceMEG(storage_path=self.storage_path)
+
+        mat = scipy.io.loadmat(filename)
+        req_fields = 'Gain GridLoc GridOrient Comment HeadModelType'.split()
+        if not all(key in mat for key in req_fields):
+            raise LaunchException(
+                'This MATLAB file does not appear to contain a valid '
+                'Brainstorm head model / gain matrix. Please verify that '
+                'the path provided corresponds to a valid head model in the '
+                'Brainstorm database, e.g. "OpenMEEG BEM".')
+
+        if mat['HeadModelType'][0] != 'surface':
+            raise LaunchException(
+                'TVB requires that the head model be computed with a cortical '
+                'source space, which does not appear to be the case for this '
+                'uploaded head model.')
+             
+        n_sens = sensors.number_of_sensors
+        n_src = surface.number_of_vertices
+        # copy to put in C-contiguous memory layout
+        gain, loc, ori = [mat[k].copy() for k in req_fields[:3]]
+
+        if gain.shape[0] != n_sens or (gain.shape[1]/3) != n_src:
+            raise LaunchException(
+                'The dimensions of the uploaded head model (%d sensors, %d '
+                'sources) do not match the selected sensor set (%d sensors) '
+                'or cortical surface (% sources). Please check that the '
+                'head model was produced with the selected sensors and '
+                'cortical surface.')
+
+        proj.sources = surface
+        proj.sensors = sensors
+        proj.projection_data = (gain.reshape((n_sens, -1, 3)) * ori).sum(axis=-1)
+        return [proj]
