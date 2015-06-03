@@ -45,7 +45,7 @@ KEY_XML = 'xml'
 
 
 
-def generage_excludes(root_folders):
+def generate_excludes(root_folders):
     """
     Specify excludes for Coverage.
     """
@@ -80,9 +80,10 @@ if __name__ == "__main__":
         import tvb.interfaces as intf
 
         SOURCE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(intf.__file__)))
+        print 'Starting coverage on ' + SOURCE_DIR
         COVERAGE = coverage(source=["tvb.adapters", "tvb.analyzers", "tvb.config", "tvb.core", "tvb.datatype_removers",
                                     "tvb.interfaces.web.controllers", "tvb.interfaces.web.entities"],
-                            omit=generage_excludes([SOURCE_DIR]), cover_pylib=False, branch=True)
+                            omit=generate_excludes([SOURCE_DIR]), cover_pylib=False, branch=True)
         COVERAGE.start()
         ## This needs to be executed before any TVB import.
 
@@ -132,6 +133,7 @@ if __name__ == "__main__":
     print 'It run tests for %d sec.' % (datetime.datetime.now() - START_TIME).seconds
 
     if KEY_COVERAGE in sys.argv:
+        print 'Gathering cobertura report ...'
         COVERAGE.stop()
         COVERAGE.xml_report(outfile=os.path.join(TvbProfile.current.TVB_LOG_FOLDER, 'coverage.xml'))
 
