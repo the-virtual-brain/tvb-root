@@ -36,7 +36,7 @@ from tvb.basic.logger.builder import get_logger
 from matplotlib import _cntr
 
 #Set the resolution of the phase-plane and sample trajectories.
-NUMBEROFGRIDPOINTS = 42
+NUMBEROFGRIDPOINTS = 2*42
 
 
 class _PhaseSpace(object):
@@ -163,8 +163,19 @@ class PhasePlaneD3(PhasePlane):
         sv_mean = numpy.array([svr[key].mean() for key in self.model.state_variables])
         sv_mean = sv_mean.reshape((self.model.nvar, 1, 1))
         self.default_sv = sv_mean.repeat(self.model.number_of_modes, axis=2)
+        self.update_integrator_clamping()
         self._jitter = self._create_mesh_jitter()
 
+    def update_integrator_clamping(self):
+        # import pydevd
+        # pydevd.settrace('localhost', port=51234, stdoutToServer=True, stderrToServer=True)
+        clamped_sv_indices = [i for i in range(self.model.nvar) if i not in [self.svx_ind, self.svy_ind]]
+        if clamped_sv_indices:
+            self.integrator.clamped_state_variable_indices = numpy.array(clamped_sv_indices)
+            self.integrator.clamped_state_variable_values = self.default_sv[self.integrator.clamped_state_variable_indices]
+        else:
+            self.integrator.clamped_state_variable_indices = None
+            self.integrator.clamped_state_variable_values = None
 
     def update_axis(self, mode, svx, svy, x_range, y_range, state_vars):
         self.mode = mode
@@ -177,6 +188,7 @@ class PhasePlaneD3(PhasePlane):
         for name, val in state_vars.iteritems():
             k = self.model.state_variables.index(name)
             self.default_sv[k] = val
+        self.update_integrator_clamping()
 
 
     def compute_phase_plane(self):
@@ -218,7 +230,7 @@ class PhasePlaneD3(PhasePlane):
 
         # signals for last trajectory
         signal_x = numpy.arange(n_steps + 1) * self.integrator.dt
-        signals = [ zip(signal_x, traj[-1, :, i, self.mode].tolist()) for i in xrange(self.model.nvar)]
+        signals = [ zip(signal_x, traj[-1, :, i, self.mode].tolist()) for i in [self.svx_ind, self.svy_ind]]
 
         return trajectory.tolist(), signals
 

@@ -53,6 +53,7 @@ import numpy
 #The Virtual Brain
 import tvb.basic.traits.core as core
 import tvb.basic.traits.types_basic as basic
+from tvb.datatypes import arrays
 
 # vb simulator
 import tvb.simulator.noise
@@ -99,6 +100,15 @@ class Integrator(core.Type):
         it is consitent with Monitors using sample periods corresponding to
         powers of 2 from 128 to 4096Hz.""")
 
+    clamped_state_variable_indices = arrays.IntegerArray(
+        label = "indices of the state variables to be clamped by the integrators to the values in the clamped_values array",
+        default = None,
+        order=-1)
+
+    clamped_state_variable_values = arrays.FloatArray(
+        label = "The values of the state variables which are clamped ",
+        default = None,
+        order=-1)
 
     def __init__(self, **kwargs):
         """Integrators are intialized using their integration step, dt."""
@@ -131,6 +141,10 @@ class Integrator(core.Type):
         """
 
         pass
+
+    def clamp_state(self, X):
+        if self.clamped_state_variable_values is not None:
+            X[self.clamped_state_variable_indices] = self.clamped_state_variable_values
 
 
 class IntegratorStochastic(Integrator):
@@ -228,11 +242,13 @@ class HeunDeterministic(Integrator):
         #import pdb; pdb.set_trace()
         m_dx_tn = dfun(X, coupling, local_coupling)
         inter = X + self.dt * (m_dx_tn  + stimulus)
+        self.clamp_state(inter)
 
         dX = (m_dx_tn + dfun(inter, coupling, local_coupling)) * self.dt / 2.0
 
-        return X + dX + self.dt * stimulus
-
+        X_next = X + dX + self.dt * stimulus
+        self.clamp_state(X_next)
+        return X_next
 
 class HeunStochastic(IntegratorStochastic):
     """
@@ -286,11 +302,13 @@ class HeunStochastic(IntegratorStochastic):
         noise *= noise_gfun
 
         inter = X + self.dt * m_dx_tn + noise + self.dt * stimulus
+        self.clamp_state(inter)
 
         dX = (m_dx_tn + dfun(inter, coupling, local_coupling)) * self.dt / 2.0
 
-        return X + dX + noise + self.dt * stimulus
-
+        X_next = X + dX + noise + self.dt * stimulus
+        self.clamp_state(X_next)
+        return X_next
 
 class EulerDeterministic(Integrator):
     """
@@ -332,7 +350,9 @@ class EulerDeterministic(Integrator):
 
         self.dX = dfun(X, coupling, local_coupling) 
 
-        return X + self.dt * (self.dX + stimulus)
+        X_next = X + self.dt * (self.dX + stimulus)
+        self.clamp_state(X_next)
+        return X_next
 
 
 class EulerStochastic(IntegratorStochastic):
@@ -388,7 +408,9 @@ class EulerStochastic(IntegratorStochastic):
                        noise_gfun.shape, (noise.shape[0], noise.shape[1])))
             raise Exception(msg)
 
-        return X + dX + noise_gfun * noise + self.dt * stimulus
+        X_next = X + dX + noise_gfun * noise + self.dt * stimulus
+        self.clamp_state(X_next)
+        return X_next
 
 
 class RungeKutta4thOrderDeterministic(Integrator):
@@ -449,14 +471,23 @@ class RungeKutta4thOrderDeterministic(Integrator):
         dt2 = dt / 2.0
         dt6 = dt / 6.0
         #import pdb; pdb.set_trace()
+        #todo clamp these
         k1 = dfun(X, coupling, local_coupling)
-        k2 = dfun(X + dt2 * k1, coupling, local_coupling)
-        k3 = dfun(X + dt2 * k2, coupling, local_coupling)
-        k4 = dfun(X + dt * k3, coupling, local_coupling)
+        inter_k1 = X + dt2 * k1
+        self.clamp_state(inter_k1)
+        k2 = dfun(inter_k1, coupling, local_coupling)
+        inter_k2 = X + dt2 * k2
+        self.clamp_state(inter_k2)
+        k3 = dfun(inter_k2, coupling, local_coupling)
+        inter_k3 = X + dt * k3
+        self.clamp_state(inter_k3)
+        k4 = dfun(inter_k3, coupling, local_coupling)
 
         dX = dt6 * (k1 + 2.0 * k2 + 2.0 * k3 + k4)
 
-        return X + dX + self.dt * stimulus
+        X_next = X + dX + self.dt * stimulus
+        self.clamp_state(X_next)
+        return X_next
 
 
 class Identity(Integrator):
