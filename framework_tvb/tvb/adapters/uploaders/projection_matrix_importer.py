@@ -217,7 +217,7 @@ class BrainstormGainMatrixImporter(ABCUploader):
              'label': 'Head model file (.mat)', 'required': True,
              'description': 'MATLAB file from Brainstorm database containing '
                             'a gain matrix description.'},
-            {'name': 'surface', 'label': 'Surface', 'type': Surface,
+            {'name': 'surface', 'label': 'Surface', 'type': CorticalSurface,
              'required': True, 'datatype': True,
              'description': 'Cortical surface for which this gain matrix was '
                             'computed.'},
