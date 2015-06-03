@@ -35,8 +35,10 @@ import numpy
 from tvb.basic.logger.builder import get_logger
 from matplotlib import _cntr
 
+# how much courser is the grid used to show the vectors
+GRID_SUBSAMPLE = 2
 #Set the resolution of the phase-plane and sample trajectories.
-NUMBEROFGRIDPOINTS = 2*42
+NUMBEROFGRIDPOINTS = GRID_SUBSAMPLE*42
 
 
 class _PhaseSpace(object):
@@ -164,11 +166,9 @@ class PhasePlaneD3(PhasePlane):
         sv_mean = sv_mean.reshape((self.model.nvar, 1, 1))
         self.default_sv = sv_mean.repeat(self.model.number_of_modes, axis=2)
         self.update_integrator_clamping()
-        self._jitter = self._create_mesh_jitter()
+        self._jitter = None     #self._create_mesh_jitter()
 
     def update_integrator_clamping(self):
-        # import pydevd
-        # pydevd.settrace('localhost', port=51234, stdoutToServer=True, stderrToServer=True)
         clamped_sv_indices = [i for i in range(self.model.nvar) if i not in [self.svx_ind, self.svy_ind]]
         if clamped_sv_indices:
             self.integrator.clamped_state_variable_indices = numpy.array(clamped_sv_indices)
@@ -200,12 +200,18 @@ class PhasePlaneD3(PhasePlane):
         u, v = self._calc_phase_plane(self.default_sv, self.svx_ind, self.svy_ind, x, y)
         u = u[..., self.mode]   # project on active mode
         v = v[..., self.mode]
-
-        d = numpy.dstack((x, y, u, v))
-        d = d.reshape((NUMBEROFGRIDPOINTS ** 2, 4)).tolist()
-
         xnull = [{'path': segment.tolist(), 'nullcline_index': 0} for segment in self.nullcline(x, y, u)]
         ynull = [{'path': segment.tolist(), 'nullcline_index': 1} for segment in self.nullcline(x, y, v)]
+
+        # a courser mesh for the arrows
+        xsmall = x[::GRID_SUBSAMPLE,::GRID_SUBSAMPLE]
+        ysmall = y[::GRID_SUBSAMPLE,::GRID_SUBSAMPLE]
+        usmall = u[::GRID_SUBSAMPLE,::GRID_SUBSAMPLE]
+        vsmall = v[::GRID_SUBSAMPLE,::GRID_SUBSAMPLE]
+
+        d = numpy.dstack((xsmall, ysmall, usmall, vsmall))
+        d = d.reshape(((NUMBEROFGRIDPOINTS/GRID_SUBSAMPLE) ** 2, 4)).tolist()
+
         return {'plane': d, 'nullclines': xnull + ynull}
 
 
