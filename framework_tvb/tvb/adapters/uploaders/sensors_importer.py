@@ -129,6 +129,12 @@ class BrainstormSensorUploader(ABCUploader):
     _ui_subsection = "sensors_importer"
     _ui_description = "Upload a description of s/M/EEG sensors from a Brainstorm database file."
 
+    _bst_type_to_class = {
+        'SEEG': SensorsInternal,
+        'EEG': SensorsEEG,
+        'MEG': SensorsMEG,
+    }
+
     def get_upload_input_tree(self):
         return [{'name': 'filename', 'type': 'upload', 'required_type': '.mat',
                  'label': 'Sensors file', 'required': True,
@@ -141,8 +147,25 @@ class BrainstormSensorUploader(ABCUploader):
         if filename is None:
             raise LaunchException("Please provide a valid filename.")
         mat = scipy.io.loadmat(filename)
+        please_verify = ('Please verify that the provided file is a valid sensors file '
+                         'from a Brainstorm database.')
         if 'Channels' not in mat:
+            raise LaunchException(please_verify)
+        chans = mat['Channel']
+        chan_fields = chans.dtype.fields.keys()
+        req_fields = 'Name Type Loc Orient'.split()
+        if any(key not in chan_fields for key in req_fields):
+            raise LaunchException(please_verify)
+        chtypes = [ch[0] for ch in chans['Type'][0]]
+        if not all(ch==chtypes[0] for ch in chtypes):
             raise LaunchException(
-                'Please verify that the provided file is a valid sensors file '
-                'from a Brainstorm database.')
-        chans = mat['Channels']
+                'Channel types are not homogeneous; please export sensors without '
+                'mixing channel types.'
+            )
+        sens = self._bst_type_to_class[chtypes[0]](storage_path=self.storage_path)
+        sens.locations = np.array([ch.flat[:] for ch in chans['Loc'][0]])
+        sens.labels = [ch[0] for ch in chans['Name'][0]]
+        if isinstance(sens, SensorsMEG):
+            sens.orientations = np.array([ch if ch.size else np.zeros((3, 4))
+                                          for ch in chans['Orient'][0]])
+        return [sens]
