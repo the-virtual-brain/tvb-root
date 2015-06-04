@@ -33,6 +33,7 @@
 """
 
 import numpy
+import scipy.io
 from tvb.adapters.uploaders.abcuploader import ABCUploader
 from tvb.basic.logger.builder import get_logger
 from tvb.core.adapters.exceptions import LaunchException
@@ -67,7 +68,6 @@ class Sensors_Importer(ABCUploader):
                              {'name': self.MEG_SENSORS, 'value': self.MEG_SENSORS},
                              {'name': self.INTERNAL_SENSORS, 'value': self.INTERNAL_SENSORS}]
                  }]
-
 
     def get_output(self):
         return [Sensors]
@@ -122,3 +122,27 @@ class Sensors_Importer(ABCUploader):
         return [sensors_inst]
     
     
+class BrainstormSensorUploader(ABCUploader):
+    "Upload sensors from Brainstorm database files"
+
+    _ui_name = "Brainstorm Sensors Uploader"
+    _ui_subsection = "sensors_importer"
+    _ui_description = "Upload a description of s/M/EEG sensors from a Brainstorm database file."
+
+    def get_upload_input_tree(self):
+        return [{'name': 'filename', 'type': 'upload', 'required_type': '.mat',
+                 'label': 'Sensors file', 'required': True,
+                 'description': 'Brainstorm file described s/M/EEG sensors.'}]
+
+    def get_output(self):
+        return [Sensors]
+
+    def launch(self, filename):
+        if filename is None:
+            raise LaunchException("Please provide a valid filename.")
+        mat = scipy.io.loadmat(filename)
+        if 'Channels' not in mat:
+            raise LaunchException(
+                'Please verify that the provided file is a valid sensors file '
+                'from a Brainstorm database.')
+        chans = mat['Channels']
