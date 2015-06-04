@@ -39,6 +39,7 @@ import os
 import json
 import psutil
 import numpy
+import importlib
 from functools import wraps
 from datetime import datetime
 from copy import copy
@@ -442,9 +443,15 @@ class ABCAdapter(object):
         """
         Having a module and a class name, create an instance of ABCAdapter.
         """
+        logger = get_logger("ABCAdapter")
         try:
-            adapter = __import__(algo_group.module, globals(), locals(), [algo_group.classname])
-            adapter = eval("adapter." + algo_group.classname)
+            if TvbProfile.env.is_development():
+                mod = importlib.import_module(algo_group.module)
+                adapter = getattr(reload(mod), algo_group.classname)
+                logger.info("reloaded %r from %r", adapter, mod)
+            else:
+                adapter = __import__(algo_group.module, globals(), locals(), [algo_group.classname])
+                adapter = eval("adapter." + algo_group.classname)
             if algo_group.init_parameter is not None and len(algo_group.init_parameter) > 0:
                 adapter_instance = adapter(str(algo_group.init_parameter))
             else:
@@ -454,7 +461,7 @@ class ABCAdapter(object):
             adapter_instance.algorithm_group = algo_group
             return adapter_instance
         except Exception, excep:
-            get_logger("ABCAdapter").exception(excep)
+            logger.exception(excep)
             raise IntrospectionException(str(excep))
 
 
