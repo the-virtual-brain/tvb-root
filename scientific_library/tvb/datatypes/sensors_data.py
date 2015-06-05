@@ -81,6 +81,9 @@ class SensorsData(MappedType):
         label="Number of sensors",
         doc="""The number of sensors described by these Sensors.""")
 
+    # introduced to accommodate real sensors sets which have sensors
+    # that should be zero during simulation i.e. ECG (heart), EOG,
+    # reference gradiometers, etc.
     usable = arrays.BoolArray(
         required=False, label="Usable sensors",
         doc="The sensors in set which are used for signal data."
