@@ -66,8 +66,12 @@ from tvb.simulator.common import get_logger
 LOG = get_logger(__name__)
 
 import tvb.datatypes.sensors as sensors_module
+from tvb.datatypes.sensors import SensorsMEG, SensorsInternal, SensorsEEG
 import tvb.datatypes.arrays as arrays
-import tvb.datatypes.projections as projections
+from tvb.datatypes.cortex import Cortex
+from tvb.datatypes.connectivity import Connectivity
+from tvb.datatypes.projections import (
+    ProjectionMatrix, ProjectionSurfaceEEG, ProjectionSurfaceMEG)
 import tvb.datatypes.equations as equations
 
 import tvb.basic.traits.util as util
@@ -548,323 +552,159 @@ class TemporalAverage(Monitor):
             return [time, avg_stock]
 
 
+class Projection(Monitor):
+    "Base class monitor providing lead field suppport."
+    _ui_name = "Projection matrix"
 
-class EEG(Monitor):
-    """
-    Monitors the temporally averaged value for the models variable of interest
-    projected to sensors on the head surface at each sampling period.
+    projection = ProjectionMatrix(
+        default=None, label='Projection matrix',
+        doc='Projection matrix to apply to sources.')
 
-    .. note:: For the moment, this returns idealised (reference free) EEG.
+    @staticmethod
+    def oriented_gain(self, gain, orient):
+        "Apply orientations to gain matrix."
+        return (gain.reshape((gain.shape[0], -1, 3)) * orient).sum(axis=-1)
 
-    .. #Currently there seems to be a clash betwen traits and autodoc, autodoc
-    .. #can't find the methods of the class, the class specific names below get
-    .. #us around this...
-    .. automethod:: EEG.__init__
-    .. automethod:: EEG.config_for_sim
-    .. automethod:: EEG.record
-
-    """
-    projection_matrix_data = projections.ProjectionMatrix(required = True, default = None,
-                                                label = "EEG Projection Matrix",
-                                                doc = """An array that is used to 
-                                                map activity from nodes of the 
-                                                simulation to a set of EEG 
-                                                sensors.""")
-
-
-    def __init__(self, **kwargs):
-        """Initialise EEG monitor from the base Monitor class."""
-        LOG.info("%s: initing..." % str(self))
-        super(EEG, self).__init__(**kwargs)
-        LOG.debug("%s: inited." % repr(self))
-
-    @property
-    def projection_matrix(self):
-        """
-        Define shortcut for retrieving ProjectionMatrix array.
-        """
-        if self.projection_matrix_data is None:
-            return None
-        return self.projection_matrix_data.projection_data
-
-
-    @property
-    def sensors(self):
-        if self.projection_matrix_data is not None:
-            return self.projection_matrix_data.sensors
-        return None
-
+    def analytic(self, *args):
+        "Construct analytic or default set of spatial filters for simulation."
+        # this will not be implemented but kept for API uniformity
+        raise NotImplementedError(
+            "No general purpose analytic formula available for spatial "
+            "projection matrices. Please select an appropriate projection "
+            "matrix."
+        )
 
     def config_for_sim(self, simulator):
-        """
-        Set the monitor's variables of interest based on the model
-        specification. Calculates the number of integration steps (isteps)
-        between returns by the record method. And initialises the stock array
-        over which the simulation state will be temporally averaged before the 
-        projection_matrix is applied.
+        "Configure projection matrix monitor for given simulation."
 
-        """
-        super(EEG, self).config_for_sim(simulator)
+        # setup convenient locals
+        self._sim = simulator
+        surf = simulator.surface
+        ":type : Cortex"
+        conn = simulator.connectivity
+        ":type : Connectivity"
+        using_cortical_surface = surf is not None
+        have_subcortical = len(numpy.unique(surf.region_mapping)) != conn.number_of_regions
 
-        if self.projection_matrix is None or self.projection_matrix.size == 0:
-            self.projection_matrix_data = projections.ProjectionSurfaceEEG()
-            self.projection_matrix_data.projection_data = simulator.surface.eeg_projection
-            simulator.surface.trait['eeg_projection'].log_debug(owner=self.__class__.__name__)
+        # determine source space
+        if using_cortical_surface:
+            sources = {'loc': surf.vertices, 'ori': surf.vertex_normals}
         else:
-            self.projection_matrix_data.trait['projection_data'].log_debug(owner=self.__class__.__name__)
+            sources = {'loc': conn.centres, 'ori': conn.orientations}
 
-        if (self.projection_matrix is None or simulator.number_of_nodes != self.projection_matrix.shape[1]):
-            raise Exception("Incompatible Monitor EEG Projection Matrix with simulation nodes!! Expected length:" 
-                            + str(simulator.number_of_nodes))
-        stock_size = (self.istep, self.voi.shape[0],
-                      simulator.number_of_nodes,
-                      simulator.model.number_of_modes)
-        LOG.debug("%s: stock_size is %s" % (str(self), str(stock_size)))
+        # compute analytic if not provided
+        if self.projection is None:
+            self.projection = self.analytic(**sources)
 
-        self._stock = numpy.zeros(stock_size)
+        # reduce to region lead field if region sim
+        if not using_cortical_surface:
+            proj = numpy.zeros((self.projection.shape[0], conn.number_of_regions))
+            numpy.add.at(proj.T, surf.region_mapping, self.projection.T)
+            self.projection = proj
 
+        # append analytic subcortical to lead field
+        if have_subcortical:
+            if using_cortical_surface:
+                sc_ind = numpy.array(
+                      set(numpy.r_[:conn.number_of_regions])
+                    - set(numpy.unique(surf.region_mapping)))
+            else:
+                # not reliable in all datasets
+                sc_ind = numpy.where(~conn.cortical)
+            # need matrix of shape (proj.shape[0], len(sc_ind))
+            self.projection = numpy.hstack((
+                self.projection,
+                self.analytic(conn.centres[sc_ind], conn.orientations[sc_ind])
+            ))
+
+        # zero out unusable sensors
+        if self.sensors.usable is not None and not self.sensors.usable.all():
+            self.projection[~self.sensors.usable] = 0.0
+
+        # attrs used for recording
+        self._state = numpy.zeros((simulator.number_of_nodes, ))
+        self._period = int(self.period / self.dt)
 
     def record(self, step, state):
-        """ 
-        Records if integration step corresponds to sampling period. Otherwise
-        just update the monitor's stock.
+        "Record state, returning sample at sampling frequency / period."
+        gain = self.projection.projection_data
+        self._state += gain.dot(state[self.voi].sum(axis=0).sum(axis=-1))
+        if step % self._period == 0:
+            time = (step - self._period / 2.0) * self.dt
+            sample = self._state.copy()
+            self._state[:] = 0.0
+            return time, sample.reshape((1, -1, 1)) # for compatibility
 
-        """
-        self._stock[((step % self.istep) - 1), :] = state[self.voi, :]
-        if step % self.istep == 0:
-            time = (step - self.istep / 2.0) * self.dt
-            avg_stock = numpy.mean(self._stock, axis=0)
-            #If there are multiple variables or modes we assume they can be 
-            #sensibly summed to form a single source...
-            avg_stock = avg_stock.sum(axis=0)[numpy.newaxis,:,:] #state-variables
-            avg_stock = avg_stock.sum(axis=2)[:,:,numpy.newaxis] #modes
-            eeg = numpy.dot(self.projection_matrix, avg_stock)
-            return [time, eeg.transpose((1, 0, 2))]
-
-
-    def create_time_series(self, storage_path, connectivity=None, surface=None,
-                           region_map=None, region_volume_map=None):
-         return TimeSeriesEEG(storage_path=storage_path,
-                              sensors=self.sensors,
-                              sample_period=self.period,
-                              title=' ' + self.__class__.__name__)
-
-
-#class MEG(Monitor):
-#    """
-#    Monitors the temporally averaged value for the models variable of interest
-#    projected to sensors on the head surface at each sampling period.
-#
-#    .. note:: For the moment, this returns single squid MEG.
-#
-#    .. #Currently there seems to be a clash betwen traits and autodoc, autodoc
-#    .. #can't find the methods of the class, the class specific names below get
-#    .. #us around this...
-#    .. automethod:: MEG.__init__
-#    .. automethod:: MEG.config_for_sim
-#    .. automethod:: MEG.record
-#
-#    """
-#    #_ui_name = "MEG (ONLY FOR reg13 SURFACE + o52r00_irp2008 CORTEX-ONLY CONNECTIVITY (74))"
-#
-#    projection_matrix = arrays.FloatArray(
-#        label = "Projection matrix",
-#        required = True,
-#        doc = """An array that is used to map activity from nodes of the
-#        simulation to a set of MEG sensors.""")
-#
-#
-#    def __init__(self, **kwargs):
-#        """Initialise MEG monitor from the base Monitor class."""
-#        LOG.info("%s: initing..." % str(self))
-#        super(MEG, self).__init__(**kwargs)
-#        LOG.debug("%s: inited." % repr(self))
-#
-#
-#    def config_for_sim(self, simulator):
-#        """
-#        Set the monitor's variables of interest based on the model
-#        specification. Calculates the number of integration steps (isteps)
-#        between returns by the record method. And initialises the stock array
-#        over which the simulation state will be temporally averaged before the
-#        projection_matrix is applied.
-#
-#        """
-#        super(MEG, self).config_for_sim(simulator)
-#
-#        if self.projection_matrix.size == 0:
-#            self.projection_matrix = simulator.surface.meg_projection
-#
-#        self.trait["projection_matrix"].log_debug(owner=self.__class__.__name__)
-#
-#        stock_size = (self.istep, self.voi.shape[0],
-#                      simulator.number_of_nodes,
-#                      simulator.model.number_of_modes)
-#        LOG.debug("%s: stock_size is %s" % (str(self), str(stock_size)))
-#
-#        self._stock = numpy.zeros(stock_size)
-#        #import pdb; pdb.set_trace()
-#
-#
-#    def record(self, step, state):
-#        """
-#        Records if integration step corresponds to sampling period. Otherwise
-#        just update the monitor's stock.
-#
-#        """
-#        self._stock[((step % self.istep) - 1), :] = state[self.voi, :]
-#        if step % self.istep == 0:
-#            time = (step - self.istep / 2.0) * self.dt
-#            avg_stock = numpy.mean(self._stock, axis=0)
-#            #If there are multiple variables or modes we assume they can be
-#            #sensibly summed to form a single source...
-#            avg_stock = avg_stock.sum(axis=0)[numpy.newaxis,:,:] #state-variables
-#            avg_stock = avg_stock.sum(axis=2)[:,:,numpy.newaxis] #modes
-#            meg = numpy.dot(self.projection_matrix, avg_stock)
-#            return [time, meg.transpose((1, 0, 2))]
-#
-
-#Note: Once OpenMEEG is operational, dump the sphericals they're a hacky mess...
-
-class SphericalEEG(Monitor):
-    """
-    Monitors the temporally averaged value for the models variable of interest 
-    projected to sensors on the head surface at each sampling period.  
+class EEG(Projection):
+    """Forward solution monitor for electroencephalogy (EEG). If a
+    precomputed lead field is not available, a single sphere analytic
+    formula due to Sarvas 1987 is used.
 
     .. [Sarvas_1987] Sarvas, J., *Basic mathematical and electromagnetic
-        concepts of the biomagnetic inverse problem*, Physics in Medicine and
-        Biology, 1987.
-
-    .. note:: For the moment, this returns idealised (reference free) EEG.
-
-    .. #Currently there seems to be a clash betwen traits and autodoc, autodoc
-    .. #can't find the methods of the class, the class specific names below get
-    .. #us around this...
-    .. automethod:: SphericalEEG.__init__
-    .. automethod:: SphericalEEG.config_for_sim
-    .. automethod:: SphericalEEG.record
+    concepts of the biomagnetic inverse problem*, Physics in Medicine and
+    Biology, 1987.
 
     """
-    _ui_name = "Spherical EEG"
+    _ui_name = "EEG"
 
-    sigma = basic.Float(label = "conductivity",
-                  default = 1.0)
+    reference = basic.String(required=False, label="EEG Reference",
+                             doc='EEG Electrode to be used as reference, or "average" to '
+                                 'apply an average reference. If none is provided, the '
+                                 'produced time-series are the idealized or reference-free.')
 
-    sensors = sensors_module.SensorsEEG(
-        label = "EEG Sensors",
-        default = None,
-        required = True,
-        doc = """The set of EEG sensors for which the forward solution will be
-        calculated.""")
+    sensors = SensorsEEG(required=True, label="EEG Sensors",
+                         doc='Sensors to use for this EEG monitor')
 
-
-    def __init__(self, **kwargs):
-        """
-        Initialise from the base Monitor class. Setting sampling period.
-
-        """
-        LOG.info("%s: initing..." % str(self))
-        super(SphericalEEG, self).__init__(**kwargs)
-
-        self.projection_matrix = None
-        LOG.debug("%s: inited." % repr(self))
-
+    sigma = basic.Float(label="Conductivity (w/o projection)", default=1.0,
+                        doc='When a projection matrix is not used, this provides '
+                            'the value of conductivity in the formula for the single '
+                            'sphere approximation of the head (Sarvas 1987).')
 
     def config_for_sim(self, simulator):
-        """
-        Equation 12 of [Sarvas_1987]_
+        super(EEG, self).config_for_sim(simulator)
+        self._ref_vec = numpy.zeros((self.sensors.number_of_sensors,))
+        if self.reference:
+            if self.reference.lower() != 'average':
+                sensor_names = self.sensors.labels.tolist()
+                self._ref_vec[sensor_names.indexof(self.reference)] = 1.0
+            else:
+                self._ref_vec[:] = 1.0 / self.sensors.number_of_sensors
 
-        TODO: add equations...
-
-        """
-        super(SphericalEEG, self).config_for_sim(simulator)
-
-        #parameter to
-        sigma = self.sigma # 1.0
-
-        #r => sensor positions
-        #r_0 => source positions
-        #a => vector from sources_to_sensor
-        #Q => source unit vectors
-        if simulator.surface is None:
-            r_0 = simulator.connectivity.centres
-            Q = simulator.connectivity.orientations # * simulator.connectivity.areas
-        else:
-            r_0 = simulator.surface.vertices
-            Q = simulator.surface.vertex_normals
-
-        centre = numpy.mean(r_0, axis=0)[numpy.newaxis, ]
-        radius = 1.05125 * max(numpy.sqrt(numpy.sum((r_0 - centre)**2, axis=1)))
-
-        #Stick sensors on a sphere enclosing the sources...
-        # use local to avoid modifying H5 data file
-        sensor_locations = self.sensors.locations.copy()
-        sen_dis = numpy.sqrt(numpy.sum((sensor_locations)**2, axis=1))
-        sensor_locations = sensor_locations / sen_dis[:, numpy.newaxis]
-        sensor_locations = sensor_locations * radius
-        sensor_locations = sensor_locations + centre
-
-        #should check all sensors positions are > r_0, and that sensors positions lie on sphere...
-        #import pdb; pdb.set_trace()
-        #a = sensor_locations - r_0
-        #na = numpy.sqrt(numpy.sum(a**2, axis=1))[:, numpy.newaxis]
-        #nr = numpy.sqrt(numpy.sum(sensor_locations**2, axis=1))[:, numpy.newaxis]
-        #Shouldn't have to loop, but I'm tired...
-        V_r = numpy.zeros((sensor_locations.shape[0], r_0.shape[0]))
-        for sensor_k in numpy.arange(sensor_locations.shape[0]):
-            a = sensor_locations[sensor_k, :] - r_0
+    def analytic(self, simulator):
+        "Equation 12 of [Sarvas_1987]_"
+        # r => sensor positions
+        # r_0 => source positions
+        # a => vector from sources_to_sensor
+        # Q => source unit vectors
+        r_0, Q = self.sources['loc'], self.sources['ori']
+        center = numpy.mean(r_0, axis=0)[numpy.newaxis, ]
+        radius = 1.05125 * max(numpy.sqrt(numpy.sum((r_0 - center)**2, axis=1)))
+        loc = self.sensors.locations.copy()
+        sen_dis = numpy.sqrt(numpy.sum((loc)**2, axis=1))
+        loc = loc / sen_dis[:, numpy.newaxis] * radius + center
+        V_r = numpy.zeros((loc.shape[0], r_0.shape[0]))
+        for sensor_k in numpy.arange(loc.shape[0]):
+            a = loc[sensor_k, :] - r_0
             na = numpy.sqrt(numpy.sum(a**2, axis=1))[:, numpy.newaxis]
-            V_r[sensor_k, :] = numpy.sum(Q * (a / na**3), axis=1 ) / (4.0 * numpy.pi * sigma)
-
+            V_r[sensor_k, :] = numpy.sum(Q * (a / na**3), axis=1 ) / (4.0 * numpy.pi * self.sigma)
         self.projection_matrix = V_r
 
-        util.log_debug_array(LOG, self.projection_matrix, "projection_matrix", 
-                             owner=self.__class__.__name__)
-
-        stock_size = (self.istep, self.voi.shape[0],
-                      simulator.number_of_nodes,
-                      simulator.model.number_of_modes)
-        LOG.debug("%s: stock_size is %s" % (str(self), str(stock_size)))
-
-        self._stock = numpy.zeros(stock_size)
-
-
     def record(self, step, state):
-        """ Records if integration step corresponds to sampling period. """
-        self._stock[((step % self.istep) - 1), :] = state[self.voi, :]
-        if step % self.istep == 0:
-            time = (step - self.istep / 2.0) * self.dt
-            avg_stock = numpy.mean(self._stock, axis=0)
-            #If there are multiple variables or modes we assume they can be 
-            #sensibly summed to form a single source...
-            avg_stock = avg_stock.sum(axis=0)[numpy.newaxis,:,:] #state-variables
-            avg_stock = avg_stock.sum(axis=2)[:,:,numpy.newaxis] #modes
-            eeg = numpy.dot(self.projection_matrix, avg_stock)
-            return [time, eeg.transpose((1, 0, 2))]
-
+        time, sample = super(EEG, self).record(step, state).reshape((-1, ))
+        sample -= self._ref_vec.dot(sample)
+        return time, sample.reshape((1, -1, 1))
 
     def create_time_series(self, storage_path, connectivity=None, surface=None,
                            region_map=None, region_volume_map=None):
-         return TimeSeriesEEG(storage_path=storage_path,
-                              sensors=self.sensors,
-                              sample_period=self.period,
-                              title=' ' + self.__class__.__name__)
+        return TimeSeriesEEG(storage_path=storage_path,
+                             sensors=self.sensors,
+                             sample_period=self.period,
+                             title=' ' + self.__class__.__name__)
 
 
-class SphericalMEG(Monitor):
-    """
-    Monitors the temporally averaged value for the models variable of interest 
-    projected to sensors on the head surface at each sampling period.
-
-    .. #Currently there seems to be a clash betwen traits and autodoc, autodoc
-    .. #can't find the methods of the class, the class specific names below get
-    .. #us around this...
-    .. automethod:: SphericalMEG.__init__
-    .. automethod:: SphericalMEG.config_for_sim
-    .. automethod:: SphericalMEG.record
-
-    """
-    _ui_name = "Spherical MEG"
+class MEG(Projection):
+    "Forward solution monitor for magnetoencephalography (MEG)."
+    _ui_name = "MEG"
 
     sensors = sensors_module.SensorsMEG(
         label = "MEG Sensors",
@@ -873,64 +713,23 @@ class SphericalMEG(Monitor):
         doc = """The set of MEG sensors for which the forward solution will be
         calculated.""")
 
-
-    def __init__(self, **kwargs):
-        """
-        Initialise from the base Monitor class. Add a placeholder attribute for
-        the projectin matrix.
-        """
-        LOG.info("%s: initing..." % str(self))
-        super(SphericalMEG, self).__init__(**kwargs)
-        self.projection_matrix = None
-        LOG.debug("%s: inited." % repr(self))
-
-
-    def config_for_sim(self, simulator):
-        """
-        Equation 25 of [Sarvas_1987]_
-
-        TODO: add equation...
-
-        """
-        super(SphericalMEG, self).config_for_sim(simulator)
-
-        #the magnetic constant = 1.25663706 × 10-6 m kg s-2 A-2  (H/m)
+    def analytic(self, simulator):
+        """Compute single sphere analytic form of MEG lead field.
+        Equation 25 of [Sarvas_1987]_."""
+        # the magnetic constant = 1.25663706 × 10-6 m kg s-2 A-2  (H/m)
         mu_0 = 1.25663706e-6 #mH/mm
-
-        #parameter to
-        #sigma = 1.0
-
-        #r => sensor positions
-        #r_0 => source positions
-        #a => vector from sources_to_sensor
-        #Q => source unit vectors
-        if simulator.surface is None:
-            r_0 = simulator.connectivity.centres
-            Q = simulator.connectivity.orientations
-        else:
-            r_0 = simulator.surface.vertices
-            Q = simulator.surface.vertex_normals
-
+        # r => sensor positions
+        # r_0 => source positions
+        # a => vector from sources_to_sensor
+        # Q => source unit vectors
+        r_0, Q = self.sources['loc'], self.sources['ori']
         centre = numpy.mean(r_0, axis=0)[numpy.newaxis, :]
         radius = 1.01 * max(numpy.sqrt(numpy.sum((r_0 - centre)**2, axis=1)))
-
-        #Stick sensors on a sphere enclosing the sources...
-        # use local to avoid modifying H5 data file
         sensor_locations = self.sensors.locations.copy()
         sen_dis = numpy.sqrt(numpy.sum((sensor_locations)**2, axis=1))
         sensor_locations = sensor_locations / sen_dis[:, numpy.newaxis]
         sensor_locations = sensor_locations * radius
         sensor_locations = sensor_locations + centre
-
-        #should check all sensor_locations are > r_0
-        #import pdb; pdb.set_trace()
-        #a = sensor_locations - r_0
-        #na = numpy.sqrt(numpy.sum(a**2, axis=1))[:, numpy.newaxis]
-        #nr = numpy.sqrt(numpy.sum(sensor_locations**2, axis=1))[:, numpy.newaxis]
-        #Shouldn't have to loop, but I'm tired...
-
-        #import pdb; pdb.set_trace()
-
         B_r = numpy.zeros((sensor_locations.shape[0], r_0.shape[0], 3))
         for sensor_k in numpy.arange(sensor_locations.shape[0]):
             a = sensor_locations[sensor_k,:] - r_0
@@ -940,44 +739,13 @@ class SphericalMEG(Monitor):
 
             F = a * (nr * a + nr**2 - numpy.sum(r_0 * rsk, axis=1)[:, numpy.newaxis])
             adotr = numpy.sum((a / na) * rsk, axis=1)[:, numpy.newaxis]
-            delF = ((na**2 / nr + adotr + 2.0 * na + 2.0 * nr) * rsk - 
+            delF = ((na**2 / nr + adotr + 2.0 * na + 2.0 * nr) * rsk -
                     (a + 2.0 * nr + adotr * r_0))
 
-            B_r[sensor_k, :] = ((mu_0 / (4.0 * numpy.pi * F**2)) * 
-                (numpy.cross(F * Q, r_0) - numpy.sum(numpy.cross(Q, r_0) *
-                (rsk * delF), axis=1)[:, numpy.newaxis]))
-
+            B_r[sensor_k, :] = ((mu_0 / (4.0 * numpy.pi * F**2)) *
+                                (numpy.cross(F * Q, r_0) - numpy.sum(numpy.cross(Q, r_0) *
+                                                                     (rsk * delF), axis=1)[:, numpy.newaxis]))
         self.projection_matrix = numpy.sqrt(numpy.sum(B_r**2, axis=2))
-
-        util.log_debug_array(LOG, self.projection_matrix, "projection_matrix",
-                             owner=self.__class__.__name__)
-
-        stock_size = (self.istep, self.voi.shape[0],
-                      simulator.number_of_nodes,
-                      simulator.model.number_of_modes)
-        LOG.debug("%s: stock_size is %s" % (str(self), str(stock_size)))
-
-        self._stock = numpy.zeros(stock_size)
-        #import pdb; pdb.set_trace()
-
-
-    def record(self, step, state):
-        """
-        Records if integration step corresponds to sampling period. The 
-        projection_matrix generated by the config_for_sim method is used to map
-        activity at nodes of the simulation to a set of MEG sensors.
-
-        """
-        self._stock[((step % self.istep) - 1), :] = state[self.voi, :]
-        if step % self.istep == 0:
-            time = (step - self.istep / 2.0) * self.dt
-            avg_stock = numpy.mean(self._stock, axis=0)
-            #If there are multiple variables or modes we assume they can be 
-            #sensibly summed to form a single source...
-            avg_stock = avg_stock.sum(axis=0)[numpy.newaxis,:,:] #state-variables
-            avg_stock = avg_stock.sum(axis=2)[:,:,numpy.newaxis] #modes
-            meg = numpy.dot(self.projection_matrix, avg_stock)
-            return [time, meg.transpose((1, 0, 2))]
 
     def create_time_series(self, storage_path, connectivity=None, surface=None,
                            region_map=None, region_volume_map=None):
@@ -986,16 +754,51 @@ class SphericalMEG(Monitor):
                              sample_period=self.period,
                              title=' ' + self.__class__.__name__)
 
-#NOTE: It's probably best to do voxelisation as an offline "analysis" style
+class iEEG(Projection):
+    "Forward solution for intracranial EEG (not ECoG!)."
+
+    _ui_name = "Intracerebral / Stereo EEG"
+
+    sigma = basic.Float(label="conductivity", default=1.0)
+
+    sensors = sensors_module.SensorsInternal(
+        label="Internal brain sensors", default=None, required=True,
+        doc="The set of SEEG sensors for which the forward solution will be calculated.")
+
+    def analytic(self, simulator):
+        """Compute the projection matrix -- simple distance weight for now.
+        Equation 12 from sarvas1987basic (point dipole in homogeneous space):
+          V(r) = 1/(4*pi*\sigma)*Q*(r-r_0)/|r-r_0|^3
+        """
+        super(iEEG, self).config_for_sim(simulator)
+        r_0, Q = self.sources['loc'], self.sources['ori']
+        V_r = numpy.zeros((self.sensors.locations.shape[0], r_0.shape[0]))
+        for sensor_k in numpy.arange(self.sensors.locations.shape[0]):
+            a = self.sensors.locations[sensor_k, :] - r_0
+            na = numpy.sqrt(numpy.sum(a ** 2, axis=1))[:, numpy.newaxis]
+            V_r[sensor_k, :] = numpy.sum(Q * (a / na ** 3), axis=1) / (4.0 * numpy.pi * self.sigma)
+        self.projection_matrix = V_r
+
+    def create_time_series(self, storage_path, connectivity=None, surface=None,
+                           region_map=None, region_volume_map=None):
+        return TimeSeriesSEEG(storage_path=storage_path,
+                              sensors=self.sensors,
+                              sample_period=self.period,
+                              title=' ' + self.__class__.__name__)
+
+
+"""
+#NOTE: It's probably best to do voxelization as an offline "analysis" style
 #      process, returning region or surface timeseries for BOLD based on the
-#      simulation. The voxelisation only really makes sense for surface anyway,
+#      simulation. The voxelization only really makes sense for surface anyway,
 #      and it should be interesting/benificial to be able to compare the effect
-#      of different voxelisations on the same underlying surface.
+#      of different voxelizations on the same underlying surface.
 
 #SK:   For a number of reasons, it's probably best to avoid returning TimeSeriesVolume ,
 #      from a simulation directly, instead just stick with the source, i.e. Region and Surface,
-#      then later we can add a voxelisation "analyser" to produce TimeSeriesVolume on which Volume
+#      then later we can add a voxelization "analyser" to produce TimeSeriesVolume on which Volume
 #      based analysers and visualisers (which don't exist yet) can operate.
+"""
 
 class Bold(Monitor):
     """
@@ -1246,6 +1049,7 @@ class BoldRegionROI(Bold):
             return None
 
 
+# TODO Delete this monitor on code review, no one uses it (not even MW)
 class BoldMultithreaded(Bold):
     """
     This is another Bold clone built to work with the GPU parameter sweep
@@ -1334,7 +1138,6 @@ class BoldMultithreaded(Bold):
             
             # return with fully general shape
             return [time, averaged.reshape((1, shape[2], 1) + shape[4:])]
-
 
 
 class BalloonWindkesselAccordingToKJFristonEtAl2003NeuroImage(Monitor):
@@ -1445,86 +1248,3 @@ class BalloonWindkesselAccordingToKJFristonEtAl2003NeuroImage(Monitor):
             return [time, bold]
 
 
-
-class SEEG(Monitor):
-    """
-    Monitors electrophysiological signals from depth electrodes (intended for stereo-EEG).
-    """
-    _ui_name = "Stereo-EEG"
-
-    sigma = basic.Float(label="conductivity", default=1.0)
-
-    sensors = sensors_module.SensorsInternal(
-        label="Internal brain sensors",
-        default=None,
-        required=True,
-        doc="""The set of SEEG sensors for which the forward solution will be calculated.""")
-
-
-    def __init__(self, **kwargs):
-        """
-        Initialise from the base Monitor class. Setting sampling period.
-
-        """
-        LOG.info("%s: initing..." % str(self))
-        super(SEEG, self).__init__(**kwargs)
-
-        self.projection_matrix = None
-        LOG.debug("%s: inited." % repr(self))
-
-
-    def config_for_sim(self, simulator):
-        """
-        Compute the projection matrix -- simple distance weight for now.
-        Equation 12 from sarvas1987basic (point dipole in homogeneous space): 
-          V(r) = 1/(4*pi*\sigma)*Q*(r-r_0)/|r-r_0|^3
-        """
-        super(SEEG, self).config_for_sim(simulator)
-        
-        if simulator.surface is None:
-            r_0 = simulator.connectivity.centres
-            Q = simulator.connectivity.orientations     # * simulator.connectivity.areas
-        else:
-            r_0 = simulator.surface.vertices
-            Q = simulator.surface.vertex_normals
-
-        V_r = numpy.zeros((self.sensors.locations.shape[0], r_0.shape[0]))
-        for sensor_k in numpy.arange(self.sensors.locations.shape[0]):
-            a = self.sensors.locations[sensor_k, :] - r_0
-            na = numpy.sqrt(numpy.sum(a ** 2, axis=1))[:, numpy.newaxis]
-            V_r[sensor_k, :] = numpy.sum(Q * (a / na ** 3), axis=1) / (4.0 * numpy.pi * self.sigma)
-
-        self.projection_matrix = V_r
-
-        util.log_debug_array(LOG, self.projection_matrix, "projection_matrix", owner=self.__class__.__name__)
-
-        stock_size = (self.istep, self.voi.shape[0],
-                      simulator.number_of_nodes,
-                      simulator.model.number_of_modes)
-        LOG.debug("%s: stock_size is %s" % (str(self), str(stock_size)))
-
-        self._stock = numpy.zeros(stock_size)
-
-
-    def record(self, step, state):
-        """
-        Same as the EEG monitor:
-        """
-        self._stock[((step % self.istep) - 1), :] = state[self.voi, :]
-        if step % self.istep == 0:
-            time = (step - self.istep / 2.0) * self.dt
-            avg_stock = numpy.mean(self._stock, axis=0)
-            #If there are multiple variables or modes we assume they can be 
-            #sensibly summed to form a single source...
-            avg_stock = avg_stock.sum(axis=0)[numpy.newaxis,:,:] #state-variables
-            avg_stock = avg_stock.sum(axis=2)[:, :, numpy.newaxis] #modes
-            eeg = numpy.dot(self.projection_matrix, avg_stock)
-            return [time, eeg.transpose((1, 0, 2))]
-
-
-    def create_time_series(self, storage_path, connectivity=None, surface=None,
-                           region_map=None, region_volume_map=None):
-        return TimeSeriesSEEG(storage_path=storage_path,
-                              sensors=self.sensors,
-                              sample_period=self.period,
-                              title=' ' + self.__class__.__name__)
