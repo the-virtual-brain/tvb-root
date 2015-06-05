@@ -81,7 +81,10 @@ class SensorsData(MappedType):
         label="Number of sensors",
         doc="""The number of sensors described by these Sensors.""")
 
-
+    usable = arrays.BoolArray(
+        required=False, label="Usable sensors",
+        doc="The sensors in set which are used for signal data."
+    )
 
 class SensorsEEGData(SensorsData):
     """

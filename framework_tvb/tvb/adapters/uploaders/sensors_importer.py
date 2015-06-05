@@ -34,6 +34,7 @@
 
 import numpy
 import scipy.io
+import collections
 from tvb.adapters.uploaders.abcuploader import ABCUploader
 from tvb.basic.logger.builder import get_logger
 from tvb.core.adapters.exceptions import LaunchException
@@ -144,28 +145,39 @@ class BrainstormSensorUploader(ABCUploader):
         return [Sensors]
 
     def launch(self, filename):
+        # get & verify data
         if filename is None:
             raise LaunchException("Please provide a valid filename.")
         mat = scipy.io.loadmat(filename)
         please_verify = ('Please verify that the provided file is a valid sensors file '
                          'from a Brainstorm database.')
-        if 'Channels' not in mat:
+        if 'Channel' not in mat:
             raise LaunchException(please_verify)
         chans = mat['Channel']
         chan_fields = chans.dtype.fields.keys()
         req_fields = 'Name Type Loc Orient'.split()
         if any(key not in chan_fields for key in req_fields):
             raise LaunchException(please_verify)
+        # guess majority channel type (i.e. ignore EOG, TRIGGER, etc.)
         chtypes = [ch[0] for ch in chans['Type'][0]]
-        if not all(ch==chtypes[0] for ch in chtypes):
-            raise LaunchException(
-                'Channel types are not homogeneous; please export sensors without '
-                'mixing channel types.'
-            )
-        sens = self._bst_type_to_class[chtypes[0]](storage_path=self.storage_path)
-        sens.locations = np.array([ch.flat[:] for ch in chans['Loc'][0]])
-        sens.labels = [ch[0] for ch in chans['Name'][0]]
+        type_ctr = collections.Counter(chtypes)
+        (chtype, _), = type_ctr.most_common(1)
+        sens_cls = self._bst_type_to_class[chtype]
+        sens = sens_cls(storage_path=self.storage_path)
+        ":type : Sensors"
+        # workaround: locations & orientations must be homogeneous arrays
+        # but in real data, channel types aren't homogeneous so neither are
+        # locations nor orientations. Find first chan with guessed type, create
+        # dummy locations with correct shape, and set sensors locations as
+        # the real locations or dummy if doesn't match
+        sens.usable = numpy.array([_ == chtype for _ in chtypes])
+        i_type, = numpy.where(sens.usable)
+        _ = numpy.zeros(chans['Loc'][0][i_type[0]].shape)
+        loc = numpy.array([ch if ch.shape==_.shape else _ for ch in chans['Loc'][0]])
+        sens.locations = loc[..., 0] * 1e3
+        sens.labels = numpy.array([str(ch[0]) for ch in chans['Name'][0]])
         if isinstance(sens, SensorsMEG):
-            sens.orientations = np.array([ch if ch.size else np.zeros((3, 4))
-                                          for ch in chans['Orient'][0]])
+            _ = numpy.zeros(chans['Orient'][0][i_type[0]].shape)
+            sens.orientations = numpy.array(
+                [ch if ch.shape==_.shape else _ for ch in chans['Orient'][0]])
         return [sens]
