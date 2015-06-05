@@ -447,7 +447,8 @@ class ABCAdapter(object):
         try:
             if TvbProfile.env.is_development():
                 mod = importlib.import_module(algo_group.module)
-                adapter = getattr(reload(mod), algo_group.classname)
+                reload(mod)
+                adapter = getattr(mod, algo_group.classname)
                 logger.info("reloaded %r from %r", adapter, mod)
             else:
                 adapter = __import__(algo_group.module, globals(), locals(), [algo_group.classname])
