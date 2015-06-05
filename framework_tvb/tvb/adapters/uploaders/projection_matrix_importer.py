@@ -211,7 +211,7 @@ class BrainstormGainMatrixImporter(ABCUploader):
         "Defines input parameters for this uploader"
         sens_filt = FilterChain(
             fields=[FilterChain.datatype + '.type'], operations=["in"],
-            values=[['SensorsEEG', 'SensorsMEG', 'SensorsSEEG']])
+            values=[['SensorsEEG', 'SensorsMEG', 'SensorsInternal']])
         return [
             {'name': 'filename', 'type': 'upload', 'required_type': '.mat',
              'label': 'Head model file (.mat)', 'required': True,
