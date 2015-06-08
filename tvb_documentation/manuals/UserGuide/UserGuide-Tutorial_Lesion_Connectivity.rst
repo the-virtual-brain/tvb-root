@@ -60,13 +60,11 @@ removing all the incoming and ongoing connections into and from this node.
     
   - Export the results of both simulations and the connectivity matrices. 
   
-    - You can export the results by choosing `Export`: -> TVB format. The data 
-      will be stored in an HDF5 file ("filename.h5") which can be used to do 
-      further analysis using other software of your choice. 
+  - You can export the results by choosing `Export`: -> TVB format. The data
+    will be stored in an HDF5 file ("filename.h5") which can be used to do
+    further analysis using other software of your choice.
 
-
-
-Here we choose MatLab to process the data. To read the HDF5 file in MatLab do::
+Here we choose MATLAB to process the data. To read the HDF5 file in MATLAB do::
 
   hinfo = hdf5info('filename.h5');
   % hinfo is a structure containing the data in the field 
@@ -83,13 +81,15 @@ To read the data use the `hdf5read` function. For our simulations
   % Where N is the number of cortical areas (=74) and T the number of time 
   % points. 
 
+You can convert `bold` to a matrix with::
 
-You can compact the data to a 2-dimension matrix as::
+  bold = squeeze(bold(1, :, 1, :));
 
-  bold_new = zeros(T,N,2);
-  bold_new(:,:,1) = reshape(bold,[T N]);
-
-You are now ready to work with `bold_new` using the tools of MatLab.
+where `size(bold)` yields `[N T]`.
+You are now ready to work with your `bold` data in MATLAB.
+If your simulation data includes the very beginning of the simulation,
+remember to remove the transient from the time series (first few seconds,
+but inspect visually) before performing any analyses.
 
 
 **Results**
