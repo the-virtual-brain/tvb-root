@@ -27,6 +27,7 @@
 #   Frontiers in Neuroinformatics (7:10. doi: 10.3389/fninf.2013.00010)
 #
 #
+
 """
 .. moduleauthor:: Calin Pavel <calin.pavel@codemart.ro>
 """
@@ -54,9 +55,9 @@ class RegionMappingImporterTest(TransactionalTestCase):
     Unit-tests for RegionMapping importer.
     """
     
-    TXT_FILE = os.path.join(os.path.dirname(demo_data.__file__), 'regionMapping_16k_74.txt')
-    ZIP_FILE = os.path.join(os.path.dirname(demo_data.__file__), 'regionMapping_16k_74.zip')
-    BZ2_FILE = os.path.join(os.path.dirname(demo_data.__file__), 'regionMapping_16k_74.bz2')
+    TXT_FILE = os.path.join(os.path.dirname(demo_data.__file__), 'regionMapping_16k_76.txt')
+    ZIP_FILE = os.path.join(os.path.dirname(demo_data.__file__), 'regionMapping_16k_76.zip')
+    BZ2_FILE = os.path.join(os.path.dirname(demo_data.__file__), 'regionMapping_16k_76.bz2')
     
     # Wrong data
     WRONG_FILE_1 = os.path.join(os.path.dirname(test_data.__file__), 'region_mapping_wrong_1.txt')
