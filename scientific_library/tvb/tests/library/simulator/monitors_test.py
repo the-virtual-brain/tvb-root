@@ -90,27 +90,15 @@ class MonitorsTest(BaseTestCase):
         self.assertEqual(monitor.period, default_period)
 
 
-    def test_monitor_smeg(self):
-        """
-        This has to be verified.
-        """
-        monitor = monitors.SphericalMEG()
+    def test_monitor_meg(self):
+        monitor = monitors.MEG()
         self.assertEqual(monitor.period, default_period)
-     
-     
-    def test_monitor_seeg(self):
-        """
-        This has to be verified.
-        """
-        monitor = monitors.SphericalEEG()
-        self.assertEqual(monitor.period, default_period)
-        
         
     def test_monitor_stereoeeg(self):
         """
         This has to be verified.
         """
-        monitor = monitors.SEEG()
+        monitor = monitors.iEEG()
         monitor.sensors = sensors.SensorsInternal(load_default=True)
         self.assertEqual(monitor.period, default_period)
 
