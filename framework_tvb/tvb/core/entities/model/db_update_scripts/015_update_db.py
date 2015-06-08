@@ -46,6 +46,7 @@ COL_REG1 = Column('_has_surface_mapping', Boolean)
 COL_REG2 = Column('_has_volume_mapping', Boolean)
 COL_REG3 = Column('_region_mapping', String)
 COL_REG4 = Column('_region_mapping_volume', String)
+COL_SENSORS = Column('_usable', String)
 
 
 def upgrade(migrate_engine):
@@ -56,11 +57,13 @@ def upgrade(migrate_engine):
     meta.bind = migrate_engine
     table1 = meta.tables['MAPPED_TIME_SERIES_DATA']
     table2 = meta.tables['MAPPED_TIME_SERIES_REGION_DATA']
+    table3 = meta.tables['MAPPED_SENSORS_DATA']
 
     create_column(COL_REG1, table1)
     create_column(COL_REG2, table1)
     create_column(COL_REG3, table2)
     create_column(COL_REG4, table2)
+    create_column(COL_SENSORS, table3)
 
     session = SA_SESSIONMAKER()
     session.execute(text("""UPDATE "MAPPED_TIME_SERIES_REGION_DATA" tr SET _region_mapping =
@@ -96,8 +99,10 @@ def downgrade(migrate_engine):
     meta.bind = migrate_engine
     table1 = meta.tables['MAPPED_TIME_SERIES_DATA']
     table2 = meta.tables['MAPPED_TIME_SERIES_REGION_DATA']
+    table3 = meta.tables['MAPPED_SENSORS_DATA']
 
     drop_column(COL_REG1, table1)
     drop_column(COL_REG2, table1)
     drop_column(COL_REG3, table2)
     drop_column(COL_REG4, table2)
+    drop_column(COL_SENSORS, table3)
