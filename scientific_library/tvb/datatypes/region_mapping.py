@@ -54,8 +54,8 @@ class RegionMapping(RegionMappingFramework, RegionMappingScientific):
                                  |
                                 / \\
           RegionMappingFramework   RegionMappingScientific
-                                \ /
-                                 |
+                                \\ /
+                                  |
                           RegionMapping
 
 
@@ -85,13 +85,13 @@ class RegionVolumeMapping(RegionVolumeMappingFramework, RegionVolumeMappingScien
 
     ::
 
-                        RegionVolumeMappingData
-                                 |
-                                / \\
-    RegionVolumeMappingFramework   RegionVolumeMappingScientific
-                                \ /
-                                 |
-                          RegionVolumeMapping
+                            RegionVolumeMappingData
+                                     |
+                                    / \\
+        RegionVolumeMappingFramework   RegionVolumeMappingScientific
+                                   \\ /
+                                    |
+                            RegionVolumeMapping
 
 
     """
