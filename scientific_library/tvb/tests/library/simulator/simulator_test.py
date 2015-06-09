@@ -45,6 +45,7 @@ if __name__ == "__main__":
     from tvb.tests.library import setup_test_console_env
     setup_test_console_env()
 
+import os
 import numpy
 import unittest
 import itertools
@@ -137,11 +138,12 @@ class Simulator(object):
         
         if default_connectivity:
             white_matter = connectivity.Connectivity(load_default=True)
-            # NOTE: This is the default region mapping should consider changing the name.
-            region_mapping = RegionMapping.from_file(source_file="cortex_reg13/region_mapping/o52r00_irp2008_hemisphere_both_subcortical_false_regions_74.txt.bz2")
+            region_mapping = RegionMapping.from_file(source_file=os.path.join("..", "regionMapping",
+                                                                              "regionMapping_16k_76.txt"))
         else:
-            white_matter = connectivity.Connectivity.from_file(source_file="connectivity_190.zip")
-            region_mapping = RegionMapping.from_file(source_file="cortex_reg13/region_mapping/o52r00_irp2008_hemisphere_both_subcortical_true_regions_190.txt.bz2")
+            white_matter = connectivity.Connectivity.from_file(source_file="connectivity_192.zip")
+            region_mapping = RegionMapping.from_file(source_file=os.path.join("..", "regionMapping",
+                                                                              "regionMapping_16k_192.txt"))
 
 
         white_matter_coupling = coupling.Linear(a=coupling_strength)    

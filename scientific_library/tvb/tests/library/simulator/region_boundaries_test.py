@@ -44,7 +44,7 @@ import unittest
 
 from tvb.tests.library.base_testcase import BaseTestCase
 from tvb.simulator import region_boundaries
-from tvb.datatypes import connectivity, surfaces
+from tvb.datatypes import connectivity
 
 
 class RegionBoundariesTest(BaseTestCase):

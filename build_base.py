@@ -138,11 +138,15 @@ def copy_distribution_dataset(dist_path, library_path):
                      ("sensors.EEG_unit_vectors_BrainProducts_62.txt.bz2", "$OUTSIDE.EEG_Sensors.txt.bz2"),
                      ("sensors.meg_channels_reg13.txt.bz2", "$OUTSIDE.MEG_Sensors.txt.bz2"),
 
-                     ("connectivity.connectivity_74.zip", "$INSIDE.connectivity.connectivity_76.zip"),
+                     ("connectivity.connectivity_76.zip", "$INSIDE.connectivity.connectivity_76.zip"),
                      ("connectivity.__init__.py", "$INSIDE.connectivity.__init__.py"),
 
                      ("projectionMatrix.surface_reg_13_eeg_62.mat", "$INSIDE.projectionMatrix.surface_reg_13_eeg_62.mat"),
                      ("projectionMatrix.__init__.py", "$INSIDE.projectionMatrix.__init__.py"),
+
+                     ("regionMapping.__init__.py", "$INSIDE.regionMapping.__init__.py"),
+                     ("regionMapping.regionMapping_16k_76.txt", "$INSIDE.regionMapping.regionMapping_16k_76.txt"),
+                     ("regionMapping.regionMapping_16k_192.txt", "$INSIDE.regionMapping.regionMapping_16k_192.txt"),
 
                      ("sensors.EEG_unit_vectors_BrainProducts_62.txt.bz2", "$INSIDE.sensors.EEG_unit_vectors_BrainProducts_62.txt.bz2"),
                      ("sensors.meg_channels_reg13.txt.bz2", "$INSIDE.sensors.meg_channels_reg13.txt.bz2"),
@@ -156,8 +160,6 @@ def copy_distribution_dataset(dist_path, library_path):
                      ("surfaceData.outer_skull_4096.zip", "$INSIDE.surfaceData.outer_skull_4096.zip"),
                      ("surfaceData.old_eeg_skin_surface.zip", "$INSIDE.surfaceData.old_eeg_skin_surface.zip"),
                      ("surfaceData.old_face_surface.zip", "$INSIDE.surfaceData.old_face_surface.zip"),
-                     ("surfaceData.cortex_reg13.region_mapping.o52r00_irp2008_hemisphere_both_subcortical_false_regions_74.txt.bz2", "$INSIDE.surfaceData.cortex_reg13.region_mapping.o52r00_irp2008_hemisphere_both_subcortical_false_regions_74.txt.bz2"),
-                     ("surfaceData.cortex_reg13.local_connectivity_surface_cortex_reg13.mat", "$INSIDE.surfaceData.cortex_reg13.local_connectivity_surface_cortex_reg13.mat"),
 
                      ("obj.__init__.py", "$INSIDE.obj.__init__.py"),
                      ("obj.face_surface.obj", "$INSIDE.obj.face_surface.obj"),

@@ -68,12 +68,12 @@ def _create_bench_project():
     lab.import_conn_zip(prj.id, zip_path)
     zip_path = path.join(data_dir, 'connectivity', 'connectivity_96.zip')
     lab.import_conn_zip(prj.id, zip_path)
-    zip_path = path.join(data_dir, 'connectivity', 'connectivity_190.zip')
+    zip_path = path.join(data_dir, 'connectivity', 'connectivity_192.zip')
     lab.import_conn_zip(prj.id, zip_path)
 
     conn68 = dao.get_generic_entity(Connectivity, 68, "_number_of_regions")[0]
     conn96 = dao.get_generic_entity(Connectivity, 96, "_number_of_regions")[0]
-    conn190 = dao.get_generic_entity(Connectivity, 190, "_number_of_regions")[0]
+    conn190 = dao.get_generic_entity(Connectivity, 192, "_number_of_regions")[0]
     return prj, [conn68, conn96, conn190]
 
 

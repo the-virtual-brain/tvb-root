@@ -62,8 +62,7 @@ class RegionMapping(RegionMappingFramework, RegionMappingScientific):
     """
 
     @staticmethod
-    def from_file(source_file=os.path.join("cortex_reg13", "region_mapping",
-                                           "o52r00_irp2008_hemisphere_both_subcortical_false_regions_74.txt.bz2"),
+    def from_file(source_file=os.path.join("..", "regionMapping", "regionMapping_16k_76.txt"),
                   instance=None):
 
         if instance is None:

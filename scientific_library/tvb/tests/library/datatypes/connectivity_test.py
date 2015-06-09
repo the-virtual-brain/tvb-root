@@ -89,35 +89,36 @@ class ConnectivityTest(BaseTestCase):
         """
         conn = connectivity.Connectivity(load_default=True)
         conn.configure()
+        n = 76
         # Check for value from tvb_data/connectivity/o52r00_irp2008
-        self.assertEqual(conn.weights.shape, (74, 74))
+        self.assertEqual(conn.weights.shape, (n, n))
         self.assertEqual(conn.weights.max(), 3.0)
         self.assertEqual(conn.weights.min(), 0.0)
-        self.assertEqual(conn.tract_lengths.shape, (74, 74))
+        self.assertEqual(conn.tract_lengths.shape, (n, n))
         self.assertEqual(conn.tract_lengths.max(), 153.48574)
         self.assertEqual(conn.tract_lengths.min(), 0.0)
-        self.assertEqual(conn.centres.shape, (74, 3))
-        self.assertEqual(conn.orientations.shape, (74, 3))
-        self.assertEqual(conn.region_labels.shape, (74,))
-        self.assertEqual(conn.areas.shape, (74,))
+        self.assertEqual(conn.centres.shape, (n, 3))
+        self.assertEqual(conn.orientations.shape, (n, 3))
+        self.assertEqual(conn.region_labels.shape, (n,))
+        self.assertEqual(conn.areas.shape, (n,))
         self.assertEqual(conn.undirected, 0)
         self.assertEqual(conn.speed, numpy.array([3.0]))
         self.assertTrue(conn.cortical.all())
-        self.assertEqual(conn.hemispheres.shape, (74,))
+        self.assertEqual(conn.hemispheres.shape, (n,))
         self.assertEqual(conn.idelays.shape, (0,))
-        self.assertEqual(conn.delays.shape, (74, 74,))
-        self.assertEqual(conn.number_of_regions, 74)
+        self.assertEqual(conn.delays.shape, (n, n,))
+        self.assertEqual(conn.number_of_regions, n)
         self.assertEqual(conn.number_of_connections, 1560)
         self.assertTrue(conn.parcellation_mask is None)
         self.assertTrue(conn.saved_selection is None)
         self.assertEqual(conn.parent_connectivity, '')
         summary = conn.summary_info
-        self.assertEqual(summary['Number of regions'], 74)
+        self.assertEqual(summary['Number of regions'], n)
         ## Call connectivity methods and make sure no compilation or runtime erros
         conn.compute_tract_lengths()
         conn.compute_region_labels()
         conn.try_compute_hemispheres()
-        self.assertEqual(conn.scaled_weights().shape, (74, 74))
+        self.assertEqual(conn.scaled_weights().shape, (n, n))
         for mode in ['none', 'tract', 'region']:
             # Empirical seems to fail on some scipy installations. Error is not pinned down
             # so far, it seems to only happen on some machines. Most relevant related to this:
@@ -126,24 +127,25 @@ class ConnectivityTest(BaseTestCase):
             # http://comments.gmane.org/gmane.comp.python.scientific.devel/14816
             # http://permalink.gmane.org/gmane.comp.python.numeric.general/42082
             #conn.switch_distribution(mode=mode)
-            self.assertEqual(conn.scaled_weights(mode=mode).shape, (74, 74))
+            self.assertEqual(conn.scaled_weights(mode=mode).shape, (n, n))
 
 
     def test_connectivity_reload(self):
         """
         Reload a connectivity and check that defaults changes accordingly.
         """
-        conn = connectivity.Connectivity.from_file("connectivity_190.zip")
-        self.assertEqual(conn.weights.shape, (190, 190))
+        conn = connectivity.Connectivity.from_file("connectivity_192.zip")
+        n = 192
+        self.assertEqual(conn.weights.shape, (n, n))
         self.assertEqual(conn.weights.max(), 3.0)
         self.assertEqual(conn.weights.min(), 0.0)
-        self.assertEqual(conn.tract_lengths.shape, (190, 190))
+        self.assertEqual(conn.tract_lengths.shape, (n, n))
         self.assertEqual(conn.tract_lengths.max(), 142.1458)
         self.assertEqual(conn.tract_lengths.min(), 0.0)
-        self.assertEqual(conn.centres.shape, (190, 3))
-        self.assertEqual(conn.orientations.shape, (190, 3))
-        self.assertEqual(conn.region_labels.shape, (190,))
-        self.assertEqual(conn.areas.shape, (190,))
+        self.assertEqual(conn.centres.shape, (n, 3))
+        self.assertEqual(conn.orientations.shape, (n, 3))
+        self.assertEqual(conn.region_labels.shape, (n,))
+        self.assertEqual(conn.areas.shape, (n,))
         self.assertEqual(conn.undirected, 0)
         self.assertEqual(conn.speed, numpy.array([3.0]))
         self.assertEqual(conn.hemispheres.shape, (0,))
