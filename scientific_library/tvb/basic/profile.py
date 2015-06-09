@@ -41,33 +41,18 @@ based on current running environment (e.g. dev vs deployment), or developer prof
 """
 
 import sys
-import copy
 from tvb.basic.config.environment import Environment
 from tvb.basic.config.profile_settings import BaseSettingsProfile
+from tvb.basic.config.utils import LibraryModulesFinder
 
 
-# avoid deepcopy errors due to six._MetaPathImporter
-class MetaPathCopier(object):
-    def __init__(self):
-        self._deepcopy = None
-        try:
-            import six
-            import copy_reg
-
-            if hasattr(six, '_SixMetaPathImporter'):
-                copy_reg.pickle(six._SixMetaPathImporter,
-                                lambda imp: (six._SixMetaPathImporter, (imp.name,)),
-                                lambda name: six._SixMetaPathImporter(name))
-        except ImportError:
-            pass
-
-
-    def deepcopy(self):
-        self._deepcopy = copy.deepcopy(sys.meta_path)
-
-
-    def restore(self):
-        sys.meta_path = copy.deepcopy(self._deepcopy)
+def cleanup_metapath():
+    """
+    Restore sys.meta_path, as some profiles (Library) are adding something
+    """
+    for meta in sys.meta_path:
+        if isinstance(meta, LibraryModulesFinder):
+            sys.meta_path.remove(meta)
 
 
 
@@ -95,9 +80,6 @@ class TvbProfile():
     current = BaseSettingsProfile(False)
     env = Environment()
 
-    _meta_path_copier = MetaPathCopier()
-    _meta_path_copier.deepcopy()
-
 
     @classmethod
     def set_profile(cls, selected_profile, in_operation=False, run_init=True):
@@ -114,8 +96,7 @@ class TvbProfile():
             sys.setdefaultencoding('utf-8')
 
         if selected_profile is not None:
-            ## Restore sys.meta_path, as some profiles (Library) are adding something
-            cls._meta_path_copier.restore()
+            cleanup_metapath()
 
             cls._load_framework_profiles(selected_profile)
             cls._build_profile_class(selected_profile, in_operation, run_init)
