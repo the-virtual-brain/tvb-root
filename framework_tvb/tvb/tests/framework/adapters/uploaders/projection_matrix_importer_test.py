@@ -43,8 +43,7 @@ from tvb.core.adapters.abcadapter import ABCAdapter
 from tvb.core.services.flow_service import FlowService
 from tvb.core.entities.file.files_helper import FilesHelper
 from tvb.core.entities.transient.structure_entities import DataTypeMetaData
-from tvb.datatypes.projections import ProjectionRegionEEG, ProjectionSurfaceEEG
-from tvb.datatypes.connectivity import Connectivity
+from tvb.datatypes.projections import ProjectionSurfaceEEG
 from tvb.datatypes.sensors import SensorsEEG
 from tvb.datatypes.surfaces import CorticalSurface
 
@@ -61,8 +60,6 @@ class ProjectionMatrixTest(TransactionalTestCase):
         self.test_user = TestFactory.create_user("UserPM")
         self.test_project = TestFactory.import_default_project(self.test_user)
 
-        self.connectivity = TestFactory.get_entity(self.test_project, Connectivity())
-        self.assertTrue(self.connectivity is not None)
         self.surface = TestFactory.get_entity(self.test_project, CorticalSurface())
         self.assertTrue(self.surface is not None)
         self.sensors = TestFactory.get_entity(self.test_project, SensorsEEG())
@@ -75,27 +72,6 @@ class ProjectionMatrixTest(TransactionalTestCase):
         """
         FilesHelper().remove_project_structure(self.test_project.name)
 
-    
-    def test_happy_flow_region_import(self):
-        """
-        Verifies the happy flow for importing a region.
-        """
-        dt_count_before = TestFactory.get_entity_count(self.test_project, ProjectionRegionEEG())
-        group = dao.find_group('tvb.adapters.uploaders.projection_matrix_importer', 'ProjectionMatrixRegionEEGImporter')
-        importer = ABCAdapter.build_adapter(group)
-
-        zip_path = os.path.join(os.path.abspath(os.path.dirname(dataset.__file__)), 'region_conn_74_eeg_1020_62.mat')
-        args = {'projection_file': zip_path,
-                'dataset_name': 'ProjectionMatrix',
-                'connectivity': self.connectivity.gid,
-                'sensors': self.sensors.gid,
-                DataTypeMetaData.KEY_SUBJECT: DataTypeMetaData.DEFAULT_SUBJECT}
-
-        FlowService().fire_operation(importer, self.test_user, self.test_project.id, **args)
-        dt_count_after = TestFactory.get_entity_count(self.test_project, ProjectionRegionEEG())
-
-        self.assertEqual(dt_count_before + 1, dt_count_after)
-        
         
     def test_happy_flow_surface_import(self):
         """
@@ -109,7 +85,6 @@ class ProjectionMatrixTest(TransactionalTestCase):
         zip_path = os.path.join(os.path.abspath(os.path.dirname(dataset.__file__)), 'surface_reg_13_eeg_62.mat')
         args = {'projection_file': zip_path,
                 'dataset_name': 'ProjectionMatrix',
-                'connectivity': self.connectivity.gid,
                 'sensors': self.sensors.gid,
                 'surface': self.surface.gid,
                 DataTypeMetaData.KEY_SUBJECT: DataTypeMetaData.DEFAULT_SUBJECT}

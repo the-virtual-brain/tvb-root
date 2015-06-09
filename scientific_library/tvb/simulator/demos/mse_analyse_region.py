@@ -145,11 +145,11 @@ def configure_simulation(stimulate):
     # eeg projection matrix from regions to sensors
     LOG.info("Reading sensors info")
     root_path = os.path.dirname(tvb_data.__file__)
-    proj_mat_path = os.path.join(root_path, 'projectionMatrix', "region_conn_74_eeg_1020_62.mat")
+    proj_mat_path = os.path.join(root_path, 'projectionMatrix', "surface_reg_13_eeg_62.mat")
     matlab_data = io.matlab.loadmat(proj_mat_path)
     eeg_projection = matlab_data["ProjectionMatrix"]
 
-    pr = projections.ProjectionRegionEEG()
+    pr = projections.ProjectionSurfaceEEG()
     pr.projection_data = eeg_projection
 
     #Initialise a Model, Connectivity, Coupling, set speed.
@@ -165,7 +165,7 @@ def configure_simulation(stimulate):
 
     # Recording techniques
     what_to_watch = (monitors.TemporalAverage(period=1e3 / 4096.),
-                     monitors.EEG(projection_matrix_data=pr, period=1e3 / 4096.))
+                     monitors.EEG(projection=pr, period=1e3 / 4096.))
     # Stimulation paradigm
     if stimulate:
         stimulus = build_stimulus(white_matter)

@@ -31,11 +31,11 @@
 """
 .. moduleauthor:: Mihai Andrei <mihai.andrei@codemart.ro>
 """
+
 import numpy
 from tvb.core.adapters.abcadapter import ABCAsynchronous
 from tvb.core.entities.storage import dao
 from tvb.datatypes.connectivity import Connectivity
-from tvb.datatypes.projections import ProjectionRegionEEG
 from tvb.datatypes.region_mapping import RegionMapping
 
 
@@ -58,7 +58,7 @@ class ConnectivityCreator(ABCAsynchronous):
 
 
     def get_output(self):
-        return [Connectivity, RegionMapping, ProjectionRegionEEG]
+        return [Connectivity, RegionMapping]
 
 
     def get_required_disk_size(self, original_connectivity, new_weights, new_tracts, interest_area_indexes, **kwargs):
@@ -67,7 +67,7 @@ class ConnectivityCreator(ABCAsynchronous):
         arrays_nr_elems = ( 1 + 3 + 1 + 3 ) * n  # areas, centres, hemispheres, orientations
         matrices_estimate = (matrices_nr_elems + arrays_nr_elems) * numpy.array(0).itemsize
         labels_guesstimate = n * numpy.array(['some label']).nbytes
-        return (matrices_estimate + labels_guesstimate)/1024
+        return (matrices_estimate + labels_guesstimate) / 1024
 
 
     def get_required_memory_size(self, **_):
@@ -84,17 +84,15 @@ class ConnectivityCreator(ABCAsynchronous):
             result_connectivity = original_connectivity.cut_new_connectivity_from_ordered_arrays(
                                         new_weights, interest_area_indexes, self.storage_path, new_tracts)
             return [result_connectivity]
+
         else:
             result = []
             result_connectivity = original_connectivity.branch_connectivity_from_ordered_arrays(
-                                        new_weights, interest_area_indexes, self.storage_path, new_tracts)
+                new_weights, interest_area_indexes, self.storage_path, new_tracts)
             result.append(result_connectivity)
 
             linked_region_mappings = dao.get_generic_entity(RegionMapping, original_connectivity.gid, '_connectivity')
             for mapping in linked_region_mappings:
                 result.append(mapping.generate_new_region_mapping(result_connectivity.gid, self.storage_path))
 
-            linked_projection = dao.get_generic_entity(ProjectionRegionEEG, original_connectivity.gid, '_sources')
-            for projection in linked_projection:
-                result.append(projection.generate_new_projection(result_connectivity.gid, self.storage_path))
             return result

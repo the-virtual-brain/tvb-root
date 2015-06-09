@@ -42,33 +42,8 @@ class ProjectionMatrixFramework(data.ProjectionMatrixData):
     __tablename__ = None
 
 
-    
-class ProjectionRegionEEGFramework(data.ProjectionRegionEEGData):
-    """ This class exists to add framework methods to ProjectionRegionEEGData. """
-    __tablename__ = None
-    
-    def generate_new_projection(self, connectivity_gid, storage_path):
-        """
-        Generate a new projection matrix with the given connectivity gid from an 
-        existing Region Projection corresponding to the parent connectivity.
-        """
-        new_projection = self.__class__()
-        new_projection.storage_path = storage_path
-        new_projection._sources = connectivity_gid
-        new_projection._sensors = self._sensors
-        new_projection.projection_data = self.projection_data
-        return new_projection
-
-
-
 class ProjectionSurfaceEEGFramework(data.ProjectionSurfaceEEGData):
     """ This class exists to add framework methods to ProjectionSurfaceEEGData. """
-    __tablename__ = None
-
-
-
-class ProjectionRegionMEGFramework(data.ProjectionRegionMEGData):
-    """ This class exists to add framework methods to ProjectionRegionMEGData. """
     __tablename__ = None
 
 

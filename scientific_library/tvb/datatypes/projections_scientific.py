@@ -44,22 +44,10 @@ class ProjectionMatrixScientific(data.ProjectionMatrixData):
 
 
 
-class ProjectionRegionEEGScientific(data.ProjectionRegionEEGData):
-    """ This class exists to add scientific methods to ProjectionRegionEEGData. """
-    __tablename__ = None
-
-
-
 class ProjectionSurfaceEEGScientific(data.ProjectionSurfaceEEGData):
     """ This class exists to add scientific methods to ProjectionSurfaceEEGData. """
     __tablename__ = None
     
-
-
-class ProjectionRegionMEGScientific(data.ProjectionRegionMEGData):
-    """ This class exists to add scientific methods to ProjectionRegionMEGData. """
-    __tablename__ = None
-
 
 
 class ProjectionSurfaceMEGScientific(data.ProjectionSurfaceMEGData):

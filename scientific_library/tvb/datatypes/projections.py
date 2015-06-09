@@ -56,29 +56,10 @@ class ProjectionMatrix(framework.ProjectionMatrixFramework, scientific.Projectio
         
     
     """
-    pass
+    @property
+    def shape(self):
+        return self.projection_data.shape
 
-
-    
-class ProjectionRegionEEG(framework.ProjectionRegionEEGFramework, 
-                          scientific.ProjectionRegionEEGScientific, ProjectionMatrix):
-    """
-    This class brings together the scientific and framework methods that are
-    associated with the ProjectionMatrix DataType.
-    
-    ::
-        
-                          ProjectionRegionEEGData
-                                     |
-                                    / \\
-        ProjectionRegionEEGFramework   ProjectionRegionEEGScientific
-                                    \ /
-                                     |
-                           ProjectionRegionEEG
-        
-    
-    """
-    pass
 
 
 
@@ -99,28 +80,6 @@ class ProjectionSurfaceEEG(framework.ProjectionSurfaceEEGFramework,
                           ProjectionSurfaceEEG
         
     
-    """
-    pass
-
-
-
-class ProjectionRegionMEG(framework.ProjectionRegionMEGFramework,
-                          scientific.ProjectionRegionMEGScientific, ProjectionMatrix):
-    """
-    This class brings together the scientific and framework methods that are
-    associated with the ProjectionMatrix DataType.
-
-    ::
-
-                          ProjectionRegionMEGData
-                                     |
-                                    / \\
-        ProjectionRegionMEGFramework   ProjectionRegionMEGScientific
-                                    \ /
-                                     |
-                           ProjectionRegionMEG
-
-
     """
     pass
 

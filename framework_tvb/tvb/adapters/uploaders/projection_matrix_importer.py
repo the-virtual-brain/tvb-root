@@ -37,23 +37,23 @@ from tvb.basic.filters.chain import FilterChain
 from tvb.basic.logger.builder import get_logger
 from tvb.core.adapters.exceptions import LaunchException
 from tvb.datatypes.surfaces import CorticalSurface
-from tvb.datatypes.connectivity import Connectivity
 from tvb.datatypes.sensors_data import SensorsData
-from tvb.datatypes.sensors import SensorsEEG, SensorsMEG, SensorsInternal
-from tvb.datatypes.projections import ProjectionSurfaceEEG, ProjectionRegionEEG
-from tvb.datatypes.projections import ProjectionSurfaceMEG, ProjectionRegionMEG
+from tvb.datatypes.sensors import SensorsEEG, SensorsInternal
+from tvb.datatypes.projections import ProjectionSurfaceEEG
+from tvb.datatypes.projections import ProjectionSurfaceMEG
 import scipy.io
 
 DEFAULT_DATASET_NAME = "ProjectionMatrix"
 
 
-class ProjectionMatrixRegionEEGImporter(ABCUploader):
+
+class ProjectionMatrixSurfaceEEGImporter(ABCUploader):
     """
-    Upload ProjectionMatrix Region -> EEG/MEG Sensors from a MAT file.
+    Upload ProjectionMatrix Cortical Surface -> EEG/MEG Sensors from a MAT file.
     """
 
-    _ui_name = "Projection Matrix Regions - EEG/MEG"
-    _ui_description = "Upload a Projection Matrix between Connectivity and EEG/MEG Sensors."
+    _ui_name = "Projection Matrix Surface - EEG/MEG"
+    _ui_description = "Upload a Projection Matrix between a Brain Cortical Surface and EEG/MEG Sensors."
     logger = get_logger(__name__)
 
 
@@ -69,51 +69,25 @@ class ProjectionMatrixRegionEEGImporter(ABCUploader):
                  'label': 'Matlab dataset name', 'default': DEFAULT_DATASET_NAME,
                  'description': 'Name of the MATLAB dataset where data is stored'},
 
-                {'name': 'connectivity', 'label': 'Large Scale Connectivity',
-                 'type': Connectivity, 'required': True, 'datatype': True,
-                 'description': 'The Connectivity Regions used by the uploaded projection matrix.'},
+                {'name': 'surface', 'label': 'Brain Cortical Surface',
+                 'type': CorticalSurface, 'required': True, 'datatype': True,
+                 'description': 'The Brain Surface used by the uploaded projection matrix.'},
 
                 {'name': 'sensors', 'label': 'Sensors',
                  'type': SensorsData, 'required': True, 'datatype': True,
                  'conditions': FilterChain(fields=[FilterChain.datatype + '.type'], operations=["in"],
                                            values=[['SensorsEEG', 'SensorsMEG']]),
                  'description': 'The Sensors used in for current projection.'}
-                ]
-              
-                             
+        ]
+
+
     def get_output(self):
-        return [ProjectionRegionEEG, ProjectionRegionMEG]
+        return [ProjectionSurfaceEEG, ProjectionSurfaceMEG]
 
 
-    def launch(self, projection_file, dataset_name, connectivity, sensors):
+    def launch(self, projection_file, surface, sensors, dataset_name=DEFAULT_DATASET_NAME):
         """
         Creates ProjectionMatrix entity from uploaded data.
-
-        :param projection_file: a mat file containing projection matrix values which map \
-                                the connectivity to the sensors; the matrix size should be \
-                                `connectivity.number_of_regions` x `sensors.number_of_sensors`
-
-        :raises LaunchException: when no connectivity is specified
-        """
-
-        if connectivity is None:
-            raise LaunchException("No source connectivity selected."
-                                  " Please initiate upload again and select a connectivity.")
-
-        if isinstance(sensors, SensorsEEG):
-            projection_matrix = ProjectionRegionEEG(storage_path=self.storage_path)
-        else:
-            projection_matrix = ProjectionRegionMEG(storage_path=self.storage_path)
-
-        ## Actual full expected shape is no_of_sensors x sources_size
-        expected_no = connectivity.number_of_regions
-
-        return self.generic_launch(projection_file, dataset_name, connectivity, sensors, expected_no, projection_matrix)
-        
-        
-    def generic_launch(self, projection_file, dataset_name, sources, sensors, expected_shape, projection_matrix):
-        """
-        Generic method, to be called also for preparing a Region EEG/MEG Projection import.
 
         :raises LaunchException: when
                     * no projection_file or sensors are specified
@@ -125,69 +99,37 @@ class ProjectionMatrixRegionEEGImporter(ABCUploader):
 
         if sensors is None:
             raise LaunchException("No sensors selected. Please initiate upload again and select one.")
-        
+
+        if surface is None:
+            raise LaunchException("No source selected. Please initiate upload again and select a source.")
+        expected_shape = surface.number_of_vertices
+
         self.logger.debug("Reading projection matrix from uploaded file...")
         eeg_projection_data = self.read_matlab_data(projection_file, dataset_name)
-        
+
         if eeg_projection_data is None or len(eeg_projection_data) == 0:
             raise LaunchException("Invalid (empty) dataset...")
-        
+
         if eeg_projection_data.shape[0] != sensors.number_of_sensors:
             raise LaunchException("Invalid Projection Matrix shape[0]: %d Expected: %d" % (eeg_projection_data.shape[0],
                                                                                            sensors.number_of_sensors))
-        
+
         if eeg_projection_data.shape[1] != expected_shape:
             raise LaunchException("Invalid Projection Matrix shape[1]: %d Expected: %d" % (eeg_projection_data.shape[1],
                                                                                            expected_shape))
-        
+
         self.logger.debug("Creating Projection Matrix instance")
-        projection_matrix.sources = sources
+        if isinstance(sensors, SensorsEEG):
+            projection_matrix = ProjectionSurfaceEEG(storage_path=self.storage_path)
+        else:
+            projection_matrix = ProjectionSurfaceMEG(storage_path=self.storage_path)
+        projection_matrix.sources = surface
         projection_matrix.sensors = sensors
         if eeg_projection_data is not None:
             projection_matrix.projection_data = eeg_projection_data
         return [projection_matrix]
 
- 
- 
 
-class ProjectionMatrixSurfaceEEGImporter(ProjectionMatrixRegionEEGImporter):
-    """
-    Upload ProjectionMatrix Cortical Surface -> EEG/MEG Sensors from a MAT file.
-    """
-
-    _ui_name = "Projection Matrix Surface - EEG/MEG"
-    _ui_description = "Upload a Projection Matrix between a Brain Cortical Surface and EEG/MEG Sensors."
- 
- 
-    def get_upload_input_tree(self):
-        """
-        Define input parameters for this importer.
-        """
-        input_tree = super(ProjectionMatrixSurfaceEEGImporter, self).get_upload_input_tree()
-        input_tree[2] = {'name': 'surface', 'label': 'Brain Cortical Surface', 
-                         'type': CorticalSurface, 'required': True, 'datatype': True,
-                         'description': 'The Brain Surface used by the uploaded projection matrix.'}
-        return input_tree
-              
-                             
-    def get_output(self):
-        return [ProjectionSurfaceEEG, ProjectionSurfaceMEG]
-
-    
-    def launch(self, projection_file, surface, sensors, dataset_name=DEFAULT_DATASET_NAME):
-        """
-        Creates ProjectionMatrix entity from uploaded data.
-        """
-        if surface is None:
-            raise LaunchException("No source selected. Please initiate upload again and select a source.")
-        if isinstance(sensors, SensorsEEG):
-            projection_matrix = ProjectionSurfaceEEG(storage_path=self.storage_path)
-        else:
-            projection_matrix = ProjectionSurfaceMEG(storage_path=self.storage_path)
-        expected_shape = surface.number_of_vertices
-        
-        return self.generic_launch(projection_file, dataset_name, surface, sensors, expected_shape, projection_matrix)
-   
 
 class BrainstormGainMatrixImporter(ABCUploader):
     """
@@ -207,6 +149,7 @@ class BrainstormGainMatrixImporter(ABCUploader):
     _ui_name = "Brainstorm Gain Matrix for s/M/EEG"
     _ui_description = "Upload a gain matrix from Brainstorm for sEEG, EEG or MEG sensors."
 
+
     def get_upload_input_tree(self):
         "Defines input parameters for this uploader"
         sens_filt = FilterChain(
@@ -225,8 +168,10 @@ class BrainstormGainMatrixImporter(ABCUploader):
              'required': True, 'datatype': True, 'conditions': sens_filt,
              'description': 'Sensors for which this gain matrix was computed'}]
 
+
     def get_output(self):
         return [ProjectionSurfaceEEG, ProjectionSurfaceMEG]
+
 
     def launch(self, filename, surface, sensors):
         if any(a is None for a in (file, surface, sensors)):
@@ -250,13 +195,13 @@ class BrainstormGainMatrixImporter(ABCUploader):
                 'TVB requires that the head model be computed with a cortical '
                 'source space, which does not appear to be the case for this '
                 'uploaded head model.')
-             
+
         n_sens = sensors.number_of_sensors
         n_src = surface.number_of_vertices
         # copy to put in C-contiguous memory layout
         gain, loc, ori = [mat[k].copy() for k in req_fields[:3]]
 
-        if gain.shape[0] != n_sens or (gain.shape[1]/3) != n_src:
+        if gain.shape[0] != n_sens or (gain.shape[1] / 3) != n_src:
             raise LaunchException(
                 'The dimensions of the uploaded head model (%d sensors, %d '
                 'sources) do not match the selected sensor set (%d sensors) '
