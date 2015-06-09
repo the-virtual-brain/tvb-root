@@ -222,9 +222,9 @@ class SurfacesTest(BaseTestCase):
 
         dt.configure()
         summary_info = dt.summary_info
-        self.assertTrue(abs(summary_info['Region area, maximum (mm:math:`^2`)'] - 9119.4540365252615) < 0.00000001)
-        self.assertTrue(abs(summary_info['Region area, mean (mm:math:`^2`)'] - 3366.2542250541251) < 0.00000001)
-        self.assertTrue(abs(summary_info['Region area, minimum (mm:math:`^2`)'] - 366.48271886512993) < 0.00000001)
+        self.assertTrue(abs(summary_info['Region area, maximum (mm:math:`^2`)'] - 9333.39) < 0.01)
+        self.assertTrue(abs(summary_info['Region area, mean (mm:math:`^2`)'] - 3038.51) < 0.01)
+        self.assertTrue(abs(summary_info['Region area, minimum (mm:math:`^2`)'] - 540.90) < 0.01)
         self.assertEqual(dt.get_data_shape('vertices'), (16384, 3))
         self.assertEqual(dt.get_data_shape('vertex_normals'), (16384, 3))
         self.assertEqual(dt.get_data_shape('triangles'), (32760, 3))

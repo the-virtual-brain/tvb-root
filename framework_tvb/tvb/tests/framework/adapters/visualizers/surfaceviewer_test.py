@@ -48,8 +48,8 @@ class SurfaceViewersTest(TransactionalTestCase):
 
     EXPECTED_KEYS = {'urlVertices': None, 'urlTriangles': None, 'urlLines': None, 'urlNormals': None,
                      'urlRegionMap': None, 'biHemispheric': False, 'hemisphereChunkMask': None,
-                     'noOfMeasurePoints': 74, 'urlMeasurePoints': None, 'boundaryURL': None, 'minMeasure': 0,
-                     'maxMeasure': 74, 'clientMeasureUrl': None}
+                     'noOfMeasurePoints': 76, 'urlMeasurePoints': None, 'boundaryURL': None, 'minMeasure': 0,
+                     'maxMeasure': 76, 'clientMeasureUrl': None}
 
     def setUp(self):
         """
