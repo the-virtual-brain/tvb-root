@@ -42,9 +42,3 @@ try:
 except NameError:
     ## Ignore __path__ not defined when called from sphinx
     __path__ = [__name__]
-
-if 'tvb' in __path__:
-    # We want the order in PYTHONPATH to have an influence in case we have both TVB Scientific Library
-    # and TVB Framework present.
-    # So just remove tvb from __path__ since this will only influence relative imports.
-    __path__.remove('tvb')
