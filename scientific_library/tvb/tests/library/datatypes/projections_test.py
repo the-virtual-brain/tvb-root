@@ -27,11 +27,11 @@
 #   Frontiers in Neuroinformatics (7:10. doi: 10.3389/fninf.2013.00010)
 #
 #
-"""
-Created on Mar 20, 2013
 
+"""
 .. moduleauthor:: Bogdan Neacsa <bogdan.neacsa@codemart.ro>
 """
+
 if __name__ == "__main__":
     from tvb.tests.library import setup_test_console_env
     setup_test_console_env()
@@ -40,7 +40,8 @@ import unittest
 
 from tvb.datatypes import projections
 from tvb.tests.library.base_testcase import BaseTestCase
-        
+
+
 class PatternsTest(BaseTestCase):
     """
     Tests the defaults for `tvb.datatypes.projections` module.
@@ -53,18 +54,20 @@ class PatternsTest(BaseTestCase):
         self.assertTrue(dt.projection_data is None)
         
         
-    def test_projectionregioneeg(self):
-        dt = projections.ProjectionRegionEEG()
-        self.assertTrue(dt.sources is None)
-        self.assertTrue(dt.sensors is None)
-        self.assertTrue(dt.projection_data is None)
-        
-        
-    def test_projectionsurfaceeeg(self):
+    def test_projection_surface_eeg(self):
         dt = projections.ProjectionSurfaceEEG()
         self.assertTrue(dt.sources is None)
         self.assertTrue(dt.skin_air is None)
         self.assertTrue(dt.skull_skin is None)                        
+        self.assertTrue(dt.sensors is None)
+        self.assertTrue(dt.projection_data is None)
+
+
+    def test_projection_surface_meg(self):
+        dt = projections.ProjectionSurfaceMEG()
+        self.assertTrue(dt.sources is None)
+        self.assertTrue(dt.skin_air is None)
+        self.assertTrue(dt.skull_skin is None)
         self.assertTrue(dt.sensors is None)
         self.assertTrue(dt.projection_data is None)
         

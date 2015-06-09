@@ -44,7 +44,7 @@ from tvb.datatypes.local_connectivity_data import LocalConnectivityData
 from tvb.datatypes.mapped_values import DatatypeMeasure, ValueWrapper
 from tvb.datatypes.mode_decompositions_data import IndependentComponentsData, PrincipalComponentsData
 from tvb.datatypes.patterns_data import StimuliRegionData, StimuliSurfaceData
-from tvb.datatypes.projections_data import ProjectionRegionEEGData, ProjectionSurfaceEEGData
+from tvb.datatypes.projections_data import ProjectionSurfaceEEGData
 from tvb.datatypes.region_mapping_data import RegionMappingData
 from tvb.datatypes.simulation_state import SimulationState
 from tvb.datatypes.temporal_correlations_data import CrossCorrelationData
@@ -77,7 +77,6 @@ DATATYPES_FOR_DOCUMENTATION = {
     sensors.SensorsInternalData: "Sensors Internal",
     StimuliRegionData: "Stimuli Region",
     StimuliSurfaceData: "Stimuli Surface",
-    ProjectionRegionEEGData: "Projection Region to EEG",
     ProjectionSurfaceEEGData: "Projection Surface to EEG",
     LocalConnectivityData: "Local Connectivity",
     RegionMappingData: "Region Mapping",
