@@ -138,11 +138,10 @@ def copy_distribution_dataset(dist_path, library_path):
                      ("sensors.EEG_unit_vectors_BrainProducts_62.txt.bz2", "$OUTSIDE.EEG_Sensors.txt.bz2"),
                      ("sensors.meg_channels_reg13.txt.bz2", "$OUTSIDE.MEG_Sensors.txt.bz2"),
 
-                     ("connectivity.connectivity_74.zip", "$INSIDE.connectivity.connectivity_74.zip"),
+                     ("connectivity.connectivity_74.zip", "$INSIDE.connectivity.connectivity_76.zip"),
                      ("connectivity.__init__.py", "$INSIDE.connectivity.__init__.py"),
 
                      ("projectionMatrix.surface_reg_13_eeg_62.mat", "$INSIDE.projectionMatrix.surface_reg_13_eeg_62.mat"),
-                     ("projectionMatrix.region_conn_74_eeg_1020_62.mat", "$INSIDE.projectionMatrix.region_conn_74_eeg_1020_62.mat"),
                      ("projectionMatrix.__init__.py", "$INSIDE.projectionMatrix.__init__.py"),
 
                      ("sensors.EEG_unit_vectors_BrainProducts_62.txt.bz2", "$INSIDE.sensors.EEG_unit_vectors_BrainProducts_62.txt.bz2"),

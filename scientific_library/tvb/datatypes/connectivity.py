@@ -63,7 +63,7 @@ class Connectivity(connectivity_scientific.ConnectivityScientific, connectivity_
     """
 
     @staticmethod
-    def from_file(source_file="connectivity_74.zip", instance=None):
+    def from_file(source_file="connectivity_76.zip", instance=None):
 
         if instance is None:
             result = Connectivity()
