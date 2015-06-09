@@ -98,10 +98,7 @@ class LocalConnectivityCreator(ABCAsynchronous):
         """
         Return the required memory to run this algorithm.
         """
-        if 'surface' in kwargs:
-            surface = kwargs['surface']
-            return surface.number_of_vertices * surface.number_of_vertices * 8.0
-        return -1
+        return self.get_required_disk_size(**kwargs)
 
 
 

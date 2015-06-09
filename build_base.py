@@ -134,7 +134,7 @@ def copy_distribution_dataset(dist_path, library_path):
     included_data = [("__init__.py", "$INSIDE.__init__.py"),
                      ("Default_Project.zip", "$INSIDE.Default_Project.zip"),
 
-                     ("connectivity.connectivity_96.zip", "$OUTSIDE.connectivity_regions_96.zip"),
+                     ("connectivity.connectivity_192.zip", "$OUTSIDE.connectivity_regions_192.zip"),
                      ("sensors.EEG_unit_vectors_BrainProducts_62.txt.bz2", "$OUTSIDE.EEG_Sensors.txt.bz2"),
                      ("sensors.meg_channels_reg13.txt.bz2", "$OUTSIDE.MEG_Sensors.txt.bz2"),
 
@@ -146,7 +146,6 @@ def copy_distribution_dataset(dist_path, library_path):
 
                      ("regionMapping.__init__.py", "$INSIDE.regionMapping.__init__.py"),
                      ("regionMapping.regionMapping_16k_76.txt", "$INSIDE.regionMapping.regionMapping_16k_76.txt"),
-                     ("regionMapping.regionMapping_16k_192.txt", "$INSIDE.regionMapping.regionMapping_16k_192.txt"),
 
                      ("sensors.EEG_unit_vectors_BrainProducts_62.txt.bz2", "$INSIDE.sensors.EEG_unit_vectors_BrainProducts_62.txt.bz2"),
                      ("sensors.meg_channels_reg13.txt.bz2", "$INSIDE.sensors.meg_channels_reg13.txt.bz2"),
