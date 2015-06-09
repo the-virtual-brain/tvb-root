@@ -41,6 +41,7 @@ import sys
 
 class Environment():
 
+    IS_WORK_IN_PROGRESS = False
 
     def is_framework_present(self):
         """

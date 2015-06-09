@@ -394,14 +394,15 @@ class ABCAdapter(object):
                 return True
         ##### Data can't be mapped on any supported type !!
         return False
-    
-    
+
+
     def _is_group_launch(self):
         """
         Return true if this adapter is launched from a group of operations
         """
         operation = dao.get_operation_by_id(self.operation_id)
         return operation.fk_operation_group is not None
+
 
     @staticmethod
     def load_entity_by_gid(data_gid):
@@ -445,14 +446,14 @@ class ABCAdapter(object):
         """
         logger = get_logger("ABCAdapter")
         try:
-            if TvbProfile.env.is_development():
-                mod = importlib.import_module(algo_group.module)
-                reload(mod)
-                adapter = getattr(mod, algo_group.classname)
-                logger.info("reloaded %r from %r", adapter, mod)
-            else:
-                adapter = __import__(algo_group.module, globals(), locals(), [algo_group.classname])
-                adapter = eval("adapter." + algo_group.classname)
+            ad_module = importlib.import_module(algo_group.module)
+            # This does no work for all adapters, so let it for manually choosing by developer
+            if TvbProfile.env.IS_WORK_IN_PROGRESS:
+                reload(ad_module)
+                logger.info("Reloaded %r", ad_module)
+
+            adapter = getattr(ad_module, algo_group.classname)
+
             if algo_group.init_parameter is not None and len(algo_group.init_parameter) > 0:
                 adapter_instance = adapter(str(algo_group.init_parameter))
             else:
@@ -689,7 +690,7 @@ class ABCAdapter(object):
                 equation_type = input_data.get(self.KEY_DTYPE, None)
                 if equation_type is None:
                     self.log.warning("Cannot figure out type of equation from input dictionary: %s. "
-                                     "Returning []." % (str(input_data,)))
+                                     "Returning []." % (str(input_data, )))
                     return []
                 splitted_class = equation_type.split('.')
                 module = '.'.join(splitted_class[:-1])
