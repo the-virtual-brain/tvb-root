@@ -64,23 +64,6 @@ class ProjectionMatrix(framework.ProjectionMatrixFramework, scientific.Projectio
         return self.projection_data.shape
 
     @staticmethod
-    def load_region_projection_matrix(result, source_file):
-        source_full_path = try_get_absolute_path("tvb_data.projectionMatrix", source_file)
-        if source_file.endswith(".mat"):
-            # consider we have a brainstorm format
-            raise Exception(
-                    'Please import your Brainstorm Projection matrix by '
-                    'instantiating the surface projection Class')
-        elif source_file.endswith(".npy"):
-            # numpy array with the projectino matrix arleady computed
-            result.projection_data = numpy.load(source_full_path)
-        else:
-            raise Exception(
-                    'The projection matrix must be either a numpy array'
-                    ' or a brainstorm .mat file')
-        return result
-
-    @staticmethod
     def load_surface_projection_matrix(result, source_file):
         source_full_path = try_get_absolute_path("tvb_data.projectionMatrix", source_file)
         if source_file.endswith(".mat"):
@@ -97,7 +80,6 @@ class ProjectionMatrix(framework.ProjectionMatrixFramework, scientific.Projectio
                     ' or a brainstorm mat file')
         return result
 
-    
 
 
 class ProjectionSurfaceEEG(framework.ProjectionSurfaceEEGFramework, 
@@ -141,7 +123,7 @@ class ProjectionSurfaceMEG(framework.ProjectionSurfaceMEGFramework,
                                       |
                                      / \\
         ProjectionSurfaceMEGFramework   ProjectionSurfaceMEGScientific
-                                     \ /
+                                     \\ /
                                       |
                           ProjectionSurfaceMEG
 
@@ -158,35 +140,6 @@ class ProjectionSurfaceMEG(framework.ProjectionSurfaceMEGFramework,
         return result 
 
 
-class ProjectionRegionSEEG(framework.ProjectionRegionMEGFramework,
-                          scientific.ProjectionRegionMEGScientific, ProjectionMatrix):
-    """
-    This class brings together the scientific and framework methods that are
-    associated with the ProjectionMatrix DataType.
-
-    ::
-
-                          ProjectionRegionMEGData
-                                     |
-                                    / \\
-        ProjectionRegionMEGFramework   ProjectionRegionMEGScientific
-                                    \ /
-                                     |
-                           ProjectionRegionMEG
-
-
-    """
-
-    @staticmethod
-    def from_file(source_file='projection_SEEG_region.npy', instance=None):
-        if instance is None:
-            result = ProjectionRegionSEEG()
-        else:
-            result = instance
-        result = ProjectionMatrix.load_region_projection_matrix(result, source_file=source_file)
-        return result 
-
-
 class ProjectionSurfaceSEEG(framework.ProjectionSurfaceMEGFramework,
                            scientific.ProjectionSurfaceMEGScientific, ProjectionMatrix):
     """
@@ -199,7 +152,7 @@ class ProjectionSurfaceSEEG(framework.ProjectionSurfaceMEGFramework,
                                       |
                                      / \\
         ProjectionSurfaceMEGFramework   ProjectionSurfaceMEGScientific
-                                     \ /
+                                     \\ /
                                       |
                           ProjectionSurfaceMEG
 
