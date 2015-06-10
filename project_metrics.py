@@ -40,10 +40,22 @@ INTROSPECT_FOLDER = os.getcwd()
 IGNORED_LIST = {"__init__.py", "project_metrics.py"}
 
 TVB_LIST = []
+TVB_CODE_LINES = 0
 TEST_LIST = []
 CSS_LIST = []
 JS_LIST = []
 HTML_LIST = []
+
+def count_code_lines(filename):
+    count = 0
+    with open(filename, 'r') as fd:
+        for line in fd.readlines():
+            parts = line.strip().split()
+            if len(parts)==0 or parts[0].startswith('#'):
+                continue
+            count += 1
+    return count
+
 
 for pydir, _, pyfiles in os.walk(INTROSPECT_FOLDER):
     for pyfile in pyfiles:
@@ -51,6 +63,7 @@ for pydir, _, pyfiles in os.walk(INTROSPECT_FOLDER):
                                                                           or 'tvb.tests.library' in pydir):
             totalpath = os.path.join(pydir, pyfile)
             TVB_LIST.append((len(open(totalpath, "r").read().splitlines()), totalpath.split(INTROSPECT_FOLDER)[1]))
+            TVB_CODE_LINES += count_code_lines(totalpath)
         elif pyfile.endswith(".py") and pyfile not in IGNORED_LIST and 'externals' not in pydir \
                 and ('tvb.tests.framework' in pydir or 'tvb.tests.library' in pydir):
             totalpath = os.path.join(pydir, pyfile)
@@ -65,7 +78,7 @@ for pydir, _, pyfiles in os.walk(INTROSPECT_FOLDER):
             totalpath = os.path.join(pydir, pyfile)
             HTML_LIST.append((len(open(totalpath, "r").read().splitlines()), totalpath.split(INTROSPECT_FOLDER)[1]))
 
-print "\nTotal: %s lines in %s .py TVB files" % (sum([x[0] for x in TVB_LIST]), len(TVB_LIST))
+print "\nTotal: %s lines in %s .py TVB files (%d lines of code)" % (sum([x[0] for x in TVB_LIST]), len(TVB_LIST), TVB_CODE_LINES)
 
 print "\nTotal: %s lines in %s .py TEST files" % (sum([x[0] for x in TEST_LIST]), len(TEST_LIST))
 
@@ -81,5 +94,3 @@ TVB_LIST.extend(JS_LIST)
 TVB_LIST.extend(HTML_LIST)
 
 print "\nTotal: %s lines in %s tvb files (%s)" % (sum([x[0] for x in TVB_LIST]), len(TVB_LIST), INTROSPECT_FOLDER)
-
-
