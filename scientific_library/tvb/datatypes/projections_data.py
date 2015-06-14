@@ -30,84 +30,95 @@
 
 """
 The Data component of ProjectionMatrices DataTypes.
-
-.. moduleauthor:: Lia Domide <lia.domide@codemart.ro>
-.. moduleauthor:: Stuart A. Knock <Stuart Knock <stuart.knock@gmail.com>
 """
 
 import tvb.basic.traits.types_basic as basic
 import tvb.datatypes.arrays as arrays
-import tvb.datatypes.surfaces as surfaces_module
-import tvb.datatypes.sensors as sensors_module
+from tvb.datatypes import surfaces, sensors
 from tvb.basic.traits.types_mapped import MappedType
 
+EEG_POLYMORPHIC_IDENTITY = "projEEG"
+MEG_POLYMORPHIC_IDENTITY = "projMEG"
+SEEG_POLYMORPHIC_IDENTITY = "projSEEG"
 
 
-class ProjectionMatrixData(MappedType):
+
+class ProjectionData(MappedType):
     """
     Base DataType for representing a ProjectionMatrix.
-    The projection is between a source of type Connectivity regions or Surface and a set of Sensors.
+    The projection is between a source of type CorticalSurface and a set of Sensors.
     """
 
-    sources = MappedType(label="surface or region",
-                         default=None, required=True)
+    projection_type = basic.String
+
+    __mapper_args__ = {'polymorphic_on': 'projection_type'}
+
+    brain_skull = surfaces.BrainSkull(label="Brain Skull", default=None, required=False,
+                                      doc="""Boundary between skull and cortex domains.""")
+
+    skull_skin = surfaces.SkullSkin(label="Skull Skin", default=None, required=False,
+                                    doc="""Boundary between skull and skin domains.""")
+
+    skin_air = surfaces.SkinAir(label="Skin Air", default=None, required=False,
+                                doc="""Boundary between skin and air domains.""")
+
+    conductances = basic.Dict(label="Domain conductances", required=False,
+                              default={'air': 0.0, 'skin': 1.0, 'skull': 0.01, 'brain': 1.0},
+                              doc=""" A dictionary representing the conductances of ... """)
+
+    sources = surfaces.CorticalSurface(label="surface or region", default=None, required=True)
+
+    sensors = sensors.Sensors(label="Sensors", default=None, required=False,
+                              doc=""" A set of sensors to compute projection matrix for them. """)
+
+    projection_data = arrays.FloatArray(label="Projection Matrix Data", default=None, required=True)
 
 
-    ## We can not use base class sensors here due to polymorphic selection
-    sensors = MappedType(label="Sensors", default=None, required=False,
-                         doc=""" A set of sensors to compute projection matrix for them. """)
 
-    projection_data = arrays.FloatArray(label="Projection Matrix Data",
-                                        default=None, required=True)
-
-
-
-class ProjectionSurfaceEEGData(ProjectionMatrixData):
+class ProjectionSurfaceEEGData(ProjectionData):
     """
     Specific projection, from a CorticalSurface to EEG sensors.
     """
 
-    brain_skull = surfaces_module.BrainSkull(label="Brain Skull", default=None, required=False,
-                                             doc="""Boundary between skull and cortex domains.""")
+    __tablename__ = None
 
-    skull_skin = surfaces_module.SkullSkin(label="Skull Skin", default=None, required=False,
-                                           doc="""Boundary between skull and skin domains.""")
+    __mapper_args__ = {'polymorphic_identity': EEG_POLYMORPHIC_IDENTITY}
 
-    skin_air = surfaces_module.SkinAir(label="Skin Air", default=None, required=False,
-                                       doc="""Boundary between skin and air domains.""")
+    projection_type = basic.String(default=EEG_POLYMORPHIC_IDENTITY)
 
-    conductances = basic.Dict(label="Domain conductances", required=False,
-                              default={'air': 0.0, 'skin': 1.0, 'skull': 0.01, 'brain': 1.0},
-                              doc=""" A dictionary representing the conductances of ... """)
-
-    sensors = sensors_module.SensorsEEG
-
-    sources = surfaces_module.CorticalSurface
+    sensors = sensors.SensorsEEG
 
 
 
-class ProjectionSurfaceMEGData(ProjectionMatrixData):
+class ProjectionSurfaceMEGData(ProjectionData):
     """
     Specific projection, from a CorticalSurface to MEG sensors.
     """
 
-    brain_skull = surfaces_module.BrainSkull(label="Brain Skull", default=None, required=False,
-                                             doc="""Boundary between skull and cortex domains.""")
+    __tablename__ = None
 
-    skull_skin = surfaces_module.SkullSkin(label="Skull Skin", default=None, required=False,
-                                           doc="""Boundary between skull and skin domains.""")
+    __mapper_args__ = {'polymorphic_identity': MEG_POLYMORPHIC_IDENTITY}
 
-    skin_air = surfaces_module.SkinAir(label="Skin Air", default=None, required=False,
-                                       doc="""Boundary between skin and air domains.""")
+    projection_type = basic.String(default=MEG_POLYMORPHIC_IDENTITY)
 
-    conductances = basic.Dict(label="Domain conductances", required=False,
-                              default={'air': 0.0, 'skin': 1.0, 'skull': 0.01, 'brain': 1.0},
-                              doc=""" A dictionary representing the conductances of ... """)
+    sensors = sensors.SensorsMEG
 
-    sensors = sensors_module.SensorsMEG
 
-    sources = surfaces_module.CorticalSurface
-    
+
+class ProjectionSurfaceSEEGData(ProjectionData):
+    """
+    Specific projection, from a CorticalSurface to SEEG sensors.
+    """
+
+    __tablename__ = None
+
+    __mapper_args__ = {'polymorphic_identity': SEEG_POLYMORPHIC_IDENTITY}
+
+    projection_type = basic.String(default=SEEG_POLYMORPHIC_IDENTITY)
+
+    sensors = sensors.SensorsInternal
+
+
     
     
     

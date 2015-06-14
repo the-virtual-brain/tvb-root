@@ -27,19 +27,18 @@
 #   Frontiers in Neuroinformatics (7:10. doi: 10.3389/fninf.2013.00010)
 #
 #
+
 """
-
 The Framework component of ProjectionMatrices DataTypes.
-
-.. moduleauthor:: Lia Domide <lia.domide@codemart.ro>
 """
 
 import tvb.datatypes.projections_data as data
 
 
-class ProjectionMatrixFramework(data.ProjectionMatrixData):
+class ProjectionMatrixFramework(data.ProjectionData):
     """ This class exists to add framework methods to ProjectionMatrixData. """
     __tablename__ = None
+
 
 
 class ProjectionSurfaceEEGFramework(data.ProjectionSurfaceEEGData):
@@ -50,4 +49,10 @@ class ProjectionSurfaceEEGFramework(data.ProjectionSurfaceEEGData):
 
 class ProjectionSurfaceMEGFramework(data.ProjectionSurfaceMEGData):
     """ This class exists to add framework methods to ProjectionSurfaceMEGData. """
+    __tablename__ = None
+
+
+
+class ProjectionSurfaceSEEGFramework(data.ProjectionSurfaceSEEGData):
+    """ This class exists to add framework methods to ProjectionSurfaceSEEGData. """
     __tablename__ = None

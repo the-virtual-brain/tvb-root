@@ -33,12 +33,12 @@ methods that are associated with the surfaces data.
 
 .. moduleauthor:: Lia Domide <lia.domide@codemart.ro>
 """
-
+import numpy
+import scipy.io
 import tvb.datatypes.projections_scientific as scientific
 import tvb.datatypes.projections_framework as framework
 from tvb.basic.readers import try_get_absolute_path
-import numpy
-import scipy.io
+from tvb.datatypes import projections_data
 
 
 
@@ -49,7 +49,7 @@ class ProjectionMatrix(framework.ProjectionMatrixFramework, scientific.Projectio
     
     ::
         
-                        ProjectionMatrixData
+                        ProjectionData
                                  |
                                 / \\
         ProjectionMatrixFramework   ProjectionMatrixScientific
@@ -72,12 +72,10 @@ class ProjectionMatrix(framework.ProjectionMatrixFramework, scientific.Projectio
             gain, loc, ori = (mat[field] for field in 'Gain GridLoc GridOrient'.split())
             result.projection_data = (gain.reshape((gain.shape[0], -1, 3)) * ori).sum(axis=-1)
         elif source_file.endswith(".npy"):
-            # numpy array with the projectino matrix arleady computed
+            # numpy array with the projection matrix already computed
             result.projection_data = numpy.load(source_full_path)
         else:
-            raise Exception(
-                    'The projection matrix must be either a numpy array'
-                    ' or a brainstorm mat file')
+            raise Exception("The projection matrix must be either a numpy array or a brainstorm mat file")
         return result
 
 
@@ -100,6 +98,7 @@ class ProjectionSurfaceEEG(framework.ProjectionSurfaceEEGFramework,
         
     
     """
+    __mapper_args__ = {'polymorphic_identity': projections_data.EEG_POLYMORPHIC_IDENTITY}
 
     @staticmethod
     def from_file(source_file='projection_EEG_surface.npy', instance=None):
@@ -129,6 +128,7 @@ class ProjectionSurfaceMEG(framework.ProjectionSurfaceMEGFramework,
 
 
     """
+    __mapper_args__ = {'polymorphic_identity': projections_data.MEG_POLYMORPHIC_IDENTITY}
 
     @staticmethod
     def from_file(source_file='projection_MEG_surface.npy', instance=None):
@@ -140,24 +140,25 @@ class ProjectionSurfaceMEG(framework.ProjectionSurfaceMEGFramework,
         return result 
 
 
-class ProjectionSurfaceSEEG(framework.ProjectionSurfaceMEGFramework,
-                           scientific.ProjectionSurfaceMEGScientific, ProjectionMatrix):
+class ProjectionSurfaceSEEG(framework.ProjectionSurfaceSEEGFramework,
+                            scientific.ProjectionSurfaceSEEGScientific, ProjectionMatrix):
     """
     This class brings together the scientific and framework methods that are
     associated with the ProjectionMatrix DataType.
 
     ::
 
-                          ProjectionSurfaceMEGData
+                          ProjectionSurfaceSEEGData
                                       |
                                      / \\
-        ProjectionSurfaceMEGFramework   ProjectionSurfaceMEGScientific
+        ProjectionSurfaceSEEGFramework   ProjectionSurfaceSEEGScientific
                                      \\ /
                                       |
-                          ProjectionSurfaceMEG
+                          ProjectionSurfaceSEEG
 
 
     """
+    __mapper_args__ = {'polymorphic_identity': projections_data.SEEG_POLYMORPHIC_IDENTITY}
 
     @staticmethod
     def from_file(source_file='projection_SEEG_surface.npy', instance=None):

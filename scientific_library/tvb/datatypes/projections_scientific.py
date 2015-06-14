@@ -38,7 +38,7 @@ The Scientific component of ProjectionMatrices DataTypes.
 import tvb.datatypes.projections_data as data
 
 
-class ProjectionMatrixScientific(data.ProjectionMatrixData):
+class ProjectionMatrixScientific(data.ProjectionData):
     """ This class exists to add scientific methods to ProjectionMatrixData. """
     __tablename__ = None
 
@@ -52,4 +52,10 @@ class ProjectionSurfaceEEGScientific(data.ProjectionSurfaceEEGData):
 
 class ProjectionSurfaceMEGScientific(data.ProjectionSurfaceMEGData):
     """ This class exists to add scientific methods to ProjectionSurfaceMEGData. """
+    __tablename__ = None
+
+
+
+class ProjectionSurfaceSEEGScientific(data.ProjectionSurfaceSEEGData):
+    """ This class exists to add scientific methods to ProjectionSurfaceSEEGData. """
     __tablename__ = None
