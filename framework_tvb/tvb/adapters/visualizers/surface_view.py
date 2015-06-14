@@ -47,12 +47,10 @@ from tvb.datatypes.surfaces_data import SurfaceData
 def prepare_shell_surface_urls(project_id, shell_surface=None):
 
     if shell_surface is None:
-        shell_surface = dao.get_values_of_datatype(project_id, FaceSurface, page_size=1)[0]
+        shell_surface = dao.try_load_last_entity_of_type(project_id, FaceSurface)
 
         if not shell_surface:
             raise Exception('No Face object found in current project.')
-
-        shell_surface = ABCDisplayer.load_entity_by_gid(shell_surface[0][2])
 
     face_vertices, face_normals, _, face_triangles = shell_surface.get_urls_for_rendering()
     return json.dumps([face_vertices, face_normals, face_triangles])

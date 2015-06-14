@@ -78,9 +78,9 @@ class TestFactory():
         """
         Return the count of stored datatypes with class given by `datatype`
 
-        :param datatype: the class whose entities are counted
+        :param datatype: Take class from this instance amd count for this class
         """
-        return FlowService().get_available_datatypes(project.id, datatype.module + "." + datatype.type)[1]
+        return dao.count_datatypes(project.id, datatype.__class__)
 
 
     @staticmethod
