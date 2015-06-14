@@ -166,7 +166,7 @@ The following is a demo script for using TVB Command mode for various operations
 	## E.g. let's get all the connectivities for a specific subject
 	from tvb.datatypes.connectivity import Connectivity
     dt_filter = FilterChain(fields = [FilterChain.datatype + '.subject'], operations=["=="], values=['My fancy subject'])
-    returned_values = dao.get_values_of_datatype(project.id, Connectivity, dt_filter)
+    returned_values = dao.get_values_of_datatype(project.id, Connectivity, dt_filter)[0]
     print "Got from database values: %s" %(returned_values,)
 	
     ##----------------------------------------------------------------------------##

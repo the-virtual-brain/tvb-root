@@ -58,6 +58,7 @@ class OperationServiceTest(BaseTestCase):
     """
     Test class for the introspection module. Some tests from here do async launches. For those
     cases Transactional tests won't work.
+    TODO: this is still to be refactored, for being huge, with duplicates and many irrelevant checks
     """
 
 
@@ -79,6 +80,19 @@ class OperationServiceTest(BaseTestCase):
         """
         TvbProfile.current.MAX_DISK_SPACE = self.backup_hdd_size
         self.clean_database()
+
+
+    def _assert_no_dt2(self):
+        count = dao.count_datatypes(self.test_project.id, Datatype2)
+        self.assertEqual(0, count)
+
+
+    def _assert_stored_dt2(self, expected_cnt=1):
+        count = dao.count_datatypes(self.test_project.id, Datatype2)
+        self.assertEqual(expected_cnt, count)
+        datatype = dao.try_load_last_entity_of_type(self.test_project.id, Datatype2)
+        self.assertEqual(datatype.subject, DataTypeMetaData.DEFAULT_SUBJECT, "Wrong data stored.")
+        return datatype
 
 
     def test_datatypes_groups(self):
@@ -152,36 +166,21 @@ class OperationServiceTest(BaseTestCase):
         class_name = "TestAdapterHDDRequired"
         group = dao.find_group(module, class_name)
         adapter = FlowService().build_adapter_instance(group)
-        output = adapter.get_output()
-        output_type = output[0].__name__
         data = {"test": 100}
         TvbProfile.current.MAX_DISK_SPACE = float(adapter.get_required_disk_size(**data))
         tmp_folder = FilesHelper().get_project_folder(self.test_project, "TEMP")
 
-        dts = dao.get_values_of_datatype(self.test_project.id, Datatype2)[0]
-        self.assertEqual(len(dts), 0)
+        self._assert_no_dt2()
         self.operation_service.initiate_operation(self.test_user, self.test_project.id, adapter,
                                                   tmp_folder, method_name=ABCAdapter.LAUNCH_METHOD, **data)
-        dts = dao.get_values_of_datatype(self.test_project.id, Datatype2)[0]
-        self.assertEqual(len(dts), 1)
+        datatype = self._assert_stored_dt2()
 
-        datatype = dao.get_datatype_by_id(dts[0][0])
-        self.assertEqual(datatype.subject, DataTypeMetaData.DEFAULT_SUBJECT, "Wrong data stored.")
-        self.assertEqual(datatype.type, output_type, "Wrong data stored.")
-
-        #Now update the maximum disk size to be the size of the previously resulted datatypes (transform from kB to MB)
-        #plus what is estimated to be required from the next one (transform from B to MB)
+        # Now free some space and relaunch
         ProjectService().remove_datatype(self.test_project.id, datatype.gid)
-        dts = dao.get_values_of_datatype(self.test_project.id, Datatype2)[0]
-        self.assertEqual(len(dts), 0)
-
+        self._assert_no_dt2()
         self.operation_service.initiate_operation(self.test_user, self.test_project.id, adapter,
                                                   tmp_folder, method_name=ABCAdapter.LAUNCH_METHOD, **data)
-        dts = dao.get_values_of_datatype(self.test_project.id, Datatype2)[0]
-        self.assertEqual(len(dts), 1)
-        datatype = dao.get_datatype_by_id(dts[0][0])
-        self.assertEqual(datatype.subject, DataTypeMetaData.DEFAULT_SUBJECT, "Wrong data stored.")
-        self.assertEqual(datatype.type, output_type, "Wrong data stored.")
+        self._assert_stored_dt2()
 
 
     def test_launch_two_ops_HDD_with_space(self):
@@ -192,29 +191,21 @@ class OperationServiceTest(BaseTestCase):
         class_name = "TestAdapterHDDRequired"
         group = dao.find_group(module, class_name)
         adapter = FlowService().build_adapter_instance(group)
-        output = adapter.get_output()
-        output_type = output[0].__name__
         data = {"test": 100}
         TvbProfile.current.MAX_DISK_SPACE = 2 * float(adapter.get_required_disk_size(**data))
         tmp_folder = FilesHelper().get_project_folder(self.test_project, "TEMP")
+
         self.operation_service.initiate_operation(self.test_user, self.test_project.id, adapter,
                                                   tmp_folder, method_name=ABCAdapter.LAUNCH_METHOD, **data)
-        dts = dao.get_values_of_datatype(self.test_project.id, Datatype2)[0]
-        self.assertEqual(len(dts), 1)
-        datatype = dao.get_datatype_by_id(dts[0][0])
-        self.assertEqual(datatype.subject, DataTypeMetaData.DEFAULT_SUBJECT, "Wrong data stored.")
-        self.assertEqual(datatype.type, output_type, "Wrong data stored.")
+        datatype = self._assert_stored_dt2()
+
         #Now update the maximum disk size to be the size of the previously resulted datatypes (transform from kB to MB)
         #plus what is estimated to be required from the next one (transform from B to MB)
         TvbProfile.current.MAX_DISK_SPACE = float(datatype.disk_size) + float(adapter.get_required_disk_size(**data))
 
         self.operation_service.initiate_operation(self.test_user, self.test_project.id, adapter,
                                                   tmp_folder, method_name=ABCAdapter.LAUNCH_METHOD, **data)
-        dts = dao.get_values_of_datatype(self.test_project.id, Datatype2)[0]
-        self.assertEqual(len(dts), 2)
-        datatype = dao.get_datatype_by_id(dts[1][0])
-        self.assertEqual(datatype.subject, DataTypeMetaData.DEFAULT_SUBJECT, "Wrong data stored.")
-        self.assertEqual(datatype.type, output_type, "Wrong data stored.")
+        self._assert_stored_dt2(2)
 
 
     def test_launch_two_ops_HDD_full_space(self):
@@ -226,28 +217,23 @@ class OperationServiceTest(BaseTestCase):
         class_name = "TestAdapterHDDRequired"
         group = dao.find_group(module, class_name)
         adapter = FlowService().build_adapter_instance(group)
-        output = adapter.get_output()
-        output_type = output[0].__name__
+
         data = {"test": 100}
         TvbProfile.current.MAX_DISK_SPACE = (1 + float(adapter.get_required_disk_size(**data)))
         tmp_folder = FilesHelper().get_project_folder(self.test_project, "TEMP")
         self.operation_service.initiate_operation(self.test_user, self.test_project.id, adapter,
                                                   tmp_folder, method_name=ABCAdapter.LAUNCH_METHOD, **data)
-        dts = dao.get_values_of_datatype(self.test_project.id, Datatype2)[0]
-        self.assertEqual(len(dts), 1)
-        datatype = dao.get_datatype_by_id(dts[0][0])
-        self.assertEqual(datatype.subject, DataTypeMetaData.DEFAULT_SUBJECT, "Wrong data stored.")
-        self.assertEqual(datatype.type, output_type, "Wrong data stored.")
+
+        datatype = self._assert_stored_dt2()
         #Now update the maximum disk size to be less than size of the previously resulted datatypes (transform kB to MB)
         #plus what is estimated to be required from the next one (transform from B to MB)
         TvbProfile.current.MAX_DISK_SPACE = float(datatype.disk_size - 1) + \
-                                                float(adapter.get_required_disk_size(**data) - 1)
+                                            float(adapter.get_required_disk_size(**data) - 1)
 
         self.assertRaises(NoMemoryAvailableException, self.operation_service.initiate_operation, self.test_user,
                           self.test_project.id, adapter,
                           tmp_folder, method_name=ABCAdapter.LAUNCH_METHOD, **data)
-        dts = dao.get_values_of_datatype(self.test_project.id, Datatype2)[0]
-        self.assertEqual(len(dts), 1)
+        self._assert_stored_dt2()
 
 
     def test_launch_operation_HDD_with_space(self):
@@ -258,18 +244,13 @@ class OperationServiceTest(BaseTestCase):
         class_name = "TestAdapterHDDRequired"
         group = dao.find_group(module, class_name)
         adapter = FlowService().build_adapter_instance(group)
-        output = adapter.get_output()
-        output_type = output[0].__name__
         data = {"test": 100}
+
         TvbProfile.current.MAX_DISK_SPACE = float(adapter.get_required_disk_size(**data))
         tmp_folder = FilesHelper().get_project_folder(self.test_project, "TEMP")
         self.operation_service.initiate_operation(self.test_user, self.test_project.id, adapter,
                                                   tmp_folder, method_name=ABCAdapter.LAUNCH_METHOD, **data)
-        dts = dao.get_values_of_datatype(self.test_project.id, Datatype2)[0]
-        self.assertEqual(len(dts), 1)
-        datatype = dao.get_datatype_by_id(dts[0][0])
-        self.assertEqual(datatype.subject, DataTypeMetaData.DEFAULT_SUBJECT, "Wrong data stored.")
-        self.assertEqual(datatype.type, output_type, "Wrong data stored.")
+        self._assert_stored_dt2()
 
 
     def test_launch_operation_HDD_with_space_started_ops(self):
@@ -284,18 +265,12 @@ class OperationServiceTest(BaseTestCase):
                                             status=model.STATUS_STARTED, estimated_disk_size=space_taken_by_started)
         dao.store_entity(started_operation)
         adapter = FlowService().build_adapter_instance(group)
-        output = adapter.get_output()
-        output_type = output[0].__name__
         data = {"test": 100}
         TvbProfile.current.MAX_DISK_SPACE = float(adapter.get_required_disk_size(**data) + space_taken_by_started)
         tmp_folder = FilesHelper().get_project_folder(self.test_project, "TEMP")
         self.operation_service.initiate_operation(self.test_user, self.test_project.id, adapter,
                                                   tmp_folder, method_name=ABCAdapter.LAUNCH_METHOD, **data)
-        dts = dao.get_values_of_datatype(self.test_project.id, Datatype2)[0]
-        self.assertEqual(len(dts), 1)
-        datatype = dao.get_datatype_by_id(dts[0][0])
-        self.assertEqual(datatype.subject, DataTypeMetaData.DEFAULT_SUBJECT, "Wrong data stored.")
-        self.assertEqual(datatype.type, output_type, "Wrong data stored.")
+        self._assert_stored_dt2()
 
 
     def test_launch_operation_HDD_full_space(self):
@@ -312,8 +287,7 @@ class OperationServiceTest(BaseTestCase):
         self.assertRaises(NoMemoryAvailableException, self.operation_service.initiate_operation, self.test_user,
                           self.test_project.id, adapter,
                           tmp_folder, method_name=ABCAdapter.LAUNCH_METHOD, **data)
-        dts = dao.get_values_of_datatype(self.test_project.id, Datatype2)[0]
-        self.assertEqual(len(dts), 0)
+        self._assert_no_dt2()
 
 
     def test_launch_operation_HDD_full_space_started_ops(self):
@@ -334,8 +308,7 @@ class OperationServiceTest(BaseTestCase):
         self.assertRaises(NoMemoryAvailableException, self.operation_service.initiate_operation, self.test_user,
                           self.test_project.id, adapter,
                           tmp_folder, method_name=ABCAdapter.LAUNCH_METHOD, **data)
-        dts = dao.get_values_of_datatype(self.test_project.id, Datatype2)[0]
-        self.assertEqual(len(dts), 0)
+        self._assert_no_dt2()
 
 
     def test_stop_operation(self):
