@@ -60,7 +60,7 @@ class NIFTIImporter(ABCUploader):
         """
         Take as input a GZ archive or NII file.
         """
-        return [{'name': 'data_file', 'type': 'upload', 'required_type': '.nii, .gz, application/zip',
+        return [{'name': 'data_file', 'type': 'upload', 'required_type': '.nii, .gz, .zip',
                  'label': 'Please select file to import (gz or nii)', 'required': True},
 
                 {'name': 'apply_corrections', 'label': 'Apply Corrections', 'type': 'bool', 'default': False,

@@ -63,7 +63,7 @@ class RegionMapping_Importer(ABCUploader):
         """
         Define input parameters for this importer.
         """
-        return [{'name': 'mapping_file', 'type': 'upload', 'required_type': 'text/plain, application/zip, .bz2',
+        return [{'name': 'mapping_file', 'type': 'upload', 'required_type': '.txt, .zip, .bz2',
                  'label': 'Please upload region mapping file (txt, zip or bz2 format)', 'required': True,
                  'description': 'Expected a text/zip/bz2 file containing region mapping values.'},
                 

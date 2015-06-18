@@ -58,7 +58,7 @@ class TVBImporter(ABCUploader):
         """
             Take as input a ZIP archive or H5 file.
         """
-        return [{'name': 'data_file', 'type': 'upload', 'required_type': 'application/zip, .h5',
+        return [{'name': 'data_file', 'type': 'upload', 'required_type': '.zip, .h5',
                  'label': 'Please select file to import (h5 or zip)', 'required': True}]
         
         
