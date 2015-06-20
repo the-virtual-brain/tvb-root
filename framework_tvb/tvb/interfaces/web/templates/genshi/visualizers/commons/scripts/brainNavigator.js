@@ -36,7 +36,7 @@ function NAV_BrainNavigator(isOneToOneMapping, brainBuffers, measurePoints, meas
     this.drawingBuffers = [];
     this.isInTimeRefresh = false;
     this.cacheInTimeRefreshValue = false;
-    this.shouldRedrawSections = true;
+    this.shouldRedrawSections = 3;
 
     // Cache from the current component to avoid hidden references towards globals.
     this.brainBuffers_REF = brainBuffers;
@@ -136,13 +136,15 @@ function NAV_BrainNavigator(isOneToOneMapping, brainBuffers, measurePoints, meas
 
 
     this.maybeRefreshSections = function () {
-        if (this.shouldRedrawSections || this.isInTimeRefresh) {
+        if (this.shouldRedrawSections > 0 || this.isInTimeRefresh) {
             for(var i = 0; i < 3; i++) {
                 this._drawSection(i);
             }
             var closestArea = this._findClosestAreaName(this.getPosition());
             $(".brainArea").text("Brain area: " + closestArea);
-            this.shouldRedrawSections = false;
+
+            // Keep shouldRedrawSections flag ON, until the first steps are gone (otherwise we are drawing only black)
+            this.shouldRedrawSections--;
         }
     };
 
@@ -269,7 +271,7 @@ function NAV_BrainNavigator(isOneToOneMapping, brainBuffers, measurePoints, meas
 
             mvPopMatrix();
 
-            this.shouldRedrawSections = true;
+            this.shouldRedrawSections = 1;
             this.maybeRefreshSections();
             this.drawNavigator();
         }
