@@ -115,10 +115,13 @@ class ABCUploader(ABCSynchronous):
     @staticmethod
     def read_list_data(full_path, dimensions=None, dtype=numpy.float64, skiprows=0, usecols=None):
         """
-        Read numpy.array from a text file.
+        Read numpy.array from a text file or a npy/npz file.
         """
         try:
-            array_result = numpy.loadtxt(full_path, dtype=dtype, skiprows=skiprows, usecols=usecols)
+            if full_path.endswith(".npy") or full_path.endswith(".npz"):
+                array_result = numpy.load(full_path)
+            else:
+                array_result = numpy.loadtxt(full_path, dtype=dtype, skiprows=skiprows, usecols=usecols)
             if dimensions:
                 return array_result.reshape(dimensions)
             return array_result

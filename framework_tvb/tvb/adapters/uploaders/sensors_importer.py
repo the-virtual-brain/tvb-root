@@ -126,7 +126,7 @@ class Sensors_Importer(ABCUploader):
 class BrainstormSensorUploader(ABCUploader):
     "Upload sensors from Brainstorm database files"
 
-    _ui_name = "Brainstorm Sensors Uploader"
+    _ui_name = "Sensors from Brainstorm"
     _ui_subsection = "sensors_importer"
     _ui_description = "Upload a description of s/M/EEG sensors from a Brainstorm database file."
 
