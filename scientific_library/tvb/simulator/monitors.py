@@ -784,7 +784,6 @@ class iEEG(Projection):
         Equation 12 from sarvas1987basic (point dipole in homogeneous space):
           V(r) = 1/(4*pi*\sigma)*Q*(r-r_0)/|r-r_0|^3
         """
-        super(iEEG, self).config_for_sim(simulator)
         r_0, Q = loc, ori
         V_r = numpy.zeros((self.sensors.locations.shape[0], r_0.shape[0]))
         for sensor_k in numpy.arange(self.sensors.locations.shape[0]):
