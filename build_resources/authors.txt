@@ -7,3 +7,4 @@ michael.burgstahler = twotribes <mburg@twotribes.de>
 paula.sanz-leon = pausz <sanzleon.paula@gmail.com>
 jan.fousek = i-Zaak <izaak@mail.muni.cz>
 mihai.andrei = mihandrei <mihai.daniel.psmg@gmail.com>
+mathieu.golos = mGolos <mathieu.golos@etu.univ-amu.fr>
