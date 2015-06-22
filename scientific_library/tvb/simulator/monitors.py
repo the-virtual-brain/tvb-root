@@ -645,7 +645,7 @@ class Projection(Monitor):
         self._state += self.gain.dot(state[self.voi].sum(axis=0).sum(axis=-1))
         if step % self._period_in_steps == 0:
             time = (step - self._period_in_steps / 2.0) * self.dt
-            sample = self._state.copy()
+            sample = self._state.copy() / self._period_in_steps
             self._state[:] = 0.0
             return time, sample.reshape((1, -1, 1)) # for compatibility
 
@@ -685,13 +685,15 @@ class EEG(Projection):
 
     def config_for_sim(self, simulator):
         super(EEG, self).config_for_sim(simulator)
-        self._ref_vec = numpy.zeros((self.sensors.number_of_sensors,))
+        self._ref_vec = numpy.zeros((self.sensors.number_of_sensors, ))
         if self.reference:
             if self.reference.lower() != 'average':
                 sensor_names = self.sensors.labels.tolist()
                 self._ref_vec[sensor_names.indexof(self.reference)] = 1.0
             else:
                 self._ref_vec[:] = 1.0 / self.sensors.number_of_sensors
+        self._ref_vec_mask = numpy.isfinite(self.gain).all(axis=1)
+        self._ref_vec = self._ref_vec[self._ref_vec_mask]
 
     def analytic(self, loc, ori):
         "Equation 12 of [Sarvas_1987]_"
@@ -716,7 +718,7 @@ class EEG(Projection):
         maybe_sample = super(EEG, self).record(step, state)
         if maybe_sample is not None:
             time, sample = maybe_sample
-            sample -= self._ref_vec.dot(sample.reshape((-1, )))
+            sample -= self._ref_vec.dot(sample.reshape((-1, ))[self._ref_vec_mask])
             return time, sample.reshape((1, -1, 1))
 
     def create_time_series(self, storage_path, connectivity=None, surface=None,
