@@ -367,66 +367,58 @@ class Simulator(core.Type):
            call to permit consistent continuation of a simulation.
 
         """
-        #The number of times this Simulator has been called.
+
         self.calls += 1
+        self.simulation_length = simulation_length or self.simulation_length
 
-        #Update the simulator objects simulation_length attribute,
-        if simulation_length is None:
-            simulation_length = self.simulation_length
-        else:
-            self.simulation_length = simulation_length
-
-        #Estimate run time and storage requirements, with logging.
+        # Estimate run time and storage requirements, with logging.
         self._guesstimate_runtime()
         self._calculate_storage_requirement()
 
         if random_state is not None:
             if isinstance(self.integrator, integrators_module.IntegratorStochastic):
                 self.integrator.noise.random_stream.set_state(random_state)
-                msg = "%s: random_state supplied. Seed is: %s"
-                LOG.info(msg % (str(self),str(self.integrator.noise.random_stream.get_state()[1][0])))
+                msg = "random_state supplied with seed %s"
+                LOG.info(msg, self.integrator.noise.random_stream.get_state()[1][0])
             else:
-                msg = "%s: random_state supplied for non-stochastic integration"
-                LOG.warn(msg % str(self))
+                LOG.warn("random_state supplied for non-stochastic integration")
 
-        #Determine the number of integration steps required to produce  
-        #data of simulation_length
+        # number of steps to perform integrqtion
         int_steps = int(simulation_length / self.integrator.dt)
-        LOG.info("%s: gonna do %d integration steps" % (str(self), int_steps))
+        msg = 'sim length %f ms requires %d steps'
+        LOG.info(msg, simulation_length, int_steps)
 
         # locals for cleaner code.
-        horizon = self.horizon
-        history = self.history
-        dfun = self.model.dfun
-        coupling = self.coupling
-        scheme = self.integrator.scheme
-        npsum = numpy.sum
-        npdot = numpy.dot
         ncvar = len(self.model.cvar)
         number_of_regions = self.connectivity.number_of_regions
-        nsn = (number_of_regions, 1, number_of_regions)
 
         # Exact dtypes and alignment are required by c speedups. Once we have history objects these will be encapsulated
         # cvar index array broadcastable to nodes, cvars, nodes
+        cvqr
         cvar = numpy.array(self.model.cvar[numpy.newaxis, :, numpy.newaxis], dtype=numpy.intc)
         LOG.debug("%s: cvar is: %s" % (str(self), str(cvar)))
+
         # idelays array broadcastable to nodes, cvars, nodes
         idelays = numpy.array(self.connectivity.idelays[:, numpy.newaxis, :], dtype=numpy.intc, order='c')
         LOG.debug("%s: idelays shape is: %s" % (str(self), str(idelays.shape)))
+
         # weights array broadcastable to nodes, cva, nodes, modes
         weights = self.connectivity.weights[:, numpy.newaxis, :, numpy.newaxis]
         LOG.debug("%s: weights shape is: %s" % (str(self), str(weights.shape)))
+
         # node_ids broadcastable to nodes, cvars, nodes
         node_ids = numpy.array(numpy.arange(number_of_regions)[numpy.newaxis, numpy.newaxis, :], dtype=numpy.intc)
         LOG.debug("%s: node_ids shape is: %s"%(str(self), str(node_ids.shape)))
 
+        rmap = self.surface.region_mapping
+
         if self.surface is None:
             local_coupling = 0.0
         else:
-            region_average = self.surface.region_average
-            region_history = npdot(region_average, history) # this may be very expensive ~60sec for epileptor (many states and modes ...)
-            region_history = region_history.transpose((1, 2, 0, 3))
-            region_history = numpy.ascontiguousarray(region_history)  # required by the c speedups
+            (nt, ns, _, nm), ax = self.history.shape, (2, 0, 1, 3)
+            region_history = numpy.zeros((nt, ns, number_of_regions, nm))
+            numpy.add.at(region_history.transpose(ax), rmap, self.history.transpose(ax))
+            region_history /= numpy.bincount(rmap).reshape((-1, 1))
             if self.surface.coupling_strength.size == 1:
                 local_coupling = (self.surface.coupling_strength[0] *
                                   self.surface.local_connectivity.matrix)
@@ -440,62 +432,53 @@ class Simulator(core.Type):
 
         if self.stimulus is None:
             stimulus = 0.0
-        else:  # TODO: Consider changing to simulator absolute time... This is an open discussion, a matter of interpretation of the stimuli time axis.
-            time = numpy.arange(0, simulation_length, self.integrator.dt)
-            time = time[numpy.newaxis, :]
-            self.stimulus.configure_time(time)
+        else:
+            self.stimulus.configure_time(numpy.r_[:simulation_length:self.integrator.dt].reshape((1, -1)))
             stimulus = numpy.zeros((self.model.nvar, self.number_of_nodes, 1))
-            LOG.debug("%s: stimulus shape is: %s" % (str(self), str(stimulus.shape)))
+            LOG.debug("stimulus shape is: %s", stimulus.shape)
 
         # initial state, history[timepoint[0], state_variables, nodes, modes]
-        state = history[self.current_step % horizon, :]
-        LOG.debug("%s: state shape is: %s" % (str(self), str(state.shape)))
-
-        if self.surface is not None:
-            # this is big a well. 
-            region_average = sparse.csr_matrix(region_average)
-            
-            node_coupling_shape = (self.surface.region_mapping.shape[0], ncvar, self.model.number_of_modes)
+        state = self.history[self.current_step % self.horizon, :]
+        LOG.debug("state shape is: %s", state.shape)
 
         delayed_state = numpy.zeros((number_of_regions, ncvar, number_of_regions, self.model.number_of_modes))
 
+        # integration loop
         for step in xrange(self.current_step + 1, self.current_step+int_steps+1):
-            time_indices = (step - 1 - idelays) % horizon
+
+            # compute afferent coupling
+            time_indices = (step - 1 - idelays) % self.horizon
             if self.surface is None:
-                get_state(history, time_indices, cvar, node_ids, out=delayed_state)
-                node_coupling = coupling(weights, state[self.model.cvar], delayed_state)
+                get_state(self.history, time_indices, cvar, node_ids, out=delayed_state)
+                node_coupling = self.coupling(weights, state[self.model.cvar], delayed_state)
             else:
                 get_state(region_history, time_indices, cvar, node_ids, out=delayed_state)
-                region_coupling = coupling(weights, region_history[(step - 1) % horizon, self.model.cvar], delayed_state)
-                node_coupling = numpy.empty(node_coupling_shape)
+                region_coupling = self.coupling(weights, region_history[(step - 1) % self.horizon, self.model.cvar], delayed_state)
+                node_coupling = region_coupling[:, rmap].transpose((1, 0, 2))
 
-                node_coupling = region_coupling[:, self.surface.region_mapping]
-
-                node_coupling = node_coupling.transpose((1, 0, 2))
-
+            # stimulus pattern at this time point
             if self.stimulus is not None:
-                stimulus[self.model.cvar, :, :] = numpy.reshape(self.stimulus(step - (self.current_step + 1)),
-                                                                (1, -1, 1))
+                stim_step = step - (self.current_step + 1) # TODO stim_step != current step ??
+                stimulus[self.model.cvar, :, :] = self.stimulus(stim_step).reshape((1, -1, 1))
 
-            state = scheme(state, dfun, node_coupling, local_coupling, stimulus)
-            history[step % horizon, :] = state
+            # apply integration scheme
+            state = self.integrator.scheme(state, self.dfun, node_coupling, local_coupling, stimulus)
 
+            # update full history & region history if applicable
+            self.history[step % self.horizon, :] = state
             if self.surface is not None:
-                # optimisation 
-                step_avg = numpy.empty((number_of_regions, state.shape[0], self.model.number_of_modes))
-                for mi in xrange(self.model.number_of_modes):
-                    step_avg[..., mi] = region_average.dot(state[..., mi].T)
+                region_state = numpy.zeros((number_of_regions, state.shape[0], state.shape[2]))
+                numpy.add.at(region_state, rmap, state.transpose((1, 0, 2)))
+                region_state /= numpy.bincount(rmap).reshape((-1, 1, 1))
+                region_history[step % self.horizon, :] = region_state.transpose((1, 0, 2))
 
-                region_history[step % horizon, :] = step_avg.transpose((1, 0, 2))
-
-            # monitor.things e.g. raw, average, eeg, meg, fmri...
+            # record monitor output & forward to caller
             output = [monitor.record(step, state) for monitor in self.monitors]
             if any(outputi is not None for outputi in output):
                 yield output
 
         # This -1 is here for not repeating the point on resume
         self.current_step = self.current_step + int_steps - 1
-        self.history = history
 
 
     def configure_history(self, initial_conditions=None):
