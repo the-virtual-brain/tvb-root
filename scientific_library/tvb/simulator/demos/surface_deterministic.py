@@ -60,7 +60,7 @@ heunint = integrators.HeunDeterministic(dt=2 ** -4)
 #Initialise some Monitors with period in physical time
 mon_tavg = monitors.TemporalAverage(period=2 ** -2)
 mon_savg = monitors.SpatialAverage(period=2 ** -2)
-mon_eeg = monitors.EEG(period=2 ** -2)
+mon_eeg = monitors.EEG(period=1e3/1024.0, sensors=sensors.SensorsEEG(load_default=True))
 
 #Bundle them
 what_to_watch = (mon_tavg, mon_savg, mon_eeg)
@@ -87,6 +87,7 @@ eeg_data = []
 eeg_time = []
 
 for tavg, savg, eeg in sim(simulation_length=2 ** 2):
+
     if not tavg is None:
         tavg_time.append(tavg[0])
         tavg_data.append(tavg[1])

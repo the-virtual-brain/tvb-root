@@ -169,7 +169,8 @@ class Monitor(core.Type):
 
         # model state-variables to monitor
         if self.variables_of_interest.size == 0:
-            self.voi = numpy.array([simulator.model.state_variables.index(var) for var in simulator.model.variables_of_interest])
+            self.voi = numpy.array([simulator.model.state_variables.index(var)
+                                    for var in simulator.model.variables_of_interest])
         else:
             self.voi = self.variables_of_interest
 
@@ -577,6 +578,8 @@ class Projection(Monitor):
     def config_for_sim(self, simulator):
         "Configure projection matrix monitor for given simulation."
 
+        super(Projection, self).config_for_sim(simulator)
+
         # setup convenient locals
         self._sim = simulator
         surf = simulator.surface
@@ -594,15 +597,15 @@ class Projection(Monitor):
 
         # compute analytic if not provided
         if self.projection is None:
-            self.projection = self.analytic(**sources)
+            self.projection = ProjectionMatrix(projection_data=self.analytic(**sources))
 
         # reduce to region lead field if region sim
         if not using_cortical_surface:
-            proj = numpy.zeros((self.projection.shape[0], conn.number_of_regions))
+            proj = numpy.zeros((self.gain.shape[0], conn.number_of_regions))
             numpy.add.at(proj.T, surf.region_mapping, self.projection.T)
             self.projection = proj
 
-        # append analytic subcortical to lead field
+        # append analytic sub-cortical to lead field
         if have_subcortical:
             if using_cortical_surface:
                 sc_ind = numpy.array(
@@ -612,28 +615,34 @@ class Projection(Monitor):
                 # not reliable in all datasets
                 sc_ind = numpy.where(~conn.cortical)
             # need matrix of shape (proj.shape[0], len(sc_ind))
-            self.projection = numpy.hstack((
-                self.projection,
-                self.analytic(conn.centres[sc_ind], conn.orientations[sc_ind])
-            ))
+            src = conn.centres[sc_ind], conn.orientations[sc_ind]
+            self.gain = numpy.hstack((self.gain, self.analytic(*src)))
 
         # zero out unusable sensors
         if self.sensors.usable is not None and not self.sensors.usable.all():
-            self.projection[~self.sensors.usable] = 0.0
+            self.gain[~self.sensors.usable] = 0.0
 
         # attrs used for recording
-        self._state = numpy.zeros((simulator.number_of_nodes, ))
+        self._state = numpy.zeros((self.gain.shape[0], ))
         self._period = int(self.period / self.dt)
 
     def record(self, step, state):
         "Record state, returning sample at sampling frequency / period."
-        gain = self.projection.projection_data
-        self._state += gain.dot(state[self.voi].sum(axis=0).sum(axis=-1))
+        self._state += self.gain.dot(state[self.voi].sum(axis=0).sum(axis=-1))
         if step % self._period == 0:
             time = (step - self._period / 2.0) * self.dt
             sample = self._state.copy()
             self._state[:] = 0.0
             return time, sample.reshape((1, -1, 1)) # for compatibility
+
+    def _get_gain(self):
+        return self.projection.projection_data
+
+    def _set_gain(self, new_gain):
+        self.projection.projection_data = new_gain
+
+    gain = property(_get_gain, _set_gain)
+
 
 class EEG(Projection):
     """Forward solution monitor for electroencephalogy (EEG). If a
@@ -690,9 +699,11 @@ class EEG(Projection):
         return V_r
 
     def record(self, step, state):
-        time, sample = super(EEG, self).record(step, state).reshape((-1, ))
-        sample -= self._ref_vec.dot(sample)
-        return time, sample.reshape((1, -1, 1))
+        maybe_sample = super(EEG, self).record(step, state)
+        if maybe_sample is not None:
+            time, sample = maybe_sample
+            sample -= self._ref_vec.dot(sample.reshape((-1, )))
+            return time, sample.reshape((1, -1, 1))
 
     def create_time_series(self, storage_path, connectivity=None, surface=None,
                            region_map=None, region_volume_map=None):
