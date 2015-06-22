@@ -580,6 +580,9 @@ class Projection(Monitor):
 
         super(Projection, self).config_for_sim(simulator)
 
+        if hasattr(self, 'sensors'):
+            self.sensors.configure()
+
         # setup convenient locals
         self._sim = simulator
         surf = simulator.surface
