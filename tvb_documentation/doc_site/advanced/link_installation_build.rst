@@ -1,1 +1,0 @@
-.. include:: ../../manuals/InstallationManual/InstallationManual.rst

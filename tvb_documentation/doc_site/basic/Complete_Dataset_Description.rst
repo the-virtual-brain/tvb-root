@@ -1,1 +1,0 @@
-.. include:: ../../manuals/UserGuide/Complete_Dataset_Description.rst

@@ -1,1 +1,0 @@
-.. include:: ../../manuals/DeveloperReference/DeveloperReferenceManual.rst
