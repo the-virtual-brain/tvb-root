@@ -39,6 +39,7 @@ from pylab import *
 from tvb.simulator.lab import *
 from tvb.datatypes.cortex import Cortex
 from tvb.datatypes.region_mapping import RegionMapping
+from tvb.datatypes.projections import ProjectionMatrix
 
 
 oscillator = models.Generic2dOscillator()
@@ -46,8 +47,12 @@ white_matter = connectivity.Connectivity.from_file('connectivity_192.zip')
 white_matter.speed = numpy.array([4.0])
 white_matter_coupling = coupling.Difference(a=0.014)
 heunint = integrators.HeunStochastic(dt=2**-4)
+projmat = ProjectionMatrix()
+ProjectionMatrix.load_surface_projection_matrix(projmat, 'projection_EEG_surface.npy')
 monitors = (
-    monitors.EEG(period=1e3/1024.0, sensors=sensors.SensorsEEG(load_default=True)),
+    monitors.EEG(period=1e3/1024.0,
+                 sensors=sensors.SensorsEEG.from_file('eeg-brainstorm-65.txt'),
+                 projection=projmat),
 )
 local_coupling_strength = numpy.array([2 ** -10])
 default_cortex = Cortex(region_mapping_data=RegionMapping.from_file('regionMapping_16k_192.txt'),
