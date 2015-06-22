@@ -565,7 +565,7 @@ class Projection(Monitor):
         "Apply orientations to gain matrix."
         return (gain.reshape((gain.shape[0], -1, 3)) * orient).sum(axis=-1)
 
-    def analytic(self, *args):
+    def analytic(self, loc, ori):
         "Construct analytic or default set of spatial filters for simulation."
         # this will not be implemented but kept for API uniformity
         raise NotImplementedError(
@@ -670,13 +670,13 @@ class EEG(Projection):
             else:
                 self._ref_vec[:] = 1.0 / self.sensors.number_of_sensors
 
-    def analytic(self, simulator):
+    def analytic(self, loc, ori):
         "Equation 12 of [Sarvas_1987]_"
         # r => sensor positions
         # r_0 => source positions
         # a => vector from sources_to_sensor
         # Q => source unit vectors
-        r_0, Q = self.sources['loc'], self.sources['ori']
+        r_0, Q = loc, ori
         center = numpy.mean(r_0, axis=0)[numpy.newaxis, ]
         radius = 1.05125 * max(numpy.sqrt(numpy.sum((r_0 - center)**2, axis=1)))
         loc = self.sensors.locations.copy()
@@ -687,7 +687,7 @@ class EEG(Projection):
             a = loc[sensor_k, :] - r_0
             na = numpy.sqrt(numpy.sum(a**2, axis=1))[:, numpy.newaxis]
             V_r[sensor_k, :] = numpy.sum(Q * (a / na**3), axis=1 ) / (4.0 * numpy.pi * self.sigma)
-        self.projection_matrix = V_r
+        return V_r
 
     def record(self, step, state):
         time, sample = super(EEG, self).record(step, state).reshape((-1, ))
@@ -713,7 +713,7 @@ class MEG(Projection):
         doc = """The set of MEG sensors for which the forward solution will be
         calculated.""")
 
-    def analytic(self, simulator):
+    def analytic(self, loc, ori):
         """Compute single sphere analytic form of MEG lead field.
         Equation 25 of [Sarvas_1987]_."""
         # the magnetic constant = 1.25663706 × 10-6 m kg s-2 A-2  (H/m)
@@ -722,7 +722,7 @@ class MEG(Projection):
         # r_0 => source positions
         # a => vector from sources_to_sensor
         # Q => source unit vectors
-        r_0, Q = self.sources['loc'], self.sources['ori']
+        r_0, Q = loc, ori
         centre = numpy.mean(r_0, axis=0)[numpy.newaxis, :]
         radius = 1.01 * max(numpy.sqrt(numpy.sum((r_0 - centre)**2, axis=1)))
         sensor_locations = self.sensors.locations.copy()
@@ -745,7 +745,7 @@ class MEG(Projection):
             B_r[sensor_k, :] = ((mu_0 / (4.0 * numpy.pi * F**2)) *
                                 (numpy.cross(F * Q, r_0) - numpy.sum(numpy.cross(Q, r_0) *
                                                                      (rsk * delF), axis=1)[:, numpy.newaxis]))
-        self.projection_matrix = numpy.sqrt(numpy.sum(B_r**2, axis=2))
+        return numpy.sqrt(numpy.sum(B_r**2, axis=2))
 
     def create_time_series(self, storage_path, connectivity=None, surface=None,
                            region_map=None, region_volume_map=None):
@@ -765,7 +765,7 @@ class iEEG(Projection):
         label="Internal brain sensors", default=None, required=True,
         doc="The set of SEEG sensors for which the forward solution will be calculated.")
 
-    def analytic(self, simulator):
+    def analytic(self, loc, ori):
         """Compute the projection matrix -- simple distance weight for now.
         Equation 12 from sarvas1987basic (point dipole in homogeneous space):
           V(r) = 1/(4*pi*\sigma)*Q*(r-r_0)/|r-r_0|^3
@@ -777,7 +777,7 @@ class iEEG(Projection):
             a = self.sensors.locations[sensor_k, :] - r_0
             na = numpy.sqrt(numpy.sum(a ** 2, axis=1))[:, numpy.newaxis]
             V_r[sensor_k, :] = numpy.sum(Q * (a / na ** 3), axis=1) / (4.0 * numpy.pi * self.sigma)
-        self.projection_matrix = V_r
+        return V_r
 
     def create_time_series(self, storage_path, connectivity=None, surface=None,
                            region_map=None, region_volume_map=None):
