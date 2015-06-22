@@ -40,14 +40,6 @@ NB: Brainstorm uses meters, TVB uses millimeters.
 import numpy
 import scipy.io
 
-tvb_data_path = '/home/sophie/dev/tvb_data/tvb_data/'
-bst_path = tvb_data_path + 'brainstorm/data/TVB-Subject/'
-
-chan_path = {
-    'eeg': 'EEG_channels/channel.mat',
-    'meg': 'MEGchannels/channel_4d_acc1.mat',
-    'seeg': 'seeg_channels/channel.mat',
-}
 
 def get_field_array(mat_group, n=3, dtype=numpy.float64):
     return numpy.array([
@@ -55,28 +47,45 @@ def get_field_array(mat_group, n=3, dtype=numpy.float64):
         for l in mat_group[0]
     ], dtype=dtype)
 
-for sens_type, sens_path in chan_path.iteritems():
-    # only MEG channels require orientation information
-    use_ori = sens_type in ('meg', )
-    # read from MAT file necessary fields
-    mat = scipy.io.loadmat(bst_path + sens_path)
-    name = [l[0] for l in mat['Channel']['Name'][0]]
-    loc = get_field_array(mat['Channel']['Loc'])
-    if use_ori:
-        ori = get_field_array(mat['Channel']['Orient'])
-    # bst uses m, we use mm
-    loc *= 1e3
-    # write out to text format
-    out_fname = '%s/sensors/%s-brainstorm-%d.txt'
-    out_fname %= tvb_data_path, sens_type, len(name)
-    with open(out_fname, 'w') as fd:
-        if use_ori: # MEG
-            for n, (x, y, z), (ox, oy, oz) in zip(name, loc, ori):
-                line = '\t'.join(['%s']+['%f']*6) + '\n'
-                line %= n, x, y, z, ox, oy, oz
-                fd.write(line)
-        else: # sEEG, EEG
-            for n, (x, y, z) in zip(name, loc):
-                line = '\t'.join(['%s']+['%f']*3) + '\n'
-                line %= n, x, y, z
-                fd.write(line)
+def convert_brainstorm_to_tvb(tvb_data_path, chan_paths):
+    """
+    Convert given set of channels from Brainstorm to TVB formats.
+
+    """
+
+    bst_path = tvb_data_path + 'brainstorm/data/TVB-Subject/'
+    for sens_type, sens_path in chan_paths.iteritems():
+        # only MEG channels require orientation information
+        use_ori = sens_type in ('meg', )
+        # read from MAT file necessary fields
+        mat = scipy.io.loadmat(bst_path + sens_path)
+        name = [l[0] for l in mat['Channel']['Name'][0]]
+        loc = get_field_array(mat['Channel']['Loc'])
+        if use_ori:
+            ori = get_field_array(mat['Channel']['Orient'])
+        # bst uses m, we use mm
+        loc *= 1e3
+        # write out to text format
+        out_fname = '%s/sensors/%s-brainstorm-%d.txt'
+        out_fname %= tvb_data_path, sens_type, len(name)
+        with open(out_fname, 'w') as fd:
+            if use_ori: # MEG
+                for n, (x, y, z), (ox, oy, oz) in zip(name, loc, ori):
+                    line = '\t'.join(['%s']+['%f']*6) + '\n'
+                    line %= n, x, y, z, ox, oy, oz
+                    fd.write(line)
+            else: # sEEG, EEG
+                for n, (x, y, z) in zip(name, loc):
+                    line = '\t'.join(['%s']+['%f']*3) + '\n'
+                    line %= n, x, y, z
+                    fd.write(line)
+
+
+if __name__ == '__main__':
+    import tvb_data
+    convert_brainstorm_to_tvb(tvb_data.__path__,
+        chan_paths={
+            'eeg': 'EEG_channels/channel.mat',
+            'meg': 'MEGchannels/channel_4d_acc1.mat',
+            'seeg': 'seeg_channels/channel.mat',
+        })
