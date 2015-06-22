@@ -38,6 +38,7 @@ integration.
 from pylab import *
 from tvb.simulator.lab import *
 from tvb.datatypes.cortex import Cortex
+from tvb.datatypes.region_mapping import RegionMapping
 
 
 oscillator = models.Generic2dOscillator()
@@ -49,7 +50,8 @@ monitors = (
     monitors.EEG(period=1e3/1024.0, sensors=sensors.SensorsEEG(load_default=True)),
 )
 local_coupling_strength = numpy.array([2 ** -10])
-default_cortex = Cortex(load_default=True)
+default_cortex = Cortex(region_mapping_data=RegionMapping.from_file('regionMapping_16k_192.txt'),
+                        load_default=True)
 default_cortex.coupling_strength = local_coupling_strength
 sim = simulator.Simulator(model=oscillator, connectivity=white_matter,
                           coupling=white_matter_coupling,

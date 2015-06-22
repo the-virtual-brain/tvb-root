@@ -281,15 +281,11 @@ class Simulator(core.Type):
         if self.surface is None:
             self.number_of_nodes = self.connectivity.number_of_regions
         else:
-            #try:
-            self.number_of_nodes = self.surface.region_mapping.shape[0]
-            #except AttributeError:
-            #    msg = "%s: Surface needs region mapping defined... "
-            #    LOG.error(msg % (repr(self)))
+            rm = self.surface.region_mapping
+            self._regmap = numpy.r_[rm, self.connectivity.unmapped_indices(rm)]
+            self.number_of_nodes = self._regmap.shape[0]
 
-        # Estimate of memory usage
         self._guesstimate_memory_requirement()
-
 
     def configure(self, full_configure=True):
         """
@@ -409,15 +405,13 @@ class Simulator(core.Type):
         node_ids = numpy.array(numpy.arange(number_of_regions)[numpy.newaxis, numpy.newaxis, :], dtype=numpy.intc)
         LOG.debug("%s: node_ids shape is: %s"%(str(self), str(node_ids.shape)))
 
-        rmap = self.surface.region_mapping
-
         if self.surface is None:
             local_coupling = 0.0
         else:
             (nt, ns, _, nm), ax = self.history.shape, (2, 0, 1, 3)
             region_history = numpy.zeros((nt, ns, number_of_regions, nm))
-            numpy.add.at(region_history.transpose(ax), rmap, self.history.transpose(ax))
-            region_history /= numpy.bincount(rmap).reshape((-1, 1))
+            numpy.add.at(region_history.transpose(ax), self._regmap, self.history.transpose(ax))
+            region_history /= numpy.bincount(self._regmap).reshape((-1, 1))
             if self.surface.coupling_strength.size == 1:
                 local_coupling = (self.surface.coupling_strength[0] *
                                   self.surface.local_connectivity.matrix)
@@ -453,7 +447,7 @@ class Simulator(core.Type):
             else:
                 get_state(region_history, time_indices, cvar, node_ids, out=delayed_state)
                 region_coupling = self.coupling(weights, region_history[(step - 1) % self.horizon, self.model.cvar], delayed_state)
-                node_coupling = region_coupling[:, rmap].transpose((1, 0, 2))
+                node_coupling = region_coupling[:, self._regmap].transpose((1, 0, 2))
 
             # stimulus pattern at this time point
             if self.stimulus is not None:
@@ -467,8 +461,8 @@ class Simulator(core.Type):
             self.history[step % self.horizon, :] = state
             if self.surface is not None:
                 region_state = numpy.zeros((number_of_regions, state.shape[0], state.shape[2]))
-                numpy.add.at(region_state, rmap, state.transpose((1, 0, 2)))
-                region_state /= numpy.bincount(rmap).reshape((-1, 1, 1))
+                numpy.add.at(region_state, self._regmap, state.transpose((1, 0, 2)))
+                region_state /= numpy.bincount(self._regmap).reshape((-1, 1, 1))
                 region_history[step % self.horizon, :] = region_state.transpose((1, 0, 2))
 
             # record monitor output & forward to caller

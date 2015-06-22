@@ -590,7 +590,10 @@ class Projection(Monitor):
         conn = simulator.connectivity
         ":type : Connectivity"
         using_cortical_surface = surf is not None
-        non_cortical_indices = conn.unmapped_indices(surf.region_mapping)
+        if using_cortical_surface:
+            non_cortical_indices, = numpy.where(numpy.bincount(surf.region_mapping) == 1)
+        else:
+            non_cortical_indices, = numpy.where(~conn.cortical)
         have_subcortical = len(non_cortical_indices) > 0
 
         # determine source space
