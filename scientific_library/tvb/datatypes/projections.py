@@ -78,6 +78,11 @@ class ProjectionMatrix(framework.ProjectionMatrixFramework, scientific.Projectio
             raise Exception("The projection matrix must be either a numpy array or a brainstorm mat file")
         return result
 
+    @classmethod
+    def from_file(cls, source_file):
+        proj = cls()
+        ProjectionMatrix.load_surface_projection_matrix(proj, source_file)
+        return proj
 
 
 class ProjectionSurfaceEEG(framework.ProjectionSurfaceEEGFramework, 

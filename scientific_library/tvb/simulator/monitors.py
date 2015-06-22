@@ -66,7 +66,7 @@ from tvb.simulator.common import get_logger
 LOG = get_logger(__name__)
 
 import tvb.datatypes.sensors as sensors_module
-from tvb.datatypes.sensors import SensorsMEG, SensorsInternal, SensorsEEG
+from tvb.datatypes.sensors import SensorsMEG, SensorsInternal, SensorsEEG, Sensors
 import tvb.datatypes.arrays as arrays
 from tvb.datatypes.cortex import Cortex
 from tvb.datatypes.connectivity import Connectivity
@@ -562,9 +562,23 @@ class Projection(Monitor):
         doc='Projection matrix to apply to sources.')
 
     @staticmethod
-    def oriented_gain(self, gain, orient):
+    def oriented_gain(gain, orient):
         "Apply orientations to gain matrix."
         return (gain.reshape((gain.shape[0], -1, 3)) * orient).sum(axis=-1)
+
+    @classmethod
+    def from_files(cls, sensors_fname, projection_fname, **kwds):
+        """
+        Build Projection-based monitor from sensors and projection files, and
+        any extra keyword arguments are passed to the monitor class constructor.
+
+        """
+
+        return cls(
+            sensors=type(cls.sensors).from_file(sensors_fname),
+            projection=ProjectionMatrix.from_file(projection_fname),
+            **kwds
+        )
 
     def analytic(self, loc, ori):
         "Construct analytic or default set of spatial filters for simulation."
