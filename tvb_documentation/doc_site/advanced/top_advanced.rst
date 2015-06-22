@@ -1,5 +1,3 @@
-:orphan:
-
 .. _top_advanced:
 
 
@@ -16,7 +14,7 @@ You can see the source code on |github_link|.
   .. toctree::
    :maxdepth: 1
 
-   /manuals/DeveloperReference/DeveloperReferenceManual
+   link_architecture
 
 
 **Contributor's manual**
@@ -24,7 +22,7 @@ You can see the source code on |github_link|.
  .. toctree::
    :maxdepth: 2
 
-   /manuals/ContributorsManual/ContributorsManual
+   link_contributor
 
 
 **Installation for Build**
@@ -32,7 +30,7 @@ You can see the source code on |github_link|.
   .. toctree::
    :maxdepth: 1
 
-   /manuals/InstallationManual/InstallationManual
+   link_installation_build
 
 **API**
 

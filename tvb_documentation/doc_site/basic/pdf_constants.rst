@@ -1,0 +1,1 @@
+.. include:: ../../manuals/templates/pdf_constants.rst

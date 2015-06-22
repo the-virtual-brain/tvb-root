@@ -1,0 +1,1 @@
+.. include:: ../../manuals/UserGuide/UserGuide-Tutorial_Complex_Stimulus.rst

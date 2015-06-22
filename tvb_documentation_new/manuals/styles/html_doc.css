@@ -1,0 +1,217 @@
+/* -------------------------------------------- */
+/* The Virtual Brain: System */
+/* -------------------------------------------- */
+/* Created by @twotribes, Stuttgart */
+/* -------------------------------------------- */
+/* StyleSheet Scope: TUTORIAL-STYLE HELP DOCUMENTS */
+/* Version: Odinson / 2.1.0 */
+/* -------------------------------------------- */
+
+/* !-------------------------------------------- */
+/* !Reset-styles */
+/* !-------------------------------------------- */
+body {
+background: rgb(255, 254, 246);
+margin-top: 0;
+overflow-x: hidden;
+padding-top: 20px;
+}
+
+h1, h2, h3, h4, h5, h6, p.topic-title {
+font-family: sans-serif;
+color:black;
+text-align: left;
+}
+
+h1.title {
+text-align: left;
+}
+
+ul, ol, dl, dt, dd, blockquote {
+list-style: none;
+margin: 0;
+padding: 0;
+}
+
+cite {
+font-style: normal;
+}
+
+em {
+font-style: italic;
+font-weight: normal;
+}
+
+/* !-------------------------------------------- */
+/* !LAYOUT: General */
+/* !-------------------------------------------- */
+
+.align-center {
+text-align: left;	
+}
+
+/* Hide header and footer lines */
+hr.header, hr.footer {
+display: none;
+}
+
+/* Hide header and footer */
+table.noborder {
+display: none;
+}
+
+/* Increase font for main title */
+/* !!! WHAT? Where the hell is that gonna used? */
+p.main-title {
+color: #000;
+font-size: 50px;
+white-space: nowrap;
+width: auto;
+font-weight: bold;
+}
+
+p {
+margin: 0 0 0.4em 0;
+}
+
+/* !-------------------------------------------- */
+/* !COMPONENT: Headlines */
+/* !-------------------------------------------- */
+
+h1 {
+border-top: 1px solid #ccc;
+color: #3e4252;
+font-size: 1.5em;
+margin: 1.5em 0 1em 0;
+padding: 0.5em 0 0 0;
+}
+
+h2 {
+color: #3e4252;
+font-size: 1.2em;
+margin: 1.2em 0 1em 0;
+padding: 0;
+}
+
+h1 + h2, 
+h1 + .section > h2:first-child {
+margin-top: 0; /* subject to margin collapsing but let's stay safe anyway */
+}
+
+div.document > .section:first-child > h1:first-child, 
+div.document > h1:first-child {
+border: none;
+margin-top: 0;
+padding-top: 0;
+}
+
+/* !-------------------------------------------- */
+/* !COMPONENT: Links */
+/* !-------------------------------------------- */
+
+a {
+color: #2172a5;
+border-bottom: 1px dotted;
+text-decoration: none;
+}
+
+a:hover {
+color: #2d8688;
+}
+
+/* !-------------------------------------------- */
+/* !COMPONENT: Lists */
+/* !-------------------------------------------- */
+
+ul, ol, dl {
+margin: 1em 0 1em 0;
+}
+
+li:before {
+content: "::";
+display: inline-block;
+margin-right: 10px;
+}
+
+li {
+color: #3e4252;
+border-top: 1px solid #ccc;
+padding: 0.3em 0 0.3em 0;
+}
+
+li:first-child {
+border-top: none;
+}
+
+dt {
+color: #3e4252;
+font-style: normal;
+font-weight: bold;
+}
+
+dd {
+border-bottom: 1px solid #ccc;
+padding: 0 0 0.3em 0;
+margin: 0 0 0.5em 0;
+}
+
+/* !-------------------------------------------- */
+/* !COMPONENT: Images */
+/* !-------------------------------------------- */
+
+img {
+margin: 1em 0 0 0;
+max-width: 80%;
+}
+
+.figure img {
+margin-bottom: 0;
+}
+
+/* catches little icons sprinkled within paragraphs */
+p img,
+li img {
+margin: 0;
+}
+
+p.caption {
+background: rgb(250, 247, 228);
+color: #3e4252;
+font-family: sans-serif;
+font-style: normal;
+margin: 0 0 1em 0; /* assuming it's always used below an <img> */
+max-width: 80%;
+padding: 0.5em 0 0.5em 0.1em;
+text-align: left;
+}
+
+div[class*="figure align"]:not(.align-center) p.caption {
+max-width: 100%;
+}
+
+/*
+Not used since :name: is not supported on Linux for RST format
+img#tvb-logo {
+	width:30% !important;
+}*/
+
+/* !-------------------------------------------- */
+/* !COMPONENT: Notes */
+/* !-------------------------------------------- */
+
+div.admonition, 
+div.attention, 
+div.caution, 
+div.danger, 
+div.error, 
+div.hint, 
+div.important, 
+div.note, 
+div.tip, 
+div.warning {
+background: #fff;
+border: 2px solid rgba(0, 0, 0, 0.1);
+-webkit-box-shadow: inset 1px 1px 1px rgba(0, 0, 0, 0.4), inset -1px -1px 1px rgba(250, 247, 228, 0.4);
+-moz-box-shadow: inset 1px 1px 1px rgba(0, 0, 0, 0.4), inset -1px -1px 1px rgba(250, 247, 228, 0.4);
+box-shadow: inset 1px 1px 1px rgba(0, 0, 0, 0.4), inset -1px -1px 1px rgba(250, 247, 228, 0.4);
+}

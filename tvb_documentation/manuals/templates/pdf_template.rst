@@ -1,4 +1,4 @@
-.. include :: /manuals/templates/pdf_constants.rst
+.. include :: pdf_constants.rst
 
 .. |DATE| date::
 

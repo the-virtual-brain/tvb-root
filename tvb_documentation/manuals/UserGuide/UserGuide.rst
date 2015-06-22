@@ -3,7 +3,7 @@
 .. |VERSION| replace:: 1.0
 .. |REVISION| replace:: 0.1
 
-.. include:: /manuals/templates/pdf_template.rst
+.. include:: ../templates/pdf_template.rst
 
 Overview of |TVB|
 =================
