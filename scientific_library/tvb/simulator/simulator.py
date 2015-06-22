@@ -469,9 +469,7 @@ class Simulator(core.Type):
                 region_coupling = coupling(weights, region_history[(step - 1) % horizon, self.model.cvar], delayed_state)
                 node_coupling = numpy.empty(node_coupling_shape)
 
-                # sparse matrices cannot multiply with 3d arrays so we use a loop over the modes                
-                for mi in xrange(self.model.number_of_modes):
-                    node_coupling[..., mi] = region_coupling[..., self.surface.region_mapping]
+                node_coupling = region_coupling[:, self.surface.region_mapping]
 
                 node_coupling = node_coupling.transpose((1, 0, 2))
 
