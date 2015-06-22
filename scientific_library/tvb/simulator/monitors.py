@@ -638,13 +638,13 @@ class Projection(Monitor):
 
         # attrs used for recording
         self._state = numpy.zeros((self.gain.shape[0], ))
-        self._period = int(self.period / self.dt)
+        self._period_in_steps = int(self.period / self.dt)
 
     def record(self, step, state):
         "Record state, returning sample at sampling frequency / period."
         self._state += self.gain.dot(state[self.voi].sum(axis=0).sum(axis=-1))
-        if step % self._period == 0:
-            time = (step - self._period / 2.0) * self.dt
+        if step % self._period_in_steps == 0:
+            time = (step - self._period_in_steps / 2.0) * self.dt
             sample = self._state.copy()
             self._state[:] = 0.0
             return time, sample.reshape((1, -1, 1)) # for compatibility
