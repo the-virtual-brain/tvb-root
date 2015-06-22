@@ -161,66 +161,13 @@ class CortexScientific(CortexData, SurfaceScientific):
          Set self._region_average attribute based on region mapping...
         """
 
-        self.vertex_mapping = spatial_mask
-
-        self._region_sum = self.vertex_mapping.T
+        self._region_sum = spatial_mask.T
 
         util.log_debug_array(LOG, self._region_sum, "region_sum", owner=self.__class__.__name__)
 
 
     region_sum = property(fget=_get_region_sum, fset=_set_region_sum)
     #--------------------------------------------------------------------------#
-
-
-    #----------------------------- vertex_mapping -----------------------------#
-    def _get_vertex_mapping(self):
-        """
-        A two dimensional array that can be used, via matrix multiplication, to
-        map a vector of length number_of_regions to a vector of length
-        number_of_vertices.
-        """
-        return self._vertex_mapping
-
-
-    def _set_vertex_mapping(self, spatial_mask):
-        """
-        Set self._region_average attribute based on region mapping...
-        If there are subcortical structures, the code below assumes that
-        the region mapping has a length number_of_nodes = number_of_vertices + number_of_non_cortical_areas
-
-        """
-        # number of nodes = number of vertices + non-cortical regions
-        number_of_nodes = self.region_mapping.shape[0]
-
-        # number of areas = number of unique areas in the region mapping.
-        # NOTE: Avoid using the index values in the spatial_mask in case we're dealing with only one hemisphere.
-        number_of_areas = len(numpy.unique(spatial_mask))
-        vertex_mapping = numpy.zeros((number_of_nodes, number_of_areas))
-
-        # If True, it means there are subcortical structures
-        # TODO: try to remove 'collections'
-        if number_of_nodes > self.number_of_vertices:
-            counter = collections.Counter(self.region_mapping)
-            vertices_per_region = numpy.asarray(counter.values())
-            non_cortical_regions = numpy.where(vertices_per_region == 1)
-            LOG.info("set vertex mapping: There are %d non-cortical regions" % len(non_cortical_regions[0]))
-            cortical_regions = numpy.where(vertices_per_region > 1)
-            cortical_region_mapping = [x for x in self.region_mapping if x in cortical_regions[0]]
-            non_cortical_region_mapping = [x for x in self.region_mapping if x in non_cortical_regions[0]]
-            vertex_mapping[numpy.arange(self.number_of_vertices), cortical_region_mapping] = 1
-            # the rest
-            vertex_mapping[self.number_of_vertices:, non_cortical_region_mapping] = 1
-
-        else:
-            vertex_mapping[numpy.arange(number_of_nodes), spatial_mask] = 1
-        self._vertex_mapping = vertex_mapping
-
-        util.log_debug_array(LOG, self._vertex_mapping, "vertex_mapping", owner=self.__class__.__name__)
-
-
-    vertex_mapping = property(fget=_get_vertex_mapping, fset=_set_vertex_mapping)
-    #--------------------------------------------------------------------------#
-
     #TODO: May be better to have these return values for assignment to the associated Connectivity...
     #TODO: These will need to do something sensible with non-cortical regions.
     def compute_region_areas(self):

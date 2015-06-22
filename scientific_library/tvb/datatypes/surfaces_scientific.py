@@ -65,7 +65,6 @@ class SurfaceScientific(surfaces_data.SurfaceData):
     __tablename__ = None
     _vertex_neighbours = None
     _vertex_triangles = None
-    _vertex_mapping = None
     _region_sum = None
     _region_average = None
     _triangle_centres = None

@@ -452,13 +452,10 @@ class Simulator(core.Type):
         LOG.debug("%s: state shape is: %s" % (str(self), str(state.shape)))
 
         if self.surface is not None:
-            # the vertex mapping array is huge but sparse.
-            # csr because I expect the row to have one value and I expect the dot to proceed row wise.
-            vertex_mapping = sparse.csr_matrix(self.surface.vertex_mapping)
-            # this is big a well. same shape as the vertex mapping.
+            # this is big a well. 
             region_average = sparse.csr_matrix(region_average)
             
-            node_coupling_shape = (vertex_mapping.shape[0], ncvar, self.model.number_of_modes)
+            node_coupling_shape = (self.surface.region_mapping.shape[0], ncvar, self.model.number_of_modes)
 
         delayed_state = numpy.zeros((number_of_regions, ncvar, number_of_regions, self.model.number_of_modes))
 
@@ -474,7 +471,7 @@ class Simulator(core.Type):
 
                 # sparse matrices cannot multiply with 3d arrays so we use a loop over the modes                
                 for mi in xrange(self.model.number_of_modes):
-                    node_coupling[..., mi] = vertex_mapping * region_coupling[..., mi].T
+                    node_coupling[..., mi] = region_coupling[..., self.surface.region_mapping]
 
                 node_coupling = node_coupling.transpose((1, 0, 2))
 
@@ -486,7 +483,7 @@ class Simulator(core.Type):
             history[step % horizon, :] = state
 
             if self.surface is not None:
-                # this optimisation is similar to the one done for vertex_mapping above
+                # optimisation 
                 step_avg = numpy.empty((number_of_regions, state.shape[0], self.model.number_of_modes))
                 for mi in xrange(self.model.number_of_modes):
                     step_avg[..., mi] = region_average.dot(state[..., mi].T)
@@ -685,7 +682,7 @@ class Simulator(core.Type):
         if self.surface:
             memreq += self.surface.number_of_triangles * 3 * bits_32 * 2  # normals
             memreq += self.surface.number_of_vertices * 3 * bits_64 * 2   # normals
-            memreq += number_of_nodes * number_of_regions * bits_64 * 4   # vertex_mapping, region_average, region_sum
+            memreq += number_of_nodes * number_of_regions * bits_64 * 4   # region_mapping, region_average, region_sum
             #???memreq += self.surface.local_connectivity.matrix.nnz * 8
 
         if not isinstance(self.monitors, (list, tuple)):
@@ -744,7 +741,7 @@ class Simulator(core.Type):
         try:
             memreq += self.surface.triangles.nbytes * 2
             memreq += self.surface.vertices.nbytes * 2
-            memreq += self.surface.vertex_mapping.nbytes * 4  # vertex_mapping, region_average, region_sum
+            memreq += self.surface.region_mapping.nbytes * self.number_of_nodes * 8. * 4  # region_average, region_sum
             memreq += self.surface.eeg_projection.nbytes
             memreq += self.surface.local_connectivity.matrix.nnz * 8
         except AttributeError:
