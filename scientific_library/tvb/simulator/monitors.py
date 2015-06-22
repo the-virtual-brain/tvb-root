@@ -590,7 +590,8 @@ class Projection(Monitor):
         conn = simulator.connectivity
         ":type : Connectivity"
         using_cortical_surface = surf is not None
-        have_subcortical = len(numpy.unique(surf.region_mapping)) != conn.number_of_regions
+        non_cortical_indices = conn.unmapped_indices(surf.region_mapping)
+        have_subcortical = len(non_cortical_indices) > 0
 
         # determine source space
         if using_cortical_surface:
@@ -610,15 +611,8 @@ class Projection(Monitor):
 
         # append analytic sub-cortical to lead field
         if have_subcortical:
-            if using_cortical_surface:
-                sc_ind = numpy.array(
-                      set(numpy.r_[:conn.number_of_regions])
-                    - set(numpy.unique(surf.region_mapping)))
-            else:
-                # not reliable in all datasets
-                sc_ind = numpy.where(~conn.cortical)
             # need matrix of shape (proj.shape[0], len(sc_ind))
-            src = conn.centres[sc_ind], conn.orientations[sc_ind]
+            src = conn.centres[non_cortical_indices], conn.orientations[non_cortical_indices]
             self.gain = numpy.hstack((self.gain, self.analytic(*src)))
 
         # zero out unusable sensors
