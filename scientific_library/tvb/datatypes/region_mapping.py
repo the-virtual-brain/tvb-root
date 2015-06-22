@@ -62,8 +62,10 @@ class RegionMapping(RegionMappingFramework, RegionMappingScientific):
     """
 
     @staticmethod
-    def from_file(source_file=os.path.join("..", "regionMapping", "regionMapping_16k_76.txt"),
+    def from_file(source_file="regionMapping_16k_76.txt",
                   instance=None):
+
+        source_file = os.path.join("..", "regionMapping", source_file)
 
         if instance is None:
             result = RegionMapping()
@@ -75,6 +77,8 @@ class RegionMapping(RegionMappingFramework, RegionMappingScientific):
 
         result.array_data = reader.read_array(dtype=numpy.int32)
         return result
+
+
 
 
 
