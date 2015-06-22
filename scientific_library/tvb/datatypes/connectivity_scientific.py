@@ -620,16 +620,11 @@ class ConnectivityScientific(connectivity_data.ConnectivityData):
             LOG.error("('numeric', 'num', 'alphabetic', 'alpha')")
             raise Exception("Bad region labels mode")
 
+    def unmapped_indices(self, region_mapping):
+        """
+        Compute vector of indices of regions in connectivity which are not in the given
+        region mapping.
 
+        """
 
-
-
-
-
-
-
-
-
-        
-        
-        
+        return numpy.setdiff1d(numpy.r_[:self.number_of_regions], region_mapping)
