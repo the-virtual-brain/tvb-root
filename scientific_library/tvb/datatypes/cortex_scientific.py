@@ -65,6 +65,19 @@ class CortexScientific(CortexData, SurfaceScientific):
             self.compute_local_connectivity()
 
 
+        # Pad the local connectivity matrix with zeros when non-cortical regions
+        # are included in the long range connectivity...
+        if self.local_connectivity.matrix.shape[0] < self.region_mapping.shape[0]:
+            LOG.info("There are non-cortical regions, will pad local connectivity")
+            padding = sparse.csc_matrix((self.local_connectivity.matrix.shape[0],
+                                         self.region_mapping.shape[0] - self.local_connectivity.matrix.shape[0]))
+            self.local_connectivity.matrix = sparse.hstack([self.local_connectivity.matrix, padding])
+
+            padding = sparse.csc_matrix((self.region_mapping.shape[0] - self.local_connectivity.matrix.shape[0],
+                                         self.local_connectivity.matrix.shape[1]))
+            self.local_connectivity.matrix = sparse.vstack([self.local_connectivity.matrix, padding])
+
+
     def _find_summary_info(self):
         """
         Extend the base class's scientific summary information dictionary.
@@ -108,17 +121,6 @@ class CortexScientific(CortexData, SurfaceScientific):
         LOG.debug("%s: %s maximum: %s" % (sts, name, array_max))
         LOG.debug("%s: %s minimum: %s" % (sts, name, array_min))
 
-        # Pad the local connectivity matrix with zeros when non-cortical regions
-        # are included in the long range connectivity...
-        if self.local_connectivity.matrix.shape[0] < self.region_mapping.shape[0]:
-            LOG.info("There are non-cortical regions, will pad local connectivity")
-            padding = sparse.csc_matrix((self.local_connectivity.matrix.shape[0],
-                                         self.region_mapping.shape[0] - self.local_connectivity.matrix.shape[0]))
-            self.local_connectivity.matrix = sparse.hstack([self.local_connectivity.matrix, padding])
-
-            padding = sparse.csc_matrix((self.region_mapping.shape[0] - self.local_connectivity.matrix.shape[0],
-                                         self.local_connectivity.matrix.shape[1]))
-            self.local_connectivity.matrix = sparse.vstack([self.local_connectivity.matrix, padding])
 
 
     #--------------------------------------------------------------------------#
@@ -140,13 +142,13 @@ class CortexScientific(CortexData, SurfaceScientific):
             vertices_per_region = numpy.bincount(self.region_mapping)
             # Assume non-cortical regions will have len 1.
             non_cortical_regions, = numpy.where(vertices_per_region == 1)
-            cortical_regions = numpy.where(vertices_per_region > 1)
+            cortical_regions, = numpy.where(vertices_per_region > 1)
             #Average orientation of the region
-            cortical_region_mapping = [x for x in self.region_mapping if x in cortical_regions[0]]
+            cortical_region_mapping = [x for x in self.region_mapping if x in cortical_regions]
 
-            for nk in non_cortical_regions[0]:
+            for nk in non_cortical_regions:
                 region_surface_area[nk, :] = 0.0
-            for k in numpy.asarray(cortical_regions[0]):
+            for k in cortical_regions:
                 regs = map(set, avt[cortical_region_mapping == k])
                 region_triangles = set.union(*regs)
                 region_surface_area[k] = self.triangle_areas[list(region_triangles)].sum()
