@@ -394,7 +394,6 @@ class Simulator(core.Type):
 
         # Exact dtypes and alignment are required by c speedups. Once we have history objects these will be encapsulated
         # cvar index array broadcastable to nodes, cvars, nodes
-        cvqr
         cvar = numpy.array(self.model.cvar[numpy.newaxis, :, numpy.newaxis], dtype=numpy.intc)
         LOG.debug("%s: cvar is: %s" % (str(self), str(cvar)))
 
@@ -462,7 +461,7 @@ class Simulator(core.Type):
                 stimulus[self.model.cvar, :, :] = self.stimulus(stim_step).reshape((1, -1, 1))
 
             # apply integration scheme
-            state = self.integrator.scheme(state, self.dfun, node_coupling, local_coupling, stimulus)
+            state = self.integrator.scheme(state, self.model.dfun, node_coupling, local_coupling, stimulus)
 
             # update full history & region history if applicable
             self.history[step % self.horizon, :] = state
