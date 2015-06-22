@@ -163,8 +163,8 @@ class CortexScientific(CortexData, SurfaceScientific):
 
         number_of_nodes = self.region_mapping.shape[0]
         number_of_areas = len(numpy.unique(spatial_mask))
-        self._region_sum = numpy.zeros((number_of_nodes, number_of_areas))
-        self._region_sum[numpy.arange(number_of_nodes), spatial_mask] = 1
+        self._region_sum = numpy.zeros((number_of_areas, number_of_nodes))
+        self._region_sum[spatial_mask, numpy.arange(number_of_nodes)] = 1
 
         util.log_debug_array(LOG, self._region_sum, "region_sum", owner=self.__class__.__name__)
 
