@@ -51,7 +51,6 @@ class CortexScientific(CortexData, SurfaceScientific):
         set during initialisation.
         """
         super(CortexScientific, self).configure()
-        self.region_average = self.region_mapping
 
         if self.region_orientation is None:
             self.compute_region_orientation()
@@ -122,54 +121,6 @@ class CortexScientific(CortexData, SurfaceScientific):
             self.local_connectivity.matrix = sparse.vstack([self.local_connectivity.matrix, padding])
 
 
-    #----------------------------- region_average -----------------------------#
-    def _get_region_average(self):
-        """
-        An array that ...
-        """
-        return self._region_average
-
-
-    def _set_region_average(self, spatial_mask):
-        """
-        .d..
-        """
-
-        self.region_sum = spatial_mask
-
-        nodes_per_area = numpy.sum(self.region_sum, axis=1)[:, numpy.newaxis]
-        self._region_average = self.region_sum / nodes_per_area
-        #import pdb; pdb.set_trace()
-
-        util.log_debug_array(LOG, self._region_average, "region_average", owner=self.__class__.__name__)
-
-
-    region_average = property(fget=_get_region_average, fset=_set_region_average)
-    #--------------------------------------------------------------------------#
-
-
-    #------------------------------- region_sum -------------------------------#
-    def _get_region_sum(self):
-        """
-        An array that ...
-        """
-        return self._region_sum
-
-
-    def _set_region_sum(self, spatial_mask):
-        """
-         Set self._region_average attribute based on region mapping...
-        """
-
-        number_of_nodes = self.region_mapping.shape[0]
-        number_of_areas = len(numpy.unique(spatial_mask))
-        self._region_sum = numpy.zeros((number_of_areas, number_of_nodes))
-        self._region_sum[spatial_mask, numpy.arange(number_of_nodes)] = 1
-
-        util.log_debug_array(LOG, self._region_sum, "region_sum", owner=self.__class__.__name__)
-
-
-    region_sum = property(fget=_get_region_sum, fset=_set_region_sum)
     #--------------------------------------------------------------------------#
     #TODO: May be better to have these return values for assignment to the associated Connectivity...
     #TODO: These will need to do something sensible with non-cortical regions.
@@ -186,11 +137,9 @@ class CortexScientific(CortexData, SurfaceScientific):
         #NOTE: Check if there are non-cortical regions.
 
         if len(self.region_mapping) > len(self.vertex_normals):
-            # Count how many vertices each region has.
-            counter = collections.Counter(self.region_mapping)
-            # Presumably non-cortical regions will have len 1.
-            vertices_per_region = numpy.asarray(counter.values())
-            non_cortical_regions = numpy.where(vertices_per_region == 1)
+            vertices_per_region = numpy.bincount(self.region_mapping)
+            # Assume non-cortical regions will have len 1.
+            non_cortical_regions, = numpy.where(vertices_per_region == 1)
             cortical_regions = numpy.where(vertices_per_region > 1)
             #Average orientation of the region
             cortical_region_mapping = [x for x in self.region_mapping if x in cortical_regions[0]]
