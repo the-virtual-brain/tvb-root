@@ -81,6 +81,109 @@ import tvb.basic.traits.core as core
 from tvb.simulator.common import iround
 
 
+class MonitorTransforms(object):
+    """
+    Monitor pre & post expr transform rules
+
+    - pre/post are string fields
+    - both contain (possibly comma separated) expressions in numexpr syntax
+    - no reduction operations (sum/prod) because these result in shape changes
+    - if comma separated, assert len(pre.split(','))==len(post.split(',')), pre-post expression are paired
+    - output 4D ts has shape (time, len(pre.split(',')), node, mode)
+    - by default pre & post is identity
+    - n pre & n post can be different, but only if one of them is 1 or 0
+      in which case it is applied to each of the others (or identity if none given)
+
+    additional rules on special variable names in the expressions
+
+    - pre can't contain empty
+    - post can, but is identity
+    - post should ref 'mon' as corresponding pre expr
+
+    """
+
+    def __init__(self, pre_exprs, post_exprs, model_svars=(), delim=';'):
+        self.pre = self._prep_exprs(pre_exprs, delim)
+        self.post = self._prep_exprs(post_exprs, delim)
+        self.svars = model_svars
+        self._check_num_exprs()
+        self._check_syntax(self.pre, allow_empty=False)
+        self._check_syntax(self.post, allow_empty=True)
+        self._np_ns = {}
+        exec "from numpy import *" in self._np_ns
+
+    def _prep_exprs(self, exprs, delim):
+        return [e.strip() for e in exprs.split(delim)]
+
+    def _check_num_exprs(self):
+        n_pre, n_post = len(self.pre), len(self.post)
+        if n_pre != n_post:
+            if n_pre == 1:
+                self.pre *= n_post
+            elif n_post == 1:
+                self.post *= n_pre
+            else:
+                msg = ("%d pre and %d post monitor expressions provided. Only an equal number or 1 for either "
+                       "should be provided.")
+                msg %= n_pre, n_post
+                raise Exception(msg)
+        else:
+            pass
+
+    def _check_syntax(self, exprs, allow_empty):
+        for expr in exprs:
+            if allow_empty and len(expr) == 0:
+                continue
+                # this expr will be no-op / identity
+            try:
+                compile(expr, '<expr>', 'eval')
+            except SyntaxError:
+                raise SyntaxError('%r is not a valid expression' % (expr, ))
+
+    def _exec_in(self, code, ns):
+        ns = ns.copy()
+        ns.update(self._np_ns)
+        try:
+            exec code in ns
+        except Exception as exc:
+            msg = '%s: %r' % (exc.message, code)
+            raise Exception(msg)
+
+    def apply_pre(self, state):
+        """
+        Apply pre-monitor transformations to state.
+
+        """
+
+        ns = {}
+        svars = self.svars or map('x{0}'.format, range(len(state)))
+        ok = '__out__'
+        assert ok not in svars
+        ns[ok] = numpy.empty((len(self.pre), ) + state.shape[1:])
+        for key, val in zip(svars, state):
+            ns[key] = val
+        for i, expr in enumerate(self.pre):
+            self._exec_in("%s[%d] = %s" % (ok, i, expr), ns)
+        return ns[ok]
+
+    def apply_post(self, monitor_output, inkey='mon'):
+        """
+        Apply post-monitor transformations to monitor output.
+
+        """
+
+        ok = '__out__'
+        assert inkey != ok
+        time, sample = monitor_output
+        ns = {inkey: sample}
+        ns[ok] = numpy.empty((len(self.post), ) + sample.shape[1:])
+        for i, expr in enumerate(self.post):
+            ns[inkey] = sample[i]
+            if len(expr) == 0:
+                expr = inkey
+            self._exec_in('%s[%d] = %s' % (ok, i, expr), ns)
+        return time, ns[ok]
+
 
 class Monitor(core.Type):
     """
@@ -116,7 +219,26 @@ class Monitor(core.Type):
         with the Model being monitored. By default, if left unspecified, this will
         be set based on the variables_of_interest attribute on the Model.""",
         order = -1)
-    
+
+    pre_expr = basic.String(
+        label="Pre-monitor expression(s)",
+        doc="Expression to evaluate on state variables prior to applying a "
+            "monitor's observation model. Several expressions may be provided "
+            "when separated by commas, each paired with a corresponding post_expr "
+            "if provided. Expressions must be standard NumPy syntax, and "
+            "reductions (sum, prod) are not available. If no set of expressions are "
+            "given, then the model's variables of interest are used."
+    )
+
+    post_expr = basic.String(
+        label="Pre-monitor expression(s)",
+        doc="Expression to evaluate on state variables after applying a "
+            "monitor's observation model. Several expressions may be provided "
+            "when separated by commas, each paired with a corresponding pre_expr "
+            "if provided. Expressions must be standard NumPy syntax, and "
+            "reductions (sum, prod) are not available. If no expressions are given "
+            "then the result of the monitor's observation model is the direct result."
+    )
 
     def __init__(self,  **kwargs):
         """
@@ -131,7 +253,6 @@ class Monitor(core.Type):
         self.istep = None #Monitor period in integration time-steps (integer).
         self.dt = None  #Integration time-step in "physical" units.
         self.voi = None
-
         self._stock = numpy.array([], dtype=numpy.float64)
 
 
@@ -174,13 +295,29 @@ class Monitor(core.Type):
         else:
             self.voi = self.variables_of_interest
 
+        self._setup_pre_post_transforms(simulator)
+
         LOG.info("%s: variables of interest: %s" % (str(self), str(self.voi)))
 
         # monitor period in integration steps
         #TODO: Enforce period as integral multiple of dt elsewhere and remove
         #      round from here, it's weird offset prone...
-        self.istep = iround(self.period/ self.dt)
+        self.istep = iround(self.period / self.dt)
         LOG.info("%s: istep of monitor is %d" % (str(self), self.istep))
+
+
+    def _setup_pre_post_transforms(self, sim):
+        if self.pre_expr or self.post_expr:
+            mt = MonitorTransforms(self.pre_expr, self.post_expr,
+                                   sim.model.state_variable_range.keys())
+            pre, post = mt.apply_pre, mt.apply_post
+            _record = self.record
+            def record(step, state):
+                return post(_record(step, pre(state)))
+            self.record = record
+            self._transforms = mt
+        else:
+            self._transforms = None
 
 
     def record(self, step, state):
@@ -258,6 +395,9 @@ class Raw(Monitor):
         regardless of any ``variables_of_interest`` provided.
 
         """
+
+        super(Raw, self).config_for_sim(simulator)
+
         # Simulation time step
         self.dt = simulator.integrator.dt
         self.period = simulator.integrator.dt #Needed for Monitor consistency
