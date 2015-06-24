@@ -60,8 +60,8 @@ Conversion of power of 2 sample-rates(Hz) to Monitor periods(ms)
 import numpy
 
 #The Virtual Brain
-from tvb.datatypes.time_series import TimeSeries, TimeSeriesRegion, TimeSeriesEEG
-from tvb.datatypes.time_series import TimeSeriesMEG, TimeSeriesSEEG, TimeSeriesSurface
+from tvb.datatypes.time_series import (TimeSeries, TimeSeriesRegion,
+    TimeSeriesEEG, TimeSeriesMEG, TimeSeriesSEEG, TimeSeriesSurface)
 from tvb.simulator.common import get_logger
 LOG = get_logger(__name__)
 
@@ -202,7 +202,8 @@ class Monitor(core.Type):
     .. automethod:: Monitor.record
 
     """
-    ## Temporary hide monitors from the UI, as these 2 are not functional (at least not with the default parameters).
+
+    # list of class names not shown in UI
     _base_classes = ['Monitor', 'BoldMultithreaded', 'BalloonWindkesselAccordingToKJFristonEtAl2003NeuroImage']
 
     period = basic.Float(
@@ -222,6 +223,7 @@ class Monitor(core.Type):
 
     pre_expr = basic.String(
         label="Pre-monitor expression(s)",
+        required=False,
         doc="Expression to evaluate on state variables prior to applying a "
             "monitor's observation model. Several expressions may be provided "
             "when separated by commas, each paired with a corresponding post_expr "
@@ -231,7 +233,8 @@ class Monitor(core.Type):
     )
 
     post_expr = basic.String(
-        label="Pre-monitor expression(s)",
+        label="Post-monitor expression(s)",
+        required=False,
         doc="Expression to evaluate on state variables after applying a "
             "monitor's observation model. Several expressions may be provided "
             "when separated by commas, each paired with a corresponding pre_expr "
@@ -255,7 +258,6 @@ class Monitor(core.Type):
         self.voi = None
         self._stock = numpy.array([], dtype=numpy.float64)
 
-
     def __repr__(self):
         """A formal, executable, representation of a Monitor object."""
         class_name = self.__class__.__name__
@@ -263,14 +265,12 @@ class Monitor(core.Type):
         formal = class_name + "(" + "=%s, ".join(traited_kwargs) + "=%s)"
         return formal % eval("(self." + ", self.".join(traited_kwargs) + ")")
 
-
     def __str__(self):
         """An informal, 'human readable', representation of a Monitor object."""
         class_name = self.__class__.__name__ 
         traited_kwargs = self.trait.keys()
         informal = class_name + "(" + ", ".join(traited_kwargs) + ")"
         return informal
-
 
     def config_for_sim(self, simulator):
         """
@@ -285,48 +285,52 @@ class Monitor(core.Type):
             ``simulator`` (Simulator): a Simulator object.
 
         """
-        # Simulation time step
         self.dt = simulator.integrator.dt
-
-        # model state-variables to monitor
-        if self.variables_of_interest.size == 0:
-            self.voi = numpy.array([simulator.model.state_variables.index(var)
-                                    for var in simulator.model.variables_of_interest])
-        else:
-            self.voi = self.variables_of_interest
-
-        self._setup_pre_post_transforms(simulator)
-
-        LOG.info("%s: variables of interest: %s" % (str(self), str(self.voi)))
-
-        # monitor period in integration steps
-        #TODO: Enforce period as integral multiple of dt elsewhere and remove
-        #      round from here, it's weird offset prone...
         self.istep = iround(self.period / self.dt)
         LOG.info("%s: istep of monitor is %d" % (str(self), self.istep))
 
+        svars = simulator.model.state_variable_range.keys()
 
-    def _setup_pre_post_transforms(self, sim):
+        # handle transforms, "expressions of interest"
         if self.pre_expr or self.post_expr:
-            mt = MonitorTransforms(self.pre_expr, self.post_expr,
-                                   sim.model.state_variable_range.keys())
-            pre, post = mt.apply_pre, mt.apply_post
-            _record = self.record
-            def record(step, state):
-                return post(_record(step, pre(state)))
-            self.record = record
-            self._transforms = mt
+            pre, post = self.pre_expr, self.post_expr
         else:
-            self._transforms = None
+            # TODO convert voi to pre expr
+            if self.variables_of_interest.size == 0:
+                self.voi = numpy.array([simulator.model.state_variables.index(var)
+                                        for var in simulator.model.variables_of_interest])
+            else:
+                self.voi = self.variables_of_interest
+            pre = ';'.join([svar for i, svar in enumerate(svars) if i in self.voi])
+            post = ''
 
+        self._transforms = mt = MonitorTransforms(pre, post, svars)
+        if self.voi is None:
+            self.voi = numpy.r_[:len(mt.pre)]
+        LOG.info('%r - pre %r, post %r, svars %r', self, mt.pre, mt.post, svars)
 
     def record(self, step, state):
         """
-        This is the method where the specific Monitor's recording/monitoring
-        function is defined, that is, it defines the return of a subset or
-        projection of the state_variables of the Simulator's Model.
+        This is a final method called by the simulator to obtain samples from a
+        monitor instance. Monitor subclasses should not override this method, but
+        rather implement the `sample` method.
+
         """
 
+        mt = self._transforms
+        sample = self.sample(step, mt.apply_pre(state))
+        if sample is not None:
+            return mt.apply_post(sample)
+
+    def sample(self, step, state):
+        """
+        This method provides monitor output, and should be overridden by subclasses.
+
+        """
+
+        raise NotImplementedError(
+            "The Monitor base class does not provide any observation model and "
+            "should be subclasses with an implementation of the `sample` method.")
 
     def create_time_series(self, storage_path, connectivity=None, surface=None,
                            region_map=None, region_volume_map=None):
@@ -340,18 +344,30 @@ class Monitor(core.Type):
             return TimeSeriesSurface(storage_path=storage_path,
                                      surface=surface,
                                      sample_period=self.period,
-                                     title='Surface ' + self.__class__.__name__)
+                                     title='Surface ' + self.__class__.__name__,
+                                     **self._transform_user_tags())
         if connectivity is not None:
             return TimeSeriesRegion(storage_path=storage_path,
                                     connectivity=connectivity,
                                     region_mapping=region_map,
                                     region_mapping_volume=region_volume_map,
                                     sample_period=self.period,
-                                    title='Regions ' + self.__class__.__name__)
+                                    title='Regions ' + self.__class__.__name__,
+                                    **self._transform_user_tags())
 
         return TimeSeries(storage_path=storage_path,
                           sample_period=self.period,
-                          title=' ' + self.__class__.__name__)
+                          title=' ' + self.__class__.__name__,
+                          **self._transform_user_tags())
+
+    def _transform_user_tags(self):
+        "Return transforms as user tags."
+        values = []
+        if self.pre_expr:
+            values.append(self.pre_expr)
+        if self.post_expr:
+            values.append(self.post_expr)
+        return {'user_tag_%d' % (i + 1, ): value for i, value in enumerate(values)}
 
 
 class Raw(Monitor):
@@ -361,14 +377,7 @@ class Raw(Monitor):
 
         - all state variables and modes from class :Model:
         - all nodes of a region or surface based 
-        - all the integration time steps 
-
-    .. #Currently there seems to be a clash betwen traits and autodoc, autodoc
-    .. #can't find the methods of the class, the class specific names below get
-    .. #us around this...
-    .. automethod:: Raw.__init__
-    .. automethod:: Raw.config_for_sim
-    .. automethod:: Raw.record
+        - all the integration time steps
 
     """
     _ui_name = "Raw recording"
@@ -386,7 +395,6 @@ class Raw(Monitor):
         LOG.info("%s: initing..." % str(self))
         super(Raw, self).__init__(**kwargs)
         LOG.debug("%s: inited." % repr(self))
-
 
     def config_for_sim(self, simulator):
         """
@@ -410,8 +418,7 @@ class Raw(Monitor):
         self.istep = 1
         LOG.info("%s: istep of monitor is %d"%(str(self), self.istep))
 
-
-    def record(self, step, state):
+    def sample(self, step, state):
         """
         Records all state-variables, nodes and modes for every step of the
         integration.
@@ -421,18 +428,10 @@ class Raw(Monitor):
         return [time, state]
 
 
-
 class SubSample(Monitor):
     """
     Discretely sub-sample the simulation every `istep` integration steps. Time 
     steps that are not modulo `istep` are completely ignored.
-
-    .. #Currently there seems to be a clash betwen traits and autodoc, autodoc
-    .. #can't find the methods of the class, the class specific names below get
-    .. #us around this...
-    .. automethod:: SubSample.__init__
-    .. automethod:: SubSample.config_for_sim
-    .. automethod:: SubSample.record
 
     """
     _ui_name = "Temporally sub-sample"
@@ -444,12 +443,11 @@ class SubSample(Monitor):
         LOG.debug("%s: inited." % repr(self))
 
 
-    def record(self, step, state):
+    def sample(self, step, state):
         """Records if integration step corresponds to sampling period."""
         if step % self.istep == 0:
             time = step * self.dt
             return [time, state[self.voi, :]]
-
 
 
 class SpatialAverage(Monitor):
@@ -465,13 +463,6 @@ class SpatialAverage(Monitor):
 
     Additionally, this monitor temporally sub-samples the simulation every `istep` 
     integration steps.
-
-    .. #Currently there seems to be a clash betwen traits and autodoc, autodoc
-    .. #can't find the methods of the class, the class specific names below get
-    .. #us around this...
-    .. automethod:: SpatialAverage.__init__
-    .. automethod:: SpatialAverage.config_for_sim
-    .. automethod:: SpatialAverage.record
 
     """
     _ui_name = "Spatial average with temporal sub-sample"
@@ -571,7 +562,7 @@ class SpatialAverage(Monitor):
         util.log_debug_array(LOG, self.spatial_mean, "spatial_mean", owner=self.__class__.__name__)
 
 
-    def record(self, step, state):
+    def sample(self, step, state):
         """
         This method records the state of the simulation if the integration step
         corresponds to the sampling period of this Monitor. The nodes of the
@@ -592,7 +583,8 @@ class SpatialAverage(Monitor):
                                     region_mapping=region_map,
                                     region_mapping_volume=region_volume_map,
                                     title='Regions ' + self.__class__.__name__,
-                                    connectivity=connectivity)
+                                    connectivity=connectivity,
+                                    **self._transform_user_tags())
         else:
             # mask does not correspond to the number of regions
             # let the parent create a plain TimeSeries
@@ -605,13 +597,6 @@ class GlobalAverage(Monitor):
     the nodes at each sampling period. This mainly exists as a "convenience"
     monitor for quickly checking the "global" state of a simulation.
 
-    .. #Currently there seems to be a clash betwen traits and autodoc, autodoc
-    .. #can't find the methods of the class, the class specific names below get
-    .. #us around this...
-    .. automethod:: GlobalAverage.__init__
-    .. automethod:: GlobalAverage.config_for_sim
-    .. automethod:: GlobalAverage.record
-
     """
     _ui_name = "Global average"
 
@@ -623,7 +608,7 @@ class GlobalAverage(Monitor):
         LOG.debug("%s: inited." % repr(self))
 
 
-    def record(self, step, state):
+    def sample(self, step, state):
         """Records if integration step corresponds to sampling period."""
         if step % self.istep == 0:
             time = step * self.dt
@@ -642,13 +627,6 @@ class TemporalAverage(Monitor):
     the nodes at each sampling period. Time steps that are not modulo ``istep``
     are stored temporarily in the ``_stock`` attribute and then that temporary
     store is averaged and returned when time step is modulo ``istep``.
-
-    .. #Currently there seems to be a clash betwen traits and autodoc, autodoc
-    .. #can't find the methods of the class, the class specific names below get
-    .. #us around this...
-    .. automethod:: TemporalAverage.__init__
-    .. automethod:: TemporalAverage.config_for_sim
-    .. automethod:: TemporalAverage.record
 
     """
     _ui_name = "Temporal average"
@@ -679,7 +657,7 @@ class TemporalAverage(Monitor):
         self._stock = numpy.zeros(stock_size)
 
 
-    def record(self, step, state):
+    def sample(self, step, state):
         """
         Records if integration step corresponds to sampling period, Otherwise
         just update the monitor's stock. When the step corresponds to the sample
@@ -777,12 +755,12 @@ class Projection(Monitor):
             self.gain[~self.sensors.usable] = 0.0
 
         # attrs used for recording
-        self._state = numpy.zeros((self.gain.shape[0], ))
+        self._state = numpy.zeros((self.gain.shape[0], len(self._transforms.pre)))
         self._period_in_steps = int(self.period / self.dt)
 
-    def record(self, step, state):
+    def sample(self, step, state):
         "Record state, returning sample at sampling frequency / period."
-        self._state += self.gain.dot(state[self.voi].sum(axis=0).sum(axis=-1))
+        self._state += self.gain.dot(state[self.voi].sum(axis=-1))
         if step % self._period_in_steps == 0:
             time = (step - self._period_in_steps / 2.0) * self.dt
             sample = self._state.copy() / self._period_in_steps
@@ -854,8 +832,8 @@ class EEG(Projection):
             V_r[sensor_k, :] = numpy.sum(Q * (a / na**3), axis=1 ) / (4.0 * numpy.pi * self.sigma)
         return V_r
 
-    def record(self, step, state):
-        maybe_sample = super(EEG, self).record(step, state)
+    def sample(self, step, state):
+        maybe_sample = super(EEG, self).sample(step, state)
         if maybe_sample is not None:
             time, sample = maybe_sample
             sample -= self._ref_vec.dot(sample.reshape((-1, ))[self._ref_vec_mask])
@@ -866,7 +844,8 @@ class EEG(Projection):
         return TimeSeriesEEG(storage_path=storage_path,
                              sensors=self.sensors,
                              sample_period=self.period,
-                             title=' ' + self.__class__.__name__)
+                             title=' ' + self.__class__.__name__,
+                             **self._transform_user_tags())
 
 
 class MEG(Projection):
@@ -919,7 +898,9 @@ class MEG(Projection):
         return TimeSeriesMEG(storage_path=storage_path,
                              sensors=self.sensors,
                              sample_period=self.period,
-                             title=' ' + self.__class__.__name__)
+                             title=' ' + self.__class__.__name__,
+                             **self._transform_user_tags())
+
 
 class iEEG(Projection):
     "Forward solution for intracranial EEG (not ECoG!)."
@@ -950,7 +931,8 @@ class iEEG(Projection):
         return TimeSeriesSEEG(storage_path=storage_path,
                               sensors=self.sensors,
                               sample_period=self.period,
-                              title=' ' + self.__class__.__name__)
+                              title=' ' + self.__class__.__name__,
+                              **self._transform_user_tags())
 
 
 """
@@ -965,6 +947,7 @@ class iEEG(Projection):
 #      then later we can add a voxelization "analyser" to produce TimeSeriesVolume on which Volume
 #      based analysers and visualisers (which don't exist yet) can operate.
 """
+
 
 class Bold(Monitor):
     """
@@ -1016,13 +999,6 @@ class Bold(Monitor):
 
     .. warning:: Not yet tested, debugged, generalised etc...
     .. wisdom and plagiarism
-
-    .. #Currently there seems to be a clash betwen traits and autodoc, autodoc
-    .. #can't find the methods of the class, the class specific names below get
-    .. #us around this...
-    .. automethod:: Bold.__init__
-    .. automethod:: Bold.config_for_sim
-    .. automethod:: Bold.record
 
     """
     _ui_name = "BOLD"
@@ -1155,7 +1131,7 @@ class Bold(Monitor):
         #import pdb; pdb.set_trace()
 
 
-    def record(self, step, state):
+    def sample(self, step, state):
         """
         Returns a result if integration step corresponds to sampling period.
         Updates the interim-stock on every step and updates the stock if the 
@@ -1205,105 +1181,14 @@ class BoldRegionROI(Bold):
         super(BoldRegionROI, self).config_for_sim(simulator)
         self.region_mapping = simulator.surface.region_mapping
 
-    def record(self, step, state, array=numpy.array):
-        result = super(BoldRegionROI, self).record(step, state)
+    def sample(self, step, state, array=numpy.array):
+        result = super(BoldRegionROI, self).sample(step, state)
         if result:
             t, data = result
             return [t, array([data.flat[self.region_mapping==i].mean()
                               for i in xrange(self.region_mapping.max())])]
         else:
             return None
-
-
-# TODO Delete this monitor on code review, no one uses it (not even MW)
-class BoldMultithreaded(Bold):
-    """
-    This is another Bold clone built to work with the GPU parameter sweep
-    simulator. Design criteria
-
-    - we're doing a temporal downsampling before passing into this monitor
-      so we need to specify the internal sampling rate using in the stock.
-      We assume for now that the downsampled signal's Nyquist frequency is 
-      outside the range of significant response of the HRF.
-
-      As a quick workaround, just set Bold.dt to the temporal averaged sampling
-      frequency.
-
-    - we'll be passing state to this monitor where there's an additional 
-      index for the GPU thread, i.e.
-
-        stock.shape == (n_stock, nodes, vars, modes, threads)
-
-      where threads is a multiple of 32, up to even 2**15 (in extreme
-      cases), so algorithm etc needs to handle this extra 
-      dimension.
-
-    PS After rewriting a few lines from the Bold class, it seems that
-       taking advantage of NumPy style indexing, the array handling can
-       be general to whether we're using the threads dimension or not; it
-       simply doesn't touch it, but operations automatically work correctly.
-
-    """
-
-    def config_for_sim(self, simulator, n_thr=1):
-        """
-        Set up stock arrays
-        """
-        super(BoldMultithreaded, self).config_for_sim(simulator)
-        self.compute_hrf()
-
-        interim_stock_size = (self._interim_istep, self.voi.shape[0],
-                              simulator.number_of_nodes,
-                              simulator.model.number_of_modes,
-                              n_thr) 
-        LOG.debug("%s: interim_stock_size is %s" % (str(self), str(interim_stock_size)))
-
-        self._interim_stock = numpy.zeros(interim_stock_size)
-
-        #Stock configuration
-        stock_size = (self._stock_steps, ) + self._interim_stock.shape[1:]
-        LOG.debug("%s: stock_size is %s" % (str(self), str(stock_size)))
-
-        #Set the inital _stock based on simulator.history
-        mean_history = numpy.mean(simulator.history[:, self.voi], axis=0)
-        self._stock = mean_history[numpy.newaxis,:] * numpy.ones(stock_size)
-        #NOTE: BOLD can have a long (~15s) transient that is mainly due to the
-        #      initial dynamic transient from simulations that are started with 
-        #      imperfect initlial conditions.
-
-
-    def record(self, step, state):
-        """
-        Returns a result if integration step corresponds to sampling period.
-        Updates the interim-stock on every step and updates the stock if the 
-        step corresponds to the interim period.
-
-        """
-        #Update the interim-stock at every step
-        self._interim_stock[((step % self._interim_istep) - 1), ...] = state[self.voi]
-
-        #At stock's period update it with the temporal average of interim-stock
-        if step % self._interim_istep == 0:
-            avg_interim_stock = numpy.mean(self._interim_stock, axis=0)
-            i_stock = ((step/self._interim_istep % self._stock_steps) - 1)
-            self._stock[i_stock, ...] = avg_interim_stock
-
-        #At the monitor's period, apply the heamodynamic response function to
-        #the stock and return the resulting BOLD signal.
-        if step % self.istep == 0:
-
-            # convenient locals
-            time = step * self.dt
-            kernel = self.hemodynamic_response_function
-            stock = self._stock
-            shape = self._stock.shape # (time, voi, node, mode, thr)
-
-            # compute "full" response, then average across voi & modes
-            response = (stock  .reshape((shape[0], -1)).T*kernel).sum(1)
-            averaged = response.reshape (shape[1:]).sum(0).sum(1)
-            
-            # return with fully general shape
-            return [time, averaged.reshape((1, shape[2], 1) + shape[4:])]
 
 
 class BalloonWindkesselAccordingToKJFristonEtAl2003NeuroImage(Monitor):
@@ -1384,7 +1269,7 @@ class BalloonWindkesselAccordingToKJFristonEtAl2003NeuroImage(Monitor):
     def __init__(self, *args, **kwds):
         raise NotImplementedError
     
-    def record(self, step, state):
+    def sample(self, step, state):
         """
         Returns a result if integration step corresponds to sampling period.
         Updates the interim-stock on every step and updates the stock if the 
@@ -1412,5 +1297,3 @@ class BalloonWindkesselAccordingToKJFristonEtAl2003NeuroImage(Monitor):
             bold = bold.sum(axis=0)[numpy.newaxis, :, :]    #state-variables
             bold = bold.sum(axis=2)[:, :, numpy.newaxis]    #modes
             return [time, bold]
-
-

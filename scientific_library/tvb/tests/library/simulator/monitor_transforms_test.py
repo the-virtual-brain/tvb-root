@@ -38,7 +38,7 @@ from tvb.simulator.monitors import MonitorTransforms
 
 from tvb.simulator import models, coupling, integrators, noise, simulator
 from tvb.datatypes import connectivity
-from tvb.simulator.monitors import Raw
+from tvb.simulator.monitors import Raw, TemporalAverage
 
 
 class MonitorTransformsTests(BaseTestCase):
@@ -115,10 +115,20 @@ class MonitorTransformsTests(BaseTestCase):
         _, out = mt.apply_post((0.0, state))
         self.assertEqual(n_expr, out.shape[0])
 
+    def test_user_tags(self):
+        pre = '0;0'
+        post = 'mon;mon**2-1'
+        raw = Raw(pre_expr=pre, post_expr=post)
+        tags = raw._transform_user_tags()
+        self.assertIn('user_tag_1', tags)
+        self.assertIn('user_tag_2', tags)
+        self.assertEqual(tags['user_tag_1'], pre)
+        self.assertEqual(tags['user_tag_2'], post)
+
 
 class MonitorTransformsInSimTest(BaseTestCase):
 
-    def _gen_sim(self, *mons):
+    def _run_sim(self, length, *mons):
         sim = simulator.Simulator(
             model=models.Generic2dOscillator(),
             connectivity=connectivity.Connectivity(load_default=True),
@@ -126,29 +136,28 @@ class MonitorTransformsInSimTest(BaseTestCase):
             integrator=integrators.EulerDeterministic(),
             monitors=mons)
         sim.configure()
-        return sim
+        ys = []
+        for (t, y), in sim(simulation_length=length):
+            ys.append(y)
+        return sim, numpy.array(ys)
 
     def test_expr_pre(self):
-        sim = self._gen_sim(Raw(pre_expr='V;W;V**2;W-V', post_expr=''))
+        sim, ys = self._run_sim(5, Raw(pre_expr='V;W;V**2;W-V', post_expr=''))
         self.assertTrue(hasattr(sim.monitors[0], '_transforms'))
-        ys = []
-        for (t, y), in sim(simulation_length=5):
-            ys.append(y)
-        ys = numpy.array(ys)
         v, w, v2, wmv = ys.transpose((1, 0, 2, 3))
         self.assertTrue(numpy.allclose(v**2, v2))
         self.assertTrue(numpy.allclose(w-v, wmv))
 
     def test_expr_post(self):
-        sim = self._gen_sim(Raw(pre_expr='V;W;V;W', post_expr=';;mon**2; exp(mon)'))
+        sim, ys = self._run_sim(5, Raw(pre_expr='V;W;V;W', post_expr=';;mon**2; exp(mon)'))
         self.assertTrue(hasattr(sim.monitors[0], '_transforms'))
-        ys = []
-        for (t, y), in sim(simulation_length=1):
-            ys.append(y)
-        ys = numpy.array(ys)
         v, w, v2, ew = ys.transpose((1, 0, 2, 3))
         self.assertTrue(numpy.allclose(v**2, v2))
         self.assertTrue(numpy.allclose(numpy.exp(w), ew))
+
+    def test_period_handling(self):
+        "Test that expression application working for monitors with a period."
+        sim, ys = self._run_sim(5, TemporalAverage(pre_expr='V+W'))
 
 
 if __name__ == '__main__':
