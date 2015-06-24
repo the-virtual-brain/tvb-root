@@ -253,9 +253,13 @@ class SimulatorAdapter(ABCAsynchronous):
             # Now check if the monitor will return results for each state variable, in which case store
             # the labels for these state variables.
             # todo move these into monitors as well
-            if m_name in self.HAVE_STATE_VARIABLES:
+            #   and replace check if ts.user_tag_1 with something better (e.g. pre_ex & post)
+            state_variable_dimension_name = ts.labels_ordering[1]
+            if ts.user_tag_1:
+                ts.labels_dimensions[state_variable_dimension_name] = ts.user_tag_1.split(';')
+
+            elif m_name in self.HAVE_STATE_VARIABLES:
                 selected_state_vars = [self.algorithm.model.state_variables[idx] for idx in monitor.voi]
-                state_variable_dimension_name = ts.labels_ordering[1]
                 ts.labels_dimensions[state_variable_dimension_name] = selected_state_vars
 
             ts.start_time = start_time
