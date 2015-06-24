@@ -3,14 +3,12 @@
    You can adapt this file completely to your liking, but it should at least
    contain the root `toctree` directive.
 
+.. include:: /manuals/templates/pdf_constants.rst
 
-Welcome to The Virtual Brain documentation!
-===========================================
+.. include:: /manuals/UserGuide/UserGuide-Overview.rst
 
-.. toctree::
-   :maxdepth: 2
-
-The Virtual Brain (TVB) is a framework for simulating, analyzing and modeling neuroimaging data.
+Download
+--------
 
 To download it, check out the |official_site|.
 
@@ -19,7 +17,9 @@ To get in touch with other users and developers, please head over to the |mailin
 Some more documents and artefacts for TVB can be found in this |sharing_area|
 (e.g. documentation from TVB Node# meetings, some team pictures).
 
-We are grateful to:
+We are grateful to
+------------------
+
  - our contributors (check their names on |our_github|)
  - our sponsors (check their names on the |our_sponsors_page|
  - all |third_party| tools that we used (licenses are also included in TVB_Distribution)
@@ -30,19 +30,21 @@ We are grateful to:
 
 
     .. image:: _static/logo_python.svg
-        :width: 30%
+        :width: 128px
     .. image:: _static/logo_jira.png
-        :width: 20%
+        :width: 128px
     .. image:: _static/logo_pycharm.png
-        :width: 35%
+        :width: 128px
 
     .. image:: _static/logo_svn.png
-        :width: 30%
+        :width: 128px
     .. image:: _static/logo_github.png
-        :width: 25%
+        :width: 128px
     .. image:: _static/logo_hudson.png
-        :width: 30%
+        :width: 128px
 
+.. toctree::
+   :maxdepth: 2
 
 
 .. |official_site| raw:: html

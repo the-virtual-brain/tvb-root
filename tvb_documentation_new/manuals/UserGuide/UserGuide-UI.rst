@@ -1,6 +1,18 @@
 Web User Interface of |TVB|
 ============================
 
+The workflow of TVB is divided in **User**, **Project**, **Simulator**,
+**Analysis**, **Stimulus** and **Conectivity**. In **User**, the user can
+manage their account and |TVB| settings. In **Project**, the individual projects
+are defined with all their data and infrastructure. In **Simulator** the
+large-scale simulation is defined and different options to view structural and
+functional data are offered in 2D, 3D, as well other representations to
+visualize results. Having multiple panels allows having a quick overview of the
+current |TVB| model parameters, simulations and results. In **Analysis** certain
+options for data and connectivity analysis are offered. In **Stimulus**,
+patterns of stimuli can be generated. And finally in **Connectivity**, the user
+can edit the connectivity matrices assisted by interactive visualization tools.
+
 
 Main Web Interface Description and Typical Workflow
 ----------------------------------------------------
@@ -42,39 +54,3 @@ through these steps:
 
 A history of launched simulations is kept to have the traceability of any
 modifications that took place in the simulation chain.
-
-.. raw:: pdf
-
-   PageBreak
-
-.. include:: UserGuide-UI_User.rst 
-
-.. raw:: pdf
-
-   PageBreak
-   
-.. include:: UserGuide-UI_Project.rst
-
-.. raw:: pdf
-
-   PageBreak
-
-.. include:: UserGuide-UI_Simulator.rst
-
-.. raw:: pdf
-
-   PageBreak
-
-.. include:: UserGuide-UI_Analyze.rst
-
-.. raw:: pdf
-
-   PageBreak
-
-.. include:: UserGuide-UI_Stimulus.rst
-
-.. raw:: pdf
-
-   PageBreak
-
-.. include:: UserGuide-UI_Connectivity.rst
