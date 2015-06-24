@@ -77,7 +77,11 @@ class TimeSeries(ABCDisplayer):
         if preview and shape[0] > self.MAX_PREVIEW_DATA_LENGTH:
             shape[0] = self.MAX_PREVIEW_DATA_LENGTH
 
-        state_variables = time_series.labels_dimensions.get(time_series.labels_ordering[1], [])
+        if time_series.user_tag_1:
+            variables = time_series.user_tag_1.split(';')
+        else:
+            variables = time_series.labels_dimensions.get(time_series.labels_ordering[1], [])
+
         labels = time_series.get_space_labels()
 
         # when surface-result, the labels will be empty, so fill some of them,
@@ -91,7 +95,8 @@ class TimeSeries(ABCDisplayer):
                 'ts_title': time_series.title, 'preview': preview, 'figsize': figsize,
                 'shape': repr(shape), 't0': ts[0],
                 'dt': ts[1] - ts[0] if len(ts) > 1 else 1,
-                'labelsStateVar': state_variables, 'labelsModes': range(shape[3])
+                'labelsStateVar': variables,
+                'labelsModes': range(shape[3])
                 }
         pars.update(self.build_template_params_for_subselectable_datatype(time_series))
 
