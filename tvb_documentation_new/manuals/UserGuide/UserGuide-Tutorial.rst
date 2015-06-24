@@ -1,5 +1,5 @@
-Examples and Tutorials
-======================
+Gui Tutorials and examples
+==========================
 
 .. |example| image:: icons/applications-science.png
 
