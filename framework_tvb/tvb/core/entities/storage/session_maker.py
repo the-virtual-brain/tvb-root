@@ -75,9 +75,11 @@ else:
     else:
         event.listen(DB_ENGINE, 'connect', __have_journal_WAL)
 
+SA_SESSIONMAKER = sessionmaker(bind=DB_ENGINE, expire_on_commit=False)
 
-SA_SESSIONMAKER = sessionmaker(bind=DB_ENGINE)
-
+# expire_on_commit – Defaults to True. When True, all instances will be fully expired after each commit(),
+#           so that all attribute/object access subsequent to a completed transaction will need to load
+#           from the most recent database state.
 
 
 def singleton(cls):

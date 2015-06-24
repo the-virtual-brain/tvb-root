@@ -335,13 +335,6 @@ class MappedType(model.DataType, mapped.MappedTypeLight):
         """
         meta_dictionary = {}
 
-        from sqlalchemy.orm.exc import DetachedInstanceError
-        try:
-            self.create_date
-        except DetachedInstanceError as exc:
-            self.logger.info('ignoring %r on %r', exc, self)
-            return
-
         # First we process fields store in DB (from Type)
         for attr in dir(self.__class__):
             value = getattr(self.__class__, attr)
