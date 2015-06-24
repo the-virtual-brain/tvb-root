@@ -38,14 +38,17 @@ handling of projection matrices, etc.
 """
 
 import unittest
+import numpy
 
 if __name__ == "__main__":
     from tvb.tests.library import setup_test_console_env
     setup_test_console_env()
 
+from tvb.datatypes import sensors
+from tvb.simulator import monitors, models, coupling, integrators, noise, simulator
 from tvb.basic.logger.builder import get_logger
 from tvb.tests.library.base_testcase import BaseTestCase
-from tvb.simulator.lab import *
+from tvb.datatypes import connectivity
 from tvb.datatypes.cortex import Cortex
 from tvb.datatypes.region_mapping import RegionMapping
 
