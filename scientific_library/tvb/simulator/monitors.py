@@ -305,9 +305,12 @@ class Monitor(core.Type):
             post = ''
 
         self._transforms = mt = MonitorTransforms(pre, post, svars)
-        if self.voi is None:
-            self.voi = numpy.r_[:len(mt.pre)]
+        self.voi = numpy.r_[:len(mt.pre)]
         LOG.info('%r - pre %r, post %r, svars %r', self, mt.pre, mt.post, svars)
+
+        dbg_voi = numpy.array([0, 3])
+        if type(self) in (TemporalAverage, ) and self.voi.shape == dbg_voi.shape and numpy.allclose(self.voi, dbg_voi):
+            pass
 
     def record(self, step, state):
         """
@@ -664,7 +667,10 @@ class TemporalAverage(Monitor):
         period, the ``_stock`` is averaged over time for return. 
 
         """
-        self._stock[((step % self.istep) - 1), :] = state[self.voi, :]
+        try:
+            self._stock[((step % self.istep) - 1), :] = state[self.voi]
+        except IndexError:
+            self.voi
         if step % self.istep == 0:
             avg_stock = numpy.mean(self._stock, axis=0)
             time = (step - self.istep / 2.0) * self.dt
@@ -711,16 +717,14 @@ class Projection(Monitor):
         "Configure projection matrix monitor for given simulation."
 
         super(Projection, self).config_for_sim(simulator)
+        self._sim = simulator
 
         if hasattr(self, 'sensors'):
             self.sensors.configure()
 
         # setup convenient locals
-        self._sim = simulator
         surf = simulator.surface
-        ":type : Cortex"
         conn = simulator.connectivity
-        ":type : Connectivity"
         using_cortical_surface = surf is not None
         if using_cortical_surface:
             non_cortical_indices, = numpy.where(numpy.bincount(surf.region_mapping) == 1)
@@ -760,7 +764,7 @@ class Projection(Monitor):
 
     def sample(self, step, state):
         "Record state, returning sample at sampling frequency / period."
-        self._state += self.gain.dot(state[self.voi].sum(axis=-1))
+        self._state += self.gain.dot(state[self.voi].sum(axis=-1).T)
         if step % self._period_in_steps == 0:
             time = (step - self._period_in_steps / 2.0) * self.dt
             sample = self._state.copy() / self._period_in_steps
@@ -836,7 +840,7 @@ class EEG(Projection):
         maybe_sample = super(EEG, self).sample(step, state)
         if maybe_sample is not None:
             time, sample = maybe_sample
-            sample -= self._ref_vec.dot(sample.reshape((-1, ))[self._ref_vec_mask])
+            sample -= self._ref_vec.dot(sample[:, self._ref_vec_mask])[:, numpy.newaxis]
             return time, sample.reshape((1, -1, 1))
 
     def create_time_series(self, storage_path, connectivity=None, surface=None,

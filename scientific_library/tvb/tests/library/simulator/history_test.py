@@ -64,10 +64,9 @@ class IdCoupling(Coupling):
 class Sum(Model):
     nvar = 1
     _nvar = 1
-    state_variables_range = {'x': [0, 100]}
+    state_variable_range = {'x': [0, 100]}
     variables_of_interest = basic.Enumerate(default=['x'], options=['x'])
     cvar = numpy.array([0])
-
 
     def dfun(self, X, coupling, local_coupling=0):
         return X + coupling + local_coupling
@@ -103,7 +102,7 @@ class ExactPropagationTests(BaseTestCase):
         self.build_simulator(n=n)
         # x = numpy.zeros((n, ))
         xs = []
-        for (t, raw), in self.sim():
+        for (t, raw), in self.sim(simulation_length=10):
             xs.append(raw.flat[:].copy())
         xs = numpy.array(xs)
         xs_ = numpy.array([[2., 2., 2., 1.],
