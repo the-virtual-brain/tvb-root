@@ -3,6 +3,20 @@
    You can adapt this file completely to your liking, but it should at least
    contain the root `toctree` directive.
 
+.. IMPORTANT: Sphinx expects a non dummy toc tree in the index.rst
+   This index page is not only the main documentation page.
+   It is mostly the top level node of the document hierarchy
+   Without this toc sphinx is lost, does not render navigations etc.
+   The toctree is hidden, not rendered, it just defines structure
+
+.. toctree::
+    :hidden:
+
+    /manuals/UserGuide/UserGuide-Installation
+    /doc_site/top_tutorials
+    /doc_site/top_gui_guide
+    /doc_site/top_developers
+
 .. include:: /manuals/templates/pdf_constants.rst
 
 .. include:: /manuals/UserGuide/UserGuide-Overview.rst
@@ -42,9 +56,6 @@ We are grateful to
         :width: 128px
     .. image:: _static/logo_hudson.png
         :width: 128px
-
-.. toctree::
-   :maxdepth: 2
 
 
 .. |official_site| raw:: html

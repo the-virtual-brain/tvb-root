@@ -11,14 +11,6 @@ Below you can find a few details from TVB code.
 
 You can see the source code on |github_link|.
 
-**TVB Architecture**
-
-  .. toctree::
-   :maxdepth: 1
-
-   /manuals/DeveloperReference/DeveloperReferenceManual
-
-
 **Contributor's manual**
 
  .. toctree::
@@ -26,13 +18,6 @@ You can see the source code on |github_link|.
 
    /manuals/ContributorsManual/ContributorsManual
 
-
-**Installation for Build**
-
-  .. toctree::
-   :maxdepth: 1
-
-   /manuals/InstallationManual/InstallationManual
 
 **API**
 

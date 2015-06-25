@@ -14,7 +14,6 @@ It is useful to you if you want to script or extend |TVB|.
 .. toctree::
    :maxdepth: 2
 
-   console/top_console
    advanced/top_advanced
    benchmarks/top_benchmarks
    future/top_future
