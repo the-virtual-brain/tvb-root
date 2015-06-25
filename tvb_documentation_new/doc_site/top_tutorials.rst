@@ -13,6 +13,7 @@ It is usually possible to reproduce the scripting tutorials with the Gui.
 .. toctree::
     :maxdepth: 2
 
+    /manuals/UserGuide/UserGuide-Demos
     /manuals/UserGuide/UserGuide-Tutorial
     /doc_site/console/tutorials
 

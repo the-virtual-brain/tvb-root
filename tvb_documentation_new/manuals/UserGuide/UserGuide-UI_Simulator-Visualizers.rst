@@ -4,6 +4,8 @@
 Simple Visualizers
 ..................
 
+.. _brain_activity_view:
+
 Brain Activity Visualizer
 ~~~~~~~~~~~~~~~~~~~~~~~~~
 
@@ -45,6 +47,7 @@ Use it to show activity only for the selected regions.
    Preview for Brain Activity Visualizer at the region level
 
 
+.. _ts_svg_ui:
 
 Time Series Visualizer (svg/d3)
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -112,7 +115,8 @@ A side effect of this setting is that as you decrease this axis separation the a
 
    Selecting the "channels" to be displayed (available in several viewers of TVB).
    
-   
+.. _brain_dual_view:
+
 Dual Brain Activity Visualizer
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
@@ -134,6 +138,7 @@ Movie start/stop, speed control, color schema change, channel selection are some
 
    Brain activity with sEEG recordings (on the left instance) and region level activity (on the right).
 
+.. _brain_volumetric:
 
 Time Series Volume Visualizer
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~

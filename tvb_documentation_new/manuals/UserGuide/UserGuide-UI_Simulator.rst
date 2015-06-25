@@ -1,3 +1,5 @@
+.. _simulator_ui:
+
 Simulator
 ---------
 
@@ -79,6 +81,7 @@ icon next to each element.
     * click *Apply Filters* to have the results filtered in the selector component right above the filters
     * this ca also be used in the context of Parameter Space Exploration of |TVB|
 
+.. _phase_plane:
 
 The `Phase plane` page
 ~~~~~~~~~~~~~~~~~~~~~~

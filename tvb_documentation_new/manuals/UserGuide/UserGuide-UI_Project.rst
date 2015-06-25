@@ -134,6 +134,8 @@ From this page you can manage all the images stored within the current working
         
         The Image Archive page
 
+.. _operations_ui:
+
 Operations
 ...........
 
@@ -186,6 +188,8 @@ filtering (when using the input text field and then pressing Button 'Filter').
 Filtering based on free-test searches into all fields of an entity, and it is case insensitive.
 
 Data Structure page contains 2 options for viewing in the central area:
+
+.. _tree_view_ui:
 
 a Tree view:
     
