@@ -71,8 +71,8 @@ import tvb.datatypes.arrays as arrays
 from tvb.datatypes.cortex import Cortex
 from tvb.datatypes.region_mapping import RegionMapping
 from tvb.datatypes.connectivity import Connectivity
-from tvb.datatypes.projections import (
-    ProjectionMatrix, ProjectionSurfaceEEG, ProjectionSurfaceMEG)
+from tvb.datatypes.projections import (ProjectionMatrix,
+    ProjectionSurfaceEEG, ProjectionSurfaceMEG, ProjectionSurfaceSEEG)
 import tvb.datatypes.equations as equations
 
 import tvb.basic.traits.util as util
@@ -686,22 +686,24 @@ class Projection(Monitor):
     "Base class monitor providing lead field suppport."
     _ui_name = "Projection matrix"
 
-    projection = ProjectionMatrix(
-        default=None, label='Projection matrix',
-        doc='Projection matrix to apply to sources.')
-
     region_mapping = RegionMapping(
         required=False,
         label="region mapping",
-        doc="""An index vector of length equal to the number_of_vertices + the
-            number of non-cortical regions, with values that index into an
-            associated connectivity matrix.""")
-
+        doc="A region mapping specifies how vertices of a surface correspond to given regions in the"
+            " connectivity. For iEEG/EEG/MEG monitors, this must be specified when performing a region"
+            " simulation but is optional for a surface simulation.")
 
     @staticmethod
     def oriented_gain(gain, orient):
         "Apply orientations to gain matrix."
         return (gain.reshape((gain.shape[0], -1, 3)) * orient).sum(axis=-1)
+
+    @classmethod
+    def _projection_class(cls):
+        if hasattr(cls, 'projection'):
+            return type(cls.projection)
+        else:
+            return ProjectionMatrix
 
     @classmethod
     def from_files(cls, sensors_fname, projection_fname, **kwds):
@@ -713,7 +715,7 @@ class Projection(Monitor):
 
         return cls(
             sensors=type(cls.sensors).from_file(sensors_fname),
-            projection=ProjectionMatrix.from_file(projection_fname),
+            projection=cls._projection_class().from_file(projection_fname),
             **kwds
         )
 
@@ -741,12 +743,17 @@ class Projection(Monitor):
         using_cortical_surface = surf is not None
         if using_cortical_surface:
             non_cortical_indices, = numpy.where(numpy.bincount(surf.region_mapping) == 1)
-            self.region_mapping = surf.region_mapping
+            self.rmap = surf.region_mapping
         else:
+            # assume all cortical if no info
+            if conn.cortical.size == 0:
+                conn.cortical = numpy.array([True] * conn.weights.shape[0])
             non_cortical_indices, = numpy.where(~conn.cortical)
             if self.region_mapping is None:
                 raise Exception("Please specify a region mapping on the EEG/MEG/iEEG monitor when "
                                 "performing a region simulation.")
+            else:
+                self.rmap = self.region_mapping
 
         have_subcortical = len(non_cortical_indices) > 0
 
@@ -758,13 +765,14 @@ class Projection(Monitor):
 
         # compute analytic if not provided
         if self.projection is None:
-            self.projection = ProjectionMatrix(projection_data=self.analytic(**sources))
+            Proj = self._projection_class()
+            self.projection = Proj(projection_data=self.analytic(**sources))
 
         # reduce to region lead field if region sim
         if not using_cortical_surface:
-            proj = numpy.zeros((self.gain.shape[0], conn.number_of_regions))
-            numpy.add.at(proj.T, self.region_mapping, self.projection.T)
-            self.projection = proj
+            gain = numpy.zeros((self.gain.shape[0], conn.number_of_regions))
+            numpy.add.at(gain.T, self.rmap, self.gain.T)
+            self.gain = gain
 
         # append analytic sub-cortical to lead field
         if have_subcortical:
@@ -773,8 +781,14 @@ class Projection(Monitor):
             self.gain = numpy.hstack((self.gain, self.analytic(*src)))
 
         # zero out unusable sensors
+        import sys; sys.path.append('/Applications/PyCharm.app/Contents/helpers/pydev'); import pydevd; pydevd.settrace('localhost', port=4242, stdoutToServer=True, stderrToServer=True)
+
         if self.sensors.usable is not None and not self.sensors.usable.all():
             self.gain[~self.sensors.usable] = 0.0
+
+        # unconditionally zero NaN elements; framework not prepared for NaNs.
+        nan_mask = numpy.isfinite(self.gain).all(axis=1)
+        self.gain[~nan_mask] = 0.0
 
         # attrs used for recording
         self._state = numpy.zeros((self.gain.shape[0], len(self._transforms.pre)))
@@ -789,13 +803,34 @@ class Projection(Monitor):
             self._state[:] = 0.0
             return time, sample.reshape((1, -1, 1)) # for compatibility
 
+    _gain = None
+
     def _get_gain(self):
-        return self.projection.projection_data
+        if self._gain is None:
+            self._gain = self.projection.projection_data
+        return self._gain
 
     def _set_gain(self, new_gain):
-        self.projection.projection_data = new_gain
+        self._gain = new_gain
 
     gain = property(_get_gain, _set_gain)
+
+    _rmap = None
+
+    def _reg_map_data(self, reg_map):
+        return getattr(reg_map, 'array_data', reg_map)
+
+    def _get_rmap(self):
+        "Normalize obtaining reg map vector over various possibilities."
+        if self._rmap is None:
+            self._rmap = self._reg_map_data(self.region_mapping)
+        return self._rmap
+
+    def _set_rmap(self, reg_map):
+        if self._rmap is not None:
+            self._rmap = self._reg_map_data(self.region_mapping)
+
+    rmap = property(_get_rmap, _set_rmap)
 
 
 class EEG(Projection):
@@ -809,6 +844,10 @@ class EEG(Projection):
 
     """
     _ui_name = "EEG"
+
+    projection = ProjectionSurfaceEEG(
+        default=None, label='Projection matrix',
+        doc='Projection matrix to apply to sources.')
 
     reference = basic.String(required=False, label="EEG Reference",
                              doc='EEG Electrode to be used as reference, or "average" to '
@@ -874,6 +913,10 @@ class MEG(Projection):
     "Forward solution monitor for magnetoencephalography (MEG)."
     _ui_name = "MEG"
 
+    projection = ProjectionSurfaceMEG(
+        default=None, label='Projection matrix',
+        doc='Projection matrix to apply to sources.')
+
     sensors = sensors_module.SensorsMEG(
         label = "MEG Sensors",
         default = None,
@@ -928,6 +971,10 @@ class iEEG(Projection):
     "Forward solution for intracranial EEG (not ECoG!)."
 
     _ui_name = "Intracerebral / Stereo EEG"
+
+    projection = ProjectionSurfaceSEEG(
+        default=None, label='Projection matrix',
+        doc='Projection matrix to apply to sources.')
 
     sigma = basic.Float(label="conductivity", default=1.0)
 
