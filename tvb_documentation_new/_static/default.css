@@ -505,3 +505,10 @@ ul.search li div.context {
 ul.keywordmatches li.goodmatch a {
     font-weight: bold;
 }
+
+/* custom TVB classes */
+
+.demo-figure{
+    display: inline-block;
+    margin: 20px;
+}
