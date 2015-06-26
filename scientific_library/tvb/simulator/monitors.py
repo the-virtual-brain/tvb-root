@@ -780,9 +780,6 @@ class Projection(Monitor):
             src = conn.centres[non_cortical_indices], conn.orientations[non_cortical_indices]
             self.gain = numpy.hstack((self.gain, self.analytic(*src)))
 
-        # zero out unusable sensors
-        import sys; sys.path.append('/Applications/PyCharm.app/Contents/helpers/pydev'); import pydevd; pydevd.settrace('localhost', port=4242, stdoutToServer=True, stderrToServer=True)
-
         if self.sensors.usable is not None and not self.sensors.usable.all():
             self.gain[~self.sensors.usable] = 0.0
 
@@ -801,7 +798,7 @@ class Projection(Monitor):
             time = (step - self._period_in_steps / 2.0) * self.dt
             sample = self._state.copy() / self._period_in_steps
             self._state[:] = 0.0
-            return time, sample.reshape((1, -1, 1)) # for compatibility
+            return time, sample.T[..., numpy.newaxis] # for compatibility
 
     _gain = None
 
