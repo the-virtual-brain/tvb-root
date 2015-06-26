@@ -11,4 +11,3 @@ TVB's Future
    :maxdepth: 2
 
    nice_to_have
-   known_issues
