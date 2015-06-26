@@ -2790,7 +2790,9 @@ class LarterBreakspear(Model):
             the expected dynamic range of that state-variable for the current
             parameters, it is used as a mechanism for bounding random inital
             conditions when the simulation isn't started from an explicit
-            history, it is also provides the default range of phase-plane plots.""")
+            history, it is also provides the default range of phase-plane plots.""",
+        order=99
+    )
 
 
     def __init__(self, **kwargs):
@@ -3516,7 +3518,7 @@ class Epileptor(Model):
                  "y4": numpy.array([0., 2.]),
                  "y5": numpy.array([-1., 1.])},
         doc="n/a",
-        order=-1
+        order=16
         )
 
     variables_of_interest = basic.Enumerate(
