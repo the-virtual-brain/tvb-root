@@ -69,6 +69,7 @@ import tvb.datatypes.sensors as sensors_module
 from tvb.datatypes.sensors import SensorsMEG, SensorsInternal, SensorsEEG, Sensors
 import tvb.datatypes.arrays as arrays
 from tvb.datatypes.cortex import Cortex
+from tvb.datatypes.region_mapping import RegionMapping
 from tvb.datatypes.connectivity import Connectivity
 from tvb.datatypes.projections import (
     ProjectionMatrix, ProjectionSurfaceEEG, ProjectionSurfaceMEG)
@@ -204,7 +205,8 @@ class Monitor(core.Type):
     """
 
     # list of class names not shown in UI
-    _base_classes = ['Monitor', 'BoldMultithreaded', 'BalloonWindkesselAccordingToKJFristonEtAl2003NeuroImage']
+    _base_classes = ['Monitor', 'BoldMultithreaded', 'BalloonWindkesselAccordingToKJFristonEtAl2003NeuroImage',
+                     'Projection']
 
     period = basic.Float(
         label = "Sampling period (ms)",
@@ -226,21 +228,24 @@ class Monitor(core.Type):
         required=False,
         doc="Expression to evaluate on state variables prior to applying a "
             "monitor's observation model. Several expressions may be provided "
-            "when separated by commas, each paired with a corresponding post_expr "
-            "if provided. Expressions must be standard NumPy syntax, and "
+            "when separated by semicolons (';'), each paired with a corresponding post_expr "
+            "if provided. Expressions must be standard NumPy syntax or using functions from numpy, and "
             "reductions (sum, prod) are not available. If no set of expressions are "
-            "given, then the model's variables of interest are used."
+            "given, then the model's variables of interest are used. For example, the dipole moment prior "
+            "to applying an EEG gain matrix for the generic 2D oscillator might use the expression "
+            "`1e-6 * (V + W / 2)`."
     )
 
     post_expr = basic.String(
         label="Post-monitor expression(s)",
         required=False,
-        doc="Expression to evaluate on state variables after applying a "
-            "monitor's observation model. Several expressions may be provided "
-            "when separated by commas, each paired with a corresponding pre_expr "
-            "if provided. Expressions must be standard NumPy syntax, and "
+        doc="Expression to evaluate on monitor values (named `mon`) after applying a "
+            "monitor's observation model. Several expressions of 'mon' may be provided "
+            "when separated by semicolons (';'), each paired with a corresponding pre_expr "
+            "if provided. Expressions must be standard NumPy syntax or using functions from numpy, and "
             "reductions (sum, prod) are not available. If no expressions are given "
-            "then the result of the monitor's observation model is the direct result."
+            "then the result of the monitor's observation model results. For example, the sine of squaring the"
+            " result of a monitor's observation model is achieved which the expression `sin(mon**2)`"
     )
 
     def __init__(self,  **kwargs):
@@ -685,6 +690,14 @@ class Projection(Monitor):
         default=None, label='Projection matrix',
         doc='Projection matrix to apply to sources.')
 
+    region_mapping = RegionMapping(
+        required=False,
+        label="region mapping",
+        doc="""An index vector of length equal to the number_of_vertices + the
+            number of non-cortical regions, with values that index into an
+            associated connectivity matrix.""")
+
+
     @staticmethod
     def oriented_gain(gain, orient):
         "Apply orientations to gain matrix."
@@ -728,8 +741,13 @@ class Projection(Monitor):
         using_cortical_surface = surf is not None
         if using_cortical_surface:
             non_cortical_indices, = numpy.where(numpy.bincount(surf.region_mapping) == 1)
+            self.region_mapping = surf.region_mapping
         else:
             non_cortical_indices, = numpy.where(~conn.cortical)
+            if self.region_mapping is None:
+                raise Exception("Please specify a region mapping on the EEG/MEG/iEEG monitor when "
+                                "performing a region simulation.")
+
         have_subcortical = len(non_cortical_indices) > 0
 
         # determine source space
@@ -745,7 +763,7 @@ class Projection(Monitor):
         # reduce to region lead field if region sim
         if not using_cortical_surface:
             proj = numpy.zeros((self.gain.shape[0], conn.number_of_regions))
-            numpy.add.at(proj.T, surf.region_mapping, self.projection.T)
+            numpy.add.at(proj.T, self.region_mapping, self.projection.T)
             self.projection = proj
 
         # append analytic sub-cortical to lead field
