@@ -62,6 +62,7 @@ Example spcifying a Model and stochastic sample trajectories::
 #      check for leaks or look into "forcing" cleanup...
 
 import numpy
+import matplotlib; matplotlib.use('TkAgg')
 import pylab
 import matplotlib.widgets as widgets
 
@@ -75,7 +76,7 @@ import tvb.simulator.integrators as integrators_module
 import tvb.basic.traits.core as core
 
 # Define a colour theme... see: matplotlib.colors.cnames.keys()
-BACKGROUNDCOLOUR = "slategrey"
+BACKGROUNDCOLOUR = "lightgray"
 EDGECOLOUR = "darkslateblue"
 AXCOLOUR = "steelblue"
 BUTTONCOLOUR = "steelblue"
@@ -749,6 +750,7 @@ class PhasePlaneInteractive(core.Type):
         self.pp_ax.set(title = model_name + " mode " + str(self.mode))
         self.pp_ax.set(xlabel = "State Variable " + self.svx)
         self.pp_ax.set(ylabel = "State Variable " + self.svy)
+
         #import pdb; pdb.set_trace()
         #Plot a discrete representation of the vector field
         if numpy.all(self.U[:, :, self.mode] + self.V[:, :, self.mode]  == 0):
@@ -783,6 +785,9 @@ class PhasePlaneInteractive(core.Type):
 
         #Calculate an example trajectory
         state = self.default_sv.copy()
+        self.integrator.clamped_state_variable_indices = numpy.setdiff1d(
+            numpy.r_[:len(self.model.state_variables)], numpy.r_[svx_ind, svy_ind])
+        self.integrator.clamped_state_variable_values = self.default_sv[self.integrator.clamped_state_variable_indices]
         state[svx_ind] = x
         state[svy_ind] = y
         scheme = self.integrator.scheme
@@ -816,11 +821,33 @@ class PhasePlaneInteractive(core.Type):
             self.plot_trajectory(x, y)
 
 
+def _list_of_models():
+    base = models_module.Model
+    for key in dir(models_module):
+        attr = getattr(models_module, key)
+        if isinstance(attr, type) and issubclass(attr, base):
+            if attr is base:
+                continue
+            first_para = attr.__doc__.replace('\n', ' ').replace('\t', ' ')[:100] + ' ...'
+            yield attr.__name__, attr._ui_name
 
 if __name__ == "__main__":
-    # Do some stuff that tests or makes use of this module...
-    LOG.info("Testing %s module..." % __file__)
-    MODEL = models_module.Generic2dOscillator()
-    ppi_fig = PhasePlaneInteractive(model = MODEL)
-    ppi_fig.show()
 
+    import sys
+
+    try:
+        Model = getattr(models_module, sys.argv[1])
+    except Exception:
+        print """
+usage: python -m tvb.simulator.plot.phase_plane_interactive name_of_model
+
+where name_of_model is one of
+
+%s
+        """ % (
+            '\n'.join(map('{0[0]:>25} - {0[1]}'.format, _list_of_models()))
+        )
+        sys.exit(1)
+
+    ppi_fig = PhasePlaneInteractive(model=Model())
+    ppi_fig.show()
