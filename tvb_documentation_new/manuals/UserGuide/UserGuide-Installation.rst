@@ -1,7 +1,9 @@
+.. include:: /manuals/templates/pdf_constants.rst
+
 Installing the Application
 ==========================
 
-To download |TVB| check out the |official_site|
+To download |TVB| check out the `official site <http://www.thevirtualbrain.org>`_
 
 The TVB software package can be used in 3 different configurations:
 
@@ -65,7 +67,7 @@ For details on script `contributor_setup`, please read document `ContributorsMan
 Configuring TVB
 ---------------
 
-The preferred method to configure |TVB| is from the web interface. See `TVB Settings`_.
+The preferred method to configure |TVB| is from the web interface. See :ref:`tvb_settings_ui`.
 
 However if |TVB| is installed on a headless server (no GUI), then the web interface might not be available remotely.
 In order to configure TVB in a headless environment, create a file named `.tvb.configuration` in the home directory
@@ -162,10 +164,3 @@ Requirements for computation/storage power, dependent on the number of parallel 
   A special feature in TVB is utilizing functions from the Brain Connectivity Toolbox.
   This feature thus requires a MatLab or Octave package on your computer (installed, activated and added to your OS' global PATH variable).
   The Brain Connectivity Toolbox doesn't need to be installed or enabled separately in any way, as TVB will temporarily append it to your MatLab/Octave path.
-
-
-.. include:: /manuals/templates/pdf_constants.rst
-
-.. |official_site| raw:: html
-
-   <a href="http://www.thevirtualbrain.org" target="_blank">official TVB website</a>

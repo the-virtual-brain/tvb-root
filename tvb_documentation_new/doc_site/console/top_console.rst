@@ -19,6 +19,5 @@ and available actions.
 .. toctree::
    :maxdepth: 2
 
-   generic
    tutorials
 

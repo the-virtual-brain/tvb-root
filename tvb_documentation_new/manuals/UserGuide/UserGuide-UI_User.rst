@@ -3,6 +3,8 @@
 User
 ----
 
+.. _tvb_settings_ui :
+
 TVB Settings
 ............
 
