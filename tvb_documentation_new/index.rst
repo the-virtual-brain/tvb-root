@@ -13,8 +13,8 @@
     :hidden:
 
     /manuals/UserGuide/UserGuide-Installation
-    /doc_site/top_tutorials
-    /doc_site/top_gui_guide
+    /doc_site/console/tutorials
+    /manuals/UserGuide/UserGuide-UI
     /doc_site/top_developers
 
 .. include:: /manuals/templates/pdf_constants.rst

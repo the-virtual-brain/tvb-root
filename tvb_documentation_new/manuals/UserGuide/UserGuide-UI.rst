@@ -1,5 +1,7 @@
 .. include:: /manuals/templates/pdf_constants.rst
 
+.. _top_gui_guide:
+
 Web User Interface of |TVB|
 ============================
 
@@ -17,7 +19,7 @@ can edit the connectivity matrices assisted by interactive visualization tools.
 
 
 Main Web Interface Description and Typical Workflow
-----------------------------------------------------
+---------------------------------------------------
 
 On the right, the `login` button has changed to a `logout` button with obvious
 functionality.
@@ -58,6 +60,7 @@ A history of launched simulations is kept to have the traceability of any
 modifications that took place in the simulation chain.
 
 .. toctree::
+    :maxdepth: 2
 
     /manuals/UserGuide/UserGuide-UI_User.rst
     /manuals/UserGuide/UserGuide-UI_Project.rst
