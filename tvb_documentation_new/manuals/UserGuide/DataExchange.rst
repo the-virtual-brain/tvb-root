@@ -1,4 +1,6 @@
-﻿|TVB| Data Storage
+﻿.. include:: ../templates/pdf_constants.rst
+
+|TVB| Data Storage
 ==================
 
 The purpose of this chapter is to provide some details about the way |TVB|

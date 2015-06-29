@@ -1,3 +1,5 @@
+.. include:: /manuals/templates/pdf_constants.rst
+
 Web User Interface of |TVB|
 ============================
 
@@ -54,3 +56,12 @@ through these steps:
 
 A history of launched simulations is kept to have the traceability of any
 modifications that took place in the simulation chain.
+
+.. toctree::
+
+    /manuals/UserGuide/UserGuide-UI_User.rst
+    /manuals/UserGuide/UserGuide-UI_Project.rst
+    /manuals/UserGuide/UserGuide-UI_Simulator.rst
+    /manuals/UserGuide/UserGuide-UI_Analyze.rst
+    /manuals/UserGuide/UserGuide-UI_Stimulus.rst
+    /manuals/UserGuide/UserGuide-UI_Connectivity.rst

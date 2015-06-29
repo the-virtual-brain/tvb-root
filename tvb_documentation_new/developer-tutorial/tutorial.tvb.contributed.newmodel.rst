@@ -19,7 +19,7 @@ External dependencies
       |   \-FloatArray 
       \-simulator 
         \-models
-::
+
 
 You can use third party libraries namely Numpy and Scipy. These should cover all
 the mathematical needs.  
@@ -69,7 +69,8 @@ Dynamical Equations(dfun):
 
 	In addition to that the internal, local and global coupling coefficients 
 	should be clearly identified in the set of equations describing the model.
-    For example, given a two state variable model, and its dynamical equations: 
+    For example, given a two state variable model, and its dynamical equations:
+
     .. math::
         \dot(x) = - a * x  + y * c + g_c + l_c + \lambda
         \dot(y) = - b * y  + x * d + g_c + l_c + \lambda

@@ -1,3 +1,5 @@
+.. include:: ../templates/pdf_constants.rst
+
 Console Interface of |TVB|
 ===========================
 

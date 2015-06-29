@@ -1,3 +1,4 @@
+.. include:: /manuals/templates/pdf_constants.rst
 
 Overview of |TVB|
 =================

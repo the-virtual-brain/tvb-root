@@ -1,4 +1,6 @@
-﻿Analyze
+﻿.. include:: /manuals/templates/pdf_constants.rst
+
+Analyze
 -------
 
 This area offers a set of techniques for data analysis.
