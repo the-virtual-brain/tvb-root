@@ -85,7 +85,7 @@ Copy the following content and edit it to suit your needs. ::
     ADMINISTRATOR_NAME=admin
     LAST_CHECKED_FILE_VERSION=2
     URL_VALUE=sqlite:////home/tvb_user/TVB/tvb-database.db
-    ADMINISTRATOR_PASSWORD=1a1dc91c907325c69271ddf0c944bc72
+    ADMINISTRATOR_PASSWORD=[[md5 of password]]
     SELECTED_DB=sqlite
     MAXIMUM_NR_OF_VERTICES_ON_SURFACE=300000
     MPLH5_SERVER_PORT=9000

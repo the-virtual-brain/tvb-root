@@ -44,18 +44,18 @@ We are grateful to
 
 
     .. image:: _static/logo_python.svg
-        :width: 128px
+        :height: 64px
     .. image:: _static/logo_jira.png
-        :width: 128px
+        :height: 64px
     .. image:: _static/logo_pycharm.png
-        :width: 128px
+        :height: 64px
 
     .. image:: _static/logo_svn.png
-        :width: 128px
+        :height: 64px
     .. image:: _static/logo_github.png
-        :width: 128px
+        :height: 64px
     .. image:: _static/logo_hudson.png
-        :width: 128px
+        :height: 64px
 
 
 .. |official_site| raw:: html

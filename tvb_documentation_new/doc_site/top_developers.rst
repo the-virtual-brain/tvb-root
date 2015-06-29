@@ -23,7 +23,8 @@ You can view open issues on TVB's Jira |open_issues|. You can see ongoing activi
 
    /manuals/ContributorsManual/ContributorsManual
    benchmarks/top_benchmarks
-   future/top_future
+
+   /manuals/UserGuide/Complete_Dataset_Description
    /manuals/UserGuide/DataExchange
 
 
