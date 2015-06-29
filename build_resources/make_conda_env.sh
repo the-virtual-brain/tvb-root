@@ -18,7 +18,7 @@ if [ -z $envname ]; then
 fi
 
 # build env with pre-built binaries from conda repos
-conda create -y -n $envname matplotlib scipy networkx scikit-learn cython h5py pip pil numexpr psutil coverage 
+conda create -y -n $envname matplotlib==1.2.1 scipy networkx scikit-learn cython h5py pip pil numexpr psutil coverage
 
 # enter environ
 source activate $envname
