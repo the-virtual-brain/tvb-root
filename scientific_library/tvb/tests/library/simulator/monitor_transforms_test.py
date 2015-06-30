@@ -128,9 +128,9 @@ class MonitorTransformsTests(BaseTestCase):
 
 class MonitorTransformsInSimTest(BaseTestCase):
 
-    def _run_sim(self, length, *mons):
+    def _run_sim(self, length, model, *mons):
         sim = simulator.Simulator(
-            model=models.Generic2dOscillator(),
+            model=model,
             connectivity=connectivity.Connectivity(load_default=True),
             coupling=coupling.Linear(),
             integrator=integrators.EulerDeterministic(),
@@ -142,22 +142,27 @@ class MonitorTransformsInSimTest(BaseTestCase):
         return sim, numpy.array(ys)
 
     def test_expr_pre(self):
-        sim, ys = self._run_sim(5, Raw(pre_expr='V;W;V**2;W-V', post_expr=''))
+        sim, ys = self._run_sim(5, models.Generic2dOscillator(), Raw(pre_expr='V;W;V**2;W-V', post_expr=''))
         self.assertTrue(hasattr(sim.monitors[0], '_transforms'))
         v, w, v2, wmv = ys.transpose((1, 0, 2, 3))
         self.assertTrue(numpy.allclose(v**2, v2))
         self.assertTrue(numpy.allclose(w-v, wmv))
 
     def test_expr_post(self):
-        sim, ys = self._run_sim(5, Raw(pre_expr='V;W;V;W', post_expr=';;mon**2; exp(mon)'))
+        sim, ys = self._run_sim(5, models.Generic2dOscillator(), Raw(pre_expr='V;W;V;W', post_expr=';;mon**2; exp(mon)'))
         self.assertTrue(hasattr(sim.monitors[0], '_transforms'))
         v, w, v2, ew = ys.transpose((1, 0, 2, 3))
         self.assertTrue(numpy.allclose(v**2, v2))
         self.assertTrue(numpy.allclose(numpy.exp(w), ew))
 
+    def test_expr_tim(self):
+        sim, ys = self._run_sim(5, models.Epileptor(), Raw(pre_expr='-y0+y3;y2', post_expr=''))
+        self.assertTrue(hasattr(sim.monitors[0], '_transforms'))
+        lfp, slow = ys.transpose((1, 0, 2, 3))
+
     def test_period_handling(self):
         "Test that expression application working for monitors with a period."
-        sim, ys = self._run_sim(5, TemporalAverage(pre_expr='V+W'))
+        sim, ys = self._run_sim(5, models.Generic2dOscillator(), TemporalAverage(pre_expr='V+W'))
 
 
 if __name__ == '__main__':
