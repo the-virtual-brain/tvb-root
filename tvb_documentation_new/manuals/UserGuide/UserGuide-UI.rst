@@ -5,56 +5,41 @@
 Web User Interface of |TVB|
 ============================
 
-The workflow of TVB is divided in **User**, **Project**, **Simulator**,
-**Analysis**, **Stimulus** and **Conectivity**. In **User**, the user can
-manage their account and |TVB| settings. In **Project**, the individual projects
-are defined with all their data and infrastructure. In **Simulator** the
-large-scale simulation is defined and different options to view structural and
-functional data are offered in 2D, 3D, as well other representations to
-visualize results. Having multiple panels allows having a quick overview of the
-current |TVB| model parameters, simulations and results. In **Analysis** certain
-options for data and connectivity analysis are offered. In **Stimulus**,
-patterns of stimuli can be generated. And finally in **Connectivity**, the user
-can edit the connectivity matrices assisted by interactive visualization tools.
+The workflow of |TVB| is divided in six major activities.
+The main menu of the web interface lays at the bottom of the page. It links to these six activities.
 
+1. In **User**, the user can manage their account and |TVB| settings.
 
-Main Web Interface Description and Typical Workflow
----------------------------------------------------
+2. In **Project**, the individual projects are managed with all their data and infrastructure.
 
-On the right, the `login` button has changed to a `logout` button with obvious
-functionality.
+3. In **Simulator** large-scale simulations are defined and launched. Analysers and visualizers
+   associated with a simulation are defined there.
+   Their results, structural and functional data, are shown in panels.
+   Having multiple panels allows having a quick overview of the
+   current |TVB| model parameters, simulations and results.
+   We consider the Simulator to be the core of |TVB|.
 
-The main menu of |TVB| interface lays at the bottom of the page and is composed
-of six basic options:
+4. In **Analysis** experimental and simulated data can be analyzed.
 
-User:
-    where user's details are managed.
+5. In **Stimulus**, patterns of spatiotemporal stimuli can be generated.
 
-Project:
-    where projects are defined and administered.
+6. And finally in **Connectivity**, the user can edit the connectivity matrices assisted by interactive visualization tools.
 
-Simulator:
-    where simulations are launched, combined with the analyzers and visualizers. 
-    It allows to have quick overview of the ongoing Project, which explains why 
-    we consider the Simulator to be the core of |TVB|.
+..
+    Sphinx quirk:
+    Section title commented because sphinx assumes the toctree to be a child of this.
+    The resulting nested structure is akward for navigation and pdf index.
+    If we find a way around this behaviour then we may reintroduce a section title
+    Main Web Interface Description and Typical Workflow
+    ---------------------------------------------------
 
-Stimulus:
-    where spatiotemporal stimuli can be generated.
+The typical workflow within |TVB| GUI proceeds through these steps:
 
-Analyze:
-    where experimental and simulated data can be analyzed.
+1. a project is defined and/or selected and user data, (e. g. a connectivity matrix), are uploaded into this project
 
-Connectivity:
-    where connectivity visualization and editing facilities of |TVB| are stored.
+2. new data is obtained by simulating large scale brain dynamics with some set of parameters
 
-These options sum up the typical workflow within |TVB| framework which proceeds
-through these steps:
-
-1. a project is defined and/or selected and user data, (e. g. a connectivity matrix), are uploaded into this project;
-
-2. new data is obtained by simulating large scale brain dynamics with some set of parameters;
-
-3. results are analyzed and visualized;
+3. results are analyzed and visualized
 
 A history of launched simulations is kept to have the traceability of any
 modifications that took place in the simulation chain.
