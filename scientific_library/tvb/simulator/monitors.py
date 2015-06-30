@@ -294,7 +294,7 @@ class Monitor(core.Type):
         self.istep = iround(self.period / self.dt)
         LOG.info("%s: istep of monitor is %d" % (str(self), self.istep))
 
-        svars = simulator.model.state_variable_range.keys()
+        svars = [sv['value'] for sv in simulator.model.trait['variables_of_interest'].interface['options']]
 
         # handle transforms, "expressions of interest"
         if self.pre_expr or self.post_expr:
