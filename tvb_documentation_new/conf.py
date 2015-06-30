@@ -185,11 +185,13 @@ latex_elements = {
 
 # Grouping the document tree into LaTeX files. List of tuples
 # (source start file, target name, title, author, documentclass [howto/manual]).
-latex_documents = [(master_doc, project_target_name + '.tex', project_name, author_names, 'manual'), ]
+latex_documents = [
+    ('manuals/UserGuide/UserGuide', 'UserGuide.tex', 'User Guide', author_names, 'manual'),
+]
 
 # The name of an image file (relative to this directory) to place at the top of
 # the title page.
-#latex_logo = None
+latex_logo = 'manuals/styles/TVB_logo.pdf'
 
 # For "manual" documents, if this is true, then toplevel headings are parts,
 # not chapters.
