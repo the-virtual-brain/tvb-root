@@ -50,8 +50,8 @@ else:
 EXCLUDES = ['_builtinsuites', 'tvb_bin', 'bsddb', 'carbon', 'compiler', 'config',
             'curses', 'dateutil', 'tvb_data', 'distutils', 'email', 'encodings', 'externals',
             'finder', 'hotshot', 'importlib', 'lib-dynload', 'logging', 'multiprocessing',
-            'openglcontext', 'pydoc_data', 'pysqlite2', 'setuptools', 'stdsuites', 'test', 
-            'tvb', 'unittest', 'wxpython', 'xml',      
+            'openglcontext', 'pydoc_data', 'pysqlite2', 'pkg_resources', 'setuptools', 'stdsuites', 'test',
+            'tvb', 'unittest', 'wxpython', 'xml',
             ## We exclude bellow shorter names for packages already introspected.
             'json', "foundation", "objc", "appkit", "exceptionhandling", "pyobjctools"
             ]
