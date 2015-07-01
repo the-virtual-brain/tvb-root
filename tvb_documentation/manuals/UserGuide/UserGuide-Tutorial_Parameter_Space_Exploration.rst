@@ -21,7 +21,7 @@ within |TVB|.
   - Click on the 'V' button next to the model parameters to unfold the available 
     parameter range and step size. At present, a maximum of 2
     parameters can be explored at the same time.
-  - For :math:`I_{ext}` set the step size to 0.4 and for :math:`a` 0.5
+  - For I {ext} set the step size to 0.4 and for a 0.5
   - Name the new simulation and launch it. 
   - After all simulation are finished, you should be able to see the Parameter
     Space Exploration Visualizer.
