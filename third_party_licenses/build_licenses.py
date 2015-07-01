@@ -44,7 +44,7 @@ from third_party_licenses.package_finder import parse_tree_structure
 CURRENT_FOLDER = third_party_licenses.__path__[0]
 LICENSES_FOLDER = "license"
 
-RST2HTML_WINDOWS = ['c:\\Python27\\Scripts\\rst2html.py',
+RST2HTML_WINDOWS = ['c:\\Python27\\Scripts\\rst2html.py', 'C:\\Anaconda\\Scripts\\rst2html.py',
                     'E:\\TVB\\Python2.7.2\\Scripts\\rst2html.py', 'D:\\TVB\\python2.7.3\\Scripts\\rst2html.py']
 RST2HTML_UNIX = ['/usr/bin/rst2html.py', '/usr/local/bin/rst2html.py',
                  '/opt/local/Library/Frameworks/Python.framework/Versions/2.7/bin/rst2html.py',
