@@ -344,6 +344,8 @@ class Simulator(core.Type):
         #Estimate of memory usage. 
         self._census_memory_requirement()
 
+        return self
+
 
     def __call__(self, simulation_length=None, random_state=None):
         """
@@ -766,3 +768,18 @@ class Simulator(core.Type):
                         self.model.number_of_modes / current_period)
         LOG.info("Calculated storage requirement for simulation: %d " % int(strgreq))
         self._storage_requirement = int(strgreq)
+
+    def run(self, **kwds):
+        "Convenience method to call the simulator with **kwds and collect output data."
+        ts, xs = [], []
+        for _ in self.monitors:
+            ts.append([])
+            xs.append([])
+        for data in self(**kwds):
+            for tl, xl, (t, x) in zip(ts, xs, data):
+                tl.append(t)
+                xl.append(x)
+        for i in range(len(ts)):
+            ts[i] = numpy.array(ts[i])
+            xs[i] = numpy.array(xs[i])
+        return list(zip(ts, xs))
