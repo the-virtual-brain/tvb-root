@@ -831,13 +831,16 @@ class Projection(Monitor):
 
 
 class EEG(Projection):
-    """Forward solution monitor for electroencephalogy (EEG). If a
+    """
+    Forward solution monitor for electroencephalogy (EEG). If a
     precomputed lead field is not available, a single sphere analytic
     formula due to Sarvas 1987 is used.
 
+    **References**:
+
     .. [Sarvas_1987] Sarvas, J., *Basic mathematical and electromagnetic
-    concepts of the biomagnetic inverse problem*, Physics in Medicine and
-    Biology, 1987.
+        concepts of the biomagnetic inverse problem*, Physics in Medicine and
+        Biology, 1987.
 
     """
     _ui_name = "EEG"
