@@ -765,11 +765,10 @@ class Projection(Monitor):
 
         # compute analytic if not provided
         if self.projection is None:
-            Proj = self._projection_class()
-            self.projection = Proj(projection_data=self.analytic(**sources))
+            self.gain = self.analytic(**sources)
 
         # reduce to region lead field if region sim
-        if not using_cortical_surface:
+        if not using_cortical_surface and self.gain.shape[1] == self.rmap.size:
             gain = numpy.zeros((self.gain.shape[0], conn.number_of_regions))
             numpy.add.at(gain.T, self.rmap, self.gain.T)
             self.gain = gain
