@@ -28,14 +28,14 @@
 #
 #
 
+if __name__ == "__main__":
+    from tvb.tests.library import setup_test_console_env
+    setup_test_console_env()
+
 import numpy
-
-from tvb.tests.library import setup_test_console_env
-setup_test_console_env()
-
+import unittest
 from tvb.tests.library.base_testcase import BaseTestCase
 from tvb.simulator.monitors import MonitorTransforms
-
 from tvb.simulator import models, coupling, integrators, noise, simulator
 from tvb.datatypes import connectivity
 from tvb.simulator.monitors import Raw, TemporalAverage
@@ -165,6 +165,20 @@ class MonitorTransformsInSimTest(BaseTestCase):
         sim, ys = self._run_sim(5, models.Generic2dOscillator(), TemporalAverage(pre_expr='V+W'))
 
 
-if __name__ == '__main__':
-    import unittest
-    unittest.main()
+
+def suite():
+    """
+    Gather all the tests in a test suite.
+    """
+    test_suite = unittest.TestSuite()
+    test_suite.addTest(unittest.makeSuite(MonitorTransformsInSimTest))
+    test_suite.addTest(unittest.makeSuite(MonitorTransformsTests))
+    return test_suite
+
+
+
+if __name__ == "__main__":
+    #So you can run tests from this package individually.
+    TEST_RUNNER = unittest.TextTestRunner()
+    TEST_SUITE = suite()
+    TEST_RUNNER.run(TEST_SUITE)

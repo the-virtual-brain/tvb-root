@@ -47,6 +47,7 @@ from tvb.tests.library.simulator import common_test
 from tvb.tests.library.simulator import coupling_test
 from tvb.tests.library.simulator import integrators_test
 from tvb.tests.library.simulator import models_test
+from tvb.tests.library.simulator import monitor_transforms_test
 from tvb.tests.library.simulator import monitors_test
 from tvb.tests.library.simulator import noise_test
 from tvb.tests.library.simulator import simulator_test
@@ -64,6 +65,7 @@ def suite():
     test_suite.addTest(integrators_test.suite())
     test_suite.addTest(history_test.suite())
     test_suite.addTest(models_test.suite())
+    test_suite.addTest(monitor_transforms_test.suite())
     test_suite.addTest(monitors_test.suite())
     test_suite.addTest(noise_test.suite())
     test_suite.addTest(region_boundaries_test.suite())
