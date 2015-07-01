@@ -103,7 +103,7 @@ class PyInstallerPacker():
         PyInstallerPacker.EXE = pyinst_globals['EXE']
         PyInstallerPacker.COLLECT = pyinst_globals['COLLECT']
         ## Prepare specific TVB hook in PyInstaller.
-        print "  Copying TVB-hook in PyInstaller..."
+        print " * Copying TVB-hook in PyInstaller..."
         shutil.copy("hook-tvb.py", os.path.join("PyInstaller", "hooks"))
 
 
@@ -138,7 +138,7 @@ class PyInstallerPacker():
                 _source_zip.close()
                 #EGG are usually: package_name.egg/package_name/actual_package
                 tree_path = os.path.join(_dest_path, actual_module)
-                print "Expanding egg for %s and including in TOC tree." % tree_path
+                print " * Expanding egg for %s and including in TOC tree." % tree_path
             result.append(PyInstallerPacker.Tree(tree_path, prefix=one_dep,
                                                  excludes=['*.pyc', '.svn', '.DStore', '*.svn*', '*.DS*']))
         return result
@@ -236,7 +236,10 @@ class PyInstallerPacker():
                     source_zip.extract(name, dest_path)
                     file_path = os.path.join(dest_path, name)
             source_zip.close()
-        shutil.copy(file_path.replace('.pyc', '.py'), os.path.join(base_folder, data_folder, 'pkg_resources.py'))
+        temp_src = file_path.replace('.pyc', '.py')
+        temp_dest = os.path.join(base_folder, data_folder, 'pkg_resources.py')
+        print " * Copying pkg_resources ", temp_src, " to ", temp_dest
+        shutil.copy(temp_src, temp_dest)
 
 
     @staticmethod
