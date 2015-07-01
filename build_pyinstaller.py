@@ -150,9 +150,9 @@ class PyInstallerPacker():
         This method does the standard flow that is required in order for 
         PyInstaller to generate a distribution package. 
         
-        @param extra_dependencies: a list with any OS specific dependencies that are 
+        :param extra_dependencies: a list with any OS specific dependencies that are
             required extra to the TVB_DEPENDENCIES that are already declared here. 
-        @param extra_binaries: a list of pyinstaller specific tuples of the form:
+        :param extra_binaries: a list of pyinstaller specific tuples of the form:
             (dynamic_lib_name, dynamic_lib_filepath, 'BINARY')
         """
         analisys_tvb = PyInstallerPacker.Analysis([os.path.join(PyInstallerPacker.BIN_FOLDER, 'app.py'),
@@ -197,9 +197,9 @@ class PyInstallerPacker():
         Pyinstaller has problems adding all required matplotlib data so we
         need to copy it manually. In the process also copy pylab since this is
         also not added properly.
-        @param base_folder: the root folder in which the various distribution packages will be
+        :param base_folder: the root folder in which the various distribution packages will be
             gathered. This folder is just an intermediate and will later become `TVB_Distribution`.
-        @param data_folder: a subfolder that will hold all the gathered data, as to keep resulting
+        :param data_folder: a subfolder that will hold all the gathered data, as to keep resulting
             package better organized. The top level will only hold scripts that use the data from this 
             subfolder, aswell as licensing and documentation.
         """
@@ -218,15 +218,17 @@ class PyInstallerPacker():
         """
         PyInstaller is not adding pkg_resources which is needed when we start
         our other python processes.
-        @param base_folder: the root folder in which the various distribution packages will be
+        :param base_folder: the root folder in which the various distribution packages will be
             gathered. This folder is just an intermediate and will later become `TVB_Distribution`.
-        @param data_folder: a subfolder that will hold all the gathered data, as to keep resulting
+        :param data_folder: a subfolder that will hold all the gathered data, as to keep resulting
             package better organized. The top level will only hold scripts that use the data from this 
             subfolder, aswell as licensing and documentation.
         """
         import pkg_resources
         file_path = pkg_resources.__file__
+
         if not os.path.isdir(os.path.dirname(file_path)):
+            print " * site_packages (for pkg_resources) is EGG, we will expand it..."
             zip_name = file_path.split('.egg')[0]
             zip_name += '.egg'
             dest_path = os.path.join('temp', 'pkg_res')
@@ -236,10 +238,17 @@ class PyInstallerPacker():
                     source_zip.extract(name, dest_path)
                     file_path = os.path.join(dest_path, name)
             source_zip.close()
-        temp_src = file_path.replace('.pyc', '.py')
-        temp_dest = os.path.join(base_folder, data_folder, 'pkg_resources.py')
-        print " * Copying pkg_resources ", temp_src, " to ", temp_dest
-        shutil.copy(temp_src, temp_dest)
+
+        if '__init__.py' in file_path:
+            temp_src = os.path.dirname(file_path)
+            temp_dest = os.path.join(base_folder, data_folder, 'pkg_resources')
+            print " * Copying pkg_resources folder ", temp_src, " to ", temp_dest
+            shutil.copytree(temp_src, temp_dest)
+        else:
+            temp_src = file_path.replace('.pyc', '.py')
+            temp_dest = os.path.join(base_folder, data_folder, 'pkg_resources.py')
+            print " * Copying pkg_resources ", temp_src, " to ", temp_dest
+            shutil.copy(temp_src, temp_dest)
 
 
     @staticmethod
@@ -257,9 +266,9 @@ class PyInstallerPacker():
         Add the Python executable into the package. Also copy any additional required packages that 
         were not added by PyInstaller but are still needed.
         
-        @param python_exe_path: the path from the build machine that should point towards the Python
+        :param python_exe_path: the path from the build machine that should point towards the Python
             executable.
-        @param extra_includes: a list with any modules that are for some reason still not included up
+        :param extra_includes: a list with any modules that are for some reason still not included up
             until this point.
         """
         #Add the Python executable to the distribution
@@ -285,10 +294,10 @@ class PyInstallerPacker():
         Since some files and folders are added by pyinstaller even tho they are not needed,
         this is the place to get rid of them.
         
-        @param exclude_files: a list of files that should be deleted after the package generation. These
+        :param exclude_files: a list of files that should be deleted after the package generation. These
             should have the full file name with extension since we want to delete *.dll, *.so, *.py or *.pyd 
             and only a module name is not enough.
-        @param exclude_dirs: a list of directories that should be deleted from the package.
+        :param exclude_dirs: a list of directories that should be deleted from the package.
         """
         if exclude_files:
             BASE_EXCLUDE_FILES.extend(exclude_files)
@@ -310,7 +319,7 @@ class PyInstallerPacker():
         Do other required post-processing like checking licenses, adding doc and get the final 
         zip of the distribution.
         
-        @param package_name: this will be used in the final zip name. Resulting package will have the 
+        :param package_name: this will be used in the final zip name. Resulting package will have the
             name generated as {package_name}{version}_x[32|64]_web.zip
         """
         PyInstallerPacker.add_sitecustomize(PyInstallerPacker.RESULT_BASE_FOLDER, PyInstallerPacker.DATA_FOLDER_NAME)
