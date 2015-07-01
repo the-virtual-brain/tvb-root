@@ -143,7 +143,7 @@ class CFF_Importer(ABCUploader):
             try:
                 net.load()
                 connectivity = parser.parse(net.data)
-                connectivity.user_tag_1 = connectivity.weights.shape[0] + " regions"
+                connectivity.user_tag_1 = str(connectivity.weights.shape[0]) + " regions"
                 connectivities.append(connectivity)
 
             except ParseException:
