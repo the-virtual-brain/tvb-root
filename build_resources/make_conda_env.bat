@@ -1,5 +1,5 @@
 REM build env with pre-built binaries from conda repos
-conda create -y -n tvb-build matplotlib==1.2.1 scipy networkx scikit-learn cython h5py pip pil numexpr psutil coverage
+conda create -y -n tvb-build  matplotlib==1.1.1 scipy==0.13.2 networkx scikit-learn cython h5py pip pil numexpr psutil coverage
 
 REM use environment
 call activate tvb-build
