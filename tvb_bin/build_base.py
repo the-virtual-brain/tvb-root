@@ -49,16 +49,18 @@ from subprocess import Popen, PIPE
 from optparse import OptionParser
 from tvb_documentor.doc_generator import DocGenerator
 
+TVB_ROOT = os.path.dirname(os.path.dirname(__file__))
+DIST_FOLDER = os.path.join(TVB_ROOT, "dist-tvb")
 
-FW_FOLDER = "framework_tvb"
-DIST_FOLDER = "dist"
-DOCS_RESULT_FOLDER = "docs"
+DOCS_RESULT_FOLDER = os.path.join(DIST_FOLDER, "docs")
+RELEASE_NOTES_PATH = os.path.join(TVB_ROOT, "tvb_documentation", 'RELEASE_NOTES')
 
 FOLDERS_TO_DELETE = ['.svn', '.project', '.settings']
 FILES_TO_DELETE = ['.DS_Store', 'dev_logger_config.conf']
 
-RELEASE_NOTES_PATH = os.path.join("tvb_documentation", 'RELEASE_NOTES')
+FW_FOLDER = os.path.join(TVB_ROOT, "framework_tvb")
 LICENSE_PATH = os.path.join(FW_FOLDER, "LICENSE_TVB.txt")
+
 DIST_FOLDER_FINAL = "TVB_Distribution"
 
 
@@ -69,26 +71,24 @@ def generate_distribution(final_name, library_path, version, extra_licensing_che
     """
     print "- Adding Docs, Demo Data and Externals..."
 
-    current_folder = os.path.dirname(__file__)
-    dist_folder = os.path.join(current_folder, DIST_FOLDER)
-    if not os.path.exists(dist_folder):
-        os.mkdir(dist_folder)
+    if not os.path.exists(DIST_FOLDER):
+        os.mkdir(DIST_FOLDER)
 
     # Copy library code before doc generation in order to avoid merging folders
     copy_simulator_library(os.path.join(DIST_FOLDER, library_path))
-    os.mkdir(os.path.join(dist_folder, DOCS_RESULT_FOLDER))
+    os.mkdir(DOCS_RESULT_FOLDER)
     # Now generate TVB manuals and Online Help
-    doc_generator = DocGenerator(current_folder, dist_folder, os.path.join(DIST_FOLDER, library_path))
+    doc_generator = DocGenerator(TVB_ROOT, DIST_FOLDER, os.path.join(DIST_FOLDER, library_path))
     doc_generator.generate_all_docs()
 
     shutil.copy2(LICENSE_PATH, os.path.join(DIST_FOLDER, 'LICENSE_TVB.txt'))
-    shutil.copy2(RELEASE_NOTES_PATH, os.path.join(DIST_FOLDER, DOCS_RESULT_FOLDER, 'RELEASE_NOTES.txt'))
+    shutil.copy2(RELEASE_NOTES_PATH, os.path.join(DOCS_RESULT_FOLDER, 'RELEASE_NOTES.txt'))
     shutil.copytree(os.path.join("externals", "BCT"), os.path.join(DIST_FOLDER, library_path, "externals", "BCT"))
     copy_distribution_dataset(DIST_FOLDER, library_path)
     write_svn_current_version(os.path.join(DIST_FOLDER, library_path))
 
     print "- Cleaning up non-required files..."
-    clean_up(dist_folder, False)
+    clean_up(DIST_FOLDER, False)
     if os.path.exists(DIST_FOLDER_FINAL):
         shutil.rmtree(DIST_FOLDER_FINAL)
     os.rename(DIST_FOLDER, DIST_FOLDER_FINAL)

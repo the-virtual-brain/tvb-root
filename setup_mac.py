@@ -41,8 +41,8 @@ import os
 import sys
 import shutil
 import setuptools
-from build_base import FW_FOLDER, DIST_FOLDER
-from build_pyinstaller import PyInstallerPacker
+from tvb_bin.build_base import FW_FOLDER, DIST_FOLDER
+from tvb_bin.build_pyinstaller import PyInstallerPacker
 
 
 
@@ -93,8 +93,8 @@ EXCLUDED_DYNAMIC_LIBS = ['libbz2.1.0.dylib', 'libdb-4.6.dylib', 'libexslt.0.dyli
                          'libintl.8.dylib', 'liblzma.5.dylib', 'libpng15.15.dylib', 'libtiff.3.dylib',
                          'libsqlite3.0.dylib', 'libXss.1.dylib', 'libxml2.2.dylib', 'libxslt.1.dylib']
 
-EXCLUDE_INTROSPECT_FOLDERS = [folder for folder in os.listdir(os.path.join(".", FW_FOLDER))
-                              if os.path.isdir(os.path.join(".", FW_FOLDER, folder)) and folder != "tvb"]
+EXCLUDE_INTROSPECT_FOLDERS = [folder for folder in os.listdir(FW_FOLDER)
+                              if os.path.isdir(os.path.join(FW_FOLDER, folder)) and folder != "tvb"]
 
 #-------------- Finish configuration, starting build-script execution ---------------------------------
 
@@ -112,10 +112,12 @@ REAL_STDOUT, REAL_STDERR = sys.stdout, sys.stderr
 sys.stdout = open('PY2APP.log', 'w')
 sys.stderr = open('PY2APP_ERR.log', 'w')
 
+FW_NAME = os.path.split(FW_FOLDER)[1]
+
 setuptools.setup(name="tvb",
                  version=PyInstallerPacker.VERSION,
-                 packages=setuptools.find_packages(FW_FOLDER, exclude=EXCLUDE_INTROSPECT_FOLDERS),
-                 package_dir={'': FW_FOLDER},
+                 packages=setuptools.find_packages(FW_NAME, exclude=EXCLUDE_INTROSPECT_FOLDERS),
+                 package_dir={'': FW_NAME},
                  license="GPL v2",
                  options={'py2app': PY2APP_OPTIONS},
                  include_package_data=True,

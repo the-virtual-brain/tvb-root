@@ -40,7 +40,7 @@ import matplotlib
 import tvb_bin
 import tvb.interfaces.web as tvb_web
 from subprocess import Popen
-from build_base import DIST_FOLDER
+from tvb_bin.build_base import DIST_FOLDER
 from tvb.basic.profile import TvbProfile
 
 
@@ -76,7 +76,7 @@ class PyInstallerPacker():
 
     ## The root folder in which the various distribution packages will be gathered. 
     ## This folder is just an intermediate and will later become `TVB_Distribution`.
-    RESULT_BASE_FOLDER = os.path.join(os.path.dirname(__file__), 'dist-tvb')
+    RESULT_BASE_FOLDER = os.path.join(os.path.dirname(os.path.dirname(__file__)), 'dist')
 
     ## A sub-folder that will hold all the gathered data, as to keep resulting package better organized. 
     ## While the top level will also hold scripts, license and documentation, this is only with code.
@@ -103,8 +103,13 @@ class PyInstallerPacker():
         PyInstallerPacker.EXE = pyinst_globals['EXE']
         PyInstallerPacker.COLLECT = pyinst_globals['COLLECT']
         ## Prepare specific TVB hook in PyInstaller.
-        print " * Copying TVB-hook in PyInstaller..."
-        shutil.copy("hook-tvb.py", os.path.join("PyInstaller", "hooks"))
+        pyinstaller_folder = os.path.join("PyInstaller", "hooks")
+
+        if not os.path.exists(pyinstaller_folder):
+            import PyInstaller
+            pyinstaller_folder = os.path.dirname(PyInstaller.__file__)
+        print " * Copying TVB-hook into PyInstaller: ", pyinstaller_folder
+        shutil.copy(os.path.join(PyInstallerPacker.BIN_FOLDER, "hook-tvb.py"), pyinstaller_folder)
 
 
     @staticmethod
@@ -324,10 +329,9 @@ class PyInstallerPacker():
         """
         PyInstallerPacker.add_sitecustomize(PyInstallerPacker.RESULT_BASE_FOLDER, PyInstallerPacker.DATA_FOLDER_NAME)
 
-        dist_folder = os.path.join(os.path.dirname(PyInstallerPacker.RESULT_BASE_FOLDER), DIST_FOLDER)
-        if os.path.exists(dist_folder):
-            shutil.rmtree(dist_folder)
-        os.rename(PyInstallerPacker.RESULT_BASE_FOLDER, dist_folder)
+        if os.path.exists(DIST_FOLDER):
+            shutil.rmtree(DIST_FOLDER)
+        os.rename(PyInstallerPacker.RESULT_BASE_FOLDER, DIST_FOLDER)
         shutil.rmtree('temp', True)
 
         PyInstallerPacker.generate_final_zip(package_name, PyInstallerPacker.DATA_FOLDER_NAME)
@@ -340,7 +344,7 @@ class PyInstallerPacker():
         This was necessary because on Windows, py2exe changes Python compiler to a 
         custom one and some imports fails.
         """
-        operation = ["python", "-m", "build_base", "--final_name", final_name,
+        operation = ["python", "-m", "tvb_bin.build_base", "--final_name", final_name,
                      "--library_path", library_path, "--version", PyInstallerPacker.VERSION]
         if extra_check_license_folders:
             operation.append("--extra_licences_check")

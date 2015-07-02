@@ -31,16 +31,15 @@
 """
 Accepted optional argument: 'cluster'
 
-Usage should be `python pyinstaller.py setup_linux.spec ['cluster']`
-You can also set 'cluster' as an environmental variable beforehand 
+Usage should be `python pyinstaller.py setup_linux.spec
 
 The resulting structure of the distribution will be:
-{current folder} / TVB_Linux_{version}_x32_web.zip
+{current folder} / TVB_Linux_{version}_x{32|64}_web.zip
 """
 import os
 import shutil
 import zipfile
-from build_pyinstaller import PyInstallerPacker, PYTHON_EXE
+from tvb_bin.build_pyinstaller import PyInstallerPacker, PYTHON_EXE
 
 
 
