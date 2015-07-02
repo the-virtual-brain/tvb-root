@@ -38,10 +38,9 @@ Environment related checks or operations are to be defined here.
 import os
 import sys
 
-
 class Environment():
 
-    IS_WORK_IN_PROGRESS = False
+    IS_WORK_IN_PROGRESS = os.environ.get('TVB_WIP', False) == 'True'
 
     def is_framework_present(self):
         """
