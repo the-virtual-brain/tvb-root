@@ -50,7 +50,7 @@ from optparse import OptionParser
 from tvb_documentor.doc_generator import DocGenerator
 
 TVB_ROOT = os.path.dirname(os.path.dirname(__file__))
-DIST_FOLDER = os.path.join(TVB_ROOT, "dist-tvb")
+DIST_FOLDER = os.path.join(TVB_ROOT, "dist")
 
 DOCS_RESULT_FOLDER = os.path.join(DIST_FOLDER, "docs")
 RELEASE_NOTES_PATH = os.path.join(TVB_ROOT, "tvb_documentation", 'RELEASE_NOTES')
@@ -70,9 +70,6 @@ def generate_distribution(final_name, library_path, version, extra_licensing_che
     Clean files, generate final ZIP, with 3rd party licenses included.
     """
     print "- Adding Docs, Demo Data and Externals..."
-
-    if not os.path.exists(DIST_FOLDER):
-        os.mkdir(DIST_FOLDER)
 
     # Copy library code before doc generation in order to avoid merging folders
     copy_simulator_library(os.path.join(DIST_FOLDER, library_path))

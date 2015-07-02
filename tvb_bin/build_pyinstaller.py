@@ -40,7 +40,7 @@ import matplotlib
 import tvb_bin
 import tvb.interfaces.web as tvb_web
 from subprocess import Popen
-from tvb_bin.build_base import DIST_FOLDER
+from tvb_bin.build_base import DIST_FOLDER, TVB_ROOT
 from tvb.basic.profile import TvbProfile
 
 
@@ -74,10 +74,6 @@ class PyInstallerPacker():
 
     BIN_FOLDER = os.path.dirname(tvb_bin.__file__)
 
-    ## The root folder in which the various distribution packages will be gathered. 
-    ## This folder is just an intermediate and will later become `TVB_Distribution`.
-    RESULT_BASE_FOLDER = os.path.join(os.path.dirname(os.path.dirname(__file__)), 'dist')
-
     ## A sub-folder that will hold all the gathered data, as to keep resulting package better organized. 
     ## While the top level will also hold scripts, license and documentation, this is only with code.
     DATA_FOLDER_NAME = "tvb_data"
@@ -96,6 +92,11 @@ class PyInstallerPacker():
          
         NOTE: This was needed in PyInstaller 2.0 version.
         """
+        print " * Removing dist, temp and build"
+        shutil.rmtree(DIST_FOLDER, True)
+        shutil.rmtree(os.path.join(TVB_ROOT, 'temp'), True)
+        shutil.rmtree(os.path.join(TVB_ROOT, 'build'), True)
+
         PyInstallerPacker.Tree = pyinst_globals['Tree']
         PyInstallerPacker.Analysis = pyinst_globals['Analysis']
         PyInstallerPacker.PYZ = pyinst_globals['PYZ']
@@ -108,6 +109,7 @@ class PyInstallerPacker():
         if not os.path.exists(pyinstaller_folder):
             import PyInstaller
             pyinstaller_folder = os.path.dirname(PyInstaller.__file__)
+
         print " * Copying TVB-hook into PyInstaller: ", pyinstaller_folder
         shutil.copy(os.path.join(PyInstallerPacker.BIN_FOLDER, "hook-tvb.py"), pyinstaller_folder)
 
@@ -177,7 +179,7 @@ class PyInstallerPacker():
 
         PyInstallerPacker.COLLECT(analisys_tvb.binaries, analisys_tvb.zipfiles, analisys_tvb.datas,
                                   pyinstaller_pyz, python_tree, *additional_trees, strip=False,
-                                  upx=True, name=os.path.join(PyInstallerPacker.RESULT_BASE_FOLDER,
+                                  upx=True, name=os.path.join(DIST_FOLDER,
                                                               PyInstallerPacker.DATA_FOLDER_NAME))
 
 
@@ -277,7 +279,7 @@ class PyInstallerPacker():
             until this point.
         """
         #Add the Python executable to the distribution
-        base_folder = PyInstallerPacker.RESULT_BASE_FOLDER
+        base_folder = DIST_FOLDER
         data_folder = PyInstallerPacker.DATA_FOLDER_NAME
         if not os.path.exists(os.path.join(base_folder, data_folder)):
             os.makedirs(os.path.join(base_folder, data_folder))
@@ -309,11 +311,11 @@ class PyInstallerPacker():
         if exclude_dirs:
             BASE_EXCLUDE_DIRS.extend(exclude_dirs)
         for entry in BASE_EXCLUDE_FILES:
-            file_n = os.path.join(PyInstallerPacker.RESULT_BASE_FOLDER, PyInstallerPacker.DATA_FOLDER_NAME, entry)
+            file_n = os.path.join(DIST_FOLDER, PyInstallerPacker.DATA_FOLDER_NAME, entry)
             if os.path.isfile(file_n):
                 os.remove(file_n)
         for entry in BASE_EXCLUDE_DIRS:
-            dir_n = os.path.join(PyInstallerPacker.RESULT_BASE_FOLDER, PyInstallerPacker.DATA_FOLDER_NAME, entry)
+            dir_n = os.path.join(DIST_FOLDER, PyInstallerPacker.DATA_FOLDER_NAME, entry)
             if os.path.isdir(dir_n):
                 shutil.rmtree(dir_n, True)
 
@@ -327,12 +329,11 @@ class PyInstallerPacker():
         :param package_name: this will be used in the final zip name. Resulting package will have the
             name generated as {package_name}{version}_x[32|64]_web.zip
         """
-        PyInstallerPacker.add_sitecustomize(PyInstallerPacker.RESULT_BASE_FOLDER, PyInstallerPacker.DATA_FOLDER_NAME)
+        PyInstallerPacker.add_sitecustomize(DIST_FOLDER, PyInstallerPacker.DATA_FOLDER_NAME)
 
-        if os.path.exists(DIST_FOLDER):
-            shutil.rmtree(DIST_FOLDER)
-        os.rename(PyInstallerPacker.RESULT_BASE_FOLDER, DIST_FOLDER)
-        shutil.rmtree('temp', True)
+        print " * Removing dist, temp and build"
+        shutil.rmtree(os.path.join(TVB_ROOT, 'temp'), True)
+        shutil.rmtree(os.path.join(TVB_ROOT, 'build'), True)
 
         PyInstallerPacker.generate_final_zip(package_name, PyInstallerPacker.DATA_FOLDER_NAME)
 
