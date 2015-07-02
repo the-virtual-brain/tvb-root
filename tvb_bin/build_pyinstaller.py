@@ -95,7 +95,6 @@ class PyInstallerPacker():
         print " * Removing dist, temp and build"
         shutil.rmtree(DIST_FOLDER, True)
         shutil.rmtree(os.path.join(TVB_ROOT, 'temp'), True)
-        shutil.rmtree(os.path.join(TVB_ROOT, 'build'), True)
 
         PyInstallerPacker.Tree = pyinst_globals['Tree']
         PyInstallerPacker.Analysis = pyinst_globals['Analysis']
@@ -331,9 +330,8 @@ class PyInstallerPacker():
         """
         PyInstallerPacker.add_sitecustomize(DIST_FOLDER, PyInstallerPacker.DATA_FOLDER_NAME)
 
-        print " * Removing dist, temp and build"
+        print " * Removing temp"
         shutil.rmtree(os.path.join(TVB_ROOT, 'temp'), True)
-        shutil.rmtree(os.path.join(TVB_ROOT, 'build'), True)
 
         PyInstallerPacker.generate_final_zip(package_name, PyInstallerPacker.DATA_FOLDER_NAME)
 
