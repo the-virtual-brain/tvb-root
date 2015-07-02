@@ -40,9 +40,9 @@ from tvb.adapters.visualizers.matrix_viewer import MappedArraySVGVisualizerMixin
 from tvb.core.adapters.abcdisplayer import ABCDisplayer
 from tvb.datatypes.mode_decompositions import IndependentComponents
 from tvb.basic.logger.builder import get_logger
+from tvb.basic.traits.types_basic import Integer
 
 LOG = get_logger(__name__)
-
 
 
 class ICA(MappedArraySVGVisualizerMixin, ABCDisplayer):
@@ -52,13 +52,16 @@ class ICA(MappedArraySVGVisualizerMixin, ABCDisplayer):
     def get_input_tree(self):
         """Inform caller of the data we need"""
         return [{"name": "datatype", "type": IndependentComponents,
-                 "label": "Independent component analysis:", "required": True }]
+                 "label": "Independent component analysis:", "required": True},
+                {"name": "i_svar", "type": Integer,
+                 "label": "Index of state variable (defaults to first state variable)",
+                 }]
 
 
-    def launch(self, datatype):
+    def launch(self, datatype, i_svar=0):
         """Construct data for visualization and launch it."""
         # get data from IndependentComponents datatype, convert to json
         # HACK: dump only a 2D array
-        matrix = abs(datatype.get_data('mixing_matrix')[:, :, 0, 0])
-        pars = self.compute_params(matrix, 'Mixing matrix plot')
+        W = datatype.get_data('mixing_matrix')
+        pars = self.compute_params(W, 'Mixing matrix plot', '(Ellipsis, %d, 0)' % (i_svar))
         return self.build_display_result("matrix/svg_view", pars)
