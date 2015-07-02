@@ -38,7 +38,7 @@ import os
 import shutil
 import zipfile
 from tvb_bin.build_pyinstaller import PyInstallerPacker, PYTHON_EXE
-
+from tvb_bin.build_base import DIST_FOLDER
 
 
 def create_start_scripts(base_folder, data_folder, python_exe):
@@ -141,7 +141,7 @@ PyInstallerPacker.set_pyinstaller_globals(globals())
 PyInstallerPacker.gather_tvb_dependencies(EXTRA_DEPENDENCIES)
 PyInstallerPacker.copy_additional_libraries(PYTHON_PATH, INCLUDE_FILES)
 PyInstallerPacker.clean_up_files(EXCLUDE_FILES, EXCLUDE_DIRS)
-create_start_scripts(PyInstallerPacker.RESULT_BASE_FOLDER, PyInstallerPacker.DATA_FOLDER_NAME, PYTHON_EXE)
+create_start_scripts(DIST_FOLDER, PyInstallerPacker.DATA_FOLDER_NAME, PYTHON_EXE)
 PyInstallerPacker.generate_package('TVB_Windows')
 
 #--------------------------- Actual package generation flow ends here   -----------------------------------------------
