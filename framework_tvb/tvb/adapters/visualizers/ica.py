@@ -40,7 +40,6 @@ from tvb.adapters.visualizers.matrix_viewer import MappedArraySVGVisualizerMixin
 from tvb.core.adapters.abcdisplayer import ABCDisplayer
 from tvb.datatypes.mode_decompositions import IndependentComponents
 from tvb.basic.logger.builder import get_logger
-from tvb.basic.traits.types_basic import Integer
 
 LOG = get_logger(__name__)
 
@@ -53,7 +52,7 @@ class ICA(MappedArraySVGVisualizerMixin, ABCDisplayer):
         """Inform caller of the data we need"""
         return [{"name": "datatype", "type": IndependentComponents,
                  "label": "Independent component analysis:", "required": True},
-                {"name": "i_svar", "type": Integer,
+                {"name": "i_svar", "type": 'int', 'default': 0,
                  "label": "Index of state variable (defaults to first state variable)",
                  }]
 

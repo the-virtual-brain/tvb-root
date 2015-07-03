@@ -87,7 +87,7 @@ class MappedArraySVGVisualizerMixin(object):
         return numpy.prod(input_size) / input_size[0] * 8.0
 
 
-    def generate_preview(self, datatype, figure_size):
+    def generate_preview(self, datatype, **kwargs):
         return self.launch(datatype)
 
 
