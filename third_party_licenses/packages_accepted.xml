@@ -3,7 +3,7 @@
     <dependency env="[win32,linux64,macos32,win64,linux32,macos64]" name="apscheduler">
         <full-name value="APScheduler"/>
         <project-home value="http://pypi.python.org/pypi/APScheduler"/>
-        <version value="[2.1.0,2.0.3,2.0.2,2.1.1]"/>
+        <version value="[2.1.0,2.0.3,2.0.2,2.1.1,3.0.3]"/>
         <usage value="dynamic linking"/>
         <license value="LICENSE_apscheduler_2.0.txt"/>
         <license-type value="MIT_"/>
@@ -43,7 +43,7 @@
     <dependency env="[win32,linux64,macos32,win64,linux32,macos64]" name="cherrypy">
         <full-name value="CherryPy Server"/>
         <project-home value="http://www.cherrypy.org"/>
-        <version value="[3.2.4,3.2.2]"/>
+        <version value="[3.2.4,3.2.2,3.8.0]"/>
         <usage value="dynamic linking"/>
         <license value="LICENSE_CherryPy.txt"/>
         <license-type value="BSD_"/>
@@ -463,7 +463,7 @@
     <dependency env="[win32,linux64,macos32,win64,linux32,macos64]" name="lxml">
         <full-name value="Lxml"/>
         <project-home value="http://lxml.de/"/>
-        <version value="[2.3,2.3.3,2.3.5,3.0alpha2,3.2.1,3.3.0beta1]"/>
+        <version value="[2.3,2.3.3,2.3.5,3.0alpha2,3.2.1,3.3.0beta1,3.4.4]"/>
         <usage value="dynamic linking"/>
         <license value="LICENSE_lxml.txt"/>
         <license-type value="BSD_"/>
@@ -543,7 +543,7 @@
     <dependency env="[win32,linux64,macos32,win64,linux32,macos64]" name="networkx">
         <full-name value="NetworkX"/>
         <project-home value="http://networkx.lanl.gov/reference/legal.html"/>
-        <version value="[1.6,1.7,1.8.1]"/>
+        <version value="[1.6,1.7,1.8.1,1.9.1]"/>
         <usage value="dynamic linking"/>
         <license value="LICENSE_networkx_1.4.txt"/>
         <license-type value="BSD_ 3 clause"/>
@@ -553,7 +553,7 @@
     <dependency env="[win32,linux64,macos32,win64,linux32,macos64]" name="nibabel">
         <full-name value="Nibabel"/>
         <project-home value="http://nipy.sourceforge.net/nibabel/"/>
-        <version value="[1.1.0,1.3.0,1.2.2]"/>
+        <version value="[1.1.0,1.3.0,1.2.2,2.0.1]"/>
         <usage value="dynamic linking"/>
         <license value="LICENSE_nibabel_1.txt"/>
         <license-type value="MIT_"/>
@@ -563,7 +563,7 @@
     <dependency env="[win32,linux64,macos64]" name="numexpr">
         <full-name value="NumExpr"/>
         <project-home value="http://code.google.com/p/numexpr/"/>
-        <version value="2.4"/>
+        <version value="[2.4,2.2.2]"/>
         <usage value="dynamic linking"/>
         <license value="LICENSE_numexpr.txt"/>
         <license-type value="MIT_"/>
@@ -613,7 +613,7 @@
     <dependency env="[win32,linux64,macos32,win64,linux32,macos64]" name="psutil">
         <full-name value="psutil"/>
         <project-home value="http://code.google.com/p/psutil/"/>
-        <version value="[0.6.1,0.7.1,1.2.1]"/>
+        <version value="[0.6.1,0.7.1,1.2.1,2.2.1]"/>
         <usage value="dynamic linking"/>
         <license value="LICENSE_psutil.txt"/>
         <license-type value="BSD_ 3rd clause"/>
@@ -623,7 +623,7 @@
     <dependency env="[win32,win64,linux32,linux64,macos32,macos64]" name="psycopg2">
         <full-name value="Psycopg2"/>
         <project-home value="http://initd.org/psycopg/"/>
-        <version value="[2.4.4 (dt dec pq3 ext),2.4.5 (dt dec pq3 ext),2.5 (dt dec pq3 ext),2.5.1 (dt dec pq3 ext),2.5.2 (dt dec pq3 ext)]"/>
+        <version value="[2.4.4 (dt dec pq3 ext),2.4.5 (dt dec pq3 ext),2.5 (dt dec pq3 ext),2.5.1 (dt dec pq3 ext),2.5.2 (dt dec pq3 ext),2.6.1 (dt dec pq3 ext lo64)]"/>
         <usage value="dynamic linking"/>
         <license value="LICENSE_psycopg.txt"/>
         <license-type value="ZPL-License"/>
@@ -633,7 +633,7 @@
     <dependency env="[win32,linux64,macos64]" name="python">
         <full-name value="Python"/>
         <project-home value="http://docs.python.org/license.html"/>
-        <version value="2.7.9"/>
+        <version value="[2.7.9,2.7.10]"/>
         <usage value="dynamic linking"/>
         <license value="LICENSE_python.txt"/>
         <license-type value="PSF_"/>
@@ -643,7 +643,7 @@
     <dependency env="[win32,linux64,macos32,win64,linux32,macos64]" name="pytz">
         <full-name value="PyTZ: TimeZone Library for Python"/>
         <project-home value="http://pytz.sourceforge.net/"/>
-        <version value="[2010o,2011n,2011c,2012c,2012d-mpl]"/>
+        <version value="[2010o,2011n,2011c,2012c,2012d-mpl,2015.4]"/>
         <usage value="dynamic linking"/>
         <license value="LICENSE_pytz.txt"/>
         <license-type value="MIT_"/>
@@ -663,7 +663,7 @@
     <dependency env="[win32,linux64,macos32,win64,linux32,macos64]" name="simplejson">
         <full-name value="Simple JSON"/>
         <project-home value="https://github.com/simplejson"/>
-        <version value="[2.6.1,2.6.0,2.3.2,3.3.0,3.3.1]"/>
+        <version value="[2.6.1,2.6.0,2.3.2,3.3.0,3.3.1,3.7.3]"/>
         <usage value="dynamic linking"/>
         <license value="LICENSE_simplejson.txt"/>
         <license-type value="MIT_ or PSF_"/>
@@ -673,7 +673,7 @@
     <dependency env="[win32,linux64,macos32,win64,linux32,macos64]" name="sklearn">
         <full-name value="Scikits Learn"/>
         <project-home value="http://scikit-learn.org/"/>
-        <version value="[0.13.1,0.11,0.12,0.14.1]"/>
+        <version value="[0.13.1,0.11,0.12,0.14.1,0.15.2]"/>
         <usage value="dynamic linkingd"/>
         <license value="LICENSE_scikits_learn.txt"/>
         <license-type value="BSD_ 3rd clause"/>
@@ -753,7 +753,7 @@
     <dependency env="[win32,linux64,macos32,win64,linux32,macos64]" name="tempita">
         <full-name value="Tempita"/>
         <project-home value="http://pythonpaste.org/tempita/"/>
-        <version value="[unknown,0.5.1]"/>
+        <version value="[unknown,0.5.1,0.5.2]"/>
         <usage value="dynamic linking"/>
         <license value="LICENSE_tempita.txt"/>
         <license-type value="BSD_ 2 clause"/>
