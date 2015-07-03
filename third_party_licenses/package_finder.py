@@ -71,10 +71,11 @@ EXCLUDES_PYD = [## Windows *.pyds that are part of python standard libs
                 '_multiprocessing.pyd', '_socket.pyd', '_ssl.pyd', '_tkinter.pyd',
                 'pyexpat.pyd', 'select.pyd', 'unicodedata.pyd', re.compile(r'win32.*\.pyd'),
                 ## Windows *.pyds already included in licensing due to python package
-                '_psutil_mswindows.pyd', '_sqlite3.pyd', 'bz2.pyd', 'gdist.pyd',
+                '_psutil_mswindows.pyd', '_sqlite3.pyd', 'bz2.pyd', 'gdist.pyd', 'genshi._speedups.pyd',
                 re.compile(r'h5py.*\.pyd'), re.compile(r'matplotlib.*\.pyd'), 'numexpr.interpreter.pyd',
                 re.compile(r'numpy.*\.pyd'), 'openssl.*\.pyd', 'psycopg2._psycopg.pyd', 'pil._imaging',
-                re.compile(r'scipy.*\.pyd'),
+                re.compile(r'scipy.*\.pyd'), 'sqlalchemy.cresultproxy.pyd', 'sqlalchemy.cprocessors.pyd',
+                'simplejson._speedups.pyd', '_psutil_windows.pyd',
                 ]
 
 EXCLUDES_SO = [  # libpq dependencies on dynamic psycopg linux 32
@@ -273,6 +274,10 @@ def parse_tree_structure(root_, excludes=None):
     modules_dict = {}
     _find_modules(root_, modules_dict)
     _find_extra_modules(EXTRA_MODULES, modules_dict, excludes)
+
+    if 'anaconda' in sys.version.lower():
+        modules_dict['anaconda'] = sys.version.split('|')[1].split(' ')[1]
+
     if sys.platform == 'darwin':
         #----- Go into Contents/Frameworks and look for dlybs/so's-----
         path = os.path.split(root_)[0]

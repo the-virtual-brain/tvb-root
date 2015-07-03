@@ -1,5 +1,15 @@
 <?xml version="1.0" ?>
 <tvb>
+    <dependency env="[win64]" name="anaconda">
+        <full-name value="Anaconda"/>
+        <project-home value="https://store.continuum.io/cshop/anaconda/"/>
+        <version value="2.2.0"/>
+        <usage value="dynamic linking"/>
+        <license value="LICENSE_anaconda.txt"/>
+        <license-type value="Derived from MIT_"/>
+        <copyright-notice value="Copyright (c) Continuum Analytics Inc"/>
+        <description value="Derives from Anaconda - Python environment for convenience in setting-up the build machine."/>
+    </dependency>
     <dependency env="[win32,linux64,macos32,win64,linux32,macos64]" name="apscheduler">
         <full-name value="APScheduler"/>
         <project-home value="http://pypi.python.org/pypi/APScheduler"/>
