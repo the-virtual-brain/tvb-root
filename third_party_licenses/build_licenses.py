@@ -73,6 +73,7 @@ FULL_TEMPLATE = "===========================\
                 \n.. _PSF: http://docs.python.org/license.html\
                 \n.. _LGPLv2: http://www.gnu.org/licenses/lgpl-2.1.html\
                 \n.. _LGPLv3: http://www.gnu.org/licenses/lgpl.html\
+                \n.. _ISC: http://opensource.org/licenses/ISC\
                 \n\n .. footer:: Includes $$COUNT$$ licenses. \
                                  Generated at $$DATE$$."
 ONE_LIB_TEMPLATE = "Library: `$$FULL-NAME$$ <$$PROJECT-HOME$$>`_  \

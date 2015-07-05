@@ -20,6 +20,16 @@
         <copyright-notice value="Copyright (c) 2009 Evan Rosson, Jan Dittberner, Domen Kozar"/>
         <description value="Scheduler of jobs."/>
     </dependency>
+    <dependency env="[win64]" name="backports">
+        <full-name value="Backports"/>
+        <project-home value="https://pypi.python.org/pypi/backports"/>
+        <version value="unknown"/>
+        <usage value="dynamic linking"/>
+        <license value="LICENSE_python.txt"/>
+        <license-type value="PSF_"/>
+        <copyright-notice value="Copyright (c) 2010-2012 Brandon Craig Rhodes"/>
+        <description value="The IPython Notebook uses backports - Coming with Anaconda env"/>
+    </dependency>
     <dependency env="[win32,linux64,macos32,win64,linux32,macos64]" name="bct">
         <full-name value="Brain Connectivity Toolbox (BCT)"/>
         <project-home value="https://sites.google.com/site/bctnet/"/>
@@ -38,7 +48,7 @@
         <license value="LICENSE_bs4.txt"/>
         <license-type value="MIT_"/>
         <copyright-notice value="Copyright (c) 2004-2012 Leonard Richardson"/>
-        <description value="Tree Parser- Coming with Anaconda env"/>
+        <description value="Tree Parser - Coming with Anaconda env"/>
     </dependency>
     <dependency env="[linux32,linux64]" name="bz2.so">
         <full-name value="libbzip2 (file compress)"/>
@@ -49,6 +59,16 @@
         <license-type value="BSD_"/>
         <copyright-notice value="Copyright (C) 1996-2010 Julian Seward &lt;jseward@bzip.org&gt;"/>
         <description value="LibBZ2 is indirectly used by the HDF5 libraries."/>
+    </dependency>
+    <dependency env="[win64]" name="certifi">
+        <full-name value="Certifi"/>
+        <project-home value="http://certifi.io/en/latest/"/>
+        <version value="14.5.14"/>
+        <usage value="dynamic linking"/>
+        <license value="LICENSE_certifi.txt"/>
+        <license-type value="ISC_"/>
+        <copyright-notice value="Copyright (c) 2015 Kenneth Reitz"/>
+        <description value="Used by IPython Notebook - Coming with Anaconda env "/>
     </dependency>
     <dependency env="[win32,linux64,macos32,win64,linux32,macos64]" name="cfflib">
         <full-name value="Connectome File Format Library (cfflib)"/>
@@ -230,6 +250,16 @@
         <copyright-notice value="Copyright (c) 2011, IPython Development Team"/>
         <description value="This library is used for TVB command access - Coming with Anaconda env"/>
     </dependency>
+    <dependency env="[win64]" name="jinja2">
+        <full-name value="Jinja"/>
+        <project-home value="http://jinja.pocoo.org/"/>
+        <version value="2.7.3"/>
+        <usage value="dynamic linking"/>
+        <license value="LICENSE_jinja.txt"/>
+        <license-type value="BSD_"/>
+        <copyright-notice value="Copyright (c) 2009 by the Jinja Team"/>
+        <description value="The IPython Notebook uses the Jinja templating tool to render HTML pages - Coming with Anaconda env"/>
+    </dependency>
     <dependency env="[win32,linux64,macos32,win64,linux32,macos64]" name="jit">
         <full-name value="Jit"/>
         <project-home value="http://thejit.org/"/>
@@ -329,6 +359,16 @@
         <license-type value="BSD_"/>
         <copyright-notice value="Copyright 1996-2002, 2006 by David Turner, Robert Wilhelm, and Werner Lemberg"/>
         <description value="A Free, High-Quality, and Portable Font Engine."/>
+    </dependency>
+    <dependency env="[win32]" name="libgcc_s_dw2-1.dll">
+        <full-name value="Mingw gcc low level runtime"/>
+        <project-home value="http://www.mingw.org/"/>
+        <version value="unknown"/>
+        <usage value="dynamic linking"/>
+        <license value="LICENSE_mingw.txt"/>
+        <license-type value="MIT_"/>
+        <copyright-notice value="Copyright (c) 2012 MinGW.org project"/>
+        <description value="Runtime library produced by the mingw32 gcc compiler."/>
     </dependency>
     <dependency env="[linux32,linux64]" name="libgnutls.so.26">
         <full-name value="GnuTLS Transport Layer Security Library"/>
@@ -460,6 +500,16 @@
         <copyright-notice value="Copyright (c) 1998-2003 Carnegie Mellon University. All rights reserved."/>
         <description value="A dependency of psycopg2 dynamic build. This product includes cryptographic software written by Eric Young."/>
     </dependency>
+    <dependency env="[win32]" name="libstdc++-6.dll">
+        <full-name value="Mingw gcc c++ runtime"/>
+        <project-home value="http://www.mingw.org/"/>
+        <version value="unknown"/>
+        <usage value="dynamic linking"/>
+        <license value="LICENSE_mingw.txt"/>
+        <license-type value="MIT_"/>
+        <copyright-notice value="Copyright (c) 2012 MinGW.org project"/>
+        <description value="Runtime library produced by the mingw32 gcc compiler."/>
+    </dependency>
     <dependency env="[macos32,macos64]" name="libtcl8.5.dylib">
         <full-name value="TCL85 dylib"/>
         <project-home value="http://www.tcl.tk/software/tcltk/license.html"/>
@@ -530,6 +580,16 @@
         <copyright-notice value="Copyright (c) 2004 Infrae. All rights reserved."/>
         <description value=""/>
     </dependency>
+    <dependency env="[win64]" name="markupsafe">
+        <full-name value="MarkupSafe"/>
+        <project-home value="https://pypi.python.org/pypi/MarkupSafe"/>
+        <version value="0.23"/>
+        <usage value="dynamic linking"/>
+        <license value="LICENSE_markupsafe.txt"/>
+        <license-type value="BSD_"/>
+        <copyright-notice value="Copyright (c) 2010 by Armin Ronacher and contributors.  See AUTHORS for more details."/>
+        <description value="The IPython Notebook uses the MarkupSafe - Coming with Anaconda env"/>
+    </dependency>
     <dependency env="[win32,linux64,macos32,win64,linux32,macos64]" name="mathjax">
         <full-name value="MathJax"/>
         <project-home value="http://www.mathjax.org/"/>
@@ -569,6 +629,16 @@
         <license-type value="MIT_"/>
         <copyright-notice value="Copyright (c) 2004-2008 by Roland Leuthe"/>
         <description value="A Lightweight XML schema validator"/>
+    </dependency>
+    <dependency env="[mac64]" name="mistune.so">
+        <full-name value="Mistune"/>
+        <project-home value="https://github.com/lepture/mistune"/>
+        <version value="unknown"/>
+        <usage value="dynamic linking"/>
+        <license value="LICENSE_mistune.txt"/>
+        <license-type value="BSD_"/>
+        <copyright-notice value="Copyright (c) 2014 - 2015, Hsiaoming Yang"/>
+        <description value="IPython Notebook uses the mistune markdown parser - Coming with Anaconda env"/>
     </dependency>
     <dependency env="[win32,linux64,macos32,win64,linux32,macos64]" name="mod_pywebsocket">
         <full-name value="Python Web Socket Server"/>
@@ -720,6 +790,16 @@
         <copyright-notice value="Copyright (c) 2010 - Daniele Varrazzo"/>
         <description value="Psycopg is the most popular PostgreSQL adapter for the Python programming language. It has a choosable license (LGPL v3 or BSD Like) and we choose the BSD like one."/>
     </dependency>
+    <dependency env="[win64]" name="ptyprocess">
+        <full-name value="Ptyprocess"/>
+        <project-home value="https://github.com/pexpect/ptyprocess"/>
+        <version value="0.4"/>
+        <usage value="dynamic linking"/>
+        <license value="LICENSE_ptyprocess.txt"/>
+        <license-type value="ISC_"/>
+        <copyright-notice value="Copyright (c) 2013-2014, Pexpect development team; Copyright (c) 2012, Noah Spurrier &lt;noah@noah.org&gt;"/>
+        <description value="Used by IPython Notebook - Coming with Anaconda env "/>
+    </dependency>
     <dependency env="[win32,linux64,macos64]" name="python">
         <full-name value="Python"/>
         <project-home value="http://docs.python.org/license.html"/>
@@ -729,6 +809,16 @@
         <license-type value="PSF_"/>
         <copyright-notice value="Copyright (c) 1990-2012, Python Software Foundation. "/>
         <description value="Most of TVB code will probably be in Python. Multiple Python libraries, some of them listed below, use Python Software Foundation "/>
+    </dependency>
+    <dependency env="[win64]" name="pygments">
+        <full-name value="Pygments"/>
+        <project-home value="http://pygments.org/"/>
+        <version value="2.0.2"/>
+        <usage value="dynamic linking"/>
+        <license value="LICENSE_pygments.txt"/>
+        <license-type value="BSD_"/>
+        <copyright-notice value="Copyright (c) 2006-2015 by the respective authors (see AUTHORS file)"/>
+        <description value="The syntax-highlighting in IPython Notebook is done by pygments - Coming with Anaconda env "/>
     </dependency>
     <dependency env="[win32,linux64,macos32,win64,linux32,macos64]" name="pytz">
         <full-name value="PyTZ: TimeZone Library for Python"/>
@@ -850,6 +940,26 @@
         <copyright-notice value="Copyright (c) 2008 Ian Bicking and Contributors"/>
         <description value="This is a dependency of SQLAlchemy's migrate versioning."/>
     </dependency>
+    <dependency env="[win64]" name="terminado">
+        <full-name value="Terminado"/>
+        <project-home value="https://pypi.python.org/pypi/terminado"/>
+        <version value="0.5"/>
+        <usage value="dynamic linking"/>
+        <license value="LICENSE_terminado.txt"/>
+        <license-type value="BSD_"/>
+        <copyright-notice value="Copyright (c) 2014, Ramalingam Saravanan &lt;sarava@sarava.net&gt;"/>
+        <description value="The IPython Notebook uses the Terminado - Coming with Anaconda env"/>
+    </dependency>
+    <dependency env="[win64]" name="tornado">
+        <full-name value="Tornado"/>
+        <project-home value="http://www.tornadoweb.org/en/stable/"/>
+        <version value="4.2"/>
+        <usage value="dynamic linking"/>
+        <license value="LICENSE_tornado.txt"/>
+        <license-type value="Apache_ 2"/>
+        <copyright-notice value="Copyright (c) 2011, Facebook."/>
+        <description value="The IPython Notebook uses the Tornado project for its HTTP server - Coming with Anaconda env"/>
+    </dependency>
     <dependency env="[macos64,macos32]" name="tk.framework">
         <full-name value="TK85 Framework"/>
         <project-home value="http://tkinter.unpythonic.net/wiki/Tkinter"/>
@@ -890,24 +1000,14 @@
         <copyright-notice value="Copyright (C) 1995-2010 Jean-loup Gailly and Mark Adler"/>
         <description value="Package part of Python's distribution."/>
     </dependency>
-    <dependency env="[win32]" name="libgcc_s_dw2-1.dll">
-        <full-name value="Mingw gcc low level runtime"/>
-        <project-home value="http://www.mingw.org/"/>
-        <version value="unknown"/>
+    <dependency env="[win64]" name="zmq">
+        <full-name value="zeromq"/>
+        <project-home value="http://zguide.zeromq.org"/>
+        <version value="14.7.0"/>
         <usage value="dynamic linking"/>
-        <license value="LICENSE_mingw.txt"/>
-        <license-type value="MIT_"/>
-        <copyright-notice value="Copyright (c) 2012 MinGW.org project"/>
-        <description value="Runtime library produced by the mingw32 gcc compiler."/>
-    </dependency>
-    <dependency env="[win32]" name="libstdc++-6.dll">
-        <full-name value="Mingw gcc c++ runtime"/>
-        <project-home value="http://www.mingw.org/"/>
-        <version value="unknown"/>
-        <usage value="dynamic linking"/>
-        <license value="LICENSE_mingw.txt"/>
-        <license-type value="MIT_"/>
-        <copyright-notice value="Copyright (c) 2012 MinGW.org project"/>
-        <description value="Runtime library produced by the mingw32 gcc compiler."/>
+        <license value="LICENSE_zmq.txt"/>
+        <license-type value="LGPLv3_"/>
+        <copyright-notice value="Copyright (C) 2007-2014 iMatix Corporation and Contributors"/>
+        <description value="The IPython Notebook requires ZeroMQ for communication - Coming with Anaconda env"/>
     </dependency>
 </tvb>
