@@ -783,7 +783,7 @@
     <dependency env="[win32,win64,linux32,linux64,macos32,macos64]" name="psycopg2">
         <full-name value="Psycopg2"/>
         <project-home value="http://initd.org/psycopg/"/>
-        <version value="[2.4.4 (dt dec pq3 ext),2.4.5 (dt dec pq3 ext),2.5 (dt dec pq3 ext),2.5.1 (dt dec pq3 ext),2.5.2 (dt dec pq3 ext),2.6.1 (dt dec pq3 ext lo64)]"/>
+        <version value="[2.4.4 (dt dec pq3 ext),2.4.5 (dt dec pq3 ext),2.5 (dt dec pq3 ext),2.5.1 (dt dec pq3 ext),2.5.2 (dt dec pq3 ext),2.6 (dt dec pq3 ext),2.6.1 (dt dec pq3 ext lo64)]"/>
         <usage value="dynamic linking"/>
         <license value="LICENSE_psycopg.txt"/>
         <license-type value="ZPL-License"/>
