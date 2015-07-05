@@ -10,7 +10,7 @@ conda install matplotlib==1.2.1 pytables==3.0
 
 conda install numpy==1.8.1 psycopg2
 
-pip install sqlalchemy==0.7.8 sqlalchemy-migrate==0.7.2 minixsv formencode genshi simplejson mod_pywebsocket cherrypy cfflib nibabel gdist appscheduler
+pip install sqlalchemy==0.7.8 sqlalchemy-migrate==0.7.2 minixsv formencode genshi simplejson mod_pywebsocket cherrypy cfflib nibabel gdist appscheduler numexpr==2.4
 
 cd ../../..
 python setup_extra.py develop
