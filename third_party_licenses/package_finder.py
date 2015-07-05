@@ -50,8 +50,8 @@ else:
 EXCLUDES = ['_builtinsuites', 'tvb_bin', 'bsddb', 'carbon', 'compiler', 'config',
             'curses', 'dateutil', 'tvb_data', 'distutils', 'email', 'encodings', 'externals',
             'finder', 'hotshot', 'importlib', 'lib-dynload', 'logging', 'multiprocessing',
-            'openglcontext', 'pydoc_data', 'pysqlite2', 'pkg_resources', 'setuptools', 'stdsuites', 'test',
-            'tvb', 'unittest', 'wxpython', 'xml',
+            'openglcontext', 'pydoc_data', 'pysqlite2', 'pkg_resources', 'pyximport', # part of cython
+            'setuptools', 'stdsuites', 'test', 'tvb', 'unittest', 'wxpython', 'xml',
             ## We exclude bellow shorter names for packages already introspected.
             'json', "foundation", "objc", "appkit", "exceptionhandling", "pyobjctools"
             ]
@@ -94,16 +94,16 @@ EXCLUDES_SO = [  # libpq dependencies on dynamic psycopg linux 32
                  'array.so', 'cpickle.so', 'cstringio.so', 'select.so', 'fcntl.so', 'binascii.so', 'future_builtins.so',
                  'operator.so', 'zlib.so', 'time.so', 'itertools.so', 'math.so', 'strop.so', 'syslog.so', 
                  '_bsddb.so', '_codecs_cn.so', '_codecs_hk.so', '_codecs_iso2022.so', '_codecs_jp.so', 
-                 '_codecs_kr.so', '_codecs_tw.so', '_csv.so', '_ctypes.so', '_curses.so', '_heapq.so', 
+                 '_codecs_kr.so', '_codecs_tw.so', '_csv.so', '_ctypes.so', '_curses.so', 'datetime.so', '_heapq.so',
                  '_imaging.so', '_json.so', '_lsprof.so', '_lsprof.so', '_multibytecodec.so', '_multiprocessing.so', 
-                 '_psutil_linux.so', '_psutil_posix.so', '_sqlite3.so', '_tkinter.so', 'cmath.so', 'datetime.so', 
+                 '_psutil_linux.so', '_psutil_posix.so', '_psutil_osx.so', '_sqlite3.so', '_tkinter.so', 'cmath.so',
                  'libcrypto.so.0.9.8', 'libgcc_s.so.1', 'libpng12.so.0', 'libssl.so.0.9.8', 'libstdc\\+\\+.so.6', 
                  'libz.so', 'mmap.so', 'parser.so', 'pyexpat.so', 'readline.so', 'resource.so', 'termios.so', 
                  re.compile(r'libncurses.*'), re.compile(r'libreadline\..*'), re.compile(r'libpython2\..*\.so.*'), 
                  'gdist.so', 'libgfortran.so.3', 'libfontconfig.so.1', 'libsqlite3.so.0', 'numexpr.interpreter.so', 
                  'genshi._speedups.so', 'psycopg2._psycopg.so', 'pysqlite2._sqlite.so', 'simplejson._speedups.so', 
-                 re.compile(r'sqlalchemy\..*\.so'), re.compile(r'scipy\..*\.so'), re.compile(r'libpq.so\.*'), 
-                 re.compile(r'matplotlib\..*\.so'), re.compile(r'numpy\..*\.so'), re.compile(r'_psutil\.*\.so'), 
+                 re.compile(r'sqlalchemy\..*\.so'), re.compile(r'scipy\..*\.so'), re.compile(r'libpq.so\.*'),
+                 re.compile(r'matplotlib\..*\.so'), re.compile(r'numpy\..*\.so'), re.compile(r'_psutil\.*\.so'),
                  'libxau.so.6', 'libxcb.so.1', 'libxdmcp.so.6', 'libxext.so.6', 'libxft.so.2', 'libxrender.so.1', 
                  'libxss.so.1', re.compile(r'h5py\..+\.so'), re.compile(r'libhdf5_hl.*\.so')]
 
@@ -283,7 +283,8 @@ def parse_tree_structure(root_, excludes=None):
         path = os.path.split(root_)[0]
         path = os.path.split(path)[0]
         path = os.path.join(os.path.split(path)[0], 'Frameworks')
-        _find_modules(path, modules_dict)
+        if os.path.exists(path):
+            _find_modules(path, modules_dict)
     os.remove(tmp_pip_file)
     return modules_dict
     
