@@ -34,7 +34,6 @@ import zipfile
 import platform
 import os.path
 from contextlib import closing
-from distutils.dir_util import copy_tree
 from tvb.basic.config.settings import VersionSettings
 from tvb.basic.config.environment import Environment
 from third_party_licenses.build_licenses import generate_artefact
@@ -114,6 +113,29 @@ def _compress(folder_to_zip, result_name):
                 absfn = os.path.join(root, file_nname)
                 zfn = absfn[len(folder_to_zip) + len(os.sep):]
                 z_file.write(absfn, zfn)
+
+
+def _copy_collapsed(config):
+    """
+    Merge multiple src folders, and filter some resources which are not needed (tests, docs, svn folders)
+    """
+    for module_path in config.tvb_sources:
+        _log(2, module_path)
+        suffix = os.path.split(module_path)[1]
+        destination_folder = os.path.join(config.target_site_packages, suffix)
+
+        for sub_folder in os.listdir(module_path):
+            src = os.path.join(module_path, sub_folder)
+            dest = os.path.join(destination_folder, sub_folder)
+
+            if os.path.isdir(src) and not (sub_folder.startswith('.')
+                                           or sub_folder.startswith("tests")) and not os.path.exists(dest):
+                shutil.copytree(src, dest)
+
+            simulator_doc_folder = os.path.join(destination_folder, "simulator", "doc")
+            if os.path.exists(simulator_doc_folder):
+                shutil.rmtree(simulator_doc_folder, True)
+                _log(3, "Removed: " + str(simulator_doc_folder))
 
 
 def _create_mac_command(target_bin_folder, command_file_name, command):
@@ -207,10 +229,7 @@ def prepare_anaconda_dist(config):
 
     # Copy tvb sources
     _log(1, "Copying TVB sources into site-packages ...")
-    for src in config.tvb_sources:
-        _log(2, src)
-        suffix = os.path.split(src)[1]
-        copy_tree(src, os.path.join(config.target_site_packages, suffix))
+    _copy_collapsed(config)
 
     bin_src = os.path.join(config.target_root, "_tvb_bin")
     bin_dst = os.path.join(config.target_site_packages, "tvb_bin")
