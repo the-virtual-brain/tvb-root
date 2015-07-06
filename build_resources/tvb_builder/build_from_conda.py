@@ -88,7 +88,7 @@ class Config:
                         'tvb_stop': 'distribution stop',
                         'contributor_setup': set_path + 'python.exe -m  tvb_bin.git_setup %1 %2\ncd ..\\bin'}
 
-        return Config("Windows", "C:\\anaconda\\envs\\tvb-run", os.path.join("Lib", "site-packages"), commands_map,
+        return Config("Windows", "C:\\anaconda\\envs\\tvb-build", os.path.join("Lib", "site-packages"), commands_map,
                       _create_windows_script)
 
 
