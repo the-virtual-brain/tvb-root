@@ -130,8 +130,8 @@ def _copy_collapsed(config):
 
             if os.path.isdir(src) and not (sub_folder.startswith('.')
                                            or sub_folder.startswith("tests")) and not os.path.exists(dest):
-                ignore_patters = shutil.ignore_patterns('.svn')
-                shutil.copytree(src, dest, ignore_patters)
+                ignore_patters = shutil.ignore_patterns('.svn', "tutorials")
+                shutil.copytree(src, dest, ignore=ignore_patters)
 
             simulator_doc_folder = os.path.join(destination_folder, "simulator", "doc")
             if os.path.exists(simulator_doc_folder):
