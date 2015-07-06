@@ -125,18 +125,18 @@ def _copy_collapsed(config):
     for module_path, suffix in config.tvb_sources.iteritems():
         destination_folder = os.path.join(config.target_site_packages, suffix)
         _log(2, module_path + " --> " + destination_folder)
+        if not os.path.exists(destination_folder):
+            os.makedirs(destination_folder)
 
         for sub_folder in os.listdir(module_path):
             src = os.path.join(module_path, sub_folder)
             dest = os.path.join(destination_folder, sub_folder)
 
-            if src.endswith("__init__.py") and not os.path.exists(dest):
+            if not os.path.isdir(src) and not os.path.exists(dest):
                 shutil.copy(src, dest)
 
             if os.path.isdir(src) and not (sub_folder.startswith('.')
                                            or sub_folder.startswith("tests")) and not os.path.exists(dest):
-                if not os.path.exists(os.path.dirname(dest)):
-                    os.makedirs(os.path.dirname(dest))
                 ignore_patters = shutil.ignore_patterns('.svn', "tutorials")
                 shutil.copytree(src, dest, ignore=ignore_patters)
 
