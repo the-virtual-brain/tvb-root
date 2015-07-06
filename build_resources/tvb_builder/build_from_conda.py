@@ -81,9 +81,9 @@ class Config:
     @staticmethod
     def win64():
         set_path = 'cd ..\\tvb_data \n' + \
-                   'set PATH=%cd%;%path%; \n'
-                   # 'set PYTHONPATH=%cd%; \n' + \
-                   # 'set PYTHONHOME=%cd%; \n'
+                   'set PATH=%cd%;%path%; \n' + \
+                   'set PYTHONPATH=%cd%; \n'
+                   #'set PYTHONHOME=%cd%; \n'
 
         commands_map = {'distribution': set_path + 'python.exe -m tvb_bin.app %1 %2 %3 %4 %5 %6\ncd ..\\bin',
                         'tvb_start': 'distribution start',
