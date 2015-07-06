@@ -128,7 +128,7 @@ def _copy_collapsed(config):
             src = os.path.join(module_path, sub_folder)
             dest = os.path.join(destination_folder, sub_folder)
 
-            if os.path.isdir(src) and not (sub_folder.startswith('.')
+            if os.path.isdir(src) and not (sub_folder.startswith('.') or '.svn' in sub_folder
                                            or sub_folder.startswith("tests")) and not os.path.exists(dest):
                 shutil.copytree(src, dest)
 
