@@ -234,4 +234,10 @@ From this overlay, the user can:
 - export data.
 
 
+.. this is a hack needed by the online help. The Project page docs have to include the
+   visualizers docs because visualizers launched from the project page live in it's context.
+   The body of the only directive is emitted only when the online_help tag is defined
 
+.. only:: online_help
+
+    .. include:: UserGuide-UI_Simulator-Visualizers.rst

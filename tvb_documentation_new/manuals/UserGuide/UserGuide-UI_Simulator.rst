@@ -285,6 +285,9 @@ There are 4 tabs:
 All the snapshots you save can be managed in  `Projects` --> `Image Archive` 
 page.
 
-  
+.. do not move this relationship to a toc tree. The online help for the simulator page
+    assumes that the simulator doc page will contain the visualizers docs
+    This is because the visualizers have no url but live in the context of the
+    project and simulator pages.
 
 .. include:: UserGuide-UI_Simulator-Visualizers.rst

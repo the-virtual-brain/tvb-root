@@ -3,7 +3,7 @@
 .. |VERSION| replace:: 1.0
 .. |REVISION| replace:: 0.2
 
-.. include:: ../templates/pdf_template.rst 
+.. include:: ../templates/pdf_constants.rst
 
 
 .. class:: legendtext
