@@ -81,9 +81,9 @@ class Config:
     @staticmethod
     def win64():
         set_path = 'cd ..\\tvb_data \n' + \
-                   'set PATH=%cd%;%path%; \n' + \
-                   'set PYTHONPATH=%cd%; \n' + \
-                   'set PYTHONHOME=%cd%; \n'
+                   'set PATH=%cd%;%path%; \n'
+                   # 'set PYTHONPATH=%cd%; \n' + \
+                   # 'set PYTHONHOME=%cd%; \n'
 
         commands_map = {'distribution': set_path + 'python.exe -m tvb_bin.app %1 %2 %3 %4 %5 %6\ncd ..\\bin',
                         'tvb_start': 'distribution start',
@@ -123,8 +123,8 @@ def _copy_collapsed(config):
     Merge multiple src folders, and filter some resources which are not needed (tests, docs, svn folders)
     """
     for module_path, suffix in config.tvb_sources.iteritems():
-        _log(2, module_path)
         destination_folder = os.path.join(config.target_site_packages, suffix)
+        _log(2, module_path + " --> " + destination_folder)
 
         for sub_folder in os.listdir(module_path):
             src = os.path.join(module_path, sub_folder)
@@ -189,7 +189,8 @@ def _modify_pth(pth_name):
     """
     Replace tvb links with paths
     """
-    tvb_markers = ["tvb_root", "tvb-root", "framework_tvb", "scientific_library", "third_party_licenses"]
+    tvb_markers = ["tvb_root", "tvb-root", "framework_tvb", "scientific_library", "third_party_licenses", "tvb_data",
+                   "hudson"]
     tvb_replacement = "./tvb\n./tvb_bin\n./tvb_data\n"
     _log(1, "Modifying PTH " + pth_name)
     new_content = ""
