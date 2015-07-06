@@ -90,6 +90,16 @@
         <copyright-notice value="Copyright (c) 2002-2008, CherryPy Team (team@cherrypy.org)"/>
         <description value="We use this library for web server."/>
     </dependency>
+    <dependency env="[win64]" name="concurrent">
+        <full-name value="PythonFutures"/>
+        <project-home value="https://github.com/agronholm/pythonfutures"/>
+        <version value="unknown"/>
+        <usage value="dynamic linking"/>
+        <license value="LICENSE_concurrent.txt"/>
+        <license-type value="BSD_"/>
+        <copyright-notice value="Copyright (c) 2009 Brian Quinlan. All rights reserved."/>
+        <description value="- Coming with Anaconda env"/>
+    </dependency>
     <dependency env="[macos64,macos32]" name="corefoundation">
         <full-name value="PyObjC"/>
         <project-home value="http://pythonhosted.org/pyobjc/"/>
