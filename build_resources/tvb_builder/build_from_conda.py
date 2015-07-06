@@ -52,6 +52,7 @@ class Config:
         self.build_folder = "build"
         self.step1_result = os.path.join(self.build_folder, "TVB_Distribution_a.zip")
         self.target_root = os.path.join(self.build_folder, "TVB_Distribution")
+        self.target_before_zip = os.path.join(self.build_folder, "TVB_Build")
 
         # Inside Distribution paths:
         self.target_library_root = os.path.join(self.target_root, "tvb_data")
@@ -260,8 +261,12 @@ def prepare_anaconda_dist(config):
     zipfile.ZipFile(zip_name).extractall(config.target_3rd_licences_folder)
     os.remove(zip_name)
 
-    _compress(config.target_root, final_zip_name)
-    shutil.rmtree(config.target_root, True)
+    if os.path.exists(config.target_before_zip):
+        shutil.rmtree(config.target_before_zip, True)
+    os.mkdir(config.target_before_zip)
+    shutil.move(config.target_root, config.target_before_zip)
+    _compress(config.target_before_zip, final_zip_name)
+    shutil.rmtree(config.target_before_zip, True)
 
 
 if __name__ == "__main__":
