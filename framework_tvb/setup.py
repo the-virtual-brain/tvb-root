@@ -41,7 +41,7 @@ import shutil
 import setuptools
 
 
-VERSION = "1.3"
+VERSION = "1.4"
 
 TVB_TEAM = "Mihai Andrei, Lia Domide, Ionel Ortelecan, Bogdan Neacsa, Calin Pavel, "
 TVB_TEAM += "Stuart Knock, Marmaduke Woodman, Paula Sansz Leon, "
@@ -49,7 +49,7 @@ TVB_TEAM += "Stuart Knock, Marmaduke Woodman, Paula Sansz Leon, "
 TVB_INSTALL_REQUIREMENTS = ["apscheduler", "beautifulsoup", "cherrypy", "genshi", "cfflib", "formencode==1.3.0a1",
                             "h5py==2.3.0", "lxml", "minixsv", "mod_pywebsocket", "networkx", "nibabel", "numpy",
                             "numexpr", "psutil", "scikit-learn", "scipy", "simplejson", "PIL>=1.1.7",
-                            "sqlalchemy==0.7", "sqlalchemy-migrate==0.7.2", "matplotlib==1.2.1"]
+                            "sqlalchemy==0.7.8", "sqlalchemy-migrate==0.7.2", "matplotlib==1.2.1"]
 
 EXCLUDE_INTROSPECT_FOLDERS = [folder for folder in os.listdir(".")
                               if os.path.isdir(os.path.join(".", folder)) and folder != "tvb"]
