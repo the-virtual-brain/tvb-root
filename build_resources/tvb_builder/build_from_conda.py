@@ -135,6 +135,8 @@ def _copy_collapsed(config):
 
             if os.path.isdir(src) and not (sub_folder.startswith('.')
                                            or sub_folder.startswith("tests")) and not os.path.exists(dest):
+                if not os.path.exists(os.path.dirname(dest)):
+                    os.makedirs(os.path.dirname(dest))
                 ignore_patters = shutil.ignore_patterns('.svn', "tutorials")
                 shutil.copytree(src, dest, ignore=ignore_patters)
 
@@ -190,7 +192,7 @@ def _modify_pth(pth_name):
     Replace tvb links with paths
     """
     tvb_markers = ["tvb_root", "tvb-root", "framework_tvb", "scientific_library", "third_party_licenses", "tvb_data",
-                   "hudson"]
+                   "Hudson"]
     tvb_replacement = "./tvb\n./tvb_bin\n./tvb_data\n"
     _log(1, "Modifying PTH " + pth_name)
     new_content = ""
