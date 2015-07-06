@@ -45,7 +45,9 @@ class Config:
         self.anaconda_env_path = anaconda_env_path
 
         dp = os.path.join("..", "..")
-        self.tvb_sources = [os.path.join(dp, "framework_tvb", "tvb"), os.path.join(dp, "scientific_library", "tvb")]
+        self.tvb_sources = {os.path.join(dp, "framework_tvb", "tvb"): "tvb",
+                            os.path.join(dp, "scientific_library", "tvb"): "tvb",
+                            os.path.join(dp, "externals", "BCT"): os.path.join("externals", "BCT")}
 
         # Build result & input
         self.platform_name = platform_name
@@ -120,14 +122,16 @@ def _copy_collapsed(config):
     """
     Merge multiple src folders, and filter some resources which are not needed (tests, docs, svn folders)
     """
-    for module_path in config.tvb_sources:
+    for module_path, suffix in config.tvb_sources.iteritems():
         _log(2, module_path)
-        suffix = os.path.split(module_path)[1]
         destination_folder = os.path.join(config.target_site_packages, suffix)
 
         for sub_folder in os.listdir(module_path):
             src = os.path.join(module_path, sub_folder)
             dest = os.path.join(destination_folder, sub_folder)
+
+            if src.endswith("__init__.py") and not os.path.exists(dest):
+                shutil.copy(src, dest)
 
             if os.path.isdir(src) and not (sub_folder.startswith('.')
                                            or sub_folder.startswith("tests")) and not os.path.exists(dest):
@@ -185,7 +189,7 @@ def _modify_pth(pth_name):
     """
     Replace tvb links with paths
     """
-    tvb_markers = ["tvb_root", "tvb-root", "framework_tvb", "scientific_library"]
+    tvb_markers = ["tvb_root", "tvb-root", "framework_tvb", "scientific_library", "third_party_licenses"]
     tvb_replacement = "./tvb\n./tvb_bin\n./tvb_data\n"
     _log(1, "Modifying PTH " + pth_name)
     new_content = ""
