@@ -27,8 +27,15 @@ from tvb.basic.profile import TvbProfile
 # coming with Sphinx (named 'sphinx.ext.*') or your custom ones.
 extensions = ['sphinx.ext.autodoc', 'sphinx.ext.pngmath']
 
+# This is NOT an error but sphinx tags api being crazy http://sphinx-doc.org/config.html
+# Once we transition to sphinx 1.3 or use custom themes this is no longer necessary
+IS_ONLINE_HELP_BUILD = tags.has('online_help')
+
 # Add any paths that contain templates here, relative to this directory.
-templates_path = ['_templates']
+if IS_ONLINE_HELP_BUILD:
+    templates_path = ['_templates_online_help']
+else:
+    templates_path = ['_templates']
 
 # The suffix of source file-names.
 source_suffix = '.rst'

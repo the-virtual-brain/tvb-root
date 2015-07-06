@@ -126,7 +126,9 @@ class DocGenerator:
 
                 # these options *override* setting in conf.py
                 '-t', 'online_help', # define a tag. It .rst files we can query the build type using this
-                '-D', 'templates_path=_templates_online_help', # replace the html layout with a no navigation one
+                # WARN Commented out below cause lists do not work for sphinx < 1.3 and our theme hacks break with sphinx 1.3
+                # conf.py searches for the tag to set this
+                # '-D', 'templates_path=_templates_online_help', # replace the html layout with a no navigation one.
                 '-D', 'html_theme_options.nosidebar=True', # do not allocate space for a side bar
 
                 conf_folder,  # Source folder
