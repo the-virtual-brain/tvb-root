@@ -42,6 +42,10 @@ On Linux these scripts will have the `.sh` termination, on Mac the `.command` te
 We will omit the termination in this manual. For example if you are using Windows and tvb_start is mentioned
 in this document then tvb_start.bat is meant.
 
+
+Launching the GUI
+.................
+
 For Mac users the `TVB_Distribution` folder contains an application file `tvb.app`.
 To start |TVB| in your web browser double click `tvb.app`.
 Please be patient, as depending on your computer resources, the startup process might take about 1-2 minutes.
@@ -51,18 +55,19 @@ For Linux and Windows users, to start |TVB| in your web-browser, run the `tvb_st
 To make sure that no processes will remain open after you use the application,
 you should always close |TVB| by running the `tvb_stop` script.
 
-The `tvb_clean` script will reset your TVB database and delete **all** data stored by |TVB|. Be careful!
-Use this to get to a clean state, as if |TVB| had just been installed and never configured.
+
+Launching scripting interfaces
+..............................
 
 The `distribution` script is used from a terminal to control the |TVB| distribution.
 Run `distribution -h` too get help with this command.
 
 To access the console interface, run in a terminal `distribution start COMMAND_PROFILE` or `distribution start LIBRARY_PROFILE`.
-The interactive Python shell will appear. See the Console and Web User Interface sections in this document for
-more details on how to use the different interfaces of |TVB|.
+The interactive Python shell will appear. See the :ref:`console <shell_ui>` and :ref:`web interface<top_gui_guide>`
+sections for more details on how to use the different interfaces of |TVB|.
 
-For details on script `contributor_setup`, please read document `ContributorsManual.pdf`.
-
+The `tvb_clean` script will reset your TVB database and delete **all** data stored by |TVB|. Be careful!
+Use this to get to a clean state, as if |TVB| had just been installed and never configured.
 
 Configuring TVB
 ---------------
@@ -70,35 +75,7 @@ Configuring TVB
 The preferred method to configure |TVB| is from the web interface. See :ref:`tvb_settings_ui`.
 
 However if |TVB| is installed on a headless server (no GUI), then the web interface might not be available remotely.
-In order to configure TVB in a headless environment, create a file named `.tvb.configuration` in the home directory
-of the current OS user which is launching |TVB|.
-Copy the following content and edit it to suit your needs. ::
-
-    MAXIMUM_NR_OF_OPS_IN_RANGE=2000
-    URL_WEB=http://127.0.0.1:8080/
-    ADMINISTRATOR_EMAIL=jira.tvb@gmail.com
-    MATLAB_EXECUTABLE=/usr/bin/octave
-    MAXIMUM_NR_OF_THREADS=4
-    WEB_SERVER_PORT=8080
-    URL_MPLH5=ws://127.0.0.1:9000/
-    LAST_CHECKED_CODE_VERSION=6507
-    USR_DISK_SPACE=5242880
-    DEPLOY_CLUSTER=False
-    ADMINISTRATOR_NAME=admin
-    LAST_CHECKED_FILE_VERSION=2
-    URL_VALUE=sqlite:////home/tvb_user/TVB/tvb-database.db
-    ADMINISTRATOR_PASSWORD=[[md5 of password]]
-    SELECTED_DB=sqlite
-    MAXIMUM_NR_OF_VERTICES_ON_SURFACE=300000
-    MPLH5_SERVER_PORT=9000
-    TVB_STORAGE=/home/tvb_user/TVB
-
-Usually one would change the web server port and domain.
-|TVB| will create a folder with project data named TVB (at the path specified by line starting with `TVB_STORAGE`).
-By default it is located in the users home directory.
-You can change the `TVB_STORAGE` to point to a different location.
-
-Finally run the appropriate script for your platform (as described in the previous chapter), to launch |TVB| with the new settings.
+See :ref:`tvb_settings_headless`.
 
 
 Upgrading the Application

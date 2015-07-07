@@ -41,12 +41,21 @@ import shutil
 import tempfile
 from optparse import OptionParser
 from sphinx.cmdline import main as sphinx_build
+from contextlib import contextmanager
 
+import tvb
 from tvb.basic.logger.builder import get_logger
 import tvb_documentor.api_doc.generate_modules
 from tvb_documentor.api_doc.generate_modules import process_sources, GenOptions
 
-
+@contextmanager
+def tempdir(prefix):
+    temp_folder = tempfile.mkdtemp(prefix=prefix)
+    try:
+        yield temp_folder
+    finally:
+        if os.path.exists(temp_folder):
+            shutil.rmtree(temp_folder)
 
 class DocGenerator:
     """
@@ -115,37 +124,38 @@ class DocGenerator:
         os.makedirs(self._dist_online_help_folder)
 
 
-    def _run_sphinx_online_help(self, dest_folder):
+    def _run_sphinx(self, builder, src_folder, dest_folder, args=None):
+        if args is None:
+            args = []
 
-        conf_folder = os.path.dirname(os.path.dirname(tvb_documentor.__file__))
+        sphinx_args = [
+            'anything',  # Ignored but must be there
+            '-b', builder,  # Specify builder: html, dirhtml, singlehtml, txt, latex, pdf,
+            '-a',  # Use option "-a" : build all
+            '-q',  # Log only Warn and Error
+        ] + args + [
+            src_folder,
+            dest_folder
+        ]
 
-        args = ['anything',  # Ignored but must be there
-                '-b', 'html',  # Specify builder: html, dirhtml, singlehtml, txt, latex, pdf,
-                '-a',  # Use option "-a" : build all
-                '-q',  # Log only Warn and Error
-
-                # these options *override* setting in conf.py
-                '-t', 'online_help', # define a tag. It .rst files we can query the build type using this
-                # WARN Commented out below cause lists do not work for sphinx < 1.3 and our theme hacks break with sphinx 1.3
-                # conf.py searches for the tag to set this
-                # '-D', 'templates_path=_templates_online_help', # replace the html layout with a no navigation one.
-                '-D', 'html_theme_options.nosidebar=True', # do not allocate space for a side bar
-
-                conf_folder,  # Source folder
-                dest_folder,  # Output folder
-                ]
-
-        status = sphinx_build(args)
+        status = sphinx_build(sphinx_args)
 
         if status != 0:
             raise Exception('sphinx build failure')
 
 
     def generate_online_help_via_sphinx(self):
-        temp_folder = tempfile.mkdtemp(prefix='tvb_sphinx_rst_online_help_')
-
-        try:
-            self._run_sphinx_online_help(temp_folder)
+        with tempdir('tvb_sphinx_rst_online_help_') as temp_folder:
+            conf_folder = os.path.dirname(os.path.dirname(tvb_documentor.__file__))
+            args = [
+                # these options *override* setting in conf.py
+                '-t', 'online_help', # define a tag. It .rst files we can query the build type using this
+                # WARN Commented out below cause lists do not work for sphinx < 1.3 and our theme hacks break with sphinx 1.3
+                # conf.py searches for the tag to set this
+                # '-D', 'templates_path=_templates_online_help', # replace the html layout with a no navigation one.
+                '-D', 'html_theme_options.nosidebar=True', # do not allocate space for a side bar
+            ]
+            self._run_sphinx('html', conf_folder, temp_folder, args)
 
             for doc in self.DOCS_TO_HTML:
                 sphinx_root_relative_pth = os.path.join(self.MANUALS, doc['folder'], doc['name'] + '.html')
@@ -163,36 +173,15 @@ class DocGenerator:
                             os.path.join(self._dist_online_help_folder, '_static'))
             shutil.copytree(os.path.join(temp_folder, '_images'),
                             os.path.join(self._dist_online_help_folder, '_images'))
-        finally:
-            if os.path.exists(temp_folder):
-                shutil.rmtree(temp_folder)
-
-
-    def _run_sphinx_latex(self, dest_folder):
-        conf_folder = os.path.dirname(os.path.dirname(tvb_documentor.__file__))
-
-        args = ['anything',  # Ignored but must be there
-                '-b', 'latex',  # Specify builder: html, dirhtml, singlehtml, txt, latex, pdf,
-                '-a',  # Use option "-a" : build all
-                '-q',  # Log only Warn and Error
-                conf_folder,  # Source folder
-                dest_folder,  # Output folder
-                ]
-
-        status = sphinx_build(args)
-
-        if status != 0:
-            raise Exception('sphinx build failure')
 
 
     def generate_pdfs_via_sphinx(self):
         """
         This method generates PDF for all available manuals using sphinx and pdflatex.
         """
-        temp_folder = tempfile.mkdtemp(prefix='tvb_sphinx_rst_latex_')
-
-        try:
-            self._run_sphinx_latex(temp_folder)
+        with tempdir('tvb_sphinx_rst_latex_') as temp_folder:
+            conf_folder = os.path.dirname(os.path.dirname(tvb_documentor.__file__))
+            self._run_sphinx('latex', conf_folder, temp_folder)
 
             for doc in self.DOCS_TO_PDF:
                 tex = doc['name'] + '.tex'
@@ -204,9 +193,6 @@ class DocGenerator:
                 pdf_pth = os.path.join(temp_folder, doc['name'] + '.pdf')
                 dest_pth = os.path.join(self._dist_docs_folder, doc['name'] + '.pdf')
                 shutil.copy(pdf_pth, dest_pth)
-        finally:
-            if os.path.exists(temp_folder):
-                shutil.rmtree(temp_folder)
 
 
     def generate_api_doc(self):
@@ -214,31 +200,18 @@ class DocGenerator:
         This generates API doc in HTML format and include this into distribution.
         """
         # Create a TMP folder where to store generated RST files.
-        temp_folder = tempfile.mkdtemp(prefix='tvb_sphinx_rst_')
-
-        try:
+        with tempdir('tvb_sphinx_rst_') as temp_folder:
             opts = GenOptions(None, 'rst', temp_folder, 'Project', 10, True, None)
 
-            import tvb
             # Start to create RST files needed for Sphinx to generate final HTML
             process_sources(opts, tvb.__path__, self.EXCLUDES)
-
             # Now generate HTML doc
             conf_folder = os.path.dirname(tvb_documentor.api_doc.generate_modules.__file__)
-            args = ['anything',  # Ignored but must be there
-                    '-b', 'html',  # Specify builder: html, dirhtml, singlehtml, txt, latex, pdf,
-                    '-a',  # Use option "-a" : build all
-                    '-q',  # Log only Warn and Error
-                    '-c', conf_folder,  # Specify path where to find conf.py
-                    '-d', temp_folder,
-                    temp_folder,  # Source folder
-                    self._dist_api_folder,  # Output folder
-                    ]
-
-            sphinx_build(args)
-        finally:
-            if os.path.exists(temp_folder):
-                shutil.rmtree(temp_folder)
+            args = [
+                '-c', conf_folder,  # Specify path where to find conf.py
+                '-d', temp_folder,
+            ]
+            self._run_sphinx('html', temp_folder, self._dist_api_folder, args)
 
 
 def main(options, root_folder):
