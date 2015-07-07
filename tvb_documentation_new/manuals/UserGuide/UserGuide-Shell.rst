@@ -9,23 +9,9 @@ Console Interface of |TVB|
 Getting started with Python IDLE 
 --------------------------------
 
-.. figure:: screenshots/linux_shell.jpg
-   :width: 90%
-   :align: center
+The console interface of |TVB| is an IDLE shell. All TVB services except GUI ones are available within this shell.
 
-   IDLE in |TVB|
-
-IDLE font size, syntax higlighting and keys can be configured according to your 
-needs. Go to the Options menu in the menu bar and select `Configure IDLE`.
-
-.. figure:: screenshots/linux_shell_idle_options.jpg
-   :width: 70%
-   :align: center
-
-   Configure IDLE options.
-   
-   
-There is a number of scripting demos to show how to build a network model and
+Within IDLE you can run a number of scripting demos to show how to build a network model and
 run a simulation. 
 
 To run any demo use the `execfile` command::
@@ -42,8 +28,6 @@ On Mac OS the path is just a little different::
 Here is an illustration for the above.
 
 .. figure:: screenshots/linux_shell_run_demo.jpg
-   :width: 90%
-   :align: center
 
    Run a |TVB| demo with execfile
    
@@ -54,8 +38,6 @@ from the Run menu. The script will be executed.
 
 
 .. figure:: screenshots/linux_shell_run_demo_2.jpg
-   :width: 90%
-   :align: center
 
    Run a |TVB| demo from the Run Menu option
 
@@ -74,6 +56,7 @@ Headless Interface of |TVB|
 ---------------------------
 
 If you are using |TVB| on a headless machine then Python IDLE is not an option.
+In this scenario TVB's shell is a simple python console shell.
 To launch a python terminal in the command profile use ::
 
    distribution start COMMAND_PROFILE -headless
