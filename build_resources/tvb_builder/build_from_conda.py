@@ -187,6 +187,18 @@ def _compute_final_zip_name(platform_name):
                         "TVB_" + platform_name + "_" + VersionSettings.BASE_VERSION + architecture + "web.zip")
 
 
+def add_sitecustomize(destination_folder):
+    """
+    Ensure Python is using UTF-8 encoding (otherwise default encoding is ASCII)
+    Most of the comments in the simulator are having pieces outside of ascii coverage
+    """
+    full_path = os.path.join(destination_folder, "sitecustomize.py")
+    with open(full_path, 'w') as sc_file:
+        sc_file.write("# -*- coding: utf-8 -*-\n\n")
+        sc_file.write("import sys\n")
+        sc_file.write("sys.setdefaultencoding('utf-8')\n")
+
+
 def _modify_pth(pth_name):
     """
     Replace tvb links with paths
@@ -235,6 +247,9 @@ def prepare_anaconda_dist(config):
     # Copy anaconda ENV folder
     _log(1, "Copying anaconda ENV " + config.anaconda_env_path + " into '" + config.target_library_root + "'...")
     shutil.copytree(config.anaconda_env_path, config.target_library_root)
+
+    _log(1, "Adding sitecustomize.py")
+    add_sitecustomize(os.path.dirname(config.target_site_packages))
 
     # Copy tvb sources
     _log(1, "Copying TVB sources into site-packages ...")
