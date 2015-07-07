@@ -13,7 +13,7 @@ It is useful to you if you want to script or extend |TVB|.
 
 The source code can be found on |github_link|.
 
-Documentation extracted from source code can be found here |api_link|.
+Documentation extracted from source code can be found |api_link|.
 
 You can view open issues on TVB's Jira |open_issues|. You can see ongoing activity on the |agile_board|.
 
@@ -30,7 +30,7 @@ You can view open issues on TVB's Jira |open_issues|. You can see ongoing activi
 
 .. |api_link| raw:: html
 
-   <a href="../api/index.html" target="_blank">here</a>
+   <a href="../api/py-modindex.html" target="_blank">here</a>
 
 .. |github_link| raw:: html
 
