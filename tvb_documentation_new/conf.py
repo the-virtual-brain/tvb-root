@@ -51,7 +51,7 @@ project = u'TVB'
 project_name = u'TVB Documentation'
 author_names = u'TVB Team'
 project_target_name = 'tvb_documentation'
-copyright = u'2013-2014, ' + author_names
+copyright = u'2013-2015, ' + author_names
 
 # The version info for the project you're documenting, acts as replacement for
 # |version| and |release|, also used in various other places throughout the
@@ -181,7 +181,7 @@ htmlhelp_basename = 'tvb_docdoc'
 
 latex_elements = {
     # The paper size ('letterpaper' or 'a4paper').
-    #'papersize': 'letterpaper',
+    'papersize': 'a4paper',
 
     # The font size ('10pt', '11pt' or '12pt').
     #'pointsize': '10pt',

@@ -25,8 +25,8 @@ A complete dataset should:
 + increase reproducibility of the results.
 
 
-A) General Considerations
--------------------------
+General Considerations
+----------------------
 
 A dataset should be made available on one single place (eg, through XNAT) to
 ensure traceability and if required for clinical/privacy reasons, restricted
@@ -81,8 +81,8 @@ head, and that the axis(x,y,z) point in the same direction with the same
 orientation.
 
 
-B) Parcellation Mask
---------------------
+Parcellation Mask
+-----------------
 
 **What is the purpose of the mask?**
 
@@ -180,8 +180,8 @@ A list with the region names/labels and corresponding integer index should be pr
   be consistent with the surface's coordinate systems.
 
 
-C) Connectivity and path length data
-------------------------------------
+Connectivity and path length data
+---------------------------------
 
 **What is it required to build a connectivity matrix (parcellated connectome)?**
 
@@ -214,8 +214,8 @@ C) Connectivity and path length data
   matter fibre lengths between regions;
 
 
-D) Cortical Mesh
-----------------
+Cortical Mesh
+-------------
 
 We encourage to use the MNI brain template (eg, MNI152) to register your
 subjects data and extract the corresponding cortical surface.
@@ -256,8 +256,8 @@ subjects data and extract the corresponding cortical surface.
     and the upcoming publication where surface regularization is explained for the case of the pial surface.
 
 
-E) Region Mapping
------------------
+Region Mapping
+--------------
 
 **What is the Region Mapping?**
 
@@ -275,8 +275,8 @@ E) Region Mapping
   TODO: Add links to relevant documentation.
 
 
-F) Head model
--------------
+Head model
+----------
 
 **What is the purpose of the head model**
 
@@ -489,7 +489,7 @@ Permissions:
 
 
 The Human Connectome Project
-.............................
+............................
 
 
 So far, the most complete datasets available.  We aim to integrate some of the

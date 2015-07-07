@@ -3,21 +3,8 @@
    You can adapt this file completely to your liking, but it should at least
    contain the root `toctree` directive.
 
-.. |tvb| replace:: `The Virtual Brain Project`
-.. _tvb: http://www.thevirtualbrain.org
-
-
-Welcome to tvb.simulator's documentation!
-=========================================
-
-The python package ``tvb.simulator`` is the simulation part of |tvb|_. It is 
-specifically intended for large scale brain simulations.
-
-A pdf version of this document can be found here_
-
-.. _here: ../latex/tvbsimulator.pdf
-
-.. Contents:
+:mod:`simulator` Package
+========================
 
 .. toctree::
    :maxdepth: 2
@@ -34,17 +21,3 @@ A pdf version of this document can be found here_
    tvb.simulator.plot.timeseries_interactive
    
    tvb.simulator.devguide
-
-.. ##Alas, there art none with a screen so large... Not evenst thou.
-.. #If ya squint, it's sorta like the white paper...
-.. #------------------------------------------------
-.. #.. image:: img/classes.svg
-.. #
-.. #Packaged spaghetti... Mmmmm spaghetti
-.. #-------------------------------------
-.. #.. image:: img/packages.svg
-
-.. #To do list
-.. #----------
-.. #
-.. #.. todolist::

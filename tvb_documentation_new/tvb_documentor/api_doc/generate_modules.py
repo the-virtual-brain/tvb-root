@@ -180,7 +180,7 @@ def create_package_file(root, master_package, subroot, py_files, opts, subs, exc
         if is_package:
             heading = ''
         else:
-            heading = ':mod:`%s` Module' % py_file_name
+            heading = ':mod:`%s`' % py_file_name
         if full_module_name in modules_specs:
             shutil.copy(modules_specs[full_module_name], full_module_name + '.rst')
             text += heading + '\n'
