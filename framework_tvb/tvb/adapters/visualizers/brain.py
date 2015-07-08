@@ -43,7 +43,7 @@ from tvb.adapters.visualizers.sensors import prepare_mapped_sensors_as_measure_p
 from tvb.basic.filters.chain import FilterChain
 from tvb.core.entities.storage import dao
 from tvb.core.adapters.abcdisplayer import ABCDisplayer
-from tvb.datatypes.surfaces import EEGCap
+from tvb.datatypes.surfaces import EEGCap, CorticalSurface
 from tvb.datatypes.region_mapping import RegionMapping
 from tvb.datatypes.surfaces_data import SurfaceData
 from tvb.datatypes.time_series import TimeSeries, TimeSeriesSurface, TimeSeriesSEEG, TimeSeriesEEG, TimeSeriesRegion
@@ -343,6 +343,9 @@ class DualBrainViewer(BrainViewer):
     def launch(self, time_series, projection_surface=None, shell_surface=None):
 
         self.surface = projection_surface
+
+        if isinstance(time_series, TimeSeriesSEEG) and shell_surface is None:
+            shell_surface = dao.try_load_last_entity_of_type(self.current_project_id, CorticalSurface)
 
         params = BrainViewer.compute_parameters(self, time_series, shell_surface)
         params.update(EegMonitor().compute_parameters(time_series, is_extended_view=True))
