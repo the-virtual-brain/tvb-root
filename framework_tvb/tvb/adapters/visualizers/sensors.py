@@ -41,7 +41,7 @@ from tvb.core.entities.storage import dao
 from tvb.datatypes.sensors_data import SensorsData
 from tvb.datatypes.sensors import SensorsInternal, SensorsEEG, SensorsMEG
 from tvb.datatypes.surfaces_data import SurfaceData
-from tvb.datatypes.surfaces import EEGCap
+from tvb.datatypes.surfaces import EEGCap, CorticalSurface
 
 
 
@@ -137,6 +137,9 @@ class SensorsViewer(ABCDisplayer):
     def _params_internal_sensors(self, internal_sensors, shell_surface=None):
 
         params = prepare_sensors_as_measure_points_params(internal_sensors)
+
+        if shell_surface is None:
+            shell_surface = dao.try_load_last_entity_of_type(self.current_project_id, CorticalSurface)
         params['shelfObject'] = prepare_shell_surface_urls(self.current_project_id, shell_surface)
 
         return self.build_display_result('sensors/sensors_internal', params,
