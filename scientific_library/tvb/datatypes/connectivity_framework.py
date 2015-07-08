@@ -175,7 +175,7 @@ class ConnectivityFramework(connectivity_data.ConnectivityData):
         These permute rows/columns so that the first half would belong to the first hemisphere
         If there is no hemisphere information returns the identity permutation
         """
-        if self.hemispheres:
+        if self.hemispheres is not None and self.hemispheres.size:
             li, ri = [], []
             for i, is_right in enumerate(self.hemispheres):
                 if is_right:
