@@ -108,6 +108,7 @@ class DocGenerator:
         self.logger = get_logger(self.__class__.__name__)
         self._dist_folder = dist_folder
         self._tvb_root_folder = tvb_root_folder
+        self._conf_folder = os.path.dirname(os.path.dirname(tvb_documentor.__file__))
 
         # Folders where to store results
         self._dist_docs_folder = os.path.join(self._dist_folder, self.DOCS)
@@ -146,7 +147,6 @@ class DocGenerator:
 
     def generate_online_help_via_sphinx(self):
         with tempdir('tvb_sphinx_rst_online_help_') as temp_folder:
-            conf_folder = os.path.dirname(os.path.dirname(tvb_documentor.__file__))
             args = [
                 # these options *override* setting in conf.py
                 '-t', 'online_help', # define a tag. It .rst files we can query the build type using this
@@ -155,7 +155,7 @@ class DocGenerator:
                 # '-D', 'templates_path=_templates_online_help', # replace the html layout with a no navigation one.
                 '-D', 'html_theme_options.nosidebar=True', # do not allocate space for a side bar
             ]
-            self._run_sphinx('html', conf_folder, temp_folder, args)
+            self._run_sphinx('html', self._conf_folder, temp_folder, args)
 
             for doc in self.DOCS_TO_HTML:
                 sphinx_root_relative_pth = os.path.join(self.MANUALS, doc['folder'], doc['name'] + '.html')
@@ -180,8 +180,7 @@ class DocGenerator:
         This method generates PDF for all available manuals using sphinx and pdflatex.
         """
         with tempdir('tvb_sphinx_rst_latex_') as temp_folder:
-            conf_folder = os.path.dirname(os.path.dirname(tvb_documentor.__file__))
-            self._run_sphinx('latex', conf_folder, temp_folder)
+            self._run_sphinx('latex', self._conf_folder, temp_folder)
 
             for doc in self.DOCS_TO_PDF:
                 tex = doc['name'] + '.tex'
@@ -214,6 +213,37 @@ class DocGenerator:
             self._run_sphinx('html', temp_folder, self._dist_api_folder, args)
 
 
+    def generate_site(self):
+        """
+        Generates a zip with the documentation site including automatic api docs.
+        """
+        auto_api_folder = os.path.join(self._conf_folder, 'api')
+
+        if os.path.exists(auto_api_folder):
+            shutil.rmtree(auto_api_folder)
+        else:
+            os.mkdir(auto_api_folder)
+
+        with tempdir('tvb_sphinx_site_') as temp_folder:
+            html_folder = os.path.join(temp_folder, 'html')
+            doctrees_folder = os.path.join(temp_folder, 'doctrees')
+            os.mkdir(html_folder)
+            os.mkdir(doctrees_folder)
+            args = [ '-d', doctrees_folder ]
+
+            try:
+                opts = GenOptions(None, 'rst', auto_api_folder, 'Project', 10, True, None)
+                # Start to create RST files needed for Sphinx to generate final HTML
+                process_sources(opts, tvb.__path__, self.EXCLUDES)
+
+                self._run_sphinx('html', self._conf_folder, html_folder, args)
+
+                archive = shutil.make_archive('tvb-documentation-site', 'zip', html_folder)
+                shutil.move(archive, os.path.dirname(self._dist_folder))
+            finally:
+                shutil.rmtree(auto_api_folder)
+
+
 def main(options, root_folder):
     abs_dist = os.path.join(root_folder, DocGenerator.DIST_FOLDER)
     if os.path.exists(abs_dist):
@@ -231,9 +261,11 @@ def main(options, root_folder):
     if options.online_help_only:
         generator.generate_online_help_via_sphinx()
 
-    # if no args generate all
+    if options.site_only:
+        generator.generate_site()
 
-    if not options.api_doc_only and not options.pdfs_only and not options.online_help_only:
+    # if no args generate all except site
+    if not options.api_doc_only and not options.pdfs_only and not options.online_help_only and not options.site_only:
         generator.generate_api_doc()
         generator.generate_pdfs_via_sphinx()
         generator.generate_online_help_via_sphinx()
@@ -248,5 +280,7 @@ if __name__ == "__main__":
     PARSER.add_option("-p", "--pdf_only", action="store_true", dest="pdfs_only", help="Generates only manual PDFs")
     PARSER.add_option("-o", "--online_help_only", action="store_true",
                       dest="online_help_only", help="Generates only Online Help")
+    PARSER.add_option("-s", "--site_only", action="store_true",
+                      dest="site_only", help="Generates Help Site")
     OPTIONS, _ = PARSER.parse_args()
     main(OPTIONS, ROOT_FOLDER)

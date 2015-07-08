@@ -25,7 +25,7 @@ from tvb.basic.profile import TvbProfile
 
 # Add any Sphinx extension module names here, as strings. They can be extensions
 # coming with Sphinx (named 'sphinx.ext.*') or your custom ones.
-extensions = ['sphinx.ext.autodoc', 'sphinx.ext.pngmath']
+extensions = ['sphinx.ext.autodoc', 'sphinx.ext.mathjax', 'sphinx.ext.viewcode']
 
 # This is NOT an error but sphinx tags api being crazy http://sphinx-doc.org/config.html
 # Once we transition to sphinx 1.3 or use custom themes this is no longer necessary
@@ -94,7 +94,7 @@ exclude_patterns = ['_build']
 pygments_style = 'sphinx'
 
 # A list of ignored prefixes for module index sorting.
-#modindex_common_prefix = []
+modindex_common_prefix = ['tvb.']
 
 
 # -- Options for HTML output ---------------------------------------------------

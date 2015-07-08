@@ -30,7 +30,7 @@ You can view open issues on TVB's Jira |open_issues|. You can see ongoing activi
 
 .. |api_link| raw:: html
 
-   <a href="../api/py-modindex.html" target="_blank">here</a>
+   <a href="../api/index.html">here</a>
 
 .. |github_link| raw:: html
 

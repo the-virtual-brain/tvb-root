@@ -11,6 +11,10 @@
 # All configuration values have a default; values that are commented out
 # serve to show the default.
 
+# NOTE: This conf.py exists mainly because we want to generate api docs without the rest of the html docs.
+#       This stand alone version is packaged with the distribution.
+#       This is also globally importable (tvb_documentor is a top level package), so that some variables are available globally (package_specs  ...)
+
 import os
 
 # If extensions (or modules to document with autodoc) are in another directory,

@@ -18,6 +18,9 @@
     /manuals/UserGuide/UserGuide-UI
     /doc_site/top_developers
 
+    /api/index
+
+
 .. include:: /manuals/templates/pdf_constants.rst
 
 .. include:: /manuals/UserGuide/UserGuide-Overview.rst
