@@ -99,9 +99,9 @@ class ConnectivityFramework(connectivity_data.ConnectivityData):
         final_conn.weights = new_weights
         final_conn.centres = self.centres[interest_areas, :]
         final_conn.region_labels = self.region_labels[interest_areas]
-        if self.orientations and len(self.orientations):
+        if self.orientations is not None and len(self.orientations):
             final_conn.orientations = self.orientations[interest_areas, :]
-        if self.cortical and len(self.cortical):
+        if self.cortical is not None and len(self.cortical):
             final_conn.cortical = self.cortical[interest_areas]
         final_conn.hemispheres = self.hemispheres[interest_areas]
         final_conn.areas = self.areas[interest_areas]
