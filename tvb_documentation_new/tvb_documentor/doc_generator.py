@@ -145,7 +145,7 @@ class DocGenerator:
             raise Exception('sphinx build failure')
 
 
-    def generate_online_help_via_sphinx(self):
+    def generate_online_help(self):
         with tempdir('tvb_sphinx_rst_online_help_') as temp_folder:
             args = [
                 # these options *override* setting in conf.py
@@ -175,7 +175,7 @@ class DocGenerator:
                             os.path.join(self._dist_online_help_folder, '_images'))
 
 
-    def generate_pdfs_via_sphinx(self):
+    def generate_pdfs(self):
         """
         This method generates PDF for all available manuals using sphinx and pdflatex.
         """
@@ -233,12 +233,15 @@ class DocGenerator:
 
             try:
                 opts = GenOptions(None, 'rst', auto_api_folder, 'Project', 10, True, None)
-                # Start to create RST files needed for Sphinx to generate final HTML
+                # create RST files for the package structure
                 process_sources(opts, tvb.__path__, self.EXCLUDES)
 
                 self._run_sphinx('html', self._conf_folder, html_folder, args)
-
-                archive = shutil.make_archive('tvb-documentation-site', 'zip', html_folder)
+                # Archive the site. In the zip we need the top level dir to be tvb-documentation-site
+                # That explains the move
+                dest = os.path.join(temp_folder, 'aparentfolder', 'tvb-documentation-site')
+                shutil.move(html_folder, dest)
+                archive = shutil.make_archive('tvb-documentation-site', 'zip', os.path.dirname(dest))
                 shutil.move(archive, os.path.dirname(self._dist_folder))
             finally:
                 shutil.rmtree(auto_api_folder)
@@ -256,10 +259,10 @@ def main(options, root_folder):
         generator.generate_api_doc()
 
     if options.pdfs_only:
-        generator.generate_pdfs_via_sphinx()
+        generator.generate_pdfs()
 
     if options.online_help_only:
-        generator.generate_online_help_via_sphinx()
+        generator.generate_online_help()
 
     if options.site_only:
         generator.generate_site()
@@ -267,8 +270,8 @@ def main(options, root_folder):
     # if no args generate all except site
     if not options.api_doc_only and not options.pdfs_only and not options.online_help_only and not options.site_only:
         generator.generate_api_doc()
-        generator.generate_pdfs_via_sphinx()
-        generator.generate_online_help_via_sphinx()
+        generator.generate_pdfs()
+        generator.generate_online_help()
 
 
 if __name__ == "__main__":
