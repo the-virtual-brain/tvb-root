@@ -383,6 +383,7 @@ class DatatypeDAO(RootDAO):
         """
         Retrieve a DataType DB reference by a global identifier.
         """
+        datatype_instance = None
         try:
             datatype_instance = self.session.query(model.DataType).filter_by(gid=gid).one()
             classname = datatype_instance.type
@@ -402,6 +403,7 @@ class DatatypeDAO(RootDAO):
         except NoResultFound, excep:
             self.logger.debug("No results found for gid=%s" % (gid,))
         except Exception, excep:
+            self.logger.warning(datatype_instance)
             self.logger.exception(excep)
         return None
 

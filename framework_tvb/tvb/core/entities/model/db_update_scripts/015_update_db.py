@@ -29,7 +29,7 @@
 #
 
 """
-Change of DB structure from TVB version 1.3.1 to 1.3.2
+Change of DB structure from TVB version 1.3.1 to 1.4
 
 .. moduleauthor:: Lia Domide <lia.domide@codemart.ro>
 """
@@ -39,14 +39,16 @@ from sqlalchemy import Column, String, Boolean
 from migrate.changeset.schema import create_column, drop_column
 from tvb.core.entities import model
 from tvb.core.entities.storage import SA_SESSIONMAKER
+from tvb.basic.logger.builder import get_logger
 
 
 meta = model.Base.metadata
-COL_REG1 = Column('_has_surface_mapping', Boolean)
-COL_REG2 = Column('_has_volume_mapping', Boolean)
+COL_REG1 = Column('_has_surface_mapping', Boolean, default=False)
+COL_REG2 = Column('_has_volume_mapping', Boolean, default=False)
 COL_REG3 = Column('_region_mapping', String)
 COL_REG4 = Column('_region_mapping_volume', String)
 COL_SENSORS = Column('_usable', String)
+
 
 
 def upgrade(migrate_engine):
@@ -65,31 +67,44 @@ def upgrade(migrate_engine):
     create_column(COL_REG4, table2)
     create_column(COL_SENSORS, table3)
 
-    session = SA_SESSIONMAKER()
-    session.execute(text("""UPDATE "MAPPED_TIME_SERIES_REGION_DATA" tr SET _region_mapping =
-                        (SELECT dt.gid
-                         FROM "MAPPED_REGION_MAPPING_DATA" rm, "DATA_TYPES" dt
-                         WHERE dt.id = rm.id AND tr._connectivity = rm._connectivity);"""))
-    # session.execute(text("""UPDATE "MAPPED_TIME_SERIES_REGION_DATA" tr SET _region_mapping_volume =
-    #                     (SELECT dt.gid
-    #                      FROM "MAPPED_REGION_VOLUME_MAPPING_DATA" rm, "DATA_TYPES" dt
-    #                      WHERE dt.id = rm.id AND tr._connectivity = rm._connectivity);"""))
-    session.execute(text("""UPDATE "MAPPED_TIME_SERIES_DATA" ts SET _has_surface_mapping = True
-                        WHERE
-                            EXISTS (SELECT * FROM "DATA_TYPES" dt
-                                    WHERE dt.id=ts.id AND dt.type in ('TimeSeriesSurface', 'TimeSeriesEEG',
-                                            'TimeSeriesSEEG', 'TimeSeriesMEG'))
-                         OR EXISTS (SELECT * from "MAPPED_TIME_SERIES_REGION_DATA" tr
-                                    WHERE tr.id=ts.id AND tr._region_mapping is not NULL);"""))
-    session.execute(text("""UPDATE "MAPPED_TIME_SERIES_DATA" ts SET _has_volume_mapping = True
-                        WHERE
-                            EXISTS (SELECT * FROM "DATA_TYPES" dt
-                                    WHERE dt.id=ts.id AND dt.type in ('TimeSeriesVolume'))
-                         OR EXISTS (SELECT * from "MAPPED_TIME_SERIES_REGION_DATA" tr
-                                    WHERE tr.id=ts.id AND tr._region_mapping_volume is not NULL);"""))
+    logger = get_logger(__name__)
+    sqlite = _exec_update("1", logger)
+    if not sqlite:
+        _exec_update("True", logger)
 
-    session.commit()
-    session.close()
+
+
+def _exec_update(boolean_value, logger):
+    session = SA_SESSIONMAKER()
+    try:
+        logger.info("Executing Db update script 015...")
+        session.execute(text("""UPDATE "MAPPED_TIME_SERIES_REGION_DATA" SET _region_mapping =
+                        (SELECT dt.gid
+                        FROM "MAPPED_REGION_MAPPING_DATA" rm, "DATA_TYPES" dt
+                        WHERE dt.id = rm.id AND "MAPPED_TIME_SERIES_REGION_DATA"._connectivity= rm._connectivity);"""))
+
+        session.execute(text("""UPDATE "MAPPED_TIME_SERIES_DATA" SET _has_surface_mapping = """ + boolean_value + """
+                            WHERE
+                                EXISTS (SELECT * FROM "DATA_TYPES" dt
+                                        WHERE dt.id="MAPPED_TIME_SERIES_DATA".id AND dt.type in ('TimeSeriesSurface',
+                                                'TimeSeriesEEG', 'TimeSeriesSEEG', 'TimeSeriesMEG'))
+                            OR EXISTS (SELECT * from "MAPPED_TIME_SERIES_REGION_DATA" tr
+                                    WHERE tr.id="MAPPED_TIME_SERIES_DATA".id AND tr._region_mapping is not NULL);"""))
+
+        session.execute(text("""UPDATE "MAPPED_TIME_SERIES_DATA" SET _has_volume_mapping = """ + boolean_value + """
+                            WHERE
+                                EXISTS (SELECT * FROM "DATA_TYPES" dt
+                                    WHERE dt.id="MAPPED_TIME_SERIES_DATA".id AND dt.type in ('TimeSeriesVolume'));"""))
+        session.commit()
+        logger.info("DB update script 015 committed.")
+        return True
+
+    except Exception, excep:
+        logger.exception(excep)
+        return False
+    finally:
+        session.close()
+
 
 
 def downgrade(migrate_engine):

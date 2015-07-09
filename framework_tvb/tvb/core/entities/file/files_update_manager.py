@@ -132,17 +132,24 @@ class FilesUpdateManager(UpdateManager):
         nr_of_dts_upgraded_fine = 0
         nr_of_dts_upgraded_fault = 0
         for datatype in datatypes:
-            specific_datatype = dao.get_datatype_by_gid(datatype.gid, load_lazy=False)
-            if isinstance(specific_datatype, MappedType):
-                try:
-                    self.upgrade_file(specific_datatype.get_storage_file_path(), specific_datatype)
-                    nr_of_dts_upgraded_fine += 1
-                except (MissingDataFileException, FileVersioningException) as ex:
-                    # The file is missing for some reason. Just mark the DataType as invalid.
+            try:
+                specific_datatype = dao.get_datatype_by_gid(datatype.gid, load_lazy=False)
+
+                if specific_datatype is None:
                     datatype.invalid = True
                     dao.store_entity(datatype)
                     nr_of_dts_upgraded_fault += 1
-                    self.log.exception(ex)
+                elif isinstance(specific_datatype, MappedType):
+                    self.upgrade_file(specific_datatype.get_storage_file_path(), specific_datatype)
+                    nr_of_dts_upgraded_fine += 1
+
+            except Exception, ex:
+                # The file/class is missing for some reason. Just mark the DataType as invalid.
+                datatype.invalid = True
+                dao.store_entity(datatype)
+                nr_of_dts_upgraded_fault += 1
+                self.log.exception(ex)
+
         return nr_of_dts_upgraded_fine, nr_of_dts_upgraded_fault
                         
                         
