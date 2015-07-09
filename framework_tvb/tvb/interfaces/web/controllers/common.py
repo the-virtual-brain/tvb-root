@@ -155,6 +155,12 @@ def get_from_session(attribute):
     return cherrypy.session.get(attribute)
 
 
+def has_error_message():
+    """ check if the session contains an error message """
+    msg, msg_type = get_message_from_session()
+    return msg_type == TYPE_ERROR
+
+
 def remove_from_session(key):
     """ Remove from session an attributes if exists."""
     cherrypy.session.acquire_lock()

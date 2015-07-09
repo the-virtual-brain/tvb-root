@@ -83,6 +83,12 @@ class RegionsModelParametersController(BurstBaseController):
         des = SerializationManager(burst_config)
 
         connectivity = des.get_connectivity()
+
+        if connectivity is None:
+            msg = 'You have to select a connectivity before setting up the region Model. '
+            common.set_error_message(msg)
+            raise ValueError(msg)
+
         params = ConnectivityViewer.get_connectivity_parameters(connectivity)
 
         params.update({

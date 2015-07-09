@@ -131,7 +131,9 @@ def handle_error(redirect):
                 log.exception('An unexpected exception appeared')
 
                 if redirect:
-                    common.set_error_message("An unexpected exception appeared. Please check the log files.")
+                    # set a default error message if one has not been set already
+                    if not common.has_error_message():
+                        common.set_error_message("An unexpected exception appeared. Please check the log files.")
                     raise cherrypy.HTTPRedirect("/tvb?error=True")
                 else:
                     raise
