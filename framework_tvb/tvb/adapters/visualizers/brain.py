@@ -49,7 +49,7 @@ from tvb.datatypes.surfaces_data import SurfaceData
 from tvb.datatypes.time_series import TimeSeries, TimeSeriesSurface, TimeSeriesSEEG, TimeSeriesEEG, TimeSeriesRegion
 
 
-MAX_MEASURE_POINTS_LENGTH = 235
+MAX_MEASURE_POINTS_LENGTH = 600
 
 
 

@@ -406,6 +406,7 @@ class ImportService():
 
         # Here we process each operation found
         for operation in operations:
+            self.logger.debug("Importing operation " + str(operation))
             old_operation_folder, _ = os.path.split(operation.import_file)
             operation_entity, datatype_group = self.__import_operation(operation)
 

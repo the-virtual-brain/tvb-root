@@ -502,6 +502,9 @@ class ProjectService:
             is_group = False
             group_op = None
             dt_entity = dao.get_datatype_by_gid(dt.gid)
+            if dt_entity is None:
+                self.logger.warning("Ignored entity (possibly removed DT class)" + str(dt))
+                continue
             ## Filter by dt.type, otherwise Links to individual DT inside a group will be mistaken
             if dt.type == "DataTypeGroup" and dt.parent_operation.operation_group is not None:
                 is_group = True
