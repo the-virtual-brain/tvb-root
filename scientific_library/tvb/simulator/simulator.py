@@ -58,7 +58,7 @@ import tvb.datatypes.connectivity as connectivity_dtype
 #import tvb.datatypes.coupling as coupling_dtype
 import tvb.datatypes.patterns as patterns_dtype
 
-from tvb.simulator.common import psutil, get_logger
+from tvb.simulator.common import psutil, get_logger, numpy_add_at
 from tvb.simulator.history import get_state
 
 LOG = get_logger(__name__)
@@ -408,7 +408,7 @@ class Simulator(core.Type):
         else:
             (nt, ns, _, nm), ax = self.history.shape, (2, 0, 1, 3)
             region_history = numpy.zeros((nt, ns, number_of_regions, nm))
-            numpy.add.at(region_history.transpose(ax), self._regmap, self.history.transpose(ax))
+            numpy_add_at(region_history.transpose(ax), self._regmap, self.history.transpose(ax))
             region_history /= numpy.bincount(self._regmap).reshape((-1, 1))
             if self.surface.coupling_strength.size == 1:
                 local_coupling = (self.surface.coupling_strength[0] *
@@ -459,7 +459,7 @@ class Simulator(core.Type):
             self.history[step % self.horizon, :] = state
             if self.surface is not None:
                 region_state = numpy.zeros((number_of_regions, state.shape[0], state.shape[2]))
-                numpy.add.at(region_state, self._regmap, state.transpose((1, 0, 2)))
+                numpy_add_at(region_state, self._regmap, state.transpose((1, 0, 2)))
                 region_state /= numpy.bincount(self._regmap).reshape((-1, 1, 1))
                 region_history[step % self.horizon, :] = region_state.transpose((1, 0, 2))
 

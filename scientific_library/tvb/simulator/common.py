@@ -53,6 +53,17 @@ def get_logger(name):
 
 LOG = get_logger(__name__)
 
+# workaround lack of ufunc at method for older NumPy versions
+def _add_at(dest, map, src):
+    for i in numpy.unique(map):
+        dest[i] += src[i==map].sum(axis=0)
+    return dest
+
+try:
+    numpy_add_at = numpy.add.at
+except AttributeError:
+    numpy_add_at = _add_at
+
 # loose couple psutil so it's an optional dependency
 try:
     import psutil

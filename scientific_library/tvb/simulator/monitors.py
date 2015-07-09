@@ -79,7 +79,7 @@ import tvb.basic.traits.util as util
 import tvb.basic.traits.types_basic as basic
 import tvb.basic.traits.core as core
 
-from tvb.simulator.common import iround
+from tvb.simulator.common import iround, numpy_add_at
 
 
 class MonitorTransforms(object):
@@ -770,7 +770,7 @@ class Projection(Monitor):
         # reduce to region lead field if region sim
         if not using_cortical_surface and self.gain.shape[1] == self.rmap.size:
             gain = numpy.zeros((self.gain.shape[0], conn.number_of_regions))
-            numpy.add.at(gain.T, self.rmap, self.gain.T)
+            numpy_add_at(gain.T, self.rmap, self.gain.T)
             self.gain = gain
 
         # append analytic sub-cortical to lead field

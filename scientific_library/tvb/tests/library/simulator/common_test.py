@@ -40,7 +40,7 @@ if __name__ == "__main__":
     setup_test_console_env()
     
 import unittest
-
+import numpy
 from tvb.tests.library.base_testcase import BaseTestCase
 from tvb.simulator import common
 
@@ -81,6 +81,23 @@ class CommonTest(BaseTestCase):
         It seems to be unused as well ... maybe should tag it as
         deprecated
         """
+        pass
+
+    @unittest.skipIf(not hasattr(numpy.add, 'at'),
+                     'Cannot test fallback numpy.add.at implementation without '
+                     'a version of NumPy which provides this ufunc method (>=1.8).')
+    def test_add_at(self):
+        ri = numpy.random.randint
+        for nd in range(1, 5):
+            m, n, rest = ri(3, 50), ri(51, 100), tuple(ri(3, 10, nd - 1))
+            source = ri(-100, 100, (n,) + rest)
+            map = ri(0, m, n)
+            expected, actual = numpy.zeros((2, m) + rest)
+            numpy.add.at(expected, map, source)
+            common._add_at(actual, map, source)
+            self.assertTrue(numpy.allclose(expected, actual))
+
+    def setUp(self):
         pass
         
 def suite():
