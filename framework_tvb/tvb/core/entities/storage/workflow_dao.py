@@ -351,3 +351,9 @@ class WorkflowDAO(RootDAO):
             return self.session.query(model.Dynamic).filter(model.Dynamic.id == dyn_id).one()
         except SQLAlchemyError, exc:
             self.logger.exception(exc)
+
+    def get_dynamic_by_name(self, name):
+        try:
+            return self.session.query(model.Dynamic).filter(model.Dynamic.name == name).all()
+        except SQLAlchemyError, exc:
+            self.logger.exception(exc)

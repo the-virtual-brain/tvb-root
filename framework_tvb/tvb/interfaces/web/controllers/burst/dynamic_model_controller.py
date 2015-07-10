@@ -434,6 +434,9 @@ class DynamicModelController(BurstBaseController):
 
     @expose_json
     def submit(self, dynamic_gid, dynamic_name):
+        if dao.get_dynamic_by_name(dynamic_name):
+            return {'saved': False, 'msg': 'There is another configuration with the same name'}
+
         dynamic = self.get_cached_dynamic(dynamic_gid)
         model = dynamic.model
         integrator = dynamic.integrator
@@ -456,6 +459,8 @@ class DynamicModelController(BurstBaseController):
         )
 
         dao.store_entity(entity)
+        return {'saved': True}
+
 
     @expose_fragment('burst/dynamic_minidetail')
     def dynamic_detail(self, dynamic_id):

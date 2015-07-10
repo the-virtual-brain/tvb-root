@@ -458,8 +458,13 @@ function onSubmit(event){
     if (name.length ) {
         doAjaxCall({
             url: _url('submit', name),
-            success: function(){
-                displayMessage('Dynamic saved', 'importantMessage');
+            success: function(res){
+                res = JSON.parse(res);
+                if(res.saved){
+                    displayMessage('Dynamic saved', 'importantMessage');
+                }else{
+                    displayMessage(res.msg, 'errorMessage');
+                }
             }
         });
     }else{
