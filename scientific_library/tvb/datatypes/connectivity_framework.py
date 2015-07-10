@@ -227,7 +227,7 @@ class ConnectivityFramework(connectivity_data.ConnectivityData):
         """
         :return: A list [('left', [lh_labels)], ('right': [rh_labels])]
         """
-        if self.hemispheres is not None:
+        if self.hemispheres is not None and self.hemispheres.size:
             l, r = [], []
 
             for i, (is_right, label) in enumerate(zip(self.hemispheres, self.region_labels)):
