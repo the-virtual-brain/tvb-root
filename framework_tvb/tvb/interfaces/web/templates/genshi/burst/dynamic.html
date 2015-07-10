@@ -11,13 +11,19 @@
     <script type="text/javascript" src="/static/js/bursts_dynamic.js"></script>
 
     <section class="configure-stimulus-shape view-column col-1">
+        <h4> Model parameter configuration </h4>
         <div id="left_input_tree">
             ${generateDisplay(input_tree, False, "")}
         </div>
-        <fieldset>
-            <div id='div_spatial_model_params'>
+        <fieldset id='div_spatial_model_params'>
+        </fieldset>
 
-            </div>
+        <h4> Phase plane viewer settings </h4>
+        <div id="integrator_input_tree">
+            ${generateDisplay(integrator_input_tree, False, "")}
+        </div>
+
+        <fieldset id='div_phase_plane_settings'>
         </fieldset>
     </section>
 

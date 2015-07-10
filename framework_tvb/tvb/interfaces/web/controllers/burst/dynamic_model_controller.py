@@ -94,15 +94,17 @@ class SessionCache(object):
 
 
 class _InputTreeFragment(core.Type):
-    """
-    This trait-ed class is used to build the input tree for the integrator.
-    """
     dynamic_name = types_basic.String(
         label = "Parameter configuration name",
         required = True,
         order=1,
         doc = """The name of this parameter configuration""")
 
+
+class _IntegratorTreeFragment(core.Type):
+    """
+    This trait-ed class is used to build the input tree for the integrator.
+    """
     integrator = integrators.Integrator(
         label = "integrator",
         required = True,
@@ -187,6 +189,23 @@ class _LeftFragmentAdapter(ABCAdapter):
         return 'Documentation is missing. '
 
 
+class _IntegratorFragmentAdapter(ABCAdapter):
+    def launch(self):
+        pass
+
+    def get_output(self):
+        pass
+
+    def get_required_memory_size(self):
+        return -1
+
+    def get_required_disk_size(self):
+        return 0
+
+    def get_input_tree(self):
+        fragment = _IntegratorTreeFragment()
+        fragment.trait.bound = traited_interface.INTERFACE_ATTRIBUTES_ONLY
+        return fragment.interface[traited_interface.INTERFACE_ATTRIBUTES]
 
 
 class DynamicModelController(BurstBaseController):
@@ -222,10 +241,15 @@ class DynamicModelController(BurstBaseController):
         #WARN: If this input tree will contain data type references then to render it correctly we have to use flow_service.prepare_parameters
         input_tree = adapter.prepare_param_names(input_tree)
 
+        integrator_adapter = _IntegratorFragmentAdapter()
+        integrator_input_tree = integrator_adapter.get_input_tree()
+        integrator_input_tree  = integrator_adapter.prepare_param_names(integrator_input_tree)
+
         params = {
             'title': "Dynamic model",
             'mainContent': 'burst/dynamic',
             'input_tree': input_tree,
+            'integrator_input_tree': integrator_input_tree,
             'dynamic_gid': dynamic_gid
         }
         self.fill_default_attributes(params)
@@ -250,12 +274,16 @@ class DynamicModelController(BurstBaseController):
         dynamic.phase_plane = phase_space_d3(dynamic.model, dynamic.integrator)
         mp_params = DynamicModelController._get_model_parameters_ui_model(dynamic.model)
         graph_params = DynamicModelController._get_graph_ui_model(dynamic)
-        return {'params' : mp_params, 'graph_params':graph_params, 'sliders_fragment': self._sliders_fragment(dynamic_gid)}
+        return {
+            'params' : mp_params, 'graph_params':graph_params,
+            'model_param_sliders_fragment': self._model_param_sliders_fragment(dynamic_gid),
+            'axis_sliders_fragment': self._axis_sliders_fragment(dynamic_gid)
+        }
 
 
     @expose_json
     def integrator_changed(self, dynamic_gid, **kwargs):
-        adapter = _LeftFragmentAdapter(self.available_models)
+        adapter = _IntegratorFragmentAdapter()
         tree = adapter.convert_ui_inputs(kwargs, validation_required=False)
         integrator_name = tree['integrator']
         integrator_parameters = tree['integrator_parameters']
@@ -385,15 +413,22 @@ class DynamicModelController(BurstBaseController):
         return ret
 
 
-    @using_template('burst/dynamic_sliders')
-    def _sliders_fragment(self, dynamic_gid):
+    @using_template('burst/dynamic_axis_sliders')
+    def _axis_sliders_fragment(self, dynamic_gid):
+        dynamic = self.get_cached_dynamic(dynamic_gid)
+        model = dynamic.model
+        ps_params = self._get_graph_ui_model(dynamic)
+        templ_var = ps_params
+        templ_var.update({'showOnlineHelp' : True,
+                          'one_dimensional':len(model.state_variables) == 1 })
+        return templ_var
+
+    @using_template('burst/dynamic_mp_sliders')
+    def _model_param_sliders_fragment(self, dynamic_gid):
         dynamic = self.get_cached_dynamic(dynamic_gid)
         model = dynamic.model
         mp_params = self._get_model_parameters_ui_model(model)
-        ps_params = self._get_graph_ui_model(dynamic)
-        templ_var = ps_params
-        templ_var.update({'parameters' : mp_params, 'showOnlineHelp' : True,
-                          'one_dimensional':len(model.state_variables) == 1 })
+        templ_var = {'parameters' : mp_params, 'showOnlineHelp' : True }
         return templ_var
 
 

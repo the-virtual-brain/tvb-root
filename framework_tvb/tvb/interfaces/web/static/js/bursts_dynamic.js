@@ -424,10 +424,17 @@ function onModelChanged(name){
         url: _url('model_changed', name) ,
         success: function(data){
             data = JSON.parse(data);
+
             var sliderContainer = $('#div_spatial_model_params');
-            sliderContainer.html(data.sliders_fragment);
+            sliderContainer.html(data.model_param_sliders_fragment);
             MathJax.Hub.Queue(["Typeset", MathJax.Hub, 'div_spatial_model_params']);
             setupMenuEvents(sliderContainer);
+
+            var axisSliderContainer = $('#div_phase_plane_settings');
+            axisSliderContainer.html(data.axis_sliders_fragment);
+            MathJax.Hub.Queue(["Typeset", MathJax.Hub, 'div_phase_plane_settings']);
+            setupMenuEvents(axisSliderContainer);
+
             _initialize_grafic(data.params, data.graph_params);
         }
     });
@@ -472,26 +479,24 @@ function onIntegratorChanged(state){
 // Event debouncing makes less sense now that the requests have been made blocking.
 var debouncedOnIntegratorChanged = $.debounce( DEBOUNCE_DELAY, onIntegratorChanged);
 
-// Detect changes by doing a tree diff. This diff is simple but relies on a specific tree structure.
-function onTreeChange(){
+function onLeftInputTreeChange(){
     var state = getSubmitableData('left_input_tree');
-    var previous = dynamicPage.treeState;
-    if (state.model_type !== previous.model_type){
-        onModelChanged(state.model_type);
-    }else if (state.dynamic_name === previous.dynamic_name){
-        // Name has not changed. The change is in the integrator subtree
-        debouncedOnIntegratorChanged(state);
-    }
-    dynamicPage.treeState = state;
+    onModelChanged(state.model_type);
+}
+
+function onIntegratorInputTreeChange(){
+    var state = getSubmitableData('integrator_input_tree');
+    debouncedOnIntegratorChanged(state);
 }
 
 function main(dynamic_gid){
     dynamicPage.dynamic_gid = dynamic_gid;
     $('.field-adapters').hide(); // hide expand range buttons. Careful as this class is used for other things as well
-    // listen for changes of the left tree
-    $('#left_input_tree').find('input').add('select').change(onTreeChange);
+    // listen for changes of the input trees
+    $('#left_input_tree').find('select').change(onLeftInputTreeChange); // intentionally omit <input>. We only need to listen for model type changes
+    $('#integrator_input_tree').find('input, select').change(onIntegratorInputTreeChange);
     $('#base_spatio_temporal_form').submit(onSubmit);
-    onTreeChange();
+    onLeftInputTreeChange();
     dynamicPage.phasePlane = new TVBUI.PhasePlane('#phasePlane');
     dynamicPage.phaseGraph = new TVBUI.PhaseGraph('#phaseGraph');
 }
