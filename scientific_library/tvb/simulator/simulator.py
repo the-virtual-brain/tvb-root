@@ -105,7 +105,19 @@ class Simulator(core.Type):
         filters_ui=[UIFilter(linked_elem_name="region_mapping_data",
                              linked_elem_field=FilterChain.datatype + "._connectivity",
                              linked_elem_parent_name="surface",
-                             linked_elem_parent_option=None)],
+                             linked_elem_parent_option=None),
+                    UIFilter(linked_elem_name="region_mapping",
+                             linked_elem_field=FilterChain.datatype + "._connectivity",
+                             linked_elem_parent_name="monitors",
+                             linked_elem_parent_option="EEG"),
+                    UIFilter(linked_elem_name="region_mapping",
+                             linked_elem_field=FilterChain.datatype + "._connectivity",
+                             linked_elem_parent_name="monitors",
+                             linked_elem_parent_option="MEG"),
+                    UIFilter(linked_elem_name="region_mapping",
+                             linked_elem_field=FilterChain.datatype + "._connectivity",
+                             linked_elem_parent_name="monitors",
+                             linked_elem_parent_option="iEEG")],
         doc="""A tvb.datatypes.Connectivity object which contains the
         structural long-range connectivity data (i.e., white-matter tracts). In
         combination with the ``Long-range coupling function`` it defines the inter-regional
