@@ -98,7 +98,6 @@ class DocGenerator:
                 'interfaces/web/templates', 'adapters/portlets', 'tests']
 
     # Folders to be bundled with the documentation site distribution zip. Paths relative to root conf.py.
-    # Note that if you create rst files in any of these folders then the build fails
     IPYNB_FOLDERS = ['demos', 'tutorials']
 
     def __init__(self, tvb_root_folder, dist_folder, library_path):
@@ -216,6 +215,30 @@ class DocGenerator:
             self._run_sphinx('html', temp_folder, self._dist_api_folder, args)
 
 
+    def _bundle_ipynbs(self, html_folder):
+        """
+        Copy all ipynb's from the self.IPYNB_FOLDERS to the destination
+        """
+        # shutil copytree will not work because it expects the dest to be a non existing dir
+        import pydevd
+        pydevd.settrace('localhost', port=51234, stdoutToServer=True, stderrToServer=True)
+        
+        for ipynb_folder in self.IPYNB_FOLDERS:
+            ipynb_folder_pth = os.path.join(self._conf_folder, ipynb_folder)
+
+            for root, dirs, files in os.walk(ipynb_folder_pth):
+                rel_root = os.path.relpath(root, ipynb_folder_pth)
+                dst_dir = os.path.join(html_folder, ipynb_folder, rel_root)
+
+                for f in files:
+                    if f.endswith('ipynb'):
+                        src = os.path.join(root, f)
+                        if not os.path.exists(dst_dir):
+                            os.makedirs(dst_dir)
+                        dst = os.path.join(dst_dir, f)
+                        shutil.copy(src, dst)
+
+
     def generate_site(self):
         """
         Generates a zip with the documentation site including automatic api docs.
@@ -240,10 +263,8 @@ class DocGenerator:
                 process_sources(opts, tvb.__path__, self.EXCLUDES)
 
                 self._run_sphinx('html', self._conf_folder, html_folder, args)
-                # Bundle the ipynb's linked by the docs
-                for ipynb_folder in self.IPYNB_FOLDERS:
-                    shutil.copytree(os.path.join(self._conf_folder, ipynb_folder),
-                                    os.path.join(html_folder, ipynb_folder))
+
+                self._bundle_ipynbs(html_folder)
                 # Archive the site. In the zip we need the top level dir to be tvb-documentation-site
                 # That explains the move
                 dest = os.path.join(temp_folder, 'aparentfolder', 'tvb-documentation-site')
