@@ -13,8 +13,8 @@
     :hidden:
 
     /manuals/UserGuide/UserGuide-Installation
-    /doc_site/Tutorials
-    /doc_site/Demos
+    /tutorials/Tutorials
+    /demos/Demos
     /manuals/UserGuide/UserGuide-UI
     /doc_site/top_developers
 
