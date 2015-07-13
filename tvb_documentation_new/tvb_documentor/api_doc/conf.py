@@ -24,10 +24,10 @@ import os
 
 #-----------------------------Specific configuration dictionary----------------
 import tvb.simulator
-tvb_default_spec_folder = os.path.join(os.path.split(os.path.dirname(__file__))[0], 'tvb_custom_doc')
+#tvb_default_spec_folder = os.path.join(os.path.split(os.path.dirname(__file__))[0], 'tvb_custom_doc')
 
 #Dictionary with mappings when a whole sub-package's documentation is overwritten from generated one
-packages_specs = {'tvb.simulator': {'path': os.path.join(os.path.dirname(tvb.simulator.__file__), 'doc'),
+packages_specs = {'tvb.simulator': {'path': os.path.join(os.path.dirname(os.path.dirname(__file__)), 'sim_doc'),
                                     'main': 'tvb.simulator.rst'}}
 #Dictionary with mappings when only one module's documentation is overwritten from generated one
 #modules_specs = {'tvb.core.datatype': os.path.join(tvb_default_spec_folder, 'tvb.core.datatype.rst')}
