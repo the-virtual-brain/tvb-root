@@ -220,9 +220,7 @@ class DocGenerator:
         Copy all ipynb's from the self.IPYNB_FOLDERS to the destination
         """
         # shutil copytree will not work because it expects the dest to be a non existing dir
-        import pydevd
-        pydevd.settrace('localhost', port=51234, stdoutToServer=True, stderrToServer=True)
-        
+
         for ipynb_folder in self.IPYNB_FOLDERS:
             ipynb_folder_pth = os.path.join(self._conf_folder, ipynb_folder)
 
