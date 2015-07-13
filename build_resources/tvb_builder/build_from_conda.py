@@ -66,17 +66,18 @@ class Config:
         self.commands_map = commands_map
         self.command_factory = command_factory
 
+
     @staticmethod
     def mac64():
-        commands_map = {'distribution': '../tvb_data/bin/python -m tvb_bin.app $@',
-                        'tvb_start': 'source ./distribution.command start',
-                        'tvb_clean': 'source ./distribution.command clean',
-                        'tvb_stop': 'source ./distribution.command stop',
-                        'contributor_setup': '../tvb_data/bin/python tvb_bin.git_setup $1 $2'}
+        commands_map = {'distribution.command': '../tvb_data/bin/python -m tvb_bin.app $@',
+                        'tvb_start.command': 'source ./distribution.command start',
+                        'tvb_clean.command': 'source ./distribution.command clean',
+                        'tvb_stop.command': 'source ./distribution.command stop',
+                        'contributor_setup.command': '../tvb_data/bin/python tvb_bin.git_setup $1 $2'}
 
         return Config("MacOS", "/anaconda/envs/tvb-run3", os.path.join("lib", "python2.7", "site-packages"),
-                      commands_map,
-                      _create_mac_command)
+                      commands_map, _create_unix_command)
+
 
     @staticmethod
     def win64():
@@ -93,6 +94,28 @@ class Config:
 
         return Config("Windows", "C:\\anaconda\\envs\\tvb-run", os.path.join("Lib", "site-packages"), commands_map,
                       _create_windows_script)
+
+
+    @staticmethod
+    def linux64():
+        set_path = 'export PYTHONHOME= \n' + \
+                   'export PYTHONPATH=`pwd`\n'
+        for env_name in ["LD_LIBRARY_PATH", "LD_RUN_PATH"]:
+            set_path += "if [ ${" + env_name + "+1} ]; then\n" + \
+                        "  export " + env_name + "=`pwd`:$" + env_name + "\n" + \
+                        "else\n" + \
+                        "  export " + env_name + "=`pwd`\n" + \
+                        "fi"
+
+        commands_map = {'distribution.sh': set_path + '../tvb_data/bin/python -m tvb_bin.app $@',
+                        'tvb_start.sh': 'bash ./distribution.sh start',
+                        'tvb_clean.sh': 'bash ./distribution.sh clean',
+                        'tvb_stop.sh': 'bash ./distribution.sh stop',
+                        'contributor_setup.sh': set_path + '../tvb_data/bin/python tvb_bin.git_setup $1 $2'}
+
+        return Config("Linux", "/root/anaconda/envs/tvb-run", os.path.join("lib", "python2.7", "site-packages"),
+                      commands_map, _create_unix_command)
+
 
 
 def _log(indent, msg):
@@ -146,12 +169,12 @@ def _copy_collapsed(config):
                 _log(3, "Removed: " + str(simulator_doc_folder))
 
 
-def _create_mac_command(target_bin_folder, command_file_name, command):
+def _create_unix_command(target_bin_folder, command_file_name, command):
     """
     Private script which adds the common part of a command file.
     """
     _log(2, command_file_name)
-    pth = os.path.join(target_bin_folder, command_file_name + ".command")
+    pth = os.path.join(target_bin_folder, command_file_name)
 
     with open(pth, 'w') as f:
         f.write('#!/bin/bash\n')
@@ -295,5 +318,9 @@ if __name__ == "__main__":
 
     if Environment.is_mac():
         prepare_anaconda_dist(Config.mac64())
+
     elif Environment.is_windows():
         prepare_anaconda_dist(Config.win64())
+
+    else:
+        prepare_anaconda_dist(Config.linux64())
