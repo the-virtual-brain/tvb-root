@@ -77,12 +77,13 @@ class Config:
     @staticmethod
     def mac64():
         # TODO set paths
-        commands_map = {'distribution.command': '../tvb_data/bin/python -m tvb_bin.app $@',
-                        'tvb_start.command': 'source ./distribution.command start',
-                        'tvb_clean.command': 'source ./distribution.command clean',
-                        'tvb_stop.command': 'source ./distribution.command stop',
-                        'ipython_notebook.sh': '../tvb_data/bin/ipython notebook ../demo_scripts',
-                        'contributor_setup.command': '../tvb_data/bin/python tvb_bin.git_setup $1 $2'}
+        commands_map = {'bin/distribution.command': '../tvb_data/bin/python -m tvb_bin.app $@',
+                        'bin/tvb_start.command': 'source ./distribution.command start',
+                        'bin/tvb_clean.command': 'source ./distribution.command clean',
+                        'bin/tvb_stop.command': 'source ./distribution.command stop',
+                        'bin/ipython_notebook.sh': '../tvb_data/bin/ipython notebook ../demo_scripts',
+                        'demo_scripts/ipython_notebook.sh': '../tvb_data/bin/ipython notebook',
+                        'bin/contributor_setup.command': '../tvb_data/bin/python tvb_bin.git_setup $1 $2'}
 
         return Config("MacOS", "/anaconda/envs/tvb-run3", os.path.join("lib", "python2.7", "site-packages"),
                       commands_map, _create_unix_command)
@@ -95,13 +96,15 @@ class Config:
                    'set PYTHONPATH=%cd%\\Lib;%cd%\\Lib\\site-packages \n' + \
                    'set PYTHONHOME=\n\n'
 
-        commands_map = {'distribution': set_path + 'python.exe -m tvb_bin.app %1 %2 %3 %4 %5 %6\ncd ..\\bin',
-                        'tvb_start': 'distribution start',
-                        'tvb_clean': 'distribution clean',
-                        'tvb_stop': 'distribution stop',
-                        'ipython_notebook': set_path +
-                                            'cd ..\\bin \n..\\tvb_data\\Scripts\\ipython notebook ..\\demo_scripts',
-                        'contributor_setup': set_path + 'python.exe -m  tvb_bin.git_setup %1 %2\ncd ..\\bin'}
+        commands_map = {'bin\\distribution.bat': set_path + 'python.exe -m tvb_bin.app %1 %2 %3 %4 %5 %6\ncd ..\\bin',
+                        'bin\\tvb_start.bat': 'distribution start',
+                        'bin\\tvb_clean.bat': 'distribution clean',
+                        'bin\\tvb_stop.bat': 'distribution stop',
+                        'bin\\ipython_notebook.bat': set_path +
+                                                'cd ..\\bin\n..\\tvb_data\\Scripts\\ipython notebook ..\\demo_scripts',
+                        'demo_scripts\\ipython_notebook.bat': set_path +
+                                                'cd ..\\demo_scripts\n..\\tvb_data\\Scripts\\ipython notebook',
+                        'bin\\contributor_setup.bat': set_path + 'python.exe -m  tvb_bin.git_setup %1 %2\ncd ..\\bin'}
 
         return Config("Windows", "C:\\anaconda\\envs\\tvb-run", os.path.join("Lib", "site-packages"), commands_map,
                       _create_windows_script)
@@ -121,12 +124,13 @@ class Config:
                         "  export " + env_name + "=`pwd`/lib:`pwd`/bin\n" + \
                         "fi\n"
 
-        commands_map = {'distribution.sh': set_path + './bin/python -m tvb_bin.app $@\ncd ../bin',
-                        'tvb_start.sh': 'bash ./distribution.sh start',
-                        'tvb_clean.sh': 'bash ./distribution.sh clean',
-                        'tvb_stop.sh': 'bash ./distribution.sh stop',
-                        'ipython_notebook.sh': set_path + 'cd ../bin\n../tvb_data/bin/ipython notebook ../demo_scripts',
-                        'contributor_setup.sh': set_path + './bin/python tvb_bin.git_setup $1 $2\ncd ../bin'}
+        commands_map = {'bin/distribution.sh': set_path + './bin/python -m tvb_bin.app $@\ncd ../bin',
+                        'bin/tvb_start.sh': 'bash ./distribution.sh start',
+                        'bin/tvb_clean.sh': 'bash ./distribution.sh clean',
+                        'bin/tvb_stop.sh': 'bash ./distribution.sh stop',
+                        'bin/ipython_notebook.sh': set_path + 'cd ../bin\n../tvb_data/bin/ipython notebook ../demo_scripts',
+                        'demo_scripts/ipython_notebook.sh': set_path + 'cd ../demo_scripts\n../tvb_data/bin/ipython notebook',
+                        'bin/contributor_setup.sh': set_path + './bin/python tvb_bin.git_setup $1 $2\ncd ../bin'}
 
         return Config("Linux", "/root/anaconda/envs/tvb-run", os.path.join("lib", "python2.7", "site-packages"),
                       commands_map, _create_unix_command)
@@ -183,34 +187,33 @@ def _copy_collapsed(config):
                 _log(3, "Removed: " + str(simulator_doc_folder))
 
 
-def _create_unix_command(target_bin_folder, command_file_name, command):
+def _create_unix_command(target_file, command):
     """
     Private script which adds the common part of a command file.
     """
-    _log(2, command_file_name)
-    pth = os.path.join(target_bin_folder, command_file_name)
+    _log(2, target_file)
 
-    with open(pth, 'w') as f:
+    with open(target_file, 'w') as f:
         f.write('#!/bin/bash\n')
         f.write('cd "$(dirname "$0")"\n')
-        f.write('echo "' + command_file_name + '"\n')
+        f.write('echo "Executing ' + os.path.split(target_file)[1] + '"\n')
         f.write(command + "\n")
         f.write('echo "Done."\n')
+    os.chmod(target_file, 0755)
 
 
-def _create_windows_script(target_bin_folder, command_file_name, command):
+def _create_windows_script(target_file, command):
     """
-    Private script which generated a command file inside tvb-bin distribution folder.
+    Private script which generates a windows launch script.
     """
-    _log(2, command_file_name)
-    pth = os.path.join(target_bin_folder, command_file_name + '.bat')
+    _log(2, target_file)
 
-    with open(pth, 'w') as f:
+    with open(target_file, 'w') as f:
         f.write('@echo off \n')
-        f.write('rem Executing ' + command_file_name + ' \n')
+        f.write('echo "Executing ' + os.path.split(target_file)[2] + '" \n')
         f.write(command + ' \n')
         f.write('echo "Done."\n')
-    os.chmod(pth, 0775)
+    os.chmod(target_file, 0755)
 
 
 def _compute_final_zip_name(platform_name):
@@ -307,9 +310,9 @@ def prepare_anaconda_dist(config):
     _log(1, "Modifying PTH " + config.easy_install_pth)
     _modify_pth(config.easy_install_pth)
 
-    _log(1, "Creating command files in BIN folder:")
-    for key, value in config.commands_map.iteritems():
-        config.command_factory(os.path.join(config.target_root, "bin"), key, value)
+    _log(1, "Creating command files:")
+    for target_file, content in config.commands_map.iteritems():
+        config.command_factory(os.path.join(config.target_root, target_file), content)
 
     _log(1, "Introspecting 3rd party licenses...")
     zip_name = generate_artefact(config.target_site_packages, extra_licenses_check=config.to_read_licenses_from)
