@@ -97,6 +97,9 @@ class DocGenerator:
     EXCLUDES = ['simulator/demos', 'simulator/backend', 'simulator/plot',
                 'interfaces/web/templates', 'adapters/portlets', 'tests']
 
+    # Folders to be bundled with the documentation site distribution zip. Paths relative to root conf.py.
+    # Note that if you create rst files in any of these folders then the build fails
+    IPYNB_FOLDERS = ['demos', 'tutorials']
 
     def __init__(self, tvb_root_folder, dist_folder, library_path):
         """
@@ -237,6 +240,10 @@ class DocGenerator:
                 process_sources(opts, tvb.__path__, self.EXCLUDES)
 
                 self._run_sphinx('html', self._conf_folder, html_folder, args)
+                # Bundle the ipynb's linked by the docs
+                for ipynb_folder in self.IPYNB_FOLDERS:
+                    shutil.copytree(os.path.join(self._conf_folder, ipynb_folder),
+                                    os.path.join(html_folder, ipynb_folder))
                 # Archive the site. In the zip we need the top level dir to be tvb-documentation-site
                 # That explains the move
                 dest = os.path.join(temp_folder, 'aparentfolder', 'tvb-documentation-site')

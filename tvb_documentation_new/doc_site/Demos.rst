@@ -17,81 +17,81 @@ Simulation
       will be weird if this document will be rendered to pdf.
 
 
-.. figure:: screenshots/simulator_phase_plane_interactive.jpg
+.. figure:: /manuals/UserGuide/screenshots/simulator_phase_plane_interactive.jpg
       :height: 200px
       :figclass: demo-figure
-      :target: UserGuide-UI_Simulator.html#phase-plane
+      :target: ../manuals/UserGuide/UserGuide-UI_Simulator.html#phase-plane
 
       :ref:`Get familiar with the behaviour of a model by exploring it's phase space. <phase_plane>`
 
 
-.. figure:: screenshots/simulator.jpg
+.. figure:: /manuals/UserGuide/screenshots/simulator.jpg
       :height: 200px
       :figclass: demo-figure
-      :target: UserGuide-UI_Simulator.html#simulator-ui
+      :target: ../manuals/UserGuide/UserGuide-UI_Simulator.html#simulator-ui
 
       :ref:`Launch a simulation. <simulator_ui>`
 
 Data Management
 ---------------
 
-.. figure:: screenshots/data.jpg
+.. figure:: /manuals/UserGuide/screenshots/data.jpg
       :width: 200px
       :figclass: demo-figure
-      :target: UserGuide-UI_Project.html#tree-view-ui
+      :target: ../manuals/UserGuide/UserGuide-UI_Project.html#tree-view-ui
 
       :ref:`View the data types in a project <tree_view_ui>`
 
-.. figure:: screenshots/default_operations.jpg
+.. figure:: /manuals/UserGuide/screenshots/default_operations.jpg
       :width: 200px
       :figclass: demo-figure
-      :target: UserGuide-UI_Project.html#operations-ui
+      :target: ../manuals/UserGuide/UserGuide-UI_Project.html#operations-ui
 
       :ref:`The operations that were executed in the project <operations_ui>`
 
 Visualizers
 -----------
 
-.. figure:: screenshots/visualizer_timeseries_svgd3.jpg
+.. figure:: /manuals/UserGuide/screenshots/visualizer_timeseries_svgd3.jpg
       :width: 200px
       :figclass: demo-figure
-      :target: UserGuide-UI_Simulator-Visualizers.html#ts-svg-ui
+      :target: ../manuals/UserGuide/UserGuide-UI_Simulator-Visualizers.html#ts-svg-ui
 
       :ref:`Time series view <ts_svg_ui>`
 
 
 
-.. figure:: screenshots/visualizer_brain.jpg
+.. figure:: /manuals/UserGuide/screenshots/visualizer_brain.jpg
       :width: 200px
       :figclass: demo-figure
-      :target: UserGuide-UI_Simulator-Visualizers.html#brain-activity-view
+      :target: ../manuals/UserGuide/UserGuide-UI_Simulator-Visualizers.html#brain-activity-view
 
       :ref:`3D brain activity view <brain_activity_view>`
 
 
 
-.. figure:: screenshots/visualizer_dual_head_eeg.jpg
+.. figure:: /manuals/UserGuide/screenshots/visualizer_dual_head_eeg.jpg
       :width: 200px
       :figclass: demo-figure
-      :target: UserGuide-UI_Simulator-Visualizers.html#brain-activity-view
+      :target: ../manuals/UserGuide/UserGuide-UI_Simulator-Visualizers.html#brain-activity-view
 
       :ref:`brain_dual_view`
 
 
 
-.. figure:: screenshots/visualizer_tsv.jpg
+.. figure:: /manuals/UserGuide/screenshots/visualizer_tsv.jpg
       :width: 200px
       :figclass: demo-figure
-      :target: UserGuide-UI_Simulator-Visualizers.html#brain-volumetric
+      :target: ../manuals/UserGuide/UserGuide-UI_Simulator-Visualizers.html#brain-volumetric
 
       :ref:`brain_volumetric`
 
 
 
-.. figure:: screenshots/connectivity_editor.jpg
+.. figure:: /manuals/UserGuide/screenshots/connectivity_editor.jpg
       :width: 200px
       :figclass: demo-figure
-      :target: UserGuide-UI_Connectivity.html#connectivity-matrix-ui
+      :target: ../manuals/UserGuide/UserGuide-UI_Connectivity.html#connectivity-matrix-ui
 
       :ref:`connectivity_matrix_ui`
 
@@ -105,18 +105,18 @@ The first set of "basic" tutorials are listed roughly in the order they should b
 and cover the basic functionality of TVB's simulator package using very simple
 examples.
 
-.. _Anatomy Of A Region Simulation: http://nbviewer.ipython.org/github/the-virtual-brain/tvb-library/blob/trunk/tvb/simulator/doc/tutorials/Tutorial_Anatomy_Of_A_Region_Simulation/Tutorial_Anatomy_Of_A_Region_Simulation.ipynb
-.. _Anatomy Of A Surface Simulation: http://nbviewer.ipython.org/github/the-virtual-brain/tvb-library/blob/trunk/tvb/simulator/doc/tutorials/Tutorial_Anatomy_Of_A_Surface_Simulation/Tutorial_Anatomy_Of_A_Surface_Simulation.ipynb
-.. _Exploring A Model: http://nbviewer.ipython.org/github/the-virtual-brain/tvb-library/blob/trunk/tvb/simulator/doc/tutorials/Tutorial_Exploring_A_Model/Tutorial_Exploring_A_Model.ipynb
-.. _Exploring A Model Reduced Wong Wang: http://nbviewer.ipython.org/github/the-virtual-brain/tvb-library/blob/trunk/tvb/simulator/doc/tutorials/Tutorial_Exploring_A_Model_ReducedWongWang/Tutorial_Exploring_A_Model_ReducedWongWang.ipynb
-.. _Exploring The Bold Monitor: http://nbviewer.ipython.org/github/the-virtual-brain/tvb-library/blob/trunk/tvb/simulator/doc/tutorials/Tutorial_Exploring_The_Bold_Monitor/Tutorial_Exploring_The_Bold_Monitor.ipynb
-.. _Looking At Longer TimeSeries: http://nbviewer.ipython.org/github/the-virtual-brain/tvb-library/blob/trunk/tvb/simulator/doc/tutorials/Tutorial_Looking_At_Longer_TimeSeries/Tutorial_Looking_At_Longer_TimeSeries.ipynb
-.. _Region Stimuli: http://nbviewer.ipython.org/github/the-virtual-brain/tvb-library/blob/trunk/tvb/simulator/doc/tutorials/Tutorial_Region_Stimuli/Tutorial_Region_Stimuli.ipynb
-.. _Surface Stimuli: http://nbviewer.ipython.org/github/the-virtual-brain/tvb-library/blob/trunk/tvb/simulator/doc/tutorials/Tutorial_Surface_Stimuli/Tutorial_Surface_Stimuli.ipynb
-.. _Smooth Parameter Variations: http://nbviewer.ipython.org/github/the-virtual-brain/tvb-library/blob/trunk/tvb/simulator/doc/tutorials/Tutorial_Smooth_Parameter_Variation/Tutorial_Smooth_Parameter_Variation.ipynb
-.. _Stochastic Simulations: http://nbviewer.ipython.org/github/the-virtual-brain/tvb-library/blob/trunk/tvb/simulator/doc/tutorials/Tutorial_Stochastic_Simulation/Tutorial_Stochastic_Simulation.ipynb
-.. _Getting To Know Your Mesh Surface: http://nbviewer.ipython.org/github/the-virtual-brain/tvb-library/blob/trunk/tvb/simulator/doc/tutorials/Tutorial_Getting_To_Know_Your_Mesh_Surface/Tutorial_Getting_To_Know_Your_Surface_Mesh.ipynb
-.. _Using Your Own Connectivity: http://nbviewer.ipython.org/github/the-virtual-brain/tvb-library/tree/trunk/tvb/simulator/doc/tutorials/Tutorial_Using_Your_Own_Connectivity/Tutorial_Using_Your_Own_Connectivity.ipynb
+.. _Anatomy Of A Region Simulation: http://nbviewer.ipython.org/url/docs.thevirtualbrain.org/demos/Tutorial_Anatomy_Of_A_Region_Simulation.ipynb
+.. _Anatomy Of A Surface Simulation: http://nbviewer.ipython.org/url/docs.thevirtualbrain.org/demos/Tutorial_Anatomy_Of_A_Surface_Simulation.ipynb
+.. _Exploring A Model: http://nbviewer.ipython.org/url/docs.thevirtualbrain.org/demos/Tutorial_Exploring_A_Model.ipynb
+.. _Exploring A Model Reduced Wong Wang: http://nbviewer.ipython.org/url/docs.thevirtualbrain.org/demos/Tutorial_Exploring_A_Model_ReducedWongWang.ipynb
+.. _Exploring The Bold Monitor: http://nbviewer.ipython.org/url/docs.thevirtualbrain.org/demos/Tutorial_Exploring_The_Bold_Monitor.ipynb
+.. _Looking At Longer TimeSeries: http://nbviewer.ipython.org/url/docs.thevirtualbrain.org/demos/Tutorial_Looking_At_Longer_TimeSeries.ipynb
+.. _Region Stimuli: http://nbviewer.ipython.org/url/docs.thevirtualbrain.org/demos/Tutorial_Region_Stimuli.ipynb
+.. _Surface Stimuli: http://nbviewer.ipython.org/url/docs.thevirtualbrain.org/demos/Tutorial_Surface_Stimuli.ipynb
+.. _Smooth Parameter Variations: http://nbviewer.ipython.org/url/docs.thevirtualbrain.org/demos/Tutorial_Smooth_Parameter_Variation.ipynb
+.. _Stochastic Simulations: http://nbviewer.ipython.org/url/docs.thevirtualbrain.org/demos/Tutorial_Stochastic_Simulation.ipynb
+.. _Getting To Know Your Mesh Surface: http://nbviewer.ipython.org/url/docs.thevirtualbrain.org/demos/Tutorial_Getting_To_Know_Your_Surface_Mesh.ipynb
+.. _Using Your Own Connectivity: http://nbviewer.ipython.org/url/docs.thevirtualbrain.org/demos/Tutorial_Using_Your_Own_Connectivity.ipynb
 
 
 .. figure:: /manuals/styles/TVB_logo.svg

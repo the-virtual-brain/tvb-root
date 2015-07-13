@@ -9,10 +9,10 @@ equivalent of a published experiment, modelling the experimental paradigm
 and performing similar analysis on the simulated EEG/MEG/fMRI to that performed
 on the experimental data.
 
-.. _Evoked Responses: http://nbviewer.ipython.org/github/the-virtual-brain/tvb-library/blob/trunk/tvb/simulator/doc/tutorials/Tutorial_Evoked_Responses_In_The_Visual_Cortex/Tutorial_Evoked_Responses_In_The_Visual_Cortex.ipynb
-.. _Modeling Lesions: http://nbviewer.ipython.org/github/the-virtual-brain/tvb-library/blob/trunk/tvb/simulator/doc/tutorials/Tutorial_Modeling_The_Impact_Of_Structural_Lesions/Tutorial_Modeling_The_Impact_Of_Structural_Lesions_Part_I.ipynb
-.. _The Brain Network Model: http://nbviewer.ipython.org/github/the-virtual-brain/tvb-library/blob/trunk/tvb/simulator/doc/tutorials/Tutorial_Modeling_The_Impact_Of_Structural_Lesions/Tutorial_Modeling_The_Impact_Of_Structural_Lesions_Part_II.ipynb
-.. _Offline Analysis: http://nbviewer.ipython.org/github/the-virtual-brain/tvb-library/blob/trunk/tvb/simulator/doc/tutorials/Tutorial_Modeling_The_Impact_Of_Structural_Lesions/Tutorial_Modeling_The_Impact_Of_Structural_Lesions_Part_III.ipynb
+.. _Evoked Responses: http://nbviewer.ipython.org/url/docs.thevirtualbrain.org/tutorials/Tutorial_Evoked_Responses_In_The_Visual_Cortex.ipynb
+.. _Modeling Lesions: http://nbviewer.ipython.org/url/docs.thevirtualbrain.org/tutorials/Tutorial_Modeling_The_Impact_Of_Structural_Lesions/Tutorial_Modeling_The_Impact_Of_Structural_Lesions_Part_I.ipynb
+.. _The Brain Network Model: http://nbviewer.ipython.org/url/docs.thevirtualbrain.org/tutorials/Tutorial_Modeling_The_Impact_Of_Structural_Lesions/Tutorial_Modeling_The_Impact_Of_Structural_Lesions_Part_II.ipynb
+.. _Offline Analysis: http://nbviewer.ipython.org/url/docs.thevirtualbrain.org/tutorials/Tutorial_Modeling_The_Impact_Of_Structural_Lesions/Tutorial_Modeling_The_Impact_Of_Structural_Lesions_Part_III.ipynb
 
 
 Evoked Responses
