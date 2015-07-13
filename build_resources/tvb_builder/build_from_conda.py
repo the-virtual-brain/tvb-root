@@ -100,10 +100,8 @@ class Config:
                         'bin\\tvb_start.bat': 'distribution start',
                         'bin\\tvb_clean.bat': 'distribution clean',
                         'bin\\tvb_stop.bat': 'distribution stop',
-                        'bin\\ipython_notebook.bat': set_path +
-                                                'cd ..\\bin\n..\\tvb_data\\Scripts\\ipython notebook ..\\demo_scripts',
-                        'demo_scripts\\ipython_notebook.bat': set_path +
-                                                'cd ..\\demo_scripts\n..\\tvb_data\\Scripts\\ipython notebook',
+                        'bin\\ipython_notebook.bat': set_path + 'cd ..\\bin\n..\\tvb_data\\Scripts\\ipython notebook ..\\demo_scripts',
+                        'demo_scripts\\ipython_notebook.bat': set_path + 'cd ..\\demo_scripts\n..\\tvb_data\\Scripts\\ipython notebook',
                         'bin\\contributor_setup.bat': set_path + 'python.exe -m  tvb_bin.git_setup %1 %2\ncd ..\\bin'}
 
         return Config("Windows", "C:\\anaconda\\envs\\tvb-run", os.path.join("Lib", "site-packages"), commands_map,
@@ -210,7 +208,7 @@ def _create_windows_script(target_file, command):
 
     with open(target_file, 'w') as f:
         f.write('@echo off \n')
-        f.write('echo "Executing ' + os.path.split(target_file)[2] + '" \n')
+        f.write('echo "Executing ' + os.path.split(target_file)[1] + '" \n')
         f.write(command + ' \n')
         f.write('echo "Done."\n')
     os.chmod(target_file, 0755)
