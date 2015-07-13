@@ -20,5 +20,7 @@ python setup.py develop
 cd ..\framework_tvb
 python setup.py develop
 
-REM exit environment
-deactivate
+
+conda uninstall pyside
+
+REM [anaconda-env]/Lib/site-packages/matplotlib/mpl-data/matplotlibrc to Agg

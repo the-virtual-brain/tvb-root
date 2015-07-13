@@ -21,3 +21,7 @@ python setup.py develop
 cd ../framework_tvb
 python setup.py develop
 
+conda uninstall pyside shiboken cairo
+
+# [anaconda-env]/Lib/site-packages/matplotlib/mpl-data/matplotlibrc to Agg
+

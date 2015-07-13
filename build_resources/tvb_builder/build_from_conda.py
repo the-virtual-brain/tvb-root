@@ -44,11 +44,6 @@ class Config:
         # System paths:
         self.anaconda_env_path = anaconda_env_path
 
-        dp = os.path.join("..", "..")
-        self.tvb_sources = {os.path.join(dp, "framework_tvb", "tvb"): "tvb",
-                            os.path.join(dp, "scientific_library", "tvb"): "tvb",
-                            os.path.join(dp, "externals", "BCT"): os.path.join("externals", "BCT")}
-
         # Build result & input
         self.platform_name = platform_name
         self.build_folder = "build"
@@ -63,16 +58,30 @@ class Config:
         self.easy_install_pth = os.path.join(self.target_site_packages, "easy-install.pth")
         self.to_read_licenses_from = [os.path.dirname(self.target_library_root)]
 
+        # TVB sources and specify where to copy them in distribution
+        dp = os.path.join("..", "..")
+        self.tvb_sources = {os.path.join(dp, "framework_tvb", "tvb"): os.path.join(self.target_site_packages, "tvb"),
+                            os.path.join(dp, "scientific_library", "tvb"): os.path.join(self.target_site_packages,
+                                                                                        "tvb"),
+                            os.path.join(dp, "externals", "BCT"): os.path.join(self.target_site_packages, "externals",
+                                                                               "BCT"),
+                            os.path.join(dp, "tvb_documentation_new", "demos"): os.path.join(self.target_root,
+                                                                                             "demo_scripts"),
+                            os.path.join(dp, "tvb_documentation_new", "tutorials"): os.path.join(self.target_root,
+                                                                                                 "demo_scripts")}
+
         self.commands_map = commands_map
         self.command_factory = command_factory
 
 
     @staticmethod
     def mac64():
+        # TODO set paths
         commands_map = {'distribution.command': '../tvb_data/bin/python -m tvb_bin.app $@',
                         'tvb_start.command': 'source ./distribution.command start',
                         'tvb_clean.command': 'source ./distribution.command clean',
                         'tvb_stop.command': 'source ./distribution.command stop',
+                        'ipython_notebook.sh': '../tvb_data/bin/ipython notebook ../demo_scripts',
                         'contributor_setup.command': '../tvb_data/bin/python tvb_bin.git_setup $1 $2'}
 
         return Config("MacOS", "/anaconda/envs/tvb-run3", os.path.join("lib", "python2.7", "site-packages"),
@@ -82,14 +91,16 @@ class Config:
     @staticmethod
     def win64():
         set_path = 'cd ..\\tvb_data \n' + \
-                   'set PATH=%cd%;%path%; \n' + \
-                   'set PYTHONPATH=%cd%;%cd%\\lib\\site-packages \n' + \
+                   'set PATH=%cd%;%cd%\\Scripts;%path%; \n' + \
+                   'set PYTHONPATH=%cd%\\Lib;%cd%\\Lib\\site-packages \n' + \
                    'set PYTHONHOME=\n\n'
 
         commands_map = {'distribution': set_path + 'python.exe -m tvb_bin.app %1 %2 %3 %4 %5 %6\ncd ..\\bin',
                         'tvb_start': 'distribution start',
                         'tvb_clean': 'distribution clean',
                         'tvb_stop': 'distribution stop',
+                        'ipython_notebook': set_path +
+                                            'cd ..\\bin \n..\\tvb_data\\Scripts\\ipython notebook ..\\demo_scripts',
                         'contributor_setup': set_path + 'python.exe -m  tvb_bin.git_setup %1 %2\ncd ..\\bin'}
 
         return Config("Windows", "C:\\anaconda\\envs\\tvb-run", os.path.join("Lib", "site-packages"), commands_map,
@@ -99,20 +110,23 @@ class Config:
     @staticmethod
     def linux64():
         set_path = 'cd ../tvb_data\n' + \
-                   'export PYTHONHOME= \n' + \
-                   'export PYTHONPATH=`pwd`:`pwd`/lib/python2.7/site-packages\n'
+                   'export PATH=`pwd`/bin:$path\n' + \
+                   'export PYTHONPATH=`pwd`/lib/python2.7:`pwd`/lib/python2.7/site-packages\n' + \
+                   'export PYTHONHOME= \n\n'
+
         for env_name in ["LD_LIBRARY_PATH", "LD_RUN_PATH"]:
             set_path += "if [ ${" + env_name + "+1} ]; then\n" + \
-                        "  export " + env_name + "=`pwd`:$" + env_name + "\n" + \
+                        "  export " + env_name + "=`pwd`/lib:`pwd`/bin:$" + env_name + "\n" + \
                         "else\n" + \
-                        "  export " + env_name + "=`pwd`\n" + \
+                        "  export " + env_name + "=`pwd`/lib:`pwd`/bin\n" + \
                         "fi\n"
 
-        commands_map = {'distribution.sh': set_path + './bin/python -m tvb_bin.app $@',
+        commands_map = {'distribution.sh': set_path + './bin/python -m tvb_bin.app $@\ncd ../bin',
                         'tvb_start.sh': 'bash ./distribution.sh start',
                         'tvb_clean.sh': 'bash ./distribution.sh clean',
                         'tvb_stop.sh': 'bash ./distribution.sh stop',
-                        'contributor_setup.sh': set_path + './bin/python tvb_bin.git_setup $1 $2'}
+                        'ipython_notebook.sh': set_path + 'cd ../bin\n../tvb_data/bin/ipython notebook ../demo_scripts',
+                        'contributor_setup.sh': set_path + './bin/python tvb_bin.git_setup $1 $2\ncd ../bin'}
 
         return Config("Linux", "/root/anaconda/envs/tvb-run", os.path.join("lib", "python2.7", "site-packages"),
                       commands_map, _create_unix_command)
@@ -146,8 +160,7 @@ def _copy_collapsed(config):
     """
     Merge multiple src folders, and filter some resources which are not needed (tests, docs, svn folders)
     """
-    for module_path, suffix in config.tvb_sources.iteritems():
-        destination_folder = os.path.join(config.target_site_packages, suffix)
+    for module_path, destination_folder in config.tvb_sources.iteritems():
         _log(2, module_path + " --> " + destination_folder)
         if not os.path.exists(destination_folder):
             os.makedirs(destination_folder)
@@ -211,7 +224,7 @@ def _compute_final_zip_name(platform_name):
                         "TVB_" + platform_name + "_" + VersionSettings.BASE_VERSION + architecture + "web.zip")
 
 
-def add_sitecustomize(destination_folder):
+def _add_sitecustomize(destination_folder):
     """
     Ensure Python is using UTF-8 encoding (otherwise default encoding is ASCII)
     Most of the comments in the simulator are having pieces outside of ascii coverage
@@ -230,7 +243,6 @@ def _modify_pth(pth_name):
     tvb_markers = ["tvb_root", "tvb-root", "framework_tvb", "scientific_library", "third_party_licenses", "tvb_data",
                    "Hudson", "hudson"]
     tvb_replacement = "./tvb\n./tvb_bin\n./tvb_data\n"
-    _log(1, "Modifying PTH " + pth_name)
     new_content = ""
     first_tvb_replace = True
 
@@ -259,24 +271,22 @@ def prepare_anaconda_dist(config):
     Main method for building from Anaconda (This requires TVB_Distribution - step1 ZIP to have been generated before
     """
     _log(0, "Generating ANACONDA-based TVB_Distribution! " + config.platform_name)
-    # Cleanup
+
     shutil.rmtree(config.target_root, True)
     final_zip_name = _compute_final_zip_name(config.platform_name)
     if os.path.exists(final_zip_name):
         os.remove(final_zip_name)
-    # Unzip skeleton TVB_Distribution
+
     _log(1, "Decompressing " + config.step1_result + " into '" + config.build_folder + "' ...")
     zipfile.ZipFile(config.step1_result).extractall(config.build_folder)
 
-    # Copy anaconda ENV folder
-    _log(1, "Copying anaconda ENV " + config.anaconda_env_path + " into '" + config.target_library_root + "'...")
+    _log(1, "Copying anaconda ENV folder" + config.anaconda_env_path + " into '" + config.target_library_root + "'...")
     shutil.copytree(config.anaconda_env_path, config.target_library_root)
 
     _log(1, "Adding sitecustomize.py")
-    add_sitecustomize(os.path.dirname(config.target_site_packages))
+    _add_sitecustomize(os.path.dirname(config.target_site_packages))
 
-    # Copy tvb sources
-    _log(1, "Copying TVB sources into site-packages ...")
+    _log(1, "Copying TVB sources into site-packages & demo_scripts ...")
     _copy_collapsed(config)
 
     bin_src = os.path.join(config.target_root, "_tvb_bin")
@@ -294,25 +304,27 @@ def prepare_anaconda_dist(config):
     _log(2, "Moving " + online_help_src + " to " + online_help_dst)
     os.rename(online_help_src, online_help_dst)
 
-    # Modify easy_install.pth
+    _log(1, "Modifying PTH " + config.easy_install_pth)
     _modify_pth(config.easy_install_pth)
 
-    # write command scripts for current OS in BIN folder
-    _log(1, "Creating command files:")
+    _log(1, "Creating command files in BIN folder:")
     for key, value in config.commands_map.iteritems():
         config.command_factory(os.path.join(config.target_root, "bin"), key, value)
 
-    # introspect licenses from distribution
+    _log(1, "Introspecting 3rd party licenses...")
     zip_name = generate_artefact(config.target_site_packages, extra_licenses_check=config.to_read_licenses_from)
     zipfile.ZipFile(zip_name).extractall(config.target_3rd_licences_folder)
     os.remove(zip_name)
 
+    _log(1, "Packing final ZIP...")
     if os.path.exists(config.target_before_zip):
         shutil.rmtree(config.target_before_zip, True)
     os.mkdir(config.target_before_zip)
     shutil.move(config.target_root, config.target_before_zip)
     _compress(config.target_before_zip, final_zip_name)
     shutil.rmtree(config.target_before_zip, True)
+    _log(1, "Done TVB package " + final_zip_name)
+
 
 
 if __name__ == "__main__":
