@@ -22,11 +22,6 @@ propagation of an epileptic seizure in the human brain, electrical stimulation
 of a brain region that can trigger a seizure, or surgical resection of brain
 regions.
 
--------------------
-
-Project II: Modeling Epilepsy
-------------------------------
-
 In this project, all the data were already generated. You can download the
 ModelingEpilepsy.zip file in the `TVB sharing area
 <http://www.thevirtualbrain.org/tvb/zwei/client-area/public>`_.  We’ll only go
@@ -59,7 +54,7 @@ will use the phase plane interactive tool.
 
 .. figure:: figures/ModelingEpilepsy_PhasePlane.png
    :alt: :math:`y_0-y_1` phase plane for the first population.
-   :scale: 60%
+   :scale: 50%
 
 3. You can also look at other variables in the phase space, such as
    the second population :math:`y_3`/:math:`y_4`, responsible for the interictal 
@@ -68,7 +63,7 @@ will use the phase plane interactive tool.
 
  .. figure:: figures/ModelingEpilepsy_PhasePlane_2.png
    :alt: :math:`y_3-y_4` phase plane for the second population.
-   :scale: 60%
+   :scale: 50%
   
 4. You can continue to play along to explore the dynamics of this model.  For
    instance, try changing the number of *integration steps*, or choosing a
@@ -237,12 +232,26 @@ The results are given in *resection_Region_TemporalLobe*.
    :scale: 40%
 
 
+-------------------
 
 More Documentation
 ==================
 
 For more information on the **Epileptor** model, see Jirsa_et_al_, El_Houssaini_et_al_, Proix_et_al_, Naze_et_al_ .
 
+
+-------------------
+
+Support
+=======
+
+The official TVB webiste is
+`www.thevirtualbrain.org <http://www.thevirtualbrain.org>`__. All the
+documentation and tutorials are hosted on
+`http://docs.thevirtualbrain.org <http://docs.thevirtualbrain.org>`__. You’ll
+find our public repository at https://github.com/the-virtual-brain. For
+questions and bug reports we have a users group
+https://groups.google.com/forum/#!forum/tvb-users
 
 .. |burst_menu| image:: figures/burst_menu.png
                 :scale: 40%

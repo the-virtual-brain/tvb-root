@@ -10,19 +10,25 @@ component of a large-scale brain network model, such as the neural mass model
 governing the local dynamics or the structural connectivity constraining the
 space-time structure of the network couplings.
 
+-------------------
 
 Objectives
-==========
+----------
 
 This tutorial presents the basic anatomy of a brain network model at the region
 level using The Virtual Brain’s (TVB’s) graphical interface. You are not
 expected to launch all the simulations. However, following these steps you
 should be able to reproduce the results from the simulations in the project
-Building Your Own Brain Network Model.
+BuildingYourOwnBrainNetworkModel.
 
-In this tutorial, all the data were already generated. We’ll only go through
+In this tutorial, all the data were already generated. You can download the 
+BuildingYourOwnBrainNetworkModel.zip file in the `TVB sharing area
+<http://www.thevirtualbrain.org/tvb/zwei/client-area/public>`_. We’ll only go through
 the necessary steps required to reproduce some simulations. You can always
 start over, click along and/or try to change parameters.
+
+
+-------------------
 
 Building A Discrete Brain Network Model
 ---------------------------------------
@@ -55,7 +61,7 @@ have a quick idea of some properties of the simulated data.
 
 .. figure:: figures/BuildingYourOwnBrainNetworkModel_SimulatorArea.png
    :alt: TVB’s Simulator page
-   :scale: 40%
+   :scale: 30%
 
 
 2. *Connectivity*: Define some structure for your network. Here, we’ll rely on **TVB’s
@@ -70,10 +76,6 @@ have a quick idea of some properties of the simulated data.
 
 5. *Local dynamics:* Then define a *Model* for the local dynamics. Here we’ll use the **generic 2
    dimensional oscillator**  with the parameters shown in the following table.
-
-.. figure:: figures/BuildingYourOwnBrainNetworkModel_Model.png
-   :alt: Selecting a Model
-   :scale: 40% 
 
 =================   =======
 Model parameter     Value
@@ -92,11 +94,16 @@ Model parameter     Value
   :math:`\tau`      1.25
 =================   =======
 
+.. figure:: figures/BuildingYourOwnBrainNetworkModel_Model.png
+   :alt: Selecting a Model
+   :scale: 30% 
+
+
 6. Now that we’ve defined our structure and dynamics we need to select
    an integration scheme. We’ll use **HeunDeterministic**. The most
    important thing here is to use a step size that is small enough for
    the integration to be numerically stable. Here, we chose a value of
-   :math:`\mathbf{dt=}`\ **dt = 0.1 ms**.
+   **dt = 0.1 ms**.
 
 7. Select the **Temporal Average** monitor. It averages over a time window of
    length *sampling period* returning one time point every period. It also, by
@@ -120,6 +127,8 @@ Monitor takes no arguments and simply returns all the simulated data.
     *AnatomyOfARegionSimulation\_a*) and click on |arrow|.
 
 
+-------------------
+
 Looking at the Results
 ----------------------
 
@@ -128,7 +137,7 @@ simulation is a result of the imperfectly set initial conditions.
 
 .. figure:: figures/BuildingYourOwnBrainNetworkModel_AnimatedTimeSeries.png
    :alt: Time-series from *AnatomyOfARegionSimulation\_a*
-   :scale: 40% 
+   :scale: 30% 
 
 The initial history (i.e., initial conditions) is merely set by default to be
 random walks within the general range of state-variables values expected from
@@ -148,7 +157,7 @@ achieve that later on).
 
 .. figure:: figures/BuildingYourOwnBrainNetworkModel_Fourier.png
    :alt: Fourier spectra of the time-series from *AnatomyOfARegionSimulation\_a*
-   :scale: 40% 
+   :scale: 30% 
 
 
 
@@ -163,7 +172,7 @@ achieve that later on).
    the name the simulation or delete it. 
 
 .. figure:: figures/BuildingYourOwnBrainNetworkModel_CopyASimulation.png
-   :scale: 40% 
+   :scale: 80% 
 
 3. Change the name of the new simulation (e.g.,
    *AnatomyOfARegionSimulation\_b* ) and set the coupling strength to
@@ -182,13 +191,15 @@ A frequent question is at which value of coupling strength this
 defining a range of values that will be explored. We’ll see how to do
 this in the next section.
 
+-------------------
+
 Parameter Space Exploration (PSE)
 ---------------------------------
 
 TVB will launch a simulation for every value. The example is set up in
 *AnatomyOfARegionSimulation\_pse*.
 
-#. In *Long rane coupling function*, under **a**, click on |expand|. Set the range between
+#. In *Long range coupling function*, under **a**, click on |expand|. Set the range between
    :math:`\mathbf{0.012 \text{ and } 0.042}` and the step to
    :math:`\mathbf{0.002}`.
 
@@ -209,6 +220,8 @@ pseudocolor map.
 
 These results are those presented in Ghosh_et_al_ and Knock_et_al_.
 
+-------------------
+
 Simulation continuation or Branching
 ------------------------------------
 
@@ -224,13 +237,10 @@ In this area there’s a an interactive tool, the *Phase Plane*, which allows yo
 understand the local dynamics, that is the dynamics of a single isolated
 node, by observing how the model parameters change its phase plane. 
 
-.. figure:: figures/BuildingYourOwnBrainNetworkModel_PhasePlane.png
-   :scale: 40% 
-
 2. Click on any point of the phase plane. A trajectory will be drawn. We
    see that the fixed point is approx (V, W) = (1.5, -0.6)
 
-.. figure:: figures/BuildingYourOwnBrainNetworkModel_PPI.png
+.. figure:: figures/BuildingYourOwnBrainNetworkModel_PhasePlane.png
    :scale: 40% 
 
 However, there certainly is a more elegant way.
@@ -254,6 +264,8 @@ monitors should be the same.)
 functionality, using the results from *AnatomyOfARegionSimulation\_a* as
 initial conditions.
 
+-------------------
+
 Stochastic Simulations
 ----------------------
 
@@ -270,10 +282,6 @@ reconfigured to, for example, only enter appropriate state variables of
 certain thalamic nodes, thus emulating a very crude model of external
 inputs to the brain.
 
-#. After configuring a model similar to the one presented in
-   *AnatomyOfARegionSimulation\_b*, we select **HeunStochastic** as an
-   integration scheme.
-
 The *Noise* functions are fed by a random process generated by a pseudo-random
 number generator (PRNG). The random processes used have Gaussian
 amplitude and can potentially be given a temporal correlation. The
@@ -285,13 +293,13 @@ defines the correlation time of the noise source, with
 greater than zero producing coloured noise.
 
 
-2. After configuring a model similar to the one presented in
+1. After configuring a model similar to the one presented in
    *AnatomyOfARegionSimulation\_b*, we select **HeunStochastic** as our
    integration scheme.
 
-3. Set the values for :math:`\boldsymbol{\tau=0}` and **seed=42**.
+2. Set the values for :math:`\boldsymbol{\tau=0}` and **seed=42**.
 
-4. Set the noise dispersion, :math:`\mathbf{D=0.005}`
+3. Set the noise dispersion, :math:`\mathbf{D=0.005}`
 
 *AnatomyOfARegionSimulation\_b* and
 *AnatomyOfARegionSimulation\_stochastic* have the same parameters but
@@ -305,6 +313,8 @@ Observe the differences using the *Spectrogram of the Wavelet Transform*.
 .. figure:: figures/BuildingYourOwnBrainNetworkModel_WaveletStochastic.png
    :scale: 40% 
 
+
+-------------------
 
 Modeling the Neural Activity on the Folded Cortex
 --------------------------------------------------
@@ -387,7 +397,9 @@ experimental work can also be incorporated, providing a link between
 simulation and experiment. 
 
 .. figure:: figures/BuildingYourOwnBrainNetworkModel_MexicanLocalConnectivityPotatoHead.png
-   :scale: 40% 
+   :scale: 30% 
+
+-------------------
 
 Define Your Own Local Connectivity
 ----------------------------------
@@ -411,7 +423,7 @@ scale dynamics modelled by neural fields.
 
 .. figure:: figures/BuildingYourOwnBrainNetworkModel_YourOwnLocalConnectivity.png
    :alt: Gaussian local connectivity. 
-   :scale: 40% 
+   :scale: 30% 
 
 4. Name your *Locl Connectivity* and save it by clicking on *Create new Local
    Connectivity* on the bottom left corner.
@@ -423,9 +435,9 @@ This data structure is saved under the name
 5. Select the *Mexican Hat equation*. Here, we changed the default parameters. See the values
    in the following Table.
 
-===============   ======
-Parameter         Value
----------------   ------
+===============   =========
+**Parameter**     **Value**
+---------------   ---------
 midpoint\_1       0 mm 
 midpoint\_2       0 mm 
 amp\_1            2 au 
@@ -433,7 +445,7 @@ amp\_2            1 au
 sigma\_1          5 mm 
 sigma\_2          15 mm 
 cutoff distance   40 mm 
-===============   ======
+===============   =========
 
 
 6. Save your new local connectivity.
@@ -460,6 +472,8 @@ These results are those of
 *SurfaceSimulation\_MexicanHatLocalConnectivity* and
 *SurfaceSimulation\_GaussianLocalConnectivity* respectively.
 
+-------------------
+
 More Documentation
 ==================
 
@@ -470,13 +484,15 @@ parameters and output modalities. Online help is available clicking on
 the |help| icons next to each entry. For more documentation on The
 Virtual Brain, please see the following articles
 
+-------------------
+
 Support
 =======
 
 The official TVB webiste is
-`www.thevirtualbrain.org <www.thevirtualbrain.org>`__. All the
+`www.thevirtualbrain.org <http://www.thevirtualbrain.org>`__. All the
 documentation and tutorials are hosted on
-`the-virtual-brain.github.io <the-virtual-brain.github.io>`__. You’ll
+`http://docs.thevirtualbrain.org <http://docs.thevirtualbrain.org>`__. You’ll
 find our public repository at https://github.com/the-virtual-brain. For
 questions and bug reports we have a users group
 https://groups.google.com/forum/#!forum/tvb-users
@@ -491,14 +507,14 @@ https://groups.google.com/forum/#!forum/tvb-users
 .. [Knock_et_al] Knock SA, McIntosh AR, Sporns O, Kötter R, Hagmann P, Jirsa VK. The efect of physiologically plausible connectivity structure on local and global dynamics in large scale brain models. Journal of Neuroscience Methods, 183(1):86-94, 2009
 
 .. |arrow| image:: figures/butt_launch_project.png
-           :scale: 30% 
+           :scale: 40% 
 .. |tr| image:: figures/nodeTimeSeriesRegion.png
-        :scale: 30% 
+        :scale: 40% 
 .. |pen| image:: figures/butt_pencil.png
-         :scale: 30% 
+         :scale: 40% 
 .. |expand| image:: figures/butt_expand_range.png
-            :scale: 30% 
+            :scale: 50% 
 .. |branch| image:: figures/butt_branching.png
-            :scale: 30% 
+            :scale: 40% 
 .. |help| image:: figures/butt_green_help.png
-          :scale: 30% 
+          :scale: 40% 

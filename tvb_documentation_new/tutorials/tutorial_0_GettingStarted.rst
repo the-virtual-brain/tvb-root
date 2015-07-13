@@ -9,16 +9,8 @@ area <http://www.thevirtualbrain.org/tvb/zwei/client-area/public>`_. This might
 take some time, so while we continue with the program you can start importing
 the projects into your copy of TVB.
 
-Objectives
-==========
-
-This tutorial presents the basic steps to upload a project, and share data with
-other users and/or link data to other TVB projects.  After this tutorial you
-should be able to import a new dataset, export a project and share it with your
-neighbour.
-
 ============================    ========
- Name                             Size 
+ **Name**                       **Size** 
 ----------------------------    --------
  LinkandShare_a                 13.3 MB
  LinkandShare_b                 13.3 MB
@@ -27,14 +19,25 @@ neighbour.
  ModelingEpilepsy                1 GB 
 ============================    ========   
 
+------------------------
 
-For your convenience, all the data were already generated. We’ll only go
-through the steps required to reproduce some simulations from the projects
-listed in Table [tab:normaltab]. You can always start over, click along and/or
-try to change parameters.
+Objectives
+----------
+
+This tutorial presents the basic steps to upload a project, and share data with
+other users and/or link data to other TVB projects.  After this tutorial you
+should be able to import a new dataset, export a project and share it with a colleague.
+
+For your convenience, all the data were already generated. You can download
+the LinkandShare_a.zip and LinkandShare_b.zip files in the `TVB sharing area
+<http://www.thevirtualbrain.org/tvb/zwei/client-area/public>`_. We’ll only go
+through the steps required to reproduce some simulations.  You can always start
+over, click along and/or try to change parameters.
+
+------------------------
 
 Importing TVB projects
-======================
+----------------------
 
 We assume that you have already created an account in your machine. If not, you
 can always work with the default account *admin*. Make sure you have
@@ -42,36 +45,39 @@ enough disk space, all the projects add up to 2 GB.
 
 #. Go to *Projects > List of all projects*.
 
-#. On the right column, bottom corner, click on Import project structure. (Fig. [fig:import])
+#. On the right column, bottom corner, click on Import project structure. 
 
 .. figure:: figures/ImportingProjects_Import.png
    :alt: Click on Import project structure
-   :scale: 40%
+   :scale: 30%
 
 3. Select one of the projects. Click on *Upload*.
 
 .. figure:: figures/ImportingProjects_ImportOverlay.png
    :alt: Click on Select files
-   :scale: 40%
+   :scale: 30%
 
 .. figure:: figures/ImportingProjects_Upload.png
    :alt: Upload.
-   :scale: 40%
+   :scale: 30%
 
 4. Be patient.
 
 .. figure:: figures/ImportingProjects_Wait.png
    :alt: Be patient, it will take a few minutes.
-   :scale: 40%
+   :scale: 30%
 
 5. You can now see the project on the *List of all projects*.
 
 .. figure:: figures/ImportingProjects_Done.png
    :alt: The imported project is on the .
-   :scale: 40%
+   :scale: 30%
+
+
+------------------------
 
 Import, link and share data
-===========================
+---------------------------
 
 In this exercise we will assume that multiple users are working with the
 same TVB installation.
@@ -82,12 +88,12 @@ same TVB installation.
 #. Change the admin email. 
 
 .. figure:: figures/LinkAndShare_ChangeAdminEmail.png
-   :scale: 50%
+   :scale: 30%
 
-3. Create a user for your someone else by registering a new user. 
+3. Create a user for someone else by registering a new user. 
 
 .. figure:: figures/LinkAndShare_AddNewUser.png
-   :scale: 50%
+   :scale: 30%
 
 4. You’ll receive a notification email.
 
@@ -95,9 +101,11 @@ same TVB installation.
 5. Make sure the new user has been validated. 
 
 .. figure:: figures/LinkAndShare_ValidateNewUser.png
-   :scale: 50%
+   :scale: 30%
 
 6. Login with the Admin account.
+
+------------------------
 
 Importing A Connectivity
 ------------------------
@@ -129,6 +137,8 @@ Importing A Connectivity
 .. figure:: figures/LinkAndShare_TagDatatype.png
    :alt: Add a personalized tag.
    :scale: 50%
+
+------------------------
 
 Link And Share
 --------------
@@ -166,6 +176,8 @@ Link And Share
 You should be able to see the connectivity matrix (and other datatypes)
 you linked from project *Session\_II\_ShareAndLink\_a*.
 
+------------------------
+
 Export and Read
 ---------------
 
@@ -173,11 +185,11 @@ Export and Read
 
 #. Click on |node_tr| from *TimeSeriesRegion - conn\_74*.
 
-#. From the overlay, Export tab, download the data in TVB format (h5).
+#. From the overlay, *Export* tab, download the data in TVB format (h5).
 
 #. Rename the file if you want (e.g. *LinkAndShare\_TimeSeriesRegion*).
 
-From an ipython shell you can follow the commands presented below. 
+From an **ipython** shell you can follow the commands presented below. 
 
 
 ::
@@ -278,30 +290,33 @@ In **R**:
    :scale: 30%
 
 
+------------------------
 
 More Documentation
 ==================
 
 Online help is available clicking on the |image| icons next to each
 entry. For more documentation on The Virtual Brain platform, please see
-Sanz_Leon_et_al, Woodman_et al
+Sanz_Leon_et_al_, Woodman_et_al_.
+
+------------------------
 
 Support
 =======
 
 The official TVB webiste is
-`www.thevirtualbrain.org <www.thevirtualbrain.org>`__. All the
+`www.thevirtualbrain.org <http://www.thevirtualbrain.org>`__. All the
 documentation and tutorials are hosted on
-`docs.the-virtual-brain.org <docs.the-virtual-brain.org>`__. You’ll
+`docs.thevirtualbrain.org <http://docs.thevirtualbrain.org>`__. You’ll
 find our public repository at https://github.com/the-virtual-brain. For
 questions and bug reports we have a users group
 https://groups.google.com/forum/#!forum/tvb-users
 
 .. |node_tr| image:: figures/nodeTimeSeriesRegion.png
-            :scale: 50%
+            :scale: 40%
 
 .. |image| image:: figures/butt_green_help.png
-           :scale: 50%
+           :scale: 40%
 
 .. [Sanz_Leon_et_al] Sanz-Leon P, Knock SA,, Woodman MM, Domide L, Mersmann J, McIntosh AR, Jirsa VK. The virtual brain: a simulator of primate brain network dynamics. Frontiers in Neuroinformatics, 7:10, 2013.
 
