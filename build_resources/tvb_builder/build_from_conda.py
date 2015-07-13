@@ -83,8 +83,8 @@ class Config:
     def win64():
         set_path = 'cd ..\\tvb_data \n' + \
                    'set PATH=%cd%;%path%; \n' + \
-                   'set PYTHONPATH=%cd%; \n' + \
-                   'set PYTHONHOME=\n'
+                   'set PYTHONPATH=%cd%;%cd%\\lib\\site-packages \n' + \
+                   'set PYTHONHOME=\n\n'
 
         commands_map = {'distribution': set_path + 'python.exe -m tvb_bin.app %1 %2 %3 %4 %5 %6\ncd ..\\bin',
                         'tvb_start': 'distribution start',
@@ -98,20 +98,21 @@ class Config:
 
     @staticmethod
     def linux64():
-        set_path = 'export PYTHONHOME= \n' + \
-                   'export PYTHONPATH=`pwd`\n'
+        set_path = 'cd ../tvb_data\n' + \
+                   'export PYTHONHOME= \n' + \
+                   'export PYTHONPATH=`pwd`:`pwd`/lib/python2.7/site-packages\n'
         for env_name in ["LD_LIBRARY_PATH", "LD_RUN_PATH"]:
             set_path += "if [ ${" + env_name + "+1} ]; then\n" + \
                         "  export " + env_name + "=`pwd`:$" + env_name + "\n" + \
                         "else\n" + \
                         "  export " + env_name + "=`pwd`\n" + \
-                        "fi"
+                        "fi\n"
 
-        commands_map = {'distribution.sh': set_path + '../tvb_data/bin/python -m tvb_bin.app $@',
+        commands_map = {'distribution.sh': set_path + './bin/python -m tvb_bin.app $@',
                         'tvb_start.sh': 'bash ./distribution.sh start',
                         'tvb_clean.sh': 'bash ./distribution.sh clean',
                         'tvb_stop.sh': 'bash ./distribution.sh stop',
-                        'contributor_setup.sh': set_path + '../tvb_data/bin/python tvb_bin.git_setup $1 $2'}
+                        'contributor_setup.sh': set_path + './bin/python tvb_bin.git_setup $1 $2'}
 
         return Config("Linux", "/root/anaconda/envs/tvb-run", os.path.join("lib", "python2.7", "site-packages"),
                       commands_map, _create_unix_command)
@@ -227,7 +228,7 @@ def _modify_pth(pth_name):
     Replace tvb links with paths
     """
     tvb_markers = ["tvb_root", "tvb-root", "framework_tvb", "scientific_library", "third_party_licenses", "tvb_data",
-                   "Hudson"]
+                   "Hudson", "hudson"]
     tvb_replacement = "./tvb\n./tvb_bin\n./tvb_data\n"
     _log(1, "Modifying PTH " + pth_name)
     new_content = ""
