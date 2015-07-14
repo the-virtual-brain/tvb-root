@@ -558,8 +558,7 @@ class ABCAdapter(object):
                 for option in entry[ABCAdapter.KEY_OPTIONS]:
                     #Only go recursive on option that was submitted
                     if option[self.KEY_VALUE] == kwargs[entry[self.KEY_NAME]] and ABCAdapter.KEY_ATTRIBUTES in option:
-                        # todo: possible bug: we always assign None here
-                        option[ABCAdapter.KEY_ATTRIBUTES] = self._append_required_defaults(kwargs, option[self.KEY_ATTRIBUTES])
+                        self._append_required_defaults(kwargs, option[self.KEY_ATTRIBUTES])
 
 
     def convert_ui_inputs(self, kwargs, validation_required=True):

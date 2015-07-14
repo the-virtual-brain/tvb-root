@@ -39,7 +39,8 @@ from sqlalchemy.sql import text
 from tvb.basic.logger.builder import get_logger
 from tvb.basic.traits.types_basic import MapAsJson
 from tvb.core.entities import model
-from tvb.core.entities.storage import SA_SESSIONMAKER, dao
+from tvb.core.entities.storage import SA_SESSIONMAKER, dao, transactional
+from tvb.core.entities.file.files_helper import FilesHelper
 from tvb.core.utils import parse_json_parameters
 from tvb.datatypes.region_mapping import RegionMapping
 
@@ -52,7 +53,7 @@ def update():
     """
     Try to port fProjection Matrices from old form into the new one
     """
-    LOGGER.info("Start 7300 code update ...")
+    LOGGER.info("Start 7350 code update ...")
 
     _adapt_simulation_monitor_params()
 
@@ -60,6 +61,7 @@ def update():
 
 
 
+@transactional
 def _adapt_simulation_monitor_params():
     """
     For previous simulation with EEG monitor, adjust the change of input parameters.
@@ -75,6 +77,8 @@ def _adapt_simulation_monitor_params():
     try:
         all_eeg_ops = session.query(model.Operation).filter(
             model.Operation.parameters.ilike('%"' + param_eeg_proj_old + '"%')).all()
+        files_helper = FilesHelper()
+        all_bursts = dict()
 
         for eeg_op in all_eeg_ops:
             try:
@@ -87,7 +91,7 @@ def _adapt_simulation_monitor_params():
                 dt = dao.get_generic_entity(model.DataType, old_projection_guid, "gid")[0]
 
                 if dt.type == 'ProjectionSurfaceEEG':
-                    LOGGER.debug("Previous Prj is surfac: " + old_projection_guid)
+                    LOGGER.debug("Previous Prj is surface: " + old_projection_guid)
                     new_projection_guid = old_projection_guid
                 else:
                     new_projection_guid = session.execute(text("""SELECT DT.gid
@@ -109,14 +113,26 @@ def _adapt_simulation_monitor_params():
 
                 eeg_op.parameters = json.dumps(op_params, cls=MapAsJson.MapAsJsonEncoder)
                 LOGGER.debug("New params:" + eeg_op.parameters)
+                files_helper.write_operation_metadata(eeg_op)
+
+                burst = dao.get_burst_for_operation_id(eeg_op.id)
+                if burst is not None:
+                    LOGGER.debug("Updating burst:" + str(burst))
+                    burst.prepare_after_load()
+                    del burst.simulator_configuration[param_eeg_proj_old]
+                    burst.simulator_configuration[param_eeg_proj_new] = {'value': str(new_projection_guid)}
+                    burst.simulator_configuration[param_eeg_sensors] = {'value': str(sensors_guid)}
+                    burst.simulator_configuration[param_eeg_rm] = {'value': str(rm.gid)}
+                    burst.prepare_before_save()
+                    if not all_bursts.has_key(burst.id):
+                        all_bursts[burst.id] = burst
 
             except Exception:
                 LOGGER.exception("Could not process " + str(eeg_op))
 
         session.add_all(all_eeg_ops)
+        session.add_all(all_bursts.values())
         session.commit()
-
-        # TODO: update Burst configuration and operation.xml also.
 
     except Exception:
         LOGGER.exception("Could not update Simulation Params")
