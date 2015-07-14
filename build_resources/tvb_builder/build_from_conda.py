@@ -81,8 +81,8 @@ class Config:
                         'bin/tvb_start.command': 'source ./distribution.command start',
                         'bin/tvb_clean.command': 'source ./distribution.command clean',
                         'bin/tvb_stop.command': 'source ./distribution.command stop',
-                        'bin/ipython_notebook.sh': '../tvb_data/bin/ipython notebook ../demo_scripts',
-                        'demo_scripts/ipython_notebook.sh': '../tvb_data/bin/ipython notebook',
+                        'bin/ipython_notebook.sh': '../tvb_data/bin/python -m tvb_bin.run_ipython notebook ../demo_scripts',
+                        'demo_scripts/ipython_notebook.sh': '../tvb_data/bin/python -m tvb_bin.run_ipython notebook',
                         'bin/contributor_setup.command': '../tvb_data/bin/python tvb_bin.git_setup $1 $2'}
 
         return Config("MacOS", "/anaconda/envs/tvb-run3", os.path.join("lib", "python2.7", "site-packages"),
@@ -126,9 +126,9 @@ class Config:
                         'bin/tvb_start.sh': 'bash ./distribution.sh start',
                         'bin/tvb_clean.sh': 'bash ./distribution.sh clean',
                         'bin/tvb_stop.sh': 'bash ./distribution.sh stop',
-                        'bin/ipython_notebook.sh': set_path + 'cd ../bin\n../tvb_data/bin/ipython notebook ../demo_scripts',
-                        'demo_scripts/ipython_notebook.sh': set_path + 'cd ../demo_scripts\n../tvb_data/bin/ipython notebook',
-                        'bin/contributor_setup.sh': set_path + './bin/python tvb_bin.git_setup $1 $2\ncd ../bin'}
+                        'bin/ipython_notebook.sh': set_path + 'cd ../bin\n../tvb_data/bin/python -m tvb_bin.run_ipython notebook ../demo_scripts',
+                        'demo_scripts/ipython_notebook.sh': set_path + 'cd ../demo_scripts\n../tvb_data/bin/python -m tvb_bin.run_ipython notebook',
+                        'bin/contributor_setup.sh': set_path + './bin/python -m tvb_bin.git_setup $1 $2\ncd ../bin'}
 
         return Config("Linux", "/root/anaconda/envs/tvb-run", os.path.join("lib", "python2.7", "site-packages"),
                       commands_map, _create_unix_command)
