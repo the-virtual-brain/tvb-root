@@ -62,7 +62,7 @@ def _create_command_file(command_file_name, command, before_message, done_messag
 
 #--------------------------- PY2APP specific configurations--------------------------------------------
 
-PY2APP_PACKAGES = ['cherrypy', 'email', 'h5py', 'idlelib', 'migrate', 'minixsv',
+PY2APP_PACKAGES = ['cherrypy', 'email', 'h5py', 'idlelib', 'IPython', 'migrate', 'minixsv',
                    'numpy', 'scipy', 'sklearn', 'tables', 'tvb']
 
 PY2APP_INCLUDES = ['apscheduler', 'apscheduler.scheduler', 'cfflib', 'cmath', 'contextlib', 'formencode',
