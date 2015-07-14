@@ -113,7 +113,7 @@ class Config:
         set_path = 'cd ../tvb_data\n' + \
                    'export PATH=`pwd`/bin:$path\n' + \
                    'export PYTHONPATH=`pwd`/lib/python2.7:`pwd`/lib/python2.7/site-packages\n' + \
-                   'export PYTHONHOME= \n\n'
+                   'unset PYTHONHOME\n\n'
 
         for env_name in ["LD_LIBRARY_PATH", "LD_RUN_PATH"]:
             set_path += "if [ ${" + env_name + "+1} ]; then\n" + \
