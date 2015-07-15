@@ -35,17 +35,21 @@
 
 import os
 import unittest
+import tvb_data.sensors
+import tvb_data.surfaceData
 import tvb_data.projectionMatrix as dataset
+from tvb.adapters.uploaders.sensors_importer import Sensors_Importer
 from tvb.tests.framework.core.base_testcase import TransactionalTestCase
 from tvb.tests.framework.core.test_factory import TestFactory
 from tvb.core.entities.storage import dao
 from tvb.core.adapters.abcadapter import ABCAdapter
 from tvb.core.services.flow_service import FlowService
+from tvb.core.services.exceptions import OperationException
 from tvb.core.entities.file.files_helper import FilesHelper
 from tvb.core.entities.transient.structure_entities import DataTypeMetaData
 from tvb.datatypes.projections import ProjectionSurfaceEEG
 from tvb.datatypes.sensors import SensorsEEG
-from tvb.datatypes.surfaces import CorticalSurface
+from tvb.datatypes.surfaces import CorticalSurface, CORTICAL
 
 
 class ProjectionMatrixTest(TransactionalTestCase):
@@ -58,7 +62,13 @@ class ProjectionMatrixTest(TransactionalTestCase):
         Reset the database before each test.
         """
         self.test_user = TestFactory.create_user("UserPM")
-        self.test_project = TestFactory.import_default_project(self.test_user)
+        self.test_project = TestFactory.create_project(self.test_user)
+
+        zip_path = os.path.join(os.path.dirname(tvb_data.sensors.__file__), 'eeg-brainstorm-65.txt')
+        TestFactory.import_sensors(self.test_user, self.test_project, zip_path, Sensors_Importer.EEG_SENSORS)
+
+        zip_path = os.path.join(os.path.dirname(tvb_data.surfaceData.__file__), 'cortex_16384.zip')
+        TestFactory.import_surface_zip(self.test_user, self.test_project, zip_path, CORTICAL, True)
 
         self.surface = TestFactory.get_entity(self.test_project, CorticalSurface())
         self.assertTrue(self.surface is not None)
@@ -72,7 +82,30 @@ class ProjectionMatrixTest(TransactionalTestCase):
         """
         FilesHelper().remove_project_structure(self.test_project.name)
 
-        
+
+    def test_wrong_shape(self):
+        """
+        Verifies that importing a different shape throws exception
+        """
+        dt_count_before = TestFactory.get_entity_count(self.test_project, ProjectionSurfaceEEG())
+        group = dao.find_group('tvb.adapters.uploaders.projection_matrix_importer',
+                               'ProjectionMatrixSurfaceEEGImporter')
+        importer = ABCAdapter.build_adapter(group)
+
+        file_path = os.path.join(os.path.abspath(os.path.dirname(dataset.__file__)), 'surface_reg_13_eeg_62.mat')
+        args = {'projection_file': file_path,
+                'dataset_name': 'ProjectionMatrix',
+                'sensors': self.sensors.gid,
+                'surface': self.surface.gid,
+                DataTypeMetaData.KEY_SUBJECT: DataTypeMetaData.DEFAULT_SUBJECT}
+
+        try:
+            FlowService().fire_operation(importer, self.test_user, self.test_project.id, **args)
+            self.fail("This was expected not to run! 62 rows in proj matrix, but 65 sensors")
+        except OperationException:
+            pass
+
+
     def test_happy_flow_surface_import(self):
         """
         Verifies the happy flow for importing a surface.
@@ -82,7 +115,7 @@ class ProjectionMatrixTest(TransactionalTestCase):
                                'ProjectionMatrixSurfaceEEGImporter')
         importer = ABCAdapter.build_adapter(group)
 
-        file_path = os.path.join(os.path.abspath(os.path.dirname(dataset.__file__)), 'surface_reg_13_eeg_62.mat')
+        file_path = os.path.join(os.path.abspath(os.path.dirname(dataset.__file__)), 'projection_EEG_surface.npy')
         args = {'projection_file': file_path,
                 'dataset_name': 'ProjectionMatrix',
                 'sensors': self.sensors.gid,

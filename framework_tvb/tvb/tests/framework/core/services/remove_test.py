@@ -154,7 +154,7 @@ class RemoveTest(TransactionalTestCase):
         self._remove_entity(RegionMapping, 1)
         ### Remove Surfaces
         # SqlAlchemy has no uniform way to retrieve Surface as base (wild-character for polymorphic_identity)
-        self._remove_entity(SurfaceData, 4)
+        self._remove_entity(SurfaceData, 6)
         ### Remove a Connectivity
         self._remove_entity(Connectivity, 1)
 
