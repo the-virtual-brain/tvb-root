@@ -120,9 +120,11 @@ examples.
 .. _Monitoring With Transformations: http://nbviewer.ipython.org/url/docs.thevirtualbrain.org/demos/monitoring_with_transformations.ipynb
 .. _Connectivity Normalisation Modes: http://nbviewer.ipython.org/url/docs.thevirtualbrain.org/demos/connectivity_normalisation_modes.ipynb
 .. _Generate Surrogate Connectivity: http://nbviewer.ipython.org/url/docs.thevirtualbrain.org/demos/generate_surrogate_connectivity.ipynb
-.. _SEEG Region Determinstic: http://nbviewer.ipython.org/url/docs.thevirtualbrain.org/demos/seeg_region_deterministic.ipynb
+.. _SEEG Region Deterministic: http://nbviewer.ipython.org/url/docs.thevirtualbrain.org/demos/seeg_region_deterministic.ipynb
 .. _Region Stochastic ReducedWongWang: http://nbviewer.ipython.org/url/docs.thevirtualbrain.org/demos/region_stoachastic_reducedWongWang.ipynb
 .. _Region Stochastic Jansen: http://nbviewer.ipython.org/url/docs.thevirtualbrain.org/demos/region_stochastic_jansen.ipynb
+.. _Surface Deterministic Custom Local Connectivity: http://nbviewer.ipython.org/url/docs.thevirtualbrain.org/demos/surface_deterministic_custom_local_connectivity.ipynb
+.. _Surface Deterministic Surface Stimulus: http://nbviewer.ipython.org/url/docs.thevirtualbrain.org/demos/surface_deterministic_surface_stimulus.ipynb
 
 
 
@@ -197,7 +199,7 @@ Simulation
       `Region Stimuli`_
 
 
-.. figure:: /manuals/UserGuide/screenshots/demo_surf_stimuli.png
+.. figure:: figures/surface_stimuli.png
       :width: 200px
       :figclass: demo-figure
       :target: `Surface Stimuli`_
@@ -269,12 +271,12 @@ Simulation
       `SEEG Region Deterministic`_
 
 
-.. figure:: figures/region_stochastic_reducedwongwang.png
+.. figure:: figures/region_stochastic_reducedWongWang.png
       :width: 200px
       :figclass: demo-figure
       :target: `Region Stochastic ReducedWongWang`_
 
-      `Region Stochastic ReduceWongWang`_
+      `Region Stochastic ReducedWongWang`_
 
 
 .. figure:: figures/region_stochastic_jansen.png
@@ -283,6 +285,22 @@ Simulation
       :target: `Region Stochastic Jansen`_
 
       `Region Stochastic Jansen`_
+
+
+.. figure:: figures/surface_deterministic_custom_local_connectivity.png
+      :width: 200px
+      :figclass: demo-figure
+      :target: `Surface Deterministic Custom Local Connectivity`_
+
+      `Surface Deterministic Custom Local Connectivity`_
+
+
+.. figure:: figures/surface_deterministic_surface_stimulus.png
+      :width: 200px
+      :figclass: demo-figure
+      :target: `Surface Deterministic Surface Stimulus`_
+
+      `Surface Deterministic Surface Stimulus`_
 
 
 
