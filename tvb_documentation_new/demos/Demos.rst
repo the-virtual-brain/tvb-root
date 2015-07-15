@@ -118,8 +118,17 @@ examples.
 .. _Getting To Know Your Mesh Surface: http://nbviewer.ipython.org/url/docs.thevirtualbrain.org/demos/getting_to_know_your_surface_mesh.ipynb
 .. _Using Your Own Connectivity: http://nbviewer.ipython.org/url/docs.thevirtualbrain.org/demos/using_your_own_connectivity.ipynb
 .. _Monitoring With Transformations: http://nbviewer.ipython.org/url/docs.thevirtualbrain.org/demos/monitoring_with_transformations.ipynb
-.. _Using The Correlation_coefficient Analyzer To Compute Functional Connectivity: http://nbviewer.ipython.org/url/docs.thevirtualbrain.org/demos/corrcoeff_analyse_view_region.ipynb
+.. _Connectivity Normalisation Modes: http://nbviewer.ipython.org/url/docs.thevirtualbrain.org/demos/connectivity_normalisation_modes.ipynb
+.. _Generate Surrogate Connectivity: http://nbviewer.ipython.org/url/docs.thevirtualbrain.org/demos/generate_surrogate_connectivity.ipynb
+.. _SEEG Region Determinstic: http://nbviewer.ipython.org/url/docs.thevirtualbrain.org/demos/seeg_region_deterministic.ipynb
+.. _Region Stochastic ReducedWongWang: http://nbviewer.ipython.org/url/docs.thevirtualbrain.org/demos/region_stoachastic_reducedWongWang.ipynb
+.. _Region Stochastic Jansen: http://nbviewer.ipython.org/url/docs.thevirtualbrain.org/demos/region_stochastic_jansen.ipynb
+
+
+
+.. _Correlation_coefficient Analyzer: http://nbviewer.ipython.org/url/docs.thevirtualbrain.org/demos/corrcoeff_analyse_view_region.ipynb
 .. _PCA Analysis: http://nbviewer.ipython.org/url/docs.thevirtualbrain.org/demos/pca_analyse_view_region.ipynb
+
 .. _Display Sensors Location: http://nbviewer.ipython.org/url/docs.thevirtualbrain.org/demos/display_sensors_location.ipynb
 .. _Display Subject Dataset: http://nbviewer.ipython.org/url/docs.thevirtualbrain.org/demos/display_subject_dataset.ipynb
 .. _Display Surface Local Connectivity: http://nbviewer.ipython.org/url/docs.thevirtualbrain.org/demos/display_surface_local_connectivity.ipynb
@@ -227,6 +236,7 @@ Simulation
 
       `Using Your Own Connectivity`_
 
+
 .. figure:: figures/monitoring_with_transformations.png
       :width: 200px
       :figclass: demo-figure
@@ -235,22 +245,63 @@ Simulation
       `Monitoring With Transformations`_
 
 
+.. figure:: figures/connectivity_normalisation_modes.png
+      :width: 200px
+      :figclass: demo-figure
+      :target: `Connectivity Normalisation Modes`_
+
+      `Connectivity Normalisation Modes`_
+
+
+.. figure:: figures/generate_surrogate_connectivity.png
+      :width: 200px
+      :figclass: demo-figure
+      :target: `Generate Surrogate Connectivity`_
+
+      `Generate Surrogate Connectivity`_
+
+
+.. figure:: figures/seeg_region_deterministic.png
+      :width: 200px
+      :figclass: demo-figure
+      :target: `SEEG Region Deterministic`_
+
+      `SEEG Region Deterministic`_
+
+
+.. figure:: figures/region_stochastic_reducedwongwang.png
+      :width: 200px
+      :figclass: demo-figure
+      :target: `Region Stochastic ReducedWongWang`_
+
+      `Region Stochastic ReduceWongWang`_
+
+
+.. figure:: figures/region_stochastic_jansen.png
+      :width: 200px
+      :figclass: demo-figure
+      :target: `Region Stochastic Jansen`_
+
+      `Region Stochastic Jansen`_
+
+
+
 Analyzers
 ---------
 
 .. figure:: figures/corrcoeff_analyse_view_region.png
       :width: 200px
       :figclass: demo-figure
-      :target: `Using The Correlation_coefficient Analyzer To Compute Functional Connectivity`_
+      :target: `Correlation_coefficient Analyzer`_
 
-      `Using The Correlation_coefficient Analyzer To Compute Functional Connectivity`_
+      `Correlation_coefficient Analyzer`_
 
 .. figure:: figures/pca_analyse_view_region.png
       :width: 200px
       :figclass: demo-figure
       :target: `PCA Analysis`_
 
-      `PCA Analysis`_
+      `PCA Analysis`
 
 
 
