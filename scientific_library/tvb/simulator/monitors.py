@@ -706,18 +706,21 @@ class Projection(Monitor):
             return ProjectionMatrix
 
     @classmethod
-    def from_file(cls, sensors_fname, projection_fname, period=1e3/1024.0, **kwds):
+    def from_file(cls, sensors_fname, projection_fname, period=1e3/1024.0, instance=None, **kwds):
         """
         Build Projection-based monitor from sensors and projection files, and
         any extra keyword arguments are passed to the monitor class constructor.
 
         """
+        if instance is None:
+            result = cls(**kwds)
+        else:
+            result = instance
 
-        return cls(
-            sensors=type(cls.sensors).from_file(sensors_fname),
-            projection=cls._projection_class().from_file(projection_fname),
-            **kwds
-        )
+        result.sensors = type(cls.sensors).from_file(sensors_fname)
+        result.projection = cls._projection_class().from_file(projection_fname)
+
+        return result
 
     def analytic(self, loc, ori):
         "Construct analytic or default set of spatial filters for simulation."
