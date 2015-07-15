@@ -183,13 +183,14 @@ for entry in EXCLUDED_DYNAMIC_LIBS:
         os.remove(path)
 
 DESTINATION_SOURCES = os.path.join("tvb.app", "Contents", "Resources", "lib", "python2.7")
+
+_copy_collapsed({os.path.join("tvb_documentation_new", "demos"): os.path.join(DIST_FOLDER, "demo_scripts"),
+                 os.path.join("tvb_documentation_new", "tutorials"): os.path.join(DIST_FOLDER, "demo_scripts"),
+                 IPython.__path__[0]: os.path.join(DIST_FOLDER, DESTINATION_SOURCES, "IPython")})
+
 PyInstallerPacker.add_sitecustomize(DIST_FOLDER, DESTINATION_SOURCES)
 PyInstallerPacker.add_tvb_bin_folder(DIST_FOLDER, DESTINATION_SOURCES)
 PyInstallerPacker.generate_final_zip("TVB_MacOS", DESTINATION_SOURCES)
-
-_copy_collapsed({os.path.join("tvb_documentation_new", "demos"): "demo_scripts",
-                 os.path.join("tvb_documentation_new", "tutorials"): "demo_scripts",
-                 IPython.__path__[0]: os.path.join(DESTINATION_SOURCES, "IPython")})
 
 ## Clean after install      
 shutil.rmtree(os.path.join(FW_FOLDER, 'tvb.egg-info'), True)    
