@@ -70,8 +70,7 @@ class TimeSeriesEEGScientific(time_series_data.TimeSeriesEEGData, TimeSeriesScie
         Gather scientifically interesting summary information from an instance of this datatype.
         """
         summary = super(TimeSeriesEEGScientific, self)._find_summary_info()
-        summary.update({"Source Sensors": self.sensors.display_name,
-                        "Source Sensors GID": self.sensors.gid})
+        summary.update({"Source Sensors": self.sensors.display_name})
         return summary
 
 
@@ -86,8 +85,7 @@ class TimeSeriesMEGScientific(time_series_data.TimeSeriesMEGData, TimeSeriesScie
         Gather scientifically interesting summary information from an instance of this datatype.
         """
         summary = super(TimeSeriesMEGScientific, self)._find_summary_info()
-        summary.update({"Source Sensors": self.sensors.display_name,
-                        "Source Sensors GID": self.sensors.gid})
+        summary.update({"Source Sensors": self.sensors.display_name})
         return summary
 
 
@@ -102,8 +100,7 @@ class TimeSeriesSEEGScientific(time_series_data.TimeSeriesSEEGData, TimeSeriesSc
         Gather scientifically interesting summary information from an instance of this datatype.
         """
         summary = super(TimeSeriesSEEGScientific, self)._find_summary_info()
-        summary.update({"Source Sensors": self.sensors.display_name,
-                        "Source Sensors GID": self.sensors.gid})
+        summary.update({"Source Sensors": self.sensors.display_name})
         return summary
 
 
@@ -119,9 +116,8 @@ class TimeSeriesRegionScientific(time_series_data.TimeSeriesRegionData, TimeSeri
         """
         summary = super(TimeSeriesRegionScientific, self)._find_summary_info()
         summary.update({"Source Connectivity": self.connectivity.display_name,
-                        "Source Connectivity GID": self.connectivity.gid,
-                        "Region Mapping GID": self.region_mapping.gid if self.region_mapping else "None",
-                        "Region Mapping Volume GID": (self.region_mapping_volume.gid
+                        "Region Mapping": self.region_mapping.display_name if self.region_mapping else "None",
+                        "Region Mapping Volume": (self.region_mapping_volume.display_name
                                                       if self.region_mapping_volume else "None")})
         return summary
 
@@ -137,8 +133,7 @@ class TimeSeriesSurfaceScientific(time_series_data.TimeSeriesSurfaceData, TimeSe
         Gather scientifically interesting summary information from an instance of this datatype.
         """
         summary = super(TimeSeriesSurfaceScientific, self)._find_summary_info()
-        summary.update({"Source Surface": self.surface.display_name,
-                        "Source Surface GID": self.surface.gid})
+        summary.update({"Source Surface": self.surface.display_name})
         return summary
 
 
@@ -153,7 +148,6 @@ class TimeSeriesVolumeScientific(time_series_data.TimeSeriesVolumeData, TimeSeri
         Gather scientifically interesting summary information from an instance of this datatype.
         """
         summary = super(TimeSeriesVolumeScientific, self)._find_summary_info()
-        summary.update({"Source Volume": self.volume.display_name,
-                        "Source Volume GID": self.volume.gid})
+        summary.update({"Source Volume": self.volume.display_name})
         return summary
 
