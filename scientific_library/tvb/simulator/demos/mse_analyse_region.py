@@ -112,13 +112,11 @@ TCi --> inferior temporal cortex
 
 """
 
-from scipy import io
 from tvb.simulator.lab import *
-import os
-import tvb_data
 import matplotlib.gridspec as gridspec
-import tvb.datatypes.projections as projections
-
+from tvb.datatypes.projections import ProjectionSurfaceEEG
+from tvb.datatypes.sensors import SensorsEEG
+from tvb.datatypes.region_mapping import RegionMapping
 
 # lV1, lV2,
 nodes = [35, 36]
@@ -144,13 +142,10 @@ def configure_simulation(stimulate):
     """
     # eeg projection matrix from regions to sensors
     LOG.info("Reading sensors info")
-    root_path = os.path.dirname(tvb_data.__file__)
-    proj_mat_path = os.path.join(root_path, 'projectionMatrix', "surface_reg_13_eeg_62.mat")
-    matlab_data = io.matlab.loadmat(proj_mat_path)
-    eeg_projection = matlab_data["ProjectionMatrix"]
 
-    pr = projections.ProjectionSurfaceEEG()
-    pr.projection_data = eeg_projection
+    pr = ProjectionSurfaceEEG(load_default=True)
+    sensors = SensorsEEG.from_file(source_file="eeg-brainstorm-65.txt")
+    rm = RegionMapping(load_default=True)
 
     #Initialise a Model, Connectivity, Coupling, set speed.
     oscilator = models.Generic2dOscillator(a=-0.5, b=-10., c=0.0, d=0.02)
@@ -165,7 +160,7 @@ def configure_simulation(stimulate):
 
     # Recording techniques
     what_to_watch = (monitors.TemporalAverage(period=1e3 / 4096.),
-                     monitors.EEG(projection=pr, period=1e3 / 4096.))
+                     monitors.EEG(projection=pr, sensors=sensors, region_mapping=rm, period=1e3 / 4096.))
     # Stimulation paradigm
     if stimulate:
         stimulus = build_stimulus(white_matter)
