@@ -121,6 +121,7 @@ examples.
 .. _Connectivity Normalisation Modes: http://nbviewer.ipython.org/url/docs.thevirtualbrain.org/demos/connectivity_normalisation_modes.ipynb
 .. _Generate Surrogate Connectivity: http://nbviewer.ipython.org/url/docs.thevirtualbrain.org/demos/generate_surrogate_connectivity.ipynb
 .. _SEEG Region Deterministic: http://nbviewer.ipython.org/url/docs.thevirtualbrain.org/demos/seeg_region_deterministic.ipynb
+.. _SEEG Surface Deterministic: http://nbviewer.ipython.org/url/docs.thevirtualbrain.org/demos/seeg_surface_deterministic.ipynb
 .. _Region Stochastic ReducedWongWang: http://nbviewer.ipython.org/url/docs.thevirtualbrain.org/demos/region_stoachastic_reducedWongWang.ipynb
 .. _Region Stochastic Jansen: http://nbviewer.ipython.org/url/docs.thevirtualbrain.org/demos/region_stochastic_jansen.ipynb
 .. _Surface Deterministic Custom Local Connectivity: http://nbviewer.ipython.org/url/docs.thevirtualbrain.org/demos/surface_deterministic_custom_local_connectivity.ipynb
@@ -271,6 +272,14 @@ Simulation
       `SEEG Region Deterministic`_
 
 
+.. figure:: figures/seeg_surface_deterministic.png
+      :width: 200px
+      :figclass: demo-figure
+      :target: `SEEG Surface Deterministic`_
+
+      `SEEG Surface Deterministic`_
+
+
 .. figure:: figures/region_stochastic_reducedWongWang.png
       :width: 200px
       :figclass: demo-figure
@@ -319,7 +328,7 @@ Analyzers
       :figclass: demo-figure
       :target: `PCA Analysis`_
 
-      `PCA Analysis`
+      `PCA Analysis`_
 
 
 
