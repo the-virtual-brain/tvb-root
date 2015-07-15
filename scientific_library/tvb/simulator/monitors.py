@@ -706,7 +706,7 @@ class Projection(Monitor):
             return ProjectionMatrix
 
     @classmethod
-    def from_files(cls, sensors_fname, projection_fname, period=1e3/1024.0, **kwds):
+    def from_file(cls, sensors_fname, projection_fname, period=1e3/1024.0, **kwds):
         """
         Build Projection-based monitor from sensors and projection files, and
         any extra keyword arguments are passed to the monitor class constructor.
@@ -863,8 +863,8 @@ class EEG(Projection):
 
 
     @classmethod
-    def from_files(cls, sensors_fname='eeg-brainstorm-65.txt', projection_fname='projection_EEG_surface.npy', **kwargs):
-        return Projection.from_files.im_func(cls, sensors_fname, projection_fname, **kwargs)
+    def from_file(cls, sensors_fname='eeg-brainstorm-65.txt', projection_fname='projection_EEG_surface.npy', **kwargs):
+        return Projection.from_file.im_func(cls, sensors_fname, projection_fname, **kwargs)
 
     def config_for_sim(self, simulator):
         super(EEG, self).config_for_sim(simulator)
@@ -930,9 +930,9 @@ class MEG(Projection):
 
 
     @classmethod
-    def from_files(cls, sensors_fname='meg-brainstorm-276.txt',
+    def from_file(cls, sensors_fname='meg-brainstorm-276.txt',
                    projection_fname='projection_MEG_surface.npy', **kwargs):
-        return Projection.from_files.im_func(cls, sensors_fname, projection_fname, **kwargs)
+        return Projection.from_file.im_func(cls, sensors_fname, projection_fname, **kwargs)
 
     def analytic(self, loc, ori):
         """Compute single sphere analytic form of MEG lead field.
@@ -994,9 +994,9 @@ class iEEG(Projection):
 
 
     @classmethod
-    def from_files(cls, sensors_fname='seeg-brainstorm-960.txt',
+    def from_file(cls, sensors_fname='seeg-brainstorm-960.txt',
                    projection_fname='projection_SEEG_surface.npy', **kwargs):
-        return Projection.from_files.im_func(cls, sensors_fname, projection_fname, **kwargs)
+        return Projection.from_file.im_func(cls, sensors_fname, projection_fname, **kwargs)
 
     def analytic(self, loc, ori):
         """Compute the projection matrix -- simple distance weight for now.
