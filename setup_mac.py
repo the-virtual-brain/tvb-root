@@ -76,7 +76,7 @@ def _copy_collapsed(to_copy):
                 shutil.copy(src, dest)
 
             if os.path.isdir(src) and not sub_folder.startswith('.') and not os.path.exists(dest):
-                ignore_patters = shutil.ignore_patterns('.svn')
+                ignore_patters = shutil.ignore_patterns('.svn', '*.rst')
                 shutil.copytree(src, dest, ignore=ignore_patters)
 
 #--------------------------- PY2APP specific configurations--------------------------------------------
@@ -92,7 +92,7 @@ PY2APP_INCLUDES = ['apscheduler', 'apscheduler.scheduler', 'cfflib', 'cmath', 'c
                    'simplejson', 'StringIO', 'xml.dom', 'xml.dom.minidom', 'zlib', 'zmq']
 
 PY2APP_EXCLUDES = ['_markerlib', 'coverage', 'cython', 'Cython', 'tvb_data', 'docutils', 'lib2to3',
-                   'nose', 'opengl', 'PyOpenGL', 'PyQt4', 'sphinx', 'wx']
+                   'nose', 'OpenGL', 'PyOpenGL', 'PyQt4', 'sphinx', 'wx']
 
 PY2APP_OPTIONS = {'iconfile': 'build_resources/icon.icns',
                   'plist': 'build_resources/info.plist',
