@@ -18,15 +18,15 @@ Simulation
 
 
 .. figure:: /manuals/UserGuide/screenshots/simulator_phase_plane_interactive.jpg
-      :height: 200px
+      :width: 200px
       :figclass: demo-figure
       :target: ../manuals/UserGuide/UserGuide-UI_Simulator.html#phase-plane
 
-      :ref:`Get familiar with the behaviour of a model by exploring it's phase space. <phase_plane>`
+      :ref:`Exploring a Model phase space. <phase_plane>`
 
 
 .. figure:: /manuals/UserGuide/screenshots/simulator.jpg
-      :height: 200px
+      :width: 200px
       :figclass: demo-figure
       :target: ../manuals/UserGuide/UserGuide-UI_Simulator.html#simulator-ui
 
@@ -47,7 +47,7 @@ Data Management
       :figclass: demo-figure
       :target: ../manuals/UserGuide/UserGuide-UI_Project.html#operations-ui
 
-      :ref:`The operations that were executed in the project <operations_ui>`
+      :ref:`Operations executed in the project <operations_ui>`
 
 Visualizers
 -----------
@@ -95,7 +95,7 @@ Visualizers
 
       :ref:`connectivity_matrix_ui`
 
-Scripting Tutorials
+Scripting Demos 
 ===================
 
 These tutorials are written as IPython Notebooks and they use the scripting interface of TVB.
@@ -105,21 +105,34 @@ The first set of "basic" tutorials are listed roughly in the order they should b
 and cover the basic functionality of TVB's simulator package using very simple
 examples.
 
-.. _Anatomy Of A Region Simulation: http://nbviewer.ipython.org/url/docs.thevirtualbrain.org/demos/Tutorial_Anatomy_Of_A_Region_Simulation.ipynb
-.. _Anatomy Of A Surface Simulation: http://nbviewer.ipython.org/url/docs.thevirtualbrain.org/demos/Tutorial_Anatomy_Of_A_Surface_Simulation.ipynb
-.. _Exploring A Model: http://nbviewer.ipython.org/url/docs.thevirtualbrain.org/demos/Tutorial_Exploring_A_Model.ipynb
-.. _Exploring A Model Reduced Wong Wang: http://nbviewer.ipython.org/url/docs.thevirtualbrain.org/demos/Tutorial_Exploring_A_Model_ReducedWongWang.ipynb
-.. _Exploring The Bold Monitor: http://nbviewer.ipython.org/url/docs.thevirtualbrain.org/demos/Tutorial_Exploring_The_Bold_Monitor.ipynb
-.. _Looking At Longer TimeSeries: http://nbviewer.ipython.org/url/docs.thevirtualbrain.org/demos/Tutorial_Looking_At_Longer_TimeSeries.ipynb
-.. _Region Stimuli: http://nbviewer.ipython.org/url/docs.thevirtualbrain.org/demos/Tutorial_Region_Stimuli.ipynb
-.. _Surface Stimuli: http://nbviewer.ipython.org/url/docs.thevirtualbrain.org/demos/Tutorial_Surface_Stimuli.ipynb
-.. _Smooth Parameter Variations: http://nbviewer.ipython.org/url/docs.thevirtualbrain.org/demos/Tutorial_Smooth_Parameter_Variation.ipynb
-.. _Stochastic Simulations: http://nbviewer.ipython.org/url/docs.thevirtualbrain.org/demos/Tutorial_Stochastic_Simulation.ipynb
-.. _Getting To Know Your Mesh Surface: http://nbviewer.ipython.org/url/docs.thevirtualbrain.org/demos/Tutorial_Getting_To_Know_Your_Surface_Mesh.ipynb
-.. _Using Your Own Connectivity: http://nbviewer.ipython.org/url/docs.thevirtualbrain.org/demos/Tutorial_Using_Your_Own_Connectivity.ipynb
+.. _Anatomy Of A Region Simulation: http://nbviewer.ipython.org/url/docs.thevirtualbrain.org/demos/anatomy_of_a_region_simulation.ipynb
+.. _Anatomy Of A Surface Simulation: http://nbviewer.ipython.org/url/docs.thevirtualbrain.org/demos/anatomy_of_a_surface_simulation.ipynb
+.. _Exploring A Model: http://nbviewer.ipython.org/url/docs.thevirtualbrain.org/demos/exploring_a_model.ipynb
+.. _Exploring A Model Reduced Wong Wang: http://nbviewer.ipython.org/url/docs.thevirtualbrain.org/demos/exploring_a_model_reducedWongWang.ipynb
+.. _Exploring The Bold Monitor: http://nbviewer.ipython.org/url/docs.thevirtualbrain.org/demos/exploring_the_bold_monitor.ipynb
+.. _Looking At Longer TimeSeries: http://nbviewer.ipython.org/url/docs.thevirtualbrain.org/demos/looking_at_longer_time_series.ipynb
+.. _Region Stimuli: http://nbviewer.ipython.org/url/docs.thevirtualbrain.org/demos/region_stimuli.ipynb
+.. _Surface Stimuli: http://nbviewer.ipython.org/url/docs.thevirtualbrain.org/demos/surface_stimuli.ipynb
+.. _Smooth Parameter Variations: http://nbviewer.ipython.org/url/docs.thevirtualbrain.org/demos/smooth_parameter_variation.ipynb
+.. _Stochastic Simulations: http://nbviewer.ipython.org/url/docs.thevirtualbrain.org/demos/stochastic_simulation.ipynb
+.. _Getting To Know Your Mesh Surface: http://nbviewer.ipython.org/url/docs.thevirtualbrain.org/demos/getting_to_know_your_surface_mesh.ipynb
+.. _Using Your Own Connectivity: http://nbviewer.ipython.org/url/docs.thevirtualbrain.org/demos/using_your_own_connectivity.ipynb
+.. _Monitoring With Transformations: http://nbviewer.ipython.org/url/docs.thevirtualbrain.org/demos/monitoring_with_transformations.ipynb
+.. _Using The Correlation_coefficient Analyzer To Compute Functional Connectivity: http://nbviewer.ipython.org/url/docs.thevirtualbrain.org/demos/corrcoeff_analyse_view_region.ipynb
+.. _PCA Analysis: http://nbviewer.ipython.org/url/docs.thevirtualbrain.org/demos/pca_analyse_view_region.ipynb
+.. _Display Sensors Location: http://nbviewer.ipython.org/url/docs.thevirtualbrain.org/demos/display_sensors_location.ipynb
+.. _Display Subject Dataset: http://nbviewer.ipython.org/url/docs.thevirtualbrain.org/demos/display_subject_dataset.ipynb
+.. _Display Surface Local Connectivity: http://nbviewer.ipython.org/url/docs.thevirtualbrain.org/demos/display_surface_local_connectivity.ipynb
+.. _Display Surface Parcellation: http://nbviewer.ipython.org/url/docs.thevirtualbrain.org/demos/display_surface_parcellation.ipynb
 
 
-.. figure:: /manuals/styles/TVB_logo.svg
+
+
+
+Simulation
+----------
+
+.. figure:: figures/anatomy_of_a_region_simulation.png
       :width: 200px
       :figclass: demo-figure
       :target: `Anatomy Of A Region Simulation`_
@@ -127,7 +140,7 @@ examples.
       `Anatomy Of A Region Simulation`_
 
 
-.. figure:: /manuals/styles/TVB_logo.svg
+.. figure:: figures/anatomy_of_a_surface_simulation.png
       :width: 200px
       :figclass: demo-figure
       :target: `Anatomy Of A Surface Simulation`_
@@ -135,8 +148,7 @@ examples.
       `Anatomy Of A Surface Simulation`_
 
 
-
-.. figure:: /manuals/styles/TVB_logo.svg
+.. figure:: figures/exploring_a_model.png
       :width: 200px
       :figclass: demo-figure
       :target: `Exploring A Model`_
@@ -160,7 +172,7 @@ examples.
       `Exploring The Bold Monitor`_
 
 
-.. figure:: /manuals/styles/TVB_logo.svg
+.. figure:: figures/looking_at_long_time_series.png 
       :width: 200px
       :figclass: demo-figure
       :target: `Looking At Longer TimeSeries`_
@@ -214,3 +226,63 @@ examples.
       :target: `Using Your Own Connectivity`_
 
       `Using Your Own Connectivity`_
+
+.. figure:: figures/monitoring_with_transformations.png
+      :width: 200px
+      :figclass: demo-figure
+      :target: `Monitoring With Transformations`_
+
+      `Monitoring With Transformations`_
+
+
+Analyzers
+---------
+
+.. figure:: figures/corrcoeff_analyse_view_region.png
+      :width: 200px
+      :figclass: demo-figure
+      :target: `Using The Correlation_coefficient Analyzer To Compute Functional Connectivity`_
+
+      `Using The Correlation_coefficient Analyzer To Compute Functional Connectivity`_
+
+.. figure:: figures/pca_analyse_view_region.png
+      :width: 200px
+      :figclass: demo-figure
+      :target: `PCA Analysis`_
+
+      `PCA Analysis`_
+
+
+
+Visualizers
+-----------
+
+.. figure:: figures/display_sensors_location.png
+      :width: 200px
+      :figclass: demo-figure
+      :target: `Display Sensors Location`_
+
+      `Display Sensors Location`_
+
+.. figure:: figures/display_subject_dataset.png
+      :width: 200px
+      :figclass: demo-figure
+      :target: `Display Subject Dataset`_
+
+      `Display Subject Dataset`_
+
+.. figure:: figures/display_surface_local_connectivity.png
+      :width: 200px
+      :figclass: demo-figure
+      :target: `Display Surface Local Connectivity`_
+
+      `Display Surface Local Connectivity`_
+
+.. figure:: figures/display_surface_parcellation.png
+      :width: 200px
+      :figclass: demo-figure
+      :target: `Display Surface Parcellation`_
+
+      `Display Surface Parcellation`_
+
+

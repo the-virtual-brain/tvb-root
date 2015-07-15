@@ -450,7 +450,7 @@ class RendererH5Canvas(RendererBase):
     def draw_tex(self, gcontext, start_x, start_y, str_, prop, angle, ismath=False):
         LOGGER.warning("Tex support is currently not implemented. Text element '" + str(str_) + "' will not be displayed...")
 
-    def draw_text(self, gcontext, start_x, start_y, str_val, prop, angle, ismath=False):
+    def draw_text(self, gcontext, start_x, start_y, str_val, prop, angle, ismath=False, mtext=None):
         
         if self._last_clip is not None or self._last_clip_path is not None: 
             self._reset_clip()

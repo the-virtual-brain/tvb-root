@@ -8,43 +8,28 @@
       tutorial_3_ModelingEpilepsy
 
 
-Tutorials
-=========
 
 GUI tutorials
--------------
+=============
 
-.. _Modeling Epilepsy: http://nbviewer.ipython.org/url/docs.thevirtualbrain.org/tutorials/tutorial_2_ModelingEpilepsy.ipynb
+0. :ref:`tutorial_0_GettingStarted`
 
-.. figure:: figures/ImportingProjects_Import.png
-      :width: 200px
-      :figclass: demo-figure
-      :target: tutorial_0_GettingStarted.html
+1. :ref:`tutorial_1_BuildingYourOwnBrainNetworkModel`
 
-      :ref:`tutorial_0_GettingStarted`
+2. Resting State Networks
 
-.. figure:: figures/BuildingYourOwnBrainNetworkModel_SimulatorArea.png
-      :width: 200px
-      :figclass: demo-figure
-      :target: tutorial_1_BuildingYourOwnBrainNetworkModel.html
+3. :ref:`tutorial_3_ModelingEpilepsy`
 
-      :ref:`tutorial_1_BuildingYourOwnBrainNetworkModel`
-
-.. figure:: figures/ModelingEpilepsy_PhasePlane.png
-      :width: 200px
-      :figclass: demo-figure
-      :target: tutorial_3_ModelingEpilepsy.html
-
-      :ref:`tutorial_3_ModelingEpilepsy`
 
 Scripting tutorials
--------------------
+===================
 
-.. figure:: figures/thumbnail_ModelingEpilepsy_ipynb.png
-      :width: 200px
-      :figclass: demo-figure
-      :target: `Modeling Epilepsy`_
+.. _Modeling Epilepsy: http://nbviewer.ipython.org/url/docs.thevirtualbrain.org/tutorials/tutorial_3_ModelingEpilepsy.ipynb
 
-      `Modeling Epilepsy`_
+1. Building Your Own Brain Network Model
+
+2. Resting State Networks
+
+3. `Modeling Epilepsy`_
 
 
