@@ -89,8 +89,8 @@ PY2APP_INCLUDES = ['apscheduler', 'apscheduler.scheduler', 'cfflib', 'cmath', 'c
                    'gdist', 'genshi', 'genshi.template', 'genshi.template.loader', 'logging.config', 'lxml.etree',
                    'lxml._elementpath', 'matplotlib', 'minixsv', 'mod_pywebsocket', 'mplh5canvas.backend_h5canvas',
                    'mpl_toolkits.axes_grid', 'nibabel', 'numexpr', 'os', 'psycopg2', 'runpy', 'sqlite3', 'sqlalchemy',
-                   'sqlalchemy.dialects.sqlite', 'sqlalchemy.dialects.postgresql', 'simplejson', 'StringIO',
-                   'xml.dom', 'xml.dom.minidom', 'zlib']
+                   'sqlalchemy.dialects.sqlite', 'sqlalchemy.dialects.postgresql', 'simplejson', 'StringIO', 'tornado',
+                   'xml.dom', 'xml.dom.minidom', 'zlib', 'zmq']
 
 PY2APP_EXCLUDES = ['_markerlib', 'coverage', 'cython', 'Cython', 'tvb_data', 'docutils', 'IPython', 'jinja2',
                    'lib2to3', 'markupsafe', 'nose', 'pygments', 'PyOpenGL', 'PyQt4', 'sphinx', 'wx']
@@ -163,17 +163,23 @@ _create_command_file(os.path.join(DIST_FOLDER, "bin", 'tvb_clean'),
                      'source ./distribution.command clean', 'Cleaning up old TVB data.', True)
 _create_command_file(os.path.join(DIST_FOLDER, "bin", 'tvb_stop'),
                      'source ./distribution.command stop', 'Stopping TVB related processes.', True)
+
+IPYTHON_COMMAND = 'export PYTHONPATH=../tvb.app/Contents/Resources/lib/python2.7:' \
+                  '../tvb.app/Contents/Resources/lib/python2.7/site-packages.zip:' \
+                  '../tvb.app/Contents/Resources/lib/python2.7/lib-dynload\n' \
+                  '../tvb.app/Contents/MacOS/python -m tvb_bin.run_ipython notebook '
 _create_command_file(os.path.join(DIST_FOLDER, "bin", 'ipython_notebook'),
-                     '../tvb.app/Contents/MacOS/python -m tvb_bin.run_ipython notebook ../demo_scripts', '')
-_create_command_file(os.path.join(DIST_FOLDER, "demo_scripts", 'ipython_notebook'),
-                     '../tvb.app/Contents/MacOS/python -m tvb_bin.run_ipython notebook', '')
+                      IPYTHON_COMMAND + '../demo_scripts', '')
+_create_command_file(os.path.join(DIST_FOLDER, "demo_scripts", 'ipython_notebook'), IPYTHON_COMMAND, '')
+
 _create_command_file(os.path.join(DIST_FOLDER, "bin", 'contributor_setup'),
                      'cd ..\n'
                      'export PYTHONPATH=tvb.app/Contents/Resources/lib/python2.7:'
                      'tvb.app/Contents/Resources/lib/python2.7/site-packages.zip:'
                      'tvb.app/Contents/Resources/lib/python2.7/lib-dynload\n'
                      './tvb.app/Contents/MacOS/python  '
-                     'tvb.app/Contents/Resources/lib/python2.7/tvb_bin/git_setup.py $1 $2\n',
+                     'tvb.app/Contents/Resources/lib/python2.7/tvb_bin/git_setup.py $1 $2\n'
+                     'cd bin\n',
                      'Setting-up contributor environment', True)
 
 #py2app should have a --exclude-dynamic parameter but it doesn't seem to work until now
