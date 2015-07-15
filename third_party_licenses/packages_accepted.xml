@@ -253,7 +253,7 @@
     <dependency env="[win64]" name="ipython">
         <full-name value="iPython"/>
         <project-home value="http://ipython.org/"/>
-        <version value="3.2.0"/>
+        <version value="[3.2.0,3.2.1]"/>
         <usage value="dynamic linking"/>
         <license value="LICENSE_ipython.txt"/>
         <license-type value="BSD_ revised"/>
