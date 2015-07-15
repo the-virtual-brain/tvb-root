@@ -51,13 +51,70 @@ LOGGER = get_logger(__name__)
 
 def update():
     """
-    Try to port fProjection Matrices from old form into the new one
+    Try to port Projection Matrices and Simulation Configurations from old to new form.
     """
     LOGGER.info("Start 7350 code update ...")
+
+    _adapt_epileptor_simulations()
 
     _adapt_simulation_monitor_params()
 
     _transfer_projection_matrices()
+
+
+
+@transactional
+def _adapt_epileptor_simulations():
+    """
+    Previous Simulations on EpileptorWithPermitivity model, should be converted to use the Epileptor model.
+    As the parameters from the two models are having different ranges and defaults, we do not translate parameters,
+    we only set the Epileptor as model instead of EpileptorPermittivityCoupling, and leave the model params to defaults.
+    """
+    session = SA_SESSIONMAKER()
+    epileptor_old = "EpileptorPermittivityCoupling"
+    epileptor_new = "Epileptor"
+    param_model = "model"
+
+    try:
+        all_ep_ops = session.query(model.Operation).filter(
+            model.Operation.parameters.ilike('%"' + epileptor_old + '"%')).all()
+        files_helper = FilesHelper()
+        all_bursts = dict()
+
+        for ep_op in all_ep_ops:
+            try:
+                op_params = parse_json_parameters(ep_op.parameters)
+                if op_params[param_model] != epileptor_old:
+                    LOGGER.debug("Skipping op " + str(op_params[param_model]) + " -- " + str(ep_op))
+                    continue
+
+                LOGGER.debug("Updating " + str(op_params))
+                op_params[param_model] = epileptor_new
+                ep_op.parameters = json.dumps(op_params, cls=MapAsJson.MapAsJsonEncoder)
+                LOGGER.debug("New params:" + ep_op.parameters)
+                files_helper.write_operation_metadata(ep_op)
+
+                burst = dao.get_burst_for_operation_id(ep_op.id)
+                if burst is not None:
+                    LOGGER.debug("Updating burst:" + str(burst))
+                    burst.prepare_after_load()
+                    burst.simulator_configuration[param_model] = {'value': epileptor_new}
+                    burst._simulator_configuration = json.dumps(burst.simulator_configuration,
+                                                                cls=MapAsJson.MapAsJsonEncoder)
+                    if not all_bursts.has_key(burst.id):
+                        all_bursts[burst.id] = burst
+
+            except Exception:
+                LOGGER.exception("Could not process " + str(ep_op))
+
+        session.add_all(all_ep_ops)
+        session.add_all(all_bursts.values())
+        session.commit()
+
+    except Exception:
+        LOGGER.exception("Could not update Simulation Epileptor Params")
+    finally:
+        session.close()
 
 
 
@@ -123,7 +180,8 @@ def _adapt_simulation_monitor_params():
                     burst.simulator_configuration[param_eeg_proj_new] = {'value': str(new_projection_guid)}
                     burst.simulator_configuration[param_eeg_sensors] = {'value': str(sensors_guid)}
                     burst.simulator_configuration[param_eeg_rm] = {'value': str(rm.gid)}
-                    burst.prepare_before_save()
+                    burst._simulator_configuration = json.dumps(burst.simulator_configuration,
+                                                                cls=MapAsJson.MapAsJsonEncoder)
                     if not all_bursts.has_key(burst.id):
                         all_bursts[burst.id] = burst
 
@@ -135,7 +193,7 @@ def _adapt_simulation_monitor_params():
         session.commit()
 
     except Exception:
-        LOGGER.exception("Could not update Simulation Params")
+        LOGGER.exception("Could not update Simulation Monitor Params")
     finally:
         session.close()
 
