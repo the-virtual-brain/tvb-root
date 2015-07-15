@@ -87,7 +87,6 @@ class ProjectionMatrixTest(TransactionalTestCase):
         """
         Verifies that importing a different shape throws exception
         """
-        dt_count_before = TestFactory.get_entity_count(self.test_project, ProjectionSurfaceEEG())
         group = dao.find_group('tvb.adapters.uploaders.projection_matrix_importer',
                                'ProjectionMatrixSurfaceEEGImporter')
         importer = ABCAdapter.build_adapter(group)

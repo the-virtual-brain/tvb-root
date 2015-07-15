@@ -62,17 +62,14 @@ class RegionMapping(RegionMappingFramework, RegionMappingScientific):
     """
 
     @staticmethod
-    def from_file(source_file="regionMapping_16k_76.txt",
-                  instance=None):
-
-        source_file = os.path.join("..", "regionMapping", source_file)
+    def from_file(source_file="regionMapping_16k_76.txt", instance=None):
 
         if instance is None:
             result = RegionMapping()
         else:
             result = instance
 
-        source_full_path = try_get_absolute_path("tvb_data.surfaceData", source_file)
+        source_full_path = try_get_absolute_path("tvb_data.regionMapping", source_file)
         reader = FileReader(source_full_path)
 
         result.array_data = reader.read_array(dtype=numpy.int32)

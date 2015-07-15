@@ -138,12 +138,10 @@ class Simulator(object):
         
         if default_connectivity:
             white_matter = connectivity.Connectivity(load_default=True)
-            region_mapping = RegionMapping.from_file(source_file=os.path.join("..", "regionMapping",
-                                                                              "regionMapping_16k_76.txt"))
+            region_mapping = RegionMapping.from_file(source_file="regionMapping_16k_76.txt")
         else:
             white_matter = connectivity.Connectivity.from_file(source_file="connectivity_192.zip")
-            region_mapping = RegionMapping.from_file(source_file=os.path.join("..", "regionMapping",
-                                                                              "regionMapping_16k_192.txt"))
+            region_mapping = RegionMapping.from_file(source_file="regionMapping_16k_192.txt")
 
 
         white_matter_coupling = coupling.Linear(a=coupling_strength)    
