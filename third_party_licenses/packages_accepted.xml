@@ -180,6 +180,16 @@
         <copyright-notice value="Copyright 2008-2011, Ian Bicking and Contributors.**"/>
         <description value="This is a validation and form generation package."/>
     </dependency>
+        <dependency env="[macos64]" name="functools32">
+        <full-name value="Functools32"/>
+        <project-home value="https://pypi.python.org/pypi/functools32"/>
+        <version value="3.2.3-2"/>
+        <usage value="dynamic linking"/>
+        <license value="LICENSE_functools32.txt"/>
+        <license-type value="PSF_"/>
+        <copyright-notice value="Copyright (c) 2010-2012, ENDOH takanao"/>
+        <description value="The IPython Notebook uses it"/>
+    </dependency>
     <dependency env="[win32,linux64,macos32,win64,linux32,macos64]" name="genshi">
         <full-name value="Genshi"/>
         <project-home value="http://genshi.edgewall.org/"/>
@@ -1010,6 +1020,16 @@
         <copyright-notice value="Copyright (C) 1989-2008 by Regents of the University of California, Sun Microsystems, Inc., Scriptics Corporation, and other parties"/>
         <description value="Library used as IDLE dependency, for the console-users."/>
     </dependency>
+    <dependency env="[macos64]" name="twisted">
+        <full-name value="Twisted"/>
+        <project-home value="https://pypi.python.org/pypi/Twisted"/>
+        <version value="12.2.0"/>
+        <usage value="dynamic linking"/>
+        <license value="LICENSE_twisted.txt"/>
+        <license-type value="MIT_"/>
+        <copyright-notice value="Copyright (c) 2001-2015 Authors list (see license file for it)"/>
+        <description value="The IPython Notebook uses it"/>
+    </dependency>
     <dependency env="[win64]" name="tzlocal">
         <full-name value="TzLocal"/>
         <project-home value="https://pypi.python.org/pypi/tzlocal"/>
@@ -1039,6 +1059,16 @@
         <license-type value="BSD_ 2 clause"/>
         <copyright-notice value="Copyright (C) 1995-2010 Jean-loup Gailly and Mark Adler"/>
         <description value="Package part of Python's distribution."/>
+    </dependency>
+    <dependency env="[macos64]" name="zope">
+        <full-name value="Zope"/>
+        <project-home value="https://pypi.python.org/pypi/zope.interface"/>
+        <version value="unknown"/>
+        <usage value="dynamic linking"/>
+        <license value="LICENSE_zope.txt"/>
+        <license-type value="ZPL 2.1"/>
+        <copyright-notice value="Copyright (c) 2012, Zope Foundation contributors"/>
+        <description value="The IPython Notebook uses it"/>
     </dependency>
     <dependency env="[win64]" name="zmq">
         <full-name value="zeromq"/>
