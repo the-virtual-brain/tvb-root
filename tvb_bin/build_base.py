@@ -238,10 +238,11 @@ def copy_simulator_library(library_folder):
         shutil.rmtree(tests_folder, True)
         print "  Removed: " + str(tests_folder)
 
-    simulator_doc_folder = os.path.join(destination_folder, "simulator", "doc")
-    if os.path.exists(simulator_doc_folder):
-        shutil.rmtree(simulator_doc_folder, True)
-        print "  Removed: " + str(simulator_doc_folder)
+    for excluded in [os.path.join(destination_folder, "simulator", "doc"),
+                     os.path.join(destination_folder, "simulator", "demos")]:
+        if os.path.exists(excluded):
+            shutil.rmtree(excluded, True)
+            print "  Removed: " + str(excluded)
 
 
 

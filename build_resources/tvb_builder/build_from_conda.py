@@ -111,7 +111,7 @@ class Config:
     @staticmethod
     def linux64():
         set_path = 'cd ../tvb_data\n' + \
-                   'export PATH=`pwd`/bin:$path\n' + \
+                   'export PATH=`pwd`/bin:$PATH\n' + \
                    'export PYTHONPATH=`pwd`/lib/python2.7:`pwd`/lib/python2.7/site-packages\n' + \
                    'unset PYTHONHOME\n\n'
 
@@ -176,13 +176,14 @@ def _copy_collapsed(config):
 
             if os.path.isdir(src) and not (sub_folder.startswith('.')
                                            or sub_folder.startswith("tests")) and not os.path.exists(dest):
-                ignore_patters = shutil.ignore_patterns('.svn', "tutorials")
+                ignore_patters = shutil.ignore_patterns('.svn')
                 shutil.copytree(src, dest, ignore=ignore_patters)
 
-            simulator_doc_folder = os.path.join(destination_folder, "simulator", "doc")
-            if os.path.exists(simulator_doc_folder):
-                shutil.rmtree(simulator_doc_folder, True)
-                _log(3, "Removed: " + str(simulator_doc_folder))
+            for excluded in [os.path.join(destination_folder, "simulator", "doc"),
+                             os.path.join(destination_folder, "simulator", "demos")]:
+                if os.path.exists(excluded):
+                    shutil.rmtree(excluded, True)
+                    _log(3, "Removed: " + str(excluded))
 
 
 def _create_unix_command(target_file, command):
