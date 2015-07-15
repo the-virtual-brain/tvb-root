@@ -788,9 +788,11 @@ class Simulator(core.Type):
             ts.append([])
             xs.append([])
         for data in self(**kwds):
-            for tl, xl, (t, x) in zip(ts, xs, data):
-                tl.append(t)
-                xl.append(x)
+            for tl, xl, t_x in zip(ts, xs, data):
+                if t_x is not None:
+                    t, x = t_x
+                    tl.append(t)
+                    xl.append(x)
         for i in range(len(ts)):
             ts[i] = numpy.array(ts[i])
             xs[i] = numpy.array(xs[i])
