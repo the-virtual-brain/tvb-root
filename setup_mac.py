@@ -41,7 +41,6 @@ import os
 import sys
 import shutil
 import setuptools
-import IPython
 from tvb_bin.build_base import FW_FOLDER, DIST_FOLDER
 from tvb_bin.build_pyinstaller import PyInstallerPacker
 
@@ -82,19 +81,18 @@ def _copy_collapsed(to_copy):
 
 #--------------------------- PY2APP specific configurations--------------------------------------------
 
-PY2APP_PACKAGES = ['cherrypy', 'email', 'h5py', 'idlelib', 'migrate', 'minixsv',
-                   'numpy', 'scipy', 'sklearn', 'tables', 'tvb']
+PY2APP_PACKAGES = ['cherrypy', 'email', 'h5py', 'IPython', 'idlelib', 'migrate', 'minixsv',
+                   'numpy', 'scipy', 'sklearn', 'tables', 'tornado', 'tvb']
 
-PY2APP_INCLUDES = ['apscheduler', 'apscheduler.scheduler', 'cfflib', 'cmath', 'contextlib', 'formencode',
-                   'gdist', 'genshi', 'genshi.template', 'genshi.template.loader',
-                   'jinja2', 'jsonschema', 'logging.config', 'lxml.etree', 'lxml._elementpath',
-                   'markupsafe', 'matplotlib', 'minixsv', 'mod_pywebsocket', 'mplh5canvas.backend_h5canvas',
-                   'mpl_toolkits.axes_grid', 'nibabel', 'numexpr', 'os', 'psycopg2', 'runpy', 'sqlite3', 'sqlalchemy',
-                   'sqlalchemy.dialects.sqlite', 'sqlalchemy.dialects.postgresql', 'simplejson', 'StringIO', 'tornado',
-                   'xml.dom', 'xml.dom.minidom', 'zlib', 'zmq']
+PY2APP_INCLUDES = ['apscheduler', 'apscheduler.scheduler', 'cfflib', 'cmath', 'contextlib', 'formencode', 'gdist',
+                   'genshi', 'genshi.template', 'genshi.template.loader', 'jinja2', 'jsonschema', 'logging.config',
+                   'lxml.etree', 'lxml._elementpath', 'markupsafe', 'matplotlib', 'minixsv', 'mod_pywebsocket',
+                   'mplh5canvas.backend_h5canvas', 'mpl_toolkits.axes_grid', 'nibabel', 'numexpr', 'os', 'psycopg2',
+                   'runpy', 'sqlite3', 'sqlalchemy', 'sqlalchemy.dialects.sqlite', 'sqlalchemy.dialects.postgresql',
+                   'simplejson', 'StringIO', 'xml.dom', 'xml.dom.minidom', 'zlib', 'zmq']
 
-PY2APP_EXCLUDES = ['_markerlib', 'coverage', 'cython', 'Cython', 'tvb_data', 'docutils', 'IPython', 'jinja2',
-                   'lib2to3', 'markupsafe', 'nose', 'pygments', 'PyOpenGL', 'PyQt4', 'sphinx', 'wx']
+PY2APP_EXCLUDES = ['_markerlib', 'coverage', 'cython', 'Cython', 'tvb_data', 'docutils', 'lib2to3',
+                   'nose', 'PyOpenGL', 'PyQt4', 'sphinx', 'wx']
 
 PY2APP_OPTIONS = {'iconfile': 'build_resources/icon.icns',
                   'plist': 'build_resources/info.plist',
@@ -191,9 +189,8 @@ for entry in EXCLUDED_DYNAMIC_LIBS:
 
 DESTINATION_SOURCES = os.path.join("tvb.app", "Contents", "Resources", "lib", "python2.7")
 
-_copy_collapsed({os.path.join("tvb_documentation_new", "demos"): os.path.join(DIST_FOLDER, "demo_scripts"),
-                 # os.path.join("tvb_documentation_new", "tutorials"): os.path.join(DIST_FOLDER, "demo_scripts"),
-                 IPython.__path__[0]: os.path.join(DIST_FOLDER, DESTINATION_SOURCES, "IPython")})
+_copy_collapsed({os.path.join("tvb_documentation_new", "demos"): os.path.join(DIST_FOLDER, "demo_scripts")})
+                 # os.path.join("tvb_documentation_new", "tutorials"): os.path.join(DIST_FOLDER, "demo_scripts")})
 
 PyInstallerPacker.add_sitecustomize(DIST_FOLDER, DESTINATION_SOURCES)
 PyInstallerPacker.add_tvb_bin_folder(DIST_FOLDER, DESTINATION_SOURCES)

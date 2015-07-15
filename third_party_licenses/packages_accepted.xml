@@ -63,7 +63,7 @@
     <dependency env="[win64]" name="certifi">
         <full-name value="Certifi"/>
         <project-home value="http://certifi.io/en/latest/"/>
-        <version value="14.5.14"/>
+        <version value="[14.5.14,2015.04.28]"/>
         <usage value="dynamic linking"/>
         <license value="LICENSE_certifi.txt"/>
         <license-type value="ISC_"/>
