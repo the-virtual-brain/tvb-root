@@ -41,16 +41,17 @@ import os
 import sys
 import shutil
 import setuptools
+import IPython
 from tvb_bin.build_base import FW_FOLDER, DIST_FOLDER
 from tvb_bin.build_pyinstaller import PyInstallerPacker
 
 
 
-def _create_command_file(command_file_name, command, before_message, done_message=False):
+def _create_command_file(command_file_path, command, before_message, done_message=False):
     """
     Private script which adds the common part of a command file.
     """
-    pth = os.path.join(DIST_FOLDER, "bin", command_file_name + ".command")
+    pth = command_file_path + ".command"
     with open(pth, 'w') as f:
         f.write('#!/bin/bash\n')
         f.write('cd "$(dirname "$0")"\n')
@@ -60,9 +61,28 @@ def _create_command_file(command_file_name, command, before_message, done_messag
             f.write('echo "Done."\n')
 
 
+def _copy_collapsed(to_copy):
+    """
+    Merge multiple src folders, and filter some resources which are not needed (e.g. svn folders)
+    """
+    for module_path, destination_folder in to_copy.iteritems():
+        if not os.path.exists(destination_folder):
+            os.makedirs(destination_folder)
+
+        for sub_folder in os.listdir(module_path):
+            src = os.path.join(module_path, sub_folder)
+            dest = os.path.join(destination_folder, sub_folder)
+
+            if not os.path.isdir(src) and not os.path.exists(dest):
+                shutil.copy(src, dest)
+
+            if os.path.isdir(src) and not sub_folder.startswith('.') and not os.path.exists(dest):
+                ignore_patters = shutil.ignore_patterns('.svn')
+                shutil.copytree(src, dest, ignore=ignore_patters)
+
 #--------------------------- PY2APP specific configurations--------------------------------------------
 
-PY2APP_PACKAGES = ['cherrypy', 'email', 'h5py', 'idlelib', 'IPython', 'migrate', 'minixsv',
+PY2APP_PACKAGES = ['cherrypy', 'email', 'h5py', 'idlelib', 'migrate', 'minixsv',
                    'numpy', 'scipy', 'sklearn', 'tables', 'tvb']
 
 PY2APP_INCLUDES = ['apscheduler', 'apscheduler.scheduler', 'cfflib', 'cmath', 'contextlib', 'formencode',
@@ -132,17 +152,28 @@ print "PY2APP finished."
 print "Running post-py2app build operations:"
 print "- Start creating startup scripts..."
 
-os.mkdir('dist/bin')
-_create_command_file('distribution', '../tvb.app/Contents/MacOS/tvb $@', '')
-_create_command_file('tvb_start', 'source ./distribution.command start', 'Starting TVB Web Interface')
-_create_command_file('tvb_clean', 'source ./distribution.command clean', 'Cleaning up old TVB data.', True)
-_create_command_file('tvb_stop', 'source ./distribution.command stop', 'Stopping TVB related processes.', True)
-_create_command_file('contributor_setup', 'cd ..\n'
-                                          'export PYTHONPATH=tvb.app/Contents/Resources/lib/python2.7:'
-                                          'tvb.app/Contents/Resources/lib/python2.7/site-packages.zip:'
-                                          'tvb.app/Contents/Resources/lib/python2.7/lib-dynload\n'
-                                          './tvb.app/Contents/MacOS/python  '
-                                          'tvb.app/Contents/Resources/lib/python2.7/tvb_bin/git_setup.py $1 $2\n',
+os.mkdir(os.path.join(DIST_FOLDER, "bin"))
+os.mkdir(os.path.join(DIST_FOLDER, "demo_scripts"))
+
+_create_command_file(os.path.join(DIST_FOLDER, "bin", 'distribution'),
+                     '../tvb.app/Contents/MacOS/tvb $@', '')
+_create_command_file(os.path.join(DIST_FOLDER, "bin", 'tvb_start'),
+                     'source ./distribution.command start', 'Starting TVB Web Interface')
+_create_command_file(os.path.join(DIST_FOLDER, "bin", 'tvb_clean'),
+                     'source ./distribution.command clean', 'Cleaning up old TVB data.', True)
+_create_command_file(os.path.join(DIST_FOLDER, "bin", 'tvb_stop'),
+                     'source ./distribution.command stop', 'Stopping TVB related processes.', True)
+_create_command_file(os.path.join(DIST_FOLDER, "bin", 'ipython_notebook'),
+                     '../tvb.app/Contents/MacOS/python -m tvb_bin.run_ipython notebook ../demo_scripts', '')
+_create_command_file(os.path.join(DIST_FOLDER, "demo_scripts", 'ipython_notebook'),
+                     '../tvb.app/Contents/MacOS/python -m tvb_bin.run_ipython notebook', '')
+_create_command_file(os.path.join(DIST_FOLDER, "bin", 'contributor_setup'),
+                     'cd ..\n'
+                     'export PYTHONPATH=tvb.app/Contents/Resources/lib/python2.7:'
+                     'tvb.app/Contents/Resources/lib/python2.7/site-packages.zip:'
+                     'tvb.app/Contents/Resources/lib/python2.7/lib-dynload\n'
+                     './tvb.app/Contents/MacOS/python  '
+                     'tvb.app/Contents/Resources/lib/python2.7/tvb_bin/git_setup.py $1 $2\n',
                      'Setting-up contributor environment', True)
 
 #py2app should have a --exclude-dynamic parameter but it doesn't seem to work until now
@@ -155,6 +186,10 @@ DESTINATION_SOURCES = os.path.join("tvb.app", "Contents", "Resources", "lib", "p
 PyInstallerPacker.add_sitecustomize(DIST_FOLDER, DESTINATION_SOURCES)
 PyInstallerPacker.add_tvb_bin_folder(DIST_FOLDER, DESTINATION_SOURCES)
 PyInstallerPacker.generate_final_zip("TVB_MacOS", DESTINATION_SOURCES)
+
+_copy_collapsed({os.path.join("tvb_documentation_new", "demos"): "demo_scripts",
+                 os.path.join("tvb_documentation_new", "tutorials"): "demo_scripts",
+                 IPython.__path__[0]: os.path.join(DESTINATION_SOURCES, "IPython")})
 
 ## Clean after install      
 shutil.rmtree(os.path.join(FW_FOLDER, 'tvb.egg-info'), True)    
