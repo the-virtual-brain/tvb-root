@@ -66,9 +66,9 @@ class Config:
                             os.path.join(dp, "externals", "BCT"): os.path.join(self.target_site_packages, "externals",
                                                                                "BCT"),
                             os.path.join(dp, "tvb_documentation_new", "demos"): os.path.join(self.target_root,
-                                                                                             "demo_scripts"),
-                            os.path.join(dp, "tvb_documentation_new", "tutorials"): os.path.join(self.target_root,
-                                                                                                 "demo_scripts")}
+                                                                                             "demo_scripts")}
+                            # os.path.join(dp, "tvb_documentation_new", "tutorials"): os.path.join(self.target_root,
+                            #                                                                      "demo_scripts")}
 
         self.commands_map = commands_map
         self.command_factory = command_factory
