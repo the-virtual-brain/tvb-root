@@ -706,7 +706,7 @@ class Projection(Monitor):
             return ProjectionMatrix
 
     @classmethod
-    def from_files(cls, sensors_fname, projection_fname, **kwds):
+    def from_files(cls, sensors_fname, projection_fname, period=1e3/1024.0, **kwds):
         """
         Build Projection-based monitor from sensors and projection files, and
         any extra keyword arguments are passed to the monitor class constructor.
@@ -861,6 +861,11 @@ class EEG(Projection):
                             'the value of conductivity in the formula for the single '
                             'sphere approximation of the head (Sarvas 1987).')
 
+
+    @classmethod
+    def from_files(cls, sensors_fname='eeg-brainstorm-65.txt', projection_fname='projection_EEG_surface.npy', **kwargs):
+        return Projection.from_files.im_func(cls, sensors_fname, projection_fname, **kwargs)
+
     def config_for_sim(self, simulator):
         super(EEG, self).config_for_sim(simulator)
         self._ref_vec = numpy.zeros((self.sensors.number_of_sensors, ))
@@ -923,6 +928,12 @@ class MEG(Projection):
         doc = """The set of MEG sensors for which the forward solution will be
         calculated.""")
 
+
+    @classmethod
+    def from_files(cls, sensors_fname='meg-brainstorm-276.txt',
+                   projection_fname='projection_MEG_surface.npy', **kwargs):
+        return Projection.from_files.im_func(cls, sensors_fname, projection_fname, **kwargs)
+
     def analytic(self, loc, ori):
         """Compute single sphere analytic form of MEG lead field.
         Equation 25 of [Sarvas_1987]_."""
@@ -980,6 +991,12 @@ class iEEG(Projection):
     sensors = sensors_module.SensorsInternal(
         label="Internal brain sensors", default=None, required=True,
         doc="The set of SEEG sensors for which the forward solution will be calculated.")
+
+
+    @classmethod
+    def from_files(cls, sensors_fname='seeg-brainstorm-960.txt',
+                   projection_fname='projection_SEEG_surface.npy', **kwargs):
+        return Projection.from_files.im_func(cls, sensors_fname, projection_fname, **kwargs)
 
     def analytic(self, loc, ori):
         """Compute the projection matrix -- simple distance weight for now.
