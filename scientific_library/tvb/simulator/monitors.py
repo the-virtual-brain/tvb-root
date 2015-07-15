@@ -997,7 +997,7 @@ class iEEG(Projection):
 
 
     @classmethod
-    def from_file(cls, sensors_fname='seeg-brainstorm-960.txt',
+    def from_file(cls, sensors_fname='SEEG_588.txt',
                    projection_fname='projection_SEEG_surface.npy', **kwargs):
         return Projection.from_file.im_func(cls, sensors_fname, projection_fname, **kwargs)
 
