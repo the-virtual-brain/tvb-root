@@ -169,7 +169,7 @@ IPYTHON_COMMAND = 'export PYTHONPATH=../tvb.app/Contents/Resources/lib/python2.7
                   '../tvb.app/Contents/MacOS/python -m tvb_bin.run_ipython notebook '
 _create_command_file(os.path.join(DIST_FOLDER, "bin", 'ipython_notebook'),
                       IPYTHON_COMMAND + '../demo_scripts', '')
-_create_command_file(os.path.join(DIST_FOLDER, "demo_scripts", 'ipython_notebook'), IPYTHON_COMMAND, '')
+# _create_command_file(os.path.join(DIST_FOLDER, "demo_scripts", 'ipython_notebook'), IPYTHON_COMMAND, '')
 
 _create_command_file(os.path.join(DIST_FOLDER, "bin", 'contributor_setup'),
                      'cd ..\n'

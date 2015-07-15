@@ -127,7 +127,7 @@ class Config:
                         'bin/tvb_clean.sh': 'bash ./distribution.sh clean',
                         'bin/tvb_stop.sh': 'bash ./distribution.sh stop',
                         'bin/ipython_notebook.sh': set_path + 'cd ../bin\n../tvb_data/bin/python -m tvb_bin.run_ipython notebook ../demo_scripts',
-                        'demo_scripts/ipython_notebook.sh': set_path + 'cd ../demo_scripts\n../tvb_data/bin/python -m tvb_bin.run_ipython notebook',
+                        # 'demo_scripts/ipython_notebook.sh': set_path + 'cd ../demo_scripts\n../tvb_data/bin/python -m tvb_bin.run_ipython notebook',
                         'bin/contributor_setup.sh': set_path + './bin/python -m tvb_bin.git_setup $1 $2\ncd ../bin'}
 
         return Config("Linux", "/root/anaconda/envs/tvb-run", os.path.join("lib", "python2.7", "site-packages"),
