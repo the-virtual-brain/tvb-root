@@ -93,12 +93,3 @@ class Cortex(CortexScientific, CortexFramework, CorticalSurface):
         reader = FileReader(source_full_path)
 
         return reader.read_array(matlab_data_name=matlab_data_name)
-
-
-    @staticmethod
-    def from_file_region_mapping_array(source_file=os.path.join("cortex_reg13", "all_regions_cortex_reg13.txt")):
-
-        source_full_path = try_get_absolute_path("tvb_data.surfaceData", source_file)
-        reader = FileReader(source_full_path)
-
-        return reader.read_array(dtype=numpy.int32)

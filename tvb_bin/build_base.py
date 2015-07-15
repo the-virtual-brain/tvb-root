@@ -149,15 +149,19 @@ def copy_distribution_dataset(dist_path, library_path):
 
                      ("regionMapping.__init__.py", "$INSIDE.regionMapping.__init__.py"),
                      ("regionMapping.regionMapping_16k_76.txt", "$INSIDE.regionMapping.regionMapping_16k_76.txt"),
+                     ("regionMapping.regionMapping_80k_80.txt", "$INSIDE.regionMapping.regionMapping_80k_80.txt"),
 
                      ("sensors.EEG_unit_vectors_BrainProducts_62.txt.bz2", "$INSIDE.sensors.EEG_unit_vectors_BrainProducts_62.txt.bz2"),
                      ("sensors.eeg-brainstorm-65.txt", "$INSIDE.sensors.eeg-brainstorm-65.txt"),
                      ("sensors.meg_channels_reg13.txt.bz2", "$INSIDE.sensors.meg_channels_reg13.txt.bz2"),
+                     ("sensors.meg-brainstorm-276.txt", "$INSIDE.sensors.meg-brainstorm-276.txt"),
                      ("sensors.internal_39.txt.bz2", "$INSIDE.sensors.internal_39.txt.bz2"),
                      ("sensors.seeg-brainstorm-960.txt", "$INSIDE.sensors.seeg-brainstorm-960.txt"),
                      ("sensors.__init__.py", "$INSIDE.sensors.__init__.py"),
 
                      ("surfaceData.__init__.py", "$INSIDE.surfaceData.__init__.py"),
+                     ("surfaceData.cortex_80k.surface_80k.zip", "$INSIDE.surfaceData.cortex_80k.surface_80k.zip"),
+                     ("surfaceData.cortex_80k.local_connectivity_80k.mat", "$INSIDE.surfaceData.cortex_80k.local_connectivity_80k.mat"),
                      ("surfaceData.cortex_reg13.surface_cortex_reg13.zip", "$INSIDE.surfaceData.cortex_reg13.surface_cortex_reg13.zip"),
                      ("surfaceData.cortex_reg13.local_connectivity_surface_cortex_reg13.mat", "$INSIDE.surfaceData.cortex_reg13.local_connectivity_surface_cortex_reg13.mat"),
                      ("surfaceData.outer_skin_4096.zip", "$INSIDE.surfaceData.outer_skin_4096.zip"),
