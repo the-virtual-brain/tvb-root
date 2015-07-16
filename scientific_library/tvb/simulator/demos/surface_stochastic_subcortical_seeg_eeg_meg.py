@@ -52,9 +52,9 @@ heunint = integrators.HeunStochastic(
 )
 fsamp = 1e3/1024.0 # 1024 Hz
 monitors = (
-    monitors.EEG.from_files('eeg-brainstorm-65.txt', 'projection_EEG_surface.npy', period=fsamp),
-    monitors.MEG.from_files('meg-brainstorm-276.txt', 'projection_MEG_surface.npy', period=fsamp),
-    monitors.iEEG.from_files('seeg-brainstorm-960.txt', 'projection_SEEG_surface.npy', period=fsamp),
+    monitors.EEG.from_file('eeg-brainstorm-65.txt', 'projection_EEG_surface.npy', period=fsamp),
+    monitors.MEG.from_file('meg-brainstorm-276.txt', 'projection_MEG_surface.npy', period=fsamp),
+    monitors.iEEG.from_file('SEEG_588.txt', 'projection_SEEG_surface.npy', period=fsamp),
 )
 local_coupling_strength = numpy.array([2 ** -10])
 default_cortex = Cortex(region_mapping_data=RegionMapping.from_file('regionMapping_16k_192.txt'),

@@ -157,6 +157,7 @@ def copy_distribution_dataset(dist_path, library_path):
                      ("sensors.meg-brainstorm-276.txt", "$INSIDE.sensors.meg-brainstorm-276.txt"),
                      ("sensors.internal_39.txt.bz2", "$INSIDE.sensors.internal_39.txt.bz2"),
                      ("sensors.seeg-brainstorm-960.txt", "$INSIDE.sensors.seeg-brainstorm-960.txt"),
+                     ("sensors.SEEG_588.txt", "$INSIDE.sensors.SEEG_588.txt"),
                      ("sensors.__init__.py", "$INSIDE.sensors.__init__.py"),
 
                      ("surfaceData.__init__.py", "$INSIDE.surfaceData.__init__.py"),
