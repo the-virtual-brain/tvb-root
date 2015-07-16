@@ -96,7 +96,7 @@ Visualizers
       :ref:`connectivity_matrix_ui`
 
 Scripting Demos 
-===================
+===============
 
 These tutorials are written as IPython Notebooks and they use the scripting interface of TVB.
 They can be run interactively if you have TVB’s scientific library and ipython installed.
@@ -115,14 +115,14 @@ examples.
 .. _Surface Stimuli: http://nbviewer.ipython.org/url/docs.thevirtualbrain.org/demos/surface_stimuli.ipynb
 .. _Smooth Parameter Variations: http://nbviewer.ipython.org/url/docs.thevirtualbrain.org/demos/smooth_parameter_variation.ipynb
 .. _Stochastic Simulations: http://nbviewer.ipython.org/url/docs.thevirtualbrain.org/demos/stochastic_simulation.ipynb
-.. _Getting To Know Your Mesh Surface: http://nbviewer.ipython.org/url/docs.thevirtualbrain.org/demos/getting_to_know_your_surface_mesh.ipynb
+.. _Getting To Know Your Mesh Surface: http://nbviewer.ipython.org/url/docs.thevirtualbrain.org/demos/getting_to_know_your_mesh_surface.ipynb
 .. _Using Your Own Connectivity: http://nbviewer.ipython.org/url/docs.thevirtualbrain.org/demos/using_your_own_connectivity.ipynb
 .. _Monitoring With Transformations: http://nbviewer.ipython.org/url/docs.thevirtualbrain.org/demos/monitoring_with_transformations.ipynb
 .. _Connectivity Normalisation Modes: http://nbviewer.ipython.org/url/docs.thevirtualbrain.org/demos/connectivity_normalisation_modes.ipynb
 .. _Generate Surrogate Connectivity: http://nbviewer.ipython.org/url/docs.thevirtualbrain.org/demos/generate_surrogate_connectivity.ipynb
 .. _SEEG Region Deterministic: http://nbviewer.ipython.org/url/docs.thevirtualbrain.org/demos/seeg_region_deterministic.ipynb
 .. _SEEG Surface Deterministic: http://nbviewer.ipython.org/url/docs.thevirtualbrain.org/demos/seeg_surface_deterministic.ipynb
-.. _Region Stochastic ReducedWongWang: http://nbviewer.ipython.org/url/docs.thevirtualbrain.org/demos/region_stoachastic_reducedWongWang.ipynb
+.. _Region Stochastic ReducedWongWang: http://nbviewer.ipython.org/url/docs.thevirtualbrain.org/demos/region_stochastic_reducedwongwang.ipynb
 .. _Region Stochastic Jansen: http://nbviewer.ipython.org/url/docs.thevirtualbrain.org/demos/region_stochastic_jansen.ipynb
 .. _Surface Deterministic Custom Local Connectivity: http://nbviewer.ipython.org/url/docs.thevirtualbrain.org/demos/surface_deterministic_custom_local_connectivity.ipynb
 .. _Surface Deterministic Surface Stimulus: http://nbviewer.ipython.org/url/docs.thevirtualbrain.org/demos/surface_deterministic_surface_stimulus.ipynb
@@ -132,7 +132,7 @@ examples.
 .. _Correlation_coefficient Analyzer: http://nbviewer.ipython.org/url/docs.thevirtualbrain.org/demos/corrcoeff_analyse_view_region.ipynb
 .. _PCA Analysis: http://nbviewer.ipython.org/url/docs.thevirtualbrain.org/demos/pca_analyse_view_region.ipynb
 
-.. _Display Sensors Location: http://nbviewer.ipython.org/url/docs.thevirtualbrain.org/demos/display_sensors_location.ipynb
+.. _Display Sensors Location: http://nbviewer.ipython.org/url/docs.thevirtualbrain.org/demos/display_sensors_locations.ipynb
 .. _Display Subject Dataset: http://nbviewer.ipython.org/url/docs.thevirtualbrain.org/demos/display_subject_dataset.ipynb
 .. _Display Surface Local Connectivity: http://nbviewer.ipython.org/url/docs.thevirtualbrain.org/demos/display_surface_local_connectivity.ipynb
 .. _Display Surface Parcellation: http://nbviewer.ipython.org/url/docs.thevirtualbrain.org/demos/display_surface_parcellation.ipynb
