@@ -46,48 +46,16 @@ RST was chosen because:
 For more details about the rst style format, read the rst quick reference at:
 ** http://docutils.sourceforge.net/docs/user/rst/quickref.html **
 
-Templates & Styles
-------------------
-
-There are some common elements for all documents, so we put them into special folders:
-1. tvb/trunk/docs/manuals/styles
-   Contains styles to be applied when generate PDF and HTML files as follow:
-           a) pdf_doc.style - used when generating PDF files. So, any change related to colors/fonts/position
-               of PDF elements should go here.
-           b) html_doc.css - this is the place where we customize the look&feel for generated HTML content,
-                which at this moment represents online-help.
-
-2.tvb/trunk/docs/manuals/templates
-   Contains templates to be used while generating PDF/HTML files.
-   					a) template.rst - has content that generates first page (logo, title, ...), table of contents
-   					   and header/footer format
-   					b) constants.rst - defines some values that are user through all manuals (e.g TVB name, url ...)
-
-
-!!! IMPORTANT:
-	- please be careful when changing these templates and styles. They apply to **ALL** TVB documents.
-	- constants.rst file is included DYNAMICALLY at build time into all rst files that generates online-help,
-	  so this file MUST NOT be deleted.
-
 
 Documents Structure
 ------------------
 
 In order to have a consistent structure and format for all documents it's important to follow
 some rules while writing docs:
+
 1. Each manual/document must have a MAIN document where other RST files can be included.
 
-2. Each MAIN document must start with a section where to define constants for doc title, description, version and revision.
-    .. |TITLE| replace:: Installation Manual
-    .. |DESCRIPTION| replace:: Installation Manual for |TVB|
-    .. |VERSION| replace:: 1.0
-    .. |REVISION| replace:: 0.1
-
-3. Each MAIN document then has to include a template file. This will provide automatically first page
-   (with TVB logo, title, version, ...), table of contents and specify content for page header/footer.
-    .. include:: ../templates/pdf_template.rst
-
-4. Because we have some documents that include other RST files, it's important to have the same "scheme"
+2. Because we have some documents that include other RST files, it's important to have the same "scheme"
    for chapter identification. In this respect here is the order of the characters to be used
    while defining chapters/sub-chapters/paragraphs ...
    a) ========================
@@ -97,7 +65,7 @@ some rules while writing docs:
    e) ************************
    f) ++++++++++++++++++++++++
 
-5. After any change in TVB documents, please generate at least PDF version to ensure there is no
+3. After any change in TVB documents, please generate at least PDF version to ensure there is no
    error in the document. Next chapter explains how to do that.
 
 Screenshots
@@ -105,14 +73,14 @@ Screenshots
 
 Most of TVB documents include images and screenshots of the web interface. This is ok,
 but we have to consider a few aspects when introducing images in our documentation:
-- image size/resolution: please be aware of the size of the images you are using into documentaion.
+- image size/resolution: please be aware of the size of the images you are using into documentation.
     In order to introduce them into documentation, any framework/software has to adjust them, which
-    measn processing time and quality reduction.
+    means processing time and quality reduction.
 - image format: current recommended format for storing/using images is png but if there are
 		cases when you don't need a high level of details jpg format can be used too.
 
 IMPORTANT:
-In case of UserGuide, from wich we automatically generate Online-Help please use JPG format
+In case of UserGuide, from which we automatically generate Online-Help please use JPG format
 for screenshots. Also, if you have any tools please try to pre-process these images to reduce their
 size as much as possible, without loosing details.
 This is important because it reduces the time to show online help into client browser.
@@ -126,27 +94,18 @@ contains into /docs folder all PDF files. HTML content is placed in a folder tha
 makes it available through web interface.
 
 Most probably you don't want to create a full TVB distribution, only to check if your
-document is ok, so that's why we created some scripts that creates only PDF/HTML content.
+document is ok. Quick builds:
 
-To run these scripts, you need to have the following packages installed:
-- Python >= version 2.6
-- additional Python libraries (rst2pdf, rst2html, docutils, svglib)
+1. To generate PDFs
+    $ make latex
+    $ cd _build/latex
+    $ make
+    A pdf for each manual is created in _build/latex
 
-1. Scripts to generate PDFs
-	- they are placed in trunk/docs/manuals: generate_pdf.bat (Windows) / generate_pdf.sh (Linux)
-		These scripts generate a PDF file for each manual/doc and place them in the same folder where
-		scripts are placed.
+2. To generate the HTML site
+    $ make html
+    Files in _build/html
 
-2. Script to generate both PDFs and HTMLs
-	- this script is trunk\doc_gen\doc_generator.py
-	  Running this Python script will generate PDF files in trunk/dist/docs folder and HTML in
-	  trunk\tvb\interfaces\web\static\help
-
-	 In case you want to generate only parts of the documentation please run this script with one of the
-	 available options (see them with: python doc_generator.py -h)
-	 a) -o option: generates only online help [this is usefull in case you want to see online help without running a distribution]
-	 b) -p option: generates only PDF manuals in "dist" folder
-	 c) -a option: generates only API DOC structure in "dist" folder"
 
 Simulator Documentation
 -----------------------
