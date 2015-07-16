@@ -136,9 +136,9 @@ def copy_distribution_dataset(dist_path, library_path):
                      ("sensors.meg_channels_reg13.txt.bz2", "$OUTSIDE.MEG_Sensors.txt.bz2"),
 
                      ("connectivity.connectivity_76.zip", "$INSIDE.connectivity.connectivity_76.zip"),
-                     ("connectivity.paupau.zip", "$INSIDE.paupau.zip"),
-                     ("connectivity.connectivity_66.zip", "$INSIDE.connectivity_regions_66.zip"),
-                     ("connectivity.connectivity_192.zip", "$INSIDE.connectivity_regions_192.zip"),
+                     ("connectivity.paupau.zip", "$INSIDE.connectivity.paupau.zip"),
+                     ("connectivity.connectivity_66.zip", "$INSIDE.connectivity.connectivity_66.zip"),
+                     ("connectivity.connectivity_192.zip", "$INSIDE.connectivity.connectivity_192.zip"),
                      ("connectivity.__init__.py", "$INSIDE.connectivity.__init__.py"),
 
                      ("projectionMatrix.surface_reg_13_eeg_62.mat", "$INSIDE.projectionMatrix.surface_reg_13_eeg_62.mat"),

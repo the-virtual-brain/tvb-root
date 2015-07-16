@@ -72,9 +72,10 @@ def run_import(project_path):
 if __name__ == '__main__':
 
     if len(argv) < 2:
-        PROJECT_PATH = "2014-03-28_14-20_Epilepsy.zip"
-    else:
-        PROJECT_PATH = str(argv[1])
+        print "No Project path given!!!"
+        exit(1)
+
+    PROJECT_PATH = str(argv[1])
 
     print "We will try to import project at path " + PROJECT_PATH
 
