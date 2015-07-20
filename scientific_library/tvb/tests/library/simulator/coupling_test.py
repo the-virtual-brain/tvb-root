@@ -54,18 +54,20 @@ class CouplingTest(BaseTestCase):
         
     """
     weights = numpy.array([[0, 1], [1, 0]])
+    weights = weights[:, numpy.newaxis, :, numpy.newaxis]  # nodes, ncvar, nodes, modes
+
     state_1sv = numpy.array([[[1], [2]]])               # (state_variables, nodes, modes)
     state_2sv = numpy.array([[[1], [2]], [[1], [2]]])
     delayed_state_1sv = numpy.ones((2, 1, 2, 1))        # nodes, state_variables, nodes, modes
     delayed_state_2sv = numpy.ones((2, 2, 2, 1))
 
+
     def _apply_coupling(self, k):
-        k.configure()
         k.configure()
         k(self.weights, self.state_1sv, self.delayed_state_1sv)
 
+
     def _apply_coupling_2sv(self, k):
-        k.configure()
         k.configure()
         k(self.weights, self.state_2sv, self.delayed_state_2sv)
 
@@ -127,7 +129,6 @@ class CouplingTest(BaseTestCase):
         self._apply_coupling(k)
 
 
-    @unittest.skipIf(True, "TODO: find why this test is failing")
     def test_sigmoidal_jr_coupling(self):
         k = coupling.SigmoidalJansenRit()
         self.assertEqual(k.cmin, 0.0)
