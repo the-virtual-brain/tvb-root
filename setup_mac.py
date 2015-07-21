@@ -41,10 +41,14 @@ import os
 import sys
 import shutil
 import setuptools
-from tvb_bin.build_base import FW_FOLDER, DIST_FOLDER
-from tvb_bin.build_pyinstaller import PyInstallerPacker
+from tvb.basic.profile import TvbProfile
+import tvb_bin
 
-
+BIN_FOLDER = os.path.dirname(tvb_bin.__file__)
+TVB_ROOT = os.path.dirname(__file__)
+DIST_FOLDER = os.path.join(TVB_ROOT, "dist")
+FW_FOLDER = os.path.join(TVB_ROOT, "framework_tvb")
+VERSION = TvbProfile.current.version.BASE_VERSION
 
 def _create_command_file(command_file_path, command, before_message, done_message=False):
     """
@@ -79,6 +83,29 @@ def _copy_collapsed(to_copy):
                 ignore_patters = shutil.ignore_patterns('.svn', '*.rst')
                 shutil.copytree(src, dest, ignore=ignore_patters)
 
+
+def add_sitecustomize(base_folder, destination_folder):
+    full_path = os.path.join(base_folder, destination_folder, "sitecustomize.py")
+    with open(full_path, 'w') as sc_file:
+        sc_file.write("# -*- coding: utf-8 -*-\n\n")
+        sc_file.write("import sys\n")
+        sc_file.write("sys.setdefaultencoding('utf-8')\n")
+
+
+def add_tvb_bin_folder(base_folder, data_folder):
+    """
+    Add our custom 'tvb_bin' python package to the distribution pack.
+    """
+    bin_package_folder = os.path.join(base_folder, data_folder, 'tvb_bin')
+    if os.path.isdir(bin_package_folder):
+        shutil.rmtree(bin_package_folder)
+    os.mkdir(bin_package_folder)
+                            
+    for file_n in os.listdir(BIN_FOLDER):
+        if file_n.endswith('.py'):
+            shutil.copy(os.path.join(BIN_FOLDER, file_n), bin_package_folder)
+
+
 #--------------------------- PY2APP specific configurations--------------------------------------------
 
 PY2APP_PACKAGES = ['cherrypy', 'email', 'h5py', 'IPython', 'idlelib', 'migrate', 'minixsv',
@@ -112,9 +139,6 @@ EXCLUDED_DYNAMIC_LIBS = ['libbz2.1.0.dylib', 'libdb-4.6.dylib', 'libexslt.0.dyli
                          'libintl.8.dylib', 'liblzma.5.dylib', 'libpng15.15.dylib', 'libtiff.3.dylib',
                          'libsqlite3.0.dylib', 'libXss.1.dylib', 'libxml2.2.dylib', 'libxslt.1.dylib']
 
-EXCLUDE_INTROSPECT_FOLDERS = [folder for folder in os.listdir(FW_FOLDER)
-                              if os.path.isdir(os.path.join(FW_FOLDER, folder)) and folder != "tvb"]
-
 #-------------- Finish configuration, starting build-script execution ---------------------------------
 
 print "Running pre-py2app:"
@@ -131,11 +155,11 @@ REAL_STDOUT, REAL_STDERR = sys.stdout, sys.stderr
 sys.stdout = open('PY2APP.log', 'w')
 sys.stderr = open('PY2APP_ERR.log', 'w')
 
-FW_NAME = os.path.split(FW_FOLDER)[1]
+FW_NAME = "framework_tvb"
 
 setuptools.setup(name="tvb",
-                 version=PyInstallerPacker.VERSION,
-                 packages=setuptools.find_packages(FW_NAME, exclude=EXCLUDE_INTROSPECT_FOLDERS),
+                 version=VERSION,
+                 packages=setuptools.find_packages(FW_NAME),
                  package_dir={'': FW_NAME},
                  license="GPL v2",
                  options={'py2app': PY2APP_OPTIONS},
@@ -192,8 +216,11 @@ DESTINATION_SOURCES = os.path.join("tvb.app", "Contents", "Resources", "lib", "p
 _copy_collapsed({os.path.join("tvb_documentation_new", "demos"): os.path.join(DIST_FOLDER, "demo_scripts"),
                  os.path.join("tvb_documentation_new", "tutorials"): os.path.join(DIST_FOLDER, "demo_scripts")})
 
-PyInstallerPacker.add_sitecustomize(DIST_FOLDER, DESTINATION_SOURCES)
-PyInstallerPacker.add_tvb_bin_folder(DIST_FOLDER, DESTINATION_SOURCES)
+add_sitecustomize(DIST_FOLDER, DESTINATION_SOURCES)
+add_tvb_bin_folder(DIST_FOLDER, DESTINATION_SOURCES)
+
+# this dependency is deprecated
+from tvb_bin.build_pyinstaller import PyInstallerPacker
 PyInstallerPacker.generate_final_zip("TVB_MacOS", DESTINATION_SOURCES)
 
 ## Clean after install      
