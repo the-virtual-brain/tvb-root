@@ -39,6 +39,10 @@ Execute:
 #Prepare TVB code and dependencies.
 import os
 import sys
+import platform
+from glob import glob
+from contextlib import closing
+from zipfile import ZipFile, ZIP_DEFLATED
 import shutil
 import setuptools
 from tvb.basic.profile import TvbProfile
@@ -47,8 +51,15 @@ import tvb_bin
 BIN_FOLDER = os.path.dirname(tvb_bin.__file__)
 TVB_ROOT = os.path.dirname(__file__)
 DIST_FOLDER = os.path.join(TVB_ROOT, "dist")
+DIST_FOLDER_FINAL = "TVB_Distribution"
+STEP1_RESULT = os.path.join(TVB_ROOT, "build_resources", "tvb_builder", "build", "TVB_Distribution_a.zip")
+
 FW_FOLDER = os.path.join(TVB_ROOT, "framework_tvb")
 VERSION = TvbProfile.current.version.BASE_VERSION
+
+FOLDERS_TO_DELETE = ['.svn', '.project', '.settings']
+FILES_TO_DELETE = ['.DS_Store', 'dev_logger_config.conf']
+
 
 def _create_command_file(command_file_path, command, before_message, done_message=False):
     """
@@ -92,18 +103,153 @@ def add_sitecustomize(base_folder, destination_folder):
         sc_file.write("sys.setdefaultencoding('utf-8')\n")
 
 
-def add_tvb_bin_folder(base_folder, data_folder):
+def copy_simulator_library(library_folder):
     """
-    Add our custom 'tvb_bin' python package to the distribution pack.
+    Make sure all TVB folders are collapsed together in one folder in distribution.
     """
-    bin_package_folder = os.path.join(base_folder, data_folder, 'tvb_bin')
-    if os.path.isdir(bin_package_folder):
-        shutil.rmtree(bin_package_folder)
-    os.mkdir(bin_package_folder)
-                            
-    for file_n in os.listdir(BIN_FOLDER):
-        if file_n.endswith('.py'):
-            shutil.copy(os.path.join(BIN_FOLDER, file_n), bin_package_folder)
+    import tvb
+
+    destination_folder = os.path.join(library_folder, 'tvb')
+    for module_path in tvb.__path__:
+        for sub_folder in os.listdir(module_path):
+            src = os.path.join(module_path, sub_folder)
+            dest = os.path.join(destination_folder, sub_folder)
+            if os.path.isdir(src) and not (sub_folder.startswith('.')
+                                           or sub_folder.startswith("tests")) and not os.path.exists(dest):
+                print "  Copying TVB: " + str(src)
+                shutil.copytree(src, dest)
+
+    tests_folder = os.path.join(destination_folder, "tests")
+    if os.path.exists(tests_folder):
+        shutil.rmtree(tests_folder, True)
+        print "  Removed: " + str(tests_folder)
+
+    for excluded in [os.path.join(destination_folder, "simulator", "doc"),
+                     os.path.join(destination_folder, "simulator", "demos")]:
+        if os.path.exists(excluded):
+            shutil.rmtree(excluded, True)
+            print "  Removed: " + str(excluded)
+
+
+def introspect_licenses(destination_folder, root_introspection, extra_licenses_check=None):
+    """Generate archive with 3rd party licenses"""
+    print "- Introspecting for dependencies..." + str(root_introspection)
+    import locale
+
+    try:
+        locale.getdefaultlocale()
+    except Exception:
+        os.environ['LANG'] = 'en_US.UTF-8'
+        os.environ['LC_ALL'] = 'en_US.UTF-8'
+    from third_party_licenses.build_licenses import generate_artefact
+
+    zip_name = generate_artefact(root_introspection, extra_licenses_check=extra_licenses_check)
+    ZipFile(zip_name).extractall(destination_folder)
+    os.remove(zip_name)
+    print "- Dependencies archive with licenses done."
+
+
+def zipdir(basedir, archivename):
+    """Create ZIP archive from folder"""
+    assert os.path.isdir(basedir)
+    with closing(ZipFile(archivename, "w", ZIP_DEFLATED)) as z_file:
+        for root, _, files in os.walk(basedir):
+            #NOTE: ignore empty directories
+            for file_nname in files:
+                absfn = os.path.join(root, file_nname)
+                zfn = absfn[len(basedir) + len(os.sep):]
+                z_file.write(absfn, zfn)
+
+
+def clean_up(folder_path, to_delete):
+    """
+    Remove any read only permission for certain files like those in .svn, then delete the files.
+    """
+    #Add Write access on folder
+    folder_name = os.path.split(folder_path)[1]
+    will_delete = False
+    os.chmod(folder_path, 0o777)
+    if to_delete or folder_name in FOLDERS_TO_DELETE:
+        will_delete = True
+
+    #step through all the files/folders and change permissions
+    for file_ in os.listdir(folder_path):
+        file_path = os.path.join(folder_path, file_)
+        os.chmod(file_path, 0o777)
+        #if it is a directory, do a recursive call
+        if os.path.isdir(file_path):
+            clean_up(file_path, to_delete or will_delete)
+        #for files merely call chmod
+        else:
+            if file_ in FILES_TO_DELETE:
+                os.remove(file_path)
+
+    if to_delete or will_delete:
+        shutil.rmtree(folder_path)
+
+
+def _generate_distribution(final_name, library_path, version, extra_licensing_check=None):
+    # merge sources
+    library_abs_path = os.path.join(DIST_FOLDER, library_path)
+
+    copy_simulator_library(library_abs_path)
+
+    shutil.copytree(os.path.join("externals", "BCT"), os.path.join(DIST_FOLDER, library_path, "externals", "BCT"))
+    #write_svn_current_version(os.path.join(DIST_FOLDER, library_path))
+
+    add_sitecustomize(DIST_FOLDER, library_path)
+
+    bin_src = os.path.join(DIST_FOLDER, "_tvb_bin")
+    bin_dst = os.path.join(library_abs_path, "tvb_bin")
+    print "- Moving " + bin_src + " to " + bin_dst
+    os.rename(bin_src, bin_dst)
+
+    demo_data_src = os.path.join(DIST_FOLDER, "_tvb_data")
+    demo_data_dst = os.path.join(library_abs_path, "tvb_data")
+    print "- Moving " + demo_data_src + " to " + demo_data_dst
+    os.rename(demo_data_src, demo_data_dst)
+
+    online_help_src = os.path.join(DIST_FOLDER, "_help")
+    online_help_dst = os.path.join(library_abs_path, "tvb", "interfaces", "web", "static", "help")
+    print "- Moving " + online_help_src + " to " + online_help_dst
+    os.rename(online_help_src, online_help_dst)
+
+    _copy_collapsed({os.path.join("tvb_documentation_new", "demos"): os.path.join(DIST_FOLDER, "demo_scripts"),
+                     os.path.join("tvb_documentation_new", "tutorials"): os.path.join(DIST_FOLDER, "demo_scripts")})
+
+    print "- Cleaning up non-required files..."
+    clean_up(DIST_FOLDER, False)
+    if os.path.exists(DIST_FOLDER_FINAL):
+        shutil.rmtree(DIST_FOLDER_FINAL)
+    os.rename(DIST_FOLDER, DIST_FOLDER_FINAL)
+    shutil.rmtree('tvb.egg-info', True)
+    shutil.rmtree('build', True)
+    for file_zip in glob('*.zip'):
+        os.unlink(file_zip)
+
+    print "- Creating required folder structure..."
+    if os.path.exists(final_name):
+        shutil.rmtree(final_name)
+    os.mkdir(final_name)
+    shutil.move(DIST_FOLDER_FINAL, final_name)
+
+    if extra_licensing_check:
+        extra_licensing_check = extra_licensing_check.split(';')
+        for idx in xrange(len(extra_licensing_check)):
+            extra_licensing_check[idx] = os.path.join(final_name, DIST_FOLDER_FINAL, extra_licensing_check[idx])
+    introspect_licenses(os.path.join(final_name, DIST_FOLDER_FINAL, 'THIRD_PARTY_LICENSES'),
+                        os.path.join(final_name, DIST_FOLDER_FINAL, library_path), extra_licensing_check)
+    print "- Creating the ZIP folder of the distribution..."
+    architecture = '_x32_'
+    if sys.maxint > 2 ** 32 or platform.architecture()[0] == '64bit':
+        architecture = '_x64_'
+    zip_name = final_name + "_" + version + architecture + "web.zip"
+    if os.path.exists(zip_name):
+        os.remove(zip_name)
+    zipdir(final_name, zip_name)
+    if os.path.exists(final_name):
+        shutil.rmtree(final_name)
+    print '- Finish creation of distribution ZIP'
 
 
 #--------------------------- PY2APP specific configurations--------------------------------------------
@@ -149,6 +295,14 @@ if os.path.exists('build'):
 if os.path.exists(DIST_FOLDER):
     shutil.rmtree(DIST_FOLDER)
 
+print "Decompressing " + STEP1_RESULT + " into '" + DIST_FOLDER
+step1_tmp_dist_folder = os.path.join(TVB_ROOT, 'TVB_Distribution')
+if os.path.exists(step1_tmp_dist_folder):
+    shutil.rmtree(step1_tmp_dist_folder)
+ZipFile(STEP1_RESULT).extractall(TVB_ROOT)
+# the above created a TVB_Distribution/ we need a dist folder
+shutil.move(step1_tmp_dist_folder, DIST_FOLDER)
+
 print "PY2APP starting ..."
 # Log everything from py2app in a log file
 REAL_STDOUT, REAL_STDERR = sys.stdout, sys.stderr
@@ -175,7 +329,7 @@ print "PY2APP finished."
 print "Running post-py2app build operations:"
 print "- Start creating startup scripts..."
 
-os.mkdir(os.path.join(DIST_FOLDER, "bin"))
+# os.mkdir(os.path.join(DIST_FOLDER, "bin"))
 os.mkdir(os.path.join(DIST_FOLDER, "demo_scripts"))
 
 _create_command_file(os.path.join(DIST_FOLDER, "bin", 'distribution'),
@@ -213,15 +367,8 @@ for entry in EXCLUDED_DYNAMIC_LIBS:
 
 DESTINATION_SOURCES = os.path.join("tvb.app", "Contents", "Resources", "lib", "python2.7")
 
-_copy_collapsed({os.path.join("tvb_documentation_new", "demos"): os.path.join(DIST_FOLDER, "demo_scripts"),
-                 os.path.join("tvb_documentation_new", "tutorials"): os.path.join(DIST_FOLDER, "demo_scripts")})
-
-add_sitecustomize(DIST_FOLDER, DESTINATION_SOURCES)
-add_tvb_bin_folder(DIST_FOLDER, DESTINATION_SOURCES)
-
 # this dependency is deprecated
-from tvb_bin.build_base import generate_distribution
-generate_distribution("TVB_MacOS", DESTINATION_SOURCES, VERSION)
+_generate_distribution("TVB_MacOS", DESTINATION_SOURCES, VERSION)
 
 ## Clean after install      
 shutil.rmtree(os.path.join(FW_FOLDER, 'tvb.egg-info'), True)    
