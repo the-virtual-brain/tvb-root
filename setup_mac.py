@@ -220,8 +220,8 @@ add_sitecustomize(DIST_FOLDER, DESTINATION_SOURCES)
 add_tvb_bin_folder(DIST_FOLDER, DESTINATION_SOURCES)
 
 # this dependency is deprecated
-from tvb_bin.build_pyinstaller import PyInstallerPacker
-PyInstallerPacker.generate_final_zip("TVB_MacOS", DESTINATION_SOURCES)
+from tvb_bin.build_base import generate_distribution
+generate_distribution("TVB_MacOS", DESTINATION_SOURCES, VERSION)
 
 ## Clean after install      
 shutil.rmtree(os.path.join(FW_FOLDER, 'tvb.egg-info'), True)    
