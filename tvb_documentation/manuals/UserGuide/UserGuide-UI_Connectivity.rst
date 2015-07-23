@@ -41,6 +41,7 @@ The left `View` column contains several Long Range Connectivity visualizations:
 
 The right column contains the connectivity matrix editor.
 
+.. _connectivity_matrix_ui:
 
 Connectivity Matrix Editor
 ~~~~~~~~~~~~~~~~~~~~~~~~~~

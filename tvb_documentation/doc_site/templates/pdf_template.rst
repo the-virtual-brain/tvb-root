@@ -1,1 +1,0 @@
-.. include:: ../../manuals/templates/pdf_template.rst

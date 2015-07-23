@@ -1,3 +1,5 @@
+:orphan:
+
 .. _top_benchmarks:
 
 
@@ -21,11 +23,22 @@ result in biased results. Also do not forget to provide the system info:
   -  TVB version.
   -  Web Browser (if applicable).
   -  Python version (if applicable).
-  
+
+
+Timeline
+--------
+
+Performance evolution from a TVB version to another.
 
 .. toctree::
    :maxdepth: 2
 
+   tvb_1.4
    tvb_1.3.1
    tvb_1.3
    tvb_1.2
+
+
+.. figure:: /_static/benchmarks-evolution.png
+
+

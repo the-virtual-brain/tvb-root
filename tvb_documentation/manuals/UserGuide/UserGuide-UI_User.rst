@@ -1,5 +1,9 @@
+.. include:: /manuals/templates/pdf_constants.rst
+
 User
 ----
+
+.. _tvb_settings_ui :
 
 TVB Settings
 ............

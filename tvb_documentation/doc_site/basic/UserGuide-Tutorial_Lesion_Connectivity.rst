@@ -1,1 +1,0 @@
-.. include:: ../../manuals/UserGuide/UserGuide-Tutorial_Lesion_Connectivity.rst

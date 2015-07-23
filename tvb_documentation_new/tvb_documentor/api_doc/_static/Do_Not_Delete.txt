@@ -1,2 +1,0 @@
-This folder should contain static content and all that content is copied by 
-Sphinx whyle generating HTLP API doc.

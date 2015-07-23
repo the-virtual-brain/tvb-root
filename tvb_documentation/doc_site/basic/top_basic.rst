@@ -1,5 +1,6 @@
-.. _top_basic:
+:orphan:
 
+.. _top_basic:
 
 ******************************************
 User Guide
@@ -16,7 +17,8 @@ available actions.
 
 **User Guide**
 
-  .. toctree::
-   :maxdepth: 3
+    .. toctree::
+        :maxdepth: 3
 
-   link_user_guide
+        /manuals/UserGuide/UserGuide
+

@@ -214,8 +214,8 @@ def _generate_distribution(final_name, library_path, version, extra_licensing_ch
     print "- Moving " + online_help_src + " to " + online_help_dst
     os.rename(online_help_src, online_help_dst)
 
-    _copy_collapsed({os.path.join("tvb_documentation_new", "demos"): os.path.join(DIST_FOLDER, "demo_scripts"),
-                     os.path.join("tvb_documentation_new", "tutorials"): os.path.join(DIST_FOLDER, "demo_scripts")})
+    _copy_collapsed({os.path.join("tvb_documentation", "demos"): os.path.join(DIST_FOLDER, "demo_scripts"),
+                     os.path.join("tvb_documentation", "tutorials"): os.path.join(DIST_FOLDER, "demo_scripts")})
 
     print "- Cleaning up non-required files..."
     clean_up(DIST_FOLDER, False)

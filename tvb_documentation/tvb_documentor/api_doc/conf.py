@@ -11,6 +11,10 @@
 # All configuration values have a default; values that are commented out
 # serve to show the default.
 
+# NOTE: This conf.py exists mainly because we want to generate api docs without the rest of the html docs.
+#       This stand alone version is packaged with the distribution.
+#       This is also globally importable (tvb_documentor is a top level package), so that some variables are available globally (package_specs  ...)
+
 import os
 
 # If extensions (or modules to document with autodoc) are in another directory,
@@ -20,10 +24,10 @@ import os
 
 #-----------------------------Specific configuration dictionary----------------
 import tvb.simulator
-tvb_default_spec_folder = os.path.join(os.path.split(os.path.dirname(__file__))[0], 'tvb_custom_doc')
+#tvb_default_spec_folder = os.path.join(os.path.split(os.path.dirname(__file__))[0], 'tvb_custom_doc')
 
 #Dictionary with mappings when a whole sub-package's documentation is overwritten from generated one
-packages_specs = {'tvb.simulator': {'path': os.path.join(os.path.dirname(tvb.simulator.__file__), 'doc'),
+packages_specs = {'tvb.simulator': {'path': os.path.join(os.path.dirname(os.path.dirname(__file__)), 'sim_doc'),
                                     'main': 'tvb.simulator.rst'}}
 #Dictionary with mappings when only one module's documentation is overwritten from generated one
 #modules_specs = {'tvb.core.datatype': os.path.join(tvb_default_spec_folder, 'tvb.core.datatype.rst')}
@@ -58,7 +62,7 @@ master_doc = 'index'
 
 # General information about the project.
 project = u'The Virtual Brain'
-copyright = u'2012-2014'
+copyright = u'2012-2015'
 
 # The version info for the project you're documenting, acts as replacement for
 # |version| and |release|, also used in various other places throughout the
@@ -101,7 +105,7 @@ exclude_patterns = ['_build']
 pygments_style = 'sphinx'
 
 # A list of ignored prefixes for module index sorting.
-#modindex_common_prefix = []
+modindex_common_prefix = ['tvb.']
 
 
 # -- Options for HTML output ---------------------------------------------------

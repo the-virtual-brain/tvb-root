@@ -1,5 +1,5 @@
 A Description of a Complete Dataset
-====================================
+===================================
 
 The primary purpose of The Virtual Brain platform is to simulate whole brain
 dynamics. A simulation pipeline has different stages. The most fundamental stage
@@ -25,8 +25,8 @@ A complete dataset should:
 + increase reproducibility of the results.
 
 
-A) GENERAL CONSIDERATIONS
-----------------------------------
+General Considerations
+----------------------
 
 A dataset should be made available on one single place (eg, through XNAT) to
 ensure traceability and if required for clinical/privacy reasons, restricted
@@ -81,8 +81,8 @@ head, and that the axis(x,y,z) point in the same direction with the same
 orientation.
 
 
-B) PARCELLATION MASK
-----------------------------------
+Parcellation Mask
+-----------------
 
 **What is the purpose of the mask?**
 
@@ -180,8 +180,8 @@ A list with the region names/labels and corresponding integer index should be pr
   be consistent with the surface's coordinate systems.
 
 
-C) CONNECTIVITY AND PATH LENGTH DATA
----------------------------------------------------
+Connectivity and path length data
+---------------------------------
 
 **What is it required to build a connectivity matrix (parcellated connectome)?**
 
@@ -214,8 +214,8 @@ C) CONNECTIVITY AND PATH LENGTH DATA
   matter fibre lengths between regions;
 
 
-D) CORTICAL MESH
-----------------------------------
+Cortical Mesh
+-------------
 
 We encourage to use the MNI brain template (eg, MNI152) to register your
 subjects data and extract the corresponding cortical surface.
@@ -256,8 +256,8 @@ subjects data and extract the corresponding cortical surface.
     and the upcoming publication where surface regularization is explained for the case of the pial surface.
 
 
-E) REGION MAPPING
-----------------------------------
+Region Mapping
+--------------
 
 **What is the Region Mapping?**
 
@@ -275,8 +275,8 @@ E) REGION MAPPING
   TODO: Add links to relevant documentation.
 
 
-F) HEAD MODEL
-----------------------------------
+Head model
+----------
 
 **What is the purpose of the head model**
 
@@ -367,7 +367,7 @@ F) HEAD MODEL
 
 
 The TVB demonstration dataset
-----------------------------------
+-----------------------------
 
 **DISCLAIMER:** This dataset was custom made and built to serve the purpose of
 numerically testing the simulator, as well as for theoretical exploration. It
@@ -465,10 +465,10 @@ We need:
 
 
 Other datasets
-----------------------------------
+--------------
 
 Hagmann
-..............
+.......
 
 What has been provided/shown :
 
@@ -489,7 +489,7 @@ Permissions:
 
 
 The Human Connectome Project
-.............................
+............................
 
 
 So far, the most complete datasets available.  We aim to integrate some of the

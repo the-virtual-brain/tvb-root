@@ -1,1 +1,0 @@
-.. include:: ../../manuals/UserGuide/UserGuide-UI_User.rst

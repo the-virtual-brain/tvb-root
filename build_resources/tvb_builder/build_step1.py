@@ -174,8 +174,10 @@ def write_svn_current_version(library_folder):
 
 
 def build_step1():
-    if os.path.exists(DIST_FOLDER):
-        shutil.rmtree(DIST_FOLDER)
+    build_folder = os.path.dirname(DIST_FOLDER)
+
+    if os.path.exists(build_folder):
+        shutil.rmtree(build_folder)
     os.makedirs(DIST_FOLDER)
 
     # make top level dirs
@@ -184,9 +186,9 @@ def build_step1():
         os.mkdir(join(DIST_FOLDER, d))
 
     # make help
-    doc_generator = DocGenerator(TVB_ROOT, DIST_FOLDER, DIST_FOLDER)
-    # doc_generator.generate_manuals_pdfs() # to /docs
-    doc_generator.generate_online_help() # to /_help
+    doc_generator = DocGenerator(TVB_ROOT, DIST_FOLDER)
+    doc_generator.generate_pdfs()
+    doc_generator.generate_online_help()
 
     shutil.copy2(LICENSE_PATH, join(DIST_FOLDER, 'LICENSE_TVB.txt'))
     shutil.copy2(RELEASE_NOTES_PATH, join(DIST_FOLDER, 'docs', 'RELEASE_NOTES.txt'))
@@ -201,9 +203,9 @@ def build_step1():
     # do this in step 2
     write_svn_current_version(os.path.join(DIST_FOLDER, '_tvb_bin'))
 
-    shutil.make_archive('TVB_Distribution', 'zip', os.path.dirname(DIST_FOLDER))
+    shutil.make_archive('TVB_Distribution_b', 'zip', build_folder) # this will not add empty folders!
     shutil.rmtree(DIST_FOLDER)
-    shutil.move('TVB_Distribution.zip', os.path.dirname(DIST_FOLDER))
+    shutil.move('TVB_Distribution_b.zip', build_folder)
 
 
 if __name__ == '__main__':

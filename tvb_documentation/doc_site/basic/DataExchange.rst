@@ -1,1 +1,0 @@
-.. include:: ../../manuals/UserGuide/DataExchange.rst

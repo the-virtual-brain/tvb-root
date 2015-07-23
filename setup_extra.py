@@ -62,7 +62,7 @@ setup(
     name='tvb_documentor',
     packages=find_packages('tvb_documentation'),
     package_dir={'': 'tvb_documentation'},
-    install_requires=["rst2pdf", "PIL>=1.1.7", "sphinx"]
+    install_requires=["sphinx<1.3"]
 )
 shutil.rmtree(os.path.join("tvb_documentation", 'tvb_documentor.egg-info'), True)
 
