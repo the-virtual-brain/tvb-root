@@ -36,17 +36,19 @@ necessary for a distribution.
 .. moduleauthor:: Calin Pavel <calin.pavel@codemart.ro>
 """
 import subprocess
-import os
 import shutil
 import tempfile
 from optparse import OptionParser
-from sphinx.cmdline import main as sphinx_build
 from contextlib import contextmanager
+
+import os
+from sphinx.cmdline import main as sphinx_build
 
 import tvb
 from tvb.basic.logger.builder import get_logger
-import tvb_documentor.api_doc.generate_modules
-from tvb_documentor.api_doc.generate_modules import process_sources, GenOptions
+import tvb_documentor
+from tvb_documentor.generate_modules import process_sources, GenOptions
+
 
 @contextmanager
 def tempdir(prefix):
@@ -195,25 +197,6 @@ class DocGenerator:
                 shutil.copy(pdf_pth, dest_pth)
 
 
-    def generate_api_doc(self):
-        """
-        This generates API doc in HTML format and include this into distribution.
-        """
-        # Create a TMP folder where to store generated RST files.
-        with tempdir('tvb_sphinx_rst_') as temp_folder:
-            opts = GenOptions(None, 'rst', temp_folder, 'Project', 10, True, None)
-
-            # Start to create RST files needed for Sphinx to generate final HTML
-            process_sources(opts, tvb.__path__, self.EXCLUDES)
-            # Now generate HTML doc
-            conf_folder = os.path.dirname(tvb_documentor.api_doc.generate_modules.__file__)
-            args = [
-                '-c', conf_folder,  # Specify path where to find conf.py
-                '-d', temp_folder,
-            ]
-            self._run_sphinx('html', temp_folder, self._dist_api_folder, args)
-
-
     def _bundle_ipynbs(self, html_folder):
         """
         Copy all ipynb's from the self.IPYNB_FOLDERS to the destination
@@ -278,10 +261,7 @@ def main(options, root_folder):
         shutil.rmtree(abs_dist)
         os.makedirs(abs_dist)
 
-    generator = DocGenerator(root_folder, abs_dist, os.path.join(root_folder, DocGenerator.FW_FOLDER))
-
-    if options.api_doc_only:
-        generator.generate_api_doc()
+    generator = DocGenerator(root_folder, abs_dist)
 
     if options.pdfs_only:
         generator.generate_pdfs()
@@ -293,8 +273,7 @@ def main(options, root_folder):
         generator.generate_site()
 
     # if no args generate all except site
-    if not options.api_doc_only and not options.pdfs_only and not options.online_help_only and not options.site_only:
-        generator.generate_api_doc()
+    if not options.pdfs_only and not options.online_help_only and not options.site_only:
         generator.generate_pdfs()
         generator.generate_online_help()
 
@@ -304,7 +283,6 @@ if __name__ == "__main__":
     ROOT_FOLDER = os.path.dirname(os.path.dirname(os.path.join(os.getcwd())))
 
     PARSER = OptionParser()
-    PARSER.add_option("-a", "--api_doc_only", action="store_true", dest="api_doc_only", help="Generates only API DOC")
     PARSER.add_option("-p", "--pdf_only", action="store_true", dest="pdfs_only", help="Generates only manual PDFs")
     PARSER.add_option("-o", "--online_help_only", action="store_true",
                       dest="online_help_only", help="Generates only Online Help")

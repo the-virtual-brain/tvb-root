@@ -29,7 +29,13 @@ It also creates a modules index (named modules.<suffix>).
 import os
 import shutil
 import optparse
-from tvb_documentor.api_doc.conf import packages_specs, modules_specs
+
+#Dictionary with mappings when a whole sub-package's documentation is overwritten from generated one
+packages_specs = {'tvb.simulator': {'path': os.path.join(os.path.dirname(__file__), 'sim_doc'),
+                                    'main': 'tvb.simulator.rst'}}
+#Dictionary with mappings when only one module's documentation is overwritten from generated one
+#modules_specs = {'tvb.core.datatype': os.path.join(tvb_default_spec_folder, 'tvb.core.datatype.rst')}
+modules_specs = {}
 
 DEFAULT_STYLE = """
 .. |tvb| replace:: `The Virtual Brain Project`
