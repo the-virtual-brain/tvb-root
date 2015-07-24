@@ -2,14 +2,46 @@
 
 .. _shell_ui :
 
-Console Interface of |TVB|
+Console Interfaces of |TVB|
 ===========================
 
+|TVB| has several flavors of scripting interfaces. These are powerful programmatic interfaces.
+Unlike the GUI they are not meant be used remotely and their leaning curve is steeper.
 
-Getting started with Python IDLE 
---------------------------------
+They are a great tool to build a reproducible workflow.
+The sequence of actions performed in the GUI are recorded as operations but a python script using the
+console interface is more detailed and exact.
 
-The console interface of |TVB| is an IDLE shell. All TVB services except GUI ones are available within this shell.
+From these interfaces you also have full access to the API's of TVB.
+
+The interfaces differ in what shell is used and in how many |TVB| services they use.
+
+
+TVB Profiles
+------------
+
+Some of the features of TVB are optional. The GUI uses all of them but the scripting interfaces may select a subset.
+Two profiles may be scripted:
+
+In the LIBRARY_PROFILE you use |TVB| as you would use a library and it will not manage data for you.
+
+In the COMMAND_PROFILE interfaces you can use the data management facilities of |TVB|.
+Datatypes will be organized in projects and saved in the User/TVB/ folder.
+You cannot use the web visualizers.
+
+
+Ipython notebook shell
+----------------------
+
+The most user friendly interface uses the LIBRARY_PROFILE by default.
+It differs from the standard ipython notebook only by having the tvb modules available.
+See the :ref:`scripting_demos` for examples of how to use this interface.
+
+
+IDLE shell
+----------
+
+One console interface of |TVB| is an IDLE shell. All TVB services except GUI ones are available within this shell.
 
 Within IDLE you can run a number of scripting demos to show how to build a network model and
 run a simulation. 
@@ -28,8 +60,9 @@ On Mac OS the path is just a little different::
 Here is an illustration for the above.
 
 .. figure:: screenshots/linux_shell_run_demo.jpg
+    :width: 600px
 
-   Run a |TVB| demo with execfile
+    Run a |TVB| demo with execfile
    
    
 Another way to run a script, that also allows to see and edit the code, is opening 
@@ -38,8 +71,9 @@ from the Run menu. The script will be executed.
 
 
 .. figure:: screenshots/linux_shell_run_demo_2.jpg
+    :width: 600px
 
-   Run a |TVB| demo from the Run Menu option
+    Run a |TVB| demo from the Run Menu option
 
 
 
@@ -52,8 +86,8 @@ This will import all the scientific simulator modules as well as some datatypes
 that wrap important data as the `Connectivity` matrix and cortical `Surface`.
 
 
-Headless Interface of |TVB|
----------------------------
+Terminal shell
+--------------
 
 If you are using |TVB| on a headless machine then Python IDLE is not an option.
 In this scenario TVB's shell is a simple python console shell.
@@ -76,39 +110,4 @@ Using the distribution script allows you to give additional options.
 The `-reset` option will clean the |TVB| folder before starting the web interface ::
 
     distribution start WEB_PROFILE -reset
-
-.. _tvb_settings_headless:
-
-Configuring a headless TVB
---------------------------
-
-In order to configure TVB in a headless environment, create a file named `.tvb.configuration` in the home directory
-of the current OS user which is launching |TVB|.
-Copy the following content and edit it to suit your needs. ::
-
-    MAXIMUM_NR_OF_OPS_IN_RANGE=2000
-    URL_WEB=http://127.0.0.1:8080/
-    ADMINISTRATOR_EMAIL=jira.tvb@gmail.com
-    MATLAB_EXECUTABLE=/usr/bin/octave
-    MAXIMUM_NR_OF_THREADS=4
-    WEB_SERVER_PORT=8080
-    URL_MPLH5=ws://127.0.0.1:9000/
-    LAST_CHECKED_CODE_VERSION=6507
-    USR_DISK_SPACE=5242880
-    DEPLOY_CLUSTER=False
-    ADMINISTRATOR_NAME=admin
-    LAST_CHECKED_FILE_VERSION=2
-    URL_VALUE=sqlite:////home/tvb_user/TVB/tvb-database.db
-    ADMINISTRATOR_PASSWORD=[[md5 of password]]
-    SELECTED_DB=sqlite
-    MAXIMUM_NR_OF_VERTICES_ON_SURFACE=300000
-    MPLH5_SERVER_PORT=9000
-    TVB_STORAGE=/home/tvb_user/TVB
-
-Usually one would change the web server port and domain.
-|TVB| will create a folder with project data named TVB (at the path specified by line starting with `TVB_STORAGE`).
-By default it is located in the users home directory.
-You can change the `TVB_STORAGE` to point to a different location.
-
-Finally run the appropriate script for your platform (as described in the previous chapter), to launch |TVB| with the new settings.
 

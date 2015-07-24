@@ -95,6 +95,8 @@ Visualizers
 
       :ref:`connectivity_matrix_ui`
 
+.. _scripting_demos:
+
 Scripting Demos 
 ===============
 

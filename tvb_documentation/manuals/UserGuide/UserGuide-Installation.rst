@@ -27,6 +27,17 @@ The TVB software package can be used in 3 different configurations:
 To install |TVB| unzip the package and it will create a folder TVB_Distribution.
 
 
+|TVB|'s interfaces
+------------------
+
+|TVB| has a web application GUI interface that can be accessed remotely.
+See the :ref:`GUI guide <top_gui_guide>` for how to use it.
+
+It also has several flavors of scripting interfaces. These are powerful programmatic interfaces.
+Unlike the GUI they are not meant be used remotely and their leaning curve is steeper.
+See the :ref:`console interface <shell_ui>` for usage.
+
+
 Launching the application
 -------------------------
 
@@ -37,10 +48,13 @@ In the TVB_Distribution folder you should find a sub-folder `bin` with a number 
 - tvb_stop
 - contributor_setup
 - distribution
+- ipython_notebook
 
 On Linux these scripts will have the `.sh` termination, on Mac the `.command` termination and on Windows the `.bat` termination.
 We will omit the termination in this manual. For example if you are using Windows and tvb_start is mentioned
 in this document then tvb_start.bat is meant.
+
+These scripts will start and control |TVB|.
 
 
 Launching the GUI
@@ -50,7 +64,7 @@ For Mac users the `TVB_Distribution` folder contains an application file `tvb.ap
 To start |TVB| in your web browser double click `tvb.app`.
 Please be patient, as depending on your computer resources, the startup process might take about 1-2 minutes.
 
-For Linux and Windows users, to start |TVB| in your web-browser, run the `tvb_start` script in `TVB_Distribution\bin`.
+For Linux and Windows users, to start |TVB| in your web-browser, run the `tvb_start` script in `TVB_Distribution/bin`.
 
 To make sure that no processes will remain open after you use the application,
 you should always close |TVB| by running the `tvb_stop` script.
@@ -59,23 +73,35 @@ you should always close |TVB| by running the `tvb_stop` script.
 Launching scripting interfaces
 ..............................
 
+There are more scripting interface flavors. They differ in what shell is used and in how many |TVB| services they use.
+In the COMMAND_PROFILE interfaces you can use the data management facilities of |TVB|.
+In the LIBRARY_PROFILE you use |TVB| as you would use a library and it will not manage data for you.
+
+The most user friendly interface is the ipython notebook one. It is a LIBRARY_PROFILE interface.
+It's shell is the browser based ipython notebook.
+To launch it run the `ipython_notebook` script from the `TVB_Distribution/bin/` folder.
+
 The `distribution` script is used from a terminal to control the |TVB| distribution.
 Run `distribution -h` too get help with this command.
 
 To access the console interface, run in a terminal `distribution start COMMAND_PROFILE` or `distribution start LIBRARY_PROFILE`.
-The interactive Python shell will appear. See the :ref:`console <shell_ui>` and :ref:`web interface<top_gui_guide>`
-sections for more details on how to use the different interfaces of |TVB|.
+A Python IDLE shell will appear. See the :ref:`console <shell_ui>`.
+
+If you want a plain python text ui shell add the `-headless` flag to the above commands: `distribution start COMMAND_PROFILE -headless`
+This is helpful if |TVB| is installed on a headless server (no GUI).
 
 The `tvb_clean` script will reset your TVB database and delete **all** data stored by |TVB|. Be careful!
 Use this to get to a clean state, as if |TVB| had just been installed and never configured.
 
+
 Configuring TVB
 ---------------
 
-The preferred method to configure |TVB| is from the web interface. See :ref:`tvb_settings_ui`.
+One of the first actions you will have to perform after starting |TVB| is to configure it.
+If you are installing |TVB| for personal usage then the default configuration is sensible and you may accept it without detailed knowledge.
 
-However if |TVB| is installed on a headless server (no GUI), then the web interface might not be available remotely.
-See :ref:`tvb_settings_headless`.
+However for a client server or cluster setup you will need to take some more time to configure TVB.
+See the :ref:`configuring_TVB` section for details.
 
 
 Upgrading the Application
@@ -92,7 +118,7 @@ Supported operating systems
 
 The current |TVB| package was tested on :
 
-- Debian Squeeze and Fedora 16.
+- Debian Squeeze and Fedora 20.
   Other Linux flavors might also work as long as you have installed a glibc version of 2.11 or higher.
 
 - Mac OS X greater than 10.7 are supported.
