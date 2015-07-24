@@ -23,6 +23,7 @@ check for updates on our web site: http://www.thevirtualbrain.org.
 
     UserGuide-Overview.rst
     UserGuide-Installation.rst
+    UserGuide-Config.rst
     UserGuide-Shell.rst
     UserGuide-UI.rst
     Complete_Dataset_Description.rst

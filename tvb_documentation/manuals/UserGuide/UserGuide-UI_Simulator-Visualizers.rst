@@ -1,5 +1,13 @@
 .. VISUALIZERS COLUMN
 
+.. This is orphan because it is ..included in other files.
+   The inclusion is forced by the need of the online help to have the visualizer docs on both the simulator and project pages in line.
+   The normal docs will not like that and would prefer a toctree.
+   This situation is handled by a conditional :only: include in the UserGuide-UI_Project.rst and a unconditional include in the simulator rst
+   This makes this file part of the simulator page.
+   Sphinx however will assume that we might do a double include and will complain with warnings.
+
+:orphan:
 
 Simple Visualizers
 ..................

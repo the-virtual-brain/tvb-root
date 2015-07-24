@@ -13,6 +13,7 @@
     :hidden:
 
     /manuals/UserGuide/UserGuide-Installation
+    /manuals/UserGuide/UserGuide-Config
     /tutorials/Tutorials
     /demos/Demos
     /manuals/UserGuide/UserGuide-UI

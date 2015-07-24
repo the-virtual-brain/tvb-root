@@ -1,3 +1,7 @@
+.. this is obsolete and not included in any toc trees.
+
+:orphan:
+
 .. |TITLE| replace:: Developers's Reference Manual
 .. |DESCRIPTION| replace:: Describes the function and architecture of |TVB|
 .. |VERSION| replace:: 1.0
