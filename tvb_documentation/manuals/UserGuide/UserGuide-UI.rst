@@ -1,4 +1,3 @@
-.. include:: /manuals/templates/pdf_constants.rst
 
 .. _top_gui_guide:
 

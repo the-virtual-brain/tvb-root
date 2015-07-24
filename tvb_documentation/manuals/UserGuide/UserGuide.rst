@@ -7,7 +7,6 @@
 .. |VERSION| replace:: 1.0
 .. |REVISION| replace:: 0.1
 
-.. include:: ../templates/pdf_constants.rst
 
 .. the odd title below is added to work around a sphinx latex bug
    https://github.com/sphinx-doc/sphinx/issues/632

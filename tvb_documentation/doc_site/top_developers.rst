@@ -6,8 +6,6 @@
 Developers
 **********
 
-.. include:: /manuals/templates/pdf_constants.rst
-
 This section contains detailed information about |TVB|.
 It is useful to you if you want to script or extend |TVB|.
 

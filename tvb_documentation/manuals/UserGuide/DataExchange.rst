@@ -1,5 +1,4 @@
-﻿.. include:: ../templates/pdf_constants.rst
-
+﻿
 |TVB| Data Storage
 ==================
 

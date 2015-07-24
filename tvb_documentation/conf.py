@@ -102,6 +102,11 @@ pygments_style = 'sphinx'
 # A list of ignored prefixes for module index sorting.
 modindex_common_prefix = ['tvb.']
 
+rst_epilog = """
+.. |TVB| replace:: *TheVirtualBrain*
+.. |TVB_URL| replace:: http://www.thevirtualbrain.org
+.. |TVB_COPYRIGHT| replace:: copyright
+"""
 
 # -- Options for HTML output ---------------------------------------------------
 

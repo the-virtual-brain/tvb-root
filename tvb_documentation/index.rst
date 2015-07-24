@@ -21,8 +21,6 @@
     /api/index
 
 
-.. include:: /manuals/templates/pdf_constants.rst
-
 .. include:: /manuals/UserGuide/UserGuide-Overview.rst
 
 Download

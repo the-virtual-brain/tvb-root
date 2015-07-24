@@ -3,8 +3,6 @@
 .. |VERSION| replace:: 1.0
 .. |REVISION| replace:: 3
 
-.. include:: ../templates/pdf_constants.rst
-      
 .. _TVB Web Page: http://www.thevirtualbrain.org
 .. _TVB Git Repository: https://github.com/the-virtual-brain/tvb-library
 

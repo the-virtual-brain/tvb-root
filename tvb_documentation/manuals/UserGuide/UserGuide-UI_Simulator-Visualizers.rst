@@ -1,6 +1,5 @@
 .. VISUALIZERS COLUMN
 
-.. include:: /manuals/templates/pdf_constants.rst
 
 Simple Visualizers
 ..................

@@ -1,4 +1,3 @@
-.. include:: ../templates/pdf_constants.rst
 
 .. _shell_ui :
 
