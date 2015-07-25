@@ -68,7 +68,7 @@ have a quick idea of some properties of the simulated data.
    default matrix.**
 
 3. Set a *Long range coupling* function. For our present purposes, we happen to know that for
-   the parameters we will use through TVB’s default *Connectivity* matrix, a linear
+   the parameters we will use through TVB’s default *Connectivity* matrix, a **linear**
    function with a slope of :math:`\mathbf{a=0.0042}` is a reasonable
    thing to use.
 
@@ -85,7 +85,7 @@ Model parameter     Value
   :math:`c`         0
   :math:`d`         0.1
   :math:`e`         0
-  :math:`f`         1/3
+  :math:`f`         0.33333 
   :math:`g`         1
   :math:`I`         0
   :math:`\alpha`    1
@@ -132,12 +132,17 @@ Monitor takes no arguments and simply returns all the simulated data.
 Looking at the Results
 ----------------------
 
-The transient large amplitude oscillatory activity at the beginning of the
-simulation is a result of the imperfectly set initial conditions.
+#. Go to *Projects > operations* dashboard.
+
+#. Click on the icon of the time-series |tr|. From the metadata
+   overlay’s visualizers tab, launch the *Animated Time Series Visualizer*.
 
 .. figure:: figures/BuildingYourOwnBrainNetworkModel_AnimatedTimeSeries.png
    :alt: Time-series from *AnatomyOfARegionSimulation\_a*
    :scale: 30% 
+
+The transient large amplitude oscillatory activity at the beginning of the
+simulation is a result of the imperfectly set initial conditions.
 
 The initial history (i.e., initial conditions) is merely set by default to be
 random walks within the general range of state-variables values expected from
@@ -146,10 +151,7 @@ if we were to set the initial conditions exactly to the values corresponding to
 that fixed point there would be no such initial transient (we will see how to
 achieve that later on).
 
-#. Go to *Projects > operations* dashboard.
 
-#. Click on the icon of the time-series |tr|. From the metadata
-   overlay’s visualizers tab, launch the *Animated Time Series Visualizer*.
 
 #. Go back to the simulator page and check the Fourier spectrum. Select
    a linear scale on the Y axis. We see that the intrinsic frequency of
@@ -183,7 +185,7 @@ see that the system exhibits self-sustained oscillations.
 
 .. figure:: figures/BuildingYourOwnBrainNetworkModel_AnimatedTimeSeriesOscillatory.png
    :alt: Time-series from *AnatomyOfARegionSimulation\_b*
-   :scale: 60% 
+   :scale: 30% 
 
 
 A frequent question is at which value of coupling strength this
@@ -213,10 +215,10 @@ All the 150 simulations are presented as a discrete 2D map or a continous
 pseudocolor map.
 
 .. figure:: figures/BuildingYourOwnBrainNetworkModel_PSEDiscrete.png
-   :scale: 40% 
+   :scale: 30% 
 
 .. figure:: figures/BuildingYourOwnBrainNetworkModel_PSEContinuous.png
-   :scale: 40% 
+   :scale: 30% 
 
 These results are those presented in Ghosh_et_al_ and Knock_et_al_.
 
@@ -231,14 +233,15 @@ To overcome this issue we have a couple of alternatives. First, we could narrow
 the range of the state variables around the values of a fixed point. How can we
 know this value?
 
-#. Clik on *Set up region model*, you’ll be redirected to a new working area.
+#. Clik on |burst_menu| *> Phase plane*, you’ll be redirected to a new working area.
 
 In this area there’s a an interactive tool, the *Phase Plane*, which allows you to
 understand the local dynamics, that is the dynamics of a single isolated
 node, by observing how the model parameters change its phase plane. 
 
-2. Click on any point of the phase plane. A trajectory will be drawn. We
-   see that the fixed point is approx (V, W) = (1.5, -0.6)
+2. Reset the same parameters as in the table above, click on any point of the
+   phase plane. A trajectory will be drawn. We see that the fixed point is
+   approx (V, W) = (1.5, -0.6)
 
 .. figure:: figures/BuildingYourOwnBrainNetworkModel_PhasePlane.png
    :scale: 40% 
@@ -258,7 +261,7 @@ the recorded state-variables, integration time-step size and selected
 monitors should be the same.)
 
 -  In *AnatomyOfARegionSimulation\_a*, set :math:`\mathbf{a=0.042}` in
-   the . Then, click on |branch|.
+   the *long-range coupling function*. Then, click on |branch|.
 
 *AnatomyOfARegionSimulation\_a\_branch1* is an example of this
 functionality, using the results from *AnatomyOfARegionSimulation\_a* as
@@ -308,10 +311,10 @@ the latter has an extra background noisy input.
 Observe the differences using the *Spectrogram of the Wavelet Transform*.
 
 .. figure:: figures/BuildingYourOwnBrainNetworkModel_WaveletDeterministic.png
-   :scale: 40% 
+   :scale: 30% 
 
 .. figure:: figures/BuildingYourOwnBrainNetworkModel_WaveletStochastic.png
-   :scale: 40% 
+   :scale: 30% 
 
 
 -------------------
@@ -363,7 +366,7 @@ level, and so we’ll introduce a couple new *Monitors* here.
    biophysical measurement process, is called **EEG**. The third will be
    the **Temporal Average**.
 
-8. The *Monitors period* is left with the default value **1.953125 ms** which is equivalent to a
+8. The *Monitors period* is the value **1.953125 ms** which is equivalent to a
    sampling frequency of 256 Hz.
 
 9. Lastly, the *simulation length* is **500 ms**.
@@ -425,8 +428,8 @@ scale dynamics modelled by neural fields.
    :alt: Gaussian local connectivity. 
    :scale: 30% 
 
-4. Name your *Locl Connectivity* and save it by clicking on *Create new Local
-   Connectivity* on the bottom left corner.
+4. Name your *Local Connectivity* and save it by clicking on *Create new Local
+   Connectivity* on the bottom right corner.
 
 This data structure is saved under the name
 *LocalConnectivity\_Gaussian\_zc\_40*.
@@ -515,6 +518,8 @@ https://groups.google.com/forum/#!forum/tvb-users
 .. |expand| image:: figures/butt_expand_range.png
             :scale: 50% 
 .. |branch| image:: figures/butt_branching.png
+            :scale: 40% 
+.. |burst_menu| image:: figures/burst_menu.png
             :scale: 40% 
 .. |help| image:: figures/butt_green_help.png
           :scale: 40% 
