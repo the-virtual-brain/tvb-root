@@ -229,8 +229,55 @@ The results are given in *resection_Region_TemporalLobe*.
 
 .. figure:: figures/ModelingEpilepsy_Resectedts.png
    :alt: Time series after the resections 
-   :scale: 40%
+   :scale: 30%
 
+-------------------
+
+Triggering a seizure by stimulation
+-----------------------------------
+
+We are now going to model an electric stimulation and trigger a seizure. We set
+the whole brain to non-epileptogenic but close to the threshold
+
+#. Go to *stimulus > Region Stimulus*
+
+#. Give a name to the new stimulus
+
+#. Choose a **PulseTrain** stimulation in time with parameters given in the following table:
+
+===================   =======
+Temporal parameters    Value
+-------------------   -------
+ :math:`onset`        2000.0 
+ :math:`tau`           20.0
+ :math:`T`            4000.0
+ :math:`amp`           10.0
+===================   =======
+
+
+.. figure:: figures/ModelingEpilepsy_stimulation.png
+   :alt: Stimulation pattern 
+   :scale: 50%
+
+
+4. Click on *Set Region Scaling*, select the **Propagation Zone** nodes, and
+   apply a scaling of 1., and click on *Save New Stimulus on Region* in the
+   right menu.
+
+The stimulus was already set for you under the name
+*Stim_PropagationZone*
+
+6.  Go to simulator and copy the former simulation.
+
+7.  Choose the *Stim_PropagationZone* stimulus.
+
+You can see the result of this simulation in *stimulation_Region_TemporalLobe*
+
+8. Visualize the time series, zoom in to better see the effect of the stimulation.
+
+.. figure:: figures/ModelingEpilepsy_stimulationts.png
+   :alt: Time Series for a stimulation
+   :scale: 30%
 
 -------------------
 
