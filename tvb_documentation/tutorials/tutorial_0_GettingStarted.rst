@@ -76,7 +76,7 @@ enough disk space, all the projects add up to 2 GB.
 
 ------------------------
 
-Import, link and share data
+Adding A New User
 ---------------------------
 
 In this exercise we will assume that multiple users are working with the
@@ -156,8 +156,7 @@ Link And Share
    :scale: 50%
 
 
-4. Link the two time-series from simulations *SimulationConnectivity74*
-   and *SimulationConnectivity96*.
+4. Link the time-series from simulation *SimulationConnectivity192*
 
 
 .. figure:: figures/LinkAndShare_LinkedProject.png
@@ -183,13 +182,15 @@ Export and Read
 
 #. Go to *Project > Data structure*
 
-#. Click on |node_tr| from *TimeSeriesRegion - conn\_74*.
+#. Click on |node_tr| from *TimeSeriesRegion - conn\_192*.
 
 #. From the overlay, *Export* tab, download the data in TVB format (h5).
 
 #. Rename the file if you want (e.g. *LinkAndShare\_TimeSeriesRegion*).
 
 From an **ipython** shell you can follow the commands presented below. 
+You can also use a **ipython notebook** by going into *TVB_Distribution/bin/* and 
+start the ipython_notebook script.
 
 
 ::
