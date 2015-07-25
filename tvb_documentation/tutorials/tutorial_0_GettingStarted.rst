@@ -12,11 +12,11 @@ the projects into your copy of TVB.
 ============================    ========
  **Name**                       **Size** 
 ----------------------------    --------
- LinkandShare_a                 13.3 MB
- LinkandShare_b                 13.3 MB
- BuildingYourOWnBNM              1 GB
+ LinkandShare_a                  11 MB
+ LinkandShare_b                  62 KB
+ BuildingYourOWnBNM              1.3 GB
  Resting State Netowrks          1 GB 
- ModelingEpilepsy                1 GB 
+ ModelingEpilepsy                411 MB 
 ============================    ========   
 
 ------------------------
