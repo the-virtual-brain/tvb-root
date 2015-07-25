@@ -27,7 +27,7 @@
 Download
 --------
 
-To download it, check out the |official_site|.
+To download it, check out the |download_site|.
 
 To get in touch with other users and developers, please head over to the |mailing_list|.
 
@@ -61,9 +61,9 @@ We are grateful to
         :height: 64px
 
 
-.. |official_site| raw:: html
+.. |download_site| raw:: html
 
-   <a href="http://www.thevirtualbrain.org" target="_blank">official TVB website</a>
+   <a href="http://www.thevirtualbrain.org" target="_blank">TVB download site</a>
 
 
 .. |our_sponsors_page| raw:: html

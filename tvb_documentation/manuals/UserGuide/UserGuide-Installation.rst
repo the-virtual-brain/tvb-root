@@ -2,7 +2,7 @@
 Installing the Application
 ==========================
 
-To download |TVB| check out the `official site <http://www.thevirtualbrain.org>`_
+To download |TVB| check out the `download site <http://www.thevirtualbrain.org>`_
 
 The TVB software package can be used in 3 different configurations:
 
