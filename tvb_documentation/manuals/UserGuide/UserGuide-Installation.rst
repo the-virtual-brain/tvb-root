@@ -17,7 +17,7 @@ The TVB software package can be used in 3 different configurations:
 
   The visualization can be accessed from a personal computers by a browser (via HTTP).
   A network connection needs to exist between the server where TVB is running and the computer doing the visualization and access.
-  http://${SERVER-IP}:8080 is the default URL.
+  `http://${SERVER-IP}:8080` is the default URL.
 
 - using a cluster (similar with server installation, but with parallelization support).
   Please note that for cluster installations, OAR is expected to be configured separately from TVB and accessible to the user for which the TVB software is launched.
@@ -124,6 +124,12 @@ Configuring TVB
 One of the first actions you will have to perform after starting |TVB| is to configure it.
 If you are installing |TVB| for personal usage then the default configuration is sensible and you may accept it without detailed knowledge.
 
+The default configuration will place |TVB| projects in a folder named TVB. This folder will be created in the users home folder.
+
+* Linux: ``/home/johndoe/TVB/``
+* Windows >= 7: ``c:\Users\johndoe\TVB``
+* Mac : ``/Users/johndoe/TVB``
+
 However for a client server or cluster setup you will need to take some more time to configure TVB.
 See the :ref:`configuring_TVB` section for details.
 
@@ -133,8 +139,11 @@ Upgrading the Application
 
 To upgrade to a new version, stop the server with `tvb_stop`, then delete the old distribution
 and install the new distribution by unzipping the new TVB downloaded package.
-Finally run the appropriate script for your platform to launch |TVB|.
+
+Do **not remove** your |TVB| projects stored in home_folder/TVB !
 The first run after update will migrate your projects to the new version.
+
+Finally run the appropriate script for your platform to launch |TVB|.
 
 
 Uninstalling |TVB|
@@ -198,15 +207,9 @@ Requirements for computation/storage power, dependent on the number of parallel 
 
 - **Memory** -
   For a single simulation 8GB of RAM should be sufficient for region level simulations, but 16GB are recommended, especially if you are to run complex simulations.
+  Surface level simulations are much more memory intensive scaling with the number of vertices.
 
 - **Disk space** is also important, as simulating only 10 ms on surface level will occupy 280MB of disk space. A minimum of 50GB of space per user is a rough approximation.
-
-- For Linux and Mac, we are only supporting x64 architectures.
-  Due to licensing and packaging, for Windows we are currently distributing an x32 package.
-  Please take note that some simulations on surface level might require more memory that 32 bit programs can address,
-  at which point the TVB software will notify you about this with a "Memory Error".
-  So for complex operations, on Windows, you might need to install TVB from sources (see our repositories on GitHub),
-  but this requires separate installation of Python x64 and all the other TVB dependencies.
 
 - Optional **MatLab or Octave** -
   A special feature in TVB is utilizing functions from the Brain Connectivity Toolbox.

@@ -20,8 +20,6 @@
     /manuals/UserGuide/UserGuide-Shell
     /doc_site/top_developers
 
-    /api/index
-
 
 .. include:: /manuals/UserGuide/UserGuide-Overview.rst
 
