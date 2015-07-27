@@ -38,8 +38,6 @@ if __name__ == "__main__":
 
 
 import unittest
-# Import just to test for any runtime/syntax errors
-import tvb.datatypes.api_datatypes
 from tvb.tests.library.datatypes import arrays_test
 from tvb.tests.library.datatypes import connectivity_test
 from tvb.tests.library.datatypes import equations_test
