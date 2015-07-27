@@ -32,7 +32,7 @@
 Define a list with all Python modules in which the introspect mechanism should search for Import Adapters.
 """
 
-__all__ = ["cff_importer", "connectivity_measure_importer", "csv_connectivity_importer",
+__all__ = ["cff_importer", "brco_importer", "connectivity_measure_importer", "csv_connectivity_importer",
            "gifti_surface_importer", "gifti_timeseries_importer", "mat_timeseries_importer",
            "networkx_importer", "nifti_importer", "obj_importer", "projection_matrix_importer",
            "region_mapping_importer", "sensors_importer", "tvb_importer",

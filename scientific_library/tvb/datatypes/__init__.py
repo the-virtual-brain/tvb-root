@@ -32,8 +32,8 @@
 TVB DataTypes, as a dictionary between multiple algorithms.
 """
 
-__all__ = ["arrays", "connectivity", "equations", "graph", "local_connectivity", "lookup_tables",
-           "mapped_values", "mode_decompositions", "patterns", "projections", "region_mapping",
-           "simulation_state", "sensors", "spectral", "surfaces", "temporal_correlations",
-           "time_series", "volumes"]
+__all__ = ["annotations", "arrays", "connectivity", "equations", "graph", "local_connectivity",
+           "lookup_tables", "mapped_values", "mode_decompositions", "patterns", "projections",
+           "region_mapping", "simulation_state", "sensors", "spectral", "surfaces",
+           "temporal_correlations", "time_series", "volumes"]
 
