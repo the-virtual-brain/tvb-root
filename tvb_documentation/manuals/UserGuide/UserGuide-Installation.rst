@@ -51,7 +51,7 @@ In the TVB_Distribution folder you should find a sub-folder `bin` with a number 
 
 On Linux these scripts will have the `.sh` termination, on Mac the `.command` termination and on Windows the `.bat` termination.
 We will omit the termination in this manual. For example if you are using Windows and tvb_start is mentioned
-in this document then tvb_start.bat is meant.
+in this document then tvb_start.bat is meant. The examples below are for Linux.
 
 These scripts will start and control |TVB|.
 
@@ -64,9 +64,20 @@ To start |TVB| in your web browser double click `tvb.app`.
 Please be patient, as depending on your computer resources, the startup process might take about 1-2 minutes.
 
 For Linux and Windows users, to start |TVB| in your web-browser, run the `tvb_start` script in `TVB_Distribution/bin`.
+On Windows you can double click the script's icon.
+
+.. code-block:: bash
+
+   $ cd TVB_Distribution/bin
+   $ ./tvb_start.sh
 
 To make sure that no processes will remain open after you use the application,
 you should always close |TVB| by running the `tvb_stop` script.
+
+.. code-block:: bash
+
+   $ ./tvb_stop.sh
+
 
 
 Launching scripting interfaces
@@ -80,17 +91,31 @@ The most user friendly interface is the ipython notebook one. It is a LIBRARY_PR
 It's shell is the browser based ipython notebook.
 To launch it run the `ipython_notebook` script from the `TVB_Distribution/bin/` folder.
 
+.. code-block:: bash
+
+   $ cd TVB_Distribution/bin
+   $ ./ipython_notebook.sh
+
 The `distribution` script is used from a terminal to control the |TVB| distribution.
-Run `distribution -h` too get help with this command.
+Run `distribution -h` too get help with this command:
+
+.. code-block:: bash
+
+   $ ./distribution.sh -h
 
 To access the console interface, run in a terminal `distribution start COMMAND_PROFILE` or `distribution start LIBRARY_PROFILE`.
 A Python IDLE shell will appear. See the :ref:`console <shell_ui>`.
 
+.. code-block:: bash
+
+   $ ./distribution.sh start COMMAND_PROFILE
+
 If you want a plain python text ui shell add the `-headless` flag to the above commands: `distribution start COMMAND_PROFILE -headless`
 This is helpful if |TVB| is installed on a headless server (no GUI).
 
-The `tvb_clean` script will reset your TVB database and delete **all** data stored by |TVB|. Be careful!
-Use this to get to a clean state, as if |TVB| had just been installed and never configured.
+.. code-block:: bash
+
+   $ ./distribution.sh start COMMAND_PROFILE -headless
 
 
 Configuring TVB
@@ -110,6 +135,27 @@ To upgrade to a new version, stop the server with `tvb_stop`, then delete the ol
 and install the new distribution by unzipping the new TVB downloaded package.
 Finally run the appropriate script for your platform to launch |TVB|.
 The first run after update will migrate your projects to the new version.
+
+
+Uninstalling |TVB|
+------------------
+
+To purge all data stored by |TVB| on your machine run the `tvb_clean`.
+It will reset your TVB database and delete **all** data stored by |TVB|. Be careful!
+Use this to get to a clean state, as if |TVB| had just been installed and never configured.
+
+.. code-block:: bash
+
+   $ # This will delete all TVB projects and configuration !
+   $ ./tvb_clean.sh
+
+
+To uninstall the application simply delete the distribution folder `TVB_Distribution/`.
+
+.. code-block:: bash
+
+  $ rm -r TVB_Distribution/
+
 
 
 Supported operating systems

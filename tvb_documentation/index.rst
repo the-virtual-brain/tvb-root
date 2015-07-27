@@ -17,6 +17,7 @@
     /tutorials/Tutorials
     /demos/Demos
     /manuals/UserGuide/UserGuide-UI
+    /manuals/UserGuide/UserGuide-Shell
     /doc_site/top_developers
 
     /api/index
