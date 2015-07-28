@@ -144,8 +144,55 @@ cancel any operation:
 Data Structure
 ..............
 
-This page provides a way to navigate through the data associated with the
-current project, plus Upload capability.
+This page shows all datatypes of a project in a tree view.
+
+This tree has three levels. Each level groups the datatypes.
+The first level groups by the state of a datatype, then each state group is further divided in groups for each subject.
+The leaf nodes are all datatypes of the project.
+
+You can change the criteria of this grouping. Experiment with the level1 and level2 drop down menus found above the tree.
+
+Besides grouping the datatypes you may also filter them.
+The left-most area of the Data Structure page contains basic filters for the
+centrally displayed entities.
+We display fixed filters (entities declared relevant / irrelevant) of free-text
+filtering (when using the input text field and then pressing Button 'Filter').
+Filtering based on free-text searches into all fields of an entity, and it is case insensitive.
+
+.. _tree_view_ui:
+
+.. figure:: screenshots/data.jpg
+    :width: 90%
+    :align: center
+
+    The data structure of the default project.
+
+
+
+Note that the color of the datatype icons in the tree view indicate their category:
+
+1. Green are the raw datatypes. These are mostly imported in TVB (eg. connectivities, surfaces, sensors etc.)
+2. Yellow are adjacent datatypes. These usually imported in TVB (eg. lookup tables and matrices etc.)
+3. Red are time series datatypes either created by simulations or imported.
+4. Blue are analyser results.
+5. Pink are some datatypes created by TVB (eg. stimuli, local connectivities etc.)
+
+
+Selecting a data node in the Tree structure causes an overlay to appear.
+
+From this overlay, the user can:
+
+- edit metadata
+- launch `Analyzers` and `Visualizers`
+- link data to other projects
+- export data.
+
+.. figure:: screenshots/data_overlay.jpg
+    :width: 90%
+    :align: center
+
+    A data nodes overlay
+
 
 On the most-right area of this page, an `upload` button appears. This
 launches an overlay with tabs for each type of TVB-compatible data:
@@ -161,55 +208,18 @@ For a detailed description of the supported file formats see :ref:`data_formats`
 Launching any uploader with success will generate you a new leaf in the Tree 
 displayed centrally on this page.
 
-The left-most area of the Data Structure page contains basic filters for the 
-centrally displayed entities.
-We display fixed filters (entities declared relevant / irrelevant) of free-text 
-filtering (when using the input text field and then pressing Button 'Filter').
-Filtering based on free-test searches into all fields of an entity, and it is case insensitive.
 
-Data Structure page contains 2 options for viewing in the central area:
+The central area also contains a Graph view.
+The main target for the Graph view is to show you in a mixed manner both DataTypes and Operations.
+The edges that link the Graph are of type: 'Operation generated DataType' and 'DataType is input for Operation'.
+When switching from the Tree display to the Graph display, the same node (if DataType) remains selected.
+This way you could filter entities in the Tree display, check generic meta-data, then switch to the Graph display and see what Operation was parent for this entity.
 
-.. _tree_view_ui:
-
-a Tree view:
-    
-.. figure:: screenshots/data.jpg
-    :width: 90%
-    :align: center
-
-    The data structure of the default project -- which automatically
-    loads the default structural data necessary for a simulation.
-    
-and a Graph view:
-    
 .. figure:: screenshots/data_graph.jpg
     :width: 90%
     :align: center
 
     A graph view of the project's data-structure
-
-The main target for the Graph view is to show you in a mixed manner both DataTypes and Operations. 
-The edges that link the Graph are of type: 'Operation generated DataType' and 'DataType is input for Operation'.
-
-When switching from the Tree display to the Graph display, the same node (if DataType) remains selected.
-This way you could filter entities in the Tree display, check generic meta-data, then switch to the Graph display and see what Operation was parent for this entity.
-
-
-Selecting a data node in the Tree structure causes an overlay to appear:
-    
-.. figure:: screenshots/data_overlay.jpg
-    :width: 90%
-    :align: center
-
-    A data nodes overlay
-    
-
-From this overlay, the user can:
-
-- edit metadata
-- launch `Analyzers` and `Visualizers`
-- link data to other projects
-- export data.
 
 
 .. this is a hack needed by the online help. The Project page docs have to include the
