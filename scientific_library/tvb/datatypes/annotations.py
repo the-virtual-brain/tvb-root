@@ -41,10 +41,10 @@ from tvb.datatypes import connectivity
 ANNOTATION_DTYPE = numpy.dtype([('id', 'i'),
                                 ('parent_id', 'i'),
                                 ('region', 'i'),
-                                ('relation', 'a'),
-                                ('label', 'a'),
-                                ('definition', 'a'),
-                                ('url', 'a')])
+                                ('relation', 'S10'),
+                                ('label', 'S10'),
+                                ('definition', 'S10'),
+                                ('url', 'S10')])
 
 
 class AnnotationTerm(object):
@@ -61,8 +61,10 @@ class AnnotationTerm(object):
         self.definition = definition
         self.url = url
 
-    def to_numpy_row(self):
-        return numpy.array([self.id, self.parent_id, self.region, self.relation, self.label, self.definition, self.url])
+
+    def to_tuple(self):
+        return self.id, self.parent_id, self.region, self.relation, self.label, self.definition, self.url
+
 
 
 class AnnotationArray(Array):
@@ -73,6 +75,9 @@ class AnnotationArray(Array):
     """
 
     dtype = types_basic.DType(default=ANNOTATION_DTYPE)
+
+    stored_metadata = [MappedType.METADATA_ARRAY_SHAPE]
+
 
 
 class ConnectivityAnnotations(MappedType):
@@ -87,8 +92,8 @@ class ConnectivityAnnotations(MappedType):
         label="Region Annotations",
         doc="""Flat tree of annotations for every connectivity region.""")
 
+
     def set_annotations(self, annotation_terms):
-        regions = numpy.array([], dtype=ANNOTATION_DTYPE)
-        for ann in annotation_terms:
-            regions = numpy.vstack([regions, ann.to_numpy_row()])
-        self.region_annotations = regions
+        annotations = [ann.to_tuple() for ann in annotation_terms]
+        annotations = numpy.array(annotations, dtype=ANNOTATION_DTYPE)
+        self.region_annotations = annotations
