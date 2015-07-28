@@ -134,24 +134,37 @@ However for a client server or cluster setup you will need to take some more tim
 See the :ref:`configuring_TVB` section for details.
 
 
+Uninstalling TVB
+----------------
+
+To uninstall, stop |TVB|, then simply delete the distribution folder, `TVB_Distribution/` :
+
+.. code-block:: bash
+
+  $ ./tvb_stop.sh
+  $ rm -r TVB_Distribution/
+
+This will not remove user data.
+
+
 Upgrading the Application
 -------------------------
 
-To upgrade to a new version, stop the server with `tvb_stop`, then delete the old distribution
-and install the new distribution by unzipping the new TVB downloaded package.
+To upgrade to a new version, uninstall the current version then install the new distribution.
 
 Do **not remove** your |TVB| projects stored in home_folder/TVB !
 The first run after update will migrate your projects to the new version.
 
-Finally run the appropriate script for your platform to launch |TVB|.
 
-
-Uninstalling |TVB|
+Removing user data
 ------------------
 
-To purge all data stored by |TVB| on your machine run the `tvb_clean`.
+To purge all user data stored by |TVB| on your machine run the `tvb_clean`.
 It will reset your TVB database and delete **all** data stored by |TVB|. Be careful!
-Use this to get to a clean state, as if |TVB| had just been installed and never configured.
+Use this to get to a clean state, as if |TVB| had just been installed and never used.
+
+.. note::
+    You **do not** have to do this to uninstall or update |TVB| !
 
 .. code-block:: bash
 
@@ -159,21 +172,13 @@ Use this to get to a clean state, as if |TVB| had just been installed and never 
    $ ./tvb_clean.sh
 
 
-To uninstall the application simply delete the distribution folder `TVB_Distribution/`.
-
-.. code-block:: bash
-
-  $ rm -r TVB_Distribution/
-
-
-
 Supported operating systems
 ---------------------------
 
 The current |TVB| package was tested on :
 
-- Debian Squeeze and Fedora 20.
-  Other Linux flavors might also work as long as you have installed a glibc version of 2.11 or higher.
+- Debian Jessie and Fedora 20.
+  Other Linux flavors might also work as long as you have installed a glibc version of 2.14 or higher.
 
 - Mac OS X greater than 10.7 are supported.
 
@@ -209,7 +214,7 @@ Requirements for computation/storage power, dependent on the number of parallel 
   For a single simulation 8GB of RAM should be sufficient for region level simulations, but 16GB are recommended, especially if you are to run complex simulations.
   Surface level simulations are much more memory intensive scaling with the number of vertices.
 
-- **Disk space** is also important, as simulating only 10 ms on surface level will occupy 280MB of disk space. A minimum of 50GB of space per user is a rough approximation.
+- **Disk space** is also important, as simulating only 10 ms on surface level may occupy around 300MB of disk space. A minimum of 50GB of space per user is a rough approximation.
 
 - Optional **MatLab or Octave** -
   A special feature in TVB is utilizing functions from the Brain Connectivity Toolbox.
