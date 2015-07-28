@@ -1,5 +1,6 @@
-﻿
-|TVB| Data Storage
+﻿.. _data_formats:
+
+|TVB| Data Formats
 ==================
 
 The purpose of this chapter is to provide some details about the way |TVB|
@@ -23,10 +24,7 @@ at different levels and formats:
   application, data can be exchanged in a custom |TVB| format or a commonly used
   format used in the neuroscience community (e.g. CFF, GIFTI, NIFTI ...)
 
-.. admonition:: Important
-
-    .. image:: icons/important.png
-        :align: left
+.. warning::
 
     During export and import operations |TVB| does not apply any space 
     transformation, so users have to ensure their data (especially in case 
@@ -118,17 +116,8 @@ one described above for 'Export Project'.
     because each project/data has a unique identifier (GUID).
 
 
-Export/Import Data
-------------------
-
-Apart from exchanging projects between |TVB| instances, there is another option to
-transfer data, but at a lower level - that is to exchange only **datatypes**
-(generated during 'Simulation' or 'Analyze' steps).
-
-
-
 Export Data
-...........
+-----------
 
 Using |TVB| interface, users can view all data types associated with a project and
 choose to export individual pieces of data.
@@ -155,7 +144,7 @@ documentation here:
 
 
 File Format
-~~~~~~~~~~~~~
+...........
 
 As a result of a Simulation or Analyze function, |TVB| can generate either a data
 type or a group of data types. Each of such structures can be exported as follows:
@@ -173,7 +162,7 @@ type or a group of data types. Each of such structures can be exported as follow
 
 
 Import Data
-...........
+-----------
 
 Probably this is the most important feature of data exchange, since it allows
 |TVB| to bring together data generated independently by other systems/applications
@@ -181,11 +170,8 @@ and allows it's users to perform different analyses on it and visualize them.
 Since there is an abundance of formats available for neuroimaging data, |TVB| 
 tries to support as many as possible for an improved user experience.
 
-.. admonition:: Important
+.. warning::
 
-    .. image:: icons/important.png
-        :align: left
-    
     In case the imported data includes/represents a surface, |TVB| does an extra
     check regarding the number of vertices of that surface. Basically you can 
     not import into |TVB| a surface that has more vertices than a MAX value.
@@ -197,7 +183,7 @@ tries to support as many as possible for an improved user experience.
 |
 
 Import Data in |TVB| Format
-~~~~~~~~~~~~~~~~~~~~~~~~~~~
+...........................
 
 In correlation with export operations, |TVB| interface allows import of data in
 |TVB| format that has been exported from other systems. This format applies to any
@@ -206,7 +192,7 @@ follows:
 
 
 File Format
-***********
+~~~~~~~~~~~
 
 1. If user uploads a ZIP file, the system automatically assumes a datatype group
    must be imported and then process the file accordingly. More specifically, it
@@ -223,7 +209,7 @@ File Format
 |
 
 Import Volume Time Series from NIFTI-1 Format
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+.............................................
 
 NIFTI [http://www.nitrc.org/projects/nifti ] is a standard format maintained by
 "The Neuroimaging Informatics Technology Initiative (NIfTI) and NIfTI Data
@@ -236,7 +222,7 @@ For the moment, |TVB| accommodates import of Volume Time Series from NIFTI files
 
 
 File Format
-***********
+~~~~~~~~~~~
 
 For import, |TVB| users can upload either .nii or .gz files containing NIFTI data
 in the format specified by [http://www.nitrc.org/projects/nifti]
@@ -245,7 +231,7 @@ in the format specified by [http://www.nitrc.org/projects/nifti]
 |
 
 Import Sensors
-~~~~~~~~~~~~~~
+..............
 
 |TVB| allows users to import data about sensors used for brain imaging. More
 specifically, |TVB| supports three types of sensors: EEG, MEG and INTERNAL. During
@@ -255,7 +241,7 @@ will be processed accordingly.
 
 
 File Format
-***********
+~~~~~~~~~~~
 
 During import, the user might upload either a TXT file or a zipped TXT in bz2
 format. This TXT file should contain data separated by spaces and grouped as
@@ -272,13 +258,13 @@ follows:
 |
 
 Import Connectivity from ZIP
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+............................
 
 This feature allows import of connectivity from a ZIP file. The ZIP should
 contain files with connectivity details as follows:
 
 File Format
-***********
+~~~~~~~~~~~
 
 ZIP file should include files with the following naming schema and format:
 
@@ -337,7 +323,7 @@ ZIP file should include files with the following naming schema and format:
 |
 
 Import Surface from ZIP
-~~~~~~~~~~~~~~~~~~~~~~~
+.......................
 
 Using this option, users have the possibility to import a surface from a more
 human readable format into TVB. Basically users have to upload a zip file
@@ -345,7 +331,7 @@ containing surface data and specify what type of surface they upload (Cortical
 Surface, Brain Skull, Skull Skin or Skin Air).
 
 File Format
-***********
+~~~~~~~~~~~
 
 Uploaded ZIP file should contain files with a specified naming schema and format
 as follow:
@@ -387,12 +373,14 @@ contain letter "r" or "l" at the end of the suffix (e.g. <trianglesl.txt> and
 
 
 Import Surface from wavefront obj
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+.................................
+
 OBJ is a generic 3d geometry format. Many 3d authoring tools can export geometry
 in this format.
 
 File Format
-***********
+~~~~~~~~~~~
+
 An overview of the OBJ file format can be found on Wikipedia_
 TVB supports only a subset of the specification. Meaning that only geometry data is considered
 and accepted forms for faces attributes are: triangles or quads.
@@ -404,7 +392,8 @@ We ignore at import time features such as texture coordinates, materials and gro
 |
 
 Import Surface and TimeSeries from GIFTI
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+........................................
+
 This is a geometry format (http://www.nitrc.org/projects/gifti/) under the 
 Neuroimaging Informatics Technology Initiative (NIfTI) that allows exchange of
 brain data (surface, time series, shapes, labels ...). Basically format is
@@ -420,7 +409,8 @@ vertices from imported time series must be the same as the one selected for surf
 Otherwise import procedure will fail.
 
 File Format
-***********
+~~~~~~~~~~~
+
 This is a standard format, supported by a large community so all details about
 it and samples can be found here:
     
@@ -436,7 +426,7 @@ it and samples can be found here:
 |
 
 Import Data from CFF
-~~~~~~~~~~~~~~~~~~~~
+....................
 
 CFF (Connectome File) is a complex format that tries to put together all data
 necessary for brain simulations or analysis. Because of its complexity and lack
@@ -453,7 +443,7 @@ group multiple such data into a single CFF file.
 
 
 File Format
-***********
+~~~~~~~~~~~
 
 For this feature, the user has to upload a CFF file (which is basically a ZIP
 file) containing a root file <meta.cml> which describes the content of the
@@ -466,14 +456,14 @@ GIFTI, NXGPickle.
 |
 
 Import Region Mapping
-~~~~~~~~~~~~~~~~~~~~~~~~
+.....................
 
 A Region Mapping in |TVB| is a vector, defining a map between a Cortical Surface and a Connectivity.
 At import time, you will need to have at least 2 entities in |TVB| system: Connectivity and Cortical Surface.
 The two entities need to be spatially aligned (overlap correctly in 3D space).
 
 File Format
-***********
+~~~~~~~~~~~
 
 For this upload we expect a text file (possibly compressed with bz2). The text file should have no headers,
 only numeric values separated with spaces.
@@ -485,7 +475,7 @@ The numeric values should be in the interval (0...n-1), where n is the number of
 |
 
 Import Projection Matrix
-~~~~~~~~~~~~~~~~~~~~~~~~~~
+........................
 
 A Projection Matrix, is intended to define a mapping from a source object and a set of sensors. 
 The source entity can be either a Cortical Surface or a Connectivity, in |TVB|. 
@@ -493,7 +483,7 @@ In order for this import to work, you will need to have previously imported in |
 both the source and the sensors entities.
 
 File Format
-***********
+~~~~~~~~~~~
 
 For this upload we expect a single text file, with numeric values, space and line separated.
 The numeric values in the uploaded file should hold a matrix of size (n, m). 

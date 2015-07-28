@@ -70,37 +70,26 @@ Upon first user registration, a default project is created for you:
 Basic Properties
 ................
 
-Enables you to edit the current project's properties, you are also directed
-to this page when you first create a new project:
+From this page you can export the project or delete it.
+
+Also you can edit the current project's properties.
+You are directed to this page when you first create a new project:
 
 .. figure:: screenshots/project_form.jpg
     :width: 90%
     :align: center
 
     The Project Properties page
-        
-.. note::
 
-    You can also access this page for any existing project by clicking the
-    edit button near a projects name on the `List of all Projects` page.
-    
-Fill in the form by:
-  
-- adding a project's name (*without spaces*)
-- writing a short description about the project.
-
+Note that the project name may not contain spaces.
 
 If there are other users registered in the framework, you can choose to
 share the project with them by checking their respective "Visible for"
 boxes.
 
-On the right side of the browser there is the `Action Column` from where you can:
-
-- delete the project,
-- export the project or,
-- save changes.
-
-Clicking on the "X" button takes you back to the `List of All Projects` page. 
+On the right side of the browser there is the `Action Column`.
+There are buttons to delete or export the project.
+The last two buttons allow you to save changes or go back to the `List of All Projects` page.
 
 If you were creating a new project it should now be visible.
 
@@ -167,17 +156,7 @@ launches an overlay with tabs for each type of TVB-compatible data:
 
     The data upload overlay
     
-Currently the data-types and/or structures supported for upload are:
-
-* CFF connectome format
-* Surface GIFTI
-* TimeSeries GIFTI
-* NIFTI
-* RegionMapping
-* TVB DataType
-* Sensors
-* Connectivity (zip)
-* Upload Surface (zip)    
+For a detailed description of the supported file formats see :ref:`data_formats`
 
 Launching any uploader with success will generate you a new leaf in the Tree 
 displayed centrally on this page.
