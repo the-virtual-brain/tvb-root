@@ -50,7 +50,7 @@ ANNOTATION_DTYPE = numpy.dtype([('id', 'i'),
 
 class AnnotationTerm(object):
     """
-    One single annotation (in the tree of annotations / region
+    One single annotation node (in the tree of annotations / region)
     """
 
     def __init__(self, id, parent, region, relation, label, definition=None, synonym=None, uri=None):
@@ -84,7 +84,7 @@ class AnnotationArray(Array):
 
 class ConnectivityAnnotations(MappedType):
     """
-    Ontology annotations.
+    Ontology annotations for a Connectivity.
     """
 
     connectivity = connectivity.Connectivity
