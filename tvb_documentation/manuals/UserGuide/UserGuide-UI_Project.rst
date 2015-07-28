@@ -2,18 +2,16 @@
 Project
 -------
 
-.. tip::
-    
-    Projects are the way you organise data and simulations in |TVB|. They
-    correspond to directories where related data sets and simulation results
-    are stored. Information on the currently selected project is always 
-    available by clicking on the upper left corner of the interface:
-        
-        .. figure:: screenshots/project_info.jpg
-            :width: 90%
-            :align: center
-            
-            The main information about the selected project.
+Projects are the way you organise data and simulations in |TVB|. They
+correspond to directories where related data sets and simulation results
+are stored. Information on the currently selected project is always
+available by clicking on the upper left corner of the interface:
+
+.. figure:: screenshots/project_info.jpg
+    :width: 90%
+    :align: center
+
+    The main information about the selected project.
     
 
 The `Project` tab provides access to the projects that you have created within
@@ -21,32 +19,32 @@ The `Project` tab provides access to the projects that you have created within
 allows you to navigate between five main subpages, each of which is described in
 more detail in the sections below:
 
-    - List of All Projects
-    - Basic Properties
-    - Operations
-    - Data Structure
-    - Saved Figures
+- List of All Projects
+- Basic Properties
+- Operations
+- Data Structure
+- Saved Figures
     
 |
 
-    .. figure:: screenshots/project.jpg
-        :width: 90%
-        :align: center
-        
-        The Project second level menu
+.. figure:: screenshots/project.jpg
+    :width: 90%
+    :align: center
+
+    The Project second level menu
     
 
 List of All Projects
-.....................
+....................
 
 This page provides a list of all the existing projects. Upon first user
 registration, a default project is created for you:
     
-    .. figure:: screenshots/default_project.jpg
-        :width: 90%
-        :align: center
-        
-        The default Project
+.. figure:: screenshots/default_project.jpg
+    :width: 90%
+    :align: center
+
+    The default Project
 
 The list of projects includes basic information about each project:
 
@@ -68,38 +66,37 @@ way to:
 
 
 Basic Properties
-...................
+................
 
 Enables you to edit the current project's properties, you are also directed
 to this page when you first create a new project:
-    
-    .. figure:: screenshots/project_form.jpg
-        :width: 90%
-        :align: center
+
+.. figure:: screenshots/project_form.jpg
+    :width: 90%
+    :align: center
+
+    The Project Properties page
         
-        The Project Properties page
-        
-    .. note::
-        
-        You can also access this page for any existing project by clicking the
-        edit button near a projects name on the `List of all Projects` page.
+.. note::
+
+    You can also access this page for any existing project by clicking the
+    edit button near a projects name on the `List of all Projects` page.
     
 Fill in the form by:
   
-  - adding a project's name (*without spaces*) 
-  - writing a short description about the project.
+- adding a project's name (*without spaces*)
+- writing a short description about the project.
 
-.. tip::
-  
-  If there are other users registered in the framework, you can choose to
-  share the project with them by checking their respective "Visible for" 
-  boxes. 
+
+If there are other users registered in the framework, you can choose to
+share the project with them by checking their respective "Visible for"
+boxes.
 
 On the right side of the browser there is the `Action Column` from where you can:
 
-  - delete the project,
-  - export the project or,
-  - save changes. 
+- delete the project,
+- export the project or,
+- save changes.
 
 Clicking on the "X" button takes you back to the `List of All Projects` page. 
 
@@ -118,10 +115,10 @@ Image Archive
 From this page you can manage all the images stored within the current working 
 `Project`, as well as:
 
-  - edit figure title,
-  - create categories to group your images,
-  - search through your figure collection,
-  - visualize, download and delete your images.
+- edit figure title,
+- create categories to group your images,
+- search through your figure collection,
+- visualize, download and delete your images.
 
 .. note::
 
@@ -129,31 +126,32 @@ From this page you can manage all the images stored within the current working
   images from another project, you will have to switch to that project.
 
 
-    .. figure:: screenshots/project_image_archive.jpg
-        :width: 90%
-        :align: center
-        
-        The Image Archive page
+.. figure:: screenshots/project_image_archive.jpg
+    :width: 90%
+    :align: center
+
+    The Image Archive page
+
 
 .. _operations_ui:
 
+
 Operations
-...........
+..........
 
 A table with the history of operations related to the currently selected
 project is displayed. From this board the user can filter, view, reload or
 cancel any operation:
-    
-    .. figure:: screenshots/default_operations.jpg
-        :width: 90%
-        :align: center
-        
-        The operation page with default operations
-    
+
+.. figure:: screenshots/default_operations.jpg
+    :width: 90%
+    :align: center
+
+    The operation page with default operations
 
 
 Data Structure
-...............
+..............
 
 This page provides a way to navigate through the data associated with the
 current project, plus Upload capability.
@@ -161,11 +159,11 @@ current project, plus Upload capability.
 On the most-right area of this page, an `upload` button appears. This
 launches an overlay with tabs for each type of TVB-compatible data:
     
-    .. figure:: screenshots/data_uploaders.jpg
-        :width: 90%
-        :align: center
-        
-        The data upload overlay
+.. figure:: screenshots/data_uploaders.jpg
+    :width: 90%
+    :align: center
+
+    The data upload overlay
     
 Currently the data-types and/or structures supported for upload are:
 
@@ -194,20 +192,20 @@ Data Structure page contains 2 options for viewing in the central area:
 
 a Tree view:
     
-    .. figure:: screenshots/data.jpg
-        :width: 90%
-        :align: center
-        
-        The data structure of the default project -- which automatically
-        loads the default structural data necessary for a simulation.
+.. figure:: screenshots/data.jpg
+    :width: 90%
+    :align: center
+
+    The data structure of the default project -- which automatically
+    loads the default structural data necessary for a simulation.
     
 and a Graph view:
     
-    .. figure:: screenshots/data_graph.jpg
-        :width: 90%
-        :align: center
-        
-        A graph view of the project's data-structure
+.. figure:: screenshots/data_graph.jpg
+    :width: 90%
+    :align: center
+
+    A graph view of the project's data-structure
 
 The main target for the Graph view is to show you in a mixed manner both DataTypes and Operations. 
 The edges that link the Graph are of type: 'Operation generated DataType' and 'DataType is input for Operation'.
@@ -218,11 +216,11 @@ This way you could filter entities in the Tree display, check generic meta-data,
 
 Selecting a data node in the Tree structure causes an overlay to appear:
     
-    .. figure:: screenshots/data_overlay.jpg
-        :width: 90%
-        :align: center
-        
-        A data nodes overlay
+.. figure:: screenshots/data_overlay.jpg
+    :width: 90%
+    :align: center
+
+    A data nodes overlay
     
 
 From this overlay, the user can:
