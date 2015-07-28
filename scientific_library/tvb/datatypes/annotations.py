@@ -44,7 +44,7 @@ ANNOTATION_DTYPE = numpy.dtype([('id', 'i'),
                                 ('relation', 'S10'),
                                 ('label', 'S10'),
                                 ('definition', 'S10'),
-                                ('url', 'S10')])
+                                ('uri', 'S10')])
 
 
 class AnnotationTerm(object):
@@ -52,18 +52,18 @@ class AnnotationTerm(object):
     One single annotation (in the tree of annotations / region
     """
 
-    def __init__(self, id, parent, region, relation, label, definition=None, url=None):
+    def __init__(self, id, parent, region, relation, label, definition=None, uri=None):
         self.id = id
         self.parent_id = parent
         self.region = region
         self.relation = relation
         self.label = label
         self.definition = definition
-        self.url = url
+        self.uri = uri
 
 
     def to_tuple(self):
-        return self.id, self.parent_id, self.region, self.relation, self.label, self.definition, self.url
+        return self.id, self.parent_id, self.region, self.relation, self.label, self.definition, self.uri
 
 
 
