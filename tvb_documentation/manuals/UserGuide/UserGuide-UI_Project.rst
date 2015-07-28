@@ -4,7 +4,9 @@ Project
 
 Projects are the way you organise data and simulations in |TVB|. They
 correspond to directories where related data sets and simulation results
-are stored. Information on the currently selected project is always
+are stored.
+
+Information on the currently selected project is always
 available by clicking on the upper left corner of the interface:
 
 .. figure:: screenshots/project_info.jpg
@@ -37,25 +39,17 @@ more detail in the sections below:
 List of All Projects
 ....................
 
-This page provides a list of all the existing projects. Upon first user
-registration, a default project is created for you:
+This page provides an overview of all the existing projects.
     
-.. figure:: screenshots/default_project.jpg
-    :width: 90%
-    :align: center
+The star column allows you to select the currently active project.
 
-    The default Project
+Some columns display basic information such as the id, name and owner of a project.
+The last column shows an estimated total size of a project. It is handy when you run out of disk space and want to clean up old big data.
 
-The list of projects includes basic information about each project:
+The colored numbers represent the number of completed, in progress, pending, failed and cancelled operations.
 
-- who owns it
-- the number of completed, pending, and failed operations.
-
-as well as providing mechanisms for:
-
-- selecting which project is currently active.
-- editing any project's properties
-- direct  access to `Operations` and `Data Structure` pages for any project.
+The button columns are linking to the `Basic properties`_, `Operations`_ and `Data Structure`_ pages for the project.
+Clicking any will also make that project the current one.
 
 In addition to the list of existing projects, the right hand menu provides a
 way to:
@@ -63,6 +57,14 @@ way to:
 - Create a new project.
 - Import an existing project structure (for example, Exported from a
   colleague's installation of |TVB|).
+
+Upon first user registration, a default project is created for you:
+
+.. figure:: screenshots/default_project.jpg
+    :width: 90%
+    :align: center
+
+    The default Project
 
 
 Basic Properties
