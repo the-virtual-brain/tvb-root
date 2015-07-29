@@ -33,6 +33,7 @@
 """
 
 from tvb.adapters.uploaders.abcuploader import ABCUploader
+from tvb.adapters.uploaders.brco.parser import XMLParser
 from tvb.core.adapters.exceptions import LaunchException
 from tvb.core.entities.storage import transactional
 from tvb.datatypes.connectivity import Connectivity
@@ -43,9 +44,9 @@ class BRCOImporter(ABCUploader):
     """
     Import connectivity data stored in the networkx gpickle format
     """
-    _ui_name = "Connectivity Annotations Importer"
+    _ui_name = "BRCO Ontology Annotations"
     _ui_subsection = "brco_importer"
-    _ui_description = "Import connectivity annotations from external Ontology"
+    _ui_description = "Import connectivity annotations from BRCO Ontology"
 
 
     def get_upload_input_tree(self):
@@ -68,11 +69,10 @@ class BRCOImporter(ABCUploader):
     @transactional
     def launch(self, data_file, connectivity):
         try:
-            result = ConnectivityAnnotations(connectivity=connectivity, storage_path = self.storage_path)
-            anns = []
-            for i in range(1, 5):
-                anns.append(AnnotationTerm(i, i - 1, i + 10, "located-in", str(i)))
-            result.set_annotations(anns)
+            result = ConnectivityAnnotations(connectivity=connectivity, storage_path=self.storage_path)
+            parser = XMLParser(data_file, connectivity)
+            annotations = parser.read_annotation_terms()
+            result.set_annotations(annotations)
             return result
         except Exception, excep:
             self.log.exception("Could not process Connectivity Annotations")

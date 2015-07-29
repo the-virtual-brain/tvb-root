@@ -40,12 +40,13 @@ from tvb.datatypes import connectivity
 
 ANNOTATION_DTYPE = numpy.dtype([('id', 'i'),
                                 ('parent_id', 'i'),
-                                ('region', 'i'),
-                                ('relation', 'S10'),
-                                ('label', 'S10'),
-                                ('definition', 'S10'),
-                                ('synonym', 'S10'),
-                                ('uri', 'S10')])
+                                ('region_left', 'i'),
+                                ('region_right', 'i'),
+                                ('relation', 'S16'),
+                                ('label', 'S128'),
+                                ('definition', 'S1024'),
+                                ('synonym', 'S2048'),
+                                ('uri', 'S248')])
 
 
 class AnnotationTerm(object):
@@ -53,10 +54,11 @@ class AnnotationTerm(object):
     One single annotation node (in the tree of annotations / region)
     """
 
-    def __init__(self, id, parent, region, relation, label, definition=None, synonym=None, uri=None):
+    def __init__(self, id, parent, region_left, region_right, relation, label, definition=None, synonym=None, uri=None):
         self.id = id
         self.parent_id = parent
-        self.region = region
+        self.region_left = region_left
+        self.region_right = region_right
         self.relation = relation
         self.label = label
         self.definition = definition
@@ -65,7 +67,8 @@ class AnnotationTerm(object):
 
 
     def to_tuple(self):
-        return self.id, self.parent_id, self.region, self.relation, self.label, self.definition, self.synonym, self.uri
+        return self.id, self.parent_id, self.region_left, self.region_right, \
+               self.relation, self.label, self.definition, self.synonym, self.uri
 
 
 
