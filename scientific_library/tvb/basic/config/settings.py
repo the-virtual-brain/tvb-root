@@ -47,7 +47,7 @@ class VersionSettings(object):
     """
 
     # Current release number
-    BASE_VERSION = "1.4"
+    BASE_VERSION = "1.4.1"
 
     # Current DB version. Increment this and create a new xxx_update_db.py migrate script
     DB_STRUCTURE_VERSION = 15
@@ -62,7 +62,7 @@ class VersionSettings(object):
     # This is the version of the tvb project.
     # It should be updated every time the project structure changes
     # Should this be sync-ed with data version changes?
-    PROJECT_VERSION = 1
+    PROJECT_VERSION = 2
 
 
     def __init__(self, manager, bin_folder):
