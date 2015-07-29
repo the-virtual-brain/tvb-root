@@ -428,22 +428,33 @@ class FilesHelper():
         Copy a file from source to dest. source and dest can either be strings or 
         any object with a read or write method, like StringIO for example.
         """
-        if not hasattr(source, 'read'):
-            source = open(source, 'rb')
-        if not hasattr(dest, 'write'):
-            if dest_postfix is not None:
-                dest = os.path.join(dest, dest_postfix)
-            if not os.path.exists(os.path.dirname(dest)):
-                os.makedirs(os.path.dirname(dest))
-            dest = open(dest, 'wb')
-        while 1:
-            copy_buffer = source.read(buffer_size)
-            if copy_buffer:
-                dest.write(copy_buffer)
-            else:
-                break
-        source.close()
-        dest.close()
+        should_close_source = False
+        should_close_dest = False
+
+        try:
+            if not hasattr(source, 'read'):
+                source = open(source, 'rb')
+                should_close_source = True
+
+            if not hasattr(dest, 'write'):
+                if dest_postfix is not None:
+                    dest = os.path.join(dest, dest_postfix)
+                if not os.path.exists(os.path.dirname(dest)):
+                    os.makedirs(os.path.dirname(dest))
+                dest = open(dest, 'wb')
+                should_close_dest = True
+
+            while 1:
+                copy_buffer = source.read(buffer_size)
+                if copy_buffer:
+                    dest.write(copy_buffer)
+                else:
+                    break
+        finally:
+            if should_close_source:
+                source.close()
+            if should_close_dest:
+                dest.close()
   
   
     @staticmethod
