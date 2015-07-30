@@ -528,11 +528,11 @@ class Introspector:
         Extract the first doc entry from a matlab file.
         """
         try:
-            m_file = open(file_n)
+            with open(file_n) as m_file:
+                m_data = m_file.read()
         except Exception, ex:
             self.logger.exception(ex)
             return "Description not available."
-        m_data = m_file.read()
 
         doc_started_flag = False
         result = ""
