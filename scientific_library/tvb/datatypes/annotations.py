@@ -102,3 +102,13 @@ class ConnectivityAnnotations(MappedType):
         annotations = [ann.to_tuple() for ann in annotation_terms]
         annotations = numpy.array(annotations, dtype=ANNOTATION_DTYPE)
         self.region_annotations = annotations
+
+
+    def _find_summary_info(self):
+        """
+        Gather interesting summary information from an instance of this dataType.
+        """
+        summary = {"Connectivity": self.connectivity.display_name}
+        summary.update(self.get_info_about_array('region_annotations', [self.METADATA_ARRAY_SHAPE]))
+        return summary
+

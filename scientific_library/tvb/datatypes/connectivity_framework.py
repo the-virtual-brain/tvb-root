@@ -44,6 +44,14 @@ class ConnectivityFramework(connectivity_data.ConnectivityData):
     """
     
     __tablename__ = None
+
+    @property
+    def display_name(self):
+        """
+        Overwrite from superclass and add number of regions field (as title on DataStructure tree)
+        """
+        previous = super(ConnectivityFramework, self).display_name or "Connectivity"
+        return previous + " " + str(self.number_of_regions)
     
 
     def branch_connectivity(self, new_weights, interest_areas, storage_path, new_tracts=None):
