@@ -392,27 +392,20 @@ class FilesHelper():
      
     def unpack_zip(self, uploaded_zip, folder_path):
         """ Simple method to unpack ZIP archive in a given folder. """
-        EXCLUDED_FOLDERS = ["__MACOSX" + os.path.sep, ".DS_Store" + os.path.sep]
-        try:
-            with zipfile.ZipFile(uploaded_zip) as zip_arch:
-                result = []
-                for filename in zip_arch.namelist():
-                    to_be_excluded = False
-                    for excluded in EXCLUDED_FOLDERS:
-                        if filename.startswith(excluded) or filename.find(os.path.sep + excluded) >= 0:
-                            to_be_excluded = True
-                            break
-                    if to_be_excluded:
-                        continue
 
-                    new_file_name = os.path.join(folder_path, filename)
-                    with zip_arch.open(filename, 'rU') as src:
-                        if new_file_name.endswith('/'):
-                            if not os.path.exists(new_file_name):
-                                os.makedirs(new_file_name)
-                        else:
-                            FilesHelper.copy_file(src, new_file_name)
-                    result.append(new_file_name)
+        def to_be_excluded(name):
+            EXCLUDED_FOLDERS = ["__MACOSX" + os.path.sep, ".DS_Store"]
+            for excluded in EXCLUDED_FOLDERS:
+                if name.startswith(excluded) or name.find(os.path.sep + excluded) >= 0:
+                    return True
+            return False
+
+        try:
+            result = []
+            with zipfile.ZipFile(uploaded_zip) as zip_arch:
+                for filename in zip_arch.namelist():
+                    if not to_be_excluded(filename):
+                        result.append(zip_arch.extract(filename, folder_path))
             return result
         except BadZipfile, excep:
             self.logger.exception("Could not process zip file")
