@@ -292,8 +292,8 @@ class TimeSeriesRegionFramework(time_series_data.TimeSeriesRegionData, TimeSerie
         After populating few fields, compute the rest of the fields
         """
         super(TimeSeriesRegionFramework, self).configure()
-        self.has_surface_mapping = self.region_mapping is not None
-        self.has_volume_mapping = self.region_mapping_volume is not None
+        self.has_surface_mapping = self.region_mapping is not None or self._region_mapping is not None
+        self.has_volume_mapping = self.region_mapping_volume is not None or self._region_mapping_volume  is not None
 
 
     def get_space_labels(self):
