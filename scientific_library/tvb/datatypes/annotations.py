@@ -49,10 +49,12 @@ ANNOTATION_DTYPE = numpy.dtype([('id', 'i'),
                                 ('uri', 'S248')])
 
 
+
 class AnnotationTerm(object):
     """
     One single annotation node (in the tree of annotations / region)
     """
+
 
     def __init__(self, id, parent, region_left, region_right, relation, label, definition=None, synonym=None, uri=None):
         self.id = id
@@ -64,11 +66,23 @@ class AnnotationTerm(object):
         self.definition = definition
         self.synonym = synonym
         self.uri = uri
+        self.children = []
+
+
+    def add_child(self, annotation_child):
+        self.children.append(annotation_child)
 
 
     def to_tuple(self):
         return self.id, self.parent_id, self.region_left, self.region_right, \
                self.relation, self.label, self.definition, self.synonym, self.uri
+
+
+    def to_json(self):
+        children = []
+        for child in self.children:
+            children.append(child.to_json())
+        return dict(state="close", id=self.id, title=self.label + " -- " + self.uri, children=children)
 
 
 
@@ -112,3 +126,39 @@ class ConnectivityAnnotations(MappedType):
         summary.update(self.get_info_about_array('region_annotations', [self.METADATA_ARRAY_SHAPE]))
         return summary
 
+
+    def tree_json(self):
+        """
+        :return:
+        """
+        annotations_map = dict()
+        regions_map = dict()
+        for i in xrange(self.connectivity.number_of_regions):
+            regions_map[i] = []
+
+        for ann in self.region_annotations:
+            ann_obj = AnnotationTerm(**ann)
+            annotations_map[ann_obj.id] = annotations_map
+            if ann_obj.parent_id < 0:
+                regions_map[ann_obj.region_left].append(ann_obj)
+                regions_map[ann_obj.region_right].append(ann_obj)
+            elif ann_obj.parent_id in annotations_map:
+                annotations_map[ann_obj.parent_id].add_child(ann_obj)
+            else:
+                self.logger.warn("Order of processing invalid parent %s child %s" % (ann_obj.parent_id, ann_obj.id))
+
+        trees = []
+        for region_idx, annotations_list in enumerate(regions_map):
+            childred_json = []
+            for ann_term in annotations_list:
+                childred_json.append(ann_term.to_json())
+            # This node is built for every TVB region
+            trees.append(dict(data=[dict(state="open",
+                                         title=self.connectivity.region_labels[region_idx],
+                                         icon="/static/style/nodes/nodeRoot.png",
+                                         children=childred_json)]))
+        # Group everything under a single root
+        return dict(data=[dict(state="open",
+                               title=self.display_name,
+                               icon="/static/style/nodes/nodeRoot.png",
+                               children=trees)])

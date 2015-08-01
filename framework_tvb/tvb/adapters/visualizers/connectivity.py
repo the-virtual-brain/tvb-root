@@ -39,14 +39,17 @@ import numpy
 import pylab
 from copy import copy
 from tvb.basic.profile import TvbProfile
+from tvb.basic.traits.core import KWARG_FILTERS_UI
+from tvb.basic.filters.chain import FilterChain, UIFilter
 from tvb.config import CONNECTIVITY_CREATOR_MODULE, CONNECTIVITY_CREATOR_CLASS
 from tvb.core.adapters.abcdisplayer import ABCDisplayer
 from tvb.core.adapters.exceptions import LaunchException
-from tvb.basic.filters.chain import FilterChain
 from tvb.core.services.flow_service import FlowService
 from tvb.datatypes.connectivity import Connectivity
 from tvb.datatypes.graph import ConnectivityMeasure
+from tvb.datatypes.annotations import ConnectivityAnnotations
 from tvb.datatypes.surfaces import CorticalSurface
+
 
 
 class ConnectivityViewer(ABCDisplayer):
@@ -62,7 +65,19 @@ class ConnectivityViewer(ABCDisplayer):
         """
         Take as Input a Connectivity Object.
         """
-        return [{'name': 'input_data', 'label': 'Connectivity Matrix', 'type': Connectivity, 'required': True},
+
+        filters_ui = [UIFilter(linked_elem_name="colors",
+                               linked_elem_field=FilterChain.datatype + "._connectivity"),
+                      UIFilter(linked_elem_name="rays",
+                               linked_elem_field=FilterChain.datatype + "._connectivity"),
+                      UIFilter(linked_elem_name="annotations",
+                               linked_elem_field=FilterChain.datatype + "._connectivity")]
+
+        json_ui_filter = json.dumps([ui_filter.to_dict() for ui_filter in filters_ui])
+
+
+        return [{'name': 'input_data', 'label': 'Connectivity Matrix', 'type': Connectivity,
+                 'required': True, KWARG_FILTERS_UI: json_ui_filter},
                 {'name': 'surface_data', 'label': 'Brain Surface', 'type': CorticalSurface,
                  'description': 'The Brain Surface is used to give you an idea of the connectivity position relative '
                                 'to the full brain cortical surface.  This surface will be displayed as a shadow '
@@ -80,10 +95,12 @@ class ConnectivityViewer(ABCDisplayer):
                  'conditions': FilterChain(fields=[FilterChain.datatype + '._nr_dimensions'],
                                            operations=["=="], values=[1]),
                  'description': 'A ConnectivityMeasure datatype used to establish the size of the spheres representing '
-                                'each node. (It only applies to 3D Nodes tab).'}]
+                                'each node. (It only applies to 3D Nodes tab).'},
+                {'name': 'annotations', 'label': 'Connectivity Ontology Annotations',
+                 'type': ConnectivityAnnotations, 'required': False}]
 
 
-    def get_required_memory_size(self, input_data, surface_data, colors, rays, step):
+    def get_required_memory_size(self, input_data, surface_data, **kwargs):
         """
         Return the required memory to run this algorithm.
         """
@@ -94,7 +111,7 @@ class ConnectivityViewer(ABCDisplayer):
         return -1
 
 
-    def launch(self, input_data, surface_data=None, colors=None, rays=None, step=None):
+    def launch(self, input_data, surface_data=None, colors=None, rays=None, step=None, annotations=None):
         """
         Given the input connectivity data and the surface data, 
         build the HTML response to be displayed.
@@ -123,11 +140,15 @@ class ConnectivityViewer(ABCDisplayer):
         _params, _pages = MPLH5Connectivity().compute_parameters(input_data)
         result_params.update(_params)
         result_pages.update(_pages)
+        _params, _pages = ConnectivityAnnotationsView().compute_parameters(self, annotations)
+        result_params.update(_params)
+        result_pages.update(_pages)
 
         return self.build_display_result("connectivity/main_connectivity", result_params, result_pages)
 
 
-    def generate_preview(self, input_data, figure_size=None, surface_data=None, colors=None, rays=None, step=None):
+    def generate_preview(self, input_data, figure_size=None, surface_data=None,
+                         colors=None, rays=None, step=None, **kwargs):
         """
         Generate the preview for the BURST cockpit.
 
@@ -175,7 +196,8 @@ class ConnectivityViewer(ABCDisplayer):
         else:
             url_vertices, url_normals, url_triangles = [], [], []
 
-        algo, group = FlowService().get_algorithm_by_module_and_class(CONNECTIVITY_CREATOR_MODULE, CONNECTIVITY_CREATOR_CLASS)
+        algo, group = FlowService().get_algorithm_by_module_and_class(CONNECTIVITY_CREATOR_MODULE,
+                                                                      CONNECTIVITY_CREATOR_CLASS)
 
         submit_url = '/flow/%d/%d' % (group.fk_category, group.id)
         global_pages = dict(controlPage="connectivity/top_right_controls")
@@ -213,7 +235,7 @@ class ConnectivityViewer(ABCDisplayer):
         global_params['selectedConnectivityGid'] = input_connectivity.gid
         return global_params
 
-#    
+#
 # -------------------- Connectivity 3D code starting -------------------
 
 
@@ -352,6 +374,7 @@ class Connectivity2DViewer(object):
 
         return json.dumps(result_json)
 
+
     @staticmethod
     def _get_weights(weights):
         """
@@ -389,6 +412,7 @@ class Connectivity2DViewer(object):
             },
             "adjacencies": adjacencies
         }
+
 
     @staticmethod
     def _get_adjacencies_json(point_weights, points_labels):
@@ -466,7 +490,7 @@ class Connectivity2DViewer(object):
 
 # -------------------- Connectivity MPLH5 code starting  ------------------
 
-class MPLH5Connectivity():
+class MPLH5Connectivity(object):
     """
     MPLH5 tab page, where the entire connectivity matrix can be seen.
     """
@@ -507,6 +531,25 @@ class MPLH5Connectivity():
         parameters = dict(mplh5ServerURL=TvbProfile.current.web.MPLH5_SERVER_URL,
                           figureNumber=figure.number, showFullToolbar=False)
         return parameters, {}
-    
-    
+
+
+
+class ConnectivityAnnotationsView(object):
+    """
+    Prepare Genshi params for displaying a ConnectivityAnnotations tree.
+    """
+
+    @staticmethod
+    def compute_parameters(displayer, annotations=None):
+
+        has_annotation = annotations is not None
+        tree_url = ""
+        if has_annotation:
+            tree_url = displayer.paths2url(annotations, 'tree_json')
+
+        params = dict(hasAnnotations=has_annotation,
+                      annotationsTreeUrl=tree_url,
+                      baseUrl=TvbProfile.current.web.BASE_URL)
+        return params, {}
+
     
