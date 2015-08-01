@@ -535,16 +535,18 @@ class FlowController(BaseController):
         """
         self.logger.debug("Starting to read HDF5: " + entity_gid + "/" + dataset_name + "/" + str(kwargs))
         entity = ABCAdapter.load_entity_by_gid(entity_gid)
+
         datatype_kwargs = json.loads(datatype_kwargs)
         if datatype_kwargs:
             for key, value in datatype_kwargs.iteritems():
                 kwargs[key] = ABCAdapter.load_entity_by_gid(value)
-        dataset = getattr(entity, dataset_name)
-        if not kwargs:
-            # why the deep copy?
-            result = copy.deepcopy(dataset)
-        else:
-            result = dataset(**kwargs)
+
+        result = getattr(entity, dataset_name)
+        if callable(result):
+            if kwargs:
+                result = result(**kwargs)
+            else:
+                result = result()
 
         if isinstance(result, numpy.ndarray):
             # for ndarrays honor the flatten kwarg and convert to lists as ndarrs are not json-able

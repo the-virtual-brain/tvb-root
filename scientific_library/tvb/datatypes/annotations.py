@@ -82,7 +82,8 @@ class AnnotationTerm(object):
         children = []
         for child in self.children:
             children.append(child.to_json())
-        return dict(state="close", id=self.id, title=self.label + " -- " + self.uri, children=children)
+        return dict(data=dict(id=str(self.id), title=self.label + " -- " + self.uri),
+                    state="close", children=children)
 
 
 
@@ -129,7 +130,7 @@ class ConnectivityAnnotations(MappedType):
 
     def tree_json(self):
         """
-        :return:
+        :return: JSON to be rendered in a Tree of entities
         """
         annotations_map = dict()
         regions_map = dict()
@@ -137,9 +138,10 @@ class ConnectivityAnnotations(MappedType):
             regions_map[i] = []
 
         for ann in self.region_annotations:
-            ann_obj = AnnotationTerm(**ann)
-            annotations_map[ann_obj.id] = annotations_map
+            ann_obj = AnnotationTerm(ann[0], ann[1], ann[2], ann[3], ann[4], ann[5], ann[6], ann[7], ann[8])
+            annotations_map[ann_obj.id] = ann_obj
             if ann_obj.parent_id < 0:
+                # Root directly under a TVB region node
                 regions_map[ann_obj.region_left].append(ann_obj)
                 regions_map[ann_obj.region_right].append(ann_obj)
             elif ann_obj.parent_id in annotations_map:
@@ -148,17 +150,18 @@ class ConnectivityAnnotations(MappedType):
                 self.logger.warn("Order of processing invalid parent %s child %s" % (ann_obj.parent_id, ann_obj.id))
 
         trees = []
-        for region_idx, annotations_list in enumerate(regions_map):
+        for region_idx, annotations_list in regions_map.iteritems():
             childred_json = []
             for ann_term in annotations_list:
                 childred_json.append(ann_term.to_json())
             # This node is built for every TVB region
-            trees.append(dict(data=[dict(state="open",
-                                         title=self.connectivity.region_labels[region_idx],
-                                         icon="/static/style/nodes/nodeRoot.png",
-                                         children=childred_json)]))
+            trees.append(dict(data=dict(title=self.connectivity.region_labels[region_idx],
+                                        icon="/static/style/nodes/nodeRoot.png"),
+                              state="open",
+                              children=childred_json))
         # Group everything under a single root
-        return dict(data=[dict(state="open",
-                               title=self.display_name,
-                               icon="/static/style/nodes/nodeRoot.png",
-                               children=trees)])
+        result = dict(data=dict(title=self.display_name,
+                                icon="/static/style/nodes/nodeRoot.png"),
+                      state="open",
+                      children=trees)
+        return result

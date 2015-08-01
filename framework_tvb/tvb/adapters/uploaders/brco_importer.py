@@ -37,7 +37,7 @@ from tvb.adapters.uploaders.brco.parser import XMLParser
 from tvb.core.adapters.exceptions import LaunchException
 from tvb.core.entities.storage import transactional
 from tvb.datatypes.connectivity import Connectivity
-from tvb.datatypes.annotations import ConnectivityAnnotations, AnnotationTerm
+from tvb.datatypes.annotations import ConnectivityAnnotations
 
 
 class BRCOImporter(ABCUploader):
