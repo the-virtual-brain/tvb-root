@@ -35,8 +35,6 @@
 import os
 import shutil
 import json
-import zipfile
-from contextlib import closing
 from zipfile import ZipFile, ZIP_DEFLATED, BadZipfile
 from tvb.basic.profile import TvbProfile
 from tvb.basic.logger.builder import get_logger
@@ -83,9 +81,8 @@ class FilesHelper():
                 self.logger.debug("Creating folder:" + str(path))
                 os.makedirs(path, mode=TvbProfile.current.ACCESS_MODE_TVB_FILES)
                 os.chmod(path, TvbProfile.current.ACCESS_MODE_TVB_FILES)
-        except OSError, excep:
-            self.logger.error("COULD NOT CREATE FOLDER! CHECK ACCESS ON IT!")
-            self.logger.exception(excep)
+        except OSError:
+            self.logger.exception("COULD NOT CREATE FOLDER! CHECK ACCESS ON IT!")
             raise FileStructureException("Could not create Folder" + str(path))
     
         
@@ -102,7 +99,8 @@ class FilesHelper():
         if not os.path.exists(complete_path):
             self.check_created(complete_path)
         return complete_path
-    
+
+
     def rename_project_structure(self, project_name, new_name):
         """ Rename Project folder or THROW FileStructureException. """
         try:
@@ -130,9 +128,8 @@ class FilesHelper():
                 else:
                     os.remove(complete_path)
             self.logger.debug("Project folders were removed for " + project_name)
-        except OSError, excep:
-            self.logger.error("A problem occurred while removing folder.")
-            self.logger.exception(excep)
+        except OSError:
+            self.logger.exception("A problem occurred while removing folder.")
             raise FileStructureException("Permission denied. Make sure you have write access on TVB folder!")
      
      
@@ -179,7 +176,8 @@ class FilesHelper():
         if not os.path.exists(operation_path):
             self.check_created(operation_path)
         return operation_path
-    
+
+
     def get_operation_meta_file_path(self, project_name, operation_id):
         """
         Retrieve the path to operation meta file
@@ -241,8 +239,8 @@ class FilesHelper():
                 shutil.rmtree(complete_path)
             elif os.path.exists(complete_path):
                 os.remove(complete_path)
-        except Exception, excep:
-            self.logger.error(excep)
+        except Exception:
+            self.logger.exception("Could not remove files")
             raise FileStructureException("Could not remove files for OP" + str(operation_id))
     
     ####################### DATA-TYPES METHODS Start Here #####################
@@ -256,9 +254,8 @@ class FilesHelper():
                 os.remove(datatype.get_storage_file_path())
             else:
                 self.logger.warning("Data file already removed:" + str(datatype.get_storage_file_path()))
-
-        except Exception, excep:
-            self.logger.exception(excep)
+        except Exception:
+            self.logger.exception("Could not remove file")
             raise FileStructureException("Could not remove " + str(datatype))
             
             
@@ -271,8 +268,8 @@ class FilesHelper():
             folder = self.get_project_folder(new_project_name, str(new_op_id))
             full_new_file = os.path.join(folder, os.path.split(full_path)[1])
             os.rename(full_path, full_new_file)
-        except Exception, excep:
-            self.logger.error(excep)
+        except Exception:
+            self.logger.exception("Could not move file")
             raise FileStructureException("Could not move " + str(datatype))
     
     
@@ -351,7 +348,7 @@ class FilesHelper():
         :param zip_full_path: full path and name of the result ZIP file
         :param files: array with the FULL names/path of the files to add into ZIP 
         """
-        with closing(ZipFile(zip_full_path, "w", ZIP_DEFLATED, True)) as zip_file:
+        with ZipFile(zip_full_path, "w", ZIP_DEFLATED, True) as zip_file:
             for file_to_include in files:
                 zip_file.write(file_to_include, os.path.basename(file_to_include))
     
@@ -362,7 +359,7 @@ class FilesHelper():
         :param zip_full_path: full path and name of the result ZIP file
         :param folders: array with the FULL names/path of the folders to add into ZIP 
         """
-        with closing(ZipFile(zip_full_path, "w", ZIP_DEFLATED, True)) as zip_res:
+        with ZipFile(zip_full_path, "w", ZIP_DEFLATED, True) as zip_res:
             for folder in set(folders):
                 parent_folder, _ = os.path.split(folder)
                 for root, _, files in os.walk(folder):
@@ -379,7 +376,7 @@ class FilesHelper():
         """
         Given a folder and a ZIP result name, create the corresponding archive.
         """
-        with closing(ZipFile(result_name, "w", ZIP_DEFLATED, True)) as zip_res:
+        with ZipFile(result_name, "w", ZIP_DEFLATED, True) as zip_res:
             for root, _, files in os.walk(folder_root):
                 #NOTE: ignore empty directories
                 for file_n in files:
@@ -392,27 +389,20 @@ class FilesHelper():
      
     def unpack_zip(self, uploaded_zip, folder_path):
         """ Simple method to unpack ZIP archive in a given folder. """
-        EXCLUDED_FOLDERS = ["__MACOSX/", ".DS_Store/"]
-        try:
-            with zipfile.ZipFile(uploaded_zip) as zip_arch:
-                result = []
-                for filename in zip_arch.namelist():
-                    to_be_excluded = False
-                    for excluded in EXCLUDED_FOLDERS:
-                        if filename.startswith(excluded) or filename.find('/' + excluded) >= 0:
-                            to_be_excluded = True
-                            break
-                    if to_be_excluded:
-                        continue
 
-                    new_file_name = os.path.join(folder_path, filename)
-                    with zip_arch.open(filename, 'rU') as src:
-                        if new_file_name.endswith('/'):
-                            if not os.path.exists(new_file_name):
-                                os.makedirs(new_file_name)
-                        else:
-                            FilesHelper.copy_file(src, new_file_name)
-                    result.append(new_file_name)
+        def to_be_excluded(name):
+            excluded_paths = ["__MACOSX/", ".DS_Store"]
+            for excluded in excluded_paths:
+                if name.startswith(excluded) or name.find('/' + excluded) >= 0:
+                    return True
+            return False
+
+        try:
+            result = []
+            with ZipFile(uploaded_zip) as zip_arch:
+                for filename in zip_arch.namelist():
+                    if not to_be_excluded(filename):
+                        result.append(zip_arch.extract(filename, folder_path))
             return result
         except BadZipfile, excep:
             self.logger.exception("Could not process zip file")
@@ -444,12 +434,8 @@ class FilesHelper():
                 dest = open(dest, 'wb')
                 should_close_dest = True
 
-            while 1:
-                copy_buffer = source.read(buffer_size)
-                if copy_buffer:
-                    dest.write(copy_buffer)
-                else:
-                    break
+            shutil.copyfileobj(source, dest, length=buffer_size)
+
         finally:
             if should_close_source:
                 source.close()
@@ -469,12 +455,11 @@ class FilesHelper():
                     os.remove(file_)
                 if os.path.isdir(file_):
                     shutil.rmtree(file_)
-            except Exception, exc:
+            except Exception:
                 logger = get_logger(__name__)
-                logger.error("Could not remove " + str(file_))
-                logger.exception(exc)
+                logger.exception("Could not remove " + str(file_))
                 if not ignore_exception:
-                    raise exc   
+                    raise
         
         
     @staticmethod
