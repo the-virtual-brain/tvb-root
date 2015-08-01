@@ -44,7 +44,7 @@ LOGGER = get_logger(__name__)
 
 def update():
     """
-    Try to import Default_Project, so that new users created with the latest code can share this project.
+    Update Surface metadata
     """
 
     try:
@@ -54,5 +54,6 @@ def update():
             if isinstance(surface, Surface):
                 surface._find_edge_lengths()
                 dao.store_entity(surface)
+                surface.persist_full_metadata()
     except Exception:
         LOGGER.exception("Could update Surface entities!")

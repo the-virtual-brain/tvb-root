@@ -45,8 +45,9 @@ PAGE_SIZE = 20
 
 def update():
     """
-    Cleanup Projections from disk.
+    Cleanup Projections from disk (make sure Projection Regions are being removed).
     """
+
     projects_count = dao.get_all_projects(is_count=True)
 
     for page_start in range(0, projects_count, PAGE_SIZE):

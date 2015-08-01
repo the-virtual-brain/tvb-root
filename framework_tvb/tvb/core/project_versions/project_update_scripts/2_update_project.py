@@ -32,21 +32,16 @@ ProjectionRegion DataType has been removed, and ProjectionSurfaces got a new req
 
 .. moduleauthor:: Lia Domide <lia.domide@codemart.ro>
 """
-import json
 
 import os
 from tvb.basic.logger.builder import get_logger
-from tvb.core.entities.file.hdf5_storage_manager import HDF5StorageManager
-from tvb.core.entities.transient.structure_entities import DataTypeMetaData
-from tvb.datatypes import projections_data
 
 LOGGER = get_logger(__name__)
-FIELD_PROJECTION_TYPE = "Projection_type"
 
 
 def update(project_path):
     """
-    Remove all ProjectionRegion entities before import
+    Remove all ProjectionRegion entities before import, to not have problems or missing DT class.
     """
 
     for root, _, files in os.walk(project_path):
@@ -55,22 +50,3 @@ def update(project_path):
             if "ProjectionRegion" in file_name:
                 LOGGER.info("Removing %s from %s" % (file_name, root))
                 os.remove(os.path.join(root, file_name))
-
-            if "ProjectionSurface" in file_name:
-                LOGGER.info("Updating ProjectionSurface %s from %s" % (file_name, root))
-
-                storage_manager = HDF5StorageManager(root, file_name)
-                root_metadata = storage_manager.get_metadata()
-
-                if FIELD_PROJECTION_TYPE not in root_metadata:
-                    class_name = root_metadata[DataTypeMetaData.KEY_CLASS_NAME]
-
-                    projection_type = projections_data.EEG_POLYMORPHIC_IDENTITY
-                    if "SEEG" in class_name:
-                        projection_type = projections_data.SEEG_POLYMORPHIC_IDENTITY
-                    elif "MEG" in class_name:
-                        projection_type = projections_data.MEG_POLYMORPHIC_IDENTITY
-
-                    root_metadata[FIELD_PROJECTION_TYPE] = json.dumps(projection_type)
-                    LOGGER.info("Setting %s = %s" % (FIELD_PROJECTION_TYPE, projection_type))
-                    storage_manager.set_metadata(root_metadata)

@@ -110,7 +110,7 @@ class MapAsJson():
             if len(string) < 1:
                 return None
             json_value = self.from_json(string)
-            setattr(inst, '_' + self.trait.name, json_value)
+            #setattr(inst, '_' + self.trait.name, json_value)
             return json_value
         return self
 
