@@ -37,15 +37,17 @@ Service layer for USER entities.
 from random import randint
 from hashlib import md5
 from inspect import stack
+import os
 from tvb.basic.profile import TvbProfile
 from tvb.basic.logger.builder import get_logger
 from tvb.core.entities import model
 from tvb.core.entities.storage import dao
 from tvb.core.services import email_sender
 from tvb.core.services.exceptions import UsernameException
+from tvb.core.services.import_service import ImportService
 from tvb.core.services.settings_service import SettingsService
 from tvb.core.services.event_handlers import handle_event
-
+import tvb_data
 
 FROM_ADDRESS = 'donotreply@thevirtualbrain.org'
 SUBJECT_REGISTER = '[TVB] Registration Confirmation'
@@ -118,13 +120,13 @@ class UserService:
             user = dao.store_entity(user)
 
             if role == model.ROLE_ADMINISTRATOR:
-                handle_event(".".join([self.__class__.__name__, "create_admin"]), user)
+                uploaded = os.path.join(os.path.dirname(tvb_data.__file__), "Default_Project.zip")
+                ImportService().import_project_structure(uploaded, user.id)
             else:
                 handle_event(".".join([self.__class__.__name__, stack()[0][3]]), user)
             return TEXT_DISPLAY
         except Exception, excep:
-            self.logger.error("Could not create user!")
-            self.logger.exception(excep)
+            self.logger.exception("Could not create user!")
             raise UsernameException(str(excep))
 
 
@@ -223,8 +225,7 @@ class UserService:
             members = dao.get_members_of_project(project_id)
             return all_users, members, total_pages
         except Exception, excep:
-            self.logger.error("Invalid userName or project identifier")
-            self.logger.exception(excep)
+            self.logger.exception("Invalid userName or project identifier")
             raise UsernameException(str(excep))
 
 

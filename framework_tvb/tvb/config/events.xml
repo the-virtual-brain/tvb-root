@@ -6,15 +6,6 @@
 
 	<!-- Supported variables to be available from runtime are so far $$CURRENT_USER$$ and $$CURRENT_PROJECT$$-->
 
- 	<event hookpoint="UserService.create_admin" type="generic">
-        <launcher module="tvb.core.services.import_service" class="ImportService" instance="True"/>
-        <method name="import_project_structure"/>
-        <args>
-            <arg name='uploaded' value="Default_Project.zip" module='tvb_data' type="file" />
-            <arg name="user_id" value="$$CURRENT_USER$$.id" type="runtime"/>
-        </args>
-    </event>
-
     <event hookpoint="UserService.create_user" type="generic">
         <launcher module="tvb.core.services.project_service" class="ProjectService" instance="True"/>
         <method name="add_member_to_project"/>
