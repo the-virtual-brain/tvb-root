@@ -67,7 +67,7 @@ class UserServiceTest(TransactionalTestCase):
     """
     This class contains tests for the tvb.core.services.user_service module.
     """
-
+    NOT_EXISTENT_PROJECT_ID = 43
 
     def setUp(self):
         """
@@ -388,11 +388,12 @@ class UserServiceTest(TransactionalTestCase):
         self.assertEqual(changed_user.validated, 1, "user not validated")
 
 
-    def test_create_project_no_projects(self):
+    def test_get_users_when_no_projects(self):
         """
-        Standard flow for creating a new project.
+        Assert exception is thrown when no project is found gor the given ID.
         """
-        self.assertRaises(UsernameException, self.user_service.get_users_for_project, "admin", 1)
+        self.assertRaises(UsernameException, self.user_service.get_users_for_project,
+                          TvbProfile.current.web.admin.ADMINISTRATOR_NAME, self.NOT_EXISTENT_PROJECT_ID)
 
 
 
@@ -408,7 +409,9 @@ def suite():
 
 if __name__ == "__main__":
     #So you can run tests individually.
-    unittest.main()        
+    TEST_RUNNER = unittest.TextTestRunner()
+    TEST_SUITE = suite()
+    TEST_RUNNER.run(TEST_SUITE)
         
         
         

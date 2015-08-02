@@ -10,7 +10,7 @@
         <launcher module="tvb.core.services.project_service" class="ProjectService" instance="True"/>
         <method name="add_member_to_project"/>
         <args>
-            <arg name="project_gid" value="3ccbe88a-47ca-11e4-809c-3c075431bf56" type="str"/>
+            <arg name="project_gid" value="2cc58a73-25c1-11e5-a7af-14109fe3bf71" type="str"/>
             <arg name="user_id" value="$$CURRENT_USER$$.id" type="runtime"/>
         </args>
     </event>
