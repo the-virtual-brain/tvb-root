@@ -91,8 +91,11 @@ def update(input_file):
             # DT already in DB (update of own storage, by making sure all fields are being correctly populated)
             dt_db.configure()
             dt_db.persist_full_metadata()
-            # restore in DB, in case TVB 1.4 had wrongly imported flags
-            dao.store_entity(dt_db)
+            try:
+                # restore in DB, in case TVB 1.4 had wrongly imported flags
+                dao.store_entity(dt_db)
+            except Exception:
+                LOGGER.exception("Could not update flags in DB, but we continue with the update!")
 
         elif FIELD_SURFACE_MAPPING not in root_metadata:
             # Have default values, to avoid the full project not being imported
