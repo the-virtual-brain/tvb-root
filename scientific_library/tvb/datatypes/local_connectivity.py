@@ -27,7 +27,7 @@
 #   Frontiers in Neuroinformatics (7:10. doi: 10.3389/fninf.2013.00010)
 #
 #
-import os
+
 from tvb.basic.readers import try_get_absolute_path, FileReader
 from tvb.datatypes.local_connectivity_framework import LocalConnectivityFramework
 from tvb.datatypes.local_connectivity_scientific import LocalConnectivityScientific
@@ -52,15 +52,14 @@ class LocalConnectivity(LocalConnectivityScientific, LocalConnectivityFramework)
     """
 
     @staticmethod
-    def from_file(source_file=os.path.join("cortex_reg13", "local_connectivity_surface_cortex_reg13.mat"),
-                  instance=None):
+    def from_file(source_file="local_connectivity_16384.mat", instance=None):
 
         if instance is None:
             result = LocalConnectivity()
         else:
             result = instance
 
-        source_full_path = try_get_absolute_path("tvb_data.surfaceData", source_file)
+        source_full_path = try_get_absolute_path("tvb_data.local_connectivity", source_file)
         reader = FileReader(source_full_path)
 
         result.matrix = reader.read_array(matlab_data_name="LocalCoupling")

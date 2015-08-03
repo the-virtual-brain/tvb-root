@@ -43,7 +43,6 @@ The second phase includes the source code and depends on the zip produced by thi
 .. moduleauthor:: Mihai Andrei <mihai.andrei@codemart.ro>
 """
 import subprocess
-from zipfile import ZipFile, ZIP_DEFLATED
 
 import os
 import shutil
@@ -101,15 +100,17 @@ INCLUDED_DATA = [
     ("sensors.__init__.py", "$INSIDE.sensors.__init__.py"),
 
     ("surfaceData.__init__.py", "$INSIDE.surfaceData.__init__.py"),
-    ("surfaceData.cortex_80k.surface_80k.zip", "$INSIDE.surfaceData.cortex_80k.surface_80k.zip"),
-    ("surfaceData.cortex_80k.local_connectivity_80k.mat", "$INSIDE.surfaceData.cortex_80k.local_connectivity_80k.mat"),
-    ("surfaceData.cortex_reg13.surface_cortex_reg13.zip", "$INSIDE.surfaceData.cortex_reg13.surface_cortex_reg13.zip"),
-    ("surfaceData.cortex_reg13.local_connectivity_surface_cortex_reg13.mat", "$INSIDE.surfaceData.cortex_reg13.local_connectivity_surface_cortex_reg13.mat"),
+    ("surfaceData.cortex_80k.zip", "$INSIDE.surfaceData.cortex_80k.zip"),
+    ("surfaceData.cortex_16384.zip", "$INSIDE.surfaceData.cortex_16384.zip"),
     ("surfaceData.outer_skin_4096.zip", "$INSIDE.surfaceData.outer_skin_4096.zip"),
     ("surfaceData.inner_skull_4096.zip", "$INSIDE.surfaceData.inner_skull_4096.zip"),
     ("surfaceData.outer_skull_4096.zip", "$INSIDE.surfaceData.outer_skull_4096.zip"),
-    ("surfaceData.old_eeg_skin_surface.zip", "$INSIDE.surfaceData.old_eeg_skin_surface.zip"),
-    ("surfaceData.old_face_surface.zip", "$INSIDE.surfaceData.old_face_surface.zip"),
+    ("surfaceData.scalp.zip", "$INSIDE.surfaceData.scalp.zip"),
+    ("surfaceData.face_8614.zip", "$INSIDE.surfaceData.face_8614.zip"),
+
+    ("local_connectivity.__init__.py", "$INSIDE.local_connectivity.__init__.py"),
+    ("local_connectivity.local_connectivity_16384.mat", "$INSIDE.local_connectivity.local_connectivity_16384.mat"),
+    ("local_connectivity.local_connectivity_80k.mat", "$INSIDE.local_connectivity.local_connectivity_80k.mat"),
 
     ("obj.__init__.py", "$INSIDE.obj.__init__.py"),
     ("obj.face_surface.obj", "$INSIDE.obj.face_surface.obj"),

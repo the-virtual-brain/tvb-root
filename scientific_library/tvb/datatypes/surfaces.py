@@ -75,7 +75,7 @@ class Surface(surfaces_scientific.SurfaceScientific, surfaces_framework.SurfaceF
     """
 
     @classmethod
-    def from_file(cls, source_file=os.path.join("cortex_reg13", "surface_cortex_reg13.zip"), instance=None):
+    def from_file(cls, source_file="cortex_16384.zip", instance=None):
         """
         Construct a Surface from source_file.
         """
@@ -281,7 +281,7 @@ class EEGCap(surfaces_scientific.EEGCapScientific, surfaces_framework.EEGCapFram
     __mapper_args__ = {'polymorphic_identity': EEG_CAP}
 
     @classmethod
-    def from_file(cls, source_file="old_eeg_skin_surface.zip", instance=None):
+    def from_file(cls, source_file="scalp_1082.zip", instance=None):
         return super(EEGCap, cls).from_file(source_file, instance)
 
 
@@ -306,7 +306,7 @@ class FaceSurface(surfaces_scientific.FaceSurfaceScientific, surfaces_framework.
     __mapper_args__ = {'polymorphic_identity': FACE}
 
     @classmethod
-    def from_file(cls, source_file="old_face_surface.zip", instance=None):
+    def from_file(cls, source_file="face_8614.zip", instance=None):
         return super(FaceSurface, cls).from_file(source_file, instance)
 
 ##--------------------- OPEN SURFACES End Here---------------------------------------##

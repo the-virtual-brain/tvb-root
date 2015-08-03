@@ -57,7 +57,7 @@ class Cortex(CortexScientific, CortexFramework, CorticalSurface):
 
 
     @classmethod
-    def from_file(cls, source_file=os.path.join("cortex_reg13", "surface_cortex_reg13.zip"),
+    def from_file(cls, source_file="cortex_16384.zip",
                   region_mapping_file=os.path.join("regionMapping_16k_76.txt"),
                   local_connectivity_file=None, eeg_projection_file=None, instance=None):
 

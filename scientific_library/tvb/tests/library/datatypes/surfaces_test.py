@@ -96,8 +96,8 @@ class SurfacesTest(BaseTestCase):
         self.assertEqual(dt.triangle_angles.shape, (32760, 3))
         self.assertEqual(len(dt.edges), 49140)
         self.assertTrue(abs(dt.edge_length_mean - 3.97605292887) < 0.00000001)
-        self.assertTrue(abs(dt.edge_length_min - 0.663807567201) < 0.00000001)
-        self.assertTrue(abs(dt.edge_length_max - 7.75671853782) < 0.00000001)
+        self.assertTrue(abs(dt.edge_length_min - 0.6638) < 0.0001)
+        self.assertTrue(abs(dt.edge_length_max - 7.7567) < 0.0001)
         self.assertEqual(len(dt.edge_triangles), 49140)
         self.assertEqual([], dt.validate_topology_for_simulations().warnings)
         self.assertEqual(dt.get_data_shape('vertices'), (16384, 3))
@@ -187,17 +187,17 @@ class SurfacesTest(BaseTestCase):
     def test_eegcap(self):
         dt = surfaces.EEGCap(load_default=True)
         self.assertTrue(isinstance(dt, surfaces.EEGCap))
-        self.assertEqual(dt.get_data_shape('vertices'), (4096, 3))
-        self.assertEqual(dt.get_data_shape('vertex_normals'), (4096, 3))
-        self.assertEqual(dt.get_data_shape('triangles'), (7062, 3))
+        self.assertEqual(dt.get_data_shape('vertices'), (1082, 3))
+        self.assertEqual(dt.get_data_shape('vertex_normals'), (1082, 3))
+        self.assertEqual(dt.get_data_shape('triangles'), (2160, 3))
 
 
     def test_facesurface(self):
         dt = surfaces.FaceSurface(load_default=True)
         self.assertTrue(isinstance(dt, surfaces.FaceSurface))
-        self.assertEqual(dt.get_data_shape('vertices'), (35613, 3))
-        self.assertEqual(dt.get_data_shape('vertex_normals'), (35613, 3))
-        self.assertEqual(dt.get_data_shape('triangles'), (10452, 3))
+        self.assertEqual(dt.get_data_shape('vertices'), (8614, 3))
+        self.assertEqual(dt.get_data_shape('vertex_normals'), (0,))
+        self.assertEqual(dt.get_data_shape('triangles'), (17224, 3))
 
 
     def test_regionmapping(self):
