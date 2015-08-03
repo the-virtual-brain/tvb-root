@@ -87,7 +87,7 @@ class Cortex(CortexScientific, CortexFramework, CorticalSurface):
 
 
     @staticmethod
-    def from_file_projection_array(source_file="surface_reg_13_eeg_62.mat", matlab_data_name="ProjectionMatrix"):
+    def from_file_projection_array(source_file="projection_eeg_62_surface_16k.mat", matlab_data_name="ProjectionMatrix"):
 
         source_full_path = try_get_absolute_path("tvb_data.projectionMatrix", source_file)
         reader = FileReader(source_full_path)

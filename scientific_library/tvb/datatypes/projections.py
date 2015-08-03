@@ -106,7 +106,7 @@ class ProjectionSurfaceEEG(framework.ProjectionSurfaceEEGFramework,
     __mapper_args__ = {'polymorphic_identity': projections_data.EEG_POLYMORPHIC_IDENTITY}
 
     @staticmethod
-    def from_file(source_file='projection_EEG_surface.npy', instance=None):
+    def from_file(source_file='projection_eeg_65_surface_16k.npy', instance=None):
         if instance is None:
             result = ProjectionSurfaceEEG()
         else:
@@ -136,7 +136,7 @@ class ProjectionSurfaceMEG(framework.ProjectionSurfaceMEGFramework,
     __mapper_args__ = {'polymorphic_identity': projections_data.MEG_POLYMORPHIC_IDENTITY}
 
     @staticmethod
-    def from_file(source_file='projection_MEG_surface.npy', instance=None):
+    def from_file(source_file='projection_meg_276_surface_16k.npy', instance=None):
         if instance is None:
             result = ProjectionSurfaceMEG()
         else:
@@ -166,7 +166,7 @@ class ProjectionSurfaceSEEG(framework.ProjectionSurfaceSEEGFramework,
     __mapper_args__ = {'polymorphic_identity': projections_data.SEEG_POLYMORPHIC_IDENTITY}
 
     @staticmethod
-    def from_file(source_file='projection_SEEG_surface.npy', instance=None):
+    def from_file(source_file='projection_seeg_588_surface_16k.npy', instance=None):
         if instance is None:
             result = ProjectionSurfaceSEEG()
         else:

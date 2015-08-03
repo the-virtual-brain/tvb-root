@@ -91,7 +91,7 @@ class ProjectionMatrixTest(TransactionalTestCase):
                                'ProjectionMatrixSurfaceEEGImporter')
         importer = ABCAdapter.build_adapter(group)
 
-        file_path = os.path.join(os.path.abspath(os.path.dirname(dataset.__file__)), 'surface_reg_13_eeg_62.mat')
+        file_path = os.path.join(os.path.abspath(os.path.dirname(dataset.__file__)), 'projection_eeg_62_surface_16k.mat')
         args = {'projection_file': file_path,
                 'dataset_name': 'ProjectionMatrix',
                 'sensors': self.sensors.gid,
@@ -114,7 +114,7 @@ class ProjectionMatrixTest(TransactionalTestCase):
                                'ProjectionMatrixSurfaceEEGImporter')
         importer = ABCAdapter.build_adapter(group)
 
-        file_path = os.path.join(os.path.abspath(os.path.dirname(dataset.__file__)), 'projection_EEG_surface.npy')
+        file_path = os.path.join(os.path.abspath(os.path.dirname(dataset.__file__)), 'projection_eeg_65_surface_16k.npy')
         args = {'projection_file': file_path,
                 'dataset_name': 'ProjectionMatrix',
                 'sensors': self.sensors.gid,

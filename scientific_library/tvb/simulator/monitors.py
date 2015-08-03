@@ -866,7 +866,7 @@ class EEG(Projection):
 
 
     @classmethod
-    def from_file(cls, sensors_fname='eeg_brainstorm_65.txt', projection_fname='projection_EEG_surface.npy', **kwargs):
+    def from_file(cls, sensors_fname='eeg_brainstorm_65.txt', projection_fname='projection_eeg_65_surface_16k.npy', **kwargs):
         return Projection.from_file.im_func(cls, sensors_fname, projection_fname, **kwargs)
 
     def config_for_sim(self, simulator):
@@ -934,7 +934,7 @@ class MEG(Projection):
 
     @classmethod
     def from_file(cls, sensors_fname='meg_brainstorm_276.txt',
-                   projection_fname='projection_MEG_surface.npy', **kwargs):
+                   projection_fname='projection_meg_276_surface_16k.npy', **kwargs):
         return Projection.from_file.im_func(cls, sensors_fname, projection_fname, **kwargs)
 
     def analytic(self, loc, ori):
@@ -998,7 +998,7 @@ class iEEG(Projection):
 
     @classmethod
     def from_file(cls, sensors_fname='seeg_588.txt',
-                   projection_fname='projection_SEEG_surface.npy', **kwargs):
+                   projection_fname='projection_seeg_588_surface_16k.npy', **kwargs):
         return Projection.from_file.im_func(cls, sensors_fname, projection_fname, **kwargs)
 
     def analytic(self, loc, ori):

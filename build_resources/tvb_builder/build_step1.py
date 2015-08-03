@@ -80,10 +80,10 @@ INCLUDED_DATA = [
     ("connectivity.connectivity_192.zip", "$INSIDE.connectivity.connectivity_192.zip"),
     ("connectivity.__init__.py", "$INSIDE.connectivity.__init__.py"),
 
-    ("projectionMatrix.surface_reg_13_eeg_62.mat", "$INSIDE.projectionMatrix.surface_reg_13_eeg_62.mat"),
-    ("projectionMatrix.projection_EEG_surface.npy", "$INSIDE.projectionMatrix.projection_EEG_surface.npy"),
-    ("projectionMatrix.projection_MEG_surface.npy", "$INSIDE.projectionMatrix.projection_MEG_surface.npy"),
-    ("projectionMatrix.projection_SEEG_surface.npy", "$INSIDE.projectionMatrix.projection_SEEG_surface.npy"),
+    ("projectionMatrix.projection_eeg_62_surface_16k.mat", "$INSIDE.projectionMatrix.projection_eeg_62_surface_16k.mat"),
+    ("projectionMatrix.projection_eeg_65_surface_16k.npy", "$INSIDE.projectionMatrix.projection_eeg_65_surface_16k.npy"),
+    ("projectionMatrix.projection_meg_276_surface_16k.npy", "$INSIDE.projectionMatrix.projection_meg_276_surface_16k.npy"),
+    ("projectionMatrix.projection_seeg_588_surface_16k.npy", "$INSIDE.projectionMatrix.projection_seeg_588_surface_16k.npy"),
     ("projectionMatrix.__init__.py", "$INSIDE.projectionMatrix.__init__.py"),
 
     ("regionMapping.__init__.py", "$INSIDE.regionMapping.__init__.py"),
