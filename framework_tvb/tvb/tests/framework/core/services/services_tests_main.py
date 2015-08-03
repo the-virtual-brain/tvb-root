@@ -34,7 +34,6 @@
 
 import unittest
 from tvb.tests.framework.core.services import burst_service_test
-from tvb.tests.framework.core.services import event_handler_test
 from tvb.tests.framework.core.services import figure_service_test
 from tvb.tests.framework.core.services import flow_service_test
 from tvb.tests.framework.core.services import import_service_test
@@ -56,7 +55,6 @@ def suite():
     """
     test_suite = unittest.TestSuite()
     test_suite.addTest(burst_service_test.suite())
-    test_suite.addTest(event_handler_test.suite())
     test_suite.addTest(figure_service_test.suite())
     test_suite.addTest(flow_service_test.suite())
     test_suite.addTest(import_service_test.suite())
