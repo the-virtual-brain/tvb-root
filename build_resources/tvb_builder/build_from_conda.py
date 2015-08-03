@@ -27,13 +27,10 @@
 #   Frontiers in Neuroinformatics (7:10. doi: 10.3389/fninf.2013.00010)
 #
 #
-
-import sys
+import glob
 import shutil
 import zipfile
-import platform
 import os.path
-from contextlib import closing
 from tvb.basic.config.settings import VersionSettings
 from tvb.basic.config.environment import Environment
 from third_party_licenses.build_licenses import generate_artefact
@@ -72,6 +69,11 @@ class Config:
 
         self.commands_map = commands_map
         self.command_factory = command_factory
+
+        self.artifact_name = "TVB_" +  platform_name + "_" + VersionSettings.BASE_VERSION + ".zip"
+        _artifact_glob = "TVB_" +  platform_name + "_*.zip"
+        self.artifact_glob = os.path.join(self.build_folder, _artifact_glob) # this is used to match old artifacts
+        self.artifact_pth = os.path.join(self.build_folder, self.artifact_name)
 
 
     @staticmethod
@@ -150,7 +152,7 @@ def _compress(folder_to_zip, result_name):
     Create ZIP archive from folder
     """
     assert os.path.isdir(folder_to_zip)
-    with closing(zipfile.ZipFile(result_name, "w", zipfile.ZIP_DEFLATED)) as z_file:
+    with zipfile.ZipFile(result_name, "w", zipfile.ZIP_DEFLATED) as z_file:
         for root, _, files in os.walk(folder_to_zip):
             for file_nname in files:
                 absfn = os.path.join(root, file_nname)
@@ -215,17 +217,6 @@ def _create_windows_script(target_file, command):
     os.chmod(target_file, 0755)
 
 
-def _compute_final_zip_name(platform_name):
-    """
-    Compute resulting ZIP name
-    """
-    architecture = '_x32_'
-    if sys.maxint > 2 ** 32 or platform.architecture()[0] == '64bit':
-        architecture = '_x64_'
-    return os.path.join("build",
-                        "TVB_" + platform_name + "_" + VersionSettings.BASE_VERSION + architecture + "web.zip")
-
-
 def _add_sitecustomize(destination_folder):
     """
     Ensure Python is using UTF-8 encoding (otherwise default encoding is ASCII)
@@ -274,10 +265,10 @@ def prepare_anaconda_dist(config):
     """
     _log(0, "Generating ANACONDA-based TVB_Distribution! " + config.platform_name)
 
+    _log(1, "Removing old artifacts")
+    for ar in glob.glob(config.artifact_glob):
+        os.remove(ar)
     shutil.rmtree(config.target_root, True)
-    final_zip_name = _compute_final_zip_name(config.platform_name)
-    if os.path.exists(final_zip_name):
-        os.remove(final_zip_name)
 
     _log(1, "Decompressing " + config.step1_result + " into '" + config.build_folder + "' ...")
     zipfile.ZipFile(config.step1_result).extractall(config.build_folder)
@@ -323,9 +314,9 @@ def prepare_anaconda_dist(config):
         shutil.rmtree(config.target_before_zip, True)
     os.mkdir(config.target_before_zip)
     shutil.move(config.target_root, config.target_before_zip)
-    _compress(config.target_before_zip, final_zip_name)
+    _compress(config.target_before_zip, config.artifact_pth)
     shutil.rmtree(config.target_before_zip, True)
-    _log(1, "Done TVB package " + final_zip_name)
+    _log(1, "Done TVB package " + config.artifact_pth)
 
 
 

@@ -39,9 +39,7 @@ Execute:
 #Prepare TVB code and dependencies.
 import os
 import sys
-import platform
 from glob import glob
-from contextlib import closing
 from zipfile import ZipFile, ZIP_DEFLATED
 import shutil
 import setuptools
@@ -152,7 +150,7 @@ def introspect_licenses(destination_folder, root_introspection, extra_licenses_c
 def zipdir(basedir, archivename):
     """Create ZIP archive from folder"""
     assert os.path.isdir(basedir)
-    with closing(ZipFile(archivename, "w", ZIP_DEFLATED)) as z_file:
+    with ZipFile(archivename, "w", ZIP_DEFLATED) as z_file:
         for root, _, files in os.walk(basedir):
             #NOTE: ignore empty directories
             for file_nname in files:
@@ -240,10 +238,7 @@ def _generate_distribution(final_name, library_path, version, extra_licensing_ch
     introspect_licenses(os.path.join(final_name, DIST_FOLDER_FINAL, 'THIRD_PARTY_LICENSES'),
                         os.path.join(final_name, DIST_FOLDER_FINAL, library_path), extra_licensing_check)
     print "- Creating the ZIP folder of the distribution..."
-    architecture = '_x32_'
-    if sys.maxint > 2 ** 32 or platform.architecture()[0] == '64bit':
-        architecture = '_x64_'
-    zip_name = final_name + "_" + version + architecture + "web.zip"
+    zip_name = final_name + "_" + version + ".zip"
     if os.path.exists(zip_name):
         os.remove(zip_name)
     zipdir(final_name, zip_name)
