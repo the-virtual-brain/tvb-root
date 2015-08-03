@@ -54,7 +54,7 @@ class NIFTIImporterTest(TransactionalTestCase):
 
     NII_FILE = os.path.join(os.path.dirname(demo_data.__file__), 'minimal.nii')
     GZ_NII_FILE = os.path.join(os.path.dirname(demo_data.__file__), 'minimal.nii.gz')
-    TVB_NII_FILE = os.path.join(os.path.dirname(demo_data.__file__), 'avg152T1_LR_nifti.nii.gz')
+    TVB_NII_FILE = os.path.join(os.path.dirname(demo_data.__file__), 'time_series_152.nii.gz')
     WRONG_NII_FILE = os.path.abspath(__file__)
 
     DEFAULT_ORIGIN = [[0.0, 0.0, 0.0]]

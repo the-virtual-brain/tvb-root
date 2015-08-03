@@ -52,8 +52,8 @@ class GIFTISurfaceImporterTest(TransactionalTestCase):
     Unit-tests for GIFTI Surface importer.
     """
 
-    GIFTI_SURFACE_FILE = os.path.join(os.path.dirname(demo_data.__file__), 'sample.cortex.surf.gii')
-    GIFTI_TIME_SERIES_FILE = os.path.join(os.path.dirname(demo_data.__file__), 'gifti.case1.time_series.L.time.gii')
+    GIFTI_SURFACE_FILE = os.path.join(os.path.dirname(demo_data.__file__), 'sample.cortex.gii')
+    GIFTI_TIME_SERIES_FILE = os.path.join(os.path.dirname(demo_data.__file__), 'sample.time_series.gii')
     WRONG_GII_FILE = os.path.abspath(__file__)
 
 
