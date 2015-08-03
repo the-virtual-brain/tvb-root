@@ -73,8 +73,7 @@ class EEGMonitorTest(TransactionalTestCase):
         """
         Check that all required keys are present in output from BrainViewer launch.
         """
-        zip_path = os.path.join(os.path.dirname(sensors_dataset.__file__), 
-                                'EEG_unit_vectors_BrainProducts_62.txt.bz2')
+        zip_path = os.path.join(os.path.dirname(sensors_dataset.__file__),  'eeg_unitvector_62.txt.bz2')
         
         TestFactory.import_sensors(self.test_user, self.test_project, zip_path, 'EEG Sensors')
         sensors = TestFactory.get_entity(self.test_project, SensorsEEG())

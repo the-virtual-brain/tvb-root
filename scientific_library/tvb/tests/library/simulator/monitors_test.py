@@ -153,9 +153,9 @@ class SubcorticalProjectionTest(BaseTestCase):
             noise=noise.Additive(nsig=numpy.array([2 ** -10, ]))
         )
         mons = (
-            monitors.EEG.from_file('eeg-brainstorm-65.txt', 'projection_EEG_surface.npy', period=self.period),
-            monitors.MEG.from_file('meg-brainstorm-276.txt', 'projection_MEG_surface.npy', period=self.period),
-            monitors.iEEG.from_file('SEEG_588.txt', 'projection_SEEG_surface.npy', period=self.period),
+            monitors.EEG.from_file('eeg_brainstorm_65.txt', 'projection_EEG_surface.npy', period=self.period),
+            monitors.MEG.from_file('meg_brainstorm_276.txt', 'projection_MEG_surface.npy', period=self.period),
+            monitors.iEEG.from_file('seeg_588.txt', 'projection_SEEG_surface.npy', period=self.period),
         )
         local_coupling_strength = numpy.array([2 ** -10])
         region_mapping = RegionMapping.from_file('regionMapping_16k_%d.txt' % (self.n_regions, ))

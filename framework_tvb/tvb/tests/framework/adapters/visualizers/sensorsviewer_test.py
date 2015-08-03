@@ -90,7 +90,7 @@ class SensorViewersTest(TransactionalTestCase):
         Check that all required keys are present in output from EegSensorViewer launch.
         """
         ## Import Sensors
-        zip_path = os.path.join(os.path.dirname(tvb_data.sensors.__file__), 'EEG_unit_vectors_BrainProducts_62.txt.bz2')
+        zip_path = os.path.join(os.path.dirname(tvb_data.sensors.__file__), 'eeg_unitvector_62.txt.bz2')
         TestFactory.import_sensors(self.test_user, self.test_project, zip_path, Sensors_Importer.EEG_SENSORS)
         sensors = TestFactory.get_entity(self.test_project, SensorsEEG())
 
@@ -121,7 +121,7 @@ class SensorViewersTest(TransactionalTestCase):
         Check that all required keys are present in output from MEGSensorViewer launch.
         """
 
-        zip_path = os.path.join(os.path.dirname(tvb_data.sensors.__file__), 'meg_channels_reg13.txt.bz2')
+        zip_path = os.path.join(os.path.dirname(tvb_data.sensors.__file__), 'meg_151.txt.bz2')
         TestFactory.import_sensors(self.test_user, self.test_project, zip_path, Sensors_Importer.MEG_SENSORS)
         sensors = TestFactory.get_entity(self.test_project, SensorsMEG())
 
@@ -136,7 +136,7 @@ class SensorViewersTest(TransactionalTestCase):
         """
         Check that all required keys are present in output from InternalSensorViewer launch.
         """
-        zip_path = os.path.join(os.path.dirname(tvb_data.sensors.__file__), 'internal_39.txt.bz2')
+        zip_path = os.path.join(os.path.dirname(tvb_data.sensors.__file__), 'seeg_39.txt.bz2')
         TestFactory.import_sensors(self.test_user, self.test_project, zip_path, Sensors_Importer.INTERNAL_SENSORS)
         sensors = TestFactory.get_entity(self.test_project, SensorsInternal())
 

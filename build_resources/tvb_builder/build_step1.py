@@ -71,8 +71,8 @@ INCLUDED_DATA = [
     #outsiders get distibuted as top level relative to dists step 1
     # all $insiders to /TVB_Distribution/_tvb_data/
     ("connectivity.connectivity_192.zip", "$OUTSIDE.connectivity_regions_192.zip"),
-    ("sensors.EEG_unit_vectors_BrainProducts_62.txt.bz2", "$OUTSIDE.EEG_Sensors.txt.bz2"),
-    ("sensors.meg_channels_reg13.txt.bz2", "$OUTSIDE.MEG_Sensors.txt.bz2"),
+    ("sensors.eeg_unitvector_62.txt.bz2", "$OUTSIDE.eeg_sensors.txt.bz2"),
+    ("sensors.meg_151.txt.bz2", "$OUTSIDE.meg_sensors.txt.bz2"),
 
     ("connectivity.connectivity_76.zip", "$INSIDE.connectivity.connectivity_76.zip"),
     ("connectivity.paupau.zip", "$INSIDE.connectivity.paupau.zip"),
@@ -90,13 +90,13 @@ INCLUDED_DATA = [
     ("regionMapping.regionMapping_16k_76.txt", "$INSIDE.regionMapping.regionMapping_16k_76.txt"),
     ("regionMapping.regionMapping_80k_80.txt", "$INSIDE.regionMapping.regionMapping_80k_80.txt"),
 
-    ("sensors.EEG_unit_vectors_BrainProducts_62.txt.bz2", "$INSIDE.sensors.EEG_unit_vectors_BrainProducts_62.txt.bz2"),
-    ("sensors.eeg-brainstorm-65.txt", "$INSIDE.sensors.eeg-brainstorm-65.txt"),
-    ("sensors.meg_channels_reg13.txt.bz2", "$INSIDE.sensors.meg_channels_reg13.txt.bz2"),
-    ("sensors.meg-brainstorm-276.txt", "$INSIDE.sensors.meg-brainstorm-276.txt"),
-    ("sensors.internal_39.txt.bz2", "$INSIDE.sensors.internal_39.txt.bz2"),
-    ("sensors.seeg-brainstorm-960.txt", "$INSIDE.sensors.seeg-brainstorm-960.txt"),
-    ("sensors.SEEG_588.txt", "$INSIDE.sensors.SEEG_588.txt"),
+    ("sensors.eeg_unitvector_62.txt.bz2", "$INSIDE.sensors.eeg_unitvector_62.txt.bz2"),
+    ("sensors.eeg_brainstorm_65.txt", "$INSIDE.sensors.eeg_brainstorm_65.txt"),
+    ("sensors.meg_151.txt.bz2", "$INSIDE.sensors.meg_151.txt.bz2"),
+    ("sensors.meg_brainstorm_276.txt", "$INSIDE.sensors.meg_brainstorm_276.txt"),
+    ("sensors.seeg_39.txt.bz2", "$INSIDE.sensors.seeg_39.txt.bz2"),
+    ("sensors.seeg_brainstorm_960.txt", "$INSIDE.sensors.seeg_brainstorm_960.txt"),
+    ("sensors.seeg_588.txt", "$INSIDE.sensors.seeg_588.txt"),
     ("sensors.__init__.py", "$INSIDE.sensors.__init__.py"),
 
     ("surfaceData.__init__.py", "$INSIDE.surfaceData.__init__.py"),

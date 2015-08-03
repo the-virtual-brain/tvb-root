@@ -38,7 +38,7 @@
         <adapter module="tvb.adapters.uploaders.sensors_importer" class="Sensors_Importer"/>
         <method name="launch"/>
         <args>
-            <arg name='sensors_file' value="internal_39.txt.bz2" module='tvb_data.sensors' type="file" />
+            <arg name='sensors_file' value="seeg_39.txt.bz2" module='tvb_data.sensors' type="file" />
             <arg name='sensors_type' value='Internal Sensors' type='str' />  
         </args>
     </event>

@@ -64,7 +64,7 @@ class ProjectionMatrixTest(TransactionalTestCase):
         self.test_user = TestFactory.create_user("UserPM")
         self.test_project = TestFactory.create_project(self.test_user)
 
-        zip_path = os.path.join(os.path.dirname(tvb_data.sensors.__file__), 'eeg-brainstorm-65.txt')
+        zip_path = os.path.join(os.path.dirname(tvb_data.sensors.__file__), 'eeg_brainstorm_65.txt')
         TestFactory.import_sensors(self.test_user, self.test_project, zip_path, Sensors_Importer.EEG_SENSORS)
 
         zip_path = os.path.join(os.path.dirname(tvb_data.surfaceData.__file__), 'cortex_16384.zip')

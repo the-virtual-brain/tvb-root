@@ -52,8 +52,8 @@ class SensorsImporterTest(TransactionalTestCase):
     """
     Unit-tests for Sensors importer.
     """
-    EEG_FILE = os.path.join(os.path.dirname(demo_data.__file__), 'EEG_unit_vectors_BrainProducts_62.txt.bz2')
-    MEG_FILE = os.path.join(os.path.dirname(demo_data.__file__), 'meg_channels_reg13.txt.bz2')
+    EEG_FILE = os.path.join(os.path.dirname(demo_data.__file__), 'eeg_unitvector_62.txt.bz2')
+    MEG_FILE = os.path.join(os.path.dirname(demo_data.__file__), 'meg_151.txt.bz2')
 
 
     def setUp(self):

@@ -63,7 +63,7 @@ class Sensors(sensors_scientific.SensorsScientific, sensors_framework.SensorsFra
     """
 
     @classmethod
-    def from_file(cls, source_file="EEG_unit_vectors_BrainProducts_62.txt.bz2", instance=None):
+    def from_file(cls, source_file="eeg_unitvector_62.txt.bz2", instance=None):
 
         if instance is None:
             result = cls()
@@ -126,7 +126,7 @@ class SensorsMEG(sensors_scientific.SensorsMEGScientific,
 
 
     @classmethod
-    def from_file(cls, source_file="meg_channels_reg13.txt.bz2", instance=None):
+    def from_file(cls, source_file="meg_151.txt.bz2", instance=None):
 
         result = super(SensorsMEG, cls).from_file(source_file, instance)
 
@@ -161,5 +161,5 @@ class SensorsInternal(sensors_scientific.SensorsInternalScientific,
 
 
     @classmethod
-    def from_file(cls, source_file="internal_39.txt.bz2", instance=None):
+    def from_file(cls, source_file="seeg_39.txt.bz2", instance=None):
         return super(SensorsInternal, cls).from_file(source_file, instance)
