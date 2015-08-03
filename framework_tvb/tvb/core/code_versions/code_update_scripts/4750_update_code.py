@@ -31,15 +31,17 @@
 """
 .. moduleauthor:: Bogdan Neacsa <bogdan.neacsa@codemart.ro>
 """
-
+import os
+from tvb.adapters.uploaders.sensors_importer import Sensors_Importer
 from tvb.basic.logger.builder import get_logger
 from tvb.core.entities.storage import dao
-from tvb.core.services.event_handlers import handle_event
+from tvb.core.services.flow_service import FlowService
+import tvb_data.sensors
 
+DATA_FILE = os.path.join(os.path.dirname(tvb_data.sensors.__file__), "seeg_39.txt.bz2")
 
 LOGGER = get_logger(__name__)
 PAGE_SIZE = 20
-EVENT_FILE_IDENTIFIER = "CodeVersionsManager.update.4750"
 
 
 def update():
@@ -54,7 +56,11 @@ def update():
         
         for project in projects_page:
             try:
-                handle_event(EVENT_FILE_IDENTIFIER, dao.get_system_user(), project)
+                adapter = Sensors_Importer()
+                FlowService().fire_operation (
+                    adapter, dao.get_system_user(), project.id, visible=False,
+                    sensors_file=DATA_FILE, sensors_type=Sensors_Importer.INTERNAL_SENSORS
+                )
             except Exception, excep:
                 LOGGER.exception(excep)
     

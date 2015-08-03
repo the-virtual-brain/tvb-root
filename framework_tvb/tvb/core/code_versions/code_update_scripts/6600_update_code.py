@@ -33,15 +33,15 @@ Change default data setup for TVB version 1.2.2.
 
 .. moduleauthor:: Lia Domide <lia.domide@codemart.ro>
 """
-
+import os
 from tvb.basic.logger.builder import get_logger
-from tvb.core.services.event_handlers import handle_event
 from tvb.core.entities.storage import dao
+from tvb.core.services.import_service import ImportService
+import tvb_data
 
+DATA_FILE = os.path.join(os.path.dirname(tvb_data.__file__), "Default_Project.zip")
 
 LOGGER = get_logger(__name__)
-
-EVENT_FILE_IDENTIFIER = "CodeVersionsManager.update.6600"
 
 
 def update():
@@ -51,6 +51,7 @@ def update():
 
     try:
         admins = dao.get_administrators()
-        handle_event(EVENT_FILE_IDENTIFIER, admins[0])
+        service = ImportService()
+        service.import_project_structure(DATA_FILE, admins[0].id)
     except Exception:
         LOGGER.exception("Could import DefaultProject!")

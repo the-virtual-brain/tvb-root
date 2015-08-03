@@ -31,18 +31,22 @@
 """
 .. moduleauthor:: Bogdan Neacsa <bogdan.neacsa@codemart.ro>
 """
-
+import os
+from tvb.adapters.uploaders.obj_importer import ObjSurfaceImporter
 from tvb.basic.logger.builder import get_logger
 from tvb.basic.config import stored
 from tvb.basic.profile import TvbProfile
+from tvb.core.services.flow_service import FlowService
 from tvb.core.utils import get_matlab_executable
-from tvb.core.services.event_handlers import handle_event
 from tvb.core.entities.storage import dao
+from tvb.datatypes.surfaces import EEG_CAP, FACE
+import tvb_data.obj
 
+DATA_FILE_EEG_CAP = os.path.join(os.path.dirname(tvb_data.obj.__file__), "eeg_cap.obj")
+DATA_FILE_FACE = os.path.join(os.path.dirname(tvb_data.obj.__file__), "face_surface.obj")
 
 LOGGER = get_logger(__name__)
 PAGE_SIZE = 20
-EVENT_FILE_IDENTIFIER = "CodeVersionsManager.update.4455"
 
 
 def update():
@@ -57,7 +61,13 @@ def update():
         
         for project in projects_page:
             try:
-                handle_event(EVENT_FILE_IDENTIFIER, dao.get_system_user(), project)
+                user = dao.get_system_user()
+                adapter = ObjSurfaceImporter()
+                FlowService().fire_operation(adapter, user, project.id, visible=False,
+                                             surface_type=EEG_CAP, data_file=DATA_FILE_EEG_CAP)
+                adapter = ObjSurfaceImporter()
+                FlowService().fire_operation(adapter, user, project.id, visible=False,
+                                             surface_type=FACE, data_file=DATA_FILE_FACE)
             except Exception, excep:
                 LOGGER.exception(excep)
                 

@@ -33,15 +33,19 @@ Change Project structure for TVB version 1.1.5.
 
 .. moduleauthor:: Mihai Andrei <mihai.andrei@codemart.ro>
 """
+import os
+from tvb.adapters.uploaders.obj_importer import ObjSurfaceImporter
 
 from tvb.basic.logger.builder import get_logger
-from tvb.core.services.event_handlers import handle_event
 from tvb.core.entities.storage import dao
+from tvb.core.services.flow_service import FlowService
+from tvb.datatypes.surfaces import FACE
+import tvb_data.obj
 
+DATA_FILE_FACE = os.path.join(os.path.dirname(tvb_data.obj.__file__), "face_surface.obj")
 
 LOGGER = get_logger(__name__)
 PAGE_SIZE = 20
-EVENT_FILE_IDENTIFIER = "CodeVersionsManager.update.6093"
 
 
 def update():
@@ -56,6 +60,9 @@ def update():
         
         for project in projects_page:
             try:
-                handle_event(EVENT_FILE_IDENTIFIER, dao.get_system_user(), project)
+                user = dao.get_system_user()
+                adapter = ObjSurfaceImporter()
+                FlowService().fire_operation(adapter, user, project.id, visible=False,
+                                             surface_type=FACE, data_file=DATA_FILE_FACE)
             except Exception:
                 LOGGER.exception("could not migrate project id: %s, name %s" % (project.id, project.name))

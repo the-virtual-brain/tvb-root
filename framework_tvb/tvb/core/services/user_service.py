@@ -36,17 +36,16 @@ Service layer for USER entities.
 
 from random import randint
 from hashlib import md5
-from inspect import stack
 import os
 from tvb.basic.profile import TvbProfile
 from tvb.basic.logger.builder import get_logger
+from tvb.config import DEFAULT_PROJECT_GID
 from tvb.core.entities import model
 from tvb.core.entities.storage import dao
 from tvb.core.services import email_sender
 from tvb.core.services.exceptions import UsernameException
 from tvb.core.services.import_service import ImportService
 from tvb.core.services.settings_service import SettingsService
-from tvb.core.services.event_handlers import handle_event
 import tvb_data
 
 FROM_ADDRESS = 'donotreply@thevirtualbrain.org'
@@ -123,7 +122,11 @@ class UserService:
                 uploaded = os.path.join(os.path.dirname(tvb_data.__file__), "Default_Project.zip")
                 ImportService().import_project_structure(uploaded, user.id)
             else:
-                handle_event(".".join([self.__class__.__name__, stack()[0][3]]), user)
+                try:
+                    default_prj_id = dao.get_project_by_gid(DEFAULT_PROJECT_GID).id
+                    dao.add_members_to_project(default_prj_id, [user.id])
+                except Exception:
+                    self.logger.warning("Could not link user_id: %d with project_gid: %s " % (user.id, DEFAULT_PROJECT_GID))
             return TEXT_DISPLAY
         except Exception, excep:
             self.logger.exception("Could not create user!")

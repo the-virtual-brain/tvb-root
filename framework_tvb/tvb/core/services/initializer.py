@@ -45,7 +45,6 @@ from tvb.core.entities.model_manager import initialize_startup, reset_database
 from tvb.core.services.project_service import initialize_storage
 from tvb.core.services.user_service import UserService
 from tvb.core.services.settings_service import SettingsService
-from tvb.core.services.event_handlers import read_events
 
 
 def reset():
@@ -86,10 +85,6 @@ def initialize(introspected_modules, load_xml_events=True):
     dao.store_entities(to_invalidate)
     for entity in to_remove:
         dao.remove_entity(entity.__class__, entity.id)
-   
-    ## Populate events
-    if load_xml_events:
-        read_events(event_folders)
 
     if not TvbProfile.is_first_run():
         ## Create default users.

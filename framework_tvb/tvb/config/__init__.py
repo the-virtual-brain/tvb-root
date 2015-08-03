@@ -81,4 +81,4 @@ CONNECTIVITY_CREATOR_CLASS = 'ConnectivityCreator'
 #DEFAULT_PORTLETS = {$tab_index: {$select_index_in_tab: '$portlet_identifier'}}
 DEFAULT_PORTLETS = {0: {0: 'TimeSeries'}}
 
-
+DEFAULT_PROJECT_GID = '2cc58a73-25c1-11e5-a7af-14109fe3bf71'

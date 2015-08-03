@@ -39,7 +39,7 @@ import os
 import copy
 import json
 import formencode
-from inspect import stack, getmro
+from inspect import getmro
 
 from tvb.core import utils
 from tvb.basic.traits.types_mapped import MappedType
@@ -55,7 +55,6 @@ from tvb.core.entities.transient.filtering import StaticFiltersFactory
 from tvb.core.entities.transient.structure_entities import StructureNode, DataTypeMetaData
 from tvb.core.entities.file.files_helper import FilesHelper
 from tvb.core.entities.file.exceptions import FileStructureException
-from tvb.core.services.event_handlers import handle_event
 from tvb.core.services.exceptions import StructureException, ProjectServiceException
 from tvb.core.services.exceptions import RemoveDataTypeException
 from tvb.core.services.user_service import UserService
@@ -129,9 +128,6 @@ class ProjectService:
         self.structure_helper.write_project_metadata(current_proj)
         current_proj = dao.store_entity(current_proj)
 
-        if is_create:
-            handle_event(".".join([self.__class__.__name__, stack()[0][3]]), dao.get_system_user(), current_proj)
-
         #Retrieve, to initialize lazy attributes
         current_proj = dao.get_project_by_id(current_proj.id)
         #Update share settings on current Project entity
@@ -148,23 +144,6 @@ class ProjectService:
         #Finish operation
         self.logger.debug("Edit/Save OK for project:" + str(current_proj.id) + ' by user:' + current_user.username)
         return current_proj
-
-
-    def add_member_to_project(self, project_gid, user_id):
-        """
-        Create a link between Project and User
-        :param project_gid: GID to identify a project uniquely
-        :param user_id: ID for the user we want to be able to access the Project
-        :return: True is the link was created, False otherwise
-        """
-        try:
-            default_prj = dao.get_project_by_gid(project_gid)
-            default_prj_id = default_prj.id
-            dao.add_members_to_project(default_prj_id, [user_id])
-            return True
-        except Exception:
-            self.logger.warning("Could not link user_id: %d with project_gid: %s " % (user_id, project_gid))
-            return False
 
 
     def find_project(self, project_id):
