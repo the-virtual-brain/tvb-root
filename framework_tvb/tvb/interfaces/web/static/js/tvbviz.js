@@ -730,7 +730,7 @@ tv.plot = {
             f.gp_ax_ctx_x = f.gp_ctx_x.append("g").classed("axis", true).call(f.ax_ctx_x)
                 .attr("transform", "translate(0, " + f.sz_ctx_x.y + ")");
             f.gp_ax_fcs_x = f.gp_fcs.append("g").classed("axis", true).call(f.ax_fcs_x);
-            f.gp_ax_fcs_y = f.gp_fcs.append("g").classed("axis", true).call(f.ax_fcs_y)
+            f.gp_ax_fcs_y = f.gp_fcs.append("g").classed("axis", true).call(f.ax_fcs_y);
 
         };
 
@@ -873,7 +873,8 @@ tv.plot = {
             var f4 = f3.append("path")
                 .attr("d", d3.svg.line()
                     .x(function (d, i) {
-                        return f.sc_ctx_x((i+0.5) * f.da_x_dt);
+                        var time_start = f.sc_ctx_x.domain()[0];
+                        return f.sc_ctx_x((time_start + i + 0.5) * f.da_x_dt);
                     })
                     .y(function (d) {
                         return d * f.sz_ctx_x.y;
@@ -893,7 +894,8 @@ tv.plot = {
                 .attr("d", d3.svg.line()
                     .x(function (d, i) {
                         var idx = (i < da_x_len) ? i : (2 * da_x_len - i);
-                        return f.sc_ctx_x(idx * f.da_x_dt);
+                        var time_start = f.sc_ctx_x.domain()[0];
+                        return f.sc_ctx_x((time_start + idx) * f.da_x_dt);
                     })
                     .y(function (d, i) {
                         var std = (i < da_x_len) ? f.da_xs[i] : -f.da_xs[2 * da_x_len - i - 1];
