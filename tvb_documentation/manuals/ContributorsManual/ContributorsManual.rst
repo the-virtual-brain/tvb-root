@@ -4,103 +4,144 @@
 .. |REVISION| replace:: 3
 
 .. _TVB Web Page: http://www.thevirtualbrain.org
-.. _TVB Git Repository: https://github.com/the-virtual-brain/tvb-library
+.. _TVB Library Repository: https://github.com/the-virtual-brain/tvb-library
 
+.. _contributors_manual:
 
 TVB Contributors manual
 =======================
 
-The purpose of this document is to provide a step by step flow that will get TVB set-up and ready for code contributions, 
-and to offer a short tutorial of how TVB can be used from a console script with storage activated as part of TVB framework.
-Current document is created and maintained by developers. You should expect changes as the contribution flow evolves.
-For details about TVB architecture, please check the adjacent document, or send us an email at tvb.admin@thevirtualbrain.org.
+So you want to contribute code to TVB. Maybe add a model or another feature.
+Thank you for helping |TVB|! We welcome and appreciate contributions.
+Please get in touch with the |TVB| team, we are glad to help tvb.admin@thevirtualbrain.org.
+
+This document describes how to set up |TVB| for a developer.
 
 
-GIT Setup
----------
+The source code
+---------------
 
-The following steps assume you have the latest distribution package from `TVB Web Page`_. You also need to make sure you have a GIT client installed and available from command line. 
-You can test this by trying to execute *git --version*.
+First you will need to fork the source code.
+You will need to have git installed. And we recommend a github account as it makes collaboration easy.
 
-You should access `TVB Git Repository`_. The first step you need to do is to create a free GitHub account, then fork TVB-Library repository for your account.
+TVB's source is hosted on `github <https://github.com/the-virtual-brain>`_ .
+
+It is spread in several repositories. These are the most important:
+
+* tvb-library contains the scientific code.
+* tvb-framework contains data management services and the web interface of TVB.
+* tvb-data contains demonstration data.
+
+Fork TVB-Library repository for your account.
 
 .. figure:: images/fork_repo.jpg
    :align: center
 
-   Fork `TVB Git Repository`_
+   Fork `TVB Library Repository`_
 
-You should now have your own git clone of TVB-Library. 
 
-Now, assuming you have your TVB Distribution package unpacked in a folder *TVB_Distribution*, go into *TVB_Distribution/bin*.
-Depending on the operating system you are using, open a terminal or command line prompt in this directory and then execute the following:
+If you want to contribute to the framework then fork that repository as well.
 
-- On Unix systems: *sh contributor_setup.sh ${github_url}*
+Do not clone your forks yet, read about the contributor setup.
 
-- On Windows machines: *contributor_setup.bat ${github_url}*
 
-In the commands above replace *${github_url}* with the URL of your previously forked repository on GitHub.
+The contributor setup
+---------------------
 
-.. figure:: images/clone_repo.jpg
-   :align: center
+You can just clone your forks then install |TVB|'s distutils packages.
+That approach is described in `The unaided setup`_.
+It seems easy but |TVB| has some heavy dependencies.
+To avoid having contributors deal with installing those we have created the contributor setup.
 
-   Clone your TVB fork
+In the contributor setup you will have to install the latest |TVB| distribution.
+This is the same install that end users will use.
 
-The steps above should create a folder *TVB_Distribution/scientific_library* which contains Simulator, Analyzers, Basic and DataTypes subfolders. 
-This is a clone of your previously Git forked repository. You are now ready to contribute to TVB. Good luck!
+Then use a special script to clone the repositories you want to modify.
+This setup will use the python and the dependencies from the |TVB| distribution, sidestepping the need to install them.
+You will run |TVB| from the distribution and the changes you have made to your local git repo will be visible.
+This works by placing your repository in PYTHONPATH ahead of the code from the distribution.
+
+Below are the commands for getting a contributor setup for the tvb-library.
+You should do the same for tvb-framework if you need to change that.
+
+The commands below are for Linux, adapt the extensions for your operating system.
+Also replace [github_account] with your github account name to get a valid url to your fork.
+
+Assuming you have your TVB Distribution package unpacked in a folder ``TVB_Distribution`` run:
+
+.. code-block:: bash
+
+   $ cd TVB_Distribution/bin
+   $ sh contributor_setup.sh git@github.com:[github_account]/tvb-library.git
+
+The steps above will create a folder *TVB_Distribution/scientific_library*.
+This is a clone of your forked repository. You are now ready to contribute to TVB. Good luck!
 
 NOTE: Each time you do a clean of TVB using the tvb_clean.sh script, make sure to re-run the above described commands in order to re-initialize TVB_PATH properly. This will give you some GIT related warning which you can just ignore.
+
+
+The unaided setup
+-----------------
+
+.. _anaconda: https://store.continuum.io/cshop/anaconda/
+
+The contributor setup avoids having to deal with dependencies. But you might want to do exactly that, adding a dependency to |TVB| or changing the ones it already has.
+
+The unaided setup is the usual way to install python packages.
+
+Clone the repositories, noting that now it is likely that you will need all three.
+
+.. code-block:: bash
+
+   $ cd my_tvb_workspace
+   $ git clone git@github.com:the-virtual-brain/tvb-library.git
+   $ # these might be optional
+   $ git clone git@github.com:the-virtual-brain/tvb-framework.git
+   $ git clone git@github.com:the-virtual-brain/tvb-data.git
+
+|TVB| depends on numpy and scipy, heavy native libraries.
+If you can please install them using you operating system package manager.
+On Linux apt-get, yum, dnf etc.
+If such native package managers are not available please install the `anaconda`_ python distribution and use TVB with it.
+
+If you leave the installation of these dependencies to distutils then it will try to compile them from source.
+For that to work you will need C and Fortran compilers, and development libraries, not an easy task.
+
+Now to install the |TVB| packages in develop mode using distutils :
+
+.. code-block:: bash
+
+   $ cd my_tvb_workspace
+   $ cd scientific_library
+   $ python setup.py develop
+   $ cd ../framework_tvb
+   $ python setup.py develop
 
 
 Contribution guidelines
 -----------------------
 
-- By default, the only branch available is 'trunk'. You should **always** create a separate branch with a self-explanatory name for the new features you want to add to TVB. In order to do this just execute (from *TVB_Distribution/scientific_library* folder): *git checkout {my-awesome-new-feature-url}*. 
+By default, the only branch available is 'trunk'. You should **always** create a separate branch with a self-explanatory name for the new features you want to add to TVB.
+In order to do this assuming you are using the contributor setup do :
 
-.. figure:: images/create_branch.jpg
-   :align: center
+.. code-block:: bash
 
-   Create a new branch within your local cloned repo
-
-
-- While making your modifications/contributions, make sure that 1) you are working in the right branch and 2) you make pull requests from master ('trunk') often, in order to quickly solve any conflicts which might appear.
-
-- If you have problems, send us an email, and we will do our best to help you.
-
-- You should put explanatory comments and documentation in your code.
-
-- You should attach unit-tests for your new code, to prove that it is correct and that it fits into the overall architecture of TVB.
-
-- Once you are done with your changes and you believe that they can be integrated into TVB master repository, go to your GitHub repository, switch to your feature branch and issue a *pull request*, describing the improvements you did. We will later test that your changes are fit to be included, and notify you of the integration process.
+   $ cd TVB_Distribution/scientific_library
+   $ git checkout -b my-awesome-new-feature-url
 
 
-	
-Use TVB Framework from Console Interface
-----------------------------------------
-	
-You can use TVB Framework Distribution package through two different interfaces: one is the web interface 
-(where you will have an HTML face with buttons and pages for manipulating TVB objects), and the other is through a console interface.
+While making your modifications/contributions, make sure that
 
-For the second available interface, TVB Distribution package comes with a working IDLE Console which you can use as a low-level alternative to the Web Interface. 
-In the console interface you can directly play with TVB Python objects and execute the same steps as in the web interface, or more; but you need to have programming knowledge.
+1) you are working in the right branch and
+2) you make pull requests from master ('trunk') often, in order to quickly solve any conflicts which might appear.
 
+If you have problems, send us an email, and we will do our best to help you.
 
-Examples of using TVB Console without Storage (Library Profile)
-***************************************************************
+You should put explanatory comments and documentation in your code.
 
-TVB Console can work in two manners: with or without storage enabled. We call the mode with storage enabled *Command Profile*, and the one without storage *Library Profile*.
-You can fire one of the two profiles, by launching the corresponding command file from inside *TVB_Distribution/bin*: *tvb_command* or *tvb_library*
+You should attach unit-tests for your new code, to prove that it is correct and that it fits into the overall architecture of TVB.
 
-When storage is disabled (in Library Profile), the manipulation of objects is entirely at your hand. 
-When you close the console any computed data will be lost, unless you store results yourself.
+Once you are done with your changes and you believe that they can be integrated into TVB master repository, go to your GitHub repository,
+switch to your feature branch and issue a *pull request*, describing the improvements you did.
+We will later test that your changes are fit to be included, and notify you of the integration process.
 
-Examples of how TVB Library Profile is in action, are found in folder *TVB_Distribution/tvb_scientific_library/tvb/simulator/demos/*. Please try them, in the IDLE console of TVB.
-
-Even more details about TVB Library Profile (without storage) are found in file *TVB_Distribution/tvb_scientific_library/tvb/simulator/README.txt*.
-
-
-Example of using TVB Console with Storage enabled (Command Profile)
-*******************************************************************
-
-You can launch TVB Command profile (with File and DB storage enabled) by using *distribution* in *bin* folder.
-
-You can find examples of Command profile usage at https://github.com/the-virtual-brain/tvb-framework/tree/master/tvb/interfaces/command/demos

@@ -25,6 +25,8 @@ The TVB software package can be used in 3 different configurations:
 
 To install |TVB| unzip the package and it will create a folder TVB_Distribution.
 
+|TVB| developers might need to install TVB :ref:`differently <contributors_manual>`.
+
 
 |TVB|'s interfaces
 ------------------
