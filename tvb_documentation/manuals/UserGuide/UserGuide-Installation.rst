@@ -1,3 +1,4 @@
+.. _installing_tvb:
 
 Installing the Application
 ==========================

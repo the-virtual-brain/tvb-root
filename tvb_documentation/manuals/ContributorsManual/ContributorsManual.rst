@@ -32,12 +32,10 @@ It is spread in several repositories. These are the most important:
 * tvb-framework contains data management services and the web interface of TVB.
 * tvb-data contains demonstration data.
 
-Fork TVB-Library repository for your account.
+Fork the `TVB Library Repository`_ for your account.
 
 .. figure:: images/fork_repo.jpg
    :align: center
-
-   Fork `TVB Library Repository`_
 
 
 If you want to contribute to the framework then fork that repository as well.
@@ -53,7 +51,7 @@ That approach is described in `The unaided setup`_.
 It seems easy but |TVB| has some heavy dependencies.
 To avoid having contributors deal with installing those we have created the contributor setup.
 
-In the contributor setup you will have to install the latest |TVB| distribution.
+In the contributor setup you will have to :ref:`install <installing_tvb>` the latest |TVB| distribution.
 This is the same install that end users will use.
 
 Then use a special script to clone the repositories you want to modify.
