@@ -65,82 +65,71 @@ DIST_FOLDER = join(os.path.dirname(__file__), '_build', 'TVB_Distribution')
 DATA_INSIDE_FOLDER = join(DIST_FOLDER, '_tvb_data')
 DATA_OUTSIDE_FOLDER = join(DIST_FOLDER, 'demo_data')
 
-INCLUDED_DATA = [
-    ("__init__.py", "$INSIDE.__init__.py"),
-    ("Default_Project.zip", "$INSIDE.Default_Project.zip"),
-    #outsiders get distibuted as top level relative to dists step 1
-    # all $insiders to /TVB_Distribution/_tvb_data/
-    ("connectivity.connectivity_192.zip", "$OUTSIDE.connectivity_regions_192.zip"),
-    ("sensors.eeg_unitvector_62.txt.bz2", "$OUTSIDE.eeg_sensors.txt.bz2"),
-    ("sensors.meg_151.txt.bz2", "$OUTSIDE.meg_sensors.txt.bz2"),
+# outsiders get distributed  to /TVB_Distribution/_tvb_data/
+INCLUDED_INSIDE_DATA = [
+    "__init__.py",
+    "Default_Project.zip",
 
-    ("connectivity.connectivity_76.zip", "$INSIDE.connectivity.connectivity_76.zip"),
-    ("connectivity.paupau.zip", "$INSIDE.connectivity.paupau.zip"),
-    ("connectivity.connectivity_66.zip", "$INSIDE.connectivity.connectivity_66.zip"),
-    ("connectivity.connectivity_192.zip", "$INSIDE.connectivity.connectivity_192.zip"),
-    ("connectivity.__init__.py", "$INSIDE.connectivity.__init__.py"),
+    "connectivity/connectivity_76.zip",
+    "connectivity/paupau.zip",
+    "connectivity/connectivity_66.zip",
+    "connectivity/connectivity_192.zip",
+    "connectivity/__init__.py",
 
-    ("projectionMatrix.projection_eeg_62_surface_16k.mat", "$INSIDE.projectionMatrix.projection_eeg_62_surface_16k.mat"),
-    ("projectionMatrix.projection_eeg_65_surface_16k.npy", "$INSIDE.projectionMatrix.projection_eeg_65_surface_16k.npy"),
-    ("projectionMatrix.projection_meg_276_surface_16k.npy", "$INSIDE.projectionMatrix.projection_meg_276_surface_16k.npy"),
-    ("projectionMatrix.projection_seeg_588_surface_16k.npy", "$INSIDE.projectionMatrix.projection_seeg_588_surface_16k.npy"),
-    ("projectionMatrix.__init__.py", "$INSIDE.projectionMatrix.__init__.py"),
+    "projectionMatrix/projection_eeg_62_surface_16k.mat",
+    "projectionMatrix/projection_eeg_65_surface_16k.npy",
+    "projectionMatrix/projection_meg_276_surface_16k.npy",
+    "projectionMatrix/projection_seeg_588_surface_16k.npy",
+    "projectionMatrix/__init__.py",
 
-    ("regionMapping.__init__.py", "$INSIDE.regionMapping.__init__.py"),
-    ("regionMapping.regionMapping_16k_76.txt", "$INSIDE.regionMapping.regionMapping_16k_76.txt"),
-    ("regionMapping.regionMapping_80k_80.txt", "$INSIDE.regionMapping.regionMapping_80k_80.txt"),
+    "regionMapping/__init__.py",
+    "regionMapping/regionMapping_16k_76.txt",
+    "regionMapping/regionMapping_80k_80.txt",
 
-    ("sensors.eeg_unitvector_62.txt.bz2", "$INSIDE.sensors.eeg_unitvector_62.txt.bz2"),
-    ("sensors.eeg_brainstorm_65.txt", "$INSIDE.sensors.eeg_brainstorm_65.txt"),
-    ("sensors.meg_151.txt.bz2", "$INSIDE.sensors.meg_151.txt.bz2"),
-    ("sensors.meg_brainstorm_276.txt", "$INSIDE.sensors.meg_brainstorm_276.txt"),
-    ("sensors.seeg_39.txt.bz2", "$INSIDE.sensors.seeg_39.txt.bz2"),
-    ("sensors.seeg_brainstorm_960.txt", "$INSIDE.sensors.seeg_brainstorm_960.txt"),
-    ("sensors.seeg_588.txt", "$INSIDE.sensors.seeg_588.txt"),
-    ("sensors.__init__.py", "$INSIDE.sensors.__init__.py"),
+    "sensors/eeg_unitvector_62.txt.bz2",
+    "sensors/eeg_brainstorm_65.txt",
+    "sensors/meg_151.txt.bz2",
+    "sensors/meg_brainstorm_276.txt",
+    "sensors/seeg_39.txt.bz2",
+    "sensors/seeg_brainstorm_960.txt",
+    "sensors/seeg_588.txt",
+    "sensors/__init__.py",
 
-    ("surfaceData.__init__.py", "$INSIDE.surfaceData.__init__.py"),
-    ("surfaceData.cortex_80k.zip", "$INSIDE.surfaceData.cortex_80k.zip"),
-    ("surfaceData.cortex_16384.zip", "$INSIDE.surfaceData.cortex_16384.zip"),
-    ("surfaceData.outer_skin_4096.zip", "$INSIDE.surfaceData.outer_skin_4096.zip"),
-    ("surfaceData.inner_skull_4096.zip", "$INSIDE.surfaceData.inner_skull_4096.zip"),
-    ("surfaceData.outer_skull_4096.zip", "$INSIDE.surfaceData.outer_skull_4096.zip"),
-    ("surfaceData.scalp.zip", "$INSIDE.surfaceData.scalp.zip"),
-    ("surfaceData.face_8614.zip", "$INSIDE.surfaceData.face_8614.zip"),
+    "surfaceData/__init__.py",
+    "surfaceData/cortex_80k.zip",
+    "surfaceData/cortex_16384.zip",
+    "surfaceData/outer_skin_4096.zip",
+    "surfaceData/inner_skull_4096.zip",
+    "surfaceData/outer_skull_4096.zip",
+    "surfaceData/scalp_1082.zip",
+    "surfaceData/face_8614.zip",
 
-    ("local_connectivity.__init__.py", "$INSIDE.local_connectivity.__init__.py"),
-    ("local_connectivity.local_connectivity_16384.mat", "$INSIDE.local_connectivity.local_connectivity_16384.mat"),
-    ("local_connectivity.local_connectivity_80k.mat", "$INSIDE.local_connectivity.local_connectivity_80k.mat"),
+    "local_connectivity/__init__.py",
+    "local_connectivity/local_connectivity_16384.mat",
+    "local_connectivity/local_connectivity_80k.mat",
 
-    ("obj.__init__.py", "$INSIDE.obj.__init__.py"),
-    ("obj.face_surface.obj", "$INSIDE.obj.face_surface.obj"),
-    ("obj.eeg_cap.obj", "$INSIDE.obj.eeg_cap.obj")
+    "obj/__init__.py",
+    "obj/face_surface.obj",
+    "obj/eeg_cap.obj",
+]
+
+#outsiders get distributed as top level relative to dists step 1
+INCLUDED_OUTSIDE_DATA = [
+    "connectivity/connectivity_192.zip",
+    "sensors/eeg_unitvector_62.txt.bz2",
+    "sensors/meg_151.txt.bz2",
 ]
 
 
-def _prepare_name(coded_name):
-    """
-    Convert in absolute path and create folder if needed.
-    """
-    parts = coded_name.split(".")
-    if parts[-1] == "bz2":
-        parts[-2] = parts[-2] + "." + parts[-1]
-        parts = parts[:-1]
-    parts[-2] = parts[-2] + "." + parts[-1]
-    parts = parts[:-1]
-
-    if parts[0] == "$INSIDE":
-        parts[0] = DATA_INSIDE_FOLDER
-    elif parts[0] == "$OUTSIDE":
-        parts[0] = DATA_OUTSIDE_FOLDER
-    else:
-        return os.path.join(DATA_SRC_FOLDER , *parts)
-
-    exact_file = os.path.join(parts[0], *parts[1:])
-    destination_folder = os.path.dirname(exact_file)
-    if not os.path.exists(destination_folder):
-        os.makedirs(destination_folder)
-    return exact_file
+def _copy_dataset(dataset_files, dataset_destination):
+    for pth in dataset_files:
+        rel_pth = pth.split('/')
+        origin = join(DATA_SRC_FOLDER, *rel_pth)
+        destination = join(dataset_destination, *rel_pth)
+        destination_folder = os.path.dirname(destination)
+        if not os.path.exists(destination_folder):
+            os.makedirs(destination_folder)
+        shutil.copyfile(origin, destination)
 
 
 def copy_distribution_dataset():
@@ -151,11 +140,8 @@ def copy_distribution_dataset():
         load default for console profile, or code update events
     - in tvb_data folder, as example for users.
     """
-
-    for coded_origin, coded_destination in INCLUDED_DATA:
-        origin = _prepare_name(coded_origin)
-        destination = _prepare_name(coded_destination)
-        shutil.copyfile(origin, destination)
+    _copy_dataset(INCLUDED_INSIDE_DATA, DATA_INSIDE_FOLDER)
+    _copy_dataset(INCLUDED_OUTSIDE_DATA, DATA_OUTSIDE_FOLDER)
 
 
 def write_svn_current_version(library_folder):
