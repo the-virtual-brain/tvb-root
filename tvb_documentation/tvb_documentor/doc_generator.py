@@ -250,6 +250,9 @@ class DocGenerator:
                 dest = os.path.join(temp_folder, 'aparentfolder', 'tvb-documentation-site')
                 shutil.move(html_folder, dest)
                 archive = shutil.make_archive('tvb-documentation-site', 'zip', os.path.dirname(dest))
+                artifact_path = os.path.join(os.path.dirname(self._dist_folder), os.path.basename(archive))
+                if os.path.exists(artifact_path):
+                    os.remove(artifact_path)
                 shutil.move(archive, os.path.dirname(self._dist_folder))
             finally:
                 shutil.rmtree(auto_api_folder)
