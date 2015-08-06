@@ -44,6 +44,7 @@ class Config:
         # Build result & input
         self.platform_name = platform_name
         self.build_folder = "build"
+        # the step 1 zip is expected to be placed in this path. Hudson will place it there via the copy artifact plugin.
         self.step1_result = os.path.join(self.build_folder, "TVB_build_step1.zip")
         self.target_root = os.path.join(self.build_folder, "TVB_Distribution")
         self.target_before_zip = os.path.join(self.build_folder, "TVB_Build")
