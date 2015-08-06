@@ -297,6 +297,9 @@ if os.path.exists(step1_tmp_dist_folder):
 ZipFile(STEP1_RESULT).extractall(TVB_ROOT)
 # the above created a TVB_Distribution/ we need a dist folder
 shutil.move(step1_tmp_dist_folder, DIST_FOLDER)
+# make needed directory structure that is not in the step1 zip
+# bin dir is initially empty, step1 does not support empty dirs in the zip
+os.mkdir(os.path.join(DIST_FOLDER, 'bin'))
 
 print "PY2APP starting ..."
 # Log everything from py2app in a log file
