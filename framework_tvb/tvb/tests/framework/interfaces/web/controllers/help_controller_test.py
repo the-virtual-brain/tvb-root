@@ -59,7 +59,7 @@ class HelpControllerTest(BaseTransactionalControllerTest):
         """
         result_dict = self.help_c.showOnlineHelp(WebStructure.SECTION_PROJECT, WebStructure.SUB_SECTION_OPERATIONS)
         self.assertTrue('helpURL' in result_dict)
-        self.assertEqual(result_dict['helpURL'], '/statichelp/UserGuide-UI_Project.html#operations')
+        self.assertEqual(result_dict['helpURL'], '/statichelp/manuals/UserGuide/UserGuide-UI_Project.html#operations')
         self.assertEqual(result_dict['overlay_class'], 'help')
         self.assertEqual(result_dict['overlay_content_template'], 'help/online_help')
         self.assertEqual(result_dict['overlay_description'], 'Online-Help')
