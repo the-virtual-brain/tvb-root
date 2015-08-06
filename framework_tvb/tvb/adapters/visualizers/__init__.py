@@ -33,7 +33,7 @@ List here all Python modules where Visualization adapters are described.
 Listed modules will be introspected and DB filled.
 """
 
-__all__ = ["brain", "connectivity", "cross_coherence", "cross_correlation", "covariance",
+__all__ = ["annotations_viewer", "brain", "connectivity", "cross_coherence", "cross_correlation", "covariance",
            "histogram", "ica", "eeg_monitor", "local_connectivity_view", "matrix_viewer",
            "mplh5_coherence_spectrum", "mplh5_cross_correlation", "mplh5_fourier_spectrum",
            "mplh5_topographic", "mplh5_wavelet_spectrogram",

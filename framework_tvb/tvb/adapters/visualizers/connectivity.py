@@ -47,7 +47,6 @@ from tvb.core.adapters.exceptions import LaunchException
 from tvb.core.services.flow_service import FlowService
 from tvb.datatypes.connectivity import Connectivity
 from tvb.datatypes.graph import ConnectivityMeasure
-from tvb.datatypes.annotations import ConnectivityAnnotations
 from tvb.datatypes.surfaces import CorticalSurface
 
 
@@ -69,8 +68,6 @@ class ConnectivityViewer(ABCDisplayer):
         filters_ui = [UIFilter(linked_elem_name="colors",
                                linked_elem_field=FilterChain.datatype + "._connectivity"),
                       UIFilter(linked_elem_name="rays",
-                               linked_elem_field=FilterChain.datatype + "._connectivity"),
-                      UIFilter(linked_elem_name="annotations",
                                linked_elem_field=FilterChain.datatype + "._connectivity")]
 
         json_ui_filter = json.dumps([ui_filter.to_dict() for ui_filter in filters_ui])
@@ -95,9 +92,7 @@ class ConnectivityViewer(ABCDisplayer):
                  'conditions': FilterChain(fields=[FilterChain.datatype + '._nr_dimensions'],
                                            operations=["=="], values=[1]),
                  'description': 'A ConnectivityMeasure datatype used to establish the size of the spheres representing '
-                                'each node. (It only applies to 3D Nodes tab).'},
-                {'name': 'annotations', 'label': 'Connectivity Ontology Annotations',
-                 'type': ConnectivityAnnotations, 'required': False}]
+                                'each node. (It only applies to 3D Nodes tab).'}]
 
 
     def get_required_memory_size(self, input_data, surface_data, **kwargs):
@@ -111,7 +106,7 @@ class ConnectivityViewer(ABCDisplayer):
         return -1
 
 
-    def launch(self, input_data, surface_data=None, colors=None, rays=None, step=None, annotations=None):
+    def launch(self, input_data, surface_data=None, colors=None, rays=None, step=None):
         """
         Given the input connectivity data and the surface data, 
         build the HTML response to be displayed.
@@ -138,9 +133,6 @@ class ConnectivityViewer(ABCDisplayer):
         result_params.update(_params)
         result_pages.update(_pages)
         _params, _pages = MPLH5Connectivity().compute_parameters(input_data)
-        result_params.update(_params)
-        result_pages.update(_pages)
-        _params, _pages = ConnectivityAnnotationsView().compute_parameters(self, annotations)
         result_params.update(_params)
         result_pages.update(_pages)
 
@@ -531,25 +523,5 @@ class MPLH5Connectivity(object):
         parameters = dict(mplh5ServerURL=TvbProfile.current.web.MPLH5_SERVER_URL,
                           figureNumber=figure.number, showFullToolbar=False)
         return parameters, {}
-
-
-
-class ConnectivityAnnotationsView(object):
-    """
-    Prepare Genshi params for displaying a ConnectivityAnnotations tree.
-    """
-
-    @staticmethod
-    def compute_parameters(displayer, annotations=None):
-
-        has_annotation = annotations is not None
-        tree_url = ""
-        if has_annotation:
-            tree_url = displayer.paths2url(annotations, 'tree_json')
-
-        params = dict(hasAnnotations=has_annotation,
-                      annotationsTreeUrl=tree_url,
-                      baseUrl=TvbProfile.current.web.BASE_URL)
-        return params, {}
-
+    
     

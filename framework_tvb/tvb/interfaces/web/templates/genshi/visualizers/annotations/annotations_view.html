@@ -1,0 +1,23 @@
+<div id="s-brain" class="brain" xmlns:py="http://genshi.edgewall.org/" xmlns:xi="http://www.w3.org/2001/XInclude">
+    <script type="text/javascript" src="/static_view/annotations/annotations.js?$currentVersionJS"></script>
+    <xi:include href="../commons/gl_view_header.html"/>
+    <xi:include href="../commons/fragment_shader.html"/>
+    <xi:include href="../commons/vertex_shader.html"/>
+    <xi:include href="../commons/gl_view_after.html" py:with="show_navigator=False"/>
+
+    <script type="text/javascript">
+        $(document).ready(function () {
+            VS_StartSurfaceViewer('${urlVertices}', '${urlLines}', '${urlTriangles}',
+                    '${urlNormals}', '${urlMeasurePoints}', ${noOfMeasurePoints},
+                    '${urlRegionMap}', '${urlMeasurePointsLabels}',
+                    '${boundaryURL}', '${shelfObject}', ${minMeasure}, ${maxMeasure},
+                    '${clientMeasureUrl}', ${hemisphereChunkMask});
+            showAnnotationsTree('${baseUrl}', '${annotationsTreeUrl}');
+        });
+    </script>
+
+    <div class="monitor single-slave">
+        <div id="treeStructure"></div>
+    </div>
+
+</div>

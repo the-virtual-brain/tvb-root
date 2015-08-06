@@ -417,27 +417,6 @@ function showTractsTable() {
     MATRIX_colorTable();
 }
 
-function showAnnotationsTree(baseUrl, treeDataUrl) {
-    $("#div-annotations").show();
-
-    $("#treeStructure").jstree({
-        "plugins": ["themes", "json_data", "ui", "crrm"],
-        "themes": {
-            "theme": "default",
-            "dots": true,
-            "icons": true,
-            "url": baseUrl + "static/jquery/jstree-theme/style.css"
-        },
-        "json_data": {
-            "ajax": {
-                url: treeDataUrl,
-                success: function (d) {
-                    return eval(d);
-                }
-            }
-        }
-    });
-}
 
 /*
  * ------------------------------Left side tab functions below------------------------------------
