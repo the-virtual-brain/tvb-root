@@ -44,7 +44,7 @@ class Config:
         # Build result & input
         self.platform_name = platform_name
         self.build_folder = "build"
-        self.step1_result = os.path.join(self.build_folder, "TVB_Distribution_a.zip")
+        self.step1_result = os.path.join(self.build_folder, "TVB_build_step1.zip")
         self.target_root = os.path.join(self.build_folder, "TVB_Distribution")
         self.target_before_zip = os.path.join(self.build_folder, "TVB_Build")
 
@@ -272,6 +272,10 @@ def prepare_anaconda_dist(config):
 
     _log(1, "Decompressing " + config.step1_result + " into '" + config.build_folder + "' ...")
     zipfile.ZipFile(config.step1_result).extractall(config.build_folder)
+
+    # make needed directory structure that is not in the step1 zip
+    # bin dir is initially empty, step1 does not support empty dirs in the zip
+    os.mkdir(os.path.join(config.target_root, 'bin'))
 
     _log(1, "Copying anaconda ENV folder" + config.anaconda_env_path + " into '" + config.target_library_root + "'...")
     shutil.copytree(config.anaconda_env_path, config.target_library_root)

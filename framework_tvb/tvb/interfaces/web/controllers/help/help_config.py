@@ -55,7 +55,7 @@ class HelpConfig:
     STIMULUS_HELP_PAGE = "UserGuide-UI_Stimulus.html"
     USER_HELP_PAGE = "UserGuide-UI_User.html"
 
-    HELP_PAGE_PATH = "/statichelp"
+    HELP_PAGE_PATH = "/statichelp/manuals/UserGuide"
 
 
     def __init__(self):

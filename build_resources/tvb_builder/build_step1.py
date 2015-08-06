@@ -60,7 +60,7 @@ RELEASE_NOTES_PATH = os.path.join(TVB_ROOT, 'tvb_documentation', 'RELEASE_NOTES'
 DATA_SRC_FOLDER = os.path.dirname(tvb_data.__file__)
 
 # dest paths
-DIST_FOLDER = join(os.path.dirname(__file__), '_build', 'TVB_Distribution')
+DIST_FOLDER = join(os.path.dirname(__file__), 'build', 'TVB_Distribution')
 
 DATA_INSIDE_FOLDER = join(DIST_FOLDER, '_tvb_data')
 DATA_OUTSIDE_FOLDER = join(DIST_FOLDER, 'demo_data')
@@ -190,9 +190,9 @@ def build_step1():
     # do this in step 2
     write_svn_current_version(os.path.join(DIST_FOLDER, '_tvb_bin'))
 
-    shutil.make_archive('TVB_Distribution_b', 'zip', build_folder) # this will not add empty folders!
+    shutil.make_archive('TVB_build_step1', 'zip', build_folder) # this will not add empty folders!
     shutil.rmtree(DIST_FOLDER)
-    shutil.move('TVB_Distribution_b.zip', build_folder)
+    shutil.move('TVB_build_step1.zip', build_folder)
 
 
 if __name__ == '__main__':
