@@ -42,8 +42,6 @@ The second phase includes the source code and depends on the zip produced by thi
 
 .. moduleauthor:: Mihai Andrei <mihai.andrei@codemart.ro>
 """
-import subprocess
-
 import os
 import shutil
 from os.path import join
@@ -144,22 +142,6 @@ def copy_distribution_dataset():
     _copy_dataset(INCLUDED_OUTSIDE_DATA, DATA_OUTSIDE_FOLDER)
 
 
-def write_svn_current_version(library_folder):
-    """Read current subversion number"""
-    try:
-        svn_variable = 'SVN_REVISION'
-        if svn_variable in os.environ:
-            version = os.environ[svn_variable]
-        else:
-            _proc = subprocess.Popen(["svnversion", "."], stdout=subprocess.PIPE)
-            version = _proc.communicate()[0]
-        with open(join(library_folder, 'tvb.version'), 'w') as f:
-            f.write(version)
-
-    except Exception, excep:
-        print "-- W: Could not get or persist revision number because: ", excep
-
-
 def build_step1():
     build_folder = os.path.dirname(DIST_FOLDER)
 
@@ -186,9 +168,6 @@ def build_step1():
             shutil.copy(join(BIN_FOLDER, file_n), join(DIST_FOLDER, '_tvb_bin'))
 
     copy_distribution_dataset()
-
-    # do this in step 2
-    write_svn_current_version(os.path.join(DIST_FOLDER, '_tvb_bin'))
 
     shutil.make_archive('TVB_build_step1', 'zip', build_folder) # this will not add empty folders!
     shutil.rmtree(DIST_FOLDER)
