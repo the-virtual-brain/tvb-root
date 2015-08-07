@@ -118,6 +118,7 @@ class WebStructure(object):
     SUB_SECTION_VIEW_19 = "view_ts_volume"
     SUB_SECTION_VIEW_20 = "view_topography"
     SUB_SECTION_VIEW_21 = "view_wavelet"
+    SUB_SECTION_VIEW_22 = "view_annotations"
 
 
     ### Texts to appear in HTML page headers as section-title.
@@ -199,7 +200,8 @@ class WebStructure(object):
         SUB_SECTION_VIEW_18: "TimeSeries Visualizer",
         SUB_SECTION_VIEW_19: "TimeSeries Volume Visualizer",
         SUB_SECTION_VIEW_20: "Topography Visualizer",
-        SUB_SECTION_VIEW_21: "Wavelet Visualizer"
+        SUB_SECTION_VIEW_21: "Wavelet Visualizer",
+        SUB_SECTION_VIEW_22: "Annotations Visualizer"
     }
 
 
@@ -228,7 +230,8 @@ class WebStructure(object):
         SUB_SECTION_VIEW_18: "time-series-visualizer-svg-d3",
         SUB_SECTION_VIEW_19: "time-series-volume-visualizer",
         SUB_SECTION_VIEW_20: "topographic-visualizer",
-        SUB_SECTION_VIEW_21: "wavelet-spectrogram-visualizer"
+        SUB_SECTION_VIEW_21: "wavelet-spectrogram-visualizer",
+        SUB_SECTION_VIEW_22: "surface-visualizer"
     }
 
 

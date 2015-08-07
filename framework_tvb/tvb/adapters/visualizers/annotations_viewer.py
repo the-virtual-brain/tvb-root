@@ -52,7 +52,8 @@ class ConnectivityAnnotationsView(SurfaceViewer):
     Given a Connectivity Matrix and a Surface data the viewer will display the matrix 'inside' the surface data.
     The surface is only displayed as a shadow.
     """
-    _ui_name = "Connectivity Visualizer"
+    _ui_name = "Annotations Visualizer"
+    _ui_subsection = "annotations"
 
 
     def get_input_tree(self):
