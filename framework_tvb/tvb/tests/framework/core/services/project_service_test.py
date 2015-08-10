@@ -173,8 +173,9 @@ class ProjectServiceTest(TransactionalTestCase):
         data = dict(name="test_project", description="test_description", users=[])
         initial_projects = dao.get_projects_for_user(self.test_user.id)
         self.assertEqual(len(initial_projects), 0, "Database reset probably failed!")
-        self.project_service.store_project(self.test_user, True, None, **data)
-        self.assertRaises(ProjectServiceException, self.project_service.find_project, 99)  
+        project = self.project_service.store_project(self.test_user, True, None, **data)
+        # fetch a likely non-existing project. Previous project id plus a 'big' offset
+        self.assertRaises(ProjectServiceException, self.project_service.find_project, project.id + 1033)
         
         
     def test_retrieve_projects_for_user(self):
