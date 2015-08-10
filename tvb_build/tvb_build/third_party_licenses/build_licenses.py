@@ -34,12 +34,12 @@ Generate PDF or HTML with third party licenses.
 
 import os
 import sys
-import third_party_licenses
-import third_party_licenses.deps_xml_parser as parser
+from tvb_build import third_party_licenses
+import tvb_build.third_party_licenses.deps_xml_parser as parser
 from datetime import datetime
 from contextlib import closing
 from zipfile import ZipFile, ZIP_DEFLATED
-from third_party_licenses.package_finder import parse_tree_structure
+from tvb_build.third_party_licenses.package_finder import parse_tree_structure
 
 CURRENT_FOLDER = third_party_licenses.__path__[0]
 LICENSES_FOLDER = "license"

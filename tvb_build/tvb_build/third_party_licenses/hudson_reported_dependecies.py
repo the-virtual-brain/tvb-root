@@ -33,7 +33,7 @@ import urllib2
 import json
 import os
 import getpass
-import third_party_licenses.deps_xml_parser as deps_xml_parser
+from tvb_build.third_party_licenses import deps_xml_parser
 
 BASE_URL = 'https://hudson.codemart.ro/hudson/'
 LOGIN_URL = BASE_URL + 'login'

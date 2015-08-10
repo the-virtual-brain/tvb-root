@@ -34,7 +34,7 @@ XML parser for the accepted packages XML.
 
 import os
 import sys
-import third_party_licenses
+from tvb_build import third_party_licenses
 import xml.dom.minidom as minidom
 from xml.dom.minidom import Node, Document
 from package_finder import parse_tree_structure

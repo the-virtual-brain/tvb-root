@@ -51,7 +51,7 @@ BIN_FOLDER = os.path.dirname(tvb_bin.__file__)
 TVB_ROOT = os.path.dirname(__file__)
 DIST_FOLDER = os.path.join(TVB_ROOT, "dist")
 DIST_FOLDER_FINAL = "TVB_Distribution"
-STEP1_RESULT = os.path.join(TVB_ROOT, "build_resources", "tvb_builder", "build", "TVB_build_step1.zip")
+STEP1_RESULT = os.path.join(TVB_ROOT, "tvb_build", "tvb_build", "build", "TVB_build_step1.zip")
 
 FW_FOLDER = os.path.join(TVB_ROOT, "framework_tvb")
 VERSION = TvbProfile.current.version.BASE_VERSION
@@ -140,7 +140,7 @@ def introspect_licenses(destination_folder, root_introspection, extra_licenses_c
     except Exception:
         os.environ['LANG'] = 'en_US.UTF-8'
         os.environ['LC_ALL'] = 'en_US.UTF-8'
-    from third_party_licenses.build_licenses import generate_artefact
+    from tvb_build.third_party_licenses import generate_artefact
 
     zip_name = generate_artefact(root_introspection, extra_licenses_check=extra_licenses_check)
     ZipFile(zip_name).extractall(destination_folder)
@@ -280,8 +280,8 @@ PY2APP_INCLUDES = ['apscheduler', 'apscheduler.scheduler', 'cfflib', 'cmath', 'c
 PY2APP_EXCLUDES = ['_markerlib', 'coverage', 'cython', 'Cython', 'tvb_data', 'docutils', 'lib2to3',
                    'nose', 'OpenGL', 'PyOpenGL', 'PyQt4', 'sphinx', 'wx']
 
-PY2APP_OPTIONS = {'iconfile': 'build_resources/icon.icns',
-                  'plist': 'build_resources/info.plist',
+PY2APP_OPTIONS = {'iconfile': 'tvb_build/icon.icns',
+                  'plist': 'tvb_build/info.plist',
                   'packages': PY2APP_PACKAGES,
                   'includes': PY2APP_INCLUDES,
                   'frameworks': ['Tcl', 'Tk'],

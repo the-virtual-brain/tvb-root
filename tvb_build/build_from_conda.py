@@ -34,7 +34,7 @@ import zipfile
 import os.path
 from tvb.basic.config.settings import VersionSettings
 from tvb.basic.config.environment import Environment
-from third_party_licenses.build_licenses import generate_artefact
+from tvb_build.third_party_licenses.build_licenses import generate_artefact
 
 
 class Config:
