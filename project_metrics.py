@@ -36,7 +36,7 @@ Utility file, to compute number of code lines in TVB project folder.
 
 import os
 
-INTROSPECT_FOLDER = os.getcwd()
+INTROSPECT_FOLDER = os.path.dirname(__file__)
 IGNORED_LIST = {"__init__.py", "project_metrics.py"}
 
 TVB_LIST = []
@@ -48,8 +48,8 @@ HTML_LIST = []
 
 def count_code_lines(filename):
     count = 0
-    with open(filename, 'r') as fd:
-        for line in fd.readlines():
+    with open(filename) as fd:
+        for line in fd:
             parts = line.strip().split()
             if len(parts)==0 or parts[0].startswith('#'):
                 continue
@@ -57,36 +57,45 @@ def count_code_lines(filename):
     return count
 
 
+def count_lines(filename):
+    count = 0
+    with open(filename) as fd:
+        for line in fd:
+            count += 1
+    return count
+
+
 for pydir, _, pyfiles in os.walk(INTROSPECT_FOLDER):
     for pyfile in pyfiles:
-        if pyfile.endswith(".py") and pyfile not in IGNORED_LIST and not ('externals' in pydir or 'tvb.tests.framework' in pydir
-                                                                          or 'tvb.tests.library' in pydir):
-            totalpath = os.path.join(pydir, pyfile)
-            TVB_LIST.append((len(open(totalpath, "r").read().splitlines()), totalpath.split(INTROSPECT_FOLDER)[1]))
+        totalpath = os.path.join(pydir, pyfile)
+        tmp = totalpath.split(INTROSPECT_FOLDER)[1]
+
+        if pyfile.endswith(".py") and pyfile not in IGNORED_LIST \
+                and not ('externals' in pydir or 'tvb/tests/framework' in pydir or 'tvb/tests/library' in pydir):
+
+            TVB_LIST.append((count_lines(totalpath), tmp))
             TVB_CODE_LINES += count_code_lines(totalpath)
+
         elif pyfile.endswith(".py") and pyfile not in IGNORED_LIST and 'externals' not in pydir \
-                and ('tvb.tests.framework' in pydir or 'tvb.tests.library' in pydir):
-            totalpath = os.path.join(pydir, pyfile)
-            TEST_LIST.append((len(open(totalpath, "r").read().splitlines()), totalpath.split(INTROSPECT_FOLDER)[1]))
+                and ('tvb/tests/framework' in pydir or 'tvb/tests/library' in pydir):
+
+            TEST_LIST.append((count_lines(totalpath), tmp))
+
         elif pyfile.endswith(".css") and '/static/style' in pydir:
-            totalpath = os.path.join(pydir, pyfile)
-            CSS_LIST.append((len(open(totalpath, "r").read().splitlines()), totalpath.split(INTROSPECT_FOLDER)[1]))
+            CSS_LIST.append((count_lines(totalpath), tmp))
+
         elif pyfile.endswith(".js") and '/static/js' in pydir:
-            totalpath = os.path.join(pydir, pyfile)
-            JS_LIST.append((len(open(totalpath, "r").read().splitlines()), totalpath.split(INTROSPECT_FOLDER)[1]))
+            JS_LIST.append((count_lines(totalpath), tmp))
+
         elif pyfile.endswith(".html") and '/templates/genshi' in pydir:
-            totalpath = os.path.join(pydir, pyfile)
-            HTML_LIST.append((len(open(totalpath, "r").read().splitlines()), totalpath.split(INTROSPECT_FOLDER)[1]))
+            HTML_LIST.append((count_lines(totalpath), tmp))
 
-print "\nTotal: %s lines in %s .py TVB files (%d lines of code)" % (sum([x[0] for x in TVB_LIST]), len(TVB_LIST), TVB_CODE_LINES)
 
-print "\nTotal: %s lines in %s .py TEST files" % (sum([x[0] for x in TEST_LIST]), len(TEST_LIST))
-
-print "\nTotal: %s lines in %s .CSS files" % (sum([x[0] for x in CSS_LIST]), len(CSS_LIST))
-
-print "\nTotal: %s lines in %s .JS files" % (sum([x[0] for x in JS_LIST]), len(JS_LIST))
-
-print "\nTotal: %s lines in %s .HTML files" % (sum([x[0] for x in HTML_LIST]), len(HTML_LIST))
+print "Total: %s lines in %s .py TVB files (%d lines of code)" % (sum([x[0] for x in TVB_LIST]), len(TVB_LIST), TVB_CODE_LINES)
+print "Total: %s lines in %s .py TEST files" % (sum([x[0] for x in TEST_LIST]), len(TEST_LIST))
+print "Total: %s lines in %s .CSS files" % (sum([x[0] for x in CSS_LIST]), len(CSS_LIST))
+print "Total: %s lines in %s .JS files" % (sum([x[0] for x in JS_LIST]), len(JS_LIST))
+print "Total: %s lines in %s .HTML files" % (sum([x[0] for x in HTML_LIST]), len(HTML_LIST))
 
 TVB_LIST.extend(TEST_LIST)
 TVB_LIST.extend(CSS_LIST)
