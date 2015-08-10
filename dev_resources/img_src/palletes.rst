@@ -1,3 +1,7 @@
+*******************************************
+The pallete resources used by TVB's viewers
+*******************************************
+
 TVB color palette texture
 =========================
 A 256x256 png file split in 32 horizontal stripes 8 pixel high.

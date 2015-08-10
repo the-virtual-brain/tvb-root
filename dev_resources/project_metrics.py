@@ -36,7 +36,7 @@ Utility file, to compute number of code lines in TVB project folder.
 
 import os
 
-INTROSPECT_FOLDER = os.path.dirname(__file__)
+INTROSPECT_FOLDER = os.path.dirname(os.path.dirname(__file__))
 IGNORED_LIST = {"__init__.py", "project_metrics.py"}
 
 TVB_LIST = []
