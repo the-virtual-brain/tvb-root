@@ -45,7 +45,7 @@ The second phase includes the source code and depends on the zip produced by thi
 import os
 import shutil
 from os.path import join
-from tvb_documentor.doc_generator import DocGenerator
+from tvb_build.tvb_documentor.doc_generator import DocGenerator
 import tvb_bin
 import tvb_data
 

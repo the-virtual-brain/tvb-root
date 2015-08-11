@@ -46,8 +46,7 @@ from sphinx.cmdline import main as sphinx_build
 
 import tvb
 from tvb.basic.logger.builder import get_logger
-import tvb_documentor
-from tvb_documentor.generate_modules import process_sources, GenOptions
+from tvb_build.tvb_documentor.generate_modules import process_sources, GenOptions
 
 
 @contextmanager
@@ -111,7 +110,7 @@ class DocGenerator:
         self.logger = get_logger(self.__class__.__name__)
         self._dist_folder = dist_folder
         self._tvb_root_folder = tvb_root_folder
-        self._conf_folder = os.path.dirname(os.path.dirname(tvb_documentor.__file__))
+        self._conf_folder = os.path.join(tvb_root_folder, 'tvb_documentation')
 
         # Folders where to store results
         self._dist_docs_folder = os.path.join(self._dist_folder, self.DOCS)
@@ -283,7 +282,7 @@ def main(options, root_folder):
 
 if __name__ == "__main__":
     #By default running this module we generate documentation
-    ROOT_FOLDER = os.path.dirname(os.path.dirname(os.path.join(os.getcwd())))
+    ROOT_FOLDER = os.path.dirname(os.path.dirname(os.path.dirname(os.path.join(os.getcwd()))))
 
     PARSER = OptionParser()
     PARSER.add_option("-p", "--pdf_only", action="store_true", dest="pdfs_only", help="Generates only manual PDFs")

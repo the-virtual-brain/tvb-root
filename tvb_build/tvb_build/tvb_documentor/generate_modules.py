@@ -29,9 +29,12 @@ It also creates a modules index (named modules.<suffix>).
 import os
 import shutil
 import optparse
+import tvb_bin
 
 #Dictionary with mappings when a whole sub-package's documentation is overwritten from generated one
-packages_specs = {'tvb.simulator': {'path': os.path.join(os.path.dirname(__file__), 'sim_doc'),
+TVB_ROOT = os.path.dirname(os.path.dirname(tvb_bin.__file__))
+
+packages_specs = {'tvb.simulator': {'path': os.path.join(TVB_ROOT, 'tvb_documentation', 'sim_doc'),
                                     'main': 'tvb.simulator.rst'}}
 #Dictionary with mappings when only one module's documentation is overwritten from generated one
 #modules_specs = {'tvb.core.datatype': os.path.join(tvb_default_spec_folder, 'tvb.core.datatype.rst')}

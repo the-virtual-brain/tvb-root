@@ -1,4 +1,3 @@
-
 .. moduleauthor:: Stuart Knock <Stuart@tvb.invalid>
 .. moduleauthor:: Marmaduke Woodman <mw@eml.cc>
 

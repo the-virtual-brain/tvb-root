@@ -77,7 +77,7 @@ release = TvbProfile.current.version.CURRENT_VERSION
 exclude_patterns = [
     '_build',
 
-    'tvb_documentor',
+    'sim_doc',
     'handouts',
     'requirements'
 ]
