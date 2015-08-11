@@ -335,7 +335,7 @@ setuptools.setup(name="tvb",
                  options={'py2app': PY2APP_OPTIONS},
                  include_package_data=True,
                  extras_require={'postgres': ["psycopg2"]},
-                 app=['tvb_bin/app.py'],
+                 app=['tvb_bin/tvb_bin/app.py'],
                  setup_requires=['py2app'])
 
 sys.stdout = REAL_STDOUT

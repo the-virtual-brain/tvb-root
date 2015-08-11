@@ -32,7 +32,7 @@ import optparse
 import tvb_bin
 
 #Dictionary with mappings when a whole sub-package's documentation is overwritten from generated one
-TVB_ROOT = os.path.dirname(os.path.dirname(tvb_bin.__file__))
+TVB_ROOT = os.path.dirname(os.path.dirname(os.path.dirname(tvb_bin.__file__)))
 
 packages_specs = {'tvb.simulator': {'path': os.path.join(TVB_ROOT, 'tvb_documentation', 'sim_doc'),
                                     'main': 'tvb.simulator.rst'}}

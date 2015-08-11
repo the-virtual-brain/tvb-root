@@ -86,7 +86,7 @@ class Config:
             'bin/tvb_stop.command': 'source ./distribution.command stop',
             'bin/ipython_notebook.sh': '../tvb_data/bin/python -m tvb_bin.run_ipython notebook ../demo_scripts',
             'demo_scripts/ipython_notebook.sh': '../tvb_data/bin/python -m tvb_bin.run_ipython notebook',
-            'bin/contributor_setup.command': '../tvb_data/bin/python tvb_bin.git_setup $1 $2'
+            'bin/contributor_setup.command': '../tvb_data/bin/python -m tvb_bin.git_setup $1 $2'
         }
 
         return Config("MacOS", "/anaconda/envs/tvb-run3", join("lib", "python2.7", "site-packages"),

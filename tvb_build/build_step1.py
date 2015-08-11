@@ -51,7 +51,7 @@ import tvb_data
 
 # source paths
 BIN_FOLDER = os.path.dirname(tvb_bin.__file__)
-TVB_ROOT = os.path.dirname(BIN_FOLDER)
+TVB_ROOT = os.path.dirname(os.path.dirname(BIN_FOLDER))
 FW_FOLDER = os.path.join(TVB_ROOT, 'framework_tvb')
 LICENSE_PATH = os.path.join(FW_FOLDER, 'LICENSE_TVB.txt')
 RELEASE_NOTES_PATH = os.path.join(TVB_ROOT, 'tvb_documentation', 'RELEASE_NOTES')
@@ -162,6 +162,7 @@ def build_step1():
     shutil.copy2(LICENSE_PATH, join(DIST_FOLDER, 'LICENSE_TVB.txt'))
     shutil.copy2(RELEASE_NOTES_PATH, join(DIST_FOLDER, 'docs', 'RELEASE_NOTES.txt'))
 
+    # todo: consider eliminating this special case as tvb_bin is now a regular package
     # add tvb_bin
     for file_n in os.listdir(BIN_FOLDER):
         if file_n.endswith('.py'):

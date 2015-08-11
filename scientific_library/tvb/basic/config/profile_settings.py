@@ -117,7 +117,7 @@ class BaseSettingsProfile(object):
         else:
             return 'python'
 
-
+    #todo rename to python interpreter path
     @property
     def PYTHON_PATH(self):
         """
@@ -126,6 +126,7 @@ class BaseSettingsProfile(object):
         exe_name = self.PYTHON_EXE_NAME
         if self.env.is_development():
             python_path = 'python'
+        #todo review this in light of the anaconda builds
         elif self.env.is_windows_deployment() or self.env.is_linux_deployment():
             python_path = os.path.join(os.path.dirname(self.BIN_FOLDER), 'exe', exe_name)
         elif self.env.is_mac_deployment():
