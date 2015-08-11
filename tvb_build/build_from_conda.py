@@ -58,16 +58,13 @@ class Config:
         self.to_read_licenses_from = [os.path.dirname(self.target_library_root)]
 
         # TVB sources and specify where to copy them in distribution
-        dp = os.path.join("..", "..")
-        self.tvb_sources = {os.path.join(dp, "framework_tvb", "tvb"): os.path.join(self.target_site_packages, "tvb"),
-                            os.path.join(dp, "scientific_library", "tvb"): os.path.join(self.target_site_packages,
-                                                                                        "tvb"),
-                            os.path.join(dp, "externals", "BCT"): os.path.join(self.target_site_packages, "externals",
-                                                                               "BCT"),
-                            os.path.join(dp, "tvb_documentation", "demos"): os.path.join(self.target_root,
-                                                                                             "demo_scripts"),
-                            os.path.join(dp, "tvb_documentation", "tutorials"): os.path.join(self.target_root,
-                                                                                                 "demo_scripts")}
+        self.tvb_sources = {
+            os.path.join("..", "framework_tvb", "tvb"): os.path.join(self.target_site_packages, "tvb"),
+            os.path.join("..", "scientific_library", "tvb"): os.path.join(self.target_site_packages, "tvb"),
+            os.path.join("..", "externals", "BCT"): os.path.join(self.target_site_packages, "externals", "BCT"),
+            os.path.join("..", "tvb_documentation", "demos"): os.path.join(self.target_root, "demo_scripts"),
+            os.path.join("..", "tvb_documentation", "tutorials"): os.path.join(self.target_root, "demo_scripts")
+        }
 
         self.commands_map = commands_map
         self.command_factory = command_factory

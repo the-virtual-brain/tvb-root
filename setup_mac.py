@@ -140,7 +140,7 @@ def introspect_licenses(destination_folder, root_introspection, extra_licenses_c
     except Exception:
         os.environ['LANG'] = 'en_US.UTF-8'
         os.environ['LC_ALL'] = 'en_US.UTF-8'
-    from tvb_build.third_party_licenses import generate_artefact
+    from tvb_build.third_party_licenses.build_licenses import generate_artefact
 
     zip_name = generate_artefact(root_introspection, extra_licenses_check=extra_licenses_check)
     ZipFile(zip_name).extractall(destination_folder)
