@@ -32,6 +32,7 @@ import shutil
 import subprocess
 import zipfile
 import os.path
+from os.path import join
 from tvb.basic.config.settings import VersionSettings
 from tvb.basic.config.environment import Environment
 from tvb_build.third_party_licenses.build_licenses import generate_artefact
@@ -46,24 +47,24 @@ class Config:
         self.platform_name = platform_name
         self.build_folder = "build"
         # the step 1 zip is expected to be placed in this path. Hudson will place it there via the copy artifact plugin.
-        self.step1_result = os.path.join(self.build_folder, "TVB_build_step1.zip")
-        self.target_root = os.path.join(self.build_folder, "TVB_Distribution")
-        self.target_before_zip = os.path.join(self.build_folder, "TVB_Build")
+        self.step1_result = join(self.build_folder, "TVB_build_step1.zip")
+        self.target_root = join(self.build_folder, "TVB_Distribution")
+        self.target_before_zip = join(self.build_folder, "TVB_Build")
 
         # Inside Distribution paths:
-        self.target_library_root = os.path.join(self.target_root, "tvb_data")
-        self.target_3rd_licences_folder = os.path.join(self.target_root, 'THIRD_PARTY_LICENSES')
-        self.target_site_packages = os.path.join(self.target_library_root, site_packages_suffix)
-        self.easy_install_pth = os.path.join(self.target_site_packages, "easy-install.pth")
+        self.target_library_root = join(self.target_root, "tvb_data")
+        self.target_3rd_licences_folder = join(self.target_root, 'THIRD_PARTY_LICENSES')
+        self.target_site_packages = join(self.target_library_root, site_packages_suffix)
+        self.easy_install_pth = join(self.target_site_packages, "easy-install.pth")
         self.to_read_licenses_from = [os.path.dirname(self.target_library_root)]
 
         # TVB sources and specify where to copy them in distribution
         self.tvb_sources = {
-            os.path.join("..", "framework_tvb", "tvb"): os.path.join(self.target_site_packages, "tvb"),
-            os.path.join("..", "scientific_library", "tvb"): os.path.join(self.target_site_packages, "tvb"),
-            os.path.join("..", "externals", "BCT"): os.path.join(self.target_site_packages, "externals", "BCT"),
-            os.path.join("..", "tvb_documentation", "demos"): os.path.join(self.target_root, "demo_scripts"),
-            os.path.join("..", "tvb_documentation", "tutorials"): os.path.join(self.target_root, "demo_scripts")
+            join("..", "framework_tvb", "tvb"): join(self.target_site_packages, "tvb"),
+            join("..", "scientific_library", "tvb"): join(self.target_site_packages, "tvb"),
+            join("..", "externals", "BCT"): join(self.target_site_packages, "externals", "BCT"),
+            join("..", "tvb_documentation", "demos"): join(self.target_root, "demo_scripts"),
+            join("..", "tvb_documentation", "tutorials"): join(self.target_root, "demo_scripts")
         }
 
         self.commands_map = commands_map
@@ -71,22 +72,24 @@ class Config:
 
         self.artifact_name = "TVB_" +  platform_name + "_" + VersionSettings.BASE_VERSION + ".zip"
         _artifact_glob = "TVB_" +  platform_name + "_*.zip"
-        self.artifact_glob = os.path.join(self.build_folder, _artifact_glob) # this is used to match old artifacts
-        self.artifact_pth = os.path.join(self.build_folder, self.artifact_name)
+        self.artifact_glob = join(self.build_folder, _artifact_glob) # this is used to match old artifacts
+        self.artifact_pth = join(self.build_folder, self.artifact_name)
 
 
     @staticmethod
     def mac64():
         # TODO set paths
-        commands_map = {'bin/distribution.command': '../tvb_data/bin/python -m tvb_bin.app $@',
-                        'bin/tvb_start.command': 'source ./distribution.command start',
-                        'bin/tvb_clean.command': 'source ./distribution.command clean',
-                        'bin/tvb_stop.command': 'source ./distribution.command stop',
-                        'bin/ipython_notebook.sh': '../tvb_data/bin/python -m tvb_bin.run_ipython notebook ../demo_scripts',
-                        'demo_scripts/ipython_notebook.sh': '../tvb_data/bin/python -m tvb_bin.run_ipython notebook',
-                        'bin/contributor_setup.command': '../tvb_data/bin/python tvb_bin.git_setup $1 $2'}
+        commands_map = {
+            'bin/distribution.command': '../tvb_data/bin/python -m tvb_bin.app $@',
+            'bin/tvb_start.command': 'source ./distribution.command start',
+            'bin/tvb_clean.command': 'source ./distribution.command clean',
+            'bin/tvb_stop.command': 'source ./distribution.command stop',
+            'bin/ipython_notebook.sh': '../tvb_data/bin/python -m tvb_bin.run_ipython notebook ../demo_scripts',
+            'demo_scripts/ipython_notebook.sh': '../tvb_data/bin/python -m tvb_bin.run_ipython notebook',
+            'bin/contributor_setup.command': '../tvb_data/bin/python tvb_bin.git_setup $1 $2'
+        }
 
-        return Config("MacOS", "/anaconda/envs/tvb-run3", os.path.join("lib", "python2.7", "site-packages"),
+        return Config("MacOS", "/anaconda/envs/tvb-run3", join("lib", "python2.7", "site-packages"),
                       commands_map, _create_unix_command)
 
 
@@ -97,15 +100,17 @@ class Config:
                    'set PYTHONPATH=%cd%\\Lib;%cd%\\Lib\\site-packages \n' + \
                    'set PYTHONHOME=\n\n'
 
-        commands_map = {'bin\\distribution.bat': set_path + 'python.exe -m tvb_bin.app %1 %2 %3 %4 %5 %6\ncd ..\\bin',
-                        'bin\\tvb_start.bat': 'distribution start',
-                        'bin\\tvb_clean.bat': 'distribution clean',
-                        'bin\\tvb_stop.bat': 'distribution stop',
-                        'bin\\ipython_notebook.bat': set_path + 'cd ..\\bin\n..\\tvb_data\\Scripts\\ipython notebook ..\\demo_scripts',
-                        'demo_scripts\\ipython_notebook.bat': set_path + 'cd ..\\demo_scripts\n..\\tvb_data\\Scripts\\ipython notebook',
-                        'bin\\contributor_setup.bat': set_path + 'python.exe -m  tvb_bin.git_setup %1 %2\ncd ..\\bin'}
+        commands_map = {
+            'bin\\distribution.bat': set_path + 'python.exe -m tvb_bin.app %1 %2 %3 %4 %5 %6\ncd ..\\bin',
+            'bin\\tvb_start.bat': 'distribution start',
+            'bin\\tvb_clean.bat': 'distribution clean',
+            'bin\\tvb_stop.bat': 'distribution stop',
+            'bin\\ipython_notebook.bat': set_path + 'cd ..\\bin\n..\\tvb_data\\Scripts\\ipython notebook ..\\demo_scripts',
+            'demo_scripts\\ipython_notebook.bat': set_path + 'cd ..\\demo_scripts\n..\\tvb_data\\Scripts\\ipython notebook',
+            'bin\\contributor_setup.bat': set_path + 'python.exe -m  tvb_bin.git_setup %1 %2\ncd ..\\bin'
+        }
 
-        return Config("Windows", "C:\\anaconda\\envs\\tvb-run", os.path.join("Lib", "site-packages"), commands_map,
+        return Config("Windows", "C:\\anaconda\\envs\\tvb-run", join("Lib", "site-packages"), commands_map,
                       _create_windows_script)
 
 
@@ -123,15 +128,17 @@ class Config:
                         "  export " + env_name + "=`pwd`/lib:`pwd`/bin\n" + \
                         "fi\n"
 
-        commands_map = {'bin/distribution.sh': set_path + './bin/python -m tvb_bin.app $@\ncd ../bin',
-                        'bin/tvb_start.sh': 'bash ./distribution.sh start',
-                        'bin/tvb_clean.sh': 'bash ./distribution.sh clean',
-                        'bin/tvb_stop.sh': 'bash ./distribution.sh stop',
-                        'bin/ipython_notebook.sh': set_path + 'cd ../bin\n../tvb_data/bin/python -m tvb_bin.run_ipython notebook ../demo_scripts',
-                        # 'demo_scripts/ipython_notebook.sh': set_path + 'cd ../demo_scripts\n../tvb_data/bin/python -m tvb_bin.run_ipython notebook',
-                        'bin/contributor_setup.sh': set_path + './bin/python -m tvb_bin.git_setup $1 $2\ncd ../bin'}
+        commands_map = {
+            'bin/distribution.sh': set_path + './bin/python -m tvb_bin.app $@\ncd ../bin',
+            'bin/tvb_start.sh': 'bash ./distribution.sh start',
+            'bin/tvb_clean.sh': 'bash ./distribution.sh clean',
+            'bin/tvb_stop.sh': 'bash ./distribution.sh stop',
+            'bin/ipython_notebook.sh': set_path + 'cd ../bin\n../tvb_data/bin/python -m tvb_bin.run_ipython notebook ../demo_scripts',
+            # 'demo_scripts/ipython_notebook.sh': set_path + 'cd ../demo_scripts\n../tvb_data/bin/python -m tvb_bin.run_ipython notebook',
+            'bin/contributor_setup.sh': set_path + './bin/python -m tvb_bin.git_setup $1 $2\ncd ../bin'
+        }
 
-        return Config("Linux", "/root/anaconda/envs/tvb-run", os.path.join("lib", "python2.7", "site-packages"),
+        return Config("Linux", "/root/anaconda/envs/tvb-run", join("lib", "python2.7", "site-packages"),
                       commands_map, _create_unix_command)
 
 
@@ -154,7 +161,7 @@ def _compress(folder_to_zip, result_name):
     with zipfile.ZipFile(result_name, "w", zipfile.ZIP_DEFLATED) as z_file:
         for root, _, files in os.walk(folder_to_zip):
             for file_nname in files:
-                absfn = os.path.join(root, file_nname)
+                absfn = join(root, file_nname)
                 zfn = absfn[len(folder_to_zip) + len(os.sep):]
                 z_file.write(absfn, zfn)
 
@@ -169,8 +176,8 @@ def _copy_collapsed(config):
             os.makedirs(destination_folder)
 
         for sub_folder in os.listdir(module_path):
-            src = os.path.join(module_path, sub_folder)
-            dest = os.path.join(destination_folder, sub_folder)
+            src = join(module_path, sub_folder)
+            dest = join(destination_folder, sub_folder)
 
             if not os.path.isdir(src) and not os.path.exists(dest):
                 shutil.copy(src, dest)
@@ -180,8 +187,8 @@ def _copy_collapsed(config):
                 ignore_patters = shutil.ignore_patterns('.svn', '*.ipynb', 'tutorials')
                 shutil.copytree(src, dest, ignore=ignore_patters)
 
-            for excluded in [os.path.join(destination_folder, "simulator", "doc"),
-                             os.path.join(destination_folder, "simulator", "demos")]:
+            for excluded in [join(destination_folder, "simulator", "doc"),
+                             join(destination_folder, "simulator", "demos")]:
                 if os.path.exists(excluded):
                     shutil.rmtree(excluded, True)
                     _log(3, "Removed: " + str(excluded))
@@ -221,7 +228,7 @@ def _add_sitecustomize(destination_folder):
     Ensure Python is using UTF-8 encoding (otherwise default encoding is ASCII)
     Most of the comments in the simulator are having pieces outside of ascii coverage
     """
-    full_path = os.path.join(destination_folder, "sitecustomize.py")
+    full_path = join(destination_folder, "sitecustomize.py")
     with open(full_path, 'w') as sc_file:
         sc_file.write("# -*- coding: utf-8 -*-\n\n")
         sc_file.write("import sys\n")
@@ -267,7 +274,7 @@ def write_svn_current_version(dest_folder):
         else:
             _proc = subprocess.Popen(["svnversion", "."], stdout=subprocess.PIPE)
             version = _proc.communicate()[0]
-        with open(os.path.join(dest_folder, 'tvb.version'), 'w') as f:
+        with open(join(dest_folder, 'tvb.version'), 'w') as f:
             f.write(version)
     except Exception, excep:
         _log(2, "-- W: Could not get or persist revision number because: " + str(excep))
@@ -289,7 +296,7 @@ def prepare_anaconda_dist(config):
 
     # make needed directory structure that is not in the step1 zip
     # bin dir is initially empty, step1 does not support empty dirs in the zip
-    os.mkdir(os.path.join(config.target_root, 'bin'))
+    os.mkdir(join(config.target_root, 'bin'))
 
     _log(1, "Copying anaconda ENV folder" + config.anaconda_env_path + " into '" + config.target_library_root + "'...")
     shutil.copytree(config.anaconda_env_path, config.target_library_root)
@@ -300,21 +307,21 @@ def prepare_anaconda_dist(config):
     _log(1, "Copying TVB sources into site-packages & demo_scripts ...")
     _copy_collapsed(config)
 
-    bin_src = os.path.join(config.target_root, "_tvb_bin")
-    bin_dst = os.path.join(config.target_site_packages, "tvb_bin")
+    bin_src = join(config.target_root, "_tvb_bin")
+    bin_dst = join(config.target_site_packages, "tvb_bin")
     _log(2, "Moving " + bin_src + " to " + bin_dst)
     os.rename(bin_src, bin_dst)
 
     _log(2, "Adding svn version")
     write_svn_current_version(bin_dst)
 
-    demo_data_src = os.path.join(config.target_root, "_tvb_data")
-    demo_data_dst = os.path.join(config.target_site_packages, "tvb_data")
+    demo_data_src = join(config.target_root, "_tvb_data")
+    demo_data_dst = join(config.target_site_packages, "tvb_data")
     _log(2, "Moving " + demo_data_src + " to " + demo_data_dst)
     os.rename(demo_data_src, demo_data_dst)
 
-    online_help_src = os.path.join(config.target_root, "_help")
-    online_help_dst = os.path.join(config.target_site_packages, "tvb", "interfaces", "web", "static", "help")
+    online_help_src = join(config.target_root, "_help")
+    online_help_dst = join(config.target_site_packages, "tvb", "interfaces", "web", "static", "help")
     _log(2, "Moving " + online_help_src + " to " + online_help_dst)
     os.rename(online_help_src, online_help_dst)
 
@@ -323,7 +330,7 @@ def prepare_anaconda_dist(config):
 
     _log(1, "Creating command files:")
     for target_file, content in config.commands_map.iteritems():
-        config.command_factory(os.path.join(config.target_root, target_file), content)
+        config.command_factory(join(config.target_root, target_file), content)
 
     _log(1, "Introspecting 3rd party licenses...")
     zip_name = generate_artefact(config.target_site_packages, extra_licenses_check=config.to_read_licenses_from)
