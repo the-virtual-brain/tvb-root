@@ -51,7 +51,7 @@ BIN_FOLDER = os.path.dirname(tvb_bin.__file__)
 TVB_ROOT = os.path.dirname(__file__)
 DIST_FOLDER = os.path.join(TVB_ROOT, "dist")
 DIST_FOLDER_FINAL = "TVB_Distribution"
-STEP1_RESULT = os.path.join(TVB_ROOT, "tvb_build", "tvb_build", "build", "TVB_build_step1.zip")
+STEP1_RESULT = os.path.join(TVB_ROOT, "tvb_build", "build", "TVB_build_step1.zip")
 
 FW_FOLDER = os.path.join(TVB_ROOT, "framework_tvb")
 VERSION = TvbProfile.current.version.BASE_VERSION
