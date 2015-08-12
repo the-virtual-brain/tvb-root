@@ -62,6 +62,7 @@ class Config:
         self.tvb_sources = {
             join("..", "framework_tvb", "tvb"): join(self.target_site_packages, "tvb"),
             join("..", "scientific_library", "tvb"): join(self.target_site_packages, "tvb"),
+            join("..", "tvb_bin", "tvb_bin"): join(self.target_site_packages, "tvb_bin"),
             join("..", "externals", "BCT"): join(self.target_site_packages, "externals", "BCT"),
             join("..", "tvb_documentation", "demos"): join(self.target_root, "demo_scripts"),
             join("..", "tvb_documentation", "tutorials"): join(self.target_root, "demo_scripts")
@@ -307,12 +308,8 @@ def prepare_anaconda_dist(config):
     _log(1, "Copying TVB sources into site-packages & demo_scripts ...")
     _copy_collapsed(config)
 
-    bin_src = join(config.target_root, "_tvb_bin")
-    bin_dst = join(config.target_site_packages, "tvb_bin")
-    _log(2, "Moving " + bin_src + " to " + bin_dst)
-    os.rename(bin_src, bin_dst)
-
     _log(2, "Adding svn version")
+    bin_dst = join(config.target_site_packages, "tvb_bin")
     write_svn_current_version(bin_dst)
 
     demo_data_src = join(config.target_root, "_tvb_data")
