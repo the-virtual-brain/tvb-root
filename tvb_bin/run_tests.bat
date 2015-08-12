@@ -2,10 +2,10 @@
 rem Runs the tests for TVB project.
 
 rem Make sure TVB application is not running....
-python app.py stop
+python tvb_bin\app.py stop
 
 echo 'Executing clean before tests...'
-python app.py clean TEST_SQLITE_PROFILE
+python tvb_bin\app.py clean TEST_SQLITE_PROFILE
 
 echo 'Starting TVB tests...'
 python -m tvb.tests.framework.main_tests TEST_SQLITE_PROFILE xml

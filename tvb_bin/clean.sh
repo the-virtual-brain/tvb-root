@@ -6,7 +6,7 @@
 #  - remove possible MatPlotLib script remaining files.
 echo off
 sh stop.sh
-python app.py clean
+python tvb_bin/app.py clean
 
 rm -f session*
 rm -f script*.m
