@@ -212,10 +212,10 @@ def _generate_distribution(final_name, library_path, version, extra_licensing_ch
 
     add_sitecustomize(DIST_FOLDER, library_path)
 
-    bin_src = os.path.join(DIST_FOLDER, "_tvb_bin")
+    bin_src = os.path.join("tvb_bin", "tvb_bin")
     bin_dst = os.path.join(library_abs_path, "tvb_bin")
-    print "- Moving " + bin_src + " to " + bin_dst
-    os.rename(bin_src, bin_dst)
+    print "- Copying " + bin_src + " to " + bin_dst
+    shutil.copytree(bin_src, bin_dst)
 
     print "- Adding svn version"
     write_svn_current_version(bin_dst)
@@ -298,96 +298,98 @@ EXCLUDED_DYNAMIC_LIBS = ['libbz2.1.0.dylib', 'libdb-4.6.dylib', 'libexslt.0.dyli
                          'libintl.8.dylib', 'liblzma.5.dylib', 'libpng15.15.dylib', 'libtiff.3.dylib',
                          'libsqlite3.0.dylib', 'libXss.1.dylib', 'libxml2.2.dylib', 'libxslt.1.dylib']
 
-#-------------- Finish configuration, starting build-script execution ---------------------------------
 
-print "Running pre-py2app:"
-print " - Cleaning old builds"
+def prepare_py2app_dist():
+    print "Running pre-py2app:"
+    print " - Cleaning old builds"
 
-if os.path.exists('build'):
-    shutil.rmtree('build')
-if os.path.exists(DIST_FOLDER):
-    shutil.rmtree(DIST_FOLDER)
+    if os.path.exists('build'):
+        shutil.rmtree('build')
+    if os.path.exists(DIST_FOLDER):
+        shutil.rmtree(DIST_FOLDER)
 
-print "Decompressing " + STEP1_RESULT + " into '" + DIST_FOLDER
-step1_tmp_dist_folder = os.path.join(TVB_ROOT, 'TVB_Distribution')
-if os.path.exists(step1_tmp_dist_folder):
-    shutil.rmtree(step1_tmp_dist_folder)
-ZipFile(STEP1_RESULT).extractall(TVB_ROOT)
-# the above created a TVB_Distribution/ we need a dist folder
-shutil.move(step1_tmp_dist_folder, DIST_FOLDER)
-# make needed directory structure that is not in the step1 zip
-# bin dir is initially empty, step1 does not support empty dirs in the zip
-os.mkdir(os.path.join(DIST_FOLDER, 'bin'))
+    print "Decompressing " + STEP1_RESULT + " into '" + DIST_FOLDER
+    step1_tmp_dist_folder = os.path.join(TVB_ROOT, 'TVB_Distribution')
+    if os.path.exists(step1_tmp_dist_folder):
+        shutil.rmtree(step1_tmp_dist_folder)
+    ZipFile(STEP1_RESULT).extractall(TVB_ROOT)
+    # the above created a TVB_Distribution/ we need a dist folder
+    shutil.move(step1_tmp_dist_folder, DIST_FOLDER)
+    # make needed directory structure that is not in the step1 zip
+    # bin dir is initially empty, step1 does not support empty dirs in the zip
+    os.mkdir(os.path.join(DIST_FOLDER, 'bin'))
 
-print "PY2APP starting ..."
-# Log everything from py2app in a log file
-REAL_STDOUT, REAL_STDERR = sys.stdout, sys.stderr
-sys.stdout = open('PY2APP.log', 'w')
-sys.stderr = open('PY2APP_ERR.log', 'w')
+    print "PY2APP starting ..."
+    # Log everything from py2app in a log file
+    REAL_STDOUT, REAL_STDERR = sys.stdout, sys.stderr
+    sys.stdout = open('PY2APP.log', 'w')
+    sys.stderr = open('PY2APP_ERR.log', 'w')
 
-FW_NAME = "framework_tvb"
+    FW_NAME = "framework_tvb"
 
-setuptools.setup(name="tvb",
-                 version=VERSION,
-                 packages=setuptools.find_packages(FW_NAME),
-                 package_dir={'': FW_NAME},
-                 license="GPL v2",
-                 options={'py2app': PY2APP_OPTIONS},
-                 include_package_data=True,
-                 extras_require={'postgres': ["psycopg2"]},
-                 app=['tvb_bin/tvb_bin/app.py'],
-                 setup_requires=['py2app'])
+    setuptools.setup(name="tvb",
+                     version=VERSION,
+                     packages=setuptools.find_packages(FW_NAME),
+                     package_dir={'': FW_NAME},
+                     license="GPL v2",
+                     options={'py2app': PY2APP_OPTIONS},
+                     include_package_data=True,
+                     extras_require={'postgres': ["psycopg2"]},
+                     app=['tvb_bin/tvb_bin/app.py'],
+                     setup_requires=['py2app'])
 
-sys.stdout = REAL_STDOUT
-sys.stderr = REAL_STDERR
-print "PY2APP finished."
+    sys.stdout = REAL_STDOUT
+    sys.stderr = REAL_STDERR
+    print "PY2APP finished."
 
-print "Running post-py2app build operations:"
-print "- Start creating startup scripts..."
+    print "Running post-py2app build operations:"
+    print "- Start creating startup scripts..."
 
-# os.mkdir(os.path.join(DIST_FOLDER, "bin"))
-os.mkdir(os.path.join(DIST_FOLDER, "demo_scripts"))
+    # os.mkdir(os.path.join(DIST_FOLDER, "bin"))
+    os.mkdir(os.path.join(DIST_FOLDER, "demo_scripts"))
 
-_create_command_file(os.path.join(DIST_FOLDER, "bin", 'distribution'),
-                     '../tvb.app/Contents/MacOS/tvb $@', '')
-_create_command_file(os.path.join(DIST_FOLDER, "bin", 'tvb_start'),
-                     'source ./distribution.command start', 'Starting TVB Web Interface')
-_create_command_file(os.path.join(DIST_FOLDER, "bin", 'tvb_clean'),
-                     'source ./distribution.command clean', 'Cleaning up old TVB data.', True)
-_create_command_file(os.path.join(DIST_FOLDER, "bin", 'tvb_stop'),
-                     'source ./distribution.command stop', 'Stopping TVB related processes.', True)
+    _create_command_file(os.path.join(DIST_FOLDER, "bin", 'distribution'),
+                         '../tvb.app/Contents/MacOS/tvb $@', '')
+    _create_command_file(os.path.join(DIST_FOLDER, "bin", 'tvb_start'),
+                         'source ./distribution.command start', 'Starting TVB Web Interface')
+    _create_command_file(os.path.join(DIST_FOLDER, "bin", 'tvb_clean'),
+                         'source ./distribution.command clean', 'Cleaning up old TVB data.', True)
+    _create_command_file(os.path.join(DIST_FOLDER, "bin", 'tvb_stop'),
+                         'source ./distribution.command stop', 'Stopping TVB related processes.', True)
 
-IPYTHON_COMMAND = 'export PYTHONPATH=../tvb.app/Contents/Resources/lib/python2.7:' \
-                  '../tvb.app/Contents/Resources/lib/python2.7/site-packages.zip:' \
-                  '../tvb.app/Contents/Resources/lib/python2.7/lib-dynload\n' \
-                  '../tvb.app/Contents/MacOS/python -m tvb_bin.run_ipython notebook '
-_create_command_file(os.path.join(DIST_FOLDER, "bin", 'ipython_notebook'),
-                      IPYTHON_COMMAND + '../demo_scripts', '')
-# _create_command_file(os.path.join(DIST_FOLDER, "demo_scripts", 'ipython_notebook'), IPYTHON_COMMAND, '')
+    IPYTHON_COMMAND = 'export PYTHONPATH=../tvb.app/Contents/Resources/lib/python2.7:' \
+                      '../tvb.app/Contents/Resources/lib/python2.7/site-packages.zip:' \
+                      '../tvb.app/Contents/Resources/lib/python2.7/lib-dynload\n' \
+                      '../tvb.app/Contents/MacOS/python -m tvb_bin.run_ipython notebook '
+    _create_command_file(os.path.join(DIST_FOLDER, "bin", 'ipython_notebook'),
+                          IPYTHON_COMMAND + '../demo_scripts', '')
+    # _create_command_file(os.path.join(DIST_FOLDER, "demo_scripts", 'ipython_notebook'), IPYTHON_COMMAND, '')
 
-_create_command_file(os.path.join(DIST_FOLDER, "bin", 'contributor_setup'),
-                     'cd ..\n'
-                     'export PYTHONPATH=tvb.app/Contents/Resources/lib/python2.7:'
-                     'tvb.app/Contents/Resources/lib/python2.7/site-packages.zip:'
-                     'tvb.app/Contents/Resources/lib/python2.7/lib-dynload\n'
-                     './tvb.app/Contents/MacOS/python  '
-                     'tvb.app/Contents/Resources/lib/python2.7/tvb_bin/git_setup.py $1 $2\n'
-                     'cd bin\n',
-                     'Setting-up contributor environment', True)
+    _create_command_file(os.path.join(DIST_FOLDER, "bin", 'contributor_setup'),
+                         'cd ..\n'
+                         'export PYTHONPATH=tvb.app/Contents/Resources/lib/python2.7:'
+                         'tvb.app/Contents/Resources/lib/python2.7/site-packages.zip:'
+                         'tvb.app/Contents/Resources/lib/python2.7/lib-dynload\n'
+                         './tvb.app/Contents/MacOS/python  '
+                         'tvb.app/Contents/Resources/lib/python2.7/tvb_bin/git_setup.py $1 $2\n'
+                         'cd bin\n',
+                         'Setting-up contributor environment', True)
 
-#py2app should have a --exclude-dynamic parameter but it doesn't seem to work until now
-for entry in EXCLUDED_DYNAMIC_LIBS:
-    path = os.path.join(DIST_FOLDER, "tvb.app", "Contents", "Frameworks", entry)
-    if os.path.exists(path):
-        os.remove(path)
+    #py2app should have a --exclude-dynamic parameter but it doesn't seem to work until now
+    for entry in EXCLUDED_DYNAMIC_LIBS:
+        path = os.path.join(DIST_FOLDER, "tvb.app", "Contents", "Frameworks", entry)
+        if os.path.exists(path):
+            os.remove(path)
 
-DESTINATION_SOURCES = os.path.join("tvb.app", "Contents", "Resources", "lib", "python2.7")
+    DESTINATION_SOURCES = os.path.join("tvb.app", "Contents", "Resources", "lib", "python2.7")
 
-# this dependency is deprecated
-_generate_distribution("TVB_MacOS", DESTINATION_SOURCES, VERSION)
+    # this dependency is deprecated
+    _generate_distribution("TVB_MacOS", DESTINATION_SOURCES, VERSION)
 
-## Clean after install      
-shutil.rmtree(os.path.join(FW_FOLDER, 'tvb.egg-info'), True)    
-    
+    ## Clean after install
+    shutil.rmtree(os.path.join(FW_FOLDER, 'tvb.egg-info'), True)
 
 
+
+if __name__ == '__main__':
+    prepare_py2app_dist()
