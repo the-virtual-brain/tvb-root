@@ -35,10 +35,10 @@ from setuptools import setup, find_packages
 setup(
     name='tvb_build',
     packages=find_packages(),
-    version="1.2",
+    version="1.4",
     author="TVB Team",
     # once we are on pypi :
-    # install_requires=['tvb==1.2', 'tvb_bin==1.2', 'tvb_data==1.2']
+    # install_requires=['tvb==1.4', 'tvb_bin==1.4', 'tvb_data==1.4']
 )
 
 shutil.rmtree('tvb_build.egg-info', True)
