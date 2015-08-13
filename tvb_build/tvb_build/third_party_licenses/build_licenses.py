@@ -31,24 +31,16 @@
 """
 Generate PDF or HTML with third party licenses.
 """
-
+import docutils.core
 import os
-import sys
 from tvb_build import third_party_licenses
 import tvb_build.third_party_licenses.deps_xml_parser as parser
 from datetime import datetime
-from contextlib import closing
 from zipfile import ZipFile, ZIP_DEFLATED
 from tvb_build.third_party_licenses.package_finder import parse_tree_structure
 
 CURRENT_FOLDER = third_party_licenses.__path__[0]
 LICENSES_FOLDER = "license"
-
-RST2HTML_WINDOWS = ['c:\\Python27\\Scripts\\rst2html.py', 'C:\\Anaconda\\Scripts\\rst2html.py',
-                    'E:\\TVB\\Python2.7.2\\Scripts\\rst2html.py', 'D:\\TVB\\python2.7.3\\Scripts\\rst2html.py']
-RST2HTML_UNIX = ['/usr/bin/rst2html.py', '/usr/local/bin/rst2html.py',
-                 '/opt/local/Library/Frameworks/Python.framework/Versions/2.7/bin/rst2html.py',
-                 '/Library/Frameworks/Python.framework/Versions/2.7/bin/rst2html.py']
 
 RESULT_FILE_NAME = os.path.join(CURRENT_FOLDER, "_THIRD_PARTY_LICENSES")
 PACKAGES_USED_XML = os.path.join(CURRENT_FOLDER, "..", "packages_used.xml")
@@ -151,37 +143,23 @@ def generate_artefact(root_folder_to_introspect, excludes=None, actual_libs=None
     dep_text = dep_text.replace("[unknown,", '[-,').replace(",unknown]", ',-]')
     dep_text = dep_text.replace("*Version:* **unknown**", "*Version:* **-**")
 
-    with open(RESULT_FILE_NAME + '.rst', 'w') as result_rst:
-        result_rst.write(dep_text)
-
-    rst2htmllist = RST2HTML_UNIX
-    if sys.platform == 'win32':
-        rst2htmllist = RST2HTML_WINDOWS
-    rst2html = ''
-    for pth in rst2htmllist:
-        if os.path.exists(pth):
-            rst2html = 'python ' + pth
-            break
-    if not rst2html:
-        rst2html = "rst2html"  # Try executing from PATH
-    rst2html = (rst2html + ' --stylesheet="%s/scheme.css" "%s.rst" "%s.html"' % (CURRENT_FOLDER, RESULT_FILE_NAME,
-                                                                                 RESULT_FILE_NAME))
-    print "- Executing " + rst2html
-    os.system(rst2html)
-    os.remove(RESULT_FILE_NAME + '.rst')
-
     print "- Writing used dependencies as xml"
     # this is used for logging purposes
     # Gathering all these files from the build machines will show TVB's dependencies
     parser.write_used_on_this_platform(accepted_libs, actual_libs, path=PACKAGES_USED_XML)
 
+    dep_html = docutils.core.publish_string(dep_text, writer_name='html4css1', settings=None,
+                                            settings_overrides={'stylesheet_path': os.path.join(CURRENT_FOLDER, 'scheme.css')})
+    with open(RESULT_FILE_NAME + '.html', 'w') as f:
+        f.write(dep_html)
     # Create ZIP with included dependencies.
     if os.path.exists(RESULT_FILE_NAME + '.zip'):
         os.remove(RESULT_FILE_NAME + '.zip')
     files2zip.append(RESULT_FILE_NAME + '.html')
     files2zip.append(os.path.join(CURRENT_FOLDER, 'back_brain.png'))
     files2zip = set(files2zip)
-    with closing(ZipFile(RESULT_FILE_NAME + '.zip', "w", ZIP_DEFLATED)) as z_file:
+
+    with ZipFile(RESULT_FILE_NAME + '.zip', "w", ZIP_DEFLATED) as z_file:
         for file_name in files2zip:
             z_file.write(file_name, os.path.split(file_name)[1])
 
