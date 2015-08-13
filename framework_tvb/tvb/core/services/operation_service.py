@@ -40,8 +40,9 @@ Module in charge with Launching an operation (creating the Operation entity as w
 import os
 import json
 import zipfile
-import tvb.core.utils as utils
-import tvb.core.adapters.xml_reader as xml_reader
+import sys
+from tvb.core import utils
+from tvb.core.adapters import xml_reader
 
 from copy import copy
 from cgi import FieldStorage
@@ -401,14 +402,13 @@ class OperationService:
             - set status ERROR on current operation (if any)
             - log exception
         """
-        self.logger.error(message)
-        self.logger.exception(exception)
+        self.logger.exception(message)
         if operation is not None:
             self.workflow_service.persist_operation_state(operation, model.STATUS_ERROR, unicode(exception))
             self.workflow_service.update_executed_workflow_state(operation)
         self._remove_files(temp_files)
         exception.message = message
-        raise exception
+        raise exception, None, sys.exc_info()[2]  # when rethrowing in python this is required to preserve the stack trace
 
 
     def _remove_files(self, file_dictionary):
