@@ -42,7 +42,7 @@ from tvb.basic.profile import TvbProfile
 from tvb.core.utils import string2date, date2string, string2bool
 from tvb.core.entities.file.exceptions import FileVersioningException
 
-PYTHON_EXE_PATH = TvbProfile.current.PYTHON_PATH
+PYTHON_EXE_PATH = TvbProfile.current.PYTHON_INTERPRETER_PATH
 DATA_BUFFER_SIZE = 50000000 / 8  # 500 MB maximum read at once (just assume worst case float64)
 
 # ---------------------- TVB 1.0 Specific constants and functions start here --------------------------

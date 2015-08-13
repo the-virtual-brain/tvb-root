@@ -66,13 +66,16 @@ class BaseSettingsProfile(object):
         self.TVB_LOG_FOLDER = os.path.join(self.TVB_STORAGE, "logs")
         self.TVB_TEMP_FOLDER = os.path.join(self.TVB_STORAGE, "TEMP")
         self.TVB_PATH = self.manager.get_attribute(stored.KEY_TVB_PATH, '')
-        self.EXTERNALS_FOLDER_PARENT = os.path.dirname(os.path.dirname(self.BIN_FOLDER))
 
         self.env = Environment()
         self.cluster = ClusterSettings(self.manager)
         self.web = WebSettings(self.manager, web_enabled)
         self.db = DBSettings(self.manager, self.DEFAULT_STORAGE, self.TVB_STORAGE)
         self.version = VersionSettings(self.manager, self.BIN_FOLDER)
+
+        self.EXTERNALS_FOLDER_PARENT = os.path.dirname(self.BIN_FOLDER)
+        if self.env.is_development():
+            self.EXTERNALS_FOLDER_PARENT = os.path.dirname(self.EXTERNALS_FOLDER_PARENT)
 
         #The path to the matlab executable (if existent). Otherwise just return an empty string.
         value = self.manager.get_attribute(stored.KEY_MATLAB_EXECUTABLE, '', str) or ''
@@ -108,40 +111,14 @@ class BaseSettingsProfile(object):
 
 
     @property
-    def PYTHON_EXE_NAME(self):
-        """
-        Returns the name of the python executable depending on the specific OS
-        """
-        if self.env.is_windows():
-            return 'python.exe'
-        else:
-            return 'python'
-
-    #todo rename to python interpreter path
-    @property
-    def PYTHON_PATH(self):
+    def PYTHON_INTERPRETER_PATH(self):
         """
         Get Python path, based on current environment.
         """
-        exe_name = self.PYTHON_EXE_NAME
-        if self.env.is_development():
-            python_path = 'python'
-        #todo review this in light of the anaconda builds
-        elif self.env.is_windows_deployment() or self.env.is_linux_deployment():
-            python_path = os.path.join(os.path.dirname(self.BIN_FOLDER), 'exe', exe_name)
-        elif self.env.is_mac_deployment():
-            root_dir = os.path.dirname(os.path.dirname(os.path.dirname(os.path.dirname(self.BIN_FOLDER))))
-            python_path = os.path.join(root_dir, 'MacOS', exe_name)
-        else:
-            python_path = 'python'
+        if self.env.is_mac_deployment():
+            return os.path.join(os.path.dirname(sys.executable), "python")
 
-        try:
-            # check if file actually exists
-            os.stat(python_path)
-            return python_path
-        except:
-            # otherwise best guess is the current interpreter!
-            return sys.executable
+        return sys.executable
 
 
     def prepare_for_operation_mode(self):

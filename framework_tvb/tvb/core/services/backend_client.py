@@ -77,7 +77,7 @@ class OperationExecutor(threading.Thread):
         #Try to get a spot to launch own operation.
         LOCKS_QUEUE.get(True)
         operation_id = self.operation_id
-        run_params = [TvbProfile.current.PYTHON_PATH, '-m', 'tvb.core.operation_async_launcher',
+        run_params = [TvbProfile.current.PYTHON_INTERPRETER_PATH, '-m', 'tvb.core.operation_async_launcher',
                       str(operation_id), TvbProfile.CURRENT_PROFILE_NAME]
 
         # In the exceptional case where the user pressed stop while the Thread startup is done,

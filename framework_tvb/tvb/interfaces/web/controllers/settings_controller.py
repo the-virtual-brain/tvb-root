@@ -106,7 +106,7 @@ class SettingsController(UserController):
 
         sleep(5)
 
-        python_path = TvbProfile.current.PYTHON_PATH
+        python_path = TvbProfile.current.PYTHON_INTERPRETER_PATH
         proc_params = [python_path, '-m', 'tvb_bin.app', 'start', TvbProfile.CURRENT_PROFILE_NAME]
         if should_reset:
             proc_params.append('-reset')

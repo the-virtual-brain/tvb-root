@@ -313,7 +313,7 @@ if __name__ == "__main__":
     # Do not run BaseSettingsProfile.initialize_profile(..) as we do not want MPLH5 do be started.
     TvbProfile.set_profile(ARGS.profile, run_init=False)
 
-    PYTHON_EXE_PATH = TvbProfile.current.PYTHON_PATH
+    PYTHON_EXE_PATH = TvbProfile.current.PYTHON_INTERPRETER_PATH
     tvb_storage = TvbProfile.current.TVB_STORAGE
     TVB_PID_FILE = os.path.join(tvb_storage, "pid.tvb")
 
