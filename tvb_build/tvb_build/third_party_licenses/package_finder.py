@@ -36,16 +36,12 @@ import os
 import re
 import sys
 import shutil
-import subprocess
+import pkg_resources
 import zipfile
 from types import ModuleType
 
 
-PYTHON_VERSION = sys.version_info
-if hasattr(PYTHON_VERSION, 'major'):
-    PYTHON_VERSION = (str(PYTHON_VERSION.major) + '.' + str(PYTHON_VERSION.minor) + '.' + str(PYTHON_VERSION.micro))
-else:
-    PYTHON_VERSION = (str(PYTHON_VERSION[0]) + '.' + str(PYTHON_VERSION[1]) + '.' + str(PYTHON_VERSION[2]))
+PYTHON_VERSION = "%s.%s.%s" % sys.version_info[:3]
     
 EXCLUDES = ['_builtinsuites', 'tvb_bin', 'bsddb', 'carbon', 'compiler', 'config',
             'curses', 'dateutil', 'tvb_data', 'distutils', 'email', 'encodings', 'externals',
@@ -133,10 +129,7 @@ EXTRA_MODULES = {'jquery': '2.1.1',
 ## These file-name pattern should not be found in TVB distribution.
 LICENSE_INTERDICTIONS = [re.compile(".*lzo.*")] ##, re.compile(".*szip.*")]
 
-PIP_WIN = ['c:\\Python27\\Scripts\\pip', 'E:\\TVB\\Python2.7.2\\Scripts\\pip']
-PIP_MAC = ['/usr/local/bin/pip', '/Library/Frameworks/Python.framework/Versions/2.7/bin/pip']
-PIP_MAC_ENV = '/usr/bin/env'
-PIP_PACKAGE_DICT = {}
+SETUPTOOLS_PACKAGE_VERSION = {}
 
 
 def _get_dll_version_number(filename):
@@ -149,7 +142,7 @@ def _get_dll_version_number(filename):
         tmp = (HIWORD(version_ms), LOWORD(version_ms),
                HIWORD(version_ls), LOWORD(version_ls))
         return ".".join([str(i) for i in tmp])
-    except ImportError, _:
+    except ImportError:
         print 'Warning, win32api not found. All dll versions set to unknown'
     except Exception:
         print 'DLL ' + filename + 'does not contain any information avout version'
@@ -178,10 +171,10 @@ def _get_module_version(module_name):
             return module.version
         if hasattr(module, 'version') and isinstance(module.version, ModuleType) and hasattr(module.version, 'version'):
             return module.version.version
-        pip_search_name = module_name.replace('-', '').replace('_', '').lower()
-        if pip_search_name in PIP_PACKAGE_DICT:
-            return PIP_PACKAGE_DICT[pip_search_name]
-    except ImportError, _:
+        pkg_search_name = module_name.replace('-', '').replace('_', '').lower()
+        if pkg_search_name in SETUPTOOLS_PACKAGE_VERSION:
+            return SETUPTOOLS_PACKAGE_VERSION[pkg_search_name]
+    except ImportError:
         pass
     return 'unknown'
 
@@ -248,29 +241,14 @@ def _find_modules(root_, modules_dict):
 
 def parse_tree_structure(root_, excludes=None):
     """Main method, to return Python packages from a distribution folder"""
-    tmp_pip_file = os.path.join(root_, 'TMP_PIP')
-    out_pip = open(tmp_pip_file, 'w')
-    try:
-        if sys.platform == 'win32':
-            call_pip = ['pip']
-            search_list = PIP_WIN
-        else:
-            call_pip = [PIP_MAC_ENV, 'pip']
-            search_list = PIP_MAC
-        for pip_path in search_list:
-            if os.path.exists(pip_path):
-                call_pip = [pip_path]
-                break
-        call_pip.append('freeze')
-        subprocess.call(call_pip, stdout=out_pip)
-    except Exception:
-        print ('Pip was unavailable. Building packages without help.')
-    out_pip.close()
-    pip_data = open(tmp_pip_file, 'r').read()
-    for line in pip_data.split('\n'):
-        split_data = line.split('==')
-        if len(split_data) > 1 and 48 <= ord(split_data[1][0]) <= 57:
-            PIP_PACKAGE_DICT[split_data[0].strip().replace('-', '').replace('_', '').lower()] = split_data[1].strip()
+
+    # The working set will also include packages that are not in the virtual env.
+    # IMPORTANT: this will list installed setuptools packages for the current interpreter!
+    for dist in pkg_resources.working_set:
+        if '0' <= dist.version[0] <= '9':  # why?
+            key = dist.project_name.strip().replace('-', '').replace('_', '').lower()
+            SETUPTOOLS_PACKAGE_VERSION[key] = dist.version.strip()
+
     modules_dict = {}
     _find_modules(root_, modules_dict)
     _find_extra_modules(EXTRA_MODULES, modules_dict, excludes)
@@ -285,7 +263,6 @@ def parse_tree_structure(root_, excludes=None):
         path = os.path.join(os.path.split(path)[0], 'Frameworks')
         if os.path.exists(path):
             _find_modules(path, modules_dict)
-    os.remove(tmp_pip_file)
     return modules_dict
     
     
