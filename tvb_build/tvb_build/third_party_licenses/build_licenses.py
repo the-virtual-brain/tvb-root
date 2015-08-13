@@ -208,5 +208,5 @@ if __name__ == "__main__":
         del all_libs[lib]
 
     print "Generating Dep-list with " + str(len(all_libs)) + " libraries."
-    RESULT_ZIP = generate_artefact('/home/mihai.andrei/Downloads/TVB_DISTRIBUTION', [])
+    RESULT_ZIP = generate_artefact(os.path.expanduser(os.path.join('~', 'Downloads', 'TVB_DISTRIBUTION')), [])
     os.rename(RESULT_ZIP, "_ALL_THIRD_PARTY.zip")

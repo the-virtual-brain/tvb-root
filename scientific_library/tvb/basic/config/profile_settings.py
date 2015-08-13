@@ -66,7 +66,7 @@ class BaseSettingsProfile(object):
         self.TVB_LOG_FOLDER = os.path.join(self.TVB_STORAGE, "logs")
         self.TVB_TEMP_FOLDER = os.path.join(self.TVB_STORAGE, "TEMP")
         self.TVB_PATH = self.manager.get_attribute(stored.KEY_TVB_PATH, '')
-        self.EXTERNALS_FOLDER_PARENT = os.path.dirname(self.BIN_FOLDER)
+        self.EXTERNALS_FOLDER_PARENT = os.path.dirname(os.path.dirname(self.BIN_FOLDER))
 
         self.env = Environment()
         self.cluster = ClusterSettings(self.manager)
