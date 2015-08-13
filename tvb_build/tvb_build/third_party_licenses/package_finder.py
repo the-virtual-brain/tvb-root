@@ -239,6 +239,19 @@ def _find_modules(root_, modules_dict):
             modules_dict[entry.lower()] = 'unknown'
 
 
+def _find_pkg_modules(modules_dict):
+    """
+    Discovers the versions of all packages installed by setuptools
+    """
+    # pkg_resources is nice but it works for the current interpreter, which is not the distribution interpreter
+    # O conda builds it is virtually the same
+    # todo:Review this on the mac builds
+    for dist in pkg_resources.working_set:
+        key = dist.project_name.lower()
+        if key not in modules_dict:
+            modules_dict[key] = dist.version
+
+
 def parse_tree_structure(root_, excludes=None):
     """Main method, to return Python packages from a distribution folder"""
 
@@ -252,6 +265,7 @@ def parse_tree_structure(root_, excludes=None):
     modules_dict = {}
     _find_modules(root_, modules_dict)
     _find_extra_modules(EXTRA_MODULES, modules_dict, excludes)
+    _find_pkg_modules(modules_dict)
 
     if 'anaconda' in sys.version.lower():
         modules_dict['anaconda'] = sys.version.split('|')[1].split(' ')[1]
