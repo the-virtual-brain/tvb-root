@@ -48,7 +48,6 @@ from tvb.basic.profile import TvbProfile
 
 #BASE = declarative_base()
 ENGINE = create_engine(TvbProfile.current.db.DB_URL, pool_recycle=5, echo=True)
-#TODO: Should this also use our new singleton SessionMaker class ?
 SESSION = sessionmaker(bind=ENGINE)
 LOGGER = get_logger(__name__)
 
