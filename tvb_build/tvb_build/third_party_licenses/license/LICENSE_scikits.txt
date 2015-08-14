@@ -1,8 +1,0 @@
-
-SCIKITS.LEARN
-------------------
-License:	
-Open source, commercially usable: BSD license (3 clause)
-
-See LICENSE_scikits_learn.txt
-

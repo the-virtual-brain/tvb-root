@@ -52,10 +52,9 @@ EXCLUDES = [
     'futures', 'backports.ssl-match-hostname',
     # others
     '_builtinsuites', 'bsddb', 'carbon', 'compiler', 'config',
-    'dateutil',  'email', 'encodings',
-    'finder', 'hotshot', 'lib-dynload',
+    'hotshot', 'lib-dynload',
     'openglcontext', 'pydoc_data', 'pysqlite2', 'pyximport', # part of cython
-    'stdsuites', 'test',  'wxpython', 'xml',
+    'stdsuites', 'wxpython',
     ## We exclude bellow shorter names for packages already introspected.
     "foundation", "objc", "appkit", "exceptionhandling", "pyobjctools"
 ]
@@ -273,7 +272,9 @@ def parse_tree_structure(root_, excludes=None):
     modules_dict = {}
     _find_modules(root_, modules_dict)
     _find_extra_modules(EXTRA_MODULES, modules_dict, excludes)
-    _find_pkg_modules(modules_dict)
+    #TODO: make this work on the py2app build. This will require "switching" to the packages interpreter
+    if not sys.platform == 'darwin':
+        _find_pkg_modules(modules_dict)
 
     if 'anaconda' in sys.version.lower():
         modules_dict['anaconda'] = sys.version.split('|')[1].split(' ')[1]
