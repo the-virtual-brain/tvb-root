@@ -853,7 +853,7 @@
     <dependency env="[win32,win64,linux32,linux64,macos32,macos64]" name="psycopg2">
         <full-name value="Psycopg2"/>
         <project-home value="http://initd.org/psycopg/"/>
-        <version value="[2.6 (dt dec pq3 ext),2.6.1 (dt dec pq3 ext lo64), 2.6]"/>
+        <version value="[2.6 (dt dec pq3 ext),2.6.1 (dt dec pq3 ext lo64),2.6]"/>
         <usage value="dynamic linking"/>
         <license value="LICENSE_psycopg.txt"/>
         <license-type value="ZPL-License"/>
@@ -1179,5 +1179,15 @@
         <license-type value="BSD_"/>
         <copyright-notice value="Copyright (c) 2005-2015, Michele Simionato"/>
         <description value="Better living through Python with decorators"/>
+    </dependency>
+    <dependency env="[win64,linux64,mac64]" name="jsonschema">
+        <full-name value="Json schema"/>
+        <project-home value="http://github.com/Julian/jsonschema"/>
+        <version value="2.4.0"/>
+        <usage value="dynamic linking"/>
+        <license value="LICENSE_jsonschema.txt"/>
+        <license-type value="MIT_"/>
+        <copyright-notice value="Copyright (c) 2013 Julian Berman"/>
+        <description value="An(other) implementation of JSON Schema for Python"/>
     </dependency>
 </tvb>
