@@ -317,7 +317,7 @@ class GenshiTestGroup(GenshiTest):
         self.assertEqual(2, len(sub_algos))
         disabled = 0
         for one_entry in sub_algos:
-            style = one_entry.attrMap.get('style')
+            style = one_entry.get('style')
             if style and 'display:none' in style:
                 disabled += 1
         self.assertEqual(1, disabled)
@@ -401,17 +401,17 @@ class GenshiTestNDimensionArray(GenshiTest):
             options = self.soup.find_all('option', attrs=dict(value=gid + "_0_" + str(i)))
             self.assertEqual(len(options), 1, "Generated option is incorrect")
             self.assertEqual(options[0].text, "Time " + str(i), "The label of the option is not correct")
-            self.assertEqual(options[0].parent.attrMap["name"], "input_data_dimensions_0")
+            self.assertEqual(options[0].parent["name"], "input_data_dimensions_0")
         for i in range(data_shape[1]):
             options = self.soup.find_all('option', attrs=dict(value=gid + "_1_" + str(i)))
             self.assertEqual(len(options), 1, "Generated option is incorrect")
             self.assertEqual(options[0].text, "Channel " + str(i), "Option's label incorrect")
-            self.assertEqual(options[0].parent.attrMap["name"], "input_data_dimensions_1", "incorrect parent")
+            self.assertEqual(options[0].parent["name"], "input_data_dimensions_1", "incorrect parent")
         for i in range(data_shape[2]):
             options = self.soup.find_all('option', attrs=dict(value=gid + "_2_" + str(i)))
             self.assertEqual(len(options), 1, "Generated option is incorrect")
             self.assertEqual(options[0].text, "Line " + str(i), "The label of the option is not correct")
-            self.assertEqual(options[0].parent.attrMap["name"], "input_data_dimensions_2")
+            self.assertEqual(options[0].parent["name"], "input_data_dimensions_2")
 
         #check the expected hidden fields
         expected_shape = self.soup.find_all('input', attrs=dict(id="input_data_expected_shape"))
