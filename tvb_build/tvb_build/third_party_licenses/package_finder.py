@@ -45,12 +45,11 @@ PYTHON_VERSION = "%s.%s.%s" % sys.version_info[:3]
     
 EXCLUDES = [
     # part of tvb
-    'tvb_bin', 'tvb_data', 'tvb', 'externals', 'mplh5canvas',
-    # part of ipython notebook
-    'mistune', 'sphinx', 'pyzmq',
+    'tvb_bin', 'tvb_data', 'tvb', 'mplh5canvas', 'gdist',
     # part of python and setuptools
-    'distutils', 'curses', 'logging', 'multiprocessing', 'pkg_resources', 'setuptools',
-    'unittest', 'json', 'importlib',
+    'distutils', 'pkg_resources', 'setuptools',
+    # python 3 backports
+    'futures', 'backports.ssl-match-hostname',
     # others
     '_builtinsuites', 'bsddb', 'carbon', 'compiler', 'config',
     'dateutil',  'email', 'encodings',

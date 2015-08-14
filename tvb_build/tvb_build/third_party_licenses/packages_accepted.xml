@@ -50,6 +50,16 @@
         <copyright-notice value="Copyright (c) 2004-2012 Leonard Richardson"/>
         <description value="Tree Parser - Coming with Anaconda env"/>
     </dependency>
+    <dependency env="[win64]" name="beautifulsoup4">
+        <full-name value="Beautiful Soup (BS4)"/>
+        <project-home value="http://www.crummy.com/software/BeautifulSoup"/>
+        <version value="[4.3.2]"/>
+        <usage value="static linking"/>
+        <license value="LICENSE_bs4.txt"/>
+        <license-type value="MIT_"/>
+        <copyright-notice value="Copyright (c) 2004-2012 Leonard Richardson"/>
+        <description value="Tree Parser - Coming with Anaconda env"/>
+    </dependency>
     <dependency env="[linux32,linux64]" name="bz2.so">
         <full-name value="libbzip2 (file compress)"/>
         <project-home value="http://www.bzip.org/"/>
@@ -640,6 +650,16 @@
         <copyright-notice value="Copyright (c) 2009 Evan Rosson, Jan Dittberner, Domen Kozar"/>
         <description value="SQLAlchemy related package, for updating from one version of DB to another."/>
     </dependency>
+    <dependency env="[win32,linux64,macos32,win64,linux32,macos64]" name="sqlalchemy-migrate">
+        <full-name value="Migrate SQL Alchemy"/>
+        <project-home value="http://code.google.com/p/sqlalchemy-migrate/"/>
+        <version value="[0.7.2,0.8.2]"/>
+        <usage value="dynamic linking"/>
+        <license value="LICENSE_migrate.txt"/>
+        <license-type value="MIT_"/>
+        <copyright-notice value="Copyright (c) 2009 Evan Rosson, Jan Dittberner, Domen Kozar"/>
+        <description value="SQLAlchemy related package, for updating from one version of DB to another."/>
+    </dependency>
     <dependency env="[win32,linux64,macos32,win64,linux32,macos64]" name="minixsv">
         <full-name value="Minixsv"/>
         <project-home value="http://www.familieleuthe.de/MiniXsv.html"/>
@@ -670,7 +690,27 @@
         <copyright-notice value="Copyright (c) 2014 - 2015, Hsiaoming Yang"/>
         <description value="IPython Notebook uses the mistune markdown parser - Coming with Anaconda env"/>
     </dependency>
+    <dependency env="[won64,mac64,linux64]" name="mistune">
+        <full-name value="Mistune"/>
+        <project-home value="https://github.com/lepture/mistune"/>
+        <version value="unknown"/>
+        <usage value="dynamic linking"/>
+        <license value="LICENSE_mistune.txt"/>
+        <license-type value="BSD_"/>
+        <copyright-notice value="Copyright (c) 2014 - 2015, Hsiaoming Yang"/>
+        <description value="IPython Notebook uses the mistune markdown parser - Coming with Anaconda env"/>
+    </dependency>
     <dependency env="[win32,linux64,macos32,win64,linux32,macos64]" name="mod_pywebsocket">
+        <full-name value="Python Web Socket Server"/>
+        <project-home value="http://code.google.com/p/pywebsocket/"/>
+        <version value="[unknown,0.6b1,0.7.9]"/>
+        <usage value="dynamic linking"/>
+        <license value="LICENSE_websocket.txt"/>
+        <license-type value="BSD_ 3rd clause."/>
+        <copyright-notice value="Copyright 2009, Google Inc."/>
+        <description value=""/>
+    </dependency>
+    <dependency env="[win32,linux64,macos32,win64,linux32,macos64]" name="mod-pywebsocket">
         <full-name value="Python Web Socket Server"/>
         <project-home value="http://code.google.com/p/pywebsocket/"/>
         <version value="[unknown,0.6b1,0.7.9]"/>
@@ -823,7 +863,7 @@
     <dependency env="[win32,win64,linux32,linux64,macos32,macos64]" name="psycopg2">
         <full-name value="Psycopg2"/>
         <project-home value="http://initd.org/psycopg/"/>
-        <version value="[2.4.4 (dt dec pq3 ext),2.4.5 (dt dec pq3 ext),2.5 (dt dec pq3 ext),2.5.1 (dt dec pq3 ext),2.5.2 (dt dec pq3 ext),2.6 (dt dec pq3 ext),2.6.1 (dt dec pq3 ext lo64),unknown]"/>
+        <version value="[2.6 (dt dec pq3 ext),2.6.1 (dt dec pq3 ext lo64), 2.6]"/>
         <usage value="dynamic linking"/>
         <license value="LICENSE_psycopg.txt"/>
         <license-type value="ZPL-License"/>
@@ -1090,4 +1130,35 @@
         <copyright-notice value="Copyright (C) 2007-2014 iMatix Corporation and Contributors"/>
         <description value="The IPython Notebook requires ZeroMQ for communication - Coming with Anaconda env"/>
     </dependency>
+    <dependency env="[win64,linux64,mac64]" name="pyzmq">
+        <full-name value="zeromq"/>
+        <project-home value="http://zguide.zeromq.org"/>
+        <version value="14.7.0"/>
+        <usage value="dynamic linking"/>
+        <license value="LICENSE_zmq.txt"/>
+        <license-type value="LGPLv3_"/>
+        <copyright-notice value="Copyright (C) 2007-2014 iMatix Corporation and Contributors"/>
+        <description value="The IPython Notebook requires ZeroMQ for communication - Coming with Anaconda env"/>
+    </dependency>
+    <dependency env="[win64,linux64,mac64]" name="six">
+        <full-name value="six"/>
+        <project-home value="https://pypi.python.org/pypi/six/"/>
+        <version value="1.9.0"/>
+        <usage value="dynamic linking"/>
+        <license value="LICENSE_six.txt"/>
+        <license-type value="MIT_"/>
+        <copyright-notice value="Copyright (c) 2010-2015 Benjamin Peterson"/>
+        <description value="Python 2 and 3 compatibility library"/>
+    </dependency>
+    <dependency env="[win64,linux64,mac64]" name="python-dateutil">
+        <full-name value="python-dateutil"/>
+        <project-home value="https://dateutil.readthedocs.org/en/latest/"/>
+        <version value="2.4.1"/>
+        <usage value="dynamic linking"/>
+        <license value="LICENSE_dateutil.txt"/>
+        <license-type value="BSD_"/>
+        <copyright-notice value="Copyright (c) 2010-2015 Benjamin Peterson"/>
+        <description value="Python 2 and 3 compatibility library"/>
+    </dependency>
+
 </tvb>
