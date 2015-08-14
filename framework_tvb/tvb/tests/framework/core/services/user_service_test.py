@@ -78,7 +78,7 @@ class UserServiceTest(TransactionalTestCase):
         self.user_service.create_user(username=TvbProfile.current.web.admin.ADMINISTRATOR_NAME,
                                       password=TvbProfile.current.web.admin.ADMINISTRATOR_PASSWORD,
                                       email=TvbProfile.current.web.admin.ADMINISTRATOR_EMAIL,
-                                      role=model.ROLE_ADMINISTRATOR)
+                                      role=model.ROLE_ADMINISTRATOR, skip_import=True)
         available_users = dao.get_all_users()
         if len(available_users) != 1:
             self.fail("Something went wrong with database initialization!")
@@ -145,8 +145,7 @@ class UserServiceTest(TransactionalTestCase):
         """
         Try to create a user with an empty email field.
         """
-        data = dict(username="test_username", password="test_password",
-                    email="", role="user", comment="")
+        data = dict(username="test_username", password="test_password", email="", role="user", comment="")
         self.assertRaises(UsernameException, self.user_service.create_user, **data)
 
 
@@ -260,8 +259,7 @@ class UserServiceTest(TransactionalTestCase):
         user = model.User("test_user", md5("test_pass").hexdigest(), "test_mail@tvb.org", True, "user")
         dao.store_entity(user)
         available_users = dao.get_all_users()
-        if len(available_users) != 2:
-            self.fail("Something went wrong with database reset!")
+        self.assertEqual(2, len(available_users))
         self.assertTrue(self.user_service.check_login("test_user", "test_pass")
                         is not None, "Login failed when it shouldn't.")
 
@@ -273,8 +271,7 @@ class UserServiceTest(TransactionalTestCase):
         user = model.User("test_user", md5("test_pass").hexdigest(), "test_mail@tvb.org", True, "user")
         dao.store_entity(user)
         available_users = dao.get_all_users()
-        if len(available_users) != 2:
-            self.fail("Something went wrong with database reset!")
+        self.assertEqual(2, len(available_users))
         self.assertTrue(self.user_service.check_login("test_user", "bad_pass") is None,
                         "Login succeeded with bad password.")
 
@@ -286,8 +283,7 @@ class UserServiceTest(TransactionalTestCase):
         user = model.User("test_user", md5("test_pass").hexdigest(), "test_mail@tvb.org", True, "user")
         dao.store_entity(user)
         available_users = dao.get_all_users()
-        if len(available_users) != 2:
-            self.fail("Something went wrong with database reset!")
+        self.assertEqual(2, len(available_users))
         self.assertTrue(self.user_service.check_login("bad_user", "test_pass") is None,
                         "Login succeeded with bad userName.")
 

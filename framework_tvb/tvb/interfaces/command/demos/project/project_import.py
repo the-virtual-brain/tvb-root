@@ -58,7 +58,7 @@ def run_import(project_path):
     else:
         ## No Admin user was found, we will create one
         user_service.create_user("admin", "pass", role=model.ROLE_ADMINISTRATOR,
-                                 email="info@thevirtualbrain.org", validated=True)
+                                 email="info@thevirtualbrain.org", validated=True, skip_import=True)
         admin = user_service.get_administrators()[0]
 
     ## Do the actual import of a project from ZIP:

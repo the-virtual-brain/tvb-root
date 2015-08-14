@@ -86,11 +86,10 @@ class UserService:
 
 
     def create_user(self, username=None, password=None, password2=None,
-                    role=None, email=None, comment=None, email_msg=None, validated=False):
+                    role=None, email=None, comment=None, email_msg=None, validated=False, skip_import=False):
         """
         Service Layer for creating a new user.
         """
-        #Basic fields validation.
         if (username is None) or len(username) < 1:
             raise UsernameException("Empty UserName!")
         if (password is None) or len(password) < 1:
@@ -99,6 +98,7 @@ class UserService:
             password2 = password
         if password != password2:
             raise UsernameException("Passwords do not match!")
+
         try:
             user_validated = (role == 'ADMINISTRATOR') or validated
             user = model.User(username, password, email, user_validated, role)
@@ -107,6 +107,7 @@ class UserService:
             admin_msg = (TEXT_CREATE_TO_ADMIN + username + ' :\n ' + TvbProfile.current.web.BASE_URL +
                          'user/validate/' + username + '\n\n"' + str(comment) + '"')
             self.logger.info("Registering user " + username + " !")
+
             if role != 'ADMINISTRATOR' and email is not None:
                 admins = UserService.get_administrators()
                 admin = admins[randint(0, len(admins) - 1)]
@@ -116,9 +117,10 @@ class UserService:
                     self.logger.debug("Email sent to:" + admin.email + " for validating user:" + username + " !")
                 email_sender.send(FROM_ADDRESS, email, SUBJECT_REGISTER, email_msg)
                 self.logger.debug("Email sent to:" + email + " for notifying new user:" + username + " !")
+
             user = dao.store_entity(user)
 
-            if role == model.ROLE_ADMINISTRATOR:
+            if role == model.ROLE_ADMINISTRATOR and not skip_import:
                 uploaded = os.path.join(os.path.dirname(tvb_data.__file__), "Default_Project.zip")
                 ImportService().import_project_structure(uploaded, user.id)
             else:
@@ -126,7 +128,9 @@ class UserService:
                     default_prj_id = dao.get_project_by_gid(DEFAULT_PROJECT_GID).id
                     dao.add_members_to_project(default_prj_id, [user.id])
                 except Exception:
-                    self.logger.warning("Could not link user_id: %d with project_gid: %s " % (user.id, DEFAULT_PROJECT_GID))
+                    self.logger.warning(
+                        "Could not link user_id: %d with project_gid: %s " % (user.id, DEFAULT_PROJECT_GID))
+
             return TEXT_DISPLAY
         except Exception, excep:
             self.logger.exception("Could not create user!")

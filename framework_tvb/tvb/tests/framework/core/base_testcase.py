@@ -58,7 +58,7 @@ def init_test_env():
     from tvb.core.services.initializer import initialize
 
     reset_database()
-    initialize(["tvb.config", "tvb.tests.framework"], load_xml_events=False)
+    initialize(["tvb.config", "tvb.tests.framework"], skip_import=True)
 
 
 # Following code is executed once / tests execution to reduce time spent in tests.

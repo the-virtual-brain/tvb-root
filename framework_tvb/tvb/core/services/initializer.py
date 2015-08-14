@@ -54,7 +54,7 @@ def reset():
     reset_database()
 
 
-def initialize(introspected_modules, load_xml_events=True):
+def initialize(introspected_modules, skip_import=False):
     """
     Initialize when Application is starting.
     Check for new algorithms or new DataTypes.
@@ -93,7 +93,7 @@ def initialize(introspected_modules, load_xml_events=True):
             UserService().create_user(username=TvbProfile.current.web.admin.ADMINISTRATOR_NAME,
                                       password=TvbProfile.current.web.admin.ADMINISTRATOR_PASSWORD,
                                       email=TvbProfile.current.web.admin.ADMINISTRATOR_EMAIL,
-                                      role=model.ROLE_ADMINISTRATOR)
+                                      role=model.ROLE_ADMINISTRATOR, skip_import=skip_import)
         
         ## In case actions related to latest code-changes are needed, make sure they are executed.
         CodeUpdateManager().run_all_updates()
