@@ -857,7 +857,7 @@
         <usage value="packaging"/>
         <license value="LICENSE_wheel.txt"/>
         <license-type value="MIT_"/>
-        <copyright-notice value="wheel copyright (c) 2012-2014 Daniel Holth <dholth@fastmail.fm> and contributors."/>
+        <copyright-notice value="wheel copyright (c) 2012-2014 Daniel Holth &lt;dholth@fastmail.fm&gt; and contributors."/>
         <description value="Binary python packager - Coming with Anaconda env"/>
     </dependency>
     <dependency env="[win32,linux64,macos32,win64,linux32,macos64]" name="psutil">
