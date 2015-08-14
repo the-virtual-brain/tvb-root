@@ -256,7 +256,8 @@ def _find_pkg_modules(modules_dict):
     for dist in pkg_resources.working_set:
         key = dist.project_name.lower()
         if key not in modules_dict:
-            modules_dict[key] = dist.version
+            if not _is_excluded(key, EXCLUDES):
+                modules_dict[key] = dist.version
 
 
 def parse_tree_structure(root_, excludes=None):

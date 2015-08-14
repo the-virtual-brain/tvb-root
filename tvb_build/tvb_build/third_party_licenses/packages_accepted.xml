@@ -1160,6 +1160,16 @@
         <copyright-notice value="Copyright (c) 2003-2011 - Gustavo Niemeyer &lt;gustavo@niemeyer.net&gt; Copyright (c) 2012-2014 - Tomi Pievilainen &lt;tomi.pievilainen@iki.fi&gt; Copyright (c) 2014 - Yaron de Leeuw &lt;me@jarondl.net&gt;"/>
         <description value="Python 2 and 3 compatibility library"/>
     </dependency>
+    <dependency env="[win64,linux64,mac64]" name="dateutil">
+        <full-name value="python-dateutil"/>
+        <project-home value="https://dateutil.readthedocs.org/en/latest/"/>
+        <version value="2.4.1"/>
+        <usage value="dynamic linking"/>
+        <license value="LICENSE_dateutil.txt"/>
+        <license-type value="BSD_"/>
+        <copyright-notice value="Copyright (c) 2003-2011 - Gustavo Niemeyer &lt;gustavo@niemeyer.net&gt; Copyright (c) 2012-2014 - Tomi Pievilainen &lt;tomi.pievilainen@iki.fi&gt; Copyright (c) 2014 - Yaron de Leeuw &lt;me@jarondl.net&gt;"/>
+        <description value="Python 2 and 3 compatibility library"/>
+    </dependency>
     <dependency env="[win64,linux64,mac64]" name="decorator">
         <full-name value="Decorator module"/>
         <project-home value="https://github.com/micheles/decorator"/>
