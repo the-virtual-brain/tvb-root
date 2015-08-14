@@ -38,7 +38,7 @@ import re
 import unittest
 import numpy
 import cherrypy
-from BeautifulSoup import BeautifulSoup
+from bs4 import BeautifulSoup
 from genshi.template.loader import TemplateLoader
 from tvb.tests.framework.core.base_testcase import BaseTestCase
 from tvb.basic.profile import TvbProfile
@@ -149,16 +149,16 @@ class GenthiTraitTest(GenshiTest):
         resulted_html = _template2string(self.template_specification)
         soup = BeautifulSoup(resulted_html)
         #Find dictionary div which should be dict_+${dict_var_name}
-        dict_div = soup.findAll('div', attrs=dict(id="dict_test_dict"))
+        dict_div = soup.find_all('div', attrs=dict(id="dict_test_dict"))
         self.assertEqual(len(dict_div), 1, 'Dictionary div not found')
-        dict_entries = soup.findAll('input', attrs=dict(name=re.compile('^test_dict_parameters*')))
+        dict_entries = soup.find_all('input', attrs=dict(name=re.compile('^test_dict_parameters*')))
         self.assertEqual(len(dict_entries), 2, 'Not all entries found')
         for i in range(2):
             if dict_entries[i]['name'] == "test_dict_parameters_W":
                 self.assertEqual(dict_entries[0]['value'], "-6.0", "Incorrect values")
             if dict_entries[i]['name'] == "test_dict_parameters_V":
                 self.assertEqual(dict_entries[1]['value'], "-3.0", "Incorrect values")
-        array_entry = soup.findAll('input', attrs=dict(name='test_array'))
+        array_entry = soup.find_all('input', attrs=dict(name='test_array'))
         self.assertEqual(len(array_entry), 1, 'Array entry not found')
         self.assertEqual(array_entry[0]['value'], "[[-3.0, -6.0], [3.0, 6.0]]", "Wrong value stored")
 
@@ -199,7 +199,7 @@ class GenshiTestSimple(GenshiTest):
         properly with only one option that is not disabled
         """
         exp = re.compile('group_parameters_option_SIM_model_parameters_option_[^ \t\n\r\f\v]*_model_1$')
-        all_inputs = self.soup.findAll('input', attrs=dict(name=exp))
+        all_inputs = self.soup.find_all('input', attrs=dict(name=exp))
         count_disabled = 0
         for one_entry in all_inputs:
             ## Replacing with IN won't work
@@ -213,8 +213,8 @@ class GenshiTestSimple(GenshiTest):
         """ 
         Check that the default ranger hidden fields are generated correctly 
         """
-        ranger1 = self.soup.findAll('input', attrs=dict(type="hidden", id=RANGE_PARAMETER_1))
-        ranger2 = self.soup.findAll('input', attrs=dict(type="hidden", id=RANGE_PARAMETER_2))
+        ranger1 = self.soup.find_all('input', attrs=dict(type="hidden", id=RANGE_PARAMETER_1))
+        ranger2 = self.soup.find_all('input', attrs=dict(type="hidden", id=RANGE_PARAMETER_2))
         self.assertEqual(len(ranger1), 1, "First ranger generated wrong")
         self.assertEqual(len(ranger2), 1, "Second ranger generated wrong")
 
@@ -226,8 +226,8 @@ class GenshiTestSimple(GenshiTest):
         """
         fail_message = "Something went wrong with generating the sub-algorithms."
         exp = re.compile('data_group_parameters_option_SIM_model*')
-        enabled_algo = self.soup.findAll('div', attrs=dict(id=exp, style="display:block"))
-        all_algo_disabled = self.soup.findAll('div', attrs=dict(id=exp, style="display:none"))
+        enabled_algo = self.soup.find_all('div', attrs=dict(id=exp, style="display:block"))
+        all_algo_disabled = self.soup.find_all('div', attrs=dict(id=exp, style="display:none"))
         self.assertEqual(1, len(enabled_algo))
         self.assertEqual(6, len(all_algo_disabled))
         self.assertFalse(enabled_algo[0] in all_algo_disabled, fail_message)
@@ -242,15 +242,15 @@ class GenshiTestSimple(GenshiTest):
         fail_message = "Something went wrong with generating the ranger."
 
         exp = re.compile('data_group_parameters_option_SIM_model*')
-        ranger_parent = self.soup.findAll('table', attrs={'id': exp, 'class': "ranger-div-class"})
+        ranger_parent = self.soup.find_all('table', attrs={'id': exp, 'class': "ranger-div-class"})
         self.assertTrue(len(ranger_parent) == 1, fail_message)
 
-        span_field = self.soup.findAll('span', attrs=dict(id="data_group_parameters_option_SIM_modelWilsonCowangroup_"
+        span_field = self.soup.find_all('span', attrs=dict(id="data_group_parameters_option_SIM_modelWilsonCowangroup_"
                                                           "parameters_option_SIM_model_parameters_option_WilsonCowan_"
                                                           "model_0_RANGER_interval_span"))
         self.assertEqual(span_field[0].contents[0], '0.01 - 0.91', fail_message)
 
-        spinner_field = self.soup.findAll('input', attrs=dict(id="data_group_parameters_option_SIM_modelWilsonCowan"
+        spinner_field = self.soup.find_all('input', attrs=dict(id="data_group_parameters_option_SIM_modelWilsonCowan"
                                                                  "group_parameters_option_SIM_model_parameters_option_"
                                                                  "WilsonCowan_model_0_RANGER_stepInput"))
         self.assertEqual(str(spinner_field[0]['value']), '0.01', fail_message)
@@ -262,13 +262,13 @@ class GenshiTestSimple(GenshiTest):
         """
         fail_message = "Something went wrong with creating multiple select."
         exp = re.compile('group_parameters_option_SIM_monitors*')
-        all_multiple_options = self.soup.findAll('div', attrs=dict(id=exp))
-        disabled_options = self.soup.findAll('div', attrs=dict(id=exp, disabled='disabled'))
+        all_multiple_options = self.soup.find_all('div', attrs=dict(id=exp))
+        disabled_options = self.soup.find_all('div', attrs=dict(id=exp, disabled='disabled'))
         self.assertEqual(len(all_multiple_options), 4, fail_message)
         self.assertEqual(len(disabled_options), 2, fail_message)
         exp = re.compile('monitors_parameters*')
-        all_multiple_params = self.soup.findAll('input', attrs=dict(name=exp))
-        disabled_params = self.soup.findAll('input', attrs=dict(name=exp, disabled='disabled'))
+        all_multiple_params = self.soup.find_all('input', attrs=dict(name=exp))
+        disabled_params = self.soup.find_all('input', attrs=dict(name=exp, disabled='disabled'))
         self.assertEqual(len(all_multiple_params), 4, fail_message)
         self.assertEqual(len(disabled_params), 2, fail_message)
 
@@ -313,7 +313,7 @@ class GenshiTestGroup(GenshiTest):
         only one of them is not disabled.
         """
         exp = re.compile('data_bct*')
-        sub_algos = self.soup.findAll('div', attrs=dict(id=exp))
+        sub_algos = self.soup.find_all('div', attrs=dict(id=exp))
         self.assertEqual(2, len(sub_algos))
         disabled = 0
         for one_entry in sub_algos:
@@ -370,7 +370,7 @@ class GenshiTestNDimensionArray(GenshiTest):
         resulted_html = _template2string(self.template_specification)
         self.soup = BeautifulSoup(resulted_html)
 
-        found_divs = self.soup.findAll('p', attrs=dict(id="dimensionsDiv_input_data"))
+        found_divs = self.soup.find_all('p', attrs=dict(id="dimensionsDiv_input_data"))
         self.assertEqual(len(found_divs), 1, "Data generated incorrect")
 
         gid = inserted_arrays[0][2]
@@ -380,17 +380,17 @@ class GenshiTestNDimensionArray(GenshiTest):
         self.soup = BeautifulSoup(component_content)
 
         #check dimensions
-        found_selects_0 = self.soup.findAll('select', attrs=dict(id="dimId_input_data_dimensions_0"))
-        found_selects_1 = self.soup.findAll('select', attrs=dict(id="dimId_input_data_dimensions_1"))
-        found_selects_2 = self.soup.findAll('select', attrs=dict(id="dimId_input_data_dimensions_2"))
+        found_selects_0 = self.soup.find_all('select', attrs=dict(id="dimId_input_data_dimensions_0"))
+        found_selects_1 = self.soup.find_all('select', attrs=dict(id="dimId_input_data_dimensions_1"))
+        found_selects_2 = self.soup.find_all('select', attrs=dict(id="dimId_input_data_dimensions_2"))
         self.assertEqual(len(found_selects_0), 1, "select not found")
         self.assertEqual(len(found_selects_1), 1, "select not found")
         self.assertEqual(len(found_selects_2), 1, "select not found")
 
         #check the aggregation functions selects
-        agg_selects_0 = self.soup.findAll('select', attrs=dict(id="funcId_input_data_dimensions_0"))
-        agg_selects_1 = self.soup.findAll('select', attrs=dict(id="funcId_input_data_dimensions_1"))
-        agg_selects_2 = self.soup.findAll('select', attrs=dict(id="funcId_input_data_dimensions_2"))
+        agg_selects_0 = self.soup.find_all('select', attrs=dict(id="funcId_input_data_dimensions_0"))
+        agg_selects_1 = self.soup.find_all('select', attrs=dict(id="funcId_input_data_dimensions_1"))
+        agg_selects_2 = self.soup.find_all('select', attrs=dict(id="funcId_input_data_dimensions_2"))
         self.assertEqual(len(agg_selects_0), 1, "incorrect first dim")
         self.assertEqual(len(agg_selects_1), 1, "incorrect second dim")
         self.assertEqual(len(agg_selects_2), 1, "incorrect third dim.")
@@ -398,37 +398,37 @@ class GenshiTestNDimensionArray(GenshiTest):
         data_shape = entity.shape
         self.assertEqual(len(data_shape), 3, "Shape of the array is incorrect")
         for i in range(data_shape[0]):
-            options = self.soup.findAll('option', attrs=dict(value=gid + "_0_" + str(i)))
+            options = self.soup.find_all('option', attrs=dict(value=gid + "_0_" + str(i)))
             self.assertEqual(len(options), 1, "Generated option is incorrect")
             self.assertEqual(options[0].text, "Time " + str(i), "The label of the option is not correct")
             self.assertEqual(options[0].parent.attrMap["name"], "input_data_dimensions_0")
         for i in range(data_shape[1]):
-            options = self.soup.findAll('option', attrs=dict(value=gid + "_1_" + str(i)))
+            options = self.soup.find_all('option', attrs=dict(value=gid + "_1_" + str(i)))
             self.assertEqual(len(options), 1, "Generated option is incorrect")
             self.assertEqual(options[0].text, "Channel " + str(i), "Option's label incorrect")
             self.assertEqual(options[0].parent.attrMap["name"], "input_data_dimensions_1", "incorrect parent")
         for i in range(data_shape[2]):
-            options = self.soup.findAll('option', attrs=dict(value=gid + "_2_" + str(i)))
+            options = self.soup.find_all('option', attrs=dict(value=gid + "_2_" + str(i)))
             self.assertEqual(len(options), 1, "Generated option is incorrect")
             self.assertEqual(options[0].text, "Line " + str(i), "The label of the option is not correct")
             self.assertEqual(options[0].parent.attrMap["name"], "input_data_dimensions_2")
 
         #check the expected hidden fields
-        expected_shape = self.soup.findAll('input', attrs=dict(id="input_data_expected_shape"))
+        expected_shape = self.soup.find_all('input', attrs=dict(id="input_data_expected_shape"))
         self.assertEqual(len(expected_shape), 1, "The generated option is not correct")
         self.assertEqual(expected_shape[0]["value"], "expected_shape_", "The generated option is not correct")
-        input_hidden_op = self.soup.findAll('input', attrs=dict(id="input_data_operations"))
+        input_hidden_op = self.soup.find_all('input', attrs=dict(id="input_data_operations"))
         self.assertEqual(len(input_hidden_op), 1, "The generated option is not correct")
         self.assertEqual(input_hidden_op[0]["value"], "operations_", "The generated option is not correct")
-        input_hidden_dim = self.soup.findAll('input', attrs=dict(id="input_data_expected_dim"))
+        input_hidden_dim = self.soup.find_all('input', attrs=dict(id="input_data_expected_dim"))
         self.assertEqual(len(input_hidden_dim), 1, "The generated option is not correct")
         self.assertEqual(input_hidden_dim[0]["value"], "requiredDim_1", "The generated option is not correct")
-        input_hidden_shape = self.soup.findAll('input', attrs=dict(id="input_data_array_shape"))
+        input_hidden_shape = self.soup.find_all('input', attrs=dict(id="input_data_array_shape"))
         self.assertEqual(len(input_hidden_shape), 1, "The generated option is not correct")
         self.assertEqual(input_hidden_shape[0]["value"], "[5, 1, 3]", "The generated option is not correct")
 
         #check only the first option from the aggregations functions selects
-        options = self.soup.findAll('option', attrs=dict(value="func_none"))
+        options = self.soup.find_all('option', attrs=dict(value="func_none"))
         self.assertEqual(len(options), 3, "The generated option is not correct")
 
 
