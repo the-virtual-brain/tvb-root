@@ -760,6 +760,16 @@
         <copyright-notice value="Copyright (c) 2005-2009, NumPy Developers."/>
         <description value="Numpy library will be used by simulation and analysis modules."/>
     </dependency>
+    <dependency env="[win32,linux64,win64,linux32,macos64,macos32]" name="scikit-learn">
+        <full-name value="scikit-learn"/>
+        <project-home value="http://scikit-learn.org/stable"/>
+        <version value="[0.15.2]"/>
+        <usage value="dynamic linking"/>
+        <license value="LICENSE_scikit_learn.txt"/>
+        <license-type value="BSD_"/>
+        <copyright-notice value="Copyright (c) 2007–2015 The scikit-learn developers."/>
+        <description value="Scikit-learn library will be used by analysis modules."/>
+    </dependency>
     <dependency env="macos64" name="openssl">
         <full-name value="Python OpenSSL"/>
         <project-home value="http://docs.python.org/license.html#openssl"/>

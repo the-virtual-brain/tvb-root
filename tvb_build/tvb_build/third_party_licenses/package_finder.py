@@ -43,14 +43,23 @@ from types import ModuleType
 
 PYTHON_VERSION = "%s.%s.%s" % sys.version_info[:3]
     
-EXCLUDES = ['_builtinsuites', 'tvb_bin', 'bsddb', 'carbon', 'compiler', 'config',
-            'curses', 'dateutil', 'tvb_data', 'distutils', 'email', 'encodings', 'externals',
-            'finder', 'hotshot', 'importlib', 'lib-dynload', 'logging', 'multiprocessing',
-            'openglcontext', 'pydoc_data', 'pysqlite2', 'pkg_resources', 'pyximport', # part of cython
-            'setuptools', 'stdsuites', 'test', 'tvb', 'unittest', 'wxpython', 'xml',
-            ## We exclude bellow shorter names for packages already introspected.
-            'json', "foundation", "objc", "appkit", "exceptionhandling", "pyobjctools"
-            ]
+EXCLUDES = [
+    # part of tvb
+    'tvb_bin', 'tvb_data', 'tvb', 'externals', 'mplh5canvas',
+    # part of ipython notebook
+    'mistune', 'sphinx', 'pyzmq',
+    # part of python and setuptools
+    'distutils', 'curses', 'logging', 'multiprocessing', 'pkg_resources', 'setuptools',
+    'unittest', 'json', 'importlib',
+    # others
+    '_builtinsuites', 'bsddb', 'carbon', 'compiler', 'config',
+    'dateutil',  'email', 'encodings',
+    'finder', 'hotshot', 'lib-dynload',
+    'openglcontext', 'pydoc_data', 'pysqlite2', 'pyximport', # part of cython
+    'stdsuites', 'test',  'wxpython', 'xml',
+    ## We exclude bellow shorter names for packages already introspected.
+    "foundation", "objc", "appkit", "exceptionhandling", "pyobjctools"
+]
  
 EXCLUDES_DLL = ['libeay32.dll', 'msvcm90.dll', 'msvcr90.dll', 'python27.dll',
                 'pywintypes27.dll', 'sqlite3.dll', 'ssleay32.dll', 'zlib1.dll', 'zlib.dll',
