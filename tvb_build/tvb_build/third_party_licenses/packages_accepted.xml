@@ -820,11 +820,21 @@
         <copyright-notice value="Copyright (c) 1998-2008 The OpenSSL Project.  All rights reserved."/>
         <description value="Package part of Python's distribution."/>
     </dependency>
-    <dependency env="[macos64,macos32]" name="pil">
+    <dependency env="[macos64,macos64,linux64]" name="pil">
         <full-name value="PIL Library"/>
         <project-home value="http://www.pythonware.com/products/pil/"/>
         <version value="[unknown,1.1.7]"/>
         <usage value="documentation"/>
+        <license value="LICENSE_PIL.txt"/>
+        <license-type value="BSD_ 3 clause"/>
+        <copyright-notice value="Copyright (c) 1997-2011 by Secret Labs AB Copyright (c) 1995-2011 by Fredrik Lundh"/>
+        <description value="This library is used when generating TVB documentation"/>
+    </dependency>
+    <dependency env="[macos64,macos64,linux64]" name="pillow">
+        <full-name value="PIL Library"/>
+        <project-home value="http://www.pythonware.com/products/pil/"/>
+        <version value="[2.9.0]"/>
+        <usage value="dynamic linking"/>
         <license value="LICENSE_PIL.txt"/>
         <license-type value="BSD_ 3 clause"/>
         <copyright-notice value="Copyright (c) 1997-2011 by Secret Labs AB Copyright (c) 1995-2011 by Fredrik Lundh"/>
