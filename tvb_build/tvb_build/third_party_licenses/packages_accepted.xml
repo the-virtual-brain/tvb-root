@@ -850,6 +850,16 @@
         <copyright-notice value="Copyright (c) 2008-2014 The pip developers"/>
         <description value="Python packager - Coming with Anaconda env"/>
     </dependency>
+    <dependency env="[linux64,win64]" name="wheel">
+        <full-name value="A built-package format for Python."/>
+        <project-home value="https://bitbucket.org/pypa/wheel"/>
+        <version value="0.24.0"/>
+        <usage value="packaging"/>
+        <license value="LICENSE_wheel.txt"/>
+        <license-type value="MIT_"/>
+        <copyright-notice value="wheel copyright (c) 2012-2014 Daniel Holth <dholth@fastmail.fm> and contributors."/>
+        <description value="Binary python packager - Coming with Anaconda env"/>
+    </dependency>
     <dependency env="[win32,linux64,macos32,win64,linux32,macos64]" name="psutil">
         <full-name value="psutil"/>
         <project-home value="http://code.google.com/p/psutil/"/>
