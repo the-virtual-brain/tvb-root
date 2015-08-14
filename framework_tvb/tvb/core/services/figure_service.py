@@ -37,10 +37,7 @@ Service layer, for storing/retrieving Resulting Figures in TVB.
 """
 
 import os
-import Image
-# See TVB-985
-if not hasattr(Image, 'open'):
-    from Image import Image
+from PIL import Image
 import base64
 import xml.dom.minidom
 from StringIO import StringIO

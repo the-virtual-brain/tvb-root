@@ -36,11 +36,7 @@ Converts a color scheme texture image to json arrays
 
 
 import numpy
-import Image
-# See TVB-985
-if not hasattr(Image, 'open'):
-    from Image import Image
-
+from PIL import Image
 
 def color_texture_to_list(img_pth, img_width, band_height):
     """

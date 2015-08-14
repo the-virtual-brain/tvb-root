@@ -34,10 +34,7 @@
 
 import os
 import unittest
-import Image
-if not hasattr(Image, 'open'):
-    from Image import Image
-
+from PIL import Image
 from tvb.tests.framework.core.base_testcase import TransactionalTestCase
 from tvb.core import utils
 from tvb.core.entities.file.files_helper import FilesHelper
