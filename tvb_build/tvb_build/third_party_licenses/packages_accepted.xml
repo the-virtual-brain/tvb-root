@@ -853,7 +853,7 @@
     <dependency env="[win32,win64,linux32,linux64,macos32,macos64]" name="psycopg2">
         <full-name value="Psycopg2"/>
         <project-home value="http://initd.org/psycopg/"/>
-        <version value="[2.6 (dt dec pq3 ext),2.6.1 (dt dec pq3 ext lo64),2.6]"/>
+        <version value="[2.5.2 (dt dec pq3 ext),2.6 (dt dec pq3 ext),2.6.1 (dt dec pq3 ext lo64),2.6,2.6.1]"/>
         <usage value="dynamic linking"/>
         <license value="LICENSE_psycopg.txt"/>
         <license-type value="ZPL-License"/>
@@ -1153,22 +1153,22 @@
     <dependency env="[win64,linux64,mac64]" name="python-dateutil">
         <full-name value="python-dateutil"/>
         <project-home value="https://dateutil.readthedocs.org/en/latest/"/>
-        <version value="2.4.1"/>
+        <version value="[1.5-mpl,2.4.1]"/>
         <usage value="dynamic linking"/>
         <license value="LICENSE_dateutil.txt"/>
         <license-type value="BSD_"/>
         <copyright-notice value="Copyright (c) 2003-2011 - Gustavo Niemeyer &lt;gustavo@niemeyer.net&gt; Copyright (c) 2012-2014 - Tomi Pievilainen &lt;tomi.pievilainen@iki.fi&gt; Copyright (c) 2014 - Yaron de Leeuw &lt;me@jarondl.net&gt;"/>
-        <description value="Python 2 and 3 compatibility library"/>
+        <description value="The dateutil module provides powerful extensions to the standard datetime module, available in Python."/>
     </dependency>
     <dependency env="[win64,linux64,mac64]" name="dateutil">
         <full-name value="python-dateutil"/>
         <project-home value="https://dateutil.readthedocs.org/en/latest/"/>
-        <version value="2.4.1"/>
+        <version value="[1.5-mpl,2.4.1]"/>
         <usage value="dynamic linking"/>
         <license value="LICENSE_dateutil.txt"/>
         <license-type value="BSD_"/>
         <copyright-notice value="Copyright (c) 2003-2011 - Gustavo Niemeyer &lt;gustavo@niemeyer.net&gt; Copyright (c) 2012-2014 - Tomi Pievilainen &lt;tomi.pievilainen@iki.fi&gt; Copyright (c) 2014 - Yaron de Leeuw &lt;me@jarondl.net&gt;"/>
-        <description value="Python 2 and 3 compatibility library"/>
+        <description value="The dateutil module provides powerful extensions to the standard datetime module, available in Python."/>
     </dependency>
     <dependency env="[win64,linux64,mac64]" name="decorator">
         <full-name value="Decorator module"/>
@@ -1183,7 +1183,7 @@
     <dependency env="[win64,linux64,mac64]" name="jsonschema">
         <full-name value="Json schema"/>
         <project-home value="http://github.com/Julian/jsonschema"/>
-        <version value="2.4.0"/>
+        <version value="[2.4.0,2.5.1]"/>
         <usage value="dynamic linking"/>
         <license value="LICENSE_jsonschema.txt"/>
         <license-type value="MIT_"/>

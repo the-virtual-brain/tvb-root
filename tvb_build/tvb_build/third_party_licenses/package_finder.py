@@ -58,7 +58,14 @@ EXCLUDES = [
     ## We exclude bellow shorter names for packages already introspected.
     "foundation", "objc", "appkit", "exceptionhandling", "pyobjctools"
 ]
- 
+
+# todo: understand why this is needed on mac
+if sys.platform == 'darwin':
+    EXCLUDES.extend([
+        'xml', 'logging', 'importlib', 'curses', 'unittest', 'multiprocessing',
+        'json', 'encodings', 'test', 'email', 'finder'
+    ])
+
 EXCLUDES_DLL = ['libeay32.dll', 'msvcm90.dll', 'msvcr90.dll', 'python27.dll',
                 'pywintypes27.dll', 'sqlite3.dll', 'ssleay32.dll', 'zlib1.dll', 'zlib.dll',
                 ## match any of the dll, so or dylib from hdf5 hl library, since the license is already
