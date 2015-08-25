@@ -43,7 +43,7 @@
     <dependency env="[win64]" name="bs4">
         <full-name value="Beautiful Soup (BS4)"/>
         <project-home value="http://www.crummy.com/software/BeautifulSoup"/>
-        <version value="[4.3.2,unknown]"/>
+        <version value="[4.3.2,4.4.0,unknown]"/>
         <usage value="static linking"/>
         <license value="LICENSE_bs4.txt"/>
         <license-type value="MIT_"/>
@@ -259,16 +259,6 @@
         <license-type value="PSF_"/>
         <copyright-notice value="Copyright (c) 1990-2012, Python Software Foundation."/>
         <description value="Used for console interface. Is a python library."/>
-    </dependency>
-    <dependency env="[win32,win64,linux32,linux64]" name="image">
-        <full-name value="PIL Library"/>
-        <project-home value="http://www.pythonware.com/products/pil/"/>
-        <version value="[unknown,1.1.7]"/>
-        <usage value="documentation"/>
-        <license value="LICENSE_PIL.txt"/>
-        <license-type value="BSD_ 3 clause"/>
-        <copyright-notice value="Copyright (c) 1997-2011 by Secret Labs AB Copyright (c) 1995-2011 by Fredrik Lundh"/>
-        <description value="This library is used when generating TVB documentation"/>
     </dependency>
     <dependency env="[win64]" name="ipython">
         <full-name value="iPython"/>
@@ -819,16 +809,6 @@
         <license-type value="BSD_"/>
         <copyright-notice value="Copyright (c) 1998-2008 The OpenSSL Project.  All rights reserved."/>
         <description value="Package part of Python's distribution."/>
-    </dependency>
-    <dependency env="[macos64,macos64,linux64]" name="pil">
-        <full-name value="PIL Library"/>
-        <project-home value="http://www.pythonware.com/products/pil/"/>
-        <version value="[unknown,1.1.7]"/>
-        <usage value="documentation"/>
-        <license value="LICENSE_PIL.txt"/>
-        <license-type value="BSD_ 3 clause"/>
-        <copyright-notice value="Copyright (c) 1997-2011 by Secret Labs AB Copyright (c) 1995-2011 by Fredrik Lundh"/>
-        <description value="This library is used when generating TVB documentation"/>
     </dependency>
     <dependency env="[macos64,macos64,linux64]" name="pillow">
         <full-name value="PIL Library"/>

@@ -308,7 +308,7 @@ def prepare_py2app_dist():
     if os.path.exists(DIST_FOLDER):
         shutil.rmtree(DIST_FOLDER)
 
-    print "Decompressing " + STEP1_RESULT + " into '" + DIST_FOLDER
+    print " - Decompressing " + STEP1_RESULT + " into '" + DIST_FOLDER
     step1_tmp_dist_folder = os.path.join(TVB_ROOT, 'TVB_Distribution')
     if os.path.exists(step1_tmp_dist_folder):
         shutil.rmtree(step1_tmp_dist_folder)
@@ -319,7 +319,7 @@ def prepare_py2app_dist():
     # bin dir is initially empty, step1 does not support empty dirs in the zip
     os.mkdir(os.path.join(DIST_FOLDER, 'bin'))
 
-    print "PY2APP starting ..."
+    print " - PY2APP starting ..."
     # Log everything from py2app in a log file
     REAL_STDOUT, REAL_STDERR = sys.stdout, sys.stderr
     sys.stdout = open('PY2APP.log', 'w')
