@@ -810,10 +810,20 @@
         <copyright-notice value="Copyright (c) 1998-2008 The OpenSSL Project.  All rights reserved."/>
         <description value="Package part of Python's distribution."/>
     </dependency>
-    <dependency env="[macos64,macos64,linux64]" name="pil">
+    <dependency env="[macos64,win64,linux64]" name="pil">
         <full-name value="Pillow Library"/>
         <project-home value="https://pillow.readthedocs.org/"/>
         <version value="[2.9.0,unknown]"/>
+        <usage value="dynamic linking"/>
+        <license value="LICENSE_PIL.txt"/>
+        <license-type value="MIT_"/>
+        <copyright-notice value="Copyright (c) 1997-2011 by Secret Labs AB Copyright (c) 1995-2011 by Fredrik Lundh"/>
+        <description value="This library is used when exporting TVB figures from web, for documentation and for color-schemes."/>
+    </dependency>
+    <dependency env="[win64,linux64]" name="pillow">
+        <full-name value="Pillow Library"/>
+        <project-home value="https://pillow.readthedocs.org/"/>
+        <version value="[2.9.0]"/>
         <usage value="dynamic linking"/>
         <license value="LICENSE_PIL.txt"/>
         <license-type value="MIT_"/>

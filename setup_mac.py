@@ -319,7 +319,7 @@ def prepare_py2app_dist():
     # bin dir is initially empty, step1 does not support empty dirs in the zip
     os.mkdir(os.path.join(DIST_FOLDER, 'bin'))
 
-    print " - PY2APP starting ..."
+    print "PY2APP starting ..."
     # Log everything from py2app in a log file
     REAL_STDOUT, REAL_STDERR = sys.stdout, sys.stderr
     sys.stdout = open('PY2APP.log', 'w')
