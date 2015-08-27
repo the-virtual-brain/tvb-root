@@ -583,7 +583,7 @@
     <dependency env="[win,mac,linux]" name="psycopg2">
         <full-name value="Psycopg2"/>
         <project-home value="http://initd.org/psycopg/"/>
-        <version value="[2.6.1,2.6,2.6.1 (dt dec pq3 ext lo64)]"/>
+        <version value="[2.6.1,2.5.2 (dt dec pq3 ext),2.6"/>
         <usage value="dynamic linking"/>
         <license value="LICENSE_psycopg.txt"/>
         <license-type value="ZPL-License"/>
