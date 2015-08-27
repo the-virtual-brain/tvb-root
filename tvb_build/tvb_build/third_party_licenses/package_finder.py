@@ -45,7 +45,7 @@ PYTHON_VERSION = "%s.%s.%s" % sys.version_info[:3]
 
 EXCLUDES = [
     # part of tvb
-    'tvb_bin', 'tvb_data', 'tvb', 'mplh5canvas', 'gdist',
+    'tvb_bin', 'tvb_data', 'tvb', 'gdist',
     # part of python and setuptools
     'distutils', 'pkg_resources', 'setuptools',
     # python 3 backports

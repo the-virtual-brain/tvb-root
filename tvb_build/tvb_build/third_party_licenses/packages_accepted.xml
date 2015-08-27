@@ -10,7 +10,7 @@
         <copyright-notice value="Copyright (c) Continuum Analytics Inc"/>
         <description value="Derives from Anaconda - Python environment for convenience in setting-up the build machine."/>
     </dependency>
-    <dependency env="[win,mac]" name="apscheduler">
+    <dependency env="[win,mac,linux]" name="apscheduler">
         <full-name value="APScheduler"/>
         <project-home value="http://pypi.python.org/pypi/APScheduler"/>
         <version value="[2.1.1,3.0.3]"/>
@@ -170,7 +170,7 @@
         <copyright-notice value="Copyright (c) 2005-2015, Michele Simionato"/>
         <description value="Better living through Python with decorators"/>
     </dependency>
-    <dependency env="win" name="docutils">
+    <dependency env="[win,linux]" name="docutils">
         <full-name value="DocUtils"/>
         <project-home value="http://docutils.sourceforge.net/"/>
         <version value="0.12"/>
@@ -320,16 +320,6 @@
         <copyright-notice value="Copyright 1996-2002, 2006 by David Turner, Robert Wilhelm, and Werner Lemberg"/>
         <description value="A Free, High-Quality, and Portable Font Engine."/>
     </dependency>
-    <dependency env="mac" name="libjpeg.9.dylib">
-        <full-name value="JPEG library"/>
-        <project-home value="http://libjpeg.sourceforge.net/"/>
-        <version value="unknown"/>
-        <usage value="dynamic linking"/>
-        <license value="LICENSE_libjpeg.txt"/>
-        <license-type value="Free Software MIT_ like"/>
-        <copyright-notice value="Copyright (C) 1991-1998, Thomas G. Lane."/>
-        <description value="LIBJPEG is included because PIL needs it for exporting our TVB images"/>
-    </dependency>
     <dependency env="mac" name="libpng12.0.dylib">
         <full-name value="PNG library"/>
         <project-home value="http://www.libpng.org/pub/png/libpng.html"/>
@@ -460,7 +450,7 @@
         <copyright-notice value="Copyright (c) 2002-2009 John D. Hunter; All Rights Reserved"/>
         <description value="This package is part of Matplotlib."/>
     </dependency>
-    <dependency env="mac" name="mplh5canvas">
+    <dependency env="[win,mac,linux]" name="mplh5canvas">
         <full-name value="Matplotlib HTML5 Backend"/>
         <project-home value="http://code.google.com/p/mplh5canvas/"/>
         <version value="1.0tvb"/>
@@ -540,10 +530,10 @@
         <copyright-notice value="Copyright (c) 1998-2008 The OpenSSL Project.  All rights reserved."/>
         <description value="Package part of Python's distribution."/>
     </dependency>
-    <dependency env="[win,linux]" name="pil">
+    <dependency env="[win,mac,linux]" name="pil">
         <full-name value="Pillow Library"/>
         <project-home value="https://pillow.readthedocs.org/"/>
-        <version value="[2.9.0,unknown]"/>
+        <version value="unknown"/>
         <usage value="dynamic linking"/>
         <license value="LICENSE_PIL.txt"/>
         <license-type value="MIT_"/>
@@ -553,7 +543,7 @@
     <dependency env="[win,linux]" name="pillow">
         <full-name value="Pillow Library"/>
         <project-home value="https://pillow.readthedocs.org/"/>
-        <version value="[2.9.0]"/>
+        <version value="2.9.0"/>
         <usage value="dynamic linking"/>
         <license value="LICENSE_PIL.txt"/>
         <license-type value="MIT_"/>
@@ -583,7 +573,7 @@
     <dependency env="[win,mac,linux]" name="psycopg2">
         <full-name value="Psycopg2"/>
         <project-home value="http://initd.org/psycopg/"/>
-        <version value="[2.6.1,2.5.2 (dt dec pq3 ext),2.6"/>
+        <version value="[2.6.1,2.6,2.5.2 (dt dec pq3 ext)]"/>
         <usage value="dynamic linking"/>
         <license value="LICENSE_psycopg.txt"/>
         <license-type value="ZPL-License"/>
@@ -800,7 +790,7 @@
         <copyright-notice value="Copyright (c) 2001-2015 Authors list (see license file for it)"/>
         <description value="The IPython Notebook uses it"/>
     </dependency>
-    <dependency env="win" name="tzlocal">
+    <dependency env="[win,linux]" name="tzlocal">
         <full-name value="TzLocal"/>
         <project-home value="https://pypi.python.org/pypi/tzlocal"/>
         <version value="1.2"/>
@@ -820,7 +810,7 @@
         <copyright-notice value="wheel copyright (c) 2012-2014 Daniel Holth &lt;dholth@fastmail.fm&gt; and contributors."/>
         <description value="Binary python packager - Coming with Anaconda env"/>
     </dependency>
-    <dependency env="mac" name="wsgiref">
+    <dependency env="[win,mac,linux]" name="wsgiref">
         <full-name value="Python module wsgiref"/>
         <project-home value="http://pypi.python.org/pypi/wsgiref"/>
         <version value="0.1.2"/>
