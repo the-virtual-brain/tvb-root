@@ -50,10 +50,10 @@
         <copyright-notice value="Copyright (c) 2004-2012 Leonard Richardson"/>
         <description value="Tree Parser - Coming with Anaconda env"/>
     </dependency>
-    <dependency env="[win,linux]" name="bs4">
+    <dependency env="[win,mac,linux]" name="bs4">
         <full-name value="Beautiful Soup (BS4)"/>
         <project-home value="http://www.crummy.com/software/BeautifulSoup"/>
-        <version value="4.3.2"/>
+        <version value="[4.3.2,4.4.0]"/>
         <usage value="static linking"/>
         <license value="LICENSE_bs4.txt"/>
         <license-type value="MIT_"/>
@@ -150,10 +150,10 @@
         <copyright-notice value="Copyright (c) 2013, Michael Bostock"/>
         <description value="JS library."/>
     </dependency>
-    <dependency env="[win,linux]" name="dateutil">
+    <dependency env="[win,mac,linux]" name="dateutil">
         <full-name value="python-dateutil"/>
         <project-home value="https://dateutil.readthedocs.org/en/latest/"/>
-        <version value="2.4.1"/>
+        <version value="[2.4.1,1.5-mpl]"/>
         <usage value="dynamic linking"/>
         <license value="LICENSE_dateutil.txt"/>
         <license-type value="BSD_"/>
