@@ -18,12 +18,9 @@
  **/
 
 /*
- * ---------------------------------------===========================================--------------------------------------
- * WARNING: This script is just adding some functionality specific to the stimulus visualization on top of what is defined 
- * in /static/js/vertice_pick/base_vertice_pick.js. As such in all the cases when this script is used, you must first 
- * include base_vertice_pick.js. In case you need to ADD FUNCTIONS here, either make sure you don't "overwrite" something
- * necessary from base_vertice_pick.js, or just prefix your functions. (e.g. STIM_PICK_${function_name}).
- * ---------------------------------------===========================================--------------------------------------
+ * ---------------------------------------=============================
+ * This script defines functionality specific for Stimulus Surface page
+ * ---------------------------------------=============================
  */
 
 /* globals gl, displayMessage */
