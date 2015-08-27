@@ -43,7 +43,7 @@ CURRENT_FOLDER = third_party_licenses.__path__[0]
 LICENSES_FOLDER = "license"
 
 RESULT_FILE_NAME = os.path.join(CURRENT_FOLDER, "_THIRD_PARTY_LICENSES")
-PACKAGES_USED_XML = os.path.join(CURRENT_FOLDER, "..", "packages_used.xml")
+PACKAGES_USED_XML = os.path.join(CURRENT_FOLDER, "..", "..", "..", "packages_used.xml")
 
 FULL_TEMPLATE = "===========================\
                 \nThe Virtual Brain Project\
@@ -78,7 +78,6 @@ ONE_LIB_TEMPLATE = "Library: `$$FULL-NAME$$ <$$PROJECT-HOME$$>`_  \
                    \n\n\n"
 
 
-
 def _invalid_version(expected, actual):
     """ 
     Check if current found version of 3rd party library is 
@@ -90,7 +89,6 @@ def _invalid_version(expected, actual):
         expected = expected[1:-1].split(',')
         return actual not in expected
     return True
-
 
 
 def generate_artefact(root_folder_to_introspect, excludes=None, actual_libs=None, extra_licenses_check=None):
@@ -149,7 +147,8 @@ def generate_artefact(root_folder_to_introspect, excludes=None, actual_libs=None
     parser.write_used_on_this_platform(accepted_libs, actual_libs, path=PACKAGES_USED_XML)
 
     dep_html = docutils.core.publish_string(dep_text, writer_name='html4css1', settings=None,
-                                            settings_overrides={'stylesheet_path': os.path.join(CURRENT_FOLDER, 'scheme.css')})
+                                            settings_overrides={
+                                            'stylesheet_path': os.path.join(CURRENT_FOLDER, 'scheme.css')})
     with open(RESULT_FILE_NAME + '.html', 'w') as f:
         f.write(dep_html)
     # Create ZIP with included dependencies.
@@ -170,8 +169,7 @@ def generate_artefact(root_folder_to_introspect, excludes=None, actual_libs=None
 
 ROOT_WINDOWS = os.path.join(os.path.dirname(CURRENT_FOLDER), 'TVB_Windows', 'TVB_distribution', 'library.zip')
 ROOT_MAC = os.path.join(os.path.dirname(CURRENT_FOLDER), 'TVB_MacOS', 'TVB_distribution', 'tvb.app',
-                            'Contents', 'Resources', 'lib', 'python2.7')
-
+                        'Contents', 'Resources', 'lib', 'python2.7')
 
 if __name__ == "__main__":
     # Run stand-alone.
