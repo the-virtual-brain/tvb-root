@@ -1,26 +1,26 @@
 <?xml version="1.0" ?>
 <tvb>
-    <dependency env="[win64]" name="anaconda">
+    <dependency env="[win,linux]" name="anaconda">
         <full-name value="Anaconda"/>
         <project-home value="https://store.continuum.io/cshop/anaconda/"/>
-        <version value="2.2.0"/>
+        <version value="2.3.0"/>
         <usage value="dynamic linking"/>
         <license value="LICENSE_anaconda.txt"/>
         <license-type value="Derived from MIT_"/>
         <copyright-notice value="Copyright (c) Continuum Analytics Inc"/>
         <description value="Derives from Anaconda - Python environment for convenience in setting-up the build machine."/>
     </dependency>
-    <dependency env="[win32,linux64,macos32,win64,linux32,macos64]" name="apscheduler">
+    <dependency env="[win,mac]" name="apscheduler">
         <full-name value="APScheduler"/>
         <project-home value="http://pypi.python.org/pypi/APScheduler"/>
-        <version value="[2.1.0,2.0.3,2.0.2,2.1.1,3.0.3]"/>
+        <version value="[2.1.1,3.0.3]"/>
         <usage value="dynamic linking"/>
         <license value="LICENSE_apscheduler_2.0.txt"/>
         <license-type value="MIT_"/>
         <copyright-notice value="Copyright (c) 2009 Evan Rosson, Jan Dittberner, Domen Kozar"/>
         <description value="Scheduler of jobs."/>
     </dependency>
-    <dependency env="[win64]" name="backports">
+    <dependency env="[win,mac,linux]" name="backports">
         <full-name value="Backports"/>
         <project-home value="https://pypi.python.org/pypi/backports"/>
         <version value="unknown"/>
@@ -30,7 +30,7 @@
         <copyright-notice value="Copyright (c) 2010-2012 Brandon Craig Rhodes"/>
         <description value="The IPython Notebook uses backports - Coming with Anaconda env"/>
     </dependency>
-    <dependency env="[win32,linux64,macos32,win64,linux32,macos64]" name="bct">
+    <dependency env="[win,mac,linux]" name="bct">
         <full-name value="Brain Connectivity Toolbox (BCT)"/>
         <project-home value="https://sites.google.com/site/bctnet/"/>
         <version value="43"/>
@@ -40,47 +40,27 @@
         <copyright-notice value="Copyright (c) 2009 Indiana University"/>
         <description value="This library is distributed with TVB's package, user will need to separately install Matlab in order to make us of its code."/>
     </dependency>
-    <dependency env="[win64]" name="bs4">
+    <dependency env="[win,linux]" name="bs4">
         <full-name value="Beautiful Soup (BS4)"/>
         <project-home value="http://www.crummy.com/software/BeautifulSoup"/>
-        <version value="[4.3.2,4.4.0,unknown]"/>
+        <version value="4.3.2"/>
         <usage value="static linking"/>
         <license value="LICENSE_bs4.txt"/>
         <license-type value="MIT_"/>
         <copyright-notice value="Copyright (c) 2004-2012 Leonard Richardson"/>
         <description value="Tree Parser - Coming with Anaconda env"/>
     </dependency>
-    <dependency env="[win64]" name="beautifulsoup4">
-        <full-name value="Beautiful Soup (BS4)"/>
-        <project-home value="http://www.crummy.com/software/BeautifulSoup"/>
-        <version value="[4.3.2]"/>
-        <usage value="static linking"/>
-        <license value="LICENSE_bs4.txt"/>
-        <license-type value="MIT_"/>
-        <copyright-notice value="Copyright (c) 2004-2012 Leonard Richardson"/>
-        <description value="Tree Parser - Coming with Anaconda env"/>
-    </dependency>
-    <dependency env="[linux32,linux64]" name="bz2.so">
-        <full-name value="libbzip2 (file compress)"/>
-        <project-home value="http://www.bzip.org/"/>
-        <version value="unknown"/>
-        <usage value="dynamic linking"/>
-        <license value="LICENSE_bzip2.txt"/>
-        <license-type value="BSD_"/>
-        <copyright-notice value="Copyright (C) 1996-2010 Julian Seward &lt;jseward@bzip.org&gt;"/>
-        <description value="LibBZ2 is indirectly used by the HDF5 libraries."/>
-    </dependency>
-    <dependency env="[win64]" name="certifi">
+    <dependency env="[win,mac,linux]" name="certifi">
         <full-name value="Certifi"/>
         <project-home value="http://certifi.io/en/latest/"/>
-        <version value="[14.5.14,2015.04.28]"/>
+        <version value="[2015.04.28,14.5.14]"/>
         <usage value="dynamic linking"/>
         <license value="LICENSE_certifi.txt"/>
         <license-type value="ISC_"/>
         <copyright-notice value="Copyright (c) 2015 Kenneth Reitz"/>
         <description value="Used by IPython Notebook - Coming with Anaconda env "/>
     </dependency>
-    <dependency env="[win32,linux64,macos32,win64,linux32,macos64]" name="cfflib">
+    <dependency env="[win,mac,linux]" name="cfflib">
         <full-name value="Connectome File Format Library (cfflib)"/>
         <project-home value="http://www.connectomics.org/viewer/license"/>
         <version value="2.0.5"/>
@@ -90,17 +70,17 @@
         <copyright-notice value="Copyright (C) 2009-2011, Ecole Polytechnique Federale de Lausanne (EPFL) and Hospital Center and University of Lausanne (UNIL-CHUV), Switzerland"/>
         <description value=""/>
     </dependency>
-    <dependency env="[win32,linux64,macos32,win64,linux32,macos64]" name="cherrypy">
+    <dependency env="[win,mac,linux]" name="cherrypy">
         <full-name value="CherryPy Server"/>
         <project-home value="http://www.cherrypy.org"/>
-        <version value="[3.2.4,3.2.2,3.8.0]"/>
+        <version value="[3.2.4,3.8.0]"/>
         <usage value="dynamic linking"/>
         <license value="LICENSE_CherryPy.txt"/>
         <license-type value="BSD_"/>
         <copyright-notice value="Copyright (c) 2002-2008, CherryPy Team (team@cherrypy.org)"/>
         <description value="We use this library for web server."/>
     </dependency>
-    <dependency env="[win64]" name="concurrent">
+    <dependency env="win" name="concurrent">
         <full-name value="PythonFutures"/>
         <project-home value="https://github.com/agronholm/pythonfutures"/>
         <version value="unknown"/>
@@ -110,7 +90,7 @@
         <copyright-notice value="Copyright (c) 2009 Brian Quinlan. All rights reserved."/>
         <description value="- Coming with Anaconda env"/>
     </dependency>
-    <dependency env="[macos64,macos32]" name="corefoundation">
+    <dependency env="mac" name="corefoundation">
         <full-name value="PyObjC"/>
         <project-home value="http://pythonhosted.org/pyobjc/"/>
         <version value="unknown"/>
@@ -120,27 +100,7 @@
         <copyright-notice value="Copyright (c) Ronald Oussoren"/>
         <description value="We use this library for the Mac OS TVB distribution to appear in the doc bar."/>
     </dependency>
-    <dependency env="[win32,linux64,macos32,win64,linux32,macos64]" name="ctypes">
-        <full-name value="CTypes"/>
-        <project-home value="http://starship.python.net/crew/theller/ctypes/"/>
-        <version value="1.1.0"/>
-        <usage value="dynamic linking"/>
-        <license value="LICENSE_ctypes.txt"/>
-        <license-type value="MIT_"/>
-        <copyright-notice value="Copyright (c) 2000 - 2006 Thomas Heller"/>
-        <description value=""/>
-    </dependency>
-    <dependency env="[win64]" name="cython">
-        <full-name value="Cython"/>
-        <project-home value="http://cython.org/"/>
-        <version value="0.22.1"/>
-        <usage value="dynamic linking"/>
-        <license value="LICENSE_cython.txt"/>
-        <license-type value="Apache_ 2"/>
-        <copyright-notice value="Copyright (c) Robert Bradshaw, Stefan Behnel, Dag Seljebotn, Greg Ewing, et al."/>
-        <description value="C extensions for Python - Coming with Anaconda env"/>
-    </dependency>
-    <dependency env="[win64]" name="coverage">
+    <dependency env="[win,linux]" name="coverage">
         <full-name value="Coverage"/>
         <project-home value="https://pypi.python.org/pypi/coverage"/>
         <version value="3.7.1"/>
@@ -150,17 +110,27 @@
         <copyright-notice value="Copyright (c) 2009-2013, Ned Batchelder, et al."/>
         <description value="Testing - Coming with Anaconda env"/>
     </dependency>
-    <dependency env="[win64]" name="docutils">
-        <full-name value="DocUtils"/>
-        <project-home value="http://docutils.sourceforge.net/"/>
-        <version value="0.12"/>
-        <usage value="generating documentation"/>
-        <license value="LICENSE_docutils.txt"/>
-        <license-type value="Public Domain"/>
-        <copyright-notice value="The persons who have associated their work with this project (the Dedicator: David Goodger and the many contributors to the Docutils project) hereby dedicate the entire copyright, less few exception, in the work of authorship known as Docutils identified below (the Work) to the public domain."/>
-        <description value="Documentation - Coming with Anaconda env"/>
+    <dependency env="mac" name="ctypes">
+        <full-name value="CTypes"/>
+        <project-home value="http://starship.python.net/crew/theller/ctypes/"/>
+        <version value="1.1.0"/>
+        <usage value="dynamic linking"/>
+        <license value="LICENSE_ctypes.txt"/>
+        <license-type value="MIT_"/>
+        <copyright-notice value="Copyright (c) 2000 - 2006 Thomas Heller"/>
+        <description value=""/>
     </dependency>
-    <dependency env="[win32,linux64,macos32,win64,linux32,macos64]" name="d3">
+    <dependency env="[win,linux]" name="cython">
+        <full-name value="Cython"/>
+        <project-home value="http://cython.org/"/>
+        <version value="0.22.1"/>
+        <usage value="dynamic linking"/>
+        <license value="LICENSE_cython.txt"/>
+        <license-type value="Apache_ 2"/>
+        <copyright-notice value="Copyright (c) Robert Bradshaw, Stefan Behnel, Dag Seljebotn, Greg Ewing, et al."/>
+        <description value="C extensions for Python - Coming with Anaconda env"/>
+    </dependency>
+    <dependency env="[win,mac,linux]" name="d3">
         <full-name value="D3 JS"/>
         <project-home value="http://d3js.org/"/>
         <version value="3"/>
@@ -170,7 +140,17 @@
         <copyright-notice value="Copyright (c) 2013, Michael Bostock"/>
         <description value="JS library."/>
     </dependency>
-    <dependency env="[win32,linux64,macos32,win64,linux32,macos64]" name="flot">
+    <dependency env="win" name="docutils">
+        <full-name value="DocUtils"/>
+        <project-home value="http://docutils.sourceforge.net/"/>
+        <version value="0.12"/>
+        <usage value="generating documentation"/>
+        <license value="LICENSE_docutils.txt"/>
+        <license-type value="Public Domain"/>
+        <copyright-notice value="The persons who have associated their work with this project (the Dedicator: David Goodger and the many contributors to the Docutils project) hereby dedicate the entire copyright, less few exception, in the work of authorship known as Docutils identified below (the Work) to the public domain."/>
+        <description value="Documentation - Coming with Anaconda env"/>
+    </dependency>
+    <dependency env="[win,mac,linux]" name="flot">
         <full-name value="Flot"/>
         <project-home value="http://www.flotcharts.org/"/>
         <version value="0.8.3"/>
@@ -180,7 +160,7 @@
         <copyright-notice value="Copyright (c) 2007-2009 IOLA and Ole Laursen"/>
         <description value="JS library."/>
     </dependency>
-    <dependency env="[win32,linux64,macos32,win64,linux32,macos64]" name="formencode">
+    <dependency env="[win,mac,linux]" name="formencode">
         <full-name value="Formencode"/>
         <project-home value="http://www.formencode.org/en/latest/index.html"/>
         <version value="1.3.0a1"/>
@@ -190,7 +170,7 @@
         <copyright-notice value="Copyright 2008-2011, Ian Bicking and Contributors.**"/>
         <description value="This is a validation and form generation package."/>
     </dependency>
-        <dependency env="[macos64]" name="functools32">
+    <dependency env="mac" name="functools32">
         <full-name value="Functools32"/>
         <project-home value="https://pypi.python.org/pypi/functools32"/>
         <version value="3.2.3-2"/>
@@ -200,27 +180,27 @@
         <copyright-notice value="Copyright (c) 2010-2012, ENDOH takanao"/>
         <description value="The IPython Notebook uses it"/>
     </dependency>
-    <dependency env="[win32,linux64,macos32,win64,linux32,macos64]" name="genshi">
+    <dependency env="[win,mac,linux]" name="genshi">
         <full-name value="Genshi"/>
         <project-home value="http://genshi.edgewall.org/"/>
-        <version value="[0.7,0.6]"/>
+        <version value="0.7"/>
         <usage value="dynamic linking"/>
         <license value="LICENSE_genshi_0.6.txt"/>
         <license-type value="BSD_ 2 clause"/>
         <copyright-notice value="Copyright 2006-2011 Edgewall Software"/>
         <description value="Templating library for HTML pages."/>
     </dependency>
-    <dependency env="[win32,linux64,macos32,win64,linux32,macos64]" name="genxmlif">
+    <dependency env="[win,mac,linux]" name="genxmlif">
         <full-name value="GenXmlIf"/>
         <project-home value="http://www.familieleuthe.de/GenXmlIf.html"/>
-        <version value="[unknown,0.9.0]"/>
+        <version value="unknown"/>
         <usage value="dynamic linking"/>
         <license value="LICENSE_genxmlif.txt"/>
         <license-type value="MIT_"/>
         <copyright-notice value="Copyright (c) 2005-2008 by Roland Leuthe"/>
         <description value="Generic XML interface package"/>
     </dependency>
-    <dependency env="[win32,linux64,macos32,win64,linux32,macos64]" name="h5py">
+    <dependency env="[win,mac,linux]" name="h5py">
         <full-name value="H5py"/>
         <project-home value="http://www.h5py.org/"/>
         <version value="2.3.0"/>
@@ -230,27 +210,17 @@
         <copyright-notice value="Copyright (c) 2008 - 2013 Andrew Collette and contributors"/>
         <description value="H5Py is the library that we use for accessing from python HDF5 library."/>
     </dependency>
-    <dependency env="[win64]" name="hdf5.dll">
+    <dependency env="[win,mac,linux]" name="hdf5">
         <full-name value="HDF5 dynamic library"/>
         <project-home value="http://www.hdfgroup.org/HDF5/"/>
-        <version value="unknown"/>
+        <version value="1.8.15"/>
         <usage value="dynamic linking"/>
         <license value="LICENSE_hdf5.txt"/>
         <license-type value="BSD_"/>
         <copyright-notice value="Copyright 2006-2011 by The HDF Group. Copyright 1998-2006 by the Board of Trustees of the University of Illinois."/>
         <description value="Library used for efficient storage."/>
     </dependency>
-    <dependency env="[win32]" name="hdf5dll.dll">
-        <full-name value="HDF5 dynamic library"/>
-        <project-home value="http://www.hdfgroup.org/HDF5/"/>
-        <version value="unknown"/>
-        <usage value="dynamic linking"/>
-        <license value="LICENSE_hdf5.txt"/>
-        <license-type value="BSD_"/>
-        <copyright-notice value="Copyright 2006-2011 by The HDF Group. Copyright 1998-2006 by the Board of Trustees of the University of Illinois."/>
-        <description value="Library used for efficient storage."/>
-    </dependency>
-    <dependency env="[win32,linux64,macos32,win64,linux32,macos64]" name="idlelib">
+    <dependency env="mac" name="idlelib">
         <full-name value="IDLE"/>
         <project-home value="http://docs.python.org/2/library/idle.html"/>
         <version value="unknown"/>
@@ -260,7 +230,7 @@
         <copyright-notice value="Copyright (c) 1990-2012, Python Software Foundation."/>
         <description value="Used for console interface. Is a python library."/>
     </dependency>
-    <dependency env="[win64]" name="ipython">
+    <dependency env="[win,mac,linux]" name="ipython">
         <full-name value="iPython"/>
         <project-home value="http://ipython.org/"/>
         <version value="[3.2.0,3.2.1]"/>
@@ -270,7 +240,7 @@
         <copyright-notice value="Copyright (c) 2011, IPython Development Team"/>
         <description value="This library is used for TVB command access - Coming with Anaconda env"/>
     </dependency>
-    <dependency env="[win64]" name="jinja2">
+    <dependency env="[win,mac,linux]" name="jinja2">
         <full-name value="Jinja"/>
         <project-home value="http://jinja.pocoo.org/"/>
         <version value="2.7.3"/>
@@ -280,7 +250,7 @@
         <copyright-notice value="Copyright (c) 2009 by the Jinja Team"/>
         <description value="The IPython Notebook uses the Jinja templating tool to render HTML pages - Coming with Anaconda env"/>
     </dependency>
-    <dependency env="[win32,linux64,macos32,win64,linux32,macos64]" name="jit">
+    <dependency env="[win,mac,linux]" name="jit">
         <full-name value="Jit"/>
         <project-home value="http://thejit.org/"/>
         <version value="2.0.1"/>
@@ -290,7 +260,7 @@
         <copyright-notice value="Copyright (c) 2010, Nicolas Garcia Belmonte"/>
         <description value="JS library."/>
     </dependency>
-    <dependency env="[win32,linux64,macos32,win64,linux32,macos64]" name="jquery">
+    <dependency env="[win,mac,linux]" name="jquery">
         <full-name value="JQuery"/>
         <project-home value="http://jquery.org/license"/>
         <version value="2.1.1"/>
@@ -300,67 +270,7 @@
         <copyright-notice value="Copyright (c) 2011 John Resig, http://jquery.com/"/>
         <description value="We may use any jQuery project under the terms of either the MIT License or the GNU General Public License (GPL) Version 2. The MIT License is recommended for most projects. It is simple and easy to understand and it places almost no restrictions on what we can do with a jQuery project."/>
     </dependency>
-    <dependency env="linux32" name="libatlas.so.3gf">
-        <full-name value="ATLAS computation library"/>
-        <project-home value="http://math-atlas.sourceforge.net/"/>
-        <version value="unknown"/>
-        <usage value="dynamic linking"/>
-        <license value="LICENSE_atlas.txt"/>
-        <license-type value="BSD_"/>
-        <copyright-notice value="(C) Copyright 1999 R. Clint Whaley"/>
-        <description value="Computations library used by numpy."/>
-    </dependency>
-    <dependency env="[linux32,linux64]" name="libblas.so.3gf">
-        <full-name value="BLAS computation library"/>
-        <project-home value="http://www.netlib.org/blas/"/>
-        <version value="unknown"/>
-        <usage value="dynamic linking"/>
-        <license value="LICENSE_lapack.txt"/>
-        <license-type value="BSD_"/>
-        <copyright-notice value="(C) Copyright 1999 R. Clint Whaley"/>
-        <description value="Computations library used by numpy. Licese is included in LAPACK."/>
-    </dependency>
-    <dependency env="[linux32,linux64]" name="libbz2.so.1.0">
-        <full-name value="libbzip2 (file compress)"/>
-        <project-home value="http://www.bzip.org/"/>
-        <version value="unknown"/>
-        <usage value="dynamic linking"/>
-        <license value="LICENSE_bzip2.txt"/>
-        <license-type value="BSD_"/>
-        <copyright-notice value="Copyright (C) 1996-2010 Julian Seward &lt;jseward@bzip.org&gt;"/>
-        <description value="LibBZ2 is indirectly used by the HDF5 libraries."/>
-    </dependency>
-    <dependency env="[macos64]" name="libbz2.1.0.6.dylib">
-        <full-name value="libbzip2 (file compress)"/>
-        <project-home value="http://www.bzip.org/"/>
-        <version value="unknown"/>
-        <usage value="dynamic linking"/>
-        <license value="LICENSE_bzip2.txt"/>
-        <license-type value="BSD_ style"/>
-        <copyright-notice value="Copyright (C) 1996-2010 Julian Seward &lt;jseward@bzip.org&gt;"/>
-        <description value="LibBZ2 is indirectly used by the HDF5 libraries."/>
-    </dependency>
-    <dependency env="macos32" name="libexpat.1.dylib">
-        <full-name value="Expat dylib"/>
-        <project-home value="https://github.com/LuaDist/libexpat"/>
-        <version value="unknown"/>
-        <usage value="dynamic linking"/>
-        <license value="LICENSE_expat.txt"/>
-        <license-type value="MIT_"/>
-        <copyright-notice value="Copyright (c) 1998, 1999, 2000 Thai Open Source Software Center Ltd and Clark Cooper"/>
-        <description value="Stream-oriented XML 1.0 parser library."/>
-    </dependency>
-    <dependency env="[linux32,linux64]" name="libexpat.so.1">
-        <full-name value="Expat dylib"/>
-        <project-home value="https://github.com/LuaDist/libexpat"/>
-        <version value="unknown"/>
-        <usage value="dynamic linking"/>
-        <license value="LICENSE_expat.txt"/>
-        <license-type value="MIT_"/>
-        <copyright-notice value="Copyright (c) 1998, 1999, 2000 Thai Open Source Software Center Ltd and Clark Cooper"/>
-        <description value="Stream-oriented XML 1.0 parser library."/>
-    </dependency>
-    <dependency env="macos32" name="libfreetype.6.dylib">
+    <dependency env="mac" name="libfreetype.6.dylib">
         <full-name value="Free Type"/>
         <project-home value="http://www.freetype.org/license.html"/>
         <version value="unknown"/>
@@ -370,77 +280,7 @@
         <copyright-notice value="Copyright 1996-2002, 2006 by David Turner, Robert Wilhelm, and Werner Lemberg"/>
         <description value="A Free, High-Quality, and Portable Font Engine."/>
     </dependency>
-    <dependency env="[linux32,linux64]" name="libfreetype.so.6">
-        <full-name value="Free Type"/>
-        <project-home value="http://www.freetype.org/license.html"/>
-        <version value="unknown"/>
-        <usage value="dynamic linking"/>
-        <license value="LICENSE_FTL.txt"/>
-        <license-type value="BSD_"/>
-        <copyright-notice value="Copyright 1996-2002, 2006 by David Turner, Robert Wilhelm, and Werner Lemberg"/>
-        <description value="A Free, High-Quality, and Portable Font Engine."/>
-    </dependency>
-    <dependency env="[win32]" name="libgcc_s_dw2-1.dll">
-        <full-name value="Mingw gcc low level runtime"/>
-        <project-home value="http://www.mingw.org/"/>
-        <version value="unknown"/>
-        <usage value="dynamic linking"/>
-        <license value="LICENSE_mingw.txt"/>
-        <license-type value="MIT_"/>
-        <copyright-notice value="Copyright (c) 2012 MinGW.org project"/>
-        <description value="Runtime library produced by the mingw32 gcc compiler."/>
-    </dependency>
-    <dependency env="[linux32,linux64]" name="libgnutls.so.26">
-        <full-name value="GnuTLS Transport Layer Security Library"/>
-        <project-home value="http://www.gnutls.org/"/>
-        <version value="unknown"/>
-        <usage value="dynamic linking"/>
-        <license value="LICENSE_libgnutls.txt"/>
-        <license-type value="LGPLv3_"/>
-        <copyright-notice value="Copyright (C) 1991, 1999 Free Software Foundation, Inc."/>
-        <description value="A psycopg2 dynamic dependency. GnuTLS is a secure communications library implementing the SSL, TLS and DTLS protocols and technologies around them."/>
-    </dependency>
-    <dependency env="[macos32]" name="libhdf5.7.dylib">
-        <full-name value="HDF5 dynamic library"/>
-        <project-home value="http://www.hdfgroup.org/HDF5/"/>
-        <version value="unknown"/>
-        <usage value="dynamic linking"/>
-        <license value="LICENSE_hdf5.txt"/>
-        <license-type value="BSD_"/>
-        <copyright-notice value="Copyright 2006-2011 by The HDF Group. Copyright 1998-2006 by the Board of Trustees of the University of Illinois."/>
-        <description value="Library used for efficient storage."/>
-    </dependency>
-    <dependency env="[macos64]" name="libhdf5.8.dylib">
-        <full-name value="HDF5 dynamic library"/>
-        <project-home value="http://www.hdfgroup.org/HDF5/"/>
-        <version value="unknown"/>
-        <usage value="dynamic linking"/>
-        <license value="LICENSE_hdf5.txt"/>
-        <license-type value="BSD_"/>
-        <copyright-notice value="Copyright 2006-2011 by The HDF Group. Copyright 1998-2006 by the Board of Trustees of the University of Illinois."/>
-        <description value="Library used for efficient storage."/>
-    </dependency>
-    <dependency env="[linux32,linux64]" name="libhdf5.so.7">
-        <full-name value="HDF5 dynamic library"/>
-        <project-home value="http://www.hdfgroup.org/HDF5/"/>
-        <version value="unknown"/>
-        <usage value="dynamic linking"/>
-        <license value="LICENSE_hdf5.txt"/>
-        <license-type value="BSD_"/>
-        <copyright-notice value="Copyright 2006-2011 by The HDF Group. Copyright 1998-2006 by the Board of Trustees of the University of Illinois."/>
-        <description value="Library used for efficient storage."/>
-    </dependency>
-    <dependency env="macos32" name="libiconv.2.dylib">
-        <full-name value="libiconv library"/>
-        <project-home value="http://savannah.gnu.org/projects/libiconv/"/>
-        <version value="unknown"/>
-        <usage value="dynamic linking"/>
-        <license value="LICENSE_libiconv_lib.txt"/>
-        <license-type value="LGPLv3_"/>
-        <copyright-notice value="Copyright (c) 2007 Free Software Foundation, Inc."/>
-        <description value="A dependency of IDLE. We only used libiconv which according to their website http://www.gnu.org/software/libiconv/ is LGPL."/>
-    </dependency>
-    <dependency env="macos32" name="libjpeg.8.dylib">
+    <dependency env="mac" name="libjpeg.9.dylib">
         <full-name value="JPEG library"/>
         <project-home value="http://libjpeg.sourceforge.net/"/>
         <version value="unknown"/>
@@ -450,37 +290,7 @@
         <copyright-notice value="Copyright (C) 1991-1998, Thomas G. Lane."/>
         <description value="LIBJPEG is included because PIL needs it for exporting our TVB images"/>
     </dependency>
-    <dependency env="macos64" name="libjpeg.9.dylib">
-        <full-name value="JPEG library"/>
-        <project-home value="http://libjpeg.sourceforge.net/"/>
-        <version value="unknown"/>
-        <usage value="dynamic linking"/>
-        <license value="LICENSE_libjpeg.txt"/>
-        <license-type value="Free Software MIT_ like"/>
-        <copyright-notice value="Copyright (C) 1991-1998, Thomas G. Lane."/>
-        <description value="LIBJPEG is included because PIL needs it for exporting our TVB images"/>
-    </dependency>
-    <dependency env="[linux32,linux64]" name="libkrb5.so.3">
-        <full-name value="MIT Kerberos v5 library"/>
-        <project-home value="http://packages.debian.org/sid/libkrb5-dev"/>
-        <version value="unknown"/>
-        <usage value="dynamic linking"/>
-        <license value="LICENSE_libkrb5.txt"/>
-        <license-type value="MIT_"/>
-        <copyright-notice value="Copyright (C) 1985-2006 by the Massachusetts Institute of Technology."/>
-        <description value="A dependency of psycopg2 dynamic build. Headers and development libraries for MIT Kerberos."/>
-    </dependency>
-    <dependency env="[linux32,linux64]" name="liblapack.so.3gf">
-        <full-name value="lapack library"/>
-        <project-home value="http://www.netlib.org/lapack/"/>
-        <version value="unknown"/>
-        <usage value="dynamic linking"/>
-        <license value="LICENSE_lapack.txt"/>
-        <license-type value="BSD_"/>
-        <copyright-notice value="Copyright (c) 1992-2011 The University of Tennessee and The University of Tennessee Research Foundation.  All rights reserved.\          Copyright (c) 2000-2011 The University of California Berkeley. All rights reserved.\          Copyright (c) 2006-2011 The University of Colorado Denver.  All rights reserved."/>
-        <description value="Numpy linear uses the lapack library for computations."/>
-    </dependency>
-    <dependency env="macos64" name="libpng12.0.dylib">
+    <dependency env="mac" name="libpng12.0.dylib">
         <full-name value="PNG library"/>
         <project-home value="http://www.libpng.org/pub/png/libpng.html"/>
         <version value="unknown"/>
@@ -490,117 +300,17 @@
         <copyright-notice value="Copyright (c) 2004, 2006-2012 Glenn Randers-Pehrson"/>
         <description value="LIBPNG is the official PNG reference library. Is is included because Matplotlib makes use of it."/>
     </dependency>
-    <dependency env="macos32" name="libpng14.14.dylib">
-        <full-name value="PNG library"/>
-        <project-home value="http://www.libpng.org/pub/png/libpng.html"/>
-        <version value="unknown"/>
-        <usage value="dynamic linking"/>
-        <license value="LICENSE_libpng.txt"/>
-        <license-type value="Proprietary Open Source (Zlib-like, BSD-3-clause style)"/>
-        <copyright-notice value="Copyright (c) 2004, 2006-2012 Glenn Randers-Pehrson"/>
-        <description value="LIBPNG is the official PNG reference library. Is is included because Matplotlib makes use of it."/>
-    </dependency>
-        <dependency env="macos32" name="libquadmath.0.dylib">
-        <full-name value="GCC Quad-Precision Math Library Application Programming Interface (API)"/>
-        <project-home value="http://gcc.gnu.org/onlinedocs/libquadmath/"/>
-        <version value="unknown"/>
-        <usage value="dynamic linking"/>
-        <license value="LICENSE_quadmath.txt"/>
-        <license-type value="LGPL v2"/>
-        <copyright-notice value="Copyright (c) 2000, 2001, 2002, 2007, 2008 Free Software Foundation"/>
-        <description value="This appeared after recent updates of numerical libraries. Sources also found here: https://gnu.googlesource.com/gcc/+/gcc-4_6_4-release/libquadmath"/>
-    </dependency>
-    <dependency env="[linux32,linux64]" name="libsasl2.so.2">
-        <full-name value="libsasl cryptographic library"/>
-        <project-home value="https://www.archlinux.org/packages/core/i686/libsasl/"/>
-        <version value="unknown"/>
-        <usage value="dynamic linking"/>
-        <license value="LICENSE_libsasl.txt"/>
-        <license-type value="MIT_"/>
-        <copyright-notice value="Copyright (c) 1998-2003 Carnegie Mellon University. All rights reserved."/>
-        <description value="A dependency of psycopg2 dynamic build. This product includes cryptographic software written by Eric Young."/>
-    </dependency>
-    <dependency env="[win32]" name="libstdc++-6.dll">
-        <full-name value="Mingw gcc c++ runtime"/>
-        <project-home value="http://www.mingw.org/"/>
-        <version value="unknown"/>
-        <usage value="dynamic linking"/>
-        <license value="LICENSE_mingw.txt"/>
-        <license-type value="MIT_"/>
-        <copyright-notice value="Copyright (c) 2012 MinGW.org project"/>
-        <description value="Runtime library produced by the mingw32 gcc compiler."/>
-    </dependency>
-    <dependency env="[macos32,macos64]" name="libtcl8.5.dylib">
-        <full-name value="TCL85 dylib"/>
-        <project-home value="http://www.tcl.tk/software/tcltk/license.html"/>
-        <version value="unknown"/>
-        <usage value="dynamic linking"/>
-        <license value="LICENSE_tcl85.txt"/>
-        <license-type value="BSD_ like"/>
-        <copyright-notice value="Copyright (C) 1989-2008 by Regents of the University of California, Sun Microsystems, Inc., Scriptics Corporation, and other parties"/>
-        <description value="Library used as IDLE dependency, for the console-users."/>
-    </dependency>
-    <dependency env="[linux32,linux64]" name="libtcl8.5.so.0">
-        <full-name value="TCL85 so"/>
-        <project-home value="http://www.tcl.tk/software/tcltk/license.html"/>
-        <version value="unknown"/>
-        <usage value="dynamic linking"/>
-        <license value="LICENSE_tcl85.txt"/>
-        <license-type value="BSD_ like"/>
-        <copyright-notice value="Copyright (C) 1989-2008 by Regents of the University of California, Sun Microsystems, Inc., Scriptics Corporation, and other parties"/>
-        <description value="Library used as IDLE dependency, for the console-users."/>
-    </dependency>
-    <dependency env="[macos32,macos64]" name="libtk8.5.dylib">
-        <full-name value="TK85 dylib"/>
-        <project-home value="http://tkinter.unpythonic.net/wiki/Tkinter"/>
-        <version value="unknown"/>
-        <usage value="dynamic linking"/>
-        <license value="LICENSE_tcl85.txt"/>
-        <license-type value="BSD_ like"/>
-        <copyright-notice value="Copyright (C) 1989-2008 by Regents of the University of California, Sun Microsystems, Inc., Scriptics Corporation, and other parties"/>
-        <description value="Library used as IDLE dependency, for the console-users."/>
-    </dependency>
-    <dependency env="[linux32,linux64]" name="libtk8.5.so.0">
-        <full-name value="TK85 so"/>
-        <project-home value="http://tkinter.unpythonic.net/wiki/Tkinter"/>
-        <version value="unknown"/>
-        <usage value="dynamic linking"/>
-        <license value="LICENSE_tcl85.txt"/>
-        <license-type value="BSD_ like"/>
-        <copyright-notice value="Copyright (C) 1989-2008 by Regents of the University of California, Sun Microsystems, Inc., Scriptics Corporation, and other parties"/>
-        <description value="Library used as IDLE dependency, for the console-users."/>
-    </dependency>
-    <dependency env="macos32" name="libx11.6.dylib">
-        <full-name value="The current version of the X Window System."/>
-        <project-home value="http://www.linfo.org/x11.html"/>
-        <version value="unknown"/>
-        <usage value="dynamic linking"/>
-        <license value="LICENSE_libX11.txt"/>
-        <license-type value="MIT_"/>
-        <copyright-notice value="Copyright (c) 1986, 1987, 1988, 1994, 2004 The Open Group"/>
-        <description value="This is one of the main dependencies of IDLE."/>
-    </dependency>
-    <dependency env="[linux32,linux64]" name="libx11.so.6">
-        <full-name value="The current version of the X Window System."/>
-        <project-home value="http://www.linfo.org/x11.html"/>
-        <version value="unknown"/>
-        <usage value="dynamic linking"/>
-        <license value="LICENSE_libX11.txt"/>
-        <license-type value="MIT_"/>
-        <copyright-notice value="Copyright (c) 1986, 1987, 1988, 1994, 2004 The Open Group"/>
-        <description value="This is one of the main dependencies of IDLE."/>
-    </dependency>
-    <dependency env="[macos64,linux64,win64]" name="lxml">
+    <dependency env="[win,mac,linux]" name="lxml">
         <full-name value="Lxml"/>
         <project-home value="http://lxml.de/"/>
-        <version value="[3.3.0beta3,3.4.4]"/>
+        <version value="[3.4.4,3.3.0beta3]"/>
         <usage value="dynamic linking"/>
         <license value="LICENSE_lxml.txt"/>
         <license-type value="BSD_"/>
         <copyright-notice value="Copyright (c) 2004 Infrae. All rights reserved."/>
         <description value=""/>
     </dependency>
-    <dependency env="[win64]" name="markupsafe">
+    <dependency env="[win,mac,linux]" name="markupsafe">
         <full-name value="MarkupSafe"/>
         <project-home value="https://pypi.python.org/pypi/MarkupSafe"/>
         <version value="0.23"/>
@@ -610,7 +320,7 @@
         <copyright-notice value="Copyright (c) 2010 by Armin Ronacher and contributors.  See AUTHORS for more details."/>
         <description value="The IPython Notebook uses the MarkupSafe - Coming with Anaconda env"/>
     </dependency>
-    <dependency env="[win32,linux64,macos32,win64,linux32,macos64]" name="mathjax">
+    <dependency env="[win,mac,linux]" name="mathjax">
         <full-name value="MathJax"/>
         <project-home value="http://www.mathjax.org/"/>
         <version value="2.0"/>
@@ -620,47 +330,37 @@
         <copyright-notice value=""/>
         <description value="This library is used to show math formulas in a nicer format."/>
     </dependency>
-    <dependency env="[win32,linux64,macos32,win64,linux32,macos64]" name="matplotlib">
+    <dependency env="[win,mac,linux]" name="matplotlib">
         <full-name value="MatPlotLib"/>
         <project-home value="http://matplotlib.sourceforge.net/users/license.html"/>
-        <version value="[1.1.1,1.1.0,1.0.1,1.2.1]"/>
+        <version value="1.2.1"/>
         <usage value="dynamic linking"/>
         <license value="LICENSE_matplotlib.txt"/>
         <license-type value="Matplotlib License (PSF_ based)"/>
         <copyright-notice value="Copyright (c) 2002-2009 John D. Hunter; All Rights Reserved"/>
         <description value=""/>
     </dependency>
-    <dependency env="[win32,linux64,macos32,win64,linux32,macos64]" name="migrate">
+    <dependency env="[win,mac,linux]" name="migrate">
         <full-name value="Migrate SQL Alchemy"/>
         <project-home value="http://code.google.com/p/sqlalchemy-migrate/"/>
-        <version value="[0.7.2,0.8.2]"/>
+        <version value="0.7.2"/>
         <usage value="dynamic linking"/>
         <license value="LICENSE_migrate.txt"/>
         <license-type value="MIT_"/>
         <copyright-notice value="Copyright (c) 2009 Evan Rosson, Jan Dittberner, Domen Kozar"/>
         <description value="SQLAlchemy related package, for updating from one version of DB to another."/>
     </dependency>
-    <dependency env="[win32,linux64,macos32,win64,linux32,macos64]" name="sqlalchemy-migrate">
-        <full-name value="Migrate SQL Alchemy"/>
-        <project-home value="http://code.google.com/p/sqlalchemy-migrate/"/>
-        <version value="[0.7.2,0.8.2]"/>
-        <usage value="dynamic linking"/>
-        <license value="LICENSE_migrate.txt"/>
-        <license-type value="MIT_"/>
-        <copyright-notice value="Copyright (c) 2009 Evan Rosson, Jan Dittberner, Domen Kozar"/>
-        <description value="SQLAlchemy related package, for updating from one version of DB to another."/>
-    </dependency>
-    <dependency env="[win32,linux64,macos32,win64,linux32,macos64]" name="minixsv">
+    <dependency env="[win,mac,linux]" name="minixsv">
         <full-name value="Minixsv"/>
         <project-home value="http://www.familieleuthe.de/MiniXsv.html"/>
-        <version value="[0.9.0,unknown]"/>
+        <version value="0.9.0"/>
         <usage value="dynamic linking"/>
         <license value="LICENSE_minixsv.txt"/>
         <license-type value="MIT_"/>
         <copyright-notice value="Copyright (c) 2004-2008 by Roland Leuthe"/>
         <description value="A Lightweight XML schema validator"/>
     </dependency>
-    <dependency env="[win64]" name="mistune.pyd">
+    <dependency env="win" name="mistune.pyd">
         <full-name value="Mistune"/>
         <project-home value="https://github.com/lepture/mistune"/>
         <version value="unknown"/>
@@ -670,7 +370,7 @@
         <copyright-notice value="Copyright (c) 2014 - 2015, Hsiaoming Yang"/>
         <description value="IPython Notebook uses the mistune markdown parser - Coming with Anaconda env"/>
     </dependency>
-    <dependency env="[mac64]" name="mistune.so">
+    <dependency env="linux" name="mistune.so">
         <full-name value="Mistune"/>
         <project-home value="https://github.com/lepture/mistune"/>
         <version value="unknown"/>
@@ -680,37 +380,17 @@
         <copyright-notice value="Copyright (c) 2014 - 2015, Hsiaoming Yang"/>
         <description value="IPython Notebook uses the mistune markdown parser - Coming with Anaconda env"/>
     </dependency>
-    <dependency env="[won64,mac64,linux64]" name="mistune">
-        <full-name value="Mistune"/>
-        <project-home value="https://github.com/lepture/mistune"/>
-        <version value="0.6"/>
-        <usage value="dynamic linking"/>
-        <license value="LICENSE_mistune.txt"/>
-        <license-type value="BSD_"/>
-        <copyright-notice value="Copyright (c) 2014 - 2015, Hsiaoming Yang"/>
-        <description value="IPython Notebook uses the mistune markdown parser - Coming with Anaconda env"/>
-    </dependency>
-    <dependency env="[win32,linux64,macos32,win64,linux32,macos64]" name="mod_pywebsocket">
+    <dependency env="[win,mac,linux]" name="mod_pywebsocket">
         <full-name value="Python Web Socket Server"/>
         <project-home value="http://code.google.com/p/pywebsocket/"/>
-        <version value="[unknown,0.6b1,0.7.9]"/>
+        <version value="0.7.9"/>
         <usage value="dynamic linking"/>
         <license value="LICENSE_websocket.txt"/>
         <license-type value="BSD_ 3rd clause."/>
         <copyright-notice value="Copyright 2009, Google Inc."/>
         <description value=""/>
     </dependency>
-    <dependency env="[win32,linux64,macos32,win64,linux32,macos64]" name="mod-pywebsocket">
-        <full-name value="Python Web Socket Server"/>
-        <project-home value="http://code.google.com/p/pywebsocket/"/>
-        <version value="[unknown,0.6b1,0.7.9]"/>
-        <usage value="dynamic linking"/>
-        <license value="LICENSE_websocket.txt"/>
-        <license-type value="BSD_ 3rd clause."/>
-        <copyright-notice value="Copyright 2009, Google Inc."/>
-        <description value=""/>
-    </dependency>
-    <dependency env="[macos64,macos32]" name="mpl_toolkits">
+    <dependency env="[win,mac,linux]" name="mpl_toolkits">
         <full-name value="MatPlotLib Toolkits"/>
         <project-home value="http://matplotlib.sourceforge.net/mpl_toolkits/axes_grid/api/axes_size_api.html"/>
         <version value="unknown"/>
@@ -720,7 +400,7 @@
         <copyright-notice value="Copyright (c) 2002-2009 John D. Hunter; All Rights Reserved"/>
         <description value="This package is part of Matplotlib."/>
     </dependency>
-    <dependency env="[win32,linux64,macos32,win64,linux32,macos64]" name="mplh5canvas">
+    <dependency env="mac" name="mplh5canvas">
         <full-name value="Matplotlib HTML5 Backend"/>
         <project-home value="http://code.google.com/p/mplh5canvas/"/>
         <version value="1.0tvb"/>
@@ -730,27 +410,27 @@
         <copyright-notice value="Copyright (c) 2010-2011, SKA South Africa"/>
         <description value=""/>
     </dependency>
-    <dependency env="[win32,linux64,macos32,win64,linux32,macos64]" name="networkx">
+    <dependency env="[win,mac,linux]" name="networkx">
         <full-name value="NetworkX"/>
         <project-home value="http://networkx.lanl.gov/reference/legal.html"/>
-        <version value="[1.6,1.7,1.8.1,1.9.1]"/>
+        <version value="[1.9.1,1.8.1]"/>
         <usage value="dynamic linking"/>
         <license value="LICENSE_networkx_1.4.txt"/>
         <license-type value="BSD_ 3 clause"/>
         <copyright-notice value="Copyright (C) 2004-2011, NetworkX Developers Aric Hagberg &lt;hagberg@lanl.gov&gt; Dan Schult &lt;dschult@colgate.edu&gt; Pieter Swart &lt;swart@lanl.gov&gt;"/>
         <description value=""/>
     </dependency>
-    <dependency env="[win32,linux64,macos32,win64,linux32,macos64]" name="nibabel">
+    <dependency env="[win,mac,linux]" name="nibabel">
         <full-name value="Nibabel"/>
         <project-home value="http://nipy.sourceforge.net/nibabel/"/>
-        <version value="[1.1.0,1.3.0,1.2.2,2.0.1]"/>
+        <version value="[1.3.0,2.0.1]"/>
         <usage value="dynamic linking"/>
         <license value="LICENSE_nibabel.txt"/>
         <license-type value="MIT_"/>
         <copyright-notice value="Copyright (c) 2006-2010 Michael Hanke &lt;michael.hanke@gmail.com&gt; Copyright (c) 2009-2010 Matthew Brett &lt;matthew.brett@gmail.com&gt;"/>
         <description value=""/>
     </dependency>
-    <dependency env="[win64]" name="nisext">
+    <dependency env="[win,linux]" name="nisext">
         <full-name value="Nibabel Setup-Tools Extension"/>
         <project-home value="https://github.com/nipy/nibabel/tree/master/nisext"/>
         <version value="unknown"/>
@@ -760,17 +440,17 @@
         <copyright-notice value="Copyright (c) 2008 by Armin Ronacher"/>
         <description value="Setuptools extensions. Nibabel uses these routines, and houses them, and installs them - Coming with Anaconda env"/>
     </dependency>
-    <dependency env="[win64]" name="nose">
+    <dependency env="[win,linux]" name="nose">
         <full-name value="Nose"/>
         <project-home value="https://nose.readthedocs.org/en/latest/"/>
-        <version value="[1.3.7]"/>
+        <version value="1.3.7"/>
         <usage value="unit tests"/>
         <license value="LICENSE_nose.txt"/>
         <license-type value="MIT_"/>
         <copyright-notice value="Copyright (c) 2005-2008 Jason Pellerin"/>
         <description value="Tests - Coming with Anaconda env"/>
     </dependency>
-    <dependency env="[win32,linux64,macos64]" name="numexpr">
+    <dependency env="[win,mac,linux]" name="numexpr">
         <full-name value="NumExpr"/>
         <project-home value="http://code.google.com/p/numexpr/"/>
         <version value="[2.4,2.2.2]"/>
@@ -780,7 +460,7 @@
         <copyright-notice value="Copyright (c) 2007,2008  David M. Cooke &lt;david.m.cooke@gmail.com&gt;  Copyright (c) 2009,2010  Francesc Alted &lt;faltet@pytables.org&gt;  Copyright (c) 2011-      See AUTHORS.txt"/>
         <description value="Fast numerical array expression evaluator for Python and NumPy."/>
     </dependency>
-    <dependency env="[win32,linux64,win64,linux32,macos64,macos32]" name="numpy">
+    <dependency env="[win,mac,linux]" name="numpy">
         <full-name value="Numpy"/>
         <project-home value="http://numpy.scipy.org/license.html#license"/>
         <version value="[1.8.0,1.8.1]"/>
@@ -790,7 +470,7 @@
         <copyright-notice value="Copyright (c) 2005-2009, NumPy Developers."/>
         <description value="Numpy library will be used by simulation and analysis modules."/>
     </dependency>
-    <dependency env="macos64" name="openssl">
+    <dependency env="mac" name="openssl">
         <full-name value="Python OpenSSL"/>
         <project-home value="http://docs.python.org/license.html#openssl"/>
         <version value="0.13.1"/>
@@ -800,17 +480,7 @@
         <copyright-notice value="Copyright (c) 1998-2008 The OpenSSL Project.  All rights reserved."/>
         <description value="Package part of Python's distribution."/>
     </dependency>
-    <dependency env="linux32" name="openssl.ssl.so">
-        <full-name value="Python OpenSSL"/>
-        <project-home value="http://docs.python.org/license.html#openssl"/>
-        <version value="unknown"/>
-        <usage value="dynamic linking"/>
-        <license value="LICENSE_openssl.txt"/>
-        <license-type value="BSD_"/>
-        <copyright-notice value="Copyright (c) 1998-2008 The OpenSSL Project.  All rights reserved."/>
-        <description value="Package part of Python's distribution."/>
-    </dependency>
-    <dependency env="[macos64,win64,linux64]" name="pil">
+    <dependency env="[win,linux]" name="pil">
         <full-name value="Pillow Library"/>
         <project-home value="https://pillow.readthedocs.org/"/>
         <version value="[2.9.0,unknown]"/>
@@ -820,7 +490,7 @@
         <copyright-notice value="Copyright (c) 1997-2011 by Secret Labs AB Copyright (c) 1995-2011 by Fredrik Lundh"/>
         <description value="This library is used when exporting TVB figures from web, for documentation and for color-schemes."/>
     </dependency>
-    <dependency env="[win64,linux64]" name="pillow">
+    <dependency env="[win,linux]" name="pillow">
         <full-name value="Pillow Library"/>
         <project-home value="https://pillow.readthedocs.org/"/>
         <version value="[2.9.0]"/>
@@ -830,7 +500,7 @@
         <copyright-notice value="Copyright (c) 1997-2011 by Secret Labs AB Copyright (c) 1995-2011 by Fredrik Lundh"/>
         <description value="This library is used when exporting TVB figures from web, for documentation and for color-schemes."/>
     </dependency>
-    <dependency env="[win64]" name="pip">
+    <dependency env="[win,linux]" name="pip">
         <full-name value="PIP Library"/>
         <project-home value="https://pip.pypa.io/en/stable/"/>
         <version value="7.1.0"/>
@@ -840,37 +510,27 @@
         <copyright-notice value="Copyright (c) 2008-2014 The pip developers"/>
         <description value="Python packager - Coming with Anaconda env"/>
     </dependency>
-    <dependency env="[linux64,win64]" name="wheel">
-        <full-name value="A built-package format for Python."/>
-        <project-home value="https://bitbucket.org/pypa/wheel"/>
-        <version value="0.24.0"/>
-        <usage value="packaging"/>
-        <license value="LICENSE_wheel.txt"/>
-        <license-type value="MIT_"/>
-        <copyright-notice value="wheel copyright (c) 2012-2014 Daniel Holth &lt;dholth@fastmail.fm&gt; and contributors."/>
-        <description value="Binary python packager - Coming with Anaconda env"/>
-    </dependency>
-    <dependency env="[win32,linux64,macos32,win64,linux32,macos64]" name="psutil">
+    <dependency env="[win,mac,linux]" name="psutil">
         <full-name value="psutil"/>
         <project-home value="http://code.google.com/p/psutil/"/>
-        <version value="[0.6.1,0.7.1,1.2.1,2.2.1]"/>
+        <version value="[2.2.1,1.2.1]"/>
         <usage value="dynamic linking"/>
         <license value="LICENSE_psutil.txt"/>
         <license-type value="BSD_ 3rd clause"/>
         <copyright-notice value="Copyright (c) 2009, Jay Loden, Dave Daeschler, Giampaolo Rodola"/>
         <description value="psutil is a module providing an interface for retrieving information on all running processes and system utilization."/>
     </dependency>
-    <dependency env="[win32,win64,linux32,linux64,macos32,macos64]" name="psycopg2">
+    <dependency env="[win,mac,linux]" name="psycopg2">
         <full-name value="Psycopg2"/>
         <project-home value="http://initd.org/psycopg/"/>
-        <version value="[2.5.2 (dt dec pq3 ext),2.6 (dt dec pq3 ext),2.6.1 (dt dec pq3 ext lo64),2.6,2.6.1]"/>
+        <version value="[2.6 (dt dec pq3 ext),2.6.1 (dt dec pq3 ext lo64),2.5.2 (dt dec pq3 ext)]"/>
         <usage value="dynamic linking"/>
         <license value="LICENSE_psycopg.txt"/>
         <license-type value="ZPL-License"/>
         <copyright-notice value="Copyright (c) 2010 - Daniele Varrazzo"/>
         <description value="Psycopg is the most popular PostgreSQL adapter for the Python programming language. It has a choosable license (LGPL v3 or BSD Like) and we choose the BSD like one."/>
     </dependency>
-    <dependency env="[win64]" name="ptyprocess">
+    <dependency env="linux" name="ptyprocess">
         <full-name value="Ptyprocess"/>
         <project-home value="https://github.com/pexpect/ptyprocess"/>
         <version value="0.4"/>
@@ -880,17 +540,7 @@
         <copyright-notice value="Copyright (c) 2013-2014, Pexpect development team; Copyright (c) 2012, Noah Spurrier &lt;noah@noah.org&gt;"/>
         <description value="Used by IPython Notebook - Coming with Anaconda env "/>
     </dependency>
-    <dependency env="[win32,linux64,macos64]" name="python">
-        <full-name value="Python"/>
-        <project-home value="http://docs.python.org/license.html"/>
-        <version value="[2.7.9,2.7.10]"/>
-        <usage value="dynamic linking"/>
-        <license value="LICENSE_python.txt"/>
-        <license-type value="PSF_"/>
-        <copyright-notice value="Copyright (c) 1990-2012, Python Software Foundation. "/>
-        <description value="Most of TVB code will probably be in Python. Multiple Python libraries, some of them listed below, use Python Software Foundation "/>
-    </dependency>
-    <dependency env="[win64]" name="pygments">
+    <dependency env="[win,mac,linux]" name="pygments">
         <full-name value="Pygments"/>
         <project-home value="http://pygments.org/"/>
         <version value="2.0.2"/>
@@ -900,7 +550,7 @@
         <copyright-notice value="Copyright (c) 2006-2015 by the respective authors (see AUTHORS file)"/>
         <description value="The syntax-highlighting in IPython Notebook is done by pygments - Coming with Anaconda env "/>
     </dependency>
-    <dependency env="[win64]" name="pyreadline">
+    <dependency env="win" name="pyreadline">
         <full-name value="Pyreadline"/>
         <project-home value="http://pythonhosted.org/pyreadline//"/>
         <version value="2.0"/>
@@ -910,17 +560,27 @@
         <copyright-notice value="Copyright (c) 2006 Jorgen Stenarson &lt;jorgen.stenarson@bostream.nu&gt;. Copyright (c) 2003-2006 Gary Bishop. Copyright (c) 2003-2006 Jack Trainor"/>
         <description value="For IPython Notebook - Coming with Anaconda env"/>
     </dependency>
-    <dependency env="[win32,linux64,macos32,win64,linux32,macos64]" name="pytz">
+    <dependency env="[win,mac,linux]" name="python">
+        <full-name value="Python"/>
+        <project-home value="http://docs.python.org/license.html"/>
+        <version value="[2.7.9,2.7.10]"/>
+        <usage value="dynamic linking"/>
+        <license value="LICENSE_python.txt"/>
+        <license-type value="PSF_"/>
+        <copyright-notice value="Copyright (c) 1990-2012, Python Software Foundation. "/>
+        <description value="Most of TVB code will probably be in Python. Multiple Python libraries, some of them listed below, use Python Software Foundation "/>
+    </dependency>
+    <dependency env="[win,mac,linux]" name="pytz">
         <full-name value="PyTZ: TimeZone Library for Python"/>
         <project-home value="http://pytz.sourceforge.net/"/>
-        <version value="[2010o,2011n,2011c,2012c,2012d-mpl,2015.4]"/>
+        <version value="[2015.4,2012d-mpl]"/>
         <usage value="dynamic linking"/>
         <license value="LICENSE_pytz.txt"/>
         <license-type value="MIT_"/>
         <copyright-notice value="Copyright (c) 2003-2009 Stuart Bishop &lt;stuart@stuartbishop.net&gt;"/>
         <description value=""/>
     </dependency>
-    <dependency env="[win32,linux64,macos32,win64,linux32,macos64]" name="scipy">
+    <dependency env="[win,mac,linux]" name="scipy">
         <full-name value="Scipy"/>
         <project-home value="http://www.scipy.org/scipylib/faq.html#what-are-scipy-s-licensing-terms"/>
         <version value="0.14.0"/>
@@ -930,117 +590,67 @@
         <copyright-notice value="Copyright (c) 2001, 2002 Enthought, Inc. Copyright (c) 2003-2009 SciPy Developers."/>
         <description value="SciPy is freely available. It is distributed as Open Source software, meaning that you have complete access to the source code and can use it in anyway allowed by its liberal BSD_ license."/>
     </dependency>
-    <dependency env="[win32,linux64,macos32,win64,linux32,macos64]" name="simplejson">
+    <dependency env="[win,mac,linux]" name="simplejson">
         <full-name value="Simple JSON"/>
         <project-home value="https://github.com/simplejson"/>
-        <version value="[2.6.1,2.6.0,2.3.2,3.3.0,3.3.1,3.7.3]"/>
+        <version value="[3.3.1,3.7.3]"/>
         <usage value="dynamic linking"/>
         <license value="LICENSE_simplejson.txt"/>
         <license-type value="MIT_ or PSF_"/>
         <copyright-notice value="Copyright (c) 2006 Bob Ippolito"/>
         <description value="Library for JSON encoding/decoding"/>
     </dependency>
-    <dependency env="[win32,linux64,macos32,win64,linux32,macos64]" name="sklearn">
+    <dependency env="[win,mac,linux]" name="sklearn">
         <full-name value="Scikits Learn"/>
         <project-home value="http://scikit-learn.org/"/>
-        <version value="[0.13.1,0.11,0.12,0.14.1,0.15.2]"/>
+        <version value="[0.15.2,0.14.1]"/>
         <usage value="dynamic linkingd"/>
         <license value="LICENSE_scikits_learn.txt"/>
         <license-type value="BSD_ 3rd clause"/>
         <copyright-notice value="Copyright (c) 2007 - 2012 The scikit-learn developers."/>
         <description value=""/>
     </dependency>
-    <dependency env="[win32,linux64,macos32,win64,linux32,macos64]" name="scikit-learn">
-        <full-name value="Scikits Learn"/>
-        <project-home value="http://scikit-learn.org/"/>
-        <version value="[0.13.1,0.11,0.12,0.14.1,0.15.2]"/>
-        <usage value="dynamic linkingd"/>
-        <license value="LICENSE_scikits_learn.txt"/>
-        <license-type value="BSD_ 3rd clause"/>
-        <copyright-notice value="Copyright (c) 2007 - 2012 The scikit-learn developers."/>
-        <description value=""/>
-    </dependency>
-    <dependency env="[win32,linux64,macos32,win64,linux32,macos64]" name="sqlalchemy">
+    <dependency env="[win,mac,linux]" name="sqlalchemy">
         <full-name value="SQL-Alchemy"/>
         <project-home value="http://www.sqlalchemy.org/"/>
-        <version value="[0.7.6,0.7.4,0.7.5,0.7.8]"/>
+        <version value="0.7.8"/>
         <usage value="dynamic linking"/>
         <license value="LICENSE_sqlalchemy_0.6.6.txt"/>
         <license-type value="MIT_"/>
         <copyright-notice value="Copyright (c) 2005-2011 the SQLAlchemy authors and contributors &lt;see AUTHORS file&gt;. SQLAlchemy is a trademark of Michael Bayer."/>
         <description value="SQLAlchemy and its documentation are licensed under the MIT_ license."/>
     </dependency>
-    <dependency env="[win32,linux64,macos32,win64,linux32,macos64]" name="sqlite3">
+    <dependency env="mac" name="sqlite3">
         <full-name value="Sqlite DB for Python"/>
         <project-home value="https://github.com/ghaering/pysqlite"/>
-        <version value="[2.6.0,2.4.1]"/>
+        <version value="2.6.0"/>
         <usage value="dynamic linking"/>
         <license value="LICENSE_sqlite.txt"/>
         <license-type value="MIT_"/>
         <copyright-notice value="Copyright (c) 2004-2007 Gerhard Haring"/>
         <description value="Python DB-API module for SQLite 3."/>
     </dependency>
-     <dependency env="[win32]" name="szip.dll">
-        <full-name value="Szip in HDF5"/>
-        <project-home value="http://www.hdfgroup.org/doc_resource/SZIP/Commercial_szip.html"/>
-        <version value="unknown"/>
-        <usage value="dynamic linking"/>
-        <license value="LICENSE_szip.txt"/>
-        <license-type value="Royal Free"/>
-        <copyright-notice value="Copyright (C) 2001 Science and Technology Corporation @ UNM.  All rights released.  Copyright (C) 2003 Lowell H. Miles and Jack A. Venbrux"/>
-        <description value="This gets included in Windows only, because H5PY comes directly with it."/>
-    </dependency>
-     <dependency env="[win64]" name="sz.dll">
-        <full-name value="Szip in HDF5"/>
-        <project-home value="http://www.hdfgroup.org/doc_resource/SZIP/Commercial_szip.html"/>
-        <version value="unknown"/>
-        <usage value="dynamic linking"/>
-        <license value="LICENSE_szip.txt"/>
-        <license-type value="Royal Free"/>
-        <copyright-notice value="Copyright (C) 2001 Science and Technology Corporation @ UNM.  All rights released.  Copyright (C) 2003 Lowell H. Miles and Jack A. Venbrux"/>
-        <description value="This gets included in Windows only, because H5PY comes directly with it."/>
-    </dependency>
-    <dependency env="[win32,linux64,macos32,win64,linux32,macos64]" name="tables">
+    <dependency env="[win,mac,linux]" name="tables">
         <full-name value="PyTables"/>
         <project-home value="http://www.pytables.org/moin/License"/>
-        <version value="[2.3.1,2.4.0,2.4.0b1,3.0.0]"/>
+        <version value="3.0.0"/>
         <usage value="dynamic linking"/>
         <license value="LICENSE_pytables.txt"/>
         <license-type value="BSD_"/>
         <copyright-notice value="Copyright Notice and Statement for PyTables Software Library and Utilities: Copyright (c) 2002-2004 by Francesc Alted  Copyright (c) 2005-2007 by Carabos Coop. V.  Copyright (c) 2008-2010 by Francesc Alted"/>
         <description value="Open source software, under BSD_ license."/>
     </dependency>
-    <dependency env="[macos64,macos32]" name="tcl.framework">
-        <full-name value="TCL85 Framework"/>
-        <project-home value="http://www.tcl.tk/software/tcltk/license.html"/>
-        <version value="unknown"/>
-        <usage value="dynamic linking"/>
-        <license value="LICENSE_tcl85.txt"/>
-        <license-type value="BSD_ like"/>
-        <copyright-notice value="Copyright (C) 1989-2008 by Regents of the University of California, Sun Microsystems, Inc., Scriptics Corporation, and other parties"/>
-        <description value="Library used as IDLE dependency, for the console-users."/>
-    </dependency>
-    <dependency env="[win32,win64]" name="tcl85.dll">
-        <full-name value="TCL85 dll"/>
-        <project-home value="http://www.tcl.tk/software/tcltk/license.html"/>
-        <version value="8.5.2.15"/>
-        <usage value="dynamic linking"/>
-        <license value="LICENSE_tcl85.txt"/>
-        <license-type value="BSD_ like"/>
-        <copyright-notice value="Copyright (C) 1989-2008 by Regents of the University of California, Sun Microsystems, Inc., Scriptics Corporation, and other parties"/>
-        <description value="Library used as IDLE dependency, for the console-users."/>
-    </dependency>
-    <dependency env="[win32,linux64,macos32,win64,linux32,macos64]" name="tempita">
+    <dependency env="[win,mac,linux]" name="tempita">
         <full-name value="Tempita"/>
         <project-home value="http://pythonpaste.org/tempita/"/>
-        <version value="[unknown,0.5.1,0.5.2]"/>
+        <version value="[0.5.1,0.5.2]"/>
         <usage value="dynamic linking"/>
         <license value="LICENSE_tempita.txt"/>
         <license-type value="BSD_ 2 clause"/>
         <copyright-notice value="Copyright (c) 2008 Ian Bicking and Contributors"/>
         <description value="This is a dependency of SQLAlchemy's migrate versioning."/>
     </dependency>
-    <dependency env="[win64]" name="terminado">
+    <dependency env="linux" name="terminado">
         <full-name value="Terminado"/>
         <project-home value="https://pypi.python.org/pypi/terminado"/>
         <version value="0.5"/>
@@ -1050,7 +660,7 @@
         <copyright-notice value="Copyright (c) 2014, Ramalingam Saravanan &lt;sarava@sarava.net&gt;"/>
         <description value="The IPython Notebook uses the Terminado - Coming with Anaconda env"/>
     </dependency>
-    <dependency env="[win64]" name="tornado">
+    <dependency env="[win,mac,linux]" name="tornado">
         <full-name value="Tornado"/>
         <project-home value="http://www.tornadoweb.org/en/stable/"/>
         <version value="4.2"/>
@@ -1060,27 +670,7 @@
         <copyright-notice value="Copyright (c) 2011, Facebook."/>
         <description value="The IPython Notebook uses the Tornado project for its HTTP server - Coming with Anaconda env"/>
     </dependency>
-    <dependency env="[macos64,macos32]" name="tk.framework">
-        <full-name value="TK85 Framework"/>
-        <project-home value="http://tkinter.unpythonic.net/wiki/Tkinter"/>
-        <version value="unknown"/>
-        <usage value="dynamic linking"/>
-        <license value="LICENSE_tcl85.txt"/>
-        <license-type value="BSD_ like"/>
-        <copyright-notice value="Copyright (C) 1989-2008 by Regents of the University of California, Sun Microsystems, Inc., Scriptics Corporation, and other parties"/>
-        <description value="Library used as IDLE dependency, for the console-users."/>
-    </dependency>
-    <dependency env="[win32,win64]" name="tk85.dll">
-        <full-name value="TK85 dll"/>
-        <project-home value="http://tkinter.unpythonic.net/wiki/Tkinter"/>
-        <version value="8.5.2.15"/>
-        <usage value="dynamic linking"/>
-        <license value="LICENSE_tcl85.txt"/>
-        <license-type value="BSD_ like"/>
-        <copyright-notice value="Copyright (C) 1989-2008 by Regents of the University of California, Sun Microsystems, Inc., Scriptics Corporation, and other parties"/>
-        <description value="Library used as IDLE dependency, for the console-users."/>
-    </dependency>
-    <dependency env="[macos64]" name="twisted">
+    <dependency env="mac" name="twisted">
         <full-name value="Twisted"/>
         <project-home value="https://pypi.python.org/pypi/Twisted"/>
         <version value="12.2.0"/>
@@ -1090,7 +680,7 @@
         <copyright-notice value="Copyright (c) 2001-2015 Authors list (see license file for it)"/>
         <description value="The IPython Notebook uses it"/>
     </dependency>
-    <dependency env="[win64]" name="tzlocal">
+    <dependency env="win" name="tzlocal">
         <full-name value="TzLocal"/>
         <project-home value="https://pypi.python.org/pypi/tzlocal"/>
         <version value="1.2"/>
@@ -1100,17 +690,17 @@
         <copyright-notice value="No Copyright"/>
         <description value="- Coming with Anaconda env"/>
     </dependency>
-    <dependency env="[win32,win64,linux32,linux64]" name="wsgiref">
+    <dependency env="mac" name="wsgiref">
         <full-name value="Python module wsgiref"/>
         <project-home value="http://pypi.python.org/pypi/wsgiref"/>
-        <version value="[unknown,0.1.2]"/>
+        <version value="0.1.2"/>
         <usage value="dynamic linking"/>
         <license value="LICENSE_python.txt"/>
         <license-type value="PSF_"/>
         <copyright-notice value="Copyright Phillip J. Eby **"/>
         <description value="The Web Server Gateway Interface (WSGI) is a standard interface between web server software and web applications written in Python."/>
     </dependency>
-    <dependency env="[win32,linux64,macos32,win64,linux32,macos64]" name="zlib">
+    <dependency env="[win,mac,linux]" name="zlib">
         <full-name value="Python ZLIB"/>
         <project-home value="http://docs.python.org/license.html#zlib"/>
         <version value="1.0"/>
@@ -1120,7 +710,17 @@
         <copyright-notice value="Copyright (C) 1995-2010 Jean-loup Gailly and Mark Adler"/>
         <description value="Package part of Python's distribution."/>
     </dependency>
-    <dependency env="[macos64]" name="zope">
+    <dependency env="[win,mac,linux]" name="zmq">
+        <full-name value="zeromq"/>
+        <project-home value="http://zguide.zeromq.org"/>
+        <version value="14.7.0"/>
+        <usage value="dynamic linking"/>
+        <license value="LICENSE_zmq.txt"/>
+        <license-type value="LGPLv3_"/>
+        <copyright-notice value="Copyright (C) 2007-2014 iMatix Corporation and Contributors"/>
+        <description value="The IPython Notebook requires ZeroMQ for communication - Coming with Anaconda env"/>
+    </dependency>
+    <dependency env="mac" name="zope">
         <full-name value="Zope"/>
         <project-home value="https://pypi.python.org/pypi/zope.interface"/>
         <version value="unknown"/>
@@ -1129,85 +729,5 @@
         <license-type value="ZPL 2.1"/>
         <copyright-notice value="Copyright (c) 2012, Zope Foundation contributors"/>
         <description value="The IPython Notebook uses it"/>
-    </dependency>
-    <dependency env="[win64]" name="zmq">
-        <full-name value="zeromq"/>
-        <project-home value="http://zguide.zeromq.org"/>
-        <version value="14.7.0"/>
-        <usage value="dynamic linking"/>
-        <license value="LICENSE_zmq.txt"/>
-        <license-type value="LGPLv3_"/>
-        <copyright-notice value="Copyright (C) 2007-2014 iMatix Corporation and Contributors"/>
-        <description value="The IPython Notebook requires ZeroMQ for communication - Coming with Anaconda env"/>
-    </dependency>
-    <dependency env="[win64,linux64,mac64]" name="pyzmq">
-        <full-name value="zeromq"/>
-        <project-home value="http://zguide.zeromq.org"/>
-        <version value="14.7.0"/>
-        <usage value="dynamic linking"/>
-        <license value="LICENSE_zmq.txt"/>
-        <license-type value="LGPLv3_"/>
-        <copyright-notice value="Copyright (C) 2007-2014 iMatix Corporation and Contributors"/>
-        <description value="The IPython Notebook requires ZeroMQ for communication - Coming with Anaconda env"/>
-    </dependency>
-    <dependency env="[win64,linux64,mac64]" name="six">
-        <full-name value="six"/>
-        <project-home value="https://pypi.python.org/pypi/six/"/>
-        <version value="1.9.0"/>
-        <usage value="dynamic linking"/>
-        <license value="LICENSE_six.txt"/>
-        <license-type value="MIT_"/>
-        <copyright-notice value="Copyright (c) 2010-2015 Benjamin Peterson"/>
-        <description value="Python 2 and 3 compatibility library"/>
-    </dependency>
-    <dependency env="[win64,linux64,mac64]" name="python-dateutil">
-        <full-name value="python-dateutil"/>
-        <project-home value="https://dateutil.readthedocs.org/en/latest/"/>
-        <version value="[1.5-mpl,2.4.1]"/>
-        <usage value="dynamic linking"/>
-        <license value="LICENSE_dateutil.txt"/>
-        <license-type value="BSD_"/>
-        <copyright-notice value="Copyright (c) 2003-2011 - Gustavo Niemeyer &lt;gustavo@niemeyer.net&gt; Copyright (c) 2012-2014 - Tomi Pievilainen &lt;tomi.pievilainen@iki.fi&gt; Copyright (c) 2014 - Yaron de Leeuw &lt;me@jarondl.net&gt;"/>
-        <description value="The dateutil module provides powerful extensions to the standard datetime module, available in Python."/>
-    </dependency>
-    <dependency env="[win64,linux64,mac64]" name="dateutil">
-        <full-name value="python-dateutil"/>
-        <project-home value="https://dateutil.readthedocs.org/en/latest/"/>
-        <version value="[1.5-mpl,2.4.1]"/>
-        <usage value="dynamic linking"/>
-        <license value="LICENSE_dateutil.txt"/>
-        <license-type value="BSD_"/>
-        <copyright-notice value="Copyright (c) 2003-2011 - Gustavo Niemeyer &lt;gustavo@niemeyer.net&gt; Copyright (c) 2012-2014 - Tomi Pievilainen &lt;tomi.pievilainen@iki.fi&gt; Copyright (c) 2014 - Yaron de Leeuw &lt;me@jarondl.net&gt;"/>
-        <description value="The dateutil module provides powerful extensions to the standard datetime module, available in Python."/>
-    </dependency>
-    <dependency env="[win64,linux64,mac64]" name="decorator">
-        <full-name value="Decorator module"/>
-        <project-home value="https://github.com/micheles/decorator"/>
-        <version value="3.4.2"/>
-        <usage value="dynamic linking"/>
-        <license value="LICENSE_decorator.txt"/>
-        <license-type value="BSD_"/>
-        <copyright-notice value="Copyright (c) 2005-2015, Michele Simionato"/>
-        <description value="Better living through Python with decorators"/>
-    </dependency>
-    <dependency env="[win64,linux64,mac64]" name="jsonschema">
-        <full-name value="Json schema"/>
-        <project-home value="http://github.com/Julian/jsonschema"/>
-        <version value="[2.4.0,2.5.1]"/>
-        <usage value="dynamic linking"/>
-        <license value="LICENSE_jsonschema.txt"/>
-        <license-type value="MIT_"/>
-        <copyright-notice value="Copyright (c) 2013 Julian Berman"/>
-        <description value="An(other) implementation of JSON Schema for Python"/>
-    </dependency>
-    <dependency env="[win64,linux64,mac64]" name="sphinx">
-        <full-name value="Sphinx python documentation generator"/>
-        <project-home value="http://sphinx-doc.org/"/>
-        <version value="[1.2.3,1.3.1]"/>
-        <usage value="dynamic linking"/>
-        <license value="LICENSE_sphinx.txt"/>
-        <license-type value="BSD_"/>
-        <copyright-notice value="Copyright (c) 2007-2015 by the Sphinx team"/>
-        <description value="The python documentation generator. Used by ipython notebook."/>
     </dependency>
 </tvb>

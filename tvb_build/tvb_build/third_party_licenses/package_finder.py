@@ -42,7 +42,7 @@ from types import ModuleType
 
 
 PYTHON_VERSION = "%s.%s.%s" % sys.version_info[:3]
-    
+
 EXCLUDES = [
     # part of tvb
     'tvb_bin', 'tvb_data', 'tvb', 'mplh5canvas', 'gdist',
@@ -89,32 +89,32 @@ EXCLUDES_PYD = [## Windows *.pyds that are part of python standard libs
                 ]
 
 EXCLUDES_SO = [  # libpq dependencies on dynamic psycopg linux 32
-                 'libcom_err.so.2', 'libgssapi_krb5.so.2', 'libldap_r-2.4.so.2', 'libkrb5support.so.0', 
-                 'libk5crypto.so.3', 'libkeyutils.so.1', 'liblber-2.4.so.2', 'libtasn1.so.3', 'libgcrypt.so.11', 
-                 'libgpg-error.so.0', 
+                 'libcom_err.so.2', 'libgssapi_krb5.so.2', 'libldap_r-2.4.so.2', 'libkrb5support.so.0',
+                 'libk5crypto.so.3', 'libkeyutils.so.1', 'liblber-2.4.so.2', 'libtasn1.so.3', 'libgcrypt.so.11',
+                 'libgpg-error.so.0',
                  # This are the so' which are only needed by the linux 32 python 2.6 machine
-                 '_bytesio.so', '_fileio.so', 'libblt.2.4.so.8.5', 'libuuid.so.1', 'libxcb-render-util.so.0', 
-                 'libxcb-render.so.0', 'libxcomposite.so.1', 'libxcursor.so.1', 'libxdamage.so.1', 'libxfixes.so.3', 
-                 'libxi.so.6', 'libxinerama.so.1', 'libxrandr.so.2', 'libxt.so.6', 'openssl.crypto.so', 
+                 '_bytesio.so', '_fileio.so', 'libblt.2.4.so.8.5', 'libuuid.so.1', 'libxcb-render-util.so.0',
+                 'libxcb-render.so.0', 'libxcomposite.so.1', 'libxcursor.so.1', 'libxdamage.so.1', 'libxfixes.so.3',
+                 'libxi.so.6', 'libxinerama.so.1', 'libxrandr.so.2', 'libxt.so.6', 'openssl.crypto.so',
                  'openssl.rand.so', 'pil._imaging.so',
                  # SO's which we can exclude from license checking being either python standard or
                  # part of library that is already in packages_accepted.xml
-                 '_bisect.so', '_collections.so', '_functools.so', '_hashlib.so', '_io.so', '_locale.so', 
-                 '_random.so', '_socket.so', '_ssl.so', '_struct.so', '_weakref.so', 'unicodedata.so', 
+                 '_bisect.so', '_collections.so', '_functools.so', '_hashlib.so', '_io.so', '_locale.so',
+                 '_random.so', '_socket.so', '_ssl.so', '_struct.so', '_weakref.so', 'unicodedata.so',
                  'array.so', 'cpickle.so', 'cstringio.so', 'select.so', 'fcntl.so', 'binascii.so', 'future_builtins.so',
-                 'operator.so', 'zlib.so', 'time.so', 'itertools.so', 'math.so', 'strop.so', 'syslog.so', 
-                 '_bsddb.so', '_codecs_cn.so', '_codecs_hk.so', '_codecs_iso2022.so', '_codecs_jp.so', 
+                 'operator.so', 'zlib.so', 'time.so', 'itertools.so', 'math.so', 'strop.so', 'syslog.so',
+                 '_bsddb.so', '_codecs_cn.so', '_codecs_hk.so', '_codecs_iso2022.so', '_codecs_jp.so',
                  '_codecs_kr.so', '_codecs_tw.so', '_csv.so', '_ctypes.so', '_curses.so', 'datetime.so', '_heapq.so',
-                 '_imaging.so', '_json.so', '_lsprof.so', '_lsprof.so', '_multibytecodec.so', '_multiprocessing.so', 
+                 '_imaging.so', '_json.so', '_lsprof.so', '_lsprof.so', '_multibytecodec.so', '_multiprocessing.so',
                  '_psutil_linux.so', '_psutil_posix.so', '_psutil_osx.so', '_sqlite3.so', '_tkinter.so', 'cmath.so',
-                 'libcrypto.so.0.9.8', 'libgcc_s.so.1', 'libpng12.so.0', 'libssl.so.0.9.8', 'libstdc\\+\\+.so.6', 
-                 'libz.so', 'mmap.so', 'parser.so', 'pyexpat.so', 'readline.so', 'resource.so', 'termios.so', 
-                 re.compile(r'libncurses.*'), re.compile(r'libreadline\..*'), re.compile(r'libpython2\..*\.so.*'), 
-                 'gdist.so', 'libgfortran.so.3', 'libfontconfig.so.1', 'libsqlite3.so.0', 'numexpr.interpreter.so', 
-                 'genshi._speedups.so', 'psycopg2._psycopg.so', 'pysqlite2._sqlite.so', 'simplejson._speedups.so', 
+                 'libcrypto.so.0.9.8', 'libgcc_s.so.1', 'libssl.so.0.9.8', 'libstdc\\+\\+.so.6',
+                 'libz.so', 'mmap.so', 'parser.so', 'pyexpat.so', 'readline.so', 'resource.so', 'termios.so',
+                 re.compile(r'libncurses.*'), re.compile(r'libreadline\..*'), re.compile(r'libpython2\..*\.so.*'),
+                 'gdist.so', 'libgfortran.so.3', 'libfontconfig.so.1', 'libsqlite3.so.0', 'numexpr.interpreter.so',
+                 'genshi._speedups.so', 'psycopg2._psycopg.so', 'pysqlite2._sqlite.so', 'simplejson._speedups.so',
                  re.compile(r'sqlalchemy\..*\.so'), re.compile(r'scipy\..*\.so'), re.compile(r'libpq.so\.*'),
                  re.compile(r'matplotlib\..*\.so'), re.compile(r'numpy\..*\.so'), re.compile(r'_psutil\.*\.so'),
-                 'libxau.so.6', 'libxcb.so.1', 'libxdmcp.so.6', 'libxext.so.6', 'libxft.so.2', 'libxrender.so.1', 
+                 'libxau.so.6', 'libxcb.so.1', 'libxdmcp.so.6', 'libxext.so.6', 'libxft.so.2', 'libxrender.so.1',
                  'libxss.so.1', re.compile(r'h5py\..+\.so'), re.compile(r'libhdf5_hl.*\.so')]
 
 EXCLUDES_DYLIB = ['libcrypto.1.0.0.dylib', 'libgcc_s.1.dylib',
@@ -124,7 +124,9 @@ EXCLUDES_DYLIB = ['libcrypto.1.0.0.dylib', 'libgcc_s.1.dylib',
                   'libfontconfig.1.dylib', 'libxau.6.dylib', 'libxcb.1.dylib', 'libxdmcp.6.dylib',
                   'libxext.6.dylib', 'libxft.2.dylib', 'libxrender.1.dylib',
                   ## Libz is needed by psycopg2
-                  re.compile(r'libz.*\.dylib'), re.compile(r'libhdf5_hl.*\.dylib')]
+                  re.compile(r'libz.*\.dylib'),
+                  ## Already included
+                  re.compile(r'libhdf5_hl.*\.dylib'), re.compile(r'libhdf5.*\.dylib')]
 
 # py2app adds some frameworks to package that we also need to check for licenses.
 EXCLUDES_FRAMEWORK = ['python.framework']
@@ -133,12 +135,14 @@ INIT = ['__init__.py', '__init__.pyc']
 EXTRA_SEARCH_FOLDERS = ['site-packages', 'site-packages.zip']
 EXTRA_MODULES = {'jquery': '2.1.1',
                  'flot': '0.8.3',
+                 'hdf5': '1.8.15',
                  'jit': '2.0.1',
                  'd3': '3',
                  'bct': '43',
                  'python': PYTHON_VERSION,
                  'zlib': '1.0',
                  'mathjax': '2.0'}
+ANACONDA_VERSION = "2.3.0"
 
 ## These file-name pattern should not be found in TVB distribution.
 LICENSE_INTERDICTIONS = [re.compile(".*lzo.*")] ##, re.compile(".*szip.*")]
@@ -284,8 +288,9 @@ def parse_tree_structure(root_, excludes=None):
     if not sys.platform == 'darwin':
         _find_pkg_modules(modules_dict)
 
-    if 'anaconda' in sys.version.lower():
-        modules_dict['anaconda'] = sys.version.split('|')[1].split(' ')[1]
+    if 'anaconda' in sys.version.lower() or 'conda' in sys.executable:
+        # TODO retrieve this from the build machine
+        modules_dict['anaconda'] = ANACONDA_VERSION
 
     if sys.platform == 'darwin':
         #----- Go into Contents/Frameworks and look for dlybs/so's-----
@@ -295,9 +300,9 @@ def parse_tree_structure(root_, excludes=None):
         if os.path.exists(path):
             _find_modules(path, modules_dict)
     return modules_dict
-    
-    
-    
+
+
+
 # Test case for Windows or Mac   
 if __name__ == '__main__':
     ROOT = 'D:\Projects\Brain\dist-repo\TVB_distribution\library.zip'

@@ -143,7 +143,7 @@ def generate_artefact(root_folder_to_introspect, excludes=None, actual_libs=None
     dep_text = dep_text.replace("[unknown,", '[-,').replace(",unknown]", ',-]')
     dep_text = dep_text.replace("*Version:* **unknown**", "*Version:* **-**")
 
-    print "- Writing used dependencies as xml"
+    print " - Writing used dependencies as xml"
     # this is used for logging purposes
     # Gathering all these files from the build machines will show TVB's dependencies
     parser.write_used_on_this_platform(accepted_libs, actual_libs, path=PACKAGES_USED_XML)
@@ -164,7 +164,7 @@ def generate_artefact(root_folder_to_introspect, excludes=None, actual_libs=None
             z_file.write(file_name, os.path.split(file_name)[1])
 
     os.remove(RESULT_FILE_NAME + '.html')
-    print "- THIRD_PARTY_LICENSES were generated"
+    print " - THIRD_PARTY_LICENSES were generated"
     return RESULT_FILE_NAME + '.zip'
 
 
