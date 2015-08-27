@@ -60,7 +60,7 @@ function _displayGradientForThePickedVertex(selectedLocalConnectivity) {
 
         if (selectedLocalConnectivity == null || selectedLocalConnectivity == "None" ||
             selectedLocalConnectivity.trim().length == 0) {
-            LCONN_PICK_drawDefaultColorBuffers();
+            _drawDefaultColorBuffers();
             return;
         }
 
@@ -69,7 +69,7 @@ function _displayGradientForThePickedVertex(selectedLocalConnectivity) {
         doAjaxCall({
             async: false,
             url: url,
-            success: LCONN_PICK_updateBrainDrawing
+            success: _updateBrainColors
         });
         TRIANGLE_pickedIndex = GL_NOTFOUND;             // disable data retrieval until next triangle pick
     }
@@ -131,4 +131,36 @@ function LCONN_submitLocalConnectivityData(actionURL, formId) {
     parametersForm.method = "POST";
     parametersForm.action = actionURL;
     parametersForm.submit();
+}
+
+
+/*
+ * ---------------------------------------Pick related code starts here:
+ * */
+
+/**
+ * Displays a gradient on the surface.
+ *
+ * @param data_from_server a json object which contains the data needed
+ * for drawing a gradient on the surface.
+ */
+function _updateBrainColors(data_from_server) {
+
+    data_from_server = $.parseJSON(data_from_server);
+    var data = $.parseJSON(data_from_server.data);
+    BASE_PICK_updateBrainColors(data);
+    displayMessage("Displaying Local Connectivity profile for selected focal point ...")
+}
+
+/**
+ * In case something changed in the parameters or the loaded local_connectivity is
+ * set to None, just use this method to draw the 'default' surface with the gray coloring.
+ */
+function _drawDefaultColorBuffers() {
+    if (noOfUnloadedBrainDisplayBuffers != 0) {
+        displayMessage("The load operation for the surface data is not completed yet!", "infoMessage");
+        return;
+    }
+    BASE_PICK_buffer_default_color();
+    drawScene();
 }

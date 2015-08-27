@@ -379,6 +379,27 @@ function BASE_PICK_buffer_default_color(){
     }
 }
 
+/**
+ * Update the buffers for coloring the displayed brain, with parameter "data"
+ */
+function BASE_PICK_updateBrainColors(data) {
+
+    if (BASE_PICK_brainDisplayBuffers.length != data.length) {
+        displayMessage("Could not draw the gradient view. Invalid data received from the server.", "errorMessage");
+        return;
+    }
+
+    for (var i = 0; i < data.length; i++) {
+        var activityBuffer = gl.createBuffer();
+        gl.bindBuffer(gl.ARRAY_BUFFER, activityBuffer);
+        var activity = new Float32Array(data[i]);
+        gl.bufferData(gl.ARRAY_BUFFER, activity, gl.STATIC_DRAW);
+        BASE_PICK_brainDisplayBuffers[i][3] = activityBuffer;
+    }
+
+    drawScene();
+}
+
 ///////////////////////////////////////~~~~~~~~START MOUSE RELATED CODE~~~~~~~~~~~//////////////////////////////////
 
 /**
