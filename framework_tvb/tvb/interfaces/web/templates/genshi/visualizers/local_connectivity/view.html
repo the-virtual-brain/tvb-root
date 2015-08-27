@@ -15,7 +15,7 @@
         $(document).ready(function() {
 
             BASE_PICK_webGLStart('${urlVerticesPick}', '${urlTrianglesPick}', '${urlNormalsPick}', '${urlVertices}',
-                    '${urlTriangles}', '${urlNormals}', '${brainCenter}', "${callback if defined('callback') else ''}");
+                    '${urlTriangles}', '${urlNormals}', '${brainCenter}', "");
 
             LCON_viewer_init(${minValue}, ${maxValue}, '${local_connectivity_gid}');
         });

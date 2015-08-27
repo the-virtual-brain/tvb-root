@@ -254,17 +254,3 @@ function tick() {
        buttonStop.className = buttonStop.className + " action-idle";
    }
 }
-
-
-function drawScene() {
-    // Use function offered by base_vertice_pick.js to draw the brain:
-    BASE_PICK_drawBrain();
-
-    // Draw the legend for the stimulus now.
-    if (BASE_PICK_isMovieMode) {
-        mvPushMatrix();
-        loadIdentity();
-        drawBuffers(gl.TRIANGLES, [LEG_legendBuffers]);
-        mvPopMatrix();
-    }
-}

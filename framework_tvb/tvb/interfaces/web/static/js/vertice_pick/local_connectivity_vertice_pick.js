@@ -26,23 +26,6 @@
  * ---------------------------------------===========================================--------------------------------------
  */
 
-
-/**
- * 'Overwrite' the drawScene function here to add extra functionality for drawing the legend
- */
-function drawScene() {
-    // Use function offered by base_vertice_pick.js to draw the brain.
-	BASE_PICK_drawBrain();
-
-   if (noOfUnloadedBrainDisplayBuffers == 0) {      // wait for the data to be loaded, then draw the legend
-       mvPushMatrix();
-       loadIdentity();
-       if (LEG_legendBuffers.length) drawBuffers(gl.TRIANGLES, [LEG_legendBuffers]);
-       mvPopMatrix();
-   }
-}
-
-
 /**
  * Displays a gradient on the surface.
  *

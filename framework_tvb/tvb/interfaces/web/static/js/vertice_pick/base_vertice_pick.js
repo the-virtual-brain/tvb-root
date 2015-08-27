@@ -198,6 +198,14 @@ function BASE_PICK_drawBrain() {
     }
     mvPopMatrix();
     gl.uniform1i(GL_shaderProgram.useActivity, true);
+
+    if (noOfUnloadedBrainDisplayBuffers == 0 && LEG_legendBuffers.length) {
+        // wait for the data to be loaded, then draw the legend
+        mvPushMatrix();
+        loadIdentity();
+        drawBuffers(gl.TRIANGLES, [LEG_legendBuffers]);
+        mvPopMatrix();
+    }
 }
 
 
