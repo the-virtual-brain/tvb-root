@@ -157,7 +157,7 @@ class ConnectivityAnnotations(MappedType):
             # This node is built for every TVB region
             trees.append(dict(data=dict(title=self.connectivity.region_labels[region_idx],
                                         icon="/static/style/nodes/nodeRoot.png"),
-                              state="close",
+                              state="close", attr=dict(id="node_" + str(region_idx)),
                               children=childred_json))
         # Group everything under a single root
         result = dict(data=dict(title=self.display_name,

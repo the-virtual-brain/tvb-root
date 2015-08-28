@@ -112,15 +112,6 @@ content: "Y"
 content: "Z"
 }
 
-#s-brain .monitor.single-slave {
-background: rgba(150, 150, 155, 0.6);
-border: outset 1px;
-float: right;
-margin-bottom: 10px;
-width: 33%;
-clear: right;
-}
-
 /* !-------------------------------------------- */
 /* !Adjust for helpers below monitors */
 /* !-------------------------------------------- */
@@ -288,4 +279,19 @@ position: absolute;
 .slider-div-right {
     left: 38px;
     top: -4px
+}
+
+.annotations {
+    overflow: hidden;
+}
+
+#s-brain .monitor.single-slave {
+    background: rgba(150, 150, 155, 0.6);
+    border: outset 1px;
+    float: right;
+    margin-bottom: 10px;
+    width: 33%;
+    clear: right;
+    height: 90%;
+    overflow: auto;
 }

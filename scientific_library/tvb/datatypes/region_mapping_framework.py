@@ -58,7 +58,7 @@ class RegionMappingFramework(RegionMappingData):
         region-index
         :param start_idx: vertex index on the surface
         :param end_idx: vertex index on the surface
-        :return: NumPy array with [colosest_reg_idx ...]
+        :return: NumPy array with [closest_reg_idx ...]
         """
         if isinstance(start_idx, (str, unicode)):
             start_idx = int(start_idx)
@@ -66,6 +66,17 @@ class RegionMappingFramework(RegionMappingData):
             end_idx = int(end_idx)
 
         return self.array_data[start_idx: end_idx].T
+
+
+    def get_triangles_mapping(self):
+        """
+        :return Numpy array of length triangles and for each the region corresponding to one of its vertices.
+        """
+        triangles_no = self.surface.number_of_triangles
+        result = []
+        for i in xrange(triangles_no):
+            result.append(self.array_data[self.surface.triangles[i][0]])
+        return numpy.array(result)
 
 
     def generate_new_region_mapping(self, connectivity_gid, storage_path):
