@@ -281,17 +281,12 @@ position: absolute;
     top: -4px
 }
 
-.annotations {
-    overflow: hidden;
-}
-
-#s-brain .monitor.single-slave {
-    background: rgba(150, 150, 155, 0.6);
-    border: outset 1px;
-    float: right;
-    margin-bottom: 10px;
-    width: 33%;
-    clear: right;
+#treeStructure {
     height: 90%;
     overflow: auto;
+}
+
+.annotations3d {
+    height: 85%;
+    width: 98%;
 }

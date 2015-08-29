@@ -1,24 +1,34 @@
-<div id="s-brain" class="brain annotations view-column" xmlns:py="http://genshi.edgewall.org/"
-     xmlns:xi="http://www.w3.org/2001/XInclude">
+<div id="s-brain" xmlns:py="http://genshi.edgewall.org/" xmlns:xi="http://www.w3.org/2001/XInclude">
 
-    <ul class="toolbar-inline">
-        <div class="slider-div"></div>
-    </ul>
+    <div class="view-column col-1">
+        <ul class="toolbar-inline">
+            <div class="slider-div"></div>
+        </ul>
 
-    <div class="monitor single-slave">
+        <xi:include href="../commons/gl_view_header.html"/>
+        <xi:include href="../commons/fragment_shader.html"/>
+        <xi:include href="../commons/surface_pick_vertex_shader.html"/>
+        <div class="monitor annotations3d">
+            <xi:include href="../commons/brain_component.html"/>
+            ${draw_brain_component("GLcanvas", value_of('minActivityLabels'))}
+        </div>
+    </div>
+
+    <div class="view-column col-2">
+        <ul class="toolbar-inline">
+            <div class="slider-div"></div>
+        </ul>
         <div id="treeStructure"></div>
     </div>
 
-    <xi:include href="../commons/gl_view_header.html"/>
-    <xi:include href="../commons/fragment_shader.html"/>
-    <xi:include href="../commons/surface_pick_vertex_shader.html"/>
-    <xi:include href="../commons/gl_view_after.html" py:with="show_navigator=False"/>
 
     <script type="text/javascript" src="/static/js/base_vertice_pick.js?$currentVersionJS"></script>
     <script type="text/javascript" src="/static_view/annotations/annotations.js?$currentVersionJS"></script>
 
     <script type="text/javascript">
         $(document).ready(function () {
+
+            $("#main").addClass("colscheme-2-2nd-narrow");
 
             BASE_PICK_webGLStart('${urlVerticesPick}', '${urlTrianglesPick}', '${urlNormalsPick}', '${urlVertices}',
                     '${urlTriangles}', '${urlNormals}', '${brainCenter}', 'ANN.setBrainColors(\'${urlColors}\')');
