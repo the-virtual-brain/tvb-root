@@ -176,6 +176,19 @@ class ConnectivityFramework(connectivity_data.ConnectivityData):
                                                               'operations': ['==', '<', '>']}})
         return filters
 
+
+    def is_right_hemisphere(self, idx):
+        """
+        :param idx:  Region IDX
+        :return: True when hemispheres information is present and it shows that the current node is in the right
+        hemisphere. When hemispheres info is not present, return True for the second half of the indices and
+        False otherwise.
+        """
+        if self.hemispheres is not None and self.hemispheres.size:
+            return self.hemispheres[idx]
+        return idx >= self.number_of_regions / 2
+
+
     @property
     def hemisphere_order_indices(self):
         """

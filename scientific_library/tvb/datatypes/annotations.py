@@ -149,19 +149,27 @@ class ConnectivityAnnotations(MappedType):
             else:
                 self.logger.warn("Order of processing invalid parent %s child %s" % (ann_obj.parent_id, ann_obj.id))
 
-        trees = []
+        ICON_TVB = "/static/style/nodes/nodeRoot.png"
+        ICON_FOLDER = "/static/style/nodes/nodeData_State.png"
+
+        left_nodes, right_nodes = [], []
         for region_idx, annotations_list in regions_map.iteritems():
             childred_json = []
             for ann_term in annotations_list:
                 childred_json.append(ann_term.to_json())
             # This node is built for every TVB region
-            trees.append(dict(data=dict(title=self.connectivity.region_labels[region_idx],
-                                        icon="/static/style/nodes/nodeRoot.png"),
-                              state="close", attr=dict(id="node_" + str(region_idx)),
-                              children=childred_json))
+            child_json = dict(data=dict(title=self.connectivity.region_labels[region_idx], icon=ICON_TVB),
+                              state="close", attr=dict(id="node_" + str(region_idx)), children=childred_json)
+            if self.connectivity.is_right_hemisphere(region_idx):
+                right_nodes.append(child_json)
+            else:
+                left_nodes.append(child_json)
+
         # Group everything under a single root
-        result = dict(data=dict(title=self.display_name,
-                                icon="/static/style/nodes/nodeRoot.png"),
-                      state="open",
-                      children=trees)
-        return result
+        left_root = dict(data=dict(title="Left Hemisphere", icon=ICON_FOLDER),
+                         state="open", children=left_nodes)
+        right_root = dict(data=dict(title="Right Hemisphere", icon=ICON_FOLDER),
+                          state="open", children=right_nodes)
+        root_root = dict(data=dict(title=self.display_name, icon=ICON_FOLDER),
+                         state="open", children=[left_root, right_root])
+        return root_root

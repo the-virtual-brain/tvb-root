@@ -290,3 +290,7 @@ position: absolute;
     height: 85%;
     width: 98%;
 }
+
+.toolbar-inline .tool-base {
+    height: 30px;
+}

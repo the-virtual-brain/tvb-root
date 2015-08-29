@@ -89,6 +89,14 @@ function ANN_Displayer(baseUrl, treeDataUrl, triangleToRegionUrl, minValue, maxV
         }
     };
 
+    this.openAll = function () {
+        this.treeElem.jstree('open_all');
+    };
+
+    this.closeAll = function () {
+        this.treeElem.jstree('close_all');
+    };
+
     this.setBrainColors = function (colorsUrlList) {
 
         colorsUrlList = $.parseJSON(colorsUrlList);

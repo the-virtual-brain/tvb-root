@@ -2,7 +2,7 @@
 
     <div class="view-column col-1">
         <ul class="toolbar-inline">
-            <div class="slider-div"></div>
+            <li class="tool-base"></li>
         </ul>
 
         <xi:include href="../commons/gl_view_header.html"/>
@@ -16,7 +16,12 @@
 
     <div class="view-column col-2">
         <ul class="toolbar-inline">
-            <div class="slider-div"></div>
+            <li class="tool-base">
+                <a href="#" tabindex='-1' class="action action-plus" title="Expand all nodes in tree"
+                   onclick='ANN.openAll();'>Expand</a>
+                <a href="#" tabindex='-1' class="action action-minus" title="Collapse all nodes in tree"
+                   onclick='ANN.closeAll();'>Collapse</a>
+            </li>
         </ul>
         <div id="treeStructure"></div>
     </div>
