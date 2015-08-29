@@ -32,10 +32,12 @@ function ANN_Displayer(baseUrl, treeDataUrl, triangleToRegionUrl, minValue, maxV
 
     this.treeElem = $("#treeStructure");
     this.triaglesMappings = [];
+    this.regionToTriangleMapping = {};
+    this.selectFrom3DMode = false;
 
     this._init = function (baseUrl, treeDataUrl, triangleToRegionUrl, minValue, maxValue) {
 
-        this._showAnnotationsTree(baseUrl, treeDataUrl);
+        this._populateAnnotationsTree(baseUrl, treeDataUrl);
 
         ColSch_initColorSchemeGUI(minValue, maxValue);
         LEG_initMinMax(minValue, maxValue);
@@ -43,13 +45,14 @@ function ANN_Displayer(baseUrl, treeDataUrl, triangleToRegionUrl, minValue, maxV
         BASE_PICK_initLegendInfo(maxValue, minValue);
 
         this.triaglesMappings = HLPR_readJSONfromFile(triangleToRegionUrl);
+        this._prepareRegionToTriangleMapping();
 
         // TODO TVB-1924
         //initRegionBoundaries(urlRegionBoundaries);
 
     };
 
-    this._showAnnotationsTree = function (baseUrl, treeDataUrl) {
+    this._populateAnnotationsTree = function (baseUrl, treeDataUrl) {
 
         this.treeElem.jstree({
             "plugins": ["themes", "json_data", "ui", "crrm"],
@@ -68,6 +71,23 @@ function ANN_Displayer(baseUrl, treeDataUrl, triangleToRegionUrl, minValue, maxV
                 }
             }
         });
+
+        var SELF = this;
+        this.treeElem.bind("select_node.jstree", function (event, data) {
+
+            if (SELF.selectFrom3DMode) {
+                return;
+            }
+
+            var selectedNode = data.rslt.obj.attr("id");
+            if (selectedNode && selectedNode.indexOf("node_") == 0) {
+                selectedNode = parseInt(selectedNode.replace("node_", ''));
+                displayMessage("Selected Region " + selectedNode, 'infoMessage');
+
+                TRIANGLE_pickedIndex = parseInt(SELF.regionToTriangleMapping[selectedNode]);
+	            BASE_PICK_moveBrainNavigator(true);
+            }
+        })
     };
 
     this.selectTreeNode = function () {
@@ -80,10 +100,11 @@ function ANN_Displayer(baseUrl, treeDataUrl, triangleToRegionUrl, minValue, maxV
             var pickedRegion = this.triaglesMappings[TRIANGLE_pickedIndex];
             displayMessage("Picked triangle " + TRIANGLE_pickedIndex + " in region " + pickedRegion, 'infoMessage');
 
+            this.selectFrom3DMode = true;
             this.treeElem.jstree("deselect_all");
             this.treeElem.jstree("select_node", "#node_" + pickedRegion);
             this.treeElem.jstree("open_node", "#node_" + pickedRegion);
-
+            this.selectFrom3DMode = false;
             // disable data retrieval until next triangle is picked
             TRIANGLE_pickedIndex = GL_NOTFOUND;
         }
@@ -106,6 +127,17 @@ function ANN_Displayer(baseUrl, treeDataUrl, triangleToRegionUrl, minValue, maxV
             dataFromServer.push(oneData);
         }
         BASE_PICK_updateBrainColors(dataFromServer);
+    };
+
+    this._prepareRegionToTriangleMapping = function () {
+
+        for	(var i = 0; i < this.triaglesMappings.length; i++) {
+            var region = this.triaglesMappings[i];
+            if (this.regionToTriangleMapping[region]){
+                continue;
+            }
+            this.regionToTriangleMapping[region] = i;
+        }
     };
 
     this._init(baseUrl, treeDataUrl, triangleToRegionUrl, minValue, maxValue);
