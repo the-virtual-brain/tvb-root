@@ -84,15 +84,17 @@ EXCLUDES_PYD = [
     # '_multiprocessing.pyd', '_socket.pyd', '_ssl.pyd', '_tkinter.pyd',
     # 'pyexpat.pyd', 'select.pyd', 'unicodedata.pyd', re.compile(r'win32.*\.pyd'),
     ## Windows *.pyds already included in licensing due to python package
-    # '_psutil_mswindows.pyd', '_sqlite3.pyd', 'bz2.pyd', 'gdist.pyd', 'genshi._speedups.pyd',
+    # '_psutil_mswindows.pyd', '_sqlite3.pyd', 'bz2.pyd', 'genshi._speedups.pyd',
     # re.compile(r'h5py.*\.pyd'), re.compile(r'matplotlib.*\.pyd'), 'numexpr.interpreter.pyd',
     # re.compile(r'numpy.*\.pyd'), 'openssl.*\.pyd', 'psycopg2._psycopg.pyd', 'pil._imaging',
     # re.compile(r'scipy.*\.pyd'), 'sqlalchemy.cresultproxy.pyd', 'sqlalchemy.cprocessors.pyd',
-    # 'simplejson._speedups.pyd', '_psutil_windows.pyd',
+    # 'simplejson._speedups.pyd',
+    '_psutil_windows.pyd', 'gdist.pyd'
 ]
 
 # libpq dependencies on dynamic psycopg linux 32
 EXCLUDES_SO = [
+    '_psutil_linux.so', '_psutil_posix.so', 'gdist.so'
      # 'libcom_err.so.2', 'libgssapi_krb5.so.2', 'libldap_r-2.4.so.2', 'libkrb5support.so.0',
      # 'libk5crypto.so.3', 'libkeyutils.so.1', 'liblber-2.4.so.2', 'libtasn1.so.3', 'libgcrypt.so.11',
      # 'libgpg-error.so.0',
@@ -123,16 +125,17 @@ EXCLUDES_SO = [
 ]
 
 EXCLUDES_DYLIB = [
+    'libcrypto.1.0.0.dylib', 'libncursesw.5.dylib', 'libpq.5.dylib', 'libpq.5.6.dylib', 'libssl.1.0.0.dylib',
     # 'libcrypto.1.0.0.dylib', 'libgcc_s.1.dylib',
     # 'libgfortran.2.dylib', 'libgfortran.2.0.0.dylib', 'libgfortran.3.dylib',
     # 'libncursesw.5.dylib', 'libncurses.5.dylib', 'libpq.5.dylib', 'libpq.5.6.dylib', 'libssl.1.0.0.dylib',
     ##Dependencies of Tkinter
     # 'libfontconfig.1.dylib', 'libxau.6.dylib', 'libxcb.1.dylib', 'libxdmcp.6.dylib',
     # 'libxext.6.dylib', 'libxft.2.dylib', 'libxrender.1.dylib',
-    ## Libz is needed by psycopg2
-    # re.compile(r'libz.*\.dylib'),
-    ## Already included
-    # re.compile(r'libhdf5_hl.*\.dylib'), re.compile(r'libhdf5.*\.dylib')
+    # Libz is needed by psycopg2
+    re.compile(r'libz.*\.dylib'),
+    # Already included
+    re.compile(r'libhdf5_hl.*\.dylib'), re.compile(r'libhdf5.*\.dylib')
 ]
 
 # py2app adds some frameworks to package that we also need to check for licenses.
