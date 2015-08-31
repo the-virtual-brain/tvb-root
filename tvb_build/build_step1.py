@@ -61,9 +61,7 @@ DATA_SRC_FOLDER = os.path.dirname(tvb_data.__file__)
 DIST_FOLDER = join(os.path.dirname(__file__), 'build', 'TVB_Distribution')
 
 DATA_INSIDE_FOLDER = join(DIST_FOLDER, '_tvb_data')
-DATA_OUTSIDE_FOLDER = join(DIST_FOLDER, 'demo_data')
 
-# outsiders get distributed  to /TVB_Distribution/_tvb_data/
 INCLUDED_INSIDE_DATA = [
     "__init__.py",
     "Default_Project.zip",
@@ -111,13 +109,6 @@ INCLUDED_INSIDE_DATA = [
     "obj/eeg_cap.obj",
 ]
 
-#outsiders get distributed as top level relative to dists step 1
-INCLUDED_OUTSIDE_DATA = [
-    "connectivity/connectivity_192.zip",
-    "sensors/eeg_unitvector_62.txt.bz2",
-    "sensors/meg_151.txt.bz2",
-]
-
 
 def _copy_dataset(dataset_files, dataset_destination):
     for pth in dataset_files:
@@ -139,7 +130,6 @@ def copy_distribution_dataset():
     - in tvb_data folder, as example for users.
     """
     _copy_dataset(INCLUDED_INSIDE_DATA, DATA_INSIDE_FOLDER)
-    _copy_dataset(INCLUDED_OUTSIDE_DATA, DATA_OUTSIDE_FOLDER)
 
 
 def build_step1():
