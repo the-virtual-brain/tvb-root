@@ -66,72 +66,20 @@ if sys.platform == 'darwin':
         'json', 'encodings', 'test', 'email', 'finder'
     ])
 
-EXCLUDES_DLL = [
-    # 'libeay32.dll', 'msvcm90.dll', 'msvcr90.dll', 'python27.dll',
-    # 'pywintypes27.dll', 'sqlite3.dll', 'ssleay32.dll', 'zlib1.dll', 'zlib.dll',
-    ## match any of the dll, so or dylib from hdf5 hl library, since the license is already
-    ## included by the libhdf5.* equivalent
-    # 'hdf5_hldll.dll', 'hdf5_hl.dll', 'h5py_hdf5_hl.dll', 'h5py_hdf5.dll', 'pythoncom27.dll',
-    ## Exclude numpy distributed dll's
-    # 'libifcoremd.dll', 'libiomp5md.dll', 'libmmd.dll',
-    ## These come from psycopg2 postgresql
-    # 'libintl-8.dll', 'libpq.dll',
-]
+EXCLUDES_DLL = []
 
 # Windows *.pyds that are part of python standard libs
 EXCLUDES_PYD = [
-    # '_bsddb.pyd', '_ctypes.pyd', '_hashlib.pyd', '_imaging.pyd',
-    # '_multiprocessing.pyd', '_socket.pyd', '_ssl.pyd', '_tkinter.pyd',
-    # 'pyexpat.pyd', 'select.pyd', 'unicodedata.pyd', re.compile(r'win32.*\.pyd'),
-    ## Windows *.pyds already included in licensing due to python package
-    # '_psutil_mswindows.pyd', '_sqlite3.pyd', 'bz2.pyd', 'genshi._speedups.pyd',
-    # re.compile(r'h5py.*\.pyd'), re.compile(r'matplotlib.*\.pyd'), 'numexpr.interpreter.pyd',
-    # re.compile(r'numpy.*\.pyd'), 'openssl.*\.pyd', 'psycopg2._psycopg.pyd', 'pil._imaging',
-    # re.compile(r'scipy.*\.pyd'), 'sqlalchemy.cresultproxy.pyd', 'sqlalchemy.cprocessors.pyd',
-    # 'simplejson._speedups.pyd',
     '_psutil_windows.pyd', 'gdist.pyd'
 ]
 
 # libpq dependencies on dynamic psycopg linux 32
 EXCLUDES_SO = [
     '_psutil_linux.so', '_psutil_posix.so', 'gdist.so'
-     # 'libcom_err.so.2', 'libgssapi_krb5.so.2', 'libldap_r-2.4.so.2', 'libkrb5support.so.0',
-     # 'libk5crypto.so.3', 'libkeyutils.so.1', 'liblber-2.4.so.2', 'libtasn1.so.3', 'libgcrypt.so.11',
-     # 'libgpg-error.so.0',
-     # # This are the so' which are only needed by the linux 32 python 2.6 machine
-     # '_bytesio.so', '_fileio.so', 'libblt.2.4.so.8.5', 'libuuid.so.1', 'libxcb-render-util.so.0',
-     # 'libxcb-render.so.0', 'libxcomposite.so.1', 'libxcursor.so.1', 'libxdamage.so.1', 'libxfixes.so.3',
-     # 'libxi.so.6', 'libxinerama.so.1', 'libxrandr.so.2', 'libxt.so.6', 'openssl.crypto.so',
-     # 'openssl.rand.so', 'pil._imaging.so',
-     # # SO's which we can exclude from license checking being either python standard or
-     # # part of library that is already in packages_accepted.xml
-     # '_bisect.so', '_collections.so', '_functools.so', '_hashlib.so', '_io.so', '_locale.so',
-     # '_random.so', '_socket.so', '_ssl.so', '_struct.so', '_weakref.so', 'unicodedata.so',
-     # 'array.so', 'cpickle.so', 'cstringio.so', 'select.so', 'fcntl.so', 'binascii.so', 'future_builtins.so',
-     # 'operator.so', 'zlib.so', 'time.so', 'itertools.so', 'math.so', 'strop.so', 'syslog.so',
-     # '_bsddb.so', '_codecs_cn.so', '_codecs_hk.so', '_codecs_iso2022.so', '_codecs_jp.so',
-     # '_codecs_kr.so', '_codecs_tw.so', '_csv.so', '_ctypes.so', '_curses.so', 'datetime.so', '_heapq.so',
-     # '_imaging.so', '_json.so', '_lsprof.so', '_lsprof.so', '_multibytecodec.so', '_multiprocessing.so',
-     # '_psutil_linux.so', '_psutil_posix.so', '_psutil_osx.so', '_sqlite3.so', '_tkinter.so', 'cmath.so',
-     # 'libcrypto.so.0.9.8', 'libgcc_s.so.1', 'libssl.so.0.9.8', 'libstdc\\+\\+.so.6',
-     # 'libz.so', 'mmap.so', 'parser.so', 'pyexpat.so', 'readline.so', 'resource.so', 'termios.so',
-     # re.compile(r'libncurses.*'), re.compile(r'libreadline\..*'), re.compile(r'libpython2\..*\.so.*'),
-     # 'gdist.so', 'libgfortran.so.3', 'libfontconfig.so.1', 'libsqlite3.so.0', 'numexpr.interpreter.so',
-     # 'genshi._speedups.so', 'psycopg2._psycopg.so', 'pysqlite2._sqlite.so', 'simplejson._speedups.so',
-     # re.compile(r'sqlalchemy\..*\.so'), re.compile(r'scipy\..*\.so'), re.compile(r'libpq.so\.*'),
-     # re.compile(r'matplotlib\..*\.so'), re.compile(r'numpy\..*\.so'), re.compile(r'_psutil\.*\.so'),
-     # 'libxau.so.6', 'libxcb.so.1', 'libxdmcp.so.6', 'libxext.so.6', 'libxft.so.2', 'libxrender.so.1',
-     # 'libxss.so.1', re.compile(r'h5py\..+\.so'), re.compile(r'libhdf5_hl.*\.so')
 ]
 
 EXCLUDES_DYLIB = [
     'libcrypto.1.0.0.dylib', 'libncursesw.5.dylib', 'libpq.5.dylib', 'libpq.5.6.dylib', 'libssl.1.0.0.dylib',
-    # 'libcrypto.1.0.0.dylib', 'libgcc_s.1.dylib',
-    # 'libgfortran.2.dylib', 'libgfortran.2.0.0.dylib', 'libgfortran.3.dylib',
-    # 'libncursesw.5.dylib', 'libncurses.5.dylib', 'libpq.5.dylib', 'libpq.5.6.dylib', 'libssl.1.0.0.dylib',
-    ##Dependencies of Tkinter
-    # 'libfontconfig.1.dylib', 'libxau.6.dylib', 'libxcb.1.dylib', 'libxdmcp.6.dylib',
-    # 'libxext.6.dylib', 'libxft.2.dylib', 'libxrender.1.dylib',
     # Libz is needed by psycopg2
     re.compile(r'libz.*\.dylib'),
     # Already included
@@ -158,8 +106,8 @@ EXTRA_MODULES = {
 
 ANACONDA_VERSION = "2.3.0"
 
-## These file-name pattern should not be found in TVB distribution.
-LICENSE_INTERDICTIONS = [re.compile(".*lzo.*")] ##, re.compile(".*szip.*")]
+# These file-name pattern should not be found in TVB distribution:
+LICENSE_INTERDICTIONS = [re.compile(".*lzo.*")]
 
 SETUPTOOLS_PACKAGE_VERSION = {}
 
@@ -240,7 +188,7 @@ def _find_modules(root_, modules_dict):
     all_files = os.listdir(root_)
     for entry in all_files:
         full_path = os.path.join(root_, entry)
-        ### Validate current file not to be in the INTERDICTION list.
+        # Validate current file not to be in the INTERDICTION list.
         for regex in LICENSE_INTERDICTIONS:
             if regex.match(entry):
                 raise Exception("%s file has unacceptable license!!! " % (entry, ))
@@ -298,7 +246,7 @@ def parse_tree_structure(root_, excludes=None):
     modules_dict = {}
     _find_modules(root_, modules_dict)
     _find_extra_modules(EXTRA_MODULES, modules_dict, excludes)
-    #TODO: make this work on the py2app build. This will require "switching" to the packages interpreter
+    # TODO: make this work on the py2app build. This will require "switching" to the packages interpreter
     if not sys.platform == 'darwin':
         _find_pkg_modules(modules_dict)
 
@@ -307,7 +255,7 @@ def parse_tree_structure(root_, excludes=None):
         modules_dict['anaconda'] = ANACONDA_VERSION
 
     if sys.platform == 'darwin':
-        #----- Go into Contents/Frameworks and look for dlybs/so's-----
+        # ----- Go into Contents/Frameworks and look for dlybs/so's-----
         path = os.path.split(root_)[0]
         path = os.path.split(path)[0]
         path = os.path.join(os.path.split(path)[0], 'Frameworks')
