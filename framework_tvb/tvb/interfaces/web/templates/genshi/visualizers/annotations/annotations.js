@@ -34,6 +34,8 @@ function ANN_Displayer(baseUrl, treeDataUrl, triangleToRegionUrl, minValue, maxV
     this.triaglesMappings = [];
     this.regionToTriangleMapping = {};
     this.selectFrom3DMode = false;
+    this.prefixNodeIdTVB = "node_tvb_";
+    this.prefixNodeIdBRCO = "node_brco_";
 
     this._init = function (baseUrl, treeDataUrl, triangleToRegionUrl, minValue, maxValue) {
 
@@ -80,8 +82,8 @@ function ANN_Displayer(baseUrl, treeDataUrl, triangleToRegionUrl, minValue, maxV
             }
 
             var selectedNode = data.rslt.obj.attr("id");
-            if (selectedNode && selectedNode.indexOf("node_") == 0) {
-                selectedNode = parseInt(selectedNode.replace("node_", ''));
+            if (selectedNode && selectedNode.indexOf(SELF.prefixNodeIdTVB) == 0) {
+                selectedNode = parseInt(selectedNode.replace(SELF.prefixNodeIdTVB, ''));
                 displayMessage("Selected Region " + selectedNode, 'infoMessage');
 
                 TRIANGLE_pickedIndex = parseInt(SELF.regionToTriangleMapping[selectedNode]);
@@ -102,8 +104,9 @@ function ANN_Displayer(baseUrl, treeDataUrl, triangleToRegionUrl, minValue, maxV
 
             this.selectFrom3DMode = true;
             this.treeElem.jstree("deselect_all");
-            this.treeElem.jstree("select_node", "#node_" + pickedRegion);
-            this.treeElem.jstree("open_node", "#node_" + pickedRegion);
+            var toBeSelectedId = "#" + this.prefixNodeIdTVB + pickedRegion;
+            this.treeElem.jstree("select_node", toBeSelectedId);
+            this.treeElem.jstree("open_node", toBeSelectedId);
             this.selectFrom3DMode = false;
             // disable data retrieval until next triangle is picked
             TRIANGLE_pickedIndex = GL_NOTFOUND;

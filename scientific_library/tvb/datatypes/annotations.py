@@ -82,7 +82,10 @@ class AnnotationTerm(object):
         children = []
         for child in self.children:
             children.append(child.to_json())
-        return dict(data=dict(id=str(self.id), title=self.label + " -- " + self.uri),
+        title = "Label: " + self.label + "\n\nDefinition: " + self.definition + \
+                "\n\nSynonyms: " + self.synonym.replace("|", "\n")
+        return dict(data=dict(title=self.uri),
+                    attr=dict(id="node_brco_" + str(self.id), title=title),
                     state="close", children=children)
 
 
@@ -158,8 +161,11 @@ class ConnectivityAnnotations(MappedType):
             for ann_term in annotations_list:
                 childred_json.append(ann_term.to_json())
             # This node is built for every TVB region
-            child_json = dict(data=dict(title=self.connectivity.region_labels[region_idx], icon=ICON_TVB),
-                              state="close", attr=dict(id="node_" + str(region_idx)), children=childred_json)
+            child_json = dict(data=dict(icon=ICON_TVB,
+                                        title=self.connectivity.region_labels[region_idx]),
+                              attr=dict(id="node_tvb_" + str(region_idx),
+                                        title=str(region_idx) + " - " + self.connectivity.region_labels[region_idx]),
+                              state="close", children=childred_json)
             if self.connectivity.is_right_hemisphere(region_idx):
                 right_nodes.append(child_json)
             else:
