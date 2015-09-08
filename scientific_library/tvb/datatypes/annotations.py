@@ -40,14 +40,22 @@ from tvb.datatypes import connectivity
 
 ANNOTATION_DTYPE = numpy.dtype([('id', 'i'),
                                 ('parent_id', 'i'),
-                                ('region_left', 'i'),
-                                ('region_right', 'i'),
+                                ('parent_left', 'i'),
+                                ('parent_right', 'i'),
                                 ('relation', 'S16'),
                                 ('label', 'S128'),
                                 ('definition', 'S1024'),
                                 ('synonym', 'S2048'),
-                                ('uri', 'S248')])
+                                ('uri', 'S248'),
+                                ('synonym_tvb_left', 'i'),
+                                ('synonym_tvb_right', 'i')
+                                ])
 
+ICON_TVB = "/static/style/nodes/nodeRoot.png"
+ICON_FOLDER = "/static/style/nodes/nodeFolder.png"
+NODE_ID_TVB = "node_tvb_"
+NODE_ID_TVB_ROOT = "node_tvb_root_"
+NODE_ID_BRCO = "node_brco_"
 
 
 class AnnotationTerm(object):
@@ -56,16 +64,19 @@ class AnnotationTerm(object):
     """
 
 
-    def __init__(self, id, parent, region_left, region_right, relation, label, definition=None, synonym=None, uri=None):
+    def __init__(self, id, parent, parent_left, parent_right, relation, label, definition=None, synonym=None, uri=None,
+                 tvb_left=None, tvb_right=None):
         self.id = id
         self.parent_id = parent
-        self.region_left = region_left
-        self.region_right = region_right
+        self.parent_left = parent_left
+        self.parent_right = parent_right
         self.relation = relation
         self.label = label
         self.definition = definition
         self.synonym = synonym
         self.uri = uri
+        self.synonym_tvb_left = tvb_left or -1
+        self.synonym_tvb_right = tvb_right or -1
         self.children = []
 
 
@@ -74,18 +85,28 @@ class AnnotationTerm(object):
 
 
     def to_tuple(self):
-        return self.id, self.parent_id, self.region_left, self.region_right, \
-               self.relation, self.label, self.definition, self.synonym, self.uri
+        return self.id, self.parent_id, self.parent_left, self.parent_right, \
+               self.relation, self.label, self.definition, self.synonym, self.uri, \
+               self.synonym_tvb_left, self.synonym_tvb_right
 
 
     def to_json(self):
+
         children = []
         for child in self.children:
             children.append(child.to_json())
         title = "Label: " + self.label + "\n\nDefinition: " + self.definition + \
                 "\n\nSynonyms: " + self.synonym.replace("|", "\n")
-        return dict(data=dict(title=self.uri),
-                    attr=dict(id="node_brco_" + str(self.id), title=title),
+
+        if self.synonym_tvb_right >= 0 and self.synonym_tvb_left >= 0:
+            # When TVB regions display differently
+            title = str(self.synonym_tvb_left) + " - " + self.uri.split('#')[1] + "\n\n" + title
+            return dict(data=dict(icon=ICON_TVB, title=self.uri),
+                        attr=dict(id=NODE_ID_TVB + str(self.synonym_tvb_left), title=title),
+                        state="close", children=children)
+
+        return dict(data=dict(icon=ICON_FOLDER, title=self.uri),
+                    attr=dict(id=NODE_ID_BRCO + str(self.id), title=title),
                     state="close", children=children)
 
 
@@ -141,19 +162,17 @@ class ConnectivityAnnotations(MappedType):
             regions_map[i] = []
 
         for ann in self.region_annotations:
-            ann_obj = AnnotationTerm(ann[0], ann[1], ann[2], ann[3], ann[4], ann[5], ann[6], ann[7], ann[8])
+            ann_obj = AnnotationTerm(ann[0], ann[1], ann[2], ann[3], ann[4], ann[5],
+                                     ann[6], ann[7], ann[8], ann[9], ann[10])
             annotations_map[ann_obj.id] = ann_obj
             if ann_obj.parent_id < 0:
                 # Root directly under a TVB region node
-                regions_map[ann_obj.region_left].append(ann_obj)
-                regions_map[ann_obj.region_right].append(ann_obj)
+                regions_map[ann_obj.parent_left].append(ann_obj)
+                regions_map[ann_obj.parent_right].append(ann_obj)
             elif ann_obj.parent_id in annotations_map:
                 annotations_map[ann_obj.parent_id].add_child(ann_obj)
             else:
                 self.logger.warn("Order of processing invalid parent %s child %s" % (ann_obj.parent_id, ann_obj.id))
-
-        ICON_TVB = "/static/style/nodes/nodeRoot.png"
-        ICON_FOLDER = "/static/style/nodes/nodeData_State.png"
 
         left_nodes, right_nodes = [], []
         for region_idx, annotations_list in regions_map.iteritems():
@@ -163,7 +182,7 @@ class ConnectivityAnnotations(MappedType):
             # This node is built for every TVB region
             child_json = dict(data=dict(icon=ICON_TVB,
                                         title=self.connectivity.region_labels[region_idx]),
-                              attr=dict(id="node_tvb_" + str(region_idx),
+                              attr=dict(id=NODE_ID_TVB_ROOT + str(region_idx),
                                         title=str(region_idx) + " - " + self.connectivity.region_labels[region_idx]),
                               state="close", children=childred_json)
             if self.connectivity.is_right_hemisphere(region_idx):

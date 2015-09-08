@@ -103,8 +103,20 @@ class XMLParser(object):
             ont_label = ont_node.getAttribute(self.ATTR_ONTOLOGY_LABEL)
             ont_syn = ont_node.getAttribute(self.ATTR_ONTOLOGY_SYN)
             ont_definition = ont_node.getAttribute(self.ATTR_ONTOLOGY_DEFINITION)
-            ont_term = AnnotationTerm(self._generate_new_id(), parent_term_id, region_left, region_right,
-                                      ont_relation, ont_label, ont_definition, ont_syn, ont_uri)
+
+            # if len(ont_syn) > 0 and ont_syn[:len(ont_syn) / 2] == ont_syn[len(ont_syn) / 2 + 1:]:
+            #     ont_syn = ont_syn[:len(ont_syn) / 2]
+
+            try:
+                # Check if it is a TVB region
+                syn_left, syn_right = self._find_region_idxs(ont_uri)
+                ont_term = AnnotationTerm(self._generate_new_id(), parent_term_id, region_left, region_right,
+                                          ont_relation, ont_label, ont_definition, ont_syn, ont_uri,
+                                          syn_left, syn_right)
+            except ParseException:
+
+                ont_term = AnnotationTerm(self._generate_new_id(), parent_term_id, region_left, region_right,
+                                          ont_relation, ont_label, ont_definition, ont_syn, ont_uri)
             # Call recursively for all child nodes
             child_terms = self._parse_ontology_children(ont_node, ont_term.id, region_left, region_right)
             result.append(ont_term)

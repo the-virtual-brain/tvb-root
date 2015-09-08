@@ -35,6 +35,7 @@ function ANN_Displayer(baseUrl, treeDataUrl, triangleToRegionUrl, minValue, maxV
     this.regionToTriangleMapping = {};
     this.selectFrom3DMode = false;
     this.prefixNodeIdTVB = "node_tvb_";
+    this.prefixNodeIdTVBRoot = "node_tvb_root_";
     this.prefixNodeIdBRCO = "node_brco_";
 
     this._init = function (baseUrl, treeDataUrl, triangleToRegionUrl, minValue, maxValue) {
@@ -83,7 +84,8 @@ function ANN_Displayer(baseUrl, treeDataUrl, triangleToRegionUrl, minValue, maxV
 
             var selectedNode = data.rslt.obj.attr("id");
             if (selectedNode && selectedNode.indexOf(SELF.prefixNodeIdTVB) == 0) {
-                selectedNode = parseInt(selectedNode.replace(SELF.prefixNodeIdTVB, ''));
+                selectedNode = selectedNode.replace(SELF.prefixNodeIdTVBRoot, '').replace(SELF.prefixNodeIdTVB, '');
+                selectedNode = parseInt(selectedNode);
                 displayMessage("Selected Region " + selectedNode, 'infoMessage');
 
                 TRIANGLE_pickedIndex = parseInt(SELF.regionToTriangleMapping[selectedNode]);
@@ -104,7 +106,7 @@ function ANN_Displayer(baseUrl, treeDataUrl, triangleToRegionUrl, minValue, maxV
 
             this.selectFrom3DMode = true;
             this.treeElem.jstree("deselect_all");
-            var toBeSelectedId = "#" + this.prefixNodeIdTVB + pickedRegion;
+            var toBeSelectedId = "#" + this.prefixNodeIdTVBRoot + pickedRegion;
             this.treeElem.jstree("select_node", toBeSelectedId);
             this.treeElem.jstree("open_node", toBeSelectedId);
             this.selectFrom3DMode = false;
