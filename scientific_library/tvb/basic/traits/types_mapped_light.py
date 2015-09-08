@@ -110,6 +110,14 @@ class MappedTypeLight(Type):
         """
         return {}
 
+    @property
+    def display_name(self):
+        """
+        To be implemented in each sub-class which is about to be displayed in UI,
+        and return the text to appear.
+        """
+        return self.__class__.__name__
+
 
     def get_info_about_array(self, array_name, included_info=None, mask_array_name=None, key_suffix=''):
         """
