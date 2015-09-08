@@ -39,7 +39,7 @@ import json
 from tvb.basic.profile import TvbProfile
 from tvb.basic.logger.builder import get_logger
 from tvb.core.entities.storage import dao
-from tvb.core.entities.file.exceptions import FileVersioningException
+from tvb.core.entities.file.exceptions import IncompatibleFileManagerException
 from tvb.core.entities.file.hdf5_storage_manager import HDF5StorageManager
 from tvb.core.entities.transient.structure_entities import DataTypeMetaData
 from tvb.core.services.import_service import ImportService
@@ -51,20 +51,22 @@ FIELD_SURFACE_MAPPING = "Has_surface_mapping"
 FIELD_VOLUME_MAPPING = "Has_volume_mapping"
 
 
-
 def update(input_file):
     """
     :param input_file: the file that needs to be converted to a newer file storage version.
     """
 
     if not os.path.isfile(input_file):
-        raise FileVersioningException("The input path %s received for upgrading from 3 -> 4 is not a "
-                                      "valid file on the disk." % input_file)
+        raise IncompatibleFileManagerException("The input path %s received for upgrading from 3 -> 4 is not a "
+                                               "valid file on the disk." % input_file)
 
     folder, file_name = os.path.split(input_file)
     storage_manager = HDF5StorageManager(folder, file_name)
 
     root_metadata = storage_manager.get_metadata()
+    if DataTypeMetaData.KEY_CLASS_NAME not in root_metadata:
+        raise IncompatibleFileManagerException("File %s received for upgrading 3 -> 4 is not valid, due to missing "
+                                               "metadata: %s" % (input_file, DataTypeMetaData.KEY_CLASS_NAME))
     class_name = root_metadata[DataTypeMetaData.KEY_CLASS_NAME]
 
     if "ProjectionSurface" in class_name and FIELD_PROJECTION_TYPE not in root_metadata:

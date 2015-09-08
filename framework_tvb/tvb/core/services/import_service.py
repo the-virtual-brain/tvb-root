@@ -346,6 +346,7 @@ class ImportService():
                 except IncompatibleFileManagerException:
                     os.remove(h5_file)
                     self.logger.warning("Incompatible H5 file will be ignored: %s" % h5_file)
+                    self.logger.exception("Incompatibility details ...")
 
         all_datatypes.sort(key=lambda dt_date: dt_date.create_date)
         for dt in all_datatypes:
