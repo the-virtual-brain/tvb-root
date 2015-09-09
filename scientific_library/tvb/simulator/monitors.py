@@ -746,6 +746,9 @@ class Projection(Monitor):
         if hasattr(self, 'sensors'):
             self.sensors.configure()
 
+        if hasattr(self, 'sensors'):
+            self.sensors.configure()
+
         # setup convenient locals
         surf = simulator.surface
         conn = simulator.connectivity
