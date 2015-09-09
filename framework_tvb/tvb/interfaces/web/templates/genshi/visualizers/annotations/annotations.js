@@ -23,22 +23,29 @@
  * @param baseUrl - Current web installation base URL (is needed for JSTree style URLS)
  * @param treeDataUrl - URL from where the Annotations tree will be loaded
  * @param triangleToRegionUrl - URL for reading a vector of triangle to connectivity region mapping
+ * @param activationPatternsUrl - URL for retrieving the Map of the activation patterns
  * @param minValue - Minimum value for the colors (used for legend)
  * @param maxValue - Maximum value for the colors (used for legend)
  * @param urlRegionBoundaries - URL for reading Region Mapping boundary lines.
  * @constructor
  */
-function ANN_Displayer(baseUrl, treeDataUrl, triangleToRegionUrl, minValue, maxValue, urlRegionBoundaries) {
+function ANN_Displayer(baseUrl, treeDataUrl, triangleToRegionUrl, activationPatternsUrl,
+                       minValue, maxValue, urlRegionBoundaries) {
 
     this.treeElem = $("#treeStructure");
+
     this.triaglesMappings = [];
     this.regionToTriangleMapping = {};
     this.selectFrom3DMode = false;
+
+    this.activationPatternMap = {};
+    this.regionMappingColors = [];
+
     this.prefixNodeIdTVB = "node_tvb_";
     this.prefixNodeIdTVBRoot = "node_tvb_root_";
     this.prefixNodeIdBRCO = "node_brco_";
 
-    this._init = function (baseUrl, treeDataUrl, triangleToRegionUrl, minValue, maxValue) {
+    this._init = function (baseUrl, treeDataUrl, triangleToRegionUrl, activationPatternsUrl, minValue, maxValue) {
 
         this._populateAnnotationsTree(baseUrl, treeDataUrl);
 
@@ -49,6 +56,8 @@ function ANN_Displayer(baseUrl, treeDataUrl, triangleToRegionUrl, minValue, maxV
 
         this.triaglesMappings = HLPR_readJSONfromFile(triangleToRegionUrl);
         this._prepareRegionToTriangleMapping();
+
+        this.activationPatternMap = HLPR_readJSONfromFile(activationPatternsUrl);
 
         // TODO TVB-1924
         //initRegionBoundaries(urlRegionBoundaries);
@@ -78,6 +87,8 @@ function ANN_Displayer(baseUrl, treeDataUrl, triangleToRegionUrl, minValue, maxV
         var SELF = this;
         this.treeElem.bind("select_node.jstree", function (event, data) {
 
+            BASE_PICK_clearFocalPoints();
+            SELF._redrawColors([]);
             if (SELF.selectFrom3DMode) {
                 return;
             }
@@ -89,7 +100,24 @@ function ANN_Displayer(baseUrl, treeDataUrl, triangleToRegionUrl, minValue, maxV
                 displayMessage("Selected Region " + selectedNode, 'infoMessage');
 
                 TRIANGLE_pickedIndex = parseInt(SELF.regionToTriangleMapping[selectedNode]);
-	            BASE_PICK_moveBrainNavigator(true);
+                BASE_PICK_moveBrainNavigator(true);
+
+                SELF._redrawColors([selectedNode]);
+
+            } else if (selectedNode && selectedNode.indexOf(SELF.prefixNodeIdBRCO) == 0) {
+                selectedNode = selectedNode.replace(SELF.prefixNodeIdBRCO, '');
+                selectedNode = parseInt(selectedNode);
+                displayMessage("Selected BRCO Region " + selectedNode, 'infoMessage');
+
+                var matchingTvbRegions = SELF.activationPatternMap[selectedNode];
+                for (var i = 0; i < matchingTvbRegions.length; i++) {
+                    var triangleIdx = parseInt(SELF.regionToTriangleMapping[matchingTvbRegions[i]]);
+                    TRIANGLE_pickedIndex = triangleIdx;
+                    BASE_PICK_moveBrainNavigator(false);
+                    BASE_PICK_addFocalPoint(triangleIdx);
+                }
+
+                SELF._redrawColors(matchingTvbRegions);
             }
         })
     };
@@ -126,24 +154,51 @@ function ANN_Displayer(baseUrl, treeDataUrl, triangleToRegionUrl, minValue, maxV
     this.setBrainColors = function (colorsUrlList) {
 
         colorsUrlList = $.parseJSON(colorsUrlList);
-        var dataFromServer = [];
+        this.regionMappingColors = [];
         for (var i = 0; i < colorsUrlList.length; i++) {
             var oneData = HLPR_readJSONfromFile(colorsUrlList[i]);
-            dataFromServer.push(oneData);
+            this.regionMappingColors.push(oneData);
         }
-        BASE_PICK_updateBrainColors(dataFromServer);
+        this._redrawColors([]);
     };
+
+    this._redrawColors = function (activeRegions) {
+
+        if (!activeRegions || activeRegions.length == 0) {
+            BASE_PICK_updateBrainColors(this.regionMappingColors);
+            return;
+        }
+
+        var currentColors = [];
+        for (var i = 0; i < this.regionMappingColors.length; i++) {
+            var chunkColors = this.regionMappingColors[i].slice(0);
+            for (var j = 0; j < chunkColors.length; j++) {
+                var isActive = false;
+                for (var k = 0; k < activeRegions.length; k++) {
+                    if (activeRegions[k] == chunkColors[j]) {
+                        isActive = true;
+                    }
+                }
+                if (!isActive) {
+                    chunkColors[j] = -1;
+                }
+            }
+            currentColors.push(chunkColors);
+        }
+        BASE_PICK_updateBrainColors(currentColors);
+    };
+
 
     this._prepareRegionToTriangleMapping = function () {
 
-        for	(var i = 0; i < this.triaglesMappings.length; i++) {
+        for (var i = 0; i < this.triaglesMappings.length; i++) {
             var region = this.triaglesMappings[i];
-            if (this.regionToTriangleMapping[region]){
+            if (this.regionToTriangleMapping[region]) {
                 continue;
             }
             this.regionToTriangleMapping[region] = i;
         }
     };
 
-    this._init(baseUrl, treeDataUrl, triangleToRegionUrl, minValue, maxValue);
+    this._init(baseUrl, treeDataUrl, triangleToRegionUrl, activationPatternsUrl, minValue, maxValue);
 }

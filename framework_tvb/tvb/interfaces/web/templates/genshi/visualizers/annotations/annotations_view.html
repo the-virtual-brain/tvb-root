@@ -39,7 +39,7 @@
                     '${urlTriangles}', '${urlNormals}', '${brainCenter}', 'ANN.setBrainColors(\'${urlColors}\')');
 
             ANN = new ANN_Displayer('${baseUrl}', '${annotationsTreeUrl}', '${urlTriangleToRegion}',
-                    ${minValue}, ${maxValue}, '${urlRegionBoundaries}');
+                    '${urlActivationPatterns}', ${minValue}, ${maxValue}, '${urlRegionBoundaries}');
 
             $('#GLcanvas').click(function () {
                 ANN.selectTreeNode();

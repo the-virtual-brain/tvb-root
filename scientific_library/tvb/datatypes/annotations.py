@@ -90,7 +90,7 @@ class AnnotationTerm(object):
                self.synonym_tvb_left, self.synonym_tvb_right
 
 
-    def to_json(self):
+    def to_json(self, is_right_hemisphere=False):
 
         children = []
         for child in self.children:
@@ -100,9 +100,10 @@ class AnnotationTerm(object):
 
         if self.synonym_tvb_right >= 0 and self.synonym_tvb_left >= 0:
             # When TVB regions display differently
-            title = str(self.synonym_tvb_left) + " - " + self.uri.split('#')[1] + "\n\n" + title
+            synonym_id = self.synonym_tvb_right if is_right_hemisphere else self.synonym_tvb_left
+            title = str(synonym_id) + " - " + self.uri.split('#')[1] + "\n\n" + title
             return dict(data=dict(icon=ICON_TVB, title=self.uri),
-                        attr=dict(id=NODE_ID_TVB + str(self.synonym_tvb_left), title=title),
+                        attr=dict(id=NODE_ID_TVB + str(synonym_id), title=title),
                         state="close", children=children)
 
         return dict(data=dict(icon=ICON_FOLDER, title=self.uri),
@@ -152,6 +153,33 @@ class ConnectivityAnnotations(MappedType):
         return summary
 
 
+    def get_activation_patterns(self):
+        """
+        Group Annotation terms by URI.
+        :return: map {brco_id: list of TVB regions IDs in which the same term is being subclass}
+        """
+
+        map_by_uri = {}
+        for ann in self.region_annotations:
+            ann_uri = ann[8]
+            left, right = str(ann[2]), str(ann[3])
+            if ann_uri not in map_by_uri:
+                map_by_uri[ann_uri] = [left, right]
+            else:
+                if left not in map_by_uri[ann_uri]:
+                    map_by_uri[ann_uri].append(left)
+                if right not in map_by_uri[ann_uri]:
+                    map_by_uri[ann_uri].append(right)
+
+        map_by_brco_id = {}
+        for ann in self.region_annotations:
+            ann_uri = ann[8]
+            ann_id = ann[0]
+            map_by_brco_id[str(ann_id)] = map_by_uri[ann_uri]
+
+        return map_by_brco_id
+
+
     def tree_json(self):
         """
         :return: JSON to be rendered in a Tree of entities
@@ -176,16 +204,17 @@ class ConnectivityAnnotations(MappedType):
 
         left_nodes, right_nodes = [], []
         for region_idx, annotations_list in regions_map.iteritems():
+            if_right_hemisphere = self.connectivity.is_right_hemisphere(region_idx)
             childred_json = []
             for ann_term in annotations_list:
-                childred_json.append(ann_term.to_json())
+                childred_json.append(ann_term.to_json(if_right_hemisphere))
             # This node is built for every TVB region
             child_json = dict(data=dict(icon=ICON_TVB,
                                         title=self.connectivity.region_labels[region_idx]),
                               attr=dict(id=NODE_ID_TVB_ROOT + str(region_idx),
                                         title=str(region_idx) + " - " + self.connectivity.region_labels[region_idx]),
                               state="close", children=childred_json)
-            if self.connectivity.is_right_hemisphere(region_idx):
+            if if_right_hemisphere:
                 right_nodes.append(child_json)
             else:
                 left_nodes.append(child_json)

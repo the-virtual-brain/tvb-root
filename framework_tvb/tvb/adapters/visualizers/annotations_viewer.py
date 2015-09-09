@@ -99,6 +99,7 @@ class ConnectivityAnnotationsView(ABCDisplayer):
                       baseUrl=TvbProfile.current.web.BASE_URL,
                       annotationsTreeUrl=self.paths2url(annotations, 'tree_json'),
                       urlTriangleToRegion=self.paths2url(region_map, "get_triangles_mapping"),
+                      urlActivationPatterns=self.paths2url(annotations, "get_activation_patterns"),
 
                       minValue=0,
                       maxValue=annotations.connectivity.number_of_regions - 1,
