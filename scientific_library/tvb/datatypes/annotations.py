@@ -90,13 +90,16 @@ class AnnotationTerm(object):
                self.synonym_tvb_left, self.synonym_tvb_right
 
 
-    def to_json(self, is_right_hemisphere=False):
+    def to_json(self, is_right_hemisphere=False, activation_patterns=None):
 
         children = []
         for child in self.children:
-            children.append(child.to_json())
+            children.append(child.to_json(is_right_hemisphere, activation_patterns))
         title = "URI: " + self.uri + "\n\nLabel: " + self.label + "\n\nDefinition: " + self.definition + \
                 "\n\nSynonyms: " + self.synonym.replace("|", "\n")
+        if activation_patterns is not None and str(self.id) in activation_patterns:
+            connected_regions = activation_patterns[str(self.id)]
+            title += "\n\nTVB " + str(len(connected_regions)) + " connected regions: " + str(connected_regions)
 
         if self.synonym_tvb_right >= 0 and self.synonym_tvb_left >= 0:
             # When TVB regions display differently
@@ -181,6 +184,23 @@ class ConnectivityAnnotations(MappedType):
         return map_by_brco_id
 
 
+    def get_activation_pattern_labels(self):
+        """
+        :return: map {brco_id: list of TVB regions LABELS in which the same BRCO term is being subclass}
+        """
+        map_with_ids = self.get_activation_patterns()
+        map_with_labels = dict()
+
+        for ann_id, activated_ids in map_with_ids.iteritems():
+            map_with_labels[ann_id] = []
+            for string_idx in activated_ids:
+                int_idx = int(string_idx)
+                conn_label = self.connectivity.region_labels[int_idx]
+                map_with_labels[ann_id].append(conn_label)
+
+        return map_with_labels
+
+
     def tree_json(self):
         """
         :return: JSON to be rendered in a Tree of entities
@@ -204,11 +224,12 @@ class ConnectivityAnnotations(MappedType):
                 self.logger.warn("Order of processing invalid parent %s child %s" % (ann_obj.parent_id, ann_obj.id))
 
         left_nodes, right_nodes = [], []
+        activation_patterns = self.get_activation_pattern_labels()
         for region_idx, annotations_list in regions_map.iteritems():
             if_right_hemisphere = self.connectivity.is_right_hemisphere(region_idx)
             childred_json = []
             for ann_term in annotations_list:
-                childred_json.append(ann_term.to_json(if_right_hemisphere))
+                childred_json.append(ann_term.to_json(if_right_hemisphere, activation_patterns))
             # This node is built for every TVB region
             child_json = dict(data=dict(icon=ICON_TVB,
                                         title=self.connectivity.region_labels[region_idx]),

@@ -93,30 +93,32 @@ function ANN_Displayer(baseUrl, treeDataUrl, triangleToRegionUrl, activationPatt
                 return;
             }
 
+            BASE_PICK_moveNavigatorToCenter();
             var selectedNode = data.rslt.obj.attr("id");
             if (selectedNode && selectedNode.indexOf(SELF.prefixNodeIdTVB) == 0) {
                 selectedNode = selectedNode.replace(SELF.prefixNodeIdTVBRoot, '').replace(SELF.prefixNodeIdTVB, '');
                 selectedNode = parseInt(selectedNode);
                 displayMessage("Selected Region " + selectedNode, 'infoMessage');
 
-                TRIANGLE_pickedIndex = parseInt(SELF.regionToTriangleMapping[selectedNode]);
-                BASE_PICK_moveBrainNavigator(true);
+                //TRIANGLE_pickedIndex = parseInt(SELF.regionToTriangleMapping[selectedNode]);
+                //BASE_PICK_moveBrainNavigator(true);
 
                 SELF._redrawColors([selectedNode]);
 
             } else if (selectedNode && selectedNode.indexOf(SELF.prefixNodeIdBRCO) == 0) {
                 selectedNode = selectedNode.replace(SELF.prefixNodeIdBRCO, '');
                 selectedNode = parseInt(selectedNode);
-                displayMessage("Selected BRCO Region " + selectedNode, 'infoMessage');
 
                 var matchingTvbRegions = SELF.activationPatternMap[selectedNode];
-                for (var i = 0; i < matchingTvbRegions.length; i++) {
-                    var triangleIdx = parseInt(SELF.regionToTriangleMapping[matchingTvbRegions[i]]);
-                    TRIANGLE_pickedIndex = triangleIdx;
-                    BASE_PICK_moveBrainNavigator(false);
-                    BASE_PICK_addFocalPoint(triangleIdx);
-                }
+                //for (var i = 0; i < matchingTvbRegions.length; i++) {
+                //    var triangleIdx = parseInt(SELF.regionToTriangleMapping[matchingTvbRegions[i]]);
+                //    TRIANGLE_pickedIndex = triangleIdx;
+                //    BASE_PICK_moveBrainNavigator(false);
+                //    BASE_PICK_addFocalPoint(triangleIdx);
+                //}
 
+                displayMessage("BRCO node connected with " + matchingTvbRegions.length +
+                    " TVB regions: \n[" + matchingTvbRegions + "]", 'infoMessage');
                 SELF._redrawColors(matchingTvbRegions);
             }
         })

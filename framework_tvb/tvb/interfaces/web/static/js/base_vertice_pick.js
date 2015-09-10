@@ -726,6 +726,13 @@ function BASE_PICK_moveBrainNavigator(shouldRedrawScene) {
     }
 }
 
+function BASE_PICK_moveNavigatorToCenter() {
+    navigatorX = BRAIN_CENTER[0];
+    navigatorY = BRAIN_CENTER[1];
+    navigatorZ = BRAIN_CENTER[2];
+    TRIANGLE_pickedIndex = GL_NOTFOUND;
+}
+
 ////////////////////////////////////~~~~~~~~END BRAIN NAVIGATOR RELATED CODE~~~~~~~~~~~/////////////////////////////
 
 
