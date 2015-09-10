@@ -95,18 +95,19 @@ class AnnotationTerm(object):
         children = []
         for child in self.children:
             children.append(child.to_json())
-        title = "Label: " + self.label + "\n\nDefinition: " + self.definition + \
+        title = "URI: " + self.uri + "\n\nLabel: " + self.label + "\n\nDefinition: " + self.definition + \
                 "\n\nSynonyms: " + self.synonym.replace("|", "\n")
 
         if self.synonym_tvb_right >= 0 and self.synonym_tvb_left >= 0:
             # When TVB regions display differently
             synonym_id = self.synonym_tvb_right if is_right_hemisphere else self.synonym_tvb_left
-            title = str(synonym_id) + " - " + self.uri.split('#')[1] + "\n\n" + title
-            return dict(data=dict(icon=ICON_TVB, title=self.uri),
+            short_tvb_name = self.uri.split('#')[1]
+            title = str(synonym_id) + " - " + short_tvb_name + "\n\n" + title
+            return dict(data=dict(icon=ICON_TVB, title=short_tvb_name),
                         attr=dict(id=NODE_ID_TVB + str(synonym_id), title=title),
                         state="close", children=children)
 
-        return dict(data=dict(icon=ICON_FOLDER, title=self.uri),
+        return dict(data=dict(icon=ICON_FOLDER, title=self.label.capitalize()),
                     attr=dict(id=NODE_ID_BRCO + str(self.id), title=title),
                     state="close", children=children)
 
