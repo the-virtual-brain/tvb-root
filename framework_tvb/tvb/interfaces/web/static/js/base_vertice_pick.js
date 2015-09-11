@@ -386,7 +386,8 @@ function BASE_PICK_buffer_default_color(){
 function BASE_PICK_updateBrainColors(data) {
 
     if (BASE_PICK_brainDisplayBuffers.length != data.length) {
-        displayMessage("Could not draw the gradient view. Invalid data received from the server.", "errorMessage");
+        displayMessage("Could not draw the gradient colors. Try again in a few seconds, perhaps not everything is " +
+            "fully loaded from the server.", "warningMessage");
         return;
     }
 
