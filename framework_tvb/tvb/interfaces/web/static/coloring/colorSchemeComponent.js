@@ -365,8 +365,12 @@ function ColSch_updateLegendLabels(container, minValue, maxValue, height) {
     }
     var step = (maxValue - minValue) / (legendLabels.length - 1);            // -1 because it includes min and max
     legendLabels.each(function(idx, elem) {
-        elem.innerHTML = (maxValue - idx * step).toFixed(3)
+        elem.innerHTML = round_number(maxValue - idx * step, 3);
     });
+}
+
+function round_number(num, dec) {
+    return Math.floor(num * Math.pow(10, dec)) / Math.pow(10, dec);
 }
 // ================================= LEGEND UPDATING FUNCTION  END   =================================
 
