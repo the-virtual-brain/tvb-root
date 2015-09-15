@@ -36,10 +36,10 @@
             $("#main").addClass("colscheme-2-2nd-narrow");
 
             BASE_PICK_webGLStart('${urlVerticesPick}', '${urlTrianglesPick}', '${urlNormalsPick}', '${urlVertices}',
-                    '${urlTriangles}', '${urlNormals}', '${brainCenter}', 'ANN.setBrainColors(\'${urlColors}\')');
+                    '${urlTriangles}', '${urlNormals}', '${brainCenter}', 'ANN.setBrainColors(\'${urlColors}\')', '${urlRegionBoundaries}');
 
             ANN = new ANN_Displayer('${baseUrl}', '${annotationsTreeUrl}', '${urlTriangleToRegion}',
-                    '${urlActivationPatterns}', ${minValue}, ${maxValue}, '${urlRegionBoundaries}');
+                    '${urlActivationPatterns}', ${minValue}, ${maxValue});
 
             $('#GLcanvas').click(function () {
                 ANN.selectTreeNode();

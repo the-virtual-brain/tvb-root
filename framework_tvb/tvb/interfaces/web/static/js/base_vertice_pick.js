@@ -50,6 +50,7 @@ var BASE_PICK_isMovieMode = false;
 var surfaceFocalPoints = {};
 
 var drawingMode;
+var BASE_PICK_regionBoundariesController = null;
 
 var BRAIN_CANVAS_ID = "GLcanvas";
 var BASE_PICK_pinBuffers = [];
@@ -87,7 +88,7 @@ function BASE_PICK_initShaders() {
 
 
 function BASE_PICK_webGLStart(urlVerticesPickList, urlTrianglesPickList, urlNormalsPickList, urlVerticesDisplayList,
-                              urlTrianglesDisplayList, urlNormalsDisplayList, brain_center, callback) {
+                              urlTrianglesDisplayList, urlNormalsDisplayList, brain_center, callback, boundaryURL) {
     BRAIN_CENTER = $.parseJSON(brain_center);
     var canvas = document.getElementById(BRAIN_CANVAS_ID);
 
@@ -119,26 +120,22 @@ function BASE_PICK_webGLStart(urlVerticesPickList, urlTrianglesPickList, urlNorm
     isOneToOneMapping = true;
 
     drawScene();
+
+    BASE_PICK_regionBoundariesController = new RB_RegionBoundariesController(boundaryURL);
 }
 
 
 /**
- * Simplest drawScene. A default overwritten in local conn viewer and stimulus viewer.
+ * Redraw from buffers.
  */
 function drawScene() {
-    BASE_PICK_drawBrain();
-}
 
-/**
- * Draw from buffers.
- */
-function BASE_PICK_drawBrain() {
     var brainBuffers, noOfUnloadedBuffers;
 
     if (BASE_PICK_doPick) {
         brainBuffers = BASE_PICK_brainPickingBuffers;
         noOfUnloadedBuffers = noOfUnloadedBrainPickingBuffers;
-    }else{
+    } else {
         brainBuffers = BASE_PICK_brainDisplayBuffers;
         noOfUnloadedBuffers = noOfUnloadedBrainDisplayBuffers;
     }
@@ -176,6 +173,8 @@ function BASE_PICK_drawBrain() {
     gl.uniform1i(GL_shaderProgram.useActivity, !BASE_PICK_doPick);
 
     drawBuffers(drawingMode, brainBuffers);
+
+    BASE_PICK_regionBoundariesController.drawRegionBoundaries(drawingMode, BASE_PICK_brainDisplayBuffers);
 
     gl.uniform1i(GL_shaderProgram.useActivity, false);
 
@@ -396,6 +395,7 @@ function BASE_PICK_updateBrainColors(data) {
         gl.bindBuffer(gl.ARRAY_BUFFER, activityBuffer);
         var activity = new Float32Array(data[i]);
         gl.bufferData(gl.ARRAY_BUFFER, activity, gl.STATIC_DRAW);
+        activityBuffer.numItems = data[i].length;
         BASE_PICK_brainDisplayBuffers[i][3] = activityBuffer;
     }
 
@@ -495,7 +495,7 @@ function BASE_PICK_doVerticePick() {
 
     //Draw the brain in picking mode: swap normal display colors with picking colors and draw the 'colored' version to a back buffer
     BASE_PICK_doPick = true;
-    BASE_PICK_drawBrain();
+    drawScene();
     TRIANGLE_pickedIndex = GL_getPickedIndex();
 
     if (TRIANGLE_pickedIndex != GL_BACKGROUND) {
@@ -515,13 +515,13 @@ function BASE_PICK_doVerticePick() {
  */
 function BASE_PICK_removeFocalPoint(triangleIndex) {
     delete surfaceFocalPoints[triangleIndex];
-    BASE_PICK_drawBrain();
+    drawScene();
 }
 
 
 function BASE_PICK_clearFocalPoints() {
     surfaceFocalPoints = {};
-    BASE_PICK_drawBrain();
+    drawScene();
 }
 
 /*
@@ -532,7 +532,7 @@ function BASE_PICK_addFocalPoint(triangleIndex) {
     var x_rot = (360 - Math.atan2(navigatorY - BRAIN_CENTER[1], navigatorZ - BRAIN_CENTER[2]) * 180 / Math.PI) % 360;
     var y_rot = Math.atan2(navigatorX - BRAIN_CENTER[0], Math.sqrt((navigatorZ - BRAIN_CENTER[2]) * (navigatorZ - BRAIN_CENTER[2]) + (navigatorY - BRAIN_CENTER[1]) * (navigatorY - BRAIN_CENTER[1]))) * 180 / Math.PI;
     surfaceFocalPoints[triangleIndex] = {'xRotation' : x_rot, 'yRotation' : y_rot, 'position' : [navigatorX, navigatorY, navigatorZ]};
-    BASE_PICK_drawBrain();
+    drawScene();
 }
 
 function createStimulusPinBuffers() {

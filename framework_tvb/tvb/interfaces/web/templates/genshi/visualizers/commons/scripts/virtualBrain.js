@@ -94,11 +94,6 @@ var ACTIVITY_FRAMES_IN_TIME_LINE_AT_MAX_SPEED = 32;
 var sliderSel = false;
 
 var isPreview = false;
-
-var brainBuffers = [];
-var brainLinesBuffers = [];
-var shelfBuffers = [];
-var measurePointsBuffers = [];
 /**
  * This buffer arrays will contain:
  * arr[i][0] Vertices buffer
@@ -107,10 +102,12 @@ var measurePointsBuffers = [];
  * arr[i][3] Color buffer (same length as vertices /3 * 4) in case of one-to-one mapping
  * arr[i][3] Region indexes, when not one-to-one mapping
  */
+var brainBuffers = [];
+var brainLinesBuffers = [];
+var shelfBuffers = [];
+var measurePointsBuffers = [];
 
-var boundaryVertexBuffers = [];
-var boundaryNormalsBuffers = [];
-var boundaryEdgesBuffers = [];
+var regionBoundariesController = null;
 
 var activitiesData = [], timeData = [], measurePoints = [], measurePointsLabels = [];
 
@@ -139,8 +136,6 @@ var isFaceToDisplay = false;
 
 var drawNavigator = false;
 var drawTriangleLines = false;
-var drawBoundaries = false;
-
 var drawSpeculars = false;
 /**
  * Used to determine which buffer chunks belong to a hemisphere.
@@ -434,7 +429,7 @@ function _initViewerGL(canvas, urlVerticesList, urlNormalsList, urlTrianglesList
     VS_init_hemisphere_mask(hemisphere_chunk_mask);
 
     brainLinesBuffers = HLPR_getDataBuffers(gl, $.parseJSON(urlLinesList), isDoubleView, true);
-    initRegionBoundaries(boundaryURL);
+    regionBoundariesController = new RB_RegionBoundariesController(boundaryURL);
     
     if (shelfObject) {
         shelfObject = $.parseJSON(shelfObject);
@@ -643,15 +638,6 @@ function initShaders() {
     }
 }
 
-function setLighting(settings){
-    settings = settings || {};
-    var useVertexColors = settings.materialColor == null;
-    gl.uniform1i(GL_shaderProgram.useVertexColors, useVertexColors);
-    if (! useVertexColors){
-        gl.uniform4fv(GL_shaderProgram.materialColor, settings.materialColor);
-    }
-    return basicSetLighting(settings);
-}
 ///////////////////////////////////////~~~~~~~~START MOUSE RELATED CODE~~~~~~~~~~~//////////////////////////////////
 
 
@@ -770,7 +756,7 @@ function toggleDrawTriangleLines() {
 }
 
 function toggleDrawBoundaries() {
-    drawBoundaries = !drawBoundaries;
+    regionBoundariesController.toggleBoundariesVisibility();
 }
 
 function setSpecularHighLights(enable){
@@ -902,27 +888,6 @@ function initBuffers(urlVertices, urlNormals, urlTriangles, urlRegionMap, static
     return result;
 }
 
-
-function initRegionBoundaries(boundariesURL) {
-    if (boundariesURL) {
-        doAjaxCall({
-            url: boundariesURL,
-            async: true,
-            success: function(data) {
-                data = $.parseJSON(data);
-                var boundaryVertices = data[0];
-                var boundaryEdges = data[1];
-                var boundaryNormals = data[2];
-                for (var i = 0; i < boundaryVertices.length; i++) {
-                    boundaryVertexBuffers.push(HLPR_createWebGlBuffer(gl, boundaryVertices[i], false, false));
-                    boundaryNormalsBuffers.push(HLPR_createWebGlBuffer(gl, boundaryNormals[i], false, false));
-                    boundaryEdgesBuffers.push(HLPR_createWebGlBuffer(gl, boundaryEdges[i], true, false));
-                }
-            }
-        });
-    }
-}
-
 /**
  * Make a draw call towards the GL_shaderProgram compiled from common/vertex_shader common_fragment_shader
  * Note: all attributes have to be bound even if the shader does not explicitly use them (ex picking mode)
@@ -935,7 +900,7 @@ function drawBuffer(drawMode, buffers){
     if (isOneToOneMapping) {
         SHADING_Context.one_to_one_program_draw(GL_shaderProgram, buffers[0], buffers[1], buffers[3], buffers[2], drawMode);
     } else {
-        SHADING_Context.region_progam_draw(GL_shaderProgram, buffers[0], buffers[1], buffers[3], buffers[2], drawMode);
+        SHADING_Context.region_program_draw(GL_shaderProgram, buffers[0], buffers[1], buffers[3], buffers[2], drawMode);
     }
 }
 
@@ -976,32 +941,6 @@ function drawBuffers(drawMode, buffersSets, bufferSetsMask, useBlending, cullFac
         if (cullFace === gl.FRONT) {
             drawBuffers(drawMode, buffersSets, bufferSetsMask, useBlending, gl.BACK);
         }
-    }
-}
-
-
-function drawRegionBoundaries() {
-    if (boundaryVertexBuffers && boundaryEdgesBuffers) {
-        if (drawingMode !== gl.POINTS) {
-            // Usually draw the boundaries with the same color. But in points mode draw them with the vertex colors.
-            var lightSettings = setLighting(regionLinesLightSettings);
-        }
-        gl.lineWidth(3.0);
-        // replace the vertex, normal and element buffers from the brain buffer set. Keep the alpha buffers
-        var bufferSets = [];
-        for (var c = 0; c < brainBuffers.length; c++){
-            var chunk = brainBuffers[c].slice();
-            chunk[0] = boundaryVertexBuffers[c];
-            chunk[1] = boundaryNormalsBuffers[c];
-            chunk[2] = boundaryEdgesBuffers[c];
-            bufferSets.push(chunk);
-        }
-        drawBuffers(gl.LINES, bufferSets, bufferSetsMask);
-        if (drawingMode !== gl.POINTS) {
-            setLighting(lightSettings); // we've drawn solid colors, now restore previous lighting
-        }
-    } else {
-        displayMessage('Boundaries data not yet loaded. Display will refresh automatically when load is finished.', 'infoMessage');
     }
 }
 
@@ -1148,9 +1087,8 @@ function drawScene() {
             // draw surface
             drawBuffers(drawingMode, brainBuffers, bufferSetsMask);
 
-            if (drawBoundaries) {
-                drawRegionBoundaries();
-            }
+            regionBoundariesController.drawRegionBoundaries(drawingMode, brainBuffers);
+
             if (drawTriangleLines) {
                 drawBrainLines(brainLinesBuffers, brainBuffers, bufferSetsMask);
             }

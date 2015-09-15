@@ -3,8 +3,8 @@
         <xi:include href='../../flow/color_scheme.html'/>
 
         <dt>Show</dt>
-        <dd><input id="showBrainBoundaries" type="checkbox" onchange="toggleDrawBoundaries();"
-                   autocomplete="off" tabindex="1"/>
+        <dd><input id="showBrainBoundaries" type="checkbox" autocomplete="off" tabindex="1"
+                   onchange="BASE_PICK_regionBoundariesController.toggleBoundariesVisibility();"/>
             <label for="showBrainBoundaries">region boundaries</label>
         </dd>
     </dl>

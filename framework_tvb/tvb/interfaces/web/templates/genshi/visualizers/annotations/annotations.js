@@ -26,11 +26,9 @@
  * @param activationPatternsUrl - URL for retrieving the Map of the activation patterns
  * @param minValue - Minimum value for the colors (used for legend)
  * @param maxValue - Maximum value for the colors (used for legend)
- * @param urlRegionBoundaries - URL for reading Region Mapping boundary lines.
  * @constructor
  */
-function ANN_Displayer(baseUrl, treeDataUrl, triangleToRegionUrl, activationPatternsUrl,
-                       minValue, maxValue, urlRegionBoundaries) {
+function ANN_Displayer(baseUrl, treeDataUrl, triangleToRegionUrl, activationPatternsUrl, minValue, maxValue) {
 
     this.treeElem = $("#treeStructure");
 
@@ -58,10 +56,6 @@ function ANN_Displayer(baseUrl, treeDataUrl, triangleToRegionUrl, activationPatt
         this._prepareRegionToTriangleMapping();
 
         this.activationPatternMap = HLPR_readJSONfromFile(activationPatternsUrl);
-
-        // TODO TVB-1924
-        //initRegionBoundaries(urlRegionBoundaries);
-
     };
 
     this._populateAnnotationsTree = function (baseUrl, treeDataUrl) {

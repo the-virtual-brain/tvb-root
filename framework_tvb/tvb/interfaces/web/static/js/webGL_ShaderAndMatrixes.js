@@ -190,7 +190,7 @@ var _GL_currentLighting = defaultLightSettings;
  * @returns {object} The previous light settings
  * Missing values are taken from the defaults NOT from the current lighting settings!
  */
-function basicSetLighting(s){
+function basicSetLighting(s) {
     s = s || {};
     for(var k in defaultLightSettings){
         if (s[k] == null){
@@ -203,6 +203,17 @@ function basicSetLighting(s){
     _GL_currentLighting = s;
     return prev;
 }
+
+function setLighting(settings) {
+    settings = settings || {};
+    var useVertexColors = settings.materialColor == null;
+    gl.uniform1i(GL_shaderProgram.useVertexColors, useVertexColors);
+    if (! useVertexColors){
+        gl.uniform4fv(GL_shaderProgram.materialColor, settings.materialColor);
+    }
+    return basicSetLighting(settings);
+}
+
 // ------ COMMON LIGHTING FUNCTIONS END ----------------------------------------
 
 // ------ MATRIX FUNCTIONS -----------------------------------------------------

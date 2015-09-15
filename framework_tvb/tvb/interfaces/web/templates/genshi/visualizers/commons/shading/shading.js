@@ -207,7 +207,7 @@ SHADING_Context.one_to_one_program_draw = function (shader, positionBuffer, norm
     gl.drawElements(drawMode, elementBuffer.numItems, gl.UNSIGNED_SHORT, 0);
 };
 
-SHADING_Context.region_progam_draw = function (shader, positionBuffer, normalBuffer,
+SHADING_Context.region_program_draw = function (shader, positionBuffer, normalBuffer,
                                                vertexRegionBuffer, elementBuffer, drawMode){
     if (!SHADING_Context.textureComplete) { return; }
     SHADING_Context._bind_geometric_attributes(shader, positionBuffer, normalBuffer);

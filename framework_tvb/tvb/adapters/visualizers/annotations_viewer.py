@@ -113,7 +113,7 @@ class ConnectivityAnnotationsView(ABCDisplayer):
                       urlVertices=json.dumps(url_vertices),
                       urlTriangles=json.dumps(url_triangles),
                       urlNormals=json.dumps(url_normals),
-                      urlRegionBoundaries=json.dumps(boundary_url))
+                      urlRegionBoundaries=boundary_url)
 
         return self.build_display_result("annotations/annotations_view", params,
                                          pages={"controlPage": "annotations/annotations_controls"})
