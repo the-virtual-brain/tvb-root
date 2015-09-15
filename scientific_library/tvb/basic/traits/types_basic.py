@@ -104,9 +104,6 @@ class MapAsJson():
 
     def __get__(self, inst, cls):
         if inst is not None and self.trait.bound and hasattr(inst, '_' + self.trait.name):
-            # cached = getattr(inst, '__' + self.trait.name, None)
-            # if cached:
-            #     return cached
 
             string = getattr(inst, '_' + self.trait.name)
             if string is None or (not isinstance(string, (str, unicode))):
@@ -115,7 +112,7 @@ class MapAsJson():
                 return None
             json_value = self.from_json(string)
             # cache value for future accesses
-            setattr(inst, '_' + self.trait.name, json_value)
+            # setattr(inst, '_' + self.trait.name, json_value)
             return json_value
         return self
 

@@ -85,39 +85,28 @@ def fill_before_insert(_, _ignored, target):
     if MappedType not in target.__class__.mro():
         return
 
-    # enforce that the H5 file gets created
+    # Enforce that the H5 file gets created first
     target.set_metadata({})
     target.configure()
-        
+
     # Fix object references
     all_class_traits = getattr(target, 'trait', {})
     for key, attr in all_class_traits.iteritems():
         kwd = attr.trait.inits.kwd
-        # Here we try to resolve references in case _key is set 
-        # and not key and __key
+        # Here we try to resolve references in case _key is set but not key and __key
         if (kwd.get('db', True) and isinstance(attr, MappedType)
-            and (hasattr(target, '_' + key) 
-                 and getattr(target, '_' + key) is not None)
-            and (hasattr(target, '__' + key) 
-                 and getattr(target, '__' + key) is None)):
-
+                and (hasattr(target, '_' + key) and getattr(target, '_' + key) is not None)
+                and (hasattr(target, '__' + key) and getattr(target, '__' + key) is None)):
             ref_entity = getattr(target, '_' + key)
             setattr(target, key, ref_entity)
-
-    # Validate if the object can be stored
-    target._validate_before_store()
-
-    # Fix String attributes                
-    # This HAVE to be executed LAST because any get() for Json attribute will 
-    # restore it's value                    
-    for key, attr in all_class_traits.iteritems():
-        kwd = attr.trait.inits.kwd
-        if (kwd.get('db', True) and isinstance(attr, MapAsJson)
-                and hasattr(target, '_' + key)):
+        # Fix String columns which are parsed as JSON
+        if kwd.get('db', True) and isinstance(attr, MapAsJson) and hasattr(target, '_' + key):
             field_value = getattr(target, '_' + key)
-            if field_value is not None:
+            if field_value is not None and not isinstance(field_value, (str, unicode)):
                 setattr(target, '_' + key, attr.to_json(field_value))
-                                
+
+    # Validate if the object can be stored before storing in DB
+    target._validate_before_store()
 
 
  
