@@ -263,6 +263,12 @@ margin-left: 10px;
 margin-top: 0;
 }
 
+.matrix-controller hgroup label {
+position: absolute;
+right: 150px;
+color: #fff;
+}
+
 
 
 /* !-------------------------------------------- */

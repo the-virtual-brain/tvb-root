@@ -99,6 +99,7 @@ function _GFUN_onSelectionComponentChange(value){
     GVAR_interestAreaNodeIndexes = GFUN_mapNodeIdsToIndices(node_ids);
     refreshTableInterestArea(); //notify matrix display
     GFUNC_updateLeftSideVisualization();
+    $("#currentlySelectedNodesLabelId").html("Selected " + node_ids.length + " nodes.")
 }
 
 /**

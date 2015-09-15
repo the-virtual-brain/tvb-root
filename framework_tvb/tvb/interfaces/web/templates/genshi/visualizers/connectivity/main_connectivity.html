@@ -85,15 +85,16 @@
         <hgroup>
             <h4><mark>Control</mark> Large Scale Matrices</h4>
             <input type="text" id="newConnectivityNameTag" value="" title="User name for the new Connectivity to be generated"/>
+			<label id="currentlySelectedNodesLabelId">All nodes selected</label>
         </hgroup>
 
         <a href="#" tabindex='-1' onclick='saveSubConnectivity("$submitURL", "$originalConnectivity", false);'
            class="action action-big-new action-new-connectivity column-control"
-           title="Create a new connectivity from the selected nodes">Create new</a>
+           title="Create a new connectivity from the selected nodes. Check the '* Select *' buttons bellow to see what it is included">Create new</a>
 
         <a href="#" tabindex='-1' onclick='saveSubConnectivity("$submitURL", "$originalConnectivity", true);'
            class="action action-big-branch action-branch-connectivity column-control"
-           title="Clone the connectivity cutting the unselected edges">Branch</a>
+           title="Clone the connectivity cutting the unselected edges. Check the '* Select *' buttons bellow to see what it is included">Branch</a>
 
     <div id="chkList" class="matrix">
     	<ul class="matrix-switcher tabswitcher">
