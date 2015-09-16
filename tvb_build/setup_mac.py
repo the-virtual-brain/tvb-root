@@ -32,7 +32,7 @@
 Create TVB distribution package for Mac OS.
 
 Execute:
-    python setup_py2app.py py2app
+    python tvb_build/setup_mac.py py2app
 
 """
 
@@ -48,7 +48,7 @@ from tvb.basic.profile import TvbProfile
 import tvb_bin
 
 BIN_FOLDER = os.path.dirname(tvb_bin.__file__)
-TVB_ROOT = os.path.dirname(__file__)
+TVB_ROOT = os.path.dirname(os.path.dirname(__file__))
 DIST_FOLDER = os.path.join(TVB_ROOT, "dist")
 DIST_FOLDER_FINAL = "TVB_Distribution"
 STEP1_RESULT = os.path.join(TVB_ROOT, "tvb_build", "build", "TVB_build_step1.zip")
@@ -292,11 +292,7 @@ PY2APP_OPTIONS = {'iconfile': 'tvb_build/icon.icns',
                   'optimize': '0'}
 
 
-#This is a list of all the dynamic libraries identified so far that are added by py2app even though apparently
-#they are not used by TVB. We will exclude them from package so as not to worry about licenses.
-EXCLUDED_DYNAMIC_LIBS = ['libbz2.1.0.dylib', 'libdb-4.6.dylib', 'libexslt.0.dylib',
-                         'libintl.8.dylib', 'liblzma.5.dylib', 'libpng15.15.dylib', 'libtiff.3.dylib',
-                         'libsqlite3.0.dylib', 'libXss.1.dylib', 'libxml2.2.dylib', 'libxslt.1.dylib']
+EXCLUDED_DYNAMIC_LIBS = []
 
 
 def prepare_py2app_dist():
