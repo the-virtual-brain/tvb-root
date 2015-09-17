@@ -31,21 +31,24 @@
 """
 Create TVB distribution package for Mac OS.
 
-Execute:
+Execute in root SVN:
+
     python tvb_build/setup_mac.py py2app
 
 """
 
-#Prepare TVB code and dependencies.
-import subprocess
 import os
 import sys
+import shutil
+import subprocess
+import setuptools
+import locale
+import tvb_bin
 from glob import glob
 from zipfile import ZipFile, ZIP_DEFLATED
-import shutil
-import setuptools
 from tvb.basic.profile import TvbProfile
-import tvb_bin
+from tvb_build.third_party_licenses.build_licenses import generate_artefact
+
 
 BIN_FOLDER = os.path.dirname(tvb_bin.__file__)
 TVB_ROOT = os.path.dirname(os.path.dirname(__file__))
@@ -58,7 +61,35 @@ VERSION = TvbProfile.current.version.BASE_VERSION
 
 FOLDERS_TO_DELETE = ['.svn', '.project', '.settings']
 FILES_TO_DELETE = ['.DS_Store', 'dev_logger_config.conf']
+EXCLUDED_DYNAMIC_LIBS = []
 
+# --------------------------- PY2APP specific configurations--------------------------------------------
+
+PY2APP_PACKAGES = ['cherrypy', 'email', 'h5py', 'IPython', 'idlelib', 'migrate', 'minixsv',
+                   'numpy', 'PIL', 'Pillow', 'scipy', 'sklearn', 'tables', 'tornado', 'tvb']
+
+PY2APP_INCLUDES = ['apscheduler', 'apscheduler.scheduler', 'cfflib', 'cmath', 'contextlib', 'formencode', 'gdist',
+                   'genshi', 'genshi.template', 'genshi.template.loader', 'jinja2', 'jsonschema', 'logging.config',
+                   'lxml.etree', 'lxml._elementpath', 'markupsafe', 'matplotlib', 'minixsv', 'mod_pywebsocket',
+                   'mplh5canvas.backend_h5canvas', 'mpl_toolkits.axes_grid', 'nibabel', 'numexpr', 'os', 'psycopg2', 'PIL', 'Pillow',
+                   'runpy', 'sqlite3', 'sqlalchemy', 'sqlalchemy.dialects.sqlite', 'sqlalchemy.dialects.postgresql',
+                   'simplejson', 'StringIO', 'xml.dom', 'xml.dom.minidom', 'zlib', 'zmq']
+
+PY2APP_EXCLUDES = ['_markerlib', 'coverage', 'cython', 'Cython', 'tvb_data', 'docutils', 'lib2to3',
+                   'nose', 'OpenGL', 'PyOpenGL', 'PyQt4', 'sphinx', 'wx']
+
+PY2APP_OPTIONS = {'iconfile': 'tvb_build/icon.icns',
+                  'plist': 'tvb_build/info.plist',
+                  'packages': PY2APP_PACKAGES,
+                  'includes': PY2APP_INCLUDES,
+                  'frameworks': ['Tcl', 'Tk'],
+                  'resources': [],
+                  'excludes': PY2APP_EXCLUDES,
+                  'argv_emulation': True,
+                  'strip': True,  # TRUE is the default
+                  'optimize': '0'}
+
+# --------------------------- Start defining functions: --------------------------------------------
 
 def _create_command_file(command_file_path, command, before_message, done_message=False):
     """
@@ -94,7 +125,7 @@ def _copy_collapsed(to_copy):
                 shutil.copytree(src, dest, ignore=ignore_patters)
 
 
-def add_sitecustomize(base_folder, destination_folder):
+def _add_sitecustomize(base_folder, destination_folder):
     full_path = os.path.join(base_folder, destination_folder, "sitecustomize.py")
     with open(full_path, 'w') as sc_file:
         sc_file.write("# -*- coding: utf-8 -*-\n\n")
@@ -102,9 +133,9 @@ def add_sitecustomize(base_folder, destination_folder):
         sc_file.write("sys.setdefaultencoding('utf-8')\n")
 
 
-def copy_simulator_library(library_folder):
+def _copy_tvb_sources(library_folder):
     """
-    Make sure all TVB folders are collapsed together in one folder in distribution.
+    Make sure all TVB folders are collapsed together in one folder in the distribution.
     """
     import tvb
 
@@ -130,17 +161,15 @@ def copy_simulator_library(library_folder):
             print "  Removed: " + str(excluded)
 
 
-def introspect_licenses(destination_folder, root_introspection, extra_licenses_check=None):
+def _introspect_licenses(destination_folder, root_introspection, extra_licenses_check=None):
     """Generate archive with 3rd party licenses"""
     print "- Introspecting for dependencies..." + str(root_introspection)
-    import locale
 
     try:
         locale.getdefaultlocale()
     except Exception:
         os.environ['LANG'] = 'en_US.UTF-8'
         os.environ['LC_ALL'] = 'en_US.UTF-8'
-    from tvb_build.third_party_licenses.build_licenses import generate_artefact
 
     zip_name = generate_artefact(root_introspection, extra_licenses_check=extra_licenses_check)
     ZipFile(zip_name).extractall(destination_folder)
@@ -148,37 +177,37 @@ def introspect_licenses(destination_folder, root_introspection, extra_licenses_c
     print "- Dependencies archive with licenses done."
 
 
-def zipdir(basedir, archivename):
+def _zipdir(basedir, archivename):
     """Create ZIP archive from folder"""
     assert os.path.isdir(basedir)
     with ZipFile(archivename, "w", ZIP_DEFLATED) as z_file:
         for root, _, files in os.walk(basedir):
-            #NOTE: ignore empty directories
+            # NOTE: ignore empty directories
             for file_nname in files:
                 absfn = os.path.join(root, file_nname)
                 zfn = absfn[len(basedir) + len(os.sep):]
                 z_file.write(absfn, zfn)
 
 
-def clean_up(folder_path, to_delete):
+def _clean_up(folder_path, to_delete):
     """
     Remove any read only permission for certain files like those in .svn, then delete the files.
     """
-    #Add Write access on folder
+    # Add Write access on folder
     folder_name = os.path.split(folder_path)[1]
     will_delete = False
     os.chmod(folder_path, 0o777)
     if to_delete or folder_name in FOLDERS_TO_DELETE:
         will_delete = True
 
-    #step through all the files/folders and change permissions
+    # step through all the files/folders and change permissions
     for file_ in os.listdir(folder_path):
         file_path = os.path.join(folder_path, file_)
         os.chmod(file_path, 0o777)
-        #if it is a directory, do a recursive call
+        # if it is a directory, do a recursive call
         if os.path.isdir(file_path):
-            clean_up(file_path, to_delete or will_delete)
-        #for files merely call chmod
+            _clean_up(file_path, to_delete or will_delete)
+        # for files merely call chmod
         else:
             if file_ in FILES_TO_DELETE:
                 os.remove(file_path)
@@ -187,7 +216,7 @@ def clean_up(folder_path, to_delete):
         shutil.rmtree(folder_path)
 
 
-def write_svn_current_version(dest_folder):
+def _write_svn_current_version(dest_folder):
     """Read current subversion number"""
     try:
         svn_variable = 'SVN_REVISION'
@@ -206,11 +235,11 @@ def _generate_distribution(final_name, library_path, version, extra_licensing_ch
     # merge sources
     library_abs_path = os.path.join(DIST_FOLDER, library_path)
 
-    copy_simulator_library(library_abs_path)
+    _copy_tvb_sources(library_abs_path)
 
     shutil.copytree(os.path.join("externals", "BCT"), os.path.join(DIST_FOLDER, library_path, "externals", "BCT"))
 
-    add_sitecustomize(DIST_FOLDER, library_path)
+    _add_sitecustomize(DIST_FOLDER, library_path)
 
     bin_src = os.path.join("tvb_bin", "tvb_bin")
     bin_dst = os.path.join(library_abs_path, "tvb_bin")
@@ -218,7 +247,7 @@ def _generate_distribution(final_name, library_path, version, extra_licensing_ch
     shutil.copytree(bin_src, bin_dst)
 
     print "- Adding svn version"
-    write_svn_current_version(bin_dst)
+    _write_svn_current_version(bin_dst)
 
     demo_data_src = os.path.join(DIST_FOLDER, "_tvb_data")
     demo_data_dst = os.path.join(library_abs_path, "tvb_data")
@@ -234,7 +263,7 @@ def _generate_distribution(final_name, library_path, version, extra_licensing_ch
                      os.path.join("tvb_documentation", "tutorials"): os.path.join(DIST_FOLDER, "demo_scripts")})
 
     print "- Cleaning up non-required files..."
-    clean_up(DIST_FOLDER, False)
+    _clean_up(DIST_FOLDER, False)
     if os.path.exists(DIST_FOLDER_FINAL):
         shutil.rmtree(DIST_FOLDER_FINAL)
     os.rename(DIST_FOLDER, DIST_FOLDER_FINAL)
@@ -253,46 +282,16 @@ def _generate_distribution(final_name, library_path, version, extra_licensing_ch
         extra_licensing_check = extra_licensing_check.split(';')
         for idx in xrange(len(extra_licensing_check)):
             extra_licensing_check[idx] = os.path.join(final_name, DIST_FOLDER_FINAL, extra_licensing_check[idx])
-    introspect_licenses(os.path.join(final_name, DIST_FOLDER_FINAL, 'THIRD_PARTY_LICENSES'),
-                        os.path.join(final_name, DIST_FOLDER_FINAL, library_path), extra_licensing_check)
+    _introspect_licenses(os.path.join(final_name, DIST_FOLDER_FINAL, 'THIRD_PARTY_LICENSES'),
+                         os.path.join(final_name, DIST_FOLDER_FINAL, library_path), extra_licensing_check)
     print "- Creating the ZIP folder of the distribution..."
     zip_name = final_name + "_" + version + ".zip"
     if os.path.exists(zip_name):
         os.remove(zip_name)
-    zipdir(final_name, zip_name)
+    _zipdir(final_name, zip_name)
     if os.path.exists(final_name):
         shutil.rmtree(final_name)
     print '- Finish creation of distribution ZIP'
-
-
-#--------------------------- PY2APP specific configurations--------------------------------------------
-
-PY2APP_PACKAGES = ['cherrypy', 'email', 'h5py', 'IPython', 'idlelib', 'migrate', 'minixsv',
-                   'numpy', 'scipy', 'sklearn', 'tables', 'tornado', 'tvb']
-
-PY2APP_INCLUDES = ['apscheduler', 'apscheduler.scheduler', 'cfflib', 'cmath', 'contextlib', 'formencode', 'gdist',
-                   'genshi', 'genshi.template', 'genshi.template.loader', 'jinja2', 'jsonschema', 'logging.config',
-                   'lxml.etree', 'lxml._elementpath', 'markupsafe', 'matplotlib', 'minixsv', 'mod_pywebsocket',
-                   'mplh5canvas.backend_h5canvas', 'mpl_toolkits.axes_grid', 'nibabel', 'numexpr', 'os', 'psycopg2',
-                   'runpy', 'sqlite3', 'sqlalchemy', 'sqlalchemy.dialects.sqlite', 'sqlalchemy.dialects.postgresql',
-                   'simplejson', 'StringIO', 'xml.dom', 'xml.dom.minidom', 'zlib', 'zmq']
-
-PY2APP_EXCLUDES = ['_markerlib', 'coverage', 'cython', 'Cython', 'tvb_data', 'docutils', 'lib2to3',
-                   'nose', 'OpenGL', 'PyOpenGL', 'PyQt4', 'sphinx', 'wx']
-
-PY2APP_OPTIONS = {'iconfile': 'tvb_build/icon.icns',
-                  'plist': 'tvb_build/info.plist',
-                  'packages': PY2APP_PACKAGES,
-                  'includes': PY2APP_INCLUDES,
-                  'frameworks': ['Tcl', 'Tk'],
-                  'resources': [],
-                  'excludes': PY2APP_EXCLUDES,
-                  'argv_emulation': True,
-                  'strip': True,  # TRUE is the default
-                  'optimize': '0'}
-
-
-EXCLUDED_DYNAMIC_LIBS = []
 
 
 def prepare_py2app_dist():
@@ -317,16 +316,16 @@ def prepare_py2app_dist():
 
     print "PY2APP starting ..."
     # Log everything from py2app in a log file
-    REAL_STDOUT, REAL_STDERR = sys.stdout, sys.stderr
+    real_stdout, real_stderr = sys.stdout, sys.stderr
     sys.stdout = open('PY2APP.log', 'w')
     sys.stderr = open('PY2APP_ERR.log', 'w')
 
-    FW_NAME = "framework_tvb"
+    fw_name = "framework_tvb"
 
     setuptools.setup(name="tvb",
                      version=VERSION,
-                     packages=setuptools.find_packages(FW_NAME),
-                     package_dir={'': FW_NAME},
+                     packages=setuptools.find_packages(fw_name),
+                     package_dir={'': fw_name},
                      license="GPL v2",
                      options={'py2app': PY2APP_OPTIONS},
                      include_package_data=True,
@@ -334,8 +333,8 @@ def prepare_py2app_dist():
                      app=['tvb_bin/tvb_bin/app.py'],
                      setup_requires=['py2app'])
 
-    sys.stdout = REAL_STDOUT
-    sys.stderr = REAL_STDERR
+    sys.stdout = real_stdout
+    sys.stderr = real_stderr
     print "PY2APP finished."
 
     print "Running post-py2app build operations:"
@@ -353,12 +352,12 @@ def prepare_py2app_dist():
     _create_command_file(os.path.join(DIST_FOLDER, "bin", 'tvb_stop'),
                          'source ./distribution.command stop', 'Stopping TVB related processes.', True)
 
-    IPYTHON_COMMAND = 'export PYTHONPATH=../tvb.app/Contents/Resources/lib/python2.7:' \
+    ipython_command = 'export PYTHONPATH=../tvb.app/Contents/Resources/lib/python2.7:' \
                       '../tvb.app/Contents/Resources/lib/python2.7/site-packages.zip:' \
                       '../tvb.app/Contents/Resources/lib/python2.7/lib-dynload\n' \
                       '../tvb.app/Contents/MacOS/python -m tvb_bin.run_ipython notebook '
     _create_command_file(os.path.join(DIST_FOLDER, "bin", 'ipython_notebook'),
-                          IPYTHON_COMMAND + '../demo_scripts', '')
+                         ipython_command + '../demo_scripts', '')
     # _create_command_file(os.path.join(DIST_FOLDER, "demo_scripts", 'ipython_notebook'), IPYTHON_COMMAND, '')
 
     _create_command_file(os.path.join(DIST_FOLDER, "bin", 'contributor_setup'),
@@ -371,20 +370,17 @@ def prepare_py2app_dist():
                          'cd bin\n',
                          'Setting-up contributor environment', True)
 
-    #py2app should have a --exclude-dynamic parameter but it doesn't seem to work until now
+    # py2app should have a --exclude-dynamic parameter but it doesn't seem to work until now
     for entry in EXCLUDED_DYNAMIC_LIBS:
         path = os.path.join(DIST_FOLDER, "tvb.app", "Contents", "Frameworks", entry)
         if os.path.exists(path):
             os.remove(path)
 
-    DESTINATION_SOURCES = os.path.join("tvb.app", "Contents", "Resources", "lib", "python2.7")
+    destination_sources = os.path.join("tvb.app", "Contents", "Resources", "lib", "python2.7")
+    _generate_distribution("TVB_MacOS", destination_sources, VERSION)
 
-    # this dependency is deprecated
-    _generate_distribution("TVB_MacOS", DESTINATION_SOURCES, VERSION)
-
-    ## Clean after install
+    # cleanup after install
     shutil.rmtree(os.path.join(FW_FOLDER, 'tvb.egg-info'), True)
-
 
 
 if __name__ == '__main__':
