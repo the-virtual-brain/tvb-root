@@ -73,6 +73,10 @@ class ABCDisplayer(ABCSynchronous):
         """
         Shortcut in case of visualization calls.
         """
+        self.operation_id = operation.id
+        self.current_project_id = operation.project.id
+        self.user_id = operation.fk_launched_by
+
         if operation.method_name == self.LAUNCH_METHOD:
             return self.launch(**kwargs), 0
 
