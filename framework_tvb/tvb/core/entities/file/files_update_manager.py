@@ -29,7 +29,7 @@
 #
 
 """
-Manager for the file storage versioning updates.
+Manager for the file storage version updates.
 
 .. moduleauthor:: Lia Domide <lia.domide@codemart.ro>
 .. moduleauthor:: Ionel Ortelecan <ionel.ortelecan@codemart.ro>
@@ -45,7 +45,7 @@ from tvb.basic.traits.types_mapped import MappedType
 from tvb.core.code_versions.base_classes import UpdateManager
 from tvb.core.entities.file.hdf5_storage_manager import HDF5StorageManager
 from tvb.core.entities.file.files_helper import FilesHelper
-from tvb.core.entities.file.exceptions import MissingDataFileException, FileVersioningException, FileStructureException
+from tvb.core.entities.file.exceptions import MissingDataFileException, FileStructureException
 from tvb.core.entities.storage import dao
 
 
@@ -63,8 +63,8 @@ class FilesUpdateManager(UpdateManager):
     DATA_TYPES_PAGE_SIZE = 500
     STATUS = True
     MESSAGE = "Done"
-    
-    
+
+
     def __init__(self):
         super(FilesUpdateManager, self).__init__(file_update_scripts,
                                                  TvbProfile.current.version.DATA_CHECKED_TO_VERSION,
@@ -108,15 +108,24 @@ class FilesUpdateManager(UpdateManager):
         sequentially, up until the current version from tvb.basic.config.settings.VersionSettings.DB_STRUCTURE_VERSION
         
         :param input_file_name: the path to the file which needs to be upgraded
+        :return True, when update was needed and running it was successful.
+                False, the the file is already up to date.
         """
+        if self.is_file_up_to_date(input_file_name):
+            # Avoid running the DB update of size, when H5 is not being changed, to speed-up
+            return False
+
         file_version = self.get_file_data_version(input_file_name)
+        self.log.info("Updating from version %s , file: %s " % (file_version, input_file_name))
         for script_name in self.get_update_scripts(file_version):
             self.run_update_script(script_name, input_file=input_file_name)
 
         if datatype:
-            #Compute and update the disk_size attribute of the DataType in DB:
+            # Compute and update the disk_size attribute of the DataType in DB:
             datatype.disk_size = self.files_helper.compute_size_on_disk(input_file_name)
             dao.store_entity(datatype)
+
+        return True
 
 
     def __upgrade_datatype_list(self, datatypes):
@@ -131,6 +140,8 @@ class FilesUpdateManager(UpdateManager):
         """
         nr_of_dts_upgraded_fine = 0
         nr_of_dts_upgraded_fault = 0
+        no_of_dts_ignored = 0
+
         for datatype in datatypes:
             try:
                 specific_datatype = dao.get_datatype_by_gid(datatype.gid, load_lazy=False)
@@ -140,8 +151,15 @@ class FilesUpdateManager(UpdateManager):
                     dao.store_entity(datatype)
                     nr_of_dts_upgraded_fault += 1
                 elif isinstance(specific_datatype, MappedType):
-                    self.upgrade_file(specific_datatype.get_storage_file_path(), specific_datatype)
-                    nr_of_dts_upgraded_fine += 1
+                    update_was_needed = self.upgrade_file(specific_datatype.get_storage_file_path(), specific_datatype)
+                    if update_was_needed:
+                        nr_of_dts_upgraded_fine += 1
+                    else:
+                        no_of_dts_ignored += 1
+                else:
+                    # Ignore DataTypeGroups
+                    self.log.debug("We will ignore, due to type: " + str(specific_datatype))
+                    no_of_dts_ignored += 1
 
             except Exception, ex:
                 # The file/class is missing for some reason. Just mark the DataType as invalid.
@@ -150,9 +168,9 @@ class FilesUpdateManager(UpdateManager):
                 nr_of_dts_upgraded_fault += 1
                 self.log.exception(ex)
 
-        return nr_of_dts_upgraded_fine, nr_of_dts_upgraded_fault
-                        
-                        
+        return nr_of_dts_upgraded_fine, nr_of_dts_upgraded_fault, no_of_dts_ignored
+
+
     def run_all_updates(self):
         """
         Upgrades all the data types from TVB storage to the latest data version.
@@ -164,7 +182,7 @@ class FilesUpdateManager(UpdateManager):
         if TvbProfile.current.version.DATA_CHECKED_TO_VERSION < TvbProfile.current.version.DATA_VERSION:
             total_count = dao.count_all_datatypes()
 
-            self.log.info("Starting to run H5 file updates from %d to %d for %d datatypes" % (
+            self.log.info("Starting to run H5 file updates from version %d to %d, for %d datatypes" % (
                 TvbProfile.current.version.DATA_CHECKED_TO_VERSION,
                 TvbProfile.current.version.DATA_VERSION, total_count))
 
@@ -172,20 +190,21 @@ class FilesUpdateManager(UpdateManager):
             # were marked as invalid due to missing files or invalid manager.
             no_ok = 0
             no_error = 0
+            no_ignored = 0
             start_time = datetime.now()
 
             # Read DataTypes in pages to limit the memory consumption
             for current_idx in range(0, total_count, self.DATA_TYPES_PAGE_SIZE):
-
                 datatypes_for_page = dao.get_all_datatypes(current_idx, self.DATA_TYPES_PAGE_SIZE)
-                upgraded_fine_count, upgraded_fault_count = self.__upgrade_datatype_list(datatypes_for_page)
-                no_ok += upgraded_fine_count
-                no_error += upgraded_fault_count
+                count_ok, count_error, count_ignored = self.__upgrade_datatype_list(datatypes_for_page)
+                no_ok += count_ok
+                no_error += count_error
+                no_ignored += count_ignored
 
-                self.log.info("Updated H5 files so far %d [fine:%d, error:%d, of total:%d, in: %s min]" % (
-                    current_idx + len(datatypes_for_page), no_ok, no_error, total_count,
+                self.log.info("Updated H5 files so far: %d [fine:%d, error:%d, ignored:%d of total:%d, in: %s min]" % (
+                    current_idx + len(datatypes_for_page), no_ok, no_error, no_ignored, total_count,
                     int((datetime.now() - start_time).seconds / 60)))
-                
+
             # Now update the configuration file since update was done
             config_file_update_dict = {stored.KEY_LAST_CHECKED_FILE_VERSION: TvbProfile.current.version.DATA_VERSION}
 
@@ -194,7 +213,7 @@ class FilesUpdateManager(UpdateManager):
                 config_file_update_dict[stored.KEY_FILE_STORAGE_UPDATE_STATUS] = FILE_STORAGE_VALID
                 FilesUpdateManager.STATUS = True
                 FilesUpdateManager.MESSAGE = ("File upgrade finished successfully for all %s entries. "
-                                              "Thank you for your patience" % no_ok)
+                                              "Thank you for your patience!" % total_count)
                 self.log.info(FilesUpdateManager.MESSAGE)
             else:
                 # Something went wrong
@@ -206,7 +225,7 @@ class FilesUpdateManager(UpdateManager):
 
             TvbProfile.current.version.DATA_CHECKED_TO_VERSION = TvbProfile.current.version.DATA_VERSION
             TvbProfile.current.manager.add_entries_to_config_file(config_file_update_dict)
-     
+
 
     @staticmethod
     def _get_manager(file_path):
@@ -215,6 +234,3 @@ class FilesUpdateManager(UpdateManager):
         """
         folder, file_name = os.path.split(file_path)
         return HDF5StorageManager(folder, file_name)
-
-            
-            

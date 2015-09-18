@@ -220,7 +220,8 @@ class DatatypeDAO(RootDAO):
         """
         resulted_data = []
         try:
-            resulted_data = self.session.query(model.DataType).offset(max(page_start, 0)).limit(max(page_size, 0)).all()
+            resulted_data = self.session.query(model.DataType).order_by(model.DataType.id).offset(
+                max(page_start, 0)).limit(max(page_size, 0)).all()
         except SQLAlchemyError, excep:
             self.logger.exception(excep)
         return resulted_data

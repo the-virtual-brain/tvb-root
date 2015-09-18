@@ -51,10 +51,9 @@ class UpdateManager(object):
     An update manager pattern.
     Goes through all the scripts, and based on the current version executed the one in need
     """
-    log = get_logger(__name__)
-
 
     def __init__(self, module_scripts, check_version, current_version):
+        self.log = get_logger(self.__class__.__module__)
         self.update_scripts_module = module_scripts
         self.checked_version = check_version
         self.current_version = current_version
@@ -76,7 +75,7 @@ class UpdateManager(object):
 
         result = sorted(unprocessed_scripts, key=lambda x: int(x.split('_')[0]))
         if result:
-            self.log.info("Found unprocessed code update scripts: %s." % result)
+            self.log.info("Found unprocessed update scripts: %s." % result)
         return result
 
 
