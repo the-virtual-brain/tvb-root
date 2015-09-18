@@ -216,6 +216,28 @@ class SimulatorAdapter(ABCAsynchronous):
         return max(int(estimation), 1)
 
 
+    def _try_find_mapping(self, mapping_class, connectivity_gid):
+        """
+        Try to find a DataType instance of class "mapping_class", linked to the given Connectivity.
+        Entities in the current project will have priority.
+
+        :param mapping_class: DT class, with field "_connectivity" on it
+        :param connectivity_gid: GUID
+        :return: None or instance of "mapping_class"
+        """
+
+        dts_list = dao.get_generic_entity(mapping_class, connectivity_gid, '_connectivity')
+        if len(dts_list) < 1:
+            return None
+
+        for dt in dts_list:
+            dt_operation = dao.get_operation_by_id(dt.fk_from_operation)
+            if dt_operation.fk_launched_in == self.current_project_id:
+                return dt
+        return dts_list[0]
+
+
+
     def launch(self, model, model_parameters, integrator, integrator_parameters, connectivity,
                monitors, monitors_parameters=None, surface=None, surface_parameters=None, stimulus=None,
                coupling=None, coupling_parameters=None, initial_conditions=None,
@@ -235,16 +257,8 @@ class SimulatorAdapter(ABCAsynchronous):
         if simulation_state is not None:
             simulation_state.fill_into(self.algorithm)
 
-        region_map = dao.get_generic_entity(region_mapping.RegionMapping, connectivity.gid, '_connectivity')
-        region_volume_map = dao.get_generic_entity(region_mapping.RegionVolumeMapping, connectivity.gid, '_connectivity')
-        if len(region_map) < 1:
-            region_map = None
-        else:
-            region_map = region_map[0]
-        if len(region_volume_map) < 1:
-            region_volume_map = None
-        else:
-            region_volume_map = region_volume_map[0]
+        region_map = self._try_find_mapping(region_mapping.RegionMapping, connectivity.gid)
+        region_volume_map = self._try_find_mapping(region_mapping.RegionVolumeMapping, connectivity.gid)
 
         for monitor in self.algorithm.monitors:
             m_name = monitor.__class__.__name__

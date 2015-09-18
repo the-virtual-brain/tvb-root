@@ -246,10 +246,11 @@ class ABCAdapter(object):
         """
         self.meta_data.update(json.loads(operation.meta_data))
         self.storage_path = self.file_handler.get_project_folder(operation.project, str(operation.id))
+        self.operation_id = operation.id
+        self.current_project_id = operation.project.id
+        self.user_id = operation.fk_launched_by
 
         if operation.method_name == self.LAUNCH_METHOD:
-            self.operation_id = operation.id
-            self.user_id = operation.fk_launched_by
 
             self.configure(**kwargs)
 
