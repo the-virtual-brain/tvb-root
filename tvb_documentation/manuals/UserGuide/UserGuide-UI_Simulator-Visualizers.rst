@@ -305,15 +305,19 @@ Annotations Visualizer
 
 This viewer shows ontology annotations linked with TVB connectivity regions. It is composed of two main display areas:
  - 3D left-side canvas with TVB regions. These regions are color coded, based on the connectivity region index
- (similar to `Surface Visualizer`_ when a Region Mapping entity is selected). From the most top-right corner menu,
- you can change the color scheme used to draw these regions coloring.
+   (similar to `Surface Visualizer`_ when a Region Mapping entity is selected). From the most top-right corner menu,
+    you can change the color scheme used to draw these regions coloring.
  - 2D tree display of ontology annotations. A tooltip will appear if you go with the mouse over various nodes,
  and will show you details imported from the ontology.
 
- The two areas (left and right) are linked, both ways:
+The two areas (left and right) are linked, both ways:
 - You can pick a vertex in 3D and have the corresponding tree node highlighted on the right-side, or backwards:
 - Click on the tree, and have the corresponding region(s) highlighted in 3D.
 
+Hints:
+ - There is an checkbox on the top-right menu to draw region boundaries in the 3D canvas
+ - When you click on an ontology node on the right, a message text will appear on the top area of the page,
+   telling you how many TVB regions are linked to this ontology term
 
 .. figure:: screenshots/visualizer_annotations.jpg
    :width: 90%
