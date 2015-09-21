@@ -212,7 +212,7 @@ selected to be dragged.
 
 
 Connectivity Measure Visualizer
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 This visualizer can be used for displaying various Brain Connectivity Measures, related to a given Connectivity.
 
@@ -290,7 +290,7 @@ Navigate the 3D scene like in the `Brain Activity Visualizer`_.
 
 
 Local Connectivity Visualizer
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 Once a Local Connectivity dataTypes (which in fact is a huge sparse matrix of max size surface
 vertices x surface vertices, shaped after the cut-off) gets computed, one can view the correlation
@@ -300,11 +300,39 @@ In order to see some correlation, one should pick (by mouse click) a vertex on t
 surface once it loads in the canvas.
 
 
+Annotations Visualizer
+~~~~~~~~~~~~~~~~~~~~~~
+
+This viewer shows ontology annotations linked with TVB connectivity regions. It is composed of two main display areas:
+ - 3D left-side canvas with TVB regions. These regions are color coded, based on the connectivity region index
+ (similar to `Surface Visualizer`_ when a Region Mapping entity is selected). From the most top-right corner menu,
+ you can change the color scheme used to draw these regions coloring.
+ - 2D tree display of ontology annotations. A tooltip will appear if you go with the mouse over various nodes,
+ and will show you details imported from the ontology.
+
+ The two areas (left and right) are linked, both ways:
+- You can pick a vertex in 3D and have the corresponding tree node highlighted on the right-side, or backwards:
+- Click on the tree, and have the corresponding region(s) highlighted in 3D.
+
+
+.. figure:: screenshots/visualizer_annotations.jpg
+   :width: 90%
+   :align: center
+
+   Pick a vertex in 3D and have the corresponding tree node selected on the right.
+
+.. figure:: screenshots/visualizer_annotations_back.jpg
+   :width: 90%
+   :align: center
+
+   Select a tree node on the right, and have the linked regions highlighted in 3D.
+
+
 Group Display
-.......................
+.............
 
 Discrete PSE Visualizer
-~~~~~~~~~~~~~~~~~~~~~~~~~
+~~~~~~~~~~~~~~~~~~~~~~~
 
 Discrete Parameter Space Exploration View, will show up to two measures of the Simulator results,
 after varying input Simulator Parameters. The two displayed measures are emphasized in the node shapes and node colors.
@@ -324,7 +352,7 @@ When clicking a node, an overlay window will open, which gives you full access t
 particular Simulation result.
 
 Isocline PSE Visualizer
-~~~~~~~~~~~~~~~~~~~~~~~~~
+~~~~~~~~~~~~~~~~~~~~~~~
 
 Continuous Parameter Space Exploration View, will show the effect of varying Simulator parameters in a continuous form.
 
@@ -347,7 +375,7 @@ Analyzers + Visualizers
 .......................
 
 Covariance Visualizer
-~~~~~~~~~~~~~~~~~~~~~~
+~~~~~~~~~~~~~~~~~~~~~
 
 Displays the covariance matrix. 
 The matrix size is `number of nodes` x `number of nodes`
@@ -361,7 +389,7 @@ The matrix size is `number of nodes` x `number of nodes`
 
 
 Cross Coherence Visualizer
-~~~~~~~~~~~~~~~~~~~~~~~~~~~
+~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 Displays the cross-coherence matrix. Axes represent brain nodes.
 The matrix size is `number of nodes` x `number of nodes`.
@@ -375,7 +403,7 @@ The matrix size is `number of nodes` x `number of nodes`.
 
 
 Complex Coherence Visualizer
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 Displays the complex-cross-coherence matrix. Axes represent brain nodes.
 The matrix is a complex ndarray that contains the `number of nodes` x `number of nodes` cross
@@ -397,7 +425,7 @@ Displays the cross-correlation matrix. Similar to the previous three visualizers
 
 
 Pearson Coefficients Visualizer
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 Displays the Pearson correlation coefficients matrix.
 
@@ -437,7 +465,7 @@ On the right, the first ten components are plotted against the brain nodes
 
 
 Independent Component Visualizer
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 ICA takes time-points as observations and nodes as variables.
 
@@ -453,7 +481,7 @@ Mostly a problem for TimeSeriesSurface datatypes, which, if sampled at 1024Hz, w
 
 
 Wavelet Spectrogram Visualizer
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 2D representation that shows how the signals wavelet spectral coefficients (frequency) 
 vary with time.

@@ -33,9 +33,7 @@
 """
 
 
-
 class WebStructure(object):
-
     ### TVB sections. Will appear as footer entries.
     SECTION_USER = "user"
     SECTION_PROJECT = "project"
@@ -231,7 +229,7 @@ class WebStructure(object):
         SUB_SECTION_VIEW_19: "time-series-volume-visualizer",
         SUB_SECTION_VIEW_20: "topographic-visualizer",
         SUB_SECTION_VIEW_21: "wavelet-spectrogram-visualizer",
-        SUB_SECTION_VIEW_22: "surface-visualizer"
+        SUB_SECTION_VIEW_22: "annotations-visualizer"
     }
 
 
@@ -258,6 +256,3 @@ class WebStructure(object):
         SUB_SECTION_ANALYZE_16: "brain-connectivity-toolbox-analyzers",
         SUB_SECTION_ANALYZE_17: "brain-connectivity-toolbox-analyzers",
     }
-    
-    
-    
