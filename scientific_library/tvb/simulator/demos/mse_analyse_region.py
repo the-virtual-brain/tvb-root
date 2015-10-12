@@ -144,7 +144,7 @@ def configure_simulation(stimulate):
     LOG.info("Reading sensors info")
 
     pr = ProjectionSurfaceEEG(load_default=True)
-    sensors = SensorsEEG.from_file(source_file="eeg-brainstorm-65.txt")
+    sensors = SensorsEEG.from_file(source_file="eeg_brainstorm_65.txt")
     rm = RegionMapping(load_default=True)
 
     #Initialise a Model, Connectivity, Coupling, set speed.
