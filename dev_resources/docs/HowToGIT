@@ -14,9 +14,9 @@
 
 ## Initialize new 3rd party SYNCHRONIZATION REPO:
 
-    git svn --authors-file=[authors.txt] clone -s -r6000:HEAD --no-minimize-url https://repo.thevirtualbrain.org/svn/tvb/trunk/ --trunk=tvb_documentation --prefix=svn/
+    git svn --authors-file=[authors.txt] clone -s -r6000:HEAD --no-minimize-url https://repo.thevirtualbrain.org/svn/tvb/trunk/ --trunk=tvb_data --prefix=svn/ --ignore-paths="/brainstorm/"
     cd trunk
-    git remote add github https://github.com/the-virtual-brain/tvb_documentation-docs.git
+    git remote add github https://github.com/the-virtual-brain/tvb-data.git
     git push github master
 
     git config --unset remote.mirror.fetch
