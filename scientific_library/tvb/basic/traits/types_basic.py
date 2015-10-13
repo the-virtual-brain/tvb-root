@@ -105,14 +105,18 @@ class MapAsJson():
     def __get__(self, inst, cls):
         if inst is not None and self.trait.bound and hasattr(inst, '_' + self.trait.name):
 
+            if hasattr(inst, '__' + self.trait.name):
+                return getattr(inst, '__' + self.trait.name)
+
             string = getattr(inst, '_' + self.trait.name)
             if string is None or (not isinstance(string, (str, unicode))):
                 return string
             if len(string) < 1:
                 return None
             json_value = self.from_json(string)
-            # cache value for future accesses
-            # setattr(inst, '_' + self.trait.name, json_value)
+
+            # Cache for future usages (e.g. Stimulus.spatial should be the same instance on multiple accesses)
+            setattr(inst, '__' + self.trait.name, json_value)
             return json_value
         return self
 
