@@ -48,6 +48,8 @@ from tvb.core.services.flow_service import FlowService
 from tvb.core.services.project_service import ProjectService
 from tvb.core.services.operation_service import OperationService
 from tvb.datatypes.connectivity import Connectivity
+from tvb.datatypes.equations import PulseTrain
+from tvb.datatypes.patterns import StimuliRegion
 from tvb.datatypes.surfaces import CorticalSurface
 from tvb.datatypes.region_mapping import RegionMapping
 from tvb.datatypes.time_series import TimeSeries, TimeSeriesEEG, TimeSeriesRegion
@@ -62,7 +64,7 @@ from tvb.tests.framework.adapters.storeadapter import StoreAdapter
 
 
 
-class DatatypesFactory():
+class DatatypesFactory(object):
     """
     This class provides a set of methods that helps user to create
     different data types for testing.
@@ -201,14 +203,14 @@ class DatatypesFactory():
         return operation, algorithm.id, storage_path
 
 
-    def create_connectivity(self):
+    def create_connectivity(self, nodes=74):
         """
         Create a connectivity that will be used in "non-dummy" burst launches (with the actual simulator).
         """
         operation, algo_id, storage_path = self.__create_operation()
         connectivity = Connectivity(storage_path=storage_path)
-        connectivity.weights = numpy.ones((74, 74))
-        connectivity.centres = numpy.ones((74, 3))
+        connectivity.weights = numpy.ones((nodes, nodes))
+        connectivity.centres = numpy.ones((nodes, 3))
         adapter_instance = StoreAdapter([connectivity])
         OperationService().initiate_prelaunch(operation, adapter_instance, {})
         return algo_id, connectivity
@@ -237,6 +239,23 @@ class DatatypesFactory():
         OperationService().initiate_prelaunch(operation, adapter_instance, {})
         time_series = dao.get_datatype_by_gid(time_series.gid)
         return time_series
+
+
+    def create_stimulus(self, connectivity):
+        """
+        :param connectivity: Connectivity to create stimuli for its regions
+        :return: persisted region Stimuli instance
+        """
+
+        operation, _, storage_path = self.__create_operation()
+        stimuli_region = StimuliRegion(storage_path=storage_path)
+        stimuli_region.connectivity = connectivity
+        stimuli_region.weight = numpy.random.random((connectivity.number_of_regions, 1)).tolist()
+        stimuli_region.temporal = PulseTrain()
+
+        adapter_instance = StoreAdapter([stimuli_region])
+        OperationService().initiate_prelaunch(operation, adapter_instance, {})
+        return stimuli_region
 
 
     def create_covariance(self, time_series):
