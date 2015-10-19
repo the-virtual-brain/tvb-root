@@ -36,7 +36,7 @@ import numpy
 import unittest
 from tvb.tests.library.base_testcase import BaseTestCase
 from tvb.simulator.monitors import MonitorTransforms
-from tvb.simulator import models, coupling, integrators, noise, simulator
+from tvb.simulator import models, coupling, integrators, simulator
 from tvb.datatypes import connectivity
 from tvb.simulator.monitors import Raw, TemporalAverage
 
@@ -53,24 +53,24 @@ class MonitorTransformsTests(BaseTestCase):
 
     def test_pre_1(self):
         mt = MonitorTransforms('a', 'b;c')
-        self.assertEqual(len(mt.pre), 2)
+        self.assertEqual(1, len(mt.pre))
 
     def test_post_1(self):
         mt = MonitorTransforms('a;b', 'c')
-        self.assertEqual(len(mt.post), 2)
+        self.assertEqual(1, len(mt.post))
 
-    def _shape_fail(self):
-        MonitorTransforms('1,2,3', '2,3', delim=',')
+    # def _shape_fail(self):
+    #     MonitorTransforms('1,2,3', '2;3', delim=',')
+    #
+    # def test_shape_fail(self):
+    #     self.assertRaises(Exception, self._shape_fail)
 
-    def test_shape_fail(self):
-        self.assertRaises(Exception, self._shape_fail)
-
-    def _syntax_fail(self):
-        MonitorTransforms('a=3', '23.234')
+    def _syntax_fail(self, pre, post):
+        MonitorTransforms(pre, post)
 
     def test_syntax(self):
-        mt = MonitorTransforms('a+b/c*f(a,b)', '23')
-        self.assertRaises(SyntaxError, self._syntax_fail)
+        self.assertRaises(SyntaxError, self._syntax_fail, 'a=3', '23.234')
+        self.assertRaises(SyntaxError, self._syntax_fail, 'a+b/c*f(a,b)', 'f=23')
 
     def test_noop_post(self):
         mt = MonitorTransforms('a;b;c', '2.34*(pre+1.5);;')
@@ -142,26 +142,28 @@ class MonitorTransformsInSimTest(BaseTestCase):
         return sim, numpy.array(ys)
 
     def test_expr_pre(self):
-        sim, ys = self._run_sim(5, models.Generic2dOscillator(), Raw(pre_expr='V;W;V**2;W-V', post_expr=''))
+        sim, ys = self._run_sim(5, models.Generic2dOscillator(), Raw(pre_expr='V;W;V**2;W-V',
+                                                                     post_expr='mon;mon;mon;mon'))
         self.assertTrue(hasattr(sim.monitors[0], '_transforms'))
         v, w, v2, wmv = ys.transpose((1, 0, 2, 3))
-        self.assertTrue(numpy.allclose(v**2, v2))
-        self.assertTrue(numpy.allclose(w-v, wmv))
+        self.assertTrue(numpy.allclose(v ** 2, v2))
+        self.assertTrue(numpy.allclose(w - v, wmv))
 
     def test_expr_post(self):
-        sim, ys = self._run_sim(5, models.Generic2dOscillator(), Raw(pre_expr='V;W;V;W', post_expr=';;mon**2; exp(mon)'))
+        sim, ys = self._run_sim(5, models.Generic2dOscillator(),
+                                Raw(pre_expr='V;W;V;W', post_expr=';;mon**2; exp(mon)'))
         self.assertTrue(hasattr(sim.monitors[0], '_transforms'))
         v, w, v2, ew = ys.transpose((1, 0, 2, 3))
-        self.assertTrue(numpy.allclose(v**2, v2))
+        self.assertTrue(numpy.allclose(v ** 2, v2))
         self.assertTrue(numpy.allclose(numpy.exp(w), ew))
 
     def test_expr_tim(self):
-        sim, ys = self._run_sim(5, models.Epileptor(), Raw(pre_expr='-y0+y3;y2', post_expr=''))
+        sim, ys = self._run_sim(5, models.Epileptor(), Raw(pre_expr='-y0+y3;y2', post_expr='mon;mon'))
         self.assertTrue(hasattr(sim.monitors[0], '_transforms'))
         lfp, slow = ys.transpose((1, 0, 2, 3))
 
     def test_period_handling(self):
-        "Test that expression application working for monitors with a period."
+        """Test that expression application working for monitors with a period."""
         sim, ys = self._run_sim(5, models.Generic2dOscillator(), TemporalAverage(pre_expr='V+W'))
 
 
