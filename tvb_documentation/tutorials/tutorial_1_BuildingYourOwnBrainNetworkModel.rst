@@ -21,7 +21,7 @@ expected to launch all the simulations. However, following these steps you
 should be able to reproduce the results from the simulations in the project
 BuildingYourOwnBrainNetworkModel.
 
-In this tutorial, all the data were already generated. You can download the 
+In this tutorial, all the data have already been generated. You can download the 
 BuildingYourOwnBrainNetworkModel.zip file in the `TVB sharing area
 <http://www.thevirtualbrain.org/tvb/zwei/client-area/public>`_. We’ll only go through
 the necessary steps required to reproduce some simulations. You can always
@@ -38,7 +38,7 @@ brain and consists of five main components, each of these components is a
 configurable object in TVB:
 
 - *Model*  or *Local population model*, which is, at its core, a set of
-  differential equations describing the local neuronal dynamic;
+  differential equations describing the local neuronal dynamics;
 
 - *Connectivity*, represents the large scale structural connectivity of the brain, ie
    white-matter tracts;
@@ -116,9 +116,9 @@ process to the simulated neural activity, such as EEG, MEG, SEEG, etc.,
 here we’ll select only one simple monitor just to show the idea. The Raw
 Monitor takes no arguments and simply returns all the simulated data.
 
-8. Provide the *simulation length*, that here we’ll use the default value of **1000 ms**.
+8. Provide the *simulation length*. Here we’ll use the default value of **1000 ms**.
 
-9. Before launching the simulation, configure a set of *Visualizeds* and/or
+9. Before launching the simulation, configure a set of *Visualizers* and/or
    *Analyzers* by clicking on *Configure*, selecting the what you want to see
    and saving your choices. These windows will enable you to have a glimpse of
    the results as soon as the simulation ends.
@@ -169,7 +169,7 @@ achieve that later on).
    the slope of the linear coupling function is
    :math:`\mathbf{a=0.042}`.
 
-#. To make things easy, we copy the fisrt simulation by clicking on |pen| on the top right
+#. To make things easy, we copy the first simulation by clicking on |pen| on the top right
    corner of a simulation tab. From the menu you can get a copy, edit
    the name the simulation or delete it. 
 
@@ -254,7 +254,7 @@ However, there certainly is a more elegant way.
 4. Run a simulation for **1000 ms**.
 
 TVB has a branching mechanism that allows you to use the data of a
-simulation, as the initial history for a new simulation. The only thing
+simulation as the initial history for a new simulation. The only thing
 you need to know is that the spatio-temporal structure of the network
 should remain unchanged (e.g., the number of nodes, conduction speed,
 the recorded state-variables, integration time-step size and selected
