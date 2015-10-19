@@ -107,7 +107,7 @@ class MonitorTransforms(object):
         self.pre = self._prep_exprs(pre_exprs, delim)
         self.post = self._prep_exprs(post_exprs, delim)
         self.svars = model_svars
-        self._check_num_exprs()
+        # self._check_num_exprs()
         self._check_syntax(self.pre, allow_empty=False)
         self._check_syntax(self.post, allow_empty=True)
         self._np_ns = {}
@@ -116,20 +116,21 @@ class MonitorTransforms(object):
     def _prep_exprs(self, exprs, delim):
         return [e.strip() for e in exprs.split(delim)]
 
-    def _check_num_exprs(self):
-        n_pre, n_post = len(self.pre), len(self.post)
-        if n_pre != n_post:
-            if n_pre == 1:
-                self.pre *= n_post
-            elif n_post == 1:
-                self.post *= n_pre
-            else:
-                msg = ("%d pre and %d post monitor expressions provided. Only an equal number or 1 for either "
-                       "should be provided.")
-                msg %= n_pre, n_post
-                raise Exception(msg)
-        else:
-            pass
+    # Commented because of  TVB-1946
+    # def _check_num_exprs(self):
+    #     n_pre, n_post = len(self.pre), len(self.post)
+    #     if n_pre != n_post:
+    #         if n_pre == 1:
+    #             self.pre *= n_post
+    #         elif n_post == 1:
+    #             self.post *= n_pre
+    #         else:
+    #             msg = ("%d pre and %d post monitor expressions provided. Only an equal number or 1 for either "
+    #                    "should be provided.")
+    #             msg %= n_pre, n_post
+    #             raise Exception(msg)
+    #     else:
+    #         pass
 
     def _check_syntax(self, exprs, allow_empty):
         for expr in exprs:
