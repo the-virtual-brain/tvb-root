@@ -37,6 +37,8 @@ methods that are associated with the precalculated look up tables.
 
 """
 
+import numpy
+from tvb.basic.readers import try_get_absolute_path
 import tvb.datatypes.lookup_tables_scientific as lookup_tables_scientific
 import tvb.datatypes.lookup_tables_framework as lookup_tables_framework
 from tvb.basic.logger.builder import get_logger
@@ -62,8 +64,16 @@ class LookUpTable(lookup_tables_scientific.LookUpTableScientific,
         
     
     """
-    
-    pass
+
+    @staticmethod
+    def populate_table(result, source_file):
+        source_full_path = try_get_absolute_path("tvb_data.tables", source_file)
+        zip_data = numpy.load(source_full_path)
+
+        result.df = zip_data['df']
+        result.xmin, result.xmax = zip_data['min_max']
+        result.data = zip_data['f']
+        return result
 
 
 class PsiTable(lookup_tables_scientific.PsiTableScientific,
@@ -84,11 +94,19 @@ class PsiTable(lookup_tables_scientific.PsiTableScientific,
         
     
     """
-    pass
+
+    @staticmethod
+    def from_file(source_file="psi.npz", instance=None):
+
+        if instance is None:
+            result = PsiTable()
+        else:
+            result = instance
+        return LookUpTable.populate_table(result, source_file)
 
 
 class NerfTable(lookup_tables_scientific.NerfTableScientific,
-               lookup_tables_framework.NerfTableFramework, LookUpTable):
+                lookup_tables_framework.NerfTableFramework, LookUpTable):
     """ 
     This class brings together the scientific and framework methods that are
     associated with the NerfTable dataType.
@@ -105,5 +123,12 @@ class NerfTable(lookup_tables_scientific.NerfTableScientific,
         
     
     """
-    pass
 
+    @staticmethod
+    def from_file(source_file="nerf_int.npz", instance=None):
+
+        if instance is None:
+            result = NerfTable()
+        else:
+            result = instance
+        return LookUpTable.populate_table(result, source_file)

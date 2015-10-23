@@ -37,6 +37,8 @@ Based on the Brunel and Wang model.
 .. moduleauthor:: Stuart A. Knock <Stuart@tvb.invalid>
 
 """
+from tvb.basic.profile import TvbProfile
+TvbProfile.set_profile(TvbProfile.TEST_LIBRARY_PROFILE)
 
 import inspect
 import numpy
@@ -51,21 +53,21 @@ LOG = get_logger(__name__)
 
 class BrunelWang(models.Model):
     """
-    .. [DJ_2012] Deco G and Jirsa V. *Ongoing Cortical 
-        Activity at Rest: Criticality, Multistability, and Ghost Attractors*. 
+    .. [DJ_2012] Deco G and Jirsa V. *Ongoing Cortical
+        Activity at Rest: Criticality, Multistability, and Ghost Attractors*.
         Journal of Neuroscience 32, 3366-3375, 2012.
-        
-    .. [BW_2001] Brunel N and Wang X-J. *Effects of neuromodulation in a cortical 
-       network model of object working memory dominated by recurrent inhibition*. 
+
+    .. [BW_2001] Brunel N and Wang X-J. *Effects of neuromodulation in a cortical
+       network model of object working memory dominated by recurrent inhibition*.
        Journal of Computational Neuroscience 11, 63–85, 2001.
-           
+
     Each node consists of one excitatory (E) and one inhibitory (I) pool.
 
-    At a global level, it uses Hagmann's 2008 connectome 66 areas(hagmann_struct.csv) 
+    At a global level, it uses Hagmann's 2008 connectome 66 areas(hagmann_struct.csv)
     with a global scaling weight (W) of 1.65.
-    
 
-    """ 
+
+    """
 
     _ui_name = "Deco-Jirsa (Mean-Field Brunel-Wang)"
     ui_configurable_parameters = ['tau', 'calpha', 'cbeta', 'cgamma', 'tauNMDArise',
@@ -73,11 +75,10 @@ class BrunelWang(models.Model):
                                   'VE', 'VI', 'VL', 'Vthr', 'Vreset', 'gNMDA_e',
                                   'gNMDA_i', 'gGABA_e', 'gGABA_i', 'gAMPArec_e',
                                   'gAMPArec_i', 'gAMPAext_e', 'gAMPAext_i',
-                                  'gm_e', 'gm_i', 'Cm_e', 'Cm_i', 'taum_e', 
+                                  'gm_e', 'gm_i', 'Cm_e', 'Cm_i', 'taum_e',
                                   'taum_i', 'taurp_e', 'taurp_i', 'Cext', 'C',
-                                  'nuext', 'wplus', 'wminus', 'W', 
-                                  'variables_of_interest']
-    
+                                  'nuext', 'wplus', 'wminus', 'W']
+
     #Define traited attributes for this model, these represent possible kwargs.
     tau = arrays.FloatArray(
         label = ":math:`\\tau`",
@@ -93,7 +94,7 @@ class BrunelWang(models.Model):
         range = basic.Range(lo = 0.4, hi = 0.5, step = 0.05),
         doc = """NMDA saturation parameter (kHz)""",
         order = 2)
-                    
+
     cbeta = arrays.FloatArray(
         label = ":math:`c_{\\beta}`",
         default = numpy.array([0.062,]),
@@ -107,7 +108,7 @@ class BrunelWang(models.Model):
         range = basic.Range(lo = 0.2801120440, hi = 0.2801120448, step = 0.0000000001),
         doc = """Strength of Mg2+ blockade""",
         order = -1)
-    
+
     tauNMDArise = arrays.FloatArray(
         label = ":math:`\\tau_{NMDA_{rise}}`",
         default = numpy.array([2.0,]),
@@ -135,7 +136,7 @@ class BrunelWang(models.Model):
         range = basic.Range(lo = 5.0, hi = 15.0, step = 1.0),
         doc = """GABA time constant (decay) (ms)""",
         order = 7)
-    
+
     VE = arrays.FloatArray(
         label = ":math:`V_E`",
         default = numpy.array([0.0,]),
@@ -177,21 +178,21 @@ class BrunelWang(models.Model):
         range = basic.Range(lo = 0.320, hi = 0.350, step = 0.0035),
         doc = """NMDA conductance on post-synaptic excitatory (nS)""",
         order = -1)
-                    
+
     gNMDA_i = arrays.FloatArray(
         label = ":math:`g_{NMDA_{i}}`",
         default = numpy.array([0.258,]),
         range = basic.Range(lo = 0.250, hi = 0.270, step = 0.002),
         doc = """NMDA conductance on post-synaptic inhibitory (nS)""",
         order = -1)
-        
+
     gGABA_e = arrays.FloatArray(
         label = ":math:`g_{GABA_{e}}`",
         default = numpy.array([1.25 * 3.5, ]),
         range = basic.Range(lo = 1.25, hi = 4.375, step = 0.005),
         doc = """GABA conductance on excitatory post-synaptic (nS)""",
         order = 10)
-        
+
     gGABA_i = arrays.FloatArray(
         label = ":math:`g_{GABA_{i}}`",
         default = numpy.array([0.973 * 3.5, ]),
@@ -205,7 +206,7 @@ class BrunelWang(models.Model):
         range = basic.Range(lo = 0.1, hi = 0.11, step = 0.001),
         doc = """AMPA(recurrent) cond on post-synaptic (nS)""",
         order = -1)
-                    
+
     gAMPArec_i = arrays.FloatArray(
         label = ":math:`g_{AMPA_{rec_i}}`",
         default = numpy.array([0.081,]),
@@ -219,7 +220,7 @@ class BrunelWang(models.Model):
         range = basic.Range(lo = 2.08, hi = 2.496, step = 0.004),
         doc = """AMPA(external) cond on post-synaptic (nS)""",
         order = 12)
-                    
+
     gAMPAext_i = arrays.FloatArray(
         label = ":math:`g_{AMPA_{ext_i}}`",
         default = numpy.array([1.62 * 1.2,]),
@@ -233,7 +234,7 @@ class BrunelWang(models.Model):
         range = basic.Range(lo = 20.0, hi = 25.0, step = 1.0),
         doc = """Excitatory membrane conductance (nS)""",
         order = 13)
-    
+
     gm_i = arrays.FloatArray(
         label = ":math:`gm_i`",
         default = numpy.array([20.,]),
@@ -247,7 +248,7 @@ class BrunelWang(models.Model):
         range = basic.Range(lo = 200.0, hi = 600.0, step = 50.0),
         doc = """Excitatory membrane capacitance (mF)""",
         order = 15)
-                    
+
     Cm_i = arrays.FloatArray(
         label = ":math:`Cm_i`",
         default = numpy.array([200.,]),
@@ -256,28 +257,28 @@ class BrunelWang(models.Model):
         order = 16)
 
     taum_e = arrays.FloatArray(
-        label = ":math:`\\tau_m_{e}`",
+        label = ":math:`\\tau_{m_{e}}`",
         default = numpy.array([20.,]),
         range = basic.Range(lo = 10.0, hi = 25.0, step = 5.0),
         doc = """Excitatory membrane leak time (ms)""",
         order = 17)
-                    
+
     taum_i = arrays.FloatArray(
-        label = ":math:`\\tau_m_{i}`",
+        label = ":math:`\\tau_{m_{i}}`",
         default = numpy.array([10.0,]),
         range = basic.Range(lo = 5.0, hi = 15.0, step = 5.),
         doc = """Inhibitory Membrane leak time (ms)""",
         order = 18)
 
     taurp_e = arrays.FloatArray(
-        label = ":math:`\\tau_{rp}_{e}`",
+        label = ":math:`\\tau_{rp_{e}}`",
         default = numpy.array([2.0,]),
         range = basic.Range(lo = 0.0, hi = 4.0, step = 1.),
         doc = """Excitatory absolute refractory period (ms)""",
         order = 19)
-                    
+
     taurp_i = arrays.FloatArray(
-        label = ":math:`\\tau_{rp}_{i}`",
+        label = ":math:`\\tau_{rp_{i}}`",
         default = numpy.array([1.0,]),
         range = basic.Range(lo = 0.0, hi = 2.0, step = 0.5),
         doc= """Inhibitory absolute refractory period (ms)""",
@@ -310,59 +311,59 @@ class BrunelWang(models.Model):
         range = basic.Range(lo = 0.5, hi = 3., step = 0.05),
         doc = """Synaptic coupling strength [w+] (dimensionless)""",
         order = -1)
-                    
+
     wminus = arrays.FloatArray(
         label = ":math:`w_{-}`",
         default = numpy.array([1.,]),
         range = basic.Range(lo = 0.2, hi = 2., step = 0.05),
         doc = """Synaptic coupling strength [w-] (dimensionless)""",
         order = -1)
-    
-            
+
+
     NMAX = arrays.IntegerArray(
         label = ":math:`N_{MAX}`",
         default = numpy.array([8, ], dtype=numpy.int32),
         range = basic.Range(lo = 2, hi = 8, step=1),
         doc = """This is a magic number as given in the original code.
-        It is used to compute the phi and psi -- computationally expensive -- 
+        It is used to compute the phi and psi -- computationally expensive --
         functions""",
         order = -1)
-        
+
     pool_nodes = arrays.FloatArray(
         label = ":math:`p_{nodes}`",
         default = numpy.array([74.0, ]),
         range = basic.Range(lo = 1.0, hi = 74.0, step = 1.0),
         doc = """Scale coupling weight sby the number of nodes in the network""",
         order = 23)
-        
+
     a = arrays.FloatArray(
         label = ":math:`a`",
         default = numpy.array([0.80823563, ]),
         range = basic.Range(lo = 0.80, hi = 0.88, step = 0.01),
         doc = """.""",
         order = -1)
-    
+
     b = arrays.FloatArray(
         label = ":math:`b`",
         default = numpy.array([67.06177975, ]),
         range =  basic.Range(lo = 66.0, hi = 69.0, step = 0.5 ),
         doc = """.""",
         order = -1)
-    
+
     ve = arrays.FloatArray(
         label = ":math:`ve`",
         default = numpy.array([- 52.5, ]),
         range = basic.Range(lo = -50.0, hi = -45.0, step = 0.2),
         doc = """.""",
         order = -1)
-        
+
     vi = arrays.FloatArray(
         label = ":math:`vi`",
         default = numpy.array([- 52.5,]),
         range = basic.Range(lo = -50.0, hi = -45.0, step = 0.2 ),
         doc = """.""",
-        order = -1)                
-                                       
+        order = -1)
+
     W = arrays.FloatArray(
         label = ":math:`W`",
         default = numpy.array([1.65,]),
@@ -376,7 +377,7 @@ class BrunelWang(models.Model):
         default=["E"],
         select_multiple=True,
         doc="""This represents the default state-variables of this Model to be
-                                    monitored. It can be overridden for each Monitor if desired. The 
+                                    monitored. It can be overridden for each Monitor if desired. The
                                     corresponding state-variable indices for this model are :math:`E = 0`
                                     and :math:`I = 1`.""",
         order=21)
@@ -387,40 +388,39 @@ class BrunelWang(models.Model):
         default = {"E": numpy.array([0.001, 0.01]),
                    "I": numpy.array([0.001, 0.01])},
         doc = """The values for each state-variable should be set to encompass
-            the expected dynamic range of that state-variable for the current 
-            parameters, it is used as a mechanism for bounding random initial 
+            the expected dynamic range of that state-variable for the current
+            parameters, it is used as a mechanism for bounding random initial
             conditions when the simulation isn't started from an explicit
             history, it is also provides the default range of phase-plane plots.
             The corresponding state-variable units for this model are kHz.""",
         order = 22)
 
 
-    psi_table = lookup_tables.PsiTable(required=True,
-                                       default=lookup_tables.PsiTable(),
-                                       label="Psi Table",
-                                       doc="""Psi Table (description).""")
+    # psi_table = lookup_tables.PsiTable(required=True,
+    #                                    default=lookup_tables.PsiTable(),
+    #                                    label="Psi Table",
+    #                                    doc="""Psi Table (description).""")
+    #
+    # nerf_table = lookup_tables.NerfTable(required=True,
+    #                                      default=lookup_tables.NerfTable(),
+    #                                      label="Nerf Table",
+    #                                      doc="""Nerf Table (description).""")
 
-    nerf_table = lookup_tables.NerfTable(required=True,
-                                         default=lookup_tables.NerfTable(),
-                                         label="Nerf Table",
-                                         doc="""Nerf Table (description).""")
-                   
-                                       
 
     def __init__(self, **kwargs):
         """
         May need to put kwargs back if we can't get them from trait...
-        
+
         """
-        
+
         LOG.info("%s: initing..." % str(self))
-        
+
         super(BrunelWang, self).__init__(**kwargs)
-        
+
         #self._state_variables = ["E", "I"]
-        self._nvar = 2 
-        
-        self.cvar = numpy.array([0], dtype=numpy.int32)
+        self._nvar = 2
+
+        self.cvar = numpy.array([0, 1], dtype=numpy.int32)
 
         #Derived parameters
         self.crho1_e  = None
@@ -430,43 +430,43 @@ class BrunelWang(models.Model):
         self.csigma_e = None
         self.csigma_i = None
         self.tauNMDA  = None
-        
+
         self.Text_e   = None
         self.Text_i   = None
         self.TAMPA_e  = None
         self.TAMPA_i  = None
         self.T_ei     = None
         self.T_ii     = None
-        
+
         self.pool_fractions = None
-        
-        self.psi_table = TabulateInterp()
-        self.phi_table = TabulateInterp()
-        
+
+
         #NOTE: We could speed up this model simplifying some the phi and psi functions
         #above. However it was decided that functions should be the same as
-        # in the original paper. 
-        
+        # in the original paper.
+
         # integral
         #self.vector_nerf = lambda z: numpy.exp(z**2) * (scipy.special.erf(z) + 1)
-        #integral = lambda x : numpy.float64(quad(self.vector_nerf, float('-Inf') , x, full_output = True)[0])       
+        #integral = lambda x : numpy.float64(quad(self.vector_nerf, float('-Inf') , x, full_output = True)[0])
         #self.vint = numpy.vectorize(integral)
-                
+
         LOG.debug('%s: inited.' % repr(self))
-        
-        
-        
+
+
+
     def configure(self):
         """  """
         super(BrunelWang, self).configure()
         self.update_derived_parameters()
 
+        self.psi_table = lookup_tables.PsiTable(load_default=True, use_storage=False)
+        self.nerf_table = lookup_tables.NerfTable(load_default=True, use_storage=False)
         # configure look up tables
         self.psi_table.configure()
         self.nerf_table.configure()
 
         #self.optimize()
-        
+
     def optimize(self, fnname='optdfun'):
         """
         Optimization routine when we have too many self.parameters
@@ -486,47 +486,47 @@ class BrunelWang(models.Model):
         #print decl
         exec decl in dikt
         self.dfun = dikt[fnname]
-        
+
     def dfun(self, state_variables, coupling, local_coupling=0.0):
         """
-        .. math::           
-             \\tau_e*\\dot{\\nu_e}(t) &= -\\nu_e(t) + \\phi_e \\\\
-             \\tau_i*\\dot{\\nu_i}(t) &= -\\nu_i(t) + \\phi_i \\\\
-             \\ve &= - (V_thr - V_reset) \\, \\nu_e \\, \\tau_e + \\mu_e \\\\
-             \\vi &= - (V_thr - V_reset) \\, \\nu_i \\, \\tau_i + \\mu_i \\\\
-             
-             \\tau_X &= \\frac{C_m_X}{g_m_x  \\, S_X} \\\\
-             \\S_X &= 1 + Text \\, \\nu_ext + T_ampa \\, \\nu_X + (rho_1 + rho_2) 
-                     \\, \\psi(\\nu_X) + T_XI \\, \\nu_I \\\\
-             \\mu_X &= \\frac{(Text \\, \\nu_X + T_AMPA \\, \\nu_X + \\rho_1 \\, 
-                        \\psi(\\nu_X)) \\, (V_E - V_L)}{S_X} + 
-                        \\frac{\\rho_2 \\, \\psi(\nu_X) \\,(\\bar{V_X} - V_L) + 
+        .. math::
+             \tau_e*\\dot{\nu_e}(t) &= -\nu_e(t) + \\phi_e \\\\
+             \tau_i*\\dot{\nu_i}(t) &= -\nu_i(t) + \\phi_i \\\\
+             ve &= - (V_thr - V_reset) \\, \nu_e \\, \tau_e + \\mu_e \\\\
+             vi &= - (V_thr - V_reset) \\, \nu_i \\, \tau_i + \\mu_i \\\\
+
+             \tau_X &= \\frac{C_m_X}{g_m_x  \\, S_X} \\\\
+             S_X &= 1 + Text \\, \nu_ext + T_ampa \\, \nu_X + (rho_1 + rho_2)
+                     \\, \\psi(\nu_X) + T_XI \\, \\nu_I \\\\
+             \\mu_X &= \\frac{(Text \\, \\nu_X + T_AMPA \\, \\nu_X + \\rho_1 \\,
+                        \\psi(\nu_X)) \\, (V_E - V_L)}{S_X} +
+                        \\frac{\\rho_2 \\, \\psi(\nu_X) \\,(\\bar{V_X} - V_L) +
                         T_xI \\, \\nu_I \\, (V_I - V_L)}{S_X} \\\\
-            \\sigma_X^2 &= \\frac{g_AMPA_ext^2(\\bar{V_X} - V_X)^2 \\, C_ext \\, nu_ext
+            sigma_X^2 &= \\frac{g_AMPA_ext^2(\\bar{V_X} - V_X)^2 \\, C_ext \\, nu_ext
                         \\tau_AMPA^2 \\, \\tau_X}{g_m_X^2 * \\tau_m_X^2} \\\\
             \\rho_1 &= {g_NMDA * C}{g_m_X * J} \\\\
             \\rho_2 &= \\beta \\frac{g_NMDA * C (\\bar{V_X} - V_E)(J - 1)}
                         {g_m_X * J^2} \\\\
-            J_X &= 1 + \\gamma \\,\\exp(-\\beta*\\bar{V_X}) \\\\
-            \\phi(\mu_X, \\sigma_X) &= (\\tau_rp_X + \\tau_X \\, \\int  
-                                         \\exp(u^2) * (\\erf(u) + 1))^-1
-        
+            J_X &= 1 + \\gamma \\,\exp(-\\beta*\\bar{V_X}) \\\\
+            \\phi(\mu_X, \\sigma_X) &= (\\tau_rp_X + \\tau_X \\, \\int
+                                         \exp(u^2) * (\\erf(u) + 1))^-1
+
         The NMDA gating variable
         .. math::
             \\psi(\\nu)
         has been approximated by the exponential function:
         .. math::
-            \\psi(\\nu) &= a * (1 - \\exp(-\\b * \\nu)) \\\\ 
-            \\a &= 0.80823563 \\\\
-            \\b &= 67.06177975
-        
-        The post-synaptic rate as described by the :math:`\\phi` function 
-        constitutes a non-linear input-output relationship between the firing 
-        rate of the post-synaptic neuron and the average firing rates 
+            \\psi(\\nu) &= a * (1 - \exp(-b * \\nu)) \\\\
+            a &= 0.80823563 \\\\
+            b &= 67.06177975
+
+        The post-synaptic rate as described by the :math:`\\phi` function
+        constitutes a non-linear input-output relationship between the firing
+        rate of the post-synaptic neuron and the average firing rates
         :math:`\\nu_{E}` and :math:`\\nu_{I}` of the pre-synaptic excitatory and
-        inhibitory neural populations. This input-output function is 
-        conceptually equivalent to the simple threshold-linear or sigmoid 
-        input-output functions routinely used in firing-rate models. What it is 
+        inhibitory neural populations. This input-output function is
+        conceptually equivalent to the simple threshold-linear or sigmoid
+        input-output functions routinely used in firing-rate models. What it is
         gained from using the integral form is a firing-rate model that captures
         many of the underlying biophysics of the real spiking neurons.[BW_2001]_
 
@@ -551,7 +551,7 @@ class BrunelWang(models.Model):
 
         # GABA (A) synapses (I --> E, and I --> I)
         vni_e = self.wminus * I  # I --> E
-        vni_i = self.wminus * I  # I --> I 
+        vni_i = self.wminus * I  # I --> I
 
         J_e = 1 + self.cgamma * numpy.exp(-self.cbeta * self.ve)
         J_i = 1 + self.cgamma * numpy.exp(-self.cbeta * self.vi)
@@ -580,7 +580,7 @@ class BrunelWang(models.Model):
         vsigma_i = numpy.sqrt((self.vi - self.VE) ** 2 * vtau_i * \
                               self.csigma_i * self.nuext)
 
-        #tauAMPA_over_vtau_e        
+        #tauAMPA_over_vtau_e
         k_e = self.tauAMPA / vtau_e
         k_i = self.tauAMPA / vtau_i
 
@@ -615,10 +615,10 @@ class BrunelWang(models.Model):
 
         dE = (-E + Phi_e) / vtau_e
         dI = (-I + Phi_i) / vtau_i
-        
+
         derivative = numpy.array([dE, dI])
         return derivative
-        
+
     def update_derived_parameters(self):
         """
         Derived parameters
@@ -644,7 +644,7 @@ class BrunelWang(models.Model):
                         (self.gm_e * self.taum_e) ** 2
         self.csigma_i = (self.gAMPAext_i ** 2 * self.Cext * self.tauAMPA ** 2) / \
                         (self.gm_i * self.taum_i) ** 2
-        
+
 
 if __name__ == "__main__":
     # Do some stuff that tests or makes use of this module...
