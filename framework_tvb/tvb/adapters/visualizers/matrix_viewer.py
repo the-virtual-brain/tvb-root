@@ -105,7 +105,7 @@ class MappedArraySVGVisualizerMixin(object):
                     matrix_strides=matrix_strides)
 
 
-    def compute_params(self, matrix, viewer_title, given_slice=None):
+    def compute_params(self, matrix, viewer_title, given_slice=None, labels=None):
         """
         Prepare a 2d matrix to display
         :param matrix: input matrix
@@ -120,7 +120,8 @@ class MappedArraySVGVisualizerMixin(object):
                          given_slice=given_slice,
                          slice_used=slice_used,
                          is_default_slice=is_default_slice,
-                         viewer_title=viewer_title)
+                         viewer_title=viewer_title,
+                         matrix_labels=json.dumps(labels))
         return view_pars
 
 

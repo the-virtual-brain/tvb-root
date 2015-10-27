@@ -26,7 +26,7 @@
  * .. moduleauthor:: Mihai Andrei <mihai.andrei@codemart.ro>
  **/
 
-function matrix_view_init_svg(matrix_data, matrix_shape, matrix_strides, title, notes){
+function matrix_view_init_svg(matrix_data, matrix_shape, matrix_strides, title, labels, notes){
     // setup dimensions, div, svg elements and plotter
     var width = 900;
     var height = 600;
@@ -37,16 +37,24 @@ function matrix_view_init_svg(matrix_data, matrix_shape, matrix_strides, title, 
     var text = svg.append("g").attr("transform", "translate(20, 100)")
                   .append("text").attr("class", "matrix-text");
 
+    var shape = $.parseJSON(matrix_shape);
+    labels = $.parseJSON(labels);
+
     function mat_over (d, i) {
-        // TODO add node labels??
-        return text.text("r(" + i + ") = " + d.toPrecision(3));
+        var x = Math.floor(i / shape[0]);
+        var y = Math.floor(i % shape[0]);
+        if (labels != null) {
+            x = labels[0][x];
+            y = labels[1][y];
+        }
+        return text.text("M[ " + x + ", " + y + " ] = " + d.toPrecision(3));
     }
 
     var plot = tv.plot.mat().w(width - 200).h(height).mat_over(mat_over);
 
     plot.mat(tv.ndar.ndfrom({
         data: $.parseJSON(matrix_data),
-        shape: $.parseJSON(matrix_shape),
+        shape: shape,
         strides: $.parseJSON(matrix_strides)}
     ));
 
