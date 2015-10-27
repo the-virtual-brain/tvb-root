@@ -54,6 +54,7 @@ class CrossCorrelationVisualizer(MappedArraySVGVisualizerMixin, ABCDisplayer):
 
     def launch(self, datatype):
         """Construct data for visualization and launch it."""
+        labels = self._get_associated_connectivity_labeling(datatype)
         matrix = datatype.get_data('array_data').mean(axis=0)[:, :, 0, 0]
-        pars = self.compute_params(matrix, 'Correlation matrix plot')
+        pars = self.compute_params(matrix, 'Correlation matrix plot', labels=labels)
         return self.build_display_result("matrix/svg_view", pars)

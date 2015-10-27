@@ -41,6 +41,7 @@ from tvb.basic.profile import TvbProfile
 from tvb.core.utils import parse_slice, slice_str
 from tvb.datatypes.arrays import MappedArray
 from tvb.core.adapters.abcdisplayer import ABCDisplayer
+from tvb.datatypes.time_series import TimeSeriesRegion
 
 
 def compute_2d_view(matrix, slice_s):
@@ -123,6 +124,19 @@ class MappedArraySVGVisualizerMixin(object):
                          viewer_title=viewer_title,
                          matrix_labels=json.dumps(labels))
         return view_pars
+
+
+    def _get_associated_connectivity_labeling(self, datatype):
+        """
+        If datatype has a source attribute of type TimeSeriesRegion
+        then the labels of the associated connectivity are returned.
+        Else None
+        """
+        source = self.load_entity_by_gid(datatype.source.gid)  # function exists in the mixin target
+        if isinstance(source, TimeSeriesRegion):
+            # todo should we use connectivity.ordered_labels? If so also permute the matrix to be consistent with the conn views
+            labels = source.connectivity.region_labels.tolist()
+            return [labels, labels]
 
 
 class MappedArrayMplVisualizer(object):

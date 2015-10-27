@@ -51,6 +51,7 @@ class CovarianceVisualizer(MappedArrayVisualizer):
     def launch(self, datatype):
         """Construct data for visualization and launch it."""
         # get data from corr datatype
+        labels = self._get_associated_connectivity_labeling(datatype)
         matrix = datatype.get_data('array_data')
-        pars = self.compute_params(matrix, 'Covariance matrix plot')
+        pars = self.compute_params(matrix, 'Covariance matrix plot', labels=labels)
         return self.build_display_result("matrix/svg_view", pars)
