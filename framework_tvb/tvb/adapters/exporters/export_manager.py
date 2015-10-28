@@ -309,8 +309,9 @@ class ExportManager:
         view_steps = []
         for wf_step in dao.get_workflow_steps(workflow.id):
 
-            if wf_step.fk_operation is None:
-                ## Avoid exporting old form of View Steps.
+            if wf_step.fk_operation is None or wf_step.fk_algorithm is None:
+                # Avoid exporting old form of View Steps.
+                LOG.warning("Skipping " + str(workflow) + " " + str(wf_step))
                 continue
             # Get all basic information for this workflow step
             wf_step_info = WorkflowStepInformation(wf_step.to_dict()[1])
