@@ -157,15 +157,6 @@ function TSV_initVisualizer(urlVolumeData, urlTimeSeriesData, minValue, maxValue
 // ==================================== DRAWING FUNCTIONS START =============================================
 
 /**
- * Draws the current view depending on the selected entity
- * @param tIndex The time point we want to draw
- */
-function drawSceneFunctional(tIndex) {
-    drawSceneFunctionalFromView(tIndex);
-    drawLegend();
-    drawLabels();
-}
-/**
  * Update function necessary for the color picking function
  */
 function colorRedraw(){
@@ -174,10 +165,10 @@ function colorRedraw(){
 
 
 /**
- * Draws the current scene only from the three visible planes data.
+ * Draws the current view depending on the selected entity
  * @param tIndex The time point we want to draw
  */
-function drawSceneFunctionalFromView(tIndex) {
+function drawSceneFunctional(tIndex) {
     var i, j, k, ii, jj, kk;
 
     // if we pass no tIndex the function will play
@@ -222,6 +213,8 @@ function drawSceneFunctionalFromView(tIndex) {
     drawNavigator();
     updateMoviePlayerSlider();
     setSelectedEntityValue();
+    drawLegend();
+    drawLabels();
 }
 
 /**
@@ -900,32 +893,24 @@ function stopBuffering() {
 function playNextTimePoint(){
     tsVol.currentTimePoint++;
     tsVol.currentTimePoint = tsVol.currentTimePoint%(tsVol.timeLength);
-    drawSceneFunctionalFromView(tsVol.currentTimePoint);
-    drawLegend();
-    drawLabels();
+    drawSceneFunctional(tsVol.currentTimePoint);
 }
 
 function playPreviousTimePoint(){
     if(tsVol.currentTimePoint === 0){
         tsVol.currentTimePoint = tsVol.timeLength;
     }
-    drawSceneFunctionalFromView(--tsVol.currentTimePoint);
-    drawLegend();
-    drawLabels();
+    drawSceneFunctional(--tsVol.currentTimePoint);
 }
 
 function seekFirst(){
     tsVol.currentTimePoint = 0;
-    drawSceneFunctionalFromView(tsVol.currentTimePoint);
-    drawLegend();
-    drawLabels();
+    drawSceneFunctional(tsVol.currentTimePoint);
 }
 
 function seekEnd(){
     tsVol.currentTimePoint = tsVol.timeLength - 1;
-    drawSceneFunctionalFromView(tsVol.currentTimePoint - 1);
-    drawLegend();
-    drawLabels();
+    drawSceneFunctional(tsVol.currentTimePoint - 1);
 }
 
 /**
@@ -1027,9 +1012,7 @@ function _coreUpdateMovieSlider(timePoint, updateSlider) {
 */
 function moviePlayerMoveEnd(event, ui){
     tsVol.currentTimePoint = ui.value;
-    drawSceneFunctionalFromView(tsVol.currentTimePoint);
-    drawLegend();
-    drawLabels();
+    drawSceneFunctional(tsVol.currentTimePoint);
 }
 
 // ==================================== CALLBACK FUNCTIONS END ===============================================
