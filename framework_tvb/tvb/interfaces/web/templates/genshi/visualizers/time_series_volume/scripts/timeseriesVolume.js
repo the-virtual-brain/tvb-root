@@ -1,3 +1,6 @@
+/* globals displayMessage, ColSch_initColorSchemeGUI, ColSch_getAbsoluteGradientColorString,
+            doAjaxCall, d3, HLPR_readJSONfromFile */
+
 // ==================================== INITIALIZATION CODE START ===========================================
 var tsVol = {
     ctx: null,                  // The context for drawing on current canvas.
@@ -188,27 +191,33 @@ function drawSceneFunctionalFromView(tIndex) {
     // An array containing the view for each plane.
     tsVol.sliceArray = getViewAtTime(tIndex);
 
-    _setCtxOnQuadrant(0);
     tsVol.ctx.fillStyle = ColSch_getAbsoluteGradientColorString(tsVol.minimumValue - 1);
     tsVol.ctx.fillRect(0, 0, tsVol.ctx.canvas.width, tsVol.ctx.canvas.height);
 
-    for (j = 0; j < tsVol.dataSize[2]; ++j)
-        for (i = 0; i < tsVol.dataSize[1]; ++i)
-            drawVoxel(i, j, tsVol.sliceArray[0][i][j])
+    _setCtxOnQuadrant(0);
+    for (j = 0; j < tsVol.dataSize[2]; ++j){
+        for (i = 0; i < tsVol.dataSize[1]; ++i){
+            drawVoxel(i, j, tsVol.sliceArray[0][i][j]);
+        }
+    }
     drawMargin();
 
     _setCtxOnQuadrant(1);
-    for (k = 0; k < tsVol.dataSize[3]; ++k)
-        for (jj = 0; jj < tsVol.dataSize[2]; ++jj)
-            drawVoxel(k, jj, tsVol.sliceArray[1][jj][k])
+    for (k = 0; k < tsVol.dataSize[3]; ++k){
+        for (jj = 0; jj < tsVol.dataSize[2]; ++jj){
+            drawVoxel(k, jj, tsVol.sliceArray[1][jj][k]);
+        }
+    }
     drawMargin();
 
     _setCtxOnQuadrant(2);
-    for (kk = 0; kk < tsVol.dataSize[3]; ++kk)
-        for (ii = 0; ii < tsVol.dataSize[1]; ++ii)
-            drawVoxel(kk, ii, tsVol.sliceArray[2][ii][kk])
-
+    for (kk = 0; kk < tsVol.dataSize[3]; ++kk){
+        for (ii = 0; ii < tsVol.dataSize[1]; ++ii){
+            drawVoxel(kk, ii, tsVol.sliceArray[2][ii][kk]);
+        }
+    }
     drawMargin();
+
     drawFocusQuadrantFromView();
     drawNavigator();
     updateMoviePlayerSlider();
@@ -220,20 +229,24 @@ function drawSceneFunctionalFromView(tIndex) {
  */
 function drawFocusQuadrantFromView(){
     _setCtxOnQuadrant(3);
-    if(tsVol.highlightedQuad.index == 0){
-        for (var j = 0; j < tsVol.dataSize[2]; ++j)
-            for (var i = 0; i < tsVol.dataSize[1]; ++i)
+    if(tsVol.highlightedQuad.index === 0){
+        for (var j = 0; j < tsVol.dataSize[2]; ++j){
+            for (var i = 0; i < tsVol.dataSize[1]; ++i){
                 drawVoxel(i, j, tsVol.sliceArray[0][i][j]);
-    }
-    else if(tsVol.highlightedQuad.index == 1){
-        for (var k = 0; k < tsVol.dataSize[3]; ++k)
-            for (var jj = 0; jj < tsVol.dataSize[2]; ++jj)
+            }
+        }
+    } else if(tsVol.highlightedQuad.index === 1){
+        for (var k = 0; k < tsVol.dataSize[3]; ++k){
+            for (var jj = 0; jj < tsVol.dataSize[2]; ++jj){
                 drawVoxel(k, jj, tsVol.sliceArray[1][jj][k]);
-    }
-    else if(tsVol.highlightedQuad.index == 2){
-        for (var kk = 0; kk < tsVol.dataSize[3]; ++kk)
-            for (var ii = 0; ii < tsVol.dataSize[1]; ++ii)
+            }
+        }
+    } else if(tsVol.highlightedQuad.index === 2){
+        for (var kk = 0; kk < tsVol.dataSize[3]; ++kk){
+            for (var ii = 0; ii < tsVol.dataSize[1]; ++ii){
                 drawVoxel(kk, ii, tsVol.sliceArray[2][ii][kk]);
+            }
+        }
     }
     drawMargin();
 }
@@ -250,7 +263,7 @@ function drawVoxel(line, col, value){
     tsVol.ctx.fillStyle = ColSch_getAbsoluteGradientColorString(value);
     // col increases horizontally and line vertically, so col represents the X drawing axis, and line the Y
 	tsVol.ctx.fillRect(col * tsVol.currentQuadrant.entityWidth, line * tsVol.currentQuadrant.entityHeight,
-	                   tsVol.currentQuadrant.entityWidth + 1, tsVol.currentQuadrant.entityHeight + 1);
+                       tsVol.currentQuadrant.entityWidth + 1, tsVol.currentQuadrant.entityHeight + 1);
 }
 
 /**
@@ -366,7 +379,7 @@ function drawLabels(){
  */
 function drawMargin(){
     var marginWidth, marginHeight;
-    if(tsVol.currentQuadrant.index == 3){
+    if(tsVol.currentQuadrant.index === 3){
         marginWidth = tsVol.focusQuadrantWidth;
         marginHeight = tsVol.focusQuadrantHeight;
     }
@@ -377,11 +390,11 @@ function drawMargin(){
     tsVol.ctx.beginPath();
     tsVol.ctx.rect(2, 0, marginWidth - 3, marginHeight - 2);
     tsVol.ctx.lineWidth = 2;
-    if(tsVol.currentQuadrant.index == tsVol.selectedQuad.index && tsVol.currentQuadrant.index != 3){
+    if(tsVol.currentQuadrant.index === tsVol.selectedQuad.index && tsVol.currentQuadrant.index !== 3){
         tsVol.ctx.strokeStyle = 'white';
         tsVol.highlightedQuad = tsVol.currentQuadrant;
     }
-    else if(tsVol.currentQuadrant.index == tsVol.highlightedQuad.index && tsVol.selectedQuad.index == 3){
+    else if(tsVol.currentQuadrant.index === tsVol.highlightedQuad.index && tsVol.selectedQuad.index === 3){
         tsVol.ctx.strokeStyle = 'white';
     }
     else{
@@ -410,7 +423,7 @@ function _setCtxOnQuadrant(quadIdx){
     // Horizontal Mode
     //tsVol.ctx.translate(quadIdx * tsVol.quadrantWidth + tsVol.currentQuadrant.offsetX, tsVol.currentQuadrant.offsetY);
     // Vertical Mode
-    if(quadIdx == 3){
+    if(quadIdx === 3){
        tsVol.ctx.translate(tsVol.quadrantWidth + tsVol.currentQuadrant.offsetX, tsVol.currentQuadrant.offsetY);
     }
     else{
@@ -442,7 +455,7 @@ function _getEntityDimensions(xAxis, yAxis){
     var scaleOnWidth  = tsVol.quadrantWidth  / (_getDataSize(xAxis) * tsVol.voxelSize[xAxis]);
     var scaleOnHeight = tsVol.quadrantHeight / (_getDataSize(yAxis) * tsVol.voxelSize[yAxis]);
     var scale = Math.min(scaleOnHeight, scaleOnWidth);
-    return {width: tsVol.voxelSize[xAxis] * scale, height: tsVol.voxelSize[yAxis] * scale}
+    return {width: tsVol.voxelSize[xAxis] * scale, height: tsVol.voxelSize[yAxis] * scale};
 }
 
 /**
@@ -456,7 +469,7 @@ function _getFocusEntityDimensions(xAxis, yAxis){
     var scaleOnWidth  = tsVol.focusQuadrantWidth  / (_getDataSize(xAxis) * tsVol.voxelSize[xAxis]);
     var scaleOnHeight = tsVol.focusQuadrantHeight / (_getDataSize(yAxis) * tsVol.voxelSize[yAxis]);
     var scale = Math.min(scaleOnHeight, scaleOnWidth);
-    return {width: tsVol.voxelSize[xAxis] * scale, height: tsVol.voxelSize[yAxis] * scale}
+    return {width: tsVol.voxelSize[xAxis] * scale, height: tsVol.voxelSize[yAxis] * scale};
 }
 
 /**
@@ -483,14 +496,14 @@ function _setupQuadrants(){
  * Helper function to setup and add the Focus Quadrant to <code>tsVol.quadrants</code>.
  */
 function _setupFocusQuadrant(){
-    if(tsVol.quadrants.length == 4){
+    if(tsVol.quadrants.length === 4){
         tsVol.quadrants.pop();
     }
     var axe = 0;
-    if(tsVol.selectedQuad.index == 0){
+    if(tsVol.selectedQuad.index === 0){
         axe = {x: 1, y: 0};
     }
-    else if(tsVol.selectedQuad.index == 1){
+    else if(tsVol.selectedQuad.index === 1){
         axe = {x: 1, y: 2};
     }
     else{
@@ -542,7 +555,7 @@ function asyncRequest(fileName, sect){
             method:"POST",
             mimeType:"text/plain",
             success:function(response){
-                if(privateID == tsVol.batchID){
+                if(privateID === tsVol.batchID){
                     parseAsync(response, function(json){
                         // save the parsed JSON
                         tsVol.bufferL2[sect] = json;
@@ -684,9 +697,9 @@ function getViewAtTime(t) {
 */
 function setSelectedEntityValue(){
 
-    if(tsVol.highlightedQuad.index == 0) {
+    if(tsVol.highlightedQuad.index === 0) {
         tsVol.selectedEntityValue = tsVol.sliceArray[0][tsVol.selectedEntity[0]][tsVol.selectedEntity[1]];
-    } else if(tsVol.highlightedQuad.index == 1) {
+    } else if(tsVol.highlightedQuad.index === 1) {
         tsVol.selectedEntityValue = tsVol.sliceArray[1][tsVol.selectedEntity[1]][tsVol.selectedEntity[2]];
     } else {
         tsVol.selectedEntityValue = tsVol.sliceArray[2][tsVol.selectedEntity[0]][tsVol.selectedEntity[2]];
@@ -700,7 +713,7 @@ function setSelectedEntityValue(){
 function customMouseDown(e){
     e.preventDefault();
     this.mouseDown = true;            // `this` is the canvas
-    TSV_pick(e)
+    TSV_pick(e);
 }
 
 function customMouseUp(e){
@@ -711,7 +724,7 @@ function customMouseUp(e){
         window.setTimeout(playBack, tsVol.playbackRate * 2);
         tsVol.resumePlayer = false;
     }
-    if(tsVol.selectedQuad.index == 3){
+    if(tsVol.selectedQuad.index === 3){
         drawGraphs();
     }
 }
@@ -767,7 +780,7 @@ function TSV_pick(e) {
     var selectedEntityOnX = 0;
     var selectedEntityOnY = 0;
 
-    if(tsVol.selectedQuad.index == 3){
+    if(tsVol.selectedQuad.index === 3){
         selectedEntityOnX = Math.floor(((xpos - tsVol.quadrantWidth) % tsVol.focusQuadrantWidth) / tsVol.selectedQuad.entityWidth);
         selectedEntityOnY = Math.floor(((ypos - tsVol.selectedQuad.offsetY) % tsVol.focusQuadrantHeight) / tsVol.selectedQuad.entityHeight);
     } else{
@@ -846,10 +859,11 @@ function startMovieSlider(){
 // ==================================== CALLBACK FUNCTIONS START ===============================================
 
 function playBack(){
-    if(!tsVol.playerIntervalID)
+    if(!tsVol.playerIntervalID) {
         tsVol.playerIntervalID = window.setInterval(drawSceneFunctional, tsVol.playbackRate);
-        $("#btnPlay")[0].setAttribute("class", "action action-pause");
-        startBuffering();
+    }
+    $("#btnPlay")[0].setAttribute("class", "action action-pause");
+    startBuffering();
 }
 
 function stopPlayback(){
@@ -892,8 +906,9 @@ function playNextTimePoint(){
 }
 
 function playPreviousTimePoint(){
-    if(tsVol.currentTimePoint === 0)
+    if(tsVol.currentTimePoint === 0){
         tsVol.currentTimePoint = tsVol.timeLength;
+    }
     drawSceneFunctionalFromView(--tsVol.currentTimePoint);
     drawLegend();
     drawLabels();
@@ -962,7 +977,7 @@ function _coreMoveSliderAxis(event, ui) {
     //  Updates the label value on the slider.
     $("#labelCurrentValueAxis" + SLIDERS[quadID]).empty().text( '[' + ui.value + ']' );
     //  Setup things to draw the scene pointing to the right voxel and redraw it.
-    if(quadID == 1) {
+    if(quadID === 1) {
         tsVol.selectedEntity[selectedQuad.axes.x] = ui.value;
     } else {
         tsVol.selectedEntity[selectedQuad.axes.y] = ui.value;
