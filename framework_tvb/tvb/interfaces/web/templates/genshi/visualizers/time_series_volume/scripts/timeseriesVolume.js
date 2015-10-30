@@ -11,7 +11,6 @@ var tsVol = {
     voxelSize: null,
     volumeOrigin: null,         // VolumeOrigin is not used for now. if needed, use it in _setQuadrant
     selectedEntity: [0, 0, 0],  // The selected voxel; [i, j, k].
-    selectedEntityValue: 0,     // the value of voxel[i,j,k]
     entitySize: [0, 0, 0],      // The size of each plane
     quadrantHeight: null,       // The height of the three small left quadrants
     quadrantWidth: null,        // The width of the three small left quadrants
@@ -31,7 +30,6 @@ var tsVol = {
     bufferL2Size: 1,            // How many sets of buffers can we keep at the same time in memory
     lookAhead: 10,             // How many sets of buffers should be loaded ahead of us each time?
     data: {},                   // The actual data to be drawn to canvas.
-    sliceArray: [],             // A helper variable to draw the data on the canvas.
     bufferL2: {},               // Contains all data from loaded views, limited by memory.
     urlVolumeData: "",          // Used to store the call for get_volume_view server function.
     dataSize: "",               // Used first to contain the file ID and then it's dimension.
@@ -163,7 +161,6 @@ function colorRedraw(){
     drawSceneFunctional(tsVol.currentTimePoint);
 }
 
-
 /**
  * Draws the current view depending on the selected entity
  * @param tIndex The time point we want to draw
@@ -180,7 +177,7 @@ function drawSceneFunctional(tIndex) {
     }
     updateTSFragment();
     // An array containing the view for each plane.
-    tsVol.sliceArray = getViewAtTime(tIndex);
+    var sliceArray = getViewAtTime(tIndex);
 
     tsVol.ctx.fillStyle = ColSch_getAbsoluteGradientColorString(tsVol.minimumValue - 1);
     tsVol.ctx.fillRect(0, 0, tsVol.ctx.canvas.width, tsVol.ctx.canvas.height);
@@ -188,7 +185,7 @@ function drawSceneFunctional(tIndex) {
     _setCtxOnQuadrant(0);
     for (j = 0; j < tsVol.dataSize[2]; ++j){
         for (i = 0; i < tsVol.dataSize[1]; ++i){
-            drawVoxel(i, j, tsVol.sliceArray[0][i][j]);
+            drawVoxel(i, j, sliceArray[0][i][j]);
         }
     }
     drawMargin();
@@ -196,7 +193,7 @@ function drawSceneFunctional(tIndex) {
     _setCtxOnQuadrant(1);
     for (k = 0; k < tsVol.dataSize[3]; ++k){
         for (jj = 0; jj < tsVol.dataSize[2]; ++jj){
-            drawVoxel(k, jj, tsVol.sliceArray[1][jj][k]);
+            drawVoxel(k, jj, sliceArray[1][jj][k]);
         }
     }
     drawMargin();
@@ -204,40 +201,39 @@ function drawSceneFunctional(tIndex) {
     _setCtxOnQuadrant(2);
     for (kk = 0; kk < tsVol.dataSize[3]; ++kk){
         for (ii = 0; ii < tsVol.dataSize[1]; ++ii){
-            drawVoxel(kk, ii, tsVol.sliceArray[2][ii][kk]);
+            drawVoxel(kk, ii, sliceArray[2][ii][kk]);
         }
     }
     drawMargin();
 
-    drawFocusQuadrantFromView();
+    drawFocusQuadrantFromView(sliceArray);
     drawNavigator();
     updateMoviePlayerSlider();
-    setSelectedEntityValue();
-    drawLegend();
+    drawLegend(getSelectedEntityValue(sliceArray));
     drawLabels();
 }
 
 /**
  * Draws the selectedQuadrant on Focus Quadrant from the xyz planes data.
  */
-function drawFocusQuadrantFromView(){
+function drawFocusQuadrantFromView(sliceArray){
     _setCtxOnQuadrant(3);
     if(tsVol.highlightedQuad.index === 0){
         for (var j = 0; j < tsVol.dataSize[2]; ++j){
             for (var i = 0; i < tsVol.dataSize[1]; ++i){
-                drawVoxel(i, j, tsVol.sliceArray[0][i][j]);
+                drawVoxel(i, j, sliceArray[0][i][j]);
             }
         }
     } else if(tsVol.highlightedQuad.index === 1){
         for (var k = 0; k < tsVol.dataSize[3]; ++k){
             for (var jj = 0; jj < tsVol.dataSize[2]; ++jj){
-                drawVoxel(k, jj, tsVol.sliceArray[1][jj][k]);
+                drawVoxel(k, jj, sliceArray[1][jj][k]);
             }
         }
     } else if(tsVol.highlightedQuad.index === 2){
         for (var kk = 0; kk < tsVol.dataSize[3]; ++kk){
             for (var ii = 0; ii < tsVol.dataSize[1]; ++ii){
-                drawVoxel(kk, ii, tsVol.sliceArray[2][ii][kk]);
+                drawVoxel(kk, ii, sliceArray[2][ii][kk]);
             }
         }
     }
@@ -321,7 +317,7 @@ function drawFocusCrossHair(x, y){
  * <li>Displays a white bar in to show the currently selected entity value.
  * </ul>
  */
-function drawLegend() {
+function drawLegend(selectedEntityValue) {
     var tmp = tsVol.legendPadding / 2;
     // set the context on the legend quadrant
     tsVol.ctx.setTransform(1, 0, 0, 1, 0, 0);  // reset the transformation
@@ -349,7 +345,7 @@ function drawLegend() {
 
     // Draw the selected entity value marker on the color bar
     tsVol.ctx.fillStyle = "white";
-    tmp = (tsVol.selectedEntityValue - tsVol.minimumValue) / (tsVol.maximumValue - tsVol.minimumValue);
+    tmp = (selectedEntityValue - tsVol.minimumValue) / (tsVol.maximumValue - tsVol.minimumValue);
     tsVol.ctx.fillRect(tmp * tsVol.legendWidth, 1, 3, tsVol.legendHeight/2);
 }
 
@@ -688,14 +684,14 @@ function getViewAtTime(t) {
 /**
 * Sets tsVol.selectedEntityValue, which represents the selected voxel intensity value, to be highlighted on the legend
 */
-function setSelectedEntityValue(){
+function getSelectedEntityValue(sliceArray){
 
     if(tsVol.highlightedQuad.index === 0) {
-        tsVol.selectedEntityValue = tsVol.sliceArray[0][tsVol.selectedEntity[0]][tsVol.selectedEntity[1]];
+        return sliceArray[0][tsVol.selectedEntity[0]][tsVol.selectedEntity[1]];
     } else if(tsVol.highlightedQuad.index === 1) {
-        tsVol.selectedEntityValue = tsVol.sliceArray[1][tsVol.selectedEntity[1]][tsVol.selectedEntity[2]];
+        return sliceArray[1][tsVol.selectedEntity[1]][tsVol.selectedEntity[2]];
     } else {
-        tsVol.selectedEntityValue = tsVol.sliceArray[2][tsVol.selectedEntity[0]][tsVol.selectedEntity[2]];
+        return sliceArray[2][tsVol.selectedEntity[0]][tsVol.selectedEntity[2]];
     }
 }
 
