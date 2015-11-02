@@ -59,13 +59,6 @@ var SLIDERIDS = ["sliderForAxisX", "sliderForAxisY", "sliderForAxisZ"];
  */
 function TSV_initVisualizer(urlVolumeData, urlTimeSeriesData, minValue, maxValue, samplePeriod, samplePeriodUnit,
                             volumeShape, volOrigin, sizeOfVoxel) {
-
-    var canvas = document.getElementById("canvasVolumes");
-    if (!canvas.getContext){
-        displayMessage('You need a browser with canvas capabilities, to see this demo fully!', "errorMessage");
-        return;
-    }
-
     /**
     * This will be our JSON parser web-worker blob,
     * Using a webworker is a bit slower than parsing the jsons with 
@@ -87,20 +80,7 @@ function TSV_initVisualizer(urlVolumeData, urlTimeSeriesData, minValue, maxValue
     tsVol.volumeOrigin = $.parseJSON(volOrigin)[0];
     tsVol.voxelSize    = $.parseJSON(sizeOfVoxel);
 
-    canvas.height = $(canvas).parent().height();
-    canvas.width  = $(canvas).parent().width();
-
-    var tmp = canvas.height / 3;
-    tsVol.quadrantHeight = tmp;       // quadrants are squares
-    tsVol.quadrantWidth = tmp;
-    tsVol.focusQuadrantWidth = canvas.width - tsVol.quadrantWidth;
-    tsVol.legendHeight = canvas.height / 13;
-    tsVol.legendWidth = tsVol.focusQuadrantWidth - tsVol.legendPadding;
-    tsVol.focusQuadrantHeight = canvas.height - tsVol.legendHeight;
-
-    tsVol.ctx = canvas.getContext("2d");
-    // TODO maybe in the future we will find a solution to make image bigger before saving
-    canvas.drawForImageExport = function() {};
+    TSV_initVolumeView();
 
     tsVol.urlVolumeData = urlVolumeData;
     tsVol.urlTimeSeriesData = urlTimeSeriesData;
@@ -423,56 +403,12 @@ function TSV_pick(e) {
         stopPlayback();
         tsVol.resumePlayer = true;
     }
-    //fix for Firefox
-    var offset = $('#canvasVolumes').offset();
-    var xpos = e.pageX - offset.left;
-    var ypos = e.pageY - offset.top;
-    //var selectedQuad = tsVol.quadrants[Math.floor(xpos / tsVol.quadrantWidth)];
-    if(Math.floor(xpos / tsVol.quadrantWidth) >= 1){
-        tsVol.selectedQuad = tsVol.quadrants[3];
-        // check if it's inside the focus quadrant but outside the drawing
-        if (ypos < tsVol.selectedQuad.offsetY ){
-            return;
-        }
-        else if(ypos >= tsVol.focusQuadrantHeight - tsVol.selectedQuad.offsetY){
-            return;
-        }
-        else if(xpos < tsVol.offsetX){
-            return;
-        }
-        else if(xpos >= tsVol.focusQuadrantWidth - tsVol.selectedQuad.offsetX + tsVol.quadrantWidth){
-            return;
-        }
-    } else{
-        tsVol.selectedQuad = tsVol.quadrants[Math.floor(ypos / tsVol.quadrantHeight)];
-        _setupFocusQuadrant();
-        // check if it's inside the quadrant but outside the drawing
-        if (ypos < tsVol.selectedQuad.offsetY ){
-            return;
-        }
-        else if(ypos >= tsVol.quadrantHeight * (tsVol.selectedQuad.index + 1) - tsVol.selectedQuad.offsetY){
-            return;
-        }
-        else if(xpos < tsVol.offsetX){
-            return;
-        }
-        else if(xpos >= tsVol.quadrantWidth - tsVol.selectedQuad.offsetX){
-            return;
-        }
+    var hit = TSV_hitTest(e);
+    if (!hit){
+        return;
     }
-
-    var selectedEntityOnX = 0;
-    var selectedEntityOnY = 0;
-
-    if(tsVol.selectedQuad.index === 3){
-        selectedEntityOnX = Math.floor(((xpos - tsVol.quadrantWidth) % tsVol.focusQuadrantWidth) / tsVol.selectedQuad.entityWidth);
-        selectedEntityOnY = Math.floor(((ypos - tsVol.selectedQuad.offsetY) % tsVol.focusQuadrantHeight) / tsVol.selectedQuad.entityHeight);
-    } else{
-        selectedEntityOnX = Math.floor((xpos - tsVol.selectedQuad.offsetX) / tsVol.selectedQuad.entityWidth);
-        selectedEntityOnY = Math.floor((ypos % tsVol.quadrantHeight) / tsVol.selectedQuad.entityHeight);
-    }
-    tsVol.selectedEntity[tsVol.selectedQuad.axes.x] = selectedEntityOnX;
-    tsVol.selectedEntity[tsVol.selectedQuad.axes.y] = selectedEntityOnY;
+    tsVol.selectedEntity[tsVol.selectedQuad.axes.x] = hit.selectedEntityOnX;
+    tsVol.selectedEntity[tsVol.selectedQuad.axes.y] = hit.selectedEntityOnY;
     updateTSFragment();
     updateSliders();
     drawSceneFunctional(tsVol.currentTimePoint);

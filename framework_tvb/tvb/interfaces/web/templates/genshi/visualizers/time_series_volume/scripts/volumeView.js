@@ -7,6 +7,27 @@ var Quadrant = function (params){                // this keeps all necessary dat
     this.offsetY = params.offsetY || 0;
 };
 
+function TSV_initVolumeView(){
+    var canvas = document.getElementById("canvasVolumes");
+    if (!canvas.getContext){
+        displayMessage('You need a browser with canvas capabilities, to see this demo fully!', "errorMessage");
+        return;
+    }
+    canvas.height = $(canvas).parent().height();
+    canvas.width  = $(canvas).parent().width();
+
+    var tmp = canvas.height / 3;
+    tsVol.quadrantHeight = tmp;       // quadrants are squares
+    tsVol.quadrantWidth = tmp;
+    tsVol.focusQuadrantWidth = canvas.width - tsVol.quadrantWidth;
+    tsVol.legendHeight = canvas.height / 13;
+    tsVol.legendWidth = tsVol.focusQuadrantWidth - tsVol.legendPadding;
+    tsVol.focusQuadrantHeight = canvas.height - tsVol.legendHeight;
+
+    tsVol.ctx = canvas.getContext("2d");
+    // TODO maybe in the future we will find a solution to make image bigger before saving
+    canvas.drawForImageExport = function() {};
+}
 
 /**
  * Draws the selectedQuadrant on Focus Quadrant from the xyz planes data.
@@ -296,4 +317,60 @@ function _setupFocusQuadrant(){
     tsVol.quadrants[3].entityWidth  = entityDimensions.width;
     tsVol.quadrants[3].offsetY = 0;
     tsVol.quadrants[3].offsetX = 0;
+}
+
+function TSV_hitTest(e){
+    //fix for Firefox
+    var offset = $('#canvasVolumes').offset();
+    var xpos = e.pageX - offset.left;
+    var ypos = e.pageY - offset.top;
+    //var selectedQuad = tsVol.quadrants[Math.floor(xpos / tsVol.quadrantWidth)];
+    if(Math.floor(xpos / tsVol.quadrantWidth) >= 1){
+        tsVol.selectedQuad = tsVol.quadrants[3];
+        // check if it's inside the focus quadrant but outside the drawing
+        if (ypos < tsVol.selectedQuad.offsetY ){
+            return;
+        }
+        else if(ypos >= tsVol.focusQuadrantHeight - tsVol.selectedQuad.offsetY){
+            return;
+        }
+        else if(xpos < tsVol.offsetX){
+            return;
+        }
+        else if(xpos >= tsVol.focusQuadrantWidth - tsVol.selectedQuad.offsetX + tsVol.quadrantWidth){
+            return;
+        }
+    } else{
+        tsVol.selectedQuad = tsVol.quadrants[Math.floor(ypos / tsVol.quadrantHeight)];
+        _setupFocusQuadrant();
+        // check if it's inside the quadrant but outside the drawing
+        if (ypos < tsVol.selectedQuad.offsetY ){
+            return;
+        }
+        else if(ypos >= tsVol.quadrantHeight * (tsVol.selectedQuad.index + 1) - tsVol.selectedQuad.offsetY){
+            return;
+        }
+        else if(xpos < tsVol.offsetX){
+            return;
+        }
+        else if(xpos >= tsVol.quadrantWidth - tsVol.selectedQuad.offsetX){
+            return;
+        }
+    }
+
+    var selectedEntityOnX = 0;
+    var selectedEntityOnY = 0;
+
+    if(tsVol.selectedQuad.index === 3){
+        selectedEntityOnX = Math.floor(((xpos - tsVol.quadrantWidth) % tsVol.focusQuadrantWidth) / tsVol.selectedQuad.entityWidth);
+        selectedEntityOnY = Math.floor(((ypos - tsVol.selectedQuad.offsetY) % tsVol.focusQuadrantHeight) / tsVol.selectedQuad.entityHeight);
+    } else{
+        selectedEntityOnX = Math.floor((xpos - tsVol.selectedQuad.offsetX) / tsVol.selectedQuad.entityWidth);
+        selectedEntityOnY = Math.floor((ypos % tsVol.quadrantHeight) / tsVol.selectedQuad.entityHeight);
+    }
+
+    return {
+        selectedEntityOnX: selectedEntityOnX,
+        selectedEntityOnY: selectedEntityOnY
+    };
 }
