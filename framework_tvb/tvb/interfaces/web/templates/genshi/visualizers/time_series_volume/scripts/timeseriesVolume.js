@@ -685,14 +685,7 @@ function getViewAtTime(t) {
 * Sets tsVol.selectedEntityValue, which represents the selected voxel intensity value, to be highlighted on the legend
 */
 function getSelectedEntityValue(sliceArray){
-
-    if(tsVol.highlightedQuad.index === 0) {
-        return sliceArray[0][tsVol.selectedEntity[0]][tsVol.selectedEntity[1]];
-    } else if(tsVol.highlightedQuad.index === 1) {
-        return sliceArray[1][tsVol.selectedEntity[1]][tsVol.selectedEntity[2]];
-    } else {
-        return sliceArray[2][tsVol.selectedEntity[0]][tsVol.selectedEntity[2]];
-    }
+    return sliceArray[0][tsVol.selectedEntity[0]][tsVol.selectedEntity[1]];
 }
 
 // ==================================== HELPER FUNCTIONS END ==============================================
