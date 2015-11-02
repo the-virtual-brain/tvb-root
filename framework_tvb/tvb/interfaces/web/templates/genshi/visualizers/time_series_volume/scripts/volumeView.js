@@ -14,6 +14,7 @@ var Quadrant = function (params){                // this keeps all necessary dat
     this.offsetY = params.offsetY || 0;
 };
 
+(function(){ // module volumeView
 /**
  * Keeps the ui state and read only contextual information associated with this view.
  */
@@ -471,3 +472,13 @@ function TSV_hitTest(e){
 function TSV_getQuadrant(quadID){
     return vol.quadrants[quadID];
 }
+
+// MODULE EXPORTS
+window.TSV_initVolumeView = TSV_initVolumeView;
+window.TSV_drawVolumeScene = TSV_drawVolumeScene;
+window.TSV_hitTest = TSV_hitTest;
+window.TSV_getQuadrant = TSV_getQuadrant;
+// for debug otherwise keep this state private
+window._debug_vol = vol;
+
+})();
