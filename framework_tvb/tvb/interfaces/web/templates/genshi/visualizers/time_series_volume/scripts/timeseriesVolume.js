@@ -7,7 +7,6 @@ var tsVol = {
     quadrants: [],              // The quadrants array.
     minimumValue: null,         // Minimum value of the dataset.
     maximumValue: null,         // Maximum value of the dataset.
-    voxelSize: null,
     volumeOrigin: null,         // VolumeOrigin is not used for now. if needed, use it in _setQuadrant
     selectedEntity: [0, 0, 0],  // The selected voxel; [i, j, k].
     entitySize: [0, 0, 0],      // The size of each plane
@@ -70,14 +69,13 @@ function TSV_initVisualizer(urlVolumeData, urlTimeSeriesData, minValue, maxValue
         );
 
     tsVol.volumeOrigin = $.parseJSON(volOrigin)[0];
-    tsVol.voxelSize    = $.parseJSON(sizeOfVoxel);
+    tsVol.dataSize = $.parseJSON(volumeShape);
 
-    TSV_initVolumeView();
+    TSV_initVolumeView(tsVol.dataSize, minValue, maxValue, $.parseJSON(sizeOfVoxel));
 
     tsVol.urlVolumeData = urlVolumeData;
     tsVol.urlTimeSeriesData = urlTimeSeriesData;
 
-    tsVol.dataSize = $.parseJSON(volumeShape);
     tsVol.samplePeriod = samplePeriod;
     tsVol.samplePeriodUnit = samplePeriodUnit;
 

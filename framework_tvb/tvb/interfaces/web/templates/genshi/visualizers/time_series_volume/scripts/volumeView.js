@@ -20,6 +20,10 @@ var Quadrant = function (params){                // this keeps all necessary dat
 var vol = {
     ctx: null,                  // The context for drawing on current canvas.
 
+    minimumValue: null,         // Minimum value of the dataset.
+    maximumValue: null,         // Maximum value of the dataset.
+    voxelSize: null,
+
     quadrantHeight: null,       // The height of the three small left quadrants
     quadrantWidth: null,        // The width of the three small left quadrants
     focusQuadrantHeight: null,  // The height of the focus quadrant
@@ -27,9 +31,16 @@ var vol = {
     legendHeight: 0,            // The height of the legend quadrant
     legendWidth: 0,             // The width of the legend quadrant
     legendPadding:80*2,         // Horizontal padding for the TSV viewr legend
+
+    dataSize: "",               // Used first to contain the file ID and then it's dimension.
 };
 
-function TSV_initVolumeView(){
+/**
+ * Initializes the volume view.
+ * The dimensions of the volume are given by dataSize.
+ * The interval in which the signal varies is [minValue .. maxValue]. This is used by the color scale. Not per slice.
+ */
+function TSV_initVolumeView(dataSize, minValue, maxValue, voxelSize){
     var canvas = document.getElementById("canvasVolumes");
     if (!canvas.getContext){
         displayMessage('You need a browser with canvas capabilities, to see this demo fully!', "errorMessage");
@@ -49,33 +60,38 @@ function TSV_initVolumeView(){
     vol.ctx = canvas.getContext("2d");
     // TODO maybe in the future we will find a solution to make image bigger before saving
     canvas.drawForImageExport = function() {};
+
+    vol.dataSize = dataSize;
+    vol.minimumValue = minValue;
+    vol.maximumValue = maxValue;
+    vol.voxelSize = voxelSize;
 }
 
 function TSV_drawVolumeScene(sliceArray){
     var i, j, k, ii, jj, kk;
 
-    vol.ctx.fillStyle = ColSch_getAbsoluteGradientColorString(tsVol.minimumValue - 1);
+    vol.ctx.fillStyle = ColSch_getAbsoluteGradientColorString(vol.minimumValue - 1);
     vol.ctx.fillRect(0, 0, vol.ctx.canvas.width, vol.ctx.canvas.height);
 
     _setCtxOnQuadrant(0);
-    for (j = 0; j < tsVol.dataSize[2]; ++j){
-        for (i = 0; i < tsVol.dataSize[1]; ++i){
+    for (j = 0; j < vol.dataSize[2]; ++j){
+        for (i = 0; i < vol.dataSize[1]; ++i){
             drawVoxel(i, j, sliceArray[0][i][j]);
         }
     }
     drawMargin();
 
     _setCtxOnQuadrant(1);
-    for (k = 0; k < tsVol.dataSize[3]; ++k){
-        for (jj = 0; jj < tsVol.dataSize[2]; ++jj){
+    for (k = 0; k < vol.dataSize[3]; ++k){
+        for (jj = 0; jj < vol.dataSize[2]; ++jj){
             drawVoxel(k, jj, sliceArray[1][jj][k]);
         }
     }
     drawMargin();
 
     _setCtxOnQuadrant(2);
-    for (kk = 0; kk < tsVol.dataSize[3]; ++kk){
-        for (ii = 0; ii < tsVol.dataSize[1]; ++ii){
+    for (kk = 0; kk < vol.dataSize[3]; ++kk){
+        for (ii = 0; ii < vol.dataSize[1]; ++ii){
             drawVoxel(kk, ii, sliceArray[2][ii][kk]);
         }
     }
@@ -93,20 +109,20 @@ function TSV_drawVolumeScene(sliceArray){
 function drawFocusQuadrantFromView(sliceArray){
     _setCtxOnQuadrant(3);
     if(tsVol.highlightedQuad.index === 0){
-        for (var j = 0; j < tsVol.dataSize[2]; ++j){
-            for (var i = 0; i < tsVol.dataSize[1]; ++i){
+        for (var j = 0; j < vol.dataSize[2]; ++j){
+            for (var i = 0; i < vol.dataSize[1]; ++i){
                 drawVoxel(i, j, sliceArray[0][i][j]);
             }
         }
     } else if(tsVol.highlightedQuad.index === 1){
-        for (var k = 0; k < tsVol.dataSize[3]; ++k){
-            for (var jj = 0; jj < tsVol.dataSize[2]; ++jj){
+        for (var k = 0; k < vol.dataSize[3]; ++k){
+            for (var jj = 0; jj < vol.dataSize[2]; ++jj){
                 drawVoxel(k, jj, sliceArray[1][jj][k]);
             }
         }
     } else if(tsVol.highlightedQuad.index === 2){
-        for (var kk = 0; kk < tsVol.dataSize[3]; ++kk){
-            for (var ii = 0; ii < tsVol.dataSize[1]; ++ii){
+        for (var kk = 0; kk < vol.dataSize[3]; ++kk){
+            for (var ii = 0; ii < vol.dataSize[1]; ++ii){
                 drawVoxel(kk, ii, sliceArray[2][ii][kk]);
             }
         }
@@ -202,24 +218,24 @@ function drawLegend(selectedEntityValue) {
     vol.ctx.textBaseline = 'middle';
     vol.ctx.fillStyle = 'white';
     // write min, mean, max values on the canvas
-    vol.ctx.fillText(tsVol.minimumValue.toExponential(2), 0, vol.legendHeight - 10);
+    vol.ctx.fillText(vol.minimumValue.toExponential(2), 0, vol.legendHeight - 10);
     vol.ctx.fillText("|", 1, vol.legendHeight/2);
-    var midValue = (tsVol.maximumValue - tsVol.minimumValue)/2;
+    var midValue = (vol.maximumValue - vol.minimumValue)/2;
     vol.ctx.fillText(midValue.toExponential(2), vol.legendWidth/2, vol.legendHeight - 10);
     vol.ctx.fillText("|", vol.legendWidth/2, vol.legendHeight/2);
-    vol.ctx.fillText(tsVol.maximumValue.toExponential(2), vol.legendWidth, vol.legendHeight - 10);
+    vol.ctx.fillText(vol.maximumValue.toExponential(2), vol.legendWidth, vol.legendHeight - 10);
     vol.ctx.fillText("|", vol.legendWidth-1, vol.legendHeight/2);
 
     // Draw a color bar from min to max value based on the selected color coding
     for(var i = 0; i< vol.legendWidth; i++){
-        var val = tsVol.minimumValue + ((i/vol.legendWidth)*(tsVol.maximumValue-tsVol.minimumValue));
+        var val = vol.minimumValue + ((i/vol.legendWidth)*(vol.maximumValue-vol.minimumValue));
         vol.ctx.fillStyle = ColSch_getAbsoluteGradientColorString(val);
         vol.ctx.fillRect(i, 1, 1.5, vol.legendHeight/2);
     }
 
     // Draw the selected entity value marker on the color bar
     vol.ctx.fillStyle = "white";
-    tmp = (selectedEntityValue - tsVol.minimumValue) / (tsVol.maximumValue - tsVol.minimumValue);
+    tmp = (selectedEntityValue - vol.minimumValue) / (vol.maximumValue - vol.minimumValue);
     vol.ctx.fillRect(tmp * vol.legendWidth, 1, 3, vol.legendHeight/2);
 }
 
@@ -299,9 +315,9 @@ function _setCtxOnQuadrant(quadIdx){
  */
 function _getDataSize(axis){
     switch (axis){
-        case 0:     return tsVol.dataSize[1];
-        case 1:     return tsVol.dataSize[2];
-        case 2:     return tsVol.dataSize[3];
+        case 0:     return vol.dataSize[1];
+        case 1:     return vol.dataSize[2];
+        case 2:     return vol.dataSize[3];
     }
 }
 
@@ -312,10 +328,10 @@ function _getDataSize(axis){
  * @returns {{width: number, height: number}} Entity width and height
  */
 function _getEntityDimensions(xAxis, yAxis){
-    var scaleOnWidth  = vol.quadrantWidth  / (_getDataSize(xAxis) * tsVol.voxelSize[xAxis]);
-    var scaleOnHeight = vol.quadrantHeight / (_getDataSize(yAxis) * tsVol.voxelSize[yAxis]);
+    var scaleOnWidth  = vol.quadrantWidth  / (_getDataSize(xAxis) * vol.voxelSize[xAxis]);
+    var scaleOnHeight = vol.quadrantHeight / (_getDataSize(yAxis) * vol.voxelSize[yAxis]);
     var scale = Math.min(scaleOnHeight, scaleOnWidth);
-    return {width: tsVol.voxelSize[xAxis] * scale, height: tsVol.voxelSize[yAxis] * scale};
+    return {width: vol.voxelSize[xAxis] * scale, height: vol.voxelSize[yAxis] * scale};
 }
 
 /**
@@ -326,10 +342,10 @@ function _getEntityDimensions(xAxis, yAxis){
  * @returns {{width: number, height: number}} Entity width and height
  */
 function _getFocusEntityDimensions(xAxis, yAxis){
-    var scaleOnWidth  = vol.focusQuadrantWidth  / (_getDataSize(xAxis) * tsVol.voxelSize[xAxis]);
-    var scaleOnHeight = vol.focusQuadrantHeight / (_getDataSize(yAxis) * tsVol.voxelSize[yAxis]);
+    var scaleOnWidth  = vol.focusQuadrantWidth  / (_getDataSize(xAxis) * vol.voxelSize[xAxis]);
+    var scaleOnHeight = vol.focusQuadrantHeight / (_getDataSize(yAxis) * vol.voxelSize[yAxis]);
     var scale = Math.min(scaleOnHeight, scaleOnWidth);
-    return {width: tsVol.voxelSize[xAxis] * scale, height: tsVol.voxelSize[yAxis] * scale};
+    return {width: vol.voxelSize[xAxis] * scale, height: vol.voxelSize[yAxis] * scale};
 }
 
 /**
