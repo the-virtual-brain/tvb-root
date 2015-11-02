@@ -419,9 +419,6 @@ function TSV_hitTest(e){
         else if(ypos >= vol.focusQuadrantHeight - selectedQuad.offsetY){
             return;
         }
-        else if(xpos < tsVol.offsetX){
-            return;
-        }
         else if(xpos >= vol.focusQuadrantWidth - selectedQuad.offsetX + vol.quadrantWidth){
             return;
         }
@@ -433,9 +430,6 @@ function TSV_hitTest(e){
             return;
         }
         else if(ypos >= vol.quadrantHeight * (selectedQuad.index + 1) - selectedQuad.offsetY){
-            return;
-        }
-        else if(xpos < tsVol.offsetX){
             return;
         }
         else if(xpos >= vol.quadrantWidth - selectedQuad.offsetX){
