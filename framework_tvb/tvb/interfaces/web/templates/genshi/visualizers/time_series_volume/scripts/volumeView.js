@@ -1,3 +1,10 @@
+/**
+ * Code that is responsible with drawing volumetric information.
+ * It is a strict view. It does not keep the volumetric slices that it displays nor the current selected voxel.
+ * Those responsibilities belong to the timeseriesVolume.js controller.
+ *
+ */
+
 var Quadrant = function (params){                // this keeps all necessary data for drawing
     this.index = params.index || 0;                // in a quadrant
     this.axes = params.axes || {x: 0, y: 1};       // axes represented in current quad; i=0, j=1, k=2
@@ -5,6 +12,21 @@ var Quadrant = function (params){                // this keeps all necessary dat
     this.entityHeight = params.entityHeight || 0;
     this.offsetX = params.offsetX || 0;            // the offset of the drawing relative to the quad
     this.offsetY = params.offsetY || 0;
+};
+
+/**
+ * Keeps the ui state and read only contextual information associated with this view.
+ */
+var vol = {
+    ctx: null,                  // The context for drawing on current canvas.
+
+    quadrantHeight: null,       // The height of the three small left quadrants
+    quadrantWidth: null,        // The width of the three small left quadrants
+    focusQuadrantHeight: null,  // The height of the focus quadrant
+    focusQuadrantWidth: null,   // The width of the focus quadrant
+    legendHeight: 0,            // The height of the legend quadrant
+    legendWidth: 0,             // The width of the legend quadrant
+    legendPadding:80*2,         // Horizontal padding for the TSV viewr legend
 };
 
 function TSV_initVolumeView(){
@@ -17,14 +39,14 @@ function TSV_initVolumeView(){
     canvas.width  = $(canvas).parent().width();
 
     var tmp = canvas.height / 3;
-    tsVol.quadrantHeight = tmp;       // quadrants are squares
-    tsVol.quadrantWidth = tmp;
-    tsVol.focusQuadrantWidth = canvas.width - tsVol.quadrantWidth;
-    tsVol.legendHeight = canvas.height / 13;
-    tsVol.legendWidth = tsVol.focusQuadrantWidth - tsVol.legendPadding;
-    tsVol.focusQuadrantHeight = canvas.height - tsVol.legendHeight;
+    vol.quadrantHeight = tmp;       // quadrants are squares
+    vol.quadrantWidth = tmp;
+    vol.focusQuadrantWidth = canvas.width - vol.quadrantWidth;
+    vol.legendHeight = canvas.height / 13;
+    vol.legendWidth = vol.focusQuadrantWidth - vol.legendPadding;
+    vol.focusQuadrantHeight = canvas.height - vol.legendHeight;
 
-    tsVol.ctx = canvas.getContext("2d");
+    vol.ctx = canvas.getContext("2d");
     // TODO maybe in the future we will find a solution to make image bigger before saving
     canvas.drawForImageExport = function() {};
 }
@@ -32,8 +54,8 @@ function TSV_initVolumeView(){
 function TSV_drawVolumeScene(sliceArray){
     var i, j, k, ii, jj, kk;
 
-    tsVol.ctx.fillStyle = ColSch_getAbsoluteGradientColorString(tsVol.minimumValue - 1);
-    tsVol.ctx.fillRect(0, 0, tsVol.ctx.canvas.width, tsVol.ctx.canvas.height);
+    vol.ctx.fillStyle = ColSch_getAbsoluteGradientColorString(tsVol.minimumValue - 1);
+    vol.ctx.fillRect(0, 0, vol.ctx.canvas.width, vol.ctx.canvas.height);
 
     _setCtxOnQuadrant(0);
     for (j = 0; j < tsVol.dataSize[2]; ++j){
@@ -101,9 +123,9 @@ function drawFocusQuadrantFromView(sliceArray){
  * @param value The value of the voxel that will be converted into color
  */
 function drawVoxel(line, col, value){
-    tsVol.ctx.fillStyle = ColSch_getAbsoluteGradientColorString(value);
+    vol.ctx.fillStyle = ColSch_getAbsoluteGradientColorString(value);
     // col increases horizontally and line vertically, so col represents the X drawing axis, and line the Y
-	tsVol.ctx.fillRect(col * tsVol.currentQuadrant.entityWidth, line * tsVol.currentQuadrant.entityHeight,
+	vol.ctx.fillRect(col * tsVol.currentQuadrant.entityWidth, line * tsVol.currentQuadrant.entityHeight,
                        tsVol.currentQuadrant.entityWidth + 1, tsVol.currentQuadrant.entityHeight + 1);
 }
 
@@ -112,8 +134,8 @@ function drawVoxel(line, col, value){
  */
 function drawNavigator(){
     // Preview quadrans navigators
-    tsVol.ctx.save();
-    tsVol.ctx.beginPath();
+    vol.ctx.save();
+    vol.ctx.beginPath();
 
     for (var quadIdx = 0; quadIdx < 3; ++quadIdx){
         _setCtxOnQuadrant(quadIdx);
@@ -121,44 +143,44 @@ function drawNavigator(){
         var y = tsVol.selectedEntity[tsVol.currentQuadrant.axes.y] * tsVol.currentQuadrant.entityHeight + tsVol.currentQuadrant.entityHeight / 2;
         drawCrossHair(x, y);
     }
-    tsVol.ctx.strokeStyle = "red";
-    tsVol.ctx.lineWidth = 3;
-    tsVol.ctx.stroke();
-    tsVol.ctx.restore();
+    vol.ctx.strokeStyle = "red";
+    vol.ctx.lineWidth = 3;
+    vol.ctx.stroke();
+    vol.ctx.restore();
 
     // Focus quadrant Navigator
-    tsVol.ctx.save();
-    tsVol.ctx.beginPath();
+    vol.ctx.save();
+    vol.ctx.beginPath();
 
     _setCtxOnQuadrant(3);
     var xx = tsVol.selectedEntity[tsVol.currentQuadrant.axes.x] * tsVol.currentQuadrant.entityWidth + tsVol.currentQuadrant.entityWidth / 2;
     var yy = tsVol.selectedEntity[tsVol.currentQuadrant.axes.y] * tsVol.currentQuadrant.entityHeight + tsVol.currentQuadrant.entityHeight / 2;
     drawFocusCrossHair(xx, yy);
 
-    tsVol.ctx.strokeStyle = "blue";
-    tsVol.ctx.lineWidth = 3;
-    tsVol.ctx.stroke();
-    tsVol.ctx.restore();
+    vol.ctx.strokeStyle = "blue";
+    vol.ctx.lineWidth = 3;
+    vol.ctx.stroke();
+    vol.ctx.restore();
 }
 
 /**
  * Draws a 20px X 20px cross hair on the <code>tsVol.currentQuadrant</code>, at the specified x and y
  */
 function drawCrossHair(x, y){
-    tsVol.ctx.moveTo(Math.max(x - 20, 0), y);                              // the horizontal line
-    tsVol.ctx.lineTo(Math.min(x + 20, tsVol.quadrantWidth), y);
-    tsVol.ctx.moveTo(x, Math.max(y - 20, 0));                              // the vertical line
-    tsVol.ctx.lineTo(x, Math.min(y + 20, tsVol.quadrantHeight));
+    vol.ctx.moveTo(Math.max(x - 20, 0), y);                              // the horizontal line
+    vol.ctx.lineTo(Math.min(x + 20, vol.quadrantWidth), y);
+    vol.ctx.moveTo(x, Math.max(y - 20, 0));                              // the vertical line
+    vol.ctx.lineTo(x, Math.min(y + 20, vol.quadrantHeight));
 }
 
 /**
  * Draws a cross hair on the bigger focus quadrant, at the specified x and y
  */
 function drawFocusCrossHair(x, y){
-    tsVol.ctx.moveTo(Math.max(x - 20, 0), y);                              // the horizontal line
-    tsVol.ctx.lineTo(Math.min(x + 20, tsVol.focusQuadrantWidth), y);
-    tsVol.ctx.moveTo(x, Math.max(y - 20, 0));                              // the vertical line
-    tsVol.ctx.lineTo(x, Math.min(y + 20, tsVol.focusQuadrantHeight));
+    vol.ctx.moveTo(Math.max(x - 20, 0), y);                              // the horizontal line
+    vol.ctx.lineTo(Math.min(x + 20, vol.focusQuadrantWidth), y);
+    vol.ctx.moveTo(x, Math.max(y - 20, 0));                              // the vertical line
+    vol.ctx.lineTo(x, Math.min(y + 20, vol.focusQuadrantHeight));
 }
 
 /**
@@ -170,49 +192,49 @@ function drawFocusCrossHair(x, y){
  * </ul>
  */
 function drawLegend(selectedEntityValue) {
-    var tmp = tsVol.legendPadding / 2;
+    var tmp = vol.legendPadding / 2;
     // set the context on the legend quadrant
-    tsVol.ctx.setTransform(1, 0, 0, 1, 0, 0);  // reset the transformation
-    tsVol.ctx.translate( tsVol.quadrantWidth + tmp, tsVol.focusQuadrantHeight);
+    vol.ctx.setTransform(1, 0, 0, 1, 0, 0);  // reset the transformation
+    vol.ctx.translate( vol.quadrantWidth + tmp, vol.focusQuadrantHeight);
     // set the font properties
-    tsVol.ctx.font = '12px Helvetica';
-    tsVol.ctx.textAlign = 'center';
-    tsVol.ctx.textBaseline = 'middle';
-    tsVol.ctx.fillStyle = 'white';
+    vol.ctx.font = '12px Helvetica';
+    vol.ctx.textAlign = 'center';
+    vol.ctx.textBaseline = 'middle';
+    vol.ctx.fillStyle = 'white';
     // write min, mean, max values on the canvas
-    tsVol.ctx.fillText(tsVol.minimumValue.toExponential(2), 0, tsVol.legendHeight - 10);
-    tsVol.ctx.fillText("|", 1, tsVol.legendHeight/2);
+    vol.ctx.fillText(tsVol.minimumValue.toExponential(2), 0, vol.legendHeight - 10);
+    vol.ctx.fillText("|", 1, vol.legendHeight/2);
     var midValue = (tsVol.maximumValue - tsVol.minimumValue)/2;
-    tsVol.ctx.fillText(midValue.toExponential(2), tsVol.legendWidth/2, tsVol.legendHeight - 10);
-    tsVol.ctx.fillText("|", tsVol.legendWidth/2, tsVol.legendHeight/2);
-    tsVol.ctx.fillText(tsVol.maximumValue.toExponential(2), tsVol.legendWidth, tsVol.legendHeight - 10);
-    tsVol.ctx.fillText("|", tsVol.legendWidth-1, tsVol.legendHeight/2);
+    vol.ctx.fillText(midValue.toExponential(2), vol.legendWidth/2, vol.legendHeight - 10);
+    vol.ctx.fillText("|", vol.legendWidth/2, vol.legendHeight/2);
+    vol.ctx.fillText(tsVol.maximumValue.toExponential(2), vol.legendWidth, vol.legendHeight - 10);
+    vol.ctx.fillText("|", vol.legendWidth-1, vol.legendHeight/2);
 
     // Draw a color bar from min to max value based on the selected color coding
-    for(var i = 0; i< tsVol.legendWidth; i++){
-        var val = tsVol.minimumValue + ((i/tsVol.legendWidth)*(tsVol.maximumValue-tsVol.minimumValue));
-        tsVol.ctx.fillStyle = ColSch_getAbsoluteGradientColorString(val);
-        tsVol.ctx.fillRect(i, 1, 1.5, tsVol.legendHeight/2);
+    for(var i = 0; i< vol.legendWidth; i++){
+        var val = tsVol.minimumValue + ((i/vol.legendWidth)*(tsVol.maximumValue-tsVol.minimumValue));
+        vol.ctx.fillStyle = ColSch_getAbsoluteGradientColorString(val);
+        vol.ctx.fillRect(i, 1, 1.5, vol.legendHeight/2);
     }
 
     // Draw the selected entity value marker on the color bar
-    tsVol.ctx.fillStyle = "white";
+    vol.ctx.fillStyle = "white";
     tmp = (selectedEntityValue - tsVol.minimumValue) / (tsVol.maximumValue - tsVol.minimumValue);
-    tsVol.ctx.fillRect(tmp * tsVol.legendWidth, 1, 3, tsVol.legendHeight/2);
+    vol.ctx.fillRect(tmp * vol.legendWidth, 1, 3, vol.legendHeight/2);
 }
 
 /**
  * Add spatial labels to the navigation quadrants
  */
 function drawLabels(){
-    tsVol.ctx.font = '15px Helvetica';
-    tsVol.ctx.textBaseline = 'middle';
+    vol.ctx.font = '15px Helvetica';
+    vol.ctx.textBaseline = 'middle';
     _setCtxOnQuadrant(0);
-    tsVol.ctx.fillText("Axial", tsVol.quadrantWidth/5, tsVol.quadrantHeight - 13);
+    vol.ctx.fillText("Axial", vol.quadrantWidth/5, vol.quadrantHeight - 13);
     _setCtxOnQuadrant(1);
-    tsVol.ctx.fillText("Sagittal", tsVol.quadrantWidth/5, tsVol.quadrantHeight - 13);
+    vol.ctx.fillText("Sagittal", vol.quadrantWidth/5, vol.quadrantHeight - 13);
     _setCtxOnQuadrant(2);
-    tsVol.ctx.fillText("Coronal", tsVol.quadrantWidth/5, tsVol.quadrantHeight - 13);
+    vol.ctx.fillText("Coronal", vol.quadrantWidth/5, vol.quadrantHeight - 13);
 }
 
 /**
@@ -221,27 +243,27 @@ function drawLabels(){
 function drawMargin(){
     var marginWidth, marginHeight;
     if(tsVol.currentQuadrant.index === 3){
-        marginWidth = tsVol.focusQuadrantWidth;
-        marginHeight = tsVol.focusQuadrantHeight;
+        marginWidth = vol.focusQuadrantWidth;
+        marginHeight = vol.focusQuadrantHeight;
     }
     else{
-        marginWidth = tsVol.quadrantWidth;
-        marginHeight = tsVol.quadrantHeight;
+        marginWidth = vol.quadrantWidth;
+        marginHeight = vol.quadrantHeight;
     }
-    tsVol.ctx.beginPath();
-    tsVol.ctx.rect(2, 0, marginWidth - 3, marginHeight - 2);
-    tsVol.ctx.lineWidth = 2;
+    vol.ctx.beginPath();
+    vol.ctx.rect(2, 0, marginWidth - 3, marginHeight - 2);
+    vol.ctx.lineWidth = 2;
     if(tsVol.currentQuadrant.index === tsVol.selectedQuad.index && tsVol.currentQuadrant.index !== 3){
-        tsVol.ctx.strokeStyle = 'white';
+        vol.ctx.strokeStyle = 'white';
         tsVol.highlightedQuad = tsVol.currentQuadrant;
     }
     else if(tsVol.currentQuadrant.index === tsVol.highlightedQuad.index && tsVol.selectedQuad.index === 3){
-        tsVol.ctx.strokeStyle = 'white';
+        vol.ctx.strokeStyle = 'white';
     }
     else{
-        tsVol.ctx.strokeStyle = 'gray';
+        vol.ctx.strokeStyle = 'gray';
     }
-    tsVol.ctx.stroke();
+    vol.ctx.stroke();
 }
 
 
@@ -252,20 +274,20 @@ function drawMargin(){
  * @private
  */
 /* TODO: make it use volumeOrigin; could be like this:
- * <code>tsVol.ctx.setTransform(1, 0, 0, 1, volumeOrigin[tsVol.currentQuadrant.axes.x], volumeOrigin[tsVol.currentQuadrant.axes.y])</code>
+ * <code>vol.ctx.setTransform(1, 0, 0, 1, volumeOrigin[tsVol.currentQuadrant.axes.x], volumeOrigin[tsVol.currentQuadrant.axes.y])</code>
  *       if implemented, also change the picking to take it into account
  */
 function _setCtxOnQuadrant(quadIdx){
     tsVol.currentQuadrant = tsVol.quadrants[quadIdx];
-    tsVol.ctx.setTransform(1, 0, 0, 1, 0, 0);                              // reset the transformation
+    vol.ctx.setTransform(1, 0, 0, 1, 0, 0);                              // reset the transformation
     // Horizontal Mode
-    //tsVol.ctx.translate(quadIdx * tsVol.quadrantWidth + tsVol.currentQuadrant.offsetX, tsVol.currentQuadrant.offsetY);
+    //vol.ctx.translate(quadIdx * vol.quadrantWidth + tsVol.currentQuadrant.offsetX, tsVol.currentQuadrant.offsetY);
     // Vertical Mode
     if(quadIdx === 3){
-       tsVol.ctx.translate(tsVol.quadrantWidth + tsVol.currentQuadrant.offsetX, tsVol.currentQuadrant.offsetY);
+       vol.ctx.translate(vol.quadrantWidth + tsVol.currentQuadrant.offsetX, tsVol.currentQuadrant.offsetY);
     }
     else{
-        tsVol.ctx.translate(tsVol.currentQuadrant.offsetX, quadIdx * tsVol.quadrantHeight +  tsVol.currentQuadrant.offsetY);
+        vol.ctx.translate(tsVol.currentQuadrant.offsetX, quadIdx * vol.quadrantHeight +  tsVol.currentQuadrant.offsetY);
     }
 }
 
@@ -290,8 +312,8 @@ function _getDataSize(axis){
  * @returns {{width: number, height: number}} Entity width and height
  */
 function _getEntityDimensions(xAxis, yAxis){
-    var scaleOnWidth  = tsVol.quadrantWidth  / (_getDataSize(xAxis) * tsVol.voxelSize[xAxis]);
-    var scaleOnHeight = tsVol.quadrantHeight / (_getDataSize(yAxis) * tsVol.voxelSize[yAxis]);
+    var scaleOnWidth  = vol.quadrantWidth  / (_getDataSize(xAxis) * tsVol.voxelSize[xAxis]);
+    var scaleOnHeight = vol.quadrantHeight / (_getDataSize(yAxis) * tsVol.voxelSize[yAxis]);
     var scale = Math.min(scaleOnHeight, scaleOnWidth);
     return {width: tsVol.voxelSize[xAxis] * scale, height: tsVol.voxelSize[yAxis] * scale};
 }
@@ -304,8 +326,8 @@ function _getEntityDimensions(xAxis, yAxis){
  * @returns {{width: number, height: number}} Entity width and height
  */
 function _getFocusEntityDimensions(xAxis, yAxis){
-    var scaleOnWidth  = tsVol.focusQuadrantWidth  / (_getDataSize(xAxis) * tsVol.voxelSize[xAxis]);
-    var scaleOnHeight = tsVol.focusQuadrantHeight / (_getDataSize(yAxis) * tsVol.voxelSize[yAxis]);
+    var scaleOnWidth  = vol.focusQuadrantWidth  / (_getDataSize(xAxis) * tsVol.voxelSize[xAxis]);
+    var scaleOnHeight = vol.focusQuadrantHeight / (_getDataSize(yAxis) * tsVol.voxelSize[yAxis]);
     var scale = Math.min(scaleOnHeight, scaleOnWidth);
     return {width: tsVol.voxelSize[xAxis] * scale, height: tsVol.voxelSize[yAxis] * scale};
 }
@@ -360,36 +382,36 @@ function TSV_hitTest(e){
     var offset = $('#canvasVolumes').offset();
     var xpos = e.pageX - offset.left;
     var ypos = e.pageY - offset.top;
-    //var selectedQuad = tsVol.quadrants[Math.floor(xpos / tsVol.quadrantWidth)];
-    if(Math.floor(xpos / tsVol.quadrantWidth) >= 1){
+    //var selectedQuad = tsVol.quadrants[Math.floor(xpos / vol.quadrantWidth)];
+    if(Math.floor(xpos / vol.quadrantWidth) >= 1){
         tsVol.selectedQuad = tsVol.quadrants[3];
         // check if it's inside the focus quadrant but outside the drawing
         if (ypos < tsVol.selectedQuad.offsetY ){
             return;
         }
-        else if(ypos >= tsVol.focusQuadrantHeight - tsVol.selectedQuad.offsetY){
+        else if(ypos >= vol.focusQuadrantHeight - tsVol.selectedQuad.offsetY){
             return;
         }
         else if(xpos < tsVol.offsetX){
             return;
         }
-        else if(xpos >= tsVol.focusQuadrantWidth - tsVol.selectedQuad.offsetX + tsVol.quadrantWidth){
+        else if(xpos >= vol.focusQuadrantWidth - tsVol.selectedQuad.offsetX + vol.quadrantWidth){
             return;
         }
     } else{
-        tsVol.selectedQuad = tsVol.quadrants[Math.floor(ypos / tsVol.quadrantHeight)];
+        tsVol.selectedQuad = tsVol.quadrants[Math.floor(ypos / vol.quadrantHeight)];
         _setupFocusQuadrant();
         // check if it's inside the quadrant but outside the drawing
         if (ypos < tsVol.selectedQuad.offsetY ){
             return;
         }
-        else if(ypos >= tsVol.quadrantHeight * (tsVol.selectedQuad.index + 1) - tsVol.selectedQuad.offsetY){
+        else if(ypos >= vol.quadrantHeight * (tsVol.selectedQuad.index + 1) - tsVol.selectedQuad.offsetY){
             return;
         }
         else if(xpos < tsVol.offsetX){
             return;
         }
-        else if(xpos >= tsVol.quadrantWidth - tsVol.selectedQuad.offsetX){
+        else if(xpos >= vol.quadrantWidth - tsVol.selectedQuad.offsetX){
             return;
         }
     }
@@ -398,11 +420,11 @@ function TSV_hitTest(e){
     var selectedEntityOnY = 0;
 
     if(tsVol.selectedQuad.index === 3){
-        selectedEntityOnX = Math.floor(((xpos - tsVol.quadrantWidth) % tsVol.focusQuadrantWidth) / tsVol.selectedQuad.entityWidth);
-        selectedEntityOnY = Math.floor(((ypos - tsVol.selectedQuad.offsetY) % tsVol.focusQuadrantHeight) / tsVol.selectedQuad.entityHeight);
+        selectedEntityOnX = Math.floor(((xpos - vol.quadrantWidth) % vol.focusQuadrantWidth) / tsVol.selectedQuad.entityWidth);
+        selectedEntityOnY = Math.floor(((ypos - tsVol.selectedQuad.offsetY) % vol.focusQuadrantHeight) / tsVol.selectedQuad.entityHeight);
     } else{
         selectedEntityOnX = Math.floor((xpos - tsVol.selectedQuad.offsetX) / tsVol.selectedQuad.entityWidth);
-        selectedEntityOnY = Math.floor((ypos % tsVol.quadrantHeight) / tsVol.selectedQuad.entityHeight);
+        selectedEntityOnY = Math.floor((ypos % vol.quadrantHeight) / tsVol.selectedQuad.entityHeight);
     }
 
     return {

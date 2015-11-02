@@ -3,7 +3,6 @@
 
 // ==================================== INITIALIZATION CODE START ===========================================
 var tsVol = {
-    ctx: null,                  // The context for drawing on current canvas.
     currentQuadrant: 0,         // The quadrant we're in.
     quadrants: [],              // The quadrants array.
     minimumValue: null,         // Minimum value of the dataset.
@@ -12,13 +11,6 @@ var tsVol = {
     volumeOrigin: null,         // VolumeOrigin is not used for now. if needed, use it in _setQuadrant
     selectedEntity: [0, 0, 0],  // The selected voxel; [i, j, k].
     entitySize: [0, 0, 0],      // The size of each plane
-    quadrantHeight: null,       // The height of the three small left quadrants
-    quadrantWidth: null,        // The width of the three small left quadrants
-    focusQuadrantHeight: null,  // The height of the focus quadrant
-    focusQuadrantWidth: null,   // The width of the focus quadrant
-    legendHeight: 0,            // The height of the legend quadrant
-    legendWidth: 0,             // The width of the legend quadrant
-    legendPadding:80*2,         // Horizontal padding for the TSV viewr legend
     selectedQuad: 0,            // The quadrant selected by the user every time
     highlightedQuad: {},        // The plane to be displayed on the focus quadrant
     timeLength: 0,              // Number of timepoints in the Volume.
