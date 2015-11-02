@@ -69,7 +69,13 @@ function TSV_initVolumeView(dataSize, minValue, maxValue, voxelSize){
     vol.voxelSize = voxelSize;
 }
 
-function TSV_drawVolumeScene(sliceArray){
+/**
+ * Draws a volume slice.
+ * @param sliceArray [axial, sagittal, coronal] where elements are 2d array slices.
+ * @param selectedEntity The selected voxel. A cross will be drawn over it.
+ * @param selectedEntityValue. Value of the selected voxel. Used to highlight value in color scale.
+ */
+function TSV_drawVolumeScene(sliceArray, selectedEntity, selectedEntityValue){
     var i, j, k, ii, jj, kk;
 
     vol.ctx.fillStyle = ColSch_getAbsoluteGradientColorString(vol.minimumValue - 1);
@@ -100,8 +106,8 @@ function TSV_drawVolumeScene(sliceArray){
     drawMargin();
 
     drawFocusQuadrantFromView(sliceArray);
-    drawNavigator();
-    drawLegend(getSelectedEntityValue(sliceArray));
+    drawNavigator(selectedEntity);
+    drawLegend(selectedEntityValue);
     drawLabels();
 }
 
@@ -148,17 +154,17 @@ function drawVoxel(line, col, value){
 }
 
 /**
- * Draws the cross-hair on each quadrant, on the <code>tsVol.selectedEntity</code>
+ * Draws the cross-hair on each quadrant, on the <code>selectedEntity</code>
  */
-function drawNavigator(){
+function drawNavigator(selectedEntity){
     // Preview quadrans navigators
     vol.ctx.save();
     vol.ctx.beginPath();
 
     for (var quadIdx = 0; quadIdx < 3; ++quadIdx){
         _setCtxOnQuadrant(quadIdx);
-        var x = tsVol.selectedEntity[vol.currentQuadrant.axes.x] * vol.currentQuadrant.entityWidth + vol.currentQuadrant.entityWidth / 2;
-        var y = tsVol.selectedEntity[vol.currentQuadrant.axes.y] * vol.currentQuadrant.entityHeight + vol.currentQuadrant.entityHeight / 2;
+        var x = selectedEntity[vol.currentQuadrant.axes.x] * vol.currentQuadrant.entityWidth + vol.currentQuadrant.entityWidth / 2;
+        var y = selectedEntity[vol.currentQuadrant.axes.y] * vol.currentQuadrant.entityHeight + vol.currentQuadrant.entityHeight / 2;
         drawCrossHair(x, y);
     }
     vol.ctx.strokeStyle = "red";
@@ -171,8 +177,8 @@ function drawNavigator(){
     vol.ctx.beginPath();
 
     _setCtxOnQuadrant(3);
-    var xx = tsVol.selectedEntity[vol.currentQuadrant.axes.x] * vol.currentQuadrant.entityWidth + vol.currentQuadrant.entityWidth / 2;
-    var yy = tsVol.selectedEntity[vol.currentQuadrant.axes.y] * vol.currentQuadrant.entityHeight + vol.currentQuadrant.entityHeight / 2;
+    var xx = selectedEntity[vol.currentQuadrant.axes.x] * vol.currentQuadrant.entityWidth + vol.currentQuadrant.entityWidth / 2;
+    var yy = selectedEntity[vol.currentQuadrant.axes.y] * vol.currentQuadrant.entityHeight + vol.currentQuadrant.entityHeight / 2;
     drawFocusCrossHair(xx, yy);
 
     vol.ctx.strokeStyle = "blue";

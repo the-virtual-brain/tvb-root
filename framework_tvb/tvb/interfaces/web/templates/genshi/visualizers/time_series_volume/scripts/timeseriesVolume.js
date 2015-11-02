@@ -1,5 +1,7 @@
 /* globals displayMessage, ColSch_initColorSchemeGUI, ColSch_getAbsoluteGradientColorString,
-            doAjaxCall, d3, HLPR_readJSONfromFile */
+            doAjaxCall, d3, HLPR_readJSONfromFile,
+            TSV_initVolumeView, TSV_drawVolumeScene, TSV_hitTest
+             */
 
 // ==================================== INITIALIZATION CODE START ===========================================
 var tsVol = {
@@ -134,7 +136,8 @@ function drawSceneFunctional(tIndex) {
     updateTSFragment();
     // An array containing the view for each plane.
     var sliceArray = getViewAtTime(tIndex);
-    TSV_drawVolumeScene(sliceArray);
+    var selectedEntityValue = getSelectedEntityValue(sliceArray);
+    TSV_drawVolumeScene(sliceArray, tsVol.selectedEntity, selectedEntityValue);
     updateMoviePlayerSlider();
 }
 
