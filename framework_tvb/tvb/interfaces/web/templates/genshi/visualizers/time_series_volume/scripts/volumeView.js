@@ -19,11 +19,12 @@ var Quadrant = function (params){                // this keeps all necessary dat
  */
 var vol = {
     ctx: null,                  // The context for drawing on current canvas.
-
+    currentQuadrant: 0,         // The quadrant we're in.
+    highlightedQuad: {},        // The plane to be displayed on the focus quadrant
+    quadrants: [],              // The quadrants array.
     minimumValue: null,         // Minimum value of the dataset.
     maximumValue: null,         // Maximum value of the dataset.
     voxelSize: null,
-
     quadrantHeight: null,       // The height of the three small left quadrants
     quadrantWidth: null,        // The width of the three small left quadrants
     focusQuadrantHeight: null,  // The height of the focus quadrant
@@ -46,6 +47,7 @@ function TSV_initVolumeView(dataSize, minValue, maxValue, voxelSize){
         displayMessage('You need a browser with canvas capabilities, to see this demo fully!', "errorMessage");
         return;
     }
+
     canvas.height = $(canvas).parent().height();
     canvas.width  = $(canvas).parent().width();
 
@@ -108,19 +110,19 @@ function TSV_drawVolumeScene(sliceArray){
  */
 function drawFocusQuadrantFromView(sliceArray){
     _setCtxOnQuadrant(3);
-    if(tsVol.highlightedQuad.index === 0){
+    if(vol.highlightedQuad.index === 0){
         for (var j = 0; j < vol.dataSize[2]; ++j){
             for (var i = 0; i < vol.dataSize[1]; ++i){
                 drawVoxel(i, j, sliceArray[0][i][j]);
             }
         }
-    } else if(tsVol.highlightedQuad.index === 1){
+    } else if(vol.highlightedQuad.index === 1){
         for (var k = 0; k < vol.dataSize[3]; ++k){
             for (var jj = 0; jj < vol.dataSize[2]; ++jj){
                 drawVoxel(k, jj, sliceArray[1][jj][k]);
             }
         }
-    } else if(tsVol.highlightedQuad.index === 2){
+    } else if(vol.highlightedQuad.index === 2){
         for (var kk = 0; kk < vol.dataSize[3]; ++kk){
             for (var ii = 0; ii < vol.dataSize[1]; ++ii){
                 drawVoxel(kk, ii, sliceArray[2][ii][kk]);
@@ -141,8 +143,8 @@ function drawFocusQuadrantFromView(sliceArray){
 function drawVoxel(line, col, value){
     vol.ctx.fillStyle = ColSch_getAbsoluteGradientColorString(value);
     // col increases horizontally and line vertically, so col represents the X drawing axis, and line the Y
-	vol.ctx.fillRect(col * tsVol.currentQuadrant.entityWidth, line * tsVol.currentQuadrant.entityHeight,
-                       tsVol.currentQuadrant.entityWidth + 1, tsVol.currentQuadrant.entityHeight + 1);
+	vol.ctx.fillRect(col * vol.currentQuadrant.entityWidth, line * vol.currentQuadrant.entityHeight,
+                       vol.currentQuadrant.entityWidth + 1, vol.currentQuadrant.entityHeight + 1);
 }
 
 /**
@@ -155,8 +157,8 @@ function drawNavigator(){
 
     for (var quadIdx = 0; quadIdx < 3; ++quadIdx){
         _setCtxOnQuadrant(quadIdx);
-        var x = tsVol.selectedEntity[tsVol.currentQuadrant.axes.x] * tsVol.currentQuadrant.entityWidth + tsVol.currentQuadrant.entityWidth / 2;
-        var y = tsVol.selectedEntity[tsVol.currentQuadrant.axes.y] * tsVol.currentQuadrant.entityHeight + tsVol.currentQuadrant.entityHeight / 2;
+        var x = tsVol.selectedEntity[vol.currentQuadrant.axes.x] * vol.currentQuadrant.entityWidth + vol.currentQuadrant.entityWidth / 2;
+        var y = tsVol.selectedEntity[vol.currentQuadrant.axes.y] * vol.currentQuadrant.entityHeight + vol.currentQuadrant.entityHeight / 2;
         drawCrossHair(x, y);
     }
     vol.ctx.strokeStyle = "red";
@@ -169,8 +171,8 @@ function drawNavigator(){
     vol.ctx.beginPath();
 
     _setCtxOnQuadrant(3);
-    var xx = tsVol.selectedEntity[tsVol.currentQuadrant.axes.x] * tsVol.currentQuadrant.entityWidth + tsVol.currentQuadrant.entityWidth / 2;
-    var yy = tsVol.selectedEntity[tsVol.currentQuadrant.axes.y] * tsVol.currentQuadrant.entityHeight + tsVol.currentQuadrant.entityHeight / 2;
+    var xx = tsVol.selectedEntity[vol.currentQuadrant.axes.x] * vol.currentQuadrant.entityWidth + vol.currentQuadrant.entityWidth / 2;
+    var yy = tsVol.selectedEntity[vol.currentQuadrant.axes.y] * vol.currentQuadrant.entityHeight + vol.currentQuadrant.entityHeight / 2;
     drawFocusCrossHair(xx, yy);
 
     vol.ctx.strokeStyle = "blue";
@@ -180,7 +182,7 @@ function drawNavigator(){
 }
 
 /**
- * Draws a 20px X 20px cross hair on the <code>tsVol.currentQuadrant</code>, at the specified x and y
+ * Draws a 20px X 20px cross hair on the <code>vol.currentQuadrant</code>, at the specified x and y
  */
 function drawCrossHair(x, y){
     vol.ctx.moveTo(Math.max(x - 20, 0), y);                              // the horizontal line
@@ -254,11 +256,11 @@ function drawLabels(){
 }
 
 /**
- * Draws a 5px rectangle around the <code>tsVol.currentQuadrant</code>
+ * Draws a 5px rectangle around the <code>vol.currentQuadrant</code>
  */
 function drawMargin(){
     var marginWidth, marginHeight;
-    if(tsVol.currentQuadrant.index === 3){
+    if(vol.currentQuadrant.index === 3){
         marginWidth = vol.focusQuadrantWidth;
         marginHeight = vol.focusQuadrantHeight;
     }
@@ -269,11 +271,11 @@ function drawMargin(){
     vol.ctx.beginPath();
     vol.ctx.rect(2, 0, marginWidth - 3, marginHeight - 2);
     vol.ctx.lineWidth = 2;
-    if(tsVol.currentQuadrant.index === tsVol.selectedQuad.index && tsVol.currentQuadrant.index !== 3){
+    if(vol.currentQuadrant.index === tsVol.selectedQuad.index && vol.currentQuadrant.index !== 3){
         vol.ctx.strokeStyle = 'white';
-        tsVol.highlightedQuad = tsVol.currentQuadrant;
+        vol.highlightedQuad = vol.currentQuadrant;
     }
-    else if(tsVol.currentQuadrant.index === tsVol.highlightedQuad.index && tsVol.selectedQuad.index === 3){
+    else if(vol.currentQuadrant.index === vol.highlightedQuad.index && tsVol.selectedQuad.index === 3){
         vol.ctx.strokeStyle = 'white';
     }
     else{
@@ -284,26 +286,26 @@ function drawMargin(){
 
 
 /**
- * Sets the <code>tsVol.currentQuadrant</code> and applies transformations on context depending on that
+ * Sets the <code>vol.currentQuadrant</code> and applies transformations on context depending on that
  *
  * @param quadIdx Specifies which of <code>quadrants</code> is selected
  * @private
  */
 /* TODO: make it use volumeOrigin; could be like this:
- * <code>vol.ctx.setTransform(1, 0, 0, 1, volumeOrigin[tsVol.currentQuadrant.axes.x], volumeOrigin[tsVol.currentQuadrant.axes.y])</code>
+ * <code>vol.ctx.setTransform(1, 0, 0, 1, volumeOrigin[vol.currentQuadrant.axes.x], volumeOrigin[vol.currentQuadrant.axes.y])</code>
  *       if implemented, also change the picking to take it into account
  */
 function _setCtxOnQuadrant(quadIdx){
-    tsVol.currentQuadrant = tsVol.quadrants[quadIdx];
+    vol.currentQuadrant = vol.quadrants[quadIdx];
     vol.ctx.setTransform(1, 0, 0, 1, 0, 0);                              // reset the transformation
     // Horizontal Mode
-    //vol.ctx.translate(quadIdx * vol.quadrantWidth + tsVol.currentQuadrant.offsetX, tsVol.currentQuadrant.offsetY);
+    //vol.ctx.translate(quadIdx * vol.quadrantWidth + vol.currentQuadrant.offsetX, vol.currentQuadrant.offsetY);
     // Vertical Mode
     if(quadIdx === 3){
-       vol.ctx.translate(vol.quadrantWidth + tsVol.currentQuadrant.offsetX, tsVol.currentQuadrant.offsetY);
+       vol.ctx.translate(vol.quadrantWidth + vol.currentQuadrant.offsetX, vol.currentQuadrant.offsetY);
     }
     else{
-        vol.ctx.translate(tsVol.currentQuadrant.offsetX, quadIdx * vol.quadrantHeight +  tsVol.currentQuadrant.offsetY);
+        vol.ctx.translate(vol.currentQuadrant.offsetX, quadIdx * vol.quadrantHeight +  vol.currentQuadrant.offsetY);
     }
 }
 
@@ -349,31 +351,31 @@ function _getFocusEntityDimensions(xAxis, yAxis){
 }
 
 /**
- * Initializes the <code>tsVol.quadrants</code> with some default axes and sets their properties
+ * Initializes the <code>vol.quadrants</code> with some default axes and sets their properties
  */
 function _setupQuadrants(){
-    tsVol.quadrants.push(new Quadrant({ index: 0, axes: {x: 1, y: 0} }));
-    tsVol.quadrants.push(new Quadrant({ index: 1, axes: {x: 1, y: 2} }));
-    tsVol.quadrants.push(new Quadrant({ index: 2, axes: {x: 0, y: 2} }));
+    vol.quadrants.push(new Quadrant({ index: 0, axes: {x: 1, y: 0} }));
+    vol.quadrants.push(new Quadrant({ index: 1, axes: {x: 1, y: 2} }));
+    vol.quadrants.push(new Quadrant({ index: 2, axes: {x: 0, y: 2} }));
 
-    for (var quadIdx = 0; quadIdx < tsVol.quadrants.length; quadIdx++){
-        var entityDimensions = _getEntityDimensions(tsVol.quadrants[quadIdx].axes.x, tsVol.quadrants[quadIdx].axes.y);
-        tsVol.quadrants[quadIdx].entityHeight = entityDimensions.height;
-        tsVol.quadrants[quadIdx].entityWidth  = entityDimensions.width;
-        tsVol.quadrants[quadIdx].offsetY = 0;
-        tsVol.quadrants[quadIdx].offsetX = 0;
+    for (var quadIdx = 0; quadIdx < vol.quadrants.length; quadIdx++){
+        var entityDimensions = _getEntityDimensions(vol.quadrants[quadIdx].axes.x, vol.quadrants[quadIdx].axes.y);
+        vol.quadrants[quadIdx].entityHeight = entityDimensions.height;
+        vol.quadrants[quadIdx].entityWidth  = entityDimensions.width;
+        vol.quadrants[quadIdx].offsetY = 0;
+        vol.quadrants[quadIdx].offsetX = 0;
     }
-    tsVol.selectedQuad = tsVol.quadrants[0];
-    tsVol.highlightedQuad = tsVol.selectedQuad;
+    tsVol.selectedQuad = vol.quadrants[0];
+    vol.highlightedQuad = tsVol.selectedQuad;
     _setupFocusQuadrant();
 }
 
 /**
- * Helper function to setup and add the Focus Quadrant to <code>tsVol.quadrants</code>.
+ * Helper function to setup and add the Focus Quadrant to <code>vol.quadrants</code>.
  */
 function _setupFocusQuadrant(){
-    if(tsVol.quadrants.length === 4){
-        tsVol.quadrants.pop();
+    if(vol.quadrants.length === 4){
+        vol.quadrants.pop();
     }
     var axe = 0;
     if(tsVol.selectedQuad.index === 0){
@@ -385,12 +387,12 @@ function _setupFocusQuadrant(){
     else{
         axe = {x: 0, y: 2};
     }
-    tsVol.quadrants.push(new Quadrant({ index: 3, axes: axe }));
-    var entityDimensions = _getFocusEntityDimensions(tsVol.quadrants[3].axes.x, tsVol.quadrants[3].axes.y);
-    tsVol.quadrants[3].entityHeight = entityDimensions.height;
-    tsVol.quadrants[3].entityWidth  = entityDimensions.width;
-    tsVol.quadrants[3].offsetY = 0;
-    tsVol.quadrants[3].offsetX = 0;
+    vol.quadrants.push(new Quadrant({ index: 3, axes: axe }));
+    var entityDimensions = _getFocusEntityDimensions(vol.quadrants[3].axes.x, vol.quadrants[3].axes.y);
+    vol.quadrants[3].entityHeight = entityDimensions.height;
+    vol.quadrants[3].entityWidth  = entityDimensions.width;
+    vol.quadrants[3].offsetY = 0;
+    vol.quadrants[3].offsetX = 0;
 }
 
 function TSV_hitTest(e){
@@ -398,9 +400,9 @@ function TSV_hitTest(e){
     var offset = $('#canvasVolumes').offset();
     var xpos = e.pageX - offset.left;
     var ypos = e.pageY - offset.top;
-    //var selectedQuad = tsVol.quadrants[Math.floor(xpos / vol.quadrantWidth)];
+    //var selectedQuad = vol.quadrants[Math.floor(xpos / vol.quadrantWidth)];
     if(Math.floor(xpos / vol.quadrantWidth) >= 1){
-        tsVol.selectedQuad = tsVol.quadrants[3];
+        tsVol.selectedQuad = vol.quadrants[3];
         // check if it's inside the focus quadrant but outside the drawing
         if (ypos < tsVol.selectedQuad.offsetY ){
             return;
@@ -415,7 +417,7 @@ function TSV_hitTest(e){
             return;
         }
     } else{
-        tsVol.selectedQuad = tsVol.quadrants[Math.floor(ypos / vol.quadrantHeight)];
+        tsVol.selectedQuad = vol.quadrants[Math.floor(ypos / vol.quadrantHeight)];
         _setupFocusQuadrant();
         // check if it's inside the quadrant but outside the drawing
         if (ypos < tsVol.selectedQuad.offsetY ){

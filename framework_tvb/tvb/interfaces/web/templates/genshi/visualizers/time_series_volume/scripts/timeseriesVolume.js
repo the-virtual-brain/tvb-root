@@ -3,15 +3,12 @@
 
 // ==================================== INITIALIZATION CODE START ===========================================
 var tsVol = {
-    currentQuadrant: 0,         // The quadrant we're in.
-    quadrants: [],              // The quadrants array.
     minimumValue: null,         // Minimum value of the dataset.
     maximumValue: null,         // Maximum value of the dataset.
     volumeOrigin: null,         // VolumeOrigin is not used for now. if needed, use it in _setQuadrant
     selectedEntity: [0, 0, 0],  // The selected voxel; [i, j, k].
     entitySize: [0, 0, 0],      // The size of each plane
     selectedQuad: 0,            // The quadrant selected by the user every time
-    highlightedQuad: {},        // The plane to be displayed on the focus quadrant
     timeLength: 0,              // Number of timepoints in the Volume.
     currentTimePoint: 0,
     playbackRate: 66,           // This is a not acurate lower limit for playback speed.
@@ -541,7 +538,7 @@ function slideMoved(event, ui) {
 
 function _coreMoveSliderAxis(event, ui) {
     var quadID = SLIDERIDS.indexOf(event.target.id);
-    var selectedQuad = tsVol.quadrants[quadID];
+    var selectedQuad = vol.quadrants[quadID];
 
     //  Updates the label value on the slider.
     $("#labelCurrentValueAxis" + SLIDERS[quadID]).empty().text( '[' + ui.value + ']' );
