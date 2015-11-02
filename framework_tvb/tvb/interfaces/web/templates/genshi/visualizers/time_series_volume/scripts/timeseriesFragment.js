@@ -1,3 +1,5 @@
+/* globals d3 */
+
 // ====================================    INITIALIZATION CODE START =========================================
 
 var tsFrag = {
@@ -94,7 +96,7 @@ function drawGraphs(){
     $('#graph').empty();
 
     var label = "["+tsFrag.selectedEntity[0]+","+tsFrag.selectedEntity[1]+","+tsFrag.selectedEntity[2]+"]";
-    var selectedVoxelIsNotPresent = !tsFrag.tsDataArray.some(function(ts){ return ts.label == this[0]}, [label]);
+    var selectedVoxelIsNotPresent = !tsFrag.tsDataArray.some(function(ts){ return ts.label === this[0];}, [label]);
 
     if( selectedVoxelIsNotPresent ){
         var tmp = new tsDataObj(getPerVoxelTimeSeries(tsFrag.selectedEntity[0], tsFrag.selectedEntity[1], tsFrag.selectedEntity[2]));
@@ -409,7 +411,7 @@ function drawSortableGraph(){
         .attr("y", 6)
         .attr("dy", ".75em")
         .attr("transform", "translate(-5,0)")
-        .text(function(d) {return d.label});
+        .text(function(d) {return d.label;});
 
 
     var xAxisForMinis = function() {
@@ -446,7 +448,7 @@ function drawSortableGraph(){
             if (tsFrag.tsDataArray.length > 1) {
                 var deleteLabel = ui.item[0].__data__.label;
                 tsFrag.tsDataArray = tsFrag.tsDataArray.filter(function (obj) {
-                    return obj.label != deleteLabel;
+                    return obj.label !== deleteLabel;
                 });
                 ui.item.remove();
                 tsFrag.selectedIndex = 0;
@@ -498,7 +500,7 @@ function drawSortableGraph(){
         $("#tsMoveArea").bind("mouseleave", function () {
             cleanupSVGTemps(false);
             $(".sortable").sortable("cancel");
-        })
+        });
     });
 }
 
@@ -721,19 +723,19 @@ function sortTsGraphs(order, by, pivot){
         return Math.abs(a.x - b.x) + Math.abs(a.y - b.y) + Math.abs(a.z - b.z);
     }
     // sorting from biggest to smallest
-    if (order == "descending"){
+    if (order === "descending"){
         tsFrag.tsDataArray.sort(function(a, b){
           return a[by] == b[by] ? 0 : + (a[by] < b[by]) || -1;
         });
     }
     // sorting from smallest to biggest
-    else if (order == "ascending") {
+    else if (order === "ascending") {
         tsFrag.tsDataArray.sort(function(a, b){
           return a[by] == b[by] ? 0 : + (a[by] > b[by]) || -1;
         });
     }
     // sorting based on manhattan distance from the pivot coordinate
-    else if (order == "manhattan") {
+    else if (order === "manhattan") {
         pivot = pivot || {x:0,y:0,z:0};
         tsFrag.tsDataArray.sort(function(a, b){
             a = md3d(a, pivot);
