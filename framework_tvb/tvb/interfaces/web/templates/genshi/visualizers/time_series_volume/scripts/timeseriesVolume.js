@@ -137,8 +137,6 @@ function colorRedraw(){
  * @param tIndex The time point we want to draw
  */
 function drawSceneFunctional(tIndex) {
-    var i, j, k, ii, jj, kk;
-
     // if we pass no tIndex the function will play
     // from the tsVol.currentTimePoint incrementing it by 1 or going back to 0.
     if(tIndex == null){
@@ -149,39 +147,8 @@ function drawSceneFunctional(tIndex) {
     updateTSFragment();
     // An array containing the view for each plane.
     var sliceArray = getViewAtTime(tIndex);
-
-    tsVol.ctx.fillStyle = ColSch_getAbsoluteGradientColorString(tsVol.minimumValue - 1);
-    tsVol.ctx.fillRect(0, 0, tsVol.ctx.canvas.width, tsVol.ctx.canvas.height);
-
-    _setCtxOnQuadrant(0);
-    for (j = 0; j < tsVol.dataSize[2]; ++j){
-        for (i = 0; i < tsVol.dataSize[1]; ++i){
-            drawVoxel(i, j, sliceArray[0][i][j]);
-        }
-    }
-    drawMargin();
-
-    _setCtxOnQuadrant(1);
-    for (k = 0; k < tsVol.dataSize[3]; ++k){
-        for (jj = 0; jj < tsVol.dataSize[2]; ++jj){
-            drawVoxel(k, jj, sliceArray[1][jj][k]);
-        }
-    }
-    drawMargin();
-
-    _setCtxOnQuadrant(2);
-    for (kk = 0; kk < tsVol.dataSize[3]; ++kk){
-        for (ii = 0; ii < tsVol.dataSize[1]; ++ii){
-            drawVoxel(kk, ii, sliceArray[2][ii][kk]);
-        }
-    }
-    drawMargin();
-
-    drawFocusQuadrantFromView(sliceArray);
-    drawNavigator();
+    TSV_drawVolumeScene(sliceArray);
     updateMoviePlayerSlider();
-    drawLegend(getSelectedEntityValue(sliceArray));
-    drawLabels();
 }
 
 // ==================================== DRAWING FUNCTIONS  END  =============================================
