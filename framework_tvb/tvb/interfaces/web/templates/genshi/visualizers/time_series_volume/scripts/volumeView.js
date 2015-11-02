@@ -373,21 +373,21 @@ function _setupQuadrants(){
     }
     tsVol.selectedQuad = vol.quadrants[0];
     vol.highlightedQuad = tsVol.selectedQuad;
-    _setupFocusQuadrant();
+    _setupFocusQuadrant(tsVol.selectedQuad);
 }
 
 /**
  * Helper function to setup and add the Focus Quadrant to <code>vol.quadrants</code>.
  */
-function _setupFocusQuadrant(){
+function _setupFocusQuadrant(selectedQuad){
     if(vol.quadrants.length === 4){
         vol.quadrants.pop();
     }
     var axe = 0;
-    if(tsVol.selectedQuad.index === 0){
+    if(selectedQuad.index === 0){
         axe = {x: 1, y: 0};
     }
-    else if(tsVol.selectedQuad.index === 1){
+    else if(selectedQuad.index === 1){
         axe = {x: 1, y: 2};
     }
     else{
@@ -401,41 +401,48 @@ function _setupFocusQuadrant(){
     vol.quadrants[3].offsetX = 0;
 }
 
+/**
+ * Given a mouse event it returns information on what quadrant and what point in said quadrant was hit.
+ * Returns undefined if nothing interesting was hit.
+ * @returns {{selectedQuad: Quadrant, selectedEntityOnX: number, selectedEntityOnY: number} || undefined }
+ */
 function TSV_hitTest(e){
     //fix for Firefox
     var offset = $('#canvasVolumes').offset();
     var xpos = e.pageX - offset.left;
     var ypos = e.pageY - offset.top;
     //var selectedQuad = vol.quadrants[Math.floor(xpos / vol.quadrantWidth)];
+    var selectedQuad;
+
     if(Math.floor(xpos / vol.quadrantWidth) >= 1){
-        tsVol.selectedQuad = vol.quadrants[3];
+        selectedQuad = vol.quadrants[3];
         // check if it's inside the focus quadrant but outside the drawing
-        if (ypos < tsVol.selectedQuad.offsetY ){
+        if (ypos < selectedQuad.offsetY ){
             return;
         }
-        else if(ypos >= vol.focusQuadrantHeight - tsVol.selectedQuad.offsetY){
+        else if(ypos >= vol.focusQuadrantHeight - selectedQuad.offsetY){
             return;
         }
         else if(xpos < tsVol.offsetX){
             return;
         }
-        else if(xpos >= vol.focusQuadrantWidth - tsVol.selectedQuad.offsetX + vol.quadrantWidth){
+        else if(xpos >= vol.focusQuadrantWidth - selectedQuad.offsetX + vol.quadrantWidth){
             return;
         }
     } else{
-        tsVol.selectedQuad = vol.quadrants[Math.floor(ypos / vol.quadrantHeight)];
-        _setupFocusQuadrant();
+        selectedQuad = vol.quadrants[Math.floor(ypos / vol.quadrantHeight)];
+        _setupFocusQuadrant(selectedQuad);
         // check if it's inside the quadrant but outside the drawing
-        if (ypos < tsVol.selectedQuad.offsetY ){
+        if (ypos < selectedQuad.offsetY ){
             return;
         }
-        else if(ypos >= vol.quadrantHeight * (tsVol.selectedQuad.index + 1) - tsVol.selectedQuad.offsetY){
+        else if(ypos >= vol.quadrantHeight * (selectedQuad.index + 1) - selectedQuad.offsetY){
             return;
         }
         else if(xpos < tsVol.offsetX){
             return;
         }
-        else if(xpos >= vol.quadrantWidth - tsVol.selectedQuad.offsetX){
+        else if(xpos >= vol.quadrantWidth - selectedQuad.offsetX){
             return;
         }
     }
@@ -443,16 +450,25 @@ function TSV_hitTest(e){
     var selectedEntityOnX = 0;
     var selectedEntityOnY = 0;
 
-    if(tsVol.selectedQuad.index === 3){
-        selectedEntityOnX = Math.floor(((xpos - vol.quadrantWidth) % vol.focusQuadrantWidth) / tsVol.selectedQuad.entityWidth);
-        selectedEntityOnY = Math.floor(((ypos - tsVol.selectedQuad.offsetY) % vol.focusQuadrantHeight) / tsVol.selectedQuad.entityHeight);
+    if(selectedQuad.index === 3){
+        selectedEntityOnX = Math.floor(((xpos - vol.quadrantWidth) % vol.focusQuadrantWidth) / selectedQuad.entityWidth);
+        selectedEntityOnY = Math.floor(((ypos - selectedQuad.offsetY) % vol.focusQuadrantHeight) / selectedQuad.entityHeight);
     } else{
-        selectedEntityOnX = Math.floor((xpos - tsVol.selectedQuad.offsetX) / tsVol.selectedQuad.entityWidth);
-        selectedEntityOnY = Math.floor((ypos % vol.quadrantHeight) / tsVol.selectedQuad.entityHeight);
+        selectedEntityOnX = Math.floor((xpos - selectedQuad.offsetX) / selectedQuad.entityWidth);
+        selectedEntityOnY = Math.floor((ypos % vol.quadrantHeight) / selectedQuad.entityHeight);
     }
 
     return {
+        selectedQuad: selectedQuad,
         selectedEntityOnX: selectedEntityOnX,
         selectedEntityOnY: selectedEntityOnY
     };
+}
+
+/**
+ * Returns the quadrant object at index quadID
+ * @returns {Quadrant}
+ */
+function TSV_getQuadrant(quadID){
+    return vol.quadrants[quadID];
 }

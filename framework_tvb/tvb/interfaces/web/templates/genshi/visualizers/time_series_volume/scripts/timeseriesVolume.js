@@ -364,6 +364,7 @@ function TSV_pick(e) {
     if (!hit){
         return;
     }
+    tsVol.selectedQuad = hit.selectedQuad;
     tsVol.selectedEntity[tsVol.selectedQuad.axes.x] = hit.selectedEntityOnX;
     tsVol.selectedEntity[tsVol.selectedQuad.axes.y] = hit.selectedEntityOnY;
     updateTSFragment();
@@ -541,7 +542,7 @@ function slideMoved(event, ui) {
 
 function _coreMoveSliderAxis(event, ui) {
     var quadID = SLIDERIDS.indexOf(event.target.id);
-    var selectedQuad = vol.quadrants[quadID];
+    var selectedQuad = TSV_getQuadrant([quadID]);
 
     //  Updates the label value on the slider.
     $("#labelCurrentValueAxis" + SLIDERS[quadID]).empty().text( '[' + ui.value + ']' );
