@@ -67,6 +67,10 @@ function TSV_initVolumeView(dataSize, minValue, maxValue, voxelSize){
     vol.minimumValue = minValue;
     vol.maximumValue = maxValue;
     vol.voxelSize = voxelSize;
+
+    _setupQuadrants();
+    vol.highlightedQuad = vol.quadrants[0];
+    _setupFocusQuadrant(vol.quadrants[0]);
 }
 
 /**
@@ -277,19 +281,13 @@ function drawMargin(){
     vol.ctx.beginPath();
     vol.ctx.rect(2, 0, marginWidth - 3, marginHeight - 2);
     vol.ctx.lineWidth = 2;
-    if(vol.currentQuadrant.index === tsVol.selectedQuad.index && vol.currentQuadrant.index !== 3){
+    if(vol.currentQuadrant.index === vol.highlightedQuad.index){
         vol.ctx.strokeStyle = 'white';
-        vol.highlightedQuad = vol.currentQuadrant;
-    }
-    else if(vol.currentQuadrant.index === vol.highlightedQuad.index && tsVol.selectedQuad.index === 3){
-        vol.ctx.strokeStyle = 'white';
-    }
-    else{
+    } else {
         vol.ctx.strokeStyle = 'gray';
     }
     vol.ctx.stroke();
 }
-
 
 /**
  * Sets the <code>vol.currentQuadrant</code> and applies transformations on context depending on that
@@ -371,9 +369,6 @@ function _setupQuadrants(){
         vol.quadrants[quadIdx].offsetY = 0;
         vol.quadrants[quadIdx].offsetX = 0;
     }
-    tsVol.selectedQuad = vol.quadrants[0];
-    vol.highlightedQuad = tsVol.selectedQuad;
-    _setupFocusQuadrant(tsVol.selectedQuad);
 }
 
 /**
@@ -456,6 +451,10 @@ function TSV_hitTest(e){
     } else{
         selectedEntityOnX = Math.floor((xpos - selectedQuad.offsetX) / selectedQuad.entityWidth);
         selectedEntityOnY = Math.floor((ypos % vol.quadrantHeight) / selectedQuad.entityHeight);
+    }
+
+    if (selectedQuad.index !== 3){
+        vol.highlightedQuad = selectedQuad;
     }
 
     return {

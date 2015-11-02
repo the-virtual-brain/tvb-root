@@ -51,8 +51,8 @@ function TSV_initVisualizer(urlVolumeData, urlTimeSeriesData, minValue, maxValue
                             volumeShape, volOrigin, sizeOfVoxel) {
     /**
     * This will be our JSON parser web-worker blob,
-    * Using a webworker is a bit slower than parsing the jsons with 
-    * classical methods but it will prevent the main thread to be blocked 
+    * Using a webworker is a bit slower than parsing the jsons with
+    * classical methods but it will prevent the main thread to be blocked
     * while waiting for the parsing, granting a smooth visualization.
     * We use this technique also to avoid writing a separate file
     * for each worker.
@@ -71,7 +71,7 @@ function TSV_initVisualizer(urlVolumeData, urlTimeSeriesData, minValue, maxValue
     tsVol.dataSize = $.parseJSON(volumeShape);
 
     TSV_initVolumeView(tsVol.dataSize, minValue, maxValue, $.parseJSON(sizeOfVoxel));
-
+    tsVol.selectedQuad = TSV_getQuadrant(0);
     tsVol.urlVolumeData = urlVolumeData;
     tsVol.urlTimeSeriesData = urlTimeSeriesData;
 
@@ -82,10 +82,8 @@ function TSV_initVisualizer(urlVolumeData, urlTimeSeriesData, minValue, maxValue
     tsVol.maximumValue = maxValue;
     tsVol.timeLength = tsVol.dataSize[0];           //Number of time points;
 
-    _setupQuadrants();
-
     // set the center entity as the selected one
-    tsVol.selectedEntity[0] = Math.floor(tsVol.dataSize[1] / 2); 
+    tsVol.selectedEntity[0] = Math.floor(tsVol.dataSize[1] / 2);
     tsVol.selectedEntity[1] = Math.floor(tsVol.dataSize[2] / 2);
     tsVol.selectedEntity[2] = Math.floor(tsVol.dataSize[3] / 2);
 
