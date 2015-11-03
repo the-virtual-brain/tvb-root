@@ -578,12 +578,6 @@ function _coreUpdateMovieSlider(timePoint, updateSlider) {
     d3.select(".timeVerticalLine").attr("transform", function(){
                 var width = $(".graph-timeSeries-rect").attr("width");
                 var pos = (timePoint * width) / (tsVol.timeLength);
-                var bMin = Math.max(0, timePoint - 30);
-                var bMax = Math.min(timePoint + 30, tsVol.timeLength);
-                d3.select('.brush').transition()
-                  .delay(0)
-                  .call(tsFrag.brush.extent([bMin, bMax]))
-                  .call(tsFrag.brush.event);
                 return "translate(" + pos + ", 0)";
             });
 }
