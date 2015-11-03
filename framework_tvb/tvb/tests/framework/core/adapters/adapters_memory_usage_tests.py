@@ -36,7 +36,6 @@ import json
 import unittest
 from tvb.core.entities import model
 from tvb.core.entities.storage import dao
-from tvb.core.adapters.abcadapter import ABCAdapter
 from tvb.core.adapters.exceptions import NoMemoryAvailableException
 from tvb.core.services.operation_service import OperationService
 from tvb.core.services.flow_service import FlowService
@@ -78,8 +77,7 @@ class AdapterMemoryUsageTest(TransactionalTestCase):
         data = {"test": 5}
 
         operation = model.Operation(self.test_user.id, self.test_project.id, algo_group.id,
-                                    json.dumps(data), json.dumps({}), status=model.STATUS_STARTED,
-                                    method_name=ABCAdapter.LAUNCH_METHOD)
+                                    json.dumps(data), json.dumps({}), status=model.STATUS_STARTED)
         operation = dao.store_entity(operation)
         self.assertRaises(NoMemoryAvailableException, OperationService().initiate_prelaunch, operation, adapter, {})
 
@@ -97,4 +95,3 @@ def suite():
 if __name__ == "__main__":
     #So you can run tests from this package individually.
     unittest.main()     
-        

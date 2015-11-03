@@ -453,8 +453,7 @@ class BurstService():
                 
     
     @staticmethod
-    def launch_visualization(visualization, frame_width=None, frame_height=None, 
-                             method_name=ABCAdapter.LAUNCH_METHOD, is_preview=True):
+    def launch_visualization(visualization, frame_width=None, frame_height=None, is_preview=True):
         """
         :param visualization: a visualization workflow step
         """
@@ -462,8 +461,8 @@ class BurstService():
         static_params = visualization.static_param
         parameters_dict = static_params
         current_project_id = 0
-        ## Current operation id needed for export mechanism. So far just use ##
-        ## the operation of the workflow_step from which the inputs are taken    ####
+        # Current operation id needed for export mechanism. So far just use ##
+        # the operation of the workflow_step from which the inputs are taken    ####
         for param in dynamic_params:
             step_index = dynamic_params[param][WorkflowStepConfiguration.STEP_INDEX_KEY]
             datatype_index = dynamic_params[param][WorkflowStepConfiguration.DATATYPE_INDEX_KEY]
@@ -472,11 +471,11 @@ class BurstService():
             referred_operation = dao.get_operation_by_id(referred_operation_id)
             current_project_id = referred_operation.fk_launched_in
             if type(datatype_index) is IntType:
-                ## Entry is the output of a previous step ##
+                # Entry is the output of a previous step ##
                 datatypes = dao.get_results_for_operation(referred_operation_id)
                 parameters_dict[param] = datatypes[datatype_index].gid
             else:
-                ## Entry is the input of a previous step ###
+                # Entry is the input of a previous step ###
                 parameters_dict[param] = json.loads(referred_operation.parameters)[datatype_index]
         algorithm = dao.get_algorithm_by_id(visualization.fk_algorithm)
         adapter_instance = ABCAdapter.build_adapter(algorithm.algo_group)
@@ -486,7 +485,11 @@ class BurstService():
             prepared_inputs[ABCDisplayer.PARAM_FIGURE_SIZE] = (frame_width, frame_height)
         if isinstance(adapter_instance, ABCMPLH5Displayer) and is_preview is True:
             prepared_inputs[ABCMPLH5Displayer.SHOW_FULL_TOOLBAR] = False
-        result = eval("adapter_instance." + method_name + "(**prepared_inputs)")
+
+        if is_preview:
+            result = eval("adapter_instance.generate_preview(**prepared_inputs)")
+        else:
+            result = eval("adapter_instance.launch(**prepared_inputs)")
         return result, parameters_dict
     
     

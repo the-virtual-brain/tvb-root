@@ -182,8 +182,7 @@ class FlowController(BaseController):
         is_burst = back_page not in ['operations', 'data']
         if cherrypy.request.method == 'POST':
             data[common.KEY_ADAPTER] = adapter_key
-            template_specification = self.execute_post(project.id, submit_link,
-                                                       step_key, algo_group, **data)
+            template_specification = self.execute_post(project.id, submit_link, step_key, algo_group, **data)
             self._populate_section(algo_group, template_specification, is_burst)
         else:
             if (('Referer' not in cherrypy.request.headers or
@@ -426,14 +425,12 @@ class FlowController(BaseController):
         return None
 
 
-    def execute_post(self, project_id, submit_url, step_key, algo_group, method_name=None, **data):
+    def execute_post(self, project_id, submit_url, step_key, algo_group, **data):
         """ Execute HTTP POST on a generic step."""
         errors = None
         adapter_instance = self.flow_service.build_adapter_instance(algo_group)
 
         try:
-            if method_name is not None:
-                data['method_name'] = method_name
             result = self.flow_service.fire_operation(adapter_instance, common.get_logged_user(), project_id, **data)
 
             # Store input data in session, for informing user of it.
@@ -555,40 +552,6 @@ class FlowController(BaseController):
             return result.tolist()
         else:
             return result
-
-
-    @expose_page
-    def invokeadaptermethod(self, adapter_id, method_name, **data):
-        """
-        Public web method, to be used when invoking specific 
-        methods from external Adapters/Algorithms.
-        """
-        algo_group = self.flow_service.get_algo_group_by_identifier(adapter_id)
-        try:
-            adapter_instance = self.flow_service.build_adapter_instance(algo_group)
-            result = self.flow_service.fire_operation(adapter_instance, common.get_logged_user(),
-                                                      common.get_current_project().id, method_name, **data)
-            common.set_info_message("Submit OK!")
-            if isinstance(adapter_instance, ABCDisplayer) and isinstance(result, dict):
-                common.pop_message_from_session()
-                result[ABCDisplayer.KEY_IS_ADAPTER] = True
-                result[common.KEY_DISPLAY_MENU] = True
-                result[common.KEY_OPERATION_ID] = adapter_instance.operation_id
-                result[common.KEY_ADAPTER] = adapter_id
-                if KEY_CONTROLLS not in result:
-                    result[KEY_CONTROLLS] = None
-                self._populate_section(algo_group, result)
-                return self.fill_default_attributes(result, algo_group.displayname)
-
-        except OperationException, excep:
-            common.set_warning_message('Problem when submitting data!')
-            self.logger.error("Invalid method, or wrong  parameters when invoking external method on post!")
-            self.logger.exception(excep)
-
-        ### Clean from session Adapter's interface, to have the UI updated.
-        self.context.clean_from_session()
-        redirect_url = self.get_url_adapter(algo_group.fk_category, algo_group.id)
-        raise cherrypy.HTTPRedirect(redirect_url)
 
 
     @expose_fragment("flow/genericAdapterFormFields")

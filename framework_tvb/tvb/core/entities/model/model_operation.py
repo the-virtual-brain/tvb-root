@@ -313,7 +313,6 @@ class Operation(Base, Exportable):
     gid = Column(String)
     parameters = Column(String)
     meta_data = Column(String)
-    method_name = Column(String)
     create_date = Column(DateTime)       # Date at which the user generated this entity
     start_date = Column(DateTime)        # Actual time when the operation executions is started (without queue time) 
     completion_date = Column(DateTime)   # Time when the operation got status FINISHED/ ERROR or CANCEL set.
@@ -330,7 +329,7 @@ class Operation(Base, Exportable):
     user = relationship(User)
 
 
-    def __init__(self, fk_launched_by, fk_launched_in, fk_from_algo, parameters, meta='', method_name='',
+    def __init__(self, fk_launched_by, fk_launched_in, fk_from_algo, parameters, meta='',
                  status=STATUS_PENDING, start_date=None, completion_date=None, op_group_id=None, additional_info='',
                  user_group=None, range_values=None, estimated_disk_size=0):
         self.fk_launched_by = fk_launched_by
@@ -338,7 +337,6 @@ class Operation(Base, Exportable):
         self.fk_from_algo = fk_from_algo
         self.parameters = parameters
         self.meta_data = meta
-        self.method_name = method_name
         self.create_date = datetime.datetime.now()
         self.start_date = start_date
         self.completion_date = completion_date
@@ -353,9 +351,9 @@ class Operation(Base, Exportable):
 
 
     def __repr__(self):
-        return "<Operation(%s,%s,'%s','%s','%s','%s','%s,'%s','%s',%s, '%s')>" \
+        return "<Operation(%s, %s,'%s','%s','%s','%s', '%s','%s',%s, '%s')>" \
                % (self.fk_launched_by, self.fk_launched_in, self.fk_from_algo, self.parameters,
-                  self.meta_data, self.status, self.method_name, self.start_date, self.completion_date,
+                  self.meta_data, self.status, self.start_date, self.completion_date,
                   self.fk_operation_group, self.user_group)
 
 
@@ -461,7 +459,6 @@ class Operation(Base, Exportable):
 
         self.parameters = dictionary['parameters']
         self.meta_data = dictionary['meta_data']
-        self.method_name = dictionary['method_name']
         self.create_date = string2date(dictionary['create_date'])
         if dictionary['start_date'] != "None":
             self.start_date = string2date(dictionary['start_date'])

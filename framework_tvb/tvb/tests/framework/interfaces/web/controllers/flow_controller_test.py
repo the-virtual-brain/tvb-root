@@ -39,7 +39,6 @@ from time import sleep
 from tvb.tests.framework.interfaces.web.controllers.base_controller_test import BaseControllersTest
 from tvb.core.entities import model
 from tvb.core.entities.storage import dao
-from tvb.core.adapters.abcadapter import ABCAdapter
 from tvb.core.services.operation_service import OperationService
 from tvb.core.services.flow_service import FlowService
 from tvb.interfaces.web.controllers import common
@@ -251,7 +250,7 @@ class FlowContollerTest(BaseControllersTest):
         algo_category = dao.get_category_by_id(algo_group.fk_category)
         algo = dao.get_algorithm_by_group(algo_group.id)
         operations, _ = self.operation_service.prepare_operations(self.test_user.id, self.test_project.id, algo,
-                                                                  algo_category, {}, ABCAdapter.LAUNCH_METHOD, **data)
+                                                                  algo_category, {}, **data)
         self.operation_service._send_to_cluster(operations, adapter)
         return operations
 

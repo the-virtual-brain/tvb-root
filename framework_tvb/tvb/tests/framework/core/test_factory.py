@@ -141,7 +141,7 @@ class TestFactory():
         meta = {DataTypeMetaData.KEY_SUBJECT: "John Doe",
                 DataTypeMetaData.KEY_STATE: "RAW_DATA"}
         operation = model.Operation(test_user.id, test_project.id, algorithm.id, parameters, meta=json.dumps(meta),
-                                    status=operation_status, method_name=ABCAdapter.LAUNCH_METHOD)
+                                    status=operation_status)
         dao.store_entity(operation)
         ### Make sure lazy attributes are correctly loaded.
         return dao.get_operation_by_id(operation.id)

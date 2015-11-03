@@ -147,8 +147,6 @@ class ABCAdapter(object):
     KEY_ID = 'id'
     KEY_UI_HIDE = "ui_hidden"
 
-    LAUNCH_METHOD = "launch"
-
     KEYWORD_PARAMS = "_parameters_"
     KEYWORD_SEPARATOR = "_"
     KEYWORD_OPTION = "option_"
@@ -250,46 +248,41 @@ class ABCAdapter(object):
         self.current_project_id = operation.project.id
         self.user_id = operation.fk_launched_by
 
-        if operation.method_name == self.LAUNCH_METHOD:
+        self.configure(**kwargs)
 
-            self.configure(**kwargs)
+        # Compare the amount of memory the current algorithms states it needs,
+        # with the average between the RAM available on the OS and the free memory at the current moment.
+        # We do not consider only the free memory, because some OSs are freeing late and on-demand only.
+        total_free_memory = psutil.virtual_memory().free + psutil.swap_memory().free
+        total_existent_memory = psutil.virtual_memory().total + psutil.swap_memory().total
+        memory_reference = (total_free_memory + total_existent_memory) / 2
+        adapter_required_memory = self.get_required_memory_size(**kwargs)
 
-            # Compare the amount of memory the current algorithms states it needs,
-            # with the average between the RAM available on the OS and the free memory at the current moment.
-            # We do not consider only the free memory, because some OSs are freeing late and on-demand only.
-            total_free_memory = psutil.virtual_memory().free + psutil.swap_memory().free
-            total_existent_memory = psutil.virtual_memory().total + psutil.swap_memory().total
-            memory_reference = (total_free_memory + total_existent_memory) / 2
-            adapter_required_memory = self.get_required_memory_size(**kwargs)
+        if adapter_required_memory > memory_reference:
+            msg = "Machine does not have enough RAM memory for the operation (expected %.2g GB, but found %.2g GB)."
+            raise NoMemoryAvailableException(msg % (adapter_required_memory / 2 ** 30, memory_reference / 2 ** 30))
 
-            if adapter_required_memory > memory_reference:
-                msg = "Machine does not have enough RAM memory for the operation (expected %.2g GB, but found %.2g GB)."
-                raise NoMemoryAvailableException(msg % (adapter_required_memory / 2 ** 30, memory_reference / 2 ** 30))
+        # Compare the expected size of the operation results with the HDD space currently available for the user
+        # TVB defines a quota per user.
+        required_disk_space = self.get_required_disk_size(**kwargs)
+        if available_disk_space < 0:
+            msg = "You have exceeded you HDD space quota by %.2f MB Stopping execution."
+            raise NoMemoryAvailableException(msg % (- available_disk_space / 2 ** 10))
+        if available_disk_space < required_disk_space:
+            msg = ("You only have %.2f GB of disk space available but the operation you "
+                   "launched might require %.2f Stopping execution...")
+            raise NoMemoryAvailableException(msg % (available_disk_space / 2 ** 20, required_disk_space / 2 ** 20))
 
-            # Compare the expected size of the operation results with the HDD space currently available for the user
-            # TVB defines a quota per user.
-            required_disk_space = self.get_required_disk_size(**kwargs)
-            if available_disk_space < 0:
-                msg = "You have exceeded you HDD space quota by %.2f MB Stopping execution."
-                raise NoMemoryAvailableException(msg % (- available_disk_space / 2 ** 10))
-            if available_disk_space < required_disk_space:
-                msg = ("You only have %.2f GB of disk space available but the operation you "
-                       "launched might require %.2f Stopping execution...")
-                raise NoMemoryAvailableException(msg % (available_disk_space / 2 ** 20, required_disk_space / 2 ** 20))
+        operation.start_now()
+        operation.estimated_disk_size = required_disk_space
+        dao.store_entity(operation)
 
-            operation.start_now()
-            operation.estimated_disk_size = required_disk_space
-            dao.store_entity(operation)
+        result = self.launch(**kwargs)
 
-            result = self.launch(**kwargs)
+        if not isinstance(result, (list, tuple)):
+            result = [result, ]
+        self.__check_integrity(result)
 
-            if not isinstance(result, (list, tuple)):
-                result = [result, ]
-            self.__check_integrity(result)
-        else:
-            result = eval("self." + operation.method_name + "(**kwargs)")
-            if not isinstance(result, (list, tuple)):
-                result = [result, ]
         return self._capture_operation_results(result, uid)
 
 

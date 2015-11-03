@@ -49,7 +49,6 @@ from tvb.core.entities.storage import dao
 from tvb.core.entities.model.model_burst import BurstConfiguration, NUMBER_OF_PORTLETS_PER_TAB
 from tvb.core.entities.transient.burst_configuration_entities import AdapterConfiguration
 from tvb.core.entities.transient.structure_entities import DataTypeMetaData
-from tvb.core.adapters.abcadapter import ABCAdapter
 from tvb.core.services.burst_service import BurstService
 from tvb.core.services.operation_service import OperationService
 from tvb.core.services.flow_service import FlowService
@@ -318,9 +317,7 @@ class BurstContollerTest(BaseControllersTest):
         meta = {DataTypeMetaData.KEY_SUBJECT: "John Doe", DataTypeMetaData.KEY_STATE: "RAW_DATA"}
         algorithm, algo_group = FlowService().get_algorithm_by_module_and_class(SIMULATOR_MODULE, SIMULATOR_CLASS)
         self.operation = model.Operation(self.test_user.id, self.test_project.id, algo_group.id,
-                                         json.dumps(''),
-                                         meta=json.dumps(meta), status=model.STATUS_STARTED,
-                                         method_name=ABCAdapter.LAUNCH_METHOD)
+                                         json.dumps(''), meta=json.dumps(meta), status=model.STATUS_STARTED)
         self.operation = dao.store_entity(self.operation)
         storage_path = FilesHelper().get_project_folder(self.test_project, str(self.operation.id))
         connectivity = Connectivity(storage_path=storage_path)

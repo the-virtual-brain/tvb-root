@@ -42,7 +42,6 @@ from tvb.core.entities.transient.structure_entities import DataTypeMetaData
 from tvb.core.entities.transient.filtering import StaticFiltersFactory
 from tvb.core.services.project_service import ProjectService
 from tvb.core.services.flow_service import FlowService
-from tvb.core.adapters.abcadapter import ABCAdapter
 from tvb.tests.framework.core.base_testcase import TransactionalTestCase
 from tvb.tests.framework.core.test_factory import TestFactory
 from tvb.tests.framework.core.services.project_service_test import ProjectServiceTest
@@ -548,8 +547,7 @@ class ProjectStructureTest(TransactionalTestCase):
         meta = {DataTypeMetaData.KEY_SUBJECT: "John Doe",
                 DataTypeMetaData.KEY_STATE: "RAW_DATA"}
         operation = model.Operation(self.test_user.id, project_id, algorithm.id, 'test params',
-                                    meta=json.dumps(meta), status=model.STATUS_FINISHED,
-                                    method_name=ABCAdapter.LAUNCH_METHOD)
+                                    meta=json.dumps(meta), status=model.STATUS_FINISHED)
         return dao.store_entity(operation)
 
 
@@ -559,8 +557,8 @@ class ProjectStructureTest(TransactionalTestCase):
         """
         test_project = TestFactory.create_project(self.test_user, "NewProject")
 
-        all_operations = dao.get_filtered_operations(test_project.id, None)
-        self.assertEqual(len(all_operations), 0, "There should be no operation.")
+        all_operations = dao.get_filtered_operations(test_project.id, None, is_count=True)
+        self.assertEqual(0, all_operations, "There should be no operation.")
         
         datatypes, op_group_id = TestFactory.create_group(self.test_user, test_project)
         dt_group = dao.get_datatypegroup_by_op_group_id(op_group_id)

@@ -345,20 +345,19 @@ class FlowService:
             dao.remove_entity(model.Links, link.id)
     
         
-    def fire_operation(self, adapter_instance, current_user, project_id,  
-                       method_name=ABCAdapter.LAUNCH_METHOD, visible=True, **data):
+    def fire_operation(self, adapter_instance, current_user, project_id, visible=True, **data):
         """
         Launch an operation, specified by AdapterInstance, for CurrentUser, 
         Current Project and a given set of UI Input Data.
         """
-        operation_name = str(adapter_instance.__class__.__name__) + "." + method_name
+        operation_name = str(adapter_instance.__class__.__name__)
         try:
             self.logger.info("Starting operation " + operation_name)
             project = dao.get_project_by_id(project_id)
             tmp_folder = self.file_helper.get_project_folder(project, self.file_helper.TEMP_FOLDER)
             
             result = OperationService().initiate_operation(current_user, project.id, adapter_instance, 
-                                                           tmp_folder, method_name, visible, **data)
+                                                           tmp_folder, visible, **data)
             self.logger.info("Finished operation:" + operation_name)
             return result
 

@@ -77,11 +77,7 @@ class ABCDisplayer(ABCSynchronous):
         self.current_project_id = operation.project.id
         self.user_id = operation.fk_launched_by
 
-        if operation.method_name == self.LAUNCH_METHOD:
-            return self.launch(**kwargs), 0
-
-        # few methods are called from Visualizers directly (e.g. Connectivity Submit).
-        return super(ABCDisplayer, self)._prelaunch(operation, **kwargs)
+        return self.launch(**kwargs), 0
     
     
     def get_required_disk_size(self, **kwargs):
@@ -157,16 +153,6 @@ class ABCDisplayer(ABCSynchronous):
 
         if parameter is not None:
             url += "?" + str(parameter)
-        return url
-            
-    
-    def get_submit_method_url(self, method_name):
-        """
-        Return a valid form submit link, so that the method passed 
-        as parameter will be invoked after submit.
-        """
-        algo_group = self.get_algo_group()
-        url = '/flow/invokeadaptermethod/' + str(algo_group.id) + '/' + method_name
         return url
     
     

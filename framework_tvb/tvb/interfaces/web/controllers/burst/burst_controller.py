@@ -513,7 +513,7 @@ class BurstController(BurstBaseController):
 
 
     @expose_fragment("burst/base_portlets_iframe")
-    def launch_visualization(self, index_in_tab, frame_width, frame_height, method_name="generate_preview"):
+    def launch_visualization(self, index_in_tab, frame_width, frame_height):
         """
         Launch the visualization for this tab and index in tab. The width and height represent the maximum of the inner 
         visualization canvas so that it can fit in the iFrame.
@@ -523,7 +523,7 @@ class BurstController(BurstBaseController):
             burst = common.get_from_session(common.KEY_BURST_CONFIG)
             visualizer = burst.tabs[burst.selected_tab].portlets[int(index_in_tab)].visualizer
             result = self.burst_service.launch_visualization(visualizer, float(frame_width),
-                                                             float(frame_height), method_name)[0]
+                                                             float(frame_height), True)[0]
             result['launch_success'] = True
         except Exception, ex:
             result['launch_success'] = False

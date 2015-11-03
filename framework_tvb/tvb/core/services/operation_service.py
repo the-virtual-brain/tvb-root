@@ -97,7 +97,7 @@ class OperationService:
     ##########################################################################################
 
     def initiate_operation(self, current_user, project_id, adapter_instance,
-                           temporary_storage, method_name=ABCAdapter.LAUNCH_METHOD, visible=True, **kwargs):
+                           temporary_storage, visible=True, **kwargs):
         """
         Gets the parameters of the computation from the previous inputs form,
         and launches a computation (on the cluster or locally).
@@ -146,7 +146,7 @@ class OperationService:
             algo = dao.get_algorithm_by_group(algo_group.id)
 
         operations = self.prepare_operations(current_user.id, project_id, algo, algo_category,
-                                             {}, method_name, visible, **kwargs)[0]
+                                             {}, visible, **kwargs)[0]
 
         if isinstance(adapter_instance, ABCSynchronous):
             if len(operations) > 1:
@@ -207,8 +207,7 @@ class OperationService:
             self.launch_operation(operation.id, True)
 
 
-    def prepare_operations(self, user_id, project_id, algorithm, category, metadata,
-                           method_name=ABCAdapter.LAUNCH_METHOD, visible=True, **kwargs):
+    def prepare_operations(self, user_id, project_id, algorithm, category, metadata, visible=True, **kwargs):
         """
         Do all the necessary preparations for storing an operation. If it's the case of a 
         range of values create an operation group and multiple operations for each possible
@@ -231,14 +230,13 @@ class OperationService:
         self.logger.debug("Saving Operation(userId=" + str(user_id) + ",projectId=" + str(project_id) + "," +
                           str(metadata) + ",algorithmId=" + str(algorithm.id) + ", ops_group= " + str(group_id) + ")")
 
-        visible_operation = visible and not (category.display is True and method_name == ABCAdapter.LAUNCH_METHOD)
+        visible_operation = visible and category.display is False
         meta_str = json.dumps(metadata)
         for (one_set_of_args, range_vals) in available_args:
             range_values = json.dumps(range_vals) if range_vals else None
             operation = model.Operation(user_id, project_id, algorithm.id,
-                                        json.dumps(one_set_of_args, cls=MapAsJson.MapAsJsonEncoder),
-                                        meta_str, method_name, op_group_id=group_id, user_group=user_group,
-                                        range_values=range_values)
+                                        json.dumps(one_set_of_args, cls=MapAsJson.MapAsJsonEncoder), meta_str,
+                                        op_group_id=group_id, user_group=user_group, range_values=range_values)
             operation.visible = visible_operation
             operations.append(operation)
         operations = dao.store_entities(operations)
@@ -292,7 +290,7 @@ class OperationService:
                     metadata, user_group = self._prepare_metadata(metadata, algo_category, operation_group, op_params)
                     operation = model.Operation(user_id, project_id, step.fk_algorithm,
                                                 json.dumps(op_params, cls=MapAsJson.MapAsJsonEncoder),
-                                                meta=json.dumps(metadata), method_name=ABCAdapter.LAUNCH_METHOD,
+                                                meta=json.dumps(metadata),
                                                 op_group_id=group_id, range_values=range_values, user_group=user_group)
                     operation.visible = step.step_visible
                     operation = dao.store_entity(operation)
@@ -317,13 +315,8 @@ class OperationService:
             unique_id = None
             if self.ATT_UID in kwargs:
                 unique_id = kwargs[self.ATT_UID]
-            if operation.method_name == ABCAdapter.LAUNCH_METHOD:
-                filtered_kwargs = adapter_instance.prepare_ui_inputs(kwargs)
-            else:
-                filtered_kwargs = kwargs
-
-            self.logger.debug("Launching operation " + str(operation.id) + "." +
-                              operation.method_name + " with " + str(filtered_kwargs))
+            filtered_kwargs = adapter_instance.prepare_ui_inputs(kwargs)
+            self.logger.debug("Launching operation " + str(operation.id) + " with " + str(filtered_kwargs))
             operation = dao.get_operation_by_id(operation.id)   # Load Lazy fields
 
             params = dict()

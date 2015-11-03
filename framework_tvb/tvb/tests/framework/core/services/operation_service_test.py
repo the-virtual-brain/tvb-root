@@ -44,7 +44,6 @@ from tvb.core.entities.transient.structure_entities import DataTypeMetaData
 from tvb.core.services.operation_service import OperationService
 from tvb.core.services.project_service import initialize_storage, ProjectService
 from tvb.core.services.flow_service import FlowService
-from tvb.core.adapters.abcadapter import ABCAdapter
 from tvb.tests.framework.datatypes.datatype1 import Datatype1
 from tvb.tests.framework.datatypes.datatype2 import Datatype2
 from tvb.tests.framework.adapters.ndimensionarrayadapter import NDimensionArrayAdapter
@@ -145,7 +144,7 @@ class OperationServiceTest(BaseTestCase):
         data = {"test1_val1": 5, "test1_val2": 5}
         tmp_folder = FilesHelper().get_project_folder(self.test_project, "TEMP")
         res = self.operation_service.initiate_operation(self.test_user, self.test_project.id, adapter,
-                                                        tmp_folder, method_name=ABCAdapter.LAUNCH_METHOD, **data)
+                                                        tmp_folder, **data)
         self.assertTrue(res.index("has finished.") > 10, "Operation didn't finish")
         group = dao.find_group(module, class_name)
         self.assertEqual(group.module, 'tvb.tests.framework.adapters.testadapter1', "Wrong data stored.")
@@ -171,15 +170,13 @@ class OperationServiceTest(BaseTestCase):
         tmp_folder = FilesHelper().get_project_folder(self.test_project, "TEMP")
 
         self._assert_no_dt2()
-        self.operation_service.initiate_operation(self.test_user, self.test_project.id, adapter,
-                                                  tmp_folder, method_name=ABCAdapter.LAUNCH_METHOD, **data)
+        self.operation_service.initiate_operation(self.test_user, self.test_project.id, adapter, tmp_folder, **data)
         datatype = self._assert_stored_dt2()
 
         # Now free some space and relaunch
         ProjectService().remove_datatype(self.test_project.id, datatype.gid)
         self._assert_no_dt2()
-        self.operation_service.initiate_operation(self.test_user, self.test_project.id, adapter,
-                                                  tmp_folder, method_name=ABCAdapter.LAUNCH_METHOD, **data)
+        self.operation_service.initiate_operation(self.test_user, self.test_project.id, adapter, tmp_folder, **data)
         self._assert_stored_dt2()
 
 
@@ -195,16 +192,14 @@ class OperationServiceTest(BaseTestCase):
         TvbProfile.current.MAX_DISK_SPACE = 2 * float(adapter.get_required_disk_size(**data))
         tmp_folder = FilesHelper().get_project_folder(self.test_project, "TEMP")
 
-        self.operation_service.initiate_operation(self.test_user, self.test_project.id, adapter,
-                                                  tmp_folder, method_name=ABCAdapter.LAUNCH_METHOD, **data)
+        self.operation_service.initiate_operation(self.test_user, self.test_project.id, adapter, tmp_folder, **data)
         datatype = self._assert_stored_dt2()
 
         #Now update the maximum disk size to be the size of the previously resulted datatypes (transform from kB to MB)
         #plus what is estimated to be required from the next one (transform from B to MB)
         TvbProfile.current.MAX_DISK_SPACE = float(datatype.disk_size) + float(adapter.get_required_disk_size(**data))
 
-        self.operation_service.initiate_operation(self.test_user, self.test_project.id, adapter,
-                                                  tmp_folder, method_name=ABCAdapter.LAUNCH_METHOD, **data)
+        self.operation_service.initiate_operation(self.test_user, self.test_project.id, adapter, tmp_folder, **data)
         self._assert_stored_dt2(2)
 
 
@@ -221,8 +216,7 @@ class OperationServiceTest(BaseTestCase):
         data = {"test": 100}
         TvbProfile.current.MAX_DISK_SPACE = (1 + float(adapter.get_required_disk_size(**data)))
         tmp_folder = FilesHelper().get_project_folder(self.test_project, "TEMP")
-        self.operation_service.initiate_operation(self.test_user, self.test_project.id, adapter,
-                                                  tmp_folder, method_name=ABCAdapter.LAUNCH_METHOD, **data)
+        self.operation_service.initiate_operation(self.test_user, self.test_project.id, adapter, tmp_folder, **data)
 
         datatype = self._assert_stored_dt2()
         #Now update the maximum disk size to be less than size of the previously resulted datatypes (transform kB to MB)
@@ -231,8 +225,7 @@ class OperationServiceTest(BaseTestCase):
                                             float(adapter.get_required_disk_size(**data) - 1)
 
         self.assertRaises(NoMemoryAvailableException, self.operation_service.initiate_operation, self.test_user,
-                          self.test_project.id, adapter,
-                          tmp_folder, method_name=ABCAdapter.LAUNCH_METHOD, **data)
+                          self.test_project.id, adapter, tmp_folder, **data)
         self._assert_stored_dt2()
 
 
@@ -248,8 +241,7 @@ class OperationServiceTest(BaseTestCase):
 
         TvbProfile.current.MAX_DISK_SPACE = float(adapter.get_required_disk_size(**data))
         tmp_folder = FilesHelper().get_project_folder(self.test_project, "TEMP")
-        self.operation_service.initiate_operation(self.test_user, self.test_project.id, adapter,
-                                                  tmp_folder, method_name=ABCAdapter.LAUNCH_METHOD, **data)
+        self.operation_service.initiate_operation(self.test_user, self.test_project.id, adapter, tmp_folder, **data)
         self._assert_stored_dt2()
 
 
@@ -268,8 +260,7 @@ class OperationServiceTest(BaseTestCase):
         data = {"test": 100}
         TvbProfile.current.MAX_DISK_SPACE = float(adapter.get_required_disk_size(**data) + space_taken_by_started)
         tmp_folder = FilesHelper().get_project_folder(self.test_project, "TEMP")
-        self.operation_service.initiate_operation(self.test_user, self.test_project.id, adapter,
-                                                  tmp_folder, method_name=ABCAdapter.LAUNCH_METHOD, **data)
+        self.operation_service.initiate_operation(self.test_user, self.test_project.id, adapter, tmp_folder, **data)
         self._assert_stored_dt2()
 
 
@@ -285,8 +276,7 @@ class OperationServiceTest(BaseTestCase):
         TvbProfile.current.MAX_DISK_SPACE = float(adapter.get_required_disk_size(**data) - 1)
         tmp_folder = FilesHelper().get_project_folder(self.test_project, "TEMP")
         self.assertRaises(NoMemoryAvailableException, self.operation_service.initiate_operation, self.test_user,
-                          self.test_project.id, adapter,
-                          tmp_folder, method_name=ABCAdapter.LAUNCH_METHOD, **data)
+                          self.test_project.id, adapter, tmp_folder, **data)
         self._assert_no_dt2()
 
 
@@ -306,8 +296,7 @@ class OperationServiceTest(BaseTestCase):
         TvbProfile.current.MAX_DISK_SPACE = float(adapter.get_required_disk_size(**data) + space_taken_by_started - 1)
         tmp_folder = FilesHelper().get_project_folder(self.test_project, "TEMP")
         self.assertRaises(NoMemoryAvailableException, self.operation_service.initiate_operation, self.test_user,
-                          self.test_project.id, adapter,
-                          tmp_folder, method_name=ABCAdapter.LAUNCH_METHOD, **data)
+                          self.test_project.id, adapter, tmp_folder, **data)
         self._assert_no_dt2()
 
 
@@ -324,7 +313,7 @@ class OperationServiceTest(BaseTestCase):
         algo_category = dao.get_category_by_id(algo_group.fk_category)
         algo = dao.get_algorithm_by_group(algo_group.id)
         operations, _ = self.operation_service.prepare_operations(self.test_user.id, self.test_project.id, algo,
-                                                                  algo_category, {}, ABCAdapter.LAUNCH_METHOD, **data)
+                                                                  algo_category, {}, **data)
         self.operation_service._send_to_cluster(operations, adapter)
         self.operation_service.stop_operation(operations[0].id)
         operation = dao.get_operation_by_id(operations[0].id)
@@ -344,7 +333,7 @@ class OperationServiceTest(BaseTestCase):
         algo_category = dao.get_category_by_id(algo_group.fk_category)
         algo = dao.get_algorithm_by_group(algo_group.id)
         operations, _ = self.operation_service.prepare_operations(self.test_user.id, self.test_project.id, algo,
-                                                                  algo_category, {}, ABCAdapter.LAUNCH_METHOD, **data)
+                                                                  algo_category, {}, **data)
         self.operation_service._send_to_cluster(operations, adapter)
         operation = dao.get_operation_by_id(operations[0].id)
         operation.status = model.STATUS_FINISHED
@@ -456,7 +445,7 @@ class OperationServiceTest(BaseTestCase):
                                                                        'NDimensionArrayAdapter')[0].id
         operation = model.Operation(self.test_user.id, self.test_project.id, algorithm_id, 'test params',
                                     meta=json.dumps({DataTypeMetaData.KEY_STATE: "RAW_DATA"}),
-                                    status=model.STATUS_FINISHED, method_name=ABCAdapter.LAUNCH_METHOD)
+                                    status=model.STATUS_FINISHED)
         operation = dao.store_entity(operation)
         #save the array wrapper in DB
         adapter_instance = NDimensionArrayAdapter()

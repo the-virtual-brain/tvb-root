@@ -201,7 +201,6 @@ class OperationDAO(RootDAO):
                                                    func.count(model.Operation.id),
                                                    func.max(model.Operation.fk_operation_group),
                                                    func.min(model.Operation.fk_from_algo),
-                                                   func.max(model.Operation.method_name),
                                                    func.max(model.Operation.fk_launched_by),
                                                    func.min(model.Operation.create_date),
                                                    func.min(model.Operation.start_date),
@@ -266,7 +265,7 @@ class OperationDAO(RootDAO):
             query = self.session.query(model.Operation).filter(
                                 model.Operation.parameters.like('%' + datatype_gid + '%')).join(
                                 model.Algorithm).join(model.AlgorithmGroup).join(model.AlgorithmCategory).filter(
-                                or_(model.AlgorithmCategory.display == False, model.Operation.method_name != 'launch'))
+                                model.AlgorithmCategory.display == False)
             query = self._apply_visibility_and_group_filters(query, only_relevant, only_in_groups)
             result = query.all()
             return result
@@ -289,7 +288,7 @@ class OperationDAO(RootDAO):
                 model.DataType.fk_datatype_group == datatype_group_id).filter(
                 model.Operation.parameters.like('%' + model.DataType.gid + '%')).join(
                 model.Algorithm).join(model.AlgorithmGroup).join(model.AlgorithmCategory).filter(
-                or_(model.AlgorithmCategory.display == False, model.Operation.method_name != 'launch'))
+                model.AlgorithmCategory.display == False)
             query = self._apply_visibility_and_group_filters(query, only_relevant, only_in_groups)
             result = query.all()
             return result

@@ -192,7 +192,7 @@ class ProjectService:
                 burst = dao.get_burst_for_operation_id(one_op[0])
                 result["burst_name"] = burst.name if burst else '-'
                 result["count"] = one_op[2]
-                result["gid"] = one_op[14]
+                result["gid"] = one_op[13]
                 if one_op[3] is not None and one_op[3]:
                     try:
                         operation_group = dao.get_generic_entity(model.OperationGroup, one_op[3])[0]
@@ -225,27 +225,26 @@ class ProjectService:
                     result['group'] = None
                     result['datatype_group_gid'] = None
                 result["algorithm"] = dao.get_algorithm_by_id(one_op[4])
-                result["method"] = one_op[5]
-                result["user"] = dao.get_user_by_id(one_op[6])
+                result["user"] = dao.get_user_by_id(one_op[5])
+                if type(one_op[6]) in (str, unicode):
+                    result["create"] = string2date(str(one_op[6]))
+                else:
+                    result["create"] = one_op[6]
                 if type(one_op[7]) in (str, unicode):
-                    result["create"] = string2date(str(one_op[7]))
+                    result["start"] = string2date(str(one_op[7]))
                 else:
-                    result["create"] = one_op[7]
+                    result["start"] = one_op[7]
                 if type(one_op[8]) in (str, unicode):
-                    result["start"] = string2date(str(one_op[8]))
+                    result["complete"] = string2date(str(one_op[8]))
                 else:
-                    result["start"] = one_op[8]
-                if type(one_op[9]) in (str, unicode):
-                    result["complete"] = string2date(str(one_op[9]))
-                else:
-                    result["complete"] = one_op[9]
+                    result["complete"] = one_op[8]
 
                 if result["complete"] is not None and result["start"] is not None:
                     result["duration"] = format_timedelta(result["complete"] - result["start"])
-                result["status"] = one_op[10]
-                result["additional"] = one_op[11]
-                result["visible"] = True if one_op[12] > 0 else False
-                result['operation_tag'] = one_op[13]
+                result["status"] = one_op[9]
+                result["additional"] = one_op[10]
+                result["visible"] = True if one_op[11] > 0 else False
+                result['operation_tag'] = one_op[12]
                 result['figures'] = None
                 if not result['group']:
                     datatype_results = dao.get_results_for_operation(result['id'])
@@ -571,7 +570,6 @@ class ProjectService:
                                              datatype.parent_operation.fk_from_algo,
                                              datatype.parent_operation.parameters,
                                              datatype.parent_operation.meta_data,
-                                             datatype.parent_operation.method_name,
                                              datatype.parent_operation.status,
                                              datatype.parent_operation.start_date,
                                              datatype.parent_operation.completion_date,

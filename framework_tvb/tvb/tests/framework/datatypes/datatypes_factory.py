@@ -43,7 +43,6 @@ from tvb.core.entities import model
 from tvb.core.entities.storage import dao
 from tvb.core.entities.file.files_helper import FilesHelper
 from tvb.core.entities.transient.structure_entities import DataTypeMetaData
-from tvb.core.adapters.abcadapter import ABCAdapter
 from tvb.core.services.flow_service import FlowService
 from tvb.core.services.project_service import ProjectService
 from tvb.core.services.operation_service import OperationService
@@ -111,8 +110,7 @@ class DatatypesFactory(object):
         self.meta = {DataTypeMetaData.KEY_SUBJECT: self.USER_FULL_NAME,
                      DataTypeMetaData.KEY_STATE: self.DATATYPE_STATE}
         operation = model.Operation(self.user.id, self.project.id, self.algorithm.id, 'test parameters',
-                                    meta=json.dumps(self.meta), status=model.STATUS_FINISHED,
-                                    method_name=ABCAdapter.LAUNCH_METHOD)
+                                    meta=json.dumps(self.meta), status=model.STATUS_FINISHED)
         self.operation = dao.store_entity(operation)
 
 
@@ -197,7 +195,7 @@ class DatatypesFactory(object):
         meta = {DataTypeMetaData.KEY_SUBJECT: "John Doe", DataTypeMetaData.KEY_STATE: "RAW_DATA"}
         algorithm, algo_group = FlowService().get_algorithm_by_module_and_class(SIMULATOR_MODULE, SIMULATOR_CLASS)
         operation = model.Operation(self.user.id, self.project.id, algo_group.id, json.dumps(''), meta=json.dumps(meta),
-                                    status=model.STATUS_STARTED, method_name=ABCAdapter.LAUNCH_METHOD)
+                                    status=model.STATUS_STARTED)
         operation = dao.store_entity(operation)
         storage_path = FilesHelper().get_project_folder(self.project, str(operation.id))
         return operation, algorithm.id, storage_path
@@ -392,7 +390,6 @@ class DatatypesFactory(object):
             for range_val2 in self.RANGE_2[1]:
                 operation = model.Operation(self.user.id, self.project.id, self.algorithm.id, 'test parameters',
                                             meta=json.dumps(self.meta), status=model.STATUS_FINISHED,
-                                            method_name=ABCAdapter.LAUNCH_METHOD,
                                             range_values=json.dumps({self.RANGE_1[0]: range_val1,
                                                                      self.RANGE_2[0]: range_val2}))
                 operation.fk_operation_group = group.id
@@ -406,7 +403,6 @@ class DatatypesFactory(object):
 
                 op_ms = model.Operation(self.user.id, self.project.id, self.algorithm.id, 'test parameters',
                                         meta=json.dumps(self.meta), status=model.STATUS_FINISHED,
-                                        method_name=ABCAdapter.LAUNCH_METHOD,
                                         range_values=json.dumps({self.RANGE_1[0]: range_val1,
                                                                  self.RANGE_2[0]: range_val2}))
                 op_ms.fk_operation_group = group_ms.id

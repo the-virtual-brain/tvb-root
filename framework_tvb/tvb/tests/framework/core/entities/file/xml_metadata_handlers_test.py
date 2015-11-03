@@ -50,7 +50,6 @@ class MetaDataReadXMLTest(unittest.TestCase):
     #Values expected to be read from file
     EXPECTED_DICTIONARY = {'status': model.STATUS_FINISHED,
                            'gid': '497b3d59-b3c1-11e1-b2e4-68a86d1bd4fa',
-                           'method_name': 'launch',
                            'user_group': 'cff_74',
                            'fk_from_algo': json.dumps({'classname': 'CFF_Importer', 'identifier': None,
                                                        'module': 'tvb.adapters.uploaders.cff_importer'})

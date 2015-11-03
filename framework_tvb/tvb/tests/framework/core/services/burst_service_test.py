@@ -818,8 +818,7 @@ class BurstServiceTest(BaseTestCase):
         meta = {DataTypeMetaData.KEY_SUBJECT: "John Doe", DataTypeMetaData.KEY_STATE: "RAW_DATA"}
 
         self.operation = model.Operation(self.test_user.id, self.test_project.id, self.sim_algo_group.id,
-                                         json.dumps(''), meta=json.dumps(meta), status=model.STATUS_STARTED,
-                                         method_name=ABCAdapter.LAUNCH_METHOD)
+                                         json.dumps(''), meta=json.dumps(meta), status=model.STATUS_STARTED)
         self.operation = dao.store_entity(self.operation)
         storage_path = FilesHelper().get_project_folder(self.test_project, str(self.operation.id))
         connectivity = Connectivity(storage_path=storage_path)
@@ -845,4 +844,3 @@ if __name__ == "__main__":
     TEST_RUNNER = unittest.TextTestRunner()
     TEST_SUITE = suite()
     TEST_RUNNER.run(TEST_SUITE)
-    

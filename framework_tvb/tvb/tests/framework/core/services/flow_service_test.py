@@ -219,8 +219,7 @@ class FlowServiceTest(TransactionalTestCase):
         algo_group = dao.find_group(TEST_ADAPTER_VALID_MODULE, TEST_ADAPTER_VALID_CLASS)
         adapter = self.flow_service.build_adapter_instance(algo_group)
         data = {"test": 5}
-        result = self.flow_service.fire_operation(adapter, self.test_user, self.test_project.id,
-                                                  ABCAdapter.LAUNCH_METHOD, **data)
+        result = self.flow_service.fire_operation(adapter, self.test_user, self.test_project.id, **data)
         self.assertTrue(result.endswith("has finished."), "Operation fail")
 
 

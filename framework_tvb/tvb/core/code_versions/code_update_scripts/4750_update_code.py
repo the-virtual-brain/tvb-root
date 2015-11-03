@@ -57,10 +57,8 @@ def update():
         for project in projects_page:
             try:
                 adapter = Sensors_Importer()
-                FlowService().fire_operation (
-                    adapter, dao.get_system_user(), project.id, visible=False,
-                    sensors_file=DATA_FILE, sensors_type=Sensors_Importer.INTERNAL_SENSORS
-                )
+                FlowService().fire_operation(adapter, dao.get_system_user(), project.id, visible=False,
+                                             sensors_file=DATA_FILE, sensors_type=Sensors_Importer.INTERNAL_SENSORS)
             except Exception, excep:
                 LOGGER.exception(excep)
     
