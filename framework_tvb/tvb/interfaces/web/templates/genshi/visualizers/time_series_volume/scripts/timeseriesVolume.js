@@ -99,13 +99,14 @@ function TSV_initVisualizer(urlVolumeData, urlTimeSeriesData, minValue, maxValue
     ColSch_initColorSchemeGUI(minValue, maxValue, colorRedraw);
     tsVol.currentTimePoint = 0;
     // Update the data shared with the SVG Time Series Fragment
-    updateTSFragment();
+    updateTSFragment(tsVol.selectedEntity, tsVol.currentTimePoint);
 
     // Fire the memory cleaning procedure
     window.setInterval(freeBuffer, tsVol.playbackRate * 20);
 
     // Start the SVG Time Series Fragment and draw it.
-    TSF_initVisualizer(tsVol.urlTimeSeriesData);
+    TSF_initVisualizer(tsVol.urlTimeSeriesData, tsVol.timeLength, tsVol.samplePeriod,
+                       tsVol.samplePeriodUnit, tsVol.minimumValue, tsVol.maximumValue);
     drawGraphs();
 }
 // ==================================== INITIALIZATION CODE END =============================================
@@ -131,7 +132,7 @@ function drawSceneFunctional(tIndex) {
         tsVol.currentTimePoint++;
         tsVol.currentTimePoint = tsVol.currentTimePoint % tsVol.timeLength;
     }
-    updateTSFragment();
+    updateTSFragment(tsVol.selectedEntity, tsVol.currentTimePoint);
     // An array containing the view for each plane.
     var sliceArray = getViewAtTime(tIndex);
     var selectedEntityValue = getSelectedEntityValue(sliceArray);
@@ -365,7 +366,7 @@ function TSV_pick(e) {
     tsVol.selectedQuad = hit.selectedQuad;
     tsVol.selectedEntity[tsVol.selectedQuad.axes.x] = hit.selectedEntityOnX;
     tsVol.selectedEntity[tsVol.selectedQuad.axes.y] = hit.selectedEntityOnY;
-    updateTSFragment();
+    updateTSFragment(tsVol.selectedEntity, tsVol.currentTimePoint);
     updateSliders();
     drawSceneFunctional(tsVol.currentTimePoint);
 }
@@ -550,7 +551,7 @@ function _coreMoveSliderAxis(event, ui) {
     } else {
         tsVol.selectedEntity[selectedQuad.axes.y] = ui.value;
     }
-    updateTSFragment();
+    updateTSFragment(tsVol.selectedEntity, tsVol.currentTimePoint);
 }
 
 /**

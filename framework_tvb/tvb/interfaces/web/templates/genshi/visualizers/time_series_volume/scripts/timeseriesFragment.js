@@ -49,15 +49,15 @@ var tsDataObj = function(params, dataArray) {             // this keeps all the 
  * Make all the necessary initialisations
  * @param tsDataRequest URLs of the dataset we're working on
  */
-function TSF_initVisualizer(tsDataRequest){
+function TSF_initVisualizer(tsDataRequest, timeLength, samplePeriod, samplePeriodUnit, minimumValue, maximumValue){
     tsFrag.urlTSData = tsDataRequest;
 
     // take all the necessary data from the time series volume visualizer
-    tsFrag.timeLength = tsVol.timeLength;
-    tsFrag.samplePeriod = tsVol.samplePeriod;
-    tsFrag.samplePeriodUnit = tsVol.samplePeriodUnit;
-    tsFrag.minimumValue = tsVol.minimumValue;
-    tsFrag.maximumValue = tsVol.maximumValue;
+    tsFrag.timeLength = timeLength;
+    tsFrag.samplePeriod = samplePeriod;
+    tsFrag.samplePeriodUnit = samplePeriodUnit;
+    tsFrag.minimumValue = minimumValue;
+    tsFrag.maximumValue = maximumValue;
 
     // tsFrag own data
     // define dimensions of graph
@@ -75,14 +75,9 @@ function TSF_initVisualizer(tsDataRequest){
 /**
  * Update the variables that this fragment shares with other visualizers
  */
-function updateTSFragment(){
-    if(typeof tsVol !== 'undefined'){
-        tsFrag.selectedEntity = tsVol.selectedEntity;
-        tsFrag.currentTimePoint = tsVol.currentTimePoint;
-    }
-    else{
-        alert("The Time Series Fragment relies on other visualizers to work");
-    }
+function updateTSFragment(selectedEntity, currentTimePoint){
+    tsFrag.selectedEntity = selectedEntity;
+    tsFrag.currentTimePoint = currentTimePoint;
 }
 
 // ====================================    INITIALIZATION CODE END   =========================================
@@ -270,7 +265,7 @@ function drawGobalTimeseries(){
         .attr('class', 'timeVerticalLine')
         .attr("transform", function(){
                 var width = $(".graph-timeSeries-rect").attr("width");
-                var pos = (tsVol.currentTimePoint*width)/(tsVol.timeLength);
+                var pos = (tsFrag.currentTimePoint*width)/(tsFrag.timeLength);
                 return "translate(" + pos + ", 0)";
             });
 
@@ -759,7 +754,7 @@ function updateBrush() {
 function TSF_updateTimeGauge(timePoint){
     d3.select(".timeVerticalLine").attr("transform", function(){
                 var width = $(".graph-timeSeries-rect").attr("width");
-                var pos = (timePoint * width) / (tsVol.timeLength);
+                var pos = (timePoint * width) / (tsFrag.timeLength);
                 return "translate(" + pos + ", 0)";
             });
 }
