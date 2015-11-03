@@ -85,29 +85,35 @@ function TSV_drawVolumeScene(sliceArray, selectedEntity, selectedEntityValue){
 
     vol.ctx.fillStyle = ColSch_getAbsoluteGradientColorString(vol.minimumValue - 1);
     vol.ctx.fillRect(0, 0, vol.ctx.canvas.width, vol.ctx.canvas.height);
-
+    // Create an off screen buffer the size of the small quadrants
+    var imageData = vol.ctx.createImageData(vol.quadrantWidth, vol.quadrantHeight);
     _setCtxOnQuadrant(0);
     for (j = 0; j < vol.dataSize[2]; ++j){
         for (i = 0; i < vol.dataSize[1]; ++i){
-            drawVoxel(i, j, sliceArray[0][i][j]);
+            drawVoxel(imageData, i, j, sliceArray[0][i][j]);
         }
     }
+    // Now paste the buffer to the canvas
+    // The putImageData api ignores the transformation matrix. So we have to duplicate the translation set by _setCtxOnQuadrant
+    vol.ctx.putImageData(imageData, vol.currentQuadrant.offsetX, 0 * vol.quadrantHeight +  vol.currentQuadrant.offsetY);
     drawMargin();
 
     _setCtxOnQuadrant(1);
     for (k = 0; k < vol.dataSize[3]; ++k){
         for (jj = 0; jj < vol.dataSize[2]; ++jj){
-            drawVoxel(k, jj, sliceArray[1][jj][k]);
+            drawVoxel(imageData, k, jj, sliceArray[1][jj][k]);
         }
     }
+    vol.ctx.putImageData(imageData, vol.currentQuadrant.offsetX, 1 * vol.quadrantHeight +  vol.currentQuadrant.offsetY);
     drawMargin();
 
     _setCtxOnQuadrant(2);
     for (kk = 0; kk < vol.dataSize[3]; ++kk){
         for (ii = 0; ii < vol.dataSize[1]; ++ii){
-            drawVoxel(kk, ii, sliceArray[2][ii][kk]);
+            drawVoxel(imageData, kk, ii, sliceArray[2][ii][kk]);
         }
     }
+    vol.ctx.putImageData(imageData, vol.currentQuadrant.offsetX, 2 * vol.quadrantHeight +  vol.currentQuadrant.offsetY);
     drawMargin();
 
     drawFocusQuadrantFromView(sliceArray);
@@ -121,25 +127,29 @@ function TSV_drawVolumeScene(sliceArray, selectedEntity, selectedEntityValue){
  */
 function drawFocusQuadrantFromView(sliceArray){
     _setCtxOnQuadrant(3);
+    // see TSV_drawVolumeScene for imageData explanation
+    var imageData = vol.ctx.createImageData(Math.floor(vol.dataSize[1] * vol.currentQuadrant.entityWidth), Math.floor(vol.focusQuadrantHeight));
+
     if(vol.highlightedQuad.index === 0){
         for (var j = 0; j < vol.dataSize[2]; ++j){
             for (var i = 0; i < vol.dataSize[1]; ++i){
-                drawVoxel(i, j, sliceArray[0][i][j]);
+                drawVoxel(imageData, i, j, sliceArray[0][i][j]);
             }
         }
     } else if(vol.highlightedQuad.index === 1){
         for (var k = 0; k < vol.dataSize[3]; ++k){
             for (var jj = 0; jj < vol.dataSize[2]; ++jj){
-                drawVoxel(k, jj, sliceArray[1][jj][k]);
+                drawVoxel(imageData, k, jj, sliceArray[1][jj][k]);
             }
         }
     } else if(vol.highlightedQuad.index === 2){
         for (var kk = 0; kk < vol.dataSize[3]; ++kk){
             for (var ii = 0; ii < vol.dataSize[1]; ++ii){
-                drawVoxel(kk, ii, sliceArray[2][ii][kk]);
+                drawVoxel(imageData, kk, ii, sliceArray[2][ii][kk]);
             }
         }
     }
+    vol.ctx.putImageData(imageData, vol.quadrantWidth + vol.currentQuadrant.offsetX, vol.currentQuadrant.offsetY);
     drawMargin();
 }
 
@@ -147,15 +157,31 @@ function drawFocusQuadrantFromView(sliceArray){
  * Draws the voxel set at (line, col) in the current quadrant, and colors it
  * according to its value.
  * This function know nothing about the time point.
+ * This draws on an off screen binary buffer.
+ * @param imageData The destination ImageData buffer
  * @param line THe vertical line of the grid we wish to draw on
  * @param col The horizontal line of the grid we wish to draw on
  * @param value The value of the voxel that will be converted into color
  */
-function drawVoxel(line, col, value){
-    vol.ctx.fillStyle = ColSch_getAbsoluteGradientColorString(value);
-    // col increases horizontally and line vertically, so col represents the X drawing axis, and line the Y
-	vol.ctx.fillRect(col * vol.currentQuadrant.entityWidth, line * vol.currentQuadrant.entityHeight,
-                       vol.currentQuadrant.entityWidth + 1, vol.currentQuadrant.entityHeight + 1);
+function drawVoxel(imageData, line, col, value){
+    // imaging api is less tolerant of float dimensions so we round
+    var x = Math.round(col * vol.currentQuadrant.entityWidth);
+    var y = Math.round(line * vol.currentQuadrant.entityHeight);
+    var w = Math.round(vol.currentQuadrant.entityWidth + 1);
+    var h = Math.round(vol.currentQuadrant.entityHeight + 1);
+
+    var rgb = ColSch_getColor(value);
+    // A fillRect on the imageData:
+    for (var yi = y; yi < y + h; ++yi) {
+        var stride = yi * imageData.width;
+        for (var xi = x; xi < x + w; ++xi) {
+            var i = (stride + xi) * 4;
+            imageData.data[i] = rgb[0] * 255;
+            imageData.data[i + 1] = rgb[1] * 255;
+            imageData.data[i + 2] = rgb[2] * 255;
+            imageData.data[i + 3] = 255;
+        }
+    }
 }
 
 /**
