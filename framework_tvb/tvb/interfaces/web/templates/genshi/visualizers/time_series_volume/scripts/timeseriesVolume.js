@@ -575,11 +575,7 @@ function _coreUpdateMovieSlider(timePoint, updateSlider) {
         var actualTime = timePoint * tsVol.samplePeriod;
         $('#labelCurrentTimeStep').empty().text("[" + actualTime.toFixed(2) + "]");
     });
-    d3.select(".timeVerticalLine").attr("transform", function(){
-                var width = $(".graph-timeSeries-rect").attr("width");
-                var pos = (timePoint * width) / (tsVol.timeLength);
-                return "translate(" + pos + ", 0)";
-            });
+    TSF_updateTimeGauge(timePoint);
 }
 
 /*

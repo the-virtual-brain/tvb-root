@@ -756,12 +756,21 @@ function updateBrush() {
       .call(tsFrag.brush.event);
 }
 
+function TSF_updateTimeGauge(timePoint){
+    d3.select(".timeVerticalLine").attr("transform", function(){
+                var width = $(".graph-timeSeries-rect").attr("width");
+                var pos = (timePoint * width) / (tsVol.timeLength);
+                return "translate(" + pos + ", 0)";
+            });
+}
+
 // ====================================    HELPER FUNCTIONS END    ===========================================
 
 // MODULE EXPORTS
 window.updateTSFragment = updateTSFragment;
 window.TSF_initVisualizer = TSF_initVisualizer;
 window.drawGraphs = drawGraphs;
-// try to remove this export:
-window.tsFrag = tsFrag;
+window.TSF_updateTimeGauge = TSF_updateTimeGauge;
+// debugging purposes only export
+window._debug_tsFrag = tsFrag;
 })();
