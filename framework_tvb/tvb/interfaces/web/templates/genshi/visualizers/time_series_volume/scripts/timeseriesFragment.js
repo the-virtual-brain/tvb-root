@@ -1,7 +1,7 @@
 /* globals d3 */
 
 // ====================================    INITIALIZATION CODE START =========================================
-
+(function(){ // module timeseriesFragment
 var tsFrag = {
     dataTimeSeries: "",                 // Contains the address to query the time series of a specific voxel.
     m: [],                              // Global preview margin sizes
@@ -757,3 +757,11 @@ function updateBrush() {
 }
 
 // ====================================    HELPER FUNCTIONS END    ===========================================
+
+// MODULE EXPORTS
+window.updateTSFragment = updateTSFragment;
+window.TSF_initVisualizer = TSF_initVisualizer;
+window.drawGraphs = drawGraphs;
+// try to remove this export:
+window.tsFrag = tsFrag;
+})();
