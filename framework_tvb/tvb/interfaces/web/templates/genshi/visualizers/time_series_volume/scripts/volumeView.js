@@ -35,6 +35,7 @@ var vol = {
     legendHeight: 0,            // The height of the legend quadrant
     legendWidth: 0,             // The width of the legend quadrant
     legendPadding:80*2,         // Horizontal padding for the TSV viewr legend
+    volumeOrigin: null,         // VolumeOrigin is not used for now. if needed, use it in _setQuadrant
 
     dataSize: ""                // Used first to contain the file ID and then it's dimension.
 };
@@ -44,7 +45,7 @@ var vol = {
  * The dimensions of the volume are given by dataSize.
  * The interval in which the signal varies is [minValue .. maxValue]. This is used by the color scale. Not per slice.
  */
-function TSV_initVolumeView(dataSize, minValue, maxValue, voxelSize){
+function TSV_initVolumeView(dataSize, minValue, maxValue, voxelSize, volumeOrigin){
     var canvas = document.getElementById("canvasVolumes");
     if (!canvas.getContext){
         displayMessage('You need a browser with canvas capabilities, to see this demo fully!', "errorMessage");
@@ -70,6 +71,7 @@ function TSV_initVolumeView(dataSize, minValue, maxValue, voxelSize){
     vol.minimumValue = minValue;
     vol.maximumValue = maxValue;
     vol.voxelSize = voxelSize;
+    vol.volumeOrigin = volumeOrigin;
 
     _setupQuadrants();
     vol.highlightedQuad = vol.quadrants[0];

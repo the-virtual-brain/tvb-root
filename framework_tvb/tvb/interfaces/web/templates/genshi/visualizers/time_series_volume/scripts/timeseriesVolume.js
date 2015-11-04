@@ -2,12 +2,9 @@
             doAjaxCall, d3, HLPR_readJSONfromFile,
             TSV_initVolumeView, TSV_drawVolumeScene, TSV_hitTest
              */
-(function(){ // module timse series volume controller
+(function(){ // module timeseriesVolume controller
 // ==================================== INITIALIZATION CODE START ===========================================
 var tsVol = {
-    minimumValue: null,         // Minimum value of the dataset.
-    maximumValue: null,         // Maximum value of the dataset.
-    volumeOrigin: null,         // VolumeOrigin is not used for now. if needed, use it in _setQuadrant
     selectedEntity: [0, 0, 0],  // The selected voxel; [i, j, k].
     entitySize: [0, 0, 0],      // The size of each plane
     selectedQuad: 0,            // The quadrant selected by the user every time
@@ -67,10 +64,10 @@ function TSV_startVolumeTimeSeriesVisualizer(urlVolumeData, urlTimeSeriesData, m
             }
         );
 
-    tsVol.volumeOrigin = $.parseJSON(volOrigin)[0];
     tsVol.dataSize = $.parseJSON(volumeShape);
 
-    TSV_initVolumeView(tsVol.dataSize, minValue, maxValue, $.parseJSON(sizeOfVoxel));
+    TSV_initVolumeView(tsVol.dataSize, minValue, maxValue, $.parseJSON(sizeOfVoxel), $.parseJSON(volOrigin)[0]);
+
     tsVol.selectedQuad = TSV_getQuadrant(0);
     tsVol.urlVolumeData = urlVolumeData;
     tsVol.urlTimeSeriesData = urlTimeSeriesData;
@@ -78,8 +75,6 @@ function TSV_startVolumeTimeSeriesVisualizer(urlVolumeData, urlTimeSeriesData, m
     tsVol.samplePeriod = samplePeriod;
     tsVol.samplePeriodUnit = samplePeriodUnit;
 
-    tsVol.minimumValue = minValue;
-    tsVol.maximumValue = maxValue;
     tsVol.timeLength = tsVol.dataSize[0];           //Number of time points;
 
     // set the center entity as the selected one
@@ -106,7 +101,7 @@ function TSV_startVolumeTimeSeriesVisualizer(urlVolumeData, urlTimeSeriesData, m
 
     // Start the SVG Time Series Fragment and draw it.
     TSF_initVisualizer(tsVol.urlTimeSeriesData, tsVol.timeLength, tsVol.samplePeriod,
-                       tsVol.samplePeriodUnit, tsVol.minimumValue, tsVol.maximumValue);
+                       tsVol.samplePeriodUnit, minValue, maxValue);
     TSF_drawGraphs();
 
     $("#canvasVolumes").mousedown(customMouseDown).mouseup(customMouseUp);
@@ -214,8 +209,7 @@ function asyncRequest(fileName, sect){
  */
 function inlineWebWorkerWrapper(workerBody){
     return URL.createObjectURL(
-        new Blob(['(', workerBody.toString(), ')()' ], { type: 'application/javascript' }
-        )
+        new Blob(['(', workerBody.toString(), ')()' ], { type: 'application/javascript' })
     );
 }
 
@@ -234,8 +228,7 @@ function parseAsync(data, callback){
             callback( json );
         }, false);
         worker.postMessage( data );
-    }
-    else{
+    }else{
         json = JSON.parse( data );
         callback( json );
     }
@@ -394,24 +387,20 @@ function initTimeControls(){
  * Code for the navigation slider. Creates the x,y,z sliders and adds labels
  */
 function startPositionSliders() {
-
-    // We loop trough every slider
     for(var i = 0; i < 3; i++) {
-        $("#sliderForAxis" + SLIDERS[i]).each(function() {
-            var value = tsVol.selectedEntity[i];
-            var opts = {
-                            value: value,
-                            min: 0,
-                            max: tsVol.entitySize[i] - 1, // yeah.. if we start from zero we need to subtract 1
-                            animate: true,
-                            orientation: "horizontal",
-                            change: slideMoved, // call this function *after* the slide is moved OR the value changes
-                            slide: slideMove  //  we use this to keep it smooth.
-                        };
-            $(this).slider(opts);
-            $("#labelCurrentValueAxis" + SLIDERS[i]).empty().text("[" + value + "]");
-            $("#labelMaxValueAxis" + SLIDERS[i]).empty().text(opts.max);
-        });
+        var value = tsVol.selectedEntity[i];
+        var opts = {
+            value: value,
+            min: 0,
+            max: tsVol.entitySize[i] - 1, // yeah.. if we start from zero we need to subtract 1
+            animate: true,
+            orientation: "horizontal",
+            change: slideMoved, // call this function *after* the slide is moved OR the value changes
+            slide: slideMove  //  we use this to keep it smooth.
+        };
+        $("#sliderForAxis" + SLIDERS[i]).slider(opts);
+        $("#labelCurrentValueAxis" + SLIDERS[i]).empty().text("[" + value + "]");
+        $("#labelMaxValueAxis" + SLIDERS[i]).empty().text(opts.max);
     }
 }
 
@@ -419,25 +408,24 @@ function startPositionSliders() {
  * Code for "movie player" slider. Creates the slider and adds labels
  */
 function startMovieSlider(){
-    $("#movieSlider").each(function() {
-        var value = 0;
-        var opts = {
-                    value: value,
-                    min: 0,
-                    max: tsVol.timeLength - 1,
-                    animate: true,
-                    orientation: "horizontal",
-                    range: "min",
-                    stop: moviePlayerMoveEnd,
-                    slide: moviePlayerMove
-                    };
-        $(this).slider(opts);
+    var value = 0;
+    var opts = {
+        value: value,
+        min: 0,
+        max: tsVol.timeLength - 1,
+        animate: true,
+        orientation: "horizontal",
+        range: "min",
+        stop: moviePlayerMoveEnd,
+        slide: moviePlayerMove
+    };
 
-        var actualTime = value * tsVol.samplePeriod;
-        var totalTime = (tsVol.timeLength - 1) * tsVol.samplePeriod;
-        $("#labelCurrentTimeStep").empty().text("[" + actualTime.toFixed(2)+ "]");
-        $("#labelMaxTimeStep").empty().text(totalTime.toFixed(2) + " ("+ tsVol.samplePeriodUnit + ")");
-    });
+    $("#movieSlider").slider(opts);
+
+    var actualTime = value * tsVol.samplePeriod;
+    var totalTime = (tsVol.timeLength - 1) * tsVol.samplePeriod;
+    $("#labelCurrentTimeStep").empty().text("[" + actualTime.toFixed(2)+ "]");
+    $("#labelMaxTimeStep").empty().text(totalTime.toFixed(2) + " ("+ tsVol.samplePeriodUnit + ")");
 }
 
 // ==================================== CALLBACK FUNCTIONS START ===============================================
@@ -446,14 +434,14 @@ function playBack(){
     if(!tsVol.playerIntervalID) {
         tsVol.playerIntervalID = window.setInterval(drawSceneFunctional, tsVol.playbackRate);
     }
-    $("#btnPlay")[0].setAttribute("class", "action action-pause");
+    $("#btnPlay").attr("class", "action action-pause");
     startBuffering();
 }
 
 function stopPlayback(){
     window.clearInterval(tsVol.playerIntervalID);
     tsVol.playerIntervalID = null;
-    $("#btnPlay")[0].setAttribute("class", "action action-run");
+    $("#btnPlay").attr("class", "action action-run");
     stopBuffering();
 }
 
@@ -509,9 +497,7 @@ function seekEnd(){
  */
 function updateSliders() {
     for(var i = 0; i < 3; i++) {
-        $("#sliderForAxis" + SLIDERS[i]).each(function() {
-            $(this).slider("option", "value", tsVol.selectedEntity[i]);                 //Update the slider value
-        });
+        $("#sliderForAxis" + SLIDERS[i]).slider("option", "value", tsVol.selectedEntity[i]); //Update the slider value
         $('#labelCurrentValueAxis' + SLIDERS[i]).empty().text('[' + tsVol.selectedEntity[i] + ']' ); //update label
     }
 }
@@ -576,13 +562,11 @@ function moviePlayerMove(event, ui) {
 }
 
 function _coreUpdateMovieSlider(timePoint, updateSlider) {
-    $("#movieSlider").each(function() {
-        if (updateSlider) {
-            $(this).slider("option", "value", tsVol.currentTimePoint);
-        }
-        var actualTime = timePoint * tsVol.samplePeriod;
-        $('#labelCurrentTimeStep').empty().text("[" + actualTime.toFixed(2) + "]");
-    });
+    if (updateSlider) {
+        $("#movieSlider").slider("option", "value", tsVol.currentTimePoint);
+    }
+    var actualTime = timePoint * tsVol.samplePeriod;
+    $('#labelCurrentTimeStep').empty().text("[" + actualTime.toFixed(2) + "]");
     TSF_updateTimeGauge(timePoint);
 }
 
