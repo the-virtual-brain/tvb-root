@@ -1,3 +1,5 @@
+/* globals displayMessage, ColSch_getAbsoluteGradientColorString, ColSch_getColor */
+
 /**
  * Code that is responsible with drawing volumetric information.
  * It is a strict view. It does not keep the volumetric slices that it displays nor the current selected voxel.
@@ -34,7 +36,7 @@ var vol = {
     legendWidth: 0,             // The width of the legend quadrant
     legendPadding:80*2,         // Horizontal padding for the TSV viewr legend
 
-    dataSize: "",               // Used first to contain the file ID and then it's dimension.
+    dataSize: ""                // Used first to contain the file ID and then it's dimension.
 };
 
 /**
@@ -52,7 +54,7 @@ function TSV_initVolumeView(dataSize, minValue, maxValue, voxelSize){
     canvas.height = $(canvas).parent().height();
     canvas.width  = $(canvas).parent().width();
 
-    var tmp = canvas.height / 3;
+    var tmp = canvas.height / 3;    // todo: floating point dimensions have interesting semantics. Consider Math.round
     vol.quadrantHeight = tmp;       // quadrants are squares
     vol.quadrantWidth = tmp;
     vol.focusQuadrantWidth = canvas.width - vol.quadrantWidth;
@@ -128,7 +130,12 @@ function TSV_drawVolumeScene(sliceArray, selectedEntity, selectedEntityValue){
 function drawFocusQuadrantFromView(sliceArray){
     _setCtxOnQuadrant(3);
     // see TSV_drawVolumeScene for imageData explanation
-    var imageData = vol.ctx.createImageData(Math.floor(vol.dataSize[1] * vol.currentQuadrant.entityWidth), Math.floor(vol.focusQuadrantHeight));
+    // The dimensions of the off screen buffer are not focusQuadrantWidth but smaller
+    // because the volumetric slice is smaller than the quadrant.
+    // Using focusQuadrantWidth will lead to some visual glitches.
+    // todo: fix assumption that dataSize[1] == dataSize[2] == dataSize[3]
+    var imageData = vol.ctx.createImageData(Math.floor(vol.dataSize[1] * vol.currentQuadrant.entityWidth),
+                                            Math.floor(vol.dataSize[2] * vol.currentQuadrant.entityHeight));
 
     if(vol.highlightedQuad.index === 0){
         for (var j = 0; j < vol.dataSize[2]; ++j){
@@ -347,11 +354,7 @@ function _setCtxOnQuadrant(quadIdx){
  * @private
  */
 function _getDataSize(axis){
-    switch (axis){
-        case 0:     return vol.dataSize[1];
-        case 1:     return vol.dataSize[2];
-        case 2:     return vol.dataSize[3];
-    }
+    return vol.dataSize[axis + 1];
 }
 
 /**

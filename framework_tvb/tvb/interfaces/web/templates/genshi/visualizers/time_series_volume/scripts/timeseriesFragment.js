@@ -1,4 +1,4 @@
-/* globals d3 */
+/* globals d3, ColSch_getAbsoluteGradientColorString */
 
 // ====================================    INITIALIZATION CODE START =========================================
 (function(){ // module timeseriesFragment
@@ -282,7 +282,7 @@ function drawGobalTimeseries(){
 
         var selectedLine = d3.select("path.tsv-highlight");
         if(selectedLine[0][0] == null){
-            selectedLine = d3.select("path.tsv-colored-line:nth-of-type(1)")
+            selectedLine = d3.select("path.tsv-colored-line:nth-of-type(1)");
         }
         var pathLength = selectedLine.node().getTotalLength();
         var beginning = xPos,
@@ -294,14 +294,13 @@ function drawGobalTimeseries(){
             var pos = selectedLine.node().getPointAtLength(target);
             if((target === end || target === beginning) && pos.x !== xPos){
                 break;
-            }
-            if(pos.x > xPos){
+            }if(pos.x > xPos){
                 end = target;
-            }
-            else if(pos.x < xPos){
+            }else if(pos.x < xPos){
                 beginning = target;
+            }else{
+                break; //position found
             }
-            else break; //position found
         }
     });
 
@@ -762,9 +761,9 @@ function TSF_updateTimeGauge(timePoint){
 // ====================================    HELPER FUNCTIONS END    ===========================================
 
 // MODULE EXPORTS
-window.updateTSFragment = updateTSFragment;
+window.TSF_updateTSFragment = updateTSFragment;
 window.TSF_initVisualizer = TSF_initVisualizer;
-window.drawGraphs = drawGraphs;
+window.TSF_drawGraphs = drawGraphs;
 window.TSF_updateTimeGauge = TSF_updateTimeGauge;
 // debugging purposes only export
 window._debug_tsFrag = tsFrag;
