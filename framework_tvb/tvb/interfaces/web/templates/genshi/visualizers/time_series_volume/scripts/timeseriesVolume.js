@@ -2,7 +2,7 @@
             doAjaxCall, d3, HLPR_readJSONfromFile,
             TSV_initVolumeView, TSV_drawVolumeScene, TSV_hitTest
              */
-
+(function(){ // module timse series volume controller
 // ==================================== INITIALIZATION CODE START ===========================================
 var tsVol = {
     minimumValue: null,         // Minimum value of the dataset.
@@ -47,8 +47,8 @@ var SLIDERIDS = ["sliderForAxisX", "sliderForAxisY", "sliderForAxisZ"];
  * @param volOrigin         The origin of the rendering; irrelevant in 2D, for now
  * @param sizeOfVoxel       How the voxel is sized on each axis; [xScale, yScale, zScale]
  */
-function TSV_initVisualizer(urlVolumeData, urlTimeSeriesData, minValue, maxValue, samplePeriod, samplePeriodUnit,
-                            volumeShape, volOrigin, sizeOfVoxel) {
+function TSV_startVolumeTimeSeriesVisualizer(urlVolumeData, urlTimeSeriesData, minValue, maxValue,
+                                             samplePeriod, samplePeriodUnit, volumeShape, volOrigin, sizeOfVoxel) {
     /**
     * This will be our JSON parser web-worker blob,
     * Using a webworker is a bit slower than parsing the jsons with
@@ -108,6 +108,13 @@ function TSV_initVisualizer(urlVolumeData, urlTimeSeriesData, minValue, maxValue
     TSF_initVisualizer(tsVol.urlTimeSeriesData, tsVol.timeLength, tsVol.samplePeriod,
                        tsVol.samplePeriodUnit, tsVol.minimumValue, tsVol.maximumValue);
     TSF_drawGraphs();
+
+    $("#canvasVolumes").mousedown(customMouseDown).mouseup(customMouseUp);
+    initTimeControls();
+    startPositionSliders();
+    startMovieSlider();
+
+    drawSceneFunctional(tsVol.currentTimePoint);
 }
 // ==================================== INITIALIZATION CODE END =============================================
 
@@ -374,13 +381,13 @@ function TSV_pick(e) {
 // ==================================== PICKING RELATED CODE  END  ==========================================
 
 // ==================================== UI RELATED CODE START ===============================================
-/**
- * Functions that calls all the setup functions for the main UI of the time series volume visualizer.
- */
-function TSV_startUserInterface() {
-    startPositionSliders();
-    startMovieSlider();
-    drawSceneFunctional(tsVol.currentTimePoint);
+
+function initTimeControls(){
+    $('#btnSeekFirst').click(seekFirst);
+    $('#btnPlayPreviousTimePoint').click(playPreviousTimePoint);
+    $('#btnPlay').click(togglePlayback);
+    $('#btnPlayNextTimePoint').click(playNextTimePoint);
+    $('#btnSeekEnd').click(seekEnd);
 }
 
 /**
@@ -591,3 +598,8 @@ function moviePlayerMoveEnd(event, ui){
 
 // ==================================== CALLBACK FUNCTIONS END ===============================================
 // ==================================== UI RELATED CODE END ==================================================
+
+// module exports
+window.TSV_startVolumeTimeSeriesVisualizer = TSV_startVolumeTimeSeriesVisualizer;
+window._debug_tsVol = tsVol;
+})();

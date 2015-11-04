@@ -31,11 +31,11 @@
             <li class="toolbar-li-with-slider">  ${drawSliderForAxis('Z')} </li>
             <li class="toolbar-small-li"> <label>(in $voxelUnit)</label></li>
             <li class="toolbar-large-li">
-                <button class="action action-go-first" onclick="seekFirst()" title="Navigate to the begining of TS"></button>
-                <button class="action action-page-back" onclick="playPreviousTimePoint()" title="Go back one time step"></button>
-                <button class="action action-run" onclick="togglePlayback()" title="Start / Stop the Movie" id="btnPlay"></button>
-                <button class="action action-page-fwd" onclick="playNextTimePoint()" title="Go forward one time step"></button>
-                <button class="action action-go-last" onclick="seekEnd()" title="Navigate to the end of the TS movie"></button>
+                <button id="btnSeekFirst" class="action action-go-first" title="Navigate to the begining of TS"></button>
+                <button id="btnPlayPreviousTimePoint" class="action action-page-back" title="Go back one time step"></button>
+                <button id="btnPlay" class="action action-run" title="Start / Stop the Movie"></button>
+                <button id="btnPlayNextTimePoint" class="action action-page-fwd" title="Go forward one time step"></button>
+                <button id="btnSeekEnd" class="action action-go-last" title="Navigate to the end of the TS movie"></button>
             </li>
         </ul>
 
@@ -105,13 +105,11 @@
     </section>
 
     <script type="text/javascript">
-        $().ready(function () {
+        $(document).ready(function () {
             $("#main").addClass("colscheme-2-even brain-extended");
-            TSV_initVisualizer('$urlVolumeData', '$urlTimeSeriesData', ${minValue}, ${maxValue}, ${samplePeriod},
+            TSV_startVolumeTimeSeriesVisualizer(
+                    '$urlVolumeData', '$urlTimeSeriesData', ${minValue}, ${maxValue}, ${samplePeriod},
                     '${samplePeriodUnit}', '${volumeShape}', '${volumeOrigin}', '${voxelSize}');
-            $("#canvasVolumes").mousedown(customMouseDown)
-                    .mouseup(customMouseUp);
-            TSV_startUserInterface();
         })
     </script>
 </div>
