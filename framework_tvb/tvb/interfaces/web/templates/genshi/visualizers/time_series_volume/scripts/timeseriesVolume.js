@@ -32,6 +32,23 @@ var tsVol = {
 var SLIDERS = ["X", "Y", "Z"];
 var SLIDERIDS = ["sliderForAxisX", "sliderForAxisY", "sliderForAxisZ"];
 
+/** Initializes all state related to the volumetric part */
+function init_VolumeController(urlVolumeData, volumeShape){
+    tsVol.dataSize = $.parseJSON(volumeShape);
+    tsVol.urlVolumeData = urlVolumeData;
+    // set the center entity as the selected one
+    tsVol.selectedEntity[0] = Math.floor(tsVol.dataSize[1] / 2);
+    tsVol.selectedEntity[1] = Math.floor(tsVol.dataSize[2] / 2);
+    tsVol.selectedEntity[2] = Math.floor(tsVol.dataSize[3] / 2);
+
+    // get entities number of voxels
+    tsVol.entitySize[0] = tsVol.dataSize[1];
+    tsVol.entitySize[1] = tsVol.dataSize[2];
+    tsVol.entitySize[2] = tsVol.dataSize[3];
+    // get entities number of time points
+    tsVol.entitySize[3] = tsVol.dataSize[0];           //Number of time points;
+}
+
 /**
  * Make all the necessary initialisations and draws the default view, with the center voxel selected
  * @param urlVolumeData          Url base for retrieving current slices data (for the left-side)
@@ -64,37 +81,22 @@ function TSV_startVolumeTimeSeriesVisualizer(urlVolumeData, urlTimeSeriesData, m
             }
         );
 
-    tsVol.dataSize = $.parseJSON(volumeShape);
-
+    init_VolumeController(urlVolumeData, volumeShape);
     TSV_initVolumeView(tsVol.dataSize, minValue, maxValue, $.parseJSON(sizeOfVoxel), $.parseJSON(volOrigin)[0]);
 
     tsVol.selectedQuad = TSV_getQuadrant(0);
-    tsVol.urlVolumeData = urlVolumeData;
-    tsVol.urlTimeSeriesData = urlTimeSeriesData;
 
+    tsVol.urlTimeSeriesData = urlTimeSeriesData;
     tsVol.samplePeriod = samplePeriod;
     tsVol.samplePeriodUnit = samplePeriodUnit;
-
     tsVol.timeLength = tsVol.dataSize[0];           //Number of time points;
-
-    // set the center entity as the selected one
-    tsVol.selectedEntity[0] = Math.floor(tsVol.dataSize[1] / 2);
-    tsVol.selectedEntity[1] = Math.floor(tsVol.dataSize[2] / 2);
-    tsVol.selectedEntity[2] = Math.floor(tsVol.dataSize[3] / 2);
-
-    // get entities number of voxels
-    tsVol.entitySize[0] = tsVol.dataSize[1];
-    tsVol.entitySize[1] = tsVol.dataSize[2];
-    tsVol.entitySize[2] = tsVol.dataSize[3];
-    // get entities number of time points
-    tsVol.entitySize[3] = tsVol.timeLength;
 
     _setupBuffersSize();
 
     ColSch_initColorSchemeGUI(minValue, maxValue, function(){
         drawSceneFunctional(tsVol.currentTimePoint);
     });
-    tsVol.currentTimePoint = 0;
+
     // Update the data shared with the SVG Time Series Fragment
     TSF_updateTSFragment(tsVol.selectedEntity, tsVol.currentTimePoint);
 
@@ -108,7 +110,7 @@ function TSV_startVolumeTimeSeriesVisualizer(urlVolumeData, urlTimeSeriesData, m
 
     $("#canvasVolumes").mousedown(customMouseDown).mouseup(customMouseUp);
     initTimeControls();
-    startPositionSliders();
+    startPositionSliders({change:slideMoved, slide:slideMove});
     startMovieSlider();
 
     drawSceneFunctional(tsVol.currentTimePoint);
@@ -128,10 +130,14 @@ function drawSceneFunctional(tIndex) {
         tsVol.currentTimePoint = tsVol.currentTimePoint % tsVol.timeLength;
     }
     TSF_updateTSFragment(tsVol.selectedEntity, tsVol.currentTimePoint);
+    drawVolumeScene(tIndex);
+    updateMoviePlayerSlider();
+}
+
+function drawVolumeScene(tIndex){
     // An array containing the view for each plane.
     var sliceArray = getViewAtTime(tIndex);
     TSV_drawVolumeScene(sliceArray, tsVol.selectedEntity);
-    updateMoviePlayerSlider();
 }
 
 /**
@@ -299,6 +305,19 @@ function getViewAtTime(t) {
 
 // ==================================== PICKING RELATED CODE START ==========================================
 
+/** Updates the selected quad and entity. and the sliders */
+function onVolumeMouseDown(e){
+    var hit = TSV_hitTest(e);
+    if (!hit){
+        return;
+    }
+    tsVol.selectedQuad = hit.selectedQuad;
+    tsVol.selectedEntity[tsVol.selectedQuad.axes.x] = hit.selectedEntityOnX;
+    tsVol.selectedEntity[tsVol.selectedQuad.axes.y] = hit.selectedEntityOnY;
+    updateSliders();
+    drawVolumeScene(tsVol.currentTimePoint);
+}
+
 function customMouseDown(e){
     e.preventDefault();
     this.mouseDown = true;            // `this` is the canvas
@@ -308,16 +327,9 @@ function customMouseDown(e){
         stopPlayback();
         tsVol.resumePlayer = true;
     }
-    var hit = TSV_hitTest(e);
-    if (!hit){
-        return;
-    }
-    tsVol.selectedQuad = hit.selectedQuad;
-    tsVol.selectedEntity[tsVol.selectedQuad.axes.x] = hit.selectedEntityOnX;
-    tsVol.selectedEntity[tsVol.selectedQuad.axes.y] = hit.selectedEntityOnY;
+    onVolumeMouseDown(e);
     TSF_updateTSFragment(tsVol.selectedEntity, tsVol.currentTimePoint);
-    updateSliders();
-    drawSceneFunctional(tsVol.currentTimePoint);
+    updateMoviePlayerSlider();
 }
 
 function customMouseUp(e){
@@ -348,7 +360,7 @@ function initTimeControls(){
 /**
  * Code for the navigation slider. Creates the x,y,z sliders and adds labels
  */
-function startPositionSliders() {
+function startPositionSliders(options) {
     for(var i = 0; i < 3; i++) {
         var value = tsVol.selectedEntity[i];
         var opts = {
@@ -357,8 +369,8 @@ function startPositionSliders() {
             max: tsVol.entitySize[i] - 1, // yeah.. if we start from zero we need to subtract 1
             animate: true,
             orientation: "horizontal",
-            change: slideMoved, // call this function *after* the slide is moved OR the value changes
-            slide: slideMove  //  we use this to keep it smooth.
+            change: options.change,// call this function *after* the slide is moved OR the value changes
+            slide: options.slide //  we use this to keep it smooth.
         };
         $("#sliderForAxis" + SLIDERS[i]).slider(opts);
         $("#labelCurrentValueAxis" + SLIDERS[i]).empty().text("[" + value + "]");
@@ -468,7 +480,6 @@ function updateSliders() {
  * While the navigation sliders are moved, this redraws the scene accordingly.
  */
 function slideMove(event, ui) {
-
     if(tsVol.playerIntervalID){
         stopPlayback();
         tsVol.resumePlayer = true;
@@ -482,7 +493,6 @@ function slideMove(event, ui) {
  * After the navigation sliders are changed, this redraws the scene accordingly.
  */
 function slideMoved(event, ui) {
-
     if(tsVol.slidersClicked) {
         tsVol.slidersClicked = false;
 
@@ -491,10 +501,11 @@ function slideMoved(event, ui) {
             window.setTimeout(playBack, tsVol.playbackRate * 2);
         }
     }
-   _coreMoveSliderAxis(event, ui);
+    _coreMoveSliderAxis(event, ui);
+    TSF_updateTSFragment(tsVol.selectedEntity, tsVol.currentTimePoint);
 }
 
-function _coreMoveSliderAxis(event, ui) {
+function _coreMoveSliderAxis(event, ui){
     var quadID = SLIDERIDS.indexOf(event.target.id);
     var selectedQuad = TSV_getQuadrant([quadID]);
 
@@ -506,7 +517,6 @@ function _coreMoveSliderAxis(event, ui) {
     } else {
         tsVol.selectedEntity[selectedQuad.axes.y] = ui.value;
     }
-    TSF_updateTSFragment(tsVol.selectedEntity, tsVol.currentTimePoint);
 }
 
 /**
