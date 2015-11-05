@@ -91,7 +91,9 @@ function TSV_startVolumeTimeSeriesVisualizer(urlVolumeData, urlTimeSeriesData, m
 
     _setupBuffersSize();
 
-    ColSch_initColorSchemeGUI(minValue, maxValue, colorRedraw);
+    ColSch_initColorSchemeGUI(minValue, maxValue, function(){
+        drawSceneFunctional(tsVol.currentTimePoint);
+    });
     tsVol.currentTimePoint = 0;
     // Update the data shared with the SVG Time Series Fragment
     TSF_updateTSFragment(tsVol.selectedEntity, tsVol.currentTimePoint);
@@ -113,15 +115,6 @@ function TSV_startVolumeTimeSeriesVisualizer(urlVolumeData, urlTimeSeriesData, m
 }
 // ==================================== INITIALIZATION CODE END =============================================
 
-// ==================================== DRAWING FUNCTIONS START =============================================
-
-/**
- * Update function necessary for the color picking function
- */
-function colorRedraw(){
-    drawSceneFunctional(tsVol.currentTimePoint);
-}
-
 /**
  * Draws the current view depending on the selected entity
  * @param tIndex The time point we want to draw
@@ -137,14 +130,9 @@ function drawSceneFunctional(tIndex) {
     TSF_updateTSFragment(tsVol.selectedEntity, tsVol.currentTimePoint);
     // An array containing the view for each plane.
     var sliceArray = getViewAtTime(tIndex);
-    var selectedEntityValue = getSelectedEntityValue(sliceArray);
-    TSV_drawVolumeScene(sliceArray, tsVol.selectedEntity, selectedEntityValue);
+    TSV_drawVolumeScene(sliceArray, tsVol.selectedEntity);
     updateMoviePlayerSlider();
 }
-
-// ==================================== DRAWING FUNCTIONS  END  =============================================
-
-// ==================================== PRIVATE FUNCTIONS START =============================================
 
 /**
  * Automatically determine optimal bufferSizer, depending on data dimensions.
@@ -163,9 +151,7 @@ function _setupBuffersSize() {
     tsVol.bufferL2Size /= 2;
 }
 
-// ==================================== PRIVATE FUNCTIONS  END  =============================================
-
-// ==================================== HELPER FUNCTIONS START ==============================================
+// ==================================== RPC FUNCTIONS START ==============================================
 
 /**
  * Requests file data without blocking the main thread if possible.
@@ -279,16 +265,6 @@ function freeBuffer() {
 }
 
 /**
- * A helper function similar to python's range().
- * @param len Integer
- * @returns An array with all integers from 0 to len-1
- */
-function range(len){
-    return Array.apply(null, new Array(len)).map(function (_, i){return i;});
-}
-
-
-/**
  *  This functions returns the X,Y,Z data from time-point t.
  * @param t The time point we want to get
  * @returns Array with only the data from the x,y,z plane at time-point t.
@@ -319,42 +295,15 @@ function getViewAtTime(t) {
     return [buffer[0][t],buffer[1][t],buffer[2][t]];
 }
 
-/**
-* Sets tsVol.selectedEntityValue, which represents the selected voxel intensity value, to be highlighted on the legend
-*/
-function getSelectedEntityValue(sliceArray){
-    return sliceArray[0][tsVol.selectedEntity[0]][tsVol.selectedEntity[1]];
-}
-
-// ==================================== HELPER FUNCTIONS END ==============================================
+// ==================================== RPC FUNCTIONS END ==============================================
 
 // ==================================== PICKING RELATED CODE START ==========================================
 
 function customMouseDown(e){
     e.preventDefault();
     this.mouseDown = true;            // `this` is the canvas
-    TSV_pick(e);
-}
 
-function customMouseUp(e){
-    e.preventDefault();
-    this.mouseDown = false;
-
-    if(tsVol.resumePlayer) {
-        window.setTimeout(playBack, tsVol.playbackRate * 2);
-        tsVol.resumePlayer = false;
-    }
-    if(tsVol.selectedQuad.index === 3){
-        TSF_drawGraphs();
-    }
-}
-
-/**
- * Implements picking and redraws the scene. Updates sliders too.
- * @param e The click event
- */
-function TSV_pick(e) {
-
+    // Implements picking and redraws the scene. Updates sliders too.
     if(tsVol.playerIntervalID){
         stopPlayback();
         tsVol.resumePlayer = true;
@@ -369,6 +318,19 @@ function TSV_pick(e) {
     TSF_updateTSFragment(tsVol.selectedEntity, tsVol.currentTimePoint);
     updateSliders();
     drawSceneFunctional(tsVol.currentTimePoint);
+}
+
+function customMouseUp(e){
+    e.preventDefault();
+    this.mouseDown = false;
+
+    if(tsVol.resumePlayer) {
+        window.setTimeout(playBack, tsVol.playbackRate * 2);
+        tsVol.resumePlayer = false;
+    }
+    if(tsVol.selectedQuad.index === 3){
+        TSF_drawGraphs();
+    }
 }
 
 // ==================================== PICKING RELATED CODE  END  ==========================================

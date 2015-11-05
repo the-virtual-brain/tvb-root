@@ -82,9 +82,8 @@ function TSV_initVolumeView(dataSize, minValue, maxValue, voxelSize, volumeOrigi
  * Draws a volume slice.
  * @param sliceArray [axial, sagittal, coronal] where elements are 2d array slices.
  * @param selectedEntity The selected voxel. A cross will be drawn over it.
- * @param selectedEntityValue. Value of the selected voxel. Used to highlight value in color scale.
  */
-function TSV_drawVolumeScene(sliceArray, selectedEntity, selectedEntityValue){
+function TSV_drawVolumeScene(sliceArray, selectedEntity){
     var i, j, k, ii, jj, kk;
 
     vol.ctx.fillStyle = ColSch_getAbsoluteGradientColorString(vol.minimumValue - 1);
@@ -122,6 +121,8 @@ function TSV_drawVolumeScene(sliceArray, selectedEntity, selectedEntityValue){
 
     drawFocusQuadrantFromView(sliceArray);
     drawNavigator(selectedEntity);
+    //Value of the selected voxel. Used to highlight value in color scale.
+    var selectedEntityValue = sliceArray[0][selectedEntity[0]][selectedEntity[1]];
     drawLegend(selectedEntityValue);
     drawLabels();
 }
