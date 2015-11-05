@@ -47,6 +47,29 @@ function init_VolumeController(urlVolumeData, volumeShape){
     tsVol.entitySize[2] = tsVol.dataSize[3];
     // get entities number of time points
     tsVol.entitySize[3] = tsVol.dataSize[0];           //Number of time points;
+    tsVol.timeLength = tsVol.dataSize[0];
+}
+
+function TSV_startVolumeStaticVisualizer(urlVolumeData, minValue, maxValue, volumeShape, volOrigin, sizeOfVoxel){
+    init_VolumeController(urlVolumeData, volumeShape);
+    TSV_initVolumeView(tsVol.dataSize, minValue, maxValue, $.parseJSON(sizeOfVoxel), $.parseJSON(volOrigin)[0]);
+
+    tsVol.selectedQuad = TSV_getQuadrant(0);
+
+    ColSch_initColorSchemeGUI(minValue, maxValue, function(){
+        drawVolumeScene(tsVol.currentTimePoint);
+    });
+
+    $("#canvasVolumes").mousedown(onVolumeMouseDown).mouseup(function(){});
+
+    startPositionSliders({
+        change: _coreMoveSliderAxis,
+        slide: function(event, ui){
+            _coreMoveSliderAxis(event, ui);
+            drawVolumeScene(tsVol.currentTimePoint);
+        }
+    });
+    drawVolumeScene(tsVol.currentTimePoint);
 }
 
 /**
@@ -89,7 +112,6 @@ function TSV_startVolumeTimeSeriesVisualizer(urlVolumeData, urlTimeSeriesData, m
     tsVol.urlTimeSeriesData = urlTimeSeriesData;
     tsVol.samplePeriod = samplePeriod;
     tsVol.samplePeriodUnit = samplePeriodUnit;
-    tsVol.timeLength = tsVol.dataSize[0];           //Number of time points;
 
     _setupBuffersSize();
 
@@ -557,5 +579,6 @@ function moviePlayerMoveEnd(event, ui){
 
 // module exports
 window.TSV_startVolumeTimeSeriesVisualizer = TSV_startVolumeTimeSeriesVisualizer;
+window.TSV_startVolumeStaticVisualizer = TSV_startVolumeStaticVisualizer;
 window._debug_tsVol = tsVol;
 })();
