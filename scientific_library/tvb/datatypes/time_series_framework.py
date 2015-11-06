@@ -45,7 +45,7 @@ import numpy
 import tvb.datatypes.time_series_data as time_series_data
 import tvb.basic.traits.exceptions as exceptions
 from tvb.basic.logger.builder import get_logger
-
+from tvb.datatypes.volumes_framework import preprocess_space_parameters
 
 LOG = get_logger(__name__)
 
@@ -358,17 +358,7 @@ class TimeSeriesRegionFramework(time_series_data.TimeSeriesRegionData, TimeSerie
         x_plane, y_plane, z_plane = preprocess_space_parameters(x_plane, y_plane, z_plane, volume_rm.length_1d,
                                                                 volume_rm.length_2d, volume_rm.length_3d)
 
-        slices = slice(volume_rm.length_1d), slice(volume_rm.length_2d), slice(z_plane, z_plane + 1)
-        slice_x = volume_rm.read_data_slice(slices)[:, :, 0]  # 2D
-        slice_x = numpy.array(slice_x, dtype=int)
-
-        slices = slice(x_plane, x_plane + 1), slice(volume_rm.length_2d), slice(volume_rm.length_3d)
-        slice_y = volume_rm.read_data_slice(slices)[0, :, :][..., ::-1]
-        slice_y = numpy.array(slice_y, dtype=int)
-
-        slices = slice(volume_rm.length_1d), slice(y_plane, y_plane + 1), slice(volume_rm.length_3d)
-        slice_z = volume_rm.read_data_slice(slices)[:, 0, :][..., ::-1]
-        slice_z = numpy.array(slice_z, dtype=int)
+        slice_x, slice_y, slice_z = self.region_mapping_volume.get_volume_slice(x_plane, y_plane, z_plane)
 
         # Read from the current TS:
         from_idx, to_idx, current_time_length = preprocess_time_parameters(from_idx, to_idx, self.read_data_shape()[0])
@@ -529,32 +519,6 @@ def preprocess_time_parameters(t1, t2, time_length):
     current_time_line = max(to_idx - from_idx, 1)
 
     return from_idx, to_idx, current_time_line
-
-
-def preprocess_space_parameters(x, y, z, max_x, max_y, max_z):
-    """
-    Covert ajax call parameters into numbers and validate them.
-
-    :param x:  coordinate
-    :param y:  coordinate
-    :param z:  coordinate that will be reversed
-    :param max_x: maximum x accepted value
-    :param max_y: maximum y accepted value
-    :param max_z: maximum z accepted value
-
-    :return: (x, y, z) as integers, Z reversed
-    """
-
-    x, y, z = int(x), int(y), int(z)
-
-    if not 0 <= x <= max_x or not 0 <= y <= max_y or not 0 <= z <= max_z:
-        msg = "Coordinates out of boundaries: [x,y,z] = [{0}, {1}, {2}]".format(x, y, z)
-        raise exceptions.ValidationException(msg)
-
-    # Reverse Z
-    z = max_z - z - 1
-
-    return x, y, z
 
 
 def prepare_time_slice(total_time_length, max_length=10 ** 4):

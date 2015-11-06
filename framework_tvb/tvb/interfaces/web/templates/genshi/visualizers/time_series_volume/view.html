@@ -1,4 +1,4 @@
-<div>
+<div xmlns:xi="http://www.w3.org/2001/XInclude">
     <script type="text/javascript" src="/static_view/time_series_volume/scripts/volumeView.js?$currentVersionJS"></script>
     <script type="text/javascript" src="/static_view/time_series_volume/scripts/volumeRPC.js?$currentVersionJS"></script>
     <script type="text/javascript" src="/static_view/time_series_volume/scripts/timeseriesVolume.js?$currentVersionJS"></script>
@@ -10,19 +10,7 @@
     <link rel="stylesheet" type="text/css" href="/static/style/subsection_timeseries.css?$currentVersionJS"/>
     <link rel="stylesheet" type="text/css" href="/static/style/sections_svg.css?$currentVersionJS"/>
 
-    <py:def function="drawSliderForAxis(axisName)" xmlns:py="http://genshi.edgewall.org/">
-        <div class="slider-div">
-            <label class="slider-axis-name">${axisName.upper()} Axis</label>
-            <br/>
-
-            <span id="sliderForAxis${axisName}"></span>
-            <br/>
-
-            <label class="min-slider-coord">0</label>
-            <label class="current-slider-coord" id="labelCurrentValueAxis${axisName}"></label>
-            <label class="max-slider-coord" id="labelMaxValueAxis${axisName}"></label>
-        </div>
-    </py:def>
+    <xi:include href="drawSliderForAxis.html"/>
 
     <section class="view-column">
 

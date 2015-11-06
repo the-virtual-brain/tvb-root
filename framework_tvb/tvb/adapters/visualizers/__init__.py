@@ -37,4 +37,5 @@ __all__ = ["annotations_viewer", "brain", "connectivity", "cross_coherence", "cr
            "histogram", "ica", "eeg_monitor", "local_connectivity_view", "matrix_viewer",
            "mplh5_coherence_spectrum", "mplh5_cross_correlation", "mplh5_fourier_spectrum",
            "mplh5_topographic", "mplh5_wavelet_spectrogram",
-           "pca", "pse_discrete", "pse_isocline", "sensors", "surface_view", "time_series", "time_series_volume"]
+           "pca", "pse_discrete", "pse_isocline", "region_volume_mapping",
+           "sensors", "surface_view", "time_series", "time_series_volume"]

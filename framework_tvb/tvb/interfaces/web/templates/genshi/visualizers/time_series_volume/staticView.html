@@ -1,0 +1,34 @@
+<div xmlns:xi="http://www.w3.org/2001/XInclude">
+    <script type="text/javascript" src="/static_view/time_series_volume/scripts/volumeView.js?$currentVersionJS"></script>
+    <script type="text/javascript" src="/static_view/time_series_volume/scripts/volumeRPC.js?$currentVersionJS"></script>
+    <script type="text/javascript" src="/static_view/time_series_volume/scripts/timeseriesVolume.js?$currentVersionJS"></script>
+    <script type="text/javascript" src="/static/js/webGL_Connectivity.js?$currentVersionJS"></script>
+    <script type="text/javascript" src="/static/coloring/colorSchemeComponent.js?$currentVersionJS"></script>
+
+    <link rel="stylesheet" type="text/css" href="/static/style/subsection_timeseries.css?$currentVersionJS"/>
+    <link rel="stylesheet" type="text/css" href="/static/style/sections_svg.css?$currentVersionJS"/>
+
+    <xi:include href="drawSliderForAxis.html"/>
+
+    <section class="view-column">
+        <ul class="toolbar-inline toolbar-with-sliders">
+            <li class="toolbar-li-with-slider">  ${drawSliderForAxis('X')} </li>
+            <li class="toolbar-li-with-slider">  ${drawSliderForAxis('Y')} </li>
+            <li class="toolbar-li-with-slider">  ${drawSliderForAxis('Z')} </li>
+            <li class="toolbar-small-li"> <label>(in $voxelUnit)</label></li>
+        </ul>
+
+        <div class="canvas-parent">
+            <canvas id="canvasVolumes"></canvas>
+        </div>
+    </section>
+
+    <script type="text/javascript">
+        $("#main").addClass("colscheme-2-even brain-extended");
+        $(document).ready(function () {
+            TSV_startVolumeStaticVisualizer(
+                    '$urlVolumeData', ${minValue}, ${maxValue},
+                    '${volumeShape}', '${volumeOrigin}', '${voxelSize}');
+        })
+    </script>
+</div>

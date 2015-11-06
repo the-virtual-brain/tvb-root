@@ -36,10 +36,10 @@ DataTypes for mapping some TVB DataTypes to a Connectivity (regions).
 """
 
 import numpy
-import tvb.basic.traits.exceptions as exceptions
+from tvb.basic.traits import exceptions
 from tvb.basic.logger.builder import get_logger
 from tvb.datatypes.region_mapping_data import RegionMappingData, RegionVolumeMappingData
-
+from tvb.datatypes.volumes_framework import preprocess_space_parameters
 
 LOG = get_logger(__name__)
 
@@ -120,3 +120,27 @@ class RegionVolumeMappingFramework(RegionVolumeMappingData):
             raise exceptions.ValidationException("Invalid Mapping array: [%d ... %d]" % (data.min(), data.max()))
 
         self.store_data("array_data", data)
+
+
+    def get_volume_slice(self, x_plane, y_plane, z_plane):
+        slices = slice(self.length_1d), slice(self.length_2d), slice(z_plane, z_plane + 1)
+        slice_x = self.read_data_slice(slices)[:, :, 0]  # 2D
+        slice_x = numpy.array(slice_x, dtype=int)
+
+        slices = slice(x_plane, x_plane + 1), slice(self.length_2d), slice(self.length_3d)
+        slice_y = self.read_data_slice(slices)[0, :, :][..., ::-1]
+        slice_y = numpy.array(slice_y, dtype=int)
+
+        slices = slice(self.length_1d), slice(y_plane, y_plane + 1), slice(self.length_3d)
+        slice_z = self.read_data_slice(slices)[:, 0, :][..., ::-1]
+        slice_z = numpy.array(slice_z, dtype=int)
+
+        return [slice_x, slice_y, slice_z]
+
+
+    def get_volume_view(self, x_plane, y_plane, z_plane, **kwargs):
+        # Work with space inside Volume:
+        x_plane, y_plane, z_plane = preprocess_space_parameters(x_plane, y_plane, z_plane, self.length_1d,
+                                                                self.length_2d, self.length_3d)
+        slice_x, slice_y, slice_z = self.get_volume_slice(x_plane, y_plane, z_plane)
+        return [[slice_x.tolist()], [slice_y.tolist()], [slice_z.tolist()]]
