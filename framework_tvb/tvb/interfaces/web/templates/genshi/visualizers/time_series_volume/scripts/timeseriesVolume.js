@@ -1,6 +1,9 @@
 /* globals displayMessage, ColSch_initColorSchemeGUI, ColSch_getAbsoluteGradientColorString,
             doAjaxCall, d3, HLPR_readJSONfromFile,
-            TSV_initVolumeView, TSV_drawVolumeScene, TSV_hitTest
+            TSV_initVolumeView, TSV_drawVolumeScene, TSV_hitTest, TSV_getQuadrant,
+            TSF_drawGraphs, TSF_updateTSFragment, TSF_initVisualizer, TSF_updateTimeGauge,
+            TSRPC_initNonStreaming, TSRPC_initStreaming, TSRPC_getViewAtTime,
+            TSRPC_startBuffering, TSRPC_stopBuffering
              */
 (function(){ // module timeseriesVolume controller
 // ==================================== INITIALIZATION CODE START ===========================================
@@ -12,19 +15,9 @@ var tsVol = {
     currentTimePoint: 0,
     playbackRate: 66,           // This is a not acurate lower limit for playback speed.
     playerIntervalID: null,     // ID from the player's setInterval().
-    streamToBufferID: null,     // ID from the buffering system's setInterval().
-    bufferSize: 1,              // How many time points to get each time. It will be computed automatically, This is only the start value
-    bufferL2Size: 1,            // How many sets of buffers can we keep at the same time in memory
-    lookAhead: 10,             // How many sets of buffers should be loaded ahead of us each time?
     data: {},                   // The actual data to be drawn to canvas.
-    bufferL2: {},               // Contains all data from loaded views, limited by memory.
-    urlVolumeData: "",          // Used to store the call for get_volume_view server function.
     dataSize: "",               // Used first to contain the file ID and then it's dimension.
-    requestQueue: [],           // Used to avoid requesting a time point set while we are waiting for it.
-    parserBlob: null,           // Used to store the JSON Parser Blob for web-workers.
     slidersClicked: false,      // Used to handle the status of the sliders.
-    batchID: 0,                 // Used to ignore useless incoming ajax responses.
-    urlTimeSeriesData: "",      // Contains the address to query the time series of a specific voxel.
     samplePeriod: 0,            // Meta data. The sampling period of the time series
     samplePeriodUnit: ""        // Meta data. The time unit of the sample period
 };
@@ -33,9 +26,8 @@ var SLIDERS = ["X", "Y", "Z"];
 var SLIDERIDS = ["sliderForAxisX", "sliderForAxisY", "sliderForAxisZ"];
 
 /** Initializes all state related to the volumetric part */
-function init_VolumeController(urlVolumeData, volumeShape){
+function init_VolumeController(volumeShape){
     tsVol.dataSize = $.parseJSON(volumeShape);
-    tsVol.urlVolumeData = urlVolumeData;
     // set the center entity as the selected one
     tsVol.selectedEntity[0] = Math.floor(tsVol.dataSize[1] / 2);
     tsVol.selectedEntity[1] = Math.floor(tsVol.dataSize[2] / 2);
@@ -51,10 +43,12 @@ function init_VolumeController(urlVolumeData, volumeShape){
 }
 
 function TSV_startVolumeStaticVisualizer(urlVolumeData, minValue, maxValue, volumeShape, volOrigin, sizeOfVoxel){
-    init_VolumeController(urlVolumeData, volumeShape);
+    init_VolumeController(volumeShape);
     TSV_initVolumeView(tsVol.dataSize, minValue, maxValue, $.parseJSON(sizeOfVoxel), $.parseJSON(volOrigin)[0]);
 
     tsVol.selectedQuad = TSV_getQuadrant(0);
+
+    TSRPC_initNonStreaming(urlVolumeData, tsVol.entitySize);
 
     ColSch_initColorSchemeGUI(minValue, maxValue, function(){
         drawVolumeScene(tsVol.currentTimePoint);
@@ -86,34 +80,18 @@ function TSV_startVolumeStaticVisualizer(urlVolumeData, minValue, maxValue, volu
  */
 function TSV_startVolumeTimeSeriesVisualizer(urlVolumeData, urlTimeSeriesData, minValue, maxValue,
                                              samplePeriod, samplePeriodUnit, volumeShape, volOrigin, sizeOfVoxel) {
-    /**
-    * This will be our JSON parser web-worker blob,
-    * Using a webworker is a bit slower than parsing the jsons with
-    * classical methods but it will prevent the main thread to be blocked
-    * while waiting for the parsing, granting a smooth visualization.
-    * We use this technique also to avoid writing a separate file
-    * for each worker.
-    */
-    tsVol.parserBlob = inlineWebWorkerWrapper(
-            function(){
-                self.addEventListener( 'message', function (e){
-                            // Parse JSON, send it to main thread, close the worker
-                            self.postMessage(JSON.parse(e.data));
-                            self.close();
-                }, false );
-            }
-        );
 
-    init_VolumeController(urlVolumeData, volumeShape);
+    init_VolumeController(volumeShape);
     TSV_initVolumeView(tsVol.dataSize, minValue, maxValue, $.parseJSON(sizeOfVoxel), $.parseJSON(volOrigin)[0]);
 
     tsVol.selectedQuad = TSV_getQuadrant(0);
 
-    tsVol.urlTimeSeriesData = urlTimeSeriesData;
     tsVol.samplePeriod = samplePeriod;
     tsVol.samplePeriodUnit = samplePeriodUnit;
 
-    _setupBuffersSize();
+    TSRPC_initStreaming(urlVolumeData, tsVol.entitySize, tsVol.playbackRate, function(){
+       return {currentTimePoint: tsVol.currentTimePoint, selectedEntity: tsVol.selectedEntity};
+    });
 
     ColSch_initColorSchemeGUI(minValue, maxValue, function(){
         drawSceneFunctional(tsVol.currentTimePoint);
@@ -122,11 +100,8 @@ function TSV_startVolumeTimeSeriesVisualizer(urlVolumeData, urlTimeSeriesData, m
     // Update the data shared with the SVG Time Series Fragment
     TSF_updateTSFragment(tsVol.selectedEntity, tsVol.currentTimePoint);
 
-    // Fire the memory cleaning procedure
-    window.setInterval(freeBuffer, tsVol.playbackRate * 20);
-
     // Start the SVG Time Series Fragment and draw it.
-    TSF_initVisualizer(tsVol.urlTimeSeriesData, tsVol.timeLength, tsVol.samplePeriod,
+    TSF_initVisualizer(urlTimeSeriesData, tsVol.timeLength, tsVol.samplePeriod,
                        tsVol.samplePeriodUnit, minValue, maxValue);
     TSF_drawGraphs();
 
@@ -158,172 +133,9 @@ function drawSceneFunctional(tIndex) {
 
 function drawVolumeScene(tIndex){
     // An array containing the view for each plane.
-    var sliceArray = getViewAtTime(tIndex);
+    var sliceArray = TSRPC_getViewAtTime(tIndex, tsVol.selectedEntity);
     TSV_drawVolumeScene(sliceArray, tsVol.selectedEntity);
 }
-
-/**
- * Automatically determine optimal bufferSizer, depending on data dimensions.
- */
-function _setupBuffersSize() {
-    var tpSize = Math.max(tsVol.entitySize[0], tsVol.entitySize[1], tsVol.entitySize[2]);
-    tpSize = tpSize * tpSize;
-    //enough to avoid waisting bandwidth and to parse the json smoothly
-    while(tsVol.bufferSize * tpSize <= 50000){
-        tsVol.bufferSize++;
-    }
-    //Very safe measure to avoid crashes. Tested on Chrome.
-    while(tsVol.bufferSize * tpSize * tsVol.bufferL2Size <= 157286400){
-        tsVol.bufferL2Size *= 2;
-    }
-    tsVol.bufferL2Size /= 2;
-}
-
-// ==================================== RPC FUNCTIONS START ==============================================
-
-/**
- * Requests file data without blocking the main thread if possible.
- * @param fileName The target URL or our request
- * @param sect The section index of the wanted data in our buffering system.
- */
-function asyncRequest(fileName, sect){
-    var index = tsVol.requestQueue.indexOf(sect);
-    var privateID = tsVol.batchID;
-
-    if (index < 0){
-        tsVol.requestQueue.push(sect);
-        doAjaxCall({
-            async:true,
-            url:fileName,
-            method:"POST",
-            mimeType:"text/plain",
-            success:function(response){
-                if(privateID === tsVol.batchID){
-                    parseAsync(response, function(json){
-                        // save the parsed JSON
-                        tsVol.bufferL2[sect] = json;
-                        var idx = tsVol.requestQueue.indexOf(sect);
-                        if (idx > -1){
-                            tsVol.requestQueue.splice(idx, 1);
-                        }
-                    });
-                }
-            },
-            error: function(){
-                displayMessage("Could not retrieve data from the server!", "warningMessage");
-            }
-        });
-    }
-}
-
-/**
- * Build a worker from an anonymous function body. Returns and URL Blob
- * @param workerBody The anonymous function to convert into URL BLOB
- * @returns URL Blob that can be used to invoke a web worker
- */
-function inlineWebWorkerWrapper(workerBody){
-    return URL.createObjectURL(
-        new Blob(['(', workerBody.toString(), ')()' ], { type: 'application/javascript' })
-    );
-}
-
-/**
- * Parses JSON data in a web-worker. Has a fall back to traditional parsing.
- * @param data The json data to be parsed
- * @param callback Function to be called after the parsing
- */
-function parseAsync(data, callback){
-    var worker;
-    var json;
-    if( window.Worker ){
-        worker = new Worker( tsVol.parserBlob );
-        worker.addEventListener( 'message', function (e){
-            json = e.data;
-            callback( json );
-        }, false);
-        worker.postMessage( data );
-    }else{
-        json = JSON.parse( data );
-        callback( json );
-    }
-}
-
-/**
- *  This function is called whenever we can, to load some data ahead of
- *  were we're looking.
- */
-function streamToBuffer(){
-    // we avoid having too many requests at the same time
-    if(tsVol.requestQueue.length < 2) {
-        var currentSection = Math.ceil(tsVol.currentTimePoint/tsVol.bufferSize);
-        var maxSections = Math.floor(tsVol.timeLength/tsVol.bufferSize);
-        var xPlane = ";x_plane=" + (tsVol.selectedEntity[0]);
-        var yPlane = ";y_plane=" + (tsVol.selectedEntity[1]);
-        var zPlane = ";z_plane=" + (tsVol.selectedEntity[2]);
-
-        for (var i = 0; i <= tsVol.lookAhead && i < maxSections; i++) {
-            var toBufferSection = Math.min( currentSection + i, maxSections );
-            // If not already requested:
-            if(!tsVol.bufferL2[toBufferSection] && tsVol.requestQueue.indexOf(toBufferSection) < 0) {
-                var from = toBufferSection * tsVol.bufferSize;
-                var to = Math.min(from + tsVol.bufferSize, tsVol.timeLength);
-                var query = tsVol.urlVolumeData + "from_idx=" + from + ";to_idx=" + to + xPlane + yPlane + zPlane;
-                asyncRequest(query, toBufferSection);
-                return; // break out of the loop
-            }
-        }
-    }
-}
-
-/**
- *  This function is called to erase some elements from bufferL2 array and avoid
- *  consuming too much memory.
- */
-function freeBuffer() {
-    var section = Math.floor(tsVol.currentTimePoint/tsVol.bufferSize);
-    var bufferedElements = Object.keys(tsVol.bufferL2).length;
-
-    if(bufferedElements > tsVol.bufferL2Size){
-        for(var idx in tsVol.bufferL2){
-            if (idx < (section - tsVol.bufferL2Size/2) % tsVol.timeLength || idx > (section + tsVol.bufferL2Size/2) % tsVol.timeLength) {
-                delete tsVol.bufferL2[idx];
-            }
-        }
-    }
-}
-
-/**
- *  This functions returns the X,Y,Z data from time-point t.
- * @param t The time point we want to get
- * @returns Array with only the data from the x,y,z plane at time-point t.
- */
-function getViewAtTime(t) {
-    var buffer;
-    var from;
-    var to;
-    var xPlane = ";x_plane=" + (tsVol.selectedEntity[0]);
-    var yPlane = ";y_plane=" + (tsVol.selectedEntity[1]);
-    var zPlane = ";z_plane=" + (tsVol.selectedEntity[2]);
-
-    var query;
-    var section = Math.floor(t/tsVol.bufferSize);
-
-    if (tsVol.bufferL2[section]) { // We have that slice in memory
-        buffer = tsVol.bufferL2[section];
-
-    } else { // We need to load that slice from the server
-        from = "from_idx=" + t;
-        to = ";to_idx=" + Math.min(1 + t, tsVol.timeLength);
-        query = tsVol.urlVolumeData + from + to + xPlane + yPlane + zPlane;
-
-        buffer = HLPR_readJSONfromFile(query);
-        return [buffer[0][0],buffer[1][0],buffer[2][0]];
-    }
-    t = t%tsVol.bufferSize;
-    return [buffer[0][t],buffer[1][t],buffer[2][t]];
-}
-
-// ==================================== RPC FUNCTIONS END ==============================================
 
 // ==================================== PICKING RELATED CODE START ==========================================
 
@@ -431,14 +243,14 @@ function playBack(){
         tsVol.playerIntervalID = window.setInterval(drawSceneFunctional, tsVol.playbackRate);
     }
     $("#btnPlay").attr("class", "action action-pause");
-    startBuffering();
+    TSRPC_startBuffering();
 }
 
 function stopPlayback(){
     window.clearInterval(tsVol.playerIntervalID);
     tsVol.playerIntervalID = null;
     $("#btnPlay").attr("class", "action action-run");
-    stopBuffering();
+    TSRPC_stopBuffering();
 }
 
 function togglePlayback() {
@@ -447,22 +259,6 @@ function togglePlayback() {
     } else {
         stopPlayback();
     }
-}
-
-function startBuffering() {
-    // Only start buffering id the computed buffer length > 1. Whe only 1 step can be retrieved it is not worthy,
-    // and we will have duplicate retrievals generated
-    if(!tsVol.streamToBufferID && tsVol.bufferSize > 1) {
-        tsVol.batchID++;
-        tsVol.requestQueue = [];
-        tsVol.bufferL2 = {};
-        tsVol.streamToBufferID = window.setInterval(streamToBuffer, 0);
-    }
-}
-
-function stopBuffering() {
-    window.clearInterval(tsVol.streamToBufferID);
-    tsVol.streamToBufferID = null;
 }
 
 function playNextTimePoint(){
