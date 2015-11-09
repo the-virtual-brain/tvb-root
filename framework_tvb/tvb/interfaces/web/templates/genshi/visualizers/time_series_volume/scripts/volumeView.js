@@ -124,7 +124,8 @@ function TSV_drawVolumeScene(sliceArray, selectedEntity){
     //Value of the selected voxel. Used to highlight value in color scale.
     var selectedEntityValue = sliceArray[0][selectedEntity[0]][selectedEntity[1]];
     drawLegend(selectedEntityValue);
-    drawLabels();
+    var focusTxt = selectedEntity+"="+selectedEntityValue.toPrecision(3);
+    drawLabels(focusTxt);
 }
 
 /**
@@ -291,7 +292,7 @@ function drawLegend(selectedEntityValue) {
 /**
  * Add spatial labels to the navigation quadrants
  */
-function drawLabels(){
+function drawLabels(focusTxt){
     vol.ctx.font = '15px Helvetica';
     vol.ctx.textBaseline = 'middle';
     _setCtxOnQuadrant(0);
@@ -300,6 +301,8 @@ function drawLabels(){
     vol.ctx.fillText("Sagittal", vol.quadrantWidth/5, vol.quadrantHeight - 13);
     _setCtxOnQuadrant(2);
     vol.ctx.fillText("Coronal", vol.quadrantWidth/5, vol.quadrantHeight - 13);
+    _setCtxOnQuadrant(3);
+    vol.ctx.fillText(focusTxt, vol.focusQuadrantWidth/2, vol.focusQuadrantHeight - 13);
 }
 
 /**

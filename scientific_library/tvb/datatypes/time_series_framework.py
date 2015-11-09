@@ -403,13 +403,15 @@ class TimeSeriesRegionFramework(time_series_data.TimeSeriesRegionData, TimeSerie
 
         time_length = self.read_data_shape()[0]
         voxel_slices = prepare_time_slice(time_length), slice(var, var + 1), slice(idx, idx + 1), slice(mode, mode + 1)
+        label = volume_rm.connectivity.region_labels[idx]
 
         background, back_min, back_max = None, None, None
         if idx < 0:
             back_min, back_max = self.get_min_max_values()
             background = numpy.ones((time_length, 1)) * self.out_of_range(back_min)
+            label = 'background'
 
-        result = postprocess_voxel_ts(self, voxel_slices, background, back_min, back_max)
+        result = postprocess_voxel_ts(self, voxel_slices, background, back_min, back_max, label)
         return result
 
 
@@ -538,7 +540,7 @@ def prepare_time_slice(total_time_length, max_length=10 ** 4):
     return slice(total_time_length - max_length, total_time_length)
 
 
-def postprocess_voxel_ts(ts, slices, background_value=None, background_min=None, background_max=None):
+def postprocess_voxel_ts(ts, slices, background_value=None, background_min=None, background_max=None, label=None):
     """
     Read TimeLine from TS and prepare the result for TSVolumeViewer.
 
@@ -560,5 +562,6 @@ def postprocess_voxel_ts(ts, slices, background_value=None, background_min=None,
                   mean=float(numpy.mean(time_line)),
                   median=float(numpy.median(time_line)),
                   variance=float(numpy.var(time_line)),
-                  deviation=float(numpy.std(time_line)))
+                  deviation=float(numpy.std(time_line)),
+                  label=label)
     return result
