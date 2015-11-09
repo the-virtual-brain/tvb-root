@@ -35,7 +35,9 @@ Backend-side for Visualizers that display measures on regions in the brain volum
 """
 
 import json
+from tvb.basic.filters.chain import FilterChain
 from tvb.core.adapters.abcdisplayer import ABCDisplayer
+from tvb.datatypes.graph import ConnectivityMeasure
 from tvb.datatypes.region_mapping import RegionVolumeMapping
 
 
@@ -48,16 +50,25 @@ class RegionVolumeMappingVisualiser(ABCDisplayer):
 
     def get_input_tree(self):
         return [{'name': 'region_mapping_volume', 'label': 'Region mapping', 'type': RegionVolumeMapping, 'required': True,},
-                ]
+                {'name': 'connectivity_measure', 'label': 'Connectivity measure',
+                 'type': ConnectivityMeasure, 'required': False,
+                 'description': 'A connectivity measure',
+                 'conditions': FilterChain(fields=[FilterChain.datatype + '._nr_dimensions'],
+                                           operations=["=="], values=[1])},]
 
 
     def get_required_memory_size(self, **kwargs):
         return -1
 
 
-    def launch(self, region_mapping_volume):
-        min_value, max_value = [0, region_mapping_volume.connectivity.number_of_regions]
-        url_volume_data = self.paths2url(region_mapping_volume, "get_volume_view", parameter="")
+    def launch(self, region_mapping_volume, connectivity_measure=None):
+        if connectivity_measure is None:
+            min_value, max_value = [0, region_mapping_volume.connectivity.number_of_regions]
+            url_volume_data = self.paths2url(region_mapping_volume, "get_volume_view", parameter="")
+        else:
+            min_value, max_value =[connectivity_measure.array_data.min(), connectivity_measure.array_data.max()]
+            datatype_kwargs = json.dumps({'mapped_array': connectivity_measure.gid})
+            url_volume_data = ABCDisplayer.paths2url(region_mapping_volume, "get_mapped_array_volume_view") + '/' + datatype_kwargs + '?'
 
         volume = region_mapping_volume.volume
         volume_shape = region_mapping_volume.read_data_shape()

@@ -42,10 +42,10 @@ Framework methods for the TimeSeries datatypes.
 
 import json
 import numpy
-import tvb.datatypes.time_series_data as time_series_data
-import tvb.basic.traits.exceptions as exceptions
+from tvb.datatypes import time_series_data
+from tvb.basic.traits import exceptions
 from tvb.basic.logger.builder import get_logger
-from tvb.datatypes.volumes_framework import preprocess_space_parameters
+from tvb.datatypes.region_mapping_framework import preprocess_space_parameters
 
 LOG = get_logger(__name__)
 

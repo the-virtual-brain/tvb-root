@@ -39,7 +39,6 @@ import numpy
 from tvb.basic.traits import exceptions
 from tvb.basic.logger.builder import get_logger
 from tvb.datatypes.region_mapping_data import RegionMappingData, RegionVolumeMappingData
-from tvb.datatypes.volumes_framework import preprocess_space_parameters
 
 LOG = get_logger(__name__)
 
@@ -144,3 +143,50 @@ class RegionVolumeMappingFramework(RegionVolumeMappingData):
                                                                 self.length_2d, self.length_3d)
         slice_x, slice_y, slice_z = self.get_volume_slice(x_plane, y_plane, z_plane)
         return [[slice_x.tolist()], [slice_y.tolist()], [slice_z.tolist()]]
+
+
+    def get_mapped_array_volume_view(self, mapped_array, x_plane, y_plane, z_plane, **kwargs):
+        x_plane, y_plane, z_plane = preprocess_space_parameters(x_plane, y_plane, z_plane, self.length_1d,
+                                                                self.length_2d, self.length_3d)
+        slice_x, slice_y, slice_z = self.get_volume_slice(x_plane, y_plane, z_plane)
+        measure = mapped_array.array_data
+        result_x = measure[slice_x]
+        result_y = measure[slice_y]
+        result_z = measure[slice_z]
+        # Voxels outside the brain are -1. The indexing above is incorrect for those voxels as it
+        # associates the values of the last region measure[-1] to them.
+        # Here we replace those values with an out of scale value.
+        result_x[slice_x==-1] = measure.min() - 1
+        result_y[slice_y==-1] = measure.min() - 1
+        result_z[slice_z==-1] = measure.min() - 1
+
+        return [[result_x.tolist()],
+                [result_y.tolist()],
+                [result_z.tolist()]]
+
+
+
+def preprocess_space_parameters(x, y, z, max_x, max_y, max_z):
+    """
+    Covert ajax call parameters into numbers and validate them.
+
+    :param x:  coordinate
+    :param y:  coordinate
+    :param z:  coordinate that will be reversed
+    :param max_x: maximum x accepted value
+    :param max_y: maximum y accepted value
+    :param max_z: maximum z accepted value
+
+    :return: (x, y, z) as integers, Z reversed
+    """
+
+    x, y, z = int(x), int(y), int(z)
+
+    if not 0 <= x <= max_x or not 0 <= y <= max_y or not 0 <= z <= max_z:
+        msg = "Coordinates out of boundaries: [x,y,z] = [{0}, {1}, {2}]".format(x, y, z)
+        raise exceptions.ValidationException(msg)
+
+    # Reverse Z
+    z = max_z - z - 1
+
+    return x, y, z
