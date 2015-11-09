@@ -186,3 +186,29 @@ class RegionMappingViewer(SurfaceViewer):
     def launch(self, region_map, connectivity_measure=None, shell_surface=None):
 
         return SurfaceViewer.launch(self, region_map.surface, region_map, connectivity_measure, shell_surface)
+
+
+class ConnectivityMeasureOnSurfaceViewer(SurfaceViewer):
+    """
+    This displays a connectivity measure on a surface via a RegionMapping
+    It reuses almost everything from SurfaceViewer, but it make required another input param.
+    """
+    _ui_name = "Connectivity Measure Surface Visualizer"
+    _ui_subsection = "surface"
+
+    def get_input_tree(self):
+        base_tree = SurfaceViewer.get_input_tree(self)
+        base_tree[2]['required'] = True
+        tree = [base_tree[2], base_tree[1], base_tree[3]]
+        return tree
+
+    def launch(self, connectivity_measure, region_map=None, shell_surface=None):
+        if region_map is None or region_map.connectivity.number_of_regions != connectivity_measure.connectivity.number_of_regions:
+            # We have no regionmap or the onw we have is not compatible with the measure.
+            # first try to find the associated region map
+            region_maps = dao.get_generic_entity(RegionMapping, connectivity_measure.connectivity.gid, '_connectivity')
+            if region_maps:
+                region_map = region_maps[0]
+            #else: todo fallback on any region map with the right number of nodes
+        return SurfaceViewer.launch(self, region_map.surface, region_map, connectivity_measure, shell_surface)
+
