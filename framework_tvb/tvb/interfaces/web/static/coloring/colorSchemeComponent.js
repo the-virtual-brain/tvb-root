@@ -284,11 +284,9 @@ function getGradientColor(pointValue, min, max) {
 /**
  * Looks up an activity value in the current palette. Analog to the color scheme shader.
  * Takes into account the active range and number of bins.
- * @returns {[number]} rgb in 0..1 units
+ * @returns {number} the index in the palette corresponding to the activity 0..len(colors)
  */
-function ColSch_getColor(activity){
-    // The color array for the current scheme
-    var colors = _colorSchemeColors[ColSchInfo()._data_idx];
+function ColSch_getPalleteIndex(activity){
     activity = (activity - _minRange)/(_maxRange - _minRange);
     // bin the activity
     activity  = Math.floor(activity  * _sparseColorNo) / _sparseColorNo;
@@ -297,12 +295,41 @@ function ColSch_getColor(activity){
     activity = activity * 253.0/255.0 + 1.0/255.0;
     activity = clampValue(activity);
     // from 0..1 to 0..255 the color array range
-    var idx = Math.round(activity * 255); // nearest neighbour interpolation
-    var col = colors[idx];
+    return Math.round(activity * 255); // nearest neighbour interpolation
+}
+
+/**
+ * Looks up an activity value in the current palette. Analog to the color scheme shader.
+ * Takes into account the active range and number of bins.
+ * @returns {[number]} rgb in 0..1 units
+ */
+function ColSch_getColor(activity){
+    // The color array for the current scheme
+    var colors = _colorSchemeColors[ColSchInfo()._data_idx];
+    var col = colors[ColSch_getPalleteIndex(activity)];
     // this function returns float colors
     return [col[0]/255, col[1]/255, col[2]/255];
 }
 
+/**
+ * Similar to ColSch_getColor but :
+ *   It returns an alpha channel
+ *   You can request a specific color scheme
+ *   Out of scale values are returned as transparent instead of color scheme edge colors.
+ */
+function ColSch_get_RGBA_Color(activity, alpha, colorSchemeName){
+    if (colorSchemeName == null){
+        colorSchemeName = _colorScheme; // The color array for the current scheme
+    }
+    var colSchIdx = _ColSchemesInfo[colorSchemeName]._data_idx;
+    var colors = _colorSchemeColors[colSchIdx];
+    var idx = ColSch_getPalleteIndex(activity);
+    if (idx === 0 || idx === 254){
+        return [0, 0, 0, 0];
+    }
+    var col = colors[idx];
+    return [col[0]/255, col[1]/255, col[2]/255, alpha];
+}
 
 function ColSch_getAbsoluteGradientColorString(pointValue) {
     var rgb_values = ColSch_getColor(pointValue);
