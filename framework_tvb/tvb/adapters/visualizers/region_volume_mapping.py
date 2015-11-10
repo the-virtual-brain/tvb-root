@@ -111,6 +111,58 @@ class _MappedArrayVolumeBase(ABCDisplayer):
 
 
 
+class MappedArrayVolumeVisualizer(_MappedArrayVolumeBase):
+    """
+    This is a generic mapped array visualizer on a region volume.
+    To view a multidimensional array one has to give this viewer a slice.
+    """
+    _ui_name = "Mapped array on region volume Visualizer"
+    _ui_subsection = "ts_volume"
+
+
+    def get_input_tree(self):
+        return [{'name': 'measure', 'label': 'Measure',
+                 'type': MappedArray, 'required': True,
+                 'description': 'A measure to view on anatomy',
+                 'conditions': FilterChain(fields=[FilterChain.datatype + '._nr_dimensions'],
+                                           operations=[">="], values=[2])},
+                {'name': 'region_mapping_volume', 'label': 'Region mapping',
+                 'type': RegionVolumeMapping, 'required': False,},
+                {'name': 'data_slice', 'label': 'slice indices in numpy syntax',
+                 'type': 'str', 'required': False}]
+
+
+    def launch(self, measure, region_mapping_volume=None, data_slice=''):
+        region_mapping_volume = self._ensure_region_mapping(region_mapping_volume)
+        params = self.compute_params(region_mapping_volume, measure, data_slice)
+        params['title'] = "Mapped array on region volume Visualizer",
+        return self.build_display_result("time_series_volume/staticView", params,
+                                         pages=dict(controlPage="time_series_volume/controls"))
+
+
+
+class ConnectivityMeasureVolumeVisualizer(_MappedArrayVolumeBase):
+    _ui_name = "Connectivity Measure on region volume Visualizer"
+    _ui_subsection = "ts_volume"
+
+
+    def get_input_tree(self):
+        return [{'name': 'connectivity_measure', 'label': 'Connectivity measure',
+                 'type': ConnectivityMeasure, 'required': True,
+                 'description': 'A connectivity measure',
+                 'conditions': FilterChain(fields=[FilterChain.datatype + '._nr_dimensions'],
+                                           operations=["=="], values=[1])},
+                {'name': 'region_mapping_volume', 'label': 'Region mapping', 'type': RegionVolumeMapping, 'required': False,}]
+
+
+    def launch(self, connectivity_measure, region_mapping_volume=None):
+        params = self.compute_params(region_mapping_volume, connectivity_measure)
+        params['title'] = "Volumetric Region Volume Mapping Visualizer"
+        return self.build_display_result("time_series_volume/staticView", params,
+                                         pages=dict(controlPage="time_series_volume/controls"))
+
+
+
 class RegionVolumeMappingVisualiser(_MappedArrayVolumeBase):
 
     _ui_name = "Region Volume Mapping Visualizer"
