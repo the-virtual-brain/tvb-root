@@ -38,6 +38,7 @@ DataTypes for mapping some TVB DataTypes to a Connectivity (regions).
 import numpy
 from tvb.basic.traits import exceptions
 from tvb.basic.logger.builder import get_logger
+from tvb.core.utils import parse_slice
 from tvb.datatypes.region_mapping_data import RegionMappingData, RegionVolumeMappingData
 
 LOG = get_logger(__name__)
@@ -145,11 +146,20 @@ class RegionVolumeMappingFramework(RegionVolumeMappingData):
         return [[slice_x.tolist()], [slice_y.tolist()], [slice_z.tolist()]]
 
 
-    def get_mapped_array_volume_view(self, mapped_array, x_plane, y_plane, z_plane, **kwargs):
+    def get_mapped_array_volume_view(self, mapped_array, x_plane, y_plane, z_plane, mapped_array_slice=None, **kwargs):
         x_plane, y_plane, z_plane = preprocess_space_parameters(x_plane, y_plane, z_plane, self.length_1d,
                                                                 self.length_2d, self.length_3d)
         slice_x, slice_y, slice_z = self.get_volume_slice(x_plane, y_plane, z_plane)
-        measure = mapped_array.array_data
+
+        if mapped_array_slice:
+            matrix_slice = parse_slice(mapped_array_slice)
+            measure = mapped_array.get_data('array_data', matrix_slice)
+        else:
+            measure = mapped_array.get_data('array_data')
+
+        if measure.shape != (self.connectivity.number_of_regions, ):
+            raise ValueError('cannot project measure on the space')
+
         result_x = measure[slice_x]
         result_y = measure[slice_y]
         result_z = measure[slice_z]
