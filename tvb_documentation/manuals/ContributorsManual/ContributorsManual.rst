@@ -70,9 +70,9 @@ Assuming you have your TVB Distribution package unpacked in a folder ``TVB_Distr
 .. code-block:: bash
 
    $ cd TVB_Distribution/bin
-   $ sh contributor_setup.sh git@github.com:[github_account]/tvb-library.git
+   $ sh contributor_setup.sh https://github.com/[github_account]/tvb-library.git
 
-The steps above will create a folder *TVB_Distribution/scientific_library*.
+The steps above will create a folder *TVB_Distribution/tvb-library*.
 This is a clone of your forked repository. You are now ready to contribute to TVB. Good luck!
 
 NOTE: Each time you do a clean of TVB using the tvb_clean.sh script, make sure to re-run the above described commands in order to re-initialize TVB_PATH properly. This will give you some GIT related warning which you can just ignore.
