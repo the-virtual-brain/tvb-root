@@ -37,12 +37,81 @@ Backend-side for Visualizers that display measures on regions in the brain volum
 import json
 from tvb.basic.filters.chain import FilterChain
 from tvb.core.adapters.abcdisplayer import ABCDisplayer
+from tvb.core.entities.storage import dao
+from tvb.core.utils import slice_str
+from tvb.datatypes.arrays import MappedArray
 from tvb.datatypes.graph import ConnectivityMeasure
 from tvb.datatypes.region_mapping import RegionVolumeMapping
+from tvb.core.adapters.exceptions import LaunchException
+
+
+class _MappedArrayVolumeBase(ABCDisplayer):
+    """
+    Base functionality for all non-temporal volume views.
+    It prepares for display a slice of a mapped array.
+    """
+
+    def get_required_memory_size(self, **kwargs):
+        return -1
+
+
+    @staticmethod
+    def get_default_slice(measure_shape, nregions):
+        default = [0 for _ in range(len(measure_shape))]
+        for i in range(len(measure_shape)):
+            if measure_shape[i] == nregions:
+                default[i] = slice(None)
+                return tuple(default)
+        raise LaunchException('The mapped array is not compatible with the region mapping')
+
+
+    def _ensure_region_mapping(self, region_mapping_volume):
+        if region_mapping_volume is None:
+            region_mapping_volume = dao.try_load_last_entity_of_type(self.current_project_id, RegionVolumeMapping)
+        if region_mapping_volume is None:
+            raise LaunchException('You should have a volume mapping to launch this viewer')
+        return region_mapping_volume
+
+
+    def _compute_measure_params(self, region_mapping_volume, measure, data_slice):
+        if measure is None:
+            # prepare the url that will display the region volume map
+            min_value, max_value = [0, region_mapping_volume.connectivity.number_of_regions]
+            url_volume_data = self.paths2url(region_mapping_volume, "get_volume_view", parameter="")
+        else:
+            # prepare the url that will project the measure onto the region volume map
+            metadata = measure.get_metadata('array_data')
+            min_value, max_value = metadata[measure.METADATA_ARRAY_MIN], metadata[measure.METADATA_ARRAY_MAX]
+            if not data_slice:
+                measure_shape = measure.get_data_shape('array_data')
+                data_slice = self.get_default_slice(measure_shape, region_mapping_volume.connectivity.number_of_regions)
+                data_slice = slice_str(data_slice)
+            datatype_kwargs = json.dumps({'mapped_array': measure.gid})
+            url_volume_data = ABCDisplayer.paths2url(region_mapping_volume, "get_mapped_array_volume_view")
+            url_volume_data += '/' + datatype_kwargs + '?mapped_array_slice=' + data_slice + ';'
+
+        return dict(  minValue=min_value, maxValue=max_value,
+                      urlVolumeData=url_volume_data)
+
+
+    def compute_params(self, region_mapping_volume=None, measure=None, data_slice=''):
+
+        region_mapping_volume = self._ensure_region_mapping(region_mapping_volume)
+
+        volume = region_mapping_volume.volume
+        volume_shape = region_mapping_volume.read_data_shape()
+        volume_shape = (1, ) + volume_shape
+
+        params = self._compute_measure_params(region_mapping_volume, measure, data_slice)
+        params.update(volumeShape=json.dumps(volume_shape),
+                      volumeOrigin=json.dumps(volume.origin.tolist()),
+                      voxelUnit=volume.voxel_unit,
+                      voxelSize=json.dumps(volume.voxel_size.tolist()))
+        return params
 
 
 
-class RegionVolumeMappingVisualiser(ABCDisplayer):
+class RegionVolumeMappingVisualiser(_MappedArrayVolumeBase):
 
     _ui_name = "Region Volume Mapping Visualizer"
     _ui_subsection = "ts_volume"
@@ -57,30 +126,8 @@ class RegionVolumeMappingVisualiser(ABCDisplayer):
                                            operations=["=="], values=[1])},]
 
 
-    def get_required_memory_size(self, **kwargs):
-        return -1
-
-
     def launch(self, region_mapping_volume, connectivity_measure=None):
-        if connectivity_measure is None:
-            min_value, max_value = [0, region_mapping_volume.connectivity.number_of_regions]
-            url_volume_data = self.paths2url(region_mapping_volume, "get_volume_view", parameter="")
-        else:
-            min_value, max_value =[connectivity_measure.array_data.min(), connectivity_measure.array_data.max()]
-            datatype_kwargs = json.dumps({'mapped_array': connectivity_measure.gid})
-            url_volume_data = ABCDisplayer.paths2url(region_mapping_volume, "get_mapped_array_volume_view") + '/' + datatype_kwargs + '?'
-
-        volume = region_mapping_volume.volume
-        volume_shape = region_mapping_volume.read_data_shape()
-        volume_shape = (1, ) + volume_shape
-
-        params = dict(title="Volumetric Region Volume Mapping Visualizer",
-                      minValue=min_value, maxValue=max_value,
-                      urlVolumeData=url_volume_data,
-                      volumeShape=json.dumps(volume_shape),
-                      volumeOrigin=json.dumps(volume.origin.tolist()),
-                      voxelUnit=volume.voxel_unit,
-                      voxelSize=json.dumps(volume.voxel_size.tolist()))
-
+        params = self.compute_params(region_mapping_volume, connectivity_measure)
+        params['title'] = "Volumetric Region Volume Mapping Visualizer"
         return self.build_display_result("time_series_volume/staticView", params,
                                          pages=dict(controlPage="time_series_volume/controls"))
