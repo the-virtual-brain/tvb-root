@@ -38,7 +38,7 @@ import json
 from tvb.basic.filters.chain import FilterChain
 from tvb.core.adapters.abcdisplayer import ABCDisplayer
 from tvb.core.entities.storage import dao
-from tvb.core.utils import slice_str
+from tvb.basic.arguments_serialisation import slice_str
 from tvb.datatypes.arrays import MappedArray
 from tvb.datatypes.graph import ConnectivityMeasure
 from tvb.datatypes.region_mapping import RegionVolumeMapping

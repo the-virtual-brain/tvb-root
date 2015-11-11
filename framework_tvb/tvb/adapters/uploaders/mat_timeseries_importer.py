@@ -37,7 +37,7 @@ from tvb.adapters.uploaders.abcuploader import ABCUploader
 from tvb.adapters.uploaders.mat.parser import read_nested_mat_file
 from tvb.core.adapters.exceptions import ParseException, LaunchException
 from tvb.core.entities.storage import transactional
-from tvb.core.utils import parse_slice
+from tvb.basic.arguments_serialisation import parse_slice
 from tvb.datatypes.time_series import TimeSeriesRegion, TimeSeriesEEG
 
 

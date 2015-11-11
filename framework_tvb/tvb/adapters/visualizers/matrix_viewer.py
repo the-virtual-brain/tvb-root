@@ -38,7 +38,7 @@ import numpy
 import pylab
 from tvb.basic.filters.chain import FilterChain
 from tvb.basic.profile import TvbProfile
-from tvb.core.utils import parse_slice, slice_str
+from tvb.basic.arguments_serialisation import parse_slice, slice_str
 from tvb.datatypes.arrays import MappedArray
 from tvb.core.adapters.abcdisplayer import ABCDisplayer
 from tvb.datatypes.time_series import TimeSeriesRegion

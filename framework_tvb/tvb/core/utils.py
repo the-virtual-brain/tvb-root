@@ -43,7 +43,7 @@ import numpy
 from tvb.basic.profile import TvbProfile
 from tvb.basic.logger.builder import get_logger
 from tvb.core.decorators import user_environment_execution
-
+from tvb.basic.arguments_serialisation import parse_slice, slice_str
 
 MATLAB = "matlab"
 OCTAVE = "octave"
@@ -205,68 +205,6 @@ def string2bool(string_input):
     """ Convert given string into boolean value."""
     string_input = str(string_input).lower()
     return string_input in ("yes", "true", "t", "1")
-
-
-def parse_slice(slice_string):
-    """
-    Parse a slicing expression
-    >>> parse_slice("::1, :")
-    (slice(None, None, 1), slice(None, None, None))
-    >>> parse_slice("2")
-    2
-    >>> parse_slice("[2]")
-    2
-    """
-    ret = []
-    slice_string = slice_string.replace(' ', '')
-
-    # remove surrounding brackets if any
-    if slice_string[0] == '[' and slice_string[-1] == ']':
-        slice_string = slice_string[1:-1]
-
-    for d in slice_string.split(','):
-        frags = d.split(':')
-        if len(frags) == 1:
-            if frags[0] == '':
-                ret.append(slice(None))
-            else:
-                ret.append(int(frags[0]))
-        elif len(frags) <= 3:
-            frags = [int(d) if d else None for d in frags]
-            ret.append(slice(*frags))
-        else:
-            raise ValueError('invalid slice')
-    if len(ret) > 1:
-        return tuple(ret)
-    else:
-        return ret[0]
-
-
-
-def slice_str(slice_or_tuple):
-    """
-    >>> slice_str(slice(1, None, 2))
-    '1::2'
-    >>> slice_str((slice(None, None, 2), slice(None), 4))
-    '::2, :, 4'
-    Does not handle ... yet
-    """
-    def sl_str(s):
-        if isinstance(s, slice):
-            if s.start is s.step is None:
-                return '%s' % (s.stop if s.stop is not None else ':')
-            r = '%s:%s' % (s.start or '', s.stop or '')
-            if s.step is not None:
-                r += ':%d' % s.step
-            return r
-        else:
-            return str(int(s))
-
-    if isinstance(slice_or_tuple, tuple):
-        return '[' + ', '.join(sl_str(s) for s in slice_or_tuple) + ']'
-    else:
-        return '[' + sl_str(slice_or_tuple) + ']'
-
 
 
 ARRAY_BEGIN = -1

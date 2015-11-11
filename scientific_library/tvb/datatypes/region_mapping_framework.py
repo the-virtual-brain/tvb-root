@@ -38,7 +38,7 @@ DataTypes for mapping some TVB DataTypes to a Connectivity (regions).
 import numpy
 from tvb.basic.traits import exceptions
 from tvb.basic.logger.builder import get_logger
-from tvb.core.utils import parse_slice
+from tvb.basic.arguments_serialisation import parse_slice, preprocess_space_parameters
 from tvb.datatypes.region_mapping_data import RegionMappingData, RegionVolumeMappingData
 
 LOG = get_logger(__name__)
@@ -184,30 +184,3 @@ class RegionVolumeMappingFramework(RegionVolumeMappingData):
         return [[result_x.tolist()],
                 [result_y.tolist()],
                 [result_z.tolist()]]
-
-
-
-def preprocess_space_parameters(x, y, z, max_x, max_y, max_z):
-    """
-    Covert ajax call parameters into numbers and validate them.
-
-    :param x:  coordinate
-    :param y:  coordinate
-    :param z:  coordinate that will be reversed
-    :param max_x: maximum x accepted value
-    :param max_y: maximum y accepted value
-    :param max_z: maximum z accepted value
-
-    :return: (x, y, z) as integers, Z reversed
-    """
-
-    x, y, z = int(x), int(y), int(z)
-
-    if not 0 <= x <= max_x or not 0 <= y <= max_y or not 0 <= z <= max_z:
-        msg = "Coordinates out of boundaries: [x,y,z] = [{0}, {1}, {2}]".format(x, y, z)
-        raise exceptions.ValidationException(msg)
-
-    # Reverse Z
-    z = max_z - z - 1
-
-    return x, y, z

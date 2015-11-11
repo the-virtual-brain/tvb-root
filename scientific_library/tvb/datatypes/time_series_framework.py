@@ -45,7 +45,7 @@ import numpy
 from tvb.datatypes import time_series_data
 from tvb.basic.traits import exceptions
 from tvb.basic.logger.builder import get_logger
-from tvb.datatypes.region_mapping_framework import preprocess_space_parameters
+from tvb.basic.arguments_serialisation import preprocess_space_parameters, preprocess_time_parameters, postprocess_voxel_ts
 
 LOG = get_logger(__name__)
 
@@ -499,30 +499,6 @@ class TimeSeriesVolumeFramework(time_series_data.TimeSeriesVolumeData, TimeSerie
         return result
 
 
-
-def preprocess_time_parameters(t1, t2, time_length):
-    """
-    Covert ajax call parameters into numbers and validate them.
-
-    :param t1: start time
-    :param t2: end time
-    :param time_length: maximum time length in current TS
-
-    :return: (t1, t2, t2-t1) as numbers
-    """
-
-    from_idx = int(t1)
-    to_idx = int(t2)
-
-    if not 0 <= from_idx < to_idx <= time_length:
-        msg = "Time indexes out of boundaries: from {0} to {1}".format(from_idx, to_idx)
-        raise exceptions.ValidationException(msg)
-
-    current_time_line = max(to_idx - from_idx, 1)
-
-    return from_idx, to_idx, current_time_line
-
-
 def prepare_time_slice(total_time_length, max_length=10 ** 4):
     """
     Limit the time dimension when retrieving from TS.
@@ -539,29 +515,3 @@ def prepare_time_slice(total_time_length, max_length=10 ** 4):
 
     return slice(total_time_length - max_length, total_time_length)
 
-
-def postprocess_voxel_ts(ts, slices, background_value=None, background_min=None, background_max=None, label=None):
-    """
-    Read TimeLine from TS and prepare the result for TSVolumeViewer.
-
-    :param ts: TS instance, with read_data_slice method
-    :param slices: slices for reading from H5
-
-    :return: A complex dictionary with information about current voxel.
-    """
-
-    if background_value is not None:
-        time_line = background_value
-    else:
-        time_line = ts.read_data_slice(slices).flatten()
-
-
-    result = dict(data=time_line.tolist(),
-                  min=background_min or float(min(time_line)),
-                  max=background_max or float(max(time_line)),
-                  mean=float(numpy.mean(time_line)),
-                  median=float(numpy.median(time_line)),
-                  variance=float(numpy.var(time_line)),
-                  deviation=float(numpy.std(time_line)),
-                  label=label)
-    return result
