@@ -169,6 +169,9 @@ class ConnectivityMeasureVolumeVisualizer(_MappedArrayVolumeBase):
     def launch(self, connectivity_measure, region_mapping_volume=None):
         params = self.compute_params(region_mapping_volume, connectivity_measure)
         params['title'] = "Volumetric Region Volume Mapping Visualizer"
+        # the view will display slicing information if this key is present.
+        # compute_params works with generic mapped arrays and it will return slicing info
+        del params['measureSlice']
         return self.build_display_result("time_series_volume/staticView", params,
                                          pages=dict(controlPage="time_series_volume/controls"))
 
