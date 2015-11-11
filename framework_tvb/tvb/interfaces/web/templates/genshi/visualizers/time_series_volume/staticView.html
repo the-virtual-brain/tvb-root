@@ -1,4 +1,4 @@
-<div xmlns:xi="http://www.w3.org/2001/XInclude">
+<div xmlns:xi="http://www.w3.org/2001/XInclude" xmlns:py="http://genshi.edgewall.org/">
     <script type="text/javascript" src="/static_view/time_series_volume/scripts/volumeView.js?$currentVersionJS"></script>
     <script type="text/javascript" src="/static_view/time_series_volume/scripts/volumeRPC.js?$currentVersionJS"></script>
     <script type="text/javascript" src="/static_view/time_series_volume/scripts/timeseriesVolume.js?$currentVersionJS"></script>
@@ -21,13 +21,22 @@
         <div class="canvas-parent">
             <canvas id="canvasVolumes"></canvas>
         </div>
+
+        <div>
+            <p> Selected voxel is in region <b id="voxelRegionLabel"></b></p>
+            <py:if test="defined('measureSlice')">
+                <p> Measure shape is <b>$measureShape</b></p>
+                <p> Measure sliced by <b>$measureSlice</b> </p>
+                <p> You may change the slice in the visualizer menu</p>
+            </py:if>
+        </div>
     </section>
 
     <script type="text/javascript">
         $("#main").addClass("colscheme-2-even brain-extended");
         $(document).ready(function () {
             TSV_startVolumeStaticVisualizer(
-                    '$urlVolumeData', ${minValue}, ${maxValue},
+                    '$urlVolumeData', '$urlVoxelRegion', ${minValue}, ${maxValue},
                     '${volumeShape}', '${volumeOrigin}', '${voxelSize}');
         })
     </script>

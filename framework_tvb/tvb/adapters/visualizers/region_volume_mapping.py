@@ -73,25 +73,30 @@ class _MappedArrayVolumeBase(ABCDisplayer):
         return region_mapping_volume
 
 
-    def _compute_measure_params(self, region_mapping_volume, measure, data_slice):
-        if measure is None:
-            # prepare the url that will display the region volume map
-            min_value, max_value = [0, region_mapping_volume.connectivity.number_of_regions]
-            url_volume_data = self.paths2url(region_mapping_volume, "get_volume_view", parameter="")
-        else:
-            # prepare the url that will project the measure onto the region volume map
-            metadata = measure.get_metadata('array_data')
-            min_value, max_value = metadata[measure.METADATA_ARRAY_MIN], metadata[measure.METADATA_ARRAY_MAX]
-            if not data_slice:
-                measure_shape = measure.get_data_shape('array_data')
-                data_slice = self.get_default_slice(measure_shape, region_mapping_volume.connectivity.number_of_regions)
-                data_slice = slice_str(data_slice)
-            datatype_kwargs = json.dumps({'mapped_array': measure.gid})
-            url_volume_data = ABCDisplayer.paths2url(region_mapping_volume, "get_mapped_array_volume_view")
-            url_volume_data += '/' + datatype_kwargs + '?mapped_array_slice=' + data_slice + ';'
-
+    def _compute_region_volume_map_params(self, region_mapping_volume):
+        # prepare the url that will display the region volume map
+        min_value, max_value = [0, region_mapping_volume.connectivity.number_of_regions]
+        url_volume_data = self.paths2url(region_mapping_volume, "get_volume_view", parameter="")
         return dict(  minValue=min_value, maxValue=max_value,
                       urlVolumeData=url_volume_data)
+
+
+    def _compute_measure_params(self, region_mapping_volume, measure, data_slice):
+        # prepare the url that will project the measure onto the region volume map
+        metadata = measure.get_metadata('array_data')
+        min_value, max_value = metadata[measure.METADATA_ARRAY_MIN], metadata[measure.METADATA_ARRAY_MAX]
+        measure_shape = measure.get_data_shape('array_data')
+        if not data_slice:
+            data_slice = self.get_default_slice(measure_shape, region_mapping_volume.connectivity.number_of_regions)
+            data_slice = slice_str(data_slice)
+        datatype_kwargs = json.dumps({'mapped_array': measure.gid})
+        url_volume_data = ABCDisplayer.paths2url(region_mapping_volume, "get_mapped_array_volume_view")
+        url_volume_data += '/' + datatype_kwargs + '?mapped_array_slice=' + data_slice + ';'
+
+        return dict(  minValue=min_value, maxValue=max_value,
+                      urlVolumeData=url_volume_data,
+                      measureShape=slice_str(measure_shape),
+                      measureSlice=data_slice)
 
 
     def compute_params(self, region_mapping_volume=None, measure=None, data_slice=''):
@@ -102,11 +107,18 @@ class _MappedArrayVolumeBase(ABCDisplayer):
         volume_shape = region_mapping_volume.read_data_shape()
         volume_shape = (1, ) + volume_shape
 
-        params = self._compute_measure_params(region_mapping_volume, measure, data_slice)
+        if measure is None:
+            params = self._compute_region_volume_map_params(region_mapping_volume)
+        else:
+            params = self._compute_measure_params(region_mapping_volume, measure, data_slice)
+
+        url_voxel_region = ABCDisplayer.paths2url(region_mapping_volume, "get_voxel_region", parameter="")
+
         params.update(volumeShape=json.dumps(volume_shape),
                       volumeOrigin=json.dumps(volume.origin.tolist()),
                       voxelUnit=volume.voxel_unit,
-                      voxelSize=json.dumps(volume.voxel_size.tolist()))
+                      voxelSize=json.dumps(volume.voxel_size.tolist()),
+                      urlVoxelRegion=url_voxel_region)
         return params
 
 
@@ -116,7 +128,7 @@ class MappedArrayVolumeVisualizer(_MappedArrayVolumeBase):
     This is a generic mapped array visualizer on a region volume.
     To view a multidimensional array one has to give this viewer a slice.
     """
-    _ui_name = "Mapped array on region volume Visualizer"
+    _ui_name = "Array Volume Visualizer"
     _ui_subsection = "ts_volume"
 
 
@@ -133,7 +145,6 @@ class MappedArrayVolumeVisualizer(_MappedArrayVolumeBase):
 
 
     def launch(self, measure, region_mapping_volume=None, data_slice=''):
-        region_mapping_volume = self._ensure_region_mapping(region_mapping_volume)
         params = self.compute_params(region_mapping_volume, measure, data_slice)
         params['title'] = "Mapped array on region volume Visualizer",
         return self.build_display_result("time_series_volume/staticView", params,
@@ -142,7 +153,7 @@ class MappedArrayVolumeVisualizer(_MappedArrayVolumeBase):
 
 
 class ConnectivityMeasureVolumeVisualizer(_MappedArrayVolumeBase):
-    _ui_name = "Connectivity Measure on region volume Visualizer"
+    _ui_name = "Connectivity Measure Volume Visualizer"
     _ui_subsection = "ts_volume"
 
 

@@ -22,11 +22,14 @@ var tsRPC = {
 
     batchID: 0,                 // Used to ignore useless incoming ajax responses.
     streamToBufferID: null,     // ID from the buffering system's setInterval().
-    getCurrentEntityAndTime: null
+    getCurrentEntityAndTime: null, //  callback called by the streaming functions to get the selected entity and time point
+
+    urlVoxelRegion: null        // url to fetch the name of the region that contains a voxel
 };
 
-function TSRPC_initNonStreaming(urlVolumeData, entitySize){
+function TSRPC_initNonStreaming(urlVolumeData, urlVoxelRegion, entitySize){
     tsRPC.urlVolumeData = urlVolumeData;
+    tsRPC.urlVoxelRegion = urlVoxelRegion;
     tsRPC.timeLength = entitySize[3];
 }
 
@@ -240,11 +243,26 @@ function TSRPC_stopBuffering() {
     tsRPC.streamToBufferID = null;
 }
 
+function TSRPC_getVoxelRegion(selectedEntity, onSuccess){
+    var url = tsRPC.urlVoxelRegion;
+    url += ';x_plane=' + selectedEntity[0];
+    url += ';y_plane=' + selectedEntity[1];
+    url += ';z_plane=' + selectedEntity[2];
+
+    doAjaxCall({
+        url: url,
+        success: onSuccess
+    });
+}
+
+
 window.TSRPC_initNonStreaming = TSRPC_initNonStreaming;
 window.TSRPC_initStreaming = TSRPC_initStreaming;
 window.TSRPC_getViewAtTime = TSRPC_getViewAtTime;
 window.TSRPC_startBuffering = TSRPC_startBuffering;
 window.TSRPC_stopBuffering = TSRPC_stopBuffering;
+window.TSRPC_getVoxelRegion = TSRPC_getVoxelRegion;
+
 window._debug_tsRPC = tsRPC;
 
 })();

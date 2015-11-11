@@ -42,19 +42,19 @@ function init_VolumeController(volumeShape){
     tsVol.timeLength = tsVol.dataSize[0];
 }
 
-function TSV_startVolumeStaticVisualizer(urlVolumeData, minValue, maxValue, volumeShape, volOrigin, sizeOfVoxel){
+function TSV_startVolumeStaticVisualizer(urlVolumeData, urlVoxelRegion, minValue, maxValue, volumeShape, volOrigin, sizeOfVoxel){
     init_VolumeController(volumeShape);
     TSV_initVolumeView(tsVol.dataSize, minValue, maxValue, $.parseJSON(sizeOfVoxel), $.parseJSON(volOrigin)[0]);
 
     tsVol.selectedQuad = TSV_getQuadrant(0);
 
-    TSRPC_initNonStreaming(urlVolumeData, tsVol.entitySize);
+    TSRPC_initNonStreaming(urlVolumeData, urlVoxelRegion, tsVol.entitySize);
 
     ColSch_initColorSchemeGUI(minValue, maxValue, function(){
         drawVolumeScene(tsVol.currentTimePoint);
     });
 
-    $("#canvasVolumes").mousedown(onVolumeMouseDown).mouseup(function(){});
+    $("#canvasVolumes").mousedown(onVolumeMouseDown).mouseup(updateSelectedVoxelInfo);
 
     startPositionSliders({
         change: _coreMoveSliderAxis,
@@ -64,6 +64,7 @@ function TSV_startVolumeStaticVisualizer(urlVolumeData, minValue, maxValue, volu
         }
     });
     drawVolumeScene(tsVol.currentTimePoint);
+    updateSelectedVoxelInfo();
 }
 
 /**
@@ -370,6 +371,11 @@ function moviePlayerMoveEnd(event, ui){
     drawSceneFunctional(tsVol.currentTimePoint);
 }
 
+function updateSelectedVoxelInfo(){
+    TSRPC_getVoxelRegion(tsVol.selectedEntity, function(response){
+        $('#voxelRegionLabel').text(response);
+    });
+}
 // ==================================== CALLBACK FUNCTIONS END ===============================================
 // ==================================== UI RELATED CODE END ==================================================
 

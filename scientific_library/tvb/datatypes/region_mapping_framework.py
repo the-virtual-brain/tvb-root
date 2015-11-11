@@ -146,6 +146,17 @@ class RegionVolumeMappingFramework(RegionVolumeMappingData):
         return [[slice_x.tolist()], [slice_y.tolist()], [slice_z.tolist()]]
 
 
+    def get_voxel_region(self, x_plane, y_plane, z_plane):
+        x_plane, y_plane, z_plane = preprocess_space_parameters(x_plane, y_plane, z_plane, self.length_1d,
+                                                                self.length_2d, self.length_3d)
+        slices = slice(x_plane, x_plane + 1), slice(y_plane, y_plane + 1), slice(z_plane, z_plane + 1)
+        voxel = self.read_data_slice(slices)[0, 0, 0]
+        if voxel != -1:
+            return self.connectivity.region_labels[voxel]
+        else:
+            return 'background'
+
+
     def get_mapped_array_volume_view(self, mapped_array, x_plane, y_plane, z_plane, mapped_array_slice=None, **kwargs):
         x_plane, y_plane, z_plane = preprocess_space_parameters(x_plane, y_plane, z_plane, self.length_1d,
                                                                 self.length_2d, self.length_3d)
