@@ -61,7 +61,6 @@ class ICA(MappedArraySVGVisualizerMixin, ABCDisplayer):
         """Construct data for visualization and launch it."""
         # get data from IndependentComponents datatype, convert to json
         # HACK: dump only a 2D array
-        labels = self._get_associated_connectivity_labeling(datatype)
         W = datatype.get_data('mixing_matrix')
-        pars = self.compute_params(W, 'Mixing matrix plot', '(Ellipsis, %d, 0)' % (i_svar), labels)
+        pars = self.compute_params(W, 'Mixing matrix plot', '(Ellipsis, %d, 0)' % (i_svar))
         return self.build_display_result("matrix/svg_view", pars)
