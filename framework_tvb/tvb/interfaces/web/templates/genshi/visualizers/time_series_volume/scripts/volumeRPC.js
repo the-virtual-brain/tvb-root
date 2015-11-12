@@ -49,7 +49,7 @@ function TSRPC_initStreaming(urlVolumeData, entitySize, playbackRate, getCurrent
     * We use this technique also to avoid writing a separate file
     * for each worker.
     */
-    TSRPC_initNonStreaming(urlVolumeData, entitySize);
+    TSRPC_initNonStreaming(urlVolumeData, null, entitySize);
     tsRPC.getCurrentEntityAndTime = getCurrentEntityAndTime;
     tsRPC.parserBlob = inlineWebWorkerWrapper(
             function(){
@@ -149,6 +149,18 @@ function parseAsync(data, callback){
     }
 }
 
+function voxelToUrlFragment(selectedEntity){
+    var xPlane = ";x_plane=" + selectedEntity[0];
+    var yPlane = ";y_plane=" + selectedEntity[1];
+    var zPlane = ";z_plane=" + selectedEntity[2];
+    return xPlane + yPlane + zPlane;
+}
+
+function buildRequestUrl(from, to, selectedEntity){
+    var spacialFragment = voxelToUrlFragment(selectedEntity);
+    return tsRPC.urlVolumeData + "from_idx=" + from + ";to_idx=" + to + spacialFragment;
+}
+
 /**
  *  This function is called whenever we can, to load some data ahead of
  *  were we're looking.
@@ -159,9 +171,6 @@ function streamToBuffer(){
         var point = tsRPC.getCurrentEntityAndTime();
         var currentSection = Math.ceil(point.currentTimePoint/tsRPC.bufferSize);
         var maxSections = Math.floor(tsRPC.timeLength/tsRPC.bufferSize);
-        var xPlane = ";x_plane=" + (point.selectedEntity[0]);
-        var yPlane = ";y_plane=" + (point.selectedEntity[1]);
-        var zPlane = ";z_plane=" + (point.selectedEntity[2]);
 
         for (var i = 0; i <= tsRPC.lookAhead && i < maxSections; i++) {
             var toBufferSection = Math.min( currentSection + i, maxSections );
@@ -169,7 +178,7 @@ function streamToBuffer(){
             if(!tsRPC.bufferL2[toBufferSection] && tsRPC.requestQueue.indexOf(toBufferSection) < 0) {
                 var from = toBufferSection * tsRPC.bufferSize;
                 var to = Math.min(from + tsRPC.bufferSize, tsRPC.timeLength);
-                var query = tsRPC.urlVolumeData + "from_idx=" + from + ";to_idx=" + to + xPlane + yPlane + zPlane;
+                var query = buildRequestUrl(from, to, point.selectedEntity);
                 asyncRequest(query, toBufferSection);
                 return; // break out of the loop
             }
@@ -203,22 +212,15 @@ function freeBuffer() {
  */
 function TSRPC_getViewAtTime(t, selectedEntity) {
     var buffer;
-    var from;
-    var to;
-    var xPlane = ";x_plane=" + (selectedEntity[0]);
-    var yPlane = ";y_plane=" + (selectedEntity[1]);
-    var zPlane = ";z_plane=" + (selectedEntity[2]);
-
-    var query;
     var section = Math.floor(t/tsRPC.bufferSize);
 
     if (tsRPC.bufferL2[section]) { // We have that slice in memory
         buffer = tsRPC.bufferL2[section];
 
     } else { // We need to load that slice from the server
-        from = "from_idx=" + t;
-        to = ";to_idx=" + Math.min(1 + t, tsRPC.timeLength);
-        query = tsRPC.urlVolumeData + from + to + xPlane + yPlane + zPlane;
+        var from =  t;
+        var to = Math.min(1 + t, tsRPC.timeLength);
+        var query = buildRequestUrl(from, to, selectedEntity);
 
         buffer = HLPR_readJSONfromFile(query);
         return [buffer[0][0],buffer[1][0],buffer[2][0]];
@@ -244,13 +246,8 @@ function TSRPC_stopBuffering() {
 }
 
 function TSRPC_getVoxelRegion(selectedEntity, onSuccess){
-    var url = tsRPC.urlVoxelRegion;
-    url += ';x_plane=' + selectedEntity[0];
-    url += ';y_plane=' + selectedEntity[1];
-    url += ';z_plane=' + selectedEntity[2];
-
     doAjaxCall({
-        url: url,
+        url: tsRPC.urlVoxelRegion + voxelToUrlFragment(selectedEntity),
         success: onSuccess
     });
 }
