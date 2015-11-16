@@ -63,50 +63,48 @@ ColSch.TransparentTheme = {
 };
 
 /**
- * A table of color scheme objects
- * Fields:
- *     theme: a theme object containing colors of various objects
- *     tex_v: the v texture coordinate of the color scheme
- *     muted_tex_v: the v texture coordinate for the scheme used to paint deselected regions
- *     measurePoints_tex_v: the v texture coordinate for the scheme used to paint measure points
- *     _data_idx: the index in _colorSchemeColors of the theme
+ *
+ * @param theme a theme object containing colors of various objects
+ * @param data_idx the index in _colorSchemeColors of the theme
+ * @constructor
  */
-ColSch.schemes = {
-    linear:  { theme: ColSch.DarkTheme, _data_idx: 0},
-    rainbow: { theme: ColSch.DarkTheme, _data_idx: 1},
-    hotcold: { theme: ColSch.DarkTheme, _data_idx: 2},
-    TVB:     { theme: ColSch.DarkTheme, _data_idx: 3},
-    sparse:  { theme: ColSch.DarkTheme, _data_idx: 4},
-
-    RdYlBu      : { theme: ColSch.DarkTheme, _data_idx: 13},
-    Spectral    : { theme: ColSch.DarkTheme, _data_idx: 14},
-    YlGnBu      : { theme: ColSch.DarkTheme, _data_idx: 15},
-    RdPu        : { theme: ColSch.DarkTheme, _data_idx: 16},
-    Grays       : { theme: ColSch.DarkTheme, _data_idx: 17},
-    transparentRdYlBu: { theme: ColSch.TransparentTheme, _data_idx: 13},
-
-    matteo: { theme: ColSch.DarkTheme, _data_idx: 23},
-    cubehelix: { theme: ColSch.DarkTheme, _data_idx: 24},
-    termal: { theme: ColSch.DarkTheme, _data_idx: 25},
-
-    transparentJet: { theme: ColSch.TransparentTheme, _data_idx: 1},
-    transparentTVB: { theme: ColSch.TransparentTheme, _data_idx: 3},
-    transparentTermal: { theme: ColSch.TransparentTheme, _data_idx: 25}
-};
-
-// Add texture v coordinates to ColSch.schemes based on the _data_idx
-// Auto executed function so we do not pollute globals
-(function() {
+function ColorScheme(theme, data_idx){
     var bandHeight = 8;
     var textureSize = 256;
-    for (var n in ColSch.schemes) {
-        // band indices are the same as the indices in the _colorSchemeColors
-        var scheme = ColSch.schemes[n];
-        scheme.tex_v = (scheme._data_idx + 0.5) * bandHeight/textureSize;
-        scheme.muted_tex_v = (30 + 0.5)* bandHeight/textureSize;
-        scheme.measurePoints_tex_v = 1.0;
-    }
-})();
+
+    this.theme = theme;                                     // a theme object containing colors of various objects
+    this.tex_v = (data_idx + 0.5) * bandHeight/textureSize; // the v texture coordinate of the color scheme
+    this.muted_tex_v = (30 + 0.5)* bandHeight/textureSize;  // the v texture coordinate for the scheme used to paint deselected regions
+    this.measurePoints_tex_v = 1.0;                         // the v texture coordinate for the scheme used to paint measure points
+    this._data_idx = data_idx;                              // the index in _colorSchemeColors of the theme
+}
+
+/**
+ * A table of color scheme objects
+ */
+ColSch.schemes = {
+    linear:  new ColorScheme(ColSch.DarkTheme, 0),
+    rainbow: new ColorScheme(ColSch.DarkTheme, 1),
+    hotcold: new ColorScheme(ColSch.DarkTheme, 2),
+    TVB:     new ColorScheme(ColSch.DarkTheme, 3),
+    sparse:  new ColorScheme(ColSch.DarkTheme, 4),
+
+    RdYlBu:   new ColorScheme(ColSch.DarkTheme, 13),
+    Spectral: new ColorScheme(ColSch.DarkTheme, 14),
+    YlGnBu:   new ColorScheme(ColSch.DarkTheme, 15),
+    RdPu:     new ColorScheme(ColSch.DarkTheme, 16),
+    Grays:    new ColorScheme(ColSch.DarkTheme, 17),
+    transparentRdYlBu: new ColorScheme(ColSch.TransparentTheme, 13),
+
+    matteo:    new ColorScheme(ColSch.DarkTheme, 23),
+    cubehelix: new ColorScheme(ColSch.DarkTheme, 24),
+    termal:    new ColorScheme(ColSch.DarkTheme, 25),
+
+    transparentJet:    new ColorScheme(ColSch.TransparentTheme, 1),
+    transparentTVB:    new ColorScheme(ColSch.TransparentTheme, 3),
+    transparentTermal: new ColorScheme(ColSch.TransparentTheme, 25)
+};
+
 
 /**
  * A color scale translates an activity to a color.
