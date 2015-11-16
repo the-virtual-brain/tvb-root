@@ -1,7 +1,10 @@
-var _colorSchemeColors;
-var _colorScale = null;                // the global color scale associated with this viewer
-var _haveDefaultColorScheme = false;   // false before retrieving default colors from the server
-var _refreshCallback = null ;          // this is called when color scheme changes update the visualiser
+// color scheme controller
+var ColSch = {
+    _colorSchemeColors: null,           // an array mapping a color scheme index to its color array
+    colorScale: null,                  // the global color scale associated with this viewer
+    _haveDefaultColorScheme: false,     // false before retrieving default colors from the server
+    _refreshCallback: null              // this is called when color scheme changes update the visualiser
+};
 
 // ================================= COLOR SCHEME MODEL START =================================
 /**
@@ -9,7 +12,7 @@ var _refreshCallback = null ;          // this is called when color scheme chang
  * Css class like idea. In the future we might move these to css
  * class -> prop value list
  */
-var ColSchDarkTheme = {
+ColSch.DarkTheme = {
     connectivityStepPlot : {
         lineColor: [0.1, 0.1, 0.2],
         noValueColor: [0.0, 0.0, 0.0],
@@ -27,7 +30,7 @@ var ColSchDarkTheme = {
     }
 };
 
-var ColSchLightTheme = {
+ColSch.LightTheme = {
     connectivityStepPlot : {
         lineColor: [0.7, 0.7, 0.8],
         noValueColor: [0.9, 0.9, 0.9],
@@ -43,7 +46,7 @@ var ColSchLightTheme = {
     }
 };
 
-var ColSchTransparentTheme = {
+ColSch.TransparentTheme = {
     connectivityStepPlot : {
         lineColor: [0.7, 0.7, 0.8],
         noValueColor: [0.9, 0.9, 0.9],
@@ -68,37 +71,37 @@ var ColSchTransparentTheme = {
  *     measurePoints_tex_v: the v texture coordinate for the scheme used to paint measure points
  *     _data_idx: the index in _colorSchemeColors of the theme
  */
-var _ColSchemesInfo = {
-    linear:  { theme: ColSchDarkTheme, _data_idx: 0},
-    rainbow: { theme: ColSchDarkTheme, _data_idx: 1},
-    hotcold: { theme: ColSchDarkTheme, _data_idx: 2},
-    TVB:     { theme: ColSchDarkTheme, _data_idx: 3},
-    sparse:  { theme: ColSchDarkTheme, _data_idx: 4},
+ColSch.schemes = {
+    linear:  { theme: ColSch.DarkTheme, _data_idx: 0},
+    rainbow: { theme: ColSch.DarkTheme, _data_idx: 1},
+    hotcold: { theme: ColSch.DarkTheme, _data_idx: 2},
+    TVB:     { theme: ColSch.DarkTheme, _data_idx: 3},
+    sparse:  { theme: ColSch.DarkTheme, _data_idx: 4},
 
-    RdYlBu      : { theme: ColSchDarkTheme, _data_idx: 13},
-    Spectral    : { theme: ColSchDarkTheme, _data_idx: 14},
-    YlGnBu      : { theme: ColSchDarkTheme, _data_idx: 15},
-    RdPu        : { theme: ColSchDarkTheme, _data_idx: 16},
-    Grays       : { theme: ColSchDarkTheme, _data_idx: 17},
-    transparentRdYlBu: { theme: ColSchTransparentTheme, _data_idx: 13},
+    RdYlBu      : { theme: ColSch.DarkTheme, _data_idx: 13},
+    Spectral    : { theme: ColSch.DarkTheme, _data_idx: 14},
+    YlGnBu      : { theme: ColSch.DarkTheme, _data_idx: 15},
+    RdPu        : { theme: ColSch.DarkTheme, _data_idx: 16},
+    Grays       : { theme: ColSch.DarkTheme, _data_idx: 17},
+    transparentRdYlBu: { theme: ColSch.TransparentTheme, _data_idx: 13},
 
-    matteo: { theme: ColSchDarkTheme, _data_idx: 23},
-    cubehelix: { theme: ColSchDarkTheme, _data_idx: 24},
-    termal: { theme: ColSchDarkTheme, _data_idx: 25},
+    matteo: { theme: ColSch.DarkTheme, _data_idx: 23},
+    cubehelix: { theme: ColSch.DarkTheme, _data_idx: 24},
+    termal: { theme: ColSch.DarkTheme, _data_idx: 25},
 
-    transparentJet: { theme: ColSchTransparentTheme, _data_idx: 1},
-    transparentTVB: { theme: ColSchTransparentTheme, _data_idx: 3},
-    transparentTermal: { theme: ColSchTransparentTheme, _data_idx: 25}
+    transparentJet: { theme: ColSch.TransparentTheme, _data_idx: 1},
+    transparentTVB: { theme: ColSch.TransparentTheme, _data_idx: 3},
+    transparentTermal: { theme: ColSch.TransparentTheme, _data_idx: 25}
 };
 
-// Add texture v coordinates to _ColSchemesInfo based on the _data_idx
+// Add texture v coordinates to ColSch.schemes based on the _data_idx
 // Auto executed function so we do not pollute globals
 (function() {
     var bandHeight = 8;
     var textureSize = 256;
-    for (var n in _ColSchemesInfo) {
+    for (var n in ColSch.schemes) {
         // band indices are the same as the indices in the _colorSchemeColors
-        var scheme = _ColSchemesInfo[n];
+        var scheme = ColSch.schemes[n];
         scheme.tex_v = (scheme._data_idx + 0.5) * bandHeight/textureSize;
         scheme.muted_tex_v = (30 + 0.5)* bandHeight/textureSize;
         scheme.measurePoints_tex_v = 1.0;
@@ -111,17 +114,17 @@ var _ColSchemesInfo = {
  * A color scheme object will contain a selected color scheme and the selected range and the number of bins etc
  * @constructor
  */
-function ColorScale(minValue, maxValue, colorScheme, colorBins){
+function ColorScale(minValue, maxValue, colorSchemeName, colorBins){
     if (minValue == null) {minValue = 0;}
     if (maxValue == null) {maxValue = 1;}
-    if (colorScheme == null) {colorScheme = 'linear';}
+    if (colorSchemeName == null) {colorSchemeName = 'linear';}
     if (colorBins == null) {colorBins = 256;}
     this._minRange = minValue;       // the interest interval. Set by a slider in the ui
     this._maxRange = maxValue;
     this._minActivity = minValue;    // the full activity range
     this._maxActivity = maxValue;
     this._colorBins = colorBins;     // the number of discrete colors. Set by a slider in the ui
-    this._colorScheme = colorScheme;
+    this._colorSchemeName = colorSchemeName;
 }
 
 ColorScale.prototype.clampValue = function(value, min, max) {
@@ -140,8 +143,8 @@ ColorScale.prototype.clampValue = function(value, min, max) {
 /**
  * Returns the current color scheme object
  */
-ColorScale.prototype.colSchInfo = function(){
-    return _ColSchemesInfo[this._colorScheme];
+ColorScale.prototype.getColorScheme = function(){
+    return ColSch.schemes[this._colorSchemeName];
 };
 
 /**
@@ -172,7 +175,7 @@ ColorScale.prototype.getBounds = function() {
  */
 ColorScale.prototype.getColor = function(activity){
     // The color array for the current scheme
-    var colors = _colorSchemeColors[this.colSchInfo()._data_idx];
+    var colors = ColSch._colorSchemeColors[this.getColorScheme()._data_idx];
     var col = colors[this.getPaletteIndex(activity)];
     // this function returns float colors
     return [col[0]/255, col[1]/255, col[2]/255];
@@ -193,7 +196,7 @@ ColorScale.prototype.getCssColor = function(activity) {
  */
 ColorScale.prototype.getGradientColor = function(pointValue, min, max){
     // The color array for the current scheme
-    var colors = _colorSchemeColors[this.colSchInfo()._data_idx];
+    var colors = ColSch._colorSchemeColors[this.getColorScheme()._data_idx];
 
     if (min === max) {         // the interval is empty, so start color is the only possible one
         var col = colors[0];
@@ -217,7 +220,7 @@ ColorScale.prototype.getGradientColor = function(pointValue, min, max){
  * Returns the current color scheme object
  */
 function ColSchInfo(){
-    return _ColSchemesInfo[_colorScale._colorScheme];
+    return ColSch.colorScale.getColorScheme();
 }
 
 /**
@@ -228,7 +231,7 @@ function ColSchGetTheme(){
 }
 
 function ColSchGetBounds(){
-    return _colorScale.getBounds();
+    return ColSch.colorScale.getBounds();
 }
 
 /**
@@ -237,7 +240,7 @@ function ColSchGetBounds(){
  */
 function ColSchCreateTiledColorPicker(selector){
     var N = 10;
-    var colors = _colorSchemeColors[_ColSchemesInfo.Spectral._data_idx];
+    var colors = ColSch._colorSchemeColors[ColSch.schemes.Spectral._data_idx];
     var tiles = [[255, 255, 255], [5, 5, 5]];
     for (var i = 0; i < N; i++){
         tiles.push(colors[1 + Math.floor(i / N * 254)]);
@@ -252,14 +255,14 @@ function ColSchCreateTiledColorPicker(selector){
  * @param notify When true, trigger an ajax call to store on the server the changed setting. It will also notify listeners.
  */
 function ColSch_setColorScheme(scheme, notify) {
-    _colorScale._colorScheme = scheme;
+    ColSch.colorScale._colorSchemeName = scheme;
     if(notify){
         //could throttle this
         doAjaxCall({
             url: '/user/set_viewer_color_scheme/' + scheme
         });
-        if (_refreshCallback) {
-            _refreshCallback();
+        if (ColSch._refreshCallback) {
+            ColSch._refreshCallback();
         }
     } else {
         $("#setColorSchemeSelId").val(scheme);
@@ -276,29 +279,29 @@ function ColSch_initColorSchemeComponent(minValue, maxValue){
     // This will get called many times for a page for historical reasons
     // So we have to initialize what is not initialized and update what is already initialized
 
-    if (!_haveDefaultColorScheme) {
-        _colorScale = new ColorScale(minValue, maxValue);
+    if (!ColSch._haveDefaultColorScheme) {
+        ColSch.colorScale = new ColorScale(minValue, maxValue);
     } else { // not first call, propagate the color scheme
-        _colorScale = new ColorScale(minValue, maxValue, _colorScale._colorScheme);
+        ColSch.colorScale = new ColorScale(minValue, maxValue, ColSch.colorScale._colorSchemeName);
     }
 
-    if(!_colorSchemeColors) {
+    if(!ColSch._colorSchemeColors) {
         doAjaxCall({
             url: '/user/get_color_schemes_json',
             type: 'GET',
             async: false,
             success: function (data) {
-                _colorSchemeColors = JSON.parse(data);
+                ColSch._colorSchemeColors = JSON.parse(data);
             }
         });
     }
-    if (!_haveDefaultColorScheme) { // on very first call, set the default color scheme
+    if (!ColSch._haveDefaultColorScheme) { // on very first call, set the default color scheme
         doAjaxCall({
             url:'/user/get_viewer_color_scheme',
             async: false,
             success:function(data){
                 ColSch_setColorScheme(JSON.parse(data), false);
-                _haveDefaultColorScheme = true;
+                ColSch._haveDefaultColorScheme = true;
             }
         });
     }
@@ -313,7 +316,7 @@ function ColSch_initColorSchemeComponent(minValue, maxValue){
  */
 function ColSch_initColorSchemeGUI(minValue, maxValue, refreshFunction) {
     ColSch_initColorSchemeComponent(minValue, maxValue);
-    _refreshCallback = refreshFunction;
+    ColSch._refreshCallback = refreshFunction;
     var elemSliderSelector = $("#rangerForLinearColSch");
     var elemMin = $("#sliderMinValue");
     var elemMax = $("#sliderMaxValue");
@@ -329,15 +332,15 @@ function ColSch_initColorSchemeGUI(minValue, maxValue, refreshFunction) {
             elemMax.html(ui.values[1].toFixed(3));
         },
         change: function(event, ui) {
-            _colorScale._minRange = ui.values[0];
-            _colorScale._maxRange = ui.values[1];
-            if (_refreshCallback) { _refreshCallback(); }
+            ColSch.colorScale._minRange = ui.values[0];
+            ColSch.colorScale._maxRange = ui.values[1];
+            if (ColSch._refreshCallback) { ColSch._refreshCallback(); }
         }
     });
     elemMin.html(minValue.toFixed(3));
     elemMax.html(maxValue.toFixed(3));
     // initialise the number of colors UI
-    elemColorNo.html(_colorScale._colorBins);
+    elemColorNo.html(ColSch.colorScale._colorBins);
     elemColorNoSlider.slider({ // and exponential slider for number of color bins
         min: 1, max: 8, step: 1, value: 8,
         slide: function (event, ui) {
@@ -345,8 +348,8 @@ function ColSch_initColorSchemeGUI(minValue, maxValue, refreshFunction) {
             elemColorNo.html(nbins);
         },
         change: function (event, ui) {
-            _colorScale._colorBins = Math.pow(2, ui.value);
-            if (_refreshCallback) { _refreshCallback(); }
+            ColSch.colorScale._colorBins = Math.pow(2, ui.value);
+            if (ColSch._refreshCallback) { ColSch._refreshCallback(); }
         }
     });
 }
@@ -360,7 +363,7 @@ function ColSch_initColorSchemeGUI(minValue, maxValue, refreshFunction) {
  * @param min Lower bound for pointValue
  */
 function getGradientColor(pointValue, min, max) {
-    return _colorScale.getGradientColor(pointValue, min, max);
+    return ColSch.colorScale.getGradientColor(pointValue, min, max);
 }
 
 /**
@@ -369,11 +372,11 @@ function getGradientColor(pointValue, min, max) {
  * @returns {[number]} rgb in 0..1 units
  */
 function ColSch_getColor(activity){
-    return _colorScale.getColor(activity);
+    return ColSch.colorScale.getColor(activity);
 }
 
 function ColSch_getAbsoluteGradientColorString(pointValue) {
-    return _colorScale.getCssColor(pointValue);
+    return ColSch.colorScale.getCssColor(pointValue);
 }
 
 function ColSch_getGradientColorString(pointValue, min, max) {
