@@ -1,11 +1,9 @@
 var _colorSchemeColors;
-var _colorScheme = null;                // the color scheme to be used for current drawing
-var _minRange, _maxRange;               // the interest interval. Set by a slider in the ui
-var _minActivity, _maxActivity;         // the full activity range
-var _refreshCallback = null ;           // this is called when color scheme changes update the visualiser
-var _sparseColorNo = 256;               // the number of discrete colors. Set by a slider in the ui
+var _colorScale = null;                // the global color scale associated with this viewer
+var _haveDefaultColorScheme = false;   // false before retrieving default colors from the server
+var _refreshCallback = null ;          // this is called when color scheme changes update the visualiser
 
-// ================================= COLOR SCHEME STRUCTURES START =================================
+// ================================= COLOR SCHEME MODEL START =================================
 /**
  * 3d viewer styling
  * Css class like idea. In the future we might move these to css
@@ -108,10 +106,118 @@ var _ColSchemesInfo = {
 })();
 
 /**
+ * A color scale translates an activity to a color.
+ * It does not have a GUI but it can be seen as the model of the color scheme component ui.
+ * A color scheme object will contain a selected color scheme and the selected range and the number of bins etc
+ * @constructor
+ */
+function ColorScale(minValue, maxValue, colorScheme, colorBins){
+    if (minValue == null) {minValue = 0;}
+    if (maxValue == null) {maxValue = 1;}
+    if (colorScheme == null) {colorScheme = 'linear';}
+    if (colorBins == null) {colorBins = 256;}
+    this._minRange = minValue;       // the interest interval. Set by a slider in the ui
+    this._maxRange = maxValue;
+    this._minActivity = minValue;    // the full activity range
+    this._maxActivity = maxValue;
+    this._colorBins = colorBins;     // the number of discrete colors. Set by a slider in the ui
+    this._colorScheme = colorScheme;
+}
+
+ColorScale.prototype.clampValue = function(value, min, max) {
+    if (min == null) {min = 0;}
+    if (max == null) {max = 1;}
+
+    if (value > max) {
+        return max;
+    }
+    if (value < min) {
+        return min;
+    }
+    return value;
+};
+
+/**
+ * Returns the current color scheme object
+ */
+ColorScale.prototype.colSchInfo = function(){
+    return _ColSchemesInfo[this._colorScheme];
+};
+
+/**
+ * Looks up an activity value in the current palette. Analog to the color scheme shader.
+ * Takes into account the active range and number of bins.
+ * @returns {number} the index in the palette corresponding to the activity 0..len(colors)
+ */
+ColorScale.prototype.getPaletteIndex = function(activity){
+    activity = (activity - this._minRange)/(this._maxRange - this._minRange);
+    // bin the activity
+    activity  = Math.floor(activity  * this._colorBins) / this._colorBins;
+    // We sample the interior of the array. If activity is between [0..1] we will obtain colors[1] and colors[254]
+    // This linear transform implements it. The shader version does the same.
+    activity = activity * 253.0/255.0 + 1.0/255.0;
+    activity = this.clampValue(activity);
+    // from 0..1 to 0..255 the color array range
+    return Math.round(activity * 255); // nearest neighbour interpolation
+};
+
+ColorScale.prototype.getBounds = function() {
+    return { min: this._minRange, max:this._maxRange, bins: this._colorBins };
+};
+
+/**
+ * Looks up an activity value in the current palette. Analog to the color scheme shader.
+ * Takes into account the active range and number of bins.
+ * @returns {[number]} rgb in 0..1 units
+ */
+ColorScale.prototype.getColor = function(activity){
+    // The color array for the current scheme
+    var colors = _colorSchemeColors[this.colSchInfo()._data_idx];
+    var col = colors[this.getPaletteIndex(activity)];
+    // this function returns float colors
+    return [col[0]/255, col[1]/255, col[2]/255];
+};
+
+ColorScale.prototype.getCssColor = function(activity) {
+    var rgb_values = this.getColor(activity);
+    return "rgb(" + Math.round(rgb_values[0]*255) + "," + Math.round(rgb_values[1]*255) + "," + Math.round(rgb_values[2]*255) + ")";
+};
+
+/**
+ * Returns a color for the given point in interval (min, max), according to the current <code>_colorScheme</code>
+ * Values outside the interval are clamped
+ *
+ * @param pointValue The value whose corresponding color is returned
+ * @param max Upper bound for pointValue
+ * @param min Lower bound for pointValue
+ */
+ColorScale.prototype.getGradientColor = function(pointValue, min, max){
+    // The color array for the current scheme
+    var colors = _colorSchemeColors[this.colSchInfo()._data_idx];
+
+    if (min === max) {         // the interval is empty, so start color is the only possible one
+        var col = colors[0];
+        return [col[0]/255, col[1]/255, col[2]/255];
+    }
+    pointValue = this.clampValue(pointValue, min, max); // avoid rounding problems
+
+    // As we are given explicit bounds we have to rescale the value to an activity
+    var normalizedValue = (pointValue - min) / (max - min);  // to 0..1
+    var activity = this._minActivity + normalizedValue * (this._maxActivity - this._minActivity); // to _minActivity.._maxActivity
+
+    return this.getColor(activity);
+};
+
+// ================================= COLOR SCHEME MODEL END =================================
+
+
+// ================================= COLOR SCHEME CONTROLLER START =================================
+
+/**
  * Returns the current color scheme object
  */
 function ColSchInfo(){
-    return _ColSchemesInfo[_colorScheme||'linear'];
+    return _ColSchemesInfo[_colorScale._colorScheme];
 }
 
 /**
@@ -122,9 +228,9 @@ function ColSchGetTheme(){
 }
 
 function ColSchGetBounds(){
-    return { min: _minRange, max:_maxRange, bins: _sparseColorNo };
+    return _colorScale.getBounds();
 }
-// ================================= COLOR SCHEME STRUCTURES END =================================
+
 /**
  * Creates a tiled color picker with 12 colors: 10 from the spectral color scheme, a black and a white
  * @param selector Selector of the <nav> element of this color picker
@@ -139,20 +245,6 @@ function ColSchCreateTiledColorPicker(selector){
      return new TVBUI.ColorTilePicker(selector, tiles);
 }
 
-function clampValue(value, min, max) {
-    if (min == null) {min = 0;}
-    if (max == null) {max = 1;}
-
-    if (value > max) {
-        return max;
-    }
-    if (value < min) {
-        return min;
-    }
-    return value;
-}
-
-// ================================= COLOR SCHEME FUNCTIONS START =================================
 
 /**
  * Sets the current color scheme to the given one
@@ -160,7 +252,7 @@ function clampValue(value, min, max) {
  * @param notify When true, trigger an ajax call to store on the server the changed setting. It will also notify listeners.
  */
 function ColSch_setColorScheme(scheme, notify) {
-    _colorScheme = scheme;
+    _colorScale._colorScheme = scheme;
     if(notify){
         //could throttle this
         doAjaxCall({
@@ -181,12 +273,14 @@ function ColSch_setColorScheme(scheme, notify) {
  * @param [maxValue] activity max
  */
 function ColSch_initColorSchemeComponent(minValue, maxValue){
-    if (minValue == null) {minValue = 0;}
-    if (maxValue == null) {maxValue = 1;}
-    _minActivity = minValue;
-    _maxActivity = maxValue;
-    _minRange = minValue;            // on start the whole interval is selected
-    _maxRange = maxValue;
+    // This will get called many times for a page for historical reasons
+    // So we have to initialize what is not initialized and update what is already initialized
+
+    if (!_haveDefaultColorScheme) {
+        _colorScale = new ColorScale(minValue, maxValue);
+    } else { // not first call, propagate the color scheme
+        _colorScale = new ColorScale(minValue, maxValue, _colorScale._colorScheme);
+    }
 
     if(!_colorSchemeColors) {
         doAjaxCall({
@@ -198,12 +292,13 @@ function ColSch_initColorSchemeComponent(minValue, maxValue){
             }
         });
     }
-    if (!_colorScheme) { // on very first call, set the default color scheme
+    if (!_haveDefaultColorScheme) { // on very first call, set the default color scheme
         doAjaxCall({
             url:'/user/get_viewer_color_scheme',
             async: false,
             success:function(data){
                 ColSch_setColorScheme(JSON.parse(data), false);
+                _haveDefaultColorScheme = true;
             }
         });
     }
@@ -234,15 +329,15 @@ function ColSch_initColorSchemeGUI(minValue, maxValue, refreshFunction) {
             elemMax.html(ui.values[1].toFixed(3));
         },
         change: function(event, ui) {
-            _minRange = ui.values[0];
-            _maxRange = ui.values[1];
+            _colorScale._minRange = ui.values[0];
+            _colorScale._maxRange = ui.values[1];
             if (_refreshCallback) { _refreshCallback(); }
         }
     });
     elemMin.html(minValue.toFixed(3));
     elemMax.html(maxValue.toFixed(3));
     // initialise the number of colors UI
-    elemColorNo.html(_sparseColorNo);
+    elemColorNo.html(_colorScale._colorBins);
     elemColorNoSlider.slider({ // and exponential slider for number of color bins
         min: 1, max: 8, step: 1, value: 8,
         slide: function (event, ui) {
@@ -250,7 +345,7 @@ function ColSch_initColorSchemeGUI(minValue, maxValue, refreshFunction) {
             elemColorNo.html(nbins);
         },
         change: function (event, ui) {
-            _sparseColorNo = Math.pow(2, ui.value);
+            _colorScale._colorBins = Math.pow(2, ui.value);
             if (_refreshCallback) { _refreshCallback(); }
         }
     });
@@ -265,37 +360,7 @@ function ColSch_initColorSchemeGUI(minValue, maxValue, refreshFunction) {
  * @param min Lower bound for pointValue
  */
 function getGradientColor(pointValue, min, max) {
-    // The color array for the current scheme
-    var colors = _colorSchemeColors[ColSchInfo()._data_idx];
-
-    if (min === max) {         // the interval is empty, so start color is the only possible one
-        var col = colors[0];
-        return [col[0]/255, col[1]/255, col[2]/255];
-    }
-    pointValue = clampValue(pointValue, min, max); // avoid rounding problems
-
-    // As we are given explicit bounds we have to rescale the value to an activity
-    var normalizedValue = (pointValue - min) / (max - min);  // to 0..1
-    var activity = _minActivity + normalizedValue * (_maxActivity - _minActivity); // to _minActivity.._maxActivity
-
-    return ColSch_getColor(activity);
-}
-
-/**
- * Looks up an activity value in the current palette. Analog to the color scheme shader.
- * Takes into account the active range and number of bins.
- * @returns {number} the index in the palette corresponding to the activity 0..len(colors)
- */
-function ColSch_getPalleteIndex(activity){
-    activity = (activity - _minRange)/(_maxRange - _minRange);
-    // bin the activity
-    activity  = Math.floor(activity  * _sparseColorNo) / _sparseColorNo;
-    // We sample the interior of the array. If activity is between [0..1] we will obtain colors[1] and colors[254]
-    // This linear transform implements it. The shader version does the same.
-    activity = activity * 253.0/255.0 + 1.0/255.0;
-    activity = clampValue(activity);
-    // from 0..1 to 0..255 the color array range
-    return Math.round(activity * 255); // nearest neighbour interpolation
+    return _colorScale.getGradientColor(pointValue, min, max);
 }
 
 /**
@@ -304,36 +369,11 @@ function ColSch_getPalleteIndex(activity){
  * @returns {[number]} rgb in 0..1 units
  */
 function ColSch_getColor(activity){
-    // The color array for the current scheme
-    var colors = _colorSchemeColors[ColSchInfo()._data_idx];
-    var col = colors[ColSch_getPalleteIndex(activity)];
-    // this function returns float colors
-    return [col[0]/255, col[1]/255, col[2]/255];
-}
-
-/**
- * Similar to ColSch_getColor but :
- *   It returns an alpha channel
- *   You can request a specific color scheme
- *   Out of scale values are returned as transparent instead of color scheme edge colors.
- */
-function ColSch_get_RGBA_Color(activity, alpha, colorSchemeName){
-    if (colorSchemeName == null){
-        colorSchemeName = _colorScheme; // The color array for the current scheme
-    }
-    var colSchIdx = _ColSchemesInfo[colorSchemeName]._data_idx;
-    var colors = _colorSchemeColors[colSchIdx];
-    var idx = ColSch_getPalleteIndex(activity);
-    if (idx === 0 || idx === 254){
-        return [0, 0, 0, 0];
-    }
-    var col = colors[idx];
-    return [col[0]/255, col[1]/255, col[2]/255, alpha];
+    return _colorScale.getColor(activity);
 }
 
 function ColSch_getAbsoluteGradientColorString(pointValue) {
-    var rgb_values = ColSch_getColor(pointValue);
-    return "rgb(" + Math.round(rgb_values[0]*255) + "," + Math.round(rgb_values[1]*255) + "," + Math.round(rgb_values[2]*255) + ")";
+    return _colorScale.getCssColor(pointValue);
 }
 
 function ColSch_getGradientColorString(pointValue, min, max) {
@@ -341,7 +381,7 @@ function ColSch_getGradientColorString(pointValue, min, max) {
     return "rgb(" + Math.round(rgb_values[0]*255) + "," + Math.round(rgb_values[1]*255) + "," + Math.round(rgb_values[2]*255) + ")";
 }
 
-// ================================= COLOR SCHEME FUNCTIONS  END  =================================
+// ================================= COLOR SCHEME CONTROLLER  END  =================================
 
 // ================================= LEGEND UPDATING FUNCTION START  =================================
 /**
@@ -396,6 +436,7 @@ function ColSch_updateLegendLabels(container, minValue, maxValue, height) {
     });
 }
 
+// @private
 function round_number(num, dec) {
     return Math.floor(num * Math.pow(10, dec)) / Math.pow(10, dec);
 }
