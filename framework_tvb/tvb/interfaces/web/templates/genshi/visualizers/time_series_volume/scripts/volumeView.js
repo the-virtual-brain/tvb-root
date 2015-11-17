@@ -84,12 +84,35 @@ function TSV_initVolumeView(dataSize, minValue, maxValue, voxelSize, volumeOrigi
  * @param selectedEntity The selected voxel. A cross will be drawn over it.
  */
 function TSV_drawVolumeScene(sliceArray, selectedEntity){
-    var i, j, k, ii, jj, kk;
 
     vol.ctx.fillStyle = ColSch_getAbsoluteGradientColorString(vol.minimumValue - 1);
     vol.ctx.fillRect(0, 0, vol.ctx.canvas.width, vol.ctx.canvas.height);
+
+    drawSmallQuadrants(sliceArray);
+
+    _setCtxOnQuadrant(0);
+    drawMargin();
+    _setCtxOnQuadrant(1);
+    drawMargin();
+    _setCtxOnQuadrant(2);
+    drawMargin();
+
+    drawFocusQuadrantFromView(sliceArray);
+    drawMargin();
+
+    drawNavigator(selectedEntity);
+    //Value of the selected voxel. Used to highlight value in color scale.
+    var selectedEntityValue = sliceArray[0][selectedEntity[0]][selectedEntity[1]];
+    drawLegend(selectedEntityValue);
+    var focusTxt = selectedEntity+"="+selectedEntityValue.toPrecision(3);
+    drawLabels(focusTxt);
+}
+
+function drawSmallQuadrants(sliceArray){
+    var i, j, k, ii, jj, kk;
     // Create an off screen buffer the size of the small quadrants
     var imageData = vol.ctx.createImageData(vol.quadrantWidth, vol.quadrantHeight);
+
     _setCtxOnQuadrant(0);
     for (j = 0; j < vol.dataSize[2]; ++j){
         for (i = 0; i < vol.dataSize[1]; ++i){
@@ -99,7 +122,6 @@ function TSV_drawVolumeScene(sliceArray, selectedEntity){
     // Now paste the buffer to the canvas
     // The putImageData api ignores the transformation matrix. So we have to duplicate the translation set by _setCtxOnQuadrant
     vol.ctx.putImageData(imageData, vol.currentQuadrant.offsetX, 0 * vol.quadrantHeight +  vol.currentQuadrant.offsetY);
-    drawMargin();
 
     _setCtxOnQuadrant(1);
     for (k = 0; k < vol.dataSize[3]; ++k){
@@ -108,7 +130,6 @@ function TSV_drawVolumeScene(sliceArray, selectedEntity){
         }
     }
     vol.ctx.putImageData(imageData, vol.currentQuadrant.offsetX, 1 * vol.quadrantHeight +  vol.currentQuadrant.offsetY);
-    drawMargin();
 
     _setCtxOnQuadrant(2);
     for (kk = 0; kk < vol.dataSize[3]; ++kk){
@@ -117,15 +138,6 @@ function TSV_drawVolumeScene(sliceArray, selectedEntity){
         }
     }
     vol.ctx.putImageData(imageData, vol.currentQuadrant.offsetX, 2 * vol.quadrantHeight +  vol.currentQuadrant.offsetY);
-    drawMargin();
-
-    drawFocusQuadrantFromView(sliceArray);
-    drawNavigator(selectedEntity);
-    //Value of the selected voxel. Used to highlight value in color scale.
-    var selectedEntityValue = sliceArray[0][selectedEntity[0]][selectedEntity[1]];
-    drawLegend(selectedEntityValue);
-    var focusTxt = selectedEntity+"="+selectedEntityValue.toPrecision(3);
-    drawLabels(focusTxt);
 }
 
 /**
@@ -161,7 +173,6 @@ function drawFocusQuadrantFromView(sliceArray){
         }
     }
     vol.ctx.putImageData(imageData, vol.quadrantWidth + vol.currentQuadrant.offsetX, vol.currentQuadrant.offsetY);
-    drawMargin();
 }
 
 /**
