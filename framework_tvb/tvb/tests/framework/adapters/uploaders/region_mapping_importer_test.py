@@ -33,7 +33,6 @@
 """
 import unittest
 import os
-import datetime
 import tvb_data.regionMapping as demo_data
 import tvb.tests.framework.adapters.uploaders.test_data as test_data
 from tvb.tests.framework.core.base_testcase import TransactionalTestCase
@@ -72,8 +71,8 @@ class RegionMappingImporterTest(TransactionalTestCase):
         """
         self.test_user = TestFactory.create_user("UserRM")
         self.test_project = TestFactory.import_default_project(self.test_user)
-        self.connectivity = self._get_entity(Connectivity())
-        self.surface = self._get_entity(CorticalSurface())
+        self.connectivity = self._get_entity(Connectivity)
+        self.surface = self._get_entity(CorticalSurface)
 
 
     def tearDown(self):
@@ -91,13 +90,12 @@ class RegionMappingImporterTest(TransactionalTestCase):
         :param filters: optional, the returned entity will also have the required filters
         :return: an object of class `expected_data`
         """
-        data_types = FlowService().get_available_datatypes(self.test_project.id,
-                                                           expected_data.module + "." + expected_data.type, filters)[0]
+        dt_full_name = expected_data.__module__ + "." + expected_data.__name__
+        data_types = FlowService().get_available_datatypes(self.test_project.id,dt_full_name, filters)[0]
         self.assertEqual(1, len(data_types), "Project should contain only one data type:" + str(expected_data.type))
         
         entity = ABCAdapter.load_entity_by_gid(data_types[0][2])
         self.assertTrue(entity is not None, "Instance should not be none")
-        
         return entity
 
 
@@ -107,29 +105,29 @@ class RegionMappingImporterTest(TransactionalTestCase):
         :param import_file_path: absolute path of the file to be imported
         """
             
-        ### Retrieve Adapter instance 
+        # Retrieve Adapter instance
+        test_subject = "test"
         group = dao.find_group('tvb.adapters.uploaders.region_mapping_importer', 'RegionMapping_Importer')
         importer = ABCAdapter.build_adapter(group)
         
         args = {'mapping_file': import_file_path, 'surface': surface_gid,
-                'connectivity': connectivity_gid, DataTypeMetaData.KEY_SUBJECT: "test"}
+                'connectivity': connectivity_gid,
+                DataTypeMetaData.KEY_SUBJECT: test_subject}
         
-        now = datetime.datetime.now() 
-        
-        ### Launch import Operation
+        # Launch import Operation
         FlowService().fire_operation(importer, self.test_user, self.test_project.id, **args)
              
         # During setup we import a CFF which creates an additional RegionMapping
         # So, here we have to find our mapping (just imported)   
-        data_filter = FilterChain(fields=[FilterChain.datatype + ".create_date"], operations=[">"], values=[now])
-        region_mapping = self._get_entity(RegionMapping(), data_filter)
+        data_filter = FilterChain(fields=[FilterChain.datatype + ".subject"], operations=["=="], values=[test_subject])
+        region_mapping = self._get_entity(RegionMapping, data_filter)
         
         return region_mapping
     
     
     def test_import_no_surface_or_connectivity(self):
         """
-            This method tests import of region mapping without providing a surface or connectivity
+        This method tests import of region mapping without providing a surface or connectivity
         """
         try:
             self._import(self.TXT_FILE, None, self.connectivity.gid)
@@ -162,14 +160,14 @@ class RegionMappingImporterTest(TransactionalTestCase):
 
     def test_import_from_bz2(self):
         """
-            This method tests import of region mapping from TXT file
+        This method tests import of region mapping from TXT file
         """
         self._import_from_file(self.BZ2_FILE) 
 
 
     def _import_from_file(self, import_file):
         """
-            This method tests import of region mapping from TXT file
+        This method tests import of region mapping from TXT file
         """
         region_mapping = self._import(import_file, self.surface.gid, self.connectivity.gid) 
         
@@ -183,7 +181,7 @@ class RegionMappingImporterTest(TransactionalTestCase):
 
     def test_import_wrong_file_content(self):
         """
-            This method tests import of region mapping with:
+        This method tests import of region mapping with:
             - a wrong region number
             - wrong number of regions
             - negative region number
