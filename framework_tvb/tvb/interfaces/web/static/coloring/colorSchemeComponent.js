@@ -173,19 +173,14 @@ ColorScale.prototype.getBounds = function() {
 /**
  * Looks up an activity value in the current palette. Analog to the color scheme shader.
  * Takes into account the active range and number of bins.
- * @returns {[number]} rgb in 0..1 units
+ * @returns {[number]} rgba in 0..1 units
  */
 ColorScale.prototype.getColor = function(activity){
     // The color array for the current scheme
     var colors = ColSch._colorSchemeColors[this.getColorScheme()._data_idx];
     var col = colors[this.getPaletteIndex(activity)];
     // this function returns float colors
-    return [col[0]/255, col[1]/255, col[2]/255];
-};
-
-ColorScale.prototype.getCssColor = function(activity) {
-    var rgb_values = this.getColor(activity);
-    return "rgb(" + Math.round(rgb_values[0]*255) + "," + Math.round(rgb_values[1]*255) + "," + Math.round(rgb_values[2]*255) + ")";
+    return [col[0]/255, col[1]/255, col[2]/255, 1.0];
 };
 
 /**
@@ -202,7 +197,7 @@ ColorScale.prototype.getGradientColor = function(pointValue, min, max){
 
     if (min === max) {         // the interval is empty, so start color is the only possible one
         var col = colors[0];
-        return [col[0]/255, col[1]/255, col[2]/255];
+        return [col[0]/255, col[1]/255, col[2]/255, 1.0];
     }
     pointValue = this.clampValue(pointValue, min, max); // avoid rounding problems
 
@@ -213,6 +208,20 @@ ColorScale.prototype.getGradientColor = function(pointValue, min, max){
     return this.getColor(activity);
 };
 
+ColorScale.prototype._toCss = function(rgb_values){
+    return "rgba(" + Math.round(rgb_values[0] * 255) + "," + Math.round(rgb_values[1] * 255) + "," +
+                     Math.round(rgb_values[2] * 255) + "," + Math.round(rgb_values[3] * 255) + ")";
+};
+
+/** @see getColor */
+ColorScale.prototype.getCssColor = function(activity) {
+    return this._toCss(this.getColor(activity));
+};
+
+/** @see getGradientColor */
+ColorScale.prototype.getCssGradientColor = function(pointValue, min, max) {
+    return this._toCss(this.getGradientColor(pointValue, min, max));
+};
 // ================================= COLOR SCHEME MODEL END =================================
 
 
@@ -379,9 +388,11 @@ function ColSch_getAbsoluteGradientColorString(pointValue) {
     return ColSch.colorScale.getCssColor(pointValue);
 }
 
+/**
+ * @see ColorScale.getCssGradientColor
+ */
 function ColSch_getGradientColorString(pointValue, min, max) {
-    var rgb_values = getGradientColor(pointValue, min, max);
-    return "rgb(" + Math.round(rgb_values[0]*255) + "," + Math.round(rgb_values[1]*255) + "," + Math.round(rgb_values[2]*255) + ")";
+    return ColSch.colorScale.getCssGradientColor(pointValue, min, max);
 }
 
 // ================================= COLOR SCHEME CONTROLLER  END  =================================

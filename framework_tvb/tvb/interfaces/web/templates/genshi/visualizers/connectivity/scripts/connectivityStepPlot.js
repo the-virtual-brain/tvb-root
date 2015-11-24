@@ -221,7 +221,7 @@ function generateColors(tractValue, intervalLength) {
             var color;
 
             if (isWithinInterval && weight != 0) {
-                color = getGradientColor(weight, minWeightsValue, maxWeightsValue);
+                color = getGradientColor(weight, minWeightsValue, maxWeightsValue).slice(0, 3);
             }else{
                 color = theme.noValueColor;
             }
