@@ -1,4 +1,4 @@
-/* globals displayMessage, ColSch_getAbsoluteGradientColorString, ColSch_getColor */
+/* globals displayMessage */
 
 /**
  * Code that is responsible with drawing volumetric information.
@@ -39,7 +39,8 @@ var vol = {
     legendPadding:80*2,         // Horizontal padding for the TSV viewr legend
     volumeOrigin: null,         // VolumeOrigin is not used for now. if needed, use it in _setQuadrant
 
-    dataSize: ""                // Used first to contain the file ID and then it's dimension.
+    dataSize: "",               // Used first to contain the file ID and then it's dimension.
+    currentColorScale: null     // The color scale used for the current draw call
 };
 
 /**
@@ -90,21 +91,25 @@ function TSV_initVolumeView(dataSize, minValue, maxValue, voxelSize, volumeOrigi
 
 /**
  * Draws a volume slice.
- * @param sliceArray [axial, sagittal, coronal] where elements are 2d array slices.
+ * @param layers A list of layers. A layer {sliceArray:, colorScale: }
+ *        sliceArray is [axial, sagittal, coronal] where elements are 2d array slices.
  * @param selectedEntity The selected voxel. A cross will be drawn over it.
  */
-function TSV_drawVolumeScene(sliceArray, selectedEntity){
-
+function TSV_drawVolumeScene(layers, selectedEntity){
+    vol.currentColorScale = layers[0].colorScale;
     clearCanvas();
 
-    drawSmallQuadrants(sliceArray);
-    drawFocusQuadrantFromView(sliceArray);
+    for (var i = 0; i < layers.length; ++i) {
+        vol.currentColorScale = layers[i].colorScale;
+        drawSmallQuadrants(layers[i].sliceArray);
+        drawFocusQuadrantFromView(layers[i].sliceArray);
+    }
 
     drawMargins();
-
     drawNavigator(selectedEntity);
-    //Value of the selected voxel. Used to highlight value in color scale.
-    var selectedEntityValue = sliceArray[0][selectedEntity[0]][selectedEntity[1]];
+    //Value of the selected voxel is taken from the last layer. Used to highlight value in color scale.
+    var lastSliceArray = layers[layers.length - 1].sliceArray;
+    var selectedEntityValue = lastSliceArray[0][selectedEntity[0]][selectedEntity[1]];
     drawLegend(selectedEntityValue);
     var focusTxt = selectedEntity+"="+selectedEntityValue.toPrecision(3);
     drawLabels(focusTxt);
@@ -207,7 +212,7 @@ function drawVoxel(imageData, line, col, value){
     var w = Math.round(vol.currentQuadrant.entityWidth + 1);
     var h = Math.round(vol.currentQuadrant.entityHeight + 1);
 
-    var rgba = ColSch_getColor(value);
+    var rgba = vol.currentColorScale.getColor(value);
     // A fillRect on the imageData:
     for (var yi = y; yi < y + h; ++yi) {
         var stride = yi * imageData.width;
@@ -305,7 +310,7 @@ function drawLegend(selectedEntityValue) {
     // Draw a color bar from min to max value based on the selected color coding
     for(var i = 0; i< vol.legendWidth; i++){
         var val = vol.minimumValue + ((i/vol.legendWidth)*(vol.maximumValue-vol.minimumValue));
-        vol.ctx.fillStyle = ColSch_getAbsoluteGradientColorString(val);
+        vol.ctx.fillStyle = vol.currentColorScale.getCssColor(val);
         vol.ctx.fillRect(i, 1, 1.5, vol.legendHeight/2);
     }
 
@@ -368,7 +373,7 @@ function drawMargins(){
 
 function clearCanvas(){
     vol.ctx.setTransform(1, 0, 0, 1, 0, 0);                              // reset the transformation
-    vol.ctx.fillStyle = ColSch_getAbsoluteGradientColorString(vol.minimumValue - 1);
+    vol.ctx.fillStyle = vol.currentColorScale.getCssColor(vol.minimumValue - 1);
     vol.ctx.fillRect(0, 0, vol.ctx.canvas.width, vol.ctx.canvas.height);
 }
 

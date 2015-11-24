@@ -135,7 +135,8 @@ function drawSceneFunctional(tIndex) {
 function drawVolumeScene(tIndex){
     // An array containing the view for each plane.
     var sliceArray = TSRPC_getViewAtTime(tIndex, tsVol.selectedEntity);
-    TSV_drawVolumeScene(sliceArray, tsVol.selectedEntity);
+    var layers = [{sliceArray: sliceArray, colorScale: ColSch.colorScale}];
+    TSV_drawVolumeScene(layers, tsVol.selectedEntity);
 }
 
 // ==================================== PICKING RELATED CODE START ==========================================
