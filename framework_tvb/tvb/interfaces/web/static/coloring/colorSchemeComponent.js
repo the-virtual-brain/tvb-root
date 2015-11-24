@@ -222,6 +222,33 @@ ColorScale.prototype.getCssColor = function(activity) {
 ColorScale.prototype.getCssGradientColor = function(pointValue, min, max) {
     return this._toCss(this.getGradientColor(pointValue, min, max));
 };
+
+/**
+ * Subclass of ColorScale that returns out of scale values transparent
+ * NOTE: subclassing ColorScales does not work with the shader based color schemes.
+ * @constructor
+ * @extends RegionSelectComponent
+ */
+function AlphaClampColorScale(minValue, maxValue, colorSchemeName, colorBins, alpha){
+    ColorScale.call(this, minValue, maxValue, colorSchemeName, colorBins);
+    this.alpha = alpha;
+}
+
+// proto chain setup.
+AlphaClampColorScale.prototype = Object.create(ColorScale.prototype);
+
+AlphaClampColorScale.prototype.getColor = function(activity){
+    // The color array for the current scheme
+    var colors = ColSch._colorSchemeColors[this.getColorScheme()._data_idx];
+    var pIdx = this.getPaletteIndex(activity);
+    if (pIdx === 0 || pIdx === 255){
+        return [0, 0, 0, 0];
+    }
+    var col = colors[pIdx];
+    // this function returns float colors
+    return [col[0]/255, col[1]/255, col[2]/255, this.alpha];
+};
+
 // ================================= COLOR SCHEME MODEL END =================================
 
 
