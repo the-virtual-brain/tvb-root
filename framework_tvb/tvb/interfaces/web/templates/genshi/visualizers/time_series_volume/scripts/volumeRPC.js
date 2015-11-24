@@ -17,6 +17,9 @@ var tsRPC = {
     bufferL2: {},               // Contains all data from loaded views, limited by memory.
     urlVolumeData: "",          // Used to store the call for get_volume_view server function.
 
+    urlBackgroundVolumeData: "",// The base url to the get_volume_view function of the background ts
+    backgroundL2: {},           // Cache for the background. Only one entry Size == 1
+
     requestQueue: [],           // Used to avoid requesting a time point set while we are waiting for it.
     parserBlob: null,           // Used to store the JSON Parser Blob for web-workers.
 
@@ -27,8 +30,9 @@ var tsRPC = {
     urlVoxelRegion: null        // url to fetch the name of the region that contains a voxel
 };
 
-function TSRPC_initNonStreaming(urlVolumeData, urlVoxelRegion, entitySize){
+function TSRPC_initNonStreaming(urlVolumeData, urlBackgroundVolumeData, urlVoxelRegion, entitySize){
     tsRPC.urlVolumeData = urlVolumeData;
+    tsRPC.urlBackgroundVolumeData = urlBackgroundVolumeData;
     tsRPC.urlVoxelRegion = urlVoxelRegion;
     tsRPC.timeLength = entitySize[3];
 }
@@ -40,7 +44,7 @@ function TSRPC_initNonStreaming(urlVolumeData, urlVoxelRegion, entitySize){
  * @param getCurrentEntityAndTime callback called by the streaming functions to get the selected entity and time point
  * The callback should return {currentTimePoint: , selectedEntity: }
  */
-function TSRPC_initStreaming(urlVolumeData, entitySize, playbackRate, getCurrentEntityAndTime){
+function TSRPC_initStreaming(urlVolumeData, urlBackgroundVolumeData, entitySize, playbackRate, getCurrentEntityAndTime){
     /**
     * This will be our JSON parser web-worker blob,
     * Using a webworker is a bit slower than parsing the jsons with
@@ -49,7 +53,7 @@ function TSRPC_initStreaming(urlVolumeData, entitySize, playbackRate, getCurrent
     * We use this technique also to avoid writing a separate file
     * for each worker.
     */
-    TSRPC_initNonStreaming(urlVolumeData, null, entitySize);
+    TSRPC_initNonStreaming(urlVolumeData, urlBackgroundVolumeData, null, entitySize);
     tsRPC.getCurrentEntityAndTime = getCurrentEntityAndTime;
     tsRPC.parserBlob = inlineWebWorkerWrapper(
             function(){
@@ -156,9 +160,9 @@ function voxelToUrlFragment(selectedEntity){
     return xPlane + yPlane + zPlane;
 }
 
-function buildRequestUrl(from, to, selectedEntity){
+function buildRequestUrl(urlVolumeData, from, to, selectedEntity){
     var spacialFragment = voxelToUrlFragment(selectedEntity);
-    return tsRPC.urlVolumeData + "from_idx=" + from + ";to_idx=" + to + spacialFragment;
+    return urlVolumeData + "from_idx=" + from + ";to_idx=" + to + spacialFragment;
 }
 
 /**
@@ -178,7 +182,7 @@ function streamToBuffer(){
             if(!tsRPC.bufferL2[toBufferSection] && tsRPC.requestQueue.indexOf(toBufferSection) < 0) {
                 var from = toBufferSection * tsRPC.bufferSize;
                 var to = Math.min(from + tsRPC.bufferSize, tsRPC.timeLength);
-                var query = buildRequestUrl(from, to, point.selectedEntity);
+                var query = buildRequestUrl(tsRPC.urlVolumeData, from, to, point.selectedEntity);
                 asyncRequest(query, toBufferSection);
                 return; // break out of the loop
             }
@@ -204,6 +208,34 @@ function freeBuffer() {
     }
 }
 
+function _getViewAtTimeNoCache(t, selectedEntity, urlVolumeData){
+    var from =  t;
+    var to = Math.min(1 + t, tsRPC.timeLength);
+    var query = buildRequestUrl(urlVolumeData, from, to, selectedEntity);
+
+    var buffer = HLPR_readJSONfromFile(query);
+    return [buffer[0][0],buffer[1][0],buffer[2][0]];
+}
+
+/**
+ * Gets volumetric slices similar to TSRPC_getViewAtTime.
+ * But this function has no temporal buffering support and it uses a different caching strategy.
+ * It caches just the last request.
+ * This behaviour is appropriate for the background.
+ * It also uses a different url to fetch data.
+ */
+function TSRPC_getBackgroundView(selectedEntity){
+    var key = selectedEntity + "";
+    if (tsRPC.backgroundL2[key]){
+        return tsRPC.backgroundL2[key];
+    } else {
+        var ret = _getViewAtTimeNoCache(0, selectedEntity, tsRPC.urlBackgroundVolumeData);
+        tsRPC.backgroundL2 = {};
+        tsRPC.backgroundL2[key] = ret;
+        return ret;
+    }
+}
+
 /**
  *  This functions returns the X,Y,Z data from time-point t.
  * @param t The time point we want to get
@@ -211,22 +243,16 @@ function freeBuffer() {
  * @returns Array with only the data from the x,y,z plane at time-point t.
  */
 function TSRPC_getViewAtTime(t, selectedEntity) {
-    var buffer;
     var section = Math.floor(t/tsRPC.bufferSize);
-
+    // Note that the cache key is time. The voxel is not part of the key.
+    // This cache will be invalidated if another voxel is selected by calling TSRPC_startBuffering.
     if (tsRPC.bufferL2[section]) { // We have that slice in memory
-        buffer = tsRPC.bufferL2[section];
-
+        var buffer = tsRPC.bufferL2[section];
+        t = t%tsRPC.bufferSize;
+        return [buffer[0][t],buffer[1][t],buffer[2][t]];
     } else { // We need to load that slice from the server
-        var from =  t;
-        var to = Math.min(1 + t, tsRPC.timeLength);
-        var query = buildRequestUrl(from, to, selectedEntity);
-
-        buffer = HLPR_readJSONfromFile(query);
-        return [buffer[0][0],buffer[1][0],buffer[2][0]];
+        return _getViewAtTimeNoCache(t, selectedEntity, tsRPC.urlVolumeData);
     }
-    t = t%tsRPC.bufferSize;
-    return [buffer[0][t],buffer[1][t],buffer[2][t]];
 }
 
 function TSRPC_startBuffering() {
@@ -259,6 +285,7 @@ window.TSRPC_getViewAtTime = TSRPC_getViewAtTime;
 window.TSRPC_startBuffering = TSRPC_startBuffering;
 window.TSRPC_stopBuffering = TSRPC_stopBuffering;
 window.TSRPC_getVoxelRegion = TSRPC_getVoxelRegion;
+window.TSRPC_getBackgroundView = TSRPC_getBackgroundView;
 
 window._debug_tsRPC = tsRPC;
 

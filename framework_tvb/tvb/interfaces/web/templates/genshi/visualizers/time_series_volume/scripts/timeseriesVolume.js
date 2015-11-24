@@ -48,7 +48,7 @@ function TSV_startVolumeStaticVisualizer(urlVolumeData, urlVoxelRegion, minValue
 
     tsVol.selectedQuad = TSV_getQuadrant(0);
 
-    TSRPC_initNonStreaming(urlVolumeData, urlVoxelRegion, tsVol.entitySize);
+    TSRPC_initNonStreaming(urlVolumeData, null, urlVoxelRegion, tsVol.entitySize);
 
     ColSch_initColorSchemeGUI(minValue, maxValue, function(){
         drawVolumeScene(tsVol.currentTimePoint);
@@ -90,7 +90,7 @@ function TSV_startVolumeTimeSeriesVisualizer(urlVolumeData, urlTimeSeriesData, m
     tsVol.samplePeriod = samplePeriod;
     tsVol.samplePeriodUnit = samplePeriodUnit;
 
-    TSRPC_initStreaming(urlVolumeData, tsVol.entitySize, tsVol.playbackRate, function(){
+    TSRPC_initStreaming(urlVolumeData, null, tsVol.entitySize, tsVol.playbackRate, function(){
        return {currentTimePoint: tsVol.currentTimePoint, selectedEntity: tsVol.selectedEntity};
     });
 
