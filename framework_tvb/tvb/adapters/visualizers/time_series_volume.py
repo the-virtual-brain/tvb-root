@@ -55,9 +55,7 @@ class TimeSeriesVolumeVisualiser(ABCDisplayer):
         return [{'name': 'time_series', 'label': 'Time Series', 'type': TimeSeries, 'required': True,
                  'conditions': FilterChain(fields=[FilterChain.datatype + '._has_volume_mapping'],
                                            operations=["=="], values=[True])},
-                {'name': 'background', 'label': 'Background T1', 'type': TimeSeries, 'required': False,
-                 'conditions': FilterChain(fields=[FilterChain.datatype + '._has_volume_mapping', FilterChain.datatype + '._length_1d'],
-                                           operations=["==", "=="], values=[True, 1])}]
+                _MappedArrayVolumeBase.get_background_input_tree()]
 
 
     def get_required_memory_size(self, **kwargs):

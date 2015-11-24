@@ -55,6 +55,11 @@ class _MappedArrayVolumeBase(ABCDisplayer):
     def get_required_memory_size(self, **kwargs):
         return -1
 
+    @staticmethod
+    def get_background_input_tree():
+        return {'name': 'background', 'label': 'Background T1', 'type': TimeSeries, 'required': False,
+                'conditions': FilterChain(fields=[FilterChain.datatype + '._has_volume_mapping', FilterChain.datatype + '._length_1d'],
+                                          operations=["==", "=="], values=[True, 1])}
 
     @staticmethod
     def get_default_slice(measure_shape, nregions):
@@ -155,11 +160,12 @@ class MappedArrayVolumeVisualizer(_MappedArrayVolumeBase):
                 {'name': 'region_mapping_volume', 'label': 'Region mapping',
                  'type': RegionVolumeMapping, 'required': False,},
                 {'name': 'data_slice', 'label': 'slice indices in numpy syntax',
-                 'type': 'str', 'required': False}]
+                 'type': 'str', 'required': False},
+                _MappedArrayVolumeBase.get_background_input_tree()]
 
 
-    def launch(self, measure, region_mapping_volume=None, data_slice=''):
-        params = self.compute_params(region_mapping_volume, measure, data_slice)
+    def launch(self, measure, region_mapping_volume=None, data_slice='', background=None):
+        params = self.compute_params(region_mapping_volume, measure, data_slice, background=background)
         params['title'] = "Mapped array on region volume Visualizer",
         return self.build_display_result("time_series_volume/staticView", params,
                                          pages=dict(controlPage="time_series_volume/controls"))
@@ -177,11 +183,13 @@ class ConnectivityMeasureVolumeVisualizer(_MappedArrayVolumeBase):
                  'description': 'A connectivity measure',
                  'conditions': FilterChain(fields=[FilterChain.datatype + '._nr_dimensions'],
                                            operations=["=="], values=[1])},
-                {'name': 'region_mapping_volume', 'label': 'Region mapping', 'type': RegionVolumeMapping, 'required': False,}]
+                {'name': 'region_mapping_volume', 'label': 'Region mapping',
+                 'type': RegionVolumeMapping, 'required': False,},
+                _MappedArrayVolumeBase.get_background_input_tree()]
 
 
-    def launch(self, connectivity_measure, region_mapping_volume=None):
-        params = self.compute_params(region_mapping_volume, connectivity_measure)
+    def launch(self, connectivity_measure, region_mapping_volume=None, background=None):
+        params = self.compute_params(region_mapping_volume, connectivity_measure, background=background)
         params['title'] = "Volumetric Region Volume Mapping Visualizer"
         # the view will display slicing information if this key is present.
         # compute_params works with generic mapped arrays and it will return slicing info
@@ -198,15 +206,14 @@ class RegionVolumeMappingVisualiser(_MappedArrayVolumeBase):
 
 
     def get_input_tree(self):
-        return [{'name': 'region_mapping_volume', 'label': 'Region mapping', 'type': RegionVolumeMapping, 'required': True,},
+        return [{'name': 'region_mapping_volume', 'label': 'Region mapping',
+                 'type': RegionVolumeMapping, 'required': True,},
                 {'name': 'connectivity_measure', 'label': 'Connectivity measure',
                  'type': ConnectivityMeasure, 'required': False,
                  'description': 'A connectivity measure',
                  'conditions': FilterChain(fields=[FilterChain.datatype + '._nr_dimensions'],
                                            operations=["=="], values=[1])},
-                {'name': 'background', 'label': 'Background T1', 'type': TimeSeries, 'required': False,
-                 'conditions': FilterChain(fields=[FilterChain.datatype + '._has_volume_mapping', FilterChain.datatype + '._length_1d'],
-                                           operations=["==", "=="], values=[True, 1])}]
+                _MappedArrayVolumeBase.get_background_input_tree()]
 
 
     def launch(self, region_mapping_volume, connectivity_measure=None, background=None):
