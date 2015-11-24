@@ -85,20 +85,12 @@ function TSV_initVolumeView(dataSize, minValue, maxValue, voxelSize, volumeOrigi
  */
 function TSV_drawVolumeScene(sliceArray, selectedEntity){
 
-    vol.ctx.fillStyle = ColSch_getAbsoluteGradientColorString(vol.minimumValue - 1);
-    vol.ctx.fillRect(0, 0, vol.ctx.canvas.width, vol.ctx.canvas.height);
+    clearCanvas();
 
     drawSmallQuadrants(sliceArray);
-
-    _setCtxOnQuadrant(0);
-    drawMargin();
-    _setCtxOnQuadrant(1);
-    drawMargin();
-    _setCtxOnQuadrant(2);
-    drawMargin();
-
     drawFocusQuadrantFromView(sliceArray);
-    drawMargin();
+
+    drawMargins();
 
     drawNavigator(selectedEntity);
     //Value of the selected voxel. Used to highlight value in color scale.
@@ -192,16 +184,16 @@ function drawVoxel(imageData, line, col, value){
     var w = Math.round(vol.currentQuadrant.entityWidth + 1);
     var h = Math.round(vol.currentQuadrant.entityHeight + 1);
 
-    var rgb = ColSch_getColor(value);
+    var rgba = ColSch_getColor(value);
     // A fillRect on the imageData:
     for (var yi = y; yi < y + h; ++yi) {
         var stride = yi * imageData.width;
         for (var xi = x; xi < x + w; ++xi) {
             var i = (stride + xi) * 4;
-            imageData.data[i] = rgb[0] * 255;
-            imageData.data[i + 1] = rgb[1] * 255;
-            imageData.data[i + 2] = rgb[2] * 255;
-            imageData.data[i + 3] = 255;
+            imageData.data[i] = rgba[0] * 255;
+            imageData.data[i + 1] = rgba[1] * 255;
+            imageData.data[i + 2] = rgba[2] * 255;
+            imageData.data[i + 3] = rgba[3] * 255;
         }
     }
 }
@@ -338,6 +330,23 @@ function drawMargin(){
         vol.ctx.strokeStyle = 'gray';
     }
     vol.ctx.stroke();
+}
+
+function drawMargins(){
+    _setCtxOnQuadrant(0);
+    drawMargin();
+    _setCtxOnQuadrant(1);
+    drawMargin();
+    _setCtxOnQuadrant(2);
+    drawMargin();
+    _setCtxOnQuadrant(3);
+    drawMargin();
+}
+
+function clearCanvas(){
+    vol.ctx.setTransform(1, 0, 0, 1, 0, 0);                              // reset the transformation
+    vol.ctx.fillStyle = vol.currentColorScale.getCssColor(vol.minimumValue - 1);
+    vol.ctx.fillRect(0, 0, vol.ctx.canvas.width, vol.ctx.canvas.height);
 }
 
 /**
