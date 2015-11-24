@@ -19,7 +19,9 @@ var tsVol = {
     dataSize: "",               // Used first to contain the file ID and then it's dimension.
     slidersClicked: false,      // Used to handle the status of the sliders.
     samplePeriod: 0,            // Meta data. The sampling period of the time series
-    samplePeriodUnit: ""        // Meta data. The time unit of the sample period
+    samplePeriodUnit: "",       // Meta data. The time unit of the sample period
+    backgroundColorScale: null, // Color scale for the anatomical background
+    haveBackground: false
 };
 
 var SLIDERS = ["X", "Y", "Z"];
@@ -42,17 +44,23 @@ function init_VolumeController(volumeShape){
     tsVol.timeLength = tsVol.dataSize[0];
 }
 
-function TSV_startVolumeStaticVisualizer(urlVolumeData, urlVoxelRegion, minValue, maxValue, volumeShape, volOrigin, sizeOfVoxel){
+function TSV_startVolumeStaticVisualizer(urlVolumeData, urlVoxelRegion, minValue, maxValue,
+                                         volumeShape, volOrigin, sizeOfVoxel,
+                                         urlBackgroundVolumeData, minBackgroundValue, maxBackgroundValue){
     init_VolumeController(volumeShape);
     TSV_initVolumeView(tsVol.dataSize, minValue, maxValue, $.parseJSON(sizeOfVoxel), $.parseJSON(volOrigin)[0]);
 
     tsVol.selectedQuad = TSV_getQuadrant(0);
 
-    TSRPC_initNonStreaming(urlVolumeData, null, urlVoxelRegion, tsVol.entitySize);
+    TSRPC_initNonStreaming(urlVolumeData, urlBackgroundVolumeData, urlVoxelRegion, tsVol.entitySize);
 
     ColSch_initColorSchemeGUI(minValue, maxValue, function(){
         drawVolumeScene(tsVol.currentTimePoint);
     });
+
+    tsVol.backgroundColorScale = new ColorScale(minBackgroundValue, maxBackgroundValue, 'Grays', 255);
+    tsVol.haveBackground = urlBackgroundVolumeData != '';
+    ColSch.colorScale = new AlphaClampColorScale(minValue, maxValue, ColSch.colorScale._colorSchemeName, 255, 1.0 );
 
     $("#canvasVolumes").mousedown(onVolumeMouseDown).mouseup(updateSelectedVoxelInfo);
 
@@ -80,7 +88,8 @@ function TSV_startVolumeStaticVisualizer(urlVolumeData, urlVoxelRegion, minValue
  * @param sizeOfVoxel       How the voxel is sized on each axis; [xScale, yScale, zScale]
  */
 function TSV_startVolumeTimeSeriesVisualizer(urlVolumeData, urlTimeSeriesData, minValue, maxValue,
-                                             samplePeriod, samplePeriodUnit, volumeShape, volOrigin, sizeOfVoxel) {
+                                             samplePeriod, samplePeriodUnit, volumeShape, volOrigin, sizeOfVoxel,
+                                             urlBackgroundVolumeData, minBackgroundValue, maxBackgroundValue) {
 
     init_VolumeController(volumeShape);
     TSV_initVolumeView(tsVol.dataSize, minValue, maxValue, $.parseJSON(sizeOfVoxel), $.parseJSON(volOrigin)[0]);
@@ -90,13 +99,17 @@ function TSV_startVolumeTimeSeriesVisualizer(urlVolumeData, urlTimeSeriesData, m
     tsVol.samplePeriod = samplePeriod;
     tsVol.samplePeriodUnit = samplePeriodUnit;
 
-    TSRPC_initStreaming(urlVolumeData, null, tsVol.entitySize, tsVol.playbackRate, function(){
+    TSRPC_initStreaming(urlVolumeData, urlBackgroundVolumeData, tsVol.entitySize, tsVol.playbackRate, function(){
        return {currentTimePoint: tsVol.currentTimePoint, selectedEntity: tsVol.selectedEntity};
     });
 
     ColSch_initColorSchemeGUI(minValue, maxValue, function(){
         drawSceneFunctional(tsVol.currentTimePoint);
     });
+
+    tsVol.backgroundColorScale = new ColorScale(minBackgroundValue, maxBackgroundValue, 'Grays', 255);
+    tsVol.haveBackground = urlBackgroundVolumeData != '';
+    ColSch.colorScale = new AlphaClampColorScale(minValue, maxValue, ColSch.colorScale._colorSchemeName, 255, 1.0 );
 
     // Update the data shared with the SVG Time Series Fragment
     TSF_updateTSFragment(tsVol.selectedEntity, tsVol.currentTimePoint);
@@ -136,6 +149,12 @@ function drawVolumeScene(tIndex){
     // An array containing the view for each plane.
     var sliceArray = TSRPC_getViewAtTime(tIndex, tsVol.selectedEntity);
     var layers = [{sliceArray: sliceArray, colorScale: ColSch.colorScale}];
+
+    if (tsVol.haveBackground){
+        var backgroundSliceArray = TSRPC_getBackgroundView(tsVol.selectedEntity);
+        layers.splice(0, 0, {sliceArray: backgroundSliceArray, colorScale: tsVol.backgroundColorScale});
+    }
+
     TSV_drawVolumeScene(layers, tsVol.selectedEntity);
 }
 

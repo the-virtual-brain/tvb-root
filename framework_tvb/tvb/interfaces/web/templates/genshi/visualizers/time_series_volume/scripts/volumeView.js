@@ -373,7 +373,7 @@ function drawMargins(){
 
 function clearCanvas(){
     vol.ctx.setTransform(1, 0, 0, 1, 0, 0);                              // reset the transformation
-    vol.ctx.fillStyle = vol.currentColorScale.getCssColor(vol.minimumValue - 1);
+    vol.ctx.fillStyle = 'rgba(25, 25, 25, 255)'; // todo: take this from the colorscheme theme
     vol.ctx.fillRect(0, 0, vol.ctx.canvas.width, vol.ctx.canvas.height);
 }
 

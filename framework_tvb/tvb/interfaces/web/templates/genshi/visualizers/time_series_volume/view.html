@@ -98,7 +98,8 @@
             $("#main").addClass("colscheme-2-even brain-extended");
             TSV_startVolumeTimeSeriesVisualizer(
                     '$urlVolumeData', '$urlTimeSeriesData', ${minValue}, ${maxValue}, ${samplePeriod},
-                    '${samplePeriodUnit}', '${volumeShape}', '${volumeOrigin}', '${voxelSize}');
+                    '${samplePeriodUnit}', '${volumeShape}', '${volumeOrigin}', '${voxelSize}',
+                    '$urlBackgroundVolumeData', ${minBackgroundValue}, ${maxBackgroundValue});
         })
     </script>
 </div>

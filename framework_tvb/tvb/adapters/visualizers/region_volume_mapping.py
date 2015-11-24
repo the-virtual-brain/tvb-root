@@ -43,6 +43,7 @@ from tvb.datatypes.arrays import MappedArray
 from tvb.datatypes.graph import ConnectivityMeasure
 from tvb.datatypes.region_mapping import RegionVolumeMapping
 from tvb.core.adapters.exceptions import LaunchException
+from tvb.datatypes.time_series import TimeSeries
 
 
 class _MappedArrayVolumeBase(ABCDisplayer):
@@ -98,8 +99,19 @@ class _MappedArrayVolumeBase(ABCDisplayer):
                       measureShape=slice_str(measure_shape),
                       measureSlice=data_slice)
 
+    @staticmethod
+    def _compute_background(background):
+        if background is not None:
+            min_value, max_value = background.get_min_max_values()
+            url_volume_data = ABCDisplayer.paths2url(background, 'get_volume_view', parameter='')
+        else:
+            min_value, max_value = 0, 0
+            url_volume_data = None
+        return dict( minBackgroundValue=min_value, maxBackgroundValue=max_value,
+                     urlBackgroundVolumeData = url_volume_data )
 
-    def compute_params(self, region_mapping_volume=None, measure=None, data_slice=''):
+
+    def compute_params(self, region_mapping_volume=None, measure=None, data_slice='', background=None):
 
         region_mapping_volume = self._ensure_region_mapping(region_mapping_volume)
 
@@ -119,6 +131,8 @@ class _MappedArrayVolumeBase(ABCDisplayer):
                       voxelUnit=volume.voxel_unit,
                       voxelSize=json.dumps(volume.voxel_size.tolist()),
                       urlVoxelRegion=url_voxel_region)
+
+        params.update(self._compute_background(background))
         return params
 
 
@@ -189,11 +203,14 @@ class RegionVolumeMappingVisualiser(_MappedArrayVolumeBase):
                  'type': ConnectivityMeasure, 'required': False,
                  'description': 'A connectivity measure',
                  'conditions': FilterChain(fields=[FilterChain.datatype + '._nr_dimensions'],
-                                           operations=["=="], values=[1])},]
+                                           operations=["=="], values=[1])},
+                {'name': 'background', 'label': 'Background T1', 'type': TimeSeries, 'required': False,
+                 'conditions': FilterChain(fields=[FilterChain.datatype + '._has_volume_mapping', FilterChain.datatype + '._length_1d'],
+                                           operations=["==", "=="], values=[True, 1])}]
 
 
-    def launch(self, region_mapping_volume, connectivity_measure=None):
-        params = self.compute_params(region_mapping_volume, connectivity_measure)
+    def launch(self, region_mapping_volume, connectivity_measure=None, background=None):
+        params = self.compute_params(region_mapping_volume, connectivity_measure, background=background)
         params['title'] = "Volumetric Region Volume Mapping Visualizer"
         return self.build_display_result("time_series_volume/staticView", params,
                                          pages=dict(controlPage="time_series_volume/controls"))

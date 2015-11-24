@@ -38,6 +38,7 @@ Backend-side for TS Visualizer of TS Volume DataTypes.
 """
 
 import json
+from tvb.adapters.visualizers.region_volume_mapping import _MappedArrayVolumeBase
 from tvb.basic.filters.chain import FilterChain
 from tvb.core.adapters.abcdisplayer import ABCDisplayer
 from tvb.datatypes.time_series import TimeSeries, TimeSeriesVolume
@@ -53,7 +54,10 @@ class TimeSeriesVolumeVisualiser(ABCDisplayer):
     def get_input_tree(self):
         return [{'name': 'time_series', 'label': 'Time Series', 'type': TimeSeries, 'required': True,
                  'conditions': FilterChain(fields=[FilterChain.datatype + '._has_volume_mapping'],
-                                           operations=["=="], values=[True])}]
+                                           operations=["=="], values=[True])},
+                {'name': 'background', 'label': 'Background T1', 'type': TimeSeries, 'required': False,
+                 'conditions': FilterChain(fields=[FilterChain.datatype + '._has_volume_mapping', FilterChain.datatype + '._length_1d'],
+                                           operations=["==", "=="], values=[True, 1])}]
 
 
     def get_required_memory_size(self, **kwargs):
@@ -61,7 +65,7 @@ class TimeSeriesVolumeVisualiser(ABCDisplayer):
         return -1
 
 
-    def launch(self, time_series):
+    def launch(self, time_series, background=None):
 
         min_value, max_value = time_series.get_min_max_values()
         url_volume_data = self.paths2url(time_series, "get_volume_view", parameter="")
@@ -85,6 +89,9 @@ class TimeSeriesVolumeVisualiser(ABCDisplayer):
                       volumeOrigin=json.dumps(volume.origin.tolist()),
                       voxelUnit=volume.voxel_unit,
                       voxelSize=json.dumps(volume.voxel_size.tolist()))
+
+
+        params.update(_MappedArrayVolumeBase._compute_background(background))
 
         return self.build_display_result("time_series_volume/view", params,
                                          pages=dict(controlPage="time_series_volume/controls"))
