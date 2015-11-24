@@ -1,7 +1,11 @@
 // color scheme controller
 var ColSch = {
+    /**
+     * The global color scale. This is kept in synch with the GUI
+     * @type ColorScale
+     */
+    colorScale: null,
     _colorSchemeColors: null,           // an array mapping a color scheme index to its color array
-    colorScale: null,                  // the global color scale associated with this viewer
     _haveDefaultColorScheme: false,     // false before retrieving default colors from the server
     _refreshCallback: null              // this is called when color scheme changes update the visualiser
 };
@@ -225,7 +229,7 @@ function ColSchInfo(){
  * For each color scheme return a 3d theme
  */
 function ColSchGetTheme(){
-    return ColSchInfo().theme;
+    return ColSch.colorScale.getColorScheme().theme;
 }
 
 function ColSchGetBounds(){
@@ -279,7 +283,7 @@ function ColSch_initColorSchemeComponent(minValue, maxValue){
 
     if (!ColSch._haveDefaultColorScheme) {
         ColSch.colorScale = new ColorScale(minValue, maxValue);
-    } else { // not first call, propagate the color scheme
+    } else if (minValue != null && maxValue != null){ // not first call, update min and max if provided
         ColSch.colorScale = new ColorScale(minValue, maxValue, ColSch.colorScale._colorSchemeName);
     }
 
@@ -352,27 +356,25 @@ function ColSch_initColorSchemeGUI(minValue, maxValue, refreshFunction) {
     });
 }
 
+// todo: consider inlining these thin wrappers
+
 /**
- * Returns a color for the given point in interval (min, max), according to the current <code>_colorScheme</code>
- * Values outside the interval are clamped
- *
- * @param pointValue The value whose corresponding color is returned
- * @param max Upper bound for pointValue
- * @param min Lower bound for pointValue
+ * @see ColorScale.getGradientColor
  */
 function getGradientColor(pointValue, min, max) {
     return ColSch.colorScale.getGradientColor(pointValue, min, max);
 }
 
 /**
- * Looks up an activity value in the current palette. Analog to the color scheme shader.
- * Takes into account the active range and number of bins.
- * @returns {[number]} rgb in 0..1 units
+ * @see ColorScale.getColor
  */
 function ColSch_getColor(activity){
     return ColSch.colorScale.getColor(activity);
 }
 
+/**
+ * @see ColorScale.getCssColor
+ */
 function ColSch_getAbsoluteGradientColorString(pointValue) {
     return ColSch.colorScale.getCssColor(pointValue);
 }
@@ -414,6 +416,10 @@ function ColSch_updateLegendColors(containerDiv, height) {
 }
 
 function ColSch_updateLegendLabels(container, minValue, maxValue, height) {
+    function round_number(num, dec) {
+        return Math.floor(num * Math.pow(10, dec)) / Math.pow(10, dec);
+    }
+
     var table = $(container).is("table") ? $(container) : $(container).find("table");    // get the table
     if (!table.length) {
         table = $("<table>").appendTo(container);                            // create one if it doesn't exist
@@ -437,9 +443,5 @@ function ColSch_updateLegendLabels(container, minValue, maxValue, height) {
     });
 }
 
-// @private
-function round_number(num, dec) {
-    return Math.floor(num * Math.pow(10, dec)) / Math.pow(10, dec);
-}
 // ================================= LEGEND UPDATING FUNCTION  END   =================================
 
