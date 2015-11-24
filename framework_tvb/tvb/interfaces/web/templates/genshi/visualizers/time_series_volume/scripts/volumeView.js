@@ -22,6 +22,8 @@ var Quadrant = function (params){                // this keeps all necessary dat
  */
 var vol = {
     ctx: null,                  // The context for drawing on current canvas.
+    backCtx: null,              // The context of the offscreen canvas.
+
     currentQuadrant: 0,         // The quadrant we're in.
     highlightedQuad: {},        // The plane to be displayed on the focus quadrant
     quadrants: [],              // The quadrants array.
@@ -64,6 +66,14 @@ function TSV_initVolumeView(dataSize, minValue, maxValue, voxelSize, volumeOrigi
     vol.focusQuadrantHeight = canvas.height - vol.legendHeight;
 
     vol.ctx = canvas.getContext("2d");
+    // This is an off screen canvas. We draw to it with fast pixel manipulation routines.
+    // Then we paste the backCanvas to the on screen one with drawImage.
+    // drawImage does perform alpha compositing and coordinate transforms allowing us to implement layers.
+    var backCanvas = document.createElement("canvas");
+    // debug back canvas by inserting it into dom
+    //$(backCanvas).css({position: 'absolute', right: 0, top:'100px', border:'1px solid yellow'});
+    //$('body').append(backCanvas);
+    vol.backCtx = backCanvas.getContext("2d");
     // TODO maybe in the future we will find a solution to make image bigger before saving
     canvas.drawForImageExport = function() {};
 
@@ -100,10 +110,16 @@ function TSV_drawVolumeScene(sliceArray, selectedEntity){
     drawLabels(focusTxt);
 }
 
+/**
+ * May be called multiple times to draw different volumetric layers with transparent parts.
+ */
 function drawSmallQuadrants(sliceArray){
     var i, j, k, ii, jj, kk;
-    // Create an off screen buffer the size of the small quadrants
-    var imageData = vol.ctx.createImageData(vol.quadrantWidth, vol.quadrantHeight);
+    // Set the back canvas size to the small quadrant. This also clears it.
+    vol.backCtx.canvas.width = vol.quadrantWidth;
+    vol.backCtx.canvas.height = vol.quadrantHeight;
+    // Create an off screen buffer for fast pixel manipulation.
+    var imageData = vol.backCtx.createImageData(vol.quadrantWidth, vol.quadrantHeight);
 
     _setCtxOnQuadrant(0);
     for (j = 0; j < vol.dataSize[2]; ++j){
@@ -111,9 +127,11 @@ function drawSmallQuadrants(sliceArray){
             drawVoxel(imageData, i, j, sliceArray[0][i][j]);
         }
     }
-    // Now paste the buffer to the canvas
-    // The putImageData api ignores the transformation matrix. So we have to duplicate the translation set by _setCtxOnQuadrant
-    vol.ctx.putImageData(imageData, vol.currentQuadrant.offsetX, 0 * vol.quadrantHeight +  vol.currentQuadrant.offsetY);
+    // Now paste the buffer to the back canvas
+    vol.backCtx.putImageData(imageData, 0, 0);
+    // Finally paste the back canvas to the foreground one
+    // This performs alpha compositing and is the reason for this 'two step paste' drawing
+    vol.ctx.drawImage(vol.backCtx.canvas, 0, 0);
 
     _setCtxOnQuadrant(1);
     for (k = 0; k < vol.dataSize[3]; ++k){
@@ -121,7 +139,8 @@ function drawSmallQuadrants(sliceArray){
             drawVoxel(imageData, k, jj, sliceArray[1][jj][k]);
         }
     }
-    vol.ctx.putImageData(imageData, vol.currentQuadrant.offsetX, 1 * vol.quadrantHeight +  vol.currentQuadrant.offsetY);
+    vol.backCtx.putImageData(imageData, 0, 0);
+    vol.ctx.drawImage(vol.backCtx.canvas, 0, 0);
 
     _setCtxOnQuadrant(2);
     for (kk = 0; kk < vol.dataSize[3]; ++kk){
@@ -129,7 +148,8 @@ function drawSmallQuadrants(sliceArray){
             drawVoxel(imageData, kk, ii, sliceArray[2][ii][kk]);
         }
     }
-    vol.ctx.putImageData(imageData, vol.currentQuadrant.offsetX, 2 * vol.quadrantHeight +  vol.currentQuadrant.offsetY);
+    vol.backCtx.putImageData(imageData, 0, 0);
+    vol.ctx.drawImage(vol.backCtx.canvas, 0, 0);
 }
 
 /**
@@ -137,13 +157,15 @@ function drawSmallQuadrants(sliceArray){
  */
 function drawFocusQuadrantFromView(sliceArray){
     _setCtxOnQuadrant(3);
-    // see TSV_drawVolumeScene for imageData explanation
+    // see drawSmallQuadrants for explanation about the drawing procedure used here.
     // The dimensions of the off screen buffer are not focusQuadrantWidth but smaller
     // because the volumetric slice is smaller than the quadrant.
     // Using focusQuadrantWidth will lead to some visual glitches.
     // todo: fix assumption that dataSize[1] == dataSize[2] == dataSize[3]
-    var imageData = vol.ctx.createImageData(Math.floor(vol.dataSize[1] * vol.currentQuadrant.entityWidth),
-                                            Math.floor(vol.dataSize[2] * vol.currentQuadrant.entityHeight));
+    vol.backCtx.canvas.width = vol.focusQuadrantWidth;
+    vol.backCtx.canvas.height = vol.focusQuadrantHeight;
+    var imageData = vol.backCtx.createImageData(Math.floor(vol.dataSize[1] * vol.currentQuadrant.entityWidth),
+                                                Math.floor(vol.dataSize[2] * vol.currentQuadrant.entityHeight));
 
     if(vol.highlightedQuad.index === 0){
         for (var j = 0; j < vol.dataSize[2]; ++j){
@@ -164,7 +186,8 @@ function drawFocusQuadrantFromView(sliceArray){
             }
         }
     }
-    vol.ctx.putImageData(imageData, vol.quadrantWidth + vol.currentQuadrant.offsetX, vol.currentQuadrant.offsetY);
+    vol.backCtx.putImageData(imageData, 0, 0);
+    vol.ctx.drawImage(vol.backCtx.canvas, 0, 0);
 }
 
 /**
@@ -345,7 +368,7 @@ function drawMargins(){
 
 function clearCanvas(){
     vol.ctx.setTransform(1, 0, 0, 1, 0, 0);                              // reset the transformation
-    vol.ctx.fillStyle = vol.currentColorScale.getCssColor(vol.minimumValue - 1);
+    vol.ctx.fillStyle = ColSch_getAbsoluteGradientColorString(vol.minimumValue - 1);
     vol.ctx.fillRect(0, 0, vol.ctx.canvas.width, vol.ctx.canvas.height);
 }
 
