@@ -116,7 +116,7 @@ ColSch.schemes = {
  * A color scheme object will contain a selected color scheme and the selected range and the number of bins etc
  * @constructor
  */
-function ColorScale(minValue, maxValue, colorSchemeName, colorBins){
+function ColorScale(minValue, maxValue, colorSchemeName, colorBins, centralHoleDiameter){
     if (minValue == null) {minValue = 0;}
     if (maxValue == null) {maxValue = 1;}
     if (colorSchemeName == null) {colorSchemeName = 'linear';}
@@ -126,6 +126,7 @@ function ColorScale(minValue, maxValue, colorSchemeName, colorBins){
     this._minActivity = minValue;    // the full activity range
     this._maxActivity = maxValue;
     this._colorBins = colorBins;     // the number of discrete colors. Set by a slider in the ui
+    this._centralHoleDiameter = centralHoleDiameter || 0;   // range 0..1
     this._colorSchemeName = colorSchemeName;
 }
 
@@ -155,7 +156,12 @@ ColorScale.prototype.getColorScheme = function(){
  * @returns {number} the index in the palette corresponding to the activity 0..len(colors)
  */
 ColorScale.prototype.getPaletteIndex = function(activity){
+    // to 0..1
     activity = (activity - this._minRange)/(this._maxRange - this._minRange);
+    // treat central values as out of range
+    if ( Math.abs(activity - 0.5) < this._centralHoleDiameter / 2 ){
+        return 0;
+    }
     // bin the activity
     activity  = Math.floor(activity  * this._colorBins) / this._colorBins;
     // We sample the interior of the array. If activity is between [0..1] we will obtain colors[1] and colors[254]
@@ -167,7 +173,10 @@ ColorScale.prototype.getPaletteIndex = function(activity){
 };
 
 ColorScale.prototype.getBounds = function() {
-    return { min: this._minRange, max:this._maxRange, bins: this._colorBins };
+    return {
+        min: this._minRange, max:this._maxRange,
+        bins: this._colorBins, centralHoleDiameter: this._centralHoleDiameter
+    };
 };
 
 /**
@@ -229,8 +238,8 @@ ColorScale.prototype.getCssGradientColor = function(pointValue, min, max) {
  * @constructor
  * @extends RegionSelectComponent
  */
-function AlphaClampColorScale(minValue, maxValue, colorSchemeName, colorBins, alpha){
-    ColorScale.call(this, minValue, maxValue, colorSchemeName, colorBins);
+function AlphaClampColorScale(minValue, maxValue, colorSchemeName, colorBins, centralHoleDiameter, alpha){
+    ColorScale.call(this, minValue, maxValue, colorSchemeName, colorBins, centralHoleDiameter);
     this.alpha = alpha;
 }
 

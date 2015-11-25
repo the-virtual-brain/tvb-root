@@ -66,6 +66,7 @@ SHADING_Context.light_init = function(shader){
 SHADING_Context.colorscheme_init = function (shader) {
     shader.activityRange = gl.getUniformLocation(shader, "activityRange");
     shader.activityBins = gl.getUniformLocation(shader, "activityBins");
+    shader.centralHoleDiameter = gl.getUniformLocation(shader, "centralHoleDiameter");
 
     var g_texture = gl.createTexture();
 
@@ -182,9 +183,10 @@ SHADING_Context.light_set_uniforms = function(shader, s){
     gl.uniform3fv(shader.pointLightingSpecularColorUniform, s.specularColor);
 };
 
-SHADING_Context.colorscheme_set_uniforms = function(shader, min, max, bins) {
+SHADING_Context.colorscheme_set_uniforms = function(shader, min, max, bins, centralHoleDiameter) {
     gl.uniform2f(shader.activityRange, min, max);
-    gl.uniform1f(shader.activityBins, bins);
+    gl.uniform1f(shader.activityBins, bins || 256);
+    gl.uniform1f(shader.centralHoleDiameter, centralHoleDiameter || 0.0);
 };
 
 /*** start draw calls for programs ***/
