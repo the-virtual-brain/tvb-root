@@ -369,6 +369,7 @@ function ColSch_initColorSchemeGUI(minValue, maxValue, refreshFunction) {
     var elemMax = $("#sliderMaxValue");
     var elemColorNoSlider = $("#sliderForSparseColSch");
     var elemColorNo = $("#ColSch_colorNo");
+    var elemSliderMiddleHole = $('#rangerForMiddleHoleDiameter');
 
     // initialise the range UI
     elemSliderSelector.slider({
@@ -396,6 +397,14 @@ function ColSch_initColorSchemeGUI(minValue, maxValue, refreshFunction) {
         },
         change: function (event, ui) {
             ColSch.colorScale._colorBins = Math.pow(2, ui.value);
+            if (ColSch._refreshCallback) { ColSch._refreshCallback(); }
+        }
+    });
+    // initialize the near mean trimming slider
+    elemSliderMiddleHole.slider({
+        min: 0, max: 1, step: 1/128, value: 0,
+        change: function (event, ui) {
+            ColSch.colorScale._centralHoleDiameter = ui.value;
             if (ColSch._refreshCallback) { ColSch._refreshCallback(); }
         }
     });
