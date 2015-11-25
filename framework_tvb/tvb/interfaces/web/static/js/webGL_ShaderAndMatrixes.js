@@ -114,6 +114,9 @@ function getShader(gl, id) {
     } else {
         return null;
     }
+    // Work around genshi overzealous escaping policy
+    str = str.replace("&lt;", "<");
+    str = str.replace("&rt;", ">");
 
     gl.shaderSource(shader, str);
     gl.compileShader(shader);

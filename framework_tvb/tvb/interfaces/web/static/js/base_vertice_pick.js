@@ -167,7 +167,8 @@ function drawScene() {
 
     var col = ColSchInfo();
     var activityRange = ColSchGetBounds();
-    SHADING_Context.colorscheme_set_uniforms(GL_shaderProgram, activityRange.min, activityRange.max, activityRange.bins);
+    SHADING_Context.colorscheme_set_uniforms(GL_shaderProgram, activityRange.min, activityRange.max,
+                                             activityRange.bins, activityRange.centralHoleDiameter);
     gl.uniform1f(GL_shaderProgram.colorSchemeUniform, col.tex_v);
 
     gl.uniform1i(GL_shaderProgram.useActivity, !BASE_PICK_doPick);

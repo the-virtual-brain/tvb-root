@@ -58,9 +58,9 @@ function TSV_startVolumeStaticVisualizer(urlVolumeData, urlVoxelRegion, minValue
         drawVolumeScene(tsVol.currentTimePoint);
     });
 
-    tsVol.backgroundColorScale = new ColorScale(minBackgroundValue, maxBackgroundValue, 'Grays', 255);
+    tsVol.backgroundColorScale = new ColorScale(minBackgroundValue, maxBackgroundValue, 'Grays');
     tsVol.haveBackground = urlBackgroundVolumeData != '';
-    ColSch.colorScale = new AlphaClampColorScale(minValue, maxValue, ColSch.colorScale._colorSchemeName, 255, 1.0 );
+    ColSch.colorScale = new AlphaClampColorScale(minValue, maxValue, ColSch.colorScale._colorSchemeName, 255, 0.0, 1.0 );
 
     $("#canvasVolumes").mousedown(onVolumeMouseDown).mouseup(updateSelectedVoxelInfo);
 
@@ -107,9 +107,9 @@ function TSV_startVolumeTimeSeriesVisualizer(urlVolumeData, urlTimeSeriesData, m
         drawSceneFunctional(tsVol.currentTimePoint);
     });
 
-    tsVol.backgroundColorScale = new ColorScale(minBackgroundValue, maxBackgroundValue, 'Grays', 255);
+    tsVol.backgroundColorScale = new ColorScale(minBackgroundValue, maxBackgroundValue, 'Grays');
     tsVol.haveBackground = urlBackgroundVolumeData != '';
-    ColSch.colorScale = new AlphaClampColorScale(minValue, maxValue, ColSch.colorScale._colorSchemeName, 255, 1.0 );
+    ColSch.colorScale = new AlphaClampColorScale(minValue, maxValue, ColSch.colorScale._colorSchemeName, 255, 0.0, 1.0 );
 
     // Update the data shared with the SVG Time Series Fragment
     TSF_updateTSFragment(tsVol.selectedEntity, tsVol.currentTimePoint);

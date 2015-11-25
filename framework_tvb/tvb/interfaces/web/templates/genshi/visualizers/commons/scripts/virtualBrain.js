@@ -680,7 +680,8 @@ function updateColors(currentTimeInFrame) {
     var currentActivity = activitiesData[currentTimeInFrame];
     var col = ColSchInfo();
     var activityRange = ColSchGetBounds();
-    SHADING_Context.colorscheme_set_uniforms(GL_shaderProgram, activityRange.min, activityRange.max, activityRange.bins);
+    SHADING_Context.colorscheme_set_uniforms(GL_shaderProgram, activityRange.min, activityRange.max,
+                                             activityRange.bins, activityRange.centralHoleDiameter);
 
     if (isOneToOneMapping) {
         for (var i = 0; i < brainBuffers.length; i++) {
