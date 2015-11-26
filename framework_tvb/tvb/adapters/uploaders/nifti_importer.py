@@ -125,9 +125,6 @@ class NIFTIImporter(ABCUploader):
         """
         Execute import operations:
         """
-        import pydevd
-        pydevd.settrace('localhost', port=51234, stdoutToServer=True, stderrToServer=True)
-
         self.data_file = data_file
 
         try:
