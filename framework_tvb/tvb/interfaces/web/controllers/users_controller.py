@@ -71,6 +71,7 @@ class UserController(BaseController):
 
     def __init__(self):
         BaseController.__init__(self)
+        self.version_info = None
 
 
     @cherrypy.expose

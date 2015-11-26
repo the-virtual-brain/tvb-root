@@ -61,7 +61,6 @@ class BaseController(object):
 
     def __init__(self):
         self.logger = get_logger(self.__class__.__module__)
-        self.version_info = None
 
         self.user_service = UserService()
         self.flow_service = FlowService()
