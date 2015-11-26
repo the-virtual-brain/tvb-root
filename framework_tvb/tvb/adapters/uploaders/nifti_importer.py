@@ -75,55 +75,73 @@ class NIFTIImporter(ABCUploader):
         return [Volume, TimeSeriesVolume, RegionVolumeMapping]
 
 
+    def _create_volume(self):
+        volume = Volume(storage_path=self.storage_path)
+        volume.set_operation_id(self.operation_id)
+        volume.origin = [[0.0, 0.0, 0.0]]
+        volume.voxel_size = [self.parser.zooms[0], self.parser.zooms[1], self.parser.zooms[2]]
+        if self.parser.units is not None and len(self.parser.units) > 0:
+            volume.voxel_unit = self.parser.units[0]
+        return volume
+
+
+    def _create_time_series(self, volume):
+        # Now create TimeSeries and fill it with data from NIFTI image
+        time_series = TimeSeriesVolume(storage_path=self.storage_path)
+        time_series.set_operation_id(self.operation_id)
+        time_series.volume = volume
+        time_series.title = "NIFTI Import - " + os.path.split(self.data_file)[1]
+        time_series.labels_ordering = ["Time", "X", "Y", "Z"]
+        time_series.start_time = 0.0
+
+        if len(self.parser.zooms) > 3:
+            time_series.sample_period = float(self.parser.zooms[3])
+        else:
+            # If no time dim, set sampling to 1 sec
+            time_series.sample_period = 1
+
+        if self.parser.units is not None and len(self.parser.units) > 1:
+            time_series.sample_period_unit = self.parser.units[1]
+
+        self.parser.parse(time_series, True)
+        return time_series
+
+
+    def _create_region_map(self, volume, connectivity, apply_corrections):
+        region2volume_mapping = RegionVolumeMapping(storage_path=self.storage_path)
+        region2volume_mapping.set_operation_id(self.operation_id)
+        region2volume_mapping.volume = volume
+        region2volume_mapping.connectivity = connectivity
+        region2volume_mapping.title = "NIFTI Import - " + os.path.split(self.data_file)[1]
+        region2volume_mapping.dimensions_labels = ["X", "Y", "Z"]
+        region2volume_mapping.apply_corrections = apply_corrections
+
+        self.parser.parse(region2volume_mapping, False)
+        return region2volume_mapping
+
+
     @transactional
     def launch(self, data_file, apply_corrections=False, connectivity=None):
         """
         Execute import operations:
         """
+        import pydevd
+        pydevd.settrace('localhost', port=51234, stdoutToServer=True, stderrToServer=True)
+
+        self.data_file = data_file
 
         try:
-            parser = NIFTIParser(data_file)
+            self.parser = NIFTIParser(data_file)
 
             # Create volume DT
-            volume = Volume(storage_path=self.storage_path)
-            volume.set_operation_id(self.operation_id)
-            volume.origin = [[0.0, 0.0, 0.0]]
-            volume.voxel_size = [parser.zooms[0], parser.zooms[1], parser.zooms[2]]
-            if parser.units is not None and len(parser.units) > 0:
-                volume.voxel_unit = parser.units[0]
+            volume = self._create_volume()
 
-            if parser.has_time_dimension or not connectivity:
-                # Now create TimeSeries and fill it with data from NIFTI image
-                time_series = TimeSeriesVolume(storage_path=self.storage_path)
-                time_series.set_operation_id(self.operation_id)
-                time_series.volume = volume
-                time_series.title = "NIFTI Import - " + os.path.split(data_file)[1]
-                time_series.labels_ordering = ["Time", "X", "Y", "Z"]
-                time_series.start_time = 0.0
-
-                if len(parser.zooms) > 3:
-                    time_series.sample_period = float(parser.zooms[3])
-                else:
-                    # If no time dim, set sampling to 1 sec
-                    time_series.sample_period = 1
-
-                if parser.units is not None and len(parser.units) > 1:
-                    time_series.sample_period_unit = parser.units[1]
-
-                parser.parse(time_series, True)
+            if self.parser.has_time_dimension or not connectivity:
+                time_series = self._create_time_series(volume)
                 return [volume, time_series]
-
             else:
-                region2volume_mapping = RegionVolumeMapping(storage_path=self.storage_path)
-                region2volume_mapping.set_operation_id(self.operation_id)
-                region2volume_mapping.volume = volume
-                region2volume_mapping.connectivity = connectivity
-                region2volume_mapping.title = "NIFTI Import - " + os.path.split(data_file)[1]
-                region2volume_mapping.dimensions_labels = ["X", "Y", "Z"]
-                region2volume_mapping.apply_corrections = apply_corrections
-
-                parser.parse(region2volume_mapping, False)
-                return [volume, region2volume_mapping]
+                rm = self._create_region_map(volume, connectivity, apply_corrections)
+                return [volume, rm]
 
         except ParseException, excep:
             logger = get_logger(__name__)
