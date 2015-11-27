@@ -35,7 +35,6 @@ Framework methods for the Volume datatypes.
 .. moduleauthor:: Stuart A. Knock <Stuart@tvb.invalid>
 
 """
-from tvb.basic.traits import exceptions
 from tvb.datatypes import volumes_data
 
 
@@ -48,10 +47,3 @@ class ParcellationMaskFramework(volumes_data.ParcellationMaskData,
                                 VolumeFramework):
     """ This class exists to add framework methods to ParcellationMaskData. """
     pass
-
-
-class StructuralMRIFramework(volumes_data.StructuralMRIData,
-                             VolumeFramework):
-    """ This class exists to add framework methods to StructuralMRIData. """
-    pass
-

@@ -59,11 +59,3 @@ class ParcellationMaskData(VolumeData):
     """
     data = arrays.IndexArray(label = "Parcellation mask")
     region_labels = arrays.StringArray(label = "Region labels")
-
-
-class StructuralMRIData(VolumeData):
-    """
-    Quantitative volumetric data recorded by means of Magnetic Resonance Imaging 
-    """
-    #TODO: Need data defined ?data = arrays.FloatArray(label = "?Contrast?") ?
-    weighting = basic.String(label = "MRI weighting") # eg, "T1", "T2", "T2*", "PD", ...

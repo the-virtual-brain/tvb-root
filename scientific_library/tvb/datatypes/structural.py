@@ -29,41 +29,33 @@
 #
 
 """
-Scientific methods for the Volume datatypes.
-
-.. moduleauthor:: Stuart A. Knock <Stuart@tvb.invalid>
+The Volume datatypes. This brings together the scientific and framework 
+methods that are associated with the volume datatypes.
 
 """
 
-import tvb.datatypes.volumes_data as volumes_data
+from tvb.datatypes import structural_scientific
+from tvb.datatypes import structural_framework
+from tvb.basic.logger.builder import get_logger
+
+LOG = get_logger(__name__)
 
 
-class VolumeScientific(volumes_data.VolumeData):
-    """ This class exists to add scientific methods to VolumeData. """
-    __tablename__ = None
-    
-    
-    def _find_summary_info(self):
-        """
-        Gather scientifically interesting summary information from an instance
-        of this datatype.
-        """
-        summary = {"Volume type": self.__class__.__name__,
-                   "Origin": self.origin,
-                   "Voxel size": self.voxel_size,
-                   "Units": self.voxel_unit}
-        return summary
+class StructuralMRI(structural_scientific.StructuralMRIScientific,
+                 structural_framework.StructuralMRIFramework):
+    """
+    This class brings together the scientific and framework methods that are
+    associated with the Structural datatype.
+
+    ::
+
+                         StructuralMRIData
+                                 |
+                                / \\
+          StructuralMRIFramework   StructuralMRIScientific
+                                \ /
+                                 |
+                           StructuralMRI
 
 
-
-class ParcellationMaskScientific(volumes_data.ParcellationMaskData,
-                                 VolumeScientific):
-    """ This class exists to add scientific methods to ParcellationMaskData. """
-    
-    
-    def _find_summary_info(self):
-        """ Extend the base class's summary dictionary. """
-        summary = super(ParcellationMaskScientific, self)._find_summary_info()
-        summary["Volume shape"] = self.get_data_shape('data')
-        summary["Number of regions"] = self.get_data_shape('region_labels')[0]
-        return summary
+    """

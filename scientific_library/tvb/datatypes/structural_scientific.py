@@ -29,41 +29,12 @@
 #
 
 """
-Scientific methods for the Volume datatypes.
-
-.. moduleauthor:: Stuart A. Knock <Stuart@tvb.invalid>
-
+Scientific methods for the Volumetric datatypes.
 """
+from tvb.datatypes import structural_data
 
-import tvb.datatypes.volumes_data as volumes_data
 
-
-class VolumeScientific(volumes_data.VolumeData):
-    """ This class exists to add scientific methods to VolumeData. """
+class StructuralMRIScientific(structural_data.StructuralMRIData):
+    """ This class exists to add scientific methods to StructuralMRIData. """
     __tablename__ = None
-    
-    
-    def _find_summary_info(self):
-        """
-        Gather scientifically interesting summary information from an instance
-        of this datatype.
-        """
-        summary = {"Volume type": self.__class__.__name__,
-                   "Origin": self.origin,
-                   "Voxel size": self.voxel_size,
-                   "Units": self.voxel_unit}
-        return summary
 
-
-
-class ParcellationMaskScientific(volumes_data.ParcellationMaskData,
-                                 VolumeScientific):
-    """ This class exists to add scientific methods to ParcellationMaskData. """
-    
-    
-    def _find_summary_info(self):
-        """ Extend the base class's summary dictionary. """
-        summary = super(ParcellationMaskScientific, self)._find_summary_info()
-        summary["Volume shape"] = self.get_data_shape('data')
-        summary["Number of regions"] = self.get_data_shape('region_labels')[0]
-        return summary

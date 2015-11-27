@@ -29,41 +29,28 @@
 #
 
 """
-Scientific methods for the Volume datatypes.
+The Data component of Volumetric datatypes.
 
-.. moduleauthor:: Stuart A. Knock <Stuart@tvb.invalid>
+.. moduleauthor:: Andrei Mihai <mihai.andrei@codemart.ro>
 
 """
 
-import tvb.datatypes.volumes_data as volumes_data
+import tvb.basic.traits.types_basic as basic
+from tvb.datatypes import volumes
+from tvb.datatypes.arrays import MappedArray, FloatArray
 
 
-class VolumeScientific(volumes_data.VolumeData):
-    """ This class exists to add scientific methods to VolumeData. """
-    __tablename__ = None
-    
-    
-    def _find_summary_info(self):
-        """
-        Gather scientifically interesting summary information from an instance
-        of this datatype.
-        """
-        summary = {"Volume type": self.__class__.__name__,
-                   "Origin": self.origin,
-                   "Voxel size": self.voxel_size,
-                   "Units": self.voxel_unit}
-        return summary
+class StructuralMRIData(MappedArray):
+    """
+    Quantitative volumetric data recorded by means of Magnetic Resonance Imaging
+    """
 
+    # without the field below weighting and volume columns are going to be added to the MAPPED_ARRAY table
+    __generate_table__ = True
 
+    array_data = FloatArray(label= "contrast")
 
-class ParcellationMaskScientific(volumes_data.ParcellationMaskData,
-                                 VolumeScientific):
-    """ This class exists to add scientific methods to ParcellationMaskData. """
-    
-    
-    def _find_summary_info(self):
-        """ Extend the base class's summary dictionary. """
-        summary = super(ParcellationMaskScientific, self)._find_summary_info()
-        summary["Volume shape"] = self.get_data_shape('data')
-        summary["Number of regions"] = self.get_data_shape('region_labels')[0]
-        return summary
+    weighting = basic.String(label= "MRI weighting") # eg, "T1", "T2", "T2*", "PD", ...
+
+    volume = volumes.Volume
+

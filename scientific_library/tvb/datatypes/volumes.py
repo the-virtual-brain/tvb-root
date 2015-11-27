@@ -82,25 +82,3 @@ class ParcellationMask(volumes_scientific.ParcellationMaskScientific,
     
     """
     pass
-
-
-class StructuralMRI(volumes_scientific.StructuralMRIScientific, 
-                    volumes_framework.StructuralMRIFramework):
-    """
-    This class brings together the scientific and framework methods that are
-    associated with the StructuralMRI datatype.
-    
-    ::
-        
-                         StructuralMRIData
-                                 |
-                                / \\
-          StructuralMRIFramework   StructuralMRIScientific
-                                \ /
-                                 |
-                           StructuralMRI
-        
-    
-    """
-    pass
-
