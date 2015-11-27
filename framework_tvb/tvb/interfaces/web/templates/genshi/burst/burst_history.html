@@ -1,6 +1,7 @@
 <div xmlns:py="http://genshi.edgewall.org/">
 
     <h4>History</h4>
+    <a href="#" title="Import simulation from JSON " class="column-control action-big-upload" onclick="showOverlay('/burst/get_upload_overlay', true);">Import</a>
     <a href="#" title="Prepare a new simulation " class="column-control action action-big-new" onclick="resetToNewBurst();">New</a>
 
     <ul class="burst-list" id="burst-history">
@@ -22,6 +23,9 @@
                                     title="Rename with new name from above input-field">Rename</button>
                             <p><button class="action action-copy" onclick="copyBurst(${burst.id})" title="Create a copy of the current simulation configuration.">
                                 Copy</button></p>
+                            <p><button class="action action-export" onclick="window.location='/burst/export/${burst.id}'; return false;"
+                                        title="Export simulation JSON, for later import or use in command line">
+                                Export JSON</button></p>
 
                             <p class="burst-prop-processtime"><mark>Processing time : </mark><span>${burst.process_time}</span></p>
                             <p class="burst-prop-workflows" py:if="burst.workflows_number"><mark>Workflows : </mark> ${burst.workflows_number}</p>

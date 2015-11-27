@@ -68,7 +68,7 @@ class ExportManager:
     export_folder = None
     EXPORT_FOLDER_NAME = "EXPORT_TMP"
     ZIP_FILE_EXTENSION = "zip"
-    
+
     def __init__(self):
         # Here we register all available data type exporters
         # If new exporters supported, they should be added here
@@ -77,7 +77,7 @@ class ExportManager:
         #self._register_exporter(ObjSurfaceExporter())
         self.export_folder = os.path.join(TvbProfile.current.TVB_STORAGE, self.EXPORT_FOLDER_NAME)
 
-    
+
     def _register_exporter(self, exporter):
         """
         This method register into an internal format available exporters.
@@ -85,7 +85,7 @@ class ExportManager:
         """
         if exporter is not None:
             self.all_exporters[exporter.__class__.__name__] = exporter
-     
+
     def get_exporters_for_data(self, data):
         """
         Get available exporters for current data type.
@@ -93,22 +93,22 @@ class ExportManager:
         """
         if data is None:
             raise InvalidExportDataException("Could not detect exporters for null data")
-        
+
         LOG.debug("Trying to determine exporters valid for %s" % data.type)
-        
+
         results = {}
-        
+
         # No exporter for None data
         if data is None:
             return results
-        
+
         for exporterId in self.all_exporters.keys():
             exporter = self.all_exporters[exporterId]
             if exporter.accepts(data):
                 results[exporterId] = exporter.get_label()
-        
+
         return results
-    
+
     def export_data(self, data, exporter_id, project):
         """
         Export provided data using given exporter
@@ -123,28 +123,28 @@ class ExportManager:
         """
         if data is None:
             raise InvalidExportDataException("Could not export null data. Please select data to be exported")
-        
+
         if exporter_id is None:
             raise ExportException("Please select the exporter to be used for this operation")
-        
+
         if exporter_id not in self.all_exporters:
             raise ExportException("Provided exporter identifier is not a valid one")
-        
+
         exporter = self.all_exporters[exporter_id]
-        
-        if project is None:  
+
+        if project is None:
             raise ExportException("Please provide the project where data files are stored")
-        
+
         # Now we start the real export        
         if not exporter.accepts(data):
             raise InvalidExportDataException("Current data can not be exported by specified exporter")
-        
+
         # Now compute and create folder where to store exported data
         # This will imply to generate a folder which is unique for each export
         data_export_folder = None
         try:
             data_export_folder = self._build_data_export_folder(data)
-            
+
             # Here is the real export                    
             LOG.debug("Start export of data: %s" % data.type)
             export_data = exporter.export(data, data_export_folder, project)
@@ -152,7 +152,7 @@ class ExportManager:
             # In case export did not generated any file delete folder
             if data_export_folder is not None and len(os.listdir(data_export_folder)) == 0:
                 os.rmdir(data_export_folder)
-            
+
         return export_data
 
 
@@ -216,7 +216,9 @@ class ExportManager:
         for start_idx in range(0, bursts_count, BURST_PAGE_SIZE):
             bursts = dao.get_bursts_for_project(project.id, page_start=start_idx, page_size=BURST_PAGE_SIZE)
             for burst in bursts:
-                self._build_burst_export_dict(burst, bursts_dict)
+                one_info = self._build_burst_export_dict(burst)
+                # Save data in dictionary form so we can just save it as a json later on
+                bursts_dict[burst.id] = one_info
 
         datatype_burst_mapping = {}
         for dt in project_datatypes:
@@ -341,9 +343,9 @@ class ExportManager:
         return wf_steps, view_steps
 
 
-    def _build_burst_export_dict(self, burst, bursts_dict):
+    def _build_burst_export_dict(self, burst):
         """
-        Compute needed info and add them to burst_dict for export.
+        Compute needed export info and return dictionary
         """
         burst_info = BurstInformation(burst.to_dict()[1])
         workflows = dao.get_workflows_for_burst(burst.id)
@@ -354,10 +356,9 @@ class ExportManager:
             workflow_info.set_workflow_steps(wf_steps)
             workflow_info.set_view_steps(view_steps)
             burst_info.add_workflow(workflow_info)
-        # Save data in dictionary form so we can just save it as a json later on
-        bursts_dict[burst.id] = burst_info.to_dict()
-    
-    
+        return burst_info.to_dict()
+
+
     def _build_data_export_folder(self, data):
         """
         This method computes the folder where results of an export operation will be 
@@ -370,5 +371,18 @@ class ExportManager:
         data_export_folder = os.path.join(self.export_folder, tmp_str)
         files_helper = FilesHelper()
         files_helper.check_created(data_export_folder)
-        
-        return data_export_folder        
+
+        return data_export_folder
+
+
+    def export_burst(self, burst_id):
+        """
+        :param burst_id: ID for existing burst
+        :return: JSON of burst representation.
+        """
+        burst = dao.get_burst_by_id(burst_id)
+        if burst is None:
+            raise InvalidExportDataException("Could not find burst with ID " + str(burst_id))
+
+        burst_info = self._build_burst_export_dict(burst)
+        return json.dumps(burst_info)

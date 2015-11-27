@@ -48,6 +48,7 @@ from tvb.basic.logger.builder import get_logger
 from tvb.core.entities import model
 from tvb.core.entities.storage import dao, transactional
 from tvb.core.entities.model.model_burst import BURST_INFO_FILE, BURSTS_DICT_KEY, DT_BURST_MAP
+from tvb.core.entities.transient.burst_configuration_entities import PortletConfiguration
 from tvb.core.services.exceptions import ProjectImportException
 from tvb.core.services.flow_service import FlowService
 from tvb.core.project_versions.project_update_manager import ProjectUpdateManager
@@ -62,7 +63,7 @@ from tvb.core.entities.transient.structure_entities import DataTypeMetaData
 
 
 
-class ImportService():
+class ImportService(object):
     """
     Service for importing TVB entities into system.
     It supports TVB exported H5 files as input, but it should also handle H5 files 
@@ -554,3 +555,58 @@ class ImportService():
                 datatype_group = dao.store_entity(datatype_group)
 
         return operation_entity, datatype_group
+
+
+    def load_burst_entity(self, json_burst, project_id):
+        """
+        Load BurstConfiguration from JSON (possibly exported from a different machine).
+        Nothing gets persisted in DB or on disk.
+
+        :param json_burst: Burst JSON export
+        :param project_id: Current project ID (it will be used if the user later starts this simulation)
+        :return: BurstConfiguration  filled from JSON
+        """
+
+        burst_information = BurstInformation.load_from_dict(json_burst)
+        burst_entity = model.BurstConfiguration(project_id)
+        burst_entity.from_dict(burst_information.data)
+        burst_entity.prepare_after_load()
+        burst_entity.reset_tabs()
+
+        workflow_info = burst_information.get_workflows()[0]
+        workflow_entity = model.Workflow(project_id, None)
+        workflow_entity.from_dict(workflow_info.data)
+
+        view_steps = workflow_info.get_view_steps()
+        analyze_steps = workflow_info.get_workflow_steps()
+
+        for view_step in view_steps:
+            try:
+                algorithm = view_step.get_algorithm()
+                portlet = view_step.get_portlet()
+                view_step_entity = model.WorkflowStepView(algorithm.id, portlet_id=portlet.id)
+                view_step_entity.from_dict(view_step.data)
+                view_step_entity.workflow = workflow_entity
+
+                ## For each visualize step, also load all of the analyze steps.
+                analyzers = []
+                for an_step in analyze_steps:
+                    if (an_step.data["tab_index"] != view_step_entity.tab_index
+                            or an_step.data["index_in_tab"] != view_step_entity.index_in_tab):
+                        continue
+                    algorithm = an_step.get_algorithm()
+                    wf_step_entity = model.WorkflowStep(algorithm.id)
+                    wf_step_entity.from_dict(an_step.data)
+                    wf_step_entity.workflow = workflow_entity
+                    analyzers.append(wf_step_entity)
+
+                portlet = PortletConfiguration(portlet.id)
+                portlet.set_visualizer(view_step_entity)
+                portlet.set_analyzers(analyzers)
+                burst_entity.set_portlet(view_step_entity.tab_index, view_step_entity.index_in_tab, portlet)
+
+            except Exception:
+                # only log exception and ignore this step from loading
+                self.logger.exception("Could not restore Workflow Step " + view_step.get_algorithm().name)
+
+        return burst_entity

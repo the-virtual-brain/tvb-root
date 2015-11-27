@@ -308,6 +308,7 @@ padding-bottom: 5px;
 }
 
 #main .view-history .inline-menu .extension .action-copy, 
+#main .view-history .inline-menu .extension .action-export,
 #main .view-history .inline-menu .extension .action-delete {
 display: block;
 width: 100%;

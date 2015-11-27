@@ -40,10 +40,15 @@ import cherrypy
 import formencode
 import tvb.core.entities.model
 from formencode import validators
+from cgi import FieldStorage
+from cherrypy._cpreqbody import Part
+from cherrypy.lib.static import serve_fileobj
 from tvb.config import SIMULATOR_MODULE, SIMULATOR_CLASS, MEASURE_METRICS_MODULE, MEASURE_METRICS_CLASS
 from tvb.basic.profile import TvbProfile
 from tvb.core.utils import generate_guid, string2bool
 from tvb.core.adapters.abcadapter import ABCAdapter
+from tvb.core.services.import_service import ImportService
+from tvb.adapters.exporters.export_manager import ExportManager
 from tvb.core.services.exceptions import BurstServiceException
 from tvb.core.services.burst_service import BurstService, KEY_PARAMETER_CHECKED, LAUNCH_NEW
 from tvb.core.services.workflow_service import WorkflowService
@@ -695,6 +700,55 @@ class BurstController(BurstBaseController):
             return validation_error
 
 
+    @cherrypy.expose
+    @handle_error(redirect=False)
+    @check_user
+    def export(self, burst_id):
+        export_manager = ExportManager()
+        export_json = export_manager.export_burst(burst_id)
+
+        result_name = "tvb_simulation_" + str(burst_id) + ".json"
+        return serve_fileobj(export_json, "application/x-download", "attachment", result_name)
+
+
+    @expose_fragment("overlay")
+    def get_upload_overlay(self):
+        template_specification = self.fill_overlay_attributes(None, "Upload", "Simulation JSON",
+                                                              "burst/upload_burst_overlay", "dialog-upload")
+        return self.fill_default_attributes(template_specification)
+
+
+    @cherrypy.expose
+    @handle_error(redirect=True)
+    @check_user
+    @settings
+    def load_burst_from_json(self, **data):
+        """Upload Burst from previously exported JSON file"""
+        self.logger.debug("Uploading ..." + str(data))
+
+        try:
+            upload_param = "uploadedfile"
+            if upload_param in data and data[upload_param]:
+
+                upload_param = data[upload_param]
+                if isinstance(upload_param, FieldStorage) or isinstance(upload_param, Part):
+                    if not upload_param.file:
+                        raise BurstServiceException("Please select a valid JSON file.")
+                    upload_param = upload_param.file.read()
+
+                upload_param = json.loads(upload_param)
+                prj_id = common.get_current_project().id
+                importer = ImportService()
+                burst_entity = importer.load_burst_entity(upload_param, prj_id)
+                common.add2session(common.KEY_BURST_CONFIG, burst_entity)
+
+        except Exception, excep:
+            self.logger.warning(excep.message)
+            common.set_error_message(excep.message)
+
+        raise cherrypy.HTTPRedirect('/burst/')
+
+
 
 class BurstNameForm(formencode.Schema):
     """
@@ -702,7 +756,3 @@ class BurstNameForm(formencode.Schema):
     """
     burst_name = formencode.All(validators.UnicodeString(not_empty=True),
                                 validators.Regex(regex=r"^[a-zA-Z\. _\-0-9]*$"))
-    
-    
-    
-    
