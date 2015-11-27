@@ -29,7 +29,7 @@
 #
 
 """
-Load a simulation from JSON (possibly to export from web GUI) and launch it (together with analyzers).
+Load a simulation from JSON file (possibly to export from web GUI) and launch it (together with analyzers, eventually).
 A "burst" on the simulation page history should appear after running this.
 
 .. moduleauthor:: Lia Domide <lia.domide@codemart.ro>
@@ -37,7 +37,6 @@ A "burst" on the simulation page history should appear after running this.
 
 if __name__ == "__main__":
     from tvb.basic.profile import TvbProfile
-
     TvbProfile.set_profile(TvbProfile.COMMAND_PROFILE)
 
 
@@ -56,8 +55,7 @@ def launch_simulation_workflow(json_path, prj_id):
     """
 
     :param json_path: Path towards a local JSON file exported from GUI
-    :param prj_id: This ID of a project needs to exists in DB, and it can be taken from the WebInterface:
-    :return:
+    :param prj_id: This ID of a project needs to exists in DB, and it can be taken from the WebInterface
     """
     project = dao.get_project_by_id(prj_id)
 
