@@ -43,7 +43,7 @@ from tvb.datatypes.arrays import MappedArray
 from tvb.datatypes.graph import ConnectivityMeasure
 from tvb.datatypes.region_mapping import RegionVolumeMapping
 from tvb.core.adapters.exceptions import LaunchException
-from tvb.datatypes.time_series import TimeSeries
+from tvb.datatypes.structural import StructuralMRI
 
 
 class _MappedArrayVolumeBase(ABCDisplayer):
@@ -57,9 +57,7 @@ class _MappedArrayVolumeBase(ABCDisplayer):
 
     @staticmethod
     def get_background_input_tree():
-        return {'name': 'background', 'label': 'Background T1', 'type': TimeSeries, 'required': False,
-                'conditions': FilterChain(fields=[FilterChain.datatype + '._has_volume_mapping', FilterChain.datatype + '._length_1d'],
-                                          operations=["==", "=="], values=[True, 1])}
+        return {'name': 'background', 'label': 'Background T1', 'type': StructuralMRI, 'required': False}
 
     @staticmethod
     def get_default_slice(measure_shape, nregions):
@@ -136,6 +134,9 @@ class _MappedArrayVolumeBase(ABCDisplayer):
                       voxelUnit=volume.voxel_unit,
                       voxelSize=json.dumps(volume.voxel_size.tolist()),
                       urlVoxelRegion=url_voxel_region)
+
+        if background is None:
+            background = dao.try_load_last_entity_of_type(self.current_project_id, StructuralMRI)
 
         params.update(self._compute_background(background))
         return params
@@ -221,3 +222,45 @@ class RegionVolumeMappingVisualiser(_MappedArrayVolumeBase):
         params['title'] = "Volumetric Region Volume Mapping Visualizer"
         return self.build_display_result("time_series_volume/staticView", params,
                                          pages=dict(controlPage="time_series_volume/controls"))
+
+
+
+class MriVolumeVisualizer(ABCDisplayer):
+
+    _ui_name = "MRI Volume Visualizer"
+    _ui_subsection = "ts_volume"
+
+
+    def get_required_memory_size(self, **kwargs):
+        return -1
+
+
+    def get_input_tree(self):
+        tree = _MappedArrayVolumeBase.get_background_input_tree()
+        tree['required'] = True
+        return [tree]
+
+
+    def launch(self, background=None):
+        volume = background.volume
+        volume_shape = background.read_data_shape()
+        volume_shape = (1, ) + volume_shape
+
+        min_value, max_value = background.get_min_max_values()
+        url_volume_data = ABCDisplayer.paths2url(background, 'get_volume_view', parameter='')
+
+        params = dict(title="MRI Volume visualizer",
+                      minValue=min_value, maxValue=max_value,
+                      urlVolumeData=url_volume_data,
+                      volumeShape=json.dumps(volume_shape),
+                      volumeOrigin=json.dumps(volume.origin.tolist()),
+                      voxelUnit=volume.voxel_unit,
+                      voxelSize=json.dumps(volume.voxel_size.tolist()),
+                      urlVoxelRegion='',
+                      minBackgroundValue=min_value, maxBackgroundValue=max_value,
+                      urlBackgroundVolumeData = '')
+
+
+        return self.build_display_result("time_series_volume/staticView", params,
+                                         pages=dict(controlPage="time_series_volume/controls"))
+

@@ -272,6 +272,10 @@ function TSRPC_stopBuffering() {
 }
 
 function TSRPC_getVoxelRegion(selectedEntity, onSuccess){
+    if ( !tsRPC.urlVoxelRegion) {
+        onSuccess('unknown');
+        return;
+    }
     doAjaxCall({
         url: tsRPC.urlVoxelRegion + voxelToUrlFragment(selectedEntity),
         success: onSuccess

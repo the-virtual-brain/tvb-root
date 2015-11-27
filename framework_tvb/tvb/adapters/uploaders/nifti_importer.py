@@ -41,9 +41,9 @@ from tvb.core.adapters.exceptions import ParseException, LaunchException
 from tvb.core.entities.storage import transactional
 from tvb.datatypes.connectivity import Connectivity
 from tvb.datatypes.region_mapping import RegionVolumeMapping
+from tvb.datatypes.structural import StructuralMRI
 from tvb.datatypes.time_series import TimeSeriesVolume
 from tvb.datatypes.volumes import Volume
-
 
 
 class NIFTIImporter(ABCUploader):
@@ -72,7 +72,7 @@ class NIFTIImporter(ABCUploader):
 
 
     def get_output(self):
-        return [Volume, TimeSeriesVolume, RegionVolumeMapping]
+        return [Volume, StructuralMRI, TimeSeriesVolume, RegionVolumeMapping]
 
 
     def _create_volume(self):
@@ -83,6 +83,16 @@ class NIFTIImporter(ABCUploader):
         if self.parser.units is not None and len(self.parser.units) > 0:
             volume.voxel_unit = self.parser.units[0]
         return volume
+
+
+    def _create_mri(self, volume):
+        mri = StructuralMRI(storage_path=self.storage_path)
+        mri.volume = volume
+        mri.title = "NIFTI Import - " + os.path.split(self.data_file)[1]
+        mri.dimensions_labels = ["X", "Y", "Z"]
+        mri.weighting = "T1"
+        self.parser.parse(mri, False)
+        return mri
 
 
     def _create_time_series(self, volume):
@@ -130,15 +140,19 @@ class NIFTIImporter(ABCUploader):
         try:
             self.parser = NIFTIParser(data_file)
 
-            # Create volume DT
             volume = self._create_volume()
 
-            if self.parser.has_time_dimension or not connectivity:
-                time_series = self._create_time_series(volume)
-                return [volume, time_series]
-            else:
+            if connectivity:
                 rm = self._create_region_map(volume, connectivity, apply_corrections)
                 return [volume, rm]
+
+            if self.parser.has_time_dimension:
+                time_series = self._create_time_series(volume)
+                return [volume, time_series]
+
+            # no connectivity and no time
+            mri = self._create_mri(volume)
+            return [volume, mri]
 
         except ParseException, excep:
             logger = get_logger(__name__)

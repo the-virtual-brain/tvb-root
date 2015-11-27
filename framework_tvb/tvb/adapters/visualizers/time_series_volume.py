@@ -41,6 +41,8 @@ import json
 from tvb.adapters.visualizers.region_volume_mapping import _MappedArrayVolumeBase
 from tvb.basic.filters.chain import FilterChain
 from tvb.core.adapters.abcdisplayer import ABCDisplayer
+from tvb.core.entities.storage import dao
+from tvb.datatypes.structural import StructuralMRI
 from tvb.datatypes.time_series import TimeSeries, TimeSeriesVolume
 
 
@@ -88,6 +90,8 @@ class TimeSeriesVolumeVisualiser(ABCDisplayer):
                       voxelUnit=volume.voxel_unit,
                       voxelSize=json.dumps(volume.voxel_size.tolist()))
 
+        if background is None:
+            background = dao.try_load_last_entity_of_type(self.current_project_id, StructuralMRI)
 
         params.update(_MappedArrayVolumeBase._compute_background(background))
 
