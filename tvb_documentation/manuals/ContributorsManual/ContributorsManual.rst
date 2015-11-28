@@ -87,15 +87,15 @@ The contributor setup avoids having to deal with dependencies. But you might wan
 
 The unaided setup is the usual way to install python packages.
 
-Clone the repositories, noting that now it is likely that you will need all three.
+Clone the repositories (after forking them in a github account of your own), noting that now it is likely that you will need all three.
 
 .. code-block:: bash
 
    $ cd my_tvb_workspace
-   $ git clone git@github.com:the-virtual-brain/tvb-library.git
+   $ git clone git@github.com:[github_account]/tvb-library.git
    $ # these might be optional
-   $ git clone git@github.com:the-virtual-brain/tvb-framework.git
-   $ git clone git@github.com:the-virtual-brain/tvb-data.git
+   $ git clone git@github.com:[github_account]/tvb-framework.git
+   $ git clone git@github.com:[github_account]/tvb-data.git
 
 |TVB| depends on numpy and scipy, heavy native libraries.
 If you can please install them using you operating system package manager.
