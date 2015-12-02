@@ -148,31 +148,38 @@ function redrawCurrentView() {
 
 
 function drawSliderForScale() {
-    $("#ctrl-input-scale").slider({ value: 4, min: 0, max: 8,
-        change: function(event, ui) {
-            /** When scaling, we need to redraw the graph and update the HTML with the new values.
-             */
-            var scale = ui.value / 4;
-            if (scale >= 0 && AG_currentIndex <= AG_numberOfVisiblePoints) {
-                AG_currentIndex = AG_numberOfVisiblePoints;
-            } else if (scale < 0 && (AG_allPoints[0].length - AG_currentIndex) < AG_numberOfVisiblePoints) {
-                AG_currentIndex = AG_allPoints[0].length;
-            }
-            AG_displayedPoints = [];
-            for (var i = 0; i < AG_noOfLines; i++) {
-                AG_displayedPoints.push([]);
-            }
-            resetToDefaultView();
-            _updateScaleFactor(scale);
+    function _onchange(){
+        /** When scaling, we need to redraw the graph and update the HTML with the new values.
+         */
+        var spacing = $("#ctrl-input-spacing").slider("value") / 4;
+        var scale = $("#ctrl-input-scale").slider("value");
+
+        if (spacing >= 0 && AG_currentIndex <= AG_numberOfVisiblePoints) {
+            AG_currentIndex = AG_numberOfVisiblePoints;
+        } else if (spacing < 0 && (AG_allPoints[0].length - AG_currentIndex) < AG_numberOfVisiblePoints) {
+            AG_currentIndex = AG_allPoints[0].length;
         }
-    });
-    $("#display-scale").html("" + AG_translationStep + '*' +AG_computedStep.toFixed(2));
+        AG_displayedPoints = [];
+        for (var i = 0; i < AG_noOfLines; i++) {
+            AG_displayedPoints.push([]);
+        }
+        resetToDefaultView();
+        _updateScaleFactor(spacing, scale);
+    }
+
+    $("#ctrl-input-spacing").slider({ value: 4, min: 0, max: 8, change: _onchange});
+    $("#ctrl-input-scale").slider({ value: 1, min: 1, max: 32, change: _onchange});
+
+    $("#display-spacing").html("" + AG_translationStep + '*' +AG_computedStep.toFixed(2));
+    $("#display-scale").html("" + AG_scaling);
 }
 
 
-function _updateScaleFactor(scale) {
-    AG_translationStep = scale;
-    $("#display-scale").html("" + AG_translationStep + '*' +AG_computedStep.toFixed(2));
+function _updateScaleFactor(spacing, scale) {
+    AG_translationStep = spacing;
+    AG_scaling = scale;
+    $("#display-spacing").html("" + AG_translationStep + '*' +AG_computedStep.toFixed(2));
+    $("#display-scale").html("" + AG_scaling);
     redrawCurrentView();
     if (AG_isStopped) {
         refreshChart();

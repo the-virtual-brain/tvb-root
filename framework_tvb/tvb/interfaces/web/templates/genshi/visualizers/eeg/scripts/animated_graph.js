@@ -17,6 +17,8 @@
  *
  **/
 
+/* globals doAjaxCall, readDataPageURL, HLPR_readJSONfromFile */
+
 // //it contains all the points that have to be/have been displayed (it contains all the points from the read file);
 // //it is an array of arrays (each array contains the points for a certain line chart)
 var AG_allPoints = [];
@@ -42,6 +44,8 @@ var AG_noOfLines = 0;
 // the step used for translating the drawn line charts; we translate the drawn line charts because we don't want them to overlap
 // the lines will be translated with <code>AG_translationStep * AG_computedStep</code>
 var AG_translationStep = 1;
+// a scaling factor for the displayed signal
+var AG_scaling = 1;
 // this var is computed on the server. It is used for line translation (<code>AG_translationStep * AG_computedStep</code>).
 var AG_computedStep = 50;
 //The normalization steps for each of the channels, in order to bring them centered near the channel bar
@@ -505,7 +509,8 @@ function submitSelectedChannels(isEndOfData) {
     // draw the first 'AG_numberOfVisiblePoints' points
     redrawCurrentView();
     if (!isSmallPreview) {
-        AG_translationStep = $('#ctrl-input-scale').slider("option", "value") / 4;
+        AG_translationStep = $('#ctrl-input-spacing').slider("option", "value") / 4;
+        AG_scaling = $("#ctrl-input-scale").slider("value");
     } else {
         AG_translationStep = 1;
     }
@@ -740,7 +745,7 @@ function processRawDataHook(plot, series, data, datapoints) {
  * @return {number}
  */
 function AG_addTranslationStep(value, index) {
-    return value - AG_normalizationSteps[displayedChannels[index]] + AG_translationStep * AG_computedStep * index;
+    return value * AG_scaling - AG_normalizationSteps[displayedChannels[index]] + AG_translationStep * AG_computedStep * index;
 }
 
 function getTimeoutBasedOnSpeed() {
@@ -845,11 +850,11 @@ function addFromPreviousPage(indexInPage, currentPage) {
         var oneLine = [];
         // Push data that is from previos slice
         for (var idy = fromIdx; idy < previousData[0].length; idy++) {
-            oneLine.push([previousTimeData[idy], AG_addTranslationStep(previousData[idx][idy], idx)])
+            oneLine.push([previousTimeData[idy], AG_addTranslationStep(previousData[idx][idy], idx)]);
         }
         // Now that that is from our current slice
         for (idy = 0; idy < toIdx; idy ++) {
-            oneLine.push([AG_time[idy], AG_addTranslationStep(AG_allPoints[idx][idy], idx)])
+            oneLine.push([AG_time[idy], AG_addTranslationStep(AG_allPoints[idx][idy], idx)]);
         }
         AG_displayedPoints.push(oneLine);
     }
@@ -874,11 +879,11 @@ function addFromNextPage(indexInPage, currentPage) {
         var oneLine = [];
         // Push data that is from this slice
         for (var idy = fromIdx; idy < AG_allPoints[0].length; idy++) {
-            oneLine.push([AG_time[idy], AG_addTranslationStep(AG_allPoints[idx][idy], idx) ])
+            oneLine.push([AG_time[idy], AG_addTranslationStep(AG_allPoints[idx][idy], idx) ]);
         }
         // Now that that is from next slice
         for (idy = 0; idy < toIdx; idy ++) {
-            oneLine.push([followingTimeData[idy], AG_addTranslationStep(followingData[idx][idy], idx) ])
+            oneLine.push([followingTimeData[idy], AG_addTranslationStep(followingData[idx][idy], idx) ]);
         }
         AG_displayedPoints.push(oneLine);
     }
