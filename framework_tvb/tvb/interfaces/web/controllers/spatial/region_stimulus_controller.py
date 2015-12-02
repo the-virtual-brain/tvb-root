@@ -36,6 +36,7 @@
 import json
 import cherrypy
 from tvb.adapters.visualizers.connectivity import ConnectivityViewer
+from tvb.basic.traits.parameters_factory import collapse_params
 from tvb.core.adapters.abcadapter import ABCAdapter
 from tvb.core.entities.transient.structure_entities import DataTypeMetaData
 from tvb.core.entities.transient.context_stimulus import RegionStimulusContext
@@ -240,7 +241,7 @@ class RegionStimulusController(SpatioTemporalController):
         Returns the html which contains the plot with the temporal equation.
         """
         try:
-            form_data = ABCAdapter.collapse_arrays(form_data, ['temporal'])
+            form_data = collapse_params(form_data, ['temporal'])
             min_x, max_x, ui_message = self.get_x_axis_range(form_data['min_x'], form_data['max_x'])
             equation = Equation.build_equation_from_dict('temporal', form_data)
             series_data, display_ui_message = equation.get_series_data(min_range=min_x, max_range=max_x)
@@ -347,4 +348,3 @@ class RegionStimulusController(SpatioTemporalController):
         template_dictionary['displayedMessage'] = msg
         template_dictionary['messageType'] = msg_type
         return SpatioTemporalController.fill_default_attributes(self, template_dictionary, subsection='regionstim')
-    

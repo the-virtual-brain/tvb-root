@@ -47,6 +47,7 @@ from abc import ABCMeta, abstractmethod
 from tvb.basic.profile import TvbProfile
 from tvb.basic.logger.builder import get_logger
 from tvb.basic.traits.types_mapped import MappedType
+from tvb.basic.traits.parameters_factory import collapse_params
 from tvb.basic.traits.exceptions import TVBException
 from tvb.core.utils import date2string, string2array, LESS_COMPLEX_TIME_FORMAT
 from tvb.core.entities.storage import dao
@@ -147,6 +148,7 @@ class ABCAdapter(object):
     KEY_ID = 'id'
     KEY_UI_HIDE = "ui_hidden"
 
+    # TODO: move everything related to parameters PRE + POST into parameters_factory
     KEYWORD_PARAMS = "_parameters_"
     KEYWORD_SEPARATOR = "_"
     KEYWORD_OPTION = "option_"
@@ -645,7 +647,7 @@ class ABCAdapter(object):
                 raise InvalidParameterException("Invalid or missing value in field %s [%s]" % (row[self.KEY_LABEL],
                                                                                                row[self.KEY_NAME]))
 
-        return self.collapse_arrays(kwa, simple_select_list)
+        return collapse_params(kwa, simple_select_list)
 
 
     def __validate_range_for_value_input(self, value, row):
@@ -886,70 +888,6 @@ class ABCAdapter(object):
             val = eval("entity." + row[ATT_METHOD] + "(param_dict)")
             result = val
         return result
-
-
-    @staticmethod
-    def collapse_arrays(args, simple_select_list, parent=''):
-        """ In case of variables with similar names:
-        (name_parameters_[option_xx]_paramKey) collapse then into dictionary 
-        of parameters. This is used after parameters POST, on Operation Launch.
-        """
-        result = {}
-        for name, value in args.items():
-            short_name = name
-            option = None
-            key = None
-            if name.find(ABCAdapter.KEYWORD_PARAMS) >= 0:
-                short_name = name[0: (name.find(ABCAdapter.KEYWORD_PARAMS) + 11)]
-                key = name[(name.find(ABCAdapter.KEYWORD_PARAMS) + 12):]
-                if key.find(ABCAdapter.KEYWORD_OPTION) == 0:
-                    key = key[7:]     # Remove '_option_'
-                    option = key[0: key.find(ABCAdapter.KEYWORD_SEPARATOR)]
-                    key = key[key.find(ABCAdapter.KEYWORD_SEPARATOR) + 1:]
-
-            if key is None:
-                result[name] = value
-            else:
-                if short_name not in result:
-                    result[short_name] = {}
-                if option is None:
-                    result[short_name][key] = value
-                else:
-                    if option not in result[short_name]:
-                        result[short_name][option] = {}
-                    result[short_name][option][key] = value
-
-        for level1_name, level1_params in result.items():
-            if ABCAdapter.KEYWORD_PARAMS[:-1] in level1_name and isinstance(level1_params, dict):
-                short_parent_name = level1_name[0: level1_name.find(ABCAdapter.KEYWORD_PARAMS) - 10]
-                if (parent + short_parent_name) in simple_select_list:
-                    # simple select
-                    if isinstance(result[short_parent_name], (str, unicode)):
-                        parent_prefix = level1_name + ABCAdapter.KEYWORD_SEPARATOR + ABCAdapter.KEYWORD_OPTION
-                        parent_prefix += result[short_parent_name]
-                        parent_prefix += ABCAdapter.KEYWORD_SEPARATOR
-                        # Ignore options in case of simple selects
-                        # Take only attributes for current selected option.
-                        if result[short_parent_name] in level1_params:
-                            level1_params = level1_params[result[short_parent_name]]
-                        else:
-                            level1_params = {}
-                    else:
-                        parent_prefix = level1_name
-
-                    transformed_params = ABCAdapter.collapse_arrays(level1_params, simple_select_list,
-                                                                    parent + parent_prefix)
-                    result[level1_name] = transformed_params
-                elif short_parent_name in result:
-                    # multiple select
-                    for level2_name, level2_params in level1_params.items():
-                        parent_prefix = level1_name + ABCAdapter.KEYWORD_SEPARATOR + ABCAdapter.KEYWORD_OPTION
-                        parent_prefix += level2_name + ABCAdapter.KEYWORD_SEPARATOR
-                        transformed_params = ABCAdapter.collapse_arrays(level2_params, simple_select_list,
-                                                                        parent + parent_prefix)
-                        result[level1_name][level2_name] = transformed_params
-        return result
-
 
     def noise_configurable_parameters(self):
         return [entry[self.KEY_NAME] for entry in self.flaten_input_interface() if 'configurableNoise' in entry]

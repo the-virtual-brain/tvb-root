@@ -38,7 +38,7 @@ import json
 from copy import deepcopy
 
 import tvb.basic.traits.traited_interface as interface
-from tvb.basic.traits.parameters_factory import get_traited_instance_for_name
+from tvb.basic.traits.parameters_factory import get_traited_instance_for_name, collapse_params
 from tvb.core.adapters.abcadapter import ABCAdapter
 from tvb.core.adapters.abcadapter import KEY_EQUATION, KEY_FOCAL_POINTS
 from tvb.core.entities.model import PARAMS_MODEL_PATTERN
@@ -46,7 +46,7 @@ from tvb.core.services.burst_config_serialization import SerializationManager
 from tvb.datatypes import equations
 from tvb.interfaces.web.controllers import common
 from tvb.interfaces.web.controllers.base_controller import BaseController
-from tvb.interfaces.web.controllers.decorators import expose_page, expose_fragment, expose_json, handle_error, check_user
+from tvb.interfaces.web.controllers.decorators import expose_page, expose_fragment, handle_error, check_user
 from tvb.interfaces.web.controllers.spatial.base_spatio_temporal_controller import SpatioTemporalController
 from tvb.interfaces.web.entities.context_model_parameters import SurfaceContextModelParameters, EquationDisplayer
 
@@ -123,7 +123,7 @@ class SurfaceModelParametersController(SpatioTemporalController):
         """
         Applies an equations for computing a model parameter.
         """
-        submitted_data = ABCAdapter.collapse_arrays(kwargs, ['model_param'])
+        submitted_data = collapse_params(kwargs, ['model_param'])
         model_param, equation = self._compute_equation(submitted_data)
         context_model_parameters = common.get_from_session(KEY_CONTEXT_MPS)
         context_model_parameters.apply_equation(model_param, equation)
@@ -287,7 +287,7 @@ class SurfaceModelParametersController(SpatioTemporalController):
         model_param = parameters[MODEL_PARAM]
         equation = parameters[MODEL_PARAM + PARAM_SUFFIX][MODEL_PARAM_EQUATION]
         equation_params = parameters[MODEL_PARAM + PARAM_SUFFIX][MODEL_PARAM_EQUATION + PARAM_SUFFIX][equation]
-        equation_params = ABCAdapter.collapse_arrays(equation_params, [])
+        equation_params = collapse_params(equation_params, [])
         if PARAMETERS + PARAM_SUFFIX in equation_params:
             equation_params = equation_params[PARAMETERS + PARAM_SUFFIX]
         else:
@@ -316,7 +316,7 @@ class SurfaceModelParametersController(SpatioTemporalController):
         """
         try:
             min_x, max_x, ui_message = self.get_x_axis_range(form_data['min_x'], form_data['max_x'])
-            form_data = ABCAdapter.collapse_arrays(form_data, self.plotted_equations_prefixes)
+            form_data = collapse_params(form_data, self.plotted_equations_prefixes)
             _, equation = self._compute_equation(form_data)
             series_data, display_ui_message = equation.get_series_data(min_range=min_x, max_range=max_x)
             json_data = self.get_series_json(series_data, "Spatial")
