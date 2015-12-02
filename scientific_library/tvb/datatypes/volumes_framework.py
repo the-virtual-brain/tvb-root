@@ -41,9 +41,3 @@ from tvb.datatypes import volumes_data
 class VolumeFramework(volumes_data.VolumeData):
     """ This class exists to add framework methods to VolumeData. """
     __tablename__ = None
-
-
-class ParcellationMaskFramework(volumes_data.ParcellationMaskData,
-                                VolumeFramework):
-    """ This class exists to add framework methods to ParcellationMaskData. """
-    pass

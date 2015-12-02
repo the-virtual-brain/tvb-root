@@ -53,17 +53,3 @@ class VolumeScientific(volumes_data.VolumeData):
                    "Voxel size": self.voxel_size,
                    "Units": self.voxel_unit}
         return summary
-
-
-
-class ParcellationMaskScientific(volumes_data.ParcellationMaskData,
-                                 VolumeScientific):
-    """ This class exists to add scientific methods to ParcellationMaskData. """
-    
-    
-    def _find_summary_info(self):
-        """ Extend the base class's summary dictionary. """
-        summary = super(ParcellationMaskScientific, self)._find_summary_info()
-        summary["Volume shape"] = self.get_data_shape('data')
-        summary["Number of regions"] = self.get_data_shape('region_labels')[0]
-        return summary

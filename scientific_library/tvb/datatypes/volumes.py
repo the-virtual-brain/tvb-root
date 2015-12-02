@@ -61,24 +61,3 @@ class Volume(volumes_scientific.VolumeScientific, volumes_framework.VolumeFramew
     
     """
     pass
-
-
-class ParcellationMask(volumes_scientific.ParcellationMaskScientific, 
-                       volumes_framework.ParcellationMaskFramework):
-    """
-    This class brings together the scientific and framework methods that are
-    associated with the ParcellationMask datatype.
-    
-    ::
-        
-                         ParcellationMaskData
-                                  |
-                                 / \\
-        ParcellationMaskFramework   ParcellationMaskScientific
-                                 \ /
-                                  |
-                           ParcellationMask
-        
-    
-    """
-    pass

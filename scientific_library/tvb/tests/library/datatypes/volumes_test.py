@@ -58,21 +58,6 @@ class VolumesTest(BaseTestCase):
         self.assertEqual(dt.voxel_unit, 'mm')
         
         
-    def test_parcellationmask(self):
-        dt = volumes.ParcellationMask()
-        summary_info = dt.summary_info
-        self.assertEqual(summary_info['Number of regions'], 0)
-        self.assertEqual(summary_info['Origin'].shape, (0,))
-        self.assertEqual(summary_info['Voxel size'].shape, (0,))
-        self.assertEqual(summary_info['Volume shape'], (0,))
-        self.assertEqual(summary_info['Volume type'], 'ParcellationMask')
-        self.assertEqual(summary_info['Units'], 'mm')
-        self.assertEqual(dt.origin.shape, (0,))
-        self.assertEqual(dt.region_labels.shape, (0,))
-        self.assertEqual(dt.voxel_size.shape, (0,))
-
-        
-        
 def suite():
     """
     Gather all the tests in a test suite.

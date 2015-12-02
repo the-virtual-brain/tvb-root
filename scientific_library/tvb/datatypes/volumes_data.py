@@ -47,15 +47,3 @@ class VolumeData(MappedType):
     origin = arrays.PositionArray(label = "Volume origin coordinates")
     voxel_size = arrays.FloatArray(label = "Voxel size") # need a triplet, xyz
     voxel_unit = basic.String(label = "Voxel Measure Unit", default = "mm")
-
-
-class ParcellationMaskData(VolumeData):
-    """
-    This mask provides the information to perform a subdivision (parcellation) 
-    of the brain `Volume` of the desired subject into spatially compacts 
-    clusters or parcels. 
-    This subdivision is based on spatial coordinates and functional information, 
-    in order to grant spatially consistent and functionally homogeneous units.
-    """
-    data = arrays.IndexArray(label = "Parcellation mask")
-    region_labels = arrays.StringArray(label = "Region labels")

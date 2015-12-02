@@ -51,11 +51,6 @@ class ConnectivityData(MappedType):
     data into a single object. 
     """
 
-    parcellation_mask = volumes.ParcellationMask(
-        label="Parcellation mask (volume)",
-        required=False,
-        doc="""A 3D volume mask defining the parcellation of the brain into distinct regions.""")
-
     region_labels = arrays.StringArray(
         label="Region labels",
         doc="""Short strings, 'labels', for the regions represented by the connectivity matrix.""")
