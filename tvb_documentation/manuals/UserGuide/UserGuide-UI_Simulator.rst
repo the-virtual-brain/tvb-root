@@ -43,6 +43,7 @@ Each simulation execution has a color label that represents its current status:
 
     - pale blue: simulation is running,
     - green: simulation is finished,
+    - gray: simulation has been canceled by the user,
     - red: an error occurred during the simulation.
 
 Each simulation can be renamed, copied, exported or deleted by clicking on |pencil_icon| icon, next to its name.
@@ -58,7 +59,8 @@ and do not forget to press |save_icon| icon when you are done writing.
 
 .. note::
 
-   You cannot rename a Simulation while it is running.
+   You cannot rename a Simulation while it is running, but instead you could `cancel` it
+   (e.g. if you see it eats too many of your machine resources, or you simply changed your mind about this run).
 
         .. figure:: screenshots/simulator_history_running.jpg
            :width: 20%
@@ -73,14 +75,14 @@ to actually run this copy of the simulation.
 parameters. This text file will be downloaded from your browser window, and can be reused later. You could use it
 on the same TVB installation, or on a totally different TVB server, in several manners:
 
-    - from web GUI, using the |upload_icon| button, on this page
+    - from web GUI, using the |upload_icon| button, on this page (top of column `History`)
     - in the python console of TVB, for better debugging capabilities. Examples for this later case can be
-    found in the set of examples for COMMAND and LIBRARY profiles.
+        found in the set of examples for COMMAND and LIBRARY profiles.
 
 
 .. caution::
-    Please notice that **deleting a simulation will also delete all
-    resulting data that had been produced**.
+    Please notice that **deleting a simulation will remove the parameters configuration, and also delete all
+    resulting data that had been produced** in relation to that simulation.
 
 
 .. SIMULATOR COLUMN

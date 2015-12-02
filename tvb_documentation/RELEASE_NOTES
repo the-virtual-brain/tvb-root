@@ -1,5 +1,29 @@
 ======================================================================================================================================
  The Virtual Brain (TVB)
+ Version: 1.5 - build 7***
+ Release Date: X Y 2016
+ Description: New functionality related to simulation and visualizers
+======================================================================================================================================
+    * New: export simulation configuration as JSON and reuse in web or console
+    * Monitor configuration: allow pre and post user configured operations
+    * Volumetric Viewers extended and improved (more datatypes can be visualized in volume - e.g. TimeSeriesRegion; better performance)
+    * Color Scheme: allow to trim near-mean values in a color scheme
+
+
+======================================================================================================================================
+ The Virtual Brain (TVB)
+ Version: 1.4.1 - build 7595
+ Release Date: 22 September 2015
+ Description: Fixes for importing old projects and new Connectivity Annotations Viewer
+======================================================================================================================================
+    * New: Connectivity Ontology Annotations Importer and Viewer
+    * Replace PIL library with Pillow inside the distribution
+    * Fix bug on importing Default Project on Windows
+    * Fix bug with left & right hemisphere labels switch in default dataset
+
+
+======================================================================================================================================
+ The Virtual Brain (TVB)
  Version: 1.4 - build 7417
  Release Date: 16 July 2015
  Description: Improved default dataset and monitors; IPython Notebook included.
