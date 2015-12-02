@@ -102,7 +102,6 @@ class NIFTIImporterTest(TransactionalTestCase):
         """
         This method tests import of a NIFTI file.
         """
-        # TODO: make this NII file a valid TS with more than one time step
         time_series = self._import(self.TIMESERIES_NII_FILE, TimeSeriesVolume)
 
         # Since self.assertAlmostEquals is not available on all machine
@@ -114,8 +113,8 @@ class NIFTIImporterTest(TransactionalTestCase):
 
         data_shape = time_series.read_data_shape()
         self.assertEquals(4, len(data_shape))
-        # We have only one entry for time dimension
-        self.assertEqual(1, data_shape[0])
+        # We have 5 time points
+        self.assertEqual(5, data_shape[0])
         dimension_labels = time_series.labels_ordering
         self.assertTrue(dimension_labels is not None)
         self.assertEquals(4, len(dimension_labels))
