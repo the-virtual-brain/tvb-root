@@ -70,13 +70,7 @@ class VolumesTest(BaseTestCase):
         self.assertEqual(dt.origin.shape, (0,))
         self.assertEqual(dt.region_labels.shape, (0,))
         self.assertEqual(dt.voxel_size.shape, (0,))
-        
-        
-    def test_structuralmri(self):
-        dt = volumes.StructuralMRI()
-        self.assertEqual(dt.origin.shape, (0,))
-        self.assertEqual(dt.voxel_size.shape, (0,))
-        self.assertEqual(dt.voxel_unit, 'mm')
+
         
         
 def suite():
