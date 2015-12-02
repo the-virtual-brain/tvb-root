@@ -92,10 +92,10 @@ Clone the repositories (after forking them in a github account of your own), not
 .. code-block:: bash
 
    $ cd my_tvb_workspace
-   $ git clone git@github.com:[github_account]/tvb-library.git
+   $ git clone https://github.com/[github_account]/tvb-library.git
    $ # these might be optional
-   $ git clone git@github.com:[github_account]/tvb-framework.git
-   $ git clone git@github.com:[github_account]/tvb-data.git
+   $ git clone https://github.com/[github_account]/tvb-framework.git
+   $ git clone https://github.com/[github_account]/tvb-data.git
 
 |TVB| depends on numpy and scipy, heavy native libraries.
 If you can please install them using you operating system package manager.
