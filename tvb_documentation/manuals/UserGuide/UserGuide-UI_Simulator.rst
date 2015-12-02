@@ -3,7 +3,7 @@
 Simulator
 ---------
 
-A configurable multicolumn interface that combines |TVB| simulation, analysis 
+This page shows a configurable multicolumn interface that combines |TVB| simulation, analysis
 and visualization capabilities.
 
     .. figure:: screenshots/simulator.jpg
@@ -11,6 +11,76 @@ and visualization capabilities.
       :align: center
 
       Preview for Simulator Area
+
+
+.. HISTORY COLUMN
+
+Simulation History
+..................
+
+.. |star_icon| image:: icons/star_icon.png
+.. |upload_icon| image:: icons/upload_icon.png
+.. |pencil_icon| image:: icons/pencil.png
+.. |save_icon| image:: icons/save_tick.png
+.. |play_icon| image:: icons/play_icon.png
+
+We call `History` the most left column on the Simulator page. Along with the `History` title,
+you can observe two buttons on the top bar of this column.
+
+The |star_icon| button allows you to initialize a new simulation, using the default `Simulator`
+parameters. This default initialization is already happening, if you just landed on this page
+for the first time. The button can be useful in case you started configuring a complex simulation
+and you lost track of the changes, to return to the safe defaults.
+
+The |upload_icon| button allows you to upload a JSON file. This file can be exported from a previously
+configured and run simulation (on the same or different TVB installation, as long as versions are compatible).
+Details on how to export such a JSON file can be found just bellow, when we explain the |pencil_icon| icon.
+
+As main content in this left column, a history of all simulations is kept and can be
+accessed at any time.
+
+Each simulation execution has a color label that represents its current status:
+
+    - pale blue: simulation is running,
+    - green: simulation is finished,
+    - red: an error occurred during the simulation.
+
+Each simulation can be renamed, copied, exported or deleted by clicking on |pencil_icon| icon, next to its name.
+
+.. figure:: screenshots/simulator_history_edits.jpg
+   :width: 20%
+   :align: center
+
+   Simulation editing menu
+
+To rename a simulation, click the |pencil_icon| icon first, then edit the text in the input field,
+and do not forget to press |save_icon| icon when you are done writing.
+
+.. note::
+
+   You cannot rename a Simulation while it is running.
+
+        .. figure:: screenshots/simulator_history_running.jpg
+           :width: 20%
+           :align: center
+
+
+`Copy` simulation means loading in memory the same configuration, as used for that particular simulation.
+It will be your job to optionally change something in the configuration and, when done, press the |play_icon| icon,
+to actually run this copy of the simulation.
+
+`Export JSON` is a new feature which allows you to create a text file, which stores the current simulation
+parameters. This text file will be downloaded from your browser window, and can be reused later. You could use it
+on the same TVB installation, or on a totally different TVB server, in several manners:
+
+    - from web GUI, using the |upload_icon| button, on this page
+    - in the python console of TVB, for better debugging capabilities. Examples for this later case can be
+    found in the set of examples for COMMAND and LIBRARY profiles.
+
+
+.. caution::
+    Please notice that **deleting a simulation will also delete all
+    resulting data that had been produced**.
 
 
 .. SIMULATOR COLUMN
@@ -182,74 +252,6 @@ will be loaded.
       point represents the results of a simulation for an unique combination of
       parameters. The disk size corresponds to Global Variance and the color
       scale corresponds to Variance of the Variance of nodes.  
-
-
-.. HISTORY COLUMN
-
-Simulation History
-..................
-
-.. |star_icon| image:: icons/star_icon.png
-.. |upload_icon| image:: icons/upload_icon.png
-.. |pencil_icon| image:: icons/pencil.png
-.. |save_icon| image:: icons/save_tick.png
-.. |play_icon| image:: icons/play_icon.png
-
-We call `History` the most left column on the Simulator page.
-Along with the `History` title, you can observe two buttons on top of this column.
-
-The |star_icon| button allows you to initialize a new simulation, using the default `Simulator`
-parameters. This default initialization is already happening, if you just landed on this page
-for the first time. The button can be useful in case you started configuring a complex simulation
-and you lost track of the changes, to return to the safe defaults.
-
-The |upload_icon| button allows you to upload a JSON file. This file can be exported from a previously
-configured and run simulation (on the same or different TVB installation, as long as versions are compatible).
-Details on how to export such a JSON file can be found just bellow, when we explain the |pencil_icon| icon.
-
-As main content in this left column, a history of all simulations is kept and can be
-accessed at any time.
-
-Each simulation execution has a color label that represents its current status:
-
-    - pale blue: simulation is running,
-    - green: simulation is finished,
-    - red: an error occurred during the simulation.
-
-Each simulation can be renamed, copied, exported or deleted by clicking on |pencil_icon| icon, next to its name.
-
-.. figure:: screenshots/simulator_history_edits.jpg
-   :width: 20%
-   :align: center
-   
-   Simulation editing menu
-
-To rename a simulation, click the |pencil_icon| icon first, then edit the text in the input field,
-and do not forget to press |save_icon| icon when you are done writing.
-
-.. note::
-
-   You cannot rename a Simulation while it is running.
-
-        .. figure:: screenshots/simulator_history_running.jpg
-           :width: 20%
-           :align: center
-
-
-`Copy` simulation means loading in memory the same configuration, as used for that particular simulation.
-It will be your job to optionally change something in the configuration and, when done, press the |play_icon| icon.
-
-`Export as JSON` is a new feature which allows you to create a text file, which stores the current simulation
-parameters. This text file will be downloaded from your browser window, and can be reused later. You could use it
-on the same TVB installation, or on a totally different TVB server, in several manners:
-- from web GUI, using the |upload_icon| button, on this page
-- in the python console of TVB, for better debugging capabilities.
-Examples for this later case can be found in the set of examples for COMMAND and LIBRARY profiles.
-
-
-.. caution::
-    Please notice that **deleting a simulation will also delete all
-    resulting data that had been produced**.
 
 
 .. VIEW COLUMN
