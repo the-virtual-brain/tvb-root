@@ -31,8 +31,12 @@
 .. moduleauthor:: Lia Domide <lia.domide@codemart.ro>
 """
 
+import numpy
 from tvb.basic.traits.core import TYPE_REGISTER
 
+KEYWORD_PARAMS = "_parameters_"
+KEYWORD_SEPARATOR = "_"
+KEYWORD_OPTION = "option_"
 
 
 def get_traited_subclasses(parent_class):
@@ -46,7 +50,6 @@ def get_traited_subclasses(parent_class):
     for class_instance in classes_list:
         result[class_instance.__name__] = class_instance
     return result
-
 
 
 def get_traited_instance_for_name(class_name, parent_class, params_dictionary):
@@ -64,4 +67,81 @@ def get_traited_instance_for_name(class_name, parent_class, params_dictionary):
     return entity
 
 
-    
+def collapse_params(args, simple_select_list, parent=''):
+    """ In case of variables with similar names:
+    (name_parameters_[option_xx]_paramKey) collapse then into dictionary
+    of parameters. This is used after parameters POST, on Operation Launch.
+    """
+    result = {}
+    for name, value in args.items():
+        short_name = name
+        option = None
+        key = None
+        if name.find(KEYWORD_PARAMS) >= 0:
+            short_name = name[0: (name.find(KEYWORD_PARAMS) + 11)]
+            key = name[(name.find(KEYWORD_PARAMS) + 12):]
+            if key.find(KEYWORD_OPTION) == 0:
+                key = key[7:]  # Remove '_option_'
+                option = key[0: key.find(KEYWORD_SEPARATOR)]
+                key = key[key.find(KEYWORD_SEPARATOR) + 1:]
+
+        if key is None:
+            result[name] = value
+        else:
+            if short_name not in result:
+                result[short_name] = {}
+            if option is None:
+                result[short_name][key] = value
+            else:
+                if option not in result[short_name]:
+                    result[short_name][option] = {}
+                result[short_name][option][key] = value
+
+    for level1_name, level1_params in result.items():
+        if KEYWORD_PARAMS[:-1] in level1_name and isinstance(level1_params, dict):
+            short_parent_name = level1_name[0: level1_name.find(KEYWORD_PARAMS) - 10]
+            if (parent + short_parent_name) in simple_select_list:
+                # simple select
+                if isinstance(result[short_parent_name], (str, unicode)):
+                    parent_prefix = level1_name + KEYWORD_SEPARATOR + KEYWORD_OPTION
+                    parent_prefix += result[short_parent_name]
+                    parent_prefix += KEYWORD_SEPARATOR
+                    # Ignore options in case of simple selects
+                    # Take only attributes for current selected option.
+                    if result[short_parent_name] in level1_params:
+                        level1_params = level1_params[result[short_parent_name]]
+                    else:
+                        level1_params = {}
+                else:
+                    parent_prefix = level1_name
+
+                transformed_params = collapse_params(level1_params, simple_select_list, parent + parent_prefix)
+                result[level1_name] = transformed_params
+            elif short_parent_name in result:
+                # multiple select
+                for level2_name, level2_params in level1_params.items():
+                    parent_prefix = level1_name + KEYWORD_SEPARATOR + KEYWORD_OPTION
+                    parent_prefix += level2_name + KEYWORD_SEPARATOR
+                    transformed_params = collapse_params(level2_params, simple_select_list, parent + parent_prefix)
+                    result[level1_name][level2_name] = transformed_params
+    return result
+
+
+def try_parse(val):
+    if isinstance(val, dict):
+        return {str(k): try_parse(v) for k, v in val.iteritems()}
+    if isinstance(val, list):
+        return val
+
+    try:
+        return int(val)
+    except Exception:
+        try:
+            return float(val)
+        except Exception:
+            if val.find('[') == 0:
+                try:
+                    return numpy.array(val.replace('[', '').replace(']', '').split(','), dtype=numpy.float64)
+                except Exception:
+                    pass
+            return str(val)
