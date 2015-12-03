@@ -77,7 +77,7 @@ on the same TVB installation, or on a totally different TVB server, in several m
 
     - from web GUI, using the |upload_icon| button, on this page (top of column `History`)
     - in the python console of TVB, for better debugging capabilities. Examples for this later case can be
-        found in the set of examples for COMMAND and LIBRARY profiles.
+      found in the set of examples for COMMAND and LIBRARY profiles.
 
 
 .. caution::
