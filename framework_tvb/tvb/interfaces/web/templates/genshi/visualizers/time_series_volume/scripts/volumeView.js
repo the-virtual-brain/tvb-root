@@ -120,42 +120,33 @@ function TSV_drawVolumeScene(layers, selectedEntity){
  * May be called multiple times to draw different volumetric layers with transparent parts.
  */
 function drawSmallQuadrants(sliceArray){
-    var i, j, k, ii, jj, kk;
     // Set the back canvas size to the small quadrant. This also clears it.
     vol.backCtx.canvas.width = vol.quadrantWidth;
     vol.backCtx.canvas.height = vol.quadrantHeight;
-    // Create an off screen buffer for fast pixel manipulation.
-    var imageData = vol.backCtx.createImageData(vol.quadrantWidth, vol.quadrantHeight);
 
     _setCtxOnQuadrant(0);
-    for (j = 0; j < vol.dataSize[2]; ++j){
-        for (i = 0; i < vol.dataSize[1]; ++i){
-            drawVoxel(imageData, i, j, sliceArray[0][i][j]);
-        }
-    }
-    // Now paste the buffer to the back canvas
-    vol.backCtx.putImageData(imageData, 0, 0);
-    // Finally paste the back canvas to the foreground one
-    // This performs alpha compositing and is the reason for this 'two step paste' drawing
-    vol.ctx.drawImage(vol.backCtx.canvas, 0, 0);
-
+    _drawAxial(sliceArray);
     _setCtxOnQuadrant(1);
-    for (k = 0; k < vol.dataSize[3]; ++k){
-        for (jj = 0; jj < vol.dataSize[2]; ++jj){
-            drawVoxel(imageData, k, jj, sliceArray[1][jj][k]);
-        }
-    }
-    vol.backCtx.putImageData(imageData, 0, 0);
-    vol.ctx.drawImage(vol.backCtx.canvas, 0, 0);
-
+    _drawSagittal(sliceArray);
     _setCtxOnQuadrant(2);
-    for (kk = 0; kk < vol.dataSize[3]; ++kk){
-        for (ii = 0; ii < vol.dataSize[1]; ++ii){
-            drawVoxel(imageData, kk, ii, sliceArray[2][ii][kk]);
-        }
+    _drawCoronal(sliceArray);
+}
+
+/**
+ * Draws the selectedQuadrant on Focus Quadrant from the xyz planes data.
+ */
+function drawFocusQuadrantFromView(sliceArray){
+    _setCtxOnQuadrant(3);
+    vol.backCtx.canvas.width = vol.focusQuadrantWidth;
+    vol.backCtx.canvas.height = vol.focusQuadrantHeight;
+
+    if(vol.highlightedQuad.index === 0){
+        _drawAxial(sliceArray);
+    } else if(vol.highlightedQuad.index === 1){
+        _drawSagittal(sliceArray);
+    } else if(vol.highlightedQuad.index === 2){
+        _drawCoronal(sliceArray);
     }
-    vol.backCtx.putImageData(imageData, 0, 0);
-    vol.ctx.drawImage(vol.backCtx.canvas, 0, 0);
 }
 
 /**
@@ -170,35 +161,39 @@ function _createImgData(w_voxels, h_voxels){
                                        Math.round(h_voxels * (1 + vol.currentQuadrant.entityHeight)));
 }
 
-/**
- * Draws the selectedQuadrant on Focus Quadrant from the xyz planes data.
- */
-function drawFocusQuadrantFromView(sliceArray){
-    _setCtxOnQuadrant(3);
-    // see drawSmallQuadrants for explanation about the drawing procedure used here.
-    vol.backCtx.canvas.width = vol.focusQuadrantWidth;
-    vol.backCtx.canvas.height = vol.focusQuadrantHeight;
-    var imageData;
-    if(vol.highlightedQuad.index === 0){
-        imageData = _createImgData(vol.dataSize[1], vol.dataSize[2]);
+/** draws the axial slice on the current quadrant */
+function _drawAxial(sliceArray){
+    // Create an off screen buffer for fast pixel manipulation.
+    var imageData = _createImgData(vol.dataSize[1], vol.dataSize[2]);
+
+    for (var j = 0; j < vol.dataSize[2]; ++j){
+        for (var i = 0; i < vol.dataSize[1]; ++i){
+            drawVoxel(imageData, i, j, sliceArray[0][i][j]);
+        }
+    }
+    // Now paste the buffer to the back canvas
+    vol.backCtx.putImageData(imageData, 0, 0);
+    // Finally paste the back canvas to the foreground one
+    // This performs alpha compositing and is the reason for this 'two step paste' drawing
+    vol.ctx.drawImage(vol.backCtx.canvas, 0, 0);
+}
+
+function _drawSagittal(sliceArray){
+    var imageData = _createImgData(vol.dataSize[2], vol.dataSize[3]);
+    for (var k = 0; k < vol.dataSize[3]; ++k){
         for (var j = 0; j < vol.dataSize[2]; ++j){
-            for (var i = 0; i < vol.dataSize[1]; ++i){
-                drawVoxel(imageData, i, j, sliceArray[0][i][j]);
-            }
+            drawVoxel(imageData, k, j, sliceArray[1][j][k]);
         }
-    } else if(vol.highlightedQuad.index === 1){
-        imageData = _createImgData(vol.dataSize[2], vol.dataSize[3]);
-        for (var k = 0; k < vol.dataSize[3]; ++k){
-            for (var jj = 0; jj < vol.dataSize[2]; ++jj){
-                drawVoxel(imageData, k, jj, sliceArray[1][jj][k]);
-            }
-        }
-    } else if(vol.highlightedQuad.index === 2){
-        imageData = _createImgData(vol.dataSize[1], vol.dataSize[3]);
-        for (var kk = 0; kk < vol.dataSize[3]; ++kk){
-            for (var ii = 0; ii < vol.dataSize[1]; ++ii){
-                drawVoxel(imageData, kk, ii, sliceArray[2][ii][kk]);
-            }
+    }
+    vol.backCtx.putImageData(imageData, 0, 0);
+    vol.ctx.drawImage(vol.backCtx.canvas, 0, 0);
+}
+
+function _drawCoronal(sliceArray){
+    var imageData = _createImgData(vol.dataSize[1], vol.dataSize[3]);
+    for (var k = 0; k < vol.dataSize[3]; ++k){
+        for (var i = 0; i < vol.dataSize[1]; ++i){
+            drawVoxel(imageData, k, i, sliceArray[2][i][k]);
         }
     }
     vol.backCtx.putImageData(imageData, 0, 0);
