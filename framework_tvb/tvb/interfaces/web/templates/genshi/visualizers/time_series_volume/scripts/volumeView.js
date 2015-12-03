@@ -58,7 +58,7 @@ function TSV_initVolumeView(dataSize, minValue, maxValue, voxelSize, volumeOrigi
     canvas.height = $(canvas).parent().height();
     canvas.width  = $(canvas).parent().width();
 
-    var tmp = canvas.height / 3;    // todo: floating point dimensions have interesting semantics. Consider Math.round
+    var tmp = Math.floor(canvas.height / 3);
     vol.quadrantHeight = tmp;       // quadrants are squares
     vol.quadrantWidth = tmp;
     vol.focusQuadrantWidth = canvas.width - vol.quadrantWidth;
@@ -169,22 +169,26 @@ function drawFocusQuadrantFromView(sliceArray){
     // todo: fix assumption that dataSize[1] == dataSize[2] == dataSize[3]
     vol.backCtx.canvas.width = vol.focusQuadrantWidth;
     vol.backCtx.canvas.height = vol.focusQuadrantHeight;
-    var imageData = vol.backCtx.createImageData(Math.floor(vol.dataSize[1] * vol.currentQuadrant.entityWidth),
-                                                Math.floor(vol.dataSize[2] * vol.currentQuadrant.entityHeight));
-
+    var imageData;
     if(vol.highlightedQuad.index === 0){
+        imageData = vol.backCtx.createImageData(Math.round(vol.dataSize[1] * (1 + vol.currentQuadrant.entityWidth)),
+                                                Math.round(vol.dataSize[2] * (1 + vol.currentQuadrant.entityHeight)));
         for (var j = 0; j < vol.dataSize[2]; ++j){
             for (var i = 0; i < vol.dataSize[1]; ++i){
                 drawVoxel(imageData, i, j, sliceArray[0][i][j]);
             }
         }
     } else if(vol.highlightedQuad.index === 1){
+        imageData = vol.backCtx.createImageData(Math.round(vol.dataSize[2] * (1 + vol.currentQuadrant.entityWidth)),
+                                                Math.round(vol.dataSize[3] * (1 + vol.currentQuadrant.entityHeight)));
         for (var k = 0; k < vol.dataSize[3]; ++k){
             for (var jj = 0; jj < vol.dataSize[2]; ++jj){
                 drawVoxel(imageData, k, jj, sliceArray[1][jj][k]);
             }
         }
     } else if(vol.highlightedQuad.index === 2){
+        imageData = vol.backCtx.createImageData(Math.round(vol.dataSize[1] * (1 + vol.currentQuadrant.entityWidth)),
+                                                Math.round(vol.dataSize[3] * (1 + vol.currentQuadrant.entityHeight)));
         for (var kk = 0; kk < vol.dataSize[3]; ++kk){
             for (var ii = 0; ii < vol.dataSize[1]; ++ii){
                 drawVoxel(imageData, kk, ii, sliceArray[2][ii][kk]);
