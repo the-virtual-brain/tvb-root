@@ -75,7 +75,8 @@ function TSV_initVolumeView(dataSize, minValue, maxValue, voxelSize, volumeOrigi
     //$(backCanvas).css({position: 'absolute', right: 0, top:'100px', border:'1px solid yellow'});
     //$('body').append(backCanvas);
     vol.backCtx = backCanvas.getContext("2d");
-    // TODO maybe in the future we will find a solution to make image bigger before saving
+    // Making images bigger before saving is not so useful when dealing with pixel data (volumetric part)
+    // or vector data (series part).
     canvas.drawForImageExport = function() {};
 
     vol.dataSize = dataSize;
@@ -158,37 +159,42 @@ function drawSmallQuadrants(sliceArray){
 }
 
 /**
+ * Create an off screen buffer for fast pixel manipulation on the current quadrant.
+ */
+function _createImgData(w_voxels, h_voxels){
+    // The dimensions of the off screen buffer are not focusQuadrantWidth but smaller
+    // because the volumetric slice is smaller than the quadrant.
+    // Using focusQuadrantWidth will lead to some visual glitches.
+    // Underlying issue is signal-pixel aliasing
+    return vol.backCtx.createImageData(Math.round(w_voxels * (1 + vol.currentQuadrant.entityWidth)),
+                                       Math.round(h_voxels * (1 + vol.currentQuadrant.entityHeight)));
+}
+
+/**
  * Draws the selectedQuadrant on Focus Quadrant from the xyz planes data.
  */
 function drawFocusQuadrantFromView(sliceArray){
     _setCtxOnQuadrant(3);
     // see drawSmallQuadrants for explanation about the drawing procedure used here.
-    // The dimensions of the off screen buffer are not focusQuadrantWidth but smaller
-    // because the volumetric slice is smaller than the quadrant.
-    // Using focusQuadrantWidth will lead to some visual glitches.
-    // todo: fix assumption that dataSize[1] == dataSize[2] == dataSize[3]
     vol.backCtx.canvas.width = vol.focusQuadrantWidth;
     vol.backCtx.canvas.height = vol.focusQuadrantHeight;
     var imageData;
     if(vol.highlightedQuad.index === 0){
-        imageData = vol.backCtx.createImageData(Math.round(vol.dataSize[1] * (1 + vol.currentQuadrant.entityWidth)),
-                                                Math.round(vol.dataSize[2] * (1 + vol.currentQuadrant.entityHeight)));
+        imageData = _createImgData(vol.dataSize[1], vol.dataSize[2]);
         for (var j = 0; j < vol.dataSize[2]; ++j){
             for (var i = 0; i < vol.dataSize[1]; ++i){
                 drawVoxel(imageData, i, j, sliceArray[0][i][j]);
             }
         }
     } else if(vol.highlightedQuad.index === 1){
-        imageData = vol.backCtx.createImageData(Math.round(vol.dataSize[2] * (1 + vol.currentQuadrant.entityWidth)),
-                                                Math.round(vol.dataSize[3] * (1 + vol.currentQuadrant.entityHeight)));
+        imageData = _createImgData(vol.dataSize[2], vol.dataSize[3]);
         for (var k = 0; k < vol.dataSize[3]; ++k){
             for (var jj = 0; jj < vol.dataSize[2]; ++jj){
                 drawVoxel(imageData, k, jj, sliceArray[1][jj][k]);
             }
         }
     } else if(vol.highlightedQuad.index === 2){
-        imageData = vol.backCtx.createImageData(Math.round(vol.dataSize[1] * (1 + vol.currentQuadrant.entityWidth)),
-                                                Math.round(vol.dataSize[3] * (1 + vol.currentQuadrant.entityHeight)));
+        imageData = _createImgData(vol.dataSize[1], vol.dataSize[3]);
         for (var kk = 0; kk < vol.dataSize[3]; ++kk){
             for (var ii = 0; ii < vol.dataSize[1]; ++ii){
                 drawVoxel(imageData, kk, ii, sliceArray[2][ii][kk]);
