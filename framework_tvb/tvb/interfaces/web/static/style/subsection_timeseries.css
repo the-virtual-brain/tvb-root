@@ -47,7 +47,7 @@
     padding-top: 2%;
 }
 
-.toolbar-with-sliders li span {
+.toolbar-with-sliders .ui-slider {
     float: left;
     width: 90%;
     margin: 3%;

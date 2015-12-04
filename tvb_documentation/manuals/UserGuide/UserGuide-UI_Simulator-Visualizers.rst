@@ -151,13 +151,19 @@ Movie start/stop, speed control, color schema change, channel selection are some
 Time Series Volume Visualizer
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
+This family of viewers display volumetric data, usually in an anatomical space.
+If the data has a time component then on the right side it will display timelines for selected voxels.
+FMri data is an example of this.
+A structural mri volume may be used as a background.
+
 .. figure:: screenshots/visualizer_tsv.jpg
    :width: 90%
    :align: center
 
    TimeSeries Volume with selections
 
-This visualizer displays time series of volumetric data, like fMRI.
+
+**Volumetric fragment**
 
 There are 3 navigation and viewing quadrants on the left and one main "focus quadrant" (left-central).
 It is  possible to navigate in space using the slide controls on the
@@ -166,18 +172,23 @@ So clicking in the 3 left squares will change the X, Y, Z of the planes slicing 
 (as the sliders on top are doing), while clicking in the main (central) square will select the clicked point for display
 of details on the right.
 
+The crosses designate the selected voxel. It's value is shown at the bottom of the focus quadrant. A white bar on the
+color legend also indicates this value.
+
 The playback function is activated by clicking the play button on the top bar,
 and it will then change the display with time (left and right areas);
 The time series data is buffered from the server according to the currently section of view.
 
 A different color map can be selected by clicked the Brain call-out in the top-right side of the screen.
-
+You might want to use the trim middle values feature with this viewer. It renders values around the mean transparent in the view.
+Also to be found un the Brain call-out.
 
 **Time Series Line Fragments**
 
 This is the right part of the TimeSeries Volume visualizer and is composed of three main parts:
 
 *Global Time Series Graph*
+
 All selected lines are shown here (top area), with the same scaling. Some transparency is applied to
 the lines and only one line is highlighted at a time. Highlighting can be done
 be passing the mouse over the line on the global graph or by clicking the
@@ -187,15 +198,24 @@ current time point (correlated with the movie in TimeSeries Volume section).
 A blue line follows the mouse showing the value of the highlighted line at each point.
 
 *Time slice selection (focus):*
+
 This function can be used to display only a portion of the data, zooming on it bellow.
-The user can manually define the time slice with the mouse actions
-,while it will automatically set itself around the current time point
+Try dragging in this region. The grey selection box can be moved and resized.
+If the focused data looks flat, increase the selected window length.
+The selection will automatically set itself around the current time point
 with a default extent during playback.
 
 *Sortable Graphs:*
+
 Every selected time series from the volume is shown on a separate line and labeled
 based on its coordinates from the 3D space.
 Adding lines in this section can be done by clicking in the left area on the main quadrant.
+
+*Important notice*:
+While these time lines share the temporal axis they do not share the vertical one.
+The signal amplitudes are dynamically scaled so as to make the signal features visible.
+Amplitudes are *not* comparable among two of these signals.
+
 The lines are colored following the selected feature
 in "Color Lines by" at the top of the screen. They are then sorted automatically
 by one of the selected methods or manually, by dragging and dropping each line
