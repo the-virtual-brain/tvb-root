@@ -53,14 +53,20 @@ class ICA(MappedArraySVGVisualizerMixin, ABCDisplayer):
         return [{"name": "datatype", "type": IndependentComponents,
                  "label": "Independent component analysis:", "required": True},
                 {"name": "i_svar", "type": 'int', 'default': 0,
-                 "label": "Index of state variable (defaults to first state variable)",
-                 }]
+                 "label": "Index of state variable (defaults to first state variable)",},
+                {"name": "i_mode", "type": 'int', 'default': 0,
+                 "label": "Index of mode (defaults to first mode)",}]
 
 
-    def launch(self, datatype, i_svar=0):
+    def launch(self, datatype, i_svar=0, i_mode=0):
         """Construct data for visualization and launch it."""
         # get data from IndependentComponents datatype, convert to json
         # HACK: dump only a 2D array
-        W = datatype.get_data('mixing_matrix')
-        pars = self.compute_params(W, 'Mixing matrix plot', '(Ellipsis, %d, 0)' % (i_svar))
+        unmixing_matrix = datatype.get_data('unmixing_matrix')
+        prewhitening_matrix = datatype.get_data('prewhitening_matrix')
+
+        unmixing_matrix = unmixing_matrix[..., i_svar, i_mode]
+        prewhitening_matrix = prewhitening_matrix[..., i_svar, i_mode]
+        Cinv = unmixing_matrix.dot(prewhitening_matrix)
+        pars = self.compute_params(Cinv, 'ICA region contribution', '(Ellipsis, %d, 0)' % (i_svar))
         return self.build_display_result("matrix/svg_view", pars)
