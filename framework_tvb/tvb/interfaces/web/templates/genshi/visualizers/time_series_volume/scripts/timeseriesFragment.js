@@ -90,8 +90,9 @@ function updateTSFragment(selectedEntity, currentTimePoint){
 function drawGraphs(){
     $('#graph').empty();
 
-    var label = "["+tsFrag.selectedEntity[0]+","+tsFrag.selectedEntity[1]+","+tsFrag.selectedEntity[2]+"]";
-    var selectedVoxelIsNotPresent = !tsFrag.tsDataArray.some(function(ts){ return ts.label === this[0];}, [label]);
+    var selectedVoxelIsNotPresent = !tsFrag.tsDataArray.some(function(ts){
+        return ts.x === tsFrag.selectedEntity[0] && ts.y === tsFrag.selectedEntity[1] && ts.z === tsFrag.selectedEntity[2];
+    });
 
     if( selectedVoxelIsNotPresent ){
         var tmp = new tsDataObj(getPerVoxelTimeSeries(tsFrag.selectedEntity[0], tsFrag.selectedEntity[1], tsFrag.selectedEntity[2]));
