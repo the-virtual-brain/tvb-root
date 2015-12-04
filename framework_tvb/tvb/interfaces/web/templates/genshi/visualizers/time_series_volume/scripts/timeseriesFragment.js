@@ -24,6 +24,7 @@ var tsFrag = {
     y: null,                            // A d3.scale() for the y axis
     sortableY: null,                    // Y axis labels for the sortable graph
     xAxisScale:null,                    // X axis labels for the global graph
+    brushWindowWidth:240,               // The default width of the brush.
     brush: null                         // A d3.brush()
 };
 
@@ -743,8 +744,8 @@ function sortTsGraphs(order, by, pivot){
  * Update the brushes based on the current time point
  */
 function updateBrush() {
-    var bMin = Math.max(0,tsFrag.currentTimePoint-30);
-    var bMax = Math.min(tsFrag.currentTimePoint+30,tsFrag.timeLength);
+    var bMin = Math.max(0,tsFrag.currentTimePoint - tsFrag.brushWindowWidth/2);
+    var bMax = Math.min(tsFrag.currentTimePoint + tsFrag.brushWindowWidth/2, tsFrag.timeLength);
     d3.select('.tsv-brush').transition()
       .delay(0)
       .call(tsFrag.brush.extent([bMin, bMax]))
