@@ -442,9 +442,9 @@ function drawSortableGraph(){
         function dropInTrash(ui) {
             // Remove the element dropped on #sortable-delete
             if (tsFrag.tsDataArray.length > 1) {
-                var deleteLabel = ui.item[0].__data__.label;
-                tsFrag.tsDataArray = tsFrag.tsDataArray.filter(function (obj) {
-                    return obj.label !== deleteLabel;
+                var toDelete = ui.item[0].__data__;
+                tsFrag.tsDataArray = tsFrag.tsDataArray.filter(function (ts) {
+                    return ! (ts.x === toDelete.x && ts.y === toDelete.y && ts.z === toDelete.z);
                 });
                 ui.item.remove();
                 tsFrag.selectedIndex = 0;
