@@ -24,7 +24,7 @@ var tsFrag = {
     y: null,                            // A d3.scale() for the y axis
     sortableY: null,                    // Y axis labels for the sortable graph
     xAxisScale:null,                    // X axis labels for the global graph
-    brushWindowWidth:240,               // The default width of the brush.
+    brushWindowWidth:512,               // The default width of the brush.
     brush: null                         // A d3.brush()
 };
 
