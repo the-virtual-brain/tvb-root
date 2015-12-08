@@ -29,7 +29,8 @@ You can change the view by pressing a mouse button and dragging it.
 
 Pressing the shift key and the left button has the same effect as the right button.
 
-Pressing the control key will rotate or translate in the model space.
+Pressing the control key will rotate or translate in the model space; while without control key pressed,
+the rotation happens in the space of the `navigator` (with center in (0,0,0) ).
 
 The SPACE key will show a top view. The CURSOR Keys will show axis aligned views.
 

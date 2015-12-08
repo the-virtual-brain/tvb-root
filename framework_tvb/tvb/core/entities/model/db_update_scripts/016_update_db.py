@@ -29,7 +29,7 @@
 #
 
 """
-Change of DB structure from TVB version 1.0 to TVB 1.0.1.
+Change of DB structure from TVB version 1.4.1 to TVB 1.5
 
 .. moduleauthor:: Andrei Mihai <mihai.andrei@codemart.ro>
 """
