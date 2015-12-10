@@ -232,7 +232,9 @@ class WebSettings(object):
                                              'tools.encode.encoding': 'utf-8',
                                              'tools.decode.on': True,
                                              'tools.gzip.on': True,
-                                             # 'tools.gzip.mime_types': ['text/*'],
+                                             'tools.gzip.mime_types': ['text/html', 'text/plain',
+                                                                       'text/javascript', 'text/css',
+                                                                       'application/x.ndarray'],
                                              'tools.sessions.on': True,
                                              'tools.sessions.storage_type': 'ram',
                                              'tools.sessions.timeout': 600,  # 10 hours

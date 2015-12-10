@@ -96,7 +96,7 @@ def ndarray_to_http_binary(func):
     def deco(*a, **b):
         x = func(*a, **b)
         x = numpy.ascontiguousarray(x)
-        cherrypy.response.headers["Content-Type"] = "application/octet-stream"
+        cherrypy.response.headers["Content-Type"] = "application/x.ndarray"
         cherrypy.response.headers["Content-Length"] = x.nbytes
         cherrypy.response.headers["X-Array-Shape"] = str(x.shape)
         cherrypy.response.headers["X-Array-Type"] = str(x.dtype)
