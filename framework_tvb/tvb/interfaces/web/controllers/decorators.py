@@ -33,7 +33,7 @@ Decorators for Cherrypy exposed methods are defined here.
 
 .. moduleauthor:: Mihai Andrei <mihai.andrei@codemart.ro>
 """
-
+import numpy
 import os
 import json
 import cherrypy
@@ -84,6 +84,24 @@ def jsonify(func):
     def deco(*a, **b):
         result = func(*a, **b)
         return json.dumps(result, cls=TVBJSONEncoder)
+
+    return deco
+
+
+def ndarray_to_http_binary(func):
+    """
+    Decorator to wrap calls that return numpy arrays. It serializes them as binary http response
+    """
+    @wraps(func)
+    def deco(*a, **b):
+        x = func(*a, **b)
+        x = numpy.ascontiguousarray(x)
+        cherrypy.response.headers["Content-Type"] = "application/octet-stream"
+        cherrypy.response.headers["Content-Length"] = x.nbytes
+        cherrypy.response.headers["X-Array-Shape"] = str(x.shape)
+        cherrypy.response.headers["X-Array-Type"] = str(x.dtype)
+
+        return x.tobytes()
 
     return deco
 
@@ -245,6 +263,14 @@ def expose_json(func):
     """
     func = check_user(func)
     func = jsonify(func)
+    func = handle_error(redirect=False)(func)
+    func = cherrypy.expose(func)
+    return func
+
+
+def expose_numpy_array(func):
+    func = check_user(func)
+    func = ndarray_to_http_binary(func)
     func = handle_error(redirect=False)(func)
     func = cherrypy.expose(func)
     return func
