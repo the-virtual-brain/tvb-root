@@ -62,6 +62,7 @@ class MappedType(model.DataType, mapped.MappedTypeLight):
 
     #### Transient fields below
     storage_path = None
+    _current_metadata = {}
     framework_metadata = None
     logger = get_logger(__name__)
     _ui_complex_datatype = False

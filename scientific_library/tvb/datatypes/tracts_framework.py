@@ -32,10 +32,7 @@
 module docstring
 .. moduleauthor:: Mihai Andrei <mihai.andrei@codemart.ro>
 """
-import numpy
-import colorsys
 from tvb.basic.logger.builder import get_logger
-from tvb.datatypes.surfaces_framework import paths2url
 from tvb.datatypes.tracts_data import TractData
 
 LOG = get_logger(__name__)
@@ -45,44 +42,27 @@ TRACTS_CHUNK_SIZE = 100
 class TractsFramework(TractData):
     __tablename__ = None
 
-    def get_urls_for_rendering(self, sample_rate=1):
-        sample_rate = int(sample_rate)
-        url_vertices = []
-
-        nchunks, rest = divmod(self.tracts_count, TRACTS_CHUNK_SIZE)
-        if rest:
-            nchunks +=1
-
-        for i in xrange(nchunks):
-            param_str = "slice_number=%d&sample_rate=%d" % (i, sample_rate)
-            url4chunk = paths2url(self, 'get_tracts_slice', parameter=param_str , flatten=True)
-            url_vertices.append(url4chunk)
-        return url_vertices
-
-    def _slice2range(self, slice_number):
-        slice_number = int(slice_number)
-
-        start = slice_number * TRACTS_CHUNK_SIZE
-        stop = min(start + TRACTS_CHUNK_SIZE, self.tracts_count)
-        return start, stop
-
-    def get_tracts_slice(self, slice_number, sample_rate):
+    def get_tract(self, i):
         """
-        Returns a list of vertex arrays. One array per tract line.
-        Sliced by tracts not vertices
+        get a tract by index
         """
-        sample_rate = int(sample_rate)
-        # todo : range checks
+        start, end = self.tract_start_idx[i:i+2]
+        return self.get_data('vertices', slice(start, end), close_file=False)
+
+
+    def _get_tract_ids(self, region_id):
+        tract_ids = self.tract_region[self.tract_region == region_id]
+        return tract_ids
+
+
+    def get_tracts_starting_in_region(self, region_id):
+        region_id = int(region_id)
+        tract_ids = self._get_tract_ids(region_id)
+
         tracts = []
-        start, stop = self._slice2range(slice_number)
+        for tid in tract_ids:
+            tracts.append(self.get_tract(tid).tolist())
 
-        for i in xrange(start, stop):
-            c = self.vertex_counts[i]
-            # indexing warning
-            tracts.append(list(self.vertices[i, :c:sample_rate * 3, :].flat))
+        self.close_file()
+
         return tracts
-
-    def get_tracts_color(self, slice_number, sample_rate):
-        start, stop = self._slice2range(slice_number)
-        hues = numpy.linspace(0, 1, self.tracts_count)[start:stop:sample_rate]
-        return [colorsys.hls_to_rgb(h, 0.5, 0.5) for h in hues]

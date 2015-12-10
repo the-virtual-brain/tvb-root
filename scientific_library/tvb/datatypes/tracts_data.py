@@ -32,24 +32,34 @@
 module docstring
 .. moduleauthor:: Mihai Andrei <mihai.andrei@codemart.ro>
 """
-
-import tvb.datatypes.arrays as arrays
+from tvb.datatypes import arrays
+from tvb.basic.traits import core
 from tvb.basic.traits.types_mapped import MappedType
 
 
 class TractData(MappedType):
     vertices = arrays.PositionArray(
         label="Vertex positions",
+        file_storage=core.FILE_STORAGE_EXPAND,
         order=-1,
         doc="""An array specifying coordinates for the tracts vertices.""")
 
-    vertex_counts = arrays.IntegerArray(
-        label="Tract vertex counts",
+    tract_start_idx = arrays.IntegerArray(
+        label="Tract starting indices",
         order=-1,
-        doc="""An array specifying how many vertices in a tract""")
+        doc="""Where is the first vertex of a tract in the vertex array""")
+
+    tract_region = arrays.IntegerArray(
+        label="Tract region index",
+        order=-1,
+        doc="""
+        An index used to find quickly all tract emerging from a region
+        tract_region[i] is the region of the i'th tract. -1 represents the background
+        """
+    )
 
     __generate_table__ = True
 
     @property
     def tracts_count(self):
-        return self.vertices.shape[0]
+        return len(self.tract_start_idx) - 1
