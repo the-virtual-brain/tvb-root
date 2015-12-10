@@ -226,7 +226,7 @@ class MappedType(model.DataType, mapped.MappedTypeLight):
         self._current_metadata[data_name] = new_metadata
 
 
-    def get_data(self, data_name, data_slice=None, where=ROOT_NODE_PATH, ignore_errors=False):
+    def get_data(self, data_name, data_slice=None, where=ROOT_NODE_PATH, ignore_errors=False, close_file=True):
         """
         This method reads data from the given data set based on the slice specification
             :param data_name: Name of the data set from where to read data
@@ -235,7 +235,7 @@ class MappedType(model.DataType, mapped.MappedTypeLight):
             :returns: a numpy.ndarray containing filtered data
         """
         store_manager = self._get_file_storage_mng()
-        return store_manager.get_data(data_name, data_slice, where, ignore_errors)
+        return store_manager.get_data(data_name, data_slice, where, ignore_errors, close_file)
 
 
     def get_data_shape(self, data_name, where=ROOT_NODE_PATH):

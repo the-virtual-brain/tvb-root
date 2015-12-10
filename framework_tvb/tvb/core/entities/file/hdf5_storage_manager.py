@@ -210,7 +210,7 @@ class HDF5StorageManager(object):
             self.close_file()
 
 
-    def get_data(self, dataset_name, data_slice=None, where=ROOT_NODE_PATH, ignore_errors=False):
+    def get_data(self, dataset_name, data_slice=None, where=ROOT_NODE_PATH, ignore_errors=False, close_file=True):
         """
         This method reads data from the given data set based on the slice specification
         
@@ -244,7 +244,8 @@ class HDF5StorageManager(object):
                 else:
                     return numpy.ndarray(0)
         finally:
-            self.close_file()
+            if close_file:
+                self.close_file()
 
 
     def get_data_shape(self, dataset_name, where=ROOT_NODE_PATH, ignore_errors=False):
