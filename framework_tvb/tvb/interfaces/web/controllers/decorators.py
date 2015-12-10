@@ -95,6 +95,16 @@ def ndarray_to_http_binary(func):
     @wraps(func)
     def deco(*a, **b):
         x = func(*a, **b)
+        if not isinstance(x, numpy.ndarray):
+            raise ValueError('Datatype attribute must be an ndarray for binary transport')
+
+        # map some unsupported dtypes to supported ones
+        if x.dtype == numpy.int64:
+            x = numpy.asarray(x, dtype=numpy.int32)
+
+        if x.dtype not in [numpy.float32, numpy.float64, numpy.int32]:
+            raise ValueError('Datatype not supported by binary transport %s' % x.dtype)
+
         x = numpy.ascontiguousarray(x)
         cherrypy.response.headers["Content-Type"] = "application/x.ndarray"
         cherrypy.response.headers["Content-Length"] = x.nbytes

@@ -53,7 +53,7 @@ from tvb.core.services.project_service import ProjectService
 from tvb.core.services.burst_service import BurstService
 from tvb.interfaces.web.controllers import common
 from tvb.interfaces.web.controllers.base_controller import BaseController
-from tvb.interfaces.web.controllers.decorators import expose_page, settings, context_selected
+from tvb.interfaces.web.controllers.decorators import expose_page, settings, context_selected, expose_numpy_array
 from tvb.interfaces.web.controllers.decorators import expose_fragment, handle_error, check_user, expose_json
 from tvb.interfaces.web.entities.context_selected_adapter import SelectedAdapterContext
 
@@ -515,6 +515,24 @@ class FlowController(BaseController):
             self.logger.exception(excep)
 
 
+    def _read_datatype_attribute(self, entity_gid, dataset_name, datatype_kwargs='null', **kwargs):
+        self.logger.debug("Starting to read HDF5: " + entity_gid + "/" + dataset_name + "/" + str(kwargs))
+        entity = ABCAdapter.load_entity_by_gid(entity_gid)
+
+        datatype_kwargs = json.loads(datatype_kwargs)
+        if datatype_kwargs:
+            for key, value in datatype_kwargs.iteritems():
+                kwargs[key] = ABCAdapter.load_entity_by_gid(value)
+
+        result = getattr(entity, dataset_name)
+        if callable(result):
+            if kwargs:
+                result = result(**kwargs)
+            else:
+                result = result()
+        return result
+
+
     @expose_json
     def read_datatype_attribute(self, entity_gid, dataset_name, flatten=False, datatype_kwargs='null', **kwargs):
         """
@@ -530,20 +548,7 @@ class FlowController(BaseController):
         :param kwargs: extra parameters to be passed when dataset_name is method.
 
         """
-        self.logger.debug("Starting to read HDF5: " + entity_gid + "/" + dataset_name + "/" + str(kwargs))
-        entity = ABCAdapter.load_entity_by_gid(entity_gid)
-
-        datatype_kwargs = json.loads(datatype_kwargs)
-        if datatype_kwargs:
-            for key, value in datatype_kwargs.iteritems():
-                kwargs[key] = ABCAdapter.load_entity_by_gid(value)
-
-        result = getattr(entity, dataset_name)
-        if callable(result):
-            if kwargs:
-                result = result(**kwargs)
-            else:
-                result = result()
+        result = self._read_datatype_attribute(entity_gid, dataset_name, datatype_kwargs, **kwargs)
 
         if isinstance(result, numpy.ndarray):
             # for ndarrays honor the flatten kwarg and convert to lists as ndarrs are not json-able
@@ -552,6 +557,11 @@ class FlowController(BaseController):
             return result.tolist()
         else:
             return result
+
+
+    @expose_numpy_array
+    def read_binary_datatype_attribute(self, entity_gid, dataset_name, datatype_kwargs='null', **kwargs):
+        return self._read_datatype_attribute(entity_gid, dataset_name, datatype_kwargs, **kwargs)
 
 
     @expose_fragment("flow/genericAdapterFormFields")
