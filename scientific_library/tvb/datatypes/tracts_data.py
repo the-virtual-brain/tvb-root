@@ -51,6 +51,7 @@ class TractData(MappedType):
 
     tract_region = arrays.IntegerArray(
         label="Tract region index",
+        required=False,
         order=-1,
         doc="""
         An index used to find quickly all tract emerging from a region

@@ -39,6 +39,7 @@ from tvb.core.entities.file.files_helper import TvbZip
 from tvb.core.entities.storage import transactional
 from tvb.datatypes.region_mapping import RegionVolumeMapping
 from tvb.datatypes.tracts import Tracts
+from tvb.interfaces.web.controllers.decorators import profile_func
 
 
 def chunk_iter(iterable, n):
@@ -74,14 +75,13 @@ class _TrackImporterBase(ABCUploader):
         return [Tracts]
 
 
-    def _get_tract_region(self, region_volume, start_vertex):
+    def _get_tract_region(self, region_volume, region_volume_shape, start_vertex):
         # Map to voxel index space
         # Lacking any affine matrix between these, we assume they are in the same geometric space
         # What remains is to map geometry to the discrete region volume mapping indices
         x_plane, y_plane, z_plane = [int(i) for i in start_vertex]
-        rvshape = region_volume.read_data_shape()
 
-        if not (0 <= x_plane < rvshape[0] and 0 <= y_plane < rvshape[1] or 0 <= z_plane < rvshape[2]):
+        if not (0 <= x_plane < region_volume_shape[0] and 0 <= y_plane < region_volume_shape[1] and 0 <= z_plane < region_volume_shape[2]):
             raise IndexError('vertices outside the region volume map cube')
 
         # in memory data set
@@ -122,18 +122,24 @@ class TrackvizTractsImporter(_TrackImporterBase):
         datatype = Tracts()
         datatype.storage_path = self.storage_path
 
+        # note the streaming parsing, we do not load the dataset in memory at once
         tract_gen, hdr = trackvis.read(data_file, as_generator=True)
 
         tract_start_indices = [0]
         tract_region = []
+        # this is called here and not in _get_tract_region because it goes to disk to get this info
+        # which would massively dominate the runtime of the import
+        if region_volume is not None:
+            region_volume_shape = region_volume.read_data_shape()
 
+        # we process tracts in bigger chunks to optimize disk write costs
         for tract_bundle in chunk_iter(tract_gen, self.READ_CHUNK):
             tract_bundle = [tr[0] for tr in tract_bundle]
 
             for tr in tract_bundle:
                 tract_start_indices.append(tract_start_indices[-1] + len(tr))
                 if region_volume is not None:
-                    tract_region.append(self._get_tract_region(region_volume, tr[0]))
+                    tract_region.append(self._get_tract_region(region_volume, region_volume_shape, tr[0]))
 
             vertices = numpy.concatenate(tract_bundle)
             datatype.store_data_chunk("vertices", vertices, grow_dimension=0, close_file=False)
@@ -158,6 +164,7 @@ class ZipTxtTractsImporter(_TrackImporterBase):
 
 
     @transactional
+    @profile_func
     def launch(self, data_file, region_volume=None):
         if data_file is None:
             raise LaunchException("Please select ZIP file which contains data to import")
@@ -171,6 +178,9 @@ class ZipTxtTractsImporter(_TrackImporterBase):
         tract_start_indices = [0]
         tract_region = []
 
+        if region_volume is not None:
+            region_volume_shape = region_volume.read_data_shape()
+
         with TvbZip(data_file) as zipf:
             for tractf in sorted(zipf.namelist()): # one track per file
                 if not tractf.endswith('.txt'): # omit directories and other non track files
@@ -182,7 +192,7 @@ class ZipTxtTractsImporter(_TrackImporterBase):
                 datatype.store_data_chunk("vertices", tract_vertices, grow_dimension=0, close_file=False)
 
                 if region_volume is not None:
-                    tract_region.append(self._get_tract_region(region_volume, tract_vertices[0]))
+                    tract_region.append(self._get_tract_region(region_volume, region_volume_shape, tract_vertices[0]))
                 vertices_file.close()
 
         datatype.tract_start_idx = tract_start_indices
