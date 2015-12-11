@@ -77,10 +77,14 @@ function RB_RegionBoundariesController(boundariesURL) {
         setMatrixUniforms();
         for (var i = 0; i < bufferSets.length; i++) {
             var buffers = bufferSets[i];
-            if (isPicking) {
-                SHADING_Context.surface_pick_draw(GL_shaderProgram, buffers[0], buffers[1], buffers[4], buffers[3], buffers[2], gl.LINES);
-            } else {
-                SHADING_Context.one_to_one_program_draw(GL_shaderProgram, buffers[0], buffers[1], buffers[3], buffers[2], gl.LINES);
+            if(isOneToOneMapping) {
+                if (isPicking) {
+                    SHADING_Context.surface_pick_draw(GL_shaderProgram, buffers[0], buffers[1], buffers[4], buffers[3], buffers[2], gl.LINES);
+                } else {
+                    SHADING_Context.one_to_one_program_draw(GL_shaderProgram, buffers[0], buffers[1], buffers[3], buffers[2], gl.LINES);
+                }
+            }else{
+                SHADING_Context.region_program_draw(GL_shaderProgram, buffers[0], buffers[1], buffers[3], buffers[2], gl.LINES);
             }
         }
 
