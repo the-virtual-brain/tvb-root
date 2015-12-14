@@ -995,7 +995,135 @@ function doAjaxCall(params) {
     });
 }
 
-// -------------End AJAX Calls----------------------------------
+/**
+ * Initiate a HTTP GET request for a given file name and return its content, parsed as a JSON object.
+ * When staticFiles = True, return without evaluating JSON from response.
+ */
+function HLPR_readJSONfromFile(fileName, staticFiles) {
+    var fileData = null;
+
+    doAjaxCall({
+        async:false,
+        url:fileName,
+        methos:"GET",
+        mimeType:"text/plain",
+        success:function(r){
+            fileData = r;
+        },
+        error: function(){
+            displayMessage("Could not retrieve data from the server!", "warningMessage");
+        }
+    });
+
+    if(!fileData){
+        return null;
+    }
+
+    if (staticFiles) {
+        fileData = fileData.replace(/[\r\n\t\[\]]/g, '');
+        return $.trim(fileData).split(/\s*,\s* /g);
+    }else{
+        return $.parseJSON(fileData);
+    }
+}
+
+// ------------ End AJAX Calls----------------------------------
+
+// ------------ Binary transport parsing------------------------
+
+function NdArr(buffer, shape){
+    this.shape = shape;
+    this.buffer = buffer;
+}
+
+NdArr.prototype.idx = function() {
+    if (arguments.length !== this.shape.length) {
+        throw "Index error";
+    }
+    var index = arguments[arguments.length - 1];
+    var stride = 1;
+
+    for (var i = this.shape.length - 2; i >= 0; --i) {
+        stride *= this.shape[i];
+        index += stride * arguments[i - 1];
+    }
+    return index;
+};
+
+NdArr.prototype.get = function(){
+    return this.buffer[this.idx(arguments)];
+};
+
+/**
+ * From an NdArr to nested lists
+ */
+NdArr.prototype.unflatten = function(){
+    var shape = this.shape;
+    var data = this.buffer;
+
+    while(shape.length ) {
+        var stride = shape.pop();
+
+        var result = [];
+        var i = 0;
+
+        while (i < data.length) {
+            var chunk = [];
+            for (var j = 0; j < stride; ++j) {
+                chunk.push(data[i]);
+                ++i;
+            }
+            result.push(chunk);
+        }
+        data = result;
+    }
+    return data;
+};
+
+/**
+ * Retrieves from server a numpy array
+ */
+function HLPR_fetchNdArray(binary_url, onload){
+    var oReq = new XMLHttpRequest();
+    // Synchronous binary requests are not supported. See http://www.w3.org/TR/XMLHttpRequest/#the-responsetype-attribute
+    oReq.open("GET", binary_url, false);
+    oReq.responseType = "arraybuffer";
+
+    oReq.onload = function (event) {
+        var arrayBuffer = oReq.response;
+        var shape = oReq.getResponseHeader("X-Array-Shape");
+        var dtype = oReq.getResponseHeader("X-Array-Type");
+
+        var floatArray;
+
+        switch (dtype){
+        case "int32":
+            floatArray = new Int32Array(arrayBuffer);
+            break;
+        case "float64":
+            floatArray = new Float64Array(arrayBuffer);
+            break;
+        case "float32":
+            floatArray = new Float32Array(arrayBuffer);
+            break;
+        default:
+            throw "datatype not supported " + dtype;
+        }
+
+        shape = shape.match(/(\d+)/g);
+        for (var i = 0; i < shape.length; ++i){
+            shape[i] = parseInt(shape[i]);
+        }
+
+        var ndarr = new NdArr(floatArray, shape);
+
+        onload(ndarr);
+    };
+
+    oReq.send(null);
+}
+
+// -------------End Binary transport parsing ----------------------------------
 
 function checkArg(arg, def) {
     return ( typeof arg === 'undefined' ? def : arg);

@@ -72,39 +72,6 @@ function HLPR_removeByElement(arrayName, arrayElement) {
   }
 }
 
-/**
- * Initiate a HTTP GET request for a given file name and return its content, parsed as a JSON object.
- * When staticFiles = True, return without evaluating JSON from response.
- */
-function HLPR_readJSONfromFile(fileName, staticFiles) {
-    var fileData = null;
-
-    doAjaxCall({
-        async:false,
-        url:fileName,
-        methos:"GET",
-        mimeType:"text/plain",
-        success:function(r){
-            fileData = r;
-        },
-        error: function(){
-            displayMessage("Could not retrieve data from the server!", "warningMessage");
-        }
-    });
-
-    if(!fileData){
-        return null;
-    }
-
-    if (staticFiles) {
-        fileData = fileData.replace(/[\r\n\t\[\]]/g, '');
-        return $.trim(fileData).split(/\s*,\s* /g);
-    }else{
-        return $.parseJSON(fileData);
-    }
-}
-
-
 function HLPR_sphereBufferAtPoint(gl, point, radius, latitudeBands, longitudeBands) {
     var moonVertexPositionBuffer;
     var moonVertexNormalBuffer;
