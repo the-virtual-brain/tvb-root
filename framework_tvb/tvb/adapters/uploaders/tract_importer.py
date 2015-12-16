@@ -105,6 +105,31 @@ class _TrackImporterBase(ABCUploader):
             self.full_rmap_cache = None
 
 
+class _SpaceTransform(object):
+    """
+    Performs voxel to RAS space transformation
+    """
+
+    def __init__(self, hdr):
+        # this is an affine transform mapping the voxel space in which the tracts live to the surface space
+        # see http://www.grahamwideman.com/gw/brain/fs/coords/fscoords.htm
+        self.vox_to_ras = hdr['vox_to_ras']
+
+        if self.vox_to_ras[3][3] == 0:
+            # according to http://www.trackvis.org/docs/?subsect=fileformat this means that the matrix cannot be trusted
+            self.vox_to_ras = numpy.eye(4)
+
+
+    def transform(self, vertices):
+        # to vox homogeneous coordinates
+        w_coordinate = numpy.ones((1, len(vertices)), dtype=vertices.dtype)
+        vertices = numpy.vstack([vertices.T, w_coordinate])
+        # to RAS homogeneous space
+        vertices = self.vox_to_ras.dot(vertices)
+        # to RAS space
+        vertices = vertices.T[:, :3]
+        return vertices
+
 
 class TrackvizTractsImporter(_TrackImporterBase):
     """
@@ -125,6 +150,7 @@ class TrackvizTractsImporter(_TrackImporterBase):
         # note the streaming parsing, we do not load the dataset in memory at once
         tract_gen, hdr = trackvis.read(data_file, as_generator=True)
 
+        vox2ras = _SpaceTransform(hdr)
         tract_start_indices = [0]
         tract_region = []
         # this is called here and not in _get_tract_region because it goes to disk to get this info
@@ -141,7 +167,9 @@ class TrackvizTractsImporter(_TrackImporterBase):
                 if region_volume is not None:
                     tract_region.append(self._get_tract_region(region_volume, region_volume_shape, tr[0]))
 
-            vertices = numpy.concatenate(tract_bundle)
+            vertices = numpy.concatenate(tract_bundle) # in voxel space
+            vertices = vox2ras.transform(vertices)
+
             datatype.store_data_chunk("vertices", vertices, grow_dimension=0, close_file=False)
 
         datatype.tract_start_idx = tract_start_indices

@@ -32,6 +32,7 @@
 module docstring
 .. moduleauthor:: Mihai Andrei <mihai.andrei@codemart.ro>
 """
+import numpy
 from tvb.basic.logger.builder import get_logger
 from tvb.datatypes.tracts_data import TractData
 
@@ -51,7 +52,7 @@ class TractsFramework(TractData):
 
 
     def _get_tract_ids(self, region_id):
-        tract_ids = self.tract_region[self.tract_region == region_id]
+        tract_ids = numpy.where(self.tract_region == region_id)[0]
         return tract_ids
 
 
@@ -66,3 +67,44 @@ class TractsFramework(TractData):
         self.close_file()
 
         return tracts
+
+
+    def get_vertices(self, region_id):
+        """
+        Concatenates the vertices for all tracts starting in region_id.
+        Returns a completely flat array as required by gl.bindBuffer apis
+        """
+        region_id = int(region_id)
+        tract_ids = self._get_tract_ids(region_id)
+
+        tracts_vertices = []
+        for tid in tract_ids:
+            tracts_vertices.append(self.get_tract(tid))
+
+        self.close_file()
+        if tracts_vertices:
+            tracts_vertices = numpy.concatenate(tracts_vertices)
+            return tracts_vertices.ravel()
+        else:
+            return numpy.array([])
+
+
+    def get_line_starts(self, region_id):
+        """
+        Returns a compact representation of the element buffers required to draw the streams via gl.drawElements
+        A list of indices that describe where the first vertex for a tract is in the vertex array returned by
+        get_tract_vertices_starting_in_region
+        """
+        region_id = int(region_id)
+        tract_ids = self._get_tract_ids(region_id)
+
+        offset = 0
+        tract_offsets = [0]
+
+        for tid in tract_ids:
+            start, end = self.tract_start_idx[tid:tid+2]
+            track_len = end - start
+            offset +=track_len
+            tract_offsets.append(offset)
+
+        return tract_offsets
