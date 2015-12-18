@@ -43,6 +43,8 @@ TRACTS_CHUNK_SIZE = 100
 class TractsFramework(TractData):
     __tablename__ = None
 
+    MAX_UINT16 = 2**16
+
     def get_tract(self, i):
         """
         get a tract by index
@@ -56,32 +58,71 @@ class TractsFramework(TractData):
         return tract_ids
 
 
-    def get_tracts_starting_in_region(self, region_id):
-        region_id = int(region_id)
+    def _get_track_ids_webgl_chunks(self, region_id):
+        """
+        webgl can draw up to MAX_UINT16 vertices in a draw call.
+        Assuming that no one track exceeds this limit we partition
+        the tracts such that each track bundle has fewer than the max vertices
+        :return: the id's of the tracts in a region chunked by the above criteria.
+        """
+        # We have to split the int64 range in many uint16 ranges
         tract_ids = self._get_tract_ids(region_id)
 
-        tracts = []
-        for tid in tract_ids:
-            tracts.append(self.get_tract(tid).tolist())
+        tract_id_chunks = []
+        chunk = []
 
-        self.close_file()
+        count = 0
+        tidx = 0
+        tract_start_idx = self.tract_start_idx # traits make . expensive
 
-        return tracts
+        while tidx < len(tract_ids):  # tidx always grows
+            tid = tract_ids[tidx]
+            start, end = tract_start_idx[tid:tid+2]
+            track_len = end - start
+
+            if track_len >= self.MAX_UINT16:
+                raise ValueError('cannot yet handle very long tracts')
+
+            count += track_len
+
+            if count < self.MAX_UINT16:
+                # add this track to the current chunk and advance to next track
+                chunk.append(tid)
+                tidx += 1
+            else:
+                # stay with the same track and start a new chunk
+                tract_id_chunks.append(chunk)
+                chunk = []
+                count = 0
+
+        if chunk:
+            tract_id_chunks.append(chunk)
+
+        # q = []
+        # for a in tract_id_chunks:
+        #     q.extend(a)
+        # assert (numpy.array(q) == tract_ids).all()
+
+        return tract_id_chunks
 
 
-    def get_vertices(self, region_id):
+    def get_vertices(self, region_id, slice_number=0):
         """
         Concatenates the vertices for all tracts starting in region_id.
         Returns a completely flat array as required by gl.bindBuffer apis
         """
         region_id = int(region_id)
-        tract_ids = self._get_tract_ids(region_id)
+        slice_number = int(slice_number)
+
+        chunks = self._get_track_ids_webgl_chunks(region_id)
+        tract_ids = chunks[slice_number]
 
         tracts_vertices = []
         for tid in tract_ids:
             tracts_vertices.append(self.get_tract(tid))
 
         self.close_file()
+
         if tracts_vertices:
             tracts_vertices = numpy.concatenate(tracts_vertices)
             return tracts_vertices.ravel()
@@ -96,15 +137,20 @@ class TractsFramework(TractData):
         get_tract_vertices_starting_in_region
         """
         region_id = int(region_id)
-        tract_ids = self._get_tract_ids(region_id)
+        chunks = self._get_track_ids_webgl_chunks(region_id)
+        chunk_line_starts = []
+        tract_start_idx = self.tract_start_idx # traits make the . expensive
 
-        offset = 0
-        tract_offsets = [0]
+        for tract_ids in chunks:
+            offset = 0
+            tract_offsets = [0]
 
-        for tid in tract_ids:
-            start, end = self.tract_start_idx[tid:tid+2]
-            track_len = end - start
-            offset +=track_len
-            tract_offsets.append(offset)
+            for tid in tract_ids:
+                start, end = tract_start_idx[tid:tid+2]
+                track_len = end - start
+                offset +=track_len
+                tract_offsets.append(offset)
 
-        return tract_offsets
+            chunk_line_starts.append(tract_offsets)
+
+        return chunk_line_starts
