@@ -39,7 +39,6 @@ from tvb.core.entities.file.files_helper import TvbZip
 from tvb.core.entities.storage import transactional
 from tvb.datatypes.region_mapping import RegionVolumeMapping
 from tvb.datatypes.tracts import Tracts
-from tvb.interfaces.web.controllers.decorators import profile_func
 
 
 def chunk_iter(iterable, n):
@@ -75,13 +74,15 @@ class _TrackImporterBase(ABCUploader):
         return [Tracts]
 
 
-    def _get_tract_region(self, region_volume, region_volume_shape, start_vertex):
+    def _get_tract_region(self, start_vertex):
         # Map to voxel index space
         # Lacking any affine matrix between these, we assume they are in the same geometric space
         # What remains is to map geometry to the discrete region volume mapping indices
         x_plane, y_plane, z_plane = [int(i) for i in start_vertex]
 
-        if not (0 <= x_plane < region_volume_shape[0] and 0 <= y_plane < region_volume_shape[1] and 0 <= z_plane < region_volume_shape[2]):
+        if not (0 <= x_plane < self.region_volume_shape[0] and
+                0 <= y_plane < self.region_volume_shape[1] and
+                0 <= z_plane < self.region_volume_shape[2]):
             raise IndexError('vertices outside the region volume map cube')
 
         # in memory data set
@@ -91,7 +92,7 @@ class _TrackImporterBase(ABCUploader):
 
         # not in memory have to go to disk
         slices = slice(x_plane, x_plane + 1), slice(y_plane, y_plane + 1), slice(z_plane, z_plane + 1)
-        region_id = region_volume.read_data_slice(slices)[0, 0, 0]
+        region_id = self.region_volume.read_data_slice(slices)[0, 0, 0]
         return region_id
 
 
@@ -105,10 +106,34 @@ class _TrackImporterBase(ABCUploader):
             self.full_rmap_cache = None
 
 
+    def _base_before_launch(self, data_file, region_volume):
+        if data_file is None:
+            raise LaunchException("Please select a file to import")
+
+        self.region_volume = region_volume
+
+        if region_volume is not None:
+            self._attempt_to_cache_regionmap(region_volume)
+            # this is called here and not in _get_tract_region because it goes to disk to get this info
+            # which would massively dominate the runtime of the import
+            self.region_volume_shape = region_volume.read_data_shape()
+
+        datatype = Tracts()
+        datatype.storage_path = self.storage_path
+        return datatype
+
+
 class _SpaceTransform(object):
     """
-    Performs voxel to RAS space transformation
+    Performs voxel to TVB space transformation
     """
+
+    RAS_TO_TVB = numpy.array(
+      [[ 0.,  1.,  0.,  0.],
+       [-1.,  0.,  0.,  0.],
+       [ 0.,  0.,  1.,  0.],
+       [ 0.,  0.,  0.,  1.]])
+
 
     def __init__(self, hdr):
         # this is an affine transform mapping the voxel space in which the tracts live to the surface space
@@ -126,7 +151,9 @@ class _SpaceTransform(object):
         vertices = numpy.vstack([vertices.T, w_coordinate])
         # to RAS homogeneous space
         vertices = self.vox_to_ras.dot(vertices)
-        # to RAS space
+        # to TVB homogeneous space
+        vertices = self.RAS_TO_TVB.dot(vertices)
+        # to 3d space
         vertices = vertices.T[:, :3]
         return vertices
 
@@ -138,14 +165,7 @@ class TrackvizTractsImporter(_TrackImporterBase):
 
     @transactional
     def launch(self, data_file, region_volume=None):
-        if data_file is None:
-            raise LaunchException("Please select a trackviz file")
-
-        if region_volume is not None:
-            self._attempt_to_cache_regionmap(region_volume)
-
-        datatype = Tracts()
-        datatype.storage_path = self.storage_path
+        datatype = self._base_before_launch(data_file, region_volume)
 
         # note the streaming parsing, we do not load the dataset in memory at once
         tract_gen, hdr = trackvis.read(data_file, as_generator=True)
@@ -153,10 +173,6 @@ class TrackvizTractsImporter(_TrackImporterBase):
         vox2ras = _SpaceTransform(hdr)
         tract_start_indices = [0]
         tract_region = []
-        # this is called here and not in _get_tract_region because it goes to disk to get this info
-        # which would massively dominate the runtime of the import
-        if region_volume is not None:
-            region_volume_shape = region_volume.read_data_shape()
 
         # we process tracts in bigger chunks to optimize disk write costs
         for tract_bundle in chunk_iter(tract_gen, self.READ_CHUNK):
@@ -165,7 +181,7 @@ class TrackvizTractsImporter(_TrackImporterBase):
             for tr in tract_bundle:
                 tract_start_indices.append(tract_start_indices[-1] + len(tr))
                 if region_volume is not None:
-                    tract_region.append(self._get_tract_region(region_volume, region_volume_shape, tr[0]))
+                    tract_region.append(self._get_tract_region(tr[0]))
 
             vertices = numpy.concatenate(tract_bundle) # in voxel space
             vertices = vox2ras.transform(vertices)
@@ -192,22 +208,11 @@ class ZipTxtTractsImporter(_TrackImporterBase):
 
 
     @transactional
-    @profile_func
     def launch(self, data_file, region_volume=None):
-        if data_file is None:
-            raise LaunchException("Please select ZIP file which contains data to import")
-
-        if region_volume is not None:
-            self._attempt_to_cache_regionmap(region_volume)
-
-        datatype = Tracts()
-        datatype.storage_path = self.storage_path
+        datatype = self._base_before_launch(data_file, region_volume)
 
         tract_start_indices = [0]
         tract_region = []
-
-        if region_volume is not None:
-            region_volume_shape = region_volume.read_data_shape()
 
         with TvbZip(data_file) as zipf:
             for tractf in sorted(zipf.namelist()): # one track per file
@@ -220,7 +225,7 @@ class ZipTxtTractsImporter(_TrackImporterBase):
                 datatype.store_data_chunk("vertices", tract_vertices, grow_dimension=0, close_file=False)
 
                 if region_volume is not None:
-                    tract_region.append(self._get_tract_region(region_volume, region_volume_shape, tract_vertices[0]))
+                    tract_region.append(self._get_tract_region(tract_vertices[0]))
                 vertices_file.close()
 
         datatype.tract_start_idx = tract_start_indices

@@ -96,7 +96,7 @@ def ndarray_to_http_binary(func):
     def deco(*a, **b):
         x = func(*a, **b)
         if not isinstance(x, numpy.ndarray):
-            raise ValueError('Datatype attribute must be an ndarray for binary transport')
+            raise ValueError('Datatype attribute must be an ndarray for binary transport not %s' % type(x) )
 
         # map some unsupported dtypes to supported ones
         if x.dtype == numpy.int64:
@@ -111,7 +111,7 @@ def ndarray_to_http_binary(func):
         cherrypy.response.headers["X-Array-Shape"] = str(x.shape)
         cherrypy.response.headers["X-Array-Type"] = str(x.dtype)
 
-        return x.tobytes()
+        return x.tostring()
 
     return deco
 
@@ -289,7 +289,7 @@ def expose_numpy_array(func):
 def profile_func(func):
     def wrapper(*args, **kwargs):
         log = get_logger(_LOGGER_NAME)
-        profile_file = func.__name__ + datetime.now().strftime("%d-%H-%M-%S") + ".profile"
+        profile_file = func.__name__ + datetime.now().strftime("%d-%H-%M-%S.%f") + ".profile"
         log.info("profiling function %s. Profile stored in %s" % (func.__name__, profile_file))
         prof = cProfile.Profile()
         ret = prof.runcall(func, *args, **kwargs)

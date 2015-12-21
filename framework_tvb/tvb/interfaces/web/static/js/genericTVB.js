@@ -1083,10 +1083,10 @@ NdArr.prototype.unflatten = function(){
 /**
  * Retrieves from server a numpy array
  */
-function HLPR_fetchNdArray(binary_url, onload){
+function HLPR_fetchNdArray(binary_url, onload, kwargs){
     var oReq = new XMLHttpRequest();
     // Synchronous binary requests are not supported. See http://www.w3.org/TR/XMLHttpRequest/#the-responsetype-attribute
-    oReq.open("GET", binary_url, false);
+    oReq.open("GET", binary_url, true);
     oReq.responseType = "arraybuffer";
 
     oReq.onload = function (event) {
@@ -1117,7 +1117,7 @@ function HLPR_fetchNdArray(binary_url, onload){
 
         var ndarr = new NdArr(floatArray, shape);
 
-        onload(ndarr);
+        onload(ndarr, kwargs);
     };
 
     oReq.send(null);
