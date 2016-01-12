@@ -34,13 +34,14 @@
 .. moduleauthor:: Bogdan Neacsa <bogdan.neacsa@codemart.ro>
 """
 
+import re
 import numpy
 from tvb.basic.logger.builder import get_logger
 from tvb.core.adapters.exceptions import ParseException
 from tvb.datatypes.connectivity import Connectivity
 
 
-class NetworkxParser():
+class NetworkxParser(object):
     """
     This class reads content of a NetworkX stream and builds a Connectivity instance filled with details.
     """
@@ -57,6 +58,8 @@ class NetworkxParser():
     KEY_EDGE_WEIGHT = ["adc_mean", "fiber_weight_mean"]
     KEY_EDGE_TRACT = ["fiber_length_mean"]
 
+    OPERATORS = "[*-+:]"
+
 
     def __init__(self, storage_path, key_edge_weight=None, key_edge_tract=None, key_node_coordinates=None,
                  key_node_label=None, key_node_region=None, key_node_hemisphere=None):
@@ -64,24 +67,19 @@ class NetworkxParser():
         self.logger = get_logger(__name__)
         self.storage_path = storage_path
 
-        if key_edge_weight and not key_edge_weight in self.KEY_EDGE_WEIGHT:
-            self.KEY_EDGE_WEIGHT.insert(0, key_edge_weight)
-        if key_edge_tract and not key_edge_tract in self.KEY_EDGE_TRACT:
-            self.KEY_EDGE_TRACT.insert(0, key_edge_tract)
-        if key_node_coordinates and not key_node_coordinates in self.KEY_NODE_COORDINATES:
-            self.KEY_NODE_COORDINATES.insert(0, key_node_coordinates)
-        if key_node_label and not key_node_label in self.KEY_NODE_LABEL:
-            self.KEY_NODE_LABEL.insert(0, key_node_label)
-        if key_node_region and not key_node_region in self.KEY_NODE_REGION:
-            self.KEY_NODE_REGION.insert(0, key_node_region)
-        if key_node_hemisphere and not key_node_hemisphere in self.KEY_NODE_HEMISPHERE:
-            self.KEY_NODE_HEMISPHERE.insert(0, key_node_hemisphere)
+        NetworkxParser._append_key(key_edge_weight, self.KEY_EDGE_WEIGHT)
+        NetworkxParser._append_key(key_edge_tract, self.KEY_EDGE_TRACT)
+        NetworkxParser._append_key(key_node_coordinates, self.KEY_NODE_COORDINATES)
+        NetworkxParser._append_key(key_node_label, self.KEY_NODE_LABEL)
+        NetworkxParser._append_key(key_node_region, self.KEY_NODE_REGION)
+        NetworkxParser._append_key(key_node_hemisphere, self.KEY_NODE_HEMISPHERE)
 
 
     @staticmethod
     def prepare_input_params_tree(prefix=None):
         """
-        :return: Adapter Input tree, with possible user-given keys for reading from networkx object
+        :param prefix: An optional string, to be used in front of the GUI displayed labels
+        :return: Adapter Input tree, with possible user-given keys for reading from NetworkX object
         """
         result = []
         configurable_keys = {'key_edge_weight': NetworkxParser.KEY_EDGE_WEIGHT,
@@ -154,7 +152,19 @@ class NetworkxParser():
         except KeyError, err:
             self.logger.exception("Could not parse Connectivity")
             raise ParseException(err)
-        
+
+
+    @staticmethod
+    def _append_key(key, current_keys):
+        """
+        This will append to the CLASS attribute the "key".
+        It will help us, by storing it for future usages of the same importer (like  a cache),
+        as it is highly probable to have the same CFF types on the same TVB installation.
+        It is not a strong requirement, so it is fine to be lost at the next TVB restart.
+        """
+        if key and key not in current_keys:
+            current_keys.insert(0, key)
+
 
     def _find_value(self, node_data, candidate_keys):
         """
@@ -165,7 +175,28 @@ class NetworkxParser():
             if key in node_data:
                 return node_data[key]
 
-        msg = "Could not find any of the labels %s" % str(candidate_keys)
+            else:
+                # Try to parse a simple number
+                try:
+                    return float(key)
+                except ValueError:
+                    pass
+
+                # Try to parse a chain of operations between multiple keys
+                try:
+                    split_keys = re.split(self.OPERATORS, key)
+                    operators = re.findall(self.OPERATORS, key)
+                    if len(split_keys) < 2 or len(split_keys) != len(operators) + 1:
+                        continue
+
+                    value = self._find_value(node_data, [split_keys[0]])
+                    for i in xrange(0, len(operators)):
+                        expression = "value" + operators[i] + str(self._find_value(node_data, [split_keys[i + 1]]))
+                        value = eval(expression)
+                    return value
+                except ParseException:
+                    continue
+
+        msg = "Could not find any of the labels %s in value %s" % (str(candidate_keys), str(node_data))
         self.logger.error(msg)
         raise ParseException(msg)
-
