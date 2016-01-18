@@ -27,7 +27,7 @@ while 1
     ff = find((str<s)&(str>0));
     
     % if none found -> stop
-    if (isempty(ff)) break; end;
+    if (isempty(ff)) break; end;            %#ok<SEPEX>
 
     % peel found nodes
     CIJ(ff,:) = 0;

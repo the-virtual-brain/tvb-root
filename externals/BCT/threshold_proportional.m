@@ -10,22 +10,24 @@ function W = threshold_proportional(W, p)
 %   Inputs: W,      weighted or binary connectivity matrix
 %           p,      proportion of weights to preserve
 %                       range:  p=1 (all weights preserved) to
-%                               p=0 (no weights removed)
+%                               p=0 (no weights preserved)
 %
 %   Output: W_thr,  thresholded connectivity matrix
 %
 %
 %   Mika Rubinov, U Cambridge,
 %   Roan LaPlante, Martinos Center, MGH
+%   Zitong Zhang, Penn Engineering
 
 %   Modification history:
 %   2010: Original (MR)
 %   2012: Bug fix for symmetric matrices (RLP)
+%   2015: Improved symmetricity test (ZZ)
 
 n=size(W,1);                                %number of nodes
 W(1:n+1:end)=0;                             %clear diagonal
 
-if isequal(W,W.');                          %if symmetric matrix
+if max(max(abs(W-W.'))) < 1e-10;            %if symmetric matrix
     W=triu(W);                              %ensure symmetry is preserved
     ud=2;                                   %halve number of removed links
 else

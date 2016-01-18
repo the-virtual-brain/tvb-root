@@ -1,4 +1,4 @@
-function [R eff]=randmio_und(R, ITER)
+function [R,eff]=randmio_und(R, ITER)
 %RANDMIO_UND     Random graph with preserved degree distribution
 %
 %   R = randmio_und(W,ITER);
@@ -32,7 +32,7 @@ function [R eff]=randmio_und(R, ITER)
 
 
 n=size(R,1);
-[i j]=find(tril(R));
+[i,j]=find(tril(R));
 K=length(i);
 ITER=K*ITER;
 

@@ -29,6 +29,8 @@ function gt = gtom(adj,numSteps)
 %
 %   J Goni, University of Navarra and Indiana University, 2009/2011
 
+%#ok<*ASGLU>
+
 %initial state for bm matrix;
 bm = adj;
 bmAux = bm;
@@ -48,7 +50,7 @@ else
         for i = 1:numNodes
             
             %neighbours of node i
-            [neighRow,neighColumn] = find(bm(i,:)==1);
+            [neighRow,neighColumn] = find(bm(i,:)==1); 
             
             %neighbours of neighbours of node i
             [neighNeighRow,neighNeighColumn] = find(bm(neighColumn,:)==1);

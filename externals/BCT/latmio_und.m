@@ -52,7 +52,7 @@ if nargin<3 %if D is not specified by user
 end
 %end create
 
-[i j]=find(tril(R));
+[i,j]=find(tril(R));
 K=length(i);
 ITER=K*ITER;
 

@@ -1,4 +1,4 @@
-function [EBC BC]=edge_betweenness_wei(G)
+function [EBC,BC]=edge_betweenness_wei(G)
 %EDGE_BETWEENNESS_WEI    Edge betweenness centrality
 %
 %   EBC = edge_betweenness_wei(L);

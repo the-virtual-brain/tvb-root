@@ -1,4 +1,4 @@
-function [Hpos Hneg] = diversity_coef_sign(W, Ci)
+function [Hpos,Hneg] = diversity_coef_sign(W, Ci)
 %DIVERSITY_COEF_SIGN     Shannon-entropy based diversity coefficient
 %
 %   [Hpos Hneg] = diversity_coef_sign(W,Ci);
@@ -14,7 +14,7 @@ function [Hpos Hneg] = diversity_coef_sign(W, Ci)
 %   Output:     Hpos,   diversity coefficient based on positive connections
 %               Hneg,   diversity coefficient based on negative connections
 %
-%   References: Shannon CE (1948) Bell Syst Tech J 27, 379–423.
+%   References: Shannon CE (1948) Bell Syst Tech J 27, 379-423.
 %               Rubinov and Sporns (2011) NeuroImage.
 %
 %

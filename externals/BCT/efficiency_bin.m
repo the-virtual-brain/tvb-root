@@ -1,18 +1,19 @@
-function E=efficiency_bin(G,local)
+function E=efficiency_bin(A,local)
 %EFFICIENCY_BIN     Global efficiency, local efficiency.
 %
 %   Eglob = efficiency_bin(A);
 %   Eloc = efficiency_bin(A,1);
 %
-%   The global efficiency is the average of inverse shortest path length, 
+%   The global efficiency is the average of inverse shortest path length,
 %   and is inversely related to the characteristic path length.
 %
 %   The local efficiency is the global efficiency computed on the
 %   neighborhood of the node, and is related to the clustering coefficient.
 %
-%   Inputs:     A,              binary undirected connection matrix
+%   Inputs:     A,              binary undirected or directed connection matrix
 %               local,          optional argument
-%                               (local=1 computes local efficiency)
+%                                   local=0 computes global efficiency (default)
+%                                   local=1 computes local efficiency
 %
 %   Output:     Eglob,          global efficiency (scalar)
 %               Eloc,           local efficiency (vector)
@@ -21,46 +22,55 @@ function E=efficiency_bin(G,local)
 %   Algorithm: algebraic path count
 %
 %   Reference: Latora and Marchiori (2001) Phys Rev Lett 87:198701.
+%              Fagiolo (2007) Phys Rev E 76:026107.
+%              Rubinov M, Sporns O (2010) NeuroImage 52:1059-69
 %
 %
-%   Mika Rubinov, UNSW, 2008-2010
+%   Mika Rubinov, U Cambridge
+%   Jonathan Clayden, UCL
+%   2008-2013
 
-if ~exist('local','var')
-    local=0;
-end
+% Modification history:
+% 2008: Original (MR)
+% 2013: Bug fix, enforce zero distance for self-connections (JC)
+% 2013: Local efficiency generalized to directed networks
 
-if local                                %local efficiency
-    N=length(G);                        %number of nodes
-    E=zeros(N,1);                       %local efficiency
+n=length(A);                                %number of nodes
+A(1:n+1:end)=0;                             %clear diagonal
+A=double(A~=0);                             %enforce double precision
 
-    for u=1:N
-        V=find(G(u,:));                 %neighbors
-        k=length(V);                    %degree
-        if k>=2;                        %degree must be at least two
-            e=distance_inv(G(V,V));
-            E(u)=sum(e(:))./(k^2-k);	%local efficiency
+if exist('local','var') && local            %local efficiency
+    E=zeros(n,1);    
+    for u=1:n
+        V=find(A(u,:)|A(:,u).');            %neighbors
+        sa=A(u,V)+A(V,u).';                 %symmetrized adjacency vector
+        e=distance_inv(A(V,V));             %inverse distance matrix
+        se=e+e.';                           %symmetrized inverse distance matrix
+        numer=sum(sum((sa.'*sa).*se))/2;    %numerator
+        if numer~=0
+            denom=sum(sa).^2 - sum(sa.^2);  %denominator
+            E(u)=numer/denom;               %local efficiency
         end
     end
-else
-    N=length(G);
-    e=distance_inv(G);
-    E=sum(e(:))./(N^2-N);               %global efficiency
+else                                        %global efficiency
+    e=distance_inv(A);
+    E=sum(e(:))./(n^2-n);
 end
 
 
-function D=distance_inv(g)
-D=eye(length(g));
-n=1;
-nPATH=g;                        %n-path matrix
-L=(nPATH~=0);                   %shortest n-path matrix
+function D=distance_inv(A_)
+l=1;                                        %path length
+Lpath=A_;                                   %matrix of paths l
+D=A_;                                       %distance matrix
+n_=length(A_);
 
-while find(L,1);
-    D=D+n.*L;
-    n=n+1;
-    nPATH=nPATH*g;
-    L=(nPATH~=0).*(D==0);
+Idx=true;
+while any(Idx(:))
+    l=l+1;
+    Lpath=Lpath*A_;
+    Idx=(Lpath~=0)&(D==0);
+    D(Idx)=l;
 end
 
-D(~D)=inf;                      %disconnected nodes are assigned d=inf;
-D=1./D;                         %invert distance
-D=D-eye(length(g));
+D(~D | eye(n_))=inf;                        %assign inf to disconnected nodes and to diagonal
+D=1./D;                                     %invert distance

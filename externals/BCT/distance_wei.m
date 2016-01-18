@@ -1,8 +1,8 @@
-function [D B]=distance_wei(G)
+function [D,B]=distance_wei(L)
 %DISTANCE_WEI       Distance matrix
 %
 %   D = distance_wei(L);
-%   [D B] = distance_wei(L);
+%   [D,B] = distance_wei(L);
 %
 %   The distance matrix contains lengths of shortest paths between all
 %   pairs of nodes. An entry (u,v) represents the length of shortest path 
@@ -10,6 +10,7 @@ function [D B]=distance_wei(G)
 %   characteristic path length of the network.
 %
 %   Input:      L,      Directed/undirected connection-length matrix.
+%   *** NB: The length matrix L isn't the weights matrix W (see below) ***
 %
 %   Output:     D,      distance (shortest weighted path) matrix
 %               B,      number of edges in shortest weighted path matrix
@@ -35,26 +36,28 @@ function [D B]=distance_wei(G)
 %   Rick Betzel and Andrea Avena, IU, 2012
 
 %Modification history
-%2007: original
-%2009-08-04: min() function vectorized
-%2012 added number of edges in shortest path as additional output
+%2007: original (MR)
+%2009-08-04: min() function vectorized (MR)
+%2012: added number of edges in shortest path as additional output (RB/AA)
+%2013: variable names changed for consistency with other functions (MR)
 
-n=length(G);
-D=zeros(n); D(~eye(n))=inf;                 %distance matrix
+n=length(L);
+D=inf(n);
+D(1:n+1:end)=0;                             %distance matrix
 B=zeros(n);                                 %number of edges matrix
 
 for u=1:n
     S=true(1,n);                            %distance permanence (true is temporary)
-    G1=G;
+    L1=L;
     V=u;
     while 1
         S(V)=0;                             %distance u->V is now permanent
-        G1(:,V)=0;                          %no in-edges as already shortest
+        L1(:,V)=0;                          %no in-edges as already shortest
         for v=V
-            W=find(G1(v,:));                %neighbours of shortest nodes
-            [d wi]=min([D(u,W);D(u,v)+G1(v,W)]);
-            D(u,W)=d;                       %smallest of old/new path lengths
-            ind=W(wi==2);                   %indices of lengthened paths
+            T=find(L1(v,:));                %neighbours of shortest nodes
+            [d,wi]=min([D(u,T);D(u,v)+L1(v,T)]);
+            D(u,T)=d;                       %smallest of old/new path lengths
+            ind=T(wi==2);                   %indices of lengthened paths
             B(u,ind)=B(u,v)+1;              %increment no. of edges in lengthened paths
         end
 

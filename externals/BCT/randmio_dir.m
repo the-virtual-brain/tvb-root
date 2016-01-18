@@ -1,4 +1,4 @@
-function [R eff]=randmio_dir(R, ITER)
+function [R,eff]=randmio_dir(R, ITER)
 %RANDMIO_DIR    Random graph with preserved in/out degree distribution
 %
 %   R = randmio_dir(W, ITER);
@@ -29,7 +29,7 @@ function [R eff]=randmio_dir(R, ITER)
 
 
 n=size(R,1);
-[i j]=find(R);
+[i,j]=find(R);
 K=length(i);
 ITER=K*ITER;
 

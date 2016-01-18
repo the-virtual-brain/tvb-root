@@ -26,6 +26,9 @@ function [CIJkcore,kn,peelorder,peellevel] = kcore_bd(CIJ,k)
 %
 %   Olaf Sporns, Indiana University, 2007/2008/2010/2012
 
+%#ok<*ASGLU>
+%#ok<*AGROW>
+
 peelorder = [];
 peellevel = [];
 iter = 0;
@@ -33,20 +36,20 @@ iter = 0;
 while 1 
 
     % get degrees of matrix
-    [id,od,deg] = degrees_dir(CIJ);
+    [id,od,deg] = degrees_dir(CIJ); 
 
     % find nodes with degree <k
     ff = find((deg<k)&(deg>0));
     
     % if none found -> stop
-    if (isempty(ff)) break; end;
+    if (isempty(ff)) break; end;            %#ok<SEPEX>
 
     % peel away found nodes
     iter = iter+1;
     CIJ(ff,:) = 0;
     CIJ(:,ff) = 0;
     
-    peelorder = [peelorder; ff'];
+    peelorder = [peelorder; ff']; 
     peellevel = [peellevel; iter.*ones(1,length(ff))'];
     
 end;

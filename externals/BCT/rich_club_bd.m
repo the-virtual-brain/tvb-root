@@ -25,11 +25,11 @@ function [R,Nk,Ek] = rich_club_bd(CIJ,varargin)
 %
 %   Martijn van den Heuvel, University Medical Center Utrecht, 2011
 
-N = size(CIJ,1);
+N = size(CIJ,1);                    %#ok<NASGU>
 
 % definition of "degree" as used for RC coefficients
 % degree is taken to be the sum of incoming and outgoing connectons
-[id,od,degree] = degrees_dir(CIJ);
+[id,od,degree] = degrees_dir(CIJ);  %#ok<ASGLU>
 
 if nargin == 1
     klevel = max(degree);

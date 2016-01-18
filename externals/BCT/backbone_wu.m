@@ -30,7 +30,7 @@ N = size(CIJ,1);
 CIJtree = zeros(N);
 
 % find strongest edge (note if multiple edges are tied, only use first one)
-[i,j,s] = find(max(max(CIJ))==CIJ);
+[i,j,s] = find(max(max(CIJ))==CIJ);                      %#ok<*ASGLU>
 im = [i(1) i(2)];
 jm = [j(1) j(2)];
 
@@ -43,13 +43,13 @@ out = setdiff(1:N,in);
 for n=1:N-2
     
     % find strongest link between 'in' and 'out',ignore tied ranks
-    [i,j,s] = find(max(max(CIJ(in,out)))==CIJ(in,out));
+    [i,j,s] = find(max(max(CIJ(in,out)))==CIJ(in,out)); 
     im = in(i(1));
     jm = out(j(1));
     
     % copy into tree graph
     CIJtree(im,jm) = CIJ(im,jm); CIJtree(jm,im) = CIJ(jm,im);
-    in = [in jm];
+    in = [in jm];                                       %#ok<AGROW>
     out = setdiff(1:N,in);
 
 end;

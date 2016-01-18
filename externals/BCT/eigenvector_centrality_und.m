@@ -16,15 +16,22 @@ function   v = eigenvector_centrality_und(CIJ)
 %
 %   Reference: Newman, MEJ (2002). The mathematics of networks.
 %
+%   Contributors:
 %   Xi-Nian Zuo, Chinese Academy of Sciences, 2010
 %   Rick Betzel, Indiana University, 2012
+%   Mika Rubinov, University of Cambridge, 2015
 
-n = length(CIJ) ;
+%   MODIFICATION HISTORY
+%   2010/2012: original (XNZ, RB)
+%   2015: ensure the use of leading eigenvector (MR)
+
+
+n = length(CIJ);
 if n < 1000
-    [V,~] = eig(CIJ) ;
-    ec = abs(V(:,n)) ;
+    [V,D] = eig(CIJ);
 else
-    [V, ~] = eigs(sparse(CIJ)) ;
-    ec = abs(V(:,1)) ;
+    [V,D] = eigs(sparse(CIJ));
 end
+[~,idx] = max(diag(D));
+ec = abs(V(:,idx));
 v = reshape(ec, length(ec), 1);

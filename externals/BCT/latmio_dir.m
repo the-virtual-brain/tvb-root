@@ -41,7 +41,7 @@ if nargin<3 %if D is not specified by user
 end
 %end create
 
-[i j]=find(R);
+[i,j]=find(R);
 K=length(i);
 ITER=K*ITER;
 

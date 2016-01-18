@@ -43,6 +43,6 @@ end;
 
 ff = find(CIJ);
 EC = 1./zeros(N);
-EC(ff) = ec;
+EC(ff) = ec;                            %#ok<FNDSB>
 
 

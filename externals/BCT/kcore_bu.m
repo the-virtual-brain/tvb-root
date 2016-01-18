@@ -26,6 +26,8 @@ function [CIJkcore,kn,peelorder,peellevel] = kcore_bu(CIJ,k)
 %
 %   Olaf Sporns, Indiana University, 2007/2008/2010/2012
 
+%#ok<*AGROW>
+
 peelorder = [];
 peellevel = [];
 iter = 0;
@@ -39,14 +41,14 @@ while 1
     ff = find((deg<k)&(deg>0));
     
     % if none found -> stop
-    if (isempty(ff)) break; end;
+    if (isempty(ff)) break; end;            %#ok<SEPEX>
 
     % peel away found nodes
     iter = iter+1;
     CIJ(ff,:) = 0;
     CIJ(:,ff) = 0;
     
-    peelorder = [peelorder; ff'];
+    peelorder = [peelorder; ff']; 
     peellevel = [peellevel; iter.*ones(1,length(ff))'];
     
 end;

@@ -18,6 +18,7 @@ function [comps,comp_sizes] = get_components(adj)
 %
 %   J Goni, University of Navarra and Indiana University, 2009/2011
 
+%#ok<*ASGLU>
 
 if size(adj,1)~=size(adj,2)
     error('this adjacency matrix is not square');
@@ -35,7 +36,7 @@ if sum(diag(adj))~=size(adj,1)
 end
 
 %Dulmage-Mendelsohn decomposition
-[useless1,p,useless2,r] = dmperm(adj);
+[useless,p,useless,r] = dmperm(adj); 
 
 %p indicates a permutation (along rows and columns)
 %r is a vector indicating the component boundaries

@@ -1,4 +1,4 @@
-function [EBC BC]=edge_betweenness_bin(G)
+function [EBC,BC]=edge_betweenness_bin(G)
 %EDGE_BETWEENNESS_BIN    Edge betweenness centrality
 %
 %   EBC = edge_betweenness_bin(A);
