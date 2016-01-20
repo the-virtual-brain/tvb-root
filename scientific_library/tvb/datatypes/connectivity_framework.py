@@ -111,8 +111,10 @@ class ConnectivityFramework(connectivity_data.ConnectivityData):
             final_conn.orientations = self.orientations[interest_areas, :]
         if self.cortical is not None and len(self.cortical):
             final_conn.cortical = self.cortical[interest_areas]
-        final_conn.hemispheres = self.hemispheres[interest_areas]
-        final_conn.areas = self.areas[interest_areas]
+        if self.hemispheres is not None and len(self.hemispheres):
+            final_conn.hemispheres = self.hemispheres[interest_areas]
+        if self.areas is not None and len(self.areas):
+            final_conn.areas = self.areas[interest_areas]
         final_conn.tract_lengths = new_tracts
         final_conn.saved_selection = None
         final_conn.subject = self.subject
