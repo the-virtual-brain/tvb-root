@@ -1248,8 +1248,6 @@ class Bold(Monitor):
             else:
                 bold = numpy.dot(hrf, self._stock.transpose((1, 2, 0, 3)))
             bold = bold.reshape(self._stock.shape[1:])
-            bold = bold.sum(axis=0)[numpy.newaxis,:,:] #state-variables
-            bold = bold.sum(axis=2)[:,:,numpy.newaxis] #modes
             return [time, bold]
 
 
