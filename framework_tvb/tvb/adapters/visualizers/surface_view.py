@@ -92,7 +92,8 @@ class SurfaceViewer(ABCDisplayer):
                  'description': "Face surface to be displayed semi-transparently, for orientation only."}]
 
 
-    def _compute_surface_params(self, surface, region_map):
+    @staticmethod
+    def _compute_surface_params(surface, region_map):
         rendering_urls = []
         # we want the URLs in json
         # But these string are going to be verbatim strings in js source code

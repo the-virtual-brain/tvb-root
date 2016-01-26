@@ -1,12 +1,12 @@
 <div xmlns:py="http://genshi.edgewall.org/" xmlns:xi="http://www.w3.org/2001/XInclude" py:strip="True">
-    <py:def function="drawRegionSelectorButton(title, groupedOptions, initialSelection=[], namedSelections=[], buttonTitle='Select channels')">
+    <py:def function="drawRegionSelectorButton(title, groupedOptions, initialSelection=[], namedSelections=[], buttonTitle='Select channels', radio=False)">
         <nav class="inline-menu">
             <button class="action action-menu">$buttonTitle</button>
 
             <div class="extension">
                 <div class="dropdown-pane">
                     <xi:include href="../commons/channel_selector.html" />
-                    ${drawRegionSelector(title, "channelSelector", groupedOptions, initialSelection, namedSelections)}
+                    ${drawRegionSelector(title, "channelSelector", groupedOptions, initialSelection, namedSelections, radio)}
                 </div>
             </div>
         </nav>

@@ -18,7 +18,7 @@
         </div>
     </py:def>
 
-    <py:def function="drawRegionSelectorChannels(groupedOptions, initialSelection)">
+    <py:def function="drawRegionSelectorChannels(groupedOptions, initialSelection, radio=None)">
         <section py:for="groupName, options in groupedOptions"
                  py:with="sectionWidth=100/len(groupedOptions)"
                  class="submatrix" style="width:${sectionWidth}%">
@@ -28,7 +28,8 @@
                    py:with="selected = value in initialSelection"
                    title="$label"
                    class="${'selected' if selected else None}">
-                <input type='checkbox' autocomplete="off"
+                <input type="${'checkbox' if not radio else 'radio'}" autocomplete="off"
+                       name="${radio}"
                        value="$value"
                        checked="${'checked' if selected else None}"/>
                 $label
@@ -36,11 +37,13 @@
         </section>
     </py:def>
 
-    <py:def function="drawRegionSelector(title, divId, groupedOptions, initialSelection=[], namedSelections=[])">
+    <py:def function="drawRegionSelector(title, divId, groupedOptions, initialSelection=[], namedSelections=[], radio=False)">
         <div id='${divId}' class="regionSelector">
             <h5>$title</h5>
-            ${drawRegionSelectorToolbar(namedSelections)}
-            ${drawRegionSelectorChannels(groupedOptions, initialSelection)}
+            <py:if test="not radio">
+                ${drawRegionSelectorToolbar(namedSelections)}
+            </py:if>
+            ${drawRegionSelectorChannels(groupedOptions, initialSelection, divId if radio else None)}
         </div>
     </py:def>
 </div>

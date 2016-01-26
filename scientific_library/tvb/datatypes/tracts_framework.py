@@ -154,3 +154,8 @@ class TractsFramework(TractData):
             chunk_line_starts.append(tract_offsets)
 
         return chunk_line_starts
+
+
+    def get_urls_for_rendering(self):
+        return ('/flow/read_datatype_attribute/'+self.gid+'/get_line_starts/False',
+                '/flow/read_binary_datatype_attribute/' + self.gid + '/get_vertices')
