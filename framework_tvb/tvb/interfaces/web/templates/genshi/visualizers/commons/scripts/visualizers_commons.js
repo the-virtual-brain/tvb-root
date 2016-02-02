@@ -56,3 +56,74 @@ function pauseMovie() {
         pauseButton.attr("class", "action action-controller-pause");
     }
 }
+
+// ------ Asynchronous geometry downloading begin
+// These are used in the surface pick and tract views
+//todo: A similar protocol might be useful for the rest of the 3d views
+//todo: use doajaxcall, cancel all requests on error
+
+/**
+ * Initialize the buffers for the surface that should be displayed in non-pick mode.
+ * callback is called when the buffers finished downloading
+ * The callback receives an object {vertices: [...], indexes:[...], normals:[...]}
+ */
+function downloadBrainGeometry(urlVerticesDisplayList, urlTrianglesDisplayList,
+                               urlNormalsDisplayList, callback) {
+
+    var drawingBrain = {
+        noOfUnloadedBuffers: 3,
+        vertices: [], indexes: [], normals: [],
+        success: callback
+    };
+
+    _startAsynchDownload(drawingBrain, $.parseJSON(urlVerticesDisplayList), drawingBrain.vertices);
+    _startAsynchDownload(drawingBrain, $.parseJSON(urlNormalsDisplayList), drawingBrain.normals);
+    _startAsynchDownload(drawingBrain, $.parseJSON(urlTrianglesDisplayList), drawingBrain.indexes);
+}
+
+function _startAsynchDownload(drawingBrain, urlList, results) {
+    if (urlList.length == 0) {
+        drawingBrain.noOfUnloadedBuffers -= 1;
+        if (drawingBrain.noOfUnloadedBuffers === 0) {
+            // Finished downloading buffer data.
+            drawingBrain.success(drawingBrain);
+        }
+        return;
+    }
+    $.get(urlList[0], function (data) {
+        results.push($.parseJSON(data));
+        urlList.splice(0, 1);
+        return _startAsynchDownload(drawingBrain, urlList, results);
+    });
+}
+
+/**
+ * Buffers the default gray surface color to the GPU
+ * Saves the buffer object at index 3 & 4 in the buffersArray list
+ */
+function drawingBrainUploadDefaultColorBuffer(drawingBrain, buffersArray){
+    for (var i = 0; i < drawingBrain.vertices.length; i++) {
+        var colorBuffer = gl.createBuffer();
+        gl.bindBuffer(gl.ARRAY_BUFFER, colorBuffer);
+        var vertexCount = drawingBrain.vertices[i].length;
+        var colors = new Float32Array(vertexCount * 4);
+        gl.bufferData(gl.ARRAY_BUFFER, colors, gl.STATIC_DRAW);
+        buffersArray[i][3] = colorBuffer; // fake activity
+        buffersArray[i][4] = colorBuffer; // fake color
+    }
+}
+
+/**
+ * downloadBrainGeometry callback recieves an object containig geometry description in js lists
+ * This uploads that data to the gpu. It returns a list of 3 webglbuffers :[ vertex, normal, triangles]
+ */
+function drawingBrainUploadGeometryBuffers(drawingBrain){
+    var ret = [];
+    for (var i = 0; i < drawingBrain.vertices.length; i++) {
+        var vertexBuffer = HLPR_createWebGlBuffer(gl, drawingBrain.vertices[i], false, false);
+        var normalBuffer = HLPR_createWebGlBuffer(gl, drawingBrain.normals[i], false, false);
+        var trianglesBuffer = HLPR_createWebGlBuffer(gl, drawingBrain.indexes[i], true, false);
+        ret.push([vertexBuffer, normalBuffer, trianglesBuffer]);
+    }
+    return ret;
+}
