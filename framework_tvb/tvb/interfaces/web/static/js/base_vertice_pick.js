@@ -29,13 +29,7 @@ var VERTEX_pickedIndex = -1;
 var navigatorX = 0.0, navigatorY = 0.0, navigatorZ = 0.0;
 var navigatorXrot = 0.0, navigatorYrot = 0.0;
 
-var drawingBrainVertices = [];
-var drawingBrainNormals = [];
-var drawingBrainIndexes = [];
-
-var pickingBrainVertices = [];
-var pickingBrainNormals = [];
-var pickingBrainIndexes = [];
+var drawingBrainVertices = []; // kept only for the vertex counts
 
 var noOfUnloadedBrainDisplayBuffers = 3;
 var noOfUnloadedBrainPickingBuffers = 3;
@@ -58,6 +52,7 @@ var BRAIN_CENTER = null;
 
 //Keep the vertices data for it will be needed later for the actual coordinates
 //of the selected point and for computing the closest vertices when using '2d-type-selection'
+//These are the picking brain's vertices
 var verticesPoints = [];
 
 var picking_triangles_number = [];
@@ -94,8 +89,38 @@ function BASE_PICK_webGLStart(urlVerticesPickList, urlTrianglesPickList, urlNorm
 
     BASE_PICK_customInitGL(canvas);
     BASE_PICK_initShaders();
-    initPickingBrainBuffers(urlVerticesPickList, urlTrianglesPickList, urlNormalsPickList, callback);
-    initDrawingBrainBuffers(urlVerticesDisplayList, urlTrianglesDisplayList, urlNormalsDisplayList, callback);
+
+    displayMessage("Start loading picking data!", "infoMessage");
+    downloadBrainGeometry(urlVerticesPickList, urlTrianglesPickList, urlNormalsPickList,
+        function(pickingBrain){
+            displayMessage("Finish loading picking data!", "infoMessage");
+            BASE_PICK_brainPickingBuffers = drawingBrainUploadGeometryBuffers(pickingBrain);
+            for (var i = 0; i < pickingBrain.vertices.length; i++) {
+                verticesPoints.push(pickingBrain.vertices[i]);
+            }
+            __createPickingColorBuffers(pickingBrain.vertices, pickingBrain.indexes);
+            executeCallback(callback);
+            drawScene();
+            // maintain some of the previous data structures assumed by localconnectivity and stimulus surface
+            noOfUnloadedBrainPickingBuffers = 0;
+        }
+    );
+
+    displayMessage("Start loading surface data!", "infoMessage");
+    downloadBrainGeometry(urlVerticesDisplayList, urlTrianglesDisplayList, urlNormalsDisplayList,
+        function(drawingBrain){
+            displayMessage("Finished loading surface data!", "infoMessage");
+            // Finished downloading buffer data. Initialize BASE_PICK_brainDisplayBuffers
+            BASE_PICK_brainDisplayBuffers = drawingBrainUploadGeometryBuffers(drawingBrain);
+            drawingBrainUploadDefaultColorBuffer(drawingBrain.vertices, BASE_PICK_brainDisplayBuffers);
+            executeCallback(callback);
+            drawScene();
+            // maintain some of the previous data structures assumed by localconnectivity and stimulus surface
+            noOfUnloadedBrainDisplayBuffers = 0;
+            drawingBrainVertices = drawingBrain.vertices;
+        }
+    );
+
     initBrainNavigatorBuffers();
     createStimulusPinBuffers();
 
@@ -233,53 +258,20 @@ function executeCallback(callback) {
     }
 }
 
-/**
- * Initialize all required data needed for picking mechanism.
- */
-function initPickingBrainBuffers(urlVerticesPickList, urlTrianglesPickList, urlNormalsPickList, callback) {
-    displayMessage("Start loading picking data!", "infoMessage");
-    initPickingBrainBuffersAsynchronous($.parseJSON(urlVerticesPickList), pickingBrainVertices, false, true, callback);
-    initPickingBrainBuffersAsynchronous($.parseJSON(urlNormalsPickList), pickingBrainNormals, false, false, callback);
-    initPickingBrainBuffersAsynchronous($.parseJSON(urlTrianglesPickList), pickingBrainIndexes, true, false, callback);
-}
-
-function initPickingBrainBuffersAsynchronous(urlList, resultBuffers, isIndex, isVertices, callback) {
-    if (urlList.length === 0) {
-        noOfUnloadedBrainPickingBuffers -= 1;
-        if (noOfUnloadedBrainPickingBuffers == 0) {
-            __createPickingColorBuffers();
-            displayMessage("Finish loading picking data!", "infoMessage");
-            executeCallback(callback);
-            drawScene();
-        }
-        return;
-    }
-    $.get(urlList[0], function(data) {
-        var dataList = eval(data);
-        var buffer = HLPR_createWebGlBuffer(gl, dataList, isIndex, false);
-        if (isVertices) {
-            verticesPoints.push(dataList);
-        }
-        resultBuffers.push(buffer);
-        urlList.splice(0, 1);
-        return initPickingBrainBuffersAsynchronous(urlList, resultBuffers, isIndex, isVertices, callback);
-    });
-}
-
-function __createPickingColorBuffers() {
+function __createPickingColorBuffers(pickingBrainVertices, pickingBrainIndexes) {
     var thisBufferColors;
     var total_picking_triangles_number = 0;
 
     for (var i = 0; i < pickingBrainVertices.length; i++) {
         var fakeActivityBuffer = gl.createBuffer();
         gl.bindBuffer(gl.ARRAY_BUFFER, fakeActivityBuffer);
-        thisBufferColors = new Float32Array(pickingBrainVertices[i].numItems / 3);
+        thisBufferColors = new Float32Array(pickingBrainVertices[i].length);
         gl.bufferData(gl.ARRAY_BUFFER, thisBufferColors, gl.STATIC_DRAW);
 
-        picking_triangles_number.push(pickingBrainIndexes[i].numItems);
-        total_picking_triangles_number = total_picking_triangles_number + pickingBrainIndexes[i].numItems/3;
+        picking_triangles_number.push(pickingBrainIndexes[i].length);
+        total_picking_triangles_number = total_picking_triangles_number + pickingBrainIndexes[i].length;
 
-        BASE_PICK_brainPickingBuffers.push([pickingBrainVertices[i], pickingBrainNormals[i], pickingBrainIndexes[i], fakeActivityBuffer, null]);
+        BASE_PICK_brainPickingBuffers[i][3] = fakeActivityBuffer;
     }
 
     GL_initColorPickFrameBuffer();
@@ -312,59 +304,11 @@ function __createPickingColorBuffers() {
 }
 
 /**
- * Initialize the buffers for the surface that should be displayed in non-pick mode.
- */
-function initDrawingBrainBuffers(urlVerticesDisplayList, urlTrianglesDisplayList, urlNormalsDisplayList, callback) {
-    displayMessage("Start loading surface data!", "infoMessage");
-    initDrawingBrainBuffersAsynchronous($.parseJSON(urlVerticesDisplayList), drawingBrainVertices, false, callback);
-    initDrawingBrainBuffersAsynchronous($.parseJSON(urlNormalsDisplayList), drawingBrainNormals, false, callback);
-    initDrawingBrainBuffersAsynchronous($.parseJSON(urlTrianglesDisplayList), drawingBrainIndexes, true, callback);
-}
-
-function initDrawingBrainBuffersAsynchronous(urlList, resultBuffers, isIndex, callback) {
-    if (urlList.length == 0) {
-        noOfUnloadedBrainDisplayBuffers -= 1;
-        if (noOfUnloadedBrainDisplayBuffers == 0) {
-            // Finished downloading buffer data. Initialize BASE_PICK_brainDisplayBuffers
-            for (var i = 0; i < drawingBrainVertices.length; i++) {
-                BASE_PICK_brainDisplayBuffers.push([drawingBrainVertices[i], drawingBrainNormals[i],
-                                                    drawingBrainIndexes[i], null, null]);
-            }
-            // Now fill the color buffer (at index 4) with the default
-            BASE_PICK_buffer_default_color();
-            displayMessage("Finished loading surface data!", "infoMessage");
-            executeCallback(callback);
-            drawScene();
-        }
-        return;
-    }
-    $.get(urlList[0], function (data) {
-        var dataList = eval(data);
-        var buffer = HLPR_createWebGlBuffer(gl, dataList, isIndex, false);
-        resultBuffers.push(buffer);
-        urlList.splice(0, 1);
-        return initDrawingBrainBuffersAsynchronous(urlList, resultBuffers, isIndex, callback);
-    });
-}
-
-/**
  * Buffers the default gray surface color to the GPU
  * And updates BASE_PICK_brainDisplayBuffers[i] at indices 3 and 4
  */
 function BASE_PICK_buffer_default_color(){
-    for (var i = 0; i < drawingBrainVertices.length; i++) {
-        var colorBuffer = gl.createBuffer();
-        gl.bindBuffer(gl.ARRAY_BUFFER, colorBuffer);
-        var colors = new Float32Array(drawingBrainVertices[i].numItems / 3 * 4);
-        gl.bufferData(gl.ARRAY_BUFFER, colors, gl.STATIC_DRAW);
-        BASE_PICK_brainDisplayBuffers[i][4] = colorBuffer;
-
-        var activityBuffer = gl.createBuffer();
-        gl.bindBuffer(gl.ARRAY_BUFFER, activityBuffer);
-        var activity = new Float32Array(drawingBrainVertices[i].numItems / 3);
-        gl.bufferData(gl.ARRAY_BUFFER, activity, gl.STATIC_DRAW);
-        BASE_PICK_brainDisplayBuffers[i][3] = activityBuffer;
-    }
+    drawingBrainUploadDefaultColorBuffer(drawingBrainVertices, BASE_PICK_brainDisplayBuffers);
 }
 
 /**

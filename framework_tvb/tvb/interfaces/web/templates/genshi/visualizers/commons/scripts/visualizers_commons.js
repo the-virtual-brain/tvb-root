@@ -101,15 +101,20 @@ function _startAsynchDownload(drawingBrain, urlList, results) {
  * Buffers the default gray surface color to the GPU
  * Saves the buffer object at index 3 & 4 in the buffersArray list
  */
-function drawingBrainUploadDefaultColorBuffer(drawingBrain, buffersArray){
-    for (var i = 0; i < drawingBrain.vertices.length; i++) {
+function drawingBrainUploadDefaultColorBuffer(drawingBrainVertices, buffersArray){
+    for (var i = 0; i < drawingBrainVertices.length; i++) {
         var colorBuffer = gl.createBuffer();
         gl.bindBuffer(gl.ARRAY_BUFFER, colorBuffer);
-        var vertexCount = drawingBrain.vertices[i].length;
+        var vertexCount = drawingBrainVertices[i].length / 3;
         var colors = new Float32Array(vertexCount * 4);
         gl.bufferData(gl.ARRAY_BUFFER, colors, gl.STATIC_DRAW);
-        buffersArray[i][3] = colorBuffer; // fake activity
-        buffersArray[i][4] = colorBuffer; // fake color
+        buffersArray[i][4] = colorBuffer;
+
+        var activityBuffer = gl.createBuffer();
+        gl.bindBuffer(gl.ARRAY_BUFFER, activityBuffer);
+        var activity = new Float32Array(vertexCount);
+        gl.bufferData(gl.ARRAY_BUFFER, activity, gl.STATIC_DRAW);
+        buffersArray[i][3] = activityBuffer;
     }
 }
 
