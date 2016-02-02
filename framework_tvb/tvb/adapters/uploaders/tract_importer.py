@@ -120,6 +120,7 @@ class _TrackImporterBase(ABCUploader):
 
         datatype = Tracts()
         datatype.storage_path = self.storage_path
+        datatype.region_volume_map = region_volume
         return datatype
 
 

@@ -35,6 +35,7 @@ module docstring
 from tvb.datatypes import arrays
 from tvb.basic.traits import core
 from tvb.basic.traits.types_mapped import MappedType
+from tvb.datatypes.region_mapping import RegionVolumeMapping
 
 
 class TractData(MappedType):
@@ -57,6 +58,12 @@ class TractData(MappedType):
         An index used to find quickly all tract emerging from a region
         tract_region[i] is the region of the i'th tract. -1 represents the background
         """
+    )
+
+    region_volume_map = RegionVolumeMapping(
+        label="Region volume Mapping used to create the tract_region index",
+        required=False,
+        order=-1
     )
 
     __generate_table__ = True
