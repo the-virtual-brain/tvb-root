@@ -157,7 +157,7 @@ function _updateBrainColors(data_from_server) {
  * set to None, just use this method to draw the 'default' surface with the gray coloring.
  */
 function _drawDefaultColorBuffers() {
-    if (noOfUnloadedBrainDisplayBuffers != 0) {
+    if (BASE_PICK_brainDisplayBuffers.length === 0) {
         displayMessage("The load operation for the surface data is not completed yet!", "infoMessage");
         return;
     }

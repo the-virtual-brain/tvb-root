@@ -31,9 +31,6 @@ var navigatorXrot = 0.0, navigatorYrot = 0.0;
 
 var drawingBrainVertices = []; // kept only for the vertex counts
 
-var noOfUnloadedBrainDisplayBuffers = 3;
-var noOfUnloadedBrainPickingBuffers = 3;
-
 var BASE_PICK_brainPickingBuffers = [];
 var BASE_PICK_brainDisplayBuffers = [];
 var BASE_PICK_navigatorBuffers = [];
@@ -101,8 +98,6 @@ function BASE_PICK_webGLStart(urlVerticesPickList, urlTrianglesPickList, urlNorm
             __createPickingColorBuffers(pickingBrain.vertices, pickingBrain.indexes);
             executeCallback(callback);
             drawScene();
-            // maintain some of the previous data structures assumed by localconnectivity and stimulus surface
-            noOfUnloadedBrainPickingBuffers = 0;
         }
     );
 
@@ -115,8 +110,7 @@ function BASE_PICK_webGLStart(urlVerticesPickList, urlTrianglesPickList, urlNorm
             drawingBrainUploadDefaultColorBuffer(drawingBrain.vertices, BASE_PICK_brainDisplayBuffers);
             executeCallback(callback);
             drawScene();
-            // maintain some of the previous data structures assumed by localconnectivity and stimulus surface
-            noOfUnloadedBrainDisplayBuffers = 0;
+            // keep the vertices. Their counts are used by BASE_PICK_updateBrainColors
             drawingBrainVertices = drawingBrain.vertices;
         }
     );
@@ -155,17 +149,15 @@ function BASE_PICK_webGLStart(urlVerticesPickList, urlTrianglesPickList, urlNorm
  */
 function drawScene() {
 
-    var brainBuffers, noOfUnloadedBuffers;
+    var brainBuffers;
 
     if (BASE_PICK_doPick) {
         brainBuffers = BASE_PICK_brainPickingBuffers;
-        noOfUnloadedBuffers = noOfUnloadedBrainPickingBuffers;
     } else {
         brainBuffers = BASE_PICK_brainDisplayBuffers;
-        noOfUnloadedBuffers = noOfUnloadedBrainDisplayBuffers;
     }
 
-    if (noOfUnloadedBuffers != 0) {
+    if (brainBuffers.length === 0) {
         displayMessage("The load operation for the surface data is not completed yet!", "infoMessage");
         return;
     }
@@ -225,7 +217,7 @@ function drawScene() {
     mvPopMatrix();
     gl.uniform1i(GL_shaderProgram.useActivity, true);
 
-    if (noOfUnloadedBrainDisplayBuffers == 0 && LEG_legendBuffers.length) {
+    if (BASE_PICK_brainDisplayBuffers.length !== 0 && LEG_legendBuffers.length) {
         // wait for the data to be loaded, then draw the legend
         mvPushMatrix();
         loadIdentity();
@@ -253,7 +245,7 @@ function executeCallback(callback) {
     if (callback == null || callback.trim().length === 0) {
         return;
     }
-    if (noOfUnloadedBrainPickingBuffers == 0 && noOfUnloadedBrainDisplayBuffers == 0) {
+    if (BASE_PICK_brainPickingBuffers.length !== 0 && BASE_PICK_brainDisplayBuffers.length !== 0) {
         eval(callback);
     }
 }
@@ -418,7 +410,7 @@ function _BASE_PICK_find_picked_vertex(){
  * Draws the brain in picking mode, then finds the picked vertex. Also centers the navigator in that vertex.
  */
 function BASE_PICK_doVerticePick() {
-    if (noOfUnloadedBrainPickingBuffers != 0 || noOfUnloadedBrainDisplayBuffers != 0) {
+    if (BASE_PICK_brainPickingBuffers.length === 0 || BASE_PICK_brainDisplayBuffers.length === 0) {
         displayMessage("The load operation for the surface data is not completed yet!", "infoMessage");
         return;
     }

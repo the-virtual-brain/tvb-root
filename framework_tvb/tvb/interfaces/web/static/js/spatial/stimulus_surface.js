@@ -125,7 +125,7 @@ function STIM_PICK_setVisualizedData(data) {
  */
 function STIM_PICK_stopDataVisualization() {
 
-    if (noOfUnloadedBrainDisplayBuffers != 0) {
+    if (BASE_PICK_brainDisplayBuffers.length === 0) {
         displayMessage("The load operation for the surface data is not completed yet!", "infoMessage");
         return;
     }
@@ -191,7 +191,7 @@ function updateColors(currentTimeInFrame){
  */
 function tick() {
 
-    if (noOfUnloadedBrainDisplayBuffers != 0) {
+    if (BASE_PICK_brainDisplayBuffers.length === 0) {
         displayMessage("The load operation for the surface data is not completed yet!", "infoMessage");
         return;
     }
