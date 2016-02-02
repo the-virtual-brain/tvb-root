@@ -1,0 +1,24 @@
+<div id="s-brain" class="brain view-column" xmlns:py="http://genshi.edgewall.org/" xmlns:xi="http://www.w3.org/2001/XInclude">
+    <xi:include href="../commons/gl_view_header.html" />
+    <xi:include href="../commons/fragment_shader.html" />
+	<xi:include href="../commons/surface_pick_vertex_shader.html"/>
+
+    <script type="text/javascript" src="/static_view/tract/track.js?$currentVersionJS"></script>
+
+    <script type="text/javascript">
+        $(document).ready(function() {
+            TRACK_webGLStart('${urlTrackStarts}', '${urlTrackVertices}', '${shelfObject}');
+        });
+    </script>
+
+
+    <ul class="toolbar-inline" xmlns:py="http://genshi.edgewall.org/" xmlns:xi="http://www.w3.org/2001/XInclude">
+        <li class="channel-selector can-extend">
+            <xi:include href="../commons/channel_selector_button.html" />
+            ${drawRegionSelectorButton("Tracks emerging from", groupedLabels, initialSelection, radio=True)}
+        </li>
+    </ul>
+
+    <xi:include href="../commons/gl_view_after.html" py:with="show_navigator=False"/>
+
+</div>

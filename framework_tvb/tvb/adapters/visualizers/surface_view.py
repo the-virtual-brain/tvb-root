@@ -44,10 +44,10 @@ from tvb.datatypes.region_mapping import RegionMapping
 from tvb.datatypes.surfaces_data import SurfaceData
 
 
-def prepare_shell_surface_urls(project_id, shell_surface=None):
+def prepare_shell_surface_urls(project_id, shell_surface=None, preferred_type=FaceSurface):
 
     if shell_surface is None:
-        shell_surface = dao.try_load_last_entity_of_type(project_id, FaceSurface)
+        shell_surface = dao.try_load_last_entity_of_type(project_id, preferred_type)
 
         if not shell_surface:
             raise Exception('No Face object found in current project.')
