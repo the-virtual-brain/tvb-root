@@ -91,7 +91,7 @@ function getTractElementBuffers(url){
 function vertices_to_directions(tract_lines, tract_offsets){
     function normalized_mean_direction(buff, n, p){
         var mean_dir = [];
-        mean_dir[0] = buff[3*n] - buff[3*p]; // last_track_vtx.x - first_track_vtx.y
+        mean_dir[0] = buff[3*n] - buff[3*p]; // last_track_vtx.x - first_track_vtx.x
         mean_dir[1] = buff[3*n+1] - buff[3*p+1];
         mean_dir[2] = buff[3*n+2] - buff[3*p+2];
         var norm = Math.sqrt(mean_dir[0]*mean_dir[0] + mean_dir[1]*mean_dir[1] + mean_dir[2]*mean_dir[2]);
@@ -111,9 +111,9 @@ function vertices_to_directions(tract_lines, tract_offsets){
         var mean_direction = normalized_mean_direction(buff, n, p);
 
         for(var i = 4*p; i < 4*n; i+=4){
-            colors[i] = mean_direction[0]*0.8+0.2;
-            colors[i+1] = mean_direction[1]*0.8+0.2;
-            colors[i+2] = mean_direction[2]*0.8+0.2;
+            colors[i] = Math.abs(mean_direction[0]);
+            colors[i+1] = Math.abs(mean_direction[1]);
+            colors[i+2] = Math.abs(mean_direction[2]);
             colors[i+3] = 1.0;
         }
     }
