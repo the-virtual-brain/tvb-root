@@ -271,14 +271,6 @@ function __createPickingColorBuffers() {
     var total_picking_triangles_number = 0;
 
     for (var i = 0; i < pickingBrainVertices.length; i++) {
-        var fakeColorBuffer = gl.createBuffer();
-        gl.bindBuffer(gl.ARRAY_BUFFER, fakeColorBuffer);
-        thisBufferColors = new Float32Array(pickingBrainVertices[i].numItems / 3 * 4);
-        for (var ii = 0; ii < pickingBrainVertices[i].numItems / 3 * 4; ii++) {
-            thisBufferColors[ii] = 0.5;
-        }
-        gl.bufferData(gl.ARRAY_BUFFER, thisBufferColors, gl.STATIC_DRAW);
-
         var fakeActivityBuffer = gl.createBuffer();
         gl.bindBuffer(gl.ARRAY_BUFFER, fakeActivityBuffer);
         thisBufferColors = new Float32Array(pickingBrainVertices[i].numItems / 3);
@@ -287,7 +279,7 @@ function __createPickingColorBuffers() {
         picking_triangles_number.push(pickingBrainIndexes[i].numItems);
         total_picking_triangles_number = total_picking_triangles_number + pickingBrainIndexes[i].numItems/3;
 
-        BASE_PICK_brainPickingBuffers.push([pickingBrainVertices[i], pickingBrainNormals[i], pickingBrainIndexes[i], fakeActivityBuffer, fakeColorBuffer]);
+        BASE_PICK_brainPickingBuffers.push([pickingBrainVertices[i], pickingBrainNormals[i], pickingBrainIndexes[i], fakeActivityBuffer, null]);
     }
 
     GL_initColorPickFrameBuffer();
@@ -296,8 +288,6 @@ function __createPickingColorBuffers() {
 
     //Create the color buffer array for the picking part where each triangles has a new color
     var pointsSoFar = 0;
-    //Need this to switch between drawing in normal mode and in 'picking' mode without re-initializing colors
-    var colorPickingBuffer = [];
 
     for (var j = 0; j < picking_triangles_number.length; j++) {
         //For each set of triangles(different file) create a new color buffers
@@ -316,11 +306,8 @@ function __createPickingColorBuffers() {
         //considering all the files that were processed before, this pointsSoFar keeps track of this
         pointsSoFar += picking_triangles_number[j];
         gl.bufferData(gl.ARRAY_BUFFER, thisBufferColors, gl.STATIC_DRAW);
-        colorPickingBuffer.push(newColorBuffer);
-    }
 
-    for (var jj = 0; jj < picking_triangles_number.length; jj++) {
-        BASE_PICK_brainPickingBuffers[jj][4] = colorPickingBuffer[jj];
+        BASE_PICK_brainPickingBuffers[j][4] = newColorBuffer;
     }
 }
 
