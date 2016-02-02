@@ -29,7 +29,7 @@
 #
 
 """
-module docstring
+A tracts visualizer
 .. moduleauthor:: Mihai Andrei <mihai.andrei@codemart.ro>
 """
 from tvb.adapters.visualizers.surface_view import prepare_shell_surface_urls
@@ -59,6 +59,9 @@ class TractViewer(ABCDisplayer):
     def launch(self, tracts, shell_surface=None):
 
         url_track_starts, url_track_vertices = tracts.get_urls_for_rendering()
+
+        if tracts.region_volume_map is None:
+            raise Exception('only tracts with an associated region volume map are supported at this moment')
 
         connectivity = tracts.region_volume_map.connectivity
 

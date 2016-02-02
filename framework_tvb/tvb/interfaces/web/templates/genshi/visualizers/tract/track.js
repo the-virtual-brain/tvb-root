@@ -133,6 +133,11 @@ function fetch_tracts_for_region(urlTrackStarts, urlTrackVertices, region){
     tract_vbuffers = [];
     tracts_loaded = false;
 
+    if(tracts_element_buffers.length === 0){
+        displayMessage('no tracks for selected region', 'warningMessage');
+        return;
+    }
+
     var latch_count = tracts_element_buffers.length;
     function _vertices_recv(tract_lines, idx){
         var pos = HLPR_createWebGlBuffer(gl, tract_lines.buffer, false, false);
@@ -152,7 +157,7 @@ function fetch_tracts_for_region(urlTrackStarts, urlTrackVertices, region){
     showOverlay("/showBlockerOverlay", false, 'message_data=Downloading tracts');
     displayMessage('Downloading tracts', 'warningMessage');
 
-    for (var i=0;i < tracts_element_buffers.length; i++) {
+    for (var i=0; i < tracts_element_buffers.length; i++) {
         var url = urlTrackVertices + '?region_id=' + region + '&slice_number=' + i;
         HLPR_fetchNdArray(url, _vertices_recv, i);
     }
@@ -204,7 +209,7 @@ function _bindEvents(canvas){
         drawScene();
     });
     $(canvas).mousewheel(function(event, delta) {
-        GL_handleMouseWeel(event);
+        GL_handleMouseWeel(delta);
         drawScene();
         return false; // prevent default
     });
