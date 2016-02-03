@@ -266,7 +266,7 @@ class PortletConfigurer():
                 default_algorithm = ''
             if default_algorithm:
                 prefix = ABCAdapter.form_prefix(algorithm_field, None, default_algorithm)
-                alg_inputs = adapter_instance._flaten(adapter_instance.xml_reader.get_inputs(default_algorithm), prefix)
+                alg_inputs = adapter_instance.tree_manager._flaten(adapter_instance.xml_reader.get_inputs(default_algorithm), prefix)
             else:
                 alg_inputs = adapter_instance.flaten_input_interface()
             ###################################################################
