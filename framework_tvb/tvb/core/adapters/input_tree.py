@@ -85,7 +85,7 @@ class InputTreeManager(object):
         self.log = get_logger(self.__class__.__module__)
 
 
-    def _append_required_defaults(self, kwargs, algorithm_inputs):
+    def append_required_defaults(self, kwargs, algorithm_inputs):
         """
         Add if necessary any parameters marked as required that have a default value
         in the algorithm interface but were not submitted from the UI. For example in
@@ -108,7 +108,7 @@ class InputTreeManager(object):
                 for option in entry[KEY_OPTIONS]:
                     #Only go recursive on option that was submitted
                     if option[KEY_VALUE] == kwargs[entry[KEY_NAME]] and KEY_ATTRIBUTES in option:
-                        self._append_required_defaults(kwargs, option[KEY_ATTRIBUTES])
+                        self.append_required_defaults(kwargs, option[KEY_ATTRIBUTES])
 
 
     def _validate_range_for_value_input(self, value, row):
@@ -277,7 +277,7 @@ class InputTreeManager(object):
         return result
 
 
-    def _flaten(self, params_list, prefix=None):
+    def flatten(self, params_list, prefix=None):
         """ Internal method, to be used recursively, on parameters POST. """
         result = []
         for param in params_list:
@@ -296,13 +296,13 @@ class InputTreeManager(object):
                     ### SELECT or SELECT_MULTIPLE attributes
                     if option.get(KEY_ATTRIBUTES) is not None:
                         new_prefix = InputTreeManager.form_prefix(param_name, prefix, option[KEY_VALUE])
-                        extra_list = self._flaten(option[KEY_ATTRIBUTES], new_prefix)
+                        extra_list = self.flatten(option[KEY_ATTRIBUTES], new_prefix)
                         result.extend(extra_list)
 
             if param.get(KEY_ATTRIBUTES) is not None:
                 ### DATATYPE attributes
                 new_prefix = InputTreeManager.form_prefix(param_name, prefix, None)
-                extra_list = self._flaten(param[KEY_ATTRIBUTES], new_prefix)
+                extra_list = self.flatten(param[KEY_ATTRIBUTES], new_prefix)
                 result.extend(extra_list)
         return result
 
@@ -346,7 +346,7 @@ class InputTreeManager(object):
 
     # -- Methods that may load entities from the db
 
-    def _review_operation_inputs(self, parameters, flat_interface):
+    def review_operation_inputs(self, parameters, flat_interface):
         """
         Find out which of the submitted parameters are actually DataTypes and
         return a list holding all the dataTypes in parameters.
@@ -443,6 +443,7 @@ class InputTreeManager(object):
         """
         Load specific DataType entities, as specified in DATA_TYPE table.
         Check if the GID is for the correct DataType sub-class, otherwise throw an exception.
+        Updates metadata_out with the metadata of this entity
         """
 
         entity = load_entity_by_gid(datatype_gid)

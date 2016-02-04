@@ -33,6 +33,7 @@
 """
 
 from tvb.basic.logger.builder import get_logger
+from tvb.core.adapters.input_tree import InputTreeManager
 from tvb.core.entities.model import WorkflowStep, WorkflowStepView
 from tvb.core.entities.transient.burst_configuration_entities import PortletConfiguration, AdapterConfiguration
 from tvb.core.entities.transient.burst_configuration_entities import WorkflowStepConfiguration as wf_cfg
@@ -108,7 +109,7 @@ class PortletConfigurer():
 
             if default_algorithm:
                 alg_inputs = adapter_instance.xml_reader.get_inputs(default_algorithm)
-                prefix = ABCAdapter.form_prefix(algorithm_field, None, default_algorithm)
+                prefix = InputTreeManager.form_prefix(algorithm_field, None, default_algorithm)
             else:
                 alg_inputs = adapter_instance.get_input_tree()
                 prefix = ''
@@ -265,8 +266,8 @@ class PortletConfigurer():
             else:
                 default_algorithm = ''
             if default_algorithm:
-                prefix = ABCAdapter.form_prefix(algorithm_field, None, default_algorithm)
-                alg_inputs = adapter_instance.tree_manager._flaten(adapter_instance.xml_reader.get_inputs(default_algorithm), prefix)
+                prefix = InputTreeManager.form_prefix(algorithm_field, None, default_algorithm)
+                alg_inputs = adapter_instance.tree_manager.flatten(adapter_instance.xml_reader.get_inputs(default_algorithm), prefix)
             else:
                 alg_inputs = adapter_instance.flaten_input_interface()
             ###################################################################

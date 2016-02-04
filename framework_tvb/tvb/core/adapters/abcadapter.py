@@ -460,7 +460,7 @@ class ABCAdapter(object):
             and a dictionary with all parameters which are different than the declared defauts
         """
         flat_interface = self.flaten_input_interface()
-        return self.tree_manager._review_operation_inputs(parameters, flat_interface)
+        return self.tree_manager.review_operation_inputs(parameters, flat_interface)
 
 
     def prepare_ui_inputs(self, kwargs, validation_required=True):
@@ -470,7 +470,7 @@ class ABCAdapter(object):
         """
         algorithm_inputs = self.get_input_tree()
         algorithm_inputs = self.prepare_param_names(algorithm_inputs)
-        self.tree_manager._append_required_defaults(kwargs, algorithm_inputs)
+        self.tree_manager.append_required_defaults(kwargs, algorithm_inputs)
         return self.convert_ui_inputs(kwargs, validation_required=validation_required)
 
 
@@ -487,21 +487,7 @@ class ABCAdapter(object):
 
     def flaten_input_interface(self):
         """ Return a simple dictionary, instead of a Tree."""
-        return self.tree_manager._flaten(self.get_input_tree())
-
-
-    @staticmethod
-    def form_prefix(input_param, prefix=None, option_prefix=None):
-        """Compute parameter prefix. We need to be able from the flatten  
-        submitted values in UI, to be able to re-compose the tree of parameters,
-        and to make sure all submitted names are uniquely identified."""
-        return InputTreeManager.form_prefix(input_param, prefix, option_prefix)
-
-
-    def key_parameters(self, parameters_for):
-        """ Return the keyword expected for holding parameters 
-            for argument 'parameters_for'."""
-        return parameters_for + self.KEYWORD_PARAMS[0:11]
+        return self.tree_manager.flatten(self.get_input_tree())
 
 
     @staticmethod
@@ -572,7 +558,7 @@ class ABCGroupAdapter(ABCAdapter):
     def get_input_for_algorithm(self, algorithm_identifier=None):
         """For a group, we will return input tree on algorithm base."""
         inputs = self.xml_reader.get_inputs(algorithm_identifier)
-        prefix = ABCAdapter.form_prefix(self.get_algorithm_param(), option_prefix=algorithm_identifier)
+        prefix = InputTreeManager.form_prefix(self.get_algorithm_param(), option_prefix=algorithm_identifier)
         result = ABCAdapter.prepare_param_names(inputs, prefix)
         return result
 
@@ -664,7 +650,7 @@ class ABCGroupAdapter(ABCAdapter):
         and actual algorithms arguments.
         """
         algorithm = kwargs[self.xml_reader.root_name]
-        key_real_args = self.key_parameters(self.xml_reader.root_name)
+        key_real_args = self.xml_reader.root_name + self.KEYWORD_PARAMS[0:11]
         algorithm_arguments = {}
         if key_real_args in kwargs:
             algorithm_arguments = kwargs[key_real_args]
@@ -678,7 +664,7 @@ class ABCGroupAdapter(ABCAdapter):
         """
         algorithm_name = self.get_algorithm_param()
         algorithm_inputs = self.get_input_for_algorithm(kwargs[algorithm_name])
-        self.tree_manager._append_required_defaults(kwargs, algorithm_inputs)
+        self.tree_manager.append_required_defaults(kwargs, algorithm_inputs)
         return self.convert_ui_inputs(kwargs, validation_required=validation_required)
 
 
@@ -688,7 +674,7 @@ class ABCGroupAdapter(ABCAdapter):
         """
         algorithm_name = parameters[self.get_algorithm_param()]
         flat_interface = self.get_input_for_algorithm(algorithm_name)
-        return self.tree_manager._review_operation_inputs(parameters, flat_interface)
+        return self.tree_manager.review_operation_inputs(parameters, flat_interface)
 
 
 
