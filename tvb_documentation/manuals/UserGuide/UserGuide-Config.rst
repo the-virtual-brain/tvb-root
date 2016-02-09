@@ -56,24 +56,36 @@ It is likely that you will have to change http ports and the path where |TVB| wi
 Depending on the processing power of the server you might want to adjust the maximum number of operations threads and vertices.
 You may also want to adjust the maximum disk quota for each tvb user.
 
-In this highly concurrent setup we strongly recommended to use postgreSQL as the metadata storage of TVB.
+In this highly concurrent setup we strongly recommended to use PostgreSQL as the metadata storage of TVB.
 
-    1. You should install PostgreSQL DB, independently of TVB.
-    2. Create a database called tvb
-    3. Choose the postgres user that TVB will use to connect.
-        TVB prefers to connect with the postgres user to the database but any user with rights over "tvb" database is ok.
-        ( These are *not* tvb accounts but db accounts )
+    1. You should install PostgreSQL DB, independently of TVB. For Windows user, see the next chapter on how this can be easily achieved.
+    2. Create a database called `tvb`, in PostgreSQL
+    3. Choose the postgres user that TVB will use to connect. Any user with rights over `tvb` database is ok.
+       These are *not* tvb accounts but db accounts.
+    4. Create a DB connection URI. Postgres URI's in TVB have this general form ::
 
-    4. Create a db connection URI.
-        Postgres URI's in TVB have this general form
-
-            postgresql+psycopg2://postgres:root@[postresql-server-host]:[postgres-port]/tvb?user=[user]&password=[postgres-pwd]
-
-        The angle bracketed expressions are placeholders that have to be replaced by values specific to your machine.
+        postgresql+psycopg2://postgres:root@[postresql-server-host]:[postgres-port]/tvb?user=[user]&password=[postgres-pwd]
+        # The angle bracketed expressions are placeholders that have to be replaced by values specific to your machine.
 
     5. Place the concrete connection URI in the |TVB| configuration using either the GUI or by editing the config file.
 
 
+Installing PosgreSQL on Windows
+-------------------------------
 
+Getting PostgreSQL database up and running isn't too difficult on Windows:
+
+    - Grab a copy for 32 or 64 bit from http://www.enterprisedb.com/products-services-training/pgdownload#windows
+    - Install, noting the port number and user/pass. These will be later on needed in TVB, when writing the connection URL
+    - [optional when using TVB Git repositories directly]
+        * `pip install psycopg2`, with the `PATH` set correctly for your Python installation, or
+        * grab and install from http://www.lfd.uci.edu/~gohlke/pythonlibs/#psycopg
+        * test `python -c "import psycopg2"`, if ImportError, find libpq.dll (e.g. `c://program files/postgresql/9.3/bin`) and add it to the `PATH`.
+    - open pgAdmin, right click databases, add a database named `tvb`, click ok, close pgadmin
+    - stop, clean (this deletes all tvb previous data!) and start.
+        * This cleanup is necessary if you have started TVB Distribution before and used sqlite DB.
+        * in case you have important TVB data that should not be lost, you can always use Project Export, clean, restart, and then Project Import after the new DB backend has been set up.
+    - in TVB GUI settings page, select `postgresql`, edit the port number (if not default `5432`) and DB password in the DB connection URL
+    - validate db (by using the GUI button). It should be ok, if not: look at the output in terminal to see more details.
 
 
