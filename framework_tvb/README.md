@@ -20,6 +20,10 @@ If you don't require the framework features listed above, the simulator
 and associated scientific modules can be used independently; please see
 the [tvb-library](https://github.com/the-virtual-brain/tvb-library) repo.
 
-For more details, please see our [full documentation](http://docs.thevirtualbrain.org/).
 
-Enjoy TVB!
+# Further Resources
+
+- For issue tracking we are using Jira: http://req.thevirtualbrain.org
+- For API documentation and live demos, have a look here: http://docs.thevirtualbrain.org
+- A public mailing list for users of The Virtual Brain can be joined and followed using: tvb-users@googlegroups.com
+- Raw demo IPython Notebooks can be found under: https://github.com/the-virtual-brain/tvb-documentation/tree/master/demos
