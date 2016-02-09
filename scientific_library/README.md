@@ -1,4 +1,4 @@
-THE VIRTUAL BRAIN SCIENTIFIC LIBRARY
+# THE VIRTUAL BRAIN SCIENTIFIC LIBRARY
 
 
 The Virtual Brain Project (TVB Project) has the purpose of offering some modern tools to the Neurosciences community, for computing, simulating and analyzing functional and structural data of human brains.
@@ -59,3 +59,10 @@ NOTE:
 
 To contribute to this repo, you are advised to first fork it under GitHub (through the web ui), and next clone that fork on your machine, and use it as you use any other git repository.
 
+
+# Further Resources
+
+- For issue tracking we are using Jira: http://req.thevirtualbrain.org
+- For API documentation and live demos, have a look here: http://docs.thevirtualbrain.org
+- A public mailing list for users of The Virtual Brain can be joined and followed using: tvb-users@googlegroups.com
+- Raw demo IPython Notebooks can be found under: https://github.com/the-virtual-brain/tvb-documentation/tree/master/demos
