@@ -3,8 +3,6 @@
  	<py:with vars="add_attrs={'disabled': 'disabled'} if disabled else {}; value=inputRow.default if 'default' in inputRow else ''">
         <input type="text" tabindex='1' name="$inputRow.name" id="$inputRow.name" value="${value}"
             py:if="(('quantifier' in inputRow and inputRow.quantifier == 'manual') or 'quantifier' not in inputRow)" py:attrs="add_attrs"/>
-        <input type="text" tabindex='1' name="$inputRow.name" id="$inputRow.name" value="${value}"
-            py:if="'quantifier' in inputRow and inputRow.quantifier == 'function'" py:attrs="add_attrs"/>
         <input type="file" tabindex='1' name="$inputRow.name" id="$inputRow.name" value="${value}"
             py:if="'quantifier' in inputRow and inputRow.quantifier == 'upload'" py:attrs="add_attrs"/>
     </py:with>

@@ -106,7 +106,7 @@ class InputTreeManager(object):
             ## Now that first level was handled, go recursively on selected options only
             if entry.get(KEY_REQUIRED) is True and entry.get(KEY_OPTIONS) is not None:
                 for option in entry[KEY_OPTIONS]:
-                    #Only go recursive on option that was submitted
+                    # Only go recursive on option that was submitted
                     if option[KEY_VALUE] == kwargs[entry[KEY_NAME]] and KEY_ATTRIBUTES in option:
                         self.append_required_defaults(kwargs, option[KEY_ATTRIBUTES])
 
@@ -259,7 +259,7 @@ class InputTreeManager(object):
                 new_p[KEY_DEFAULT] = data[param[KEY_NAME]]
             if param.get(KEY_ATTRIBUTES) is not None:
                 new_p[KEY_ATTRIBUTES] = InputTreeManager.fill_defaults(param[KEY_ATTRIBUTES], data,
-                                                                            fill_unselected_branches)
+                                                                       fill_unselected_branches)
             if param.get(KEY_OPTIONS) is not None:
                 new_options = param[KEY_OPTIONS]
                 if param[KEY_NAME] in data or fill_unselected_branches:
@@ -327,7 +327,7 @@ class InputTreeManager(object):
                 add_prefix_option = param.get(KEY_TYPE) in [xml_reader.TYPE_MULTIPLE, xml_reader.TYPE_SELECT]
                 new_prefix = InputTreeManager.form_prefix(param[KEY_NAME], prefix)
                 prepared_param[KEY_OPTIONS] = InputTreeManager.prepare_param_names(param[KEY_OPTIONS],
-                                                                                        new_prefix, add_prefix_option)
+                                                                                   new_prefix, add_prefix_option)
 
             if param.get(KEY_ATTRIBUTES) is not None:
                 new_prefix = prefix
@@ -338,8 +338,7 @@ class InputTreeManager(object):
                     new_prefix += KEYWORD_SEPARATOR
                 if is_dict:
                     new_prefix = new_name + KEYWORD_PARAMS
-                prepared_param[KEY_ATTRIBUTES] = InputTreeManager.prepare_param_names(
-                                                        param[KEY_ATTRIBUTES], new_prefix)
+                prepared_param[KEY_ATTRIBUTES] = InputTreeManager.prepare_param_names(param[KEY_ATTRIBUTES], new_prefix)
             result.append(prepared_param)
         return result
 
@@ -433,8 +432,6 @@ class InputTreeManager(object):
             elif quantifier == xml_reader.QUANTIFIER_UPLOAD:
                 input_str = open(input_data, 'r').read()
                 return string2array(input_str, " ", dtype)
-            elif quantifier == xml_reader.QUANTIFIER_FUNTION:
-                return input_data
 
         return None
 
@@ -497,8 +494,8 @@ class InputTreeManager(object):
             result = val
         if ATT_METHOD in row:
             param_dict = dict()
-            #The 'shape' attribute of an arraywrapper is overridden by us
-            #the following check is made only to improve performance
+            # The 'shape' attribute of an arraywrapper is overridden by us
+            # the following check is made only to improve performance
             # (to find data in the dictionary with O(1)) on else the data is found in O(n)
             if hasattr(entity, 'shape'):
                 for i in xrange(len(entity.shape)):
@@ -596,7 +593,7 @@ class InputTreeManager(object):
                     ## Load filtered and trimmed attribute (e.g. field is applied if specified):
                     kwa[row_attr] = self._load_entity(row, datatype_gid, kwargs, metadata_out)
                     if xml_reader.ATT_FIELD in row:
-                        #Add entity_GID to the parameters to recognize original input
+                        # Add entity_GID to the parameters to recognize original input
                         kwa[row_attr + '_gid'] = datatype_gid
 
             except TVBException:
@@ -606,4 +603,3 @@ class InputTreeManager(object):
                                                                                                row[KEY_NAME]))
 
         return collapse_params(kwa, simple_select_list)
-
