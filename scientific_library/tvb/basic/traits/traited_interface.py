@@ -110,8 +110,10 @@ class TraitedInterfaceGenerator(object):
                     ## Dictionary without any sub-parameter
                     return {}
 
+        mro_type_names = [str(i.__name__) for i in ownr.mro()]
+
         ##### ARRAY specific processing ########################################
-        if 'Array' in [str(i.__name__) for i in ownr.mro()]:
+        if 'Array' in mro_type_names:
             intr['type'] = 'array'
             intr['elementType'] = str(inst.dtype)
             intr['quantifier'] = 'manual'
@@ -120,13 +122,12 @@ class TraitedInterfaceGenerator(object):
                 intr['default'] = str(obj.trait.value.tolist())
 
         ##### TYPE & subclasses specifics ######################################
-        elif ('Type' in [str(i.__name__) for i in ownr.mro()]
-              and (obj.__module__ != 'tvb.basic.traits.types_basic'
-                   or 'Range' in [str(i.__name__) for i in ownr.mro()])
-              or 'Enumerate' in [str(i.__name__) for i in ownr.mro()]):
+        elif ('Type' in mro_type_names
+              and (obj.__module__ != 'tvb.basic.traits.types_basic' or 'Range' in mro_type_names)
+              or 'Enumerate' in mro_type_names):
 
             # Populate Attributes for current entity
-            attrs = sorted(getattr(obj, 'trait').values(), key=lambda entity: entity.trait.order_number)
+            attrs = sorted(obj.trait.values(), key=lambda entity: entity.trait.order_number)
             attrs = [val.interface for val in attrs if val.trait.order_number >= 0]
             attrs = [attr for attr in attrs if attr is not None and len(attr) > 0]
             intr['attributes'] = attrs
@@ -142,7 +143,7 @@ class TraitedInterfaceGenerator(object):
                 intr['type'] = 'select'
 
             ##### MAPPED_TYPE specifics ############################################
-            if 'MappedType' in [str(i.__name__) for i in ownr.mro()]:
+            if 'MappedType' in mro_type_names:
                 intr['datatype'] = True
                 #### For simple DataTypes, cut options and attributes
                 intr['options'] = []

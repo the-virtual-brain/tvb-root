@@ -138,7 +138,7 @@ class InputTreeManager(object):
         """
         if InputTreeManager._is_parent_not_submitted(row, kwargs):
             return {}, []
-        name = row[xml_reader.ATT_NAME]
+        name = row[KEY_NAME]
         result_dict = {}
         taken_keys = []
         for key in kwargs:
@@ -170,8 +170,8 @@ class InputTreeManager(object):
                 return flat_name
             else:
                 return None
-        prefix = flat_name[0: (flat_name.find(KEYWORD_PARAMS) + 12)]
-        sufix = flat_name[(flat_name.find(KEYWORD_PARAMS) + 12):]
+        prefix = flat_name[0: flat_name.find(KEYWORD_PARAMS) + 12]
+        sufix = flat_name[flat_name.find(KEYWORD_PARAMS) + 12:]
         parent_name = flat_name[0: flat_name.find(KEYWORD_PARAMS)]
         submitted_options = InputTreeManager._compute_submit_option_select(submited_kwargs[parent_name])
 
@@ -205,7 +205,7 @@ class InputTreeManager(object):
     def _is_parent_not_submitted(row, kwargs):
         """
         :returns: True when current attributes should not be considered, because parent option was not selected."""
-        att_name = row[xml_reader.ATT_NAME]
+        att_name = row[KEY_NAME]
         parent_name, option = None, None
         if KEYWORD_PARAMS in att_name:
             parent_name = att_name[0: att_name.find(KEYWORD_PARAMS)]
@@ -226,7 +226,7 @@ class InputTreeManager(object):
     @staticmethod
     def _compute_submit_option_select(submitted_option):
         """ """
-        if isinstance(submitted_option, (str, unicode)):
+        if isinstance(submitted_option, basestring):
             submitted_option = submitted_option.replace('[', '').replace(']', '').split(',')
         return submitted_option
 
@@ -501,12 +501,12 @@ class InputTreeManager(object):
                 for i in xrange(len(entity.shape)):
                     if not i:
                         continue
-                    param_key = (row[xml_reader.ATT_NAME] + "_" + row[ATT_PARAMETERS] + "_" + str(i - 1))
+                    param_key = (row[KEY_NAME] + "_" + row[ATT_PARAMETERS] + "_" + str(i - 1))
                     if param_key in kwargs:
                         param_dict[param_key] = kwargs[param_key]
             else:
                 param_dict = dict((k, v) for k, v in kwargs.items()
-                                  if k.startswith(row[xml_reader.ATT_NAME] + "_" + row[ATT_PARAMETERS]))
+                                  if k.startswith(row[KEY_NAME] + "_" + row[ATT_PARAMETERS]))
             val = eval("entity." + row[ATT_METHOD] + "(param_dict)")
             result = val
         return result
@@ -519,8 +519,8 @@ class InputTreeManager(object):
         kwa = {}
         simple_select_list, to_skip_dict_subargs = [], []
         for row in flat_input_interface:
-            row_attr = row[xml_reader.ATT_NAME]
-            row_type = row[xml_reader.ATT_TYPE]
+            row_attr = row[KEY_NAME]
+            row_type = row[KEY_TYPE]
             ## If required attribute was submitted empty no point to continue, so just raise exception
             if (validation_required and row.get(xml_reader.ATT_REQUIRED, False)
                     and row_attr in kwargs and kwargs[row_attr] == ""):
