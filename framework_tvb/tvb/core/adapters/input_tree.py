@@ -36,14 +36,19 @@ from copy import copy
 import json
 import numpy
 
+from tvb.basic.filters.chain import FilterChain
 from tvb.basic.logger.builder import get_logger
 from tvb.basic.traits.exceptions import TVBException
 from tvb.basic.traits.parameters_factory import collapse_params
 from tvb.basic.traits.types_mapped import MappedType
+from tvb.core import utils
 from tvb.core.adapters import xml_reader
 from tvb.core.adapters.exceptions import InvalidParameterException
+from tvb.core.entities import model
 from tvb.core.entities.load import load_entity_by_gid
+from tvb.core.entities.storage import dao
 from tvb.core.entities.transient.structure_entities import DataTypeMetaData
+from tvb.core.portlets.xml_reader import KEY_DYNAMIC
 from tvb.core.utils import string2array
 
 ATT_METHOD = "python_method"
@@ -77,6 +82,12 @@ KEY_UI_HIDE = "ui_hidden"
 KEYWORD_PARAMS = "_parameters_"
 KEYWORD_SEPARATOR = "_"
 KEYWORD_OPTION = "option_"
+
+
+MAXIMUM_DATA_TYPES_DISPLAYED = 50
+KEY_WARNING = "warning"
+WARNING_OVERFLOW = "Too many entities in storage; some of them were not returned, to avoid overcrowding. " \
+                   "Use filters, to make the list small enough to fit in here!"
 
 
 class InputTreeManager(object):
@@ -603,3 +614,125 @@ class InputTreeManager(object):
                                                                                                row[KEY_NAME]))
 
         return collapse_params(kwa, simple_select_list)
+
+
+    @staticmethod
+    def _populate_values(data_list, type_, category_key, complex_dt_attributes=None):
+        """
+        Populate meta-data fields for data_list (list of DataTypes).
+
+        Private method, to be called recursively.
+        It will receive a list of Attributes, and it will populate 'options'
+        entry with data references from DB.
+        """
+        values = []
+        all_field_values = ''
+        for value in data_list:
+            # Here we only populate with DB data, actual
+            # XML check will be done after select and submit.
+            entity_gid = value[2]
+            actual_entity = dao.get_generic_entity(type_, entity_gid, "gid")
+            display_name = ''
+            if actual_entity is not None and len(actual_entity) > 0 and isinstance(actual_entity[0], model.DataType):
+                display_name = actual_entity[0].display_name
+            display_name = display_name + ' - ' + (value[3] or "None ")
+            if value[5]:
+                display_name = display_name + ' - From: ' + str(value[5])
+            else:
+                display_name = display_name + utils.date2string(value[4])
+            if value[6]:
+                display_name = display_name + ' - ' + str(value[6])
+            display_name = display_name + ' - ID:' + str(value[0])
+            all_field_values = all_field_values + str(entity_gid) + ','
+            values.append({KEY_NAME: display_name, KEY_VALUE: entity_gid})
+            if complex_dt_attributes is not None:
+                ### TODO apply filter on sub-attributes
+                values[-1][KEY_ATTRIBUTES] = complex_dt_attributes
+        if category_key is not None:
+            category = dao.get_category_by_id(category_key)
+            if (not category.display) and (not category.rawinput) and len(data_list) > 1:
+                values.insert(0, {KEY_NAME: "All", KEY_VALUE: all_field_values[:-1]})
+        return values
+
+
+    def _get_available_datatypes(self, project_id, data_name, filters=None):
+        """
+        Return all dataTypes that match a given name and some filters.
+        """
+        data_class = FilterChain._get_class_instance(data_name)
+        if data_class is None:
+            self.log.warning("Invalid Class specification:" + str(data_name))
+            return [], 0
+        else:
+            self.log.debug('Filtering:' + str(data_class))
+            return dao.get_values_of_datatype(project_id, data_class, filters, MAXIMUM_DATA_TYPES_DISPLAYED)
+
+
+    def fill_input_tree_with_options(self, attributes_list, project_id, category_key):
+        """
+        For a datatype node in the input tree, load all instances from the db that fit the filters.
+        """
+        result = []
+        for param in attributes_list:
+            if param.get(KEY_UI_HIDE):
+                continue
+            transformed_param = copy(param)
+
+            if (KEY_TYPE in param) and not (param[KEY_TYPE] in STATIC_ACCEPTED_TYPES):
+
+                if KEY_CONDITION in param:
+                    filter_condition = param[KEY_CONDITION]
+                else:
+                    filter_condition = FilterChain('')
+                filter_condition.add_condition(FilterChain.datatype + ".visible", "==", True)
+
+                data_list, total_count = self._get_available_datatypes(project_id, param[KEY_TYPE],
+                                                                      filter_condition)
+
+                if total_count > MAXIMUM_DATA_TYPES_DISPLAYED:
+                    transformed_param[KEY_WARNING] = WARNING_OVERFLOW
+
+                complex_dt_attributes = None
+                if param.get(KEY_ATTRIBUTES):
+                    complex_dt_attributes = self.fill_input_tree_with_options(param[KEY_ATTRIBUTES],
+                                                                    project_id, category_key)
+                values = self._populate_values(data_list, param[KEY_TYPE],
+                                              category_key, complex_dt_attributes)
+
+                if (transformed_param.get(KEY_REQUIRED) and len(values) > 0 and
+                        transformed_param.get(KEY_DEFAULT) in [None, 'None']):
+                    transformed_param[KEY_DEFAULT] = str(values[-1][KEY_VALUE])
+
+                transformed_param[KEY_FILTERABLE] = FilterChain.get_filters_for_type(param[KEY_TYPE])
+                transformed_param[KEY_TYPE] = TYPE_SELECT
+                # If Portlet dynamic parameter, don't add the options instead
+                # just add the default value.
+                if KEY_DYNAMIC in param:
+                    dynamic_param = {KEY_NAME: param[KEY_DEFAULT],
+                                     KEY_VALUE: param[KEY_DEFAULT]}
+                    transformed_param[KEY_OPTIONS] = [dynamic_param]
+                else:
+                    transformed_param[KEY_OPTIONS] = values
+                if type(param[KEY_TYPE]) == str:
+                    transformed_param[KEY_DATATYPE] = param[KEY_TYPE]
+                else:
+                    data_type = param[KEY_TYPE]
+                    transformed_param[KEY_DATATYPE] = data_type.__module__ + '.' + data_type.__name__
+
+                ### DataType-attributes are no longer necessary, they were already copied on each OPTION
+                transformed_param[KEY_ATTRIBUTES] = []
+
+            else:
+                if param.get(KEY_OPTIONS) is not None:
+                    transformed_param[KEY_OPTIONS] = self.fill_input_tree_with_options(param[KEY_OPTIONS],
+                                                                                        project_id, category_key)
+                    if (transformed_param.get(KEY_REQUIRED) and len(param[KEY_OPTIONS]) > 0 and
+                            transformed_param.get(KEY_DEFAULT) in [None, 'None']):
+                        def_val = str(param[KEY_OPTIONS][-1][KEY_VALUE])
+                        transformed_param[KEY_DEFAULT] = def_val
+
+                if param.get(KEY_ATTRIBUTES) is not None:
+                    transformed_param[KEY_ATTRIBUTES] = self.fill_input_tree_with_options(
+                        param[KEY_ATTRIBUTES], project_id, category_key)
+            result.append(transformed_param)
+        return result

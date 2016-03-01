@@ -42,6 +42,7 @@ import formencode
 import numpy
 
 from tvb.basic.filters.chain import FilterChain
+from tvb.core.adapters.input_tree import InputTreeManager, MAXIMUM_DATA_TYPES_DISPLAYED, KEY_WARNING, WARNING_OVERFLOW
 from tvb.datatypes.arrays import MappedArray
 from tvb.core.utils import url2path, parse_json_parameters, string2date, string2bool
 from tvb.core.entities.file.files_helper import FilesHelper
@@ -382,7 +383,7 @@ class FlowController(BaseController):
         #Get dataTypes that match the filters from DB then populate with values
         datatypes, total_count = self.flow_service.get_available_datatypes(common.get_current_project().id,
                                                                            datatype, new_filter)
-        values = self.flow_service.populate_values(datatypes, datatype, self.context.get_current_step())
+        values = InputTreeManager._populate_values(datatypes, datatype, self.context.get_current_step())
         #Create a dictionary that matches what the template expects
         parameters = {ABCAdapter.KEY_NAME: name,
                       ABCAdapter.KEY_FILTERABLE: availablefilter,
@@ -390,8 +391,8 @@ class FlowController(BaseController):
                       ABCAdapter.KEY_OPTIONS: values,
                       ABCAdapter.KEY_DATATYPE: datatype}
 
-        if total_count > self.flow_service.MAXIMUM_DATA_TYPES_DISPLAYED:
-            parameters[self.flow_service.KEY_WARNING] = self.flow_service.WARNING_OVERFLOW
+        if total_count > MAXIMUM_DATA_TYPES_DISPLAYED:
+            parameters[KEY_WARNING] = WARNING_OVERFLOW
 
         if ABCAdapter.KEY_REQUIRED in current_node:
             parameters[ABCAdapter.KEY_REQUIRED] = current_node[ABCAdapter.KEY_REQUIRED]

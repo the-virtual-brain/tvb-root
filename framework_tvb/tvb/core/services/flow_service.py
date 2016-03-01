@@ -36,11 +36,9 @@ Code related to launching/duplicating operations is placed here.
 .. moduleauthor:: Bogdan Neacsa <bogdan.neacsa@codemart.ro>
 """
 
-from copy import copy
 from tvb.basic.traits.exceptions import TVBException
-from tvb.basic.filters.chain import FilterChain
 from tvb.basic.logger.builder import get_logger
-from tvb.core import utils
+from tvb.core.adapters.input_tree import InputTreeManager
 from tvb.core.entities import model
 from tvb.core.entities.storage import dao
 from tvb.core.entities.file.files_helper import FilesHelper
@@ -48,7 +46,6 @@ from tvb.core.adapters.abcadapter import ABCAdapter
 from tvb.core.adapters.exceptions import IntrospectionException
 from tvb.core.services.exceptions import OperationException
 from tvb.core.services.operation_service import OperationService
-from tvb.core.portlets.xml_reader import KEY_DYNAMIC
 
 
 
@@ -57,16 +54,10 @@ class FlowService:
     Service Layer for all TVB generic Work-Flow operations.
     """
 
-    MAXIMUM_DATA_TYPES_DISPLAYED = 50
-    KEY_WARNING = "warning"
-    WARNING_OVERFLOW = "Too many entities in storage; some of them were not returned, to avoid overcrowding. " \
-                       "Use filters, to make the list small enough to fit in here!"
-
-
     def __init__(self):
         self.logger = get_logger(self.__class__.__module__)
         self.file_helper = FilesHelper()
-    
+        self.input_tree_manager = InputTreeManager()
     
     def get_category_by_id(self, identifier):
         """ Pass to DAO the retrieve of category by ID operation."""
@@ -208,121 +199,14 @@ class FlowService:
         """
         Return all dataTypes that match a given name and some filters.
         """
-        data_class = FilterChain._get_class_instance(data_name)
-        if data_class is None:
-            self.logger.warning("Invalid Class specification:" + str(data_name))
-            return [], 0
-        else:
-            self.logger.debug('Filtering:' + str(data_class))
-            return dao.get_values_of_datatype(project_id, data_class, filters, self.MAXIMUM_DATA_TYPES_DISPLAYED)
-        
-    
-    @staticmethod
-    def populate_values(data_list, type_, category_key, complex_dt_attributes=None):
-        """
-        Populate meta-data fields for data_list (list of DataTypes).
-        """
-        values = []
-        all_field_values = ''
-        for value in data_list:
-            # Here we only populate with DB data, actual
-            # XML check will be done after select and submit.
-            entity_gid = value[2]
-            actual_entity = dao.get_generic_entity(type_, entity_gid, "gid")
-            display_name = ''
-            if actual_entity is not None and len(actual_entity) > 0 and isinstance(actual_entity[0], model.DataType):
-                display_name = actual_entity[0].display_name
-            display_name = display_name + ' - ' + (value[3] or "None ")
-            if value[5]:
-                display_name = display_name + ' - From: ' + str(value[5])
-            else:
-                display_name = display_name + utils.date2string(value[4])
-            if value[6]:
-                display_name = display_name + ' - ' + str(value[6])
-            display_name = display_name + ' - ID:' + str(value[0])
-            all_field_values = all_field_values + str(entity_gid) + ','
-            values.append({ABCAdapter.KEY_NAME: display_name, ABCAdapter.KEY_VALUE: entity_gid})
-            if complex_dt_attributes is not None:
-                ### TODO apply filter on sub-attributes
-                values[-1][ABCAdapter.KEY_ATTRIBUTES] = complex_dt_attributes
-        if category_key is not None:
-            category = dao.get_category_by_id(category_key)
-            if (not category.display) and (not category.rawinput) and len(data_list) > 1:
-                values.insert(0, {ABCAdapter.KEY_NAME: "All", ABCAdapter.KEY_VALUE: all_field_values[:-1]})
-        return values
-     
-     
+        return self.input_tree_manager._get_available_datatypes(project_id, data_name, filters)
+
+
     def prepare_parameters(self, attributes_list, project_id, category_key):
         """
-        Private method, to be called recursively.
-        It will receive a list of Attributes, and it will populate 'options'
-        entry with data references from DB.
+        For a datatype node in the input tree, load all instances from the db that fit the filters.
         """
-        result = []
-        for param in attributes_list:
-            if param.get(ABCAdapter.KEY_UI_HIDE):
-                continue
-            transformed_param = copy(param)
-
-            if (ABCAdapter.KEY_TYPE in param) and not (param[ABCAdapter.KEY_TYPE] in ABCAdapter.STATIC_ACCEPTED_TYPES):
-
-                if ABCAdapter.KEY_CONDITION in param:
-                    filter_condition = param[ABCAdapter.KEY_CONDITION]
-                else:
-                    filter_condition = FilterChain('')
-                filter_condition.add_condition(FilterChain.datatype + ".visible", "==", True)
-
-                data_list, total_count = self.get_available_datatypes(project_id, param[ABCAdapter.KEY_TYPE],
-                                                                      filter_condition)
-
-                if total_count > self.MAXIMUM_DATA_TYPES_DISPLAYED:
-                    transformed_param[self.KEY_WARNING] = self.WARNING_OVERFLOW
-
-                complex_dt_attributes = None
-                if param.get(ABCAdapter.KEY_ATTRIBUTES):
-                    complex_dt_attributes = self.prepare_parameters(param[ABCAdapter.KEY_ATTRIBUTES], 
-                                                                    project_id, category_key)
-                values = self.populate_values(data_list, param[ABCAdapter.KEY_TYPE], 
-                                              category_key, complex_dt_attributes)
-                
-                if (transformed_param.get(ABCAdapter.KEY_REQUIRED) and len(values) > 0 and
-                        transformed_param.get(ABCAdapter.KEY_DEFAULT) in [None, 'None']):
-                    transformed_param[ABCAdapter.KEY_DEFAULT] = str(values[-1][ABCAdapter.KEY_VALUE])
-                transformed_param[ABCAdapter.KEY_FILTERABLE] = FilterChain.get_filters_for_type(
-                    param[ABCAdapter.KEY_TYPE])
-                transformed_param[ABCAdapter.KEY_TYPE] = ABCAdapter.TYPE_SELECT
-                # If Portlet dynamic parameter, don't add the options instead
-                # just add the default value. 
-                if KEY_DYNAMIC in param:
-                    dynamic_param = {ABCAdapter.KEY_NAME: param[ABCAdapter.KEY_DEFAULT],
-                                     ABCAdapter.KEY_VALUE: param[ABCAdapter.KEY_DEFAULT]}
-                    transformed_param[ABCAdapter.KEY_OPTIONS] = [dynamic_param]
-                else:
-                    transformed_param[ABCAdapter.KEY_OPTIONS] = values
-                if type(param[ABCAdapter.KEY_TYPE]) == str:
-                    transformed_param[ABCAdapter.KEY_DATATYPE] = param[ABCAdapter.KEY_TYPE]
-                else:
-                    data_type = param[ABCAdapter.KEY_TYPE]
-                    transformed_param[ABCAdapter.KEY_DATATYPE] = data_type.__module__ + '.' + data_type.__name__
-            
-                ### DataType-attributes are no longer necessary, they were already copied on each OPTION
-                transformed_param[ABCAdapter.KEY_ATTRIBUTES] = []
-                
-            else:
-                if param.get(ABCAdapter.KEY_OPTIONS) is not None:
-                    transformed_param[ABCAdapter.KEY_OPTIONS] = self.prepare_parameters(param[ABCAdapter.KEY_OPTIONS],
-                                                                                        project_id, category_key)
-                    if (transformed_param.get(ABCAdapter.KEY_REQUIRED) and
-                            len(param[ABCAdapter.KEY_OPTIONS]) > 0 and
-                            (transformed_param.get(ABCAdapter.KEY_DEFAULT) in [None, 'None'])):
-                        def_val = str(param[ABCAdapter.KEY_OPTIONS][-1][ABCAdapter.KEY_VALUE])
-                        transformed_param[ABCAdapter.KEY_DEFAULT] = def_val
-                    
-                if param.get(ABCAdapter.KEY_ATTRIBUTES) is not None:
-                    transformed_param[ABCAdapter.KEY_ATTRIBUTES] = self.prepare_parameters(
-                        param[ABCAdapter.KEY_ATTRIBUTES], project_id, category_key)
-            result.append(transformed_param)   
-        return result
+        return self.input_tree_manager.fill_input_tree_with_options(attributes_list, project_id, category_key)
     
     
     @staticmethod

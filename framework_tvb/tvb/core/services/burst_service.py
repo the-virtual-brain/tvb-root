@@ -487,9 +487,9 @@ class BurstService():
             prepared_inputs[ABCMPLH5Displayer.SHOW_FULL_TOOLBAR] = False
 
         if is_preview:
-            result = eval("adapter_instance.generate_preview(**prepared_inputs)")
+            result = adapter_instance.generate_preview(**prepared_inputs)
         else:
-            result = eval("adapter_instance.launch(**prepared_inputs)")
+            result = adapter_instance.launch(**prepared_inputs)
         return result, parameters_dict
     
     
