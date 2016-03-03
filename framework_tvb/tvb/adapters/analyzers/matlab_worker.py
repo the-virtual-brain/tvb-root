@@ -45,11 +45,10 @@ import tempfile
 from scipy.io import loadmat, savemat
 from tvb.basic.profile import TvbProfile
 from tvb.core.utils import MATLAB, OCTAVE, matlab_cmd
-from tvb.core.adapters.abcadapter import ABCAsynchronous
 
 
 
-class MatlabAnalyzer(ABCAsynchronous):
+class MatlabWorker(object):
     """
     MatlabAnalyzer is an adapter for calling arbitrary MATLAB code with
     arbitrary data.
@@ -62,7 +61,6 @@ class MatlabAnalyzer(ABCAsynchronous):
 
 
     def __init__(self):
-        ABCAsynchronous.__init__(self)
         self.mlab_exe = TvbProfile.current.MATLAB_EXECUTABLE
         self.hex = hex(random.randint(0, 2 ** 32))
         self.script_name = "script%s" % self.hex
@@ -98,14 +96,6 @@ class MatlabAnalyzer(ABCAsynchronous):
         if OCTAVE in self.mlab_exe:
             save_clause = "hexstamp = '%s'\nsave %s.mat -V7\nsave %s.mat -V7 hexstamp\nquit"
         return catch + save_clause % (self.hex, self.wkspc_name, self.done_name)
-
-
-    def launch(self, code, data=None, wd=None, cleanup=True):
-        """
-        Analyzers that derive from this adapter and use MATLAB should
-        override this method.
-        """
-        return self.matlab(code, data, cleanup)
 
 
     def cleanup(self):

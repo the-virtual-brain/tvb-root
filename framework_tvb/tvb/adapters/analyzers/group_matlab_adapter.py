@@ -31,39 +31,39 @@
 .. moduleauthor:: Lia Domide <lia.domide@codemart.ro>
 """
 
-from tvb.adapters.analyzers.group_matlab_helper import MatlabAnalyzer
+from tvb.adapters.analyzers.matlab_worker import MatlabWorker
 from tvb.core.adapters.abcadapter import ABCGroupAdapter
 
 
-
-class MatlabAdapter(ABCGroupAdapter, MatlabAnalyzer):
+class MatlabAdapter(ABCGroupAdapter):
     """
     Interface between Brain Connectivity Toolbox of Olaf Sporns and TVB Framework.
     This adapter requires BCT and Matlab deployed locally.
     """
+
     def __init__(self, xml_file_path):
-        MatlabAnalyzer.__init__(self)
         ABCGroupAdapter.__init__(self, xml_file_path)
-    
+        self.matlab_worker = MatlabWorker()
+
     def get_required_memory_size(self, **kwargs):
         """
         Return the required memory to run this algorithm.
         """
         # Don't know how much memory is needed.
         return -1
-    
+
     def get_required_disk_size(self, **kwargs):
         """
         Returns the required disk size to be able to run the adapter (in kB).
         """
         return 0
-    
+
     def get_matlab_file_root(self):
         """
         Return the root folder in which the matlab files are stored.
         """
         return self.xml_reader.get_additional_path()
-    
+
     def launch(self, **kwargs):
         """
         Pick the correct algorithm to use, and launch the MATLAB call. 
@@ -72,19 +72,16 @@ class MatlabAdapter(ABCGroupAdapter, MatlabAnalyzer):
         # Read selected Algorithm identifier, from input arguments
         bct_storage = self.xml_reader.get_additional_path()
         if bct_storage is not None:
-            self.add_to_path(bct_storage)
+            self.matlab_worker.add_to_path(bct_storage)
         algorithm, kwargs = self.get_algorithm_and_attributes(**kwargs)
-        
+
         # Execute MATLAB code
         mat_code = self.get_call_code(algorithm)
         self.log.info("Starting execution of MATLAB code:" + mat_code)
-        runcode, matlablog, result = self.matlab(mat_code, kwargs)
+        runcode, matlablog, result = self.matlab_worker.matlab(mat_code, kwargs)
         self.log.debug("Code run in MATLAB: " + str(runcode))
         self.log.debug("MATLAB log: " + str(matlablog))
         self.log.debug("Finished MATLAB execution:" + str(result))
-        
-        #Now build PYTHON result objects
+
+        # Now build PYTHON result objects
         return self.build_result(algorithm, result, kwargs)
-    
-    
-    
