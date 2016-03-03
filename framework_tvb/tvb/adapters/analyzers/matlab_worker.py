@@ -50,8 +50,8 @@ from tvb.core.utils import MATLAB, OCTAVE, matlab_cmd
 
 class MatlabWorker(object):
     """
-    MatlabAnalyzer is an adapter for calling arbitrary MATLAB code with
-    arbitrary data.
+    MatlabAnalyzer is an helper class for calling arbitrary MATLAB code with
+    arbitrary parameters.
 
     Specific analyzers should derive from this class and implement the
     interface and launch methods inherited from Asynchronous Adapter.

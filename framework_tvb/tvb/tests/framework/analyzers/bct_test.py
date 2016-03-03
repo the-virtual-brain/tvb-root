@@ -132,8 +132,8 @@ class BCTTest(TransactionalTestCase):
                 ### Prepare Operation and parameters
                 algorithm = dao.get_algorithm_by_group(self.algo_groups[i].id, bct_identifier)
                 self.assertTrue(len(algorithm.description) > 0,
-                                "Description was not loaded properly for algorithm %s" % (str(algorithm, )))
-
+                                "Description was not loaded properly for algorithm %s -- %s" % (str(algorithm),
+                                                                                                bct_identifier))
 
 
 def suite():
@@ -145,13 +145,8 @@ def suite():
     return test_suite
 
 
-
 if __name__ == "__main__":
-    #So you can run tests from this package individually.
+    # So you can run tests from this package individually.
     TEST_RUNNER = unittest.TextTestRunner()
     TEST_SUITE = suite()
     TEST_RUNNER.run(TEST_SUITE)
-    
-    
-    
-    

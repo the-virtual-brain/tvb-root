@@ -55,7 +55,7 @@ from tvb.core.utils import extract_matlab_doc_string
 
 ALL_VARIABLE = "__all__"
 XML_FOLDERS_VARIABLE = "__xml_folders__"
-MATLAB_ADAPTER = "MatlabAnalyzer"
+MATLAB_ADAPTER = "MatlabAdapter"
 LAUNCHABLE = 'launchable'
 DISPLAYER = 'display'
 RAWINPUT = 'rawinput'
@@ -375,7 +375,7 @@ class Introspector:
                 req_type, param_name, flt = self.__get_required_input(in_params)
                 outputs = adapter.get_output_for_algorithm(algo_ident)
                 algo_description = ""
-                if self.__is_matlab_parent(inspect.getclasstree([adapter.__class__])):
+                if self.__is_matlab_parent(adapter.__class__):
                     root_folder = adapter.get_matlab_file_root()
                     file_name = adapter.get_matlab_file(algo_ident)
                     if file_name:
@@ -504,8 +504,8 @@ class Introspector:
             return model.AlgorithmGroup(class_ref.__module__, class_ref.__name__, category_key,
                                         init_parameter=init_parameter, last_introspection_check=datetime.datetime.now())
         else:
-            if self.__is_matlab_parent(inspect.getclasstree([class_ref])):
-                self.logger.debug("Skip Adapter because MATLAB is not found:" + str(class_ref))
+            if self.__is_matlab_parent(class_ref):
+                self.logger.warning("Skiped Adapter because MATLAB is not found:" + str(class_ref))
                 return None
             else:
                 return model.AlgorithmGroup(class_ref.__module__, class_ref.__name__, category_key,
@@ -513,15 +513,9 @@ class Introspector:
                                             last_introspection_check=datetime.datetime.now())
 
 
-    def __is_matlab_parent(self, search_in):
-        """ Check if current class has MATLAB as parent Class"""
-        if inspect.isclass(search_in) and search_in.__name__.find(MATLAB_ADAPTER) >= 0:
-            return True
-        if isinstance(search_in, (tuple, list)):
-            for parent in search_in:
-                if self.__is_matlab_parent(parent):
-                    return True
-        return False
+    def __is_matlab_parent(self, adapter_class):
+        """ Check if current class is MatlabAdapter"""
+        return adapter_class.__name__.find(MATLAB_ADAPTER) >= 0
 
 
     @staticmethod
