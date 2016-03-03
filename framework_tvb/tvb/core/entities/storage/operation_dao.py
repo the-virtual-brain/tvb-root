@@ -431,7 +431,7 @@ class OperationDAO(RootDAO):
 
 
     def get_launchable_categories(self, elimin_viewers=False):
-        """Retrieve categories with display = true"""
+        """Retrieve algorithm categories which can be launched on right-click (optionally filter visualizers)"""
         try:
             result = self.session.query(model.AlgorithmCategory).filter_by(launchable=True)
             if elimin_viewers:

@@ -90,7 +90,7 @@ class FlowService:
     
     @staticmethod
     def get_launchable_non_viewers():
-        """Retrieve all Algorithm categories, with display capability"""
+        """Retrieve the Analyze Algorithm Category, (first category with launch capability which is not Viewers)"""
         result = dao.get_launchable_categories(elimin_viewers=True)
         if result is None or len(result) < 1:
             raise Exception("Analyze Category not found!!!")

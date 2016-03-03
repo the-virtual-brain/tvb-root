@@ -43,7 +43,7 @@ import numpy
 from tvb.basic.profile import TvbProfile
 from tvb.basic.logger.builder import get_logger
 from tvb.core.decorators import user_environment_execution
-from tvb.basic.arguments_serialisation import parse_slice, slice_str
+
 
 MATLAB = "matlab"
 OCTAVE = "octave"
@@ -385,6 +385,32 @@ def matlab_cmd(matlab_path, script_name, log_file):
         command = exe_name + ' %s.m >> %s' % (script_name, log_file)
     return os.system(command)
 
+
+def extract_matlab_doc_string(file_n):
+    """
+    Extract the first doc entry from a matlab file.
+    """
+    file_n = os.path.join(TvbProfile.current.EXTERNALS_FOLDER_PARENT, file_n)
+    try:
+        with open(file_n) as m_file:
+            m_data = m_file.read()
+    except Exception:
+        return "Description not available."
+
+    doc_started_flag = False
+    result = ""
+
+    for row in m_data.split('\n'):
+        if row.startswith('%'):
+            doc_started_flag = True
+            result += row.replace('%', '') + "<br/>"
+        else:
+            if len(row.strip()) == 0:
+                result += "<br/>"
+            else:
+                if doc_started_flag:
+                    break
+    return unicode(result, errors="ignore")
 
 ################## MATLAB methods end here     ##############
 
