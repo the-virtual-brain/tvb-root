@@ -83,6 +83,7 @@ KEYWORD_PARAMS = "_parameters_"
 KEYWORD_SEPARATOR = "_"
 KEYWORD_OPTION = "option_"
 
+KEY_PARAMETER_CHECKED = model.KEY_PARAMETER_CHECKED
 
 MAXIMUM_DATA_TYPES_DISPLAYED = 50
 KEY_WARNING = "warning"
@@ -735,4 +736,47 @@ class InputTreeManager(object):
                     transformed_param[KEY_ATTRIBUTES] = self.fill_input_tree_with_options(
                         param[KEY_ATTRIBUTES], project_id, category_key)
             result.append(transformed_param)
+        return result
+
+
+    @staticmethod
+    def select_simulator_inputs(full_tree, selection_dictionary, prefix=''):
+        """
+        Cut Simulator input Tree, to display only user-checked inputs.
+
+        :param full_tree: the simulator input tree
+        :param selection_dictionary: a dictionary that keeps for each entry a default value and if it is check or not.
+        :param prefix: a prefix to be added to the ui_name in case a select with subtrees is not selected
+
+        """
+        if full_tree is None:
+            return None
+        result = []
+        for param in full_tree:
+            param_name = param[KEY_NAME]
+            if KEY_LABEL in param and len(prefix):
+                param[KEY_LABEL] = prefix + '_' + param[KEY_LABEL]
+
+            is_checked = param_name in selection_dictionary and selection_dictionary[param_name][KEY_PARAMETER_CHECKED]
+            if is_checked:
+                param[KEY_DEFAULT] = selection_dictionary[param_name][model.KEY_SAVED_VALUE]
+                result.append(param)
+
+            if KEY_OPTIONS in param and param[KEY_OPTIONS] is not None:
+                if is_checked:
+                    for option in param[KEY_OPTIONS]:
+                        if KEY_ATTRIBUTES in option:
+                            option[KEY_ATTRIBUTES] = InputTreeManager.select_simulator_inputs(
+                                                            option[KEY_ATTRIBUTES], selection_dictionary, prefix)
+                            option[KEY_DEFAULT] = selection_dictionary[param_name][model.KEY_SAVED_VALUE]
+                else:
+                    ## Since entry is not selected, just recurse on the default option and ###
+                    ## all it's subtree will come up one level in the input tree         #####
+                    for option in param[KEY_OPTIONS]:
+                        if (param_name in selection_dictionary and KEY_ATTRIBUTES in option and
+                            option[KEY_VALUE] == selection_dictionary[param_name][model.KEY_SAVED_VALUE]):
+                            new_prefix = option[KEY_VALUE] + '_' + prefix
+                            recursive_results = InputTreeManager.select_simulator_inputs(option[KEY_ATTRIBUTES],
+                                                                             selection_dictionary, new_prefix)
+                            result.extend(recursive_results)
         return result

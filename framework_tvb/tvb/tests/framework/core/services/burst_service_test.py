@@ -37,6 +37,7 @@ import unittest
 import numpy
 import json
 from time import sleep
+from tvb.core.adapters.input_tree import InputTreeManager
 from tvb.tests.framework.core.base_testcase import BaseTestCase
 from tvb.config import SIMULATOR_MODULE, SIMULATOR_CLASS
 from tvb.datatypes.connectivity import Connectivity
@@ -307,8 +308,7 @@ class BurstServiceTest(BaseTestCase):
             if found_it:
                 break
         self.assertTrue(child_parameter != '', "Could not find any sub-tree entry in simulator interface.")
-
-        subtree = self.burst_service.select_simulator_inputs(simulator_input_tree, checked_parameters)
+        subtree = InputTreeManager.select_simulator_inputs(simulator_input_tree, checked_parameters)
         #After the select method we expect only the checked parameters entries to remain with
         #the new values updated accordingly.
         expected_outputs = [{ABCAdapter.KEY_NAME: simulator_input_tree[0][ABCAdapter.KEY_NAME],

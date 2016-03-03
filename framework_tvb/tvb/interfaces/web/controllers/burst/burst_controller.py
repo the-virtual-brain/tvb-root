@@ -38,6 +38,7 @@ import json
 import copy
 import cherrypy
 import formencode
+from tvb.core.adapters.input_tree import InputTreeManager
 import tvb.core.entities.model
 from formencode import validators
 from cgi import FieldStorage
@@ -578,7 +579,7 @@ class BurstController(BurstBaseController):
         simulator_input_tree = ABCAdapter.fill_defaults(simulator_input_tree, default_values)
         ## In case no values were checked just skip tree-cut part and show entire simulator tree ##
         if any_checked:
-            simulator_input_tree = self.burst_service.select_simulator_inputs(simulator_input_tree, simulator_config)
+            simulator_input_tree = InputTreeManager.select_simulator_inputs(simulator_input_tree, simulator_config)
 
         ### Add simulator tree to session to be available in filters
         self.context.add_adapter_to_session(self.cached_simulator_algo_group, simulator_input_tree, default_values)

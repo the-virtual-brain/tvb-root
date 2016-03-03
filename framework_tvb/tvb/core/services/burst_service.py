@@ -42,8 +42,8 @@ from types import IntType
 from tvb.config import MEASURE_METRICS_MODULE, MEASURE_METRICS_CLASS, DEFAULT_PORTLETS
 from tvb.config import SIMULATION_DATATYPE_MODULE, SIMULATION_DATATYPE_CLASS
 from tvb.basic.logger.builder import get_logger
+from tvb.core.adapters.input_tree import KEY_TYPE, TYPE_SELECT, KEY_NAME
 import tvb.core.entities.model as model
-from tvb.core.entities.model import KEY_PARAMETER_CHECKED, KEY_SAVED_VALUE
 from tvb.core.entities.transient.structure_entities import DataTypeMetaData
 from tvb.core.entities.transient.burst_configuration_entities import PortletConfiguration, WorkflowStepConfiguration
 from tvb.core.entities.storage import dao, transactional
@@ -411,9 +411,9 @@ class BurstService():
                 # We have a select that should be the dataType and a select multiple with the 
                 # required metric algorithms to be evaluated. Only dynamic parameter should be
                 # the select type.
-                if entry[ABCAdapter.KEY_TYPE] == 'select':
-                    dynamics[entry[ABCAdapter.KEY_NAME]] = {WorkflowStepConfiguration.DATATYPE_INDEX_KEY: 0,
-                                                            WorkflowStepConfiguration.STEP_INDEX_KEY: simulator_index}
+                if entry[KEY_TYPE] == TYPE_SELECT:
+                    dynamics[entry[KEY_NAME]] = {WorkflowStepConfiguration.DATATYPE_INDEX_KEY: 0,
+                                                 WorkflowStepConfiguration.STEP_INDEX_KEY: simulator_index}
             metric_step = model.WorkflowStep(algorithm_id=metric_algo.id, step_index=simulator_index + 1,
                                              static_param={}, dynamic_param=dynamics)
             metric_step.step_visible = False
@@ -618,48 +618,3 @@ class BurstService():
                 else:
                     return operation.status, operation.additional_info or ''
         return model.STATUS_FINISHED, ''
-            
-            
-    def select_simulator_inputs(self, full_tree, selection_dictionary, prefix=''):
-        """
-        Cut Simulator input Tree, to display only user-checked inputs.
-        
-        :param full_tree: the simulator input tree
-        :param selection_dictionary: a dictionary that keeps for each entry a default value and if it is check or not.
-        :param prefix: a prefix to be added to the ui_name in case a select with subtrees is not selected
-        
-        """
-        if full_tree is None:
-            return None
-        result = []
-        for param in full_tree:
-            param_name = param[ABCAdapter.KEY_NAME]
-            if ABCAdapter.KEY_LABEL in param and len(prefix):
-                param[ABCAdapter.KEY_LABEL] = prefix + '_' + param[ABCAdapter.KEY_LABEL]
-
-            is_checked = param_name in selection_dictionary and selection_dictionary[param_name][KEY_PARAMETER_CHECKED]
-            if is_checked:
-                param[ABCAdapter.KEY_DEFAULT] = selection_dictionary[param_name][model.KEY_SAVED_VALUE]
-                result.append(param)
-
-            if ABCAdapter.KEY_OPTIONS in param and param[ABCAdapter.KEY_OPTIONS] is not None:
-                if is_checked:
-                    for option in param[ABCAdapter.KEY_OPTIONS]:
-                        if ABCAdapter.KEY_ATTRIBUTES in option:
-                            option[ABCAdapter.KEY_ATTRIBUTES] = self.select_simulator_inputs(
-                                                    option[ABCAdapter.KEY_ATTRIBUTES], selection_dictionary, prefix)
-                            option[ABCAdapter.KEY_DEFAULT] = selection_dictionary[param_name][model.KEY_SAVED_VALUE]
-                else:
-                    ## Since entry is not selected, just recurse on the default option and ###
-                    ## all it's subtree will come up one level in the input tree         #####
-                    for option in param[ABCAdapter.KEY_OPTIONS]:
-                        if (param_name in selection_dictionary and ABCAdapter.KEY_ATTRIBUTES in option and
-                            option[ABCAdapter.KEY_VALUE] == selection_dictionary[param_name][model.KEY_SAVED_VALUE]):
-                            new_prefix = option[ABCAdapter.KEY_VALUE] + '_' + prefix
-                            recursive_results = self.select_simulator_inputs(option[ABCAdapter.KEY_ATTRIBUTES],
-                                                                             selection_dictionary, new_prefix)
-                            result.extend(recursive_results)
-        return result
-    
-    
-            
