@@ -161,13 +161,13 @@ class PortletConfigurer():
                         param[ABCAdapter.KEY_DISABLED] = True
                         param[KEY_DYNAMIC] = True
 
-            if ABCAdapter.KEY_OPTIONS in param and param[ABCAdapter.KEY_OPTIONS] is not None:
+            if param.get(ABCAdapter.KEY_OPTIONS) is not None:
                 new_prefix = prefix + param[ABCAdapter.KEY_NAME] + ABCAdapter.KEYWORD_PARAMS
                 self._prepare_input_tree(param[ABCAdapter.KEY_OPTIONS], default_values, new_prefix)
 
-            if ABCAdapter.KEY_ATTRIBUTES in param and param[ABCAdapter.KEY_ATTRIBUTES] is not None:
+            if param.get(ABCAdapter.KEY_ATTRIBUTES) is not None:
                 new_prefix = prefix
-                if ABCAdapter.KEY_TYPE in param and param[ABCAdapter.KEY_TYPE] == 'dict':
+                if param.get(ABCAdapter.KEY_TYPE) == 'dict':
                     new_prefix = prefix + param[ABCAdapter.KEY_NAME] + ABCAdapter.KEYWORD_PARAMS
                 self._prepare_input_tree(param[ABCAdapter.KEY_ATTRIBUTES], default_values, new_prefix)
         return input_list
@@ -238,11 +238,11 @@ class PortletConfigurer():
         """
         for param in input_list:
             param[ABCAdapter.KEY_NAME] = prefix + param[ABCAdapter.KEY_NAME]
-            if ABCAdapter.KEY_OPTIONS in param and param[ABCAdapter.KEY_OPTIONS] is not None:
+            if param.get(ABCAdapter.KEY_OPTIONS) is not None:
                 for option in param[ABCAdapter.KEY_OPTIONS]:
-                    if ABCAdapter.KEY_ATTRIBUTES in option and option[ABCAdapter.KEY_ATTRIBUTES] is not None:
+                    if option.get(ABCAdapter.KEY_ATTRIBUTES) is not None:
                         self._prepend_prefix(option[ABCAdapter.KEY_ATTRIBUTES], prefix)
-            if ABCAdapter.KEY_ATTRIBUTES in param and param[ABCAdapter.KEY_ATTRIBUTES] is not None:
+            if param.get(ABCAdapter.KEY_ATTRIBUTES) is not None:
                 self._prepend_prefix(param[ABCAdapter.KEY_ATTRIBUTES], prefix)
 
 

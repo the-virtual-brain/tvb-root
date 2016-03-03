@@ -382,7 +382,7 @@ class InputTreeManager(object):
                         module = field_dict[KEY_TYPE][:point_separator]
                         classname = field_dict[KEY_TYPE][(point_separator + 1):]
                         try:
-                            module = __import__(module, [], locals(), globals())
+                            module = __import__(module, globals())
                             class_entity = eval("module." + classname)
                             if issubclass(class_entity, MappedType):
                                 data_gid = parameters.get(str(field_dict[KEY_NAME]))
@@ -415,10 +415,10 @@ class InputTreeManager(object):
             try:
                 input_data = eval(str(input_data))
                 # TODO move at a different level
-                equation_type = input_data.get(KEY_DTYPE, None)
+                equation_type = input_data.get(KEY_DTYPE)
                 if equation_type is None:
                     self.log.warning("Cannot figure out type of equation from input dictionary: %s. "
-                                     "Returning []." % (str(input_data, )))
+                                     "Returning []." % input_data)
                     return []
                 splitted_class = equation_type.split('.')
                 module = '.'.join(splitted_class[:-1])
@@ -458,14 +458,14 @@ class InputTreeManager(object):
         entity = load_entity_by_gid(datatype_gid)
         if entity is None:
             ## Validate required DT one more time, after actual retrieval from DB:
-            if row.get(xml_reader.ATT_REQUIRED, False):
+            if row.get(xml_reader.ATT_REQUIRED):
                 raise InvalidParameterException("Empty DataType value for required parameter %s [%s]" % (
                     row[KEY_LABEL], row[KEY_NAME]))
 
             return None
 
         expected_dt_class = row[KEY_TYPE]
-        if isinstance(expected_dt_class, (str, unicode)):
+        if isinstance(expected_dt_class, basestring):
             classname = expected_dt_class.split('.')[-1]
             data_class = __import__(expected_dt_class.replace(classname, ''), globals(), locals(), [classname])
             data_class = eval("data_class." + classname)
@@ -493,9 +493,8 @@ class InputTreeManager(object):
         ##  End Step 2 - Meta-data Updates
 
         ## Validate current entity to be compliant with specified ROW filters.
-        dt_filter = row.get(xml_reader.ELEM_CONDITIONS, False)
-        if (dt_filter is not None) and (dt_filter is not False) and \
-                (entity is not None) and not dt_filter.get_python_filter_equivalent(entity):
+        dt_filter = row.get(xml_reader.ELEM_CONDITIONS)
+        if dt_filter is not None and entity is not None and not dt_filter.get_python_filter_equivalent(entity):
             ## If a filter is declared, check that the submitted DataType is in compliance to it.
             raise InvalidParameterException("Field %s [%s] did not pass filters." % (row[KEY_LABEL],
                                                                                      row[KEY_NAME]))
@@ -510,10 +509,8 @@ class InputTreeManager(object):
             # the following check is made only to improve performance
             # (to find data in the dictionary with O(1)) on else the data is found in O(n)
             if hasattr(entity, 'shape'):
-                for i in xrange(len(entity.shape)):
-                    if not i:
-                        continue
-                    param_key = (row[KEY_NAME] + "_" + row[ATT_PARAMETERS] + "_" + str(i - 1))
+                for i in xrange(1, len(entity.shape)):
+                    param_key = row[KEY_NAME] + "_" + row[ATT_PARAMETERS] + "_" + str(i - 1)
                     if param_key in kwargs:
                         param_dict[param_key] = kwargs[param_key]
             else:
@@ -534,8 +531,7 @@ class InputTreeManager(object):
             row_attr = row[KEY_NAME]
             row_type = row[KEY_TYPE]
             ## If required attribute was submitted empty no point to continue, so just raise exception
-            if (validation_required and row.get(xml_reader.ATT_REQUIRED, False)
-                    and row_attr in kwargs and kwargs[row_attr] == ""):
+            if validation_required and row.get(xml_reader.ATT_REQUIRED) and kwargs.get(row_attr) == "":
                 msg = "Parameter %s [%s] is required for %s but no value was submitted! Please relaunch with valid parameters."
                 raise InvalidParameterException(msg % (row[KEY_LABEL], row[KEY_NAME], self.__class__.__name__))
 
