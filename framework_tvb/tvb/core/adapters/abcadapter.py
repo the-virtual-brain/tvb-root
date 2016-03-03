@@ -172,6 +172,14 @@ class ABCAdapter(object):
         self.log = get_logger(self.__class__.__module__)
         self.tree_manager = InputTreeManager()
 
+    @staticmethod
+    def can_be_active():
+        """
+        To be overridden where needed (e.g. Matlab dependent adapters).
+        :return: By default True, and False when the current Adapter can not be executed in the current env
+        for various reasons (e.g. no Matlab or Octave installed)
+        """
+        return True
 
     @abstractmethod
     def get_input_tree(self):

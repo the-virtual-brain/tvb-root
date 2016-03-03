@@ -74,7 +74,6 @@ class Introspector:
     def __init__(self, introspected_module):
         self.module_name = introspected_module
         self.logger = get_logger(self.__class__.__module__)
-        self.matlab_executable = TvbProfile.current.MATLAB_EXECUTABLE
 
 
     def get_events_path(self):
@@ -498,19 +497,14 @@ class Introspector:
     def __create_instance(self, category_key, class_ref, init_parameter=None):
         """
         Validate Class reference.
-        Return None of Algorithm instance, from class reference.
+        Return None or Algorithm instance, from class reference.
         """
-        if self.matlab_executable:
+        if class_ref.can_be_active():
             return model.AlgorithmGroup(class_ref.__module__, class_ref.__name__, category_key,
                                         init_parameter=init_parameter, last_introspection_check=datetime.datetime.now())
         else:
-            if self.__is_matlab_parent(class_ref):
-                self.logger.warning("Skiped Adapter because MATLAB is not found:" + str(class_ref))
-                return None
-            else:
-                return model.AlgorithmGroup(class_ref.__module__, class_ref.__name__, category_key,
-                                            init_parameter=init_parameter,
-                                            last_introspection_check=datetime.datetime.now())
+            self.logger.warning("Skipped Adapter(probably because MATLAB not found):" + str(class_ref))
+            return None
 
 
     def __is_matlab_parent(self, adapter_class):

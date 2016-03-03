@@ -32,6 +32,7 @@
 """
 
 from tvb.adapters.analyzers.matlab_worker import MatlabWorker
+from tvb.basic.profile import TvbProfile
 from tvb.core.adapters.abcadapter import ABCGroupAdapter
 
 
@@ -44,6 +45,10 @@ class MatlabAdapter(ABCGroupAdapter):
     def __init__(self, xml_file_path):
         ABCGroupAdapter.__init__(self, xml_file_path)
         self.matlab_worker = MatlabWorker()
+
+    @staticmethod
+    def can_be_active():
+        return not not TvbProfile.current.MATLAB_EXECUTABLE
 
     def get_required_memory_size(self, **kwargs):
         """
