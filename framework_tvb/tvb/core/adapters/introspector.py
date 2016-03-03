@@ -50,6 +50,7 @@ from tvb.core.adapters.xml_reader import ATT_TYPE, ATT_NAME, INPUTS_KEY
 from tvb.core.adapters.xml_reader import ATT_REQUIRED, ELEM_CONDITIONS, XMLGroupReader
 from tvb.core.adapters.exceptions import XmlParserException
 from tvb.core.portlets.portlet_configurer import PortletConfigurer
+from tvb.core.utils import extract_matlab_doc_string
 
 
 ALL_VARIABLE = "__all__"
@@ -378,7 +379,7 @@ class Introspector:
                     root_folder = adapter.get_matlab_file_root()
                     file_name = adapter.get_matlab_file(algo_ident)
                     if file_name:
-                        algo_description = self.extract_matlab_doc_string(os.path.join(root_folder, file_name))
+                        algo_description = extract_matlab_doc_string(os.path.join(root_folder, file_name))
                 algorithm = dao.get_algorithm_by_group(group.id, algo_ident)
                 if algorithm is None:
                     #Create new
@@ -521,33 +522,6 @@ class Introspector:
                 if self.__is_matlab_parent(parent):
                     return True
         return False
-
-
-    def extract_matlab_doc_string(self, file_n):
-        """
-        Extract the first doc entry from a matlab file.
-        """
-        try:
-            with open(file_n) as m_file:
-                m_data = m_file.read()
-        except Exception, ex:
-            self.logger.exception(ex)
-            return "Description not available."
-
-        doc_started_flag = False
-        result = ""
-
-        for row in m_data.split('\n'):
-            if row.startswith('%'):
-                doc_started_flag = True
-                result += row.replace('%', '') + "<br/>"
-            else:
-                if len(row.strip()) == 0:
-                    result += "<br/>"
-                else:
-                    if doc_started_flag:
-                        break
-        return unicode(result, errors="ignore")
 
 
     @staticmethod
