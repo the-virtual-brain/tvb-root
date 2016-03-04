@@ -333,7 +333,6 @@ class Introspector:
                 group.description = getattr(adapter, "_ui_description")
             if hasattr(adapter, "_ui_subsection"):
                 group.subsection_name = getattr(adapter, "_ui_subsection")
-            group.ui_display = adapter._ui_display
             group.displayname = ui_name
             group.removed = False
             group.last_introspection_check = datetime.datetime.now()

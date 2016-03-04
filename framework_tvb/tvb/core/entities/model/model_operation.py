@@ -118,7 +118,6 @@ class AlgorithmGroup(Base):
     displayname = Column(String)
     description = Column(String)
     subsection_name = Column(String)
-    ui_display = Column(Integer)        # When negative the algorithm will not be displayed on the STEPS page.
     init_parameter = Column(String)
     last_introspection_check = Column(DateTime)
     removed = Column(Boolean, default=False)

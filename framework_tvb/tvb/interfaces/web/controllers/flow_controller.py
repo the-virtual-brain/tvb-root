@@ -97,8 +97,6 @@ class FlowController(BaseController):
                                       title="Select an algorithm", displayControl=False)
         adapters_list = []
         for algo_group in self.flow_service.get_groups_for_categories([category]):
-            if algo_group.ui_display < 0:
-                continue
             adapter_link = self.get_url_adapter(step_key, algo_group.id)
             adapters_list.append({common.KEY_TITLE: algo_group.displayname,
                                   'link': adapter_link,

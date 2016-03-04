@@ -156,8 +156,6 @@ class ABCAdapter(object):
     # Group that will be set for each adapter created by in build_adapter method
     algorithm_group = None
 
-    _ui_display = 1
-
     __metaclass__ = ABCMeta
 
 
