@@ -38,7 +38,7 @@ import json
 import copy
 import cherrypy
 import formencode
-from tvb.core.adapters.input_tree import InputTreeManager
+from tvb.core.adapters.input_tree import InputTreeManager, KEY_PARAMETER_CHECKED
 import tvb.core.entities.model
 from formencode import validators
 from cgi import FieldStorage
@@ -51,7 +51,7 @@ from tvb.core.adapters.abcadapter import ABCAdapter
 from tvb.core.services.import_service import ImportService
 from tvb.adapters.exporters.export_manager import ExportManager
 from tvb.core.services.exceptions import BurstServiceException
-from tvb.core.services.burst_service import BurstService, KEY_PARAMETER_CHECKED, LAUNCH_NEW
+from tvb.core.services.burst_service import BurstService, LAUNCH_NEW
 from tvb.core.services.workflow_service import WorkflowService
 from tvb.core.services.operation_service import RANGE_PARAMETER_1, RANGE_PARAMETER_2
 from tvb.interfaces.web.controllers import common
