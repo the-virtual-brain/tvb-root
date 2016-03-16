@@ -42,7 +42,6 @@ from tvb.basic.traits.exceptions import TVBException
 from tvb.basic.traits.parameters_factory import collapse_params
 from tvb.basic.traits.types_mapped import MappedType
 from tvb.core import utils
-from tvb.core.adapters import xml_reader
 from tvb.core.adapters.exceptions import InvalidParameterException
 from tvb.core.entities import model
 from tvb.core.entities.load import load_entity_by_gid
@@ -58,16 +57,24 @@ KEY_EQUATION = "equation"
 KEY_FOCAL_POINTS = "focal_points"
 KEY_SURFACE_GID = "surface_gid"
 
-TYPE_SELECT = xml_reader.TYPE_SELECT
-TYPE_MULTIPLE = xml_reader.TYPE_MULTIPLE
-STATIC_ACCEPTED_TYPES = xml_reader.ALL_TYPES
-KEY_TYPE = xml_reader.ATT_TYPE
-KEY_OPTIONS = xml_reader.ELEM_OPTIONS
-KEY_ATTRIBUTES = xml_reader.ATT_ATTRIBUTES
-KEY_NAME = xml_reader.ATT_NAME
-KEY_DESCRIPTION = xml_reader.ATT_DESCRIPTION
-KEY_VALUE = xml_reader.ATT_VALUE
-KEY_LABEL = xml_reader.ATT_LABEL
+from tvb.core.adapters.xml_reader import (
+    ALL_TYPES as STATIC_ACCEPTED_TYPES,
+    ATT_TYPE as KEY_TYPE,
+    ELEM_OPTIONS as KEY_OPTIONS,
+    ATT_ATTRIBUTES as KEY_ATTRIBUTES,
+    ATT_NAME as KEY_NAME,
+    ATT_DESCRIPTION as KEY_DESCRIPTION,
+    ATT_VALUE as KEY_VALUE,
+    ATT_LABEL as KEY_LABEL,
+    ATT_REQUIRED as KEY_REQUIRED,
+    ATT_MAXVALUE as KEY_MAXVALUE,
+    ATT_MINVALUE as KEY_MINVALUE,
+    ATT_FIELD as KEY_FIELD,
+
+    TYPE_SELECT, TYPE_MULTIPLE, TYPE_DICT, TYPE_ARRAY, TYPE_LIST, TYPE_BOOL, TYPE_INT, TYPE_FLOAT,
+    TYPE_STR, TYPE_UPLOAD,
+    QUANTIFIER_MANUAL, QUANTIFIER_UPLOAD, ATT_QUATIFIER)
+
 KEY_DEFAULT = "default"
 KEY_DATATYPE = 'datatype'
 KEY_DTYPE = 'elementType'
@@ -75,7 +82,6 @@ KEY_DISABLED = "disabled"
 KEY_ALL = "allValue"
 KEY_CONDITION = "conditions"
 KEY_FILTERABLE = "filterable"
-KEY_REQUIRED = "required"
 KEY_ID = 'id'
 KEY_UI_HIDE = "ui_hidden"
 
@@ -111,7 +117,7 @@ class InputTreeManager(object):
             if (entry[KEY_NAME] not in kwargs
                     and entry.get(KEY_REQUIRED) is True
                     and KEY_DEFAULT in entry
-                    and entry[KEY_TYPE] != xml_reader.TYPE_DICT):
+                    and entry[KEY_TYPE] != TYPE_DICT):
                 kwargs[entry[KEY_NAME]] = entry[KEY_DEFAULT]
 
         for entry in algorithm_inputs:
@@ -124,10 +130,10 @@ class InputTreeManager(object):
 
 
     def _validate_range_for_value_input(self, value, row):
-        if value < row[xml_reader.ATT_MINVALUE] or value > row[xml_reader.ATT_MAXVALUE]:
+        if value < row[KEY_MINVALUE] or value > row[KEY_MAXVALUE]:
             warning_message = "Field %s [%s] should be between %s and %s but provided value was %s." % (
-                row[KEY_LABEL], row[KEY_NAME], row[xml_reader.ATT_MINVALUE],
-                row[xml_reader.ATT_MAXVALUE], value)
+                row[KEY_LABEL], row[KEY_NAME], row[KEY_MINVALUE],
+                row[KEY_MAXVALUE], value)
             self.log.warning(warning_message)
 
 
@@ -135,11 +141,11 @@ class InputTreeManager(object):
         min_val = numpy.min(array)
         max_val = numpy.max(array)
 
-        if min_val < row[xml_reader.ATT_MINVALUE] or max_val > row[xml_reader.ATT_MAXVALUE]:
+        if min_val < row[KEY_MINVALUE] or max_val > row[KEY_MAXVALUE]:
             # As described in TVB-1295, we do no longer raise exception, but only log a warning
             warning_message = "Field %s [%s] should have values between %s and %s but provided array contains min-" \
-                              "max:(%s, %s)." % (row[KEY_LABEL], row[KEY_NAME], row[xml_reader.ATT_MINVALUE],
-                                                 row[xml_reader.ATT_MAXVALUE], min_val, max_val)
+                              "max:(%s, %s)." % (row[KEY_LABEL], row[KEY_NAME], row[KEY_MINVALUE],
+                                                 row[KEY_MAXVALUE], min_val, max_val)
             self.log.warning(warning_message)
 
 
@@ -336,7 +342,7 @@ class InputTreeManager(object):
 
             if ((KEY_TYPE not in param or param[KEY_TYPE] in STATIC_ACCEPTED_TYPES)
                     and param.get(KEY_OPTIONS) is not None):
-                add_prefix_option = param.get(KEY_TYPE) in [xml_reader.TYPE_MULTIPLE, xml_reader.TYPE_SELECT]
+                add_prefix_option = param.get(KEY_TYPE) in [TYPE_MULTIPLE, TYPE_SELECT]
                 new_prefix = InputTreeManager.form_prefix(param[KEY_NAME], prefix)
                 prepared_param[KEY_OPTIONS] = InputTreeManager.prepare_param_names(param[KEY_OPTIONS],
                                                                                    new_prefix, add_prefix_option)
@@ -434,14 +440,14 @@ class InputTreeManager(object):
                 self.log.exception("The parameter '" + str(row['name']) + "' was ignored. None value was returned.")
                 return None
 
-        if xml_reader.ATT_QUATIFIER in row:
-            quantifier = row[xml_reader.ATT_QUATIFIER]
+        if ATT_QUATIFIER in row:
+            quantifier = row[ATT_QUATIFIER]
             dtype = None
             if KEY_DTYPE in row:
                 dtype = row[KEY_DTYPE]
-            if quantifier == xml_reader.QUANTIFIER_MANUAL:
+            if quantifier == QUANTIFIER_MANUAL:
                 return string2array(str(input_data), ",", dtype)
-            elif quantifier == xml_reader.QUANTIFIER_UPLOAD:
+            elif quantifier == QUANTIFIER_UPLOAD:
                 input_str = open(input_data, 'r').read()
                 return string2array(input_str, " ", dtype)
 
@@ -458,7 +464,7 @@ class InputTreeManager(object):
         entity = load_entity_by_gid(datatype_gid)
         if entity is None:
             ## Validate required DT one more time, after actual retrieval from DB:
-            if row.get(xml_reader.ATT_REQUIRED):
+            if row.get(KEY_REQUIRED):
                 raise InvalidParameterException("Empty DataType value for required parameter %s [%s]" % (
                     row[KEY_LABEL], row[KEY_NAME]))
 
@@ -493,15 +499,15 @@ class InputTreeManager(object):
         ##  End Step 2 - Meta-data Updates
 
         ## Validate current entity to be compliant with specified ROW filters.
-        dt_filter = row.get(xml_reader.ELEM_CONDITIONS)
+        dt_filter = row.get(KEY_CONDITION)
         if dt_filter is not None and entity is not None and not dt_filter.get_python_filter_equivalent(entity):
             ## If a filter is declared, check that the submitted DataType is in compliance to it.
             raise InvalidParameterException("Field %s [%s] did not pass filters." % (row[KEY_LABEL],
                                                                                      row[KEY_NAME]))
 
         # In case a specific field in entity is to be used, use it
-        if xml_reader.ATT_FIELD in row:
-            val = eval("entity." + row[xml_reader.ATT_FIELD])
+        if KEY_FIELD in row:
+            val = eval("entity." + row[KEY_FIELD])
             result = val
         if ATT_METHOD in row:
             param_dict = dict()
@@ -531,12 +537,12 @@ class InputTreeManager(object):
             row_attr = row[KEY_NAME]
             row_type = row[KEY_TYPE]
             ## If required attribute was submitted empty no point to continue, so just raise exception
-            if validation_required and row.get(xml_reader.ATT_REQUIRED) and kwargs.get(row_attr) == "":
+            if validation_required and row.get(KEY_REQUIRED) and kwargs.get(row_attr) == "":
                 msg = "Parameter %s [%s] is required for %s but no value was submitted! Please relaunch with valid parameters."
                 raise InvalidParameterException(msg % (row[KEY_LABEL], row[KEY_NAME], self.__class__.__name__))
 
             try:
-                if row_type == xml_reader.TYPE_DICT:
+                if row_type == TYPE_DICT:
                     kwa[row_attr], taken_keys = self._get_dictionary(row, **kwargs)
                     for key in taken_keys:
                         if key in kwa:
@@ -560,39 +566,39 @@ class InputTreeManager(object):
                     del kwargs[row_attr]
                     continue
 
-                if row_type == xml_reader.TYPE_ARRAY:
+                if row_type == TYPE_ARRAY:
                     kwa[row_attr] = self._convert_to_array(kwargs[row_attr], row)
-                    if xml_reader.ATT_MINVALUE in row and xml_reader.ATT_MAXVALUE in row:
+                    if KEY_MINVALUE in row and KEY_MAXVALUE in row:
                         self._validate_range_for_array_input(kwa[row_attr], row)
-                elif row_type == xml_reader.TYPE_LIST:
+                elif row_type == TYPE_LIST:
                     if not isinstance(kwargs[row_attr], list):
                         kwa[row_attr] = json.loads(kwargs[row_attr])
-                elif row_type == xml_reader.TYPE_BOOL:
+                elif row_type == TYPE_BOOL:
                     kwa[row_attr] = bool(kwargs[row_attr])
-                elif row_type == xml_reader.TYPE_INT:
+                elif row_type == TYPE_INT:
                     if kwargs[row_attr] in [None, '', 'None']:
                         kwa[row_attr] = None
                     else:
                         kwa[row_attr] = int(kwargs[row_attr])
-                        if xml_reader.ATT_MINVALUE in row and xml_reader.ATT_MAXVALUE in row:
+                        if KEY_MINVALUE in row and KEY_MAXVALUE in row:
                             self._validate_range_for_value_input(kwa[row_attr], row)
-                elif row_type == xml_reader.TYPE_FLOAT:
+                elif row_type == TYPE_FLOAT:
                     if kwargs[row_attr] in ['', 'None']:
                         kwa[row_attr] = None
                     else:
                         kwa[row_attr] = float(kwargs[row_attr])
-                        if xml_reader.ATT_MINVALUE in row and xml_reader.ATT_MAXVALUE in row:
+                        if KEY_MINVALUE in row and KEY_MAXVALUE in row:
                             self._validate_range_for_value_input(kwa[row_attr], row)
-                elif row_type == xml_reader.TYPE_STR:
+                elif row_type == TYPE_STR:
                     kwa[row_attr] = kwargs[row_attr]
-                elif row_type in [xml_reader.TYPE_SELECT, xml_reader.TYPE_MULTIPLE]:
+                elif row_type in [TYPE_SELECT, TYPE_MULTIPLE]:
                     val = kwargs[row_attr]
-                    if row_type == xml_reader.TYPE_MULTIPLE and not isinstance(val, list):
+                    if row_type == TYPE_MULTIPLE and not isinstance(val, list):
                         val = [val]
                     kwa[row_attr] = val
-                    if row_type == xml_reader.TYPE_SELECT:
+                    if row_type == TYPE_SELECT:
                         simple_select_list.append(row_attr)
-                elif row_type == xml_reader.TYPE_UPLOAD:
+                elif row_type == TYPE_UPLOAD:
                     kwa[row_attr] = kwargs[row_attr]
                 else:
                     ## DataType parameter to be processed:
@@ -600,7 +606,7 @@ class InputTreeManager(object):
                     datatype_gid = kwargs[row_attr]
                     ## Load filtered and trimmed attribute (e.g. field is applied if specified):
                     kwa[row_attr] = self._load_entity(row, datatype_gid, kwargs, metadata_out)
-                    if xml_reader.ATT_FIELD in row:
+                    if KEY_FIELD in row:
                         # Add entity_GID to the parameters to recognize original input
                         kwa[row_attr + '_gid'] = datatype_gid
 
