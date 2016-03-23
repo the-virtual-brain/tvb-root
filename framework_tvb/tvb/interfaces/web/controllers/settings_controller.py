@@ -150,9 +150,13 @@ class SettingsController(UserController):
         if len(submitted_path) == 0:
             return {'status': 'ok',
                     'message': 'No Matlab/Ocatve path was given. Some analyzers will not be available.'}
+
         if os.path.isfile(submitted_path):
             version = check_matlab_version(submitted_path)
-            return {'status': 'ok', 'message': 'Valid Matlab/Octave. Found version: %s.' % (version,)}
+            if version:
+                return {'status': 'ok', 'message': "Valid Matlab/Octave. Found version: '%s'." % (version,)}
+            else:
+                return {'status': 'not ok', 'message': "Invalid Matlab/Octave. Found version: '%s' ." % (version,)}
         else:
             return {'status': 'not ok', 'message': 'Invalid Matlab/Octave path.'}
 
@@ -243,16 +247,17 @@ class MatlabValidator(formencode.FancyValidator):
 
     def _convert_to_python(self, value, _):
         """ 
-        Validation required method.
+        Validation method for the Matlab Path.
         """
         try:
             version = check_matlab_version(value)
-            if len(version) > 0:
+            if version:
                 return value
             else:
                 raise formencode.Invalid('No valid matlab installation was found at the path you provided.', '', None)
         except Exception:
-            raise formencode.Invalid('No valid matlab installation was found at the path you provided.', '', None)
+            raise formencode.Invalid('An exception was thrown when trying to validate Matlab. \n'
+                                     'Try a different path, or empty.', '', None)
 
 
 class AsciiValidator(formencode.FancyValidator):
