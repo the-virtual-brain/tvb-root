@@ -76,12 +76,13 @@ def user_environment_execution(func):
             del os.environ['LD_LIBRARY_PATH']
         if ORIGINAL_LD_RUN_PATH:
             del os.environ['LD_RUN_PATH']
-        func(*args, **kwargs)
+        result = func(*args, **kwargs)
         ## Restore environment settings after function executed.
         if ORIGINAL_LD_LIBRARY_PATH:
             os.environ['LD_LIBRARY_PATH'] = ORIGINAL_LD_LIBRARY_PATH
         if ORIGINAL_LD_RUN_PATH:
             os.environ['LD_RUN_PATH'] = ORIGINAL_LD_RUN_PATH
+        return result
             
     return new_function
 
