@@ -345,7 +345,7 @@ def get_matlab_executable():
     return matlab_exe_path
 
 
-
+@user_environment_execution
 def check_matlab_version(matlab_path):
     """
     Try to get the current version of matlab from a given path.
