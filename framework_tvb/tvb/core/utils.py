@@ -365,7 +365,7 @@ def check_matlab_version(matlab_path):
     version = version.replace('\n', '').strip()
 
     logger = get_logger(__name__)
-    logger.info("Response in TVB from: %s\n Version: %s \nOriginal %s" % (matlab_path, version, result_data))
+    logger.debug("Response in TVB from: %s\n Version: %s \nOriginal %s" % (matlab_path, version, result_data))
     os.remove(matlab_test_file)
     os.remove(matlab_log_file)
     return version
