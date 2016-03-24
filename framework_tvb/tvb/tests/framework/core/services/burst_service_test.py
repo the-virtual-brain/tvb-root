@@ -50,7 +50,7 @@ from tvb.core.entities.storage import dao
 from tvb.core.entities.file.files_helper import FilesHelper
 from tvb.core.entities.transient.burst_configuration_entities import WorkflowStepConfiguration as wf_cfg
 from tvb.core.entities.transient.structure_entities import DataTypeMetaData
-from tvb.core.services.burst_service import BurstService, KEY_SAVED_VALUE, KEY_PARAMETER_CHECKED
+from tvb.core.services.burst_service import BurstService
 from tvb.core.services.flow_service import FlowService
 from tvb.core.services.workflow_service import WorkflowService
 from tvb.core.services.project_service import ProjectService
@@ -286,10 +286,10 @@ class BurstServiceTest(BaseTestCase):
         """
         simulator_input_tree = self.flow_service.prepare_adapter(self.test_project.id, self.sim_algo_group)[1]
         child_parameter = ''
-        checked_parameters = {simulator_input_tree[0][ABCAdapter.KEY_NAME]: {KEY_PARAMETER_CHECKED: True,
-                                                                             KEY_SAVED_VALUE: 'new_value'},
-                              simulator_input_tree[1][ABCAdapter.KEY_NAME]: {KEY_PARAMETER_CHECKED: True,
-                                                                             KEY_SAVED_VALUE: 'new_value'}}
+        checked_parameters = {simulator_input_tree[0][ABCAdapter.KEY_NAME]: {model.KEY_PARAMETER_CHECKED: True,
+                                                                             model.KEY_SAVED_VALUE: 'new_value'},
+                              simulator_input_tree[1][ABCAdapter.KEY_NAME]: {model.KEY_PARAMETER_CHECKED: True,
+                                                                             model.KEY_SAVED_VALUE: 'new_value'}}
         #Look for a entry from a subtree to add to the selected simulator inputs
         for idx, entry in enumerate(simulator_input_tree):
             found_it = False
@@ -298,11 +298,11 @@ class BurstServiceTest(BaseTestCase):
                     if option[ABCAdapter.KEY_VALUE] == entry[ABCAdapter.KEY_DEFAULT]:
                         if option[ABCAdapter.KEY_ATTRIBUTES]:
                             child_parameter = option[ABCAdapter.KEY_ATTRIBUTES][0][ABCAdapter.KEY_NAME]
-                            checked_parameters[entry[ABCAdapter.KEY_NAME]] = {KEY_PARAMETER_CHECKED: False,
-                                                                              KEY_SAVED_VALUE: entry[
+                            checked_parameters[entry[ABCAdapter.KEY_NAME]] = {model.KEY_PARAMETER_CHECKED: False,
+                                                                              model.KEY_SAVED_VALUE: entry[
                                                                                   ABCAdapter.KEY_DEFAULT]}
-                            checked_parameters[child_parameter] = {KEY_PARAMETER_CHECKED: True,
-                                                                   KEY_SAVED_VALUE: 'new_value'}
+                            checked_parameters[child_parameter] = {model.KEY_PARAMETER_CHECKED: True,
+                                                                   model.KEY_SAVED_VALUE: 'new_value'}
                             found_it = True
                             break
             if found_it:
@@ -468,8 +468,8 @@ class BurstServiceTest(BaseTestCase):
         ui_submited_simulator_iface_replica = {}
         kwargs_replica = {}
         for entry in adapter_interface:
-            ui_submited_simulator_iface_replica[entry[ABCAdapter.KEY_NAME]] = {KEY_PARAMETER_CHECKED: True,
-                                                                               KEY_SAVED_VALUE: entry[
+            ui_submited_simulator_iface_replica[entry[ABCAdapter.KEY_NAME]] = {model.KEY_PARAMETER_CHECKED: True,
+                                                                               model.KEY_SAVED_VALUE: entry[
                                                                                    ABCAdapter.KEY_DEFAULT]}
             kwargs_replica[entry[ABCAdapter.KEY_NAME]] = entry[ABCAdapter.KEY_DEFAULT]
         burst_config = self.burst_service.new_burst_configuration(self.test_project.id)
