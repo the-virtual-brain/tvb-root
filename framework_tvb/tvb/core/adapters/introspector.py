@@ -136,9 +136,9 @@ class Introspector:
             self.logger.debug("Found Adapters_Dict=" + str(path_adapters))
             for category_name in path_adapters:
                 category_details = path_adapters[category_name]
-                launchable = category_details.get(LAUNCHABLE)
-                rawinput = category_details.get(RAWINPUT)
-                display = category_details.get(DISPLAYER)
+                launchable = bool(category_details.get(LAUNCHABLE))
+                rawinput = bool(category_details.get(RAWINPUT))
+                display = bool(category_details.get(DISPLAYER))
                 order_nr = category_details.get(ORDER, 999)
                 category_instance = dao.filter_category(category_name, rawinput, display, launchable, order_nr)
                 if category_instance is not None:
