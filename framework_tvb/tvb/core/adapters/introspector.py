@@ -116,10 +116,7 @@ class Introspector:
             path_adapters = module.ADAPTERS
             self.path_types = module.DATATYPES_PATH
             self.removers_path = module.REMOVERS_PATH
-            if hasattr(module, 'PORTLETS_PATH'):
-                self.path_portlets = module.PORTLETS_PATH
-            else:
-                self.path_portlets = []
+            self.path_portlets = getattr(module, 'PORTLETS_PATH', [])
         except Exception, excep:
             self.logger.warning("Module " + self.module_name + " is not fully introspect compatible!")
             self.logger.warning(excep.message)
@@ -139,19 +136,16 @@ class Introspector:
             self.logger.debug("Found Adapters_Dict=" + str(path_adapters))
             for category_name in path_adapters:
                 category_details = path_adapters[category_name]
-                launchable = (LAUNCHABLE in category_details and category_details[LAUNCHABLE])
-                rawinput = (RAWINPUT in category_details and category_details[RAWINPUT])
-                display = (DISPLAYER in category_details and category_details[DISPLAYER])
-                if ORDER in category_details:
-                    order_nr = category_details[ORDER]
-                else:
-                    order_nr = 999
+                launchable = category_details.get(LAUNCHABLE)
+                rawinput = category_details.get(RAWINPUT)
+                display = category_details.get(DISPLAYER)
+                order_nr = category_details.get(ORDER, 999)
                 category_instance = dao.filter_category(category_name, rawinput, display, launchable, order_nr)
                 if category_instance is not None:
                     category_instance.last_introspection_check = datetime.datetime.now()
                     category_instance.removed = False
                 else:
-                    category_state = category_details[STATE] if STATE in category_details else ''
+                    category_state = category_details.get(STATE, '')
                     category_instance = model.AlgorithmCategory(category_name, launchable, rawinput, display,
                                                                 category_state, order_nr, datetime.datetime.now())
                 category_instance = dao.store_entity(category_instance)
@@ -170,7 +164,7 @@ class Introspector:
         the package, get it's folder and look for all the XML files defined 
         there, then read all the portlets defined there and store them in DB.
         """
-        portlet_package = __import__(path_portlets, locals(), globals(), ["__init__"])
+        portlet_package = __import__(path_portlets, globals(), locals(), ["__init__"])
         portlet_folder = os.path.dirname(portlet_package.__file__)
         portlets_list = []
         for file_n in os.listdir(portlet_folder):
@@ -208,11 +202,11 @@ class Introspector:
                                     continue
                                 adapter_input_names = [entry[ABCAdapter.KEY_NAME] for entry
                                                        in adapter_instance.flaten_input_interface()]
-                                for input_entry in portlet_inputs:
-                                    if portlet_inputs[input_entry][ATT_OVERWRITE] == adapter[ABCAdapter.KEY_NAME]:
-                                        if portlet_inputs[input_entry][ABCAdapter.KEY_NAME] not in adapter_input_names:
+                                for input_entry in portlet_inputs.values():
+                                    if input_entry[ATT_OVERWRITE] == adapter[ABCAdapter.KEY_NAME]:
+                                        if input_entry[ABCAdapter.KEY_NAME] not in adapter_input_names:
                                             self.logger.error("Invalid input %s for adapter %s" % (
-                                                portlet_inputs[input_entry][ABCAdapter.KEY_NAME], adapter_instance))
+                                                input_entry[ABCAdapter.KEY_NAME], adapter_instance))
                                             is_valid = False
                             except ImportError, _:
                                 self.logger.error("Invalid adapter declaration %s in portlet %s" % (
@@ -326,13 +320,13 @@ class Introspector:
                 self.logger.info(str(group.module) + " will be updated")
                 group = group_inst_from_db
             if hasattr(adapter, "_ui_name"):
-                ui_name = getattr(adapter, "_ui_name")
+                ui_name = adapter._ui_name
             elif ui_name is None or len(ui_name) == 0:
                 ui_name = group.classname
             if hasattr(adapter, "_ui_description"):
-                group.description = getattr(adapter, "_ui_description")
+                group.description = adapter._ui_description
             if hasattr(adapter, "_ui_subsection"):
-                group.subsection_name = getattr(adapter, "_ui_subsection")
+                group.subsection_name = adapter._ui_subsection
             group.displayname = ui_name
             group.removed = False
             group.last_introspection_check = datetime.datetime.now()
@@ -345,15 +339,10 @@ class Introspector:
         Given the full name of a class as a string this method
         will return a reference to that class.
         """
-        index = full_class_name.rfind(".")
-        if index > 0:
-            module = full_class_name[0:index]
-            class_name = full_class_name[index + 1:]
-            mod = __import__(module)
-            components = module.split('.')
-            for comp in components[1:]:
-                mod = getattr(mod, comp)
-            return eval("mod." + class_name)
+        if '.' in full_class_name:
+            module, class_name = full_class_name.rsplit('.', 1)
+            mod = __import__(module, fromlist=[class_name])
+            return getattr(mod, class_name)
         self.logger.error("The location of the adapter class is incorrect. It should be placed in a module.")
         raise Exception("The location of the adapter class is incorrect. It should be placed in a module.")
 
@@ -398,7 +387,7 @@ class Introspector:
             outputs = str(adapter.get_output())
             algorithm = dao.get_algorithm_by_group(group.id, None)
             if hasattr(adapter, '_ui_name'):
-                algo_name = getattr(adapter, '_ui_name')
+                algo_name = adapter._ui_name
             else:
                 algo_name = adapter.__class__.__name__
             if algorithm is None:
@@ -437,7 +426,7 @@ class Introspector:
                     all_param_filters.append(j)
                 else:
                     all_param_filters.append('None')
-                if ATT_REQUIRED in input_field and input_field[ATT_REQUIRED]:
+                if input_field.get(ATT_REQUIRED):
                     required_datatypes.append(class_name.__name__)
                     req_param_name.append(input_field[ATT_NAME])
                     if ELEM_CONDITIONS in input_field:
@@ -464,10 +453,9 @@ class Introspector:
         if param_to_test in ABCAdapter.STATIC_ACCEPTED_TYPES:
             return None
         try:
-            class_name = param_to_test.split('.')[-1]
-            module = param_to_test.replace("." + class_name, '')
+            module, class_name = param_to_test.rsplit('.', 1)
             reference = __import__(module, globals(), locals(), [class_name])
-            return eval("reference." + class_name)
+            return getattr(reference, class_name)
         except Exception, excep:
             self.logger.debug("Could not import class:" + str(excep))
             return None
@@ -518,13 +506,4 @@ class Introspector:
         Result will be a list of Strings.
         """
         module = __import__(module_path, globals(), locals(), ["__init__"])
-        types_list = inspect.getmembers(module)
-        result = []
-        for var_module in types_list:
-            if variable_name == var_module[0]:
-                for name in var_module[1]:
-                    result.append(str(name))
-                break
-        return result
-    
-    
+        return [str(a) for a in getattr(module, variable_name, [])]

@@ -82,11 +82,11 @@ class TraitedInterfaceGenerator(object):
 
             if intr['type'] == 'dict' and isinstance(intr['default'], dict):
                 intr['attributes'], intr['elementType'] = self.__prepare_dictionary(intr['default'])
-                if len(intr['attributes']) < 1:
+                if len(intr['attributes']) == 0:
                     ## Dictionary without any sub-parameter
                     return {}
 
-        mro_type_names = [str(i.__name__) for i in ownr.mro()]
+        mro_type_names = [i.__name__ for i in ownr.mro()]
 
         if 'Array' in mro_type_names:
             self.__fill_array(obj, inst, intr)
@@ -174,7 +174,7 @@ class TraitedInterfaceGenerator(object):
         intr['type'] = 'array'
         intr['elementType'] = str(inst.dtype)
         intr['quantifier'] = 'manual'
-        if obj.trait.value is not None and isinstance(obj.trait.value, numpy.ndarray):
+        if isinstance(obj.trait.value, numpy.ndarray):
             # Make sure arrays are displayed in a compatible form: [1, 2, 3]
             intr['default'] = str(obj.trait.value.tolist())
 
@@ -222,12 +222,12 @@ class TraitedInterfaceGenerator(object):
             value = dictionary[key]
             entry['label'] = key
             entry['name'] = key
-            if type(value).__name__ == 'dict':
+            if type(value) == dict:
                 entry['attributes'], entry['elementType'] = self.__prepare_dictionary(value)
                 value = ''
             entry['default'] = str(value)
 
-            if hasattr(value, 'tolist') or 'Array' in [str(i.__name__) for i in type(value).mro()]:
+            if hasattr(value, 'tolist') or 'Array' in [i.__name__ for i in type(value).mro()]:
                 entry['type'] = 'array'
                 if not hasattr(value, 'tolist'):
                     entry['default'] = str(value.trait.value)
@@ -261,8 +261,8 @@ class TraitedInterfaceGenerator(object):
 
     @staticmethod
     def __correct_defaults(intr):
-        if intr['default'] is not None and intr['default'].__class__:
-            intr['default'] = str(intr['default'].__class__.__name__)
+        if intr['default'] is not None:
+            intr['default'] = intr['default'].__class__.__name__
             if intr['default'] == 'RandomState':
                 intr['default'] = 'RandomStream'
         else:
