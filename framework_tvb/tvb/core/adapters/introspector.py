@@ -188,7 +188,7 @@ class Introspector:
                             module_name = adapter[ABCAdapter.KEY_TYPE].replace('.' + class_name, '')
                             try:
                                 #Check that module is properly declared
-                                module = __import__(module_name, class_name, globals(), locals())
+                                module = __import__(module_name, globals(), fromlist=[class_name])
                                 if type(module) != ModuleType:
                                     is_valid = False
                                     self.logger.error("Wrong module %s in portlet %s" % (module_name, algo_identifier))
