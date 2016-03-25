@@ -97,6 +97,19 @@ WARNING_OVERFLOW = "Too many entities in storage; some of them were not returned
                    "Use filters, to make the list small enough to fit in here!"
 
 
+def get_class_by_name(fqname):
+    '''
+    get_class_by_name("package.module.class")
+    is equivalent to from package.module import class
+    '''
+    try:
+        modulename, classname = fqname.rsplit('.', 1)
+        module = __import__(modulename, globals(), fromlist=[classname])
+        return getattr(module, classname)
+    except (AttributeError, ValueError) as e:
+        raise ImportError(str(e))
+
+
 class InputTreeManager(object):
 
     def __init__(self):
@@ -130,23 +143,25 @@ class InputTreeManager(object):
 
 
     def _validate_range_for_value_input(self, value, row):
-        if value < row[KEY_MINVALUE] or value > row[KEY_MAXVALUE]:
-            warning_message = "Field %s [%s] should be between %s and %s but provided value was %s." % (
-                row[KEY_LABEL], row[KEY_NAME], row[KEY_MINVALUE],
-                row[KEY_MAXVALUE], value)
-            self.log.warning(warning_message)
+        if KEY_MINVALUE in row and KEY_MAXVALUE in row:
+            if value < row[KEY_MINVALUE] or value > row[KEY_MAXVALUE]:
+                warning_message = "Field %s [%s] should be between %s and %s but provided value was %s." % (
+                    row[KEY_LABEL], row[KEY_NAME], row[KEY_MINVALUE],
+                    row[KEY_MAXVALUE], value)
+                self.log.warning(warning_message)
 
 
     def _validate_range_for_array_input(self, array, row):
-        min_val = numpy.min(array)
-        max_val = numpy.max(array)
+        if KEY_MINVALUE in row and KEY_MAXVALUE in row:
+            min_val = numpy.min(array)
+            max_val = numpy.max(array)
 
-        if min_val < row[KEY_MINVALUE] or max_val > row[KEY_MAXVALUE]:
-            # As described in TVB-1295, we do no longer raise exception, but only log a warning
-            warning_message = "Field %s [%s] should have values between %s and %s but provided array contains min-" \
-                              "max:(%s, %s)." % (row[KEY_LABEL], row[KEY_NAME], row[KEY_MINVALUE],
-                                                 row[KEY_MAXVALUE], min_val, max_val)
-            self.log.warning(warning_message)
+            if min_val < row[KEY_MINVALUE] or max_val > row[KEY_MAXVALUE]:
+                # As described in TVB-1295, we do no longer raise exception, but only log a warning
+                warning_message = "Field %s [%s] should have values between %s and %s but provided array contains min-" \
+                                  "max:(%s, %s)." % (row[KEY_LABEL], row[KEY_NAME], row[KEY_MINVALUE],
+                                                     row[KEY_MAXVALUE], min_val, max_val)
+                self.log.warning(warning_message)
 
 
     @staticmethod
@@ -382,22 +397,17 @@ class InputTreeManager(object):
                     if eq_datatype is not None:
                         inputs_datatypes.append(eq_datatype)
                         is_datatype = True
-                elif type(field_dict[KEY_TYPE]) in (str, unicode):
-                    point_separator = field_dict[KEY_TYPE].rfind('.')
-                    if point_separator > 0:
-                        module = field_dict[KEY_TYPE][:point_separator]
-                        classname = field_dict[KEY_TYPE][(point_separator + 1):]
-                        try:
-                            module = __import__(module, globals())
-                            class_entity = eval("module." + classname)
-                            if issubclass(class_entity, MappedType):
-                                data_gid = parameters.get(str(field_dict[KEY_NAME]))
-                                data_type = load_entity_by_gid(data_gid)
-                                if data_type:
-                                    inputs_datatypes.append(data_type)
-                                    is_datatype = True
-                        except ImportError, _:
-                            pass
+                elif isinstance(field_dict[KEY_TYPE], basestring):
+                    try:
+                        class_entity = get_class_by_name(field_dict[KEY_TYPE])
+                        if issubclass(class_entity, MappedType):
+                            data_gid = parameters.get(str(field_dict[KEY_NAME]))
+                            data_type = load_entity_by_gid(data_gid)
+                            if data_type:
+                                inputs_datatypes.append(data_type)
+                                is_datatype = True
+                    except ImportError, _:
+                        pass
 
                 if is_datatype:
                     changed_parameters[field_dict[KEY_LABEL]] = inputs_datatypes[-1].display_name
@@ -426,11 +436,7 @@ class InputTreeManager(object):
                     self.log.warning("Cannot figure out type of equation from input dictionary: %s. "
                                      "Returning []." % input_data)
                     return []
-                splitted_class = equation_type.split('.')
-                module = '.'.join(splitted_class[:-1])
-                classname = splitted_class[-1]
-                eq_module = __import__(module, globals(), locals(), [classname])
-                eq_class = eval('eq_module.' + classname)
+                eq_class = get_class_by_name(equation_type)
                 equation = eq_class.from_json(input_data[KEY_EQUATION])
                 focal_points = json.loads(input_data[KEY_FOCAL_POINTS])
                 surface_gid = input_data[KEY_SURFACE_GID]
@@ -472,10 +478,7 @@ class InputTreeManager(object):
 
         expected_dt_class = row[KEY_TYPE]
         if isinstance(expected_dt_class, basestring):
-            classname = expected_dt_class.split('.')[-1]
-            data_class = __import__(expected_dt_class.replace(classname, ''), globals(), locals(), [classname])
-            data_class = eval("data_class." + classname)
-            expected_dt_class = data_class
+            expected_dt_class = get_class_by_name(expected_dt_class)
         if not isinstance(entity, expected_dt_class):
             raise InvalidParameterException("Expected param %s [%s] of type %s but got type %s." % (
                 row[KEY_LABEL], row[KEY_NAME], expected_dt_class.__name__, entity.__class__.__name__))
@@ -568,8 +571,7 @@ class InputTreeManager(object):
 
                 if row_type == TYPE_ARRAY:
                     kwa[row_attr] = self._convert_to_array(kwargs[row_attr], row)
-                    if KEY_MINVALUE in row and KEY_MAXVALUE in row:
-                        self._validate_range_for_array_input(kwa[row_attr], row)
+                    self._validate_range_for_array_input(kwa[row_attr], row)
                 elif row_type == TYPE_LIST:
                     if not isinstance(kwargs[row_attr], list):
                         kwa[row_attr] = json.loads(kwargs[row_attr])
@@ -580,15 +582,13 @@ class InputTreeManager(object):
                         kwa[row_attr] = None
                     else:
                         kwa[row_attr] = int(kwargs[row_attr])
-                        if KEY_MINVALUE in row and KEY_MAXVALUE in row:
-                            self._validate_range_for_value_input(kwa[row_attr], row)
+                        self._validate_range_for_value_input(kwa[row_attr], row)
                 elif row_type == TYPE_FLOAT:
                     if kwargs[row_attr] in ['', 'None']:
                         kwa[row_attr] = None
                     else:
                         kwa[row_attr] = float(kwargs[row_attr])
-                        if KEY_MINVALUE in row and KEY_MAXVALUE in row:
-                            self._validate_range_for_value_input(kwa[row_attr], row)
+                        self._validate_range_for_value_input(kwa[row_attr], row)
                 elif row_type == TYPE_STR:
                     kwa[row_attr] = kwargs[row_attr]
                 elif row_type in [TYPE_SELECT, TYPE_MULTIPLE]:

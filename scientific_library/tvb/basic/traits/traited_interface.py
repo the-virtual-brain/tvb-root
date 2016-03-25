@@ -75,10 +75,7 @@ class TraitedInterfaceGenerator(object):
             intr['elementType'] = getattr(obj, 'dtype')
 
         if get(obj.trait, 'wraps', False):
-            if isinstance(obj.trait.wraps, tuple):
-                intr['type'] = str(obj.trait.wraps[0].__name__)
-            else:
-                intr['type'] = str(obj.trait.wraps.__name__)
+            self.__fill_wrapped_type(obj, intr)
 
             if intr['type'] == 'dict' and isinstance(intr['default'], dict):
                 intr['attributes'], intr['elementType'] = self.__prepare_dictionary(intr['default'])
@@ -167,6 +164,14 @@ class TraitedInterfaceGenerator(object):
                                                  obj.trait.inits.kwd[KWARG_FILTERS_UI]])
         if KWARG_FILTERS_BACKEND in obj.trait.inits.kwd:
             intr["conditions"] = obj.trait.inits.kwd[KWARG_FILTERS_BACKEND]
+
+
+    @staticmethod
+    def __fill_wrapped_type(obj, intr):
+        if isinstance(obj.trait.wraps, tuple):
+            intr['type'] = str(obj.trait.wraps[0].__name__)
+        else:
+            intr['type'] = str(obj.trait.wraps.__name__)
 
 
     @staticmethod

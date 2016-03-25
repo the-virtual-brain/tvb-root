@@ -238,6 +238,10 @@ class Introspector:
                 self.logger.debug("Will now store portlet %s" % (str(portlet),))
                 dao.store_entity(portlet)
 
+    @staticmethod
+    def _is_concrete_subclass(clz, super_cls):
+        return inspect.isclass(clz) and not inspect.isabstract(clz) and issubclass(clz, super_cls)
+
 
     def __get_datatypes(self, path_types):
         """
@@ -246,12 +250,10 @@ class Introspector:
         for my_type in Introspector.__get_variable(path_types):
             try:
                 module_ref = __import__(path_types, globals(), locals(), [my_type])
-                module_ref = eval("module_ref." + my_type)
-                tree = [module_ref.__dict__[j] for j in [i for i in dir(module_ref)
-                          if (inspect.isclass(module_ref.__dict__[i]) and not inspect.isabstract(module_ref.__dict__[i])
-                             and issubclass(module_ref.__dict__[i], MappedType))]]
-                for class_ref in tree:
-                    self.logger.debug("Importing class for DB table to be created: " + str(class_ref.__name__))
+                module_ref = getattr(module_ref, my_type)
+                tree = inspect.getmembers(module_ref, lambda c: self._is_concrete_subclass(c, MappedType))
+                for class_name, class_ref in tree:
+                    self.logger.debug("Importing class for DB table to be created: " + class_name)
             except Exception, excep1:
                 self.logger.error('Could not import DataType!' + my_type)
                 self.logger.exception(excep1)
@@ -267,11 +269,9 @@ class Introspector:
         for adapter_file in Introspector.__get_variable(module_name):
             try:
                 adapter = __import__(module_name, globals(), locals(), [adapter_file])
-                adapter = eval("adapter." + adapter_file)
-                tree = [adapter.__dict__[j] for j in [i for i in dir(adapter)
-                           if (inspect.isclass(adapter.__dict__[i]) and not inspect.isabstract(adapter.__dict__[i])
-                               and issubclass(adapter.__dict__[i], ABCAdapter))]]
-                for class_ref in tree:
+                adapter = getattr(adapter, adapter_file)
+                tree = inspect.getmembers(adapter, lambda c: self._is_concrete_subclass(c, ABCAdapter))
+                for class_name, class_ref in tree:
                     group = self.__create_instance(category_key, class_ref)
                     if group is not None:
                         groups.append(group)
