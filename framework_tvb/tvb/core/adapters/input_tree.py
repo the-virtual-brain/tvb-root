@@ -181,7 +181,7 @@ class InputTreeManager(object):
                     if row[KEY_DTYPE] == 'array':
                         val = string2array(kwargs[key], " ", "float")
                     else:
-                        val = eval(row[KEY_DTYPE] + "('" + kwargs[key] + "')")
+                        val = eval(row[KEY_DTYPE])(kwargs[key])
                 else:
                     val = str(kwargs[key])
                 result_dict[key.split(KEYWORD_PARAMS[1:])[-1]] = val
@@ -203,9 +203,9 @@ class InputTreeManager(object):
                 return flat_name
             else:
                 return None
-        prefix = flat_name[0: flat_name.find(KEYWORD_PARAMS) + 12]
-        sufix = flat_name[flat_name.find(KEYWORD_PARAMS) + 12:]
-        parent_name = flat_name[0: flat_name.find(KEYWORD_PARAMS)]
+        parent_name, sufix = flat_name.split(KEYWORD_PARAMS, 1)
+        prefix = parent_name + KEYWORD_PARAMS
+
         submitted_options = InputTreeManager._compute_submit_option_select(submited_kwargs[parent_name])
 
         datatype_like_submit = False
@@ -239,13 +239,11 @@ class InputTreeManager(object):
         """
         :returns: True when current attributes should not be considered, because parent option was not selected."""
         att_name = row[KEY_NAME]
-        parent_name, option = None, None
         if KEYWORD_PARAMS in att_name:
-            parent_name = att_name[0: att_name.find(KEYWORD_PARAMS)]
-            option = att_name[att_name.find(KEYWORD_OPTION) + 7:]
+            parent_name = att_name[: att_name.find(KEYWORD_PARAMS)]
+            option = att_name[att_name.find(KEYWORD_OPTION) + len(KEYWORD_OPTION):]
             option = option[: option.find(KEYWORD_SEPARATOR)]
-
-        if parent_name is None or option is None:
+        else:
             return False
 
         submitted_option = InputTreeManager._compute_submit_option_select(kwargs[parent_name])
@@ -272,8 +270,8 @@ class InputTreeManager(object):
         new_prefix = ""
         if prefix is not None and prefix != '':
             new_prefix = prefix
-        if prefix is not None and prefix != '' and not new_prefix.endswith(KEYWORD_SEPARATOR):
-            new_prefix += KEYWORD_SEPARATOR
+            if not new_prefix.endswith(KEYWORD_SEPARATOR):
+                new_prefix += KEYWORD_SEPARATOR
         new_prefix += input_param + KEYWORD_PARAMS
         if option_prefix is not None:
             new_prefix += KEYWORD_OPTION + option_prefix + KEYWORD_SEPARATOR
@@ -443,7 +441,7 @@ class InputTreeManager(object):
                 surface = load_entity_by_gid(surface_gid)
                 return surface.compute_equation(focal_points, equation)
             except Exception:
-                self.log.exception("The parameter '" + str(row['name']) + "' was ignored. None value was returned.")
+                self.log.exception("The parameter %s was ignored. None value was returned.", row['name'])
                 return None
 
         if ATT_QUATIFIER in row:
@@ -510,23 +508,21 @@ class InputTreeManager(object):
 
         # In case a specific field in entity is to be used, use it
         if KEY_FIELD in row:
-            val = eval("entity." + row[KEY_FIELD])
-            result = val
+            result = getattr(entity, row[KEY_FIELD])
         if ATT_METHOD in row:
-            param_dict = dict()
             # The 'shape' attribute of an arraywrapper is overridden by us
             # the following check is made only to improve performance
             # (to find data in the dictionary with O(1)) on else the data is found in O(n)
+            prefix = row[KEY_NAME] + "_" + row[ATT_PARAMETERS]
             if hasattr(entity, 'shape'):
+                param_dict = {}
                 for i in xrange(1, len(entity.shape)):
-                    param_key = row[KEY_NAME] + "_" + row[ATT_PARAMETERS] + "_" + str(i - 1)
+                    param_key = prefix + "_" + str(i - 1)
                     if param_key in kwargs:
                         param_dict[param_key] = kwargs[param_key]
             else:
-                param_dict = dict((k, v) for k, v in kwargs.items()
-                                  if k.startswith(row[KEY_NAME] + "_" + row[ATT_PARAMETERS]))
-            val = eval("entity." + row[ATT_METHOD] + "(param_dict)")
-            result = val
+                param_dict = dict((k, v) for k, v in kwargs.items() if k.startswith(prefix))
+            result = getattr(entity, row[ATT_METHOD])(param_dict)
         return result
 
 
@@ -638,22 +634,22 @@ class InputTreeManager(object):
             display_name = ''
             if actual_entity is not None and len(actual_entity) > 0 and isinstance(actual_entity[0], model.DataType):
                 display_name = actual_entity[0].display_name
-            display_name = display_name + ' - ' + (value[3] or "None ")
+            display_name += ' - ' + (value[3] or "None ")
             if value[5]:
-                display_name = display_name + ' - From: ' + str(value[5])
+                display_name += ' - From: ' + str(value[5])
             else:
-                display_name = display_name + utils.date2string(value[4])
+                display_name += utils.date2string(value[4])
             if value[6]:
-                display_name = display_name + ' - ' + str(value[6])
-            display_name = display_name + ' - ID:' + str(value[0])
-            all_field_values = all_field_values + str(entity_gid) + ','
+                display_name += ' - ' + str(value[6])
+            display_name += ' - ID:' + str(value[0])
+            all_field_values += str(entity_gid) + ','
             values.append({KEY_NAME: display_name, KEY_VALUE: entity_gid})
             if complex_dt_attributes is not None:
                 ### TODO apply filter on sub-attributes
                 values[-1][KEY_ATTRIBUTES] = complex_dt_attributes
         if category_key is not None:
             category = dao.get_category_by_id(category_key)
-            if (not category.display) and (not category.rawinput) and len(data_list) > 1:
+            if not category.display and not category.rawinput and len(data_list) > 1:
                 values.insert(0, {KEY_NAME: "All", KEY_VALUE: all_field_values[:-1]})
         return values
 
@@ -759,24 +755,30 @@ class InputTreeManager(object):
             if KEY_LABEL in param and len(prefix):
                 param[KEY_LABEL] = prefix + '_' + param[KEY_LABEL]
 
-            is_checked = param_name in selection_dictionary and selection_dictionary[param_name][KEY_PARAMETER_CHECKED]
+            if param_name in selection_dictionary:
+                selection_val = selection_dictionary[param_name][model.KEY_SAVED_VALUE]
+                is_checked = selection_dictionary[param_name][KEY_PARAMETER_CHECKED]
+            else:
+                selection_val = None
+                is_checked = False
+
             if is_checked:
-                param[KEY_DEFAULT] = selection_dictionary[param_name][model.KEY_SAVED_VALUE]
+                param[KEY_DEFAULT] = selection_val
                 result.append(param)
 
-            if KEY_OPTIONS in param and param[KEY_OPTIONS] is not None:
+            if param.get(KEY_OPTIONS) is not None:
                 if is_checked:
                     for option in param[KEY_OPTIONS]:
                         if KEY_ATTRIBUTES in option:
                             option[KEY_ATTRIBUTES] = InputTreeManager.select_simulator_inputs(
                                                             option[KEY_ATTRIBUTES], selection_dictionary, prefix)
-                            option[KEY_DEFAULT] = selection_dictionary[param_name][model.KEY_SAVED_VALUE]
+                            option[KEY_DEFAULT] = selection_val
                 else:
                     ## Since entry is not selected, just recurse on the default option and ###
                     ## all it's subtree will come up one level in the input tree         #####
                     for option in param[KEY_OPTIONS]:
                         if (param_name in selection_dictionary and KEY_ATTRIBUTES in option and
-                            option[KEY_VALUE] == selection_dictionary[param_name][model.KEY_SAVED_VALUE]):
+                                    option[KEY_VALUE] == selection_val):
                             new_prefix = option[KEY_VALUE] + '_' + prefix
                             recursive_results = InputTreeManager.select_simulator_inputs(option[KEY_ATTRIBUTES],
                                                                              selection_dictionary, new_prefix)
