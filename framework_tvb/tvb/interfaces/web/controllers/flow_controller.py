@@ -379,9 +379,10 @@ class FlowController(BaseController):
         new_filter.operations.extend(filters[FILTER_OPERATIONS])
         new_filter.values.extend(filters[FILTER_VALUES])
         #Get dataTypes that match the filters from DB then populate with values
-        datatypes, total_count = self.flow_service.get_available_datatypes(common.get_current_project().id,
-                                                                           datatype, new_filter)
-        values = InputTreeManager._populate_values(datatypes, datatype, self.context.get_current_step())
+        values, total_count = InputTreeManager().populate_option_values_for_dtype(
+                                    common.get_current_project().id,
+                                    datatype, new_filter,
+                                    self.context.get_current_step() )
         #Create a dictionary that matches what the template expects
         parameters = {ABCAdapter.KEY_NAME: name,
                       ABCAdapter.KEY_FILTERABLE: availablefilter,

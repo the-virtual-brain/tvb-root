@@ -658,13 +658,25 @@ class InputTreeManager(object):
         """
         Return all dataTypes that match a given name and some filters.
         """
-        data_class = FilterChain._get_class_instance(data_name)
-        if data_class is None:
-            self.log.warning("Invalid Class specification:" + str(data_name))
-            return [], 0
-        else:
-            self.log.debug('Filtering:' + str(data_class))
-            return dao.get_values_of_datatype(project_id, data_class, filters, MAXIMUM_DATA_TYPES_DISPLAYED)
+        data_class = get_class_by_name(data_name)
+        self.log.debug('Filtering:' + str(data_class))
+        return dao.get_values_of_datatype(project_id, data_class, filters, MAXIMUM_DATA_TYPES_DISPLAYED)
+
+
+    def populate_option_values_for_dtype(self, project_id, type_name, filter_condition=None,
+                                         category_key=None, complex_dt_attributes=None):
+        '''
+        Converts all datatypes that match the project_id, type_name and filter_condition
+        to a {name: , value:} dict used to populate options in the input tree ui
+        '''
+        #todo: both these functions will dynamically import type_name
+        #todo: send category instead of category_key to avoid redundant queries
+        #NOTE these functions are coupled via data_list, _populate_values makes no sense without _get_available_datatypes
+        data_list, total_count = self._get_available_datatypes(project_id, type_name,
+                                                               filter_condition)
+        values = self._populate_values(data_list, type_name,
+                                       category_key, complex_dt_attributes)
+        return values, total_count
 
 
     def fill_input_tree_with_options(self, attributes_list, project_id, category_key):
@@ -685,18 +697,14 @@ class InputTreeManager(object):
                     filter_condition = FilterChain('')
                 filter_condition.add_condition(FilterChain.datatype + ".visible", "==", True)
 
-                data_list, total_count = self._get_available_datatypes(project_id, param[KEY_TYPE],
-                                                                      filter_condition)
-
-                if total_count > MAXIMUM_DATA_TYPES_DISPLAYED:
-                    transformed_param[KEY_WARNING] = WARNING_OVERFLOW
-
                 complex_dt_attributes = None
                 if param.get(KEY_ATTRIBUTES):
                     complex_dt_attributes = self.fill_input_tree_with_options(param[KEY_ATTRIBUTES],
                                                                     project_id, category_key)
-                values = self._populate_values(data_list, param[KEY_TYPE],
-                                              category_key, complex_dt_attributes)
+                values, total_count = self.populate_option_values_for_dtype(project_id, param[KEY_TYPE], filter_condition,
+                                                      category_key, complex_dt_attributes)
+                if total_count > MAXIMUM_DATA_TYPES_DISPLAYED:
+                    transformed_param[KEY_WARNING] = WARNING_OVERFLOW
 
                 if (transformed_param.get(KEY_REQUIRED) and len(values) > 0 and
                         transformed_param.get(KEY_DEFAULT) in [None, 'None']):
