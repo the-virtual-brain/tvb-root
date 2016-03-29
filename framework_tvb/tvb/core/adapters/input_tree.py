@@ -115,14 +115,14 @@ class InputTreeManager(object):
         for entry in algorithm_inputs:
             ## First handle this level of the tree, adding defaults where required
             if (entry[KEY_NAME] not in kwargs
-                    and entry.get(KEY_REQUIRED) is True
+                    and entry.get(KEY_REQUIRED)
                     and KEY_DEFAULT in entry
                     and entry[KEY_TYPE] != TYPE_DICT):
                 kwargs[entry[KEY_NAME]] = entry[KEY_DEFAULT]
 
         for entry in algorithm_inputs:
             ## Now that first level was handled, go recursively on selected options only
-            if entry.get(KEY_REQUIRED) is True and entry.get(KEY_OPTIONS) is not None:
+            if entry.get(KEY_REQUIRED) and entry.get(KEY_OPTIONS) is not None:
                 for option in entry[KEY_OPTIONS]:
                     # Only go recursive on option that was submitted
                     if option[KEY_VALUE] == kwargs[entry[KEY_NAME]] and KEY_ATTRIBUTES in option:
@@ -674,7 +674,7 @@ class InputTreeManager(object):
                 continue
             transformed_param = copy(param)
 
-            if (KEY_TYPE in param) and not (param[KEY_TYPE] in STATIC_ACCEPTED_TYPES):
+            if KEY_TYPE in param and param[KEY_TYPE] not in STATIC_ACCEPTED_TYPES:
 
                 if KEY_CONDITION in param:
                     filter_condition = param[KEY_CONDITION]
@@ -691,8 +691,7 @@ class InputTreeManager(object):
                 if total_count > MAXIMUM_DATA_TYPES_DISPLAYED:
                     transformed_param[KEY_WARNING] = WARNING_OVERFLOW
 
-                if (transformed_param.get(KEY_REQUIRED) and len(values) > 0 and
-                        transformed_param.get(KEY_DEFAULT) in [None, 'None']):
+                if param.get(KEY_REQUIRED) and len(values) > 0 and param.get(KEY_DEFAULT) is None:
                     transformed_param[KEY_DEFAULT] = str(values[-1][KEY_VALUE])
 
                 transformed_param[KEY_FILTERABLE] = FilterChain.get_filters_for_type(param[KEY_TYPE])
@@ -718,14 +717,12 @@ class InputTreeManager(object):
                 if param.get(KEY_OPTIONS) is not None:
                     transformed_param[KEY_OPTIONS] = self.fill_input_tree_with_options(param[KEY_OPTIONS],
                                                                                         project_id, category_key)
-                    if (transformed_param.get(KEY_REQUIRED) and len(param[KEY_OPTIONS]) > 0 and
-                            transformed_param.get(KEY_DEFAULT) in [None, 'None']):
-                        def_val = str(param[KEY_OPTIONS][-1][KEY_VALUE])
-                        transformed_param[KEY_DEFAULT] = def_val
+                    if param.get(KEY_REQUIRED) and len(param[KEY_OPTIONS]) > 0 and param.get(KEY_DEFAULT) is None:
+                        transformed_param[KEY_DEFAULT] = str(param[KEY_OPTIONS][-1][KEY_VALUE])
 
                 if param.get(KEY_ATTRIBUTES) is not None:
-                    transformed_param[KEY_ATTRIBUTES] = self.fill_input_tree_with_options(
-                        param[KEY_ATTRIBUTES], project_id, category_key)
+                    transformed_param[KEY_ATTRIBUTES] = self.fill_input_tree_with_options(param[KEY_ATTRIBUTES],
+                                                                                          project_id, category_key)
             result.append(transformed_param)
         return result
 
