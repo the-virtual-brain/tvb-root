@@ -40,6 +40,7 @@ from tvb.basic.traits.exceptions import TVBException
 from tvb.basic.logger.builder import get_logger
 from tvb.core.adapters.input_tree import InputTreeManager
 from tvb.core.entities import model
+from tvb.core.entities.load import get_filtered_datatypes
 from tvb.core.entities.storage import dao
 from tvb.core.entities.file.files_helper import FilesHelper
 from tvb.core.adapters.abcadapter import ABCAdapter
@@ -200,7 +201,7 @@ class FlowService:
         Return all dataTypes that match a given name and some filters.
         :param data_type_cls: either a fully qualified class name or a class object
         """
-        return self.input_tree_manager._get_available_datatypes(project_id, data_type_cls, filters)
+        return get_filtered_datatypes(project_id, data_type_cls, filters)
 
 
     def prepare_parameters(self, attributes_list, project_id, category_key):

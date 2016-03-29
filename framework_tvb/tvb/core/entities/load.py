@@ -29,14 +29,28 @@
 #
 
 """
-Higher level entity loading. Currently only load_entity_by_gid
+Higher level entity loading.
 .. moduleauthor:: Mihai Andrei <mihai.andrei@codemart.ro>
 """
-
+from tvb.basic.logger.builder import get_logger
 from tvb.core.entities.file.exceptions import FileVersioningException
 from tvb.core.entities.file.files_update_manager import FilesUpdateManager
 from tvb.core.entities.storage import dao
 from tvb.core.traits.types_mapped import MappedType
+
+LOGGER = get_logger(__name__)
+
+def get_class_by_name(fqname):
+    '''
+    get_class_by_name("package.module.class")
+    is equivalent to from package.module import class
+    '''
+    try:
+        modulename, classname = fqname.rsplit('.', 1)
+        module = __import__(modulename, globals(), fromlist=[classname])
+        return getattr(module, classname)
+    except (AttributeError, ValueError) as e:
+        raise ImportError(str(e))
 
 
 def load_entity_by_gid(data_gid):
@@ -53,3 +67,15 @@ def load_entity_by_gid(data_gid):
             raise FileVersioningException("Encountered DataType with an incompatible storage or data version. "
                                           "The DataType was marked as invalid.")
     return datatype
+
+
+def get_filtered_datatypes(project_id, data_type_cls, filters=None, page_size=50):
+    """
+    Return all dataTypes that match a given name and some filters.
+    :param data_type_cls: either a fully qualified class name or a class object
+    """
+    if isinstance(data_type_cls, basestring):
+        data_type_cls = get_class_by_name(data_type_cls)
+    LOGGER.debug('Filtering:' + str(data_type_cls))
+    return dao.get_values_of_datatype(project_id, data_type_cls, filters, page_size)
+
