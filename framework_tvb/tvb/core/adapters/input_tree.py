@@ -647,7 +647,11 @@ class InputTreeManager(object):
         Converts all datatypes that match the project_id, type_name and filter_condition
         to a {name: , value:} dict used to populate options in the input tree ui
         '''
-        data_type_cls = get_class_by_name(type_name)
+        # todo: normalize all itree[KEY_TYPE] to be a python type, not a str, not a None etc
+        if isinstance(type_name, basestring):
+            data_type_cls = get_class_by_name(type_name)
+        else:
+            data_type_cls = type_name
         #todo: send category instead of category_key to avoid redundant queries
         #NOTE these functions are coupled via data_list, _populate_values makes no sense without _get_available_datatypes
         data_list, total_count = get_filtered_datatypes(project_id, data_type_cls,
