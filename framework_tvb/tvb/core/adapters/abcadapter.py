@@ -47,7 +47,7 @@ from tvb.basic.profile import TvbProfile
 from tvb.basic.logger.builder import get_logger
 from tvb.core.adapters import input_tree
 from tvb.core.adapters.input_tree import InputTreeManager
-from tvb.core.entities.load import load_entity_by_gid
+from tvb.core.entities.load import load_entity_by_gid, get_class_by_name
 from tvb.core.utils import date2string, LESS_COMPLEX_TIME_FORMAT
 from tvb.core.entities.storage import dao
 from tvb.core.entities.file.files_helper import FilesHelper
@@ -574,7 +574,7 @@ class ABCGroupAdapter(ABCAdapter):
         real_outputs = []
         for output_description in self.xml_reader.get_all_outputs():
             full_type = output_description[xml_reader.ATT_TYPE]
-            real_outputs.append(self._import_type(full_type))
+            real_outputs.append(get_class_by_name(full_type))
         return real_outputs
 
 
@@ -611,15 +611,6 @@ class ABCGroupAdapter(ABCAdapter):
         return self.xml_reader.get_import(algorithm_identifier)
 
 
-    def _import_type(self, full_type_string):
-        """ Execute a dynamic import and return class reverence"""
-        module = full_type_string[0: full_type_string.rfind(".")]
-        class_name = full_type_string[full_type_string.rfind(".") + 1:]
-        reference = __import__(module, globals(), locals(), [class_name])
-        self.log.debug("Imported: " + reference.__name__)
-        return eval("reference." + class_name)
-
-
     def build_result(self, algorithm, result, inputs):
         """
         Build an actual Python object, based on the XML interface description.
@@ -642,7 +633,7 @@ class ABCGroupAdapter(ABCAdapter):
                     kwa[field[xml_reader.ATT_NAME]] = eval(expression)
             kwa["storage_path"] = self.storage_path
             # Import Output type and call constructor
-            out_class = self._import_type(output[xml_reader.ATT_TYPE])
+            out_class = get_class_by_name(output[xml_reader.ATT_TYPE])
             self.log.warning("Executing INIT with parameters:" + str(kwa))
             final_result.append(out_class(**kwa))
         final_result.append(None)
