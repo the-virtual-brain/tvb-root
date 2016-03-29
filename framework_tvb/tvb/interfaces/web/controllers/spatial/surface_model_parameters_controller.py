@@ -39,8 +39,8 @@ from copy import deepcopy
 
 import tvb.basic.traits.traited_interface as interface
 from tvb.basic.traits.parameters_factory import get_traited_instance_for_name, collapse_params
-from tvb.core.adapters.abcadapter import ABCAdapter
 from tvb.core.adapters.abcadapter import KEY_EQUATION, KEY_FOCAL_POINTS
+from tvb.core.adapters.input_tree import InputTreeManager
 from tvb.core.entities.model import PARAMS_MODEL_PATTERN
 from tvb.core.services.burst_config_serialization import SerializationManager
 from tvb.datatypes import equations
@@ -246,7 +246,7 @@ class SurfaceModelParametersController(SpatioTemporalController):
 
         input_list = [{'name': 'model_param', 'type': 'select', 'default': default_selected_model_param,
                        'label': 'Model param', 'required': True, 'options': options}]
-        input_list = ABCAdapter.prepare_param_names(input_list)
+        input_list = InputTreeManager.prepare_param_names(input_list)
         return {common.KEY_PARAMETERS_CONFIG: False, 'inputList': input_list,
                 'applied_equations': context_model_parameters.get_configure_info()}
 

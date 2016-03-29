@@ -89,8 +89,9 @@ def fire_simulation(project_id=1, **kwargs):
     _, algo_group = flow_service.get_algorithm_by_module_and_class(SIMULATOR_MODULE, SIMULATOR_CLASS)
     simulator_adapter = flow_service.build_adapter_instance(algo_group)
     flatten_interface = simulator_adapter.flaten_input_interface()
-    prepared_flatten_interface = flow_service.prepare_parameters(flatten_interface, project.id,
-                                                                      algo_group.fk_category)
+    itree_mngr = flow_service.input_tree_manager
+    prepared_flatten_interface = itree_mngr.fill_input_tree_with_options(flatten_interface, project.id,
+                                                                         algo_group.fk_category)
     launch_args = {}
     for entry in prepared_flatten_interface:
         value = entry['default']

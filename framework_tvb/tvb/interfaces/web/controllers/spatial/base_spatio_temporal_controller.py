@@ -126,8 +126,9 @@ class SpatioTemporalController(BaseController):
             for idx in lock_midpoint_for_eq:
                 input_list[idx] = self._lock_midpoints(input_list[idx])
         category = self.flow_service.get_visualisers_category()
-        input_list = self.flow_service.prepare_parameters(input_list, common.get_current_project().id, category.id)
-        input_list = ABCAdapter.prepare_param_names(input_list)
+        itree_mngr = self.flow_service.input_tree_manager
+        input_list = itree_mngr.fill_input_tree_with_options(input_list, common.get_current_project().id, category.id)
+        input_list = itree_mngr.prepare_param_names(input_list)
 
         return self.flow_service.build_adapter_instance(group), input_list
 
@@ -168,8 +169,9 @@ class SpatioTemporalController(BaseController):
         interface = [{'name': 'existentEntitiesSelect', 'label': label, 'type': entity_type}]
         if entity_gid is not None:
             interface[0]['default'] = entity_gid
-        interface = self.flow_service.prepare_parameters(interface, project_id, category.id)
-        interface = ABCAdapter.prepare_param_names(interface)
+        itree_mngr = self.flow_service.input_tree_manager
+        interface = itree_mngr.fill_input_tree_with_options(interface, project_id, category.id)
+        interface = itree_mngr.prepare_param_names(interface)
 
         return interface
 

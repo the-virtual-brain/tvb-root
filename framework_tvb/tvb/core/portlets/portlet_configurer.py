@@ -187,14 +187,14 @@ class PortletConfigurer():
         if portlet_configuration.analyzers:
             for adapter_idx in xrange(len(portlet_interface[:-1])):
                 saved_configuration = portlet_configuration.analyzers[adapter_idx]
-                replaced_defaults_dict = ABCAdapter.fill_defaults(portlet_interface[adapter_idx].interface,
+                replaced_defaults_dict = InputTreeManager.fill_defaults(portlet_interface[adapter_idx].interface,
                                                                   saved_configuration.static_param)
                 portlet_interface[adapter_idx].interface = replaced_defaults_dict
 
         #Check for visualization defaults
         if portlet_configuration.visualizer:
             saved_configuration = portlet_configuration.visualizer
-            replaced_defaults_dict = ABCAdapter.fill_defaults(portlet_interface[-1].interface,
+            replaced_defaults_dict = InputTreeManager.fill_defaults(portlet_interface[-1].interface,
                                                               saved_configuration.static_param)
             portlet_interface[-1].interface = replaced_defaults_dict
 

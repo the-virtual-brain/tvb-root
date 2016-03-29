@@ -37,6 +37,7 @@ import json
 import numpy
 import copy
 
+from tvb.core.adapters.input_tree import InputTreeManager
 from tvb.datatypes.patterns import StimuliSurface
 from tvb.core.adapters.abcadapter import ABCAdapter
 from tvb.core.entities.transient.context_stimulus import SurfaceStimulusContext, SURFACE_PARAMETER
@@ -214,7 +215,7 @@ class SurfaceStimulusController(SpatioTemporalController):
         input_list = self.get_creator_and_interface(SURFACE_STIMULUS_CREATOR_MODULE,
                                                     SURFACE_STIMULUS_CREATOR_CLASS, StimuliSurface(),
                                                     lock_midpoint_for_eq=[1])[1]
-        input_list = ABCAdapter.fill_defaults(input_list, default_dict)
+        input_list = InputTreeManager.fill_defaults(input_list, default_dict)
         context.reset()
         context.update_from_interface(input_list)
         context.equation_kwargs[DataTypeMetaData.KEY_TAG_1] = selected_surface_stimulus.user_tag_1
@@ -383,7 +384,7 @@ class SurfaceStimulusController(SpatioTemporalController):
         input_list = self.get_creator_and_interface(SURFACE_STIMULUS_CREATOR_MODULE,
                                                     SURFACE_STIMULUS_CREATOR_CLASS, StimuliSurface(),
                                                     lock_midpoint_for_eq=[1])[1]
-        input_list = ABCAdapter.fill_defaults(input_list, context.equation_kwargs)
+        input_list = InputTreeManager.fill_defaults(input_list, context.equation_kwargs)
         input_list, focal_points_list = self._remove_focal_points(input_list)
         input_list = self.prepare_entity_interface(input_list)
         input_list['selectedFocalPoints'] = focal_points_list

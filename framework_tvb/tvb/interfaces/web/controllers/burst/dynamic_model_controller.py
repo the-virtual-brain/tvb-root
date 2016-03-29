@@ -40,6 +40,7 @@ from tvb.basic.traits.parameters_factory import get_traited_subclasses
 from tvb.basic.traits.util import multiline_math_directives_to_matjax
 from tvb.core import utils
 from tvb.core.adapters.abcadapter import ABCAdapter
+from tvb.core.adapters.input_tree import InputTreeManager
 from tvb.core.entities.storage import dao
 import tvb.core.entities.model
 from tvb.datatypes import noise_framework
@@ -238,12 +239,12 @@ class DynamicModelController(BurstBaseController):
         dynamic_gid = utils.generate_guid()
         adapter = _LeftFragmentAdapter(self.available_models)
         input_tree = adapter.get_input_tree()
-        #WARN: If this input tree will contain data type references then to render it correctly we have to use flow_service.prepare_parameters
-        input_tree = adapter.prepare_param_names(input_tree)
+        #WARN: If this input tree will contain data type references then to render it correctly we have to use fill_input_tree_with_options
+        input_tree = InputTreeManager.prepare_param_names(input_tree)
 
         integrator_adapter = _IntegratorFragmentAdapter()
         integrator_input_tree = integrator_adapter.get_input_tree()
-        integrator_input_tree  = integrator_adapter.prepare_param_names(integrator_input_tree)
+        integrator_input_tree  = InputTreeManager.prepare_param_names(integrator_input_tree)
 
         params = {
             'title': "Dynamic model",

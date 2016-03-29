@@ -475,7 +475,7 @@ class ABCAdapter(object):
         used by the Python adapter.
         """
         algorithm_inputs = self.get_input_tree()
-        algorithm_inputs = self.prepare_param_names(algorithm_inputs)
+        algorithm_inputs = InputTreeManager.prepare_param_names(algorithm_inputs)
         self.tree_manager.append_required_defaults(kwargs, algorithm_inputs)
         return self.convert_ui_inputs(kwargs, validation_required=validation_required)
 
@@ -494,22 +494,6 @@ class ABCAdapter(object):
     def flaten_input_interface(self):
         """ Return a simple dictionary, instead of a Tree."""
         return self.tree_manager.flatten(self.get_input_tree())
-
-
-    @staticmethod
-    def fill_defaults(adapter_interface, data, fill_unselected_branches=False):
-        """ Change the default values in the Input Interface Tree."""
-        return InputTreeManager.fill_defaults(adapter_interface, data, fill_unselected_branches)
-
-
-    @staticmethod
-    def prepare_param_names(attributes_list, prefix=None, add_option_prefix=False):
-        """
-        For a given attribute list, change the name of the attributes where needed.
-        Changes refer to adding a prefix, to identify groups.
-        Will be used on parameters page GET.
-        """
-        return InputTreeManager.prepare_param_names(attributes_list, prefix, add_option_prefix)
 
 
 
@@ -565,7 +549,7 @@ class ABCGroupAdapter(ABCAdapter):
         """For a group, we will return input tree on algorithm base."""
         inputs = self.xml_reader.get_inputs(algorithm_identifier)
         prefix = InputTreeManager.form_prefix(self.get_algorithm_param(), option_prefix=algorithm_identifier)
-        result = ABCAdapter.prepare_param_names(inputs, prefix)
+        result = InputTreeManager.prepare_param_names(inputs, prefix)
         return result
 
 

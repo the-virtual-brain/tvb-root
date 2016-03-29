@@ -78,8 +78,9 @@ class ModelValidator(object):
         simulator_adapter = self.flow_service.build_adapter_instance(algo_group)
         launch_args = {}
         flatten_interface = simulator_adapter.flaten_input_interface()
-        prepared_flatten_interface = self.flow_service.prepare_parameters(flatten_interface, self.project.id,
-                                                                          algo_group.fk_category)
+        itree_mngr = self.flow_service.input_tree_manager
+        prepared_flatten_interface = itree_mngr.fill_input_tree_with_options(flatten_interface, self.project.id,
+                                                                             algo_group.fk_category)
         for entry in prepared_flatten_interface:
             value = entry['default']
             if isinstance(value, dict):

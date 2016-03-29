@@ -40,6 +40,8 @@ import numpy
 import cherrypy
 from bs4 import BeautifulSoup
 from genshi.template.loader import TemplateLoader
+
+from tvb.core.adapters.input_tree import InputTreeManager
 from tvb.tests.framework.core.base_testcase import BaseTestCase
 from tvb.basic.profile import TvbProfile
 import tvb.basic.traits as trait
@@ -144,7 +146,7 @@ class GenthiTraitTest(GenshiTest):
         Test the generation of a multi-dimensional array.
         """
         input_tree = TraitAdapter().get_input_tree()
-        input_tree = ABCAdapter.prepare_param_names(input_tree)
+        input_tree = InputTreeManager.prepare_param_names(input_tree)
         self.template_specification['inputList'] = input_tree
         resulted_html = _template2string(self.template_specification)
         soup = BeautifulSoup(resulted_html)
@@ -182,7 +184,7 @@ class GenshiTestSimple(GenshiTest):
         self.xml_group_adapter = ABCAdapter.build_adapter(algo_group)
         input_tree = self.xml_group_adapter.get_input_tree()
 
-        input_tree = ABCAdapter.prepare_param_names(input_tree)
+        input_tree = InputTreeManager.prepare_param_names(input_tree)
         self.template_specification['inputList'] = input_tree
         self.template_specification['draw_hidden_ranges'] = True
         self.template_specification[common.KEY_PARAMETERS_CONFIG] = False
@@ -290,7 +292,7 @@ class GenshiTestGroup(GenshiTest):
         algo_group = dao.find_group('tvb.tests.framework.adapters.testgroupadapter', 'TestGroupAdapter', xml_group_path)
         self.xml_group_adapter = ABCAdapter.build_adapter(algo_group)
         input_tree = self.xml_group_adapter.get_input_tree()
-        input_tree = ABCAdapter.prepare_param_names(input_tree)
+        input_tree = InputTreeManager.prepare_param_names(input_tree)
         self.template_specification['inputList'] = input_tree
         self.template_specification[common.KEY_PARAMETERS_CONFIG] = False
         resulted_html = _template2string(self.template_specification)

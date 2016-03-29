@@ -36,6 +36,7 @@
 import json
 import cherrypy
 
+from tvb.core.adapters.input_tree import InputTreeManager
 from tvb.datatypes.local_connectivity import LocalConnectivity
 from tvb.core.adapters.abcadapter import ABCAdapter
 from tvb.datatypes import surfaces_framework
@@ -230,7 +231,7 @@ class LocalConnectivityController(SpatioTemporalController):
                                                     LOCAL_CONN_CREATOR_CLASS, LocalConnectivity(),
                                                     lock_midpoint_for_eq=[1])[1]
         input_list = self._add_extra_fields_to_interface(input_list)
-        input_list = ABCAdapter.fill_defaults(input_list, default_dict)
+        input_list = InputTreeManager.fill_defaults(input_list, default_dict)
 
         template_specification = {'inputList': input_list, common.KEY_PARAMETERS_CONFIG: False,
                                   'equationViewerUrl': '/spatial/localconnectivity/get_equation_chart',

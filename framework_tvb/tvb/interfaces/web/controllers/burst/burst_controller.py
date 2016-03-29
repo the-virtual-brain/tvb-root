@@ -118,7 +118,7 @@ class BurstController(BurstBaseController):
             adapter_interface = self.cached_simulator_input_tree
             if session_stored_burst is not None:
                 current_data = session_stored_burst.get_all_simulator_values()[0]
-                adapter_interface = ABCAdapter.fill_defaults(adapter_interface, current_data, True)
+                adapter_interface = InputTreeManager.fill_defaults(adapter_interface, current_data, True)
                 ### Add simulator tree to session to be available in filters
                 self.context.add_adapter_to_session(self.cached_simulator_algo_group, adapter_interface, current_data)
             template_specification['inputList'] = adapter_interface
@@ -550,7 +550,7 @@ class BurstController(BurstBaseController):
         burst_config = common.get_from_session(common.KEY_BURST_CONFIG)
         default_values, any_checked = burst_config.get_all_simulator_values()
         simulator_input_tree = self.cached_simulator_input_tree
-        simulator_input_tree = ABCAdapter.fill_defaults(simulator_input_tree, default_values)
+        simulator_input_tree = InputTreeManager.fill_defaults(simulator_input_tree, default_values)
         ### Add simulator tree to session to be available in filters
         self.context.add_adapter_to_session(self.cached_simulator_algo_group, simulator_input_tree, default_values)
 
@@ -576,7 +576,7 @@ class BurstController(BurstBaseController):
         ## Fill with stored defaults, and see if any parameter was checked by user ##
         default_values, any_checked = burst_config.get_all_simulator_values()
         simulator_input_tree = self.cached_simulator_input_tree
-        simulator_input_tree = ABCAdapter.fill_defaults(simulator_input_tree, default_values)
+        simulator_input_tree = InputTreeManager.fill_defaults(simulator_input_tree, default_values)
         ## In case no values were checked just skip tree-cut part and show entire simulator tree ##
         if any_checked:
             simulator_input_tree = InputTreeManager.select_simulator_inputs(simulator_input_tree, simulator_config)

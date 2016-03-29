@@ -176,8 +176,8 @@ class FlowService:
             group = dao.find_group(adapter_module, adapter_name, algo_group.init_parameter)
             adapter_instance = self.build_adapter_instance(group)
             interface = adapter_instance.get_input_tree()
-            interface = self.prepare_parameters(interface, project_id, group.fk_category)
-            interface = ABCAdapter.prepare_param_names(interface)
+            interface = self.input_tree_manager.fill_input_tree_with_options(interface, project_id, group.fk_category)
+            interface = self.input_tree_manager.prepare_param_names(interface)
             return group, interface
         except Exception, excep:
             self.logger.exception(excep)
@@ -204,13 +204,6 @@ class FlowService:
         return get_filtered_datatypes(project_id, data_type_cls, filters)
 
 
-    def prepare_parameters(self, attributes_list, project_id, category_key):
-        """
-        For a datatype node in the input tree, load all instances from the db that fit the filters.
-        """
-        return self.input_tree_manager.fill_input_tree_with_options(attributes_list, project_id, category_key)
-    
-    
     @staticmethod
     def create_link(data_ids, project_id):
         """

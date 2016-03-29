@@ -488,7 +488,7 @@ class FlowController(BaseController):
             current_defaults = self.context.get_current_default()
             if current_defaults is not None:
                 #Change default values in tree, according to selected input
-                adapter_interface = ABCAdapter.fill_defaults(adapter_interface, current_defaults)
+                adapter_interface = InputTreeManager.fill_defaults(adapter_interface, current_defaults)
 
             template_specification = dict(submitLink=submit_url, inputList=adapter_interface, title=title)
             self._populate_section(algo_group, template_specification, is_burst)

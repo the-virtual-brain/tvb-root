@@ -42,7 +42,7 @@ from types import IntType
 from tvb.config import MEASURE_METRICS_MODULE, MEASURE_METRICS_CLASS, DEFAULT_PORTLETS
 from tvb.config import SIMULATION_DATATYPE_MODULE, SIMULATION_DATATYPE_CLASS
 from tvb.basic.logger.builder import get_logger
-from tvb.core.adapters.input_tree import KEY_TYPE, TYPE_SELECT, KEY_NAME
+from tvb.core.adapters.input_tree import KEY_TYPE, TYPE_SELECT, KEY_NAME, InputTreeManager
 import tvb.core.entities.model as model
 from tvb.core.entities.transient.structure_entities import DataTypeMetaData
 from tvb.core.entities.transient.burst_configuration_entities import PortletConfiguration, WorkflowStepConfiguration
@@ -105,8 +105,9 @@ class BurstService():
          
         for adapter_conf in portlet_interface:
             interface = adapter_conf.interface
-            interface = FlowService().prepare_parameters(interface, project_id, adapter_conf.group.fk_category)
-            interface = ABCAdapter.prepare_param_names(interface, adapter_conf.prefix)
+            itree_mngr = InputTreeManager()
+            interface = itree_mngr.fill_input_tree_with_options(interface, project_id, adapter_conf.group.fk_category)
+            interface = itree_mngr.prepare_param_names(interface, adapter_conf.prefix)
             adapter_conf.interface = interface
         
         portlet_configurer.update_default_values(portlet_interface, portlet_configuration)

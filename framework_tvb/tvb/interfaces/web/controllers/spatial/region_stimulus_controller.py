@@ -38,6 +38,7 @@ import cherrypy
 from tvb.adapters.visualizers.connectivity import ConnectivityViewer
 from tvb.basic.traits.parameters_factory import collapse_params
 from tvb.core.adapters.abcadapter import ABCAdapter
+from tvb.core.adapters.input_tree import InputTreeManager
 from tvb.core.entities.transient.structure_entities import DataTypeMetaData
 from tvb.core.entities.transient.context_stimulus import RegionStimulusContext
 from tvb.core.entities.transient.context_stimulus import SCALING_PARAMETER, CONNECTIVITY_PARAMETER
@@ -194,7 +195,7 @@ class RegionStimulusController(SpatioTemporalController):
         input_list = self.get_creator_and_interface(REGION_STIMULUS_CREATOR_MODULE,
                                                     REGION_STIMULUS_CREATOR_CLASS, StimuliRegion())[1]
         context.equation_kwargs.update({SCALING_PARAMETER: context.get_weights()})
-        input_list = ABCAdapter.fill_defaults(input_list, context.equation_kwargs)
+        input_list = InputTreeManager.fill_defaults(input_list, context.equation_kwargs)
         input_list, any_scaling = self._remove_scaling(input_list)
         template_specification = {'inputList': input_list, common.KEY_PARAMETERS_CONFIG: False}
         return self._add_extra_fields_to_interface(template_specification), any_scaling
@@ -287,7 +288,7 @@ class RegionStimulusController(SpatioTemporalController):
 
         input_list = self.get_creator_and_interface(REGION_STIMULUS_CREATOR_MODULE,
                                                     REGION_STIMULUS_CREATOR_CLASS, StimuliRegion())[1]
-        input_list = ABCAdapter.fill_defaults(input_list, default_dict)
+        input_list = InputTreeManager.fill_defaults(input_list, default_dict)
         context = common.get_from_session(KEY_REGION_CONTEXT)
         context.reset()
         context.update_from_interface(input_list)
