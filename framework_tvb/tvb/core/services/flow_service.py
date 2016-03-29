@@ -195,11 +195,12 @@ class FlowService:
         return algo, group
     
     
-    def get_available_datatypes(self, project_id, data_name, filters=None):
+    def get_available_datatypes(self, project_id, data_type_cls, filters=None):
         """
         Return all dataTypes that match a given name and some filters.
+        :param data_type_cls: either a fully qualified class name or a class object
         """
-        return self.input_tree_manager._get_available_datatypes(project_id, data_name, filters)
+        return self.input_tree_manager._get_available_datatypes(project_id, data_type_cls, filters)
 
 
     def prepare_parameters(self, attributes_list, project_id, category_key):

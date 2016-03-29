@@ -654,13 +654,15 @@ class InputTreeManager(object):
         return values
 
 
-    def _get_available_datatypes(self, project_id, data_name, filters=None):
+    def _get_available_datatypes(self, project_id, data_type_cls, filters=None):
         """
         Return all dataTypes that match a given name and some filters.
+        :param data_type_cls: either a fully qualified class name or a class object
         """
-        data_class = get_class_by_name(data_name)
-        self.log.debug('Filtering:' + str(data_class))
-        return dao.get_values_of_datatype(project_id, data_class, filters, MAXIMUM_DATA_TYPES_DISPLAYED)
+        if isinstance(data_type_cls, basestring):
+            data_type_cls = get_class_by_name(data_type_cls)
+        self.log.debug('Filtering:' + str(data_type_cls))
+        return dao.get_values_of_datatype(project_id, data_type_cls, filters, MAXIMUM_DATA_TYPES_DISPLAYED)
 
 
     def populate_option_values_for_dtype(self, project_id, type_name, filter_condition=None,
@@ -669,12 +671,12 @@ class InputTreeManager(object):
         Converts all datatypes that match the project_id, type_name and filter_condition
         to a {name: , value:} dict used to populate options in the input tree ui
         '''
-        #todo: both these functions will dynamically import type_name
+        data_type_cls = get_class_by_name(type_name)
         #todo: send category instead of category_key to avoid redundant queries
         #NOTE these functions are coupled via data_list, _populate_values makes no sense without _get_available_datatypes
-        data_list, total_count = self._get_available_datatypes(project_id, type_name,
+        data_list, total_count = self._get_available_datatypes(project_id, data_type_cls,
                                                                filter_condition)
-        values = self._populate_values(data_list, type_name,
+        values = self._populate_values(data_list, data_type_cls,
                                        category_key, complex_dt_attributes)
         return values, total_count
 
