@@ -495,7 +495,9 @@ class InputTreeManager(object):
 
         # In case a specific field in entity is to be used, use it
         if KEY_FIELD in row:
-            result = getattr(entity, row[KEY_FIELD])
+            # note: this cannot be replaced by getattr(entity, row[KEY_FIELD])
+            # at least BCT has 'fields' like scaled_weights()
+            result = eval('entity.' + row[KEY_FIELD])
         if ATT_METHOD in row:
             # The 'shape' attribute of an arraywrapper is overridden by us
             # the following check is made only to improve performance
@@ -596,6 +598,7 @@ class InputTreeManager(object):
             except TVBException:
                 raise
             except Exception:
+                self.log.exception('convert_ui_inputs failed')
                 raise InvalidParameterException("Invalid or missing value in field %s [%s]" % (row[KEY_LABEL],
                                                                                                row[KEY_NAME]))
 
