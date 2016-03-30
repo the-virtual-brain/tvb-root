@@ -71,10 +71,7 @@ class TraitedInterfaceGenerator(object):
         self.__fill_noiseconfig(obj, intr)
         self.__fill_filters(obj, intr)
 
-        if hasattr(obj, 'dtype'):
-            intr['elementType'] = getattr(obj, 'dtype')
-
-        if get(obj.trait, 'wraps', False):
+        if obj.trait.wraps is not None:
             self.__fill_wrapped_type(obj, intr)
 
             if intr['type'] == 'dict' and isinstance(intr['default'], dict):
@@ -130,7 +127,7 @@ class TraitedInterfaceGenerator(object):
         intr.update({
             'default': (obj.value or obj.trait.value) if hasattr(obj, 'value') else obj.trait.value,
             'description': get(obj.trait.inits.kwd, 'doc'),
-            'label': TraitedInterfaceGenerator.label(label),
+            'label': label.capitalize(),
             'name': obj.trait.name,
             'locked': obj.trait.inits.kwd.get('locked', False),
             'required': obj.trait.inits.kwd.get('required', True)
@@ -169,9 +166,9 @@ class TraitedInterfaceGenerator(object):
     @staticmethod
     def __fill_wrapped_type(obj, intr):
         if isinstance(obj.trait.wraps, tuple):
-            intr['type'] = str(obj.trait.wraps[0].__name__)
+            intr['type'] = obj.trait.wraps[0].__name__
         else:
-            intr['type'] = str(obj.trait.wraps.__name__)
+            intr['type'] = obj.trait.wraps.__name__
 
 
     @staticmethod
@@ -244,7 +241,8 @@ class TraitedInterfaceGenerator(object):
         return result, element_type
 
 
-    def __handle_nonmapped_subtypes(self, ownr, obj, intr):
+    @staticmethod
+    def __handle_nonmapped_subtypes(ownr, obj, intr):
         """ Populate options for each subtype. This fills in models etc"""
         for opt in TYPE_REGISTER.subclasses(ownr, KWARG_AVOID_SUBCLASSES in obj.trait.inits.kwd):
             if hasattr(obj, 'value') and obj.value is not None and isinstance(obj.value, opt):
@@ -280,14 +278,3 @@ class TraitedInterfaceGenerator(object):
         chosen options, we should be able to fully instantiate a class.
         """
         raise NotImplementedError
-
-
-    @staticmethod
-    def label(text):
-        """
-        Create suitable UI label given text.
-        Enforce starts with upper-case.
-        """
-        return text[0].upper() + text[1:]
-    
-
