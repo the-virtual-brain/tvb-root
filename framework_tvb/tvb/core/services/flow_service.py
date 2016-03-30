@@ -62,14 +62,8 @@ class FlowService:
     
     def get_category_by_id(self, identifier):
         """ Pass to DAO the retrieve of category by ID operation."""
-        try:
-            return dao.get_category_by_id(identifier)
-        except Exception, excep:
-            self.logger.warning("Wrong step!")
-            self.logger.exception(excep)
-            raise OperationException(excep.message)
-    
-    
+        return dao.get_category_by_id(identifier)
+
     @staticmethod
     def get_uploader_categories():
         """Retrieve all algorithm categories with Upload mechanism"""
@@ -84,8 +78,8 @@ class FlowService:
     def get_visualisers_category():
         """Retrieve all Algorithm categories, with display capability"""
         result = dao.get_visualisers_categories()
-        if result is None or len(result) < 1:
-            raise Exception("View Category not found!!!")
+        if not result:
+            raise ValueError("View Category not found!!!")
         return result[0]
     
     
@@ -93,8 +87,8 @@ class FlowService:
     def get_launchable_non_viewers():
         """Retrieve the Analyze Algorithm Category, (first category with launch capability which is not Viewers)"""
         result = dao.get_launchable_categories(elimin_viewers=True)
-        if result is None or len(result) < 1:
-            raise Exception("Analyze Category not found!!!")
+        if not result:
+            raise ValueError("Analyze Category not found!!!")
         return result[0]
     
     
@@ -107,29 +101,23 @@ class FlowService:
         return dao.get_groups_by_categories(categories_ids)
     
     
-    def get_algorithm_by_identifier(self, ident):
+    @staticmethod
+    def get_algorithm_by_identifier(ident):
         """
         Retrieve Algorithm entity by ID.
         Return None, if ID is not found in DB.
         """
-        try:
-            return dao.get_algorithm_by_id(ident)
-        except Exception, excep:
-            self.logger.exception(excep)
-            return None
-    
-    
-    def get_algo_group_by_identifier(self, ident):
+        return dao.get_algorithm_by_id(ident)
+
+
+    @staticmethod
+    def get_algo_group_by_identifier(ident):
         """
         Retrieve Algorithm Group entity by ID.
         Return None, if ID is not found in DB.
         """
-        try:
-            return dao.get_algo_group_by_id(ident)
-        except Exception, excep:
-            self.logger.exception(excep)
-            return None
-        
+        return dao.get_algo_group_by_id(ident)
+
     
     @staticmethod
     def load_operation(operation_id):
@@ -149,15 +137,13 @@ class FlowService:
         """
         Having a module and a class name, create an instance of ABCAdapter.
         """
+        if group is None:
+            self.logger.error('The given algorithm group is None.')
+            raise OperationException("Could not prepare the algo- group.")
         try:
             return ABCAdapter.build_adapter(group)
-        except IntrospectionException, excep:
-            if group is None:
-                self.logger.error('The given algorithm group is None.')
-                self.logger.exception(excep)
-                raise OperationException("Could not prepare the algo- group.")
-            self.logger.error('Not found: ' + group.classname + ' in:' + group.module)
-            self.logger.exception(excep)
+        except IntrospectionException:
+            self.logger.exception('Not found: ' + group.classname + ' in:' + group.module)
             raise OperationException("Could not prepare " + group.classname)
               
         
@@ -179,9 +165,8 @@ class FlowService:
             interface = self.input_tree_manager.fill_input_tree_with_options(interface, project_id, group.fk_category)
             interface = self.input_tree_manager.prepare_param_names(interface)
             return group, interface
-        except Exception, excep:
-            self.logger.exception(excep)
-            self.logger.error('Not found:' + adapter_name + ' in:' + adapter_module)
+        except Exception:
+            self.logger.exception('Not found:' + adapter_name + ' in:' + adapter_module)
             raise OperationException("Could not prepare " + adapter_name)
     
     
@@ -196,7 +181,8 @@ class FlowService:
         return algo, group
     
     
-    def get_available_datatypes(self, project_id, data_type_cls, filters=None):
+    @staticmethod
+    def get_available_datatypes(project_id, data_type_cls, filters=None):
         """
         Return all dataTypes that match a given name and some filters.
         :param data_type_cls: either a fully qualified class name or a class object

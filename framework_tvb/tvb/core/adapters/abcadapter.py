@@ -52,7 +52,7 @@ from tvb.core.utils import date2string, LESS_COMPLEX_TIME_FORMAT
 from tvb.core.entities.storage import dao
 from tvb.core.entities.file.files_helper import FilesHelper
 from tvb.core.entities.transient.structure_entities import DataTypeMetaData
-from tvb.core.adapters.exceptions import IntrospectionException, LaunchException
+from tvb.core.adapters.exceptions import IntrospectionException, LaunchException, InvalidParameterException
 from tvb.core.adapters.exceptions import NoMemoryAvailableException
 from tvb.core.adapters.xml_reader import ELEM_OPTIONS, ELEM_OUTPUTS, INPUTS_KEY
 
@@ -370,17 +370,17 @@ class ABCAdapter(object):
                 #### Now check if the first item has a supported type
                 if not self.__is_data_in_supported_types(first_item):
                     msg = "Unexpected DataType %s"
-                    raise Exception(msg % type(first_item))
+                    raise InvalidParameterException(msg % type(first_item))
 
                 first_item_type = type(first_item)
                 for res in result_entity:
                     if not isinstance(res, first_item_type):
                         msg = '%s-Heterogeneous types (%s).Expected %s list.'
-                        raise Exception(msg % (entity_id, type(res), first_item_type))
+                        raise InvalidParameterException(msg % (entity_id, type(res), first_item_type))
             else:
                 if not self.__is_data_in_supported_types(result_entity):
                     msg = "Unexpected DataType %s"
-                    raise Exception(msg % type(result_entity))
+                    raise InvalidParameterException(msg % type(result_entity))
 
 
     def __is_data_in_supported_types(self, data):
@@ -417,9 +417,9 @@ class ABCAdapter(object):
         """
         Having a subclass of ABCAdapter, prepare an instance for launching an operation with it.
         """
+        if not issubclass(adapter_class, ABCAdapter):
+            raise IntrospectionException("Invalid data type: It should extend adapters.ABCAdapter!")
         try:
-            if not issubclass(adapter_class, ABCAdapter):
-                raise IntrospectionException("Invalid data type: It should extend adapters.ABCAdapter!")
             algo_group = dao.find_group(adapter_class.__module__, adapter_class.__name__)
 
             adapter_instance = adapter_class()
