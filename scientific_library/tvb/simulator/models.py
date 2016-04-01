@@ -1417,7 +1417,9 @@ class JansenRit(Model):
         range=basic.Range(lo=3.12, hi=6.0, step=0.02),
         doc="""Firing threshold (PSP) for which a 50% firing rate is achieved.
         In other words, it is the value of the average membrane potential
-        corresponding to the inflection point of the sigmoid [mV].""",
+        corresponding to the inflection point of the sigmoid [mV]. 
+
+	The usual value for this parameter is 6.0.""",
         order=5)
 
     nu_max = arrays.FloatArray(
