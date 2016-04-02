@@ -51,7 +51,7 @@ project = u'TVB'
 project_name = u'TVB Documentation'
 author_names = u'TVB Team'
 project_target_name = 'tvb_documentation'
-copyright = u'2013-2015, ' + author_names
+copyright = u'2013-2016, ' + author_names
 
 # The version info for the project you're documenting, acts as replacement for
 # |version| and |release|, also used in various other places throughout the
