@@ -1,0 +1,17 @@
+#! /usr/bin/env python
+# encoding: utf-8
+
+bld.stlib(
+    features='cxx',
+    source=bld.path.ant_glob('**/*.cpp'),
+    target='cpuid',
+    export_includes=['..'],
+    use=['platform_includes']
+)
+
+# Add a manual dependency to rebuild cpuinfo.cpp if a header file changes.
+# waf cannot detect this dependency, because the headers are included
+# conditionally based on the platform
+bld.add_manual_dependency(
+    bld.path.find_node('cpuinfo.cpp'),
+    bld.path.ant_glob('**/*.hpp'))

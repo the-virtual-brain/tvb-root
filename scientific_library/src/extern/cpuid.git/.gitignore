@@ -1,0 +1,55 @@
+# Compiled Object files
+*.slo
+*.lo
+*.o
+
+# Compiled Dynamic libraries
+*.so
+
+# Compiled Static libraries
+*.lai
+*.la
+*.a
+
+# Python
+*.pyc
+
+# Compiled Doxygen documentation
+/doxygen/html
+
+# For projects that use Waf for building: http://code.google.com/p/waf/
+waf-*
+.waf-*
+.lock-*
+build
+bundle_dependencies
+*.sh
+
+# Gnu Global tag files
+GPATH
+GRTAGS
+GSYMS
+GTAGS
+
+# Emacs temp / auto save
+\#*#
+*~
+
+#Eclipse ignore
+.cproject
+*.project
+.metadata
+local.properties
+.classpath
+.settings/
+
+# Visual Studio ignore
+*.bat
+*.sln
+*.suo
+*.user
+*.ncb
+*.sdf
+*.opensdf
+*.log
+VSProjects

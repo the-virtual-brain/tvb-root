@@ -1,0 +1,65 @@
+# Useful Macros to be used later
+
+function(getCompilerVersion)
+   # like gcc: gcc version X.Y.Z (......)
+   # or X.Y when using -dumpversion
+   exec_program(${CMAKE_C_COMPILER} ARGS -dumpversion OUTPUT_VARIABLE LOCAL_COMPILER_VERSION)
+   string(REGEX REPLACE "^([0-9].[0-9]+).*" "\\1" LOCAL_COMPILER_VERSION "${LOCAL_COMPILER_VERSION}")
+   if (LOCAL_COMPILER_VERSION AND CMAKE_COMPILER_IS_GNUCXX)
+      message (STATUS "Found GCC compiler version ${LOCAL_COMPILER_VERSION}")
+      set (COMPILER_VERSION ${LOCAL_COMPILER_VERSION} PARENT_SCOPE)
+      RETURN()
+   endif()
+
+   exec_program(${CMAKE_C_COMPILER} ARGS -v OUTPUT_VARIABLE LOCAL_COMPILER_VERSION)
+   # like clang on mac: Apple clang version X.Y (...) (based on LLVM Z.Wsvn)
+   # like clang on linux: Ubuntu clang version A.X.Y~... (...) (based on LLVM Z.W)
+   string(REGEX REPLACE ".*based on LLVM ([0-9].[0-9]+).*" "\\1" LOCAL_COMPILER_VERSION "${LOCAL_COMPILER_VERSION}")
+   if (LOCAL_COMPILER_VERSION AND CMAKE_COMPILER_IS_CLANG)
+      message (STATUS "Found CLANG compiler version ${LOCAL_COMPILER_VERSION}")
+      set (COMPILER_VERSION ${LOCAL_COMPILER_VERSION} PARENT_SCOPE)
+      RETURN()
+   endif()
+
+   # like icc: icc version 13.1.1 (gcc version 4.4.7 compatibility)
+   string(REGEX REPLACE ".*([0-9][0-9].[0-9].[0-9]).*version.*" "\\1" LOCAL_COMPILER_VERSION "${LOCAL_COMPILER_VERSION}")
+   if (LOCAL_COMPILER_VERSION)
+      message (STATUS "Found ICC compiler version ${LOCAL_COMPILER_VERSION}")
+      set (COMPILER_VERSION ${LOCAL_COMPILER_VERSION} PARENT_SCOPE)
+      RETURN()
+   endif()      
+
+endfunction(getCompilerVersion)
+
+#-------------------------------------------------------------------------------
+
+macro(change_option NAME NEWVAL)
+  unset(${NAME} CACHE)
+  set(${NAME} ${NEWVAL} CACHE BOOL "Value changed by cmake - probably due to compiler incompatibilities")
+endmacro(change_option)
+
+
+macro(add_exe_and_link  EXENAME FILENAME ADDITIONAL_LIB)
+    # no name is lib not present
+    set (ADDITIONAL_LIB_NAME "")
+    if (NOT APPLE) # in this case u have the framework carbon
+      if (${ADDITIONAL_LIB} MATCHES "None")
+      else (${ADDITIONAL_LIB} MATCHES "None")
+          set (ADDITIONAL_LIB_NAME ${ADDITIONAL_LIB})
+      endif (${ADDITIONAL_LIB} MATCHES "None")
+    endif (NOT APPLE)
+
+    #link Vc if present
+    if(USE_VC)
+      add_executable( ${EXENAME} ${FILENAME})
+      target_link_libraries(${EXENAME} vdt VcWrapper ${ADDITIONAL_LIB_NAME})
+    else(USE_VC)
+      add_executable( ${EXENAME} ${FILENAME})
+      target_link_libraries(${EXENAME} vdt ${ADDITIONAL_LIB_NAME})
+    endif(USE_VC)
+endmacro(add_exe_and_link)
+
+# End macro definitions
+
+        
+
