@@ -68,7 +68,7 @@ class Model(core.Type):
     .. automethod:: Model.update_derived_parameters
 
     """
-    _base_classes = ['Model', "JRFast"]
+    _base_classes = ['Model', ]
     # NOTE: the parameters that are contained in the following list will be
     # editable from the ui in an visual manner
     ui_configurable_parameters = []
@@ -1629,55 +1629,6 @@ class JansenRit(Model):
                 - 2.0 * self.a * y4 - self.a ** 2 * y1,
             self.B * self.b * (self.a_4 * self.J * sigm_y0_3) - 2.0 * self.b * y5 - self.b ** 2 * y2,
         ])
-
-
-class JRFast(JansenRit):
-    """
-    This is an optimized version of the above JansenRit model, using numexpr and
-    constant memory (as far as is obvious).
-
-    Note that it caches parameters and derivative arrays on the first call to
-    the dfun method, so if you change the number of nodes or the parameters, you
-    need to invalidate the cache by setting the invalid_dfun_cache attribute to
-    True.
-
-    """
-
-    invalid_dfun_cache = True
-
-    #@profile
-    def dfun(self, y, coupling, local_coupling=0.0, ev=numexpr.evaluate):
-
-        if self.invalid_dfun_cache:
-            self.dy = y.copy() * 0.0
-            self.y1m2 = y[1].copy()
-            self.dfunlocals = {}
-            for k in ['nu_max', 'r', 'v0', 'a_1', 'J', 'a_3', 'A', 'a', 'mu',
-                    'a_2', 'B', 'b', 'a_4']:
-                self.dfunlocals[k] = getattr(self, k)
-            self.dfunglobals = {}
-            self.invalid_dfun_cache = False
-
-        l = self.dfunlocals
-        g = self.dfunglobals
-
-        l['y0'], l['y1'], l['y2'], l['y3'], l['y4'], l['y5'] = y
-
-        l['c0'], l['c1'] = coupling
-
-        # self.cvar = numpy.array([1, 2], dtype=numpy.int32)
-        self.y1m2[:] = y[1]
-        self.y1m2 -= y[2]
-        l['lc'] = local_coupling * self.y1m2
-
-        self.dy[:3] = y[3:]
-
-        ev('A * a * (2.0 * nu_max / (1.0 + exp(r * (v0 - (y1 - y2))))) - 2.0 * a * y3 - a ** 2 * y0', l, g, out=self.dy[3], casting='no')
-        ev('A * a * (mu + a_2 * J * (2.0 * nu_max / (1.0 + exp(r * (v0 - (a_1 * J * y0))))) + (c0 - c1) + lc) - 2.0 * a * y4 - a ** 2 * y1', l, g, out=self.dy[4], casting='no')
-        ev('B * b * (a_4 * J * (2.0 * nu_max / (1.0 + exp(r * (v0 - (a_3 * J * y0)))))) - 2.0 * b * y5 - b ** 2 * y2', l, g, out=self.dy[5], casting='no')
-
-        return self.dy
-
 
 
 class ZetterbergJansen(Model):
