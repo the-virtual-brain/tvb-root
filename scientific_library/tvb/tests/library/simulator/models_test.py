@@ -116,13 +116,6 @@ class ModelsTest(BaseTestCase):
         self._validate_initialization(model, 6)
 
 
-    def test_jansen_rit_fast(self):
-        """
-        """
-        model = models.JRFast()
-        self._validate_initialization(model, 6)
-
-
     def test_sj2d(self):
         """
         """
