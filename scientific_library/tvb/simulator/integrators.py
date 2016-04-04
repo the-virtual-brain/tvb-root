@@ -216,6 +216,8 @@ class HeunDeterministic(Integrator):
 
     """
 
+    _ui_name = "Heun"
+
     def __init__(self, **kwargs):
         """
         Wisdom... and plagiarism.
@@ -265,6 +267,8 @@ class HeunStochastic(IntegratorStochastic):
     .. automethod:: HeunStochastic.scheme
 
     """
+
+    _ui_name = "Stochastic Heun"
 
     def __init__(self, **kwargs):
         """
@@ -327,6 +331,8 @@ class EulerDeterministic(Integrator):
 
     """
 
+    _ui_name = "Euler"
+
     def __init__(self, **kwargs):
         """
         Wisdom... and plagiarism.
@@ -371,6 +377,8 @@ class EulerStochastic(IntegratorStochastic):
     .. automethod:: EulerStochastic.scheme
 
     """
+
+    _ui_name = "Euler-Maruyama"
 
     def __init__(self, **kwargs):
         """
@@ -426,6 +434,8 @@ class RungeKutta4thOrderDeterministic(Integrator):
     .. automethod:: RungeKutta4thOrderDeterministic.scheme
 
     """
+
+    _ui_name = "Runge-Kutta 4th order"
 
     def __init__(self, **kwargs):
         """
@@ -503,6 +513,8 @@ class Identity(Integrator):
 
     """
 
+    _ui_name = "Difference equation"
+
     def scheme(self, X, dfun, coupling=None, local_coupling=0.0, stimulus=0.0):
         """
         The identity scheme simply returns the results of the dfun and
@@ -560,18 +572,24 @@ class SciPySDE(SciPyODEBase):
 
 class VODE(SciPyODE, Integrator):
     _scipy_ode_integrator_name = "vode"
+    _ui_name = "Variable-order Adams / BDF"
 
 class VODEStochastic(SciPySDE, IntegratorStochastic):
     _scipy_ode_integrator_name = "vode"
+    _ui_name = "Stochastic variable-order Adams / BDF"
 
 class Dopri5(SciPyODE, Integrator):
     _scipy_ode_integrator_name = "dopri5"
+    _ui_name = "Dormand-Prince, order (4, 5)"
 
 class Dopri5Stochastic(SciPySDE, IntegratorStochastic):
     _scipy_ode_integrator_name = "dopri5"
+    _ui_name = "Stochastic Dormand-Prince, order (4, 5)"
 
 class Dop853(SciPyODE, Integrator):
     _scipy_ode_integrator_name = "dop853"
+    _ui_name = "Dormand-Prince, order 8 (5, 3)"
 
 class Dop853Stochastic(SciPySDE, IntegratorStochastic):
     _scipy_ode_integrator_name = "dop853"
+    _ui_name = "Stochastic Dormand-Prince, order 8 (5, 3)"
