@@ -46,9 +46,11 @@ will be consistent with Monitor periods corresponding to any of [4096, 2048, 102
 """
 
 # From standard python libraries
+import functools
 
 # Third party python libraries  
 import numpy
+import scipy.integrate
 
 #The Virtual Brain
 import tvb.basic.traits.core as core
@@ -512,3 +514,64 @@ class Identity(Integrator):
         """
 
         return dfun(X, coupling, local_coupling) + stimulus
+
+
+class SciPyODEBase(object):
+    "Provides a base class for integrators using SciPy's ode class."
+
+    def _dfun_wrapper(self, dfun, state_shape):
+        @functools.wraps(dfun)
+        def wrapper(t, X_, coupling=None, local_coupling=0.0):
+            X = X_.reshape(state_shape)
+            dXdt = dfun(X, coupling, local_coupling)
+            return dXdt.ravel()
+        return wrapper
+
+    def _prepare_ode(self, X, dfun):
+        ode = scipy.integrate.ode(self._dfun_wrapper(dfun, X.shape))
+        ode.set_initial_value(X.ravel())
+        ode.set_integrator(self._scipy_ode_integrator_name,
+                           first_step=self.dt / 5.0)
+        return ode
+
+    _ode = None
+
+    def _apply_ode(self, X, dfun, coupling, local_coupling, stimulus):
+        if self._ode is None:
+            self._ode = self._prepare_ode(X, dfun)
+        self._ode.y[:] = X.ravel()
+        self._ode.set_f_params(coupling, local_coupling)
+        return self._ode.integrate(self._ode.t + self.dt).reshape(X.shape) + self.dt * stimulus
+
+class SciPyODE(SciPyODEBase):
+
+    def scheme(self, X, dfun, coupling, local_coupling, stimulus):
+        X_next = self._apply_ode(X, dfun, coupling, local_coupling, stimulus)
+        self.clamp_state(X_next)
+        return X_next
+
+class SciPySDE(SciPyODEBase):
+
+    def scheme(self, X, dfun, coupling, local_coupling, stimulus):
+        X_next = self._apply_ode(X, dfun, coupling, local_coupling, stimulus)
+        X_next += self.noise.gfun(X) * self.noise.generate(X.shape)
+        self.clamp_state(X_next)
+        return X_next
+
+class VODE(SciPyODE, Integrator):
+    _scipy_ode_integrator_name = "vode"
+
+class VODEStochastic(SciPySDE, IntegratorStochastic):
+    _scipy_ode_integrator_name = "vode"
+
+class Dopri5(SciPyODE, Integrator):
+    _scipy_ode_integrator_name = "dopri5"
+
+class Dopri5Stochastic(SciPySDE, IntegratorStochastic):
+    _scipy_ode_integrator_name = "dopri5"
+
+class Dop853(SciPyODE, Integrator):
+    _scipy_ode_integrator_name = "dop853"
+
+class Dop853Stochastic(SciPySDE, IntegratorStochastic):
+    _scipy_ode_integrator_name = "dop853"
