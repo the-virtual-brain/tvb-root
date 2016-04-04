@@ -141,8 +141,8 @@ class Integrator(core.Type):
         :math:`X` and provide an appropriate :math:`X + dX` (dfun in the code).
 
         """
-
-        pass
+        msg = "Integrator is a base class; please use a suitable subclass."
+        raise NotImplementedError(msg)
 
     def clamp_state(self, X):
         if self.clamped_state_variable_values is not None:
