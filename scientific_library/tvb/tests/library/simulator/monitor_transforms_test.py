@@ -125,6 +125,10 @@ class MonitorTransformsTests(BaseTestCase):
         self.assertEqual(tags['user_tag_1'], pre)
         self.assertEqual(tags['user_tag_2'], post)
 
+    def test_post_default_expands(self):
+        mt = MonitorTransforms('V;W', '')
+        self.assertEqual(2, len(mt.post))
+
 
 class MonitorTransformsInSimTest(BaseTestCase):
 
