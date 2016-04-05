@@ -457,7 +457,7 @@ class Simulator(core.Type):
             else:
                 get_state(region_history, time_indices, cvar, node_ids, out=delayed_state)
                 region_coupling = self.coupling(weights, region_history[(step - 1) % self.horizon, self.model.cvar], delayed_state)
-                node_coupling = region_coupling[:, self._regmap].transpose((1, 0, 2))
+                node_coupling = region_coupling[:, self._regmap]
 
             # stimulus pattern at this time point
             if self.stimulus is not None:

@@ -42,7 +42,7 @@ if __name__ == "__main__":
 import numpy
 import unittest
 from tvb.tests.library.base_testcase import BaseTestCase
-from tvb.simulator import coupling
+from tvb.simulator import coupling, models
 
 
 
@@ -139,6 +139,39 @@ class CouplingTest(BaseTestCase):
         self._apply_coupling_2sv(k)
 
 
+class CouplingShapeTestModel(models.Generic2dOscillator):
+
+    def __init__(self, test_case, n_node, **kwds):
+        super(CouplingShapeTestModel, self).__init__(**kwds)
+        self.cvar = numpy.r_[0, 1]
+        self.n_node = n_node
+        self.test_case = test_case
+
+    def dfun(self, state, coupling, local_coupling):
+        self.test_case.assertEqual(
+            (2, self.n_node, 1),
+            coupling.shape
+        )
+        return state
+
+class CouplingShapeTest(BaseTestCase):
+
+    def test_shape(self):
+
+        from tvb.datatypes import cortex, connectivity
+        from tvb.simulator import simulator
+
+        surf = cortex.Cortex(load_default=True)
+        sim = simulator.Simulator(
+            model=CouplingShapeTestModel(self, surf.vertices.shape[0]),
+            connectivity=connectivity.Connectivity(load_default=True),
+            surface=surf)
+
+        sim.configure()
+
+        for _ in sim(simulation_length=sim.integrator.dt * 2):
+            pass
+
 
 def suite():
     """
@@ -146,6 +179,7 @@ def suite():
     """
     test_suite = unittest.TestSuite()
     test_suite.addTest(unittest.makeSuite(CouplingTest))
+    test_suite.addTest(unittest.makeSuite(CouplingShapeTest))
     return test_suite
 
 
