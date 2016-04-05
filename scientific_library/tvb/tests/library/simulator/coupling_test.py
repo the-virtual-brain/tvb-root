@@ -39,11 +39,12 @@ if __name__ == "__main__":
     from tvb.tests.library import setup_test_console_env
     setup_test_console_env()
 
+import copy
 import numpy
 import unittest
 from tvb.tests.library.base_testcase import BaseTestCase
-from tvb.simulator import coupling, models
-
+from tvb.simulator import coupling, models, simulator
+from tvb.datatypes import cortex, connectivity
 
 
 class CouplingTest(BaseTestCase):
@@ -139,27 +140,27 @@ class CouplingTest(BaseTestCase):
         self._apply_coupling_2sv(k)
 
 
-class CouplingShapeTestModel(models.Generic2dOscillator):
-
-    def __init__(self, test_case, n_node, **kwds):
-        super(CouplingShapeTestModel, self).__init__(**kwds)
-        self.cvar = numpy.r_[0, 1]
-        self.n_node = n_node
-        self.test_case = test_case
-
-    def dfun(self, state, coupling, local_coupling):
-        self.test_case.assertEqual(
-            (2, self.n_node, 1),
-            coupling.shape
-        )
-        return state
-
 class CouplingShapeTest(BaseTestCase):
 
     def test_shape(self):
 
-        from tvb.datatypes import cortex, connectivity
-        from tvb.simulator import simulator
+        # try to avoid introspector picking up this model
+        Gen2D = copy.deepcopy(models.Generic2dOscillator)
+
+        class CouplingShapeTestModel(Gen2D):
+            def __init__(self, test_case=None, n_node=None, **kwds):
+                super(CouplingShapeTestModel, self).__init__(**kwds)
+                self.cvar = numpy.r_[0, 1]
+                self.n_node = n_node
+                self.test_case = test_case
+
+            def dfun(self, state, coupling, local_coupling):
+                if self.test_case is not None:
+                    self.test_case.assertEqual(
+                        (2, self.n_node, 1),
+                        coupling.shape
+                    )
+                    return state
 
         surf = cortex.Cortex(load_default=True)
         sim = simulator.Simulator(
@@ -171,7 +172,6 @@ class CouplingShapeTest(BaseTestCase):
 
         for _ in sim(simulation_length=sim.integrator.dt * 2):
             pass
-
 
 def suite():
     """
