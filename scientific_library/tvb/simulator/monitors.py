@@ -105,6 +105,8 @@ class MonitorTransforms(object):
 
     def __init__(self, pre_exprs, post_exprs, model_svars=(), delim=';'):
         self.pre = self._prep_exprs(pre_exprs, delim)
+        if post_exprs == '':
+            post_exprs = delim.join(['mon']*len(self.pre))
         self.post = self._prep_exprs(post_exprs, delim)
         self.svars = model_svars
         # self._check_num_exprs()
