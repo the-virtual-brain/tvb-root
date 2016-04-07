@@ -451,7 +451,7 @@ class Simulator(core.Type):
         state = self._prepare_initial_state_from_history(self.history)
 
         # integration loop
-        n_steps = numpy.ceil(self.simulation_length / self.integrator.dt).astype('i')
+        n_steps = int(numpy.ceil(self.simulation_length / self.integrator.dt))
         for step in xrange(self.current_step + 1, self.current_step + n_steps +1):
             node_coupling = self._loop_compute_node_coupling(
                 step, n_reg, n_cvar, cvar, idelays, weights, node_ids, state, region_history)
