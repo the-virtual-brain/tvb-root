@@ -40,64 +40,26 @@ simulation and the method for running the simulation.
 """
 
 import numpy
-import scipy.sparse as sparse
+import scipy.sparse
 from tvb.basic.profile import TvbProfile
 import tvb.basic.traits.core as core
 import tvb.basic.traits.types_basic as basic
 from tvb.basic.filters.chain import UIFilter, FilterChain
-from tvb.datatypes.cortex import Cortex
 
-import tvb.simulator.models as models_module
-import tvb.simulator.integrators as integrators_module
-import tvb.simulator.monitors as monitors_module
-import tvb.simulator.coupling as coupling_module
-
-import tvb.datatypes.arrays as arrays_dtype
-import tvb.datatypes.surfaces as surfaces_dtype
-import tvb.datatypes.connectivity as connectivity_dtype
-#import tvb.datatypes.coupling as coupling_dtype
-import tvb.datatypes.patterns as patterns_dtype
+from tvb.datatypes import cortex, connectivity, arrays, patterns
+from tvb.simulator import models, integrators, monitors, coupling
 
 from tvb.simulator.common import psutil, get_logger, numpy_add_at
 from tvb.simulator.history import get_state
 
+
 LOG = get_logger(__name__)
 
 
-#from tvb.simulator.common import iround
-
 class Simulator(core.Type):
-    """
-    The Simulator class coordinates classes from all other modules in the
-    simulator package in order to perform simulations. 
+    "A Simulator assembles components required to perform simulations."
 
-    In general, it is necessary to initialiaze a simulator with the desired
-    components and then call the simulator in a loop to obtain simulation
-    data:
-    
-    >>> sim = Simulator(...)
-    >>> for output in sim(simulation_length=1000):
-            ...
-    
-    Please refer to the user guide and the demos for more detail.
-
-
-    .. #Currently there seems to be a clash betwen traits and autodoc, autodoc
-    .. #can't find the methods of the class, the class specific names below get
-    .. #us around this...
-    .. automethod:: Simulator.__init__
-    .. automethod:: Simulator.configure
-    .. automethod:: Simulator.__call__
-    .. automethod:: Simulator.configure_history
-    .. automethod:: Simulator.configure_integrator_noise
-    .. automethod:: Simulator.memory_requirement
-    .. automethod:: Simulator.runtime
-    .. automethod:: Simulator.storage_requirement
-
-
-    """
-
-    connectivity = connectivity_dtype.Connectivity(
+    connectivity = connectivity.Connectivity(
         label="Long-range connectivity",
         default=None,
         order=1,
@@ -132,9 +94,9 @@ class Simulator(core.Type):
         range=basic.Range(lo=0.01, hi=100.0, step=1.0),
         doc="""Conduction speed for ``Long-range connectivity`` (mm/ms)""")
 
-    coupling = coupling_module.Coupling(
+    coupling = coupling.Coupling(
         label="Long-range coupling function",
-        default=coupling_module.Linear(),
+        default=coupling.Linear(),
         required=True,
         order=2,
         doc="""The coupling function is applied to the activity propagated
@@ -142,7 +104,7 @@ class Simulator(core.Type):
         dynamic equations of the Model. Its primary purpose is to 'rescale' the
         incoming activity to a level appropriate to Model.""")
 
-    surface = Cortex(
+    surface = cortex.Cortex(
         label="Cortical surface",
         default=None,
         order=3,
@@ -157,13 +119,13 @@ class Simulator(core.Type):
                              linked_elem_field=FilterChain.datatype + "._surface",
                              linked_elem_parent_name="surface",
                              linked_elem_parent_option=None)],
-        doc="""By default, a tvb.datatypes.Cortex object which represents the
+        doc="""By default, a Cortex object which represents the
         cortical surface defined by points in the 3D physical space and their 
         neighborhood relationship. In the current TVB version, when setting up a 
         surface-based simulation, the option to configure the spatial spread of 
         the ``Local Connectivity`` is available.""")
 
-    stimulus = patterns_dtype.SpatioTemporalPattern(
+    stimulus = patterns.SpatioTemporalPattern(
         label="Spatiotemporal stimulus",
         default=None,
         order=4,
@@ -177,9 +139,9 @@ class Simulator(core.Type):
         In the current version of TVB, stimuli are applied to the first state 
         variable of the ``Local dynamic model``.""")
 
-    model = models_module.Model(
+    model = models.Model(
         label="Local dynamic model",
-        default=models_module.Generic2dOscillator,
+        default=models.Generic2dOscillator,
         required=True,
         order=5,
         doc="""A tvb.simulator.Model object which describe the local dynamic
@@ -188,9 +150,9 @@ class Simulator(core.Type):
         monitor. By default the 'Generic2dOscillator' model is used. Read the 
         Scientific documentation to learn more about this model.""")
 
-    integrator = integrators_module.Integrator(
+    integrator = integrators.Integrator(
         label="Integration scheme",
-        default=integrators_module.HeunDeterministic,
+        default=integrators.HeunDeterministic,
         required=True,
         order=6,
         doc="""A tvb.simulator.Integrator object which is
@@ -199,7 +161,7 @@ class Simulator(core.Type):
             methods. It is used to compute the time courses of the model state 
             variables.""")
 
-    initial_conditions = arrays_dtype.FloatArray(
+    initial_conditions = arrays.FloatArray(
         label="Initial Conditions",
         default=None,
         order=-1,
@@ -212,9 +174,9 @@ class Simulator(core.Type):
         array will be padded with random values based on the 'state_variables_range'
         attribute.""")
 
-    monitors = monitors_module.Monitor(
+    monitors = monitors.Monitor(
         label="Monitor(s)",
-        default=monitors_module.TemporalAverage,
+        default=monitors.TemporalAverage,
         required=True,
         order=8,
         select_multiple=True,
@@ -345,7 +307,7 @@ class Simulator(core.Type):
         LOG.debug(msg % (repr(self), str(self.good_history_shape)))
 
         #Reshape integrator.noise.nsig, if necessary.
-        if isinstance(self.integrator, integrators_module.IntegratorStochastic):
+        if isinstance(self.integrator, integrators.IntegratorStochastic):
             self.configure_integrator_noise()
 
         self.configure_history(self.initial_conditions)
@@ -357,7 +319,6 @@ class Simulator(core.Type):
         self._census_memory_requirement()
 
         return self
-
 
     def __call__(self, simulation_length=None, random_state=None):
         """
@@ -382,7 +343,7 @@ class Simulator(core.Type):
         self._calculate_storage_requirement()
 
         if random_state is not None:
-            if isinstance(self.integrator, integrators_module.IntegratorStochastic):
+            if isinstance(self.integrator, integrators.IntegratorStochastic):
                 self.integrator.noise.random_stream.set_state(random_state)
                 msg = "random_state supplied with seed %s"
                 LOG.info(msg, self.integrator.noise.random_stream.get_state()[1][0])
@@ -429,8 +390,8 @@ class Simulator(core.Type):
                 ind = numpy.arange(self.number_of_nodes, dtype=int)
                 vec_cs = numpy.zeros((self.number_of_nodes,))
                 vec_cs[:self.surface.number_of_vertices] = self.surface.coupling_strength
-                sp_cs = sparse.csc_matrix((vec_cs, (ind, ind)),
-                                          shape=(self.number_of_nodes, self.number_of_nodes))
+                sp_cs = scipy.sparse.csc_matrix((vec_cs, (ind, ind)),
+                                                shape=(self.number_of_nodes, self.number_of_nodes))
                 local_coupling = sp_cs * self.surface.local_connectivity.matrix
 
         if self.stimulus is None:
@@ -482,7 +443,6 @@ class Simulator(core.Type):
 
         # This -1 is here for not repeating the point on resume
         self.current_step = self.current_step + int_steps - 1
-
 
     def configure_history(self, initial_conditions=None):
         """
@@ -581,7 +541,6 @@ class Simulator(core.Type):
         LOG.debug("Simulator.integrator.noise.nsig shape: %s" % str(nsig.shape))
         self.integrator.noise.nsig = nsig
 
-
     def configure_monitors(self):
         """ Configure the requested Monitors for this Simulator """
         if not isinstance(self.monitors, (list, tuple)):
@@ -591,7 +550,6 @@ class Simulator(core.Type):
         for monitor in self.monitors:
             monitor.config_for_sim(self)
 
-
     def configure_stimuli(self):
         """ Configure the defined Stimuli for this Simulator """
         if self.stimulus is not None:
@@ -600,7 +558,6 @@ class Simulator(core.Type):
             else:
                 self.stimulus.configure_space()
 
-
     def memory_requirement(self):
         """
         Return an estimated of the memory requirements (Bytes) for this
@@ -608,7 +565,6 @@ class Simulator(core.Type):
         """
         self._guesstimate_memory_requirement()
         return self._memory_requirement_guess
-
 
     def runtime(self, simulation_length):
         """
@@ -620,7 +576,6 @@ class Simulator(core.Type):
         self._guesstimate_runtime()
         return self._runtime
 
-
     def storage_requirement(self, simulation_length):
         """
         Return an estimated storage requirement (Bytes) for the simulator's
@@ -630,7 +585,6 @@ class Simulator(core.Type):
         self.simulation_length = simulation_length
         self._calculate_storage_requirement()
         return self._storage_requirement
-
 
     def _guesstimate_memory_requirement(self):
         """
@@ -669,12 +623,11 @@ class Simulator(core.Type):
             memreq += number_of_nodes * number_of_regions * bits_64 * 4   # region_mapping, region_average, region_sum
             #???memreq += self.surface.local_connectivity.matrix.nnz * 8
 
-        if not isinstance(self.monitors, (list, tuple)):
-            monitors = [self.monitors]
-        else:
-            monitors = self.monitors
-        for monitor in monitors:
-            if not isinstance(monitor, monitors_module.Bold):
+        if not hasattr(self.monitors, '__len__'):
+            self.monitors = [self.monitors]
+
+        for monitor in self.monitors:
+            if not isinstance(monitor, monitors.Bold):
                 stock_shape = (monitor.period / self.integrator.dt, 
                                self.model.variables_of_interest.shape[0], 
                                number_of_nodes,
@@ -706,7 +659,6 @@ class Simulator(core.Type):
         msg = "Memory requirement guesstimate: simulation will need about %.1f MB"
         LOG.info(msg % (self._memory_requirement_guess / 1048576.0))
 
-
     def _census_memory_requirement(self):
         """
         Guesstimate the memory required for this simulator. 
@@ -733,17 +685,16 @@ class Simulator(core.Type):
 
         for monitor in self.monitors:
             memreq += monitor._stock.nbytes
-            if isinstance(monitor, monitors_module.Bold):
+            if isinstance(monitor, monitors.Bold):
                 memreq += monitor._interim_stock.nbytes
 
         if psutil and memreq > psutil.virtual_memory().total:
-            LOG.error("This is gonna get ugly...")
+            LOG.warning("Memory estimate exceeds total available RAM.")
 
         self._memory_requirement_census = magic_number * memreq
         #import pdb; pdb.set_trace()
         msg = "Memory requirement census: simulation will need about %.1f MB"
         LOG.info(msg % (self._memory_requirement_census / 1048576.0))
-
 
     def _guesstimate_runtime(self):
         """
@@ -760,7 +711,6 @@ class Simulator(core.Type):
                          self.simulation_length / self.integrator.dt)
         msg = "Simulation single-threaded runtime should be about %s seconds!"
         LOG.info(msg % str(int(self._runtime)))
-
 
     def _calculate_storage_requirement(self):
         """
