@@ -171,6 +171,9 @@ class ModelsTest(BaseTestCase):
         model = models.LarterBreakspear()
         self._validate_initialization(model, 3)
 
+    def test_linear(self):
+        model = models.Linear()
+        self._validate_initialization(model, 1)
 
 
 def suite():

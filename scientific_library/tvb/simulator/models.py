@@ -3102,6 +3102,44 @@ class Kuramoto(Model):
         return self.derivative
 
 
+class Linear(Model):
+    _ui_name = "Linear model"
+    ui_configurable_parameters = ['gamma']
+
+    gamma = arrays.FloatArray(
+        label=r":math:`\gamma`",
+        default=numpy.array([-10.0]),
+        range=basic.Range(lo=-100.0, hi=0.0, step=1.0),
+        doc="The damping coefficient specifies how quickly the node's activity relaxes, must be larger"
+            " than the node's in-degree in order to remain stable.",
+        order=1)
+
+    state_variable_range = basic.Dict(
+        label="State Variable ranges [lo, hi]",
+        default={"x": numpy.array([-1, 1])},
+        doc="Range used for state variable initialization and visualization.",
+        order=2)
+
+    variables_of_interest = basic.Enumerate(
+        label="Variables watched by Monitors",
+        options=["x"],
+        default=["x"],
+        select_multiple=True,
+        order=-1)
+
+
+    def __init__(self, **kwargs):
+        super(Linear, self).__init__(**kwargs)
+        self._nvar = 1
+        self.cvar = numpy.array([0], dtype=numpy.int32)
+
+    def dfun(self, state, coupling, local_coupling=0.0):
+        x, = state
+        c, = coupling
+        dx = self.gamma * x + c + local_coupling * x
+        return numpy.array([dx])
+
+
 class Hopfield(Model):
     r"""
 
