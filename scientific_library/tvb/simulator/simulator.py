@@ -381,11 +381,47 @@ class Simulator(core.Type):
             LOG.debug("stimulus shape is: %s", stimulus.shape)
         return stimulus
 
-    def _initial_state_from_history(self, history):
+    def _prepare_initial_state_from_history(self, history):
         # initial state, history[timepoint[0], state_variables, nodes, modes]
         state = self.history[self.current_step % self.horizon, :]
         LOG.debug("state shape is: %s", state.shape)
         return state
+
+    def _loop_compute_node_coupling(self, step, n_reg, n_cvar, cvar, idelays, weights, node_ids, state, region_history):
+        "Compute delayed node coupling values."
+        if not hasattr(self, '_delayed_state'):
+            self._delayed_state = numpy.zeros((n_reg, n_cvar, n_reg, self.model.number_of_modes))
+        time_indices = (step - 1 - idelays) % self.horizon
+        if self.surface is None:
+            get_state(self.history, time_indices, cvar, node_ids, out=self._delayed_state)
+            node_coupling = self.coupling(weights, state[self.model.cvar], self._delayed_state)
+        else:
+            get_state(region_history, time_indices, cvar, node_ids, out=self._delayed_state)
+            region_coupling = self.coupling(weights, region_history[(step - 1) % self.horizon, self.model.cvar],
+                                            self._delayed_state)
+            node_coupling = region_coupling[:, self._regmap]
+        return node_coupling
+
+    def _loop_update_stimulus(self, step, stimulus):
+        "Update stimulus values for current time step."
+        if self.stimulus is not None:
+            # TODO stim_step != current step
+            stim_step = step - (self.current_step + 1)
+            stimulus[self.model.cvar, :, :] = self.stimulus(stim_step).reshape((1, -1, 1))
+
+    def _loop_update_history(self, step, n_reg, state, region_history):
+        "Update history & region history."
+        self.history[step % self.horizon, :] = state
+        if self.surface is not None:
+            region_state = numpy.zeros((n_reg, state.shape[0], state.shape[2]))
+            numpy_add_at(region_state, self._regmap, state.transpose((1, 0, 2)))
+            region_state /= numpy.bincount(self._regmap).reshape((-1, 1, 1))
+            region_history[step % self.horizon, :] = region_state.transpose((1, 0, 2))
+
+    def _loop_monitor_output(self, step, state):
+        output = [monitor.record(step, state) for monitor in self.monitors]
+        if any(outputi is not None for outputi in output):
+            return output
 
     def __call__(self, simulation_length=None, random_state=None):
         """
@@ -412,42 +448,18 @@ class Simulator(core.Type):
         local_coupling = self._prepare_local_coupling()
         region_history = self._prepare_region_history()
         stimulus = self._prepare_stimulus()
-        state = self._initial_state_from_history(self.history)
-        delayed_state = numpy.zeros((n_reg, n_cvar, n_reg, self.model.number_of_modes))
+        state = self._prepare_initial_state_from_history(self.history)
 
         # integration loop
         n_steps = numpy.ceil(self.simulation_length / self.integrator.dt).astype('i')
         for step in xrange(self.current_step + 1, self.current_step + n_steps +1):
-
-            # compute afferent coupling
-            time_indices = (step - 1 - idelays) % self.horizon
-            if self.surface is None:
-                get_state(self.history, time_indices, cvar, node_ids, out=delayed_state)
-                node_coupling = self.coupling(weights, state[self.model.cvar], delayed_state)
-            else:
-                get_state(region_history, time_indices, cvar, node_ids, out=delayed_state)
-                region_coupling = self.coupling(weights, region_history[(step - 1) % self.horizon, self.model.cvar], delayed_state)
-                node_coupling = region_coupling[:, self._regmap]
-
-            # stimulus pattern at this time point
-            if self.stimulus is not None:
-                stim_step = step - (self.current_step + 1) # TODO stim_step != current step ??
-                stimulus[self.model.cvar, :, :] = self.stimulus(stim_step).reshape((1, -1, 1))
-
-            # apply integration scheme
+            node_coupling = self._loop_compute_node_coupling(
+                step, n_reg, n_cvar, cvar, idelays, weights, node_ids, state, region_history)
+            self._loop_update_stimulus(step, stimulus)
             state = self.integrator.scheme(state, self.model.dfun, node_coupling, local_coupling, stimulus)
-
-            # update full history & region history if applicable
-            self.history[step % self.horizon, :] = state
-            if self.surface is not None:
-                region_state = numpy.zeros((n_reg, state.shape[0], state.shape[2]))
-                numpy_add_at(region_state, self._regmap, state.transpose((1, 0, 2)))
-                region_state /= numpy.bincount(self._regmap).reshape((-1, 1, 1))
-                region_history[step % self.horizon, :] = region_state.transpose((1, 0, 2))
-
-            # record monitor output & forward to caller
-            output = [monitor.record(step, state) for monitor in self.monitors]
-            if any(outputi is not None for outputi in output):
+            self._loop_update_history(step, n_reg, state, region_history)
+            output = self._loop_monitor_output(step, state)
+            if output is not None:
                 yield output
 
         self.current_step = self.current_step + n_steps - 1  # -1 : don't repeat last point
