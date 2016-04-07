@@ -3125,7 +3125,7 @@ class Linear(Model):
         options=["x"],
         default=["x"],
         select_multiple=True,
-        order=-1)
+        order=3)
 
 
     def __init__(self, **kwargs):
