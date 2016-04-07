@@ -291,7 +291,7 @@ class Simulator(core.Type):
                 setattr(self.model, param, new_parameters)
 
         #Configure spatial component of any stimuli
-        self.configure_stimuli()
+        self._configure_stimuli()
 
         #Set delays, provided in physical units, in integration steps.
         self.connectivity.set_idelays(self.integrator.dt)
@@ -308,12 +308,12 @@ class Simulator(core.Type):
 
         #Reshape integrator.noise.nsig, if necessary.
         if isinstance(self.integrator, integrators.IntegratorStochastic):
-            self.configure_integrator_noise()
+            self._configure_integrator_noise()
 
-        self.configure_history(self.initial_conditions)
+        self._configure_history(self.initial_conditions)
 
         #Configure Monitors to work with selected Model, etc...
-        self.configure_monitors()
+        self._configure_monitors()
 
         #Estimate of memory usage. 
         self._census_memory_requirement()
@@ -464,54 +464,11 @@ class Simulator(core.Type):
 
         self.current_step = self.current_step + n_steps - 1  # -1 : don't repeat last point
 
-    def configure_history(self, initial_conditions=None):
-        """
-        Set initial conditions for the simulation using either the provided 
-        initial_conditions or, if none are provided, the model's initial() 
-        method. This method is called durin the Simulator's __init__(). 
+    def _configure_history(self):
+        "Initialize history buffer."
+        self.history = self.model.initial(self.integrator.dt, self.good_history_shape)
 
-        Any initial_conditions that are provided as an argument are expected 
-        to have dimensions 1, 2, and 3 with shapse corresponding to the number
-        of state_variables, nodes and modes, respectively. If the provided 
-        inital_conditions are shorter in time (dim=0) than the required history
-        the model's initial() method is called to make up the difference.
-
-        """
-
-        history = self.history
-        if initial_conditions is None:
-            msg = "%s: Setting default history using model's initial() method."
-            LOG.info(msg % str(self))
-            history = self.model.initial(self.integrator.dt, self.good_history_shape)
-        else:
-            # history should be [timepoints, state_variables, nodes, modes]
-            LOG.info("%s: Received initial conditions as arg." % str(self))
-            ic_shape = initial_conditions.shape
-            if ic_shape[1:] != self.good_history_shape[1:]:
-                msg = "%s: bad initial_conditions[1:] shape %s, should be %s"
-                msg %= self, ic_shape[1:], self.good_history_shape[1:]
-                raise ValueError(msg)
-            else:
-                if ic_shape[0] >= self.horizon:
-                    msg = "%s: Using last %s time-steps for history."
-                    LOG.info(msg % (str(self), self.horizon))
-                    history = initial_conditions[-self.horizon:, :, :, :].copy()
-                else:
-                    msg = "%s: initial_conditions shorter than required."
-                    LOG.info(msg % str(self))
-                    msg = "%s: Using model's initial() method for difference."
-                    LOG.info(msg % str(self))
-                    history = self.model.initial(self.integrator.dt, self.good_history_shape)
-                    csmh = self.current_step % self.horizon
-                    history = numpy.roll(history, -csmh, axis=0)
-                    history[:ic_shape[0], :, :, :] = initial_conditions
-                    history = numpy.roll(history, csmh, axis=0)
-                self.current_step += ic_shape[0] - 1
-            msg = "%s: history shape is: %s"
-            LOG.debug(msg % (str(self), str(history.shape)))
-        self.history = history
-
-    def configure_integrator_noise(self):
+    def _configure_integrator_noise(self):
         """
         This enables having noise to be state variable specific and/or to enter 
         only via specific brain structures, for example it we only want to 
@@ -561,7 +518,7 @@ class Simulator(core.Type):
         LOG.debug("Simulator.integrator.noise.nsig shape: %s" % str(nsig.shape))
         self.integrator.noise.nsig = nsig
 
-    def configure_monitors(self):
+    def _configure_monitors(self):
         """ Configure the requested Monitors for this Simulator """
         if not isinstance(self.monitors, (list, tuple)):
             self.monitors = [self.monitors]
@@ -570,7 +527,7 @@ class Simulator(core.Type):
         for monitor in self.monitors:
             monitor.config_for_sim(self)
 
-    def configure_stimuli(self):
+    def _configure_stimuli(self):
         """ Configure the defined Stimuli for this Simulator """
         if self.stimulus is not None:
             if self.surface:
@@ -578,6 +535,7 @@ class Simulator(core.Type):
             else:
                 self.stimulus.configure_space()
 
+    # used by simulator adaptor
     def memory_requirement(self):
         """
         Return an estimated of the memory requirements (Bytes) for this
@@ -586,6 +544,7 @@ class Simulator(core.Type):
         self._guesstimate_memory_requirement()
         return self._memory_requirement_guess
 
+    # appears to be unused
     def runtime(self, simulation_length):
         """
         Return an estimated run time (seconds) for the simulator's current 
@@ -596,6 +555,7 @@ class Simulator(core.Type):
         self._guesstimate_runtime()
         return self._runtime
 
+    # used by simulator adaptor
     def storage_requirement(self, simulation_length):
         """
         Return an estimated storage requirement (Bytes) for the simulator's
