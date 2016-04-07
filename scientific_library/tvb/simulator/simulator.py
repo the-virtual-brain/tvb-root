@@ -464,9 +464,52 @@ class Simulator(core.Type):
 
         self.current_step = self.current_step + n_steps - 1  # -1 : don't repeat last point
 
-    def _configure_history(self):
-        "Initialize history buffer."
-        self.history = self.model.initial(self.integrator.dt, self.good_history_shape)
+    def _configure_history(self, initial_conditions):
+        """
+        Set initial conditions for the simulation using either the provided
+        initial_conditions or, if none are provided, the model's initial()
+        method. This method is called durin the Simulator's __init__().
+
+        Any initial_conditions that are provided as an argument are expected
+        to have dimensions 1, 2, and 3 with shapse corresponding to the number
+        of state_variables, nodes and modes, respectively. If the provided
+        inital_conditions are shorter in time (dim=0) than the required history
+        the model's initial() method is called to make up the difference.
+
+        """
+
+        history = self.history
+        if initial_conditions is None:
+            msg = "%s: Setting default history using model's initial() method."
+            LOG.info(msg % str(self))
+            history = self.model.initial(self.integrator.dt, self.good_history_shape)
+        else:
+            # history should be [timepoints, state_variables, nodes, modes]
+            LOG.info("%s: Received initial conditions as arg." % str(self))
+            ic_shape = initial_conditions.shape
+            if ic_shape[1:] != self.good_history_shape[1:]:
+                msg = "%s: bad initial_conditions[1:] shape %s, should be %s"
+                msg %= self, ic_shape[1:], self.good_history_shape[1:]
+                raise ValueError(msg)
+            else:
+                if ic_shape[0] >= self.horizon:
+                    msg = "%s: Using last %s time-steps for history."
+                    LOG.info(msg % (str(self), self.horizon))
+                    history = initial_conditions[-self.horizon:, :, :, :].copy()
+                else:
+                    msg = "%s: initial_conditions shorter than required."
+                    LOG.info(msg % str(self))
+                    msg = "%s: Using model's initial() method for difference."
+                    LOG.info(msg % str(self))
+                    history = self.model.initial(self.integrator.dt, self.good_history_shape)
+                    csmh = self.current_step % self.horizon
+                    history = numpy.roll(history, -csmh, axis=0)
+                    history[:ic_shape[0], :, :, :] = initial_conditions
+                    history = numpy.roll(history, csmh, axis=0)
+                self.current_step += ic_shape[0] - 1
+            msg = "%s: history shape is: %s"
+            LOG.debug(msg % (str(self), str(history.shape)))
+        self.history = history
 
     def _configure_integrator_noise(self):
         """
