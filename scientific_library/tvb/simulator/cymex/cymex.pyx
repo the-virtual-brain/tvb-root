@@ -64,6 +64,8 @@ cdef extern from "mex.h":
     # functions from MATLAB's documented extern API
     int mexPrintf(char *msg, ...)
     int mxGetN(mxArray*pm)
+    void mxSetM(mxArray*pm, int)
+    void mxSetN(mxArray*pm, int)
     void* mxMalloc(int)
     int mxGetString(mxArray*pm, char*str, int strlen)
     int mexCallMATLAB(int nlhs, mxArray **plhs,
@@ -78,6 +80,7 @@ cdef extern from *:
 
     mxArray *mxCreateDoubleMatrix(int m, int n, int flag)
     double *mxGetPr(const_mxArray_ptr pm)
+    void mxSetPr(mxArray* pm, double *)
 
     # http://www.mathworks.com/help/matlab/apiref/mxclassid.html
     ctypedef enum mxClassID:
@@ -133,32 +136,49 @@ cdef mlsin(int n):
         mexCallMATLAB(1, &l, 1, &r, "sin")
     return (<double*>mxGetPr(l))[0]
 
-class linalg_bypass(object):
-    """
-    A monkey patch to numpy.linalg
-    """
-    def __init__(self):
-        """
-        Install the monkey patch.
+import numpy as np
+cimport numpy as np
 
-        """
+class MATLABLinAlg(object):
+    "Use MATLAB for linear algebra."
 
+    # TODO
+    eigvals, lstsq, inv = 1, 2, 3
 
-        sys.modules['numpy.linalg']
+    @staticmethod
+    def svd(np.ndarray[double, ndim=2, mode="c"] A):
+        # MATLAB doesn't want to use memory it didn't allocate, so here
+        # we need a copy until we can set the allocator used in NumPy.
+        cdef mxArray *lhs[3], *rhs[1]
+        rhs[0] = mxCreateDoubleMatrix(A.shape[0], A.shape[1], 0)
+        cdef double * Ap = &A[0, 0]
+        cdef double * mAp = mxGetPr(rhs[0])
+        for i in range(A.size):
+            mAp[i] = Ap[i]
+        mexCallMATLAB(3, lhs, 1, rhs, "svd")
+        print A[0, 0]
+
+    @staticmethod
+    def monkey_path_sys_modules():
+        import sys
+        # handle import numpy.linalg
+        sys.modules['numpy.linalg'] = MATLABLinAlg()
+        # handle from numpy import linalg
+        import numpy
+        import numpy.linalg as la
+        numpy.linalg = la
 
 cdef public void mexFunction(int nlhs, mxArray* lhs[],
                              int nrhs, const_mxArray_ptr_ptr rhs):
 
-    # 1e6 calls from MATLAB
-    #   empty       -> 2.34 s
-    #   w/ niceties -> 3.39 s
+    # 1e6 calls from MATLAB costs 3.39 s
 
     if not Py_IsInitialized():
         dlopen("libgfortran.so", RTLD_LAZY | RTLD_GLOBAL) # linux only
         dlopen("libpython2.7.so", RTLD_LAZY | RTLD_GLOBAL) # linux only
         Py_Initialize()
         initcymex()
-        linalg_bypass()
+        MATLABLinAlg.monkey_path_sys_modules()
 
     if nrhs == 0 or not mxGetClassID(rhs[0]) == mxCHAR_CLASS:
         mexErrMsgTxt(
@@ -183,8 +203,8 @@ cdef public void mexFunction(int nlhs, mxArray* lhs[],
 
         elif cmd == 'lapack':               # MKL ERROR: Parameter 5 was incorrect on entry to DGESDD
             from numpy import linalg, r_
-            A = r_[:20].reshape((4,5))
-            print linalg.svd(A)[1]
+            A = r_[:20.0].reshape((4,5))
+            print linalg.svd(A.astype(np.float64))
 
         elif cmd == 'mlsin1':
             print mlsin(1)
@@ -204,3 +224,4 @@ cdef public void mexFunction(int nlhs, mxArray* lhs[],
 
     return # mexFunction
 
+# vi: sts=4 sw=4 et ai
