@@ -214,29 +214,16 @@ function GFUNC_initTractsAndWeights(fileWeights, fileTracts) {
 function GFUNC_updateContextMenu(selectedNodeIndex, selectedNodeLabel, isAnyComingInLinesChecked, isAnyComingOutLinesChecked) {
     if (selectedNodeIndex == -1) {
         $('#nodeNameId').text("Please select a node...");
-        $("#drawComingOutLinesForSelectedNodeItemId").hide();
-        $("#removeComingOutLinesForSelectedNodeItemId").hide();
-        $("#drawComingInLinesForSelectedNodeItemId").hide();
-        $("#removeComingInLinesForSelectedNodeItemId").hide();
-        $("#setCurrentColorForNodeItemId").hide();
+        $("#contextMenuDiv").find("a").hide();
     } else {
         $('#nodeNameId').text("Node: " + selectedNodeLabel);
         $('#selectedNodeIndex').val(selectedNodeIndex);
 
-        if (isAnyComingOutLinesChecked) {
-            $("#removeComingOutLinesForSelectedNodeItemId").show();
-            $("#drawComingOutLinesForSelectedNodeItemId").hide();
-        } else {
-            $("#removeComingOutLinesForSelectedNodeItemId").hide();
-            $("#drawComingOutLinesForSelectedNodeItemId").show();
-        }
-        if (isAnyComingInLinesChecked) {
-            $("#removeComingInLinesForSelectedNodeItemId").show();
-            $("#drawComingInLinesForSelectedNodeItemId").hide();
-        } else {
-            $("#removeComingInLinesForSelectedNodeItemId").hide();
-            $("#drawComingInLinesForSelectedNodeItemId").show();
-        }
+        $("#removeComingOutLinesForSelectedNodeItemId").toggle(isAnyComingOutLinesChecked);
+        $("#drawComingOutLinesForSelectedNodeItemId").toggle(!isAnyComingOutLinesChecked);
+
+        $("#removeComingInLinesForSelectedNodeItemId").toggle(isAnyComingInLinesChecked);
+        $("#drawComingInLinesForSelectedNodeItemId").toggle(!isAnyComingInLinesChecked);
 
         $("#setCurrentColorForNodeItemId").show();
     }
