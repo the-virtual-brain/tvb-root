@@ -100,10 +100,15 @@ function customKeyDown(event) {
 function customMouseDown(event) {
     GL_handleMouseDown(event, event.target);
     doPick = true;
-    drawScene();
-    GFUNC_updateContextMenu(CONN_pickedIndex, GVAR_pointsLabels[CONN_pickedIndex],
-           CONN_pickedIndex >= 0 && isAnyPointChecked(CONN_pickedIndex, CONN_comingInLinesIndices[CONN_pickedIndex], 0),
-           CONN_pickedIndex >= 0 && isAnyPointChecked(CONN_pickedIndex, CONN_comingOutLinesIndices[CONN_pickedIndex], 1));
+    // Updating only for right clicks to avoid a visual flicker.
+    // Not essential, but if a menu is visible the regular click will update it just before it will be dismissed.
+    if (event.which == 3) {
+        // draw scene to get the picked node for this click event
+        drawScene();
+        GFUNC_updateContextMenu(CONN_pickedIndex, GVAR_pointsLabels[CONN_pickedIndex],
+            CONN_pickedIndex >= 0 && isAnyPointChecked(CONN_pickedIndex, CONN_comingInLinesIndices[CONN_pickedIndex], 0),
+            CONN_pickedIndex >= 0 && isAnyPointChecked(CONN_pickedIndex, CONN_comingOutLinesIndices[CONN_pickedIndex], 1));
+    }
     GFUNC_updateLeftSideVisualization();
 }
 
