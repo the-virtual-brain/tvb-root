@@ -457,17 +457,11 @@ function handleLines(selectedNodeIdx, direction, draw) {
  */
 function checkAll() {
     var values = GVAR_interestAreaVariables[GVAR_selectedAreaType].values;
+
     for (var i = 0; i < NO_POSITIONS; i++) {
-        var comingInEdgesIndexes = CONN_comingInLinesIndices[i];
-        for (var j = 0; j < comingInEdgesIndexes.length; j++) {
-            if (values[comingInEdgesIndexes[j]][i] > 0 ) {
-                GVAR_connectivityMatrix[comingInEdgesIndexes[j]][i] = 1;
-            }
-        }
-        var comingOutEdgesIndexes = CONN_comingOutLinesIndices[i];
-        for (var jj = 0; jj < comingOutEdgesIndexes.length; jj++) {
-            if (values[i][comingOutEdgesIndexes[jj]] > 0 ) {
-                GVAR_connectivityMatrix[i][comingOutEdgesIndexes[jj]] = 1;
+        for (var j = 0; j < NO_POSITIONS; j++) {
+            if (values[j][i] > 0) {
+                GVAR_connectivityMatrix[j][i] = 1;
             }
         }
     }
@@ -478,8 +472,8 @@ function checkAll() {
  * Clear all the comming in and comming out lines for the connectivity matrix.
  */
 function clearAll() {
-    for (var i = 0; i < GVAR_connectivityMatrix.length; i++) {
-        for (var j = 0; j < GVAR_connectivityMatrix[i].length; j++) {
+    for (var i = 0; i < NO_POSITIONS; i++) {
+        for (var j = 0; j < NO_POSITIONS; j++) {
             GVAR_connectivityMatrix[i][j] = 0;
         }
     }
@@ -488,24 +482,16 @@ function clearAll() {
 
 
 /**
- * Draw all the comming in and comming out lines for the connectivity matrix for selected nodes.
+ * Draw all connecting lines between the selected nodes
  */
 function checkAllSelected() {
     var values = GVAR_interestAreaVariables[GVAR_selectedAreaType].values;
-
-    for (var i = 0; i < NO_POSITIONS; i++) {
-        if (GFUNC_isNodeAddedToInterestArea(i)) {
-            var comingInEdgesIndexes = CONN_comingInLinesIndices[i];
-            for (var j = 0; j < comingInEdgesIndexes.length; j++) {
-                if (GFUNC_isNodeAddedToInterestArea(j) && values[comingInEdgesIndexes[j]][i] > 0) {
-                    GVAR_connectivityMatrix[comingInEdgesIndexes[j]][i] = 1;
-                }
-            }
-            var comingOutEdgesIndexes = CONN_comingOutLinesIndices[i];
-            for (var jj = 0; jj < comingOutEdgesIndexes.length; jj++) {
-                if (GFUNC_isNodeAddedToInterestArea(jj) && values[i][comingOutEdgesIndexes[jj]] > 0 ) {
-                    GVAR_connectivityMatrix[i][comingOutEdgesIndexes[jj]] = 1;
-                }
+    for (var a = 0; a < GVAR_interestAreaNodeIndexes.length; a++){
+        for (var b = 0; b < GVAR_interestAreaNodeIndexes.length; b++){
+            var i = GVAR_interestAreaNodeIndexes[a];
+            var j = GVAR_interestAreaNodeIndexes[b];
+            if (values[i][j] > 0){
+                GVAR_connectivityMatrix[i][j] = 1;
             }
         }
     }
@@ -513,28 +499,17 @@ function checkAllSelected() {
 }
 
 /**
- * Clear all the comming in and comming out lines for the connectivity matrix for selected nodes.
+ * Remove all lines that connect the selected nodes
  */
 function clearAllSelected() {
-    var values = GVAR_interestAreaVariables[GVAR_selectedAreaType].values;
+    for (var a = 0; a < GVAR_interestAreaNodeIndexes.length; a++){
+        for (var b = 0; b < GVAR_interestAreaNodeIndexes.length; b++){
+            var i = GVAR_interestAreaNodeIndexes[a];
+            var j = GVAR_interestAreaNodeIndexes[b];
 
-    for (var i = 0; i < NO_POSITIONS; i++) {
-        if (GFUNC_isNodeAddedToInterestArea(i)) {
-            var comingInEdgesIndexes = CONN_comingInLinesIndices[i];
-            for (var j = 0; j < comingInEdgesIndexes.length; j++) {
-                if (GFUNC_isNodeAddedToInterestArea(j) && values[comingInEdgesIndexes[j]][i] > 0) {
-                    GVAR_connectivityMatrix[comingInEdgesIndexes[j]][i] = 0;
-                }
-            }
-            var comingOutEdgesIndexes = CONN_comingOutLinesIndices[i];
-            for (var jj = 0; jj < comingOutEdgesIndexes.length; jj++) {
-                if (GFUNC_isNodeAddedToInterestArea(jj) && values[i][comingOutEdgesIndexes[jj]] > 0 ) {
-                    GVAR_connectivityMatrix[i][comingOutEdgesIndexes[jj]] = 0;
-                }
-            }
-      }
+            GVAR_connectivityMatrix[i][j] = 0;
+        }
     }
-    drawScene(); // todo: are 2 draw calls necessary?
     drawScene();
 }
 
