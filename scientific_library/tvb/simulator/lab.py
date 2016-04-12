@@ -85,6 +85,7 @@ def timed(fn, t=time):
 # try to import plotting tools and matplotlib
 try:
     from tvb.simulator.plot.tools import *
+    from tvb.simulator.plot.mayavi_tools import *
     from matplotlib.pyplot import *
 except ImportError as exc:
     LOG.warning("Plotting tools will not be available: %s:", exc)
