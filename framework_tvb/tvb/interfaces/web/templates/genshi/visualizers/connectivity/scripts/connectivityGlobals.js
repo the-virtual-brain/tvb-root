@@ -207,17 +207,13 @@ function GFUNC_initTractsAndWeights(fileWeights, fileTracts) {
  * -----------------------The next part handles the context menu update -----------------------------------
  * --------------------------------------------------------------------------------------------------------
  */
+/**
+ * When clicking on a new node from the connectivity 3D visualization, create a specific context menu depending on
+ * conditions like (was a node selected, is the node part of interest area, are the lines already drawn)
+ */
 function GFUNC_updateContextMenu(selectedNodeIndex, selectedNodeLabel, isAnyComingInLinesChecked, isAnyComingOutLinesChecked) {
-    /*
-     * When clicking on a new node from the connectivity 3D visualization, create a specific context menu depending on
-     * conditions like (was a node selected, is the node part of interest area, are the lines already drawn)
-     */
-    //todo-mh: jquery toggle will simplify these
     if (selectedNodeIndex == -1) {
         $('#nodeNameId').text("Please select a node...");
-        $("#addNodeToInterestAreaItemId").hide();
-        $("#stimulusItemId").hide();
-        $("#removeNodeFromInterestAreaItemId").hide();
         $("#drawComingOutLinesForSelectedNodeItemId").hide();
         $("#removeComingOutLinesForSelectedNodeItemId").hide();
         $("#drawComingInLinesForSelectedNodeItemId").hide();
@@ -226,16 +222,6 @@ function GFUNC_updateContextMenu(selectedNodeIndex, selectedNodeLabel, isAnyComi
     } else {
         $('#nodeNameId').text("Node: " + selectedNodeLabel);
         $('#selectedNodeIndex').val(selectedNodeIndex);
-
-        $("#stimulusItemId").show();
-
-        if (GFUNC_isNodeAddedToInterestArea(selectedNodeIndex)) {
-            $("#addNodeToInterestAreaItemId").hide();
-            $("#removeNodeFromInterestAreaItemId").show();
-        } else {
-            $("#addNodeToInterestAreaItemId").show();
-            $("#removeNodeFromInterestAreaItemId").hide();
-        }
 
         if (isAnyComingOutLinesChecked) {
             $("#removeComingOutLinesForSelectedNodeItemId").show();
