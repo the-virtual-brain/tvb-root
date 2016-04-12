@@ -100,7 +100,7 @@ function customKeyDown(event) {
 function customMouseDown(event) {
     GL_handleMouseDown(event, event.target);
     doPick = true;
-
+    drawScene();
     GFUNC_updateContextMenu(CONN_pickedIndex, GVAR_pointsLabels[CONN_pickedIndex],
            CONN_pickedIndex >= 0 && isAnyPointChecked(CONN_pickedIndex, CONN_comingInLinesIndices[CONN_pickedIndex], 0),
            CONN_pickedIndex >= 0 && isAnyPointChecked(CONN_pickedIndex, CONN_comingOutLinesIndices[CONN_pickedIndex], 1));
