@@ -30,38 +30,21 @@
 var originalRegionStimulusWeights = [];
 // the updated weights values for a region stimulus
 var updatedRegionStimulusWeights = [];
-var SEL_selector;
+var StimView;
 
-function STIM_initSelectionComponent(selectionGID){
-    SEL_selector = TVBUI.textGridRegionSelector("#channelSelector", {filterGid: selectionGID});
-    TVBUI.quickSelector(SEL_selector, "#selection-text-area", "#loadSelectionFromTextBtn");
-
-    SEL_selector.change(function(value){
-        GVAR_interestAreaNodeIndexes = [];
-        for(var i=0; i < value.length; i++){
-            GVAR_interestAreaNodeIndexes.push(parseInt(value[i], 10));
+function main(weights, selectionGID) {
+    StimView = new TVBUI.RegionAssociatorView({
+        selectionGID: selectionGID,
+        onPut: STIM_saveWeightForSelectedNodes,
+        prepareSubmitData: function () {
+            console.warn('This should not happen. Stimulus page does not use the submit logic of RegionAssociatorView. ');
+            return false;
         }
     });
-
-    SEL_selector.setGridText(updatedRegionStimulusWeights);
-    SEL_selector.checkAll();
-}
-
-/**
- * Method used for making initializations.
- */
-function STIM_initConnectivityViewer(weights) {
-        //The click event is bound on the div in which will be placed the connectivity canvas.
-        //If I bind the event on the canvas and I'll change the connectivity which in turn
-        // will change the canvas => on the new canvas the click event won't be bound
-        $('#GLcanvas').unbind('click.toggleNodeSelection').bind('click.toggleNodeSelection', function (e) {
-            if (e.target == document.getElementById("GLcanvas")) {
-                STIM_toggleNodeSelection(CONN_pickedIndex);
-            }
-        });
-        originalRegionStimulusWeights = weights;
-        updatedRegionStimulusWeights = originalRegionStimulusWeights.slice(0);
-        GVAR_connectivityNodesWithPositiveWeight = [];
+    originalRegionStimulusWeights = weights;
+    updatedRegionStimulusWeights = originalRegionStimulusWeights.slice(0);
+    GVAR_connectivityNodesWithPositiveWeight = [];
+    StimView.setGridText(updatedRegionStimulusWeights);
 }
 
 function _STIM_server_update_scaling(){
@@ -85,10 +68,9 @@ function STIM_saveWeightForSelectedNodes() {
             updatedRegionStimulusWeights[nodeIndex] = newWeight;
         }
         weightElement.val("");
-        SEL_selector.setTextForSelection(newWeight);
-        SEL_selector.clearAll();
         _STIM_server_update_scaling();
     }
+    return newWeight;
 }
 
 
@@ -97,21 +79,8 @@ function STIM_saveWeightForSelectedNodes() {
  */
 function STIM_resetRegionStimulusWeights() {
     updatedRegionStimulusWeights = originalRegionStimulusWeights.slice(0);
-    SEL_selector.setGridText(updatedRegionStimulusWeights);
+    StimView.setGridText(updatedRegionStimulusWeights);
     _STIM_server_update_scaling();
-}
-
-
-/**
- * Toggle the selection of the given node.
- *
- * @param nodeIndex the index of the selected node.
- */
-function STIM_toggleNodeSelection(nodeIndex) {
-    if (nodeIndex >= 0) {
-        GFUNC_toggleNodeInInterestArea(nodeIndex);
-        SEL_selector.val(GVAR_interestAreaNodeIndexes);
-    }
 }
 
 

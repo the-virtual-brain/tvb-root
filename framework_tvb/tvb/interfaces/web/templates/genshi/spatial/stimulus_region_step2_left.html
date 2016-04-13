@@ -14,14 +14,14 @@
 	</form>
     	
     <xi:include href="../visualizers/connectivity/left_template_connectivity_view.html"/>
-    
+	<script type="text/javascript" src="/static/js/region_associator.js?$currentVersionJS"></script>
+
     <script type="text/javascript">
         $(document).ready(function() {
         	$("select[name='existentEntitiesSelect']").change(function () {
                 BS_loadEntity();
             });
-            STIM_initConnectivityViewer(${node_weights});
-            STIM_initSelectionComponent("${measurePointsSelectionGID}");
+			main(${node_weights}, "${measurePointsSelectionGID}");
         });
     </script>
     
