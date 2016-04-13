@@ -249,15 +249,11 @@ class MatlabValidator(formencode.FancyValidator):
         """ 
         Validation method for the Matlab Path.
         """
-        try:
-            version = check_matlab_version(value)
-            if version:
-                return value
-            else:
-                raise formencode.Invalid('No valid matlab installation was found at the path you provided.', '', None)
-        except Exception:
-            raise formencode.Invalid('An exception was thrown when trying to validate Matlab. \n'
-                                     'Try a different path, or empty.', '', None)
+        version = check_matlab_version(value)
+        if version:
+            return value
+        else:
+            raise formencode.Invalid('No valid matlab installation was found at the path you provided.', '', None)
 
 
 class AsciiValidator(formencode.FancyValidator):

@@ -33,6 +33,8 @@
 """
 
 import os
+from tvb.basic.config.environment import Environment
+
 
 
 def synchronized(lock):
@@ -67,22 +69,51 @@ def user_environment_execution(func):
     removing any TVB specific configurations that alter either LD_LIBRARY_PATH
     or LD_RUN_PATH.
     """
-    
+
+    def _remove_from_path(env_name, count, segment_marker):
+        """
+        For 'env_name' environment variable representing a path (e.g. LB_RUN_PATH), remove first 'count' segments.
+        Remove only those path segments within the limit of 'count' and containing 'segment_marker'.
+        Set the value without the removed segments as environment variables instead of the previous one.
+
+        :return: original 'env_name' value, for possibility of revert.
+        """
+        original_path = os.environ.get(env_name, None)
+        if not original_path:
+            return original_path
+
+        path_segments = original_path.split(os.pathsep)
+        new_path = original_path
+        for i in xrange(min(count, len(path_segments))):
+            segment = path_segments[i]
+            if segment_marker in segment:
+                new_path = new_path.replace(segment + os.pathsep, '', 1)
+
+        os.environ[env_name] = new_path
+        return original_path
+
+
     def new_function(*args, **kwargs):
-        # Wrapper function
-        ORIGINAL_LD_LIBRARY_PATH = os.environ.get('LD_LIBRARY_PATH', None)
-        ORIGINAL_LD_RUN_PATH = os.environ.get('LD_RUN_PATH', None)
-        if ORIGINAL_LD_LIBRARY_PATH:
-            del os.environ['LD_LIBRARY_PATH']
-        if ORIGINAL_LD_RUN_PATH:
-            del os.environ['LD_RUN_PATH']
+        """
+        Wrapper function for Linux TVB altered environment variables.
+        Apply this only on Linux, as that is the only env in which TVB start scripts alter LD_*_PATH env vars.
+
+        :return: Result of the wrapped function
+        """
+        if not Environment().is_linux_deployment():
+            # Do nothing
+            return func(*args, **kwargs)
+
+        original_ld_library_path = _remove_from_path('LD_LIBRARY_PATH', 2, 'tvb_data')
+        original_ld_run_path = _remove_from_path('LD_RUN_PATH', 2, 'tvb_data')
+
         result = func(*args, **kwargs)
         ## Restore environment settings after function executed.
-        if ORIGINAL_LD_LIBRARY_PATH:
-            os.environ['LD_LIBRARY_PATH'] = ORIGINAL_LD_LIBRARY_PATH
-        if ORIGINAL_LD_RUN_PATH:
-            os.environ['LD_RUN_PATH'] = ORIGINAL_LD_RUN_PATH
+        if original_ld_library_path:
+            os.environ['LD_LIBRARY_PATH'] = original_ld_library_path
+        if original_ld_run_path:
+            os.environ['LD_RUN_PATH'] = original_ld_run_path
         return result
-            
+
     return new_function
 

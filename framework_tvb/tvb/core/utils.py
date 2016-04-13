@@ -350,24 +350,38 @@ def check_matlab_version(matlab_path):
     """
     Try to get the current version of matlab from a given path.
     """
-    matlab_version_txt = """tvb_checking_version = version
-    quit()
-    """
+    version = None
+    logger = get_logger(__name__)
     matlab_test_file_name = 'test_mat_version'
     matlab_test_file = matlab_test_file_name + '.m'
     matlab_log_file = 'version_log.txt'
-    with open(matlab_test_file, 'w') as file_p:
-        file_p.write(matlab_version_txt)
-    matlab_cmd(matlab_path, matlab_test_file_name, matlab_log_file)
-    with open(matlab_log_file) as log_file:
-        result_data = log_file.read()
-    version = result_data.strip().split('tvb_checking_version')[1]
-    version = version.replace('\n', '').strip()
 
-    logger = get_logger(__name__)
-    logger.debug("Response in TVB from: %s\n Version: %s \nOriginal %s" % (matlab_path, version, result_data))
-    os.remove(matlab_test_file)
-    os.remove(matlab_log_file)
+    try:
+        matlab_version_txt = """tvb_checking_version = version
+        quit()
+        """
+        with open(matlab_test_file, 'w') as file_p:
+            file_p.write(matlab_version_txt)
+
+        matlab_cmd(matlab_path, matlab_test_file_name, matlab_log_file)
+
+        with open(matlab_log_file) as log_file:
+            result_data = log_file.read()
+        version = result_data.strip().split('tvb_checking_version')[1]
+        version = version.replace('\n', '').strip()
+
+        logger.debug("Response in TVB from: %s\n Version: %s \nOriginal %s" % (matlab_path, version, result_data))
+        os.remove(matlab_test_file)
+        os.remove(matlab_log_file)
+
+    except Exception:
+        logger.error('Could not parse Matlab Version!')
+        try:
+            os.remove(matlab_test_file)
+            os.remove(matlab_log_file)
+        except Exception:
+            logger.error('Could not remove files in the second try...')
+
     return version
 
 
