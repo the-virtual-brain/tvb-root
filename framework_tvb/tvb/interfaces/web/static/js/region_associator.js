@@ -32,6 +32,10 @@
 
 /**
  * A view for associating some values to connectivity nodes.
+ * The synchronization with the webgl view happens via the global GVAR_interestAreaNodeIndexes
+ * GVAR_interestAreaNodeIndexes has the *indices* of the selected nodes; indices in a hemispheric ordered view of the connectivity.
+ * The mapping idx->id is done assumming that the check boxes of the selection component appear in the dom in index order.
+ * So the first checkbox has idx 0 and id the value attr
  * @param settings An object with these keys:
  *                 selectionGID: the gid of the connectivity,
  *                 onPut: a callback receiving a list of selected node ids. It should return a text to place in the ui,
@@ -57,10 +61,7 @@ RegionAssociatorView.prototype.createSelector = function(selectionGID){
     TVBUI.quickSelector(selector, "#selection-text-area", "#loadSelectionFromTextBtn");
 
     selector.change(function (value) {
-        GVAR_interestAreaNodeIndexes = [];
-        for (var i = 0; i < value.length; i++) {
-            GVAR_interestAreaNodeIndexes.push(parseInt(value[i], 10));
-        }
+        GVAR_interestAreaNodeIndexes = selector.selectedIndices();
     });
     selector.checkAll();
     return selector;
@@ -69,7 +70,7 @@ RegionAssociatorView.prototype.createSelector = function(selectionGID){
 RegionAssociatorView.prototype._onCanvasPick = function(){
     if (CONN_pickedIndex >= 0) {
         GFUNC_toggleNodeInInterestArea(CONN_pickedIndex);
-        this.selector.val(GVAR_interestAreaNodeIndexes);
+        this.selector.selectedIndices(GVAR_interestAreaNodeIndexes);
     }
 };
 
