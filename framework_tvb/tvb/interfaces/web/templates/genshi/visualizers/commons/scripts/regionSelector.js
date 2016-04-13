@@ -211,6 +211,26 @@ RegionSelectComponent.prototype._set_val = function(arg){
 };
 
 /**
+ * Sets the selection without triggering events
+ * @private
+ */
+RegionSelectComponent.prototype._set_indices = function(arg){
+    this._selectedValues = [];
+    this._selectedIndices =[];
+    for(var i=0; i < arg.length; i++){
+        var idx = arg[i];
+        // filter bad values
+        if( idx >= 0 && idx < this._allValues.length){
+            this._selectedValues.push(this._allValues[idx]);
+            this._selectedIndices.push(idx);
+        }else{
+            console.warn("bad index selection" + arg[i]);
+        }
+    }
+    this.selectedValues2dom();
+};
+
+/**
  * Gets the selected values if no argument is given
  * Sets the selected values if an array of values is given as argument
  */
@@ -228,8 +248,14 @@ RegionSelectComponent.prototype.val = function(arg){
  * Return the selected indices
  * @returns {Array}
  */
-RegionSelectComponent.prototype.selectedIndices = function(){
-    return this._selectedIndices.slice();
+RegionSelectComponent.prototype.selectedIndices = function(arg){
+    if (arg==null) {
+        return this._selectedIndices.slice();
+    }else{
+        this._set_indices(arg);
+        this._dropDown.val("[]");
+        this.$dom.trigger("selectionChange", [this._selectedValues.slice()]);
+    }
 };
 
 RegionSelectComponent.prototype.selectedLabels = function(){
@@ -338,11 +364,21 @@ TextGridSelectComponent.prototype.setTextForSelection = function(nr){
     }
 };
 
+/**
+ * @param nrs a dict of {node_id: label} Or an array where the index is implicitly the node id
+ */
 TextGridSelectComponent.prototype.setGridText = function(nrs){
-    for(var i = 0; i < nrs.length; i++){
-        var sp = $(this._spans[i]);
-        sp.text('' + nrs[i]);
-        sp.toggleClass("node-scale-selected", nrs[i] !== this.settings.emptyValue);
+    var vals = Object.keys(nrs);
+    for (var i = 0; i < vals.length; i++){
+        var id = vals[i];
+        var idx = this._allValues.indexOf(id); // convert node id to node index
+        if( idx !== -1){
+            var sp = $(this._spans[idx]);
+            sp.text('' + nrs[id]);
+            sp.toggleClass("node-scale-selected", nrs[id] !== this.settings.emptyValue);
+        } else {
+            console.warn("bad selection" + id);
+        }
     }
 };
 
