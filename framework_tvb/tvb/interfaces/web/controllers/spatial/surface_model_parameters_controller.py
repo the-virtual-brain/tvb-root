@@ -319,8 +319,8 @@ class SurfaceModelParametersController(SpatioTemporalController):
             form_data = collapse_params(form_data, self.plotted_equations_prefixes)
             _, equation = self._compute_equation(form_data)
             series_data, display_ui_message = equation.get_series_data(min_range=min_x, max_range=max_x)
-            json_data = self.get_series_json(series_data, "Spatial")
-            all_series = self.build_final_json([json_data])
+            all_series = self.get_series_json(series_data, "Spatial")
+
             ui_message = ''
             if display_ui_message:
                 ui_message = self.get_ui_message(["spatial"])

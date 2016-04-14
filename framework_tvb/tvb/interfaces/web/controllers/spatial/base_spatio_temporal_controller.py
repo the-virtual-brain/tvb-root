@@ -136,13 +136,7 @@ class SpatioTemporalController(BaseController):
     @staticmethod
     def get_series_json(data, label):
         """ For each data point entry, build the FLOT specific JSON. """
-        return '{"data": %s, "label": "%s"}' % (json.dumps(data), label)
-
-
-    @staticmethod
-    def build_final_json(list_of_series):
-        """ Given a list with all the data points, build the final FLOT json. """
-        return '[' + ','.join(list_of_series) + ']'
+        return json.dumps([{'data': data, 'label': label}])
 
 
     @staticmethod

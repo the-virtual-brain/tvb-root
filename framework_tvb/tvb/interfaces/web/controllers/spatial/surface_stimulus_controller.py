@@ -330,8 +330,8 @@ class SurfaceStimulusController(SpatioTemporalController):
             form_data = surface_stimulus_creator.prepare_ui_inputs(form_data, validation_required=False)
             equation = surface_stimulus_creator.get_temporal_equation(form_data)
             series_data, display_ui_message = equation.get_series_data(min_range=min_x, max_range=max_x)
-            json_data = self.get_series_json(series_data, "Temporal")
-            all_series = self.build_final_json([json_data])
+            all_series = self.get_series_json(series_data, "Temporal")
+
             if display_ui_message:
                 ui_message = self.get_ui_message(["temporal"])
             return {'allSeries': all_series, 'prefix': 'temporal', 'message': ui_message}
@@ -359,8 +359,8 @@ class SurfaceStimulusController(SpatioTemporalController):
             form_data = surface_stimulus_creator.prepare_ui_inputs(form_data, validation_required=False)
             equation = surface_stimulus_creator.get_spatial_equation(form_data)
             series_data, display_ui_message = equation.get_series_data(min_range=min_x, max_range=max_x)
-            json_data = self.get_series_json(series_data, "Spatial")
-            all_series = self.build_final_json([json_data])
+            all_series = self.get_series_json(series_data, "Spatial")
+
             ui_message = ''
             if display_ui_message:
                 ui_message = self.get_ui_message(["spatial"])

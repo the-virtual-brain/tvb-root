@@ -292,33 +292,13 @@ class LocalConnectivityController(SpatioTemporalController):
     @staticmethod
     def get_series_json(ideal_case, average_case, worst_case, best_case, vertical_line):
         """ Gather all the separate data arrays into a single flot series. """
-        series = []
-        normal = '{"data": ' + json.dumps(ideal_case) + ', "lines" : {"lineWidth" : 1},'
-        normal += '"label": "Theoretical case", color : "rgb(52, 255, 25)"'
-        normal += '}'
-
-        data_2_by_2 = '{"data": ' + json.dumps(average_case) + ', "lines" : {"lineWidth" : 1},'
-        data_2_by_2 += '"label": "Most probable", color : "rgb(148, 0, 179)"'
-        data_2_by_2 += '}'
-
-        data_3_by_3 = '{"data": ' + json.dumps(worst_case) + ', "lines" : {"lineWidth" : 1},'
-        data_3_by_3 += '"label": "Worst case", color : "rgb(0, 0, 255)"'
-        data_3_by_3 += '}'
-
-        data_double_length = '{"data": ' + json.dumps(best_case) + ', "lines" : {"lineWidth" : 1},'
-        data_double_length += '"label": "Best case", color : "rgb(122, 122, 0)"'
-        data_double_length += '}'
-
-        data_vertical_line = '{"data": ' + json.dumps(vertical_line) + ', "points": { "show" : true, "radius" : 1 },'
-        data_vertical_line += '"label": "Cut-off distance", color : "rgb(255, 0, 0)"'
-        data_vertical_line += '}'
-
-        series.append(normal)
-        series.append(data_2_by_2)
-        series.append(data_3_by_3)
-        series.append(data_double_length)
-        series.append(data_vertical_line)
-        return series
+        return json.dumps([
+            {"data": ideal_case, "lines": {"lineWidth" : 1}, "label": "Theoretical case", "color" : "rgb(52, 255, 25)"},
+            {"data": average_case, "lines": {"lineWidth": 1}, "label": "Most probable", "color": "rgb(148, 0, 179)"},
+            {"data": worst_case, "lines": {"lineWidth": 1}, "label": "Worst case", "color": "rgb(0, 0, 255)"},
+            {"data": best_case, "lines": {"lineWidth": 1}, "label": "Best case", "color": "rgb(122, 122, 0)"},
+            {"data": vertical_line, "points": { "show" : True, "radius" : 1 }, "label": "Cut-off distance", "color" : "rgb(255, 0, 0)"}
+        ])
 
 
     @expose_fragment('spatial/equation_displayer')
@@ -376,9 +356,8 @@ class LocalConnectivityController(SpatioTemporalController):
                 vertical_step = (max_y - min_y) / NO_OF_CUTOFF_POINTS
                 for i in xrange(NO_OF_CUTOFF_POINTS):
                     vertical_line.append([max_x, min_y + i * vertical_step])
-                json_data = self.get_series_json(ideal_case_series, average_case_series, worst_case_series,
+                all_series = self.get_series_json(ideal_case_series, average_case_series, worst_case_series,
                                                  best_case_series, vertical_line)
-                all_series = self.build_final_json(json_data)
 
                 return {'allSeries': all_series, 'prefix': self.plotted_equations_prefixes[0], "message": None}
             except NameError, ex:

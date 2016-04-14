@@ -62,10 +62,7 @@ class StimuliRegionFramework(patterns_data.StimuliRegionData):
         Returns a list with a number of elements
         equal to the given number of regions.
         """
-        default_weights = []
-        for i in range(number_of_regions):
-            default_weights.append(0.0)
-        return default_weights
+        return [0.0] * number_of_regions
 
 
 class StimuliSurfaceFramework(patterns_data.StimuliSurfaceData):

@@ -246,8 +246,8 @@ class RegionStimulusController(SpatioTemporalController):
             min_x, max_x, ui_message = self.get_x_axis_range(form_data['min_x'], form_data['max_x'])
             equation = Equation.build_equation_from_dict('temporal', form_data)
             series_data, display_ui_message = equation.get_series_data(min_range=min_x, max_range=max_x)
-            json_data = self.get_series_json(series_data, 'Temporal')
-            all_series = self.build_final_json([json_data])
+            all_series = self.get_series_json(series_data, 'Temporal')
+
             if display_ui_message:
                 ui_message = self.get_ui_message(["temporal"])
 
