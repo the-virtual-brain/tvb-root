@@ -35,11 +35,11 @@ Change of DB structure from TVB version 1.1.2 to 1.1.3
 .. moduleauthor:: Andrei Mihai <mihai.andrei@codemart.ro>
 """
 
-from sqlalchemy import Column, Integer
+from sqlalchemy import Column, Integer, text
 from migrate.changeset.schema import create_column, drop_column
 from tvb.basic.logger.builder import get_logger
 from tvb.core.entities import model
-from tvb.core.entities.storage import dao
+from tvb.core.entities.storage import SA_SESSIONMAKER
 
 
 meta = model.Base.metadata
@@ -87,16 +87,23 @@ def remove_visualizer_references():
 
     LOGGER.info("Starting to remove references towards old viewer ....")
 
-    pearson_group = dao.find_group('tvb.adapters.visualizers.cross_correlation',
-                                   'PearsonCorrelationCoefficientVisualizer')
-    pearson_algorithm = dao.get_algorithm_by_group(pearson_group.id)
+    session = SA_SESSIONMAKER()
+    try:
+        session.execute(text(
+            """DELETE FROM "OPERATIONS" WHERE fk_from_algo IN
+               (SELECT A.id FROM "ALGORITHMS" A, "ALGORITHM_GROUPS" AG
+               WHERE  A.fk_algo_group = AG.id AND module = 'tvb.adapters.visualizers.cross_correlation'
+                      AND classname = 'PearsonCorrelationCoefficientVisualizer');"""))
 
-    pearson_operations = dao.get_generic_entity(model.Operation, pearson_algorithm.id, "fk_from_algo")
-    for op in pearson_operations:
-        dao.remove_entity(model.Operation, op.id)
-
-    pearson_workflows = dao.get_generic_entity(model.WorkflowStepView, pearson_algorithm.id, "fk_algorithm")
-    for ws in pearson_workflows:
-        dao.remove_entity(model.WorkflowStepView, ws.id)
+        session.execute(text(
+            """DELETE FROM "WORKFLOW_VIEW_STEPS" WHERE fk_algorithm IN
+               (SELECT A.id FROM "ALGORITHMS" A, "ALGORITHM_GROUPS" AG
+               WHERE  A.fk_algo_group = AG.id AND module = 'tvb.adapters.visualizers.cross_correlation'
+                      AND classname = 'PearsonCorrelationCoefficientVisualizer');"""))
+        session.commit()
+    except Exception, excep:
+        LOGGER.exception(excep)
+    finally:
+        session.close()
 
     LOGGER.info("References removed.")

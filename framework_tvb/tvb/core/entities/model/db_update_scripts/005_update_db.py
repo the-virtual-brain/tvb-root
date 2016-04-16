@@ -34,7 +34,7 @@ Change of DB structure for TVB version 1.0.6.
 .. moduleauthor:: Lia Domide <lia.domide@codemart.ro>
 """
 
-from tvb.core.entities.storage import dao
+from tvb.core.entities.model.db_update_scripts.helper import change_algorithm
 
 
 def upgrade(_migrate_engine):
@@ -42,20 +42,14 @@ def upgrade(_migrate_engine):
     Upgrade operations go here.
     Don't create your own engine; bind migrate_engine to your metadata.
     """
-    db_group = dao.find_group('tvb.adapters.uploaders.csv_connectivity_importer', 'ZIPConnectivityImporter')
-    if db_group is not None:
-        db_group.module = 'tvb.adapters.uploaders.csv_connectivity_importer'
-        db_group.classname = 'CSVConnectivityImporter'
-        dao.store_entity(db_group)
+
+    change_algorithm('tvb.adapters.uploaders.csv_connectivity_importer', 'ZIPConnectivityImporter',
+                     'tvb.adapters.uploaders.csv_connectivity_importer', 'CSVConnectivityImporter')
     
 
 def downgrade(_migrate_engine):
-    """Operations to reverse the above upgrade go here."""
-    db_group = dao.find_group('tvb.adapters.uploaders.csv_connectivity_importer', 'CSVConnectivityImporter')
-    if db_group is not None:
-        db_group.module = 'tvb.adapters.uploaders.csv_connectivity_importer'
-        db_group.classname = 'ZIPConnectivityImporter'
-        dao.store_entity(db_group)
-        
-        
+    """
+    We do not support downgrade
+    """
+    pass
         

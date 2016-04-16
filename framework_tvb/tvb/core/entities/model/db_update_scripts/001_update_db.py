@@ -31,31 +31,25 @@
 """
 Change of DB structure from TVB version 1.0 to TVB 1.0.1.
 
+.. moduleauthor:: Lia Domide <lia.domide@codemart.ro>
 .. moduleauthor:: Bogdan Neacsa <bogdan.neacsa@codemart.ro>
 """
 
-from tvb.core.entities.storage import dao
+from tvb.core.entities.model.db_update_scripts.helper import change_algorithm
+
 
 
 def upgrade(_migrate_engine):
     """
-    Upgrade operations go here.
-    Don't create your own engine; bind migrate_engine to your metadata.
+    Change SimulatorAdapter module
     """
-    simulator_db_group = dao.find_group('tvb.adapters.simulator.simulatorAdapter', 'SimulatorAdapter')
-    if simulator_db_group is not None:
-        simulator_db_group.module = 'tvb.adapters.simulator.simulator_adapter'
-        simulator_db_group.classname = 'SimulatorAdapter'
-        dao.store_entity(simulator_db_group)
-    
+    change_algorithm('tvb.adapters.simulator.simulatorAdapter', 'SimulatorAdapter',
+                     'tvb.adapters.simulator.simulator_adapter', 'SimulatorAdapter')
+
+
 
 def downgrade(_migrate_engine):
-    """Operations to reverse the above upgrade go here."""
-    simulator_db_group = dao.find_group('tvb.adapters.simulator.simulator_adapter', 'SimulatorAdapter')
-    if simulator_db_group is not None:
-        simulator_db_group.module = 'tvb.adapters.simulator.simulatorAdapter'
-        simulator_db_group.classname = 'SimulatorAdapter'
-        dao.store_entity(simulator_db_group)
-        
-        
-        
+    """
+    We do not support downgrade
+    """
+    pass
