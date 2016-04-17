@@ -1,33 +1,28 @@
 <?xml version="1.0"?>
- 
-		
-<tvb xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-     xsi:noNamespaceSchemaLocation="../../../../core/schema/tvb.xsd">
 
-    <algorithm_group name="test_simple_portlet" type="" uiName="Simple Python Portlets" label="Selected Portlet:">
-        
-        <algorithm name="TA1 with TA2" identifier="TA1TA2">
-            <code value=""/>
-            <inputs>
-                <input>
-                    <name value="chain_1"/>
-                    <label value="First adapter from chain"/>
-                    <type value="tvb.tests.framework.adapters.testadapter1.TestAdapterDatatypeInput" field=""/>
-                </input>
-                
-                <input>
-                    <name value="chain_2"/>
-                    <label value="Second adapter from chain"/>
-                    <type value="tvb.tests.framework.adapters.testadapter2.TestAdapter2" field=""/>
-                </input>
-                        
-                <input overwrite="chain_1">
-                    <name value="test_dt_input"/>
-                    <label value="Overwrite with first input of the simulator adapter."/>
-                    <type value="dynamic" default="step_0[0]" />
-                </input>
-                
-            </inputs>
-        </algorithm>
-   </algorithm_group>
+
+<tvb xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+     xsi:noNamespaceSchemaLocation="../../../../core/portlets/tvb.xsd">
+
+    <portlet name="TA1 with TA2" identifier="TA1TA2">
+        <inputs>
+            <input>
+                <name value="chain_1"/>
+                <label value="First adapter from chain"/>
+                <type value="tvb.tests.framework.adapters.testadapter1.TestAdapterDatatypeInput" field=""/>
+            </input>
+
+            <input>
+                <name value="chain_2"/>
+                <label value="Second adapter from chain"/>
+                <type value="tvb.tests.framework.adapters.testadapter2.TestAdapter2" field=""/>
+            </input>
+
+            <input overwrite="chain_1">
+                <name value="test_dt_input"/>
+                <label value="Overwrite with first input of the simulator adapter."/>
+                <type value="dynamic" default="step_0[0]"/>
+            </input>
+        </inputs>
+    </portlet>
 </tvb>

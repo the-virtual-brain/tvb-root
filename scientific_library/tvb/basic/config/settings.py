@@ -258,10 +258,6 @@ class WebSettings(object):
                                                                                             'templates', 'genshi',
                                                                                             'visualizers'),
                                                         },
-                                       '/schema': {'tools.staticdir.root': self.CURRENT_DIR,
-                                                   'tools.staticdir.on': True,
-                                                   'tools.staticdir.dir': os.path.join('core', 'schema'),
-                                                   },
                                        }
 
 

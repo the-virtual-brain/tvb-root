@@ -45,8 +45,7 @@ from tvb.core.entities.storage import dao, SA_SESSIONMAKER
 from tvb.core.portlets.xml_reader import XMLPortletReader, ATT_OVERWRITE
 from tvb.core.adapters.abcremover import ABCRemover
 from tvb.core.adapters.abcadapter import ABCAdapter
-from tvb.core.adapters.xml_reader import ATT_TYPE, ATT_NAME, INPUTS_KEY
-from tvb.core.adapters.xml_reader import ATT_REQUIRED, ELEM_CONDITIONS
+from tvb.core.adapters.constants import ATT_TYPE, ATT_NAME, INPUTS_KEY, ATT_REQUIRED, ELEM_CONDITIONS
 from tvb.core.adapters.exceptions import XmlParserException
 from tvb.core.portlets.portlet_configurer import PortletConfigurer
 
@@ -205,7 +204,7 @@ class Introspector:
             try:
                 if file_n.endswith('.xml'):
                     complete_file_path = os.path.join(portlet_folder, file_n)
-                    portlet_reader = XMLPortletReader.get_instance(complete_file_path)
+                    portlet_reader = XMLPortletReader(complete_file_path)
                     portlet_list = portlet_reader.get_algorithms_dictionary()
                     self.logger.debug("Starting to verify currently declared portlets in %s." % (file_n,))
                     for algo_identifier in portlet_list:

@@ -63,7 +63,7 @@ class PortletConfigurer():
 
     def __init__(self, portlet_entity):
         self.log = get_logger(self.__class__.__module__)
-        self.reader = XMLPortletReader.get_instance(portlet_entity.xml_path)
+        self.reader = XMLPortletReader(portlet_entity.xml_path)
         self.portlet_entity = portlet_entity
 
 

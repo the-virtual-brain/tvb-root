@@ -57,7 +57,7 @@ KEY_EQUATION = "equation"
 KEY_FOCAL_POINTS = "focal_points"
 KEY_SURFACE_GID = "surface_gid"
 
-from tvb.core.adapters.xml_reader import (
+from tvb.core.adapters.constants import (
     ALL_TYPES as STATIC_ACCEPTED_TYPES,
     ATT_TYPE as KEY_TYPE,
     ELEM_OPTIONS as KEY_OPTIONS,
@@ -72,8 +72,7 @@ from tvb.core.adapters.xml_reader import (
     ATT_FIELD as KEY_FIELD,
 
     TYPE_SELECT, TYPE_MULTIPLE, TYPE_DICT, TYPE_ARRAY, TYPE_LIST, TYPE_BOOL, TYPE_INT, TYPE_FLOAT,
-    TYPE_STR, TYPE_UPLOAD,
-    QUANTIFIER_MANUAL, QUANTIFIER_UPLOAD, ATT_QUATIFIER)
+    TYPE_STR, TYPE_UPLOAD)
 
 KEY_DEFAULT = "default"
 KEY_DATATYPE = 'datatype'
@@ -431,18 +430,10 @@ class InputTreeManager(object):
                 self.log.exception("The parameter %s was ignored. None value was returned.", row['name'])
                 return None
 
-        if ATT_QUATIFIER in row:
-            quantifier = row[ATT_QUATIFIER]
-            dtype = None
-            if KEY_DTYPE in row:
-                dtype = row[KEY_DTYPE]
-            if quantifier == QUANTIFIER_MANUAL:
-                return string2array(str(input_data), ",", dtype)
-            elif quantifier == QUANTIFIER_UPLOAD:
-                input_str = open(input_data, 'r').read()
-                return string2array(input_str, " ", dtype)
-
-        return None
+        dtype = None
+        if KEY_DTYPE in row:
+            dtype = row[KEY_DTYPE]
+        return string2array(str(input_data), ",", dtype)
 
 
     def _load_entity(self, row, datatype_gid, kwargs, metadata_out):

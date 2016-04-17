@@ -41,25 +41,23 @@ import os
 import json
 import zipfile
 import sys
-from tvb.core import utils
-from tvb.core.adapters import xml_reader
-
 from copy import copy
 from cgi import FieldStorage
 from datetime import datetime
 from tvb.basic.traits.exceptions import TVBException
 from tvb.basic.traits.types_basic import MapAsJson, Range
-from tvb.core.utils import parse_json_parameters
-from tvb.core.entities import model
-from tvb.core.entities.storage import dao
-from tvb.core.services.workflow_service import WorkflowService
-from tvb.core.entities.transient.structure_entities import DataTypeMetaData
-from tvb.core.entities.file.files_helper import FilesHelper
-from tvb.core.adapters.abcadapter import ABCAdapter, ABCSynchronous
-from tvb.core.services.backend_client import BACKEND_CLIENT
-from tvb.core.adapters.exceptions import LaunchException
 from tvb.basic.profile import TvbProfile
 from tvb.basic.logger.builder import get_logger
+from tvb.core import utils
+from tvb.core.adapters import constants
+from tvb.core.adapters.abcadapter import ABCAdapter, ABCSynchronous
+from tvb.core.adapters.exceptions import LaunchException
+from tvb.core.entities import model
+from tvb.core.entities.storage import dao
+from tvb.core.entities.transient.structure_entities import DataTypeMetaData
+from tvb.core.entities.file.files_helper import FilesHelper
+from tvb.core.services.workflow_service import WorkflowService
+from tvb.core.services.backend_client import BACKEND_CLIENT
 
 try:
     from cherrypy._cpreqbody import Part
@@ -375,7 +373,7 @@ class OperationService:
             if adapter_instance is None:
                 algorithm = operation.algorithm
                 adapter_instance = ABCAdapter.build_adapter(algorithm)
-            parsed_params = parse_json_parameters(operation.parameters)
+            parsed_params = utils.parse_json_parameters(operation.parameters)
 
             if send_to_cluster:
                 self._send_to_cluster([operation], adapter_instance, operation.user.username)
@@ -479,10 +477,10 @@ class OperationService:
         if type(range_data) in (list, tuple):
             return range_data
 
-        if (xml_reader.ATT_MINVALUE in range_data) and (xml_reader.ATT_MAXVALUE in range_data):
-            lo_val = float(range_data[xml_reader.ATT_MINVALUE])
-            hi_val = float(range_data[xml_reader.ATT_MAXVALUE])
-            step = float(range_data[xml_reader.ATT_STEP])
+        if (constants.ATT_MINVALUE in range_data) and (constants.ATT_MAXVALUE in range_data):
+            lo_val = float(range_data[constants.ATT_MINVALUE])
+            hi_val = float(range_data[constants.ATT_MAXVALUE])
+            step = float(range_data[constants.ATT_STEP])
             range_values = list(Range(lo=lo_val, hi=hi_val, step=step, mode=Range.MODE_INCLUDE_BOTH))
 
         else:

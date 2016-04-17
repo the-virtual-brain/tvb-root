@@ -19,31 +19,14 @@
 
     <xs:element name="tvb">
         <xs:complexType>
-            <xs:all>
-                <xs:element name="algorithm_group" type="algorithmGroupType"/>
-            </xs:all>
+            <xs:sequence>
+                <xs:element name="portlet" type="portletType" minOccurs="1" maxOccurs="unbounded"/>
+            </xs:sequence>
         </xs:complexType>
     </xs:element>
 
-
-    <xs:complexType name="algorithmGroupType">
+    <xs:complexType name="portletType">
         <xs:sequence>
-            <xs:element name="algorithm" type="algorithmType" minOccurs="1" maxOccurs="unbounded"/>
-        </xs:sequence>
-        <xs:attribute name="name" type="xs:string" use="required"/>
-        <xs:attribute name="type" type="xs:string" use="required"/>
-        <xs:attribute name="uiName" type="xs:string" use="required"/>
-        <xs:attribute name="description" type="xs:string" use="optional"/>
-        <xs:attribute name="label" type="xs:string" use="required"/>
-        <xs:attribute name="additionalPath" type="xs:string" use="optional"/>
-        <xs:attribute name="subsection" type="xs:string" use="optional"/>
-    </xs:complexType>
-
-
-    <xs:complexType name="algorithmType">
-        <xs:sequence>
-            <xs:element name="code" type="codeType"/>
-            <xs:element name="matlab_file" type="codeType" minOccurs="0"/>
             <xs:element name="inputs" minOccurs="0">
                 <xs:complexType>
                     <xs:sequence>
@@ -51,16 +34,9 @@
                     </xs:sequence>
                 </xs:complexType>
             </xs:element>
-            <xs:element name="outputs" type="outputsType" minOccurs="0"/>
         </xs:sequence>
         <xs:attribute name="name" type="xs:string" use="required"/>
         <xs:attribute name="identifier" type="alfaNumericString" use="required"/>
-    </xs:complexType>
-
-
-    <xs:complexType name="codeType">
-        <xs:attribute name="value" type="xs:string" use="required"/>
-        <xs:attribute name="import" type="xs:string" use="optional"/>
     </xs:complexType>
 
 
@@ -174,26 +150,6 @@
                     </xs:all>
                     <xs:attribute name="name" type="xs:string" use="required"/>
                     <xs:attribute name="value" type="xs:string" use="required"/>
-                </xs:complexType>
-            </xs:element>
-        </xs:sequence>
-    </xs:complexType>
-
-
-    <xs:complexType name="outputsType">
-        <xs:sequence>
-            <xs:element name="output" minOccurs="1" maxOccurs="unbounded">
-                <xs:complexType>
-                    <xs:sequence>
-                        <xs:element name="field" minOccurs="1" maxOccurs="unbounded">
-                            <xs:complexType>
-                                <xs:attribute name="name" type="xs:string" use="required"/>
-                                <xs:attribute name="reference" type="xs:string" use="optional"/>
-                                <xs:attribute name="value" type="xs:string" use="optional"/>
-                            </xs:complexType>
-                        </xs:element>
-                    </xs:sequence>
-                    <xs:attribute name="type" type="xs:string" use="required"/>
                 </xs:complexType>
             </xs:element>
         </xs:sequence>
