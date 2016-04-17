@@ -38,7 +38,6 @@ from tvb.core.entities import model
 from tvb.core.entities.storage import dao
 from tvb.core.adapters.exceptions import NoMemoryAvailableException
 from tvb.core.services.operation_service import OperationService
-from tvb.core.services.flow_service import FlowService
 from tvb.tests.framework.core.base_testcase import TransactionalTestCase
 from tvb.tests.framework.core.test_factory import TestFactory
 
@@ -61,8 +60,7 @@ class AdapterMemoryUsageTest(TransactionalTestCase):
         Test that a method not implemented exception is raised in case the
         get_required_memory_size method is not implemented.
         """
-        algo_group = dao.find_group("tvb.tests.framework.adapters.testadapter3", "TestAdapterHDDRequired")
-        adapter = FlowService().build_adapter_instance(algo_group)
+        adapter = TestFactory.create_adapter("tvb.tests.framework.adapters.testadapter3", "TestAdapterHDDRequired")
         self.assertEqual(42, adapter.get_required_memory_size())
         
         
@@ -70,13 +68,11 @@ class AdapterMemoryUsageTest(TransactionalTestCase):
         """
         Test that an MemoryException is raised in case adapter cant launch due to lack of memory.
         """
-        module = "tvb.tests.framework.adapters.testadapter3"
-        class_name = "TestAdapterHugeMemoryRequired"
-        algo_group = dao.find_group(module, class_name)
-        adapter = FlowService().build_adapter_instance(algo_group)
+        adapter = TestFactory.create_adapter("tvb.tests.framework.adapters.testadapter3",
+                                             "TestAdapterHugeMemoryRequired")
         data = {"test": 5}
 
-        operation = model.Operation(self.test_user.id, self.test_project.id, algo_group.id,
+        operation = model.Operation(self.test_user.id, self.test_project.id, adapter.stored_adapter.id,
                                     json.dumps(data), json.dumps({}), status=model.STATUS_STARTED)
         operation = dao.store_entity(operation)
         self.assertRaises(NoMemoryAvailableException, OperationService().initiate_prelaunch, operation, adapter, {})

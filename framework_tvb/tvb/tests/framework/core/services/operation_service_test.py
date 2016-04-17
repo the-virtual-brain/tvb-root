@@ -103,9 +103,7 @@ class OperationServiceTest(BaseTestCase):
         all_operations = dao.get_filtered_operations(self.test_project.id, None)
         self.assertEqual(len(all_operations), 0, "There should be no operation")
 
-        algogroup = dao.find_group('tvb.tests.framework.adapters.testadapter3', 'TestAdapter3')
-        group, _ = flow_service.prepare_adapter(self.test_project.id, algogroup)
-        adapter_instance = flow_service.build_adapter_instance(group)
+        adapter_instance = TestFactory.create_adapter('tvb.tests.framework.adapters.testadapter3', 'TestAdapter3')
         data = {model.RANGE_PARAMETER_1: 'param_5', 'param_5': [1, 2]}
         ## Create Group of operations
         flow_service.fire_operation(adapter_instance, self.test_user, self.test_project.id, **data)
@@ -137,8 +135,7 @@ class OperationServiceTest(BaseTestCase):
         """
         module = "tvb.tests.framework.adapters.testadapter1"
         class_name = "TestAdapter1"
-        group = dao.find_group(module, class_name)
-        adapter = FlowService().build_adapter_instance(group)
+        adapter = TestFactory.create_adapter(module, class_name)
         output = adapter.get_output()
         output_type = output[0].__name__
         data = {"test1_val1": 5, "test1_val2": 5}
@@ -146,7 +143,7 @@ class OperationServiceTest(BaseTestCase):
         res = self.operation_service.initiate_operation(self.test_user, self.test_project.id, adapter,
                                                         tmp_folder, **data)
         self.assertTrue(res.index("has finished.") > 10, "Operation didn't finish")
-        group = dao.find_group(module, class_name)
+        group = dao.get_algorithm_by_module(module, class_name)
         self.assertEqual(group.module, 'tvb.tests.framework.adapters.testadapter1', "Wrong data stored.")
         self.assertEqual(group.classname, 'TestAdapter1', "Wrong data stored.")
         dts, count = dao.get_values_of_datatype(self.test_project.id, Datatype1)
@@ -161,10 +158,7 @@ class OperationServiceTest(BaseTestCase):
         """
         Launch two operations and give enough available space for user so that both should finish.
         """
-        module = "tvb.tests.framework.adapters.testadapter3"
-        class_name = "TestAdapterHDDRequired"
-        group = dao.find_group(module, class_name)
-        adapter = FlowService().build_adapter_instance(group)
+        adapter = TestFactory.create_adapter("tvb.tests.framework.adapters.testadapter3", "TestAdapterHDDRequired")
         data = {"test": 100}
         TvbProfile.current.MAX_DISK_SPACE = float(adapter.get_required_disk_size(**data))
         tmp_folder = FilesHelper().get_project_folder(self.test_project, "TEMP")
@@ -184,10 +178,7 @@ class OperationServiceTest(BaseTestCase):
         """
         Launch two operations and give enough available space for user so that both should finish.
         """
-        module = "tvb.tests.framework.adapters.testadapter3"
-        class_name = "TestAdapterHDDRequired"
-        group = dao.find_group(module, class_name)
-        adapter = FlowService().build_adapter_instance(group)
+        adapter = TestFactory.create_adapter("tvb.tests.framework.adapters.testadapter3", "TestAdapterHDDRequired")
         data = {"test": 100}
         TvbProfile.current.MAX_DISK_SPACE = 2 * float(adapter.get_required_disk_size(**data))
         tmp_folder = FilesHelper().get_project_folder(self.test_project, "TEMP")
@@ -208,12 +199,9 @@ class OperationServiceTest(BaseTestCase):
         Launch two operations and give available space for user so that the first should finish,
         but after the update to the user hdd size the second should not.
         """
-        module = "tvb.tests.framework.adapters.testadapter3"
-        class_name = "TestAdapterHDDRequired"
-        group = dao.find_group(module, class_name)
-        adapter = FlowService().build_adapter_instance(group)
-
+        adapter = TestFactory.create_adapter("tvb.tests.framework.adapters.testadapter3", "TestAdapterHDDRequired")
         data = {"test": 100}
+
         TvbProfile.current.MAX_DISK_SPACE = (1 + float(adapter.get_required_disk_size(**data)))
         tmp_folder = FilesHelper().get_project_folder(self.test_project, "TEMP")
         self.operation_service.initiate_operation(self.test_user, self.test_project.id, adapter, tmp_folder, **data)
@@ -233,10 +221,7 @@ class OperationServiceTest(BaseTestCase):
         """
         Test the actual operation flow by executing a test adapter.
         """
-        module = "tvb.tests.framework.adapters.testadapter3"
-        class_name = "TestAdapterHDDRequired"
-        group = dao.find_group(module, class_name)
-        adapter = FlowService().build_adapter_instance(group)
+        adapter = TestFactory.create_adapter("tvb.tests.framework.adapters.testadapter3", "TestAdapterHDDRequired")
         data = {"test": 100}
 
         TvbProfile.current.MAX_DISK_SPACE = float(adapter.get_required_disk_size(**data))
@@ -250,13 +235,10 @@ class OperationServiceTest(BaseTestCase):
         Test the actual operation flow by executing a test adapter.
         """
         space_taken_by_started = 100
-        module = "tvb.tests.framework.adapters.testadapter3"
-        class_name = "TestAdapterHDDRequired"
-        group = dao.find_group(module, class_name)
-        started_operation = model.Operation(self.test_user.id, self.test_project.id, group.id, "",
+        adapter = TestFactory.create_adapter("tvb.tests.framework.adapters.testadapter3", "TestAdapterHDDRequired")
+        started_operation = model.Operation(self.test_user.id, self.test_project.id, adapter.stored_adapter.id, "",
                                             status=model.STATUS_STARTED, estimated_disk_size=space_taken_by_started)
         dao.store_entity(started_operation)
-        adapter = FlowService().build_adapter_instance(group)
         data = {"test": 100}
         TvbProfile.current.MAX_DISK_SPACE = float(adapter.get_required_disk_size(**data) + space_taken_by_started)
         tmp_folder = FilesHelper().get_project_folder(self.test_project, "TEMP")
@@ -268,10 +250,7 @@ class OperationServiceTest(BaseTestCase):
         """
         Test the actual operation flow by executing a test adapter.
         """
-        module = "tvb.tests.framework.adapters.testadapter3"
-        class_name = "TestAdapterHDDRequired"
-        group = dao.find_group(module, class_name)
-        adapter = FlowService().build_adapter_instance(group)
+        adapter = TestFactory.create_adapter("tvb.tests.framework.adapters.testadapter3", "TestAdapterHDDRequired")
         data = {"test": 100}
         TvbProfile.current.MAX_DISK_SPACE = float(adapter.get_required_disk_size(**data) - 1)
         tmp_folder = FilesHelper().get_project_folder(self.test_project, "TEMP")
@@ -285,13 +264,10 @@ class OperationServiceTest(BaseTestCase):
         Test the actual operation flow by executing a test adapter.
         """
         space_taken_by_started = 100
-        module = "tvb.tests.framework.adapters.testadapter3"
-        class_name = "TestAdapterHDDRequired"
-        group = dao.find_group(module, class_name)
-        started_operation = model.Operation(self.test_user.id, self.test_project.id, group.id, "",
+        adapter = TestFactory.create_adapter("tvb.tests.framework.adapters.testadapter3", "TestAdapterHDDRequired")
+        started_operation = model.Operation(self.test_user.id, self.test_project.id, adapter.stored_adapter.id, "",
                                             status=model.STATUS_STARTED, estimated_disk_size=space_taken_by_started)
         dao.store_entity(started_operation)
-        adapter = FlowService().build_adapter_instance(group)
         data = {"test": 100}
         TvbProfile.current.MAX_DISK_SPACE = float(adapter.get_required_disk_size(**data) + space_taken_by_started - 1)
         tmp_folder = FilesHelper().get_project_folder(self.test_project, "TEMP")
@@ -304,14 +280,10 @@ class OperationServiceTest(BaseTestCase):
         """
         Test that an operation is successfully stopped.
         """
-        module = "tvb.tests.framework.adapters.testadapter2"
-        class_name = "TestAdapter2"
-        group = dao.find_group(module, class_name)
-        adapter = FlowService().build_adapter_instance(group)
+        adapter = TestFactory.create_adapter("tvb.tests.framework.adapters.testadapter2", "TestAdapter2")
         data = {"test": 5}
-        algo_group = adapter.algorithm_group
-        algo_category = dao.get_category_by_id(algo_group.fk_category)
-        algo = dao.get_algorithm_by_group(algo_group.id)
+        algo = adapter.stored_adapter
+        algo_category = dao.get_category_by_id(algo.fk_category)
         operations, _ = self.operation_service.prepare_operations(self.test_user.id, self.test_project.id, algo,
                                                                   algo_category, {}, **data)
         self.operation_service._send_to_cluster(operations, adapter)
@@ -324,14 +296,10 @@ class OperationServiceTest(BaseTestCase):
         """
         Test that an operation that is already finished is not changed by the stop operation.
         """
-        module = "tvb.tests.framework.adapters.testadapter1"
-        class_name = "TestAdapter1"
-        group = dao.find_group(module, class_name)
-        adapter = FlowService().build_adapter_instance(group)
+        adapter = TestFactory.create_adapter("tvb.tests.framework.adapters.testadapter1", "TestAdapter1")
         data = {"test1_val1": 5, 'test1_val2': 5}
-        algo_group = adapter.algorithm_group
-        algo_category = dao.get_category_by_id(algo_group.fk_category)
-        algo = dao.get_algorithm_by_group(algo_group.id)
+        algo = adapter.stored_adapter
+        algo_category = dao.get_category_by_id(algo.fk_category)
         operations, _ = self.operation_service.prepare_operations(self.test_user.id, self.test_project.id, algo,
                                                                   algo_category, {}, **data)
         self.operation_service._send_to_cluster(operations, adapter)
@@ -442,7 +410,7 @@ class OperationServiceTest(BaseTestCase):
         self.assertEqual(inserted_count, 0, "Expected to find no data.")
         #create an operation
         algorithm_id = FlowService().get_algorithm_by_module_and_class('tvb.tests.framework.adapters.ndimensionarrayadapter',
-                                                                       'NDimensionArrayAdapter')[0].id
+                                                                       'NDimensionArrayAdapter').id
         operation = model.Operation(self.test_user.id, self.test_project.id, algorithm_id, 'test params',
                                     meta=json.dumps({DataTypeMetaData.KEY_STATE: "RAW_DATA"}),
                                     status=model.STATUS_FINISHED)

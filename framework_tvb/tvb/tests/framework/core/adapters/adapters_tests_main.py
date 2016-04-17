@@ -29,16 +29,14 @@
 #
 
 """
-Created on Jul 21, 2011
-
 .. moduleauthor:: Bogdan Neacsa <bogdan.neacsa@codemart.ro>
 """
 
 import unittest
-from tvb.tests.framework.core.adapters import xml_reader_test
 from tvb.tests.framework.core.adapters import introspector_test
 from tvb.tests.framework.core.adapters import adapters_memory_usage_tests
 from tvb.tests.framework.core.adapters import abcadapter_test
+
 
 def suite():
     """
@@ -46,7 +44,6 @@ def suite():
     """
     test_suite = unittest.TestSuite()
     test_suite.addTest(introspector_test.suite())
-    test_suite.addTest(xml_reader_test.suite())
     test_suite.addTest(adapters_memory_usage_tests.suite())
     test_suite.addTest(abcadapter_test.suite())
     return test_suite

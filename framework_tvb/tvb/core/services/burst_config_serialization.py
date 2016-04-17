@@ -63,8 +63,8 @@ class SerializationManager(object):
 
 
     def _build_simulator_adapter(self):
-        _, group = self.flow_service.get_algorithm_by_module_and_class(SIMULATOR_MODULE, SIMULATOR_CLASS)
-        return self.flow_service.build_adapter_instance(group)
+        stored_adapter = self.flow_service.get_algorithm_by_module_and_class(SIMULATOR_MODULE, SIMULATOR_CLASS)
+        return ABCAdapter.build_adapter(stored_adapter)
 
 
     def has_model_pse_ranges(self):

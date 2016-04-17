@@ -41,8 +41,6 @@ import tvb_data.projectionMatrix as dataset
 from tvb.adapters.uploaders.sensors_importer import Sensors_Importer
 from tvb.tests.framework.core.base_testcase import TransactionalTestCase
 from tvb.tests.framework.core.test_factory import TestFactory
-from tvb.core.entities.storage import dao
-from tvb.core.adapters.abcadapter import ABCAdapter
 from tvb.core.services.flow_service import FlowService
 from tvb.core.services.exceptions import OperationException
 from tvb.core.entities.file.files_helper import FilesHelper
@@ -75,6 +73,9 @@ class ProjectionMatrixTest(TransactionalTestCase):
         self.sensors = TestFactory.get_entity(self.test_project, SensorsEEG())
         self.assertTrue(self.sensors is not None)
 
+        self.importer = TestFactory.create_adapter('tvb.adapters.uploaders.projection_matrix_importer',
+                                                   'ProjectionMatrixSurfaceEEGImporter')
+
 
     def tearDown(self):
         """
@@ -87,11 +88,8 @@ class ProjectionMatrixTest(TransactionalTestCase):
         """
         Verifies that importing a different shape throws exception
         """
-        group = dao.find_group('tvb.adapters.uploaders.projection_matrix_importer',
-                               'ProjectionMatrixSurfaceEEGImporter')
-        importer = ABCAdapter.build_adapter(group)
-
-        file_path = os.path.join(os.path.abspath(os.path.dirname(dataset.__file__)), 'projection_eeg_62_surface_16k.mat')
+        file_path = os.path.join(os.path.abspath(os.path.dirname(dataset.__file__)),
+                                 'projection_eeg_62_surface_16k.mat')
         args = {'projection_file': file_path,
                 'dataset_name': 'ProjectionMatrix',
                 'sensors': self.sensors.gid,
@@ -99,7 +97,7 @@ class ProjectionMatrixTest(TransactionalTestCase):
                 DataTypeMetaData.KEY_SUBJECT: DataTypeMetaData.DEFAULT_SUBJECT}
 
         try:
-            FlowService().fire_operation(importer, self.test_user, self.test_project.id, **args)
+            FlowService().fire_operation(self.importer, self.test_user, self.test_project.id, **args)
             self.fail("This was expected not to run! 62 rows in proj matrix, but 65 sensors")
         except OperationException:
             pass
@@ -110,18 +108,15 @@ class ProjectionMatrixTest(TransactionalTestCase):
         Verifies the happy flow for importing a surface.
         """
         dt_count_before = TestFactory.get_entity_count(self.test_project, ProjectionSurfaceEEG())
-        group = dao.find_group('tvb.adapters.uploaders.projection_matrix_importer',
-                               'ProjectionMatrixSurfaceEEGImporter')
-        importer = ABCAdapter.build_adapter(group)
-
-        file_path = os.path.join(os.path.abspath(os.path.dirname(dataset.__file__)), 'projection_eeg_65_surface_16k.npy')
+        file_path = os.path.join(os.path.abspath(os.path.dirname(dataset.__file__)),
+                                 'projection_eeg_65_surface_16k.npy')
         args = {'projection_file': file_path,
                 'dataset_name': 'ProjectionMatrix',
                 'sensors': self.sensors.gid,
                 'surface': self.surface.gid,
                 DataTypeMetaData.KEY_SUBJECT: DataTypeMetaData.DEFAULT_SUBJECT}
 
-        FlowService().fire_operation(importer, self.test_user, self.test_project.id, **args)
+        FlowService().fire_operation(self.importer, self.test_user, self.test_project.id, **args)
         dt_count_after = TestFactory.get_entity_count(self.test_project, ProjectionSurfaceEEG())
 
         self.assertEqual(dt_count_before + 1, dt_count_after)

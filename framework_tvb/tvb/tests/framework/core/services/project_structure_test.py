@@ -35,6 +35,7 @@
 
 import unittest
 import json
+from tvb.core.adapters.abcadapter import ABCAdapter
 from tvb.core.entities import model
 from tvb.core.entities.storage import dao
 from tvb.core.entities.file.files_helper import FilesHelper
@@ -326,8 +327,7 @@ class ProjectStructureTest(TransactionalTestCase):
         Tests method get_datatype_and_datatypegroup_inputs_for_operation.
         Verifies filters' influence over results is as expected
         """
-        algo_group = dao.find_group('tvb.tests.framework.adapters.testadapter3', 'TestAdapter3')
-        algo = dao.get_algorithm_by_group(algo_group.id)
+        algo = dao.get_algorithm_by_module('tvb.tests.framework.adapters.testadapter3', 'TestAdapter3')
 
         array_wrappers = self._create_mapped_arrays(self.test_project.id)
         ids = []
@@ -390,8 +390,7 @@ class ProjectStructureTest(TransactionalTestCase):
         params_1 = json.dumps({"param_5": "1", "param_1": first_dt.gid, "param_6": "2"})
         params_2 = json.dumps({"param_5": "1", "param_4": second_dt.gid, "param_6": "5"})
 
-        algo_group = dao.find_group('tvb.tests.framework.adapters.testadapter3', 'TestAdapter3')
-        algo = dao.get_algorithm_by_group(algo_group.id)
+        algo = dao.get_algorithm_by_module('tvb.tests.framework.adapters.testadapter3', 'TestAdapter3')
 
         op1 = model.Operation(self.test_user.id, project.id, algo.id, params_1, op_group_id=op_group.id)
         op2 = model.Operation(self.test_user.id, project.id, algo.id, params_2, op_group_id=op_group.id)
@@ -444,8 +443,7 @@ class ProjectStructureTest(TransactionalTestCase):
         params_2 = json.dumps({"param_5": "5", "param_3": array_wrappers[2][2],
                                "param_2": array_wrappers[1][2], "param_6": "6"})
 
-        algo_group = dao.find_group('tvb.tests.framework.adapters.testadapter3', 'TestAdapter3')
-        algo = dao.get_algorithm_by_group(algo_group.id)
+        algo = dao.get_algorithm_by_module('tvb.tests.framework.adapters.testadapter3', 'TestAdapter3')
 
         op1 = model.Operation(self.test_user.id, self.test_project.id, algo.id, params_1, op_group_id=op_group.id)
         op2 = model.Operation(self.test_user.id, self.test_project.id, algo.id, params_2, op_group_id=op_group.id)
@@ -514,10 +512,8 @@ class ProjectStructureTest(TransactionalTestCase):
         count = self.flow_service.get_available_datatypes(project_id, "tvb.datatypes.arrays.MappedArray")[1]
         self.assertEqual(count, 0)
         
-        algo_group = dao.find_group('tvb.tests.framework.adapters.ndimensionarrayadapter', 'NDimensionArrayAdapter')
-        group, _ = self.flow_service.prepare_adapter(project_id, algo_group)
-
-        adapter_instance = self.flow_service.build_adapter_instance(group)
+        group = dao.get_algorithm_by_module('tvb.tests.framework.adapters.ndimensionarrayadapter', 'NDimensionArrayAdapter')
+        adapter_instance = ABCAdapter.build_adapter(group)
         data = {'param_1': 'some value'}
         #create 3 data types
         self.flow_service.fire_operation(adapter_instance, self.test_user, project_id, **data)
@@ -646,17 +642,14 @@ class ProjectStructureTest(TransactionalTestCase):
         """
         categ1 = model.AlgorithmCategory('one', True)
         self.categ1 = dao.store_entity(categ1)
-        algo = model.AlgorithmGroup(TEST_ADAPTER_VALID_MODULE, TEST_ADAPTER_VALID_CLASS, categ1.id)
-        adapter = dao.store_entity(algo)
-        algo = model.Algorithm(adapter.id, 'ident', name='', req_data='', param_name='', output='')
-        self.algo_inst = dao.store_entity(algo)
+        ad = model.Algorithm(TEST_ADAPTER_VALID_MODULE, TEST_ADAPTER_VALID_CLASS, categ1.id)
+        self.algo_inst = dao.store_entity(ad)
 
     @staticmethod
     def _create_algo_for_upload():
         """ Creates a fake algorithm for an upload category. """
         category = dao.store_entity(model.AlgorithmCategory("upload_category", rawinput=True))
-        algo_group = dao.store_entity(model.AlgorithmGroup("module", "classname", category.id))
-        return dao.store_entity(model.Algorithm(algo_group.id, "algo"))
+        return dao.store_entity(model.Algorithm("module", "classname", category.id))
 
 
 def suite():

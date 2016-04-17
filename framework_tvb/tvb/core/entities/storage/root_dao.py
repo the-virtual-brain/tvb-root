@@ -57,13 +57,16 @@ class RootDAO(object):
     EXCEPTION_DATATYPE_SIMULATION = SIMULATION_DATATYPE_CLASS
 
 
-    def store_entity(self, entity):
+    def store_entity(self, entity, merge=False):
         """
         Store in DB one generic entity.
         """
         self.logger.debug("We will store entity of type: %s with id %s" % (entity.__class__.__name__, str(entity.id)))
 
-        self.session.add(entity)
+        if merge:
+            self.session.merge(entity)
+        else:
+            self.session.add(entity)
         self.session.commit()
 
         self.logger.debug("After commit %s ID is %s" % (entity.__class__.__name__, str(entity.id)))

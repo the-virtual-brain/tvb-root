@@ -408,7 +408,6 @@ def extract_matlab_doc_string(file_n):
     """
     Extract the first doc entry from a matlab file.
     """
-    file_n = os.path.join(TvbProfile.current.EXTERNALS_FOLDER_PARENT, file_n)
     try:
         with open(file_n) as m_file:
             m_data = m_file.read()

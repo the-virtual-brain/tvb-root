@@ -35,8 +35,6 @@ from os import path
 import unittest
 import tvb_data
 from tvb.datatypes.connectivity import Connectivity
-from tvb.core.entities.storage import dao
-from tvb.core.adapters.abcadapter import ABCAdapter
 from tvb.core.services.flow_service import FlowService
 from tvb.core.entities.transient.structure_entities import DataTypeMetaData
 from tvb.tests.framework.core.test_factory import TestFactory
@@ -55,13 +53,14 @@ class ConnectivityZipTest(TransactionalTestCase):
         self.test_user = TestFactory.create_user('CFF_User')
         self.test_project = TestFactory.create_project(self.test_user, "CFF_Project")
 
+
     @staticmethod
     def import_test_connectivity96(test_user, test_project, subject=DataTypeMetaData.DEFAULT_SUBJECT):
         """
         Import a connectivity with 96 regions from tvb_data.
         """
-        group = dao.find_group('tvb.adapters.uploaders.zip_connectivity_importer', 'ZIPConnectivityImporter')
-        importer = ABCAdapter.build_adapter(group)
+        importer = TestFactory.create_adapter('tvb.adapters.uploaders.zip_connectivity_importer',
+                                              'ZIPConnectivityImporter')
 
         data_dir = path.abspath(path.dirname(tvb_data.__file__))
         zip_path = path.join(data_dir, 'connectivity', 'connectivity_96.zip')

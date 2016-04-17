@@ -91,7 +91,8 @@ class SimulatorAdapter(ABCAsynchronous):
         sim.trait.bound = self.INTERFACE_ATTRIBUTES_ONLY
         result = sim.interface[self.INTERFACE_ATTRIBUTES]
         # We should add as hidden the Simulator State attribute.
-        result.append({self.KEY_NAME: 'simulation_state', self.KEY_TYPE: SimulationState,
+        result.append({self.KEY_NAME: 'simulation_state',
+                       self.KEY_TYPE: 'tvb.datatypes.simulation_state.SimulationState',
                        self.KEY_LABEL: "Continuation of", self.KEY_REQUIRED: False, self.KEY_UI_HIDE: True})
         return result
 

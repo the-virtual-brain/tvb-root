@@ -42,10 +42,8 @@ from tvb.datatypes.connectivity import Connectivity
 from tvb.datatypes.graph import ConnectivityMeasure
 from tvb.tests.framework.core.test_factory import TestFactory
 from tvb.tests.framework.core.base_testcase import TransactionalTestCase
-from tvb.core.entities.storage import dao
 from tvb.core.entities.transient.structure_entities import DataTypeMetaData
 from tvb.core.services.flow_service import FlowService
-from tvb.core.adapters.abcadapter import ABCAdapter
 from tvb.tests.framework.adapters.uploaders import test_data
 
 
@@ -68,14 +66,13 @@ class ConnectivityMeasureImporterTest(TransactionalTestCase):
 
     def _import(self, import_file_name):
         ### Retrieve Adapter instance
-        group = dao.find_group('tvb.adapters.uploaders.connectivity_measure_importer', 'ConnectivityMeasureImporter')
-        importer = ABCAdapter.build_adapter(group)
+        importer = TestFactory.create_adapter('tvb.adapters.uploaders.connectivity_measure_importer',
+                                              'ConnectivityMeasureImporter')
         path = os.path.join(os.path.dirname(test_data.__file__), import_file_name)
 
         args = {'data_file': path,
-                'connectivity' : self.connectivity.gid,
-                DataTypeMetaData.KEY_SUBJECT: "John"
-        }
+                'connectivity': self.connectivity.gid,
+                DataTypeMetaData.KEY_SUBJECT: "John"}
 
         ### Launch import Operation
         FlowService().fire_operation(importer, self.test_user, self.test_project.id, **args)

@@ -37,9 +37,7 @@ import tvb_data
 from os import path
 from tvb.adapters.uploaders.csv_connectivity_importer import CSVConnectivityParser
 from tvb.basic.filters.chain import FilterChain
-from tvb.core.adapters.abcadapter import ABCAdapter
 from tvb.core.entities.file.files_helper import FilesHelper
-from tvb.core.entities.storage import dao
 from tvb.core.services.exceptions import OperationException
 from tvb.core.services.flow_service import FlowService
 from tvb.datatypes.connectivity import Connectivity
@@ -96,8 +94,8 @@ class CSVConnectivityImporterTest(TransactionalTestCase):
         self.helper.copy_file(tracts, tracts_tmp)
 
         ### Find importer and Launch Operation
-        group = dao.find_group('tvb.adapters.uploaders.csv_connectivity_importer', 'CSVConnectivityImporter')
-        importer = ABCAdapter.build_adapter(group)
+        importer = TestFactory.create_adapter('tvb.adapters.uploaders.csv_connectivity_importer',
+                                              'CSVConnectivityImporter')
         FlowService().fire_operation(importer, self.test_user, self.test_project.id,
                                      weights=weights_tmp, tracts=tracts_tmp, Data_Subject=subject,
                                      input_data=reference_connectivity_gid)

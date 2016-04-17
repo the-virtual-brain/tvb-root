@@ -77,10 +77,9 @@ class BurstController(BurstBaseController):
         self.workflow_service = WorkflowService()
         self.context = SelectedAdapterContext()
 
-        ## Cache simulator Tree, Algorithm and AlgorithmGroup, for performance issues.
-        algorithm, self.cached_simulator_algo_group = self.flow_service.get_algorithm_by_module_and_class(
-            SIMULATOR_MODULE, SIMULATOR_CLASS)
-        self.cached_simulator_algorithm_id = algorithm.id
+        ## Cache simulator Tree and Algorithm for performance issues.
+        self.cached_simulator_algorithm = self.flow_service.get_algorithm_by_module_and_class(SIMULATOR_MODULE,
+                                                                                              SIMULATOR_CLASS)
 
 
     @property
@@ -94,7 +93,7 @@ class BurstController(BurstBaseController):
         cached_simulator_tree = common.get_from_session(common.KEY_CACHED_SIMULATOR_TREE)
         if cached_simulator_tree is None:
             cached_simulator_tree = self.flow_service.prepare_adapter(common.get_current_project().id,
-                                                                      self.cached_simulator_algo_group)[1]
+                                                                      self.cached_simulator_algorithm)
             common.add2session(common.KEY_CACHED_SIMULATOR_TREE, cached_simulator_tree)
         return copy.deepcopy(cached_simulator_tree)
 
@@ -120,7 +119,7 @@ class BurstController(BurstBaseController):
                 current_data = session_stored_burst.get_all_simulator_values()[0]
                 adapter_interface = InputTreeManager.fill_defaults(adapter_interface, current_data, True)
                 ### Add simulator tree to session to be available in filters
-                self.context.add_adapter_to_session(self.cached_simulator_algo_group, adapter_interface, current_data)
+                self.context.add_adapter_to_session(self.cached_simulator_algorithm, adapter_interface, current_data)
             template_specification['inputList'] = adapter_interface
 
         selected_portlets = session_stored_burst.update_selected_portlets()
@@ -133,9 +132,8 @@ class BurstController(BurstBaseController):
         ### Prepare PSE available metrics
         ### We put here all available algorithms, because the metrics select area is a generic one, 
         ### and not loaded with every Burst Group change in history.
-        algo_group = self.flow_service.get_algorithm_by_module_and_class(MEASURE_METRICS_MODULE,
-                                                                         MEASURE_METRICS_CLASS)[1]
-        adapter_instance = ABCAdapter.build_adapter(algo_group)
+        algorithm = self.flow_service.get_algorithm_by_module_and_class(MEASURE_METRICS_MODULE, MEASURE_METRICS_CLASS)
+        adapter_instance = ABCAdapter.build_adapter(algorithm)
         if adapter_instance is not None and hasattr(adapter_instance, 'available_algorithms'):
             template_specification['available_metrics'] = [metric_name for metric_name
                                                            in adapter_instance.available_algorithms.keys()]
@@ -350,13 +348,13 @@ class BurstController(BurstBaseController):
 
         ## Fill all parameters 
         user_id = common.get_logged_user().id
-        data[common.KEY_ADAPTER] = self.cached_simulator_algorithm_id
+        data[common.KEY_ADAPTER] = self.cached_simulator_algorithm.id
         burst_config.update_simulator_configuration(data)
         burst_config.fk_project = common.get_current_project().id
 
         ## Do the asynchronous launch
         try:
-            burst_id, burst_name = self.burst_service.launch_burst(burst_config, 0, self.cached_simulator_algorithm_id,
+            burst_id, burst_name = self.burst_service.launch_burst(burst_config, 0, self.cached_simulator_algorithm.id,
                                                                    user_id, launch_mode)
             return {'id': burst_id, 'name': burst_name}
         except BurstServiceException, e:
@@ -552,7 +550,7 @@ class BurstController(BurstBaseController):
         simulator_input_tree = self.cached_simulator_input_tree
         simulator_input_tree = InputTreeManager.fill_defaults(simulator_input_tree, default_values)
         ### Add simulator tree to session to be available in filters
-        self.context.add_adapter_to_session(self.cached_simulator_algo_group, simulator_input_tree, default_values)
+        self.context.add_adapter_to_session(self.cached_simulator_algorithm, simulator_input_tree, default_values)
 
         template_vars = {}
         self.fill_default_attributes(template_vars)
@@ -582,7 +580,7 @@ class BurstController(BurstBaseController):
             simulator_input_tree = InputTreeManager.select_simulator_inputs(simulator_input_tree, simulator_config)
 
         ### Add simulator tree to session to be available in filters
-        self.context.add_adapter_to_session(self.cached_simulator_algo_group, simulator_input_tree, default_values)
+        self.context.add_adapter_to_session(self.cached_simulator_algorithm, simulator_input_tree, default_values)
 
         template_specification = {"inputList": simulator_input_tree,
                                   common.KEY_PARAMETERS_CONFIG: False,
@@ -648,24 +646,24 @@ class BurstController(BurstBaseController):
         algorithm = self.flow_service.get_algorithm_by_identifier(visualizer.fk_algorithm)
 
         if common.KEY_TITLE not in result:
-            result[common.KEY_TITLE] = algorithm.name
+            result[common.KEY_TITLE] = algorithm.displayname
 
-        result[common.KEY_ADAPTER] = algorithm.algo_group.id
+        result[common.KEY_ADAPTER] = algorithm.id
         result[common.KEY_OPERATION_ID] = None
         result[common.KEY_INCLUDE_RESOURCES] = 'flow/included_resources'
         ## Add required field to input dictionary and return it so that it can be used ##
         ## for top right control.                                                    ####
-        input_data[common.KEY_ADAPTER] = algorithm.algo_group.id
+        input_data[common.KEY_ADAPTER] = algorithm.id
 
         if common.KEY_PARENT_DIV not in result:
             result[common.KEY_PARENT_DIV] = ''
-        self.context.add_adapter_to_session(algorithm.algo_group, None, copy.deepcopy(input_data))
+        self.context.add_adapter_to_session(algorithm, None, copy.deepcopy(input_data))
 
-        self._populate_section(algorithm.algo_group, result, True)
+        self._populate_section(algorithm, result, True)
         result[common.KEY_DISPLAY_MENU] = True
         result[common.KEY_BACK_PAGE] = "/burst"
-        result[common.KEY_SUBMIT_LINK] = self.get_url_adapter(algorithm.algo_group.group_category.id,
-                                                              algorithm.algo_group.id, 'burst')
+        result[common.KEY_SUBMIT_LINK] = self.get_url_adapter(algorithm.fk_category,
+                                                              algorithm.id, 'burst')
         if KEY_CONTROLLS not in result:
             result[KEY_CONTROLLS] = ''
         return self.fill_default_attributes(result)

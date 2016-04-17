@@ -36,10 +36,10 @@ import json
 import unittest
 from copy import copy
 from tvb.config import SIMULATOR_CLASS, SIMULATOR_MODULE
+from tvb.core.adapters.abcadapter import ABCAdapter
 from tvb.core.entities import model
 from tvb.core.entities.storage import dao
 from tvb.core.services.project_service import initialize_storage
-from tvb.core.services.flow_service import FlowService
 from tvb.core.services.operation_service import OperationService
 from tvb.datatypes.time_series import TimeSeriesRegion
 from tvb.tests.framework.core.test_factory import TestFactory
@@ -101,9 +101,8 @@ class SimulatorAdapterTest(TransactionalTestCase):
         self.test_project = self.datatypes_factory.get_project()
         self.connectivity = self.datatypes_factory.create_connectivity(self.CONNECTIVITY_NODES)[1]
 
-        algo_group = dao.find_group(SIMULATOR_MODULE, SIMULATOR_CLASS)
-        algorithm = dao.get_algorithm_by_group(algo_group.id)
-        self.simulator_adapter = FlowService().build_adapter_instance(algo_group)
+        algorithm = dao.get_algorithm_by_module(SIMULATOR_MODULE, SIMULATOR_CLASS)
+        self.simulator_adapter = ABCAdapter.build_adapter(algorithm)
         self.operation = TestFactory.create_operation(algorithm, self.test_user, self.test_project,
                                                       model.STATUS_STARTED, json.dumps(SIMULATOR_PARAMETERS))
 

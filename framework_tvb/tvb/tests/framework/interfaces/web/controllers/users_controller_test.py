@@ -288,7 +288,7 @@ class UsersControllerTest(BaseTransactionalControllerTest):
         """
         Check that all the defaults are present in the template dictionary.
         """
-        self.assertEqual(template_dict[common.KEY_LINK_ANALYZE], '/flow/step/2')
+        self.assertEqual(template_dict[common.KEY_LINK_ANALYZE], '/flow/step_analyzers')
         self.assertEqual(template_dict[common.KEY_BACK_PAGE], False)
         self.assertEqual(template_dict[common.KEY_LINK_CONNECTIVITY_TAB], '/flow/step_connectivity')
         self.assertEqual(template_dict[common.KEY_CURRENT_TAB], 'nav-user')

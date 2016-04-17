@@ -104,12 +104,11 @@ class ABCUploader(ABCSynchronous):
         cat = dao.get_uploader_categories()[0]
         cls = self.__class__
         cmd, cnm = cls.__module__, cls.__name__
-        gp = dao.find_group(cmd, cnm)
+        gp = dao.get_algorithm_by_module(cmd, cnm)
         if gp is None:
-            gp = model.AlgorithmGroup(cmd, cnm, cat.id)
+            gp = model.Algorithm(cmd, cnm, cat.id)
             gp = dao.store_entity(gp)
-            dao.store_entity(model.Algorithm(gp.id, cnm, cnm))
-        self.algorithm_group = gp
+        self.stored_adapter = gp
 
 
     @staticmethod

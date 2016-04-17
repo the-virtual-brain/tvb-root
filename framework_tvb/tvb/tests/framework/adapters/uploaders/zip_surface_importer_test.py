@@ -35,9 +35,9 @@
 import os
 import unittest
 from tvb.tests.framework.core.base_testcase import TransactionalTestCase
+from tvb.tests.framework.core.test_factory import TestFactory
 from tvb.tests.framework.datatypes.datatypes_factory import DatatypesFactory
 from tvb.core.entities.file.files_helper import FilesHelper
-from tvb.core.entities.storage import dao
 from tvb.core.entities.transient.structure_entities import DataTypeMetaData
 from tvb.core.services.flow_service import FlowService
 from tvb.core.adapters.abcadapter import ABCAdapter
@@ -67,13 +67,10 @@ class ZIPSurfaceImporterTest(TransactionalTestCase):
 
     def _importSurface(self, import_file_path=None):
         ### Retrieve Adapter instance
-        group = dao.find_group('tvb.adapters.uploaders.zip_surface_importer', 'ZIPSurfaceImporter')
-        importer = ABCAdapter.build_adapter(group)
-        args = {
-            'uploaded': import_file_path, 'surface_type': OUTER_SKULL,
-            'zero_based_triangles': True,
-            DataTypeMetaData.KEY_SUBJECT: "John"
-        }
+        importer = TestFactory.create_adapter('tvb.adapters.uploaders.zip_surface_importer', 'ZIPSurfaceImporter')
+        args = {'uploaded': import_file_path, 'surface_type': OUTER_SKULL,
+                'zero_based_triangles': True,
+                DataTypeMetaData.KEY_SUBJECT: "John"}
 
         ### Launch import Operation
         FlowService().fire_operation(importer, self.test_user, self.test_project.id, **args)

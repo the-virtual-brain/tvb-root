@@ -79,7 +79,7 @@ class RemoveTest(TransactionalTestCase):
 
         self.test_project = TestFactory.import_default_project(self.test_user)
         self.operation = TestFactory.create_operation(test_user=self.test_user, test_project=self.test_project)
-        self.adapter_instance = TestFactory.create_adapter(test_project=self.test_project)
+        self.adapter_instance = TestFactory.create_adapter()
 
 
     def tearDown(self):

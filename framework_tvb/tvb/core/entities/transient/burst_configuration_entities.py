@@ -114,9 +114,10 @@ class AdapterConfiguration():
     """
 
 
-    def __init__(self, interface, group, ui_name=None, prefix='', subalgorithm_field=None, subalgorithm_value=None):
+    def __init__(self, interface, stored_adapter, ui_name=None, prefix='',
+                 subalgorithm_field=None, subalgorithm_value=None):
         self.interface = interface
-        self.group = group
+        self.stored_adapter = stored_adapter
         self._ui_name = ui_name
         self.prefix = prefix
         self.subalgorithm_field = subalgorithm_field
@@ -128,7 +129,7 @@ class AdapterConfiguration():
         """ UI title """
         if self._ui_name is not None:
             return self._ui_name
-        return self.group.displayname
+        return self.stored_adapter.displayname
 
 
 

@@ -33,6 +33,7 @@ This is intended to be a Benchmarking  and Validator script.
 
 .. moduleauthor:: bogdan.neacsa
 """
+
 if __name__ == '__main__':
     from tvb.basic.profile import TvbProfile
     TvbProfile.set_profile(TvbProfile.COMMAND_PROFILE)
@@ -40,6 +41,7 @@ if __name__ == '__main__':
 import sys
 from time import sleep
 from tvb.config import SIMULATOR_MODULE, SIMULATOR_CLASS
+from tvb.core.adapters.abcadapter import ABCAdapter
 from tvb.core.services.flow_service import FlowService
 from tvb.core.services.operation_service import OperationService
 from tvb.core.entities.storage import dao
@@ -74,13 +76,13 @@ class ModelValidator(object):
         Prepare the arguments to be submitted and launch actual operations group.
         TODO: Now get the results and check if any errors
         """
-        _, algo_group = self.flow_service.get_algorithm_by_module_and_class(SIMULATOR_MODULE, SIMULATOR_CLASS)
-        simulator_adapter = self.flow_service.build_adapter_instance(algo_group)
+        stored_adapter = self.flow_service.get_algorithm_by_module_and_class(SIMULATOR_MODULE, SIMULATOR_CLASS)
+        simulator_adapter = ABCAdapter.build_adapter(stored_adapter)
         launch_args = {}
         flatten_interface = simulator_adapter.flaten_input_interface()
         itree_mngr = self.flow_service.input_tree_manager
         prepared_flatten_interface = itree_mngr.fill_input_tree_with_options(flatten_interface, self.project.id,
-                                                                             algo_group.fk_category)
+                                                                             stored_adapter.fk_category)
         for entry in prepared_flatten_interface:
             value = entry['default']
             if isinstance(value, dict):

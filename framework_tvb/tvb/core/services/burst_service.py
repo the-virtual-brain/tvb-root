@@ -106,7 +106,8 @@ class BurstService():
         for adapter_conf in portlet_interface:
             interface = adapter_conf.interface
             itree_mngr = InputTreeManager()
-            interface = itree_mngr.fill_input_tree_with_options(interface, project_id, adapter_conf.group.fk_category)
+            interface = itree_mngr.fill_input_tree_with_options(interface, project_id,
+                                                                adapter_conf.stored_adapter.fk_category)
             interface = itree_mngr.prepare_param_names(interface, adapter_conf.prefix)
             adapter_conf.interface = interface
         
@@ -372,7 +373,7 @@ class BurstService():
         metadata = {DataTypeMetaData.KEY_BURST: burst_id}
         launch_data = burst_config.get_all_simulator_values()[0]
         operations, group = self.operation_service.prepare_operations(user_id, project_id, sim_algo, 
-                                                                      sim_algo.algo_group.group_category, metadata, 
+                                                                      sim_algo.algorithm_category, metadata,
                                                                       **launch_data)
         group_launched = group is not None
         if group_launched:
@@ -404,9 +405,8 @@ class BurstService():
         if group_launched:
             ###  For a group of operations, make sure the metric for PSE view 
             ### is also computed, immediately after the simulation.
-            metric_algo, metric_group = FlowService().get_algorithm_by_module_and_class(MEASURE_METRICS_MODULE,
-                                                                                        MEASURE_METRICS_CLASS)
-            _, metric_interface = FlowService().prepare_adapter(project_id, metric_group)
+            metric_algo = FlowService().get_algorithm_by_module_and_class(MEASURE_METRICS_MODULE, MEASURE_METRICS_CLASS)
+            metric_interface = FlowService().prepare_adapter(project_id, metric_algo)
             dynamics = {}
             for entry in metric_interface:
                 # We have a select that should be the dataType and a select multiple with the 
@@ -479,7 +479,7 @@ class BurstService():
                 # Entry is the input of a previous step ###
                 parameters_dict[param] = json.loads(referred_operation.parameters)[datatype_index]
         algorithm = dao.get_algorithm_by_id(visualization.fk_algorithm)
-        adapter_instance = ABCAdapter.build_adapter(algorithm.algo_group)
+        adapter_instance = ABCAdapter.build_adapter(algorithm)
         adapter_instance.current_project_id = current_project_id
         prepared_inputs = adapter_instance.prepare_ui_inputs(parameters_dict)
         if frame_width is not None:

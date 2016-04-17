@@ -99,7 +99,7 @@ class StaticFiltersFactory():
                                  [True], operations=["=="])
         new_filters.append(new_filter)
         if simulation_algorithm is not None:
-            new_filter = FilterChain("Only Simulations", [FilterChain.algorithm_group + '.id'],
+            new_filter = FilterChain("Only Simulations", [FilterChain.algorithm + '.id'],
                                      [simulation_algorithm.id], operations=["=="])
             new_filters.append(new_filter)
 

@@ -59,7 +59,7 @@ class OperationDAO(RootDAO):
         operation.user
         operation.project
         operation.operation_group
-        operation.algorithm.algo_group
+        operation.algorithm
 
         return operation
 
@@ -85,7 +85,7 @@ class OperationDAO(RootDAO):
             operation.user
             operation.project
             operation.operation_group
-            operation.algorithm.algo_group.group_category
+            operation.algorithm.algorithm_category
             return operation
         except SQLAlchemyError:
             self.logger.exception("When fetching gid %s" % operation_gid)
@@ -97,8 +97,7 @@ class OperationDAO(RootDAO):
         Returns all finished upload operations.
         """
         try:
-            result = self.session.query(model.Operation).join(model.Algorithm).join(
-                                        model.AlgorithmGroup).join(model.AlgorithmCategory).filter(
+            result = self.session.query(model.Operation).join(model.Algorithm).join(model.AlgorithmCategory).filter(
                                         model.AlgorithmCategory.rawinput == True).filter(
                                         model.Operation.fk_launched_in == project_id).filter(
                                         model.Operation.status == model.STATUS_FINISHED).all()
@@ -113,10 +112,9 @@ class OperationDAO(RootDAO):
         Returns True only if the operation with the given gid is an upload operation.
         """
         try:
-            result = self.session.query(model.Operation).join(model.Algorithm).join(
-                                        model.AlgorithmGroup).join(model.AlgorithmCategory).filter(
-                                        model.AlgorithmCategory.rawinput == True).filter(
-                                        model.Operation.gid == operation_gid).count()
+            result = self.session.query(model.Operation).join(model.Algorithm).join(model.AlgorithmCategory
+                                        ).filter(model.AlgorithmCategory.rawinput == True
+                                                 ).filter(model.Operation.gid == operation_gid).count()
             return result > 0
         except SQLAlchemyError:
             return False
@@ -211,7 +209,7 @@ class OperationDAO(RootDAO):
                                                    func.min(model.Operation.user_group),
                                                    func.min(model.Operation.gid))
 
-            query = select_clause.join(model.Algorithm).join(model.AlgorithmGroup).join(
+            query = select_clause.join(model.Algorithm).join(
                 model.AlgorithmCategory).filter(model.Operation.fk_launched_in == project_id)
 
             if filter_chain is not None:
@@ -264,7 +262,7 @@ class OperationDAO(RootDAO):
         try:
             query = self.session.query(model.Operation).filter(
                                 model.Operation.parameters.like('%' + datatype_gid + '%')).join(
-                                model.Algorithm).join(model.AlgorithmGroup).join(model.AlgorithmCategory).filter(
+                                model.Algorithm).join(model.AlgorithmCategory).filter(
                                 model.AlgorithmCategory.display == False)
             query = self._apply_visibility_and_group_filters(query, only_relevant, only_in_groups)
             result = query.all()
@@ -287,7 +285,7 @@ class OperationDAO(RootDAO):
             query = self.session.query(model.Operation).filter(
                 model.DataType.fk_datatype_group == datatype_group_id).filter(
                 model.Operation.parameters.like('%' + model.DataType.gid + '%')).join(
-                model.Algorithm).join(model.AlgorithmGroup).join(model.AlgorithmCategory).filter(
+                model.Algorithm).join(model.AlgorithmCategory).filter(
                 model.AlgorithmCategory.display == False)
             query = self._apply_visibility_and_group_filters(query, only_relevant, only_in_groups)
             result = query.all()
@@ -354,19 +352,6 @@ class OperationDAO(RootDAO):
             self.logger.exception(excep)
 
 
-    def get_figures_for_operation(self, operation_id):
-        """Retrieve Figure entities, resulted after executing an operation."""
-        try:
-            result = self.session.query(model.ResultFigure).filter_by(fk_from_operation=operation_id).all()
-            for figure in result:
-                figure.project
-                figure.operation
-            return result
-        except SQLAlchemyError, excep:
-            self.logger.exception(excep)
-            return None
-
-
     def get_operationgroup_by_gid(self, gid):
         """Retrieve by GID"""
         try:
@@ -383,6 +368,23 @@ class OperationDAO(RootDAO):
             return result
         except SQLAlchemyError:
             return None
+
+
+    def get_operation_numbers(self, proj_id):
+        """
+        Count total number of operations started for current project.
+        """
+        stats = self.session.query(model.Operation.status, func.count(model.Operation.id)
+                                    ).filter_by(fk_launched_in=proj_id
+                                    ).group_by(model.Operation.status).all()
+        stats = dict(stats)
+        finished = stats.get(model.STATUS_FINISHED, 0)
+        started = stats.get(model.STATUS_STARTED, 0)
+        failed = stats.get(model.STATUS_ERROR, 0)
+        canceled = stats.get(model.STATUS_CANCELED, 0)
+        pending = stats.get(model.STATUS_PENDING, 0)
+
+        return finished, started, failed, canceled, pending
 
 
     #
@@ -466,106 +468,57 @@ class OperationDAO(RootDAO):
 
 
     #
-    #GROUP RELATED METHODS
+    # ALGORITHM RELATED METHODS
     #
 
-    def get_algo_group_by_id(self, group_id):
-        """Retrieve GROUP entity by Identifier."""
-        result = None
+    def get_algorithm_by_id(self, algorithm_id):
         try:
-            result = self.session.query(model.AlgorithmGroup).filter_by(id=group_id).one()
-            result.group_category
-        except SQLAlchemyError:
-            pass
-        return result
+            result = self.session.query(model.Algorithm).filter_by(id=algorithm_id).one()
+            result.algorithm_category
+            return result
+        except SQLAlchemyError, ex:
+            self.logger.exception(ex)
+            return None
 
 
-    def find_group(self, module, class_name, init_parameter=None):
-        """
-        Retrieve Group entity, by module and class name from DB.
-        """
+    def get_algorithm_by_module(self, module_name, class_name):
         try:
-            if init_parameter is not None:
-                result = self.session.query(model.AlgorithmGroup).filter_by(module=module, classname=class_name,
-                                                                            init_parameter=init_parameter).one()
-            else:
-                result = self.session.query(model.AlgorithmGroup).filter_by(module=module, classname=class_name).one()
+            result = self.session.query(model.Algorithm).filter_by(module=module_name, classname=class_name).one()
+            result.algorithm_category
             return result
         except SQLAlchemyError:
             return None
 
 
-    def get_apliable_algo_groups(self, compatible_class_names, launch_categ):
+    def get_applicable_adapters(self, compatible_class_names, launch_categ):
         """
         Retrieve a list of algorithms in a given list of categories with a given dataType classes as required input.
         """
         try:
-            # Filter only groups with applicable algorithms for current DataType
-            groups_list = self.session.query(model.AlgorithmGroup).join(model.Algorithm
-                                        ).filter(model.AlgorithmGroup.removed == False
-                                        ).filter(model.AlgorithmGroup.fk_category.in_(launch_categ)
-                                        ).filter(model.Algorithm.required_datatype.in_(compatible_class_names)).all()
-        except SQLAlchemyError, excep:
-            self.logger.exception(excep)
-            groups_list = []
-
-        # Remove duplicate algorithms and populate attribute .children
-        result = []
-        for one_group in groups_list:
-            algos_list = [algo for algo in one_group.algorithms if algo.required_datatype in compatible_class_names]
-            if algos_list and one_group not in result:
-                one_group.children = algos_list
-                result.append(one_group)
-
-        return result
+            return self.session.query(model.Algorithm
+                                      ).filter_by(removed=False
+                                      ).filter(model.Algorithm.fk_category.in_(launch_categ)
+                                      ).filter(model.Algorithm.required_datatype.in_(compatible_class_names)
+                                      ).order_by(model.Algorithm.fk_category
+                                      ).order_by(model.Algorithm.group_name).all()
+        except SQLAlchemyError:
+            self.logger.exception("Could not retrieve applicable Adapters ...")
+            return []
 
 
-    def get_groups_by_categories(self, categories, filter_removed=True):
+    def get_adapters_from_categories(self, categories):
         """
-        Retrieve a list of algorithm groups in a given category.
+        Retrieve a list of stored adapters in the given categories.
         """
         try:
-            query = self.session.query(model.AlgorithmGroup).filter(model.AlgorithmGroup.fk_category.in_(categories))
-            if filter_removed:
-                query = query.filter(model.AlgorithmGroup.removed == False)
-            algos_list = query.order_by(model.AlgorithmGroup.displayname).all()
-
-        except SQLAlchemyError, excep:
-            self.logger.exception(excep)
-            algos_list = []
-
-        return algos_list
-
-
-    #
-    # ALGORITHM RELATED METHODS
-    #
-
-    def get_algorithm_by_id(self, algorithm_id):
-        """Retrieve ALGORITHM entity by Identifier."""
-        try:
-            result = self.session.query(model.Algorithm).filter_by(id=algorithm_id).one()
-            result.algo_group
-            result.algo_group.group_category
-        except SQLAlchemyError, ex:
-            self.logger.exception(ex)
-            result = None
-        return result
-
-
-    def get_algorithm_by_group(self, group_id, ident=''):
-        """Retrieve an algorithm for a given group_id and an identifier"""
-        try:
-            if ident == '':
-                algo = self.session.query(model.Algorithm).filter_by(fk_algo_group=group_id).one()
-            else:
-                algo = self.session.query(model.Algorithm).filter_by(fk_algo_group=group_id
-                                                                     ).filter_by(identifier=ident).one()
-            algo.algo_group
-            algo.algo_group.group_category
-            return algo
-        except NoResultFound, _:
-            return None
+            return self.session.query(model.Algorithm
+                                      ).filter_by(removed=False
+                                      ).filter(model.Algorithm.fk_category.in_(categories)
+                                      ).order_by(model.Algorithm.group_name
+                                      ).order_by(model.Algorithm.displayname).all()
+        except SQLAlchemyError:
+            self.logger.exception("Could not retrieve Adapters ...")
+            return []
 
 
     #
@@ -665,18 +618,14 @@ class OperationDAO(RootDAO):
             return {}
 
 
-    def get_operation_numbers(self, proj_id):
-        """
-        Count total number of operations started for current project.
-        """
-        stats = self.session.query(model.Operation.status, func.count(model.Operation.id)
-                                    ).filter_by(fk_launched_in=proj_id
-                                    ).group_by(model.Operation.status).all()
-        stats = dict(stats)
-        finished = stats.get(model.STATUS_FINISHED, 0)
-        started = stats.get(model.STATUS_STARTED, 0)
-        failed = stats.get(model.STATUS_ERROR, 0)
-        canceled = stats.get(model.STATUS_CANCELED, 0)
-        pending = stats.get(model.STATUS_PENDING, 0)
-
-        return finished, started, failed, canceled, pending
+    def get_figures_for_operation(self, operation_id):
+        """Retrieve Figure entities, resulted after executing an operation."""
+        try:
+            result = self.session.query(model.ResultFigure).filter_by(fk_from_operation=operation_id).all()
+            for figure in result:
+                figure.project
+                figure.operation
+            return result
+        except SQLAlchemyError, excep:
+            self.logger.exception(excep)
+            return None

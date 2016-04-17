@@ -82,7 +82,7 @@ class BurstServiceTest(BaseTestCase):
     flow_service = FlowService()
     operation_service = OperationService()
     workflow_service = WorkflowService()
-    sim_algorithm, sim_algo_group = flow_service.get_algorithm_by_module_and_class(SIMULATOR_MODULE, SIMULATOR_CLASS)
+    sim_algorithm = flow_service.get_algorithm_by_module_and_class(SIMULATOR_MODULE, SIMULATOR_CLASS)
     local_simulation_params = copy.deepcopy(SIMULATOR_PARAMETERS)
 
 
@@ -284,7 +284,7 @@ class BurstServiceTest(BaseTestCase):
         Test that given a dictionary of selected inputs as it would arrive from UI, only
         the selected simulator inputs are kept.
         """
-        simulator_input_tree = self.flow_service.prepare_adapter(self.test_project.id, self.sim_algo_group)[1]
+        simulator_input_tree = self.flow_service.prepare_adapter(self.test_project.id, self.sim_algorithm)
         child_parameter = ''
         checked_parameters = {simulator_input_tree[0][ABCAdapter.KEY_NAME]: {model.KEY_PARAMETER_CHECKED: True,
                                                                              model.KEY_SAVED_VALUE: 'new_value'},
@@ -462,9 +462,9 @@ class BurstServiceTest(BaseTestCase):
         """
         Test the launch burst method from burst service.
         """
-        first_step_algo, first_step_algo_group = self.flow_service.get_algorithm_by_module_and_class(
+        first_step_algo = self.flow_service.get_algorithm_by_module_and_class(
             'tvb.tests.framework.adapters.testadapter1', 'TestAdapter1')
-        _, adapter_interface = self.flow_service.prepare_adapter(self.test_project.id, first_step_algo_group)
+        adapter_interface = self.flow_service.prepare_adapter(self.test_project.id, first_step_algo)
         ui_submited_simulator_iface_replica = {}
         kwargs_replica = {}
         for entry in adapter_interface:
@@ -514,7 +514,7 @@ class BurstServiceTest(BaseTestCase):
         Test that burst is marked as error if invalid data is passed to the first step.
         """
         algo_id = self.flow_service.get_algorithm_by_module_and_class('tvb.tests.framework.adapters.testadapter1',
-                                                                      'TestAdapter1')[0].id
+                                                                      'TestAdapter1').id
         #Passing invalid kwargs to the 'simulator' component
         burst_config = self.burst_service.new_burst_configuration(self.test_project.id)
         kwargs_replica = {'test1_val1_invalid': '0', 'test1_val2': '0'}
@@ -531,7 +531,7 @@ class BurstServiceTest(BaseTestCase):
         Test that burst is marked as error if invalid data is passed to the first step.
         """
         algo_id = self.flow_service.get_algorithm_by_module_and_class('tvb.tests.framework.adapters.testadapter1',
-                                                                      'TestAdapter1')[0].id
+                                                                      'TestAdapter1').id
         #Adapter tries to do an int(test1_val1) so this should fail
         burst_config = self.burst_service.new_burst_configuration(self.test_project.id)
         kwargs_replica = {'test1_val1': 'asa', 'test1_val2': '0'}
@@ -547,7 +547,7 @@ class BurstServiceTest(BaseTestCase):
         Test that burst is marked as error if invalid data is passed to the first step.
         """
         algo_id = self.flow_service.get_algorithm_by_module_and_class('tvb.tests.framework.adapters.testadapter1',
-                                                                      'TestAdapter1')[0].id
+                                                                      'TestAdapter1').id
         #Adapter tries to do an int(test1_val1) and int(test1_val2) so this should be valid
         burst_config = self.burst_service.new_burst_configuration(self.test_project.id)
         kwargs_replica = {'test1_val1': '1', 'test1_val2': '0'}
@@ -603,7 +603,7 @@ class BurstServiceTest(BaseTestCase):
         burst_config = self.burst_service.new_burst_configuration(self.test_project.id)
 
         algo_id = self.flow_service.get_algorithm_by_module_and_class('tvb.tests.framework.adapters.testadapter1',
-                                                                      'TestAdapter1')[0].id
+                                                                      'TestAdapter1').id
         kwargs_replica = {'test1_val1': '[0, 1, 2]', 'test1_val2': '0', model.RANGE_PARAMETER_1: 'test1_val1'}
         test_portlet = dao.get_portlet_by_identifier(self.PORTLET_ID)
         tab_config = {test_portlet.id: [(0, 0), (0, 1), (1, 0)]}
@@ -632,7 +632,7 @@ class BurstServiceTest(BaseTestCase):
         burst_config = self.burst_service.new_burst_configuration(self.test_project.id)
         SIMULATOR_MODULE = 'tvb.tests.framework.adapters.testadapter1'
         SIMULATOR_CLASS = 'TestAdapter1'
-        algo_id = self.flow_service.get_algorithm_by_module_and_class(SIMULATOR_MODULE, SIMULATOR_CLASS)[0].id
+        algo_id = self.flow_service.get_algorithm_by_module_and_class(SIMULATOR_MODULE, SIMULATOR_CLASS).id
         kwargs_replica = {'test1_val1': '0', 'test1_val2': '0'}
         test_portlet = dao.get_portlet_by_identifier(self.PORTLET_ID)
         # Add test_portlet to positions (0,0), (0,1) and (1,0)
@@ -732,12 +732,12 @@ class BurstServiceTest(BaseTestCase):
 
         stored_dt = datatypes_factory.DatatypesFactory()._store_datatype(Datatype1())
         first_step_algorithm = self.flow_service.get_algorithm_by_module_and_class(
-            "tvb.tests.framework.adapters.testadapter1", "TestAdapterDatatypeInput")[0]
+            "tvb.tests.framework.adapters.testadapter1", "TestAdapterDatatypeInput")
         metadata = {DataTypeMetaData.KEY_BURST: burst_config.id}
         kwargs = {"test_dt_input": stored_dt.gid, 'test_non_dt_input': '0'}
         operations, group = self.operation_service.prepare_operations(self.test_user.id, self.test_project.id,
                                                                       first_step_algorithm,
-                                                                      first_step_algorithm.algo_group.group_category,
+                                                                      first_step_algorithm.algorithm_category,
                                                                       metadata, **kwargs)
         view_step = TestFactory.create_workflow_step("tvb.tests.framework.adapters.testadapter2", "TestAdapter2",
                                                      {"test2": 2}, {}, 0, 0, 0, 0, is_view_step=True)
@@ -817,7 +817,7 @@ class BurstServiceTest(BaseTestCase):
         """
         meta = {DataTypeMetaData.KEY_SUBJECT: "John Doe", DataTypeMetaData.KEY_STATE: "RAW_DATA"}
 
-        self.operation = model.Operation(self.test_user.id, self.test_project.id, self.sim_algo_group.id,
+        self.operation = model.Operation(self.test_user.id, self.test_project.id, self.sim_algorithm.id,
                                          json.dumps(''), meta=json.dumps(meta), status=model.STATUS_STARTED)
         self.operation = dao.store_entity(self.operation)
         storage_path = FilesHelper().get_project_folder(self.test_project, str(self.operation.id))

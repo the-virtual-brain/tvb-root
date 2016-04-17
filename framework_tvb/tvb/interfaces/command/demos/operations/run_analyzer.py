@@ -66,7 +66,7 @@ if __name__ == "__main__":
     project = dao.get_project_by_id(1)
 
     ## Prepare the Adapter
-    adapter_instance = ABCAdapter.prepare_adapter(FourierAdapter)
+    adapter_instance = ABCAdapter.build_adapter_from_class(FourierAdapter)
 
     ## Prepare the input algorithms as if they were coming from web UI submit:
     time_series = dao.get_generic_entity(TimeSeriesRegion, DataTypeMetaData.DEFAULT_SUBJECT, "subject")

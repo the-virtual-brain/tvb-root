@@ -138,12 +138,8 @@ class OperationService:
             self._handle_exception(excep, temp_files, "Could not launch operation: invalid input files!")
 
         ### Store Operation entity. 
-        algo_group = adapter_instance.algorithm_group
-        algo_category = dao.get_category_by_id(algo_group.fk_category)
-        if algo_group.algorithm_param_name in kwargs:
-            algo = dao.get_algorithm_by_group(algo_group.id, kwargs[algo_group.algorithm_param_name])
-        else:
-            algo = dao.get_algorithm_by_group(algo_group.id)
+        algo = adapter_instance.stored_adapter
+        algo_category = dao.get_category_by_id(algo.fk_category)
 
         operations = self.prepare_operations(current_user.id, project_id, algo, algo_category,
                                              {}, visible, **kwargs)[0]
@@ -196,12 +192,12 @@ class OperationService:
         return str(values).strip()
     
     
-    def group_operation_launch(self, user_id, project_id, algo_group_id, category_id, **kwargs):
+    def group_operation_launch(self, user_id, project_id, algorithm_id, category_id, **kwargs):
         """
         Create and prepare the launch of a group of operations.
         """
         category = dao.get_category_by_id(category_id)
-        algorithm = dao.get_algorithm_by_group(algo_group_id)
+        algorithm = dao.get_algorithm_by_id(algorithm_id)
         operations, _ = self.prepare_operations(user_id, project_id, algorithm, category, {}, **kwargs)
         for operation in operations:
             self.launch_operation(operation.id, True)
@@ -271,7 +267,7 @@ class OperationService:
             metadata = {DataTypeMetaData.KEY_BURST: burst_id}
             algo_category = dao.get_algorithm_by_id(step.fk_algorithm)
             if algo_category is not None:
-                algo_category = algo_category.algo_group.group_category
+                algo_category = algo_category.algorithm_category
 
             for wf_idx, workflow in enumerate(workflows):
                 cloned_w_step = step.clone()
@@ -378,8 +374,7 @@ class OperationService:
             operation = dao.get_operation_by_id(operation_id)
             if adapter_instance is None:
                 algorithm = operation.algorithm
-                group = dao.get_algo_group_by_id(algorithm.fk_algo_group)
-                adapter_instance = ABCAdapter.build_adapter(group)
+                adapter_instance = ABCAdapter.build_adapter(algorithm)
             parsed_params = parse_json_parameters(operation.parameters)
 
             if send_to_cluster:

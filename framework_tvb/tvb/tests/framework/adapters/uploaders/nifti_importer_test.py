@@ -34,6 +34,7 @@
 import os
 import numpy
 import unittest
+from tvb.tests.framework.core.test_factory import TestFactory
 import tvb_data.nifti as demo_data
 from tvb.tests.framework.core.base_testcase import TransactionalTestCase
 from tvb.tests.framework.datatypes.datatypes_factory import DatatypesFactory
@@ -82,8 +83,7 @@ class NIFTIImporterTest(TransactionalTestCase):
         """
 
         ### Retrieve Adapter instance 
-        group = dao.find_group('tvb.adapters.uploaders.nifti_importer', 'NIFTIImporter')
-        importer = ABCAdapter.build_adapter(group)
+        importer = TestFactory.create_adapter('tvb.adapters.uploaders.nifti_importer', 'NIFTIImporter')
         args = {'data_file': import_file_path, DataTypeMetaData.KEY_SUBJECT: "bla bla",
                 'apply_corrections': True, 'connectivity': connectivity}
 

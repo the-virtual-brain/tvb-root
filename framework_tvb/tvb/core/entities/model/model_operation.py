@@ -102,45 +102,55 @@ class AlgorithmCategory(Base):
 
 
 
-class AlgorithmGroup(Base):
-    """
-    Group = Simulation|Analysis|Visualization|Upload adapter group reference.
-    Store module, className - to rebuild a Python import string dynamically.
-    Store algorithm_param_name and - to launch an algorithm automatically. 
-    """
-    __tablename__ = 'ALGORITHM_GROUPS'
+class AlgorithmTransientGroup(object):
+
+    def __init__(self, name, description):
+        self.name = name
+        self.description = description
+        self.children = []
+
+
+
+class Algorithm(Base):
+
+    __tablename__ = 'ALGORITHMS'
 
     id = Column(Integer, primary_key=True)
     module = Column(String)
     classname = Column(String)
+
     fk_category = Column(Integer, ForeignKey('ALGORITHM_CATEGORIES.id', ondelete="CASCADE"))
-    algorithm_param_name = Column(String)
+    group_name = Column(String)
+    group_description = Column(String)
+
     displayname = Column(String)
     description = Column(String)
     subsection_name = Column(String)
-    init_parameter = Column(String)
+
+    required_datatype = Column(String)
+    datatype_filter = Column(String)
+    parameter_name = Column(String)
+    outputlist = Column(String)
+
     last_introspection_check = Column(DateTime)
     removed = Column(Boolean, default=False)
 
-    group_category = relationship(AlgorithmCategory, backref=backref('ALGORITHM_GROUPS',
-                                                                     order_by=id, cascade="delete, all"))
-    algorithms = relationship('Algorithm', cascade="delete, all")
+    algorithm_category = relationship(AlgorithmCategory,
+                                      backref=backref('ALGORITHMS', order_by=id, cascade="delete, all"))
 
 
-    def __init__(self, module, classname, category_key, algorithm_param_name=None, init_parameter=None,
-                 last_introspection_check=None, description=None, subsection_name=None):
+    def __init__(self, module, classname, category_key, group_name=None, group_description=None,
+                 display_name='', description="", subsection_name=None, last_introspection_check=None):
+
         self.module = module
         self.classname = classname
         self.fk_category = category_key
-        self.algorithm_param_name = algorithm_param_name
-        self.init_parameter = init_parameter
+        self.group_name = group_name
+        self.group_description = group_description
+        self.displayname = display_name
+        self.description = description
         self.last_introspection_check = last_introspection_check
         self.removed = False
-
-        if description is None:
-            self.description = ""
-        else:
-            self.description = description
 
         if subsection_name is not None:
             self.subsection_name = subsection_name
@@ -149,50 +159,9 @@ class AlgorithmGroup(Base):
 
 
     def __repr__(self):
-        return "<Group('%d', '%s', '%s', '%d', '%s', '%s', '%s', '%s', '%d')>" % (
+        return "<Algorithm('%d', '%s', '%s', '%d', '%s', '%s', '%s', '%s', '%d')>" % (
             self.id, self.module, self.classname, self.fk_category, self.displayname,
-            self.subsection_name, self.algorithm_param_name, self.init_parameter, self.removed)
-
-
-
-class Algorithm(Base):
-    """
-    An algorithm will be part of a group. The module and ClassName are those of it's corresponding
-    group. It will thus have a groupId, an Identifier(none if single algorithm in module or unique
-    per algorithm is more than one algorithm launched from same group) additionally it will hold
-    the required DataType input, the input parameter name and the outputList.
-    """
-    __tablename__ = 'ALGORITHMS'
-
-    id = Column(Integer, primary_key=True)
-    fk_algo_group = Column(Integer, ForeignKey('ALGORITHM_GROUPS.id', ondelete="CASCADE"))
-    identifier = Column(String)
-    name = Column(String)
-    required_datatype = Column(String)
-    datatype_filter = Column(String)
-    parameter_name = Column(String)
-    outputlist = Column(String)
-    description = Column(String)
-
-    algo_group = relationship(AlgorithmGroup, backref=backref('ALGORITHMS', order_by=id, cascade="delete, all"))
-
-
-    def __init__(self, group_id, identifier, name='', req_data='', param_name='',
-                 output='', datatype_filter='', description=''):
-        self.fk_algo_group = group_id
-        self.identifier = identifier
-        self.name = name
-        self.required_datatype = req_data
-        self.parameter_name = param_name
-        self.outputlist = output
-        self.datatype_filter = datatype_filter
-        self.description = description
-
-
-    def __repr__(self):
-        return "<Group('%d', '%s', '%s', %s', '%s', '%s', '%s', '%s')>" % (
-            self.fk_algo_group, self.identifier, self.name, self.required_datatype,
-            self.parameter_name, self.outputlist, self.datatype_filter, self.description)
+            self.subsection_name, self.group_name, self.group_description, self.removed)
 
 
 
@@ -383,10 +352,8 @@ class Operation(Base, Exportable):
                                                                 'project', 'fk_from_algo', 'algorithm',
                                                                 'fk_operation_group', 'operation_group'])
         base_dict['fk_launched_in'] = self.project.gid
-        base_dict['fk_from_algo'] = json.dumps(dict(module=self.algorithm.algo_group.module,
-                                                    classname=self.algorithm.algo_group.classname,
-                                                    init_parameter=self.algorithm.algo_group.init_parameter,
-                                                    identifier=self.algorithm.identifier))
+        base_dict['fk_from_algo'] = json.dumps(dict(module=self.algorithm.module,
+                                                    classname=self.algorithm.classname))
         # We keep the information for the operation_group in this place (on each operation)
         #because we don't have an XML file for the operation_group entity.
         # We don't want to keep the information about the operation groups into the project XML file
@@ -413,14 +380,9 @@ class Operation(Base, Exportable):
 
         # Find parent Algorithm
         source_algorithm = json.loads(dictionary['fk_from_algo'])
-        init_parameter = None
-        if 'init_parameter' in source_algorithm:
-            init_parameter = source_algorithm['init_parameter']
+        algorithm = dao.get_algorithm_by_module(source_algorithm['module'], source_algorithm['classname'])
 
-        algo_group = dao.find_group(source_algorithm['module'], source_algorithm['classname'], init_parameter)
-
-        if algo_group:
-            algorithm = dao.get_algorithm_by_group(algo_group.id, source_algorithm['identifier'])
+        if algorithm:
             self.algorithm = algorithm
             self.fk_from_algo = algorithm.id
         else:
@@ -429,8 +391,7 @@ class Operation(Base, Exportable):
             LOG.warning("Algorithm group %s was not found in DB. Most likely cause is that archive was exported "
                         "from a different TVB version. Using fallback TVB_Importer as source of "
                         "this operation." % (source_algorithm['module'],))
-            algo_group = dao.find_group(TVB_IMPORTER_MODULE, TVB_IMPORTER_CLASS)
-            algorithm = dao.get_algorithm_by_group(algo_group.id)
+            algorithm = dao.get_algorithm_by_module(TVB_IMPORTER_MODULE, TVB_IMPORTER_CLASS)
             self.fk_from_algo = algorithm.id
             dictionary['additional_info'] = ("The original parameters for this operation were: \nAdapter: %s "
                                              "\nParameters %s" % (source_algorithm['module'] + '.' +

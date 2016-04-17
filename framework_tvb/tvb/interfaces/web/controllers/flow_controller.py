@@ -81,30 +81,32 @@ class FlowController(BaseController):
     @expose_page
     @settings
     @context_selected
-    def step(self, step_key=None):
+    def step_analyzers(self):
         """
         Choose exact action/adapter for current step.
         """
-        category = self.flow_service.get_category_by_id(step_key)
-        if category is None:
-            message = 'Inconsistent Step Name! Please excuse the wrong link!'
-            common.set_warning_message(message)
-            self.logger.warning(message + '- Wrong step:' + str(step_key))
-            raise cherrypy.HTTPRedirect('/tvb')
+        try:
+            analyze_category, groups = self.flow_service.get_analyze_groups()
+            step_name = analyze_category.displayname.lower()
+            template_specification = dict(mainContent="header_menu", section_name=step_name, controlPage=None,
+                                          title="Select an analyzer", displayControl=False)
+            adapters_list = []
+            for adapter_group in groups:
+                #TODO when more than one child '/flow/prepare_adapters_group/' + adapter_group.name
+                adapter_link = self.get_url_adapter(analyze_category.id, adapter_group.children[0].id)
+                adapters_list.append({common.KEY_TITLE: adapter_group.name,
+                                      'link': adapter_link,
+                                      'description': adapter_group.description,
+                                      'subsection': adapter_group.children[0].subsection_name})
+            self.analyze_adapters = adapters_list
+            template_specification[common.KEY_SUBMENU_LIST] = adapters_list
+            return self.fill_default_attributes(template_specification)
 
-        step_name = category.displayname.lower()
-        template_specification = dict(mainContent="header_menu", section_name=step_name, controlPage=None,
-                                      title="Select an algorithm", displayControl=False)
-        adapters_list = []
-        for algo_group in self.flow_service.get_groups_for_categories([category]):
-            adapter_link = self.get_url_adapter(step_key, algo_group.id)
-            adapters_list.append({common.KEY_TITLE: algo_group.displayname,
-                                  'link': adapter_link,
-                                  'description': algo_group.description,
-                                  'subsection': algo_group.subsection_name})
-        self.analyze_adapters = adapters_list
-        template_specification[common.KEY_SUBMENU_LIST] = adapters_list
-        return self.fill_default_attributes(template_specification)
+        except ValueError:
+            message = 'Could not load analyzers!'
+            common.set_warning_message(message)
+            self.logger.warning(message)
+            raise cherrypy.HTTPRedirect('/tvb')
 
 
     @expose_page
@@ -140,7 +142,7 @@ class FlowController(BaseController):
     @expose_page
     @settings
     @context_selected
-    def prepare_group_launch(self, group_gid, step_key, algo_group_key, **data):
+    def prepare_group_launch(self, group_gid, step_key, algorithm_id, **data):
         """
         Receives as input a group gid and an algorithm given by category and id, along
         with data that gives the name of the required input parameter for the algorithm.
@@ -154,7 +156,7 @@ class FlowController(BaseController):
         data[RANGE_PARAMETER_1] = range_param_name
         data[range_param_name] = ','.join(dt.gid for dt in datatypes)
         OperationService().group_operation_launch(common.get_logged_user().id, common.get_current_project().id,
-                                                  int(algo_group_key), int(step_key), **data)
+                                                  int(algorithm_id), int(step_key), **data)
         redirect_url = self._compute_back_link('operations', common.get_current_project())
         raise cherrypy.HTTPRedirect(redirect_url)
     
@@ -168,10 +170,10 @@ class FlowController(BaseController):
         'data' are arguments for POST
         """
         project = common.get_current_project()
-        algo_group = self.flow_service.get_algo_group_by_identifier(adapter_key)
+        algorithm = self.flow_service.get_algorithm_by_identifier(adapter_key)
         back_page_link = self._compute_back_link(back_page, project)
 
-        if algo_group is None:
+        if algorithm is None:
             raise cherrypy.HTTPRedirect("/tvb?error=True")
 
         if cherrypy.request.method == 'POST' and cancel:
@@ -181,16 +183,16 @@ class FlowController(BaseController):
         is_burst = back_page not in ['operations', 'data']
         if cherrypy.request.method == 'POST':
             data[common.KEY_ADAPTER] = adapter_key
-            template_specification = self.execute_post(project.id, submit_link, step_key, algo_group, **data)
-            self._populate_section(algo_group, template_specification, is_burst)
+            template_specification = self.execute_post(project.id, submit_link, step_key, algorithm, **data)
+            self._populate_section(algorithm, template_specification, is_burst)
         else:
             if (('Referer' not in cherrypy.request.headers or
                 ('Referer' in cherrypy.request.headers and 'step' not in cherrypy.request.headers['Referer']))
-                    and 'View' in algo_group.group_category.displayname):
+                    and 'View' in algorithm.algorithm_category.displayname):
                 # Avoid reset in case of Visualizers, as a supplementary GET
                 # might be enforced by MPLH5 on FF.
                 not_reset = True
-            template_specification = self.get_template_for_adapter(project.id, step_key, algo_group,
+            template_specification = self.get_template_for_adapter(project.id, step_key, algorithm,
                                                                    submit_link, not not_reset, is_burst=is_burst)
         if template_specification is None:
             raise cherrypy.HTTPRedirect('/tvb')
@@ -208,7 +210,7 @@ class FlowController(BaseController):
 
         template_specification[common.KEY_ADAPTER] = adapter_key
         template_specification[ABCDisplayer.KEY_IS_ADAPTER] = True
-        self.fill_default_attributes(template_specification, algo_group.displayname)
+        self.fill_default_attributes(template_specification, algorithm.displayname)
         return template_specification
 
 
@@ -425,10 +427,10 @@ class FlowController(BaseController):
         return None
 
 
-    def execute_post(self, project_id, submit_url, step_key, algo_group, **data):
+    def execute_post(self, project_id, submit_url, step_key, algorithm, **data):
         """ Execute HTTP POST on a generic step."""
         errors = None
-        adapter_instance = self.flow_service.build_adapter_instance(algo_group)
+        adapter_instance = ABCAdapter.build_adapter(algorithm)
 
         try:
             result = self.flow_service.fire_operation(adapter_instance, common.get_logged_user(), project_id, **data)
@@ -456,7 +458,7 @@ class FlowController(BaseController):
 
         previous_step = self.context.get_current_substep()
         should_reset = previous_step is None or data.get(common.KEY_ADAPTER) != previous_step
-        template_specification = self.get_template_for_adapter(project_id, step_key, algo_group,
+        template_specification = self.get_template_for_adapter(project_id, step_key, algorithm,
                                                                submit_url, should_reset)
         if (errors is not None) and (template_specification is not None):
             template_specification[common.KEY_ERRORS] = errors
@@ -464,7 +466,7 @@ class FlowController(BaseController):
         return template_specification
 
 
-    def get_template_for_adapter(self, project_id, step_key, algo_group, submit_url, session_reset=True, is_burst=True):
+    def get_template_for_adapter(self, project_id, step_key, stored_adapter, submit_url, session_reset=True, is_burst=True):
         """ Get Input HTML Interface template or a given adapter """
         try:
             if session_reset:
@@ -474,11 +476,11 @@ class FlowController(BaseController):
             # Cache some values in session, for performance
             previous_tree = self.context.get_current_input_tree()
             previous_sub_step = self.context.get_current_substep()
-            if not session_reset and previous_tree is not None and previous_sub_step == algo_group.id:
+            if not session_reset and previous_tree is not None and previous_sub_step == stored_adapter.id:
                 adapter_interface = previous_tree
             else:
-                group, adapter_interface = self.flow_service.prepare_adapter(project_id, algo_group)
-                self.context.add_adapter_to_session(algo_group, adapter_interface)
+                adapter_interface = self.flow_service.prepare_adapter(project_id, stored_adapter)
+                self.context.add_adapter_to_session(stored_adapter, adapter_interface)
 
             category = self.flow_service.get_category_by_id(step_key)
             title = "Fill parameters for step " + category.displayname.lower()
@@ -491,7 +493,7 @@ class FlowController(BaseController):
                 adapter_interface = InputTreeManager.fill_defaults(adapter_interface, current_defaults)
 
             template_specification = dict(submitLink=submit_url, inputList=adapter_interface, title=title)
-            self._populate_section(algo_group, template_specification, is_burst)
+            self._populate_section(stored_adapter, template_specification, is_burst)
             return template_specification
         except OperationException, oexc:
             self.logger.error("Inconsistent Adapter")
@@ -565,46 +567,46 @@ class FlowController(BaseController):
 
 
     @expose_fragment("flow/genericAdapterFormFields")
-    def get_simple_adapter_interface(self, algo_group_id, parent_div='', is_uploader=False):
+    def get_simple_adapter_interface(self, algorithm_id, parent_div='', is_uploader=False):
         """
         AJAX exposed method. Will return only the interface for a adapter, to
         be used when tabs are needed.
         """
         curent_project = common.get_current_project()
         is_uploader = string2bool(is_uploader)
-        template_specification = self.get_adapter_template(curent_project.id, algo_group_id, is_uploader)
+        template_specification = self.get_adapter_template(curent_project.id, algorithm_id, is_uploader)
         template_specification[common.KEY_PARENT_DIV] = parent_div
         return self.fill_default_attributes(template_specification)
 
 
     @expose_fragment("flow/full_adapter_interface")
-    def getadapterinterface(self, project_id, algo_group_id, back_page=None):
+    def getadapterinterface(self, project_id, algorithm_id, back_page=None):
         """
         AJAX exposed method. Will return only a piece of a page, 
         to be integrated as part in another page.
         """
-        template_specification = self.get_adapter_template(project_id, algo_group_id, False, back_page)
+        template_specification = self.get_adapter_template(project_id, algorithm_id, False, back_page)
         template_specification["isCallout"] = True
         return self.fill_default_attributes(template_specification)
 
 
-    def get_adapter_template(self, project_id, algo_group_id, is_upload=False, back_page=None):
+    def get_adapter_template(self, project_id, algorithm_id, is_upload=False, back_page=None):
         """
         Get the template for an adapter based on the algo group id.
         """
-        if not (project_id and int(project_id) and (algo_group_id is not None) and int(algo_group_id)):
+        if not (project_id and int(project_id) and (algorithm_id is not None) and int(algorithm_id)):
             return ""
 
-        algo_group = self.flow_service.get_algo_group_by_identifier(algo_group_id)
+        algorithm = self.flow_service.get_algorithm_by_identifier(algorithm_id)
         if is_upload:
-            submit_link = "/project/launchloader/" + str(project_id) + "/" + str(algo_group_id)
+            submit_link = "/project/launchloader/" + str(project_id) + "/" + str(algorithm_id)
         else:
-            submit_link = self.get_url_adapter(algo_group.fk_category, algo_group.id, back_page)
+            submit_link = self.get_url_adapter(algorithm.fk_category, algorithm.id, back_page)
 
         current_step = self.context.get_current_substep()
-        if current_step is None or str(current_step) != str(algo_group_id):
+        if current_step is None or str(current_step) != str(algorithm_id):
             self.context.clean_from_session()
-        template_specification = self.get_template_for_adapter(project_id, algo_group.fk_category, algo_group,
+        template_specification = self.get_template_for_adapter(project_id, algorithm.fk_category, algorithm,
                                                                submit_link, is_upload)
         if template_specification is None:
             return ""
@@ -620,9 +622,9 @@ class FlowController(BaseController):
         with input data already selected."""
         operation = self.flow_service.load_operation(operation_id)
         data = parse_json_parameters(operation.parameters)
-        self.context.add_adapter_to_session(operation.algorithm.algo_group, None, data)
-        category_id = operation.algorithm.algo_group.fk_category
-        algo_id = operation.algorithm.fk_algo_group
+        self.context.add_adapter_to_session(operation.algorithm, None, data)
+        category_id = operation.algorithm.fk_category
+        algo_id = operation.fk_from_algo
         raise cherrypy.HTTPRedirect("/flow/" + str(category_id) + "/" + str(algo_id) + "?not_reset=True")
 
     

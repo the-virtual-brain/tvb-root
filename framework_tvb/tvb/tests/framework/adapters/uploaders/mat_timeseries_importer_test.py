@@ -39,10 +39,8 @@ import os
 import tvb_data
 from tvb.datatypes.connectivity import Connectivity
 from tvb.datatypes.time_series import TimeSeriesRegion
-from tvb.core.entities.storage import dao
 from tvb.core.entities.file.files_helper import FilesHelper
 from tvb.core.services.flow_service import FlowService
-from tvb.core.adapters.abcadapter import ABCAdapter
 from tvb.tests.framework.core.test_factory import TestFactory
 from tvb.tests.framework.datatypes.datatypes_factory import DatatypesFactory
 from tvb.tests.framework.core.base_testcase import TransactionalTestCase
@@ -66,8 +64,8 @@ class MatTimeSeriesImporterTest(TransactionalTestCase):
 
 
     def _import_connectivity(self):
-        group = dao.find_group('tvb.adapters.uploaders.zip_connectivity_importer', 'ZIPConnectivityImporter')
-        importer = ABCAdapter.build_adapter(group)
+        importer = TestFactory.create_adapter('tvb.adapters.uploaders.zip_connectivity_importer',
+                                              'ZIPConnectivityImporter')
 
         ### Launch Operation
         FlowService().fire_operation(importer, self.test_user, self.test_project.id,
@@ -78,8 +76,7 @@ class MatTimeSeriesImporterTest(TransactionalTestCase):
 
     def test_import_bold(self):
         ### Retrieve Adapter instance
-        group = dao.find_group('tvb.adapters.uploaders.mat_timeseries_importer', 'MatTimeSeriesImporter')
-        importer = ABCAdapter.build_adapter(group)
+        importer = TestFactory.create_adapter('tvb.adapters.uploaders.mat_timeseries_importer', 'MatTimeSeriesImporter')
 
         args = dict(data_file=self.bold_path, dataset_name='QL_20120824_DK_BOLD_timecourse', structure_path='',
                     transpose=False, slice=None, sampling_rate=1000, start_time=0,

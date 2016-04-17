@@ -1,9 +1,0 @@
-<?xml version="1.0"?>
-
-<tvb xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-     xsi:noNamespaceSchemaLocation="../../../../core/schema/tvb.xsd">
-
-    <algorithm_group name="simple" type="tvb.tests.framework.adapters.testgroupadapter.TestGroupAdapter"
-                     uiName="Simple Python Analyzers" label="Analysis Algorithm:">
-    </algorithm_group>
-</tvb>

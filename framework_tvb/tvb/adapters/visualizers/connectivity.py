@@ -188,10 +188,8 @@ class ConnectivityViewer(ABCDisplayer):
         else:
             url_vertices, url_normals, url_triangles = [], [], []
 
-        algo, group = FlowService().get_algorithm_by_module_and_class(CONNECTIVITY_CREATOR_MODULE,
-                                                                      CONNECTIVITY_CREATOR_CLASS)
-
-        submit_url = '/flow/%d/%d' % (group.fk_category, group.id)
+        algo = FlowService().get_algorithm_by_module_and_class(CONNECTIVITY_CREATOR_MODULE, CONNECTIVITY_CREATOR_CLASS)
+        submit_url = '/flow/%d/%d' % (algo.fk_category, algo.id)
         global_pages = dict(controlPage="connectivity/top_right_controls")
 
         minimum, maximum, minimum_non_zero = self._compute_matrix_extrema(input_data.ordered_weights)
@@ -209,7 +207,6 @@ class ConnectivityViewer(ABCDisplayer):
                              urlVertices=json.dumps(url_vertices), urlTriangles=json.dumps(url_triangles),
                              urlNormals=json.dumps(url_normals),
                              connectivity_entity=input_data, surface_entity=surface_data,
-                             algo_group=self.get_algo_group(),
                              base_selection=input_data.saved_selection_labels,
                              hemisphereOrderUrl=path_hemisphere_order_indices)
         global_params.update(self.build_template_params_for_subselectable_datatype(input_data))

@@ -181,8 +181,7 @@ class ExportManager:
             return
 
         # Make a import operation which will contain links to other projects
-        alg_group = dao.find_group(TVB_IMPORTER_MODULE, TVB_IMPORTER_CLASS)
-        algo = dao.get_algorithm_by_group(alg_group.id)
+        algo = dao.get_algorithm_by_module(TVB_IMPORTER_MODULE, TVB_IMPORTER_CLASS)
         op = model.Operation(None, project.id, algo.id, '')
         op.project = project
         op.algorithm = algo

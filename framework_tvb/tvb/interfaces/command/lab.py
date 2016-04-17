@@ -75,7 +75,7 @@ def new_project(name):
 
 def import_conn_zip(project_id, zip_path):
     project = dao.get_project_by_id(project_id)
-    group = dao.find_group('tvb.adapters.uploaders.zip_connectivity_importer', 'ZIPConnectivityImporter')
+    group = dao.get_algorithm_by_module('tvb.adapters.uploaders.zip_connectivity_importer', 'ZIPConnectivityImporter')
     importer = ABCAdapter.build_adapter(group)
     ### Launch Operation
     FlowService().fire_operation(importer, project.administrator, project_id, uploaded=zip_path)
@@ -86,12 +86,12 @@ def fire_simulation(project_id=1, **kwargs):
     flow_service = FlowService()
 
     # below the holy procedure to launch with the correct parameters taken from the defaults
-    _, algo_group = flow_service.get_algorithm_by_module_and_class(SIMULATOR_MODULE, SIMULATOR_CLASS)
-    simulator_adapter = flow_service.build_adapter_instance(algo_group)
+    stored_adapter = flow_service.get_algorithm_by_module_and_class(SIMULATOR_MODULE, SIMULATOR_CLASS)
+    simulator_adapter = ABCAdapter.build_adapter(stored_adapter)
     flatten_interface = simulator_adapter.flaten_input_interface()
     itree_mngr = flow_service.input_tree_manager
     prepared_flatten_interface = itree_mngr.fill_input_tree_with_options(flatten_interface, project.id,
-                                                                         algo_group.fk_category)
+                                                                         stored_adapter.fk_category)
     launch_args = {}
     for entry in prepared_flatten_interface:
         value = entry['default']

@@ -53,13 +53,13 @@ class WorkflowDAO(RootDAO):
         :return tuple (list of entities to get invalidated) (list of entities to be removed)
         """
         try:
-            algo_groups = self.session.query(model.AlgorithmGroup
-                                        ).filter(model.AlgorithmGroup.last_introspection_check < reference_time).all()
+            stored_adapters = self.session.query(model.Algorithm
+                                        ).filter(model.Algorithm.last_introspection_check < reference_time).all()
             categories = self.session.query(model.AlgorithmCategory
                                         ).filter(model.AlgorithmCategory.last_introspection_check<reference_time).all()
             portlets = self.session.query(model.Portlet
                                         ).filter(model.Portlet.last_introspection_check < reference_time).all()
-            result = algo_groups + categories, portlets
+            result = stored_adapters + categories, portlets
         except SQLAlchemyError, ex:
             self.logger.exception(ex)
             result = [], []

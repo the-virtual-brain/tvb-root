@@ -286,7 +286,7 @@ class DatatypeDAO(RootDAO):
             ## First Query DT, DT_gr, Lk_DT and Lk_DT_gr
             query = self.session.query(model.DataType
                         ).join((model.Operation, model.Operation.id == model.DataType.fk_from_operation)
-                        ).join(model.Algorithm).join(model.AlgorithmGroup).join(model.AlgorithmCategory
+                        ).join(model.Algorithm).join(model.AlgorithmCategory
                         ).outerjoin((model.Links, and_(model.Links.fk_from_datatype == model.DataType.id,
                                                        model.Links.fk_to_project == project_id))
                         ).outerjoin(model.BurstConfiguration,
@@ -309,7 +309,7 @@ class DatatypeDAO(RootDAO):
             links = aliased(model.Links)
             query2 = self.session.query(model.DataType
                         ).join((model.Operation, model.Operation.id == model.DataType.fk_from_operation)
-                        ).join(model.Algorithm).join(model.AlgorithmGroup).join(model.AlgorithmCategory
+                        ).join(model.Algorithm).join(model.AlgorithmCategory
                         ).join((model.Links, and_(model.Links.fk_from_datatype == model.DataType.id,
                                                   model.Links.fk_to_project == project_id))
                         ).outerjoin(links, and_(links.fk_from_datatype == model.DataType.fk_datatype_group,
@@ -332,8 +332,7 @@ class DatatypeDAO(RootDAO):
             for dt in resulted_data:
                 dt._parent_burst
                 dt.parent_operation.algorithm
-                dt.parent_operation.algorithm.algo_group
-                dt.parent_operation.algorithm.algo_group.group_category
+                dt.parent_operation.algorithm.algorithm_category
                 dt.parent_operation.project
                 dt.parent_operation.operation_group
                 dt.parent_operation.user
@@ -361,8 +360,7 @@ class DatatypeDAO(RootDAO):
                    model.DataType.user_tag_5.ilike('%' + filter_string + '%'),
                    model.Operation.user_group.ilike('%' + filter_string + '%'),
                    model.AlgorithmCategory.displayname.ilike('%' + filter_string + '%'),
-                   model.AlgorithmGroup.displayname.ilike('%' + filter_string + '%'),
-                   model.Algorithm.name.ilike('%' + filter_string + '%'),
+                   model.Algorithm.displayname.ilike('%' + filter_string + '%'),
                    model.BurstConfiguration.name.ilike('%' + filter_string + '%'))
 
 
@@ -396,7 +394,7 @@ class DatatypeDAO(RootDAO):
             result_dt.parent_operation.project
             if load_lazy:
                 result_dt.parent_operation.user
-                result_dt.parent_operation.algorithm.algo_group.group_category
+                result_dt.parent_operation.algorithm.algorithm_category
                 result_dt.parent_operation.operation_group
                 result_dt._parent_burst
 

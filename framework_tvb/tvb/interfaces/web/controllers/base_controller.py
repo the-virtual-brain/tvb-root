@@ -65,13 +65,12 @@ class BaseController(object):
         self.user_service = UserService()
         self.flow_service = FlowService()
 
-        analyze_category = self.flow_service.get_launchable_non_viewers()
-        self.analyze_category_link = '/flow/step/' + str(analyze_category.id)
+        self.analyze_category_link = '/flow/step_analyzers'
         self.analyze_adapters = None
 
         self.connectivity_tab_link = '/flow/step_connectivity'
         view_category = self.flow_service.get_visualisers_category()
-        conn_id = self.flow_service.get_algorithm_by_module_and_class(CONNECTIVITY_MODULE, CONNECTIVITY_CLASS)[1].id
+        conn_id = self.flow_service.get_algorithm_by_module_and_class(CONNECTIVITY_MODULE, CONNECTIVITY_CLASS).id
         connectivity_link = self.get_url_adapter(view_category.id, conn_id)
 
         self.connectivity_submenu = [dict(title="Large Scale Connectivity", subsection="connectivity",
@@ -225,38 +224,38 @@ class BaseController(object):
         return template_dictionary
 
 
-    def _populate_section(self, algo_group, result_template, is_burst=True):
+    def _populate_section(self, algorithm, result_template, is_burst=True):
         """
         Populate Section and Sub-Section fields from current Algorithm-Group.
         """
-        if algo_group.module == CONNECTIVITY_MODULE:
+        if algorithm.module == CONNECTIVITY_MODULE:
             result_template[common.KEY_SECTION] = 'connectivity'
             result_template[common.KEY_SUB_SECTION] = 'connectivity'
             result_template[common.KEY_SUBMENU_LIST] = self.connectivity_submenu
 
-        elif algo_group.group_category.display:
+        elif algorithm.algorithm_category.display:
             ## We are having a visualizer:
             if is_burst:
                 result_template[common.KEY_SECTION] = 'burst'
                 result_template[common.KEY_SUBMENU_LIST] = self.burst_submenu
             else:
                 result_template[common.KEY_SECTION] = 'project'
-            result_template[common.KEY_SUB_SECTION] = 'view_' + algo_group.subsection_name
+            result_template[common.KEY_SUB_SECTION] = 'view_' + algorithm.subsection_name
 
-        elif algo_group.group_category.rawinput:
+        elif algorithm.algorithm_category.rawinput:
             ### Upload algorithms
             result_template[common.KEY_SECTION] = 'project'
             result_template[common.KEY_SUB_SECTION] = 'data'
 
-        elif 'RAW_DATA' in algo_group.group_category.defaultdatastate:
+        elif 'RAW_DATA' in algorithm.algorithm_category.defaultdatastate:
             ### Creators
             result_template[common.KEY_SECTION] = 'stimulus'
             result_template[common.KEY_SUB_SECTION] = 'stimulus'
 
         else:
             ### Analyzers
-            result_template[common.KEY_SECTION] = algo_group.group_category.displayname.lower()
-            result_template[common.KEY_SUB_SECTION] = algo_group.subsection_name
+            result_template[common.KEY_SECTION] = algorithm.algorithm_category.displayname.lower()
+            result_template[common.KEY_SUB_SECTION] = algorithm.subsection_name
             result_template[common.KEY_SUBMENU_LIST] = self.analyze_adapters
 
 

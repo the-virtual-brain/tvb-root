@@ -36,10 +36,8 @@ import os
 import unittest
 from tvb.tests.framework.core.base_testcase import BaseTestCase
 from tvb.basic.profile import TvbProfile
-from tvb.core.entities import model
 from tvb.core.entities.storage import dao
 from tvb.core.adapters.introspector import Introspector
-import tvb.tests.framework.adapters as adapters_init
 
 
 class IntrospectorTest(BaseTestCase):
@@ -47,7 +45,6 @@ class IntrospectorTest(BaseTestCase):
     Test class for the introspection module.
     """
     old_current_dir = TvbProfile.current.web.CURRENT_DIR
-    old_xml_path = adapters_init.__xml_folders__
 
 
     def setUp(self):
@@ -56,7 +53,6 @@ class IntrospectorTest(BaseTestCase):
         """
         core_path = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
         TvbProfile.current.web.CURRENT_DIR = os.path.dirname(core_path)
-        adapters_init.__xml_folders__ = [os.path.join("core", "adapters")]
 
         self.introspector = Introspector("tvb.tests.framework")
         self.introspector.introspect(True)
@@ -67,10 +63,6 @@ class IntrospectorTest(BaseTestCase):
         Revert changes settings and remove recently imported algorithms
         """
         TvbProfile.current.web.CURRENT_DIR = self.old_current_dir
-        adapters_init.__xml_folders__ = self.old_xml_path
-
-        for group in dao.get_generic_entity(model.AlgorithmGroup, "simple", "algorithm_param_name"):
-            dao.remove_entity(model.AlgorithmGroup, group.id)
 
 
     def test_introspect(self):
@@ -81,11 +73,10 @@ class IntrospectorTest(BaseTestCase):
         
         all_categories = dao.get_algorithm_categories()
         category_ids = [cat.id for cat in all_categories if cat.displayname == "AdaptersTest"]
-        groups = dao.get_groups_by_categories(category_ids)
-        self.assertEqual(12, len(groups), "Introspection failed!")
+        adapters = dao.get_adapters_from_categories(category_ids)
+        self.assertEqual(8, len(adapters), "Introspection failed!")
         nr_adapters_mod2 = 0
-        nr_from_xml = 0
-        for algorithm in groups:
+        for algorithm in adapters:
             self.assertTrue(algorithm.module in ['tvb.tests.framework.adapters.testadapter1',
                                                  'tvb.tests.framework.adapters.testadapter2',
                                                  'tvb.tests.framework.adapters.testadapter3',
@@ -95,32 +86,14 @@ class IntrospectorTest(BaseTestCase):
             self.assertTrue(algorithm.classname in ["TestAdapter1", "TestAdapterDatatypeInput",
                                                     "TestAdapter2", "TestAdapter22", "TestAdapterHugeMemoryRequired",
                                                     "TestAdapter3", "TestAdapterHDDRequired",
-                                                    "NDimensionArrayAdapter", "TestGroupAdapter"
+                                                    "NDimensionArrayAdapter"
                                                     ],
                             "Unknown Adapter Class:" + str(algorithm.classname))
             if algorithm.module == 'tvb.tests.framework.adapters.testadapter2':
                 nr_adapters_mod2 += 1
-            if algorithm.module == 'tvb.tests.framework.adapters.testgroupadapter':
-                nr_from_xml += 1
         self.assertEqual(nr_adapters_mod2, 2)
-        self.assertEqual(nr_from_xml, 4)
 
 
-    def test_xml_introspection(self):
-        """
-        Check that the new xml specified in setUp was correctly introspected.
-        """
-
-        init_parameter = os.path.join("core", "adapters", "test_group.xml")
-        group = dao.find_group("tvb.tests.framework.adapters.testgroupadapter", "TestGroupAdapter", init_parameter)
-        self.assertTrue(group is not None, "The group was not found")
-        self.assertEqual(group.init_parameter, init_parameter, "Wrong init_parameter:" + str(group.init_parameter))
-        self.assertEqual(group.displayname, "Simple Python Analyzers", "The display-name of the group is not valid")
-        self.assertEqual(group.algorithm_param_name, "simple", "The algorithm_param_name of the group is not valid")
-        self.assertEqual(group.classname, "TestGroupAdapter", "The class-name of the group is not valid")
-        self.assertEqual(group.module, "tvb.tests.framework.adapters.testgroupadapter", "Group Module invalid")
-
-        
 def suite():
     """
     Gather all the tests in a test suite.

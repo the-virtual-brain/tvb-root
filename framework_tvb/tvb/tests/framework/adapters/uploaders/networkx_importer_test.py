@@ -35,10 +35,9 @@
 import os
 import unittest
 from tvb.tests.framework.core.base_testcase import TransactionalTestCase
+from tvb.tests.framework.core.test_factory import TestFactory
 from tvb.tests.framework.datatypes.datatypes_factory import DatatypesFactory
-from tvb.core.adapters.abcadapter import ABCAdapter
 from tvb.core.entities.file.files_helper import FilesHelper
-from tvb.core.entities.storage import dao
 from tvb.core.entities.transient.structure_entities import DataTypeMetaData
 from tvb.core.services.flow_service import FlowService
 from tvb.datatypes.connectivity import Connectivity
@@ -68,9 +67,8 @@ class NetworkxImporterTest(TransactionalTestCase):
         self.assertEqual(0, count_before)
 
         ### Retrieve Adapter instance
-        group = dao.find_group('tvb.adapters.uploaders.networkx_importer', 'NetworkxConnectivityImporter')
-        importer = ABCAdapter.build_adapter(group)
-
+        importer = TestFactory.create_adapter('tvb.adapters.uploaders.networkx_importer',
+                                              'NetworkxConnectivityImporter')
         args = {'data_file': self.upload_file,
                 DataTypeMetaData.KEY_SUBJECT: "John"}
 

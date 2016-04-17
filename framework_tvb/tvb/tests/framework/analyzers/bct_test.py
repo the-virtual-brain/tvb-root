@@ -34,6 +34,7 @@
 
 import numpy
 import unittest
+from tvb.core.adapters.abcadapter import ABCAdapter
 from tvb.core.entities.model import STATUS_FINISHED
 from tvb.tests.framework.core.base_testcase import TransactionalTestCase
 from tvb.core.utils import get_matlab_executable
@@ -51,6 +52,7 @@ class BCTTest(TransactionalTestCase):
     Test that all BCT analyzers are executed without error.
     We do not verify that the algorithms are correct, because that is outside the purpose of TVB framework.
     """
+    #TODO fill with proper class names when all BCT algos are written
     EXPECTED_TO_FAIL_VALIDATION = ["CCBU", "CCWU", "EIGUN", "KCCBU", "TBU", "TWU"]
 
 
@@ -71,13 +73,13 @@ class BCTTest(TransactionalTestCase):
         w = self.connectivity.weights
         self.connectivity.weights = w + w.T - numpy.diag(w.diagonal())
 
-        self.algo_groups = dao.get_generic_entity(model.AlgorithmGroup, 'MatlabAdapter', 'classname')
+        algorithms = dao.get_generic_entity(model.Algorithm, 'Brain Connectivity Toolbox', 'group_description')
+        self.assertTrue(algorithms is not None)
+        self.assertTrue(len(algorithms) > 5)
 
-        self.assertTrue(self.algo_groups is not None)
-        self.assertEquals(6, len(self.algo_groups))
         self.bct_adapters = []
-        for group in self.algo_groups:
-            self.bct_adapters.append(TestFactory.create_adapter(group, self.test_project))
+        for algo in algorithms:
+            self.bct_adapters.append(ABCAdapter.build_adapter(algo))
 
 
     def tearDown(self):
@@ -92,48 +94,41 @@ class BCTTest(TransactionalTestCase):
         """
         Iterate all BCT algorithms and execute them.
         """
-        for i in xrange(len(self.bct_adapters)):
-            for bct_identifier in self.bct_adapters[i].get_algorithms_dictionary():
-                ### Prepare Operation and parameters
-                algorithm = dao.get_algorithm_by_group(self.algo_groups[i].id, bct_identifier)
-                operation = TestFactory.create_operation(algorithm=algorithm, test_user=self.test_user,
-                                                         test_project=self.test_project,
-                                                         operation_status=model.STATUS_STARTED)
-                self.assertEqual(model.STATUS_STARTED, operation.status)
-                ### Launch BCT algorithm
-                submit_data = {self.algo_groups[i].algorithm_param_name: bct_identifier,
-                               algorithm.parameter_name: self.connectivity.gid}
-                try:
-                    OperationService().initiate_prelaunch(operation, self.bct_adapters[i], {}, **submit_data)
-                    if bct_identifier in BCTTest.EXPECTED_TO_FAIL_VALIDATION:
-                        raise Exception("Algorithm %s was expected to throw input validation "
-                                        "exception, but did not!" % (bct_identifier,))
+        for adapter_instance in self.bct_adapters:
+            algorithm = adapter_instance.stored_adapter
+            operation = TestFactory.create_operation(algorithm=algorithm, test_user=self.test_user,
+                                                     test_project=self.test_project,
+                                                     operation_status=model.STATUS_STARTED)
+            self.assertEqual(model.STATUS_STARTED, operation.status)
+            ### Launch BCT algorithm
+            submit_data = {algorithm.parameter_name: self.connectivity.gid}
+            try:
+                OperationService().initiate_prelaunch(operation, adapter_instance, {}, **submit_data)
+                if algorithm.classname in BCTTest.EXPECTED_TO_FAIL_VALIDATION:
+                    raise Exception("Algorithm %s was expected to throw input validation "
+                                    "exception, but did not!" % (algorithm.classname,))
 
-                    operation = dao.get_operation_by_id(operation.id)
-                    ### Check that operation status after execution is success.
-                    self.assertEqual(STATUS_FINISHED, operation.status)
-                    ### Make sure at least one result exists for each BCT algorithm
-                    results = dao.get_generic_entity(model.DataType, operation.id, 'fk_from_operation')
-                    self.assertTrue(len(results) > 0)
+                operation = dao.get_operation_by_id(operation.id)
+                ### Check that operation status after execution is success.
+                self.assertEqual(STATUS_FINISHED, operation.status)
+                ### Make sure at least one result exists for each BCT algorithm
+                results = dao.get_generic_entity(model.DataType, operation.id, 'fk_from_operation')
+                self.assertTrue(len(results) > 0)
 
-                except InvalidParameterException, excep:
-                    ## Some algorithms are expected to throw validation exception.
-                    if bct_identifier not in BCTTest.EXPECTED_TO_FAIL_VALIDATION:
-                        raise excep
+            except InvalidParameterException, excep:
+                ## Some algorithms are expected to throw validation exception.
+                if algorithm.classname not in BCTTest.EXPECTED_TO_FAIL_VALIDATION:
+                    raise excep
 
 
     @unittest.skipIf(get_matlab_executable() is None, "Matlab or Octave not installed!")
     def test_bct_descriptions(self):
         """
-        Iterate all BCT algorithms and check description not empty.
+        Iterate all BCT algorithms and check that description has been extracted from *.m files.
         """
-        for i in xrange(len(self.bct_adapters)):
-            for bct_identifier in self.bct_adapters[i].get_algorithms_dictionary():
-                ### Prepare Operation and parameters
-                algorithm = dao.get_algorithm_by_group(self.algo_groups[i].id, bct_identifier)
-                self.assertTrue(len(algorithm.description) > 0,
-                                "Description was not loaded properly for algorithm %s -- %s" % (str(algorithm),
-                                                                                                bct_identifier))
+        for adapter_instance in self.bct_adapters:
+            self.assertTrue(len(adapter_instance.stored_adapter.description) > 10,
+                            "Description was not loaded properly for algorithm %s" % (str(adapter_instance)))
 
 
 def suite():

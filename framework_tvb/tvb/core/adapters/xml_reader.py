@@ -120,6 +120,7 @@ OUTPUTS_KEY = "outputs"
 GLOBAL_LOADED_XML_READERS = {}
 
 
+#TODO retain only what is needed for the XML portlet definitions, or move those into Python also
 class XMLGroupReader():
     """
     Helper class to read from XML, a group of Algorithms definition.
@@ -235,7 +236,7 @@ class XMLGroupReader():
 
     def get_matlab_file(self, algorithm_identifier):
         """
-        The Matlab file where the code is located. Used to get the algorithm description. 
+        The Matlab file where the code is located. Used to get the algorithm description.
         """
         alg = self._get_algorithm(algorithm_identifier)
         if alg is None:
@@ -300,7 +301,7 @@ class XMLGroupReader():
     def get_additional_path(self):
         """
         Extra file to be added to Matlab Path when executing algorithm.
-        
+
         :returns: Absolute path for additional Matlab path.
         """
         additional_path = None

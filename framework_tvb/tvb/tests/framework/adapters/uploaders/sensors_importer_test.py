@@ -35,12 +35,12 @@
 import unittest
 import os
 from tvb.core.entities.file.files_helper import FilesHelper
-from tvb.core.entities.storage import dao
 from tvb.core.services.exceptions import OperationException
 from tvb.core.services.flow_service import FlowService
 from tvb.core.adapters.abcadapter import ABCAdapter
 from tvb.datatypes.sensors import SensorsEEG, SensorsMEG, SensorsInternal
 from tvb.adapters.uploaders.sensors_importer import Sensors_Importer
+from tvb.tests.framework.core.test_factory import TestFactory
 from tvb.tests.framework.datatypes.datatypes_factory import DatatypesFactory
 from tvb.tests.framework.core.base_testcase import TransactionalTestCase
 
@@ -81,8 +81,7 @@ class SensorsImporterTest(TransactionalTestCase):
         """
 
         ### Retrieve Adapter instance 
-        group = dao.find_group('tvb.adapters.uploaders.sensors_importer', 'Sensors_Importer')
-        importer = ABCAdapter.build_adapter(group)
+        importer = TestFactory.create_adapter('tvb.adapters.uploaders.sensors_importer', 'Sensors_Importer')
 
         args = {'sensors_file': import_file_path, 'sensors_type': sensors_type}
 

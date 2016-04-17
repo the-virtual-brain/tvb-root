@@ -38,6 +38,7 @@ if __name__ == "__main__":
     from tvb.basic.profile import TvbProfile
     TvbProfile.set_profile(TvbProfile.COMMAND_PROFILE)
 
+from tvb.core.adapters.abcadapter import ABCAdapter
 from tvb.core.entities.storage import dao
 from tvb.core.services.flow_service import FlowService
 from tvb.adapters.uploaders.tvb_importer import TVBImporter
@@ -51,9 +52,7 @@ def import_h5(file_path, project_id):
     ## This ID of a project needs to exists in Db, and it can be taken from the WebInterface:
     project = dao.get_project_by_id(project_id)
 
-    adapter_instance = TVBImporter()
-    my_group = dao.find_group(TVBImporter.__module__, TVBImporter.__name__)
-    adapter_instance.algorithm_group = my_group
+    adapter_instance = ABCAdapter.build_adapter_from_class(TVBImporter)
 
     ## Prepare the input algorithms as if they were coming from web UI submit:
     launch_args = {"data_file": file_path}

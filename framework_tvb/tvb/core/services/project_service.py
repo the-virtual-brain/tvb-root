@@ -36,16 +36,13 @@ Service Layer for the Project entity.
 """
 
 import os
-import copy
 import json
 import formencode
-from inspect import getmro
-
 from tvb.core import utils
 from tvb.basic.traits.types_mapped import MappedType
 from tvb.basic.logger.builder import get_logger
-from tvb.basic.filters.chain import FilterChain
 from tvb.core.entities.model import DataTypeGroup
+from tvb.core.services.flow_service import FlowService
 from tvb.core.utils import string2date, date2string, format_timedelta, format_bytes_human
 from tvb.core.removers_factory import get_remover
 from tvb.core.entities import model
@@ -202,22 +199,8 @@ class ProjectService:
                         datatype_group = dao.get_datatypegroup_by_op_group_id(one_op[3])
                         result["datatype_group_gid"] = datatype_group.gid
                         result["gid"] = operation_group.gid
-
                         ## Filter only viewers for current DataTypeGroup entity:
-                        launcher = self.retrieve_launchers(datatype_group.gid,
-                                                           include_categories=[view_categ_id]).values()[0]
-                        view_groups = []
-                        for launcher in launcher.values():
-                            url = '/flow/' + str(launcher['category']) + '/' + str(launcher['id'])
-                            if launcher['part_of_group']:
-                                url = '/flow/prepare_group_launch/' + datatype_group.gid + '/' + \
-                                      str(launcher['category']) + '/' + str(launcher['id'])
-                            view_groups.append(dict(name=launcher["displayName"],
-                                                    url=url,
-                                                    param_name=launcher['children'][0]['param_name'],
-                                                    part_of_group=launcher['part_of_group']))
-                        result["view_groups"] = view_groups
-
+                        result["view_groups"] = FlowService().get_visualizers_for_group(datatype_group.gid)
                     except Exception:
                         self.logger.exception("We will ignore group on entity:" + str(one_op))
                         result["datatype_group_gid"] = None
@@ -506,11 +489,10 @@ class ProjectService:
 
             # Operation related fields:
             operation_name = CommonDetails.compute_operation_name(
-                dt.parent_operation.algorithm.algo_group.group_category.displayname,
-                dt.parent_operation.algorithm.algo_group.displayname,
-                dt.parent_operation.algorithm.name)
+                dt.parent_operation.algorithm.algorithm_category.displayname,
+                dt.parent_operation.algorithm.displayname)
             data[DataTypeMetaData.KEY_OPERATION_TYPE] = operation_name
-            data[DataTypeMetaData.KEY_OPERATION_ALGORITHM] = dt.parent_operation.algorithm.name
+            data[DataTypeMetaData.KEY_OPERATION_ALGORITHM] = dt.parent_operation.algorithm.displayname
             data[DataTypeMetaData.KEY_AUTHOR] = dt.parent_operation.user.username
             data[DataTypeMetaData.KEY_OPERATION_TAG] = group_op.name if is_group else dt.parent_operation.user_group
             data[DataTypeMetaData.KEY_OP_GROUP_ID] = group_op.id if is_group else None
@@ -667,99 +649,6 @@ class ProjectService:
             raise RemoveDataTypeException("Could not remove DataType " + str(datatype_gid))
 
 
-    def retrieve_launchers(self, datatype_gid, inspect_group=False, include_categories=None):
-        """
-        Returns all the available launch-able algorithms from the database.
-        Filter the ones accepting as required input a specific DataType.
-
-        :param datatype_gid: GID, to filter algorithms for this particular entity.
-        :param inspect_group: TRUE if we are now in the inspection of sub-entities in a DataTypeGroup
-        :param include_categories: List of categories to be included in the result.
-                When None, all lanchable categories are included
-        """
-        try:
-            all_launch_categ = dao.get_launchable_categories()
-            launch_categ = dict((categ.id, categ.displayname) for categ in all_launch_categ
-                                if include_categories is None or categ.id in include_categories)
-
-            datatype_instance = dao.get_datatype_by_gid(datatype_gid)
-            data_class = datatype_instance.__class__
-            all_compatible_classes = [data_class.__name__]
-            for one_class in getmro(data_class):
-                if issubclass(one_class, MappedType) and one_class.__name__ not in all_compatible_classes:
-                    all_compatible_classes.append(one_class.__name__)
-
-            self.logger.debug("Searching in categories: " + str(len(launch_categ)) + " - " +
-                              str(launch_categ.keys()) + "-" + str(include_categories))
-            launchable_groups = dao.get_apliable_algo_groups(all_compatible_classes, launch_categ.keys())
-
-            to_remove = []
-            for one_group in launchable_groups:
-                compatible_algorithms = []
-                for one_algo in one_group.children:
-                    filter_chain = FilterChain.from_json(one_algo.datatype_filter)
-                    if not filter_chain or filter_chain.get_python_filter_equivalent(datatype_instance):
-                        compatible_algorithms.append(one_algo)
-                if len(compatible_algorithms) > 0:
-                    one_group.children = copy.deepcopy(compatible_algorithms)
-                else:
-                    to_remove.append(one_group)
-
-            for one_group in to_remove:
-                launchable_groups.remove(one_group)
-                del one_group
-
-            launchers = ProjectService.__prepare_group_result(launchable_groups, launch_categ, inspect_group)
-
-            if data_class.__name__ == model.DataTypeGroup.__name__:
-                # If part of a group, update also with specific launchers of the child datatype
-                dt_group = dao.get_datatype_group_by_gid(datatype_gid)
-                datatypes = dao.get_datatypes_from_datatype_group(dt_group.id)
-                if len(datatypes):
-                    datatype = datatypes[-1]
-                    datatype = dao.get_datatype_by_gid(datatype.gid)
-
-                    views_categ_id = dao.get_visualisers_categories()[0].id
-                    categories_for_small_type = [categ.id for categ in all_launch_categ
-                                                 if categ.id != views_categ_id and (include_categories is None or
-                                                                                    categ.id in include_categories)]
-                    if categories_for_small_type:
-                        specific_launchers = self.retrieve_launchers(datatype.gid, True, categories_for_small_type)
-                        for key in specific_launchers:
-                            if key in launchers:
-                                launchers[key].update(specific_launchers[key])
-                            else:
-                                launchers[key] = specific_launchers[key]
-            return launchers
-
-        except Exception, excep:
-            ProjectService().logger.exception(excep)
-            ProjectService().logger.warning("Attempting to filter launcher for group despite exception!")
-            return ProjectService.__prepare_group_result([], [], inspect_group)
-
-
-    @staticmethod
-    def __prepare_group_result(launch_groups, launch_categ, inspect_group):
-        """Prepare data result format for display."""
-        result = dict()
-        for group in launch_groups:
-            category = launch_categ[group.fk_category]
-            if category not in result:
-                result[category] = dict()
-            result[category][group.id] = {'id': group.id,
-                                          'displayName': group.displayname,
-                                          'category': group.fk_category,
-                                          'algo_param': group.algorithm_param_name,
-                                          'part_of_group': inspect_group}
-            childs = []
-            for one_child in group.children:
-                childs.append({'ident': one_child.identifier,
-                               'name': one_child.name,
-                               'req_data': one_child.required_datatype,
-                               'param_name': one_child.parameter_name})
-            result[category][group.id]['children'] = childs
-        return result
-
 
     def update_metadata(self, submit_data):
         """
@@ -889,7 +778,7 @@ class ProjectService:
         """
         operation = dao.get_operation_by_gid(operation_gid)
         parameters = json.loads(operation.parameters)
-        adapter = ABCAdapter.build_adapter(operation.algorithm.algo_group)
+        adapter = ABCAdapter.build_adapter(operation.algorithm)
         return adapter.review_operation_inputs(parameters)
 
 

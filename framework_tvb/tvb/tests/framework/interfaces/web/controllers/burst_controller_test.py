@@ -315,8 +315,8 @@ class BurstContollerTest(BaseControllersTest):
         once that is done.
         """
         meta = {DataTypeMetaData.KEY_SUBJECT: "John Doe", DataTypeMetaData.KEY_STATE: "RAW_DATA"}
-        algorithm, algo_group = FlowService().get_algorithm_by_module_and_class(SIMULATOR_MODULE, SIMULATOR_CLASS)
-        self.operation = model.Operation(self.test_user.id, self.test_project.id, algo_group.id,
+        algorithm = FlowService().get_algorithm_by_module_and_class(SIMULATOR_MODULE, SIMULATOR_CLASS)
+        self.operation = model.Operation(self.test_user.id, self.test_project.id, algorithm.id,
                                          json.dumps(''), meta=json.dumps(meta), status=model.STATUS_STARTED)
         self.operation = dao.store_entity(self.operation)
         storage_path = FilesHelper().get_project_folder(self.test_project, str(self.operation.id))

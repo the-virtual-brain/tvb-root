@@ -88,12 +88,12 @@ class WorkflowTest(TransactionalTestCase):
         stored_dt = datatypes_factory.DatatypesFactory()._store_datatype(Datatype1())
 
         first_step_algorithm = self.flow_service.get_algorithm_by_module_and_class("tvb.tests.framework.adapters.testadapter1",
-                                                                                   "TestAdapterDatatypeInput")[0]
+                                                                                   "TestAdapterDatatypeInput")
         metadata = {DataTypeMetaData.KEY_BURST: burst_config.id}
         kwargs = {"test_dt_input": stored_dt.gid, 'test_non_dt_input': '0'}
         operations, group = self.operation_service.prepare_operations(self.test_user.id, self.test_project.id,
                                                                       first_step_algorithm,
-                                                                      first_step_algorithm.algo_group.group_category,
+                                                                      first_step_algorithm.algorithm_category,
                                                                       metadata, **kwargs)
 
         workflows = self.workflow_service.create_and_store_workflow(project_id=self.test_project.id,

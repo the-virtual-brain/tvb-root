@@ -31,6 +31,7 @@
 """
 .. moduleauthor:: Calin Pavel <calin.pavel@codemart.ro>
 """
+
 import unittest
 import os
 import tvb_data.regionMapping as demo_data
@@ -39,7 +40,6 @@ from tvb.tests.framework.core.base_testcase import TransactionalTestCase
 from tvb.tests.framework.core.test_factory import TestFactory
 from tvb.basic.filters.chain import FilterChain
 from tvb.core.entities.file.files_helper import FilesHelper
-from tvb.core.entities.storage import dao
 from tvb.core.entities.transient.structure_entities import DataTypeMetaData
 from tvb.core.services.flow_service import FlowService
 from tvb.core.services.exceptions import OperationException
@@ -107,9 +107,8 @@ class RegionMappingImporterTest(TransactionalTestCase):
             
         # Retrieve Adapter instance
         test_subject = "test"
-        group = dao.find_group('tvb.adapters.uploaders.region_mapping_importer', 'RegionMapping_Importer')
-        importer = ABCAdapter.build_adapter(group)
-        
+        importer = TestFactory.create_adapter('tvb.adapters.uploaders.region_mapping_importer',
+                                              'RegionMapping_Importer')
         args = {'mapping_file': import_file_path, 'surface': surface_gid,
                 'connectivity': connectivity_gid,
                 DataTypeMetaData.KEY_SUBJECT: test_subject}

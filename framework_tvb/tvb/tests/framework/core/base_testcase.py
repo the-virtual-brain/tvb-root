@@ -82,7 +82,7 @@ class BaseTestCase(unittest.TestCase):
     """
     This class should implement basic functionality which is common to all TVB tests.
     """
-    EXCLUDE_TABLES = ["ALGORITHMS", "ALGORITHM_GROUPS", "ALGORITHM_CATEGORIES", "PORTLETS",
+    EXCLUDE_TABLES = ["ALGORITHMS", "ALGORITHM_CATEGORIES", "PORTLETS",
                       "MAPPED_INTERNAL__CLASS", "MAPPED_MAPPED_TEST_CLASS"]
 
 

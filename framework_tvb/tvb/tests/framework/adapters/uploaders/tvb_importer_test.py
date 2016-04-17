@@ -38,10 +38,10 @@ import unittest
 from tvb.adapters.exporters.export_manager import ExportManager
 from tvb.basic.profile import TvbProfile
 from tvb.core.entities.file.files_helper import FilesHelper
-from tvb.core.entities.storage import dao
 from tvb.core.services.exceptions import OperationException
 from tvb.core.services.flow_service import FlowService
 from tvb.core.adapters.abcadapter import ABCAdapter
+from tvb.tests.framework.core.test_factory import TestFactory
 from tvb.tests.framework.datatypes.datatypes_factory import DatatypesFactory
 from tvb.tests.framework.core.base_testcase import TransactionalTestCase
 
@@ -95,8 +95,7 @@ class TVBImporterTest(TransactionalTestCase):
         :param import_file_path: absolute path of the file to be imported
         """
         ### Retrieve Adapter instance 
-        group = dao.find_group('tvb.adapters.uploaders.tvb_importer', 'TVBImporter')
-        importer = ABCAdapter.build_adapter(group)
+        importer = TestFactory.create_adapter('tvb.adapters.uploaders.tvb_importer', 'TVBImporter')
         args = {'data_file': import_file_path}
 
         ### Launch import Operation

@@ -106,16 +106,14 @@ class CommonDetails(EnhancedDictionary):
     
     
     @staticmethod
-    def compute_operation_name(category_name, group_name, algorithm_name):
+    def compute_operation_name(category_name, algorithm_name):
         """
-        Compute Operation display name, based on Operation Category, AlgoGroup and Algorithm.
+        Compute Operation display name, based on Operation Category and Algorithm.
         """
         display_name = ''
         if category_name:
             display_name = category_name
-        if group_name:
-            display_name = display_name + "->" + group_name
-        if algorithm_name and (group_name is None or group_name.lstrip().rstrip() != algorithm_name.lstrip().rstrip()):
+        if algorithm_name:
             display_name = display_name + "->" + algorithm_name
         return display_name
     
@@ -175,8 +173,8 @@ class OperationOverlayDetails(CommonDetails):
         self.author = username
         self.count = no_of_op_in_group
         self.burst_name = burst.name if burst is not None else ""
-        self.operation_type = self.compute_operation_name(operation.algorithm.algo_group.group_category.displayname,
-                                                operation.algorithm.algo_group.displayname, operation.algorithm.name)
+        self.operation_type = self.compute_operation_name(operation.algorithm.algorithm_category.displayname,
+                                                          operation.algorithm.displayname)
         
         group_id = operation.operation_group.id if operation.operation_group is not None else None
         self.operation_group_id = group_id
@@ -270,8 +268,8 @@ class DataTypeOverlayDetails(CommonDetails):
         self.author = datatype_result.parent_operation.user.username
         
         parent_algorithm = datatype_result.parent_operation.algorithm
-        operation_name = self.compute_operation_name(parent_algorithm.algo_group.group_category.displayname,
-                                                     parent_algorithm.algo_group.displayname, parent_algorithm.name)
+        operation_name = self.compute_operation_name(parent_algorithm.algorithm_category.displayname,
+                                                     parent_algorithm.displayname)
         self.operation_type = operation_name
         
         create_date_str = ''

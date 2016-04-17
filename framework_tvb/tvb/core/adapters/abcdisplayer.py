@@ -34,14 +34,14 @@
 import os
 import sys
 import pylab
+from threading import Lock
 from abc import ABCMeta, abstractmethod
 from tvb.basic.profile import TvbProfile
 from tvb.core.decorators import synchronized
 from tvb.core.adapters.abcadapter import ABCSynchronous
 from tvb.core.adapters.exceptions import LaunchException
-from tvb.core.entities.storage import dao
 
-from threading import Lock
+
 LOCK_CREATE_FIGURE = Lock()
 
 
@@ -154,11 +154,6 @@ class ABCDisplayer(ABCSynchronous):
         if parameter is not None:
             url += "?" + str(parameter)
         return url
-    
-    
-    def get_algo_group(self):
-        """ Find AlgoGroup by module and class"""
-        return dao.find_group(self.__module__, self.__class__.__name__)
 
 
     @staticmethod

@@ -85,12 +85,12 @@ class FilterChain(object):
     """
 
     datatype = '$$DATATYPE_INPUT$$'
-    algorithm_group = '$$ALGORITHM_GROUP_INPUT$$'
+    algorithm = '$$ALGORITHM_INPUT$$'
     algorithm_category = '$$ALGORITHM_CATEGORY_INPUT$$'
     operation = '$$OPERATION_INPUT$$'
 
     datatype_replacement = "model.DataType"
-    algorithm_group_replacement = "model.AlgorithmGroup"
+    algorithm_replacement = "model.Algorithm"
     algorithm_category_replacement = "model.AlgorithmCategory"
     operation_replacement = "model.Operation"
 
@@ -115,7 +115,7 @@ class FilterChain(object):
         """
         Overwrite so that the custom keys cannot be overwritten.
         """
-        if name in ('datatype', 'algorithm_group', 'algorithm_category', 'operation'):
+        if name in ('datatype', 'algorithm', 'algorithm_category', 'operation'):
             raise AttributeError("FilterChain '%s' attribute is used internally and can only be read, not set." % name)
         else:
             object.__setattr__(self, name, value)
@@ -163,7 +163,7 @@ class FilterChain(object):
         Do all replacements of place-holders with evaluable strings.
         """
         return filter_string.replace(self.datatype, self.datatype_replacement
-                                     ).replace(self.algorithm_group, self.algorithm_group_replacement
+                                     ).replace(self.algorithm, self.algorithm_replacement
                                      ).replace(self.algorithm_category, self.algorithm_category_replacement
                                      ).replace(self.operation, self.operation_replacement)
 
@@ -212,7 +212,7 @@ class FilterChain(object):
                            operator_between_fields=filter_dictionary[KEY_OPERATOR])
 
 
-    def get_python_filter_equivalent(self, datatype_to_check=None, algogroup_to_check=None,
+    def get_python_filter_equivalent(self, datatype_to_check=None, algorithm_to_check=None,
                                      algocategory_to_check=None, operation_to_check=None):
         """
         Python evaluate of the filter against a current given DataType
@@ -226,7 +226,7 @@ class FilterChain(object):
         passed_test = True
         ## set to current method input parameters, as these strings will be use in eval
         self.datatype_replacement = 'datatype_to_check'
-        self.algorithm_group_replacement = 'algogroup_to_check'
+        self.algorithm_replacement = 'algorithm_to_check'
         self.algorithm_category_replacement = 'algocategory_to_check'
         self.operation_replacement = 'operation_to_check'
 
@@ -264,7 +264,7 @@ class FilterChain(object):
 
 
     def get_sql_filter_equivalent(self, datatype_to_check="model.DataType", operation_to_check="model.Operation",
-                                  algogroup_to_check="model.AlgorithmGroup",
+                                  algorithm_to_check="model.Algorithm",
                                   algocategory_to_check="model.AlgorithmCategory"):
         """
         Returns the computed SQL string from the given filter.
@@ -284,7 +284,7 @@ class FilterChain(object):
             return None
 
         self.datatype_replacement = datatype_to_check
-        self.algorithm_group_replacement = algogroup_to_check
+        self.algorithm_replacement = algorithm_to_check
         self.algorithm_category_replacement = algocategory_to_check
         self.operation_replacement = operation_to_check
 

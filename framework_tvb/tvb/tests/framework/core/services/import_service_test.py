@@ -70,7 +70,7 @@ class ImportServiceTest(TransactionalTestCase):
         self.test_user = TestFactory.create_user()
         self.test_project = TestFactory.create_project(self.test_user, name="GeneratedProject", description="test_desc")
         self.operation = TestFactory.create_operation(test_user=self.test_user, test_project=self.test_project)
-        self.adapter_instance = TestFactory.create_adapter(test_project=self.test_project)
+        self.adapter_instance = TestFactory.create_adapter()
         TestFactory.import_cff(test_user=self.test_user, test_project=self.test_project)
         self.zip_path = None 
         

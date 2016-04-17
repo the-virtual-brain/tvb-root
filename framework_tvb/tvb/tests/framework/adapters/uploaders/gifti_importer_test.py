@@ -27,15 +27,17 @@
 #   Frontiers in Neuroinformatics (7:10. doi: 10.3389/fninf.2013.00010)
 #
 #
+
 """
 .. moduleauthor:: Calin Pavel <calin.pavel@codemart.ro>
 """
+
 import unittest
 import os
 from tvb.core.entities.file.files_helper import FilesHelper
+from tvb.tests.framework.core.test_factory import TestFactory
 from tvb.tests.framework.datatypes.datatypes_factory import DatatypesFactory
 from tvb.tests.framework.core.base_testcase import TransactionalTestCase
-from tvb.core.entities.storage import dao
 from tvb.core.entities.transient.structure_entities import DataTypeMetaData
 from tvb.core.services.flow_service import FlowService
 from tvb.core.adapters.abcadapter import ABCAdapter
@@ -77,8 +79,7 @@ class GIFTISurfaceImporterTest(TransactionalTestCase):
         """
 
         ### Retrieve Adapter instance 
-        group = dao.find_group('tvb.adapters.uploaders.gifti_surface_importer', 'GIFTISurfaceImporter')
-        importer = ABCAdapter.build_adapter(group)
+        importer = TestFactory.create_adapter('tvb.adapters.uploaders.gifti_surface_importer', 'GIFTISurfaceImporter')
 
         args = {'data_file': import_file_path, DataTypeMetaData.KEY_SUBJECT: ""}
 

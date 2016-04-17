@@ -94,7 +94,7 @@ class PortletConfigurer():
         result = []
         for adapter_declaration in chain_adapters:
 
-            adapter_instance, algorithm_group = self.build_adapter_from_declaration(adapter_declaration)
+            adapter_instance = self.build_adapter_from_declaration(adapter_declaration)
 
             algorithm_field = adapter_declaration[KEY_FIELD]
             if algorithm_field:
@@ -115,7 +115,7 @@ class PortletConfigurer():
                 prefix = ''
 
             replace_values = self._prepare_input_tree(alg_inputs, specific_adapter_overwrites, prefix)
-            adapter_configuration = AdapterConfiguration(replace_values, algorithm_group, prefix=prefix,
+            adapter_configuration = AdapterConfiguration(replace_values, adapter_instance.stored_adapter, prefix=prefix,
                                                          subalgorithm_field=algorithm_field,
                                                          subalgorithm_value=default_algorithm)
             result.append(adapter_configuration)
@@ -130,14 +130,11 @@ class PortletConfigurer():
         adapter_import_path = adapter_declaration[ABCAdapter.KEY_TYPE]
         class_name = adapter_import_path.split('.')[-1]
         module = adapter_import_path.replace('.' + class_name, '')
-        if 'initparam' in adapter_declaration:
-            algo_group = dao.find_group(module, class_name, adapter_declaration['initparam'])
+        algo = dao.get_algorithm_by_module(module, class_name)
+        if algo is not None:
+            return ABCAdapter.build_adapter(algo)
         else:
-            algo_group = dao.find_group(module, class_name)
-        if algo_group is not None:
-            return ABCAdapter.build_adapter(algo_group), algo_group
-        else:
-            return None, None
+            return None
 
 
     def _prepare_input_tree(self, input_list, default_values, prefix=''):
@@ -257,7 +254,7 @@ class PortletConfigurer():
 
         idx = 0
         for adapter_declaration in chain_adapters:
-            adapter_instance, algorithm_group = self.build_adapter_from_declaration(adapter_declaration)
+            adapter_instance = self.build_adapter_from_declaration(adapter_declaration)
             ### Get the flatten interface for the adapter, and in case of #####
             ### sub-algorithms also get the pair {algorithm : value}      #####
             algorithm_field = adapter_declaration[KEY_FIELD]
@@ -316,17 +313,13 @@ class PortletConfigurer():
                 prepared_params[KEY_DYNAMIC][param_name] = new_value
             ###################################################################
 
-            ###Finally get the actual algorithm id from the DB as we need the #
-            ###algorithm id, then build the workflow step given the computed  #
-            ###parameter set, then build and return the portlet configuration##
-            algorithm = dao.get_algorithm_by_group(algorithm_group.id, default_algorithm)
-
+            algo_id = adapter_instance.stored_adapter.id
             if idx == len(chain_adapters) - 1:
-                view_step = WorkflowStepView(algorithm_id=algorithm.id, portlet_id=self.portlet_id,
+                view_step = WorkflowStepView(algorithm_id=algo_id, portlet_id=self.portlet_id,
                                              ui_name=name, static_param=prepared_params[KEY_STATIC],
                                              dynamic_param=prepared_params[KEY_DYNAMIC])
             else:
-                workflow_step = WorkflowStep(algorithm_id=algorithm.id, static_param=prepared_params[KEY_STATIC],
+                workflow_step = WorkflowStep(algorithm_id=algo_id, static_param=prepared_params[KEY_STATIC],
                                              dynamic_param=prepared_params[KEY_DYNAMIC])
                 analyze_steps.append(workflow_step)
             idx += 1

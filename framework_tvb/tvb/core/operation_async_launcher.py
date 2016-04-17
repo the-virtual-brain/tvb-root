@@ -66,12 +66,11 @@ def do_operation_launch(operation_id):
     try:
         LOGGER.debug("Loading operation with id=%s" % operation_id)
         curent_operation = dao.get_operation_by_id(operation_id)
-        algorithm = curent_operation.algorithm
-        algorithm_group = dao.get_algo_group_by_id(algorithm.fk_algo_group)
-        LOGGER.debug("Importing Algorithm: " + str(algorithm_group.classname) +
+        stored_adapter = curent_operation.algorithm
+        LOGGER.debug("Importing Algorithm: " + str(stored_adapter.classname) +
                      " for Operation:" + str(curent_operation.id))
         PARAMS = parse_json_parameters(curent_operation.parameters)
-        adapter_instance = ABCAdapter.build_adapter(algorithm_group)
+        adapter_instance = ABCAdapter.build_adapter(stored_adapter)
 
         ## Un-comment bellow for profiling an operation:
         ## import cherrypy.lib.profiler as profiler

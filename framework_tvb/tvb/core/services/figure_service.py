@@ -121,7 +121,7 @@ class FigureService:
             if operation is not None:
                 # create a name based on the operation that created the image
                 # e.g. TVB-Algo-Name-354
-                image_name = operation.algorithm.name.replace(' ', '-')
+                image_name = operation.algorithm.displayname.replace(' ', '-')
             else:
                 # default to a generic name
                 image_name = "figure"

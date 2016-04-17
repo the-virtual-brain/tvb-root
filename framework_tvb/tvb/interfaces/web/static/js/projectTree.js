@@ -427,12 +427,10 @@ function tvbSubmitPageAsync(action, params){
 /**
  * Launch from DataType overlay an analysis or a visualize algorithm.
  */
-function launchAdapter(adapter_url, param_name, param_val, param_algo, algo_ident, back_page_link, launchAsync){
+function launchAdapter(adapter_url, param_name, param_val, back_page_link, launchAsync){
     var params = {};
     params[param_name] = param_val;
-    if(param_algo){
-        params[param_algo] = algo_ident;
-    }
+
     if (launchAsync){
         tvbSubmitPageAsync(adapter_url, params);
     }else {

@@ -115,10 +115,9 @@ class SpatioTemporalController(BaseController):
         The interface is prepared for rendering, it is populated with existent data, in case of a
         parameter of type DataType. The name of the attributes are also prefixed to identify groups.
         """
-        algo_group = self.flow_service.get_algorithm_by_module_and_class(creator_module, creator_class)[1]
-        group, _ = self.flow_service.prepare_adapter(common.get_current_project().id, algo_group)
+        algorithm = self.flow_service.get_algorithm_by_module_and_class(creator_module, creator_class)
 
-        #I didn't use the interface(from the above line) returned by the method 'prepare_adapter' from flow service
+        # We can't use 'build_adapter_from_class' from flow service
         # because the selects that display dataTypes will also have the 'All' entry.
         datatype_instance.trait.bound = traited_interface.INTERFACE_ATTRIBUTES_ONLY
         input_list = datatype_instance.interface[traited_interface.INTERFACE_ATTRIBUTES]
@@ -130,7 +129,7 @@ class SpatioTemporalController(BaseController):
         input_list = itree_mngr.fill_input_tree_with_options(input_list, common.get_current_project().id, category.id)
         input_list = itree_mngr.prepare_param_names(input_list)
 
-        return self.flow_service.build_adapter_instance(group), input_list
+        return ABCAdapter.build_adapter(algorithm), input_list
 
 
     @staticmethod

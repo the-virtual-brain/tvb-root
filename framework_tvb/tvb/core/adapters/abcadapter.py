@@ -45,19 +45,17 @@ from datetime import datetime
 from abc import ABCMeta, abstractmethod
 from tvb.basic.profile import TvbProfile
 from tvb.basic.logger.builder import get_logger
+import tvb.basic.traits.traited_interface as interface
 from tvb.core.adapters import input_tree
 from tvb.core.adapters.input_tree import InputTreeManager
-from tvb.core.entities.load import load_entity_by_gid, get_class_by_name
+from tvb.core.entities.load import load_entity_by_gid
 from tvb.core.utils import date2string, LESS_COMPLEX_TIME_FORMAT
 from tvb.core.entities.storage import dao
 from tvb.core.entities.file.files_helper import FilesHelper
 from tvb.core.entities.transient.structure_entities import DataTypeMetaData
 from tvb.core.adapters.exceptions import IntrospectionException, LaunchException, InvalidParameterException
 from tvb.core.adapters.exceptions import NoMemoryAvailableException
-from tvb.core.adapters.xml_reader import ELEM_OPTIONS, ELEM_OUTPUTS, INPUTS_KEY
 
-import tvb.basic.traits.traited_interface as interface
-import tvb.core.adapters.xml_reader as xml_reader
 
 ATT_METHOD = "python_method"
 ATT_PARAMETERS = "parameters_prefix"
@@ -66,6 +64,7 @@ KEY_EQUATION = input_tree.KEY_EQUATION
 KEY_FOCAL_POINTS = input_tree.KEY_FOCAL_POINTS
 KEY_SURFACE_GID = input_tree.KEY_SURFACE_GID
 
+LOGGER = get_logger("ABCAdapter")
 
 
 def nan_not_allowed():
@@ -153,8 +152,8 @@ class ABCAdapter(object):
     INTERFACE_ATTRIBUTES_ONLY = interface.INTERFACE_ATTRIBUTES_ONLY
     INTERFACE_ATTRIBUTES = interface.INTERFACE_ATTRIBUTES
 
-    # Group that will be set for each adapter created by in build_adapter method
-    algorithm_group = None
+    # model.Algorithm instance that will be set for each adapter created by in build_adapter method
+    stored_adapter = None
 
     __metaclass__ = ABCMeta
 
@@ -169,6 +168,35 @@ class ABCAdapter(object):
         self.user_id = None
         self.log = get_logger(self.__class__.__module__)
         self.tree_manager = InputTreeManager()
+
+    @classmethod
+    def get_group_name(cls):
+        if hasattr(cls, "_ui_group") and hasattr(cls._ui_group, "name"):
+            return cls._ui_group.name
+        return None
+
+    @classmethod
+    def get_group_description(cls):
+        if hasattr(cls, "_ui_group") and hasattr(cls._ui_group, "description"):
+            return cls._ui_group.description
+        return None
+
+    @classmethod
+    def get_ui_name(cls):
+        if hasattr(cls, "_ui_name"):
+            return cls._ui_name
+        else:
+            return cls.__name__
+
+    @classmethod
+    def get_ui_description(cls):
+        if hasattr(cls, "_ui_description"):
+            return cls._ui_description
+
+    @classmethod
+    def get_ui_subsection(cls):
+        if hasattr(cls, "_ui_subsection"):
+            return cls._ui_subsection
 
     @staticmethod
     def can_be_active():
@@ -413,49 +441,44 @@ class ABCAdapter(object):
 
 
     @staticmethod
-    def prepare_adapter(adapter_class):
+    def build_adapter_from_class(adapter_class):
         """
         Having a subclass of ABCAdapter, prepare an instance for launching an operation with it.
         """
         if not issubclass(adapter_class, ABCAdapter):
             raise IntrospectionException("Invalid data type: It should extend adapters.ABCAdapter!")
         try:
-            algo_group = dao.find_group(adapter_class.__module__, adapter_class.__name__)
+            stored_adapter = dao.get_algorithm_by_module(adapter_class.__module__, adapter_class.__name__)
 
             adapter_instance = adapter_class()
-            adapter_instance.algorithm_group = algo_group
+            adapter_instance.stored_adapter = stored_adapter
             return adapter_instance
         except Exception, excep:
-            get_logger("ABCAdapter").exception(excep)
+            LOGGER.exception(excep)
             raise IntrospectionException(str(excep))
 
 
     @staticmethod
-    def build_adapter(algo_group):
+    def build_adapter(stored_adapter):
         """
         Having a module and a class name, create an instance of ABCAdapter.
         """
-        logger = get_logger("ABCAdapter")
         try:
-            ad_module = importlib.import_module(algo_group.module)
+            ad_module = importlib.import_module(stored_adapter.module)
             # This does no work for all adapters, so let it for manually choosing by developer
             if TvbProfile.env.IS_WORK_IN_PROGRESS:
                 reload(ad_module)
-                logger.info("Reloaded %r", ad_module)
+                LOGGER.info("Reloaded %r", ad_module)
 
-            adapter = getattr(ad_module, algo_group.classname)
-
-            if algo_group.init_parameter is not None and len(algo_group.init_parameter) > 0:
-                adapter_instance = adapter(str(algo_group.init_parameter))
-            else:
-                adapter_instance = adapter()
-            if not isinstance(adapter_instance, ABCAdapter):
-                raise IntrospectionException("Invalid data type: It should extend adapters.ABCAdapter!")
-            adapter_instance.algorithm_group = algo_group
+            adapter_class = getattr(ad_module, stored_adapter.classname)
+            adapter_instance = adapter_class()
+            adapter_instance.stored_adapter = stored_adapter
             return adapter_instance
-        except Exception, excep:
-            logger.exception(excep)
-            raise IntrospectionException(str(excep))
+
+        except Exception:
+            msg = "Could not load Adapter Instance for Stored row %s" % stored_adapter
+            LOGGER.exception(msg)
+            raise IntrospectionException(msg)
 
 
     ####### METHODS for PROCESSING PARAMETERS start here #############################
@@ -494,168 +517,6 @@ class ABCAdapter(object):
     def flaten_input_interface(self):
         """ Return a simple dictionary, instead of a Tree."""
         return self.tree_manager.flatten(self.get_input_tree())
-
-
-
-class ABCGroupAdapter(ABCAdapter):
-    """
-    Still Abstract class.
-    Acts as a notifier that a given adapter has a group of sub-algorithms.
-    It is used for multiple simple methods interfaced in TVB through an XML description.
-    """
-
-
-    def __init__(self, xml_file_path):
-        ABCAdapter.__init__(self)
-        if not os.path.isabs(xml_file_path):
-            xml_file_path = os.path.join(TvbProfile.current.web.CURRENT_DIR, xml_file_path)
-        ### Find the XML reader (it loads only once in the system per XML file).
-        self.xml_reader = xml_reader.XMLGroupReader.get_instance(xml_file_path)
-
-
-    def get_input_tree(self):
-        """ Overwrite empty method from super."""
-        interface_result = []
-        if self.algorithm_group is None:
-            return interface_result
-        tree_root = dict()
-        tree_root[self.KEY_NAME] = self.xml_reader.get_group_name()
-        tree_root[self.KEY_LABEL] = self.xml_reader.get_group_label()
-        tree_root[self.KEY_REQUIRED] = True
-        tree_root[self.KEY_TYPE] = self.TYPE_SELECT
-        tree_root[ELEM_OPTIONS] = self._compute_options_for_group()
-        interface_result.append(tree_root)
-        return interface_result
-
-
-    def _compute_options_for_group(self):
-        """Sub-Algorithms"""
-        result = []
-        algorithms = self.xml_reader.get_algorithms_dictionary()
-        for identifier in algorithms.keys():
-            option = dict()
-            option[self.KEY_VALUE] = identifier
-            option[self.KEY_NAME] = algorithms[identifier][self.KEY_NAME]
-            algorithm = dao.get_algorithm_by_group(self.algorithm_group.id, identifier)
-            option[self.KEY_DESCRIPTION] = algorithm.description
-            inputs = algorithms[identifier][INPUTS_KEY]
-            option[self.KEY_ATTRIBUTES] = [inputs[key] for key in inputs.keys()]
-            option[ELEM_OUTPUTS] = self.xml_reader.get_outputs(identifier)
-            result.append(option)
-        return result
-
-
-    def get_input_for_algorithm(self, algorithm_identifier=None):
-        """For a group, we will return input tree on algorithm base."""
-        inputs = self.xml_reader.get_inputs(algorithm_identifier)
-        prefix = InputTreeManager.form_prefix(self.get_algorithm_param(), option_prefix=algorithm_identifier)
-        result = InputTreeManager.prepare_param_names(inputs, prefix)
-        return result
-
-
-    def get_output(self):
-        """For a group, we will return outputs of all sub-algorithms."""
-        real_outputs = []
-        for output_description in self.xml_reader.get_all_outputs():
-            full_type = output_description[xml_reader.ATT_TYPE]
-            real_outputs.append(get_class_by_name(full_type))
-        return real_outputs
-
-
-    def get_output_for_algorithm(self, algorithm_identifier):
-        """For this group, we will return input tree on algorithm base."""
-        return self.xml_reader.get_outputs(algorithm_identifier)
-
-
-    def get_algorithms_dictionary(self):
-        """Return the list of sub-algorithms in current group"""
-        return self.xml_reader.get_algorithms_dictionary()
-
-
-    def get_algorithm_param(self):
-        """
-        This string, represents the argument name, 
-        where the algorithms selection is submitted.
-        """
-        return self.xml_reader.root_name
-
-
-    def get_call_code(self, algorithm_identifier):
-        """From the XML interface, read the code for call method."""
-        return self.xml_reader.get_code(algorithm_identifier)
-
-
-    def get_matlab_file(self, algorithm_identifier):
-        """From the XML interface read the name of the file that contains the code."""
-        return self.xml_reader.get_matlab_file(algorithm_identifier)
-
-
-    def get_import_code(self, algorithm_identifier):
-        """From the XML interface, read the code for Python import. Optional"""
-        return self.xml_reader.get_import(algorithm_identifier)
-
-
-    def build_result(self, algorithm, result, inputs):
-        """
-        Build an actual Python object, based on the XML interface description.
-        Put inside the resulting Python object, the call result. 
-        """
-        final_result = []
-        self.log.debug("Received results:" + str(result))
-        self.log.debug("Received inputs:" + str(inputs))
-        python_out_references = self.get_output_for_algorithm(algorithm)
-        for output in python_out_references:
-            # First prepare output attributes
-            kwa = {}
-            for field in output[xml_reader.ELEM_FIELD]:
-                if xml_reader.ATT_VALUE in field:
-                    kwa[field[xml_reader.ATT_NAME]] = field[xml_reader.ATT_VALUE]
-                else:
-                    expression = field[xml_reader.ATT_REFERENCE]
-                    expression = expression.replace("$", 'result[')
-                    expression = expression.replace("#", ']')
-                    kwa[field[xml_reader.ATT_NAME]] = eval(expression)
-            kwa["storage_path"] = self.storage_path
-            # Import Output type and call constructor
-            out_class = get_class_by_name(output[xml_reader.ATT_TYPE])
-            self.log.warning("Executing INIT with parameters:" + str(kwa))
-            final_result.append(out_class(**kwa))
-        final_result.append(None)
-        return final_result
-
-
-    def get_algorithm_and_attributes(self, **kwargs):
-        """ 
-        Read selected Algorithm identifier, from input arguments.
-        From the original full dictionary, split Algorithm name, 
-        and actual algorithms arguments.
-        """
-        algorithm = kwargs[self.xml_reader.root_name]
-        key_real_args = self.xml_reader.root_name + self.KEYWORD_PARAMS[0:11]
-        algorithm_arguments = {}
-        if key_real_args in kwargs:
-            algorithm_arguments = kwargs[key_real_args]
-        return algorithm, algorithm_arguments
-
-
-    def prepare_ui_inputs(self, kwargs, validation_required=True):
-        """
-        Overwrite the method from ABCAdapter to only append the required defaults for
-        the selected subalgorithm.
-        """
-        algorithm_name = self.get_algorithm_param()
-        algorithm_inputs = self.get_input_for_algorithm(kwargs[algorithm_name])
-        self.tree_manager.append_required_defaults(kwargs, algorithm_inputs)
-        return self.convert_ui_inputs(kwargs, validation_required=validation_required)
-
-
-    def review_operation_inputs(self, parameters):
-        """
-        Returns a list with the inputs from the parameters list that are instances of DataType.
-        """
-        algorithm_name = parameters[self.get_algorithm_param()]
-        flat_interface = self.get_input_for_algorithm(algorithm_name)
-        return self.tree_manager.review_operation_inputs(parameters, flat_interface)
 
 
 

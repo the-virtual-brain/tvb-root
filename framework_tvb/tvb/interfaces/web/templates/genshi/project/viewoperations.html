@@ -18,18 +18,16 @@
 					<mark>${operation_row['count']} operations</mark>
 					<p>Group ${operation_row['group']}</p>
 
-                    <py:for each="view_group in operation_row.view_groups"
-                            py:with="isPartOfGroup = view_group.get('part_of_group', False);
-                                     launchParamName = view_group.param_name if not isPartOfGroup else 'range_param_name';
-                                     launchParamVal = operation_row['datatype_group_gid'] if not isPartOfGroup else view_group.param_name">
+					<py:for each="view_algo in operation_row.view_groups"
+						py:with="launchParamName = view_algo.parameter_name;
+								 launchParamVal = operation_row['datatype_group_gid'];
+								 url = '/flow/' + str(view_algo.fk_category) + '/' + str(view_algo.id)">
 
-                        <a href="#" title="Go view the diagram"
-                           class="action action-crosslink crosslink-s-project crosslink-ss-stray" tabindex="-1"
-                           onclick="launchAdapter('$view_group.url', '$launchParamName', '$launchParamVal', '', '', 'operations', false);">
-
-                           $view_group.name
-                        </a>
-                    </py:for>
+						<a href="#" title="Go view the diagram"
+						   class="action action-crosslink crosslink-s-project crosslink-ss-stray" tabindex="-1"
+						   onclick="launchAdapter('$url', '$launchParamName', '$launchParamVal', 'operations', false);">
+						   $view_algo.displayname </a>
+					</py:for>
 				</div>
 			</div>
 		</nav>
@@ -106,7 +104,7 @@
 					class="${'ops-group' if operation['group'] else 'ops-single'}
 					       ${status_class}
 					       ${'ops-relevant' if operation['visible'] else 'ops-irrelevant'}
-					       ops-type-${operation['algorithm'].algo_group.group_category.displayname.lower()}" >
+					       ops-type-${operation['algorithm'].algorithm_category.displayname.lower()}" >
 					<td class="id" title="${operation['operation_tag']}">
 						${operation['id']}
 					</td>
@@ -142,7 +140,7 @@
 									</button>
 								</py:when>
 								<py:otherwise>
-									<py:choose test="(not operation['group']) and (not operation['algorithm'].algo_group.group_category.displayname == 'Create') and (not operation['algorithm'].algo_group.group_category.rawinput)">
+									<py:choose test="(not operation['group']) and (not operation['algorithm'].algorithm_category.displayname == 'Create') and (not operation['algorithm'].algorithm_category.rawinput)">
 										<py:when test="True">
 											<!--! Normal operation reload -->
 											<button tabindex='3' type="submit" class="action action-run" onclick="reloadOperation(${operation['id']}, 'operationsForm')">Reload</button>
@@ -195,7 +193,7 @@
 						</div>
 					</td>
 					
-					<td class="ops"> <mark>${operation['algorithm'].algo_group.group_category.displayname}</mark> ${operation['algorithm'].name} </td>
+					<td class="ops"> <mark>${operation['algorithm'].algorithm_category.displayname}</mark> ${operation['algorithm'].displayname} </td>
 					
 					<td class="brst"> ${operation['burst_name'] if operation['burst_name']!='-' else ''} </td>
 					

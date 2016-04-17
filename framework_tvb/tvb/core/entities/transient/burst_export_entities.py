@@ -242,10 +242,8 @@ class StepInfo(BaseExportHelp):
         Recieves a model.Algorithm entity and makes sure to store just what is needed to
         later be able to re-create that entity (even if with different id).
         """
-        self._data_dict[self.ALGO_INFO] = {'module': algorithm.algo_group.module,
-                                           'class': algorithm.algo_group.classname,
-                                           'init_param': algorithm.algo_group.init_parameter,
-                                           'identifier': algorithm.identifier}
+        self._data_dict[self.ALGO_INFO] = {'module': algorithm.module,
+                                           'class': algorithm.classname}
 
 
     def get_algorithm(self):
@@ -256,13 +254,8 @@ class StepInfo(BaseExportHelp):
         """
         if self.ALGO_INFO not in self._data_dict:
             return None
-        algo_group = dao.find_group(self._data_dict[self.ALGO_INFO]['module'],
-                                    self._data_dict[self.ALGO_INFO]['class'],
-                                    self._data_dict[self.ALGO_INFO]['init_param'])
-        if algo_group:
-            algorithm = dao.get_algorithm_by_group(algo_group.id, self._data_dict[self.ALGO_INFO]['identifier'])
-            return algorithm
-        return None
+        return dao.get_algorithm_by_module(self._data_dict[self.ALGO_INFO]['module'],
+                                           self._data_dict[self.ALGO_INFO]['class'])
 
 
     def to_dict(self):

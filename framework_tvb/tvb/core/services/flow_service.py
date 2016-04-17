@@ -36,15 +36,18 @@ Code related to launching/duplicating operations is placed here.
 .. moduleauthor:: Bogdan Neacsa <bogdan.neacsa@codemart.ro>
 """
 
+from inspect import getmro
+from tvb.basic.filters.chain import FilterChain
 from tvb.basic.traits.exceptions import TVBException
 from tvb.basic.logger.builder import get_logger
+from tvb.basic.traits.types_mapped import MappedType
 from tvb.core.adapters.input_tree import InputTreeManager
 from tvb.core.entities import model
 from tvb.core.entities.load import get_filtered_datatypes
+from tvb.core.entities.model import AlgorithmTransientGroup
 from tvb.core.entities.storage import dao
 from tvb.core.entities.file.files_helper import FilesHelper
 from tvb.core.adapters.abcadapter import ABCAdapter
-from tvb.core.adapters.exceptions import IntrospectionException
 from tvb.core.services.exceptions import OperationException
 from tvb.core.services.operation_service import OperationService
 
@@ -63,11 +66,6 @@ class FlowService:
     def get_category_by_id(self, identifier):
         """ Pass to DAO the retrieve of category by ID operation."""
         return dao.get_category_by_id(identifier)
-
-    @staticmethod
-    def get_uploader_categories():
-        """Retrieve all algorithm categories with Upload mechanism"""
-        return dao.get_uploader_categories()
     
     @staticmethod
     def get_raw_categories():
@@ -82,25 +80,6 @@ class FlowService:
             raise ValueError("View Category not found!!!")
         return result[0]
     
-    
-    @staticmethod
-    def get_launchable_non_viewers():
-        """Retrieve the Analyze Algorithm Category, (first category with launch capability which is not Viewers)"""
-        result = dao.get_launchable_categories(elimin_viewers=True)
-        if not result:
-            raise ValueError("Analyze Category not found!!!")
-        return result[0]
-    
-    
-    @staticmethod
-    def get_groups_for_categories(categories):
-        """
-        Retrieve the list of all Adapters names from a  given Category
-        """
-        categories_ids = [categ.id for categ in categories]
-        return dao.get_groups_by_categories(categories_ids)
-    
-    
     @staticmethod
     def get_algorithm_by_identifier(ident):
         """
@@ -108,15 +87,6 @@ class FlowService:
         Return None, if ID is not found in DB.
         """
         return dao.get_algorithm_by_id(ident)
-
-
-    @staticmethod
-    def get_algo_group_by_identifier(ident):
-        """
-        Retrieve Algorithm Group entity by ID.
-        Return None, if ID is not found in DB.
-        """
-        return dao.get_algo_group_by_id(ident)
 
     
     @staticmethod
@@ -131,40 +101,22 @@ class FlowService:
     def get_operation_numbers(proj_id):
         """ Count total number of operations started for current project. """
         return dao.get_operation_numbers(proj_id)
-    
-    
-    def build_adapter_instance(self, group):
-        """
-        Having a module and a class name, create an instance of ABCAdapter.
-        """
-        if group is None:
-            self.logger.error('The given algorithm group is None.')
-            raise OperationException("Could not prepare the algo- group.")
-        try:
-            return ABCAdapter.build_adapter(group)
-        except IntrospectionException:
-            self.logger.exception('Not found: ' + group.classname + ' in:' + group.module)
-            raise OperationException("Could not prepare " + group.classname)
               
-        
-    def prepare_adapter(self, project_id, algo_group):
+
+    def prepare_adapter(self, project_id, stored_adapter):
         """
-        Having a given Adapter, specified by Module and ClassName, 
-        create a instance of it and return the instance.
-        Actually return a Tuple: Adapter Instance, Dictionary for Adapter 
-        Interface specification.
+        Having a  StoredAdapter, return the Tree Adapter Interface object, populated with datatypes from 'project_id'.
         """
-        adapter_module = algo_group.module.replace('-', '.')
-        adapter_name = algo_group.classname
+        adapter_module = stored_adapter.module
+        adapter_name = stored_adapter.classname
         try:
             # Prepare Adapter Interface, by populating with existent data,
             # in case of a parameter of type DataType.
-            group = dao.find_group(adapter_module, adapter_name, algo_group.init_parameter)
-            adapter_instance = self.build_adapter_instance(group)
+            adapter_instance = ABCAdapter.build_adapter(stored_adapter)
             interface = adapter_instance.get_input_tree()
-            interface = self.input_tree_manager.fill_input_tree_with_options(interface, project_id, group.fk_category)
+            interface = self.input_tree_manager.fill_input_tree_with_options(interface, project_id, stored_adapter.fk_category)
             interface = self.input_tree_manager.prepare_param_names(interface)
-            return group, interface
+            return interface
         except Exception:
             self.logger.exception('Not found:' + adapter_name + ' in:' + adapter_module)
             raise OperationException("Could not prepare " + adapter_name)
@@ -176,9 +128,7 @@ class FlowService:
         Get the db entry from the algorithm table for the given module and 
         class.
         """
-        group = dao.find_group(module, classname)
-        algo = dao.get_algorithm_by_group(group.id)
-        return algo, group
+        return dao.get_algorithm_by_module(module, classname)
     
     
     @staticmethod
@@ -233,6 +183,117 @@ class FlowService:
         except Exception, excep:
             self.logger.exception("Could not launch operation " + operation_name + " with the given set of input data!")
             raise OperationException(str(excep))      
+
+
+    @staticmethod
+    def get_upload_algorithms():
+        """
+        :return: List of StoredAdapter entities
+        """
+        categories = dao.get_uploader_categories()
+        categories_ids = [categ.id for categ in categories]
+        return dao.get_adapters_from_categories(categories_ids)
+
+
+    def get_analyze_groups(self):
+        """
+        :return: list of AlgorithmTransientGroup entities
+        """
+        categories = dao.get_launchable_categories(elimin_viewers=True)
+        categories_ids = [categ.id for categ in categories]
+        stored_adapters = dao.get_adapters_from_categories(categories_ids)
+
+        groups_list = []
+        for adapter in stored_adapters:
+            # For empty groups, this time, we fill the actual adapter
+            group = AlgorithmTransientGroup(adapter.group_name or adapter.displayname,
+                                            adapter.group_description or adapter.description)
+            group = self._find_group(groups_list, group)
+            group.children.append(adapter)
+        return categories[0], groups_list
+
+
+    @staticmethod
+    def _find_group(groups_list, new_group):
+        for i in range(len(groups_list) - 1, -1, -1):
+            current_group = groups_list[i]
+            if current_group.name == new_group.name and current_group.description == new_group.description:
+                return current_group
+        # Not found in list
+        groups_list.append(new_group)
+        return new_group
+
+
+    def get_visualizers_for_group(self, dt_group_gid):
+
+        categories = dao.get_visualisers_categories()
+        return self._get_launchable_algorithms(dt_group_gid, categories)[1]
+
+
+    def get_launchable_algorithms(self, datatype_gid):
+        """
+        :param datatype_gid: Filter only algorithms compatible with this GUID
+        :return: dict(category_name: List AlgorithmTransientGroup)
+        """
+        categories = dao.get_launchable_categories()
+        datatype_instance, filtered_adapters = self._get_launchable_algorithms(datatype_gid, categories)
+
+        if isinstance(datatype_instance, model.DataTypeGroup):
+            # If part of a group, update also with specific analyzers of the child datatype
+            dt_group = dao.get_datatype_group_by_gid(datatype_gid)
+            datatypes = dao.get_datatypes_from_datatype_group(dt_group.id)
+            if len(datatypes):
+                datatype = datatypes[-1]
+                analyze_category = dao.get_launchable_categories(True)
+                _, inner_analyzers = self._get_launchable_algorithms(datatype.gid, analyze_category)
+                filtered_adapters.extend(inner_analyzers)
+
+        categories_dict = dict()
+        for c in categories:
+            categories_dict[c.id] = c.displayname
+
+        return self._group_adapters_by_category(filtered_adapters, categories_dict)
+
+
+    def _get_launchable_algorithms(self, datatype_gid, categories):
+
+        datatype_instance = dao.get_datatype_by_gid(datatype_gid)
+        data_class = datatype_instance.__class__
+        all_compatible_classes = [data_class.__name__]
+        for one_class in getmro(data_class):
+            if issubclass(one_class, MappedType) and one_class.__name__ not in all_compatible_classes:
+                all_compatible_classes.append(one_class.__name__)
+
+        self.logger.debug("Searching in categories: " + str(categories) + " for classes " + str(all_compatible_classes))
+        categories_ids = [categ.id for categ in categories]
+        launchable_adapters = dao.get_applicable_adapters(all_compatible_classes, categories_ids)
+
+        filtered_adapters = []
+        for stored_adapter in launchable_adapters:
+            filter_chain = FilterChain.from_json(stored_adapter.datatype_filter)
+            if not filter_chain or filter_chain.get_python_filter_equivalent(datatype_instance):
+                filtered_adapters.append(stored_adapter)
+
+        return datatype_instance, filtered_adapters
+
+
+    def _group_adapters_by_category(self, stored_adapters, categories):
+        """
+        :param stored_adapters: list StoredAdapter
+        :return: dict(category_name: List AlgorithmTransientGroup), empty groups all in the same AlgorithmTransientGroup
+        """
+        categories_dict = dict()
+        for adapter in stored_adapters:
+            category_name = categories.get(adapter.fk_category)
+            if category_name in categories_dict:
+                groups_list = categories_dict.get(category_name)
+            else:
+                groups_list = []
+                categories_dict[category_name] = groups_list
+            group = AlgorithmTransientGroup(adapter.group_name, adapter.group_description)
+            group = self._find_group(groups_list, group)
+            group.children.append(adapter)
+        return categories_dict
 
     
     ##########################################################################

@@ -38,23 +38,20 @@ import inspect
 import datetime
 import tvb.core.removers_factory as removers
 from types import ModuleType
-from tvb.basic.profile import TvbProfile
 from tvb.basic.logger.builder import get_logger
 from tvb.basic.traits.types_mapped import MappedType
 from tvb.core.entities import model
 from tvb.core.entities.storage import dao, SA_SESSIONMAKER
 from tvb.core.portlets.xml_reader import XMLPortletReader, ATT_OVERWRITE
 from tvb.core.adapters.abcremover import ABCRemover
-from tvb.core.adapters.abcadapter import ABCAdapter, ABCGroupAdapter
+from tvb.core.adapters.abcadapter import ABCAdapter
 from tvb.core.adapters.xml_reader import ATT_TYPE, ATT_NAME, INPUTS_KEY
-from tvb.core.adapters.xml_reader import ATT_REQUIRED, ELEM_CONDITIONS, XMLGroupReader
+from tvb.core.adapters.xml_reader import ATT_REQUIRED, ELEM_CONDITIONS
 from tvb.core.adapters.exceptions import XmlParserException
 from tvb.core.portlets.portlet_configurer import PortletConfigurer
-from tvb.core.utils import extract_matlab_doc_string
 
 
 ALL_VARIABLE = "__all__"
-XML_FOLDERS_VARIABLE = "__xml_folders__"
 MATLAB_ADAPTER = "MatlabAdapter"
 LAUNCHABLE = 'launchable'
 DISPLAYER = 'display'
@@ -150,12 +147,49 @@ class Introspector:
                                                                 category_state, order_nr, datetime.datetime.now())
                 category_instance = dao.store_entity(category_instance)
                 for actual_module in path_adapters[category_name]['modules']:
-                    self.__populate_algorithms(category_instance.id, actual_module)
+                    self.__read_adapters(category_instance.id, actual_module)
 
             for path in self.path_portlets:
                 self.__get_portlets(path)
         ### Register Remover instances for current introspected module
         removers.update_dictionary(self.get_removers_dict())
+
+
+    def __read_adapters(self, category_key, module_name):
+        """
+        Add or update lines into STORED_ADAPTERS table:
+        One line for each custom class found which is extending from ABCAdapter.
+        """
+        for adapters_file in Introspector.__read_module_variable(module_name):
+            try:
+                adapters_module = __import__(module_name + "." + adapters_file, globals(), locals(), [adapters_file])
+                for ad_class in dir(adapters_module):
+                    ad_class = adapters_module.__dict__[ad_class]
+                    if Introspector._is_concrete_subclass(ad_class, ABCAdapter):
+                        if ad_class.can_be_active():
+                            stored_adapter = model.Algorithm(ad_class.__module__, ad_class.__name__, category_key,
+                                                                 ad_class.get_group_name(), ad_class.get_group_description(),
+                                                                 ad_class.get_ui_name(), ad_class.get_ui_description(),
+                                                                 ad_class.get_ui_subsection(), datetime.datetime.now())
+                            adapter_inst = ad_class()
+                            in_params = adapter_inst.get_input_tree()
+                            req_type, param_name, flt = self.__get_required_input(in_params)
+                            stored_adapter.required_datatype = req_type
+                            stored_adapter.parameter_name = param_name
+                            stored_adapter.datatype_filter = flt
+                            stored_adapter.outputlist = str(adapter_inst.get_output())
+
+                            inst_from_db = dao.get_algorithm_by_module(ad_class.__module__, ad_class.__name__)
+                            if inst_from_db is not None:
+                                stored_adapter.id = inst_from_db.id
+
+                            stored_adapter = dao.store_entity(stored_adapter, inst_from_db is not None)
+                            ad_class.stored_adapter = stored_adapter
+                        else:
+                            self.logger.warning("Skipped Adapter(probably because MATLAB not found):" + str(ad_class))
+
+            except Exception:
+                self.logger.exception("Could not introspect Adapters file:" + adapters_file)
 
 
     def __get_portlets(self, path_portlets):
@@ -194,7 +228,7 @@ class Introspector:
                                     continue
                                 #Check inputs that refers to this adapter
                                 portlet_inputs = portlet_list[algo_identifier][INPUTS_KEY]
-                                adapter_instance, _ = PortletConfigurer.build_adapter_from_declaration(adapter)
+                                adapter_instance = PortletConfigurer.build_adapter_from_declaration(adapter)
                                 if adapter_instance is None:
                                     is_valid = False
                                     self.logger.warning("No group having class=%s stored for "
@@ -247,7 +281,7 @@ class Introspector:
         """
         Imports each DataType to update the DB model, by creating a new table for each DataType.
         """
-        for my_type in Introspector.__get_variable(path_types):
+        for my_type in Introspector.__read_module_variable(path_types):
             try:
                 module_ref = __import__(path_types, globals(), locals(), [my_type])
                 module_ref = getattr(module_ref, my_type)
@@ -258,80 +292,6 @@ class Introspector:
                 self.logger.error('Could not import DataType!' + my_type)
                 self.logger.exception(excep1)
         self.logger.debug('DB Model update finished for ' + path_types)
-
-
-    def __populate_algorithms(self, category_key, module_name):
-        """
-        Add lines to ALGORITHMS table, 
-        one line for each custom class found extending from ABCAdapter.
-        """
-        groups = []
-        for adapter_file in Introspector.__get_variable(module_name):
-            try:
-                adapter = __import__(module_name, globals(), locals(), [adapter_file])
-                adapter = getattr(adapter, adapter_file)
-                tree = inspect.getmembers(adapter, lambda c: self._is_concrete_subclass(c, ABCAdapter))
-                for class_name, class_ref in tree:
-                    group = self.__create_instance(category_key, class_ref)
-                    if group is not None:
-                        groups.append(group)
-            except Exception, excep:
-                self.logger.error("Could not introspect Adapters file:" + adapter_file)
-                self.logger.exception(excep)
-
-        xml_folders = Introspector.__get_variable(module_name, XML_FOLDERS_VARIABLE)
-        for folder in xml_folders:
-            folder_path = os.path.join(TvbProfile.current.web.CURRENT_DIR, folder)
-            files = os.listdir(folder_path)
-            for file_ in files:
-                if file_.endswith(".xml"):
-                    try:
-                        reader = XMLGroupReader.get_instance(os.path.join(folder_path, file_))
-                        adapter_class = reader.get_type()
-                        class_ref = self.__get_class_ref(adapter_class)
-                        group = self.__create_instance(category_key, class_ref, os.path.join(folder, file_))
-                        if group is not None:
-                            group.displayname = reader.get_ui_name()
-                            group.subsection_name = reader.subsection_name
-                            group.description = reader.get_ui_description()
-                            groups.append(group)
-                    except XmlParserException, excep:
-                        self.logger.error("Could not parse XML file: " + os.path.join(folder_path, file_))
-                        self.logger.exception(excep)
-
-        # Set the last_introspection_check flag so they will pass the validation check done after introspection
-        self.__update_references_last_check_timestamp(groups, category_key)
-
-        for group in groups:
-            group_inst_from_db = dao.find_group(group.module, group.classname, group.init_parameter)
-            adapter = ABCAdapter.build_adapter(group)
-            has_sub_algorithms = False
-            ui_name = group.displayname
-            if isinstance(adapter, ABCGroupAdapter):
-                group.algorithm_param_name = adapter.get_algorithm_param()
-                has_sub_algorithms = True
-            if group_inst_from_db is None:
-                self.logger.info(str(group.module) + " will be stored new in DB")
-                group = model.AlgorithmGroup(group.module, group.classname, category_key,
-                                             group.algorithm_param_name, group.init_parameter,
-                                             datetime.datetime.now(), subsection_name=group.subsection_name,
-                                             description=group.description)
-            else:
-                self.logger.info(str(group.module) + " will be updated")
-                group = group_inst_from_db
-            if hasattr(adapter, "_ui_name"):
-                ui_name = adapter._ui_name
-            elif ui_name is None or len(ui_name) == 0:
-                ui_name = group.classname
-            if hasattr(adapter, "_ui_description"):
-                group.description = adapter._ui_description
-            if hasattr(adapter, "_ui_subsection"):
-                group.subsection_name = adapter._ui_subsection
-            group.displayname = ui_name
-            group.removed = False
-            group.last_introspection_check = datetime.datetime.now()
-            group_inst_from_db = dao.store_entity(group)
-            self.__store_algorithms_for_group(group_inst_from_db, adapter, has_sub_algorithms)
 
 
     def __get_class_ref(self, full_class_name):
@@ -345,62 +305,6 @@ class Introspector:
             return getattr(mod, class_name)
         self.logger.error("The location of the adapter class is incorrect. It should be placed in a module.")
         raise Exception("The location of the adapter class is incorrect. It should be placed in a module.")
-
-
-    def __store_algorithms_for_group(self, group, adapter, has_sub_algorithms):
-        """
-        For the group passed as parameter do the following:
-        If it has sub-algorithms, get the list of them, add sub-algorithm 
-        references into the DB with all the required fields.
-        If it is not a GroupAdapter add a single algorithm into the DB with an
-        empty identifier.
-        """
-        if has_sub_algorithms:
-            algos = adapter.get_algorithms_dictionary()
-            for algo_ident in algos:
-                in_params = adapter.get_input_for_algorithm(algo_ident)
-                req_type, param_name, flt = self.__get_required_input(in_params)
-                outputs = adapter.get_output_for_algorithm(algo_ident)
-                algo_description = ""
-                if self.__is_matlab_parent(adapter.__class__):
-                    root_folder = adapter.get_matlab_file_root()
-                    file_name = adapter.get_matlab_file(algo_ident)
-                    if file_name:
-                        algo_description = extract_matlab_doc_string(os.path.join(root_folder, file_name))
-                algorithm = dao.get_algorithm_by_group(group.id, algo_ident)
-                if algorithm is None:
-                    #Create new
-                    algorithm = model.Algorithm(group.id, algo_ident, algos[algo_ident][ATT_NAME],
-                                                req_type, param_name, str(outputs), flt, description=algo_description)
-                else:
-                    #Edit previous
-                    algorithm.name = algos[algo_ident][ATT_NAME]
-                    algorithm.required_datatype = req_type
-                    algorithm.parameter_name = param_name
-                    algorithm.outputlist = str(outputs)
-                    algorithm.datatype_filter = flt
-                    algorithm.description = algo_description
-                dao.store_entity(algorithm)
-        else:
-            input_tree = adapter.get_input_tree()
-            req_type, param_name, flt = self.__get_required_input(input_tree)
-            outputs = str(adapter.get_output())
-            algorithm = dao.get_algorithm_by_group(group.id, None)
-            if hasattr(adapter, '_ui_name'):
-                algo_name = adapter._ui_name
-            else:
-                algo_name = adapter.__class__.__name__
-            if algorithm is None:
-                #Create new
-                algorithm = model.Algorithm(group.id, None, algo_name, req_type, param_name, outputs, flt)
-            else:
-                #Edit previous
-                algorithm.name = algo_name
-                algorithm.required_datatype = req_type
-                algorithm.parameter_name = param_name
-                algorithm.outputlist = str(outputs)
-                algorithm.datatype_filter = flt
-            dao.store_entity(algorithm)
 
 
     def __get_required_input(self, input_tree):
@@ -481,26 +385,8 @@ class Introspector:
                     break
 
 
-    def __create_instance(self, category_key, class_ref, init_parameter=None):
-        """
-        Validate Class reference.
-        Return None or Algorithm instance, from class reference.
-        """
-        if class_ref.can_be_active():
-            return model.AlgorithmGroup(class_ref.__module__, class_ref.__name__, category_key,
-                                        init_parameter=init_parameter, last_introspection_check=datetime.datetime.now())
-        else:
-            self.logger.warning("Skipped Adapter(probably because MATLAB not found):" + str(class_ref))
-            return None
-
-
-    def __is_matlab_parent(self, adapter_class):
-        """ Check if current class is MatlabAdapter"""
-        return adapter_class.__name__.find(MATLAB_ADAPTER) >= 0
-
-
     @staticmethod
-    def __get_variable(module_path, variable_name=ALL_VARIABLE):
+    def __read_module_variable(module_path, variable_name=ALL_VARIABLE):
         """
         Retrieve variable with name 'variable_name' from the given Python module.
         Result will be a list of Strings.

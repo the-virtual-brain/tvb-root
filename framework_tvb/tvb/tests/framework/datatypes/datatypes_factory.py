@@ -101,10 +101,8 @@ class DatatypesFactory(object):
         # Create algorithm
         alg_category = model.AlgorithmCategory('one', True)
         dao.store_entity(alg_category)
-        alg_group = model.AlgorithmGroup("test_module1", "classname1", alg_category.id)
-        dao.store_entity(alg_group)
-        algorithm = model.Algorithm(alg_group.id, 'id', name='', req_data='', param_name='', output='')
-        self.algorithm = dao.store_entity(algorithm)
+        ad = model.Algorithm("test_module1", "classname1", alg_category.id)
+        self.algorithm = dao.store_entity(ad)
 
         #Create an operation
         self.meta = {DataTypeMetaData.KEY_SUBJECT: self.USER_FULL_NAME,
@@ -193,8 +191,8 @@ class DatatypesFactory(object):
         Create a operation entity. Return the operation, algo_id and the storage path.
         """
         meta = {DataTypeMetaData.KEY_SUBJECT: "John Doe", DataTypeMetaData.KEY_STATE: "RAW_DATA"}
-        algorithm, algo_group = FlowService().get_algorithm_by_module_and_class(SIMULATOR_MODULE, SIMULATOR_CLASS)
-        operation = model.Operation(self.user.id, self.project.id, algo_group.id, json.dumps(''), meta=json.dumps(meta),
+        algorithm = FlowService().get_algorithm_by_module_and_class(SIMULATOR_MODULE, SIMULATOR_CLASS)
+        operation = model.Operation(self.user.id, self.project.id, algorithm.id, json.dumps(''), meta=json.dumps(meta),
                                     status=model.STATUS_STARTED)
         operation = dao.store_entity(operation)
         storage_path = FilesHelper().get_project_folder(self.project, str(operation.id))

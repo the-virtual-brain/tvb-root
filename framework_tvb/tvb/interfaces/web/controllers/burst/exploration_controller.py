@@ -72,12 +72,12 @@ class ParameterExplorationController(BaseController):
         If none are available return: None.
         """
         algorithm = self.flow_service.get_algorithm_by_module_and_class(DISCRETE_PSE_ADAPTER_MODULE,
-                                                                        DISCRETE_PSE_ADAPTER_CLASS)[0]
+                                                                        DISCRETE_PSE_ADAPTER_CLASS)
         if self._is_compatible(algorithm, datatype_group_gid):
             return PSE_FLOT
 
         algorithm = self.flow_service.get_algorithm_by_module_and_class(ISOCLINE_PSE_ADAPTER_MODULE,
-                                                                        ISOCLINE_PSE_ADAPTER_CLASS)[0]
+                                                                        ISOCLINE_PSE_ADAPTER_CLASS)
         if self._is_compatible(algorithm, datatype_group_gid):
             return PSE_ISO
 
@@ -111,9 +111,9 @@ class ParameterExplorationController(BaseController):
         if size_metric == 'None':
             size_metric = None
 
-        algorithm, group = self.flow_service.get_algorithm_by_module_and_class(DISCRETE_PSE_ADAPTER_MODULE,
-                                                                               DISCRETE_PSE_ADAPTER_CLASS)
-        adapter = self.flow_service.build_adapter_instance(group)
+        algorithm = self.flow_service.get_algorithm_by_module_and_class(DISCRETE_PSE_ADAPTER_MODULE,
+                                                                        DISCRETE_PSE_ADAPTER_CLASS)
+        adapter = ABCAdapter.build_adapter(algorithm)
         if self._is_compatible(algorithm, datatype_group_gid):
             try:
                 pse_context = adapter.prepare_parameters(datatype_group_gid, back_page, color_metric, size_metric)
@@ -139,9 +139,9 @@ class ParameterExplorationController(BaseController):
         if height is not None:
             height = int(height)
 
-        algorithm, group = self.flow_service.get_algorithm_by_module_and_class(ISOCLINE_PSE_ADAPTER_MODULE,
-                                                                               ISOCLINE_PSE_ADAPTER_CLASS)
-        adapter = self.flow_service.build_adapter_instance(group)
+        algorithm = self.flow_service.get_algorithm_by_module_and_class(ISOCLINE_PSE_ADAPTER_MODULE,
+                                                                        ISOCLINE_PSE_ADAPTER_CLASS)
+        adapter = ABCAdapter.build_adapter(algorithm)
         if self._is_compatible(algorithm, datatype_group_gid):
             try:
                 return adapter.burst_preview(datatype_group_gid, width, height)

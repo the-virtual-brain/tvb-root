@@ -27,29 +27,30 @@
 #   Frontiers in Neuroinformatics (7:10. doi: 10.3389/fninf.2013.00010)
 #
 #
-"""
-Created on Jul 19, 2011
 
+"""
 .. moduleauthor:: Bogdan Neacsa <bogdan.neacsa@codemart.ro>
 .. moduleauthor:: Lia Domide <lia.domide@codemart.ro>
 """
+
 import os
 import numpy
 import unittest
 from datetime import datetime
+from tvb.config import DISCRETE_PSE_ADAPTER_CLASS
+from tvb.core.adapters.exceptions import IntrospectionException
 from tvb.tests.framework.core.base_testcase import TransactionalTestCase
 from tvb.datatypes.arrays import MappedArray
 from tvb.basic.filters.chain import FilterChain
 from tvb.core.entities import model
 from tvb.core.entities.storage import dao
 from tvb.core.entities.file.files_helper import FilesHelper
-from tvb.core.adapters.abcadapter import ABCAdapter
-from tvb.core.adapters.abcadapter import ABCSynchronous
-from tvb.core.services.exceptions import OperationException
+from tvb.core.adapters.abcadapter import ABCSynchronous, ABCAdapter
 from tvb.core.services.flow_service import FlowService
 from tvb.tests.framework.datatypes.datatype1 import Datatype1
 from tvb.tests.framework.datatypes.datatype2 import Datatype2
 from tvb.tests.framework.core.test_factory import TestFactory
+from tvb.tests.framework.datatypes.datatypes_factory import DatatypesFactory
 
 
 TEST_ADAPTER_VALID_MODULE = "tvb.tests.framework.core.services.flow_service_test"
@@ -58,6 +59,7 @@ TEST_ADAPTER_INVALID_CLASS = "InvalidTestAdapter"
 
 CATEGORY1 = 1
 CATEGORY2 = 2
+
 
 
 class ValidTestAdapter(ABCSynchronous):
@@ -80,7 +82,7 @@ class ValidTestAdapter(ABCSynchronous):
         # Don't know how much memory is needed.
         return -1
 
-    def launch(self, test):
+    def launch(self, **kwarg):
         pass
 
 
@@ -111,81 +113,73 @@ class FlowServiceTest(TransactionalTestCase):
         self.flow_service = FlowService()
         self.test_user = TestFactory.create_user()
         self.test_project = TestFactory.create_project(admin=self.test_user)
-        ### Insert some starting data in the database.
-        categ1 = model.AlgorithmCategory('one', True)
-        self.categ1 = dao.store_entity(categ1)
-        categ2 = model.AlgorithmCategory('two', rawinput=True)
-        self.categ2 = dao.store_entity(categ2)
 
-        group1 = model.AlgorithmGroup("test_module1", "classname1", categ1.id)
-        self.algo_group1 = dao.store_entity(group1)
-        group2 = model.AlgorithmGroup("test_module2", "classname2", categ2.id)
-        self.algo_group2 = dao.store_entity(group2)
-        group3 = model.AlgorithmGroup("test_module3", "classname3", categ1.id)
-        self.algo_group3 = dao.store_entity(group3)
-
-        group_v = model.AlgorithmGroup(TEST_ADAPTER_VALID_MODULE, TEST_ADAPTER_VALID_CLASS, categ2.id)
-        self.algo_group_v = dao.store_entity(group_v)
-
-        algo_v = model.Algorithm(self.algo_group_v.id, 'ident', name='', req_data='', param_name='', output='')
-        self.algorithm_v = dao.store_entity(algo_v)
-
-        algo1 = model.Algorithm(self.algo_group1.id, 'id', name='', req_data='', param_name='', output='')
-        self.algorithm1 = dao.store_entity(algo1)
+        category = dao.get_uploader_categories()[0]
+        self.algorithm = dao.store_entity(model.Algorithm(TEST_ADAPTER_VALID_MODULE,
+                                                          TEST_ADAPTER_VALID_CLASS, category.id))
 
 
     def tearDown(self):
-        for algo in [self.algorithm1, self.algorithm_v]:
-            dao.remove_entity(model.Algorithm, algo.id)
-
-        for group in [self.algo_group1, self.algo_group2, self.algo_group3, self.algorithm_v]:
-            dao.remove_entity(model.AlgorithmGroup, group.id)
-
-        for categ in [self.categ1, self.categ2]:
-            dao.remove_entity(model.AlgorithmCategory, categ.id)
+        dao.remove_entity(model.Algorithm, self.algorithm)
 
 
-    def test_groups_for_categories(self):
-        """
-        Test getting algorithms for specific categories.
-        """
-        category1 = self.flow_service.get_groups_for_categories([self.categ1])
-        category2 = self.flow_service.get_groups_for_categories([self.categ2])
+    def test_get_uploaders(self):
 
-        dummy = model.AlgorithmCategory('dummy', rawinput=True)
-        dummy.id = 999
-        unexisting_cat = self.flow_service.get_groups_for_categories([dummy])
-
-        self.assertEqual(len(category1), 2)
-        self.assertEqual(len(category2), 2)
-        self.assertEqual(len(unexisting_cat), 0)
-
-        for group in category1:
-            if group.module not in ["test_module1", "test_module3"]:
-                self.fail("Some invalid data retrieved")
-        for group in category2:
-            if group.module not in ["test_module2", TEST_ADAPTER_VALID_MODULE]:
-                self.fail("Some invalid data retrieved")
+        result = self.flow_service.get_upload_algorithms()
+        self.assertEqual(29, len(result))
+        found = False
+        for algo in result:
+            if algo.classname == self.algorithm.classname and algo.module == self.algorithm.module:
+                found = True
+                break
+        self.assertTrue(found, "Uploader incorrectly returned")
 
 
+    def test_get_analyze_groups(self):
 
-    def test_get_broup_by_identifier(self):
+        category, groups = self.flow_service.get_analyze_groups()
+        self.assertEqual(category.displayname, 'Analyze')
+        self.assertTrue(len(groups) > 1)
+        self.assertTrue(isinstance(groups[0], model.AlgorithmTransientGroup))
+
+
+    def test_get_visualizers_for_group(self):
+
+        _, op_group_id = TestFactory.create_group(self.test_user, self.test_project)
+        dt_group = dao.get_datatypegroup_by_op_group_id(op_group_id)
+        result = self.flow_service.get_visualizers_for_group(dt_group.gid)
+        # Only the discreet is expected
+        self.assertEqual(1, len(result))
+        self.assertEqual(DISCRETE_PSE_ADAPTER_CLASS, result[0].classname)
+
+
+    def test_get_launchable_algorithms(self):
+
+        factory = DatatypesFactory()
+        conn = factory.create_connectivity(4)[1]
+        ts = factory.create_timeseries(conn)
+        result = self.flow_service.get_launchable_algorithms(ts.gid)
+        self.assertTrue('Analyze' in result)
+        self.assertTrue('View' in result)
+
+
+
+    def test_get_roup_by_identifier(self):
         """
         Test for the get_algorithm_by_identifier.
         """
-        algo_ret = self.flow_service.get_algo_group_by_identifier(self.algo_group1.id)
-        self.assertEqual(algo_ret.id, self.algo_group1.id, "ID-s are different!")
-        self.assertEqual(algo_ret.module, self.algo_group1.module, "Modules are different!")
-        self.assertEqual(algo_ret.fk_category, self.algo_group1.fk_category, "Categories are different!")
-        self.assertEqual(algo_ret.classname, self.algo_group1.classname, "Class names are different!")
+        algo_ret = self.flow_service.get_algorithm_by_identifier(self.algorithm.id)
+        self.assertEqual(algo_ret.id, self.algorithm.id, "ID-s are different!")
+        self.assertEqual(algo_ret.module, self.algorithm.module, "Modules are different!")
+        self.assertEqual(algo_ret.fk_category, self.algorithm.fk_category, "Categories are different!")
+        self.assertEqual(algo_ret.classname, self.algorithm.classname, "Class names are different!")
 
 
     def test_build_adapter_instance(self):
         """
         Test standard flow for building an adapter instance.
         """
-        algo_group = dao.find_group(TEST_ADAPTER_VALID_MODULE, TEST_ADAPTER_VALID_CLASS)
-        adapter = ABCAdapter.build_adapter(algo_group)
+        adapter = TestFactory.create_adapter(TEST_ADAPTER_VALID_MODULE, TEST_ADAPTER_VALID_CLASS)
         self.assertTrue(isinstance(adapter, ABCSynchronous), "Something went wrong with valid data!")
 
 
@@ -193,17 +187,17 @@ class FlowServiceTest(TransactionalTestCase):
         """
         Test flow for trying to build an adapter that does not inherit from ABCAdapter.
         """
-        group = dao.find_group(TEST_ADAPTER_VALID_MODULE, TEST_ADAPTER_INVALID_CLASS)
-        self.assertRaises(OperationException, self.flow_service.build_adapter_instance, group)
+        group = dao.get_algorithm_by_module(TEST_ADAPTER_VALID_MODULE, TEST_ADAPTER_INVALID_CLASS)
+        self.assertRaises(IntrospectionException, ABCAdapter.build_adapter, group)
 
 
     def test_prepare_adapter(self):
         """
         Test preparation of an adapter.
         """
-        algo_group = dao.find_group(TEST_ADAPTER_VALID_MODULE, TEST_ADAPTER_VALID_CLASS)
-        group, interface = self.flow_service.prepare_adapter(self.test_project.id, algo_group)
-        self.assertTrue(isinstance(group, model.AlgorithmGroup), "Something went wrong with valid data!")
+        stored_adapter = dao.get_algorithm_by_module(TEST_ADAPTER_VALID_MODULE, TEST_ADAPTER_VALID_CLASS)
+        interface = self.flow_service.prepare_adapter(self.test_project.id, stored_adapter)
+        self.assertTrue(isinstance(stored_adapter, model.Algorithm), "Something went wrong with valid data!")
         self.assertTrue("name" in interface[0], "Bad interface created!")
         self.assertEquals(interface[0]["name"], "test", "Bad interface!")
         self.assertTrue("type" in interface[0], "Bad interface created!")
@@ -216,8 +210,7 @@ class FlowServiceTest(TransactionalTestCase):
         """
         Test preparation of an adapter and launch mechanism.
         """
-        algo_group = dao.find_group(TEST_ADAPTER_VALID_MODULE, TEST_ADAPTER_VALID_CLASS)
-        adapter = self.flow_service.build_adapter_instance(algo_group)
+        adapter = TestFactory.create_adapter(TEST_ADAPTER_VALID_MODULE, TEST_ADAPTER_VALID_CLASS)
         data = {"test": 5}
         result = self.flow_service.fire_operation(adapter, self.test_user, self.test_project.id, **data)
         self.assertTrue(result.endswith("has finished."), "Operation fail")
@@ -295,7 +288,7 @@ class FlowServiceTest(TransactionalTestCase):
                      datetime.strptime("08-12-2011", "%m-%d-%Y"),
                      datetime.strptime("08-12-2011", "%m-%d-%Y")]
         for i in range(5):
-            operation = model.Operation(self.test_user.id, self.test_project.id, self.algorithm1.id, 'test params',
+            operation = model.Operation(self.test_user.id, self.test_project.id, self.algorithm.id, 'test params',
                                         status=model.STATUS_FINISHED, start_date=start_dates[i],
                                         completion_date=end_dates[i])
             operation = dao.store_entity(operation)

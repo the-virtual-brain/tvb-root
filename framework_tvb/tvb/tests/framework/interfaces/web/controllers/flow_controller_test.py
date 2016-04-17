@@ -36,11 +36,11 @@ import json
 import unittest
 import cherrypy
 from time import sleep
+from tvb.tests.framework.core.test_factory import TestFactory
 from tvb.tests.framework.interfaces.web.controllers.base_controller_test import BaseControllersTest
 from tvb.core.entities import model
 from tvb.core.entities.storage import dao
 from tvb.core.services.operation_service import OperationService
-from tvb.core.services.flow_service import FlowService
 from tvb.interfaces.web.controllers import common
 from tvb.interfaces.web.controllers.flow_controller import FlowController
 from tvb.interfaces.web.controllers.burst.burst_controller import BurstController
@@ -74,14 +74,7 @@ class FlowContollerTest(BaseControllersTest):
         Remove the project from CherryPy session and check that you are redirected to projects page.
         """
         del cherrypy.session[common.KEY_PROJECT]
-        self._expect_redirect('/project/viewall', self.flow_c.step)
-    
-
-    def test_invalid_step(self):
-        """
-        Pass an invalid step and make sure we are redirected to tvb start page.
-        """
-        self._expect_redirect('/tvb', self.flow_c.step)
+        self._expect_redirect('/project/viewall', self.flow_c.step_analyzers)
         
         
     def test_valid_step(self):
@@ -89,12 +82,10 @@ class FlowContollerTest(BaseControllersTest):
         For all algorithm categories check that a submenu is generated and the result
         page has it's title given by category name.
         """
-        categories = dao.get_algorithm_categories()
-        for categ in categories:
-            result_dict = self.flow_c.step(categ.id)
-            self.assertTrue(common.KEY_SUBMENU_LIST in result_dict,
-                            "Expect to have a submenu with available algorithms for category.")
-            self.assertEqual(result_dict["section_name"], categ.displayname.lower())
+        result_dict = self.flow_c.step_analyzers()
+        self.assertTrue(common.KEY_SUBMENU_LIST in result_dict,
+                        "Expect to have a submenu with available algorithms for category.")
+        self.assertEqual(result_dict["section_name"], 'analyze')
 
 
     def test_step_connectivity(self):
@@ -114,7 +105,7 @@ class FlowContollerTest(BaseControllersTest):
         cherrypy.request.method = "GET"
         categories = dao.get_algorithm_categories()
         for categ in categories:
-            algo_groups = dao.get_groups_by_categories([categ.id])
+            algo_groups = dao.get_adapters_from_categories([categ.id])
             for algo in algo_groups:
                 result_dict = self.flow_c.default(categ.id, algo.id)
                 self.assertEqual(result_dict[common.KEY_SUBMIT_LINK], '/flow/%i/%i' % (categ.id, algo.id))
@@ -128,7 +119,7 @@ class FlowContollerTest(BaseControllersTest):
         """
         cherrypy.request.method = "POST"
         categories = dao.get_algorithm_categories()
-        algo_groups = dao.get_groups_by_categories([categories[0].id])
+        algo_groups = dao.get_adapters_from_categories([categories[0].id])
         self._expect_redirect('/project/viewoperations/%i' % self.test_project.id, self.flow_c.default,
                               categories[0].id, algo_groups[0].id, cancel=True, back_page='operations')
         
@@ -163,7 +154,7 @@ class FlowContollerTest(BaseControllersTest):
         
         
     def test_get_simple_adapter_interface(self):
-        adapter = dao.find_group('tvb.tests.framework.adapters.testadapter1', 'TestAdapter1')
+        adapter = dao.get_algorithm_by_module('tvb.tests.framework.adapters.testadapter1', 'TestAdapter1')
         result = self.flow_c.get_simple_adapter_interface(adapter.id)
         expected_interface = TestAdapter1().get_input_tree()
         self.assertEqual(result['inputList'], expected_interface)
@@ -242,13 +233,9 @@ class FlowContollerTest(BaseControllersTest):
 
 
     def _launch_test_algo_on_cluster(self, **data):
-        module = "tvb.tests.framework.adapters.testadapter1"
-        class_name = "TestAdapter1"
-        group = dao.find_group(module, class_name)
-        adapter = FlowService().build_adapter_instance(group)
-        algo_group = adapter.algorithm_group
-        algo_category = dao.get_category_by_id(algo_group.fk_category)
-        algo = dao.get_algorithm_by_group(algo_group.id)
+        adapter = TestFactory.create_adapter("tvb.tests.framework.adapters.testadapter1", "TestAdapter1")
+        algo = adapter.stored_adapter
+        algo_category = dao.get_category_by_id(algo.fk_category)
         operations, _ = self.operation_service.prepare_operations(self.test_user.id, self.test_project.id, algo,
                                                                   algo_category, {}, **data)
         self.operation_service._send_to_cluster(operations, adapter)

@@ -69,11 +69,11 @@ def launch_simulation_workflow(json_path, prj_id):
         LOG.info("Simulation Workflow configuration object loaded: \n  %s", simulation_config)
 
         flow_service = FlowService()
-        simulator_algorithm, _ = flow_service.get_algorithm_by_module_and_class(SIMULATOR_MODULE, SIMULATOR_CLASS)
-        LOG.info("Found Simulation algorithm in local DB: \n   %s", simulator_algorithm)
+        stored_adapter = flow_service.get_algorithm_by_module_and_class(SIMULATOR_MODULE, SIMULATOR_CLASS)
+        LOG.info("Found Simulation algorithm in local DB: \n   %s", stored_adapter)
 
         burst_service = BurstService()
-        burst_service.launch_burst(simulation_config, 0, simulator_algorithm.id, project.administrator.id, LAUNCH_NEW)
+        burst_service.launch_burst(simulation_config, 0, stored_adapter.id, project.administrator.id, LAUNCH_NEW)
         LOG.info("Check in the web GUI for your operation. It should be starting now ...")
 
 

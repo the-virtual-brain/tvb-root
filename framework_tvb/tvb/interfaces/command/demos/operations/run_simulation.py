@@ -67,7 +67,7 @@ if __name__ == "__main__":
     project = dao.get_project_by_id(1)
 
     ## Prepare the Adapter
-    adapter_instance = ABCAdapter.prepare_adapter(SimulatorAdapter)
+    adapter_instance = ABCAdapter.build_adapter_from_class(SimulatorAdapter)
 
     ## Prepare the input algorithms as if they were coming from web UI submit:
     ## TODO create helper methods for working with objects instead of strings.

@@ -129,9 +129,9 @@ class TestFactory():
         :return: Operation entity after persistence. 
         """
         if algorithm is None:
-            algo_group = dao.find_group('tvb.tests.framework.adapters.ndimensionarrayadapter', 'NDimensionArrayAdapter')
-            algorithm = dao.get_algorithm_by_group(algo_group.id)
-            
+            algorithm = dao.get_algorithm_by_module('tvb.tests.framework.adapters.ndimensionarrayadapter',
+                                                    'NDimensionArrayAdapter')
+
         if test_user is None:
             test_user = TestFactory.create_user()
             
@@ -156,15 +156,12 @@ class TestFactory():
             test_user = TestFactory.create_user()  
         if test_project is None:
             test_project = TestFactory.create_project(test_user)
-           
-        ### Retrieve Adapter instance 
-        algo_group = dao.find_group('tvb.tests.framework.adapters.testadapter3', 'TestAdapter3')
-        algo_category = dao.get_category_by_id(algo_group.fk_category)
-        algo = dao.get_algorithm_by_group(algo_group.id) 
         
-        adapter_inst = TestFactory.create_adapter(algo_group=algo_group, test_project=test_project)
+        adapter_inst = TestFactory.create_adapter('tvb.tests.framework.adapters.testadapter3', 'TestAdapter3')
         adapter_inst.meta_data = {DataTypeMetaData.KEY_SUBJECT: subject}
         args = {model.RANGE_PARAMETER_1: 'param_5', 'param_5': [1, 2]}
+        algo = adapter_inst.stored_adapter
+        algo_category = dao.get_category_by_id(algo.fk_category)
         
         ### Prepare Operations group. Execute them synchronously
         service = OperationService()
@@ -177,19 +174,13 @@ class TestFactory():
         
     
     @staticmethod
-    def create_adapter(algo_group=None, test_project=None, ):
+    def create_adapter(module='tvb.tests.framework.adapters.ndimensionarrayadapter',
+                       class_name='NDimensionArrayAdapter'):
         """
         :returns: Adapter Class after initialization.
         """
-        if algo_group is None:
-            algo_group = dao.find_group('tvb.tests.framework.adapters.ndimensionarrayadapter', 'NDimensionArrayAdapter')
-            
-        if test_project is None:
-            test_user = TestFactory.create_user()
-            test_project = TestFactory.create_project(test_user)
-            
-        group, _ = FlowService().prepare_adapter(test_project.id, algo_group)
-        return FlowService().build_adapter_instance(group)
+        algorithm = dao.get_algorithm_by_module(module, class_name )
+        return ABCAdapter.build_adapter(algorithm)
     
     
     @staticmethod
@@ -214,8 +205,7 @@ class TestFactory():
             static_kwargs = {}
         if dynamic_kwargs is None:
             dynamic_kwargs = {}
-        step_group = dao.find_group(module, classname)
-        algorithm = dao.get_algorithm_by_group(step_group.id)
+        algorithm = dao.get_algorithm_by_module(module, classname)
         second_step_configuration = wf_cfg(algorithm.id, static_kwargs, dynamic_kwargs)
         
         static_params = second_step_configuration.static_params
@@ -258,9 +248,8 @@ class TestFactory():
         if test_project is None:
             test_project = TestFactory.create_project(test_user)  
             
-        ### Retrieve Adapter instance 
-        group = dao.find_group('tvb.adapters.uploaders.cff_importer', 'CFF_Importer')
-        importer = ABCAdapter.build_adapter(group)
+        ### Retrieve Adapter instance
+        importer = TestFactory.create_adapter('tvb.adapters.uploaders.cff_importer', 'CFF_Importer')
         args = {'cff': cff_path, DataTypeMetaData.KEY_SUBJECT: DataTypeMetaData.DEFAULT_SUBJECT}
         
         ### Launch Operation
@@ -270,8 +259,7 @@ class TestFactory():
     @staticmethod
     def import_surface_zip(user, project, zip_path, surface_type, zero_based):
         ### Retrieve Adapter instance 
-        group = dao.find_group('tvb.adapters.uploaders.zip_surface_importer', 'ZIPSurfaceImporter')
-        importer = ABCAdapter.build_adapter(group)
+        importer = TestFactory.create_adapter('tvb.adapters.uploaders.zip_surface_importer', 'ZIPSurfaceImporter')
         args = {'uploaded': zip_path, 'surface_type': surface_type,
                 'zero_based_triangles': zero_based}
         
@@ -282,8 +270,7 @@ class TestFactory():
     @staticmethod
     def import_surface_obj(user, project, obj_path, surface_type):
         ### Retrieve Adapter instance
-        group = dao.find_group('tvb.adapters.uploaders.obj_importer', 'ObjSurfaceImporter')
-        importer = ABCAdapter.build_adapter(group)
+        importer = TestFactory.create_adapter('tvb.adapters.uploaders.obj_importer', 'ObjSurfaceImporter')
         args = {'data_file': obj_path,
                 'surface_type': surface_type}
 
@@ -294,8 +281,7 @@ class TestFactory():
     @staticmethod
     def import_sensors(user, project, zip_path, sensors_type):
         ### Retrieve Adapter instance 
-        group = dao.find_group('tvb.adapters.uploaders.sensors_importer', 'Sensors_Importer')
-        importer = ABCAdapter.build_adapter(group)
+        importer = TestFactory.create_adapter('tvb.adapters.uploaders.sensors_importer', 'Sensors_Importer')
         args = {'sensors_file': zip_path, 'sensors_type': sensors_type}
         ### Launch Operation
         FlowService().fire_operation(importer, user, project.id, **args)
@@ -303,8 +289,8 @@ class TestFactory():
     
     @staticmethod
     def import_zip_connectivity(user, project, subject, zip_path):
-        group = dao.find_group('tvb.adapters.uploaders.zip_connectivity_importer', 'ZIPConnectivityImporter')
-        importer = ABCAdapter.build_adapter(group)
+        importer = TestFactory.create_adapter('tvb.adapters.uploaders.zip_connectivity_importer',
+                                              'ZIPConnectivityImporter')
         FlowService().fire_operation(importer, user, project.id, uploaded=zip_path, Data_Subject=subject)
 
 

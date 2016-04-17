@@ -38,7 +38,7 @@ if __name__ == "__main__":
     from tvb.basic.profile import TvbProfile
     TvbProfile.set_profile(TvbProfile.COMMAND_PROFILE)
 
-from tvb.core.entities.model import AlgorithmGroup, Algorithm
+from tvb.core.entities.model import Algorithm
 from tvb.core.entities.storage import dao
 from tvb.core.services.flow_service import FlowService
 from tvb.core.services.operation_service import OperationService
@@ -60,14 +60,13 @@ if __name__ == "__main__":
     # First select the category of uploaders:
     upload_category = dao.get_uploader_categories()[0]
     # check if the algorithm has been added in DB already
-    my_group = dao.find_group(FooDataImporter.__module__, FooDataImporter.__name__)
-    if my_group is None:
+    algorithm = dao.get_algorithm_by_module(FooDataImporter.__module__, FooDataImporter.__name__)
+    if algorithm is None:
         # not stored in DB previously, we will store it now:
-        my_group = AlgorithmGroup(FooDataImporter.__module__, FooDataImporter.__name__, upload_category.id)
-        my_group = dao.store_entity(my_group)
-        dao.store_entity(Algorithm(my_group.id, "", "FooName"))
+        algorithm = Algorithm(FooDataImporter.__module__, FooDataImporter.__name__, upload_category.id)
+        algorithm = dao.store_entity(algorithm)
 
-    adapter_instance.algorithm_group = my_group
+    adapter_instance.stored_adapter = algorithm
 
     ## Prepare the input algorithms as if they were coming from web UI submit:
     #launch_args = {"array_data": "[1, 2, 3, 4, 5]"}

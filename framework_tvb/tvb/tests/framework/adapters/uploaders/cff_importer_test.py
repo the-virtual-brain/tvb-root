@@ -36,10 +36,8 @@ import os
 import unittest
 import tvb_data.cff as dataset
 from tvb.tests.framework.core.base_testcase import TransactionalTestCase
-from tvb.core.adapters.abcadapter import ABCAdapter
 from tvb.core.services.exceptions import OperationException
 from tvb.core.services.flow_service import FlowService
-from tvb.core.entities.storage import dao
 from tvb.core.entities.transient.structure_entities import DataTypeMetaData
 from tvb.tests.framework.core.test_factory import TestFactory
 
@@ -62,8 +60,7 @@ class CFFUploadTest(TransactionalTestCase):
 
     def _run_cff_importer(self, cff_path):
         ### Retrieve Adapter instance
-        group = dao.find_group('tvb.adapters.uploaders.cff_importer', 'CFF_Importer')
-        importer = ABCAdapter.build_adapter(group)
+        importer = TestFactory.create_adapter('tvb.adapters.uploaders.cff_importer', 'CFF_Importer')
         args = {'cff': cff_path, DataTypeMetaData.KEY_SUBJECT: DataTypeMetaData.DEFAULT_SUBJECT}
 
         ### Launch Operation

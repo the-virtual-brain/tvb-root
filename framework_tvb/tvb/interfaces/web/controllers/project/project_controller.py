@@ -304,7 +304,7 @@ class ProjectController(BaseController):
             return session_filtes
 
         else:
-            sim_group = self.flow_service.get_algorithm_by_module_and_class(SIMULATOR_MODULE, SIMULATOR_CLASS)[1]
+            sim_group = self.flow_service.get_algorithm_by_module_and_class(SIMULATOR_MODULE, SIMULATOR_CLASS)
             new_filters = StaticFiltersFactory.build_operations_filters(sim_group, common.get_logged_user().id)
             common.add2session(self.KEY_OPERATION_FILTERS, new_filters)
             return new_filters
@@ -338,7 +338,7 @@ class ProjectController(BaseController):
         datatype_gid = datatype_details.gid
         categories = {}
         if not entity.invalid:
-            categories = self._get_algorithms_for_datatype(str(datatype_gid))
+            categories = self.flow_service.get_launchable_algorithms(datatype_gid)
 
         is_group = False
         if datatype_details.operation_group_id is not None:
@@ -409,28 +409,7 @@ class ProjectController(BaseController):
                                                               overlay_title, "project/details_datatype_overlay",
                                                               overlay_class, tabs, overlay_indexes)
         template_specification['baseUrl'] = TvbProfile.current.web.BASE_URL
-        #template_specification[c.KEY_OVERLAY_PAGINATION] = True
-        #template_specification[c.KEY_OVERLAY_PREVIOUS] = "alert(1);"
-        #template_specification[c.KEY_OVERLAY_NEXT] = "alert(2);"
         return FlowController().fill_default_attributes(template_specification)
-
-
-    def _get_algorithms_for_datatype(self, datatype_gid):
-        """
-        Retrieve the available algorithms for a DataType as a JSON, will be used for creating overlay context.
-        We will return a dictionary, grouped by category.
-        """
-        algorithms = self.project_service.retrieve_launchers(datatype_gid)
-        for category in algorithms:
-            available_launchers = algorithms[category]
-            for launcher in available_launchers:
-                info = available_launchers[launcher]
-                if info['part_of_group'] is False:
-                    info['url'] = self.get_url_adapter(info['category'], info['id'])
-                else:
-                    info['url'] = '/flow/prepare_group_launch/' + datatype_gid + '/' + str(
-                        info['category']) + '/' + str(info['id'])
-        return algorithms
 
 
     @expose_fragment('project/linkable_projects')
@@ -509,7 +488,7 @@ class ProjectController(BaseController):
         if (operation.fk_operation_group is not None) or (operation.burst is not None):
             display_reload_btn = False
         else:
-            op_categ_id = operation.algorithm.algo_group.fk_category
+            op_categ_id = operation.algorithm.fk_category
             raw_categories = self.flow_service.get_raw_categories()
             for category in raw_categories:
                 if category.id == op_categ_id:
@@ -568,18 +547,17 @@ class ProjectController(BaseController):
         Returns the html which displays a dialog which allows the user
         to upload certain data into the application.
         """
-        upload_categories = self.flow_service.get_uploader_categories()
-        upload_algorithms = self.flow_service.get_groups_for_categories(upload_categories)
+        upload_algorithms = self.flow_service.get_upload_algorithms()
 
         flow_controller = FlowController()
         algorithms_interface = {}
         tabs = []
 
-        for algo_group in upload_algorithms:
-            adapter_template = flow_controller.get_adapter_template(project_id, algo_group.id, True, None)
-            algorithms_interface['template_for_algo_' + str(algo_group.id)] = adapter_template
-            tabs.append(OverlayTabDefinition(algo_group.displayname, algo_group.subsection_name,
-                                             description=algo_group.description))
+        for algorithm in upload_algorithms:
+            adapter_template = flow_controller.get_adapter_template(project_id, algorithm.id, True, None)
+            algorithms_interface['template_for_algo_' + str(algorithm.id)] = adapter_template
+            tabs.append(OverlayTabDefinition(algorithm.displayname, algorithm.subsection_name,
+                                             description=algorithm.description))
 
         template_specification = self.fill_overlay_attributes(None, "Upload", "Upload data for this project",
                                                               "project/upload_data_overlay", "dialog-upload",
@@ -604,7 +582,7 @@ class ProjectController(BaseController):
 
 
     @expose_page
-    def launchloader(self, project_id, algo_group_id, cancel=False, **data):
+    def launchloader(self, project_id, algorithm_id, cancel=False, **data):
         """ 
         Start Upload mechanism
         """
@@ -614,13 +592,13 @@ class ProjectController(BaseController):
             raise cherrypy.HTTPRedirect(success_link)
         try:
             int(project_id)
-            int(algo_group_id)
+            int(algorithm_id)
         except (ValueError, TypeError):
             raise cherrypy.HTTPRedirect(success_link)
 
         project = self.project_service.find_project(project_id)
-        group = self.flow_service.get_algo_group_by_identifier(algo_group_id)
-        FlowController().execute_post(project.id, success_link, group.fk_category, group, **data)
+        algorithm = self.flow_service.get_algorithm_by_identifier(algorithm_id)
+        FlowController().execute_post(project.id, success_link, algorithm.fk_category, algorithm, **data)
 
         raise cherrypy.HTTPRedirect(success_link)
 

@@ -38,14 +38,13 @@ import re
 import unittest
 import numpy
 import cherrypy
+import tvb.basic.traits as trait
+import tvb.interfaces.web.templates.genshi.flow as root_html
 from bs4 import BeautifulSoup
 from genshi.template.loader import TemplateLoader
-
 from tvb.core.adapters.input_tree import InputTreeManager
 from tvb.tests.framework.core.base_testcase import BaseTestCase
 from tvb.basic.profile import TvbProfile
-import tvb.basic.traits as trait
-import tvb.interfaces.web.templates.genshi.flow as root_html
 from tvb.interfaces.web.controllers import common
 from tvb.core.adapters.abcadapter import ABCAdapter
 from tvb.core.entities.storage import dao
@@ -166,26 +165,23 @@ class GenthiTraitTest(GenshiTest):
 
 
 
-class GenshiTestSimple(GenshiTest):
+class GenshiTestSimulator(GenshiTest):
     """
-    For a simple adapter interface (no group of algorithms) test that
-    various fields are generated correctly.
+    For the simulator interface, test that various fields are generated correctly.
     """
+    algorithm = dao.get_algorithm_by_module('tvb.adapters.simulator.simulator_adapter', 'SimulatorAdapter')
+    adapter_instance = ABCAdapter.build_adapter(algorithm)
+    input_tree = adapter_instance.get_input_tree()
+    input_tree = InputTreeManager.prepare_param_names(input_tree)
 
 
     def setUp(self):
         """
         Set up any additionally needed parameters.
         """
-        super(GenshiTestSimple, self).setUp()
+        super(GenshiTestSimulator, self).setUp()
 
-        xml_group_path = os.path.join('tests', 'framework', 'interfaces', 'web', "test_simple.xml")
-        algo_group = dao.find_group('tvb.tests.framework.adapters.testgroupadapter', 'TestGroupAdapter', xml_group_path)
-        self.xml_group_adapter = ABCAdapter.build_adapter(algo_group)
-        input_tree = self.xml_group_adapter.get_input_tree()
-
-        input_tree = InputTreeManager.prepare_param_names(input_tree)
-        self.template_specification['inputList'] = input_tree
+        self.template_specification['inputList'] = self.input_tree
         self.template_specification['draw_hidden_ranges'] = True
         self.template_specification[common.KEY_PARAMETERS_CONFIG] = False
         resulted_html = _template2string(self.template_specification)
@@ -200,15 +196,15 @@ class GenshiTestSimple(GenshiTest):
         Check the name of inputs generated for each sub-algorithm is done 
         properly with only one option that is not disabled
         """
-        exp = re.compile('group_parameters_option_SIM_model_parameters_option_[^ \t\n\r\f\v]*_model_1$')
+        exp = re.compile('model_parameters_option_[a-zA-Z]*')
         all_inputs = self.soup.find_all('input', attrs=dict(name=exp))
         count_disabled = 0
         for one_entry in all_inputs:
             ## Replacing with IN won't work
             if one_entry.has_key('disabled'):
                 count_disabled += 1
-        self.assertEqual(5, len(all_inputs), "Some inputs not generated or too many inputs generated")
-        self.assertEqual(4, count_disabled, "Disabling input fields was not done correctly")
+        self.assertTrue(len(all_inputs) > 100, "Not enough input fields generated")
+        self.assertTrue(count_disabled > 100, "Not enough input fields disabled")
 
 
     def test_hidden_ranger_fields(self):
@@ -217,8 +213,8 @@ class GenshiTestSimple(GenshiTest):
         """
         ranger1 = self.soup.find_all('input', attrs=dict(type="hidden", id=RANGE_PARAMETER_1))
         ranger2 = self.soup.find_all('input', attrs=dict(type="hidden", id=RANGE_PARAMETER_2))
-        self.assertEqual(len(ranger1), 1, "First ranger generated wrong")
-        self.assertEqual(len(ranger2), 1, "Second ranger generated wrong")
+        self.assertEqual(1, len(ranger1), "First ranger generated wrong")
+        self.assertEqual(1, len(ranger2), "Second ranger generated wrong")
 
 
     def test_sub_algorithms(self):
@@ -227,11 +223,11 @@ class GenshiTestSimple(GenshiTest):
         and that only one of them is not disable
         """
         fail_message = "Something went wrong with generating the sub-algorithms."
-        exp = re.compile('data_group_parameters_option_SIM_model*')
+        exp = re.compile('data_model[A-Z][a-zA-Z]*')
         enabled_algo = self.soup.find_all('div', attrs=dict(id=exp, style="display:block"))
         all_algo_disabled = self.soup.find_all('div', attrs=dict(id=exp, style="display:none"))
         self.assertEqual(1, len(enabled_algo))
-        self.assertEqual(6, len(all_algo_disabled))
+        self.assertEqual(11, len(all_algo_disabled))
         self.assertFalse(enabled_algo[0] in all_algo_disabled, fail_message)
 
 
@@ -243,19 +239,13 @@ class GenshiTestSimple(GenshiTest):
         """
         fail_message = "Something went wrong with generating the ranger."
 
-        exp = re.compile('data_group_parameters_option_SIM_model*')
+        exp = re.compile('data_model*')
         ranger_parent = self.soup.find_all('table', attrs={'id': exp, 'class': "ranger-div-class"})
-        self.assertTrue(len(ranger_parent) == 1, fail_message)
+        self.assertTrue(len(ranger_parent) > 100, fail_message)
 
-        span_field = self.soup.find_all('span', attrs=dict(id="data_group_parameters_option_SIM_modelWilsonCowangroup_"
-                                                          "parameters_option_SIM_model_parameters_option_WilsonCowan_"
-                                                          "model_0_RANGER_interval_span"))
-        self.assertEqual(span_field[0].contents[0], '0.01 - 0.91', fail_message)
-
-        spinner_field = self.soup.find_all('input', attrs=dict(id="data_group_parameters_option_SIM_modelWilsonCowan"
-                                                                 "group_parameters_option_SIM_model_parameters_option_"
-                                                                 "WilsonCowan_model_0_RANGER_stepInput"))
-        self.assertEqual(str(spinner_field[0]['value']), '0.01', fail_message)
+        range_expand = self.soup.find_all('input', attrs=dict(
+            id="data_modelGeneric2dOscillatormodel_parameters_option_Generic2dOscillator_tau_RANGER_buttonExpand"))
+        self.assertEqual(1, len(range_expand))
 
 
     def test_multiple_select(self):
@@ -263,66 +253,16 @@ class GenshiTestSimple(GenshiTest):
         Checks the correct creation of a multiple select component.
         """
         fail_message = "Something went wrong with creating multiple select."
-        exp = re.compile('group_parameters_option_SIM_monitors*')
+        exp = re.compile('data_monitors[A-Z][a-zA-Z]*')
         all_multiple_options = self.soup.find_all('div', attrs=dict(id=exp))
         disabled_options = self.soup.find_all('div', attrs=dict(id=exp, disabled='disabled'))
-        self.assertEqual(len(all_multiple_options), 4, fail_message)
-        self.assertEqual(len(disabled_options), 2, fail_message)
+        self.assertEqual(9, len(all_multiple_options), fail_message)
+        self.assertEqual(8, len(disabled_options), fail_message)
         exp = re.compile('monitors_parameters*')
         all_multiple_params = self.soup.find_all('input', attrs=dict(name=exp))
         disabled_params = self.soup.find_all('input', attrs=dict(name=exp, disabled='disabled'))
-        self.assertEqual(len(all_multiple_params), 4, fail_message)
-        self.assertEqual(len(disabled_params), 2, fail_message)
-
-
-
-class GenshiTestGroup(GenshiTest):
-    """
-    For a  group of algorithms interface test that
-    various fields are generated correctly.
-    """
-
-    def setUp(self):
-        """
-        Set up any additionally needed parameters.
-        """
-        super(GenshiTestGroup, self).setUp()
-
-        xml_group_path = os.path.join('tests', 'framework', 'interfaces', 'web', "test_group.xml")
-        algo_group = dao.find_group('tvb.tests.framework.adapters.testgroupadapter', 'TestGroupAdapter', xml_group_path)
-        self.xml_group_adapter = ABCAdapter.build_adapter(algo_group)
-        input_tree = self.xml_group_adapter.get_input_tree()
-        input_tree = InputTreeManager.prepare_param_names(input_tree)
-        self.template_specification['inputList'] = input_tree
-        self.template_specification[common.KEY_PARAMETERS_CONFIG] = False
-        resulted_html = _template2string(self.template_specification)
-        self.soup = BeautifulSoup(resulted_html)
-
-
-    def test_algorithm_select_is_first(self):
-        """
-        Test that the first select input is always the algorithm selection 
-        and that an updateDivContent is performed on it.
-        """
-        first_select = self.soup.find('input', attrs=dict(type="radio"))
-        self.assertTrue(first_select['name'] == 'bct')
-        self.assertTrue("updateDivContent" in first_select['onchange'])
-
-
-    def test_sub_algorithms_correct(self):
-        """
-        Test that the two sub-algorithms are correctly generated and that
-        only one of them is not disabled.
-        """
-        exp = re.compile('data_bct*')
-        sub_algos = self.soup.find_all('div', attrs=dict(id=exp))
-        self.assertEqual(2, len(sub_algos))
-        disabled = 0
-        for one_entry in sub_algos:
-            style = one_entry.get('style')
-            if style and 'display:none' in style:
-                disabled += 1
-        self.assertEqual(1, disabled)
+        self.assertTrue(len(all_multiple_params) > 50, fail_message)
+        self.assertTrue(len(disabled_params) > 50, fail_message)
 
 
 
@@ -366,8 +306,9 @@ class GenshiTestNDimensionArray(GenshiTest):
         inserted_arrays, array_count = flow_service.get_available_datatypes(self.test_project.id, MappedArray)
         self.assertEqual(1, array_count, "Problems when inserting data")
 
-        algogroup = dao.find_group('tvb.tests.framework.adapters.ndimensionarrayadapter', 'NDimensionArrayAdapter')
-        _, interface = flow_service.prepare_adapter(self.test_project.id, algogroup)
+        algorithm = flow_service.get_algorithm_by_module_and_class(
+            'tvb.tests.framework.adapters.ndimensionarrayadapter', 'NDimensionArrayAdapter')
+        interface = flow_service.prepare_adapter(self.test_project.id, algorithm)
         self.template_specification['inputList'] = interface
         resulted_html = _template2string(self.template_specification)
         self.soup = BeautifulSoup(resulted_html)
@@ -441,8 +382,7 @@ def suite():
     """
     test_suite = unittest.TestSuite()
     test_suite.addTest(unittest.makeSuite(GenshiTestNDimensionArray))
-    test_suite.addTest(unittest.makeSuite(GenshiTestSimple))
-    test_suite.addTest(unittest.makeSuite(GenshiTestGroup))
+    test_suite.addTest(unittest.makeSuite(GenshiTestSimulator))
     test_suite.addTest(unittest.makeSuite(GenthiTraitTest))
     return test_suite
 
