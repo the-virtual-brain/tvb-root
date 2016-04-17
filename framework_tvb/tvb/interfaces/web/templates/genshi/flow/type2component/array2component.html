@@ -1,10 +1,7 @@
 <py:def function="draw_array_component(inputRow, disabled)" xmlns:py="http://genshi.edgewall.org/">
  	<!--! Draw Input field for an array (Upload component or text-field with function/comma separated values). -->
  	<py:with vars="add_attrs={'disabled': 'disabled'} if disabled else {}; value=inputRow.default if 'default' in inputRow else ''">
-        <input type="text" tabindex='1' name="$inputRow.name" id="$inputRow.name" value="${value}"
-            py:if="(('quantifier' in inputRow and inputRow.quantifier == 'manual') or 'quantifier' not in inputRow)" py:attrs="add_attrs"/>
-        <input type="file" tabindex='1' name="$inputRow.name" id="$inputRow.name" value="${value}"
-            py:if="'quantifier' in inputRow and inputRow.quantifier == 'upload'" py:attrs="add_attrs"/>
+        <input type="text" tabindex='1' name="$inputRow.name" id="$inputRow.name" value="${value}" py:attrs="add_attrs"/>
     </py:with>
             
     ${add_checkbox_control(inputRow)}

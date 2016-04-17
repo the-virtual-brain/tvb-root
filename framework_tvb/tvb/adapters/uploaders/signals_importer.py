@@ -117,7 +117,6 @@ class VHDR(ABCUploader):
     def get_upload_input_tree(self):
         return [{'name': 'vhdr',
                  "type": "upload",
-                 #'type': "array", "quantifier": "manual",
                  'required_type': '.vhdr',
                  'label': 'Please select a VHDR file',
                  'required': 'true'},

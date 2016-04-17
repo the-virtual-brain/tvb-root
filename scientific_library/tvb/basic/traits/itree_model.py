@@ -99,14 +99,12 @@ class NumericNode(LeafNode):
 
 
 class ArrayNode(LeafNode):
-    def __init__(self, name, type_, default, range_=None, quantifier='manual',
-                 label=None, description=None, required=True, locked=False):
+    def __init__(self, name, type_, default, range_=None, label=None, description=None, required=True, locked=False):
         LeafNode.__init__(self, name, 'array', label, description, required, locked)
 
         self.default = default
         self.range = range_
         self.elementType = type_
-        self.quantifier = quantifier
 
 
 class DictNode(object):

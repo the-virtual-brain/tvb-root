@@ -175,7 +175,6 @@ class TraitedInterfaceGenerator(object):
     def __fill_array(obj, inst, intr):
         intr['type'] = 'array'
         intr['elementType'] = str(inst.dtype)
-        intr['quantifier'] = 'manual'
         if isinstance(obj.trait.value, numpy.ndarray):
             # Make sure arrays are displayed in a compatible form: [1, 2, 3]
             intr['default'] = str(obj.trait.value.tolist())

@@ -51,7 +51,6 @@ class FooDataImporter(ABCUploader):
         return [
             {'name': 'array_data',
              "type": "upload",
-             #'type': "array", "quantifier": "manual",
              'required_type': '.npy',
              'label': 'please upload npy',
              'required': 'true'}

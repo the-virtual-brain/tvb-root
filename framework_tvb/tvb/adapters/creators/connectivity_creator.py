@@ -46,13 +46,13 @@ class ConnectivityCreator(ABCAsynchronous):
 
     def get_input_tree(self):
         return [{'name': 'original_connectivity', 'label': 'Parent connectivity',
-                 'type': Connectivity, 'required': True, 'quantifier': 'manual'},
+                 'type': Connectivity, 'required': True},
                 {'name': 'new_weights', 'label': 'Weights json array',
-                 'type': 'array', 'elementType': 'float', 'required': True, 'quantifier': 'manual'},
+                 'type': 'array', 'elementType': 'float', 'required': True},
                 {'name': 'new_tracts', 'label': 'Tracts json array',
-                 'type': 'array', 'elementType': 'float', 'required': True, 'quantifier': 'manual'},
+                 'type': 'array', 'elementType': 'float', 'required': True},
                 {'name': 'interest_area_indexes', 'label': 'Indices of selected nodes as json array',
-                 'type': 'array', 'elementType': 'int', 'required': True, 'quantifier': 'manual'},
+                 'type': 'array', 'elementType': 'int', 'required': True},
                 {'name': 'is_branch', 'label': 'Is it a branch',
                  'type': 'bool', 'required': True}]
 
