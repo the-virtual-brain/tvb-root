@@ -50,7 +50,7 @@ class VersionSettings(object):
     BASE_VERSION = "1.4.2"
 
     # Current DB version. Increment this and create a new xxx_update_db.py migrate script
-    DB_STRUCTURE_VERSION = 16
+    DB_STRUCTURE_VERSION = 17
 
     # This is the version of the data stored in H5 and XML files
     # and should be used by next versions to know how to import

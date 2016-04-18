@@ -68,7 +68,7 @@ def upgrade(migrate_engine):
     Alter existing table ALGORITHMS, by moving columns from the old ALGORITHM_GROUPS table.
     """
     meta.bind = migrate_engine
-    table_algo = meta.tables['ALGORITHMS']
+    table_algo = meta.tables["ALGORITHMS"]
     for col in ADD_COLUMNS:
         create_column(col, table_algo)
 
@@ -76,25 +76,25 @@ def upgrade(migrate_engine):
     try:
         session.execute(text(
             """UPDATE "ALGORITHMS" SET
-                module = (select G.module  FROM "ALGORITHM_GROUPS" G WHERE "ALGORITHMS".fk_algo_group=G.id),
-                classname = (select G.classname  FROM "ALGORITHM_GROUPS" G WHERE "ALGORITHMS".fk_algo_group=G.id),
-                fk_category = (select G.fk_category  FROM "ALGORITHM_GROUPS" G WHERE "ALGORITHMS".fk_algo_group=G.id)
-                ;"""))
+            module = (select G.module FROM "ALGORITHM_GROUPS" G WHERE "ALGORITHMS".fk_algo_group=G.id),
+            classname = (select G.classname FROM "ALGORITHM_GROUPS" G WHERE "ALGORITHMS".fk_algo_group=G.id),
+            displayname = (select G.displayname FROM "ALGORITHM_GROUPS" G WHERE "ALGORITHMS".fk_algo_group=G.id),
+            fk_category = (select G.fk_category FROM "ALGORITHM_GROUPS" G WHERE "ALGORITHMS".fk_algo_group=G.id);"""))
         session.commit()
-
-        # Create constraint only after rows are being populated
-        table_algo = meta.tables['ALGORITHMS']
-        fk_constraint = ForeignKeyConstraint(['fk_category'], ['ALGORITHM_CATEGORIES.id'],
-                                             ondelete="CASCADE", table=table_algo)
-        fk_constraint.create()
 
         # Delete old columns, no longer needed
         for col in DEL_COLUMNS:
             drop_column(col, table_algo)
 
+        # Create constraint only after rows are being populated
+        table_algo = meta.tables["ALGORITHMS"]
+        fk_constraint = ForeignKeyConstraint(["fk_category"], ["ALGORITHM_CATEGORIES.id"],
+                                             ondelete="CASCADE", table=table_algo)
+        fk_constraint.create()
+
         # Drop old table
         session = SA_SESSIONMAKER()
-        session.execute(text("DROP TABLE \"ALGORITHM_GROUPS\""))
+        session.execute(text("""DROP TABLE "ALGORITHM_GROUPS";"""))
         session.commit()
 
     except Exception, excep:
