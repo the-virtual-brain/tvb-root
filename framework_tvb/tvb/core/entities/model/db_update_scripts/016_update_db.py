@@ -29,7 +29,7 @@
 #
 
 """
-Change of DB structure from TVB version 1.4.1 to TVB 1.5
+Change of DB structure from TVB version 1.4.1 to TVB 1.4.1b
 
 .. moduleauthor:: Andrei Mihai <mihai.andrei@codemart.ro>
 """
@@ -48,8 +48,10 @@ def upgrade(_migrate_engine):
     session.commit()
     session.close()
 
-    
 
-def downgrade(_migrate_engine):
-    """Operations to reverse the above upgrade go here."""
-    upgrade(_migrate_engine)
+
+def downgrade(_):
+    """
+    Downgrade currently not supported
+    """
+    pass
