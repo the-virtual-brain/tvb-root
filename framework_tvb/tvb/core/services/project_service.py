@@ -56,6 +56,7 @@ from tvb.core.services.exceptions import StructureException, ProjectServiceExcep
 from tvb.core.services.exceptions import RemoveDataTypeException
 from tvb.core.services.user_service import UserService
 from tvb.core.adapters.abcadapter import ABCAdapter
+from tvb.core.adapters.exceptions import IntrospectionException
 
 
 def initialize_storage():
@@ -428,7 +429,7 @@ class ProjectService:
 
         username = dao.get_user_by_id(operation.fk_launched_by).username
         burst = dao.get_burst_for_operation_id(operation.id)
-        datatypes_param, all_special_params = ProjectService._review_operation_inputs(operation.gid)
+        datatypes_param, all_special_params = self._review_operation_inputs(operation.gid)
 
         op_pid = dao.get_operation_process_for_operation(operation.id)
         op_details = OperationOverlayDetails(operation, username, len(datatypes_param),
@@ -740,8 +741,7 @@ class ProjectService:
                                                         str(datatype.fk_from_operation), from_group)
 
 
-    @staticmethod
-    def get_datatype_and_datatypegroup_inputs_for_operation(operation_gid, selected_filter):
+    def get_datatype_and_datatypegroup_inputs_for_operation(self, operation_gid, selected_filter):
         """
         Returns the dataTypes that are used as input parameters for the given operation.
         'selected_filter' - is expected to be a visibility filter.
@@ -749,7 +749,7 @@ class ProjectService:
         If any dataType is part of a dataType group then the dataType group will
         be returned instead of that dataType.
         """
-        all_datatypes = ProjectService._review_operation_inputs(operation_gid)[0]
+        all_datatypes = self._review_operation_inputs(operation_gid)[0]
         datatype_inputs = []
         for datatype in all_datatypes:
             if selected_filter.display_name == StaticFiltersFactory.RELEVANT_VIEW:
@@ -770,20 +770,30 @@ class ProjectService:
         return datatypes
 
 
-    @staticmethod
-    def _review_operation_inputs(operation_gid):
+    def _review_operation_inputs(self, operation_gid):
         """
         :returns: A list of DataTypes that are used as input parameters for the specified operation.
                  And a dictionary will all operation parameters different then the default ones.
         """
         operation = dao.get_operation_by_gid(operation_gid)
         parameters = json.loads(operation.parameters)
-        adapter = ABCAdapter.build_adapter(operation.algorithm)
-        return adapter.review_operation_inputs(parameters)
+        try:
+            adapter = ABCAdapter.build_adapter(operation.algorithm)
+            return adapter.review_operation_inputs(parameters)
+
+        except IntrospectionException:
+            self.logger.warning("Could not find adapter class for operation %s" % operation_gid)
+            inputs_datatypes = []
+            changed_parameters = dict(Warning="Algorithm was Removed. We can not offer more details")
+            for submit_param in parameters.values():
+                self.logger.debug("Searching DT by GID %s" % submit_param)
+                datatype = ABCAdapter.load_entity_by_gid(str(submit_param))
+                if datatype is not None:
+                    inputs_datatypes.append(datatype)
+            return inputs_datatypes, changed_parameters
 
 
-    @staticmethod
-    def get_datatypes_inputs_for_operation_group(group_id, selected_filter):
+    def get_datatypes_inputs_for_operation_group(self, group_id, selected_filter):
         """
         Returns the dataType inputs for an operation group. If more dataTypes
         are part of the same dataType group then only the dataType group will
@@ -792,7 +802,7 @@ class ProjectService:
         operations_gids = dao.get_operations_in_group(group_id, only_gids=True)
         op_group_inputs = dict()
         for gid in operations_gids:
-            op_inputs = ProjectService.get_datatype_and_datatypegroup_inputs_for_operation(gid[0], selected_filter)
+            op_inputs = self.get_datatype_and_datatypegroup_inputs_for_operation(gid[0], selected_filter)
             for datatype in op_inputs:
                 op_group_inputs[datatype.id] = datatype
         return op_group_inputs.values()

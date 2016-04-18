@@ -763,7 +763,7 @@ class ProjectController(BaseController):
 
         dt_inputs, parent_op, dt_outputs, op_inputs = [], [], [], []
         if item_type == graph_structures.NODE_OPERATION_TYPE:
-            dt_inputs = ProjectService.get_datatype_and_datatypegroup_inputs_for_operation(item_gid, selected_filter)
+            dt_inputs = self.project_service.get_datatype_and_datatypegroup_inputs_for_operation(item_gid, selected_filter)
             parent_op = self.project_service.load_operation_by_gid(item_gid)
             dt_outputs = self.project_service.get_results_for_operation(parent_op.id, selected_filter)
             #create graph nodes
@@ -805,7 +805,7 @@ class ProjectController(BaseController):
                 op_inputs.extend(op_inputs_in_groups)
             else:
                 parent_op = self.flow_service.load_operation(selected_dt.fk_from_operation)
-                dt_inputs = ProjectService.get_datatype_and_datatypegroup_inputs_for_operation(parent_op.gid,
+                dt_inputs = self.project_service.get_datatype_and_datatypegroup_inputs_for_operation(parent_op.gid,
                                                                                                selected_filter)
                 op_inputs = self.project_service.get_operations_for_datatype(selected_dt.gid, selected_filter)
                 op_inputs_in_groups = self.project_service.get_operations_for_datatype(selected_dt.gid, selected_filter,
