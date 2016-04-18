@@ -34,7 +34,10 @@ Change of DB structure from TVB version 1.4.1 to TVB 1.4.2
 .. moduleauthor:: Lia Domide <lia.domide@codemart.ro>
 """
 
+from sqlalchemy import Column, Integer, String, Boolean, DateTime
 from sqlalchemy.sql import text
+from migrate.changeset.constraint import ForeignKeyConstraint
+from migrate.changeset.schema import create_column, drop_column
 from tvb.basic.logger.builder import get_logger
 from tvb.core.entities import model
 from tvb.core.entities.storage import SA_SESSIONMAKER
@@ -44,54 +47,54 @@ meta = model.Base.metadata
 
 LOGGER = get_logger(__name__)
 
-SQL_CREATE_TABLE = """
-CREATE TABLE "ALGORITHMS2"
-(
-  id INTEGER NOT NULL,
-  module VARCHAR,
-  classname VARCHAR,
-  fk_category INTEGER,
-  group_name VARCHAR,
-  group_description VARCHAR,
-  displayname VARCHAR,
-  description VARCHAR,
-  subsection_name VARCHAR,
-  required_datatype VARCHAR,
-  datatype_filter VARCHAR,
-  parameter_name VARCHAR,
-  outputlist VARCHAR,
-  last_introspection_check timestamp without time zone,
-  removed BOOLEAN,
-  PRIMARY KEY(id),
-  FOREIGN KEY (fk_category) REFERENCES "ALGORITHM_CATEGORIES" (id) ON DELETE CASCADE
-);
-         """
+DEL_COLUMNS = [Column('fk_algo_group', Integer),
+               Column('identifier', String),
+               Column('name', String)]
 
-SQL_INSERT = """
-INSERT INTO "ALGORITHMS2"
-SELECT A.id, G.module, G.classname, G.fk_category, null, null ,A.name, A.description,
-        G.subsection_name, A.required_datatype, A.datatype_filter, A.parameter_name, A.outputlist, null, 0
-FROM "ALGORITHMS" A, "ALGORITHM_GROUPS" G
-WHERE A.fk_algo_group = G.id;
-               """
+ADD_COLUMNS = [Column('fk_category', Integer),
+               Column('module', String),
+               Column('classname', String),
+               Column('group_name', String),
+               Column('group_description', String),
+               Column('displayname', String),
+               Column('subsection_name', String),
+               Column('last_introspection_check', DateTime),
+               Column('removed', Boolean, default=False)]
+
 
 
 def upgrade(migrate_engine):
     """
-    Migrate can not handle these (adding new columns with FK, etc.) so we need to find a more solid solution
+    Alter existing table ALGORITHMS, by moving columns from the old ALGORITHM_GROUPS table.
     """
     meta.bind = migrate_engine
+    table_algo = meta.tables['ALGORITHMS']
+    for col in ADD_COLUMNS:
+        create_column(col, table_algo)
 
     session = SA_SESSIONMAKER()
     try:
-        session.execute(text("PRAGMA foreign_keys=OFF"))
-        session.execute(text(SQL_CREATE_TABLE))
-        session.execute(text(SQL_INSERT))
-        #session.execute(text("""DROP TABLE "ALGORITHM_GROUPS";"""))
-        #session.execute(text("""DROP TABLE "ALGORITHMS";"""))
-        session.execute(text("""ALTER TABLE "ALGORITHMS" RENAME TO "ALGORITHMS_old";"""))
-        session.execute(text("""ALTER TABLE "ALGORITHMS2" RENAME TO "ALGORITHMS";"""))
-        session.execute(text("PRAGMA foreign_keys=OFF"))
+        session.execute(text(
+            """UPDATE "ALGORITHMS" SET
+                module = (select G.module  FROM "ALGORITHM_GROUPS" G WHERE "ALGORITHMS".fk_algo_group=G.id),
+                classname = (select G.classname  FROM "ALGORITHM_GROUPS" G WHERE "ALGORITHMS".fk_algo_group=G.id),
+                fk_category = (select G.fk_category  FROM "ALGORITHM_GROUPS" G WHERE "ALGORITHMS".fk_algo_group=G.id)
+                ;"""))
+        session.commit()
+
+        # Create constraint only after rows are being populated
+        table_algo = meta.tables['ALGORITHMS']
+        fk_constraint = ForeignKeyConstraint(['fk_category'], ['ALGORITHM_CATEGORIES.id'],
+                                             ondelete="CASCADE", table=table_algo)
+        fk_constraint.create()
+
+        # Delete old columns, no longer needed
+        for col in DEL_COLUMNS:
+            drop_column(col, table_algo)
+
+        # Drop old table
+        session = SA_SESSIONMAKER()
+        session.execute(text("DROP TABLE \"ALGORITHM_GROUPS\""))
         session.commit()
 
     except Exception, excep:
