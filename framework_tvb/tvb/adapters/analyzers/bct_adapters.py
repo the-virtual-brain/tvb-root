@@ -47,6 +47,12 @@ BCT_GROUP_DISTANCE = AlgorithmTransientGroup("Distance Algorithms", "Brain Conne
 BCT_PATH = os.path.join(TvbProfile.current.EXTERNALS_FOLDER_PARENT, "externals/BCT")
 
 
+
+def bct_description(mat_file_name):
+    return extract_matlab_doc_string(os.path.join(BCT_PATH, mat_file_name))
+
+
+
 class _BaseBCT(ABCAsynchronous):
     """
     Interface between Brain Connectivity Toolbox of Olaf Sporns and TVB Framework.
@@ -55,26 +61,33 @@ class _BaseBCT(ABCAsynchronous):
     _ui_subsection = "bct"
     _ui_connectivity_label = "Connection matrix:"
 
+
     def __init__(self):
         ABCAsynchronous.__init__(self)
         self.matlab_worker = MatlabWorker()
+
 
     @staticmethod
     def can_be_active():
         return not not TvbProfile.current.MATLAB_EXECUTABLE
 
+
     def get_input_tree(self):
         return [dict(name="connectivity", label=self._ui_connectivity_label, type=Connectivity, required=True)]
 
+
     def get_output(self):
         return [ConnectivityMeasure, ValueWrapper]
+
 
     def get_required_memory_size(self, **kwargs):
         # We do not know how much memory is needed.
         return -1
 
+
     def get_required_disk_size(self, **kwargs):
         return 0
+
 
     def execute_matlab(self, matlab_code, **kwargs):
         self.matlab_worker.add_to_path(BCT_PATH)
@@ -85,12 +98,16 @@ class _BaseBCT(ABCAsynchronous):
         self.log.debug("Finished MATLAB execution:" + str(result))
         return result
 
-    def build_connectivity_measure(self, result, key, connectivity, title=""):
+
+    def build_connectivity_measure(self, result, key, connectivity, title="", label_x="", label_y=""):
         measure = ConnectivityMeasure(storage_path=self.storage_path)
         measure.array_data = result[key]
         measure.connectivity = connectivity
         measure.title = title
+        measure.label_x = label_x
+        measure.label_y = label_y
         return measure
+
 
     def build_float_value_wrapper(self, result, key, title=""):
         value = ValueWrapper(storage_path=self.storage_path)
@@ -99,9 +116,19 @@ class _BaseBCT(ABCAsynchronous):
         value.data_name = title
         return value
 
+
+    def build_int_value_wrapper(self, result, key, title=""):
+        value = ValueWrapper(storage_path=self.storage_path)
+        value.data_value = int(result[key])
+        value.data_type = 'int'
+        value.data_name = title
+        return value
+
+
     @abstractmethod
     def launch(self, connectivity, **kwargs):
         pass
+
 
 
 class ModularityOCSM(_BaseBCT):
@@ -111,8 +138,9 @@ class ModularityOCSM(_BaseBCT):
     _ui_connectivity_label = "Directed (weighted or binary) connection matrix:"
 
     _ui_name = "Optimal Community Structure and Modularity"
-    _ui_description = extract_matlab_doc_string(os.path.join(BCT_PATH, "modularity_dir.m"))
+    _ui_description = bct_description("modularity_dir.m")
     _matlab_code = "[Ci,Q] = modularity_dir(CW);"
+
 
     def launch(self, connectivity, **kwargs):
         # Prepare parameters
@@ -125,12 +153,14 @@ class ModularityOCSM(_BaseBCT):
         return [measure, value]
 
 
+
 class ModularityOpCSMU(ModularityOCSM):
     """
     """
     _ui_name = "Optimal Community Structure and Modularity (Undirected)"
-    _ui_description = extract_matlab_doc_string(os.path.join(BCT_PATH, "modularity_und.m"))
+    _ui_description = bct_description("modularity_und.m")
     _matlab_code = "[Ci,Q] = modularity_und(CW);"
+
 
 
 class DistanceDBIN(_BaseBCT):
@@ -140,8 +170,9 @@ class DistanceDBIN(_BaseBCT):
     _ui_connectivity_label = "Binary (directed/undirected) connection matrix:"
 
     _ui_name = "Distance binary matrix"
-    _ui_description = extract_matlab_doc_string(os.path.join(BCT_PATH, "distance_bin.m"))
+    _ui_description = bct_description("distance_bin.m")
     _matlab_code = "D = distance_bin(A);"
+
 
     def launch(self, connectivity, **kwargs):
         kwargs['A'] = connectivity.weights
@@ -150,21 +181,24 @@ class DistanceDBIN(_BaseBCT):
         return [measure]
 
 
+
 class DistanceDWEI(DistanceDBIN):
     """
     """
     _ui_connectivity_label = "Weighted (directed/undirected) connection matrix:"
     _ui_name = "Distance weighted matrix"
-    _ui_description = extract_matlab_doc_string(os.path.join(BCT_PATH, "distance_wei.m"))
+    _ui_description = bct_description("distance_wei.m")
     _matlab_code = "D = distance_wei(A);"
+
 
 
 class DistanceRDM(DistanceDBIN):
     """
     """
     _ui_name = "Reachability and distance matrices (Breadth-first search)"
-    _ui_description = extract_matlab_doc_string(os.path.join(BCT_PATH, "breadthdist.m"))
+    _ui_description = bct_description("breadthdist.m")
     _matlab_code = "[R,D] = breadthdist(A);"
+
 
     def launch(self, connectivity, **kwargs):
         kwargs['A'] = connectivity.weights
@@ -175,20 +209,23 @@ class DistanceRDM(DistanceDBIN):
         return [measure1, measure2]
 
 
+
 class DistanceRDA(DistanceRDM):
     """
     """
     _ui_name = "Reachability and distance matrices (Algebraic path count)"
-    _ui_description = extract_matlab_doc_string(os.path.join(BCT_PATH, "reachdist.m"))
+    _ui_description = bct_description("reachdist.m")
     _matlab_code = "[R,D] = reachdist(A);"
+
 
 
 class DistanceNETW(DistanceDBIN):
     """
     """
     _ui_name = "Network walks"
-    _ui_description = extract_matlab_doc_string(os.path.join(BCT_PATH, "findwalks.m"))
+    _ui_description = bct_description("findwalks.m")
     _matlab_code = "[Wq,twalk,wlq]  = findwalks(A);"
+
 
     def launch(self, connectivity, **kwargs):
         kwargs['A'] = connectivity.weights
