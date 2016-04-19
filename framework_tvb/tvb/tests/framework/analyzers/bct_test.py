@@ -46,14 +46,14 @@ from tvb.datatypes.connectivity import Connectivity
 from tvb.tests.framework.core.test_factory import TestFactory
 
 
-
 class BCTTest(TransactionalTestCase):
     """
     Test that all BCT analyzers are executed without error.
     We do not verify that the algorithms are correct, because that is outside the purpose of TVB framework.
     """
-    #TODO fill with proper class names when all BCT algos are written
-    EXPECTED_TO_FAIL_VALIDATION = ["CCBU", "CCWU", "EIGUN", "KCCBU", "TBU", "TWU"]
+    EXPECTED_TO_FAIL_VALIDATION = ["CentralityKCoreness", "CentralityEigenVector",
+                                   "ClusteringCoefficientBU", "ClusteringCoefficientWU",
+                                   "TransitivityBinaryUnDirected", "TransitivityWeightedUnDirected"]
 
 
     @unittest.skipIf(get_matlab_executable() is None, "Matlab or Octave not installed!")

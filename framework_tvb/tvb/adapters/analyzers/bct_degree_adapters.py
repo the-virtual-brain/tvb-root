@@ -29,15 +29,14 @@
 #
 
 from tvb.core.entities.model import AlgorithmTransientGroup
-from tvb.adapters.analyzers.bct_adapters import _BaseBCT, bct_description
+from tvb.adapters.analyzers.bct_adapters import BaseBCT, bct_description
 
 
 BCT_GROUP_DEGREE = AlgorithmTransientGroup("Degree and Similarity Algorithms", "Brain Connectivity Toolbox")
 BCT_GROUP_DENSITY = AlgorithmTransientGroup("Density Algorithms", "Brain Connectivity Toolbox")
 
 
-
-class Degree(_BaseBCT):
+class Degree(BaseBCT):
     """
     """
     _ui_group = BCT_GROUP_DEGREE
@@ -53,7 +52,6 @@ class Degree(_BaseBCT):
         result = self.execute_matlab(self._matlab_code, **kwargs)
         measure = self.build_connectivity_measure(result, 'deg', connectivity, "Node degree")
         return [measure]
-
 
 
 class DegreeIOD(Degree):
@@ -73,7 +71,6 @@ class DegreeIOD(Degree):
         measure2 = self.build_connectivity_measure(result, 'od', connectivity, "Node outdegree")
         measure3 = self.build_connectivity_measure(result, 'deg', connectivity, "Node degree (indegree + outdegree)")
         return [measure1, measure2, measure3]
-
 
 
 class JointDegree(Degree):
@@ -98,7 +95,6 @@ class JointDegree(Degree):
         return [measure, value1, value2, value3]
 
 
-
 class MatchingIndex(Degree):
     """
     """
@@ -120,7 +116,6 @@ class MatchingIndex(Degree):
         return [measure1, measure2, measure3]
 
 
-
 class Strength(Degree):
     """
     """
@@ -136,7 +131,6 @@ class Strength(Degree):
         result = self.execute_matlab(self._matlab_code, **kwargs)
         measure = self.build_connectivity_measure(result, 'strength', connectivity, "Node strength")
         return [measure]
-
 
 
 class StrengthISOS(Strength):
@@ -157,7 +151,6 @@ class StrengthISOS(Strength):
         return [measure1, measure2, measure3]
 
 
-
 class StrengthWeights(Strength):
     """
     """
@@ -176,8 +169,7 @@ class StrengthWeights(Strength):
         return [measure1, measure2, value1, value2]
 
 
-
-class DensityDirected(_BaseBCT):
+class DensityDirected(BaseBCT):
     """
     """
     _ui_group = BCT_GROUP_DENSITY
@@ -195,7 +187,6 @@ class DensityDirected(_BaseBCT):
         value2 = self.build_int_value_wrapper(result, 'N', title="Number of vertices")
         value3 = self.build_int_value_wrapper(result, 'K', title="Number of edges")
         return [value1, value2, value3]
-
 
 
 class DensityUndirected(DensityDirected):

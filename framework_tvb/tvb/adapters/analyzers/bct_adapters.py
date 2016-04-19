@@ -31,6 +31,7 @@
 import os
 from abc import abstractmethod
 from tvb.adapters.analyzers.matlab_worker import MatlabWorker
+from tvb.basic.filters.chain import FilterChain
 from tvb.basic.profile import TvbProfile
 from tvb.core.adapters.abcadapter import ABCAsynchronous
 from tvb.core.entities.model import AlgorithmTransientGroup
@@ -40,20 +41,21 @@ from tvb.datatypes.graph import ConnectivityMeasure
 from tvb.datatypes.mapped_values import ValueWrapper
 
 
-
 BCT_GROUP_MODULARITY = AlgorithmTransientGroup("Modularity Algorithms", "Brain Connectivity Toolbox")
 BCT_GROUP_DISTANCE = AlgorithmTransientGroup("Distance Algorithms", "Brain Connectivity Toolbox")
 
 BCT_PATH = os.path.join(TvbProfile.current.EXTERNALS_FOLDER_PARENT, "externals/BCT")
 
+LABEL_CONNECTIVITY_BINARY = "Binary (directed/undirected) connection matrix"
+LABEL_CONN_WEIGHTED_DIRECTED = "Weighted directed connection matrix"
+LABEL_CONN_WEIGHTED_UNDIRECTED = "Weighted undirected connection matrix"
 
 
 def bct_description(mat_file_name):
     return extract_matlab_doc_string(os.path.join(BCT_PATH, mat_file_name))
 
 
-
-class _BaseBCT(ABCAsynchronous):
+class BaseBCT(ABCAsynchronous):
     """
     Interface between Brain Connectivity Toolbox of Olaf Sporns and TVB Framework.
     This adapter requires BCT deployed locally, and Matlab or Octave installed separately of TVB.
@@ -130,8 +132,23 @@ class _BaseBCT(ABCAsynchronous):
         pass
 
 
+class BaseUndirected(BaseBCT):
+    """
+    """
+    _ui_connectivity_label = "Undirected connection matrix:"
 
-class ModularityOCSM(_BaseBCT):
+    def get_input_tree(self):
+        return [dict(name="connectivity", label=self._ui_connectivity_label, type=Connectivity, required=True,
+                     conditions=FilterChain(fields=[FilterChain.datatype + '._undirected'],
+                                            operations=["=="], values=['1']))]
+
+
+    @abstractmethod
+    def launch(self, connectivity, **kwargs):
+        pass
+
+
+class ModularityOCSM(BaseBCT):
     """
     """
     _ui_group = BCT_GROUP_MODULARITY
@@ -153,7 +170,6 @@ class ModularityOCSM(_BaseBCT):
         return [measure, value]
 
 
-
 class ModularityOpCSMU(ModularityOCSM):
     """
     """
@@ -162,12 +178,10 @@ class ModularityOpCSMU(ModularityOCSM):
     _matlab_code = "[Ci,Q] = modularity_und(CW);"
 
 
-
-class DistanceDBIN(_BaseBCT):
+class DistanceDBIN(BaseBCT):
     """
     """
     _ui_group = BCT_GROUP_DISTANCE
-    _ui_connectivity_label = "Binary (directed/undirected) connection matrix:"
 
     _ui_name = "Distance binary matrix"
     _ui_description = bct_description("distance_bin.m")
@@ -181,7 +195,6 @@ class DistanceDBIN(_BaseBCT):
         return [measure]
 
 
-
 class DistanceDWEI(DistanceDBIN):
     """
     """
@@ -189,7 +202,6 @@ class DistanceDWEI(DistanceDBIN):
     _ui_name = "Distance weighted matrix"
     _ui_description = bct_description("distance_wei.m")
     _matlab_code = "D = distance_wei(A);"
-
 
 
 class DistanceRDM(DistanceDBIN):
@@ -209,14 +221,12 @@ class DistanceRDM(DistanceDBIN):
         return [measure1, measure2]
 
 
-
 class DistanceRDA(DistanceRDM):
     """
     """
     _ui_name = "Reachability and distance matrices (Algebraic path count)"
     _ui_description = bct_description("reachdist.m")
     _matlab_code = "[R,D] = reachdist(A);"
-
 
 
 class DistanceNETW(DistanceDBIN):

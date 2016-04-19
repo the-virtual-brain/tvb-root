@@ -27,22 +27,19 @@
 # Frontiers in Neuroinformatics (7:10. doi: 10.3389/fninf.2013.00010)
 #
 #
-from tvb.basic.filters.chain import FilterChain
 
+from tvb.adapters.analyzers.bct_adapters import BaseBCT, BaseUndirected, bct_description, LABEL_CONNECTIVITY_BINARY
 from tvb.core.entities.model import AlgorithmTransientGroup
-from tvb.adapters.analyzers.bct_adapters import _BaseBCT, bct_description
-from tvb.datatypes.connectivity import Connectivity
 
 
 BCT_GROUP_CENTRALITY = AlgorithmTransientGroup("Centrality Algorithms", "Brain Connectivity Toolbox")
 
 
-
-class CentralityNodeBinary(_BaseBCT):
+class CentralityNodeBinary(BaseBCT):
     """
     """
     _ui_group = BCT_GROUP_CENTRALITY
-    _ui_connectivity_label = "Binary (directed/undirected) connection matrix:"
+    _ui_connectivity_label = LABEL_CONNECTIVITY_BINARY
 
     _ui_name = "Node Betweenness Centrality Binary"
     _ui_description = bct_description("betweenness_bin.m")
@@ -57,10 +54,10 @@ class CentralityNodeBinary(_BaseBCT):
         return [measure]
 
 
-
-class CentralityNodeWeighted(CentralityNodeBinary):
+class CentralityNodeWeighted(BaseBCT):
     """
     """
+    _ui_group = BCT_GROUP_CENTRALITY
     _ui_connectivity_label = "Weighted (directed/undirected)  connection matrix:"
 
     _ui_name = "Node Betweenness Centrality Weighted"
@@ -74,7 +71,6 @@ class CentralityNodeWeighted(CentralityNodeBinary):
         measure = self.build_connectivity_measure(result, 'C', connectivity,
                                                   "Node Betweenness Centrality Weighted", "Nodes")
         return [measure]
-
 
 
 class CentralityEdgeBinary(CentralityNodeBinary):
@@ -93,7 +89,6 @@ class CentralityEdgeBinary(CentralityNodeBinary):
         return [measure1, measure2]
 
 
-
 class CentralityEdgeWeighted(CentralityNodeWeighted):
     """
     """
@@ -110,21 +105,14 @@ class CentralityEdgeWeighted(CentralityNodeWeighted):
         return [measure1, measure2]
 
 
-
-class CentralityEigenVector(CentralityNodeBinary):
+class CentralityEigenVector(BaseUndirected):
     """
     """
-    _ui_connectivity_label = "Binary/weighted undirected adjacency matrix"
+    _ui_group = BCT_GROUP_CENTRALITY
 
     _ui_name = "EigenVector Centrality"
     _ui_description = bct_description("eigenvector_centrality_und.m")
     _matlab_code = "v = eigenvector_centrality_und(CIJ)"
-
-
-    def get_input_tree(self):
-        return [dict(name="connectivity", label=self._ui_connectivity_label, type=Connectivity, required=True,
-                     conditions=FilterChain(fields=[FilterChain.datatype + '._undirected'],
-                                            operations=["=="], values=['1']))]
 
 
     def launch(self, connectivity, **kwargs):
@@ -134,11 +122,11 @@ class CentralityEigenVector(CentralityNodeBinary):
         return [measure]
 
 
-
-class CentralityKCoreness(CentralityEigenVector):
+class CentralityKCoreness(BaseUndirected):
     """
     """
-    _ui_connectivity_label = "Connection/adjacency matrix (binary, unidirected)"
+    _ui_group = BCT_GROUP_CENTRALITY
+    _ui_connectivity_label = LABEL_CONNECTIVITY_BINARY
 
     _ui_name = "K-coreness centrality BU"
     _ui_description = bct_description("kcoreness_centrality_bu.m")
@@ -152,6 +140,21 @@ class CentralityKCoreness(CentralityEigenVector):
         measure2 = self.build_connectivity_measure(result, 'kn', connectivity, "Size of k-core")
         return [measure1, measure2]
 
+
+class CentralityKCorenessBD(CentralityNodeBinary):
+    """
+    """
+    _ui_name = "K-coreness centrality BD"
+    _ui_description = bct_description("kcoreness_centrality_bd.m")
+    _matlab_code = "[coreness, kn] = kcoreness_centrality_bd(CIJ);"
+
+
+    def launch(self, connectivity, **kwargs):
+        kwargs['CIJ'] = connectivity.binarized_weights
+        result = self.execute_matlab(self._matlab_code, **kwargs)
+        measure1 = self.build_connectivity_measure(result, 'coreness', connectivity, "Node coreness BD")
+        measure2 = self.build_connectivity_measure(result, 'kn', connectivity, "Size of k-core")
+        return [measure1, measure2]
 
 
 class CentralityShortcuts(CentralityNodeBinary):
@@ -174,3 +177,77 @@ class CentralityShortcuts(CentralityNodeBinary):
         value2 = self.build_float_value_wrapper(result, 'fs', "Fraction of shortcuts in the graph")
         return [measure1, value1, measure2, value2]
 
+
+class FlowCoefficients(CentralityNodeBinary):
+    """
+    """
+    _ui_name = "Node-wise flow coefficients"
+    _ui_description = bct_description("flow_coef_bd.m")
+    _matlab_code = "[fc,FC,total_flo] = flow_coef_bd(CIJ);"
+
+
+    def launch(self, connectivity, **kwargs):
+        kwargs['CIJ'] = connectivity.binarized_weights
+        result = self.execute_matlab(self._matlab_code, **kwargs)
+
+        measure1 = self.build_connectivity_measure(result, 'fc', connectivity, "Flow coefficient for each node")
+        value1 = self.build_float_value_wrapper(result, 'FC', "Average flow coefficient over the network")
+        measure2 = self.build_connectivity_measure(result, 'total_flo', connectivity,
+                                                   "Number of paths that flow across the central node")
+        return [measure1, value1, measure2]
+
+
+class ParticipationCoefficient(BaseBCT):
+    """
+    """
+    _ui_group = BCT_GROUP_CENTRALITY
+    _ui_connectivity_label = "Binary/weighted, directed/undirected connection matrix"
+
+    _ui_name = "Participation Coefficient"
+    _ui_description = bct_description("participation_coef.m")
+    _matlab_code = "[Ci, Q]=modularity_dir(W); P = participation_coef(W, Ci);"
+
+
+    def launch(self, connectivity, **kwargs):
+        kwargs['W'] = connectivity.weights
+        result = self.execute_matlab(self._matlab_code, **kwargs)
+
+        measure = self.build_connectivity_measure(result, 'P', connectivity, "Participation Coefficient")
+        return [measure]
+
+
+class ParticipationCoefficientSign(ParticipationCoefficient):
+    """
+    """
+    _ui_name = "Participation Coefficient Sign"
+    _ui_description = bct_description("participation_coef_sign.m")
+    _matlab_code = "[Ci, Q]=modularity_dir(W); [Ppos, Pneg] = participation_coef_sign(W, Ci);"
+
+
+    def launch(self, connectivity, **kwargs):
+        kwargs['W'] = connectivity.weights
+        result = self.execute_matlab(self._matlab_code, **kwargs)
+
+        measure1 = self.build_connectivity_measure(result, 'Ppos', connectivity,
+                                                   "Participation Coefficient from positive weights")
+        measure2 = self.build_connectivity_measure(result, 'Pneg', connectivity,
+                                                   "Participation Coefficient from negative weights")
+        return [measure1, measure2]
+
+
+class SubgraphCentrality(CentralityNodeBinary):
+    """
+    """
+    _ui_connectivity_label = "Adjacency matrix (binary)"
+
+    _ui_name = "Subgraph centrality of a network"
+    _ui_description = bct_description("subgraph_centrality.m")
+    _matlab_code = "Cs = subgraph_centrality(CIJ);"
+
+
+    def launch(self, connectivity, **kwargs):
+        kwargs['CIJ'] = connectivity.binarized_weights
+        result = self.execute_matlab(self._matlab_code, **kwargs)
+
+        measure = self.build_connectivity_measure(result, 'Cs', connectivity, "Subgraph Centrality")
+        return [measure]
