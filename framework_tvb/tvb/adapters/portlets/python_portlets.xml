@@ -12,7 +12,7 @@
             <input>
                 <name value="chain_1"/>
                 <label value="First adapter from chain"/>
-                <type value="tvb.adapters.analyzers.fourier_adapter.FourierAdapter" field=""/>
+                <type value="tvb.adapters.analyzers.fourier_adapter.FourierAdapter"/>
             </input>
             <input overwrite="chain_1">
                 <name value="time_series"/>
@@ -23,7 +23,7 @@
             <input>
                 <name value="chain_2"/>
                 <label value="Second adapter from chain"/>
-                <type value="tvb.adapters.visualizers.mplh5_fourier_spectrum.FourierSpectrumDisplay" field=""/>
+                <type value="tvb.adapters.visualizers.mplh5_fourier_spectrum.FourierSpectrumDisplay"/>
             </input>
             <input overwrite="chain_2">
                 <name value="input_data"/>
@@ -39,8 +39,7 @@
             <input>
                 <name value="chain_1"/>
                 <label value="First adapter from chain"/>
-                <type value="tvb.adapters.analyzers.node_complex_coherence_adapter.NodeComplexCoherenceAdapter"
-                      field=""/>
+                <type value="tvb.adapters.analyzers.node_complex_coherence_adapter.NodeComplexCoherenceAdapter"/>
             </input>
             <input overwrite="chain_1">
                 <name value="time_series"/>
@@ -51,7 +50,7 @@
             <input>
                 <name value="chain_2"/>
                 <label value="Second adapter from chain"/>
-                <type value="tvb.adapters.visualizers.mplh5_coherence_spectrum.ImaginaryCoherenceDisplay" field=""/>
+                <type value="tvb.adapters.visualizers.mplh5_coherence_spectrum.ImaginaryCoherenceDisplay"/>
             </input>
             <input overwrite="chain_2">
                 <name value="input_data"/>
@@ -66,7 +65,7 @@
             <input>
                 <name value="chain_1"/>
                 <label value="First adapter from chain"/>
-                <type value="tvb.adapters.analyzers.wavelet_adapter.ContinuousWaveletTransformAdapter" field=""/>
+                <type value="tvb.adapters.analyzers.wavelet_adapter.ContinuousWaveletTransformAdapter"/>
             </input>
             <input overwrite="chain_1">
                 <name value="time_series"/>
@@ -77,7 +76,7 @@
             <input>
                 <name value="chain_2"/>
                 <label value="Second adapter from chain"/>
-                <type value="tvb.adapters.visualizers.mplh5_wavelet_spectrogram.WaveletSpectrogramViewer" field=""/>
+                <type value="tvb.adapters.visualizers.mplh5_wavelet_spectrogram.WaveletSpectrogramViewer"/>
             </input>
             <input overwrite="chain_2">
                 <name value="input_data"/>
@@ -92,7 +91,7 @@
             <input>
                 <name value="chain_1"/>
                 <label value="First adapter from chain"/>
-                <type value="tvb.adapters.analyzers.pca_adapter.PCAAdapter" field=""/>
+                <type value="tvb.adapters.analyzers.pca_adapter.PCAAdapter"/>
             </input>
             <input overwrite="chain_1">
                 <name value="time_series"/>
@@ -103,7 +102,7 @@
             <input>
                 <name value="chain_2"/>
                 <label value="Second adapter from chain"/>
-                <type value="tvb.adapters.visualizers.pca.PCA" field=""/>
+                <type value="tvb.adapters.visualizers.pca.PCA"/>
             </input>
             <input overwrite="chain_2">
                 <name value="pca"/>
@@ -118,7 +117,7 @@
             <input>
                 <name value="chain_1"/>
                 <label value="First adapter from chain"/>
-                <type value="tvb.adapters.analyzers.ica_adapter.ICAAdapter" field=""/>
+                <type value="tvb.adapters.analyzers.ica_adapter.ICAAdapter"/>
             </input>
             <input overwrite="chain_1">
                 <name value="time_series"/>
@@ -129,7 +128,7 @@
             <input>
                 <name value="chain_2"/>
                 <label value="Second adapter from chain"/>
-                <type value="tvb.adapters.visualizers.ica.ICA" field=""/>
+                <type value="tvb.adapters.visualizers.ica.ICA"/>
             </input>
             <input overwrite="chain_2">
                 <name value="datatype"/>
@@ -144,7 +143,7 @@
             <input>
                 <name value="chain_1"/>
                 <label value="First adapter from chain"/>
-                <type value="tvb.adapters.analyzers.node_covariance_adapter.NodeCovarianceAdapter" field=""/>
+                <type value="tvb.adapters.analyzers.node_covariance_adapter.NodeCovarianceAdapter"/>
             </input>
             <input overwrite="chain_1">
                 <name value="time_series"/>
@@ -155,7 +154,7 @@
             <input>
                 <name value="chain_2"/>
                 <label value="Second adapter from chain"/>
-                <type value="tvb.adapters.visualizers.covariance.CovarianceVisualizer" field=""/>
+                <type value="tvb.adapters.visualizers.covariance.CovarianceVisualizer"/>
             </input>
             <input overwrite="chain_2">
                 <name value="datatype"/>
@@ -171,7 +170,7 @@
             <input>
                 <name value="chain_1"/>
                 <label value="First adapter from chain"/>
-                <type value="tvb.adapters.analyzers.cross_correlation_adapter.CrossCorrelateAdapter" field=""/>
+                <type value="tvb.adapters.analyzers.cross_correlation_adapter.CrossCorrelateAdapter"/>
             </input>
             <input overwrite="chain_1">
                 <name value="time_series"/>
@@ -182,7 +181,7 @@
             <input>
                 <name value="chain_2"/>
                 <label value="Second adapter from chain"/>
-                <type value="tvb.adapters.visualizers.cross_correlation.CrossCorrelationVisualizer" field=""/>
+                <type value="tvb.adapters.visualizers.cross_correlation.CrossCorrelationVisualizer"/>
             </input>
             <input overwrite="chain_2">
                 <name value="datatype"/>
@@ -199,7 +198,7 @@
                 <name value="chain_1"/>
                 <label value="First adapter from chain"/>
                 <type value="tvb.adapters.analyzers.cross_correlation_adapter.PearsonCorrelationCoefficientAdapter"
-                      field=""/>
+                />
             </input>
             <input overwrite="chain_1">
                 <name value="time_series"/>
@@ -211,7 +210,7 @@
                 <name value="chain_2"/>
                 <label value="Second adapter from chain"/>
                 <type value="tvb.adapters.visualizers.mplh5_cross_correlation.PearsonCorrelationCoefficientVisualizer"
-                      field=""/>
+                />
             </input>
             <input overwrite="chain_2">
                 <name value="corr_coefficients"/>
@@ -227,7 +226,7 @@
             <input>
                 <name value="chain_1"/>
                 <label value="First adapter from chain"/>
-                <type value="tvb.adapters.analyzers.node_coherence_adapter.NodeCoherenceAdapter" field=""/>
+                <type value="tvb.adapters.analyzers.node_coherence_adapter.NodeCoherenceAdapter"/>
             </input>
             <input overwrite="chain_1">
                 <name value="time_series"/>
@@ -238,7 +237,7 @@
             <input>
                 <name value="chain_2"/>
                 <label value="Second adapter from chain"/>
-                <type value="tvb.adapters.visualizers.cross_coherence.CrossCoherenceVisualizer" field=""/>
+                <type value="tvb.adapters.visualizers.cross_coherence.CrossCoherenceVisualizer"/>
             </input>
             <input overwrite="chain_2">
                 <name value="datatype"/>
@@ -254,7 +253,7 @@
             <input>
                 <name value="chain_1"/>
                 <label value="First adapter from chain"/>
-                <type value="tvb.adapters.visualizers.connectivity.ConnectivityViewer" field=""/>
+                <type value="tvb.adapters.visualizers.connectivity.ConnectivityViewer"/>
             </input>
             <input overwrite="chain_1">
                 <name value="input_data"/>
@@ -269,7 +268,7 @@
             <input>
                 <name value="chain_1"/>
                 <label value="First adapter from chain"/>
-                <type value="tvb.adapters.visualizers.brain.BrainViewer" field=""/>
+                <type value="tvb.adapters.visualizers.brain.BrainViewer"/>
             </input>
             <input overwrite="chain_1">
                 <name value="time_series"/>
@@ -284,7 +283,7 @@
             <input>
                 <name value="chain_1"/>
                 <label value="First adapter from chain"/>
-                <type value="tvb.adapters.visualizers.eeg_monitor.EegMonitor" field=""/>
+                <type value="tvb.adapters.visualizers.eeg_monitor.EegMonitor"/>
             </input>
             <input overwrite="chain_1">
                 <name value="input_data"/>
@@ -299,7 +298,7 @@
             <input>
                 <name value="chain_1"/>
                 <label value="First adapter from chain"/>
-                <type value="tvb.adapters.visualizers.time_series.TimeSeries" field=""/>
+                <type value="tvb.adapters.visualizers.time_series.TimeSeries"/>
             </input>
             <input overwrite="chain_1">
                 <name value="time_series"/>

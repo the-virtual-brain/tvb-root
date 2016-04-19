@@ -72,87 +72,9 @@
 
 
     <xs:complexType name="type">
-        <xs:sequence>
-            <xs:element name="options" type="optionsType" minOccurs="0" maxOccurs="1"/>
-            <xs:element name="conditions" type="conditionsType" minOccurs="0" maxOccurs="1"/>
-            <xs:element name="pre_process" type="preProcessType" minOccurs="0" maxOccurs="1"/>
-        </xs:sequence>
         <xs:attribute name="value" type="xs:string" use="required"/>
-        <xs:attribute name="field" type="xs:string" use="optional"/>
-        <xs:attribute name="initparam" type="xs:string" use="optional"/>
         <xs:attribute name="default" type="xs:string" use="optional"/>
-        <xs:attribute name="minValue" type="xs:string" use="optional"/>
-        <xs:attribute name="maxValue" type="xs:string" use="optional"/>
     </xs:complexType>
 
-    <xs:complexType name="preProcessType">
-        <xs:sequence>
-            <xs:element name="python_method" minOccurs="1" maxOccurs="1">
-                <xs:complexType>
-                    <xs:attribute name="value" type="xs:string" use="required"/>
-                </xs:complexType>
-            </xs:element>
-            <xs:element name="ui_method" minOccurs="1" maxOccurs="1">
-                <xs:complexType>
-                    <xs:attribute name="value" type="xs:string" use="required"/>
-                    <xs:attribute name="parameters_prefix" type="xs:string" use="required"/>
-                </xs:complexType>
-            </xs:element>
-            <xs:element name="parameters" minOccurs="0" maxOccurs="1">
-                <xs:complexType>
-                    <xs:sequence>
-                        <xs:element name="parameter" minOccurs="1" maxOccurs="unbounded">
-                            <xs:complexType>
-                                <xs:attribute name="name" type="xs:string" use="required"/>
-                                <xs:attribute name="value" type="xs:string" use="required"/>
-                                <xs:attribute name="operations" type="xs:string" use="optional"/>
-                            </xs:complexType>
-                        </xs:element>
-                    </xs:sequence>
-                </xs:complexType>
-            </xs:element>
-        </xs:sequence>
-    </xs:complexType>
-
-    <xs:complexType name="conditionsType">
-        <xs:sequence>
-            <xs:element name="cond_fields" minOccurs="1" maxOccurs="1">
-                <xs:complexType>
-                    <xs:attribute name="value_list" type="xs:string" use="required"/>
-                </xs:complexType>
-            </xs:element>
-            <xs:element name="cond_operations" minOccurs="1" maxOccurs="1">
-                <xs:complexType>
-                    <xs:attribute name="value_list" type="xs:string" use="required"/>
-                </xs:complexType>
-            </xs:element>
-            <xs:element name="cond_values" minOccurs="1" maxOccurs="1">
-                <xs:complexType>
-                    <xs:attribute name="value_list" type="xs:string" use="required"/>
-                </xs:complexType>
-            </xs:element>
-        </xs:sequence>
-    </xs:complexType>
-
-
-    <xs:complexType name="optionsType">
-        <xs:sequence>
-            <xs:element name="option" minOccurs="1" maxOccurs="unbounded">
-                <xs:complexType>
-                    <xs:all>
-                        <xs:element name="inputs" minOccurs="0">
-                            <xs:complexType>
-                                <xs:sequence>
-                                    <xs:element name="input" type="inputType" minOccurs="1" maxOccurs="unbounded"/>
-                                </xs:sequence>
-                            </xs:complexType>
-                        </xs:element>
-                    </xs:all>
-                    <xs:attribute name="name" type="xs:string" use="required"/>
-                    <xs:attribute name="value" type="xs:string" use="required"/>
-                </xs:complexType>
-            </xs:element>
-        </xs:sequence>
-    </xs:complexType>
 </xs:schema>
 

@@ -9,13 +9,13 @@
             <input>
                 <name value="chain_1"/>
                 <label value="First adapter from chain"/>
-                <type value="tvb.tests.framework.adapters.testadapter1.TestAdapterDatatypeInput" field=""/>
+                <type value="tvb.tests.framework.adapters.testadapter1.TestAdapterDatatypeInput" />
             </input>
 
             <input>
                 <name value="chain_2"/>
                 <label value="Second adapter from chain"/>
-                <type value="tvb.tests.framework.adapters.testadapter2.TestAdapter2" field=""/>
+                <type value="tvb.tests.framework.adapters.testadapter2.TestAdapter2"/>
             </input>
 
             <input overwrite="chain_1">

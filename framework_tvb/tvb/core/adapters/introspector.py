@@ -45,7 +45,7 @@ from tvb.core.entities.storage import dao, SA_SESSIONMAKER
 from tvb.core.portlets.xml_reader import XMLPortletReader, ATT_OVERWRITE
 from tvb.core.adapters.abcremover import ABCRemover
 from tvb.core.adapters.abcadapter import ABCAdapter
-from tvb.core.adapters.constants import ATT_TYPE, ATT_NAME, INPUTS_KEY, ATT_REQUIRED, ELEM_CONDITIONS
+from tvb.core.adapters.constants import ATT_TYPE, ATT_NAME, ATT_REQUIRED, ELEM_CONDITIONS, ELEM_INPUTS
 from tvb.core.adapters.exceptions import XmlParserException
 from tvb.core.portlets.portlet_configurer import PortletConfigurer
 
@@ -226,7 +226,7 @@ class Introspector:
                                     self.logger.error("Wrong class %s in portlet %s." % (class_name, algo_identifier))
                                     continue
                                 #Check inputs that refers to this adapter
-                                portlet_inputs = portlet_list[algo_identifier][INPUTS_KEY]
+                                portlet_inputs = portlet_list[algo_identifier][ELEM_INPUTS]
                                 adapter_instance = PortletConfigurer.build_adapter_from_declaration(adapter)
                                 if adapter_instance is None:
                                     is_valid = False

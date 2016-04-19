@@ -12,7 +12,7 @@
                            groupDescription = transient_group.description;
                            algorithmsList = transient_group.children">
 
-                <h4 py:if="groupName or groupDescription"> $groupName - $groupDescription</h4>
+                <h5 py:if="groupName or groupDescription"> $groupName - $groupDescription</h5>
                 <ul>
                     <li py:for="algo in sorted(algorithmsList, key=lambda k: k.displayname)">
                         <py:with vars="paramName = algo.parameter_name;

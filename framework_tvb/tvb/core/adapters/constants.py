@@ -47,12 +47,8 @@ ATT_MINVALUE = "minValue"
 ATT_MAXVALUE = "maxValue"
 ATT_STEP = "step"
 ATT_REQUIRED = "required"
-ATT_ARRAY_ELEM_TYPE = 'elementType'
-ATT_FILTER_VALUES = 'value_list'
-ATT_PARAMETERS_PREFIX = 'parameters_prefix'
 
 ELEM_OPTIONS = "options"
-ELEM_OPTION = "option"
 ELEM_PORTLET = "portlet"
 ELEM_INPUTS = "inputs"
 ELEM_INPUT = "input"
@@ -60,16 +56,7 @@ ELEM_NAME = "name"
 ELEM_LABEL = "label"
 ELEM_DESCRIPTION = "description"
 ELEM_TYPE = "type"
-ELEM_FIELD = "field"
 ELEM_CONDITIONS = "conditions"
-ELEM_COND_FIELDS = "cond_fields"
-ELEM_COND_OPS = "cond_operations"
-ELEM_COND_VALUES = "cond_values"
-ELEM_PRE_PROCESS = "pre_process"
-ELEM_PYTHON_METHOD = "python_method"
-ELEM_UI_METHOD = "ui_method"
-ELEM_PARAMETERS = "parameters"
-ELEM_PARAMETER = "parameter"
 
 TYPE_INT = "int"
 TYPE_STR = "str"
@@ -86,6 +73,3 @@ TYPE_LIST = "list"
 
 ALL_TYPES = (TYPE_STR, TYPE_FLOAT, TYPE_INT, TYPE_UPLOAD, TYPE_BOOL, TYPE_DICT,
              TYPE_ARRAY, TYPE_SELECT, TYPE_MULTIPLE, TYPE_DYNAMIC, TYPE_LIST)
-
-INPUTS_KEY = "inputs"
-OUTPUTS_KEY = "outputs"

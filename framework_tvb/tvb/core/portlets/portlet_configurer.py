@@ -255,18 +255,7 @@ class PortletConfigurer():
         idx = 0
         for adapter_declaration in chain_adapters:
             adapter_instance = self.build_adapter_from_declaration(adapter_declaration)
-            ### Get the flatten interface for the adapter, and in case of #####
-            ### sub-algorithms also get the pair {algorithm : value}      #####
-            algorithm_field = adapter_declaration[KEY_FIELD]
-            if algorithm_field:
-                default_algorithm = adapter_declaration[ABCAdapter.KEY_DEFAULT]
-            else:
-                default_algorithm = ''
-            if default_algorithm:
-                prefix = InputTreeManager.form_prefix(algorithm_field, None, default_algorithm)
-                alg_inputs = adapter_instance.tree_manager.flatten(adapter_instance.xml_reader.get_inputs(default_algorithm), prefix)
-            else:
-                alg_inputs = adapter_instance.flaten_input_interface()
+            alg_inputs = adapter_instance.flaten_input_interface()
             ###################################################################
 
             ### Get the overwrites defined in the portlet configuration #######
@@ -302,8 +291,6 @@ class PortletConfigurer():
                     else:
                         input_value = ''
                     prepared_params[KEY_STATIC][input_name] = input_value
-            if default_algorithm:
-                prepared_params[KEY_STATIC][algorithm_field] = default_algorithm
             ###################################################################
 
             ### Now parse the dynamic inputs declared in the portlets XML ######

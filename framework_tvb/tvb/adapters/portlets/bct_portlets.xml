@@ -7,16 +7,15 @@
         	 tvb/interfaces/static/style/img/portlets 
         	 and a style in section_burst.css
        -->
-    <portlet name="BCT - Clustering Coeficient WD" identifier="CCWD">
+    <portlet name="BCT - Clustering Coefficient WD" identifier="CCWD">
         <inputs>
             <input>
                 <name value="chain_1"/>
                 <label value="First adapter from chain"/>
-                <type value="tvb.adapters.analyzers.group_matlab_adapter.MatlabAdapter"
-                      initparam="adapters/analyzers/matlab_interfaces/bct_clustering.xml" field="bct" default="CCWD"/>
+                <type value="tvb.adapters.analyzers.bct_clustering_adapters.ClusteringCoefficientWD" />
             </input>
             <input overwrite="chain_1">
-                <name value="bct_parameters_option_CCWD_A"/>
+                <name value="connectivity"/>
                 <label value="Overwrite with first input of the simulator adapter."/>
                 <type value="dynamic" default="step_0[connectivity]"/>
             </input>
@@ -24,7 +23,7 @@
             <input>
                 <name value="chain_2"/>
                 <label value="Second adapter from chain"/>
-                <type value="tvb.adapters.visualizers.histogram.HistogramViewer" field=""/>
+                <type value="tvb.adapters.visualizers.histogram.HistogramViewer" />
             </input>
             <input overwrite="chain_2">
                 <name value="input_data"/>
@@ -39,11 +38,10 @@
             <input>
                 <name value="chain_1"/>
                 <label value="First adapter from chain"/>
-                <type value="tvb.adapters.analyzers.group_matlab_adapter.MatlabAdapter"
-                      initparam="adapters/analyzers/matlab_interfaces/bct_centrality.xml" field="bct" default="NBCB"/>
+                <type value="tvb.adapters.analyzers.bct_centrality_adapters.CentralityNodeBinary" />
             </input>
             <input overwrite="chain_1">
-                <name value="bct_parameters_option_NBCB_A"/>
+                <name value="connectivity"/>
                 <label value="Overwrite with first input of the simulator adapter."/>
                 <type value="dynamic" default="step_0[connectivity]"/>
             </input>
@@ -51,7 +49,7 @@
             <input>
                 <name value="chain_2"/>
                 <label value="Second adapter from chain"/>
-                <type value="tvb.adapters.visualizers.histogram.HistogramViewer" field=""/>
+                <type value="tvb.adapters.visualizers.histogram.HistogramViewer"/>
             </input>
             <input overwrite="chain_2">
                 <name value="input_data"/>
@@ -66,11 +64,10 @@
             <input>
                 <name value="chain_1"/>
                 <label value="First adapter from chain"/>
-                <type value="tvb.adapters.analyzers.group_matlab_adapter.MatlabAdapter"
-                      initparam="adapters/analyzers/matlab_interfaces/bct_degree.xml" field="bct" default="ISOS"/>
+                <type value="tvb.adapters.analyzers.bct_degree_adapters.StrengthISOS"/>
             </input>
             <input overwrite="chain_1">
-                <name value="bct_parameters_option_ISOS_CIJ"/>
+                <name value="connectivity"/>
                 <label value="Overwrite with first input of the simulator adapter."/>
                 <type value="dynamic" default="step_0[connectivity]"/>
             </input>
@@ -78,7 +75,7 @@
             <input>
                 <name value="chain_2"/>
                 <label value="Second adapter from chain"/>
-                <type value="tvb.adapters.visualizers.histogram.HistogramViewer" field=""/>
+                <type value="tvb.adapters.visualizers.histogram.HistogramViewer"/>
             </input>
             <input overwrite="chain_2">
                 <name value="input_data"/>
@@ -93,11 +90,10 @@
             <input>
                 <name value="chain_1"/>
                 <label value="First adapter from chain"/>
-                <type value="tvb.adapters.analyzers.group_matlab_adapter.MatlabAdapter"
-                      initparam="adapters/analyzers/matlab_interfaces/bct_degree.xml" field="bct" default="ISOS"/>
+                <type value="tvb.adapters.analyzers.bct_degree_adapters.StrengthISOS"/>
             </input>
             <input overwrite="chain_1">
-                <name value="bct_parameters_option_ISOS_CIJ"/>
+                <name value="connectivity"/>
                 <label value="Overwrite with first input of the simulator adapter."/>
                 <type value="dynamic" default="step_0[connectivity]"/>
             </input>
@@ -105,7 +101,7 @@
             <input>
                 <name value="chain_2"/>
                 <label value="Second adapter from chain"/>
-                <type value="tvb.adapters.visualizers.mplh5_topographic.TopographicViewer" field=""/>
+                <type value="tvb.adapters.visualizers.mplh5_topographic.TopographicViewer"/>
             </input>
             <input overwrite="chain_2">
                 <name value="data_0"/>
@@ -130,11 +126,10 @@
             <input>
                 <name value="chain_1"/>
                 <label value="First adapter from chain"/>
-                <type value="tvb.adapters.analyzers.group_matlab_adapter.MatlabAdapter"
-                      initparam="adapters/analyzers/matlab_interfaces/bct_degree.xml" field="bct" default="STW"/>
+                <type value="tvb.adapters.analyzers.bct_degree_adapters.StrengthWeights" />
             </input>
             <input overwrite="chain_1">
-                <name value="bct_parameters_option_STW_CIJ"/>
+                <name value="connectivity"/>
                 <label value="Overwrite with first input of the simulator adapter."/>
                 <type value="dynamic" default="step_0[connectivity]"/>
             </input>
@@ -142,7 +137,7 @@
             <input>
                 <name value="chain_2"/>
                 <label value="Second adapter from chain"/>
-                <type value="tvb.adapters.visualizers.mplh5_topographic.TopographicViewer" field=""/>
+                <type value="tvb.adapters.visualizers.mplh5_topographic.TopographicViewer"/>
             </input>
             <input overwrite="chain_2">
                 <name value="data_0"/>

@@ -35,7 +35,6 @@
 
 import xml.dom.minidom
 from xml.dom.minidom import Node
-from tvb.basic.filters.chain import FilterChain
 from tvb.basic.logger.builder import get_logger
 from tvb.core.adapters.constants import *
 
@@ -46,7 +45,6 @@ KEY_FIELD = 'field'
 ATT_MODULE = "module"
 ATT_CHAIN = 'chain'
 ATT_OVERWRITE = 'overwrite'
-
 
 
 class XMLPortletReader(object):
@@ -156,66 +154,9 @@ class XMLPortletReader(object):
         type_attrs = self._read_all_attributes(child_node)
         input_.update(type_attrs)
         input_[ATT_TYPE] = str(child_node.getAttribute(ATT_VALUE))
-        field_val = child_node.getAttribute(ATT_FIELD)
-        if field_val is not None and len(str(field_val)) > 0:
-            input_[ATT_FIELD] = str(field_val)
         default_value = child_node.getAttribute(ATT_DEFAULT)
         if default_value is not None and len(str(default_value)) > 0:
             input_[ATT_DEFAULT] = str(default_value)
-        if len(child_node.childNodes) > 0:
-            for type_child in child_node.childNodes:
-                if ((input_[ATT_TYPE] == TYPE_SELECT or input_[ATT_TYPE] == TYPE_MULTIPLE) and
-                            type_child.nodeType == Node.ELEMENT_NODE and type_child.nodeName == ELEM_OPTIONS):
-                    ops = self._parse_options(type_child.childNodes)
-                    input_[ELEM_OPTIONS] = ops
-                if type_child.nodeName == ELEM_CONDITIONS:
-                    filter_ = self._get_filter(type_child.childNodes)
-                    input_[ELEM_CONDITIONS] = filter_
-                if type_child.nodeName == ELEM_PRE_PROCESS:
-                    attr_dict = self._parse_pre_process_element(type_child.childNodes)
-                    input_.update(attr_dict)
-
-
-    def _parse_options(self, child_nodes):
-        """Private - parse an XML nodes for Options"""
-        result = []
-        for node in child_nodes:
-            if node.nodeType != Node.ELEMENT_NODE or node.nodeName != ELEM_OPTION:
-                continue
-            option = self._read_all_attributes(node)
-            option[ATT_VALUE] = node.getAttribute(ATT_VALUE)
-            if len(node.childNodes) > 0:
-                for child in node.childNodes:
-                    if child.nodeType != Node.ELEMENT_NODE or child.nodeName != ELEM_INPUTS:
-                        continue
-                    option[ATT_ATTRIBUTES] = self._parse_inputs(child.childNodes)
-                    break
-            result.append(option)
-        return result
-
-
-    @classmethod
-    def _parse_pre_process_element(cls, child_nodes):
-        """
-        Parse the child elements of a 'pre_process' element.
-        """
-        result = {}
-        for node in child_nodes:
-            if node.nodeType != Node.ELEMENT_NODE:
-                continue
-            if node.nodeName == ELEM_PYTHON_METHOD:
-                result[ELEM_PYTHON_METHOD] = node.getAttribute(ATT_VALUE)
-            if node.nodeName == ELEM_UI_METHOD:
-                result[ELEM_UI_METHOD] = node.getAttribute(ATT_VALUE)
-                result[ATT_PARAMETERS_PREFIX] = node.getAttribute(ATT_PARAMETERS_PREFIX)
-            if node.nodeName == ELEM_PARAMETERS:
-                params = {}
-                if len(node.childNodes) > 0:
-                    for child in node.childNodes:
-                        if child.nodeType == Node.ELEMENT_NODE and child.nodeName == ELEM_PARAMETER:
-                            params[child.getAttribute(ATT_NAME)] = XMLPortletReader._read_all_attributes(child)
-                result[ELEM_PARAMETERS] = params
-        return result
 
 
     @classmethod
@@ -230,23 +171,6 @@ class XMLPortletReader(object):
         return atts
 
 
-    @classmethod
-    def _get_filter(cls, nodes_list):
-        """Get default filter"""
-        fields = None
-        values = None
-        operations = None
-        for node in nodes_list:
-            if node.nodeName == ELEM_COND_FIELDS:
-                fields = eval(node.getAttribute(ATT_FILTER_VALUES))
-            if node.nodeName == ELEM_COND_OPS:
-                operations = eval(node.getAttribute(ATT_FILTER_VALUES))
-            if node.nodeName == ELEM_COND_VALUES:
-                values = eval(node.getAttribute(ATT_FILTER_VALUES))
-        return FilterChain(fields=fields, values=values, operations=operations)
-
-
-
 class PortletWrapper(object):
     """
     Transient model class, used for passing data when reading from XML into portlets memory
@@ -255,7 +179,7 @@ class PortletWrapper(object):
     def __init__(self):
         self.name = None
         self.identifier = None
-        self.inputs = []   # list of dictionaries
+        self.inputs = []  # list of dictionaries
         self.chain_adapters = []
         self.dynamic_inputs = []
 
@@ -265,7 +189,7 @@ class PortletWrapper(object):
         alg = dict()
         alg[ATT_NAME] = self.name
         alg[ATT_IDENTIFIER] = self.identifier
-        alg[INPUTS_KEY] = self.get_inputs_dict()
+        alg[ELEM_INPUTS] = self.get_inputs_dict()
         return alg
 
 
