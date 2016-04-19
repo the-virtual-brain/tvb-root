@@ -137,9 +137,8 @@ class BurstServiceTest(BaseTestCase):
         actual_interface = self.burst_service.build_portlet_interface(portlet_configuration, self.test_project.id)
         #The expected portlet steps and interface in correspondace to the xml declaration
         #from tvb.tests.framework/core/portlets/test_portlet.xml
-        expected_steps = [{'ui_name': 'TestAdapterDatatypeInput', 'subalgorithm_value': '',
-                           'subalgorithm_field': '', 'prefix': ''},
-                          {'ui_name': 'TestAdapter2', 'subalgorithm_value': '', 'subalgorithm_field': '', 'prefix': ''}]
+        expected_steps = [{'ui_name': 'TestAdapterDatatypeInput'},
+                          {'ui_name': 'TestAdapter2'}]
         expected_interface = [{ABCAdapter.KEY_DEFAULT: 'step_0[0]', ABCAdapter.KEY_DISABLED: True,
                                KEY_DYNAMIC: True, ABCAdapter.KEY_NAME: ADAPTER_PREFIX_ROOT + '0test_dt_input'},
                               {ABCAdapter.KEY_DEFAULT: '0', ABCAdapter.KEY_DISABLED: False,

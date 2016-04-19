@@ -108,8 +108,7 @@ class BurstService():
             itree_mngr = InputTreeManager()
             interface = itree_mngr.fill_input_tree_with_options(interface, project_id,
                                                                 adapter_conf.stored_adapter.fk_category)
-            interface = itree_mngr.prepare_param_names(interface, adapter_conf.prefix)
-            adapter_conf.interface = interface
+            adapter_conf.interface = itree_mngr.prepare_param_names(interface)
         
         portlet_configurer.update_default_values(portlet_interface, portlet_configuration)
         portlet_configurer.prefix_adapters_parameters(portlet_interface)
