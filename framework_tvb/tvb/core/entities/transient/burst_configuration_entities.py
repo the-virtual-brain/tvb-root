@@ -114,14 +114,10 @@ class AdapterConfiguration():
     """
 
 
-    def __init__(self, interface, stored_adapter, ui_name=None, prefix='',
-                 subalgorithm_field=None, subalgorithm_value=None):
+    def __init__(self, interface, stored_adapter, ui_name=None):
         self.interface = interface
         self.stored_adapter = stored_adapter
         self._ui_name = ui_name
-        self.prefix = prefix
-        self.subalgorithm_field = subalgorithm_field
-        self.subalgorithm_value = subalgorithm_value
 
 
     @property

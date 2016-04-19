@@ -51,7 +51,6 @@ from tvb.core.portlets.portlet_configurer import PortletConfigurer
 
 
 ALL_VARIABLE = "__all__"
-MATLAB_ADAPTER = "MatlabAdapter"
 LAUNCHABLE = 'launchable'
 DISPLAYER = 'display'
 RAWINPUT = 'rawinput'

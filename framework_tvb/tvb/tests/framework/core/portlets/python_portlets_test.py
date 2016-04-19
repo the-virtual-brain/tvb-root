@@ -90,5 +90,4 @@ def suite():
 if __name__ == "__main__":
     #So you can run tests from this package individually.
     unittest.main() 
-    
-    
+

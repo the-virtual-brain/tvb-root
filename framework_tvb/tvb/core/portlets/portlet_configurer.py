@@ -39,7 +39,7 @@ from tvb.core.entities.transient.burst_configuration_entities import PortletConf
 from tvb.core.entities.transient.burst_configuration_entities import WorkflowStepConfiguration as wf_cfg
 from tvb.core.entities.storage import dao
 from tvb.core.adapters.abcadapter import ABCAdapter
-from tvb.core.portlets.xml_reader import XMLPortletReader, KEY_STATIC, KEY_DYNAMIC, KEY_FIELD, ATT_OVERWRITE
+from tvb.core.portlets.xml_reader import XMLPortletReader, KEY_STATIC, KEY_DYNAMIC, ATT_OVERWRITE
 
 
 #The root of each prefix. The index in the adapter chain for each adapter will
@@ -48,9 +48,9 @@ ADAPTER_PREFIX_ROOT = 'portlet_step_'
 
 
 
-class PortletConfigurer():
+class PortletConfigurer(object):
     """
-    Helper class that handles all the functionalities required from a portlet.
+    Helper class that handles all the functionality required from a portlet.
     Given a portlet entity, this will allow the following:
     
     - return a configurable interface in the form of a dictionary 
@@ -93,31 +93,15 @@ class PortletConfigurer():
         chain_adapters = self.reader.get_adapters_chain(self.algo_identifier)
         result = []
         for adapter_declaration in chain_adapters:
-
             adapter_instance = self.build_adapter_from_declaration(adapter_declaration)
-
-            algorithm_field = adapter_declaration[KEY_FIELD]
-            if algorithm_field:
-                default_algorithm = adapter_declaration[ABCAdapter.KEY_DEFAULT]
-            else:
-                default_algorithm = ''
 
             all_portlet_defined_params = self.reader.get_inputs(self.algo_identifier)
             specific_adapter_overwrites = [entry for entry in all_portlet_defined_params
                                            if ATT_OVERWRITE in entry and entry[ATT_OVERWRITE] ==
-                                              adapter_declaration[ABCAdapter.KEY_NAME]]
-
-            if default_algorithm:
-                alg_inputs = adapter_instance.xml_reader.get_inputs(default_algorithm)
-                prefix = InputTreeManager.form_prefix(algorithm_field, None, default_algorithm)
-            else:
-                alg_inputs = adapter_instance.get_input_tree()
-                prefix = ''
-
-            replace_values = self._prepare_input_tree(alg_inputs, specific_adapter_overwrites, prefix)
-            adapter_configuration = AdapterConfiguration(replace_values, adapter_instance.stored_adapter, prefix=prefix,
-                                                         subalgorithm_field=algorithm_field,
-                                                         subalgorithm_value=default_algorithm)
+                                           adapter_declaration[ABCAdapter.KEY_NAME]]
+            alg_inputs = adapter_instance.get_input_tree()
+            replace_values = self._prepare_input_tree(alg_inputs, specific_adapter_overwrites)
+            adapter_configuration = AdapterConfiguration(replace_values, adapter_instance.stored_adapter)
             result.append(adapter_configuration)
         return result
 
@@ -180,19 +164,19 @@ class PortletConfigurer():
         values stored in the corresponding workflow step held in the 
         PortletConfiguration entity.
         """
-        #Check for any defaults first in analyzer steps
+        # Check for any defaults first in analyzer steps
         if portlet_configuration.analyzers:
             for adapter_idx in xrange(len(portlet_interface[:-1])):
                 saved_configuration = portlet_configuration.analyzers[adapter_idx]
                 replaced_defaults_dict = InputTreeManager.fill_defaults(portlet_interface[adapter_idx].interface,
-                                                                  saved_configuration.static_param)
+                                                                        saved_configuration.static_param)
                 portlet_interface[adapter_idx].interface = replaced_defaults_dict
 
-        #Check for visualization defaults
+        # Check for visualization defaults
         if portlet_configuration.visualizer:
             saved_configuration = portlet_configuration.visualizer
             replaced_defaults_dict = InputTreeManager.fill_defaults(portlet_interface[-1].interface,
-                                                              saved_configuration.static_param)
+                                                                    saved_configuration.static_param)
             portlet_interface[-1].interface = replaced_defaults_dict
 
 
@@ -364,4 +348,3 @@ class PortletConfigurer():
                 analyzer.index_in_tab = None
                 dao.store_entity(analyzer)
             dao.remove_entity(step.__class__, step.id)
-    

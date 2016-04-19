@@ -40,7 +40,6 @@ from tvb.core.adapters.constants import *
 
 KEY_DYNAMIC = 'dynamic'
 KEY_STATIC = 'static'
-KEY_FIELD = 'field'
 
 ATT_MODULE = "module"
 ATT_CHAIN = 'chain'
