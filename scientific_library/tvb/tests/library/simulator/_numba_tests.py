@@ -214,5 +214,18 @@ class TestDcfun(CudaBaseCase):
             self._do_for_params(horizon)
 
 
+
+def suite():
+    """
+    Gather all the tests in a test suite.
+    """
+    test_suite = unittest.TestSuite()
+    test_suite.addTest(unittest.makeSuite(TestSimpleCfun))
+    test_suite.addTest(unittest.makeSuite(TestCfunExpr))
+    test_suite.addTest(unittest.makeSuite(TestDcfun))
+    test_suite.addTest(unittest.makeSuite(TestUtils))
+    return test_suite
+
+
 if __name__ == '__main__':
     unittest.main()

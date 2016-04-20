@@ -53,6 +53,7 @@ from tvb.tests.library.simulator import noise_test
 from tvb.tests.library.simulator import simulator_test
 from tvb.tests.library.simulator import region_boundaries_test
 from tvb.tests.library.simulator import history_test
+from tvb.tests.library.simulator import _numba_tests
 
 
 def suite():
@@ -70,6 +71,7 @@ def suite():
     test_suite.addTest(noise_test.suite())
     test_suite.addTest(region_boundaries_test.suite())
     test_suite.addTest(simulator_test.suite())
+    test_suite.addTest(_numba_tests.suite())
 
     return test_suite
 
