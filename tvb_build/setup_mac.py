@@ -144,10 +144,12 @@ def _copy_tvb_sources(library_folder):
         for sub_folder in os.listdir(module_path):
             src = os.path.join(module_path, sub_folder)
             dest = os.path.join(destination_folder, sub_folder)
-            if os.path.isdir(src) and not (sub_folder.startswith('.')
-                                           or sub_folder.startswith("tests")) and not os.path.exists(dest):
+            if os.path.isdir(src) and not (sub_folder.startswith('.') or sub_folder.startswith("tests")):
+                if os.path.exists(dest):
+                    shutil.rmtree(dest)
                 print "  Copying TVB: " + str(src)
-                shutil.copytree(src, dest)
+                ignore_patterns = shutil.ignore_patterns('*.pyc', '.svn')
+                shutil.copytree(src, dest, ignore=ignore_patterns)
 
     tests_folder = os.path.join(destination_folder, "tests")
     if os.path.exists(tests_folder):
