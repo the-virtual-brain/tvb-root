@@ -330,6 +330,16 @@
         <copyright-notice value="Copyright (c) 2004, 2006-2012 Glenn Randers-Pehrson"/>
         <description value="LIBPNG is the official PNG reference library. Is is included because Matplotlib makes use of it."/>
     </dependency>
+    <dependency env="[win,mac,linux]" name="llvmlite">
+        <full-name value="llvmlite"/>
+        <project-home value="http://llvmlite.pydata.org/en/latest/"/>
+        <version value="0.10.0"/>
+        <usage value="dynamic linking"/>
+        <license value="LICENSE_llvmlite.txt"/>
+        <license-type value="BSD_"/>
+        <copyright-notice value="Copyright (c) 2014-, Continuum Analytics, Inc."/>
+        <description value="A light-weight Python binding to LLVM"/>
+    </dependency>
     <dependency env="[win,mac,linux]" name="lxml">
         <full-name value="Lxml"/>
         <project-home value="http://lxml.de/"/>

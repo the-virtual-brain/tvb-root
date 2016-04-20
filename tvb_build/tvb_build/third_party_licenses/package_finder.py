@@ -49,7 +49,7 @@ EXCLUDES = [
     # part of python and setuptools
     'distutils', 'pkg_resources', 'setuptools',
     # python 3 backports
-    'futures', 'backports.ssl-match-hostname',
+    'futures', 'backports.ssl-match-hostname', 'singledispatch', 'funcsigs', 'enum34', 'enum',
     # others
     '_builtinsuites', 'bsddb', 'carbon', 'compiler', 'config',
     'hotshot', 'lib-dynload',
