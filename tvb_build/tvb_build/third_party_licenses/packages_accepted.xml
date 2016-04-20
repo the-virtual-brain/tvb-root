@@ -703,8 +703,8 @@
     <dependency env="[win,mac,linux]" name="sklearn">
         <full-name value="Scikits Learn"/>
         <project-home value="http://scikit-learn.org/"/>
-        <version value="[0.15.2,0.14.1]"/>
-        <usage value="dynamic linkingd"/>
+        <version value="0.17.1"/>
+        <usage value="dynamic linking"/>
         <license value="LICENSE_scikits_learn.txt"/>
         <license-type value="BSD_ 3rd clause"/>
         <copyright-notice value="Copyright (c) 2007 - 2012 The scikit-learn developers."/>
