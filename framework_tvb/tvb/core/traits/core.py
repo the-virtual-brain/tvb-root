@@ -55,6 +55,10 @@ def compute_table_name(class_name):
     tablename = 'MAPPED' + re.sub('((?=[A-Z][a-z])|(?<=[a-z])(?=[A-Z]))', '_', class_name).upper()
     if tablename.count('MAPPED_') > 1:
         tablename = tablename.replace('MAPPED_', '', 1)
+
+    # Preserve table names from when diamond datatypes, to avoid DB update scripts
+    if not tablename.endswith("_DATA"):
+        tablename = tablename + '_DATA'
     return tablename
 
 

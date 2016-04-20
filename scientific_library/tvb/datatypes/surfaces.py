@@ -1193,6 +1193,7 @@ class Surface(MappedType):
 
 class WhiteMatterSurface(Surface):
     "White matter - gray matter interface surface."
+    __tablename__ = None
     __mapper_args__ = {'polymorphic_identity': WHITE_MATTER}
     _ui_name = "A white matter - gray  surface"
     surface_type = basic.String(default=WHITE_MATTER)
@@ -1202,16 +1203,16 @@ class CorticalSurface(Surface):
     "Cortical or pial surface."
     _ui_name = "A cortical surface"
     surface_type = basic.String(default=CORTICAL, order=-1)
+    __tablename__ = None
     __mapper_args__ = {'polymorphic_identity': CORTICAL}
 
 
 class SkinAir(Surface):
     "Skin - air interface surface."
-
+    __tablename__ = None
     __mapper_args__ = {'polymorphic_identity': OUTER_SKIN}
     _ui_name = "Skin"
     surface_type = basic.String(default=OUTER_SKIN)
-    __generate_table__ = True
 
     @classmethod
     def from_file(cls, source_file="outer_skin_4096.zip", instance=None):
@@ -1220,6 +1221,7 @@ class SkinAir(Surface):
 
 class BrainSkull(Surface):
     "Brain - inner skull interface surface."
+    __tablename__ = None
     __mapper_args__ = {'polymorphic_identity': INNER_SKULL}
     _ui_name = "Brain - inner skull interface surface."
     surface_type = basic.String(default=INNER_SKULL)
@@ -1232,6 +1234,7 @@ class BrainSkull(Surface):
 
 class SkullSkin(Surface):
     "Outer-skull - scalp interface surface."
+    __tablename__ = None
     __mapper_args__ = {'polymorphic_identity': OUTER_SKULL}
     _ui_name = "Outer-skull - scalp interface surface"
     surface_type = basic.String(default=OUTER_SKULL)
@@ -1243,7 +1246,7 @@ class SkullSkin(Surface):
 
 class OpenSurface(Surface):
     "Base class for open surfaces."
-
+    __tablename__ = None
 
 class EEGCap(OpenSurface):
     "EEG cap surface."
