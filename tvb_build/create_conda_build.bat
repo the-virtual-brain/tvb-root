@@ -23,4 +23,7 @@ python setup.py develop
 
 conda uninstall pyside
 
+# Upgrade to have numba on and the same packages as on Unix
+conda install numba numpy==1.11.0 numexpr==2.5.2 scikit-learn==0.17.1 scipy==0.17.0
+
 REM [anaconda-env]/Lib/site-packages/matplotlib/mpl-data/matplotlibrc to Agg

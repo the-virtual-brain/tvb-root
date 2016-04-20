@@ -25,3 +25,4 @@ conda uninstall pyside shiboken cairo
 
 # [anaconda-env]/Lib/site-packages/matplotlib/mpl-data/matplotlibrc to Agg
 
+conda install nomkl numba
