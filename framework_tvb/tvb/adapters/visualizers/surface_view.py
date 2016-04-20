@@ -41,7 +41,7 @@ from tvb.core.entities.storage import dao
 from tvb.datatypes.graph import ConnectivityMeasure
 from tvb.datatypes.surfaces import FaceSurface
 from tvb.datatypes.region_mapping import RegionMapping
-from tvb.datatypes.surfaces_data import SurfaceData
+from tvb.datatypes.surfaces import Surface
 
 
 def prepare_shell_surface_urls(project_id, shell_surface=None, preferred_type=FaceSurface):
@@ -77,7 +77,7 @@ class SurfaceViewer(ABCDisplayer):
         json_ui_filter = json.dumps([ui_filter.to_dict() for ui_filter in filters_ui])
 
         return [{'name': 'surface', 'label': 'Brain surface',
-                 'type': SurfaceData, 'required': True,
+                 'type': Surface, 'required': True,
                  'description': '', KWARG_FILTERS_UI: json_ui_filter},
                 {'name': 'region_map', 'label': 'Region mapping',
                  'type': RegionMapping, 'required': False,
@@ -88,7 +88,7 @@ class SurfaceViewer(ABCDisplayer):
                  'conditions': FilterChain(fields=[FilterChain.datatype + '._nr_dimensions'],
                                            operations=["=="], values=[1])},
                 {'name': 'shell_surface', 'label': 'Shell Surface',
-                 'type': SurfaceData, 'required': False,
+                 'type': Surface, 'required': False,
                  'description': "Face surface to be displayed semi-transparently, for orientation only."}]
 
 

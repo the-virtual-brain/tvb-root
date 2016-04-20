@@ -45,7 +45,7 @@ from tvb.core.entities.storage import dao
 from tvb.core.adapters.abcdisplayer import ABCDisplayer
 from tvb.datatypes.surfaces import EEGCap, CorticalSurface
 from tvb.datatypes.region_mapping import RegionMapping
-from tvb.datatypes.surfaces_data import SurfaceData
+from tvb.datatypes.surfaces import Surface
 from tvb.datatypes.time_series import TimeSeries, TimeSeriesSurface, TimeSeriesSEEG, TimeSeriesEEG, TimeSeriesRegion
 
 
@@ -71,7 +71,7 @@ class BrainViewer(ABCDisplayer):
                                            operations=["in", "=="],
                                            values=[['TimeSeriesRegion', 'TimeSeriesSurface'], True])},
 
-                {'name': 'shell_surface', 'label': 'Shell Surface', 'type': SurfaceData, 'required': False,
+                {'name': 'shell_surface', 'label': 'Shell Surface', 'type': Surface, 'required': False,
                  'description': "Surface to be displayed semi-transparently, for visual purposes only."}]
 
 
@@ -297,11 +297,11 @@ class DualBrainViewer(BrainViewer):
                                            values=[['TimeSeriesEEG', 'TimeSeriesSEEG',
                                                     'TimeSeriesMEG', 'TimeSeriesRegion'], True])},
 
-                {'name': 'projection_surface', 'label': 'Projection Surface', 'type': SurfaceData, 'required': False,
+                {'name': 'projection_surface', 'label': 'Projection Surface', 'type': Surface, 'required': False,
                  'description': 'A surface on which to project the results. When missing, the first EEGCap is taken'
                                 'This parameter is ignored when InternalSensors measures.'},
 
-                {'name': 'shell_surface', 'label': 'Shell Surface', 'type': SurfaceData, 'required': False,
+                {'name': 'shell_surface', 'label': 'Shell Surface', 'type': Surface, 'required': False,
                  'description': "Wrapping surface over the internal sensors, to be displayed "
                                 "semi-transparently, for visual purposes only."}]
 

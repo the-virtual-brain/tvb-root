@@ -40,7 +40,7 @@ from tvb.core.adapters.exceptions import LaunchException
 from tvb.core.entities.storage import dao
 from tvb.datatypes.sensors_data import SensorsData
 from tvb.datatypes.sensors import SensorsInternal, SensorsEEG, SensorsMEG
-from tvb.datatypes.surfaces_data import SurfaceData
+from tvb.datatypes.surfaces import Surface
 from tvb.datatypes.surfaces import EEGCap, CorticalSurface
 
 
@@ -106,11 +106,11 @@ class SensorsViewer(ABCDisplayer):
         return [{'name': 'sensors', 'label': 'Sensors', 'type': SensorsData, 'required': True,
                  'description': 'Internals sensors to view'},
 
-                {'name': 'projection_surface', 'label': 'Projection Surface', 'type': SurfaceData, 'required': False,
+                {'name': 'projection_surface', 'label': 'Projection Surface', 'type': Surface, 'required': False,
                  'description': 'A surface on which to project the results. When missing, the first EEGCap is taken'
                                 'This parameter is ignored when InternalSensors are inspected'},
 
-                {'name': 'shell_surface', 'label': 'Shell Surface', 'type': SurfaceData, 'required': False,
+                {'name': 'shell_surface', 'label': 'Shell Surface', 'type': Surface, 'required': False,
                  'description': "Wrapping surface over the internal sensors, to be displayed "
                                 "semi-transparently, for visual purposes only."}]
 

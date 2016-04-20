@@ -34,7 +34,7 @@ from tvb.basic.logger.builder import get_logger
 from tvb.basic.traits import types_basic as basic, exceptions
 from tvb.basic.traits.types_mapped import MappedType, SparseMatrix
 from tvb.datatypes import equations as equations
-from tvb.datatypes.surfaces_data import CorticalSurfaceData
+from tvb.datatypes.surfaces import CorticalSurface
 
 LOG = get_logger(__name__)
 
@@ -44,7 +44,7 @@ class LocalConnectivityData(MappedType):
     """
     _ui_name = "Local connectivity"
 
-    surface = CorticalSurfaceData(label="Surface", order=1)
+    surface = CorticalSurface(label="Surface", order=1)
 
     matrix = SparseMatrix(order=-1)
 

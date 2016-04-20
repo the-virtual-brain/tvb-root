@@ -42,8 +42,7 @@ if __name__ == "__main__":
 import unittest
 import sys
 import numpy
-import tvb.datatypes.surfaces_data as surfaces_data
-import tvb.datatypes.surfaces as surfaces
+from tvb.datatypes import surfaces
 from tvb.tests.library.base_testcase import BaseTestCase
 
 
@@ -55,7 +54,7 @@ class SurfacesTest(BaseTestCase):
 
     def test_surface(self):
         dt = surfaces.Surface()
-        dt.vertices = numpy.array(range(30)).reshape(10, 3)
+        dt.vertices = numpy.array(range(30)).reshape(10, 3).astype(numpy.float64)
         dt.triangles = numpy.array(range(9)).reshape(3, 3)
         dt.configure()
         summary_info = dt.summary_info
@@ -86,7 +85,7 @@ class SurfacesTest(BaseTestCase):
         self.assertEqual(summary_info['Number of edges'], 49140)
         self.assertEqual(summary_info['Number of triangles'], 32760)
         self.assertEqual(summary_info['Number of vertices'], 16384)
-        self.assertEqual(dt.surface_type, surfaces_data.CORTICAL)
+        self.assertEqual(dt.surface_type, surfaces.CORTICAL)
         self.assertEqual(len(dt.vertex_neighbours), 16384)
         self.assertTrue(isinstance(dt.vertex_neighbours[0], frozenset))
         self.assertEqual(len(dt.vertex_triangles), 16384)
@@ -110,7 +109,7 @@ class SurfacesTest(BaseTestCase):
 
     def test_cortical_topology_pyramid(self):
         dt = surfaces.Surface()
-        dt.vertices = numpy.array([[0, 0, 0], [1, 0, 0], [0, 1, 0], [0, 0, 1]])
+        dt.vertices = numpy.array([[0, 0, 0], [1, 0, 0], [0, 1, 0], [0, 0, 1]]).astype(numpy.float64)
         dt.triangles = numpy.array([[0, 2, 1], [0, 1, 3], [0, 3, 2], [1, 2, 3]])
         dt.configure()
 
@@ -123,7 +122,7 @@ class SurfacesTest(BaseTestCase):
 
     def test_cortical_topology_isolated_vertex(self):
         dt = surfaces.Surface()
-        dt.vertices = numpy.array([[0, 0, 0], [1, 0, 0], [0, 1, 0], [0, 0, 1], [0, 0, 2]])
+        dt.vertices = numpy.array([[0, 0, 0], [1, 0, 0], [0, 1, 0], [0, 0, 1], [0, 0, 2]]).astype(numpy.float64)
         dt.triangles = numpy.array([[0, 2, 1], [0, 1, 3], [0, 3, 2], [1, 2, 3]])
         dt.configure()
 
@@ -136,7 +135,7 @@ class SurfacesTest(BaseTestCase):
 
     def test_cortical_topology_pinched(self):
         dt = surfaces.Surface()
-        dt.vertices = numpy.array([[0, 0, 0], [1, 0, 0], [0, 1, 0], [0, 0, 1]])
+        dt.vertices = numpy.array([[0, 0, 0], [1, 0, 0], [0, 1, 0], [0, 0, 1]]).astype(numpy.float64)
         dt.triangles = numpy.array([[0, 2, 1], [0, 1, 3], [0, 3, 2], [1, 2, 3], [1, 2, 3]])
         dt.configure()
 
@@ -149,7 +148,7 @@ class SurfacesTest(BaseTestCase):
 
     def test_cortical_topology_hole(self):
         dt = surfaces.Surface()
-        dt.vertices = numpy.array([[0, 0, 0], [1, 0, 0], [0, 1, 0], [0, 0, 1]])
+        dt.vertices = numpy.array([[0, 0, 0], [1, 0, 0], [0, 1, 0], [0, 0, 1]]).astype(numpy.float64)
         dt.triangles = numpy.array([[0, 2, 1], [0, 1, 3], [0, 3, 2]])
         dt.configure()
 

@@ -32,15 +32,15 @@ from tvb.basic.traits import types_basic as basic, core
 from tvb.datatypes import arrays as arrays
 from tvb.datatypes.local_connectivity_data import LocalConnectivityData
 from tvb.datatypes.region_mapping_data import RegionMappingData
-from tvb.datatypes.surfaces_data import CorticalSurfaceData
+from tvb.datatypes.surfaces import CorticalSurface
 
 
-class CortexData(CorticalSurfaceData):
+class CortexData(CorticalSurface):
     """
     Extends the CorticalSurface class to add specific attributes of the cortex,
     such as, local connectivity...
     """
-    _ui_complex_datatype = CorticalSurfaceData
+    _ui_complex_datatype = CorticalSurface
 
     _ui_name = "A cortex..."
 

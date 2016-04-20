@@ -41,8 +41,7 @@ from tvb.core.entities.file.files_helper import FilesHelper
 from tvb.core.entities.transient.structure_entities import DataTypeMetaData
 from tvb.core.services.flow_service import FlowService
 from tvb.core.adapters.abcadapter import ABCAdapter
-from tvb.datatypes.surfaces import SkullSkin
-from tvb.datatypes.surfaces_data import OUTER_SKULL
+from tvb.datatypes.surfaces import SkullSkin, OUTER_SKULL
 import tvb_data.surfaceData
 
 

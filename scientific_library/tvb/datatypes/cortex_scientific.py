@@ -33,10 +33,10 @@ from scipy import sparse
 from tvb.basic.traits import util
 from tvb.datatypes.cortex_data import CortexData
 from tvb.datatypes.local_connectivity_scientific import LocalConnectivityScientific
-from tvb.datatypes.surfaces_scientific import SurfaceScientific, LOG
+from tvb.datatypes.surfaces import LOG
 
 
-class CortexScientific(CortexData, SurfaceScientific):
+class CortexScientific(CortexData):
     """ This class exists to add scientific methods to Cortex """
     __tablename__ = None
 

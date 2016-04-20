@@ -35,7 +35,7 @@ A tracts visualizer
 from tvb.adapters.visualizers.surface_view import prepare_shell_surface_urls
 from tvb.core.adapters.abcdisplayer import ABCDisplayer
 from tvb.datatypes.surfaces import CorticalSurface
-from tvb.datatypes.surfaces_data import SurfaceData
+from tvb.datatypes.surfaces import Surface
 from tvb.datatypes.tracts import Tracts
 
 
@@ -51,7 +51,7 @@ class TractViewer(ABCDisplayer):
         return [{'name': 'tracts', 'label': 'White matter tracts',
                  'type': Tracts, 'required': True,
                  'description': ''},
-                {'name': 'shell_surface', 'label': 'Shell Surface', 'type': SurfaceData, 'required': False,
+                {'name': 'shell_surface', 'label': 'Shell Surface', 'type': Surface, 'required': False,
                  'description': "Surface to be displayed semi-transparently, for visual purposes only."}]
 
 

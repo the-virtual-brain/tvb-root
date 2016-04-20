@@ -28,9 +28,8 @@
 #
 #
 from tvb.datatypes.cortex_data import CortexData
-from tvb.datatypes.surfaces_framework import CorticalSurfaceFramework
 
 
-class CortexFramework(CortexData, CorticalSurfaceFramework):
+class CortexFramework(CortexData):
     """ This class exists to add framework methods to CortexData """
     __tablename__ = None

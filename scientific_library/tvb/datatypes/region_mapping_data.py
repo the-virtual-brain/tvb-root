@@ -37,7 +37,7 @@ DataTypes for mapping some TVB DataTypes to a Connectivity (regions).
 
 import tvb.datatypes.arrays as arrays
 from tvb.datatypes.connectivity import Connectivity
-from tvb.datatypes.surfaces_data import SurfaceData
+from tvb.datatypes.surfaces import Surface
 from tvb.datatypes.volumes import Volume
 
 
@@ -52,7 +52,7 @@ class RegionMappingData(arrays.MappedArray):
 
     connectivity = Connectivity
 
-    surface = SurfaceData
+    surface = Surface
 
     __generate_table__ = True
 
