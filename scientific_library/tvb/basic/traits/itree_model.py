@@ -33,6 +33,13 @@ A data model for the input trees.
 .. moduleauthor:: Mihai Andrei <mihai.andrei@codemart.ro>
 """
 
+def _repr_help_format_list(lines):
+    'Formats a list, trying to keep indentation. It makes repr behave similar to pprint.pformat'
+    lines = '\n'.join(str(o) for o in lines)
+    lines = lines.splitlines()
+    lines = '\n    '.join(lines)
+    return lines
+
 
 class SelectTypeNode(object):
     '''
@@ -50,6 +57,14 @@ class SelectTypeNode(object):
         else:
             self.default = default
 
+
+    def __repr__(self):
+        opts = _repr_help_format_list(self.options)
+        return ('SelectTypeNode(\n'
+                '    name=%r, type=%r, default=%r, label=%r,\n'
+                '    options=[\n    %s    \n]' % (self.name, self.type, self.default, self.label, opts))
+
+
 class TypeNode(object):
     '''
     A non-mapped type. Has attributes
@@ -60,6 +75,11 @@ class TypeNode(object):
         self.class_ = class_ # fqn class
         self.description = description # docstring
         self.attributes = attributes
+
+    def __repr__(self):
+        attrs = _repr_help_format_list(self.attributes)
+        return ('%s(name=%r, class=%r, \n'
+                '    attributes=[\n    %s    \n]\n' %(type(self).__name__, self.name, self.class_, attrs))
 
 
 class LeafNode(object):
@@ -74,6 +94,8 @@ class LeafNode(object):
         self.required = required
         self.default = default
 
+    def __repr__(self):
+        return '%s(name=%r, type=%r, label=%r, default=%r)' % (type(self).__name__, self.name, self.type, self.label, self.default)
 
 class DatatypeNode(LeafNode):
     '''
@@ -108,6 +130,9 @@ class Range(object):
         self.max = max_
         self.step = step
 
+    def __repr__(self):
+        return 'Range(%d, %d, %d)'% (self.min, self.max, self.step)
+
 
 class NumericNode(LeafNode):
     def __init__(self, name, type_, default=0, range_=None,
@@ -115,6 +140,9 @@ class NumericNode(LeafNode):
         LeafNode.__init__(self, name, type_, default, label, description, required)
         self.range = range_
 
+    def __repr__(self):
+        return '%s(name=%r, type=%r, label=%r, default=%r, range=%r)' % (
+            type(self).__name__, self.name, self.type, self.label, self.default, self.range)
 
 
 class ArrayNode(NumericNode):
@@ -131,6 +159,12 @@ class DictNode(object):
         self.default = default
         self.attributes = attributes # type Leafnode
 
+    def __repr__(self):
+        attrs = _repr_help_format_list(self.attributes)
+        return ('DictNode(name=%r, type=%r, label=%r, default=%r)\n'
+                '    attributes=[\n    %s    \n]\n'
+                % (self.name, self.type, self.label, self.default, attrs))
+
 
 # todo is this really a leaf? it has options and select type. In a sense it is a leaf, as the options are trivial
 class EnumerateNode(LeafNode):
@@ -140,8 +174,16 @@ class EnumerateNode(LeafNode):
         LeafNode.__init__(self, name, type_, default, label, description, required)
         self.options = options  # of type EnumeratedOption
 
+    def __repr__(self):
+        s = LeafNode.__repr__(self)
+        return s[:-1] + ', options=%r)' % self.options
+
 
 class EnumeratedOption(object):
     def __init__(self, name, value):
         self.name = name
         self.value = value
+
+    def __repr__(self):
+        return repr((self.name, self.value))
+
