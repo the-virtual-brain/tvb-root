@@ -35,6 +35,8 @@ import unittest
 from tvb.simulator.simulator import Simulator
 from tvb.simulator.models import Model
 from tvb.basic.traits.core import TYPE_REGISTER
+from tvb.datatypes.surfaces import CorticalSurface
+from tvb.datatypes.connectivity import Connectivity
 
 
 class TraitedInterfaceTests(unittest.TestCase):
@@ -77,10 +79,10 @@ class TraitedInterfaceTests(unittest.TestCase):
             
         attr = self._get_attr_description(current_dict, 'connectivity')
         self.assertTrue(attr['datatype'])
-        self.assertEqual(attr['type'], 'tvb.datatypes.connectivity.Connectivity')
+        self.assertEqual(Connectivity.__module__ + "." + Connectivity.__name__, attr['type'])
         attr = self._get_attr_description(current_dict, 'surface')
         self.assertTrue(attr['datatype'])
-        self.assertEqual(attr['type'], 'tvb.datatypes.surfaces_data.CorticalSurface')
+        self.assertEqual(CorticalSurface.__module__ + "." + CorticalSurface.__name__, attr['type'])
         
         attr = self._get_attr_description(current_dict, 'conduction_speed')
         self.assertEquals(attr['type'], 'float')
@@ -123,6 +125,4 @@ if __name__ == "__main__":
     TEST_RUNNER = unittest.TextTestRunner()
     TEST_SUITE = suite()
     TEST_RUNNER.run(TEST_SUITE)               
-                
-                
                 
