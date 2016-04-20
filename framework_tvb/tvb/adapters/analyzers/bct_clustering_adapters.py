@@ -33,7 +33,7 @@ from tvb.adapters.analyzers.bct_adapters import BaseBCT, BaseUndirected, bct_des
     LABEL_CONN_WEIGHTED_UNDIRECTED, LABEL_CONN_WEIGHTED_DIRECTED
 
 
-BCT_GROUP_CLUSTERING = AlgorithmTransientGroup("Clustering Algorithms", "Brain Connectivity Toolbox")
+BCT_GROUP_CLUSTERING = AlgorithmTransientGroup("Clustering Algorithms", "Brain Connectivity Toolbox", "bctclustering")
 
 
 class ClusteringCoefficient(BaseBCT):

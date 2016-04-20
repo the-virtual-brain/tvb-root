@@ -198,6 +198,9 @@ class ABCAdapter(object):
         if hasattr(cls, "_ui_subsection"):
             return cls._ui_subsection
 
+        if hasattr(cls, "_ui_group") and hasattr(cls._ui_group, "subsection"):
+            return cls._ui_group.subsection
+
     @staticmethod
     def can_be_active():
         """

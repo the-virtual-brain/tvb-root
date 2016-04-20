@@ -32,8 +32,9 @@ from tvb.core.entities.model import AlgorithmTransientGroup
 from tvb.adapters.analyzers.bct_adapters import BaseBCT, bct_description
 
 
-BCT_GROUP_DEGREE = AlgorithmTransientGroup("Degree and Similarity Algorithms", "Brain Connectivity Toolbox")
-BCT_GROUP_DENSITY = AlgorithmTransientGroup("Density Algorithms", "Brain Connectivity Toolbox")
+BCT_GROUP_DEGREE = AlgorithmTransientGroup("Degree and Similarity Algorithms",
+                                           "Brain Connectivity Toolbox", "bctdegree")
+BCT_GROUP_DENSITY = AlgorithmTransientGroup("Density Algorithms", "Brain Connectivity Toolbox", "bctdensity")
 
 
 class Degree(BaseBCT):

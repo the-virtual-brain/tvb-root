@@ -29,8 +29,6 @@
 #
 
 """
-Created on Apr 27, 2012
-
 .. moduleauthor:: lia.domide <lia.domide@codemart.ro>
 .. moduleauthor:: bogdan.neacsa <bogdan.neacsa@codemart.ro>
 """
@@ -63,7 +61,7 @@ LAUNCH_NEW = 'new'
 LAUNCH_BRANCH = 'branch'
 
 
-class BurstService():
+class BurstService(object):
     """
     Service layer for Burst related entities.
     """
@@ -98,7 +96,7 @@ class BurstService():
         if portlet_entity is None:
             raise InvalidPortletConfiguration("No portlet entity located in database with id=%s. "
                                               "Portlet configuration %s is not valid." % (
-                                              portlet_configuration.portlet_id, portlet_configuration))
+                                                  portlet_configuration.portlet_id, portlet_configuration))
         portlet_configurer = PortletConfigurer(portlet_entity)
         portlet_interface = portlet_configurer.get_configurable_interface()
         self.logger.debug("Created interface for portlet " + str([portlet_entity])) 
@@ -262,13 +260,11 @@ class BurstService():
     @staticmethod
     def new_portlet_configuration(portlet_id, tab_nr=-1, index_in_tab=-1, portlet_name='Default'):
         """
-        Return a new portlet configuration entitiy with default parameters.
+        Return a new portlet configuration entity with default parameters.
         
-        :param portlet_id: the id of the portlet for which a configuration will
-            be stored
+        :param portlet_id: the id of the portlet for which a configuration will be stored
         :param tab_nr: the index of the currently selected tab
         :param index_in_tab: the index from the currently selected tab
-        
         """
         portlet_entity = dao.get_portlet_by_id(portlet_id)
         if portlet_entity is None:

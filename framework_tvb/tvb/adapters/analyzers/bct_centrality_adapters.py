@@ -32,7 +32,7 @@ from tvb.adapters.analyzers.bct_adapters import BaseBCT, BaseUndirected, bct_des
 from tvb.core.entities.model import AlgorithmTransientGroup
 
 
-BCT_GROUP_CENTRALITY = AlgorithmTransientGroup("Centrality Algorithms", "Brain Connectivity Toolbox")
+BCT_GROUP_CENTRALITY = AlgorithmTransientGroup("Centrality Algorithms", "Brain Connectivity Toolbox", "bctcentrality")
 
 
 class CentralityNodeBinary(BaseBCT):

@@ -104,10 +104,11 @@ class AlgorithmCategory(Base):
 
 class AlgorithmTransientGroup(object):
 
-    def __init__(self, name, description):
+    def __init__(self, name, description, subsection=None):
         self.name = name
         self.description = description
         self.children = []
+        self.subsection = subsection
 
 
 

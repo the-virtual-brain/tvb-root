@@ -41,8 +41,8 @@ from tvb.datatypes.graph import ConnectivityMeasure
 from tvb.datatypes.mapped_values import ValueWrapper
 
 
-BCT_GROUP_MODULARITY = AlgorithmTransientGroup("Modularity Algorithms", "Brain Connectivity Toolbox")
-BCT_GROUP_DISTANCE = AlgorithmTransientGroup("Distance Algorithms", "Brain Connectivity Toolbox")
+BCT_GROUP_MODULARITY = AlgorithmTransientGroup("Modularity Algorithms", "Brain Connectivity Toolbox", "bct")
+BCT_GROUP_DISTANCE = AlgorithmTransientGroup("Distance Algorithms", "Brain Connectivity Toolbox", "bctdistance")
 
 BCT_PATH = os.path.join(TvbProfile.current.EXTERNALS_FOLDER_PARENT, "externals/BCT")
 
@@ -60,7 +60,6 @@ class BaseBCT(ABCAsynchronous):
     Interface between Brain Connectivity Toolbox of Olaf Sporns and TVB Framework.
     This adapter requires BCT deployed locally, and Matlab or Octave installed separately of TVB.
     """
-    _ui_subsection = "bct"
     _ui_connectivity_label = "Connection matrix:"
 
 
