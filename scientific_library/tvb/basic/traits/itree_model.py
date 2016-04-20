@@ -39,18 +39,22 @@ class SelectTypeNode(object):
     This node represents a collection of non mapped Types.
     Examples Model collection, Integrator collection
     '''
-    def __init__(self, name, options, label=None, description=None):
+    def __init__(self, name, select_multiple, options, default=None, label=None, description=None):
         self.name = name
         self.label = label or name
         self.description = description or self.label
+        self.type = 'selectMultiple' if select_multiple else 'select'
         self.options = options # of type TypeNode
-
+        if default is None and len(options):
+            self.default = options[0].name
+        else:
+            self.default = default
 
 class TypeNode(object):
     '''
     A non-mapped type. Has attributes
     '''
-    def __init__(self, name, attributes,  value, class_, description):
+    def __init__(self, name, value, class_, description, attributes):
         self.name = name  # _ui_name
         self.value = value   # short class name
         self.class_ = class_ # fqn class
@@ -62,26 +66,41 @@ class LeafNode(object):
     '''
     Node has no descendants
     '''
-    def __init__(self, name, type_, label=None, description=None, required=True, locked=False):
+    def __init__(self, name, type_, default=None, label=None, description=None, required=True):
         self.name = name
         self.type = type_
         self.label = label or name
         self.description = description or self.label
         self.required = required
-        self.locked = locked
+        self.default = default
 
 
 class DatatypeNode(LeafNode):
     '''
     A dataype node. Has filters.
     '''
-    def __init__(self, name, type_, label=None, description=None, required=True, locked=False):
-        LeafNode.__init__(self, name, type_, label, description, required, locked)
-        self.conditions = None
-        self.filters_ui = None
+    def __init__(self, name, type_, label=None, description=None, required=True, conditions=None, filters_ui=None):
+        '''
+        type_ may be a FQN or a type
+        '''
+        if not isinstance(type_, basestring):
+            type_ = type_.__module__ + '.' + type_.__name__
+        LeafNode.__init__(self, name, type_, None, label, description, required)
+        self.conditions = conditions
+        self.filters_ui = filters_ui
 
-# class ComplexDtypeNode(TypeNode): # cortex
-#     pass
+
+class ComplexDtypeNode(TypeNode):
+    '''
+    Usually a cortex. It is not a LeafNode even though similar to a datatypenode
+    '''
+    def __init__(self, name, type_, attributes, label=None, description=None, required=True, conditions=None, filters_ui=None):
+        TypeNode.__init__(self, name, 'value', type_, description, attributes)
+        self.label = label
+        self.required = required
+        self.conditions = conditions
+        self.filters_ui = filters_ui
+
 
 class Range(object):
     def __init__(self, min_, max_, step):
@@ -91,35 +110,34 @@ class Range(object):
 
 
 class NumericNode(LeafNode):
-    def __init__(self, name, type_, default, range_=None,
-                 label=None, description=None, required=True, locked=False):
-        LeafNode.__init__(self, name, type_, label, description, required, locked)
-        self.default = default
+    def __init__(self, name, type_, default=0, range_=None,
+                 label=None, description=None, required=True):
+        LeafNode.__init__(self, name, type_, default, label, description, required)
         self.range = range_
 
 
-class ArrayNode(LeafNode):
-    def __init__(self, name, type_, default, range_=None, label=None, description=None, required=True, locked=False):
-        LeafNode.__init__(self, name, 'array', label, description, required, locked)
 
-        self.default = default
-        self.range = range_
-        self.elementType = type_
+class ArrayNode(NumericNode):
+    def __init__(self, name, type_, default='[]', range_=None,
+                 label=None, description=None, required=True):
+        NumericNode.__init__(self, name, type_, default, range_, label, description, required)
 
 
 class DictNode(object):
-    def __init__(self):
-        self.name = None
-        self.label = None
-        self.default = None
-        self.type = None
-        self.attributes = [] # type Leafnode
-        self.elementType = None
-
-
-class EnumerateNode(object):
-    def __init__(self, name, options):
+    def __init__(self, name, type_, attributes, default):
         self.name = name
+        self.label = name
+        self.type = type_  # todo: is it useful to keep the concrete leaf node type?
+        self.default = default
+        self.attributes = attributes # type Leafnode
+
+
+# todo is this really a leaf? it has options and select type. In a sense it is a leaf, as the options are trivial
+class EnumerateNode(LeafNode):
+    def __init__(self, name, select_multiple, default, options,
+                 label=None, description=None, required=True):
+        type_ = 'selectMultiple' if select_multiple else 'select'
+        LeafNode.__init__(self, name, type_, default, label, description, required)
         self.options = options  # of type EnumeratedOption
 
 
