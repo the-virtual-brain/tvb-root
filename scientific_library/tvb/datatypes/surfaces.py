@@ -768,7 +768,7 @@ class Surface(MappedType):
         self.edge_min_length = 0
         self.edge_max_length = 0
         self.valid_for_simulations = True
-        self.load_from_metadata(meta_dictionary)
+        super(Surface, self).load_from_metadata(meta_dictionary)
 
     def get_vertices_slice(self, slice_number=0):
         """

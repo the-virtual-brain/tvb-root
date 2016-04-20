@@ -80,7 +80,7 @@ class TraitedInterfaceTests(unittest.TestCase):
         self.assertEqual(attr['type'], 'tvb.datatypes.connectivity.Connectivity')
         attr = self._get_attr_description(current_dict, 'surface')
         self.assertTrue(attr['datatype'])
-        self.assertEqual(attr['type'], 'tvb.datatypes.surfaces_data.CorticalSurfaceData')
+        self.assertEqual(attr['type'], 'tvb.datatypes.surfaces_data.CorticalSurface')
         
         attr = self._get_attr_description(current_dict, 'conduction_speed')
         self.assertEquals(attr['type'], 'float')
