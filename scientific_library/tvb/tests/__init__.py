@@ -30,7 +30,7 @@
 
 
 """
-This is the tests folder for TVB project.
+This is the tests folder for the entire TVB project.
 """
 
 import unittest
@@ -39,10 +39,24 @@ from pkgutil import extend_path
 __path__ = extend_path(__path__, __name__)
 
 
+def run_all():
+    run_framework()
+    run_library()
+
+
+def run_framework():
+    try:
+        from tvb.tests.framework.main_tests import suite as fwk_suite
+        TEST_RUNNER = unittest.TextTestRunner()
+        TEST_SUITE = fwk_suite()
+        TEST_RUNNER.run(TEST_SUITE)
+    except ImportError:
+        # ignore this when framework does not exist
+        pass
+
 
 def run_library():
     from tvb.tests.library.main_tests import suite as lib_suite
-
-    test_runner = unittest.TextTestRunner()
-    test_suite = lib_suite()
-    test_runner.run(test_suite)
+    TEST_RUNNER = unittest.TextTestRunner()
+    TEST_SUITE = lib_suite()
+    TEST_RUNNER.run(TEST_SUITE)
