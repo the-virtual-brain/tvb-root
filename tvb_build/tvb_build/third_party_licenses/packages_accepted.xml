@@ -63,7 +63,7 @@
     <dependency env="[win,mac,linux]" name="certifi">
         <full-name value="Certifi"/>
         <project-home value="http://certifi.io/en/latest/"/>
-        <version value="[2015.04.28,14.5.14]"/>
+        <version value="[2015.4.28,14.5.14]"/>
         <usage value="dynamic linking"/>
         <license value="LICENSE_certifi.txt"/>
         <license-type value="ISC_"/>
@@ -343,7 +343,7 @@
     <dependency env="[win,mac,linux]" name="lxml">
         <full-name value="Lxml"/>
         <project-home value="http://lxml.de/"/>
-        <version value="[3.4.4,3.3.0beta3]"/>
+        <version value="[3.4.4,3.3.0b3]"/>
         <usage value="dynamic linking"/>
         <license value="LICENSE_lxml.txt"/>
         <license-type value="BSD_"/>
