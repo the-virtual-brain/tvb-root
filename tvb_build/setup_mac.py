@@ -61,7 +61,7 @@ VERSION = TvbProfile.current.version.BASE_VERSION
 
 FOLDERS_TO_DELETE = ['.svn', '.project', '.settings']
 FILES_TO_DELETE = ['.DS_Store', 'dev_logger_config.conf']
-EXCLUDED_DYNAMIC_LIBS = []
+EXCLUDED_DYNAMIC_LIBS = ['libgfortran.3.dylib']
 
 # --------------------------- PY2APP specific configurations--------------------------------------------
 
