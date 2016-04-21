@@ -330,6 +330,16 @@
         <copyright-notice value="Copyright 1996-2002, 2006 by David Turner, Robert Wilhelm, and Werner Lemberg"/>
         <description value="A Free, High-Quality, and Portable Font Engine."/>
     </dependency>
+    <dependency env="mac" name="libgfortran.3.dylib">
+        <full-name value="GFortran"/>
+        <project-home value="https://gcc.gnu.org/wiki/GFortran"/>
+        <version value="unknown"/>
+        <usage value="dynamic linking"/>
+        <license value="LICENSE_gfortran3.txt"/>
+        <license-type value="LGPLv2_"/>
+        <copyright-notice value="Copyright (C) 1999-2016 Free Software Foundation, Inc."/>
+        <description value="The GNU Fortran compiler, part of GCC. Needed by recent numpy."/>
+    </dependency>
     <dependency env="mac" name="libpng12.0.dylib">
         <full-name value="PNG library"/>
         <project-home value="http://www.libpng.org/pub/png/libpng.html"/>
@@ -346,7 +356,7 @@
         <version value="unknown"/>
         <usage value="dynamic linking"/>
         <license value="LICENSE_quadmath.txt"/>
-        <license-type value="LGPL v2"/>
+        <license-type value="LGPLv2_"/>
         <copyright-notice value="Copyright (C) 2010, 2011 Free Software Foundation, Inc."/>
         <description value="This appeared after recent updates of numerical libraries. Sources also found here: https://gnu.googlesource.com/gcc/+/gcc-4_6_4-release/libquadmath"/>
     </dependency>
@@ -720,7 +730,7 @@
         <copyright-notice value="Copyright (c) 2006 Bob Ippolito"/>
         <description value="Library for JSON encoding/decoding"/>
     </dependency>
-    <dependency env="[win,linux]" name="six">
+    <dependency env="[win,linux, Mac]" name="six">
         <full-name value="six"/>
         <project-home value="https://pypi.python.org/pypi/six/"/>
         <version value="1.10.0"/>
