@@ -310,7 +310,7 @@
         <copyright-notice value="Copyright (c) 2013 Julian Berman"/>
         <description value="An(other) implementation of JSON Schema for Python"/>
     </dependency>
-    <dependency env="mac" name="libatlas.dylib">
+    <dependency env="mac" name="libtatlas.dylib">
         <full-name value="Atlas"/>
         <project-home value="http://math-atlas.sourceforge.net/"/>
         <version value="unknown"/>
