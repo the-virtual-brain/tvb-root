@@ -88,7 +88,7 @@ def _cu_mod_pow_2(i, n):
 
 
 # TODO http://stackoverflow.com/a/30524712
-def cu_delay_cfun(horizon, cfpre, cfpost, n_cvar, n_thread_per_block, step_stride=0):
+def cu_delay_cfun(horizon, cfpre, cfpost, n_cvar, n_thread_per_block, step_stride=0, aff_node_stride=0):
     "Construct CUDA device function for delayed coupling with given pre & post summation functions."
 
     if horizon < 2 or (horizon & (horizon - 1)) != 0:
@@ -98,6 +98,7 @@ def cu_delay_cfun(horizon, cfpre, cfpost, n_cvar, n_thread_per_block, step_strid
 
     # 0 except for testing
     step_stride = int32(step_stride)
+    aff_node_stride = int32(aff_node_stride)
 
     @cuda.jit(device=True)
     def dcfun(aff, delays, weights, state, i_post, i_thread, step, cvars, buf):#, delayed_step):
@@ -133,7 +134,7 @@ def cu_delay_cfun(horizon, cfpre, cfpost, n_cvar, n_thread_per_block, step_strid
 
         # apply cfpost
         for i_cvar in range(cvars.shape[0]):
-            aff[step_, i_post, i_cvar, i_thread] = cfpost(
+            aff[step_, i_post * aff_node_stride, i_cvar, i_thread] = cfpost(
                 aff_i[i_cvar, i_t]
                 # aff[step_, i_post, i_cvar, i_thread]
             )

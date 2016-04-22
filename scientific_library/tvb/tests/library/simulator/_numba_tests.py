@@ -190,7 +190,7 @@ class TestDcfun(CudaBaseCase):
         # setup cu functions
         pre = cu_linear_cfe_pre(0.0, 1.0, 0.0)
         post = cu_linear_cfe_post(1.0, 0.0)
-        dcf = cu_delay_cfun(horizon, pre, post, n_cvar, self.block_dim[0], step_stride=1)
+        dcf = cu_delay_cfun(horizon, pre, post, n_cvar, self.block_dim[0], step_stride=1, aff_node_stride=1)
 
         # run it
         @self.jit_and_run(out, delays, weights, state, cvars, buf)#,delayed_step)
@@ -327,7 +327,7 @@ class TestSim(CudaBaseCase):
         cfpre = cu_expr('sin(xj - xi)', ('xi', 'xj'), {})
         cfpost = cu_expr('rcp_n * gx', ('gx', ), {'rcp_n': 1.0 / n})
         horiz2 = next_pow_of_2(sims[0].horizon)
-        dcf = cu_delay_cfun(horiz2, cfpre, cfpost, 1, self.block_dim[0])
+        dcf = cu_delay_cfun(horiz2, cfpre, cfpost, 1, self.block_dim[0], aff_node_stride=1)
 
         # build kernel
         dt = numba.float32(sims[0].integrator.dt)
