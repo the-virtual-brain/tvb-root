@@ -31,15 +31,15 @@
 """
 .. moduleauthor:: Lia Domide <lia.domide@codemart.ro>
 """
-from tvb.datatypes.cortex import Cortex
-from tvb.datatypes.local_connectivity import LocalConnectivity
+
 
 if __name__ == "__main__":
     from tvb.tests.library import setup_test_console_env
     setup_test_console_env()
 
 import unittest
-from tvb.datatypes import surfaces
+from tvb.datatypes.cortex import Cortex
+from tvb.datatypes.local_connectivity import LocalConnectivity
 from tvb.tests.library.base_testcase import BaseTestCase
 
             

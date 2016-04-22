@@ -563,7 +563,7 @@
     <dependency env="[win,mac,linux]" name="numpy">
         <full-name value="Numpy"/>
         <project-home value="http://numpy.scipy.org/license.html#license"/>
-        <version value="1.11.0"/>
+        <version value="[1.10.4,1.11.0]"/>
         <usage value="dynamic linking"/>
         <license value="LICENSE_numpy.txt"/>
         <license-type value="BSD_"/>
@@ -713,7 +713,7 @@
     <dependency env="[win,mac,linux]" name="scipy">
         <full-name value="Scipy"/>
         <project-home value="http://www.scipy.org/scipylib/faq.html#what-are-scipy-s-licensing-terms"/>
-        <version value="0.17.0"/>
+        <version value="[0.16.0,0.17.0]"/>
         <usage value="dynamic linking"/>
         <license value="LICENSE_scipy.txt"/>
         <license-type value="BSD_"/>
