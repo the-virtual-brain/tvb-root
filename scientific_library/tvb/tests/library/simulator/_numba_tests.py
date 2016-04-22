@@ -18,20 +18,28 @@ except ImportError:
     HAVE_NUMBA = False
     CUDA_SIM = True
 
+
+from tvb.tests.library import setup_test_console_env
+setup_test_console_env()
+
 from tvb.tests.library.base_testcase import BaseTestCase
 
 if HAVE_NUMBA:
     from tvb.simulator._numba.coupling import (cu_simple_cfun, next_pow_of_2, cu_linear_cfe_post, cu_linear_cfe_pre,
                                                cu_delay_cfun, _cu_mod_pow_2, cu_tanh_cfe_pre, cu_sigm_cfe_post,
                                                cu_kura_cfe_pre)
-    from tvb.simulator._numba.util import CUDA_SIM
+    from tvb.simulator._numba.util import CUDA_SIM, cu_expr
 
-from tvb.simulator import coupling as py_coupling
+from tvb.simulator import coupling as py_coupling, simulator, models, monitors, integrators
+from tvb.datatypes import connectivity
+
 
 def skip_if_no_numba(f):
     return unittest.skipIf(not HAVE_NUMBA, "Numba unavailable")(f)
 
 class CudaBaseCase(BaseTestCase):
+
+    def setUp(self): pass
 
     # Implementations and tests written for a 1D block & 1D grid layout.
     # Results in 4 threads under simulator.
@@ -159,7 +167,7 @@ class TestCfunExpr(CudaBaseCase):
             t = cuda.blockDim.x * cuda.blockIdx.x + cuda.threadIdx.x
             out[t] = cu_cf(xi[t], xj[t])
 
-        numpy.testing.assert_allclose(out, py_cf.pre(xi, xj))
+        numpy.testing.assert_allclose(out, py_cf.pre(xi, xj), 1e-5, 1e-6)
 
 
 class TestDcfun(CudaBaseCase):
@@ -173,6 +181,7 @@ class TestDcfun(CudaBaseCase):
         out = numpy.zeros((n_step, n_node, n_cvar, n_thread), numpy.float32)
         delays = numpy.random.randint(0, horizon - 2, (n_node, n_node)).astype(numpy.int32)
         weights = numpy.random.randn(n_node, n_node).astype(numpy.float32)
+        weights[numpy.random.rand(*weights.shape) < 0.25] = 0.0
         state = numpy.random.randn(n_step, n_node, n_svar, n_thread).astype(numpy.float32)
         buf = numpy.zeros((n_node, horizon, n_cvar, n_thread), numpy.float32)
         # debugging
@@ -181,7 +190,7 @@ class TestDcfun(CudaBaseCase):
         # setup cu functions
         pre = cu_linear_cfe_pre(0.0, 1.0, 0.0)
         post = cu_linear_cfe_post(1.0, 0.0)
-        dcf = cu_delay_cfun(horizon, pre, post, n_cvar, self.block_dim[0])
+        dcf = cu_delay_cfun(horizon, pre, post, n_cvar, self.block_dim[0], step_stride=1)
 
         # run it
         @self.jit_and_run(out, delays, weights, state, cvars, buf)#,delayed_step)
@@ -203,7 +212,6 @@ class TestDcfun(CudaBaseCase):
         for step in range(horizon + 3, n_step):
             delayed_state = state[:, :, cvars][step - delays, nodes] # (n_node, n_node, n_cvar, n_thread)
             afferent = (weights.reshape((n_node, n_node, 1, 1)) * delayed_state).sum(axis=1) # (n_node, n_cvar, n_thread)
-            err = numpy.abs(afferent - out[step])
             numpy.testing.assert_allclose(afferent, out[step], 1e-5, 1e-6)
 
     @skip_if_no_numba
@@ -214,18 +222,157 @@ class TestDcfun(CudaBaseCase):
             self._do_for_params(horizon)
 
 
+class TestCuExpr(CudaBaseCase):
+    "Test generic generation of single expression device functions."
+
+    @skip_if_no_numba
+    def test_linear_full_pars(self):
+        expr = 'ai * xi + aj * xj + offset'
+        pars = 'ai aj xi xj offset'.split()
+        const = {}
+        cu_fn, fn = cu_expr(expr, pars, const, return_fn=True)
+        pars = numpy.random.randn(5, 10, self.n_thread).astype(numpy.float32)
+        out = numpy.zeros((10, self.n_thread), numpy.float32)
+
+        @self.jit_and_run(out, *pars)
+        def kernel(out, ai, aj, xi, xj, offset):
+            i_thread = cuda.blockDim.x * cuda.blockIdx.x + cuda.threadIdx.x
+            for i in range(out.shape[0]):
+                out[i, i_thread] = cu_fn(ai[i, i_thread], aj[i, i_thread], xi[i, i_thread],
+                                         xj[i, i_thread], offset[i, i_thread])
+
+        numpy.testing.assert_allclose(out, fn(*pars), 1e-5, 1e-6)
+
+    @skip_if_no_numba
+    def test_linear_constant_slopes(self):
+        expr = 'ai * xi + aj * xj + offset'
+        pars = 'xi xj offset'.split()
+        const = {'ai': 0.3, 'aj': -0.84}
+        cu_fn, fn = cu_expr(expr, pars, const, return_fn=True)
+        pars = numpy.random.randn(3, 10, self.n_thread).astype(numpy.float32)
+        out = numpy.zeros((10, self.n_thread), numpy.float32)
+
+        @self.jit_and_run(out, *pars)
+        def kernel(out, xi, xj, offset):
+            i_thread = cuda.blockDim.x * cuda.blockIdx.x + cuda.threadIdx.x
+            for i in range(out.shape[0]):
+                out[i, i_thread] = cu_fn(xi[i, i_thread], xj[i, i_thread], offset[i, i_thread])
+
+        numpy.testing.assert_allclose(out, fn(*pars), 1e-5, 1e-6)
+
+    @skip_if_no_numba
+    def test_math_functions(self):
+        cu_fn = cu_expr('exp(x) + sin(y)', ['x', 'y'], {})
+        x, y = numpy.random.randn(2, self.n_thread).astype(numpy.float32)
+        out = numpy.zeros((self.n_thread,), numpy.float32)
+
+        @self.jit_and_run(out, x, y)
+        def kernel(out, x, y):
+            i_thread = cuda.blockDim.x * cuda.blockIdx.x + cuda.threadIdx.x
+            out[i_thread] = cu_fn(x[i_thread], y[i_thread])
+
+        numpy.testing.assert_allclose(out, numpy.exp(x) + numpy.sin(y), 1e-5, 1e-6)
+
+
+class TestSim(CudaBaseCase):
+
+    @skip_if_no_numba
+    @unittest.skipIf(CUDA_SIM, "https://github.com/numba/numba/issues/1837")
+    def test_kuramoto(self):
+
+        # build & run Python simulations
+        numpy.random.seed(42)
+        n = 5
+
+        weights = numpy.zeros((n, n), numpy.float32)
+        idelays = numpy.zeros((n, n), numpy.int32)
+        for i in range(n - 1):
+            idelays[i, i + 1] = i + 1
+            weights[i, i + 1] = i + 1
+
+        def gen_sim(a):
+            dt = 0.1
+            conn = connectivity.Connectivity()
+            conn.weights = weights
+            conn.tract_lengths = idelays * dt
+            conn.speed = 1.0
+            sim = simulator.Simulator(
+                coupling=py_coupling.Kuramoto(a=a),
+                connectivity=conn,
+                model=models.Kuramoto(omega=100 * 2 * numpy.pi / 1e3),
+                monitors=monitors.Raw(),
+                integrator=integrators.EulerDeterministic(dt=dt)
+            )
+            sim.configure()
+            sim.history[:] = 0.1
+            return sim
+
+        a_values = numpy.r_[:self.n_thread].astype(numpy.float32)
+        sims = [gen_sim(a) for a in a_values]
+
+        py_data = []
+        py_coupling0 = []
+        for sim in sims:
+            ys = []
+            cs = []
+            for (t, y), in sim(simulation_length=10.0):
+                ys.append(y[0, :, 0])
+                # cs.append(sim.model._coupling_0[:, 0])
+            py_data.append(numpy.array(ys))
+            # py_coupling0.append(numpy.array(cs))
+        py_data = numpy.array(py_data)
+        # py_coupling0 = numpy.array(py_coupling0)
+
+        # build CUDA kernels
+        cfpre = cu_expr('sin(xj - xi)', ('xi', 'xj'), {})
+        cfpost = cu_expr('rcp_n * gx', ('gx', ), {'rcp_n': 1.0 / n})
+        horiz2 = next_pow_of_2(sims[0].horizon)
+        dcf = cu_delay_cfun(horiz2, cfpre, cfpost, 1, self.block_dim[0])
+
+        # build kernel
+        dt = numba.float32(sims[0].integrator.dt)
+        omega = numba.float32(sims[0].model.omega[0])
+        cvars = numpy.array([0], numpy.int32)
+        weights = sims[0].connectivity.weights.astype(numpy.float32)
+        delays = sims[0].connectivity.idelays.astype(numpy.int32)
+
+        @cuda.jit
+        def kernel(step, state, coupling, aff, buf, dt, omega, cvars, weights, delays, a_values):
+            i_thread = cuda.blockIdx.x * cuda.blockDim.x + cuda.threadIdx.x
+            a = a_values[i_thread]
+            for i_post in range(weights.shape[0]):
+                dcf(aff, delays, weights, state, i_post, i_thread, step[0], cvars, buf)
+                coupling[i_post, i_thread] = a * aff[0, i_post, 0, i_thread]
+                state[0, i_post, 0, i_thread] += dt * (omega + a * aff[0, i_post, 0, i_thread])
+
+        step = numpy.array([0], numpy.int32)
+        state = (numpy.zeros((1, n, 1, self.n_thread)) + 0.1).astype(numpy.float32)
+        coupling0 = numpy.zeros((n, self.n_thread), numpy.float32)
+        aff = numpy.zeros((1, n, 1, self.n_thread), numpy.float32)
+        buf = numpy.zeros((n, horiz2, 1, self.n_thread), numpy.float32)
+        buf += 0.1
+
+        cu_data = numpy.zeros(py_data.shape, numpy.float32)
+        cu_coupling0 = numpy.zeros((cu_data.shape[1], ) + coupling0.shape)
+        for step_ in range(cu_data.shape[1]):
+            step[0] = step_
+            kernel[self.block_dim, self.grid_dim](step, state, coupling0, aff, buf, dt, omega, cvars, weights, delays, a_values)
+            cu_data[:, step_] = state[0, :, 0].T
+            cu_coupling0[step_] = coupling0
+
+        # accept higher error because it accumulates over time
+        # TODO test error proportional to time
+        numpy.testing.assert_allclose(cu_data, py_data, 1e-2, 1e-2)
+
 
 def suite():
-    """
-    Gather all the tests in a test suite.
-    """
+    "Gather all the tests in a test suite."
     test_suite = unittest.TestSuite()
-    test_suite.addTest(unittest.makeSuite(TestSimpleCfun))
-    test_suite.addTest(unittest.makeSuite(TestCfunExpr))
-    test_suite.addTest(unittest.makeSuite(TestDcfun))
-    test_suite.addTest(unittest.makeSuite(TestUtils))
+    tests = TestSimpleCfun, TestCfunExpr, TestDcfun, TestUtils, TestCfunExpr, TestSim
+    for case in tests:
+        test_suite.addTest(unittest.makeSuite(case))
     return test_suite
 
 
 if __name__ == '__main__':
-    unittest.main()
+    unittest.TextTestRunner(verbosity=2).run(suite())

@@ -1,6 +1,6 @@
 
 import numpy
-from numba import cuda, float32
+from numba import cuda, float32, int32
 from .util import CUDA_SIM
 
 
@@ -68,10 +68,7 @@ def cu_sigm_cfe_post(cmin, cmax, midpoint, a, sigma):
     return cfe
 
 
-# TODO Sigmoidal Jansen Rit indexes by cvar
-
-
-# TODO PreSigmoidal is another model specific cfun with nonstandard indexing
+# TODO Sigmoidal Jansen Rit & PreSigmoidal are model specific hacks
 
 
 def cu_kura_cfe_pre():
@@ -91,14 +88,16 @@ def _cu_mod_pow_2(i, n):
 
 
 # TODO http://stackoverflow.com/a/30524712
-
-def cu_delay_cfun(horizon, cfpre, cfpost, n_cvar, n_thread_per_block):
+def cu_delay_cfun(horizon, cfpre, cfpost, n_cvar, n_thread_per_block, step_stride=0):
     "Construct CUDA device function for delayed coupling with given pre & post summation functions."
 
     if horizon < 2 or (horizon & (horizon - 1)) != 0:
         msg = "cu_delay_cfun argument `horizon` should be a positive power of 2, but received %d"
         msg %= horizon
         raise ValueError(msg)
+
+    # 0 except for testing
+    step_stride = int32(step_stride)
 
     @cuda.jit(device=True)
     def dcfun(aff, delays, weights, state, i_post, i_thread, step, cvars, buf):#, delayed_step):
@@ -107,24 +106,36 @@ def cu_delay_cfun(horizon, cfpre, cfpost, n_cvar, n_thread_per_block):
         aff_i = cuda.shared.array((n_cvar, n_thread_per_block), float32)
         i_t = cuda.threadIdx.x
 
+        # 0 except for testing
+        step_ = step_stride * step
+
         # update buffer with state
         for i_cvar in range(cvars.shape[0]):
-            buf[i_post, _cu_mod_pow_2(step, horizon), i_cvar, i_thread] = state[step, i_post, cvars[i_cvar], i_thread]
+            buf[i_post, _cu_mod_pow_2(step, horizon), i_cvar, i_thread] = state[step_, i_post, cvars[i_cvar], i_thread]
 
         # initialize sums to zero
         for i_cvar in range(cvars.shape[0]):
             aff_i[i_cvar, i_t] = float32(0.0)
+            #aff[step_, i_post, i_cvar, i_thread] = float32(0.0)
 
         # query buffer, summing over cfpre applied to delayed efferent cvar values
         for i_pre in range(weights.shape[0]):
-            #delayed_step[i_post, i_pre] = _cu_mod_pow_2(step - delays[i_post, i_pre] + horizon, horizon)
+            weight = weights[i_post, i_pre]
+            if weight == 0.0:
+                continue
+            # delayed_step[i_post, i_pre] = _cu_mod_pow_2(step - delays[i_post, i_pre] + horizon, horizon)
             delayed_step = _cu_mod_pow_2(step - delays[i_post, i_pre] + horizon, horizon)
             for i_cvar in range(cvars.shape[0]):
                 cval = buf[i_pre, delayed_step, i_cvar, i_thread]
-                aff_i[i_cvar, i_t] += weights[i_post, i_pre] * cfpre(state[step, i_post, cvars[i_cvar], i_thread], cval)
+                # aff[step_, i_post, i_cvar, i_thread] += \
+                aff_i[i_cvar, i_t] += \
+                    weight * cfpre(state[step_, i_post, cvars[i_cvar], i_thread], cval)
 
         # apply cfpost
         for i_cvar in range(cvars.shape[0]):
-            aff[step, i_post, i_cvar, i_thread] = cfpost(aff_i[i_cvar, i_t])
+            aff[step_, i_post, i_cvar, i_thread] = cfpost(
+                aff_i[i_cvar, i_t]
+                # aff[step_, i_post, i_cvar, i_thread]
+            )
 
     return dcfun
