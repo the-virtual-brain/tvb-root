@@ -208,6 +208,18 @@ function getSubmitableData(inputDivId, allowDisabled) {
     return submitableData;
 }
 
+function submitParentForm(formToSubmitId, submitURL) {
+    var submittableData = getSubmitableData(formToSubmitId, false);
+    doAjaxCall({
+        async : false,
+        type: 'POST',
+        url: submitURL,
+        data: submittableData,
+        success: function(r) {
+            displayMessage("Operation launched!");
+        }
+     });
+}
 
 /**
  * Generic function to maximize /minimize a column in Michael's columnize framework.

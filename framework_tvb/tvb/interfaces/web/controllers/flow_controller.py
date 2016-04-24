@@ -92,8 +92,14 @@ class FlowController(BaseController):
                                           title="Select an analyzer", displayControl=False)
             adapters_list = []
             for adapter_group in groups:
-                #TODO when more than one child '/flow/prepare_adapters_group/' + adapter_group.name
-                adapter_link = self.get_url_adapter(analyze_category.id, adapter_group.children[0].id)
+
+                if len(adapter_group.children) > 1:
+                    ids = [str(child.id) for child in adapter_group.children]
+                    ids = ','.join(ids)
+                    adapter_link = '/flow/show_group_of_algorithms/' + str(analyze_category.id) + "/" + ids
+                else:
+                    adapter_link = self.get_url_adapter(analyze_category.id, adapter_group.children[0].id)
+
                 adapters_list.append({common.KEY_TITLE: adapter_group.name,
                                       'link': adapter_link,
                                       'description': adapter_group.description,
@@ -137,6 +143,28 @@ class FlowController(BaseController):
         else:
             back_page_link = '/project/editstructure/' + str(project.id)
         return back_page_link
+
+
+    @expose_page
+    @settings
+    @context_selected
+    def show_group_of_algorithms(self, step_key, algorithm_ids):
+
+        project = common.get_current_project()
+        category = self.flow_service.get_category_by_id(step_key)
+        algorithms = []
+        for i in algorithm_ids.split(','):
+            algorithm_id = int(i)
+            algorithm = self.flow_service.get_algorithm_by_identifier(algorithm_id)
+            algorithm.link = self.get_url_adapter(step_key, algorithm_id)
+            algorithm.input_tree = self.flow_service.prepare_adapter(project.id, algorithm)
+            algorithms.append(algorithm)
+
+        template_specification = dict(mainContent="flow/algorithms_list", algorithms=algorithms,
+                                      title="Select an algorithm", section_name=category.displayname.lower())
+        self._populate_section(algorithms[0], template_specification)
+        self.fill_default_attributes(template_specification, algorithms[0].group_name)
+        return template_specification
 
 
     @expose_page
