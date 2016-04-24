@@ -232,8 +232,14 @@ class ProjectService:
                 result['figures'] = None
                 if not result['group']:
                     datatype_results = dao.get_results_for_operation(result['id'])
-                    result['results'] = [dao.get_generic_entity(dt.module + '.' + dt.type,
-                                                                dt.gid, 'gid')[0] for dt in datatype_results]
+                    result['results'] = []
+                    for dt in datatype_results:
+                        dt_loaded = ABCAdapter.load_entity_by_gid(dt.gid)
+                        if dt_loaded:
+                            result['results'].append(dt_loaded)
+                        else:
+                            self.logger.warn("Could not retrieve datatype %s" % str(dt))
+
                     operation_figures = dao.get_figures_for_operation(result['id'])
 
                     # Compute the full path to the figure / image on disk
