@@ -102,6 +102,18 @@ def upgrade(migrate_engine):
     finally:
         session.close()
 
+    session = SA_SESSIONMAKER()
+    try:
+        session.execute(text("""ALTER TABLE "MAPPED_CONNECTIVITY_ANNOTATIONS"
+                                RENAME TO "MAPPED_CONNECTIVITY_ANNOTATIONS_DATA"; """))
+        session.execute(text("""ALTER TABLE "MAPPED_DATATYPE_MEASURE" RENAME TO "MAPPED_DATATYPE_MEASURE_DATA"; """))
+        session.execute(text("""ALTER TABLE "MAPPED_SIMULATION_STATE" RENAME TO "MAPPED_SIMULATION_STATE_DATA"; """))
+        session.execute(text("""ALTER TABLE "MAPPED_VALUE_WRAPPER" RENAME TO "MAPPED_VALUE_WRAPPER_DATA"; """))
+        session.commit()
+    except Exception, excep:
+        LOGGER.exception(excep)
+    finally:
+        session.close()
 
 
 def downgrade(_):
