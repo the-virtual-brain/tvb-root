@@ -56,6 +56,7 @@ class FilesHelper():
     TEMP_FOLDER = "TEMP"
     IMAGES_FOLDER = "IMAGES"
     PROJECTS_FOLDER = "PROJECTS"
+    ALLEN_MOUSE_CONNECTIVITY_CACHE_FOLDER = "ALLEN_MOUSE_CONNECTIVITY_CACHE"
 
     TVB_FILE_EXTENSION = XMLWriter.FILE_EXTENSION    
     TVB_STORAGE_FILE_EXTENSION = ".h5"
@@ -306,7 +307,12 @@ class FilesHelper():
         name = figure.file_path.split('.')[0]
         images_folder = self.get_images_folder(figure.project.name)
         return os.path.join(TvbProfile.current.TVB_STORAGE, images_folder, name + XMLWriter.FILE_EXTENSION)
-    
+
+    def get_allen_mouse_cache_folder(self, project_name):
+        project_folder = self.get_project_folder(project_name)
+        folder = os.path.join(project_folder, self.ALLEN_MOUSE_CONNECTIVITY_CACHE_FOLDER)
+        self.check_created(folder)
+        return folder
     
     @staticmethod
     def find_relative_path(full_path, root_path=TvbProfile.current.TVB_STORAGE):

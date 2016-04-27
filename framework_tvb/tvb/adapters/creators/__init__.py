@@ -28,4 +28,4 @@
 #
 #
 
-__all__ = ["connectivity_creator", "local_connectivity_creator", "stimulus_creator"]
+__all__ = ["allen", "connectivity_creator", "local_connectivity_creator", "stimulus_creator"]

@@ -41,7 +41,7 @@ import os
 import cherrypy
 
 from tvb.interfaces.web.controllers import common
-from tvb.config import CONNECTIVITY_CLASS, CONNECTIVITY_MODULE
+from tvb.config import CONNECTIVITY_CLASS, CONNECTIVITY_MODULE, ALLEN_CREATOR_MODULE, ALLEN_CREATOR_CLASS
 from tvb.basic.profile import TvbProfile
 from tvb.basic.logger.builder import get_logger
 from tvb.core.services.user_service import UserService
@@ -73,12 +73,19 @@ class BaseController(object):
         conn_id = self.flow_service.get_algorithm_by_module_and_class(CONNECTIVITY_MODULE, CONNECTIVITY_CLASS).id
         connectivity_link = self.get_url_adapter(view_category.id, conn_id)
 
+        allen_algo = self.flow_service.get_algorithm_by_module_and_class(ALLEN_CREATOR_MODULE, ALLEN_CREATOR_CLASS)
+        allen_link = self.get_url_adapter(allen_algo.fk_category, allen_algo.id)
+
         self.connectivity_submenu = [dict(title="Large Scale Connectivity", subsection="connectivity",
                                           description="View Connectivity Regions. Perform Connectivity lesions",
                                           link=connectivity_link),
                                      dict(title="Local Connectivity", subsection="local",
                                           link='/spatial/localconnectivity/step_1/1',
-                                          description="Create or view existent Local Connectivity entities.")]
+                                          description="Create or view existent Local Connectivity entities."),
+                                     dict(title="Allen Connectome Downloader", subsection="local",
+                                          link=allen_link,
+                                          description="Download a mouse connectivity from Allen dataset")
+                                     ]
         self.burst_submenu = [dict(link='/burst', subsection='burst',
                                    title='Simulation Cockpit', description='Manage simulations'),
                               dict(link='/burst/dynamic', subsection='dynamic',
