@@ -597,7 +597,7 @@ class InputTreeManager(object):
 
 
     @staticmethod
-    def _populate_values(data_list, type_, category_key, complex_dt_attributes=None):
+    def _populate_values(data_list, type_, category_key):
         """
         Populate meta-data fields for data_list (list of DataTypes).
 
@@ -625,9 +625,6 @@ class InputTreeManager(object):
             display_name += ' - ID:' + str(value[0])
             all_field_values += str(entity_gid) + ','
             values.append({KEY_NAME: display_name, KEY_VALUE: entity_gid})
-            if complex_dt_attributes is not None:
-                ### TODO apply filter on sub-attributes
-                values[-1][KEY_ATTRIBUTES] = complex_dt_attributes
         if category_key is not None:
             category = dao.get_category_by_id(category_key)
             if not category.display and not category.rawinput and len(data_list) > 1:
@@ -636,7 +633,7 @@ class InputTreeManager(object):
 
 
     def populate_option_values_for_dtype(self, project_id, type_name, filter_condition=None,
-                                         category_key=None, complex_dt_attributes=None):
+                                         category_key=None):
         '''
         Converts all datatypes that match the project_id, type_name and filter_condition
         to a {name: , value:} dict used to populate options in the input tree ui
@@ -650,8 +647,7 @@ class InputTreeManager(object):
         #NOTE these functions are coupled via data_list, _populate_values makes no sense without _get_available_datatypes
         data_list, total_count = get_filtered_datatypes(project_id, data_type_cls,
                                                         filter_condition)
-        values = self._populate_values(data_list, data_type_cls,
-                                       category_key, complex_dt_attributes)
+        values = self._populate_values(data_list, data_type_cls, category_key)
         return values, total_count
 
 
@@ -673,12 +669,15 @@ class InputTreeManager(object):
                     filter_condition = FilterChain('')
                 filter_condition.add_condition(FilterChain.datatype + ".visible", "==", True)
 
-                complex_dt_attributes = None
-                if param.get(KEY_ATTRIBUTES):
+                values, total_count = self.populate_option_values_for_dtype(project_id, param[KEY_TYPE], filter_condition,
+                                                      category_key)
+                if param.get(KEY_ATTRIBUTES): # copy complex datatype attributes to all options
                     complex_dt_attributes = self.fill_input_tree_with_options(param[KEY_ATTRIBUTES],
                                                                     project_id, category_key)
-                values, total_count = self.populate_option_values_for_dtype(project_id, param[KEY_TYPE], filter_condition,
-                                                      category_key, complex_dt_attributes)
+                    for value in values:
+                        if value[KEY_NAME] != 'All':
+                            value[KEY_ATTRIBUTES] = complex_dt_attributes
+
                 if total_count > MAXIMUM_DATA_TYPES_DISPLAYED:
                     transformed_param[KEY_WARNING] = WARNING_OVERFLOW
 
