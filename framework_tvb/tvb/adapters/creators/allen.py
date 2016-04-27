@@ -134,8 +134,22 @@ class AllenConnectomeBuilder(ABCAsynchronous):
         Vol_parcel = MouseBrainVisualizer(Vol, Order, KeyOrd, UniqueParents, UniqueGranParents, ontology)
 
         # results: Connectivity & RegionVolumeMapping
-        # TODO actually return a Connectivity and RegionVolumeMapping instances, not their fields
-        return SC, centres, names, tract_lengths, Vol_parcel
+        conn = Connectivity(storage_path=self.storage_path)
+        conn.weights = SC
+        conn.tract_lengths = tract_lengths
+        conn.centres = centres
+        conn.region_labels = np.array(names)
+        conn.subject = 'John Mouse'
+
+        # TODO actually return a RegionVolumeMapping
+        # rvmap = RegionVolumeMapping(storage_path=self.storage_path)
+        # rvmap.connectivity = conn
+        # volume = Volume(storage_path=self.storage_path)
+        # volume.origin, volume.voxel_size, volume.voxel_unit = ...
+        # rvmap.volume = volume
+        # rvmap.write_data_slice(Vol_parcel)
+        # rvmap.title rvmap.dimensions_labels etc
+        return conn
 
     def get_required_memory_size(self, **kwargs):
         return -1
