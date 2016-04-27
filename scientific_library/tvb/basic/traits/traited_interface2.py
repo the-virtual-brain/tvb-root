@@ -100,7 +100,7 @@ class TraitedInterfaceGeneratorExperimental(object):
                 return None
             intr = itr.DictNode(name, elementType, attributes, default)
         elif 'Enumerate' in mro_type_names:
-            options = [itr.EnumeratedOption(val, val) for val in obj.trait.options]
+            options = [itr.Option(val, val) for val in obj.trait.options]
             intr = itr.EnumerateNode(name, obj.trait.select_multiple, obj.trait.value, options,
                                      label, description, required)
 
@@ -225,9 +225,9 @@ class TraitedInterfaceGeneratorExperimental(object):
             description = multiline_math_directives_to_matjax(opt_class.__doc__)
             name = get(opt, '_ui_name', opt_class.__name__)
             value=str_class_name(opt_class, short_form=True)
-            class_=str_class_name(opt_class, short_form=False)
+            type_=str_class_name(opt_class, short_form=False)
             attributes=opt.interface_experimental
-            options.append(itr.TypeNode(name, value, class_, description, attributes))
+            options.append(itr.TypeNode(name, value, type_, description, attributes))
         return options
 
 

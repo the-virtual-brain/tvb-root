@@ -60,9 +60,8 @@ class SelectTypeNode(object):
 
     def __repr__(self):
         opts = _repr_help_format_list(self.options)
-        return ('SelectTypeNode(\n'
-                '    name=%r, type=%r, default=%r, label=%r,\n'
-                '    options=[\n    %s    \n]' % (self.name, self.type, self.default, self.label, opts))
+        return ('SelectTypeNode(name=%r, type=%r, default=%r, label=%r,\n'
+                '  options=[\n    %s    \n])' % (self.name, self.type, self.default, self.label, opts))
 
 
 class TypeNode(object):
@@ -72,14 +71,14 @@ class TypeNode(object):
     def __init__(self, name, value, class_, description, attributes):
         self.name = name  # _ui_name
         self.value = value   # short class name
-        self.class_ = class_ # fqn class
+        self.type = class_ # fqn class
         self.description = description # docstring
         self.attributes = attributes
 
     def __repr__(self):
         attrs = _repr_help_format_list(self.attributes)
         return ('%s(name=%r, class=%r, \n'
-                '    attributes=[\n    %s    \n]\n' %(type(self).__name__, self.name, self.class_, attrs))
+                '  attributes=[\n    %s    \n])' %(type(self).__name__, self.name, self.type, attrs))
 
 
 class LeafNode(object):
@@ -97,7 +96,8 @@ class LeafNode(object):
     def __repr__(self):
         return '%s(name=%r, type=%r, label=%r, default=%r)' % (type(self).__name__, self.name, self.type, self.label, self.default)
 
-class DatatypeNode(LeafNode):
+#class NodeWithInstancesFromDb
+class DatatypeNode(object):
     '''
     A dataype node. Has filters.
     '''
@@ -107,21 +107,41 @@ class DatatypeNode(LeafNode):
         '''
         if not isinstance(type_, basestring):
             type_ = type_.__module__ + '.' + type_.__name__
-        LeafNode.__init__(self, name, type_, None, label, description, required)
+        self.name = name
+        self.type = type_
+        self.label = label or name
+        self.description = description or self.label
+        self.required = required
         self.conditions = conditions
         self.filters_ui = filters_ui
+        self.default = None
+        # List of concrete instance gid's. These Options are runtime values, filled from the db after applying filters.
+        # This is not a Type level concept, so setting them in a get_input_tree makes no sense.
+        self.options = []
+
+    def __repr__(self):
+        return '%s(name=%r, type=%r, label=%r, default=%r)' % (
+        type(self).__name__, self.name, self.type, self.label, self.default)
 
 
-class ComplexDtypeNode(TypeNode):
+class ComplexDtypeNode(object):
     '''
     Usually a cortex. It is not a LeafNode even though similar to a datatypenode
     '''
     def __init__(self, name, type_, attributes, label=None, description=None, required=True, conditions=None, filters_ui=None):
-        TypeNode.__init__(self, name, 'value', type_, description, attributes)
+        self.name = name
+        self.type = type_
+        self.description = description
+        self.attributes = attributes
         self.label = label
         self.required = required
         self.conditions = conditions
         self.filters_ui = filters_ui
+
+    def __repr__(self):
+        attrs = _repr_help_format_list(self.attributes)
+        return ('%s(name=%r, class=%r, \n'
+                '  attributes=[\n    %s    \n]\n)' %(type(self).__name__, self.name, self.type, attrs))
 
 
 class Range(object):
@@ -166,20 +186,24 @@ class DictNode(object):
                 % (self.name, self.type, self.label, self.default, attrs))
 
 
-# todo is this really a leaf? it has options and select type. In a sense it is a leaf, as the options are trivial
-class EnumerateNode(LeafNode):
+class EnumerateNode(object):
     def __init__(self, name, select_multiple, default, options,
                  label=None, description=None, required=True):
         type_ = 'selectMultiple' if select_multiple else 'select'
-        LeafNode.__init__(self, name, type_, default, label, description, required)
-        self.options = options  # of type EnumeratedOption
+        self.name = name
+        self.type = type_
+        self.label = label or name
+        self.description = description or self.label
+        self.required = required
+        self.default = default
+        self.options = options  # of type Option. These options are derived from the Type traits.
 
     def __repr__(self):
-        s = LeafNode.__repr__(self)
-        return s[:-1] + ', options=%r)' % self.options
+        return '%s(name=%r, type=%r, label=%r, default=%r, options=%r)' % (
+            type(self).__name__, self.name, self.type, self.label, self.default, self.options)
 
 
-class EnumeratedOption(object):
+class Option(object):
     def __init__(self, name, value):
         self.name = name
         self.value = value
