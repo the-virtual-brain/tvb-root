@@ -73,20 +73,22 @@ class BaseController(object):
         conn_id = self.flow_service.get_algorithm_by_module_and_class(CONNECTIVITY_MODULE, CONNECTIVITY_CLASS).id
         connectivity_link = self.get_url_adapter(view_category.id, conn_id)
 
-        allen_algo = self.flow_service.get_algorithm_by_module_and_class(ALLEN_CREATOR_MODULE, ALLEN_CREATOR_CLASS)
-        allen_link = self.get_url_adapter(allen_algo.fk_category, allen_algo.id)
+        self.connectivity_submenu = [dict(title="Large Scale Connectivity", link=connectivity_link,
+                                          subsection=WebStructure.SUB_SECTION_CONNECTIVITY,
+                                          description="View Connectivity Regions. Perform Connectivity lesions"),
+                                     dict(title="Local Connectivity", link='/spatial/localconnectivity/step_1/1',
+                                          subsection=WebStructure.SUB_SECTION_LOCAL_CONNECTIVITY,
+                                          description="Create or view existent Local Connectivity entities.")]
 
-        self.connectivity_submenu = [dict(title="Large Scale Connectivity", subsection="connectivity",
-                                          description="View Connectivity Regions. Perform Connectivity lesions",
-                                          link=connectivity_link),
-                                     dict(title="Local Connectivity", subsection="local",
-                                          link='/spatial/localconnectivity/step_1/1',
-                                          description="Create or view existent Local Connectivity entities."),
-                                     dict(title="Allen Connectome Downloader", subsection="local",
-                                          link=allen_link,
-                                          description="Download a mouse connectivity from Allen dataset")
-                                     ]
-        self.burst_submenu = [dict(link='/burst', subsection='burst',
+        allen_algo = self.flow_service.get_algorithm_by_module_and_class(ALLEN_CREATOR_MODULE, ALLEN_CREATOR_CLASS)
+        if allen_algo:
+            # Only add the Allen Creator if AllenSDK is installed
+            allen_link = self.get_url_adapter(allen_algo.fk_category, allen_algo.id)
+            self.connectivity_submenu.append(dict(title="Allen Connectome Downloader", link=allen_link,
+                                                  subsection=WebStructure.SUB_SECTION_ALLEN,
+                                                  description="Download a mouse connectivity from Allen dataset"))
+
+        self.burst_submenu = [dict(link='/burst', subsection=WebStructure.SUB_SECTION_BURST,
                                    title='Simulation Cockpit', description='Manage simulations'),
                               dict(link='/burst/dynamic', subsection='dynamic',
                                    title='Phase plane', description='Configure model dynamics')]
@@ -236,28 +238,33 @@ class BaseController(object):
         Populate Section and Sub-Section fields from current Algorithm-Group.
         """
         if algorithm.module == CONNECTIVITY_MODULE:
-            result_template[common.KEY_SECTION] = 'connectivity'
-            result_template[common.KEY_SUB_SECTION] = 'connectivity'
+            result_template[common.KEY_SECTION] = WebStructure.SECTION_CONNECTIVITY
+            result_template[common.KEY_SUB_SECTION] = WebStructure.SUB_SECTION_CONNECTIVITY
+            result_template[common.KEY_SUBMENU_LIST] = self.connectivity_submenu
+
+        elif algorithm.module == ALLEN_CREATOR_MODULE:
+            result_template[common.KEY_SECTION] = WebStructure.SECTION_CONNECTIVITY
+            result_template[common.KEY_SUB_SECTION] = WebStructure.SUB_SECTION_ALLEN
             result_template[common.KEY_SUBMENU_LIST] = self.connectivity_submenu
 
         elif algorithm.algorithm_category.display:
             ## We are having a visualizer:
             if is_burst:
-                result_template[common.KEY_SECTION] = 'burst'
+                result_template[common.KEY_SECTION] = WebStructure.SECTION_BURST
                 result_template[common.KEY_SUBMENU_LIST] = self.burst_submenu
             else:
-                result_template[common.KEY_SECTION] = 'project'
+                result_template[common.KEY_SECTION] = WebStructure.SECTION_PROJECT
             result_template[common.KEY_SUB_SECTION] = 'view_' + algorithm.subsection_name
 
         elif algorithm.algorithm_category.rawinput:
             ### Upload algorithms
-            result_template[common.KEY_SECTION] = 'project'
-            result_template[common.KEY_SUB_SECTION] = 'data'
+            result_template[common.KEY_SECTION] = WebStructure.SECTION_PROJECT
+            result_template[common.KEY_SUB_SECTION] = WebStructure.SUB_SECTION_DATA_STRUCTURE
 
         elif 'RAW_DATA' in algorithm.algorithm_category.defaultdatastate:
             ### Creators
-            result_template[common.KEY_SECTION] = 'stimulus'
-            result_template[common.KEY_SUB_SECTION] = 'stimulus'
+            result_template[common.KEY_SECTION] = WebStructure.SECTION_STIMULUS
+            result_template[common.KEY_SUB_SECTION] = WebStructure.SUB_SECTION_STIMULUS_MENU
 
         else:
             ### Analyzers
@@ -337,8 +344,8 @@ class BaseController(object):
         Returns the content of the blocking overlay (covers entire page and do not allow any action)
         """
         return self.fill_default_attributes(dict(data))
-    
-    
+
+
     def update_operations_count(self):
         """
         If a project is selected, update Operation Numbers in call-out.
