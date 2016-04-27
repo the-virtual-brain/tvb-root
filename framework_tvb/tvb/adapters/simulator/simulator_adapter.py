@@ -80,6 +80,11 @@ class SimulatorAdapter(ABCAsynchronous):
         super(SimulatorAdapter, self).__init__()
         self.log.debug("%s: Initialized..." % str(self))
 
+    def get_input_tree2(self):
+        sim = Simulator()
+        sim.trait.bound = self.INTERFACE_ATTRIBUTES_ONLY
+        result = sim.interface_experimental
+        return result
 
     def get_input_tree(self):
         """
