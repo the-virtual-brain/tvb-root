@@ -36,8 +36,6 @@ data using their SDK.
 .. moduleauthor:: Marmaduke Woodman <mmwoodman@gmail.com>
 
 """
-# TODO: woudn't this fit better under the Connectivity section in the GUI, as a Creator ?
-# How about
 
 import os.path
 import numpy as np
@@ -50,6 +48,7 @@ from allensdk.core.mouse_connectivity_cache import MouseConnectivityCache
 
 class AllenConnectomeBuilder(ABCAsynchronous):
     "Handler for uploading a mouse connectivity from Allen dataset using AllenSDK."
+
     _ui_name = "Allen connectivity uploader"
     _ui_description = "Import mouse connectivity from Allen database (tracer experiments)"
 

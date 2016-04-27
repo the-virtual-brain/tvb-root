@@ -63,7 +63,7 @@ SIMULATION_DATATYPE_CLASS = "SimulationState"
 CONNECTIVITY_MODULE = 'tvb.adapters.visualizers.connectivity'
 CONNECTIVITY_CLASS = 'ConnectivityViewer'
 
-ALLEN_CREATOR_MODULE = 'tvb.adapters.creators.allen'
+ALLEN_CREATOR_MODULE = 'tvb.adapters.creators.allen_creator'
 ALLEN_CREATOR_CLASS = 'AllenConnectomeBuilder'
 
 MEASURE_METRICS_MODULE = "tvb.adapters.analyzers.metrics_group_timeseries"
