@@ -61,14 +61,14 @@ class FcdCalculator(core.Type):
         doc = """The time-series for which the fcd matrices are calculated.""")
 
     sw = basic.Float(
-        label="Sliding window length (s)",
-        default=120,
-        doc="""Sliding window length (s)""")
+        label="Sliding window length (ms)",
+        default=120000,
+        doc="""Sliding window length (ms)""")
 
     sp = basic.Float(
-        label="Spanning between two consecutive sliding window (s)",
-        default=2,
-        doc="""Spanning between two consecutive sliding window (s)""")
+        label="Spanning between two consecutive sliding window (ms)",
+        default=2000,
+        doc="""Spanning between two consecutive sliding window (ms)""")
 
     def evaluate(self):
         cls_attr_name = self.__class__.__name__ + ".time_series"
@@ -83,7 +83,6 @@ class FcdCalculator(core.Type):
         # (fcd_points, fcd_points, state-variables, modes)
         input_shape = self.time_series.read_data_shape()
         result_shape = self.result_shape(input_shape)
-        LOG.info("result shape will be: %s" % str(result_shape))
 
         result = np.zeros(result_shape)
 
