@@ -43,6 +43,7 @@ from tvb.core.adapters.abcadapter import ABCAsynchronous
 from tvb.core.entities.storage import dao
 from tvb.datatypes.connectivity import Connectivity
 from tvb.datatypes.region_mapping import RegionVolumeMapping
+from tvb.datatypes.volumes import Volume
 from allensdk.core.mouse_connectivity_cache import MouseConnectivityCache
 
 
@@ -90,7 +91,7 @@ class AllenConnectomeBuilder(ABCAsynchronous):
                  'required': True, 'default': '1000000000'}]
 
     def get_output(self):
-        return [Connectivity, RegionVolumeMapping]
+        return [Connectivity, RegionVolumeMapping, Volume]
 
 
     def launch(self, resolution, weighting, inf_vox_thresh, vol_thresh):
@@ -130,25 +131,29 @@ class AllenConnectomeBuilder(ABCAsynchronous):
         [UniqueParents, UniqueGranParents] = ParentsAndGranParentsVolumeCalculator(Order, KeyOrd, Vol, ontology)
 
         # Vol indicizzato between 1-Nareas, 0=background, entries>Nareas= Areas that are not in the selected parcellation
-        Vol_parcel = MouseBrainVisualizer(Vol, Order, KeyOrd, UniqueParents, UniqueGranParents, ontology)
+        Vol_parcel = MouseBrainVisualizer(Vol, Order, KeyOrd, UniqueParents, UniqueGranParents, ontology, projmaps)
 
         # results: Connectivity & RegionVolumeMapping
-        conn = Connectivity(storage_path=self.storage_path)
-        conn.weights = SC
-        conn.tract_lengths = tract_lengths
-        conn.centres = centres
-        conn.region_labels = np.array(names)
-        conn.subject = 'John Mouse'
+        #Connectivity
+        result_connectivity = Connectivity(storage_path=self.storage_path)
+        result_connectivity.centres = centres
+        result_connectivity.region_labels = names
+        result_connectivity.weights = SC
+        result_connectivity.tract_lengths = tract_lengths
 
-        # TODO actually return a RegionVolumeMapping
-        # rvmap = RegionVolumeMapping(storage_path=self.storage_path)
-        # rvmap.connectivity = conn
-        # volume = Volume(storage_path=self.storage_path)
-        # volume.origin, volume.voxel_size, volume.voxel_unit = ...
-        # rvmap.volume = volume
-        # rvmap.write_data_slice(Vol_parcel)
-        # rvmap.title rvmap.dimensions_labels etc
-        return conn
+        # Volume
+        result_volume = Volume(storage_path=self.storage_path)
+        result_volume.origin = [[0.0, 0.0, 0.0]]
+        result_volume.voxel_size = [resolution, resolution, resolution]
+        # volume.voxel_unit= micron
+        # Region Volume Mapping
+        result_rvm = RegionVolumeMapping(storage_path=self.storage_path)
+        result_rvm.volume = result_volume
+        result_rvm.array_data = Vol_parcel
+        result_rvm.connectivity = result_connectivity
+        result_rvm.title = "Volume mouse brain "
+        result_rvm.dimensions_labels = ["X", "Y", "Z"]
+        return [result_connectivity, result_rvm, result_volume]
 
     def get_required_memory_size(self, **kwargs):
         return -1
@@ -584,7 +589,7 @@ def ParentsAndGranParentsVolumeCalculator(Order,KeyOrd,Vol,ontology):
 
 
 
-def MouseBrainVisualizer(Vol,Order,KeyOrd,UniqueParents,UniqueGranParents, ontology):
+def MouseBrainVisualizer(Vol,Order,KeyOrd,UniqueParents,UniqueGranParents, ontology, projmaps):
     Nareas=len(KeyOrd)*2
     Vec = np.arange(Nareas).reshape(Nareas,)
     Vec=Vec+1 #indicizzato fra 1 e Nareas
@@ -603,7 +608,7 @@ def MouseBrainVisualizer(Vol,Order,KeyOrd,UniqueParents,UniqueGranParents, ontol
             vol_l[vol_l == ID] =Vec[index_vec+left]
         child=list(ontology.get_child_ids( ontology[ID].id ))
         while len(child)!=0:
-            if child[0] in vol_r:
+            if (child[0] in vol_r) and (child[0] not in projmaps.keys()):
                 vol_r[vol_r == child[0]] = Vec[index_vec]
                 vol_l[vol_l == child[0]] = Vec[index_vec+left]
             if len(ontology.get_child_ids(ontology[child[0]].id))!=0:
@@ -639,7 +644,7 @@ def MouseBrainVisualizer(Vol,Order,KeyOrd,UniqueParents,UniqueGranParents, ontol
             PP=int(PP)
             if PP in UniqueParents.keys():
                 vol_r[vol_r == ID] = Vec[UniqueParents[PP]]
-                vol_l[vol_l == ID] = Vec[UniqueParents[PP]+len(Vec)/2]
+                vol_l[vol_l == ID] = Vec[UniqueParents[PP]+left]
                 k=0
             else:
                 ont=ontology[PP]
@@ -670,7 +675,7 @@ def MouseBrainVisualizer(Vol,Order,KeyOrd,UniqueParents,UniqueGranParents, ontol
             PP=int(PP)
             if PP in UniqueGranParents.keys():
                 vol_r[vol_r == ID] = Vec[UniqueGranParents[PP]]
-                vol_l[vol_l == ID] = Vec[UniqueGranParents[PP]+len(Vec)/2]
+                vol_l[vol_l == ID] = Vec[UniqueGranParents[PP]+left]
                 k=0
             else:
                 ont=ontology[PP]
@@ -678,7 +683,8 @@ def MouseBrainVisualizer(Vol,Order,KeyOrd,UniqueParents,UniqueGranParents, ontol
                 if np.isnan(PP):
                     k=0
     vol_parcel=np.concatenate((vol_r, vol_l), axis=2)
-    vol_parcel[vol_parcel>=1]=1
+    vol_parcel[vol_parcel>=1]=0 #set all the areas not in the parcellation to 0 (as the background that is zero)
     vol_parcel=vol_parcel*(10**(1+int(np.log10(Nareas)))) #ritorno alla indicizzazione fra uno e Nareas
-    vol_parcel = np.ceil(vol_parcel)
+    vol_parcel=vol_parcel-1 #with this operation background and areas not in parcellation will be -1 and all the others with the index as in python (betweeen 0 and Nareas-1)
+    vol_parcel = np.round(vol_parcel)
     return vol_parcel
