@@ -76,18 +76,18 @@ class AllenConnectomeBuilder(ABCAsynchronous):
                 # 'required': True, 'options': self.TRANSGENIC_OPTIONS, 'default': 'False'},
 
                 {'name': 'resolution', 'type': 'select',
-                 'label': 'Resolution of the data that you chose to download in the cache (microns):',
+                 'label': 'Resolution of the data that you want to download to construct the volume and the connectivity (micron) :',
                  'required': True, 'options': self.RESOLUTION_OPTIONS, 'default': '100'},
 
-                {'name': 'weighting', 'type': 'select', 'label': 'Definition of the weights : ',
+                {'name': 'weighting', 'type': 'select', 'label': 'Definition of the weights of the connectivity :',
                  'required': True, 'options': self.WEIGHTS_OPTIONS, 'default': '1'},
 
                 {'name': 'inf_vox_thresh', 'type': 'float',
-                 'label': 'Consider only the areas where at least one exp infect more than ... voxels: ',
+                 'label': 'To build the volume and the connectivity select only the areas where there is at least one infection experiment that had infected more than ... voxels in that areas.',
                  'required': True, 'default': '50'},
 
                 {'name': 'vol_thresh', 'type': 'float',
-                 'label': 'Consider only the areas that have a volume greater than (micron^3): ',
+                 'label': 'To build the volume and the connectivity select only the areas that have a volume greater than (micron^3): ',
                  'required': True, 'default': '1000000000'}]
 
     def get_output(self):
@@ -115,6 +115,7 @@ class AllenConnectomeBuilder(ABCAsynchronous):
         # This method cleans the file projmaps in 4 steps
         projmaps = pmsCleaner(projmaps)
 
+        #Taking only brain regions whose volume is greater than vol_thresh
         projmaps = AreasVolumeTreshold(projmaps, vol_thresh, resolution, Vol, ontology)
 
         # Taking only brain regions where at least one exp has infected more than N voxel (where N is inf_vox_thresh)
@@ -130,7 +131,7 @@ class AllenConnectomeBuilder(ABCAsynchronous):
         # For the Vol I should calculate before Parents and Granparents:
         [UniqueParents, UniqueGranParents] = ParentsAndGranParentsVolumeCalculator(Order, KeyOrd, Vol, ontology)
 
-        # Vol indicizzato between 1-Nareas, 0=background, entries>Nareas= Areas that are not in the selected parcellation
+        # Vol indexed between 0:(N-1)areas, -1=background and areas not in the selected parcellation
         Vol_parcel = MouseBrainVisualizer(Vol, Order, KeyOrd, UniqueParents, UniqueGranParents, ontology, projmaps)
 
         # results: Connectivity & RegionVolumeMapping
@@ -145,7 +146,7 @@ class AllenConnectomeBuilder(ABCAsynchronous):
         result_volume = Volume(storage_path=self.storage_path)
         result_volume.origin = [[0.0, 0.0, 0.0]]
         result_volume.voxel_size = [resolution, resolution, resolution]
-        # volume.voxel_unit= micron
+        #result_volume.voxel_unit= micron
         # Region Volume Mapping
         result_rvm = RegionVolumeMapping(storage_path=self.storage_path)
         result_rvm.volume = result_volume
