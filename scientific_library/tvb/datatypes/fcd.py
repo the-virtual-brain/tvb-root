@@ -56,14 +56,14 @@ class Fcd(arrays.MappedArray):
         doc="Links to the time-series on which FCD is calculated.")
 
     sw = basic.Float(
-        label="Sliding window length (s)",
-        default=120,
-        doc="""Sliding window length (s)""")
+        label="Sliding window length (ms)",
+        default=120000,
+        doc="""Sliding window length (ms)""")
 
     sp = basic.Float(
-        label="Spanning between two consecutive sliding window (s)",
-        default=2,
-        doc="""Spanning between two consecutive sliding window (s)""")
+        label="Spanning between two consecutive sliding window (ms)",
+        default=2000,
+        doc="""Spanning between two consecutive sliding window (ms)""")
 
     labels_ordering = basic.List(
         label="Dimension Names",

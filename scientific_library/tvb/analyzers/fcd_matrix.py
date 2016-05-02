@@ -37,12 +37,10 @@ Adapter that uses the traits module to generate interfaces for ... Analyzer.
 """
 import numpy as np
 import tvb.datatypes.time_series as time_series
-import tvb.datatypes.fcd as fcd
 import tvb.basic.traits.core as core
 import tvb.basic.traits.types_basic as basic
 import tvb.basic.traits.util as util
 from tvb.basic.logger.builder import get_logger
-from tvb.datatypes.graph import ConnectivityMeasure
 from scipy.spatial.distance import pdist
 from sklearn.manifold import SpectralEmbedding
 from sklearn.cluster import DBSCAN
@@ -62,7 +60,7 @@ class FcdCalculator(core.Type):
     (the larger components of the eigenvectors, associated with the larger values of the eigenvalues of the FC, identified the functional hubs of the corresponding epoch of stability)
     """
 
-    time_series = time_series.TimeSeries(
+    time_series = time_series.TimeSeriesRegion(
         label = "Time Series",
         required = True,
         doc = """The time-series for which the fcd matrices are calculated.""")
@@ -84,11 +82,12 @@ class FcdCalculator(core.Type):
         sp=float(self.sp)
         sw=float(self.sw)
         # Pass sp and sw in the right reference (means considering the sample period)
-        #! the sample period is in second
+
         sp = sp  / self.time_series.sample_period
         sw = sw / self.time_series.sample_period
         # (fcd_points, fcd_points, state-variables, modes)
         input_shape = self.time_series.read_data_shape()
+
         result_shape = self.result_shape(input_shape)
 
         FCD = np.zeros(result_shape)
@@ -116,7 +115,6 @@ class FcdCalculator(core.Type):
                         j += 1
 
         util.log_debug_array(LOG, FCD, "FCD")
-        #result_FCD = fcd.Fcd (source=self.time_series, array_data=FCD, use_storage=False)
 
         num_eig = 3  # I fix the value of the eigenvector to extract = 3, but maybe this can be changed
         mode = 0
@@ -124,12 +122,19 @@ class FcdCalculator(core.Type):
         FCD_matrix = FCD[:, :, var, mode]
         [xir, xir_cutoff] = spectral_embedding(FCD_matrix)
         epochs_extremes = epochs_interval(xir, xir_cutoff, sp, sw)
+        FCD_segmented = FCD.copy()
+        if epochs_extremes.shape[0]<=1: #(means that there are not epochs of stability, thus I will calculate eigenvector of the FC calculated over the entire timeseries)
+            epochs_extremes = np.zeros((2, 2), dtype=float)
+            epochs_extremes[1, 1] = input_shape[0]  # [0,0] setted because I skip first epoch
+        else: #there are epochs so you can calculate the starting and the ending point of each epoch
+            FCD_segmented[xir > xir_cutoff, :,var, mode] = 1.1
+            FCD_segmented[:, xir > xir_cutoff, var, mode] = 1.1
+
         Eigenvectors = {}  # in this dictionary I will store the eigenvector of each epoch, key=numb ep
         Eigenvalues = {}  # in this dictionary I will store the eigenvalues of each epoch, key=numb ep
-        for ep in range(1, epochs_extremes.shape[
-            0]):  # I will skip the first epoch since it is (always?) an artifact caused by initial conditions
-            Eigenvectors[ep] = []
-            Eigenvalues[ep] = []
+        for ep in range(1,epochs_extremes.shape[0]):
+            Eigenvectors[ep]=[]
+            Eigenvalues[ep]=[]
             current_slice = tuple([slice(int(epochs_extremes[ep][0]), int(epochs_extremes[ep][1]) + 1), slice(var, var + 1),
                                    slice(input_shape[2]), slice(mode, mode + 1)])
             data = self.time_series.read_data_slice(current_slice).squeeze()
@@ -144,7 +149,9 @@ class FcdCalculator(core.Type):
                 Eigenvalues[ep].append(D[index])
                 D[index] = 0
 
-        return FCD
+        Connectivity=self.time_series.connectivity
+
+        return [FCD, FCD_segmented, Eigenvectors, Eigenvalues, Connectivity]
 
 
     def result_shape(self, input_shape):
@@ -217,6 +224,7 @@ def epochs_interval(xir, xir_cutoff, sp, sw):
         Epochs[ep].append(Tresholds[0][tt])
         tt += 1
         ep += 1
+
     # The relation between the index of the FCD [T] and the time point [t(i)] of the BOLD is the following:
     # T=0 indicates the FC calculate over the length of time that starts at (t=0) and that ends at (t=0)+sw (sw=length of the sliding window, sp=spanning between sliding windows)
     # T=1 indicates the FC calculate over the length of time that starts at (t=0)+sp and that ends at (t=0)+sp+sw
@@ -233,7 +241,7 @@ def epochs_interval(xir, xir_cutoff, sp, sw):
     # Thus (we save the BOLD time in the epochs_extremes matrix)
     epochs_extremes = np.zeros((len(Epochs), 2), dtype=float)
     for ep in range(len(Epochs)):
-        epochs_extremes[ep, 0] = Epochs[ep][0] * sp
-        epochs_extremes[ep, 1] = Epochs[ep][1] * sp + sw
+	    epochs_extremes[ep, 0] = Epochs[ep][0] * sp
+	    epochs_extremes[ep, 1] = Epochs[ep][1] * sp + sw
     return epochs_extremes
 

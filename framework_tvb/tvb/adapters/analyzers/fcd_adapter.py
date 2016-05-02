@@ -42,8 +42,7 @@ from tvb.core.adapters.abcadapter import ABCAsynchronous
 from tvb.datatypes.fcd import Fcd
 from tvb.basic.traits.util import log_debug_array
 from tvb.basic.filters.chain import FilterChain
-from tvb.datatypes.time_series import TimeSeries
-
+from tvb.datatypes.graph import ConnectivityMeasure
 
 
 class FunctionalConnectivityDynamicsAdapter(ABCAsynchronous):
@@ -68,7 +67,7 @@ class FunctionalConnectivityDynamicsAdapter(ABCAsynchronous):
 
 
     def get_output(self):
-        return [Fcd]
+        return [Fcd, ConnectivityMeasure]
 
 
     def configure(self, time_series, sw, sp):
@@ -90,11 +89,11 @@ class FunctionalConnectivityDynamicsAdapter(ABCAsynchronous):
 
         self.algorithm = FcdCalculator(time_series=time_series, sw=sw, sp=sp)
 
-
+    """
     def get_required_memory_size(self, **kwargs):
-        """
-        Returns the required memory to be able to run this adapter.
-        """
+
+        #Returns the required memory to be able to run this adapter.
+
         in_memory_input = [self.input_shape[0], 1, self.input_shape[2], 1]
         input_size = np.prod(in_memory_input) * 8.0
         output_size = self.algorithm.result_size(self.input_shape)
@@ -102,12 +101,19 @@ class FunctionalConnectivityDynamicsAdapter(ABCAsynchronous):
 
 
     def get_required_disk_size(self, **kwargs):
-        """
-        Returns the required disk size to be able to run the adapter (in kB).
-        """
+
+        #Returns the required disk size to be able to run the adapter (in kB).
 
         output_size = self.algorithm.result_size(self.input_shape)
         return self.array_size2kb(output_size)
+
+    """
+    def get_required_memory_size(self, **kwargs):
+        # We do not know how much memory is needed.
+        return -1
+
+    def get_required_disk_size(self, **kwargs):
+        return 0
 
 
     def launch(self, time_series, sw, sp):
@@ -121,19 +127,23 @@ class FunctionalConnectivityDynamicsAdapter(ABCAsynchronous):
            :rtype: `Fcd`
         """
         # Create a Fcd dataType object.
-        result = Fcd(storage_path=self.storage_path, source=time_series, sw=sw, sp=sp)
-        fcd = self.algorithm.evaluate()
-        result.array_data = fcd
+        result=[]
+        [fcd, fcd_segmented, Eigenvectors, Eigenvalues, Connectivity] = self.algorithm.evaluate()
+        result_FCD = Fcd(storage_path=self.storage_path, source=time_series, sw=sw, sp=sp)
+        result_FCD.array_data = fcd
+        result.append(result_FCD)
+
+        if np.amax(fcd_segmented)==1.1 :
+            result_FCD_segmented = Fcd(storage_path=self.storage_path, source=time_series, sw=sw, sp=sp)
+            result_FCD_segmented.array_data = fcd_segmented
+            result.append(result_FCD_segmented)
+        for ep in Eigenvectors.keys():
+            for eig in range(3):
+                result_eigen = ConnectivityMeasure(storage_path=self.storage_path)
+                result_eigen.connectivity = Connectivity
+                result_eigen.array_data = Eigenvectors[ep][eig]
+                result_eigen.title = "Epoch # %d\n , eigenvalue = %s\n" % (ep,Eigenvalues[ep][eig])
+                result.append(result_eigen)
+
         return result
 
-
-"""
-    def launch(self, time_series, sw, sp):
-        # Create a Fcd dataType object.
-        not_stored_result = self.algorithm.evaluate()
-        result = FcdCalculator(storage_path=self.storage_path, source=self.time_series, sp=self.sp, sw=self.sw)
-        result.array_data = not_stored_result.array_data
-
-        return result
-
-"""
