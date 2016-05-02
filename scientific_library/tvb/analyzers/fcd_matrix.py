@@ -68,12 +68,18 @@ class FcdCalculator(core.Type):
     sw = basic.Float(
         label="Sliding window length (ms)",
         default=120000,
-        doc="""Sliding window length (ms)""")
+        doc="""Length of the time window used to divided the time series.
+                FCD matrix is calculated in the following way: the time series is divided in time window of fixed length and with an overlapping of fixed length.
+                The datapoints within each window, centered at time ti, are used to calculate FC(ti) as Pearson correlation.
+                The ij element of the FCD matrix is calculated as the Pearson correlation between FC(ti) and FC(tj) arranged in a vector.""")
 
     sp = basic.Float(
         label="Spanning between two consecutive sliding window (ms)",
         default=2000,
-        doc="""Spanning between two consecutive sliding window (ms)""")
+        doc="""Spanning= (time windows length)-(overlapping between two consecutive time window).
+                FCD matrix is calculated in the following way: the time series is divided in time window of fixed length and with an overlapping of fixed length.
+                The datapoints within each window, centered at time ti, are used to calculate FC(ti) as Pearson correlation.
+                The ij element of the FCD matrix is calculated as the Pearson correlation between FC(ti) and FC(tj) arranged in a vector""")
 
     def evaluate(self):
         cls_attr_name = self.__class__.__name__ + ".time_series"
@@ -117,37 +123,41 @@ class FcdCalculator(core.Type):
         util.log_debug_array(LOG, FCD, "FCD")
 
         num_eig = 3  # I fix the value of the eigenvector to extract = 3, but maybe this can be changed
-        mode = 0
-        var = 0
-        FCD_matrix = FCD[:, :, var, mode]
-        [xir, xir_cutoff] = spectral_embedding(FCD_matrix)
-        epochs_extremes = epochs_interval(xir, xir_cutoff, sp, sw)
-        FCD_segmented = FCD.copy()
-        if epochs_extremes.shape[0]<=1: #(means that there are not epochs of stability, thus I will calculate eigenvector of the FC calculated over the entire timeseries)
-            epochs_extremes = np.zeros((2, 2), dtype=float)
-            epochs_extremes[1, 1] = input_shape[0]  # [0,0] setted because I skip first epoch
-        else: #there are epochs so you can calculate the starting and the ending point of each epoch
-            FCD_segmented[xir > xir_cutoff, :,var, mode] = 1.1
-            FCD_segmented[:, xir > xir_cutoff, var, mode] = 1.1
 
-        Eigenvectors = {}  # in this dictionary I will store the eigenvector of each epoch, key=numb ep
-        Eigenvalues = {}  # in this dictionary I will store the eigenvalues of each epoch, key=numb ep
-        for ep in range(1,epochs_extremes.shape[0]):
-            Eigenvectors[ep]=[]
-            Eigenvalues[ep]=[]
-            current_slice = tuple([slice(int(epochs_extremes[ep][0]), int(epochs_extremes[ep][1]) + 1), slice(var, var + 1),
-                                   slice(input_shape[2]), slice(mode, mode + 1)])
-            data = self.time_series.read_data_slice(current_slice).squeeze()
-            FC = np.corrcoef(data.T)
-            D, V = LA.eig(FC)
-            D = np.real(D)
-            V = np.real(V)
-            D = D / np.sum(np.abs(D))  # normalize eigenvalues between 0 and 1
-            for en in range(num_eig):
-                index = np.argmax(D)
-                Eigenvectors[ep].append(V[:, index])
-                Eigenvalues[ep].append(D[index])
-                D[index] = 0
+        Eigenvectors = {}  # in this dictionary I will store the eigenvector of each epoch, key1=mode, key2=var, key3=numb ep
+        Eigenvalues = {}  # in this dictionary I will store the eigenvalues of each epoch, key1=mode, key2=var, key3=numb ep
+        for mode in range(result_shape[3]):
+            Eigenvectors[mode]={}
+            Eigenvalues[mode]={}
+            for var in range(result_shape[2]):
+                Eigenvectors[mode][var]={}
+                Eigenvalues[mode][var]={}
+                FCD_matrix = FCD[:, :, var, mode]
+                [xir, xir_cutoff] = spectral_embedding(FCD_matrix)
+                epochs_extremes = epochs_interval(xir, xir_cutoff, sp, sw)
+                FCD_segmented = FCD.copy()
+                if epochs_extremes.shape[0]<=1: #(means that there are not epochs of stability, thus I will calculate eigenvector of the FC calculated over the entire timeseries)
+                    epochs_extremes = np.zeros((2, 2), dtype=float)
+                    epochs_extremes[1, 1] = input_shape[0]  # [0,0] setted because I skip first epoch
+                else: #there are epochs so you can calculate the starting and the ending point of each epoch
+                    FCD_segmented[xir > xir_cutoff, :,var, mode] = 1.1
+                    FCD_segmented[:, xir > xir_cutoff, var, mode] = 1.1
+                for ep in range(1,epochs_extremes.shape[0]):
+                    Eigenvectors[mode][var][ep]=[]
+                    Eigenvalues[mode][var][ep]=[]
+                    current_slice = tuple([slice(int(epochs_extremes[ep][0]), int(epochs_extremes[ep][1]) + 1), slice(var, var + 1),
+                                           slice(input_shape[2]), slice(mode, mode + 1)])
+                    data = self.time_series.read_data_slice(current_slice).squeeze()
+                    FC = np.corrcoef(data.T)
+                    D, V = LA.eig(FC)
+                    D = np.real(D)
+                    V = np.real(V)
+                    D = D / np.sum(np.abs(D))  # normalize eigenvalues between 0 and 1
+                    for en in range(num_eig):
+                        index = np.argmax(D)
+                        Eigenvectors[mode][var][ep].append(V[:, index])
+                        Eigenvalues[mode][var][ep].append(D[index])
+                        D[index] = 0
 
         Connectivity=self.time_series.connectivity
 

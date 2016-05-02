@@ -137,13 +137,14 @@ class FunctionalConnectivityDynamicsAdapter(ABCAsynchronous):
             result_FCD_segmented = Fcd(storage_path=self.storage_path, source=time_series, sw=sw, sp=sp)
             result_FCD_segmented.array_data = fcd_segmented
             result.append(result_FCD_segmented)
-        for ep in Eigenvectors.keys():
-            for eig in range(3):
-                result_eigen = ConnectivityMeasure(storage_path=self.storage_path)
-                result_eigen.connectivity = Connectivity
-                result_eigen.array_data = Eigenvectors[ep][eig]
-                result_eigen.title = "Epoch # %d\n , eigenvalue = %s\n" % (ep,Eigenvalues[ep][eig])
-                result.append(result_eigen)
-
+        for mode in Eigenvectors.keys():
+            for var in Eigenvectors[mode].keys():
+                for ep in Eigenvectors[mode][var].keys():
+                    for eig in range(3):
+                        result_eigen = ConnectivityMeasure(storage_path=self.storage_path)
+                        result_eigen.connectivity = Connectivity
+                        result_eigen.array_data = Eigenvectors[mode][var][ep][eig]
+                        result_eigen.title = "Epoch # %d, \n eigenvalue = %s,\n variable = %s,\n mode = %s." % (ep,Eigenvalues[mode][var][ep][eig], var, mode)
+                        result.append(result_eigen)
         return result
 

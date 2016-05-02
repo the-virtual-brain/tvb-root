@@ -58,12 +58,18 @@ class Fcd(arrays.MappedArray):
     sw = basic.Float(
         label="Sliding window length (ms)",
         default=120000,
-        doc="""Sliding window length (ms)""")
+        doc="""Length of the time window used to divided the time series.
+                FCD matrix is calculated in the following way: the time series is divided in time window of fixed length and with an overlapping of fixed length.
+                The datapoints within each window, centered at time ti, are used to calculate FC(ti) as Pearson correlation.
+                The ij element of the FCD matrix is calculated as the Pearson correlation between FC(ti) and FC(tj) arranged in a vector.""")
 
     sp = basic.Float(
         label="Spanning between two consecutive sliding window (ms)",
         default=2000,
-        doc="""Spanning between two consecutive sliding window (ms)""")
+        doc="""Spanning= (time windows length)-(overlapping between two consecutive time window).
+                FCD matrix is calculated in the following way: the time series is divided in time window of fixed length and with an overlapping of fixed length.
+                The datapoints within each window, centered at time ti, are used to calculate FC(ti) as Pearson correlation.
+                The ij element of the FCD matrix is calculated as the Pearson correlation between FC(ti) and FC(tj) arranged in a vector""")
 
     labels_ordering = basic.List(
         label="Dimension Names",
