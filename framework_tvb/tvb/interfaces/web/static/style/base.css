@@ -569,7 +569,10 @@ header nav li#nav-connectivity-local {
 background-image: url("./img/nav/img_ss_generic1.png");
 }
 header nav li#nav-connectivity-connectivity {
-background-image: url("./img/nav/img_ss_generic1.png");
+background-image: url("./img/nav/img_ss_generic2.png");
+}
+header nav li#nav-connectivity-allen {
+background-image: url("./img/nav/img_ss_generic3.png");
 }
 
 /* !-------------------------------------------- */
