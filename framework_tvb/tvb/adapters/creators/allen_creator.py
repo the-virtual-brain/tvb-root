@@ -76,18 +76,21 @@ class AllenConnectomeBuilder(ABCAsynchronous):
                 # 'required': True, 'options': self.TRANSGENIC_OPTIONS, 'default': 'False'},
 
                 {'name': 'resolution', 'type': 'select',
-                 'label': 'Resolution of the data that you want to download to construct the volume and the connectivity (micron) :',
+                 'label': 'Spatial resolution (micron)',
+                 'description': 'Resolution of the data that you want to download to construct the volume and the connectivity (micron) :',
                  'required': True, 'options': self.RESOLUTION_OPTIONS, 'default': '100'},
 
                 {'name': 'weighting', 'type': 'select', 'label': 'Definition of the weights of the connectivity :',
                  'required': True, 'options': self.WEIGHTS_OPTIONS, 'default': '1'},
 
                 {'name': 'inf_vox_thresh', 'type': 'float',
-                 'label': 'To build the volume and the connectivity select only the areas where there is at least one infection experiment that had infected more than ... voxels in that areas.',
+                 'label': 'Min infected voxels',
+                 'description': 'To build the volume and the connectivity select only the areas where there is at least one infection experiment that had infected more than ... voxels in that areas.',
                  'required': True, 'default': '50'},
 
                 {'name': 'vol_thresh', 'type': 'float',
-                 'label': 'To build the volume and the connectivity select only the areas that have a volume greater than (micron^3): ',
+                 'label': 'Min volume',
+                 'description': 'To build the volume and the connectivity select only the areas that have a volume greater than (micron^3): ',
                  'required': True, 'default': '1000000000'}]
 
     def get_output(self):
