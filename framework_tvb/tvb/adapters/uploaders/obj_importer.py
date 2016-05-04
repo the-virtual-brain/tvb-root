@@ -79,7 +79,6 @@ class ObjSurfaceImporter(ABCUploader):
                 raise ParseException("Could not determine surface type! %s" % surface_type)
 
             surface.storage_path = self.storage_path
-            surface.set_operation_id(self.operation_id)
             surface.zero_based_triangles = True
 
             with open(data_file) as f:

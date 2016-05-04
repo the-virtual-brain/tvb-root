@@ -63,8 +63,13 @@ class NIFTIImporter(ABCUploader):
         return [{'name': 'data_file', 'type': 'upload', 'required_type': '.nii, .gz, .zip',
                  'label': 'Please select file to import (gz or nii)', 'required': True},
 
-                {'name': 'apply_corrections', 'label': 'Apply Corrections', 'type': 'bool', 'default': False,
-                 'description': 'Check this when the NII mapping is not zero based'},
+                {'name': 'apply_corrections', 'label': 'Apply auto Corrections', 'type': 'bool', 'default': False,
+                 'description': 'Check this when the NII mapping is not zero based. Everything outside [0..N-1] '
+                                'Connectivity indices will be considered background (value -1)'},
+
+                {'name': 'mappings_file', 'label': 'Mapping File', 'type': 'upload', 'required_type': '.txt',
+                 'description': 'Fill this for Region Mappings, when the indices in the NII do not match the '
+                                'Connectivity [0..N-1] indices'},
 
                 {'name': 'connectivity', 'label': 'Connectivity',
                  'type': Connectivity, 'required': False, 'datatype': True,
@@ -77,7 +82,6 @@ class NIFTIImporter(ABCUploader):
 
     def _create_volume(self):
         volume = Volume(storage_path=self.storage_path)
-        volume.set_operation_id(self.operation_id)
         volume.origin = [[0.0, 0.0, 0.0]]
         volume.voxel_size = [self.parser.zooms[0], self.parser.zooms[1], self.parser.zooms[2]]
         if self.parser.units is not None and len(self.parser.units) > 0:
@@ -98,7 +102,6 @@ class NIFTIImporter(ABCUploader):
     def _create_time_series(self, volume):
         # Now create TimeSeries and fill it with data from NIFTI image
         time_series = TimeSeriesVolume(storage_path=self.storage_path)
-        time_series.set_operation_id(self.operation_id)
         time_series.volume = volume
         time_series.title = "NIFTI Import - " + os.path.split(self.data_file)[1]
         time_series.labels_ordering = ["Time", "X", "Y", "Z"]
@@ -117,21 +120,21 @@ class NIFTIImporter(ABCUploader):
         return time_series
 
 
-    def _create_region_map(self, volume, connectivity, apply_corrections):
+    def _create_region_map(self, volume, connectivity, apply_corrections, mappings_file):
         region2volume_mapping = RegionVolumeMapping(storage_path=self.storage_path)
-        region2volume_mapping.set_operation_id(self.operation_id)
         region2volume_mapping.volume = volume
         region2volume_mapping.connectivity = connectivity
         region2volume_mapping.title = "NIFTI Import - " + os.path.split(self.data_file)[1]
         region2volume_mapping.dimensions_labels = ["X", "Y", "Z"]
         region2volume_mapping.apply_corrections = apply_corrections
+        region2volume_mapping.mappings_file = mappings_file
 
         self.parser.parse(region2volume_mapping, False)
         return region2volume_mapping
 
 
     @transactional
-    def launch(self, data_file, apply_corrections=False, connectivity=None):
+    def launch(self, data_file, apply_corrections=False, mappings_file=None, connectivity=None):
         """
         Execute import operations:
         """
@@ -143,7 +146,7 @@ class NIFTIImporter(ABCUploader):
             volume = self._create_volume()
 
             if connectivity:
-                rm = self._create_region_map(volume, connectivity, apply_corrections)
+                rm = self._create_region_map(volume, connectivity, apply_corrections, mappings_file)
                 return [volume, rm]
 
             if self.parser.has_time_dimension:

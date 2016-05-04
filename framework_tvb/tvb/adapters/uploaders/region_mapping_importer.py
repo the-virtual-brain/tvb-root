@@ -139,7 +139,6 @@ class RegionMapping_Importer(ABCUploader):
         self.logger.debug("Creating RegionMapping instance")
         region_mapping_inst = RegionMapping()
         region_mapping_inst.storage_path = self.storage_path
-        region_mapping_inst.set_operation_id(self.operation_id)
         region_mapping_inst.surface = surface
         region_mapping_inst.connectivity = connectivity
         

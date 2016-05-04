@@ -119,7 +119,6 @@ class GIFTIParser(object):
             surface.title = title
 
         surface.storage_path = self.storage_path
-        surface.set_operation_id(self.operation_id)
         surface.zero_based_triangles = True
 
         # Now fill TVB data type with geometry data
@@ -151,7 +150,6 @@ class GIFTIParser(object):
         # Create TVB time series to be filled
         time_series = TimeSeriesSurface()
         time_series.storage_path = self.storage_path
-        time_series.set_operation_id(self.operation_id)
         time_series.start_time = 0.0
         time_series.sample_period = 1.0
 

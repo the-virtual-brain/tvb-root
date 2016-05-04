@@ -100,6 +100,7 @@ class RegionVolumeMappingFramework(VolumetricDataFrameworkMixin, RegionVolumeMap
     """
     __tablename__ = None
     apply_corrections = True
+    mappings_file = None
 
 
     def write_data_slice(self, data):
@@ -116,6 +117,29 @@ class RegionVolumeMappingFramework(VolumetricDataFrameworkMixin, RegionVolumeMap
             data = data - 1
             data[data >= self.connectivity.number_of_regions] = -1
             LOG.debug("After corrections: RegionVolumeMapping min=%d, mix=%d" % (data.min(), data.max()))
+
+        if self.mappings_file:
+            try:
+                mapping_data = numpy.loadtxt(self.mappings_file, dtype=numpy.str, usecols=(0, 2))
+                mapping_data = {int(row[0]): int(row[1]) for row in mapping_data}
+            except Exception:
+                raise exceptions.ValidationException("Invalid Mapping File. Expected 3 columns (int, string, int)")
+
+            if len(data.shape) != 3:
+                raise exceptions.ValidationException('Invalid RVM data. Expected 3D.')
+
+            not_matched = set()
+            for i in xrange(data.shape[0]):
+                for j in xrange(data.shape[1]):
+                    for k in xrange(data.shape[2]):
+                        val = data[i][j][k]
+                        if not mapping_data.has_key(val):
+                            not_matched.add(val)
+                        data[i][j][k] = mapping_data.get(val, -1)
+
+            LOG.info("Imported RM with values in interval [%d - %d]" % (data.min(), data.max()))
+            if not_matched:
+                LOG.warn("Not matched regions will be considered background: %s" % not_matched)
 
         if data.min() < -1 or data.max() >= self.connectivity.number_of_regions:
             raise exceptions.ValidationException("Invalid Mapping array: [%d ... %d]" % (data.min(), data.max()))
