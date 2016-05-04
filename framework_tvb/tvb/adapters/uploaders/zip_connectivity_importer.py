@@ -39,6 +39,11 @@ from tvb.core.entities.file.files_helper import FilesHelper
 from tvb.core.adapters.exceptions import LaunchException
 from tvb.datatypes.connectivity import Connectivity
 
+NORMALIZATION_OPTIONS = [
+    {'name': 'None', 'value': 'none'},
+    {'name': 'Region (node)', 'value': 'region'},
+    {'name': 'Absolute (max weight)', 'value': 'tract'}]
+
 
 class ZIPConnectivityImporter(ABCUploader):
     """
@@ -48,7 +53,7 @@ class ZIPConnectivityImporter(ABCUploader):
     _ui_name = "Connectivity ZIP"
     _ui_subsection = "zip_connectivity_importer"
     _ui_description = "Import a Connectivity from ZIP"
-    
+
     WEIGHT_TOKEN = "weight"
     CENTRES_TOKEN = "centres"
     TRACT_TOKEN = "tract"
@@ -56,21 +61,24 @@ class ZIPConnectivityImporter(ABCUploader):
     AREA_TOKEN = "area"
     CORTICAL_INFO = "cortical"
     HEMISPHERE_INFO = "hemisphere"
-            
+
 
     def get_upload_input_tree(self):
         """
         Take as input a ZIP archive.
         """
         return [{'name': 'uploaded', 'type': 'upload', 'required_type': 'application/zip',
-                 'label': 'Connectivity file (zip)', 'required': True}]
-        
-        
+                 'label': 'Connectivity file (zip)', 'required': True},
+
+                {'name': 'normalization', 'label': 'Weights Normalization', 'type': 'select', 'default': 'none',
+                 'options': NORMALIZATION_OPTIONS, 'description': 'Normalization mode for weights'}]
+
+
     def get_output(self):
         return [Connectivity]
 
 
-    def launch(self, uploaded):
+    def launch(self, uploaded, normalization=None):
         """
         Execute import operations: unpack ZIP and build Connectivity object as result.
 
@@ -86,9 +94,9 @@ class ZIPConnectivityImporter(ABCUploader):
         """
         if uploaded is None:
             raise LaunchException("Please select ZIP file which contains data to import")
-        
+
         files = FilesHelper().unpack_zip(uploaded, self.storage_path)
-        
+
         weights_matrix = None
         centres = None
         labels_vector = None
@@ -118,10 +126,10 @@ class ZIPConnectivityImporter(ABCUploader):
 
         ### Clean remaining text-files.
         FilesHelper.remove_files(files, True)
-        
+
         result = Connectivity()
         result.storage_path = self.storage_path
-        
+
         ### Fill positions
         if centres is None:
             raise Exception("Region centres are required for Connectivity Regions! "
@@ -132,7 +140,7 @@ class ZIPConnectivityImporter(ABCUploader):
         result.centres = centres
         if labels_vector is not None:
             result.region_labels = labels_vector
-            
+
         ### Fill and check weights
         if weights_matrix is not None:
             if numpy.any([x < 0 for x in weights_matrix.flatten()]):
@@ -142,7 +150,9 @@ class ZIPConnectivityImporter(ABCUploader):
                 raise Exception("Unexpected shape for weights matrix! "
                                 "Should be %d x %d " % (expected_number_of_nodes, expected_number_of_nodes))
             result.weights = weights_matrix
-            
+            if normalization:
+                result.weights = result.scaled_weights(normalization)
+
         ### Fill and check tracts    
         if tract_matrix is not None:
             if numpy.any([x < 0 for x in tract_matrix.flatten()]):
@@ -152,31 +162,28 @@ class ZIPConnectivityImporter(ABCUploader):
                 raise Exception("Unexpected shape for tracts matrix! "
                                 "Should be %d x %d " % (expected_number_of_nodes, expected_number_of_nodes))
             result.tract_lengths = tract_matrix
-        
-        
+
         if orientation is not None:
             if len(orientation) != expected_number_of_nodes:
                 raise Exception("Invalid size for vector orientation. "
                                 "Expected the same as region-centers number %d" % expected_number_of_nodes)
             result.orientations = orientation
-            
+
         if areas is not None:
             if len(areas) != expected_number_of_nodes:
                 raise Exception("Invalid size for vector areas. "
                                 "Expected the same as region-centers number %d" % expected_number_of_nodes)
             result.areas = areas
-            
+
         if cortical_vector is not None:
             if len(cortical_vector) != expected_number_of_nodes:
                 raise Exception("Invalid size for vector cortical. "
                                 "Expected the same as region-centers number %d" % expected_number_of_nodes)
             result.cortical = cortical_vector
-            
+
         if hemisphere_vector is not None:
             if len(hemisphere_vector) != expected_number_of_nodes:
                 raise Exception("Invalid size for vector hemispheres. "
                                 "Expected the same as region-centers number %d" % expected_number_of_nodes)
             result.hemispheres = hemisphere_vector
         return result
-
-
