@@ -3,19 +3,31 @@
 .. |VERSION| replace:: 1.0
 .. |REVISION| replace:: 3
 
+.. |open_issues| raw:: html
+
+   <a href="http://req.thevirtualbrain.org/issues/?filter=10421" target="_blank">open issues</a>
+
+
 .. _TVB Web Page: http://www.thevirtualbrain.org
 .. _TVB Library Repository: https://github.com/the-virtual-brain/tvb-library
-
+.. _mailing list: https://groups.google.com/forum/#!forum/tvb-users
 .. _contributors_manual:
 
 TVB Contributors manual
 =======================
 
-So you want to contribute code to TVB. Maybe add a model or another feature.
-Thank you for helping |TVB|! We welcome and appreciate contributions.
-Please get in touch with the |TVB| team, we are glad to help tvb.admin@thevirtualbrain.org.
+So you want to contribute to TVB. Maybe add a model or another feature.
+Thank you for helping! We welcome and appreciate contributions.
 
-This document describes how to set up |TVB| for a developer.
+Get in touch with the |TVB| team, we are glad to help tvb.admin@thevirtualbrain.org.
+
+Sign up for the `mailing list`_ and introduce yourself.
+
+Read trough these docs. Get to know TVB by installing a TVB distribution and playing with the GUI or following tutorials.
+
+Have a look at the open tasks in our Jira |open_issues|.
+
+Finally revisit this document and find out how to set up |TVB| for a developer.
 
 
 The source code
@@ -82,6 +94,7 @@ The unaided setup
 -----------------
 
 .. _anaconda: https://store.continuum.io/cshop/anaconda/
+.. _virtualenv: https://virtualenv.pypa.io/en/latest/index.html
 
 The contributor setup avoids having to deal with dependencies. But you might want to do exactly that, adding a dependency to |TVB| or changing the ones it already has.
 
@@ -100,10 +113,26 @@ Clone the repositories (after forking them in a github account of your own), not
 |TVB| depends on numpy and scipy, heavy native libraries.
 If you can please install them using you operating system package manager.
 On Linux apt-get, yum, dnf etc.
+
+.. code-block:: bash
+
+   $ sudo yum install Cython numpy scipy
+
 If such native package managers are not available please install the `anaconda`_ python distribution and use TVB with it.
 
 If you leave the installation of these dependencies to distutils then it will try to compile them from source.
 For that to work you will need C and Fortran compilers, and development libraries, not an easy task.
+
+Using a virtual python environment is a good idea.
+For vanilla python get `virtualenv`_ then create and activate an enviroment:
+
+.. code-block:: bash
+
+   $ virtualenv tvb_venv
+   $ source tvb_venv/bin/activate
+
+Anaconda has it's own way of creating environments, see `anaconda`_ site.
+
 
 Now to install the |TVB| packages in develop mode using distutils :
 
@@ -116,8 +145,44 @@ Now to install the |TVB| packages in develop mode using distutils :
    $ python setup.py develop
 
 
+Support
+-------
+
+If you have problems, send us an email, and we will do our best to help you.
+You can see open issues on TVB's Jira |open_issues|. You may also create a new issue.
+
+
+Test suite
+----------
+
+TVB's test suite takes a long time to run, but a patch will have to pass it.
+We recommend running tests before submitting changes that touch code that you have not written.
+
+.. code-block:: bash
+
+   $ cd my_tvb_workspace/tvb_bin
+   $ sh run_tests.sh
+
+
 Contribution guidelines
 -----------------------
+
+You should put explanatory comments and documentation in your code.
+
+Avoid cryptic short names. You may relax this if implementing a mathematical formula.
+But then please document it using latex docstrings.
+
+Try to adhere to the Python code style. Indent with 4 spaces. We are ok with 120 long lines.
+Naming: module_name, ClassName, function_name, CONSTANT_NAME function_parameter_name, local_var_name
+
+You should attach unit-tests for your new code, to prove that it is correct and that it fits into the overall architecture of TVB.
+
+Prefer small commits. Add a meaningful commit message.
+We strongly recommend that the commit message start with the Jira task id. (e.g. TVB-1963 Add FCT analyser).
+
+
+Git guidelines
+--------------
 
 By default, the only branch available is 'trunk'. You should **always** create a separate branch with a self-explanatory name for the new features you want to add to TVB.
 In order to do this assuming you are using the contributor setup do :
@@ -132,14 +197,16 @@ While making your modifications/contributions, make sure that
 
 1) you are working in the right branch and
 2) you make pull requests from master ('trunk') often, in order to quickly solve any conflicts which might appear.
-
-If you have problems, send us an email, and we will do our best to help you.
-
-You should put explanatory comments and documentation in your code.
-
-You should attach unit-tests for your new code, to prove that it is correct and that it fits into the overall architecture of TVB.
+3) You follow the `Contribution guidelines`_
 
 Once you are done with your changes and you believe that they can be integrated into TVB master repository, go to your GitHub repository,
 switch to your feature branch and issue a *pull request*, describing the improvements you did.
 We will later test that your changes are fit to be included, and notify you of the integration process.
+
+
+Tools
+-----
+
+We use pycharm to develop and debug TVB.
+To test quick ideas we like ipython.
 
