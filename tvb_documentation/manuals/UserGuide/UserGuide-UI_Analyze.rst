@@ -222,3 +222,37 @@ Additional BCT techniques are:
 
 For more details, please refer to BCT_ web site 
 
+
+Functional Connectivity Dynamics metric
+.......................................
+
+Analyse functional connectivity dynamics.
+
+The analyser generates:
+
+* The FCD
+* The FCD segmented, that is the FCD matrix with the entries corresponding to the time points
+  not belonging to the epochs of stability equal to 1.1. When the epochs of stability are not find, the FCD segmented is not an output
+* The 3 eigenvectors corresponding to the FC of the epochs (if present) or to the global FC.
+  These are ConnectivityMeasures which are viewable with the volume visualizer.
+
+The analyser takes as input a time series region, time window length (in ms), spanning between 2 consecutive time windows (in ms).
+
+The code does the following steps:
+
+1. Calculates the FCD:
+     The entire time series is divided in time window of the fixed length (decided by the user)
+     and with an overlap decided by the user ( spanning=[time window length] - [overlapping between consecutive time window]).
+     The data points within each window, centred at time ti, are used to calculate FC(ti).
+     The element ij of the FCD is calculated as the Pearson correlation between the upper triangular part of FC(ti)
+     arranged as a vector and the upper triangular part of FC(tj) arranged as a vector.
+2. The FCD is segmented in epochs of stability using the spectral embedding algorithm.
+     We call epoch of stability a length of time during which an FC configuration stays stable.
+     It is possible to visualize this epochs of stable FC as blocks of elevated inter-FC(t) correlation around the diagonal of the FCD.
+     We neglect always the first epoch of stability found by the algorithm since should be an artefact caused by the initial condition of the simulated time series.
+3. FCs are calculated over the epochs of stability (excluded the first epoch).
+     When the algorithm does not find the epochs the global FC is calculated, i.e. the FC calculated over the entire timeseries.
+4. The first three eigenvectors of the FCs calculated at step 3 are extracted.
+     We call the "first" eigenvector the one associated to the largest eigenvalue,
+     the second eigenvector the one associated to the second largest eigenvalue and so on.
+     Eigenvalues are normalized between 0 and 1.

@@ -81,6 +81,7 @@ class WebStructure(object):
     SUB_SECTION_ANALYZE_15 = "bctdegree"
     SUB_SECTION_ANALYZE_16 = "bctdensity"
     SUB_SECTION_ANALYZE_17 = "bctdistance"
+    SUB_SECTION_ANALYZE_18 = "fcd_calculator"
 
     ### Subsections for STIMULUS section.
     SUB_SECTION_STIMULUS_MENU = "stimulus"
@@ -169,6 +170,7 @@ class WebStructure(object):
         SUB_SECTION_ANALYZE_15: "BCT Degree",
         SUB_SECTION_ANALYZE_16: "BCT Density",
         SUB_SECTION_ANALYZE_17: "BCT Distance",
+        SUB_SECTION_ANALYZE_18: "Functional Connectivity Dynamics",
 
         SUB_SECTION_STIMULUS_MENU: "",
         SUB_SECTION_STIMULUS_SURFACE: "Region",
@@ -257,4 +259,5 @@ class WebStructure(object):
         SUB_SECTION_ANALYZE_15: "brain-connectivity-toolbox-analyzers",
         SUB_SECTION_ANALYZE_16: "brain-connectivity-toolbox-analyzers",
         SUB_SECTION_ANALYZE_17: "brain-connectivity-toolbox-analyzers",
+        SUB_SECTION_ANALYZE_18: "functional-connectivity-dynamics-metric",
     }

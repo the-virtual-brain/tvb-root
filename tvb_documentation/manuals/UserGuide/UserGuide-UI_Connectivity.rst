@@ -5,7 +5,9 @@ In this area you can edit both types of TVB connectivity objects:
 
     - long-range connectivity and,
     - local connectivity.
-    
+
+You can also download connectomes from the Allen Mouse Brain Connectivity Atlas.
+
 |
 
     .. figure:: screenshots/connectivity_area.jpg
@@ -503,3 +505,14 @@ spatial profile based on the length of :
 and the red-dotted vertical line represents the cut-off distance. 
 
 The x-axis range is automatically set to two times the cut-off distance.
+
+
+Allen Connectome Downloader
+...........................
+
+From this page you can initiate an operation which will download data from The Allen Mouse Brain Connectivity Atlas.
+See http://connectivity.brain-map.org
+
+This operation needs an internet connection and it will take many minutes to complete.
+It will produce a Connectivity and a brain Volume.
+
