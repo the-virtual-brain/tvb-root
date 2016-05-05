@@ -168,6 +168,8 @@ Contribution guidelines
 -----------------------
 
 You should put explanatory comments and documentation in your code.
+Document every public function with a docstring.
+Use english for both comments and names.
 
 Avoid cryptic short names. You may relax this if implementing a mathematical formula.
 But then please document it using latex docstrings.
@@ -179,6 +181,14 @@ You should attach unit-tests for your new code, to prove that it is correct and 
 
 Prefer small commits. Add a meaningful commit message.
 We strongly recommend that the commit message start with the Jira task id. (e.g. TVB-1963 Add FCT analyser).
+
+Use logging instead of print statements.
+
+If code is indented more than 6 levels your function is too complex.
+If a function has more than 50 lines it is too long. Split these functions.
+
+Do not copy paste code.
+Avoid reinventing the wheel. Use the python built in functions, the standard library and numpy.
 
 
 Git guidelines
@@ -209,4 +219,55 @@ Tools
 
 We use pycharm to develop and debug TVB.
 To test quick ideas we like ipython.
+
+
+Technologies used by TVB
+------------------------
+
+TVB uses numpy extensively.
+Numpy is quite different from other python libraries.
+Learn a bit about it before trying to understand TVB code.
+
+The TVB framework uses sqlalchemy for ORM mapping, cherrypy as a web framework and server and genshi for html templating.
+Numeric arrays are stored in the hdf5 format.
+Client side we use jquery, d3 and webgl.
+
+TVB uses some advanced python features to implement it's `Traits` system: metaclasses and data descriptors.
+
+
+Glossary of terms used by TVB code
+----------------------------------
+
+Datatype:
+
+   The way TVB represents data. Similar to entities in a database model.
+   They usually contain numeric arrays.
+   Many algorithms receive and produce Datatypes.
+
+   Tvb framework organizes them into projects, stores the numeric data in .h5 files and metadata in MAPPED_TYPE... tables in a database.
+
+   Example: Surface, Connectivity
+   Code: scientific_library/tvb/datatypes/
+
+Adapter:
+
+   A TVB framework plugin, similar to a runnable task. It has a launch method.
+   It declares what inputs it requires and what Datatypes it produces.
+   Asynchronous Adapters will be run in a different process, possibly on a cluster.
+
+   Adapters may be of different types: analysers, creators, uploaders, visualizers
+
+   These plugins are discovered at TVB startup and recorded in the database table ALGORITHMS.
+
+   Example:  SimulatorAdapter
+   code: framework_tvb/tvb/adapters
+
+Operation:
+
+   Running an Adapter produces an Operation. It will contain the Datatypes produced by the Adapter.
+
+Project:
+
+   Organizes the data of an user. It will contain all Operations and Datatypes.
+   Stored on disk in ~/TVB/PROJECTS. The numerically named folders correspond to operations with that id, the h5 files in them correspond to datatypes.
 
