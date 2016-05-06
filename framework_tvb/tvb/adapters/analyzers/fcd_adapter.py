@@ -89,25 +89,6 @@ class FunctionalConnectivityDynamicsAdapter(ABCAsynchronous):
 
         self.algorithm = FcdCalculator(time_series=time_series, sw=sw, sp=sp)
 
-    """
-    def get_required_memory_size(self, **kwargs):
-
-        #Returns the required memory to be able to run this adapter.
-
-        in_memory_input = [self.input_shape[0], 1, self.input_shape[2], 1]
-        input_size = np.prod(in_memory_input) * 8.0
-        output_size = self.algorithm.result_size(self.input_shape)
-        return input_size + output_size
-
-
-    def get_required_disk_size(self, **kwargs):
-
-        #Returns the required disk size to be able to run the adapter (in kB).
-
-        output_size = self.algorithm.result_size(self.input_shape)
-        return self.array_size2kb(output_size)
-
-    """
     def get_required_memory_size(self, **kwargs):
         # We do not know how much memory is needed.
         return -1
@@ -124,27 +105,30 @@ class FunctionalConnectivityDynamicsAdapter(ABCAsynchronous):
            :param sw: length of the sliding window
            :param sp: spanning time: distance between two consecutive sliding window
            :returns: the fcd matrix for the given time-series, with that sw and that sp
-           :rtype: `Fcd`
+           :rtype: `Fcd`,`ConnectivityMeasure` 
         """
+        
+        result = [] # where fcd, fcd_segmented (eventually), and connectivity measures will be stored
+
+        [fcd, fcd_segmented, eigvect_dict, eigval_dict, Connectivity] = self.algorithm.evaluate()
+    
         # Create a Fcd dataType object.
-        result=[]
-        [fcd, fcd_segmented, Eigenvectors, Eigenvalues, Connectivity] = self.algorithm.evaluate()
-        result_FCD = Fcd(storage_path=self.storage_path, source=time_series, sw=sw, sp=sp)
-        result_FCD.array_data = fcd
-        result.append(result_FCD)
+        result_fcd = Fcd(storage_path=self.storage_path, source=time_series, sw=sw, sp=sp)
+        result_fcd.array_data = fcd
+        result.append(result_fcd)
 
         if np.amax(fcd_segmented)==1.1 :
-            result_FCD_segmented = Fcd(storage_path=self.storage_path, source=time_series, sw=sw, sp=sp)
-            result_FCD_segmented.array_data = fcd_segmented
-            result.append(result_FCD_segmented)
-        for mode in Eigenvectors.keys():
-            for var in Eigenvectors[mode].keys():
-                for ep in Eigenvectors[mode][var].keys():
+            result_fcd_segmented = Fcd(storage_path=self.storage_path, source=time_series, sw=sw, sp=sp)
+            result_fcd_segmented.array_data = fcd_segmented
+            result.append(result_fcd_segmented)
+        for mode in eigvect_dict.keys():
+            for var in eigvect_dict[mode].keys():
+                for ep in eigvect_dict[mode][var].keys():
                     for eig in range(3):
-                        result_eigen = ConnectivityMeasure(storage_path=self.storage_path)
-                        result_eigen.connectivity = Connectivity
-                        result_eigen.array_data = Eigenvectors[mode][var][ep][eig]
-                        result_eigen.title = "Epoch # %d, \n eigenvalue = %s,\n variable = %s,\n mode = %s." % (ep,Eigenvalues[mode][var][ep][eig], var, mode)
-                        result.append(result_eigen)
+                        result_eig = ConnectivityMeasure(storage_path=self.storage_path)
+                        result_eig.connectivity = Connectivity
+                        result_eig.array_data = eigvect_dict[mode][var][ep][eig]
+                        result_eig.title = "Epoch # %d, \n eigenvalue = %s,\n variable = %s,\n mode = %s." % (ep,eigval_dict[mode][var][ep][eig], var, mode)
+                        result.append(result_eig)
         return result
 
