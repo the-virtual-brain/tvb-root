@@ -2849,7 +2849,7 @@ class ReducedWongWang(Model):
         label=":math:`a`",
         default=numpy.array([0.270, ]),
         range=basic.Range(lo=0.0, hi=0.270, step=0.01),
-        doc=""" [nC]^{-1}. Parameter chosen to fit numerical solutions.""",
+        doc=""" [pC]^{-1}. Parameter chosen to fit numerical solutions.""",
         order=1)
 
     b = arrays.FloatArray(

@@ -337,7 +337,7 @@ class Simulator(core.Type):
         # node, cvar, node
         idelays = conform(self.connectivity.idelays[:, na, :])
         # node, cvar, node, mode
-        weights = conform(self.connectivity.weights[:, na, :, na])
+        weights = numpy.ascontiguousarray(self.connectivity.weights[:, na, :, na])
         # node, cvar, node
         node_ids = conform(numpy.r_[:n_reg][na, na, :])
         LOG.debug("cvar, idelays, weights & node ids shape %s %s %s %s",
