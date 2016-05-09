@@ -8,8 +8,10 @@
     * Monitor configuration: allow pre and post user configured operations
     * Volumetric Viewers extended and improved (more datatypes can be visualized in volume - e.g. TimeSeriesRegion; better performance)
     * Color Scheme: allow to trim near-mean values in a color scheme
-    * New: tracts visualizer
+    * New: tracts visualizer, FCD analyzer
     * Refactored internal API for Adapters, with the purpose of simplifying console usage
+    * Allen SDK Creator added
+
 
 
 ======================================================================================================================================
