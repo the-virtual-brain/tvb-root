@@ -59,7 +59,6 @@ class AllenConnectomeBuilder(ABCAsynchronous):
     #]
 
     RESOLUTION_OPTIONS = [
-        {'name': '10', 'value': '10'},
         {'name': '25', 'value': '25'},
         {'name': '50', 'value': '50'},
         {'name': '100', 'value': '100'}
@@ -108,15 +107,15 @@ class AllenConnectomeBuilder(ABCAsynchronous):
         manifest_file = os.path.join(manifest_file, 'mouse_connectivity_manifest.json')
         cache = MouseConnectivityCache(resolution=resolution, manifest_file=manifest_file)
 
-        Vol, annot_info = cache.get_annotation_volume()
-        ontology = cache.get_ontology()
-
         ist2e = DictionaireBuilder(cache, False)
 
         projmaps = DownloadAndConstructMatrix(cache, weighting, ist2e, False)
 
         # This method cleans the file projmaps in 4 steps
         projmaps = pmsCleaner(projmaps)
+
+        Vol, annot_info = cache.get_annotation_volume()
+        ontology = cache.get_ontology()
 
         #Taking only brain regions whose volume is greater than vol_thresh
         projmaps = AreasVolumeTreshold(projmaps, vol_thresh, resolution, Vol, ontology)
@@ -373,16 +372,15 @@ def AreasVolumeTreshold (projmaps,vol_thresh,resolution,Vol,ontology):
     IDok=[]
     cc=0
     for ID in projmaps.keys():
-        n_voxels=np.where(Vol==ID)
-        tot_voxels=(n_voxels[0].shape)[0]
+        tot_voxels = np.count_nonzero(Vol==ID)
         if tot_voxels>treshold:
             IDok.append(ID)
         else: #I will check for child
             child=list(ontology.get_child_ids( ontology[ID].id ))
             while len(child)!=0:
-                if child[0] in Vol:
-                    n_voxels=np.where(Vol==child[0])
-                    tot_voxels+=(n_voxels[0].shape)[0]
+                child_voxel_count = np.count_nonzero(Vol==child[0])
+                if child_voxel_count > 0:
+                    tot_voxels += child_voxel_count
                     if tot_voxels>treshold:
                         IDok.append(ID)
                         break
@@ -477,8 +475,8 @@ def Construct_centres(ontology, Order,KeyOrd,Vol):
         ID=Order[graph_ord_inj][0]
         Coord=[0,0,0]
         print 'I am calculating centre of area:', Order[graph_ord_inj]
-        if ID in vol_r: #Check if the area is in the annotation volume
-            xyz=np.where(vol_r==ID)
+        xyz = np.where(vol_r == ID)
+        if xyz[0].shape[0] > 0: #Check if the area is in the annotation volume
             Coord[0]=np.mean(xyz[0])
             Coord[1]=np.mean(xyz[1])
             Coord[2]=np.mean(xyz[2])
@@ -494,8 +492,8 @@ def Construct_centres(ontology, Order,KeyOrd,Vol):
                         child.extend(ontology.get_child_ids( ontology[child[0]].id ))
                 child.remove(child[0])
             for IDchild in FinestDivision:
-                if IDchild in vol_r:
-                    xyz=np.where(vol_r==IDchild)
+                xyz = np.where(vol_r == IDchild)
+                if xyz[0].shape[0] > 0:
                     Coord[0]=np.mean(xyz[0])
                     Coord[1]=np.mean(xyz[1])
                     Coord[2]=np.mean(xyz[2])
@@ -552,9 +550,9 @@ def ParentsAndGranParentsVolumeCalculator(Order,KeyOrd,Vol,ontology):
         GranParents.append(ont.loc[gg]['parent_structure_id'])
         IndVec.append(indexvec)
         indexvec+=1
-        if ID in Vol: #To calculate the vol of each area I should look also at the child
-            NVoxels=np.where(Vol==ID)
-            TotVoxels=NVoxels[0].shape
+
+        TotVoxels = np.count_nonzero(Vol==ID)
+        if TotVoxels > 0: #To calculate the vol of each area I should look also at the child
             VV.append(TotVoxels)
         else:
             TotVoxels=0
@@ -562,10 +560,9 @@ def ParentsAndGranParentsVolumeCalculator(Order,KeyOrd,Vol,ontology):
             child=list(ontology.get_child_ids( ontology[ID].id ))
             while len(child)!=0:
                 print child
-                if child[0] in Vol:
-                    NVoxels=np.where(Vol==child[0])
-                    bb=NVoxels[0].shape
-                    TotVoxels+=bb[0]
+                child_voxel_count = np.count_nonzero(Vol == child[0])
+                if child_voxel_count > 0:
+                    TotVoxels+=child_voxel_count
                 else:
                     if len(ontology.get_child_ids(ontology[child[0]].id))!=0:
                         child.extend(ontology.get_child_ids( ontology[child[0]].id ))
