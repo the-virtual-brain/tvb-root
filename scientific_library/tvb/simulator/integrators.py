@@ -412,6 +412,7 @@ class EulerStochastic(IntegratorStochastic):
 
         dX = dfun(X, coupling, local_coupling) * self.dt 
         noise_gfun = self.noise.gfun(X)
+        # TODO fails for scalar numpy values
         if (noise_gfun.shape != (1,) and noise.shape[0] != noise_gfun.shape[0]):
             msg = str("Got shape %s for noise but require %s."
                       " You need to reconfigure noise after you have changed your model."%(

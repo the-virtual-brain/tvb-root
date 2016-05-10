@@ -39,6 +39,7 @@ simulation and the method for running the simulation.
 
 """
 
+import time
 import numpy
 import scipy.sparse
 from tvb.basic.profile import TvbProfile
@@ -760,12 +761,16 @@ class Simulator(core.Type):
         for _ in self.monitors:
             ts.append([])
             xs.append([])
+        wall_time_start = time.time()
         for data in self(**kwds):
             for tl, xl, t_x in zip(ts, xs, data):
                 if t_x is not None:
                     t, x = t_x
                     tl.append(t)
                     xl.append(x)
+        elapsed_wall_time = time.time() - wall_time_start
+        LOG.info("%.3f s elapsed, %.3fx real time", elapsed_wall_time,
+                 elapsed_wall_time * 1e3 / self.simulation_length)
         for i in range(len(ts)):
             ts[i] = numpy.array(ts[i])
             xs[i] = numpy.array(xs[i])
