@@ -12,6 +12,7 @@ from tvb.simulator._numba.coupling import cu_delay_cfun, next_pow_of_2
 from tvb.simulator._numba.util import cu_expr
 from tvb.simulator.async import AsyncResult
 from randomstate.prng.xorshift128 import xorshift128
+import datetime
 
 
 cuda.detect()
@@ -41,7 +42,8 @@ def make_kernel(delays, n_thread_per_block, n_inner):
     n_inner = int32(n_inner)
     dcf = cu_delay_cfun(horizon, cfpre, cfpost, 1, n_thread_per_block)
     @cuda.jit
-    def kernel(step, state, buf, dt, omega, cvars, weights, delays, a_values, s_values, Z):
+    def kernel(step, state, update, buf, dt, omega, cvars,
+	       weights, delays, a_values, s_values, Z):
         i_t = cuda.threadIdx.x
         i_thread = cuda.blockIdx.x * cuda.blockDim.x + i_t
         aff = cuda.shared.array((1, 1, 1, n_thread_per_block), float32)
@@ -51,8 +53,10 @@ def make_kernel(delays, n_thread_per_block, n_inner):
         for i_step in range(n_inner):
             for i_post in range(weights.shape[0]):
                 dcf(aff, delays, weights, state, i_post, i_thread, step[0], cvars, buf)
-                state[0, i_post, 0, i_thread] += \
-                    dt * (omega + a * aff[0, 0, 0, i_t]) + s * Z[i_step, i_post, i_thread]
+                update[i_post, i_thread] = dt * (omega + a * aff[0, 0, 0, i_t]) \
+			+ s * Z[i_step, i_post, i_thread]
+            for i_post in range(weights.shape[0]):
+                state[0, i_post, 0, i_thread] += update[i_post, i_thread]
             if i_thread == 0:
                 step[0] += 1
             cuda.syncthreads()
@@ -60,6 +64,8 @@ def make_kernel(delays, n_thread_per_block, n_inner):
 
 
 if __name__ == '__main__':
+    import sys
+    print sys.executable
     cuda.close()
     cuda.select_device(0)
     # load data
@@ -69,31 +75,40 @@ if __name__ == '__main__':
     # normalize
     weights = weights / weights.sum(axis=0).max()
     dt, omega = 1.0, 10*2.0*math.pi/1e3
-    delays = (tract_lengths / 5.0 / dt).astype(numpy.int32)
+    delays = (tract_lengths / 2.0 / dt).astype(numpy.int32)
     # parameter space
-    n_grid, n_iter, n_inner = 64, 10, 10
-    a_values, s_values = [ary.reshape((-1, )) for ary in 10**numpy.mgrid[1.0:2.0:1j * n_grid, -4.0:-3.0:n_grid * 1j].astype('f')]
+    n_iter = 5 * 60 * 10
+    n_grid, n_inner = 64,  100
+    a_values, s_values = [ary.reshape((-1, )) for ary in 10**numpy.mgrid[0.0:4.0:1j * n_grid, -5.0:-1.0:n_grid * 1j].astype('f')]
     # workspace
     n_nodes, n_threads = weights.shape[0], n_grid**2
     state = numpy.random.rand(1, n_nodes, 1, n_threads).astype('f')
-    time_series = numpy.zeros((n_iter, n_nodes, n_threads), 'f')
+    update = numpy.zeros((n_nodes, n_threads), numpy.float32)
+    from numpy.lib.format import open_memmap
+    time_series = open_memmap('/dat4/mw/tvb-test-gpu-time-series.npy', 'w+', numpy.float32, (n_iter, n_nodes, n_threads))
     step = numpy.zeros((1, ), numpy.int32)
-    cvars = numpy.zeros((0, ), numpy.int32)
+    cvars = numpy.zeros((1, ), numpy.int32)
     # noise
     xorshift128.seed(42)
-    async_noise = AsyncNoise((n_inner, n_nodes, n_threads), xorshift128)
+    async_noise = AsyncNoise((n_inner, n_nodes, n_threads), numpy.random)
     # kernel
-    n_thread_per_block = 128
+    n_thread_per_block = 64
     n_block = int(n_threads / n_thread_per_block)
     horizon, kernel = make_kernel(delays, n_thread_per_block, n_inner)
     buf = numpy.zeros((n_nodes, horizon, 1, n_threads), numpy.float32)
     print 'buf dims', buf.shape
     # begin
     tic = time.time()
+    print datetime.datetime.now().isoformat(' ')
     for i in range(n_iter):
-        noise = async_noise.get()
+        noise = async_noise.get().astype('f')
         kernel[(n_thread_per_block, ), (n_block,)](
-            step, state, buf, dt, omega, cvars, weights, delays, a_values, s_values, noise)
-        print step
+            step, state, update, buf, dt, omega, cvars, weights, delays, a_values, s_values, noise)
+        time_series[i] = state[0, :, 0, :]
+        if i%10==1:
+            pct = i * 1e2 / n_iter
+            tta = (time.time() - tic) / pct * (100 - pct)
+            eta = (datetime.datetime.now() + datetime.timedelta(seconds=tta)).isoformat(' ')
+            print 'Step %d of %d, %02.2f %% done, ETA %s' % (i, n_iter, pct, eta)
     toc = time.time() - tic
     print toc

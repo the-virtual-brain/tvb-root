@@ -117,7 +117,7 @@ def cu_delay_cfun(horizon, cfpre, cfpost, n_cvar, n_thread_per_block, step_strid
         # initialize sums to zero
         for i_cvar in range(cvars.shape[0]):
             aff_i[i_cvar, i_t] = float32(0.0)
-            #aff[step_, i_post, i_cvar, i_thread] = float32(0.0)
+            #aff[step_, i_post * aff_node_stride, i_cvar, i_thread*0] = float32(0.0)
 
         # query buffer, summing over cfpre applied to delayed efferent cvar values
         for i_pre in range(weights.shape[0]):
@@ -128,15 +128,16 @@ def cu_delay_cfun(horizon, cfpre, cfpost, n_cvar, n_thread_per_block, step_strid
             delayed_step = _cu_mod_pow_2(step - delays[i_post, i_pre] + horizon, horizon)
             for i_cvar in range(cvars.shape[0]):
                 cval = buf[i_pre, delayed_step, i_cvar, i_thread]
-                # aff[step_, i_post, i_cvar, i_thread] += \
+                #aff[step_, i_post * aff_node_stride, i_cvar, i_thread*0] += \
                 aff_i[i_cvar, i_t] += \
                     weight * cfpre(state[step_, i_post, cvars[i_cvar], i_thread], cval)
 
         # apply cfpost
         for i_cvar in range(cvars.shape[0]):
-            aff[step_, i_post * aff_node_stride, i_cvar, i_thread] = cfpost(
+            # i_t use and i_thread for tests...
+            aff[step_, i_post * aff_node_stride, i_cvar, i_t] = cfpost(
                 aff_i[i_cvar, i_t]
-                # aff[step_, i_post, i_cvar, i_thread]
+                #aff[step_, i_post * aff_node_stride, i_cvar, i_thread*0]
             )
 
     return dcfun
