@@ -41,7 +41,6 @@ function _updatePlotPSE(canvasId, xLabels, yLabels, seriesArray, data_info, min_
     _PSE_minColor = min_color;
     _PSE_maxColor = max_color;
     PSE_nodesInfo = data_info;
-    
     _PSE_plotOptions = {
         series: {
             lines: {
@@ -81,7 +80,6 @@ function _updatePlotPSE(canvasId, xLabels, yLabels, seriesArray, data_info, min_
         }
 
     };
-    
     _PSE_plot = $.plot($("#" + canvasId), $.parseJSON(seriesArray), $.extend(true, {}, _PSE_plotOptions));
     changeColors();
     $(".tickLabel").each(function() { $(this).css("color", "#000000"); });

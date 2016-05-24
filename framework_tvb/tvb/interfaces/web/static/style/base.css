@@ -34,7 +34,7 @@ html, body, ul, li, dl, dt, dd, p,
 h1, h2, h3, h4, h5, h6, fieldset, legend {
 border: none;
 list-style: none;
-margin: 0;
+margin: 10;
 padding: 0;
 }
 
@@ -164,6 +164,11 @@ width: 114px;
 z-index: 100; /* Only necessary for Chrome v22+ */
 }
 
+
+/* attempting to shift the new toolbar icons to the right*/
+.newButtons {
+	float:right;
+}
 /* !-------------------------------------------- */
 /* !COMPONENT: Project widget */
 /* !-------------------------------------------- */
