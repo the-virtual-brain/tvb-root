@@ -27,10 +27,10 @@ class TestCLRWW(unittest.TestCase):
 
     def test_numpy_against_opencl(self):
         from tvb.simulator.models import ReducedWongWang
-        from tvb.simulator._opencl.models import CLRWWHostDevCopy
+        from tvb.simulator._opencl.models import CLRWW
         np_rww = ReducedWongWang()
         np_rww.configure()
-        cl_rww = CLRWWHostDevCopy()
+        cl_rww = CLRWW()
         cl_rww.configure()
         cl_rww.configure_opencl(self.context, self.queue)
 
