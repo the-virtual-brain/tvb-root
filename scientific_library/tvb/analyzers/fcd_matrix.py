@@ -165,7 +165,7 @@ class FcdCalculator(core.Type):
                     eigval_matrix = eigval_matrix / np.sum(np.abs(eigval_matrix))  # normalize eigenvalues between 0 and 1
                     for en in range(num_eig):
                         index = np.argmax(eigval_matrix)
-                        eigvect_dict[mode][var][ep].append(eigvect_matrix[:, index])
+                        eigvect_dict[mode][var][ep].append(abs(eigvect_matrix[:, index]))
                         eigval_dict[mode][var][ep].append(eigval_matrix[index])
                         eigval_matrix[index] = 0
 
