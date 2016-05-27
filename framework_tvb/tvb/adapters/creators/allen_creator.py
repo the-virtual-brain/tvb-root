@@ -107,48 +107,54 @@ class AllenConnectomeBuilder(ABCAsynchronous):
         manifest_file = os.path.join(manifest_file, 'mouse_connectivity_manifest.json')
         cache = MouseConnectivityCache(resolution=resolution, manifest_file=manifest_file)
 
+        # the method creates a dictionary with information about which experiments need to be downloaded
         ist2e = DictionaireBuilder(cache, False)
 
+        # the method downloads experiments necessary to build the connectivity
         projmaps = DownloadAndConstructMatrix(cache, weighting, ist2e, False)
 
-        # This method cleans the file projmaps in 4 steps
+        # the method cleans the file projmaps in 4 steps
         projmaps = pmsCleaner(projmaps)
 
         Vol, annot_info = cache.get_annotation_volume()
         ontology = cache.get_ontology()
 
-        #Taking only brain regions whose volume is greater than vol_thresh
+        # the method includes in the parcellation only brain regions whose volume is greater than vol_thresh
         projmaps = AreasVolumeTreshold(projmaps, vol_thresh, resolution, Vol, ontology)
 
-        # Taking only brain regions where at least one exp has infected more than N voxel (where N is inf_vox_thresh)
+        # the method includes in the parcellation only brain regions where at least one injection experiment had infected more than N voxel (where N is inf_vox_thresh)
         projmaps = AreasVoxelTreshold(cache, projmaps, inf_vox_thresh, Vol, ontology)
 
-        [Order, KeyOrd] = CreateFileOrder(projmaps, ontology)
+        # the method creates file order and keyord that will be the link between the SC order and the id key in the Allen database
+        [order, key_ord] = CreateFileOrder(projmaps, ontology)
 
-        SC = ConstructingSC(projmaps, Order, KeyOrd)
+        # the method builds the Structural Connectivity (SC) matrix
+        SC = ConstructingSC(projmaps, order, key_ord)
 
-        [centres, names] = Construct_centres(ontology, Order, KeyOrd, Vol)
+        # the method returns the coordinate of the centres and the name of the brain areas in the selected parcellation
+        [centres, names] = Construct_centres(ontology, order, key_ord, Vol)
 
+        # the method returns the tract lengths between the brain areas in the selected parcellation
         tract_lengths = ConstructTractLengths(centres)
-        # For the Vol I should calculate before Parents and Granparents:
-        [UniqueParents, UniqueGranParents] = ParentsAndGranParentsVolumeCalculator(Order, KeyOrd, Vol, ontology)
 
-        # Vol indexed between 0:(N-1)areas, -1=background and areas not in the selected parcellation
-        Vol_parcel = MouseBrainVisualizer(Vol, Order, KeyOrd, UniqueParents, UniqueGranParents, ontology, projmaps)
+        # the method associated the parent and the grandparents to the child in the selected parcellation with the biggest volume
+        [unique_parents, unique_grandparents] = ParentsAndGrandParentsFinder(order, key_ord, Vol, ontology)
 
-        # results: Connectivity & RegionVolumeMapping
-        #Connectivity
+        # the method returns a volume indexed between 0 and N-1, with N=tot brain areas in the parcellation. -1=background and areas that are not in the parcellation
+        Vol_parcel = MouseBrainVisualizer(Vol, order, key_ord, unique_parents, unique_grandparents, ontology, projmaps)
+
+        # results: Connectivity, Volume & RegionVolumeMapping
+        # Connectivity
         result_connectivity = Connectivity(storage_path=self.storage_path)
         result_connectivity.centres = centres
         result_connectivity.region_labels = names
         result_connectivity.weights = SC
         result_connectivity.tract_lengths = tract_lengths
-
         # Volume
         result_volume = Volume(storage_path=self.storage_path)
         result_volume.origin = [[0.0, 0.0, 0.0]]
         result_volume.voxel_size = [resolution, resolution, resolution]
-        #result_volume.voxel_unit= micron
+        # result_volume.voxel_unit= micron
         # Region Volume Mapping
         result_rvm = RegionVolumeMapping(storage_path=self.storage_path)
         result_rvm.volume = result_volume
@@ -165,8 +171,7 @@ class AllenConnectomeBuilder(ABCAsynchronous):
         return -1
 
 
-
-# This method construct the dictionary of the experiments that you want to download
+# the method creates a dictionary with information about which experiments need to be downloaded
 def DictionaireBuilder(tvb_mcc,TransgenicLine):
     # open up a list of all of the experiments
     all_experiments = tvb_mcc.get_experiments(dataframe=True, cre=TransgenicLine)
@@ -181,32 +186,33 @@ def DictionaireBuilder(tvb_mcc,TransgenicLine):
     return ist2e
 
 
+# the method downloads experiments necessary to build the connectivity
 def DownloadAndConstructMatrix(tvb_mcc,weighting,ist2e,TransgenicLine):
     projmaps = {}
-    if weighting==3: # case in which I download projection energy
+    if weighting==3: # download projection energy
         for isti, elist in ist2e.items():
             projmaps[isti] = tvb_mcc.get_projection_matrix(
                 experiment_ids=elist,
                 projection_structure_ids=ist2e.keys(), #summary_structure_ids,
                 parameter='projection_energy')
             print 'injection site id', isti, ' has ', len(elist), ' experiments with pm shape ', projmaps[isti]['matrix'].shape
-    else: # in the other 2 cases for sure I should download projection density:
+    else: # download projection density:
         for isti, elist in ist2e.items():
             projmaps[isti] = tvb_mcc.get_projection_matrix(
                      experiment_ids=elist,
                      projection_structure_ids=ist2e.keys(), #summary_structure_ids,
                      parameter='projection_density')
             print 'injection site id', isti, ' has ', len(elist), ' experiments with pm shape ', projmaps[isti]['matrix'].shape
-        if weighting==1: # in this case I should also download injection density
+        if weighting==1: #  download injection density
             injdensity = {}
             all_experiments = tvb_mcc.get_experiments(dataframe=True, cre=TransgenicLine)
             for exp_id in all_experiments['id']:
                 injD=tvb_mcc.get_injection_density(exp_id, file_name=None)
-                #I check that all experiments have only an injection sites (only 3 coordinates)
-                #thus we can sum on the injection matrix since contains only the injection density for a single injection
+                #all the experiments have only an injection sites (only 3 coordinates),
+                #thus it is possible to sum the injection matrix
                 injdensity[exp_id]=(np.sum(injD[0])/np.count_nonzero(injD[0]))
                 print 'Experiment id', exp_id, ', the total injection density is ', injdensity[exp_id]
-            #now in this case I want PD/ID and like this I will modify the file projmaps:
+            #in this case projmaps will contain PD/ID
             for inj_id in range(len(projmaps.values())):
                 index=0
                 for exp_id in projmaps.values()[inj_id]['rows']:
@@ -214,110 +220,104 @@ def DownloadAndConstructMatrix(tvb_mcc,weighting,ist2e,TransgenicLine):
                     index+=1
     return projmaps
 
-#This method cleans the file projmaps in 4 steps
+
+# the method cleans the file projmaps in 4 steps
 def pmsCleaner(projmaps):
     def get_structure_id_set(pm):
         return set([c['structure_id'] for c in pm['columns']])
     sis0=get_structure_id_set(projmaps[515])
-    # 1) All the target sites are the same for all the injection sites? If not I will remove the corresponding injection sites
-    DifferentTargetSet=[]
-    for inj in projmaps.keys():
-        sis_i=get_structure_id_set(projmaps[inj])
+    # 1) All the target sites are the same for all the injection sites? If not remove those injection sites
+    for inj_id in projmaps.keys():
+        sis_i=get_structure_id_set(projmaps[inj_id])
         if len(sis0.difference(sis_i))!=0:
-            projmaps.pop(inj, None)
-            DifferentTargetSet.append(inj)
-    if len(DifferentTargetSet)!=0:
-        print 'There are',len(DifferentTargetSet),' injection sites that do not project in the same set of target sites of the others injection sites'
-        print'Their ID is', DifferentTargetSet,'. I removed that injection sites.'
-
-    else:
-        print 'All the matrix have the same kind of target sites, great!'
-
-    # 2) All the injection sites are also target sites?
-    #    If not we will remove that injection sites
-    NotTarg=[]
-    for inj in projmaps.keys():
-        if inj not in sis0:
-            del projmaps[inj]
-            NotTarg.append(inj)
-
-    if len(NotTarg)!=0:
-        print 'There are', len(NotTarg),'inj sites that were not targ sites; their ID is', NotTarg
-        print 'I removed that injection sites; now all the inj sites are also target sites'
-    else:
-        print 'All the injection sites are also target sites.'
-
-    # 3) All the target sites are also injection sites?
-    #    if not remove that targets (from the columns and from the matrix)
-    if len(sis0)==len(projmaps.keys()):
-        print 'Great! All the target sites are also inj sites'
-    else:
-        print 'There are', len(sis0)-len(projmaps.keys()),'area that are target but not injection, I will removed them from the target sites list and in the matrices.'
-        for indexinj in range(len(projmaps.values())):
-            indextarg=-1
-            while len(projmaps.values()[indexinj]['columns'])!=(3*len(projmaps.keys())): #there is -3 since for each id-target I have 3 regions since I have 3 hemisphere to consider
-                indextarg+=1
-                if projmaps.values()[indexinj]['columns'][indextarg]['structure_id'] not in projmaps.keys():
-                    del projmaps.values()[indexinj]['columns'][indextarg]
-                    projmaps.values()[indexinj]['matrix']=np.delete(projmaps.values()[indexinj]['matrix'],indextarg,1)
-                    indextarg=-1
-
-    # 4) Exclude the areas (in inj and target) that have NaN values (in all the experiments; only one exp with no-Nan values, and I keep the region)
-    # this is a choice that I made by myself.
+            projmaps.pop(inj_id, None)
+    # 2) All the injection sites are also target sites? If not remove those injection sites
+    for inj_id in projmaps.keys():
+        if inj_id not in sis0:
+            del projmaps[inj_id]
+    # 3) All the target sites are also injection sites? if not remove those targets (from the columns and from the matrix)
+    if len(sis0)!=len(projmaps.keys()):
+        for inj_id in range(len(projmaps.values())):
+            targ_id=-1
+            while len(projmaps.values()[inj_id]['columns'])!=(3*len(projmaps.keys())): #there is -3 since for each id-target I have 3 regions since I have 3 hemisphere to consider
+                targ_id+=1
+                if projmaps.values()[inj_id]['columns'][targ_id]['structure_id'] not in projmaps.keys():
+                    del projmaps.values()[inj_id]['columns'][targ_id]
+                    projmaps.values()[inj_id]['matrix']=np.delete(projmaps.values()[inj_id]['matrix'],targ_id,1)
+                    targ_id=-1
+    # 4) Exclude the areas that have NaN values (in all the experiments)
     Nan_id={}
-    for inj in projmaps.keys():
-        M=projmaps[inj]['matrix']
-        for targ in range(M.shape[1]):
-            if np.isnan(M[0,targ]):
-                if all([np.isnan(M[exp,targ]) for exp in range(M.shape[0])]):
-                    Nan_id[inj]=[]
-                    Nan_id[inj]=projmaps[inj]['columns'][targ]['structure_id']
+    for inj_id in projmaps.keys():
+        M=projmaps[inj_id]['matrix']
+        for targ_id in range(M.shape[1]):
+            if np.isnan(M[0,targ_id]):
+                if all([np.isnan(M[exp,targ_id]) for exp in range(M.shape[0])]):
+                    Nan_id[inj_id]=[]
+                    Nan_id[inj_id]=projmaps[inj_id]['columns'][targ_id]['structure_id']
     #Remove Nan areas from the injection list
     for remove in Nan_id.values():
         projmaps.pop(remove, None)
     #Remove Nan areas from targe list (columns+matrix)
-    for indexinj in range(len(projmaps.keys())):
-        indextarg=-1
-        PreviousSize= len(projmaps.values()[indexinj]['columns'])
-        while len(projmaps.values()[indexinj]['columns'])!=(PreviousSize-3*len(Nan_id)): #3 hemispheres
-            indextarg+=1
-            COL=projmaps.values()[indexinj]['columns'][indextarg]
-            if COL['structure_id'] in Nan_id.values():
-               del projmaps.values()[indexinj]['columns'][indextarg]
-               projmaps.values()[indexinj]['matrix']=np.delete(projmaps.values()[indexinj]['matrix'],indextarg,1)
-               indextarg=-1
-
-    # Summary of what we have obtain
-    lenleft=0
-    lenright=0
-    rl=0
-    for targ in projmaps.values()[0]['columns']:
-        if targ['hemisphere_id']==1:
-            lenleft+=1
-        if targ['hemisphere_id']==2:
-            lenright+=1
-        else:
-            rl+=1
-    print 'Now we have clean everything and we end up with:'
-    print len(projmaps.keys()), 'injection sites (in the right hemisphere)'
-    print lenright,' target sites in the ipsilateral hemisphere'
-    print lenleft,' target sites in the controlateral hemisphere.'
-
+    for inj_id in range(len(projmaps.keys())):
+        targ_id=-1
+        previous_size= len(projmaps.values()[inj_id]['columns'])
+        while len(projmaps.values()[inj_id]['columns'])!=(previous_size-3*len(Nan_id)): #3 hemispheres
+            targ_id+=1
+            column=projmaps.values()[inj_id]['columns'][targ_id]
+            if column['structure_id'] in Nan_id.values():
+               del projmaps.values()[inj_id]['columns'][targ_id]
+               projmaps.values()[inj_id]['matrix']=np.delete(projmaps.values()[inj_id]['matrix'],targ_id,1)
+               targ_id=-1
     return projmaps
 
 
+# the method includes in the parcellation only brain regions whose volume is greater than vol_thresh
+def AreasVolumeTreshold (projmaps,vol_thresh,resolution,Vol,ontology):
+    threshold=(vol_thresh)/(resolution**3)
+    id_ok=[]
+    for ID in projmaps.keys():
+        tot_voxels = np.count_nonzero(Vol==ID)
+        if tot_voxels>threshold:
+            id_ok.append(ID)
+        else: #I will check for child
+            child=list(ontology.get_child_ids( ontology[ID].id ))
+            while len(child)!=0:
+                child_voxel_count = np.count_nonzero(Vol==child[0])
+                if child_voxel_count > 0:
+                    tot_voxels += child_voxel_count
+                    if tot_voxels>threshold:
+                        id_ok.append(ID)
+                        break
+                else:
+                    if len(ontology.get_child_ids(ontology[child[0]].id))!=0:
+                        child.extend(ontology.get_child_ids(ontology[child[0]].id ))
+                child.remove(child[0])
+     #Remove areas that are not in id_ok from the injection list
+    for checkid in projmaps.keys():
+        if checkid not in id_ok:
+            projmaps.pop(checkid,None)
+    #Remove areas that are not in id_ok from target list (columns+matrix)
+    for inj_id in range(len(projmaps.values())):
+        targ_id=-1
+        while len(projmaps.values()[inj_id]['columns'])!=(len(id_ok)*3): #I have 3 hemispheres
+            targ_id+=1
+            if projmaps.values()[inj_id]['columns'][targ_id]['structure_id'] not in id_ok:
+                del projmaps.values()[inj_id]['columns'][targ_id]
+                projmaps.values()[inj_id]['matrix']=np.delete(projmaps.values()[inj_id]['matrix'],targ_id,1)
+                targ_id=-1
+    return projmaps
 
-#Taking only brain regions where at least one exp has infected more than inf_vox_thresh Voxel
-# what we can download is the Injection fraction: fraction of pixels belonging to manually annotated injection site (http://help.brain-map.org/display/mouseconnectivity/API)
-#when this fraction is greater than inf_vox_thresh I consider that area in
+
+# the method includes in the parcellation only brain regions where at least one injection experiment had infected more than N voxel (where N is inf_vox_thresh)
+# what can be download is the Injection fraction: fraction of pixels belonging to manually annotated injection site (http://help.brain-map.org/display/mouseconnectivity/API)
+# when this fraction is greater than inf_vox_thresh that area is included in the parcellation
 def AreasVoxelTreshold (tvb_mcc,projmaps,inf_vox_thresh, Vol,ontology):
-    IDok=[]
-    cc=0
+    id_ok=[]
     for ID in projmaps.keys():
         for exp in projmaps[ID]['rows']:
             inj_f, inf_info=tvb_mcc.get_injection_fraction(exp)
-            inj_voxels=np.where( inj_f >= 0) #coordinates of the injected voxels with inj fraction>=1
-            id_infected=Vol[inj_voxels] #id of area located in Vol where injf>=0 (thus the id of the infected structure)
+            inj_voxels=np.where( inj_f >= 0) #coordinates of the injected voxels with inj fraction >= 0
+            id_infected=Vol[inj_voxels] #id of area located in Vol where injf >= 0 (thus the id of the infected structure)
             myid_infected=np.where(id_infected==ID)
             inj_f_id=0     #fraction of injected voxels for the ID I am currently examinating       
             for index in myid_infected[0]:
@@ -325,9 +325,9 @@ def AreasVoxelTreshold (tvb_mcc,projmaps,inf_vox_thresh, Vol,ontology):
                 if inj_f_id>=inf_vox_thresh:
                     break
             if inj_f_id>=inf_vox_thresh:
-                IDok.append(ID)
+                id_ok.append(ID)
                 break
-            else:
+            else: #check for child of that area
                 child=list(ontology.get_child_ids( ontology[ID].id ))
                 while len(child)!=0:
                     if child[0] in Vol:
@@ -338,7 +338,7 @@ def AreasVoxelTreshold (tvb_mcc,projmaps,inf_vox_thresh, Vol,ontology):
                                 if inj_f_id>=inf_vox_thresh:
                                     break
                             if inj_f_id>=inf_vox_thresh:
-                                IDok.append(ID)
+                                id_ok.append(ID)
                                 break
                     else:
                         if len(ontology.get_child_ids(ontology[child[0]].id))!=0:
@@ -346,168 +346,122 @@ def AreasVoxelTreshold (tvb_mcc,projmaps,inf_vox_thresh, Vol,ontology):
                     child.remove(child[0])
             if inj_f_id>=inf_vox_thresh:
                 break
-        cc+=1
-        print 'I have', len(IDok), 'and I have examinating area', cc,'over',len(projmaps.keys())            
-    #Remove areas that are not in IDok from the injection list
+    #Remove areas that are not in id_ok from the injection list
     for checkid in projmaps.keys():
-        if checkid not in IDok:
+        if checkid not in id_ok:
             projmaps.pop(checkid,None)
-    #Remove areas that are not in IDok from target list (columns+matrix)
+    #Remove areas that are not in id_ok from target list (columns+matrix)
     for indexinj in range(len(projmaps.values())):
         indextarg=-1
-        while len(projmaps.values()[indexinj]['columns'])!=(len(IDok)*3): #I have 3 hemispheres
+        while len(projmaps.values()[indexinj]['columns'])!=(len(id_ok)*3): #I have 3 hemispheres
             indextarg+=1
-            if projmaps.values()[indexinj]['columns'][indextarg]['structure_id'] not in IDok:
+            if projmaps.values()[indexinj]['columns'][indextarg]['structure_id'] not in id_ok:
                 del projmaps.values()[indexinj]['columns'][indextarg]
                 projmaps.values()[indexinj]['matrix']=np.delete(projmaps.values()[indexinj]['matrix'],indextarg,1)
                 indextarg=-1
     return projmaps
 
 
-
-
-#Taking only brain regions that have a volume greater than vol_thresh
-def AreasVolumeTreshold (projmaps,vol_thresh,resolution,Vol,ontology):
-    treshold=(vol_thresh)/(resolution**3)
-    IDok=[]
-    cc=0
-    for ID in projmaps.keys():
-        tot_voxels = np.count_nonzero(Vol==ID)
-        if tot_voxels>treshold:
-            IDok.append(ID)
-        else: #I will check for child
-            child=list(ontology.get_child_ids( ontology[ID].id ))
-            while len(child)!=0:
-                child_voxel_count = np.count_nonzero(Vol==child[0])
-                if child_voxel_count > 0:
-                    tot_voxels += child_voxel_count
-                    if tot_voxels>treshold:
-                        IDok.append(ID)
-                        break
-                else:
-                    if len(ontology.get_child_ids(ontology[child[0]].id))!=0:
-                        child.extend(ontology.get_child_ids( ontology[child[0]].id ))
-                child.remove(child[0])
-        cc+=1
-        print 'I have', len(IDok), 'and I have examinating area', cc,'over',len(projmaps.keys())
-     #Remove areas that are not in IDok from the injection list
-    for checkid in projmaps.keys():
-        if checkid not in IDok:
-            projmaps.pop(checkid,None)
-    #Remove areas that are not in IDok from target list (columns+matrix)
-    for indexinj in range(len(projmaps.values())):
-        indextarg=-1
-        while len(projmaps.values()[indexinj]['columns'])!=(len(IDok)*3): #I have 3 hemispheres
-            indextarg+=1
-            if projmaps.values()[indexinj]['columns'][indextarg]['structure_id'] not in IDok:
-                del projmaps.values()[indexinj]['columns'][indextarg]
-                projmaps.values()[indexinj]['matrix']=np.delete(projmaps.values()[indexinj]['matrix'],indextarg,1)
-                indextarg=-1
-    return projmaps
-
-# Now that I have clean up totally file projmaps I start to constrcut the matrix/centres/tractlengths.
-# this function create file order and keyord that will be our method to link the SC order and the ID in the Allen Atlas
+# the method creates file order and keyord that will be the link between the SC order and the id key in the Allen database
 def CreateFileOrder (projmaps,ontology):
-    Order={}
+    order={}
     for index in range(len(projmaps)):
-        TargetKey=projmaps.values()[0]['columns'][index]['structure_id']
-        ont=ontology[TargetKey]
-        Order[ont.loc[TargetKey]['graph_order']]=[TargetKey]
-        Order[ont.loc[TargetKey]['graph_order']].append(ont.loc[TargetKey]['name'])
+        target_id=projmaps.values()[0]['columns'][index]['structure_id']
+        ont=ontology[target_id]
+        order[ont.loc[target_id]['graph_order']]=[target_id]
+        order[ont.loc[target_id]['graph_order']].append(ont.loc[target_id]['name'])
+    key_ord=order.keys()
+    key_ord.sort()
+    return order, key_ord
 
-    KeyOrd=Order.keys()
-    KeyOrd.sort()
-    return Order, KeyOrd
 
 
-def ConstructingSC(projmaps,Order,KeyOrd):
-    lenright=len(projmaps.keys())
-    SC=np.zeros((lenright,2*lenright), dtype=float)
+# the method builds the Structural Connectivity (SC) matrix
+def ConstructingSC(projmaps, order, key_ord):
+    len_right=len(projmaps.keys())
+    SC=np.zeros((len_right,2*len_right), dtype=float)
     row=-1
-    for graph_ord_inj in KeyOrd:
+    for graph_ord_inj in key_ord:
         row+=1
-        ID_inj= Order[graph_ord_inj][0]
-        TARG=projmaps[ID_inj]['columns']
-        M=projmaps[ID_inj]['matrix']
+        inj_id= order[graph_ord_inj][0]
+        target=projmaps[inj_id]['columns']
+        matrix=projmaps[inj_id]['matrix']
         #average on the experiments (NB: if there are NaN values not average!)
-        if np.isnan(np.sum(M)):
-            M_temp=np.zeros((M.shape[1],1), dtype=float)
-            for i in range(M.shape[1]):
-                if np.isnan(sum(M[:,i])):
+        if np.isnan(np.sum(matrix)):
+            matrix_temp=np.zeros((matrix.shape[1],1), dtype=float)
+            for i in range(matrix.shape[1]):
+                if np.isnan(sum(matrix[:,i])):
                     occ=0
-                    for jj in range(M.shape[0]):
-                        if M[jj,i]==M[jj,i]: #since nan!=nan
+                    for jj in range(matrix.shape[0]):
+                        if matrix[jj,i]==matrix[jj,i]: #since nan!=nan
                             occ+=1
-                            M_temp[i,0]=M_temp[i,0]+M[jj,i]
-                    M_temp[i,0]=M_temp[i,0]/occ
+                            matrix_temp[i,0]=matrix_temp[i,0]+matrix[jj,i]
+                    matrix_temp[i,0]=matrix_temp[i,0]/occ
                 else:
-                    M_temp[i,0]=sum(M[:,i])/M.shape[0]
-            M=M_temp
+                    matrix_temp[i,0]=sum(matrix[:,i])/matrix.shape[0]
+            matrix=matrix_temp
         else:
-            M=(np.array([sum(M[:,i]) for i in range(M.shape[1])])/(M.shape[0]))
-        #now we will order the target
+            matrix=(np.array([sum(matrix[:,i]) for i in range(matrix.shape[1])])/(matrix.shape[0]))
+        #order the target
         col=-1
-        for graph_ord_targ in KeyOrd:
+        for graph_ord_targ in key_ord:
             col+=1
-            ID_targ=Order[graph_ord_targ][0]
-            for index in range(len(TARG)):
-                if TARG[index]['structure_id']==ID_targ:
-                    if TARG[index]['hemisphere_id']==2:
-                        SC[row,col]=M[index]
-                    if TARG[index]['hemisphere_id']==1:
-                        SC[row,col+lenright]=M[index]
-
-
-    # I will save the complete matrix (both left and right inj):
-    FirstQuarter=SC[:,:(SC.shape[1]/2)]
-    SecondQuarter=SC[:,(SC.shape[1]/2):]
-    SC_down=np.concatenate((SecondQuarter,FirstQuarter), axis=1)
-    SC=np.concatenate((SC,SC_down),axis=0)
+            targ_id=order[graph_ord_targ][0]
+            for index in range(len(target)):
+                if target[index]['structure_id']==targ_id:
+                    if target[index]['hemisphere_id']==2:
+                        SC[row,col]=matrix[index]
+                    if target[index]['hemisphere_id']==1:
+                        SC[row,col+len_right]=matrix[index]
+    #save the complete matrix (both left and right inj):
+    first_quarter=SC[:,:(SC.shape[1]/2)]
+    second_quarter=SC[:,(SC.shape[1]/2):]
+    SC_down=np.concatenate((second_quarter,first_quarter), axis=1)
+    SC = np.concatenate((SC, SC_down), axis=0)
     SC=SC/(np.amax(SC)) #normalize the matrix
     return SC
 
-def Construct_centres(ontology, Order,KeyOrd,Vol):
-    centres=np.zeros((len(KeyOrd)*2,3), dtype=float)
+# the method returns the centres of the brain areas in the selected parcellation
+def Construct_centres(ontology, order, key_ord, Vol):
+    centres=np.zeros((len(key_ord) * 2, 3), dtype=float)
     names=[]
     row=-1
     vol_r=Vol[:,:,:Vol.shape[2]/2]
-    for graph_ord_inj in KeyOrd:
-        ID=Order[graph_ord_inj][0]
-        Coord=[0,0,0]
-        print 'I am calculating centre of area:', Order[graph_ord_inj]
+    for graph_ord_inj in key_ord:
+        ID=order[graph_ord_inj][0]
+        coord=[0,0,0]
         xyz = np.where(vol_r == ID)
-        if xyz[0].shape[0] > 0: #Check if the area is in the annotation volume
-            Coord[0]=np.mean(xyz[0])
-            Coord[1]=np.mean(xyz[1])
-            Coord[2]=np.mean(xyz[2])
-        else: #The area is not in the annotation volume, check for child
-            print 'That area is not in the annotation volume, I will check for child'
+        if xyz[0].shape[0] > 0: # Check if the area is in the annotation volume
+            coord[0]=np.mean(xyz[0])
+            coord[1]=np.mean(xyz[1])
+            coord[2]=np.mean(xyz[2])
+        else: # if the area is not in the annotation volume, check for child
             child=list(ontology.get_child_ids( ontology[ID].id ))
-            FinestDivision=[]
+            finest_division=[]
             while len(child)!=0:
                 if child[0] in vol_r:
-                    FinestDivision.append(child[0])
+                    finest_division.append(child[0])
                 else:
                     if len(ontology.get_child_ids(ontology[child[0]].id))!=0:
                         child.extend(ontology.get_child_ids( ontology[child[0]].id ))
                 child.remove(child[0])
-            for IDchild in FinestDivision:
-                xyz = np.where(vol_r == IDchild)
+            for child_id in finest_division:
+                xyz = np.where(vol_r == child_id)
                 if xyz[0].shape[0] > 0:
-                    Coord[0]=np.mean(xyz[0])
-                    Coord[1]=np.mean(xyz[1])
-                    Coord[2]=np.mean(xyz[2])
+                    coord[0]=np.mean(xyz[0])
+                    coord[1]=np.mean(xyz[1])
+                    coord[2]=np.mean(xyz[2])
         row+=1
-        centres[row,:]=Coord
-        Coord[2]=(Vol.shape[2])-Coord[2]
-        centres[row+len(KeyOrd),:]=Coord
-        n=Order[graph_ord_inj][1]
+        centres[row,:]=coord
+        coord[2]=(Vol.shape[2])-coord[2]
+        centres[row+len(key_ord), :]=coord
+        n=order[graph_ord_inj][1]
         Right='Right '
         Right+=n
         Right=str(Right)
         names.append(Right)
-    for graph_ord_inj in KeyOrd:
-        n=Order[graph_ord_inj][1]
+    for graph_ord_inj in key_ord:
+        n=order[graph_ord_inj][1]
         Left='Left '
         Left+=n
         Left=str(Left)
@@ -515,177 +469,170 @@ def Construct_centres(ontology, Order,KeyOrd,Vol):
     return centres, names
 
 
+# the method returns the tract lengths between the brain areas in the selected parcellation
 def ConstructTractLengths(centres):
-    lenhalf=len(centres)/2
-    tracts=np.zeros((lenhalf,len(centres)), dtype=float)
-    for inj in range(lenhalf):
+    len_right=len(centres)/2
+    tracts=np.zeros((len_right,len(centres)), dtype=float)
+    for inj in range(len_right):
         Inj=centres[inj]
-        for targ in range(lenhalf):
-            Targ_r=centres[targ]
-            Targ_l=centres[targ+lenhalf]
-            tracts[inj,targ]=np.sqrt((Inj[0]-Targ_r[0])**2+(Inj[1]-Targ_r[1])**2+(Inj[2]-Targ_r[2])**2)
-            tracts[inj,targ+lenhalf]=np.sqrt((Inj[0]-Targ_l[0])**2+(Inj[1]-Targ_l[1])**2+(Inj[2]-Targ_l[2])**2)
-    # I will save the complete matrix (both left and right inj):
-    FirstQuarter=tracts[:,:(tracts.shape[1]/2)]
-    SecondQuarter=tracts[:,(tracts.shape[1]/2):]
-    tracts_down=np.concatenate((SecondQuarter,FirstQuarter), axis=1)
+        for targ in range(len_right):
+            targ_r =centres[targ]
+            targ_l=centres[targ+len_right]
+            tracts[inj,targ]=np.sqrt((Inj[0]-targ_r[0])**2+(Inj[1]-targ_r[1])**2+(Inj[2]-targ_r[2])**2)
+            tracts[inj,targ+len_right]=np.sqrt((Inj[0]-targ_l[0])**2+(Inj[1]-targ_l[1])**2+(Inj[2]-targ_l[2])**2)
+    # Save the complete matrix (both left and right inj):
+    first_quarter=tracts[:,:(tracts.shape[1]/2)]
+    second_quarter=tracts[:,(tracts.shape[1]/2):]
+    tracts_down=np.concatenate((second_quarter,first_quarter), axis=1)
     tracts=np.concatenate((tracts,tracts_down),axis=0)
     return tracts
 
-
-#Now the Vol:
-def ParentsAndGranParentsVolumeCalculator(Order,KeyOrd,Vol,ontology):
-    Parents=[] #Here I will put the parents of the areas that I have in my parcel
-    GranParents=[]
-    VV=[] #Here I will put the volume of the areas that I have in myparcel
-    IndVec=[] #Here I will put the index of the eigenvector of the areas that I have in my parcel
-    indexvec=0
-    for graph_ord_inj in KeyOrd:
-        ID=Order[graph_ord_inj][0]
+# the method associated the parent and the grandparents to the child in the selected parcellation with the biggest volume
+# Since the parcellation is reduced some areas are in the annotation volume but not in the parcellation, so it is possible to plot also those areas with following trick:
+# If an area that is not in the parcellation is brother of an area that is in the parcellation (same parent), the areas not in the parcellation will be plotted in the vol with the
+# same vec_indexed of the area in the parcellation.
+# In order to have an univocal relation, since some areas in the parcellation have some parent
+# for each parent it will be link the child with the biggest volume in the parcellation
+# the same is done for the grandparents
+def ParentsAndGrandParentsFinder(order, key_ord, Vol, ontology):
+    parents=[] #Here it will be the id of the parents of the areas in the parcellation
+    grandparents=[] #Here it will be the id of the grandparents of the areas in the parcellation
+    vol_areas=[] #Here it will be the volume of the areas in the parcellation
+    vec_index=[] #Here it will be the index of the vector of the areas in the parcellation
+    index=0
+    for graph_ord_inj in key_ord:
+        ID=order[graph_ord_inj][0]
         ont=ontology[ID]
-        Parents.append(ont.loc[ID]['parent_structure_id'])
-        gg=ont.loc[ID]['parent_structure_id']
-        gg=int(gg)
-        ont=ontology[gg]
-        GranParents.append(ont.loc[gg]['parent_structure_id'])
-        IndVec.append(indexvec)
-        indexvec+=1
-
-        TotVoxels = np.count_nonzero(Vol==ID)
-        if TotVoxels > 0: #To calculate the vol of each area I should look also at the child
-            VV.append(TotVoxels)
-        else:
-            TotVoxels=0
-            print 'That area is not in the annotation volume, I will check for child'
+        parent_id=ont.loc[ID]['parent_structure_id']
+        parents.append(parent_id)
+        parent_id=int(parent_id)
+        ont=ontology[parent_id]
+        grandparents.append(ont.loc[parent_id]['parent_structure_id'])
+        vec_index.append(index)
+        index+=1
+        tot_voxels = np.count_nonzero(Vol==ID)
+        if tot_voxels > 0:
+            vol_areas.append(tot_voxels)
+        else: #if ID not in annotation vol, check for child
+            tot_voxels=0
             child=list(ontology.get_child_ids( ontology[ID].id ))
             while len(child)!=0:
                 print child
                 child_voxel_count = np.count_nonzero(Vol == child[0])
                 if child_voxel_count > 0:
-                    TotVoxels+=child_voxel_count
+                    tot_voxels+=child_voxel_count
                 else:
                     if len(ontology.get_child_ids(ontology[child[0]].id))!=0:
                         child.extend(ontology.get_child_ids( ontology[child[0]].id ))
                 child.remove(child[0])
-            VV.append(TotVoxels)
-    #I will order Parents, granparents, Index vec according to the volume
-    Parents=[parents for (vv,parents) in sorted(zip(VV,Parents))]
-    GranParents=[granparents for (vv,granparents) in sorted(zip(VV,GranParents))]
-    IndVec=[iid for (vv,iid) in sorted(zip(VV,IndVec))]
-    k=len(Parents)
-    UniqueParents={}#Unique parents will be a dictionary with keys the parent id and as value the index vec of the region in my parcellation that has that parent id
-    for P in reversed(Parents):
+            vol_areas.append(tot_voxels)
+    #I will order parents, grandparents, vec_index according to the volume of the areas
+    parents=[parents for (vv,parents) in sorted(zip(vol_areas,parents))]
+    grandparents=[grandparents for (vv,grandparents) in sorted(zip(vol_areas,grandparents))]
+    vec_index=[iid for (vv,iid) in sorted(zip(vol_areas,vec_index))]
+    k=len(parents)
+    unique_parents={}#Unique parents will be a dictionary with keys the parent id and as value the index vec of the region in parcellation which has that parent id
+    for p in reversed(parents):
         k-=1
-        if P not in UniqueParents.keys():
-            UniqueParents[P]=IndVec[k]
-    k=len(GranParents)
-    UniqueGranParents={}#Unique parents will be a dictionary with keys the parent id and as value the index vec of the region in my parcellation that has that parent id
-    for P in reversed(GranParents):
+        if p not in unique_parents.keys():
+            unique_parents[p]=vec_index[k]
+    k=len(grandparents)
+    unique_gradparents={}#Unique parents will be a dictionary with keys the parent id and as value the index vec of the region in my parcellation that has that parent id
+    for p in reversed(grandparents):
         k-=1
-        if np.isnan(P)==0:
-            if P not in UniqueGranParents.keys():
-                UniqueGranParents[P]=IndVec[k]
-    return UniqueParents, UniqueGranParents
+        if np.isnan(p)==0:
+            if p not in unique_gradparents.keys():
+                unique_gradparents[p]=vec_index[k]
+    return unique_parents, unique_gradparents
 
 
-
-
-def MouseBrainVisualizer(Vol,Order,KeyOrd,UniqueParents,UniqueGranParents, ontology, projmaps):
-    Nareas=len(KeyOrd)*2
-    Vec = np.arange(Nareas).reshape(Nareas,)
-    Vec=Vec+1 #indicizzato fra 1 e Nareas
-    Vec=Vec*(10**(-(1+int(np.log10(Nareas))))) #now, all the Vec components are always less than one
+# the method returns a volume indexed between 0 and N-1, with N=tot brain areas in the parcellation. -1=background and areas that are not in the parcellation
+def MouseBrainVisualizer(Vol, order, key_ord, unique_parents, unique_grandparents, ontology, projmaps):
+    tot_areas= len(key_ord) * 2
+    indexed_vec = np.arange(tot_areas).reshape(tot_areas,) #vec indexed between 0 and (N-1), with N=total number of area in the parcellation
+    indexed_vec=indexed_vec+1 #vec indexed betweeen 1 and N
+    indexed_vec=indexed_vec*(10**(-(1+int(np.log10(tot_areas))))) #vec indexed between 0 and 0,N (now all the entries of vec_indexed are < 1 in order to not create confusion with the entry of Vol (always greater than 1)
     vol_r=Vol[:,:,:(Vol.shape[2]/2)]
     vol_r=vol_r.astype(np.float64)
     vol_l=Vol[:,:,(Vol.shape[2]/2):]
     vol_l=vol_l.astype(np.float64)
     index_vec=0 #this is the index of the vector
-    left=len(Vec)/2
-    for graph_ord_inj in KeyOrd:
-        ID=Order[graph_ord_inj][0]
-       # print 'I am associating the value of Vec to area:', Order[graph_ord_inj]
-        if ID in vol_r: #Check if the area is in the annotation volume
-            vol_r[vol_r == ID] = Vec[index_vec]
-            vol_l[vol_l == ID] =Vec[index_vec+left]
+    left=len(indexed_vec)/2
+    for graph_ord_inj in key_ord:
+        ID=order[graph_ord_inj][0]
+        if ID in vol_r: #check if the area is in the annotation volume
+            vol_r[vol_r == ID] = indexed_vec[index_vec]
+            vol_l[vol_l == ID] =indexed_vec[index_vec+left]
         child=list(ontology.get_child_ids( ontology[ID].id ))
         while len(child)!=0:
             if (child[0] in vol_r) and (child[0] not in projmaps.keys()):
-                vol_r[vol_r == child[0]] = Vec[index_vec]
-                vol_l[vol_l == child[0]] = Vec[index_vec+left]
+                vol_r[vol_r == child[0]] = indexed_vec[index_vec]
+                vol_l[vol_l == child[0]] = indexed_vec[index_vec+left]
             if len(ontology.get_child_ids(ontology[child[0]].id))!=0:
                 child.extend(ontology.get_child_ids( ontology[child[0]].id ))
             child.remove(child[0])
         index_vec+=1 # index of vector
-    vol_parcel=np.concatenate((vol_r, vol_l), axis=2)
-    #Now we have a problem: since the parcellation is reduced I do not have a lot of areas plotted, so I can plot the areas that are not plotted
-    #using the following trick:
-    #I will plot with the same value of the eig the areas that are brother (it means that they have the same parent in the ontology)
-    #but since a lot of the areas that I have in the parcellation have the same parent and I want an univoca relation
-    #for each parent I will associate only the biggest (bigger volume) child in my parcellation
-    bool_idx = (vol_parcel > np.amax(Vec))  # Find the elements of vol_parcel that are yet not associated to a value of the eigenvector
-    # We use boolean array indexing to construct a rank 1 array consisting of the elements of a corresponding to the True values of bool_idx
-    not_assigned=np.unique(vol_parcel[bool_idx])
-    vol_r=vol_parcel[:,:,:(Vol.shape[2]/2)]
-    vol_r=vol_r.astype(np.float64)
-    vol_l=vol_parcel[:,:,(Vol.shape[2]/2):]
-    vol_l=vol_l.astype(np.float64)
-    #In this loop I will look at the parents in the next at the granparents
-    count=1
+    vol_parcel = np.concatenate((vol_r, vol_l), axis=2)
+    # Since the parcellation is reduced some areas are in the annotation volume but not in the parcellation, so it is possible to plot also those areas with trick explained in ParentsAndGrandPArentsFinder
+    # Parents:
+    bool_idx = (vol_parcel > np.amax(
+        indexed_vec))  # Find the elements of vol_parcel that are yet not associated to a value of the indexed_vec in the parcellation
+    not_assigned = np.unique(vol_parcel[bool_idx])
+    vol_r = vol_parcel[:, :, :(Vol.shape[2] / 2)]
+    vol_r = vol_r.astype(np.float64)
+    vol_l = vol_parcel[:, :, (Vol.shape[2] / 2):]
+    vol_l = vol_l.astype(np.float64)
     for ID in not_assigned:
-        #print 'Esamino area',count,'di aree',len(not_assigned)
-        count+=1
-        ID=int(ID)
-        ont=ontology[ID]
-        PP=ont.loc[ID]['parent_structure_id']
-        if np.isnan(PP):
-            k=0 #If the area has not parent it will return a NaN value thus I will not enter in the while loop
+        ID = int(ID)
+        ont = ontology[ID]
+        pp = ont.loc[ID]['parent_structure_id']
+        if np.isnan(pp):
+            k = 0  # If the area has not parent it will return a NaN value thus it will not enter in the while loop
         else:
-            k=1
-        while k==1:
-            PP=int(PP)
-            if PP in UniqueParents.keys():
-                vol_r[vol_r == ID] = Vec[UniqueParents[PP]]
-                vol_l[vol_l == ID] = Vec[UniqueParents[PP]+left]
-                k=0
+            k = 1
+        while k == 1:
+            pp = int(pp)
+            if pp in unique_parents.keys():
+                vol_r[vol_r == ID] = indexed_vec[unique_parents[pp]]
+                vol_l[vol_l == ID] = indexed_vec[unique_parents[pp] + left]
+                k = 0
             else:
-                ont=ontology[PP]
-                PP=ont.loc[PP]['parent_structure_id']
-                if np.isnan(PP):
-                    k=0
-    vol_parcel=np.concatenate((vol_r, vol_l), axis=2)
-    #Now I will look at the granparents for the areas not yet assigned
-    bool_idx = (vol_parcel > np.amax(Vec))  # Find the elements of vol_parcel that are yet not associated to a value of the eigenvector
-    # We use boolean array indexing to construct a rank 1 array consisting of the elements of a corresponding to the True values of bool_idx
-    not_assigned=np.unique(vol_parcel[bool_idx])
-    vol_r=vol_parcel[:,:,:(Vol.shape[2]/2)]
-    vol_r=vol_r.astype(np.float64)
-    vol_l=vol_parcel[:,:,(Vol.shape[2]/2):]
-    vol_l=vol_l.astype(np.float64)
-    count=1
+                ont = ontology[pp]
+                pp = ont.loc[pp]['parent_structure_id']
+                if np.isnan(pp):
+                    k = 0
+    vol_parcel = np.concatenate((vol_r, vol_l), axis=2)
+    # Grand parents:
+    bool_idx = (vol_parcel > np.amax(
+        indexed_vec))  # Find the elements of vol_parcel that are yet not associated to a value of the indexed_vec in the parcellation
+    not_assigned = np.unique(vol_parcel[bool_idx])
+    vol_r = vol_parcel[:, :, :(Vol.shape[2] / 2)]
+    vol_r = vol_r.astype(np.float64)
+    vol_l = vol_parcel[:, :, (Vol.shape[2] / 2):]
+    vol_l = vol_l.astype(np.float64)
     for ID in not_assigned:
-        #print 'Esamino area',count,'di aree',len(not_assigned)
-        count+=1
-        ID=int(ID)
-        ont=ontology[ID]
-        PP=ont.loc[ID]['parent_structure_id']
-        if np.isnan(PP):
-            k=0 #If the area has not parent it will return a NaN value thus I will not enter in the while loop
+        ID = int(ID)
+        ont = ontology[ID]
+        pp = ont.loc[ID]['parent_structure_id']
+        if np.isnan(pp):
+            k = 0  # If the area has not grand parent it will return a NaN value thus it will not enter in the while loop
         else:
-            k=1
-        while k==1:
-            PP=int(PP)
-            if PP in UniqueGranParents.keys():
-                vol_r[vol_r == ID] = Vec[UniqueGranParents[PP]]
-                vol_l[vol_l == ID] = Vec[UniqueGranParents[PP]+left]
-                k=0
+            k = 1
+        while k == 1:
+            pp = int(pp)
+            if pp in unique_grandparents.keys():
+                vol_r[vol_r == ID] = indexed_vec[unique_grandparents[pp]]
+                vol_l[vol_l == ID] = indexed_vec[unique_grandparents[pp] + left]
+                k = 0
             else:
-                ont=ontology[PP]
-                PP=ont.loc[PP]['parent_structure_id']
-                if np.isnan(PP):
-                    k=0
-    vol_parcel=np.concatenate((vol_r, vol_l), axis=2)
-    vol_parcel[vol_parcel>=1]=0 #set all the areas not in the parcellation to 0 (as the background that is zero)
-    vol_parcel=vol_parcel*(10**(1+int(np.log10(Nareas)))) #ritorno alla indicizzazione fra uno e Nareas
-    vol_parcel=vol_parcel-1 #with this operation background and areas not in parcellation will be -1 and all the others with the index as in python (betweeen 0 and Nareas-1)
+                ont = ontology[pp]
+                pp = ont.loc[pp]['parent_structure_id']
+                if np.isnan(pp):
+                    k = 0
+    vol_parcel = np.concatenate((vol_r, vol_l), axis=2)
+    vol_parcel[
+        vol_parcel >= 1] = 0  # set all the areas not in the parcellation to 0 (since the background that is zero)
+    vol_parcel = vol_parcel * (10 ** (1 + int(np.log10(tot_areas))))  # return to indexed between 1 and N (with N=tot number of areas in the parcellation)
+    vol_parcel = vol_parcel - 1  # with this operation background and areas not in parcellation will be -1 and all the others with the indexed betweeen 0 and N-1
     vol_parcel = np.round(vol_parcel)
     return vol_parcel
