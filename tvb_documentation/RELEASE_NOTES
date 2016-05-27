@@ -11,7 +11,7 @@
     * New: tracts visualizer, FCD analyzer
     * Refactored internal API for Adapters, with the purpose of simplifying console usage
     * Allen SDK Creator added
-
+    * Reduced Wong-Wang default parameters updated to reflect usage in Hansen et al 2015
 
 
 ======================================================================================================================================
