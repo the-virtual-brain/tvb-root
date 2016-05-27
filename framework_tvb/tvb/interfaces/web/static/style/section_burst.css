@@ -31,7 +31,6 @@
 /* Adjusting column widths, inherited from columnizer of base.css */
 /* !-------------------------------------------- */
 
-
 /* :not is only needed to raise specificity here */
 #main:not(.portlet-frame) {
 right: 15px;
@@ -318,11 +317,6 @@ width: 100%;
 /* !-------------------------------------------- */
 /* !COMPONENT: Portlet viewers */
 /* !-------------------------------------------- */
-
-/* attempting to shift the new toolbar icons to the right*/
-.newButtons {
-	float:right;
-}
 
 .view-portlets .flex-wrapper {
 display: -webkit-box;

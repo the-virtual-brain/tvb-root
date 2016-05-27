@@ -6,7 +6,7 @@ conda create -y -n $envname scipy==0.14.0 numpy==1.8.1 networkx scikit-learn cyt
 
 source activate $envname
 
-conda install matplotlib==1.2.1 pytables==3.0
+conda install matplotlib==1.5.1 pytables==3.0
 
 conda install numpy==1.8.1 psycopg2
 
@@ -26,3 +26,5 @@ conda uninstall pyside shiboken cairo
 # [anaconda-env]/Lib/site-packages/matplotlib/mpl-data/matplotlibrc to Agg
 
 conda install nomkl numba
+
+#After these run "sh install_from_svn.sh" or "python setuo.py develop/install" from each of TVB packages
