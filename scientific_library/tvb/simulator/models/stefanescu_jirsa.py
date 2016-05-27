@@ -31,7 +31,7 @@ Models developed by Stefanescu-Jirsa, based on reduced-set analyses of infinite 
 
 """
 
-from .base import Model, LOG, numpy, basic, arrays
+from .base import Model, LOG, numpy, basic, arrays, scipy_integrate_trapz, scipy_stats_norm
 
 class ReducedSetFitzHughNagumo(Model):
     r"""
