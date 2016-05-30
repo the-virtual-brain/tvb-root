@@ -52,7 +52,14 @@ function _updatePlotPSE(canvasId, xLabels, yLabels, seriesArray, data_info, min_
                 fill: true
             }
         },
+        margins: { // is this the correct way to be doing margins? It's just how I have in the past,
+            top: 20,
+            bottom: 60,
+            left: 70,
+            right: 20
+        },
         xaxis: {
+            labels: xLabels, // is there a better way to get access to these values inside my plotting?
             min: -1,
             max: xLabels.length,
             tickSize: 1,
@@ -64,6 +71,7 @@ function _updatePlotPSE(canvasId, xLabels, yLabels, seriesArray, data_info, min_
             }
         },
         yaxis: {
+            labels: yLabels,
             min: -1,
             max: yLabels.length,
             tickSize: 1,
@@ -80,16 +88,113 @@ function _updatePlotPSE(canvasId, xLabels, yLabels, seriesArray, data_info, min_
         }
 
     };
-    _PSE_plot = $.plot($("#" + canvasId), $.parseJSON(seriesArray), $.extend(true, {}, _PSE_plotOptions));
-    changeColors();
-    $(".tickLabel").each(function() { $(this).css("color", "#000000"); });
+    //var _d3PSE_plot = d3Plot("#" + canvasId, $.parseJSON(seriesArray), $.extend(true, {}, _PSE_plotOptions));
 
+    //this has been commented out below so that I can see what I have done on the canvas after the above function has ended
+    _PSE_plot = $.plot($("#" + canvasId), $.parseJSON(seriesArray), $.extend(true, {}, _PSE_plotOptions));
+    changeColors(); // this will need to eventually have the addition of the d3 plot function
+    $(".tickLabel").each(function () {
+        $(this).css("color", "#000000");
+    });
     //if you want to catch the right mouse click you have to change the flot sources
     // because it allows you to catch only "plotclick" and "plothover"
     applyClickEvent(canvasId, backPage);
     applyHoverEvent(canvasId);
 }
 
+
+function d3Plot(placeHolder, data, options) {
+// I should check to see whether there is already a canvas of the d3 variety because then we can just use that if redraw must happen
+    function createScale(xORy) {
+        // should I incorporate some sort of testing for values before actually getting into the function?
+        if (xORy === "x") {
+            var newScale = d3.scale.linear()
+                .domain(d3.extent(options.xaxis.labels))
+                .range([options.margins.left, canvasDimensions.w - options.margins.right]);
+            return newScale
+        } else {
+            newScale = d3.scale.linear()
+                .domain(d3.extent(options.yaxis.labels))
+                .range([canvasDimensions.h - (options.margins.bottom), options.margins.top]);
+            // I need some way to subtrack pixel valued variables?
+            return newScale
+        }
+    }
+
+    function createAxis(xORy) {
+        if (xORy === "x") { // should I be creating the whole axis inside here, or should I simply return the axis that has the parts to be customized and called later
+            newAxis = d3.svg.axis().scale(xScale)
+                .orient("bottom")
+                .ticks(10);
+            return newAxis
+        }
+        else {
+            newAxis = d3.svg.axis().scale(yScale)
+                .orient("left")
+                .ticks(10);// should number of ticks be specified in the options object?
+            return newAxis
+        }
+    }
+
+    function dataToOpt(checkd, xORy) {
+        if (xORy === "x") {
+            return options.xaxis.tickFormatter(checkd.data[0][0]);
+        } else
+            return options.yaxis.tickFormatter(checkd.data[0][1])
+
+    }
+
+
+    var myBase = d3.select(placeHolder),
+        canvasDimensions = {h: parseInt(myBase.style("height")), w: parseInt(myBase.style("width"))},
+        canvas = myBase.append("svg")
+            .attr({
+                height: canvasDimensions.h,
+                width: canvasDimensions.w
+            }),
+        xScale = createScale("x"),
+        yScale = createScale("y"),
+        xAxis = createAxis("x"),
+        yAxis = createAxis("y");
+
+
+    circles = canvas.selectAll("circle").data(data).enter().append("circle");
+    circles.attr({
+        r: function (d) {
+            return d.points.radius * 1.25
+        },
+        cx: function (d) {
+            return xScale(dataToOpt(d, "x"))
+        },
+        cy: function (d) {
+            return yScale(dataToOpt(d, "y"));
+            // return yScale(d.yCen) // why is this placing dots far below the bottom of the pane? Is the canvas dimension off?
+        }
+
+    });
+    canvas.append("g")
+        .attr("transform", "translate (0," + (canvasDimensions.h - 35) + ")")
+        .call(xAxis)
+    canvas.append("g")
+        .attr("transform", "translate (" + (options.margins.left - 20) + ",0)")
+        .call(yAxis)
+    // this is now the area that should allow for drawing the lines of the grid
+    canvas.append("g") //todo ask about the css that needs to be added here so that the grid lines show up.
+        .attr("id", "x-grid")
+        .attr("transform", "translate(15," + (canvasDimensions.h - 35) + ")") //figure out a way to make sure that the lines land on the dots
+        .style("stroke", "black")
+        .call(createAxis("x")
+            .tickSize(-canvasDimensions.h, 0, 0)
+            .tickFormat(""));
+    canvas.append("g") //todo ask about the css that needs to be added here so that the grid lines show up.
+        .attr("id", "y-grid")
+        .attr("transform", "translate (" + (options.margins.left - 20) + ",15)") //figure out a way to make sure that the lines land on the dots
+        .style("stroke", "black")
+        .call(createAxis("y")
+            .tickSize(-canvasDimensions.w, 0, 0)
+            .tickFormat(""));
+
+}
 /*
  * Do a redraw of the plot. Be sure to keep the resizable margin elements as the plot method seems to destroy them.
  */
@@ -100,6 +205,7 @@ function redrawPlot(plotCanvasId) {
         _PSE_plot = $.plot($('#'+plotCanvasId)[0], _PSE_plot.getData(), $.extend(true, {}, _PSE_plotOptions));
     }
 }
+
 
 /*
  * Fire DataType overlay when clicking on a node in PSE.
