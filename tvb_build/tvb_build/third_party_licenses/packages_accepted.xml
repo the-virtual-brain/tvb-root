@@ -653,7 +653,7 @@
     <dependency env="[win,linux]" name="pip">
         <full-name value="PIP Library"/>
         <project-home value="https://pip.pypa.io/en/stable/"/>
-        <version value="8.1.1"/>
+        <version value="8.1.2"/>
         <usage value="packaging"/>
         <license value="LICENSE_pip.txt"/>
         <license-type value="MIT_"/>
@@ -720,6 +720,16 @@
         <copyright-notice value="Copyright (c) 2009-13 Andreas Klockner and Contributors"/>
         <description value="OpenCL integration for Python, plus shiny features"/>
     </dependency>
+    <dependency env="[win,linux]" name="pyparsing">
+        <full-name value="PyParsing"/>
+        <project-home value="http://pyparsing.wikispaces.com/"/>
+        <version value="2.1.4"/>
+        <usage value="dynamic linking"/>
+        <license value="LICENSE_pyparsing.txt"/>
+        <license-type value="MIT_"/>
+        <copyright-notice value="Copyright (c) 2003-2013 Paul McGuire"/>
+        <description value="Python parsing module"/>
+    </dependency>
     <dependency env="win" name="pyreadline">
         <full-name value="Pyreadline"/>
         <project-home value="http://pythonhosted.org/pyreadline//"/>
@@ -743,7 +753,7 @@
     <dependency env="[win,linux]" name="python-dateutil">
         <full-name value="python-dateutil"/>
         <project-home value="https://dateutil.readthedocs.org/en/latest/"/>
-        <version value="2.4.1"/>
+        <version value="2.5.3"/>
         <usage value="dynamic linking"/>
         <license value="LICENSE_dateutil.txt"/>
         <license-type value="BSD_"/>
