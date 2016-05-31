@@ -374,15 +374,19 @@ class RendererH5Canvas(RendererBase):
                     ctx.fill()
                     ctx.fillStyle = '#000000'
 
-    def _slipstream_png(self, start_x, start_y, im_buffer, width, height):
+    def _slipstream_png(self, start_x, start_y, im_buffer, width, height, flip=False):
         """Insert image directly into HTML canvas as base64-encoded PNG."""
         # Shift x, y (top left corner) to the nearest CSS pixel edge, 
-        #to prevent resampling and consequent image blurring
+        #to prevent re-sampling and consequent image blurring
         start_x = math.floor(start_x + 0.5)
         start_y = math.floor(start_y + 1.5)
         # Write the image into a WebPNG object
+        image_array = numpy.fromstring(im_buffer, numpy.uint8)
+        image_array.shape = height, width, 4
+        if flip:
+            image_array = numpy.flipud(image_array)
         web_png = WebPNG()
-        _png.write_png(im_buffer, width, height, web_png)
+        _png.write_png(image_array, web_png, self.dpi)
         # Extract the base64-encoded PNG and send it to the canvas
         uname = str(uuid.uuid1()).replace("-","") 
         # try to use a unique image name
@@ -426,9 +430,13 @@ class RendererH5Canvas(RendererBase):
             self.ctx.save()
             self.ctx.clip()
         (start_x, start_y) = self.flip.transform((start_x, start_y))
-        imag.flipud_out()
+        if hasattr(imag, 'flipud_out'):
+            imag.flipud_out()
+            flip = False
+        else:
+            flip = True
         rows, cols, im_buffer = imag.as_rgba_str()
-        self._slipstream_png(start_x, (start_y-height), im_buffer, cols, rows)
+        self._slipstream_png(start_x, (start_y - height), im_buffer, cols, rows, flip)
         if clippath is not None:
             self.ctx.restore()
 
