@@ -613,7 +613,7 @@
     <dependency env="[win,mac,linux]" name="numpy">
         <full-name value="Numpy"/>
         <project-home value="http://numpy.scipy.org/license.html#license"/>
-        <version value="[1.10.4,1.11.0]"/>
+        <version value="1.11.0"/>
         <usage value="dynamic linking"/>
         <license value="LICENSE_numpy.txt"/>
         <license-type value="BSD_"/>
@@ -717,7 +717,7 @@
         <usage value="dynamic linking"/>
         <license value="LICENSE_pyopencl.txt"/>
         <license-type value="MIT_"/>
-        <copyright-notice value="Copyright (c) 2009-13 Andreas Klöckner and Contributors"/>
+        <copyright-notice value="Copyright (c) 2009-13 Andreas Klockner and Contributors"/>
         <description value="OpenCL integration for Python, plus shiny features"/>
     </dependency>
     <dependency env="win" name="pyreadline">
@@ -753,7 +753,7 @@
     <dependency env="[win,mac,linux]" name="pytz">
         <full-name value="PyTZ: TimeZone Library for Python"/>
         <project-home value="http://pytz.sourceforge.net/"/>
-        <version value="[2015.4,2012d-mpl]"/>
+        <version value="[2016.4,2012d-mpl]"/>
         <usage value="dynamic linking"/>
         <license value="LICENSE_pytz.txt"/>
         <license-type value="MIT_"/>
