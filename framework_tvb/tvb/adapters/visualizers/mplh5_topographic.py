@@ -107,7 +107,7 @@ class BaseTopography():
 
         try:
             topo = griddata(topography_data["sproj"][:, 0], topography_data["sproj"][:, 1],
-                            numpy.ravel(numpy.array(topography)), x_arr, y_arr)
+                            numpy.ravel(numpy.array(topography)), x_arr, y_arr, interp='linear')
         except KeyError, err:
             self.log.exception("Could not execute matplotlib.mlab.griddata...")
             raise LaunchException("The measure points location is not compatible with this viewer "
