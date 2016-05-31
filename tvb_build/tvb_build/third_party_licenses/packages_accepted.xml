@@ -70,6 +70,16 @@
         <copyright-notice value="Copyright (c) 2015 Kenneth Reitz"/>
         <description value="Used by IPython Notebook - Coming with Anaconda env "/>
     </dependency>
+    <dependency env="[win,mac,linux]" name="cffi">
+        <full-name value="CFFI"/>
+        <project-home value="http://cffi.readthedocs.io/en/latest/#"/>
+        <version value="1.6.0"/>
+        <usage value="dynamic linking"/>
+        <license value="LICENSE_cffi.txt"/>
+        <license-type value="MIT_"/>
+        <copyright-notice value="Copyright (C) 2012-2015, Armin Rigo, Maciej Fijalkowski."/>
+        <description value="Foreign Function Interface for Python calling C code (for PyOpenCL)"/>
+    </dependency>
     <dependency env="[win,mac,linux]" name="cfflib">
         <full-name value="Connectome File Format Library (cfflib)"/>
         <project-home value="http://www.connectomics.org/viewer/license"/>
@@ -339,6 +349,16 @@
         <license-type value="BSD_"/>
         <copyright-notice value="Copyright (C) 1996-2010 Julian Seward &lt;jseward@bzip.org&gt;"/>
         <description value="LibBZ2 is indirrectly used by the HDF5 libraries."/>
+    </dependency>
+    <dependency env="mac" name="libffi.6.dylib">
+        <full-name value="LibFFI"/>
+        <project-home value="https://sourceware.org/libffi/"/>
+        <version value="unknown"/>
+        <usage value="dynamic linking"/>
+        <license value="LICENSE_libffi.txt"/>
+        <license-type value="MIT_"/>
+        <copyright-notice value="Copyright (C) 1996-2014  Anthony Green, Red Hat, Inc and others."/>
+        <description value="A Portable Foreign Function Interface Library (for PyOpenCL)"/>
     </dependency>
     <dependency env="mac" name="libfreetype.6.dylib">
         <full-name value="Free Type"/>
@@ -670,6 +690,16 @@
         <copyright-notice value="Copyright (c) 2013-2014, Pexpect development team; Copyright (c) 2012, Noah Spurrier &lt;noah@noah.org&gt;"/>
         <description value="Used by IPython Notebook - Coming with Anaconda env "/>
     </dependency>
+    <dependency env="mac" name="pycparser">
+        <full-name value="PyCparser"/>
+        <project-home value="https://github.com/eliben/pycparser"/>
+        <version value="2.14"/>
+        <usage value="dynamic linking"/>
+        <license value="LICENSE_pycparser.txt"/>
+        <license-type value="BSD_"/>
+        <copyright-notice value="Copyright (c) 2008-2016, Eli Bendersky"/>
+        <description value="C parser in Python (for PyOpenCL)"/>
+    </dependency>
     <dependency env="[win,mac,linux]" name="pygments">
         <full-name value="Pygments"/>
         <project-home value="http://pygments.org/"/>
@@ -679,6 +709,16 @@
         <license-type value="BSD_"/>
         <copyright-notice value="Copyright (c) 2006-2015 by the respective authors (see AUTHORS file)"/>
         <description value="The syntax-highlighting in IPython Notebook is done by pygments - Coming with Anaconda env "/>
+    </dependency>
+    <dependency env="[win,mac,linux]" name="pyopencl">
+        <full-name value="PyOpenCL"/>
+        <project-home value="https://github.com/pyopencl/pyopencl"/>
+        <version value="2016.1"/>
+        <usage value="dynamic linking"/>
+        <license value="LICENSE_pyopencl.txt"/>
+        <license-type value="MIT_"/>
+        <copyright-notice value="Copyright (c) 2009-13 Andreas Klöckner and Contributors"/>
+        <description value="OpenCL integration for Python, plus shiny features"/>
     </dependency>
     <dependency env="win" name="pyreadline">
         <full-name value="Pyreadline"/>
