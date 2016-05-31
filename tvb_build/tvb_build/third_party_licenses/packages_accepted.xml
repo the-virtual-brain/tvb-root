@@ -140,6 +140,16 @@
         <copyright-notice value="Copyright (c) 2000 - 2006 Thomas Heller"/>
         <description value=""/>
     </dependency>
+    <dependency env="[win,linux]" name="cycler">
+        <full-name value="Cycler"/>
+        <project-home value="http://matplotlib.org/cycler/"/>
+        <version value="0.10.0"/>
+        <usage value="dynamic linking"/>
+        <license value="LICENSE_cycler.txt"/>
+        <license-type value="BDS_"/>
+        <copyright-notice value="Copyright (c) 2015, matplotlib project"/>
+        <description value="Composable cycles (for Matplotlib)"/>
+    </dependency>
     <dependency env="[win,linux]" name="cython">
         <full-name value="Cython"/>
         <project-home value="http://cython.org/"/>
