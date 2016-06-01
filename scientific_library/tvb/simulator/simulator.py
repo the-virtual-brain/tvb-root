@@ -52,7 +52,7 @@ from tvb.datatypes import cortex, connectivity, arrays, patterns
 from tvb.simulator import models, integrators, monitors, coupling
 
 from .common import psutil, get_logger, numpy_add_at
-from .history import DenseHistory
+from .history import SparseHistory, DenseHistory
 
 
 
@@ -497,7 +497,7 @@ class Simulator(core.Type):
             region_history /= numpy.bincount(self._regmap).reshape((-1, 1))
             history = region_history
 
-        self.history = DenseHistory(
+        self.history = SparseHistory(
             self.connectivity.weights,
             self.connectivity.idelays,
             self.model.cvar,

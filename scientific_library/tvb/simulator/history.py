@@ -164,8 +164,44 @@ class DenseHistory(BaseHistory):
         self.buffer[step % self.n_time] = new_state[self.cvars]
 
 
-class SparseNearestHistory(DenseHistory):
-    pass
+class SparseHistory(DenseHistory):
+    "History implementation which stores data only for non-zero weights."
+
+    n_nnzw = Dim()
+    time_stride = Dim()
+    nnz_mask = NDArray(('n_node', 'n_node'), numpy.bool)
+    const_indices = NDArray(('n_cvar', n_nnzw, 'n_mode'), 'i')
+    idelays_nnz = NDArray((n_nnzw, ), 'i')
+
+    def __init__(self, weights, delays, cvars, n_mode):
+        super(SparseHistory, self).__init__(weights, delays, cvars, n_mode)
+        self.time_stride = self.n_cvar * self.n_node * self.n_mode
+        self.nnz_mask = weights_nonzero = weights != 0.0 # type: numpy.ndarray
+        self.n_nnzw = nnz = weights_nonzero.sum()
+        self.idelays_nnz = delays[weights_nonzero].astype('i')
+        # build const indices
+        n, m = self.n_node, self.n_mode
+        icvars_ = numpy.r_[:len(cvars)].reshape((-1, 1, 1)) * n * m
+        nodes_ = numpy.tile(numpy.r_[:n], (n, 1))[self.nnz_mask, numpy.newaxis] * m
+        modes_ = numpy.r_[:m]
+        self.const_indices = icvars_ + nodes_ + modes_
+        self.delayed_state[:] = 0.0
+
+    def query(self, step, out=None):
+        time_indices = ((step - 1 - self.idelays_nnz + self.n_time) % self.n_time) # type: numpy.ndarray
+        time_indices = time_indices.reshape((-1, 1)) * self.time_stride # type: numpy.ndarray
+        sparse_delayed_state = self.buffer.take(time_indices + self.const_indices)
+        self.delayed_state.transpose((1, 0, 2, 3))[:, self.nnz_mask] = sparse_delayed_state
+        self.current_state = self.buffer[(step - 1) % self.n_time]
+        return self.current_state, self.delayed_state
+
+    @property
+    def nbytes(self):
+        arrays = 'nnz_mask const_indices idelays_nnz'.split()
+        nbytes = sum([getattr(self, ary).nbytes for ary in arrays])
+        nbytes += DenseHistory.nbytes.fget(self)
+        return nbytes
+
 
 # implement in order  NumPy, Numba & OpenCL versions
 
