@@ -145,6 +145,7 @@ class Model(core.Type):
         """
         pass
 
+    # used by generate_model_phase_plane_images?
     def configure_initial(self, dt, shape):
         """Docs..."""
         # Configure the models noise stream
@@ -178,6 +179,7 @@ class Model(core.Type):
         """
         pass
 
+    # TODO refactor as a NodeSimulator class
     def stationary_trajectory(self,
                               coupling=numpy.array([[0.0]]),
                               initial_conditions=None,
