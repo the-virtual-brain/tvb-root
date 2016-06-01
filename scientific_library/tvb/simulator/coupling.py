@@ -359,8 +359,8 @@ class SigmoidalJansenRit(Sigmoidal):
         order=5)
 
     def pre(self, x_i, x_j):
-        return self.cmax / (1.0 + numpy.exp(
-          self.r * (self.midpoint - (x_j[:, 0] - x_j[:, 1]))))
+        pre = self.cmax / (1.0 + numpy.exp(self.r * (self.midpoint - (x_j[:, 0] - x_j[:, 1]))))
+        return pre[:, numpy.newaxis]
 
     def post(self, gx):
         return self.a * gx
