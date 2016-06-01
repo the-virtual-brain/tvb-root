@@ -36,8 +36,7 @@ Tests for data descriptors for declaring workspace for algorithms and checking u
 
 import unittest
 import numpy
-from tvb.simulator.descriptors import (StaticAttr, NDArray, ImmutableAttrError,
-    IncorrectTypeAttrError, InstanceOf, Dim)
+from tvb.simulator.descriptors import (StaticAttr, NDArray, ImmutableAttrError, Final)
 
 
 class TestStaticAttr(unittest.TestCase):
@@ -46,6 +45,7 @@ class TestStaticAttr(unittest.TestCase):
     def setUp(self):
         class TestClass(StaticAttr):
             x = 5
+            z = 2
             def __init__(self):
                 self.z = 42
             def set_x(self):
@@ -70,7 +70,7 @@ class TestNDArray(unittest.TestCase):
     def setUp(self):
         class PointSet(object):
             positions = NDArray(('n_point', 'dim'), 'f')
-            counts = NDArray(('n_point',), 'i', mutable=True)
+            counts = NDArray(('n_point',), 'i', read_only=False)
             def __init__(self, n_point, dim=3):
                 self.n_point = n_point
                 self.dim = dim
@@ -110,47 +110,39 @@ class TestNDArray(unittest.TestCase):
         self.assertRaises(ValueError, self._set_incorrect_shape)
 
 
-class TestInstanceOf(unittest.TestCase):
-    "Test API of InstanceOf and Dim descriptors."
+class TestFinal(unittest.TestCase):
 
     def setUp(self):
-        class TestClass(object):
-            n = Dim()
-            dt = InstanceOf(float)
-            x = InstanceOf(float, mutable=True)
-        self.test_class = TestClass()
+        class Inst(object):
+            n = Final()
+            x = Final(float)
+            def __init__(self):
+                self.n = 42
+            def change_n(self):
+                self.n = 'asdf'
+            def set_x_int(self):
+                self.x = 32
+            def set_x_float(self):
+                self.x = 2.3
+        self.Inst = Inst
+        self.foo = Inst()
+        self.bar = Inst()
 
-    def _set_n(self):
-        self.test_class.n = 5
+    def test_immutability(self):
+        self.assertEqual(self.foo.n, 42)
+        self.assertRaises(AttributeError, self.foo.change_n)
 
-    def _set_dt(self):
-        self.test_class.dt = 0.124
+    def test_class_get_descriptor(self):
+        self.assertIsInstance(self.Inst.n, Final)
 
-    def _set_dt_int(self):
-        self.test_class.dt = 100
+    def test_count_weakref(self):
+        self.assertEqual(len(self.Inst.n.instance_state), 2)
+        delattr(self, 'foo')
+        self.assertEqual(len(self.Inst.n.instance_state), 1)
+        delattr(self, 'bar')
+        self.assertEqual(len(self.Inst.n.instance_state), 0)
 
-    def _set_n_float(self):
-        self.test_class.n = 1.2
-
-    def _set_x_int(self):
-        self.test_class.x = 234
-
-    def _set_x(self):
-        self.test_class.x = 2.0
-
-    def test_type_checks(self):
-        self._set_n()
-        self.assertEqual(self.test_class.n, 5)
-        self._set_dt()
-        self.assertEqual(self.test_class.dt, 0.124)
-        self.test_class.x = 23.0
-        self.assertRaises(IncorrectTypeAttrError, self._set_dt_int)
-        self.assertRaises(IncorrectTypeAttrError, self._set_n_float)
-        self.assertRaises(IncorrectTypeAttrError, self._set_x_int)
-
-    def test_mutability(self):
-        self._set_n()
-        self.assertRaises(ImmutableAttrError, self._set_n)
-        self._set_x()
-        self._set_x()
-
+    def test_type_check(self):
+        self.assertRaises(AttributeError, self.foo.set_x_int)
+        self.foo.set_x_float()
+        self.assertEqual(self.foo.x, 2.3)

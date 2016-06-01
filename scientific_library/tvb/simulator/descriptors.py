@@ -35,24 +35,29 @@ Data descriptors for declaring workspace for algorithms and checking usage.
 """
 
 import numpy
-import traceback
 import collections
+import weakref
+
+def hasattr(object, key):
+    try:
+        getattr(object, key)
+        return True
+    except:
+        return False
 
 # TODO turn off checking at run time?
 
 # StaticAttr prevents descriptors from placing instance-owned, descriptor storage
 
-# Not currently used; doesn't (yet)  work well with descriptors below.
 class StaticAttr(object):
-    "Base class which requires all attributes to be declared at class level or set during __init__."
+    "Base class which requires all attributes to be declared at class level."
 
     def __setattr__(self, name, value, set_it_anyway=False):
         attr_exists = hasattr(self, name)
-        attr_init = any(['__init__' == fn for _, _, fn, _ in traceback.extract_stack()])
-        if attr_exists or attr_init or set_it_anyway:
-            super(StaticAttr, self).__setattr__(name, value)
+        if not hasattr(self, name):
+            raise AttributeError('%r has no attr %r.' % (self, name))
         else:
-            raise AttributeError('%r has no attr %r or not set during __init__.' % (self, name))
+            super(StaticAttr, self).__setattr__(name, value)
 
 
 class ImmutableAttrError(AttributeError):
@@ -68,76 +73,97 @@ class IncorrectTypeAttrError(AttributeError):
 class NDArray(StaticAttr):
     "Data descriptor for a NumPy array, with type, mutability and shape checking."
 
-    # Owner can provide array constructor via _array_ctor attr, i.e. NumPy or PyOpenCL, etc.
+    # Owner can provide array constructor via _array_ctor attr, i.e. NumPy or PyOpenCL, etc. ?
 
-    def __init__(self, shape, dtype, mutable=False):
+    State = collections.namedtuple('State', 'array initialized')
+
+    shape, dtype, read_only, instance_state = (), None, True, {}
+
+    def __init__(self, shape, dtype, read_only=True):
         self.shape = shape # may have strings which eval in owner ns
         self.dtype = dtype
-        self.mutable = mutable
-        self.key = '__%d' % (id(self), )
+        self.read_only = read_only
+        self.instance_state = weakref.WeakKeyDictionary()
 
     def _make_array(self, instance):
         shape = []
         for dim in self.shape:
             if isinstance(dim, str):
                 dim = getattr(instance, dim)
-            if isinstance(dim, Dim):
-                dim = getattr(instance, dim.key) # type: int
+            elif isinstance(dim, Dim):
+                dim = dim.instance_state[instance].value
+            else:
+                raise TypeError('expect int, str but found %r' % (type(dim), ))
             shape.append(dim)
         array = numpy.empty(shape, self.dtype)
-        if not self.mutable and hasattr(array, 'setflags'):
+        if self.read_only and hasattr(array, 'setflags'):
             array.setflags(write=False)
         return array
 
+    def _get_or_create_state(self, instance):
+        if instance not in self.instance_state:
+            array = self._make_array(instance)
+            self.instance_state[instance] = NDArray.State(array, False)
+        return self.instance_state[instance]
+
     def __get__(self, instance, _):
         if instance is None:
             return self
-        if not hasattr(instance, self.key):
-            setattr(instance, self.key, self._make_array(instance))
-        return getattr(instance, self.key)
+        else:
+            return self._get_or_create_state(instance).array
 
     def __set__(self, instance, value):
-        is_init = getattr(instance, self.key + '_is_init', False)
-        array = self.__get__(instance, None)
-        if not self.mutable:
-            if is_init:
+        state = self._get_or_create_state(instance)
+        if self.read_only:
+            if state.initialized:
                 raise ImmutableAttrError('Cannot modify an immutable ndarray.')
             else:
-                array.setflags(write=True)
+                state.array.setflags(write=True)
         # set with [:] to ensure shape compat and safe type coercion
-        array[:] = value
-        if not self.mutable:
-            array.setflags(write=False)
-        if not is_init:
-            setattr(instance, self.key + '_is_init', True)
+        state.array[:] = value
+        if self.read_only:
+            state.array.setflags(write=False)
+        if not state.initialized:
+            self.instance_state[instance] = NDArray.State(state.array, True)
 
 
-class InstanceOf(StaticAttr):
-    "Data descriptor for object instance, checking mutability and type."
+class Final(object):
+    "A descriptor for an attribute, possibly type-checked, that once initialized, cannot be changed."
 
-    def __init__(self, otype, mutable=False):
-        self.otype = otype
-        self.mutable = mutable
-        self.key = '__%d' % (id(self), )
+    State = collections.namedtuple('State', 'value initialized')
 
-    def __get__(self, instance, _):
-        if instance is None:
-            return self
-        return getattr(instance, self.key)
+    def __init__(self, type=None):
+        self.instance_state = weakref.WeakKeyDictionary()
+        self.type = type
+
+    def _get_or_create_state(self, instance):
+        if instance not in self.instance_state:
+            self.instance_state[instance] = Final.State(None, False)
+        return self.instance_state[instance]
 
     def __set__(self, instance, value):
-        if not isinstance(value, self.otype):
-            raise IncorrectTypeAttrError(
-                '%r not an instance of %r.' % (value, self.otype))
-        if hasattr(instance, self.key) and not self.mutable:
-            raise ImmutableAttrError('Cannot modify an immutable attribute.')
-        setattr(instance, self.key, value)
+        state = self._get_or_create_state(instance) # type: Final.State
+        if state.initialized:
+            raise AttributeError('final attribute cannot be set.')
+        else:
+            if self.type and (not isinstance(value, self.type)):
+                raise AttributeError('value %r does not match expected type %r'
+                                      % (value, self.type))
+            self.instance_state[instance] = Final.State(value, True)
+
+    def __get__(self, instance, owner):
+        if instance is None:
+            return self
+        else:
+            return self._get_or_create_state(instance).value
 
 
-class Dim(InstanceOf):
-    "Specialization of InstanceOf to int type."
+
+class Dim(Final):
+    "Specialization of Final to int type."
+
     def __init__(self):
-        super(Dim, self).__init__(int, mutable=False)
+        super(Dim, self).__init__(int)
 
 
 # TODO

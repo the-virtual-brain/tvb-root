@@ -88,7 +88,7 @@ except ImportError:
 
 
 
-class BaseHistory(object):
+class BaseHistory(StaticAttr):
     "Abstract base class for history implementations."
 
     n_time, n_node, n_cvar, n_mode = Dim(), Dim(), Dim(), Dim()
@@ -127,9 +127,9 @@ class DenseHistory(BaseHistory):
     es_idelays = NDArray(_es, 'i')
     es_weights = NDArray(_es + ('n_mode', ), 'f')
     es_node_ids = NDArray(_es, 'i')
-    buffer = NDArray(('n_time', 'n_cvar', 'n_node', 'n_mode'), 'f', mutable=True)
-    current_state = NDArray(('n_cvar', 'n_node', 'n_mode'), 'f', mutable=True)
-    delayed_state = NDArray(('n_node', 'n_cvar', 'n_node', 'n_mode'), 'f', mutable=True)
+    buffer = NDArray(('n_time', 'n_cvar', 'n_node', 'n_mode'), 'f', read_only=False)
+    current_state = NDArray(('n_cvar', 'n_node', 'n_mode'), 'f', read_only=False)
+    delayed_state = NDArray(('n_node', 'n_cvar', 'n_node', 'n_mode'), 'f', read_only=False)
 
     @property
     def nbytes(self):
