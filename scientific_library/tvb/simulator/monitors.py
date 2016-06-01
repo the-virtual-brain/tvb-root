@@ -675,10 +675,7 @@ class TemporalAverage(Monitor):
         period, the ``_stock`` is averaged over time for return. 
 
         """
-        try:
-            self._stock[((step % self.istep) - 1), :] = state[self.voi]
-        except IndexError:
-            self.voi
+        self._stock[((step % self.istep) - 1), :] = state[self.voi]
         if step % self.istep == 0:
             avg_stock = numpy.mean(self._stock, axis=0)
             time = (step - self.istep / 2.0) * self.dt
