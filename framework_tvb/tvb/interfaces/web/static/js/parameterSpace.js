@@ -88,10 +88,10 @@ function _updatePlotPSE(canvasId, xLabels, yLabels, seriesArray, data_info, min_
         }
 
     };
-    //var _d3PSE_plot = d3Plot("#" + canvasId, $.parseJSON(seriesArray), $.extend(true, {}, _PSE_plotOptions));
+    var _d3PSE_plot = d3Plot("#" + canvasId, $.parseJSON(seriesArray), $.extend(true, {}, _PSE_plotOptions));
 
     //this has been commented out below so that I can see what I have done on the canvas after the above function has ended
-    _PSE_plot = $.plot($("#" + canvasId), $.parseJSON(seriesArray), $.extend(true, {}, _PSE_plotOptions));
+    /*_PSE_plot = $.plot($("#" + canvasId), $.parseJSON(seriesArray), $.extend(true, {}, _PSE_plotOptions));
     changeColors(); // this will need to eventually have the addition of the d3 plot function
     $(".tickLabel").each(function () {
         $(this).css("color", "#000000");
@@ -99,7 +99,7 @@ function _updatePlotPSE(canvasId, xLabels, yLabels, seriesArray, data_info, min_
     //if you want to catch the right mouse click you have to change the flot sources
     // because it allows you to catch only "plotclick" and "plothover"
     applyClickEvent(canvasId, backPage);
-    applyHoverEvent(canvasId);
+     applyHoverEvent(canvasId);*/
 }
 
 
@@ -144,40 +144,97 @@ function d3Plot(placeHolder, data, options) {
 
     }
 
+    function brushed() {
+        var extent = brush.extent();
+        circles.classed("selected", function (d) {
+            return extent[0][0] <= d.data[0][0] && d.data[0][0] <= extent[1][0] // basically says that circle x score, is inbetween brush x bounds and vice verse for y
+                &&
+                extent[0][1] <= d.data[0][1] && d.data[0][1] <= extent[1][1]
+        })
 
-    var myBase = d3.select(placeHolder),
-        canvasDimensions = {h: parseInt(myBase.style("height")), w: parseInt(myBase.style("width"))},
-        canvas = myBase.append("svg")
+    }
+
+    function brushend() {
+        debugger;
+        var extent = brush.extent();
+        xScale.domain(brush.empty() ? xRef.domain() : [extent[0][0], extent[1][0]]);
+        yScale.domain(brush.empty() ? yRef.domain() : [extent[0][1], extent[1][1]]);
+
+        moveDots();
+        replaceAxes();
+
+        d3.select(".brush").call(brush.clear())
+    }
+
+    function moveDots() {
+        circles
+            .transition()
+            .delay(500)
             .attr({
-                height: canvasDimensions.h,
-                width: canvasDimensions.w
-            }),
-        xScale = createScale("x"),
-        yScale = createScale("y"),
-        xAxis = createAxis("x"),
-        yAxis = createAxis("y");
+                cx: function (d) {
+                    return xScale(dataToOpt(d, "x"))
+                },
+                cy: function (d) {
+                    return yScale(dataToOpt(d, "y"));
+                    // return yScale(d.yCen) // why is this placing dots far below the bottom of the pane? Is the canvas dimension off?
+                }
 
+            })
+    }
 
-    circles = canvas.selectAll("circle").data(data).enter().append("circle");
-    circles.attr({
-        r: function (d) {
-            return d.points.radius * 1.25
-        },
-        cx: function (d) {
-            return xScale(dataToOpt(d, "x"))
-        },
-        cy: function (d) {
-            return yScale(dataToOpt(d, "y"));
-            // return yScale(d.yCen) // why is this placing dots far below the bottom of the pane? Is the canvas dimension off?
-        }
+    function replaceAxes() {
+        canvas.transition().duration(500)
+            .select("#xAxis")
+            .call(xAxis);
 
-    });
+        canvas.transition().duration(500)
+            .select("#yAxis")
+            .call(yAxis);
+
+    }
+
+    var myBase, canvasDimensions, canvas, xScale, yScale, xRef, yRef, xAxis, yAxis, circles, brush;
+    myBase = d3.select(placeHolder);
+    canvasDimensions = {h: parseInt(myBase.style("height")), w: parseInt(myBase.style("width"))};
+    canvas = myBase.append("svg")
+        .attr({
+            height: canvasDimensions.h,
+            width: canvasDimensions.w
+        });
+    xScale = createScale("x");
+    yScale = createScale("y");
+    xRef = xScale.copy();
+    yRef = yScale.copy();
+    xAxis = createAxis("x");
+    yAxis = createAxis("y");
+    circles = canvas.selectAll("circle").data(data).enter().append("circle")
+        .attr({
+            r: function (d) {
+                return d.points.radius * 1.25
+            },
+            cx: function (d) {
+                return xScale(dataToOpt(d, "x"))
+            },
+            cy: function (d) {
+                return yScale(dataToOpt(d, "y"));
+                // return yScale(d.yCen) // why is this placing dots far below the bottom of the pane? Is the canvas dimension off?
+            }
+
+        });
+    brush = d3.svg.brush()
+        .x(xScale)
+        .y(yScale)
+        .on("brush", brushed)
+        .on("brushend", brushend);
+
     canvas.append("g")
+        .attr("id", "xAxis")
         .attr("transform", "translate (0," + (canvasDimensions.h - 35) + ")")
-        .call(xAxis)
+        .call(xAxis);
     canvas.append("g")
+        .attr("id", "yAxis")
         .attr("transform", "translate (" + (options.margins.left - 20) + ",0)")
-        .call(yAxis)
+        .call(yAxis);
     // this is now the area that should allow for drawing the lines of the grid
     canvas.append("g") //todo ask about the css that needs to be added here so that the grid lines show up.
         .attr("id", "x-grid")
@@ -193,6 +250,13 @@ function d3Plot(placeHolder, data, options) {
         .call(createAxis("y")
             .tickSize(-canvasDimensions.w, 0, 0)
             .tickFormat(""));
+
+    canvas.append("g")
+        .call(brush)
+        .selectAll("rect")
+        .attr("height", canvasDimensions.h - (options.margins.top + options.margins.bottom))
+    
+    
 
 }
 /*
