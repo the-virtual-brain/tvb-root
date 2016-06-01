@@ -155,7 +155,6 @@ function d3Plot(placeHolder, data, options) {
     }
 
     function brushend() {
-        debugger;
         var extent = brush.extent();
         xScale.domain(brush.empty() ? xRef.domain() : [extent[0][0], extent[1][0]]);
         yScale.domain(brush.empty() ? yRef.domain() : [extent[0][1], extent[1][1]]);
@@ -196,7 +195,7 @@ function d3Plot(placeHolder, data, options) {
     var myBase, canvasDimensions, canvas, xScale, yScale, xRef, yRef, xAxis, yAxis, circles, brush;
     myBase = d3.select(placeHolder);
     canvasDimensions = {h: parseInt(myBase.style("height")), w: parseInt(myBase.style("width"))};
-    canvas = myBase.append("svg")
+    canvas = myBase.append("svg") //todo must make plottable canvas be inbetween axes, otherwise zoom adjusted circles can be seen outside of rational graphing area
         .attr({
             height: canvasDimensions.h,
             width: canvasDimensions.w
@@ -227,6 +226,7 @@ function d3Plot(placeHolder, data, options) {
         .on("brush", brushed)
         .on("brushend", brushend);
 
+
     canvas.append("g")
         .attr("id", "xAxis")
         .attr("transform", "translate (0," + (canvasDimensions.h - 35) + ")")
@@ -252,9 +252,10 @@ function d3Plot(placeHolder, data, options) {
             .tickFormat(""));
 
     canvas.append("g")
+        .attr("class", "brush")
         .call(brush)
-        .selectAll("rect")
-        .attr("height", canvasDimensions.h - (options.margins.top + options.margins.bottom))
+        .selectAll("rect");
+    //.attr("height", canvasDimensions.h - (options.margins.top + options.margins.bottom))
     
     
 
