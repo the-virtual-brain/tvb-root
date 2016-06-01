@@ -120,6 +120,7 @@ class NDArray(StaticAttr):
             else:
                 state.array.setflags(write=True)
         # set with [:] to ensure shape compat and safe type coercion
+        _, value = numpy.broadcast_arrays(state.array, value)
         state.array[:] = value
         if self.read_only:
             state.array.setflags(write=False)
