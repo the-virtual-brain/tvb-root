@@ -38,7 +38,6 @@ import tvb.datatypes.arrays as arrays
 from tvb.basic.traits.types_mapped import MappedType
 
 
-
 class SimulationState(MappedType):
     """
     Simulation State, prepared for H5 file storage.
@@ -46,6 +45,9 @@ class SimulationState(MappedType):
 
     # History Array
     history = arrays.FloatArray(required=False)
+
+    # State array, all state variables
+    current_state = arrays.FloatArray(required=False)
 
     # Simulator's current step number (in time)
     current_step = basic.Integer()
@@ -81,8 +83,9 @@ class SimulationState(MappedType):
         """
         Prepare a state for storage from a Simulator object.
         """
-        self.history = simulator_algorithm.history
+        self.history = simulator_algorithm.history.buffer.copy()
         self.current_step = simulator_algorithm.current_step
+        self.current_state = simulator_algorithm.current_state
 
         for i, monitor in enumerate(simulator_algorithm.monitors):
             field_name = "monitor_stock_" + str(i + 1)
@@ -98,8 +101,9 @@ class SimulationState(MappedType):
         """
         Populate a Simulator object from current stored-state.
         """
-        simulator_algorithm.history = self.history
+        simulator_algorithm.history.initialize(self.history)
         simulator_algorithm.current_step = self.current_step
+        simulator_algorithm.current_state = self.current_state
 
         for i, monitor in enumerate(simulator_algorithm.monitors):
             monitor._stock = getattr(self, "monitor_stock_" + str(i + 1))
