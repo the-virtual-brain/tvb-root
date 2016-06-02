@@ -12,6 +12,7 @@
     * Refactored internal API for Adapters, with the purpose of simplifying console usage
     * Allen SDK Creator added
     * Reduced Wong-Wang default parameters updated to reflect usage in Hansen et al 2015
+    * Coefficients for the Stefanescu-Jirsa 3D model have been corrected
 
 
 ======================================================================================================================================

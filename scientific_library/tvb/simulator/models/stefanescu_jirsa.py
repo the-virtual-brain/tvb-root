@@ -697,7 +697,7 @@ class ReducedSetHindmarshRose(Model):
         return derivative
 
 
-    def update_derived_parameters(self):
+    def update_derived_parameters(self, corrected_d_p=True):
         """
         Calculate coefficients for the neural field model based on a Reduced set
         of Hindmarsh-Rose oscillators. Specifically, this method implements
@@ -763,8 +763,14 @@ class ReducedSetHindmarshRose(Model):
         self.IE_i = trapz(Iv * cV, Iv, axis=1)[newaxis, :]
         self.II_i = trapz(Iu * cU, Iu, axis=1)[newaxis, :]
 
-        self.d_i = (self.d * intcVdI).T
-        self.p_i = (self.d * intcUdI).T
+        if corrected_d_p:
+            # correction identified by Shrey Dutta & Arpan Bannerjee, confirmed by RS
+            self.d_i = self.d * trapz(cV * V ** 2, Iv, axis=1)[newaxis, :]
+            self.p_i = self.d * trapz(cU * U ** 2, Iu, axis=1)[newaxis, :]
+        else:
+            # typo in the original paper by RS & VJ, kept for comparison purposes.
+            self.d_i = (self.d * intcVdI).T
+            self.p_i = (self.d * intcUdI).T
 
         self.m_i = (self.r * self.s * self.xo * intcVdI).T
         self.n_i = (self.r * self.s * self.xo * intcUdI).T
