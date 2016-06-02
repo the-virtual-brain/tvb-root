@@ -58,7 +58,7 @@ try:
 
     IMPORTED_MAYAVI = True
 except ImportError:
-    LOG.error("Mayavi is needed for this demo but due to sizing and packaging constraints we are not distributing it. "
+    LOG.warning("Mayavi is needed for this demo but due to sizing and packaging constraints we are not distributing it. "
               "If you want to see the actual plot you should use the github version and install all the required "
               "dependencies as described here: (advanced users only)"
               "http://docs.thevirtualbrain.com/manuals/ContributorsManual/ContributorsManual.html#the-unaided-setup")
