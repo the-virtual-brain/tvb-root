@@ -104,7 +104,8 @@ function _updatePlotPSE(canvasId, xLabels, yLabels, seriesArray, data_info, min_
 
 
 function d3Plot(placeHolder, data, options) {
-// I should check to see whether there is already a canvas of the d3 variety because then we can just use that if redraw must happen
+//todo check to see whether there is already a canvas of the d3 variety because then we can just use that if redraw must happen
+
     function createScale(xORy) {
         // should I incorporate some sort of testing for values before actually getting into the function?
         if (xORy === "x") {
@@ -116,7 +117,6 @@ function d3Plot(placeHolder, data, options) {
             newScale = d3.scale.linear()
                 .domain(d3.extent(options.yaxis.labels))
                 .range([canvasDimensions.h - (options.margins.bottom), options.margins.top]);
-            // I need some way to subtrack pixel valued variables?
             return newScale
         }
     }
@@ -125,13 +125,13 @@ function d3Plot(placeHolder, data, options) {
         if (xORy === "x") { // should I be creating the whole axis inside here, or should I simply return the axis that has the parts to be customized and called later
             newAxis = d3.svg.axis().scale(xScale)
                 .orient("bottom")
-                .ticks(10);
+                .ticks(options.xaxis.max);
             return newAxis
         }
         else {
             newAxis = d3.svg.axis().scale(yScale)
                 .orient("left")
-                .ticks(10);// should number of ticks be specified in the options object?
+                .ticks(options.yaxis.max);
             return newAxis
         }
     }
@@ -250,15 +250,37 @@ function d3Plot(placeHolder, data, options) {
         .call(createAxis("y")
             .tickSize(-canvasDimensions.w, 0, 0)
             .tickFormat(""));
+    //todo again visual grid stuff. How should I go about making the grid fit the canvas better?
 
-    canvas.append("g")
-        .attr("class", "brush")
-        .call(brush)
-        .selectAll("rect");
+
+    d3.select("#Magnify").on("click", function (d) {
+        debugger;
+        var activeBrush = d3.select(".brush")
+        if (activeBrush.empty() == true) {
+            canvas.append("g")
+                .attr("class", "brush")
+                .call(brush)
+                .selectAll("rect");
+        } else {
+            activeBrush.remove()
+        }
     //.attr("height", canvasDimensions.h - (options.margins.top + options.margins.bottom))
-    
-    
 
+    })
+
+    /* I think the tooltip part is going to have to wait. Plus, do I need to start breaking the plot function down again? Section for the creation of tooltips?
+
+
+     function applyHover() {
+     d3.selectAll("circle").on("mouseover",function (d){ // why can't a access the options variable inside this scope?
+     var xVal, yVal;
+     });
+
+     d3.selectAll("circle").on("mouseout",function (d){
+
+     })
+     }
+     */
 }
 /*
  * Do a redraw of the plot. Be sure to keep the resizable margin elements as the plot method seems to destroy them.
