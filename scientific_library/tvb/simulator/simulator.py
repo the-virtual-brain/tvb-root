@@ -461,7 +461,7 @@ class Simulator(core.Type):
             history = self.model.initial(self.integrator.dt, (n_time, n_svar, n_node, n_mode))
         else:
             # history should be [timepoints, state_variables, nodes, modes]
-            LOG.info("%s: Received initial conditions as arg." % str(self))
+            LOG.debug("%s: Received initial conditions as arg." % str(self))
             n_time, n_svar, n_node, n_mode = ic_shape = initial_conditions.shape
             nr = self.connectivity.number_of_regions
             if self.surface is not None and n_node == nr:
@@ -474,10 +474,10 @@ class Simulator(core.Type):
             else:
                 if ic_shape[0] >= self.horizon:
                     msg = "%s: Using last %s time-steps for history."
-                    LOG.info(msg % (str(self), self.horizon))
+                    LOG.debug(msg % (str(self), self.horizon))
                     history = initial_conditions[-self.horizon:, :, :, :].copy()
                 else:
-                    LOG.info('initial_conditions too short, padding with model.initial.')
+                    LOG.debug('initial_conditions too short, padding with model.initial.')
                     history = self.model.initial(self.integrator.dt, self.history.buffer.shape)
                     shift = self.current_step % self.horizon
                     history = numpy.roll(history, -shift, axis=0)
@@ -488,7 +488,7 @@ class Simulator(core.Type):
             LOG.debug(msg % (str(self), str(history.shape)))
 
         self.current_state = history[self.current_step % self.horizon].copy()
-        LOG.warning('initial state has shape %r' % (self.current_state.shape, ))
+        LOG.debug('initial state has shape %r' % (self.current_state.shape, ))
         if self.surface is not None and history.shape[2] > self.connectivity.number_of_regions:
             n_reg = self.connectivity.number_of_regions
             (nt, ns, _, nm), ax = history.shape, (2, 0, 1, 3)
@@ -633,7 +633,7 @@ class Simulator(core.Type):
                                                                self.connectivity.speed or 3.0) / self.integrator.dt,
                       self.model.nvar, number_of_nodes, 
                       self.model.number_of_modes)
-        LOG.error("hist_shape is %r", hist_shape)
+        LOG.debug("hist_shape is %r", hist_shape)
 
         memreq = numpy.prod(hist_shape) * bits_64
         if self.surface:
@@ -671,13 +671,12 @@ class Simulator(core.Type):
                 memreq += numpy.prod(stock_shape) * bits_64
                 memreq += numpy.prod(interim_stock_shape) * bits_64
 
-        LOG.error("memreq = %r", memreq)
         if psutil and memreq > psutil.virtual_memory().total:
-            LOG.error("This is gonna get ugly...")
+            LOG.warning("There may be insufficient memory for this simulation.")
 
         self._memory_requirement_guess = magic_number * memreq
         msg = "Memory requirement guesstimate: simulation will need about %.1f MB"
-        LOG.info(msg % (self._memory_requirement_guess / 1048576.0))
+        LOG.info(msg, self._memory_requirement_guess / 2**20)
 
     def _census_memory_requirement(self):
         """

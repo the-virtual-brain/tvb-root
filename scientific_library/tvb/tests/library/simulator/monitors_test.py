@@ -175,8 +175,7 @@ class SubcorticalProjectionTest(BaseTestCase):
         for mon in self.sim.monitors:
             self.assertEqual(mon.period, self.period)
             n_sens, g_n_node = mon.gain.shape
-            h_n_node = self.sim.history.n_node
-            self.assertEqual(g_n_node, h_n_node)
+            self.assertEqual(g_n_node, self.sim.number_of_nodes)
             self.assertEqual(n_sens, mon.sensors.number_of_sensors)
             self.assertEqual(lc_n_node, g_n_node)
 

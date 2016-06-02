@@ -209,7 +209,7 @@ class Monitor(core.Type):
 
     # list of class names not shown in UI
     _base_classes = ['Monitor', 'BoldMultithreaded', 'BalloonWindkesselAccordingToKJFristonEtAl2003NeuroImage',
-                     'Projection']
+                     'Projection', 'ProgressLogger']
 
     period = basic.Float(
         label = "Sampling period (ms)",
@@ -1118,9 +1118,7 @@ class Bold(Monitor):
         Initialise from the base Monitor class.
 
         """
-        LOG.info("%s: initing..." % str(self))
         super(Bold, self).__init__(**kwargs)
-        LOG.warning("%s: Needs testing, debugging, etc..." % repr(self))
 
         #Bold measurement period is much larger than our simulation's dt, so we
         #need an interim downsampling to support it. 
@@ -1130,15 +1128,12 @@ class Bold(Monitor):
         #      surface simulations).
         self._interim_period = None
         self._interim_istep = None
-        self._interim_stock = None #I hate bold.
+        self._interim_stock = None
         self._stock_steps = None
-        self._stock_time = None    # Me too
+        self._stock_time = None
         self._stock_sample_rate = 2**-2
 
         self.hemodynamic_response_function = None
-
-        LOG.debug("%s: inited." % repr(self))
-
 
     def compute_hrf(self):
         """
@@ -1154,7 +1149,6 @@ class Bold(Monitor):
         #then (18.75 * tau_s) * 256  ==> 3840 required length of _stock
 
         # simulation in ms therefore 1000.0/256.0 ==> 3.90625 _interim_period in ms
-        LOG.warning("%s: Needs testing, debugging, etc..." % repr(self))
 
         self._stock_sample_rate = 2.0**-2 #/ms    # NOTE: An integral multiple of dt
         magic_number = self.hrf_length #* 0.8      # truncates G, volterra kernel, once ~zero 
@@ -1189,34 +1183,16 @@ class Bold(Monitor):
 
 
     def config_for_sim(self, simulator):
-        """
-        Set up stock arrays
-       
-        """
+        "Configure BOLD monitor for simulator instance."
         super(Bold, self).config_for_sim(simulator)
-
-        self.compute_hrf() # now we have self.hemodynamic_response_function
-
-        interim_stock_size = (self._interim_istep, self.voi.shape[0],
-                              simulator.number_of_nodes,
-                              simulator.model.number_of_modes) 
-        LOG.debug("%s: interim_stock_size is %s" % (str(self), str(interim_stock_size)))
-
-        self._interim_stock = numpy.zeros(interim_stock_size)
-
-        #Stock configuration
-        stock_size = (self._stock_steps, self.voi.shape[0],
-                      simulator.number_of_nodes,
-                      simulator.model.number_of_modes)
-        LOG.debug("%s: stock_size is %s" % (str(self), str(stock_size)))
-
-        #Set the initingal _stock based on simulator.history
-        mean_history = numpy.mean(simulator.history[:, self.voi, :, :], axis=0)
-        self._stock = mean_history[numpy.newaxis,:] * numpy.ones(stock_size)
-        #NOTE: BOLD can have a long (~15s) transient that is mainly due to the
-        #      initial dynamic transient from simulations that are started with 
-        #      imperfect initial conditions.
-        #import pdb; pdb.set_trace()
+        self.compute_hrf()
+        sample_shape = self.voi.shape[0], simulator.number_of_nodes, simulator.model.number_of_modes
+        self._interim_stock = numpy.zeros((self._interim_istep,) + sample_shape)
+        LOG.debug("BOLD inner buffer %s %.2f MB" % (
+            self._interim_stock.shape, self._interim_stock.nbytes/2**20))
+        self._stock = numpy.zeros((self._stock_steps,) + sample_shape)
+        LOG.debug("BOLD outer buffer %s %.2f MB" % (
+            self._stock.shape, self._stock.nbytes/2**20))
 
 
     def sample(self, step, state):
@@ -1383,3 +1359,25 @@ class BalloonWindkesselAccordingToKJFristonEtAl2003NeuroImage(Monitor):
             bold = bold.sum(axis=0)[numpy.newaxis, :, :]    #state-variables
             bold = bold.sum(axis=2)[:, :, numpy.newaxis]    #modes
             return [time, bold]
+
+
+class ProgressLogger(Monitor):
+    "Logs progress of simulation."
+
+    def __init__(self, **kwargs):
+        super(ProgressLogger, self).__init__(**kwargs)
+        self.logger = get_logger('Sim Progress')
+
+    def config_for_sim(self, simulator):
+        self._dt = simulator.integrator.dt
+        self._istep = int(self.period / self._dt)
+
+    def record(self, step, state):
+        try:
+            self._last_step
+        except:
+            self._last_step = step
+        if (step - self._last_step) % self._istep == 0:
+            self.logger.info('step %d time %.4f s', step, step * self._dt / 1e3)
+
+
