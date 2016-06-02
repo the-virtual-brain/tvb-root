@@ -36,7 +36,8 @@ Tests for data descriptors for declaring workspace for algorithms and checking u
 
 import unittest
 import numpy
-from tvb.simulator.descriptors import (StaticAttr, NDArray, ImmutableAttrError, Final)
+from tvb.simulator.descriptors import StaticAttr, NDArray, ImmutableAttrError, Final, Dim
+import six
 
 
 class TestStaticAttr(unittest.TestCase):
@@ -115,6 +116,7 @@ class TestFinal(unittest.TestCase):
     def setUp(self):
         class Inst(object):
             n = Final()
+            m0, m1, m2, m3, m4 = Dim(), Dim(), Dim(), Dim(), Dim()
             x = Final(float)
             def __init__(self):
                 self.n = 42
@@ -146,3 +148,8 @@ class TestFinal(unittest.TestCase):
         self.assertRaises(AttributeError, self.foo.set_x_int)
         self.foo.set_x_float()
         self.assertEqual(self.foo.x, 2.3)
+
+    def test_dim_accepts_many_int_types(self):
+        int_types = list(six.integer_types) + [numpy.int32, numpy.uint32, numpy.int64]
+        for i, int_type in enumerate(six.integer_types):
+            setattr(self.foo, 'm%d' % i, int_type(0))

@@ -37,8 +37,15 @@ Data descriptors for declaring workspace for algorithms and checking usage.
 import numpy
 import collections
 import weakref
+import six
 
+# While debugging some code below, it appeared that hasattr in Python implemented by trying to get the
+# attribute, and return False iff an exception was raised. The issue is that getattr can raise an exception
+# that you want to track, while Python's impl will just swallow the original exception. So, for this module,
+# we redefine hasattr, so that it's possible to set a breakpoint and step into an exception raised in getattr()
+# during the operation of hasattr().
 def hasattr(object, key):
+    "Test if object has attr named by key."
     try:
         getattr(object, key)
         return True
@@ -142,12 +149,15 @@ class Final(object):
             self.instance_state[instance] = Final.State(None, False)
         return self.instance_state[instance]
 
+    def _correct_type(self, value):
+        return isinstance(value, self.type)
+
     def __set__(self, instance, value):
         state = self._get_or_create_state(instance) # type: Final.State
         if state.initialized:
             raise AttributeError('final attribute cannot be set.')
         else:
-            if self.type and (not isinstance(value, self.type)):
+            if self.type and not self._correct_type(value):
                 raise AttributeError('value %r does not match expected type %r'
                                       % (value, self.type))
             self.instance_state[instance] = Final.State(value, True)
@@ -159,12 +169,15 @@ class Final(object):
             return self._get_or_create_state(instance).value
 
 
-
 class Dim(Final):
-    "Specialization of Final to int type."
+    "Specialization of Final to int/long type."
 
     def __init__(self):
         super(Dim, self).__init__(int)
+
+    def _correct_type(self, value):
+        return isinstance(value, six.integer_types) \
+               or numpy.issubdtype(type(value), numpy.integer)
 
 
 # TODO
