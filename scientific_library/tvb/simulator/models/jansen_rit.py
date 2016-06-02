@@ -32,7 +32,8 @@ Jansen-Rit and derivative models.
 """
 
 from .base import Model, LOG, numpy, basic, arrays
-
+import math
+from numba import guvectorize, float64
 
 class JansenRit(Model):
     r"""
@@ -266,7 +267,7 @@ class JansenRit(Model):
         LOG.debug('%s: inited.' % repr(self))
 
 
-    def dfun(self, state_variables, coupling, local_coupling=0.0):
+    def _numpy_dfun(self, state_variables, coupling, local_coupling=0.0):
         r"""
         The dynamic equations were taken from [JR_1995]_
 
@@ -328,6 +329,31 @@ class JansenRit(Model):
                 - 2.0 * self.a * y4 - self.a ** 2 * y1,
             self.B * self.b * (self.a_4 * self.J * sigm_y0_3) - 2.0 * self.b * y5 - self.b ** 2 * y2,
         ])
+
+    def dfun(self, y, c, local_coupling=0.0):
+        src =  local_coupling*(y[1] - y[2])[:, 0]
+        y_ = y.reshape(y.shape[:-1]).T
+        c_ = c.reshape(c.shape[:-1]).T
+        deriv = _numba_dfun_jr(y_, c_, src,
+                               self.nu_max, self.r, self.v0, self.a, self.a_1, self.a_2, self.a_3, self.a_4,
+                               self.A, self.b, self.B, self.J, self.mu
+                               )
+        return deriv.T[..., numpy.newaxis]
+
+@guvectorize([(float64[:],) * 17], '(n),(m)' + ',()'*14 + '->(n)', nopython=True)
+def _numba_dfun_jr(y, c,
+                   src,
+                   nu_max, r, v0, a, a_1, a_2, a_3, a_4, A, b, B, J, mu,
+                   dx):
+    sigm_y1_y2 = 2.0 * nu_max[0] / (1.0 + math.exp(r[0] * (v0[0] - (y[1] - y[2]))))
+    sigm_y0_1 = 2.0 * nu_max[0] / (1.0 + math.exp(r[0] * (v0[0] - (a_1[0] * J[0] * y[0]))))
+    sigm_y0_3 = 2.0 * nu_max[0] / (1.0 + math.exp(r[0] * (v0[0] - (a_3[0] * J[0] * y[0]))))
+    dx[0] = y[3]
+    dx[1] = y[4]
+    dx[2] = y[5]
+    dx[3] = A[0] * a[0] * sigm_y1_y2 - 2.0 * a[0] * y[3] - a[0] ** 2 * y[0]
+    dx[4] = A[0] * a[0] * (mu[0] + a_2[0] * J[0] * sigm_y0_1 + c[0] + src[0]) - 2.0 * a[0] * y[4] - a[0] ** 2 * y[1]
+    dx[5] = B[0] * b[0] * (a_4[0] * J[0] * sigm_y0_3) - 2.0 * b[0] * y[5] - b[0] ** 2 * y[2]
 
 
 class ZetterbergJansen(Model):

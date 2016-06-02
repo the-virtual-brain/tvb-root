@@ -32,6 +32,20 @@ Models based on Wong-Wang's work.
 """
 
 from .base import Model, LOG, numpy, basic, arrays
+from numba import guvectorize, float64
+
+@guvectorize([(float64[:],)*11], '(n),(m)' + ',()'*8 + '->(n)', nopython=True)
+def _numba_dfun(S, c, a, b, d, g, ts, w, j, io, dx):
+    "Gufunc for reduced Wong-Wang model equations."
+
+    if S[0] < 0.0:
+        dx[0] = 0.0 - S[0]
+    elif S[0] > 1.0:
+        dx[0] = 1.0 - S[0]
+    else:
+        x = w[0]*j[0]*S[0] + io[0] + j[0]*c[0]
+        h = (a[0]*x - b[0]) / (1 - numpy.exp(-d[0]*(a[0]*x - b[0])))
+        dx[0] = - (S[0] / ts[0]) + (1.0 - S[0]) * h * g[0]
 
 
 class ReducedWongWang(Model):
@@ -171,7 +185,7 @@ class ReducedWongWang(Model):
         self.update_derived_parameters()
 
 
-    def dfun(self, state_variables, coupling, local_coupling=0.0):
+    def _numpy_dfun(self, state_variables, coupling, local_coupling=0.0):
         r"""
         Equations taken from [DPA_2013]_ , page 11242
 
@@ -198,3 +212,9 @@ class ReducedWongWang(Model):
         derivative = numpy.array([dS])
         return derivative
 
+    def dfun(self, x, c, lc=0.0):
+        x_ = x.reshape(x.shape[:-1]).T
+        c_ = c.reshape(c.shape[:-1]).T + lc * x[0]
+        deriv = _numba_dfun(x_, c_, self.a, self.b, self.d, self.gamma,
+                        self.tau_s, self.w, self.J_N, self.I_o)
+        return deriv.T[..., numpy.newaxis]

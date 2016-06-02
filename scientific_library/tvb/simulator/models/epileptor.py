@@ -32,6 +32,40 @@ Hindmarsh-Rose-Jirsa Epileptor model.
 """
 
 from .base import Model, LOG, numpy, basic, arrays
+from numba import guvectorize, float64
+
+@guvectorize([(float64[:],) * 18], '(n),(m)' + ',()'*15 + '->(n)', nopython=True)
+def _numba_dfun(y, c_pop, x0, Iext, Iext2, a, b, slope, tt, Kvf, c, d, r, Ks, Kf, aa, tau, ydot):
+    "Gufunc for Hindmarsh-Rose-Jirsa Epileptor model equations."
+
+    c_pop1 = c_pop[0]
+    c_pop2 = c_pop[1]
+
+    # population 1
+    if y[0] < 0.0:
+        ydot[0] = - a[0] * y[0] ** 2 + b[0] * y[0]
+    else:
+        ydot[0] = slope[0] - y[3] + 0.6 * (y[2] - 4.0) ** 2
+    ydot[0] = tt[0] * (y[1] - y[2] + Iext[0] + Kvf[0] * c_pop1 + ydot[0] * y[0])
+    ydot[1] = tt[0] * (c[0] - d[0] * y[0] ** 2 - y[1])
+
+    # energy
+    if y[2] < 0.0:
+        ydot[2] = - 0.1 * y[2] ** 7
+    else:
+        ydot[2] = 0.0
+    ydot[2] = tt[0] * (r[0] * (4 * (y[0] - x0[0]) - y[2] + ydot[2] + Ks[0] * c_pop1))
+
+    # population 2
+    ydot[3] = tt[0] * (-y[4] + y[3] - y[3] ** 3 + Iext2[0] + 2 * y[5] - 0.3 * (y[2] - 3.5) + Kf[0] * c_pop2)
+    if y[3] < -0.25:
+        ydot[4] = 0.0
+    else:
+        ydot[4] = aa[0] * (y[3] + 0.25)
+    ydot[4] = tt[0] * ((-y[4] + ydot[4]) / tau[0])
+
+    # filter
+    ydot[5] = tt[0] * (-0.01 * (y[5] - 0.1 * y[0]))
 
 
 class Epileptor(Model):
@@ -255,7 +289,7 @@ class Epileptor(Model):
 
         LOG.info("%s: init'ed." % (repr(self),))
 
-    def dfun(self, state_variables, coupling, local_coupling=0.0,
+    def _numpy_dfun(self, state_variables, coupling, local_coupling=0.0,
              array=numpy.array, where=numpy.where, concat=numpy.concatenate):
         r"""
         Computes the derivatives of the state variables of the Epileptor
@@ -326,3 +360,12 @@ class Epileptor(Model):
         ydot[5] = self.tt*(-0.01*(y[5] - 0.1*y[0]))
 
         return ydot
+
+    def dfun(self, x, c, lc=0.0):
+        x_ = x.reshape(x.shape[:-1]).T
+        c_ = c.reshape(c.shape[:-1]).T
+        Iext = self.Iext + lc * x[0, :, 0]
+        deriv = _numba_dfun(x_, c_,
+                         self.x0, Iext, self.Iext2, self.a, self.b, self.slope, self.tt, self.Kvf,
+                         self.c, self.d, self.r, self.Ks, self.Kf, self.aa, self.tau)
+        return deriv.T[..., numpy.newaxis]

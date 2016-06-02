@@ -13,6 +13,8 @@
     * Allen SDK Creator added
     * Reduced Wong-Wang default parameters updated to reflect usage in Hansen et al 2015
     * Coefficients for the Stefanescu-Jirsa 3D model have been corrected
+    * ~5x accelerations for several models (Epileptor, Generic 2D Oscillator, Jansen-Rit, Reduced Wong-Wang)
+
 
 
 ======================================================================================================================================

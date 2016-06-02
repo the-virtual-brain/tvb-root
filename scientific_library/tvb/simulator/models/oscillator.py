@@ -32,6 +32,8 @@ Oscillator models.
 """
 
 from .base import Model, LOG, numpy, basic, arrays, numexpr
+from numba import guvectorize, float64
+
 
 
 class Generic2dOscillator(Model):
@@ -373,7 +375,7 @@ class Generic2dOscillator(Model):
         LOG.debug("%s: inited." % repr(self))
 
 
-    def dfun(self, state_variables, coupling, local_coupling=0.0, ev=numexpr.evaluate):
+    def _numpy_dfun(self, state_variables, coupling, local_coupling=0.0, ev=numexpr.evaluate):
         r"""
         The two state variables :math:`V` and :math:`W` are typically considered
         to represent a function of the neuron's membrane potential, such as the
@@ -423,6 +425,23 @@ class Generic2dOscillator(Model):
 
         return derivative
 
+    def dfun(self, vw, c, local_coupling=0.0):
+        lc_0 = local_coupling * vw[0, :, 0]
+        vw_ = vw.reshape(vw.shape[:-1]).T
+        c_ = c.reshape(c.shape[:-1]).T
+        deriv = _numba_dfun_g2d(vw_, c_, self.tau, self.I, self.a, self.b, self.c, self.d, self.e, self.f, self.g,
+                                self.beta, self.alpha, self.gamma, lc_0)
+        return deriv.T[..., numpy.newaxis]
+
+
+@guvectorize([(float64[:],) * 16], '(n),(m)' + ',()'*13 + '->(n)', nopython=True)
+def _numba_dfun_g2d(vw, c_0, tau, I, a, b, c, d, e, f, g, beta, alpha, gamma, lc_0, dx):
+    "Gufunc for reduced Wong-Wang model equations."
+    V = vw[0]
+    V2 = V * V
+    W = vw[1]
+    dx[0] = d[0] * tau[0] * (alpha[0] * W - f[0] * V2*V + e[0] * V2 + g[0] * V + gamma[0] * I[0] + gamma[0] * c_0[0] + lc_0[0])
+    dx[1] = d[0] * (a[0] + b[0] * V + c[0] * V2 - beta[0] * W) / tau[0]
 
 
 class Kuramoto(Model):
