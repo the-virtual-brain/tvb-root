@@ -254,7 +254,6 @@ function d3Plot(placeHolder, data, options) {
 
 
     d3.select("#Magnify").on("click", function (d) {
-        debugger;
         var activeBrush = d3.select(".brush")
         if (activeBrush.empty() == true) {
             canvas.append("g")
