@@ -76,7 +76,7 @@
 </ul>
 
     <!--! this is what will become visible upon selecting an canvas area for exploration -->
-    <div id="Exploretooltip" class="hidden">
+    <!-- todo tie brush into max and min values, and make slider vertical for step values -->
         <div xmlns:py="http://genshi.edgewall.org/" py:strip="True">
 
             <py:def function="draw_number_component(inputRow, disabled, parentDivId)">
@@ -126,19 +126,33 @@
                                 <td colspan="2" id="${containerDivId}_rangeLabelsTd"></td>
                             </tr>
                         </table>
-                        <p class="field-adapters">
+                        <!-- <p class="field-adapters">
                             <input tabindex='1' type="button" class="ranger-button right-display"
                                    value="Expand Range" id="${containerDivId}_buttonExpand"
                                    title="Toggle Range for current parameter. This will launch multiple simulations!"
                                    onclick="toggleRange('$containerDivId', ${minValue}, ${maxValue}, ${stepValue}, '${inputRow.name}');"/>
-                        </p>
+                        </p> -->
+                        <script type="text/javascript">
+                            $(document).ready(function () {
+                                // this gives us two separate sliderbars to vary, one for x one for y
+                                initRangeComponent('$containerDivId', ${minValue}, ${maxValue}, ${stepValue}, '${inputRow.name}')
+                            })
+                            console.log('$containerDivId loaded')
+                        </script>
                     </py:with>
                 </py:if>
             </py:def>
-            ${draw_number_component({'name':"slider", 'minValue':0, 'maxValue':10,'stepValue':
-            0.001},False,"Exploretooltip")}
         </div>
-
+    <div id="xSteps"><label> X-Param Opts
+        ${draw_number_component({'name':"slider", 'minValue':0, 'maxValue':5,'stepValue':
+        0.001},False,"xSteps")}
+    </label></div>
+    <div id="ySteps">
+        <label>Y-Param Opts
+            <!-- todo figure out how to have both these things visible all the time instead of just after expand is used -->
+            ${draw_number_component({'name':"slider", 'minValue':0, 'maxValue':5,'stepValue':
+            0.001},False,"ySteps")}
+        </label>
     </div>
 
 <input type="hidden" id="datatype-group-gid" value="$dataTypeGroupGID"/>
