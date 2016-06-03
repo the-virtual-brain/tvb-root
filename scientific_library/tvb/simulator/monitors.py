@@ -740,6 +740,8 @@ class Projection(Monitor):
         if hasattr(self, 'sensors'):
             self.sensors.configure()
 
+        # handle region vs simulation, analytic vs numerical proj, cortical vs subcortical.
+
         # setup convenient locals
         surf = simulator.surface
         conn = simulator.connectivity
@@ -764,7 +766,7 @@ class Projection(Monitor):
         if using_cortical_surface:
             sources = {'loc': surf.vertices, 'ori': surf.vertex_normals}
         else:
-            sources = {'loc': conn.centres, 'ori': conn.orientations}
+            sources = {'loc': conn.centres[conn.cortical], 'ori': conn.orientations[conn.cortical]}
 
         # compute analytic if not provided
         if self.projection is None:

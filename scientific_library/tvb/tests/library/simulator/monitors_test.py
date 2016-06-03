@@ -51,6 +51,7 @@ from tvb.tests.library.base_testcase import BaseTestCase
 from tvb.datatypes import connectivity
 from tvb.datatypes.cortex import Cortex
 from tvb.datatypes.region_mapping import RegionMapping
+from tvb.datatypes.sensors import SensorsInternal
 
 
 LOG = get_logger(__name__)
@@ -196,6 +197,24 @@ class SubcorticalProjectionTest(BaseTestCase):
     def tearDown(self):
         # gc sim so multiple test suites don't hog memory
         del self.sim
+
+
+class AllAnalyticWithSubcortical(BaseTestCase):
+    "Test correct gain matrix shape for all analytic with subcortical nodes."
+    def setUp(self):
+        self.sim = simulator.Simulator(
+            connectivity=connectivity.Connectivity.from_file('connectivity_192.zip'),
+            monitors=(monitors.iEEG(
+                sensors=SensorsInternal(load_default=True),
+                region_mapping=RegionMapping.from_file('regionMapping_16k_192.txt')
+            ))
+        ).configure()
+
+    def test_gain_size(self):
+        ieeg = self.sim.monitors[0] # type: SensorsInternal
+        n_sens, n_reg = ieeg.gain.shape
+        self.assertEqual(ieeg.sensors.locations.shape[0], n_sens)
+        self.assertEqual(self.sim.connectivity.number_of_regions, n_reg)
 
 
 class NoSubCorticalProjection(SubcorticalProjectionTest):
