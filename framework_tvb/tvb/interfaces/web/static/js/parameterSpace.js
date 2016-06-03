@@ -267,19 +267,13 @@ function d3Plot(placeHolder, data, options) {
 
     })
 
-    /* I think the tooltip part is going to have to wait. Plus, do I need to start breaking the plot function down again? Section for the creation of tooltips?
 
+    d3.selectAll("circle").on("mouseover", function (d) { // why can't a access the options variable inside this scope?
+        var xVal, yVal;
+        debugger;
 
-     function applyHover() {
-     d3.selectAll("circle").on("mouseover",function (d){ // why can't a access the options variable inside this scope?
-     var xVal, yVal;
-     });
+    });
 
-     d3.selectAll("circle").on("mouseout",function (d){
-
-     })
-     }
-     */
 }
 /*
  * Do a redraw of the plot. Be sure to keep the resizable margin elements as the plot method seems to destroy them.
