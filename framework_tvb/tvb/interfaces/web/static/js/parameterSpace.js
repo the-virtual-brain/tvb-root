@@ -270,7 +270,6 @@ function d3Plot(placeHolder, data, options) {
 
     d3.selectAll("circle").on("mouseover", function (d) { // why can't a access the options variable inside this scope?
         var xVal, yVal;
-        debugger;
 
     });
 
