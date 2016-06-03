@@ -452,13 +452,17 @@ class Simulator(core.Type):
 
         """
 
+        rng = numpy.random
+        if hasattr(self.integrator, 'noise'):
+            rng = self.integrator.noise.random_stream
+
         if initial_conditions is None:
             msg = "%s: Setting default history using model's initial() method."
             LOG.info(msg % str(self))
             n_time, n_svar, n_node, n_mode = self.good_history_shape
             if self.surface is not None:
                 n_node = self.number_of_nodes
-            history = self.model.initial(self.integrator.dt, (n_time, n_svar, n_node, n_mode))
+            history = self.model.initial(self.integrator.dt, (n_time, n_svar, n_node, n_mode), rng)
         else:
             # history should be [timepoints, state_variables, nodes, modes]
             LOG.debug("%s: Received initial conditions as arg." % str(self))
@@ -478,7 +482,7 @@ class Simulator(core.Type):
                     history = initial_conditions[-self.horizon:, :, :, :].copy()
                 else:
                     LOG.debug('initial_conditions too short, padding with model.initial.')
-                    history = self.model.initial(self.integrator.dt, self.history.buffer.shape)
+                    history = self.model.initial(self.integrator.dt, self.history.buffer.shape, rng)
                     shift = self.current_step % self.horizon
                     history = numpy.roll(history, -shift, axis=0)
                     history[:ic_shape[0], :, :, :] = initial_conditions

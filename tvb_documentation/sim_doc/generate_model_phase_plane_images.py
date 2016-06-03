@@ -38,7 +38,7 @@ Usage::
     run generate_model_phase_plane_images.py
 
 .. moduleauthor:: Stuart A. Knock <Stuart@tvb.invalid>
-.. moduleauthor:: Marmaduke Woodman <mw@eml.cc>
+.. moduleauthor:: Marmaduke Woodman <mmwoodman@gmail.com>
 
 """
 
@@ -99,39 +99,20 @@ class TestModel(Type):
                    default = 42)
     int_steps = Integer(label = "integration steps for sample trajectory",
                         default = 2048)
-    
-    def __init__(self, **kwargs):
-        """Use BaseModel passed in through test_factory()"""
-        super(TestModel, self).__init__(**kwargs)
-        
+
     def configure(self):
         super(TestModel, self).configure()
-        
         self.model.configure()
-        
         if self.phase_plane is None:
             self.phase_plane = self.all_state_variable_pairs()
     
-    
-    def __str__(self):
+    def initial(self, history_shape, rng):
         """Use BaseModel passed in through test_factory()"""
-        return self.model.__str__()
-
-        
-    def __repr__(self):
-        """Use BaseModel passed in through test_factory()"""
-        return self.model.__repr__()
-        
-        
-    def initial(self, history_shape):
-        """Use BaseModel passed in through test_factory()"""
-        return self.model.initial(1.0, history_shape)
-
+        return self.model.initial(1.0, history_shape, rng)
         
     def dfun(self, state_variables, coupling, local_coupling=0.0):
         """Use BaseModel passed in through test_factory()"""
         return self.model.dfun(state_variables, coupling, local_coupling=local_coupling)
-
 
     def pplane(self, **kwargs):
         """
@@ -265,16 +246,10 @@ def test_factory(BaseModel, **kwargs):
 
     
     """
-    
-    #SpecificTestModel = TestModel
-    #SpecificTestModel.__bases__ = (BaseModel,)
-    #tester = SpecificTestModel(**kwargs)
+
     tester = TestModel(model = BaseModel(**kwargs))
     tester.configure()
-    tester.model.configure_initial(1.0, (1, tester.model.nvar, 1, tester.model.number_of_modes))
     return tester
-
-
 
 
 if __name__ == '__main__':

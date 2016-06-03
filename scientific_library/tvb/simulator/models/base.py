@@ -64,15 +64,6 @@ class Model(core.Type):
     # editable from the ui in an visual manner
     ui_configurable_parameters = []
 
-    noise = noise_module.Noise(
-        fixed_type=True,  # Can only be Noise in UI, and not a subclass of Noise
-        label="Initial Conditions Noise",
-        default=noise_module.Noise,
-        doc="""A noise source used to provide random initial conditions when
-        no, or insufficient, explicit initial conditions are provided.
-        NOTE: Dispersion is computed based on ``state_variable_range``.""",
-        order=42 ** 42)  # to be displayed last
-
     def __init__(self, **kwargs):
         """
         Initialize the model with parameters as keywords arguments, a sensible
@@ -81,28 +72,13 @@ class Model(core.Type):
         """
         super(Model, self).__init__(**kwargs)
         LOG.debug(str(kwargs))
-
-        # self._state_variables = None
         self._nvar = None
-        self.number_of_modes = 1  # NOTE: Models without modes can ignore this.
+        self.number_of_modes = 1
 
     def configure(self):
-        """  """
+        "Configure base model."
         super(Model, self).configure()
         self.update_derived_parameters()
-
-    def __repr__(self):
-        """ A formal, executable, representation of a Model object. """
-        class_name = self.__class__.__name__
-        traited_kwargs = self.trait.keys()
-        formal = class_name + "(" + "=%s, ".join(traited_kwargs) + "=%s)"
-        return formal % eval("(self." + ", self.".join(traited_kwargs) + ")")
-
-    def __str__(self):
-        """ An informal, human readable, representation of a Model object. """
-        # NOTE: We don't explicitly list kwds cause some models have too many.
-        informal = self.__class__.__name__ + "(**kwargs)"
-        return informal
 
     @property
     def state_variables(self):
@@ -145,25 +121,14 @@ class Model(core.Type):
         """
         pass
 
-    # used by generate_model_phase_plane_images?
-    def configure_initial(self, dt, shape):
-        """Docs..."""
-        # Configure the models noise stream
-        if self.noise.ntau > 0.0:
-            self.noise.configure_coloured(dt, shape)
-        else:
-            # The same applies for truncated rv
-            self.noise.configure_white(dt, shape)
-
-    def initial(self, dt, history_shape):
+    def initial(self, dt, history_shape, rng=numpy.random):
         """Generates uniformly distributed initial conditions,
-        respecting the state variable limits defined by the model."""
-
+        bounded by the state variable limits defined by the model.
+        """
         nt, nvar, nnode, nmode = history_shape
         ic = numpy.empty(history_shape)
         svr = self.state_variable_range
         sv = self.state_variables
-        rng = self.noise.random_stream
         block = nt, nnode, nmode
         for i, (lo, hi) in enumerate([svr[sv[i]] for i in range(nvar)]):
             ic[:, i] = rng.uniform(low=lo, high=hi, size=block)
