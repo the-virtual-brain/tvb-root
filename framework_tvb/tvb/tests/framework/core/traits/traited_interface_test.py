@@ -75,7 +75,7 @@ class TraitedInterfaceTests(unittest.TestCase):
             self.assertTrue(model_attr['name'] is not None)
             self.assertTrue(model_attr['value'] is not None)
             self.assertTrue(model_attr['value'] in model_attr['class'])
-            self.assertTrue(len(model_attr['attributes']) > 3)
+            self.assertTrue(len(model_attr['attributes']) >= 3)
             
         attr = self._get_attr_description(current_dict, 'connectivity')
         self.assertTrue(attr['datatype'])
