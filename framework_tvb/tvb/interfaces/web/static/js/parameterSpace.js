@@ -105,7 +105,6 @@ function _updatePlotPSE(canvasId, xLabels, yLabels, seriesArray, data_info, min_
 
 function d3Plot(placeHolder, data, options) {
 //todo check to see whether there is already a canvas of the d3 variety because then we can just use that if redraw must happen
-
     function createScale(xORy) {
         // should I incorporate some sort of testing for values before actually getting into the function?
         if (xORy === "x") {
@@ -136,13 +135,13 @@ function d3Plot(placeHolder, data, options) {
         }
     }
 
-    function dataToOpt(checkd, xORy) {
+    /*function dataToOpt(checkd, xORy) {
         if (xORy === "x") {
             return options.xaxis.tickFormatter(checkd.data[0][0]);
         } else
             return options.yaxis.tickFormatter(checkd.data[0][1])
 
-    }
+     }*/
 
     function brushed() {
         var extent = brush.extent();
@@ -171,12 +170,14 @@ function d3Plot(placeHolder, data, options) {
             .delay(500)
             .attr({
                 cx: function (d) {
-                    return xScale(dataToOpt(d, "x"))
+                    return xScale(_PSE_plotOptions.xaxis.tickFormatter(d.data[0][0]))
                 },
                 cy: function (d) {
-                    return yScale(dataToOpt(d, "y"));
-                    // return yScale(d.yCen) // why is this placing dots far below the bottom of the pane? Is the canvas dimension off?
+                    return yScale(_PSE_plotOptions.xaxis.tickFormatter(d.data[0][1]))
                 }
+
+                    // return yScale(d.yCen) // why is this placing dots far below the bottom of the pane? Is the canvas dimension off?
+
 
             })
     }
@@ -240,10 +241,10 @@ function d3Plot(placeHolder, data, options) {
                 return d.points.radius * 1.25
             },
             cx: function (d) {
-                return xScale(dataToOpt(d, "x"))
+                return xScale(_PSE_plotOptions.xaxis.tickFormatter(d.data[0][0]))
             },
             cy: function (d) {
-                return yScale(dataToOpt(d, "y"));
+                return yScale(_PSE_plotOptions.yaxis.tickFormatter(d.data[0][1]))
                 // return yScale(d.yCen) // why is this placing dots far below the bottom of the pane? Is the canvas dimension off?
             },
             fill: function (d) {
