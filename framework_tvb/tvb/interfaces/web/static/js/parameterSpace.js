@@ -1,17 +1,17 @@
 /**
- * TheVirtualBrain-Framework Package. This package holds all Data Management, and 
+ * TheVirtualBrain-Framework Package. This package holds all Data Management, and
  * Web-UI helpful to run brain-simulations. To use it, you also need do download
  * TheVirtualBrain-Scientific Package (for simulators). See content of the
  * documentation-folder for more details. See also http://www.thevirtualbrain.org
  *
  * (c) 2012-2013, Baycrest Centre for Geriatric Care ("Baycrest")
  *
- * This program is free software; you can redistribute it and/or modify it under 
+ * This program is free software; you can redistribute it and/or modify it under
  * the terms of the GNU General Public License version 2 as published by the Free
  * Software Foundation. This program is distributed in the hope that it will be
- * useful, but WITHOUT ANY WARRANTY; without even the implied warranty of 
+ * useful, but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU General Public
- * License for more details. You should have received a copy of the GNU General 
+ * License for more details. You should have received a copy of the GNU General
  * Public License along with this program; if not, you can download it here
  * http://www.gnu.org/licenses/old-licenses/gpl-2.0
  *
@@ -21,7 +21,7 @@
 // We keep all-nodes information for current PSE as a global, to have them ready at node-selection, node-overlay.
 var PSE_nodesInfo;
 // Keep Plot-options and MIN/MAx colors for redraw (e.g. at resize).
-var _PSE_plotOptions; 
+var _PSE_plotOptions;
 var _PSE_minColor;
 var _PSE_maxColor;
 var _PSE_plot;
@@ -63,7 +63,7 @@ function _updatePlotPSE(canvasId, xLabels, yLabels, seriesArray, data_info, min_
             min: -1,
             max: xLabels.length,
             tickSize: 1,
-            tickFormatter: function(val) {
+            tickFormatter: function (val) {
                 if (val < 0 || val >= xLabels.length) {
                     return "";
                 }
@@ -75,7 +75,7 @@ function _updatePlotPSE(canvasId, xLabels, yLabels, seriesArray, data_info, min_
             min: -1,
             max: yLabels.length,
             tickSize: 1,
-            tickFormatter: function(val) {
+            tickFormatter: function (val) {
                 if (val < 0 || val >= yLabels.length || yLabels[val] === "_") {
                     return "";
                 }
@@ -92,13 +92,13 @@ function _updatePlotPSE(canvasId, xLabels, yLabels, seriesArray, data_info, min_
 
     //this has been commented out below so that I can see what I have done on the canvas after the above function has ended
     /*_PSE_plot = $.plot($("#" + canvasId), $.parseJSON(seriesArray), $.extend(true, {}, _PSE_plotOptions));
-    changeColors(); // this will need to eventually have the addition of the d3 plot function
-    $(".tickLabel").each(function () {
-        $(this).css("color", "#000000");
-    });
-    //if you want to catch the right mouse click you have to change the flot sources
-    // because it allows you to catch only "plotclick" and "plothover"
-    applyClickEvent(canvasId, backPage);
+     changeColors(); // this will need to eventually have the addition of the d3 plot function
+     $(".tickLabel").each(function () {
+     $(this).css("color", "#000000");
+     });
+     //if you want to catch the right mouse click you have to change the flot sources
+     // because it allows you to catch only "plotclick" and "plothover"
+     applyClickEvent(canvasId, backPage);
      applyHoverEvent(canvasId);*/
 }
 
@@ -286,32 +286,43 @@ function d3Plot(placeHolder, data, options) {
         }
 
         function expBrushStop() { // todo add sliders to the div that shows up
-            var extent = exploreBrush.extent();
             debugger;
-            var explToolTip = d3.select("#ExploreToolTip").style({
-                position: "absolute",
-                left: xScale(extent[1][0]) + _PSE_plotOptions.margins.left + "px", //this is the x cordinate of where the drag ended (assumption here is drags from left to right
-                top: yScale(extent[1][1]) + _PSE_plotOptions.margins.top + 100 + "px",
-                display: "block",
-                'background-color': '#C0C0C0',
-                border: '1px solid #fdd',
-                padding: '2px',
-                opacity: 0.80
-            })
+            if (exploreBrush.empty() == true) {
+                explToolTip.style("display", "none")
+            } else {
+                var extent = exploreBrush.extent();
+                var xRange = Math.abs(extent[0][0] - extent[1][0]),
+                    yRange = Math.abs(extent[0][1] - extent[1][1]);
+                explToolTip.style({
+                    position: "absolute",
+                    left: xScale(extent[1][0]) + _PSE_plotOptions.margins.left + "px", //this is the x cordinate of where the drag ended (assumption here is drags from left to right
+                    top: yScale(extent[1][1]) + _PSE_plotOptions.margins.top + 100 + "px",
+                    display: "block",
+                    'background-color': '#C0C0C0',
+                    border: '1px solid #fdd',
+                    padding: '2px',
+                    opacity: 0.80
+                })
+                d3.select("#xRange").text(xRange)
+                d3.select("#yRange").text(yRange)
+            }
         }
+
+        var explToolTip = d3.select("#ExploreToolTip");
 
         var exploreBrush = d3.svg.brush()
             .x(xScale)
             .y(yScale)
             .on("brush", expBrushMove)
-            .on("brushend", expBrushStop)
+            .on("brushend", expBrushStop);
         if (d3.select(".brush").empty() == true) {
             canvas.append("g")
                 .attr("class", "brush")
                 .call(exploreBrush)
                 .selectAll("rect");
         } else {
-            d3.select(".brush").remove()
+            d3.select(".brush").remove();
+            explToolTip.style("display", "none") // is this redundant with the above tooltip hider?
         }
 
 
@@ -347,7 +358,7 @@ function redrawPlot(plotCanvasId) {
     // todo: mh the selected element is not an ancestor of the second tab!!!
     // thus this redraw call fails, ex on resize
     if (_PSE_plot != null) {
-        _PSE_plot = $.plot($('#'+plotCanvasId)[0], _PSE_plot.getData(), $.extend(true, {}, _PSE_plotOptions));
+        _PSE_plot = $.plot($('#' + plotCanvasId)[0], _PSE_plot.getData(), $.extend(true, {}, _PSE_plotOptions));
     }
 }
 
@@ -356,7 +367,7 @@ function redrawPlot(plotCanvasId) {
  * Fire DataType overlay when clicking on a node in PSE.
  */
 function applyClickEvent(canvasId, backPage) {
-    var currentCanvas = $("#"+canvasId);
+    var currentCanvas = $("#" + canvasId);
     currentCanvas.unbind("plotclick");
     currentCanvas.bind("plotclick", function (event, pos, item) {
         if (item != null) {
@@ -384,9 +395,11 @@ function applyHoverEvent(canvasId) {
                 var tooltipText = ("" + dataInfo["tooltip"]).split("&amp;").join("&").split("&lt;").join("<").split("&gt;").join(">");
 
                 $('<div id="tooltip"> </div>').html(tooltipText
-                    ).css({ position: 'absolute', display: 'none', top: item.pageY + 5, left: item.pageX + 5,
-                           border: '1px solid #fdd', padding: '2px', 'background-color': '#C0C0C0', opacity: 0.80 }
-                    ).appendTo('body').fadeIn(200);
+                ).css({
+                        position: 'absolute', display: 'none', top: item.pageY + 5, left: item.pageX + 5,
+                        border: '1px solid #fdd', padding: '2px', 'background-color': '#C0C0C0', opacity: 0.80
+                    }
+                ).appendTo('body').fadeIn(200);
             }
         } else {
             $("#tooltip").remove();
@@ -408,12 +421,12 @@ function PSEDiscreteInitialize(labelsXJson, labelsYJson, series_array, dataJson,
     min_size = parseFloat(min_size);
     max_size = parseFloat(max_size);
 
-    ColSch_initColorSchemeGUI(min_color, max_color, function(){
+    ColSch_initColorSchemeGUI(min_color, max_color, function () {
         _updatePlotPSE('main_div_pse', labels_x, labels_y, series_array, data, min_color, max_color, backPage);
     });
 
-    function _fmt_lbl(sel, v){
-        $(sel).html( Number.isNaN(v) ? 'not available': toSignificantDigits(v, 3));
+    function _fmt_lbl(sel, v) {
+        $(sel).html(Number.isNaN(v) ? 'not available' : toSignificantDigits(v, 3));
     }
 
     _fmt_lbl('#minColorLabel', min_color);
@@ -421,8 +434,9 @@ function PSEDiscreteInitialize(labelsXJson, labelsYJson, series_array, dataJson,
     _fmt_lbl('#minShapeLabel', min_size);
     _fmt_lbl('#maxShapeLabel', max_size);
 
-    if (Number.isNaN(min_color)){
-        min_color = 0; max_color = 1;
+    if (Number.isNaN(min_color)) {
+        min_color = 0;
+        max_color = 1;
     }
     _updatePlotPSE('main_div_pse', labels_x, labels_y, series_array, data, min_color, max_color, backPage);
 
@@ -432,17 +446,17 @@ function PSEDiscreteInitialize(labelsXJson, labelsYJson, series_array, dataJson,
         /* this canvas is drawn by FLOT library so resizing it directly has no influence;
          * therefore, its parent needs resizing before redrawing;
          * canvas.afterImageExport() is used to bring is back to original size */
-         var canvasDiv = $("#main_div_pse");
-         var oldHeight = canvasDiv.height();
-         var scale = C2I_EXPORT_HEIGHT / oldHeight;
-         canvas.oldStyle = canvasDiv.attr('style');
+        var canvasDiv = $("#main_div_pse");
+        var oldHeight = canvasDiv.height();
+        var scale = C2I_EXPORT_HEIGHT / oldHeight;
+        canvas.oldStyle = canvasDiv.attr('style');
 
-         canvasDiv.css("display", "inline-block");
-         canvasDiv.width(canvasDiv.width() * scale);
-         canvasDiv.height(oldHeight * scale);
-         redrawPlot('main_div_pse');
+        canvasDiv.css("display", "inline-block");
+        canvasDiv.width(canvasDiv.width() * scale);
+        canvasDiv.height(oldHeight * scale);
+        redrawPlot('main_div_pse');
     };
-    canvas.afterImageExport = function() {
+    canvas.afterImageExport = function () {
         // bring it back to original size and redraw
         var canvasDiv = $("#main_div_pse");
         canvasDiv.attr('style', canvas.oldStyle);
@@ -474,7 +488,7 @@ function PSE_mainDraw(parametersCanvasId, backPage, groupGID) {
 
     if (selectedColorMetric != '' && selectedColorMetric != null) {
         url += '/' + selectedColorMetric;
-        if (selectedSizeMetric != ''  && selectedSizeMetric != null) {
+        if (selectedSizeMetric != '' && selectedSizeMetric != null) {
             url += '/' + selectedSizeMetric;
         }
     }
@@ -482,10 +496,10 @@ function PSE_mainDraw(parametersCanvasId, backPage, groupGID) {
     doAjaxCall({
         type: "POST",
         url: url,
-        success: function(r) {
+        success: function (r) {
             $('#' + parametersCanvasId).html(r);
         },
-        error: function() {
+        error: function () {
             displayMessage("Could not refresh with the new metrics.", "errorMessage");
         }
     });
@@ -510,7 +524,7 @@ function changeColors() {
 
 
 /*************************************************************************************************************************
- * 			ISOCLINE PSE BELLOW
+ *            ISOCLINE PSE BELLOW
  *************************************************************************************************************************/
 
 
@@ -551,7 +565,7 @@ function updateMetric(selectComponent) {
     var pseElem = $('#section-pse');
     var width = pseElem.width() - 60;
     var height = pseElem.height() - 90;
-    waitOnConnection(currentFigure, 'resizePlot('+ width +', '+ height +')', 200, 50);
+    waitOnConnection(currentFigure, 'resizePlot(' + width + ', ' + height + ')', 200, 50);
 }
 
 /*
@@ -561,10 +575,10 @@ function showMetric(newMetric) {
     for (var key in figuresDict) {
         $('#' + key).hide()
             .find('canvas').each(function () {
-                if (this.drawForImageExport) {            // remove redrawing method such that only current view is exported
-                    this.drawForImageExport = null;
-                }
-            });
+            if (this.drawForImageExport) {            // remove redrawing method such that only current view is exported
+                this.drawForImageExport = null;
+            }
+        });
     }
     currentFigure = figuresDict[newMetric];
     connect_manager(serverURL, figuresDict[newMetric]);
@@ -594,10 +608,10 @@ function Isocline_MainDraw(groupGID, divId, width, height) {
     doAjaxCall({
         type: "POST",
         url: '/burst/explore/draw_isocline_exploration/' + groupGID + '/' + width + '/' + height,
-        success: function(r) {
+        success: function (r) {
             $('#' + divId).html(r);
         },
-        error: function() {
+        error: function () {
             displayMessage("Could not refresh with the new metrics.", "errorMessage");
         }
     });
