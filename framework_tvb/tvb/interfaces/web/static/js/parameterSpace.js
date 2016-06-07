@@ -192,7 +192,7 @@ function d3Plot(placeHolder, data, options) {
 
     }
 
-    var myBase, canvasDimensions, canvas, xScale, yScale, xRef, yRef, xAxis, yAxis, circles, brush, dotsCanvas, innerHeight, innerWidth;
+    var myBase, canvasDimensions, canvas, xScale, yScale, xRef, yRef, xAxis, yAxis, circles, brush, dotsCanvas, innerHeight, innerWidth, toolTipDiv;
     myBase = d3.select(placeHolder);
     canvasDimensions = {h: parseInt(myBase.style("height")), w: parseInt(myBase.style("width"))};
     innerHeight = canvasDimensions.h - options.margins.top - options.margins.bottom;
@@ -208,6 +208,7 @@ function d3Plot(placeHolder, data, options) {
     yScale = createScale("y");
     xRef = xScale.copy();
     yRef = yScale.copy();
+    toolTipDiv = d3.select(".tooltip");
     xAxis = createAxis("x");
     yAxis = createAxis("y");
     dotsCanvas = canvas.append("svg")
@@ -244,6 +245,7 @@ function d3Plot(placeHolder, data, options) {
 
         });
 
+
     canvas.append("g")
         .attr("id", "xAxis")
         .attr("transform", "translate (0," + (innerHeight) + ")")
@@ -272,9 +274,25 @@ function d3Plot(placeHolder, data, options) {
 
 
     d3.selectAll("circle").on("mouseover", function (d) { // why can't a access the options variable inside this scope?
-        var xVal, yVal;
-
-    });
+        var nodeInfo = PSE_nodesInfo[d.data[0][0]][d.data[0][1]];
+        var toolTipText = nodeInfo.tooltip.split("&amp;").join("&").split("&lt;").join("<").split("&gt;").join(">");
+        toolTipDiv.html(toolTipText);
+        toolTipDiv.style({
+            position: "absolute",
+            left: (d3.event.pageX) + "px",
+            top: (d3.event.pageY - 100) + "px",
+            display: "block",
+            'background-color': '#C0C0C0',
+            border: '1px solid #fdd',
+            padding: '2px',
+            opacity: 0.80
+        })
+    })
+        .on("mouseout", function (d) {
+            toolTipDiv.transition()
+                .duration(300)
+                .style("display", "none")
+        })
 
 }
 /*
