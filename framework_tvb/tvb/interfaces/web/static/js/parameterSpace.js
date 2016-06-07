@@ -222,7 +222,7 @@ function d3Plot(placeHolder, data, options) {
             width: innerWidth
         });
 
-    brush = d3.svg.brush()
+    brush = d3.svg.brush() // todo either figure out how to generalize the brush or tuck it into the magnify function
         .x(xScale)
         .y(yScale)
         .on("brush", brushed)
@@ -277,6 +277,43 @@ function d3Plot(placeHolder, data, options) {
             activeBrush.remove()
         }
         //.attr("height", canvasDimensions.h - (options.margins.top + options.margins.bottom))
+
+    });
+
+    d3.select("#Explore").on("click", function () { //todo make sure to add a x button in the corner of the overlay so that it can be closed without exiting the explore tool
+        function expBrushMove() {
+            // var xRange
+        }
+
+        function expBrushStop() { // todo add sliders to the div that shows up
+            var extent = exploreBrush.extent();
+            debugger;
+            var explToolTip = d3.select("#ExploreToolTip").style({
+                position: "absolute",
+                left: xScale(extent[1][0]) + _PSE_plotOptions.margins.left + "px", //this is the x cordinate of where the drag ended (assumption here is drags from left to right
+                top: yScale(extent[1][1]) + _PSE_plotOptions.margins.top + 100 + "px",
+                display: "block",
+                'background-color': '#C0C0C0',
+                border: '1px solid #fdd',
+                padding: '2px',
+                opacity: 0.80
+            })
+        }
+
+        var exploreBrush = d3.svg.brush()
+            .x(xScale)
+            .y(yScale)
+            .on("brush", expBrushMove)
+            .on("brushend", expBrushStop)
+        if (d3.select(".brush").empty() == true) {
+            canvas.append("g")
+                .attr("class", "brush")
+                .call(exploreBrush)
+                .selectAll("rect");
+        } else {
+            d3.select(".brush").remove()
+        }
+
 
     });
 
