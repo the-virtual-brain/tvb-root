@@ -105,7 +105,7 @@ function _updatePlotPSE(canvasId, xLabels, yLabels, seriesArray, data_info, min_
 
 function d3Plot(placeHolder, data, options) {
 //todo check to see whether there is already a canvas of the d3 variety because then we can just use that if redraw must happen
-//todo remove the options parameter and just use the globel PSE_plot_options
+
     function createScale(xORy) {
         // should I incorporate some sort of testing for values before actually getting into the function?
         if (xORy === "x") {
@@ -122,17 +122,15 @@ function d3Plot(placeHolder, data, options) {
     }
 
     function createAxis(xORy) {
-        if (xORy === "x") { //todo fix the behavior back to numbers that stay tied to the area of the axis line
+        if (xORy === "x") { // should I be creating the whole axis inside here, or should I simply return the axis that has the parts to be customized and called later
             newAxis = d3.svg.axis().scale(xScale)
                 .orient("bottom")
-                .tickValues(_PSE_plotOptions.xaxis.labels)
-                .ticks(options.xaxis.max)
+                .ticks(options.xaxis.max);
             return newAxis
         }
         else {
             newAxis = d3.svg.axis().scale(yScale)
                 .orient("left")
-                .tickValues(_PSE_plotOptions.yaxis.labels)
                 .ticks(options.yaxis.max);
             return newAxis
         }
@@ -194,8 +192,8 @@ function d3Plot(placeHolder, data, options) {
 
     }
 
-    var myBase, canvasDimensions, canvas, xScale, yScale, xRef, yRef, xAxis, yAxis, circles, brush, dotsCanvas,
-        innerHeight, innerWidth, toolTipDiv, colScale;
+    var myBase, canvasDimensions, canvas, xScale, yScale, xRef, yRef, xAxis, yAxis, circles, brush,
+        colScale, dotsCanvas, innerHeight, innerWidth, toolTipDiv;
     myBase = d3.select(placeHolder);
     canvasDimensions = {h: parseInt(myBase.style("height")), w: parseInt(myBase.style("width"))};
     innerHeight = canvasDimensions.h - options.margins.top - options.margins.bottom;
@@ -231,6 +229,11 @@ function d3Plot(placeHolder, data, options) {
         .on("brushend", brushend);
 
 
+    /*canvas.append("rect") // todo make this only a border
+     .attr({
+     width: innerWidth,
+     height: innerHeight
+     });*/
     circles = dotsCanvas.selectAll("circle").data(data).enter().append("circle")
         .attr({
             r: function (d) {
@@ -263,7 +266,6 @@ function d3Plot(placeHolder, data, options) {
     //todo again visual grid stuff. How should I go about making the grid fit the canvas better?
 
 
-    //this is the code that changes the behavior for the canvas allowing users to zoom in on areas
     d3.select("#Magnify").on("click", function (d) {
         var activeBrush = d3.select(".brush");
         if (activeBrush.empty() == true) {
@@ -274,15 +276,12 @@ function d3Plot(placeHolder, data, options) {
         } else {
             activeBrush.remove()
         }
+        //.attr("height", canvasDimensions.h - (options.margins.top + options.margins.bottom))
 
     });
 
-    d3.select("#Explore").on("click", function () {
 
-    })
-
-
-    d3.selectAll("circle").on("mouseover", function (d) {
+    d3.selectAll("circle").on("mouseover", function (d) { // why can't a access the options variable inside this scope?
         var nodeInfo = PSE_nodesInfo[d.data[0][0]][d.data[0][1]];
         var toolTipText = nodeInfo.tooltip.split("&amp;").join("&").split("&lt;").join("<").split("&gt;").join(">");
         toolTipDiv.html(toolTipText);
@@ -299,9 +298,9 @@ function d3Plot(placeHolder, data, options) {
     })
         .on("mouseout", function (d) {
             toolTipDiv.transition()
+                .duration(300)
                 .style("display", "none")
         })
-
 
 }
 /*
