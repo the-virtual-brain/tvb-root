@@ -54,9 +54,9 @@ function _updatePlotPSE(canvasId, xLabels, yLabels, seriesArray, data_info, min_
         },
         margins: { // is this the correct way to be doing margins? It's just how I have in the past,
             top: 20,
-            bottom: 60,
-            left: 70,
-            right: 20
+            bottom: 40,
+            left: 40,
+            right: 50
         },
         xaxis: {
             labels: xLabels, // is there a better way to get access to these values inside my plotting?
@@ -111,12 +111,12 @@ function d3Plot(placeHolder, data, options) {
         if (xORy === "x") {
             var newScale = d3.scale.linear()
                 .domain(d3.extent(options.xaxis.labels))
-                .range([options.margins.left, canvasDimensions.w - options.margins.right]);
+                .range([options.margins.left, innerWidth - options.margins.right]);
             return newScale
         } else {
             newScale = d3.scale.linear()
                 .domain(d3.extent(options.yaxis.labels))
-                .range([canvasDimensions.h - (options.margins.bottom), options.margins.top]);
+                .range([innerHeight - (options.margins.bottom), options.margins.top]);
             return newScale
         }
     }
@@ -192,21 +192,44 @@ function d3Plot(placeHolder, data, options) {
 
     }
 
-    var myBase, canvasDimensions, canvas, xScale, yScale, xRef, yRef, xAxis, yAxis, circles, brush;
+    var myBase, canvasDimensions, canvas, xScale, yScale, xRef, yRef, xAxis, yAxis, circles, brush, dotsCanvas, innerHeight, innerWidth;
     myBase = d3.select(placeHolder);
     canvasDimensions = {h: parseInt(myBase.style("height")), w: parseInt(myBase.style("width"))};
+    innerHeight = canvasDimensions.h - options.margins.top - options.margins.bottom;
+    innerWidth = canvasDimensions.w - options.margins.left - options.margins.right;
     canvas = myBase.append("svg") //todo must make plottable canvas be inbetween axes, otherwise zoom adjusted circles can be seen outside of rational graphing area
         .attr({
             height: canvasDimensions.h,
             width: canvasDimensions.w
-        });
+        })
+        .append("g")
+        .attr("transform", "translate( " + options.margins.left + "," + options.margins.top + " )");
     xScale = createScale("x");
     yScale = createScale("y");
     xRef = xScale.copy();
     yRef = yScale.copy();
     xAxis = createAxis("x");
     yAxis = createAxis("y");
-    circles = canvas.selectAll("circle").data(data).enter().append("circle")
+    dotsCanvas = canvas.append("svg")
+        .classed("dotsCanvas", true)
+        .attr({
+            height: innerHeight,
+            width: innerWidth
+        });
+
+    brush = d3.svg.brush()
+        .x(xScale)
+        .y(yScale)
+        .on("brush", brushed)
+        .on("brushend", brushend);
+
+
+    /*canvas.append("rect") // todo make this only a border
+     .attr({
+     width: innerWidth,
+     height: innerHeight
+     });*/
+    circles = dotsCanvas.selectAll("circle").data(data).enter().append("circle")
         .attr({
             r: function (d) {
                 return d.points.radius * 1.25
@@ -220,41 +243,21 @@ function d3Plot(placeHolder, data, options) {
             }
 
         });
-    brush = d3.svg.brush()
-        .x(xScale)
-        .y(yScale)
-        .on("brush", brushed)
-        .on("brushend", brushend);
-
 
     canvas.append("g")
         .attr("id", "xAxis")
-        .attr("transform", "translate (0," + (canvasDimensions.h - 35) + ")")
+        .attr("transform", "translate (0," + (innerHeight) + ")")
         .call(xAxis);
     canvas.append("g")
         .attr("id", "yAxis")
-        .attr("transform", "translate (" + (options.margins.left - 20) + ",0)")
+        .attr("transform", "translate (0,0)")
         .call(yAxis);
     // this is now the area that should allow for drawing the lines of the grid
-    canvas.append("g") //todo ask about the css that needs to be added here so that the grid lines show up.
-        .attr("id", "x-grid")
-        .attr("transform", "translate(15," + (canvasDimensions.h - 35) + ")") //figure out a way to make sure that the lines land on the dots
-        .style("stroke", "black")
-        .call(createAxis("x")
-            .tickSize(-canvasDimensions.h, 0, 0)
-            .tickFormat(""));
-    canvas.append("g") //todo ask about the css that needs to be added here so that the grid lines show up.
-        .attr("id", "y-grid")
-        .attr("transform", "translate (" + (options.margins.left - 20) + ",15)") //figure out a way to make sure that the lines land on the dots
-        .style("stroke", "black")
-        .call(createAxis("y")
-            .tickSize(-canvasDimensions.w, 0, 0)
-            .tickFormat(""));
     //todo again visual grid stuff. How should I go about making the grid fit the canvas better?
 
 
     d3.select("#Magnify").on("click", function (d) {
-        var activeBrush = d3.select(".brush")
+        var activeBrush = d3.select(".brush");
         if (activeBrush.empty() == true) {
             canvas.append("g")
                 .attr("class", "brush")
@@ -265,7 +268,7 @@ function d3Plot(placeHolder, data, options) {
         }
     //.attr("height", canvasDimensions.h - (options.margins.top + options.margins.bottom))
 
-    })
+    });
 
 
     d3.selectAll("circle").on("mouseover", function (d) { // why can't a access the options variable inside this scope?
