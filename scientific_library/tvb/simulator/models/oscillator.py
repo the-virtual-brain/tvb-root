@@ -347,16 +347,14 @@ class Generic2dOscillator(Model):
     #        order = 7)
 
     variables_of_interest = basic.Enumerate(
-        label="Variables watched by Monitors",
-        options=["V", "W"],
+        label="Variables or quantities available to Monitors",
+        options=["V", "W", "V + W", "V - W"],
         default=["V", ],
         select_multiple=True,
-        doc="""This represents the default state-variables of this Model to be
-                                        monitored. It can be overridden for each Monitor if desired. The
-                                        corresponding state-variable indices for this model are :math:`V = 0`
-                                        and :math:`W = 1`.""",
+        doc="The quantities of interest for monitoring for the generic 2D oscillator.",
         order=12)
 
+    state_variables = ['V', 'W']
 
     def __init__(self, **kwargs):
         """
@@ -373,7 +371,6 @@ class Generic2dOscillator(Model):
         self.cvar = numpy.array([0], dtype=numpy.int32)
 
         LOG.debug("%s: inited." % repr(self))
-
 
     def _numpy_dfun(self, state_variables, coupling, local_coupling=0.0, ev=numexpr.evaluate):
         r"""
@@ -508,7 +505,7 @@ class Kuramoto(Model):
                             is not necessary to change the default here.""",
         order=7)
 
-
+    state_variables = ['theta']
 
     def __init__(self, **kwargs):
         """

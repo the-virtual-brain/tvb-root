@@ -155,6 +155,8 @@ class ReducedWongWang(Model):
         doc="""default state variables to be monitored""",
         order=10)
 
+    state_variables = ['S']
+
     #    variables_of_interest = arrays.IntegerArray(
     #        label="Variables watched by Monitors",
     #        range=basic.Range(lo=0.0, hi=1.0, step=1.0),

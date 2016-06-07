@@ -184,6 +184,8 @@ class ReducedSetFitzHughNagumo(Model):
                                     :math:`\eta = 1`, :math:`\alpha = 2`, and :math:`\beta= 3`.""",
         order=10)
 
+    state_variables = 'xi eta alpha beta'.split()
+
     #    number_of_modes = Integer(
     #        order = -1, #-1 => don't show me as a configurable option in the UI...
     #        label = "Number of modes",
@@ -549,6 +551,8 @@ class ReducedSetHindmarshRose(Model):
                 :math:`\eta = 1`, :math:`\tau = 2`, :math:`\alpha = 3`,
                 :math:`\beta = 4`, and :math:`\gamma = 5`""",
         order=14)
+
+    state_variables = 'xi eta tau alpha beta gamma'.split()
 
     #    variables_of_interest = arrays.IntegerArray(
     #        label = "Variables watched by Monitors",

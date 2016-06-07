@@ -335,7 +335,7 @@ class WilsonCowan(Model):
 
     variables_of_interest = basic.Enumerate(
         label="Variables watched by Monitors",
-        options=["E", "I"],
+        options=["E", "I", "E + I", "E - I"],
         default=["E"],
         select_multiple=True,
         doc="""This represents the default state-variables of this Model to be
@@ -343,6 +343,8 @@ class WilsonCowan(Model):
                corresponding state-variable indices for this model are :math:`E = 0`
                and :math:`I = 1`.""",
         order=24)
+
+    state_variables = 'E I'.split()
 
     #    coupling_variables = arrays.IntegerArray(
     #        label = "Variables to couple activity through",

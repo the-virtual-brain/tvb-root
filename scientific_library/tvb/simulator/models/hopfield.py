@@ -140,6 +140,8 @@ class Hopfield(Model):
             history, it is also provides the default range of phase-plane plots.""",
         order=5)
 
+    state_variables = ['x', 'theta']
+
     def __init__(self, **kwargs):
         """Initialize the Hopfield model's traited attributes, any provided as
         keywords will overide their traited default.

@@ -42,7 +42,7 @@ if __name__ == "__main__":
 import unittest
 from tvb.simulator import models
 from tvb.tests.library.base_testcase import BaseTestCase
-
+import numpy
 
 
 class ModelsTest(BaseTestCase):
@@ -58,6 +58,7 @@ class ModelsTest(BaseTestCase):
 
     def _validate_initialization(self, model, expected_sv, expected_models=1):
 
+        model.configure()
         dt = 2 ** -4
         history_shape = (1, model._nvar, 1, model.number_of_modes)
         model_ic = model.initial(dt, history_shape)
@@ -70,6 +71,10 @@ class ModelsTest(BaseTestCase):
             for val in model_ic[:, i, :].flatten():
                 self.assertTrue(lo < val < hi)
 
+        state = numpy.zeros((expected_sv, 10, model.number_of_modes))
+        obser = model.observe(state)
+        self.assertEqual((len(model.variables_of_interest), 10, model.number_of_modes), obser.shape)
+        return state, obser
 
     def test_wilson_cowan(self):
         """
@@ -106,8 +111,16 @@ class ModelsTest(BaseTestCase):
 
         """
         model = models.Generic2dOscillator()
-        self._validate_initialization(model, 2)
+        state, obser = self._validate_initialization(model, 2)
+        numpy.testing.assert_allclose(obser[0], state[0])
 
+    def test_g2d_voi(self):
+        model = models.Generic2dOscillator(
+            variables_of_interest = ['W', 'W - V']
+        )
+        (V, W), (voi_W, voi_WmV) = self._validate_initialization(model, 2)
+        numpy.testing.assert_allclose(voi_W, W)
+        numpy.testing.assert_allclose(voi_WmV, W - V)
 
     def test_jansen_rit(self):
         """

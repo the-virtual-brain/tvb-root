@@ -122,37 +122,6 @@ class Coupling(core.Type):
     """
     _base_classes = ["Coupling"]
 
-    def __init__(self, **kwargs):
-        """
-        Initialize the model with parameters as keywords arguments, a sensible
-        default parameter set should be provided via the trait mechanism.
-
-        """
-        super(Coupling, self).__init__(**kwargs)
-        LOG.debug(str(kwargs))
-
-
-    def configure(self):
-        """  """
-        super(Coupling, self).configure()
-
-
-    def __repr__(self):
-        """A formal, executable, representation of a Coupling object."""
-        class_name = self.__class__.__name__
-        traited_kwargs = self.trait.keys()
-        formal = class_name + "(" + "=%s, ".join(traited_kwargs) + "=%s)"
-        return formal % eval("(self." + ", self.".join(traited_kwargs) + ")")
-
-
-    def __str__(self):
-        """An informal, human readable, representation of a Coupling object."""
-        class_name = self.__class__.__name__
-        traited_kwargs = self.trait.keys()
-        informal = class_name + "(" + ", ".join(traited_kwargs) + ")"
-        return informal
-
-
     def __call__(self, g_ij, x_i, x_j):
         x_i = x_i[numpy.newaxis].transpose((2, 1, 0, 3)) # (to, ncv, from, m)
         pre = self.pre(x_i, x_j)

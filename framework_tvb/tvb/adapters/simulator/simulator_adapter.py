@@ -279,8 +279,8 @@ class SimulatorAdapter(ABCAsynchronous):
                 ts.labels_dimensions[state_variable_dimension_name] = ts.user_tag_1.split(';')
 
             elif m_name in self.HAVE_STATE_VARIABLES:
-                selected_state_vars = [self.algorithm.model.state_variables[idx] for idx in monitor.voi]
-                ts.labels_dimensions[state_variable_dimension_name] = selected_state_vars
+                selected_vois = [self.algorithm.model.variables_of_interest[idx] for idx in monitor.voi]
+                ts.labels_dimensions[state_variable_dimension_name] = selected_vois
 
             ts.start_time = start_time
             result_datatypes[m_name] = ts

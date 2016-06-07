@@ -66,6 +66,7 @@ class Sum(Model):
     _nvar = 1
     state_variable_range = {'x': [0, 100]}
     variables_of_interest = basic.Enumerate(default=['x'], options=['x'])
+    state_variables = ['x']
     cvar = numpy.array([0])
 
     def dfun(self, X, coupling, local_coupling=0):

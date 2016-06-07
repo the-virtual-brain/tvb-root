@@ -236,6 +236,7 @@ class JansenRit(Model):
     #        :math:`y5 = 5`""",
     #        order = 17)
 
+    state_variables = 'y0 y1 y2 y3 y4 y5'.split()
 
     def __init__(self, **kwargs):
         """
@@ -563,6 +564,7 @@ class ZetterbergJansen(Model):
                                     :math:`v_5 = 5`""",
         order=42)
 
+    state_variables = 'v1 y1 v2 y2 v3 y3 v4 y4 v5 y5 v6 v7'.split()
 
     def __init__(self, **kwargs):
         """

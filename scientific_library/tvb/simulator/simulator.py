@@ -395,7 +395,8 @@ class Simulator(core.Type):
         self.history.update(step, state)
 
     def _loop_monitor_output(self, step, state):
-        output = [monitor.record(step, state) for monitor in self.monitors]
+        observed = self.model.observe(state)
+        output = [monitor.record(step, observed) for monitor in self.monitors]
         if any(outputi is not None for outputi in output):
             return output
 

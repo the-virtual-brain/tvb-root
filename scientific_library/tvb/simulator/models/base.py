@@ -64,6 +64,9 @@ class Model(core.Type):
     # editable from the ui in an visual manner
     ui_configurable_parameters = []
 
+    state_variables = []
+    variables_of_interest = []
+
     def __init__(self, **kwargs):
         """
         Initialize the model with parameters as keywords arguments, a sensible
@@ -75,15 +78,28 @@ class Model(core.Type):
         self._nvar = None
         self.number_of_modes = 1
 
+    def _build_observer(self):
+        template = ("def observe(state):\n"
+                            "    {svars} = state\n"
+                            "    return numpy.array([{voi_names}])")
+        svars = ','.join(self.state_variables)
+        if len(self.state_variables) == 1:
+            svars += ','
+        code = template.format(
+            svars = svars,
+            voi_names = ','.join(self.variables_of_interest)
+        )
+        namespace = {'numpy': numpy}
+        LOG.debug('building observer with code:\n%s', code)
+        exec code in namespace
+        self.observe = namespace['observe']
+        self.observe.code = code
+
     def configure(self):
         "Configure base model."
         super(Model, self).configure()
         self.update_derived_parameters()
-
-    @property
-    def state_variables(self):
-        """ A list of the state variables in this model. """
-        return self.trait['variables_of_interest'].trait.options
+        self._build_observer()
 
     @property
     def nvar(self):

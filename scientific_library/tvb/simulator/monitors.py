@@ -208,8 +208,7 @@ class Monitor(core.Type):
     """
 
     # list of class names not shown in UI
-    _base_classes = ['Monitor', 'BoldMultithreaded', 'BalloonWindkesselAccordingToKJFristonEtAl2003NeuroImage',
-                     'Projection', 'ProgressLogger']
+    _base_classes = ['Monitor', 'Projection', 'ProgressLogger']
 
     period = basic.Float(
         label = "Sampling period (ms)",
@@ -220,11 +219,11 @@ class Monitor(core.Type):
 
     variables_of_interest = arrays.IntegerArray(
         label = "Model variables to watch",
-        doc = """This can be used to override, for each Monitor, the default 
-        monitored state-variables. NOTE: Any specified indices must be consistent 
-        with the Model being monitored. By default, if left unspecified, this will
-        be set based on the variables_of_interest attribute on the Model.""",
-        order = -1)
+        doc = ("Indices of model's variables of interest (VOI) that this monitor should record. "
+               "Note that the indices should start at zero, so that if a model offers VOIs V, W and "
+               "V+W, and W is selected, and this monitor should record W, then the correct index is 0.")
+        #order = -1
+    )
 
     pre_expr = basic.String(
         label="Pre-monitor expression(s)",
@@ -236,7 +235,8 @@ class Monitor(core.Type):
             "reductions (sum, prod) are not available. If no set of expressions are "
             "given, then the model's variables of interest are used. For example, the dipole moment prior "
             "to applying an EEG gain matrix for the generic 2D oscillator might use the expression "
-            "`1e-6 * (V + W / 2)`."
+            "`1e-6 * (V + W / 2)`.",
+        order=-1
     )
 
     post_expr = basic.String(
@@ -248,7 +248,8 @@ class Monitor(core.Type):
             "if provided. Expressions must be standard NumPy syntax or using functions from numpy, and "
             "reductions (sum, prod) are not available. If no expressions are given "
             "then the result of the monitor's observation model results. For example, the sine of squaring the"
-            " result of a monitor's observation model is achieved which the expression `sin(mon**2)`"
+            " result of a monitor's observation model is achieved which the expression `sin(mon**2)`",
+        order=-1
     )
 
     def __init__(self,  **kwargs):
@@ -265,20 +266,6 @@ class Monitor(core.Type):
         self.dt = None  #Integration time-step in "physical" units.
         self.voi = None
         self._stock = numpy.array([], dtype=numpy.float64)
-
-    def __repr__(self):
-        """A formal, executable, representation of a Monitor object."""
-        class_name = self.__class__.__name__
-        traited_kwargs = self.trait.keys()
-        formal = class_name + "(" + "=%s, ".join(traited_kwargs) + "=%s)"
-        return formal % eval("(self." + ", self.".join(traited_kwargs) + ")")
-
-    def __str__(self):
-        """An informal, 'human readable', representation of a Monitor object."""
-        class_name = self.__class__.__name__ 
-        traited_kwargs = self.trait.keys()
-        informal = class_name + "(" + ", ".join(traited_kwargs) + ")"
-        return informal
 
     def config_for_sim(self, simulator):
         """
@@ -297,30 +284,32 @@ class Monitor(core.Type):
         self.istep = iround(self.period / self.dt)
         LOG.info("%s: istep of monitor is %d" % (str(self), self.istep))
 
-        svars = [sv['value'] for sv in simulator.model.trait['variables_of_interest'].interface['options']]
+        svars = simulator.model.state_variables
 
-        # handle transforms, "expressions of interest"
-        if self.pre_expr or self.post_expr:
-            pre, post = self.pre_expr, self.post_expr
-        else:
-            # TODO convert voi to pre expr
-            if self.variables_of_interest.size == 0:
-                self.voi = numpy.array([simulator.model.state_variables.index(var)
-                                        for var in simulator.model.variables_of_interest])
+        if False: # xfm branch to remove
+            # handle transforms, "expressions of interest"
+            if self.pre_expr or self.post_expr:
+                pre, post = self.pre_expr, self.post_expr
             else:
-                self.voi = self.variables_of_interest
-            pre = ';'.join([svar for i, svar in enumerate(svars) if i in self.voi])
-            post = ''
+                # TODO convert voi to pre expr
+                if self.variables_of_interest.size == 0:
+                    self.voi = numpy.array([simulator.model.state_variables.index(var)
+                                            for var in simulator.model.variables_of_interest])
+                else:
+                    self.voi = self.variables_of_interest
+                pre = ';'.join([svar for i, svar in enumerate(svars) if i in self.voi])
+                post = ''
 
-        self._transforms = mt = MonitorTransforms(pre, post, svars)
-        self.voi = numpy.r_[:len(mt.pre)]
-        LOG.info('%r - pre %r, post %r, svars %r', self, mt.pre, mt.post, svars)
+            self._transforms = mt = MonitorTransforms(pre, post, svars)
+            self.voi = numpy.r_[:len(mt.pre)]
+            LOG.info('%r - pre %r, post %r, svars %r', self, mt.pre, mt.post, svars)
 
-        dbg_voi = numpy.array([0, 3])
-        if type(self) in (TemporalAverage, ) and self.voi.shape == dbg_voi.shape and numpy.allclose(self.voi, dbg_voi):
-            pass
+        else:
+            self.voi = self.variables_of_interest
+            if self.voi is None or self.voi.size == 0:
+                self.voi = numpy.r_[:len(simulator.model.variables_of_interest)]
 
-    def record(self, step, state):
+    def record(self, step, observed):
         """
         This is a final method called by the simulator to obtain samples from a
         monitor instance. Monitor subclasses should not override this method, but
@@ -328,10 +317,13 @@ class Monitor(core.Type):
 
         """
 
-        mt = self._transforms
-        sample = self.sample(step, mt.apply_pre(state))
-        if sample is not None:
-            return mt.apply_post(sample)
+        if False: # xfm branch to be removed
+            mt = self._transforms
+            sample = self.sample(step, mt.apply_pre(observed))
+            if sample is not None:
+                return mt.apply_post(sample)
+        else:
+            return self.sample(step, observed)
 
     def sample(self, step, state):
         """
@@ -422,7 +414,7 @@ class Raw(Monitor):
         self.period = simulator.integrator.dt #Needed for Monitor consistency
 
         # state-variables to monitor
-        self.voi = numpy.arange(simulator.model.nvar)
+        self.voi = numpy.arange(len(simulator.model.variables_of_interest))
         LOG.info("%s: variable of interest is %s"%(str(self), str(self.voi)))
 
         # monitor period in integration steps
@@ -618,7 +610,6 @@ class GlobalAverage(Monitor):
         super(GlobalAverage, self).__init__(**kwargs)
         LOG.debug("%s: inited." % repr(self))
 
-
     def sample(self, step, state):
         """Records if integration step corresponds to sampling period."""
         if step % self.istep == 0:
@@ -641,14 +632,6 @@ class TemporalAverage(Monitor):
 
     """
     _ui_name = "Temporal average"
-
-
-    def __init__(self, **kwargs):
-        """Initialise a TemporalAverage monitor from the base Monitor class."""
-        LOG.info("%s: initing..." % str(self))
-        super(TemporalAverage, self).__init__(**kwargs)
-        LOG.debug("%s: inited." % repr(self))
-
 
     def config_for_sim(self, simulator):
         """
@@ -792,7 +775,7 @@ class Projection(Monitor):
         self.gain[~nan_mask] = 0.0
 
         # attrs used for recording
-        self._state = numpy.zeros((self.gain.shape[0], len(self._transforms.pre)))
+        self._state = numpy.zeros((self.gain.shape[0], len(self.voi)))
         self._period_in_steps = int(self.period / self.dt)
 
     def sample(self, step, state):
@@ -1255,116 +1238,8 @@ class BoldRegionROI(Bold):
             return None
 
 
-class BalloonWindkesselAccordingToKJFristonEtAl2003NeuroImage(Monitor):
-    """
-
-    The full Balloon-Windkessel model, following Friston et al's paper
-    detailing the equations describing hemodynamic state. 
-
-    Currently, this monitor models the BOLD activity of the nodes of the
-    simulation, not voxels. 
-
-    .. [F_2003] Friston, K., Harrison, L., and Penny, W., *Dynamic causal
-        modeling*, NeuroImage, 19, 1273 - 1302, 2003.
-
-    """
-    _ui_name = "Balloon-Windkessel"
-
-    class config:
-
-        period = basic.Float(
-            label = "Sampling period (ms)",
-            default = 1000.0,
-            doc = """Sampling period of the Balloon""")
-
-        nvcvar = basic.Integer(
-            label = "Neurovascular coupling variable index",
-            default = 0,
-            doc = ""
-            )
-
-        #                                   prior mean          prior variance
-
-        kappa = basic.Float(
-            label="",
-            default=                        0.65, # per/s       0.015
-            doc="Rate of signal decay"
-            )
-
-        gamma = basic.Float(
-            label="",
-            default=                        0.41, # per/s       0.002
-            doc="Rate of flow-dependent elimination"
-            )
-
-        tau = basic.Float(
-            label="",
-            default=                        0.98, # s           0.0568
-            doc="Haemodynamic transit time"
-            )
-
-        alpha = basic.Float(
-            label="",
-            default=                        0.32, #             0.0015
-            doc="Grubb's exponent"
-            )
-
-        rho = basic.Float(
-            label="",
-            default=                        0.34, #             0.0024
-            doc="Resting oxygen extraction fraction"
-            )
-
-    """
-    class state:
-
-        z_i = FloatArray()
-        s_i = FloatArray()
-        f_i = FloatArray()
-        v_i = FloatArray()
-        q_i = FloatArray()
-        y_i = FloatArray()
-
-    class ddt:
-        pass
-
-    """
-        
-    def __init__(self, *args, **kwds):
-        raise NotImplementedError
-    
-    def sample(self, step, state):
-        """
-        Returns a result if integration step corresponds to sampling period.
-        Updates the interim-stock on every step and updates the stock if the 
-        step corresponds to the interim period.
-
-        """
-        #Update the interim-stock at every step
-        self._interim_stock[((step % self._interim_istep) - 1), :] = state[self.voi, :]
-
-        #At stock's period update it with the temporal average of interim-stock
-        if step % self._interim_istep == 0:
-            #import pdb; pdb.set_trace()
-            avg_interim_stock = numpy.mean(self._interim_stock, axis=0)
-            self._stock[((step/self._interim_istep % self._stock_steps) - 1), :] = avg_interim_stock
-
-        #At the monitor's period, apply the heamodynamic response function to
-        #the stock and return the resulting BOLD signal.
-        if step % self.istep == 0:
-            time = step * self.dt
-            hrf = numpy.roll(self.hemodynamic_response_function,
-                             ((step/self._interim_istep % self._stock_steps) - 1),
-                             axis=1)
-            bold = numpy.dot(hrf, self._stock.transpose((1, 2, 0, 3)))
-            bold = bold.reshape(self._stock.shape[1:])
-            bold = bold.sum(axis=0)[numpy.newaxis, :, :]    #state-variables
-            bold = bold.sum(axis=2)[:, :, numpy.newaxis]    #modes
-            return [time, bold]
-
-
 class ProgressLogger(Monitor):
-    "Logs progress of simulation."
+    "Logs progress of simulation; only for use in console scripts."
 
     def __init__(self, **kwargs):
         super(ProgressLogger, self).__init__(**kwargs)

@@ -442,6 +442,7 @@ class LarterBreakspear(Model):
         order=99
     )
 
+    state_variables = 'V W Z'.split()
 
     def __init__(self, **kwargs):
         """

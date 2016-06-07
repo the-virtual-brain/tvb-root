@@ -59,6 +59,7 @@ class Linear(Model):
         select_multiple=True,
         order=3)
 
+    state_variables = ['x']
 
     def __init__(self, **kwargs):
         super(Linear, self).__init__(**kwargs)

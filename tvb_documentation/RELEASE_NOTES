@@ -5,7 +5,6 @@
  Description: New functionality related to simulation and visualizers
 ======================================================================================================================================
     * New: export simulation configuration as JSON and reuse in web or console
-    * Monitor configuration: allow pre and post user configured operations
     * Volumetric Viewers extended and improved (more datatypes can be visualized in volume - e.g. TimeSeriesRegion; better performance)
     * Color Scheme: allow to trim near-mean values in a color scheme
     * New: tracts visualizer, FCD analyzer
@@ -14,8 +13,9 @@
     * Reduced Wong-Wang default parameters updated to reflect usage in Hansen et al 2015
     * Coefficients for the Stefanescu-Jirsa 3D model have been corrected
     * ~5x accelerations for several models (Epileptor, Generic 2D Oscillator, Jansen-Rit, Reduced Wong-Wang)
-
-
+    * Epileptor state variables names updated to those used publications, (y0->x1, y1->y1, y2->z, y3->x2, y4->y2, y5->g)
+    * Models: new variables of interest for monitoring physiological signals e.g. LFP.
+    * Variable order integrators now available which can improve accuracy and execution speed for many cases.
 
 ======================================================================================================================================
  The Virtual Brain (TVB)

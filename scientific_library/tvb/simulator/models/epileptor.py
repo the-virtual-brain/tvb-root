@@ -258,23 +258,26 @@ class Epileptor(Model):
 
     state_variable_range = basic.Dict(
         label="State variable ranges [lo, hi]",
-        default={"y0": numpy.array([-2., 1.]),
+        default={"x1": numpy.array([-2., 1.]),
                  "y1": numpy.array([-20., 2.]),
-                 "y2": numpy.array([2.0, 5.0]),
-                 "y3": numpy.array([-2., 0.]),
-                 "y4": numpy.array([0., 2.]),
-                 "y5": numpy.array([-1., 1.])},
-        doc="n/a",
+                 "z": numpy.array([2.0, 5.0]),
+                 "x2": numpy.array([-2., 0.]),
+                 "y2": numpy.array([0., 2.]),
+                 "g": numpy.array([-1., 1.])},
+        doc="Typical bounds on state variables in the Epileptor model.",
         order=16
         )
 
     variables_of_interest = basic.Enumerate(
         label="Variables watched by Monitors",
-        options=["y0", "y1", "y2", "y3", "y4", "y5"],
-        default=["y0", "y3"],
+        options=['x1', 'y1', 'z', 'x2', 'y2', 'g', 'x2 - x1'],
+        default=["x2 - x1", 'z'],
         select_multiple=True,
-        doc="""default state variables to be monitored""",
-        order=-1)
+        doc="Quantities of the Epileptor available to monitor.",
+        order=100
+    )
+
+    state_variables = ['x1', 'y1', 'z', 'x2', 'y2', 'g']
 
     def __init__(self, **kwargs):
         """
