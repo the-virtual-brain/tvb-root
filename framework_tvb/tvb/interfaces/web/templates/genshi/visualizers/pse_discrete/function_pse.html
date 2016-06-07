@@ -76,83 +76,11 @@
 </ul>
 
     <!--! this is what will become visible upon selecting an canvas area for exploration -->
-    <!-- todo tie brush into max and min values, and make slider vertical for step values -->
-        <div xmlns:py="http://genshi.edgewall.org/" py:strip="True">
+    <div id="Exploretooltip" class="hidden">
+        <label>X-val Steps </label>
 
-            <py:def function="draw_number_component(inputRow, disabled, parentDivId)">
-                <!--! Draw Input field for a number  (input text). -->
-                <input type="text" tabindex='1' name="$inputRow.name" id="$inputRow.name"
-                       value="${inputRow.default if ('default' in inputRow) else ''}"
-                       readonly="${'readonly' if 'locked' in inputRow and inputRow.locked else None}"
-                       disabled="${'disabled' if disabled else None}"/>
+        <label>Y-val Steps </label>
 
-                ${drawRangeComponent(inputRow, parentDivId)}
-            </py:def>
-
-
-            <py:def function="drawRangeComponent(inputRow, parentDivId)">
-                <!--!    Function to generate the UI component for a Range parameter. (for FLOAT/INT/ARRAY attributes) -->
-                <py:if test="'minValue' in inputRow and 'maxValue' in inputRow and 'stepValue' in inputRow and not param_checkbox_config">
-                    <py:with vars="containerDivId=parentDivId+inputRow.name + '_RANGER';
-                       minValue=float(inputRow.minValue);maxValue=float(inputRow.maxValue);stepValue=float(inputRow.stepValue)">
-                        <table id="${containerDivId}" class="ranger-div-class" style="display: none;">
-                            <tr>
-                                <td><label>Available Interval:</label></td>
-                                <td><span id='${containerDivId}_interval_span' class="ranger-value">${minValue} - ${maxValue}</span>
-                                </td>
-                            </tr>
-                            <tr>
-                                <td><label>Current Selected Range:</label></td>
-                                <td><input type="number" step="0.0001" min="${minValue}" max="${maxValue}"
-                                           id="${containerDivId}_FromIdx"/>
-                                    <input type="number" step="0.0001" min="${minValue}" max="${maxValue}"
-                                           id="${containerDivId}_ToIdx"/></td>
-                            </tr>
-                            <tr>
-                                <td><label for='${containerDivId}_stepInput'
-                                           title='The step used for the range'>Step:</label></td>
-                                <td><input type='number' id='${containerDivId}_stepInput' value='${stepValue}' min="0"
-                                           max="${maxValue - minValue}" step="0.0001"
-                                           title='The step used for the range' tabindex="1" disabled="disabled"/></td>
-                            </tr>
-                            <tr>
-                                <td colspan="2">
-                                    <div id='${containerDivId}_slider'></div>
-                                    <input id='${containerDivId}_hidden' type='hidden' name='${inputRow.name}'
-                                           disabled="disabled"/>
-                                </td>
-                            </tr>
-                            <tr>
-                                <td colspan="2" id="${containerDivId}_rangeLabelsTd"></td>
-                            </tr>
-                        </table>
-                        <!-- <p class="field-adapters">
-                            <input tabindex='1' type="button" class="ranger-button right-display"
-                                   value="Expand Range" id="${containerDivId}_buttonExpand"
-                                   title="Toggle Range for current parameter. This will launch multiple simulations!"
-                                   onclick="toggleRange('$containerDivId', ${minValue}, ${maxValue}, ${stepValue}, '${inputRow.name}');"/>
-                        </p> -->
-                        <script type="text/javascript">
-                            $(document).ready(function () {
-                                // this gives us two separate sliderbars to vary, one for x one for y
-                                initRangeComponent('$containerDivId', ${minValue}, ${maxValue}, ${stepValue}, '${inputRow.name}')
-                            })
-                            console.log('$containerDivId loaded')
-                        </script>
-                    </py:with>
-                </py:if>
-            </py:def>
-        </div>
-    <div id="xSteps"><label> X-Param Opts
-        ${draw_number_component({'name':"slider", 'minValue':0, 'maxValue':5,'stepValue':
-        0.001},False,"xSteps")}
-    </label></div>
-    <div id="ySteps">
-        <label>Y-Param Opts
-            <!-- todo figure out how to have both these things visible all the time instead of just after expand is used -->
-            ${draw_number_component({'name':"slider", 'minValue':0, 'maxValue':5,'stepValue':
-            0.001},False,"ySteps")}
-        </label>
     </div>
 
 <input type="hidden" id="datatype-group-gid" value="$dataTypeGroupGID"/>
