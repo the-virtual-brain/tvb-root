@@ -135,13 +135,6 @@ function d3Plot(placeHolder, data, options) {
         }
     }
 
-    /*function dataToOpt(checkd, xORy) {
-        if (xORy === "x") {
-            return options.xaxis.tickFormatter(checkd.data[0][0]);
-        } else
-            return options.yaxis.tickFormatter(checkd.data[0][1])
-
-     }*/
 
     function brushed() {
         var extent = brush.extent();
@@ -173,7 +166,7 @@ function d3Plot(placeHolder, data, options) {
                     return xScale(_PSE_plotOptions.xaxis.tickFormatter(d.data[0][0]))
                 },
                 cy: function (d) {
-                    return yScale(_PSE_plotOptions.xaxis.tickFormatter(d.data[0][1]))
+                    return yScale(_PSE_plotOptions.yaxis.tickFormatter(d.data[0][1]))
                 }
 
                     // return yScale(d.yCen) // why is this placing dots far below the bottom of the pane? Is the canvas dimension off?
@@ -193,9 +186,11 @@ function d3Plot(placeHolder, data, options) {
 
     }
 
-    var myBase, canvasDimensions, canvas, xScale, yScale, xRef, yRef, xAxis, yAxis, circles, brush,
+
+    var myBase, workingData, canvasDimensions, canvas, xScale, yScale, xRef, yRef, xAxis, yAxis, circles, brush,
         colScale, dotsCanvas, innerHeight, innerWidth, toolTipDiv;
     myBase = d3.select(placeHolder);
+    workingData = $.extend(true, {}, data); //this will be filtered when necessary according to the function and the parameters
     canvasDimensions = {h: parseInt(myBase.style("height")), w: parseInt(myBase.style("width"))};
     innerHeight = canvasDimensions.h - options.margins.top - options.margins.bottom;
     innerWidth = canvasDimensions.w - options.margins.left - options.margins.right;
@@ -230,11 +225,7 @@ function d3Plot(placeHolder, data, options) {
         .on("brushend", brushend);
 
 
-    /*canvas.append("rect") // todo make this only a border
-     .attr({
-     width: innerWidth,
-     height: innerHeight
-     });*/
+
     circles = dotsCanvas.selectAll("circle").data(data).enter().append("circle")
         .attr({
             r: function (d) {
@@ -245,7 +236,6 @@ function d3Plot(placeHolder, data, options) {
             },
             cy: function (d) {
                 return yScale(_PSE_plotOptions.yaxis.tickFormatter(d.data[0][1]))
-                // return yScale(d.yCen) // why is this placing dots far below the bottom of the pane? Is the canvas dimension off?
             },
             fill: function (d) {
                 var nodeInfo = PSE_nodesInfo[d.data[0][0]][d.data[0][1]];
@@ -277,8 +267,6 @@ function d3Plot(placeHolder, data, options) {
         } else {
             activeBrush.remove()
         }
-        //.attr("height", canvasDimensions.h - (options.margins.top + options.margins.bottom))
-
     });
 
     d3.select("#Explore").on("click", function () { //todo make sure to add a x button in the corner of the overlay so that it can be closed without exiting the explore tool
@@ -328,6 +316,15 @@ function d3Plot(placeHolder, data, options) {
 
 
     });
+
+    d3.select("#Filter").on("click", function () { //todo standardize the id names for the div elements used for the various overlays.
+        function filterData(dataIn, criteria) {
+            debugger;
+        }
+
+        var filterDiv = d3.select("#FilterDiv").style("display", "block");
+        filterData(workingData, filterPrefs)
+    })
 
 
     d3.selectAll("circle").on("mouseover", function (d) { // why can't a access the options variable inside this scope?
