@@ -168,17 +168,27 @@ class SparseHistory(DenseHistory):
     "History implementation which stores data only for non-zero weights."
 
     n_nnzw = Dim()
+    n_nnzr = Dim()
     time_stride = Dim()
     nnz_mask = NDArray(('n_node', 'n_node'), numpy.bool)
     const_indices = NDArray(('n_cvar', n_nnzw, 'n_mode'), 'i')
-    idelays_nnz = NDArray((n_nnzw, ), 'i')
+    nnz_idelays = NDArray((n_nnzw,), 'i')
+    nnz_row_el_idx = NDArray((n_nnzw, ), 'i')
+    nnz_col_el_idx = NDArray((n_nnzw, ), 'i')
+    nnz_weights = NDArray((n_nnzw, ), 'f')
+    nnz_row_idx = NDArray((n_nnzr, ), 'i')
 
     def __init__(self, weights, delays, cvars, n_mode):
         super(SparseHistory, self).__init__(weights, delays, cvars, n_mode)
         self.time_stride = self.n_cvar * self.n_node * self.n_mode
         self.nnz_mask = weights_nonzero = weights != 0.0 # type: numpy.ndarray
         self.n_nnzw = nnz = weights_nonzero.sum()
-        self.idelays_nnz = delays[weights_nonzero].astype('i')
+        self.nnz_weights = weights[self.nnz_mask]
+        self.nnz_row_el_idx, self.nnz_col_el_idx = numpy.argwhere(self.nnz_mask).T
+        nnz_row_idx = numpy.unique(self.nnz_row_el_idx)
+        self.n_nnzr = len(nnz_row_idx)
+        self.nnz_row_idx = nnz_row_idx
+        self.nnz_idelays = delays[weights_nonzero].astype('i')
         # build const indices
         n, m = self.n_node, self.n_mode
         icvars_ = numpy.r_[:len(cvars)].reshape((-1, 1, 1)) * n * m
@@ -187,17 +197,27 @@ class SparseHistory(DenseHistory):
         self.const_indices = icvars_ + nodes_ + modes_
         self.delayed_state[:] = 0.0
 
+        LOG.info('history has n_time=%d n_cvar=%d n_node=%d n_nmode=%d, requires %.2f MB',
+                 self.n_time, self.n_cvar, self.n_node, self.n_mode, self.nbytes*2**-20)
+        LOG.debug('sparse flat time_stride=%d', self.time_stride)
+        LOG.info('sparse history has n_nnzw=%d, i.e. %.2f %% sparse', self.n_nnzw,
+                 self.n_nnzw * 100.0 / self.n_node**2)
+
     def query(self, step, out=None):
-        time_indices = ((step - 1 - self.idelays_nnz + self.n_time) % self.n_time) # type: numpy.ndarray
+        current, delayed = self.query_sparse(step)
+        self.delayed_state.transpose((1, 0, 2, 3))[:, self.nnz_mask] = delayed
+        return current, self.delayed_state
+
+    def query_sparse(self, step):
+        time_indices = ((step - 1 - self.nnz_idelays + self.n_time) % self.n_time) # type: numpy.ndarray
         time_indices = time_indices.reshape((-1, 1)) * self.time_stride # type: numpy.ndarray
-        sparse_delayed_state = self.buffer.take(time_indices + self.const_indices)
-        self.delayed_state.transpose((1, 0, 2, 3))[:, self.nnz_mask] = sparse_delayed_state
-        self.current_state = self.buffer[(step - 1) % self.n_time]
-        return self.current_state, self.delayed_state
+        delayed_state = self.buffer.take(time_indices + self.const_indices)
+        current_state = self.buffer[(step - 1) % self.n_time]
+        return current_state, delayed_state
 
     @property
     def nbytes(self):
-        arrays = 'nnz_mask const_indices idelays_nnz'.split()
+        arrays = 'nnz_mask const_indices nnz_idelays nnz_row_el_idx nnz_col_el_idx nnz_weights nnz_row_idx'.split()
         nbytes = sum([getattr(self, ary).nbytes for ary in arrays])
         nbytes += DenseHistory.nbytes.fget(self)
         return nbytes

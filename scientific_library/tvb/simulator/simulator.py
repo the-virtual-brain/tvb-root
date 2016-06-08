@@ -372,8 +372,7 @@ class Simulator(core.Type):
 
     def _loop_compute_node_coupling(self, step):
         "Compute delayed node coupling values."
-        current, delayed = self.history.query(step)
-        coupling = self.coupling(self.history.es_weights, current, delayed)
+        coupling = self.coupling(step, self.history)
         if self.surface is not None:
             coupling = coupling[:, self._regmap]
         return coupling

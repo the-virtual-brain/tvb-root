@@ -90,6 +90,8 @@ import tvb.datatypes.arrays as arrays
 from tvb.simulator.common import get_logger
 LOG = get_logger(__name__)
 
+from .history import SparseHistory
+
 
 class Coupling(core.Type):
     r"""
@@ -120,9 +122,11 @@ class Coupling(core.Type):
     .. automethod:: PreSigmoidal.__call__
 
     """
-    _base_classes = ["Coupling"]
+    _base_classes = ["Coupling", 'SparseCoupling']
 
-    def __call__(self, g_ij, x_i, x_j):
+    def __call__(self, step, history):
+        g_ij = history.es_weights
+        x_i, x_j = history.query(step)
         x_i = x_i[numpy.newaxis].transpose((2, 1, 0, 3)) # (to, ncv, from, m)
         pre = self.pre(x_i, x_j)
         sum = (g_ij * pre).sum(axis=2) # (to, ncv, m)
@@ -135,7 +139,34 @@ class Coupling(core.Type):
         return gx
 
 
-class Linear(Coupling):
+class SparseCoupling(Coupling):
+    """
+    A coupling implementation which takes advantage of a sparse weights structure to reduce the
+    number of coupling terms evaluated.
+
+    """
+
+    def _lri(self, nnz_row_el_idx):
+        "Flat array of indices afferent, non-zero-weight connections."
+        if not hasattr(self, '_cached_lri'):
+            rows = numpy.r_[-1, nnz_row_el_idx]
+            self._cached_lri, = numpy.argwhere(numpy.diff(rows)).T
+            self._cached_nzr = numpy.unique(nnz_row_el_idx)
+        return self._cached_lri, self._cached_nzr
+
+    def __call__(self, step, history):
+        h = history # type: SparseHistory
+        x_i, x_j = h.query_sparse(step)
+        sum = numpy.zeros_like(x_i)
+        x_i = x_i[:, h.nnz_col_el_idx]
+        pre = self.pre(x_i, x_j)
+        assert pre.shape == (h.n_cvar, h.n_nnzw, h.n_mode)
+        weights_col = h.nnz_weights.reshape((h.n_nnzw, 1))
+        lri, nzr = self._lri(h.nnz_row_el_idx)
+        sum[:, nzr] = numpy.add.reduceat(weights_col * pre, lri, axis=1)
+        return self.post(sum)
+
+class Linear(SparseCoupling):
     r"""
     Provides a linear coupling function of the following form
 
@@ -163,7 +194,7 @@ class Linear(Coupling):
         return self.a * gx + self.b
 
 
-class Scaling(Coupling):
+class Scaling(SparseCoupling):
     r"""
     Provides a simple scaling of the connectivity of the form
 
@@ -183,7 +214,7 @@ class Scaling(Coupling):
         return self.a * gx
 
 
-class HyperbolicTangent(Coupling):
+class HyperbolicTangent(SparseCoupling):
     r"""
     Provides a sigmoidal coupling function of the form
 
@@ -227,7 +258,7 @@ class HyperbolicTangent(Coupling):
         return self.a * (1 +  numpy.tanh((self.b * x_j - self.midpoint) / self.sigma))
 
 
-class Sigmoidal(Coupling):
+class BaseSigmoidal(Coupling):
     r"""
     Provides a sigmoidal coupling function of the form
 
@@ -280,7 +311,12 @@ class Sigmoidal(Coupling):
         return self.cmin + ((self.cmax - self.cmin) / (1.0 + numpy.exp(-self.a *((gx - self.midpoint) / self.sigma))))
 
 
-class SigmoidalJansenRit(Sigmoidal):
+# SigJR derives from Sig but doesn't yet support sparse scheme, hence intermediate sigmoidal base
+class Sigmoidal(SparseCoupling, BaseSigmoidal):
+    pass
+
+
+class SigmoidalJansenRit(BaseSigmoidal):
     r"""
     Provides a sigmoidal coupling function as described in the 
     Jansen and Rit model, of the following form
@@ -402,7 +438,9 @@ class PreSigmoidal(Coupling):
 
     # override __call__ directly simpler than pre/post form
     # TODO check use of arrays dims here
-    def __call__(self, g_ij, x_i, x_j, na=numpy.newaxis):
+    def __call__(self, step, history, na=numpy.newaxis):
+        g_ij = history.es_weights
+        x_i, x_j = history.query(step)
         if self.dynamic:
             _ = (self.P * x_j[:,0] - x_j[:,1,self.sliceT])[:,na]
         else:
@@ -418,7 +456,7 @@ class PreSigmoidal(Coupling):
             return (g_ij.transpose((2, 1, 0, 3)) * A_j).sum(axis=0)
 
 
-class Difference(Coupling):
+class Difference(SparseCoupling):
     r"""
     Provides a difference coupling function, between pre and post synaptic
     activity of the form
@@ -443,7 +481,7 @@ class Difference(Coupling):
         return self.a * gx
 
 
-class Kuramoto(Coupling):
+class Kuramoto(SparseCoupling):
     r"""
     Provides a Kuramoto-style coupling, a periodic difference of the form
     

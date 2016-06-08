@@ -55,8 +55,9 @@ from tvb.tests.library.base_testcase import BaseTestCase
 class IdCoupling(Coupling):
     """Implements an identity coupling function."""
 
-
-    def __call__(self, g_ij, x_i, x_j):
+    def __call__(self, step, history):
+        g_ij = history.es_weights
+        x_i, x_j = history.query(step)
         return (g_ij * x_j).sum(axis=2).transpose((1, 0, 2))
 
 

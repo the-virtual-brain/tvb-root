@@ -98,7 +98,10 @@ class NDArray(StaticAttr):
             if isinstance(dim, str):
                 dim = getattr(instance, dim)
             elif isinstance(dim, Dim):
-                dim = dim.instance_state[instance].value
+                if instance in dim.instance_state:
+                    dim = dim.instance_state[instance].value
+                else:
+                    raise AttributeError('Dimension referenced before definition.')
             else:
                 raise TypeError('expect int, str but found %r' % (type(dim), ))
             shape.append(dim)

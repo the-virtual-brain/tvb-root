@@ -35,7 +35,7 @@ Test for tvb.simulator.coupling module
 
 """
 
-if __name__ == "__main__":
+if True or __name__ == "__main__":
     from tvb.tests.library import setup_test_console_env
     setup_test_console_env()
 
@@ -45,7 +45,7 @@ import unittest
 from tvb.tests.library.base_testcase import BaseTestCase
 from tvb.simulator import coupling, models, simulator
 from tvb.datatypes import cortex, connectivity
-
+from tvb.simulator.history import SparseHistory
 
 class CouplingTest(BaseTestCase):
     """
@@ -62,15 +62,19 @@ class CouplingTest(BaseTestCase):
     delayed_state_1sv = numpy.ones((2, 1, 2, 1))        # nodes, state_variables, nodes, modes
     delayed_state_2sv = numpy.ones((2, 2, 2, 1))
 
+    weights2d = weights[:, 0, :, 0]
+    history_1sv = SparseHistory(weights2d, weights2d*0, numpy.r_[0], 1)
+    history_2sv = SparseHistory(weights2d, weights2d*0, numpy.r_[0, 1], 1)
+
 
     def _apply_coupling(self, k):
         k.configure()
-        k(self.weights, self.state_1sv, self.delayed_state_1sv)
+        k(0, self.history_1sv)
 
 
     def _apply_coupling_2sv(self, k):
         k.configure()
-        k(self.weights, self.state_2sv, self.delayed_state_2sv)
+        k(0, self.history_2sv)
 
 
     def test_difference_coupling(self):
