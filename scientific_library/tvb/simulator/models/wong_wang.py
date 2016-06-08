@@ -80,14 +80,14 @@ class ReducedWongWang(Model):
         label=":math:`a`",
         default=numpy.array([0.270, ]),
         range=basic.Range(lo=0.0, hi=0.270, step=0.01),
-        doc=""" [pC]^{-1}. Parameter chosen to fit numerical solutions.""",
+        doc="[n/C]. Input gain parameter, chosen to fit numerical solutions.",
         order=1)
 
     b = arrays.FloatArray(
         label=":math:`b`",
         default=numpy.array([0.108, ]),
         range=basic.Range(lo=0.0, hi=1.0, step=0.01),
-        doc="""[kHz]. Parameter chosen to fit numerical solutions.""",
+        doc="[kHz]. Input shift parameter chosen to fit numerical solutions.",
         order=2)
 
     d = arrays.FloatArray(
