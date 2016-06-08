@@ -88,7 +88,7 @@ function _updatePlotPSE(canvasId, xLabels, yLabels, seriesArray, data_info, min_
         }
 
     };
-    var _d3PSE_plot = d3Plot("#" + canvasId, $.parseJSON(seriesArray), $.extend(true, {}, _PSE_plotOptions), backPage);
+    _d3PSE_plot = d3Plot("#" + canvasId, $.parseJSON(seriesArray), $.extend(true, {}, _PSE_plotOptions), backPage);
 
     //this has been commented out below so that I can see what I have done on the canvas after the above function has ended
     /*_PSE_plot = $.plot($("#" + canvasId), $.parseJSON(seriesArray), $.extend(true, {}, _PSE_plotOptions));
@@ -104,6 +104,13 @@ function _updatePlotPSE(canvasId, xLabels, yLabels, seriesArray, data_info, min_
 
 
 function d3Plot(placeHolder, data, options, pageParam) {
+    //these lines are cleanup for artifacts of the conversion that aren't behaving nicely, they should eventually be removed because they are just treating the symptoms.
+    if (d3.select(".outerCanvas").empty() != true) {
+        d3.selectAll(".outerCanvas").remove()
+    }
+    if (d3.select("div > div.flex-wrapper").empty() != true) {
+        d3.select("div > div.flex-wrapper").remove()
+    }
 //todo check to see whether there is already a canvas of the d3 variety because then we can just use that if redraw must happen
     function createScale(xORy) {
         // should I incorporate some sort of testing for values before actually getting into the function?
@@ -196,6 +203,7 @@ function d3Plot(placeHolder, data, options, pageParam) {
     innerWidth = canvasDimensions.w - options.margins.left - options.margins.right;
     canvas = myBase.append("svg") //todo must make plottable canvas be inbetween axes, otherwise zoom adjusted circles can be seen outside of rational graphing area
         .attr({
+            class: "outerCanvas",
             height: canvasDimensions.h,
             width: canvasDimensions.w
         })
@@ -358,11 +366,19 @@ function d3Plot(placeHolder, data, options, pageParam) {
  * Do a redraw of the plot. Be sure to keep the resizable margin elements as the plot method seems to destroy them.
  */
 function redrawPlot(plotCanvasId) {
-    // todo: mh the selected element is not an ancestor of the second tab!!!
+    /*// todo: mh the selected element is not an ancestor of the second tab!!!
     // thus this redraw call fails, ex on resize
+
     if (_PSE_plot != null) {
         _PSE_plot = $.plot($('#' + plotCanvasId)[0], _PSE_plot.getData(), $.extend(true, {}, _PSE_plotOptions));
+     }*/
+    //it appears that there is a tie in for window.resize to this function. Lets see how this works out
+    if (backPage == null || backPage == '') {
+        var backPage = get_URL_param('back_page');
     }
+    debugger;
+    d3Plot("#" + plotCanvasId, d3.selectAll("circles").data(), $.extend(true, {}, _PSE_plotOptions), backPage);
+
 }
 
 
@@ -415,6 +431,7 @@ function applyHoverEvent(canvasId) {
 function PSEDiscreteInitialize(labelsXJson, labelsYJson, series_array, dataJson, backPage, hasStartedOperations,
                                min_color, max_color, min_size, max_size) {
 
+
     var labels_x = $.parseJSON(labelsXJson);
     var labels_y = $.parseJSON(labelsYJson);
     var data = $.parseJSON(dataJson);
@@ -441,14 +458,15 @@ function PSEDiscreteInitialize(labelsXJson, labelsYJson, series_array, dataJson,
         min_color = 0;
         max_color = 1;
     }
-    _updatePlotPSE('main_div_pse', labels_x, labels_y, series_array, data, min_color, max_color, backPage);
+    _updatePlotPSE('main_div_pse', labels_x, labels_y, series_array, data, min_color, max_color, backPage); // why is this called a second time?
 
     // Prepare functions for Export Canvas as Image
-    var canvas = $("#main_div_pse").find(".flot-base")[0];
+    // it's unclear whether this area is necessary for the recreation of the plot after metric updates
+    /*var canvas = $("#main_div_pse").find(".flot-base")[0];
     canvas.drawForImageExport = function () {
-        /* this canvas is drawn by FLOT library so resizing it directly has no influence;
+     /!* this canvas is drawn by FLOT library so resizing it directly has no influence;
          * therefore, its parent needs resizing before redrawing;
-         * canvas.afterImageExport() is used to bring is back to original size */
+     * canvas.afterImageExport() is used to bring is back to original size *!/
         var canvasDiv = $("#main_div_pse");
         var oldHeight = canvasDiv.height();
         var scale = C2I_EXPORT_HEIGHT / oldHeight;
@@ -464,7 +482,7 @@ function PSEDiscreteInitialize(labelsXJson, labelsYJson, series_array, dataJson,
         var canvasDiv = $("#main_div_pse");
         canvasDiv.attr('style', canvas.oldStyle);
         redrawPlot('main_div_pse');
-    };
+     };*/
 
     if (hasStartedOperations) {
         setTimeout("PSE_mainDraw('main_div_pse','" + backPage + "')", 3000);
@@ -495,6 +513,7 @@ function PSE_mainDraw(parametersCanvasId, backPage, groupGID) {
             url += '/' + selectedSizeMetric;
         }
     }
+
 
     doAjaxCall({
         type: "POST",
