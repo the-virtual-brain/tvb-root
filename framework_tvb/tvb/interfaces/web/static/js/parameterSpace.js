@@ -376,7 +376,6 @@ function redrawPlot(plotCanvasId) {
     if (backPage == null || backPage == '') {
         var backPage = get_URL_param('back_page');
     }
-    debugger;
     d3Plot("#" + plotCanvasId, d3.selectAll("circles").data(), $.extend(true, {}, _PSE_plotOptions), backPage);
 
 }
