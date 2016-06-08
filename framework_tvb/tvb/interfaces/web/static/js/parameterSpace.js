@@ -88,7 +88,7 @@ function _updatePlotPSE(canvasId, xLabels, yLabels, seriesArray, data_info, min_
         }
 
     };
-    var _d3PSE_plot = d3Plot("#" + canvasId, $.parseJSON(seriesArray), $.extend(true, {}, _PSE_plotOptions));
+    var _d3PSE_plot = d3Plot("#" + canvasId, $.parseJSON(seriesArray), $.extend(true, {}, _PSE_plotOptions), backPage);
 
     //this has been commented out below so that I can see what I have done on the canvas after the above function has ended
     /*_PSE_plot = $.plot($("#" + canvasId), $.parseJSON(seriesArray), $.extend(true, {}, _PSE_plotOptions));
@@ -103,7 +103,7 @@ function _updatePlotPSE(canvasId, xLabels, yLabels, seriesArray, data_info, min_
 }
 
 
-function d3Plot(placeHolder, data, options) {
+function d3Plot(placeHolder, data, options, pageParam) {
 //todo check to see whether there is already a canvas of the d3 variety because then we can just use that if redraw must happen
     function createScale(xORy) {
         // should I incorporate some sort of testing for values before actually getting into the function?
@@ -291,8 +291,8 @@ function d3Plot(placeHolder, data, options) {
                     border: '1px solid #fdd',
                     padding: '2px',
                     opacity: 0.80
-                })
-                d3.select("#xRange").text(xRange)
+                });
+                d3.select("#xRange").text(xRange);
                 d3.select("#yRange").text(yRange)
             }
         }
@@ -311,23 +311,22 @@ function d3Plot(placeHolder, data, options) {
                 .selectAll("rect");
         } else {
             d3.select(".brush").remove();
-            explToolTip.style("display", "none") // is this redundant with the above tooltip hider?
+            explToolTip.style("display", "none"); // is this redundant with the above tooltip hider?
         }
 
 
     });
 
-    d3.select("#Filter").on("click", function () { //todo standardize the id names for the div elements used for the various overlays.
+    /*d3.select("#Filter").on("click", function () { //todo standardize the id names for the div elements used for the various overlays.
         function filterData(dataIn, criteria) {
-            debugger;
         }
 
         var filterDiv = d3.select("#FilterDiv").style("display", "block");
         filterData(workingData, filterPrefs)
-    })
+     });*/
 
 
-    d3.selectAll("circle").on("mouseover", function (d) { // why can't a access the options variable inside this scope?
+    d3.selectAll("circle").on("mouseover", function (d) { 
         var nodeInfo = PSE_nodesInfo[d.data[0][0]][d.data[0][1]];
         var toolTipText = nodeInfo.tooltip.split("&amp;").join("&").split("&lt;").join("<").split("&gt;").join(">");
         toolTipDiv.html(toolTipText);
@@ -346,7 +345,13 @@ function d3Plot(placeHolder, data, options) {
             toolTipDiv.transition()
                 .duration(300)
                 .style("display", "none")
-        })
+        });
+    d3.selectAll("circle").on("click", function (d) {
+        var nodeInfo = PSE_nodesInfo[d.data[0][0]][d.data[0][1]];
+        if (nodeInfo.dataType != undefined) {
+            displayNodeDetails(nodeInfo['Gid'], nodeInfo['dataType'], pageParam); // curious because backPage isn't in the scope, but appears to work.
+        }
+    })
 
 }
 /*
