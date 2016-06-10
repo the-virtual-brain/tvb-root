@@ -36,57 +36,15 @@ work easier by importing all the simulator pieces at once.
 
 """
 
-import os
-import pdb
-from time import time
-from numpy import * # for load & save not available in pylab
-import numpy as np
-import numpy
-
 from tvb.basic.profile import TvbProfile
 TvbProfile.set_profile(TvbProfile.LIBRARY_PROFILE)
+
+from tvb.simulator.common import get_logger, log_debug
+log_debug(False)
 
 from tvb.simulator import (simulator, models, coupling, integrators, monitors, noise)
 from tvb.datatypes import connectivity, surfaces, equations, patterns, region_mapping, sensors, cortex, local_connectivity
 
-from tvb.simulator.common import get_logger
-LOG = get_logger(__name__)
-
-
-PDB = lambda: pdb.set_trace()
-
-
-def file_exists(fname):
-    """
-    file_exists(fname) is a convenience function to test whether a file
-    already exists or not. Returns True if we can stat the file, otherwise
-    False.
-
-    """
-    try:
-        os.stat(fname)
-        return True
-    except OSError:
-        return False
-
-
-def timed(fn, t=time):
-    fn.times = []
-    @functools.wraps(fn)
-    def wrapper(*args, **kwds):
-        tic = t()
-        ret = fn(*args, **kwds)
-        toc = t()
-        fn.times.append(toc - tic)
-        return ret
-    return wrapper
-
-
-# try to import plotting tools and matplotlib
-try:
-    from tvb.simulator.plot.tools import *
-    from tvb.simulator.plot.mayavi_tools import *
-    from matplotlib.pyplot import *
-except ImportError as exc:
-    LOG.warning("Plotting tools will not be available: %s:", exc)
-
+from tvb.simulator.plot.tools import (hinton_diagram, plot_3d_centres, plot_connectivity,
+                                      plot_fast_kde, plot_local_connectivity, plot_matrix,
+                                      plot_pattern, plot_tri_matrix)

@@ -32,7 +32,6 @@ This module defines the common imports and abstract base class for model definit
 """
 
 import numpy
-import numexpr
 from scipy.integrate import trapz as scipy_integrate_trapz
 from scipy.stats import norm as scipy_stats_norm
 from tvb.simulator.common import get_logger
@@ -45,38 +44,22 @@ import tvb.simulator.noise as noise_module
 LOG = get_logger(__name__)
 
 
-# NOTE: For UI convenience set the step in all parameters ranges such that there
-#      are approximately 10 steps from lo to hi...
-
-
-
 class Model(core.Type):
     """
-    Defines the abstract class for neuronal models.
-
-    .. automethod:: Model.__init__
-    .. automethod:: Model.dfun
-    .. automethod:: Model.update_derived_parameters
+    Defines the abstract base class for neuronal models.
 
     """
-    _base_classes = ['Model', ]
+
+    _base_classes = ['Model', 'ReducedSetBase']
     # NOTE: the parameters that are contained in the following list will be
     # editable from the ui in an visual manner
     ui_configurable_parameters = []
 
     state_variables = []
     variables_of_interest = []
-
-    def __init__(self, **kwargs):
-        """
-        Initialize the model with parameters as keywords arguments, a sensible
-        default parameter set should be provided via the trait mechanism.
-
-        """
-        super(Model, self).__init__(**kwargs)
-        LOG.debug(str(kwargs))
-        self._nvar = None
-        self.number_of_modes = 1
+    _nvar = None
+    number_of_modes = 1
+    cvar = None
 
     def _build_observer(self):
         template = ("def observe(state):\n"
@@ -97,6 +80,8 @@ class Model(core.Type):
 
     def configure(self):
         "Configure base model."
+        for req_attr in 'nvar number_of_modes cvar'.split():
+            assert hasattr(self, req_attr)
         super(Model, self).configure()
         self.update_derived_parameters()
         self._build_observer()
@@ -105,27 +90,6 @@ class Model(core.Type):
     def nvar(self):
         """ The number of state variables in this model. """
         return self._nvar
-
-#    @property
-#    def distal_coupling(self):
-#        """ Heterogeneous coupling given by the connectivity matrix"""
-#        return self._distal_coupling
-#
-#    @property
-#    def local_coupling(self):
-#        """ Homogeneous connectivity given by a local connectivity kernel"""
-#        return self._local_coupling
-#
-#    @property
-#    def internal_coupling(self):
-#        """ Internal connectivity between neural masses of a model"""
-#        return self._internal_coupling
-#
-#    @property
-#    def state_coupling(self):
-#        """ State operator: A matrix where each elemeent represents
-#        a parameter of the model """
-#        return self._state_coupling
 
     def update_derived_parameters(self):
         """
@@ -201,8 +165,3 @@ class Model(core.Type):
                 out.append(state.copy())
 
         return numpy.r_[0:dt * n_step:1j * len(out)], numpy.array(out)
-
-# TODO: both coupling/connectivity and local_coupling should be generalised to
-#      couplings and local_couplings that can be set to independantly on each
-#      state variable of a model at run time. Current functionality would then
-#      come via defaults that turn off the coupling on some state variables.

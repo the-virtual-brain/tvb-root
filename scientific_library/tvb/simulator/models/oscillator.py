@@ -31,7 +31,8 @@ Oscillator models.
 
 """
 
-from .base import Model, LOG, numpy, basic, arrays, numexpr
+from .base import Model, LOG, numpy, basic, arrays
+import numexpr
 from numba import guvectorize, float64
 
 
@@ -355,22 +356,8 @@ class Generic2dOscillator(Model):
         order=12)
 
     state_variables = ['V', 'W']
-
-    def __init__(self, **kwargs):
-        """
-        May need to put kwargs back if we can't get them from trait...
-
-        """
-
-        LOG.info("%s: initing..." % str(self))
-
-        super(Generic2dOscillator, self).__init__(**kwargs)
-
-        #self._state_variables = ["V", "W"]
-        self._nvar = 2
-        self.cvar = numpy.array([0], dtype=numpy.int32)
-
-        LOG.debug("%s: inited." % repr(self))
+    _nvar = 2
+    cvar = numpy.array([0], dtype=numpy.int32)
 
     def _numpy_dfun(self, state_variables, coupling, local_coupling=0.0, ev=numexpr.evaluate):
         r"""
@@ -506,23 +493,8 @@ class Kuramoto(Model):
         order=7)
 
     state_variables = ['theta']
-
-    def __init__(self, **kwargs):
-        """
-        May need to put kwargs back if we can't get them from trait...
-
-        """
-
-        LOG.info("%s: initing..." % str(self))
-
-        super(Kuramoto, self).__init__(**kwargs)
-
-        #self._state_variables = ["theta"]
-        self._nvar = 1
-        self.cvar = numpy.array([0], dtype=numpy.int32)
-
-        LOG.debug("%s: inited." % repr(self))
-
+    _nvar = 1
+    cvar = numpy.array([0], dtype=numpy.int32)
 
     def dfun(self, state_variables, coupling, local_coupling=0.0,
              ev=numexpr.evaluate, sin=numpy.sin, pi2=numpy.pi * 2):

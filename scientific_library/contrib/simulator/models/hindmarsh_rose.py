@@ -40,7 +40,6 @@ A contributed model: Hindmarsh-Rose
 
 # Third party python libraries
 import numpy
-import numexpr
 
 #The Virtual Brain
 from tvb.simulator.common import psutil, get_logger

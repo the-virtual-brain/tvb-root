@@ -156,36 +156,13 @@ class ReducedWongWang(Model):
         order=10)
 
     state_variables = ['S']
-
-    #    variables_of_interest = arrays.IntegerArray(
-    #        label="Variables watched by Monitors",
-    #        range=basic.Range(lo=0.0, hi=1.0, step=1.0),
-    #        default=numpy.array([0], dtype=numpy.int32),
-    #        doc="default state variables to be monitored",
-    #        order=10)
-
-
-    def __init__(self, **kwargs):
-        """
-        .. May need to put kwargs back if we can't get them from trait...
-
-        """
-
-        #LOG.info('%s: initing...' % str(self))
-
-        super(ReducedWongWang, self).__init__(**kwargs)
-
-        #self._state_variables = ["S1"]
-        self._nvar = 1
-        self.cvar = numpy.array([0], dtype=numpy.int32)
-
-        LOG.debug('%s: inited.' % repr(self))
+    _nvar = 1
+    cvar = numpy.array([0], dtype=numpy.int32)
 
     def configure(self):
         """  """
         super(ReducedWongWang, self).configure()
         self.update_derived_parameters()
-
 
     def _numpy_dfun(self, state_variables, coupling, local_coupling=0.0):
         r"""
@@ -197,7 +174,6 @@ class ReducedWongWang(Model):
                  \dot{S}_k &= -\dfrac{S_k}{\tau_s} + (1 - S_k) \, H(x_k) \, \gamma
 
         """
-
         S   = state_variables[0, :]
         S[S<0] = 0.
         S[S>1] = 1.

@@ -55,28 +55,10 @@ from .common import psutil, get_logger, numpy_add_at
 from .history import SparseHistory, DenseHistory
 
 
-
 LOG = get_logger(__name__)
 
 
-class SimulationIterator(object):
-    "Iterator over observable states of given configured simulator."
-
-    def __init__(self, sim):
-        self.sim = sim # type: Simulator
-        self.started = False
-        self.step = self.step_begin = sim.current_step + 1
-        self.step_end = sim.current_step + sim.n_steps + 1
-
-    def __iter__(self):
-        self.started = True
-        return self
-
-    def next(self):
-        pass
-
-
-# with refactor, this becomes more of a builder, since iterator will account for
+# TODO with refactor, this becomes more of a builder, since iterator will account for
 # most of the runtime associated with a simulation.
 class Simulator(core.Type):
     "A Simulator assembles components required to perform simulations."
@@ -217,28 +199,22 @@ class Simulator(core.Type):
         order=9,
         doc="""The length of a simulation in milliseconds (ms).""")
 
-    history = None # type: DenseHistory
+    history = None # type: SparseHistory
 
     @property
     def good_history_shape(self):
         "Returns expected history shape."
         n_reg = self.connectivity.number_of_regions
         shape = self.horizon, len(self.model.state_variables), n_reg, self.model.number_of_modes
-        LOG.debug("good_history_shape = %r", shape)
         return shape
 
-    def __init__(self, **kwargs): 
-        super(Simulator, self).__init__(**kwargs)
-        LOG.debug(str(kwargs))
-
-        self.calls = 0
-        self.current_step = 0
-
-        self.number_of_nodes = None
-        self._memory_requirement_guess = None
-        self._memory_requirement_census = None
-        self._storage_requirement = None
-        self._runtime = None
+    calls = 0
+    current_step = 0
+    number_of_nodes = None
+    _memory_requirement_guess = None
+    _memory_requirement_census = None
+    _storage_requirement = None
+    _runtime = None
 
     # methods consist of
     # 1) generic configure
@@ -250,39 +226,35 @@ class Simulator(core.Type):
     def preconfigure(self):
         "Configure just the basic fields, so that memory can be estimated."
         self.connectivity.configure()
-
         if self.surface:
             self.surface.configure()
-
         if self.stimulus:
             self.stimulus.configure()
-
         self.coupling.configure()
         self.model.configure()
         self.integrator.configure()
-
         # monitors needs to be a list or tuple, even if there is only one...
         if not isinstance(self.monitors, (list, tuple)):
             self.monitors = [self.monitors]
-
         # Configure monitors
         for monitor in self.monitors:
             monitor.configure()
-
-        ##------------- Now the the interdependant configuration -------------##
-
-        #"Nodes" refers to either regions or vertices + non-cortical regions.
+        # "Nodes" refers to either regions or vertices + non-cortical regions.
         if self.surface is None:
             self.number_of_nodes = self.connectivity.number_of_regions
+            LOG.info('Region simulation with %d ROI nodes', self.number_of_nodes)
         else:
             rm = self.surface.region_mapping
-            self._regmap = numpy.r_[rm, self.connectivity.unmapped_indices(rm)]
+            unmapped = self.connectivity.unmapped_indices(rm)
+            self._regmap = numpy.r_[rm, unmapped]
             self.number_of_nodes = self._regmap.shape[0]
-
+            LOG.info('Surface simulation with %d vertices + %d non-cortical, %d total nodes',
+                     rm.size, unmapped.size, self.number_of_nodes)
         self._guesstimate_memory_requirement()
 
     def configure(self, full_configure=True):
-        """
+        """Configure simulator and its components.
+
         The first step of configuration is to run the configure methods of all
         the Simulator's components, ie its traited attributes.
 
@@ -292,18 +264,22 @@ class Simulator(core.Type):
 
         Converts delays from physical time units into integration steps
         and updates attributes that depend on combinations of the 6 inputs.
+
+        Returns
+        -------
+        sim: Simulator
+            The configured Simulator instance.
+
         """
         if full_configure:
             # When run from GUI, preconfigure is run separately, and we want to avoid running that part twice
             self.preconfigure()
-
-        #Make sure spatialised model parameters have the right shape (number_of_nodes, 1)
+        # Make sure spatialised model parameters have the right shape (number_of_nodes, 1)
         excluded_params = ("state_variable_range", "variables_of_interest", "noise", "psi_table", "nerf_table")
-
         for param in self.model.trait.keys():
             if param in excluded_params:
                 continue
-            #If it's a surface sim and model parameters were provided at the region level
+            # If it's a surface sim and model parameters were provided at the region level
             region_parameters = getattr(self.model, param)
             if self.surface is not None:
                 if region_parameters.size == self.connectivity.number_of_regions:
@@ -313,26 +289,21 @@ class Simulator(core.Type):
             if region_parameters.size == self.number_of_nodes:
                 new_parameters = region_parameters.reshape((-1, 1))
                 setattr(self.model, param, new_parameters)
-
-        #Configure spatial component of any stimuli
+        # Configure spatial component of any stimuli
         self._configure_stimuli()
-
-        #Set delays, provided in physical units, in integration steps.
+        # Set delays, provided in physical units, in integration steps.
         self.connectivity.set_idelays(self.integrator.dt)
         self.horizon = self.connectivity.idelays.max() + 1
-
-        #Reshape integrator.noise.nsig, if necessary.
+        # Reshape integrator.noise.nsig, if necessary.
         if isinstance(self.integrator, integrators.IntegratorStochastic):
             self._configure_integrator_noise()
-
+        # Setup history
         self._configure_history(self.initial_conditions)
-
-        #Configure Monitors to work with selected Model, etc...
+        # Configure Monitors to work with selected Model, etc...
         self._configure_monitors()
-
-        #Estimate of memory usage. 
+        # Estimate of memory usage.
         self._census_memory_requirement()
-
+        # Allow user to chain configure to another call or assignment.
         return self
 
     def _handle_random_state(self, random_state):
@@ -451,46 +422,42 @@ class Simulator(core.Type):
         the model's initial() method is called to make up the difference.
 
         """
-
         rng = numpy.random
         if hasattr(self.integrator, 'noise'):
             rng = self.integrator.noise.random_stream
-
+        # Default initial conditions
         if initial_conditions is None:
-            msg = "%s: Setting default history using model's initial() method."
-            LOG.info(msg % str(self))
             n_time, n_svar, n_node, n_mode = self.good_history_shape
+            LOG.info('Preparing initial history of shape %r using model.initial()', self.good_history_shape)
             if self.surface is not None:
                 n_node = self.number_of_nodes
             history = self.model.initial(self.integrator.dt, (n_time, n_svar, n_node, n_mode), rng)
+        # ICs provided
         else:
             # history should be [timepoints, state_variables, nodes, modes]
-            LOG.debug("%s: Received initial conditions as arg." % str(self))
+            LOG.info('Using provided initial history of shape %r', initial_conditions.shape)
             n_time, n_svar, n_node, n_mode = ic_shape = initial_conditions.shape
             nr = self.connectivity.number_of_regions
             if self.surface is not None and n_node == nr:
                 initial_conditions = initial_conditions[:, :, self._regmap]
                 return self._configure_history(initial_conditions)
             elif ic_shape[1:] != self.good_history_shape[1:]:
-                msg = "%s: bad initial_conditions[1:] shape %s, should be %s"
-                msg %= self, ic_shape[1:], self.good_history_shape[1:]
-                raise ValueError(msg)
+                raise ValueError("Incorrect history sample shape %s, expected %s"
+                                 % ic_shape[1:], self.good_history_shape[1:])
             else:
                 if ic_shape[0] >= self.horizon:
-                    msg = "%s: Using last %s time-steps for history."
-                    LOG.debug(msg % (str(self), self.horizon))
+                    LOG.debug("Using last %d time-steps for history.", self.horizon)
                     history = initial_conditions[-self.horizon:, :, :, :].copy()
                 else:
-                    LOG.debug('initial_conditions too short, padding with model.initial.')
+                    LOG.debug('Padding initial conditions with model.initial')
                     history = self.model.initial(self.integrator.dt, self.history.buffer.shape, rng)
                     shift = self.current_step % self.horizon
                     history = numpy.roll(history, -shift, axis=0)
                     history[:ic_shape[0], :, :, :] = initial_conditions
                     history = numpy.roll(history, shift, axis=0)
                 self.current_step += ic_shape[0] - 1
-            msg = "%s: history shape is: %s"
-            LOG.debug(msg % (str(self), str(history.shape)))
-
+        LOG.info('Final initial history shape is %r', history.shape)
+        # create initial state from history
         self.current_state = history[self.current_step % self.horizon].copy()
         LOG.debug('initial state has shape %r' % (self.current_state.shape, ))
         if self.surface is not None and history.shape[2] > self.connectivity.number_of_regions:
@@ -500,13 +467,14 @@ class Simulator(core.Type):
             numpy_add_at(region_history.transpose(ax), self._regmap, history.transpose(ax))
             region_history /= numpy.bincount(self._regmap).reshape((-1, 1))
             history = region_history
-
+        # create history query implementation
         self.history = SparseHistory(
             self.connectivity.weights,
             self.connectivity.idelays,
             self.model.cvar,
             self.model.number_of_modes
         )
+        # initialize its buffer
         self.history.initialize(history)
 
     def _configure_integrator_noise(self):
@@ -543,7 +511,7 @@ class Simulator(core.Type):
         good_nsig_shape = (self.model.nvar, self.number_of_nodes,
                            self.model.number_of_modes)
         nsig = self.integrator.noise.nsig
-        LOG.debug("Simulator.integrator.noise.nsig shape: %s" % str(nsig.shape))
+        LOG.debug("Given noise shape is %s", nsig.shape)
         if nsig.shape in (good_nsig_shape, (1,)):
             return
         elif nsig.shape == (self.model.nvar, ):
@@ -556,15 +524,15 @@ class Simulator(core.Type):
             msg = "Bad Simulator.integrator.noise.nsig shape: %s"
             LOG.error(msg % str(nsig.shape))
 
-        LOG.debug("Simulator.integrator.noise.nsig shape: %s" % str(nsig.shape))
+        LOG.debug("Corrected noise shape is %s", nsig.shape)
         self.integrator.noise.nsig = nsig
 
     def _configure_monitors(self):
         """ Configure the requested Monitors for this Simulator """
+        # Coerce to list if required
         if not isinstance(self.monitors, (list, tuple)):
             self.monitors = [self.monitors]
-
-        # Configure monitors 
+        # Configure monitors
         for monitor in self.monitors:
             monitor.config_for_sim(self)
 
@@ -637,7 +605,7 @@ class Simulator(core.Type):
                                                                self.connectivity.speed or 3.0) / self.integrator.dt,
                       self.model.nvar, number_of_nodes, 
                       self.model.number_of_modes)
-        LOG.debug("hist_shape is %r", hist_shape)
+        LOG.debug("Estimated history shape is %r", hist_shape)
 
         memreq = numpy.prod(hist_shape) * bits_64
         if self.surface:
@@ -679,7 +647,7 @@ class Simulator(core.Type):
             LOG.warning("There may be insufficient memory for this simulation.")
 
         self._memory_requirement_guess = magic_number * memreq
-        msg = "Memory requirement guesstimate: simulation will need about %.1f MB"
+        msg = "Memory requirement estimate: simulation will need about %.1f MB"
         LOG.info(msg, self._memory_requirement_guess / 2**20)
 
     def _census_memory_requirement(self):
@@ -732,8 +700,8 @@ class Simulator(core.Type):
         magic_number = 6.57e-06  # seconds
         self._runtime = (magic_number * self.number_of_nodes * self.model.nvar * self.model.number_of_modes *
                          self.simulation_length / self.integrator.dt)
-        msg = "Simulation single-threaded runtime should be about %s seconds!"
-        LOG.info(msg % str(int(self._runtime)))
+        msg = "Simulation runtime should be about %0.3f seconds"
+        LOG.info(msg, self._runtime)
 
     def _calculate_storage_requirement(self):
         """

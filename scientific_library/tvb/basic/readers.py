@@ -155,8 +155,8 @@ class ZipReader():
                 break
 
         if matching_file_name is None:
-            self.logger.warning("File %s not found in ZIP." % file_name)
-            raise ReaderException("File %s not found in ZIP." % file_name)
+            self.logger.warning("File %r not found in ZIP." % file_name)
+            raise ReaderException("File %r not found in ZIP." % file_name)
 
         zip_entry = self.zip_archive.open(matching_file_name, 'rU')
 

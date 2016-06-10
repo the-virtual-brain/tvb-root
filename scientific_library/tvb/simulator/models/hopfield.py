@@ -142,23 +142,12 @@ class Hopfield(Model):
 
     state_variables = ['x', 'theta']
 
-    def __init__(self, **kwargs):
-        """Initialize the Hopfield model's traited attributes, any provided as
-        keywords will overide their traited default.
-        """
-
-        LOG.info("%s: initing..." % str(self))
-        super(Hopfield, self).__init__(**kwargs)
-
-        self._nvar = 2
-        self.cvar = numpy.array([0], dtype=numpy.int32)
-
-        LOG.debug("%s: inited." % repr(self))
+    _nvar = 2
+    cvar = numpy.array([0], dtype=numpy.int32)
 
     def configure(self):
         """Set the threshold as a state variable for a dynamical threshold."""
         super(Hopfield, self).configure()
-
         if self.dynamic:
             self.dfun = self.dfunDyn
             self._nvar = 2
@@ -175,7 +164,6 @@ class Hopfield(Model):
                 \dot{x_{i}} &= 1 / \tau_{x} (-x_{i} + c_0)
 
         """
-
         x = state_variables[0, :]
         dx = (- x + coupling[0]) / self.taux
 

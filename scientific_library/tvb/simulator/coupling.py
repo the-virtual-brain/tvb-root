@@ -91,6 +91,7 @@ from tvb.simulator.common import get_logger
 LOG = get_logger(__name__)
 
 from .history import SparseHistory
+from .common import astr, map_astr, simple_gen_astr
 
 
 class Coupling(core.Type):
@@ -152,6 +153,7 @@ class SparseCoupling(Coupling):
             rows = numpy.r_[-1, nnz_row_el_idx]
             self._cached_lri, = numpy.argwhere(numpy.diff(rows)).T
             self._cached_nzr = numpy.unique(nnz_row_el_idx)
+            LOG.debug('lri.size %d nzr.size %d', self._cached_lri.size, self._cached_nzr.size)
         return self._cached_lri, self._cached_nzr
 
     def __call__(self, step, history):
@@ -193,6 +195,8 @@ class Linear(SparseCoupling):
     def post(self, gx):
         return self.a * gx + self.b
 
+    def __str__(self):
+        return simple_gen_astr(self, 'a b')
 
 class Scaling(SparseCoupling):
     r"""
@@ -212,6 +216,9 @@ class Scaling(SparseCoupling):
 
     def post(self, gx):
         return self.a * gx
+
+    def __str__(self):
+        return simple_gen_astr(self, 'a')
 
 
 class HyperbolicTangent(SparseCoupling):
@@ -257,8 +264,11 @@ class HyperbolicTangent(SparseCoupling):
     def pre(self, x_i, x_j):
         return self.a * (1 +  numpy.tanh((self.b * x_j - self.midpoint) / self.sigma))
 
+    def __str__(self):
+        return simple_gen_astr(self, 'a b midpoint sigma')
 
-class BaseSigmoidal(Coupling):
+
+class Sigmoidal(Coupling):
     r"""
     Provides a sigmoidal coupling function of the form
 
@@ -307,16 +317,14 @@ class BaseSigmoidal(Coupling):
         doc="Standard deviation of the sigmoidal",
         order=5)
 
+    def __str__(self):
+        return simple_gen_astr(self, 'cmin cmax midpoint a sigma')
+
     def post(self, gx):
         return self.cmin + ((self.cmax - self.cmin) / (1.0 + numpy.exp(-self.a *((gx - self.midpoint) / self.sigma))))
 
 
-# SigJR derives from Sig but doesn't yet support sparse scheme, hence intermediate sigmoidal base
-class Sigmoidal(SparseCoupling, BaseSigmoidal):
-    pass
-
-
-class SigmoidalJansenRit(BaseSigmoidal):
+class SigmoidalJansenRit(Coupling):
     r"""
     Provides a sigmoidal coupling function as described in the 
     Jansen and Rit model, of the following form
@@ -362,6 +370,9 @@ class SigmoidalJansenRit(BaseSigmoidal):
         range=basic.Range(lo=0.01, hi=1000.0, step=10.0),
         doc="Scaling of the coupling term",
         order=5)
+
+    def __str__(self):
+        return simple_gen_astr(self, 'cmin cmax midpoint a r')
 
     def pre(self, x_i, x_j):
         pre = self.cmax / (1.0 + numpy.exp(self.r * (self.midpoint - (x_j[:, 0] - x_j[:, 1]))))
@@ -431,6 +442,9 @@ class PreSigmoidal(Coupling):
         doc="Use global threshold (otherwise local).",
         order=7)
 
+    def __str__(self):
+        return simple_gen_astr(self, 'H Q G P theta dynamic globalT')
+
     def configure(self):
         """Set the right indirect call."""
         super(PreSigmoidal, self).configure()
@@ -474,6 +488,9 @@ class Difference(SparseCoupling):
         doc="Rescales the connection strength.",
         order=1)
 
+    def __str__(self):
+        return simple_gen_astr(self, 'a')
+
     def pre(self, x_i, x_j):
         return x_j - x_i
 
@@ -497,6 +514,9 @@ class Kuramoto(SparseCoupling):
         range=basic.Range(lo=0.0, hi=1.0, step=0.01),
         doc="Rescales the connection strength.",
         order=1)
+
+    def __str__(self):
+        return simple_gen_astr(self, 'a')
 
     def pre(self, x_i, x_j):
         return numpy.sin(x_j - x_i)

@@ -33,7 +33,22 @@ Models developed by Stefanescu-Jirsa, based on reduced-set analyses of infinite 
 
 from .base import Model, LOG, numpy, basic, arrays, scipy_integrate_trapz, scipy_stats_norm
 
-class ReducedSetFitzHughNagumo(Model):
+class ReducedSetBase(Model):
+    number_of_modes = 3
+    nu = 1500
+    nv = 1500
+    def configure(self):
+        super(ReducedSetBase, self).configure()
+        if numpy.mod(self.nv, self.number_of_modes):
+            raise ValueError("nv (%d) must be divisible by the number_of_modes (%d), nu mod n_mode = %d",
+                             self.nv, self.number_of_modes, self.nv % self.number_of_modes)
+        if numpy.mod(self.nu, self.number_of_modes):
+            raise ValueError("nu (%d) must be divisible by the number_of_modes (%d), nu mod n_mode = %d",
+                             self.nu, self.number_of_modes, self.nu % self.number_of_modes)
+        self.update_derived_parameters()
+
+
+class ReducedSetFitzHughNagumo(ReducedSetBase):
     r"""
     A reduced representation of a set of Fitz-Hugh Nagumo oscillators,
     [SJ_2008]_.
@@ -185,79 +200,18 @@ class ReducedSetFitzHughNagumo(Model):
         order=10)
 
     state_variables = 'xi eta alpha beta'.split()
-
-    #    number_of_modes = Integer(
-    #        order = -1, #-1 => don't show me as a configurable option in the UI...
-    #        label = "Number of modes",
-    #        default = 3)
-    #
-    #    nu = Integer(
-    #        order = -1, #-1 => don't show me as a configurable option in the UI...
-    #        label = "nu",
-    #        default = 1500,
-    #        range = basic.Range(lo = 0, hi = 10000, step = 100),
-    #        doc = """Discretisation of Inhibitory distribution""")
-    #
-    #    nv = Integer(
-    #        order = -1, #-1 => don't show me as a configurable option in the UI...
-    #        label = "nv",
-    #        default = 1500,
-    #        range = basic.Range(lo = 0, hi = 10000, step = 100),
-    #        doc = """Discretisation of Excitatory distribution""")
-
-    #    coupling_variables = trait.Array(
-    #        label = "Variables to couple activity through",
-    #        default = numpy.array([0, 2], dtype=numpy.int32))
-
-    #    nsig = trait.Array(label = "Noise dispersion",
-    #                       default = numpy.array([0.0]))
-
-    def __init__(self, **kwargs):
-        """
-        Initialise parameters for a reduced representation of a set of
-        Fitz-Hugh Nagumo oscillators.
-
-        """
-        super(ReducedSetFitzHughNagumo, self).__init__(**kwargs)
-        # self._state_variables = ["xi", "eta", "alpha", "beta"]
-        self._nvar = 4
-        self.cvar = numpy.array([0, 2], dtype=numpy.int32)
-
-        # TODO: Hack fix, these cause issues with mapping spatialised parameters
-        #      at the region level to the surface for surface sims.
-        #      Setting per region parameters with a surface simulation will break this model.
-        # NOTE: Existing modes definition (from the paper) is not properly
-        #      normalised, so number_of_modes can't really be changed
-        #      meaningfully anyway adnd nu and nv just need to be "large enough"
-        #      so chaning them is only really an optimisation thing...
-        self.number_of_modes = 3
-        self.nu = 15000
-        self.nv = 15000
-
-        # Derived parameters
-        self.Aik = None
-        self.Bik = None
-        self.Cik = None
-        self.e_i = None
-        self.f_i = None
-        self.IE_i = None
-        self.II_i = None
-        self.m_i = None
-        self.n_i = None
-
-    def configure(self):
-        """  """
-        super(ReducedSetFitzHughNagumo, self).configure()
-
-        if numpy.mod(self.nv, self.number_of_modes):
-            error_msg = "nv must be divisible by the number_of_modes: %s"
-            LOG.error(error_msg % repr(self))
-
-        if numpy.mod(self.nu, self.number_of_modes):
-            error_msg = "nu must be divisible by the number_of_modes: %s"
-            LOG.error(error_msg % repr(self))
-
-        self.update_derived_parameters()
+    _nvar = 4
+    cvar = numpy.array([0, 2], dtype=numpy.int32)
+    # Derived parameters
+    Aik = None
+    Bik = None
+    Cik = None
+    e_i = None
+    f_i = None
+    IE_i = None
+    II_i = None
+    m_i = None
+    n_i = None
 
     def dfun(self, state_variables, coupling, local_coupling=0.0):
         r"""
@@ -374,7 +328,7 @@ class ReducedSetFitzHughNagumo(Model):
         # import pdb; pdb.set_trace()
 
 
-class ReducedSetHindmarshRose(Model):
+class ReducedSetHindmarshRose(ReducedSetBase):
     r"""
     .. [SJ_2008] Stefanescu and Jirsa, PLoS Computational Biology, *A Low
         Dimensional Description of Globally Coupled Heterogeneous Neural
@@ -553,97 +507,24 @@ class ReducedSetHindmarshRose(Model):
         order=14)
 
     state_variables = 'xi eta tau alpha beta gamma'.split()
-
-    #    variables_of_interest = arrays.IntegerArray(
-    #        label = "Variables watched by Monitors",
-    #        range = basic.Range(lo = 0.0, hi = 6.0, step = 1.0),
-    #        default = numpy.array([0, 3], dtype=numpy.int32),
-    #        doc = r"""This represents the default state-variables of this Model to be
-    #        monitored. It can be overridden for each Monitor if desired. The
-    #        corresponding state-variable indices for this model are :math:`\xi = 0`,
-    #        :math:`\eta = 1`, :math:`\tau = 2`, :math:`\alpha = 3`,
-    #        :math:`\beta = 4`, and :math:`\gamma = 5`""",
-    #        order = 14)
-
-    #    number_of_modes = Integer(
-    #        order = -1, #-1 => don't show me as a configurable option in the UI...
-    #        label = "Number of modes",
-    #        default = 3,
-    #        doc = """Number of modes""")
-    #
-    #    nu = Integer(
-    #        order = -1, #-1 => don't show me as a configurable option in the UI...
-    #        label = "nu",
-    #        default = 1500,
-    #        range = basic.Range(lo = 500, hi = 10000, step = 500),
-    #        doc = """Discretisation of Inhibitory distribution""")
-    #
-    #    nv = Integer(
-    #        order = -1, #-1 => don't show me as a configurable option in the UI...
-    #        label = "nv",
-    #        default = 1500,
-    #        range = basic.Range(lo = 500, hi = 10000, step = 500),
-    #        doc = """Discretisation of Excitatory distribution""")
-
-    #    coupling_variables = arrays.IntegerArray(
-    #        label = "Variables to couple activity through",
-    #        default = numpy.array([0, 3], dtype=numpy.int32))
-
-    #    nsig = arrays.FloatArray(label = "Noise dispersion",
-    #                       default = numpy.array([0.0]))
-
-    def __init__(self, **kwargs):
-        """
-        Initialise parameters for a reduced representation of a set of
-        Hindmarsh Rose oscillators, [SJ_2008]_.
-
-        """
-        super(ReducedSetHindmarshRose, self).__init__(**kwargs)
-        # self._state_variables = ["xi", "eta", "tau", "alpha", "beta", "gamma"]
-        self._nvar = 6
-        self.cvar = numpy.array([0, 3], dtype=numpy.int32)
-
-        # TODO: Hack fix, these cause issues with mapping spatialised parameters
-        #      at the region level to the surface for surface sims.
-        #      Setting per region parameters with a surface simulation will break this model.
-        # NOTE: Existing modes definition (from the paper) is not properly
-        #      normalised, so number_of_modes can't really be changed
-        #      meaningfully anyway adnd nu and nv just need to be "large enough"
-        #      so chaning them is only really an optimisation thing...
-        self.number_of_modes = 3
-        self.nu = 1500
-        self.nv = 1500
-
-        # derived parameters
-        self.A_ik = None
-        self.B_ik = None
-        self.C_ik = None
-        self.a_i = None
-        self.b_i = None
-        self.c_i = None
-        self.d_i = None
-        self.e_i = None
-        self.f_i = None
-        self.h_i = None
-        self.p_i = None
-        self.IE_i = None
-        self.II_i = None
-        self.m_i = None
-        self.n_i = None
-
-    def configure(self):
-        """  """
-        super(ReducedSetHindmarshRose, self).configure()
-
-        if numpy.mod(self.nv, self.number_of_modes):
-            error_msg = "nv must be divisible by the number_of_modes: %s"
-            LOG.error(error_msg % repr(self))
-
-        if numpy.mod(self.nu, self.number_of_modes):
-            error_msg = "nu must be divisible by the number_of_modes: %s"
-            LOG.error(error_msg % repr(self))
-
-        self.update_derived_parameters()
+    _nvar = 6
+    cvar = numpy.array([0, 3], dtype=numpy.int32)
+    # derived parameters
+    A_ik = None
+    B_ik = None
+    C_ik = None
+    a_i = None
+    b_i = None
+    c_i = None
+    d_i = None
+    e_i = None
+    f_i = None
+    h_i = None
+    p_i = None
+    IE_i = None
+    II_i = None
+    m_i = None
+    n_i = None
 
     def dfun(self, state_variables, coupling, local_coupling=0.0):
         r"""
@@ -699,7 +580,6 @@ class ReducedSetHindmarshRose(Model):
         derivative[5] = self.r * self.s * alpha - self.r * gamma - self.n_i
 
         return derivative
-
 
     def update_derived_parameters(self, corrected_d_p=True):
         """

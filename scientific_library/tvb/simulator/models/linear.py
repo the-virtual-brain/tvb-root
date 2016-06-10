@@ -60,15 +60,11 @@ class Linear(Model):
         order=3)
 
     state_variables = ['x']
-
-    def __init__(self, **kwargs):
-        super(Linear, self).__init__(**kwargs)
-        self._nvar = 1
-        self.cvar = numpy.array([0], dtype=numpy.int32)
+    _nvar = 1
+    cvar = numpy.array([0], dtype=numpy.int32)
 
     def dfun(self, state, coupling, local_coupling=0.0):
         x, = state
         c, = coupling
         dx = self.gamma * x + c + local_coupling * x
         return numpy.array([dx])
-

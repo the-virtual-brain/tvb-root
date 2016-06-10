@@ -323,16 +323,6 @@ class WilsonCowan(Model):
         it is also provides the default range of phase-plane plots.""",
         order=23)
 
-    #    variables_of_interest = arrays.IntegerArray(
-    #        label = "Variables watched by Monitors",
-    #        range = basic.Range(lo = 0.0, hi = 2.0, step = 1.0),
-    #        default = numpy.array([0], dtype=numpy.int32),
-    #        doc = """This represents the default state-variables of this Model to be
-    #        monitored. It can be overridden for each Monitor if desired. The
-    #        corresponding state-variable indices for this model are :math:`E = 0`
-    #        and :math:`I = 1`.""",
-    #        order = 16)
-
     variables_of_interest = basic.Enumerate(
         label="Variables watched by Monitors",
         options=["E", "I", "E + I", "E - I"],
@@ -345,28 +335,8 @@ class WilsonCowan(Model):
         order=24)
 
     state_variables = 'E I'.split()
-
-    #    coupling_variables = arrays.IntegerArray(
-    #        label = "Variables to couple activity through",
-    #        default = numpy.array([0], dtype=numpy.int32))
-
-    #    nsig = arrays.FloatArray(
-    #        label = "Noise dispersion",
-    #        default = numpy.array([0.0]),
-    #        range = basic.Range(lo = 0.0, hi = 1.0))
-
-    def __init__(self, **kwargs):
-        """
-        Initialize the WilsonCowan model's traited attributes, any provided as
-        keywords will overide their traited default.
-
-        """
-        LOG.info('%s: initing...' % str(self))
-        super(WilsonCowan, self).__init__(**kwargs)
-        # self._state_variables = ["E", "I"]
-        self._nvar = 2
-        self.cvar = numpy.array([0, 1], dtype=numpy.int32)
-        LOG.debug('%s: inited.' % repr(self))
+    _nvar = 2
+    cvar = numpy.array([0, 1], dtype=numpy.int32)
 
     def dfun(self, state_variables, coupling, local_coupling=0.0):
         r"""

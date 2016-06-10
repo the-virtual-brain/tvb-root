@@ -38,28 +38,16 @@ import numpy
 import collections
 import weakref
 import six
+from .common import get_logger
 
-# While debugging some code below, it appeared that hasattr in Python implemented by trying to get the
-# attribute, and return False iff an exception was raised. The issue is that getattr can raise an exception
-# that you want to track, while Python's impl will just swallow the original exception. So, for this module,
-# we redefine hasattr, so that it's possible to set a breakpoint and step into an exception raised in getattr()
-# during the operation of hasattr().
-def hasattr(object, key):
-    "Test if object has attr named by key."
-    try:
-        getattr(object, key)
-        return True
-    except:
-        return False
-
-# TODO turn off checking at run time?
+LOG = get_logger(__name__)
 
 # StaticAttr prevents descriptors from placing instance-owned, descriptor storage
 
 class StaticAttr(object):
     "Base class which requires all attributes to be declared at class level."
 
-    def __setattr__(self, name, value, set_it_anyway=False):
+    def __setattr__(self, name, value):
         attr_exists = hasattr(self, name)
         if not hasattr(self, name):
             raise AttributeError('%r has no attr %r.' % (self, name))
@@ -118,6 +106,7 @@ class NDArray(StaticAttr):
 
     def __get__(self, instance, _):
         if instance is None:
+            LOG.debug('NDArray returning self for None instance.')
             return self
         else:
             return self._get_or_create_state(instance).array
@@ -167,6 +156,7 @@ class Final(object):
 
     def __get__(self, instance, owner):
         if instance is None:
+            LOG.debug('Final returning self for None instance.')
             return self
         else:
             return self._get_or_create_state(instance).value

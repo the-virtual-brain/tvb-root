@@ -37,7 +37,6 @@ A abstract 2d oscillator model.
 
 # Third party python libraries
 import numpy
-import numexpr
 
 #The Virtual Brain
 from tvb.simulator.common import psutil, get_logger

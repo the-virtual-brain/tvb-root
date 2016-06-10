@@ -40,18 +40,76 @@ A module of classes and functions of common use.
 import numpy
 import os
 import zipfile
+import logging
+from ..basic.logger.builder import GLOBAL_LOGGER_BUILDER
 
 # route framework imports through this module so they are more easily updated
 
-def get_logger(name):
-    try:
-        from tvb.basic.logger.builder import get_logger
-        return get_logger(name)
-    except ImportError:
-        import logging
-        return logging.getLogger(name)
+try:
+    from tvb.basic.logger.builder import get_logger
+except ImportError:
+    import logging
+    get_logger = logging.getLogger
+
 
 LOG = get_logger(__name__)
+
+
+def log_debug(debug=False, timestamp=False):
+    level_name = 'DEBUG' if debug else 'INFO'
+    level = getattr(logging, level_name)
+    GLOBAL_LOGGER_BUILDER.set_loggers_level(level)
+    for handler in LOG.root.handlers:
+        handler.setLevel(level)
+        # reset formatter more friendly for console work
+        if isinstance(handler, logging.StreamHandler) and not timestamp:
+            handler.setFormatter(logging.Formatter('%(levelname)07s  %(message)s'))
+    LOG.info('log level set to %s' % (level_name, ))
+
+
+import six
+
+def astr(ary):
+    "Make short str repr of numerical value."
+    if isinstance(ary, numpy.ndarray):
+        if ary.size == 1:
+            val = ary[0]
+        else:
+            val = 'ndarray(%s, %s)' % (ary.shape, ary.dtype)
+    elif isinstance(ary, bool):
+        val = str(ary)
+    elif isinstance(ary, float) or isinstance(ary, six.integer_types):
+        val = ary
+    else:
+        val = str(ary)
+
+    if isinstance(val, str):
+        return val
+    else:
+        is_py_int = isinstance(val, six.integer_types)
+        is_np_int = hasattr(val, 'dtype') and numpy.issubdtype(ary.dtype, numpy.integer)
+        if is_py_int or is_np_int:
+            return '%d' % (val, )
+        else:
+            return '%g' % (val, )
+
+
+def map_astr(self, names):
+    "Helper for generating a sequence of astr representation of attributes on self"
+    strs = []
+    for name in names.split():
+        strs.append(astr(getattr(self, name)))
+    return tuple(strs)
+
+
+def simple_gen_astr(self, names):
+    "Helper for generating str for object with only numerical attributes."
+    strs = []
+    for name, str in zip(names.split(), map_astr(self, names)):
+        strs.append('%s=%s' % (name, str))
+    clsname = self.__class__.__name__
+    return '%s(%s)' % (clsname, ', '.join(strs))
+
 
 # workaround lack of ufunc at method for older NumPy versions
 def _add_at(dest, map, src):

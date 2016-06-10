@@ -237,36 +237,8 @@ class JansenRit(Model):
     #        order = 17)
 
     state_variables = 'y0 y1 y2 y3 y4 y5'.split()
-
-    def __init__(self, **kwargs):
-        """
-        Initialise parameters for the Jansen Rit column, [JR_1995]_.
-
-        """
-        LOG.info("%s: initing..." % str(self))
-        super(JansenRit, self).__init__(**kwargs)
-
-        #self._state_variables = ["y0", "y1", "y2", "y3", "y4", "y5"]
-        self._nvar = 6
-
-        self.cvar = numpy.array([1, 2], dtype=numpy.int32)
-
-        #TODO: adding an update_derived_parameters method to remove some of the
-        #      redundant parameter multiplication in dfun should gain about 7%
-        #      maybe not worth it... The three exp() kill us at ~90 times *
-        #self.nu_max2 = None #2.0 * self.nu_max
-        #self.Aa = None # self.A * self.a
-        #self.Bb = None # self.B * self.b
-        #self.aa = None # self.a**2
-        #self.a2 = None # 2.0 * self.a
-        #self.b2 = None # 2.0 * self.b
-        #self.a_1J = None # self.a_1 * self.J
-        #self.a_2J = None # self.a_2 * self.J
-        #self.a_3J = None # self.a_3 * self.J
-        #self.a_4J = None # self.a_4 * self.J
-
-        LOG.debug('%s: inited.' % repr(self))
-
+    _nvar = 6
+    cvar = numpy.array([1, 2], dtype=numpy.int32)
 
     def _numpy_dfun(self, state_variables, coupling, local_coupling=0.0):
         r"""
@@ -298,9 +270,7 @@ class JansenRit(Model):
             n = 7 \\
             w = 0.005 [s]
 
-
         """
-
         y0, y1, y2, y3, y4, y5 = state_variables
 
         # NOTE: This is assumed to be \sum_j u_kj * S[y_{1_j} - y_{2_j}]
@@ -341,6 +311,7 @@ class JansenRit(Model):
                                )
         return deriv.T[..., numpy.newaxis]
 
+
 @guvectorize([(float64[:],) * 17], '(n),(m)' + ',()'*14 + '->(n)', nopython=True)
 def _numba_dfun_jr(y, c,
                    src,
@@ -359,11 +330,11 @@ def _numba_dfun_jr(y, c,
 
 class ZetterbergJansen(Model):
     """
-    The Jansen and Rit is a biologically inspired mathematical framework
-    originally conceived to simulate the spontaneous electrical activity of
-    neuronal assemblies, with a particular focus on alpha activity, for instance,
-    as measured by EEG. Later on, it was discovered that in addition to alpha
-    activity, this model was also able to simulate evoked potentials.
+    Zetterberg et al derived a model inspired by the Wilson-Cowan equations. It served as a basis for the later,
+    better known Jansen-Rit model.
+
+    .. [ZL_1978] Zetterberg LH, Kristiansson L and Mossberg K. Performance of a Model for a Local Neuron Population.
+        Biological Cybernetics 31, 15-26, 1978.
 
     .. [JB_1995]  Jansen, B., H. and Rit V., G., *Electroencephalogram and
         visual evoked potential generation in a mathematical model of
@@ -381,9 +352,6 @@ class ZetterbergJansen(Model):
 
     .. figure :: img/ZetterbergJansen_01_mode_0_pplane.svg
         :alt: Jansen and Rit phase plane
-
-    .. automethod:: ZetterbergJansen.__init__
-    .. automethod:: ZetterbergJansen.dfun
 
     """
 
@@ -565,44 +533,16 @@ class ZetterbergJansen(Model):
         order=42)
 
     state_variables = 'v1 y1 v2 y2 v3 y3 v4 y4 v5 y5 v6 v7'.split()
-
-    def __init__(self, **kwargs):
-        """
-        Initialise parameters for the Zetterberg-Jansen model
-
-        """
-        LOG.info("%s: initing..." % str(self))
-        super(ZetterbergJansen, self).__init__(**kwargs)
-
-        self._nvar = 12
-
-        self.cvar = numpy.array([10], dtype=numpy.int32)
-
-
-        self.Heke = None # self.He * self.ke
-        self.Hiki = None # self.Hi * self.ki
-        self.ke_2 = None # 2 * self.ke
-        self.ki_2 = None # 2 * self.ki
-        self.keke = None # self.ke **2
-        self.kiki = None # self.ki **2
-
-        LOG.debug('%s: inited.' % repr(self))
-
-
-    def configure(self):
-        """  """
-        super(ZetterbergJansen, self).configure()
-        self.update_derived_parameters()
-
+    _nvar = 12
+    cvar = numpy.array([10], dtype=numpy.int32)
+    Heke = None  # self.He * self.ke
+    Hiki = None  # self.Hi * self.ki
+    ke_2 = None  # 2 * self.ke
+    ki_2 = None  # 2 * self.ki
+    keke = None  # self.ke **2
+    kiki = None  # self.ki **2
 
     def dfun(self, state_variables, coupling, local_coupling=0.0):
-        r"""
-
-        .. math:: do something
-
-
-        """
-
         magic_exp_number = 709
 
         v1 = state_variables[0, :]
@@ -647,7 +587,6 @@ class ZetterbergJansen(Model):
         derivative[10] = y2 - y3
         # inhibitory cells
         derivative[11] = y4 - y5
-
         return derivative
 
     def sigma_fun(self, sv):
@@ -663,9 +602,7 @@ class ZetterbergJansen(Model):
         temp = self.rho_1 * (self.rho_2 - sv)
         temp = numpy.where(temp > magic_exp_number, numpy.inf, temp)
         sigma_v = (2* self.e0) / (1 + numpy.exp(temp))
-
         return sigma_v
-
 
     def update_derived_parameters(self):
         self.Heke = self.He * self.ke

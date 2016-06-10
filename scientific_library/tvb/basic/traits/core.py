@@ -384,6 +384,9 @@ class MetaType(abc.ABCMeta):
 
         # The owner class, if any, will set this to true, see metatype.__new__
         inst.trait.bound = False
+
+        LOG.debug('%s initialized', inst)
+
         return inst
 
 
@@ -405,7 +408,6 @@ class Type(object):
 
     __metaclass__ = MetaType
     _summary_info = None
-
 
     def __get__(self, inst, cls):
         """

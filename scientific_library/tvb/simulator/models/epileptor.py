@@ -279,18 +279,8 @@ class Epileptor(Model):
 
     state_variables = ['x1', 'y1', 'z', 'x2', 'y2', 'g']
 
-    def __init__(self, **kwargs):
-        """
-        """
-
-        LOG.info("%s: init'ing..." % (str(self),))
-
-        super(Epileptor, self).__init__(**kwargs)
-
-        self._nvar = 6
-        self.cvar = numpy.array([0, 3], dtype=numpy.int32)
-
-        LOG.info("%s: init'ed." % (repr(self),))
+    _nvar = 6
+    cvar = numpy.array([0, 3], dtype=numpy.int32)
 
     def _numpy_dfun(self, state_variables, coupling, local_coupling=0.0,
              array=numpy.array, where=numpy.where, concat=numpy.concatenate):
@@ -334,7 +324,6 @@ class Epileptor(Model):
                 \end{cases}
 
         """
-
         y = state_variables
         ydot = numpy.empty_like(state_variables)
 

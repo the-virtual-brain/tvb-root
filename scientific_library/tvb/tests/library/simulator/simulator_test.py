@@ -41,7 +41,7 @@ schemes (region and surface based simulations).
 #TODO: check the defaults of simulator.Simulator() (?)
 #TODO: continuation support or maybe test that particular feature elsewhere
 
-if __name__ == "__main__":
+if True or __name__ == "__main__":
     from tvb.tests.library import setup_test_console_env
     setup_test_console_env()
 

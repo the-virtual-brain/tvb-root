@@ -41,6 +41,7 @@ Singleton logging builder.
 """
 
 import os
+import weakref
 import logging.config
 from tvb.basic.profile import TvbProfile
 
@@ -65,14 +66,18 @@ class LoggerBuilder(object):
         #Specify logging configuration file for current package. 
         logging.config.fileConfig(os.path.join(package_path, config_file_name), disable_existing_loggers=False)
 
+        self._loggers = weakref.WeakValueDictionary()
 
-    @staticmethod
-    def build_logger(parent_module):
+    def build_logger(self, parent_module):
         """
         Build a logger instance and return it
         """
-        return logging.getLogger(parent_module)
+        self._loggers[parent_module] = logger = logging.getLogger(parent_module)
+        return logger
 
+    def set_loggers_level(self, level):
+        for logger in self._loggers.values():
+            logger.setLevel(level)
 
 
 ### We make sure a single instance of logger-builder is created.
@@ -89,7 +94,7 @@ def get_logger(parent_module=''):
     """
     Function to retrieve a new Python logger instance for current module.
     
-    :param parent_module: module for which to create logger.
+    :param parent_module: module name for which to create logger.
     """
     return GLOBAL_LOGGER_BUILDER.build_logger(parent_module)
    

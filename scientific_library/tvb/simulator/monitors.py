@@ -54,17 +54,10 @@ Conversion of power of 2 sample-rates(Hz) to Monitor periods(ms)
 
 """
 
-# Standard python libraries
-
-# Third party python libraries
 import numpy
-
-#The Virtual Brain
 from tvb.datatypes.time_series import (TimeSeries, TimeSeriesRegion,
     TimeSeriesEEG, TimeSeriesMEG, TimeSeriesSEEG, TimeSeriesSurface)
-from tvb.simulator.common import get_logger
-LOG = get_logger(__name__)
-
+from tvb.simulator.common import get_logger, simple_gen_astr
 import tvb.datatypes.sensors as sensors_module
 from tvb.datatypes.sensors import SensorsMEG, SensorsInternal, SensorsEEG, Sensors
 import tvb.datatypes.arrays as arrays
@@ -74,136 +67,18 @@ from tvb.datatypes.connectivity import Connectivity
 from tvb.datatypes.projections import (ProjectionMatrix,
     ProjectionSurfaceEEG, ProjectionSurfaceMEG, ProjectionSurfaceSEEG)
 import tvb.datatypes.equations as equations
-
 import tvb.basic.traits.util as util
 import tvb.basic.traits.types_basic as basic
 import tvb.basic.traits.core as core
-
 from tvb.simulator.common import iround, numpy_add_at
 
 
-class MonitorTransforms(object):
-    """
-    Monitor pre & post expr transform rules
-
-    - pre/post are string fields
-    - both contain (possibly comma separated) expressions in numexpr syntax
-    - no reduction operations (sum/prod) because these result in shape changes
-    - if comma separated, assert len(pre.split(','))==len(post.split(',')), pre-post expression are paired
-    - output 4D ts has shape (time, len(pre.split(',')), node, mode)
-    - by default pre & post is identity
-    - n pre & n post can be different, but only if one of them is 1 or 0
-      in which case it is applied to each of the others (or identity if none given)
-
-    additional rules on special variable names in the expressions
-
-    - pre can't contain empty
-    - post can, but is identity
-    - post should ref 'mon' as corresponding pre expr
-
-    """
-
-    def __init__(self, pre_exprs, post_exprs, model_svars=(), delim=';'):
-        self.pre = self._prep_exprs(pre_exprs, delim)
-        if post_exprs == '':
-            post_exprs = delim.join(['mon']*len(self.pre))
-        self.post = self._prep_exprs(post_exprs, delim)
-        self.svars = model_svars
-        # self._check_num_exprs()
-        self._check_syntax(self.pre, allow_empty=False)
-        self._check_syntax(self.post, allow_empty=True)
-        self._np_ns = {}
-        exec "from numpy import *" in self._np_ns
-
-    def _prep_exprs(self, exprs, delim):
-        return [e.strip() for e in exprs.split(delim)]
-
-    # Commented because of  TVB-1946
-    # def _check_num_exprs(self):
-    #     n_pre, n_post = len(self.pre), len(self.post)
-    #     if n_pre != n_post:
-    #         if n_pre == 1:
-    #             self.pre *= n_post
-    #         elif n_post == 1:
-    #             self.post *= n_pre
-    #         else:
-    #             msg = ("%d pre and %d post monitor expressions provided. Only an equal number or 1 for either "
-    #                    "should be provided.")
-    #             msg %= n_pre, n_post
-    #             raise Exception(msg)
-    #     else:
-    #         pass
-
-    def _check_syntax(self, exprs, allow_empty):
-        for expr in exprs:
-            if allow_empty and len(expr) == 0:
-                continue
-                # this expr will be no-op / identity
-            try:
-                compile(expr, '<expr>', 'eval')
-            except SyntaxError:
-                raise SyntaxError('%r is not a valid expression' % (expr, ))
-
-    def _exec_in(self, code, ns):
-        ns = ns.copy()
-        ns.update(self._np_ns)
-        try:
-            exec code in ns
-        except Exception as exc:
-            msg = '%s: %r' % (exc.message, code)
-            raise Exception(msg)
-
-    def apply_pre(self, state):
-        """
-        Apply pre-monitor transformations to state.
-
-        """
-
-        ns = {}
-        svars = self.svars or map('x{0}'.format, range(len(state)))
-        ok = '__out__'
-        assert ok not in svars
-        ns[ok] = numpy.empty((len(self.pre), ) + state.shape[1:])
-        for key, val in zip(svars, state):
-            ns[key] = val
-        for i, expr in enumerate(self.pre):
-            self._exec_in("%s[%d] = %s" % (ok, i, expr), ns)
-        return ns[ok]
-
-    def apply_post(self, monitor_output, inkey='mon'):
-        """
-        Apply post-monitor transformations to monitor output.
-
-        """
-
-        ok = '__out__'
-        assert inkey != ok
-        time, sample = monitor_output
-        ns = {inkey: sample}
-        ns[ok] = numpy.empty((len(self.post), ) + sample.shape[1:])
-        for i, expr in enumerate(self.post):
-            ns[inkey] = sample[i]
-            if len(expr) == 0:
-                expr = inkey
-            self._exec_in('%s[%d] = %s' % (ok, i, expr), ns)
-        return time, ns[ok]
+LOG = get_logger(__name__)
 
 
 class Monitor(core.Type):
     """
-    Base Monitor class, all Monitors inherit from this class.
-
-    **private attribute:**
-        ``_stock``: 
-            A kind of internal memory of the monitor, used for when monitors
-            are non-instantaneous, such as TemporalAverage or fMRI.
-
-    .. #Currently there seems to be a clash betwen traits and autodoc, autodoc
-    .. #can't find the methods of the class, the class specific names below get
-    .. #us around this...
-    .. automethod:: Monitor.__init__
-    .. automethod:: Monitor.config_for_sim
-    .. automethod:: Monitor.record
+    Abstract base class for monitor implementations.
 
     """
 
@@ -225,50 +100,18 @@ class Monitor(core.Type):
         #order = -1
     )
 
-    pre_expr = basic.String(
-        label="Pre-monitor expression(s)",
-        required=False,
-        doc="Expression to evaluate on state variables prior to applying a "
-            "monitor's observation model. Several expressions may be provided "
-            "when separated by semicolons (';'), each paired with a corresponding post_expr "
-            "if provided. Expressions must be standard NumPy syntax or using functions from numpy, and "
-            "reductions (sum, prod) are not available. If no set of expressions are "
-            "given, then the model's variables of interest are used. For example, the dipole moment prior "
-            "to applying an EEG gain matrix for the generic 2D oscillator might use the expression "
-            "`1e-6 * (V + W / 2)`.",
-        order=-1
-    )
+    istep = None
+    dt = None
+    voi = None
+    _stock = numpy.empty([])
 
-    post_expr = basic.String(
-        label="Post-monitor expression(s)",
-        required=False,
-        doc="Expression to evaluate on monitor values (named `mon`) after applying a "
-            "monitor's observation model. Several expressions of 'mon' may be provided "
-            "when separated by semicolons (';'), each paired with a corresponding pre_expr "
-            "if provided. Expressions must be standard NumPy syntax or using functions from numpy, and "
-            "reductions (sum, prod) are not available. If no expressions are given "
-            "then the result of the monitor's observation model results. For example, the sine of squaring the"
-            " result of a monitor's observation model is achieved which the expression `sin(mon**2)`",
-        order=-1
-    )
-
-    def __init__(self,  **kwargs):
-        """
-        Initialise the place holder attributes that will be filled when the
-        Monitor is configured for a given Simulation -- ie, for a specific
-        Model, Connectivity, Integrator, etc.
-
-        """
-        super(Monitor, self).__init__(**kwargs) 
-        LOG.debug(str(kwargs))
-
-        self.istep = None #Monitor period in integration time-steps (integer).
-        self.dt = None  #Integration time-step in "physical" units.
-        self.voi = None
-        self._stock = numpy.array([], dtype=numpy.float64)
+    def __str__(self):
+        clsname = self.__class__.__name__
+        return '%s(period=%f, voi=%s)' % (clsname, self.period, self.variables_of_interest.tolist())
 
     def config_for_sim(self, simulator):
-        """
+        """Configure monitor for given simulator.
+
         Grab the Simulator's integration step size. Set the monitor's variables
         of interest based on the Monitor's 'variables_of_interest' attribute, if
         it was specified, otherwise use the 'variables_of_interest' specified 
@@ -276,54 +119,23 @@ class Monitor(core.Type):
         between returns by the record method. This method is called from within
         the the Simulator's configure() method.
 
-        Args:
-            ``simulator`` (Simulator): a Simulator object.
-
         """
         self.dt = simulator.integrator.dt
         self.istep = iround(self.period / self.dt)
-        LOG.info("%s: istep of monitor is %d" % (str(self), self.istep))
-
-        svars = simulator.model.state_variables
-
-        if False: # xfm branch to remove
-            # handle transforms, "expressions of interest"
-            if self.pre_expr or self.post_expr:
-                pre, post = self.pre_expr, self.post_expr
-            else:
-                # TODO convert voi to pre expr
-                if self.variables_of_interest.size == 0:
-                    self.voi = numpy.array([simulator.model.state_variables.index(var)
-                                            for var in simulator.model.variables_of_interest])
-                else:
-                    self.voi = self.variables_of_interest
-                pre = ';'.join([svar for i, svar in enumerate(svars) if i in self.voi])
-                post = ''
-
-            self._transforms = mt = MonitorTransforms(pre, post, svars)
-            self.voi = numpy.r_[:len(mt.pre)]
-            LOG.info('%r - pre %r, post %r, svars %r', self, mt.pre, mt.post, svars)
-
-        else:
-            self.voi = self.variables_of_interest
-            if self.voi is None or self.voi.size == 0:
-                self.voi = numpy.r_[:len(simulator.model.variables_of_interest)]
+        self.voi = self.variables_of_interest
+        if self.voi is None or self.voi.size == 0:
+            self.voi = numpy.r_[:len(simulator.model.variables_of_interest)]
 
     def record(self, step, observed):
-        """
+        """Record a sample of the observed state at given step.
+
         This is a final method called by the simulator to obtain samples from a
         monitor instance. Monitor subclasses should not override this method, but
         rather implement the `sample` method.
 
         """
 
-        if False: # xfm branch to be removed
-            mt = self._transforms
-            sample = self.sample(step, mt.apply_pre(observed))
-            if sample is not None:
-                return mt.apply_post(sample)
-        else:
-            return self.sample(step, observed)
+        return self.sample(step, observed)
 
     def sample(self, step, state):
         """
@@ -364,13 +176,7 @@ class Monitor(core.Type):
                           **self._transform_user_tags())
 
     def _transform_user_tags(self):
-        "Return transforms as user tags."
-        values = []
-        if self.pre_expr:
-            values.append(self.pre_expr)
-        if self.post_expr:
-            values.append(self.post_expr)
-        return {'user_tag_%d' % (i + 1, ): value for i, value in enumerate(values)}
+        return {}
 
 
 class Raw(Monitor):
@@ -392,62 +198,28 @@ class Raw(Monitor):
     variables_of_interest = arrays.IntegerArray(
         label = "Raw Monitor sees all!!! Resistance is futile...",
         order = -1)
-    
-    def __init__(self, **kwargs):
-        """Initialise the Raw monitor from the base Monitor class."""
-        LOG.info("%s: initing..." % str(self))
-        super(Raw, self).__init__(**kwargs)
-        LOG.debug("%s: inited." % repr(self))
 
     def config_for_sim(self, simulator):
-        """
-        Initialise the istep to 1, regardless of any ``period`` provided. Also,
-        sets the monitor's variables of interest to be all state variables, 
-        regardless of any ``variables_of_interest`` provided.
-
-        """
-
+        if self.period != simulator.integrator.dt:
+            LOG.debug('Raw period not equal to integration time step, overriding')
+        self.period = simulator.integrator.dt
         super(Raw, self).config_for_sim(simulator)
-
-        # Simulation time step
-        self.dt = simulator.integrator.dt
-        self.period = simulator.integrator.dt #Needed for Monitor consistency
-
-        # state-variables to monitor
-        self.voi = numpy.arange(len(simulator.model.variables_of_interest))
-        LOG.info("%s: variable of interest is %s"%(str(self), str(self.voi)))
-
-        # monitor period in integration steps
         self.istep = 1
-        LOG.info("%s: istep of monitor is %d"%(str(self), self.istep))
+        self.voi = numpy.arange(len(simulator.model.variables_of_interest))
 
     def sample(self, step, state):
-        """
-        Records all state-variables, nodes and modes for every step of the
-        integration.
-
-        """
         time = step * self.dt
         return [time, state]
 
 
 class SubSample(Monitor):
     """
-    Discretely sub-sample the simulation every `istep` integration steps. Time 
-    steps that are not modulo `istep` are completely ignored.
+    Sub-samples or decimates the solution in time.
 
     """
     _ui_name = "Temporally sub-sample"
 
-    def __init__(self, **kwargs):
-        """Initialise a SubSample monitor from the base Monitor class."""
-        LOG.info("%s: initing..." % str(self))
-        super(SubSample, self).__init__(**kwargs)
-        LOG.debug("%s: inited." % repr(self))
-
-
     def sample(self, step, state):
-        """Records if integration step corresponds to sampling period."""
         if step % self.istep == 0:
             time = step * self.dt
             return [time, state[self.voi, :]]
@@ -485,32 +257,13 @@ class SpatialAverage(Monitor):
                               to use either connectivity hemispheres or cortical attributes.""",
                               order = -1)
 
-
-
-    def __init__(self, **kwargs):
-        """
-        Initialise a SpatialAverage monitor from the base Monitor class. Add an
-        additional place holder attribute, specific to this Monitor, for the
-        array which averages nodes of the simulation to the new set of
-        time-series specified by the spatial_mask.
-
-        """
-        LOG.info("%s: initing..." % str(self))
-        super(SpatialAverage, self).__init__(**kwargs)
-
-        self.spatial_mean = None
-        LOG.debug("%s: inited." % repr(self))
-
-
     def config_for_sim(self, simulator):
-        """
-        Sets sampling period, variable/s of interest, and the array used to
-        group nodes, by default the surface's region_mapping is used.
 
-        """
+        # initialize base attributes
         super(SpatialAverage, self).config_for_sim(simulator)
         self.is_default_special_mask = False
 
+        # setup given spatial mask or default to region mapping
         if self.spatial_mask.size == 0:
             self.is_default_special_mask = True
             if not (simulator.surface is None):
@@ -523,7 +276,6 @@ class SpatialAverage(Monitor):
                         self.spatial_mask = [int(c) for c in conn.cortical]
                     else:
                         msg = "Must fill Spatial Mask parameter for non-surface simulations when using SpatioTemporal monitor!"
-                        LOG.error(msg)
                         raise Exception(msg)
                 if self.default_mask[0] == 'hemispheres':
                     if conn is not None and conn.hemispheres is not None and conn.hemispheres.size > 0:
@@ -531,48 +283,31 @@ class SpatialAverage(Monitor):
                         self.spatial_mask = [int(h) for h in conn.hemispheres]
                     else:
                         msg = "Must fill Spatial Mask parameter for non-surface simulations when using SpatioTemporal monitor!"
-                        LOG.error(msg)
                         raise Exception(msg)
 
         number_of_nodes = simulator.number_of_nodes
-        LOG.debug("%s: number_of_nodes = %s" % (str(self), number_of_nodes))
         if self.spatial_mask.size != number_of_nodes:
             msg = "spatial_mask must be a vector of length number_of_nodes."
-            LOG.error(msg)
             raise Exception(msg)
 
         areas = numpy.unique(self.spatial_mask)
         number_of_areas = len(areas)
-        LOG.debug("%s: number_of_areas = %s" % (str(self), number_of_areas))
         if not numpy.all(areas == numpy.arange(number_of_areas)):
             msg = ("Areas in the spatial_mask must be specified as a "
                     "contiguous set of indices starting from zero.")
-            LOG.error(msg)
             raise Exception(msg)
 
         util.log_debug_array(LOG, self.spatial_mask, "spatial_mask", owner=self.__class__.__name__)
-
         spatial_sum = numpy.zeros((number_of_nodes, number_of_areas))
         spatial_sum[numpy.arange(number_of_nodes), self.spatial_mask] = 1
-
         spatial_sum = spatial_sum.T
-
         util.log_debug_array(LOG, spatial_sum, "spatial_sum")
-
         nodes_per_area = numpy.sum(spatial_sum, axis=1)[:, numpy.newaxis]
         self.spatial_mean = spatial_sum / nodes_per_area
-
         util.log_debug_array(LOG, self.spatial_mean, "spatial_mean", owner=self.__class__.__name__)
 
 
     def sample(self, step, state):
-        """
-        This method records the state of the simulation if the integration step
-        corresponds to the sampling period of this Monitor. The nodes of the
-        simulation are effectively combined into groups, and then time-series
-        representing the average activity within these groups is returned.
-
-        """
         if step % self.istep == 0:
             time = step * self.dt
             monitored_state = numpy.dot(self.spatial_mean, state[self.voi, :])
@@ -603,13 +338,6 @@ class GlobalAverage(Monitor):
     """
     _ui_name = "Global average"
 
-
-    def __init__(self, **kwargs):
-        """Initialise a GlobalAverage monitor from the base Monitor class."""
-        LOG.info("%s: initing..." % str(self))
-        super(GlobalAverage, self).__init__(**kwargs)
-        LOG.debug("%s: inited." % repr(self))
-
     def sample(self, step, state):
         """Records if integration step corresponds to sampling period."""
         if step % self.istep == 0:
@@ -634,20 +362,11 @@ class TemporalAverage(Monitor):
     _ui_name = "Temporal average"
 
     def config_for_sim(self, simulator):
-        """
-        Set the monitor's variables of interest based on the model
-        specification. Calculates the number of integration steps (isteps)
-        between returns by the record method. And initialises the stock array
-        over which the temporal averaging will be performed.
-
-        """
         super(TemporalAverage, self).config_for_sim(simulator)
-
         stock_size = (self.istep, self.voi.shape[0],
                       simulator.number_of_nodes,
                       simulator.model.number_of_modes)
-        LOG.debug("%s: stock_size is %s" % (str(self), str(stock_size)))
-
+        LOG.debug("Temporal average stock_size is %s" % (str(stock_size), ))
         self._stock = numpy.zeros(stock_size)
 
 
@@ -743,6 +462,8 @@ class Projection(Monitor):
             else:
                 self.rmap = self.region_mapping
 
+            LOG.debug('Projection used in region sim has %d non-cortical regions', non_cortical_indices.size)
+
         have_subcortical = len(non_cortical_indices) > 0
 
         # determine source space
@@ -753,12 +474,14 @@ class Projection(Monitor):
 
         # compute analytic if not provided
         if self.projection is None:
+            LOG.debug('Precomputed projection not unavailable using analytic approximation.')
             self.gain = self.analytic(**sources)
 
         # reduce to region lead field if region sim
         if not using_cortical_surface and self.gain.shape[1] == self.rmap.size:
             gain = numpy.zeros((self.gain.shape[0], conn.number_of_regions))
             numpy_add_at(gain.T, self.rmap, self.gain.T)
+            LOG.debug('Region mapping gain shape %s to %s', self.gain.shape, gain.shape)
             self.gain = gain
 
         # append analytic sub-cortical to lead field
@@ -766,17 +489,24 @@ class Projection(Monitor):
             # need matrix of shape (proj.shape[0], len(sc_ind))
             src = conn.centres[non_cortical_indices], conn.orientations[non_cortical_indices]
             self.gain = numpy.hstack((self.gain, self.analytic(*src)))
+            LOG.debug('Added subcortical analytic gain, for final shape %s', self.gain.shape)
 
         if self.sensors.usable is not None and not self.sensors.usable.all():
-            self.gain[~self.sensors.usable] = 0.0
+            mask_unusable = ~self.sensors.usable
+            self.gain[mask_unusable] = 0.0
+            LOG.debug('Zeroed gain coefficients for %d unusable sensors', mask_unusable.sum())
 
         # unconditionally zero NaN elements; framework not prepared for NaNs.
         nan_mask = numpy.isfinite(self.gain).all(axis=1)
         self.gain[~nan_mask] = 0.0
+        LOG.debug('Zeroed %d NaN gain coefficients', nan_mask.sum())
 
         # attrs used for recording
         self._state = numpy.zeros((self.gain.shape[0], len(self.voi)))
         self._period_in_steps = int(self.period / self.dt)
+        LOG.debug('State shape %s, period in steps %s', self._state.shape, self._period_in_steps)
+
+        LOG.info('Projection configured gain shape %s', self.gain.shape)
 
     def sample(self, step, state):
         "Record state, returning sample at sampling frequency / period."
@@ -1008,20 +738,6 @@ class iEEG(Projection):
                               **self._transform_user_tags())
 
 
-"""
-#NOTE: It's probably best to do voxelization as an offline "analysis" style
-#      process, returning region or surface timeseries for BOLD based on the
-#      simulation. The voxelization only really makes sense for surface anyway,
-#      and it should be interesting/benificial to be able to compare the effect
-#      of different voxelizations on the same underlying surface.
-
-#SK:   For a number of reasons, it's probably best to avoid returning TimeSeriesVolume ,
-#      from a simulation directly, instead just stick with the source, i.e. Region and Surface,
-#      then later we can add a voxelization "analyser" to produce TimeSeriesVolume on which Volume
-#      based analysers and visualisers (which don't exist yet) can operate.
-"""
-
-
 class Bold(Monitor):
     """
 
@@ -1057,26 +773,14 @@ class Bold(Monitor):
     .. [Gl_1999] Glover, G. *Deconvolution of Impulse Response in Event-Related BOLD fMRI*.
         NeuroImage 9, 416-429, 1999.
 
-  
-    .. VJ derivation in the review paper.
-
-    .. note:: LIMITATIONS: sampling period must be integer multiple of 500ms
-
-    .. note:: CONSIDERATIONS: It is  sensible to use this monitor if your 
-              simulation length is > 30s (30000ms)
-
     .. note:: gamma and polonsky are based on the nitime implementation
               http://nipy.org/nitime/api/generated/nitime.fmri.hrf.html
 
     .. note:: see Tutorial_Exploring_The_Bold_Monitor
 
-    .. warning:: Not yet tested, debugged, generalised etc...
-    .. wisdom and plagiarism
-
     """
     _ui_name = "BOLD"
 
-    #Over-ride the Monitor baseclass period...
     period = basic.Float(
         label = "Sampling period (ms)",
         default = 2000.0,
@@ -1097,78 +801,41 @@ class Bold(Monitor):
         doc= """Duration of the hrf kernel""",
         order=-1)
 
-
-    def __init__(self, **kwargs):
-        """
-        Initialise from the base Monitor class.
-
-        """
-        super(Bold, self).__init__(**kwargs)
-
-        #Bold measurement period is much larger than our simulation's dt, so we
-        #need an interim downsampling to support it. 
-        #TODO: adapt monitors to support chaining, so we can just stick a 
-        #      temporal average followed by the bold response convolution and
-        #      then a spatial average (node to voxel, only really relevant for 
-        #      surface simulations).
-        self._interim_period = None
-        self._interim_istep = None
-        self._interim_stock = None
-        self._stock_steps = None
-        self._stock_time = None
-        self._stock_sample_rate = 2**-2
-
-        self.hemodynamic_response_function = None
+    _interim_period = None
+    _interim_istep = None
+    _interim_stock = None
+    _stock_steps = None
+    _stock_time = None
+    _stock_sample_rate = 2 ** -2
+    hemodynamic_response_function = None
 
     def compute_hrf(self):
         """
-        Compute the heamodynamic response function.
+        Compute the hemodynamic response function.
+
         """
-
-        #TODO: Current traits limitations require this moved to config_for_sim()
-        if numpy.mod(self.period, 500.0): #TODO: This is a temporary limit, need to fix configure...
-            msg = "%s: BOLD.period must be a multiple of 500.0, period = %s"
-            LOG.error(msg % (str(self), str(self.period)))
-
-        #downsample average over simulator steps to give a fixed sampling rate (256Hz)
-        #then (18.75 * tau_s) * 256  ==> 3840 required length of _stock
-
-        # simulation in ms therefore 1000.0/256.0 ==> 3.90625 _interim_period in ms
-
         self._stock_sample_rate = 2.0**-2 #/ms    # NOTE: An integral multiple of dt
-        magic_number = self.hrf_length #* 0.8      # truncates G, volterra kernel, once ~zero 
-
+        magic_number = self.hrf_length #* 0.8      # truncates G, volterra kernel, once ~zero
         #Length of history needed for convolution in steps @ _stock_sample_rate
         required_history_length = self._stock_sample_rate * magic_number # 3840 for tau_s=0.8
         self._stock_steps = numpy.ceil(required_history_length).astype(int)
         stock_time_max    = magic_number/1000.0                                # [s]
         stock_time_step   = stock_time_max / self._stock_steps                 # [s]
         self._stock_time  = numpy.arange(0.0, stock_time_max, stock_time_step) # [s]
-
-        LOG.debug("%s: Required history length for performing convolution = %s" % 
-                (str(self), self._stock_steps))
-
-        
+        LOG.debug("Bold requires %d steps for HRF kernel convolution", self._stock_steps)
         #Compute the HRF kernel
         self.hrf_kernel.pattern = self._stock_time
         G = self.hrf_kernel.pattern
-
         #Reverse it, need it into the past for matrix-multiply of stock
         G = G[::-1]
         self.hemodynamic_response_function = G[numpy.newaxis, :]
-
-
-        util.log_debug_array(LOG, self.hemodynamic_response_function,
-                             "hemodynamic_response_function",
-                             owner=self.__class__.__name__)
-
         #Interim stock configuration
         self._interim_period = 1.0 / self._stock_sample_rate #period in ms
         self._interim_istep = int(round(self._interim_period / self.dt)) # interim period in integration time steps
-
+        LOG.debug('Bold HRF shape %s, interim period & istep %d & %d',
+                  self.hemodynamic_response_function.shape, self._interim_period, self._interim_istep)
 
     def config_for_sim(self, simulator):
-        "Configure BOLD monitor for simulator instance."
         super(Bold, self).config_for_sim(simulator)
         self.compute_hrf()
         sample_shape = self.voi.shape[0], simulator.number_of_nodes, simulator.model.number_of_modes
@@ -1181,22 +848,14 @@ class Bold(Monitor):
 
 
     def sample(self, step, state):
-        """
-        Returns a result if integration step corresponds to sampling period.
-        Updates the interim-stock on every step and updates the stock if the 
-        step corresponds to the interim period.
-
-        """
-        #Update the interim-stock at every step
+        # Update the interim-stock at every step
         self._interim_stock[((step % self._interim_istep) - 1), :] = state[self.voi, :]
-
-        #At stock's period update it with the temporal average of interim-stock
+        # At stock's period update it with the temporal average of interim-stock
         if step % self._interim_istep == 0:
             avg_interim_stock = numpy.mean(self._interim_stock, axis=0)
             self._stock[((step/self._interim_istep % self._stock_steps) - 1), :] = avg_interim_stock
-
-        #At the monitor's period, apply the heamodynamic response function to
-        #the stock and return the resulting BOLD signal.
+        # At the monitor's period, apply the heamodynamic response function to
+        # the stock and return the resulting BOLD signal.
         if step % self.istep == 0:
             time = step * self.dt
             hrf = numpy.roll(self.hemodynamic_response_function,
@@ -1232,6 +891,7 @@ class BoldRegionROI(Bold):
         result = super(BoldRegionROI, self).sample(step, state)
         if result:
             t, data = result
+            # TODO use reduceat
             return [t, array([data.flat[self.region_mapping==i].mean()
                               for i in xrange(self.region_mapping.max())])]
         else:
@@ -1256,5 +916,3 @@ class ProgressLogger(Monitor):
             self._last_step = step
         if (step - self._last_step) % self._istep == 0:
             self.logger.info('step %d time %.4f s', step, step * self._dt / 1e3)
-
-

@@ -34,7 +34,6 @@ Larter-Breakspear model based on the Morris-Lecar equations.
 from .base import Model, LOG, numpy, basic, arrays
 
 
-
 class LarterBreakspear(Model):
     r"""
     A modified Morris-Lecar model that includes a third equation which simulates
@@ -443,24 +442,9 @@ class LarterBreakspear(Model):
     )
 
     state_variables = 'V W Z'.split()
-
-    def __init__(self, **kwargs):
-        """
-        .. May need to put kwargs back if we can't get them from trait...
-
-        """
-
-        LOG.info('%s: initing...' % str(self))
-
-        super(LarterBreakspear, self).__init__(**kwargs)
-
-        self._state_variables = ["V", "W", "Z"]
-
-        self._nvar = 3
-        self.cvar = numpy.array([0], dtype=numpy.int32)
-
-        LOG.debug('%s: inited.' % repr(self))
-
+    _state_variables = ["V", "W", "Z"]
+    _nvar = 3
+    cvar = numpy.array([0], dtype=numpy.int32)
 
     def dfun(self, state_variables, coupling, local_coupling=0.0):
         r"""
@@ -479,34 +463,23 @@ class LarterBreakspear(Model):
             Q_{Z}   &= Q_{Z_{max}} \, (1 + \tanh\left(\dfrac{Z_{k} - ZT}{\delta_{Z}}\right)),
 
         """
-        V = state_variables[0, :]
-        W = state_variables[1, :]
-        Z = state_variables[2, :]
+        V, W, Z = state_variables
         derivative = numpy.empty_like(state_variables)
-
         c_0   = coupling[0, :]
-
-
         # relationship between membrane voltage and channel conductance
         m_Ca = 0.5 * (1 + numpy.tanh((V - self.TCa) / self.d_Ca))
         m_Na = 0.5 * (1 + numpy.tanh((V - self.TNa) / self.d_Na))
         m_K  = 0.5 * (1 + numpy.tanh((V - self.TK )  / self.d_K))
-
         # voltage to firing rate
         QV    = 0.5 * self.QV_max * (1 + numpy.tanh((V - self.VT) / self.d_V))
         QZ    = 0.5 * self.QZ_max * (1 + numpy.tanh((Z - self.ZT) / self.d_Z))
         lc_0  = local_coupling * QV
-
-
         derivative[0] = self.t_scale * (- (self.gCa + (1.0 - self.C) * (self.rNMDA * self.aee) * (QV + lc_0)+ self.C * self.rNMDA * self.aee * c_0) * m_Ca * (V - self.VCa)
                          - self.gK * W * (V - self.VK)
                          - self.gL * (V - self.VL)
                          - (self.gNa * m_Na + (1.0 - self.C) * self.aee * (QV  + lc_0) + self.C * self.aee * c_0) * (V - self.VNa)
                          - self.aie * Z * QZ
                          + self.ane * self.Iext)
-
         derivative[1] = self.t_scale * self.phi * (m_K - W) / self.tau_K
-
         derivative[2] = self.t_scale * self.b * (self.ani * self.Iext + self.aei * V * QV)
-
         return derivative
