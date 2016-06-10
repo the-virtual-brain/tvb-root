@@ -39,31 +39,57 @@ methods that are associated with the precalculated look up tables.
 
 import numpy
 from tvb.basic.readers import try_get_absolute_path
-import tvb.datatypes.lookup_tables_scientific as lookup_tables_scientific
-import tvb.datatypes.lookup_tables_framework as lookup_tables_framework
+from tvb.datatypes import arrays
+from tvb.basic.traits import types_basic as basic, types_mapped
 from tvb.basic.logger.builder import get_logger
+
 
 LOG = get_logger(__name__)
 
 
-class LookUpTable(lookup_tables_scientific.LookUpTableScientific,
-                  lookup_tables_framework.LookUpTableFramework):
+class LookUpTable(types_mapped.MappedType):
     """
-    This class brings together the scientific and framework methods that are
-    associated with the LookUpTable datatype.
-    
-    ::
-        
-                          LookUpTableData
-                                 |
-                                / \\
-          LookUpTableFramework     LookUpTableScientific
-                                \ /
-                                 |
-                            LookUpTable
-        
-    
+    Lookup Tables for storing pre-computed functions.
+    Specific table subclasses are implemented below.
     """
+
+    _base_classes = ['LookUpTables']
+
+    equation = basic.String(
+        label="String representation of the precalculated function",
+        doc="""A latex representation of the function whose values are stored
+            in the table, with the extra escaping needed for interpretation via sphinx.""")
+
+    xmin = arrays.FloatArray(
+        label="x-min",
+        doc="""Minimum value""")
+
+    xmax = arrays.FloatArray(
+        label="x-max",
+        doc="""Maximum value""")
+
+    data = arrays.FloatArray(
+        label="data",
+        doc="""Tabulated values""")
+
+    number_of_values = basic.Integer(
+        label="Number of values",
+        default=0,
+        doc="""The number of values in the table """)
+
+    df = arrays.FloatArray(
+        label="df",
+        doc=""".""")
+
+    dx = arrays.FloatArray(
+        label="dx",
+        default=numpy.array([]),
+        doc="""Tabulation step""")
+
+    invdx = arrays.FloatArray(
+        label="invdx",
+        default=numpy.array([]),
+        doc=""".""")
 
     @staticmethod
     def populate_table(result, source_file):
@@ -75,60 +101,73 @@ class LookUpTable(lookup_tables_scientific.LookUpTableScientific,
         result.data = zip_data['f']
         return result
 
+    def configure(self):
+        """
+        Invoke the compute methods for computable attributes that haven't been
+        set during initialization.
+        """
+        super(LookUpTable, self).configure()
 
-class PsiTable(lookup_tables_scientific.PsiTableScientific,
-               lookup_tables_framework.PsiTableFramework, LookUpTable):
-    """ 
-    This class brings together the scientific and framework methods that are
-    associated with the PsiTable dataType.
-    
-    ::
-        
-                             PsiTableData
-                                 |
-                                / \\
-               PsiTableFramework   PsiTableScientific
-                                \ /
-                                 |
-                               PsiTable
-        
-    
+        # Check if dx and invdx have been computed
+        if self.number_of_values == 0:
+            self.number_of_values = self.data.shape[0]
+
+        if self.dx.size == 0:
+            self.compute_search_indices()
+
+    def _find_summary_info(self):
+        """
+        Gather scientifically interesting summary information from an instance
+        of this dataType, if any ...
+        """
+        summary = {"Number of values": self.number_of_values}
+        return summary
+
+    def compute_search_indices(self):
+        """
+        ...
+        """
+        self.dx = ((self.xmax - self.xmin) / (self.number_of_values) - 1)
+        self.invdx = 1 / self.dx
+
+    def search_value(self, val):
+        """
+        Search a value in this look up table
+        """
+
+        if self.xmin:
+            y = val - self.xmin
+        else:
+            y = val
+
+        ind = numpy.array(y * self.invdx, dtype=int)
+
+        try:
+            return self.data[ind] + self.df[ind] * (y - ind * self.dx)
+        except IndexError:  # out of bounds
+            return numpy.NaN
+            # NOTE: not sure if we should return a NaN or make val = self.max
+            # At the moment, we force the input values to be within a known range
+
+
+class PsiTable(LookUpTable):
     """
+    Look up table containing the values of a function representing the time-averaged gating variable
+    :math:`\\psi(\\nu)` as a function of the presynaptic rates :math:`\\nu`
 
+    """
     @staticmethod
     def from_file(source_file="psi.npz", instance=None):
-
-        if instance is None:
-            result = PsiTable()
-        else:
-            result = instance
-        return LookUpTable.populate_table(result, source_file)
+        return LookUpTable.populate_table(instance or PsiTable(), source_file)
 
 
-class NerfTable(lookup_tables_scientific.NerfTableScientific,
-                lookup_tables_framework.NerfTableFramework, LookUpTable):
-    """ 
-    This class brings together the scientific and framework methods that are
-    associated with the NerfTable dataType.
-    
-    ::
-        
-                             NerfTableData
-                                 |
-                                / \\
-              NerfTableFramework   NerfTableScientific
-                                \ /
-                                 |
-                               NerfTable
-        
-    
+class NerfTable(LookUpTable):
     """
+    Look up table containing the values of Nerf integral within the :math:`\\phi`
+    function that describes how the discharge rate vary as a function of parameters
+    defining the statistical properties of the membrane potential in presence of synaptic inputs.
 
+    """
     @staticmethod
     def from_file(source_file="nerf_int.npz", instance=None):
-
-        if instance is None:
-            result = NerfTable()
-        else:
-            result = instance
-        return LookUpTable.populate_table(result, source_file)
+        return LookUpTable.populate_table(instance or NerfTable(), source_file)

@@ -409,6 +409,10 @@ class Type(object):
     __metaclass__ = MetaType
     _summary_info = None
 
+    def __init__(self, *args, **kwds):
+        "Dummy initialization of Type instance."
+        super(Type, self).__init__(*args, **kwds)
+
     def __get__(self, inst, cls):
         """
         When an attribute of Type is retrieved on another class.

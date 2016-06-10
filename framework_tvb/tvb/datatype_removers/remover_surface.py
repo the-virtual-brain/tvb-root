@@ -37,7 +37,7 @@ from tvb.core.adapters.abcremover import ABCRemover
 from tvb.datatypes.time_series import TimeSeriesSurface
 from tvb.datatypes.region_mapping import RegionMapping
 from tvb.datatypes.local_connectivity import LocalConnectivity
-from tvb.datatypes.patterns_data import StimuliSurfaceData
+from tvb.datatypes.patterns import StimuliSurface
 from tvb.core.services.exceptions import RemoveDataTypeException
 
 
@@ -54,7 +54,7 @@ class SurfaceRemover(ABCRemover):
             associated_ts = dao.get_generic_entity(TimeSeriesSurface, self.handled_datatype.gid, '_surface')
             associated_rm = dao.get_generic_entity(RegionMapping, self.handled_datatype.gid, '_surface')
             associated_lc = dao.get_generic_entity(LocalConnectivity, self.handled_datatype.gid, '_surface')
-            associated_stim = dao.get_generic_entity(StimuliSurfaceData, self.handled_datatype.gid, '_surface')
+            associated_stim = dao.get_generic_entity(StimuliSurface, self.handled_datatype.gid, '_surface')
             error_msg = "Surface cannot be removed because is still used by a "
             if len(associated_ts) > 0:
                 raise RemoveDataTypeException(error_msg + " TimeSeriesSurface.")

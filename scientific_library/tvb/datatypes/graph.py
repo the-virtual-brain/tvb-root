@@ -35,75 +35,89 @@ that are associated with the Graph datatypes.
 
 .. moduleauthor:: Stuart A. Knock <Stuart@tvb.invalid>
 .. moduleauthor:: Paula Sanz Leon <paula.sanz-leon@univ-amu.fr>
+
 """
 
-import tvb.datatypes.graph_scientific as graph_scientific
-import tvb.datatypes.graph_framework as graph_framework
+from tvb.basic.traits import core, types_basic as basic
 from tvb.basic.logger.builder import get_logger
+from tvb.datatypes import arrays, time_series, connectivity
+
 
 LOG = get_logger(__name__)
 
 
+class Covariance(arrays.MappedArray):
+    "Covariance datatype."
 
-class Covariance(graph_scientific.CovarianceScientific, graph_framework.CovarianceFramework):
-    """
-    This class brings together the scientific and framework methods that are
-    associated with the Covariance DataType.
-    
-    ::
-        
-                     CovarianceData
-                            |
-                           / \\
-        CovarianceFramework   CovarianceScientific
-                           \ /
-                            |
-                        Covariance
-        
-    
-    """
-    pass
+    array_data = arrays.ComplexArray(file_storage=core.FILE_STORAGE_EXPAND)
 
+    source = time_series.TimeSeries(
+        label="Source time-series",
+        doc="Links to the time-series on which NodeCovariance is applied.")
 
+    __generate_table__ = True
 
-class CorrelationCoefficients(graph_scientific.CorrelationCoefficientsScientific,
-                              graph_framework.CorrelationCoefficientsFramework):
-    """
-    This class brings together the scientific and framework methods that are
-    associated with the CorrelationCoefficients DataType.
-    
-    ::
-        
-                            CorrelationCoefficientsData
-                                         |
-                                        / \\
-        CorrelationCoefficientsFramework   CorrelationCoefficientsScientific
-                                        \ /
-                                         |
-                               CorrelationCoefficients
-        
-    
-    """
-    pass
+    def configure(self):
+        """After populating few fields, compute the rest of the fields"""
+        # Do not call super, because that accesses data not-chunked
+        self.nr_dimensions = len(self.read_data_shape())
+        for i in range(self.nr_dimensions):
+            setattr(self, 'length_%dd' % (i + 1), int(self.read_data_shape()[i]))
+
+    def write_data_slice(self, partial_result):
+        """
+        Append chunk.
+        """
+        self.store_data_chunk('array_data', partial_result, grow_dimension=2, close_file=False)
+
+    def _find_summary_info(self):
+        summary = {"Graph type": self.__class__.__name__,
+                   "Source": self.source.title}
+
+        summary.update(self.get_info_about_array('array_data'))
+        return summary
 
 
+class CorrelationCoefficients(arrays.MappedArray):
+    "Correlation coefficients datatype."
 
-class ConnectivityMeasure(graph_scientific.ConnectivityMeasureScientific,
-                          graph_framework.ConnectivityMeasureFramework):
-    """
-    This class brings together the scientific and framework methods that are
-    associated with the ConnectivityMeasure dataType.
-    
-    ::
-        
-                          ConnectivityMeasureData
-                                     |
-                                    / \\
-         ConnectivityMeasureFramework   ConnectivityMeasureScientific
-                                    \ /
-                                     |
-                          ConnectivityMeasure
-        
-    """
-    pass
+    array_data = arrays.FloatArray(file_storage=core.FILE_STORAGE_DEFAULT)
 
+    source = time_series.TimeSeries(
+        label="Source time-series",
+        doc="Links to the time-series on which Correlation (coefficients) is applied.")
+
+    labels_ordering = basic.List(
+        label="Dimension Names",
+        default=["Node", "Node", "State Variable", "Mode"],
+        doc="""List of strings representing names of each data dimension""")
+
+    __generate_table__ = True
+
+    def configure(self):
+        """After populating few fields, compute the rest of the fields"""
+        # Do not call super, because that accesses data not-chunked
+        self.nr_dimensions = len(self.read_data_shape())
+        for i in range(self.nr_dimensions):
+            setattr(self, 'length_%dd' % (i + 1), int(self.read_data_shape()[i]))
+
+    def _find_summary_info(self):
+        summary = {"Graph type": self.__class__.__name__,
+                   "Source": self.source.title,
+                   "Dimensions": self.labels_ordering}
+        summary.update(self.get_info_about_array('array_data'))
+        return summary
+
+
+class ConnectivityMeasure(arrays.MappedArray):
+    "Measurement of based on a connectivity."
+
+    connectivity = connectivity.Connectivity
+
+    def _find_summary_info(self):
+        summary = {"Graph type": self.__class__.__name__}
+        # summary["Source"] = self.connectivity.title
+        summary.update(self.get_info_about_array('array_data'))
+        return summary
+
+    __generate_table__ = True

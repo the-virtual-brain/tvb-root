@@ -49,16 +49,16 @@ class ParametersFactoryTest(BaseTestCase):
         Tests successful creation of traited classes.
         """
         # We imported array so we should have all these traited classes registered
-        expected = ['PositionArrayScientific', 'FloatArrayScientific', 'StringArrayScientific', 
-                    'IntegerArray', 'IntegerArrayFramework', 'OrientationArrayScientific', 
-                    'BaseArrayFramework', 'IndexArrayData', 'StringArray', 'PositionArray', 
-                    'IndexArray', 'IntegerArrayData', 'IndexArrayScientific', 
-                    'IntegerArrayScientific', 'BoolArrayFramework', 'BoolArrayData', 
-                    'BoolArray', 'ComplexArrayFramework', 'OrientationArray', 'BoolArrayScientific',
-                    'OrientationArrayFramework', 'ComplexArrayScientific', 'ComplexArrayData', 
-                    'FloatArrayFramework', 'IndexArrayFramework', 'OrientationArrayData', 
-                    'StringArrayData', 'StringArrayFramework', 'PositionArrayData', 'FloatArray', 
-                    'PositionArrayFramework', 'ComplexArray', 'Array', 'FloatArrayData', 'SparseMatrix']
+        expected = [
+                    'IntegerArray',
+                    'StringArray', 'PositionArray',
+                    'IndexArray',
+
+                    'BoolArray', 'OrientationArray',
+
+
+                    'FloatArray',
+                    'ComplexArray', 'Array', 'SparseMatrix']
         subclasses = get_traited_subclasses(Array)
         for key in expected:
             self.assertTrue(key in subclasses)

@@ -43,7 +43,7 @@ from tvb.core.entities.file.exceptions import IncompatibleFileManagerException
 from tvb.core.entities.file.hdf5_storage_manager import HDF5StorageManager
 from tvb.core.entities.transient.structure_entities import DataTypeMetaData
 from tvb.core.services.import_service import ImportService
-from tvb.datatypes import projections_data
+from tvb.datatypes import projections
 
 LOGGER = get_logger(__name__)
 FIELD_PROJECTION_TYPE = "Projection_type"
@@ -72,11 +72,11 @@ def update(input_file):
     if "ProjectionSurface" in class_name and FIELD_PROJECTION_TYPE not in root_metadata:
         LOGGER.info("Updating ProjectionSurface %s from %s" % (file_name, folder))
 
-        projection_type = projections_data.EEG_POLYMORPHIC_IDENTITY
+        projection_type = projections.EEG_POLYMORPHIC_IDENTITY
         if "SEEG" in class_name:
-            projection_type = projections_data.SEEG_POLYMORPHIC_IDENTITY
+            projection_type = projections.SEEG_POLYMORPHIC_IDENTITY
         elif "MEG" in class_name:
-            projection_type = projections_data.MEG_POLYMORPHIC_IDENTITY
+            projection_type = projections.MEG_POLYMORPHIC_IDENTITY
 
         root_metadata[FIELD_PROJECTION_TYPE] = json.dumps(projection_type)
         LOGGER.debug("Setting %s = %s" % (FIELD_PROJECTION_TYPE, projection_type))

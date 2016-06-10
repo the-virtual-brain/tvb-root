@@ -39,7 +39,7 @@ from tvb.core.adapters.abcremover import ABCRemover
 from tvb.datatypes.connectivity import Connectivity
 from tvb.datatypes.region_mapping import RegionMapping
 from tvb.datatypes.time_series import TimeSeriesRegion
-from tvb.datatypes.patterns_data import StimuliRegionData
+from tvb.datatypes.patterns import StimuliRegion
 from tvb.datatypes.graph import ConnectivityMeasure
 from tvb.core.services.exceptions import RemoveDataTypeException
 
@@ -56,7 +56,7 @@ class ConnectivityRemover(ABCRemover):
         if not skip_validation:
             associated_ts = dao.get_generic_entity(TimeSeriesRegion, self.handled_datatype.gid, '_connectivity')
             associated_rm = dao.get_generic_entity(RegionMapping, self.handled_datatype.gid, '_connectivity')
-            associated_stim = dao.get_generic_entity(StimuliRegionData, self.handled_datatype.gid, '_connectivity')
+            associated_stim = dao.get_generic_entity(StimuliRegion, self.handled_datatype.gid, '_connectivity')
             associated_mes = dao.get_generic_entity(ConnectivityMeasure, self.handled_datatype.gid, '_connectivity')
             msg = "Connectivity cannot be removed as it is used by at least one "
 
