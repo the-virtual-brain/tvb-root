@@ -132,7 +132,7 @@ class RegionMapping(arrays.MappedArray):
         return summary
 
 
-class RegionVolumeMapping(VolumetricDataMixin, RegionMapping):
+class RegionVolumeMapping(VolumetricDataMixin, arrays.MappedArray):
     """
     Each value is representing the index in Connectivity regions to which the current voxel is mapped.
     """
