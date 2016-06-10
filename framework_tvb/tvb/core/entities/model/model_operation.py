@@ -85,15 +85,13 @@ class AlgorithmCategory(Base):
 
 
     def __repr__(self):
-        return "<AlgorithmCategory('%d', '%s', '%s', '%s', '%s', '%s', '%d', '%s', '%d')>" % (
+        return "<AlgorithmCategory('%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s')>" % (
             self.id, self.displayname, self.launchable, self.rawinput, self.display,
             self.defaultdatastate, self.order_nr, self.last_introspection_check, self.removed)
-
 
     def __hash__(self):
         return hash((self.displayname, self.launchable, self.rawinput,
                      self.display, self.defaultdatastate, self.order_nr))
-
 
     def __eq__(self, other):
         return (isinstance(other, AlgorithmCategory) and self.displayname == other.displayname and
@@ -160,7 +158,7 @@ class Algorithm(Base):
 
 
     def __repr__(self):
-        return "<Algorithm('%d', '%s', '%s', '%d', '%s', '%s', '%s', '%s', '%d')>" % (
+        return "<Algorithm('%s', '%s', '%s', '%d', '%s', '%s', '%s', '%s', '%s')>" % (
             self.id, self.module, self.classname, self.fk_category, self.displayname,
             self.subsection_name, self.group_name, self.group_description, self.removed)
 
