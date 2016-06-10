@@ -46,7 +46,7 @@ from tvb.datatypes.surfaces import Surface
 from tvb.datatypes.volumes import Volume
 from tvb.basic.logger.builder import get_logger
 from tvb.basic.arguments_serialisation import parse_slice, preprocess_space_parameters
-from tvb.datatypes.structural_framework import VolumetricDataFrameworkMixin
+from tvb.datatypes.structural import VolumetricDataMixin
 
 
 LOG = get_logger(__name__)
@@ -132,7 +132,7 @@ class RegionMapping(arrays.MappedArray):
         return summary
 
 
-class RegionVolumeMapping(VolumetricDataFrameworkMixin, RegionMapping):
+class RegionVolumeMapping(VolumetricDataMixin, RegionMapping):
     """
     Each value is representing the index in Connectivity regions to which the current voxel is mapped.
     """

@@ -37,30 +37,67 @@ framework methods that are associated with the Temporal Correlation datatypes.
 
 """
 
-import tvb.datatypes.temporal_correlations_scientific as temporal_correlations_scientific
-import tvb.datatypes.temporal_correlations_framework as temporal_correlations_framework
+import tvb.basic.traits.core as core
+import tvb.basic.traits.types_basic as basic
+import tvb.datatypes.arrays as arrays
+import tvb.datatypes.time_series as time_series
 from tvb.basic.logger.builder import get_logger
+from tvb.basic.traits.types_mapped import MappedType
 
 LOG = get_logger(__name__)
 
 
-class CrossCorrelation(temporal_correlations_scientific.CrossCorrelationScientific,
-                       temporal_correlations_framework.CrossCorrelationFramework):
+class CrossCorrelation(MappedType):
     """
-    This class brings together the scientific and framework methods that are
-    associated with the CrossCorrelation datatype.
-    
-    ::
-        
-                         CrossCorrelationData
-                                  |
-                                 / \\
-        CrossCorrelationFramework   CrossCorrelationScientific
-                                 \ /
-                                  |
-                           CrossCorrelation
-        
-    
+    Result of a CrossCorrelation Analysis.
     """
-    pass
+    array_data = arrays.FloatArray(file_storage=core.FILE_STORAGE_EXPAND)
 
+    source = time_series.TimeSeries(
+        label="Source time-series",
+        doc="""Links to the time-series on which the cross_correlation is applied.""")
+
+    time = arrays.FloatArray(label="Temporal Offsets")
+
+    labels_ordering = basic.List(
+        label="Dimension Names",
+        default=["Offsets", "Node", "Node", "State Variable", "Mode"],
+        doc="""List of strings representing names of each data dimension""")
+
+    __generate_table__ = True
+
+    def configure(self):
+        """After populating few fields, compute the rest of the fields"""
+        # Do not call super, because that accesses data not-chunked
+        self.nr_dimensions = len(self.read_data_shape())
+        for i in range(self.nr_dimensions):
+            setattr(self, 'length_%dd' % (i + 1), int(self.read_data_shape()[i]))
+
+    def read_data_shape(self):
+        """
+        Expose shape read on field 'data'
+        """
+        return self.get_data_shape('array_data')
+
+    def read_data_slice(self, data_slice):
+        """
+        Expose chunked-data access.
+        """
+        return self.get_data('array_data', data_slice)
+
+    def write_data_slice(self, partial_result):
+        """
+        Append chunk.
+        """
+        self.store_data_chunk('array_data', partial_result.array_data, grow_dimension=3, close_file=False)
+
+    def _find_summary_info(self):
+        """
+        Gather scientifically interesting summary information from an instance of this datatype.
+        """
+        summary = {"Temporal correlation type": self.__class__.__name__,
+                   "Source": self.source.title,
+                   "Dimensions": self.labels_ordering}
+
+        summary.update(self.get_info_about_array('array_data'))
+        return summary

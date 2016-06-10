@@ -87,7 +87,7 @@ tv.util = {
         var readDataURL = readDataChannelURL(baseURL, slices[0].lo, slices[0].hi,
             currentStateVar, currentMode, slices[0].di, JSON.stringify(channels));
         //NOTE: If we need to add slices for the other dimensions pass them as the 'specific_slices' parameter.
-        //      Method called is from time_series_framework.py.
+        //      Method called is from time_series.py.
         $.getJSON(readDataURL, callback);
     }
 };
