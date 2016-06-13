@@ -2,15 +2,16 @@
 
 envname="tvb-run"
 
-conda create -y -n $envname scipy==0.14.0 numpy==1.8.1 networkx scikit-learn cython h5py==2.3.0 pip pil numexpr psutil coverage beautiful-soup lxml ipython ipython-notebook
+conda create -y -n $envname nomkl scipy==0.17.0 numpy==1.11.0 networkx scikit-learn cython h5py==2.3.0 pip pil numexpr psutil coverage beautiful-soup lxml ipython ipython-notebook
 
 source activate $envname
 
-conda install matplotlib==1.5.1 pytables==3.0
+conda install matplotlib==1.5.1 pytables==3.0 psycopg2 numba
 
-conda install numpy==1.8.1 psycopg2
+pip install sqlalchemy==0.7.8 sqlalchemy-migrate==0.7.2 minixsv formencode genshi simplejson mod_pywebsocket cherrypy cfflib nibabel gdist numexpr
 
-pip install sqlalchemy==0.7.8 sqlalchemy-migrate==0.7.2 minixsv formencode genshi simplejson mod_pywebsocket cherrypy cfflib nibabel gdist numexpr==2.4
+
+#After these run "sh install_from_svn.sh" or "python setup.py develop/install" from each of TVB packages
 
 cd ../../..
 python setup_extra.py develop
@@ -24,7 +25,3 @@ python setup.py develop
 conda uninstall pyside shiboken cairo
 
 # [anaconda-env]/Lib/site-packages/matplotlib/mpl-data/matplotlibrc to Agg
-
-conda install nomkl numba
-
-#After these run "sh install_from_svn.sh" or "python setuo.py develop/install" from each of TVB packages
