@@ -56,7 +56,7 @@ EXCLUDES = [
     'openglcontext', 'pydoc_data', 'pysqlite2', 'pyximport', # part of cython
     'stdsuites', 'wxpython',
     ## We exclude bellow shorter names for packages already introspected.
-    "foundation", "objc", "appkit", "exceptionhandling", "pyobjctools", "_cffi_backend.pyd"
+    "foundation", "objc", "appkit", "exceptionhandling", "pyobjctools"
 ]
 
 # todo: understand why this is needed on mac
@@ -70,7 +70,7 @@ EXCLUDES_DLL = []
 
 # Windows *.pyds that are part of python standard libs
 EXCLUDES_PYD = [
-    '_psutil_windows.pyd', 'gdist.pyd'
+    '_psutil_windows.pyd', 'gdist.pyd', "_cffi_backend.pyd"
 ]
 
 # libpq dependencies on dynamic psycopg linux 32
