@@ -20,14 +20,14 @@ class CLComponent(object):
 
 class CLModel(CLComponent):
 
-    def _alloc_opencl(self, n_nodes):
+    def _alloc_opencl(self, n_nodes ,n_states=1):
 
         if not hasattr(self, '_queue'):
             msg = "OpenCL components must be configured via the `configure_opencl` method prior to use."
             raise RuntimeError(msg)
 
         # arrays in component workspace
-        arrays = {'state': (1, n_nodes), 'coupling': (1, n_nodes), 'deriv': (1, n_nodes)}
+        arrays = {'state': (n_states, n_nodes), 'coupling': (1, n_nodes), 'deriv': (n_states, n_nodes)}
 
         if hasattr(self, '_opencl_ordered_params'):
             arrays['param'] = (len(self._opencl_ordered_params), n_nodes)
