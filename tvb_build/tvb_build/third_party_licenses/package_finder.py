@@ -56,7 +56,7 @@ EXCLUDES = [
     'openglcontext', 'pydoc_data', 'pysqlite2', 'pyximport', # part of cython
     'stdsuites', 'wxpython',
     ## We exclude bellow shorter names for packages already introspected.
-    "foundation", "objc", "appkit", "exceptionhandling", "pyobjctools"
+    "foundation", "objc", "appkit", "exceptionhandling", "pyobjctools", "_cffi_backend.pyd"
 ]
 
 # todo: understand why this is needed on mac
