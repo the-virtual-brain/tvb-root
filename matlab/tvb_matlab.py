@@ -49,6 +49,8 @@ def unsupport_module(modname):
 
 def setup():
     unsupport_module('h5py')
+    sys.modules['numpy.linalg'] = UnsupportedModule('numpy.linalg')
+    sys.modules['scipy.linalg'] = UnsupportedModule('scipy.linalg')
 
     import logging
     logging.basicConfig(level=logging.DEBUG, stream=sys.stdout)
