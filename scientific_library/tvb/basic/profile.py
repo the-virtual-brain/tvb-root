@@ -65,12 +65,13 @@ class TvbProfile():
     COMMAND_PROFILE = "COMMAND_PROFILE"
     WEB_PROFILE = "WEB_PROFILE"
     DESKTOP_PROFILE = "DESKTOP_PROFILE"
+    MATLAB_PROFILE = "MATLAB_PROFILE"
 
     TEST_LIBRARY_PROFILE = "TEST_LIBRARY_PROFILE"
     TEST_POSTGRES_PROFILE = "TEST_POSTGRES_PROFILE"
     TEST_SQLITE_PROFILE = "TEST_SQLITE_PROFILE"
 
-    ALL = [LIBRARY_PROFILE, COMMAND_PROFILE, WEB_PROFILE, DESKTOP_PROFILE,
+    ALL = [LIBRARY_PROFILE, COMMAND_PROFILE, WEB_PROFILE, DESKTOP_PROFILE, MATLAB_PROFILE,
            TEST_POSTGRES_PROFILE, TEST_SQLITE_PROFILE, TEST_LIBRARY_PROFILE]
 
     REGISTERED_PROFILES = {}
@@ -136,9 +137,10 @@ class TvbProfile():
     @classmethod
     def _load_framework_profiles(cls, new_profile):
 
-        from tvb.basic.config.profile_settings import LibrarySettingsProfile, TestLibraryProfile
+        from tvb.basic.config.profile_settings import LibrarySettingsProfile, TestLibraryProfile, MATLABLibraryProfile
         cls.REGISTERED_PROFILES[TvbProfile.LIBRARY_PROFILE] = LibrarySettingsProfile
         cls.REGISTERED_PROFILES[TvbProfile.TEST_LIBRARY_PROFILE] = TestLibraryProfile
+        cls.REGISTERED_PROFILES[TvbProfile.MATLAB_PROFILE] = MATLABLibraryProfile
 
         if not cls.is_library_mode(new_profile):
             try:

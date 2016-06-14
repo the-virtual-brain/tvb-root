@@ -42,9 +42,10 @@ Singleton logging builder.
 
 import os
 import weakref
+import logging
 import logging.config
 from tvb.basic.profile import TvbProfile
-
+from tvb.basic.config.profile_settings import MATLABLibraryProfile
 
 class LoggerBuilder(object):
     """
@@ -57,15 +58,16 @@ class LoggerBuilder(object):
         """
         Prepare Python logger based on a configuration file.
         :param: config_root - current package to configure logger for it.
+
         """
-
-        config_file_name = TvbProfile.current.LOGGER_CONFIG_FILE_NAME
-        package = __import__(config_root, globals(), locals(), ['__init__'], 0)
-        package_path = package.__path__[0]
-
-        #Specify logging configuration file for current package. 
-        logging.config.fileConfig(os.path.join(package_path, config_file_name), disable_existing_loggers=False)
-
+        if not isinstance(TvbProfile.current, MATLABLibraryProfile):
+            config_file_name = TvbProfile.current.LOGGER_CONFIG_FILE_NAME
+            package = __import__(config_root, globals(), locals(), ['__init__'], 0)
+            package_path = package.__path__[0]
+            # Specify logging configuration file for current package.
+            logging.config.fileConfig(os.path.join(package_path, config_file_name), disable_existing_loggers=False)
+        else:
+            logging.basicConfig(level=logging.DEBUG)
         self._loggers = weakref.WeakValueDictionary()
 
     def build_logger(self, parent_module):

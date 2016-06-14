@@ -55,7 +55,7 @@ except ImportError:
 LOG = get_logger(__name__)
 
 
-def log_debug(debug=False, timestamp=False):
+def log_debug(debug=False, timestamp=False, prefix=''):
     level_name = 'DEBUG' if debug else 'INFO'
     level = getattr(logging, level_name)
     GLOBAL_LOGGER_BUILDER.set_loggers_level(level)
@@ -63,7 +63,9 @@ def log_debug(debug=False, timestamp=False):
         handler.setLevel(level)
         # reset formatter more friendly for console work
         if isinstance(handler, logging.StreamHandler) and not timestamp:
-            handler.setFormatter(logging.Formatter('%(levelname)07s  %(message)s'))
+            if prefix:
+                prefix += ' '
+            handler.setFormatter(logging.Formatter(prefix + '%(levelname)07s  %(message)s'))
     LOG.info('log level set to %s' % (level_name, ))
 
 

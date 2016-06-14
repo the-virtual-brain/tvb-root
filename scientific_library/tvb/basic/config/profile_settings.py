@@ -235,3 +235,7 @@ class TestLibraryProfile(LibrarySettingsProfile):
         super(TestLibraryProfile, self).__init__()
         self.TVB_LOG_FOLDER = "TEST_OUTPUT"
 
+
+class MATLABLibraryProfile(LibrarySettingsProfile):
+    "Profile use library use from MATLAB."
+    LOGGER_CONFIG_FILE_NAME = None
