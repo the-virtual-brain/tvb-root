@@ -32,7 +32,7 @@
     :show-inheritance:
 
 :mod:`common`
------------
+--------------
 
 .. automodule:: tvb.simulator.common
     :members:
@@ -40,17 +40,9 @@
     :show-inheritance:
 
 :mod:`descriptors`
-----------------
+-------------------
 
 .. automodule:: tvb.simulator.descriptors
-    :members:
-    :undoc-members:
-    :show-inheritance:
-
-:mod:`lab`
-----------------
-
-.. automodule:: tvb.simulator.lab
     :members:
     :undoc-members:
     :show-inheritance:

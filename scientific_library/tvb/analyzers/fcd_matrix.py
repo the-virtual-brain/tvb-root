@@ -37,71 +37,74 @@ Adapter that uses the traits module to generate interfaces for ... Analyzer.
 """
 import numpy as np
 import tvb.datatypes.time_series as time_series
-import tvb.basic.traits.core as core
-import tvb.basic.traits.types_basic as basic
-import tvb.basic.traits.util as util
+from tvb.basic.traits import core, types_basic, util
 from tvb.basic.logger.builder import get_logger
 from scipy.spatial.distance import pdist
 from sklearn.manifold import SpectralEmbedding
 from sklearn.cluster import DBSCAN
-from numpy import linalg as LA
-
+from numpy import linalg
 
 
 LOG = get_logger(__name__)
 
+
 class FcdCalculator(core.Type):
     """
     The present class will do the following actions:
-    -Compute the the fcd of the timeseries; the fcd is calculated in the following way:
-          the time series is divided in time window of fixed length and with an overlapping of fixed length.
-          The datapoints within each window, centered at time ti, are used to calculate FC(ti) as Pearson correlation.
-          The ij element of the FCD matrix is calculated as the Pearson correlation between FC(ti) and FC(tj) arranged in a vector.
-      -Apply to the fcd the spectral embedding algorithm in order to calculate epochs of stability of the fcd (length of time during which FC matrix are high correlated).
-         the algorithm can produce 2 kind of results:
-         *case 1: the algorithm is able to identify the epochs of stability
-            -fcs over the epochs of stability (exlcuded the first one, that we consider always an artifact due to initial condition) are calculated
-            -3 eigenvectors, associated to the 3 largest eigenvalues, of the fcs are extracted
-         *case 2: the algorithm is not able to identify the epochs of stability
-            -fc over the all time series is calculated
-            -3 first eigenvectors, associated to the 3 largest eigenvalues, of the fcs are extracted
+    - Compute the the fcd of the timeseries; the fcd is calculated in the following way:
+     the time series is divided in time window of fixed length and with an overlapping of fixed length.
+     The datapoints within each window, centered at time ti, are used to calculate FC(ti) as Pearson correlation.
+     The ij element of the FCD matrix is calculated as the Pearson correlation between FC(ti) and FC(tj) -- in a vector.
 
-    The code will return:
-        -fcd matrix whose values are between -1 and 1, inclusive.
-        -in case 1: fcd matrix segmented i.e. fcd whose values are between -1 and 1.1, inclusive. (Value=1.1 for time not belonging to epochs of stability identified with spectral embedding algorithm)
-         in case2: fcd matrix segmented identical to the fcd matrix not segmented
-        -dictionary containing the eigenvectors.
-        -dictionary containing the eigenvalues
-        -connectivity associated to the TimeSeriesRegions
+    - Apply to the fcd the spectral embedding algorithm in order to calculate epochs of stability of the fcd
+    (length of time during which FC matrix are high correlated).
+    The algorithm can produce 2 kind of results:
+         * case 1: the algorithm is able to identify the epochs of stability
+            - fcs calculated over the epochs of stability (excluded the first one = artifact, due to initial conditions)
+            - 3 eigenvectors, associated to the 3 largest eigenvalues, of the fcs are extracted
+         * case 2: the algorithm is not able to identify the epochs of stability
+            - fc over the all time series is calculated
+            - 3 first eigenvectors, associated to the 3 largest eigenvalues, of the fcs are extracted
+
+    @:return
+        - fcd matrix whose values are between -1 and 1, inclusive.
+        - in case 1: fcd matrix segmented i.e. fcd whose values are between -1 and 1.1, inclusive.
+        (Value=1.1 for time not belonging to epochs of stability identified with spectral embedding algorithm)
+        in case 2: fcd matrix segmented identical to the fcd matrix not segmented
+        - dictionary containing the eigenvectors.
+        - dictionary containing the eigenvalues
+        - connectivity associated to the TimeSeriesRegions
     """
 
     time_series = time_series.TimeSeriesRegion(
-        label = "Time Series",
-        required = True,
-        doc = """The time-series for which the fcd matrices are calculated.""")
+        label="Time Series",
+        required=True,
+        doc="""The time-series for which the fcd matrices are calculated.""")
 
-    sw = basic.Float(
+    sw = types_basic.Float(
         label="Sliding window length (ms)",
         default=120000,
         doc="""Length of the time window used to divided the time series.
-                FCD matrix is calculated in the following way: the time series is divided in time window of fixed length and with an overlapping of fixed length.
-                The datapoints within each window, centered at time ti, are used to calculate FC(ti) as Pearson correlation.
-                The ij element of the FCD matrix is calculated as the Pearson correlation between FC(ti) and FC(tj) arranged in a vector.""")
+        FCD matrix is calculated in the following way: the time series is divided in time window of fixed length and
+        with an overlapping of fixed length. The datapoints within each window, centered at time ti, are used to
+        calculate FC(ti) as Pearson correlation. The ij element of the FCD matrix is calculated as the Pearson
+        Correlation between FC(ti) and FC(tj) arranged in a vector.""")
 
-    sp = basic.Float(
+    sp = types_basic.Float(
         label="Spanning between two consecutive sliding window (ms)",
         default=2000,
-        doc="""Spanning= (time windows length)-(overlapping between two consecutive time window).
-                FCD matrix is calculated in the following way: the time series is divided in time window of fixed length and with an overlapping of fixed length.
-                The datapoints within each window, centered at time ti, are used to calculate FC(ti) as Pearson correlation.
-                The ij element of the FCD matrix is calculated as the Pearson correlation between FC(ti) and FC(tj) arranged in a vector""")
+        doc="""Spanning= (time windows length)-(overlapping between two consecutive time window). FCD matrix is
+        calculated in the following way: the time series is divided in time window of fixed length and with an
+        overlapping of fixed length. The datapoints within each window, centered at time ti, are used to calculate
+        FC(ti) as Pearson Correlation. The ij element of the FCD matrix is calculated as the Pearson correlation
+        between FC(ti) and FC(tj) arranged in a vector""")
 
     def evaluate(self):
         cls_attr_name = self.__class__.__name__ + ".time_series"
         self.time_series.trait["data"].log_debug(owner=cls_attr_name)
 
         # Pass sp and sw in the right time reference (means considering the sample period)
-        sp = float(self.sp)  / self.time_series.sample_period
+        sp = float(self.sp) / self.time_series.sample_period
         sw = float(self.sw) / self.time_series.sample_period
 
         input_shape = self.time_series.read_data_shape()
@@ -118,8 +121,8 @@ class FcdCalculator(core.Type):
                                            slice(input_shape[2]), slice(mode, mode + 1)])
                     data = self.time_series.read_data_slice(current_slice).squeeze()
                     fc = np.corrcoef(data.T)
-                    triangular = np.triu_indices(len(fc),
-                                                 1)  # the triangular part of the fc is organized as a vector, excluding the diagonal (always ones)
+                    # the triangular part of the fc is organized as a vector, excluding the diagonal (always ones)
+                    triangular = np.triu_indices(len(fc), 1)
                     fc_stream[nfcd] = fc[triangular]
                 for i in range(result_shape[0]):
                     j = i
@@ -134,53 +137,54 @@ class FcdCalculator(core.Type):
 
         num_eig = 3  # number of the eigenvector that will be extracted
 
-        eigvect_dict = {}  # in this dictionary I will store the eigenvectors of the fcs calculated over the epochs, key1=mode, key2=var, key3=numb ep
-        eigval_dict = {}  # in this dictionary I will store the eigenvalues of the fcs calculated over the epochs, key1=mode, key2=var, key3=numb ep
+        eigvect_dict = {}  # holds eigenvectors of the fcs calculated over the epochs, key1=mode, key2=var, key3=numb ep
+        eigval_dict = {}  # holds eigenvalues of the fcs calculated over the epochs, key1=mode, key2=var, key3=numb ep
         for mode in range(result_shape[3]):
-            eigvect_dict[mode]={}
-            eigval_dict[mode]={}
+            eigvect_dict[mode] = {}
+            eigval_dict[mode] = {}
             for var in range(result_shape[2]):
-                eigvect_dict[mode][var]={}
-                eigval_dict[mode][var]={}
+                eigvect_dict[mode][var] = {}
+                eigval_dict[mode][var] = {}
                 fcd_matrix = fcd[:, :, var, mode]
                 [xir, xir_cutoff] = spectral_embedding(fcd_matrix)
                 epochs_extremes = epochs_interval(xir, xir_cutoff, sp, sw)
                 fcd_segmented = fcd.copy()
-                if epochs_extremes.shape[0]<=1: #means that there are no more than 1 epochs of stability, thus the eigenvectors of the FC calculated over the entire timeseries will be calculated
+                if epochs_extremes.shape[0] <= 1:
+                    # means that there are no more than 1 epochs of stability, thus the eigenvectors of
+                    # the FC calculated over the entire TimeSeries will be calculated
                     epochs_extremes = np.zeros((2, 2), dtype=float)
-                    epochs_extremes[1, 1] = input_shape[0]  # [0,0] setted in order to skip the first epoch
-                else: #means that more than 1 epochs of stability is identified thus fcd_segmented is calculated
-                    fcd_segmented[xir > xir_cutoff, :,var, mode] = 1.1
+                    epochs_extremes[1, 1] = input_shape[0]  # [0,0] set in order to skip the first epoch
+                else:
+                    # means that more than 1 epochs of stability is identified thus fcd_segmented is calculated
+                    fcd_segmented[xir > xir_cutoff, :, var, mode] = 1.1
                     fcd_segmented[:, xir > xir_cutoff, var, mode] = 1.1
-                for ep in range(1,epochs_extremes.shape[0]):
-                    eigvect_dict[mode][var][ep]=[]
-                    eigval_dict[mode][var][ep]=[]
-                    current_slice = tuple([slice(int(epochs_extremes[ep][0]), int(epochs_extremes[ep][1]) + 1), slice(var, var + 1),
-                                           slice(input_shape[2]), slice(mode, mode + 1)])
+
+                for ep in range(1, epochs_extremes.shape[0]):
+                    eigvect_dict[mode][var][ep] = []
+                    eigval_dict[mode][var][ep] = []
+                    current_slice = tuple([slice(int(epochs_extremes[ep][0]), int(epochs_extremes[ep][1]) + 1),
+                                           slice(var, var + 1), slice(input_shape[2]), slice(mode, mode + 1)])
                     data = self.time_series.read_data_slice(current_slice).squeeze()
-                    fc = np.corrcoef(data.T) #calculate fc over the epoch of stability
-                    eigval_matrix, eigvect_matrix = LA.eig(fc)
+                    fc = np.corrcoef(data.T)  # calculate fc over the epoch of stability
+                    eigval_matrix, eigvect_matrix = linalg.eig(fc)
                     eigval_matrix = np.real(eigval_matrix)
                     eigvect_matrix = np.real(eigvect_matrix)
-                    eigval_matrix = eigval_matrix / np.sum(np.abs(eigval_matrix))  # normalize eigenvalues between 0 and 1
+                    eigval_matrix = eigval_matrix / np.sum(np.abs(eigval_matrix))  # normalize eigenvalues to [0 and 1)
                     for en in range(num_eig):
                         index = np.argmax(eigval_matrix)
                         eigvect_dict[mode][var][ep].append(abs(eigvect_matrix[:, index]))
                         eigval_dict[mode][var][ep].append(eigval_matrix[index])
                         eigval_matrix[index] = 0
 
-        Connectivity=self.time_series.connectivity
-
-        return [fcd, fcd_segmented, eigvect_dict, eigval_dict, Connectivity]
+        return [fcd, fcd_segmented, eigvect_dict, eigval_dict, self.time_series.connectivity]
 
 
     def result_shape(self, input_shape):
         """Returns the shape of the fcd"""
-        sp = float(self.sp)  / (self.time_series.sample_period)
-        sw = float(self.sw) / (self.time_series.sample_period)
+        sp = float(self.sp) / self.time_series.sample_period
+        sw = float(self.sw) / self.time_series.sample_period
         fcd_points = int((input_shape[0] - sw) / sp)
-        result_shape = (fcd_points, fcd_points,
-                        input_shape[1], input_shape[3])
+        result_shape = (fcd_points, fcd_points, input_shape[1], input_shape[3])
         return result_shape
 
 
@@ -202,8 +206,7 @@ class FcdCalculator(core.Type):
         return extend_size
 
 
-
-#Methods:
+# Methods:
 def spectral_dbscan(fcd, n_dim=2, eps=0.3, min_samples=50):
     fcd = fcd - fcd.min()
     se = SpectralEmbedding(n_dim, affinity="precomputed")
@@ -213,11 +216,13 @@ def spectral_dbscan(fcd, n_dim=2, eps=0.3, min_samples=50):
     db = DBSCAN(eps=eps, min_samples=min_samples).fit(xi)
     return xi.T, db.labels_
 
+
 def compute_radii(xi, centered=False):
     if centered:
         xi = xi.copy() - xi.mean(axis=1).reshape((len(xi), 1))
     radii = np.sqrt(np.sum(xi ** 2, axis=0))
     return radii
+
 
 def spectral_embedding(fcd):
     xi, _ = spectral_dbscan(fcd, 2)
@@ -226,23 +231,25 @@ def spectral_embedding(fcd):
     xir_cutoff = 0.5 * xir_sorted[-1]
     return xir, xir_cutoff
 
+
 def epochs_interval(xir, xir_cutoff, sp, sw):
     # Calculate the starting point and the ending point of each epoch of stability
     # sp=spanning, sw=sliding window
-    epochs_dict = {}  #here the starting and the ending point will be stored
+    epochs_dict = {}  # here the starting and the ending point will be stored
     thresholds = np.where(xir < xir_cutoff)
     tt = 0
     ep = 0
-    while ((tt + 2) < len(thresholds[0])):
+    while (tt + 2) < len(thresholds[0]):
         epochs_dict[ep] = [thresholds[0][tt]]  # starting point of epoch ep
-        while (((tt + 2) != len(thresholds[0])) & (thresholds[0][tt + 1] == thresholds[0][
-            tt] + 1)):  # until the vector is not finish and until each entries +1 is equal to the next one
+        while ((tt + 2) != len(thresholds[0])) & (thresholds[0][tt + 1] == thresholds[0][tt] + 1):
+            # until the vector is not finish and until each entries +1 is equal to the next one
             tt += 1
         epochs_dict[ep].append(thresholds[0][tt])
         tt += 1
         ep += 1
     # The relation between the index of the fcd[T] and the time point [t(i)] of the BOLD is the following:
-    # T=0 indicates the FC calculate over the length of time that starts at (t=0) and that ends at (t=0)+sw (sw=length of the sliding window, sp=spanning between sliding windows)
+    # T=0 indicates the FC calculate over the length of time that starts at (t=0) and that
+    #     ends at (t=0)+sw (sw=length of the sliding window, sp=spanning between sliding windows)
     # T=1 indicates the FC calculate over the length of time that starts at (t=0)+sp and that ends at (t=0)+sp+sw
     # T=2 indicates the FC calculate over the length of time that starts at (t=0)+2*sp and that ends at (t=0)+s*sp+sw
     # Thus we can write:
@@ -257,7 +264,6 @@ def epochs_interval(xir, xir_cutoff, sp, sw):
     # Thus (we save the BOLD time in the epochs_extremes matrix)
     epochs_extremes = np.zeros((len(epochs_dict), 2), dtype=float)
     for ep in range(len(epochs_dict)):
-	    epochs_extremes[ep, 0] = epochs_dict[ep][0] * sp
-	    epochs_extremes[ep, 1] = epochs_dict[ep][1] * sp + sw
+        epochs_extremes[ep, 0] = epochs_dict[ep][0] * sp
+        epochs_extremes[ep, 1] = epochs_dict[ep][1] * sp + sw
     return epochs_extremes
-
