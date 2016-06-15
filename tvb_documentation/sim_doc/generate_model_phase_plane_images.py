@@ -153,17 +153,18 @@ class TestModel(Type):
         if self.yhi is None:
             self.yhi = numpy.array([self.model.state_variable_range[self.model.state_variables[indx]][1] for indx in self.phase_plane[1]]) #self.model.state_variable_range[1][self.phase_plane[1]]
         
-        init_cond = self.initial(history_shape=(1, self.model.nvar, 1, self.model.number_of_modes))
+        init_cond = self.initial(history_shape=(1, self.model.nvar, 1, self.model.number_of_modes), rng=numpy.random)
         init_cond = init_cond.reshape((self.model.nvar, 1, self.model.number_of_modes))
         no_coupling = numpy.zeros(init_cond.shape)
         #import pdb; pdb.set_trace()
         
         #Calculate an example trajectory
-        state = init_cond.copy() 
+        state = init_cond.copy()
+        zero_coupling = numpy.zeros_like(state)
         rk4 = integrators.RungeKutta4thOrderDeterministic(dt=2**-5)
         traj = numpy.zeros((self.int_steps, self.model.nvar, 1, self.model.number_of_modes))
         for step in range(self.int_steps):
-            state = rk4.scheme(state, self.dfun)
+            state = rk4.scheme(state, self.dfun, zero_coupling)
             traj[step, :] = state
 
         npp = len(self.phase_plane[0])

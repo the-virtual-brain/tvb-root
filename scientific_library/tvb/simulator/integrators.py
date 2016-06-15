@@ -300,7 +300,7 @@ class RungeKutta4thOrderDeterministic(Integrator):
 
     _ui_name = "Runge-Kutta 4th order"
 
-    def scheme(self, X, dfun, coupling=None, local_coupling=0.0, stimulus=0.0):
+    def scheme(self, X, dfun, coupling, local_coupling=0.0, stimulus=0.0):
         r"""
         The classical 4th order Runge-Kutta method is an explicit method.
         The 4th order Runge-Kutta methods are the most commonly used,
