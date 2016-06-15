@@ -21,3 +21,36 @@
    tvb.simulator.plot.timeseries_interactive
    
    tvb.simulator.devguide
+
+
+:mod:`history`
+----------------
+
+.. automodule:: tvb.simulator.history
+    :members:
+    :undoc-members:
+    :show-inheritance:
+
+:mod:`common`
+-----------
+
+.. automodule:: tvb.simulator.common
+    :members:
+    :undoc-members:
+    :show-inheritance:
+
+:mod:`descriptors`
+----------------
+
+.. automodule:: tvb.simulator.descriptors
+    :members:
+    :undoc-members:
+    :show-inheritance:
+
+:mod:`lab`
+----------------
+
+.. automodule:: tvb.simulator.lab
+    :members:
+    :undoc-members:
+    :show-inheritance:

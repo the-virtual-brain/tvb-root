@@ -95,8 +95,7 @@ class DocGenerator:
 
 
     #paths relative to the tvb package that should not be documented
-    EXCLUDES = ['simulator/demos', 'simulator/backend', 'simulator/plot',
-                'interfaces/web/templates', 'adapters/portlets', 'tests']
+    EXCLUDES = ['simulator/plot', 'interfaces/web/templates', 'adapters/portlets', 'tests']
 
     # Folders to be bundled with the documentation site distribution zip. Paths relative to root conf.py.
     IPYNB_FOLDERS = ['demos', 'tutorials']
