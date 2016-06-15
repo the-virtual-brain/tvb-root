@@ -126,7 +126,6 @@ examples.
 .. _Region Stochastic ReducedWongWang: http://nbviewer.ipython.org/url/docs.thevirtualbrain.org/demos/region_stochastic_reducedwongwang.ipynb
 .. _Region Stochastic Jansen: http://nbviewer.ipython.org/url/docs.thevirtualbrain.org/demos/region_stochastic_jansen.ipynb
 .. _Surface Deterministic Custom Local Connectivity: http://nbviewer.ipython.org/url/docs.thevirtualbrain.org/demos/surface_deterministic_custom_local_connectivity.ipynb
-.. _Surface Deterministic Surface Stimulus: http://nbviewer.ipython.org/url/docs.thevirtualbrain.org/demos/surface_deterministic_surface_stimulus.ipynb
 
 
 
@@ -303,14 +302,6 @@ Simulation
       :target: `Surface Deterministic Custom Local Connectivity`_
 
       `Surface Deterministic Custom Local Connectivity`_
-
-
-.. figure:: figures/surface_deterministic_surface_stimulus.png
-      :width: 200px
-      :figclass: demo-figure
-      :target: `Surface Deterministic Surface Stimulus`_
-
-      `Surface Deterministic Surface Stimulus`_
 
 
 
