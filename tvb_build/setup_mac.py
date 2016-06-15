@@ -65,7 +65,7 @@ EXCLUDED_DYNAMIC_LIBS = []
 
 # --------------------------- PY2APP specific configurations--------------------------------------------
 
-PY2APP_PACKAGES = ['cherrypy', 'email', 'h5py', 'IPython', 'idlelib', 'migrate', 'minixsv',
+PY2APP_PACKAGES = ['cherrypy', 'email', 'h5py', 'IPython', 'idlelib', 'migrate', 'minixsv', 'numba',
                    'numpy', 'PIL', 'pkg_resources', 'scipy', 'sklearn', 'tables', 'tornado', 'tvb']
 
 PY2APP_INCLUDES = ['apscheduler', 'apscheduler.scheduler', 'cfflib', 'cmath', 'contextlib', 'formencode', 'gdist',
