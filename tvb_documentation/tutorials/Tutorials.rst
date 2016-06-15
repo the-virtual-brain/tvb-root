@@ -24,12 +24,14 @@ GUI tutorials
 Scripting tutorials
 ===================
 
-.. _Modeling Epilepsy: http://nbviewer.ipython.org/url/docs.thevirtualbrain.org/tutorials/tutorial_3_ModelingEpilepsy.ipynb
+.. _Evoked Responses In The Visual Cortex: http://nbviewer.ipython.org/url/docs.thevirtualbrain.org/tutorials/tutorial_s1_EvokedResponsesInTheVisualCortex.ipynb
 
-.. _Resting State Networks: http://nbviewer.ipython.org/url/docs.thevirtualbrain.org/tutorials/tutorial_2_RestingStateNetworks.ipynb
+.. _Resting State Networks: http://nbviewer.ipython.org/url/docs.thevirtualbrain.org/tutorials/tutorial_s2_ModelingRestingStateNetworks.ipynb
 
-1. Building Your Own Brain Network Model (work in progress)
+.. _Modeling Epilepsy: http://nbviewer.ipython.org/url/docs.thevirtualbrain.org/tutorials/tutorial_s3_ModelingEpilepsy.ipynb
 
-2. `Resting State Networks`_ (work in progress)
+1. `Evoked Responses In The Visual Cortex`_
+
+2. `Resting State Networks`_
 
 3. `Modeling Epilepsy`_

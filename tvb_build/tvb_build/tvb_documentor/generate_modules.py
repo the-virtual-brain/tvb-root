@@ -232,29 +232,7 @@ def create_package_file(root, master_package, subroot, py_files, opts, subs, exc
     write_file(file_name, text, opts, extra_toc_entries)
 
 
-def write_verbatim_demos(source, destination):
-    def verbatim_rst(f, name):
-        content = DEMO_INCLUDE.format(f, len(f) * '-')
-        with open(os.path.join(demo_dest, name + '.rst'), 'w') as out:
-            out.write(content)
-   
-    demo_dest = os.path.join(destination, 'demos')
-    os.mkdir(demo_dest)
-    toc = DEMO_TOC
-
-    for f in os.listdir(source):
-        if f.endswith('.py') and f != INIT:
-            shutil.copy(os.path.join(source, f), demo_dest)
-            name = os.path.splitext(f)[0]
-            verbatim_rst(f, name)
-            toc += '    demos/' + name
-            toc += '\n'
-
-    with open(os.path.join(destination, 'demos.rst'), 'w') as out:
-        out.write(toc)
-
-
-def create_modules_toc_file(master_package, modules, opts, name='index'):
+def create_modules_toc_file(modules, opts, name='index'):
     """
     Create the module's index.
     """
@@ -272,13 +250,7 @@ def create_modules_toc_file(master_package, modules, opts, name='index'):
         prev_module = module
         text += '   %s\n' % module
 
-    import tvb.simulator
     import tvb.config
-    sim_folder = os.path.dirname(tvb.simulator.__file__)
-
-    write_verbatim_demos(
-        os.path.join(sim_folder, 'demos'),
-        opts.destdir)
 
     text += '   demos'
     text += '\n'
@@ -453,7 +425,7 @@ def process_sources(opts, rootpaths, excludes):
     
     for package_name in packages:
         if not opts.notoc:
-            create_modules_toc_file(package_name, packages[package_name], opts)
+            create_modules_toc_file(packages[package_name], opts)
             
     for module in packages_specs:
         details_dict = packages_specs[module]

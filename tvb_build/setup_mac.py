@@ -240,6 +240,7 @@ def _generate_distribution(final_name, library_path, version, extra_licensing_ch
     _copy_tvb_sources(library_abs_path)
 
     shutil.copytree(os.path.join("externals", "BCT"), os.path.join(DIST_FOLDER, library_path, "externals", "BCT"))
+    shutil.copytree(os.path.join("matlab"), os.path.join(DIST_FOLDER, "matlab"))
 
     _add_sitecustomize(DIST_FOLDER, library_path)
 
