@@ -190,7 +190,7 @@ class ReducedWongWang(Model):
         derivative = numpy.array([dS])
         return derivative
 
-    def dfun(self, x, c, lc=0.0):
+    def dfun(self, x, c, local_coupling=0.0):
         x_ = x.reshape(x.shape[:-1]).T
         c_ = c.reshape(c.shape[:-1]).T + lc * x[0]
         deriv = _numba_dfun(x_, c_, self.a, self.b, self.d, self.gamma,

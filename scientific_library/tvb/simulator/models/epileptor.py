@@ -353,10 +353,10 @@ class Epileptor(Model):
 
         return ydot
 
-    def dfun(self, x, c, lc=0.0):
+    def dfun(self, x, c, local_coupling=0.0):
         x_ = x.reshape(x.shape[:-1]).T
         c_ = c.reshape(c.shape[:-1]).T
-        Iext = self.Iext + lc * x[0, :, 0]
+        Iext = self.Iext + local_coupling * x[0, :, 0]
         deriv = _numba_dfun(x_, c_,
                          self.x0, Iext, self.Iext2, self.a, self.b, self.slope, self.tt, self.Kvf,
                          self.c, self.d, self.r, self.Ks, self.Kf, self.aa, self.tau)
