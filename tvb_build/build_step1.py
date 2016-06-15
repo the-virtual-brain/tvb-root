@@ -140,7 +140,7 @@ def build_step1():
     os.makedirs(DIST_FOLDER)
 
     # make top level dirs
-    top_level_folders = ['bin', 'docs', '_tvb_bin']
+    top_level_folders = ['docs']
     for d in top_level_folders:
         os.mkdir(join(DIST_FOLDER, d))
 
@@ -154,7 +154,8 @@ def build_step1():
 
     copy_distribution_dataset()
 
-    shutil.make_archive('TVB_build_step1', 'zip', build_folder) # this will not add empty folders!
+    shutil.rmtree(join(DIST_FOLDER, DocGenerator.API))
+    shutil.make_archive('TVB_build_step1', 'zip', build_folder)
     shutil.rmtree(DIST_FOLDER)
     shutil.move('TVB_build_step1.zip', build_folder)
 
