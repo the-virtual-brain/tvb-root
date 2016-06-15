@@ -13,33 +13,33 @@ __kernel void dfun(__global float *state, __global float *coupling,
         v4 = state[indexNum(6,12)], y4 = state[indexNum(7,12)], v5 = state[indexNum(8,12)],
         y5 = state[indexNum(9,12)], v6 = state[indexNum(10,12)], v7 = state[indexNum(11,12)],
         c = coupling[i];
-        //He Hi ke ki e0 rho_2 rho_1 gamma_1 gamma_2 gamma_3 gamma_4 gamma_5 P U Q
-        float He = param[indexNum(0,15)];
-        float Hi = param[indexNum(1,15)];
-        float ke = param[indexNum(2,15)];
-        float ki = param[indexNum(3,15)];
-        float e0 = param[indexNum(4,15)];
-        float rho_2 = param[indexNum(5,15)];
-        float rho_1 = param[indexNum(6,15)];
-        float gamma_1 = param[indexNum(7,15)];
-        float gamma_2 = param[indexNum(8,15)];
-        float gamma_3 = param[indexNum(9,15)];
-        float gamma_4 = param[indexNum(10,15)];
-        float gamma_5 = param[indexNum(11,15)];
-        float P = param[indexNum(12,15)];
-        float U = param[indexNum(13,15)];
-        float Q = param[indexNum(14,15)];
-
-        float Heke = He * ke;
-        float Hiki = Hi * ki;
-        float ke_2 = 2 * ke;
-        float ki_2 = 2 * ki;
-        float keke = ke*ke;
-        float kiki = ki*ki;
+        //He Hi ke ki e0 rho_2 rho_1 gamma_1 gamma_2 gamma_3 gamma_4 gamma_5 P U Q Heke Hiki ke_2 ki_2 keke kiki gamma_1T gamma_2T gamma_3T
+        float He = param[indexNum(0,24)];
+        float Hi = param[indexNum(1,24)];
+        float ke = param[indexNum(2,24)];
+        float ki = param[indexNum(3,24)];
+        float e0 = param[indexNum(4,24)];
+        float rho_2 = param[indexNum(5,24)];
+        float rho_1 = param[indexNum(6,24)];
+        float gamma_1 = param[indexNum(7,24)];
+        float gamma_2 = param[indexNum(8,24)];
+        float gamma_3 = param[indexNum(9,24)];
+        float gamma_4 = param[indexNum(10,24)];
+        float gamma_5 = param[indexNum(11,24)];
+        float P = param[indexNum(12,24)];
+        float U = param[indexNum(13,24)];
+        float Q = param[indexNum(14,24)];
+        float Heke = param[indexNum(15,24)];
+        float Hiki = param[indexNum(16,24)];
+        float ke_2 = param[indexNum(17,24)];
+        float ki_2 = param[indexNum(18,24)];
+        float keke = param[indexNum(19,24)];
+        float kiki = param[indexNum(20,24)];
+        float gamma_1T = param[indexNum(21,24)];
+        float gamma_2T = param[indexNum(22,24)];
+        float gamma_3T = param[indexNum(23,24)];
         // TODO: implement local coupling
         float locol_coupling = 1;
-        float gamma_1T = 1, gamma_2T = 1, gamma_3T = 1;
-        float U = 1, P = 1, Q = 1;
 
         float coupled_input = c + 6*locol_coupling;
 
