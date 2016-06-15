@@ -51,29 +51,32 @@ LOG = get_logger(__name__)
 class FcdCalculator(core.Type):
     """
     The present class will do the following actions:
+
     - Compute the the fcd of the timeseries; the fcd is calculated in the following way:
-     the time series is divided in time window of fixed length and with an overlapping of fixed length.
-     The datapoints within each window, centered at time ti, are used to calculate FC(ti) as Pearson correlation.
-     The ij element of the FCD matrix is calculated as the Pearson correlation between FC(ti) and FC(tj) -- in a vector.
-
+        the time series is divided in time window of fixed length and with an overlapping of fixed length.
+        The data-points within each window, centered at time ti, are used to calculate FC(ti) as Pearson correlation.
+        The ij element of the FCD matrix is calculated as the Pearson correlation between FC(ti) and FC(tj) -in a vector
     - Apply to the fcd the spectral embedding algorithm in order to calculate epochs of stability of the fcd
-    (length of time during which FC matrix are high correlated).
-    The algorithm can produce 2 kind of results:
-         * case 1: the algorithm is able to identify the epochs of stability
-            - fcs calculated over the epochs of stability (excluded the first one = artifact, due to initial conditions)
-            - 3 eigenvectors, associated to the 3 largest eigenvalues, of the fcs are extracted
-         * case 2: the algorithm is not able to identify the epochs of stability
-            - fc over the all time series is calculated
-            - 3 first eigenvectors, associated to the 3 largest eigenvalues, of the fcs are extracted
+        (length of time during which FC matrix are high correlated).
 
-    @:return
+    The algorithm can produce 2 kind of results:
+
+    - case 1: the algorithm is able to identify the epochs of stability
+        -- fcs calculated over the epochs of stability (excluded the first one = artifact, due to initial conditions)
+        -- 3 eigenvectors, associated to the 3 largest eigenvalues, of the fcs are extracted
+    - case 2: the algorithm is not able to identify the epochs of stability
+        -- fc over the all time series is calculated
+        -- 3 first eigenvectors, associated to the 3 largest eigenvalues, of the fcs are extracted
+
+    :return
         - fcd matrix whose values are between -1 and 1, inclusive.
         - in case 1: fcd matrix segmented i.e. fcd whose values are between -1 and 1.1, inclusive.
-        (Value=1.1 for time not belonging to epochs of stability identified with spectral embedding algorithm)
-        in case 2: fcd matrix segmented identical to the fcd matrix not segmented
+            (Value=1.1 for time not belonging to epochs of stability identified with spectral embedding algorithm)
+            in case 2: fcd matrix segmented identical to the fcd matrix not segmented
         - dictionary containing the eigenvectors.
         - dictionary containing the eigenvalues
         - connectivity associated to the TimeSeriesRegions
+
     """
 
     time_series = time_series.TimeSeriesRegion(

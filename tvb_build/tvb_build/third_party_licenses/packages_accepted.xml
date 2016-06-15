@@ -423,7 +423,7 @@
     <dependency env="[win,mac,linux]" name="llvmlite">
         <full-name value="llvmlite"/>
         <project-home value="http://llvmlite.pydata.org/en/latest/"/>
-        <version value="0.10.0"/>
+        <version value="[0.10.0,0.11.0.dev+8.ge1fe952]"/>
         <usage value="dynamic linking"/>
         <license value="LICENSE_llvmlite.txt"/>
         <license-type value="BSD_"/>

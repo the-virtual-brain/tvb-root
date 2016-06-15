@@ -107,9 +107,10 @@ class FilesUpdateManager(UpdateManager):
         Upgrades the given file to the latest data version. The file will be upgraded
         sequentially, up until the current version from tvb.basic.config.settings.VersionSettings.DB_STRUCTURE_VERSION
         
-        :param input_file_name: the path to the file which needs to be upgraded
-        :return - True, when update was needed and running it was successful.
-        - False, the the file is already up to date.
+        :param input_file_name the path to the file which needs to be upgraded
+        :return True, when update was needed and running it was successful.
+        False, the the file is already up to date.
+
         """
         if self.is_file_up_to_date(input_file_name):
             # Avoid running the DB update of size, when H5 is not being changed, to speed-up
