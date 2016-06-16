@@ -2,7 +2,7 @@
 :mod:`Noise`
 ============
 
-.. _noise: _images/classes_noise.svg
+.. _noise: ../_images/classes_noise.svg
 
 .. image:: img/classes_noise.svg 
     :alt: Class diagram for tvb.simulator.noise

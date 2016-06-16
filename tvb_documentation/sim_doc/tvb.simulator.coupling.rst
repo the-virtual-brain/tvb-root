@@ -2,7 +2,7 @@
 :mod:`Coupling`
 ===============
 
-.. _coupling: _images/classes_coupling.svg
+.. _coupling: ../_images/classes_coupling.svg
 
 .. image:: img/classes_coupling.svg 
     :alt: Class diagram for tvb.simulator.coupling

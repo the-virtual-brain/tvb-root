@@ -2,7 +2,7 @@
 :mod:`Monitors`
 ===============
 
-.. _monitors: _images/classes_monitors.svg
+.. _monitors: ../_images/classes_monitors.svg
 
 .. image:: img/classes_monitors.svg 
     :alt: Class diagram for tvb.simulator.monitors

@@ -252,7 +252,6 @@ def create_modules_toc_file(modules, opts, name='index'):
 
     import tvb.config
 
-    text += '   demos'
     text += '\n'
     text += '\n'    
     frw_folder = os.path.dirname(os.path.dirname(os.path.dirname(tvb.config.__file__)))

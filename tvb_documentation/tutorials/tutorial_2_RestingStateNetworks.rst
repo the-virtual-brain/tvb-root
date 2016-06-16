@@ -87,10 +87,9 @@ For more information on modeling resting state networks with TVB, see Ghosh_et_a
 Knock_et_al_, Spiegler_et_al_.
 
 
--------------------
-
+-------
 Support
-=======
+-------
 
 The official TVB webiste is
 `www.thevirtualbrain.org <http://www.thevirtualbrain.org>`__. All the

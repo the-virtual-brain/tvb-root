@@ -2,7 +2,7 @@
 :mod:`Integrators`
 ==================
 
-.. _integrators: _images/classes_integrators.svg
+.. _integrators: ../_images/classes_integrators.svg
 
 .. image:: img/classes_integrators.svg 
     :alt: Class diagram for tvb.simulator.integrators
