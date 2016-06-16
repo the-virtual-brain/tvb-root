@@ -55,7 +55,7 @@ function _updatePlotPSE(canvasId, xLabels, yLabels, seriesArray, data_info, min_
         margins: { // is this the correct way to be doing margins? It's just how I have in the past,
             top: 20,
             bottom: 40,
-            left: 40,
+            left: 15,
             right: 50
         },
         xaxis: {
@@ -108,21 +108,50 @@ function d3Plot(placeHolder, data, options, pageParam) {
     if (d3.select(".outerCanvas").empty() != true) {
         d3.selectAll(".outerCanvas").remove()
     }
-    if (d3.select("div > div.flex-wrapper").empty() != true) {
-        d3.select("div > div.flex-wrapper").remove()
+    if (d3.selectAll("#main_div_pse")[0].length != 1) {
+        var oneOrMoreDiv = d3.selectAll("div > div.flex-wrapper"); //index necessary because selection is an array with two elements, and second is unneccessary
+
+        if (oneOrMoreDiv[0].length > 1) {
+            oneOrMoreDiv[0][1].remove()
+        } else {
+            oneOrMoreDiv[0][0].remove()
+        }
     }
-//todo check to see whether there is already a canvas of the d3 variety because then we can just use that if redraw must happen
     function createScale(xORy) {
         // should I incorporate some sort of testing for values before actually getting into the function?
+        //todo relate the scaling factor to the radius values available
         if (xORy === "x") {
-            var newScale = d3.scale.linear()
-                .domain(d3.extent(options.xaxis.labels))
-                .range([options.margins.left, innerWidth - options.margins.right]);
+            var [lowerExtent,upperExtent] = d3.extent(_PSE_plotOptions.xaxis.labels),
+                extentPadding = ((upperExtent - lowerExtent) * .10) / 2, // this multiplication factor controls how much the dots are gathered together
+                [padLo,padUp] = [lowerExtent - extentPadding, upperExtent + extentPadding];
+
+            if (padLo < 0) {
+                var newScale = d3.scale.linear()
+                    .domain([0, padUp])
+                    .range([0, innerWidth - options.margins.right]);
+
+            } else {
+                var newScale = d3.scale.linear()
+                    .domain([padLo, padUp])
+                    .range([options.margins.left, innerWidth - options.margins.right]);
+            }
             return newScale
         } else {
-            newScale = d3.scale.linear()
-                .domain(d3.extent(options.yaxis.labels))
-                .range([innerHeight - (options.margins.bottom), options.margins.top]);
+            var [lowerExtent,upperExtent] = d3.extent(_PSE_plotOptions.yaxis.labels),
+                extentPadding = ((upperExtent - lowerExtent) * .35) / 2,
+                [padLo,padUp] = [lowerExtent - extentPadding, upperExtent + extentPadding];
+
+            if (padLo < 0) {
+                var newScale = d3.scale.linear()
+                    .domain([0, padUp])
+                    .range([innerHeight - (options.margins.bottom), options.margins.top]);
+
+            } else {
+                var newScale = d3.scale.linear()
+                    .domain([padLo, padUp])
+                    .range([innerHeight - (options.margins.bottom), options.margins.top]);
+
+            }
             return newScale
         }
     }
@@ -194,13 +223,16 @@ function d3Plot(placeHolder, data, options, pageParam) {
     }
 
 
-    var myBase, workingData, canvasDimensions, canvas, xScale, yScale, xRef, yRef, xAxis, yAxis, circles, brush,
+    var myBase, workingData, maxRad, canvasDimensions, canvas, xScale, yScale, xRef, yRef, xAxis, yAxis, circles, brush,
         colScale, dotsCanvas, innerHeight, innerWidth, toolTipDiv;
     myBase = d3.select(placeHolder);
     workingData = $.extend(true, {}, data); //this will be filtered when necessary according to the function and the parameters
+    maxRad = d3.max(data, function (d) {
+        return +d.points.radius
+    });
     canvasDimensions = {h: parseInt(myBase.style("height")), w: parseInt(myBase.style("width"))};
-    innerHeight = canvasDimensions.h - options.margins.top - options.margins.bottom;
-    innerWidth = canvasDimensions.w - options.margins.left - options.margins.right;
+    innerHeight = canvasDimensions.h - options.margins.top;
+    innerWidth = canvasDimensions.w - options.margins.left;
     canvas = myBase.append("svg") //todo must make plottable canvas be inbetween axes, otherwise zoom adjusted circles can be seen outside of rational graphing area
         .attr({
             class: "outerCanvas",
@@ -237,7 +269,7 @@ function d3Plot(placeHolder, data, options, pageParam) {
     circles = dotsCanvas.selectAll("circle").data(data).enter().append("circle")
         .attr({
             r: function (d) {
-                return d.points.radius * 1.25
+                return d.points.radius
             },
             cx: function (d) {
                 return xScale(_PSE_plotOptions.xaxis.tickFormatter(d.data[0][0]))
@@ -255,11 +287,11 @@ function d3Plot(placeHolder, data, options, pageParam) {
 
     canvas.append("g")
         .attr("id", "xAxis")
-        .attr("transform", "translate (0," + (innerHeight) + ")")
+        .attr("transform", "translate (0," + ( innerHeight - _PSE_plotOptions.margins.bottom ) + ")")
         .call(xAxis);
     canvas.append("g")
         .attr("id", "yAxis")
-        .attr("transform", "translate (0,0)")
+        .attr("transform", "translate (" + _PSE_plotOptions.margins.left + " ,0)")
         .call(yAxis);
     // this is now the area that should allow for drawing the lines of the grid
     //todo again visual grid stuff. How should I go about making the grid fit the canvas better?
@@ -334,7 +366,7 @@ function d3Plot(placeHolder, data, options, pageParam) {
      });*/
 
 
-    d3.selectAll("circle").on("mouseover", function (d) { 
+    d3.selectAll("circle").on("mouseover", function (d) {
         var nodeInfo = PSE_nodesInfo[d.data[0][0]][d.data[0][1]];
         var toolTipText = nodeInfo.tooltip.split("&amp;").join("&").split("&lt;").join("<").split("&gt;").join(">");
         toolTipDiv.html(toolTipText);
@@ -376,7 +408,9 @@ function redrawPlot(plotCanvasId) {
     if (backPage == null || backPage == '') {
         var backPage = get_URL_param('back_page');
     }
-    d3Plot("#" + plotCanvasId, d3.selectAll("circles").data(), $.extend(true, {}, _PSE_plotOptions), backPage);
+    PSE_mainDraw('main_div_pse', backPage)
+    /*
+     d3Plot("#" + plotCanvasId, d3.selectAll("circles").data(), $.extend(true, {}, _PSE_plotOptions), backPage);*/
 
 }
 
@@ -440,9 +474,11 @@ function PSEDiscreteInitialize(labelsXJson, labelsYJson, series_array, dataJson,
     min_size = parseFloat(min_size);
     max_size = parseFloat(max_size);
 
-    ColSch_initColorSchemeGUI(min_color, max_color, function () {
-        _updatePlotPSE('main_div_pse', labels_x, labels_y, series_array, data, min_color, max_color, backPage);
-    });
+    if (d3.select("#control-view").empty() != true) {
+        ColSch_initColorSchemeGUI(min_color, max_color, function () {
+            _updatePlotPSE('main_div_pse', labels_x, labels_y, series_array, data, min_color, max_color, backPage);
+        });
+    }
 
     function _fmt_lbl(sel, v) {
         $(sel).html(Number.isNaN(v) ? 'not available' : toSignificantDigits(v, 3));
