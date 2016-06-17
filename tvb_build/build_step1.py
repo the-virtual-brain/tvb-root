@@ -56,6 +56,7 @@ FW_FOLDER = join(TVB_ROOT, 'framework_tvb')
 LICENSE_PATH = join(FW_FOLDER, 'LICENSE_TVB.txt')
 RELEASE_NOTES_PATH = join(TVB_ROOT, 'tvb_documentation', 'RELEASE_NOTES')
 DATA_SRC_FOLDER = os.path.dirname(tvb_data.__file__)
+DEMOS_MATLAB_FOLDER = join(TVB_ROOT, 'matlab')
 
 # dest paths
 DIST_FOLDER = join(os.path.dirname(__file__), 'build', 'TVB_Distribution')
@@ -151,6 +152,7 @@ def build_step1():
 
     shutil.copy2(LICENSE_PATH, join(DIST_FOLDER, 'LICENSE_TVB.txt'))
     shutil.copy2(RELEASE_NOTES_PATH, join(DIST_FOLDER, 'docs', 'RELEASE_NOTES.txt'))
+    shutil.copytree(DEMOS_MATLAB_FOLDER, join(DIST_FOLDER, 'matlab'))
 
     copy_distribution_dataset()
 

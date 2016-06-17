@@ -65,8 +65,7 @@ class Config:
             join("..", "tvb_bin", "tvb_bin"): join(self.target_site_packages, "tvb_bin"),
             join("..", "externals", "BCT"): join(self.target_site_packages, "externals", "BCT"),
             join("..", "tvb_documentation", "demos"): join(self.target_root, "demo_scripts"),
-            join("..", "tvb_documentation", "tutorials"): join(self.target_root, "demo_scripts"),
-            join("..", "matlab"): join(self.target_root, "matlab"),
+            join("..", "tvb_documentation", "tutorials"): join(self.target_root, "demo_scripts")
         }
 
         self.commands_map = commands_map
