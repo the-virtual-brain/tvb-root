@@ -106,6 +106,8 @@ class ProjectionMatrix(MappedType):
 class ProjectionSurfaceEEG(ProjectionMatrix):
     "Specific projection, from a CorticalSurface to EEG sensors."
 
+    __tablename__ = None
+
     __mapper_args__ = {'polymorphic_identity': EEG_POLYMORPHIC_IDENTITY}
 
     projection_type = basic.String(default=EEG_POLYMORPHIC_IDENTITY)
@@ -149,6 +151,8 @@ class ProjectionSurfaceSEEG(ProjectionMatrix):
     """
     Specific projection, from a CorticalSurface to SEEG sensors.
     """
+
+    __tablename__ = None
 
     __mapper_args__ = {'polymorphic_identity': SEEG_POLYMORPHIC_IDENTITY}
 

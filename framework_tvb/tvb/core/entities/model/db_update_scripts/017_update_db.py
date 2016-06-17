@@ -29,7 +29,7 @@
 #
 
 """
-Change of DB structure from TVB version 1.4.1 to TVB 1.4.2
+Change of DB structure from TVB version 1.4.1 to TVB 1.5
 
 .. moduleauthor:: Lia Domide <lia.domide@codemart.ro>
 """
@@ -109,6 +109,7 @@ def upgrade(migrate_engine):
         session.execute(text("""ALTER TABLE "MAPPED_DATATYPE_MEASURE" RENAME TO "MAPPED_DATATYPE_MEASURE_DATA"; """))
         session.execute(text("""ALTER TABLE "MAPPED_SIMULATION_STATE" RENAME TO "MAPPED_SIMULATION_STATE_DATA"; """))
         session.execute(text("""ALTER TABLE "MAPPED_VALUE_WRAPPER" RENAME TO "MAPPED_VALUE_WRAPPER_DATA"; """))
+        session.execute(text("""ALTER TABLE "MAPPED_PROJECTION_DATA" RENAME TO "MAPPED_PROJECTION_MATRIX_DATA"; """))
         session.commit()
     except Exception, excep:
         LOGGER.exception(excep)
