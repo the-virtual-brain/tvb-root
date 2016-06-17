@@ -35,15 +35,17 @@ module docstring
 
 import numpy
 from tvb.basic.logger.builder import get_logger
-from tvb.basic.traits import core, types_mapped
+from tvb.basic.traits import core
+from tvb.basic.traits.types_mapped import MappedType
 from tvb.datatypes import arrays
 from tvb.datatypes.region_mapping import RegionVolumeMapping
 
 LOG = get_logger(__name__)
 TRACTS_CHUNK_SIZE = 100
 
-class Tracts(types_mapped.MappedType):
-    "Datatype for results of diffusion imaging tractography."
+
+class Tracts(MappedType):
+    """Datatype for results of diffusion imaging tractography."""
 
     MAX_N_VERTICES = 2 ** 16
 
@@ -74,7 +76,6 @@ class Tracts(types_mapped.MappedType):
         order=-1
     )
 
-    __generate_table__ = True
 
     @property
     def tracts_count(self):

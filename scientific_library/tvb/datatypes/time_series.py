@@ -314,6 +314,8 @@ class SensorsTSBase(TimeSeries):
     Add framework related functionality for TS Sensor classes
 
     """
+    __tablename__ = None
+
 
     def get_space_labels(self):
         """
@@ -346,6 +348,8 @@ class SensorsTSBase(TimeSeries):
 class TimeSeriesEEG(SensorsTSBase):
     """ A time series associated with a set of EEG sensors. """
     _ui_name = "EEG time-series"
+    __generate_table__ = True
+
     sensors = sensors.SensorsEEG
     labels_ordering = basic.List(default=["Time", "1", "EEG Sensor", "1"])
 
@@ -353,6 +357,8 @@ class TimeSeriesEEG(SensorsTSBase):
 class TimeSeriesMEG(SensorsTSBase):
     """ A time series associated with a set of MEG sensors. """
     _ui_name = "MEG time-series"
+    __generate_table__ = True
+
     sensors = sensors.SensorsMEG
     labels_ordering = basic.List(default=["Time", "1", "MEG Sensor", "1"])
 
@@ -360,6 +366,8 @@ class TimeSeriesMEG(SensorsTSBase):
 class TimeSeriesSEEG(SensorsTSBase):
     """ A time series associated with a set of Internal sensors. """
     _ui_name = "Stereo-EEG time-series"
+    __generate_table__ = True
+
     sensors = sensors.SensorsInternal
     labels_ordering = basic.List(default=["Time", "1", "sEEG Sensor", "1"])
 

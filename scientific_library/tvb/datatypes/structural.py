@@ -45,7 +45,7 @@ LOG = get_logger(__name__)
 
 
 class VolumetricDataMixin(object):
-    "Provides subclasses with useful methods for volumes."
+    """Provides subclasses with useful methods for volumes."""
 
     def write_data_slice(self, data):
         """
@@ -94,8 +94,8 @@ class StructuralMRI(VolumetricDataMixin, arrays.MappedArray):
     # without the field below weighting and volume columns are going to be added to the MAPPED_ARRAY table
     __generate_table__ = True
 
-    array_data = arrays.FloatArray(label= "contrast")
+    array_data = arrays.FloatArray(label="contrast")
 
-    weighting = basic.String(label= "MRI weighting") # eg, "T1", "T2", "T2*", "PD", ...
+    weighting = basic.String(label="MRI weighting")  # eg, "T1", "T2", "T2*", "PD", ...
 
     volume = volumes.Volume

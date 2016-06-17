@@ -47,7 +47,7 @@ LOG = get_logger(__name__)
 
 
 class Covariance(arrays.MappedArray):
-    "Covariance datatype."
+    """Covariance datatype."""
 
     array_data = arrays.ComplexArray(file_storage=core.FILE_STORAGE_EXPAND)
 
@@ -79,7 +79,7 @@ class Covariance(arrays.MappedArray):
 
 
 class CorrelationCoefficients(arrays.MappedArray):
-    "Correlation coefficients datatype."
+    """Correlation coefficients datatype."""
 
     array_data = arrays.FloatArray(file_storage=core.FILE_STORAGE_DEFAULT)
 
@@ -110,7 +110,7 @@ class CorrelationCoefficients(arrays.MappedArray):
 
 
 class ConnectivityMeasure(arrays.MappedArray):
-    "Measurement of based on a connectivity."
+    """Measurement of based on a connectivity."""
 
     connectivity = connectivity.Connectivity
 

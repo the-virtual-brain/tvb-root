@@ -82,7 +82,6 @@ class PrincipalComponents(MappedType):
         label="Normalised component time series",
         file_storage=core.FILE_STORAGE_EXPAND)
 
-    __generate_table__ = True
 
     def write_data_slice(self, partial_result):
         """
@@ -236,7 +235,6 @@ class IndependentComponents(MappedType):
         label="Normalised component time series",
         file_storage=core.FILE_STORAGE_EXPAND)
 
-    __generate_table__ = True
 
     def write_data_slice(self, partial_result):
         """

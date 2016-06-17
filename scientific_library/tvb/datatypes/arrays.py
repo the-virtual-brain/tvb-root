@@ -128,12 +128,14 @@ class MappedArray(MappedType):
     "An array stored in the database."
     KEY_SIZE = "size"
     KEY_OPERATION = "operation"
+
     title = basic.String
     label_x, label_y = basic.String, basic.String
     aggregation_functions = basic.JSONType(required=False)
     dimensions_labels = basic.JSONType(required=False)
     nr_dimensions, length_1d, length_2d, length_3d, length_4d = [basic.Integer] * 5
     array_data = Array()
+
     __generate_table__ = True
 
     def _find_summary_info(self):
