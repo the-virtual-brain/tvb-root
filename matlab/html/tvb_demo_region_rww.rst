@@ -1,49 +1,28 @@
 .. _tvb_demo_region_rww:
 
-.. raw:: html
+=======================
+Reduced Wong-Wang model
+=======================
 
-   <div class="content">
 
-.. rubric:: Region-level simulation with reduced Wong-Wang.
-   :name: region-level-simulation-with-reduced-wong-wang.
-
-In this demo, we show how to perform a simulation with the reduced
+In this demo, we show how to perform a region level simulation with the reduced
 Wong-Wang model, using the default connectivity.
 
-.. rubric:: Contents
-   :name: contents
-
-.. raw:: html
-
-   <div>
-
--  `Ensure TVB is set up <#1>`__
--  `Build simulator <#2>`__
--  `Plot connectivity weights and tract lengths <#3>`__
--  `Run simulation <#4>`__
--  `Convert data to MATLAB format <#5>`__
--  `Plot results <#6>`__
-
-.. raw:: html
-
-   </div>
-
-.. rubric:: Ensure TVB is set up\ ` <>`__
-   :name: ensure-tvb-is-set-up
-
-.. code:: codeinput
+--------------------
+Ensure TVB is set up
+--------------------
+::
 
     tvb_setup
 
-.. code:: codeoutput
 
-    [tvb_setup] using Python 2.7 C:\Users\mw\Downloads\TVB_Distribution\tvb_data\python.exe
-    TVB modules available.
+|  [tvb_setup] using Python 2.7 C:\Users\mw\Downloads\TVB_Distribution\tvb_data\python.exe
+|  TVB modules available.
 
-.. rubric:: Build simulator\ ` <>`__
-   :name: build-simulator
-
-.. code:: codeinput
+---------------
+Build simulator
+---------------
+::
 
     model = py.tvb.simulator.models.ReducedWongWang();
     coupling = py.tvb.simulator.coupling.Linear;
@@ -61,38 +40,40 @@ Wong-Wang model, using the default connectivity.
 
     configure(sim);
 
-.. rubric:: Plot connectivity weights and tract lengths\ ` <>`__
-   :name: plot-connectivity-weights-and-tract-lengths
-
-.. code:: codeinput
+-------------------------------------------
+Plot connectivity weights and tract lengths
+-------------------------------------------
+::
 
     figure('Position', [500 500 1000 400])
     subplot 121, imagesc(np2m(conn.weights)), colorbar, title('Weights')
     subplot 122, imagesc(np2m(conn.tract_lengths)), colorbar
     title('Tract Lengths (mm)')
 
-|image0|
-.. rubric:: Run simulation\ ` <>`__
-   :name: run-simulation
+.. figure:: ../../matlab/html/tvb_demo_region_rww_01.png
+      :width: 1000px
+      :figclass: demo-figure
 
-.. code:: codeinput
+--------------
+Run simulation
+--------------
+::
 
     data = run(sim);
 
-.. rubric:: Convert data to MATLAB format\ ` <>`__
-   :name: convert-data-to-matlab-format
-
-.. code:: codeinput
+-----------------------------
+Convert data to MATLAB format
+-----------------------------
+::
 
     t = np2m(data{1}{1});
     y = np2m(data{1}{2});
 
-.. rubric:: Plot results\ ` <>`__
-   :name: plot-results
+------------
+Plot results
+------------
 
-NB Dimensions will be [mode, node, state var, time]
-
-.. code:: codeinput
+NB Dimensions will be [mode, node, state var, time]::
 
     figure()
     plot(t, squeeze(y(1, :, 1, :)), 'k')
@@ -100,15 +81,9 @@ NB Dimensions will be [mode, node, state var, time]
     xlabel('Time (ms)')
     title(sprintf('Reduced Wong-Wang, %d Regions', conn.weights.shape{1}*1))
 
-|image1|
-| 
-| `Published with MATLAB®
-  R2016a <http://www.mathworks.com/products/matlab/>`__
 
-.. raw:: html
+.. figure:: ../../matlab/html/tvb_demo_region_rww_02.png
+      :width: 560px
+      :figclass: demo-figure
 
-   </div>
-
-.. |image0| image:: tvb_demo_region_rww_01.png
-.. |image1| image:: tvb_demo_region_rww_02.png
 

@@ -1,47 +1,27 @@
 .. _tvb_demo_two_epi:
 
-.. raw:: html
+========================
+Two Epileptor simulation
+========================
 
-   <div class="content">
-
-.. rubric:: Two Epileptor simulation.
-   :name: two-epileptor-simulation.
 
 In this demo, we show how to perform a simulation with two Epileptors.
 
-.. rubric:: Contents
-   :name: contents
-
-.. raw:: html
-
-   <div>
-
--  `Ensure TVB is set up <#1>`__
--  `Build simulator <#2>`__
--  `Run simulation <#3>`__
--  `Convert data to MATLAB format <#4>`__
--  `Plot 2 kHz LFP & metabolic variables <#5>`__
-
-.. raw:: html
-
-   </div>
-
-.. rubric:: Ensure TVB is set up\ ` <>`__
-   :name: ensure-tvb-is-set-up
-
-.. code:: codeinput
+--------------------
+Ensure TVB is set up
+--------------------
+::
 
     tvb_setup
 
-.. code:: codeoutput
 
-    [tvb_setup] using Python 2.7 C:\Users\mw\Downloads\TVB_Distribution\tvb_data\python.exe
-    TVB modules available.
+|  [tvb_setup] using Python 2.7 C:\Users\mw\Downloads\TVB_Distribution\tvb_data\python.exe
+|  TVB modules available.
 
-.. rubric:: Build simulator\ ` <>`__
-   :name: build-simulator
-
-.. code:: codeinput
+---------------
+Build simulator
+---------------
+::
 
     % Create epileptor model.
     model = py.tvb.simulator.models.Epileptor();
@@ -78,27 +58,26 @@ In this demo, we show how to perform a simulation with two Epileptors.
     % Spatialize epileptor excitability
     model.x0 = [-2.0, -1.6];
 
-.. rubric:: Run simulation\ ` <>`__
-   :name: run-simulation
-
-.. code:: codeinput
+--------------
+Run simulation
+--------------
+::
 
     monitor_output = run(sim);
 
-.. rubric:: Convert data to MATLAB format\ ` <>`__
-   :name: convert-data-to-matlab-format
-
-.. code:: codeinput
+-----------------------------
+Convert data to MATLAB format
+-----------------------------
+::
 
     time = np2m(monitor_output{1}{1});
     signal = np2m(monitor_output{1}{2});
 
-.. rubric:: Plot 2 kHz LFP & metabolic variables\ ` <>`__
-   :name: plot-2-khz-lfp-metabolic-variables
+------------------------------------
+Plot 2 kHz LFP & metabolic variables
+------------------------------------
 
-NB dimensions will be [mode, node, state var, time]
-
-.. code:: codeinput
+NB dimensions will be [mode, node, state var, time]::
 
     figure()
 
@@ -125,14 +104,9 @@ NB dimensions will be [mode, node, state var, time]
     ylabel('Z(t)')
     xlabel('Time (ms)')
 
-|image0|
-| 
-| `Published with MATLAB®
-  R2016a <http://www.mathworks.com/products/matlab/>`__
 
-.. raw:: html
+.. figure:: ../../matlab/html/tvb_demo_two_epi_01.png
+      :width: 560px
+      :figclass: demo-figure
 
-   </div>
-
-.. |image0| image:: tvb_demo_two_epi_01.png
 
