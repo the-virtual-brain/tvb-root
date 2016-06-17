@@ -5,6 +5,23 @@ import glob
 import os.path
 import sys
 import types
+import ctypes
+
+class OutStream(object):
+
+    def __init__(self, matlab_root=''):
+        if sys.platform == 'darwin':
+            libname = 'mex'
+        elif sys.platform == 'win32':
+            libname = 'libmex'
+        elif sys.platform == 'linux2':
+            libname = '%s/glnxa64/libmex.so' % (matlab_root, )
+        else:
+            print 'unsupported platform %r' % (sys.platform, )
+        self.lib = ctypes.CDLL(libname)
+
+    def write(self, str):
+        self.lib.mexPrintf(str)
 
 
 class UnsupportedModule(types.ModuleType):
@@ -48,9 +65,9 @@ def unsupport_module(modname):
 
 
 def setup():
-    unsupport_module('h5py')
-    sys.modules['numpy.linalg'] = UnsupportedModule('numpy.linalg')
-    sys.modules['scipy.linalg'] = UnsupportedModule('scipy.linalg')
+
+    if sys.platform != 'darwin':
+        unsupport_module('h5py')
 
     import logging
     logging.basicConfig(level=logging.DEBUG, stream=sys.stdout)
@@ -58,4 +75,11 @@ def setup():
     from tvb.basic.profile import TvbProfile
     TvbProfile.set_profile(TvbProfile.MATLAB_PROFILE)
 
-
+    # MATLAB states the module doesn't exist if not importable and provides no traceback
+    # to diagnose the import error, so we'll need to workaround this in the future. For now,
+    # just try to import the simlab and report if it worked or not.
+    try:
+        import tvb.simulator.lab
+        print 'TVB modules available.'
+    except Exception as exc:
+        print 'failed to import TVB modules.'

@@ -366,9 +366,17 @@ Visualizers
 Matlab Demos
 ============
 
-.. figure:: ../../matlab/html/tvb_demo_simple.png
+.. figure:: ../../matlab/html/tvb_demo_region_rww_01.png
       :width: 200px
       :figclass: demo-figure
-      :target: :ref:`tvb_demo_simple`
+      :target: :ref:`tvb_demo_region_rww`
 
-      :ref:`tvb_demo_simple`
+      :ref:`tvb_demo_region_rww`
+
+
+.. figure:: ../../matlab/html/tvb_demo_two_epi_01.png
+      :width: 200px
+      :figclass: demo-figure
+      :target: :ref:`tvb_demo_two_epi`
+
+      :ref:`tvb_demo_two_epi`

@@ -15,6 +15,6 @@ if ~isloaded
 else
     fprintf('[tvb_setup] using Python %s %s\n', version, executable);
 end
-
+%%
 py.tvb_matlab.setup()
 py.tvb.simulator.common.log_debug(py.False, py.False, '[TVB]')

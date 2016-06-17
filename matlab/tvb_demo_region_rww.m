@@ -1,3 +1,8 @@
+%% Region-level simulation with reduced Wong-Wang.
+%
+% In this demo, we show how to perform a simulation with the reduced
+% Wong-Wang model, using the default connectivity.
+
 %% Ensure TVB is set up
 tvb_setup
 
@@ -18,7 +23,7 @@ sim = py.tvb.simulator.simulator.Simulator(pyargs(...
 
 configure(sim);
 
-%% Examine connectivity weights and tract lengths
+%% Plot connectivity weights and tract lengths
 figure('Position', [500 500 1000 400])
 subplot 121, imagesc(np2m(conn.weights)), colorbar, title('Weights')
 subplot 122, imagesc(np2m(conn.tract_lengths)), colorbar
