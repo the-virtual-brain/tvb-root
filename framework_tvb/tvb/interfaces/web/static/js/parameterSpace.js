@@ -1,17 +1,17 @@
 /**
- * TheVirtualBrain-Framework Package. This package holds all Data Management, and
+ * TheVirtualBrain-Framework Package. This package holds all Data Management, and 
  * Web-UI helpful to run brain-simulations. To use it, you also need do download
  * TheVirtualBrain-Scientific Package (for simulators). See content of the
  * documentation-folder for more details. See also http://www.thevirtualbrain.org
  *
  * (c) 2012-2013, Baycrest Centre for Geriatric Care ("Baycrest")
  *
- * This program is free software; you can redistribute it and/or modify it under
+ * This program is free software; you can redistribute it and/or modify it under 
  * the terms of the GNU General Public License version 2 as published by the Free
  * Software Foundation. This program is distributed in the hope that it will be
- * useful, but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * useful, but WITHOUT ANY WARRANTY; without even the implied warranty of 
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU General Public
- * License for more details. You should have received a copy of the GNU General
+ * License for more details. You should have received a copy of the GNU General 
  * Public License along with this program; if not, you can download it here
  * http://www.gnu.org/licenses/old-licenses/gpl-2.0
  *
@@ -21,7 +21,7 @@
 // We keep all-nodes information for current PSE as a global, to have them ready at node-selection, node-overlay.
 var PSE_nodesInfo;
 // Keep Plot-options and MIN/MAx colors for redraw (e.g. at resize).
-var _PSE_plotOptions;
+var _PSE_plotOptions; 
 var _PSE_minColor;
 var _PSE_maxColor;
 var _PSE_plot;
@@ -41,6 +41,7 @@ function _updatePlotPSE(canvasId, xLabels, yLabels, seriesArray, data_info, min_
     _PSE_minColor = min_color;
     _PSE_maxColor = max_color;
     PSE_nodesInfo = data_info;
+    
     _PSE_plotOptions = {
         series: {
             lines: {
@@ -52,18 +53,11 @@ function _updatePlotPSE(canvasId, xLabels, yLabels, seriesArray, data_info, min_
                 fill: true
             }
         },
-        margins: { // is this the correct way to be doing margins? It's just how I have in the past,
-            top: 20,
-            bottom: 40,
-            left: 15,
-            right: 50
-        },
         xaxis: {
-            labels: xLabels, // is there a better way to get access to these values inside my plotting?
             min: -1,
             max: xLabels.length,
             tickSize: 1,
-            tickFormatter: function (val) {
+            tickFormatter: function(val) {
                 if (val < 0 || val >= xLabels.length) {
                     return "";
                 }
@@ -71,11 +65,10 @@ function _updatePlotPSE(canvasId, xLabels, yLabels, seriesArray, data_info, min_
             }
         },
         yaxis: {
-            labels: yLabels,
             min: -1,
             max: yLabels.length,
             tickSize: 1,
-            tickFormatter: function (val) {
+            tickFormatter: function(val) {
                 if (val < 0 || val >= yLabels.length || yLabels[val] === "_") {
                     return "";
                 }
@@ -88,338 +81,33 @@ function _updatePlotPSE(canvasId, xLabels, yLabels, seriesArray, data_info, min_
         }
 
     };
-    _d3PSE_plot = d3Plot("#" + canvasId, $.parseJSON(seriesArray), $.extend(true, {}, _PSE_plotOptions), backPage);
+    
+    _PSE_plot = $.plot($("#" + canvasId), $.parseJSON(seriesArray), $.extend(true, {}, _PSE_plotOptions));
+    changeColors();
+    $(".tickLabel").each(function() { $(this).css("color", "#000000"); });
 
-    //this has been commented out below so that I can see what I have done on the canvas after the above function has ended
-    /*_PSE_plot = $.plot($("#" + canvasId), $.parseJSON(seriesArray), $.extend(true, {}, _PSE_plotOptions));
-     changeColors(); // this will need to eventually have the addition of the d3 plot function
-     $(".tickLabel").each(function () {
-     $(this).css("color", "#000000");
-     });
-     //if you want to catch the right mouse click you have to change the flot sources
-     // because it allows you to catch only "plotclick" and "plothover"
-     applyClickEvent(canvasId, backPage);
-     applyHoverEvent(canvasId);*/
+    //if you want to catch the right mouse click you have to change the flot sources
+    // because it allows you to catch only "plotclick" and "plothover"
+    applyClickEvent(canvasId, backPage);
+    applyHoverEvent(canvasId);
 }
 
-
-function d3Plot(placeHolder, data, options, pageParam) {
-    //these lines are cleanup for artifacts of the conversion that aren't behaving nicely, they should eventually be removed because they are just treating the symptoms.
-    if (d3.select(".outerCanvas").empty() != true) {
-        d3.selectAll(".outerCanvas").remove()
-    }
-    if (d3.selectAll("#main_div_pse")[0].length != 1) {
-        var oneOrMoreDiv = d3.selectAll("div > div.flex-wrapper"); //index necessary because selection is an array with two elements, and second is unneccessary
-
-        if (oneOrMoreDiv[0].length > 1) {
-            oneOrMoreDiv[0][1].remove()
-        } else {
-            oneOrMoreDiv[0][0].remove()
-        }
-    }
-    function createScale(xORy) {
-        // should I incorporate some sort of testing for values before actually getting into the function?
-        //todo relate the scaling factor to the radius values available
-        if (xORy === "x") {
-            var [lowerExtent,upperExtent] = d3.extent(_PSE_plotOptions.xaxis.labels),
-                extentPadding = ((upperExtent - lowerExtent) * .10) / 2, // this multiplication factor controls how much the dots are gathered together
-                [padLo,padUp] = [lowerExtent - extentPadding, upperExtent + extentPadding];
-
-            if (padLo < 0) {
-                var newScale = d3.scale.linear()
-                    .domain([0, padUp])
-                    .range([0, innerWidth - options.margins.right]);
-
-            } else {
-                var newScale = d3.scale.linear()
-                    .domain([padLo, padUp])
-                    .range([options.margins.left, innerWidth - options.margins.right]);
-            }
-            return newScale
-        } else {
-            var [lowerExtent,upperExtent] = d3.extent(_PSE_plotOptions.yaxis.labels),
-                extentPadding = ((upperExtent - lowerExtent) * .35) / 2,
-                [padLo,padUp] = [lowerExtent - extentPadding, upperExtent + extentPadding];
-
-            if (padLo < 0) {
-                var newScale = d3.scale.linear()
-                    .domain([0, padUp])
-                    .range([innerHeight - (options.margins.bottom), options.margins.top]);
-
-            } else {
-                var newScale = d3.scale.linear()
-                    .domain([padLo, padUp])
-                    .range([innerHeight - (options.margins.bottom), options.margins.top]);
-
-            }
-            return newScale
-        }
-    }
-
-    function createAxis(xORy) {
-        if (xORy === "x") { // should I be creating the whole axis inside here, or should I simply return the axis that has the parts to be customized and called later
-            newAxis = d3.svg.axis().scale(xScale)
-                .orient("bottom")
-                .ticks(options.xaxis.max);
-            return newAxis
-        }
-        else {
-            newAxis = d3.svg.axis().scale(yScale)
-                .orient("left")
-                .ticks(options.yaxis.max);
-            return newAxis
-        }
-    }
-
-
-    function brushed() {
-        var extent = brush.extent();
-        circles.classed("selected", function (d) {
-            return extent[0][0] <= d.data[0][0] && d.data[0][0] <= extent[1][0] // basically says that circle x score, is inbetween brush x bounds and vice verse for y
-                &&
-                extent[0][1] <= d.data[0][1] && d.data[0][1] <= extent[1][1]
-        })
-
-    }
-
-    function brushend() {
-        var extent = brush.extent();
-        xScale.domain(brush.empty() ? xRef.domain() : [extent[0][0], extent[1][0]]);
-        yScale.domain(brush.empty() ? yRef.domain() : [extent[0][1], extent[1][1]]);
-
-        moveDots();
-        replaceAxes();
-
-        d3.select(".brush").call(brush.clear())
-    }
-
-    function moveDots() {
-        circles
-            .transition()
-            .delay(500)
-            .attr({
-                cx: function (d) {
-                    return xScale(_PSE_plotOptions.xaxis.tickFormatter(d.data[0][0]))
-                },
-                cy: function (d) {
-                    return yScale(_PSE_plotOptions.yaxis.tickFormatter(d.data[0][1]))
-                }
-
-                    // return yScale(d.yCen) // why is this placing dots far below the bottom of the pane? Is the canvas dimension off?
-
-
-            })
-    }
-
-    function replaceAxes() {
-        canvas.transition().duration(500)
-            .select("#xAxis")
-            .call(xAxis);
-
-        canvas.transition().duration(500)
-            .select("#yAxis")
-            .call(yAxis);
-
-    }
-
-
-    var myBase, workingData, maxRad, canvasDimensions, canvas, xScale, yScale, xRef, yRef, xAxis, yAxis, circles, brush,
-        colScale, dotsCanvas, innerHeight, innerWidth, toolTipDiv;
-    myBase = d3.select(placeHolder);
-    workingData = $.extend(true, {}, data); //this will be filtered when necessary according to the function and the parameters
-    maxRad = d3.max(data, function (d) {
-        return +d.points.radius
-    });
-    canvasDimensions = {h: parseInt(myBase.style("height")), w: parseInt(myBase.style("width"))};
-    innerHeight = canvasDimensions.h - options.margins.top;
-    innerWidth = canvasDimensions.w - options.margins.left;
-    canvas = myBase.append("svg") //todo must make plottable canvas be inbetween axes, otherwise zoom adjusted circles can be seen outside of rational graphing area
-        .attr({
-            class: "outerCanvas",
-            height: canvasDimensions.h,
-            width: canvasDimensions.w
-        })
-        .append("g")
-        .attr("transform", "translate( " + options.margins.left + "," + options.margins.top + " )");
-    xScale = createScale("x");
-    yScale = createScale("y");
-    xRef = xScale.copy();
-    yRef = yScale.copy();
-    toolTipDiv = d3.select(".tooltip");
-    xAxis = createAxis("x");
-    yAxis = createAxis("y");
-    colScale = d3.scale.linear()
-        .domain([_PSE_minColor, _PSE_maxColor])
-        .range(["white", "red"]);
-    dotsCanvas = canvas.append("svg")
-        .classed("dotsCanvas", true)
-        .attr({
-            height: innerHeight,
-            width: innerWidth
-        });
-
-    brush = d3.svg.brush() // todo either figure out how to generalize the brush or tuck it into the magnify function
-        .x(xScale)
-        .y(yScale)
-        .on("brush", brushed)
-        .on("brushend", brushend);
-
-
-
-    circles = dotsCanvas.selectAll("circle").data(data).enter().append("circle")
-        .attr({
-            r: function (d) {
-                return d.points.radius
-            },
-            cx: function (d) {
-                return xScale(_PSE_plotOptions.xaxis.tickFormatter(d.data[0][0]))
-            },
-            cy: function (d) {
-                return yScale(_PSE_plotOptions.yaxis.tickFormatter(d.data[0][1]))
-            },
-            fill: function (d) {
-                var nodeInfo = PSE_nodesInfo[d.data[0][0]][d.data[0][1]];
-                return colScale(nodeInfo.color_weight)
-            }
-
-        });
-
-
-    canvas.append("g")
-        .attr("id", "xAxis")
-        .attr("transform", "translate (0," + ( innerHeight - _PSE_plotOptions.margins.bottom ) + ")")
-        .call(xAxis);
-    canvas.append("g")
-        .attr("id", "yAxis")
-        .attr("transform", "translate (" + _PSE_plotOptions.margins.left + " ,0)")
-        .call(yAxis);
-    // this is now the area that should allow for drawing the lines of the grid
-    //todo again visual grid stuff. How should I go about making the grid fit the canvas better?
-
-
-    d3.select("#Magnify").on("click", function (d) {
-        var activeBrush = d3.select(".brush");
-        if (activeBrush.empty() == true) {
-            canvas.append("g")
-                .attr("class", "brush")
-                .call(brush)
-                .selectAll("rect");
-        } else {
-            activeBrush.remove()
-        }
-    });
-
-    d3.select("#Explore").on("click", function () { //todo make sure to add a x button in the corner of the overlay so that it can be closed without exiting the explore tool
-        function expBrushMove() {
-            // var xRange
-        }
-
-        function expBrushStop() { // todo add sliders to the div that shows up
-            debugger;
-            if (exploreBrush.empty() == true) {
-                explToolTip.style("display", "none")
-            } else {
-                var extent = exploreBrush.extent();
-                var xRange = Math.abs(extent[0][0] - extent[1][0]),
-                    yRange = Math.abs(extent[0][1] - extent[1][1]);
-                explToolTip.style({
-                    position: "absolute",
-                    left: xScale(extent[1][0]) + _PSE_plotOptions.margins.left + "px", //this is the x cordinate of where the drag ended (assumption here is drags from left to right
-                    top: yScale(extent[1][1]) + _PSE_plotOptions.margins.top + 100 + "px",
-                    display: "block",
-                    'background-color': '#C0C0C0',
-                    border: '1px solid #fdd',
-                    padding: '2px',
-                    opacity: 0.80
-                });
-                d3.select("#xRange").text(xRange);
-                d3.select("#yRange").text(yRange)
-            }
-        }
-
-        var explToolTip = d3.select("#ExploreToolTip");
-
-        var exploreBrush = d3.svg.brush()
-            .x(xScale)
-            .y(yScale)
-            .on("brush", expBrushMove)
-            .on("brushend", expBrushStop);
-        if (d3.select(".brush").empty() == true) {
-            canvas.append("g")
-                .attr("class", "brush")
-                .call(exploreBrush)
-                .selectAll("rect");
-        } else {
-            d3.select(".brush").remove();
-            explToolTip.style("display", "none"); // is this redundant with the above tooltip hider?
-        }
-
-
-    });
-
-    /*d3.select("#Filter").on("click", function () { //todo standardize the id names for the div elements used for the various overlays.
-        function filterData(dataIn, criteria) {
-        }
-
-        var filterDiv = d3.select("#FilterDiv").style("display", "block");
-        filterData(workingData, filterPrefs)
-     });*/
-
-
-    d3.selectAll("circle").on("mouseover", function (d) {
-        var nodeInfo = PSE_nodesInfo[d.data[0][0]][d.data[0][1]];
-        var toolTipText = nodeInfo.tooltip.split("&amp;").join("&").split("&lt;").join("<").split("&gt;").join(">");
-        toolTipDiv.html(toolTipText);
-        toolTipDiv.style({
-            position: "absolute",
-            left: (d3.event.pageX) + "px",
-            top: (d3.event.pageY - 100) + "px",
-            display: "block",
-            'background-color': '#C0C0C0',
-            border: '1px solid #fdd',
-            padding: '2px',
-            opacity: 0.80
-        })
-    })
-        .on("mouseout", function (d) {
-            toolTipDiv.transition()
-                .duration(300)
-                .style("display", "none")
-        });
-    d3.selectAll("circle").on("click", function (d) {
-        var nodeInfo = PSE_nodesInfo[d.data[0][0]][d.data[0][1]];
-        if (nodeInfo.dataType != undefined) {
-            displayNodeDetails(nodeInfo['Gid'], nodeInfo['dataType'], pageParam); // curious because backPage isn't in the scope, but appears to work.
-        }
-    })
-
-}
 /*
  * Do a redraw of the plot. Be sure to keep the resizable margin elements as the plot method seems to destroy them.
  */
 function redrawPlot(plotCanvasId) {
-    /*// todo: mh the selected element is not an ancestor of the second tab!!!
+    // todo: mh the selected element is not an ancestor of the second tab!!!
     // thus this redraw call fails, ex on resize
-
     if (_PSE_plot != null) {
-        _PSE_plot = $.plot($('#' + plotCanvasId)[0], _PSE_plot.getData(), $.extend(true, {}, _PSE_plotOptions));
-     }*/
-    //it appears that there is a tie in for window.resize to this function. Lets see how this works out
-    if (backPage == null || backPage == '') {
-        var backPage = get_URL_param('back_page');
+        _PSE_plot = $.plot($('#'+plotCanvasId)[0], _PSE_plot.getData(), $.extend(true, {}, _PSE_plotOptions));
     }
-    PSE_mainDraw('main_div_pse', backPage)
-    /*
-     d3Plot("#" + plotCanvasId, d3.selectAll("circles").data(), $.extend(true, {}, _PSE_plotOptions), backPage);*/
-
 }
-
 
 /*
  * Fire DataType overlay when clicking on a node in PSE.
  */
 function applyClickEvent(canvasId, backPage) {
-    var currentCanvas = $("#" + canvasId);
+    var currentCanvas = $("#"+canvasId);
     currentCanvas.unbind("plotclick");
     currentCanvas.bind("plotclick", function (event, pos, item) {
         if (item != null) {
@@ -447,11 +135,9 @@ function applyHoverEvent(canvasId) {
                 var tooltipText = ("" + dataInfo["tooltip"]).split("&amp;").join("&").split("&lt;").join("<").split("&gt;").join(">");
 
                 $('<div id="tooltip"> </div>').html(tooltipText
-                ).css({
-                        position: 'absolute', display: 'none', top: item.pageY + 5, left: item.pageX + 5,
-                        border: '1px solid #fdd', padding: '2px', 'background-color': '#C0C0C0', opacity: 0.80
-                    }
-                ).appendTo('body').fadeIn(200);
+                    ).css({ position: 'absolute', display: 'none', top: item.pageY + 5, left: item.pageX + 5,
+                           border: '1px solid #fdd', padding: '2px', 'background-color': '#C0C0C0', opacity: 0.80 }
+                    ).appendTo('body').fadeIn(200);
             }
         } else {
             $("#tooltip").remove();
@@ -464,7 +150,6 @@ function applyHoverEvent(canvasId) {
 function PSEDiscreteInitialize(labelsXJson, labelsYJson, series_array, dataJson, backPage, hasStartedOperations,
                                min_color, max_color, min_size, max_size) {
 
-
     var labels_x = $.parseJSON(labelsXJson);
     var labels_y = $.parseJSON(labelsYJson);
     var data = $.parseJSON(dataJson);
@@ -474,14 +159,12 @@ function PSEDiscreteInitialize(labelsXJson, labelsYJson, series_array, dataJson,
     min_size = parseFloat(min_size);
     max_size = parseFloat(max_size);
 
-    if (d3.select("#control-view").empty() != true) {
-        ColSch_initColorSchemeGUI(min_color, max_color, function () {
-            _updatePlotPSE('main_div_pse', labels_x, labels_y, series_array, data, min_color, max_color, backPage);
-        });
-    }
+    ColSch_initColorSchemeGUI(min_color, max_color, function(){
+        _updatePlotPSE('main_div_pse', labels_x, labels_y, series_array, data, min_color, max_color, backPage);
+    });
 
-    function _fmt_lbl(sel, v) {
-        $(sel).html(Number.isNaN(v) ? 'not available' : toSignificantDigits(v, 3));
+    function _fmt_lbl(sel, v){
+        $(sel).html( Number.isNaN(v) ? 'not available': toSignificantDigits(v, 3));
     }
 
     _fmt_lbl('#minColorLabel', min_color);
@@ -489,35 +172,33 @@ function PSEDiscreteInitialize(labelsXJson, labelsYJson, series_array, dataJson,
     _fmt_lbl('#minShapeLabel', min_size);
     _fmt_lbl('#maxShapeLabel', max_size);
 
-    if (Number.isNaN(min_color)) {
-        min_color = 0;
-        max_color = 1;
+    if (Number.isNaN(min_color)){
+        min_color = 0; max_color = 1;
     }
-    _updatePlotPSE('main_div_pse', labels_x, labels_y, series_array, data, min_color, max_color, backPage); // why is this called a second time?
+    _updatePlotPSE('main_div_pse', labels_x, labels_y, series_array, data, min_color, max_color, backPage);
 
     // Prepare functions for Export Canvas as Image
-    // it's unclear whether this area is necessary for the recreation of the plot after metric updates
-    /*var canvas = $("#main_div_pse").find(".flot-base")[0];
+    var canvas = $("#main_div_pse").find(".flot-base")[0];
     canvas.drawForImageExport = function () {
-     /!* this canvas is drawn by FLOT library so resizing it directly has no influence;
+        /* this canvas is drawn by FLOT library so resizing it directly has no influence;
          * therefore, its parent needs resizing before redrawing;
-     * canvas.afterImageExport() is used to bring is back to original size *!/
-        var canvasDiv = $("#main_div_pse");
-        var oldHeight = canvasDiv.height();
-        var scale = C2I_EXPORT_HEIGHT / oldHeight;
-        canvas.oldStyle = canvasDiv.attr('style');
+         * canvas.afterImageExport() is used to bring is back to original size */
+         var canvasDiv = $("#main_div_pse");
+         var oldHeight = canvasDiv.height();
+         var scale = C2I_EXPORT_HEIGHT / oldHeight;
+         canvas.oldStyle = canvasDiv.attr('style');
 
-        canvasDiv.css("display", "inline-block");
-        canvasDiv.width(canvasDiv.width() * scale);
-        canvasDiv.height(oldHeight * scale);
-        redrawPlot('main_div_pse');
+         canvasDiv.css("display", "inline-block");
+         canvasDiv.width(canvasDiv.width() * scale);
+         canvasDiv.height(oldHeight * scale);
+         redrawPlot('main_div_pse');
     };
-    canvas.afterImageExport = function () {
+    canvas.afterImageExport = function() {
         // bring it back to original size and redraw
         var canvasDiv = $("#main_div_pse");
         canvasDiv.attr('style', canvas.oldStyle);
         redrawPlot('main_div_pse');
-     };*/
+    };
 
     if (hasStartedOperations) {
         setTimeout("PSE_mainDraw('main_div_pse','" + backPage + "')", 3000);
@@ -544,19 +225,18 @@ function PSE_mainDraw(parametersCanvasId, backPage, groupGID) {
 
     if (selectedColorMetric != '' && selectedColorMetric != null) {
         url += '/' + selectedColorMetric;
-        if (selectedSizeMetric != '' && selectedSizeMetric != null) {
+        if (selectedSizeMetric != ''  && selectedSizeMetric != null) {
             url += '/' + selectedSizeMetric;
         }
     }
 
-
     doAjaxCall({
         type: "POST",
         url: url,
-        success: function (r) {
+        success: function(r) {
             $('#' + parametersCanvasId).html(r);
         },
-        error: function () {
+        error: function() {
             displayMessage("Could not refresh with the new metrics.", "errorMessage");
         }
     });
@@ -581,7 +261,7 @@ function changeColors() {
 
 
 /*************************************************************************************************************************
- *            ISOCLINE PSE BELLOW
+ * 			ISOCLINE PSE BELLOW
  *************************************************************************************************************************/
 
 
@@ -622,7 +302,7 @@ function updateMetric(selectComponent) {
     var pseElem = $('#section-pse');
     var width = pseElem.width() - 60;
     var height = pseElem.height() - 90;
-    waitOnConnection(currentFigure, 'resizePlot(' + width + ', ' + height + ')', 200, 50);
+    waitOnConnection(currentFigure, 'resizePlot('+ width +', '+ height +')', 200, 50);
 }
 
 /*
@@ -632,10 +312,10 @@ function showMetric(newMetric) {
     for (var key in figuresDict) {
         $('#' + key).hide()
             .find('canvas').each(function () {
-            if (this.drawForImageExport) {            // remove redrawing method such that only current view is exported
-                this.drawForImageExport = null;
-            }
-        });
+                if (this.drawForImageExport) {            // remove redrawing method such that only current view is exported
+                    this.drawForImageExport = null;
+                }
+            });
     }
     currentFigure = figuresDict[newMetric];
     connect_manager(serverURL, figuresDict[newMetric]);
@@ -665,10 +345,10 @@ function Isocline_MainDraw(groupGID, divId, width, height) {
     doAjaxCall({
         type: "POST",
         url: '/burst/explore/draw_isocline_exploration/' + groupGID + '/' + width + '/' + height,
-        success: function (r) {
+        success: function(r) {
             $('#' + divId).html(r);
         },
-        error: function () {
+        error: function() {
             displayMessage("Could not refresh with the new metrics.", "errorMessage");
         }
     });
