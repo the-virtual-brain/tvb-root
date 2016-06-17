@@ -74,6 +74,20 @@ def upgrade(migrate_engine):
 
     session = SA_SESSIONMAKER()
     try:
+        session.execute(text("ALTER TABLE \"MAPPED_SIMULATION_STATE\" "
+                             "ADD COLUMN _current_state VARYING CHARACTER(255)"))
+        session.commit()
+    except Exception, _:
+        session.close()
+        session = SA_SESSIONMAKER()
+        session.execute(text("ALTER TABLE \"MAPPED_SIMULATION_STATE\" "
+                             "ADD COLUMN _current_state character varying;"))
+        session.commit()
+    finally:
+        session.close()
+
+    session = SA_SESSIONMAKER()
+    try:
         session.execute(text(
             """UPDATE "ALGORITHMS" SET
             module = (select G.module FROM "ALGORITHM_GROUPS" G WHERE "ALGORITHMS".fk_algo_group=G.id),
