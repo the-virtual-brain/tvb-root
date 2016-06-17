@@ -360,7 +360,7 @@ Visualizers
 .. toctree::
       :hidden:
 
-      .. include::  ../../matlab/html/tvb_demo_simple.rst
+      Demos_Matlab
 
 
 Matlab Demos
