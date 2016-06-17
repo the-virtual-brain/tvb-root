@@ -356,3 +356,19 @@ Visualizers
       `Display Surface Parcellation`_
 
 
+
+.. toctree::
+      :hidden:
+
+      .. include::  ../../matlab/html/tvb_demo_simple.rst
+
+
+Matlab Demos
+============
+
+.. figure:: ../../matlab/html/tvb_demo_simple.png
+      :width: 200px
+      :figclass: demo-figure
+      :target: :ref:`tvb_demo_simple`
+
+      :ref:`tvb_demo_simple`
