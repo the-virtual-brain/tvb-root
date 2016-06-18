@@ -43,7 +43,8 @@ from tvb.simulator.common import get_logger, log_debug
 log_debug(False)
 
 from tvb.simulator import (simulator, models, coupling, integrators, monitors, noise)
-from tvb.datatypes import connectivity, surfaces, equations, patterns, region_mapping, sensors, cortex, local_connectivity
+from tvb.datatypes import (connectivity, surfaces, equations, patterns, region_mapping, sensors, cortex,
+                           local_connectivity, time_series)
 
 from tvb.simulator.plot.tools import (hinton_diagram, plot_3d_centres, plot_connectivity,
                                       plot_fast_kde, plot_local_connectivity, plot_matrix,
