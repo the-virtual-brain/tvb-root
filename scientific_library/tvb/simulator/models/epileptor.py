@@ -31,7 +31,7 @@ Hindmarsh-Rose-Jirsa Epileptor model.
 
 """
 
-from .base import Model, LOG, numpy, basic, arrays
+from .base import ModelNumbaDfun, LOG, numpy, basic, arrays
 from numba import guvectorize, float64
 
 @guvectorize([(float64[:],) * 18], '(n),(m)' + ',()'*15 + '->(n)', nopython=True)
@@ -68,7 +68,7 @@ def _numba_dfun(y, c_pop, x0, Iext, Iext2, a, b, slope, tt, Kvf, c, d, r, Ks, Kf
     ydot[5] = tt[0] * (-0.01 * (y[5] - 0.1 * y[0]))
 
 
-class Epileptor(Model):
+class Epileptor(ModelNumbaDfun):
     r"""
     The Epileptor is a composite neural mass model of six dimensions which
     has been crafted to model the phenomenology of epileptic seizures.

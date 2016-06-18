@@ -276,6 +276,7 @@ class Simulator(core.Type):
             self.preconfigure()
         # Make sure spatialised model parameters have the right shape (number_of_nodes, 1)
         excluded_params = ("state_variable_range", "variables_of_interest", "noise", "psi_table", "nerf_table")
+        spatial_reshape = self.model.spatial_param_reshape
         for param in self.model.trait.keys():
             if param in excluded_params:
                 continue
@@ -283,11 +284,11 @@ class Simulator(core.Type):
             region_parameters = getattr(self.model, param)
             if self.surface is not None:
                 if region_parameters.size == self.connectivity.number_of_regions:
-                    new_parameters = region_parameters[self.surface.region_mapping].reshape((-1, 1))
+                    new_parameters = region_parameters[self.surface.region_mapping].reshape(spatial_reshape)
                     setattr(self.model, param, new_parameters)
             region_parameters = getattr(self.model, param)
             if region_parameters.size == self.number_of_nodes:
-                new_parameters = region_parameters.reshape((-1, 1))
+                new_parameters = region_parameters.reshape(spatial_reshape)
                 setattr(self.model, param, new_parameters)
         # Configure spatial component of any stimuli
         self._configure_stimuli()

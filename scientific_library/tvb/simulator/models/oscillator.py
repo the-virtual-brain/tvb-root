@@ -31,13 +31,13 @@ Oscillator models.
 
 """
 
-from .base import Model, LOG, numpy, basic, arrays
+from .base import Model, ModelNumbaDfun, LOG, numpy, basic, arrays
 import numexpr
 from numba import guvectorize, float64
 
 
 
-class Generic2dOscillator(Model):
+class Generic2dOscillator(ModelNumbaDfun):
     r"""
     The Generic2dOscillator model is a generic dynamic system with two state
     variables. The dynamic equations of this model are composed of two ordinary

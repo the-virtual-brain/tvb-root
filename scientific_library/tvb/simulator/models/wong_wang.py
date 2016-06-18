@@ -31,7 +31,7 @@ Models based on Wong-Wang's work.
 
 """
 
-from .base import Model, LOG, numpy, basic, arrays
+from .base import ModelNumbaDfun, LOG, numpy, basic, arrays
 from numba import guvectorize, float64
 
 @guvectorize([(float64[:],)*11], '(n),(m)' + ',()'*8 + '->(n)', nopython=True)
@@ -48,7 +48,7 @@ def _numba_dfun(S, c, a, b, d, g, ts, w, j, io, dx):
         dx[0] = - (S[0] / ts[0]) + (1.0 - S[0]) * h * g[0]
 
 
-class ReducedWongWang(Model):
+class ReducedWongWang(ModelNumbaDfun):
     r"""
     .. [WW_2006] Kong-Fatt Wong and Xiao-Jing Wang,  *A Recurrent Network
                 Mechanism of Time Integration in Perceptual Decisions*.

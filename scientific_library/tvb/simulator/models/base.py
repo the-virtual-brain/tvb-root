@@ -165,3 +165,16 @@ class Model(core.Type):
                 out.append(state.copy())
 
         return numpy.r_[0:dt * n_step:1j * len(out)], numpy.array(out)
+
+    @property
+    def spatial_param_reshape(self):
+        "Returns reshape argument for a spatialized parameter."
+        return -1, 1
+
+
+class ModelNumbaDfun(Model):
+    "Base model for Numba-implemented dfuns."
+
+    @property
+    def spatial_param_reshape(self):
+        return -1,

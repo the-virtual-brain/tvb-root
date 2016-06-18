@@ -31,11 +31,11 @@ Jansen-Rit and derivative models.
 
 """
 
-from .base import Model, LOG, numpy, basic, arrays
+from .base import ModelNumbaDfun, Model, LOG, numpy, basic, arrays
 import math
 from numba import guvectorize, float64
 
-class JansenRit(Model):
+class JansenRit(ModelNumbaDfun):
     r"""
     The Jansen and Rit is a biologically inspired mathematical framework
     originally conceived to simulate the spontaneous electrical activity of
