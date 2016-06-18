@@ -82,7 +82,7 @@ class Equation(basic.MapAsJson, core.Type):
         of this datatype.
         """
         summary = {"Equation type": self.__class__.__name__,
-                   "equation": self.trait["equation"].doc,
+                   "equation": self.equation,
                    "parameters": self.parameters}
         return summary
 

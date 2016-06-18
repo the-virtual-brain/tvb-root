@@ -162,11 +162,12 @@ class Cortex(surfaces.CorticalSurface):
         """
         Extend the base class's scientific summary information dictionary.
         """
-        summary = {}
+        summary = super(Cortex, self)._find_summary_info()
         summary["Number of regions"] = numpy.sum(self.region_areas > 0.0)
         summary["Region area, mean (mm:math:`^2`)"] = self.region_areas.mean()
         summary["Region area, minimum (mm:math:`^2`)"] = self.region_areas.min()
         summary["Region area, maximum (mm:math:`^2`)"] = self.region_areas.max()
+
         return summary
 
     def compute_local_connectivity(self):
