@@ -352,8 +352,9 @@ class MetaType(abc.ABCMeta):
             if not args and not kwds:
                 raise
             else:
-                msg = "Couldn't create instance of %s.%s with unhandled args: %s " % (cls.__module__, cls.__name__,
-                                                                                      str(args) if args else "")
+                # most likely case is that a keyword argument is misspelled.
+                msg = "Couldn't create instance of %s with args: %r, %r."
+                msg %= cls, args, kwds
                 LOG.exception(msg)
                 raise TypeError(msg)
 
@@ -408,10 +409,6 @@ class Type(object):
 
     __metaclass__ = MetaType
     _summary_info = None
-
-    def __init__(self, *args, **kwds):
-        "Dummy initialization of Type instance."
-        super(Type, self).__init__(*args, **kwds)
 
     def __get__(self, inst, cls):
         """
@@ -499,6 +496,17 @@ class Type(object):
             self._summary_info = self._find_summary_info()
         return self._summary_info
 
+    # Used by IPython Notebook
+    def _repr_html_(self):
+        "Generate HTML repr for use in IPython notebook."
+        info = self.summary_info
+        if info is None:
+            return repr(self)
+        html = ['<table width=100%>']
+        row_fmt = '<tr><td>%s</td><td>%s</td></tr>'
+        for key, value in info.items():
+            html.append(row_fmt % (key, value))
+        return ''.join(html)
 
     def _find_summary_info(self):
         """
