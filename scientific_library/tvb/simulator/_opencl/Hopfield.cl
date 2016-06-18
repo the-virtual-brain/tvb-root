@@ -5,10 +5,10 @@ __kernel void dfun(__global float *state, __global float *coupling,
         int i = get_global_id(0), n = get_global_size(0);
 
         // this is boilerplate and could be generated
-        float x = state[paraIndex(0,2)], theta=param[paraIndex(1,2)];
+        float x = state[indexNum(0,2)], theta=param[indexNum(1,2)];
         float c = coupling[i];
         // taux tauT dynamic
-        float taux = param[paraIndex(0,3)],tauT = param[paraIndex(1,3)], dynamic = param[paraIndex(2,3)]
+        float taux = param[indexNum(0,3)],tauT = param[indexNum(1,3)], dynamic = param[indexNum(2,3)];
 
 
         deriv[indexNum(0,2)] = (-x + c) / taux;

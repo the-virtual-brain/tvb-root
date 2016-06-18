@@ -23,7 +23,6 @@ __kernel void dfun(__global float *state, __global float *coupling,
         float  J = param[indexNum(11,13)];
         float  mu = param[indexNum(12,13)];
 
-
         float src = y1 - y2;
 
         float sigm_y1_y2 = 2.0 * nu_max / (1.0 + exp(r * (v0 - (y1 - y2))));
@@ -35,6 +34,4 @@ __kernel void dfun(__global float *state, __global float *coupling,
         deriv[indexNum(3,6)] = A * a * sigm_y1_y2 - 2.0 * a * y3 - a * a * y0;
         deriv[indexNum(4,6)] = A * a * (mu + a_2 * J * sigm_y0_1 + c + src) - 2.0 * a * y4 - a * a * y1;
         deriv[indexNum(5,6)] = B * b * (a_4 * J * sigm_y0_3) - 2.0 * b * y5 - b *b * y2;
-
-
     }

@@ -1,59 +1,56 @@
-#define indexNum(cur,totalN) cur*n+i
+define indexNum(cur,totalN) cur*n+i
 __kernel void dfun(__global float *state, __global float *coupling,
-                   __global float *param, __global float *deriv)
+                   __global float *params, __global float *deriv)
     {
         int i = get_global_id(0), n = get_global_size(0);
 
-        float xi = state[paraIndex(0,5)], eta=param[paraIndex(1,5)],alpha = state[paraIndex(2,5)], beta = param[paraIndex(3,5)], gamma = param[paraIndex(4,5)];
-        // tau a b K11 K12 K21 sigma mu Aik Bik Cik e_i f_i IE_i II_i m_i n_i
+        float xi = state[indexNum(0,6)], eta=state[indexNum(1,6)], tau = state[indexNum(2,6)] ,  alpha = state[indexNum(3,6)], beta = state[indexNum(4,6)], gamma = state[indexNum(5,6)];
+        // "r s K11 K12 K21 mu A_iK B_iK C_iK a_i b_i c_i d_i e_i f_i h_i p_i IE_i II_i m_i n_i gamma_1T gamma_2T gamma_3T
 
         float c_0 = coupling[i];
 
-        float r = param[indexNum(0,27)];
-        float a = param[indexNum(1,27)];
-        float b = param[indexNum(2,27)];
-        float c = param[indexNum(3,27)];
-        float d = param[indexNum(4,27)];
-        float s = param[indexNum(5,27)];
-        float xo = param[indexNum(6,27)];
-        float K11 = param[indexNum(7,27)];
-        float K12 = param[indexNum(8,27)];
-        float K21 = param[indexNum(9,27)];
-        float sigma = param[indexNum(10,27)];
-        float mu = param[indexNum(11,27)];
-        float A_iK = param[indexNum(12,27)];
-        float B_iK = param[indexNum(13,27)];
-        float C_iK = param[indexNum(14,27)];
-        float a_i = param[indexNum(15,27)];
-        float b_i = param[indexNum(16,27)];
-        float c_i = param[indexNum(17,27)];
-        float d_i = param[indexNum(18,27)];
-        float e_i = param[indexNum(19,27)];
-        float f_i = param[indexNum(20,27)];
-        float h_i = param[indexNum(21,27)];
-        float p_i = param[indexNum(22,27)];
-        float IE_i = param[indexNum(23,27)];
-        float II_i = param[indexNum(24,27)];
-        float m_i = param[indexNum(25,27)];
-        float n_i = param[indexNum(26,27)];
+        float r = params[indexNum(0,24)];
+        float s = params[indexNum(1,24)];
+        float K11 = params[indexNum(2,24)];
+        float K12 = params[indexNum(3,24)];
+        float K21 = params[indexNum(4,24)];
+        float mu = params[indexNum(5,24)];
+        float A_iK = params[indexNum(6,24)];
+        float B_iK = params[indexNum(7,24)];
+        float C_iK = params[indexNum(8,24)];
+        float a_i = params[indexNum(9,24)];
+        float b_i = params[indexNum(10,24)];
+        float c_i = params[indexNum(11,24)];
+        float d_i = params[indexNum(12,24)];
+        float e_i = params[indexNum(13,24)];
+        float f_i = params[indexNum(14,24)];
+        float h_i = params[indexNum(15,24)];
+        float p_i = params[indexNum(16,24)];
+        float IE_i = params[indexNum(17,24)];
+        float II_i = params[indexNum(18,24)];
+        float m_i = params[indexNum(19,24)];
+        float n_i = params[indexNum(20,24)];
+        float gamma_1T = params[indexNum(21,24)];
+        float gamma_2T = params[indexNum(22,24)];
+        float gamma_3T = params[indexNum(23,24)];
 
         float local_coupling = 0;
         //TODO Dot Product
-            deriv[paraIndex(0,6)] = (eta - a_i * pow(xi , 3) + b_i * pow(xi, 2) - tau +
-                                    K11 * ((xi * A_ik) - xi) -
-                                    K12 * ((alpha * B_ik) - xi) +
+            deriv[indexNum(0,6)] = (eta - a_i * pow(xi , 3) + b_i * pow(xi, 2) - tau +
+                                    K11 * ((xi * A_iK) - xi) -
+                                    K12 * ((alpha * B_iK) - xi) +
                                     IE_i + c_0 + local_coupling * xi);
 
-            deriv[paraIndex(1,6)] = c_i - d_i * pow(xi, 2) - eta;
+            deriv[indexNum(1,6)] = c_i - d_i * pow(xi, 2) - eta;
 
-            deriv[paraIndex(2,6)] = r * s * xi - r * tau - m_i;
+            deriv[indexNum(2,6)] = r * s * xi - r * tau - m_i;
 
-            deriv[paraIndex(3,6)]= (beta - e_i * pow(alpha, 3) + f_i * pow(alpha , 2) - gamma +
-                                    K21 * ((xi * C_ik) - alpha) +
+            deriv[indexNum(3,6)]= (beta - e_i * pow(alpha, 3) + f_i * pow(alpha , 2) - gamma +
+                                    K21 * ((xi * C_iK) - alpha) +
                                     II_i + c_0 + local_coupling * xi);
 
-            deriv[paraIndex(4,6)] = h_i - p_i * pow(alpha, 2) - beta;
+            deriv[indexNum(4,6)] = h_i - p_i * pow(alpha, 2) - beta;
 
-            deriv[paraIndex(5,6)]= r * s * alpha - r * gamma - n_i;
+            deriv[indexNum(5,6)]= r * s * alpha - r * gamma - n_i;
 
     }

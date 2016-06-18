@@ -4,9 +4,9 @@ __kernel void dfun(__global float *state, __global float *coupling,
     {
         int i = get_global_id(0), n = get_global_size(0);
 
-        float y0 = state[paraIndex(0,6)], y1=param[paraIndex(1,6)],
-        y2 = state[paraIndex(2,6)], y3 = param[paraIndex(4,6)],
-        y4 = state[paraIndex(4,6)], y5 = param[paraIndex(5,6)];
+        float y0 = state[indexNum(0,6)], y1=param[indexNum(1,6)],
+        y2 = state[indexNum(2,6)], y3 = param[indexNum(4,6)],
+        y4 = state[indexNum(4,6)], y5 = param[indexNum(5,6)];
 
         // x0 Iext Iext2 a b slope tt Kvf c d r Ks Kf aa tau ydot
 
@@ -41,11 +41,11 @@ __kernel void dfun(__global float *state, __global float *coupling,
         deriv[1] = tt * (c - d*y0*y0 - y1);
 
         if( y2 < 0.0){
-            temp_ydot2 = -0.1*pow(y2,7.0);
+            temp_ydot2 = -0.1*pow(y2,7);
         }else{
             temp_ydot2 = 0.0;
         }
-        deriv[2] = tt* (r * (4*(y0-x0)-y2+temp_ydot2+Ks*c_pop1);
+        deriv[2] = tt* (r * (4*(y0-x0)-y2+temp_ydot2+Ks*c_pop1));
 
         deriv[3] = tt * (-y4 + y3 - pow(y3,3) + Iext2 + 2 * y5 - 0.3 * (y2 - 3.5) + Kf * c_pop2);
 

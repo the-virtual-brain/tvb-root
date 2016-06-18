@@ -4,7 +4,7 @@ __kernel void dfun(__global float *state, __global float *coupling,
     {
         int i = get_global_id(0), n = get_global_size(0);
 
-        float E = state[paraIndex(0,2)], I = state[paraIndex(1,2)]
+        float E = state[indexNum(0,2)], I = state[indexNum(1,2)];
         //c_ee c_ei c_ie c_ii tau_e tau_i a_e b_e c_e a_i b_i c_i r_e r_i k_e k_i P Q theta_e theta_i alpha_e alpha_i
 
         float c_0 = coupling[i];

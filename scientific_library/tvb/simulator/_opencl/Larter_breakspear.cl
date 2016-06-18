@@ -3,7 +3,7 @@ __kernel void dfun(__global float *state, __global float *coupling,
                    __global float *param, __global float *deriv)
     {
     int i = get_global_id(0), n = get_global_size(0);
-    float V = state[paraIndex(0,3)], W = param[paraIndex(1,3)],Z = param[paraIndex(2,3)];
+    float V = state[indexNum(0,3)], W = param[indexNum(1,3)],Z = param[indexNum(2,3)];
     
     float c_0 = coupling[i];
 
@@ -41,20 +41,20 @@ __kernel void dfun(__global float *state, __global float *coupling,
     float t_scale = param[indexNum(31,32)];
 
     float local_coupling = 1;
-    m_Ca = 0.5 * (1 + tan((V - TCa) / d_Ca))
-    m_Na = 0.5 * (1 + tan((V - TNa) / d_Na))
-    m_K  = 0.5 * (1 + tan((V - TK )  / d_K))
+    float m_Ca = 0.5 * (1 + tan((V - TCa) / d_Ca));
+    float m_Na = 0.5 * (1 + tan((V - TNa) / d_Na));
+    float m_K  = 0.5 * (1 + tan((V - TK )  / d_K));
     // voltage to firing rate
-    QV    = 0.5 * QV_max * (1 + tan((V - VT) / d_V))
-    QZ    = 0.5 * QZ_max * (1 + tan((Z - ZT) / d_Z))
-    lc_0  = local_coupling * QV;
-    derivative[0] = t_scale * (- (gCa + (1.0 - C) * (rNMDA * aee) * (QV + lc_0)+ C * rNMDA * aee * c_0) * m_Ca * (V - VCa)
+    float QV    = 0.5 * QV_max * (1 + tan((V - VT) / d_V));
+    float QZ    = 0.5 * QZ_max * (1 + tan((Z - ZT) / d_Z));
+    float lc_0  = local_coupling * QV;
+    deriv[0] = t_scale * (- (gCa + (1.0 - C) * (rNMDA * aee) * (QV + lc_0)+ C * rNMDA * aee * c_0) * m_Ca * (V - VCa)
                      - gK * W * (V - VK)
                      - gL * (V - VL)
                      - (gNa * m_Na + (1.0 - C) * aee * (QV  + lc_0) + C * aee * c_0) * (V - VNa)
                      - aie * Z * QZ
                      + ane * Iext);
-    derivative[1] = t_scale * phi * (m_K - W) / tau_K;
-    derivative[2] = t_scale * b * (ani * Iext + aei * V * QV);
+    deriv[1] = t_scale * phi * (m_K - W) / tau_K;
+    deriv[2] = t_scale * b * (ani * Iext + aei * V * QV);
 
     }

@@ -43,24 +43,24 @@ __kernel void dfun(__global float *state, __global float *coupling,
 
         float coupled_input = c + 6*locol_coupling;
 
-        deriv[indexNum(0,12)]) = y1;
-        deriv[indexNum(1,12)]) = Heke * (gamma_1 * sigma_fun(v2 - v3) + gamma_1T * (U + coupled_input )) - ke_2 * y1 - keke * v1;
+        deriv[indexNum(0,12)] = y1;
+        deriv[indexNum(1,12)] = Heke * (gamma_1 * sigma_fun(v2 - v3) + gamma_1T * (U + coupled_input )) - ke_2 * y1 - keke * v1;
         // exc input to the pyramidal cells
-        deriv[indexNum(2,12)]) = y2
-        deriv[indexNum(3,12)]) = Heke * (gamma_2 * sigma_fun(v1)      + gamma_2T * (P + coupled_input )) - ke_2 * y2 - keke * v2;
+        deriv[indexNum(2,12)] = y2;
+        deriv[indexNum(3,12)] = Heke * (gamma_2 * sigma_fun(v1)      + gamma_2T * (P + coupled_input )) - ke_2 * y2 - keke * v2;
         // inh input to the pyramidal cells
-        deriv[indexNum(4,12)]) = y3;
-        deriv[indexNum(5,12)]) = Hiki * (gamma_4 * sigma_fun(v4 - v5)) - ki_2 * y3 - kiki * v3;
-        deriv[indexNum(6,12)]) = y4;
+        deriv[indexNum(4,12)] = y3;
+        deriv[indexNum(5,12)] = Hiki * (gamma_4 * sigma_fun(v4 - v5)) - ki_2 * y3 - kiki * v3;
+        deriv[indexNum(6,12)] = y4;
         // exc input to the inhibitory interneurons
-        deriv[indexNum(7,12)]) = Heke * (gamma_3 * sigma_fun(v2 - v3) + gamma_3T * (Q + coupled_input)) - ke_2 * y4 - keke * v4;
-        deriv[indexNum(8,12)]) = y5;
+        deriv[indexNum(7,12)] = Heke * (gamma_3 * sigma_fun(v2 - v3) + gamma_3T * (Q + coupled_input)) - ke_2 * y4 - keke * v4;
+        deriv[indexNum(8,12)] = y5;
         // inh input to the inhibitory interneurons
-        deriv[indexNum(9,12)]) = Hiki * (gamma_5 * sigma_fun(v4 - v5)) - ki_2 * y5 - keke * v5;
+        deriv[indexNum(9,12)] = Hiki * (gamma_5 * sigma_fun(v4 - v5)) - ki_2 * y5 - keke * v5;
         // aux variables (the sum gathering the postsynaptic inh & exc potentials)
         // pyramidal cells
-        deriv[indexNum(10,12)]) = y2 - y3;
+        deriv[indexNum(10,12)] = y2 - y3;
         // inhibitory cells
-        deriv[indexNum(11,12)]) = y4 - y5;
+        deriv[indexNum(11,12)] = y4 - y5;
 
     }
