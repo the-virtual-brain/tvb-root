@@ -501,7 +501,7 @@ class Type(object):
         "Generate HTML repr for use in IPython notebook."
         info = self.summary_info
         if info is None or len(info) == 0:
-            return repr(self)
+            info = {key: getattr(self, key) for key in self.trait.keys()}
         html = ['<table width=100%>']
         row_fmt = '<tr><td>%s</td><td>%s</td></tr>'
         for key, value in info.items():
