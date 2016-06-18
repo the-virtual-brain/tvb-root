@@ -451,7 +451,7 @@ class Simulator(core.Type):
                     history = initial_conditions[-self.horizon:, :, :, :].copy()
                 else:
                     LOG.debug('Padding initial conditions with model.initial')
-                    history = self.model.initial(self.integrator.dt, self.history.buffer.shape, rng)
+                    history = self.model.initial(self.integrator.dt, self.good_history_shape, rng)
                     shift = self.current_step % self.horizon
                     history = numpy.roll(history, -shift, axis=0)
                     history[:ic_shape[0], :, :, :] = initial_conditions
