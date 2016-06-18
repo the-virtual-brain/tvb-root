@@ -171,6 +171,15 @@ class Model(core.Type):
         "Returns reshape argument for a spatialized parameter."
         return -1, 1
 
+    def _repr_html_(self):
+        "Generate HTML representation for IPython notebook."
+        html = ['<table>']
+        row_fmt = '<tr><td>%s</td><td>%s</td></tr>'
+        for key in self.trait.keys():
+            html.append(row_fmt % (key, getattr(self, key)))
+        html.append('</table>')
+        return ''.join(html)
+
 
 class ModelNumbaDfun(Model):
     "Base model for Numba-implemented dfuns."

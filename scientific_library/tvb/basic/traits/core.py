@@ -500,7 +500,7 @@ class Type(object):
     def _repr_html_(self):
         "Generate HTML repr for use in IPython notebook."
         info = self.summary_info
-        if info is None:
+        if info is None or len(info) == 0:
             return repr(self)
         html = ['<table width=100%>']
         row_fmt = '<tr><td>%s</td><td>%s</td></tr>'
