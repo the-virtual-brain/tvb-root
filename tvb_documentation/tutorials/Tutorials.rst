@@ -24,14 +24,26 @@ GUI tutorials
 Scripting tutorials
 ===================
 
-.. _Evoked Responses In The Visual Cortex: http://nbviewer.ipython.org/url/docs.thevirtualbrain.org/tutorials/tutorial_s1_EvokedResponsesInTheVisualCortex.ipynb
+.. _Region simulation tutorial: http://nbviewer.ipython.org/url/docs.thevirtualbrain.org/tutorials/tutorial_s1_region_simulation.ipynb
 
-.. _Resting State Networks: http://nbviewer.ipython.org/url/docs.thevirtualbrain.org/tutorials/tutorial_s2_ModelingRestingStateNetworks.ipynb
+.. _Surface simulation tutorial: http://nbviewer.ipython.org/url/docs.thevirtualbrain.org/tutorials/tutorial_s2_surface_simulation.ipynb
 
-.. _Modeling Epilepsy: http://nbviewer.ipython.org/url/docs.thevirtualbrain.org/tutorials/tutorial_s3_ModelingEpilepsy.ipynb
+.. _Exploring a neural mass model: http://nbviewer.ipython.org/url/docs.thevirtualbrain.org/tutorials/tutorial_s3_exploring_a_model.ipynb
 
-1. `Evoked Responses In The Visual Cortex`_
+.. _Evoked Responses In The Visual Cortex: http://nbviewer.ipython.org/url/docs.thevirtualbrain.org/tutorials/tutorial_s4_EvokedResponsesInTheVisualCortex.ipynb
 
-2. `Resting State Networks`_
+.. _Resting State Networks: http://nbviewer.ipython.org/url/docs.thevirtualbrain.org/tutorials/tutorial_s5_ModelingRestingStateNetworks.ipynb
 
-3. `Modeling Epilepsy`_
+.. _Modeling Epilepsy: http://nbviewer.ipython.org/url/docs.thevirtualbrain.org/tutorials/tutorial_s6_ModelingEpilepsy.ipynb
+
+1. `Region simulation tutorial`_
+
+2. `Surface simulation tutorial`_
+
+3. `Exploring a neural mass model`_
+
+4. `Evoked Responses In The Visual Cortex`_
+
+5. `Resting State Networks`_
+
+6. `Modeling Epilepsy`_

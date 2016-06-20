@@ -112,7 +112,11 @@ TCi --> inferior temporal cortex
 
 """
 
+from pylab import *
+import numpy
 from tvb.simulator.lab import *
+from matplotlib import pyplot
+LOG = get_logger('demo')
 import matplotlib.gridspec as gridspec
 from tvb.datatypes.projections import ProjectionSurfaceEEG
 from tvb.datatypes.sensors import SensorsEEG

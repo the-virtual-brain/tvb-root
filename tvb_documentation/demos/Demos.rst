@@ -94,9 +94,12 @@ Visualizers
 
       :ref:`connectivity_matrix_ui`
 
+
+
 .. _scripting_demos:
 
-Scripting Demos 
+
+Python Demos
 ===============
 
 These tutorials are written as IPython Notebooks and they use the scripting interface of TVB.
@@ -105,78 +108,72 @@ They can be run interactively if you have TVB’s scientific library and ipython
 The first set of "basic" tutorials are listed roughly in the order they should be read,
 and cover the basic functionality of TVB's simulator package using very simple
 examples.
-
-.. _Anatomy Of A Region Simulation: http://nbviewer.ipython.org/url/docs.thevirtualbrain.org/demos/anatomy_of_a_region_simulation.ipynb
-.. _Anatomy Of A Surface Simulation: http://nbviewer.ipython.org/url/docs.thevirtualbrain.org/demos/anatomy_of_a_surface_simulation.ipynb
-.. _Exploring A Model: http://nbviewer.ipython.org/url/docs.thevirtualbrain.org/demos/exploring_a_model.ipynb
-.. _Exploring A Model Reduced Wong Wang: http://nbviewer.ipython.org/url/docs.thevirtualbrain.org/demos/exploring_a_model_reducedWongWang.ipynb
-.. _Exploring The Bold Monitor: http://nbviewer.ipython.org/url/docs.thevirtualbrain.org/demos/exploring_the_bold_monitor.ipynb
-.. _Looking At Longer TimeSeries: http://nbviewer.ipython.org/url/docs.thevirtualbrain.org/demos/looking_at_longer_time_series.ipynb
-.. _Region Stimuli: http://nbviewer.ipython.org/url/docs.thevirtualbrain.org/demos/region_stimuli.ipynb
-.. _Surface Stimuli: http://nbviewer.ipython.org/url/docs.thevirtualbrain.org/demos/surface_stimuli.ipynb
-.. _Smooth Parameter Variations: http://nbviewer.ipython.org/url/docs.thevirtualbrain.org/demos/smooth_parameter_variation.ipynb
-.. _Stochastic Simulations: http://nbviewer.ipython.org/url/docs.thevirtualbrain.org/demos/stochastic_simulation.ipynb
-.. _Getting To Know Your Mesh Surface: http://nbviewer.ipython.org/url/docs.thevirtualbrain.org/demos/getting_to_know_your_mesh_surface.ipynb
-.. _Using Your Own Connectivity: http://nbviewer.ipython.org/url/docs.thevirtualbrain.org/demos/using_your_own_connectivity.ipynb
-.. _Monitoring With Transformations: http://nbviewer.ipython.org/url/docs.thevirtualbrain.org/demos/monitoring_with_transformations.ipynb
-.. _Connectivity Normalisation Modes: http://nbviewer.ipython.org/url/docs.thevirtualbrain.org/demos/connectivity_normalisation_modes.ipynb
-.. _Generate Surrogate Connectivity: http://nbviewer.ipython.org/url/docs.thevirtualbrain.org/demos/generate_surrogate_connectivity.ipynb
-.. _SEEG Region Deterministic: http://nbviewer.ipython.org/url/docs.thevirtualbrain.org/demos/seeg_region_deterministic.ipynb
-.. _SEEG Surface Deterministic: http://nbviewer.ipython.org/url/docs.thevirtualbrain.org/demos/seeg_surface_deterministic.ipynb
-.. _Region Stochastic ReducedWongWang: http://nbviewer.ipython.org/url/docs.thevirtualbrain.org/demos/region_stochastic_reducedwongwang.ipynb
-.. _Region Stochastic Jansen: http://nbviewer.ipython.org/url/docs.thevirtualbrain.org/demos/region_stochastic_jansen.ipynb
-.. _Surface Deterministic Custom Local Connectivity: http://nbviewer.ipython.org/url/docs.thevirtualbrain.org/demos/surface_deterministic_custom_local_connectivity.ipynb
-
-
-
-.. _Correlation_coefficient Analyzer: http://nbviewer.ipython.org/url/docs.thevirtualbrain.org/demos/corrcoeff_analyse_view_region.ipynb
-.. _PCA Analysis: http://nbviewer.ipython.org/url/docs.thevirtualbrain.org/demos/pca_analyse_view_region.ipynb
-
-.. _Display Sensors Location: http://nbviewer.ipython.org/url/docs.thevirtualbrain.org/demos/display_sensors_locations.ipynb
-.. _Display Subject Dataset: http://nbviewer.ipython.org/url/docs.thevirtualbrain.org/demos/display_subject_dataset.ipynb
+.. _Analyze Region Corrcoef: http://nbviewer.ipython.org/url/docs.thevirtualbrain.org/demos/analyze_region_corrcoef.ipynb
+.. _Compare Connectivity Normalization: http://nbviewer.ipython.org/url/docs.thevirtualbrain.org/demos/compare_connectivity_normalization.ipynb
+.. _Compare Integrators: http://nbviewer.ipython.org/url/docs.thevirtualbrain.org/demos/compare_integrators.ipynb
+.. _Display Source Sensor Geometry: http://nbviewer.ipython.org/url/docs.thevirtualbrain.org/demos/display_source_sensor_geometry.ipynb
 .. _Display Surface Local Connectivity: http://nbviewer.ipython.org/url/docs.thevirtualbrain.org/demos/display_surface_local_connectivity.ipynb
-.. _Display Surface Parcellation: http://nbviewer.ipython.org/url/docs.thevirtualbrain.org/demos/display_surface_parcellation.ipynb
-
-
-
-
-
-Simulation
-----------
-
-.. figure:: figures/anatomy_of_a_region_simulation.png
+.. _Exploring Longer Time Series: http://nbviewer.ipython.org/url/docs.thevirtualbrain.org/demos/exploring_longer_time_series.ipynb
+.. _Exploring The Bold Monitor: http://nbviewer.ipython.org/url/docs.thevirtualbrain.org/demos/exploring_the_bold_monitor.ipynb
+.. _Exporing A Surface Mesh: http://nbviewer.ipython.org/url/docs.thevirtualbrain.org/demos/exporing_a_surface_mesh.ipynb
+.. _Generate Surrogate Connectivity: http://nbviewer.ipython.org/url/docs.thevirtualbrain.org/demos/generate_surrogate_connectivity.ipynb
+.. _Interacting With The Framework: http://nbviewer.ipython.org/url/docs.thevirtualbrain.org/demos/interacting_with_the_framework.ipynb
+.. _Simulate Bold Continuation: http://nbviewer.ipython.org/url/docs.thevirtualbrain.org/demos/simulate_bold_continuation.ipynb
+.. _Simulate Reduced Wong Wang: http://nbviewer.ipython.org/url/docs.thevirtualbrain.org/demos/simulate_reduced_wong_wang.ipynb
+.. _Simulate Region Bold Stimulus: http://nbviewer.ipython.org/url/docs.thevirtualbrain.org/demos/simulate_region_bold_stimulus.ipynb
+.. _Simulate Region Jansen Rit: http://nbviewer.ipython.org/url/docs.thevirtualbrain.org/demos/simulate_region_jansen_rit.ipynb
+.. _Simulate Region Stimulus: http://nbviewer.ipython.org/url/docs.thevirtualbrain.org/demos/simulate_region_stimulus.ipynb
+.. _Simulate Surface Seeg Eeg Meg: http://nbviewer.ipython.org/url/docs.thevirtualbrain.org/demos/simulate_surface_seeg_eeg_meg.ipynb
+.. _Using Your Own Connectivity: http://nbviewer.ipython.org/url/docs.thevirtualbrain.org/demos/using_your_own_connectivity.ipynb
+.. figure:: figures/analyze_region_corrcoef.png
       :width: 200px
       :figclass: demo-figure
-      :target: `Anatomy Of A Region Simulation`_
+      :target: `Analyze Region Corrcoef`_
 
-      `Anatomy Of A Region Simulation`_
+      `Analyze Region Corrcoef`_
 
 
-.. figure:: figures/anatomy_of_a_surface_simulation.png
+.. figure:: figures/compare_connectivity_normalization.png
       :width: 200px
       :figclass: demo-figure
-      :target: `Anatomy Of A Surface Simulation`_
+      :target: `Compare Connectivity Normalization`_
 
-      `Anatomy Of A Surface Simulation`_
+      `Compare Connectivity Normalization`_
 
 
-.. figure:: figures/exploring_a_model.png
+.. figure:: figures/compare_integrators.png
       :width: 200px
       :figclass: demo-figure
-      :target: `Exploring A Model`_
+      :target: `Compare Integrators`_
 
-      `Exploring A Model`_
+      `Compare Integrators`_
 
 
-.. figure:: /manuals/UserGuide/screenshots/demo_wong_wang.png
+.. figure:: figures/display_source_sensor_geometry.png
       :width: 200px
       :figclass: demo-figure
-      :target: `Exploring A Model Reduced Wong Wang`_
+      :target: `Display Source Sensor Geometry`_
 
-      `Exploring A Model Reduced Wong Wang`_
+      `Display Source Sensor Geometry`_
 
 
-.. figure:: /manuals/UserGuide/screenshots/demo_bold.png
+.. figure:: figures/display_surface_local_connectivity.png
+      :width: 200px
+      :figclass: demo-figure
+      :target: `Display Surface Local Connectivity`_
+
+      `Display Surface Local Connectivity`_
+
+
+.. figure:: figures/exploring_longer_time_series.png
+      :width: 200px
+      :figclass: demo-figure
+      :target: `Exploring Longer Time Series`_
+
+      `Exploring Longer Time Series`_
+
+
+.. figure:: figures/exploring_the_bold_monitor.png
       :width: 200px
       :figclass: demo-figure
       :target: `Exploring The Bold Monitor`_
@@ -184,76 +181,12 @@ Simulation
       `Exploring The Bold Monitor`_
 
 
-.. figure:: figures/looking_at_long_time_series.png 
+.. figure:: figures/exporing_a_surface_mesh.png
       :width: 200px
       :figclass: demo-figure
-      :target: `Looking At Longer TimeSeries`_
+      :target: `Exporing A Surface Mesh`_
 
-      `Looking At Longer TimeSeries`_
-
-
-.. figure:: /manuals/UserGuide/screenshots/demo_stimuli.png
-      :width: 200px
-      :figclass: demo-figure
-      :target: `Region Stimuli`_
-
-      `Region Stimuli`_
-
-
-.. figure:: figures/surface_stimuli.png
-      :width: 200px
-      :figclass: demo-figure
-      :target: `Surface Stimuli`_
-
-      `Surface Stimuli`_
-
-
-.. figure:: /manuals/UserGuide/screenshots/demo_smooth_param.png
-      :width: 200px
-      :figclass: demo-figure
-      :target: `Smooth Parameter Variations`_
-
-      `Smooth Parameter Variations`_
-
-
-.. figure:: /manuals/UserGuide/screenshots/demo_stoch.png
-      :width: 200px
-      :figclass: demo-figure
-      :target: `Stochastic Simulations`_
-
-      `Stochastic Simulations`_
-
-
-.. figure:: /manuals/UserGuide/screenshots/demo_mesh_stats.png
-      :width: 200px
-      :figclass: demo-figure
-      :target: `Getting To Know Your Mesh Surface`_
-
-      `Getting To Know Your Mesh Surface`_
-
-
-.. figure:: /manuals/UserGuide/screenshots/demo_conn.png
-      :width: 200px
-      :figclass: demo-figure
-      :target: `Using Your Own Connectivity`_
-
-      `Using Your Own Connectivity`_
-
-
-.. figure:: figures/monitoring_with_transformations.png
-      :width: 200px
-      :figclass: demo-figure
-      :target: `Monitoring With Transformations`_
-
-      `Monitoring With Transformations`_
-
-
-.. figure:: figures/connectivity_normalisation_modes.png
-      :width: 200px
-      :figclass: demo-figure
-      :target: `Connectivity Normalisation Modes`_
-
-      `Connectivity Normalisation Modes`_
+      `Exporing A Surface Mesh`_
 
 
 .. figure:: figures/generate_surrogate_connectivity.png
@@ -264,96 +197,69 @@ Simulation
       `Generate Surrogate Connectivity`_
 
 
-.. figure:: figures/seeg_region_deterministic.png
+.. figure:: figures/interacting_with_the_framework.png
       :width: 200px
       :figclass: demo-figure
-      :target: `SEEG Region Deterministic`_
+      :target: `Interacting With The Framework`_
 
-      `SEEG Region Deterministic`_
+      `Interacting With The Framework`_
 
 
-.. figure:: figures/seeg_surface_deterministic.png
+.. figure:: figures/simulate_bold_continuation.png
       :width: 200px
       :figclass: demo-figure
-      :target: `SEEG Surface Deterministic`_
+      :target: `Simulate Bold Continuation`_
 
-      `SEEG Surface Deterministic`_
+      `Simulate Bold Continuation`_
 
 
-.. figure:: figures/region_stochastic_reducedWongWang.png
+.. figure:: figures/simulate_reduced_wong_wang.png
       :width: 200px
       :figclass: demo-figure
-      :target: `Region Stochastic ReducedWongWang`_
+      :target: `Simulate Reduced Wong Wang`_
 
-      `Region Stochastic ReducedWongWang`_
+      `Simulate Reduced Wong Wang`_
 
 
-.. figure:: figures/region_stochastic_jansen.png
+.. figure:: figures/simulate_region_bold_stimulus.png
       :width: 200px
       :figclass: demo-figure
-      :target: `Region Stochastic Jansen`_
+      :target: `Simulate Region Bold Stimulus`_
 
-      `Region Stochastic Jansen`_
+      `Simulate Region Bold Stimulus`_
 
 
-.. figure:: figures/surface_deterministic_custom_local_connectivity.png
+.. figure:: figures/simulate_region_jansen_rit.png
       :width: 200px
       :figclass: demo-figure
-      :target: `Surface Deterministic Custom Local Connectivity`_
+      :target: `Simulate Region Jansen Rit`_
 
-      `Surface Deterministic Custom Local Connectivity`_
+      `Simulate Region Jansen Rit`_
 
 
-
-Analyzers
----------
-
-.. figure:: figures/corrcoeff_analyse_view_region.png
+.. figure:: figures/simulate_region_stimulus.png
       :width: 200px
       :figclass: demo-figure
-      :target: `Correlation_coefficient Analyzer`_
+      :target: `Simulate Region Stimulus`_
 
-      `Correlation_coefficient Analyzer`_
+      `Simulate Region Stimulus`_
 
-.. figure:: figures/pca_analyse_view_region.png
+
+.. figure:: figures/simulate_surface_seeg_eeg_meg.png
       :width: 200px
       :figclass: demo-figure
-      :target: `PCA Analysis`_
+      :target: `Simulate Surface Seeg Eeg Meg`_
 
-      `PCA Analysis`_
+      `Simulate Surface Seeg Eeg Meg`_
 
 
-
-Visualizers
------------
-
-.. figure:: figures/display_sensors_location.png
+.. figure:: figures/using_your_own_connectivity.png
       :width: 200px
       :figclass: demo-figure
-      :target: `Display Sensors Location`_
+      :target: `Using Your Own Connectivity`_
 
-      `Display Sensors Location`_
+      `Using Your Own Connectivity`_
 
-.. figure:: figures/display_subject_dataset.png
-      :width: 200px
-      :figclass: demo-figure
-      :target: `Display Subject Dataset`_
-
-      `Display Subject Dataset`_
-
-.. figure:: figures/display_surface_local_connectivity.png
-      :width: 200px
-      :figclass: demo-figure
-      :target: `Display Surface Local Connectivity`_
-
-      `Display Surface Local Connectivity`_
-
-.. figure:: figures/display_surface_parcellation.png
-      :width: 200px
-      :figclass: demo-figure
-      :target: `Display Surface Parcellation`_
-
-      `Display Surface Parcellation`_
 
 
 
@@ -363,8 +269,14 @@ Visualizers
       Demos_Matlab
 
 
-Matlab Demos
+
+.. _matlab_demos:
+
+MATLAB Demos
 ============
+
+These are the first demos of the experimental use of TVB from the MATLAB environment, and they will
+be expanded in the future.
 
 .. figure:: ../../matlab/html/tvb_demo_region_rww_01.png
       :width: 200px

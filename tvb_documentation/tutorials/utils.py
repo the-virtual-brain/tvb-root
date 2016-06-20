@@ -1,4 +1,5 @@
 
+from pylab import *
 from tvb.simulator.lab import *
 import threading
 import numpy

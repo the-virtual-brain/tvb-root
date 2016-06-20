@@ -62,11 +62,10 @@ Example spcifying a Model and stochastic sample trajectories::
 #      check for leaks or look into "forcing" cleanup...
 
 import numpy
-import matplotlib; matplotlib.use('TkAgg')
+# import matplotlib; matplotlib.use('TkAgg')
 import pylab
 import matplotlib.widgets as widgets
 
-#The Virtual Brain
 from tvb.simulator.common import get_logger
 LOG = get_logger(__name__)
 
@@ -244,16 +243,17 @@ class PhasePlaneInteractive(core.Type):
         #Figure and main phase-plane axes
         model_name = self.model.__class__.__name__
         integrator_name = self.integrator.__class__.__name__
+        figsize = 10, 5
         try:
             figure_window_title = "Interactive phase-plane: " + model_name
             figure_window_title += "   --   %s" % integrator_name
             self.ipp_fig = pylab.figure(num = figure_window_title,
-                                        figsize = (16, 9),
+                                        figsize = figsize,
                                         facecolor = BACKGROUNDCOLOUR, 
                                         edgecolor = EDGECOLOUR)
         except ValueError:
             LOG.info("My life would be easier if you'd update your PyLab...")
-            self.ipp_fig = pylab.figure(num = 42, figsize = (16, 9), 
+            self.ipp_fig = pylab.figure(num = 42, figsize = figsize,
                                         facecolor = BACKGROUNDCOLOUR, 
                                         edgecolor = EDGECOLOUR)
 
@@ -404,7 +404,7 @@ class PhasePlaneInteractive(core.Type):
         pos_shp = [0.825, 0.1, 0.125, 0.025]
         sax = self.ipp_fig.add_axes(pos_shp, axisbg=AXCOLOUR)
 
-        self.noise_slider = widgets.Slider(sax, "Noise", 0.0, 1.0,
+        self.noise_slider = widgets.Slider(sax, "Log Noise", -9.0, 1.0,
                                    valinit = self.integrator.noise.nsig)
         self.noise_slider.on_changed(self.update_noise)
 
@@ -604,7 +604,7 @@ class PhasePlaneInteractive(core.Type):
 
     def update_noise(self, nsig):
         """ Update integrator noise based on the noise slider value. """
-        self.integrator.noise.nsig = numpy.array([nsig,])
+        self.integrator.noise.nsig = numpy.array([10**nsig,])
 
 
     def update_range(self, val):
