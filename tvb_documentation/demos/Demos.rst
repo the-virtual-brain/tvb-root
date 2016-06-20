@@ -100,7 +100,7 @@ Visualizers
 
 
 Python Demos
-===============
+============
 
 These tutorials are written as IPython Notebooks and they use the scripting interface of TVB.
 They can be run interactively if you have TVB’s scientific library and ipython installed.
@@ -108,6 +108,8 @@ They can be run interactively if you have TVB’s scientific library and ipython
 The first set of "basic" tutorials are listed roughly in the order they should be read,
 and cover the basic functionality of TVB's simulator package using very simple
 examples.
+
+
 .. _Analyze Region Corrcoef: http://nbviewer.ipython.org/url/docs.thevirtualbrain.org/demos/analyze_region_corrcoef.ipynb
 .. _Compare Connectivity Normalization: http://nbviewer.ipython.org/url/docs.thevirtualbrain.org/demos/compare_connectivity_normalization.ipynb
 .. _Compare Integrators: http://nbviewer.ipython.org/url/docs.thevirtualbrain.org/demos/compare_integrators.ipynb
@@ -125,6 +127,8 @@ examples.
 .. _Simulate Region Stimulus: http://nbviewer.ipython.org/url/docs.thevirtualbrain.org/demos/simulate_region_stimulus.ipynb
 .. _Simulate Surface Seeg Eeg Meg: http://nbviewer.ipython.org/url/docs.thevirtualbrain.org/demos/simulate_surface_seeg_eeg_meg.ipynb
 .. _Using Your Own Connectivity: http://nbviewer.ipython.org/url/docs.thevirtualbrain.org/demos/using_your_own_connectivity.ipynb
+
+
 .. figure:: figures/analyze_region_corrcoef.png
       :width: 200px
       :figclass: demo-figure
