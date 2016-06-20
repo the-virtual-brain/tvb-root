@@ -1,17 +1,39 @@
-function tvb_setup
+function tvb_setup(python_exe)
+% Setup TVB for use. If no argument is given, the distribution Python
+% is used (or an env is created on Mac). Otherwise, use the given
+% Python executable, and assume the TVB package is on that Python's path.
 
 [version, executable, isloaded] = pyversion;
 
 if ~isloaded
     
-    % in distribution, try to find path relative to this file
-    tvb_path = 'C:\Users\mw\Downloads\TVB_Distribution';
+    [here, ~, ~] = fileparts(mfilename);
+    dist_python = fullfile(here, '..', 'tvb_data', 'python');
+    
+    if nargin == 0
+        switch (computer)
+            case 'MACI64'
+                try
+                    tvb_setup_mac_env
+                catch
+                end
+                pyversion tvb_env/bin/python
 
-    if isempty(tvb_path)
-        error('Please set the path to TVB_Distribution folder in tvb_setup.m')
+            case 'GLNXA64'
+                pyversion(dist_python);
+
+            case 'PCWIN'
+                fprintf('32-bit Windows unsupported, please upgrade ot 64-bit.\n');
+
+            case 'PCWIN64'
+                pyversion([dist_python '.exe']);
+
+        end
+        
+    else
+        pyversion(python_exe)
     end
 
-    pyversion(fullfile(tvb_path, 'tvb_data', 'python.exe'))
 else
     fprintf('[tvb_setup] using Python %s %s\n', version, executable);
 end

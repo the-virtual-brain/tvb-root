@@ -82,4 +82,4 @@ def setup():
         import tvb.simulator.lab
         print 'TVB modules available.'
     except Exception as exc:
-        print 'failed to import TVB modules.'
+        #print 'failed to import all TVB modules, not all functionality may be .'
