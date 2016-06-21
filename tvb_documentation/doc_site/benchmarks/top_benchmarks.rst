@@ -33,6 +33,7 @@ Performance evolution from a TVB version to another.
 .. toctree::
    :maxdepth: 2
 
+   tvb_1.5
    tvb_1.4
    tvb_1.3.1
    tvb_1.3

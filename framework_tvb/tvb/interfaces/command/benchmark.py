@@ -29,18 +29,18 @@
 #
 
 """
-This module is used to measure simulation performance. Some standardized simulations are run and a report is generated.
+This module is used to measure simulation performance with the Command Profile.
+Some standardized simulations are run and a report is generated in the console output.
 """
-
-from time import sleep
-from datetime import datetime
-from os import path
-import tvb_data
 
 if __name__ == "__main__":
     from tvb.basic.profile import TvbProfile
     TvbProfile.set_profile(TvbProfile.COMMAND_PROFILE)
 
+import tvb_data
+from time import sleep
+from datetime import datetime
+from os import path
 from tvb.core.entities import model
 from tvb.core.entities.storage import dao
 from tvb.datatypes.connectivity import Connectivity
@@ -62,6 +62,7 @@ def _fire_simulation(project_id, **kwargs):
 
 
 def _create_bench_project():
+
     prj = lab.new_project("benchmark_project_ %s" % datetime.now())
     data_dir = path.abspath(path.dirname(tvb_data.__file__))
     zip_path = path.join(data_dir, 'connectivity', 'connectivity_68.zip')
@@ -87,10 +88,11 @@ HEADER = """
 |                        |    (ms)|       |    (mm/ms)|     (ms)| min:sec   |
 +========================+========+=======+===========+=========+===========+"""
 
+
 class Bench(object):
     LINE = HEADER.splitlines()[1]
-    COLW = [len(col) - 2 for col in LINE.split('+')[1:-1] ]  # the widths of columns based on the first line of the header
-    FS = ' | '.join( '%'+str(cw)+'s' for cw in COLW)  # builds a format string like  "| %6s | %6s | %6s ... "
+    COLW = [len(col) - 2 for col in LINE.split('+')[1:-1]]  # the widths of columns based on the first header line
+    FS = ' | '.join('%' + str(cw) + 's' for cw in COLW)  # builds a format string like  "| %6s | %6s | %6s ... "
     FS = '| ' + FS + ' |'
 
     def __init__(self, model_kws, connectivities, conductions, int_dts, sim_lengths):
@@ -141,24 +143,24 @@ def main():
     prj, connectivities = _create_bench_project()
 
     g2d_epi = Bench(
-        model_kws = [
-            {"model": "Generic2dOscillator", },
-            {"model": "Epileptor", },
+        model_kws=[
+            {"model": "Generic2dOscillator"},
+            {"model": "Epileptor"},
         ],
-        connectivities= connectivities,
-        conductions= [30.0, 3.0],
-        int_dts= [0.1, 0.05],
-        sim_lengths= [1000],
+        connectivities=connectivities,
+        conductions=[30.0, 3.0],
+        int_dts=[0.1, 0.05],
+        sim_lengths=[1000],
     )
 
     larter = Bench(
-        model_kws = [
+        model_kws=[
             {"model": "LarterBreakspear", "coupling": "HyperbolicTangent"},
         ],
-        connectivities= connectivities,
-        conductions = [10.0],
-        int_dts = [0.2, 0.1],
-        sim_lengths = [10000]
+        connectivities=connectivities,
+        conductions=[10.0],
+        int_dts=[0.2, 0.1],
+        sim_lengths=[10000]
     )
 
     print 'Generic2dOscillator and Epileptor'
