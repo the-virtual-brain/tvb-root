@@ -438,15 +438,10 @@ class Projection(Monitor):
 
         super(Projection, self).config_for_sim(simulator)
         self._sim = simulator
-
         if hasattr(self, 'sensors'):
             self.sensors.configure()
 
         # handle region vs simulation, analytic vs numerical proj, cortical vs subcortical.
-
-        if hasattr(self, 'sensors'):
-            self.sensors.configure()
-
         # setup convenient locals
         surf = simulator.surface
         conn = simulator.connectivity
@@ -747,8 +742,8 @@ class Bold(Monitor):
     Base class for the Bold monitor.
 
     **Attributes**
-    
-        hrf_kernel: the haemodynamic response function (HRF) used to compute 
+
+        hrf_kernel: the haemodynamic response function (HRF) used to compute
                     the BOLD (Blood Oxygenation Level Dependent) signal.
 
         length    : duration of the hrf in seconds.
@@ -756,17 +751,17 @@ class Bold(Monitor):
         period    : the monitor's period
 
     **References**:
-      
-    .. [B_1997] Buxton, R. and Frank, L., *A Model for the Coupling between 
+
+    .. [B_1997] Buxton, R. and Frank, L., *A Model for the Coupling between
         Cerebral Blood Flow and Oxygen Metabolism During Neural Stimulation*,
         17:64-72, 1997.
 
     .. [Fr_2000] Friston, K., Mechelli, A., Turner, R., and Price, C., *Nonlinear
-        Responses in fMRI: The Balloon Model, Volterra Kernels, and Other 
+        Responses in fMRI: The Balloon Model, Volterra Kernels, and Other
         Hemodynamics*, NeuroImage, 12, 466 - 477, 2000.
 
     .. [Bo_1996] Geoffrey M. Boynton, Stephen A. Engel, Gary H. Glover and David
-        J. Heeger (1996). Linear Systems Analysis of Functional Magnetic Resonance 
+        J. Heeger (1996). Linear Systems Analysis of Functional Magnetic Resonance
         Imaging in Human V1. J Neurosci 16: 4207-4221
 
     .. [Po_2000] Alex Polonsky, Randolph Blake, Jochen Braun and David J. Heeger
@@ -788,7 +783,7 @@ class Bold(Monitor):
         label = "Sampling period (ms)",
         default = 2000.0,
         doc = """For the BOLD monitor, sampling period in milliseconds must be
-        an integral multiple of 500. Typical measurment interval (repetition 
+        an integral multiple of 500. Typical measurment interval (repetition
         time TR) is between 1-3 s. If TR is 2s, then Bold period is 2000ms.""")
 
     hrf_kernel = equations.HRFKernelEquation(
@@ -796,7 +791,7 @@ class Bold(Monitor):
         default = equations.FirstOrderVolterra,
         required = True,
         doc = """A tvb.datatypes.equation object which describe the haemodynamic
-        response function used to compute the BOLD signal.""") 
+        response function used to compute the BOLD signal.""")
 
     hrf_length = basic.Float(
         label = "Duration (ms)",
@@ -875,11 +870,11 @@ class Bold(Monitor):
 
 class BoldRegionROI(Bold):
     """
-    The BoldRegionROI monitor assumes that it is being used on a surface and 
+    The BoldRegionROI monitor assumes that it is being used on a surface and
     uses the region mapping of the surface to generate regional signals which
-    are the spatial average of all vertices in the region. 
+    are the spatial average of all vertices in the region.
 
-    This was originated to compare the results of a Bold monitor with a 
+    This was originated to compare the results of a Bold monitor with a
     region level simulation with that of an otherwise identical surface
     simulation.
 
