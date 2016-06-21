@@ -444,9 +444,6 @@ class Projection(Monitor):
 
         # handle region vs simulation, analytic vs numerical proj, cortical vs subcortical.
 
-        if hasattr(self, 'sensors'):
-            self.sensors.configure()
-
         # setup convenient locals
         surf = simulator.surface
         conn = simulator.connectivity
