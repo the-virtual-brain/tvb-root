@@ -8,3 +8,6 @@ paula.sanz-leon = pausz <sanzleon.paula@gmail.com>
 jan.fousek = i-Zaak <izaak@mail.muni.cz>
 mihai.andrei = mihandrei <mihai.daniel.psmg@gmail.com>
 mathieu.golos = mGolos <mathieu.golos@etu.univ-amu.fr>
+francesca.melozzi = FrancescaMelozzi <france.melozzi@gmail.com>
+devin.bayly = DevinBayly <baylyd@email.arizona.edu>
+wenyan = Vio8023 <huwy.vio@gmail.com>

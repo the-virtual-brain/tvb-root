@@ -1,7 +1,7 @@
 ======================================================================================================================================
  The Virtual Brain (TVB)
- Version: 1.5 - build 8000
- Release Date: 17 June 2016
+ Version: 1.5 - build 8020
+ Release Date: 22 June 2016
  Description: New functionality related to simulation and visualizers
 ======================================================================================================================================
     * New: export simulation configuration as JSON and reuse in web or console
