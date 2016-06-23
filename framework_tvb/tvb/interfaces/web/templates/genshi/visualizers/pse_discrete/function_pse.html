@@ -1,12 +1,12 @@
 <py:def function="generateFramePSE(dataTypeGroupGID, available_metrics)" xmlns:py="http://genshi.edgewall.org/">
-
-	<script type="text/javascript" src="/static/flot/jquery.flot.js"></script>
+    <script type="text/javascript" src="/static/js/d3.v3.js"></script>
+    <script type="text/javascript" src="/static/flot/jquery.flot.js"></script>
     <script type="text/javascript" src="/static/flot/jquery.flot.symbol.js"></script>
     <script type="text/javascript" src="/static/coloring/colorSchemeComponent.js"></script>
 
- 	<!--! Controls for changing metrics -->
-	<ul class="toolbar-inline burst-pse-metrics">
-		<li>
+    <!--! Controls for changing metrics -->
+    <ul class="toolbar-inline burst-pse-metrics">
+        <li>
 		<label for="color_metric_select">Color metric</label>
 		<select id="color_metric_select">
 			<option value="None">None</option>
@@ -19,9 +19,9 @@
                 </py:if>
             </py:for>
 		</select>
-		</li>
-		
-		<li>
+        </li>
+
+        <li>
 		<label for="size_metric_select">Size metric</label>
 		<select id="size_metric_select">
 			<option value="None">None</option>
@@ -34,43 +34,88 @@
                 </py:if>
             </py:for>
 		</select>
-		</li>
-		
-		<li>
-		<a href="#" onclick="PSE_mainDraw('main_div_pse', '${pse_back_page}')" title="Refresh..." class="action action-refresh">Refresh</a>
-		</li>
-	</ul>
-
- 	<!--! Controls for displaying MAX / MIN values -->
-	<ul class="toolbar-inline burst-pse-colors">
-		<li>
-		    <label><mark>Minimum color metric</mark> <span id="minColorLabel"></span> </label>
-		</li>
-		<li>
-		    <label><mark>Maximum color metric</mark> <span id="maxColorLabel"></span> </label>
-		</li>
-        <li>
-		    <label><mark>Minimum shape metric</mark> <span id="minShapeLabel"></span> </label>
-		</li>
-		<li>
-		    <label><mark>Maximum shape metric</mark> <span id="maxShapeLabel"></span> </label>
-		</li>
-        <li>
-            <label class="pse-graph-title"><mark>axis Y - axis X</mark> $title_y  -  $title_x</label>
         </li>
-	</ul>
-   	
-	<input type="hidden" id="datatype-group-gid" value="$dataTypeGroupGID"/>
-	
-	<!--! Here PSE bubles will be displayed.	-->
-	<div id="main_div_pse" class="specialviewer"></div>
-	
-	<script type="text/javascript">
-    	$(document).ready(function() {
-    		PSEDiscreteInitialize('$labels_x', '$labels_y', '$series_array', '$data', '$pse_back_page',
+
+        <li>
+		<a href="#" onclick="PSE_mainDraw('main_div_pse', '${pse_back_page}')" title="Refresh..." class="action action-refresh">Refresh</a>
+        </li>
+        <li>
+            <button id="Explore" class="action action-analyze">Explore</button>
+        </li>
+        <li>
+            <button id="Magnify" class="action action-mini-zoom-in">Magnify</button>
+        </li>
+        <li>
+            <button id="Hand" class="action action-block">Hand</button>
+        </li>
+        <li>
+            <button id="Filter" class="action action-edit">Filter</button>
+        </li>
+    </ul>
+
+    <!--! Controls for displaying MAX / MIN values -->
+    <ul class="toolbar-inline burst-pse-colors">
+        <li>
+            <label>
+                <mark>Minimum color metric</mark>
+                <span id="minColorLabel"></span> </label>
+        </li>
+        <li>
+            <label>
+                <mark>Maximum color metric</mark>
+                <span id="maxColorLabel"></span> </label>
+        </li>
+        <li>
+            <label>
+                <mark>Minimum shape metric</mark>
+                <span id="minShapeLabel"></span> </label>
+        </li>
+        <li>
+            <label>
+                <mark>Maximum shape metric</mark>
+                <span id="maxShapeLabel"></span> </label>
+        </li>
+        <li>
+            <label class="pse-graph-title">
+                <mark>axis Y - axis X</mark>
+                $title_y - $title_x</label>
+        </li>
+    </ul>
+
+    <!--! this is what will become visible upon selecting an canvas area for exploration -->
+    <div id="ExploreToolTip" style="display: none;">
+        <p>The X Range is</p>
+        <p id="xRange"></p>
+        <p>The Y Range is</p>
+        <p id="yRange"></p>
+    </div>
+    <div class="tooltip"></div>
+    <div id="FilterDiv" style="display: none;">
+        <ul class="toolbar-inline">
+            <li>
+                <label for="fileNameInput">Output Filename:</label>
+                <input type="text" id="fileNameInput"/>
+            </li>
+            <li>
+                <button id="addFilterOps"></button>
+            </li>
+        </ul>
+    </div>
+
+    <input type="hidden" id="datatype-group-gid" value="$dataTypeGroupGID"/>
+
+    <!--! Here PSE bubles will be displayed.	-->
+    <div id="main_div_pse" class="specialviewer">
+    </div>
+
+    <script type="text/javascript">
+        $(document).ready(function () {
+            PSEDiscreteInitialize('$labels_x', '$labels_y', '$series_array', '$data', '$pse_back_page',
                     $has_started_ops, '$min_color', '$max_color', '$min_shape_size', '$max_shape_size');
-            window.onresize = function() { redrawPlot('main_div_pse'); };
-		});
+            window.onresize = function () {
+                redrawPlot('main_div_pse');
+            };
+        });
     </script>
 
 </py:def>
