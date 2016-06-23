@@ -276,7 +276,7 @@ function d3Plot(placeHolder, data, options, pageParam) {
     circles = dotsCanvas.selectAll("circle").data(workingData, getKey).enter().append("circle") //todo make this a function so that it can be called after filter has removed dots to bring them back, and refresh workingdata
         .attr({
             r: function (d) {
-                return d.points.radius * 2
+                return d.points.radius
             },
             cx: function (d) {
                 return xScale(_PSE_plotOptions.xaxis.tickFormatter(d.data[0][0]))
@@ -354,12 +354,28 @@ function d3Plot(placeHolder, data, options, pageParam) {
     });
 
     d3.select("#Filter").on("click", function () { //todo standardize the id names for the div elements used for the various overlays.
-        // todo create toggle for filter options visibility.
+        //todo ask lia if I'm going about adding the selector in the correct way.
+        //todo ask lia how to debug the python aspects of this code. (breakpoints and introspection)
+        //todo ask what the abc adapter is inside the flowcontroller
+        //todo ask if the name parameter needs to be an element already in existence?
+        //todo ask what is the treesession stored key?
 
-        var filterDiv = d3.select("#FilterDiv");
-        if (filterDiv.style("display") == "none") {
-            filterDiv.style("display", "block")
-        } else {
+        var filterDiv = d3.select("#FilterDiv"),
+            idNum = d3.selectAll("#threshold").length;
+        // if (filterDiv.style("display") == "none") {
+        //     filterDiv.style("display", "block")
+        //     doAjaxCall ({
+        //         type:"POST",
+        //         url:"flow/testselectioncreator/"+ "threshold" +idNum + "/" + filterDiv + "/", //what should I be entering for the sessionTree ?
+        //         success: function (r) {
+        //
+        //         }
+        //
+        //     })
+        filterDiv.style("display", "block")
+    }
+else
+    {
             filterDiv.style("display", "none")
         }
     });
@@ -367,7 +383,6 @@ function d3Plot(placeHolder, data, options, pageParam) {
     d3.select("#filterGo").on("click", function () {
         // todo ask how the not might work, because it seems like it needs another logical operator to be applied on
         // todo ask about whether I need to fix that the rate will return different results as to when it is applied?
-        // todo ask how I would differentiate between different criteria bars
         // todo ask how I might start saving certain overlays of results to the datagroup
         // todo ask how changes to the data appearance might make this different (say columns don't have the same number of entries)
         // so I could make a function that gets called on each of the bars that have been selected yes?
@@ -538,6 +553,10 @@ function d3Plot(placeHolder, data, options, pageParam) {
         });
         removeDots()
     });
+
+d3.select("#addFilterOps").on("click", function (d) {
+    console.log("")
+});
 
 
     d3.selectAll("circle").on("mouseover", function (d) {

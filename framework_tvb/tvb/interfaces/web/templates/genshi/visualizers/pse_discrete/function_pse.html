@@ -43,12 +43,6 @@
             <button id="Explore" class="action action-analyze">Explore</button>
         </li>
         <li>
-            <button id="Magnify" class="action action-mini-zoom-in">Magnify</button>
-        </li>
-        <li>
-            <button id="Hand" class="action action-block">Hand</button>
-        </li>
-        <li>
             <button id="Filter" class="action action-edit">Filter</button>
         </li>
     </ul>
@@ -91,13 +85,34 @@
     </div>
     <div class="tooltip"></div>
     <div id="FilterDiv" style="display: none;">
-        <ul class="toolbar-inline">
+        <ul class="toolbar-inline" id="filterTools">
             <li>
-                <label for="fileNameInput">Output Filename:</label>
-                <input type="text" id="fileNameInput"/>
-            </li>
-            <li>
-                <button id="addFilterOps"></button>
+                <label for="overlayNameInput">Overlay name:</label>
+                <input type="text" id="overlayNameInput"/>
+
+                <br/>
+                <label for="threshold">Threshold: </label>
+                <input type="text" id="threshold" value=".0005"/>
+                <form>
+                    <input type="radio" name="threshold" id="Size"/>Size
+                    <input type="radio" name="threshold" id="Color" checked="checked"/>Color <br/>
+                </form>
+                <form>
+                    <label>Logic Options: </label>
+                    <input type="radio" name="logicButton" id="And"/>And
+                    <input type="radio" name="logicButton" id="Or" checked="checked"/>Or
+                    <input type="radio" name="logicButton" id="Not"/>Not
+                    <br/>
+                </form>
+                <label for="rateOfChange">Rate of Change: </label>
+                <input type="text" id="rateOfChange" value="0"/>
+                <form>
+                    <input type="radio" name="rateOfChange" id="Size" checked="checked"/>Size
+                    <input type="radio" name="rateOfChange" id="Color"/>Color
+                </form>
+                <button id="addFilterOps">Add Options</button>
+                <button id="removeFilterOps">Remove Options</button>
+                <button id="filterGo">Start Filter</button>
             </li>
         </ul>
     </div>
