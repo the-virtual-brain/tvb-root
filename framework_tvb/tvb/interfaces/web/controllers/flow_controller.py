@@ -435,6 +435,63 @@ class FlowController(BaseController):
                                   "parentDivId": parent_div, common.KEY_SESSION_TREE: tree_session_key}
         return self.fill_default_attributes(template_specification)
 
+    @expose_fragment("flow/type2component/datatype2select_simple")
+    def testselectioncreator(self, name, parent_div, tree_session_key, filters):
+        previous_tree = self.context.get_session_tree_for_key(tree_session_key)
+        if previous_tree is None:
+            common.set_error_message("Adapter Interface not in session for filtering!")
+            raise cherrypy.HTTPRedirect("/tvb?error=True")
+        current_node = self._get_node(previous_tree, name)
+        if current_node is None:
+            raise Exception("Could not find node :" + name)
+        datatype = current_node[ABCAdapter.KEY_DATATYPE]
+
+        filters = json.loads(filters)
+        availablefilter = json.loads(FilterChain.get_filters_for_type(datatype))
+        for i, filter_ in enumerate(filters[FILTER_FIELDS]):
+            # Check for filter input of type 'date' as these need to be converted
+            if filter_ in availablefilter and availablefilter[filter_][FILTER_TYPE] == 'date':
+                try:
+                    temp_date = string2date(filters[FILTER_VALUES][i], False)
+                    filters[FILTER_VALUES][i] = temp_date
+                except ValueError:
+                    raise
+        # In order for the filter object not to "stack up" on multiple calls to
+        # this method, create a deepCopy to work with
+        if ABCAdapter.KEY_CONDITION in current_node:
+            new_filter = copy.deepcopy(current_node[ABCAdapter.KEY_CONDITION])
+        else:
+            new_filter = FilterChain()
+        new_filter.fields.extend(filters[FILTER_FIELDS])
+        new_filter.operations.extend(filters[FILTER_OPERATIONS])
+        new_filter.values.extend(filters[FILTER_VALUES])
+        # Get dataTypes that match the filters from DB then populate with values
+        values, total_count = InputTreeManager().populate_option_values_for_dtype(
+            common.get_current_project().id,
+            datatype, new_filter,
+            self.context.get_current_step())
+        # Create a dictionary that matches what the template expects
+        parameters = {ABCAdapter.KEY_NAME: name,
+                      ABCAdapter.KEY_FILTERABLE: availablefilter,
+                      ABCAdapter.KEY_TYPE: ABCAdapter.TYPE_SELECT,
+                      ABCAdapter.KEY_OPTIONS: values,
+                      ABCAdapter.KEY_DATATYPE: datatype}
+
+        if total_count > MAXIMUM_DATA_TYPES_DISPLAYED:
+            parameters[KEY_WARNING] = WARNING_OVERFLOW
+
+        if ABCAdapter.KEY_REQUIRED in current_node:
+            parameters[ABCAdapter.KEY_REQUIRED] = current_node[ABCAdapter.KEY_REQUIRED]
+            if len(values) > 0 and string2bool(str(parameters[ABCAdapter.KEY_REQUIRED])):
+                parameters[ABCAdapter.KEY_DEFAULT] = str(values[-1][ABCAdapter.KEY_VALUE])
+        previous_selected = self.context.get_current_default(name)
+        if previous_selected in [str(vv['value']) for vv in values]:
+            parameters[ABCAdapter.KEY_DEFAULT] = previous_selected
+
+        template_specification = {"inputRow": parameters, "disabled": False,
+                                  "parentDivId": parent_div, common.KEY_SESSION_TREE: tree_session_key}
+        return self.fill_default_attributes(template_specification)
+
 
     def _get_node(self, input_tree, name):
         """

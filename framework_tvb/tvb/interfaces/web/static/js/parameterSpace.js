@@ -209,13 +209,11 @@ function d3Plot(placeHolder, data, options, pageParam) {
         return d.key
     }
 
-    function removeDots() {
+    function transparentDots() {
         d3.selectAll("circle").data(workingData, getKey).exit()
             .transition()
             .duration(500)
-            .attr("cy", -canvasDimensions.h)
-            .attr("cx", -canvasDimensions.w)
-            .remove()
+            .attr("fill-opacity", ".5")
     }
 
     function zoomed() {
@@ -362,8 +360,8 @@ function d3Plot(placeHolder, data, options, pageParam) {
 
         var filterDiv = d3.select("#FilterDiv"),
             idNum = d3.selectAll("#threshold").length;
-        // if (filterDiv.style("display") == "none") {
-        //     filterDiv.style("display", "block")
+        if (filterDiv.style("display") == "none") {
+            filterDiv.style("display", "block")
         //     doAjaxCall ({
         //         type:"POST",
         //         url:"flow/testselectioncreator/"+ "threshold" +idNum + "/" + filterDiv + "/", //what should I be entering for the sessionTree ?
@@ -372,7 +370,6 @@ function d3Plot(placeHolder, data, options, pageParam) {
         //         }
         //
         //     })
-        filterDiv.style("display", "block")
     }
 else
     {
@@ -551,7 +548,7 @@ else
         removalSet.forEach(function (indPair) {
             workingDataRemove(indPair, workingData)
         });
-        removeDots()
+        transparentDots()
     });
 
 d3.select("#addFilterOps").on("click", function (d) {
