@@ -478,6 +478,7 @@ else
                 if (radDiff > criteria.rate.value) { // the < should make it so that only items with large changes of metric are kept on canvas
                     // set.add(cir.__data__.data[0])
                     //todo still make things sensitive to placement on the canvas, (border cases)
+                    //todo figure out what's happening in the bottom right of the canvas
                     var cirRad = +cir.attributes.r.value,
                         cirX = +cir.attributes.cx.value,
                         cirY = +cir.attributes.cy.value,
@@ -512,7 +513,7 @@ else
                     if (lineData != null) {
                         d3.select(".dotsCanvas").append("path")
                             .attr("d", lineFunc(lineData))
-                            .attr("stroke", "red")
+                            .attr("stroke", radDiffColScale(radDiff))
                             .attr("stroke-width", "2px")
                             .attr("fill", "none");
                     }
@@ -540,7 +541,10 @@ else
                 },
                 logic: d3.select("input[name=logicButton]:checked").node().id
             },
-            removalSet;
+            removalSet,
+            radDiffColScale = d3.scale.linear()
+                .domain([0, max_size - min_size])
+                .range(["white", "red"]);
 
         if (criteria.logic == "Or") {
             var thresholdSet = new Set(),
