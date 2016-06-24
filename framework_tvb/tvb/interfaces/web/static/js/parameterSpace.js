@@ -440,15 +440,15 @@ else
             //todo come back and fix the indexing so that the vertical circles are actually the ones that are being selected in col numbers greater than 0
             allCircles, sizeScale; // why does putting this here actually create a reference to it?
             var focusRow = cir.__data__.data[0][1], //zero based index
-                focusCol = cir.__data__.data[0][0],
+                focusCol = cir.__data__.data[0][0] * 3, // the multiplication by 3 should be a necessary conversion number to match with the indices of the actual sized array.t
                 topRow = PSE_nodesInfo[0].length - 1, //1 based index so subtract 1 PERHAPS NOT NEEDED INSIDE FUNCTION AS VALUES ARE STATIC
                 rightCol = PSE_nodesInfo.length - 1;
-            if (focusRow != topRow && focusCol != rightCol) { //wha is a good algorithmic way to check all these options efficiently
+            if (focusRow != topRow && focusCol / 3 != rightCol) { //wha is a good algorithmic way to check all these options efficiently
                 var vertCircle = allCircles[0][focusRow + focusCol + 1],//allcircles is ordered in columns, so this selects dot above
                     horzCircle = allCircles[0][focusCol + focusRow + 3];
                 // what will happen if we start making non linear groups here?
             }
-            else if (focusRow == topRow && focusCol != rightCol) {
+            else if (focusRow == topRow && focusCol / 3 != rightCol) {
                 var vertCircle = allCircles[0][focusRow + focusCol - 1],
                     horzCircle = allCircles[0][focusCol + focusRow + 3]
             }
@@ -461,6 +461,7 @@ else
                 var vertCircle = allCircles[0][focusRow + focusCol - 1],
                     horzCircle = allCircles[0][focusCol + focusRow - 3]
             }
+            ;
 
 
             for (otherCir of [horzCircle, vertCircle]) { // todo ask whether there should be an option specifying for object to leave behind
@@ -487,17 +488,6 @@ else
                         diffDistY = ((cirY + cirRad) - otherY + otherRad) / 2,
                         lineData = [];
                     if (cirX - otherX == 0) { //determines which pair we are examining, if zero it is vert circle
-                        // ar lineData = [{
-                        //         y: cirY + cirRad + diffDisty, // this is the bottom position of the focused circle
-                        //         x: cirX + cirRad
-                        //     },
-                        //         {
-                        //             y:cirY + cirRad + diffDisty,
-                        //             x: cirX - cirRad
-                        //         }]
-
-                    } else {
-                        // this should calculate the distance between the inner edges of the circles and then divide by 2
                         var lineData = [{
                             y: cirY - diffDistY - cirRad, // this is the bottom position of the focused circle
                             x: cirX - cirRad
@@ -505,6 +495,17 @@ else
                             {
                                 y: cirY - diffDistY - cirRad, // this is the bottom position of the focused circle
                                 x: cirX + cirRad
+                            }]
+
+                    } else {
+                        // this should calculate the distance between the inner edges of the circles and then divide by 2
+                        var lineData = [{
+                            x: cirX - diffDistX - cirRad, // this is the bottom position of the focused circle
+                            y: cirY - cirRad
+                        },
+                            {
+                                x: cirX - diffDistX - cirRad, // this is the bottom position of the focused circle
+                                y: cirY + cirRad
                             }]
                     }
                     ;
