@@ -464,7 +464,7 @@ else
             ;
 
 
-            for (otherCir of [horzCircle, vertCircle]) { // todo ask whether there should be an option specifying for object to leave behind
+            for (otherCir of [horzCircle, vertCircle]) { //todo have conditional check to prevent the top row and the far right from making duplicates
                 var radDiff = Math.abs(sizeScale.invert(cir.attributes.r.value) - sizeScale.invert(otherCir.attributes.r.value)),
                     lineFunc = d3.svg.line()
                         .x(function (d) {
@@ -484,28 +484,28 @@ else
                         otherRad = +otherCir.attributes.r.value,
                         otherX = +otherCir.attributes.cx.value,
                         otherY = +otherCir.attributes.cy.value,
-                        diffDistX = (otherX - otherRad - (cirX + cirRad)) / 2,
-                        diffDistY = ((cirY + cirRad) - otherY + otherRad) / 2,
+                        diffDistX = ((otherX + otherRad) - (cirX + cirRad)) / 2,
+                        diffDistY = ((cirY + cirRad) - (otherY + otherRad)) / 2,
                         lineData = [];
                     if (cirX - otherX == 0) { //determines which pair we are examining, if zero it is vert circle
                         var lineData = [{
-                            y: cirY - diffDistY - cirRad, // this is the bottom position of the focused circle
+                            y: cirY - diffDistY, // this is the bottom position of the focused circle
                             x: cirX - cirRad
                         },
                             {
-                                y: cirY - diffDistY - cirRad, // this is the bottom position of the focused circle
+                                y: cirY - diffDistY, // this is the bottom position of the focused circle
                                 x: cirX + cirRad
                             }]
 
                     } else {
                         // this should calculate the distance between the inner edges of the circles and then divide by 2
                         var lineData = [{
-                            x: cirX - diffDistX - cirRad, // this is the bottom position of the focused circle
-                            y: cirY - cirRad
+                            x: cirX + diffDistX, // this is the bottom position of the focused circle
+                            y: cirY + cirRad
                         },
                             {
-                                x: cirX - diffDistX - cirRad, // this is the bottom position of the focused circle
-                                y: cirY + cirRad
+                                x: cirX + diffDistX, // this is the bottom position of the focused circle
+                                y: cirY - cirRad
                             }]
                     }
                     ;
