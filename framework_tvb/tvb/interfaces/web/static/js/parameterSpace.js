@@ -213,7 +213,7 @@ function d3Plot(placeHolder, data, options, pageParam) {
         d3.selectAll("circle").data(workingData, getKey).exit()
             .transition()
             .duration(500)
-            .attr("fill-opacity", ".5")
+            .attr("fill-opacity", ".1")
     }
 
     function zoomed() {
@@ -437,6 +437,7 @@ else
         }
 
         function rateFilterSize(cir, set) {
+            //todo come back and fix the indexing so that the vertical circles are actually the ones that are being selected in col numbers greater than 0
             allCircles, sizeScale; // why does putting this here actually create a reference to it?
             var focusRow = cir.__data__.data[0][1], //zero based index
                 focusCol = cir.__data__.data[0][0],
@@ -463,10 +464,57 @@ else
 
 
             for (otherCir of [horzCircle, vertCircle]) { // todo ask whether there should be an option specifying for object to leave behind
-                var radDiff = Math.abs(sizeScale.invert(cir.attributes.r.value) - sizeScale.invert(otherCir.attributes.r.value)); //the inverting brings out values that are related to max and min for the size
-                if (radDiff < criteria.rate.value) { // the < should make it so that only items with large changes of metric are kept on canvas
-                    // does this need to be more stringent? at the moment dots are removed as soon as there is one difference of large enough value
-                    set.add(cir.__data__.data[0])
+                var radDiff = Math.abs(sizeScale.invert(cir.attributes.r.value) - sizeScale.invert(otherCir.attributes.r.value)),
+                    lineFunc = d3.svg.line()
+                        .x(function (d) {
+                            return d.x
+                        })
+                        .y(function (d) {
+                            return d.y
+                        })
+                        .interpolate("linear");
+
+                if (radDiff > criteria.rate.value) { // the < should make it so that only items with large changes of metric are kept on canvas
+                    // set.add(cir.__data__.data[0])
+                    //todo still make things sensitive to placement on the canvas, (border cases)
+                    var cirRad = +cir.attributes.r.value,
+                        cirX = +cir.attributes.cx.value,
+                        cirY = +cir.attributes.cy.value,
+                        otherRad = +otherCir.attributes.r.value,
+                        otherX = +otherCir.attributes.cx.value,
+                        otherY = +otherCir.attributes.cy.value,
+                        diffDistX = (otherX - otherRad - (cirX + cirRad)) / 2,
+                        diffDistY = ((cirY + cirRad) - otherY + otherRad) / 2,
+                        lineData = [];
+                    if (cirX - otherX == 0) { //determines which pair we are examining, if zero it is vert circle
+                        // ar lineData = [{
+                        //         y: cirY + cirRad + diffDisty, // this is the bottom position of the focused circle
+                        //         x: cirX + cirRad
+                        //     },
+                        //         {
+                        //             y:cirY + cirRad + diffDisty,
+                        //             x: cirX - cirRad
+                        //         }]
+
+                    } else {
+                        // this should calculate the distance between the inner edges of the circles and then divide by 2
+                        var lineData = [{
+                            y: cirY - diffDistY - cirRad, // this is the bottom position of the focused circle
+                            x: cirX - cirRad
+                        },
+                            {
+                                y: cirY - diffDistY - cirRad, // this is the bottom position of the focused circle
+                                x: cirX + cirRad
+                            }]
+                    }
+                    ;
+                    if (lineData != null) {
+                        d3.select(".dotsCanvas").append("path")
+                            .attr("d", lineFunc(lineData))
+                            .attr("stroke", "red")
+                            .attr("stroke-width", "2px")
+                            .attr("fill", "none");
+                    }
                 }
             }
         }

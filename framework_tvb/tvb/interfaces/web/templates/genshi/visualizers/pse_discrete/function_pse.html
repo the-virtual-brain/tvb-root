@@ -84,7 +84,7 @@
         <p id="yRange"></p>
     </div>
     <div class="tooltip"></div>
-    <div id="FilterDiv" style="display: none;">
+    <div id="FilterDiv" style="display: block;">
         <ul class="toolbar-inline" id="filterTools">
             <li>
                 <label for="overlayNameInput">Overlay name:</label>
@@ -92,7 +92,7 @@
 
                 <br/>
                 <label for="threshold">Threshold: </label>
-                <input type="text" id="threshold" value=".0005"/>
+                <input type="text" id="threshold" value="0"/>
                 <form>
                     <input type="radio" name="threshold" id="Size"/>Size
                     <input type="radio" name="threshold" id="Color" checked="checked"/>Color <br/>
@@ -105,7 +105,7 @@
                     <br/>
                 </form>
                 <label for="rateOfChange">Rate of Change: </label>
-                <input type="text" id="rateOfChange" value="0"/>
+                <input type="text" id="rateOfChange" value="0.03"/>
                 <form>
                     <input type="radio" name="rateOfChange" id="Size" checked="checked"/>Size
                     <input type="radio" name="rateOfChange" id="Color"/>Color
