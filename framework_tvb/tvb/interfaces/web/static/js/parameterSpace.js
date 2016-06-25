@@ -362,14 +362,19 @@ function d3Plot(placeHolder, data, options, pageParam) {
             idNum = d3.selectAll("#threshold").length;
         if (filterDiv.style("display") == "none") {
             filterDiv.style("display", "block")
-        //     doAjaxCall ({
-        //         type:"POST",
-        //         url:"flow/testselectioncreator/"+ "threshold" +idNum + "/" + filterDiv + "/", //what should I be entering for the sessionTree ?
-        //         success: function (r) {
-        //
-        //         }
-        //
-        //     })
+            doAjaxCall({ // i believe that I know now that this would be the wrong ajax call just to make a selector also.
+                type: 'POST',
+                url: '/flow/testselectioncreator/testTextID/testButtonId',
+                success: function (r) {
+                    console.log(r)
+                    // d3.select("#FilterDiv").append
+                },
+                error: function () {
+                    displayMessage("couldn't load the selection bar", "errorMessage")
+                }
+
+
+            })
     }
 else
     {
