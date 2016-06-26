@@ -26,7 +26,6 @@ class CL_Kuramoto(Kuramoto, CLModel):
         // this is boilerplate and could be generated
         float S=state[i], omega=param[i];
         float I = coupling[i];
-
         deriv[i] = omega + I;
     }
     """
@@ -37,7 +36,7 @@ class CL_Kuramoto(Kuramoto, CLModel):
 class CL_Generic2D(Generic2dOscillator, CLModel):
 
     n_states = 2
-    _opencl_ordered_params = "tau, a, b, c, I, d, e, f, g, alpha, beta, gamma".split()
+    _opencl_ordered_params = "tau a b c I d e f g alpha beta gamma".split()
     _opencl_program_source_file = "Generic2D.cl"
     _opencl_program_source = """
     //Generic2dOscillator
@@ -185,7 +184,7 @@ class CL_Zetterberg_Jasen(ZetterbergJansen, CLModel):
 
 class CL_Linear( Linear, CLModel ):
     n_states = 1
-    _opencl_ordered_params = "gamma"
+    _opencl_ordered_params = "gamma".split()
     _opencl_program_source_file = "Linear.cl"
     _opencl_program_source = """
     __kernel void dfun(__global float *state, __global float *coupling,
@@ -227,7 +226,7 @@ class CL_Hopfield( Hopfield, CLModel ):
 class CL_ReducedSetFitzHughNagumo( ReducedSetFitzHughNagumo, CLModel):
     n_states = 4
     """tau b K11 K12 K21 are nomral variables, f_i IE_i II_i m_i n_i are (1,3) vector, Aik Bik Cik are (3,3) matrices """
-    _opencl_ordered_params = "// tau b K11 K12 K21 e_i f_i IE_i II_i m_i n_i  Aik Bik Cik ".split()
+    _opencl_ordered_params = "tau b K11 K12 K21 e_i f_i IE_i II_i m_i n_i  Aik Bik Cik ".split()
     _opencl_program_source_file = "ReducedSetFitzHughNagumo.cl"
     _opencl_program_source = """//ReducedSetFitzHugnNagumo
     #define indexNum(cur,totalN) cur*n+i
@@ -381,7 +380,7 @@ class CL_ReducedSetHindmarshRose( ReducedSetHindmarshRose , CLModel):
 
 class CL_Epileptor( Epileptor, CLModel):
     n_states = 6
-    _opencl_ordered_params = "x0 Iext Iext2 a b slope tt Kvf c d r Ks Kf aa tau ydot".split()
+    _opencl_ordered_params = "x0 Iext Iext2 a b slope tt Kvf c d r Ks Kf aa tau".split()
     _opencl_program_source_file = "Epileptor.cl"
     _opencl_program_source = """
    #define indexNum(cur,totalN) cur*n+i
