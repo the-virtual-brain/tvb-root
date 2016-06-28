@@ -23,6 +23,7 @@
 //todo investigate new series array structure that will make adding more dots easier
 //todo create an exporting function that can save the figure
 //todo create a way to plot the data before simulations are complete
+//todo ask about whether there should be radius scaling that happens on zooming, because many simulations will have miniscule dots in current setup
 //todo figure out how to propperly position all dots within the innerhtml svg before the plotting begins
 //todo create a red marker line that pinpoints the dot on the canvas (or just highlights the grid lines)
 //todo ask lia which is preferred, (an xi:include and a template function call in the html) or (a new genshi template that returns the elements i need accessed by a ajax call to the controller method)
@@ -229,13 +230,10 @@ function d3Plot(placeHolder, data, options, pageParam) {
     }
 
     function returnfill(weight) {
-        if (d3.select("#minShapeLabel").node().innerHTML == "not available") {
-            return d3.rgb("black") //this is an arbitrary selection for the dots color when there isn't any data to be found
-        } else {
+
             var colTest = ColSch_getGradientColorString(weight, _PSE_minColor, _PSE_maxColor).replace("a", ""), // the a creates an error in the color scale creation
                 d3color = d3.rgb(colTest);
             return d3color
-        }
 
     }
 
@@ -293,8 +291,13 @@ function d3Plot(placeHolder, data, options, pageParam) {
                 return yScale(_PSE_plotOptions.yaxis.tickFormatter(d.data[0][1]))
             },
             fill: function (d) {
-                var nodeInfo = PSE_nodesInfo[d.data[0][0]][d.data[0][1]],
+                var nodeInfo = PSE_nodesInfo[d.data[0][0]][d.data[0][1]];
+                if (nodeInfo.tooltip.search("PENDING") == -1 && nodeInfo.tooltip.search("CANCELED") == -1) {
                     color = returnfill(nodeInfo.color_weight);
+                }
+                else {
+                    var color = d3.rgb("black");
+                }
                 return color
             }
 
@@ -725,11 +728,9 @@ function PSEDiscreteInitialize(labelsXJson, labelsYJson, series_array, dataJson,
     min_size = parseFloat(min_size);
     max_size = parseFloat(max_size);
 
-    if (d3.select("#control-view").empty() != true) { //this is helping to prevent errors that arise when this viewer is used in other panels of TVB besides the PSE discrete viewer
-        ColSch_initColorSchemeGUI(min_color, max_color, function () {
-            _updatePlotPSE('main_div_pse', labels_x, labels_y, series_array, data, min_color, max_color, backPage);
-        });
-    }
+    ColSch_initColorSchemeGUI(min_color, max_color, function () { //this now doesn't create error in simulator panel, why?
+        _updatePlotPSE('main_div_pse', labels_x, labels_y, series_array, data, min_color, max_color, backPage);
+    });
 
     function _fmt_lbl(sel, v) {
         $(sel).html(Number.isNaN(v) ? 'not available' : toSignificantDigits(v, 3));
