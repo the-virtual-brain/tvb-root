@@ -19,6 +19,7 @@
 /* global doAjaxCall, displayMessage */
 //general chores
 //todo collapse plot to single svg with cutting path support
+//todo create the cutting path around the canvas so that the ticks and other items don't make it look bad
 //todo add grid lines, and reposition the axes ticks
 //todo investigate new series array structure that will make adding more dots easier
 //todo create an exporting function that can save the figure
@@ -279,7 +280,23 @@ function d3Plot(placeHolder, data, options, pageParam) {
             width: innerWidth
         });
 
-    circles = dotsCanvas.selectAll("circle").data(workingData, getKey).enter().append("circle") //todo make this a function so that it can be called after filter has removed dots to bring them back, and refresh workingdata
+    canvas.append("g")
+        .attr("id", "yGrid")
+        .attr("transform", "translate (" + _PSE_plotOptions.margins.left + " ,0)")
+        .style("stroke", "black")
+        .call(createAxis("y")
+            .tickSize(-canvasDimensions.w, 0, 0)
+            .tickFormat(""));
+
+    canvas.append("g")
+        .attr("id", "xGrid")
+        .attr("transform", "translate (0," + ( innerHeight - _PSE_plotOptions.margins.bottom ) + ")")
+        .style("stroke", "black")
+        .call(createAxis("x")
+            .tickSize(-canvasDimensions.h, 0, 0)
+            .tickFormat(""));
+
+    circles = canvas.selectAll("circle").data(workingData, getKey).enter().append("circle") //todo make this a function so that it can be called after filter has removed dots to bring them back, and refresh workingdata
         .attr({
             r: function (d) {
                 return d.points.radius
@@ -312,6 +329,8 @@ function d3Plot(placeHolder, data, options, pageParam) {
         .attr("id", "yAxis")
         .attr("transform", "translate (" + _PSE_plotOptions.margins.left + " ,0)")
         .call(yAxis);
+
+
     // this is now the area that should allow for drawing the lines of the grid
     //todo again visual grid stuff. How should I go about making the grid fit the canvas better?
     // testing patch process
@@ -368,7 +387,7 @@ function d3Plot(placeHolder, data, options, pageParam) {
         //todo ask lia if I'm going about adding the selector in the correct way.
         //todo ask lia how to debug the python aspects of this code. (breakpoints and introspection)
         //todo ask if the name parameter needs to be an element already in existence?
-        //todo do I need to make a new genshi template that will return the 
+        //todo do I need to make a new genshi template that will return the
         //todo ask lia how I'm supposed to get an html return out of something like drawQuickSelector
 
 
@@ -755,7 +774,7 @@ function PSEDiscreteInitialize(labelsXJson, labelsYJson, series_array, dataJson,
 
 
 /*
- * Take currently selected metrics and refresh the plot. 
+ * Take currently selected metrics and refresh the plot.
  */
 function PSE_mainDraw(parametersCanvasId, backPage, groupGID) {
 
