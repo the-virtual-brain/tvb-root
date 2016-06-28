@@ -19,9 +19,13 @@
 /* global doAjaxCall, displayMessage */
 //general chores
 //todo collapse plot to single svg with cutting path support
+//todo add grid lines, and reposition the axes ticks
 //todo investigate new series array structure that will make adding more dots easier
 //todo create an exporting function that can save the figure
-//todo ask about how to store overlays inside viewer associated with original file, and find way to load them when user specifies.
+//todo create a way to plot the data before simulations are complete
+//todo figure out how to propperly position all dots within the innerhtml svg before the plotting begins
+//todo create a red marker line that pinpoints the dot on the canvas (or just highlights the grid lines)
+//todo ask lia which is preferred, (an xi:include and a template function call in the html) or (a new genshi template that returns the elements i need accessed by a ajax call to the controller method)
 
 // We keep all-nodes information for current PSE as a global, to have them ready at node-selection, node-overlay.
 var PSE_nodesInfo;
@@ -165,12 +169,14 @@ function d3Plot(placeHolder, data, options, pageParam) {
         if (xORy === "x") { // should I be creating the whole axis inside here, or should I simply return the axis that has the parts to be customized and called later
             newAxis = d3.svg.axis().scale(xScale)
                 .orient("bottom")
+                .tickValues(_PSE_plotOptions.xaxis.labels)
                 .ticks(options.xaxis.max);
             return newAxis
         }
         else {
             newAxis = d3.svg.axis().scale(yScale)
                 .orient("left")
+                .tickValues(_PSE_plotOptions.yaxis.labels) //todo figure out what option will give me the line up of the tick with the dot which this does, but still gives me new ticks upon panning
                 .ticks(options.yaxis.max);
             return newAxis
         }
@@ -223,9 +229,13 @@ function d3Plot(placeHolder, data, options, pageParam) {
     }
 
     function returnfill(weight) {
-        var colTest = ColSch_getGradientColorString(weight, _PSE_minColor, _PSE_maxColor).replace("a", ""), // the a creates an error in the color scale creation
-            d3color = d3.rgb(colTest);
-        return d3color
+        if (d3.select("#minShapeLabel").node().innerHTML == "not available") {
+            return d3.rgb("black") //this is an arbitrary selection for the dots color when there isn't any data to be found
+        } else {
+            var colTest = ColSch_getGradientColorString(weight, _PSE_minColor, _PSE_maxColor).replace("a", ""), // the a creates an error in the color scale creation
+                d3color = d3.rgb(colTest);
+            return d3color
+        }
 
     }
 
@@ -354,39 +364,34 @@ function d3Plot(placeHolder, data, options, pageParam) {
     d3.select("#Filter").on("click", function () { //todo standardize the id names for the div elements used for the various overlays.
         //todo ask lia if I'm going about adding the selector in the correct way.
         //todo ask lia how to debug the python aspects of this code. (breakpoints and introspection)
-        //todo ask what the abc adapter is inside the flowcontroller
         //todo ask if the name parameter needs to be an element already in existence?
-        //todo ask what is the treesession stored key?
+        //todo do I need to make a new genshi template that will return the 
+        //todo ask lia how I'm supposed to get an html return out of something like drawQuickSelector
+
 
         var filterDiv = d3.select("#FilterDiv"),
             idNum = d3.selectAll("#threshold").length;
         if (filterDiv.style("display") == "none") {
             filterDiv.style("display", "block")
-            doAjaxCall({ // i believe that I know now that this would be the wrong ajax call just to make a selector also.
-                type: 'POST',
-                url: '/flow/testselectioncreator/testTextID/testButtonId',
-                success: function (r) {
-                    console.log(r)
-                    // d3.select("#FilterDiv").append
-                },
-                error: function () {
-                    displayMessage("couldn't load the selection bar", "errorMessage")
-                }
+            /*doAjaxCall({ // i believe that I know now that this would be the wrong ajax call just to make a selector also.
+             type: 'POST',
+             url: '/flow/testselectioncreator/testTextID/testButtonId',
+             success: function (r) {
+             console.log(r)
+             // d3.select("#FilterDiv").append
+             },
+             error: function () {
+             displayMessage("couldn't load the selection bar", "errorMessage")
+             }*/
+        }
 
 
-            })
-    }
-else
-    {
+        else {
             filterDiv.style("display", "none")
         }
     });
 
     d3.select("#filterGo").on("click", function () {
-        // todo ask how the not might work, because it seems like it needs another logical operator to be applied on
-        // todo ask about whether I need to fix that the rate will return different results as to when it is applied?
-        // todo ask how I might start saving certain overlays of results to the datagroup
-        // todo ask how changes to the data appearance might make this different (say columns don't have the same number of entries)
         // so I could make a function that gets called on each of the bars that have been selected yes?
         function thresholdFilterSize(cir, set) {
             var radius = parseFloat(cir.attributes.r.value);
@@ -715,12 +720,12 @@ function PSEDiscreteInitialize(labelsXJson, labelsYJson, series_array, dataJson,
     var labels_y = $.parseJSON(labelsYJson);
     var data = $.parseJSON(dataJson);
 
-    min_color = parseFloat(min_color);
+    min_color = parseFloat(min_color); // todo run a batch of simulations part of the way,  and then cancel to see what the result looks like.
     max_color = parseFloat(max_color);
     min_size = parseFloat(min_size);
     max_size = parseFloat(max_size);
 
-    if (d3.select("#control-view").empty() != true) {
+    if (d3.select("#control-view").empty() != true) { //this is helping to prevent errors that arise when this viewer is used in other panels of TVB besides the PSE discrete viewer
         ColSch_initColorSchemeGUI(min_color, max_color, function () {
             _updatePlotPSE('main_div_pse', labels_x, labels_y, series_array, data, min_color, max_color, backPage);
         });
