@@ -214,10 +214,22 @@ function d3Plot(placeHolder, data, options, pageParam) {
             .attr("fill-opacity", ".1")
     }
 
-    function zoomed() {
+    function xyzoomed() { // more compact way of doing this?
         d3.select("#xAxis").call(xAxis);
         d3.select("#yAxis").call(yAxis);
         d3.select("#xGrid").call(xGrid);
+        d3.select("#yGrid").call(yGrid);
+        moveDots()
+    }
+
+    function xzoomed() {
+        d3.select("#xAxis").call(xAxis);
+        d3.select("#xGrid").call(xGrid);
+        moveDots()
+    }
+
+    function yzoomed() {
+        d3.select("#yAxis").call(yAxis);
         d3.select("#yGrid").call(yGrid);
         moveDots()
     }
@@ -232,7 +244,7 @@ function d3Plot(placeHolder, data, options, pageParam) {
 
 
     var myBase, workingData, canvasDimensions, canvas, xScale, yScale, xRef, yRef, xAxis, yAxis, circles, brush,
-        dotsCanvas, innerHeight, innerWidth, toolTipDiv, zoom;
+        dotsCanvas, innerHeight, innerWidth, toolTipDiv, zoom, zoomable;
     myBase = d3.select(placeHolder);
     workingData = $.parseJSON(data);
     for (ind in workingData) {
@@ -244,11 +256,16 @@ function d3Plot(placeHolder, data, options, pageParam) {
     innerWidth = canvasDimensions.w - options.margins.left;
     xScale = createScale("x");
     yScale = createScale("y");
-    zoom = d3.behavior.zoom()
+    xyzoom = d3.behavior.zoom()
         .x(xScale)
         .y(yScale)
-        .on("zoom", zoomed)
-        .on("zoomend", moveDots);
+        .on("zoom", xyzoomed);
+    yzoom = d3.behavior.zoom()
+        .y(yScale)
+        .on("zoom", yzoomed);
+    xzoom = d3.behavior.zoom()
+        .x(xScale)
+        .on("zoom", xzoomed);
     canvas = myBase.append("svg")
         .attr({
             class: "outerCanvas",
@@ -256,8 +273,7 @@ function d3Plot(placeHolder, data, options, pageParam) {
             width: canvasDimensions.w
         })
         .append("g")
-        .attr("transform", "translate( " + options.margins.left + "," + options.margins.top + " )")
-        .call(zoom);
+        .attr("transform", "translate( " + options.margins.left + "," + options.margins.top + " )");
     xRef = xScale.copy();
     yRef = yScale.copy();
     toolTipDiv = d3.select(".tooltip");
@@ -274,13 +290,15 @@ function d3Plot(placeHolder, data, options, pageParam) {
     canvas.append("g")
         .attr("id", "yGrid")
         .attr("transform", "translate (" + _PSE_plotOptions.margins.left + " ,0)")
-        .style("stroke", "black")
+        .style("stroke", "gray")
+        .style("stroke-opacity", ".5")
         .call(yGrid);
 
     canvas.append("g")
         .attr("id", "xGrid")
         .attr("transform", "translate (0," + ( innerHeight - _PSE_plotOptions.margins.bottom ) + ")")
-        .style("stroke", "black")
+        .style("stroke", "gray")
+        .style("stroke-opacity", ".5")
         .call(xGrid);
 
     dotsCanvas = canvas.append("svg")
@@ -289,7 +307,7 @@ function d3Plot(placeHolder, data, options, pageParam) {
             height: innerHeight,
             width: innerWidth
         });
-    circles = dotsCanvas.selectAll("circle").data(workingData, getKey).enter().append("circle") //todo make this a function so that it can be called after filter has removed dots to bring them back, and refresh workingdata
+    circles = dotsCanvas.selectAll("circle").data(workingData, getKey).enter().append("circle") 
         .attr({
             r: function (d) {
                 return d.points.radius
@@ -317,11 +335,13 @@ function d3Plot(placeHolder, data, options, pageParam) {
     canvas.append("g")
         .attr("id", "xAxis")
         .attr("transform", "translate (0," + ( innerHeight - _PSE_plotOptions.margins.bottom ) + ")")
-        .call(xAxis);
+        .call(xAxis)
+        .call(xzoom);
     canvas.append("g")
         .attr("id", "yAxis")
         .attr("transform", "translate (" + _PSE_plotOptions.margins.left + " ,0)")
-        .call(yAxis);
+        .call(yAxis)
+        .call(yzoom);
 
 
     d3.select("#Explore").on("click", function () { //todo deactivate the hand panning so that brush can be used
@@ -622,9 +642,9 @@ function d3Plot(placeHolder, data, options, pageParam) {
         transparentDots()
     });
 
-d3.select("#addFilterOps").on("click", function (d) {
-    console.log("")
-});
+    d3.select("#addFilterOps").on("click", function (d) {
+        console.log("")
+    });
 
 
     d3.selectAll("circle").on("mouseover", function (d) {
@@ -653,6 +673,13 @@ d3.select("#addFilterOps").on("click", function (d) {
             displayNodeDetails(nodeInfo['Gid'], nodeInfo['dataType'], pageParam); // curious because backPage isn't in the scope, but appears to work.
         }
     })
+
+    // d3.select("#xAxis").on("mouseover", function () {
+    //     d3.select(".outerCanvas").call(xzoom)
+    // })
+    //     .on("mouseout", function () {
+    //         d3.select(".outerCanvas").call(".zoom", null)
+    //     })
 
 }
 /*
