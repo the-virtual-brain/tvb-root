@@ -66,7 +66,7 @@ function _updatePlotPSE(canvasId, xLabels, yLabels, seriesArray, data_info, min_
             top: 20,
             bottom: 40,
             left: 20,
-            right: 100
+            right: 50
         },
         xaxis: {
             labels: xLabels, // is there a better way to get access to these values inside my plotting?
@@ -244,7 +244,7 @@ function d3Plot(placeHolder, data, options, pageParam) {
 
 
     var myBase, workingData, canvasDimensions, canvas, xScale, yScale, xRef, yRef, xAxis, yAxis, circles, brush,
-        dotsCanvas, innerHeight, innerWidth, toolTipDiv, zoom, clip;
+        dotsCanvas, innerHeight, innerWidth, toolTipDiv, zoom, zoomable;
     myBase = d3.select(placeHolder);
     workingData = $.parseJSON(data);
     for (ind in workingData) {
@@ -274,24 +274,16 @@ function d3Plot(placeHolder, data, options, pageParam) {
         })
         .append("g")
         .attr("transform", "translate( " + options.margins.left + "," + options.margins.top + " )");
-    xclip = canvas.append("svg:clipPath")
-        .attr("id", "xclip")
+    canvasClip = canvas.append("svg:clipPath")
+        .attr("id", "genClip")
         .append("svg:rect")
-        .attr("id", "clip-rect")
+        .attr("id", "clipRect")
         .attr("x", _PSE_plotOptions.margins.left)
-        .attr("y", "0")
-        .attr("width", innerWidth - _PSE_plotOptions.margins.right)
-        .attr("height", innerHeight + _PSE_plotOptions.margins.top);
-    yclip = canvas.append("svg:clipPath")
-        .attr("id", "yclip")
-        .append("svg:rect")
-        .attr("id", "clip-rect")
-        .attr("x", "0")
-        .attr("y", "0")
-        .attr("width", innerWidth - _PSE_plotOptions.margins.right)
-        .attr("height", innerHeight + _PSE_plotOptions.margins.top);
+        .attr("y", _PSE_plotOptions.margins.top)
+        .attr("width", innerWidth - _PSE_plotOptions.margins.left - _PSE_plotOptions.margins.right)
+        .attr("height", innerHeight - _PSE_plotOptions.margins.bottom - _PSE_plotOptions.margins.top)
     toolTipDiv = d3.select(".tooltip");
-    xAxis = createAxis("x");
+    xAxis = createAxis("x")
     xGrid = createAxis("x")
         .tickSize(-innerHeight, 0, 0)
         .tickFormat("");
@@ -303,15 +295,15 @@ function d3Plot(placeHolder, data, options, pageParam) {
 
     canvas.append("g")
         .attr("id", "yGrid")
-        .attr("clip-path", "url(#yclip)")
-        .attr("transform", "translate (" + _PSE_plotOptions.margins.left + " ,0)")
+        .attr("clip-path", "url(#genClip)")
+        .attr("transform", "translate (0,0)")
         .style("stroke", "gray")
         .style("stroke-opacity", ".5")
         .call(yGrid);
 
     canvas.append("g")
         .attr("id", "xGrid")
-        .attr("clip-path", "url(#xclip)")
+        .attr("clip-path", "url(#genClip)")
         .attr("transform", "translate (0," + ( innerHeight - _PSE_plotOptions.margins.bottom ) + ")")
         .style("stroke", "gray")
         .style("stroke-opacity", ".5")
@@ -323,8 +315,8 @@ function d3Plot(placeHolder, data, options, pageParam) {
             height: innerHeight,
             width: innerWidth
         })
-        .attr("clip-path", "url(#xclip)");
-    circles = dotsCanvas.selectAll("circle").data(workingData, getKey).enter().append("circle") 
+        .attr("clip-path", "url(#genClip)");
+    circles = dotsCanvas.selectAll("circle").data(workingData, getKey).enter().append("circle")
         .attr({
             r: function (d) {
                 return d.points.radius
@@ -345,19 +337,18 @@ function d3Plot(placeHolder, data, options, pageParam) {
                 }
                 return color
             }
+
         });
 
 
     canvas.append("g")
         .attr("id", "xAxis")
         .attr("transform", "translate (0," + ( innerHeight - _PSE_plotOptions.margins.bottom ) + ")")
-        .attr("clip-path", "url(#xclip)")
         .call(xAxis)
         .call(xzoom);
     canvas.append("g")
         .attr("id", "yAxis")
         .attr("transform", "translate (" + _PSE_plotOptions.margins.left + " ,0)")
-        .attr("clip-path", "url(#yclip)")
         .call(yAxis)
         .call(yzoom);
 
