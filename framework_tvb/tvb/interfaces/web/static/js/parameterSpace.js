@@ -128,35 +128,24 @@ function d3Plot(placeHolder, data, options, pageParam) {
         }
     }
     function createScale(xORy) {
-        // should I incorporate some sort of testing for values before actually getting into the function?
+        // !! there is the potential to create wrong looking figures when the lower extent has a negative value in it, but is this just an error coming from large ranges? or
         //todo relate the scaling factor to the radius values available
         if (xORy === "x") {
             var [lowerExtent,upperExtent] = d3.extent(_PSE_plotOptions.xaxis.labels),
                 extentPadding = ((upperExtent - lowerExtent) * .10) / 2, // this multiplication factor controls how much the dots are gathered together
                 [padLo,padUp] = [lowerExtent - extentPadding, upperExtent + extentPadding];
 
-            if (padLo < 0) {
-                var newScale = d3.scale.linear()
-                    .domain([0, padUp])
-                    .range([0, innerWidth - options.margins.right]);
 
-            } else {
                 var newScale = d3.scale.linear()
                     .domain([padLo, padUp])
                     .range([options.margins.left, innerWidth - options.margins.right]);
             }
-            return newScale
-        } else {
+        else {
             var [lowerExtent,upperExtent] = d3.extent(_PSE_plotOptions.yaxis.labels),
                 extentPadding = ((upperExtent - lowerExtent) * .35) / 2,
                 [padLo,padUp] = [lowerExtent - extentPadding, upperExtent + extentPadding];
 
-            if (padLo < 0) {
-                var newScale = d3.scale.linear()
-                    .domain([0, padUp])
-                    .range([innerHeight - (options.margins.bottom), options.margins.top]);
 
-            } else {
                 var newScale = d3.scale.linear()
                     .domain([padLo, padUp])
                     .range([innerHeight - (options.margins.bottom), options.margins.top]);
@@ -164,11 +153,10 @@ function d3Plot(placeHolder, data, options, pageParam) {
             }
             return newScale
         }
-    }
 
-    function createRange(arr) {
+    function createRange(arr) { // this makes a large range in the form of an array of values that configure to the proper step value that the ticks would otherwise be spaced at.
         var step = arr[1] - arr[0];
-        return d3.range(-100 + arr[1], 100 + arr[1], step)
+        return d3.range(-50 + arr[1], 50 + arr[1], step)
     }
 
     function createAxis(xORy) {
@@ -244,7 +232,7 @@ function d3Plot(placeHolder, data, options, pageParam) {
 
 
     var myBase, workingData, canvasDimensions, canvas, xScale, yScale, xRef, yRef, xAxis, yAxis, circles, brush,
-        colScale, dotsCanvas, innerHeight, innerWidth, toolTipDiv, zoom;
+        dotsCanvas, innerHeight, innerWidth, toolTipDiv, zoom;
     myBase = d3.select(placeHolder);
     workingData = $.parseJSON(data);
     for (ind in workingData) {
@@ -281,14 +269,7 @@ function d3Plot(placeHolder, data, options, pageParam) {
     yGrid = createAxis("y")
         .tickSize(-innerWidth, 0, 0)
         .tickFormat("");
-    // colScale = makeColScale();
 
-    dotsCanvas = canvas.append("svg")
-        .classed("dotsCanvas", true)
-        .attr({
-            height: innerHeight,
-            width: innerWidth
-        });
 
     canvas.append("g")
         .attr("id", "yGrid")
@@ -302,7 +283,13 @@ function d3Plot(placeHolder, data, options, pageParam) {
         .style("stroke", "black")
         .call(xGrid);
 
-    circles = canvas.selectAll("circle").data(workingData, getKey).enter().append("circle") //todo make this a function so that it can be called after filter has removed dots to bring them back, and refresh workingdata
+    dotsCanvas = canvas.append("svg")
+        .classed("dotsCanvas", true)
+        .attr({
+            height: innerHeight,
+            width: innerWidth
+        });
+    circles = dotsCanvas.selectAll("circle").data(workingData, getKey).enter().append("circle") //todo make this a function so that it can be called after filter has removed dots to bring them back, and refresh workingdata
         .attr({
             r: function (d) {
                 return d.points.radius
@@ -388,7 +375,6 @@ function d3Plot(placeHolder, data, options, pageParam) {
         //todo ask lia if I'm going about adding the selector in the correct way.
         //todo !!ask lia how to debug the python aspects of this code. (breakpoints and introspection)
         //todo do I need to make a new genshi template that will return the elements
-        //todo ask lia how I'm supposed to get an html return out of something like drawQuickSelector
 
 
         var filterDiv = d3.select("#FilterDiv"),
@@ -683,7 +669,6 @@ function redrawPlot(plotCanvasId) {
     if (backPage == null || backPage == '') {
         var backPage = get_URL_param('back_page');
     }
-    debugger;
     PSE_mainDraw('main_div_pse', backPage)
 
 }
