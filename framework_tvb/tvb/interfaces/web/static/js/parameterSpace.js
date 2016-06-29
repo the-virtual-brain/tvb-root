@@ -18,16 +18,15 @@
  **/
 /* global doAjaxCall, displayMessage */
 //general chores
-//todo collapse plot to single svg with cutting path support
 //todo create the cutting path around the canvas so that the ticks and other items don't make it look bad
-//todo add grid lines, and reposition the axes ticks
 //todo investigate new series array structure that will make adding more dots easier
 //todo create an exporting function that can save the figure
-//todo create a way to plot the data before simulations are complete
+//todo ask about the cases inwich the simulations are still underway, and whether the metrics will become updated, or how should I plot?
+//todo ask if there is anything lia knows about with the svg scaling being off.
 //todo ask about whether there should be radius scaling that happens on zooming, because many simulations will have miniscule dots in current setup
 //todo figure out how to propperly position all dots within the innerhtml svg before the plotting begins
 //todo create a red marker line that pinpoints the dot on the canvas (or just highlights the grid lines)
-//todo ask lia which is preferred, (an xi:include and a template function call in the html) or (a new genshi template that returns the elements i need accessed by a ajax call to the controller method)
+//todo !!ask lia which is preferred, (an xi:include and a template function call in the html) or (a new genshi template that returns the elements i need accessed by a ajax call to the controller method)
 
 // We keep all-nodes information for current PSE as a global, to have them ready at node-selection, node-overlay.
 var PSE_nodesInfo;
@@ -66,7 +65,7 @@ function _updatePlotPSE(canvasId, xLabels, yLabels, seriesArray, data_info, min_
         margins: { // is this the correct way to be doing margins? It's just how I have in the past,
             top: 20,
             bottom: 40,
-            left: 15,
+            left: 20,
             right: 50
         },
         xaxis: {
@@ -167,19 +166,22 @@ function d3Plot(placeHolder, data, options, pageParam) {
         }
     }
 
+    function createRange(arr) {
+        var step = arr[1] - arr[0];
+        return d3.range(-100 + arr[1], 100 + arr[1], step)
+    }
+
     function createAxis(xORy) {
         if (xORy === "x") { // should I be creating the whole axis inside here, or should I simply return the axis that has the parts to be customized and called later
             newAxis = d3.svg.axis().scale(xScale)
                 .orient("bottom")
-                .tickValues(_PSE_plotOptions.xaxis.labels)
-                .ticks(options.xaxis.max);
+                .tickValues(createRange(_PSE_plotOptions.xaxis.labels));
             return newAxis
         }
         else {
             newAxis = d3.svg.axis().scale(yScale)
                 .orient("left")
-                .tickValues(_PSE_plotOptions.yaxis.labels) //todo figure out what option will give me the line up of the tick with the dot which this does, but still gives me new ticks upon panning
-                .ticks(options.yaxis.max);
+                .tickValues(createRange(_PSE_plotOptions.yaxis.labels)) //todo figure out what option will give me the line up of the tick with the dot which this does, but still gives me new ticks upon pannin;
             return newAxis
         }
     }
@@ -227,6 +229,8 @@ function d3Plot(placeHolder, data, options, pageParam) {
     function zoomed() {
         d3.select("#xAxis").call(xAxis);
         d3.select("#yAxis").call(yAxis);
+        d3.select("#xGrid").call(xGrid);
+        d3.select("#yGrid").call(yGrid);
         moveDots()
     }
 
@@ -269,8 +273,14 @@ function d3Plot(placeHolder, data, options, pageParam) {
     xRef = xScale.copy();
     yRef = yScale.copy();
     toolTipDiv = d3.select(".tooltip");
-    xAxis = createAxis("x");
+    xAxis = createAxis("x")
+    xGrid = createAxis("x")
+        .tickSize(-innerHeight, 0, 0)
+        .tickFormat("");
     yAxis = createAxis("y");
+    yGrid = createAxis("y")
+        .tickSize(-innerWidth, 0, 0)
+        .tickFormat("");
     // colScale = makeColScale();
 
     dotsCanvas = canvas.append("svg")
@@ -284,17 +294,13 @@ function d3Plot(placeHolder, data, options, pageParam) {
         .attr("id", "yGrid")
         .attr("transform", "translate (" + _PSE_plotOptions.margins.left + " ,0)")
         .style("stroke", "black")
-        .call(createAxis("y")
-            .tickSize(-canvasDimensions.w, 0, 0)
-            .tickFormat(""));
+        .call(yGrid);
 
     canvas.append("g")
         .attr("id", "xGrid")
         .attr("transform", "translate (0," + ( innerHeight - _PSE_plotOptions.margins.bottom ) + ")")
         .style("stroke", "black")
-        .call(createAxis("x")
-            .tickSize(-canvasDimensions.h, 0, 0)
-            .tickFormat(""));
+        .call(xGrid);
 
     circles = canvas.selectAll("circle").data(workingData, getKey).enter().append("circle") //todo make this a function so that it can be called after filter has removed dots to bring them back, and refresh workingdata
         .attr({
@@ -329,11 +335,6 @@ function d3Plot(placeHolder, data, options, pageParam) {
         .attr("id", "yAxis")
         .attr("transform", "translate (" + _PSE_plotOptions.margins.left + " ,0)")
         .call(yAxis);
-
-
-    // this is now the area that should allow for drawing the lines of the grid
-    //todo again visual grid stuff. How should I go about making the grid fit the canvas better?
-    // testing patch process
 
 
     d3.select("#Explore").on("click", function () { //todo deactivate the hand panning so that brush can be used
@@ -385,9 +386,8 @@ function d3Plot(placeHolder, data, options, pageParam) {
 
     d3.select("#Filter").on("click", function () { //todo standardize the id names for the div elements used for the various overlays.
         //todo ask lia if I'm going about adding the selector in the correct way.
-        //todo ask lia how to debug the python aspects of this code. (breakpoints and introspection)
-        //todo ask if the name parameter needs to be an element already in existence?
-        //todo do I need to make a new genshi template that will return the
+        //todo !!ask lia how to debug the python aspects of this code. (breakpoints and introspection)
+        //todo do I need to make a new genshi template that will return the elements
         //todo ask lia how I'm supposed to get an html return out of something like drawQuickSelector
 
 
@@ -422,7 +422,7 @@ function d3Plot(placeHolder, data, options, pageParam) {
             }
         }
 
-        function thresholdFilterColor(cir, set) { //todo ask about how to easily give users a way to select a reasonable value, because numbers are really small
+        function thresholdFilterColor(cir, set) { //todo !!ask about how to easily give users a way to select a reasonable value, because numbers are really small
             // will I need to be able to parse exponential(scientific) digits?
             // should I give people a sampling tool for the color? like an eyedropper?
             var nodeInfo = PSE_nodesInfo[cir.__data__.data[0][0]][cir.__data__.data[0][1]];
@@ -523,22 +523,22 @@ function d3Plot(placeHolder, data, options, pageParam) {
                     if (cirX - otherX == 0) { //determines which pair we are examining, if zero it is vert circle
                         var lineData = [{
                             y: cirY - diffDistY, // this is the bottom position of the focused circle
-                            x: cirX - cirRad
+                            x: cirY
                         },
                             {
                                 y: cirY - diffDistY, // this is the bottom position of the focused circle
-                                x: cirX + cirRad
+                                x: otherY
                             }]
 
                     } else {
                         // this should calculate the distance between the inner edges of the circles and then divide by 2
                         var lineData = [{
                             x: cirX + diffDistX, // this is the bottom position of the focused circle
-                            y: cirY + cirRad
+                            y: cirX
                         },
                             {
                                 x: cirX + diffDistX, // this is the bottom position of the focused circle
-                                y: cirY - cirRad
+                                y: otherX
                             }]
                     }
                     ;
@@ -683,6 +683,7 @@ function redrawPlot(plotCanvasId) {
     if (backPage == null || backPage == '') {
         var backPage = get_URL_param('back_page');
     }
+    debugger;
     PSE_mainDraw('main_div_pse', backPage)
 
 }
