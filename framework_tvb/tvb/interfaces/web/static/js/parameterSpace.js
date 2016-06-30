@@ -281,7 +281,15 @@ function d3Plot(placeHolder, data, options, pageParam) {
         .attr("x", _PSE_plotOptions.margins.left)
         .attr("y", _PSE_plotOptions.margins.top)
         .attr("width", innerWidth - _PSE_plotOptions.margins.left - _PSE_plotOptions.margins.right)
-        .attr("height", innerHeight - _PSE_plotOptions.margins.bottom - _PSE_plotOptions.margins.top)
+        .attr("height", innerHeight - _PSE_plotOptions.margins.bottom - _PSE_plotOptions.margins.top);
+    xAxisClip = canvas.append("svg:clipPath")
+        .attr("id", "xClip")
+        .append("svg:rect")
+        .attr("x", _PSE_plotOptions.margins.left)
+        .attr("y", 0)
+        .attr("width", innerWidth - _PSE_plotOptions.margins.left - _PSE_plotOptions.margins.right)
+        .attr("height", _PSE_plotOptions.margins.bottom);
+
     toolTipDiv = d3.select(".tooltip");
     xAxis = createAxis("x")
     xGrid = createAxis("x")
@@ -308,6 +316,18 @@ function d3Plot(placeHolder, data, options, pageParam) {
         .style("stroke", "gray")
         .style("stroke-opacity", ".5")
         .call(xGrid);
+
+    canvas.append("g") // the tricky part here is to applythe clip where the xaxis was before the transform
+        .attr("id", "xAxis")
+        .attr("clip-path", "url(#xClip)")
+        .attr("transform", "translate (0," + ( innerHeight - _PSE_plotOptions.margins.bottom ) + ")")
+        .call(xAxis)
+        .call(xzoom);
+    canvas.append("g")
+        .attr("id", "yAxis")
+        .attr("transform", "translate (" + _PSE_plotOptions.margins.left + " ,0)")
+        .call(yAxis)
+        .call(yzoom);
 
     dotsCanvas = canvas.append("svg")
         .classed("dotsCanvas", true)
@@ -339,18 +359,6 @@ function d3Plot(placeHolder, data, options, pageParam) {
             }
 
         });
-
-
-    canvas.append("g")
-        .attr("id", "xAxis")
-        .attr("transform", "translate (0," + ( innerHeight - _PSE_plotOptions.margins.bottom ) + ")")
-        .call(xAxis)
-        .call(xzoom);
-    canvas.append("g")
-        .attr("id", "yAxis")
-        .attr("transform", "translate (" + _PSE_plotOptions.margins.left + " ,0)")
-        .call(yAxis)
-        .call(yzoom);
 
 
     d3.select("#Explore").on("click", function () { //todo deactivate the hand panning so that brush can be used
