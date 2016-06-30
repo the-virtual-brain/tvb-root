@@ -285,7 +285,7 @@ function d3Plot(placeHolder, data, options, pageParam) {
     toolTipDiv = d3.select(".tooltip");
     xAxis = createAxis("x")
     xGrid = createAxis("x")
-        .tickSize(-innerHeight, 0, 0)
+        .tickSize(innerHeight, 0, 0)
         .tickFormat("");
     yAxis = createAxis("y");
     yGrid = createAxis("y")
@@ -304,7 +304,7 @@ function d3Plot(placeHolder, data, options, pageParam) {
     canvas.append("g")
         .attr("id", "xGrid")
         .attr("clip-path", "url(#genClip)")
-        .attr("transform", "translate (0," + ( innerHeight - _PSE_plotOptions.margins.bottom ) + ")")
+        .attr("transform", "translate (0,0)")
         .style("stroke", "gray")
         .style("stroke-opacity", ".5")
         .call(xGrid);
