@@ -289,6 +289,13 @@ function d3Plot(placeHolder, data, options, pageParam) {
         .attr("y", 0)
         .attr("width", innerWidth - _PSE_plotOptions.margins.left - _PSE_plotOptions.margins.right)
         .attr("height", _PSE_plotOptions.margins.bottom);
+    yAxisClip = canvas.append("svg:clipPath")
+        .attr("id", "yClip")
+        .append("svg:rect")
+        .attr("x", -_PSE_plotOptions.margins.left * 2)// these two areas are simply selected for what they accomplish visually. I wonder if there could be a real connection to the values used for arranging the canvas
+        .attr("y", _PSE_plotOptions.margins.top)
+        .attr("width", _PSE_plotOptions.margins.right)//
+        .attr("height", innerHeight - _PSE_plotOptions.margins.bottom - _PSE_plotOptions.margins.top);
 
     toolTipDiv = d3.select(".tooltip");
     xAxis = createAxis("x")
@@ -325,6 +332,7 @@ function d3Plot(placeHolder, data, options, pageParam) {
         .call(xzoom);
     canvas.append("g")
         .attr("id", "yAxis")
+        .attr("clip-path", "url(#yClip)")
         .attr("transform", "translate (" + _PSE_plotOptions.margins.left + " ,0)")
         .call(yAxis)
         .call(yzoom);
