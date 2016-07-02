@@ -710,12 +710,16 @@ function d3Plot(placeHolder, data, options, pageParam) {
     })
 
     d3.select(".action-store").on("click", function () { // this is the functionality for the save button next to the text box for the select  element.
-        var text = d3.select('#overlayNameInput').property('value');
+        var incoming_values = {
+            name: d3.select('#overlayNameInput').property('value'),
+            threshold_value: d3.select('input#threshold').property('value'),
+            threshold_type: d3.select('input[name="threshold"]:checked').property('id')
+        };
         doAjaxCall({
             type: 'POST',
-            url: '/flow/save_PSE_filter_setup/' + text,
+            url: '/flow/save_PSE_filter_setup/',
+            data: incoming_values,
             success: function (r) {
-                console.log(r)
                 get_filter_selections()
                 d3.select('#overlayNameInput').property('value', '')
             },

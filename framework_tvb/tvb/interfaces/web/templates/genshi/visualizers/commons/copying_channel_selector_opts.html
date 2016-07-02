@@ -1,8 +1,10 @@
 <div xmlns:py="http://genshi.edgewall.org/" py:strip="True">
     <select id="filterSelect">
         <option selected="selected" value="${value_of('noneSelectionVal','[0,0]')}">New Filter</option>
-        <option py:for="name in namesList"
-                value="$name">$name
+        <?python import ipdb; ipdb.set_trace()?>
+        <option py:for="name,val_list in namesDict.items()"
+                value="$val_list">$name
+            <?python import ipdb; ipdb.set_trace()?>
         </option>
     </select>
 </div>

@@ -795,16 +795,16 @@ class FlowController(BaseController):
     @expose_fragment("visualizers/commons/copying_channel_selector_opts")
     def PSE_filter_selections(self):
         try:
-            return dict(namesList=self.PSE_names_list)
+            return dict(namesDict=self.PSE_names_dict)
         except AttributeError:
-            return dict(namesList='')  # this will give us back atleast the New Selection option in the select
+            return dict(namesDict='')  # this will give us back atleast the New Selection option in the select
 
     @expose_json
-    def save_PSE_filter_setup(self, text_input):
+    def save_PSE_filter_setup(self, **data):
         try:
-            self.PSE_names_list.append(text_input)
+            self.PSE_names_dict[data['name']] = [data['threshold_value'], data['threshold_type']]
         except AttributeError:
-            self.PSE_names_list = [text_input]
+            self.PSE_names_dict = {data['name']: [data['threshold_value'], data['threshold_type']]}
         # else:
         #     return [False,'Something went wrong, time to debug'] #this might not be doing what I think its supposed to
         self.PSE_filter_selections()
