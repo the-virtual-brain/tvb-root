@@ -723,8 +723,7 @@ class FlowController(BaseController):
             result = burst_service.stop_burst(operation.burst)
             if remove_after_stop:
                 current_burst = common.get_from_session(common.KEY_BURST_CONFIG)
-                if current_burst and current_burst.id == operation.burst.id:
-                    common.remove_from_session(common.KEY_BURST_CONFIG)
+                common.remove_from_session(common.KEY_BURST_CONFIG)
                 result = burst_service.cancel_or_remove_burst(operation.burst.id) or result
 
             return result
@@ -792,3 +791,21 @@ class FlowController(BaseController):
         else:
             error_msg = self.NEW_SELECTION_NAME + " or empty name are not  valid as selection names."
             return [False, error_msg]
+
+    @expose_fragment("visualizers/commons/copying_channel_selector_opts")
+    def PSE_filter_selections(self):
+        try:
+            return dict(namesList=self.PSE_names_list)
+        except AttributeError:
+            return dict(namesList='')  # this will give us back atleast the New Selection option in the select
+
+    @expose_json
+    def save_PSE_filter_setup(self, text_input):
+        try:
+            self.PSE_names_list.append(text_input)
+        except AttributeError:
+            self.PSE_names_list = [text_input]
+        # else:
+        #     return [False,'Something went wrong, time to debug'] #this might not be doing what I think its supposed to
+        self.PSE_filter_selections()
+        return [True, 'Selected Text stored, and selection updated']

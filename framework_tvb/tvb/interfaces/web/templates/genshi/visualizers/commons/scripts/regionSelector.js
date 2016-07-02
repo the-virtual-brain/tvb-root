@@ -436,7 +436,7 @@ TVBUI.ModeAndStateSelectComponent = ModeAndStateSelectComponent;
 function createServerSynchronizingSelector(component, filterGid){
     function getSelections() {
         doAjaxCall({type: "POST",
-            async: false,
+            async: false,   
             url: '/flow/get_available_selections',
             data: {'datatype_gid': filterGid},
             success: function(r) {

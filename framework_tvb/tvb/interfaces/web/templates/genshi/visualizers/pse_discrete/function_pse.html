@@ -87,8 +87,10 @@
     <div id="FilterDiv" style="display: none;">
         <ul class="toolbar-inline" id="filterTools">
             <li>
-                <label for="overlayNameInput">Overlay name:</label>
+                <select name="Storing Selections for Filter" id="filterSelect">
+                </select>
                 <input type="text" id="overlayNameInput"/>
+                <button class="action-store action" title="Save your filter inputs">Save</button>
 
                 <br/>
                 <label for="threshold">Threshold: </label>
@@ -110,9 +112,9 @@
                     <input type="radio" name="rateOfChange" id="Size" checked="checked"/>Size
                     <input type="radio" name="rateOfChange" id="Color"/>Color
                 </form>
-                <button id="addFilterOps">Add Options</button>
-                <button id="removeFilterOps">Remove Options</button>
-                <button id="filterGo">Start Filter</button>
+                <button class="action action-plus" id="addFilterOps">Add Options</button>
+                <button class="action action-minus" id="removeFilterOps">Remove Options</button>
+                <button class="action action-confirm" id="filterGo">Start Filter</button>
             </li>
         </ul>
     </div>

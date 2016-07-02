@@ -174,7 +174,26 @@ function d3Plot(placeHolder, data, options, pageParam) {
         }
     }
 
+    function split_element_string(string) {
+        string = string.replace("\n")
+    }
 
+    function get_filter_selections() {
+        doAjaxCall({ // i believe that I know now that this would be the wrong ajax call just to make a selector also.
+            type: 'POST',
+            url: '/flow/PSE_filter_selections',
+            success: function (r) { //todo ask why I get this error NoResultFound: No row was found for one()
+
+                d3.select("#filterSelect > option").remove();
+                d3.select("#filterSelect").html(r);// this is the best way that i could come up with to separate out the returned elements
+
+
+            },
+            error: function () {
+                displayMessage("couldn't load the selection bar", "errorMessage")
+            }
+        })
+    }
     function moveDots() {
         circles
             .transition()
@@ -426,16 +445,7 @@ function d3Plot(placeHolder, data, options, pageParam) {
             idNum = d3.selectAll("#threshold").length;
         if (filterDiv.style("display") == "none") {
             filterDiv.style("display", "block")
-            /*doAjaxCall({ // i believe that I know now that this would be the wrong ajax call just to make a selector also.
-             type: 'POST',
-             url: '/flow/testselectioncreator/testTextID/testButtonId',
-             success: function (r) {
-             console.log(r)
-             // d3.select("#FilterDiv").append
-             },
-             error: function () {
-             displayMessage("couldn't load the selection bar", "errorMessage")
-             }*/
+            get_filter_selections()
         }
 
 
@@ -699,12 +709,23 @@ function d3Plot(placeHolder, data, options, pageParam) {
         }
     })
 
-    // d3.select("#xAxis").on("mouseover", function () {
-    //     d3.select(".outerCanvas").call(xzoom)
-    // })
-    //     .on("mouseout", function () {
-    //         d3.select(".outerCanvas").call(".zoom", null)
-    //     })
+    d3.select(".action-store").on("click", function () { // this is the functionality for the save button next to the text box for the select  element.
+        var text = d3.select('#overlayNameInput').property('value');
+        doAjaxCall({
+            type: 'POST',
+            url: '/flow/save_PSE_filter_setup/' + text,
+            success: function (r) {
+                console.log(r)
+                get_filter_selections()
+                d3.select('#overlayNameInput').property('value', '')
+            },
+            error: function () {
+                displayMessage('could not store the selected text', 'errorMessage')
+            }
+
+        })
+    })
+
 
 }
 /*
