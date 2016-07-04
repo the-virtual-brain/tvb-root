@@ -739,6 +739,21 @@ function d3Plot(placeHolder, data, options, pageParam) {
         d3.select("input[type='radio']#" + filterSpecs[1]).property("checked", true)
     })
 
+    d3.select("#addFilterOps").on("click", function () { //todo attach id numbers to the add and remove buttons
+        var nextRowId = d3.selectAll("#addFilterOps").length;
+        doAjaxCall({
+            type: "POST",
+            url: "/flow/create_row_of_specs/" + nextRowId + "/", //remember if you experience an error about there now being a row for one(), there is some silly typo sitting around, so go and check everything with the working examples.
+            success: function (r) {
+                var newLiEntry = d3.select("#FilterDiv > ul").append("li").html(r)
+            },
+            error: function () {
+                displayMessage("couldn't add new row of filter options", "errorMessage")
+            }
+        })
+
+    })
+
 
 }
 /*

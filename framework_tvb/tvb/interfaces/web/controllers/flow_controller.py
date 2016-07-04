@@ -801,6 +801,7 @@ class FlowController(BaseController):
 
     @expose_json
     def save_PSE_filter_setup(self, **data):
+        # this will need to be updated in such a way that the expose_json actually gets used
         try:
             self.PSE_names_dict[data['name']] = [data['threshold_value'], data['threshold_type']]
         except AttributeError:
@@ -809,3 +810,7 @@ class FlowController(BaseController):
         #     return [False,'Something went wrong, time to debug'] #this might not be doing what I think its supposed to
         self.PSE_filter_selections()
         return [True, 'Selected Text stored, and selection updated']
+
+    @expose_fragment("visualizers/commons/inserting_new_threshold_spec_bar")
+    def create_row_of_specs(self, count):
+        return dict(id_increment_count=count)
