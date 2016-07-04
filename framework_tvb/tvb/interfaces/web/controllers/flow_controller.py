@@ -797,7 +797,7 @@ class FlowController(BaseController):
         try:
             return dict(namesDict=self.PSE_names_dict)
         except AttributeError:
-            return dict(namesDict='')  # this will give us back atleast the New Selection option in the select
+            return dict(namesDict={})  # this will give us back atleast the New Selection option in the select
 
     @expose_json
     def save_PSE_filter_setup(self, **data):
