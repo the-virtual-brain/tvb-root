@@ -154,6 +154,7 @@ function d3Plot(placeHolder, data, options, pageParam) {
             return newScale
         }
 
+
     function createRange(arr) { // this makes a large range in the form of an array of values that configure to the proper step value that the ticks would otherwise be spaced at.
         var step = arr[1] - arr[0];
         return d3.range(-50 + arr[1], 50 + arr[1], step)
@@ -169,7 +170,7 @@ function d3Plot(placeHolder, data, options, pageParam) {
         else {
             newAxis = d3.svg.axis().scale(yScale)
                 .orient("left")
-                .tickValues(createRange(_PSE_plotOptions.yaxis.labels)) //todo figure out what option will give me the line up of the tick with the dot which this does, but still gives me new ticks upon pannin;
+                .tickValues(createRange(_PSE_plotOptions.yaxis.labels)); //todo figure out what option will give me the line up of the tick with the dot which this does, but still gives me new ticks upon pannin;
             return newAxis
         }
     }
@@ -317,7 +318,7 @@ function d3Plot(placeHolder, data, options, pageParam) {
         .attr("height", innerHeight - _PSE_plotOptions.margins.bottom - _PSE_plotOptions.margins.top);
 
     toolTipDiv = d3.select(".tooltip");
-    xAxis = createAxis("x")
+    xAxis = createAxis("x");
     xGrid = createAxis("x")
         .tickSize(innerHeight, 0, 0)
         .tickFormat("");
@@ -444,7 +445,7 @@ function d3Plot(placeHolder, data, options, pageParam) {
         var filterDiv = d3.select("#FilterDiv"),
             idNum = d3.selectAll("#threshold").length;
         if (filterDiv.style("display") == "none") {
-            filterDiv.style("display", "block")
+            filterDiv.style("display", "block");
             get_filter_selections()
         }
 
@@ -473,7 +474,7 @@ function d3Plot(placeHolder, data, options, pageParam) {
         }
 
         function rateFilterColor(cir, set) {
-            allCircles // why does putting this here actually create a reference to it?
+            allCircles; // why does putting this here actually create a reference to it?
             var focusRow = cir.__data__.data[0][1], //zero based index
                 focusCol = cir.__data__.data[0][0],
                 colorWeight = PSE_nodesInfo[focusCol][focusRow].color_weight, //essentially the same as the row above
@@ -635,7 +636,7 @@ function d3Plot(placeHolder, data, options, pageParam) {
                     thresholdFilterSize(d, thresholdSet);
                     rateFilterColor(d, rateSet);
                 } else {
-                    thresholdFilterColor(d, thresholdSet)
+                    thresholdFilterColor(d, thresholdSet);
                     rateFilterColor(d, rateSet)
                 }
             });
@@ -658,7 +659,7 @@ function d3Plot(placeHolder, data, options, pageParam) {
                     thresholdFilterSize(d, thresholdSet);
                     rateFilterColor(d, rateSet);
                 } else {
-                    thresholdFilterColor(d, thresholdSet)
+                    thresholdFilterColor(d, thresholdSet);
                     rateFilterColor(d, rateSet)
                 }
 
@@ -671,6 +672,8 @@ function d3Plot(placeHolder, data, options, pageParam) {
 
 
         }
+        ;
+        ;
         removalSet.forEach(function (indPair) {
             workingDataRemove(indPair, workingData)
         });
@@ -707,7 +710,7 @@ function d3Plot(placeHolder, data, options, pageParam) {
         if (nodeInfo.dataType != undefined) {
             displayNodeDetails(nodeInfo['Gid'], nodeInfo['dataType'], pageParam); // curious because backPage isn't in the scope, but appears to work.
         }
-    })
+    });
 
     d3.select(".action-store").on("click", function () { // this is the functionality for the save button next to the text box for the select  element.
         var incoming_values = {
@@ -720,7 +723,7 @@ function d3Plot(placeHolder, data, options, pageParam) {
             url: '/flow/save_PSE_filter_setup/',
             data: incoming_values,
             success: function (r) {
-                get_filter_selections()
+                get_filter_selections();
                 d3.select('#overlayNameInput').property('value', '')
             },
             error: function () {
@@ -728,6 +731,12 @@ function d3Plot(placeHolder, data, options, pageParam) {
             }
 
         })
+    });
+
+    d3.select("#filterSelect").on("change", function () {
+        var filterSpecs = d3.select(this).property("value").split(','); //threshold value (type float) is stored first index, and then the type (string)
+        d3.select("input#threshold").property("value", parseFloat(filterSpecs[0]));
+        d3.select("input[type='radio']#" + filterSpecs[1]).property("checked", true)
     })
 
 

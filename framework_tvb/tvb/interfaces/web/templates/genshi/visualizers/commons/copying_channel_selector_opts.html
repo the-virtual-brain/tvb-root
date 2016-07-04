@@ -1,8 +1,8 @@
 <div xmlns:py="http://genshi.edgewall.org/" py:strip="True">
     <select id="filterSelect">
-        <option selected="selected" value="${value_of('noneSelectionVal','[0,0]')}">New Filter</option>
+        <option selected="selected" value="${value_of('noneSelectionVal','0,None')}">New Filter</option>
         <option py:for="name,val_list in namesDict.items()"
-                value="$val_list">$name
+                value="${val_list[0]},${val_list[1]}">$name
         </option>
     </select>
 </div>
