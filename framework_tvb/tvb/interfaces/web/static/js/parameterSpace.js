@@ -170,7 +170,7 @@ function d3Plot(placeHolder, data, options, pageParam) {
         else {
             newAxis = d3.svg.axis().scale(yScale)
                 .orient("left")
-                .tickValues(createRange(_PSE_plotOptions.yaxis.labels)); //todo figure out what option will give me the line up of the tick with the dot which this does, but still gives me new ticks upon pannin;
+                .tickValues(createRange(_PSE_plotOptions.yaxis.labels));
             return newAxis
         }
     }
@@ -179,11 +179,11 @@ function d3Plot(placeHolder, data, options, pageParam) {
         string = string.replace("\n")
     }
 
-    function get_filter_selections() {
-        doAjaxCall({ // i believe that I know now that this would be the wrong ajax call just to make a selector also.
+    function getFilterSelections() { //todo make this specific to the element that it is applied to. so parameter is the selection element
+        doAjaxCall({
             type: 'POST',
             url: '/flow/PSE_filter_selections',
-            success: function (r) { //todo ask why I get this error NoResultFound: No row was found for one()
+            success: function (r) {
 
                 d3.select("#filterSelect > option").remove();
                 d3.select("#filterSelect").html(r);// this is the best way that i could come up with to separate out the returned elements
@@ -446,7 +446,7 @@ function d3Plot(placeHolder, data, options, pageParam) {
             idNum = d3.selectAll("#threshold").length;
         if (filterDiv.style("display") == "none") {
             filterDiv.style("display", "block");
-            get_filter_selections()
+            getFilterSelections()
         }
 
 
@@ -723,7 +723,7 @@ function d3Plot(placeHolder, data, options, pageParam) {
             url: '/flow/save_PSE_filter_setup/',
             data: incoming_values,
             success: function (r) {
-                get_filter_selections();
+                getFilterSelections();
                 d3.select('#overlayNameInput').property('value', '')
             },
             error: function () {
@@ -747,7 +747,7 @@ function d3Plot(placeHolder, data, options, pageParam) {
             success: function (r) {
                 var newLiEntry = d3.select("#FilterDiv > ul").append("li").html(r)
             },
-            error: function () {
+            error: function () { //todo make sure the selection options get shared to all selection bars
                 displayMessage("couldn't add new row of filter options", "errorMessage")
             }
         })
