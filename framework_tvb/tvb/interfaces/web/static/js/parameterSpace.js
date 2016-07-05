@@ -254,6 +254,10 @@ function d3Plot(placeHolder, data, options, pageParam) {
 
             })
         });
+
+        d3.selectAll(".action-minus").on("click", function () {
+            d3.select(this).node().parentNode.remove()
+        })
     }
 
 
@@ -268,7 +272,7 @@ function d3Plot(placeHolder, data, options, pageParam) {
             .attr("fill-opacity", ".1")
     }
 
-    function xyzoomed() { // more compact way of doing this?
+    function xyzoomed() { // currently non-functional todo decide whether to remove or fix up
         d3.select("#xAxis").call(xAxis);
         d3.select("#yAxis").call(yAxis);
         d3.select("#xGrid").call(xGrid);
@@ -404,7 +408,7 @@ function d3Plot(placeHolder, data, options, pageParam) {
                 return d.points.radius
             },
             cx: function (d) {
-                return xScale(_PSE_plotOptions.xaxis.tickFormatter(d.data[0][0]))
+                return xScale(_PSE_plotOptions.xaxis.tickFormatter(d.data[0][0])) // this is intrinsically tied to the structure of the data
             },
             cy: function (d) {
                 return yScale(_PSE_plotOptions.yaxis.tickFormatter(d.data[0][1]))
