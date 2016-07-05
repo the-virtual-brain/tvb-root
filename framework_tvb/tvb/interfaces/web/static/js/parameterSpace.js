@@ -225,14 +225,35 @@ function d3Plot(placeHolder, data, options, pageParam) {
 
     function refreshOnChange() { //this function exists because if new select bars are added after loading then there is no _onchange handler attributed
 
-        d3.select(".filterSelectBar").on("change", function () { // why wont this execute on all selection bars?
+        d3.selectAll(".filterSelectBar").on("change", function () { // why wont this execute on all selection bars?
 
             var filterSpecs = d3.select(this).property("value").split(','),
                 incrementId = d3.select(this).property("id").slice(-1); //threshold value (type float) is stored first index, and then the type (string)
             d3.select("input#threshold" + incrementId).property("value", parseFloat(filterSpecs[0]));
             d3.select("input[type='radio']#" + filterSpecs[1] + incrementId).property("checked", true)
-        })
+        });
 
+        d3.selectAll(".action-store").on("click", function () { // this is the functionality for the save button next to the text box for the select  element.
+            var incrementId = d3.select(this).property("id").slice(-1),
+                incoming_values = {
+                    name: d3.select('#overlayNameInput' + incrementId).property('value'),
+                    threshold_value: d3.select('input#threshold' + incrementId).property('value'),
+                    threshold_type: d3.select('input[name="threshold' + incrementId + '"]:checked').property('id')
+                };
+            doAjaxCall({
+                type: 'POST',
+                url: '/flow/save_PSE_filter_setup/',
+                data: incoming_values,
+                success: function (r) {
+                    getFilterSelections();
+                    d3.select('#overlayNameInput' + incrementId).property('value', '')
+                },
+                error: function () {
+                    displayMessage('could not store the selected text', 'errorMessage')
+                }
+
+            })
+        });
     }
 
 
@@ -723,26 +744,7 @@ function d3Plot(placeHolder, data, options, pageParam) {
         }
     });
 
-    d3.select(".action-store").on("click", function () { // this is the functionality for the save button next to the text box for the select  element.
-        var incoming_values = {
-            name: d3.select('#overlayNameInput').property('value'),
-            threshold_value: d3.select('input#threshold').property('value'),
-            threshold_type: d3.select('input[name="threshold"]:checked').property('id')
-        };
-        doAjaxCall({
-            type: 'POST',
-            url: '/flow/save_PSE_filter_setup/',
-            data: incoming_values,
-            success: function (r) {
-                getFilterSelections();
-                d3.select('#overlayNameInput').property('value', '')
-            },
-            error: function () {
-                displayMessage('could not store the selected text', 'errorMessage')
-            }
 
-        })
-    });
 
     d3.select("#addFilterOps").on("click", function () { //todo attach id numbers to the add and remove buttons
         var nextRowId = d3.selectAll("#addFilterOps").length;
