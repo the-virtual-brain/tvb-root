@@ -179,7 +179,7 @@ function d3Plot(placeHolder, data, options, pageParam) {
         string = string.replace("\n")
     }
 
-    function getFilterSelections(selectElement) { //todo make this specific to the element that it is applied to. so parameter is the selection element
+    function getFilterSelections() { //todo make this specific to the element that it is applied to. so parameter is the selection element
         doAjaxCall({
             type: 'POST',
             url: '/flow/PSE_filter_selections',
@@ -220,6 +220,18 @@ function d3Plot(placeHolder, data, options, pageParam) {
                 return
             }
         }
+
+    }
+
+    function refreshOnChange() { //this function exists because if new select bars are added after loading then there is no _onchange handler attributed
+
+        d3.select(".filterSelectBar").on("change", function () { // why wont this execute on all selection bars?
+
+            var filterSpecs = d3.select(this).property("value").split(','),
+                incrementId = d3.select(this).property("id").slice(-1); //threshold value (type float) is stored first index, and then the type (string)
+            d3.select("input#threshold" + incrementId).property("value", parseFloat(filterSpecs[0]));
+            d3.select("input[type='radio']#" + filterSpecs[1] + incrementId).property("checked", true)
+        })
 
     }
 
@@ -448,6 +460,7 @@ function d3Plot(placeHolder, data, options, pageParam) {
         if (filterDiv.style("display") == "none") {
             filterDiv.style("display", "block");
             getFilterSelections()
+            refreshOnChange()
         }
 
 
@@ -731,12 +744,6 @@ function d3Plot(placeHolder, data, options, pageParam) {
         })
     });
 
-    d3.select("#filterSelect").on("change", function () { // todo make this specific to the incremental ids
-        var filterSpecs = d3.select(this).property("value").split(','); //threshold value (type float) is stored first index, and then the type (string)
-        d3.select("input#threshold").property("value", parseFloat(filterSpecs[0]));
-        d3.select("input[type='radio']#" + filterSpecs[1]).property("checked", true)
-    })
-
     d3.select("#addFilterOps").on("click", function () { //todo attach id numbers to the add and remove buttons
         var nextRowId = d3.selectAll("#addFilterOps").length;
         doAjaxCall({
@@ -745,6 +752,7 @@ function d3Plot(placeHolder, data, options, pageParam) {
             success: function (r) {
                 var newLiEntry = d3.select("#FilterDiv > ul").append("li").html(r)
                 getFilterSelections()
+                refreshOnChange()
             },
             error: function () { //todo make sure the selection options get shared to all selection bars
                 displayMessage("couldn't add new row of filter options", "errorMessage")

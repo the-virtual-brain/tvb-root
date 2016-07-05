@@ -1,5 +1,13 @@
 <div xmlns:py="http://genshi.edgewall.org/" py:strip="True">
-    <select name="Storing Selections for Filter" id="${'filterSelect'+id_increment_count}">
+    <!--! how am i supposed to use this without an ajax call if there is no function? -->
+    <form>
+        <label>Logic Options: </label>
+        <input type="radio" name="logicButton" id="And"/>And
+        <input type="radio" name="logicButton" id="Or" checked="checked"/>Or
+        <input type="radio" name="logicButton" id="Not"/>Not
+        <br/>
+    </form>
+    <select name="Storing Selections for Filter" id="${'filterSelect'+id_increment_count}" class="filterSelectBar">
     </select>
     <input type="text" id="${'overlayNameInput'+id_increment_count}"/>
     <button class="action-store action " id="${'saveButtonNumber'+id_increment_count}" title="Save your filter inputs">

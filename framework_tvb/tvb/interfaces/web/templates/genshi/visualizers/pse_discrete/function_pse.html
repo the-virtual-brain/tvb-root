@@ -87,31 +87,25 @@
     <div id="FilterDiv" style="display: none;">
         <ul class="toolbar-inline" id="filterTools">
             <li>
-                <select name="Storing Selections for Filter" id="filterSelect0">
+                <select name="Storing Selections for Filter" id="filterSelect0" class="filterSelectBar">
                 </select>
-                <input type="text" id="overlayNameInput"/>
+                <input type="text" id="overlayNameInput0"/>
                 <button class="action-store action" title="Save your filter inputs">Save</button>
 
                 <br/>
                 <label for="threshold">Threshold: </label>
-                <input type="text" id="threshold" value="0"/>
+                <input type="text" id="threshold0" value="0"/>
                 <form>
-                    <input type="radio" name="threshold" id="Size"/>Size
-                    <input type="radio" name="threshold" id="Color" checked="checked"/>Color <br/>
+                    <input type="radio" name="threshold" id="Size0"/>Size
+                    <input type="radio" name="threshold" id="Color0" checked="checked"/>Color <br/>
                 </form>
-                <form>
-                    <label>Logic Options: </label>
-                    <input type="radio" name="logicButton" id="And"/>And
-                    <input type="radio" name="logicButton" id="Or" checked="checked"/>Or
-                    <input type="radio" name="logicButton" id="Not"/>Not
-                    <br/>
-                </form>
-                <label for="rateOfChange">Rate of Change: </label>
-                <input type="text" id="rateOfChange" value="0.001"/>
-                <form>
-                    <input type="radio" name="rateOfChange" id="Size" checked="checked"/>Size
-                    <input type="radio" name="rateOfChange" id="Color"/>Color
-                </form>
+
+                <!--! <label for="rateOfChange">Rate of Change: </label>
+                 <input type="text" id="rateOfChange" value="0.001"/>
+                 <form>
+                     <input type="radio" name="rateOfChange" id="Size" checked="checked"/>Size
+                     <input type="radio" name="rateOfChange" id="Color"/>Color
+                 </form> -->
                 <button class="action action-plus" id="addFilterOps">Add Options</button>
                 <button class="action action-minus" id="removeFilterOps">Remove Options</button>
                 <button class="action action-confirm" id="filterGo">Start Filter</button>

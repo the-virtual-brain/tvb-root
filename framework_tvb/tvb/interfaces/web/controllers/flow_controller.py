@@ -435,11 +435,6 @@ class FlowController(BaseController):
                                   "parentDivId": parent_div, common.KEY_SESSION_TREE: tree_session_key}
         return self.fill_default_attributes(template_specification)
 
-    @expose_fragment("visualizers/commons/channel_selector_quick/")
-    def testselectioncreator(self, textId, buttonId):
-        template_specification = {"textId": textId, "buttonId": buttonId}
-        return self.fill_default_attributes(template_specification)
-
 
     def _get_node(self, input_tree, name):
         """
@@ -723,7 +718,8 @@ class FlowController(BaseController):
             result = burst_service.stop_burst(operation.burst)
             if remove_after_stop:
                 current_burst = common.get_from_session(common.KEY_BURST_CONFIG)
-                common.remove_from_session(common.KEY_BURST_CONFIG)
+                if current_burst and current_burst.id == operation.burst.id:
+                    common.remove_from_session(common.KEY_BURST_CONFIG)
                 result = burst_service.cancel_or_remove_burst(operation.burst.id) or result
 
             return result
@@ -792,25 +788,25 @@ class FlowController(BaseController):
             error_msg = self.NEW_SELECTION_NAME + " or empty name are not  valid as selection names."
             return [False, error_msg]
 
-    @expose_fragment("visualizers/commons/copying_channel_selector_opts")
+    @expose_fragment("visualizers/commons/channel_selector_opts")
     def PSE_filter_selections(self):
         try:
-            return dict(namesDict=self.PSE_names_dict)
+            return dict(namedSelections=self.PSE_names_list)
         except AttributeError:
-            return dict(namesDict={})  # this will give us back atleast the New Selection option in the select
+            return dict(namedSelections=[])  # this will give us back atleast the New Selection option in the select
 
     @expose_json
     def save_PSE_filter_setup(self, **data):
         # this will need to be updated in such a way that the expose_json actually gets used
         try:
-            self.PSE_names_dict[data['name']] = [data['threshold_value'], data['threshold_type']]
+            self.PSE_names_list.append((data['name'], (data['threshold_value'] + "," + data['threshold_type'])))
         except AttributeError:
-            self.PSE_names_dict = {data['name']: [data['threshold_value'], data['threshold_type']]}
+            self.PSE_names_list = [(data['name'], (data['threshold_value'] + "," + data['threshold_type']))]
         # else:
         #     return [False,'Something went wrong, time to debug'] #this might not be doing what I think its supposed to
         self.PSE_filter_selections()
         return [True, 'Selected Text stored, and selection updated']
 
-    @expose_fragment("visualizers/commons/inserting_new_threshold_spec_bar")
+    @expose_fragment("visualizers/pse_discrete/inserting_new_threshold_spec_bar")
     def create_row_of_specs(self, count):
         return dict(id_increment_count=count)
