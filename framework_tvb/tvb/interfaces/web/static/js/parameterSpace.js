@@ -179,15 +179,16 @@ function d3Plot(placeHolder, data, options, pageParam) {
         string = string.replace("\n")
     }
 
-    function getFilterSelections() { //todo make this specific to the element that it is applied to. so parameter is the selection element
+    function getFilterSelections(selectElement) { //todo make this specific to the element that it is applied to. so parameter is the selection element
         doAjaxCall({
             type: 'POST',
             url: '/flow/PSE_filter_selections',
             success: function (r) {
-
-                d3.select("#filterSelect > option").remove();
-                d3.select("#filterSelect").html(r);// this is the best way that i could come up with to separate out the returned elements
-
+                for (var i = 0; i < d3.selectAll(".action-store")[0].length; i++) { // note the indexing due to the selectAll returning a one ele array of multiple arrays
+                    var selectElement = d3.select("#filterSelect" + i);
+                    selectElement.selectAll("option").remove();
+                    selectElement.html(r);// this is the best way that i could come up with to separate out the returned elements
+                }
 
             },
             error: function () {
@@ -680,9 +681,6 @@ function d3Plot(placeHolder, data, options, pageParam) {
         transparentDots()
     });
 
-    d3.select("#addFilterOps").on("click", function (d) {
-        console.log("")
-    });
 
 
     d3.selectAll("circle").on("mouseover", function (d) {
@@ -733,7 +731,7 @@ function d3Plot(placeHolder, data, options, pageParam) {
         })
     });
 
-    d3.select("#filterSelect").on("change", function () {
+    d3.select("#filterSelect").on("change", function () { // todo make this specific to the incremental ids
         var filterSpecs = d3.select(this).property("value").split(','); //threshold value (type float) is stored first index, and then the type (string)
         d3.select("input#threshold").property("value", parseFloat(filterSpecs[0]));
         d3.select("input[type='radio']#" + filterSpecs[1]).property("checked", true)
@@ -746,6 +744,7 @@ function d3Plot(placeHolder, data, options, pageParam) {
             url: "/flow/create_row_of_specs/" + nextRowId + "/", //remember if you experience an error about there now being a row for one(), there is some silly typo sitting around, so go and check everything with the working examples.
             success: function (r) {
                 var newLiEntry = d3.select("#FilterDiv > ul").append("li").html(r)
+                getFilterSelections()
             },
             error: function () { //todo make sure the selection options get shared to all selection bars
                 displayMessage("couldn't add new row of filter options", "errorMessage")
