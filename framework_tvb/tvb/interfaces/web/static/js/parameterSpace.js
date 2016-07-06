@@ -200,6 +200,18 @@ function d3Plot(placeHolder, data, options, pageParam) {
         circles
             .transition()
             .attr({
+                r: function (d) {
+                    var factor = xzoom.scale() * yzoom.scale()
+                    if (factor > 2.5) {
+                        return d.points.radius * 2.5;
+                    } else if (factor < .5) {
+                        return d.points.radius * .5
+                    } else {
+                        return d.points.radius * factor
+                    }
+
+
+                },
                 cx: function (d) {
                     return xScale(_PSE_plotOptions.xaxis.tickFormatter(d.data[0][0]))
                 },
@@ -645,7 +657,7 @@ function d3Plot(placeHolder, data, options, pageParam) {
                 })), // makes sure that we don't start creating negative radii based on user input, clamps to upper or lower bounds
             criteria = {
                 threshold: {//currently this is hard coded for the size filters which needs to be updated
-                    value: +d3.select("#threshold").node().value
+                    value: +d3.select("#threshold").node().value //todo eventually update this to reflect the changes made to the way that the input bars are enumerated
                     , type: d3.select("input[name=threshold]:checked").node().id
                 },//specifies color versus size measurements
                 rate: { // how to relate rate of change  to the max and min
