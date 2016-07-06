@@ -792,7 +792,7 @@ class FlowController(BaseController):
     def PSE_filter_selections(self):
         try:
             return dict(namedSelections=self.PSE_names_list)
-        except AttributeError:
+        except AttributeError:  # add debug breakpoint to check why 3rd and up select bars don't show,
             return dict(namedSelections=[])  # this will give us back atleast the New Selection option in the select
 
     @expose_json

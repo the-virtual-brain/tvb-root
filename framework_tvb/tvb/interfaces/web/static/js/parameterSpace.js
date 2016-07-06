@@ -18,15 +18,10 @@
  **/
 /* global doAjaxCall, displayMessage */
 //general chores
-//todo create the cutting path around the canvas so that the ticks and other items don't make it look bad
 //todo investigate new series array structure that will make adding more dots easier
 //todo create an exporting function that can save the figure
-//todo ask about the cases inwich the simulations are still underway, and whether the metrics will become updated, or how should I plot?
-//todo ask if there is anything lia knows about with the svg scaling being off.
-//todo ask about whether there should be radius scaling that happens on zooming, because many simulations will have miniscule dots in current setup
-//todo figure out how to propperly position all dots within the innerhtml svg before the plotting begins
 //todo create a red marker line that pinpoints the dot on the canvas (or just highlights the grid lines)
-//todo !!ask lia which is preferred, (an xi:include and a template function call in the html) or (a new genshi template that returns the elements i need accessed by a ajax call to the controller method)
+//todo how should I go about embedding genshi templates that don't have a return within the function pse script
 
 // We keep all-nodes information for current PSE as a global, to have them ready at node-selection, node-overlay.
 var PSE_nodesInfo;
@@ -48,6 +43,8 @@ var _PSE_plot;
  */
 function _updatePlotPSE(canvasId, xLabels, yLabels, seriesArray, data_info, min_color, max_color, backPage) {
 
+    // why is it that we don't associate the labels into the attributes of the actual data_info or seriesArray?
+    // where does the seriesArray structure get created?
     _PSE_minColor = min_color;
     _PSE_maxColor = max_color;
     PSE_nodesInfo = data_info;
@@ -129,7 +126,6 @@ function d3Plot(placeHolder, data, options, pageParam) {
     }
     function createScale(xORy) {
         // !! there is the potential to create wrong looking figures when the lower extent has a negative value in it, but is this just an error coming from large ranges? or
-        //todo relate the scaling factor to the radius values available
         if (xORy === "x") {
             var [lowerExtent,upperExtent] = d3.extent(_PSE_plotOptions.xaxis.labels),
                 extentPadding = ((upperExtent - lowerExtent) * .10) / 2, // this multiplication factor controls how much the dots are gathered together
@@ -164,13 +160,15 @@ function d3Plot(placeHolder, data, options, pageParam) {
         if (xORy === "x") { // should I be creating the whole axis inside here, or should I simply return the axis that has the parts to be customized and called later
             newAxis = d3.svg.axis().scale(xScale)
                 .orient("bottom")
-                .tickValues(createRange(_PSE_plotOptions.xaxis.labels));
+                .tickValues(createRange(_PSE_plotOptions.xaxis.labels))
+                .tickFormat(d3.format(",.2f"));
             return newAxis
         }
         else {
             newAxis = d3.svg.axis().scale(yScale)
                 .orient("left")
-                .tickValues(createRange(_PSE_plotOptions.yaxis.labels));
+                .tickValues(createRange(_PSE_plotOptions.yaxis.labels))
+                .tickFormat(d3.format(",.2f"));
             return newAxis
         }
     }
@@ -179,7 +177,7 @@ function d3Plot(placeHolder, data, options, pageParam) {
         string = string.replace("\n")
     }
 
-    function getFilterSelections() { //todo make this specific to the element that it is applied to. so parameter is the selection element
+    function getFilterSelections() {
         doAjaxCall({
             type: 'POST',
             url: '/flow/PSE_filter_selections',
@@ -439,7 +437,7 @@ function d3Plot(placeHolder, data, options, pageParam) {
         });
 
 
-    d3.select("#Explore").on("click", function () { //todo deactivate the hand panning so that brush can be used
+    d3.select("#Explore").on("click", function () {
         function expBrushMove() {
             // var xRange
         }
@@ -487,9 +485,6 @@ function d3Plot(placeHolder, data, options, pageParam) {
     });
 
     d3.select("#Filter").on("click", function () { //todo standardize the id names for the div elements used for the various overlays.
-        //todo ask lia if I'm going about adding the selector in the correct way.
-        //todo !!ask lia how to debug the python aspects of this code. (breakpoints and introspection)
-        //todo do I need to make a new genshi template that will return the elements
 
 
         var filterDiv = d3.select("#FilterDiv"),
@@ -761,8 +756,7 @@ function d3Plot(placeHolder, data, options, pageParam) {
     });
 
 
-
-    d3.select("#addFilterOps").on("click", function () { //todo attach id numbers to the add and remove buttons
+    d3.select("#addFilterOps").on("click", function () {
         var nextRowId = d3.selectAll("#addFilterOps").length;
         doAjaxCall({
             type: "POST",
@@ -772,7 +766,7 @@ function d3Plot(placeHolder, data, options, pageParam) {
                 getFilterSelections()
                 refreshOnChange()
             },
-            error: function () { //todo make sure the selection options get shared to all selection bars
+            error: function () {
                 displayMessage("couldn't add new row of filter options", "errorMessage")
             }
         })
@@ -876,7 +870,7 @@ function PSEDiscreteInitialize(labelsXJson, labelsYJson, series_array, dataJson,
         min_color = 0;
         max_color = 1;
     }
-    _updatePlotPSE('main_div_pse', labels_x, labels_y, series_array, data, min_color, max_color, backPage); // why is this called a second time?
+    _updatePlotPSE('main_div_pse', labels_x, labels_y, series_array, data, min_color, max_color, backPage); 
 
 
     if (hasStartedOperations) {
