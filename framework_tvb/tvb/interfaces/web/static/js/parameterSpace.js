@@ -168,7 +168,7 @@ function d3Plot(placeHolder, data, options, pageParam) {
             newAxis = d3.svg.axis().scale(yScale)
                 .orient("left")
                 .tickValues(createRange(_PSE_plotOptions.yaxis.labels))
-                .tickFormat(d3.format(",.2f"));
+                .tickFormat(d3.format(",.2f")); // this means add in , when thousands are used, and look for 2 digits past the decimal, with value considered float type
             return newAxis
         }
     }
@@ -238,9 +238,10 @@ function d3Plot(placeHolder, data, options, pageParam) {
         d3.selectAll(".filterSelectBar").on("change", function () { // why wont this execute on all selection bars?
 
             var filterSpecs = d3.select(this).property("value").split(','),
+                filterType = filterSpecs[1].slice(0, -1), // error was coming up due to the extra number tagged onto the end of the button id, this keeps just the part that matters,could break if more than 10 filters rows are created
                 incrementId = d3.select(this).property("id").slice(-1); //threshold value (type float) is stored first index, and then the type (string)
             d3.select("input#threshold" + incrementId).property("value", parseFloat(filterSpecs[0]));
-            d3.select("input[type='radio']#" + filterSpecs[1] + incrementId).property("checked", true)
+            d3.select("input[type='radio']#" + filterType + incrementId).property("checked", true)
         });
 
         d3.selectAll(".action-store").on("click", function () { // this is the functionality for the save button next to the text box for the select  element.
@@ -757,7 +758,7 @@ function d3Plot(placeHolder, data, options, pageParam) {
 
 
     d3.select("#addFilterOps").on("click", function () {
-        var nextRowId = d3.selectAll("#addFilterOps").length;
+        var nextRowId = d3.selectAll("button.action-store")[0].length;
         doAjaxCall({
             type: "POST",
             url: "/flow/create_row_of_specs/" + nextRowId + "/", //remember if you experience an error about there now being a row for one(), there is some silly typo sitting around, so go and check everything with the working examples.

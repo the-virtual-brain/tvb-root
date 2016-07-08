@@ -794,6 +794,8 @@ class FlowController(BaseController):
             return dict(namedSelections=self.PSE_names_list)
         except AttributeError:  # add debug breakpoint to check why 3rd and up select bars don't show,
             return dict(namedSelections=[])  # this will give us back atleast the New Selection option in the select
+        finally:  # is this the right way to go about writing for an error that wasn't the attribute error above?
+            print "hit a problem with my error exceptions"
 
     @expose_json
     def save_PSE_filter_setup(self, **data):
@@ -809,4 +811,5 @@ class FlowController(BaseController):
 
     @expose_fragment("visualizers/pse_discrete/inserting_new_threshold_spec_bar")
     def create_row_of_specs(self, count):
+
         return dict(id_increment_count=count)
