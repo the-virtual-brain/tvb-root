@@ -565,3 +565,10 @@ class DatatypeDAO(RootDAO):
         except SQLAlchemyError, excep:
             self.logger.exception(excep)
             return None
+
+            ##########################################################################
+            ########## End of specifics for MeasurePoint Selections ##################
+            ##########################################################################
+
+            # def get_selections_for_viewer (self,project_id,datatype_gid,filter_ui_name=None):
+            #

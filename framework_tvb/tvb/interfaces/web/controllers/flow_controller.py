@@ -800,6 +800,7 @@ class FlowController(BaseController):
     @expose_json
     def save_PSE_filter_setup(self, **data):
         # this will need to be updated in such a way that the expose_json actually gets used
+        ## also this is going to be changed to be storing through the flow service and dao. Stay updated
         try:
             self.PSE_names_list.append((data['name'], (data['threshold_value'] + "," + data['threshold_type'])))
         except AttributeError:
@@ -813,3 +814,13 @@ class FlowController(BaseController):
     def create_row_of_specs(self, count):
 
         return dict(id_increment_count=count)
+
+        # @expose_json
+        # def store_PSE_filter_config_(self,config_name,**data):
+        #     ##todo create get_selections_for_viewer in datatype_dao
+        #     ##todo finish flow_service last method there
+        #     #what am I going to do with the project id? I think I only really need the datatype GID
+        #     project_id = common.get_current_project()
+        #     selection = json.dumps([data['value'],data['type']]) #should this be list or tuple? Order matters here
+        #     datatype_gid = data['GID']
+        #     #now is the area that I have to start thinking about the flow_service call, the easy part is over...

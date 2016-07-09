@@ -331,3 +331,8 @@ class FlowService:
     @staticmethod
     def get_generic_entity(entity_type, filter_value, select_field):
         return dao.get_generic_entity(entity_type, filter_value, select_field)
+
+        # @staticmethod
+        # def store_PSE_filter_config (ui_name,user_inputs,datatype_gid,project_id):
+        #
+        #

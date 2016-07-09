@@ -266,8 +266,11 @@ class MeasurePointsSelection(Base):
 
     def __repr__(self):
         return '<Selection(%s, %s, for %s)>' % (self.ui_name, self.selected_nodes, self.fk_datatype_gid)
-    
-    
-    
-    
-    
+
+
+class FilterConfigSelections(Base):
+    """
+    Interest Area
+    PSE Viewer Filter tool, specific filter configuration user inputs to be stored from multiple elements
+    """
+    __tablename__ = "FILTER_CONFIG_SELECTIONS"
