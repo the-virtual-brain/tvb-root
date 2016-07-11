@@ -566,9 +566,16 @@ class DatatypeDAO(RootDAO):
             self.logger.exception(excep)
             return None
 
-            ##########################################################################
-            ########## End of specifics for MeasurePoint Selections ##################
-            ##########################################################################
+    ##########################################################################
+    ##########    Bellow are PSE Filters specific methods   ##################
+    ##########################################################################
 
-            # def get_selections_for_viewer (self,project_id,datatype_gid,filter_ui_name=None):
-            #
+    def get_stored_pse_filters(self, project_id, datatype_group_gid):
+        try:
+            query = self.session.query(model.StoredPSEFilter
+                                       ).filter_by(fk_in_project=project_id
+                                                   ).filter_by(fk_datatype_gid=datatype_group_gid)
+            return query.all()
+        except SQLAlchemyError, excep:
+            self.logger.exception(excep)
+            return None

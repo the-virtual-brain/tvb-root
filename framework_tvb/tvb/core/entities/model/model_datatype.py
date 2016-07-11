@@ -39,7 +39,7 @@ Entities for Generic DataTypes, Links and Groups of DataTypes are defined here.
 from copy import copy
 from datetime import datetime
 from sqlalchemy.orm import relationship, backref
-from sqlalchemy import Boolean, Integer, String, Column, ForeignKey, DateTime
+from sqlalchemy import Boolean, Integer, String, Float, Column, ForeignKey, DateTime
 
 from tvb.core.utils import generate_guid
 from tvb.core.entities.model.model_base import Base
@@ -268,9 +268,33 @@ class MeasurePointsSelection(Base):
         return '<Selection(%s, %s, for %s)>' % (self.ui_name, self.selected_nodes, self.fk_datatype_gid)
 
 
-class FilterConfigSelections(Base):
+class StoredPSEFilter(Base):
     """
     Interest Area
     PSE Viewer Filter tool, specific filter configuration user inputs to be stored from multiple elements
     """
-    __tablename__ = "FILTER_CONFIG_SELECTIONS"
+    __tablename__ = "PSE_FILTERS"
+
+    id = Column(Integer, primary_key=True)
+    #### Unique name /DataType, to be displayed in selector UI:
+    ui_name = Column(String)
+    #### A DataType Group GID, Referring to the Group that this filter was stored for:
+    fk_datatype_gid = Column(String, ForeignKey('DATA_TYPES.gid', ondelete="CASCADE"))
+    #### Current Project where the filter was defined in:
+    fk_in_project = Column(Integer, ForeignKey('PROJECTS.id', ondelete="CASCADE"))
+
+    threshold_value = Column(Float)
+
+    applied_on = Column(String)
+
+    def __init__(self, ui_name, datatype_gid, project_id, threshold, applied_on):
+        self.ui_name = ui_name
+        self.fk_in_project = project_id
+        self.fk_datatype_gid = datatype_gid
+        self.threshold_value = threshold
+        self.applied_on = applied_on
+
+
+    def __repr__(self):
+        return '<StoredPSEFilter(%s, for %s, %s, %s)>' % (self.ui_name, self.fk_datatype_gid,
+                                                          self.threshold_value, self.applied_on)
