@@ -295,7 +295,12 @@ class FlowService:
             group.children.append(adapter)
         return categories_dict
 
-    
+
+    @staticmethod
+    def get_generic_entity(entity_type, filter_value, select_field):
+        return dao.get_generic_entity(entity_type, filter_value, select_field)
+
+
     ##########################################################################
     ######## Methods below are for MeasurePoint selections ###################
     ##########################################################################
@@ -328,11 +333,29 @@ class FlowService:
         dao.store_entity(select_entity)
 
 
-    @staticmethod
-    def get_generic_entity(entity_type, filter_value, select_field):
-        return dao.get_generic_entity(entity_type, filter_value, select_field)
+    ##########################################################################
+    ##########    Bellow are PSE Filters specific methods   ##################
+    ##########################################################################
 
-        # @staticmethod
-        # def store_PSE_filter_config (ui_name,user_inputs,datatype_gid,project_id):
-        #
-        #
+
+    @staticmethod
+    def get_stored_pse_filters(datatype_group_gid):
+        return dao.get_stored_pse_filters(datatype_group_gid)
+
+
+    @staticmethod
+    def save_pse_filter(ui_name, datatype_group_gid, threshold_value, applied_on):
+        """
+        Store in DB a PSE filter.
+        """
+        select_entities = dao.get_stored_pse_filters(datatype_group_gid)
+
+        if select_entities:
+            # when the UI name is already in DB, update the exiting entity
+            select_entity = select_entities[0]
+            select_entity.threshold_value = threshold_value
+            select_entities.applied_on = applied_on
+        else:
+            select_entity = model.StoredPSEFilter(ui_name, datatype_group_gid, threshold_value, applied_on)
+
+        dao.store_entity(select_entity)

@@ -280,18 +280,15 @@ class StoredPSEFilter(Base):
     ui_name = Column(String)
     #### A DataType Group GID, Referring to the Group that this filter was stored for:
     fk_datatype_gid = Column(String, ForeignKey('DATA_TYPES.gid', ondelete="CASCADE"))
-    #### Current Project where the filter was defined in:
-    fk_in_project = Column(Integer, ForeignKey('PROJECTS.id', ondelete="CASCADE"))
 
     threshold_value = Column(Float)
 
     applied_on = Column(String)
 
-    def __init__(self, ui_name, datatype_gid, project_id, threshold, applied_on):
+    def __init__(self, ui_name, datatype_gid, threshold_value, applied_on):
         self.ui_name = ui_name
-        self.fk_in_project = project_id
         self.fk_datatype_gid = datatype_gid
-        self.threshold_value = threshold
+        self.threshold_value = threshold_value
         self.applied_on = applied_on
 
 
