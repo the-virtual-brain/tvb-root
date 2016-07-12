@@ -570,12 +570,14 @@ class DatatypeDAO(RootDAO):
     ##########    Bellow are PSE Filters specific methods   ##################
     ##########################################################################
 
-    def get_stored_pse_filters(self, datatype_group_gid):
+    def get_stored_pse_filters(self, datatype_group_gid, filter_ui_name=None):
         """
         :return: Stored PSE filters for a given DatTypeGroup or None
         """
         try:
             query = self.session.query(model.StoredPSEFilter).filter_by(fk_datatype_gid=datatype_group_gid)
+            if filter_ui_name is not None:
+                query = query.filter_by(ui_name=filter_ui_name)
             return query.all()
         except SQLAlchemyError, excep:
             self.logger.exception(excep)
