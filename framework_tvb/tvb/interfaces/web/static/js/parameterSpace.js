@@ -178,9 +178,10 @@ function d3Plot(placeHolder, data, options, pageParam) {
     }
 
     function getFilterSelections() {
+        groupGID = document.getElementById("datatype-group-gid").value;
         doAjaxCall({
             type: 'POST',
-            url: '/flow/PSE_filter_selections',
+            url: '/flow/get_pse_filters/' + groupGID,
             success: function (r) {
                 for (var i = 0; i < d3.selectAll(".action-store")[0].length; i++) { // note the indexing due to the selectAll returning a one ele array of multiple arrays
                     var selectElement = d3.select("#filterSelect" + i);
@@ -251,9 +252,10 @@ function d3Plot(placeHolder, data, options, pageParam) {
                     threshold_value: d3.select('input#threshold' + incrementId).property('value'),
                     threshold_type: d3.select('input[name="threshold' + incrementId + '"]:checked').property('id')
                 };
+            groupGID = document.getElementById("datatype-group-gid").value;
             doAjaxCall({
                 type: 'POST',
-                url: '/flow/store_PSE_filter_config/' + usrSelectedName,
+                url: '/flow/store_pse_filter/' + usrSelectedName + '/' + groupGID,
                 data: incoming_values,
                 success: function (r) {
                     getFilterSelections();

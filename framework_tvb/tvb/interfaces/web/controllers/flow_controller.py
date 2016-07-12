@@ -788,59 +788,25 @@ class FlowController(BaseController):
             error_msg = self.NEW_SELECTION_NAME + " or empty name are not  valid as selection names."
             return [False, error_msg]
 
-    @expose_fragment("visualizers/commons/channel_selector_opts")
-    def PSE_filter_selections(self):
-        """
-        please note that this function is going to be outdated by the PSE get selections below
-        :return:
-        """
-        try:
-            return dict(namedSelections=self.PSE_names_list)
-        except AttributeError:  # add debug breakpoint to check why 3rd and up select bars don't show,
-            return dict(namedSelections=[])  # this will give us back atleast the New Selection option in the select
-        finally:  # is this the right way to go about writing for an error that wasn't the attribute error above?
-            print "hit a problem with my error exceptions"
-
-    @expose_json
-    def save_PSE_filter_setup(self, **data):
-        # this will need to be updated in such a way that the expose_json actually gets used
-        ## also this is going to be changed to be storing through the flow service and dao. Stay updated
-        try:
-            self.PSE_names_list.append((data['name'], (data['threshold_value'] + "," + data['threshold_type'])))
-        except AttributeError:
-            self.PSE_names_list = [(data['name'], (data['threshold_value'] + "," + data['threshold_type']))]
-        # else:
-        #     return [False,'Something went wrong, time to debug'] #this might not be doing what I think its supposed to
-        self.PSE_filter_selections()
-        return [True, 'Selected Text stored, and selection updated']
 
     @expose_fragment("visualizers/pse_discrete/inserting_new_threshold_spec_bar")
     def create_row_of_specs(self, count):
-
         return dict(id_increment_count=count)
 
-    @expose_json
-    def store_PSE_filter_config_(self, config_name, **data):
-        try:  # performing this look before you leap has created other issues in the past for debugging, is this the best way to do this?
-            threshold_value = float(data[
-                                        'threshold_value'])  # model datatype specifies that the column enttry for the threshold_value must be float.
-            applied_on = data['threshold_type']
-            datatype_gid = data['GID']
-            self.flow_service.save_pse_filter(config_name, datatype_gid, threshold_value, applied_on)
-            return [True, "selection stored successfully!"]
-        except:
-            return [False, "Storing selection was not successful, please check the log"]
 
-    def _get_PSE_selections(self, datatype_gid):
-        selections = self.flow_service.get_stored_pse_filters(datatype_gid)
-        names_list = []
-        for selection in selections:
-            names_list.append((selection.ui_name, (
-            selection.threshold_value + "," + selection.applied_on)))  # im trying to mimic the structure that I've used so far, so that I don't have to change the way that the genshi looks
-        return names_list
+    @expose_json
+    def store_pse_filter(self, config_name, datatype_gid, **data):
+        # model datatype specifies that the column entry for the threshold_value must be float.
+        threshold_value = float(data['threshold_value'])
+        applied_on = data['threshold_type']
+        self.flow_service.save_pse_filter(config_name, datatype_gid, threshold_value, applied_on)
+        return [True, "selection stored successfully!"]
+
 
     @expose_fragment("visualizers/commons/channel_selector_opts")
-    def get_PSE_selections(self, **data):
-        datatype_gid = data['GID']
-        names_list = self._get_PSE_selections(datatype_gid)
+    def get_pse_filters(self, datatype_gid):
+        stored_filters = self.flow_service.get_stored_pse_filters(datatype_gid)
+        names_list = []
+        for sf in stored_filters:
+            names_list.append((sf.ui_name, (str(sf.threshold_value) + "," + sf.applied_on)))
         return dict(namedSelections=names_list)
