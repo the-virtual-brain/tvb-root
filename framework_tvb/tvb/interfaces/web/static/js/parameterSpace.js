@@ -246,14 +246,14 @@ function d3Plot(placeHolder, data, options, pageParam) {
 
         d3.selectAll(".action-store").on("click", function () { // this is the functionality for the save button next to the text box for the select  element.
             var incrementId = d3.select(this).property("id").slice(-1),
+                usrSelectedName = d3.select('#overlayNameInput' + incrementId).property('value'),
                 incoming_values = {
-                    name: d3.select('#overlayNameInput' + incrementId).property('value'),
                     threshold_value: d3.select('input#threshold' + incrementId).property('value'),
                     threshold_type: d3.select('input[name="threshold' + incrementId + '"]:checked').property('id')
                 };
             doAjaxCall({
                 type: 'POST',
-                url: '/flow/save_PSE_filter_setup/',
+                url: '/flow/store_PSE_filter_config/' + usrSelectedName,
                 data: incoming_values,
                 success: function (r) {
                     getFilterSelections();

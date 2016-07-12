@@ -351,10 +351,10 @@ class FlowService:
         select_entities = dao.get_stored_pse_filters(datatype_group_gid)
 
         if select_entities:
-            # when the UI name is already in DB, update the exiting entity
+            # when the UI name is already in DB, update the existing entity
             select_entity = select_entities[0]
             select_entity.threshold_value = threshold_value
-            select_entities.applied_on = applied_on
+            select_entity.applied_on = applied_on  # is this the type? as in applied on size or color? im pretty sure this is supposed to remain select entity not plural?
         else:
             select_entity = model.StoredPSEFilter(ui_name, datatype_group_gid, threshold_value, applied_on)
 

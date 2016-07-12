@@ -790,6 +790,10 @@ class FlowController(BaseController):
 
     @expose_fragment("visualizers/commons/channel_selector_opts")
     def PSE_filter_selections(self):
+        """
+        please note that this function is going to be outdated by the PSE get selections below
+        :return:
+        """
         try:
             return dict(namedSelections=self.PSE_names_list)
         except AttributeError:  # add debug breakpoint to check why 3rd and up select bars don't show,
@@ -815,12 +819,28 @@ class FlowController(BaseController):
 
         return dict(id_increment_count=count)
 
-        # @expose_json
-        # def store_PSE_filter_config_(self,config_name,**data):
-        #     ##todo create get_selections_for_viewer in datatype_dao
-        #     ##todo finish flow_service last method there
-        #     #what am I going to do with the project id? I think I only really need the datatype GID
-        #     project_id = common.get_current_project()
-        #     selection = json.dumps([data['value'],data['type']]) #should this be list or tuple? Order matters here
-        #     datatype_gid = data['GID']
-        #     #now is the area that I have to start thinking about the flow_service call, the easy part is over...
+    @expose_json
+    def store_PSE_filter_config_(self, config_name, **data):
+        try:  # performing this look before you leap has created other issues in the past for debugging, is this the best way to do this?
+            threshold_value = float(data[
+                                        'threshold_value'])  # model datatype specifies that the column enttry for the threshold_value must be float.
+            applied_on = data['threshold_type']
+            datatype_gid = data['GID']
+            self.flow_service.save_pse_filter(config_name, datatype_gid, threshold_value, applied_on)
+            return [True, "selection stored successfully!"]
+        except:
+            return [False, "Storing selection was not successful, please check the log"]
+
+    def _get_PSE_selections(self, datatype_gid):
+        selections = self.flow_service.get_stored_pse_filters(datatype_gid)
+        names_list = []
+        for selection in selections:
+            names_list.append((selection.ui_name, (
+            selection.threshold_value + "," + selection.applied_on)))  # im trying to mimic the structure that I've used so far, so that I don't have to change the way that the genshi looks
+        return names_list
+
+    @expose_fragment("visualizers/commons/channel_selector_opts")
+    def get_PSE_selections(self, **data):
+        datatype_gid = data['GID']
+        names_list = self._get_PSE_selections(datatype_gid)
+        return dict(namedSelections=names_list)
