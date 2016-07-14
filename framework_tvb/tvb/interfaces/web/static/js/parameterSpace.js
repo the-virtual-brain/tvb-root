@@ -18,10 +18,8 @@
  **/
 /* global doAjaxCall, displayMessage */
 //general chores
-//todo investigate new series array structure that will make adding more dots easier
 //todo create an exporting function that can save the figure
 //todo create a red marker line that pinpoints the dot on the canvas (or just highlights the grid lines)
-//todo how should I go about embedding genshi templates that don't have a return within the function pse script
 
 // We keep all-nodes information for current PSE as a global, to have them ready at node-selection, node-overlay.
 var PSE_nodesInfo;
@@ -178,10 +176,9 @@ function d3Plot(placeHolder, data, options, pageParam) {
     }
 
     function getFilterSelections() {
-        groupGID = document.getElementById("datatype-group-gid").value;
         doAjaxCall({
             type: 'POST',
-            url: '/flow/get_pse_filters/' + groupGID,
+            url: '/flow/get_pse_filters/' + datatypeGID,
             success: function (r) {
                 for (var i = 0; i < d3.selectAll(".action-store")[0].length; i++) { // note the indexing due to the selectAll returning a one ele array of multiple arrays
                     var selectElement = d3.select("#filterSelect" + i);
@@ -252,10 +249,9 @@ function d3Plot(placeHolder, data, options, pageParam) {
                     threshold_value: d3.select('input#threshold' + incrementId).property('value'),
                     threshold_type: d3.select('input[name="threshold' + incrementId + '"]:checked').property('id')
                 };
-            groupGID = document.getElementById("datatype-group-gid").value;
             doAjaxCall({
                 type: 'POST',
-                url: '/flow/store_pse_filter/' + usrSelectedName + '/' + groupGID,
+                url: '/flow/store_pse_filter/' + usrSelectedName + '/' + datatypeGID,
                 data: incoming_values,
                 success: function (r) {
                     getFilterSelections();
@@ -315,7 +311,7 @@ function d3Plot(placeHolder, data, options, pageParam) {
 
 
     var myBase, workingData, canvasDimensions, canvas, xScale, yScale, xRef, yRef, xAxis, yAxis, circles, brush,
-        dotsCanvas, innerHeight, innerWidth, toolTipDiv, zoom, zoomable;
+        dotsCanvas, innerHeight, innerWidth, toolTipDiv, zoom, zoomable, datatypeGID;
     myBase = d3.select(placeHolder);
     workingData = $.parseJSON(data);
     for (ind in workingData) {
@@ -325,6 +321,7 @@ function d3Plot(placeHolder, data, options, pageParam) {
     canvasDimensions = {h: parseInt(myBase.style("height")), w: parseInt(myBase.style("width"))};
     innerHeight = canvasDimensions.h - options.margins.top;
     innerWidth = canvasDimensions.w - options.margins.left;
+    datatypeGID = d3.select("#datatype-group-gid").property("value");
     xScale = createScale("x");
     yScale = createScale("y");
     xyzoom = d3.behavior.zoom()
