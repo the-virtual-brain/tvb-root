@@ -17,8 +17,8 @@ class CLComponent(object):
         self._queue = queue
         if hasattr(self, '_opencl_program_source'):
             self._program = pyopencl.Program(context, self._opencl_program_source).build()
-        elif hasattr(self, '_opencl_program_source'):
-            self._program = pyopencl.Program(context, (getattr(self,'_opencl_program_source'),'r').read()).build()
+        elif hasattr(self, '_opencl_program_source_file'):
+            self._program = pyopencl.Program(context, open(getattr(self,'_opencl_program_source_file'),'r').read()).build()
 class CLModel(CLComponent):
 
     def _alloc_opencl(self, n_nodes ,n_states=1,n_mode=1):
@@ -28,11 +28,11 @@ class CLModel(CLComponent):
             raise RuntimeError(msg)
 
         # arrays in component workspace
-        arrays = {'state': (n_states, n_nodes,n_mode), 'coupling': (1, n_nodes), 'deriv': (n_states, n_nodes,n_mode)}
+        arrays = {'state': (n_states, n_nodes,n_mode), 'coupling': (1, n_nodes), 'deriv': (n_states, n_nodes, n_mode)}
         self.arrays = arrays
         if hasattr(self, '_opencl_ordered_params'):
             arrays['param'] = (len(self._opencl_ordered_params), n_nodes)
-
+            #arrays['param'] = (len(self._opencl_ordered_params), n_nodes, n_mode)
         # alloc opencl device arrays
         self._arrays = {}
         for name, shape in arrays.items():
@@ -59,8 +59,11 @@ class CLModel(CLComponent):
 
         self._kernel = self._program.dfun
 
+    def dfun(self , queue, nt, args ):
+        self._kernel(queue, (int(nt),), None, *[arg.data for arg in args])
 
-    def dfunKernel(self, state_variables, coupling, local_coupling=0.0):
+
+    def dfunKernel(self, state_variables, coupling, local_coupling=0.0 ):
         n_states = state_variables.shape[0]
         n_nodes = state_variables.shape[1]
         n_mode = state_variables.shape[2]
@@ -112,6 +115,7 @@ class CLModel(CLComponent):
             deriv = deriv.get().reshape((n_states, n_nodes, n_mode)).astype('d')
 
         return deriv
+
 
 class CLRWW(ReducedWongWang, CLModel):
 
