@@ -27,7 +27,7 @@ class TestCLRWW(unittest.TestCase):
         self.coupling = numpy.random.rand(1, self.n_nodes, 1)
 
     def test_numpy_against_opencl(self):
-        from tvb.simulator.models import ReducedWongWang
+        from tvb.simulator.models.wong_wang import ReducedWongWang
         from tvb.simulator._opencl.models import CLRWW
         np_rww = ReducedWongWang()
         np_rww.configure()
@@ -36,7 +36,7 @@ class TestCLRWW(unittest.TestCase):
         cl_rww.configure_opencl(self.context, self.queue)
 
         np_dx = np_rww.dfun(self.state, self.coupling)
-        cl_dx = cl_rww.dfun(self.state, self.coupling)
+        cl_dx = cl_rww.dfunKernel(self.state, self.coupling)
 
         numpy.testing.assert_allclose(cl_dx, np_dx, 1e-5, 1e-6)
 
@@ -47,40 +47,32 @@ class TestModels(unittest.TestCase):
         self.context, self.queue = context_and_queue(create_cpu_context())
         self.n_nodes = 100
 
-
-
-
     def test_RWW_opencl(self):
         from tvb.simulator.models import ReducedWongWang
         from tvb.simulator._opencl.models import CLRWW
 
         self.validate(ReducedWongWang(),CLRWW(),1)
 
-    #Passed
     def test_Kuramoto(self):
         from tvb.simulator.models.oscillator import  Kuramoto
         from tvb.simulator._opencl.cl_models import CL_Kuramoto
         self.validate(Kuramoto(), CL_Kuramoto(), CL_Kuramoto.n_states)
 
-    #Passed
     def test_Generic2D(self):
         from tvb.simulator.models.oscillator import Generic2dOscillator
         from tvb.simulator._opencl.cl_models import CL_Generic2D
         self.validate(Generic2dOscillator(), CL_Generic2D(), CL_Generic2D.n_states)
 
-    #Passed
     def test_Linear(self):
         from tvb.simulator.models.linear import Linear
         from tvb.simulator._opencl.cl_models import CL_Linear
         self.validate(Linear(), CL_Linear(), CL_Linear.n_states)
 
-    #Passed
     def test_Epiletor(self):
         from tvb.simulator.models.epileptor import Epileptor
         from tvb.simulator._opencl.cl_models import CL_Epileptor
         self.validate(Epileptor(), CL_Epileptor(), CL_Epileptor.n_states)
 
-    #Passed
     def test_Hopfiled(self):
         from tvb.simulator.models.hopfield import Hopfield
         from tvb.simulator._opencl.cl_models import CL_Hopfield
@@ -95,12 +87,12 @@ class TestModels(unittest.TestCase):
     def test_ReducedSet_FitzHughNagumo(self):
         from tvb.simulator.models.stefanescu_jirsa import ReducedSetFitzHughNagumo
         from tvb.simulator._opencl.cl_models import CL_ReducedSetFitzHughNagumo
-        self.validate(ReducedSetFitzHughNagumo(), CL_ReducedSetFitzHughNagumo(), CL_ReducedSetFitzHughNagumo.n_states)
+        self.validate(ReducedSetFitzHughNagumo(), CL_ReducedSetFitzHughNagumo(), CL_ReducedSetFitzHughNagumo.n_states,3)
 
     def test_ReducedSet_HindmarshRose(self):
         from tvb.simulator.models.stefanescu_jirsa import ReducedSetHindmarshRose
         from tvb.simulator._opencl.cl_models import CL_ReducedSetHindmarshRose
-        self.validate(ReducedSetHindmarshRose(), CL_ReducedSetHindmarshRose(), CL_ReducedSetHindmarshRose.n_states)
+        self.validate(ReducedSetHindmarshRose(), CL_ReducedSetHindmarshRose(), CL_ReducedSetHindmarshRose.n_states,3)
 
     def test_Wilson_Cowan(self):
         from tvb.simulator.models.wilson_cowan import WilsonCowan
@@ -112,17 +104,17 @@ class TestModels(unittest.TestCase):
         from tvb.simulator._opencl.cl_models import CL_Zetterberg_Jasen
         self.validate(ZetterbergJansen(), CL_Zetterberg_Jasen(), CL_Zetterberg_Jasen.n_states)
 
-    def validate(self, npm, clm, n_states):
+    def validate(self, npm, clm, n_states, nmode=1):
         self.np = npm
         self.np.configure()
         self.cl = clm
         self.cl.configure()
         self.cl.configure_opencl(self.context, self.queue)
-        self.state = numpy.random.rand(n_states, self.n_nodes, 1)
-        self.coupling = numpy.random.rand(n_states, self.n_nodes, 1)
+        self.state = numpy.random.rand(n_states, self.n_nodes, nmode)
+        self.coupling = numpy.random.rand(1, self.n_nodes,nmode)
 
         np_dx = self.np.dfun(self.state, self.coupling)
-        cl_dx = self.cl.dfun(self.state, self.coupling)
+        cl_dx = self.cl.dfunKernel(self.state, self.coupling)
         numpy.testing.assert_allclose(cl_dx, np_dx, 1e-5, 1e-6)
 
 
@@ -168,3 +160,37 @@ class TestModels(unittest.TestCase):
 #     TEST_RUNNER = unittest.TextTestRunner()
 #     TEST_SUITE = suite()
 #     TEST_RUNNER.run(TEST_SUITE)
+@unittest.skipIf(not PYOPENCL_AVAILABLE, 'PyOpenCL not available')
+class TestIntegrator(unittest.TestCase):
+    def setUp(self):
+        from tvb.simulator._opencl.util import create_cpu_context, context_and_queue
+        from tvb.simulator._opencl.cl_models import CL_Linear
+        self.context, self.queue = context_and_queue(create_cpu_context())
+        self.n_nodes = 100
+        self.state = numpy.random.rand(1, self.n_nodes, 1)
+        self.coupling = numpy.random.rand(1, self.n_nodes, 1)
+        self.model = CL_Linear()
+
+    def test_CLIntegrator(self):
+        from tvb.simulator._opencl.cl_integrator import CLIntegrator
+        cl = CLIntegrator()
+        cl.configure_opencl(self.context, self.queue)
+        self.model.configure_opencl( self.context, self.queue )
+        cl.scheme(self.state, self.model.dfunKernel,self.coupling )
+        cl.scheme_cl(self.state, self.model, self.coupling)
+
+    def test_CL_EulerDeterministic(self):
+        from tvb.simulator._opencl.cl_integrator import CL_EulerDeterministic
+        cl = CL_EulerDeterministic()
+        cl.configure_opencl(self.context, self.queue)
+        self.model.configure_opencl(self.context, self.queue)
+        cl.scheme(self.state, self.model.dfunKernel, self.coupling)
+        cl.scheme_cl(self.state, self.model, self.coupling)
+
+    def test_CL_Identity(self):
+        from tvb.simulator._opencl.cl_integrator import CL_Identity
+        cl = CL_Identity()
+        cl.configure_opencl(self.context, self.queue)
+        self.model.configure_opencl(self.context, self.queue)
+        cl.scheme(self.state, self.model.dfunKernel, self.coupling)
+        cl.scheme_cl(self.state, self.model, self.coupling)
