@@ -114,71 +114,16 @@ function filterResults(data) {
 function compareToNeighbors(structure, stepOb, xArr, yArr) {
 
     //this function returns a result that has been decided to be the closest neighbor to the currently examined dot for each parameter direction, and also according to boundary rules
-    function chooseClosestNeighbor(selection, currentRes, paramDir, boundaryCase) {
-        switch (boundaryCase) {
-            //on first try unfortunately realized that there will be a lot of ties if only considering parameters coords alone
-            //todo factor in the other parameter somehow
-            case 'bottom left'://this and cases above break case have the same selection rules. I know having all of this text and similar case grouping is lengthy, but i think it's clearer this way.
-            case 'middle middle':
-            case 'bottom middle':
-            case 'middle left':
+    function chooseClosestNeighbor(selection, currentRes, paramDir) {
+        //todo create euclidean measurement of distance
+        //todo also simplify the choosing rules.
+        // I will only be considering left and up, unless there isn't a result that can be determined for that. return None or undefined in that case.
                 var initial = currentRes.coords[paramDir], // each case will have a variation of this code block
                     difArr = selection.map(function (ob) {
                         if ((ob.coords[paramDir] - initial) > 0) return ob.coords[paramDir] - initial;
                         return undefined
                     }); // this should allow us to only get a positive float array to minimize with indexing intact for ob retrieval,
                 return selection[difArr.indexOf(d3.min(difArr))] // will I need to worry about duplicates? I guess not because that suggests that they are the same dst
-            case 'top middle':
-            case 'top left':
-                if (paramDir == 'x') {
-                    var initial = currentRes.coords[paramDir],
-                        difArr = selection.map(function (ob) {
-                            if ((ob.coords[paramDir] - initial) > 0) return ob.coords[paramDir] - initial;
-                            return undefined
-                        });
-                    return selection[difArr.indexOf(d3.min(difArr))]
-                } else if (paramDir == 'y') {
-                    var initial = currentRes.coords[paramDir],
-                        difArr = selection.map(function (ob) {
-                            if ((ob.coords[paramDir] - initial) < 0) return ob.coords[paramDir] - initial;
-                            return undefined
-                        }); // this time around we want the negatives only to maximize.
-                    return selection[difArr.indexOf(d3.max(difArr))] // want the max this time because the current dot has none above it in the column, so largest (most positive) value gets indexed
-                }
-            case 'bottom right':
-            case 'middle right':
-                if (paramDir == 'x') {
-                    var initial = currentRes.coords[paramDir],
-                        difArr = selection.map(function (ob) {
-                            if ((ob.coords[paramDir] - initial) < 0) return ob.coords[paramDir] - initial;
-                            return undefined
-                        });
-                    return selection[difArr.indexOf(d3.max(difArr))]
-                } else if (paramDir == 'y') {
-                    var initial = currentRes.coords[paramDir],
-                        difArr = selection.map(function (ob) {
-                            if ((ob.coords[paramDir] - initial) > 0) return ob.coords[paramDir] - initial;
-                            return undefined
-                        });
-                    return selection[difArr.indexOf(d3.min(difArr))] // want the max this time because the current dot has none above it in the column, so largest (most positive) value gets indexed
-                }
-            case 'top right':
-                if (paramDir == 'x') {
-                    var initial = currentRes.coords[paramDir],
-                        difArr = selection.map(function (ob) {
-                            if ((ob.coords[paramDir] - initial) < 0) return ob.coords[paramDir] - initial;
-                            return undefined
-                        });
-                    return selection[difArr.indexOf(d3.max(difArr))]
-                } else if (paramDir == 'y') {
-                    var initial = currentRes.coords[paramDir],
-                        difArr = selection.map(function (ob) {
-                            if ((ob.coords[paramDir] - initial) < 0) return ob.coords[paramDir] - initial;
-                            return undefined
-                        });
-                    return selection[difArr.indexOf(d3.max(difArr))]// want the max this time because the current dot has none above it in the column, so largest (most positive) value gets indexed
-                }
-        }
     }
 
     var obInd = 0;

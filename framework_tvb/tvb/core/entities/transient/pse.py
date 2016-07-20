@@ -164,6 +164,7 @@ class ContextDiscretePSE(EnhancedDictionary):
     
     def fill_object(self, final_dict):
         """ Populate current entity with attributes required for visualizer"""
+        # todo consider deprecating the i,j data attr used for the series in favor of the parameterCoordinates
         all_series = []
         for i, key_1 in enumerate(self.values_x):
             for j, key_2 in enumerate(self.values_y):
@@ -173,6 +174,7 @@ class ContextDiscretePSE(EnhancedDictionary):
                     #This means the operation was finished
                     datatype_gid = current[self.KEY_GID]
                 series_data = [[i, j]]
+                parameter_coords = '{"x":' + str(key_1) + ', "y":' + str(key_2) + '}'
                 color_weight, shape_type_1 = self.__get_color_weight(self.datatypes_dict, datatype_gid, 
                                                                      self.color_metric)
                 if (shape_type_1 is not None) and (datatype_gid is not None):
@@ -183,7 +185,7 @@ class ContextDiscretePSE(EnhancedDictionary):
                     current[self.KEY_TOOLTIP] += self.LINE_SEPARATOR + " Size metric has NaN values"
                 #If either of the shape_types is not none use that
                 shape_type = shape_type_1 or shape_type_2
-                series = self.__get_node_json(series_data, shape_type, shape_size)
+                series = self.__get_node_json(series_data, shape_type, shape_size, parameter_coords)
                 current['color_weight'] = color_weight
                 all_series.append(series)
 
@@ -214,14 +216,15 @@ class ContextDiscretePSE(EnhancedDictionary):
     
     
     @staticmethod
-    def __get_node_json(data, symbol, radius):
+    def __get_node_json(data, symbol, radius, coords):
         """
         For each data point entry, build the FLOT specific JSON.
         """
         series = '{"data": ' + json.dumps(data) + ', "points": {'
         if symbol is not None:
             series += '"symbol": "' + symbol + '", '
-        series += '"radius": ' + str(radius) + '} }'
+        series += '"radius": ' + str(radius) + '}, '
+        series += '"coords": ' + coords + '}'
         return series
 
 
