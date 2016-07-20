@@ -44,6 +44,7 @@ from tvb.core.entities.storage import dao
 from tvb.datatypes.connectivity import Connectivity
 from tvb.datatypes.region_mapping import RegionVolumeMapping
 from tvb.datatypes.volumes import Volume
+from tvb.datatypes.structural import StructuralMRI
 from allensdk.core.mouse_connectivity_cache import MouseConnectivityCache
 
 
@@ -93,7 +94,7 @@ class AllenConnectomeBuilder(ABCAsynchronous):
                  'required': True, 'default': '1000000000'}]
 
     def get_output(self):
-        return [Connectivity, RegionVolumeMapping, Volume]
+        return [Connectivity, Volume, RegionVolumeMapping, StructuralMRI]
 
 
     def launch(self, resolution, weighting, inf_vox_thresh, vol_thresh):
@@ -116,8 +117,13 @@ class AllenConnectomeBuilder(ABCAsynchronous):
         # the method cleans the file projmaps in 4 steps
         projmaps = pmsCleaner(projmaps)
 
+        #download from the AllenSDK the annotation volume, the ontology, the template volume
         Vol, annot_info = cache.get_annotation_volume()
         ontology = cache.get_ontology()
+        template, template_info = cache.get_template_volume()
+
+        #rotate template in the TVB 3D reference:
+        template = RotateReference(template)
 
         # the method includes in the parcellation only brain regions whose volume is greater than vol_thresh
         projmaps = AreasVolumeTreshold(projmaps, vol_thresh, resolution, Vol, ontology)
@@ -162,7 +168,12 @@ class AllenConnectomeBuilder(ABCAsynchronous):
         result_rvm.connectivity = result_connectivity
         result_rvm.title = "Volume mouse brain "
         result_rvm.dimensions_labels = ["X", "Y", "Z"]
-        return [result_connectivity, result_rvm, result_volume]
+        # Volume template
+        result_template = StructuralMRI(storage_path=self.storage_path)
+        result_template.array_data = template
+        result_template.weighting = 'T1'
+        result_template.volume = result_volume
+        return [result_connectivity, result_volume, result_rvm, result_template]
 
     def get_required_memory_size(self, **kwargs):
         return -1
@@ -635,4 +646,20 @@ def MouseBrainVisualizer(Vol, order, key_ord, unique_parents, unique_grandparent
     vol_parcel = vol_parcel * (10 ** (1 + int(np.log10(tot_areas))))  # return to indexed between 1 and N (with N=tot number of areas in the parcellation)
     vol_parcel = vol_parcel - 1  # with this operation background and areas not in parcellation will be -1 and all the others with the indexed betweeen 0 and N-1
     vol_parcel = np.round(vol_parcel)
+    vol_parcel = RotateReference(vol_parcel)
     return vol_parcel
+
+
+# the method rotate the Allen 3D (x1,y1,z1) reference in the TVB 3D reference (x2,y2,z2).
+#the relation between the different refernece system is: x1=z2, y1=x2, z1=y2
+def RotateReference(allen):
+    #first rotation in order to obtain: x1=x2, y1=z2, z1=y2
+    vol_trans = np.zeros((allen.shape[0], allen.shape[2], allen.shape[1]), dtype=float)
+    for x in range(allen.shape[0]):
+        vol_trans[x, :, :] = (allen[x, :, :][::-1]).transpose()
+
+    #second rotation in order to obtain: x1=z2, y1=x1, z1=y2
+    allen_rotate = np.zeros((allen.shape[2], allen.shape[0], allen.shape[1]), dtype=float)
+    for y in range(allen.shape[1]):
+        allen_rotate[:, :, y] = (vol_trans[:, :, y]).transpose()
+    return allen_rotate
