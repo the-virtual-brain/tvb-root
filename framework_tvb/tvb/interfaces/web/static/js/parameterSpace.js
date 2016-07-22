@@ -418,10 +418,10 @@ function d3Plot(placeHolder, data, options, pageParam) {
                 return d.points.radius
             },
             cx: function (d) {
-                return xScale(_PSE_plotOptions.xaxis.tickFormatter(d.data[0][0])) // this is intrinsically tied to the structure of the data
+                return xScale(d.coords.x) //use the newly attributed coordinate attribute from the data
             },
             cy: function (d) {
-                return yScale(_PSE_plotOptions.yaxis.tickFormatter(d.data[0][1]))
+                return yScale(d.coords.y)
             },
             fill: function (d) {
                 var nodeInfo = PSE_nodesInfo[d.data[0][0]][d.data[0][1]];
