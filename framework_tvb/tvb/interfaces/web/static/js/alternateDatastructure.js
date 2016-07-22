@@ -7,22 +7,15 @@
  *
  * Created by dev on 7/14/16.
  */
-// would I need to be starting to think about how to make a class out of this new structure? That would allow us to perform plenty of manipulations?
-// I'm currently torn between using the terminology labels vs array for describing the collection of the x&y parameters
-// todo Ask about what I should do for instances of data when there are multiple results at the same point in parameter space?
-//adds coordinate attribute to each of the data objects that are included in the
+// todo make sure to ask lia about how to combine the information that is stored in PSE_nodeInfo, because that could present some issues when the  data is on the page and there isn't an actual result to access upon clicks or hovers
+// todo decide whether i should make some sort of init alternate function that takes all of the information from the working state of the program before the data starts being merged or anything.
+
 
 //this function will take in the original 1 dimensional array (seriesArray likely) and generate a matrix (sparse or condensed) that will be accessed upon plotting, filtering, and generating overlays.
 //I'm just going to try a COO coordinate list of tuples, but then why would I change it from the current object array?
 // do I want the data to be sorted at all? Maybe either by row or column parameter value?
 function createStructure(data, xlabels, ylabels) {
-    retCSR = {IA: [0], A: removeDuplicateRes(data), JA: []};
-    retCSR.A.sort(function (obA, obB) { // for CSR I think maybe I need to be sorting on the y, and it needs to sort such that the order is increasing like labels
-        if (obA.coords.y < obB.coords.y) return -1
-        if (obA.coords.y > obB.coords.y) return 1
-        if (obA.coords.x < obB.coords.x) return -1
-        if (obA.coords.x > obB.coords.x) return 1
-    })
+    retCSR = {IA: [0], A: data, JA: []};
     for (var i in ylabels) { //this will populate the IA array with as many entries as the # of rows + 1
         var rowCount = 0;
         data.map(function (ob) {
@@ -46,7 +39,7 @@ function removeDuplicateRes(data) {
     for (var ob of data) {
         discardOb = '' + ob.coords.x + '' + ob.coords.y;
         if (obCounter.hasOwnProperty(discardOb)) {
-            discardInd = data.indexOf(ob)
+            discardInd = data.indexOf(ob);
             data.splice(discardInd, 1)
         } else {
             obCounter[discardOb] = undefined
@@ -69,6 +62,7 @@ function reconstructMatrixBySection(structure, startRow, endRow, startCol, endCo
             // i think there could be a way to simply change the actual structure, and do away with the filtering below.
         }
         ;
+        ;
     }
     //please note that retArr isn't the same as nzEles because they are different lengths for one, and retArr is sorted with duplicate dataentries (same parameter coords) paired down.
     //todo figure out whether the fact that the results at the same point get overwritten is going to cause problems later on.
@@ -82,29 +76,65 @@ function reconstructMatrixBySection(structure, startRow, endRow, startCol, endCo
 }
 
 
+//this function will be used to create arrays of labels separated into x and y based on a collection of data that is passed in.
+function constructLabels(data) {
+    var xArr = [],
+        yArr = [];
+    for (var ob of data) {
+        var obX = ob.coords.x,
+            obY = ob.coords.y;
+        if (xArr.indexOf(ob.coords.x) == -1) {
+            xArr.push(obX)
+        }
+        if (yArr.indexOf(ob.coords.y) == -1) {
+            yArr.push(obY)
+        }
+    }
+    xArr.sort();
+    yArr.sort();
+    return [xArr, yArr]
+}
+
+
 //this function will be necessary because there will need to be a single array comprised of the parameter values used to generate the results.
 // Think of arrays of the xparameter and yparameter values used as coordinates to position results in the canvas; these arrays need updating when more results are added.
-function updateCoordinateArrays(oldArr, newArr) {
-
+function updateCoordinateArrays(oldArrs, newArrs) {
     var retArr = [];
-    retArr = oldArr.concat(newArr);
-    retArr.sort();
-    for (var i in retArr) { //removes the potential for duplicates in the arr
-        if (retArr.indexOf(retArr[i]) != retArr.lastIndexOf(retArr[i])) {
-            retArr.splice(i, 1)
+
+    for (var arrInd in oldArrs) {
+        retArr[arrInd] = oldArrs[arrInd].concat(newArrs[arrInd]);
+        retArr[arrInd].sort();
+        for (var i in retArr[arrInd]) { //removes the potential for duplicates in the arr
+            if (retArr[arrInd].indexOf(retArr[arrInd][i]) != retArr[arrInd].lastIndexOf(retArr[arrInd][i])) {
+                retArr[arrInd].splice(i, 1)
+            }
         }
     }
     return retArr
-
 }
 
 //this is just a basic updater to keep track of the step values that are present in the canvas for the separate parameters
 // i don't suppose that I need to make sure that the arrays have atleast 1 entry?
 function updateKnownSteps(stepOb, xArr, yArr) {
-    var xStep = +(xArr[1] - xArr[0]).toFixed(3), //I don't have much reason to expect that there will be less or more than 3 digits, How to predict?
-        yStep = +(yArr[1] - yArr[0]).toFixed(3);
-    stepOb.x.push(xStep);
-    stepOb.y.push(yStep)
+    var xStep = [],
+        yStep = [];
+    for (var i = 0; i < xArr.length - 2; i++) {
+        var dif = +(xArr[i + 1] - xArr[i]).toFixed(3); //I don't have much reason to expect that there will be less or more than 3 digits, How to predict?
+        if (xStep.indexOf(dif) == -1) {
+            xStep.push(dif)
+        }
+
+    }
+
+    for (var i = 0; i < yArr.length - 2; i++) {
+        var dif = +(yArr[i + 1] - yArr[i]).toFixed(3); //I don't have much reason to expect that there will be less or more than 3 digits, How to predict?
+        if (yStep.indexOf(dif) == -1) {
+            yStep.push(dif)
+        }
+
+    }
+    stepOb.x = xStep;
+    stepOb.y = yStep;
 
 }
 
@@ -113,15 +143,17 @@ function updateKnownSteps(stepOb, xArr, yArr) {
 // i suppose this is a lot like the addition property of traditional matrices, it just needs to be tailored to work with matrices that are different sizes (controversial).
 function mergeResults(newData, data) {
     //what I did in the actual html script tag was to simply concat the two arrays into one large one, and then sort on the y parameter, will it continue to be this simple?
+    dataAll = newData.concat(data)//must make into Array before I can actually perform the sort below that is necessary
+    removeDuplicateRes(dataAll);
+    dataAll.sort(function (obA, obB) { // for CSR I think maybe I need to be sorting on the y, and it needs to sort such that the order is increasing like labels
+        if (obA.coords.y < obB.coords.y) return -1;
+        if (obA.coords.y > obB.coords.y) return 1;
+        if (obA.coords.x < obB.coords.x) return -1;
+        if (obA.coords.x > obB.coords.x) return 1
+    });
 
+    return dataAll
 
-}
-
-// this function is for attaching the actual coordinate information to the data objects within data (the array of dataobs)
-function addCoordinateAttr(data, xlabels, ylabels) {
-    for (var ob of data) {
-        ob.coords = {x: xlabels[ob.data[0][0]], y: ylabels[ob.data[0][1]]}
-    }
 }
 
 
@@ -151,6 +183,8 @@ function compareToNeighbors(structure, stepOb, xArr, yArr) {
         return selection.splice(difArr.indexOf(d3.min(difArr)), 1)[0]; // return the actual object not a single element array with it inside
     }
 
+    var obCompTracker = [];
+
 
     for (var ob of structure.A) { //do I need to sort this by x coord?
         // create some sort of control variable for the step val index
@@ -174,7 +208,7 @@ function compareToNeighbors(structure, stepOb, xArr, yArr) {
                     selectedResults = reconstructMatrixBySection(structure, currentRowInd, rowBoundary, currentColInd, colBoundary);
                 selectedResults.splice(selectedResults.indexOf(ob), 1);
                 while (selectedResults.length > 10 || selectedResults.length == 0 && counter < 30) { //inner while loop is to allow the step values arr to help adjust the amount of results we get back
-                    ++counter
+                    ++counter;
                     if (rowBoundary == -1) ++yStepInd;
                     if (colBoundary == -1) ++xStepInd;
                     if (selectedResults.length > 10) {
@@ -190,7 +224,7 @@ function compareToNeighbors(structure, stepOb, xArr, yArr) {
                         selectedResults = reconstructMatrixBySection(structure, currentRowInd, rowBoundary, currentColInd, colBoundary);
                     selectedResults.splice(selectedResults.indexOf(ob), 1)
                 }
-                console.log(ob.coords.x + " " + ob.coords.y)
+
                 for (var i = 0; i < 2; i++) {
                     if (selectedResults.length > 0) {
                         closest.push(chooseClosestNeighbor(selectedResults, ob))
@@ -200,8 +234,10 @@ function compareToNeighbors(structure, stepOb, xArr, yArr) {
                 // next it will be good to create some sort of actual metric comparison function to call below
                 //todo maake metric comparison function
                 //todo email lia asking how to get info for results metrics that arent currently available in color or rad.
-                obCompTracker[ob.coords.x + ' ' + ob.coords.y] = closest.map(function (ele) {
-                    return ele.coords.x + ' ' + ele.coords.y
+                obCompTracker.push({
+                    'focalPoint': ob, 'neigbors': closest.map(function (ele) {
+                        return ele.coords.x + ' ' + ele.coords.y
+                    })
                 })
                 break;
             case ('true,false'): //top row
@@ -210,7 +246,7 @@ function compareToNeighbors(structure, stepOb, xArr, yArr) {
                 selectedResults.splice(selectedResults.indexOf(ob), 1);
 
                 while (selectedResults.length > 10 || selectedResults.length == 0 && counter < 30) { //inner while loop is to allow the step values arr to help adjust the amount of results we get back
-                    ++counter
+                    ++counter;
                     if (colBoundary == -1) ++xStepInd;
                     if (selectedResults.length > 10) {
                         ++xStepInd
@@ -220,13 +256,15 @@ function compareToNeighbors(structure, stepOb, xArr, yArr) {
                         selectedResults = reconstructMatrixBySection(structure, currentRowInd, currentRowInd, currentColInd, colBoundary); // return only items from the row
                     selectedResults.splice(selectedResults.indexOf(ob), 1);
                 }
-                console.log(ob.coords.x + " " + ob.coords.y)
+
                 closest.push(chooseClosestNeighbor(selectedResults, ob));
                 if (typeof(closest[0]) === 'undefined') { // this simply performs a check that will only pass if we are at the corner result that isn't supposed to have a neighbor up or right
                     break;
                 }
-                obCompTracker[ob.coords.x + ' ' + ob.coords.y] = closest.map(function (ele) {
-                    return ele.coords.x + ' ' + ele.coords.y
+                obCompTracker.push({
+                    'focalPoint': ob, 'neigbors': closest.map(function (ele) {
+                        return ele.coords.x + ' ' + ele.coords.y
+                    })
                 })
                 break;
             case ('false,true'): //right col
@@ -235,7 +273,7 @@ function compareToNeighbors(structure, stepOb, xArr, yArr) {
                 selectedResults.splice(selectedResults.indexOf(ob), 1);
 
                 while (selectedResults.length > 10 || selectedResults.length == 0 && counter < 30) { //inner while loop is to allow the step values arr to help adjust the amount of results we get back
-                    ++counter
+                    ++counter;
                     if (rowBoundary == -1) ++yStepInd;
                     if (selectedResults.length > 10) {
                         ++yStepInd
@@ -245,18 +283,21 @@ function compareToNeighbors(structure, stepOb, xArr, yArr) {
                         selectedResults = reconstructMatrixBySection(structure, currentRowInd, rowBoundary, currentColInd, currentColInd);
                     selectedResults.splice(selectedResults.indexOf(ob), 1);
                 }
-                console.log(ob.coords.x + " " + ob.coords.y)
+
                 closest.push(chooseClosestNeighbor(selectedResults, ob));
                 if (typeof(closest[0]) === 'undefined') { // this simply performs a check that will only pass if we are at the corner result that isn't supposed to have a neighbor up or right
                     break;
                 }
-                obCompTracker[ob.coords.x + ' ' + ob.coords.y] = closest.map(function (ele) {
-                    return ele.coords.x + ' ' + ele.coords.y
+                obCompTracker.push({
+                    'focalPoint': ob, 'neigbors': closest.map(function (ele) {
+                        return ele.coords.x + ' ' + ele.coords.y
+                    })
                 })
                 break;
             // don't worry about the top right dot, it has already recieved all the comparisons that it needs
         }
     }
+    return obCompTracker
 }
 
 

@@ -20,6 +20,7 @@
 //general chores
 //todo create an exporting function that can save the figure
 //todo create a red marker line that pinpoints the dot on the canvas (or just highlights the grid lines)
+//todo create a function that will normalize the size attributes that belong to the results
 
 // We keep all-nodes information for current PSE as a global, to have them ready at node-selection, node-overlay.
 var PSE_nodesInfo;
@@ -122,10 +123,11 @@ function d3Plot(placeHolder, data, options, pageParam) {
             oneOrMoreDiv[0][0].remove()
         }
     }
-    function createScale(xORy) {
+    function createScale(xORy, labelArr) {
         // !! there is the potential to create wrong looking figures when the lower extent has a negative value in it, but is this just an error coming from large ranges? or
+        //todo change this to allow for values above the initial data range
         if (xORy === "x") {
-            var [lowerExtent,upperExtent] = d3.extent(_PSE_plotOptions.xaxis.labels),
+            var [lowerExtent,upperExtent] = d3.extent(labelArr),
                 extentPadding = ((upperExtent - lowerExtent) * .10) / 2, // this multiplication factor controls how much the dots are gathered together
                 [padLo,padUp] = [lowerExtent - extentPadding, upperExtent + extentPadding];
 
@@ -135,7 +137,7 @@ function d3Plot(placeHolder, data, options, pageParam) {
                     .range([options.margins.left, innerWidth - options.margins.right]);
             }
         else {
-            var [lowerExtent,upperExtent] = d3.extent(_PSE_plotOptions.yaxis.labels),
+            var [lowerExtent,upperExtent] = d3.extent(labelArr),
                 extentPadding = ((upperExtent - lowerExtent) * .35) / 2,
                 [padLo,padUp] = [lowerExtent - extentPadding, upperExtent + extentPadding];
 
@@ -150,6 +152,7 @@ function d3Plot(placeHolder, data, options, pageParam) {
 
 
     function createRange(arr) { // this makes a large range in the form of an array of values that configure to the proper step value that the ticks would otherwise be spaced at.
+        //todo tie this to the step object that is now in existen
         var step = arr[1] - arr[0];
         return d3.range(-50 + arr[1], 50 + arr[1], step)
     }
@@ -209,10 +212,10 @@ function d3Plot(placeHolder, data, options, pageParam) {
 
                 },
                 cx: function (d) {
-                    return xScale(_PSE_plotOptions.xaxis.tickFormatter(d.data[0][0]))
+                    return xScale(d.coords.x)
                 },
                 cy: function (d) {
-                    return yScale(_PSE_plotOptions.yaxis.tickFormatter(d.data[0][1]))
+                    return yScale(d.coords.y)
                 }
 
                 // return yScale(d.yCen) // why is this placing dots far below the bottom of the pane? Is the canvas dimension off?
@@ -311,10 +314,67 @@ function d3Plot(placeHolder, data, options, pageParam) {
 
 
     var myBase, workingData, canvasDimensions, canvas, xScale, yScale, xRef, yRef, xAxis, yAxis, circles, brush,
-        dotsCanvas, innerHeight, innerWidth, toolTipDiv, zoom, zoomable, datatypeGID;
+        dotsCanvas, innerHeight, innerWidth, toolTipDiv, zoom, zoomable, datatypeGID, data24, structure, inclusiveX, inclusiveY, steps;
     myBase = d3.select(placeHolder);
+    //the data24 is to simulate the results returned from the exploration tool.
+    data24 = [{
+        "data": [[0, 0]],
+        "points": {"radius": 19.1853172894},
+        "coords": {"x": 0.93, "y": 12.33}
+    }, {"data": [[0, 1]], "points": {"radius": 22.9928375553}, "coords": {"x": 0.93, "y": 12.83}}, {
+        "data": [[0, 2]],
+        "points": {"radius": 12.7519426598},
+        "coords": {"x": 0.93, "y": 13.33}
+    }, {"data": [[0, 3]], "points": {"radius": 18.1498754318}, "coords": {"x": 0.93, "y": 13.83}}, {
+        "data": [[0, 4]],
+        "points": {"radius": 12.2224671709},
+        "coords": {"x": 0.93, "y": 14.33}
+    }, {"data": [[0, 5]], "points": {"radius": 16.7006562512}, "coords": {"x": 0.93, "y": 14.83}}, {
+        "data": [[1, 0]],
+        "points": {"radius": 26.095335614},
+        "coords": {"x": 0.98, "y": 12.33}
+    }, {"data": [[1, 1]], "points": {"radius": 21.718820915}, "coords": {"x": 0.98, "y": 12.83}}, {
+        "data": [[1, 2]],
+        "points": {"radius": 26.5846321192},
+        "coords": {"x": 0.98, "y": 13.33}
+    }, {"data": [[1, 3]], "points": {"radius": 15.6576946551}, "coords": {"x": 0.98, "y": 13.83}}, {
+        "data": [[1, 4]],
+        "points": {"radius": 16.0924128895},
+        "coords": {"x": 0.98, "y": 14.33}
+    }, {"data": [[1, 5]], "points": {"radius": 10}, "coords": {"x": 0.98, "y": 14.83}}, {
+        "data": [[2, 0]],
+        "points": {"radius": 12.862484061},
+        "coords": {"x": 1.03, "y": 12.33}
+    }, {"data": [[2, 1]], "points": {"radius": 23.2339264002}, "coords": {"x": 1.03, "y": 12.83}}, {
+        "data": [[2, 2]],
+        "points": {"radius": 31.8010742281},
+        "coords": {"x": 1.03, "y": 13.33}
+    }, {"data": [[2, 3]], "points": {"radius": 30.8209462332}, "coords": {"x": 1.03, "y": 13.83}}, {
+        "data": [[2, 4]],
+        "points": {"radius": 27.0538952451},
+        "coords": {"x": 1.03, "y": 14.33}
+    }, {"data": [[2, 5]], "points": {"radius": 18.3147344831}, "coords": {"x": 1.03, "y": 14.83}}, {
+        "data": [[3, 0]],
+        "points": {"radius": 19.1483833282},
+        "coords": {"x": 1.08, "y": 12.33}
+    }, {"data": [[3, 1]], "points": {"radius": 25.2752743433}, "coords": {"x": 1.08, "y": 12.83}}, {
+        "data": [[3, 2]],
+        "points": {"radius": 20.4643681626},
+        "coords": {"x": 1.08, "y": 13.33}
+    }, {"data": [[3, 3]], "points": {"radius": 23.1271435287}, "coords": {"x": 1.08, "y": 13.83}}, {
+        "data": [[3, 4]],
+        "points": {"radius": 33},
+        "coords": {"x": 1.08, "y": 14.33}
+    }, {"data": [[3, 5]], "points": {"radius": 32.3596795}, "coords": {"x": 1.08, "y": 14.83}}]
     workingData = $.parseJSON(data);
-    for (ind in workingData) {
+
+    [inclusiveX, inclusiveY] = updateCoordinateArrays(constructLabels(workingData), constructLabels(data24));
+    steps = {x: [], y: []};
+    updateKnownSteps(steps, inclusiveX, inclusiveY); // must determine a way to have every step value, not just the smallest.
+    steps.y = [1, .5]; // presence of the 1 this is just an attempt to test a bug resolution in the bottom
+    workingData = mergeResults(workingData, data24)
+    structure = createStructure(workingData, inclusiveX, inclusiveY);
+    for (ind in workingData) { //todo determine whether the new coords attribute will provide a way for us to be able to target the results in the way this does for adjustment in filtering or removal.
         workingData[ind].key = parseFloat(ind)
     }
     ;
@@ -322,8 +382,8 @@ function d3Plot(placeHolder, data, options, pageParam) {
     innerHeight = canvasDimensions.h - options.margins.top;
     innerWidth = canvasDimensions.w - options.margins.left;
     datatypeGID = d3.select("#datatype-group-gid").property("value");
-    xScale = createScale("x");
-    yScale = createScale("y");
+    xScale = createScale("x", inclusiveX);
+    yScale = createScale("y", inclusiveY);
     xyzoom = d3.behavior.zoom()
         .x(xScale)
         .y(yScale)
@@ -423,20 +483,30 @@ function d3Plot(placeHolder, data, options, pageParam) {
             cy: function (d) {
                 return yScale(d.coords.y)
             },
-            fill: function (d) {
-                var nodeInfo = PSE_nodesInfo[d.data[0][0]][d.data[0][1]];
-                if (nodeInfo.tooltip.search("PENDING") == -1 && nodeInfo.tooltip.search("CANCELED") == -1) {
-                    color = returnfill(nodeInfo.color_weight);
-                }
-                else {
-                    var color = d3.rgb("black");
-                }
-                return color
-            }
+            // fill: function (d) {
+            //     var nodeInfo = PSE_nodesInfo[d.data[0][0]][d.data[0][1]]; // the data attribute still has usefulness in retrieving the nodeInformation, but perhaps later it can be worked out.
+            //     if (nodeInfo.tooltip.search("PENDING") == -1 && nodeInfo.tooltip.search("CANCELED") == -1) {
+            //         color = returnfill(nodeInfo.color_weight);
+            //     }
+            //     else {
+            //         var color = d3.rgb("black");
+            //     }
+            //     return color
+            // }
 
         });
 
+    d3.select("#Contour").on("click", function () {
 
+        function drawCompLines(relationOb) {
+
+        }
+
+
+        neighborsObjct = compareToNeighbors(structure, steps, inclusiveX, inclusiveY)
+    })
+
+    
     d3.select("#Explore").on("click", function () {
         function expBrushMove() {
             // var xRange
