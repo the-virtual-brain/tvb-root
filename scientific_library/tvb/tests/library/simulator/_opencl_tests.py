@@ -194,3 +194,11 @@ class TestIntegrator(unittest.TestCase):
         self.model.configure_opencl(self.context, self.queue)
         cl.scheme(self.state, self.model.dfunKernel, self.coupling)
         cl.scheme_cl(self.state, self.model, self.coupling)
+
+    def test_CL_HeunDeterministic(self):
+        from tvb.simulator._opencl.cl_integrator import CL_HeunDeterministic
+        cl = CL_HeunDeterministic()
+        cl.configure_opencl(self.context, self.queue)
+        self.model.configure_opencl(self.context, self.queue)
+        cl.scheme(self.state, self.model.dfunKernel, self.coupling)
+        cl.scheme_cl(self.state, self.model, self.coupling)
