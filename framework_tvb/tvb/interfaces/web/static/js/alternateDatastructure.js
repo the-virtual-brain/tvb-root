@@ -235,7 +235,7 @@ function compareToNeighbors(structure, stepOb, xArr, yArr) {
                 //todo maake metric comparison function
                 //todo email lia asking how to get info for results metrics that arent currently available in color or rad.
                 obCompTracker.push({
-                    'focalPoint': ob, 'neigbors': closest.map(function (ele) {
+                    'focalPoint': ob, 'neighbors': closest.map(function (ele) {
                         return ele.coords.x + ' ' + ele.coords.y
                     })
                 })
@@ -262,7 +262,7 @@ function compareToNeighbors(structure, stepOb, xArr, yArr) {
                     break;
                 }
                 obCompTracker.push({
-                    'focalPoint': ob, 'neigbors': closest.map(function (ele) {
+                    'focalPoint': ob, 'neighbors': closest.map(function (ele) {
                         return ele.coords.x + ' ' + ele.coords.y
                     })
                 })
@@ -289,7 +289,7 @@ function compareToNeighbors(structure, stepOb, xArr, yArr) {
                     break;
                 }
                 obCompTracker.push({
-                    'focalPoint': ob, 'neigbors': closest.map(function (ele) {
+                    'focalPoint': ob, 'neighbors': closest.map(function (ele) {
                         return ele.coords.x + ' ' + ele.coords.y
                     })
                 })

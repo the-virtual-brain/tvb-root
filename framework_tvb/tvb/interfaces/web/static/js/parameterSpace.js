@@ -500,10 +500,42 @@ function d3Plot(placeHolder, data, options, pageParam) {
 
         function drawCompLines(relationOb) {
 
+            var lineFunc = d3.svg.line()
+                .x(function (d) {
+                    return d.x
+                })
+                .y(function (d) {
+                    return d.y
+                })
+                .interpolate("linear");
+
+            for (var currentOb of relationOb) {
+                for (var neighbor of currentOb.neighbors) {
+                    var neighborsCoords = neighbor.split(" ").map(function (ele) {
+                            return +ele
+                        }), //breakdown of line: separate and convert coordinates from string to float before assigning to variables.
+                        xNeighbor = xScale(neighborsCoords[0]),
+                        yNeighbor = yScale(neighborsCoords[1]),
+                        obX = xScale(currentOb.focalPoint.coords.x),
+                        obY = yScale(currentOb.focalPoint.coords.y),
+                        deltaX = (xNeighbor - obX), //simple final minus initial for change
+                        deltaY = (yNeighbor - obY),
+                        midPoint = {x: obX + deltaX / 2, y: obY + deltaY / 2},
+                        startCoord = {x: midPoint.x + deltaY / 2, y: midPoint.y - deltaX / 2},
+                        endCoord = {x: midPoint.x - deltaY / 2, y: midPoint.y + deltaX / 2};
+                    d3.select(".dotsCanvas").append("path")
+                        .attr("d", lineFunc([startCoord, endCoord]))
+                        .attr("stroke", "red")
+                        .attr("stroke-width", "2px")
+                        .attr("fill", "none");
+                }
+            }
+
         }
 
 
         neighborsObjct = compareToNeighbors(structure, steps, inclusiveX, inclusiveY)
+        drawCompLines(neighborsObjct)
     })
 
     
