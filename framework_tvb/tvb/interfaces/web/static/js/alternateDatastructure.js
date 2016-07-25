@@ -225,7 +225,7 @@ function compareToNeighbors(structure, stepOb, xArr, yArr) {
                     selectedResults.splice(selectedResults.indexOf(ob), 1)
                 }
 
-                for (var i = 0; i < 2; i++) {
+                for (var i = 0; i < 3; i++) {
                     if (selectedResults.length > 0) {
                         closest.push(chooseClosestNeighbor(selectedResults, ob))
                     }

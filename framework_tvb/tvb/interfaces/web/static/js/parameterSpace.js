@@ -371,7 +371,11 @@ function d3Plot(placeHolder, data, options, pageParam) {
     [inclusiveX, inclusiveY] = updateCoordinateArrays(constructLabels(workingData), constructLabels(data24));
     steps = {x: [], y: []};
     updateKnownSteps(steps, inclusiveX, inclusiveY); // must determine a way to have every step value, not just the smallest.
-    steps.y = [1, .5]; // presence of the 1 this is just an attempt to test a bug resolution in the bottom
+    steps.y = [1, .5];// presence of the 1 this is just an attempt to test a bug resolution in the bottom
+    //todo take this line out when not interested in normalized data24 radii
+    for (var ob of data24) {
+        ob.points.radius = ob.points.radius / 4;
+    }
     workingData = mergeResults(workingData, data24)
     structure = createStructure(workingData, inclusiveX, inclusiveY);
     for (ind in workingData) { //todo determine whether the new coords attribute will provide a way for us to be able to target the results in the way this does for adjustment in filtering or removal.
@@ -526,13 +530,13 @@ function d3Plot(placeHolder, data, options, pageParam) {
                     d3.select(".dotsCanvas").append("path")
                         .attr("d", lineFunc([startCoord, endCoord]))
                         .attr("stroke", "red")
-                        .attr("stroke-width", "2px")
+                        .attr("stroke-width", ".5px")
+                        .attr("fill-opacity", ".1")
                         .attr("fill", "none");
                 }
             }
 
         }
-
 
         neighborsObjct = compareToNeighbors(structure, steps, inclusiveX, inclusiveY)
         drawCompLines(neighborsObjct)
@@ -618,128 +622,6 @@ function d3Plot(placeHolder, data, options, pageParam) {
             var nodeInfo = PSE_nodesInfo[cir.__data__.data[0][0]][cir.__data__.data[0][1]];
             if (nodeInfo.color_weight < criteria.threshold.value) {
                 set.add(cir.__data__.data[0]);
-            }
-        }
-
-        function rateFilterColor(cir, set) {
-            allCircles; // why does putting this here actually create a reference to it?
-            var focusRow = cir.__data__.data[0][1], //zero based index
-                focusCol = cir.__data__.data[0][0],
-                colorWeight = PSE_nodesInfo[focusCol][focusRow].color_weight, //essentially the same as the row above
-                topRow = PSE_nodesInfo[0].length - 1, //1 based index so subtract 1 PERHAPS NOT NEEDED INSIDE FUNCTION AS VALUES ARE STATIC
-                rightCol = PSE_nodesInfo.length - 1;
-            if (focusRow != topRow && focusCol != rightCol) { //wha is a good algorithmic way to check all these options efficiently
-                var vertCircle = allCircles[0][focusRow + focusCol + 1],//allcircles is ordered in columns, so this selects dot above
-                    horzCircle = allCircles[0][focusCol + focusRow + 3];
-                // what will happen if we start making non linear groups here?
-            }
-            else if (focusRow == topRow && focusCol != rightCol) {
-                var vertCircle = allCircles[0][focusRow + focusCol - 1],
-                    horzCircle = allCircles[0][focusCol + focusRow + 3]
-            }
-            else if (focusRow != topRow && focusCol == rightCol) {
-                var vertCircle = allCircles[0][focusRow + focusCol + 1],
-                    horzCircle = allCircles[0][focusCol + focusRow - 3]
-
-            }
-            else {
-                var vertCircle = allCircles[0][focusRow + focusCol - 1],
-                    horzCircle = allCircles[0][focusCol + focusRow - 3]
-            }
-
-
-            for (otherCir of [horzCircle, vertCircle]) { // todo determine how to parse scientific entries
-                var otherCirColWeight = PSE_nodesInfo[otherCir.__data__.data[0][0]][otherCir.__data__.data[0][1]].color_weight,  //the inverting brings out values that are related to max and min for the size
-                    colDiff = Math.abs(colorWeight - otherCirColWeight);
-                if (colDiff < criteria.rate.value) {
-                    set.add(cir.__data__.data[0])
-                }
-
-            }
-        }
-
-        function rateFilterSize(cir, set) {
-            //todo come back and fix the indexing so that the vertical circles are actually the ones that are being selected in col numbers greater than 0
-            allCircles, sizeScale; // why does putting this here actually create a reference to it?
-            var focusRow = cir.__data__.data[0][1], //zero based index
-                focusCol = cir.__data__.data[0][0] * 3, // the multiplication by 3 should be a necessary conversion number to match with the indices of the actual sized array.t
-                topRow = PSE_nodesInfo[0].length - 1, //1 based index so subtract 1 PERHAPS NOT NEEDED INSIDE FUNCTION AS VALUES ARE STATIC
-                rightCol = PSE_nodesInfo.length - 1;
-            if (focusRow != topRow && focusCol / 3 != rightCol) { //wha is a good algorithmic way to check all these options efficiently
-                var vertCircle = allCircles[0][focusRow + focusCol + 1],//allcircles is ordered in columns, so this selects dot above
-                    horzCircle = allCircles[0][focusCol + focusRow + 3];
-                // what will happen if we start making non linear groups here?
-            }
-            else if (focusRow == topRow && focusCol / 3 != rightCol) {
-                var vertCircle = allCircles[0][focusRow + focusCol - 1],
-                    horzCircle = allCircles[0][focusCol + focusRow + 3]
-            }
-            else if (focusRow != topRow && focusCol == rightCol) {
-                var vertCircle = allCircles[0][focusRow + focusCol + 1],
-                    horzCircle = allCircles[0][focusCol + focusRow - 3]
-
-            }
-            else {
-                var vertCircle = allCircles[0][focusRow + focusCol - 1],
-                    horzCircle = allCircles[0][focusCol + focusRow - 3]
-            }
-            ;
-
-
-            for (otherCir of [horzCircle, vertCircle]) { //todo have conditional check to prevent the top row and the far right from making duplicates
-                var radDiff = Math.abs(sizeScale.invert(cir.attributes.r.value) - sizeScale.invert(otherCir.attributes.r.value)),
-                    lineFunc = d3.svg.line()
-                        .x(function (d) {
-                            return d.x
-                        })
-                        .y(function (d) {
-                            return d.y
-                        })
-                        .interpolate("linear");
-
-                if (radDiff > criteria.rate.value) { // the < should make it so that only items with large changes of metric are kept on canvas
-                    // set.add(cir.__data__.data[0])
-                    //todo still make things sensitive to placement on the canvas, (border cases)
-                    //todo figure out what's happening in the bottom right of the canvas
-                    var cirRad = +cir.attributes.r.value,
-                        cirX = +cir.attributes.cx.value,
-                        cirY = +cir.attributes.cy.value,
-                        otherRad = +otherCir.attributes.r.value,
-                        otherX = +otherCir.attributes.cx.value,
-                        otherY = +otherCir.attributes.cy.value,
-                        diffDistX = ((otherX + otherRad) - (cirX + cirRad)) / 2,
-                        diffDistY = ((cirY + cirRad) - (otherY + otherRad)) / 2,
-                        lineData = [];
-                    if (cirX - otherX == 0) { //determines which pair we are examining, if zero it is vert circle
-                        var lineData = [{
-                            y: cirY - diffDistY, // this is the bottom position of the focused circle
-                            x: cirY
-                        },
-                            {
-                                y: cirY - diffDistY, // this is the bottom position of the focused circle
-                                x: otherY
-                            }]
-
-                    } else {
-                        // this should calculate the distance between the inner edges of the circles and then divide by 2
-                        var lineData = [{
-                            x: cirX + diffDistX, // this is the bottom position of the focused circle
-                            y: cirX
-                        },
-                            {
-                                x: cirX + diffDistX, // this is the bottom position of the focused circle
-                                y: otherX
-                            }]
-                    }
-                    ;
-                    if (lineData != null) {
-                        d3.select(".dotsCanvas").append("path")
-                            .attr("d", lineFunc(lineData))
-                            .attr("stroke", radDiffColScale(radDiff))
-                            .attr("stroke-width", "2px")
-                            .attr("fill", "none");
-                    }
-                }
             }
         }
 
