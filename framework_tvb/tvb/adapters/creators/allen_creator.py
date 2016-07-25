@@ -434,10 +434,11 @@ def ConstructingSC(projmaps, order, key_ord):
 
 # the method returns the centres of the brain areas in the selected parcellation
 def Construct_centres(ontology, order, key_ord, Vol):
+    Vol = RotateReference(Vol)
     centres=np.zeros((len(key_ord) * 2, 3), dtype=float)
     names=[]
     row=-1
-    vol_r=Vol[:,:,:Vol.shape[2]/2]
+    vol_r = Vol[:Vol.shape[0] / 2, :, :]
     for graph_ord_inj in key_ord:
         ID=order[graph_ord_inj][0]
         coord=[0,0,0]
@@ -464,7 +465,7 @@ def Construct_centres(ontology, order, key_ord, Vol):
                     coord[2]=np.mean(xyz[2])
         row+=1
         centres[row,:]=coord
-        coord[2]=(Vol.shape[2])-coord[2]
+        coord[0]=(Vol.shape[0])-coord[0]
         centres[row+len(key_ord), :]=coord
         n=order[graph_ord_inj][1]
         Right='Right '
