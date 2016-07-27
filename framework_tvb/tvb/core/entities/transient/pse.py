@@ -69,6 +69,7 @@ class ContextDiscretePSE(EnhancedDictionary):
         self.values_x, self.labels_x, self.values_y, self.labels_y = [], [], [], []
         self.series_array, self.data, self.available_metrics = [], [], []
         self.datatypes_dict = {}
+        self.d3_data = {}
         self.color_metric = color_metric
         self.size_metric = size_metric
         self.pse_back_page = back_page
@@ -191,6 +192,7 @@ class ContextDiscretePSE(EnhancedDictionary):
 
         #each shape from the UI corresponds to a dataType. In this matrix we
         #keep information about those dataTypes.
+        # todo consider deprecating the data in this matrix form.
         matrix = []
         for x_label in self.values_x:
             r = []
@@ -199,6 +201,7 @@ class ContextDiscretePSE(EnhancedDictionary):
             matrix.append(r)
 
         self.data = matrix
+        self.d3_data = json.dumps(final_dict)
         self.series_array = self.__build_series_json(all_series)
         self.status = 'started' if self.has_started_ops else 'finished'
         

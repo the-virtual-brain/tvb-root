@@ -156,12 +156,19 @@ function mergeResults(newData, data) {
 
 }
 
-
-//this function will gather information about the specifications that the user has selected above, and the logical relation between them (AND,OR) and will iteratively progress through the results one by one adding them to a return if they fit the search criteria
-function filterResults(data) {
-
-
+//this function is a parallel to the mergeResults because it is meant to merge the information that comes in the form of nodeInfo, should just be a merging two objects deal.
+function mergeNodeInfo(oldInfo, newInfo) {
+    for (var xCoordAttr in newInfo) {
+        for (var yCoordAttr in newInfo[xCoordAttr])
+            if (oldInfo.hasOwnProperty(xCoordAttr)) {
+                oldInfo[xCoordAttr][yCoordAttr] = newInfo[xCoordAttr][yCoordAttr] //this way we overwrite any cases of the same attribute combo
+            } else {
+                oldInfo[xCoordAttr] = {}
+                oldInfo[xCoordAttr][yCoordAttr] = newInfo[xCoordAttr][yCoordAttr]
+            }
+    }
 }
+
 
 //this function will calculate the difference between each result and its neighbors upon a selected metric. This difference will be compared to a user input value, and will dictate whether there are colored contour lines added inbetween results to help visualize the change in results based on parameter change.
 //don't forget that this will need to have some sort of threshold for the number of results that are coming back from the geometric selection before proceeding

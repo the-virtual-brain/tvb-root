@@ -40,13 +40,14 @@ var _PSE_plot;
  * @param max_color: maximum color, used for gradient
  * @param backPage: page where visualizers fired from overlay should take you back.
  */
-function _updatePlotPSE(canvasId, xLabels, yLabels, seriesArray, data_info, min_color, max_color, backPage) {
+function _updatePlotPSE(canvasId, xLabels, yLabels, seriesArray, data_info, min_color, max_color, backPage, d3Data_info) {
 
     // why is it that we don't associate the labels into the attributes of the actual data_info or seriesArray?
     // where does the seriesArray structure get created?
     _PSE_minColor = min_color;
     _PSE_maxColor = max_color;
     PSE_nodesInfo = data_info;
+    PSE_d3NodesInfo = d3Data_info;
     _PSE_plotOptions = {
         series: {
             lines: {
@@ -365,7 +366,185 @@ function d3Plot(placeHolder, data, options, pageParam) {
         "data": [[3, 4]],
         "points": {"radius": 33},
         "coords": {"x": 1.08, "y": 14.33}
-    }, {"data": [[3, 5]], "points": {"radius": 32.3596795}, "coords": {"x": 1.08, "y": 14.83}}]
+    }, {"data": [[3, 5]], "points": {"radius": 32.3596795}, "coords": {"x": 1.08, "y": 14.83}}];
+    nodeInfo24 = {
+        "0.93": {
+            "12.33": {
+                "dataType": "TimeSeriesRegion",
+                "Gid": "c502990b-4a27-11e6-9924-247703eaf3fc",
+                "color_weight": 6.167353942901428e-7,
+                "tooltip": "Operation id: 8654&lt;br/&gt;Datatype gid: c502990b-4a27-11e6-9924-247703eaf3fc&lt;br/&gt;Datatype type: TimeSeriesRegion&lt;br/&gt;Datatype subject: John Doe&lt;br/&gt;Datatype invalid: False",
+                "operationId": 8654
+            },
+            "14.83": {
+                "dataType": "TimeSeriesRegion",
+                "Gid": "ba6db748-4a28-11e6-9924-247703eaf3fc",
+                "color_weight": 8.647569110101361e-7,
+                "tooltip": "Operation id: 8674&lt;br/&gt;Datatype gid: ba6db748-4a28-11e6-9924-247703eaf3fc&lt;br/&gt;Datatype type: TimeSeriesRegion&lt;br/&gt;Datatype subject: John Doe&lt;br/&gt;Datatype invalid: False",
+                "operationId": 8674
+            },
+            "12.83": {
+                "dataType": "TimeSeriesRegion",
+                "Gid": "f8daa596-4a27-11e6-9924-247703eaf3fc",
+                "color_weight": 7.447212655251371e-7,
+                "tooltip": "Operation id: 8658&lt;br/&gt;Datatype gid: f8daa596-4a27-11e6-9924-247703eaf3fc&lt;br/&gt;Datatype type: TimeSeriesRegion&lt;br/&gt;Datatype subject: John Doe&lt;br/&gt;Datatype invalid: False",
+                "operationId": 8658
+            },
+            "13.83": {
+                "dataType": "TimeSeriesRegion",
+                "Gid": "55ce554c-4a28-11e6-9924-247703eaf3fc",
+                "color_weight": 0.0000010909858517403598,
+                "tooltip": "Operation id: 8666&lt;br/&gt;Datatype gid: 55ce554c-4a28-11e6-9924-247703eaf3fc&lt;br/&gt;Datatype type: TimeSeriesRegion&lt;br/&gt;Datatype subject: John Doe&lt;br/&gt;Datatype invalid: False",
+                "operationId": 8666
+            },
+            "14.33": {
+                "dataType": "TimeSeriesRegion",
+                "Gid": "87e21e28-4a28-11e6-9924-247703eaf3fc",
+                "color_weight": 0.000009104168999137599,
+                "tooltip": "Operation id: 8670&lt;br/&gt;Datatype gid: 87e21e28-4a28-11e6-9924-247703eaf3fc&lt;br/&gt;Datatype type: TimeSeriesRegion&lt;br/&gt;Datatype subject: John Doe&lt;br/&gt;Datatype invalid: False",
+                "operationId": 8670
+            },
+            "13.33": {
+                "dataType": "TimeSeriesRegion",
+                "Gid": "29db6338-4a28-11e6-9924-247703eaf3fc",
+                "color_weight": 0.0000017377564720283131,
+                "tooltip": "Operation id: 8662&lt;br/&gt;Datatype gid: 29db6338-4a28-11e6-9924-247703eaf3fc&lt;br/&gt;Datatype type: TimeSeriesRegion&lt;br/&gt;Datatype subject: John Doe&lt;br/&gt;Datatype invalid: False",
+                "operationId": 8662
+            }
+        },
+        "1.08": {
+            "12.33": {
+                "dataType": "TimeSeriesRegion",
+                "Gid": "c62847e1-4a27-11e6-9924-247703eaf3fc",
+                "color_weight": 0.0000010075882228185133,
+                "tooltip": "Operation id: 8657&lt;br/&gt;Datatype gid: c62847e1-4a27-11e6-9924-247703eaf3fc&lt;br/&gt;Datatype type: TimeSeriesRegion&lt;br/&gt;Datatype subject: John Doe&lt;br/&gt;Datatype invalid: False",
+                "operationId": 8657
+            },
+            "14.83": {
+                "dataType": "TimeSeriesRegion",
+                "Gid": "c1326dbc-4a28-11e6-9924-247703eaf3fc",
+                "color_weight": 9.434361363149573e-7,
+                "tooltip": "Operation id: 8677&lt;br/&gt;Datatype gid: c1326dbc-4a28-11e6-9924-247703eaf3fc&lt;br/&gt;Datatype type: TimeSeriesRegion&lt;br/&gt;Datatype subject: John Doe&lt;br/&gt;Datatype invalid: False",
+                "operationId": 8677
+            },
+            "12.83": {
+                "dataType": "TimeSeriesRegion",
+                "Gid": "fdfdb68a-4a27-11e6-9924-247703eaf3fc",
+                "color_weight": 0.0000022344815256355095,
+                "tooltip": "Operation id: 8661&lt;br/&gt;Datatype gid: fdfdb68a-4a27-11e6-9924-247703eaf3fc&lt;br/&gt;Datatype type: TimeSeriesRegion&lt;br/&gt;Datatype subject: John Doe&lt;br/&gt;Datatype invalid: False",
+                "operationId": 8661
+            },
+            "13.83": {
+                "dataType": "TimeSeriesRegion",
+                "Gid": "5d4eac98-4a28-11e6-9924-247703eaf3fc",
+                "color_weight": 5.402144797142424e-7,
+                "tooltip": "Operation id: 8669&lt;br/&gt;Datatype gid: 5d4eac98-4a28-11e6-9924-247703eaf3fc&lt;br/&gt;Datatype type: TimeSeriesRegion&lt;br/&gt;Datatype subject: John Doe&lt;br/&gt;Datatype invalid: False",
+                "operationId": 8669
+            },
+            "14.33": {
+                "dataType": "TimeSeriesRegion",
+                "Gid": "905a2c20-4a28-11e6-9924-247703eaf3fc",
+                "color_weight": 4.897308515262516e-7,
+                "tooltip": "Operation id: 8673&lt;br/&gt;Datatype gid: 905a2c20-4a28-11e6-9924-247703eaf3fc&lt;br/&gt;Datatype type: TimeSeriesRegion&lt;br/&gt;Datatype subject: John Doe&lt;br/&gt;Datatype invalid: False",
+                "operationId": 8673
+            },
+            "13.33": {
+                "dataType": "TimeSeriesRegion",
+                "Gid": "2e81583e-4a28-11e6-9924-247703eaf3fc",
+                "color_weight": 0.0000016668460103600569,
+                "tooltip": "Operation id: 8665&lt;br/&gt;Datatype gid: 2e81583e-4a28-11e6-9924-247703eaf3fc&lt;br/&gt;Datatype type: TimeSeriesRegion&lt;br/&gt;Datatype subject: John Doe&lt;br/&gt;Datatype invalid: False",
+                "operationId": 8665
+            }
+        },
+        "1.03": {
+            "12.33": {
+                "dataType": "TimeSeriesRegion",
+                "Gid": "c6361c60-4a27-11e6-9924-247703eaf3fc",
+                "color_weight": 0.000005643245336502221,
+                "tooltip": "Operation id: 8656&lt;br/&gt;Datatype gid: c6361c60-4a27-11e6-9924-247703eaf3fc&lt;br/&gt;Datatype type: TimeSeriesRegion&lt;br/&gt;Datatype subject: John Doe&lt;br/&gt;Datatype invalid: False",
+                "operationId": 8656
+            },
+            "14.83": {
+                "dataType": "TimeSeriesRegion",
+                "Gid": "bf4e40f7-4a28-11e6-9924-247703eaf3fc",
+                "color_weight": 0.000001693903535892038,
+                "tooltip": "Operation id: 8676&lt;br/&gt;Datatype gid: bf4e40f7-4a28-11e6-9924-247703eaf3fc&lt;br/&gt;Datatype type: TimeSeriesRegion&lt;br/&gt;Datatype subject: John Doe&lt;br/&gt;Datatype invalid: False",
+                "operationId": 8676
+            },
+            "12.83": {
+                "dataType": "TimeSeriesRegion",
+                "Gid": "fa9cb58f-4a27-11e6-9924-247703eaf3fc",
+                "color_weight": 0.0000016670037423902026,
+                "tooltip": "Operation id: 8660&lt;br/&gt;Datatype gid: fa9cb58f-4a27-11e6-9924-247703eaf3fc&lt;br/&gt;Datatype type: TimeSeriesRegion&lt;br/&gt;Datatype subject: John Doe&lt;br/&gt;Datatype invalid: False",
+                "operationId": 8660
+            },
+            "13.83": {
+                "dataType": "TimeSeriesRegion",
+                "Gid": "58c8994f-4a28-11e6-9924-247703eaf3fc",
+                "color_weight": 6.873580635909723e-7,
+                "tooltip": "Operation id: 8668&lt;br/&gt;Datatype gid: 58c8994f-4a28-11e6-9924-247703eaf3fc&lt;br/&gt;Datatype type: TimeSeriesRegion&lt;br/&gt;Datatype subject: John Doe&lt;br/&gt;Datatype invalid: False",
+                "operationId": 8668
+            },
+            "14.33": {
+                "dataType": "TimeSeriesRegion",
+                "Gid": "8caa9ffd-4a28-11e6-9924-247703eaf3fc",
+                "color_weight": 0.0000012368886103307727,
+                "tooltip": "Operation id: 8672&lt;br/&gt;Datatype gid: 8caa9ffd-4a28-11e6-9924-247703eaf3fc&lt;br/&gt;Datatype type: TimeSeriesRegion&lt;br/&gt;Datatype subject: John Doe&lt;br/&gt;Datatype invalid: False",
+                "operationId": 8672
+            },
+            "13.33": {
+                "dataType": "TimeSeriesRegion",
+                "Gid": "2b7b7279-4a28-11e6-9924-247703eaf3fc",
+                "color_weight": 0.0000010490355960533516,
+                "tooltip": "Operation id: 8664&lt;br/&gt;Datatype gid: 2b7b7279-4a28-11e6-9924-247703eaf3fc&lt;br/&gt;Datatype type: TimeSeriesRegion&lt;br/&gt;Datatype subject: John Doe&lt;br/&gt;Datatype invalid: False",
+                "operationId": 8664
+            }
+        },
+        "0.98": {
+            "12.33": {
+                "dataType": "TimeSeriesRegion",
+                "Gid": "c58f2759-4a27-11e6-9924-247703eaf3fc",
+                "color_weight": 0.000005247728188022526,
+                "tooltip": "Operation id: 8655&lt;br/&gt;Datatype gid: c58f2759-4a27-11e6-9924-247703eaf3fc&lt;br/&gt;Datatype type: TimeSeriesRegion&lt;br/&gt;Datatype subject: John Doe&lt;br/&gt;Datatype invalid: False",
+                "operationId": 8655
+            },
+            "14.83": {
+                "dataType": "TimeSeriesRegion",
+                "Gid": "bc54b6b6-4a28-11e6-9924-247703eaf3fc",
+                "color_weight": 8.087106183352099e-7,
+                "tooltip": "Operation id: 8675&lt;br/&gt;Datatype gid: bc54b6b6-4a28-11e6-9924-247703eaf3fc&lt;br/&gt;Datatype type: TimeSeriesRegion&lt;br/&gt;Datatype subject: John Doe&lt;br/&gt;Datatype invalid: False",
+                "operationId": 8675
+            },
+            "12.83": {
+                "dataType": "TimeSeriesRegion",
+                "Gid": "fa4f5f8e-4a27-11e6-9924-247703eaf3fc",
+                "color_weight": 0.000017745206462907023,
+                "tooltip": "Operation id: 8659&lt;br/&gt;Datatype gid: fa4f5f8e-4a27-11e6-9924-247703eaf3fc&lt;br/&gt;Datatype type: TimeSeriesRegion&lt;br/&gt;Datatype subject: John Doe&lt;br/&gt;Datatype invalid: False",
+                "operationId": 8659
+            },
+            "13.83": {
+                "dataType": "TimeSeriesRegion",
+                "Gid": "5aae9354-4a28-11e6-9924-247703eaf3fc",
+                "color_weight": 0.000001152918836297828,
+                "tooltip": "Operation id: 8667&lt;br/&gt;Datatype gid: 5aae9354-4a28-11e6-9924-247703eaf3fc&lt;br/&gt;Datatype type: TimeSeriesRegion&lt;br/&gt;Datatype subject: John Doe&lt;br/&gt;Datatype invalid: False",
+                "operationId": 8667
+            },
+            "14.33": {
+                "dataType": "TimeSeriesRegion",
+                "Gid": "8c0e2176-4a28-11e6-9924-247703eaf3fc",
+                "color_weight": 0.0000011904474544003512,
+                "tooltip": "Operation id: 8671&lt;br/&gt;Datatype gid: 8c0e2176-4a28-11e6-9924-247703eaf3fc&lt;br/&gt;Datatype type: TimeSeriesRegion&lt;br/&gt;Datatype subject: John Doe&lt;br/&gt;Datatype invalid: False",
+                "operationId": 8671
+            },
+            "13.33": {
+                "dataType": "TimeSeriesRegion",
+                "Gid": "29fd73e2-4a28-11e6-9924-247703eaf3fc",
+                "color_weight": 0.0000022743320815518227,
+                "tooltip": "Operation id: 8663&lt;br/&gt;Datatype gid: 29fd73e2-4a28-11e6-9924-247703eaf3fc&lt;br/&gt;Datatype type: TimeSeriesRegion&lt;br/&gt;Datatype subject: John Doe&lt;br/&gt;Datatype invalid: False",
+                "operationId": 8663
+            }
+        }
+    };
     workingData = $.parseJSON(data);
 
     [inclusiveX, inclusiveY] = updateCoordinateArrays(constructLabels(workingData), constructLabels(data24));
@@ -376,7 +555,8 @@ function d3Plot(placeHolder, data, options, pageParam) {
     for (var ob of data24) {
         ob.points.radius = ob.points.radius / 4;
     }
-    workingData = mergeResults(workingData, data24)
+    workingData = mergeResults(workingData, data24);
+    mergeNodeInfo(PSE_d3NodesInfo, nodeInfo24)
     structure = createStructure(workingData, inclusiveX, inclusiveY);
     for (ind in workingData) { //todo determine whether the new coords attribute will provide a way for us to be able to target the results in the way this does for adjustment in filtering or removal.
         workingData[ind].key = parseFloat(ind)
@@ -487,16 +667,16 @@ function d3Plot(placeHolder, data, options, pageParam) {
             cy: function (d) {
                 return yScale(d.coords.y)
             },
-            // fill: function (d) {
-            //     var nodeInfo = PSE_nodesInfo[d.data[0][0]][d.data[0][1]]; // the data attribute still has usefulness in retrieving the nodeInformation, but perhaps later it can be worked out.
-            //     if (nodeInfo.tooltip.search("PENDING") == -1 && nodeInfo.tooltip.search("CANCELED") == -1) {
-            //         color = returnfill(nodeInfo.color_weight);
-            //     }
-            //     else {
-            //         var color = d3.rgb("black");
-            //     }
-            //     return color
-            // }
+            fill: function (d) {
+                var nodeInfo = PSE_d3NodesInfo[d.coords.x][d.coords.y]; // todo remind me why we store this information separate from the seriesArray? Would it be simpler to just make it another attribute of each element in seriesArr?
+                if (nodeInfo.tooltip.search("PENDING") == -1 && nodeInfo.tooltip.search("CANCELED") == -1) {
+                    color = returnfill(nodeInfo.color_weight);
+                }
+                else {
+                    var color = d3.rgb("black");
+                }
+                return color
+            }
 
         });
 
@@ -713,7 +893,7 @@ function d3Plot(placeHolder, data, options, pageParam) {
 
 
     d3.selectAll("circle").on("mouseover", function (d) {
-        var nodeInfo = PSE_nodesInfo[d.data[0][0]][d.data[0][1]];
+        var nodeInfo = PSE_d3NodesInfo[d.coords.x][d.coords.y];
         var toolTipText = nodeInfo.tooltip.split("&amp;").join("&").split("&lt;").join("<").split("&gt;").join(">");
         toolTipDiv.html(toolTipText);
         toolTipDiv.style({
@@ -733,7 +913,7 @@ function d3Plot(placeHolder, data, options, pageParam) {
                 .style("display", "none")
         });
     d3.selectAll("circle").on("click", function (d) {
-        var nodeInfo = PSE_nodesInfo[d.data[0][0]][d.data[0][1]];
+        var nodeInfo = PSE_d3NodesInfo[d.coords.x][d.coords.y];
         if (nodeInfo.dataType != undefined) {
             displayNodeDetails(nodeInfo['Gid'], nodeInfo['dataType'], pageParam); // curious because backPage isn't in the scope, but appears to work.
         }
@@ -825,12 +1005,13 @@ function applyHoverEvent(canvasId) {
 
 
 function PSEDiscreteInitialize(labelsXJson, labelsYJson, series_array, dataJson, backPage, hasStartedOperations,
-                               min_color, max_color, min_size, max_size) {
+                               min_color, max_color, min_size, max_size, d3DataJson) {
 
 
     var labels_x = $.parseJSON(labelsXJson);
     var labels_y = $.parseJSON(labelsYJson);
     var data = $.parseJSON(dataJson);
+    var d3Data = $.parseJSON(d3DataJson);
 
     min_color = parseFloat(min_color); // todo run a batch of simulations part of the way,  and then cancel to see what the result looks like.
     max_color = parseFloat(max_color);
@@ -838,7 +1019,7 @@ function PSEDiscreteInitialize(labelsXJson, labelsYJson, series_array, dataJson,
     max_size = parseFloat(max_size);
 
     ColSch_initColorSchemeGUI(min_color, max_color, function () { //this now doesn't create error in simulator panel, why?
-        _updatePlotPSE('main_div_pse', labels_x, labels_y, series_array, data, min_color, max_color, backPage);
+        _updatePlotPSE('main_div_pse', labels_x, labels_y, series_array, data, min_color, max_color, backPage, d3Data);
     });
 
     function _fmt_lbl(sel, v) {
@@ -854,7 +1035,7 @@ function PSEDiscreteInitialize(labelsXJson, labelsYJson, series_array, dataJson,
         min_color = 0;
         max_color = 1;
     }
-    _updatePlotPSE('main_div_pse', labels_x, labels_y, series_array, data, min_color, max_color, backPage); 
+    _updatePlotPSE('main_div_pse', labels_x, labels_y, series_array, data, min_color, max_color, backPage, d3Data);
 
 
     if (hasStartedOperations) {
