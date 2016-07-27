@@ -225,15 +225,6 @@ function d3Plot(placeHolder, data, options, pageParam) {
             })
     }
 
-    function workingDataRemove(index, dataObj) {
-        for (i in dataObj) {
-            if (dataObj[i].data[0] == index) {
-                dataObj.splice(i, 1);
-                return
-            }
-        }
-
-    }
 
     function refreshOnChange() { //this function exists because if new select bars are added after loading then there is no _onchange handler attributed
 
@@ -787,107 +778,57 @@ function d3Plot(placeHolder, data, options, pageParam) {
         }
     });
 
-    d3.select("#filterGo").on("click", function () {
-        // so I could make a function that gets called on each of the bars that have been selected yes?
-        function thresholdFilterSize(cir, set) {
-            var radius = parseFloat(cir.attributes.r.value);
-            if (radius < sizeScale(criteria.threshold.value)) {
-                set.add(cir.__data__.data[0]); // why does having workingData as an argument make it in the local scope all of a sudden?
+    d3.select("#filterGo").on("click", function () { // will the filtering also be any metric of option?
+
+        function concatCriteria() {
+            var filterFields = d3.selectAll(".toolbar-inline#filterTools > li")[0],
+                concatStr = '';
+            for (var set of filterFields) {
+                var groupSelection = d3.select(set),
+                    logicalPresence = groupSelection.select("input[name='logicButton']:checked").node(),
+                    logicalOperator;
+                if (logicalPresence != null) {
+                    if (logicalPresence.id == 'Or') {
+                        logicalOperator = ' ||'
+                    } else {
+                        logicalOperator = ' &&'
+                    }
+                } else {
+                    logicalOperator = ''
+                }
+                var thresholdValue = groupSelection.select(".thresholdInput").property('value'), //todo how to create messages in the upper right corner? should be able to tell user that they clicked wrong search criteria for value
+                    notPreference = (groupSelection.select("input[name='notButton']").property('checked')) ? ">" : "<", //gives us true or false
+                    filterType = groupSelection.select("input[name='thresholdType']:checked").property('id').slice(0, -1); // gives either 'Color' or 'Size'
+                concatStr += logicalOperator + ' ' + filterType + ' ' + notPreference + ' ' + thresholdValue;
+
             }
+
+            return concatStr
+
         }
 
-        function thresholdFilterColor(cir, set) { //todo !!ask about how to easily give users a way to select a reasonable value, because numbers are really small
-            // will I need to be able to parse exponential(scientific) digits?
-            // should I give people a sampling tool for the color? like an eyedropper?
-            var nodeInfo = PSE_nodesInfo[cir.__data__.data[0][0]][cir.__data__.data[0][1]];
-            if (nodeInfo.color_weight < criteria.threshold.value) {
-                set.add(cir.__data__.data[0]);
-            }
-        }
-
-
-        var allCircles = d3.selectAll("circle"),
-            min_size = d3.select("#minShapeLabel").node().innerHTML,
-            max_size = d3.select("#maxShapeLabel").node().innerHTML,
+        var min_size = +d3.select("#minShapeLabel").node().innerHTML,
+            max_size = +d3.select("#maxShapeLabel").node().innerHTML,
             sizeScale = d3.scale.linear()
-                .domain([+min_size, +max_size]) // these plus signs convert the string to number
-                .range(d3.extent(workingData, function (d) {
+                .range([min_size, max_size]) // these plus signs convert the string to number
+                .domain(d3.extent(workingData, function (d) {
                     return +d.points.radius
-                })), // makes sure that we don't start creating negative radii based on user input, clamps to upper or lower bounds
-            criteria = {
-                threshold: {//currently this is hard coded for the size filters which needs to be updated
-                    value: +d3.select("#threshold").node().value //todo eventually update this to reflect the changes made to the way that the input bars are enumerated
-                    , type: d3.select("input[name=threshold]:checked").node().id
-                },//specifies color versus size measurements
-                rate: { // how to relate rate of change  to the max and min
-                    value: +d3.select("#rateOfChange").node().value //in theory this won't need to have the scale, because the differences will be arbitrary value
-                    , type: d3.select("input[name=rateOfChange]:checked").node().id
-                },
-                logic: d3.select("input[name=logicButton]:checked").node().id
-            },
-            removalSet,
-            radDiffColScale = d3.scale.linear()
-                .domain([0, max_size - min_size])
-                .range(["white", "red"]);
-
-        if (criteria.logic == "Or") {
-            var thresholdSet = new Set(),
-                rateSet = new Set();
-            d3.selectAll("circle")[0].forEach(function (d) {// [0] part seems strange, is there another way to use forEach without it?
-                if (criteria.threshold.type == "Size" && criteria.rate.type == "Size") {
-                    thresholdFilterSize(d, thresholdSet);
-                    rateFilterSize(d, rateSet);
-
-                } else if (criteria.threshold.type == "Color" && criteria.rate.type == "Size") {
-                    thresholdFilterColor(d, thresholdSet);
-                    rateFilterSize(d, rateSet);
-
-                } else if (criteria.threshold.type == "Size" && criteria.rate.type == "Color") {
-                    thresholdFilterSize(d, thresholdSet);
-                    rateFilterColor(d, rateSet);
-                } else {
-                    thresholdFilterColor(d, thresholdSet);
-                    rateFilterColor(d, rateSet)
-                }
-            });
-            // @formatter:off
-            removalSet = new Set([...thresholdSet, ...rateSet]);// this performs a union of the two sets, and the actual syntax is messing up pycharm
-            // @formatter: on
-        } else if (criteria.logic == "And") {
-            var thresholdSet = new Set(),
-                rateSet = new Set();
-            d3.selectAll("circle")[0].forEach(function (d) {// [0] part seems strange, is there another way to use forEach without it?
-                if (criteria.threshold.type == "Size" && criteria.rate.type == "Size") {
-                    thresholdFilterSize(d, thresholdSet);
-                    rateFilterSize(d, rateSet);
-
-                } else if (criteria.threshold.type == "Color" && criteria.rate.type == "Size") {
-                    thresholdFilterColor(d, thresholdSet);
-                    rateFilterSize(d, rateSet);
-
-                } else if (criteria.threshold.type == "Size" && criteria.rate.type == "Color") {
-                    thresholdFilterSize(d, thresholdSet);
-                    rateFilterColor(d, rateSet);
-                } else {
-                    thresholdFilterColor(d, thresholdSet);
-                    rateFilterColor(d, rateSet)
-                }
-
-            });
-
-            //line below is pycharm commmand to prevent bug triggered by auto format
-            // @formatter:off
-            removalSet = new Set([...thresholdSet].filter(x => rateSet.has(x))) // this is an intersection for set arithmetic the [...] converts by spreading out elements => is a shorthand function form
-            // @formatter:on
+                }))
 
 
+        for (var circle of d3.selectAll('circle')[0]) {
+            var radius = sizeScale(+circle.attributes.r.value),
+                filterString = concatCriteria(),
+                data = circle.__data__,
+                colorWeight = PSE_d3NodesInfo[data.coords.x][data.coords.y].color_weight,
+                filterString = filterString.replace(/Size/g, radius).replace(/Color/g, colorWeight);
+            if (eval(filterString)) { //todo ask lia about how I should be troubleshooting the eval
+                workingData.splice(workingData.indexOf(data), 1) //this will remove the data from the group, and then it can be selected for below in the transparent dots
+            }
         }
-        ;
-        ;
-        removalSet.forEach(function (indPair) {
-            workingDataRemove(indPair, workingData)
-        });
         transparentDots()
+
+
     });
 
 
@@ -1010,7 +951,7 @@ function PSEDiscreteInitialize(labelsXJson, labelsYJson, series_array, dataJson,
 
     var labels_x = $.parseJSON(labelsXJson);
     var labels_y = $.parseJSON(labelsYJson);
-    var data = $.parseJSON(dataJson);
+    var data = $.parseJSON(dataJson);    
     var d3Data = $.parseJSON(d3DataJson);
 
     min_color = parseFloat(min_color); // todo run a batch of simulations part of the way,  and then cancel to see what the result looks like.
