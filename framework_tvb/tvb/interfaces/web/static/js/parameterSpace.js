@@ -242,7 +242,7 @@ function d3Plot(placeHolder, data, options, pageParam) {
                 usrSelectedName = d3.select('#overlayNameInput' + incrementId).property('value'),
                 incoming_values = {
                     threshold_value: d3.select('input#threshold' + incrementId).property('value'),
-                    threshold_type: d3.select('input[name="threshold' + incrementId + '"]:checked').property('id')
+                    threshold_type: d3.select('input[name="thresholdType"]:checked').property('id')
                 };
             doAjaxCall({
                 type: 'POST',
