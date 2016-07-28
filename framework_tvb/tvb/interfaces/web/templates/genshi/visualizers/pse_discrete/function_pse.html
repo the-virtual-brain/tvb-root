@@ -112,6 +112,33 @@
         </ul>
     </div>
 
+    <div class="tooltip"></div>
+    <div id="contourDiv" style="display: none;">
+        <ul class="toolbar-inline" id="contourTools">
+            <li>
+                <select name="Storing Selections for contour" id="contourSelect" class="contourSelectBar">
+                </select>
+                <input type="text" id="overlayNameInput"/>
+                <button class="action-store action" title="Save your contour inputs" id="saveButton">Save</button>
+
+                <br/>
+                <label for="RateOfChange">RateOfChange: </label>
+                <input type="text" id="rateOfChangeInput" value="65e-5"/>
+                <input type="checkbox" id="notButton"/>Not
+
+                <form>
+                    <input type="radio" name="RateOfChangeType" id="Size" checked="checked"/>Size
+                    <input type="radio" name="RateOfChangeType" id="Color"/>Color <br/>
+                </form>
+
+                <button class="action action-confirm" id="contourGo">Start contour</button>
+                <button class="action" id="contourClear">Clear lines</button>
+
+            </li>
+        </ul>
+    </div>
+
+
     <input type="hidden" id="datatype-group-gid" value="$dataTypeGroupGID"/>
 
     <!--! Here PSE bubles will be displayed.	-->

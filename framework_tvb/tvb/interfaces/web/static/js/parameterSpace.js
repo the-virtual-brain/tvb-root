@@ -196,6 +196,23 @@ function d3Plot(placeHolder, data, options, pageParam) {
             }
         })
     }
+
+    function getContourSelections() {
+        doAjaxCall({
+            type: 'POST',
+            url: '/flow/get_pse_filters/' + datatypeGID,
+            success: function (r) {
+                var selectElement = d3.select("#contourSelect");
+                selectElement.selectAll("option").remove();
+                selectElement.html(r);// this is the best way that i could come up with to separate out the returned elements
+
+
+            },
+            error: function () {
+                displayMessage("couldn't load the selection bar", "errorMessage")
+            }
+        })
+    }
     function moveDots() {
         circles
             .transition()
@@ -671,7 +688,22 @@ function d3Plot(placeHolder, data, options, pageParam) {
 
         });
 
-    d3.select("#Contour").on("click", function () {
+    d3.select('#Contour').on("click", function () {
+        var contourDiv = d3.select("#contourDiv"); //todo is there going to be a problem with what I wrote for filter, due to the addition of more input fields in this dropdown?
+        if (contourDiv.style("display") == "none") {
+            contourDiv.style("display", "block");
+            getContourSelections() //todo rename the function to describe the general purpose that fits for both the filter and contour.
+            refreshOnChange()
+        }
+
+
+        else {
+            contourDiv.style("display", "none")
+        }
+
+    })
+
+    d3.select("#contourGo").on("click", function () {
 
         function drawCompLines(relationOb) {
 
@@ -684,6 +716,7 @@ function d3Plot(placeHolder, data, options, pageParam) {
                 })
                 .interpolate("linear");
 
+            var lineCol = d3.rgb(Math.random() * 255, Math.random() * 255, Math.random() * 255); // this will give us a way to keep contours on the page between comparisons
             for (var currentOb of relationOb) {
                 for (var neighbor of currentOb.neighbors) {
                     var neighborsCoords = neighbor.split(" ").map(function (ele) {
@@ -700,18 +733,29 @@ function d3Plot(placeHolder, data, options, pageParam) {
                         endCoord = {x: midPoint.x - deltaY / 2, y: midPoint.y + deltaX / 2};
                     d3.select(".dotsCanvas").append("path")
                         .attr("d", lineFunc([startCoord, endCoord]))
-                        .attr("stroke", "red")
+                        .attr("stroke", lineCol)
                         .attr("stroke-width", ".5px")
                         .attr("fill-opacity", ".1")
-                        .attr("fill", "none");
+                        .attr("fill", "none")
+                        .attr("id", "contourLine");
                 }
             }
 
         }
 
-        neighborsObjct = compareToNeighbors(structure, steps, inclusiveX, inclusiveY)
+        var criteria = {
+            type: d3.select('input[name="RateOfChangeType"]:checked').node().id,
+            value: +d3.select('input#rateOfChangeInput').node().value,
+            not: d3.select("#notButton").property('checked')
+        }
+
+        neighborsObjct = compareToNeighbors(structure, steps, inclusiveX, inclusiveY, criteria, PSE_d3NodesInfo)
         drawCompLines(neighborsObjct)
     })
+
+    d3.select("#contourClear").on("click", function () {
+        d3.selectAll('#contourLine').remove()
+    });
 
     
     d3.select("#Explore").on("click", function () {

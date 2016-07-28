@@ -174,7 +174,7 @@ function mergeNodeInfo(oldInfo, newInfo) {
 //don't forget that this will need to have some sort of threshold for the number of results that are coming back from the geometric selection before proceeding
 //      if there happens to be too many decrease the distance value to the next smallest step value (x&y step arrays) that exists from the calculations.
 //
-function compareToNeighbors(structure, stepOb, xArr, yArr) {
+function compareToNeighbors(structure, stepOb, xArr, yArr, srchCritOb, nodeInfo) {
 
     //this function returns a result that has been decided to be the closest neighbor to the currently examined dot for each parameter direction, and also according to boundary rules
     function chooseClosestNeighbor(selection, currentRes) {
@@ -190,12 +190,36 @@ function compareToNeighbors(structure, stepOb, xArr, yArr) {
         return selection.splice(difArr.indexOf(d3.min(difArr)), 1)[0]; // return the actual object not a single element array with it inside
     }
 
+    //this function is meant to allow for the user specified search criteria to actually be compared to the differences in metrics between current results and their neighbors.
+    //the nodeInfo must be included so that we can compare with color_weight values
+    function checkAgainstCriteria(srchCritOb, currentRes, neighbor, nodeInfo, structure) {
+
+        if (srchCritOb.type == 'Size') {
+            var min_size = +d3.select("#minShapeLabel").node().innerHTML,
+                max_size = +d3.select("#maxShapeLabel").node().innerHTML,
+                sizeScale = d3.scale.linear()
+                    .range([min_size, max_size]) // these plus signs convert the string to number
+                    .domain(d3.extent(structure.A, function (d) {
+                        return +d.points.radius
+                    })),
+                diff = Math.abs(sizeScale(neighbor.points.radius) - sizeScale(currentRes.points.radius)); //absolute value, because we want to draw lines for jumps in either direction: values increasing or decreasing
+            return srchCritOb.not ? diff < srchCritOb.value : diff > srchCritOb.value // this line means, if the user selected inverse search value, then we want lines drawn everywhere the difference is below the value, else only draw lines where the dif is bigger than the value
+        }
+        else if (srchCritOb.type == 'Color') {
+            var currentColorWeight = nodeInfo[currentRes.coords.x][currentRes.coords.y].color_weight,
+                neighborColorWeight = nodeInfo[neighbor.coords.x][neighbor.coords.y].color_weight,
+                diffColorWeight = Math.abs(neighborColorWeight - currentColorWeight);
+            return srchCritOb.not ? diffColorWeight < srchCritOb.value : diffColorWeight > srchCritOb.value
+        }
+    }
+
     var obCompTracker = [];
 
 
     for (var ob of structure.A) { //do I need to sort this by x coord?
         // create some sort of control variable for the step val index
         var currentRowInd = yArr.indexOf(ob.coords.y),
+            neighbor,
             currentColInd = xArr.indexOf(ob.coords.x),
             topRowInd = yArr.length - 1,
             farRightColInd = xArr.length - 1,
@@ -234,7 +258,12 @@ function compareToNeighbors(structure, stepOb, xArr, yArr) {
 
                 for (var i = 0; i < 3; i++) {
                     if (selectedResults.length > 0) {
-                        closest.push(chooseClosestNeighbor(selectedResults, ob))
+                        neighbor = chooseClosestNeighbor(selectedResults, ob);
+                        console.log(ob.coords.x)
+                        console.log(ob.coords.y)
+                        if (checkAgainstCriteria(srchCritOb, ob, neighbor, nodeInfo, structure)) {
+                            closest.push(neighbor)
+                        }
                     }
                 }
                 ;
@@ -264,9 +293,16 @@ function compareToNeighbors(structure, stepOb, xArr, yArr) {
                     selectedResults.splice(selectedResults.indexOf(ob), 1);
                 }
 
-                closest.push(chooseClosestNeighbor(selectedResults, ob));
-                if (typeof(closest[0]) === 'undefined') { // this simply performs a check that will only pass if we are at the corner result that isn't supposed to have a neighbor up or right
+
+                neighbor = chooseClosestNeighbor(selectedResults, ob)
+                if (neighbor == undefined) { // this simply performs a check that will only pass if we are at the corner result that isn't supposed to have a neighbor up or right
                     break;
+                }
+                console.log(ob.coords.x)
+                console.log(ob.coords.y)
+                if (checkAgainstCriteria(srchCritOb, ob, neighbor, nodeInfo, structure)) {
+                    closest.push(neighbor);
+
                 }
                 obCompTracker.push({
                     'focalPoint': ob, 'neighbors': closest.map(function (ele) {
@@ -291,10 +327,17 @@ function compareToNeighbors(structure, stepOb, xArr, yArr) {
                     selectedResults.splice(selectedResults.indexOf(ob), 1);
                 }
 
-                closest.push(chooseClosestNeighbor(selectedResults, ob));
-                if (typeof(closest[0]) === 'undefined') { // this simply performs a check that will only pass if we are at the corner result that isn't supposed to have a neighbor up or right
+                neighbor = chooseClosestNeighbor(selectedResults, ob)
+                if (neighbor == undefined) { // this simply performs a check that will only pass if we are at the corner result that isn't supposed to have a neighbor up or right
                     break;
                 }
+                console.log(ob.coords.x)
+                console.log(ob.coords.y)
+                if (checkAgainstCriteria(srchCritOb, ob, neighbor, nodeInfo, structure)) {
+                    closest.push(neighbor);
+
+                }
+
                 obCompTracker.push({
                     'focalPoint': ob, 'neighbors': closest.map(function (ele) {
                         return ele.coords.x + ' ' + ele.coords.y
