@@ -95,44 +95,32 @@ function constructLabels(data) {
     return [xArr, yArr]
 }
 
-
-//this function will be necessary because there will need to be a single array comprised of the parameter values used to generate the results.
-// Think of arrays of the xparameter and yparameter values used as coordinates to position results in the canvas; these arrays need updating when more results are added.
-function updateCoordinateArrays(oldArrs, newArrs) {
-    var retArr = [];
-
-    for (var arrInd in oldArrs) {
-        retArr[arrInd] = oldArrs[arrInd].concat(newArrs[arrInd]);
-        retArr[arrInd].sort();
-        for (var i in retArr[arrInd]) { //removes the potential for duplicates in the arr
-            if (retArr[arrInd].indexOf(retArr[arrInd][i]) != retArr[arrInd].lastIndexOf(retArr[arrInd][i])) {
-                retArr[arrInd].splice(i, 1)
-            }
-        }
-    }
-    return retArr
+//this function will return the number of significant figures within a float, and can be used to help make sure that the correct numbers are generated through the stepDetector
+function sigFigNum(flt) {
+    var fltStr = flt.toExponential(),
+        sigStr = fltStr.replace(/e.*$/, "");
+    return sigStr.length
 }
 
 //this is just a basic updater to keep track of the step values that are present in the canvas for the separate parameters
 // i don't suppose that I need to make sure that the arrays have atleast 1 entry?
-function updateKnownSteps(stepOb, xArr, yArr) {
+// problem here is that this function only workes on arrays that have not been sorted by value, so that the steps can be next to each other.
+function updateKnownSteps(stepOb, xArr, yArr) { // todo either deprecate, or switch to storing from computed explorations.
     var xStep = [],
         yStep = [];
-    for (var i = 0; i < xArr.length - 2; i++) {
-        var dif = +(xArr[i + 1] - xArr[i]).toFixed(3); //I don't have much reason to expect that there will be less or more than 3 digits, How to predict?
-        if (xStep.indexOf(dif) == -1) {
-            xStep.push(dif)
+    for (var arr, step of [[xArr, xStep], [yArr, yStep]]) // should suffice to make the loops general to the x&y
+        for (var i = 0; i < arr.length - 2; i++) {
+            var left = arr[i],
+                right = arr[i + 1],
+                sigLeft = sigFigNum(left),
+                sigRight = sigFigNum(right),
+                dif = +(right - left).toFixed(sigLeft < sigRight ? sigRight : sigLeft); // this will help to minimize returning the wrong step value ideally.
+            if (Step.indexOf(dif) == -1) {
+                Step.push(dif)
+            }
+
         }
 
-    }
-
-    for (var i = 0; i < yArr.length - 2; i++) {
-        var dif = +(yArr[i + 1] - yArr[i]).toFixed(3); //I don't have much reason to expect that there will be less or more than 3 digits, How to predict?
-        if (yStep.indexOf(dif) == -1) {
-            yStep.push(dif)
-        }
-
-    }
     stepOb.x = xStep;
     stepOb.y = yStep;
 
