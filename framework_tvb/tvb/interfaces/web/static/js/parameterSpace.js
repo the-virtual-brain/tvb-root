@@ -254,7 +254,7 @@ function d3Plot(placeHolder, data, options, pageParam) {
             d3.select("input[type='radio']#" + filterType + incrementId).property("checked", true)
         });
 
-        d3.selectAll(".action-store").on("click", function () { // this is the functionality for the save button next to the text box for the select  element.
+        d3.selectAll(".action-store").on("click", function () { // this might not be currently specific enough to save only the filter configs, I don't want this to fire when I click on a contour save button.
             var incrementId = d3.select(this).property("id").slice(-1),
                 usrSelectedName = d3.select('#overlayNameInput' + incrementId).property('value'),
                 incoming_values = {
@@ -278,6 +278,16 @@ function d3Plot(placeHolder, data, options, pageParam) {
 
         d3.selectAll(".action-minus").on("click", function () {
             d3.select(this).node().parentNode.remove()
+        })
+    }
+
+    function enactSelection() {
+        d3.select("#contourSelect").on("change", function () {
+            var filterSpecs = d3.select(this).property('value').split(","),
+                filterType = filterSpecs[1],
+                filterValue = filterSpecs[0];
+            d3.select('input[name="RateOfChangeType"]#' + filterType).property("checked", true);
+            d3.select('input#rateOfChangeInput').property("value", filterValue);
         })
     }
 
@@ -693,7 +703,7 @@ function d3Plot(placeHolder, data, options, pageParam) {
         if (contourDiv.style("display") == "none") {
             contourDiv.style("display", "block");
             getContourSelections() //todo rename the function to describe the general purpose that fits for both the filter and contour.
-            refreshOnChange()
+            enactSelection()
         }
 
 
@@ -755,6 +765,28 @@ function d3Plot(placeHolder, data, options, pageParam) {
 
     d3.select("#contourClear").on("click", function () {
         d3.selectAll('#contourLine').remove()
+    });
+
+    d3.select("#saveContourConfig").on("click", function () {// todo think about the way to save the not option also.
+
+        var usrSelectedName = d3.select('#contourNameInput').property('value'),
+            incoming_values = {
+                threshold_value: d3.select('input#rateOfChangeInput').node().value,
+                threshold_type: d3.select('input[name="RateOfChangeType"]:checked').node().id
+            };
+        doAjaxCall({
+            type: 'POST',
+            url: '/flow/store_pse_filter/' + usrSelectedName + '/' + datatypeGID,
+            data: incoming_values,
+            success: function (r) {
+                getFilterSelections();
+                d3.select('#contourNameInput').property('value', '')
+            },
+            error: function () {
+                displayMessage('could not store the selected text', 'errorMessage')
+            }
+
+        })
     });
 
     
