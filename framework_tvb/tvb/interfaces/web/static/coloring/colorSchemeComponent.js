@@ -495,7 +495,7 @@ function ColSch_updateLegendLabels(container, minValue, maxValue, height) {
     }
     var step = (maxValue - minValue) / (legendLabels.length - 1);            // -1 because it includes min and max
     legendLabels.each(function(idx, elem) {
-        elem.innerHTML = round_number(maxValue - idx * step, 3);
+        elem.innerHTML = round_number(maxValue - idx * step, 6);
     });
 }
 

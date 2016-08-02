@@ -108,7 +108,7 @@ function sigFigNum(flt) {
 function updateKnownSteps(stepOb, xArr, yArr) { // todo either deprecate, or switch to storing from computed explorations.
     var xStep = [],
         yStep = [];
-    for (var arr, step of [[xArr, xStep], [yArr, yStep]]) // should suffice to make the loops general to the x&y
+    for (var [arr, step] of [[xArr, xStep], [yArr, yStep]]) // should suffice to make the loops general to the x&y
         for (var i = 0; i < arr.length - 2; i++) {
             var left = arr[i],
                 right = arr[i + 1],
@@ -155,6 +155,7 @@ function mergeNodeInfo(oldInfo, newInfo) {
                 oldInfo[xCoordAttr][yCoordAttr] = newInfo[xCoordAttr][yCoordAttr]
             }
     }
+    return oldInfo
 }
 
 

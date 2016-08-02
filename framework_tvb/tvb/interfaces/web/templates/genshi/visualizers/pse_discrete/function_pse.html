@@ -1,4 +1,5 @@
-<py:def function="generateFramePSE(dataTypeGroupGID, available_metrics)" xmlns:py="http://genshi.edgewall.org/">
+<py:def function="generateFramePSE(dataTypeGroupGID, available_metrics)" xmlns:py="http://genshi.edgewall.org/"
+        xmlns:xi="http://www.w3.org/2001/XInclude">
     <script type="text/javascript" src="/static/js/d3.v3.js"></script>
     <script type="text/javascript" src="/static/js/alternateDatastructure.js"></script>
     <script type="text/javascript" src="/static/flot/jquery.flot.js"></script>
@@ -146,8 +147,32 @@
     <div id="main_div_pse" class="specialviewer">
     </div>
 
+    <py:def function="drawMatrixLegendArea(canvasContainerID)">
+        <div class="matrix-legend" id="$canvasContainerID">
+
+            <div class="matrix-legend">
+                <table id="table-${canvasContainerID}" class="table-legend-labels">
+                    <py:for each='label in range(7)'>
+                        <py:if test='label != 0'>
+                            <tr height="${str(100/8) + '%'}" style='vertical-align: bottom;'>
+                                <td>${label}</td>
+                            </tr>
+                        </py:if>
+                        <py:if test='label == 0'>
+                            <tr height="20px">
+                                <td>${label}</td>
+                            </tr>
+                        </py:if>
+                    </py:for>
+                </table>
+            </div>
+        </div>
+    </py:def>
+    ${drawMatrixLegendArea('colorWeightsLegend')}
+
     <script type="text/javascript">
-        var data24, nodeInfo24, collectiveData,
+        var data24, nodeInfo24, collectiveData, collectiveInfo, tmpInfo, legendContainer;
+
                 data24 = [{
                     "data": [[0, 0]],
                     "points": {"radius": 19.1853172894},
@@ -381,11 +406,17 @@
         for (var ob of data24) {
             ob.points.radius = ob.points.radius / 4;
         }
-        collectiveData = mergeResults('$data', data24);
-        mergeNodeInfo('$d3_data', nodeInfo24); //difference in merges here is it is a mutable object change, so '$d3_data' still be passed below.
+        collectiveData = mergeResults($.parseJSON('$series_array'), data24); //todo ask lia on wed how we would permanently merge these results because code that facilitates the merge doesn't do a good job of updating
+        tmpInfo = $.parseJSON('$d3_data');
+        collectiveInfo = mergeNodeInfo(tmpInfo, nodeInfo24); //difference in merges here is it is a mutable object change, so '$d3_data' still be passed below.
         $(document).ready(function () {
-            PSEDiscreteInitialize('$labels_x', '$labels_y', '$series_array', collectiveData, '$pse_back_page',
-                    $has_started_ops, '$min_color', '$max_color', '$min_shape_size', '$max_shape_size', '$d3_data');
+            PSEDiscreteInitialize('$labels_x', '$labels_y', collectiveData, '$data', '$pse_back_page',
+                    $has_started_ops, '$min_color', '$max_color', '$min_shape_size', '$max_shape_size', collectiveInfo);
+            legendContainer = d3.select("#colorWeightsLegend");
+            var legendHeight = d3.select("#table-colorWeightsLegend").node().getBoundingClientRect().height;
+            var tableContainer = d3.select("#table-colorWeightsLegend");
+            ColSch_updateLegendColors(legendContainer.node(), legendHeight);
+            ColSch_updateLegendLabels(tableContainer.node(), '$min_color', '$max_color', legendHeight);
             window.onresize = function () {
                 redrawPlot('main_div_pse');
             };

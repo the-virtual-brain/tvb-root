@@ -336,7 +336,7 @@ function d3Plot(placeHolder, data, options, pageParam) {
         dotsCanvas, innerHeight, innerWidth, toolTipDiv, zoom, zoomable, datatypeGID, structure, inclusiveX, inclusiveY, steps;
     myBase = d3.select(placeHolder);
     //todo make the data merging occur on initialization, but after that continue using the collective working data for all viewer operations
-    workingData = $.parseJSON(data); // for our current demonstration this data is coming in mixed from two simulations over the same parameters, but different ranges and steps.
+    workingData = data; // for our current demonstration this data is coming in mixed from two simulations over the same parameters, but different ranges and steps.
     [inclusiveX, inclusiveY] = constructLabels(workingData);
     steps = {x: [.1, .05], y: [1, .5]}; // this will be populated when explorations are run, because other wise will have to write a function to extract steps from array of values.
     // updateKnownSteps(steps, inclusiveX, inclusiveY); // must determine a way to have every step value, not just the smallest.
@@ -792,8 +792,9 @@ function PSEDiscreteInitialize(labelsXJson, labelsYJson, series_array, dataJson,
 
     var labels_x = $.parseJSON(labelsXJson);
     var labels_y = $.parseJSON(labelsYJson);
-    var data = $.parseJSON(dataJson);    
-    var d3Data = $.parseJSON(d3DataJson);
+    var data = $.parseJSON(dataJson);
+    series_array = typeof (series_array) == "string" ? $.parseJSON(series_array) : series_array;
+    var d3Data = typeof (d3DataJson) == "string" ? $.parseJSON(d3DataJson) : d3DataJson;
 
     min_color = parseFloat(min_color); // todo run a batch of simulations part of the way,  and then cancel to see what the result looks like.
     max_color = parseFloat(max_color);
