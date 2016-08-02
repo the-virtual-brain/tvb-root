@@ -140,6 +140,22 @@
         </ul>
     </div>
 
+    <div class="tooltip"></div>
+    <div id="exploreDiv" style="display: none;">
+        <ul class="toolbar-inline" id="exploreTools">
+            <xi:include href="../../flow/type2component/number2component.html"/>
+            <xi:include href="../../flow/genericAdapterTemplateFunctions.html"/>
+
+            <li>
+                <!-- i think the min and max should just get set by the brush, or atleast go both ways, but the step part should be adjusted in the window. -->
+                ${draw_number_component({'name':"xslider", 'minValue':0, 'maxValue':10,'stepValue':
+                0.001},False,'exploreDiv')}
+                ${draw_number_component({'name':"yslider", 'minValue':0, 'maxValue':10,'stepValue':
+                0.001},False,'exploreDiv')}
+            </li>
+        </ul>
+    </div>
+
 
     <input type="hidden" id="datatype-group-gid" value="$dataTypeGroupGID"/>
 
@@ -174,15 +190,8 @@
 
         $(document).ready(function () {
             // the line below this is just to keep certain things in this genshi from being run multiple times
-            if (!window.location.hash) {
-                PSEDiscreteInitialize('$labels_x', '$labels_y', collectiveData, '$data', '$pse_back_page',
-                        $has_started_ops, '$min_color', '$max_color', '$min_shape_size', '$max_shape_size', collectiveInfo);
-
-                window.location = window.location + '#initialized'
-            } else {
-                PSEDiscreteInitialize('$labels_x', '$labels_y', '$series_array', '$data', '$pse_back_page',
-                        $has_started_ops, '$min_color', '$max_color', '$min_shape_size', '$max_shape_size', '$d3_data');
-            }
+            PSEDiscreteInitialize('$labels_x', '$labels_y', '$series_array', '$data', '$pse_back_page',
+                    $has_started_ops, '$min_color', '$max_color', '$min_shape_size', '$max_shape_size', '$d3_data');
             window.onresize = function () {
                 redrawPlot('main_div_pse');
             };

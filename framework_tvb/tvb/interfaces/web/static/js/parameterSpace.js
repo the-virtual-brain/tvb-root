@@ -558,6 +558,18 @@ function d3Plot(placeHolder, data, options, pageParam) {
 
     
     d3.select("#Explore").on("click", function () {
+        var exploreDiv = d3.select("#exploreDiv"); //todo is there going to be a problem with what I wrote for filter, due to the addition of more input fields in this dropdown?
+        if (exploreDiv.style("display") == "none") {
+            exploreDiv.style("display", "block");
+
+        }
+
+
+        else {
+            exploreDiv.style("display", "none")
+        }
+
+
         function expBrushMove() {
             // var xRange
         }
@@ -568,7 +580,8 @@ function d3Plot(placeHolder, data, options, pageParam) {
             } else {
                 var extent = exploreBrush.extent();
                 var xRange = Math.abs(extent[0][0] - extent[1][0]),
-                    yRange = Math.abs(extent[0][1] - extent[1][1]);
+                    yRange = Math.abs(extent[0][1] - extent[1][1]),
+                    xSlideLow = d3.select('#exploreDivxslider_RANGER_FromIdx');
                 explToolTip.style({
                     position: "absolute",
                     left: xScale(extent[1][0]) + _PSE_plotOptions.margins.left + "px", //this is the x cordinate of where the drag ended (assumption here is drags from left to right
