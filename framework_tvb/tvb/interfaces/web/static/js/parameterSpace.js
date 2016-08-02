@@ -571,7 +571,7 @@ function d3Plot(placeHolder, data, options, pageParam) {
 
 
         function expBrushMove() {
-            // var xRange
+            d3.select("#rectSVG").remove()
         }
 
         function expBrushStop() { // todo add sliders to the div that shows up
@@ -594,6 +594,27 @@ function d3Plot(placeHolder, data, options, pageParam) {
                 });
                 d3.select("#xRange").text(xRange);
                 d3.select("#yRange").text(yRange)
+                var dim = d3.select("rect.extent").node().getBoundingClientRect();
+                canvas.append("svg")
+                    .attr({
+                        id: "rectSVG",
+                        height: dim.height,
+                        width: dim.width,
+                        x: dim.left - options.margins.left - 15, // i wish i knew why this value is going to put the x where it should be
+                        y: dim.top - options.margins.top - 214
+
+                    })
+                    .append("g")
+                    .style("stroke", "blue")
+                    .style("stroke-opacity", ".5")
+                    .attr("id", "rectxGrid")
+                    .call(xGrid);// need to make an adjustable grid function
+                d3.select("#rectSVG")
+                    .append("g")
+                    .style("stroke", "blue")
+                    .style("stroke-opacity", ".5")
+                    .attr("id", "rectyGrid")
+                    .call(yGrid);
             }
         }
 
@@ -609,6 +630,12 @@ function d3Plot(placeHolder, data, options, pageParam) {
                 .attr("class", "brush")
                 .call(exploreBrush)
                 .selectAll("rect");
+            d3.select('.extent').style({
+                stroke: '#4dbbbb',
+                'fill-opacity': '.125',
+                'shape-rendering': 'crispEdges'
+            });
+
         } else {
             d3.select(".brush").remove();
             explToolTip.style("display", "none"); // is this redundant with the above tooltip hider?
