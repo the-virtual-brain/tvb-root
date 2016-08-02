@@ -19,8 +19,10 @@
 /* global doAjaxCall, displayMessage */
 //general chores
 //todo create an exporting function that can save the figure
-//todo create a red marker line that pinpoints the dot on the canvas (or just highlights the grid lines)
 //todo create a function that will normalize the size attributes that belong to the results
+//ask lia how I might do the data merge within the database.
+//finish creating the explore box, and it's little tooltip window.
+//should the hover tooltip have information about the color and weight metric?
 
 // We keep all-nodes information for current PSE as a global, to have them ready at node-selection, node-overlay.
 var PSE_nodesInfo;
@@ -785,6 +787,23 @@ function applyHoverEvent(canvasId) {
     });
 }
 
+function updateLegend(minColor, maxColor) {
+    var legendContainer, legendHeight, tableContainer;
+    legendContainer = d3.select("#colorWeightsLegend");
+    legendHeight = d3.select("#table-colorWeightsLegend").node().getBoundingClientRect().height;
+    tableContainer = d3.select("#table-colorWeightsLegend");
+    ColSch_updateLegendColors(legendContainer.node(), legendHeight);
+    ColSch_updateLegendLabels(tableContainer.node(), minColor, maxColor, legendHeight);
+    d3.selectAll(".matrix-legend")
+        .style({
+            position: 'absolute',
+            top: '118px',
+            right: '25px'
+        })
+    d3.select("#colorWeightsLegend")
+        .style("right", "85px")
+}
+
 
 function PSEDiscreteInitialize(labelsXJson, labelsYJson, series_array, dataJson, backPage, hasStartedOperations,
                                min_color, max_color, min_size, max_size, d3DataJson) {
@@ -819,6 +838,7 @@ function PSEDiscreteInitialize(labelsXJson, labelsYJson, series_array, dataJson,
         max_color = 1;
     }
     _updatePlotPSE('main_div_pse', labels_x, labels_y, series_array, data, min_color, max_color, backPage, d3Data);
+    updateLegend(min_color, max_color)
 
 
     if (hasStartedOperations) {
