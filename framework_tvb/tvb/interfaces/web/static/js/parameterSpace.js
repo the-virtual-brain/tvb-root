@@ -398,7 +398,7 @@ function d3Plot(placeHolder, data, options, pageParam) {
     steps = {x: [.1], y: [1]}; // this will be populated when explorations are run, because other wise will have to write a function to extract steps from array of values.
     // updateKnownSteps(steps, inclusiveX, inclusiveY); // must determine a way to have every step value, not just the smallest.
     structure = createStructure(workingData, inclusiveX, inclusiveY);
-    for (ind in workingData) { //todo determine whether the new coords attribute will provide a way for us to be able to target the results in the way this does for adjustment in filtering or removal.
+    for (ind in workingData) {
         workingData[ind].key = parseFloat(ind)
     }
     ;
@@ -619,6 +619,7 @@ function d3Plot(placeHolder, data, options, pageParam) {
         var exploreDiv = d3.select("#exploreDiv"); //todo is there going to be a problem with what I wrote for filter, due to the addition of more input fields in this dropdown?
         if (exploreDiv.style("display") == "none") {
             exploreDiv.style("display", "block");
+            
 
         }
 

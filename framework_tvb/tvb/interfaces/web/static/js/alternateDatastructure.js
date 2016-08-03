@@ -61,8 +61,6 @@ function reconstructMatrixBySection(structure, startRow, endRow, startCol, endCo
             nzEles[i] = undefined//if the result belongs to a column that we aren't interested in then it shall be removed from the selection.
             // i think there could be a way to simply change the actual structure, and do away with the filtering below.
         }
-        ;
-        ;
     }
     //please note that retArr isn't the same as nzEles because they are different lengths for one, and retArr is sorted with duplicate dataentries (same parameter coords) paired down.
     //todo figure out whether the fact that the results at the same point get overwritten is going to cause problems later on.
@@ -126,6 +124,17 @@ function updateKnownSteps(stepOb, xArr, yArr) { // todo either deprecate, or swi
 
 }
 
+function sortResults(data) {
+    data.sort(function (obA, obB) { // for CSR I think maybe I need to be sorting on the y, and it needs to sort such that the order is increasing like labels
+        if (obA.coords.y < obB.coords.y) return -1;
+        if (obA.coords.y > obB.coords.y) return 1;
+        if (obA.coords.x < obB.coords.x) return -1;
+        if (obA.coords.x > obB.coords.x) return 1
+    });
+
+    return data
+}
+
 //very important to be able to add new results into the current structure whatever winds up being selected
 //this could be a good place to update a list that is storing the step values that have been used so far. Probably the call to update the coordinate arrays
 // i suppose this is a lot like the addition property of traditional matrices, it just needs to be tailored to work with matrices that are different sizes (controversial).
@@ -133,14 +142,8 @@ function mergeResults(newData, data) {
     //what I did in the actual html script tag was to simply concat the two arrays into one large one, and then sort on the y parameter, will it continue to be this simple?
     dataAll = newData.concat(data)//must make into Array before I can actually perform the sort below that is necessary
     removeDuplicateRes(dataAll);
-    dataAll.sort(function (obA, obB) { // for CSR I think maybe I need to be sorting on the y, and it needs to sort such that the order is increasing like labels
-        if (obA.coords.y < obB.coords.y) return -1;
-        if (obA.coords.y > obB.coords.y) return 1;
-        if (obA.coords.x < obB.coords.x) return -1;
-        if (obA.coords.x > obB.coords.x) return 1
-    });
+    return sortResults(dataAll);
 
-    return dataAll
 
 }
 
@@ -208,7 +211,7 @@ function compareToNeighbors(structure, stepOb, xArr, yArr, srchCritOb, nodeInfo)
     for (var ob of structure.A) { //do I need to sort this by x coord?
         // create some sort of control variable for the step val index
         var currentRowInd = yArr.indexOf(ob.coords.y),
-            neighbor,
+            neighbor = {},
             currentColInd = xArr.indexOf(ob.coords.x),
             topRowInd = yArr.length - 1,
             farRightColInd = xArr.length - 1,

@@ -1,0 +1,48 @@
+<div xmlns:py="http://genshi.edgewall.org/" py:strip="True">
+
+    <py:def function="drawRangeEntry(inputRow, parentDivId)">
+        <!--!    Function to generate the UI component for a Range parameter. (for FLOAT/INT/ARRAY attributes) -->
+        <py:if test="'minValue' in inputRow and 'maxValue' in inputRow and 'stepValue' in inputRow">
+            <py:with vars="containerDivId=parentDivId+inputRow.name + '_RANGER';
+                       minValue=float(inputRow.minValue);maxValue=float(inputRow.maxValue);stepValue=float(inputRow.stepValue)">
+                <table id="${containerDivId}" class="ranger-div-class" style="display: none;">
+                    <tr>
+                        <td><label>Available Interval:</label></td>
+                        <td><span id='${containerDivId}_interval_span'
+                                  class="ranger-value">${minValue} - ${maxValue}</span></td>
+                    </tr>
+                    <tr>
+                        <td><label>Current Selected Range:</label></td>
+                        <td><input type="number" step="0.0001" min="${minValue}" max="${maxValue}"
+                                   id="${containerDivId}_FromIdx"/>
+                            <input type="number" step="0.0001" min="${minValue}" max="${maxValue}"
+                                   id="${containerDivId}_ToIdx"/></td>
+                    </tr>
+                    <tr>
+                        <td><label for='${containerDivId}_stepInput' title='The step used for the range'>Step:</label>
+                        </td>
+                        <td><input type='number' id='${containerDivId}_stepInput' value='${stepValue}' min="0"
+                                   max="${maxValue - minValue}" step="0.0001"
+                                   title='The step used for the range' tabindex="1" disabled="disabled"/></td>
+                    </tr>
+                    <tr>
+                        <td colspan="2">
+                            <div id='${containerDivId}_slider'></div>
+                            <input id='${containerDivId}_hidden' type='hidden' name='${inputRow.name}'
+                                   disabled="disabled"/>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td colspan="2" id="${containerDivId}_rangeLabelsTd"></td>
+                    </tr>
+                </table>
+                <script type="text/javascript">
+                    $(document).ready(function () {
+                        toggleRange('$containerDivId', ${minValue}, ${maxValue}, ${stepValue}, '${inputRow.name}');
+                    })
+                </script>
+            </py:with>
+        </py:if>
+    </py:def>
+
+</div>

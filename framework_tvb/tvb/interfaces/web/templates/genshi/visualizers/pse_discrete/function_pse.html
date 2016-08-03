@@ -145,6 +145,13 @@
     <div class="tooltip"></div>
     <div id="exploreDiv" style="display: none;">
         <ul class="toolbar-inline" id="exploreTools">
+            <xi:include href="../../flow/type2component/explore_setup.html"/>
+            <li>
+                ${drawRangeEntry({'name':"xslider", 'minValue':0, 'maxValue':10,'stepValue':
+                0.001},'exploreDiv')}
+                ${drawRangeEntry({'name':"yslider", 'minValue':0, 'maxValue':10,'stepValue':
+                0.001},'exploreDiv')}
+            </li>
 
         </ul>
     </div>
