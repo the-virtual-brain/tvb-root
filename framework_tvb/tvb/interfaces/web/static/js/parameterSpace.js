@@ -393,9 +393,9 @@ function d3Plot(placeHolder, data, options, pageParam) {
         dotsCanvas, innerHeight, innerWidth, toolTipDiv, zoom, zoomable, datatypeGID, structure, inclusiveX, inclusiveY, steps;
     myBase = d3.select(placeHolder);
     //todo make the data merging occur on initialization, but after that continue using the collective working data for all viewer operations
-    workingData = data; // for our current demonstration this data is coming in mixed from two simulations over the same parameters, but different ranges and steps.
+    workingData = sortResults(data); //structure expects the sorting that this function performs.
     [inclusiveX, inclusiveY] = constructLabels(workingData);
-    steps = {x: [.1, .05], y: [1, .5]}; // this will be populated when explorations are run, because other wise will have to write a function to extract steps from array of values.
+    steps = {x: [.1], y: [1]}; // this will be populated when explorations are run, because other wise will have to write a function to extract steps from array of values.
     // updateKnownSteps(steps, inclusiveX, inclusiveY); // must determine a way to have every step value, not just the smallest.
     structure = createStructure(workingData, inclusiveX, inclusiveY);
     for (ind in workingData) { //todo determine whether the new coords attribute will provide a way for us to be able to target the results in the way this does for adjustment in filtering or removal.
