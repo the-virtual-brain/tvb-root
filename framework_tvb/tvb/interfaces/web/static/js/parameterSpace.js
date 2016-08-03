@@ -20,9 +20,19 @@
 //general chores
 //todo create an exporting function that can save the figure
 //todo create a function that will normalize the size attributes that belong to the results
+
+//questions for Lia tomorrow
+//ask about how to extend the legend piece
 //ask lia how I might do the data merge within the database.
+//ask which method for step values to use.
 //finish creating the explore box, and it's little tooltip window.
 //should the hover tooltip have information about the color and weight metric?
+
+// what to start on tomorrow: try to determine the relation to the correct values for the brush section and the placement of the grids.
+//also write a grid function that is flexible to input stepvalue and doesn't have a base line to make things look wierd
+//change the selection bars to being only session stored, and make them not specific to the datatypegid
+//determine how to make the legend stretch all the way down to the bottom of the graph
+
 
 // We keep all-nodes information for current PSE as a global, to have them ready at node-selection, node-overlay.
 var PSE_nodesInfo;
@@ -680,7 +690,7 @@ function d3Plot(placeHolder, data, options, pageParam) {
                     logicalOperator = ''
                 }
                 var thresholdValue = groupSelection.select(".thresholdInput").property('value'), //todo how to create messages in the upper right corner? should be able to tell user that they clicked wrong search criteria for value
-                    notPreference = (groupSelection.select("input[name='notButton']").property('checked')) ? ">" : "<", //gives us true or false
+                    notPreference = (groupSelection.select("input[name='notButton']").property('checked')) ? "<" : ">", //gives us true or false
                     filterType = groupSelection.select("input[name='thresholdType']:checked").property('id').slice(0, -1); // gives either 'Color' or 'Size'
                 concatStr += logicalOperator + ' ' + filterType + ' ' + notPreference + ' ' + thresholdValue;
 
@@ -705,8 +715,11 @@ function d3Plot(placeHolder, data, options, pageParam) {
                 data = circle.__data__,
                 colorWeight = PSE_d3NodesInfo[data.coords.x][data.coords.y].color_weight,
                 filterString = filterString.replace(/Size/g, radius).replace(/Color/g, colorWeight);
-            if (eval(filterString)) { //todo ask lia about how I should be troubleshooting the eval
-                workingData.splice(workingData.indexOf(data), 1) //this will remove the data from the group, and then it can be selected for below in the transparent dots
+            if (!eval(filterString)) { // this phrasing is now persistent phrased, meaning that the data that the user wants to keep doesn't pass.
+                var repInd = workingData.indexOf(data)
+                if (repInd != -1) { // keeps the function from repeatedly detecting transparent dots, but removing others from workingData that pass the criteria
+                    workingData.splice(repInd, 1) //this will remove the data from the group, and then it can be selected for below in the transparent dots
+                }
             }
         }
         transparentDots()
