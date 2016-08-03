@@ -124,13 +124,15 @@
                 </button>
 
                 <br/>
-                <label for="RateOfChange">RateOfChange: </label>
+                <label for="rateOfChangeInput">RateOfChange: </label>
                 <input type="text" id="rateOfChangeInput" value="65e-5"/>
                 <input type="checkbox" id="notButton"/>Not
 
                 <form>
-                    <input type="radio" name="RateOfChangeType" id="Size" checked="checked"/>Size
-                    <input type="radio" name="RateOfChangeType" id="Color"/>Color <br/>
+                    <input type="radio" name="RateOfChangeType" id="Size" checked="checked"/>
+                    <label for="Size">Size (min --> max)</label>
+                    <input type="radio" name="RateOfChangeType" id="Color"/>
+                    <label for="Color">Color (min --> max) </label><br/>
                 </form>
 
                 <button class="action action-confirm" id="contourGo">Start contour</button>

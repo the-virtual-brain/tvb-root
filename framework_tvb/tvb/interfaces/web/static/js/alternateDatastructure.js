@@ -248,8 +248,8 @@ function compareToNeighbors(structure, stepOb, xArr, yArr, srchCritOb, nodeInfo)
                 for (var i = 0; i < 3; i++) {
                     if (selectedResults.length > 0) {
                         neighbor = chooseClosestNeighbor(selectedResults, ob);
-                        console.log(ob.coords.x)
-                        console.log(ob.coords.y)
+
+
                         if (checkAgainstCriteria(srchCritOb, ob, neighbor, nodeInfo, structure)) {
                             closest.push(neighbor)
                         }
@@ -287,8 +287,8 @@ function compareToNeighbors(structure, stepOb, xArr, yArr, srchCritOb, nodeInfo)
                 if (neighbor == undefined) { // this simply performs a check that will only pass if we are at the corner result that isn't supposed to have a neighbor up or right
                     break;
                 }
-                console.log(ob.coords.x)
-                console.log(ob.coords.y)
+
+
                 if (checkAgainstCriteria(srchCritOb, ob, neighbor, nodeInfo, structure)) {
                     closest.push(neighbor);
 
@@ -320,8 +320,8 @@ function compareToNeighbors(structure, stepOb, xArr, yArr, srchCritOb, nodeInfo)
                 if (neighbor == undefined) { // this simply performs a check that will only pass if we are at the corner result that isn't supposed to have a neighbor up or right
                     break;
                 }
-                console.log(ob.coords.x)
-                console.log(ob.coords.y)
+
+
                 if (checkAgainstCriteria(srchCritOb, ob, neighbor, nodeInfo, structure)) {
                     closest.push(neighbor);
 

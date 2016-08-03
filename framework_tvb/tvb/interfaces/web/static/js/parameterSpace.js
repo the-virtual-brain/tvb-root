@@ -343,6 +343,51 @@ function d3Plot(placeHolder, data, options, pageParam) {
 
     }
 
+    function calcDiff() {
+        var [maxDiffCol,minDiffCol,minDiffSize,maxDiffSize,] = [0, Infinity, Infinity, 0] //initializing the values to be returned
+        allNeighbors = compareToNeighbors(structure, steps, inclusiveX, inclusiveY, {
+            type: 'Color',
+            value: 0,
+            not: false
+        }, PSE_d3NodesInfo);//the type here isn't important actually
+        for (ob of allNeighbors) {
+            for (neighborStr of ob.neighbors) {
+                var [xNeighborCoord,yNeighborCoord]  = neighborStr.split(" "),
+                    neighborOb = workingData.filter(function (dataOb) {
+                        return dataOb.coords.x == xNeighborCoord && dataOb.coords.y == yNeighborCoord
+                    }),
+                    neighborSize = neighborOb[0].points.radius,
+                    neighborColorWeight = PSE_d3NodesInfo[xNeighborCoord][yNeighborCoord].color_weight,
+                    obColorWeight = PSE_d3NodesInfo[ob.focalPoint.coords.x][ob.focalPoint.coords.y].color_weight,
+                    colorDiff = Math.abs(obColorWeight - neighborColorWeight),
+                    min_size = +d3.select("#minShapeLabel").node().innerHTML,
+                    max_size = +d3.select("#maxShapeLabel").node().innerHTML,
+                    sizeScale = d3.scale.linear() //todo shift sizescale into the scope of the head of the d3plot function variables, it's used in a lot of places.
+                        .range([min_size, max_size]) // these plus signs convert the string to number
+                        .domain(d3.extent(workingData, function (d) {
+                            return +d.points.radius
+                        })),
+                    sizeDiff = Math.abs(sizeScale(+neighborSize) - sizeScale(+ob.focalPoint.points.radius)); // gosh I need to have the radius to size converter on hand nearby all the time...
+                if (maxDiffCol < colorDiff) {
+                    maxDiffCol = colorDiff
+                }
+                if (minDiffCol > colorDiff && colorDiff != 0) {
+                    minDiffCol = colorDiff
+
+                }
+                if (maxDiffSize < sizeDiff) {
+                    maxDiffSize = sizeDiff
+
+                }
+                if (minDiffSize > sizeDiff && sizeDiff != 0) {
+                    minDiffSize = sizeDiff
+                }
+
+            }
+        }
+        return {size: [minDiffSize, maxDiffSize], color: [minDiffCol, maxDiffCol]}
+    }
+
 
     var myBase, workingData, canvasDimensions, canvas, xScale, yScale, xRef, yRef, xAxis, yAxis, circles, brush,
         dotsCanvas, innerHeight, innerWidth, toolTipDiv, zoom, zoomable, datatypeGID, structure, inclusiveX, inclusiveY, steps;
@@ -480,7 +525,10 @@ function d3Plot(placeHolder, data, options, pageParam) {
         if (contourDiv.style("display") == "none") {
             contourDiv.style("display", "block");
             getContourSelections() //todo rename the function to describe the general purpose that fits for both the filter and contour.
-            enactSelection()
+            enactSelection();
+            var tipFillin = calcDiff();
+            d3.select("label[for='Size']").html('Size --> (' + tipFillin.size[0].toExponential(4) + ", " + tipFillin.size[1].toExponential(4) + ")")
+            d3.select("label[for='Color']").html('Color --> (' + tipFillin.color[0].toExponential(4) + ", " + tipFillin.color[1].toExponential(4) + ")")
         }
 
 
