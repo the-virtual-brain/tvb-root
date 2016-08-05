@@ -772,6 +772,25 @@ function d3Plot(placeHolder, data, options, pageParam) {
 
     });
 
+    d3.select("#exploreGo").on("click", function () {
+        var xRange = [d3.select("#exploreDivxslider_RANGER_FromIdx").node().value, d3.select("#exploreDivxslider_RANGER_ToIdx").node().value],
+            yRange = [d3.select("#exploreDivyslider_RANGER_FromIdx").node().value, d3.select("#exploreDivyslider_RANGER_ToIdx").node().value],
+            xStep = d3.select("#exploreDivxslider_RANGER_stepInput").node().value,
+            yStep = d3.select("#exploreDivyslider_RANGER_stepInput").node().value;
+
+        doAjaxCall({
+            type: "POST",
+            url: "/flow/store_exploration_section/" + [xRange, yRange] + "/" + [xStep, yStep] + "/" + datatypeGID,
+            success: function () {
+                displayMessage(error, "successfully stored exploration details")
+            },
+            error: function () {
+                displayMessage(error, "couldn't store the exploration details")
+            }
+
+        })
+    })
+
 
 
     d3.selectAll("circle").on("mouseover", function (d) {

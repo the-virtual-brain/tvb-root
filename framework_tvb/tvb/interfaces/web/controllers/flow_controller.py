@@ -812,6 +812,49 @@ class FlowController(BaseController):
     def get_pse_filters(self):
         try:
             return dict(namedSelections=self.PSE_names_list)
-        except AttributeError:  # add debug breakpoint to check why 3rd and up select bars don't show,
+        except AttributeError:
             return dict(namedSelections=[])  # this will give us back atleast the New Selection option in the select
-        pass
+        except:
+            raise
+
+    @expose_json
+    def store_exploration_section(self, range, step, GID):
+        """
+        Later on this function will serve as the launching method for further simulations, but currently only reflects the information that will be passed off in that call.
+        :param data: x&y range are tuples that have the start and end value the user has selected. x&y step are float numbers
+        :return:
+        """
+        range = [float(num) for num in range.split(",")]
+        step = [float(num) for num in step.split(",")]
+        try:
+            self.explorations[GID].append({'x_range': range[:2],
+                                           'x_step': step[0],
+                                           'y_range': range[2:],
+                                           'y_step': step[1]})
+        except AttributeError:
+            self.explorations = {GID: [{'x_range': range[:2],
+                                        'x_step': step[0],
+                                        'y_range': range[2:],
+                                        'y_step': step[1]}]}
+        except KeyError:
+            self.explorations[GID] = [{'x_range': range[:2],
+                                       'x_step': step[0],
+                                       'y_range': range[2:],
+                                       'y_step': step[1]}]
+        except:
+            raise
+
+        return [True, 'Stored the exploration material successfully']
+
+    def retrieve_exploration_section(self, GID):
+        """
+
+        :param data: this will contain the same information as the store method of the same name.
+        :return: we will be giving back the whole set of datatype_groups that exist in the class attribute explorations.
+        """
+        try:  ## do I need to be doing comparisons for GID?
+            return self.explorations[GID]
+        except (AttributeError, KeyError):  # add debug breakpoint to check why 3rd and up select bars don't show,
+            return []
+        except:
+            raise
