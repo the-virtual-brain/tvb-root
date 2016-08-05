@@ -21,17 +21,13 @@
 //todo create an exporting function that can save the figure
 //todo create a function that will normalize the size attributes that belong to the results
 
-//questions for Lia tomorrow
-//ask about how to extend the legend piece
-//ask lia how I might do the data merge within the database.
-//ask which method for step values to use.
+
 //finish creating the explore box, and it's little tooltip window.
 //should the hover tooltip have information about the color and weight metric?
 
 // what to start on tomorrow: try to determine the relation to the correct values for the brush section and the placement of the grids.
 //also write a grid function that is flexible to input stepvalue and doesn't have a base line to make things look wierd
 //change the selection bars to being only session stored, and make them not specific to the datatypegid
-//determine how to make the legend stretch all the way down to the bottom of the graph
 
 
 // We keep all-nodes information for current PSE as a global, to have them ready at node-selection, node-overlay.
@@ -194,7 +190,7 @@ function d3Plot(placeHolder, data, options, pageParam) {
     function getFilterSelections() {
         doAjaxCall({
             type: 'POST',
-            url: '/flow/get_pse_filters/' + datatypeGID,
+            url: '/flow/get_pse_filters',
             success: function (r) {
                 for (var i = 0; i < d3.selectAll(".action-store")[0].length; i++) { // note the indexing due to the selectAll returning a one ele array of multiple arrays
                     var selectElement = d3.select("#filterSelect" + i);
@@ -212,7 +208,7 @@ function d3Plot(placeHolder, data, options, pageParam) {
     function getContourSelections() {
         doAjaxCall({
             type: 'POST',
-            url: '/flow/get_pse_filters/' + datatypeGID,
+            url: '/flow/get_pse_filters',
             success: function (r) {
                 var selectElement = d3.select("#contourSelect");
                 selectElement.selectAll("option").remove();
@@ -275,7 +271,7 @@ function d3Plot(placeHolder, data, options, pageParam) {
                 };
             doAjaxCall({
                 type: 'POST',
-                url: '/flow/store_pse_filter/' + usrSelectedName + '/' + datatypeGID,
+                url: '/flow/store_pse_filter/' + usrSelectedName,
                 data: incoming_values,
                 success: function (r) {
                     getFilterSelections();
@@ -601,7 +597,7 @@ function d3Plot(placeHolder, data, options, pageParam) {
             };
         doAjaxCall({
             type: 'POST',
-            url: '/flow/store_pse_filter/' + usrSelectedName + '/' + datatypeGID,
+            url: '/flow/store_pse_filter/' + usrSelectedName,
             data: incoming_values,
             success: function (r) {
                 getFilterSelections();
@@ -619,7 +615,7 @@ function d3Plot(placeHolder, data, options, pageParam) {
         var exploreDiv = d3.select("#exploreDiv"); //todo is there going to be a problem with what I wrote for filter, due to the addition of more input fields in this dropdown?
         if (exploreDiv.style("display") == "none") {
             exploreDiv.style("display", "block");
-            
+
 
         }
 

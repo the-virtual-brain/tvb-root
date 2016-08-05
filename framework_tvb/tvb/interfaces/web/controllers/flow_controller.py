@@ -795,18 +795,23 @@ class FlowController(BaseController):
 
 
     @expose_json
-    def store_pse_filter(self, config_name, datatype_gid, **data):
-        # model datatype specifies that the column entry for the threshold_value must be float.
-        threshold_value = float(data['threshold_value'])
-        applied_on = data['threshold_type']
-        self.flow_service.save_pse_filter(config_name, datatype_gid, threshold_value, applied_on)
-        return [True, "selection stored successfully!"]
+    def store_pse_filter(self, config_name, **data):
+        # this will need to be updated in such a way that the expose_json actually gets used
+        ## also this is going to be changed to be storing through the flow service and dao. Stay updated
+        try:
+            self.PSE_names_list.append((config_name, (data['threshold_value'] + "," + data['threshold_type'])))
+        except AttributeError:
+            self.PSE_names_list = [(config_name, (data['threshold_value'] + "," + data['threshold_type']))]
+        # else:
+        #     return [False,'Something went wrong, time to debug'] #this might not be doing what I think its supposed to
+        self.get_pse_filters()
+        return [True, 'Selected Text stored, and selection updated']
 
 
     @expose_fragment("visualizers/commons/channel_selector_opts")
-    def get_pse_filters(self, datatype_gid):
-        stored_filters = self.flow_service.get_stored_pse_filters(datatype_gid)
-        names_list = []
-        for sf in stored_filters:
-            names_list.append((sf.ui_name, (str(sf.threshold_value) + "," + sf.applied_on)))
-        return dict(namedSelections=names_list)
+    def get_pse_filters(self):
+        try:
+            return dict(namedSelections=self.PSE_names_list)
+        except AttributeError:  # add debug breakpoint to check why 3rd and up select bars don't show,
+            return dict(namedSelections=[])  # this will give us back atleast the New Selection option in the select
+        pass
