@@ -145,17 +145,52 @@
     <div class="tooltip"></div>
     <div id="exploreDiv" style="display: none;">
         <ul class="toolbar-inline" id="exploreTools">
-            <xi:include href="../../flow/type2component/explore_setup.html"/>
-            <li>
-                ${drawRangeEntry({'name':"xslider", 'minValue':0, 'maxValue':10,'stepValue':
-                0.001},'exploreDiv')}
-                ${drawRangeEntry({'name':"yslider", 'minValue':0, 'maxValue':10,'stepValue':
-                0.001},'exploreDiv')}
-            </li>
-            <li>
-                <button class="action action-confirm" id="exploreGo">Start exploration</button>
-            </li>
+            <fieldset>
+                <dl>
+                    <dt>
+                        <label>Parameter B Step Slider</label>
+                    </dt>
+                    <dd>
+                        <div class="sliderStepDiv">
+                            <div id="BStepSlider"
+                                 title="Slider to adjust the step increment of the next exploration"></div>
+                        </div>
+                    </dd>
+                </dl>
+                <dl>
+                    <dt>
+                        <label>Parameter A Step Slider</label>
+                    </dt>
+                    <dd>
+                        <div class="sliderStepDiv">
+                            <div id="AStepSlider"
+                                 title="Slider to adjust the step increment of the next exploration"></div>
+                        </div>
+                    </dd>
+                </dl>
+            </fieldset>
         </ul>
+
+        <script type="text/javascript">
+            $(document).ready(function () {
+                var elemSliderA = $('#AStepSlider');
+                elemSliderA.slider({
+                    min: 0, max: 1, step: .0001, value: 0,
+                    change: function (event, ui) {
+                        console.log('the slider is now at ' + ui.value)
+                        console.log('something to do with the event is ' + event)
+                    }
+                });
+                var elemSliderB = $('#BStepSlider');
+                elemSliderB.slider({
+                    min: 0, max: 1, step: .0001, value: 0,
+                    change: function (event, ui) {
+                        console.log('the slider is now at ' + ui.value)
+                        console.log('something to do with the event is ' + event)
+                    }
+                })
+            })
+        </script>
     </div>
 
 
@@ -194,6 +229,7 @@
             // the line below this is just to keep certain things in this genshi from being run multiple times
             PSEDiscreteInitialize('$labels_x', '$labels_y', '$series_array', '$data', '$pse_back_page',
                     $has_started_ops, '$min_color', '$max_color', '$min_shape_size', '$max_shape_size', '$d3_data');
+
             window.onresize = function () {
                 redrawPlot('main_div_pse');
             };
