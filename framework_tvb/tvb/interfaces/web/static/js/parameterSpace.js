@@ -637,14 +637,14 @@ function d3Plot(placeHolder, data, options, pageParam) {
                 var xRange = Math.abs(extent[0][0] - extent[1][0]),
                     yRange = Math.abs(extent[0][1] - extent[1][1]),
                     xSlideLow = d3.select('#exploreDivxslider_RANGER_FromIdx');
-                d3.select('#lowA').node().value = extent[0][0].toFixed(4);
-                d3.select('#upperA').node().value = extent[1][0].toFixed(4);
-                d3.select('#lowB').node().value = extent[0][1].toFixed(4);
-                d3.select('#upperB').node().value = extent[1][1].toFixed(4);
+                d3.select('#lowX').node().value = extent[0][0].toFixed(4);
+                d3.select('#upperX').node().value = extent[1][0].toFixed(4);
+                d3.select('#lowY').node().value = extent[0][1].toFixed(4);
+                d3.select('#upperY').node().value = extent[1][1].toFixed(4);
 
                 explToolTip.style({
                     position: "absolute",
-                    left: xScale(extent[1][0]) + _PSE_plotOptions.margins.left + "px", //this is the x cordinate of where the drag ended (assumption here is drags from left to right
+                    left: xScale(extent[1][0]) + _PSE_plotOptions.margins.left + "px", //this is the x coordinate of where the drag ended (assumption here is drags from left to right
                     top: yScale(extent[1][1]) + _PSE_plotOptions.margins.top + 100 + "px",
                     display: "block",
                     'background-color': '#C0C0C0',
@@ -704,9 +704,9 @@ function d3Plot(placeHolder, data, options, pageParam) {
 
     });
 
-    d3.select("#exploreGo").on("click", function () {
-        var xRange = [d3.select("#exploreDivxslider_RANGER_FromIdx").node().value, d3.select("#exploreDivxslider_RANGER_ToIdx").node().value],
-            yRange = [d3.select("#exploreDivyslider_RANGER_FromIdx").node().value, d3.select("#exploreDivyslider_RANGER_ToIdx").node().value],
+    d3.select("#exploreGo").on("click", function () { //todo settle on whether to use the actual parameter names, or x&y 
+        var xRange = [d3.select("#lowX").node().value, d3.select("#upperX").node().value],
+            yRange = [d3.select("#lowY").node().value, d3.select("#upperY").node().value],
             xStep = d3.select("#exploreDivxslider_RANGER_stepInput").node().value,
             yStep = d3.select("#exploreDivyslider_RANGER_stepInput").node().value;
 

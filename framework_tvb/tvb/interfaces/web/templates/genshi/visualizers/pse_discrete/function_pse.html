@@ -148,40 +148,43 @@
             <fieldset>
                 <dl>
                     <dt>
-                        <label>Parameter A range</label>
+                        <label>X range</label>
                     </dt>
                     <dd>
-                        <input type="number" name="lowerBoundParA" id="lowA"/>
-                        <input type="number" name="upperBoundParA" id="upperA"/>
+                        <input type="number" name="lowerBoundX" id="lowX"/>
+                        <!-- will need to put in some way to tie the increase in the range to the stepvalue selection -->
+                        <input type="number" name="upperBoundX" id="upperX"/>
                     </dd>
                 </dl>
                 <dl>
                     <dt>
-                        <label>Parameter A Step Slider</label>
+                        <label>X Step Slider</label>
                     </dt>
                     <dd>
+                        <input type="number" name="xStepInput"/>
                         <div class="sliderStepDiv">
-                            <div id="AStepSlider"
+                            <div id="XStepSlider"
                                  title="Slider to adjust the step increment of the next exploration"></div>
                         </div>
                     </dd>
                 </dl>
                 <dl>
                     <dt>
-                        <label>Parameter B range</label>
+                        <label>Y range</label>
                     </dt>
                     <dd>
-                        <input type="number" name="lowerBoundParB" id="lowB"/>
-                        <input type="number" name="upperBoundParB" id="upperB"/>
+                        <input type="number" name="lowerBoundY" id="lowY"/>
+                        <input type="number" name="upperBoundY" id="upperY"/>
                     </dd>
                 </dl>
                 <dl>
                     <dt>
-                        <label>Parameter B Step Slider</label>
+                        <label>Y Step Slider</label>
                     </dt>
                     <dd>
+                        <input type="number" name="yStepInput"/>
                         <div class="sliderStepDiv">
-                            <div id="BStepSlider"
+                            <div id="YStepSlider"
                                  title="Slider to adjust the step increment of the next exploration"></div>
                         </div>
                     </dd>
@@ -192,20 +195,18 @@
 
         <script type="text/javascript">
             $(document).ready(function () {
-                var elemSliderA = $('#AStepSlider');
+                var elemSliderA = $('#XStepSlider');
                 elemSliderA.slider({
                     min: 0, max: 1, step: .0001, value: 0,
-                    change: function (event, ui) {
-                        console.log('the slider is now at ' + ui.value)
-                        console.log('something to do with the event is ' + event)
+                    slide: function (event, ui) {
+                        d3.select('input[name="xStepInput"]').property('value', ui.value);
                     }
                 });
-                var elemSliderB = $('#BStepSlider');
+                var elemSliderB = $('#YStepSlider');
                 elemSliderB.slider({
                     min: 0, max: 1, step: .0001, value: 0,
-                    change: function (event, ui) {
-                        console.log('the slider is now at ' + ui.value)
-                        console.log('something to do with the event is ' + event)
+                    slide: function (event, ui) {
+                        d3.select('input[name="yStepInput"]').property('value', ui.value);
                     }
                 })
             })
