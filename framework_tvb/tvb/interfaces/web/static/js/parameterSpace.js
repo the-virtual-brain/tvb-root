@@ -160,24 +160,26 @@ function d3Plot(placeHolder, data, options, pageParam) {
         }
 
 
-    function createRange(arr) { // this makes a large range in the form of an array of values that configure to the proper step value that the ticks would otherwise be spaced at.
+    function createRange(arr, step) { // this makes a large range in the form of an array of values that configure to the proper step value that the ticks would otherwise be spaced at.
         //todo tie this to the step object that is now in existen
-        var step = arr[1] - arr[0];
+        if (step == undefined) {
+            step = arr[1] - arr[0];
+        }
         return d3.range(-50 + arr[1], 50 + arr[1], step)
     }
 
-    function createAxis(xORy) {
+    function createAxis(xORy, step) {
         if (xORy === "x") { // should I be creating the whole axis inside here, or should I simply return the axis that has the parts to be customized and called later
             newAxis = d3.svg.axis().scale(xScale)
                 .orient("bottom")
-                .tickValues(createRange(_PSE_plotOptions.xaxis.labels))
+                .tickValues(createRange(_PSE_plotOptions.xaxis.labels, step))
                 .tickFormat(d3.format(",.2f"));
             return newAxis
         }
         else {
             newAxis = d3.svg.axis().scale(yScale)
                 .orient("left")
-                .tickValues(createRange(_PSE_plotOptions.yaxis.labels))
+                .tickValues(createRange(_PSE_plotOptions.yaxis.labels, step))
                 .tickFormat(d3.format(",.2f")); // this means add in , when thousands are used, and look for 2 digits past the decimal, with value considered float type
             return newAxis
         }
@@ -446,12 +448,12 @@ function d3Plot(placeHolder, data, options, pageParam) {
         .attr("height", innerHeight - _PSE_plotOptions.margins.bottom - _PSE_plotOptions.margins.top);
 
     toolTipDiv = d3.select(".tooltip");
-    xAxis = createAxis("x");
-    xGrid = createAxis("x")
+    xAxis = createAxis("x", undefined);
+    xGrid = createAxis("x", undefined)
         .tickSize(innerHeight, 0, 0)
         .tickFormat("");
-    yAxis = createAxis("y");
-    yGrid = createAxis("y")
+    yAxis = createAxis("y", undefined);
+    yGrid = createAxis("y", undefined)
         .tickSize(-innerWidth, 0, 0)
         .tickFormat("");
 
@@ -653,16 +655,25 @@ function d3Plot(placeHolder, data, options, pageParam) {
                     opacity: 0.80
                 });
                 d3.select("#xRange").text(xRange);
-                d3.select("#yRange").text(yRange)
-                var dim = d3.select("rect.extent").node().getBoundingClientRect();
-                canvas.append("svg")
+                d3.select("#yRange").text(yRange);
+                var dim = d3.select("rect.extent").node().getBoundingClientRect(),
+                    xStep = d3.select('input[name="xStepInput"]').node().value,
+                    yStep = d3.select('input[name="yStepInput"]').node().value,
+                    xGrid = createAxis("x", undefined)
+                        .tickSize(innerHeight, 0, 0)
+                        .tickFormat(""),
+                    yGrid = createAxis("y", undefined)
+                        .tickSize(-innerWidth, 0, 0)
+                        .tickFormat("");
+
+                canvas.append("g")
+                    .append("svg")
                     .attr({
                         id: "rectSVG",
+                        x: xScale(extent[0][0]),
+                        y: yScale(extent[1][1]),
                         height: dim.height,
-                        width: dim.width,
-                        x: dim.left - options.margins.left - 15, // i wish i knew why this value is going to put the x where it should be
-                        y: dim.top - options.margins.top - 214
-
+                        width: dim.width
                     })
                     .append("g")
                     .style("stroke", "blue")
@@ -707,8 +718,8 @@ function d3Plot(placeHolder, data, options, pageParam) {
     d3.select("#exploreGo").on("click", function () { //todo settle on whether to use the actual parameter names, or x&y 
         var xRange = [d3.select("#lowX").node().value, d3.select("#upperX").node().value],
             yRange = [d3.select("#lowY").node().value, d3.select("#upperY").node().value],
-            xStep = d3.select("#exploreDivxslider_RANGER_stepInput").node().value,
-            yStep = d3.select("#exploreDivyslider_RANGER_stepInput").node().value;
+            xStep = d3.select("input[name='xStepInput']").node().value,
+            yStep = d3.select("input[name='yStepInput']").node().value;
 
         doAjaxCall({
             type: "POST",

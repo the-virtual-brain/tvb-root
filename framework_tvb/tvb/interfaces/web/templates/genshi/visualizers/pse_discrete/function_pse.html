@@ -89,6 +89,7 @@
         <p id="yRange"></p>
     </div>
     <div class="tooltip"></div>
+    <!-- should I make the tooltipwindows into a genshi template to be called when the buttons are clickedd? -->
     <div id="FilterDiv" style="display: none;">
         <ul class="toolbar-inline" id="filterTools">
             <li>
@@ -188,6 +189,9 @@
                                  title="Slider to adjust the step increment of the next exploration"></div>
                         </div>
                     </dd>
+                </dl>
+                <dl>
+                    <button id="exploreGo" class="action action-confirm">Explore Selected Region</button>
                 </dl>
 
             </fieldset>
