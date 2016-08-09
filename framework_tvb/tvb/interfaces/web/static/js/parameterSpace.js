@@ -638,31 +638,21 @@ function d3Plot(placeHolder, data, options, pageParam) {
                 var extent = exploreBrush.extent();
                 var xRange = Math.abs(extent[0][0] - extent[1][0]),
                     yRange = Math.abs(extent[0][1] - extent[1][1]),
-                    xSlideLow = d3.select('#exploreDivxslider_RANGER_FromIdx');
+                    xSteps = d3.select("input[name='xStepInput']").node().value,
+                    ySteps = d3.select("input[name='yStepInput']").node().value;
                 d3.select('#lowX').node().value = extent[0][0].toFixed(4);
                 d3.select('#upperX').node().value = extent[1][0].toFixed(4);
                 d3.select('#lowY').node().value = extent[0][1].toFixed(4);
                 d3.select('#upperY').node().value = extent[1][1].toFixed(4);
 
-                explToolTip.style({
-                    position: "absolute",
-                    left: xScale(extent[1][0]) + _PSE_plotOptions.margins.left + "px", //this is the x coordinate of where the drag ended (assumption here is drags from left to right
-                    top: yScale(extent[1][1]) + _PSE_plotOptions.margins.top + 100 + "px",
-                    display: "block",
-                    'background-color': '#C0C0C0',
-                    border: '1px solid #fdd',
-                    padding: '2px',
-                    opacity: 0.80
-                });
+
                 d3.select("#xRange").text(xRange);
                 d3.select("#yRange").text(yRange);
                 var dim = d3.select("rect.extent").node().getBoundingClientRect(),
-                    xStep = d3.select('input[name="xStepInput"]').node().value,
-                    yStep = d3.select('input[name="yStepInput"]').node().value,
-                    xGrid = createAxis("x", undefined)
+                    xGrid = createAxis("x", xSteps)
                         .tickSize(innerHeight, 0, 0)
                         .tickFormat(""),
-                    yGrid = createAxis("y", undefined)
+                    yGrid = createAxis("y", ySteps)
                         .tickSize(-innerWidth, 0, 0)
                         .tickFormat("");
 
@@ -679,17 +669,34 @@ function d3Plot(placeHolder, data, options, pageParam) {
                     .style("stroke", "blue")
                     .style("stroke-opacity", ".5")
                     .attr("id", "rectxGrid")
+                    .attr("transform", "translate(0,-10)") // hopefully this small shift is enough to remove the base grid line
                     .call(xGrid);// need to make an adjustable grid function
                 d3.select("#rectSVG")
                     .append("g")
                     .style("stroke", "blue")
                     .style("stroke-opacity", ".5")
                     .attr("id", "rectyGrid")
+                    .attr("transform", "translate(-10,0)")
                     .call(yGrid);
+
+                $(".outerCanvas").insert(explToolTip);
+
+                explToolTip.style({
+                    position: "absolute",
+                    left: xScale(extent[1][0]) + _PSE_plotOptions.margins.left + "px", //this is the x coordinate of where the drag ended (assumption here is drags from left to right
+                    top: yScale(extent[1][1]) + _PSE_plotOptions.margins.top + 100 + "px",
+                    display: "block",
+                    'background-color': '#C0C0C0',
+                    border: '1px solid #fdd',
+                    padding: '2px',
+                    opacity: 0.80
+                });
+
+
             }
         }
 
-        var explToolTip = d3.select("#ExploreToolTip");
+        var explToolTip = $("#ExploreToolTip").remove(); //todo think about deprecating the floating tooltip
 
         var exploreBrush = d3.svg.brush()
             .x(xScale)
