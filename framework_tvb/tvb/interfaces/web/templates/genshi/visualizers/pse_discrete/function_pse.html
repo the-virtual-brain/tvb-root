@@ -81,13 +81,6 @@
         </li>
     </ul>
 
-    <!--! this is what will become visible upon selecting an canvas area for exploration -->
-    <div id="ExploreToolTip" style="display: none;">
-        <p>The X Range is</p>
-        <p id="xRange"></p>
-        <p>The Y Range is</p>
-        <p id="yRange"></p>
-    </div>
     <div class="tooltip"></div>
     <!-- should I make the tooltipwindows into a genshi template to be called when the buttons are clickedd? -->
     <div id="FilterDiv" style="display: none;">
@@ -162,7 +155,7 @@
                         <label>X Step Slider</label>
                     </dt>
                     <dd>
-                        <input type="number" name="xStepInput"/>
+                        <input type="number" name="xStepInput" value=".05"/>
                         <div class="sliderStepDiv">
                             <div id="XStepSlider"
                                  title="Slider to adjust the step increment of the next exploration"></div>
@@ -183,7 +176,7 @@
                         <label>Y Step Slider</label>
                     </dt>
                     <dd>
-                        <input type="number" name="yStepInput"/>
+                        <input type="number" name="yStepInput" value=".09"/>
                         <div class="sliderStepDiv">
                             <div id="YStepSlider"
                                  title="Slider to adjust the step increment of the next exploration"></div>

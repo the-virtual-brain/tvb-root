@@ -624,6 +624,7 @@ function d3Plot(placeHolder, data, options, pageParam) {
 
         else {
             exploreDiv.style("display", "none")
+            d3.select("#brushCircles").remove()
         }
 
 
@@ -632,71 +633,44 @@ function d3Plot(placeHolder, data, options, pageParam) {
         }
 
         function expBrushStop() { // todo add sliders to the div that shows up
-            if (exploreBrush.empty() == true) {
-                explToolTip.style("display", "none")
-            } else {
-                var extent = exploreBrush.extent();
-                var xRange = Math.abs(extent[0][0] - extent[1][0]),
-                    yRange = Math.abs(extent[0][1] - extent[1][1]),
-                    xSteps = d3.select("input[name='xStepInput']").node().value,
-                    ySteps = d3.select("input[name='yStepInput']").node().value;
-                d3.select('#lowX').node().value = extent[0][0].toFixed(4);
-                d3.select('#upperX').node().value = extent[1][0].toFixed(4);
-                d3.select('#lowY').node().value = extent[0][1].toFixed(4);
-                d3.select('#upperY').node().value = extent[1][1].toFixed(4);
+            d3.select("#brushCircles").remove();
+            var extent = exploreBrush.extent();
+            var xRange = Math.abs(extent[0][0] - extent[1][0]),
+                yRange = Math.abs(extent[0][1] - extent[1][1]),
+                xSteps = d3.select("input[name='xStepInput']").node().value,
+                ySteps = d3.select("input[name='yStepInput']").node().value,
+                dim = d3.select("rect.extent").node().getBoundingClientRect(),
+                brushDotData = [];
+            d3.select('#lowX').node().value = extent[0][0].toFixed(4);
+            d3.select('#upperX').node().value = extent[1][0].toFixed(4);
+            d3.select('#lowY').node().value = extent[0][1].toFixed(4);
+            d3.select('#upperY').node().value = extent[1][1].toFixed(4);
+            for (var xVal of d3.range(extent[0][0], extent[1][0], xSteps)) {
+                for (var yVal of d3.range(extent[0][1], extent[1][1], ySteps)) {
+                    brushDotData.push([xVal, yVal])
+                }
+            }
 
 
-                d3.select("#xRange").text(xRange);
-                d3.select("#yRange").text(yRange);
-                var dim = d3.select("rect.extent").node().getBoundingClientRect(),
-                    xGrid = createAxis("x", xSteps)
-                        .tickSize(innerHeight, 0, 0)
-                        .tickFormat(""),
-                    yGrid = createAxis("y", ySteps)
-                        .tickSize(-innerWidth, 0, 0)
-                        .tickFormat("");
+            d3.select("#xRange").text(xRange);
+            d3.select("#yRange").text(yRange);
 
-                canvas.append("g")
-                    .append("svg")
-                    .attr({
-                        id: "rectSVG",
-                        x: xScale(extent[0][0]),
-                        y: yScale(extent[1][1]),
-                        height: dim.height,
-                        width: dim.width
-                    })
-                    .append("g")
-                    .style("stroke", "blue")
-                    .style("stroke-opacity", ".5")
-                    .attr("id", "rectxGrid")
-                    .attr("transform", "translate(0,-10)") // hopefully this small shift is enough to remove the base grid line
-                    .call(xGrid);// need to make an adjustable grid function
-                d3.select("#rectSVG")
-                    .append("g")
-                    .style("stroke", "blue")
-                    .style("stroke-opacity", ".5")
-                    .attr("id", "rectyGrid")
-                    .attr("transform", "translate(-10,0)")
-                    .call(yGrid);
-
-                $(".outerCanvas").insert(explToolTip);
-
-                explToolTip.style({
-                    position: "absolute",
-                    left: xScale(extent[1][0]) + _PSE_plotOptions.margins.left + "px", //this is the x coordinate of where the drag ended (assumption here is drags from left to right
-                    top: yScale(extent[1][1]) + _PSE_plotOptions.margins.top + 100 + "px",
-                    display: "block",
-                    'background-color': '#C0C0C0',
-                    border: '1px solid #fdd',
-                    padding: '2px',
-                    opacity: 0.80
+            canvas.append("g")
+                .attr("id", "brushCircles")
+                .selectAll("circle").data(brushDotData).enter().append('circle')
+                .attr({
+                    cx: function (d) {
+                        return xScale(d[0])
+                    },
+                    cy: function (d) {
+                        return yScale(d[1])
+                    },
+                    r: "5px",
+                    fill: "black"
                 });
 
-
-            }
         }
 
-        var explToolTip = $("#ExploreToolTip").remove(); //todo think about deprecating the floating tooltip
 
         var exploreBrush = d3.svg.brush()
             .x(xScale)
@@ -732,7 +706,7 @@ function d3Plot(placeHolder, data, options, pageParam) {
             type: "POST",
             url: "/flow/store_exploration_section/" + [xRange, yRange] + "/" + [xStep, yStep] + "/" + datatypeGID,
             success: function () {
-                displayMessage(error, "successfully stored exploration details")
+                displayMessage("successfully stored exploration details")
             },
             error: function () {
                 displayMessage(error, "couldn't store the exploration details")
