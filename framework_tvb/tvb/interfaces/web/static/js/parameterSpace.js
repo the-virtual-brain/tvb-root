@@ -333,6 +333,44 @@ function d3Plot(placeHolder, data, options, pageParam) {
         moveDots()
     }
 
+    function lineFillBrush(span, steps) {
+        lineFunc = d3.svg.line()
+            .x(function (d) {
+                return d.x
+            })
+            .y(function (d) {
+                return d.y
+            })
+            .interpolate("linear");
+
+        canvas.append("g")
+            .attr("id", "brushLines")
+        var lineData;
+
+        for (var xVal of d3.range(span[0][0], span[1][0], steps[0])) {
+            lineData = [{x: xScale(xVal), y: yScale(span[0][1])}, {x: xScale(xVal), y: yScale(span[1][1])}];
+            d3.select("#brushLines").append("path")
+                .attr("d", lineFunc(lineData))
+                .attr("stroke", "blue")
+                .attr("stroke-width", ".5px")
+                .attr("fill-opacity", ".1")
+                .attr("fill", "none")
+                .attr("id", "brushLine");
+        }
+        for (var yVal of d3.range(span[0][1], span[1][1], steps[1])) {
+            lineData = [{x: xScale(span[0][0]), y: yScale(yVal)}, {x: xScale(span[1][0]), y: yScale(yVal)}];
+            d3.select("#brushLines").append("path")
+                .attr("d", lineFunc(lineData))
+                .attr("stroke", "blue")
+                .attr("stroke-width", ".5px")
+                .attr("fill-opacity", ".1")
+                .attr("fill", "none")
+                .attr("id", "brushLine");
+        }
+
+
+    }
+
     function returnfill(weight) {
 
             var colTest = ColSch_getGradientColorString(weight, _PSE_minColor, _PSE_maxColor).replace("a", ""), // the a creates an error in the color scale creation
@@ -633,41 +671,26 @@ function d3Plot(placeHolder, data, options, pageParam) {
         }
 
         function expBrushStop() { // todo add sliders to the div that shows up
-            d3.select("#brushCircles").remove();
+            d3.select("#brushLines").remove();
+
             var extent = exploreBrush.extent();
             var xRange = Math.abs(extent[0][0] - extent[1][0]),
                 yRange = Math.abs(extent[0][1] - extent[1][1]),
                 xSteps = d3.select("input[name='xStepInput']").node().value,
-                ySteps = d3.select("input[name='yStepInput']").node().value,
-                dim = d3.select("rect.extent").node().getBoundingClientRect(),
-                brushDotData = [];
+                ySteps = d3.select("input[name='yStepInput']").node().value;
             d3.select('#lowX').node().value = extent[0][0].toFixed(4);
             d3.select('#upperX').node().value = extent[1][0].toFixed(4);
             d3.select('#lowY').node().value = extent[0][1].toFixed(4);
             d3.select('#upperY').node().value = extent[1][1].toFixed(4);
-            for (var xVal of d3.range(extent[0][0], extent[1][0], xSteps)) {
-                for (var yVal of d3.range(extent[0][1], extent[1][1], ySteps)) {
-                    brushDotData.push([xVal, yVal])
-                }
-            }
+
 
 
             d3.select("#xRange").text(xRange);
             d3.select("#yRange").text(yRange);
 
-            canvas.append("g")
-                .attr("id", "brushCircles")
-                .selectAll("circle").data(brushDotData).enter().append('circle')
-                .attr({
-                    cx: function (d) {
-                        return xScale(d[0])
-                    },
-                    cy: function (d) {
-                        return yScale(d[1])
-                    },
-                    r: "5px",
-                    fill: "black"
-                });
+            lineFillBrush(extent, [xSteps, ySteps])
+
+
 
         }
 
