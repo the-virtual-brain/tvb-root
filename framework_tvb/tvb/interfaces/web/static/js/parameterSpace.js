@@ -263,7 +263,7 @@ function d3Plot(placeHolder, data, options, pageParam) {
                 incrementId = d3.select(this).property("id").slice(-1); //threshold value (type float) is stored first index, and then the type (string)
             d3.select("input#threshold" + incrementId).property("value", parseFloat(filterSpecs[0]));
             d3.select("input[type='radio']#" + filterType + incrementId).property("checked", true);
-            d3.select("#notButton").property('checked', filterNot);
+            d3.select("#Not" + incrementId).property('checked', filterNot);
         });
 
         d3.selectAll(".action-store").on("click", function () { // this might not be currently specific enough to save only the filter configs, I don't want this to fire when I click on a contour save button.
