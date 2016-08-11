@@ -638,7 +638,8 @@ function d3Plot(placeHolder, data, options, pageParam) {
         var usrSelectedName = d3.select('#contourNameInput').property('value'),
             incoming_values = {
                 threshold_value: d3.select('input#rateOfChangeInput').node().value,
-                threshold_type: d3.select('input[name="RateOfChangeType"]:checked').node().id
+                threshold_type: d3.select('input[name="RateOfChangeType"]:checked').node().id,
+                not_presence: d3.select("#notButton").node().checked
             };
         doAjaxCall({
             type: 'POST',
@@ -672,7 +673,6 @@ function d3Plot(placeHolder, data, options, pageParam) {
 
 
         function expBrushMove() {
-            d3.select("#rectSVG").remove()
         }
 
         function expBrushStop() { // todo add sliders to the div that shows up
@@ -694,6 +694,27 @@ function d3Plot(placeHolder, data, options, pageParam) {
             d3.select("#yRange").text(yRange);
 
             lineFillBrush(extent, [xSteps, ySteps])
+            var elemSliderA = $('#XStepSlider');
+            elemSliderA.slider({
+                min: 0, max: extent[1][0] - extent[0][0], step: .0001, value: 0,
+                slide: function (event, ui) {
+                    d3.select('input[name="xStepInput"]').property('value', ui.value);
+                    d3.select("#brushLines").remove()
+                    lineFillBrush(extent, [ui.value, ySteps])
+
+                }
+            });
+            var elemSliderB = $('#YStepSlider');
+            elemSliderB.slider({
+                min: 0, max: extent[1][1] - extent[0][1], step: .0001, value: 0,
+                slide: function (event, ui) {
+                    d3.select('input[name="yStepInput"]').property('value', ui.value);
+                    d3.select("#brushLines").remove()
+                    lineFillBrush(extent, [xSteps, ui.value])
+
+
+                }
+            })
 
 
 
