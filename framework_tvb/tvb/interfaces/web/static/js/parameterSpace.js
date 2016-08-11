@@ -259,9 +259,11 @@ function d3Plot(placeHolder, data, options, pageParam) {
 
             var filterSpecs = d3.select(this).property("value").split(','),
                 filterType = filterSpecs[1].slice(0, -1), // error was coming up due to the extra number tagged onto the end of the button id, this keeps just the part that matters,could break if more than 10 filters rows are created
+                filterNot = filterSpecs[2],
                 incrementId = d3.select(this).property("id").slice(-1); //threshold value (type float) is stored first index, and then the type (string)
             d3.select("input#threshold" + incrementId).property("value", parseFloat(filterSpecs[0]));
-            d3.select("input[type='radio']#" + filterType + incrementId).property("checked", true)
+            d3.select("input[type='radio']#" + filterType + incrementId).property("checked", true);
+            d3.select("#notButton").property('checked', filterNot);
         });
 
         d3.selectAll(".action-store").on("click", function () { // this might not be currently specific enough to save only the filter configs, I don't want this to fire when I click on a contour save button.
@@ -269,7 +271,8 @@ function d3Plot(placeHolder, data, options, pageParam) {
                 usrSelectedName = d3.select('#overlayNameInput' + incrementId).property('value'),
                 incoming_values = {
                     threshold_value: d3.select('input#threshold' + incrementId).property('value'),
-                    threshold_type: d3.select('input[name="thresholdType"]:checked').property('id')
+                    threshold_type: d3.select('input[name="thresholdType"]:checked').property('id'),
+                    not_presence: d3.select("#Not" + incrementId).node().checked
                 };
             doAjaxCall({
                 type: 'POST',
@@ -295,9 +298,11 @@ function d3Plot(placeHolder, data, options, pageParam) {
         d3.select("#contourSelect").on("change", function () {
             var filterSpecs = d3.select(this).property('value').split(","),
                 filterType = filterSpecs[1],
-                filterValue = filterSpecs[0];
+                filterValue = filterSpecs[0],
+                filterNot = filterSpecs[2];
             d3.select('input[name="RateOfChangeType"]#' + filterType).property("checked", true);
-            d3.select('input#rateOfChangeInput').property("value", filterValue);
+            d3.select('input#rateOfChangeInput').property("value", filterValue)
+            d3.select("#notButton").property('checked', filterNot);
         })
     }
 
@@ -713,7 +718,6 @@ function d3Plot(placeHolder, data, options, pageParam) {
 
         } else {
             d3.select(".brush").remove();
-            explToolTip.style("display", "none"); // is this redundant with the above tooltip hider?
         }
 
 
@@ -857,6 +861,10 @@ function d3Plot(placeHolder, data, options, pageParam) {
                 displayMessage("couldn't add new row of filter options", "errorMessage")
             }
         })
+
+    })
+
+    d3.select("#ctrl-action-export").on("click", function (d) {
 
     })
 

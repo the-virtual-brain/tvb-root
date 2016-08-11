@@ -799,9 +799,19 @@ class FlowController(BaseController):
         # this will need to be updated in such a way that the expose_json actually gets used
         ## also this is going to be changed to be storing through the flow service and dao. Stay updated
         try:
-            self.PSE_names_list.append((config_name, (data['threshold_value'] + "," + data['threshold_type'])))
+            ##this is to check whether there is already an entry in the
+            for i, (name, Val) in enumerate(self.PSE_names_list):
+                if (name == config_name):
+                    self.PSE_names_list[i] = (config_name, (
+                    data['threshold_value'] + "," + data['threshold_type'] + "," + data[
+                        'not_presence']))  ##replace the previous occurence of the config name, and carry on.
+                    self.get_pse_filters()
+                    return [True, 'Selected Text stored, and selection updated']
+            self.PSE_names_list.append(
+                (config_name, (data['threshold_value'] + "," + data['threshold_type'] + "," + data['not_presence'])))
         except AttributeError:
-            self.PSE_names_list = [(config_name, (data['threshold_value'] + "," + data['threshold_type']))]
+            self.PSE_names_list = [
+                (config_name, (data['threshold_value'] + "," + data['threshold_type'] + "," + data['not_presence']))]
         # else:
         #     return [False,'Something went wrong, time to debug'] #this might not be doing what I think its supposed to
         self.get_pse_filters()
