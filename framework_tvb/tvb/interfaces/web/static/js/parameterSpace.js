@@ -98,7 +98,7 @@ function d3Plot(placeHolder, data, options, pageParam) {
 
     /*
      * The whole point of this function is to make the graph appear less crowded towards the axes, and each other dot. The point of discriminating between x and y is stylistic choice.
-     * */
+     */
     function createScale(xORy, labelArr) {
         if (xORy === "x") {
             var [lowerExtent,upperExtent] = d3.extent(labelArr),
@@ -128,7 +128,7 @@ function d3Plot(placeHolder, data, options, pageParam) {
     /*
      * this makes a large range in the form of an array of values that configure to the proper step value that the ticks would otherwise be spaced at.
      * So far this is the only method that I've figured out to create grid lines for the graph background that can work for the extensive panning the user might be interested in.
-     * */
+     */
 
     function createRange(arr, step) {
         if (step == undefined) {
@@ -140,7 +140,7 @@ function d3Plot(placeHolder, data, options, pageParam) {
     /*
      * This function generates an x or y axis structure with floating point accuracy up to 2 decimals. This will be used in slightly varying ways for the grid lines, and
      * the typical axes of the graph.
-     * */
+     */
     function createAxis(xORy, step) {
         if (xORy === "x") { // should I be creating the whole axis inside here, or should I simply return the axis that has the parts to be customized and called later
             newAxis = d3.svg.axis().scale(xScale)
@@ -162,7 +162,7 @@ function d3Plot(placeHolder, data, options, pageParam) {
     /*
      * This function uses an ajax call to retrieve the stored configurations for the filter tool. it simply removes the options that were already present in the select bar
      * and loads in an updated version of them. The whole point of the for loop is to load in the options for multiple select bars if they are present in greater numbers than 1.
-     * */
+     */
     function getFilterSelections() {
         doAjaxCall({
             type: 'POST',
@@ -183,7 +183,7 @@ function d3Plot(placeHolder, data, options, pageParam) {
 
     /*
      * This function is more or less the same as the one above it except there is no need to account for multiple select bars.
-     * */
+     */
     function getContourSelections() {
         doAjaxCall({
             type: 'POST',
@@ -205,7 +205,7 @@ function d3Plot(placeHolder, data, options, pageParam) {
      * This function is what helps coordinate the new positions of each of our result dots when the user pans the graph, or zooms in and out.
      * the factor section prevents the dots from overlapping each other after extreme amounts of zooming, but it makes it possible to scale up
      * small sections of a great big batch result.
-     * */
+     */
     function moveDots() {
         circles
             .transition()
@@ -240,7 +240,7 @@ function d3Plot(placeHolder, data, options, pageParam) {
      * and making sure that they are up to date with the configuration options that the users have created.
      * Worth noting that there is an incremental id to keep track of which of the select bars actions are being executed on.
      * lastly, this also introduces the expected behavior for the "remove options" button that comes with each filter bar group after the first.
-     * */
+     */
     function refreshOnChange() {
 
         d3.selectAll(".filterSelectBar").on("change", function () { // why wont this execute on all selection bars?
@@ -285,7 +285,7 @@ function d3Plot(placeHolder, data, options, pageParam) {
     /*
      * this function is for the contour tool again. It simply takes the stored values of the selected option, and recreates the configuration in the elements of the dropdown
      * (filling in rate of change input, checking the not button if necessary, selecting the correct contour type from color&size).
-     * */
+     */
     function enactSelection() {
         d3.select("#contourSelect").on("change", function () {
             var filterSpecs = d3.select(this).property('value').split(","),
@@ -302,14 +302,14 @@ function d3Plot(placeHolder, data, options, pageParam) {
     /*
      * simply but necessary function to help us keep track of the results for things like transparentDots below. Without a key value for each result, specific entries failing to pass filter
      * wouldn't be accurately modified.
-     * */
+     */
     function getKey(d) {
         return d.key
     }
 
     /*
      * create a selection from the data that has been removed for not passing the filter criteria, and then transition it to having a high level of transparency.
-     * */
+     */
     function transparentDots() {
         d3.selectAll("circle").data(workingData, getKey).exit()
             .transition()
@@ -321,7 +321,7 @@ function d3Plot(placeHolder, data, options, pageParam) {
     /*
      * This function tells our axis, grid, and dots to react to the panning events that the users creates when they drag the clicked cursor across either of the axes. The call
      * simply re evaluates what should be displayed given the change in the graph.
-     * */
+     */
     function xzoomed() {
         d3.select("#xAxis").call(xAxis);
         d3.select("#xGrid").call(xGrid);
@@ -338,7 +338,7 @@ function d3Plot(placeHolder, data, options, pageParam) {
      * This function is only taking arguments from brushed space of graph, and the step slider bars of the explore drop down. With these pieces of information it draws horizontal
      * and vertical lines in the correct positions to fill in the Brushed area of the graph. The point is to provide illustration to the user of where results will be placed if
      * an actual exploration were launched.
-     * */
+     */
     function lineFillBrush(span, steps) {
         lineFunc = d3.svg.line()
             .x(function (d) {
@@ -379,7 +379,7 @@ function d3Plot(placeHolder, data, options, pageParam) {
 
     /*
      * This function uses the ColSch gradient function to determine the fill color for each dot in the graph.
-     * */
+     */
     function returnfill(weight) {
 
         var colTest = ColSch_getGradientColorString(weight, _PSE_minColor, _PSE_maxColor).replace("a", ""), // the a creates an error in the color scale creation, so it must be removed.
@@ -391,7 +391,7 @@ function d3Plot(placeHolder, data, options, pageParam) {
     /*
      * This function generates range labels to assist the user in inputting a threshold for the contour tool. It simply goes through the neighbor options for every dot in the graph
      * and determines what the differences are in size and color metric. Then the function simply returns an object of the max&mins of color and size comparisons for the labels.
-     * */
+     */
     function calcDiff() {
         var [maxDiffCol,minDiffCol,minDiffSize,maxDiffSize,] = [0, Infinity, Infinity, 0] //initializing the values to be returned
         allNeighbors = compareToNeighbors(structure, steps, inclusiveX, inclusiveY, {
@@ -442,8 +442,8 @@ function d3Plot(placeHolder, data, options, pageParam) {
      *  this section below is devoted to variable declaration, and graph assembly.
      ******************************************************************************/
 
-    var myBase, workingData, canvasDimensions, canvas, xScale, yScale, xRef, yRef, xAxis, yAxis, circles, brush,
-        dotsCanvas, innerHeight, innerWidth, toolTipDiv, zoom, zoomable, datatypeGID, structure, inclusiveX, inclusiveY, steps;
+    var myBase, workingData, canvasDimensions, canvas, xScale, yScale, xAxis, yAxis, circles, brush,
+        dotsCanvas, innerHeight, innerWidth, toolTipDiv, zoom, datatypeGID, structure, inclusiveX, inclusiveY, steps;
     myBase = d3.select(placeHolder);
     workingData = sortResults(data); //structure expects the sorting that this function performs.
     [inclusiveX, inclusiveY] = constructLabels(workingData);
@@ -572,7 +572,7 @@ function d3Plot(placeHolder, data, options, pageParam) {
 
     /*
      * This indicates what should be done at the clicking of the contour button.
-     * */
+     */
     d3.select('#Contour').on("click", function () {
         var contourDiv = d3.select("#contourDiv");
         if (contourDiv.style("display") == "none") {
@@ -594,7 +594,7 @@ function d3Plot(placeHolder, data, options, pageParam) {
 
     /*
      * executes the drawing of lines where the rate of change passes the users criteria.
-     * */
+     */
     d3.select("#contourGo").on("click", function () {
 
         function drawCompLines(relationOb) {
@@ -651,7 +651,7 @@ function d3Plot(placeHolder, data, options, pageParam) {
 
     /*
      * store the user specified configuration for a contour run as session attribute
-     * */
+     */
     d3.select("#saveContourConfig").on("click", function () {
 
         var usrSelectedName = d3.select('#contourNameInput').property('value'),
@@ -677,7 +677,7 @@ function d3Plot(placeHolder, data, options, pageParam) {
 
     /*
      * specifics for drawing the explore menu upon clicking the explore button, and the generation of brush for the graph.
-     * */
+     */
     d3.select("#Explore").on("click", function () {
         var exploreDiv = d3.select("#exploreDiv");
         if (exploreDiv.style("display") == "none") {
@@ -693,7 +693,7 @@ function d3Plot(placeHolder, data, options, pageParam) {
         /*
          * this function is what is executed upon the release of the mouse when selecting a region of the graph. Here we update the range inputs for the extent of the brushed
          * area. Furthermore we extend the behavior of the sliders to dynamically change the spacing of the grid lines within the brushed area of the graph.
-         * */
+         */
         function expBrushStop() {
             d3.select("#brushLines").remove();
 
@@ -758,7 +758,7 @@ function d3Plot(placeHolder, data, options, pageParam) {
 
     /*
      * when we click the "Explore Section" button send the info from the drop down menu to be stored as a session attribute.
-     * */
+     */
     d3.select("#exploreGo").on("click", function () {
         var xRange = [d3.select("#lowX").node().value, d3.select("#upperX").node().value],
             yRange = [d3.select("#lowY").node().value, d3.select("#upperY").node().value],
@@ -780,7 +780,7 @@ function d3Plot(placeHolder, data, options, pageParam) {
 
     /*
      * display the filter drop down on clicking the filter button in the tool bar. Populate the selections, and selection behavior if there are actually entries.
-     * */
+     */
     d3.select("#Filter").on("click", function () {
 
 
@@ -801,7 +801,7 @@ function d3Plot(placeHolder, data, options, pageParam) {
     /*
      * This is what happens when we click the "start filter" button. First the user criteria bars are concatenated into a string for boolean comparison through eval. Then we
      * retrieve the actual thresholds for comparisons
-     * */
+     */
     d3.select("#filterGo").on("click", function () { // will the filtering also be any metric of option?
 
         function concatCriteria() {
@@ -861,7 +861,7 @@ function d3Plot(placeHolder, data, options, pageParam) {
 
     /*
      * create a new row of filter criteria if the user selects "add options"
-     * */
+     */
     d3.select("#addFilterOps").on("click", function () {
         var nextRowId = d3.selectAll("button.action-store")[0].length;
         doAjaxCall({
@@ -882,7 +882,7 @@ function d3Plot(placeHolder, data, options, pageParam) {
 
     /*
      * provides basis for behavior when the cursor passes over a result. we get shown the message that is stored as information in the nodeInfo.tooltip
-     * */
+     */
     d3.selectAll("circle").on("mouseover", function (d) {
         var nodeInfo = PSE_d3NodesInfo[d.coords.x][d.coords.y];
         var toolTipText = nodeInfo.tooltip.split("&amp;").join("&").split("&lt;").join("<").split("&gt;").join(">");
@@ -906,7 +906,7 @@ function d3Plot(placeHolder, data, options, pageParam) {
 
     /*
      * this is the behavior for when a result is clicked. We have to bring up the window that gives the user more options relating to the specific result clicked upon.
-     * */
+     */
     d3.selectAll("circle").on("click", function (d) {
         var nodeInfo = PSE_d3NodesInfo[d.coords.x][d.coords.y];
         if (nodeInfo.dataType != undefined) {
@@ -917,7 +917,7 @@ function d3Plot(placeHolder, data, options, pageParam) {
 
     /*
      * This is the function that specifies how to convert the graph into an exportable file.
-     * */
+     */
     d3.select("#ctrl-action-export").on("click", function (d) {
 
     })
@@ -938,7 +938,7 @@ function redrawPlot(plotCanvasId) {
 
 /*
  * create a colored legend for the current colorScheme and data results, and place it in the upper right of the graphed space.
- * */
+ */
 function updateLegend(minColor, maxColor) {
     var legendContainer, legendHeight, tableContainer;
     legendContainer = d3.select("#colorWeightsLegend");
