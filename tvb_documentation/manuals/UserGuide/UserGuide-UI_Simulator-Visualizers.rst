@@ -364,10 +364,9 @@ Discrete Parameter Space Exploration View, will show up to two measures of the S
 after varying input Simulator Parameters. The two displayed measures are emphasized in the node shapes and node colors.
 
 When running a range of Simulations in TVB, it is possible to do it by varying up to 2 input parameters (displayed on
-the X and Y axis of current viewer).This visualizer supports to display results when the resulting space is not bigger
-than 200 points.
+the X and Y axis of current viewer).
 
-.. figure:: screenshots/simulator_pse_configuration.jpg
+.. figure:: screenshots/basic_updated_pse_viewer.png
    :width: 90%
    :align: center
 
@@ -376,6 +375,23 @@ than 200 points.
 When moving with your mouse cursor over a graph node, you will see a few details about that particular simulation result.
 When clicking a node, an overlay window will open, which gives you full access to view or further analyze that
 particular Simulation result.
+
+.. figure:: screenshots/panning_in_action.png
+:width: 90%
+   :align: center
+
+      Panning the graph
+
+   A newly incorporated feature is the option to pan the canvas in/out or left/right/up/down. This will allow for inspection of very large batch simulations section by section.
+   The same mouse over, and clicking rules apply from above.
+
+.. figure:: screenshots/filter_button_inaction.png
+:width: 90%
+   :align: center
+
+      Filter Button support
+
+
 
 Isocline PSE Visualizer
 ~~~~~~~~~~~~~~~~~~~~~~~

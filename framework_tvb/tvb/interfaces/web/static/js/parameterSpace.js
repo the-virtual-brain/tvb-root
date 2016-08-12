@@ -693,15 +693,12 @@ function d3Plot(placeHolder, data, options, pageParam) {
         else {
             exploreDiv.style("display", "none")
         }
-
-
         /*
          * this function is what is executed upon the release of the mouse when selecting a region of the graph. Here we update the range inputs for the extent of the brushed
          * area. Furthermore we extend the behavior of the sliders to dynamically change the spacing of the grid lines within the brushed area of the graph.
          */
         function expBrushStop() {
             d3.select("#brushLines").remove();
-
             var extent = exploreBrush.extent();
             var xRange = Math.abs(extent[0][0] - extent[1][0]),
                 yRange = Math.abs(extent[0][1] - extent[1][1]),
