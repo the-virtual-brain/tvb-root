@@ -462,21 +462,21 @@ function d3Plot(placeHolder, data, options, pageParam) {
     datatypeGID = d3.select("#datatype-group-gid").property("value");
     xScale = createScale("x", inclusiveX);
     yScale = createScale("y", inclusiveY);
-    yzoom = d3.behavior.zoom()
+    yzoom = d3.behavior.zoom() // these zooms are to create the panning behavior that the user employs for zooming in/out or side to side adjustments of graph.
         .y(yScale)
         .on("zoom", yzoomed);
     xzoom = d3.behavior.zoom()
         .x(xScale)
         .on("zoom", xzoomed);
-    canvas = myBase.append("svg")
+    canvas = myBase.append("svg") // now we establish the actual selection to generate the background for our graph, using dimensions taken from above.
         .attr({
             class: "outerCanvas",
             height: canvasDimensions.h,
             width: canvasDimensions.w
         })
         .append("g")
-        .attr("transform", "translate( " + _PSE_plotOptions.margins.left + "," + _PSE_plotOptions.margins.top + " )");
-    canvasClip = canvas.append("svg:clipPath")
+        .attr("transform", "translate( " + _PSE_plotOptions.margins.left + "," + _PSE_plotOptions.margins.top + " )"); // means that everything that is child of this selection will be adjusted by margins
+    canvasClip = canvas.append("svg:clipPath") //thes objects limit what is currently displayed on the graph and the axes. Keep in mind that without these the axes and grids would stretch beyond where we expect to see them.
         .attr("id", "genClip")
         .append("svg:rect")
         .attr("id", "clipRect")
@@ -499,11 +499,11 @@ function d3Plot(placeHolder, data, options, pageParam) {
         .attr("width", _PSE_plotOptions.margins.right)//
         .attr("height", innerHeight - _PSE_plotOptions.margins.bottom - _PSE_plotOptions.margins.top);
 
-    toolTipDiv = d3.select(".tooltip");
-    xAxis = createAxis("x", undefined);
+    toolTipDiv = d3.select(".tooltip"); // this is the hover over dot tool tip which displays information stored in the PSE_nodeInfo variable.
+    xAxis = createAxis("x", undefined); // these lines create the axes and grids
     xGrid = createAxis("x", undefined)
         .tickSize(innerHeight, 0, 0)
-        .tickFormat("");
+        .tickFormat(""); //means don't show any values at the base line of the axis
     yAxis = createAxis("y", undefined);
     yGrid = createAxis("y", undefined)
         .tickSize(-innerWidth, 0, 0)
@@ -512,7 +512,7 @@ function d3Plot(placeHolder, data, options, pageParam) {
 
     canvas.append("g")
         .attr("id", "yGrid")
-        .attr("clip-path", "url(#genClip)")
+        .attr("clip-path", "url(#genClip)") // applying the clip to limit extent of displayed grid
         .attr("transform", "translate (0,0)")
         .style("stroke", "gray")
         .style("stroke-opacity", ".5")
@@ -531,7 +531,7 @@ function d3Plot(placeHolder, data, options, pageParam) {
         .attr("clip-path", "url(#xClip)")
         .attr("transform", "translate (0," + ( innerHeight - _PSE_plotOptions.margins.bottom ) + ")")
         .call(xAxis)
-        .call(xzoom);
+        .call(xzoom); // tie the panning behaviour to this element
     canvas.append("g")
         .attr("id", "yAxis")
         .attr("clip-path", "url(#yClip)")
@@ -539,41 +539,44 @@ function d3Plot(placeHolder, data, options, pageParam) {
         .call(yAxis)
         .call(yzoom);
 
-    dotsCanvas = canvas.append("svg")
+    dotsCanvas = canvas.append("svg") // generate the SVG container for the plotted dots.
         .classed("dotsCanvas", true)
         .attr({
             height: innerHeight,
             width: innerWidth
         })
         .attr("clip-path", "url(#genClip)");
-    circles = dotsCanvas.selectAll("circle").data(workingData, getKey).enter().append("circle")
+    circles = dotsCanvas.selectAll("circle").data(workingData, getKey).enter().append("circle") // bind the data using d3, and use data to assign specific attributes to each dot
         .attr({
             r: function (d) {
                 return d.points.radius
             },
             cx: function (d) {
-                return xScale(d.coords.x) //use the newly attributed coordinate attribute from the data
+                return xScale(d.coords.x) // the xScale converts from data values to pixel values for appropriate actual placement in the graphed space.
             },
             cy: function (d) {
                 return yScale(d.coords.y)
             },
             fill: function (d) {
                 var nodeInfo = PSE_d3NodesInfo[d.coords.x][d.coords.y];
-                if (nodeInfo.tooltip.search("PENDING") == -1 && nodeInfo.tooltip.search("CANCELED") == -1) {
+                if (nodeInfo.tooltip.search("PENDING") == -1 && nodeInfo.tooltip.search("CANCELED") == -1) { // this prevents code from trying to find reasonable color values when simulation results haven't been generated for them
                     color = returnfill(nodeInfo.color_weight);
                 }
                 else {
-                    var color = d3.rgb("black");
+                    var color = d3.rgb("black"); // leave pending results blacked out if not complete.
                 }
-                return color
+                return color // otherwise fill out with color in keeping with scheme.
             }
 
         });
 
+    /*
+     * This indicates what should be done at the clicking of the contour button.
+     * */
     d3.select('#Contour').on("click", function () {
         var contourDiv = d3.select("#contourDiv");
         if (contourDiv.style("display") == "none") {
-            contourDiv.style("display", "block");
+            contourDiv.style("display", "block"); // makes the contour dropdown menu visible
             getContourSelections()
             enactSelection();
             var tipFillin = calcDiff(); // this is the label filling in for threshold of rate of change
@@ -583,11 +586,15 @@ function d3Plot(placeHolder, data, options, pageParam) {
 
 
         else {
-            contourDiv.style("display", "none")
+            contourDiv.style("display", "none") // removes the contour menu from display
         }
 
     })
 
+
+    /*
+     * executes the drawing of lines where the rate of change passes the users criteria.
+     * */
     d3.select("#contourGo").on("click", function () {
 
         function drawCompLines(relationOb) {
@@ -614,10 +621,10 @@ function d3Plot(placeHolder, data, options, pageParam) {
                         deltaX = (xNeighbor - obX), //simple final minus initial for change
                         deltaY = (yNeighbor - obY),
                         midPoint = {x: obX + deltaX / 2, y: obY + deltaY / 2},
-                        startCoord = {x: midPoint.x + deltaY / 2, y: midPoint.y - deltaX / 2},
+                        startCoord = {x: midPoint.x + deltaY / 2, y: midPoint.y - deltaX / 2}, // gives instruction as to what direction and how far from the midpoint to establish start&end of line
                         endCoord = {x: midPoint.x - deltaY / 2, y: midPoint.y + deltaX / 2};
                     d3.select(".dotsCanvas").append("path")
-                        .attr("d", lineFunc([startCoord, endCoord]))
+                        .attr("d", lineFunc([startCoord, endCoord])) // generate the svg path for the line
                         .attr("stroke", lineCol)
                         .attr("stroke-width", ".5px")
                         .attr("fill-opacity", ".1")
@@ -628,13 +635,13 @@ function d3Plot(placeHolder, data, options, pageParam) {
 
         }
 
-        var criteria = {
+        var criteria = { //retrieve the user specifications for the contour run
             type: d3.select('input[name="RateOfChangeType"]:checked').node().id,
             value: +d3.select('input#rateOfChangeInput').node().value,
             not: d3.select("#notButton").property('checked')
         }
 
-        neighborsObjct = compareToNeighbors(structure, steps, inclusiveX, inclusiveY, criteria, PSE_d3NodesInfo)
+        neighborsObjct = compareToNeighbors(structure, steps, inclusiveX, inclusiveY, criteria, PSE_d3NodesInfo) // use function from the alternateDatastructure.js to determine which dots and neigbors will be separated by lines.
         drawCompLines(neighborsObjct)
     })
 
@@ -642,7 +649,10 @@ function d3Plot(placeHolder, data, options, pageParam) {
         d3.selectAll('#contourLine').remove()
     });
 
-    d3.select("#saveContourConfig").on("click", function () {// todo think about the way to save the not option also.
+    /*
+     * store the user specified configuration for a contour run as session attribute
+     * */
+    d3.select("#saveContourConfig").on("click", function () {
 
         var usrSelectedName = d3.select('#contourNameInput').property('value'),
             incoming_values = {
@@ -665,26 +675,26 @@ function d3Plot(placeHolder, data, options, pageParam) {
         })
     });
 
-    
+    /*
+     * specifics for drawing the explore menu upon clicking the explore button, and the generation of brush for the graph.
+     * */
     d3.select("#Explore").on("click", function () {
-        var exploreDiv = d3.select("#exploreDiv"); //todo is there going to be a problem with what I wrote for filter, due to the addition of more input fields in this dropdown?
+        var exploreDiv = d3.select("#exploreDiv");
         if (exploreDiv.style("display") == "none") {
             exploreDiv.style("display", "block");
-
-
         }
 
 
         else {
             exploreDiv.style("display", "none")
-            d3.select("#brushCircles").remove()
         }
 
 
-        function expBrushMove() {
-        }
-
-        function expBrushStop() { // todo add sliders to the div that shows up
+        /*
+         * this function is what is executed upon the release of the mouse when selecting a region of the graph. Here we update the range inputs for the extent of the brushed
+         * area. Furthermore we extend the behavior of the sliders to dynamically change the spacing of the grid lines within the brushed area of the graph.
+         * */
+        function expBrushStop() {
             d3.select("#brushLines").remove();
 
             var extent = exploreBrush.extent();
@@ -697,20 +707,15 @@ function d3Plot(placeHolder, data, options, pageParam) {
             d3.select('#lowY').node().value = extent[0][1].toFixed(4);
             d3.select('#upperY').node().value = extent[1][1].toFixed(4);
 
-
-
-            d3.select("#xRange").text(xRange);
-            d3.select("#yRange").text(yRange);
-
-            lineFillBrush(extent, [xSteps, ySteps])
+            lineFillBrush(extent, [xSteps, ySteps]) // draw initial grid lines when mouse button is released.
             var elemSliderA = $('#XStepSlider'); // this is included here to make the sliders affect the drawing of the grid lines dynamically
             elemSliderA.slider({
                 min: 0, max: extent[1][0] - extent[0][0], step: .0001, value: xSteps,
                 slide: function (event, ui) {
                     xSteps = ui.value;
                     d3.select('input[name="xStepInput"]').property('value', ui.value);
-                    d3.select("#brushLines").remove()
-                    lineFillBrush(extent, [xSteps, ySteps])
+                    d3.select("#brushLines").remove() // remove the previously drawn lines to prevent confusion.
+                    lineFillBrush(extent, [xSteps, ySteps]) // redraw grid lines
 
                 }
             });
@@ -724,29 +729,25 @@ function d3Plot(placeHolder, data, options, pageParam) {
                     lineFillBrush(extent, [xSteps, ySteps])
                 }
             })
-
-
-
         }
 
 
-        var exploreBrush = d3.svg.brush()
+        var exploreBrush = d3.svg.brush() // generate the brush
             .x(xScale)
             .y(yScale)
-            .on("brush", expBrushMove)
             .on("brushend", expBrushStop);
-        if (d3.select(".brush").empty() == true) {
+        if (d3.select(".brush").empty() == true) { // if there not already a brush attach it to the canvas
             canvas.append("g")
                 .attr("class", "brush")
                 .call(exploreBrush)
                 .selectAll("rect");
-            d3.select('.extent').style({
+            d3.select('.extent').style({ // create temporary stylish rules for the brush.
                 stroke: '#4dbbbb',
                 'fill-opacity': '.125',
                 'shape-rendering': 'crispEdges'
             });
 
-        } else {
+        } else { // if we found a brush, then we need to remove it because if we get here we are closing the menu
             d3.select(".brush").remove();
             d3.select("#brushLines").remove();
         }
@@ -754,7 +755,11 @@ function d3Plot(placeHolder, data, options, pageParam) {
 
     });
 
-    d3.select("#exploreGo").on("click", function () { //todo settle on whether to use the actual parameter names, or x&y 
+
+    /*
+     * when we click the "Explore Section" button send the info from the drop down menu to be stored as a session attribute.
+     * */
+    d3.select("#exploreGo").on("click", function () {
         var xRange = [d3.select("#lowX").node().value, d3.select("#upperX").node().value],
             yRange = [d3.select("#lowY").node().value, d3.select("#upperY").node().value],
             xStep = d3.select("input[name='xStepInput']").node().value,
@@ -771,9 +776,12 @@ function d3Plot(placeHolder, data, options, pageParam) {
             }
 
         })
-    })
+    });
 
-    d3.select("#Filter").on("click", function () { //todo standardize the id names for the div elements used for the various overlays.
+    /*
+     * display the filter drop down on clicking the filter button in the tool bar. Populate the selections, and selection behavior if there are actually entries.
+     * */
+    d3.select("#Filter").on("click", function () {
 
 
         var filterDiv = d3.select("#FilterDiv"),
@@ -790,6 +798,10 @@ function d3Plot(placeHolder, data, options, pageParam) {
         }
     });
 
+    /*
+     * This is what happens when we click the "start filter" button. First the user criteria bars are concatenated into a string for boolean comparison through eval. Then we
+     * retrieve the actual thresholds for comparisons
+     * */
     d3.select("#filterGo").on("click", function () { // will the filtering also be any metric of option?
 
         function concatCriteria() {
@@ -808,7 +820,7 @@ function d3Plot(placeHolder, data, options, pageParam) {
                 } else {
                     logicalOperator = ''
                 }
-                var thresholdValue = groupSelection.select(".thresholdInput").property('value'), //todo how to create messages in the upper right corner? should be able to tell user that they clicked wrong search criteria for value
+                var thresholdValue = groupSelection.select(".thresholdInput").property('value'),
                     notPreference = (groupSelection.select("input[name='notButton']").property('checked')) ? "<" : ">", //gives us true or false
                     filterType = groupSelection.select("input[name='thresholdType']:checked").property('id').slice(0, -1); // gives either 'Color' or 'Size'
                 concatStr += logicalOperator + ' ' + filterType + ' ' + notPreference + ' ' + thresholdValue;
@@ -847,9 +859,30 @@ function d3Plot(placeHolder, data, options, pageParam) {
     });
 
 
+    /*
+     * create a new row of filter criteria if the user selects "add options"
+     * */
+    d3.select("#addFilterOps").on("click", function () {
+        var nextRowId = d3.selectAll("button.action-store")[0].length;
+        doAjaxCall({
+            type: "POST",
+            url: "/flow/create_row_of_specs/" + nextRowId + "/", //remember if you experience an error about there now being a row for one(), there is some silly typo sitting around, so go and check everything with the working examples.
+            success: function (r) {
+                var newLiEntry = d3.select("#FilterDiv > ul").append("li").html(r)
+                getFilterSelections()
+                refreshOnChange()
+            },
+            error: function () {
+                displayMessage("couldn't add new row of filter options", "errorMessage")
+            }
+        })
+
+    })
 
 
-
+    /*
+     * provides basis for behavior when the cursor passes over a result. we get shown the message that is stored as information in the nodeInfo.tooltip
+     * */
     d3.selectAll("circle").on("mouseover", function (d) {
         var nodeInfo = PSE_d3NodesInfo[d.coords.x][d.coords.y];
         var toolTipText = nodeInfo.tooltip.split("&amp;").join("&").split("&lt;").join("<").split("&gt;").join(">");
@@ -870,6 +903,10 @@ function d3Plot(placeHolder, data, options, pageParam) {
                 .duration(300)
                 .style("display", "none")
         });
+
+    /*
+     * this is the behavior for when a result is clicked. We have to bring up the window that gives the user more options relating to the specific result clicked upon.
+     * */
     d3.selectAll("circle").on("click", function (d) {
         var nodeInfo = PSE_d3NodesInfo[d.coords.x][d.coords.y];
         if (nodeInfo.dataType != undefined) {
@@ -878,23 +915,9 @@ function d3Plot(placeHolder, data, options, pageParam) {
     });
 
 
-    d3.select("#addFilterOps").on("click", function () {
-        var nextRowId = d3.selectAll("button.action-store")[0].length;
-        doAjaxCall({
-            type: "POST",
-            url: "/flow/create_row_of_specs/" + nextRowId + "/", //remember if you experience an error about there now being a row for one(), there is some silly typo sitting around, so go and check everything with the working examples.
-            success: function (r) {
-                var newLiEntry = d3.select("#FilterDiv > ul").append("li").html(r)
-                getFilterSelections()
-                refreshOnChange()
-            },
-            error: function () {
-                displayMessage("couldn't add new row of filter options", "errorMessage")
-            }
-        })
-
-    })
-
+    /*
+     * This is the function that specifies how to convert the graph into an exportable file.
+     * */
     d3.select("#ctrl-action-export").on("click", function (d) {
 
     })
@@ -913,7 +936,9 @@ function redrawPlot(plotCanvasId) {
 }
 
 
-
+/*
+ * create a colored legend for the current colorScheme and data results, and place it in the upper right of the graphed space.
+ * */
 function updateLegend(minColor, maxColor) {
     var legendContainer, legendHeight, tableContainer;
     legendContainer = d3.select("#colorWeightsLegend");
