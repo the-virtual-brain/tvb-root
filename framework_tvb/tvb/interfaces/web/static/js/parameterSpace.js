@@ -448,8 +448,8 @@ function d3Plot(placeHolder, data, options, pageParam) {
     workingData = sortResults(data); //structure expects the sorting that this function performs.
     [inclusiveX, inclusiveY] = constructLabels(workingData);
     steps = {
-        x: [inclusiveX[1] - inclusiveX[0]]
-        , y: [inclusiveY[1] - inclusiveY[0]]
+        x: [+(inclusiveX[1] - inclusiveX[0]).toFixed(4)] // prevent any wierd float point arithmetic
+        , y: [+(inclusiveY[1] - inclusiveY[0]).toFixed(4)]
     };
     structure = createStructure(workingData, inclusiveX, inclusiveY);
     for (ind in workingData) {
@@ -569,6 +569,11 @@ function d3Plot(placeHolder, data, options, pageParam) {
             }
 
         });
+
+
+    /*************************************************************************************************************************
+     *   what follows here is the associated code for mouse events, and user generated events
+     *************************************************************************************************************************/
 
     /*
      * This indicates what should be done at the clicking of the contour button.
