@@ -380,7 +380,7 @@ particular Simulation result.
 :width: 90%
    :align: center
 
-      Panning the graph
+      Panning the Graph
 
    A newly incorporated feature is the option to pan the canvas in/out or left/right/up/down. This will allow for inspection of very large batch simulations section by section.
    The same mouse over, and clicking rules apply from above.
@@ -389,7 +389,35 @@ particular Simulation result.
 :width: 90%
    :align: center
 
-      Filter Button support
+      Filter support
+
+   The next new tool is the filter button. This allows users to specify threshold values for either the color or size metric and render results trasparent if they are below that value.
+   This tool has the option to invert the threshold rule which makes the results above that threshold transparent instead. Also, the user has the choice to make their filter more specific
+   by adding further criteria rows that relate to the one which came before it through selected logical operators (AND OR). It is worth noting that in order to perform filtrations that
+   require grouping of the logical operations ([foo and bar] or baz) as different from (foo and [bar or baz]) sequential filters must be applied: one filter execution then the other.
+
+.. figure:: screenshots/contour_tool_action.png
+:width: 90%
+   :align: center
+
+      Contour Line Creation
+
+   Even with the incorporation of size and color as visual cues to the individual result metrics, it can be difficult to tell similar results apart. This tool allows the user to specify a threshold
+   for the difference in metrics between one dot and its neighbors, and lines will be drawn in between dots that have metric differences that are greater than the user input threshold.
+   Similar options to the filter tool are included, so that the threshold can be inverted, and color or size can be considered at a time.
+
+.. figure:: screenshots/explore_button_in_action.png
+:width: 90%
+   :align: center
+
+      Explore Tool, with Region Selected
+
+   The last tool to be described in the PSE Discrete Viewer is the Explore tool. This tool is meant to give users the option to select regions of the Parameter Space to be filled in with
+   new results. Currently only the front end of this tool is complete, so upon clicking the explore button the mouse cursor becomes a cross hair, and sections of the graph can be selected.
+   Upon creation of this selection, grid lines are placed to demonstrate where new results would be added given the user's chosen step values. To adjust these values simply drag the sliders
+   in the drop down menu for the explore tool, and the grid lines will adjust until they suit the user.
+
+
 
 
 
