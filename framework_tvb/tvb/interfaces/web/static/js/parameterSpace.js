@@ -57,16 +57,6 @@ function _updatePlotPSE(canvasId, xLabels, yLabels, seriesArray, data_info, min_
     PSE_nodesInfo = data_info;
     PSE_d3NodesInfo = d3Data_info;
     _PSE_plotOptions = {
-        series: {
-            lines: {
-                show: false
-            },
-            points: {
-                lineWidth: 0,
-                show: true,
-                fill: true
-            }
-        },
         margins: { // is this the correct way to be doing margins? It's just how I have in the past,
             top: 20,
             bottom: 40,
@@ -74,51 +64,24 @@ function _updatePlotPSE(canvasId, xLabels, yLabels, seriesArray, data_info, min_
             right: 50
         },
         xaxis: {
-            labels: xLabels, // is there a better way to get access to these values inside my plotting?
-            min: -1,
-            max: xLabels.length,
-            tickSize: 1,
-            tickFormatter: function (val) {
-                if (val < 0 || val >= xLabels.length) {
-                    return "";
-                }
-                return xLabels[val];
-            }
+            labels: xLabels
         },
         yaxis: {
-            labels: yLabels,
-            min: -1,
-            max: yLabels.length,
-            tickSize: 1,
-            tickFormatter: function (val) {
-                if (val < 0 || val >= yLabels.length || yLabels[val] === "_") {
-                    return "";
-                }
-                return yLabels[val];
-            }
-        },
-        grid: {
-            clickable: true,
-            hoverable: true
+            labels: yLabels
         }
 
     };
     _d3PSE_plot = d3Plot("#" + canvasId, seriesArray, $.extend(true, {}, _PSE_plotOptions), backPage);
-
-    //this has been commented out below so that I can see what I have done on the canvas after the above function has ended
-    /*_PSE_plot = $.plot($("#" + canvasId), $.parseJSON(seriesArray), $.extend(true, {}, _PSE_plotOptions));
-     changeColors(); // this will need to eventually have the addition of the d3 plot function
-     $(".tickLabel").each(function () {
-     $(this).css("color", "#000000");
-     });
-     //if you want to catch the right mouse click you have to change the flot sources
-     // because it allows you to catch only "plotclick" and "plothover"
-     applyClickEvent(canvasId, backPage);
-     applyHoverEvent(canvasId);*/
 }
 
 
 function d3Plot(placeHolder, data, options, pageParam) {
+
+    /*************************************************************************************************************************
+     *   what follows here first are functions meant to assist in the plotting of results correctly with d3 as our plotting language.
+     *************************************************************************************************************************/
+
+
     //these lines are cleanup for artifacts of the conversion that aren't behaving nicely, they should eventually be removed because they are just treating the symptoms.
     if (d3.select(".outerCanvas").empty() != true) {
         d3.selectAll(".outerCanvas").remove()
@@ -132,9 +95,11 @@ function d3Plot(placeHolder, data, options, pageParam) {
             oneOrMoreDiv[0][0].remove()
         }
     }
+
+    /*
+     * The whole point of this function is to make the graph appear less crowded towards the axes, and each other dot. The point of discriminating between x and y is stylistic choice.
+     * */
     function createScale(xORy, labelArr) {
-        // !! there is the potential to create wrong looking figures when the lower extent has a negative value in it, but is this just an error coming from large ranges? or
-        //todo change this to allow for values above the initial data range
         if (xORy === "x") {
             var [lowerExtent,upperExtent] = d3.extent(labelArr),
                 extentPadding = ((upperExtent - lowerExtent) * .10) / 2, // this multiplication factor controls how much the dots are gathered together
@@ -143,7 +108,7 @@ function d3Plot(placeHolder, data, options, pageParam) {
 
                 var newScale = d3.scale.linear()
                     .domain([padLo, padUp])
-                    .range([options.margins.left, innerWidth - options.margins.right]);
+                    .range([_PSE_plotOptions.margins.left, innerWidth - _PSE_plotOptions.margins.right]);
             }
         else {
             var [lowerExtent,upperExtent] = d3.extent(labelArr),
@@ -153,21 +118,29 @@ function d3Plot(placeHolder, data, options, pageParam) {
 
                 var newScale = d3.scale.linear()
                     .domain([padLo, padUp])
-                    .range([innerHeight - (options.margins.bottom), options.margins.top]);
+                    .range([innerHeight - (_PSE_plotOptions.margins.bottom), _PSE_plotOptions.margins.top]);
 
             }
             return newScale
         }
 
 
-    function createRange(arr, step) { // this makes a large range in the form of an array of values that configure to the proper step value that the ticks would otherwise be spaced at.
-        //todo tie this to the step object that is now in existen
+    /*
+     * this makes a large range in the form of an array of values that configure to the proper step value that the ticks would otherwise be spaced at.
+     * So far this is the only method that I've figured out to create grid lines for the graph background that can work for the extensive panning the user might be interested in.
+     * */
+
+    function createRange(arr, step) {
         if (step == undefined) {
             step = arr[1] - arr[0];
         }
         return d3.range(-50 + arr[1], 50 + arr[1], step)
     }
 
+    /*
+     * This function generates an x or y axis structure with floating point accuracy up to 2 decimals. This will be used in slightly varying ways for the grid lines, and
+     * the typical axes of the graph.
+     * */
     function createAxis(xORy, step) {
         if (xORy === "x") { // should I be creating the whole axis inside here, or should I simply return the axis that has the parts to be customized and called later
             newAxis = d3.svg.axis().scale(xScale)
@@ -185,10 +158,11 @@ function d3Plot(placeHolder, data, options, pageParam) {
         }
     }
 
-    function split_element_string(string) {
-        string = string.replace("\n")
-    }
 
+    /*
+     * This function uses an ajax call to retrieve the stored configurations for the filter tool. it simply removes the options that were already present in the select bar
+     * and loads in an updated version of them. The whole point of the for loop is to load in the options for multiple select bars if they are present in greater numbers than 1.
+     * */
     function getFilterSelections() {
         doAjaxCall({
             type: 'POST',
@@ -207,6 +181,9 @@ function d3Plot(placeHolder, data, options, pageParam) {
         })
     }
 
+    /*
+     * This function is more or less the same as the one above it except there is no need to account for multiple select bars.
+     * */
     function getContourSelections() {
         doAjaxCall({
             type: 'POST',
@@ -223,6 +200,12 @@ function d3Plot(placeHolder, data, options, pageParam) {
             }
         })
     }
+
+    /*
+     * This function is what helps coordinate the new positions of each of our result dots when the user pans the graph, or zooms in and out.
+     * the factor section prevents the dots from overlapping each other after extreme amounts of zooming, but it makes it possible to scale up
+     * small sections of a great big batch result.
+     * */
     function moveDots() {
         circles
             .transition()
@@ -246,14 +229,19 @@ function d3Plot(placeHolder, data, options, pageParam) {
                     return yScale(d.coords.y)
                 }
 
-                // return yScale(d.yCen) // why is this placing dots far below the bottom of the pane? Is the canvas dimension off?
 
 
             })
     }
 
 
-    function refreshOnChange() { //this function exists because if new select bars are added after loading then there is no _onchange handler attributed
+    /*
+     * This is primarily a filter tool function. It is responsible for attaching the "on("change")" function to new select bars, saving behavior,
+     * and making sure that they are up to date with the configuration options that the users have created.
+     * Worth noting that there is an incremental id to keep track of which of the select bars actions are being executed on.
+     * lastly, this also introduces the expected behavior for the "remove options" button that comes with each filter bar group after the first.
+     * */
+    function refreshOnChange() {
 
         d3.selectAll(".filterSelectBar").on("change", function () { // why wont this execute on all selection bars?
 
@@ -294,6 +282,10 @@ function d3Plot(placeHolder, data, options, pageParam) {
         })
     }
 
+    /*
+     * this function is for the contour tool again. It simply takes the stored values of the selected option, and recreates the configuration in the elements of the dropdown
+     * (filling in rate of change input, checking the not button if necessary, selecting the correct contour type from color&size).
+     * */
     function enactSelection() {
         d3.select("#contourSelect").on("change", function () {
             var filterSpecs = d3.select(this).property('value').split(","),
@@ -307,10 +299,17 @@ function d3Plot(placeHolder, data, options, pageParam) {
     }
 
 
+    /*
+     * simply but necessary function to help us keep track of the results for things like transparentDots below. Without a key value for each result, specific entries failing to pass filter
+     * wouldn't be accurately modified.
+     * */
     function getKey(d) {
         return d.key
     }
 
+    /*
+     * create a selection from the data that has been removed for not passing the filter criteria, and then transition it to having a high level of transparency.
+     * */
     function transparentDots() {
         d3.selectAll("circle").data(workingData, getKey).exit()
             .transition()
@@ -318,14 +317,11 @@ function d3Plot(placeHolder, data, options, pageParam) {
             .attr("fill-opacity", ".1")
     }
 
-    function xyzoomed() { // currently non-functional todo decide whether to remove or fix up
-        d3.select("#xAxis").call(xAxis);
-        d3.select("#yAxis").call(yAxis);
-        d3.select("#xGrid").call(xGrid);
-        d3.select("#yGrid").call(yGrid);
-        moveDots()
-    }
 
+    /*
+     * This function tells our axis, grid, and dots to react to the panning events that the users creates when they drag the clicked cursor across either of the axes. The call
+     * simply re evaluates what should be displayed given the change in the graph.
+     * */
     function xzoomed() {
         d3.select("#xAxis").call(xAxis);
         d3.select("#xGrid").call(xGrid);
@@ -338,6 +334,11 @@ function d3Plot(placeHolder, data, options, pageParam) {
         moveDots()
     }
 
+    /*
+     * This function is only taking arguments from brushed space of graph, and the step slider bars of the explore drop down. With these pieces of information it draws horizontal
+     * and vertical lines in the correct positions to fill in the Brushed area of the graph. The point is to provide illustration to the user of where results will be placed if
+     * an actual exploration were launched.
+     * */
     function lineFillBrush(span, steps) {
         lineFunc = d3.svg.line()
             .x(function (d) {
@@ -376,14 +377,21 @@ function d3Plot(placeHolder, data, options, pageParam) {
 
     }
 
+    /*
+     * This function uses the ColSch gradient function to determine the fill color for each dot in the graph.
+     * */
     function returnfill(weight) {
 
-            var colTest = ColSch_getGradientColorString(weight, _PSE_minColor, _PSE_maxColor).replace("a", ""), // the a creates an error in the color scale creation
-                d3color = d3.rgb(colTest);
+        var colTest = ColSch_getGradientColorString(weight, _PSE_minColor, _PSE_maxColor).replace("a", ""), // the a creates an error in the color scale creation, so it must be removed.
+            d3color = d3.rgb(colTest); // turn color string into a d3 compatible form.
             return d3color
 
     }
 
+    /*
+     * This function generates range labels to assist the user in inputting a threshold for the contour tool. It simply goes through the neighbor options for every dot in the graph
+     * and determines what the differences are in size and color metric. Then the function simply returns an object of the max&mins of color and size comparisons for the labels.
+     * */
     function calcDiff() {
         var [maxDiffCol,minDiffCol,minDiffSize,maxDiffSize,] = [0, Infinity, Infinity, 0] //initializing the values to be returned
         allNeighbors = compareToNeighbors(structure, steps, inclusiveX, inclusiveY, {
@@ -430,29 +438,30 @@ function d3Plot(placeHolder, data, options, pageParam) {
     }
 
 
+    /*******************************************************************************
+     *  this section below is devoted to variable declaration, and graph assembly.
+     ******************************************************************************/
+
     var myBase, workingData, canvasDimensions, canvas, xScale, yScale, xRef, yRef, xAxis, yAxis, circles, brush,
         dotsCanvas, innerHeight, innerWidth, toolTipDiv, zoom, zoomable, datatypeGID, structure, inclusiveX, inclusiveY, steps;
     myBase = d3.select(placeHolder);
-    //todo make the data merging occur on initialization, but after that continue using the collective working data for all viewer operations
     workingData = sortResults(data); //structure expects the sorting that this function performs.
     [inclusiveX, inclusiveY] = constructLabels(workingData);
-    steps = {x: [.1], y: [1]}; // this will be populated when explorations are run, because other wise will have to write a function to extract steps from array of values.
-    // updateKnownSteps(steps, inclusiveX, inclusiveY); // must determine a way to have every step value, not just the smallest.
+    steps = {
+        x: [inclusiveX[1] - inclusiveX[0]]
+        , y: [inclusiveY[1] - inclusiveY[0]]
+    };
     structure = createStructure(workingData, inclusiveX, inclusiveY);
     for (ind in workingData) {
         workingData[ind].key = parseFloat(ind)
     }
     ;
     canvasDimensions = {h: parseInt(myBase.style("height")), w: parseInt(myBase.style("width"))};
-    innerHeight = canvasDimensions.h - options.margins.top;
-    innerWidth = canvasDimensions.w - options.margins.left;
+    innerHeight = canvasDimensions.h - _PSE_plotOptions.margins.top;
+    innerWidth = canvasDimensions.w - _PSE_plotOptions.margins.left;
     datatypeGID = d3.select("#datatype-group-gid").property("value");
     xScale = createScale("x", inclusiveX);
     yScale = createScale("y", inclusiveY);
-    xyzoom = d3.behavior.zoom()
-        .x(xScale)
-        .y(yScale)
-        .on("zoom", xyzoomed);
     yzoom = d3.behavior.zoom()
         .y(yScale)
         .on("zoom", yzoomed);
@@ -466,7 +475,7 @@ function d3Plot(placeHolder, data, options, pageParam) {
             width: canvasDimensions.w
         })
         .append("g")
-        .attr("transform", "translate( " + options.margins.left + "," + options.margins.top + " )");
+        .attr("transform", "translate( " + _PSE_plotOptions.margins.left + "," + _PSE_plotOptions.margins.top + " )");
     canvasClip = canvas.append("svg:clipPath")
         .attr("id", "genClip")
         .append("svg:rect")
@@ -517,7 +526,7 @@ function d3Plot(placeHolder, data, options, pageParam) {
         .style("stroke-opacity", ".5")
         .call(xGrid);
 
-    canvas.append("g") // the tricky part here is to applythe clip where the xaxis was before the transform
+    canvas.append("g") // the tricky part here is to apply the clip where the xaxis was before the transform... more g tag strangeness
         .attr("id", "xAxis")
         .attr("clip-path", "url(#xClip)")
         .attr("transform", "translate (0," + ( innerHeight - _PSE_plotOptions.margins.bottom ) + ")")
@@ -549,7 +558,7 @@ function d3Plot(placeHolder, data, options, pageParam) {
                 return yScale(d.coords.y)
             },
             fill: function (d) {
-                var nodeInfo = PSE_d3NodesInfo[d.coords.x][d.coords.y]; // todo remind me why we store this information separate from the seriesArray? Would it be simpler to just make it another attribute of each element in seriesArr?
+                var nodeInfo = PSE_d3NodesInfo[d.coords.x][d.coords.y];
                 if (nodeInfo.tooltip.search("PENDING") == -1 && nodeInfo.tooltip.search("CANCELED") == -1) {
                     color = returnfill(nodeInfo.color_weight);
                 }
@@ -562,12 +571,12 @@ function d3Plot(placeHolder, data, options, pageParam) {
         });
 
     d3.select('#Contour').on("click", function () {
-        var contourDiv = d3.select("#contourDiv"); //todo is there going to be a problem with what I wrote for filter, due to the addition of more input fields in this dropdown?
+        var contourDiv = d3.select("#contourDiv");
         if (contourDiv.style("display") == "none") {
             contourDiv.style("display", "block");
-            getContourSelections() //todo rename the function to describe the general purpose that fits for both the filter and contour.
+            getContourSelections()
             enactSelection();
-            var tipFillin = calcDiff();
+            var tipFillin = calcDiff(); // this is the label filling in for threshold of rate of change
             d3.select("label[for='Size']").html('Size --> (' + tipFillin.size[0].toExponential(4) + ", " + tipFillin.size[1].toExponential(4) + ")")
             d3.select("label[for='Color']").html('Color --> (' + tipFillin.color[0].toExponential(4) + ", " + tipFillin.color[1].toExponential(4) + ")")
         }
@@ -694,25 +703,25 @@ function d3Plot(placeHolder, data, options, pageParam) {
             d3.select("#yRange").text(yRange);
 
             lineFillBrush(extent, [xSteps, ySteps])
-            var elemSliderA = $('#XStepSlider');
+            var elemSliderA = $('#XStepSlider'); // this is included here to make the sliders affect the drawing of the grid lines dynamically
             elemSliderA.slider({
-                min: 0, max: extent[1][0] - extent[0][0], step: .0001, value: 0,
+                min: 0, max: extent[1][0] - extent[0][0], step: .0001, value: xSteps,
                 slide: function (event, ui) {
+                    xSteps = ui.value;
                     d3.select('input[name="xStepInput"]').property('value', ui.value);
                     d3.select("#brushLines").remove()
-                    lineFillBrush(extent, [ui.value, ySteps])
+                    lineFillBrush(extent, [xSteps, ySteps])
 
                 }
             });
             var elemSliderB = $('#YStepSlider');
             elemSliderB.slider({
-                min: 0, max: extent[1][1] - extent[0][1], step: .0001, value: 0,
+                min: 0, max: extent[1][1] - extent[0][1], step: .0001, value: ySteps,
                 slide: function (event, ui) {
+                    ySteps = ui.value;
                     d3.select('input[name="yStepInput"]').property('value', ui.value);
                     d3.select("#brushLines").remove()
-                    lineFillBrush(extent, [xSteps, ui.value])
-
-
+                    lineFillBrush(extent, [xSteps, ySteps])
                 }
             })
 
@@ -739,6 +748,7 @@ function d3Plot(placeHolder, data, options, pageParam) {
 
         } else {
             d3.select(".brush").remove();
+            d3.select("#brushLines").remove();
         }
 
 
@@ -892,16 +902,9 @@ function d3Plot(placeHolder, data, options, pageParam) {
 
 }
 /*
- * Do a redraw of the plot. Be sure to keep the resizable margin elements as the plot method seems to destroy them.
+ * Do a redraw of the plot.
  */
 function redrawPlot(plotCanvasId) {
-    /*// todo: mh the selected element is not an ancestor of the second tab!!!
-     // thus this redraw call fails, ex on resize
-
-     if (_PSE_plot != null) {
-     _PSE_plot = $.plot($('#' + plotCanvasId)[0], _PSE_plot.getData(), $.extend(true, {}, _PSE_plotOptions));
-     }*/
-    //it appears that there is a tie in for window.resize to this function. Lets see how this works out
     if (backPage == null || backPage == '') {
         var backPage = get_URL_param('back_page');
     }
@@ -910,50 +913,6 @@ function redrawPlot(plotCanvasId) {
 }
 
 
-/*
- * Fire DataType overlay when clicking on a node in PSE.
- */
-function applyClickEvent(canvasId, backPage) {
-    var currentCanvas = $("#" + canvasId);
-    currentCanvas.unbind("plotclick");
-    currentCanvas.bind("plotclick", function (event, pos, item) {
-        if (item != null) {
-            var dataPoint = item.datapoint;
-            var dataInfo = PSE_nodesInfo[dataPoint[0]][dataPoint[1]];
-            if (dataInfo['dataType'] != undefined) {
-                displayNodeDetails(dataInfo['Gid'], dataInfo['dataType'], backPage);
-            }
-        }
-    });
-}
-
-var previousPoint = null;
-/*
- * On hover display few additional information about this node.
- */
-function applyHoverEvent(canvasId) {
-    $("#" + canvasId).bind("plothover", function (event, pos, item) {
-        if (item) {
-            if (previousPoint != item.dataIndex) {
-                previousPoint = item.dataIndex;
-                $("#tooltip").remove();
-                var dataPoint = item.datapoint;
-                var dataInfo = PSE_nodesInfo[dataPoint[0]][dataPoint[1]];
-                var tooltipText = ("" + dataInfo["tooltip"]).split("&amp;").join("&").split("&lt;").join("<").split("&gt;").join(">");
-
-                $('<div id="tooltip"> </div>').html(tooltipText
-                ).css({
-                        position: 'absolute', display: 'none', top: item.pageY + 5, left: item.pageX + 5,
-                        border: '1px solid #fdd', padding: '2px', 'background-color': '#C0C0C0', opacity: 0.80
-                    }
-                ).appendTo('body').fadeIn(200);
-            }
-        } else {
-            $("#tooltip").remove();
-            previousPoint = null;
-        }
-    });
-}
 
 function updateLegend(minColor, maxColor) {
     var legendContainer, legendHeight, tableContainer;
@@ -1050,23 +1009,6 @@ function PSE_mainDraw(parametersCanvasId, backPage, groupGID) {
             displayMessage("Could not refresh with the new metrics.", "errorMessage");
         }
     });
-}
-
-
-/**
- * Changes the series colors according to the color picker component.
- */
-function changeColors() {
-    var series = _PSE_plot.getData();
-    for (var i = 0; i < series.length; i++) {
-        var indexes = series[i].datapoints.points;
-        var dataInfo = PSE_nodesInfo[indexes[0]][indexes[1]];
-        var colorWeight = dataInfo['color_weight'];
-        var color = ColSch_getGradientColorString(colorWeight, _PSE_minColor, _PSE_maxColor);
-        series[i].points.fillColor = color;
-        series[i].color = color;
-    }
-    _PSE_plot.draw();
 }
 
 

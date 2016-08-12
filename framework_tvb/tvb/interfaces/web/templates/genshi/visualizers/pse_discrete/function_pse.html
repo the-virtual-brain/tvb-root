@@ -155,7 +155,7 @@
                         <label>X Step Slider</label>
                     </dt>
                     <dd>
-                        <input type="number" name="xStepInput" value=".05"/>
+                        <input type="number" name="xStepInput" value=".5"/>
                         <div class="sliderStepDiv">
                             <div id="XStepSlider"
                                  title="Slider to adjust the step increment of the next exploration"></div>
@@ -176,7 +176,7 @@
                         <label>Y Step Slider</label>
                     </dt>
                     <dd>
-                        <input type="number" name="yStepInput" value=".09"/>
+                        <input type="number" name="yStepInput" value=".5"/>
                         <div class="sliderStepDiv">
                             <div id="YStepSlider"
                                  title="Slider to adjust the step increment of the next exploration"></div>
@@ -194,14 +194,14 @@
             $(document).ready(function () {
                 var elemSliderA = $('#XStepSlider');
                 elemSliderA.slider({
-                    min: 0, max: 1, step: .0001, value: 0,
+                    min: 0, max: 1, step: .0001, value: 0.5,
                     slide: function (event, ui) {
                         d3.select('input[name="xStepInput"]').property('value', ui.value);
                     }
                 });
                 var elemSliderB = $('#YStepSlider');
                 elemSliderB.slider({
-                    min: 0, max: 1, step: .0001, value: 0,
+                    min: 0, max: 1, step: .0001, value: .5,
                     slide: function (event, ui) {
                         d3.select('input[name="yStepInput"]').property('value', ui.value);
                     }
