@@ -167,8 +167,8 @@ class TestIntegrator(unittest.TestCase):
         from tvb.simulator._opencl.cl_models import CL_Linear
         self.context, self.queue = context_and_queue(create_cpu_context())
         self.n_nodes = 100
-        self.state = numpy.random.rand(1, self.n_nodes, 1)
-        self.coupling = numpy.random.rand(1, self.n_nodes, 1)
+        self.state = numpy.random.rand(1, self.n_nodes, 1).astype(numpy.float32)
+        self.coupling = numpy.random.rand(1, self.n_nodes, 1).astype(numpy.float32)
         self.model = CL_Linear()
 
     def test_CLIntegrator(self):
@@ -177,15 +177,8 @@ class TestIntegrator(unittest.TestCase):
         cl.configure_opencl(self.context, self.queue)
         self.model.configure_opencl( self.context, self.queue )
         cl.scheme(self.state, self.model.dfunKernel,self.coupling )
-        cl.scheme_cl(self.state, self.model, self.coupling)
+        #cl.scheme_cl(self.state, self.model, self.coupling)
 
-    def test_CL_EulerDeterministic(self):
-        from tvb.simulator._opencl.cl_integrator import CL_EulerDeterministic
-        cl = CL_EulerDeterministic()
-        cl.configure_opencl(self.context, self.queue)
-        self.model.configure_opencl(self.context, self.queue)
-        cl.scheme(self.state, self.model.dfunKernel, self.coupling)
-        cl.scheme_cl(self.state, self.model, self.coupling)
 
     def test_CL_Identity(self):
         from tvb.simulator._opencl.cl_integrator import CL_Identity
@@ -193,7 +186,15 @@ class TestIntegrator(unittest.TestCase):
         cl.configure_opencl(self.context, self.queue)
         self.model.configure_opencl(self.context, self.queue)
         cl.scheme(self.state, self.model.dfunKernel, self.coupling)
-        cl.scheme_cl(self.state, self.model, self.coupling)
+        #cl.scheme_cl(self.state, self.model, self.coupling)
+
+    def test_CL_EulerDeterministic(self):
+        from tvb.simulator._opencl.cl_integrator import CL_EulerDeterministic
+        cl = CL_EulerDeterministic()
+        cl.configure_opencl(self.context, self.queue)
+        self.model.configure_opencl(self.context, self.queue)
+        cl.scheme(self.state, self.model.dfunKernel, self.coupling)
+        #cl.scheme_cl(self.state, self.model, self.coupling)
 
     def test_CL_HeunDeterministic(self):
         from tvb.simulator._opencl.cl_integrator import CL_HeunDeterministic
@@ -201,4 +202,29 @@ class TestIntegrator(unittest.TestCase):
         cl.configure_opencl(self.context, self.queue)
         self.model.configure_opencl(self.context, self.queue)
         cl.scheme(self.state, self.model.dfunKernel, self.coupling)
-        cl.scheme_cl(self.state, self.model, self.coupling)
+        #cl.scheme_cl(self.state, self.model, self.coupling)
+
+    def test_CL_RungeKutta4thOrderDeterministic(self):
+        from tvb.simulator._opencl.cl_integrator import CL_RungeKutta4thOrderDeterministic
+        cl = CL_RungeKutta4thOrderDeterministic()
+        cl.configure_opencl(self.context, self.queue)
+        self.model.configure_opencl(self.context, self.queue)
+
+        cl.scheme(self.state, self.model.dfunKernel, self.coupling)
+
+    def test_CL_EulerStochastic(self):
+        from tvb.simulator._opencl.cl_integrator import CL_EulerStochastic
+        cl = CL_EulerStochastic()
+        cl.configure_opencl(self.context, self.queue)
+        self.model.configure_opencl(self.context, self.queue)
+        cl.noise.dt = cl.dt
+        cl.scheme(self.state, self.model.dfunKernel, self.coupling)
+        #cl.scheme_cl(self.state, self.model, self.coupling)
+
+    def test_CL_HeunStochastic(self):
+        from tvb.simulator._opencl.cl_integrator import CL_HeunStochastic
+        cl = CL_HeunStochastic()
+        cl.configure_opencl(self.context, self.queue)
+        self.model.configure_opencl(self.context, self.queue)
+        cl.noise.dt = cl.dt
+        cl.scheme(self.state, self.model.dfunKernel, self.coupling)
