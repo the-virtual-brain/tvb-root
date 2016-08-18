@@ -856,15 +856,3 @@ class FlowController(BaseController):
 
         return [True, 'Stored the exploration material successfully']
 
-    def retrieve_exploration_section(self, GID):
-        """
-
-        :param data: this will contain the same information as the store method of the same name.
-        :return: we will be giving back the whole set of datatype_groups that exist in the class attribute explorations.
-        """
-        try:  ## do I need to be doing comparisons for GID?
-            return self.explorations[GID]
-        except (AttributeError, KeyError):  # add debug breakpoint to check why 3rd and up select bars don't show,
-            return []
-        except:
-            raise
