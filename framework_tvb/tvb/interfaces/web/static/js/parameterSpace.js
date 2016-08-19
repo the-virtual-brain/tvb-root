@@ -821,7 +821,7 @@ function d3Plot(placeHolder, data, options, pageParam) {
                 } else {
                     logicalOperator = ''
                 }
-                var thresholdValue = groupSelection.select(".thresholdInput").property('value'),
+                var thresholdValue = +groupSelection.select(".thresholdInput").property('value'),
                     notPreference = (groupSelection.select("input[name='notButton']").property('checked')) ? "<" : ">", //gives us true or false
                     filterType = groupSelection.select("input[name='thresholdType']:checked").property('id').slice(0, -1); // gives either 'Color' or 'Size'
                 concatStr += logicalOperator + ' ' + filterType + ' ' + notPreference + ' ' + thresholdValue;

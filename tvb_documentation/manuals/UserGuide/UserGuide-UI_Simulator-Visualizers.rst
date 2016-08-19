@@ -382,7 +382,7 @@ particular Simulation result.
 
    Panning the Graph
 
-A newly incorporated feature is the option to pan the canvas in/out or left/right/up/down. This will allow for inspection of very large batch simulations section by section.
+A newly incorporated feature is the option to pan the canvas in/out or left/right/up/down. To pan you may click and  drag on top of one of the axes, and to zoom in double click or out shift + double click. This will allow for inspection of very large batch simulations section by section.
 The same mouse over, and clicking rules apply from above.
 
 .. figure:: screenshots/filter_button_inaction.png
