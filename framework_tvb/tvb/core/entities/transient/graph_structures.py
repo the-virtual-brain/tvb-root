@@ -147,7 +147,7 @@ class NodeStructure(object):
 
         algo = dao.get_algorithm_by_id(operation.fk_from_algo)
 
-        structure = NodeStructure(operation.gid, algo.name)
+        structure = NodeStructure(operation.gid, algo.displayname)
         structure.data = NodeData.build_node_for_operation(operation)
         return structure
 
@@ -159,7 +159,7 @@ class NodeStructure(object):
         operation = dao.get_operations_in_group(group.id, only_first_operation=True)
         algo = dao.get_algorithm_by_id(operation.fk_from_algo)
 
-        structure = NodeStructure(operation_group_gid, algo.name)
+        structure = NodeStructure(operation_group_gid, algo.displayname)
         structure.data = NodeData.build_node_for_operation(operation, group.id)
         return structure
 
