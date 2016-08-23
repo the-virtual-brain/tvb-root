@@ -144,7 +144,7 @@ icon next to each element.
 
     **You can filter DataTypes (like Long Range Connectivity) from UI**
 
-    .. image:: screenshots/filter_datatypes.png
+    .. image:: screenshots/simulator_filter_datatypes.png
        :width: 60%
        :align: center
 
