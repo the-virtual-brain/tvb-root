@@ -31,7 +31,7 @@
 
 
 // We keep all-nodes information for current PSE as a global, to have them ready at node-selection, node-overlay.
-var PSE_nodesInfo;
+var _PSE_d3NodesInfo;
 // Keep Plot-options and MIN/MAx colors for redraw (e.g. at resize).
 var _PSE_plotOptions;
 var _PSE_minColor;
@@ -48,14 +48,13 @@ var _PSE_plot;
  * @param max_color: maximum color, used for gradient
  * @param backPage: page where visualizers fired from overlay should take you back.
  */
-function _updatePlotPSE(canvasId, xLabels, yLabels, seriesArray, data_info, min_color, max_color, backPage, d3Data_info) {
+function _updatePlotPSE(canvasId, xLabels, yLabels, seriesArray, min_color, max_color, backPage, d3Data) {
 
     // why is it that we don't associate the labels into the attributes of the actual data_info or seriesArray?
     // where does the seriesArray structure get created?
     _PSE_minColor = min_color;
     _PSE_maxColor = max_color;
-    PSE_nodesInfo = data_info;
-    PSE_d3NodesInfo = d3Data_info;
+    _PSE_d3NodesInfo = d3Data;
     _PSE_plotOptions = {
         margins: { // is this the correct way to be doing margins? It's just how I have in the past,
             top: 20,
@@ -90,9 +89,9 @@ function d3Plot(placeHolder, data, options, pageParam) {
         var oneOrMoreDiv = d3.selectAll("div > div.flex-wrapper"); //index necessary because selection is an array with two elements, and second is unneccessary
 
         if (oneOrMoreDiv[0].length > 1) {
-            oneOrMoreDiv[0][1].remove()
+            oneOrMoreDiv[0][1].remove();
         } else {
-            oneOrMoreDiv[0][0].remove()
+            oneOrMoreDiv[0][0].remove();
         }
     }
 
@@ -100,28 +99,26 @@ function d3Plot(placeHolder, data, options, pageParam) {
      * The whole point of this function is to make the graph appear less crowded towards the axes, and each other dot. The point of discriminating between x and y is stylistic choice.
      */
     function createScale(xORy, labelArr) {
+        var lowerExtent, upperExtent, extentPadding, padLo, padUp, newScale;
         if (xORy === "x") {
-            var [lowerExtent,upperExtent] = d3.extent(labelArr),
-                extentPadding = ((upperExtent - lowerExtent) * .10) / 2, // this multiplication factor controls how much the dots are gathered together
-                [padLo,padUp] = [lowerExtent - extentPadding, upperExtent + extentPadding];
+            [lowerExtent, upperExtent] = d3.extent(labelArr);
+            extentPadding = ((upperExtent - lowerExtent) * .10) / 2; // this multiplication factor controls how much the dots are gathered together
+            [padLo, padUp] = [lowerExtent - extentPadding, upperExtent + extentPadding];
 
-
-            var newScale = d3.scale.linear()
+            newScale = d3.scale.linear()
                 .domain([padLo, padUp])
                 .range([_PSE_plotOptions.margins.left, innerWidth - _PSE_plotOptions.margins.right]);
-        }
-        else {
-            var [lowerExtent,upperExtent] = d3.extent(labelArr),
-                extentPadding = ((upperExtent - lowerExtent) * .35) / 2,
-                [padLo,padUp] = [lowerExtent - extentPadding, upperExtent + extentPadding];
 
+        } else {
+            [lowerExtent, upperExtent] = d3.extent(labelArr);
+            extentPadding = ((upperExtent - lowerExtent) * .35) / 2;
+            [padLo, padUp] = [lowerExtent - extentPadding, upperExtent + extentPadding];
 
-            var newScale = d3.scale.linear()
+            newScale = d3.scale.linear()
                 .domain([padLo, padUp])
                 .range([innerHeight - (_PSE_plotOptions.margins.bottom), _PSE_plotOptions.margins.top]);
-
         }
-        return newScale
+        return newScale;
     }
 
 
@@ -173,7 +170,6 @@ function d3Plot(placeHolder, data, options, pageParam) {
                     selectElement.selectAll("option").remove();
                     selectElement.html(r);// this is the best way that i could come up with to separate out the returned elements
                 }
-
             },
             error: function () {
                 displayMessage("couldn't load the selection bar", "errorMessage")
@@ -192,8 +188,6 @@ function d3Plot(placeHolder, data, options, pageParam) {
                 var selectElement = d3.select("#contourSelect");
                 selectElement.selectAll("option").remove();
                 selectElement.html(r);// this is the best way that i could come up with to separate out the returned elements
-
-
             },
             error: function () {
                 displayMessage("couldn't load the selection bar", "errorMessage")
@@ -211,7 +205,7 @@ function d3Plot(placeHolder, data, options, pageParam) {
             .transition()
             .attr({
                 r: function (d) {
-                    var factor = xzoom.scale() * yzoom.scale()
+                    var factor = xzoom.scale() * yzoom.scale();
                     if (factor > 2.5) {
                         return d.points.radius * 2.5;
                     } else if (factor < .5) {
@@ -219,8 +213,6 @@ function d3Plot(placeHolder, data, options, pageParam) {
                     } else {
                         return d.points.radius * factor
                     }
-
-
                 },
                 cx: function (d) {
                     return xScale(d.coords.x)
@@ -228,8 +220,6 @@ function d3Plot(placeHolder, data, options, pageParam) {
                 cy: function (d) {
                     return yScale(d.coords.y)
                 }
-
-
             })
     }
 
@@ -292,7 +282,7 @@ function d3Plot(placeHolder, data, options, pageParam) {
                 filterValue = filterSpecs[0],
                 filterNot = filterSpecs[2];
             d3.select('input[name="RateOfChangeType"]#' + filterType).property("checked", true);
-            d3.select('input#rateOfChangeInput').property("value", filterValue)
+            d3.select('input#rateOfChangeInput').property("value", filterValue);
             d3.select("#notButton").property('checked', filterNot);
         })
     }
@@ -348,8 +338,7 @@ function d3Plot(placeHolder, data, options, pageParam) {
             })
             .interpolate("linear");
 
-        canvas.append("g")
-            .attr("id", "brushLines")
+        canvas.append("g").attr("id", "brushLines");
         var lineData;
 
         for (var xVal of d3.range(span[0][0], span[1][0], steps[0])) {
@@ -372,8 +361,6 @@ function d3Plot(placeHolder, data, options, pageParam) {
                 .attr("fill", "none")
                 .attr("id", "brushLine");
         }
-
-
     }
 
     /*
@@ -381,10 +368,10 @@ function d3Plot(placeHolder, data, options, pageParam) {
      */
     function returnfill(weight) {
 
-        var colTest = ColSch_getGradientColorString(weight, _PSE_minColor, _PSE_maxColor).replace("a", ""), // the a creates an error in the color scale creation, so it must be removed.
-            d3color = d3.rgb(colTest); // turn color string into a d3 compatible form.
-        return d3color
-
+        var colTest = ColSch_getGradientColorString(weight, _PSE_minColor, _PSE_maxColor).replace("a", "");
+        // the a creates an error in the color scale creation, so it must be removed.
+        // turn color string into a d3 compatible form.
+        return d3.rgb(colTest)
     }
 
     /*
@@ -392,12 +379,12 @@ function d3Plot(placeHolder, data, options, pageParam) {
      * and determines what the differences are in size and color metric. Then the function simply returns an object of the max&mins of color and size comparisons for the labels.
      */
     function calcDiff() {
-        var [maxDiffCol,minDiffCol,minDiffSize,maxDiffSize,] = [0, Infinity, Infinity, 0] //initializing the values to be returned
-        allNeighbors = compareToNeighbors(structure, steps, inclusiveX, inclusiveY, {
+        var [maxDiffCol,minDiffCol,minDiffSize,maxDiffSize,] = [0, Infinity, Infinity, 0]; //initializing the values to be returned
+        var allNeighbors = compareToNeighbors(structure, steps, inclusiveX, inclusiveY, {
             type: 'Color',
             value: 0,
             not: false
-        }, PSE_d3NodesInfo);//the type here isn't important actually
+        }, _PSE_d3NodesInfo);//the type here isn't important actually
         for (ob of allNeighbors) {
             for (neighborStr of ob.neighbors) {
                 var [xNeighborCoord,yNeighborCoord]  = neighborStr.split(" "),
@@ -405,8 +392,8 @@ function d3Plot(placeHolder, data, options, pageParam) {
                         return dataOb.coords.x == xNeighborCoord && dataOb.coords.y == yNeighborCoord
                     }),
                     neighborSize = neighborOb[0].points.radius,
-                    neighborColorWeight = PSE_d3NodesInfo[xNeighborCoord][yNeighborCoord].color_weight,
-                    obColorWeight = PSE_d3NodesInfo[ob.focalPoint.coords.x][ob.focalPoint.coords.y].color_weight,
+                    neighborColorWeight = getNodeInfo({x:xNeighborCoord, y:yNeighborCoord}).color_weight,
+                    obColorWeight = getNodeInfo(ob.focalPoint.coords).color_weight,
                     colorDiff = Math.abs(obColorWeight - neighborColorWeight),
                     min_size = +d3.select("#minShapeLabel").node().innerHTML,
                     max_size = +d3.select("#maxShapeLabel").node().innerHTML,
@@ -430,7 +417,6 @@ function d3Plot(placeHolder, data, options, pageParam) {
                 if (minDiffSize > sizeDiff && sizeDiff != 0) {
                     minDiffSize = sizeDiff
                 }
-
             }
         }
         return {size: [minDiffSize, maxDiffSize], color: [minDiffCol, maxDiffCol]}
@@ -451,10 +437,10 @@ function d3Plot(placeHolder, data, options, pageParam) {
         , y: [+(inclusiveY[1] - inclusiveY[0]).toFixed(4)]
     };
     structure = createStructure(workingData, inclusiveX, inclusiveY);
-    for (ind in workingData) {
+    for (var ind in workingData) {
         workingData[ind].key = parseFloat(ind)
     }
-    ;
+
     canvasDimensions = {h: parseInt(myBase.style("height")), w: parseInt(myBase.style("width"))};
     innerHeight = canvasDimensions.h - _PSE_plotOptions.margins.top;
     innerWidth = canvasDimensions.w - _PSE_plotOptions.margins.left;
@@ -551,22 +537,20 @@ function d3Plot(placeHolder, data, options, pageParam) {
                 return d.points.radius
             },
             cx: function (d) {
-                return xScale(d.coords.x) // the xScale converts from data values to pixel values for appropriate actual placement in the graphed space.
+                return xScale(d.coords.x); // the xScale converts from data values to pixel values for appropriate actual placement in the graphed space.
             },
             cy: function (d) {
                 return yScale(d.coords.y)
             },
             fill: function (d) {
-                var nodeInfo = PSE_d3NodesInfo[d.coords.x][d.coords.y];
+
+                var color = d3.rgb("black"); // leave pending results blacked out if not complete.
+                var nodeInfo = getNodeInfo(d.coords);
                 if (nodeInfo.tooltip.search("PENDING") == -1 && nodeInfo.tooltip.search("CANCELED") == -1) { // this prevents code from trying to find reasonable color values when simulation results haven't been generated for them
                     color = returnfill(nodeInfo.color_weight);
                 }
-                else {
-                    var color = d3.rgb("black"); // leave pending results blacked out if not complete.
-                }
-                return color // otherwise fill out with color in keeping with scheme.
+                return color; // otherwise fill out with color in keeping with scheme.
             }
-
         });
 
 
@@ -581,19 +565,16 @@ function d3Plot(placeHolder, data, options, pageParam) {
         var contourDiv = d3.select("#contourDiv");
         if (contourDiv.style("display") == "none") {
             contourDiv.style("display", "block"); // makes the contour dropdown menu visible
-            getContourSelections()
+            getContourSelections();
             enactSelection();
             var tipFillin = calcDiff(); // this is the label filling in for threshold of rate of change
-            d3.select("label[for='Size']").html('Size --> (' + tipFillin.size[0].toExponential(4) + ", " + tipFillin.size[1].toExponential(4) + ")")
+            d3.select("label[for='Size']").html('Size --> (' + tipFillin.size[0].toExponential(4) + ", " + tipFillin.size[1].toExponential(4) + ")");
             d3.select("label[for='Color']").html('Color --> (' + tipFillin.color[0].toExponential(4) + ", " + tipFillin.color[1].toExponential(4) + ")")
+
+        } else {
+            contourDiv.style("display", "none"); // removes the contour menu from display
         }
-
-
-        else {
-            contourDiv.style("display", "none") // removes the contour menu from display
-        }
-
-    })
+    });
 
 
     /*
@@ -636,18 +617,18 @@ function d3Plot(placeHolder, data, options, pageParam) {
                         .attr("id", "contourLine");
                 }
             }
-
         }
 
         var criteria = { //retrieve the user specifications for the contour run
             type: d3.select('input[name="RateOfChangeType"]:checked').node().id,
             value: +d3.select('input#rateOfChangeInput').node().value,
             not: d3.select("#notButton").property('checked')
-        }
+        };
 
-        neighborsObjct = compareToNeighbors(structure, steps, inclusiveX, inclusiveY, criteria, PSE_d3NodesInfo) // use function from the alternateDatastructure.js to determine which dots and neigbors will be separated by lines.
-        drawCompLines(neighborsObjct)
-    })
+        var neighborsObjct = compareToNeighbors(structure, steps, inclusiveX, inclusiveY, criteria, _PSE_d3NodesInfo);
+        // use function from the alternateDatastructure.js to determine which dots and neigbors will be separated by lines.
+        drawCompLines(neighborsObjct);
+    });
 
     d3.select("#contourClear").on("click", function () {
         d3.selectAll('#contourLine').remove()
@@ -675,7 +656,6 @@ function d3Plot(placeHolder, data, options, pageParam) {
             error: function () {
                 displayMessage('could not store the selected text', 'errorMessage')
             }
-
         })
     });
 
@@ -686,10 +666,8 @@ function d3Plot(placeHolder, data, options, pageParam) {
         var exploreDiv = d3.select("#exploreDiv");
         if (exploreDiv.style("display") == "none") {
             exploreDiv.style("display", "block");
-        }
 
-
-        else {
+        } else {
             exploreDiv.style("display", "none")
         }
         /*
@@ -708,16 +686,15 @@ function d3Plot(placeHolder, data, options, pageParam) {
             d3.select('#lowY').node().value = extent[0][1].toFixed(4);
             d3.select('#upperY').node().value = extent[1][1].toFixed(4);
 
-            lineFillBrush(extent, [xSteps, ySteps]) // draw initial grid lines when mouse button is released.
+            lineFillBrush(extent, [xSteps, ySteps]); // draw initial grid lines when mouse button is released.
             var elemSliderA = $('#XStepSlider'); // this is included here to make the sliders affect the drawing of the grid lines dynamically
             elemSliderA.slider({
                 min: 0, max: extent[1][0] - extent[0][0], step: .0001, value: xSteps,
                 slide: function (event, ui) {
                     xSteps = ui.value;
                     d3.select('input[name="xStepInput"]').property('value', ui.value);
-                    d3.select("#brushLines").remove() // remove the previously drawn lines to prevent confusion.
-                    lineFillBrush(extent, [xSteps, ySteps]) // redraw grid lines
-
+                    d3.select("#brushLines").remove(); // remove the previously drawn lines to prevent confusion.
+                    lineFillBrush(extent, [xSteps, ySteps]); // redraw grid lines
                 }
             });
             var elemSliderB = $('#YStepSlider');
@@ -726,7 +703,7 @@ function d3Plot(placeHolder, data, options, pageParam) {
                 slide: function (event, ui) {
                     ySteps = ui.value;
                     d3.select('input[name="yStepInput"]').property('value', ui.value);
-                    d3.select("#brushLines").remove()
+                    d3.select("#brushLines").remove();
                     lineFillBrush(extent, [xSteps, ySteps])
                 }
             })
@@ -752,8 +729,6 @@ function d3Plot(placeHolder, data, options, pageParam) {
             d3.select(".brush").remove();
             d3.select("#brushLines").remove();
         }
-
-
     });
 
 
@@ -775,7 +750,6 @@ function d3Plot(placeHolder, data, options, pageParam) {
             error: function () {
                 displayMessage(error, "couldn't store the exploration details")
             }
-
         })
     });
 
@@ -784,17 +758,13 @@ function d3Plot(placeHolder, data, options, pageParam) {
      */
     d3.select("#Filter").on("click", function () {
 
-
-        var filterDiv = d3.select("#FilterDiv"),
-            idNum = d3.selectAll("#threshold").length;
+        var filterDiv = d3.select("#FilterDiv");
         if (filterDiv.style("display") == "none") {
             filterDiv.style("display", "block");
-            getFilterSelections()
+            getFilterSelections();
             refreshOnChange()
-        }
 
-
-        else {
+        } else {
             filterDiv.style("display", "none")
         }
     });
@@ -828,8 +798,7 @@ function d3Plot(placeHolder, data, options, pageParam) {
 
             }
 
-            return concatStr
-
+            return concatStr;
         }
 
         var min_size = +d3.select("#minShapeLabel").node().innerHTML,
@@ -838,25 +807,24 @@ function d3Plot(placeHolder, data, options, pageParam) {
                 .range([min_size, max_size]) // these plus signs convert the string to number
                 .domain(d3.extent(workingData, function (d) {
                     return +d.points.radius
-                }))
-
+                }));
 
         for (var circle of d3.selectAll('circle')[0]) {
             var radius = sizeScale(+circle.attributes.r.value),
                 filterString = concatCriteria(),
                 data = circle.__data__,
-                colorWeight = PSE_d3NodesInfo[data.coords.x][data.coords.y].color_weight,
-                filterString = filterString.replace(/Size/g, radius).replace(/Color/g, colorWeight);
+                colorWeight = getNodeInfo(data.coords).color_weight;
+
+            filterString = filterString.replace(/Size/g, radius).replace(/Color/g, colorWeight);
             if (!eval(filterString)) { // this phrasing is now persistent phrased, meaning that the data that the user wants to keep doesn't pass.
-                var repInd = workingData.indexOf(data)
+                var repInd = workingData.indexOf(data);
                 if (repInd != -1) { // keeps the function from repeatedly detecting transparent dots, but removing others from workingData that pass the criteria
-                    workingData.splice(repInd, 1) //this will remove the data from the group, and then it can be selected for below in the transparent dots
+                    workingData.splice(repInd, 1); //this will remove the data from the group, and then it can be selected for below in the transparent dots
                 }
             }
         }
+
         transparentDots()
-
-
     });
 
 
@@ -869,36 +837,55 @@ function d3Plot(placeHolder, data, options, pageParam) {
             type: "POST",
             url: "/flow/create_row_of_specs/" + nextRowId + "/", //remember if you experience an error about there now being a row for one(), there is some silly typo sitting around, so go and check everything with the working examples.
             success: function (r) {
-                var newLiEntry = d3.select("#FilterDiv > ul").append("li").html(r)
-                getFilterSelections()
+                d3.select("#FilterDiv > ul").append("li").html(r);
+                getFilterSelections();
                 refreshOnChange()
             },
             error: function () {
                 displayMessage("couldn't add new row of filter options", "errorMessage")
             }
         })
+    });
 
-    })
-
+    function getNodeInfo(coords) {
+        try {
+            return _PSE_d3NodesInfo[coords.x][coords.y];
+        } catch (err) {
+            try {
+                return _PSE_d3NodesInfo[coords.x.toFixed(1)][coords.y];
+            } catch (err) {
+                try {
+                    return _PSE_d3NodesInfo[coords.x][coords.y.toFixed(1)];
+                } catch (err) {
+                    try {
+                        return _PSE_d3NodesInfo[coords.x.toFixed(1)][coords.y.toFixed(1)];
+                    } catch (err) {
+                        displayMessage(err, "errorMessage");
+                    }
+                }
+            }
+        }
+    }
 
     /*
      * provides basis for behavior when the cursor passes over a result. we get shown the message that is stored as information in the nodeInfo.tooltip
      */
-    d3.selectAll("circle").on("mouseover", function (d) {
-        var nodeInfo = PSE_d3NodesInfo[d.coords.x][d.coords.y];
-        var toolTipText = nodeInfo.tooltip.split("&amp;").join("&").split("&lt;").join("<").split("&gt;").join(">");
-        toolTipDiv.html(toolTipText);
-        toolTipDiv.style({
-            position: "absolute",
-            left: (d3.event.pageX) + "px",
-            top: (d3.event.pageY - 100) + "px",
-            display: "block",
-            'background-color': '#C0C0C0',
-            border: '1px solid #fdd',
-            padding: '2px',
-            opacity: 0.80
+    d3.selectAll("circle")
+        .on("mouseover", function (d) {
+            var nodeInfo = getNodeInfo(d.coords);
+            var toolTipText = nodeInfo.tooltip.split("&amp;").join("&").split("&lt;").join("<").split("&gt;").join(">");
+            toolTipDiv.html(toolTipText);
+            toolTipDiv.style({
+                position: "absolute",
+                left: (d3.event.pageX) + "px",
+                top: (d3.event.pageY - 100) + "px",
+                display: "block",
+                'background-color': '#C0C0C0',
+                border: '1px solid #fdd',
+                padding: '2px',
+                opacity: 0.80
+            })
         })
-    })
         .on("mouseout", function (d) {
             toolTipDiv.transition()
                 .duration(300)
@@ -909,7 +896,7 @@ function d3Plot(placeHolder, data, options, pageParam) {
      * this is the behavior for when a result is clicked. We have to bring up the window that gives the user more options relating to the specific result clicked upon.
      */
     d3.selectAll("circle").on("click", function (d) {
-        var nodeInfo = PSE_d3NodesInfo[d.coords.x][d.coords.y];
+        var nodeInfo = getNodeInfo(d.coords);
         if (nodeInfo.dataType != undefined) {
             displayNodeDetails(nodeInfo['Gid'], nodeInfo['dataType'], pageParam); // curious because backPage isn't in the scope, but appears to work.
         }
@@ -922,18 +909,16 @@ function d3Plot(placeHolder, data, options, pageParam) {
     d3.select("#ctrl-action-export").on("click", function (d) {
 
     })
-
-
 }
 /*
  * Do a redraw of the plot.
  */
-function redrawPlot(plotCanvasId) {
+function redrawPlot(plotCanvasId, backPage) {
     if (backPage == null || backPage == '') {
-        var backPage = get_URL_param('back_page');
+        backPage = get_URL_param('back_page');
     }
-    PSE_mainDraw('main_div_pse', backPage)
 
+    PSE_mainDraw(plotCanvasId, backPage);
 }
 
 
@@ -952,21 +937,19 @@ function updateLegend(minColor, maxColor) {
             position: 'absolute',
             top: '118px',
             right: '25px'
-        })
+        });
     d3.select("#colorWeightsLegend")
         .style("right", "85px")
 }
 
 
 function PSEDiscreteInitialize(labelsXJson, labelsYJson, series_array, dataJson, backPage, hasStartedOperations,
-                               min_color, max_color, min_size, max_size, d3DataJson) {
-
+                               min_color, max_color, min_size, max_size) {
 
     var labels_x = $.parseJSON(labelsXJson);
     var labels_y = $.parseJSON(labelsYJson);
     var data = $.parseJSON(dataJson);
     series_array = typeof (series_array) == "string" ? $.parseJSON(series_array) : series_array;
-    var d3Data = typeof (d3DataJson) == "string" ? $.parseJSON(d3DataJson) : d3DataJson;
 
     min_color = parseFloat(min_color); // todo run a batch of simulations part of the way,  and then cancel to see what the result looks like.
     max_color = parseFloat(max_color);
@@ -974,7 +957,7 @@ function PSEDiscreteInitialize(labelsXJson, labelsYJson, series_array, dataJson,
     max_size = parseFloat(max_size);
 
     ColSch_initColorSchemeGUI(min_color, max_color, function () { //this now doesn't create error in simulator panel, why?
-        _updatePlotPSE('main_div_pse', labels_x, labels_y, series_array, data, min_color, max_color, backPage, d3Data);
+        _updatePlotPSE('main_div_pse', labels_x, labels_y, series_array, min_color, max_color, backPage, data);
     });
 
     function _fmt_lbl(sel, v) {
@@ -990,9 +973,8 @@ function PSEDiscreteInitialize(labelsXJson, labelsYJson, series_array, dataJson,
         min_color = 0;
         max_color = 1;
     }
-    _updatePlotPSE('main_div_pse', labels_x, labels_y, series_array, data, min_color, max_color, backPage, d3Data);
-    updateLegend(min_color, max_color)
-
+    _updatePlotPSE('main_div_pse', labels_x, labels_y, series_array, min_color, max_color, backPage, data);
+    updateLegend(min_color, max_color);
 
     if (hasStartedOperations) {
         setTimeout("PSE_mainDraw('main_div_pse','" + backPage + "')", 3000);
@@ -1024,7 +1006,6 @@ function PSE_mainDraw(parametersCanvasId, backPage, groupGID) {
         }
     }
 
-
     doAjaxCall({
         type: "POST",
         url: url,
@@ -1038,9 +1019,9 @@ function PSE_mainDraw(parametersCanvasId, backPage, groupGID) {
 }
 
 
-/*************************************************************************************************************************
+/*********************************************************************************************************************
  *            ISOCLINE PSE BELLOW
- *************************************************************************************************************************/
+ *********************************************************************************************************************/
 
 
 var serverURL = null;
@@ -1131,5 +1112,3 @@ function Isocline_MainDraw(groupGID, divId, width, height) {
         }
     });
 }
-
-

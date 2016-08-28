@@ -67,7 +67,7 @@ class ContextDiscretePSE(EnhancedDictionary):
         self.status = 'started'
         self.title_x, self.title_y = "", ""
         self.values_x, self.labels_x, self.values_y, self.labels_y = [], [], [], []
-        self.series_array, self.data, self.available_metrics = [], [], []
+        self.series_array, self.available_metrics = [], []
         self.datatypes_dict = {}
         self.d3_data = {}
         self.color_metric = color_metric
@@ -91,7 +91,7 @@ class ContextDiscretePSE(EnhancedDictionary):
         """
         self.labels_x = json.dumps(self.labels_x)
         self.labels_y = json.dumps(self.labels_y)
-        self.data = json.dumps(self.data)
+        self.d3_data = json.dumps(self.d3_data)
         self.has_started_ops = json.dumps(self.has_started_ops)
     
     
@@ -190,18 +190,7 @@ class ContextDiscretePSE(EnhancedDictionary):
                 current['color_weight'] = color_weight
                 all_series.append(series)
 
-        #each shape from the UI corresponds to a dataType. In this matrix we
-        #keep information about those dataTypes.
-        # todo consider deprecating the data in this matrix form.
-        matrix = []
-        for x_label in self.values_x:
-            r = []
-            for y_label in self.values_y:
-                r.append(final_dict[x_label][y_label])
-            matrix.append(r)
-
-        self.data = matrix
-        self.d3_data = json.dumps(final_dict)
+        self.d3_data = final_dict
         self.series_array = self.__build_series_json(all_series)
         self.status = 'started' if self.has_started_ops else 'finished'
         
