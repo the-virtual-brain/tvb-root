@@ -41,7 +41,6 @@ from tvb.tests.framework.datatypes.datatypes_factory import DatatypesFactory
 from tvb.tests.framework.core.base_testcase import TransactionalTestCase
 
 
-
 class PSETest(TransactionalTestCase):
     """
     Unit-tests for BrainViewer.
@@ -64,14 +63,13 @@ class PSETest(TransactionalTestCase):
         viewer = DiscretePSEAdapter()
         result = viewer.launch(self.group)
 
-        expected_keys = ['status', 'size_metric', 'series_array', 'min_shape_size', 'min_color', 'data',
+        expected_keys = ['status', 'size_metric', 'series_array', 'min_shape_size', 'min_color', 'd3_data',
                          'max_shape_size', 'max_color', 'mainContent', 'labels_y', 'labels_x', 'isAdapter',
                          'has_started_ops', 'datatype_group_gid', 'datatypes_dict', 'color_metric']
         for key in expected_keys:
             self.assertTrue(key in result)
         self.assertEqual(self.group.gid, result["datatype_group_gid"])
         self.assertEqual('false', result["has_started_ops"])
-
 
 
     def test_launch_isocline(self):
@@ -86,8 +84,6 @@ class PSETest(TransactionalTestCase):
         self.assertEqual(1, len(result["metrics"]))
 
 
-
-
 def suite():
     """
     Gather all the tests in a test suite.
@@ -97,9 +93,8 @@ def suite():
     return test_suite
 
 
-
 if __name__ == "__main__":
-    #So you can run tests from this package individually.
+    # So you can run tests from this package individually.
     TEST_RUNNER = unittest.TextTestRunner()
     TEST_SUITE = suite()
     TEST_RUNNER.run(TEST_SUITE)

@@ -39,7 +39,6 @@ from tvb.tests.framework.datatypes.datatypes_factory import DatatypesFactory
 from tvb.interfaces.web.controllers.burst.exploration_controller import ParameterExplorationController
 
 
-
 class ExplorationControllerTest(BaseTransactionalControllerTest):
     """
     Unit tests ParameterExplorationController
@@ -70,11 +69,11 @@ class ExplorationControllerTest(BaseTransactionalControllerTest):
         self.assertEqual(result['size_metric'], None)
         self.assertEqual(DatatypesFactory.RANGE_1[1], json.loads(result['labels_x']))
         self.assertEqual(DatatypesFactory.RANGE_2[1], json.loads(result['labels_y']))
-        data = json.loads(result['data'])
+        data = json.loads(result['d3_data'])
         self.assertEqual(len(data), len(DatatypesFactory.RANGE_1[1]))
-        for row in data:
+        for row in data.values():
             self.assertEqual(len(row), len(DatatypesFactory.RANGE_2[1]))
-            for entry in row:
+            for entry in row.values():
                 self.assertEqual(entry['dataType'], 'Datatype2')
                 for key in ['Gid', 'color_weight', 'operationId', 'tooltip']:
                     self.assertTrue(key in entry)
@@ -91,8 +90,6 @@ class ExplorationControllerTest(BaseTransactionalControllerTest):
         self.assertTrue(result['showFullToolbar'])
 
 
-
-
 def suite():
     """
     Gather all the tests in a test suite.
@@ -102,9 +99,8 @@ def suite():
     return test_suite
 
 
-
 if __name__ == "__main__":
-    #So you can run tests individually.
+    # So you can run tests individually.
     TEST_RUNNER = unittest.TextTestRunner()
     TEST_SUITE = suite()
     TEST_RUNNER.run(TEST_SUITE)
