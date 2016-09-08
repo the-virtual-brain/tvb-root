@@ -86,14 +86,14 @@ class Monitor(core.Type):
     _base_classes = ['Monitor', 'Projection', 'ProgressLogger']
 
     period = basic.Float(
-        label = "Sampling period (ms)",
+        label = "Sampling period (ms)", order=10,
         default = 0.9765625, #ms. 0.9765625 => 1024Hz #ms, 0.5 => 2000Hz
         doc = """Sampling period in milliseconds, must be an integral multiple
         of integration-step size. As a guide: 2048 Hz => 0.48828125 ms ;  
         1024 Hz => 0.9765625 ms ; 512 Hz => 1.953125 ms.""")
 
     variables_of_interest = arrays.IntegerArray(
-        label = "Model variables to watch",
+        label = "Model variables to watch", order=11,
         doc = ("Indices of model's variables of interest (VOI) that this monitor should record. "
                "Note that the indices should start at zero, so that if a model offers VOIs V, W and "
                "V+W, and W is selected, and this monitor should record W, then the correct index is 0.")
@@ -390,7 +390,7 @@ class Projection(Monitor):
 
     region_mapping = RegionMapping(
         required=False,
-        label="region mapping",
+        label="region mapping", order=3,
         doc="A region mapping specifies how vertices of a surface correspond to given regions in the"
             " connectivity. For iEEG/EEG/MEG monitors, this must be specified when performing a region"
             " simulation but is optional for a surface simulation.")
@@ -561,18 +561,18 @@ class EEG(Projection):
     _ui_name = "EEG"
 
     projection = ProjectionSurfaceEEG(
-        default=None, label='Projection matrix',
+        default=None, label='Projection matrix', order=2,
         doc='Projection matrix to apply to sources.')
 
-    reference = basic.String(required=False, label="EEG Reference",
+    reference = basic.String(required=False, label="EEG Reference", order=5,
                              doc='EEG Electrode to be used as reference, or "average" to '
                                  'apply an average reference. If none is provided, the '
                                  'produced time-series are the idealized or reference-free.')
 
-    sensors = SensorsEEG(required=True, label="EEG Sensors",
+    sensors = SensorsEEG(required=True, label="EEG Sensors", order=1,
                          doc='Sensors to use for this EEG monitor')
 
-    sigma = basic.Float(label="Conductivity (w/o projection)", default=1.0,
+    sigma = basic.Float(label="Conductivity (w/o projection)", default=1.0, order=4,
                         doc='When a projection matrix is not used, this provides '
                             'the value of conductivity in the formula for the single '
                             'sphere approximation of the head (Sarvas 1987).')
@@ -634,13 +634,13 @@ class MEG(Projection):
     _ui_name = "MEG"
 
     projection = ProjectionSurfaceMEG(
-        default=None, label='Projection matrix',
+        default=None, label='Projection matrix', order=2,
         doc='Projection matrix to apply to sources.')
 
     sensors = sensors_module.SensorsMEG(
         label = "MEG Sensors",
         default = None,
-        required = True,
+        required = True, order=1,
         doc = """The set of MEG sensors for which the forward solution will be
         calculated.""")
 
@@ -699,13 +699,13 @@ class iEEG(Projection):
     _ui_name = "Intracerebral / Stereo EEG"
 
     projection = ProjectionSurfaceSEEG(
-        default=None, label='Projection matrix',
+        default=None, label='Projection matrix', order=2,
         doc='Projection matrix to apply to sources.')
 
-    sigma = basic.Float(label="conductivity", default=1.0)
+    sigma = basic.Float(label="conductivity", default=1.0, order=4)
 
     sensors = sensors_module.SensorsInternal(
-        label="Internal brain sensors", default=None, required=True,
+        label="Internal brain sensors", default=None, required=True, order=1,
         doc="The set of SEEG sensors for which the forward solution will be calculated.")
 
 
