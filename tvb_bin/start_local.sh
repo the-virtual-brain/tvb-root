@@ -6,7 +6,7 @@ python tvb_bin/app.py start WEB_PROFILE
 # export VERSIONER_PYTHON_PREFER_32_BIT=yes
 # python tvb_bin/app.py start DESKTOP_PROFILE
 
-# Starts a IDLE console with the correct environment set
+# Starts a IDLE console with the correct scripting environment set
 # python tvb_bin/app.py start LIBRARY_PROFILE
 # python tvb_bin/app.py start COMMAND_PROFILE
 
