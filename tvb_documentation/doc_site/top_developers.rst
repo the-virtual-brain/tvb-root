@@ -13,7 +13,7 @@ The source code can be found on |github_link|.
 
 Documentation extracted from source code can be found |api_link|.
 
-You can view open issues on TVB's Jira |open_issues|. You can see ongoing activity on the |agile_board|.
+You can view open issues on TVB's Jira |open_issues|. You can see ongoing activity on the |agile_board| (tester/pass).
 
 
 .. toctree::
