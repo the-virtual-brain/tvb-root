@@ -143,9 +143,6 @@ class ZIPConnectivityImporter(ABCUploader):
 
         ### Fill and check weights
         if weights_matrix is not None:
-            if numpy.any([x < 0 for x in weights_matrix.flatten()]):
-                raise Exception("Negative values are not accepted in weights matrix! "
-                                "Please check your file, and use values >= 0")
             if weights_matrix.shape != (expected_number_of_nodes, expected_number_of_nodes):
                 raise Exception("Unexpected shape for weights matrix! "
                                 "Should be %d x %d " % (expected_number_of_nodes, expected_number_of_nodes))
