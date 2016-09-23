@@ -89,6 +89,7 @@ PY2APP_OPTIONS = {'iconfile': 'tvb_build/icon.icns',
                   'strip': True,  # TRUE is the default
                   'optimize': '0'}
 
+
 # --------------------------- Start defining functions: --------------------------------------------
 
 def _create_command_file(command_file_path, command, before_message, done_message=False):
@@ -100,6 +101,7 @@ def _create_command_file(command_file_path, command, before_message, done_messag
         f.write('#!/bin/bash\n')
         f.write('cd "$(dirname "$0")"\n')
         f.write('echo "' + before_message + '"\n')
+        f.write("export LC_ALL=$LANG\n")
         f.write(command + "\n")
         if done_message:
             f.write('echo "Done."\n')
@@ -359,7 +361,7 @@ def prepare_py2app_dist():
                       '../tvb.app/Contents/Resources/lib/python2.7/lib-dynload\n' \
                       '../tvb.app/Contents/MacOS/python -m tvb_bin.run_ipython notebook '
     _create_command_file(os.path.join(DIST_FOLDER, "bin", 'ipython_notebook'),
-                         ipython_command + '../demo_scripts', '')
+                         ipython_command + '../demo_scripts', 'Launching IPython Notebook from TVB Distribution')
     # _create_command_file(os.path.join(DIST_FOLDER, "demo_scripts", 'ipython_notebook'), IPYTHON_COMMAND, '')
 
     _create_command_file(os.path.join(DIST_FOLDER, "bin", 'contributor_setup'),
