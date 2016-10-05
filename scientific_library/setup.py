@@ -71,6 +71,7 @@ setuptools.setup(
     author_email='tvb-users@googlegroups.com',
     include_package_data=True,
     install_requires=TVB_INSTALL_REQUIREMENTS,
+    setup_requires=['cython', 'numpy'],
     long_description="""
 This package contains the scientific library from the Virtual Brain 
 project which provides data handling and numerical routines 
