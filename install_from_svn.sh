@@ -11,13 +11,13 @@ rm -rf build
 rm -rf dist
 cd ../..
 
-cd externals/geodesic_distance
-python setup.py install
-rm -rf build
-rm -rf dist
-rm -rf gdist.egg-info
-rm -f gdist.cpp
-cd ../..
+#cd externals/geodesic_distance
+#python setup.py install
+#rm -rf build
+#rm -rf dist
+#rm -rf gdist.egg-info
+#rm -f gdist.cpp
+#cd ../..
 
 cd scientific_library
 python setup.py develop
