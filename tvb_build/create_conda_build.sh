@@ -8,7 +8,7 @@ source activate $envname
 
 conda install matplotlib==1.5.1 pytables==3.0 psycopg2 numba
 
-pip install sqlalchemy==0.7.8 sqlalchemy-migrate==0.7.2 minixsv formencode genshi simplejson mod_pywebsocket cherrypy cfflib nibabel gdist numexpr
+pip install sqlalchemy==0.7.8 sqlalchemy-migrate==0.7.2 minixsv formencode genshi simplejson mod_pywebsocket cherrypy cfflib nibabel gdist
 
 
 #After these run "sh install_from_svn.sh" or "python setup.py develop/install" from each of TVB packages
