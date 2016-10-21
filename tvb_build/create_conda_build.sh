@@ -10,8 +10,13 @@ conda install matplotlib==1.5.1 pytables==3.0 psycopg2 numba
 
 pip install sqlalchemy==0.7.8 sqlalchemy-migrate==0.7.2 minixsv formencode genshi simplejson mod_pywebsocket cherrypy cfflib nibabel gdist
 
+# The next ones are for Mac build env:
+# pip install py2app docutils apscheduler pyobjc
+# pip install --upgrade setuptools
+# pip install --upgrade distribute
+# Edit [anaconda-env]/Lib/python2.7/site-packages/macholib/MatchOGraph.py loader= into loader_path=
 
-#After these run "sh install_from_svn.sh" or "python setup.py develop/install" from each of TVB packages
+# After these run "sh install_from_svn.sh" or "python setup.py develop/install" from each of TVB packages
 
 cd ../../..
 python setup_extra.py develop
@@ -24,4 +29,4 @@ python setup.py develop
 
 conda uninstall pyside shiboken cairo
 
-# [anaconda-env]/Lib/site-packages/matplotlib/mpl-data/matplotlibrc to Agg
+# [anaconda-env]/Lib/python2.7/site-packages/matplotlib/mpl-data/matplotlibrc to Agg
