@@ -13,7 +13,7 @@
     <dependency env="[win,mac,linux]" name="apscheduler">
         <full-name value="APScheduler"/>
         <project-home value="http://pypi.python.org/pypi/APScheduler"/>
-        <version value="[2.1.1,3.0.3]"/>
+        <version value="[2.1.1,3.0.3,3.2.0]"/>
         <usage value="dynamic linking"/>
         <license value="LICENSE_apscheduler_2.0.txt"/>
         <license-type value="MIT_"/>
@@ -93,7 +93,7 @@
     <dependency env="[win,mac,linux]" name="cherrypy">
         <full-name value="CherryPy Server"/>
         <project-home value="http://www.cherrypy.org"/>
-        <version value="[3.2.4,3.8.0]"/>
+        <version value="[3.2.4,3.8.0,8.1.2]"/>
         <usage value="dynamic linking"/>
         <license value="LICENSE_CherryPy.txt"/>
         <license-type value="BSD_"/>
@@ -213,7 +213,7 @@
     <dependency env="[win,mac,linux]" name="formencode">
         <full-name value="Formencode"/>
         <project-home value="http://www.formencode.org/en/latest/index.html"/>
-        <version value="1.3.0a1"/>
+        <version value="[1.3.0a1,1.3.1]"/>
         <usage value="dynamic linking"/>
         <license value="LICENSE_python.txt"/>
         <license-type value="PSF_"/>
@@ -223,7 +223,7 @@
     <dependency env="mac" name="functools32">
         <full-name value="Functools32"/>
         <project-home value="https://pypi.python.org/pypi/functools32"/>
-        <version value="3.2.3-2"/>
+        <version value="[3.2.3-2,3.2.3.post2]"/>
         <usage value="dynamic linking"/>
         <license value="LICENSE_functools32.txt"/>
         <license-type value="PSF_"/>
@@ -253,7 +253,7 @@
     <dependency env="[win,mac,linux]" name="h5py">
         <full-name value="H5py"/>
         <project-home value="http://www.h5py.org/"/>
-        <version value="2.3.0"/>
+        <version value="[2.3.0,2.6.0]"/>
         <usage value="dynamic linking"/>
         <license value="LICENSE_h5py.txt"/>
         <license-type value="BSD_ 3rd clause"/>
@@ -283,7 +283,7 @@
     <dependency env="[win,mac,linux]" name="ipython">
         <full-name value="iPython"/>
         <project-home value="http://ipython.org/"/>
-        <version value="[3.2.0,3.2.1]"/>
+        <version value="[3.2.0,3.2.1,5.1.0]"/>
         <usage value="dynamic linking"/>
         <license value="LICENSE_ipython.txt"/>
         <license-type value="BSD_ revised"/>
@@ -293,7 +293,7 @@
     <dependency env="[win,mac,linux]" name="jinja2">
         <full-name value="Jinja"/>
         <project-home value="http://jinja.pocoo.org/"/>
-        <version value="2.7.3"/>
+        <version value="[2.7.3,2.8]"/>
         <usage value="dynamic linking"/>
         <license value="LICENSE_jinja.txt"/>
         <license-type value="BSD_"/>
@@ -330,7 +330,7 @@
         <copyright-notice value="Copyright (c) 2013 Julian Berman"/>
         <description value="An(other) implementation of JSON Schema for Python"/>
     </dependency>
-    <dependency env="[mac]" name="jupyter_client">
+    <dependency env="mac" name="jupyter_client">
         <full-name value="Jupyter Client"/>
         <project-home value="http://jupyter.org/"/>
         <version value="4.4.0"/>
@@ -340,7 +340,7 @@
         <copyright-notice value="Copyright (c) Jupyter Development Team. Distributed under the terms of the Modified BSD License."/>
         <description value=""/>
     </dependency>
-    <dependency env="[mac]" name="jupyter_core">
+    <dependency env="mac" name="jupyter_core">
         <full-name value="Jupyter Core"/>
         <project-home value="http://jupyter.org/"/>
         <version value="4.2.0"/>
@@ -410,7 +410,7 @@
         <copyright-notice value="Copyright (C) 1999-2016 Free Software Foundation, Inc."/>
         <description value="The GNU Fortran compiler, part of GCC. Needed by recent numpy."/>
     </dependency>
-    <dependency env="mac" name="libpng15.15.dylib">
+    <dependency env="mac" name="libpng16.16.dylib">
         <full-name value="PNG library"/>
         <project-home value="http://www.libpng.org/pub/png/libpng.html"/>
         <version value="unknown"/>
@@ -443,7 +443,7 @@
     <dependency env="[win,mac,linux]" name="llvmlite">
         <full-name value="llvmlite"/>
         <project-home value="http://llvmlite.pydata.org/en/latest/"/>
-        <version value="[0.10.0,0.11.0.dev+8.ge1fe952]"/>
+        <version value="[0.10.0,0.11.0.dev+8.ge1fe952,0.14.0]"/>
         <usage value="dynamic linking"/>
         <license value="LICENSE_llvmlite.txt"/>
         <license-type value="BSD_"/>
@@ -453,7 +453,7 @@
     <dependency env="[win,mac,linux]" name="lxml">
         <full-name value="Lxml"/>
         <project-home value="http://lxml.de/"/>
-        <version value="[3.4.4,3.3.0b3]"/>
+        <version value="[3.4.4,3.3.0b3,3.6.4]"/>
         <usage value="dynamic linking"/>
         <license value="LICENSE_lxml.txt"/>
         <license-type value="BSD_"/>
@@ -583,7 +583,7 @@
     <dependency env="[win,mac,linux]" name="networkx">
         <full-name value="NetworkX"/>
         <project-home value="http://networkx.lanl.gov/reference/legal.html"/>
-        <version value="[1.9.1,1.8.1]"/>
+        <version value="[1.9.1,1.8.1,1.11]"/>
         <usage value="dynamic linking"/>
         <license value="LICENSE_networkx_1.4.txt"/>
         <license-type value="BSD_ 3 clause"/>
@@ -593,7 +593,7 @@
     <dependency env="[win,mac,linux]" name="nibabel">
         <full-name value="Nibabel"/>
         <project-home value="http://nipy.sourceforge.net/nibabel/"/>
-        <version value="[1.3.0,2.0.1]"/>
+        <version value="[1.3.0,2.0.1,2.1.0]"/>
         <usage value="dynamic linking"/>
         <license value="LICENSE_nibabel.txt"/>
         <license-type value="MIT_"/>
@@ -623,7 +623,7 @@
     <dependency env="[win,mac,linux]" name="numba">
         <full-name value="Numba"/>
         <project-home value="http://numba.pydata.org/"/>
-        <version value="0.25.0"/>
+        <version value="[0.25.0,0.29.0+0.gead0dd3.dirty]"/>
         <usage value="dynamic linking"/>
         <license value="LICENSE_numba.txt"/>
         <license-type value="BSD_"/>
@@ -633,7 +633,7 @@
     <dependency env="[win,mac,linux]" name="numexpr">
         <full-name value="NumExpr"/>
         <project-home value="http://code.google.com/p/numexpr/"/>
-        <version value="2.5.2"/>
+        <version value="[2.5.2,2.6.1]"/>
         <usage value="dynamic linking"/>
         <license value="LICENSE_numexpr.txt"/>
         <license-type value="MIT_"/>
@@ -663,7 +663,7 @@
     <dependency env="[win,mac,linux]" name="pil">
         <full-name value="Pillow Library"/>
         <project-home value="https://pillow.readthedocs.org/"/>
-        <version value="unknown"/>
+        <version value="[1.1.7,unknown]"/>
         <usage value="dynamic linking"/>
         <license value="LICENSE_PIL.txt"/>
         <license-type value="MIT_"/>
@@ -693,7 +693,7 @@
     <dependency env="[win,mac,linux]" name="psutil">
         <full-name value="psutil"/>
         <project-home value="http://code.google.com/p/psutil/"/>
-        <version value="[2.2.1,1.2.1]"/>
+        <version value="[2.2.1,1.2.1,4.3.1]"/>
         <usage value="dynamic linking"/>
         <license value="LICENSE_psutil.txt"/>
         <license-type value="BSD_ 3rd clause"/>
@@ -703,7 +703,7 @@
     <dependency env="[win,mac,linux]" name="psycopg2">
         <full-name value="Psycopg2"/>
         <project-home value="http://initd.org/psycopg/"/>
-        <version value="[2.5.2 (dt dec pq3 ext),2.6,2.6.1]"/>
+        <version value="[2.6.2 (dt dec pq3 ext lo64),2.6,2.6.1]"/>
         <usage value="dynamic linking"/>
         <license value="LICENSE_psycopg.txt"/>
         <license-type value="ZPL-License"/>
@@ -713,7 +713,7 @@
     <dependency env="linux" name="ptyprocess">
         <full-name value="Ptyprocess"/>
         <project-home value="https://github.com/pexpect/ptyprocess"/>
-        <version value="0.4"/>
+        <version value="[0.4,0.5.1]"/>
         <usage value="dynamic linking"/>
         <license value="LICENSE_ptyprocess.txt"/>
         <license-type value="ISC_"/>
@@ -733,7 +733,7 @@
     <dependency env="[win,mac,linux]" name="pygments">
         <full-name value="Pygments"/>
         <project-home value="http://pygments.org/"/>
-        <version value="2.0.2"/>
+        <version value="[2.0.2,2.1.3]"/>
         <usage value="dynamic linking"/>
         <license value="LICENSE_pygments.txt"/>
         <license-type value="BSD_"/>
@@ -773,7 +773,7 @@
     <dependency env="[win,mac,linux]" name="python">
         <full-name value="Python"/>
         <project-home value="http://docs.python.org/license.html"/>
-        <version value="2.7.11"/>
+        <version value="[2.7.11,2.7.12]"/>
         <usage value="dynamic linking"/>
         <license value="LICENSE_python.txt"/>
         <license-type value="PSF_"/>
@@ -793,17 +793,17 @@
     <dependency env="[win,mac,linux]" name="pytz">
         <full-name value="PyTZ: TimeZone Library for Python"/>
         <project-home value="http://pytz.sourceforge.net/"/>
-        <version value="[2016.4,2012d-mpl]"/>
+        <version value="[2016.7,2016.4,2012d-mpl]"/>
         <usage value="dynamic linking"/>
         <license value="LICENSE_pytz.txt"/>
         <license-type value="MIT_"/>
         <copyright-notice value="Copyright (c) 2003-2009 Stuart Bishop &lt;stuart@stuartbishop.net&gt;"/>
         <description value=""/>
     </dependency>
-    <dependency env="[win,linux]" name="pyzmq">
+    <dependency env="[win,linux,mac]" name="pyzmq">
         <full-name value="zeromq"/>
         <project-home value="http://zguide.zeromq.org"/>
-        <version value="14.7.0"/>
+        <version value="[14.7.0,16.0.0]"/>
         <usage value="dynamic linking"/>
         <license value="LICENSE_zmq.txt"/>
         <license-type value="LGPLv3_"/>
@@ -833,7 +833,7 @@
     <dependency env="[win,mac,linux]" name="simplejson">
         <full-name value="Simple JSON"/>
         <project-home value="https://github.com/simplejson"/>
-        <version value="[3.3.1,3.7.3]"/>
+        <version value="[3.3.1,3.7.3,3.8.2]"/>
         <usage value="dynamic linking"/>
         <license value="LICENSE_simplejson.txt"/>
         <license-type value="MIT_ or PSF_"/>
@@ -853,7 +853,7 @@
     <dependency env="[win,mac,linux]" name="sklearn">
         <full-name value="Scikits Learn"/>
         <project-home value="http://scikit-learn.org/"/>
-        <version value="0.17.1"/>
+        <version value="[0.17.1,0.18]"/>
         <usage value="dynamic linking"/>
         <license value="LICENSE_scikits_learn.txt"/>
         <license-type value="BSD_ 3rd clause"/>
@@ -890,10 +890,10 @@
         <copyright-notice value="Copyright (c) 2009 Evan Rosson, Jan Dittberner, Domen Kozar"/>
         <description value="SQLAlchemy related package, for updating from one version of DB to another."/>
     </dependency>
-    <dependency env="mac" name="sqlite3">
+    <dependency env="mac" name="libsqlite3.0.dylib">
         <full-name value="Sqlite DB for Python"/>
         <project-home value="https://github.com/ghaering/pysqlite"/>
-        <version value="2.6.0"/>
+        <version value="unknown"/>
         <usage value="dynamic linking"/>
         <license value="LICENSE_sqlite.txt"/>
         <license-type value="MIT_"/>
@@ -903,7 +903,7 @@
     <dependency env="[win,mac,linux]" name="tables">
         <full-name value="PyTables"/>
         <project-home value="http://www.pytables.org/moin/License"/>
-        <version value="3.0.0"/>
+        <version value="[3.0.0,3.2.3.1]"/>
         <usage value="dynamic linking"/>
         <license value="LICENSE_pytables.txt"/>
         <license-type value="BSD_"/>
@@ -920,10 +920,10 @@
         <copyright-notice value="Copyright (c) 2008 Ian Bicking and Contributors"/>
         <description value="This is a dependency of SQLAlchemy's migrate versioning."/>
     </dependency>
-    <dependency env="linux" name="terminado">
+    <dependency env="[linux,mac]" name="terminado">
         <full-name value="Terminado"/>
         <project-home value="https://pypi.python.org/pypi/terminado"/>
-        <version value="0.5"/>
+        <version value="[0.5,0.6]"/>
         <usage value="dynamic linking"/>
         <license value="LICENSE_terminado.txt"/>
         <license-type value="BSD_"/>
@@ -933,7 +933,7 @@
     <dependency env="[win,mac,linux]" name="tornado">
         <full-name value="Tornado"/>
         <project-home value="http://www.tornadoweb.org/en/stable/"/>
-        <version value="4.2"/>
+        <version value="[4.2,4.4.2]"/>
         <usage value="dynamic linking"/>
         <license value="LICENSE_tornado.txt"/>
         <license-type value="Apache_ 2"/>
@@ -950,10 +950,10 @@
         <copyright-notice value="Copyright (c) 2001-2015 Authors list (see license file for it)"/>
         <description value="The IPython Notebook uses it"/>
     </dependency>
-    <dependency env="[win,linux]" name="tzlocal">
+    <dependency env="[win,linux,mac]" name="tzlocal">
         <full-name value="TzLocal"/>
         <project-home value="https://pypi.python.org/pypi/tzlocal"/>
-        <version value="1.2"/>
+        <version value="[1.2,1.3]"/>
         <usage value="dynamic linking"/>
         <license value="LICENSE_tzlocal.txt"/>
         <license-type value="CC0_"/>
@@ -993,7 +993,7 @@
     <dependency env="[win,mac,linux]" name="zmq">
         <full-name value="zeromq"/>
         <project-home value="http://zguide.zeromq.org"/>
-        <version value="14.7.0"/>
+        <version value="[14.7.0,16.0.0]"/>
         <usage value="dynamic linking"/>
         <license value="LICENSE_zmq.txt"/>
         <license-type value="LGPLv3_"/>
