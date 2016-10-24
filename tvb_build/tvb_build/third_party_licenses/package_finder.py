@@ -57,7 +57,7 @@ EXCLUDES = [
     'stdsuites', 'wxpython',
     ## Mac: We exclude bellow shorter names for packages already introspected.
     "foundation", "exceptionhandling",
-    "objc", "appkit", "pyobjctools",
+    "objc", "appkit", "pyobjctools", "cocoa",
     "ipykernel", "ipython_genutils",
     'finder', 'unittest', 'email', 'encodings', 'multiprocessing', 'json', 'curses', 'importlib', 'xml', 'logging'
 ]
