@@ -55,9 +55,11 @@ EXCLUDES = [
     'hotshot', 'lib-dynload',
     'openglcontext', 'pydoc_data', 'pysqlite2', 'pyximport',  # part of cython
     'stdsuites', 'wxpython',
-    ## We exclude bellow shorter names for packages already introspected.
-    "foundation", "objc", "appkit", "exceptionhandling", "pyobjctools", "applescriptkit", "applescriptobjc",
-    "ipykernel", "ipython_genutils"
+    ## Mac: We exclude bellow shorter names for packages already introspected.
+    "foundation", "exceptionhandling",
+    "objc", "appkit", "pyobjctools",
+    "ipykernel", "ipython_genutils",
+    'finder', 'unittest', 'email', 'encodings', 'multiprocessing', 'json', 'curses', 'importlib', 'xml', 'logging'
 ]
 
 EXCLUDES_DLL = []

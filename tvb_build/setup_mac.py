@@ -72,12 +72,12 @@ PY2APP_INCLUDES = ['apscheduler', 'apscheduler.scheduler', 'cfflib', 'cmath', 'c
                    'genshi', 'genshi.template', 'genshi.template.loader', 'jinja2', 'jsonschema', 'logging.config',
                    'lxml.etree', 'lxml._elementpath', 'markupsafe', 'matplotlib', 'minixsv', 'mod_pywebsocket',
                    'mplh5canvas.backend_h5canvas', 'mpl_toolkits.axes_grid', 'nibabel', 'numexpr', 'os',
-                   'PyObjCTools', 'psycopg2',
+                   'PyObjCTools.AppHelper', 'psycopg2',
                    'runpy', 'sqlite3', 'sqlalchemy', 'sqlalchemy.dialects.sqlite', 'sqlalchemy.dialects.postgresql',
                    'simplejson', 'six', 'StringIO', 'xml.dom', 'xml.dom.minidom', 'zlib', 'zmq']
 
 PY2APP_EXCLUDES = ['_markerlib', 'coverage', 'cython', 'Cython', 'tvb_data', 'docutils', 'lib2to3',
-                   'nose', 'OpenGL', 'PyOpenGL', 'PyQt4', 'sphinx', 'wx']
+                   'nose', 'OpenGL', 'py2app', 'PyOpenGL', 'PyQt4', 'sphinx', 'wx']
 
 PY2APP_OPTIONS = {'iconfile': 'tvb_build/icon.icns',
                   'plist': 'tvb_build/info.plist',
