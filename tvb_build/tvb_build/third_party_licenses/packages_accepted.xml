@@ -890,10 +890,10 @@
         <copyright-notice value="Copyright (c) 2009 Evan Rosson, Jan Dittberner, Domen Kozar"/>
         <description value="SQLAlchemy related package, for updating from one version of DB to another."/>
     </dependency>
-    <dependency env="mac" name="libsqlite3.0.dylib">
+    <dependency env="mac" name="sqlite3">
         <full-name value="Sqlite DB for Python"/>
         <project-home value="https://github.com/ghaering/pysqlite"/>
-        <version value="unknown"/>
+        <version value="2.6.0"/>
         <usage value="dynamic linking"/>
         <license value="LICENSE_sqlite.txt"/>
         <license-type value="MIT_"/>

@@ -71,7 +71,8 @@ PY2APP_PACKAGES = ['cherrypy', 'email', 'h5py', 'IPython', 'idlelib', "llvmlite"
 PY2APP_INCLUDES = ['apscheduler', 'apscheduler.scheduler', 'cfflib', 'cmath', 'contextlib', 'formencode', 'gdist',
                    'genshi', 'genshi.template', 'genshi.template.loader', 'jinja2', 'jsonschema', 'logging.config',
                    'lxml.etree', 'lxml._elementpath', 'markupsafe', 'matplotlib', 'minixsv', 'mod_pywebsocket',
-                   'mplh5canvas.backend_h5canvas', 'mpl_toolkits.axes_grid', 'nibabel', 'numexpr', 'os', 'psycopg2',
+                   'mplh5canvas.backend_h5canvas', 'mpl_toolkits.axes_grid', 'nibabel', 'numexpr', 'os',
+                   'PyObjCTools', 'psycopg2',
                    'runpy', 'sqlite3', 'sqlalchemy', 'sqlalchemy.dialects.sqlite', 'sqlalchemy.dialects.postgresql',
                    'simplejson', 'six', 'StringIO', 'xml.dom', 'xml.dom.minidom', 'zlib', 'zmq']
 
@@ -101,6 +102,9 @@ def _create_command_file(command_file_path, command, before_message, done_messag
         f.write('#!/bin/bash\n')
         f.write('cd "$(dirname "$0")"\n')
         f.write('echo "' + before_message + '"\n')
+        f.write('if [ -z "$LANG" ]; then\n')
+        f.write("    export LANG=en_US.UTF-8\n")
+        f.write('fi\n')
         f.write("export LC_ALL=$LANG\n")
         f.write(command + "\n")
         if done_message:

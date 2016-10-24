@@ -53,18 +53,12 @@ EXCLUDES = [
     # others
     '_builtinsuites', 'bsddb', 'carbon', 'compiler', 'config',
     'hotshot', 'lib-dynload',
-    'openglcontext', 'pydoc_data', 'pysqlite2', 'pyximport', # part of cython
+    'openglcontext', 'pydoc_data', 'pysqlite2', 'pyximport',  # part of cython
     'stdsuites', 'wxpython',
     ## We exclude bellow shorter names for packages already introspected.
-    "foundation", "objc", "appkit", "exceptionhandling", "pyobjctools"
+    "foundation", "objc", "appkit", "exceptionhandling", "pyobjctools", "applescriptkit", "applescriptobjc",
+    "ipykernel", "ipython_genutils"
 ]
-
-# todo: understand why this is needed on mac
-if sys.platform == 'darwin':
-    EXCLUDES.extend([
-        'xml', 'logging', 'importlib', 'curses', 'unittest', 'multiprocessing',
-        'json', 'encodings', 'test', 'email', 'finder'
-    ])
 
 EXCLUDES_DLL = []
 
@@ -80,12 +74,12 @@ EXCLUDES_SO = [
 
 EXCLUDES_DYLIB = [
     'libcrypto.1.0.0.dylib', 'libncursesw.5.dylib', 'libpq.5.dylib', 'libpq.5.8.dylib',
-    'libssl.1.0.0.dylib','libpython2.7.dylib',
+    'libssl.1.0.0.dylib', 'libpython2.7.dylib',
     re.compile(r'libgcc.*\.dylib'),
     # Libz is needed by psycopg2
     re.compile(r'libz.*\.dylib'),
     # Already included
-    re.compile(r'libhdf5_hl.*\.dylib'), re.compile(r'libhdf5.*\.dylib')
+    re.compile(r'libhdf5_hl.*\.dylib'), re.compile(r'libhdf5.*\.dylib'), 'libsqlite3.0.dylib'
 ]
 
 # py2app adds some frameworks to package that we also need to check for licenses.
@@ -193,7 +187,7 @@ def _find_modules(root_, modules_dict):
         # Validate current file not to be in the INTERDICTION list.
         for regex in LICENSE_INTERDICTIONS:
             if regex.match(entry):
-                raise Exception("%s file has unacceptable license!!! " % (entry, ))
+                raise Exception("%s file has unacceptable license!!! " % (entry,))
 
         if (os.path.isdir(full_path) and not _is_excluded(entry, EXCLUDES) and (INIT[0] in os.listdir(full_path)
                                                                                 or INIT[1] in os.listdir(full_path))):
@@ -266,10 +260,8 @@ def parse_tree_structure(root_, excludes=None):
     return modules_dict
 
 
-
-# Test case for Windows or Mac   
+# Test case for Windows or Mac
 if __name__ == '__main__':
     ROOT = 'D:\Projects\Brain\dist-repo\TVB_distribution\library.zip'
     ROOT_MAC = '../TVB_MacOS_dist/TVB_distribution/tvb.app/Contents/Resources/lib/python2.7'
     print parse_tree_structure(ROOT)
-
