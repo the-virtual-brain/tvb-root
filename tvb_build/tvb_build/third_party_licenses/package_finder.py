@@ -58,7 +58,7 @@ EXCLUDES = [
     ## Mac: We exclude bellow shorter names for packages already introspected.
     "foundation", "exceptionhandling",
     "objc", "appkit", "pyobjctools", "cocoa",
-    "ipykernel", "ipython_genutils",
+    "ipykernel", "ipython_genutils", "nbformat", "nbconvert",
     'finder', 'unittest', 'email', 'encodings', 'multiprocessing', 'json', 'curses', 'importlib', 'xml', 'logging'
 ]
 
@@ -81,7 +81,8 @@ EXCLUDES_DYLIB = [
     # Libz is needed by psycopg2
     re.compile(r'libz.*\.dylib'),
     # Already included
-    re.compile(r'libhdf5_hl.*\.dylib'), re.compile(r'libhdf5.*\.dylib'), 'libsqlite3.0.dylib'
+    re.compile(r'libhdf5_hl.*\.dylib'), re.compile(r'libhdf5.*\.dylib'), 'libsqlite3.0.dylib', 'liblcms.1.0.19.dylib',
+    re.compile(r'lib*xslt.*\.dylib')  # Comes with with libxml2
 ]
 
 # py2app adds some frameworks to package that we also need to check for licenses.
