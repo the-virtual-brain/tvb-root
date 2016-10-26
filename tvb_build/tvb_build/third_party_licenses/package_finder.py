@@ -82,7 +82,7 @@ EXCLUDES_DYLIB = [
     re.compile(r'libz.*\.dylib'),
     # Already included
     re.compile(r'libhdf5_hl.*\.dylib'), re.compile(r'libhdf5.*\.dylib'), 'libsqlite3.0.dylib', 'liblcms.1.0.19.dylib',
-    re.compile(r'lib*xslt.*\.dylib')  # Comes with with libxml2
+    re.compile(r'libxslt.*\.dylib'), re.compile(r'libexslt.*\.dylib')   # Come with with libxml2
 ]
 
 # py2app adds some frameworks to package that we also need to check for licenses.
