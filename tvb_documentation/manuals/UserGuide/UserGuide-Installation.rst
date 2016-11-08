@@ -3,7 +3,7 @@
 Installing the Application
 ==========================
 
-To download |TVB| check out the `download site <http://www.thevirtualbrain.org>`_
+To download |TVB| check out the `download site <http://www.thevirtualbrain.org/tvb/zwei/brainsimulator-software>`_
 
 The TVB software package can be used in 3 different configurations:
 

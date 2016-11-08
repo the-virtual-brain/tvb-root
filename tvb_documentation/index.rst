@@ -62,12 +62,12 @@ We are grateful to
 
 .. |download_site| raw:: html
 
-   <a href="http://www.thevirtualbrain.org" target="_blank">TVB download site</a>
+   <a href="http://www.thevirtualbrain.org/tvb/zwei/brainsimulator-software" target="_blank">TVB download site</a>
 
 
 .. |our_sponsors_page| raw:: html
 
-    <a href="http://www.thevirtualbrain.org/tvb/zwei/team" target="_blank"> our sponsors page </a>
+    <a href="http://www.thevirtualbrain.org/tvb/zwei/teamwork-sponsors" target="_blank"> our sponsors page </a>
 
 
 .. |mailing_list| raw:: html
@@ -87,7 +87,7 @@ We are grateful to
 
 .. |third_party| raw:: html
 
-   <a href="http://www.thevirtualbrain.org/tvb/zwei/licenses" target="_blank"> 3rd party </a>
+   <a href="http://www.thevirtualbrain.org/tvb/zwei/brainsimulator-requirements" target="_blank"> 3rd party </a>
 
 
 .. |pycharm_ide| raw:: html
