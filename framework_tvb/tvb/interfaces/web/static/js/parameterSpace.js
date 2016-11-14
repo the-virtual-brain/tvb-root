@@ -848,17 +848,34 @@ function d3Plot(placeHolder, data, options, pageParam) {
     });
 
     function getNodeInfo(coords) {
+        var res;
         try {
-            return _PSE_d3NodesInfo[coords.x][coords.y];
+            res = _PSE_d3NodesInfo[coords.x][coords.y];
+            if (res == undefined){
+                throw Exception()
+            }
+            return res;
         } catch (err) {
             try {
-                return _PSE_d3NodesInfo[coords.x.toFixed(1)][coords.y];
+                res = _PSE_d3NodesInfo[coords.x.toFixed(1)][coords.y];
+                if (res == undefined){
+                    throw Exception()
+                }
+                return res;
             } catch (err) {
                 try {
-                    return _PSE_d3NodesInfo[coords.x][coords.y.toFixed(1)];
+                    res = _PSE_d3NodesInfo[coords.x][coords.y.toFixed(1)];
+                    if (res == undefined){
+                        throw Exception()
+                    }
+                    return res;
                 } catch (err) {
                     try {
-                        return _PSE_d3NodesInfo[coords.x.toFixed(1)][coords.y.toFixed(1)];
+                        res = _PSE_d3NodesInfo[coords.x.toFixed(1)][coords.y.toFixed(1)];
+                        if (res == undefined){
+                            throw Exception()
+                        }
+                        return res;
                     } catch (err) {
                         displayMessage(err, "errorMessage");
                     }
