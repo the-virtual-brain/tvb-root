@@ -59,7 +59,7 @@ TEXT_RECOVERY = 'Hi %s,\n\n' \
                 'TVB Team.'
 TEXT_DISPLAY = "Thank you! Please check your email for further details!"
 TEXT_CREATE = (',\n\nYour registration has been notified to the administrators '
-               + 'of The Virtual Brain Project; you will receive an mail as '
+               + 'of The Virtual Brain Project; you will receive an email as '
                + 'soon as the administrator has validated your registration.'
                + ' \n\nThank you for registering!\nTVB Team')
 TEXT_CREATE_TO_ADMIN = 'New member requires validation. Go to this url to validate '
