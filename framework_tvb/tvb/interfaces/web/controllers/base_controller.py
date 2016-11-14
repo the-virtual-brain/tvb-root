@@ -84,9 +84,9 @@ class BaseController(object):
         if allen_algo:
             # Only add the Allen Creator if AllenSDK is installed
             allen_link = self.get_url_adapter(allen_algo.fk_category, allen_algo.id)
-            self.connectivity_submenu.append(dict(title="Allen Connectome Downloader", link=allen_link,
+            self.connectivity_submenu.append(dict(title="Allen Connectome Builder", link=allen_link,
                                                   subsection=WebStructure.SUB_SECTION_ALLEN,
-                                                  description="Download a mouse connectivity from Allen dataset"))
+                                                  description="Download data from Allen dataset and create a mouse connectome"))
 
         self.burst_submenu = [dict(link='/burst', subsection=WebStructure.SUB_SECTION_BURST,
                                    title='Simulation Cockpit', description='Manage simulations'),
