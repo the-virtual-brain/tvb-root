@@ -42,6 +42,7 @@ import formencode
 import numpy
 
 from tvb.basic.filters.chain import FilterChain
+from tvb.core.adapters import constants
 from tvb.core.adapters.input_tree import InputTreeManager, MAXIMUM_DATA_TYPES_DISPLAYED, KEY_WARNING, WARNING_OVERFLOW
 from tvb.datatypes.arrays import MappedArray
 from tvb.core.utils import url2path, parse_json_parameters, string2date, string2bool
@@ -49,7 +50,7 @@ from tvb.core.entities.file.files_helper import FilesHelper
 from tvb.core.adapters.abcdisplayer import ABCDisplayer
 from tvb.core.adapters.abcadapter import ABCAdapter
 from tvb.core.services.exceptions import OperationException
-from tvb.core.services.operation_service import OperationService, RANGE_PARAMETER_1
+from tvb.core.services.operation_service import OperationService, RANGE_PARAMETER_1, RANGE_PARAMETER_2
 from tvb.core.services.project_service import ProjectService
 from tvb.core.services.burst_service import BurstService
 from tvb.interfaces.web.controllers import common
@@ -801,10 +802,10 @@ class FlowController(BaseController):
         try:
             ##this is to check whether there is already an entry in the
             for i, (name, Val) in enumerate(self.PSE_names_list):
-                if (name == config_name):
+                if name == config_name:
                     self.PSE_names_list[i] = (config_name, (
-                    data['threshold_value'] + "," + data['threshold_type'] + "," + data[
-                        'not_presence']))  ##replace the previous occurence of the config name, and carry on.
+                        data['threshold_value'] + "," + data['threshold_type'] + "," + data[
+                            'not_presence']))  # replace the previous occurence of the config name, and carry on.
                     self.get_pse_filters()
                     return [True, 'Selected Text stored, and selection updated']
             self.PSE_names_list.append(
@@ -812,8 +813,7 @@ class FlowController(BaseController):
         except AttributeError:
             self.PSE_names_list = [
                 (config_name, (data['threshold_value'] + "," + data['threshold_type'] + "," + data['not_presence']))]
-        # else:
-        #     return [False,'Something went wrong, time to debug'] #this might not be doing what I think its supposed to
+
         self.get_pse_filters()
         return [True, 'Selected Text stored, and selection updated']
 
@@ -828,31 +828,35 @@ class FlowController(BaseController):
             raise
 
     @expose_json
-    def store_exploration_section(self, range, step, GID):
+    def store_exploration_section(self, val_range, step, dt_group_guid):
         """
-        Later on this function will serve as the launching method for further simulations, but currently only reflects the information that will be passed off in that call.
-        :param data: x&y range are tuples that have the start and end value the user has selected. x&y step are float numbers
-        :return:
+        Launching method for further simulations.
         """
-        range = [float(num) for num in range.split(",")]
-        step = [float(num) for num in step.split(",")]
-        try:
-            self.explorations[GID].append({'x_range': range[:2],
-                                           'x_step': step[0],
-                                           'y_range': range[2:],
-                                           'y_step': step[1]})
-        except AttributeError:
-            self.explorations = {GID: [{'x_range': range[:2],
-                                        'x_step': step[0],
-                                        'y_range': range[2:],
-                                        'y_step': step[1]}]}
-        except KeyError:
-            self.explorations[GID] = [{'x_range': range[:2],
-                                       'x_step': step[0],
-                                       'y_range': range[2:],
-                                       'y_step': step[1]}]
-        except:
-            raise
+        range_list = [float(num) for num in val_range.split(",")]
+        step_list = [float(num) for num in step.split(",")]
+
+        datatype_group_ob = ProjectService().get_datatypegroup_by_gid(dt_group_guid)
+        operation_grp = datatype_group_ob.parent_operation_group
+        operation_obj = self.flow_service.load_operation(datatype_group_ob.fk_from_operation)
+        parameters = json.loads(operation_obj.parameters)
+
+        range1name, range1_dict = json.loads(operation_grp.range1)
+        range2name, range2_dict = json.loads(operation_grp.range2)
+        parameters[RANGE_PARAMETER_1] = range1name
+        parameters[RANGE_PARAMETER_2] = range2name
+
+        ##change the existing simulator parameters to be min max step types
+        range1_dict = {constants.ATT_MINVALUE: range_list[0],
+                       constants.ATT_MAXVALUE: range_list[1],
+                       constants.ATT_STEP: step_list[0]}
+        range2_dict = {constants.ATT_MINVALUE: range_list[2],
+                       constants.ATT_MAXVALUE: range_list[3],
+                       constants.ATT_STEP: step_list[1]}
+        parameters[range1name] = json.dumps(range1_dict)  # this is for the x axis parameter
+        parameters[range2name] = json.dumps(range2_dict)  # this is for the y axis parameter
+
+        OperationService().group_operation_launch(common.get_logged_user().id, common.get_current_project().id,
+                                                  operation_obj.algorithm.id, operation_obj.algorithm.fk_category,
+                                                  datatype_group_ob, **parameters)
 
         return [True, 'Stored the exploration material successfully']
-

@@ -188,20 +188,22 @@ class OperationService:
                     values_str = values_str + " " + str(val)
             values = values_str
         return str(values).strip()
-    
-    
-    def group_operation_launch(self, user_id, project_id, algorithm_id, category_id, **kwargs):
+
+
+    def group_operation_launch(self, user_id, project_id, algorithm_id, category_id, existing_dt_group=None, **kwargs):
         """
         Create and prepare the launch of a group of operations.
         """
         category = dao.get_category_by_id(category_id)
         algorithm = dao.get_algorithm_by_id(algorithm_id)
-        operations, _ = self.prepare_operations(user_id, project_id, algorithm, category, {}, **kwargs)
-        for operation in operations:
+        ops, _ = self.prepare_operations(user_id, project_id, algorithm, category, {},
+                                         existing_dt_group=existing_dt_group, **kwargs)
+        for operation in ops:
             self.launch_operation(operation.id, True)
 
 
-    def prepare_operations(self, user_id, project_id, algorithm, category, metadata, visible=True, **kwargs):
+    def prepare_operations(self, user_id, project_id, algorithm, category, metadata,
+                           visible=True, existing_dt_group=None, **kwargs):
         """
         Do all the necessary preparations for storing an operation. If it's the case of a 
         range of values create an operation group and multiple operations for each possible
@@ -210,7 +212,7 @@ class OperationService:
         """
         operations = []
 
-        available_args, group = self._prepare_group(project_id, kwargs)
+        available_args, group = self._prepare_group(project_id, existing_dt_group, kwargs)
         if len(available_args) > TvbProfile.current.MAX_RANGE_NUMBER:
             raise LaunchException("Too big range specified. You should limit the"
                                   " resulting operations to %d" % TvbProfile.current.MAX_RANGE_NUMBER)
@@ -239,9 +241,14 @@ class OperationService:
             burst_id = None
             if DataTypeMetaData.KEY_BURST in metadata:
                 burst_id = metadata[DataTypeMetaData.KEY_BURST]
-            datatype_group = model.DataTypeGroup(group, operation_id=operations[0].id, fk_parent_burst=burst_id,
-                                                 state=metadata[DataTypeMetaData.KEY_STATE])
-            dao.store_entity(datatype_group)
+            if existing_dt_group is None:
+                datatype_group = model.DataTypeGroup(group, operation_id=operations[0].id, fk_parent_burst=burst_id,
+                                                     state=metadata[DataTypeMetaData.KEY_STATE])
+                dao.store_entity(datatype_group)
+            else:
+                # Reset count
+                existing_dt_group.count_results = None
+                dao.store_entity(existing_dt_group)
 
         return operations, group
 
@@ -419,7 +426,7 @@ class OperationService:
         return model.PARAM_RANGE_PREFIX + str(range_no)
 
 
-    def _prepare_group(self, project_id, kwargs):
+    def _prepare_group(self, project_id, existing_dt_group, kwargs):
         """
         Create and store OperationGroup entity, or return None
         """
@@ -448,9 +455,12 @@ class OperationService:
             ranges = []  # Since we only have 3 fields in db for this just hide it
         if not is_group:
             group = None
-        else:
+        elif existing_dt_group is None:
             group = model.OperationGroup(project_id=project_id, ranges=ranges)
             group = dao.store_entity(group)
+        else:
+            group = existing_dt_group.parent_operation_group
+
         return available_args, group
 
 

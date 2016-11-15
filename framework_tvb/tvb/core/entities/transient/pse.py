@@ -75,7 +75,7 @@ class ContextDiscretePSE(EnhancedDictionary):
         self.pse_back_page = back_page
 
 
-    def setRanges(self, title_x, values_x, labels_x, title_y, values_y, labels_y):
+    def setRanges(self, title_x, values_x, labels_x, title_y, values_y, labels_y, only_numbers):
         self.title_x = title_x
         self.values_x = values_x
         self.labels_x = labels_x
@@ -83,6 +83,7 @@ class ContextDiscretePSE(EnhancedDictionary):
         self.title_y = title_y
         self.values_y = values_y
         self.labels_y = labels_y
+        self.only_numbers = only_numbers
 
         
     def prepare_individual_jsons(self):
@@ -161,40 +162,52 @@ class ContextDiscretePSE(EnhancedDictionary):
                     self.max_shape_size = size_value
                 dt_info[self.size_metric] = size_value
         self.datatypes_dict[datatype.gid] = dt_info
-        
-    
+
+
     def fill_object(self, final_dict):
         """ Populate current entity with attributes required for visualizer"""
-        # todo consider deprecating the i,j data attr used for the series in favor of the parameterCoordinates
         all_series = []
-        for i, key_1 in enumerate(self.values_x):
-            for j, key_2 in enumerate(self.values_y):
+        if self.only_numbers:
+            self.values_x = final_dict.keys()
+
+            y_values_set = set()
+            for dict_ in final_dict.values():
+                y_values_set = y_values_set.union(dict_.keys())
+            self.values_y = [a for a in y_values_set]
+
+            self.values_x.sort()
+            self.values_y.sort()
+            self.labels_x = self.values_x
+            self.labels_y = self.values_y
+
+        for key_1 in final_dict.keys():
+            for key_2 in final_dict[key_1].keys():
                 datatype_gid = None
                 current = final_dict[key_1][key_2]
                 if self.KEY_GID in current:
-                    #This means the operation was finished
+                    # This means the operation was finished
                     datatype_gid = current[self.KEY_GID]
-                series_data = [[i, j]]
+
                 parameter_coords = '{"x":' + str(key_1) + ', "y":' + str(key_2) + '}'
-                color_weight, shape_type_1 = self.__get_color_weight(self.datatypes_dict, datatype_gid, 
+                color_weight, shape_type_1 = self.__get_color_weight(self.datatypes_dict, datatype_gid,
                                                                      self.color_metric)
                 if (shape_type_1 is not None) and (datatype_gid is not None):
                     current[self.KEY_TOOLTIP] += self.LINE_SEPARATOR + " Color metric has NaN values"
-                shape_size, shape_type_2 = self.__get_node_size(self.datatypes_dict, datatype_gid, len(self.labels_x), 
+                shape_size, shape_type_2 = self.__get_node_size(self.datatypes_dict, datatype_gid, len(self.labels_x),
                                                                 len(self.labels_y), self.size_metric)
                 if (shape_type_2 is not None) and (datatype_gid is not None):
                     current[self.KEY_TOOLTIP] += self.LINE_SEPARATOR + " Size metric has NaN values"
-                #If either of the shape_types is not none use that
+                # If either of the shape_types is not none use that
                 shape_type = shape_type_1 or shape_type_2
-                series = self.__get_node_json(series_data, shape_type, shape_size, parameter_coords)
+                series = self.__get_node_json(shape_type, shape_size, parameter_coords)
                 current['color_weight'] = color_weight
                 all_series.append(series)
 
         self.d3_data = final_dict
         self.series_array = self.__build_series_json(all_series)
         self.status = 'started' if self.has_started_ops else 'finished'
-        
-        
+
+
     @staticmethod
     def __build_series_json(list_of_series):
         """ Given a list with all the data points, build the final FLOT JSON. """
@@ -205,14 +218,14 @@ class ContextDiscretePSE(EnhancedDictionary):
             final_json += value
         final_json += "]"
         return final_json
-    
-    
+
+
     @staticmethod
-    def __get_node_json(data, symbol, radius, coords):
+    def __get_node_json(symbol, radius, coords):
         """
         For each data point entry, build the FLOT specific JSON.
         """
-        series = '{"data": ' + json.dumps(data) + ', "points": {'
+        series = '{"points": {'
         if symbol is not None:
             series += '"symbol": "' + symbol + '", '
         series += '"radius": ' + str(radius) + '}, '

@@ -86,7 +86,8 @@ class DiscretePSEAdapter(ABCDisplayer):
         pse_context = self.prepare_parameters(datatype_group.gid, '')
         pse_context.prepare_individual_jsons()
 
-        return self.build_display_result('pse_discrete/view', pse_context, pages=dict(controlPage="pse_discrete/controls"))
+        return self.build_display_result('pse_discrete/view', pse_context,
+                                         pages=dict(controlPage="pse_discrete/controls"))
 
 
     @staticmethod
@@ -98,12 +99,11 @@ class DiscretePSEAdapter(ABCDisplayer):
         :param operation_group: model.OperationGroup instance
         :param range_json: Stored JSON for for a given range
         :return: String with current range label, Array of ranged numbers, Array of labels for current range
-
         """
         contains_numbers, range_name, range_values = operation_group.load_range_numbers(range_json)
 
         if contains_numbers is None:
-            return None, range_values, range_values
+            return None, range_values, range_values, True
 
         if contains_numbers:
             range_labels = range_values
@@ -113,7 +113,7 @@ class DiscretePSEAdapter(ABCDisplayer):
             for data_gid in range_values:
                 range_labels.append(dao.get_datatype_by_gid(data_gid).display_name)
 
-        return range_name, range_values, range_labels
+        return range_name, range_values, range_labels, contains_numbers
 
 
     @staticmethod
@@ -122,11 +122,11 @@ class DiscretePSEAdapter(ABCDisplayer):
         We suppose that there are max 2 ranges and from each operation results exactly one dataType.
 
         :param datatype_group_gid: the group id for the `DataType` to be visualised
+        :param back_page: Page where back button will direct
         :param color_metric: a list of `DataTypeMeasure` which has been executed on `datatype_group_gid`
         :param size_metric:  a list of `DataTypeMeasure` which has been executed on `datatype_group_gid`
 
         :returns: `ContextDiscretePSE`
-
         :raises Exception: when `datatype_group_id` is invalid (not in database)
         """
         datatype_group = dao.get_datatype_group_by_gid(datatype_group_gid)
@@ -136,13 +136,14 @@ class DiscretePSEAdapter(ABCDisplayer):
 
         operation_group = dao.get_operationgroup_by_id(datatype_group.fk_operation_group)
 
-        range1_name, range1_values, range1_labels = DiscretePSEAdapter.prepare_range_labels(operation_group,
-                                                                                            operation_group.range1)
-        range2_name, range2_values, range2_labels = DiscretePSEAdapter.prepare_range_labels(operation_group,
-                                                                                            operation_group.range2)
+        name1, values1, labels1, only_numbers1 = DiscretePSEAdapter.prepare_range_labels(operation_group,
+                                                                                         operation_group.range1)
+        name2, values2, labels2, only_numbers2 = DiscretePSEAdapter.prepare_range_labels(operation_group,
+                                                                                         operation_group.range2)
 
         pse_context = ContextDiscretePSE(datatype_group_gid, color_metric, size_metric, back_page)
-        pse_context.setRanges(range1_name, range1_values, range1_labels, range2_name, range2_values, range2_labels)
+        pse_context.setRanges(name1, values1, labels1, name2, values2, labels2,
+                              only_numbers1 and only_numbers2)
         final_dict = {}
         operations = dao.get_operations_in_group(operation_group.id)
 
@@ -150,10 +151,10 @@ class DiscretePSEAdapter(ABCDisplayer):
             if not operation_.has_finished:
                 pse_context.has_started_ops = True
             range_values = eval(operation_.range_values)
-            key_1 = range_values[range1_name]
+            key_1 = range_values[name1]
             key_2 = model.RANGE_MISSING_STRING
-            if range2_name is not None:
-                key_2 = range_values[range2_name]
+            if name2 is not None:
+                key_2 = range_values[name2]
 
             datatype = None
             if operation_.status == model.STATUS_FINISHED:
@@ -177,4 +178,3 @@ class DiscretePSEAdapter(ABCDisplayer):
         ## causes problems in case of NaN values, so just remove it before creating the json
         pse_context.datatypes_dict = {}
         return pse_context
-

@@ -67,6 +67,7 @@ class DatatypeDAO(RootDAO):
         """
         try:
             result = self.session.query(model.DataTypeGroup).filter_by(gid=datatype_group_gid).one()
+            result.parent_operation_group
             return result
         except SQLAlchemyError, excep:
             self.logger.exception(excep)
