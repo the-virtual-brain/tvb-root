@@ -36,13 +36,13 @@ Backend-side for Visualizers that display measures on regions in the brain volum
 
 import json
 from tvb.basic.filters.chain import FilterChain
-from tvb.core.adapters.abcdisplayer import ABCDisplayer
-from tvb.core.entities.storage import dao
 from tvb.basic.arguments_serialisation import slice_str
+from tvb.core.adapters.abcdisplayer import ABCDisplayer
+from tvb.core.adapters.exceptions import LaunchException
+from tvb.core.entities.storage import dao
 from tvb.datatypes.arrays import MappedArray
 from tvb.datatypes.graph import ConnectivityMeasure
 from tvb.datatypes.region_mapping import RegionVolumeMapping
-from tvb.core.adapters.exceptions import LaunchException
 from tvb.datatypes.structural import StructuralMRI
 
 
@@ -51,6 +51,7 @@ class _MappedArrayVolumeBase(ABCDisplayer):
     Base functionality for all non-temporal volume views.
     It prepares for display a slice of a mapped array.
     """
+    _ui_subsection = "volume"
 
     def get_required_memory_size(self, **kwargs):
         return -1
@@ -81,8 +82,8 @@ class _MappedArrayVolumeBase(ABCDisplayer):
         # prepare the url that will display the region volume map
         min_value, max_value = [0, region_mapping_volume.connectivity.number_of_regions]
         url_volume_data = self.paths2url(region_mapping_volume, "get_volume_view", parameter="")
-        return dict(  minValue=min_value, maxValue=max_value,
-                      urlVolumeData=url_volume_data)
+        return dict(minValue=min_value, maxValue=max_value,
+                    urlVolumeData=url_volume_data)
 
 
     def _compute_measure_params(self, region_mapping_volume, measure, data_slice):
@@ -97,10 +98,10 @@ class _MappedArrayVolumeBase(ABCDisplayer):
         url_volume_data = ABCDisplayer.paths2url(region_mapping_volume, "get_mapped_array_volume_view")
         url_volume_data += '/' + datatype_kwargs + '?mapped_array_slice=' + data_slice + ';'
 
-        return dict(  minValue=min_value, maxValue=max_value,
-                      urlVolumeData=url_volume_data,
-                      measureShape=slice_str(measure_shape),
-                      measureSlice=data_slice)
+        return dict(minValue=min_value, maxValue=max_value,
+                    urlVolumeData=url_volume_data,
+                    measureShape=slice_str(measure_shape),
+                    measureSlice=data_slice)
 
     @staticmethod
     def _compute_background(background):
@@ -110,8 +111,8 @@ class _MappedArrayVolumeBase(ABCDisplayer):
         else:
             min_value, max_value = 0, 0
             url_volume_data = None
-        return dict( minBackgroundValue=min_value, maxBackgroundValue=max_value,
-                     urlBackgroundVolumeData = url_volume_data )
+        return dict(minBackgroundValue=min_value, maxBackgroundValue=max_value,
+                    urlBackgroundVolumeData=url_volume_data)
 
 
     def compute_params(self, region_mapping_volume=None, measure=None, data_slice='', background=None):
@@ -120,7 +121,7 @@ class _MappedArrayVolumeBase(ABCDisplayer):
 
         volume = region_mapping_volume.volume
         volume_shape = region_mapping_volume.read_data_shape()
-        volume_shape = (1, ) + volume_shape
+        volume_shape = (1,) + volume_shape
 
         if measure is None:
             params = self._compute_region_volume_map_params(region_mapping_volume)
@@ -142,14 +143,12 @@ class _MappedArrayVolumeBase(ABCDisplayer):
         return params
 
 
-
 class MappedArrayVolumeVisualizer(_MappedArrayVolumeBase):
     """
     This is a generic mapped array visualizer on a region volume.
     To view a multidimensional array one has to give this viewer a slice.
     """
     _ui_name = "Array Volume Visualizer"
-    _ui_subsection = "ts_volume"
 
 
     def get_input_tree(self):
@@ -159,7 +158,7 @@ class MappedArrayVolumeVisualizer(_MappedArrayVolumeBase):
                  'conditions': FilterChain(fields=[FilterChain.datatype + '._nr_dimensions'],
                                            operations=[">="], values=[2])},
                 {'name': 'region_mapping_volume', 'label': 'Region mapping',
-                 'type': RegionVolumeMapping, 'required': False,},
+                 'type': RegionVolumeMapping, 'required': False, },
                 {'name': 'data_slice', 'label': 'slice indices in numpy syntax',
                  'type': 'str', 'required': False},
                 _MappedArrayVolumeBase.get_background_input_tree()]
@@ -172,10 +171,8 @@ class MappedArrayVolumeVisualizer(_MappedArrayVolumeBase):
                                          pages=dict(controlPage="time_series_volume/controls"))
 
 
-
 class ConnectivityMeasureVolumeVisualizer(_MappedArrayVolumeBase):
     _ui_name = "Connectivity Measure Volume Visualizer"
-    _ui_subsection = "ts_volume"
 
 
     def get_input_tree(self):
@@ -185,13 +182,13 @@ class ConnectivityMeasureVolumeVisualizer(_MappedArrayVolumeBase):
                  'conditions': FilterChain(fields=[FilterChain.datatype + '._nr_dimensions'],
                                            operations=["=="], values=[1])},
                 {'name': 'region_mapping_volume', 'label': 'Region mapping',
-                 'type': RegionVolumeMapping, 'required': False,},
+                 'type': RegionVolumeMapping, 'required': False, },
                 _MappedArrayVolumeBase.get_background_input_tree()]
 
 
     def launch(self, connectivity_measure, region_mapping_volume=None, background=None):
         params = self.compute_params(region_mapping_volume, connectivity_measure, background=background)
-        params['title'] = "Volumetric Region Volume Mapping Visualizer"
+        params['title'] = "Connectivity Measure in Volume Visualizer"
         # the view will display slicing information if this key is present.
         # compute_params works with generic mapped arrays and it will return slicing info
         del params['measureSlice']
@@ -199,16 +196,13 @@ class ConnectivityMeasureVolumeVisualizer(_MappedArrayVolumeBase):
                                          pages=dict(controlPage="time_series_volume/controls"))
 
 
-
 class RegionVolumeMappingVisualiser(_MappedArrayVolumeBase):
-
     _ui_name = "Region Volume Mapping Visualizer"
-    _ui_subsection = "ts_volume"
 
 
     def get_input_tree(self):
         return [{'name': 'region_mapping_volume', 'label': 'Region mapping',
-                 'type': RegionVolumeMapping, 'required': True,},
+                 'type': RegionVolumeMapping, 'required': True, },
                 {'name': 'connectivity_measure', 'label': 'Connectivity measure',
                  'type': ConnectivityMeasure, 'required': False,
                  'description': 'A connectivity measure',
@@ -219,16 +213,15 @@ class RegionVolumeMappingVisualiser(_MappedArrayVolumeBase):
 
     def launch(self, region_mapping_volume, connectivity_measure=None, background=None):
         params = self.compute_params(region_mapping_volume, connectivity_measure, background=background)
-        params['title'] = "Volumetric Region Volume Mapping Visualizer"
+        params['title'] = "Volume to Regions Visualizer"
         return self.build_display_result("time_series_volume/staticView", params,
                                          pages=dict(controlPage="time_series_volume/controls"))
-
 
 
 class MriVolumeVisualizer(ABCDisplayer):
 
     _ui_name = "MRI Volume Visualizer"
-    _ui_subsection = "ts_volume"
+    _ui_subsection = "volume"
 
 
     def get_required_memory_size(self, **kwargs):
@@ -244,7 +237,7 @@ class MriVolumeVisualizer(ABCDisplayer):
     def launch(self, background=None):
         volume = background.volume
         volume_shape = background.read_data_shape()
-        volume_shape = (1, ) + volume_shape
+        volume_shape = (1,) + volume_shape
 
         min_value, max_value = background.get_min_max_values()
         url_volume_data = ABCDisplayer.paths2url(background, 'get_volume_view', parameter='')
@@ -258,9 +251,7 @@ class MriVolumeVisualizer(ABCDisplayer):
                       voxelSize=json.dumps(volume.voxel_size.tolist()),
                       urlVoxelRegion='',
                       minBackgroundValue=min_value, maxBackgroundValue=max_value,
-                      urlBackgroundVolumeData = '')
-
+                      urlBackgroundVolumeData='')
 
         return self.build_display_result("time_series_volume/staticView", params,
                                          pages=dict(controlPage="time_series_volume/controls"))
-

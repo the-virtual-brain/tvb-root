@@ -115,7 +115,7 @@ class WebStructure(object):
     SUB_SECTION_VIEW_16 = "view_sensors"
     SUB_SECTION_VIEW_17 = "view_surface"
     SUB_SECTION_VIEW_18 = "view_timeseries"
-    SUB_SECTION_VIEW_19 = "view_ts_volume"
+    SUB_SECTION_VIEW_19 = "view_volume"
     SUB_SECTION_VIEW_20 = "view_topography"
     SUB_SECTION_VIEW_21 = "view_wavelet"
     SUB_SECTION_VIEW_22 = "view_annotations"
@@ -200,7 +200,7 @@ class WebStructure(object):
         SUB_SECTION_VIEW_16: "Sensor Visualizer",
         SUB_SECTION_VIEW_17: "Surface Visualizer",
         SUB_SECTION_VIEW_18: "TimeSeries Visualizer",
-        SUB_SECTION_VIEW_19: "TimeSeries Volume Visualizer",
+        SUB_SECTION_VIEW_19: "in Volume Visualizer",
         SUB_SECTION_VIEW_20: "Topography Visualizer",
         SUB_SECTION_VIEW_21: "Wavelet Visualizer",
         SUB_SECTION_VIEW_22: "Annotations Visualizer"
@@ -230,7 +230,7 @@ class WebStructure(object):
         SUB_SECTION_VIEW_16: "sensor-visualizer",
         SUB_SECTION_VIEW_17: "surface-visualizer",
         SUB_SECTION_VIEW_18: "time-series-visualizer-svg-d3",
-        SUB_SECTION_VIEW_19: "time-series-volume-visualizer",
+        SUB_SECTION_VIEW_19: "volume-visualizer",
         SUB_SECTION_VIEW_20: "topographic-visualizer",
         SUB_SECTION_VIEW_21: "wavelet-spectrogram-visualizer",
         SUB_SECTION_VIEW_22: "annotations-visualizer"

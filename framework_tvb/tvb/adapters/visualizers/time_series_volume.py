@@ -50,7 +50,7 @@ from tvb.datatypes.time_series import TimeSeries, TimeSeriesVolume
 class TimeSeriesVolumeVisualiser(ABCDisplayer):
 
     _ui_name = "Time Series Volume Visualizer"
-    _ui_subsection = "ts_volume"
+    _ui_subsection = "volume"
 
 
     def get_input_tree(self):
