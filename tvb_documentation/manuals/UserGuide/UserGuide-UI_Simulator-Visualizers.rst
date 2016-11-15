@@ -149,8 +149,8 @@ Movie start/stop, speed control, color schema change, channel selection are some
 
 .. _brain_volumetric:
 
-Time Series Volume Visualizer
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+Volume Visualizer
+~~~~~~~~~~~~~~~~~
 
 This family of viewers display volumetric data, usually in an anatomical space.
 If the data has a time component then on the right side it will display timelines for selected voxels.
@@ -360,11 +360,15 @@ Group Display
 Discrete PSE Visualizer
 ~~~~~~~~~~~~~~~~~~~~~~~
 
-Discrete Parameter Space Exploration View, will show up to two measures of the Simulator results,
-after varying input Simulator Parameters. The two displayed measures are emphasized in the node shapes and node colors.
+Discrete Parameter Space Exploration (**PSE**) View, will show up information on multiple simulation results at once.
 
-When running a range of Simulations in TVB, it is possible to do it by varying up to 2 input parameters (displayed on
-the X and Y axis of current viewer).
+In TVB is possible to launch multiple simulations by varying up to 2 input parameters (displayed on the X and Y axis of
+the current viewer). Each simulation result has afterwards "metrics" computed on the total output. Each metric is a
+single number. Two metrics are emphasized in this viewer in the node shapes and node colors.
+
+When moving with your mouse cursor over a graph node, you will see a few **details** about that particular simulation
+result. When clicking a node, an overlay window will open, which gives you full access to view or further analyze that
+particular Simulation result.
 
 .. figure:: screenshots/visualizer_pse_discreet.jpg
    :width: 90%
@@ -372,9 +376,9 @@ the X and Y axis of current viewer).
 
    Preview for Discrete PSE Visualizer, when varying two input parameters of the simulator
 
-When moving with your mouse cursor over a graph node, you will see a few details about that particular simulation result.
-When clicking a node, an overlay window will open, which gives you full access to view or further analyze that
-particular Simulation result.
+A newly incorporated feature is the option to **pan the canvas** in/out or left/right/up/down. To pan you may click and
+drag on top of one of the axes, and to zoom in double click or out shift + double click. This will allow for inspection
+of very large batch simulations section by section. The same mouse over, and clicking rules apply from above.
 
 .. figure:: screenshots/visualizer_pse_discreet_panning.jpg
    :width: 90%
@@ -382,9 +386,7 @@ particular Simulation result.
 
    Panning the Graph
 
-A newly incorporated feature is the option to pan the canvas in/out or left/right/up/down. To pan you may click and
-drag on top of one of the axes, and to zoom in double click or out shift + double click. This will allow for inspection
-of very large batch simulations section by section. The same mouse over, and clicking rules apply from above.
+
 
 .. figure:: screenshots/visualizer_pse_discreet_filter.jpg
    :width: 90%
@@ -392,7 +394,7 @@ of very large batch simulations section by section. The same mouse over, and cli
 
    Filter support
 
-The next new tool is the filter button. This allows users to specify threshold values for either the color or size
+The next new tool is the **filter button**. This allows users to specify threshold values for either the color or size
 metric and render results transparent if they are below that value. This tool has the option to invert the threshold
 rule which makes the results above that threshold transparent instead. Also, the user has the choice to make their
 filter more specific by adding further criteria rows that relate to the one which came before it through selected
@@ -404,7 +406,7 @@ one filter execution then the other.
    :width: 90%
    :align: center
 
-   Contour Line Creation
+   **Contour Line Creation**
 
 Even with the incorporation of size and color as visual cues to the individual result metrics, it can be difficult to
 tell similar results apart. This tool allows the user to specify a threshold for the difference in metrics between one
@@ -418,7 +420,7 @@ or size can be considered at a time.
 
    Explore Tool, with Region Selected
 
-The last tool to be described in the PSE Discrete Viewer is the Explore tool. This tool is meant to give users the
+The last tool to be described in the PSE Discrete Viewer is the **Explore tool**. This tool is meant to give users the
 option to select regions of the Parameter Space to be filled in with new results. Currently only the front end of this
 tool is complete, so upon clicking the explore button the mouse cursor becomes a cross hair, and sections of the graph
 can be selected. Upon creation of this selection, grid lines are placed to demonstrate where new results would be
@@ -426,6 +428,11 @@ added given the user's chosen step values. To adjust these values simply drag th
 the explore tool, and the grid lines will adjust until they suit the user.
 
 
+.. figure:: screenshots/visualizer_pse_sparse.jpg
+   :width: 90%
+   :align: center
+
+   Sparse results
 
 
 Isocline PSE Visualizer
