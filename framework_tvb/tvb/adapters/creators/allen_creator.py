@@ -51,7 +51,7 @@ from allensdk.core.mouse_connectivity_cache import MouseConnectivityCache
 class AllenConnectomeBuilder(ABCAsynchronous):
     "Handler for uploading a mouse connectivity from Allen dataset using AllenSDK."
 
-    _ui_name = "Allen connectivity uploader"
+    _ui_name = "Allen connectivity builder"
     _ui_description = "Import mouse connectivity from Allen database (tracer experiments)"
 
     #TRANSGENIC_OPTIONS = [
@@ -126,7 +126,7 @@ class AllenConnectomeBuilder(ABCAsynchronous):
         template = RotateReference(template)
 
         # the method includes in the parcellation only brain regions whose volume is greater than vol_thresh
-        projmaps = AreasVolumeTreshold(projmaps, vol_thresh, resolution, Vol, ontology)
+        projmaps = AreasVolumeTreshold(cache, projmaps, vol_thresh, resolution, Vol, ontology)
 
         # the method includes in the parcellation only brain regions where at least one injection experiment had infected more than N voxel (where N is inf_vox_thresh)
         projmaps = AreasVoxelTreshold(cache, projmaps, inf_vox_thresh, Vol, ontology)
@@ -138,13 +138,13 @@ class AllenConnectomeBuilder(ABCAsynchronous):
         SC = ConstructingSC(projmaps, order, key_ord)
 
         # the method returns the coordinate of the centres and the name of the brain areas in the selected parcellation
-        [centres, names] = Construct_centres(ontology, order, key_ord, Vol)
+        [centres, names] = Construct_centres(cache, ontology, order, key_ord)
 
         # the method returns the tract lengths between the brain areas in the selected parcellation
         tract_lengths = ConstructTractLengths(centres)
 
         # the method associated the parent and the grandparents to the child in the selected parcellation with the biggest volume
-        [unique_parents, unique_grandparents] = ParentsAndGrandParentsFinder(order, key_ord, Vol, ontology)
+        [unique_parents, unique_grandparents] = ParentsAndGrandParentsFinder(cache, order, key_ord, ontology)
 
         # the method returns a volume indexed between 0 and N-1, with N=tot brain areas in the parcellation. -1=background and areas that are not in the parcellation
         Vol_parcel = MouseBrainVisualizer(Vol, order, key_ord, unique_parents, unique_grandparents, ontology, projmaps)
@@ -283,27 +283,15 @@ def pmsCleaner(projmaps):
 
 
 # the method includes in the parcellation only brain regions whose volume is greater than vol_thresh
-def AreasVolumeTreshold (projmaps,vol_thresh,resolution,Vol,ontology):
+def  AreasVolumeTreshold (tvb_mcc, projmaps,vol_thresh,resolution,Vol,ontology):
     threshold=(vol_thresh)/(resolution**3)
     id_ok=[]
     for ID in projmaps.keys():
-        tot_voxels = np.count_nonzero(Vol==ID)
+        mask, _ = tvb_mcc.get_structure_mask(ID)
+        tot_voxels = (np.count_nonzero(mask))/2 #mask contains both left and right hemisphere
         if tot_voxels>threshold:
             id_ok.append(ID)
-        else: #I will check for child
-            child=list(ontology.get_child_ids( ontology[ID].id ))
-            while len(child)!=0:
-                child_voxel_count = np.count_nonzero(Vol==child[0])
-                if child_voxel_count > 0:
-                    tot_voxels += child_voxel_count
-                    if tot_voxels>threshold:
-                        id_ok.append(ID)
-                        break
-                else:
-                    if len(ontology.get_child_ids(ontology[child[0]].id))!=0:
-                        child.extend(ontology.get_child_ids(ontology[child[0]].id ))
-                child.remove(child[0])
-     #Remove areas that are not in id_ok from the injection list
+   #Remove areas that are not in id_ok from the injection list
     for checkid in projmaps.keys():
         if checkid not in id_ok:
             projmaps.pop(checkid,None)
@@ -433,39 +421,24 @@ def ConstructingSC(projmaps, order, key_ord):
     return SC
 
 # the method returns the centres of the brain areas in the selected parcellation
-def Construct_centres(ontology, order, key_ord, Vol):
-    Vol = RotateReference(Vol)
+def Construct_centres(tvb_mcc, ontology, order, key_ord):
     centres=np.zeros((len(key_ord) * 2, 3), dtype=float)
     names=[]
     row=-1
-    vol_r = Vol[:Vol.shape[0] / 2, :, :]
     for graph_ord_inj in key_ord:
         ID=order[graph_ord_inj][0]
         coord=[0,0,0]
-        xyz = np.where(vol_r == ID)
+        mask, _ = tvb_mcc.get_structure_mask(ID)
+        mask = RotateReference(mask)
+        mask_r = mask[:mask.shape[0] / 2, :, :]
+        xyz = np.where(mask_r)
         if xyz[0].shape[0] > 0: # Check if the area is in the annotation volume
             coord[0]=np.mean(xyz[0])
             coord[1]=np.mean(xyz[1])
             coord[2]=np.mean(xyz[2])
-        else: # if the area is not in the annotation volume, check for child
-            child=list(ontology.get_child_ids( ontology[ID].id ))
-            finest_division=[]
-            while len(child)!=0:
-                if child[0] in vol_r:
-                    finest_division.append(child[0])
-                else:
-                    if len(ontology.get_child_ids(ontology[child[0]].id))!=0:
-                        child.extend(ontology.get_child_ids( ontology[child[0]].id ))
-                child.remove(child[0])
-            for child_id in finest_division:
-                xyz = np.where(vol_r == child_id)
-                if xyz[0].shape[0] > 0:
-                    coord[0]=np.mean(xyz[0])
-                    coord[1]=np.mean(xyz[1])
-                    coord[2]=np.mean(xyz[2])
         row+=1
         centres[row,:]=coord
-        coord[0]=(Vol.shape[0])-coord[0]
+        coord[0]=(mask.shape[0])-coord[0]
         centres[row+len(key_ord), :]=coord
         n=order[graph_ord_inj][1]
         Right='Right '
@@ -506,7 +479,7 @@ def ConstructTractLengths(centres):
 # In order to have an univocal relation, since some areas in the parcellation have some parent
 # for each parent it will be link the child with the biggest volume in the parcellation
 # the same is done for the grandparents
-def ParentsAndGrandParentsFinder(order, key_ord, Vol, ontology):
+def ParentsAndGrandParentsFinder(tvb_mcc, order, key_ord, ontology):
     parents=[] #Here it will be the id of the parents of the areas in the parcellation
     grandparents=[] #Here it will be the id of the grandparents of the areas in the parcellation
     vol_areas=[] #Here it will be the volume of the areas in the parcellation
@@ -522,22 +495,9 @@ def ParentsAndGrandParentsFinder(order, key_ord, Vol, ontology):
         grandparents.append(ont.loc[parent_id]['parent_structure_id'])
         vec_index.append(index)
         index+=1
-        tot_voxels = np.count_nonzero(Vol==ID)
-        if tot_voxels > 0:
-            vol_areas.append(tot_voxels)
-        else: #if ID not in annotation vol, check for child
-            tot_voxels=0
-            child=list(ontology.get_child_ids( ontology[ID].id ))
-            while len(child)!=0:
-                print child
-                child_voxel_count = np.count_nonzero(Vol == child[0])
-                if child_voxel_count > 0:
-                    tot_voxels+=child_voxel_count
-                else:
-                    if len(ontology.get_child_ids(ontology[child[0]].id))!=0:
-                        child.extend(ontology.get_child_ids( ontology[child[0]].id ))
-                child.remove(child[0])
-            vol_areas.append(tot_voxels)
+        mask, _ = tvb_mcc.get_structure_mask(ID)
+        tot_voxels = np.count_nonzero(mask)
+        vol_areas.append(tot_voxels)
     #I will order parents, grandparents, vec_index according to the volume of the areas
     parents=[parents for (vv,parents) in sorted(zip(vol_areas,parents))]
     grandparents=[grandparents for (vv,grandparents) in sorted(zip(vol_areas,grandparents))]
