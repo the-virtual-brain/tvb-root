@@ -120,6 +120,7 @@ examples.
 .. _Exporing A Surface Mesh: http://nbviewer.ipython.org/url/docs.thevirtualbrain.org/demos/exporing_a_surface_mesh.ipynb
 .. _Generate Surrogate Connectivity: http://nbviewer.ipython.org/url/docs.thevirtualbrain.org/demos/generate_surrogate_connectivity.ipynb
 .. _Interacting With The Framework: http://nbviewer.ipython.org/url/docs.thevirtualbrain.org/demos/interacting_with_the_framework.ipynb
+.. _Interacting With The Framework and Allen: http://nbviewer.ipython.org/url/docs.thevirtualbrain.org/demos/interacting_with_Allen.ipynb
 .. _Simulate Bold Continuation: http://nbviewer.ipython.org/url/docs.thevirtualbrain.org/demos/simulate_bold_continuation.ipynb
 .. _Simulate Reduced Wong Wang: http://nbviewer.ipython.org/url/docs.thevirtualbrain.org/demos/simulate_reduced_wong_wang.ipynb
 .. _Simulate Region Bold Stimulus: http://nbviewer.ipython.org/url/docs.thevirtualbrain.org/demos/simulate_region_bold_stimulus.ipynb
@@ -207,6 +208,14 @@ examples.
       :target: `Interacting With The Framework`_
 
       `Interacting With The Framework`_
+
+
+.. figure:: figures/interacting_with_the_framework.png
+      :width: 200px
+      :figclass: demo-figure
+      :target: `Interacting With The Framework and Allen`_
+
+      `Interacting With The Framework and Allen`_
 
 
 .. figure:: figures/simulate_bold_continuation.png
