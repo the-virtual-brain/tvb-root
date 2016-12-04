@@ -38,20 +38,19 @@ schemes (region and surface based simulations).
 
 """
 
-#TODO: check the defaults of simulator.Simulator() (?)
-#TODO: continuation support or maybe test that particular feature elsewhere
+# TODO: check the defaults of simulator.Simulator() (?)
+# TODO: continuation support or maybe test that particular feature elsewhere
 
 if True or __name__ == "__main__":
     from tvb.tests.library import setup_test_console_env
     setup_test_console_env()
 
-import os
 import numpy
 import unittest
 import itertools
 from tvb.simulator.common import get_logger
 from tvb.simulator import simulator, models, coupling, integrators, monitors, noise
-from tvb.datatypes import connectivity, sensors
+from tvb.datatypes.connectivity import Connectivity
 from tvb.datatypes.cortex import Cortex
 from tvb.datatypes.local_connectivity import LocalConnectivity
 from tvb.datatypes.region_mapping import RegionMapping
@@ -60,8 +59,6 @@ from tvb.tests.library.base_testcase import BaseTestCase
 
 LOG = get_logger(__name__)
 
-sens_meg = sensors.SensorsMEG(load_default=True)
-sens_eeg = sensors.SensorsEEG(load_default=True)
 AVAILABLE_MODELS = get_traited_subclasses(models.Model)
 AVAILABLE_METHODS = get_traited_subclasses(integrators.Integrator)
 MODEL_CLASSES = AVAILABLE_MODELS.values()
@@ -74,25 +71,27 @@ class Simulator(object):
     Simulator test class
     
     """
-    def __init__(self): 
+
+
+    def __init__(self):
         """
         Initialise the structural information, coupling function, and monitors.
         
         """
 
-        #Initialise some Monitors with period in physical time
-        raw     = monitors.Raw()
-        gavg    = monitors.GlobalAverage(period=2 ** -2)
+        # Initialise some Monitors with period in physical time
+        raw = monitors.Raw()
+        gavg = monitors.GlobalAverage(period=2 ** -2)
         subsamp = monitors.SubSample(period=2 ** -2)
-        tavg    = monitors.TemporalAverage(period=2 ** -2)
-        #spheeg  = monitors.SphericalEEG(sensors=sens_eeg, period=2 ** -2)
-        #sphmeg  = monitors.SphericalMEG(sensors=sens_meg, period=2 ** -2)
-        # TODO test all monitors
-        
-        self.monitors = (raw, gavg, subsamp, tavg) 
+        tavg = monitors.TemporalAverage(period=2 ** -2)
+        eeg = monitors.EEG(load_default=True, period=2 ** -2)
+        eeg2 = monitors.EEG(load_default=True, period=2 ** -2, reference='Fp2')  # EEG with a reference electrode
+        meg = monitors.MEG(load_default=True, period=2 ** -2)
+
+        self.monitors = (raw, gavg, subsamp, tavg, eeg, eeg2, meg)
 
         self.method = None
-        self.sim    = None
+        self.sim = None
 
 
     def run_simulation(self, simulation_length=2 ** 2):
@@ -100,32 +99,18 @@ class Simulator(object):
         Test a simulator constructed with one of the <model>_<scheme> methods.
         """
 
-        raw_data, gavg_data, subsamp_data, tavg_data = [], [], [], []
-        # spheeg_data, sphmeg_data = [], []
+        results = [[] for _ in self.monitors]
 
-        for raw, gavg, subsamp, tavg in self.sim(simulation_length=simulation_length):    
+        for step in self.sim(simulation_length=simulation_length):
+            for i, result in enumerate(step):
+                if result is not None:
+                    results[i].append(result)
 
-            if not raw is None:
-                raw_data.append(raw)
+        return results
 
-            if not gavg is None:
-                gavg_data.append(gavg)
-
-            if not subsamp is None:
-                subsamp_data.append(subsamp)
-
-            if not tavg is None:
-                tavg_data.append(tavg)
-                
-            # if not spheeg is None:
-            #     spheeg_data.append(spheeg)
-                
-            # if not sphmeg is None:
-            #     sphmeg_data.append(sphmeg)
-                
 
     def configure(self, dt=2 ** -3, model=models.Generic2dOscillator, speed=4.0,
-                  coupling_strength=0.00042, method="HeunDeterministic", 
+                  coupling_strength=0.00042, method="HeunDeterministic",
                   surface_sim=False,
                   default_connectivity=True):
         """
@@ -135,33 +120,32 @@ class Simulator(object):
         
         """
         self.method = method
-        
+
         if default_connectivity:
-            white_matter = connectivity.Connectivity(load_default=True)
+            white_matter = Connectivity(load_default=True)
             region_mapping = RegionMapping.from_file(source_file="regionMapping_16k_76.txt")
         else:
-            white_matter = connectivity.Connectivity.from_file(source_file="connectivity_192.zip")
+            white_matter = Connectivity.from_file(source_file="connectivity_192.zip")
             region_mapping = RegionMapping.from_file(source_file="regionMapping_16k_192.txt")
 
-
-        white_matter_coupling = coupling.Linear(a=coupling_strength)    
+        white_matter_coupling = coupling.Linear(a=coupling_strength)
         white_matter.speed = speed
 
         dynamics = model()
-        
+
         if method[-10:] == "Stochastic":
             hisss = noise.Additive(nsig=numpy.array([2 ** -11]))
             integrator = eval("integrators." + method + "(dt=dt, noise=hisss)")
         else:
             integrator = eval("integrators." + method + "(dt=dt)")
-        
+
         if surface_sim:
             local_coupling_strength = numpy.array([2 ** -10])
             default_cortex = Cortex(load_default=True, region_mapping_data=region_mapping)
             default_cortex.coupling_strength = local_coupling_strength
             default_cortex.local_connectivity = LocalConnectivity(load_default=default_connectivity,
-                                                                           surface=default_cortex)
-        else: 
+                                                                  surface=default_cortex)
+        else:
             default_cortex = None
 
         # Order of monitors determines order of returned values.
@@ -172,37 +156,37 @@ class Simulator(object):
                                        monitors=self.monitors,
                                        surface=default_cortex)
         self.sim.configure()
-        
+
 
 
 class SimulatorTest(BaseTestCase):
 
     def test_simulator_region(self):
-        #init
+
         test_simulator = Simulator()
-    
-        #test cases
         for model_class, method_name in itertools.product(MODEL_CLASSES, METHOD_NAMES):
             test_simulator.configure(model=model_class,
                                      method=method_name,
                                      surface_sim=False)
-            test_simulator.run_simulation()
-            
-            
-    def test_simulator_surface(self): 
-        """
-        This test mainly evaluates if surface simulations run when
-        subcortical structures are included. 
-       
-        TODO: 
-            Should be as complete as the one for region simulations.
+            result = test_simulator.run_simulation()
 
+            self.assertEqual(len(test_simulator.monitors), len(result))
+            for ts in result:
+                self.assertIsNotNone(ts)
+                self.assertTrue(len(ts) > 0)
+
+
+    def test_simulator_surface(self):
+        """
+        This test evaluates if surface simulations run as basic flow.
         """
         test_simulator = Simulator()
 
         for default_connectivity in [True, False]:
             test_simulator.configure(surface_sim=True, default_connectivity=default_connectivity)
-            test_simulator.run_simulation(simulation_length=2)
+            result = test_simulator.run_simulation(simulation_length=2)
+
+            self.assertEqual(len(test_simulator.monitors), len(result))
             LOG.debug("Surface simulation finished for defaultConnectivity= %s" % str(default_connectivity))
 
 
@@ -216,8 +200,9 @@ def suite():
     return test_suite
 
 
+
 if __name__ == "__main__":
-    #So you can run tests from this package individually.
+    # So you can run tests from this package individually.
     TEST_RUNNER = unittest.TextTestRunner()
     TEST_SUITE = suite()
-    TEST_RUNNER.run(TEST_SUITE) 
+    TEST_RUNNER.run(TEST_SUITE)

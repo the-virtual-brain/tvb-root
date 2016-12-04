@@ -408,7 +408,8 @@ class Projection(Monitor):
             return ProjectionMatrix
 
     @classmethod
-    def from_file(cls, sensors_fname, projection_fname, period=1e3/1024.0, instance=None, **kwds):
+    def from_file(cls, sensors_fname, projection_fname, rm_f_name="regionMapping_16k_76.txt",
+                  period=1e3/1024.0, instance=None, **kwds):
         """
         Build Projection-based monitor from sensors and projection files, and
         any extra keyword arguments are passed to the monitor class constructor.
@@ -421,6 +422,7 @@ class Projection(Monitor):
 
         result.sensors = type(cls.sensors).from_file(sensors_fname)
         result.projection = cls._projection_class().from_file(projection_fname)
+        result.region_mapping = RegionMapping.from_file(rm_f_name)
 
         return result
 
@@ -588,7 +590,7 @@ class EEG(Projection):
         if self.reference:
             if self.reference.lower() != 'average':
                 sensor_names = self.sensors.labels.tolist()
-                self._ref_vec[sensor_names.indexof(self.reference)] = 1.0
+                self._ref_vec[sensor_names.index(self.reference)] = 1.0
             else:
                 self._ref_vec[:] = 1.0 / self.sensors.number_of_sensors
         self._ref_vec_mask = numpy.isfinite(self.gain).all(axis=1)
