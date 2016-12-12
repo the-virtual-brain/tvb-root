@@ -111,7 +111,7 @@ class NoiseConfigurationController(BurstBaseController):
         if nsig.shape == (1,):
             # Only one number for noise
             return [noise_values * nr_nodes for _ in state_variables]
-        elif nsig.shape == (nr_state_vars, 1):
+        elif nsig.shape == (nr_state_vars, 1) or nsig.shape == (nr_state_vars,):
             # Only one number per state variable
             return [[noise_values[idx]] * nr_nodes for idx in xrange(nr_state_vars)]
         elif nsig.shape == (nr_state_vars, nr_nodes):
