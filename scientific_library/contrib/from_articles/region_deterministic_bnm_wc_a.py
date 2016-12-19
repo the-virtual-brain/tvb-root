@@ -20,9 +20,8 @@ Run:
 import numpy
 import argparse
 from tvb.simulator.lab import *
+from matplotlib import pylab
 
-
-import matplotlib.pylab as pylab
 pylab.rcParams['figure.figsize'] = 10, 7  # that's default image size for this interactive session
 pylab.rcParams.update({'font.size': 22})
 pylab.rcParams.update({'axes.linewidth': 3})
@@ -40,11 +39,13 @@ simulation_length = 512
 
 idx = ['a0', 'a1', 'a2']
 gcs = [0.0, 0.0042, 0.042]
+LOG = get_logger(__name__)
 
 if args['sim']:
     for i in range(3):
         
         oscilator = models.WilsonCowan()
+        oscilator.variables_of_interest=['E', 'I']
         white_matter = connectivity.Connectivity(load_default=True)
         white_matter.speed = numpy.array([speed])
         # 0, 0.0042, 0.042
@@ -85,10 +86,10 @@ if args['sim']:
 
         LOG.info("Finished simulation.")
 
-
         #Make the lists numpy.arrays for easier use.
         RAW = numpy.asarray(raw_data)
         TAVG = numpy.asarray(tavg_data)
+        LOG.info(RAW.shape)
 
 
         numpy.save('region_deterministic_bnm_wc_raw_' + idx[i] + '.npy', RAW)
@@ -103,45 +104,45 @@ if args['fig']:
         RAW       = numpy.load('region_deterministic_bnm_wc_raw_'  + idx[i] + '.npy')
         raw_time  = numpy.load('region_deterministic_bnm_wc_rawtime_'  + idx[i] + '.npy')
 
-        fig=figure(1)
-        clf()
-        ax1 = subplot(1, 2, 1)
-        plot(raw_time, RAW[:, 0, :, 0],'k', alpha=0.042,  linewidth=3)
-        plot(raw_time, RAW[:, 1, :, 0],'r', alpha=0.042,  linewidth=3)
-        plot(raw_time, RAW[:, 0, :, 0].mean(axis=1), 'k', linewidth=3)
-        plot(raw_time, RAW[:, 1, :, 0].mean(axis=1), 'r', linewidth=3)
-        title('TS')
-        xlabel('time[ms]')
-        ylabel('[au]')
-        ylim([0, 1.])
-        xlim([0, simulation_length])
-        xticks((0, simulation_length /2. , simulation_length), 
+        fig = pylab.figure(1)
+        pylab.clf()
+        ax1 = pylab.subplot(1, 2, 1)
+        pylab.plot(raw_time, RAW[:, 0, :, 0],'k', alpha=0.042,  linewidth=3)
+        pylab.plot(raw_time, RAW[:, 1, :, 0],'r', alpha=0.042,  linewidth=3)
+        pylab.plot(raw_time, RAW[:, 0, :, 0].mean(axis=1), 'k', linewidth=3)
+        pylab.plot(raw_time, RAW[:, 1, :, 0].mean(axis=1), 'r', linewidth=3)
+        pylab.title('TS')
+        pylab.xlabel('time[ms]')
+        pylab.ylabel('[au]')
+        pylab.ylim([0, 1.])
+        pylab.xlim([0, simulation_length])
+        pylab.xticks((0, simulation_length /2. , simulation_length), 
             ('0', str(int(simulation_length //2)),  str(simulation_length)))
-        yticks((0, 0.5, 1), ('0', '0.5', '1'))
+        pylab.yticks((0, 0.5, 1), ('0', '0.5', '1'))
         for label in ax1.get_yticklabels(): 
             label.set_fontsize(24)
         for label in ax1.get_xticklabels(): 
             label.set_fontsize(24)
         
-        ax = subplot(1, 2, 2)
-        plot(RAW[:, 0, :, 0], RAW[:, 1, :, 0], 'b', alpha=0.042, linewidth=3)
-        plot(RAW[:, 0, :, 0].mean(axis=1), RAW[:, 1, :, 0].mean(axis=1), 'b', alpha=1., linewidth=3)
-        plot(RAW[0, 0, :, 0], RAW[0, 1, :, 0], 'bo', alpha=0.15)
-        title('PP')
-        ylim([0, 1])
-        xlim([0, 1])
-        xticks((0, 0.5, 1), ('0', '0.5', '1'))
-        yticks((0, 0.5, 1), ('0', '0.5', '1'))
+        ax = pylab.subplot(1, 2, 2)
+        pylab.plot(RAW[:, 0, :, 0], RAW[:, 1, :, 0], 'b', alpha=0.042, linewidth=3)
+        pylab.plot(RAW[:, 0, :, 0].mean(axis=1), RAW[:, 1, :, 0].mean(axis=1), 'b', alpha=1., linewidth=3)
+        pylab.plot(RAW[0, 0, :, 0], RAW[0, 1, :, 0], 'bo', alpha=0.15)
+        pylab.title('PP')
+        pylab.ylim([0, 1])
+        pylab.xlim([0, 1])
+        pylab.xticks((0, 0.5, 1), ('0', '0.5', '1'))
+        pylab.yticks((0, 0.5, 1), ('0', '0.5', '1'))
         for label in ax.get_yticklabels(): 
             label.set_fontsize(24)
         for label in ax.get_xticklabels(): 
             label.set_fontsize(24)
         ax.yaxis.set_label_position("right")
-        xlabel(r'$E$')
-        ylabel(r'$I$')
+        pylab.xlabel(r'$E$')
+        pylab.ylabel(r'$I$')
 
 
         fig_name = 'WC_default_speed_' + str(int(speed)) + '-config_gcs-' + idx[i] + '.pdf'
-        savefig(fig_name)
+        pylab.savefig(fig_name)
 
 
