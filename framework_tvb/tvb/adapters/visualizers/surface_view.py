@@ -148,10 +148,10 @@ class SurfaceViewer(ABCDisplayer):
         return dict(minMeasure=min_measure, maxMeasure=max_measure, clientMeasureUrl=client_measure_url)
 
 
-    def launch(self, surface, region_map=None, connectivity_measure=None, shell_surface=None):
-        params = dict(title="Surface Visualizer", extended_view=False,
-                      isOneToOneMapping=False, hasRegionMap=region_map is not None)
-
+    def launch(self, surface, region_map=None, connectivity_measure=None,
+               shell_surface=None, title="Surface Visualizer"):
+        params = dict(title=title, extended_view=False, isOneToOneMapping=False,
+                      hasRegionMap=region_map is not None)
         params.update(self._compute_surface_params(surface, region_map))
         params.update(self._compute_measure_points_param(surface, region_map))
         params.update(self._compute_measure_param(connectivity_measure, params['noOfMeasurePoints']))
@@ -186,7 +186,8 @@ class RegionMappingViewer(SurfaceViewer):
 
     def launch(self, region_map, connectivity_measure=None, shell_surface=None):
 
-        return SurfaceViewer.launch(self, region_map.surface, region_map, connectivity_measure, shell_surface)
+        return SurfaceViewer.launch(self, region_map.surface, region_map, connectivity_measure, shell_surface,
+                                    title=RegionMappingViewer._ui_name)
 
 
 class ConnectivityMeasureOnSurfaceViewer(SurfaceViewer):
@@ -204,12 +205,13 @@ class ConnectivityMeasureOnSurfaceViewer(SurfaceViewer):
         return tree
 
     def launch(self, connectivity_measure, region_map=None, shell_surface=None):
-        if region_map is None or region_map.connectivity.number_of_regions != connectivity_measure.connectivity.number_of_regions:
+        if (region_map is None or region_map.connectivity.number_of_regions !=
+                connectivity_measure.connectivity.number_of_regions):
             # We have no regionmap or the onw we have is not compatible with the measure.
             # first try to find the associated region map
             region_maps = dao.get_generic_entity(RegionMapping, connectivity_measure.connectivity.gid, '_connectivity')
             if region_maps:
                 region_map = region_maps[0]
-            #else: todo fallback on any region map with the right number of nodes
-        return SurfaceViewer.launch(self, region_map.surface, region_map, connectivity_measure, shell_surface)
-
+                # else: todo fallback on any region map with the right number of nodes
+        return SurfaceViewer.launch(self, region_map.surface, region_map, connectivity_measure, shell_surface,
+                                    title=connectivity_measure.display_name)
