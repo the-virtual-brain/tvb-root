@@ -33,8 +33,7 @@
 /**
  * WebGL methods "inheriting" from webGL_xx.js in static/js.
  */
-
-var BRAIN_CANVAS_ID = "GLcanvas";
+const BRAIN_CANVAS_ID = "GLcanvas";
 /**
  * Variables for displaying Time and computing Frames/Sec
  */
@@ -232,22 +231,19 @@ function VS_StartPortletPreview(baseDatatypeURL, urlVerticesList, urlTrianglesLi
 }
 
 function _VS_static_entrypoint(urlVerticesList, urlLinesList, urlTrianglesList, urlNormalsList, urlMeasurePoints,
-                               noOfMeasurePoints, urlRegionMapList, urlMeasurePointsLabels,
-                               boundaryURL, shelfObject, hemisphereChunkMask, showLegend, argDisplayMeasureNodes, argIsFaceToDisplay,
-                               minMeasure, maxMeasure, urlMeasure){
+                               noOfMeasurePoints, urlRegionMapList, urlMeasurePointsLabels, boundaryURL, shelfObject,
+                               hemisphereChunkMask, argDisplayMeasureNodes, argIsFaceToDisplay,
+                               minMeasure, maxMeasure, urlMeasure) {
     // initialize global configuration
     isDoubleView = false;
     isOneToOneMapping = false;
     shouldIncrementTime = false;
     AG_isStopped = true;
-    VS_showLegend = showLegend;
     displayMeasureNodes = argDisplayMeasureNodes;
     isFaceToDisplay = argIsFaceToDisplay; // this could be retrieved from the dom like drawNavigator
     // make checkbox consistent with this flag
     $("#displayFaceChkId").attr('checked', isFaceToDisplay);
     drawNavigator = $("#showNavigator").prop('checked');
-    // initialize global data
-    var i;
 
     if (noOfMeasurePoints === 0){
         // we are viewing a surface with no region mapping
@@ -263,12 +259,12 @@ function _VS_static_entrypoint(urlVerticesList, urlLinesList, urlTrianglesList, 
         _initMeasurePoints(noOfMeasurePoints, urlMeasurePoints, urlMeasurePointsLabels);
         activityMin = parseFloat(minMeasure);
         activityMax = parseFloat(maxMeasure);
-        var measure;
+        let measure;
         if (urlMeasure === ''){
             // Empty url => The static viewer has to show a region map.
             // The measure will be a range(NO_OF_MEASURE_POINTS)
             measure = [];
-            for(i = 0; i < NO_OF_MEASURE_POINTS; i++){
+            for(let i = 0; i < NO_OF_MEASURE_POINTS; i++){
                 measure.push(i);
             }
         } else {
@@ -278,11 +274,18 @@ function _VS_static_entrypoint(urlVerticesList, urlLinesList, urlTrianglesList, 
         activitiesData = [measure];
     }
 
-    for(i = 0; i < NO_OF_MEASURE_POINTS; i++){
+    VS_showLegend = false;
+    if (parseFloat(minMeasure) < parseFloat(maxMeasure)) {
+        const brainLegendDiv = document.getElementById('brainLegendDiv');
+        ColSch_updateLegendLabels(brainLegendDiv, minMeasure, maxMeasure, "100%");
+        VS_showLegend = true;
+    }
+
+    for(let i = 0; i < NO_OF_MEASURE_POINTS; i++){
         VS_selectedRegions.push(i);
     }
 
-    var canvas = document.getElementById(BRAIN_CANVAS_ID);
+    const canvas = document.getElementById(BRAIN_CANVAS_ID);
     _initViewerGL(canvas, urlVerticesList, urlNormalsList, urlTrianglesList,
                   urlRegionMapList, urlLinesList, boundaryURL, shelfObject, hemisphereChunkMask);
 
@@ -320,7 +323,7 @@ function _VS_movie_entrypoint(baseDatatypeURL, onePageSize, urlTimeList, urlVert
     }
     drawNavigator = $("#showNavigator").prop('checked');
 
-    var canvas = document.getElementById(BRAIN_CANVAS_ID);
+    const canvas = document.getElementById(BRAIN_CANVAS_ID);
 
     _initViewerGL(canvas, urlVerticesList, urlNormalsList, urlTrianglesList,
                   urlRegionMapList, urlLinesList, boundaryURL, shelfObject, hemisphereChunkMask);
@@ -336,12 +339,12 @@ function _VS_movie_entrypoint(baseDatatypeURL, onePageSize, urlTimeList, urlVert
 }
 
 function _VS_init_cubicalMeasurePoints(){
-    for (var i = 0; i < NO_OF_MEASURE_POINTS; i++) {
-        var result = HLPR_bufferAtPoint(gl, measurePoints[i]);
-        var bufferVertices= result[0];
-        var bufferNormals = result[1];
-        var bufferTriangles = result[2];
-        var bufferColor = createColorBufferForCube(false);
+    for (let i = 0; i < NO_OF_MEASURE_POINTS; i++) {
+        const result = HLPR_bufferAtPoint(gl, measurePoints[i]);
+        const bufferVertices = result[0];
+        const bufferNormals = result[1];
+        const bufferTriangles = result[2];
+        const bufferColor = createColorBufferForCube(false);
         measurePointsBuffers[i] = [bufferVertices, bufferNormals, bufferTriangles, bufferColor];
     }
 }
@@ -351,8 +354,8 @@ function VS_StartSurfaceViewer(urlVerticesList, urlLinesList, urlTrianglesList, 
                                boundaryURL, shelveObject, minMeasure, maxMeasure, urlMeasure, hemisphereChunkMask){
 
     _VS_static_entrypoint(urlVerticesList, urlLinesList, urlTrianglesList, urlNormalsList, urlMeasurePoints,
-                       noOfMeasurePoints, urlRegionMapList, urlMeasurePointsLabels,
-                       boundaryURL, shelveObject, hemisphereChunkMask, false, false, false, minMeasure, maxMeasure, urlMeasure);
+                          noOfMeasurePoints, urlRegionMapList, urlMeasurePointsLabels, boundaryURL, shelveObject,
+                          hemisphereChunkMask, false, false, minMeasure, maxMeasure, urlMeasure);
     _VS_init_cubicalMeasurePoints();
 }
 
@@ -361,8 +364,8 @@ function VS_StartEEGSensorViewer(urlVerticesList, urlLinesList, urlTrianglesList
                                shelfObject, minMeasure, maxMeasure, urlMeasure){
     isEEGView = true;
     _VS_static_entrypoint(urlVerticesList, urlLinesList, urlTrianglesList, urlNormalsList, urlMeasurePoints,
-                               noOfMeasurePoints, '', urlMeasurePointsLabels,
-                               '', shelfObject, null, false, true, true, minMeasure, maxMeasure, urlMeasure);
+                          noOfMeasurePoints, '', urlMeasurePointsLabels, '', shelfObject, null, true, true,
+                          minMeasure, maxMeasure, urlMeasure);
     _VS_init_cubicalMeasurePoints();
 }
 
@@ -413,12 +416,12 @@ function _initViewerGL(canvas, urlVerticesList, urlNormalsList, urlTrianglesList
         LEG_initMinMax(activityMin, activityMax);
         ColSch_initColorSchemeGUI(activityMin, activityMax, LEG_updateLegendColors);
         LEG_generateLegendBuffers();
-    }else{
+    } else {
         ColSch_initColorSchemeGUI(activityMin, activityMax);
     }
 
     if (urlVerticesList) {
-        var parsedIndices = [];
+        let parsedIndices = [];
         if (urlRegionMapList) {
             parsedIndices = $.parseJSON(urlRegionMapList);
         }

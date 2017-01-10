@@ -18,11 +18,11 @@
  **/
 
 function _VSI_bufferAtPoint(p, idx) {
-    var result = HLPR_sphereBufferAtPoint(gl, p, 3, 12, 12);
-    var bufferVertices= result[0];
-    var bufferNormals = result[1];
-    var bufferTriangles = result[2];
-    var vertexRegionBuffer = VSI_createColorBufferForSphere(idx, bufferVertices.numItems * 3);
+    const result = HLPR_sphereBufferAtPoint(gl, p, 3, 12, 12);
+    const bufferVertices = result[0];
+    const bufferNormals = result[1];
+    const bufferTriangles = result[2];
+    const vertexRegionBuffer = VSI_createColorBufferForSphere(idx, bufferVertices.numItems * 3);
     return [bufferVertices, bufferNormals, bufferTriangles, vertexRegionBuffer];
 }
 
@@ -30,13 +30,12 @@ function _VSI_bufferAtPoint(p, idx) {
  * Method used for creating a color buffer for a cube (measure point).
  */
 function VSI_createColorBufferForSphere(nodeIdx, nrOfVertices) {
-    var regionMap = [];
-
-    for (var i = 0; i < nrOfVertices; i++) {
+    let regionMap = [];
+    for (let i = 0; i < nrOfVertices; i++) {
         regionMap.push(nodeIdx);
     }
 
-    var vertexRegionBuffer = gl.createBuffer();
+    let vertexRegionBuffer = gl.createBuffer();
     gl.bindBuffer(gl.ARRAY_BUFFER, vertexRegionBuffer);
     gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(regionMap), gl.STATIC_DRAW);
     return vertexRegionBuffer;
@@ -44,16 +43,15 @@ function VSI_createColorBufferForSphere(nodeIdx, nrOfVertices) {
 
 
 function _VSI_init_sphericalMeasurePoints(){
-    for (var i = 0; i < NO_OF_MEASURE_POINTS; i++) {
+    for (let i = 0; i < NO_OF_MEASURE_POINTS; i++) {
         measurePointsBuffers[i] = _VSI_bufferAtPoint(measurePoints[i], i);
     }
 }
 
 function VSI_StartInternalSensorViewer(urlMeasurePoints,  noOfMeasurePoints, urlMeasurePointsLabels,
                                        shelfObject, minMeasure, maxMeasure, measure){
-    _VS_static_entrypoint('', '[]', '', '', urlMeasurePoints, noOfMeasurePoints, '',
-                         urlMeasurePointsLabels, '', shelfObject, null, false, false, true,
-                         minMeasure, maxMeasure, measure);
+    _VS_static_entrypoint('', '[]', '', '', urlMeasurePoints, noOfMeasurePoints, '', urlMeasurePointsLabels, '',
+                          shelfObject, null, false, true, minMeasure, maxMeasure, measure);
     isInternalSensorView = true;
     displayMeasureNodes = true;
 
