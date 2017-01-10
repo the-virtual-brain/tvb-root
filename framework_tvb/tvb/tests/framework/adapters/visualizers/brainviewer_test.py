@@ -52,7 +52,7 @@ class BrainViewerTest(TransactionalTestCase):
                      'base_activity_url', 'isOneToOneMapping', 'minActivity', 'maxActivity',
                      'noOfMeasurePoints', 'isAdapter']
     EXPECTED_EXTRA_KEYS = ['urlMeasurePointsLabels', 'urlMeasurePoints', 'time_series', 'pageSize', 'shelfObject',
-                           'extended_view', 'minActivityLabels', 'labelsStateVar', 'labelsModes', 'title']
+                           'extended_view', 'legendLabels', 'labelsStateVar', 'labelsModes', 'title']
 
 
     def setUp(self):

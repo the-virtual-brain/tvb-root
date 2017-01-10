@@ -199,7 +199,7 @@ class BrainViewer(ABCDisplayer):
                            urlLines=json.dumps(url_lines), urlNormals=json.dumps(url_normals),
                            urlRegionMap=json.dumps(url_region_map), base_activity_url=base_activity_url,
                            time=json.dumps(time_urls), minActivity=min_val, maxActivity=max_val,
-                           minActivityLabels=legend_labels, labelsStateVar=state_variables,
+                           legendLabels=legend_labels, labelsStateVar=state_variables,
                            labelsModes=range(data_shape[3]), extended_view=False,
                            shelfObject=prepare_shell_surface_urls(self.current_project_id, shell_surface),
                            biHemispheric=self.surface.bi_hemispheric,
