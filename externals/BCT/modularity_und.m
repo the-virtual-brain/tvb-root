@@ -23,18 +23,23 @@ function [Ci,Q]=modularity_und(A,gamma)
 %       Ci,     optimal community structure
 %       Q,      maximized modularity
 %
-%   Note: Ci and Q may vary from run to run, due to heuristics in the
-%   algorithm. Consequently, it may be worth to compare multiple runs.
-%   Also see Good et al. (2010) Phys. Rev. E 81:046106.
+%   Note:
+%       This algorithm is essentially deterministic. The only potential
+%       source of stochasticity occurs at the iterative finetuning step, in
+%       the presence of non-unique optimal swaps. However, the present
+%       implementation always makes the first available optimal swap and
+%       is therefore deterministic.
 %
-%   Reference: Newman (2006) -- Phys Rev E 74:036104, PNAS 23:8577-8582.
-%              Reichardt and Bornholdt (2006) Phys Rev E 74:016110.
+%   References: 
+%       Newman (2006) -- Phys Rev E 74:036104, PNAS 23:8577-8582.
+%       Reichardt and Bornholdt (2006) Phys Rev E 74:016110.
 %
 %   2008-2016
 %   Mika Rubinov, UNSW
 %   Jonathan Power, WUSTL
 %   Dani Bassett, UCSB
 %   Xindi Wang, Beijing Normal University
+%   Roan LaPlante, Martinos Center for Biomedical Imaging
 
 %   Modification History:
 %   Jul 2008: Original (Mika Rubinov)
@@ -46,14 +51,15 @@ function [Ci,Q]=modularity_und(A,gamma)
 %   Dec 2013: Detection of maximum real part of eigenvalues enforced (Mika Rubinov)
 %               Thanks to Mason Porter and Jack Setford, University of Oxford
 %   Dec 2015: Single moves during fine-tuning enforced (Xindi Wang)
+%   Jan 2017: Removed node permutation and updated documentation (Roan LaPlante)
 
 if ~exist('gamma','var')
     gamma = 1;
 end
 
 N=length(A);                            %number of vertices
-n_perm = randperm(N);                   %DB: randomly permute order of nodes
-A = A(n_perm,n_perm);                   %DB: use permuted matrix for subsequent analysis
+% n_perm = randperm(N);                   %DB: randomly permute order of nodes
+% A = A(n_perm,n_perm);                   %DB: use permuted matrix for subsequent analysis
 K=sum(A);                               %degree
 m=sum(K);                               %number of edges (each undirected edge is counted twice)
 B=A-gamma*(K.'*K)/m;                    %modularity matrix
@@ -67,7 +73,7 @@ Ng=N;
 
 while U(1)                              %examine community U(1)
     [V,D]=eig(Bg);
-    [d1,i1]=max(real(diag(D)));         %maximal positive (real part of) eigenvalue of Bg
+    [~,i1]=max(real(diag(D)));          %maximal positive (real part of) eigenvalue of Bg
     v1=V(:,i1);                         %corresponding eigenvector
 
     S=ones(Ng,1);
@@ -79,12 +85,12 @@ while U(1)                              %examine community U(1)
         Bg(logical(eye(Ng)))=0;      	%Bg is modified, to enable fine-tuning
         indg=ones(Ng,1);                %array of unmoved indices
         Sit=S;
-        while any(indg);                %iterative fine-tuning
+        while any(indg)                 %iterative fine-tuning
             Qit=qmax-4*Sit.*(Bg*Sit); 	%this line is equivalent to:
             [qmax,imax]=max(Qit.*indg); %for i=1:Ng
             Sit(imax)=-Sit(imax);       %	Sit(i)=-Sit(i);
             indg(imax)=nan;             %	Qit(i)=Sit.'*Bg*Sit;
-            if qmax>q;                  %	Sit(i)=-Sit(i);
+            if qmax>q                   %	Sit(i)=-Sit(i);
                 q=qmax;                 %end
                 S=Sit;
             end
@@ -111,6 +117,6 @@ end
 s=Ci(:,ones(1,N));                      %compute modularity
 Q=~(s-s.').*B/m;
 Q=sum(Q(:));
-Ci_corrected = zeros(N,1);              % DB: initialize Ci_corrected
-Ci_corrected(n_perm) = Ci;              % DB: return order of nodes to the order used at the input stage.
-Ci = Ci_corrected;                      % DB: output corrected community assignments
+% Ci_corrected = zeros(N,1);              % DB: initialize Ci_corrected
+% Ci_corrected(n_perm) = Ci;              % DB: return order of nodes to the order used at the input stage.
+% Ci = Ci_corrected;                      % DB: output corrected community assignments

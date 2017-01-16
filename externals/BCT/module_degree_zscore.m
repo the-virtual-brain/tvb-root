@@ -25,8 +25,8 @@ if ~exist('flag','var')
 end
 
 switch flag
-    case 0; % no action required
-    case 1; % no action required
+    case 0  % no action required
+    case 1  % no action required
     case 2; W=W.';
     case 3; W=W+W.';
 end

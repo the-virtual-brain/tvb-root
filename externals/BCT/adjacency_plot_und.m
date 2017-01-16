@@ -1,5 +1,5 @@
 function [X,Y,Z] = adjacency_plot_und(aij,coor)
-%ADJACENCY_PLOT     quick visualization tool
+%ADJACENCY_PLOT_UND     Quick visualization tool
 %
 %   [X,Y,Z] = ADJACENCY_PLOT(AIJ,COOR) takes adjacency matrix AIJ and node
 %   spatial coordinates COOR and generates three vectors that can be used

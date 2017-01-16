@@ -25,10 +25,10 @@ diagMAT = diag(diag(MAT));
 MAT = MAT-diagMAT;
 
 % generate cost function
-if strcmp(cost,'line');
+if strcmp(cost,'line')
     profil = fliplr(normpdf(1:N,0,N/2));
 end;
-if strcmp(cost,'circ');
+if strcmp(cost,'circ')
     profil = fliplr(normpdf(1:N,N/2,N/4));
 end;
 COST = toeplitz(profil,profil);

@@ -1,5 +1,5 @@
 function [EC,ec,degij] = edge_nei_overlap_bd(CIJ)
-%EDGE_NEI_OVERLAP_BD     overlap amongst neighbors of two adjacent nodes
+% EDGE_NEI_OVERLAP_BD     Overlap amongst neighbors of two adjacent nodes
 %
 %   [EC,ec,degij] = edge_nei_bd(CIJ);
 %

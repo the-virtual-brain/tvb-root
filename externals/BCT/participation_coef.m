@@ -31,8 +31,8 @@ if ~exist('flag','var')
 end
 
 switch flag
-    case 0; % no action required
-    case 1; % no action required
+    case 0 % no action required
+    case 1 % no action required
     case 2; W=W.';
 end
 
@@ -41,7 +41,7 @@ Ko=sum(W,2);                        %degree
 Gc=(W~=0)*diag(Ci);                 %neighbor community affiliation
 Kc2=zeros(n,1);                     %community-specific neighbors
 
-for i=1:max(Ci);
+for i=1:max(Ci)
    Kc2=Kc2+(sum(W.*(Gc==i),2).^2);
 end
 

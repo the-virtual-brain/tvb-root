@@ -1,5 +1,5 @@
 function D = agreement_weighted(CI,Wts)
-%WEIGHTED_AGREEMENT     weights agreement matrix
+% AGREEMENT_WEIGHTED     Weights agreement matrix
 %
 %   D = AGREEMENT_WEIGHTED(CI,WTS) is identical to AGREEMENT, with the 
 %   exception that each partitions contribution is weighted according to 

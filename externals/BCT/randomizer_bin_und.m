@@ -56,7 +56,7 @@ end
 
 % find edges
 [i,j]=find(triu(R,1));
-K=size(i,1);
+% K=size(i,1);
 
 % exclude fully connected nodes. will replace later
 fullnode=find((sum(triu(R,1),1)+(sum(triu(R,1),2))')==(a-1));

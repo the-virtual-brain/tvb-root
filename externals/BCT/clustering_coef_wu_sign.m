@@ -25,7 +25,7 @@ function [C_pos,C_neg,Ctot_pos,Ctot_neg] = clustering_coef_wu_sign(W,coef_type)
 %           3,  Constantini & Perugini's generalization of the Zhang &
 %               Horvath formula. This formula takes both positive &
 %               negative weights into account simultaneously, & is
-%               particularly sensitive to non-redundnacy in path
+%               particularly sensitive to non-redundancy in path
 %               information based on sign (i.e., when two weights are
 %               positive & one negative, or all three are negative, both of
 %               which indicate that the weight of the third path is not
@@ -54,6 +54,8 @@ function [C_pos,C_neg,Ctot_pos,Ctot_neg] = clustering_coef_wu_sign(W,coef_type)
 %             computation of mean coefficient (Jeff Spielberg)
 %   May 2015: Added computation of Zhang & Horvath and Constantini & 
 %             Perugini formulas (Jeff Spielberg)
+%   May 2016: Bugfix in computation of the denominator of the Costantini &
+%             Perugini (flag 3) version (Chiara Pintossi)
 
 if ~exist('coef_type','var')
     coef_type = 1;
@@ -120,7 +122,7 @@ switch coef_type
                 for q = 1:n
                     cyc3(i) = cyc3(i)+(W(j,i)*W(i,q)*W(j,q));
                     if j~=q
-                        cyc2(i) = cyc2(i)+(W(j,i)*W(i,q));
+                        cyc2(i) = cyc2(i)+abs(W(j,i)*W(i,q));
                     end
                 end
             end

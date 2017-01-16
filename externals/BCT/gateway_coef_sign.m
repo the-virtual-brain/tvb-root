@@ -53,10 +53,10 @@ GWneg = gcoef(-W.*(W<0));
                 cent = betweenness_wei(L);
         end
         
-        for i = 1:max(Ci);
+        for i = 1:max(Ci)
             ks = sum(W_.*(Gc==i),2);
             Sc2 = Sc2 + (ks.^2);
-            for j = 1:max(Ci);
+            for j = 1:max(Ci)
                 ksm(Ci==j) = ksm(Ci==j) + ks(Ci==j)/sum(ks(Ci==j)); % Calculate extra-modular weights
             end
             centm(Ci==i) = sum(cent(Ci==i));                        % Calculate intra-modular weights

@@ -1,5 +1,5 @@
 function   r = assortativity_bin(CIJ,flag)
-%ASSORTATIVITY      Assortativity coefficient
+% ASSORTATIVITY_BIN      Assortativity coefficient
 %
 %   r = assortativity(CIJ,flag);
 %
@@ -23,7 +23,7 @@ function   r = assortativity_bin(CIJ,flag)
 %   and Sporns (2010) NeuroImage.
 %
 %   Reference:  Newman (2002) Phys Rev Lett 89:208701
-%               Foster et al. (2010) PNAS 107:10815–10820
+%               Foster et al. (2010) PNAS 107:10815ï¿½10820
 %
 %   Olaf Sporns, Indiana University, 2007/2008
 %   Vassilis Tsiaras, University of Crete, 2009

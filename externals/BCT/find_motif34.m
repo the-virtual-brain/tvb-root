@@ -24,7 +24,7 @@ persistent M3 ID3 M4 ID4
 
 if isscalar(m)
     if n==3
-        if isempty(ID3);
+        if isempty(ID3)
             load motif34lib M3 ID3;
         end
         ind=find(ID3==m).';
@@ -34,7 +34,7 @@ if isscalar(m)
                 M3(ind(i),4:6) 0],3,3);
         end
     elseif n==4
-        if isempty(ID4);
+        if isempty(ID4)
             load motif34lib M4 ID4;
         end
         ind=find(ID4==m).';

@@ -4,11 +4,11 @@ function [R,eff] = randmio_und_connected(R, ITER)
 %   R = randmio_und_connected(W,ITER);
 %   [R eff] = randmio_und_connected(W, ITER);
 %
-%   This function randomizes an undirected network, while preserving the 
-%   degree distribution. The function does not preserve the strength 
-%   distribution in weighted networks. The function also ensures that the 
-%   randomized network maintains connectedness, the ability for every node 
-%   to reach every other node in the network. The input network for this 
+%   This function randomizes an undirected network, while preserving the
+%   degree distribution. The function does not preserve the strength
+%   distribution in weighted networks. The function also ensures that the
+%   randomized network maintains connectedness, the ability for every node
+%   to reach every other node in the network. The input network for this
 %   function must be connected.
 %
 %   Input:      W,      undirected (binary/weighted) connection matrix
@@ -51,17 +51,17 @@ for iter=1:ITER
         while 1
             e1=ceil(K*rand);
             e2=ceil(K*rand);
-            while (e2==e1),
+            while (e2==e1)
                 e2=ceil(K*rand);
             end
             a=i(e1); b=j(e1);
             c=i(e2); d=j(e2);
-
-            if all(a~=[c d]) && all(b~=[c d]);
+            
+            if all(a~=[c d]) && all(b~=[c d])
                 break           %all four vertices must be different
             end
         end
-
+        
         if rand>0.5
             i(e2)=d; j(e2)=c; 	%flip edge c-d with 50% probability
             c=i(e2); d=j(e2); 	%to explore all potential rewirings
@@ -74,7 +74,7 @@ for iter=1:ITER
                 P=R([a d],:);
                 P(1,b)=0; P(2,c)=0;
                 PN=P;
-                PN(:,d)=1; PN(:,a)=1; 
+                PN(:,d)=1; PN(:,a)=1;
                 
                 while 1
                     P(1,:)=any(R(P(1,:)~=0,:),1);
@@ -89,13 +89,13 @@ for iter=1:ITER
                     PN=PN+P;
                 end
             end %connectedness testing
-
+            
             if rewire               %reassign edges
                 R(a,d)=R(a,b); R(a,b)=0;
                 R(d,a)=R(b,a); R(b,a)=0;
                 R(c,b)=R(c,d); R(c,d)=0;
                 R(b,c)=R(d,c); R(d,c)=0;
-
+                
                 j(e1) = d;          %reassign edge indices
                 j(e2) = b;
                 eff = eff+1;

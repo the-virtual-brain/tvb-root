@@ -34,7 +34,7 @@ for v=1:N
         CIJflo = -CIJ(nb,nb);
         for i=1:length(nb)
             for j=1:length(nb)
-                if((CIJ(nb(i),v))==1)&&(CIJ(v,nb(j))==1);
+                if((CIJ(nb(i),v))==1)&&(CIJ(v,nb(j))==1)
                     CIJflo(i,j) = CIJflo(i,j) + 1;
                 end;
             end;

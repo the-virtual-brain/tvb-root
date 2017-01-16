@@ -56,13 +56,13 @@ for iter=1:ITER
         while 1
             e1=ceil(K*rand);
             e2=ceil(K*rand);
-            while (e2==e1),
+            while (e2==e1)
                 e2=ceil(K*rand);
             end
             a=i(e1); b=j(e1);
             c=i(e2); d=j(e2);
 
-            if all(a~=[c d]) && all(b~=[c d]);
+            if all(a~=[c d]) && all(b~=[c d])
                 break           %all four vertices must be different
             end
         end

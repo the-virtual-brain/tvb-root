@@ -30,7 +30,7 @@ NSP=NSPd; NSP(I)=1;        	%number of shortest paths of any length
 L=NSPd; L(I)=1;           	%length of shortest paths
 
 %calculate NSP and L
-while find(NSPd,1);
+while find(NSPd,1)
     d=d+1;
     NPd=NPd*G;
     NSPd=NPd.*(L==0);

@@ -54,11 +54,11 @@ B = (b+b.')/(2*s);                          % directed core-ness matrix
 q = sum(sum(B(C,C))) - sum(sum(B(~C,~C)));  % core-ness statistic
 
 f=1;                                        % loop flag
-while f;
+while f
     f=0;
     Idx = 1:n;                              % initial node indices
     Ct = C;
-    while any(Idx);
+    while any(Idx)
         Qt = zeros(1,n);                    % check swaps of node indices
         q0 = sum(sum(B(Ct,Ct))) - sum(sum(B(~Ct,~Ct)));
         Qt( Ct) = q0 - 2*sum(B( Ct, :),2);
@@ -77,7 +77,7 @@ while f;
         Ct(Idx(u)) = ~Ct(Idx(u));
         Idx(u)=[];                          % remove index from consideration
         
-        if max_Qt-q>1e-10;                  % recompute core-ness statistic
+        if max_Qt-q>1e-10                   % recompute core-ness statistic
             f = 1;
             C = Ct;
             q = sum(sum(B(C,C))) - sum(sum(B(~C,~C)));

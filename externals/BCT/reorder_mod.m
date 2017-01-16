@@ -7,14 +7,14 @@ function [On,Wr] = reorder_mod(W,M)
 %   This function reorders the connectivity matrix by modular structure and
 %   may consequently be useful in visualization of modular structure.
 %
-%   Inputs:     
+%   Inputs:
 %       W,      connectivity matrix (binary/weighted undirected/directed)
 %       M,      module affiliation vector
 %
-%   Outputs:    
+%   Outputs:
 %       On,     new node order
 %       Wr,     reordered connectivity matrix
-%   
+%
 %
 %   Used in: Rubinov and Sporns (2011) NeuroImage; Zingg et al. (2014) Cell.
 %
@@ -25,7 +25,7 @@ function [On,Wr] = reorder_mod(W,M)
 %   Mar 2011: Original
 %	Jan 2015: Improved behavior for directed networks
 
-%#ok<*ASGLU> 
+%#ok<*ASGLU>
 %#ok<*AGROW>
 
 W = W+eps;
@@ -37,7 +37,7 @@ Nm=zeros(1,m);                                              %number of nodes in 
 Knm_o=zeros(n,m);                                           %node-to-module out-degree
 Knm_i=zeros(n,m);                                           %node-to-module in-degree
 for i=1:m
-	Nm(i)=nnz(M==i);
+    Nm(i)=nnz(M==i);
     Knm_o(:,i)=sum(W(:,M==i),2);
     Knm_i(:,i)=sum(W(M==i,:),1);
 end
@@ -58,7 +58,7 @@ Bm=(Wm+Wm.')./(2*(Nm.'*Nm));
 %1. Arrange densely connected modules together
 [I,J,bv]=find(tril(Bm,-1));                             	%symmetrized intermodular connectivity values
 [~,ord]=sort(bv,'descend');                                 %sort by greatest relative connectivity
-I=I(ord); 
+I=I(ord);
 J=J(ord);
 Om=[I(1) J(1)];                                             %new module order
 
@@ -79,9 +79,9 @@ while length(Om)<m                                          %while not all modul
             break
         end
     end
-    if old==Om(1);      
-        Om=[new Om];             
-    elseif old==Om(end);
+    if old==Om(1)
+        Om=[new Om];
+    elseif old==Om(end)
         Om=[Om new];
     end
     Si(I==new)=false;
@@ -94,13 +94,13 @@ On = zeros(n,1,'uint64');                                   %node order array
 for i=1:m
     u = Om(i);
     ind = find(M==u);                                       %indices
-        
+    
     mod_imp=[Om; sign((1:m)-i); abs((1:m)-i); Bm(u,Om)].';
-    mod_imp=sortrows(mod_imp,[3 -4]);    
+    mod_imp=sortrows(mod_imp,[3 -4]);
     mod_imp=prod(mod_imp(2:end,[1 2]),2);
     
-	[dum,ord]=sortrows(Knm(ind,:),mod_imp);                 %sort nodes by number of links to close modules
-	On(ind(ord))=1e6*i+(1:Nm(u));                           %assign node order (assumes <1e6 nodes in a module)
+    [dum,ord]=sortrows(Knm(ind,:),mod_imp);                 %sort nodes by number of links to close modules
+    On(ind(ord))=1e6*i+(1:Nm(u));                           %assign node order (assumes <1e6 nodes in a module)
 end
 
 [dum,On]=sort(On);                                          %reorder nodes

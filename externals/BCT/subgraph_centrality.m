@@ -1,5 +1,5 @@
 function Cs = subgraph_centrality(CIJ)
-% SUBGRAPH_CENTRALITY     subgraph centrality of a network
+% SUBGRAPH_CENTRALITY     Subgraph centrality of a network
 %
 %   Cs = subgraph_centrality(CIJ)
 %

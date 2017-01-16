@@ -1,5 +1,5 @@
 function [B,E,K] = evaluate_generative_model(A,Atgt,D,modeltype,modelvar,params)
-% EVALUATE_GENERATIVE_MODEL     generate and evaluate synthetic networks
+% EVALUATE_GENERATIVE_MODEL     Generation and evaluation of synthetic networks
 %
 %   [B,E,K] = EVALUATE_GENERATIVE_MODEL(A,Atgt,D,m,modeltype,modelvar,params) 
 %

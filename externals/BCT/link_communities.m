@@ -6,7 +6,7 @@ function M=link_communities(W,type_clustering)
 %
 %   The optimal community structure is a subdivision of the network into
 %   groups of nodes which have a high number of within-group connections
-%   and a low number of between group connections. 
+%   and a low number of between group connections.
 %
 %   This algorithm uncovers overlapping community structure via
 %   hierarchical clustering of network links. This algorith is generalized
@@ -16,7 +16,7 @@ function M=link_communities(W,type_clustering)
 %               type_clustering,    type of hierarchical clustering (optional)
 %                                       'single'        single-linkage (default)
 %                                       'complete'      complete-linkage
-%                                   
+%
 %   Output:     M,                  nodal community-affiliation matrix
 %                                   binary matrix of size CxN [communities x nodes]
 %
@@ -45,7 +45,7 @@ Ni=sum(W.^2,1);                                                     % in-norm sq
 Jo=zeros(n);                                                        % weighted in-Jaccard
 Ji=zeros(n);                                                        % weighted ou-Jaccard
 for b=1:n
-    for c=1:n;       
+    for c=1:n
         Do=W(b,:)*W(c,:).';
         Jo(b,c)=Do./(No(b)+No(c)-Do);
         
@@ -60,14 +60,14 @@ end
 m=length(A);
 Ln=zeros(m,2);                                                      % link nodes
 Lw=zeros(m,1);                                                      % link weights
-for i=1:m;
+for i=1:m
     Ln(i,:) = [A(i) B(i)];                                          % link nodes
     Lw(i) = (W(A(i),B(i))+W(B(i),A(i)))/2;                          % link weight
 end
 
 ES=zeros(m,m,'single');                                             % link similarity
-for i=1:m;
-    for j=1:m;
+for i=1:m
+    for j=1:m
         if      Ln(i,1)==Ln(j,1); a=Ln(i,1); b=Ln(i,2); c=Ln(j,2);
         elseif  Ln(i,1)==Ln(j,2); a=Ln(i,1); b=Ln(i,2); c=Ln(j,1);
         elseif  Ln(i,2)==Ln(j,1); a=Ln(i,2); b=Ln(i,1); c=Ln(j,2);
@@ -90,7 +90,7 @@ C(1,:)=U;                                                           % as above, 
 for i=1:m-1; fprintf('hierarchy%8d\n',i)                            % hierarchy level
     
     % compute densities
-    for j=1:length(U);                                              % loop over communities
+    for j=1:length(U)                                               % loop over communities
         idx = C(i,:)==U(j);                                         % get link indices
         links = sort(Lw(idx));                                      % sort link weights
         nodes = sort(reshape(Ln(idx,:),2*nnz(idx),1));
@@ -139,7 +139,7 @@ Dc(isnan(Dc))=0;
 
 U=unique(C(i,:));                                                   % unique communities
 M=zeros(1,n);                                                       % nodal affiliations
-for j=1:length(U);
+for j=1:length(U)
     M(j,unique( Ln(C(i,:)==U(j),:)) )=1;
 end
 M=M(sum(M,2)>2,:);

@@ -1,5 +1,5 @@
 function [kden,N,K] = density_und(CIJ)
-%DENSITY        Density
+% DENSITY_UND        Density
 %
 %   kden = density_und(CIJ);
 %   [kden,N,K] = density_und(CIJ);

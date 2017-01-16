@@ -29,7 +29,7 @@ N = size(CIJ,1);                    %#ok<NASGU>
 
 % definition of "degree" as used for RC coefficients
 % degree is taken to be the sum of incoming and outgoing connectons
-[id,od,degree] = degrees_dir(CIJ);  %#ok<ASGLU>
+[~,~,degree] = degrees_dir(CIJ);
 
 if nargin == 1
     klevel = max(degree);

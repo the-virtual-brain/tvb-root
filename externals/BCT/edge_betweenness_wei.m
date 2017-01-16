@@ -64,7 +64,7 @@ for u=1:n
 
         minD=min(D(S));
         if isempty(minD), break             %all nodes reached, or
-        elseif isinf(minD),                 %...some cannot be reached:
+        elseif isinf(minD)                  %...some cannot be reached:
             Q(1:q)=find(isinf(D)); break	%...these are first-in-line
         end
         V=find(D==minD);

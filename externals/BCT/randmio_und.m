@@ -4,8 +4,8 @@ function [R,eff]=randmio_und(R, ITER)
 %   R = randmio_und(W,ITER);
 %   [R eff]=randmio_und(W, ITER);
 %
-%   This function randomizes an undirected network, while preserving the 
-%   degree distribution. The function does not preserve the strength 
+%   This function randomizes an undirected network, while preserving the
+%   degree distribution. The function does not preserve the strength
 %   distribution in weighted networks.
 %
 %   Input:      W,      undirected (binary/weighted) connection matrix
@@ -47,17 +47,17 @@ for iter=1:ITER
         while 1
             e1=ceil(K*rand);
             e2=ceil(K*rand);
-            while (e2==e1),
+            while (e2==e1)
                 e2=ceil(K*rand);
             end
             a=i(e1); b=j(e1);
             c=i(e2); d=j(e2);
-
-            if all(a~=[c d]) && all(b~=[c d]);
+            
+            if all(a~=[c d]) && all(b~=[c d])
                 break           %all four vertices must be different
             end
         end
-
+        
         if rand>0.5
             i(e2)=d; j(e2)=c; 	%flip edge c-d with 50% probability
             c=i(e2); d=j(e2); 	%to explore all potential rewirings
@@ -69,7 +69,7 @@ for iter=1:ITER
             R(d,a)=R(b,a); R(b,a)=0;
             R(c,b)=R(c,d); R(c,d)=0;
             R(b,c)=R(d,c); R(d,c)=0;
-
+            
             j(e1) = d;          %reassign edge indices
             j(e2) = b;
             eff = eff+1;

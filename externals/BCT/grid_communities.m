@@ -1,5 +1,5 @@
 function [X,Y,indsort] = grid_communities(c)
-%GRID_COMMUNITIES       outline communities along diagonal
+% GRID_COMMUNITIES       Outline communities along diagonal
 %
 %   [X Y INDSORT] = GRID_COMMUNITIES(C) takes a vector of community
 %   assignments C and returns three output arguments for visualizing the

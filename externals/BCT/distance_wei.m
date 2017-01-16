@@ -1,5 +1,5 @@
 function [D,B]=distance_wei(L)
-%DISTANCE_WEI       Distance matrix
+% DISTANCE_WEI       Distance matrix (Dijkstra's algorithm)
 %
 %   D = distance_wei(L);
 %   [D,B] = distance_wei(L);
@@ -62,7 +62,7 @@ for u=1:n
         end
 
         minD=min(D(u,S));
-        if isempty(minD)||isinf(minD),      %isempty: all nodes reached;
+        if isempty(minD)||isinf(minD)       %isempty: all nodes reached;
             break,                          %isinf: some nodes cannot be reached
         end;
 

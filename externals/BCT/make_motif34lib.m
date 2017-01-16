@@ -29,7 +29,7 @@ for i=0:2^6-1                   %loop through all subgraphs
         m(2)  ' '  m(4)  ' '  '0'   ]);         %#ok<ST2NM>
     Ko=sum(G,2);
     Ki=sum(G,1).';
-    if all(Ko|Ki),              %if subgraph weakly-connected
+    if all(Ko|Ki)               %if subgraph weakly-connected
         n=n+1;
         cl(:)=sortrows([Ko Ki]).';
         CL(n,:)=cl;             %assign motif label to isomorph
@@ -67,7 +67,7 @@ for i=0:2^12-1                  %loop through all subgraphs
         m(3)  ' '  m(6)  ' '  m(9)  ' '  '0'    ]); %#ok<ST2NM>
     Gs=G+G.';
     v=Gs(1,:);
-    for j=1:2,
+    for j=1:2
         v=any(Gs(v~=0,:),1)+v;
     end
     if v                        %if subgraph weakly connected

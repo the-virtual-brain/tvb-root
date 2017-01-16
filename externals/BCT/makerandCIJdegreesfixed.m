@@ -45,13 +45,13 @@ edges = [outInv(1:k)'; inInv(randperm(k))'];
 
 % create cij, and check for double edges and self-connections
 for i = 1:k
-    if cij(edges(1,i),edges(2,i)),
+    if cij(edges(1,i),edges(2,i))
         warningCounter = 1;
         while (1)
             switchTo = ceil(k*rand);
-            if ~(cij(edges(1,i),edges(2,switchTo)) || cij(edges(1,switchTo),edges(2,i))),
+            if ~(cij(edges(1,i),edges(2,switchTo)) || cij(edges(1,switchTo),edges(2,i)))
                 cij(edges(1,i),edges(2,switchTo)) = 1;
-                if switchTo < i,
+                if switchTo < i
                     cij(edges(1,switchTo),edges(2,switchTo)) = 0;
                     cij(edges(1,switchTo),edges(2,i)) = 1;
                 end

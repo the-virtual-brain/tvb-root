@@ -12,12 +12,12 @@ function   [Rw] = rich_club_wu(CIJ,varargin)
 %
 %       k-level:    (optional) max level of RC(k).
 %                   (by default k-level quals the maximal degree of CIJ)
-%                
+%
 %   Output:
 %       Rw:         rich-club curve
 %
 %
-%   References:     
+%   References:
 %       T Opsahl et al. Phys Rev Lett, 2008, 101(16)
 %       M van den Heuvel, O Sporns, J Neurosci 2011 31(44)
 %
@@ -48,7 +48,7 @@ for kk = 1:klevel
     
     SmallNodes=find(NodeDegree<kk);
     
-    if isempty(SmallNodes);
+    if isempty(SmallNodes)
         Rw(kk)=NaN;             %#ok<*AGROW>
         continue
     end
@@ -68,5 +68,5 @@ for kk = 1:klevel
     wrank_r = wrank(1:1:Er);
     
     %weighted rich-club coefficient
-    Rw(kk)=Wr / sum(wrank_r); 
+    Rw(kk)=Wr / sum(wrank_r);
 end

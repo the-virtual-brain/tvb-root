@@ -31,7 +31,7 @@ function [M,Q]=community_louvain(W,gamma,M0,B)
 %               gamma>1,        detects smaller modules
 %               0<=gamma<1,     detects larger modules
 %               gamma=1,        classic modularity (default)
-%       M0,     
+%       M0,
 %           initial community affiliation vector (optional)
 %       B,
 %           objective-function type or custom objective matrix (optional)
@@ -45,16 +45,16 @@ function [M,Q]=community_louvain(W,gamma,M0,B)
 %           symmetric vs. asymmetric treatment of negative weights.
 %
 %   Outputs:
-%       M,      
+%       M,
 %           community affiliation vector
-%       Q,  
+%       Q,
 %           optimized community-structure statistic (modularity by default)
 %
 %   Example:
 %       % Iterative community finetuning.
 %       % W is the input connection matrix.
 %       n  = size(W,1);             % number of nodes
-%       M  = 1:n;                   % initial community affiliations 
+%       M  = 1:n;                   % initial community affiliations
 %       Q0 = -1; Q1 = 0;            % initialize modularity values
 %       while Q1-Q0>1e-5;           % while modularity increases
 %           Q0 = Q1;                % perform community detection
@@ -150,7 +150,7 @@ Q = sum(B(bsxfun(@eq,M0,M0.')));                        % compute modularity
 first_iteration = true;
 while Q-Q0>1e-10
     flag = true;                                        % flag for within-hierarchy search
-    while flag;
+    while flag
         flag = false;
         for u=randperm(n)                               % loop over all nodes in random order
             ma = Mb(u);                                 % current module of u
@@ -158,7 +158,7 @@ while Q-Q0>1e-10
             dQ(ma) = 0;                                 % (line above) algorithm condition
             
             [max_dQ,mb] = max(dQ);                      % maximal increase in modularity and corresponding module
-            if max_dQ>1e-10;                            % if maximal increase is positive
+            if max_dQ>1e-10                             % if maximal increase is positive
                 flag = true;
                 Mb(u) = mb;                             % reassign module
                 

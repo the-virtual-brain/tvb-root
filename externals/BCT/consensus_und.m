@@ -1,5 +1,5 @@
 function ciu = consensus_und(d,tau,reps)
-%CONSENSUS      consensus clustering
+% CONSENSUS_UND      Consensus clustering
 %
 %   CIU = CONSENSUS(D,TAU,REPS) seeks a consensus partition of the 
 %   agreement matrix D. The algorithm used here is almost identical to the

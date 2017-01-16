@@ -1,5 +1,5 @@
 function [R,eff] = randmio_und_signed(W, ITER)
-%RANDMIO_UND     Random graph with preserved signed degree distribution
+% RANDMIO_UND_SIGNED	Random graph with preserved signed degree distribution
 %
 %   R       = randmio_und_signed(W,ITER);
 %   [R,eff] = randmio_und_signed(W,ITER);

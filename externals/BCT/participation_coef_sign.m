@@ -35,11 +35,11 @@ Pneg = pcoef(-W.*(W<0));
         S   = sum(W_,2);                    %strength
         Gc  = (W_~=0)*diag(Ci);             %neighbor community affiliation
         Sc2 = zeros(n,1);                   %community-specific neighbors
-
-        for i = 1:max(Ci);
+        
+        for i = 1:max(Ci)
             Sc2 = Sc2 + (sum(W_.*(Gc==i),2).^2);
         end
-
+        
         P = ones(n,1) - Sc2./(S.^2);
         P(isnan(P)) = 0;
         P(~P) = 0;                            %p_ind=0 if no (out)neighbors

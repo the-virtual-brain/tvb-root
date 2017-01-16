@@ -1,5 +1,5 @@
 function D = agreement(ci,buffsz)
-%AGREEMENT      agreement matrix from clusters
+%AGREEMENT      Agreement matrix from clusters
 %
 %   D = AGREEMENT(CI) takes as input a set of vertex partitions CI of
 %   dimensions [vertex x partition]. Each column in CI contains the
@@ -20,7 +20,6 @@ function D = agreement(ci,buffsz)
 %   Outputs:    D,      agreement matrix
 %
 %   Richard Betzel, Indiana University, 2012
-%
 
 %modification history
 %09.24.2012 - added loop for big N that makes the function slower but also

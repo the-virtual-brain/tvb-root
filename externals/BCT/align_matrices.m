@@ -1,5 +1,5 @@
 function [Mreordered,Mindices,cost] = align_matrices(M1,M2,dfun,flag)
-%ALIGN_MATRICES         alignment of two matrices
+%ALIGN_MATRICES         Alignment of two matrices
 %
 %   [Mreordered,Mindices,cost] = align_matrices(M1,M2,dfun,flag)
 %

@@ -1,5 +1,5 @@
 function [J,J_od,J_id,J_bl] = jdegree(CIJ)
-%JDEGREE    Joint degree distribution
+%JDEGREE        Joint degree distribution
 %
 %   [J,J_od,J_id,J_bl] = jdegree(CIJ);
 %

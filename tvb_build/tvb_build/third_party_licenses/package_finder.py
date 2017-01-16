@@ -97,7 +97,7 @@ EXTRA_MODULES = {
     'hdf5': '1.8.15',
     'jit': '2.0.1',
     'd3': '3',
-    'bct': '46',
+    'bct': '2017',
     'python': PYTHON_VERSION,
     'zlib': '1.0',
     'mathjax': '2.0'

@@ -22,11 +22,11 @@ function W = weight_conversion(W, wcm)
 %   distance and betweenness centrality. In a weighted connection network,
 %   higher weights are naturally interpreted as shorter lengths. The
 %   connection-lengths matrix here is defined as the inverse of the
-%   connection-weights matrix. 
+%   connection-weights matrix.
 %
-%       Autofix removes all Inf and NaN values, remove all self connections 
-%   (sets all weights on the main diagonal to 0), ensures that symmetric matrices 
-%   are exactly symmetric (by correcting for round-off error), and ensures that 
+%       Autofix removes all Inf and NaN values, remove all self connections
+%   (sets all weights on the main diagonal to 0), ensures that symmetric matrices
+%   are exactly symmetric (by correcting for round-off error), and ensures that
 %   binary matrices are exactly binary (by correcting for round-off error).
 %
 %   Inputs: W           binary or weighted connectivity matrix
@@ -45,40 +45,41 @@ function W = weight_conversion(W, wcm)
 %   Modification History:
 %   Sep 2012: Original
 %   Jan 2015: Added autofix feature.
+%   Jan 2017: Corrected bug in autofix (thanks to Jeff Spielberg)
 
 switch wcm
     case 'binarize'
         W=double(W~=0);         % binarize
     case 'normalize'
-        W=W./max(abs(W(:)));    % scale by maximal weight
+        W=W./max(abs(W(:)));    % rescale by maximal weight
     case 'lengths'
-        E=find(W); 
+        E=find(W);
         W(E)=1./W(E);           % invert weights
     case 'autofix'
         % clear diagonal
         n = length(W);
         W(1:n+1:end)=0;
-
+        
         % remove Infs and NaNs
         idx = isnan(W) | isinf(W);
-        if any(any(idx));
+        if any(any(idx))
             W(idx)=0;
         end
-
+        
         % ensure exact binariness
         U = unique(W);
-        if numel(U)>1
-            idx_0 = abs(U)<1e-10;
-            idx_1 = abs(U-1)<1e-10;
-            if all(idx_0 | idx_1)
+        if nnz(U) > 1
+            idx_0 = abs(W  ) < 1e-10;
+            idx_1 = abs(W-1) < 1e-10;
+            if all(all(idx_0 | idx_1))
                 W(idx_0)=0;
                 W(idx_1)=1;
             end
         end
-
+        
         % ensure exact symmetry
-        if ~isequal(W,W.');
-            if max(max(abs(W-W.'))) < 1e-10;            
+        if ~isequal(W,W.')
+            if max(max(abs(W-W.'))) < 1e-10
                 W=(W+W).'/2;
             end
         end

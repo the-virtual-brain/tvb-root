@@ -1,5 +1,5 @@
 function A = randomize_graph_partial_und(A,B,maxswap)
-%RANDOMIZE_GRAPH_PARTIAL_UND    swap edges/preserve degree sequence
+% RANDOMIZE_GRAPH_PARTIAL_UND    Swap edges with preserved degree sequence
 %
 %   A = RANDOMIZE_GRAPH_PARTIAL_UND(A,B,MAXSWAP) takes adjacency matrices A 
 %   and B and attempts to randomize matrix A by performing MAXSWAP 

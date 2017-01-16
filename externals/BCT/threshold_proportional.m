@@ -27,7 +27,7 @@ function W = threshold_proportional(W, p)
 n=size(W,1);                                %number of nodes
 W(1:n+1:end)=0;                             %clear diagonal
 
-if max(max(abs(W-W.'))) < 1e-10;            %if symmetric matrix
+if max(max(abs(W-W.'))) < 1e-10             %if symmetric matrix
     W=triu(W);                              %ensure symmetry is preserved
     ud=2;                                   %halve number of removed links
 else

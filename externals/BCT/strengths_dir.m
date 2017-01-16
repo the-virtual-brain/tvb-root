@@ -1,5 +1,5 @@
 function [is,os,str] = strengths_dir(CIJ)
-%STRENGTHS_DIR      Instrength and outstrength
+%STRENGTHS_DIR      In-strength and out-strength
 %
 %   [is,os,str] = strengths_dir(CIJ);
 %

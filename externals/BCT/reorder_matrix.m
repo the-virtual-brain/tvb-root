@@ -1,5 +1,5 @@
 function [Mreordered,Mindices,cost] = reorder_matrix(M1,cost,flag)
-%REORDER_MATRIX         matrix reordering for visualization
+% REORDER_MATRIX         Matrix reordering for visualization
 %
 %   [Mreordered,Mindices,cost] = reorder_matrix(M1,cost,flag)
 %

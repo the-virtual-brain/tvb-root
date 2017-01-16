@@ -1,5 +1,5 @@
 function   r = assortativity_wei(CIJ,flag)
-%ASSORTATIVITY      Assortativity coefficient
+% ASSORTATIVITY_WEI      Assortativity coefficient
 %
 %   r = assortativity_wei(CIJ,flag);
 %

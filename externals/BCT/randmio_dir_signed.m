@@ -1,6 +1,6 @@
 function [R,eff] = randmio_dir_signed(W, ITER)
-%RANDMIO_DIR    Random directed graph with preserved signed
-%               in/out degree distribution
+% RANDMIO_DIR_SIGNED        Random directed graph with preserved signed
+%                           in/out degree distribution
 %
 %   R       = randmio_dir(W, ITER);
 %   [R,eff] = randmio_dir(W, ITER);
