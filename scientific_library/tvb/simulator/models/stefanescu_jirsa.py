@@ -140,14 +140,14 @@ class ReducedSetFitzHughNagumo(ReducedSetBase):
         label=":math:`K_{12}`",
         default=numpy.array([0.15]),
         range=basic.Range(lo=0.0, hi=1.0, step=0.01),
-        doc="""Internal coupling, excitatory to inhibitory""",
+        doc="""Internal coupling, inhibitory to excitatory""",
         order=5)
 
     K21 = arrays.FloatArray(
         label=":math:`K_{21}`",
         default=numpy.array([0.15]),
         range=basic.Range(lo=0.0, hi=1.0, step=0.01),
-        doc="""Internal coupling, inhibitory to excitatory""",
+        doc="""Internal coupling, excitatory to inhibitory""",
         order=6)
 
     sigma = arrays.FloatArray(
@@ -454,14 +454,14 @@ class ReducedSetHindmarshRose(ReducedSetBase):
         label=":math:`K_{12}`",
         default=numpy.array([0.1]),
         range=basic.Range(lo=0.0, hi=1.0, step=0.01),
-        doc="""Internal coupling, excitatory to inhibitory""",
+        doc="""Internal coupling, inhibitory to excitatory""",
         order=9)
 
     K21 = arrays.FloatArray(
         label=":math:`K_{21}`",
         default=numpy.array([0.15]),
         range=basic.Range(lo=0.0, hi=1.0, step=0.01),
-        doc="""Internal coupling, inhibitory to excitatory""",
+        doc="""Internal coupling, excitatory to inhibitory""",
         order=10)
 
     sigma = arrays.FloatArray(

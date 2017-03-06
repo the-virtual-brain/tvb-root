@@ -159,10 +159,18 @@ class SparseCoupling(Coupling):
     def __call__(self, step, history):
         h = history # type: SparseHistory
         x_i, x_j = h.query_sparse(step)
+        assert x_i.shape == (h.n_cvar, h.n_node, h.n_mode)
+        assert x_j.shape == (h.n_cvar, h.n_nnzw, h.n_mode)
+        #                              ^ from (columns)
+
         sum = numpy.zeros_like(x_i)
-        x_i = x_i[:, h.nnz_col_el_idx]
+        x_i = x_i[:, h.nnz_row_el_idx]
+        assert x_i.shape == (h.n_cvar, h.n_nnzw, h.n_mode)
+        #                              ^ to (rows)
+
         pre = self.pre(x_i, x_j)
         assert pre.shape == (h.n_cvar, h.n_nnzw, h.n_mode)
+
         weights_col = h.nnz_weights.reshape((h.n_nnzw, 1))
         lri, nzr = self._lri(h.nnz_row_el_idx)
         sum[:, nzr] = numpy.add.reduceat(weights_col * pre, lri, axis=1)

@@ -55,32 +55,41 @@ class CouplingTest(BaseTestCase):
         
     """
     weights = numpy.array([[0, 1], [1, 0]])
-    weights = weights[:, numpy.newaxis, :, numpy.newaxis]  # nodes, ncvar, nodes, modes
 
     state_1sv = numpy.array([[[1], [2]]])               # (state_variables, nodes, modes)
     state_2sv = numpy.array([[[1], [2]], [[1], [2]]])
-    delayed_state_1sv = numpy.ones((2, 1, 2, 1))        # nodes, state_variables, nodes, modes
-    delayed_state_2sv = numpy.ones((2, 2, 2, 1))
 
-    weights2d = weights[:, 0, :, 0]
-    history_1sv = SparseHistory(weights2d, weights2d*0, numpy.r_[0], 1)
-    history_2sv = SparseHistory(weights2d, weights2d*0, numpy.r_[0, 1], 1)
+    history_1sv = SparseHistory(weights, weights*0, numpy.r_[0], 1)
+    history_2sv = SparseHistory(weights, weights*0, numpy.r_[0, 1], 1)
 
+    history_1sv.update(0, state_1sv)
+    history_2sv.update(0, state_2sv)
 
     def _apply_coupling(self, k):
         k.configure()
-        k(0, self.history_1sv)
+        return k(0, self.history_1sv)
 
 
     def _apply_coupling_2sv(self, k):
         k.configure()
-        k(0, self.history_2sv)
+        return k(0, self.history_2sv)
 
 
     def test_difference_coupling(self):
         k = coupling.Difference()
         self.assertEqual(k.a, 0.1)
-        self._apply_coupling(k)
+
+        result = self._apply_coupling(k)
+        self.assertEqual(result.shape, (1, 2, 1))           # One state variable, two nodes, one mode
+
+        result = result[0, :, 0].tolist()
+        expected_result = [
+            k.a*(  self.weights[0, 0] * (self.state_1sv[0, 0, 0] - self.state_1sv[0, 0, 0])
+                 + self.weights[0, 1] * (self.state_1sv[0, 1, 0] - self.state_1sv[0, 0, 0])),
+            k.a*(  self.weights[1, 0] * (self.state_1sv[0, 0, 0] - self.state_1sv[0, 1, 0])
+                 + self.weights[1, 1] * (self.state_1sv[0, 1, 0] - self.state_1sv[0, 1, 0]))]
+
+        self.assertAlmostEqual(result, expected_result)
 
 
     def test_hyperbolic_coupling(self):
