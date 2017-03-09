@@ -37,7 +37,7 @@ This module contains basic reading mechanism for default DataType fields.
 try:
     H5PY_SUPPORT = True
     import h5py as hdf5
-except Exception:
+except ImportError:
     H5PY_SUPPORT = False
 
 import os
@@ -50,7 +50,7 @@ from tvb.basic.logger.builder import get_logger
 
 
 
-class H5Reader():
+class H5Reader(object):
     """
     Read one or many numpy arrays from a H5 file.
     """
@@ -81,7 +81,7 @@ class H5Reader():
 
 
 
-class FileReader():
+class FileReader(object):
     """
     Read one or multiple numpy arrays from a text/bz2 file.
     """
@@ -107,7 +107,7 @@ class FileReader():
             if self.file_path.endswith('.txt') or self.file_path.endswith('.bz2'):
                 return self._read_text(self.file_stream, dtype, skip_rows, use_cols)
 
-            if self.file_path.endswith('.npz'):
+            if self.file_path.endswith('.npz') or self.file_path.endswith(".npy"):
                 return numpy.load(self.file_stream)
 
             # Try to read Matlab format:
@@ -134,8 +134,24 @@ class FileReader():
             return matlab_data[matlab_data_name]
 
 
+    def read_gain_from_brainstorm(self):
 
-class ZipReader():
+        if not self.file_path.endswith('.mat'):
+            raise ReaderException("Brainstorm format is expected in a Matlab file not %s" % self.file_path)
+
+        mat = scipy_io.loadmat(self.file_stream)
+        expected_fields = ['Gain', 'GridLoc', 'GridOrient']
+
+        for field in expected_fields:
+            if field not in mat.keys():
+                raise ReaderException("Brainstorm format is expecting field %s" % field)
+
+        gain, loc, ori = (mat[field] for field in expected_fields)
+        return (gain.reshape((gain.shape[0], -1, 3)) * ori).sum(axis=-1)
+
+
+
+class ZipReader(object):
     """
     Read one or many numpy arrays from a ZIP archive.
     """
@@ -203,8 +219,8 @@ def try_get_absolute_path(relative_module, file_suffix):
             result_full_path = os.path.join(os.path.dirname(module_import.__file__), file_suffix)
 
         except ImportError:
-            LOG = get_logger(__name__)
-            LOG.exception("Could not import tvb_data Python module for default data-set!")
+            logger = get_logger(__name__)
+            logger.exception("Could not import tvb_data Python module for default data-set!")
 
     return result_full_path
 

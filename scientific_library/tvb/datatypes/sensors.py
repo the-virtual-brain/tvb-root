@@ -63,7 +63,7 @@ class Sensors(sensors_scientific.SensorsScientific, sensors_framework.SensorsFra
     """
 
     @classmethod
-    def from_file(cls, source_file="eeg_unitvector_62.txt.bz2", instance=None):
+    def from_file(cls, source_file="eeg_brainstorm_65.txt", instance=None):
 
         if instance is None:
             result = cls()
