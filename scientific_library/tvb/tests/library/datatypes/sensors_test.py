@@ -55,11 +55,11 @@ class SensorsTest(BaseTestCase):
 
         summary_info = dt.summary_info
         self.assertEqual(summary_info['Sensor type'], '')
-        self.assertEqual(summary_info['Number of Sensors'], 62)
+        self.assertEqual(summary_info['Number of Sensors'], 65)
         self.assertFalse(dt.has_orientation)
-        self.assertEqual(dt.labels.shape, (62,))
-        self.assertEqual(dt.locations.shape, (62, 3))
-        self.assertEqual(dt.number_of_sensors, 62)
+        self.assertEqual(dt.labels.shape, (65,))
+        self.assertEqual(dt.locations.shape, (65, 3))
+        self.assertEqual(dt.number_of_sensors, 65)
         self.assertEqual(dt.orientations.shape, (0,))
         self.assertEqual(dt.sensors_type, '')
 
@@ -67,7 +67,7 @@ class SensorsTest(BaseTestCase):
         surf = SkinAir(load_default=True)
         surf.configure()
         mapping = dt.sensors_to_surface(surf)
-        self.assertEqual(mapping.shape, (62, 3))
+        self.assertEqual(mapping.shape, (65, 3))
 
         ## Mapping on a surface with holes should fail
         dummy_surf = SkinAir()
@@ -86,9 +86,9 @@ class SensorsTest(BaseTestCase):
         dt.configure()
         self.assertTrue(isinstance(dt, sensors.SensorsEEG))
         self.assertFalse(dt.has_orientation)
-        self.assertEqual(dt.labels.shape, (62,))
-        self.assertEqual(dt.locations.shape, (62, 3))
-        self.assertEqual(dt.number_of_sensors, 62)
+        self.assertEqual(dt.labels.shape, (65,))
+        self.assertEqual(dt.locations.shape, (65, 3))
+        self.assertEqual(dt.number_of_sensors, 65)
         self.assertEqual(dt.orientations.shape, (0,))
         self.assertEqual(dt.sensors_type, EEG_POLYMORPHIC_IDENTITY)
 
