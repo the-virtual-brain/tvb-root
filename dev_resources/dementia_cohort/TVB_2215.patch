@@ -1,0 +1,48 @@
+Index: framework_tvb/tvb/interfaces/web/templates/genshi/visualizers/commons/scripts/virtualBrain.js
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+--- framework_tvb/tvb/interfaces/web/templates/genshi/visualizers/commons/scripts/virtualBrain.js	(revision 8175)
++++ framework_tvb/tvb/interfaces/web/templates/genshi/visualizers/commons/scripts/virtualBrain.js	(revision )
+@@ -278,7 +278,7 @@
+     if (parseFloat(minMeasure) < parseFloat(maxMeasure)) {
+         const brainLegendDiv = document.getElementById('brainLegendDiv');
+         ColSch_updateLegendLabels(brainLegendDiv, minMeasure, maxMeasure, "100%");
+-        VS_showLegend = true;
++        //VS_showLegend = true;
+     }
+ 
+     for(let i = 0; i < NO_OF_MEASURE_POINTS; i++){
+Index: framework_tvb/tvb/interfaces/web/static/js/canvas2image.js
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+--- framework_tvb/tvb/interfaces/web/static/js/canvas2image.js	(revision 8175)
++++ framework_tvb/tvb/interfaces/web/static/js/canvas2image.js	(revision )
+@@ -19,7 +19,7 @@
+ 
+ /* globals displayMessage */
+ 
+-var C2I_EXPORT_HEIGHT = 1080;
++var C2I_EXPORT_HEIGHT = 100;
+ 
+ /**
+  * Function called on any visualizer, to export canvases into image/svg downloadable files..
+Index: framework_tvb/tvb/core/services/figure_service.py
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+--- framework_tvb/tvb/core/services/figure_service.py	(revision 8175)
++++ framework_tvb/tvb/core/services/figure_service.py	(revision )
+@@ -73,7 +73,7 @@
+         final_image = Image.open(StringIO(img_data))                    # place it in a PIL stream
+ 
+         branding_bar = Image.open(FigureService._BRANDING_BAR_PNG)      # place the branding bar over
+-        final_image.paste(branding_bar, (0, final_image.size[1] - branding_bar.size[1]), branding_bar)
++        #final_image.paste(branding_bar, (0, final_image.size[1] - branding_bar.size[1]), branding_bar)
+ 
+         final_image.save(store_path)                                    # store to disk as PNG
+ 
