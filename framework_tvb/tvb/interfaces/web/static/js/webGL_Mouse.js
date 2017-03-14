@@ -128,9 +128,9 @@ function GL_handleKeyDown(event) {
         GL_trackBallMatrix = createRotationMatrix(270, [1, 0, 0]).x(createRotationMatrix(90, [0, 0, 1]));
     }else if (event.keyCode === 38) {
         // Up cursor key
-        GL_trackBallMatrix = createRotationMatrix(180, [1, 0, 0]);
+        GL_trackBallMatrix = createRotationMatrix(270, [1, 0, 0]);
     }else if (event.keyCode === 40) {
-        GL_trackBallMatrix = Matrix.I(4);
+        GL_trackBallMatrix = createRotationMatrix(270, [1, 0, 0]).x(createRotationMatrix(180, [0, 0, 1]));
     }else{
         processed = false;
     }
