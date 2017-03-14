@@ -98,7 +98,6 @@ ColSch.schemes = {
     YlGnBu:   new ColorScheme(ColSch.DarkTheme, 15),
     RdPu:     new ColorScheme(ColSch.DarkTheme, 16),
     Grays:    new ColorScheme(ColSch.DarkTheme, 17),
-    transparentRdYlBu: new ColorScheme(ColSch.TransparentTheme, 13),
 
     matteo:    new ColorScheme(ColSch.DarkTheme, 23),
     cubehelix: new ColorScheme(ColSch.DarkTheme, 24),
@@ -106,6 +105,9 @@ ColSch.schemes = {
 
     transparentJet:    new ColorScheme(ColSch.TransparentTheme, 1),
     transparentTVB:    new ColorScheme(ColSch.TransparentTheme, 3),
+    transparentRdYlBu: new ColorScheme(ColSch.TransparentTheme, 13),
+    transparentSparse: new ColorScheme(ColSch.TransparentTheme, 19),
+    transparentMatteo: new ColorScheme(ColSch.TransparentTheme, 20),
     transparentTermal: new ColorScheme(ColSch.TransparentTheme, 25)
 };
 
