@@ -31,7 +31,7 @@
 
 """
 We want tvb package to extend over at least 3 folders:
-web and desktop interfaces, and scientific-library packages.
+web and command interfaces, and scientific-library packages.
 """
 
 from pkgutil import extend_path

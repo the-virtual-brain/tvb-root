@@ -66,7 +66,6 @@ RUN_TEST_PROFILES = [TvbProfile.TEST_POSTGRES_PROFILE, TvbProfile.TEST_SQLITE_PR
 
 SCRIPT_FOR_CONSOLE = 'tvb_bin.run_IDLE'
 SCRIPT_FOR_WEB = 'tvb.interfaces.web.run'
-SCRIPT_FOR_DESKTOP = 'tvb.interfaces.desktop.run'
 
 CONSOLE_PROFILE_SET = ('from tvb.basic.profile import TvbProfile; '
                        'TvbProfile.set_profile("%s");')
@@ -219,30 +218,6 @@ def execute_start_web(profile, reset):
 
 
 
-def execute_start_desktop(profile, reset):
-    """
-    Fire TVB with Desktop interface.
-    :return: reference towards tvb new started process
-    """
-    pid_file_reference = open(TVB_PID_FILE, 'a')
-    desktop_args_list = [PYTHON_EXE_PATH, '-m', SCRIPT_FOR_DESKTOP, profile, 'tvb.config']
-
-    if reset:
-        desktop_args_list.append(SUB_PARAMETER_RESET)
-        pid_file_reference.close()
-        execute_clean()
-        if not os.path.exists(TvbProfile.current.TVB_STORAGE):
-            os.mkdir(TvbProfile.current.TVB_STORAGE)
-        pid_file_reference = open(TVB_PID_FILE, 'a')
-
-    tvb_process = subprocess.Popen(desktop_args_list, shell=False)
-
-    pid_file_reference.write(str(tvb_process.pid) + "\n")
-    pid_file_reference.close()
-    return tvb_process
-
-
-
 def execute_start_console(console_profile_name, headless):
     """
     :param console_profile_name: one of the strings in RUN_CONSOLE_PROFILES
@@ -332,11 +307,6 @@ if __name__ == "__main__":
             if execute_stop():
                 time.sleep(2)
             TVB_PROCESS = execute_start_web(ARGS.profile, ARGS.reset)
-            wait_for_tvb_process(TVB_PROCESS)
-
-        elif ARGS.profile == TvbProfile.DESKTOP_PROFILE:
-            execute_stop()
-            TVB_PROCESS = execute_start_desktop(ARGS.profile, ARGS.reset)
             wait_for_tvb_process(TVB_PROCESS)
 
         else:
