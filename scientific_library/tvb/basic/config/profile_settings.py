@@ -77,7 +77,7 @@ class BaseSettingsProfile(object):
         if self.env.is_development():
             self.EXTERNALS_FOLDER_PARENT = os.path.dirname(self.EXTERNALS_FOLDER_PARENT)
 
-        #The path to the matlab executable (if existent). Otherwise just return an empty string.
+        # The path to the matlab executable (if existent). Otherwise just return an empty string.
         value = self.manager.get_attribute(stored.KEY_MATLAB_EXECUTABLE, '', str) or ''
         if value == 'None':
             value = ''
@@ -89,7 +89,7 @@ class BaseSettingsProfile(object):
         self.MAX_RANGE_NUMBER = self.manager.get_attribute(stored.KEY_MAX_RANGE_NR, 2000, int)
         # Max number of threads in the pool of ops running in parallel. TO be correlated with CPU cores
         self.MAX_THREADS_NUMBER = self.manager.get_attribute(stored.KEY_MAX_THREAD_NR, 4, int)
-        #The maximum disk space that can be used by one single user, in KB.
+        # The maximum disk space that can be used by one single user, in KB.
         self.MAX_DISK_SPACE = self.manager.get_attribute(stored.KEY_MAX_DISK_SPACE_USR, 5 * 1024 * 1024, int)
 
         ## Configure Traits
@@ -184,7 +184,7 @@ class BaseSettingsProfile(object):
             # 'python -m ...' will consider the current folder as the first to search in.
             sys.path = os.environ.get("PYTHONPATH", "").split(os.pathsep) + sys.path
             for key in sys.modules.keys():
-                if (key.startswith("tvb") and sys.modules[key] and
+                if (key.startswith("tvb.") and sys.modules[key] and not 'lab' in key and
                         not key.startswith("tvb.basic.profile") and not 'profile_settings' in key):
                     try:
                         reload(sys.modules[key])
@@ -237,5 +237,8 @@ class TestLibraryProfile(LibrarySettingsProfile):
 
 
 class MATLABLibraryProfile(LibrarySettingsProfile):
-    "Profile use library use from MATLAB."
+    """
+    Profile use library use from MATLAB.
+    """
+
     LOGGER_CONFIG_FILE_NAME = None
