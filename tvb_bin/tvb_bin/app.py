@@ -64,7 +64,6 @@ if 'py2app' in sys.argv:
 RUN_CONSOLE_PROFILES = [TvbProfile.LIBRARY_PROFILE, TvbProfile.COMMAND_PROFILE]
 RUN_TEST_PROFILES = [TvbProfile.TEST_POSTGRES_PROFILE, TvbProfile.TEST_SQLITE_PROFILE, TvbProfile.TEST_LIBRARY_PROFILE]
 
-SCRIPT_FOR_CONSOLE = 'tvb_bin.run_IDLE'
 SCRIPT_FOR_WEB = 'tvb.interfaces.web.run'
 
 CONSOLE_PROFILE_SET = ('from tvb.basic.profile import TvbProfile; '
@@ -89,7 +88,6 @@ def parse_commandline():
     add_profile_arg(start, set(TvbProfile.ALL) - set(RUN_TEST_PROFILES))
 
     start.add_argument('-reset', action='store_true', help='reset database')
-    start.add_argument('-headless', action='store_true', help='launch python instead of IDLE when scripting profiles')
 
     stop = subparsers.add_parser('stop', help='stop all TVB processes')
     # all sub-commands are expected to have a profile not necessarily entered by the user.
@@ -218,28 +216,24 @@ def execute_start_web(profile, reset):
 
 
 
-def execute_start_console(console_profile_name, headless):
+def execute_start_console(console_profile_name):
     """
     :param console_profile_name: one of the strings in RUN_CONSOLE_PROFILES
-    :param headless: boolean
     """
     pid_file_reference = open(TVB_PID_FILE, 'a')
     console_profile_set = CONSOLE_PROFILE_SET % console_profile_name
-    if headless:
-        # Launch a python interactive shell.
-        # We use a new process to make sure that the initialization of TVB is straightforward and
-        # not influenced by this launcher.
-        tvb_process = subprocess.Popen([PYTHON_EXE_PATH, '-i', '-c', console_profile_set])
-    else:
-        tvb_process = subprocess.Popen([PYTHON_EXE_PATH, '-m', SCRIPT_FOR_CONSOLE, '-c', console_profile_set])
+
+    # Launch a python interactive shell.
+    # We use a new process to make sure that the initialization of TVB is straightforward and
+    # not influenced by this launcher.
+    tvb_process = subprocess.Popen([PYTHON_EXE_PATH, '-i', '-c', console_profile_set])
 
     pid_file_reference.write(str(tvb_process.pid) + "\n")
     pid_file_reference.close()
 
-    if headless:
-        # The child inherits the stdin stdout descriptors of the launcher so we keep the launcher alive
-        # by calling wait. It would be good if this could be avoided.
-        tvb_process.wait()
+    # The child inherits the stdin stdout descriptors of the launcher so we keep the launcher alive
+    # by calling wait. It would be good if this could be avoided.
+    tvb_process.wait()
 
 
 
@@ -301,7 +295,7 @@ if __name__ == "__main__":
     if ARGS.subcommand == 'start':
         # Start one of TVB interfaces
         if ARGS.profile in RUN_CONSOLE_PROFILES:
-            execute_start_console(ARGS.profile, ARGS.headless)
+            execute_start_console(ARGS.profile)
 
         elif ARGS.profile == TvbProfile.WEB_PROFILE:
             if execute_stop():
