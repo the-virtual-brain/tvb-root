@@ -38,8 +38,7 @@ from tvb.adapters.visualizers.surface_view import prepare_shell_surface_urls
 from tvb.core.adapters.abcdisplayer import ABCDisplayer
 from tvb.core.adapters.exceptions import LaunchException
 from tvb.core.entities.storage import dao
-from tvb.datatypes.sensors_data import SensorsData
-from tvb.datatypes.sensors import SensorsInternal, SensorsEEG, SensorsMEG
+from tvb.datatypes.sensors import Sensors, SensorsInternal, SensorsEEG, SensorsMEG
 from tvb.datatypes.surfaces import Surface
 from tvb.datatypes.surfaces import EEGCap, CorticalSurface
 
@@ -103,7 +102,7 @@ class SensorsViewer(ABCDisplayer):
 
     def get_input_tree(self):
 
-        return [{'name': 'sensors', 'label': 'Sensors', 'type': SensorsData, 'required': True,
+        return [{'name': 'sensors', 'label': 'Sensors', 'type': Sensors, 'required': True,
                  'description': 'Internals sensors to view'},
 
                 {'name': 'projection_surface', 'label': 'Projection Surface', 'type': Surface, 'required': False,
@@ -192,4 +191,3 @@ class SensorsViewer(ABCDisplayer):
 
     def get_required_memory_size(self):
         return -1
-

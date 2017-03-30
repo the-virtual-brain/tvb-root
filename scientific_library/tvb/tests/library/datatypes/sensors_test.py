@@ -39,7 +39,7 @@ import numpy
 import unittest
 from tvb.datatypes import sensors
 from tvb.datatypes.surfaces import SkinAir
-from tvb.datatypes.sensors_data import INTERNAL_POLYMORPHIC_IDENTITY, MEG_POLYMORPHIC_IDENTITY, EEG_POLYMORPHIC_IDENTITY
+from tvb.datatypes.sensors import INTERNAL_POLYMORPHIC_IDENTITY, MEG_POLYMORPHIC_IDENTITY, EEG_POLYMORPHIC_IDENTITY
 from tvb.tests.library.base_testcase import BaseTestCase
 
 
@@ -129,7 +129,7 @@ def suite():
 
 
 if __name__ == "__main__":
-    #So you can run tests from this package individually.
+    # So you can run tests from this package individually.
     TEST_RUNNER = unittest.TextTestRunner()
     TEST_SUITE = suite()
-    TEST_RUNNER.run(TEST_SUITE) 
+    TEST_RUNNER.run(TEST_SUITE)

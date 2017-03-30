@@ -38,8 +38,7 @@ from tvb.adapters.uploaders.abcuploader import ABCUploader
 from tvb.basic.logger.builder import get_logger
 from tvb.core.adapters.exceptions import LaunchException
 from tvb.datatypes.surfaces import CorticalSurface
-from tvb.datatypes.sensors_data import SensorsData
-from tvb.datatypes.sensors import SensorsEEG, SensorsMEG
+from tvb.datatypes.sensors import Sensors, SensorsEEG, SensorsMEG
 from tvb.datatypes.projections import ProjectionSurfaceEEG, ProjectionSurfaceMEG, ProjectionSurfaceSEEG
 
 
@@ -63,7 +62,7 @@ class ProjectionMatrixSurfaceEEGImporter(ABCUploader):
     Upload ProjectionMatrix Cortical Surface -> EEG/MEG/SEEG Sensors from a MAT or NPY file.
     """
 
-    _ui_name = "Gain Matrix for s/M/EEG Sensors"
+    _ui_name = "Gain Matrix for Sensors"
     _ui_description = "Upload a Projection Matrix between a Brain Cortical Surface and EEG/MEG Sensors."
     logger = get_logger(__name__)
 
@@ -86,7 +85,7 @@ class ProjectionMatrixSurfaceEEGImporter(ABCUploader):
                  'description': 'The Brain Surface used by the uploaded projection matrix.'},
 
                 {'name': 'sensors', 'label': 'Sensors',
-                 'type': SensorsData, 'required': True, 'datatype': True,
+                 'type': Sensors, 'required': True, 'datatype': True,
                  'description': 'The Sensors used in for current projection.'}
                 ]
 
@@ -156,7 +155,7 @@ class BrainstormGainMatrixImporter(ABCUploader):
 
     """
 
-    _ui_name = "Gain Matrix for s/M/EEG Sensors from Brainstorm"
+    _ui_name = "Gain Matrix Brainstorm"
     _ui_description = "Upload a gain matrix from Brainstorm for sEEG, EEG or MEG sensors."
 
 
@@ -171,7 +170,7 @@ class BrainstormGainMatrixImporter(ABCUploader):
              'required': True, 'datatype': True,
              'description': 'Cortical surface for which this gain matrix was '
                             'computed.'},
-            {'name': 'sensors', 'label': 'Sensors', 'type': SensorsData,
+            {'name': 'sensors', 'label': 'Sensors', 'type': Sensors,
              'required': True, 'datatype': True,
              'description': 'Sensors for which this gain matrix was computed'}]
 
