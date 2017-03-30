@@ -43,7 +43,7 @@ class ConnectivityMeasureImporter(ABCUploader):
     """
     This imports a searies of conectivity measures from a .mat file
     """
-    _ui_name = "Connectivity measure"
+    _ui_name = "ConnectivityMeasure"
     _ui_subsection = "connectivity_measure"
     _ui_description = "Import a searies of connectivity measures from a .mat file"
 

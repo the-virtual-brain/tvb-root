@@ -57,7 +57,7 @@ def chunk_iter(iterable, n):
 
 
 class _TrackImporterBase(ABCUploader):
-    _ui_name = "Tracts"
+    _ui_name = "Tracts TRK"
     _ui_subsection = "tracts_importer"
     _ui_description = "Import tracts"
 
@@ -199,7 +199,7 @@ class ZipTxtTractsImporter(_TrackImporterBase):
     """
     This imports tracts from a zip containing txt files. One txt file for a tract.
     """
-    _ui_name = "ZipTxtTracts"
+    _ui_name = "Tracts Zipped Txt"
 
 
     def get_upload_input_tree(self):

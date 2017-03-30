@@ -44,7 +44,7 @@ class NetworkxConnectivityImporter(ABCUploader):
     """
     Import connectivity data stored in the networkx gpickle format
     """
-    _ui_name = "Connectivity networkx gpickle"
+    _ui_name = "Connectivity Networkx gpickle"
     _ui_subsection = "networkx_importer"
     _ui_description = "Import connectivity data stored in the networkx gpickle format"
 
