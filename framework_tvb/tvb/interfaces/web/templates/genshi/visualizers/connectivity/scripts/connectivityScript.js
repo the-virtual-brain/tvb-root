@@ -4,7 +4,7 @@
  * TheVirtualBrain-Scientific Package (for simulators). See content of the
  * documentation-folder for more details. See also http://www.thevirtualbrain.org
  *
- * (c) 2012-2013, Baycrest Centre for Geriatric Care ("Baycrest")
+ * (c) 2012-2017, Baycrest Centre for Geriatric Care ("Baycrest") and others and others
  *
  * This program is free software; you can redistribute it and/or modify it under 
  * the terms of the GNU General Public License version 2 as published by the Free
@@ -22,21 +22,21 @@
 /**
  * WebGL methods "inheriting" from webGL_xx.js in static/js.
  */
-var CONNECTIVITY_CANVAS_ID = "GLcanvas";
+const CONNECTIVITY_CANVAS_ID = "GLcanvas";
 
 function initShaders() {
     createAndUseShader("shader-fs", "shader-vs");
     SHADING_Context.connectivity_init(GL_shaderProgram);
 }
 
-var COLORS = {
-    WHITE:  [1.0, 1.0, 1.0, 1.0],
-    RED:    [1.0, 0.0, 0.0, 1.0],
-    BLUE:   [0.0, 0.0, 1.0, 1.0],
+const COLORS = {
+    WHITE: [1.0, 1.0, 1.0, 1.0],
+    RED: [1.0, 0.0, 0.0, 1.0],
+    BLUE: [0.0, 0.0, 1.0, 1.0],
     YELLOW: [1.0, 1.0, 0.0, 1.0],
-    GREEN:  [0.0, 1.0, 0.0, 1.0],
-    GRAY:   [0.5, 0.5, 0.5, 1.0],
-    BLACK:  [0.1, 0.1, 0.1, 1.0]
+    GREEN: [0.0, 1.0, 0.0, 1.0],
+    GRAY: [0.5, 0.5, 0.5, 1.0],
+    BLACK: [0.1, 0.1, 0.1, 1.0]
 };
 
 // the number of the points that were read from the 'position.txt' file (no of points from the connectivity matrix)
@@ -135,15 +135,14 @@ function displayNameForPickedNode() {
     }
 }
 
-var linesBuffer;
+let linesBuffer;
 
 function initBuffers() {
-    var fakeNormal_1 = [0, 0, 1];
+    const fakeNormal_1 = [0, 0, 1];
+    let points = [];
+    let normals = [];
 
-    var points = [];
-    var normals = [];
-
-    for (var i = 0; i < NO_POSITIONS; i++) {
+    for (let i = 0; i < NO_POSITIONS; i++) {
         points = points.concat(GVAR_positionsPoints[i]);
         normals = normals.concat(fakeNormal_1);
         lineColors = lineColors.concat(COLORS.WHITE);
@@ -173,8 +172,8 @@ function initBuffers() {
 
 function displayPoints() {
     gl.uniform1i(GL_shaderProgram.useVertexColors, false);
-    for (var i = 0; i < NO_POSITIONS; i++) {
-        var currentBuffers;
+    for (let i = 0; i < NO_POSITIONS; i++) {
+        let currentBuffers;
         if (showMetricDetails) {
             currentBuffers = positionsBuffers_3D[i];
         } else {
@@ -185,7 +184,7 @@ function displayPoints() {
 
         if (colorsWeights) {
             // We have some color weights defined (eg. connectivity viewer)
-            var color = getGradientColor(colorsWeights[i], parseFloat($('#colorMinId').val()), parseFloat($('#colorMaxId').val()));
+            const color = getGradientColor(colorsWeights[i], parseFloat($('#colorMinId').val()), parseFloat($('#colorMaxId').val()));
             gl.uniform4f(GL_shaderProgram.materialColor, color[0], color[1], color[2], 1.0);
         }
 
@@ -271,7 +270,7 @@ function drawScene() {
         mvPushMatrix();
         mvTranslate([GVAR_additionalXTranslationStep, GVAR_additionalYTranslationStep, 0]);
 
-        for (var i = 0; i < NO_POSITIONS; i++){
+        for (let i = 0; i < NO_POSITIONS; i++){
             gl.uniform4fv(GL_shaderProgram.materialColor, GL_colorPickerInitColors[i]);
 
             setMatrixUniforms();
@@ -279,7 +278,7 @@ function drawScene() {
             SHADING_Context.connectivity_draw(GL_shaderProgram, positionsBuffers[i][0], positionsBuffers[i][1],
                 positionsBuffers[i][1], positionsBuffers[i][2], gl.TRIANGLES);
          }
-        var newPicked = GL_getPickedIndex();
+        const newPicked = GL_getPickedIndex();
         if (newPicked != null) {
             CONN_pickedIndex = newPicked;
         }
@@ -297,8 +296,8 @@ function drawScene() {
 function createLinesBuffer(dictOfIndexes) {
     linesBuffer = [];
     if (dictOfIndexes) {
-        for (var width in dictOfIndexes) {
-            var buffer = getElementArrayBuffer(dictOfIndexes[width]);
+        for (let width in dictOfIndexes) {
+            const buffer = getElementArrayBuffer(dictOfIndexes[width]);
             buffer.lineWidth = width;
             linesBuffer.push(buffer);
         }
@@ -307,8 +306,8 @@ function createLinesBuffer(dictOfIndexes) {
 
 
 function computeRay(rayWeight, minWeight, maxWeight) {
-    var minRay = 1;
-    var maxRay = 4;
+    const minRay = 1;
+    const maxRay = 4;
     if (minWeight != maxWeight) {
         return minRay + [(rayWeight - minWeight) / (maxWeight - minWeight)] * (maxRay - minRay);
     }else{
@@ -318,7 +317,7 @@ function computeRay(rayWeight, minWeight, maxWeight) {
 
 
 /*
- * Get the aproximated line width value using a histogram like behaviour.
+ * Get the approximated line width value using a histogram like behaviour.
  */
 function CONN_getLineWidthValue(weightsValue) {
     var minWeights = GVAR_interestAreaVariables[1].min_val;
