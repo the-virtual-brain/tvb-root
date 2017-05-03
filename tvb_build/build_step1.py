@@ -53,7 +53,7 @@ import tvb_data
 BIN_FOLDER = os.path.dirname(tvb_bin.__file__)
 TVB_ROOT = os.path.dirname(os.path.dirname(BIN_FOLDER))
 FW_FOLDER = join(TVB_ROOT, 'framework_tvb')
-LICENSE_PATH = join(FW_FOLDER, 'LICENSE_TVB.txt')
+LICENSE_PATH = join(FW_FOLDER, 'LICENSE')
 RELEASE_NOTES_PATH = join(TVB_ROOT, 'tvb_documentation', 'RELEASE_NOTES')
 DATA_SRC_FOLDER = os.path.dirname(tvb_data.__file__)
 DEMOS_MATLAB_FOLDER = join(TVB_ROOT, 'matlab')
