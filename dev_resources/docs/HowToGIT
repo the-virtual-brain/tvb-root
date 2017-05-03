@@ -1,15 +1,15 @@
 ## GIT URLS
 #   https://github.com/the-virtual-brain/tvb-framework.git
 #   https://github.com/the-virtual-brain/tvb-library.git
-#   https://github.com/the-virtual-brain/tvb-geodesic=.git
+#   https://github.com/the-virtual-brain/tvb-geodesic.git
 #   https://github.com/the-virtual-brain/tvb-docs.git
 
 ## SVN URLS
 #   https://repo.thevirtualbrain.org/svn/tvb/trunk/ --trunk=framework_tvb
 #   https://repo.thevirtualbrain.org/svn/tvb/trunk/ --trunk=scientific_library
 #   https://repo.thevirtualbrain.org/svn/tvb/trunk/externals/ --trunk=geodesic_distance
-#   https://repo.thevirtualbrain.org/svn/tvb/trunk/ --trunk=tvb_documentation
-#   https://repo.thevirtualbrain.org/svn/tvb/trunk/ --trunk=tvb_data
+#   https://repo.thevirtualbrain.org/svn/tvb/trunk/ --trunk=tvb_documentation   #sync from revision number 7000
+#   https://repo.thevirtualbrain.org/svn/tvb/trunk/ --trunk=tvb_data            #sync from revision number 7500
 
 
 ## Initialize new 3rd party SYNCHRONIZATION REPO:

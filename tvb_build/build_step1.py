@@ -108,6 +108,11 @@ INCLUDED_INSIDE_DATA = [
     "obj/__init__.py",
     "obj/face_surface.obj",
     "obj/eeg_cap.obj",
+
+    "mouse/allen_2mm/Connectivity.h5",
+    "mouse/allen_2mm/Volume.h5",
+    "mouse/allen_2mm/StructuralMRI.h5",
+    "mouse/allen_2mm/RegionVolumeMapping.h5",
 ]
 
 

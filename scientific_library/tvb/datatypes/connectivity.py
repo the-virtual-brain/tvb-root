@@ -924,10 +924,10 @@ class Connectivity(MappedType):
             result.weights = reader.read_field("weights")
             result.centres = reader.read_field("centres")
             result.region_labels = reader.read_field("region_labels")
-            result.orientations = reader.read_field("orientations")
+            result.orientations = reader.read_optional_field("orientations")
             result.cortical = reader.read_optional_field("cortical")
             result.hemispheres = reader.read_field("hemispheres")
-            result.areas = reader.read_field("areas")
+            result.areas = reader.read_optional_field("areas")
             result.tract_lengths = reader.read_field("tract_lengths")
 
         else:
