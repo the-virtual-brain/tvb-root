@@ -78,7 +78,7 @@ def initialize(introspected_modules, skip_import=False):
         if event_path:
             event_folders.append(event_path)
 
-    # Now remove or mark as removed any unverified Algo-Group, Algo-Category or Portlet
+    # Now remove or mark as removed any unverified Algorithm, Algo-Category or Portlet
     to_invalidate, to_remove = dao.get_non_validated_entities(start_introspection_time)
     for entity in to_invalidate:
         entity.removed = True

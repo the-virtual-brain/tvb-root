@@ -81,7 +81,7 @@ class BaseController(object):
                                           description="Create or view existent Local Connectivity entities.")]
 
         allen_algo = self.flow_service.get_algorithm_by_module_and_class(ALLEN_CREATOR_MODULE, ALLEN_CREATOR_CLASS)
-        if allen_algo:
+        if allen_algo and not allen_algo.removed:
             # Only add the Allen Creator if AllenSDK is installed
             allen_link = self.get_url_adapter(allen_algo.fk_category, allen_algo.id)
             self.connectivity_submenu.append(dict(title="Allen Connectome Builder", link=allen_link,

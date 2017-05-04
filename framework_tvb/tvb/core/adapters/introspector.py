@@ -364,26 +364,6 @@ class Introspector:
 
 
     @staticmethod
-    def __update_references_last_check_timestamp(current_groups, category_key):
-        """
-        For all the algorithms found in the db for category given by category_key, update their
-        'last_introspection_check' timestamp if they are part of current_groups.
-        
-        :param current_groups: a list of algorithm groups that recently passed our validations
-            from the introspection and are still valid
-        :param category_key: the algorithm group category for which we match the algorithms found
-            in the db with those we recently validated on introspection
-        """
-        db_groups = dao.get_groups_by_categories([category_key], filter_removed=False)
-        for group in db_groups:
-            for curr_group in current_groups:
-                if group.module == curr_group.module and group.classname == curr_group.classname:
-                    group.last_introspection_check = datetime.datetime.now()
-                    dao.store_entity(group)
-                    break
-
-
-    @staticmethod
     def __read_module_variable(module_path, variable_name=ALL_VARIABLE):
         """
         Retrieve variable with name 'variable_name' from the given Python module.
