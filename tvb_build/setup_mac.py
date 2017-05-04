@@ -65,15 +65,14 @@ EXCLUDED_DYNAMIC_LIBS = []
 
 # --------------------------- PY2APP specific configurations--------------------------------------------
 
-PY2APP_PACKAGES = ['cherrypy', 'email', 'h5py', 'IPython', "llvmlite", 'migrate', 'minixsv', 'numba',
+PY2APP_PACKAGES = ['cherrypy', 'email', 'h5py', 'IPython', "llvmlite", 'migrate', 'minixsv', 'numba', 'notebook',
                    'numpy', 'PIL', 'pkg_resources', 'PyObjCTools', 'scipy', 'sklearn', 'tables', 'tornado', 'tvb']
 
 PY2APP_INCLUDES = ['apscheduler', 'apscheduler.scheduler', 'cfflib', 'cmath', 'contextlib', 'formencode', 'gdist',
                    'genshi', 'genshi.template', 'genshi.template.loader', 'jinja2', 'jsonschema', 'logging.config',
                    'lxml.etree', 'lxml._elementpath', 'markupsafe', 'matplotlib', 'minixsv', 'mod_pywebsocket',
                    'mplh5canvas.backend_h5canvas', 'mpl_toolkits.axes_grid', 'nibabel',
-                   'notebook.files.handlers', 'notebook.tree.handlers', 'numexpr', 'os', 'psycopg2',
-                   'pygments.formatters.html', 'pygments.lexers.python',
+                   'numexpr', 'os', 'psycopg2', 'pygments.formatters.html', 'pygments.lexers.python',
                    'runpy', 'sqlite3', 'sqlalchemy', 'sqlalchemy.dialects.sqlite', 'sqlalchemy.dialects.postgresql',
                    'simplejson', 'six', 'StringIO', 'xml.dom', 'xml.dom.minidom', 'zlib', 'zmq']
 
