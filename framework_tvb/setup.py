@@ -57,7 +57,7 @@ EXCLUDE_INTROSPECT_FOLDERS = [folder for folder in os.listdir(".")
 setuptools.setup(name="tvb",
                  version=VERSION,
                  packages=setuptools.find_packages(exclude=EXCLUDE_INTROSPECT_FOLDERS),
-                 license="GPL v2",
+                 license="GPL v3",
                  author=TVB_TEAM,
                  author_email='lia.domide@codemart.ro',
                  include_package_data=True,

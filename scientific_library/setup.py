@@ -66,7 +66,7 @@ setuptools.setup(
     packages=setuptools.find_packages(),
     ext_modules=cython_ext,
     cmdclass={"build_ext": build_ext},
-    license='GPL',
+    license="GPL v3",
     author=TVB_TEAM,
     author_email='tvb-users@googlegroups.com',
     include_package_data=True,
