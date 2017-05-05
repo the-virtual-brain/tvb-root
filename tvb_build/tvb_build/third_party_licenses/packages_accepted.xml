@@ -1,5 +1,15 @@
 <?xml version="1.0" ?>
 <tvb>
+    <dependency env="[win,mac,linux]" name="allensdk">
+        <full-name value="AllenSDK"/>
+        <project-home value="https://github.com/AllenInstitute/AllenSDK"/>
+        <version value="0.13.1"/>
+        <usage value="dynamic linking"/>
+        <license value="LICENSE_allen.txt"/>
+        <license-type value="GPLv3_"/>
+        <copyright-notice value="Copyright 2015-2016 Allen Institute for Brain Science"/>
+        <description value="AllenSDK is used for connecting from TVB to Allen DB"/>
+    </dependency>
     <dependency env="[win,linux]" name="anaconda">
         <full-name value="Anaconda"/>
         <project-home value="https://store.continuum.io/cshop/anaconda/"/>
@@ -193,7 +203,7 @@
     <dependency env="[win,linux]" name="decorator">
         <full-name value="Decorator module"/>
         <project-home value="https://github.com/micheles/decorator"/>
-        <version value="3.4.2"/>
+        <version value="4.0.11"/>
         <usage value="dynamic linking"/>
         <license value="LICENSE_decorator.txt"/>
         <license-type value="BSD_"/>
@@ -263,7 +273,7 @@
     <dependency env="[win,mac,linux]" name="h5py">
         <full-name value="H5py"/>
         <project-home value="http://www.h5py.org/"/>
-        <version value="[2.3.0,2.6.0]"/>
+        <version value="2.6.0"/>
         <usage value="dynamic linking"/>
         <license value="LICENSE_h5py.txt"/>
         <license-type value="BSD_ 3rd clause"/>
@@ -273,7 +283,7 @@
     <dependency env="[win,mac,linux]" name="hdf5">
         <full-name value="HDF5 dynamic library"/>
         <project-home value="http://www.hdfgroup.org/HDF5/"/>
-        <version value="1.8.15"/>
+        <version value="1.8.17-1"/>
         <usage value="dynamic linking"/>
         <license value="LICENSE_hdf5.txt"/>
         <license-type value="BSD_"/>
@@ -293,7 +303,7 @@
     <dependency env="[win,mac,linux]" name="ipython">
         <full-name value="iPython"/>
         <project-home value="http://ipython.org/"/>
-        <version value="[3.2.0,3.2.1,5.1.0]"/>
+        <version value="5.3.0"/>
         <usage value="dynamic linking"/>
         <license value="LICENSE_ipython.txt"/>
         <license-type value="BSD_ revised"/>
@@ -416,9 +426,9 @@
         <version value="unknown"/>
         <usage value="dynamic linking"/>
         <license value="LICENSE_gfortran3.txt"/>
-        <license-type value="LGPLv2_"/>
+        <license-type value="GPLv2_"/>
         <copyright-notice value="Copyright (C) 1999-2016 Free Software Foundation, Inc."/>
-        <description value="The GNU Fortran compiler, part of GCC. Needed by recent numpy."/>
+        <description value="The GNU Fortran compiler, part of GCC. Needed by recent numpy. https://moinmo.in/GPL"/>
     </dependency>
     <dependency env="mac" name="libjpeg.8.dylib">
         <full-name value="JPEG library"/>
@@ -466,7 +476,7 @@
         <version value="unknown"/>
         <usage value="dynamic linking"/>
         <license value="LICENSE_quadmath.txt"/>
-        <license-type value="LGPLv2_"/>
+        <license-type value="GPLv2_"/>
         <copyright-notice value="Copyright (C) 2010, 2011 Free Software Foundation, Inc."/>
         <description value="This appeared after recent updates of numerical libraries. Sources also found here: https://gnu.googlesource.com/gcc/+/gcc-4_6_4-release/libquadmath"/>
     </dependency>
@@ -690,6 +700,16 @@
         <copyright-notice value="Copyright (c) 2005-2008 Jason Pellerin"/>
         <description value="Tests - Coming with Anaconda env"/>
     </dependency>
+    <dependency env="[win,mac,linux]" name="nrrd">
+        <full-name value="PyNRRD"/>
+        <project-home value="https://pypi.python.org/pypi/pynrrd"/>
+        <version value="0.2.1"/>
+        <usage value="dynamic linking"/>
+        <license value="LICENSE_nrrd.txt"/>
+        <license-type value="MIT_"/>
+        <copyright-notice value="Copyright (c) 2012 Maarten H. Everts and contributors"/>
+        <description value="Package needed for AllenSDK"/>
+    </dependency>
     <dependency env="[win,mac,linux]" name="numba">
         <full-name value="Numba"/>
         <project-home value="http://numba.pydata.org/"/>
@@ -713,7 +733,7 @@
     <dependency env="[win,mac,linux]" name="numpy">
         <full-name value="Numpy"/>
         <project-home value="http://numpy.scipy.org/license.html#license"/>
-        <version value="1.11.0"/>
+        <version value="1.12.1"/>
         <usage value="dynamic linking"/>
         <license value="LICENSE_numpy.txt"/>
         <license-type value="BSD_"/>
@@ -730,10 +750,20 @@
         <copyright-notice value="Copyright (c) 1998-2008 The OpenSSL Project.  All rights reserved."/>
         <description value="Package part of Python's distribution."/>
     </dependency>
+    <dependency env="[win,mac,linux]" name="pandas">
+        <full-name value="Pandas"/>
+        <project-home value="http://pandas.pydata.org/"/>
+        <version value="0.20"/>
+        <usage value="dynamic linking"/>
+        <license value="LICENSE_pandas.txt"/>
+        <license-type value="BSD_"/>
+        <copyright-notice value="Copyright (c) 2011-2012, Lambda Foundry, Inc. and PyData Development Team"/>
+        <description value="Package needed for AllenSDK"/>
+    </dependency>
     <dependency env="mac" name="pexpect">
         <full-name value="Pexpect"/>
         <project-home value="https://pexpect.readthedocs.io/"/>
-        <version value="4.0.1"/>
+        <version value="4.2.1"/>
         <usage value="dynamic linking"/>
         <license value="LICENSE_pexpect.txt"/>
         <license-type value="ISC_"/>
@@ -763,7 +793,7 @@
     <dependency env="[win,linux]" name="pip">
         <full-name value="PIP Library"/>
         <project-home value="https://pip.pypa.io/en/stable/"/>
-        <version value="8.1.2"/>
+        <version value="9.0.1"/>
         <usage value="packaging"/>
         <license value="LICENSE_pip.txt"/>
         <license-type value="MIT_"/>
@@ -773,7 +803,7 @@
     <dependency env="mac" name="prompt_toolkit">
         <full-name value="Prompt Toolkit"/>
         <project-home value="https://github.com/jonathanslenders/python-prompt-toolkit"/>
-        <version value="1.0.3"/>
+        <version value="1.0.14"/>
         <usage value="dynamic linking"/>
         <license value="LICENSE_prompt_toolkit.txt"/>
         <license-type value="BSD_"/>
@@ -823,7 +853,7 @@
     <dependency env="[win,mac,linux]" name="pygments">
         <full-name value="Pygments"/>
         <project-home value="http://pygments.org/"/>
-        <version value="[2.0.2,2.1.3]"/>
+        <version value="2.2.0"/>
         <usage value="dynamic linking"/>
         <license value="LICENSE_pygments.txt"/>
         <license-type value="BSD_"/>
@@ -863,7 +893,7 @@
     <dependency env="[win,mac,linux]" name="python">
         <full-name value="Python"/>
         <project-home value="http://docs.python.org/license.html"/>
-        <version value="[2.7.11,2.7.12]"/>
+        <version value="2.7.13"/>
         <usage value="dynamic linking"/>
         <license value="LICENSE_python.txt"/>
         <license-type value="PSF_"/>
@@ -904,7 +934,7 @@
         <full-name value="Scikits Learn"/>
         <project-home value="http://scikit-learn.org/"/>
         <version value="0.17.1"/>
-        <usage value="dynamic linkingd"/>
+        <usage value="dynamic linking"/>
         <license value="LICENSE_scikits_learn.txt"/>
         <license-type value="BSD_ 3rd clause"/>
         <copyright-notice value="Copyright (c) 2007 - 2012 The scikit-learn developers."/>
@@ -913,7 +943,7 @@
     <dependency env="[win,mac,linux]" name="scipy">
         <full-name value="Scipy"/>
         <project-home value="http://www.scipy.org/scipylib/faq.html#what-are-scipy-s-licensing-terms"/>
-        <version value="[0.16.0,0.17.0]"/>
+        <version value="0.19.0"/>
         <usage value="dynamic linking"/>
         <license value="LICENSE_scipy.txt"/>
         <license-type value="BSD_"/>
@@ -1020,10 +1050,10 @@
         <copyright-notice value="Copyright (c) 2014, Ramalingam Saravanan &lt;sarava@sarava.net&gt;"/>
         <description value="The IPython Notebook uses the Terminado - Coming with Anaconda env"/>
     </dependency>
-    <dependency env="mac" name="traitlets">
+    <dependency env="[mac,linux]" name="traitlets">
         <full-name value="Traitlets"/>
         <project-home value="http://ipython.org/"/>
-        <version value="4.3.1"/>
+        <version value="4.3.2"/>
         <usage value="dynamic linking"/>
         <license value="LICENSE_ipython.txt"/>
         <license-type value="BSD_ revised"/>
