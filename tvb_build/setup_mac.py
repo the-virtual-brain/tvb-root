@@ -112,25 +112,6 @@ def _create_command_file(command_file_path, command, before_message, done_messag
             f.write('echo "Done."\n')
 
 
-def _copy_collapsed(to_copy):
-    """
-    Merge multiple src folders, and filter some resources which are not needed (e.g. svn folders)
-    """
-    for module_path, destination_folder in to_copy.iteritems():
-        if not os.path.exists(destination_folder):
-            os.makedirs(destination_folder)
-
-        for sub_folder in os.listdir(module_path):
-            src = os.path.join(module_path, sub_folder)
-            dest = os.path.join(destination_folder, sub_folder)
-
-            if not os.path.isdir(src) and not os.path.exists(dest):
-                shutil.copy(src, dest)
-
-            if os.path.isdir(src) and not sub_folder.startswith('.') and not os.path.exists(dest):
-                ignore_patters = shutil.ignore_patterns('.svn', '*.rst')
-                shutil.copytree(src, dest, ignore=ignore_patters)
-
 
 def _add_sitecustomize(base_folder, destination_folder):
     full_path = os.path.join(base_folder, destination_folder, "sitecustomize.py")
@@ -268,9 +249,6 @@ def _generate_distribution(final_name, library_path, version, extra_licensing_ch
     print "- Moving " + online_help_src + " to " + online_help_dst
     os.rename(online_help_src, online_help_dst)
 
-    _copy_collapsed({os.path.join("tvb_documentation", "demos"): os.path.join(DIST_FOLDER, "demo_scripts"),
-                     os.path.join("tvb_documentation", "tutorials"): os.path.join(DIST_FOLDER, "demo_scripts")})
-
     print "- Cleaning up non-required files..."
     _clean_up(DIST_FOLDER, False)
     if os.path.exists(DIST_FOLDER_FINAL):
@@ -348,9 +326,6 @@ def prepare_py2app_dist():
 
     print "Running post-py2app build operations:"
     print "- Start creating startup scripts..."
-
-    # os.mkdir(os.path.join(DIST_FOLDER, "bin"))
-    os.mkdir(os.path.join(DIST_FOLDER, "demo_scripts"))
 
     _create_command_file(os.path.join(DIST_FOLDER, "bin", 'distribution'),
                          '../tvb.app/Contents/MacOS/tvb $@', '')

@@ -138,6 +138,27 @@ def copy_distribution_dataset():
     _copy_dataset(INCLUDED_INSIDE_DATA, DATA_INSIDE_FOLDER)
 
 
+def _copy_demos_collapsed(to_copy):
+    """
+    Merge multiple src folders, and filter some resources which are not needed (e.g. svn folders)
+    """
+    for module_path, destination_folder in to_copy.iteritems():
+        if not os.path.exists(destination_folder):
+            os.makedirs(destination_folder)
+
+        for sub_folder in os.listdir(module_path):
+            src = os.path.join(module_path, sub_folder)
+            dest = os.path.join(destination_folder, sub_folder)
+
+            if not os.path.isdir(src) and not os.path.exists(dest):
+                if not (sub_folder.startswith('.') or sub_folder.endswith(".rst")):
+                    shutil.copy(src, dest)
+
+            if os.path.isdir(src) and not sub_folder.startswith('.') and not os.path.exists(dest):
+                ignore_patters = shutil.ignore_patterns('.svn', '*.rst')
+                shutil.copytree(src, dest, ignore=ignore_patters)
+
+
 def build_step1():
     build_folder = os.path.dirname(DIST_FOLDER)
 
@@ -160,6 +181,9 @@ def build_step1():
     shutil.copytree(DEMOS_MATLAB_FOLDER, join(DIST_FOLDER, 'matlab'))
 
     copy_distribution_dataset()
+
+    _copy_demos_collapsed({os.path.join("..", "tvb_documentation", "demos"): os.path.join(DIST_FOLDER, "demo_scripts"),
+                           os.path.join("..", "tvb_documentation", "tutorials"): os.path.join(DIST_FOLDER, "demo_scripts")})
 
     shutil.rmtree(join(DIST_FOLDER, DocGenerator.API))
     shutil.make_archive('TVB_build_step1', 'zip', build_folder)

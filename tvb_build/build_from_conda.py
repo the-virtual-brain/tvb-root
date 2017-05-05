@@ -64,8 +64,6 @@ class Config:
             join("..", "scientific_library", "tvb"): join(self.target_site_packages, "tvb"),
             join("..", "tvb_bin", "tvb_bin"): join(self.target_site_packages, "tvb_bin"),
             join("..", "externals", "BCT"): join(self.target_site_packages, "externals", "BCT"),
-            join("..", "tvb_documentation", "demos"): join(self.target_root, "demo_scripts"),
-            join("..", "tvb_documentation", "tutorials"): join(self.target_root, "demo_scripts")
         }
 
         self.commands_map = commands_map
@@ -135,7 +133,7 @@ class Config:
             'bin/tvb_clean.sh': 'bash ./distribution.sh clean',
             'bin/tvb_stop.sh': 'bash ./distribution.sh stop',
             'bin/ipython_notebook.sh': set_path + 'cd ../bin\n../tvb_data/bin/python -m tvb_bin.run_ipython notebook ../demo_scripts',
-            # 'demo_scripts/ipython_notebook.sh': set_path + 'cd ../demo_scripts\n../tvb_data/bin/python -m tvb_bin.run_ipython notebook',
+            'demo_scripts/ipython_notebook.sh': set_path + 'cd ../demo_scripts\n../tvb_data/bin/python -m tvb_bin.run_ipython notebook',
             'bin/contributor_setup.sh': set_path + './bin/python -m tvb_bin.git_setup $1 $2\ncd ../bin'
         }
 
@@ -305,7 +303,7 @@ def prepare_anaconda_dist(config):
     _log(1, "Adding sitecustomize.py")
     _add_sitecustomize(os.path.dirname(config.target_site_packages))
 
-    _log(1, "Copying TVB sources into site-packages & demo_scripts ...")
+    _log(1, "Copying TVB sources into site-packages ...")
     _copy_collapsed(config)
 
     _log(2, "Adding svn version")
