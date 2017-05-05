@@ -121,40 +121,25 @@ function d3Plot(placeHolder, data, options, pageParam) {
         return newScale;
     }
 
-
     /*
-     * this makes a large range in the form of an array of values that configure to the proper step value that the ticks would otherwise be spaced at.
-     * So far this is the only method that I've figured out to create grid lines for the graph background that can work for the extensive panning the user might be interested in.
-     */
-
-    function createRange(arr, step) {
-        if (step == undefined) {
-            step = arr[1] - arr[0];
-        }
-        return d3.range(-50 + arr[1], 50 + arr[1], step)
-    }
-
-    /*
-     * This function generates an x or y axis structure with floating point accuracy up to 2 decimals. This will be used in slightly varying ways for the grid lines, and
+     * This functions generate an x or y axis structure with floating point accuracy up to 3 decimals. This will be used in slightly varying ways for the grid lines, and
      * the typical axes of the graph.
      */
-    function createAxis(xORy, step) {
-        if (xORy === "x") { // should I be creating the whole axis inside here, or should I simply return the axis that has the parts to be customized and called later
-            newAxis = d3.svg.axis().scale(xScale)
-                .orient("bottom")
-                .tickValues(createRange(_PSE_plotOptions.xaxis.labels, step))
-                .tickFormat(d3.format(",.2f"));
-            return newAxis
-        }
-        else {
-            newAxis = d3.svg.axis().scale(yScale)
-                .orient("left")
-                .tickValues(createRange(_PSE_plotOptions.yaxis.labels, step))
-                .tickFormat(d3.format(",.2f")); // this means add in , when thousands are used, and look for 2 digits past the decimal, with value considered float type
-            return newAxis
-        }
+    function createXAxis() {
+        newAxis = d3.svg.axis().scale(xScale)
+            .orient("bottom")
+            .tickValues(_PSE_plotOptions.xaxis.labels)
+            .tickFormat(d3.format(",.3f"));
+        return newAxis
     }
 
+    function createYAxis() {
+        newAxis = d3.svg.axis().scale(yScale)
+            .orient("left")
+            .tickValues(_PSE_plotOptions.yaxis.labels)
+            .tickFormat(d3.format(",.3f")); // this means add in , when thousands are used, and look for 2 digits past the decimal, with value considered float type
+        return newAxis
+    }
 
     /*
      * This function uses an ajax call to retrieve the stored configurations for the filter tool. it simply removes the options that were already present in the select bar
@@ -485,12 +470,12 @@ function d3Plot(placeHolder, data, options, pageParam) {
         .attr("height", innerHeight - _PSE_plotOptions.margins.bottom - _PSE_plotOptions.margins.top);
 
     toolTipDiv = d3.select(".tooltip"); // this is the hover over dot tool tip which displays information stored in the PSE_nodeInfo variable.
-    xAxis = createAxis("x", undefined); // these lines create the axes and grids
-    xGrid = createAxis("x", undefined)
+    xAxis = createXAxis(); // these lines create the axes and grids
+    xGrid = createXAxis()
         .tickSize(innerHeight, 0, 0)
         .tickFormat(""); //means don't show any values at the base line of the axis
-    yAxis = createAxis("y", undefined);
-    yGrid = createAxis("y", undefined)
+    yAxis = createYAxis();
+    yGrid = createYAxis()
         .tickSize(-innerWidth, 0, 0)
         .tickFormat("");
 

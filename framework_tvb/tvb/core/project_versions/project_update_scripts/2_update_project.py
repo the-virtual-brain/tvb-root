@@ -30,6 +30,8 @@
 """
 ProjectionRegion DataType has been removed, and ProjectionSurfaces got a new required field.
 
+for release 1.5.1
+
 .. moduleauthor:: Lia Domide <lia.domide@codemart.ro>
 """
 
