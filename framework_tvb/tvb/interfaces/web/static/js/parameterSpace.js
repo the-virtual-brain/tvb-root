@@ -4,7 +4,7 @@
  * TheVirtualBrain-Scientific Package (for simulators). See content of the
  * documentation-folder for more details. See also http://www.thevirtualbrain.org
  *
- * (c) 2012-2013, Baycrest Centre for Geriatric Care ("Baycrest")
+ * (c) 2012-2017, Baycrest Centre for Geriatric Care ("Baycrest") and others
  *
  * This program is free software; you can redistribute it and/or modify it under
  * the terms of the GNU General Public License version 2 as published by the Free
@@ -934,14 +934,6 @@ function updateLegend(minColor, maxColor) {
     tableContainer = d3.select("#table-colorWeightsLegend");
     ColSch_updateLegendColors(legendContainer.node(), legendHeight);
     ColSch_updateLegendLabels(tableContainer.node(), minColor, maxColor, legendHeight);
-    d3.selectAll(".matrix-legend")
-        .style({
-            position: 'absolute',
-            top: '118px',
-            right: '25px'
-        });
-    d3.select("#colorWeightsLegend")
-        .style("right", "85px")
 }
 
 
@@ -1012,7 +1004,7 @@ function PSE_mainDraw(parametersCanvasId, backPage, groupGID) {
         type: "POST",
         url: url,
         success: function (r) {
-            $('#' + parametersCanvasId).html(r);
+            $("#pse_discreet_top_id").html(r);
         },
         error: function () {
             displayMessage("Could not refresh with the new metrics.", "errorMessage");

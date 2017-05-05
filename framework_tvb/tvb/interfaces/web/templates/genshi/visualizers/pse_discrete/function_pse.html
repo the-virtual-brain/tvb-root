@@ -214,14 +214,11 @@
     <input type="hidden" id="datatype-group-gid" value="$dataTypeGroupGID"/>
 
     <!--! Here PSE bubles will be displayed.	-->
-    <div id="main_div_pse" class="specialviewer">
-    </div>
+    <div id="main_div_pse" class="specialviewer" style="position:relative;">
 
-    <py:def function="drawMatrixLegendArea(canvasContainerID)">
-        <div class="matrix-legend" id="$canvasContainerID"></div>
-
+        <div class="matrix-legend" id="colorWeightsLegend"></div>
         <div class="matrix-legend">
-            <table id="table-${canvasContainerID}" class="table-legend-labels">
+            <table id="table-colorWeightsLegend" class="table-legend-labels">
                 <py:for each='label in range(7)'>
                     <py:if test='label != 0'>
                         <tr height="${str(100/8) + '%'}" style='vertical-align: bottom;'>
@@ -236,9 +233,7 @@
                 </py:for>
             </table>
         </div>
-
-    </py:def>
-    ${drawMatrixLegendArea('colorWeightsLegend')}
+    </div>
 
     <script type="text/javascript">
 
