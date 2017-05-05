@@ -163,24 +163,6 @@ function d3Plot(placeHolder, data, options, pageParam) {
     }
 
     /*
-     * This function is more or less the same as the one above it except there is no need to account for multiple select bars.
-     */
-    function getContourSelections() {
-        doAjaxCall({
-            type: 'POST',
-            url: '/flow/get_pse_filters',
-            success: function (r) {
-                var selectElement = d3.select("#contourSelect");
-                selectElement.selectAll("option").remove();
-                selectElement.html(r);// this is the best way that i could come up with to separate out the returned elements
-            },
-            error: function () {
-                displayMessage("couldn't load the selection bar", "errorMessage")
-            }
-        })
-    }
-
-    /*
      * This function is what helps coordinate the new positions of each of our result dots when the user pans the graph, or zooms in and out.
      * the factor section prevents the dots from overlapping each other after extreme amounts of zooming, but it makes it possible to scale up
      * small sections of a great big batch result.
@@ -255,23 +237,6 @@ function d3Plot(placeHolder, data, options, pageParam) {
             d3.select(this).node().parentNode.remove()
         })
     }
-
-    /*
-     * this function is for the contour tool again. It simply takes the stored values of the selected option, and recreates the configuration in the elements of the dropdown
-     * (filling in rate of change input, checking the not button if necessary, selecting the correct contour type from color&size).
-     */
-    function enactSelection() {
-        d3.select("#contourSelect").on("change", function () {
-            var filterSpecs = d3.select(this).property('value').split(","),
-                filterType = filterSpecs[1],
-                filterValue = filterSpecs[0],
-                filterNot = filterSpecs[2];
-            d3.select('input[name="RateOfChangeType"]#' + filterType).property("checked", true);
-            d3.select('input#rateOfChangeInput').property("value", filterValue);
-            d3.select("#notButton").property('checked', filterNot);
-        })
-    }
-
 
     /*
      * simply but necessary function to help us keep track of the results for things like transparentDots below. Without a key value for each result, specific entries failing to pass filter
@@ -542,107 +507,6 @@ function d3Plot(placeHolder, data, options, pageParam) {
     /*************************************************************************************************************************
      *   what follows here is the associated code for mouse events, and user generated events
      *************************************************************************************************************************/
-
-    /*
-     * This indicates what should be done at the clicking of the contour button.
-     */
-    d3.select('#Contour').on("click", function () {
-        var contourDiv = d3.select("#contourDiv");
-        if (contourDiv.style("display") == "none") {
-            contourDiv.style("display", "block"); // makes the contour dropdown menu visible
-            getContourSelections();
-            enactSelection();
-            var tipFillin = calcDiff(); // this is the label filling in for threshold of rate of change
-            d3.select("label[for='Size']").html('Size --> (' + tipFillin.size[0].toExponential(4) + ", " + tipFillin.size[1].toExponential(4) + ")");
-            d3.select("label[for='Color']").html('Color --> (' + tipFillin.color[0].toExponential(4) + ", " + tipFillin.color[1].toExponential(4) + ")")
-
-        } else {
-            contourDiv.style("display", "none"); // removes the contour menu from display
-        }
-    });
-
-
-    /*
-     * executes the drawing of lines where the rate of change passes the users criteria.
-     */
-    d3.select("#contourGo").on("click", function () {
-
-        function drawCompLines(relationOb) {
-
-            var lineFunc = d3.svg.line()
-                .x(function (d) {
-                    return d.x
-                })
-                .y(function (d) {
-                    return d.y
-                })
-                .interpolate("linear");
-
-            var lineCol = d3.rgb(Math.random() * 255, Math.random() * 255, Math.random() * 255); // this will give us a way to keep contours on the page between comparisons
-            for (var currentOb of relationOb) {
-                for (var neighbor of currentOb.neighbors) {
-                    var neighborsCoords = neighbor.split(" ").map(function (ele) {
-                            return +ele
-                        }), //breakdown of line: separate and convert coordinates from string to float before assigning to variables.
-                        xNeighbor = xScale(neighborsCoords[0]),
-                        yNeighbor = yScale(neighborsCoords[1]),
-                        obX = xScale(currentOb.focalPoint.coords.x),
-                        obY = yScale(currentOb.focalPoint.coords.y),
-                        deltaX = (xNeighbor - obX), //simple final minus initial for change
-                        deltaY = (yNeighbor - obY),
-                        midPoint = {x: obX + deltaX / 2, y: obY + deltaY / 2},
-                        startCoord = {x: midPoint.x + deltaY / 2, y: midPoint.y - deltaX / 2}, // gives instruction as to what direction and how far from the midpoint to establish start&end of line
-                        endCoord = {x: midPoint.x - deltaY / 2, y: midPoint.y + deltaX / 2};
-                    d3.select(".dotsCanvas").append("path")
-                        .attr("d", lineFunc([startCoord, endCoord])) // generate the svg path for the line
-                        .attr("stroke", lineCol)
-                        .attr("stroke-width", ".5px")
-                        .attr("fill-opacity", ".1")
-                        .attr("fill", "none")
-                        .attr("id", "contourLine");
-                }
-            }
-        }
-
-        var criteria = { //retrieve the user specifications for the contour run
-            type: d3.select('input[name="RateOfChangeType"]:checked').node().id,
-            value: +d3.select('input#rateOfChangeInput').node().value,
-            not: d3.select("#notButton").property('checked')
-        };
-
-        var neighborsObjct = compareToNeighbors(structure, steps, inclusiveX, inclusiveY, criteria, _PSE_d3NodesInfo);
-        // use function from the alternateDatastructure.js to determine which dots and neigbors will be separated by lines.
-        drawCompLines(neighborsObjct);
-    });
-
-    d3.select("#contourClear").on("click", function () {
-        d3.selectAll('#contourLine').remove()
-    });
-
-    /*
-     * store the user specified configuration for a contour run as session attribute
-     */
-    d3.select("#saveContourConfig").on("click", function () {
-
-        var usrSelectedName = d3.select('#contourNameInput').property('value'),
-            incoming_values = {
-                threshold_value: d3.select('input#rateOfChangeInput').node().value,
-                threshold_type: d3.select('input[name="RateOfChangeType"]:checked').node().id,
-                not_presence: d3.select("#notButton").node().checked
-            };
-        doAjaxCall({
-            type: 'POST',
-            url: '/flow/store_pse_filter/' + usrSelectedName,
-            data: incoming_values,
-            success: function (r) {
-                getFilterSelections();
-                d3.select('#contourNameInput').property('value', '')
-            },
-            error: function () {
-                displayMessage('could not store the selected text', 'errorMessage')
-            }
-        })
-    });
 
     /*
      * specifics for drawing the explore menu upon clicking the explore button, and the generation of brush for the graph.

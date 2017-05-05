@@ -47,9 +47,6 @@
         <li>
             <button id="Filter" class="action action-edit">Filter</button>
         </li>
-        <li>
-            <button id="Contour" class="action action-edit">Contour</button>
-        </li>
     </ul>
 
     <!--! Controls for displaying MAX / MIN values -->
@@ -103,35 +100,6 @@
 
                 <button class="action action-plus" id="addFilterOps">Add Options</button>
                 <button class="action action-confirm" id="filterGo">Start Filter</button>
-            </li>
-        </ul>
-    </div>
-
-    <div class="tooltip"></div>
-    <div id="contourDiv" style="display: none;">
-        <ul class="toolbar-inline" id="contourTools">
-            <li>
-                <select name="Storing Selections for contour" id="contourSelect" class="contourSelectBar">
-                </select>
-                <input type="text" id="contourNameInput"/>
-                <button class="action-store action" title="Save your contour inputs" id="saveContourConfig">Save
-                </button>
-
-                <br/>
-                <label for="rateOfChangeInput">RateOfChange: </label>
-                <input type="text" id="rateOfChangeInput" value="65e-5"/>
-                <input type="checkbox" id="notButton"/>Not
-
-                <form>
-                    <input type="radio" name="RateOfChangeType" id="Size" checked="checked"/>
-                    <label for="Size">Size (min --> max)</label>
-                    <input type="radio" name="RateOfChangeType" id="Color"/>
-                    <label for="Color">Color (min --> max) </label><br/>
-                </form>
-
-                <button class="action action-confirm" id="contourGo">Start contour</button>
-                <button class="action" id="contourClear">Clear lines</button>
-
             </li>
         </ul>
     </div>
