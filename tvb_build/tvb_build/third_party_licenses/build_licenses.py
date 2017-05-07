@@ -130,9 +130,7 @@ def generate_artefact(root_folder_to_introspect, excludes=None, actual_libs=None
         dep_text += lib_text
 
     if exceptions:
-        raise Exception("Libraries: " + str(exceptions) +
-                        "\n are included in TVB package but their license were not validated!\n"
-                        "Update '" + parser.FILE + "' for these libraries!")
+        print "Libraries: " + str(exceptions) + "\n are included in TVB package but their license were not validated!"
 
     if os.path.exists(RESULT_FILE_NAME + '.rst'):
         os.remove(RESULT_FILE_NAME + '.rst')
