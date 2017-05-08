@@ -62,6 +62,7 @@ FULL_TEMPLATE = "===========================\
                 \n.. _BSD: http://en.wikipedia.org/wiki/BSD_licenses\
                 \n.. _MIT: http://opensource.org/licenses/mit-license.php\
                 \n.. _Apache: http://www.apache.org/licenses/LICENSE-2.0.html\
+                \n.. _ZPL: https://opensource.org/licenses/ZPL-2.0\
                 \n.. _PSF: http://docs.python.org/license.html\
                 \n.. _LGPLv2: http://www.gnu.org/licenses/lgpl-2.1.html\
                 \n.. _LGPLv3: http://www.gnu.org/licenses/lgpl.html\

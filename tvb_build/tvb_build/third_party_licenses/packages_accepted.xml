@@ -320,6 +320,26 @@
         <copyright-notice value="Copyright (c) 2011, IPython Development Team"/>
         <description value="This library is used for TVB command access - Coming with Anaconda env"/>
     </dependency>
+    <dependency env="[win,linux]" name="ipython-genutils">
+        <full-name value="iPython Genutils"/>
+        <project-home value="https://pypi.python.org/pypi/ipython_genutils"/>
+        <version value="0.2.0"/>
+        <usage value="dynamic linking"/>
+        <license value="LICENSE_ipython.txt"/>
+        <license-type value="BSD_ "/>
+        <copyright-notice value="Copyright (c) 2001-, IPython Development Team"/>
+        <description value="Vestigial utilities from IPython"/>
+    </dependency>
+    <dependency env="mac" name="ipywidgets">
+        <full-name value="iPython Widgets"/>
+        <project-home value="https://pypi.python.org/pypi/ipywidgets"/>
+        <version value="5.2.2"/>
+        <usage value="dynamic linking"/>
+        <license value="LICENSE_ipython.txt"/>
+        <license-type value="BSD_ "/>
+        <copyright-notice value="Copyright (c) 2001-, IPython Development Team"/>
+        <description value="IPython HTML widgets for Jupyter"/>
+    </dependency>
     <dependency env="[win,mac,linux]" name="jinja2">
         <full-name value="Jinja"/>
         <project-home value="http://jinja.pocoo.org/"/>
@@ -770,6 +790,16 @@
         <copyright-notice value="Copyright (c) 2011-2012, Lambda Foundry, Inc. and PyData Development Team"/>
         <description value="Package needed for AllenSDK"/>
     </dependency>
+    <dependency env="[win,linux]" name="pathlib2">
+        <full-name value="Pathlib2"/>
+        <project-home value="https://pypi.python.org/pypi/pathlib2/"/>
+        <version value="2.2.1"/>
+        <usage value="dynamic linking"/>
+        <license value="LICENSE_pathlib2.txt"/>
+        <license-type value="MIT_"/>
+        <copyright-notice value="Copyright (c) 2014-2017 Matthias C. M. Troffaes; Copyright (c) 2012-2014 Antoine Pitrou and contributors"/>
+        <description value="Object-oriented filesystem paths"/>
+    </dependency>
     <dependency env="mac" name="pexpect">
         <full-name value="Pexpect"/>
         <project-home value="https://pexpect.readthedocs.io/"/>
@@ -779,6 +809,16 @@
         <license-type value="ISC_"/>
         <copyright-notice value="Copyright (c) 2013-2014, Pexpect development team"/>
         <description value="Pexpect - needed by iPython"/>
+    </dependency>
+    <dependency env="[win,linux]" name="pickleshare">
+        <full-name value="Pickleshare"/>
+        <project-home value="https://pypi.python.org/pypi/pickleshare/"/>
+        <version value="0.7.4"/>
+        <usage value="dynamic linking"/>
+        <license value="LICENSE_pickeshare.txt"/>
+        <license-type value="MIT_"/>
+        <copyright-notice value="Copyright (c) 2016 Ville Vainiopython"/>
+        <description value="Tiny 'shelve'-like database with concurrency support"/>
     </dependency>
     <dependency env="[win,mac,linux]" name="pil">
         <full-name value="Pillow Library"/>
@@ -1010,6 +1050,16 @@
         <copyright-notice value="Copyright (c) 2001, 2002 Enthought, Inc. Copyright (c) 2003-2009 SciPy Developers."/>
         <description value="SciPy is freely available. It is distributed as Open Source software, meaning that you have complete access to the source code and can use it in anyway allowed by its liberal BSD_ license."/>
     </dependency>
+    <dependency env="[win,linux]" name="simplegeneric">
+        <full-name value="Simplegeneric"/>
+        <project-home value="https://pypi.python.org/pypi/simplegeneric"/>
+        <version value="0.8.1"/>
+        <usage value="dynamic linking"/>
+        <license value="LICENSE_simplegeneric.txt"/>
+        <license-type value="ZPL_"/>
+        <copyright-notice value="Copyright (c) 2012 Phillip J. Eby"/>
+        <description value="Simple generic functions"/>
+    </dependency>
     <dependency env="[win,mac,linux]" name="simplejson">
         <full-name value="Simple JSON"/>
         <project-home value="https://github.com/simplejson"/>
@@ -1169,6 +1219,36 @@
         <license-type value="MIT_"/>
         <copyright-notice value="Copyright (c) 2014 Jeff Quast &lt;contact@jeffquast.com&gt;"/>
         <description value="Measures number of Terminal column cells of wide-character codes. Needed by iPython."/>
+    </dependency>
+    <dependency env="mac" name="widgetsnbextension">
+        <full-name value="iPython Widgets Extension"/>
+        <project-home value="https://pypi.python.org/pypi/widgetsnbextension"/>
+        <version value="1.2.6"/>
+        <usage value="dynamic linking"/>
+        <license value="LICENSE_ipython.txt"/>
+        <license-type value="BSD_ "/>
+        <copyright-notice value="Copyright (c) 2001-, IPython Development Team"/>
+        <description value="IPython HTML widgets for Jupyter"/>
+    </dependency>
+    <dependency env="win" name="win_unicode_console">
+        <full-name value="win_unicode_console"/>
+        <project-home value="https://pypi.python.org/pypi/win_unicode_console"/>
+        <version value="0.5"/>
+        <usage value="dynamic linking"/>
+        <license value="LICENSE_win_unc_console.txt"/>
+        <license-type value="MIT_"/>
+        <copyright-notice value="Copyright (c) 2014 Drekin"/>
+        <description value="Enable Unicode input and display when running Python from Windows console. https://github.com/Drekin/win-unicode-console"/>
+    </dependency>
+    <dependency env="win" name="win-unicode-console">
+        <full-name value="win_unicode_console"/>
+        <project-home value="https://pypi.python.org/pypi/win_unicode_console"/>
+        <version value="0.5"/>
+        <usage value="dynamic linking"/>
+        <license value="LICENSE_win_unc_console.txt"/>
+        <license-type value="MIT_"/>
+        <copyright-notice value="Copyright (c) 2014 Drekin"/>
+        <description value="Enable Unicode input and display when running Python from Windows console. https://github.com/Drekin/win-unicode-console"/>
     </dependency>
     <dependency env="[win,linux]" name="wheel">
         <full-name value="A built-package format for Python."/>

@@ -49,7 +49,8 @@ EXCLUDES = [
     # part of python and setuptools
     'distutils', 'pkg_resources', 'setuptools', 'socketserver', '_thread', '_dummy_thread',
     # python 3 backports
-    'futures', 'libfuturize', 'libpasteurize', 'singledispatch', 'funcsigs', 'enum34', 'enum', 'reprlib',
+    'futures', 'libfuturize', 'libpasteurize', 'past',
+    'singledispatch', 'funcsigs', 'enum34', 'enum', 'reprlib',
     'backports.ssl-match-hostname', 'backports.shutil-get-terminal-size', 'copyreg', 'winreg',
     # others
     '_builtinsuites', 'builtins', 'bsddb', 'carbon', 'compiler', 'config', 'http', 'html',
