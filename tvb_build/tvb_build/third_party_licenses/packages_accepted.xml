@@ -176,7 +176,7 @@
         <version value="0.10.0"/>
         <usage value="dynamic linking"/>
         <license value="LICENSE_cycler.txt"/>
-        <license-type value="BDS_"/>
+        <license-type value="BSD_"/>
         <copyright-notice value="Copyright (c) 2015, matplotlib project"/>
         <description value="Composable cycles (for Matplotlib)"/>
     </dependency>
