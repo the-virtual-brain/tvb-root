@@ -523,7 +523,7 @@
     <dependency env="[win,mac,linux]" name="llvmlite">
         <full-name value="llvmlite"/>
         <project-home value="http://llvmlite.pydata.org/en/latest/"/>
-        <version value="[0.10.0,0.17]"/>
+        <version value="[0.10.0,0.17.0]"/>
         <usage value="dynamic linking"/>
         <license value="LICENSE_llvmlite.txt"/>
         <license-type value="BSD_"/>
@@ -723,7 +723,7 @@
     <dependency env="[win,mac,linux]" name="numba">
         <full-name value="Numba"/>
         <project-home value="http://numba.pydata.org/"/>
-        <version value="[0.25.0,0.29.0+0.gead0dd3.dirty]"/>
+        <version value="[0.25.0,0.32.0+0.g139e4c6.dirty]"/>
         <usage value="dynamic linking"/>
         <license value="LICENSE_numba.txt"/>
         <license-type value="BSD_"/>
@@ -950,7 +950,17 @@
         <copyright-notice value="Copyright 2016 Kenneth Reitz"/>
         <description value="Package needed for AllenSDK"/>
     </dependency>
-    <dependency env="[win,mac,linux]" name="requests_toolbelt">
+    <dependency env="[win,linux]" name="requests-toolbelt">
+        <full-name value="Requests Toolbelt"/>
+        <project-home value="https://pypi.python.org/pypi/requests-toolbelt"/>
+        <version value="0.7.1"/>
+        <usage value="dynamic linking"/>
+        <license value="LICENSE_req_toolbelt.txt"/>
+        <license-type value="Apache_ 2"/>
+        <copyright-notice value="Copyright 2014 Ian Cordasco, Cory Benfield"/>
+        <description value="Package needed for AllenSDK"/>
+    </dependency>
+    <dependency env="mac" name="requests_toolbelt">
         <full-name value="Requests Toolbelt"/>
         <project-home value="https://pypi.python.org/pypi/requests-toolbelt"/>
         <version value="0.7.1"/>
@@ -1003,7 +1013,7 @@
     <dependency env="[win,mac,linux]" name="sklearn">
         <full-name value="Scikits Learn"/>
         <project-home value="http://scikit-learn.org/"/>
-        <version value="[0.17.1,0.18]"/>
+        <version value="[0.17.1,0.18.1]"/>
         <usage value="dynamic linking"/>
         <license value="LICENSE_scikits_learn.txt"/>
         <license-type value="BSD_ 3rd clause"/>
@@ -1079,6 +1089,16 @@
         <license-type value="BSD_"/>
         <copyright-notice value="Copyright (c) 2014, Ramalingam Saravanan &lt;sarava@sarava.net&gt;"/>
         <description value="The IPython Notebook uses the Terminado - Coming with Anaconda env"/>
+    </dependency>
+    <dependency env="mac" name="tkinter">
+        <full-name value="Tkinter"/>
+        <project-home value="http://tkinter.unpythonic.net/wiki/Tkinter"/>
+        <version value="unknown"/>
+        <usage value="dynamic linking"/>
+        <license value="LICENSE_tcl85.txt"/>
+        <license-type value="BSD_ like"/>
+        <copyright-notice value="Copyright (C) 1989-2008 by Regents of the University of California, Sun Microsystems, Inc., Scriptics Corporation, and other parties"/>
+        <description value="Library used as IDLE dependency, for the console-users."/>
     </dependency>
     <dependency env="[mac,linux]" name="traitlets">
         <full-name value="Traitlets"/>
