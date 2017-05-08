@@ -69,15 +69,15 @@ PY2APP_PACKAGES = ['cherrypy', 'email', 'h5py', 'IPython', "llvmlite", 'migrate'
                    'numba', 'notebook', 'numpy', 'pkg_resources', 'PyObjCTools', 'scipy',
                    'sklearn', 'tables', 'tornado', 'tvb']
 
-PY2APP_INCLUDES = ['apscheduler', 'apscheduler.scheduler', 'cfflib', 'cmath', 'contextlib', 'formencode', 'gdist',
-                   'genshi', 'genshi.template', 'genshi.template.loader', 'jinja2', 'jsonschema', 'logging.config',
-                   'lxml.etree', 'lxml._elementpath', 'markupsafe', 'matplotlib', 'minixsv', 'mod_pywebsocket',
-                   'mplh5canvas.backend_h5canvas', 'mpl_toolkits.axes_grid', 'nibabel',
+PY2APP_INCLUDES = ['allensdk', 'apscheduler', 'apscheduler.scheduler', 'cfflib', 'cmath', 'contextlib', 'formencode',
+                   'gdist', 'genshi', 'genshi.template', 'genshi.template.loader', 'jinja2', 'jsonschema',
+                   'logging.config', 'lxml.etree', 'lxml._elementpath', 'markupsafe', 'matplotlib', 'minixsv',
+                   'mod_pywebsocket', 'mplh5canvas.backend_h5canvas', 'mpl_toolkits.axes_grid', 'nibabel',
                    'numexpr', 'os', 'psycopg2', 'pygments.formatters.html', 'pygments.lexers.python',
                    'runpy', 'sqlite3', 'sqlalchemy', 'sqlalchemy.dialects.sqlite', 'sqlalchemy.dialects.postgresql',
                    'simplejson', 'six', 'StringIO', 'xml.dom', 'xml.dom.minidom', 'zlib', 'zmq']
 
-PY2APP_EXCLUDES = ['_markerlib', 'altgraph', 'coverage', 'cython', 'Cython', 'tvb_data', 'docutils', 'lib2to3',
+PY2APP_EXCLUDES = ['_markerlib', 'altgraph', 'coverage', 'cython', 'Cython', 'tvb_data', 'docutils',
                    'macholib', 'modulegraph', 'nose', 'OpenGL', 'py2app', 'PyOpenGL', 'PyQt4', 'sphinx', 'wx']
 
 PY2APP_OPTIONS = {'iconfile': 'tvb_build/icon.icns',
