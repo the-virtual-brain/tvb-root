@@ -65,9 +65,10 @@ EXCLUDED_DYNAMIC_LIBS = []
 
 # --------------------------- PY2APP specific configurations--------------------------------------------
 
-PY2APP_PACKAGES = ['cherrypy', 'email', 'h5py', 'IPython', 'ipykernel', 'ipython_genutils', 'lib2to3', "llvmlite",
-                   'migrate', 'minixsv', 'numba', 'notebook', 'numpy', 'pkg_resources', 'PyObjCTools', 'scipy',
-                   'sklearn', 'tables', 'tornado', 'tvb']
+PY2APP_PACKAGES = ['cherrypy', 'email', 'h5py', 'IPython', 'ipykernel', 'ipython_genutils', 'ipykernel_launcher',
+                   'jupyter_client', 'jupyter_core',
+                   'lib2to3', "llvmlite", 'migrate', 'minixsv', 'numba', 'notebook', 'numpy', 'pkg_resources',
+                   'PyObjCTools', 'scipy', 'sklearn', 'tables', 'tornado', 'tvb']
 
 PY2APP_INCLUDES = ['allensdk', 'apscheduler', 'apscheduler.scheduler', 'cfflib', 'cmath', 'contextlib', 'formencode',
                    'gdist', 'genshi', 'genshi.template', 'genshi.template.loader', 'jinja2', 'jsonschema',
