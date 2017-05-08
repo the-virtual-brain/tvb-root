@@ -94,7 +94,7 @@ EXTRA_SEARCH_FOLDERS = ['site-packages', 'site-packages.zip']
 EXTRA_MODULES = {
     'jquery': '2.1.1',
     'flot': '0.8.3',
-    'hdf5': '1.8.15',
+    'hdf5': '1.8.17',
     'jit': '2.0.1',
     'd3': '3',
     'bct': '2017',

@@ -250,6 +250,16 @@
         <copyright-notice value="Copyright (c) 2010-2012, ENDOH takanao"/>
         <description value="The IPython Notebook uses it"/>
     </dependency>
+    <dependency env="[win,mac,linux]" name="future">
+        <full-name value="Future"/>
+        <project-home value="https://pypi.python.org/pypi/future"/>
+        <version value="0.16.0"/>
+        <usage value="dynamic linking"/>
+        <license value="LICENSE_future.txt"/>
+        <license-type value="MIT_"/>
+        <copyright-notice value="Copyright (c) 2013-2016 Python Charmers Pty Ltd, Australia"/>
+        <description value="Clean single-source support for Python 3 and 2"/>
+    </dependency>
     <dependency env="[win,mac,linux]" name="genshi">
         <full-name value="Genshi"/>
         <project-home value="http://genshi.edgewall.org/"/>
@@ -283,7 +293,7 @@
     <dependency env="[win,mac,linux]" name="hdf5">
         <full-name value="HDF5 dynamic library"/>
         <project-home value="http://www.hdfgroup.org/HDF5/"/>
-        <version value="1.8.17-1"/>
+        <version value="1.8.17"/>
         <usage value="dynamic linking"/>
         <license value="LICENSE_hdf5.txt"/>
         <license-type value="BSD_"/>
@@ -513,7 +523,7 @@
     <dependency env="[win,mac,linux]" name="llvmlite">
         <full-name value="llvmlite"/>
         <project-home value="http://llvmlite.pydata.org/en/latest/"/>
-        <version value="[0.10.0,0.11.0.dev+8.ge1fe952,0.14.0]"/>
+        <version value="[0.10.0,0.17]"/>
         <usage value="dynamic linking"/>
         <license value="LICENSE_llvmlite.txt"/>
         <license-type value="BSD_"/>
@@ -700,7 +710,7 @@
         <copyright-notice value="Copyright (c) 2005-2008 Jason Pellerin"/>
         <description value="Tests - Coming with Anaconda env"/>
     </dependency>
-    <dependency env="[win,mac,linux]" name="nrrd">
+    <dependency env="[win,mac,linux]" name="pynrrd">
         <full-name value="PyNRRD"/>
         <project-home value="https://pypi.python.org/pypi/pynrrd"/>
         <version value="0.2.1"/>
@@ -723,7 +733,7 @@
     <dependency env="[win,mac,linux]" name="numexpr">
         <full-name value="NumExpr"/>
         <project-home value="http://code.google.com/p/numexpr/"/>
-        <version value="[2.5.2,2.6.1]"/>
+        <version value="2.6.2"/>
         <usage value="dynamic linking"/>
         <license value="LICENSE_numexpr.txt"/>
         <license-type value="MIT_"/>
@@ -930,6 +940,26 @@
         <copyright-notice value="Copyright (C) 2007-2014 iMatix Corporation and Contributors"/>
         <description value="The IPython Notebook requires ZeroMQ for communication - Coming with Anaconda env"/>
     </dependency>
+    <dependency env="[win,mac,linux]" name="requests">
+        <full-name value="Requests"/>
+        <project-home value="https://pypi.python.org/pypi/requests"/>
+        <version value="2.13.0"/>
+        <usage value="dynamic linking"/>
+        <license value="LICENSE_req.txt"/>
+        <license-type value="Apache_ 2"/>
+        <copyright-notice value="Copyright 2016 Kenneth Reitz"/>
+        <description value="Package needed for AllenSDK"/>
+    </dependency>
+    <dependency env="[win,mac,linux]" name="requests_toolbelt">
+        <full-name value="Requests Toolbelt"/>
+        <project-home value="https://pypi.python.org/pypi/requests-toolbelt"/>
+        <version value="0.7.1"/>
+        <usage value="dynamic linking"/>
+        <license value="LICENSE_req_toolbelt.txt"/>
+        <license-type value="Apache_ 2"/>
+        <copyright-notice value="Copyright 2014 Ian Cordasco, Cory Benfield"/>
+        <description value="Package needed for AllenSDK"/>
+    </dependency>
     <dependency env="[win,linux]" name="scikit-learn">
         <full-name value="Scikits Learn"/>
         <project-home value="http://scikit-learn.org/"/>
@@ -1023,7 +1053,7 @@
     <dependency env="[win,mac,linux]" name="tables">
         <full-name value="PyTables"/>
         <project-home value="http://www.pytables.org/moin/License"/>
-        <version value="[3.0.0,3.2.3.1]"/>
+        <version value="[3.0.0,3.3.0]"/>
         <usage value="dynamic linking"/>
         <license value="LICENSE_pytables.txt"/>
         <license-type value="BSD_"/>
