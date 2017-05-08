@@ -1050,10 +1050,10 @@
         <copyright-notice value="Copyright (c) 2012, Ben Hoyt"/>
         <description value="A better directory iterator and faster os.walk()"/>
     </dependency>
-    <dependency env="[win,linux]" name="scikit-learn">
+    <dependency env="[win,linux,mac]" name="scikit-learn">
         <full-name value="Scikits Learn"/>
         <project-home value="http://scikit-learn.org/"/>
-        <version value="0.17.1"/>
+        <version value="[0.17.1,0.18.1]"/>
         <usage value="dynamic linking"/>
         <license value="LICENSE_scikits_learn.txt"/>
         <license-type value="BSD_ 3rd clause"/>

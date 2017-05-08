@@ -2,7 +2,7 @@
 
 envname="tvb-run"
 
-conda create -y -n $envname nomkl scipy==0.17.0 numpy==1.11.0 networkx scikit-learn cython h5py==2.3.0 pip pil numexpr psutil coverage beautiful-soup lxml ipython ipython-notebook
+conda create -y -n $envname nomkl scipy==0.19.0 numpy==1.12.1 networkx scikit-learn cython h5py==2.6.0 pip pil numexpr psutil coverage beautiful-soup lxml ipython ipython-notebook
 
 source activate $envname
 
@@ -14,12 +14,13 @@ pip install sqlalchemy==0.7.8 sqlalchemy-migrate==0.7.2 minixsv formencode gensh
 # pip install py2app docutils apscheduler pyobjc
 # pip install --upgrade setuptools
 # pip install --upgrade distribute
-# Edit [anaconda-env]/Lib/python2.7/site-packages/macholib/MatchOGraph.py loader= into loader_path=
+# Edit python2.7/site-packages/macholib/MatchOGraph.py loader= into loader_path=
+# Add an empty __init__.py in python2.7/site-packages/PyObjCTools/ folder or else py2app won't be able to process this module
 
 # After these run "sh install_from_svn.sh" or "python setup.py develop/install" from each of TVB packages
 
 cd ../../..
-python setup_extra.py develop
+sh install_from_svn.sh
 
 cd scientific_library
 python setup.py develop
@@ -29,4 +30,4 @@ python setup.py develop
 
 conda uninstall pyside shiboken cairo
 
-# [anaconda-env]/Lib/python2.7/site-packages/matplotlib/mpl-data/matplotlibrc to Agg
+# python2.7/site-packages/matplotlib/mpl-data/matplotlibrc to Agg

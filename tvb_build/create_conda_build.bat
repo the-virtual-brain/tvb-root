@@ -1,5 +1,5 @@
 REM build env with pre-built binaries from conda repos
-conda create -y -n tvb-run scipy==0.17.0 numpy==1.11.0 networkx scikit-learn cython h5py==2.3.0 pip pil numexpr psutil coverage beautiful-soup lxml ipython ipython-notebook
+conda create -y -n tvb-run scipy==0.19.0 numpy==1.12.1 networkx scikit-learn cython h5py==2.6.0 pip pil numexpr psutil coverage beautiful-soup lxml ipython ipython-notebook
 
 REM use environment
 call activate tvb-run
@@ -12,10 +12,7 @@ pip install gdist sqlalchemy==0.7.8 sqlalchemy-migrate==0.7.2 minixsv formencode
 
 #After these run "sh install_from_svn.sh" or "python setup.py develop/install" from each of TVB packages
 
-cd ..
-python setup_extra.py develop
-
-cd scientific_library
+cd ..\scientific_library
 python setup.py develop
 
 cd ..\framework_tvb
