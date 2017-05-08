@@ -78,7 +78,7 @@ PY2APP_INCLUDES = ['allensdk', 'apscheduler', 'apscheduler.scheduler', 'cfflib',
                    'simplejson', 'six', 'StringIO', 'xml.dom', 'xml.dom.minidom', 'zlib', 'zmq']
 
 PY2APP_EXCLUDES = ['_markerlib', 'altgraph', 'coverage', 'cython', 'Cython', 'tvb_data', 'docutils',
-                   'macholib', 'modulegraph', 'nose', 'OpenGL', 'packaging', 'py2app', 'PyOpenGL', 'PyQt4',
+                   'macholib', 'modulegraph', 'nose', 'OpenGL', 'py2app', 'PyOpenGL', 'PyQt4',
                    'sphinx', 'test', 'testpath', 'wx']
 
 PY2APP_OPTIONS = {'iconfile': 'tvb_build/icon.icns',
