@@ -49,7 +49,7 @@ EXCLUDES = [
     # part of python and setuptools
     'distutils', 'pkg_resources', 'setuptools', 'socketserver', '_thread', '_dummy_thread',
     # python 3 backports
-    'futures', 'libfuturize', 'libpasteurize', 'past',
+    'futures', 'libfuturize', 'libpasteurize', 'lib2to3', 'past',
     'singledispatch', 'funcsigs', 'enum34', 'enum', 'reprlib',
     'backports.ssl-match-hostname', 'backports.shutil-get-terminal-size', 'copyreg', 'winreg',
     # others
