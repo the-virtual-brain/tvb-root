@@ -13,7 +13,7 @@
     <dependency env="[win,linux]" name="anaconda">
         <full-name value="Anaconda"/>
         <project-home value="https://store.continuum.io/cshop/anaconda/"/>
-        <version value="2.3.0"/>
+        <version value="4.2"/>
         <usage value="dynamic linking"/>
         <license value="LICENSE_anaconda.txt"/>
         <license-type value="Derived from MIT_"/>
@@ -820,6 +820,16 @@
         <copyright-notice value="Copyright (c) 2014, Jonathan Slenders"/>
         <description value="iPython dependency"/>
     </dependency>
+    <dependency env="[win,linux]" name="prompt-toolkit">
+        <full-name value="Prompt Toolkit"/>
+        <project-home value="https://github.com/jonathanslenders/python-prompt-toolkit"/>
+        <version value="1.0.14"/>
+        <usage value="dynamic linking"/>
+        <license value="LICENSE_prompt_toolkit.txt"/>
+        <license-type value="BSD_"/>
+        <copyright-notice value="Copyright (c) 2014, Jonathan Slenders"/>
+        <description value="iPython dependency"/>
+    </dependency>
     <dependency env="[win,mac,linux]" name="psutil">
         <full-name value="psutil"/>
         <project-home value="http://code.google.com/p/psutil/"/>
@@ -969,6 +979,16 @@
         <license-type value="Apache_ 2"/>
         <copyright-notice value="Copyright 2014 Ian Cordasco, Cory Benfield"/>
         <description value="Package needed for AllenSDK"/>
+    </dependency>
+    <dependency env="[win,linux]" name="scandir">
+        <full-name value="Scandir"/>
+        <project-home value="https://pypi.python.org/pypi/scandir"/>
+        <version value="1.5"/>
+        <usage value="dynamic linking"/>
+        <license value="LICENSE_scandir.txt"/>
+        <license-type value="BSD_ new"/>
+        <copyright-notice value="Copyright (c) 2012, Ben Hoyt"/>
+        <description value="A better directory iterator and faster os.walk()"/>
     </dependency>
     <dependency env="[win,linux]" name="scikit-learn">
         <full-name value="Scikits Learn"/>

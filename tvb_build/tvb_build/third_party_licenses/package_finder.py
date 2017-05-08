@@ -47,14 +47,15 @@ EXCLUDES = [
     # part of tvb
     'tvb_bin', 'tvb_data', 'tvb', 'gdist',
     # part of python and setuptools
-    'distutils', 'pkg_resources', 'setuptools',
+    'distutils', 'pkg_resources', 'setuptools', 'socketserver', '_thread', '_dummy_thread',
     # python 3 backports
-    'futures', 'backports.ssl-match-hostname', 'singledispatch', 'funcsigs', 'enum34', 'enum',
+    'futures', 'libfuturize', 'libpasteurize', 'singledispatch', 'funcsigs', 'enum34', 'enum', 'reprlib',
+    'backports.ssl-match-hostname', 'backports.shutil-get-terminal-size', 'copyreg', 'winreg',
     # others
-    '_builtinsuites', 'bsddb', 'carbon', 'compiler', 'config',
-    'hotshot', 'lib-dynload',
+    '_builtinsuites', 'builtins', 'bsddb', 'carbon', 'compiler', 'config', 'http', 'html',
+    'hotshot', 'lib-dynload', '_markupbase',
     'openglcontext', 'pydoc_data', 'pysqlite2', 'pyximport',  # part of cython
-    'stdsuites', 'wxpython',
+    'queue', 'stdsuites', 'wxpython',
     ## Mac: We exclude bellow shorter names for packages already introspected.
     "foundation", "exceptionhandling",
     "objc", "appkit", "pyobjctools", "cocoa",
@@ -66,12 +67,12 @@ EXCLUDES_DLL = []
 
 # Windows *.pyds that are part of python standard libs
 EXCLUDES_PYD = [
-    '_psutil_windows.pyd', 'gdist.pyd', "_cffi_backend.pyd"
+    '_psutil_windows.pyd', 'gdist.pyd', "_cffi_backend.pyd", "_scandir.pyd"
 ]
 
 # libpq dependencies on dynamic psycopg linux 32
 EXCLUDES_SO = [
-    '_psutil_linux.so', '_psutil_posix.so', 'gdist.so'
+    '_psutil_linux.so', '_psutil_posix.so', 'gdist.so', '_scandir.so'
 ]
 
 EXCLUDES_DYLIB = [
@@ -103,7 +104,7 @@ EXTRA_MODULES = {
     'mathjax': '2.0'
 }
 
-ANACONDA_VERSION = "2.3.0"
+ANACONDA_VERSION = "4.2"
 
 # These file-name pattern should not be found in TVB distribution:
 LICENSE_INTERDICTIONS = [re.compile(".*lzo.*")]
