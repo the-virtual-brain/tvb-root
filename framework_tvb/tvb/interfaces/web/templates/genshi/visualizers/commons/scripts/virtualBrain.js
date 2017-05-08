@@ -33,7 +33,7 @@
 /**
  * WebGL methods "inheriting" from webGL_xx.js in static/js.
  */
-const BRAIN_CANVAS_ID = "GLcanvas";
+var BRAIN_CANVAS_ID = "GLcanvas";
 /**
  * Variables for displaying Time and computing Frames/Sec
  */
