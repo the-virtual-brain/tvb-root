@@ -47,7 +47,7 @@ EXCLUDES = [
     # part of tvb
     'tvb_bin', 'tvb_data', 'tvb', 'gdist',
     # part of python and setuptools
-    'distutils', 'pkg_resources', 'setuptools', 'socketserver', '_thread', '_dummy_thread',
+    'distutils', 'packaging', 'pkg_resources', 'setuptools', 'socketserver', '_thread', '_dummy_thread',
     # python 3 backports
     'futures', 'libfuturize', 'libpasteurize', 'lib2to3', 'past',
     'singledispatch', 'funcsigs', 'enum34', 'enum', 'reprlib',
