@@ -120,6 +120,16 @@
         <copyright-notice value="Copyright (c) 2002-2008, CherryPy Team (team@cherrypy.org)"/>
         <description value="We use this library for web server."/>
     </dependency>
+    <dependency env="mac" name="cheroot">
+        <full-name value="Cheroot"/>
+        <project-home value="https://pypi.python.org/pypi/Cheroot"/>
+        <version value="5.5.0"/>
+        <usage value="dynamic linking"/>
+        <license value="LICENSE_cheroot.txt"/>
+        <license-type value="BSD_"/>
+        <copyright-notice value="Copyright (c) 2004-2016, CherryPy Team (team@cherrypy.org)"/>
+        <description value="Highly-optimized, pure-python HTTP server. Used by CherryPy"/>
+    </dependency>
     <dependency env="win" name="colorama">
         <full-name value="Colorama"/>
         <project-home value="https://pypi.python.org/pypi/colorama"/>
@@ -419,6 +429,16 @@
         <license-type value="BSD_"/>
         <copyright-notice value="Copyright 1999 R. Clint Whaley"/>
         <description value="Automated Empirical Optimization of Software Project"/>
+    </dependency>
+    <dependency env="mac" name="libtiff.5.dylib">
+        <full-name value="TIFF library"/>
+        <project-home value="https://pypi.python.org/pypi/libtiff/"/>
+        <version value="unknown"/>
+        <usage value="dynamic linking"/>
+        <license value="LICENSE_libtiff.txt"/>
+        <license-type value="BSD_ 3rd clause"/>
+        <copyright-notice value="Copyright (c) 2009-2010 Pearu Peterson"/>
+        <description value="https://github.com/pearu/pylibtiff"/>
     </dependency>
     <dependency env="mac" name="libbz2.1.0.dylib">
         <full-name value="BZip library"/>
@@ -1170,6 +1190,16 @@
         <copyright-notice value="Copyright (c) 2008 Ian Bicking and Contributors"/>
         <description value="This is a dependency of SQLAlchemy's migrate versioning."/>
     </dependency>
+    <dependency env="mac" name="tempora">
+        <full-name value="Tempora"/>
+        <project-home value="https://pypi.python.org/pypi/tempora"/>
+        <version value="1.6.1"/>
+        <usage value="dynamic linking"/>
+        <license value="LICENSE_tempora.txt"/>
+        <license-type value="MIT_"/>
+        <copyright-notice value="Copyright (c) 2016 Jason R. Coombs"/>
+        <description value="Objects and routines pertaining to date and time (tempora)"/>
+    </dependency>
     <dependency env="[linux,mac]" name="terminado">
         <full-name value="Terminado"/>
         <project-home value="https://pypi.python.org/pypi/terminado"/>
@@ -1239,6 +1269,16 @@
         <license-type value="MIT_"/>
         <copyright-notice value="Copyright (c) 2014 Jeff Quast &lt;contact@jeffquast.com&gt;"/>
         <description value="Measures number of Terminal column cells of wide-character codes. Needed by iPython."/>
+    </dependency>
+    <dependency env="mac" name="webencodings">
+        <full-name value="WebEncodings"/>
+        <project-home value="https://pypi.python.org/pypi/webencodings"/>
+        <version value="0.5.1"/>
+        <usage value="dynamic linking"/>
+        <license value="LICENSE_webencodings.txt"/>
+        <license-type value="BSD_ "/>
+        <copyright-notice value="Copyright (c) 2012 by Simon Sapin."/>
+        <description value="Character encoding aliases for legacy web content"/>
     </dependency>
     <dependency env="mac" name="widgetsnbextension">
         <full-name value="iPython Widgets Extension"/>
