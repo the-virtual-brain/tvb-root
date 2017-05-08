@@ -1,13 +1,13 @@
 ======================================================================================================================================
  The Virtual Brain (TVB)
- Version: 1.5.1 - build 8---
+ Version: 1.5.1 - build 8250
  Release Date: 10 May 2017
  Description: License change.
 ======================================================================================================================================
     * Change license of TVB from GPL v2 into GPL v3
     * Expose in TVB_Distribution Allen Connectivity creator
     * New PSE viewer
-    *
+    * Bug fixes
 
 ======================================================================================================================================
  The Virtual Brain (TVB)
