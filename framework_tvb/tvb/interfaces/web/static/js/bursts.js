@@ -537,7 +537,7 @@ function changePSETab(clickedHref, toShow) {
     if (toShow == 'flot') {
         $('#burst-pse-flot').show();
         $('#burst-pse-iso').hide();
-        redrawPlot('main_div_pse');
+        redrawPlot('pse_discreet_top_id');
     } else {
         $('#burst-pse-flot').hide();
         $('#burst-pse-iso').show();
@@ -568,7 +568,7 @@ function toggleMaximizeBurst(hrefElement) {
         resizeIsoFigures();
     }
     if ($('#pse-flot').hasClass('active')) {
-        redrawPlot('main_div_pse');
+        redrawPlot('pse_discreet_top_id');
     }
 }
 

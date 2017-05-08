@@ -868,7 +868,7 @@ function PSE_mainDraw(parametersCanvasId, backPage, groupGID) {
         type: "POST",
         url: url,
         success: function (r) {
-            $("#pse_discreet_top_id").html(r);
+            $('#' + parametersCanvasId).html(r);
         },
         error: function () {
             displayMessage("Could not refresh with the new metrics.", "errorMessage");
