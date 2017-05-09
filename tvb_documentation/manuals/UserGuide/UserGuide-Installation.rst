@@ -65,16 +65,20 @@ Launching the GUI
 For Mac users the `TVB_Distribution` folder contains an application file `tvb.app`.
 To start |TVB| in your web browser double click `tvb.app`.
 Please be patient, as depending on your computer resources, the startup process might take about 1-2 minutes.
-On the latest versions of MacOS, you should allow from `Settings --> Security and Privacy` the newly downloaded
-executable to run.
 
 .. figure:: screenshots/install_mac_error.png
     :align: center
+    :width: 300px
 
     Access error when launching TVB on Mac
 
+On the latest versions of MacOS, you should allow from `Settings --> Security and Privacy` the newly downloaded
+executable to run.
+
+
 .. figure:: screenshots/install_mac_access.png
     :align: center
+    :width: 700px
 
     Give access to TVB on Mac
 
