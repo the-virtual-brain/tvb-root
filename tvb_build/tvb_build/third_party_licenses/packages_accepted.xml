@@ -3,7 +3,7 @@
     <dependency env="[win,mac,linux]" name="allensdk">
         <full-name value="AllenSDK"/>
         <project-home value="https://github.com/AllenInstitute/AllenSDK"/>
-        <version value="0.13.1"/>
+        <version value="0.12.4"/>
         <usage value="dynamic linking"/>
         <license value="LICENSE_allen.txt"/>
         <license-type value="GPLv3_"/>
@@ -813,7 +813,7 @@
     <dependency env="[win,mac,linux]" name="pandas">
         <full-name value="Pandas"/>
         <project-home value="http://pandas.pydata.org/"/>
-        <version value="0.20"/>
+        <version value="0.18.1"/>
         <usage value="dynamic linking"/>
         <license value="LICENSE_pandas.txt"/>
         <license-type value="BSD_"/>
