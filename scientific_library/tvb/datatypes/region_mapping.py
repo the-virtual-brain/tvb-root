@@ -198,7 +198,7 @@ class RegionVolumeMapping(VolumetricDataMixin, arrays.MappedArray):
         slices = slice(x_plane, x_plane + 1), slice(y_plane, y_plane + 1), slice(z_plane, z_plane + 1)
         voxel = self.read_data_slice(slices)[0, 0, 0]
         if voxel != -1:
-            return self.connectivity.region_labels[voxel]
+            return self.connectivity.region_labels[int(voxel)]
         else:
             return 'background'
 
