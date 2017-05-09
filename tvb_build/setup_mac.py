@@ -65,8 +65,7 @@ EXCLUDED_DYNAMIC_LIBS = []
 
 # --------------------------- PY2APP specific configurations--------------------------------------------
 
-PY2APP_PACKAGES = ['cherrypy', 'email', 'h5py', 'IPython', 'ipykernel', 'ipython_genutils', 'ipykernel_launcher',
-                   'jupyter_client', 'jupyter_core',
+PY2APP_PACKAGES = ['cherrypy', 'email', 'h5py', 'IPython', 'ipykernel', 'ipykernel_launcher', 'nbformat',
                    'lib2to3', "llvmlite", 'migrate', 'minixsv', 'numba', 'notebook', 'numpy', 'pkg_resources',
                    'PyObjCTools', 'scipy', 'sklearn', 'tables', 'tornado', 'tvb']
 
