@@ -174,14 +174,15 @@ class TimeSeries(types_mapped.MappedType):
         """
         if channels_list:
             channels_list = json.loads(channels_list)
+            for i in xrange(len(channels_list)):
+                channels_list[i] = int(channels_list[i])
 
         if channels_list:
             channel_slice = tuple(channels_list)
         else:
             channel_slice = slice(None)
 
-        data_page = self.read_data_page(
-            from_idx, to_idx, step, specific_slices)
+        data_page = self.read_data_page(from_idx, to_idx, step, specific_slices)
         # This is just a 1D array like in the case of Global Average monitor.
         # No need for the channels list
         if len(data_page.shape) == 1:
