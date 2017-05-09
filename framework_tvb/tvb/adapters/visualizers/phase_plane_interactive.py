@@ -178,7 +178,7 @@ class PhasePlaneD3(PhasePlane):
             self.integrator.clamped_state_variable_values = None
 
     def update_axis(self, mode, svx, svy, x_range, y_range, state_vars):
-        self.mode = mode
+        self.mode = int(mode)
         self.svx_ind = self.model.state_variables.index(svx)
         self.svy_ind = self.model.state_variables.index(svy)
         svr = self.model.state_variable_range
@@ -273,7 +273,7 @@ class PhaseLineD3(_PhaseSpace):
 
 
     def update_axis(self, mode, svx, x_range):
-        self.mode = mode
+        self.mode = int(mode)
         svr = self.model.state_variable_range
         svr[svx][:] = x_range
 
