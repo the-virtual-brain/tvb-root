@@ -36,7 +36,26 @@ function C2I_exportFigures(kwargs) {
         __storeCanvas(this, kwargs);
     });
 
-    var svgRef = $("svg").filter(":visible");
+    let svgRef = $("svg").filter(":visible");
+    if (svgRef.length > 1) {
+        let filteredSVGs = [];
+        let l = svgRef.length;
+        for (let i = 0; i < l; i++) {
+            let currentSVG = svgRef[i];
+            let contained = false;
+            for (let j = 0; j < l; j++) {
+                let otherSVG = svgRef[j];
+                if (i != j && $.contains(otherSVG, currentSVG)) {
+                    contained = true;
+                }
+            }
+            if (!contained) {
+                filteredSVGs.push(currentSVG);
+            }
+        }
+        svgRef = $(filteredSVGs);
+    }
+
     svgRef.attr({ version: '1.1' , xmlns:"http://www.w3.org/2000/svg"});
     svgRef.each(function () {
         __storeSVG(this, kwargs);
