@@ -36,7 +36,7 @@ function C2I_exportFigures(kwargs) {
         __storeCanvas(this, kwargs);
     });
 
-    let svgRef = $("svg").filter(":visible");
+    let svgRef = $("svg").filter(":visible").filter(":not([display='none'])");
     if (svgRef.length > 1) {
         let filteredSVGs = [];
         let l = svgRef.length;
