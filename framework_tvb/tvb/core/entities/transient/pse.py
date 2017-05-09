@@ -92,6 +92,8 @@ class ContextDiscretePSE(EnhancedDictionary):
         """
         self.labels_x = json.dumps(self.labels_x)
         self.labels_y = json.dumps(self.labels_y)
+        self.values_x = json.dumps(self.values_x)
+        self.values_y = json.dumps(self.values_y)
         self.d3_data = json.dumps(self.d3_data)
         self.has_started_ops = json.dumps(self.has_started_ops)
     

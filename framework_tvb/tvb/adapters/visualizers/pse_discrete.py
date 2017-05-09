@@ -117,6 +117,15 @@ class DiscretePSEAdapter(ABCDisplayer):
 
 
     @staticmethod
+    def get_value_on_axe(op_range, only_numbers, range_param_name, fake_numbers):
+        if range_param_name is None:
+            return model.RANGE_MISSING_STRING
+        if only_numbers:
+            return op_range[range_param_name]
+        return fake_numbers[op_range[range_param_name]]
+
+
+    @staticmethod
     def prepare_parameters(datatype_group_gid, back_page, color_metric=None, size_metric=None):
         """
         We suppose that there are max 2 ranges and from each operation results exactly one dataType.
@@ -147,14 +156,15 @@ class DiscretePSEAdapter(ABCDisplayer):
         final_dict = {}
         operations = dao.get_operations_in_group(operation_group.id)
 
+        fake_numbers1 = dict(zip(values1, range(len(list(values1)))))
+        fake_numbers2 = dict(zip(values2, range(len(list(values2)))))
+
         for operation_ in operations:
             if not operation_.has_finished:
                 pse_context.has_started_ops = True
             range_values = eval(operation_.range_values)
-            key_1 = range_values[name1]
-            key_2 = model.RANGE_MISSING_STRING
-            if name2 is not None:
-                key_2 = range_values[name2]
+            key_1 = DiscretePSEAdapter.get_value_on_axe(range_values, only_numbers1, name1, fake_numbers1)
+            key_2 = DiscretePSEAdapter.get_value_on_axe(range_values, only_numbers2, name2, fake_numbers2)
 
             datatype = None
             if operation_.status == model.STATUS_FINISHED:
@@ -177,4 +187,8 @@ class DiscretePSEAdapter(ABCDisplayer):
         ## datatypes_dict is not actually used in the drawing of the PSE and actually
         ## causes problems in case of NaN values, so just remove it before creating the json
         pse_context.datatypes_dict = {}
+        if not only_numbers1:
+            pse_context.values_x = range(len(list(values1)))
+        if not only_numbers2:
+            pse_context.values_y = range(len(list(values2)))
         return pse_context

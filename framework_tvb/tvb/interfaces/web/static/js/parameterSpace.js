@@ -48,7 +48,7 @@ var _PSE_plot;
  * @param max_color: maximum color, used for gradient
  * @param backPage: page where visualizers fired from overlay should take you back.
  */
-function _updatePlotPSE(canvasId, xLabels, yLabels, seriesArray, min_color, max_color, backPage, d3Data) {
+function _updatePlotPSE(canvasId, xLabels, yLabels, xValues, yValues, seriesArray, min_color, max_color, backPage, d3Data) {
 
     // why is it that we don't associate the labels into the attributes of the actual data_info or seriesArray?
     // where does the seriesArray structure get created?
@@ -63,10 +63,12 @@ function _updatePlotPSE(canvasId, xLabels, yLabels, seriesArray, min_color, max_
             right: 50
         },
         xaxis: {
-            labels: xLabels
+            labels: xLabels,
+            values: xValues
         },
         yaxis: {
-            labels: yLabels
+            labels: yLabels,
+            values: yValues
         }
 
     };
@@ -126,18 +128,35 @@ function d3Plot(placeHolder, data, options, pageParam) {
      * the typical axes of the graph.
      */
     function createXAxis() {
+
         newAxis = d3.svg.axis().scale(xScale)
             .orient("bottom")
-            .tickValues(_PSE_plotOptions.xaxis.labels)
-            .tickFormat(d3.format(",.3f"));
+            .tickValues(_PSE_plotOptions.xaxis.values)
+            .tickFormat(function (i) {
+                current_idx = _PSE_plotOptions.xaxis.values.indexOf(i);
+                if (typeof _PSE_plotOptions.xaxis.labels[current_idx] === "string") {
+                    return _PSE_plotOptions.xaxis.labels[i]
+                } else {
+                    return d3.format(",.3f")(i)
+                }
+
+            });
         return newAxis
     }
 
     function createYAxis() {
         newAxis = d3.svg.axis().scale(yScale)
             .orient("left")
-            .tickValues(_PSE_plotOptions.yaxis.labels)
-            .tickFormat(d3.format(",.3f")); // this means add in , when thousands are used, and look for 2 digits past the decimal, with value considered float type
+            .tickValues(_PSE_plotOptions.yaxis.values)
+            .tickFormat(function (i) {
+                current_idx = _PSE_plotOptions.yaxis.values.indexOf(i);
+                if (typeof _PSE_plotOptions.yaxis.labels[current_idx] === "string") {
+                    return _PSE_plotOptions.yaxis.labels[i]
+                } else {
+                    return d3.format(",.3f")(i)
+                }
+
+            });
         return newAxis
     }
 
@@ -801,11 +820,13 @@ function updateLegend(minColor, maxColor) {
 }
 
 
-function PSEDiscreteInitialize(labelsXJson, labelsYJson, series_array, dataJson, backPage, hasStartedOperations,
+function PSEDiscreteInitialize(labelsXJson, labelsYJson, valuesXJson, valuesYJson, series_array, dataJson, backPage, hasStartedOperations,
                                min_color, max_color, min_size, max_size) {
 
     var labels_x = $.parseJSON(labelsXJson);
     var labels_y = $.parseJSON(labelsYJson);
+    var values_x = $.parseJSON(valuesXJson);
+    var values_y = $.parseJSON(valuesYJson);
     var data = $.parseJSON(dataJson);
     series_array = typeof (series_array) == "string" ? $.parseJSON(series_array) : series_array;
 
@@ -815,7 +836,7 @@ function PSEDiscreteInitialize(labelsXJson, labelsYJson, series_array, dataJson,
     max_size = parseFloat(max_size);
 
     ColSch_initColorSchemeGUI(min_color, max_color, function () { //this now doesn't create error in simulator panel, why?
-        _updatePlotPSE('main_div_pse', labels_x, labels_y, series_array, min_color, max_color, backPage, data);
+        _updatePlotPSE('main_div_pse', labels_x, labels_y, values_x, values_y, series_array, min_color, max_color, backPage, data);
     });
 
     function _fmt_lbl(sel, v) {
@@ -831,7 +852,7 @@ function PSEDiscreteInitialize(labelsXJson, labelsYJson, series_array, dataJson,
         min_color = 0;
         max_color = 1;
     }
-    _updatePlotPSE('main_div_pse', labels_x, labels_y, series_array, min_color, max_color, backPage, data);
+    _updatePlotPSE('main_div_pse', labels_x, labels_y, values_x, values_y, series_array, min_color, max_color, backPage, data);
     updateLegend(min_color, max_color);
 
     if (hasStartedOperations) {
