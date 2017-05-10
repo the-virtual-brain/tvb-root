@@ -4,17 +4,18 @@ The Virtual Brain framework is a complete framework including:
 
 - a plugable workflow manager;
 - a data persistence layer (with a relational DB and File Storage);
-- a browser-based user interface;
+- an HTML5 based user interface;
 - visualizers for neuro-science related entities.
 
-The easiest way to use the framework from the Git repo is to obtain
-a distribution of TVB with Python & all the necessary packages: please
-follow the instructions [in our documentation](http://docs.thevirtualbrain.com/advanced/link_contributor.html).
+The easiest way to make use of the code from this Git repo is to obtain
+a Distribution of TVB with Python and all the necessary packages linked, 
+and then clone this repo nearby. More details [in our documentation](http://docs.thevirtualbrain.org/manuals/ContributorsManual/ContributorsManual.html).
 
-Alternatively, if you plan to develop with TVB, extensively modify code,
-or prefer to use your own Python installation, you may prefer to use the
-[tvb-pack](https://github.com/the-virtual-brain/tvb-pack) repo which gathers together several required modules and a
-few helpful tools.
+Alternatively, if you plan to develop long term with TVB, extensively modify code,
+add new dependencies, or you simply prefer to use your own Python installation, you may want to use the
+[tvb-pack](https://github.com/the-virtual-brain/tvb-pack) repo which gathers 
+together several required modules and a few helpful TVB tools.
+You will need in this case to setup your machine alone. Few guidelines can be found [here](http://docs.thevirtualbrain.org/manuals/ContributorsManual/ContributorsManual.html#the-unaided-setup).
 
 If you don't require the framework features listed above, the simulator 
 and associated scientific modules can be used independently; please see
