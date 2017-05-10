@@ -12,3 +12,4 @@ francesca.melozzi = FrancescaMelozzi <france.melozzi@gmail.com>
 devin.bayly = DevinBayly <baylyd@email.arizona.edu>
 wenyan = Vio8023 <huwy.vio@gmail.com>
 viktor.sip = sipv <vikt.sip@gmail.com>
+paula.popa = popaula937 <paula.popa@codemart.ro>

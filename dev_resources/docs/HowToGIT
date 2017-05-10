@@ -11,6 +11,10 @@
 #   https://repo.thevirtualbrain.org/svn/tvb/trunk/ --trunk=tvb_documentation   #sync from revision number 7000
 #   https://repo.thevirtualbrain.org/svn/tvb/trunk/ --trunk=tvb_data            #sync from revision number 7500
 
+## To reconnect Git - SVN
+# http://stackoverflow.com/questions/12954644/how-can-i-reconnect-a-git-repository-with-a-svn-repository
+# successfully applied on framework-tvb
+
 
 ## Initialize new 3rd party SYNCHRONIZATION REPO:
 
