@@ -409,6 +409,8 @@ one filter execution then the other.
 
    Explore Tool, with Region Selected
 
+   (The Explore button is currently disabled because this functionality is not fully implemented)
+
 The last tool to be described in the PSE Discrete Viewer is the **Explore tool**. This tool is meant to give users the
 option to select regions of the Parameter Space to be filled in with new results. Currently only the front end of this
 tool is complete, so upon clicking the explore button the mouse cursor becomes a cross hair, and sections of the graph
