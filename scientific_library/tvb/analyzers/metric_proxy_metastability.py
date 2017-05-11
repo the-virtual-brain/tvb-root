@@ -113,6 +113,7 @@ class ProxyMetastabilitySynchrony(metrics_base.BaseTimeseriesMetricAlgorithm):
             # Lazy strategy
             start_tpt = int((self.segment - 1) * (tpts // self.segment))
 
+        start_tpt = int(start_tpt)
         time_series_diffs = remove_mean(self.time_series.data[start_tpt:, :], axis=2)
         v_data = abs(time_series_diffs).mean(axis=2)
 

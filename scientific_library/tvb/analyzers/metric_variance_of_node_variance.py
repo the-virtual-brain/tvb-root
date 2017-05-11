@@ -81,6 +81,7 @@ class VarianceNodeVariance(metrics_base.BaseTimeseriesMetricAlgorithm):
             # Lazy strategy
             start_tpt = int((self.segment - 1) * (tpts // self.segment))
 
+        start_tpt = int(start_tpt)
         zero_mean_data = (self.time_series.data[start_tpt:, :] - self.time_series.data[start_tpt:, :].mean(axis=0))
         #reshape by concatenating the time-series of each var and modes for each node.
         zero_mean_data = zero_mean_data.transpose((0, 1, 3, 2))

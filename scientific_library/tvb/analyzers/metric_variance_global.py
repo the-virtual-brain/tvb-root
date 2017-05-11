@@ -81,7 +81,8 @@ class GlobalVariance(metrics_base.BaseTimeseriesMetricAlgorithm):
             LOG.debug("Will divide the time-series into %d segments." % self.segment)
             # Lazy strategy
             start_tpt = int((self.segment - 1) * (tpts // self.segment))
-        
+
+        start_tpt = int(start_tpt)
         zero_mean_data = (self.time_series.data[start_tpt:, :] - self.time_series.data[start_tpt:, :].mean(axis=0))
         global_variance = zero_mean_data.var()
         return global_variance  
