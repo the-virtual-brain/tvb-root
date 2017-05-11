@@ -402,17 +402,6 @@ logical operators (AND OR). It is worth noting that in order to perform filterin
 operations ([foo and bar] or baz) as different from (foo and [bar or baz]) sequential filters must be applied:
 one filter execution then the other.
 
-.. figure:: screenshots/visualizer_pse_discreet_contour.jpg
-   :width: 90%
-   :align: center
-
-   **Contour Line Creation**
-
-Even with the incorporation of size and color as visual cues to the individual result metrics, it can be difficult to
-tell similar results apart. This tool allows the user to specify a threshold for the difference in metrics between one
-dot and its neighbors, and lines will be drawn in between dots that have metric differences that are greater than the
-user input threshold. Similar options to the filter tool are included, so that the threshold can be inverted, and color
-or size can be considered at a time.
 
 .. figure:: screenshots/visualizer_pse_discreet_explore.jpg
    :width: 90%
