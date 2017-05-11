@@ -1,12 +1,20 @@
 ======================================================================================================================================
  The Virtual Brain (TVB)
- Version: 1.5.1 - build 8250
- Release Date: 10 May 2017
- Description: License change.
+ Version: 1.5.2 - build 8250
+ Release Date: 11 May 2017
+ Description: Bug fixing.
 ======================================================================================================================================
-    * Change license of TVB from GPL v2 into GPL v3
-    * Expose in TVB_Distribution Allen Connectivity creator
-    * New PSE viewer
+    * Fix bug when launching PSE
+
+======================================================================================================================================
+ The Virtual Brain (TVB)
+ Version: 1.5.1 - build 8240
+ Release Date: 9 May 2017
+ Description: License change from GPL v2 into GPL v3, integration of Allen Connectivity Creator.
+======================================================================================================================================
+    * Update license of TVB from GPL v2 into GPL v3
+    * Expose in TVB_Distribution the Allen Connectivity creator
+    * New and improved PSE discreet viewer
     * Bug fixes
 
 ======================================================================================================================================
