@@ -63,7 +63,7 @@
     <dependency env="[win,linux]" name="beautifulsoup4">
         <full-name value="Beautiful Soup (BS4)"/>
         <project-home value="http://www.crummy.com/software/BeautifulSoup"/>
-        <version value="4.3.2"/>
+        <version value="[4.3.2,4.6.0]"/>
         <usage value="static linking"/>
         <license value="LICENSE_bs4.txt"/>
         <license-type value="MIT_"/>
@@ -240,6 +240,16 @@
         <copyright-notice value="The persons who have associated their work with this project (the Dedicator: David Goodger and the many contributors to the Docutils project) hereby dedicate the entire copyright, less few exception, in the work of authorship known as Docutils identified below (the Work) to the public domain."/>
         <description value="Documentation - Coming with Anaconda env"/>
     </dependency>
+    <dependency env="[win,linux]" name="entrypoints">
+        <full-name value="Entrypoints"/>
+        <project-home value="https://pypi.python.org/pypi/entrypoints"/>
+        <version value="0.2.2"/>
+        <usage value="dynamic linking"/>
+        <license value="LICENSE_entrypoints.txt"/>
+        <license-type value="MIT_"/>
+        <copyright-notice value="Copyright (c) 2015 Thomas Kluyver and contributors"/>
+        <description value="Discover and load entry points from installed packages - In Anaconda env"/>
+    </dependency>
     <dependency env="[win,mac,linux]" name="flot">
         <full-name value="Flot"/>
         <project-home value="http://www.flotcharts.org/"/>
@@ -350,7 +360,7 @@
         <copyright-notice value="Copyright (c) 2001-, IPython Development Team"/>
         <description value="Vestigial utilities from IPython"/>
     </dependency>
-    <dependency env="[win,mac]" name="ipywidgets">
+    <dependency env="[win,linux,mac]" name="ipywidgets">
         <full-name value="iPython Widgets"/>
         <project-home value="https://pypi.python.org/pypi/ipywidgets"/>
         <version value="[5.2.2,6.0.0]"/>
@@ -693,7 +703,7 @@
     <dependency env="[win,linux,mac]" name="mistune">
         <full-name value="Mistune"/>
         <project-home value="https://github.com/lepture/mistune"/>
-        <version value="[0.6,0.7.3]"/>
+        <version value="[0.6,0.7.3,0.7.4]"/>
         <usage value="dynamic linking"/>
         <license value="LICENSE_mistune.txt"/>
         <license-type value="BSD_"/>
@@ -1330,7 +1340,7 @@
         <copyright-notice value="Copyright (c) 2012 by Simon Sapin."/>
         <description value="Character encoding aliases for legacy web content"/>
     </dependency>
-    <dependency env="[win,mac]" name="widgetsnbextension">
+    <dependency env="[win,mac,linux]" name="widgetsnbextension">
         <full-name value="iPython Widgets Extension"/>
         <project-home value="https://pypi.python.org/pypi/widgetsnbextension"/>
         <version value="[1.2.6,2.0.0]"/>
