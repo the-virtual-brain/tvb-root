@@ -1261,6 +1261,16 @@
         <copyright-notice value="Copyright Notice and Statement for PyTables Software Library and Utilities: Copyright (c) 2002-2004 by Francesc Alted  Copyright (c) 2005-2007 by Carabos Coop. V.  Copyright (c) 2008-2010 by Francesc Alted"/>
         <description value="Open source software, under BSD_ license."/>
     </dependency>
+    <dependency env="linux" name="testpath">
+        <full-name value="Testpath"/>
+        <project-home value="https://pypi.python.org/pypi/testpath"/>
+        <version value="0.3"/>
+        <usage value="dynamic linking"/>
+        <license value="LICENSE_testpath.txt"/>
+        <license-type value="MIT_"/>
+        <copyright-notice value="Copyright (c) 2015, The Jupyter Development Team"/>
+        <description value="Test utilities for code working with files and commands"/>
+    </dependency>
     <dependency env="[win,mac,linux]" name="tempita">
         <full-name value="Tempita"/>
         <project-home value="http://pythonpaste.org/tempita/"/>
