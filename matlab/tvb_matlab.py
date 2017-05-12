@@ -114,3 +114,12 @@ def setup():
     except Exception as exc:
         #print 'failed to import all TVB modules, not all functionality may be .'
         pass
+
+
+def run_sim_with_seed(sim, length, seed):
+    try:
+        import numpy as np
+        rstate = np.random.RandomState(int(seed)).get_state()
+        return sim.run(simulation_length=length, random_state=rstate)
+    except Exception as exc:
+        print 'unable to run: %r' % (exc, )

@@ -38,5 +38,8 @@ else
     fprintf('[tvb_setup] using Python %s %s\n', version, executable);
 end
 %%
+
+append(py.sys.path, fileparts(mfilename('fullpath')))
+
 py.tvb_matlab.setup()
 py.tvb.simulator.common.log_debug(py.False, py.False, '[TVB]')
