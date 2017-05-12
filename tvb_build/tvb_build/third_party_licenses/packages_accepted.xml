@@ -350,10 +350,10 @@
         <copyright-notice value="Copyright (c) 2001-, IPython Development Team"/>
         <description value="Vestigial utilities from IPython"/>
     </dependency>
-    <dependency env="mac" name="ipywidgets">
+    <dependency env="[win,mac]" name="ipywidgets">
         <full-name value="iPython Widgets"/>
         <project-home value="https://pypi.python.org/pypi/ipywidgets"/>
-        <version value="5.2.2"/>
+        <version value="[5.2.2,6.0.0]"/>
         <usage value="dynamic linking"/>
         <license value="LICENSE_ipython.txt"/>
         <license-type value="BSD_ "/>
@@ -400,6 +400,16 @@
         <copyright-notice value="Copyright (c) 2013 Julian Berman"/>
         <description value="An(other) implementation of JSON Schema for Python"/>
     </dependency>
+    <dependency env="[win,linux]" name="jupyter">
+        <full-name value="Jupyter"/>
+        <project-home value="http://jupyter.org/"/>
+        <version value="1.0.0"/>
+        <usage value="dynamic linking"/>
+        <license value="LICENSE_jupyter.txt"/>
+        <license-type value="BSD_ modified"/>
+        <copyright-notice value="Copyright (c) Jupyter Development Team. Distributed under the terms of the Modified BSD License."/>
+        <description value=""/>
+    </dependency>
     <dependency env="mac" name="jupyter_client">
         <full-name value="Jupyter Client"/>
         <project-home value="http://jupyter.org/"/>
@@ -410,7 +420,47 @@
         <copyright-notice value="Copyright (c) Jupyter Development Team. Distributed under the terms of the Modified BSD License."/>
         <description value=""/>
     </dependency>
+    <dependency env="[win,linux]" name="jupyter-client">
+        <full-name value="Jupyter Client"/>
+        <project-home value="http://jupyter.org/"/>
+        <version value="5.0.1"/>
+        <usage value="dynamic linking"/>
+        <license value="LICENSE_jupyter.txt"/>
+        <license-type value="BSD_ modified"/>
+        <copyright-notice value="Copyright (c) Jupyter Development Team. Distributed under the terms of the Modified BSD License."/>
+        <description value=""/>
+    </dependency>
+    <dependency env="[win,linux]" name="jupyter_console">
+        <full-name value="Jupyter Console"/>
+        <project-home value="http://jupyter.org/"/>
+        <version value="5.1.0"/>
+        <usage value="dynamic linking"/>
+        <license value="LICENSE_jupyter.txt"/>
+        <license-type value="BSD_ modified"/>
+        <copyright-notice value="Copyright (c) Jupyter Development Team. Distributed under the terms of the Modified BSD License."/>
+        <description value=""/>
+    </dependency>
+    <dependency env="[win,linux]" name="jupyter-console">
+        <full-name value="Jupyter Console"/>
+        <project-home value="http://jupyter.org/"/>
+        <version value="5.1.0"/>
+        <usage value="dynamic linking"/>
+        <license value="LICENSE_jupyter.txt"/>
+        <license-type value="BSD_ modified"/>
+        <copyright-notice value="Copyright (c) Jupyter Development Team. Distributed under the terms of the Modified BSD License."/>
+        <description value=""/>
+    </dependency>
     <dependency env="mac" name="jupyter_core">
+        <full-name value="Jupyter Core"/>
+        <project-home value="http://jupyter.org/"/>
+        <version value="4.3.0"/>
+        <usage value="dynamic linking"/>
+        <license value="LICENSE_jupyter.txt"/>
+        <license-type value="BSD_ modified"/>
+        <copyright-notice value="Copyright (c) Jupyter Development Team. Distributed under the terms of the Modified BSD License."/>
+        <description value=""/>
+    </dependency>
+    <dependency env="[win,linux]" name="jupyter-core">
         <full-name value="Jupyter Core"/>
         <project-home value="http://jupyter.org/"/>
         <version value="4.3.0"/>
@@ -1280,10 +1330,10 @@
         <copyright-notice value="Copyright (c) 2012 by Simon Sapin."/>
         <description value="Character encoding aliases for legacy web content"/>
     </dependency>
-    <dependency env="mac" name="widgetsnbextension">
+    <dependency env="[win,mac]" name="widgetsnbextension">
         <full-name value="iPython Widgets Extension"/>
         <project-home value="https://pypi.python.org/pypi/widgetsnbextension"/>
-        <version value="1.2.6"/>
+        <version value="[1.2.6,2.0.0]"/>
         <usage value="dynamic linking"/>
         <license value="LICENSE_ipython.txt"/>
         <license-type value="BSD_ "/>
