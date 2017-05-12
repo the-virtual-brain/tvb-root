@@ -70,6 +70,16 @@
         <copyright-notice value="Copyright (c) 2004-2012 Leonard Richardson"/>
         <description value="Tree Parser - Coming with Anaconda env"/>
     </dependency>
+    <dependency env="linux" name="bleach">
+        <full-name value="Bleach"/>
+        <project-home value="https://pypi.python.org/pypi/bleach"/>
+        <version value="2.0.0"/>
+        <usage value="static linking"/>
+        <license value="LICENSE_bleach.txt"/>
+        <license-type value="Apache_"/>
+        <copyright-notice value="Copyright (c) 2014-2017, Mozilla Foundation"/>
+        <description value="An easy safelist-based HTML-sanitizing tool."/>
+    </dependency>
     <dependency env="[win,mac,linux]" name="bs4">
         <full-name value="Beautiful Soup (BS4)"/>
         <project-home value="http://www.crummy.com/software/BeautifulSoup"/>
@@ -880,6 +890,17 @@
         <copyright-notice value="Copyright (c) 2011-2012, Lambda Foundry, Inc. and PyData Development Team"/>
         <description value="Package needed for AllenSDK"/>
     </dependency>
+    <dependency env="linux" name="pandocfilters">
+        <full-name value="Pandocfilters"/>
+        <project-home value="https://pypi.python.org/pypi/pandocfilters"/>
+        <version value="1.4.1"/>
+        <usage value="dynamic linking"/>
+        <license value="LICENSE_pandocfilters.txt"/>
+        <license-type value="BSD_ 3rd clause"/>
+        <copyright-notice value="Copyright (c) 2013, John MacFarlane"/>
+        <description value="A python module for writing pandoc filters"/>
+    </dependency>
+
     <dependency env="[win,linux]" name="pathlib2">
         <full-name value="Pathlib2"/>
         <project-home value="https://pypi.python.org/pypi/pathlib2/"/>
