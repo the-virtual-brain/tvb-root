@@ -39,12 +39,16 @@ work easier by importing all the simulator pieces at once.
 import os
 import sys
 
+# avoid segfaulting in absence of X11 DISPLAY
 if sys.platform in ('linux2', ) and 'DISPLAY' not in os.environ:
     try:
         import matplotlib as mpl
         mpl.use('Agg')
     except Exception:
         pass
+
+# copy reference to intended stdout
+_sys_stdout = sys.stdout
 
 from tvb.basic.profile import TvbProfile
 TvbProfile.set_profile(TvbProfile.LIBRARY_PROFILE)
@@ -59,3 +63,8 @@ from tvb.datatypes import (connectivity, surfaces, equations, patterns, region_m
 from tvb.simulator.plot.tools import (hinton_diagram, plot_3d_centres, plot_connectivity,
                                       plot_fast_kde, plot_local_connectivity, plot_matrix,
                                       plot_pattern, plot_tri_matrix)
+
+# restore intended stdout 
+sys.stdout = _sys_stdout
+del _sys_stdout
+
