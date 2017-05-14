@@ -35,7 +35,7 @@ from setuptools import setup, find_packages
 setup(
     name='tvb_build',
     packages=find_packages(),
-    version="1.5.3",
+    version="1.5.4",
     license="GPL v3",
     author="TVB Team",
     # once we are on pypi :
