@@ -36,6 +36,16 @@ work easier by importing all the simulator pieces at once.
 
 """
 
+import os
+import sys
+
+if sys.platform in ('linux2', ) and 'DISPLAY' not in os.environ:
+    try:
+        import matplotlib as mpl
+        mpl.use('Agg')
+    except Exception:
+        pass
+
 from tvb.basic.profile import TvbProfile
 TvbProfile.set_profile(TvbProfile.LIBRARY_PROFILE)
 
