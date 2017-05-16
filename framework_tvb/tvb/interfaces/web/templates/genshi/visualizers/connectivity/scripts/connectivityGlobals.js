@@ -489,11 +489,6 @@ function start2DConnectivity(idx) {
     SELECTED_TAB = CONNECTIVITY_2D_TAB;
 }
 
-function startMPLH5ConnectivityView() {
-    $("#monitor-mplh5").show();
-    initMPLH5CanvasForExportAsImage(mplh5_figureNo)
-}
-
 function startSpaceTimeConnectivity() {
     SELECTED_TAB = CONNECTIVITY_SPACE_TIME_TAB;
     $("#monitor-plot-id").show();

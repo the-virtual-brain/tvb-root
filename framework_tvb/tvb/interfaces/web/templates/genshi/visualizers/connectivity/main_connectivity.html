@@ -8,7 +8,6 @@
     <script type="text/javascript" src="/static/js/zoom.js" ></script>
     <script type="text/javascript" src="/static/js/jit-tvb.js?$currentVersionJS" ></script>
     <script type="text/javascript" src="/static/js/projectTree.js?$currentVersionJS"></script>
-    <script type="text/javascript" src="/static/js/mplh5.js?$currentVersionJS"></script>
     <script type="text/javascript" src="/static/coloring/colorSchemeComponent.js?$currentVersionJS"></script>
     <script type="text/javascript" src="/static_view/commons/shading/shading.js"></script>
     <script type="text/javascript" src="/static/js/webGL_ShaderAndMatrixes.js?$currentVersionJS" ></script>
@@ -56,18 +55,8 @@
 			<li><a href="#" onclick="hideLeftSideTabs(this); start2DConnectivity(0);">Hemisphere 1</a></li>
 			<li><a href="#" onclick="hideLeftSideTabs(this); start2DConnectivity(1);">Transverse</a></li>
 			<li><a href="#" onclick="hideLeftSideTabs(this); start2DConnectivity(2);">Hemisphere 2</a></li>
-			<li><a href="#" onclick="hideLeftSideTabs(this); startMPLH5ConnectivityView()">Matrix</a></li>
 			<li><a href="#" onclick="hideLeftSideTabs(this); startSpaceTimeConnectivity()">Space Time</a></li>
 		</ul>
-		
-		<div id="monitor-mplh5" class="monitor-container" style="display:none">
-			<xi:include href="../mplh5/figure_template.html" py:with="parentDiv='monitorDiv'"/>
-			<script type="text/javascript">
-		        $(document).ready(function() {
-		            connect_manager('$mplh5ServerURL', $figureNumber);
-		        });
-		    </script>
-		</div>	
 		
 		<xi:include href="connectivity_view.html"/>
 		${drawConnectivityViewer(True)}
@@ -185,7 +174,6 @@
         $(document).ready(function() {
             // todo: warning the jsons below are huge, practically the whole connectivity in json
             prepareConnectivity2D(${leftHemisphereJson}, ${bothHemisphereJson}, ${rightHemisphereJson});
-            mplh5_figureNo = $figureNumber;
             //Do all the required initializations and draw the right table view of the connectivity matrix
             GFUNC_storeMinMax('${weightsMin}', '${weightsNonZeroMin}', '${weightsMax}', '${tractsMin}', '${tractsNonZeroMin}', '${tractsMax}');
             TBL_storeHemisphereDetails(${start_points_x}, ${end_points_x}, ${start_points_y}, ${end_points_y});

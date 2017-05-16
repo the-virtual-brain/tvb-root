@@ -132,9 +132,6 @@ class ConnectivityViewer(ABCDisplayer):
         _params, _pages = Connectivity3DViewer().compute_parameters(input_data, colors, rays)
         result_params.update(_params)
         result_pages.update(_pages)
-        _params, _pages = MPLH5Connectivity().compute_parameters(input_data)
-        result_params.update(_params)
-        result_pages.update(_pages)
 
         return self.build_display_result("connectivity/main_connectivity", result_params, result_pages)
 
@@ -475,50 +472,3 @@ class Connectivity2DViewer(object):
                         weights[i][j] = (self.MIN_WEIGHT_VALUE + ((weights[i][j] - min_value) / (max_value - min_value))
                                          * (self.MAX_WEIGHT_VALUE - self.MIN_WEIGHT_VALUE))
         return weights
-
-
-# -------------------- Connectivity MPLH5 code starting  ------------------
-
-class MPLH5Connectivity(object):
-    """
-    MPLH5 tab page, where the entire connectivity matrix can be seen.
-    """
-
-
-    @staticmethod
-    def compute_parameters(input_data):
-        """
-        Build the required HTML response to be displayed.
-        """
-        figure = pylab.figure(figsize=(7, 8))
-        pylab.clf()
-
-        matrix = input_data.ordered_weights
-        matrix_size = input_data.number_of_regions
-        labels = input_data.ordered_labels
-        plot_title = "Connection Strength"
-
-        order = numpy.arange(matrix_size)
-        # Assumes order is shape (number_of_regions, )
-        order_rows = order[:, numpy.newaxis]
-        order_columns = order_rows.T
-
-        axes = figure.gca()
-        img = axes.matshow(matrix[order_rows, order_columns])
-        axes.set_title(plot_title)
-        figure.colorbar(img)
-
-        if labels is None:
-            return
-
-        axes.set_yticks(numpy.arange(matrix_size))
-        axes.set_yticklabels(list(labels[order]), fontsize=8)
-        axes.set_xticks(numpy.arange(matrix_size))
-        axes.set_xticklabels(list(labels[order]), fontsize=8, rotation=90)
-
-        figure.canvas.draw()
-        parameters = dict(mplh5ServerURL=TvbProfile.current.web.MPLH5_SERVER_URL,
-                          figureNumber=figure.number, showFullToolbar=False)
-        return parameters, {}
-    
-    
