@@ -330,6 +330,14 @@ class Simulator(core.Type):
                 sp_cs = scipy.sparse.csc_matrix((vec_cs, (ind, ind)),
                                                 shape=(self.number_of_nodes, self.number_of_nodes))
                 local_coupling = sp_cs * self.surface.local_connectivity.matrix
+            if local_coupling.shape[1] < self.number_of_nodes:
+                # must match unmapped indices handling in preconfigure
+                from scipy.sparse import csr_matrix, vstack, hstack
+                nn = self.number_of_nodes
+                npad = nn - local_coupling.shape[0]
+                rpad = csr_matrix((local_coupling.shape[0], npad))
+                bpad = csr_matrix((npad, nn))
+                local_coupling = vstack([hstack([local_coupling, rpad]), bpad])
         return local_coupling
 
     def _prepare_stimulus(self):
