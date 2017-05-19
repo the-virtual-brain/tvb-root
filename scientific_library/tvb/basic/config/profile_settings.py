@@ -43,10 +43,12 @@ from tvb.basic.config.utils import EnhancedDictionary, LibraryModulesFinder, Lib
 
 class BaseSettingsProfile(object):
 
-    TVB_CONFIG_FILE = os.path.expanduser(os.path.join("~", '.tvb.configuration'))
+    TVB_USER_HOME = os.environ.get('TVB_USER_HOME', '~')
 
-    DEFAULT_STORAGE = os.path.expanduser(os.path.join('~', 'TVB' + os.sep))
-    FIRST_RUN_STORAGE = os.path.expanduser(os.path.join('~', '.tvb-temp'))
+    TVB_CONFIG_FILE = os.path.expanduser(os.path.join(TVB_USER_HOME, '.tvb.configuration'))
+
+    DEFAULT_STORAGE = os.path.expanduser(os.path.join(TVB_USER_HOME, 'TVB' + os.sep))
+    FIRST_RUN_STORAGE = os.path.expanduser(os.path.join(TVB_USER_HOME, '.tvb-temp'))
 
     LOGGER_CONFIG_FILE_NAME = "logger_config.conf"
 
