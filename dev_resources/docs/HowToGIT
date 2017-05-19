@@ -13,7 +13,22 @@
 
 ## To reconnect Git - SVN
 # http://stackoverflow.com/questions/12954644/how-can-i-reconnect-a-git-repository-with-a-svn-repository
-# successfully applied on framework-tvb
+# successfully applied on framework-tvb and scientific_library
+
+git clone https://github.com/the-virtual-brain/tvb-library.git tvb-library
+cd tvb-library
+git config svn-remote.svn.url https://repo.thevirtualbrain.org/svn/tvb/trunk/
+git config svn-remote.svn.fetch scientific_library:refs/remotes/svn/trunk
+git config svn-remote.svn.branches branches/*:refs/remotes/svn/*
+git config svn-remote.svn.tags tags/*:refs/remotes/svn/tags/*
+git config --list
+git log --first-parent refs/heads/trunk # get the last with a $GUID$
+git update-ref refs/remotes/svn/trunk $GUID$
+git svn fetch
+git svn rebase
+git pull
+git push
+git svn dcommit
 
 
 ## Initialize new 3rd party SYNCHRONIZATION REPO:
