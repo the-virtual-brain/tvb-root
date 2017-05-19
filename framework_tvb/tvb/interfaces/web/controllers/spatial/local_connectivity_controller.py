@@ -39,10 +39,10 @@ import cherrypy
 from tvb.core.adapters.input_tree import InputTreeManager
 from tvb.datatypes.local_connectivity import LocalConnectivity
 from tvb.core.adapters.abcadapter import ABCAdapter
-from tvb.datatypes import surfaces
 from tvb.interfaces.web.controllers import common
 from tvb.interfaces.web.controllers.base_controller import BaseController
-from tvb.interfaces.web.controllers.decorators import check_user, handle_error, expose_fragment, expose_page, expose_json
+from tvb.interfaces.web.controllers.decorators import check_user, handle_error
+from tvb.interfaces.web.controllers.decorators import expose_fragment, expose_page, expose_json
 from tvb.interfaces.web.controllers.spatial.base_spatio_temporal_controller import SpatioTemporalController
 from tvb.core.entities.transient.structure_entities import DataTypeMetaData
 from tvb.core.entities.transient.context_local_connectivity import ContextLocalConnectivity
@@ -73,6 +73,7 @@ class LocalConnectivityController(SpatioTemporalController):
     def step_1(self, do_reset=0, **kwargs):
         """
         Generate the html for the first step of the local connectivity page. 
+        :param do_reset: Boolean telling to start from empty page or not
         :param kwargs: not actually used, but parameters are still submitted from UI since we just\
                use the same js function for this. TODO: do this in a smarter way
         """
@@ -83,7 +84,7 @@ class LocalConnectivityController(SpatioTemporalController):
         right_side_interface = self._get_lconn_interface()
         left_side_interface = self.get_select_existent_entities('Load Local Connectivity', LocalConnectivity,
                                                                 context.selected_entity)
-        #add interface to session, needed for filters
+        # add interface to session, needed for filters
         self.add_interface_to_session(left_side_interface, right_side_interface['inputList'])
         template_specification = dict(title="Surface - Local Connectivity")
         template_specification['mainContent'] = 'spatial/local_connectivity_step1_main'
@@ -276,16 +277,16 @@ class LocalConnectivityController(SpatioTemporalController):
         triangle_index = int(selected_triangle)
         vertex_index = int(surface.triangles[triangle_index][0])
         picked_data = list(selected_local_conn.matrix[vertex_index].toarray().squeeze())
-        chunk_size = surfaces.SPLIT_MAX_SIZE
-        buffer_size = surfaces.SPLIT_BUFFER_SIZE
+
         result = []
-        if chunk_size >= len(picked_data):
+        if surface.number_of_split_slices <= 1:
             result.append(picked_data)
         else:
-            for start_idx in xrange(0, len(picked_data) - buffer_size, chunk_size):
-                result.append(picked_data[start_idx:start_idx + chunk_size + buffer_size])
-        result = {'data': json.dumps(result)}
+            for slice_number in xrange(surface.number_of_split_slices):
+                start_idx, end_idx = surface._get_slice_vertex_boundaries(slice_number)
+                result.append(picked_data[start_idx:end_idx])
 
+        result = {'data': json.dumps(result)}
         return result
 
 
@@ -293,11 +294,12 @@ class LocalConnectivityController(SpatioTemporalController):
     def get_series_json(ideal_case, average_case, worst_case, best_case, vertical_line):
         """ Gather all the separate data arrays into a single flot series. """
         return json.dumps([
-            {"data": ideal_case, "lines": {"lineWidth" : 1}, "label": "Theoretical case", "color" : "rgb(52, 255, 25)"},
+            {"data": ideal_case, "lines": {"lineWidth": 1}, "label": "Theoretical case", "color": "rgb(52, 255, 25)"},
             {"data": average_case, "lines": {"lineWidth": 1}, "label": "Most probable", "color": "rgb(148, 0, 179)"},
             {"data": worst_case, "lines": {"lineWidth": 1}, "label": "Worst case", "color": "rgb(0, 0, 255)"},
             {"data": best_case, "lines": {"lineWidth": 1}, "label": "Best case", "color": "rgb(122, 122, 0)"},
-            {"data": vertical_line, "points": { "show" : True, "radius" : 1 }, "label": "Cut-off distance", "color" : "rgb(255, 0, 0)"}
+            {"data": vertical_line, "points": {"show": True, "radius": 1}, "label": "Cut-off distance",
+             "color": "rgb(255, 0, 0)"}
         ])
 
 
@@ -323,20 +325,20 @@ class LocalConnectivityController(SpatioTemporalController):
                     max_x = 50
                 form_data = local_connectivity_creator.prepare_ui_inputs(form_data, validation_required=False)
                 equation = local_connectivity_creator.get_lconn_equation(form_data)
-                #What we want
+                # What we want
                 ideal_case_series, _ = equation.get_series_data(0, 2 * max_x)
 
-                #What we'll mostly get
+                # What we'll mostly get
                 avg_res = 2 * int(max_x / surface.edge_length_mean)
                 step = max_x * 2 / (avg_res - 1)
                 average_case_series, _ = equation.get_series_data(0, 2 * max_x, step)
 
-                #It can be this bad
+                # It can be this bad
                 worst_res = 2 * int(max_x / surface.edge_length_max)
                 step = 2 * max_x / (worst_res - 1)
                 worst_case_series, _ = equation.get_series_data(0, 2 * max_x, step)
 
-                #This is as good as it gets...
+                # This is as good as it gets...
                 best_res = 2 * int(max_x / surface.edge_length_min)
                 step = 2 * max_x / (best_res - 1)
                 best_case_series, _ = equation.get_series_data(0, 2 * max_x, step)
@@ -357,7 +359,7 @@ class LocalConnectivityController(SpatioTemporalController):
                 for i in xrange(NO_OF_CUTOFF_POINTS):
                     vertical_line.append([max_x, min_y + i * vertical_step])
                 all_series = self.get_series_json(ideal_case_series, average_case_series, worst_case_series,
-                                                 best_case_series, vertical_line)
+                                                  best_case_series, vertical_line)
 
                 return {'allSeries': all_series, 'prefix': self.plotted_equations_prefixes[0], "message": None}
             except NameError, ex:
@@ -369,7 +371,5 @@ class LocalConnectivityController(SpatioTemporalController):
             except Exception, ex:
                 self.logger.exception(ex)
                 return {'allSeries': None, 'errorMsg': ex.message}
+
         return {'allSeries': None, 'errorMsg': "Equation should not be None for a valid local connectivity."}
-    
-    
-    

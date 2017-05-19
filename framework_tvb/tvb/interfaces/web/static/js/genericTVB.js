@@ -1,5 +1,5 @@
 /**
- * TheVirtualBrain-Framework Package. This package holds all Data Management, and 
+ * TheVirtualBrain-Framework Package. This package holds all Data Management, and
  * Web-UI helpful to run brain-simulations. To use it, you also need do download
  * TheVirtualBrain-Scientific Package (for simulators). See content of the
  * documentation-folder for more details. See also http://www.thevirtualbrain.org
@@ -23,19 +23,19 @@
 
 function displayMessage(msg, className) {
     // Change the content and style class for Message DIV.
-    var messagesDiv = $("#messageDiv");
+    const messagesDiv = $("#messageDiv");
     messagesDiv.empty();
     messagesDiv.append(msg);
 
-    var messageDivParent = document.getElementById("messageDivParent");	
+    let messageDivParent = document.getElementById("messageDivParent");
     if (messageDivParent) {
-        if (className == 'errorMessage'){
+        if (className == 'errorMessage') {
             className = 'msg-sticky msg-level-fatal';
             console.warn(msg);
-        } else if (className =='warningMessage') {
+        } else if (className == 'warningMessage') {
             className = 'msg-transient transient-medium msg-level-warn';
             console.warn(msg);
-        } else if (className =='importantMessage') {
+        } else if (className == 'importantMessage') {
             className = 'msg-transient transient-medium msg-level-confirm';
             console.info(msg);
         } else {
@@ -58,39 +58,39 @@ function displayMessage(msg, className) {
 }
 
 function checkForIE() {
-    var browserName=navigator.appName;
+    const browserName = navigator.appName;
 
-    if (browserName=="Microsoft Internet Explorer") {
-        var msg = "Internet Explorer is not supported. Please use Google Chrome, Mozilla Firefox or Apple Safari.";
+    if (browserName == "Microsoft Internet Explorer") {
+        const msg = "Internet Explorer is not supported. Please use Google Chrome, Mozilla Firefox or Apple Safari.";
         displayMessage(msg, 'errorMessage');
     }
 }
 
 function get_URL_param(param) {
-   var search = window.location.search.substring(1);
-   var compareKeyValuePair = function(pair) {
-      var key_value = pair.split('=');
-      var decodedKey = decodeURIComponent(key_value[0]);
-      var decodedValue = decodeURIComponent(key_value[1]);
-      if(decodedKey == param) return decodedValue;
-      return null;
-   };
+    const search = window.location.search.substring(1);
+    const compareKeyValuePair = function (pair) {
+        const key_value = pair.split('=');
+        const decodedKey = decodeURIComponent(key_value[0]);
+        const decodedValue = decodeURIComponent(key_value[1]);
+        if (decodedKey == param) return decodedValue;
+        return null;
+    };
 
-   var comparisonResult = null;
+    let comparisonResult = null;
 
-   if(search.indexOf('&') > -1) {
-      var params = search.split('&');
-      for(var i = 0; i < params.length; i++) {
-         comparisonResult = compareKeyValuePair(params[i]);
-         if(comparisonResult !== null) {
-            break;
-         }
-      }
-   } else {
-      comparisonResult = compareKeyValuePair(search);
-   }
+    if (search.indexOf('&') > -1) {
+        const params = search.split('&');
+        for (let i = 0; i < params.length; i++) {
+            comparisonResult = compareKeyValuePair(params[i]);
+            if (comparisonResult !== null) {
+                break;
+            }
+        }
+    } else {
+        comparisonResult = compareKeyValuePair(search);
+    }
 
-   return comparisonResult;
+    return comparisonResult;
 }
 
 /**
@@ -106,27 +106,27 @@ function changeDisplayPage(page, formId) {
 
 //              TAB Accessibility FUNCTIONS
 // This was a work-around for FF compatibility.
-var pressedKey = 0;
+let pressedKey = 0;
 
-function setUpKeyWatch(){
+function setUpKeyWatch() {
     $(document.documentElement).keydown(function (event) {
-      pressedKey = event.keyCode;
-      return true;
+        pressedKey = event.keyCode;
+        return true;
     });
 }
 
 function redirectToHrefChild(redirectPage) {
-   if (pressedKey == 13) {
-        var children = redirectPage.children;
-        for (var i=0; i < children.length; i++) {
-                if (children[i].tagName == "A") {
-                    window.location = children[i].href;
-                    children[i].onclick();
-                    break;
-                }
+    if (pressedKey == 13) {
+        const children = redirectPage.children;
+        for (let i = 0; i < children.length; i++) {
+            if (children[i].tagName == "A") {
+                window.location = children[i].href;
+                children[i].onclick();
+                break;
             }
-       }
- }
+        }
+    }
+}
 
 function fireOnClick(redirectElem) {
     if (pressedKey == 13) {
@@ -138,11 +138,11 @@ function fireOnClick(redirectElem) {
 // ---------- Function on the top left call-out
 function updateCallOutProject() {
     doAjaxCall({
-        async : false,
+        async: false,
         type: 'GET',
         url: "/project/generate_call_out_control/",
-        success: function(r) {
-             $("#control_top_left").html(r);
+        success: function (r) {
+            $("#control_top_left").html(r);
         }
     });
 }
@@ -152,12 +152,14 @@ function updateCallOutProject() {
 function includeAdapterInterface(divId, projectId, algorithmId, back_page) {
     // Populate in divId, the interface of the adapter, specified by algorihmId.
     // The interface will be automatically populated with dataTypes from projectId     
-    var get_url = "/flow/getadapterinterface/"+ projectId+ "/" + algorithmId + '/' +back_page;
+    const get_url = "/flow/getadapterinterface/" + projectId + "/" + algorithmId + '/' + back_page;
     doAjaxCall({
-        async : false,
+        async: false,
         type: 'GET',
         url: get_url,
-        success: function(r) { $("#"+ divId).html(r); }
+        success: function (r) {
+            $("#" + divId).html(r);
+        }
     });
 }
 
@@ -168,10 +170,10 @@ function includeAdapterInterface(divId, projectId, algorithmId, back_page) {
  */
 function getSubmitableData(inputDivId, allowDisabled) {
 
-    var inputs = $("#" + inputDivId + " input");
-    var submitableData = {};
-    for (var ii = 0; ii < inputs.length; ii++) {
-        var thisInput = inputs[ii];
+    const inputs = $("#" + inputDivId + " input");
+    let submitableData = {};
+    for (let ii = 0; ii < inputs.length; ii++) {
+        const thisInput = inputs[ii];
         if (!allowDisabled && thisInput.disabled) {
             continue;
         }
@@ -187,21 +189,21 @@ function getSubmitableData(inputDivId, allowDisabled) {
             }
         }
     }
-    var selects = $("#" + inputDivId + " select");
-    for (var i = 0; i < selects.length; i++) {
-        var thisSelect = selects[i];
+    const selects = $("#" + inputDivId + " select");
+    for (let i = 0; i < selects.length; i++) {
+        const thisSelect = selects[i];
         if (!allowDisabled && thisSelect.disabled) {
             continue;
         }
         if (thisSelect.multiple) {
-            var selectedOptions = [];
-            for (var j=0; j < thisSelect.options.length; j++) {
+            let selectedOptions = [];
+            for (let j = 0; j < thisSelect.options.length; j++) {
                 if (thisSelect.options[j].selected) {
                     selectedOptions.push(thisSelect.options[j].value);
                 }
             }
             submitableData[thisSelect.name] = selectedOptions;
-        } else if (thisSelect.selectedIndex >= 0){
+        } else if (thisSelect.selectedIndex >= 0) {
             submitableData[thisSelect.name] = thisSelect.options[thisSelect.selectedIndex].value;
         }
     }
@@ -209,27 +211,27 @@ function getSubmitableData(inputDivId, allowDisabled) {
 }
 
 function submitParentForm(formToSubmitId, submitURL) {
-    var submittableData = getSubmitableData(formToSubmitId, false);
+    const submittableData = getSubmitableData(formToSubmitId, false);
     doAjaxCall({
-        async : false,
+        async: false,
         type: 'POST',
         url: submitURL,
         data: submittableData,
-        success: function(r) {
+        success: function (r) {
             displayMessage("Operation launched!");
         }
-     });
+    });
 }
 
 /**
  * Generic function to maximize /minimize a column in Michael's columnize framework.
  */
 function toggleMaximizeColumn(link, maximizeColumnId) {
-    var mainDiv = $("div[id='main']");
+    const mainDiv = $("div[id='main']");
     if (link.text == "Maximize") {
         if (!mainDiv.hasClass('is-maximized')) {
             mainDiv[0].className = mainDiv[0].className + " is-maximized";
-            var maximizeColumn = $("#" + maximizeColumnId)[0];
+            const maximizeColumn = $("#" + maximizeColumnId)[0];
             maximizeColumn.className = maximizeColumn.className + ' shows-maximized';
         }
         link.innerHTML = "Minimize";
@@ -242,10 +244,10 @@ function toggleMaximizeColumn(link, maximizeColumnId) {
 
 function minimizeColumn(link, maximizeColumnId) {
 
-    $("div[id='main']").each(function() {
+    $("div[id='main']").each(function () {
         $(this).removeClass('is-maximized');
     });
-    $("#" + maximizeColumnId).each(function() {
+    $("#" + maximizeColumnId).each(function () {
         $(this).removeClass('shows-maximized');
     });
     link.innerHTML = "Maximize";
@@ -263,24 +265,26 @@ function minimizeColumn(link, maximizeColumnId) {
 function changeMembersPage(projectId, pageNo, divId, editEnabled) {
     $(".projectmembers-pagetab-selected").attr("class", "projectmembers-pagetab");
     $("#tab-" + pageNo).attr("class", "projectmembers-pagetab projectmembers-pagetab-selected");
-    var membersElem = $('span[class="user_on_page_'+ pageNo+'"]');
+    const membersElem = $('span[class="user_on_page_' + pageNo + '"]');
     if (membersElem.length > 0) {
-        $('span[class^="user_on_page_"]').hide(); 
+        $('span[class^="user_on_page_"]').hide();
         membersElem.show();
     } else {
-        var my_url = '/project/getmemberspage/' + pageNo;
+        let my_url = '/project/getmemberspage/' + pageNo;
         if (projectId) {
-            my_url = my_url + "/"+ projectId;
+            my_url = my_url + "/" + projectId;
         }
         doAjaxCall({
             async: false,
             type: 'GET',
-            url:  my_url,
-            success: function(r) {
+            url: my_url,
+            success: function (r) {
                 $('span[class^="user_on_page_"]').hide();
                 $("#" + divId).append(r);
                 if (editEnabled) {
-                    $("#visitedPages").val(function(idx, val){return val + "," + pageNo});
+                    $("#visitedPages").val(function (idx, val) {
+                        return val + "," + pageNo
+                    });
                 }
             }
         });
@@ -289,12 +293,12 @@ function changeMembersPage(projectId, pageNo, divId, editEnabled) {
 
 
 function show_hide(show_class, hide_class) {
-    var elems = $(show_class);
-    for (var i=0; i< elems.length; i++) {
+    let elems = $(show_class);
+    for (let i = 0; i < elems.length; i++) {
         elems[i].style.display = 'inline';
     }
     elems = $(hide_class);
-    for (var ii=0; ii< elems.length; ii++) {
+    for (let ii = 0; ii < elems.length; ii++) {
         elems[ii].style.display = 'none';
     }
 }
@@ -302,7 +306,7 @@ function show_hide(show_class, hide_class) {
 /**
  * Function on the Settings page.
  */
-function _on_validation_finished(r){
+function _on_validation_finished(r) {
     r = $.parseJSON(r);
     if (r['status'] == 'ok') {
         displayMessage(r['message'], "infoMessage");
@@ -311,34 +315,34 @@ function _on_validation_finished(r){
     }
 }
 
-function validateDb(db_url, tvb_storage){
-    var db_url_value = document.getElementById(db_url).value;
-    var storage = document.getElementById(tvb_storage).value;
+function validateDb(db_url, tvb_storage) {
+    const db_url_value = document.getElementById(db_url).value;
+    const storage = document.getElementById(tvb_storage).value;
     doAjaxCall({
-        async : false,
+        async: false,
         type: 'POST',
         url: "/settings/check_db_url",
-        data: { URL_VALUE: db_url_value , TVB_STORAGE : storage},
+        data: {URL_VALUE: db_url_value, TVB_STORAGE: storage},
         success: _on_validation_finished
-      });
+    });
 }
 
-function validateMatlabPath(matlab_path){
-    var matlab_path_value = document.getElementById(matlab_path).value;
+function validateMatlabPath(matlab_path) {
+    const matlab_path_value = document.getElementById(matlab_path).value;
     doAjaxCall({
-        async : false,
+        async: false,
         type: 'GET',
         url: "/settings/validate_matlab_path",
-        data: { MATLAB_EXECUTABLE: matlab_path_value},
+        data: {MATLAB_EXECUTABLE: matlab_path_value},
         success: _on_validation_finished
     });
 }
 
 function changeDBValue(selectComponent) {
-    var component = eval(selectComponent);
-    var selectedValue = $(component).val();
-    var correspondingValue = component.options[component.selectedIndex].attributes.correspondingVal.nodeValue;
-    var correspondingTextField = document.getElementById('URL_VALUE');
+    const component = eval(selectComponent);
+    const selectedValue = $(component).val();
+    const correspondingValue = component.options[component.selectedIndex].attributes.correspondingVal.nodeValue;
+    const correspondingTextField = document.getElementById('URL_VALUE');
     correspondingTextField.value = correspondingValue;
     if (selectedValue == 'sqlite') {
         correspondingTextField.setAttribute('readonly', 'readonly');
@@ -347,11 +351,11 @@ function changeDBValue(selectComponent) {
     }
 }
 
-function settingsPageInitialize(){
-    $('#TVB_STORAGE').change( function() {
+function settingsPageInitialize() {
+    $('#TVB_STORAGE').change(function () {
         if ($('#SELECTED_DB').val() == 'sqlite') {
-            var storagePath = $('#TVB_STORAGE').val();
-            if (storagePath.slice(-1) !== '/'){
+            let storagePath = $('#TVB_STORAGE').val();
+            if (storagePath.slice(-1) !== '/') {
                 storagePath += '/'
             }
             $('#URL_VALUE').val('sqlite:///' + storagePath + 'tvb-database.db');
@@ -368,7 +372,7 @@ function settingsPageInitialize(){
 // ---------------------------------------------------------
 
 function viewProject(projectId, formId) {
-    document.getElementById(formId).action = "/project/editone/"+ projectId;
+    document.getElementById(formId).action = "/project/editone/" + projectId;
     document.getElementById(formId).submit();
 }
 
@@ -382,9 +386,9 @@ function exportProject(projectId) {
     window.location = "/project/downloadproject/?project_id=" + projectId
 }
 
-function removeProject(projectId, formId){
-    var form = document.getElementById(formId);
-    form.action = "/project/editone/"+ projectId + "/?delete=Delete" ;
+function removeProject(projectId, formId) {
+    const form = document.getElementById(formId);
+    form.action = "/project/editone/" + projectId + "/?delete=Delete";
     form.submit();
 }
 
@@ -396,10 +400,10 @@ function removeProject(projectId, formId){
 //------------------------------------------------------------------------
 
 // Set to true when we want to avoid display of overlay (e.g. when switching TAB on Data Structure page).
-var TVB_skipDisplayOverlay = false;
-var TVB_NODE_OPERATION_TYPE = "operation";
-var TVB_NODE_OPERATION_GROUP_TYPE = "operationGroup";
-var TVB_NODE_DATATYPE_TYPE = "datatype";
+let TVB_skipDisplayOverlay = false;
+const TVB_NODE_OPERATION_TYPE = "operation";
+const TVB_NODE_OPERATION_GROUP_TYPE = "operationGroup";
+const TVB_NODE_DATATYPE_TYPE = "datatype";
 /**
  * Displays the overlay with details for a node(operation or dataType group/single).
  *
@@ -413,7 +417,7 @@ function displayNodeDetails(entity_gid, entityType, backPage, excludeTabs) {
     if (entity_gid == undefined || entity_gid == "firstOperation" || entity_gid == "fakeRootNode" || TVB_skipDisplayOverlay) {
         return;
     }
-    var url;
+    let url;
     if (entityType == TVB_NODE_OPERATION_TYPE) {
         url = '/project/get_operation_details/' + entity_gid + "/0";
     } else if (entityType == TVB_NODE_OPERATION_GROUP_TYPE) {
@@ -437,7 +441,7 @@ function displayNodeDetails(entity_gid, entityType, backPage, excludeTabs) {
 
 /**
  * Close overlay and refresh backPage.
- */	
+ */
 function closeAndRefreshNodeDetailsOverlay(returnCode, backPage) {
 
     closeOverlay();
@@ -451,7 +455,7 @@ function closeAndRefreshNodeDetailsOverlay(returnCode, backPage) {
                 update_workflow_graph('workflowCanvasDiv', TREE_lastSelectedNode, TREE_lastSelectedNodeType);
             } else {
                 updateTree('#treeStructure');
-           }
+            }
 
         } else if (backPage == 'burst') {
             $("#tab-burst-tree")[0].onclick();
@@ -465,13 +469,13 @@ function closeAndRefreshNodeDetailsOverlay(returnCode, backPage) {
  */
 function overlaySubmitMetadata(formToSubmitId, backPage) {
 
-    var submitableData = getSubmitableData(formToSubmitId, false);
+    const submitableData = getSubmitableData(formToSubmitId, false);
     doAjaxCall({
-        async : false,
+        async: false,
         type: 'POST',
         url: "/project/updatemetadata",
         data: submitableData,
-        success: function(r) {
+        success: function (r) {
             if (r) {
                 displayMessage(r, 'errorMessage');
             } else {
@@ -479,7 +483,7 @@ function overlaySubmitMetadata(formToSubmitId, backPage) {
                 closeAndRefreshNodeDetailsOverlay(0, backPage);
             }
         }
-     });
+    });
 }
 
 
@@ -488,10 +492,10 @@ function overlaySubmitMetadata(formToSubmitId, backPage) {
  */
 function overlayRemoveEntity(projectId, dataGid, backPage) {
     doAjaxCall({
-        async : false,
+        async: false,
         type: 'POST',
         url: "/project/noderemove/" + projectId + "/" + dataGid,
-        success: function(r) {
+        success: function (r) {
             if (r) {
                 displayMessage(r, 'errorMessage');
             } else {
@@ -507,16 +511,16 @@ function overlayRemoveEntity(projectId, dataGid, backPage) {
 
 /**
  * Take an operation Identifier and reload previously selected input parameters for it.
- * Used from Operation-Overlay and View All Operations button/each row. 
+ * Used from Operation-Overlay and View All Operations button/each row.
  */
 function reloadOperation(operationId, formId) {
-    document.getElementById(formId).action = "/flow/reloadoperation/"+ operationId;
+    document.getElementById(formId).action = "/flow/reloadoperation/" + operationId;
     document.getElementById(formId).submit();
 }
 
 
 /**
- * Take an operation Identifier which was started from a burst, and redirect to the 
+ * Take an operation Identifier which was started from a burst, and redirect to the
  * burst page with that given burst as the selected one.
  */
 function reloadBurstOperation(operationId, isGroup, formId) {
@@ -529,7 +533,7 @@ function reloadBurstOperation(operationId, isGroup, formId) {
  * To be called from Operation/DataType overlay window to switch current entity's visibility.
  */
 function overlayMarkVisibility(entityGID, entityType, toBeVisible, backPage) {
-    var returnCode = _markEntityVisibility(entityGID, entityType, toBeVisible);
+    const returnCode = _markEntityVisibility(entityGID, entityType, toBeVisible);
     closeAndRefreshNodeDetailsOverlay(returnCode, backPage);
 }
 
@@ -538,15 +542,15 @@ function overlayMarkVisibility(entityGID, entityType, toBeVisible, backPage) {
  * Used from view-operations and overlay-dataType /operation as well.
  */
 function _markEntityVisibility(entityGID, entityType, toBeVisible) {
-    var returnCode = 0;
+    let returnCode = 0;
     doAjaxCall({
         async: false,
         type: 'POST',
-        url: "/project/set_visibility/" + entityType+"/"+ entityGID+"/"+ toBeVisible,
-        success: function() {
+        url: "/project/set_visibility/" + entityType + "/" + entityGID + "/" + toBeVisible,
+        success: function () {
             displayMessage("Visibility was changed.");
         },
-        error: function() {
+        error: function () {
             displayMessage("Error when trying to change visibility! Check logs...", "errorMessage");
             returnCode = 1;
         }
@@ -562,10 +566,10 @@ function _markEntityVisibility(entityGID, entityType, toBeVisible) {
 
 // a global flag to be set when the page has been submitted and is about to reload
 // Any function that wants to submit the page should do so only if this flag is not set
-var TVB_pageSubmitted = false;
+let TVB_pageSubmitted = false;
 
 /**
- * Sets the visibility for an operation, from specifically the View Operation page. 
+ * Sets the visibility for an operation, from specifically the View Operation page.
  * This will also trigger operation reload.
  *
  * @param operationGID an operation/operationGroup GID
@@ -574,14 +578,14 @@ var TVB_pageSubmitted = false;
  * @param submitFormId ID for the form to parent form, to submit operation through it.
  */
 function setOperationRelevant(operationGID, isGroup, toBeRelevant, submitFormId) {
-    var entityType;
+    let entityType;
     if (isGroup) {
         entityType = "operationGroup"
-    }else{
+    } else {
         entityType = "operation";
     }
-    var returnCode = _markEntityVisibility(operationGID, entityType, toBeRelevant);
-    if (returnCode == 0){
+    const returnCode = _markEntityVisibility(operationGID, entityType, toBeRelevant);
+    if (returnCode == 0) {
         document.getElementById(submitFormId).submit();
     }
 }
@@ -589,11 +593,11 @@ function setOperationRelevant(operationGID, isGroup, toBeRelevant, submitFormId)
 
 function _stopOperationsOrBurst(operationId, isGroup, isBurst, removeAfter) {
 
-    var urlBase = "/flow/stop_operation/";
+    let urlBase = "/flow/stop_operation/";
     if (isBurst) {
         urlBase = "/flow/stop_burst_operation/";
     }
-    urlBase += operationId + '/' + isGroup ;
+    urlBase += operationId + '/' + isGroup;
     if (removeAfter) {
         urlBase += '/True';
     }
@@ -602,18 +606,18 @@ function _stopOperationsOrBurst(operationId, isGroup, isBurst, removeAfter) {
         async: false,
         type: 'POST',
         url: urlBase,
-        success: function(r) {
+        success: function (r) {
             if (r.toLowerCase() == 'true') {
                 displayMessage("The operation was successfully removed.", "infoMessage")
             } else {
-                displayMessage("Could not remove operation.",'warningMessage');
+                displayMessage("Could not remove operation.", 'warningMessage');
             }
             if (removeAfter) {
                 refreshOperations();
             }
         },
-        error: function() {
-            displayMessage("Some error occurred while removing operation.",'errorMessage');
+        error: function () {
+            displayMessage("Some error occurred while removing operation.", 'errorMessage');
         }
     });
 }
@@ -644,11 +648,11 @@ function deleteBurstOperation(operationId, isGroup) {
 
 function resetOperationFilters(submitFormId) {
     //Reset all the filters set for the operation page.
-    var input = document.createElement("INPUT");
+    const input = document.createElement("INPUT");
     input.type = "hidden";
     input.name = "reset_filters";
     input.value = "true";
-    var form = document.getElementById(submitFormId);
+    const form = document.getElementById(submitFormId);
     form.appendChild(input);
     form.submit()
 }
@@ -665,8 +669,8 @@ function applyOperationFilter(filterName, submitFormId) {
  */
 function refreshOperations() {
     // do not cancel another request
-    if(TVB_pageSubmitted){
-       return;
+    if (TVB_pageSubmitted) {
+        return;
     }
 
     if (document.getElementById("overlay") == null) {
@@ -685,7 +689,7 @@ function refreshOperations() {
 // ---------------------------------------------------------
 
 
-var _keyUpEvent = "keyup";
+const _keyUpEvent = "keyup";
 
 /**
  * Opens the overlay dialog and fill in
@@ -697,19 +701,19 @@ var _keyUpEvent = "keyup";
 function showOverlay(url, allowClose, message_data) {
 
     $.ajax({
-        async:false,
-        type:'GET',
+        async: false,
+        type: 'GET',
         url: url,
-        dataType:'html',
-        cache:true,
+        dataType: 'html',
+        cache: true,
         data: message_data,
-        success:function (htmlResult) {
-            var bodyElem = $('body');
+        success: function (htmlResult) {
+            const bodyElem = $('body');
             bodyElem.addClass("overlay");
             if (allowClose) {
                 bodyElem.bind(_keyUpEvent, closeOverlayOnEsc);
             }
-            var parentDiv = $("#main");
+            let parentDiv = $("#main");
             if (parentDiv.length === 0) {
                 parentDiv = bodyElem;
             }
@@ -718,10 +722,10 @@ function showOverlay(url, allowClose, message_data) {
                 MathJax.Hub.Queue(["Typeset", MathJax.Hub, "overlay"]);
             }
         },
-        error:function (r) {
+        error: function (r) {
             if (r) {
                 displayMessage(r, 'errorMessage');
-            } 
+            }
         }
     });
 }
@@ -731,7 +735,7 @@ function showOverlay(url, allowClose, message_data) {
  *
  */
 function closeOverlay() {
-    var bodyElem = $('body');
+    const bodyElem = $('body');
     bodyElem.removeClass("overlay");
     bodyElem.unbind(_keyUpEvent, closeOverlayOnEsc);
     $("#overlay").remove();
@@ -742,7 +746,7 @@ function closeOverlay() {
  * @param evt keyboard event
  */
 function closeOverlayOnEsc(evt) {
-    var evt_value = (evt) ? evt : ((event) ? event : null);
+    const evt_value = (evt) ? evt : ((event) ? event : null);
 
     // handle ESC key code
     if (evt_value.keyCode == 27) {
@@ -760,9 +764,9 @@ function closeOverlayOnEsc(evt) {
  * @param tabId identifier of the tab to be selected
  */
 function selectOverlayTab(tabsPrefix, tabId) {
-    var css_class = "active";
+    const css_class = "active";
 
-    $("li[id^='" + tabsPrefix + "']").each(function() {
+    $("li[id^='" + tabsPrefix + "']").each(function () {
         $(this).removeClass(css_class);
     });
 
@@ -770,7 +774,7 @@ function selectOverlayTab(tabsPrefix, tabId) {
         $(this).removeClass(css_class);
     });
 
-    $("#"+ tabsPrefix + tabId).addClass(css_class);
+    $("#" + tabsPrefix + tabId).addClass(css_class);
     $("#overlayTabContent_" + tabId).addClass(css_class);
 }
 
@@ -779,10 +783,10 @@ function selectOverlayTab(tabsPrefix, tabId) {
  * action.
  */
 function showOverlayProgress() {
-    var overlayElem = $("#overlay");
+    const overlayElem = $("#overlay");
     if (overlayElem != null) {
         overlayElem.addClass("overlay-blocker");
-        var bodyElem = $('body');
+        const bodyElem = $('body');
         bodyElem.unbind(_keyUpEvent, closeOverlayOnEsc);
     }
 
@@ -796,8 +800,8 @@ function showOverlayProgress() {
 // We use this counter to allow multiple Ajax calls in the 
 // same time. This way we ensure only the first one opens 
 // overlay and last one closes it.
-var _blockerOverlayCounter = 0;
-var _blockerOverlayTimeout = null;
+let _blockerOverlayCounter = 0;
+let _blockerOverlayTimeout = null;
 
 function showBlockerOverlay(timeout, overlay_data) {
     timeout = checkArg(timeout, 60 * 1000);
@@ -823,8 +827,8 @@ function showQuestionOverlay(question, yesCallback, noCallback) {
     if (noCallback == null) {
         noCallback = 'closeOverlay()';
     }
-    var url = "/project/show_confirmation_overlay";
-    var data = {'yes_action': yesCallback, 'no_action': noCallback};
+    const url = "/project/show_confirmation_overlay";
+    const data = {'yes_action': yesCallback, 'no_action': noCallback};
     if (question != null) {
         data['question'] = question;
     }
@@ -851,12 +855,12 @@ function closeBlockerOverlay() {
 
 /**
  * Function which opens online-help into overlay
- * 
+ *
  * @param {Object} section
  * @param {Object} subsection
  */
 function showHelpOverlay(section, subsection) {
-    var url = "/help/showOnlineHelp";
+    let url = "/help/showOnlineHelp";
     if (section != null) {
         url += "/" + section;
     }
@@ -875,13 +879,13 @@ function waitForStorageUpdateToEnd() {
     doAjaxCall({
         overlay_timeout: 60 * 1000 * 60 * 4, //Timeout of 4 hours
         overlay_data: {'message_data': "Due to upgrade in H5 structures, we need to update all your stored data. Please be patient and don't close TVB during the process."},
-        showBlockerOverlay : true,
-        type:'GET',
-        url:'/user/is_storage_ready',
-        success:function (data) {
-            var result = $.parseJSON(data);
-            var message = result['message'];
-            var status = result['status'];
+        showBlockerOverlay: true,
+        type: 'GET',
+        url: '/user/is_storage_ready',
+        success: function (data) {
+            const result = $.parseJSON(data);
+            const message = result['message'];
+            const status = result['status'];
             if (message.length > 0) {
                 if (status == true) {
                     displayMessage(message, "infoMessage");
@@ -890,10 +894,9 @@ function waitForStorageUpdateToEnd() {
                 }
             }
             closeBlockerOverlay();
-       }
+        }
     });
 }
-
 
 
 /**
@@ -903,8 +906,8 @@ function waitForStorageUpdateToEnd() {
  */
 function showDataUploadOverlay(projectId) {
     showOverlay("/project/get_data_uploader_overlay/" + projectId, true);
-     // Bind the menu events for the online help pop-ups
-     setupMenuEvents($('.uploader .adaptersDiv'));
+    // Bind the menu events for the online help pop-ups
+    setupMenuEvents($('.uploader .adaptersDiv'));
 }
 
 /**
@@ -931,8 +934,8 @@ function zoomInFigure(figure_id) {
 
 
 function displayFiguresForSession(selected_session) {
-    var actionUrl = "/project/figure/displayresultfigures/" + selected_session;
-    var myForm = document.createElement("form");
+    const actionUrl = "/project/figure/displayresultfigures/" + selected_session;
+    const myForm = document.createElement("form");
     myForm.method = "POST";
     myForm.action = actionUrl;
     document.body.appendChild(myForm);
@@ -953,7 +956,7 @@ function displayFiguresForSession(selected_session) {
  * - {String} url URL to call
  * - {String} type request TYPE (POST, GET). Default = POST
  * - {bool} async Specify if the call should be done Sync
- * 		or Async. Default = true (asynchronous)
+ *        or Async. Default = true (asynchronous)
  * - {function} success Function to be called for success
  * - {function} error Function to be called for error
  * - {bool} showBlockerOverlay if True will show blocker overlay until request is done. Default = false
@@ -964,31 +967,31 @@ function doAjaxCall(params) {
     params.async = checkArg(params.async, true);
     params.showBlockerOverlay = checkArg(params.showBlockerOverlay, false);
 
-    if(params.showBlockerOverlay) {
+    if (params.showBlockerOverlay) {
         // should execute async, otherwise overlay is not shown
         params.async = true;
         showBlockerOverlay(params.overlay_timeout, params.overlay_data);
     }
 
-    function closeOverlay(){
-        if(params.showBlockerOverlay) {
+    function closeOverlay() {
+        if (params.showBlockerOverlay) {
             closeBlockerOverlay();
         }
     }
 
     function onSuccess(data, textStatus, jqXHR) {
-        if( params.success != undefined) {
+        if (params.success != undefined) {
             params.success(data, textStatus, jqXHR);
         }
     }
 
-    function onError(jqXHR, textStatus, error){
+    function onError(jqXHR, textStatus, error) {
         if (jqXHR.status == 401) {
             displayMessage('Your session has expired. Please log in.', 'errorMessage');
-        } else if (jqXHR.status == 303 ) {
+        } else if (jqXHR.status == 303) {
             //handle a redirect.
             displayMessage(error, 'errorMessage');
-        } else if( params.error != undefined) {
+        } else if (params.error != undefined) {
             params.error(jqXHR, textStatus, error);
         } else {
             displayMessage(error, 'errorMessage');
@@ -997,44 +1000,45 @@ function doAjaxCall(params) {
 
     // Do AJAX call
     $.ajax({
-        url : params.url,
-        type : params.type,
-        async : params.async,
-        success : [onSuccess, closeOverlay],
-        error : [onError, closeOverlay],
-        data : params.data,
-        cache : params.cache
+        url: params.url,
+        type: params.type,
+        async: params.async,
+        success: [onSuccess, closeOverlay],
+        error: [onError, closeOverlay],
+        data: params.data,
+        cache: params.cache
     });
 }
 
 /**
  * Initiate a HTTP GET request for a given file name and return its content, parsed as a JSON object.
  * When staticFiles = True, return without evaluating JSON from response.
+ * @return {null} when nothing comes from the server
  */
 function HLPR_readJSONfromFile(fileName, staticFiles) {
-    var fileData = null;
+    let fileData = null;
 
     doAjaxCall({
-        async:false,
-        url:fileName,
-        methos:"GET",
-        mimeType:"text/plain",
-        success:function(r){
+        async: false,
+        url: fileName,
+        methos: "GET",
+        mimeType: "text/plain",
+        success: function (r) {
             fileData = r;
         },
-        error: function(){
+        error: function () {
             displayMessage("Could not retrieve data from the server!", "warningMessage");
         }
     });
 
-    if(!fileData){
+    if (!fileData) {
         return null;
     }
 
     if (staticFiles) {
         fileData = fileData.replace(/[\r\n\t\[\]]/g, '');
         return $.trim(fileData).split(/\s*,\s* /g);
-    }else{
+    } else {
         return $.parseJSON(fileData);
     }
 }
@@ -1043,45 +1047,45 @@ function HLPR_readJSONfromFile(fileName, staticFiles) {
 
 // ------------ Binary transport parsing------------------------
 
-function NdArr(buffer, shape){
+function NdArr(buffer, shape) {
     this.shape = shape;
     this.buffer = buffer;
 }
 
-NdArr.prototype.idx = function() {
+NdArr.prototype.idx = function () {
     if (arguments.length !== this.shape.length) {
         throw "Index error";
     }
-    var index = arguments[arguments.length - 1];
-    var stride = 1;
+    let index = arguments[arguments.length - 1];
+    let stride = 1;
 
-    for (var i = this.shape.length - 2; i >= 0; --i) {
+    for (let i = this.shape.length - 2; i >= 0; --i) {
         stride *= this.shape[i];
         index += stride * arguments[i - 1];
     }
     return index;
 };
 
-NdArr.prototype.get = function(){
+NdArr.prototype.get = function () {
     return this.buffer[this.idx(arguments)];
 };
 
 /**
  * From an NdArr to nested lists
  */
-NdArr.prototype.unflatten = function(){
-    var shape = this.shape;
-    var data = this.buffer;
+NdArr.prototype.unflatten = function () {
+    let shape = this.shape;
+    let data = this.buffer;
 
-    while(shape.length ) {
-        var stride = shape.pop();
+    while (shape.length) {
+        const stride = shape.pop();
 
-        var result = [];
-        var i = 0;
+        let result = [];
+        let i = 0;
 
         while (i < data.length) {
-            var chunk = [];
-            for (var j = 0; j < stride; ++j) {
+            const chunk = [];
+            for (let j = 0; j < stride; ++j) {
                 chunk.push(data[i]);
                 ++i;
             }
@@ -1095,40 +1099,38 @@ NdArr.prototype.unflatten = function(){
 /**
  * Retrieves from server a numpy array
  */
-function HLPR_fetchNdArray(binary_url, onload, kwargs){
-    var oReq = new XMLHttpRequest();
+function HLPR_fetchNdArray(binary_url, onload, kwargs) {
+    const oReq = new XMLHttpRequest();
     // Synchronous binary requests are not supported. See http://www.w3.org/TR/XMLHttpRequest/#the-responsetype-attribute
     oReq.open("GET", binary_url, true);
     oReq.responseType = "arraybuffer";
 
     oReq.onload = function (event) {
-        var arrayBuffer = oReq.response;
-        var shape = oReq.getResponseHeader("X-Array-Shape");
-        var dtype = oReq.getResponseHeader("X-Array-Type");
+        const arrayBuffer = oReq.response;
+        let shape = oReq.getResponseHeader("X-Array-Shape");
+        const dtype = oReq.getResponseHeader("X-Array-Type");
+        let floatArray;
 
-        var floatArray;
-
-        switch (dtype){
-        case "int32":
-            floatArray = new Int32Array(arrayBuffer);
-            break;
-        case "float64":
-            floatArray = new Float64Array(arrayBuffer);
-            break;
-        case "float32":
-            floatArray = new Float32Array(arrayBuffer);
-            break;
-        default:
-            throw "datatype not supported " + dtype;
+        switch (dtype) {
+            case "int32":
+                floatArray = new Int32Array(arrayBuffer);
+                break;
+            case "float64":
+                floatArray = new Float64Array(arrayBuffer);
+                break;
+            case "float32":
+                floatArray = new Float32Array(arrayBuffer);
+                break;
+            default:
+                throw "datatype not supported " + dtype;
         }
 
         shape = shape.match(/(\d+)/g);
-        for (var i = 0; i < shape.length; ++i){
+        for (let i = 0; i < shape.length; ++i) {
             shape[i] = parseInt(shape[i]);
         }
 
-        var ndarr = new NdArr(floatArray, shape);
-
+        const ndarr = new NdArr(floatArray, shape);
         onload(ndarr, kwargs);
     };
 
@@ -1150,27 +1152,27 @@ function checkArg(arg, def) {
  * toSignificantDigits(0.0233) == "23"
  * toSignificantDigits(23.3) == "23.30"
  */
-function toSignificantDigits(number, precision){
-    if(precision == null || precision < 0){
+function toSignificantDigits(number, precision) {
+    if (precision == null || precision < 0) {
         precision = 2;
     }
-    if(number == 0 || number > 1){
+    if (number == 0 || number > 1) {
         return number.toFixed(precision);
-    }else{
+    } else {
         return number.toPrecision(precision);
     }
 }
 
-var activeMenu = null;
+let activeMenu = null;
 
-function openMenu(selector){
+function openMenu(selector) {
     hideMenus();
     activeMenu = $(selector);
     activeMenu.find('.extension').show();
 }
 
-function hideMenus(){
-    if (activeMenu){
+function hideMenus() {
+    if (activeMenu) {
         activeMenu.find('.extension').hide();
         activeMenu = null;
     }
@@ -1184,33 +1186,32 @@ function hideMenus(){
  * Dynamically created menus must call this to initialize. parent is provided so that this use case will not rebind all events.
  * todo: Introduce a new class for this new menu behaviour as the above selector is complex
  */
-function setupMenuEvents(parent){
-    if(parent == null){
+function setupMenuEvents(parent) {
+    if (parent == null) {
         parent = $(document);
     }
     // By menu root understand the element which shows the menu on click. The root contains the menu dom.
-    var menuRoots = parent.find(".can-extend").not(".auto-extends").add(".inline-menu");
-
+    const menuRoots = parent.find(".can-extend").not(".auto-extends").add(".inline-menu");
     menuRoots.off('click.menus');
 
-    menuRoots.on('click.menus', function(event){
+    menuRoots.on('click.menus', function (event) {
         // hide menu if the menu root of the current menu has been clicked
         // but do nothing if the menu extension was clicked
-        var clickedOnActiveMenu = activeMenu && activeMenu[0] == this;
-        if (clickedOnActiveMenu){
-            var clickedExtension = activeMenu.find('.extension').find(event.target).length;
-            if( ! clickedExtension){
+        const clickedOnActiveMenu = activeMenu && activeMenu[0] == this;
+        if (clickedOnActiveMenu) {
+            let clickedExtension = activeMenu.find('.extension').find(event.target).length;
+            if (!clickedExtension) {
                 hideMenus();
             }
-        }else{
+        } else {
             openMenu(this);
         }
     });
 
-    $(document).click(function(event){
-        if (activeMenu){
-            var clickedOutsideMenu = activeMenu.find(event.target).length === 0;
-            if (clickedOutsideMenu){
+    $(document).click(function (event) {
+        if (activeMenu) {
+            const clickedOutsideMenu = activeMenu.find(event.target).length === 0;
+            if (clickedOutsideMenu) {
                 hideMenus();
             }
         }
@@ -1218,6 +1219,6 @@ function setupMenuEvents(parent){
 }
 
 // todo: this is *NOT* the right place. Where is the place for document wide initialisations?
-$(document).ready(function(){
+$(document).ready(function () {
     setupMenuEvents();
 });

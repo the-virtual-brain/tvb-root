@@ -38,7 +38,7 @@
 
 /* globals gl*/
 
-let SHADING_Context = SHADING_Context || {};
+var SHADING_Context = SHADING_Context || {};
 
 (function(){
 // Change this if it leads to conflict.

@@ -64,7 +64,7 @@ function _displayGradientForThePickedVertex(selectedLocalConnectivity) {
             return;
         }
 
-        var url = '/spatial/localconnectivity/compute_data_for_gradient_view?local_connectivity_gid=';
+        let url = '/spatial/localconnectivity/compute_data_for_gradient_view?local_connectivity_gid=';
         url += selectedLocalConnectivity + "&selected_triangle=" + TRIANGLE_pickedIndex;
         doAjaxCall({
             async: false,
@@ -80,7 +80,7 @@ function _displayGradientForThePickedVertex(selectedLocalConnectivity) {
  */
 function LCONN_disableView(message) {
 
-    var stepButton = $("#lconn_step_2");
+    const stepButton = $("#lconn_step_2");
     stepButton[0].onclick = null;
     stepButton.unbind("click");
     stepButton.click(function () {
@@ -94,7 +94,7 @@ function LCONN_disableView(message) {
  * Disable the create button and remove action in case we just loaded an entity.
  */
 function LCONN_disableCreate(message) {
-    var stepButton = $('#lconn_step_3');
+    const stepButton = $('#lconn_step_3');
     stepButton[0].onclick = null;
     stepButton.unbind("click");
     stepButton.click(function () {
@@ -109,7 +109,7 @@ function LCONN_disableCreate(message) {
  */
 function LCONN_enableCreate() {
 
-    var stepButton = $('#lconn_step_3');
+    const stepButton = $('#lconn_step_3');
     stepButton[0].onclick = null;
     stepButton.unbind("click");
     stepButton.click(function () {
@@ -127,7 +127,7 @@ function LCONN_enableCreate() {
  * @param formId Form to be submitted.
  */
 function LCONN_submitLocalConnectivityData(actionURL, formId) {
-    var parametersForm = document.getElementById(formId);
+    const parametersForm = document.getElementById(formId);
     parametersForm.method = "POST";
     parametersForm.action = actionURL;
     parametersForm.submit();
@@ -147,9 +147,11 @@ function LCONN_submitLocalConnectivityData(actionURL, formId) {
 function _updateBrainColors(data_from_server) {
 
     data_from_server = $.parseJSON(data_from_server);
-    var data = $.parseJSON(data_from_server.data);
+    const data = $.parseJSON(data_from_server.data);
+    console.info("Showing " + data_from_server);
+    console.info(data.length);
     BASE_PICK_updateBrainColors(data);
-    displayMessage("Displaying Local Connectivity profile for selected focal point ...")
+    displayMessage("Done displaying Local Connectivity profile for selected focal point ...")
 }
 
 /**
