@@ -82,7 +82,7 @@ class Config:
                    'export PATH=`pwd`/bin:$PATH\n' + \
                    'export PYTHONPATH=`pwd`/lib/python2.7:`pwd`/lib/python2.7/site-packages\n' + \
                    'unset PYTHONHOME\n\n' + \
-                   '# set TVB_USER_HOME=`pwd` \n'
+                   '# export TVB_USER_HOME=`pwd` \n'
 
         commands_map = {
             'bin/distribution.command': set_path + '../tvb_data/bin/python -m tvb_bin.app $@',
@@ -126,7 +126,7 @@ class Config:
                    'export PATH=`pwd`/bin:$PATH\n' + \
                    'export PYTHONPATH=`pwd`/lib/python2.7:`pwd`/lib/python2.7/site-packages\n' + \
                    'unset PYTHONHOME\n\n' + \
-                    '# set TVB_USER_HOME=`pwd` \n'
+                    '# export TVB_USER_HOME=`pwd` \n'
 
         for env_name in ["LD_LIBRARY_PATH", "LD_RUN_PATH"]:
             set_path += "if [ ${" + env_name + "+1} ]; then\n" + \
