@@ -98,6 +98,12 @@ you should always close |TVB| by running the `tvb_stop` script.
 
    $ ./tvb_stop.sh
 
+.. note::
+    The first time you configure TVB, it will write a file *.tvb.configuration* in your `user home folder`.
+    In case you run into problems when this write is about to happen, you can set environment variable `TVB_USER_HOME`
+    to a value more appropriate for your environment (for example pointing towards TVB_Distribution unzipped location).
+    Specify a value for the environment variable `TVB_USER_HOME` in  `distribution` command file to have it ready for
+    multiple TVB runs.
 
 
 Launching scripting interfaces
