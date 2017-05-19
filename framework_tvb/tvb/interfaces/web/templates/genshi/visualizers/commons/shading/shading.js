@@ -38,7 +38,7 @@
 
 /* globals gl*/
 
-var SHADING_Context = SHADING_Context || {};
+let SHADING_Context = SHADING_Context || {};
 
 (function(){
 // Change this if it leads to conflict.
@@ -68,12 +68,12 @@ SHADING_Context.colorscheme_init = function (shader) {
     shader.activityBins = gl.getUniformLocation(shader, "activityBins");
     shader.centralHoleDiameter = gl.getUniformLocation(shader, "centralHoleDiameter");
 
-    var g_texture = gl.createTexture();
+    let g_texture = gl.createTexture();
 
     gl.activeTexture(gl.TEXTURE0 + SHADING_Context.colorSchemeTextureUnit);
     gl.bindTexture(gl.TEXTURE_2D, g_texture);
 
-    var img = new Image();
+    let img = new Image();
     img.src = '/static/coloring/color_schemes.png';
 
     img.onload = function(){
@@ -142,7 +142,7 @@ SHADING_Context.region_progam_init = function(shader, measure_point_nr, legendGr
     gl.enableVertexAttribArray(shader.vertexRegionAttribute);
 
     shader.activityUniform = [];
-    for (var i = 0; i <= measure_point_nr + 1 + legendGranularity; i++) {
+    for (let i = 0; i <= measure_point_nr + 1 + legendGranularity; i++) {
         shader.activityUniform[i] = gl.getUniformLocation(shader, "uActivity[" + i + "]");
     }
 };

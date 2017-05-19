@@ -17,7 +17,7 @@
  *
  **/
 
-/* globals gl, GL_shaderProgram */
+/* globals gl, GL_shaderProgram, SHADING_Context */
 
 /**
  * WebGL methods "inheriting" from webGL_xx.js in static/js.
