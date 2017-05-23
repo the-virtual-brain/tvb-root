@@ -31,29 +31,28 @@
 """
 .. moduleauthor:: Bogdan Neacsa <bogdan.neacsa@codemart.ro>
 """
-import sys
+
 import os
-from tvb.core.decorators import user_environment_execution
-from tvb.basic.profile import TvbProfile
+import sys
 from tvb.basic.config import stored
+from tvb.basic.profile import TvbProfile
+from tvb.core.decorators import user_environment_execution
 
 
 @user_environment_execution
 def _checkout_git():
-
     git_repo = sys.argv[1]
     destination_folder = git_repo.split('/')[-1].replace('.git', '')
 
     os.system('git clone %s %s' % (git_repo, destination_folder))
     os.chdir(destination_folder)
-    os.system('git checkout trunk')
-    TVB_PATH = TvbProfile.current.TVB_PATH
-    if TVB_PATH:
-        TVB_PATH = TVB_PATH + os.pathsep + os.getcwd()
+    os.system('git checkout')
+    tvb_path = TvbProfile.current.TVB_PATH
+    if tvb_path:
+        tvb_path = tvb_path + os.pathsep + os.getcwd()
     else:
-        TVB_PATH = os.getcwd()
-    TvbProfile.current.manager.add_entries_to_config_file({stored.KEY_TVB_PATH: TVB_PATH})
-
+        tvb_path = os.getcwd()
+    TvbProfile.current.manager.add_entries_to_config_file({stored.KEY_TVB_PATH: tvb_path})
 
 
 WINDOWS_USAGE = "Usage is 'contributor_setup.bat your.github.repository.link'"
@@ -67,7 +66,6 @@ if len(sys.argv) < 2:
 if os.system('git --version') != 0:
     raise Exception("You need to have git installed in order to set up TVB for contributions.")
 
-
 if TvbProfile.env.is_mac_deployment():
     parent_folder = os.path.split(os.path.dirname(os.path.abspath(__file__)))[0]
     sys.path = [parent_folder, os.path.join(parent_folder, 'site-packages.zip'),
@@ -77,4 +75,3 @@ else:
     os.chdir('..')
     os.chdir('..')
     _checkout_git()
-    
