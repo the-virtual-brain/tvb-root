@@ -64,18 +64,19 @@ class H5Reader(object):
             self.logger.warning("You need h5py properly installed in order to load from a HDF5 source.")
 
 
-    def read_field(self, field):
+    def read_field(self, field, log_exception=True):
 
         try:
             return self.hfd5_source['/' + field][()]
         except Exception:
-            self.logger.exception("Could not read from %s field" % field)
+            if log_exception:
+                self.logger.exception("Could not read from %s field" % field)
             raise ReaderException("Could not read from %s field" % field)
 
 
     def read_optional_field(self, field):
         try:
-            return self.read_field(field)
+            return self.read_field(field, log_exception=False)
         except ReaderException:
             return numpy.array([])
 
