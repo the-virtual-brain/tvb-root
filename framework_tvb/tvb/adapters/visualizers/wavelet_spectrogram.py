@@ -65,19 +65,7 @@ class WaveletSpectrogramVisualizer(ABCDisplayer):
         return -1
 
     def launch(self, input_data, **kwarg):
-        #input_data = kwargs['input_data']
         shape = input_data.read_data_shape()
-        start_time = input_data.source.start_time
-        wavelet_sample_period = input_data.source.sample_period * \
-                                max((1, int(input_data.sample_period / input_data.source.sample_period)))
-        end_time = input_data.source.start_time + (wavelet_sample_period * shape[1])
-        if len(input_data.frequencies):
-            freq_lo = input_data.frequencies[0]
-            freq_hi = input_data.frequencies[-1]
-        else:
-            freq_lo = 0
-            freq_hi = 1
-            # TODO: This is a dummy, just showing first var, mode, and average over nodes
         slices = (slice(shape[0]),
                   slice(shape[1]),
                   slice(0, 1, None),
