@@ -49,7 +49,7 @@ class WaveletSpectrogramVisualizer(ABCDisplayer):
     """
         Plot the power of a WaveletCoefficients object using a MPLH5 canvas.
         """
-    _ui_name = "New Spectrogram of Wavelet Power"
+    _ui_name = "Spectrogram of Wavelet Power"
     _ui_subsection = "wavelet"
 
     def get_input_tree(self):

@@ -97,3 +97,18 @@ div.flot-tick-label{
     text-align: center;
     top: 0;
 }
+
+.wavelet-spectrogram-svg-container {
+    position: absolute;
+    top:0;
+    left:0;
+    width:95%;
+    height: 95%;
+}
+
+.wavelet-spectrogram-main-canvas {
+    position: absolute;
+    left:35px;
+    width:90%;
+    height: 90%;
+}
