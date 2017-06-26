@@ -91,7 +91,7 @@ function wavelet_spectrogram_init(matrix_data, matrix_shape, start_time, end_tim
 function updateLegend(minColor, maxColor) {
     var legendContainer, legendHeight, tableContainer;
     legendContainer = d3.select("#colorWeightsLegend");
-    legendHeight = d3.select("#colorWeightsLegend").node().getBoundingClientRect().height;
+    legendHeight = legendContainer.node().getBoundingClientRect().height;
     tableContainer = d3.select("#table-colorWeightsLegend");
     ColSch_updateLegendColors(legendContainer.node(), legendHeight * 95 / 100);
     ColSch_updateLegendLabels(tableContainer.node(), minColor, maxColor, "95%");

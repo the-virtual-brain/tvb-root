@@ -18,20 +18,22 @@
 # program.  If not, see <http://www.gnu.org/licenses/>.
 #
 #
-# CITATION:
+#   CITATION:
 # When using The Virtual Brain for scientific publications, please cite it as follows:
 #
-# Paula Sanz Leon, Stuart A. Knock, M. Marmaduke Woodman, Lia Domide,
-# Jochen Mersmann, Anthony R. McIntosh, Viktor Jirsa (2013)
-# The Virtual Brain: a simulator of primate brain network dynamics.
-# Frontiers in Neuroinformatics (7:10. doi: 10.3389/fninf.2013.00010)
+#   Paula Sanz Leon, Stuart A. Knock, M. Marmaduke Woodman, Lia Domide,
+#   Jochen Mersmann, Anthony R. McIntosh, Viktor Jirsa (2013)
+#       The Virtual Brain: a simulator of primate brain network dynamics.
+#   Frontiers in Neuroinformatics (7:10. doi: 10.3389/fninf.2013.00010)
 #
 #
+
 
 """
 Plot the power of a WaveletCoefficients object
 
 .. moduleauthor:: Dan Pop <dan.pop@codemart.ro>
+.. moduleauthor:: Stuart A. Knock <Stuart@tvb.invalid>
 """
 
 import json
@@ -62,7 +64,12 @@ class WaveletSpectrogramVisualizer(ABCDisplayer):
                  'description': 'Wavelet spectrogram to display'}]
 
     def get_required_memory_size(self, **kwargs):
-        return -1
+        """
+         Return the required memory to run this algorithm.
+         """
+        input_data = kwargs['input_data']
+        shape = input_data.read_data_shape()
+        return shape[0] * shape[1] * 8
 
     def launch(self, input_data, **kwarg):
         shape = input_data.read_data_shape()
