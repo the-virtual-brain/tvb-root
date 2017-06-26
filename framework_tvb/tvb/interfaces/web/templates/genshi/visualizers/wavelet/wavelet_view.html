@@ -22,12 +22,12 @@
             </py:for>
         </table>
     </div>
-
-    <canvas style="width:95%; height: 95%;"></canvas>
+    <svg id="svg-container" style="position: absolute;top:0;left:0;width:95%; height: 95%;"></svg>
+    <canvas style="position: absolute;left:35px;width:90%; height: 90%;"></canvas>
     <script type="text/javascript">
         $(document).ready(function () {
-            wavelet_spectrogram_view('${matrix_data}','${matrix_shape}',${start_time},${end_time},${freq_lo},${freq_hi},${vmin},${vmax});
-            updateLegend(${vmin},${vmax});
+            wavelet_spectrogram_view('${matrix_data}', '${matrix_shape}', ${start_time}, ${end_time}, ${freq_lo}, ${freq_hi}, ${vmin}, ${vmax});
+            updateLegend(${vmin}, ${vmax});
         });
     </script>
 
