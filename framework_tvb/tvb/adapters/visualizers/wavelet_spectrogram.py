@@ -65,10 +65,38 @@ class WaveletSpectrogramVisualizer(ABCDisplayer):
         return -1
 
     def launch(self, input_data, **kwarg):
-        matrix = input_data.get_data('array_data')
-        matrix_data = dump_prec(matrix.flat)
-        matrix_shape = json.dumps(matrix.shape)
+        #input_data = kwargs['input_data']
+        shape = input_data.read_data_shape()
+        start_time = input_data.source.start_time
+        wavelet_sample_period = input_data.source.sample_period * \
+                                max((1, int(input_data.sample_period / input_data.source.sample_period)))
+        end_time = input_data.source.start_time + (wavelet_sample_period * shape[1])
+        if len(input_data.frequencies):
+            freq_lo = input_data.frequencies[0]
+            freq_hi = input_data.frequencies[-1]
+        else:
+            freq_lo = 0
+            freq_hi = 1
+            # TODO: This is a dummy, just showing first var, mode, and average over nodes
+        slices = (slice(shape[0]),
+                  slice(shape[1]),
+                  slice(0, 1, None),
+                  slice(0, shape[3], None),
+                  slice(0, 1, None))
+
+        data_matrix = input_data.get_data('power', slices)
+
+        data_matrix = data_matrix.sum(axis=3)
+
+        scale_range_start = max(1, int(0.25 * shape[1]))
+        scale_range_end = max(1, int(0.75 * shape[1]))
+        scale_min = data_matrix[:, scale_range_start:scale_range_end, :].min()
+        scale_max = data_matrix[:, scale_range_start:scale_range_end, :].max()
+        matrix_data = dump_prec(data_matrix.flat)
+        matrix_shape = json.dumps(data_matrix.squeeze().shape)
         params = dict(title="Wavelet Spectrogram Visualizer",
                       matrix_data=matrix_data,
-                      matrix_shape=matrix_shape)
+                      matrix_shape=matrix_shape,
+                      vmin=scale_min,
+                      vmax=scale_max)
         return self.build_display_result("wavelet/wavelet_view", params)

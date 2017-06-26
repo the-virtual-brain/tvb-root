@@ -2,12 +2,13 @@
     <script type="text/javascript" src="/static/js/d3.v4.js"></script>
     <script type="text/javascript" src="/static/js/d3-hsv.js"></script>
     <script type="text/javascript" src="/static_view/wavelet/wavelet.js?$currentVersionJS"></script>
+    <script type="text/javascript" src="/static/coloring/colorSchemeComponent.js?$currentVersionJS"></script>
 
     <div id="wavelet-viewer"> </div>
-    <canvas style="width:100px;"></canvas>
+    <canvas style="width:600px;"></canvas>
     <script type="text/javascript">
         $(document).ready(function () {
-            wavelet_spectrogram_view('${matrix_data}','${matrix_shape}');
+            wavelet_spectrogram_view('${matrix_data}','${matrix_shape}',${vmin},${vmax});
         });
     </script>
 </div>
