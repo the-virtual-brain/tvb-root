@@ -32,34 +32,34 @@ function wavelet_spectrogram_view(matrix_data, matrix_shape, start_time, end_tim
             image.data[l + 3] = 255;
         }
     }
-    var cWidth=context.canvas.clientWidth;
-    var cHeight=context.canvas.clientHeight;
-    var svgContainer = d3.select("#wavelet-root").append("svg")
-                                        .attr("style", "position:absolute;top:0;left:0")
-                                      .attr("width", "95%")
-                                      .attr("height", "95%");
+
+    var cWidth = context.canvas.clientWidth;
+    var cHeight = context.canvas.clientHeight;
+    var svgContainer = d3.select("#svg-container");
     var xAxisScale = d3.scale.linear()
         .domain([start_time, end_time])
-        .range([0,cWidth]);
+
+        .range([0, cWidth]);
+
     var xAxis = d3.svg.axis()
-        .orient("top")
+        .orient("bot")
         .scale(xAxisScale);
     var xAxisGroup = svgContainer.append("g")
-        .call(xAxis)
-        .attr("transform", "translate(0, +"+cHeight+")");
+        .attr("transform", "translate(35, " + cHeight + ")")
+        .call(xAxis);
+
 
     var yAxisScale = d3.scale.linear()
         .domain([freq_lo, freq_hi])
-        .range([cHeight,0]);
+        .range([cHeight, 0]);
     var yAxis = d3.svg.axis()
         .scale(yAxisScale)
-        .orient("right")
+        .orient("left")
         .ticks(5);
     var yAxisGroup = svgContainer.append("g")
+        .attr("transform", "translate(35,0)")
         .call(yAxis);
-
     context.putImageData(image, 0, 0);
-
 }
 
 function updateLegend(minColor, maxColor) {
