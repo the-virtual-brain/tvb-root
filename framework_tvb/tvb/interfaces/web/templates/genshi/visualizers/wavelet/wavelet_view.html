@@ -1,12 +1,10 @@
-<div xmlns:py="http://genshi.edgewall.org/">
-    <script type="text/javascript" src="/static/js/d3.v4.js"></script>
-    <script type="text/javascript" src="/static/js/d3-hsv.js"></script>
+<div xmlns:py="http://genshi.edgewall.org/" id="wavelet-root">
+    <script type="text/javascript" src="/static/js/d3.v3.js"></script>
     <script type="text/javascript" src="/static_view/wavelet/wavelet.js?$currentVersionJS"></script>
     <script type="text/javascript" src="/static/coloring/colorSchemeComponent.js?$currentVersionJS"></script>
     <link type="text/css" rel="stylesheet" href="/static/style/section_visualisers.css?$currentVersionJS"/>
 
 
-    <div id="wavelet-viewer"> </div>
     <div class="matrix-legend" id="colorWeightsLegend"></div>
     <div class="matrix-legend">
         <table id="table-colorWeightsLegend" class="table-legend-labels">
@@ -25,12 +23,10 @@
         </table>
     </div>
 
-    <canvas style="width:95%; height: 95%;">
-
-    </canvas>
+    <canvas style="width:95%; height: 95%;"></canvas>
     <script type="text/javascript">
         $(document).ready(function () {
-            wavelet_spectrogram_view('${matrix_data}','${matrix_shape}',${vmin},${vmax});
+            wavelet_spectrogram_view('${matrix_data}','${matrix_shape}',${start_time},${end_time},${freq_lo},${freq_hi},${vmin},${vmax});
             updateLegend(${vmin},${vmax});
         });
     </script>

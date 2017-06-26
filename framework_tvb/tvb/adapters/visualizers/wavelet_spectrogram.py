@@ -44,6 +44,7 @@ def dump_prec(xs, prec=3):
     format_str = "%0." + str(prec) + "g"
     return "[" + ",".join(format_str % s for s in xs) + "]"
 
+
 class WaveletSpectrogramVisualizer(ABCDisplayer):
     """
         Plot the power of a WaveletCoefficients object using a MPLH5 canvas.
@@ -60,12 +61,21 @@ class WaveletSpectrogramVisualizer(ABCDisplayer):
                  'type': WaveletCoefficients, 'required': True,
                  'description': 'Wavelet spectrogram to display'}]
 
-
     def get_required_memory_size(self, **kwargs):
         return -1
 
     def launch(self, input_data, **kwarg):
         shape = input_data.read_data_shape()
+        start_time = input_data.source.start_time
+        wavelet_sample_period = input_data.source.sample_period * \
+                                max((1, int(input_data.sample_period / input_data.source.sample_period)))
+        end_time = input_data.source.start_time + (wavelet_sample_period * shape[1])
+        if len(input_data.frequencies):
+            freq_lo = input_data.frequencies[0]
+            freq_hi = input_data.frequencies[-1]
+        else:
+            freq_lo = 0
+            freq_hi = 1
         slices = (slice(shape[0]),
                   slice(shape[1]),
                   slice(0, 1, None),
@@ -73,7 +83,6 @@ class WaveletSpectrogramVisualizer(ABCDisplayer):
                   slice(0, 1, None))
 
         data_matrix = input_data.get_data('power', slices)
-
         data_matrix = data_matrix.sum(axis=3)
 
         scale_range_start = max(1, int(0.25 * shape[1]))
@@ -85,6 +94,12 @@ class WaveletSpectrogramVisualizer(ABCDisplayer):
         params = dict(title="Wavelet Spectrogram Visualizer",
                       matrix_data=matrix_data,
                       matrix_shape=matrix_shape,
+                      start_time=start_time,
+                      end_time=end_time,
+                      freq_lo=freq_lo,
+                      freq_hi=freq_hi,
                       vmin=scale_min,
                       vmax=scale_max)
-        return self.build_display_result("wavelet/wavelet_view", params)
+
+        return self.build_display_result("wavelet/wavelet_view", params,
+                                         pages={"controlPage": "wavelet/controls"})
