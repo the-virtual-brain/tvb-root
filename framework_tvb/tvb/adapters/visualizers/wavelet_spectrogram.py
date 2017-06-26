@@ -28,9 +28,21 @@
 #
 #
 
+"""
+Plot the power of a WaveletCoefficients object
+
+.. moduleauthor:: Dan Pop <dan.pop@codemart.ro>
+"""
+
+import json
 from tvb.core.adapters.abcdisplayer import ABCDisplayer
 from tvb.datatypes.spectral import WaveletCoefficients
 
+
+def dump_prec(xs, prec=3):
+    """ Dump a list of numbers into a string, each at the specified precision. """
+    format_str = "%0." + str(prec) + "g"
+    return "[" + ",".join(format_str % s for s in xs) + "]"
 
 class WaveletSpectrogramVisualizer(ABCDisplayer):
     """
@@ -53,6 +65,10 @@ class WaveletSpectrogramVisualizer(ABCDisplayer):
         return -1
 
     def launch(self, input_data, **kwarg):
-
-        params = dict(title="Wavelet Spectrogram Visualizer")
+        matrix = input_data.get_data('array_data')
+        matrix_data = dump_prec(matrix.flat)
+        matrix_shape = json.dumps(matrix.shape)
+        params = dict(title="Wavelet Spectrogram Visualizer",
+                      matrix_data=matrix_data,
+                      matrix_shape=matrix_shape)
         return self.build_display_result("wavelet/wavelet_view", params)

@@ -1,6 +1,13 @@
-<div id="s-brain" xmlns:py="http://genshi.edgewall.org/" xmlns:xi="http://www.w3.org/2001/XInclude">
+<div>
+    <script type="text/javascript" src="/static/js/d3.v4.js"></script>
+    <script type="text/javascript" src="/static/js/d3-hsv.js"></script>
+    <script type="text/javascript" src="/static_view/wavelet/wavelet.js?$currentVersionJS"></script>
 
-    <p>${title}</p>
-    <p>Wavele Spect</p>
-
+    <div id="wavelet-viewer"> </div>
+    <canvas style="width:100px;"></canvas>
+    <script type="text/javascript">
+        $(document).ready(function () {
+            wavelet_spectrogram_view('${matrix_data}','${matrix_shape}');
+        });
+    </script>
 </div>
