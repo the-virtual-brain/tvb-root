@@ -87,3 +87,13 @@ div.flot-tick-label{
     /* increase label contrast*/
     color: #000000;
 }
+
+.matrix-legend {
+    font-size: 10px;
+    font-weight: bold;
+    position: absolute;
+    height: 95%;
+    right: 5px;
+    text-align: center;
+    top: 0;
+}

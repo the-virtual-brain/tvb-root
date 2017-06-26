@@ -36,5 +36,15 @@ function wavelet_spectrogram_view(matrix_data,matrix_shape,vmin,vmax){
 		      image.data[l + 3] = 255;
           }
       }
-	  context.putImageData(image, 0, 0);
+        context.putImageData(image, 0, 0);
+
+}
+
+function updateLegend(minColor, maxColor) {
+    var legendContainer, legendHeight, tableContainer;
+    legendContainer = d3.select("#colorWeightsLegend");
+    legendHeight = d3.select("#colorWeightsLegend").node().getBoundingClientRect().height;
+    tableContainer = d3.select("#table-colorWeightsLegend");
+    ColSch_updateLegendColors(legendContainer.node(), legendHeight);
+    ColSch_updateLegendLabels(tableContainer.node(), minColor, maxColor, legendHeight);
 }

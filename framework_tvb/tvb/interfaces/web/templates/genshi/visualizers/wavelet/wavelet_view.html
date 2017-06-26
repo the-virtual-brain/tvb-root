@@ -1,14 +1,38 @@
-<div>
+<div xmlns:py="http://genshi.edgewall.org/">
     <script type="text/javascript" src="/static/js/d3.v4.js"></script>
     <script type="text/javascript" src="/static/js/d3-hsv.js"></script>
     <script type="text/javascript" src="/static_view/wavelet/wavelet.js?$currentVersionJS"></script>
     <script type="text/javascript" src="/static/coloring/colorSchemeComponent.js?$currentVersionJS"></script>
+    <link type="text/css" rel="stylesheet" href="/static/style/section_visualisers.css?$currentVersionJS"/>
+
 
     <div id="wavelet-viewer"> </div>
-    <canvas style="width:95%; height: 95%;"></canvas>
+    <div class="matrix-legend" id="colorWeightsLegend"></div>
+    <div class="matrix-legend">
+        <table id="table-colorWeightsLegend" class="table-legend-labels">
+            <py:for each='label in range(7)'>
+                <py:if test='label != 0'>
+                    <tr height="${str(100/8) + '%'}" style='vertical-align: bottom;'>
+                        <td>${label}</td>
+                    </tr>
+                </py:if>
+                <py:if test='label == 0'>
+                    <tr height="20px">
+                        <td>${label}</td>
+                    </tr>
+                </py:if>
+            </py:for>
+        </table>
+    </div>
+
+    <canvas style="width:95%; height: 95%;">
+
+    </canvas>
     <script type="text/javascript">
         $(document).ready(function () {
             wavelet_spectrogram_view('${matrix_data}','${matrix_shape}',${vmin},${vmax});
+            updateLegend(${vmin},${vmax});
         });
     </script>
+
 </div>
