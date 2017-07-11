@@ -76,7 +76,7 @@
             <input>
                 <name value="chain_2"/>
                 <label value="Second adapter from chain"/>
-                <type value="tvb.adapters.visualizers.mplh5_wavelet_spectrogram.WaveletSpectrogramViewer"/>
+                <type value="tvb.adapters.visualizers.wavelet_spectrogram.WaveletSpectrogramVisualizer"/>
             </input>
             <input overwrite="chain_2">
                 <name value="input_data"/>
