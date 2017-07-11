@@ -51,7 +51,8 @@ tv.util = {
 
     // helper to add usage notes to plots
     usage: function (root, heading, notes) {
-        var p = root.append("p");
+        const p = root.append("p");
+        p.classed("slice-info", true);
         p.append("h3").classed("instructions", true).text(heading);
         p.append("ul").selectAll("li").data(notes)
             .enter().append("li").classed("instructions", true).text(function (d) {

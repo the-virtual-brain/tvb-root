@@ -567,3 +567,17 @@ vary with time.
 
    Preview for Wavelet Visualizer
 
+
+Matrix Visualizer
+~~~~~~~~~~~~~~~~~
+
+This is a 2D representation of a generic matrix-like result.
+
+In case the current Datatype has more than 2 dimensions, the ND array will be cut, with a default slice.
+The user can also input the slice manually.
+
+.. figure:: screenshots/visualizer_matrix.jpg
+   :width: 90%
+   :align: center
+
+   Preview for Matrix Visualizer

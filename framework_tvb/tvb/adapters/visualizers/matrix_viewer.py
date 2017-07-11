@@ -142,6 +142,7 @@ class MappedArraySVGVisualizerMixin(object):
 
 class MappedArrayVisualizer(MappedArraySVGVisualizerMixin, ABCDisplayer):
     _ui_name = "Matrix Visualizer"
+    _ui_subsection = "matrix"
 
     def get_input_tree(self):
         return [{'name': 'datatype', 'label': 'Array data type',

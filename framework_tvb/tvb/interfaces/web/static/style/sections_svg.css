@@ -51,7 +51,7 @@
 /* used to style numpy slices*/
 .npy-slice { font-family: monospace; color: #002580; }
 
-.slice-info { margin-top: 10px; }
+.slice-info { margin-top: 10px;  margin-left: 20px;}
 
 /************** START -- TS from TSVolume Viewer ********/
 

@@ -58,6 +58,7 @@ def tempdir(prefix):
         if os.path.exists(temp_folder):
             shutil.rmtree(temp_folder)
 
+
 class DocGenerator:
     """
     This class will generate and copy in the distribution folder documents
@@ -72,7 +73,7 @@ class DocGenerator:
     USER_GUIDE_UI_ANALYZE = {"name": "UserGuide-UI_Analyze", "folder": USER_GUIDE_FOLDER}
     USER_GUIDE_UI_BURST = {"name": "UserGuide-UI_Simulator", "folder": USER_GUIDE_FOLDER}
     USER_GUIDE_UI_CONNECTIVITY = {"name": "UserGuide-UI_Connectivity", "folder": USER_GUIDE_FOLDER}
-    USER_GUIDE_UI_PROJECT = {"name": "UserGuide-UI_Project", "folder": USER_GUIDE_FOLDER }
+    USER_GUIDE_UI_PROJECT = {"name": "UserGuide-UI_Project", "folder": USER_GUIDE_FOLDER}
     USER_GUIDE_UI_STIMULUS = {"name": "UserGuide-UI_Stimulus", "folder": USER_GUIDE_FOLDER}
     USER_GUIDE_UI_USER = {"name": "UserGuide-UI_User", "folder": USER_GUIDE_FOLDER}
 
@@ -93,8 +94,7 @@ class DocGenerator:
                     USER_GUIDE_UI_CONNECTIVITY, USER_GUIDE_UI_PROJECT,
                     USER_GUIDE_UI_STIMULUS, USER_GUIDE_UI_USER]
 
-
-    #paths relative to the tvb package that should not be documented
+    # paths relative to the tvb package that should not be documented
     EXCLUDES = ['simulator/plot', 'interfaces/web/templates', 'adapters/portlets', 'tests']
 
     # Folders to be bundled with the documentation site distribution zip. Paths relative to root conf.py.
@@ -124,21 +124,18 @@ class DocGenerator:
         if not os.path.exists(self._dist_api_folder):
             os.makedirs(self._dist_api_folder)
         os.makedirs(self._dist_online_help_folder)
+        self.logger.info("We will generate online help in " + self._dist_online_help_folder)
 
 
     def _run_sphinx(self, builder, src_folder, dest_folder, args=None):
         if args is None:
             args = []
 
-        sphinx_args = [
-            'anything',  # Ignored but must be there
-            '-b', builder,  # Specify builder: html, dirhtml, singlehtml, txt, latex, pdf,
-            '-a',  # Use option "-a" : build all
-            '-q',  # Log only Warn and Error
-        ] + args + [
-            src_folder,
-            dest_folder
-        ]
+        sphinx_args = ['anything',  # Ignored but must be there
+                       '-b', builder,  # Specify builder: html, dirhtml, singlehtml, txt, latex, pdf,
+                       '-a',  # Use option "-a" : build all
+                       '-q',  # Log only Warn and Error
+                       ] + args + [src_folder, dest_folder]
 
         status = sphinx_build(sphinx_args)
 
@@ -150,11 +147,11 @@ class DocGenerator:
         with tempdir('tvb_sphinx_rst_online_help_') as temp_folder:
             args = [
                 # these options *override* setting in conf.py
-                '-t', 'online_help', # define a tag. It .rst files we can query the build type using this
+                '-t', 'online_help',  # define a tag. It .rst files we can query the build type using this
                 # WARN Commented out below cause lists do not work for sphinx < 1.3 and our theme hacks break with sphinx 1.3
                 # conf.py searches for the tag to set this
                 # '-D', 'templates_path=_templates_online_help', # replace the html layout with a no navigation one.
-                '-D', 'html_theme_options.nosidebar=True', # do not allocate space for a side bar
+                '-D', 'html_theme_options.nosidebar=True',  # do not allocate space for a side bar
             ]
             self._run_sphinx('html', self._conf_folder, temp_folder, args)
 
@@ -186,9 +183,9 @@ class DocGenerator:
             for doc in self.DOCS_TO_PDF:
                 tex = doc['name'] + '.tex'
                 # run pdflatex
-                subprocess.call(["pdflatex", tex ], cwd=temp_folder)
+                subprocess.call(["pdflatex", tex], cwd=temp_folder)
                 # 2nd time to include the index
-                subprocess.call(["pdflatex", tex ], cwd=temp_folder)
+                subprocess.call(["pdflatex", tex], cwd=temp_folder)
                 # copy the pdf's
                 pdf_pth = os.path.join(temp_folder, doc['name'] + '.pdf')
                 dest_pth = os.path.join(self._dist_docs_folder, doc['name'] + '.pdf')
@@ -233,7 +230,7 @@ class DocGenerator:
             doctrees_folder = os.path.join(temp_folder, 'doctrees')
             os.mkdir(html_folder)
             os.mkdir(doctrees_folder)
-            args = [ '-d', doctrees_folder ]
+            args = ['-d', doctrees_folder]
 
             try:
                 opts = GenOptions(None, 'rst', auto_api_folder, 'Project', 10, True, None)
@@ -280,7 +277,7 @@ def main(options, root_folder):
 
 
 if __name__ == "__main__":
-    #By default running this module we generate documentation
+    # By default running this module we generate documentation
     ROOT_FOLDER = os.path.dirname(os.path.dirname(os.path.dirname(os.path.join(os.getcwd()))))
 
     PARSER = OptionParser()
