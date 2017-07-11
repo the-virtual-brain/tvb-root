@@ -35,9 +35,7 @@
 
 import json
 import numpy
-import pylab
 from tvb.basic.filters.chain import FilterChain
-from tvb.basic.profile import TvbProfile
 from tvb.basic.arguments_serialisation import parse_slice, slice_str
 from tvb.datatypes.arrays import MappedArray
 from tvb.core.adapters.abcdisplayer import ABCDisplayer
@@ -53,7 +51,7 @@ def compute_2d_view(matrix, slice_s):
     :param slice_s: a string representation of a slice
     :return: (a 2d array,  the slice used to make it, is_default_returned)
     """
-    default = (slice(None), slice(None)) + tuple(0 for _ in range(matrix.ndim - 2))     # [:,:,0,0,0,0 etc]
+    default = (slice(None), slice(None)) + tuple(0 for _ in range(matrix.ndim - 2))  # [:,:,0,0,0,0 etc]
 
     try:
         if slice_s is not None:
@@ -83,6 +81,7 @@ class MappedArraySVGVisualizerMixin(object):
     """
     To be mixed in a ABCDisplayer
     """
+
     def get_required_memory_size(self, datatype):
         input_size = datatype.read_data_shape()
         return numpy.prod(input_size) / input_size[0] * 8.0
@@ -122,6 +121,7 @@ class MappedArraySVGVisualizerMixin(object):
                          slice_used=slice_used,
                          is_default_slice=is_default_slice,
                          viewer_title=viewer_title,
+                         title=viewer_title,
                          matrix_labels=json.dumps(labels))
         return view_pars
 
@@ -134,29 +134,13 @@ class MappedArraySVGVisualizerMixin(object):
         """
         source = self.load_entity_by_gid(datatype.source.gid)  # function exists in the mixin target
         if isinstance(source, TimeSeriesRegion):
-            # todo should we use connectivity.ordered_labels? If so also permute the matrix to be consistent with the conn views
+            # todo should we use connectivity.ordered_labels?
+            # If so also permute the matrix to be consistent with the conn views
             labels = source.connectivity.region_labels.tolist()
             return [labels, labels]
 
 
-class MappedArrayMplVisualizer(object):
-    @staticmethod
-    def compute_parameters(matrix, plot_title):
-        figure = pylab.figure(figsize=(7, 8))
-        pylab.clf()
-
-        axes = figure.gca()
-        img = axes.matshow(matrix)
-        axes.set_title(plot_title)
-        figure.colorbar(img)
-        figure.canvas.draw()
-        return dict(mplh5ServerURL=TvbProfile.current.web.MPLH5_SERVER_URL,
-                    figureNumber=figure.number, showFullToolbar=True)
-
-
-
 class MappedArrayVisualizer(MappedArraySVGVisualizerMixin, ABCDisplayer):
-
     _ui_name = "Matrix Visualizer"
 
     def get_input_tree(self):
@@ -174,6 +158,4 @@ class MappedArrayVisualizer(MappedArraySVGVisualizerMixin, ABCDisplayer):
         title = datatype.display_name + " matrix plot"
 
         pars = self.compute_params(matrix, title, slice)
-        pars.update(MappedArrayMplVisualizer.compute_parameters(matrix2d, title))
-
-        return self.build_display_result("matrix/combined_view", pars)
+        return self.build_display_result("matrix/svg_view", pars)

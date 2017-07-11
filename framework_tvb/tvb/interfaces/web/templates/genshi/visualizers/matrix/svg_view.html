@@ -1,18 +1,38 @@
-<div>
+<div xmlns:py="http://genshi.edgewall.org/" class="view-column">
     <script type="text/javascript" src="/static/js/d3.v3.js"></script>
     <script type="text/javascript" src="/static/js/tvbviz.js?$currentVersionJS"></script>
     <script type="text/javascript" src="/static/js/matrix_view.js?$currentVersionJS"></script>
 
     <link rel="stylesheet" href="/static/style/sections_svg.css?$currentVersionJS" type="text/css"/>
 
-    <div id="svg-viewer"> </div>
+    <div id="svg-viewer"></div>
+
+    <div py:if="show_slice_info" class="slice-info">
+        <p>Matrix shape <span class="npy-slice">$original_matrix_shape</span></p>
+
+        <py:if test="is_default_slice">
+            <py:if test="not given_slice">You have not entered a slice.</py:if>
+            <py:if test="given_slice">
+                The given slice <span class="npy-slice">[$given_slice]</span> has not produced a 2d view of the data.
+            </py:if>
+
+            The above view was produced by the default slice <span class="npy-slice">$slice_used</span>.
+        </py:if>
+
+        <span py:if="not is_default_slice">
+           Current slice <span class="npy-slice">$slice_used</span>.
+        </span>
+    </div>
 
     <script type="text/javascript">
+
         $(document).ready(function () {
+
+            $("#main").addClass("colscheme-1");
             matrix_view_init_svg('${matrix_data}', '${matrix_shape}',
-                    '${matrix_strides}', "$viewer_title", '${matrix_labels}',
-                    ["Place mouse over matrix elements to inspect their values",
-                      "Drag in colorbar to select and show entries in a range of values"]);
+                '${matrix_strides}', "$viewer_title", '${matrix_labels}',
+                ["Place mouse over matrix elements to inspect their values",
+                    "Drag in colorbar to select and show entries in a range of values"]);
         });
     </script>
 </div>
