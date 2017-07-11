@@ -58,10 +58,13 @@ try:
 except ImportError:
     class ExceptionRaisingGdistModule:
         msg = "Geodesic distance module is unavailable, cannot compute gdist matrix."
+
         def local_gdist_matrix(self, *args, **kwds):
             raise RuntimeError(self.msg)
+
         def compute_gdist(self, *args, **kwds):
             raise RuntimeError(self.msg)
+
     gdist = ExceptionRaisingGdistModule()
     msg = "Geodesic distance module is unavailable; some functionality for surfaces will be unavailable."
     warnings.warn(msg)
@@ -79,11 +82,10 @@ EEG_CAP = "EEG Cap"
 FACE = "Face"
 
 
-
 # TODO: This is just a temporary solution placed here to remove dependency from tvb.basic to tvb framework.
 # As soon as we implement a better solution to the datatype framework diamond problem this should be removed.
 def paths2url(datatype_entity, attribute_name, flatten=False, parameter=None, datatype_kwargs=None):
-    "Prepare a File System Path for passing into an URL."
+    """Prepare a File System Path for passing into an URL."""
     jskw = json.dumps(datatype_kwargs)
     url = '%s%s/%s/%s/%s'
     url %= TvbProfile.current.web.VISUALIZERS_URL_PREFIX, datatype_entity.gid, attribute_name, flatten, jskw
@@ -139,7 +141,7 @@ class ValidationResult(object):
 
 
 class Surface(MappedType):
-    "A base class for other surfaces."
+    """A base class for other surfaces."""
 
     vertices = arrays.PositionArray(
         label="Vertex positions",
@@ -211,7 +213,7 @@ class Surface(MappedType):
 
     @classmethod
     def from_file(cls, source_file="cortex_16384.zip", instance=None):
-        "Construct a Surface from source_file."
+        """Construct a Surface from source_file."""
 
         if instance is None:
             result = cls()
@@ -282,6 +284,7 @@ class Surface(MappedType):
         of this datatype.
         """
         summary = {"Surface type": self.__class__.__name__,
+                   "Valid for simulations": self.valid_for_simulations,
                    "Number of vertices": self.number_of_vertices,
                    "Number of triangles": self.number_of_triangles,
                    "Number of edges": self.number_of_edges,
@@ -1192,7 +1195,7 @@ class Surface(MappedType):
 
 
 class WhiteMatterSurface(Surface):
-    "White matter - gray matter interface surface."
+    """White matter - gray matter interface surface."""
     __tablename__ = None
     __mapper_args__ = {'polymorphic_identity': WHITE_MATTER}
     _ui_name = "A white matter - gray  surface"
@@ -1200,7 +1203,7 @@ class WhiteMatterSurface(Surface):
 
 
 class CorticalSurface(Surface):
-    "Cortical or pial surface."
+    """Cortical or pial surface."""
     _ui_name = "A cortical surface"
     surface_type = basic.String(default=CORTICAL, order=-1)
     __tablename__ = None
@@ -1208,7 +1211,7 @@ class CorticalSurface(Surface):
 
 
 class SkinAir(Surface):
-    "Skin - air interface surface."
+    """Skin - air interface surface."""
     __tablename__ = None
     __mapper_args__ = {'polymorphic_identity': OUTER_SKIN}
     _ui_name = "Skin"
@@ -1220,7 +1223,7 @@ class SkinAir(Surface):
 
 
 class BrainSkull(Surface):
-    "Brain - inner skull interface surface."
+    """Brain - inner skull interface surface."""
     __tablename__ = None
     __mapper_args__ = {'polymorphic_identity': INNER_SKULL}
     _ui_name = "Brain - inner skull interface surface."
@@ -1233,7 +1236,7 @@ class BrainSkull(Surface):
 
 
 class SkullSkin(Surface):
-    "Outer-skull - scalp interface surface."
+    """Outer-skull - scalp interface surface."""
     __tablename__ = None
     __mapper_args__ = {'polymorphic_identity': OUTER_SKULL}
     _ui_name = "Outer-skull - scalp interface surface"
@@ -1245,11 +1248,12 @@ class SkullSkin(Surface):
 
 
 class OpenSurface(Surface):
-    "Base class for open surfaces."
+    """Base class for open surfaces."""
     __tablename__ = None
 
+
 class EEGCap(OpenSurface):
-    "EEG cap surface."
+    """EEG cap surface."""
     __mapper_args__ = {'polymorphic_identity': EEG_CAP}
     _ui_name = "EEG Cap"
     surface_type = basic.String(default=EEG_CAP)
@@ -1260,7 +1264,7 @@ class EEGCap(OpenSurface):
 
 
 class FaceSurface(OpenSurface):
-    "Face surface."
+    """Face surface."""
     __mapper_args__ = {'polymorphic_identity': FACE}
     _ui_name = "Face surface"
     surface_type = basic.String(default=FACE)

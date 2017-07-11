@@ -32,6 +32,7 @@ import os
 import collections
 import numpy
 import scipy.sparse
+from tvb.basic.traits import util
 from tvb.basic.readers import try_get_absolute_path, FileReader
 from tvb.basic.traits import core, types_basic as basic
 from tvb.basic.logger.builder import get_logger
@@ -39,13 +40,12 @@ from . import arrays, local_connectivity, region_mapping, surfaces
 
 LOG = get_logger(__name__)
 
-# sci
-
-from tvb.basic.traits import util
 
 class Cortex(surfaces.CorticalSurface):
+    """
+    Wrapper Class over a CorticalSurface, to be used when preparing a simulation launch.
+    """
 
-    # data
     _ui_complex_datatype = surfaces.CorticalSurface
 
     _ui_name = "A cortex..."
@@ -64,6 +64,9 @@ class Cortex(surfaces.CorticalSurface):
             number of non-cortical regions, with values that index into an
             associated connectivity matrix.""")  # 'CS'
 
+    region_areas = None
+    region_orientation = None
+
     coupling_strength = arrays.FloatArray(
         label="Local coupling strength",
         range=basic.Range(lo=0.0, hi=20.0, step=1.0),
@@ -73,24 +76,23 @@ class Cortex(surfaces.CorticalSurface):
 
     eeg_projection = arrays.FloatArray(
         label="EEG projection", order=-1,
-        #NOTE: This is redundant if the EEG monitor isn't used, but it makes life simpler.
+        # NOTE: This is redundant if the EEG monitor isn't used, but it makes life simpler.
         required=False,
         doc="""A 2-D array which projects the neural activity on the cortical
             surface to a set of EEG sensors.""")
-    #  requires linked sensors.SensorsEEG and Skull/Skin/Air
+    #  requires linked sensors.SensorsEEG
 
     meg_projection = arrays.FloatArray(
         label="MEG projection",
-        #linked = ?sensors, skull, skin, etc?
+        # linked = ?sensors, skull, skin, etc?
         doc="""A 2-D array which projects the neural activity on the cortical
             surface to a set of MEG sensors.""",
-        required=False, order=-1,)
-    #  requires linked SensorsMEG and Skull/Skin/Air
+        required=False, order=-1, )
+    #  requires linked SensorsMEG
 
     internal_projection = arrays.FloatArray(
         label="Internal projection",
         required=False, order=-1,
-        #linked = ?sensors, skull, skin, etc?
         doc="""A 2-D array which projects the neural activity on the
             cortical surface to a set of embeded sensors.""")
     #  requires linked SensorsInternal
@@ -122,10 +124,6 @@ class Cortex(surfaces.CorticalSurface):
             return None
         return self.region_mapping_data.array_data
 
-    # sci
-
-    region_areas = None
-    region_orientation = None
 
     def configure(self):
         """
@@ -151,11 +149,11 @@ class Cortex(surfaces.CorticalSurface):
         if self.local_connectivity.matrix.shape[0] < self.region_mapping.shape[0]:
             LOG.info("There are non-cortical regions, will pad local connectivity")
             padding = scipy.sparse.csc_matrix((self.local_connectivity.matrix.shape[0],
-                                         self.region_mapping.shape[0] - self.local_connectivity.matrix.shape[0]))
+                                               self.region_mapping.shape[0] - self.local_connectivity.matrix.shape[0]))
             self.local_connectivity.matrix = scipy.sparse.hstack([self.local_connectivity.matrix, padding])
 
             padding = scipy.sparse.csc_matrix((self.region_mapping.shape[0] - self.local_connectivity.matrix.shape[0],
-                                         self.local_connectivity.matrix.shape[1]))
+                                               self.local_connectivity.matrix.shape[1]))
             self.local_connectivity.matrix = scipy.sparse.vstack([self.local_connectivity.matrix, padding])
 
     def _find_summary_info(self):
@@ -202,7 +200,7 @@ class Cortex(surfaces.CorticalSurface):
         LOG.debug("%s: %s minimum: %s" % (sts, name, array_min))
 
     def compute_region_areas(self):
-        "Update the region_area attribute."
+        """Update the region_area attribute."""
         regions = numpy.unique(self.region_mapping)
         number_of_regions = len(regions)
         region_surface_area = numpy.zeros((number_of_regions, 1))
@@ -236,7 +234,7 @@ class Cortex(surfaces.CorticalSurface):
         self.region_areas = region_surface_area
 
     def compute_region_orientation(self):
-        "Update the region_orientation attribute."
+        """Update the region_orientation attribute."""
         regions = numpy.unique(self.region_mapping)
         average_orientation = numpy.zeros((len(regions), 3))
         if len(self.region_mapping) > len(self.vertex_normals):
@@ -263,8 +261,6 @@ class Cortex(surfaces.CorticalSurface):
 
         util.log_debug_array(LOG, average_orientation, "region_orientation", owner=self.__class__.__name__)
         self.region_orientation = average_orientation
-
-    # final
 
     @classmethod
     def from_file(cls, source_file="cortex_16384.zip",
@@ -296,7 +292,8 @@ class Cortex(surfaces.CorticalSurface):
         return result
 
     @staticmethod
-    def from_file_projection_array(source_file="projection_eeg_62_surface_16k.mat", matlab_data_name="ProjectionMatrix"):
+    def from_file_projection_array(source_file="projection_eeg_62_surface_16k.mat",
+                                   matlab_data_name="ProjectionMatrix"):
 
         source_full_path = try_get_absolute_path("tvb_data.projectionMatrix", source_file)
         reader = FileReader(source_full_path)
