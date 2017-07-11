@@ -50,13 +50,12 @@ class XMLPortletReader(object):
     """
     Helper class to read from XML, a group of Portlets definition.
     """
-
+    logger = get_logger(__name__)
 
     def __init__(self, interface_file):
-        self.algorithms = dict()
 
-        self.logger = get_logger(self.__class__.__module__ + '.')
-        self.logger.info("Starting to parse XML file " + interface_file)
+        self.algorithms = dict()
+        self.logger.info("Starting to parse XML file: " + interface_file)
         doc_xml = xml.dom.minidom.parse(interface_file)
         tvb_node = doc_xml.lastChild
 

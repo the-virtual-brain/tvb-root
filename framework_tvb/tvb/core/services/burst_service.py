@@ -65,13 +65,14 @@ class BurstService(object):
     """
     Service layer for Burst related entities.
     """
-    
+
     def __init__(self):
         self.operation_service = OperationService()
         self.workflow_service = WorkflowService()
         self.logger = get_logger(self.__class__.__module__)
-    
-    
+        self.cache_portlet_configurators = {}
+
+
     def build_portlet_interface(self, portlet_configuration, project_id):
         """
         From a portlet_id and a project_id, first build the portlet
@@ -92,29 +93,37 @@ class BurstService(object):
             A list of dictionaries for each adapter that makes up the portlet.
             
         """
-        portlet_entity = dao.get_portlet_by_id(portlet_configuration.portlet_id)
-        if portlet_entity is None:
-            raise InvalidPortletConfiguration("No portlet entity located in database with id=%s. "
-                                              "Portlet configuration %s is not valid." % (
-                                                  portlet_configuration.portlet_id, portlet_configuration))
-        portlet_configurer = PortletConfigurer(portlet_entity)
+        portlet_configurer = self._get_portlet_configurer(portlet_configuration.portlet_id)
         portlet_interface = portlet_configurer.get_configurable_interface()
-        self.logger.debug("Created interface for portlet " + str([portlet_entity])) 
-         
+
         for adapter_conf in portlet_interface:
             interface = adapter_conf.interface
             itree_mngr = InputTreeManager()
             interface = itree_mngr.fill_input_tree_with_options(interface, project_id,
                                                                 adapter_conf.stored_adapter.fk_category)
             adapter_conf.interface = itree_mngr.prepare_param_names(interface)
-        
+
         portlet_configurer.update_default_values(portlet_interface, portlet_configuration)
         portlet_configurer.prefix_adapters_parameters(portlet_interface)
-        
+
         return portlet_interface
-    
-    @staticmethod
-    def update_portlet_configuration(portlet_configuration, submited_parameters):
+
+
+    def _get_portlet_configurer(self, portlet_id):
+
+        if portlet_id not in self.cache_portlet_configurators:
+
+            portlet_entity = dao.get_portlet_by_id(portlet_id)
+            if portlet_entity is None:
+                raise InvalidPortletConfiguration("No portlet entity located in database with id=%s. " % portlet_id)
+
+            self.cache_portlet_configurators[portlet_id] = PortletConfigurer(portlet_entity)
+            self.logger.debug("Recently parsed portlet XML:" + str([portlet_entity]))
+
+        return self.cache_portlet_configurators[portlet_id]
+
+
+    def update_portlet_configuration(self, portlet_configuration, submited_parameters):
         """
         :param portlet_configuration: the portlet configuration that needs to be updated
         :param submited_parameters: a list of parameters as submitted from the UI. This 
@@ -123,35 +132,28 @@ class BurstService(object):
             
         All names are prefixed with adapter specific generated prefix.
         """
-        portlet_entity = dao.get_portlet_by_id(portlet_configuration.portlet_id)
-        portlet_configurer = PortletConfigurer(portlet_entity)
+        portlet_configurer = self._get_portlet_configurer(portlet_configuration.portlet_id)
         return portlet_configurer.update_portlet_configuration(portlet_configuration, submited_parameters)
 
 
-    @staticmethod
-    def new_burst_configuration(project_id):
+    def new_burst_configuration(self, project_id):
         """
         Return a new burst configuration entity with all the default values.
         """
         burst_configuration = model.BurstConfiguration(project_id)
         burst_configuration.selected_tab = 0
-        BurstService.set_default_portlets(burst_configuration)
-        return burst_configuration
 
-
-    @staticmethod
-    def set_default_portlets(burst_configuration):
-        """
-        Sets the default portlets for the specified burst configuration.
-        The default portlets are specified in the __init__.py script from tvb root.
-        """
+        # Now set the default portlets for the specified burst configuration.
+        # The default portlets are specified in the __init__.py script from tvb root.
         for tab_idx, value in DEFAULT_PORTLETS.items():
             for sel_idx, portlet_identifier in value.items():
                 portlet = BurstService.get_portlet_by_identifier(portlet_identifier)
                 if portlet is not None:
-                    portlet_configuration = BurstService.new_portlet_configuration(portlet.id, tab_idx, sel_idx,
-                                                                                   portlet.algorithm_identifier)
+                    portlet_configuration = self.new_portlet_configuration(portlet.id, tab_idx, sel_idx,
+                                                                           portlet.algorithm_identifier)
                     burst_configuration.set_portlet(tab_idx, sel_idx, portlet_configuration)
+
+        return burst_configuration
 
 
     @staticmethod
@@ -162,8 +164,8 @@ class BurstService(object):
         burst_config.prepare_before_save()
         saved_entity = dao.store_entity(burst_config)
         return saved_entity.id
-    
-    
+
+
     @staticmethod
     def get_available_bursts(project_id):
         """
@@ -195,8 +197,8 @@ class BurstService(object):
         burst = dao.get_burst_by_id(burst_id)
         burst.name = new_name
         dao.store_entity(burst)
-        
-    
+
+
     def load_burst(self, burst_id):
         """
         :param burst_id: the id of the burst that should be loaded
@@ -214,7 +216,7 @@ class BurstService(object):
         burst.prepare_after_load()
         burst.reset_tabs()
         burst_workflows = dao.get_workflows_for_burst(burst.id)
-        
+
         group_gid = None
         if len(burst_workflows) == 1:
             # A simple burst with no range parameters
@@ -230,7 +232,7 @@ class BurstService(object):
                 workflow_group = dao.get_datatypegroup_by_op_group_id(operation.operation_group.id)
                 group_gid = workflow_group.gid
         return burst, group_gid
-    
+
     @staticmethod
     def __populate_tabs_from_workflow(burst_entity, workflow):
         """
@@ -246,7 +248,7 @@ class BurstService(object):
             portlet_cfg.set_analyzers(analyzers)
             burst_entity.tabs[entry.tab_index].portlets[entry.index_in_tab] = portlet_cfg
         return burst_entity
-    
+
     def load_tab_configuration(self, burst_entity, op_id):
         """
         Given a burst entity and an operation id, find the workflow to which the op_id
@@ -255,10 +257,9 @@ class BurstService(object):
         originating_workflow = dao.get_workflow_for_operation_id(op_id)
         burst_entity = self.__populate_tabs_from_workflow(burst_entity, originating_workflow)
         return burst_entity
-    
-    
-    @staticmethod
-    def new_portlet_configuration(portlet_id, tab_nr=-1, index_in_tab=-1, portlet_name='Default'):
+
+
+    def new_portlet_configuration(self, portlet_id, tab_nr=-1, index_in_tab=-1, portlet_name='Default'):
         """
         Return a new portlet configuration entity with default parameters.
         
@@ -266,25 +267,23 @@ class BurstService(object):
         :param tab_nr: the index of the currently selected tab
         :param index_in_tab: the index from the currently selected tab
         """
-        portlet_entity = dao.get_portlet_by_id(portlet_id)
-        if portlet_entity is None:
-            raise InvalidPortletConfiguration("No portlet entity located in database with id=%s." % portlet_id)
-        portlet_configurer = PortletConfigurer(portlet_entity)
+        portlet_configurer = self._get_portlet_configurer(portlet_id)
         configuration = portlet_configurer.create_new_portlet_configuration(portlet_name)
         for wf_step in configuration.analyzers:
             wf_step.tab_index = tab_nr
             wf_step.index_in_tab = index_in_tab
         configuration.visualizer.tab_index = tab_nr
         configuration.visualizer.index_in_tab = index_in_tab
-        return configuration 
-    
+        return configuration
+
+
     @staticmethod
     def get_available_portlets():
         """
         :returns: a list of all the available portlet entites
         """
         return dao.get_available_portlets()
-    
+
     @staticmethod
     def get_portlet_by_id(portlet_id):
         """
@@ -329,14 +328,14 @@ class BurstService(object):
                                             "thus we are unable to branch from it!" % burst_config.name)
                 self.logger.error(exc)
                 raise exc
-            
+
             simulation_state = simulation_state[0]
             burst_config.update_simulation_parameter("simulation_state", simulation_state.gid)
             burst_config = burst_configuration.clone()
-            
+
             count = dao.count_bursts_with_name(burst_config.name, burst_config.fk_project)
             burst_config.name = burst_config.name + "_" + launch_mode + str(count)
-            
+
         ## 2. Create Operations and do the actual launch  
         if launch_mode in [LAUNCH_NEW, LAUNCH_BRANCH]:
             ## New Burst entry in the history
@@ -352,8 +351,8 @@ class BurstService(object):
             ## Continue simulation
             ## TODO
             return burst_config.id, burst_config.name
-        
-        
+
+
     @transactional
     def _prepare_operations(self, burst_config, simulator_index, simulator_id, user_id):
         """
@@ -363,17 +362,17 @@ class BurstService(object):
         burst_id = burst_config.id
         workflow_step_list = []
         starting_index = simulator_index + 1
-        
+
         sim_algo = FlowService().get_algorithm_by_identifier(simulator_id)
         metadata = {DataTypeMetaData.KEY_BURST: burst_id}
         launch_data = burst_config.get_all_simulator_values()[0]
-        operations, group = self.operation_service.prepare_operations(user_id, project_id, sim_algo, 
+        operations, group = self.operation_service.prepare_operations(user_id, project_id, sim_algo,
                                                                       sim_algo.algorithm_category, metadata,
                                                                       **launch_data)
         group_launched = group is not None
         if group_launched:
             starting_index += 1
-    
+
         for tab in burst_config.tabs:
             for portlet_cfg in tab.portlets:
                 ### For each portlet configuration stored, update the step index ###
@@ -414,22 +413,22 @@ class BurstService(object):
                                              static_param={}, dynamic_param=dynamics)
             metric_step.step_visible = False
             workflow_step_list.insert(0, metric_step)
-        
-        workflows = self.workflow_service.create_and_store_workflow(project_id, burst_id, simulator_index, 
+
+        workflows = self.workflow_service.create_and_store_workflow(project_id, burst_id, simulator_index,
                                                                     simulator_id, operations)
-        self.operation_service.prepare_operations_for_workflowsteps(workflow_step_list, workflows, user_id, 
+        self.operation_service.prepare_operations_for_workflowsteps(workflow_step_list, workflows, user_id,
                                                                     burst_id, project_id, group, operations)
         operation_ids = [operation.id for operation in operations]
         return operation_ids
-    
-    
+
+
     def _async_launch_and_prepare(self, burst_config, simulator_index, simulator_id, user_id):
         """
         Prepare operations asynchronously.
-        """  
-        try:  
+        """
+        try:
             operation_ids = self._prepare_operations(burst_config, simulator_index, simulator_id, user_id)
-            self.logger.debug("Starting a total of %s workflows" % (len(operation_ids,)))
+            self.logger.debug("Starting a total of %s workflows" % (len(operation_ids, )))
             wf_errs = 0
             for operation_id in operation_ids:
                 try:
@@ -438,16 +437,14 @@ class BurstService(object):
                     self.logger.error(excep)
                     wf_errs += 1
                     self.workflow_service.mark_burst_finished(burst_config, error_message=str(excep))
-                    
+
             self.logger.debug("Finished launching workflows. " + str(len(operation_ids) - wf_errs) +
                               " were launched successfully, " + str(wf_errs) + " had error on pre-launch steps")
         except Exception, excep:
             self.logger.error(excep)
             self.workflow_service.mark_burst_finished(burst_config, error_message=str(excep))
-            
-        
-                
-    
+
+
     @staticmethod
     def launch_visualization(visualization, frame_width=None, frame_height=None, is_preview=True):
         """
@@ -487,8 +484,8 @@ class BurstService(object):
         else:
             result = adapter_instance.launch(**prepared_inputs)
         return result, parameters_dict
-    
-    
+
+
     def update_history_status(self, id_list):
         """
         For each burst_id received in the id_list read new status from DB and return a list [id, new_status] pair.
@@ -512,12 +509,12 @@ class BurstService(object):
             else:
                 self.logger.debug("Could not find burst with id=" + str(b_id) + ". Might have been deleted by user!!")
         return result
-        
-    
+
+
     def stop_burst(self, burst_entity):
         """
         Stop all the entities for the current burst and set the burst status to canceled.
-        """ 
+        """
         burst_wfs = dao.get_workflows_for_burst(burst_entity.id)
         any_stopped = False
         for workflow in burst_wfs:
@@ -531,9 +528,9 @@ class BurstService(object):
             self.workflow_service.mark_burst_finished(burst_entity, model.BurstConfiguration.BURST_CANCELED)
             return True
         return False
-        
-    
-    @transactional 
+
+
+    @transactional
     def cancel_or_remove_burst(self, burst_id):
         """
         Cancel (if burst is still running) or Remove the burst given by burst_id.
@@ -543,7 +540,7 @@ class BurstService(object):
         if burst_entity.status == burst_entity.BURST_RUNNING:
             self.stop_burst(burst_entity)
             return False
-        
+
         service = ProjectService()
         ## Remove each DataType in current burst.
         ## We can not leave all on cascade, because it won't work on SQLite for mapped dataTypes.
@@ -551,15 +548,15 @@ class BurstService(object):
         ## Get operations linked to current burst before removing the burst or else 
         ##    the burst won't be there to identify operations any more.
         remaining_ops = dao.get_operations_in_burst(burst_id)
-        
-        #Remove burst first to delete work-flow steps which still hold foreign keys to operations.
+
+        # Remove burst first to delete work-flow steps which still hold foreign keys to operations.
         correct = dao.remove_entity(burst_entity.__class__, burst_id)
         if not correct:
             raise RemoveDataTypeException("Could not remove Burst entity!")
-        
+
         for datatype in datatypes:
             service.remove_datatype(burst_entity.fk_project, datatype.gid, False)
-        
+
         ## Remove all Operations remained.
         correct = True
         remaining_op_groups = set()
@@ -577,13 +574,13 @@ class BurstService(object):
                     correct = correct and dao.remove_entity(model.OperationGroup, oper.fk_operation_group)
             correct = correct and dao.remove_entity(oper.__class__, oper.id)
             service.structure_helper.remove_operation_data(project.name, oper.id)
-         
+
         if not correct:
             raise RemoveDataTypeException("Could not remove Burst because a linked operation could not be dropped!!")
         return True
-        
-            
-    @staticmethod       
+
+
+    @staticmethod
     def get_portlet_status(portlet_cfg):
         """ 
         Get the status of a portlet configuration. 

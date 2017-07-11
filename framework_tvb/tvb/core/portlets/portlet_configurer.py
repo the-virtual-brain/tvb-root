@@ -36,16 +36,18 @@ from tvb.basic.logger.builder import get_logger
 from tvb.core.adapters.input_tree import InputTreeManager
 from tvb.core.entities.model import WorkflowStep, WorkflowStepView
 from tvb.core.entities.transient.burst_configuration_entities import PortletConfiguration, AdapterConfiguration
-from tvb.core.entities.transient.burst_configuration_entities import WorkflowStepConfiguration as wf_cfg
+from tvb.core.entities.transient.burst_configuration_entities import WorkflowStepConfiguration
 from tvb.core.entities.storage import dao
 from tvb.core.adapters.abcadapter import ABCAdapter
 from tvb.core.portlets.xml_reader import XMLPortletReader, KEY_STATIC, KEY_DYNAMIC, ATT_OVERWRITE
 
 
-#The root of each prefix. The index in the adapter chain for each adapter will
-#be added to form specific prefixes for each adapter from the portlet.
+# The root of each prefix. The index in the adapter chain for each adapter will
+# be added to form specific prefixes for each adapter from the portlet.
 ADAPTER_PREFIX_ROOT = 'portlet_step_'
 
+## Cache XML readers, to avoid parsing the XML too many times
+PORTLET_XML_READERS = {}
 
 
 class PortletConfigurer(object):
@@ -59,11 +61,14 @@ class PortletConfigurer(object):
         created one with a new set of parameters
         
     """
+    log = get_logger(__name__)
 
 
     def __init__(self, portlet_entity):
-        self.log = get_logger(self.__class__.__module__)
-        self.reader = XMLPortletReader(portlet_entity.xml_path)
+        if portlet_entity.xml_path not in PORTLET_XML_READERS:
+            PORTLET_XML_READERS[portlet_entity.xml_path] = XMLPortletReader(portlet_entity.xml_path)
+
+        self.reader = PORTLET_XML_READERS[portlet_entity.xml_path]
         self.portlet_entity = portlet_entity
 
 
@@ -106,15 +111,15 @@ class PortletConfigurer(object):
         return result
 
 
-    @classmethod
-    def build_adapter_from_declaration(cls, adapter_declaration):
+    @staticmethod
+    def build_adapter_from_declaration(adapter_declaration):
         """
         Build and adapter from the declaration in the portlets xml.
         """
         adapter_import_path = adapter_declaration[ABCAdapter.KEY_TYPE]
         class_name = adapter_import_path.split('.')[-1]
-        module = adapter_import_path.replace('.' + class_name, '')
-        algo = dao.get_algorithm_by_module(module, class_name)
+        module_name = adapter_import_path.replace('.' + class_name, '')
+        algo = dao.get_algorithm_by_module(module_name, class_name)
         if algo is not None:
             return ABCAdapter.build_adapter(algo)
         else:
@@ -192,7 +197,8 @@ class PortletConfigurer(object):
             self.log.debug("%s defines an output as an entry to a workflow step." % (value,))
         except ValueError, _:
             self.log.debug("%s defines an input as an entry to a workflow step." % (value,))
-        workflow_value = {wf_cfg.STEP_INDEX_KEY: int(step_idx), wf_cfg.DATATYPE_INDEX_KEY: datatype_idx}
+        workflow_value = {WorkflowStepConfiguration.STEP_INDEX_KEY: int(step_idx),
+                          WorkflowStepConfiguration.DATATYPE_INDEX_KEY: datatype_idx}
         return workflow_value
 
 
@@ -249,7 +255,7 @@ class PortletConfigurer(object):
             all_portlet_defined_params = self.reader.get_inputs(self.algo_identifier)
             specific_adapter_overwrites = [entry for entry in all_portlet_defined_params
                                            if ATT_OVERWRITE in entry and entry[ATT_OVERWRITE] ==
-                                              adapter_declaration[ABCAdapter.KEY_NAME]]
+                                           adapter_declaration[ABCAdapter.KEY_NAME]]
 
             for entry in specific_adapter_overwrites:
                 if ABCAdapter.KEY_DEFAULT in entry:
