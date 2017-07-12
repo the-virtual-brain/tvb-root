@@ -14,3 +14,4 @@ wenyan = Vio8023 <huwy.vio@gmail.com>
 viktor.sip = sipv <vikt.sip@gmail.com>
 paula.popa = popaula937 <paula.popa@codemart.ro>
 dan.pop = danvladpop <popdanvlad87@gmail.com>
+vlad.farcas = uivlis <vladsilviufarcas@gmail.com>
