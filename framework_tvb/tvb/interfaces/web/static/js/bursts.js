@@ -765,6 +765,7 @@ function showPortletParametersPage(tabIdx) {
             $("#portlets-display").hide();
             portletElem.show();
             updatePortletsToolbar(2);
+            setupMenuEvents(portletElem);
         } ,
         error: function() {
             displayMessage("View configuration was not property loaded...", "errorMessage");
