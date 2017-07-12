@@ -56,6 +56,7 @@ class ZIPConnectivityImporter(ABCUploader):
 
     WEIGHT_TOKEN = "weight"
     CENTRES_TOKEN = "centres"
+    CENTRES_TOKEN2 = "centers"
     TRACT_TOKEN = "tract"
     ORIENTATION_TOKEN = "orientation"
     AREA_TOKEN = "area"
@@ -110,7 +111,7 @@ class ZIPConnectivityImporter(ABCUploader):
             file_name_low = file_name.lower()
             if self.WEIGHT_TOKEN in file_name_low:
                 weights_matrix = self.read_list_data(file_name)
-            elif self.CENTRES_TOKEN in file_name_low:
+            elif self.CENTRES_TOKEN in file_name_low or self.CENTRES_TOKEN2 in file_name_low:
                 centres = self.read_list_data(file_name, usecols=[1, 2, 3])
                 labels_vector = self.read_list_data(file_name, dtype=numpy.str, usecols=[0])
             elif self.TRACT_TOKEN in file_name_low:
