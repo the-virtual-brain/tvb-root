@@ -47,6 +47,7 @@ from formencode import validators
 from tvb.basic.profile import TvbProfile
 from tvb.core.entities.file.files_update_manager import FilesUpdateManager
 from tvb.core.services.user_service import UserService, KEY_PASSWORD, KEY_EMAIL, KEY_USERNAME, KEY_COMMENT
+from tvb.basic.profile import TvbProfile
 from tvb.core.services.project_service import ProjectService
 from tvb.core.services.exceptions import UsernameException
 from tvb.core.utils import format_bytes_human
@@ -260,8 +261,10 @@ class UserController(BaseController):
                 data[KEY_COMMENT] = "Created by administrator."
                 # User is created by administrator, should be validated automatically, and credentials
                 # should be sent to user by email.
-                email_msg = """A TVB account was just created for you by an administrator.
-                Your credentials are username=%s, password=%s.""" % (data[KEY_USERNAME], data[KEY_PASSWORD])
+                email_msg = """A TVB account was just created for you by an administrator. 
+                \n Your credentials are username=%s, password=%s. 
+                \n You can log in here: %s.
+                """ % (data[KEY_USERNAME], data[KEY_PASSWORD], TvbProfile.current.web.BASE_URL)
                 self._create_user(email_msg=email_msg, validated=True, **data)
                 common.set_info_message("New user created successfully.")
                 redirect = True
