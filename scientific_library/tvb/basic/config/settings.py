@@ -226,7 +226,7 @@ class WebSettings(object):
                                                   'server.socket_port': self.SERVER_PORT,
                                                   'server.thread_pool': 20,
                                                   'engine.autoreload_on': False,
-                                                  'server.max_request_body_size': 1932735283  # 1.8 GB
+                                                  'server.max_request_body_size': 3221225472  # 3 GB
                                                   },
                                        '/': {'tools.encode.on': True,
                                              'tools.encode.encoding': 'utf-8',
