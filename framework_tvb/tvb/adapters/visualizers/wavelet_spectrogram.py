@@ -54,7 +54,6 @@ class WaveletSpectrogramVisualizer(ABCDisplayer):
     _ui_name = "Spectrogram of Wavelet Power"
     _ui_subsection = "wavelet"
 
-
     def get_input_tree(self):
         """
         Accept as input result from Continuous wavelet transform analysis.
@@ -63,7 +62,6 @@ class WaveletSpectrogramVisualizer(ABCDisplayer):
         return [{'name': 'input_data', 'label': 'Wavelet transform Result',
                  'type': WaveletCoefficients, 'required': True,
                  'description': 'Wavelet spectrogram to display'}]
-
 
     def get_required_memory_size(self, **kwargs):
         """
