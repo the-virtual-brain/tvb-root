@@ -130,7 +130,7 @@ Run `distribution -h` too get help with this command:
    $ ./distribution.sh -h
 
 To access the console interface, run in a terminal `distribution start COMMAND_PROFILE` or `distribution start LIBRARY_PROFILE`.
-A Python IDLE shell will appear. See the :ref:`console <shell_ui>`.
+A Python shell will appear. See the :ref:`console <shell_ui>`.
 
 .. code-block:: bash
 
@@ -196,6 +196,16 @@ Use this to get to a clean state, as if |TVB| had just been installed and never 
 
    $ # This will delete all TVB projects and configuration !
    $ ./tvb_clean.sh
+
+The above operation will not touch `TVB_Distribution`, which represents your downloaded |TVB| app,
+together with some demo-data. Such demo-data can be found inside `TVB_Distribution`, under the following path:
+    - On Windows `TVB_Distribution/tvb_data/Lib/site-packages/tvb_data/`
+    - On Linux `TVB_Distribution/tvb_data/lib/python2.7/site-packages/tvb_data/`
+    - On Mac `TVB_Distribution/tvb.app/Contents/Resources/lib/python2.7/tvb_data/`
+
+Everything under `TVB_Distribution` is not to be removed or edited.
+The files under `TVB_Distribution/..../tvb_data` can be used together with the GUI and/or the
+script interfaces, or taken as reference for you, when creating TVB compatible dataset.
 
 
 Supported operating systems

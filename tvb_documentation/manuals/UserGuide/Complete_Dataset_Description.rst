@@ -19,7 +19,7 @@ A complete dataset should:
 + provide the history of the acquisition/processing protocols (traceability);
 + be in a standard format to perform analysis with different toolboxes;
 + have the *Minimal Structural Dataset* to derive a self-consistent
-  set of files used in TheVirtualBrain. This minla dataset will permit
+  set of files used in TheVirtualBrain. This minimal dataset will permit
   users to build large-scale brain network models and save their
   simulated data under different output modalities (eg, EEG, MEG, fMRI).
 + increase reproducibility of the results.
@@ -42,7 +42,7 @@ access.
 
 **Structural Dataset**
 
-  (a collection of T1/T2 weighted MRIscans + DTI data + parcellation )
+  (a collection of T1/T2 weighted MRI scans + DTI data + parcellation )
 
 **Minimal (Preprocessed) Structural Dataset**
 
@@ -59,7 +59,7 @@ access.
 
 In general, all the steps in the processing pipeline should be documented, so
 it's possible to apply the same treatment to subsequent datasets.  Sending
-pieces of informations in different files without descriptions from where they
+pieces of information in different files without descriptions from where they
 came and how they were processed is a bad practice and only detrimental for your
 own research project (takes a lot of time and it's not reproducible). We can't
 provide any meaningful help to integrate/check or validate incomplete datasets.
@@ -105,7 +105,7 @@ Parcellation Mask
 **What should be the format?**
 
   NIFTI is a standard format for volumetric time-series, and it is widely used
-  in the neuroimaging commmunity. Originally, NIFTI-1 file format was based on
+  in the neuroimaging community. Originally, NIFTI-1 file format was based on
   16-bit signed integers and was limited to 32,767 in each dimension. The
   NIFTI-2 format is based on 64-bit integers and can handle very large volumes
   and matrices. The more recent CIFTI format is compatible with the NIFTI-2
@@ -113,9 +113,9 @@ Parcellation Mask
   format (.nii and .nii.gz).I
 
   .. Note::
-    add references to the libraries and softwares that are available for
+    add references to the libraries and software that are available for
     NIFTI-1 TVB also has a reader. Not the same case for NIFTI-2 and CIFTI.
-    FieldTrip is the only one providing CIFTI i/o functionalities.
+    FieldTrip is the only one providing CIFTI i/o functionality.
 
 In the case of a parcellation mask, each voxel contains  an integer
 corresponding to a specific region (numeric labeling). This means, assuming
@@ -133,7 +133,7 @@ A list with the region names/labels and corresponding integer index should be pr
   refers to a human readable description. Examples for one region/name would
   be something like 'label: RM-TCpol_R' / 'name: right temporal polar cortex'.
   Ideally, a reference to the original atlas/template should be provided as
-  well. Notice that the correspondance between integrers values in the
+  well. Notice that the correspondence between integers values in the
   parcellation mask and anatomical/human readable labels should be provided if
   they are not specified in the volume file.
 
@@ -242,7 +242,7 @@ subjects data and extract the corresponding cortical surface.
   one for vertices, and one for triangles. Tha latter is an array with triplets
   of indices into the first array of vertices. So, basically a surface mesh is
   given by a set of vertices (triplets (x,y,z) defining the location of those
-  vertices). And alternatively, the mesh can be represented by triagle arrays
+  vertices). And alternatively, the mesh can be represented by triangle arrays
   which are indices into the vertex arrays; three indices for each triangle.
 
   Then there are other 'attributes' that can be derived from these two main
@@ -264,7 +264,7 @@ Region Mapping
   The region mapping is just a relationship between the two pieces of data,
   mapping regions of a connectivity onto the nodes of a surface simulation, one
   to  many for the vertices of the cortical surface and one to one for the
-  remaining  noncortical regions.  NOTE: A region mapping could be between two
+  remaining  non-cortical regions.  NOTE: A region mapping could be between two
   connectomes of different resolution (eg, the connectomes presented in Hagmann
   998 to 66 regions).
 
@@ -346,8 +346,7 @@ Head model
   * Mesh surfaces for:
         - inner-skull: boundary between the brain and the skull,
         - outer-skull: the boundary of between the skull and the skin
-        - outer-skin:  boundary surface between the skin and the air
-            (for EEG/MEG monitors)
+        - outer-skin:  boundary surface between the skin and the air (for EEG/MEG monitors)
 
   * Basic additional information:
         - Units: tract lengths, coordinates etc (mm).
@@ -358,7 +357,7 @@ Head model
 **Guidelines to import the data into TVB**
 
   Currently we have some guidelines describing what data fields and in which
-  format users can import different components of a compelte dataset
+  format users can import different components of a complete dataset
   (connectome, surface, sensors, gain matrix for eeg, etc...).
 
   .. Note::
@@ -369,13 +368,14 @@ Head model
 The TVB demonstration dataset
 -----------------------------
 
-**DISCLAIMER:** This dataset was custom made and built to serve the purpose of
-numerically testing the simulator, as well as for theoretical exploration. It
-does have, however, certain issues with regard to biophysical realism and so
-shouldn't be used/relied-upon for that purpose. References, where appropiate,
-are given. Also, this is an open source project and contributions are greatly
-appreciated. If you see an error, please leave a comment or make corresponding
-modifications [please give proper references and argument your corrections].
+  .. Note::
+    **DISCLAIMER:** This dataset was custom made and built to serve the purpose of
+    numerically testing the simulator, as well as for theoretical exploration. It
+    does have, however, certain issues with regard to biophysical realism and so
+    shouldn't be used/relied-upon for that purpose. References, where appropriate,
+    are given. Also, this is an open source project and contributions are greatly
+    appreciated. If you see an error, please leave a comment or make corresponding
+    modifications [please give proper references and argument your corrections].
 
 + The parcellation was chosen to be as homologous as possible between Macaque
   and Human. (See the [scalable brain atlas interactive tool]
@@ -454,7 +454,7 @@ We need:
    dataset available to users who can't or aren't interested in providing their
    own. Of specific importance here is the Connectivity Parcellation Mask, as
    well as a specification of hemisphere and cortical vs non-cortical regions.
-   If you are intetrested in contributing a dataset, please contact paupau.
+   If you are interested in contributing a dataset, please contact paupau.
 
  - Algorithm for calculating the region mapping, given a coregistered Cortex
    and ParcellationMask, including an "island" removal/correction mechanism to
@@ -462,7 +462,14 @@ We need:
    data, between an individual's cortical surface and the "generic"
    parcellation mask.
 
-
+    .. Note::
+        Demo data as described in this chapter, can be found inside `TVB_Distribution`, under the following path:
+        `TVB_Distribution/tvb_data/Lib/site-packages/tvb_data/` on Windows,
+        `TVB_Distribution/tvb_data/lib/python2.7/site-packages/tvb_data/` on Linux, or
+        `TVB_Distribution/tvb.app/Contents/Resources/lib/python2.7/tvb_data/` on Mac.
+        Everything under `TVB_Distribution` is not to be removed or edited.
+        The files under `TVB_Distribution/..../tvb_data` can be used together with the GUI and/or the
+        script interfaces, or taken as reference for you, when creating TVB compatible dataset.
 
 Other datasets
 --------------

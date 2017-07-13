@@ -76,6 +76,7 @@ class DocGenerator:
     USER_GUIDE_UI_PROJECT = {"name": "UserGuide-UI_Project", "folder": USER_GUIDE_FOLDER}
     USER_GUIDE_UI_STIMULUS = {"name": "UserGuide-UI_Stimulus", "folder": USER_GUIDE_FOLDER}
     USER_GUIDE_UI_USER = {"name": "UserGuide-UI_User", "folder": USER_GUIDE_FOLDER}
+    DATA_EXCHANGE = {"name": "DataExchange", "folder": USER_GUIDE_FOLDER}
 
     # Folders
     DOCS_SRC = "tvb_documentation"
@@ -92,7 +93,7 @@ class DocGenerator:
     # Documents that will be transformed into HTML
     DOCS_TO_HTML = [USER_GUIDE_UI, USER_GUIDE_UI_ANALYZE, USER_GUIDE_UI_BURST,
                     USER_GUIDE_UI_CONNECTIVITY, USER_GUIDE_UI_PROJECT,
-                    USER_GUIDE_UI_STIMULUS, USER_GUIDE_UI_USER]
+                    USER_GUIDE_UI_STIMULUS, USER_GUIDE_UI_USER, DATA_EXCHANGE]
 
     # paths relative to the tvb package that should not be documented
     EXCLUDES = ['simulator/plot', 'interfaces/web/templates', 'adapters/portlets', 'tests']
