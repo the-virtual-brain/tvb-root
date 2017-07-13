@@ -1,5 +1,5 @@
 /**
- * TheVirtualBrain-Framework Package. This package holds all Data Management, and 
+ * TheVirtualBrain-Framework Package. This package holds all Data Management, and
  * Web-UI helpful to run brain-simulations. To use it, you also need do download
  * TheVirtualBrain-Scientific Package (for simulators). See content of the
  * documentation-folder for more details. See also http://www.thevirtualbrain.org
@@ -24,11 +24,11 @@
  */
 
 /* globals gl, SHADING_Context, GL_shaderProgram, displayMessage, HLPR_readJSONfromFile, readDataPageURL,
-    GL_handleKeyDown, GL_handleKeyUp, GL_handleMouseMove, GL_handleMouseWeel,
-    initGL, updateGLCanvasSize, LEG_updateLegendVerticesBuffers,
-    basicInitShaders, basicInitSurfaceLighting, GL_initColorPickFrameBuffer,
-    ColSchGetTheme, LEG_generateLegendBuffers, LEG_initMinMax
-    */
+ GL_handleKeyDown, GL_handleKeyUp, GL_handleMouseMove, GL_handleMouseWeel,
+ initGL, updateGLCanvasSize, LEG_updateLegendVerticesBuffers,
+ basicInitShaders, basicInitSurfaceLighting, GL_initColorPickFrameBuffer,
+ ColSchGetTheme, LEG_generateLegendBuffers, LEG_initMinMax
+ */
 
 /**
  * WebGL methods "inheriting" from webGL_xx.js in static/js.
@@ -38,8 +38,8 @@ var BRAIN_CANVAS_ID = "GLcanvas";
  * Variables for displaying Time and computing Frames/Sec
  */
 var lastTime = 0;
-var framestime = [50,50,50,50,50,50,50,50,50,50,50,50,50,50,50,50,50,50,50,50,
-                  50,50,50,50,50,50,50,50,50,50,50,50,50,50,50,50,50,50,50];
+var framestime = [50, 50, 50, 50, 50, 50, 50, 50, 50, 50, 50, 50, 50, 50, 50, 50, 50, 50, 50, 50,
+    50, 50, 50, 50, 50, 50, 50, 50, 50, 50, 50, 50, 50, 50, 50, 50, 50, 50, 50];
 
 /**
  * Time like entities:
@@ -158,28 +158,27 @@ var near = 0.1;
 // index of the currently selected node. This is equivalent to CONN_pickedIndex
 var VS_pickedIndex = -1;
 
-
 var VB_BrainNavigator;
 
 
-function VS_init_hemisphere_mask(hemisphere_chunk_mask){
+function VS_init_hemisphere_mask(hemisphere_chunk_mask) {
     VS_hemisphere_chunk_mask = hemisphere_chunk_mask;
-    if (hemisphere_chunk_mask != null){
+    if (hemisphere_chunk_mask !== null && hemisphere_chunk_mask !== undefined) {
         bufferSetsMask = [];
-        for(var i = 0; i < VS_hemisphere_chunk_mask.length; i++){
+        for (let i = 0; i < VS_hemisphere_chunk_mask.length; i++) {
             bufferSetsMask[i] = 1;
         }
     }
 }
 
-function VS_SetHemisphere(h){
+function VS_SetHemisphere(h) {
     VS_hemisphereVisibility = h;
-    for(var i = 0; i < VS_hemisphere_chunk_mask.length; i++){
-        if ( h == null ){
+    for (let i = 0; i < VS_hemisphere_chunk_mask.length; i++) {
+        if (h === null || h === undefined) {
             bufferSetsMask[i] = 1;
-        }else if (h === 'l'){
+        } else if (h === 'l') {
             bufferSetsMask[i] = 1 - VS_hemisphere_chunk_mask[i];
-        }else if (h === 'r'){
+        } else if (h === 'r') {
             bufferSetsMask[i] = VS_hemisphere_chunk_mask[i];
         }
     }
@@ -190,24 +189,24 @@ function VS_StartPortletPreview(baseDatatypeURL, urlVerticesList, urlTrianglesLi
     isPreview = true;
     pageSize = 1;
     urlBase = baseDatatypeURL;
-    activitiesData = HLPR_readJSONfromFile(readDataPageURL(urlBase, 0, 1, selectedStateVar, selectedMode, TIME_STEP));
+    activitiesData = HLPR_readJSONfromFile(readDataSplitPageURL(urlBase, 0, 1, selectedStateVar, selectedMode, TIME_STEP));
     if (oneToOneMapping === 'True') {
         isOneToOneMapping = true;
     }
     activityMin = parseFloat(minActivity);
     activityMax = parseFloat(maxActivity);
 
-    NO_OF_MEASURE_POINTS =  noOfMeasurePoints;
-    for(var i = 0; i < NO_OF_MEASURE_POINTS; i++){
+    NO_OF_MEASURE_POINTS = noOfMeasurePoints;
+    for (let i = 0; i < NO_OF_MEASURE_POINTS; i++) {
         VS_selectedRegions.push(i);
     }
 
-    var canvas = document.getElementById(BRAIN_CANVAS_ID);
+    const canvas = document.getElementById(BRAIN_CANVAS_ID);
     customInitGL(canvas);
     initShaders();
     if (urlVerticesList) {
-        brainBuffers = initBuffers($.parseJSON(urlVerticesList), $.parseJSON(urlNormalsList), $.parseJSON(urlTrianglesList), 
-                               $.parseJSON(urlRegionMapList), false);
+        brainBuffers = initBuffers($.parseJSON(urlVerticesList), $.parseJSON(urlNormalsList), $.parseJSON(urlTrianglesList),
+            $.parseJSON(urlRegionMapList), false);
     }
 
     ColSch_initColorSchemeComponent(activityMin, activityMax);
@@ -220,7 +219,9 @@ function VS_StartPortletPreview(baseDatatypeURL, urlVerticesList, urlTrianglesLi
     canvas.onkeydown = GL_handleKeyDown;
     canvas.onkeyup = GL_handleKeyUp;
     canvas.onmousedown = customMouseDown;
-    canvas.oncontextmenu = function() { return false;};
+    canvas.oncontextmenu = function () {
+        return false;
+    };
     $(document).on('mousemove', GL_handleMouseMove);
     $(document).on('mouseup', customMouseUp);
     // We use drawScene instead of tick because tick's performance is worse.
@@ -245,7 +246,7 @@ function _VS_static_entrypoint(urlVerticesList, urlLinesList, urlTrianglesList, 
     $("#displayFaceChkId").attr('checked', isFaceToDisplay);
     drawNavigator = $("#showNavigator").prop('checked');
 
-    if (noOfMeasurePoints === 0){
+    if (noOfMeasurePoints === 0) {
         // we are viewing a surface with no region mapping
         // we mock 1 measure point
         measurePoints = [[0, 0, 0]];
@@ -260,11 +261,11 @@ function _VS_static_entrypoint(urlVerticesList, urlLinesList, urlTrianglesList, 
         activityMin = parseFloat(minMeasure);
         activityMax = parseFloat(maxMeasure);
         let measure;
-        if (urlMeasure === ''){
+        if (urlMeasure === '') {
             // Empty url => The static viewer has to show a region map.
             // The measure will be a range(NO_OF_MEASURE_POINTS)
             measure = [];
-            for(let i = 0; i < NO_OF_MEASURE_POINTS; i++){
+            for (let i = 0; i < NO_OF_MEASURE_POINTS; i++) {
                 measure.push(i);
             }
         } else {
@@ -281,29 +282,29 @@ function _VS_static_entrypoint(urlVerticesList, urlLinesList, urlTrianglesList, 
         VS_showLegend = true;
     }
 
-    for(let i = 0; i < NO_OF_MEASURE_POINTS; i++){
+    for (let i = 0; i < NO_OF_MEASURE_POINTS; i++) {
         VS_selectedRegions.push(i);
     }
 
     const canvas = document.getElementById(BRAIN_CANVAS_ID);
     _initViewerGL(canvas, urlVerticesList, urlNormalsList, urlTrianglesList,
-                  urlRegionMapList, urlLinesList, boundaryURL, shelfObject, hemisphereChunkMask);
+        urlRegionMapList, urlLinesList, boundaryURL, shelfObject, hemisphereChunkMask);
 
     _bindEvents(canvas);
 
     //specify the re-draw function.
-    if (_isValidActivityData()){
+    if (_isValidActivityData()) {
         setInterval(tick, TICK_STEP);
     }
 }
 
 function _VS_movie_entrypoint(baseDatatypeURL, onePageSize, urlTimeList, urlVerticesList, urlLinesList,
-                    urlTrianglesList, urlNormalsList, urlMeasurePoints, noOfMeasurePoints,
-                    urlRegionMapList, minActivity, maxActivity,
-                    oneToOneMapping, doubleView, shelfObject, hemisphereChunkMask, urlMeasurePointsLabels, boundaryURL) {
+                              urlTrianglesList, urlNormalsList, urlMeasurePoints, noOfMeasurePoints,
+                              urlRegionMapList, minActivity, maxActivity,
+                              oneToOneMapping, doubleView, shelfObject, hemisphereChunkMask, urlMeasurePointsLabels, boundaryURL) {
     // initialize global configuration
     isDoubleView = doubleView;
-    if (oneToOneMapping == 'True') {
+    if (oneToOneMapping === 'True') {
         isOneToOneMapping = true;
     }
     // these global flags could be structured better
@@ -326,19 +327,19 @@ function _VS_movie_entrypoint(baseDatatypeURL, onePageSize, urlTimeList, urlVert
     const canvas = document.getElementById(BRAIN_CANVAS_ID);
 
     _initViewerGL(canvas, urlVerticesList, urlNormalsList, urlTrianglesList,
-                  urlRegionMapList, urlLinesList, boundaryURL, shelfObject, hemisphereChunkMask);
+        urlRegionMapList, urlLinesList, boundaryURL, shelfObject, hemisphereChunkMask);
 
     _bindEvents(canvas);
 
     _initSliders();
 
     //specify the re-draw function.
-    if (_isValidActivityData()){
+    if (_isValidActivityData()) {
         setInterval(tick, TICK_STEP);
     }
 }
 
-function _VS_init_cubicalMeasurePoints(){
+function _VS_init_cubicalMeasurePoints() {
     for (let i = 0; i < NO_OF_MEASURE_POINTS; i++) {
         const result = HLPR_bufferAtPoint(gl, measurePoints[i]);
         const bufferVertices = result[0];
@@ -351,68 +352,72 @@ function _VS_init_cubicalMeasurePoints(){
 
 function VS_StartSurfaceViewer(urlVerticesList, urlLinesList, urlTrianglesList, urlNormalsList, urlMeasurePoints,
                                noOfMeasurePoints, urlRegionMapList, urlMeasurePointsLabels,
-                               boundaryURL, shelveObject, minMeasure, maxMeasure, urlMeasure, hemisphereChunkMask){
+                               boundaryURL, shelveObject, minMeasure, maxMeasure, urlMeasure, hemisphereChunkMask) {
 
     _VS_static_entrypoint(urlVerticesList, urlLinesList, urlTrianglesList, urlNormalsList, urlMeasurePoints,
-                          noOfMeasurePoints, urlRegionMapList, urlMeasurePointsLabels, boundaryURL, shelveObject,
-                          hemisphereChunkMask, false, false, minMeasure, maxMeasure, urlMeasure);
+        noOfMeasurePoints, urlRegionMapList, urlMeasurePointsLabels, boundaryURL, shelveObject,
+        hemisphereChunkMask, false, false, minMeasure, maxMeasure, urlMeasure);
     _VS_init_cubicalMeasurePoints();
 }
 
 function VS_StartEEGSensorViewer(urlVerticesList, urlLinesList, urlTrianglesList, urlNormalsList, urlMeasurePoints,
-                               noOfMeasurePoints, urlMeasurePointsLabels,
-                               shelfObject, minMeasure, maxMeasure, urlMeasure){
+                                 noOfMeasurePoints, urlMeasurePointsLabels,
+                                 shelfObject, minMeasure, maxMeasure, urlMeasure) {
     isEEGView = true;
     _VS_static_entrypoint(urlVerticesList, urlLinesList, urlTrianglesList, urlNormalsList, urlMeasurePoints,
-                          noOfMeasurePoints, '', urlMeasurePointsLabels, '', shelfObject, null, true, true,
-                          minMeasure, maxMeasure, urlMeasure);
+        noOfMeasurePoints, '', urlMeasurePointsLabels, '', shelfObject, null, true, true,
+        minMeasure, maxMeasure, urlMeasure);
     _VS_init_cubicalMeasurePoints();
 }
 
 function VS_StartBrainActivityViewer(baseDatatypeURL, onePageSize, urlTimeList, urlVerticesList, urlLinesList,
-                    urlTrianglesList, urlNormalsList, urlMeasurePoints, noOfMeasurePoints,
-                    urlRegionMapList, minActivity, maxActivity,
-                    oneToOneMapping, doubleView, shelfObject, hemisphereChunkMask,
-                    urlMeasurePointsLabels, boundaryURL, measurePointsSelectionGID) {
+                                     urlTrianglesList, urlNormalsList, urlMeasurePoints, noOfMeasurePoints,
+                                     urlRegionMapList, minActivity, maxActivity,
+                                     oneToOneMapping, doubleView, shelfObject, hemisphereChunkMask,
+                                     urlMeasurePointsLabels, boundaryURL, measurePointsSelectionGID) {
     _VS_movie_entrypoint(baseDatatypeURL, onePageSize, urlTimeList, urlVerticesList, urlLinesList,
-                    urlTrianglesList, urlNormalsList, urlMeasurePoints, noOfMeasurePoints,
-                    urlRegionMapList, minActivity, maxActivity,
-                    oneToOneMapping, doubleView, shelfObject, hemisphereChunkMask,
-                    urlMeasurePointsLabels, boundaryURL);
+        urlTrianglesList, urlNormalsList, urlMeasurePoints, noOfMeasurePoints,
+        urlRegionMapList, minActivity, maxActivity,
+        oneToOneMapping, doubleView, shelfObject, hemisphereChunkMask,
+        urlMeasurePointsLabels, boundaryURL);
     _VS_init_cubicalMeasurePoints();
 
-    if (!isDoubleView){
+    if (!isDoubleView) {
         // If this is a brain activity viewer then we have to initialize the selection component
         _initChannelSelection(measurePointsSelectionGID);
         // For the double view the selection is the responsibility of the extended view functions
     }
 }
 
-function _isValidActivityData(){
-    if(isOneToOneMapping){
-        if(3 * activitiesData[0].length !== brainBuffers[0][0].numItems ){            
+function _isValidActivityData() {
+    if (isOneToOneMapping) {
+        if (activitiesData.length !== brainBuffers.length) {
+            displayMessage("The number of activity buffers should equal the number of split surface slices", "errorMessage");
+            return false;
+        }
+        if (3 * activitiesData[0][0].length !== brainBuffers[0][0].numItems) {
             displayMessage("The number of activity points should equal the number of surface vertices", "errorMessage");
             return false;
         }
     } else {
-        if (NO_OF_MEASURE_POINTS !== activitiesData[0].length){
+        if (NO_OF_MEASURE_POINTS !== activitiesData[0].length) {
             displayMessage("The number of activity points should equal the number of regions", "errorMessage");
             return false;
         }
     }
-    return true; 
+    return true;
 }
 
 /**
  * Scene setup common to all webgl brain viewers
  */
 function _initViewerGL(canvas, urlVerticesList, urlNormalsList, urlTrianglesList,
-                       urlRegionMapList, urlLinesList, boundaryURL, shelfObject, hemisphere_chunk_mask){
+                       urlRegionMapList, urlLinesList, boundaryURL, shelfObject, hemisphere_chunk_mask) {
     customInitGL(canvas);
     GL_initColorPickFrameBuffer();
     initShaders();
 
-    if(VS_showLegend){
+    if (VS_showLegend) {
         LEG_initMinMax(activityMin, activityMax);
         ColSch_initColorSchemeGUI(activityMin, activityMax, LEG_updateLegendColors);
         LEG_generateLegendBuffers();
@@ -426,14 +431,14 @@ function _initViewerGL(canvas, urlVerticesList, urlNormalsList, urlTrianglesList
             parsedIndices = $.parseJSON(urlRegionMapList);
         }
         brainBuffers = initBuffers($.parseJSON(urlVerticesList), $.parseJSON(urlNormalsList),
-                                   $.parseJSON(urlTrianglesList), parsedIndices, isDoubleView);
+            $.parseJSON(urlTrianglesList), parsedIndices, isDoubleView);
     }
 
     VS_init_hemisphere_mask(hemisphere_chunk_mask);
 
     brainLinesBuffers = HLPR_getDataBuffers(gl, $.parseJSON(urlLinesList), isDoubleView, true);
     regionBoundariesController = new RB_RegionBoundariesController(boundaryURL);
-    
+
     if (shelfObject) {
         shelfObject = $.parseJSON(shelfObject);
         shelfBuffers = initBuffers(shelfObject[0], shelfObject[1], shelfObject[2], false, true);
@@ -443,7 +448,7 @@ function _initViewerGL(canvas, urlVerticesList, urlNormalsList, urlTrianglesList
 }
 
 
-function _bindEvents(canvas){
+function _bindEvents(canvas) {
     // Enable keyboard and mouse interaction
     canvas.onkeydown = GL_handleKeyDown;
     canvas.onkeyup = GL_handleKeyUp;
@@ -452,28 +457,34 @@ function _bindEvents(canvas){
     $(canvas).on('contextmenu', _onContextMenu);
     $(document).on('mousemove', GL_handleMouseMove);
 
-    $(canvas).mousewheel(function(event, delta) {
+    $(canvas).mousewheel(function (event, delta) {
         GL_handleMouseWeel(delta);
         return false; // prevent default
     });
 
     if (!isDoubleView) {
-        var canvasX = document.getElementById('brain-x');
+        const canvasX = document.getElementById('brain-x');
         if (canvasX) {
-            canvasX.onmousedown = function (event) { VB_BrainNavigator.moveInXSection(event)};
+            canvasX.onmousedown = function (event) {
+                VB_BrainNavigator.moveInXSection(event)
+            };
         }
-        var canvasY = document.getElementById('brain-y');
+        const canvasY = document.getElementById('brain-y');
         if (canvasY) {
-            canvasY.onmousedown = function (event) { VB_BrainNavigator.moveInYSection(event)};
+            canvasY.onmousedown = function (event) {
+                VB_BrainNavigator.moveInYSection(event)
+            };
         }
-        var canvasZ = document.getElementById('brain-z');
+        const canvasZ = document.getElementById('brain-z');
         if (canvasZ) {
-            canvasZ.onmousedown = function (event) { VB_BrainNavigator.moveInZSection(event)};
+            canvasZ.onmousedown = function (event) {
+                VB_BrainNavigator.moveInZSection(event)
+            };
         }
     }
 }
 
-function _initMeasurePoints(noOfMeasurePoints, urlMeasurePoints, urlMeasurePointsLabels){
+function _initMeasurePoints(noOfMeasurePoints, urlMeasurePoints, urlMeasurePointsLabels) {
     if (noOfMeasurePoints > 0) {
         measurePoints = HLPR_readJSONfromFile(urlMeasurePoints);
         measurePointsLabels = HLPR_readJSONfromFile(urlMeasurePointsLabels);
@@ -485,51 +496,53 @@ function _initMeasurePoints(noOfMeasurePoints, urlMeasurePoints, urlMeasurePoint
     }
 }
 
-function _initTimeData(urlTimeList){
-    var timeUrls = $.parseJSON(urlTimeList);
-    for (var i = 0; i < timeUrls.length; i++) {
+function _initTimeData(urlTimeList) {
+    const timeUrls = $.parseJSON(urlTimeList);
+    for (let i = 0; i < timeUrls.length; i++) {
         timeData = timeData.concat(HLPR_readJSONfromFile(timeUrls[i]));
     }
     MAX_TIME = timeData.length - 1;
 }
 
-function _updateSpeedSliderValue(stepsPerTick){
-    var s;
-    if (stepsPerTick >= 1){
+function _updateSpeedSliderValue(stepsPerTick) {
+    let s;
+    if (stepsPerTick >= 1) {
         s = stepsPerTick.toFixed(0);
-    }else{
-        s = "1/" + (1/stepsPerTick).toFixed(0);
+    } else {
+        s = "1/" + (1 / stepsPerTick).toFixed(0);
     }
     $("#slider-value").html(s);
 }
 
-function _initSliders(){
-    var maxAllowedTimeStep = Math.ceil(MAX_TIME / ACTIVITY_FRAMES_IN_TIME_LINE_AT_MAX_SPEED);
+function _initSliders() {
+    const maxAllowedTimeStep = Math.ceil(MAX_TIME / ACTIVITY_FRAMES_IN_TIME_LINE_AT_MAX_SPEED);
     // after being converted to the exponential range maxSpeed must not exceed maxAllowedTimeStep
-    var maxSpeedSlider = Math.min(10, 5 + Math.log(maxAllowedTimeStep)/Math.LN2);
+    const maxSpeedSlider = Math.min(10, 5 + Math.log(maxAllowedTimeStep) / Math.LN2);
 
     if (timeData.length > 0) {
-        $("#sliderStep").slider({min:0, max: maxSpeedSlider, step: 1, value:5,
-            stop: function() {
+        $("#sliderStep").slider({
+            min: 0, max: maxSpeedSlider, step: 1, value: 5,
+            stop: function () {
                 refreshCurrentDataSlice();
                 sliderSel = false;
             },
-            slide: function(event, target) {
+            slide: function (event, target) {
                 // convert the linear 0..10 range to the exponential 1/32..1..32 range
-                var newStep = Math.pow(2, target.value - 5);
+                const newStep = Math.pow(2, target.value - 5);
                 setTimeStep(newStep);
                 _updateSpeedSliderValue(timeStepsPerTick);
                 sliderSel = true;
             }
         });
         // Initialize slider for timeLine
-        $("#slider").slider({ min:0, max: MAX_TIME,
-            slide: function(event, target) {
+        $("#slider").slider({
+            min: 0, max: MAX_TIME,
+            slide: function (event, target) {
                 sliderSel = true;
                 currentTimeValue = target.value;
                 $('#TimeNow').val(currentTimeValue);
             },
-            stop: function(event, target) {
+            stop: function (event, target) {
                 sliderSel = false;
                 loadFromTimeStep(target.value);
             }
@@ -539,14 +552,14 @@ function _initSliders(){
     }
     _updateSpeedSliderValue(timeStepsPerTick);
 
-    $('#TimeNow').click(function(){
-        if (!AG_isStopped){
+    $('#TimeNow').click(function () {
+        if (!AG_isStopped) {
             pauseMovie();
         }
         $(this).select();
-    }).change(function(ev){
-        var val = parseFloat(ev.target.value);
-        if (val == null || val < 0 || val > MAX_TIME){
+    }).change(function (ev) {
+        let val = parseFloat(ev.target.value);
+        if (val === null || val < 0 || val > MAX_TIME) {
             val = 0;
             ev.target.value = 0;
         }
@@ -555,22 +568,22 @@ function _initSliders(){
     });
 }
 
-function _initChannelSelection(selectionGID){
-    var vs_regionsSelector = TVBUI.regionSelector("#channelSelector", {filterGid: selectionGID});
+function _initChannelSelection(selectionGID) {
+    const vs_regionsSelector = TVBUI.regionSelector("#channelSelector", {filterGid: selectionGID});
 
-    vs_regionsSelector.change(function(value){
+    vs_regionsSelector.change(function (value) {
         VS_selectedRegions = [];
-        for(var i=0; i < value.length; i++){
+        for (let i = 0; i < value.length; i++) {
             VS_selectedRegions.push(parseInt(value[i], 10));
         }
     });
     //sync region filter with initial selection
     VS_selectedRegions = [];
-    var selection = vs_regionsSelector.val();
-    for(var i=0; i < selection.length; i++){
+    const selection = vs_regionsSelector.val();
+    for (let i = 0; i < selection.length; i++) {
         VS_selectedRegions.push(parseInt(selection[i], 10));
     }
-    var mode_selector = TVBUI.modeAndStateSelector("#channelSelector", 0);
+    const mode_selector = TVBUI.modeAndStateSelector("#channelSelector", 0);
     mode_selector.modeChanged(VS_changeMode);
     mode_selector.stateVariableChanged(VS_changeStateVariable);
 }
@@ -578,7 +591,7 @@ function _initChannelSelection(selectionGID){
 ////////////////////////////////////////// GL Initializations //////////////////////////////////////////
 
 function customInitGL(canvas) {
-    window.onresize = function() {
+    window.onresize = function () {
         updateGLCanvasSize(BRAIN_CANVAS_ID);
         LEG_updateLegendVerticesBuffers();
     };
@@ -595,16 +608,16 @@ function customInitGL(canvas) {
 }
 
 /** This callback handles image exporting from this canvas.*/
-function VS_multipleImageExport(saveFigure){
-    var canvas = this;
+function VS_multipleImageExport(saveFigure) {
+    const canvas = this;
 
-    function saveFrontBack(nameFront, nameBack){
+    function saveFrontBack(nameFront, nameBack) {
         mvPushMatrix();
         // front
         canvas.drawForImageExport();
         saveFigure({suggestedName: nameFront});
         // back: rotate model around the vertical y axis in trackball space (almost camera space: camera has a z translation)
-        var r  = createRotationMatrix(180, [0, 1, 0]);
+        const r = createRotationMatrix(180, [0, 1, 0]);
         GL_mvMatrix = GL_cameraMatrix.x(r.x(GL_trackBallMatrix));
         canvas.drawForImageExport();
         saveFigure({suggestedName: nameBack});
@@ -614,8 +627,8 @@ function VS_multipleImageExport(saveFigure){
     // using drawForImageExport because it handles resizing canvas for export
     // It is set on canvas in initGL and defers to drawscene.
 
-    if (VS_hemisphere_chunk_mask != null) {    // we have 2 hemispheres
-        if (VS_hemisphereVisibility == null) {  // both are visible => take them apart when taking picture
+    if (VS_hemisphere_chunk_mask !== null) {    // we have 2 hemispheres
+        if (VS_hemisphereVisibility === null) {  // both are visible => take them apart when taking picture
             VS_SetHemisphere('l');
             saveFrontBack('brain-LH-front', 'brain-LH-back');
             VS_SetHemisphere('r');
@@ -636,7 +649,7 @@ function initShaders() {
     createAndUseShader("shader-fs", "shader-vs");
     if (isOneToOneMapping) {
         SHADING_Context.one_to_one_program_init(GL_shaderProgram);
-    }else {
+    } else {
         SHADING_Context.region_progam_init(GL_shaderProgram, NO_OF_MEASURE_POINTS, legendGranularity);
     }
 }
@@ -644,8 +657,8 @@ function initShaders() {
 ///////////////////////////////////////~~~~~~~~START MOUSE RELATED CODE~~~~~~~~~~~//////////////////////////////////
 
 
-function _onContextMenu(){
-    if( !displayMeasureNodes || VS_pickedIndex === -1) {
+function _onContextMenu() {
+    if (!displayMeasureNodes || VS_pickedIndex === -1) {
         return false;
     }
     doPick = true;
@@ -680,28 +693,24 @@ function customMouseUp(event) {
  */
 
 function updateColors(currentTimeInFrame) {
-    var currentActivity = activitiesData[currentTimeInFrame];
-    var col = ColSchInfo();
-    var activityRange = ColSchGetBounds();
+    const col = ColSchInfo();
+    const activityRange = ColSchGetBounds();
     SHADING_Context.colorscheme_set_uniforms(GL_shaderProgram, activityRange.min, activityRange.max,
-                                             activityRange.bins, activityRange.centralHoleDiameter);
+        activityRange.bins, activityRange.centralHoleDiameter);
 
     if (isOneToOneMapping) {
-        for (var i = 0; i < brainBuffers.length; i++) {
-            var upperBorder = brainBuffers[i][0].numItems / 3;
-            var offset_start = i * 40000;
-            var currentActivitySlice = currentActivity.slice(offset_start, offset_start + upperBorder);
-            var activity = new Float32Array(currentActivitySlice);
-
+        for (let i = 0; i < brainBuffers.length; i++) {
+            const activity = new Float32Array(activitiesData[i][currentTimeInFrame]);
             gl.bindBuffer(gl.ARRAY_BUFFER, brainBuffers[i][3]);
             gl.bufferData(gl.ARRAY_BUFFER, activity, gl.STATIC_DRAW);
             gl.uniform1f(GL_shaderProgram.colorSchemeUniform, col.tex_v);
         }
     } else {
-        for (var ii = 0; ii < NO_OF_MEASURE_POINTS; ii++) {
-            if(VS_selectedRegions.indexOf(ii) !== -1){
+        const currentActivity = activitiesData[currentTimeInFrame];
+        for (let ii = 0; ii < NO_OF_MEASURE_POINTS; ii++) {
+            if (VS_selectedRegions.indexOf(ii) !== -1) {
                 gl.uniform2f(GL_shaderProgram.activityUniform[ii], currentActivity[ii], col.tex_v);
-            }else{
+            } else {
                 gl.uniform2f(GL_shaderProgram.activityUniform[ii], currentActivity[ii], col.muted_tex_v);
             }
         }
@@ -713,7 +722,7 @@ function updateColors(currentTimeInFrame) {
 }
 
 function toggleMeasureNodes() {
-    displayMeasureNodes = ! displayMeasureNodes;
+    displayMeasureNodes = !displayMeasureNodes;
 }
 
 
@@ -738,9 +747,9 @@ function wireFrame() {
  */
 function setTimeStep(newTimeStepsPerTick) {
     timeStepsPerTick = newTimeStepsPerTick;
-    if (timeStepsPerTick < 1){ // subunit speed
+    if (timeStepsPerTick < 1) { // subunit speed
         TIME_STEP = 1;
-    }else{
+    } else {
         TIME_STEP = Math.floor(timeStepsPerTick);
     }
 }
@@ -763,7 +772,7 @@ function toggleDrawBoundaries() {
     regionBoundariesController.toggleBoundariesVisibility();
 }
 
-function setSpecularHighLights(enable){
+function setSpecularHighLights(enable) {
     drawSpeculars = enable;
 }
 
@@ -773,9 +782,9 @@ function setSpecularHighLights(enable){
  * @param dataList a list of lists. Each list will contain the data needed for creating a gl buffer.
  */
 function createWebGlBuffers(dataList) {
-    var result = [];
-    for (var i = 0; i < dataList.length; i++) {
-        var buffer = gl.createBuffer();
+    const result = [];
+    for (let i = 0; i < dataList.length; i++) {
+        const buffer = gl.createBuffer();
         gl.bindBuffer(gl.ARRAY_BUFFER, buffer);
         gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(dataList[i]), gl.STATIC_DRAW);
         buffer.numItems = dataList[i].length;
@@ -792,11 +801,11 @@ function createWebGlBuffers(dataList) {
  * @param staticFiles <code>true</code> if the urls points to some static files
  */
 function readFloatData(data_url_list, staticFiles) {
-    var result = [];
-    for (var i = 0; i < data_url_list.length; i++) {
-        var data_json = HLPR_readJSONfromFile(data_url_list[i], staticFiles);
+    const result = [];
+    for (let i = 0; i < data_url_list.length; i++) {
+        let data_json = HLPR_readJSONfromFile(data_url_list[i], staticFiles);
         if (staticFiles) {
-            for (var j = 0; j < data_json.length; j++) {
+            for (let j = 0; j < data_json.length; j++) {
                 data_json[j] = parseFloat(data_json[j]);
             }
         }
@@ -813,12 +822,12 @@ function readFloatData(data_url_list, staticFiles) {
  * @param measurePoints a list which contains all the measure points. E.g.: [[x0,y0,z0],[x1,y1,z1],...]
  */
 function computeVertexRegionMap(vertices, measurePoints) {
-    var vertexRegionMap = [];
-    for (var i = 0; i < vertices.length; i++) {
-        var reg = [];
-        for (var j = 0; j < vertices[i].length/3; j++) {
-            var currentVertex = vertices[i].slice(j * 3, (j + 1) * 3);
-            var closestPosition = NAV_BrainNavigator.findClosestPosition(currentVertex, measurePoints);
+    const vertexRegionMap = [];
+    for (let i = 0; i < vertices.length; i++) {
+        const reg = [];
+        for (let j = 0; j < vertices[i].length / 3; j++) {
+            const currentVertex = vertices[i].slice(j * 3, (j + 1) * 3);
+            const closestPosition = NAV_BrainNavigator.findClosestPosition(currentVertex, measurePoints);
             reg.push(closestPosition);
         }
         vertexRegionMap.push(reg);
@@ -835,7 +844,7 @@ function computeVertexRegionMap(vertices, measurePoints) {
  * corresponding eeg channels are selected.
  */
 function createColorBufferForCube(isPicked) {
-    var pointColor = [];
+    let pointColor = [];
     if (isOneToOneMapping) {
         pointColor = [0.34, 0.95, 0.37, 1.0];
         if (isPicked) {
@@ -847,41 +856,41 @@ function createColorBufferForCube(isPicked) {
             pointColor = [NO_OF_MEASURE_POINTS + 1];
         }
     }
-    var colors = [];
-    for (var i = 0; i < 24; i++) {
+    let colors = [];
+    for (let i = 0; i < 24; i++) {
         colors = colors.concat(pointColor);
     }
-    var cubeColorBuffer = gl.createBuffer();
+    const cubeColorBuffer = gl.createBuffer();
     gl.bindBuffer(gl.ARRAY_BUFFER, cubeColorBuffer);
     gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(colors), gl.STATIC_DRAW);
     return cubeColorBuffer;
 }
 
 function initBuffers(urlVertices, urlNormals, urlTriangles, urlRegionMap, staticFiles) {
-    var verticesData = readFloatData(urlVertices, staticFiles);
-    var vertexBatches = createWebGlBuffers(verticesData);
-    var normals = HLPR_getDataBuffers(gl, urlNormals, staticFiles);
-    var indexes = HLPR_getDataBuffers(gl, urlTriangles, staticFiles, true);
+    const verticesData = readFloatData(urlVertices, staticFiles);
+    const vertexBatches = createWebGlBuffers(verticesData);
+    const normals = HLPR_getDataBuffers(gl, urlNormals, staticFiles);
+    const indexes = HLPR_getDataBuffers(gl, urlTriangles, staticFiles, true);
 
-    var vertexRegionMap;
-    if (!isOneToOneMapping){
-        if(urlRegionMap && urlRegionMap.length) {
+    let vertexRegionMap;
+    if (!isOneToOneMapping) {
+        if (urlRegionMap && urlRegionMap.length) {
             vertexRegionMap = HLPR_getDataBuffers(gl, urlRegionMap);
-        }else if (isEEGView) {
+        } else if (isEEGView) {
             // if is eeg view than we use the static surface 'eeg_skin_surface' and we have to compute the vertexRegionMap;
             // todo: do this on the server to eliminate this special case
-            var regionData = computeVertexRegionMap(verticesData, measurePoints);
+            const regionData = computeVertexRegionMap(verticesData, measurePoints);
             vertexRegionMap = createWebGlBuffers(regionData);
-        }else{
+        } else {
             // Fake buffers, copy of the normals, in case of transparency, we only need dummy ones.
             vertexRegionMap = normals;
         }
     }
 
-    var result = [];
-    for (var i = 0; i < vertexBatches.length; i++) {
+    const result = [];
+    for (let i = 0; i < vertexBatches.length; i++) {
         if (isOneToOneMapping) {
-            var activityBuffer = gl.createBuffer();
+            const activityBuffer = gl.createBuffer();
             gl.bindBuffer(gl.ARRAY_BUFFER, activityBuffer);
             gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(vertexBatches[i].numItems), gl.STATIC_DRAW);
             result.push([vertexBatches[i], normals[i], indexes[i], activityBuffer]);
@@ -899,7 +908,7 @@ function initBuffers(urlVertices, urlNormals, urlTriangles, urlRegionMap, static
  * @param buffers Buffers to be drawn. Array of (vertices, normals, triangles, colors) for one to one mappings
  *                Array of (vertices, normals, triangles, alphas, alphaindices) for region based drawing
  */
-function drawBuffer(drawMode, buffers){
+function drawBuffer(drawMode, buffers) {
     setMatrixUniforms();
     if (isOneToOneMapping) {
         SHADING_Context.one_to_one_program_draw(GL_shaderProgram, buffers[0], buffers[1], buffers[3], buffers[2], drawMode);
@@ -918,8 +927,9 @@ function drawBuffer(drawMode, buffers){
  *                 It should be set to GL.FRONT for objects transparent and convex.
  */
 function drawBuffers(drawMode, buffersSets, bufferSetsMask, useBlending, cullFace) {
+    let lightSettings = null;
     if (useBlending) {
-        var lightSettings = setLighting(blendingLightSettings);
+        lightSettings = setLighting(blendingLightSettings);
         gl.enable(gl.BLEND);
         gl.blendEquationSeparate(gl.FUNC_ADD, gl.FUNC_ADD);
         gl.blendFuncSeparate(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA, gl.ONE, gl.ONE_MINUS_SRC_ALPHA);
@@ -930,8 +940,8 @@ function drawBuffers(drawMode, buffersSets, bufferSetsMask, useBlending, cullFac
         }
     }
 
-    for (var i = 0; i < buffersSets.length; i++) {
-        if(bufferSetsMask != null && !bufferSetsMask[i]){
+    for (let i = 0; i < buffersSets.length; i++) {
+        if (bufferSetsMask !== null && bufferSetsMask !== undefined && !bufferSetsMask[i]) {
             continue;
         }
         drawBuffer(drawMode, buffersSets[i]);
@@ -950,15 +960,16 @@ function drawBuffers(drawMode, buffersSets, bufferSetsMask, useBlending, cullFac
 
 
 function drawBrainLines(linesBuffers, brainBuffers, bufferSetsMask) {
+    let lightSettings = null;
     if (drawingMode !== gl.POINTS) {
-        // Usually draw the wireframe with the same color. But in points mode draw with the vertex colors.
-        var lightSettings = setLighting(linesLightSettings);
+        // Usually draw the wire-frame with the same color. But in points mode draw with the vertex colors.
+        lightSettings = setLighting(linesLightSettings);
     }
     gl.lineWidth(1.0);
     // we want all the brain buffers in this set except the element array buffer (at index 2)
-    var bufferSets = [];
-    for (var c = 0; c < brainBuffers.length; c++){
-        var chunk = brainBuffers[c].slice();
+    let bufferSets = [];
+    for (let c = 0; c < brainBuffers.length; c++) {
+        let chunk = brainBuffers[c].slice();
         chunk[2] = linesBuffers[c];
         bufferSets.push(chunk);
     }
@@ -980,9 +991,9 @@ function tick() {
     //// Update activity buffers to be drawn at next step
     // If we are in the middle of waiting for the next data file just
     // stop and wait since we might have an index that is 'out' of this data slice
-    if (! AG_isStopped ) {
+    if (!AG_isStopped) {
         // Synchronizes display time with movie time
-        var shouldStep = false;
+        let shouldStep = false;
         if (timeStepsPerTick >= 1) {
             shouldStep = true;
         } else if (elapsedTicksPerTimeStep >= (1 / timeStepsPerTick)) {
@@ -1019,15 +1030,15 @@ function tick() {
         }
     }
 
-    var currentTimeInFrame = Math.floor((currentTimeValue - totalPassedActivitiesData) / TIME_STEP);
+    const currentTimeInFrame = Math.floor((currentTimeValue - totalPassedActivitiesData) / TIME_STEP);
     updateColors(currentTimeInFrame);
 
     drawScene();
 
     /// Update FPS and Movie timeline
     if (!isPreview) {
-        var timeNow = new Date().getTime();
-        var elapsed = timeNow - lastTime;
+        const timeNow = new Date().getTime();
+        const elapsed = timeNow - lastTime;
 
         if (lastTime !== 0) {
             framestime.shift();
@@ -1035,16 +1046,16 @@ function tick() {
         }
 
         lastTime = timeNow;
-        if (timeData.length > 0 && ! AG_isStopped) {
+        if (timeData.length > 0 && !AG_isStopped) {
             document.getElementById("TimeNow").value = toSignificantDigits(timeData[currentTimeValue], 2);
         }
-        var meanFrameTime = 0;
-        for(var i=0; i < framestime.length; i++){
+        let meanFrameTime = 0;
+        for (let i = 0; i < framestime.length; i++) {
             meanFrameTime += framestime[i];
         }
         meanFrameTime = meanFrameTime / framestime.length;
-        document.getElementById("FramesPerSecond").innerHTML = Math.floor(1000/meanFrameTime).toFixed();
-        if (! sliderSel && ! AG_isStopped) {
+        document.getElementById("FramesPerSecond").innerHTML = Math.floor(1000 / meanFrameTime).toFixed();
+        if (!sliderSel && !AG_isStopped) {
             $("#slider").slider("option", "value", currentTimeValue);
         }
     }
@@ -1055,7 +1066,7 @@ function tick() {
  */
 function drawScene() {
 
-    var theme = ColSchGetTheme().surfaceViewer;
+    const theme = ColSchGetTheme().surfaceViewer;
     gl.clearColor(theme.backgroundColor[0], theme.backgroundColor[1], theme.backgroundColor[2], theme.backgroundColor[3]);
     gl.viewport(0, 0, gl.viewportWidth, gl.viewportHeight);
 
@@ -1071,20 +1082,20 @@ function drawScene() {
     if (!doPick) {
         gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
 
-        if (drawSpeculars){
+        if (drawSpeculars) {
             setLighting(specularLightSettings);
-        }else{
+        } else {
             setLighting();
         }
 
-        if(VS_showLegend){
+        if (VS_showLegend) {
             mvPushMatrix();
             loadIdentity();
             drawBuffers(gl.TRIANGLES, [LEG_legendBuffers]);
             mvPopMatrix();
         }
 
-        if(isInternalSensorView){
+        if (isInternalSensorView) {
             // for internal sensors we render only the sensors
             drawBuffers(gl.TRIANGLES, measurePointsBuffers);
         } else {
@@ -1102,7 +1113,7 @@ function drawScene() {
         }
 
         if (isFaceToDisplay) {
-            var faceDrawMode = isInternalSensorView ? drawingMode : gl.TRIANGLES;
+            const faceDrawMode = isInternalSensorView ? drawingMode : gl.TRIANGLES;
             mvPushMatrix();
             mvTranslate(VB_BrainNavigator.getPosition());
             drawBuffers(faceDrawMode, shelfBuffers, null, true, gl.FRONT);
@@ -1122,10 +1133,10 @@ function drawScene() {
 
         if (GL_colorPickerInitColors.length === 0) {
             GL_initColorPickingData(NO_OF_MEASURE_POINTS);
-        }    
+        }
 
-        for (var i = 0; i < NO_OF_MEASURE_POINTS; i++){
-            var mpColor = GL_colorPickerInitColors[i];
+        for (let i = 0; i < NO_OF_MEASURE_POINTS; i++) {
+            const mpColor = GL_colorPickerInitColors[i];
             gl.uniform4fv(GL_shaderProgram.materialColor, mpColor);
             drawBuffer(gl.TRIANGLES, measurePointsBuffers[i]);
         }
@@ -1168,9 +1179,9 @@ function VS_changeMode(id, val) {
 function initActivityData() {
     currentTimeValue = 0;
     //read the first file
-    var initUrl = getUrlForPageFromIndex(0);
+    const initUrl = getUrlForPageFromIndex(0);
     activitiesData = HLPR_readJSONfromFile(initUrl);
-    if (activitiesData != null) {
+    if (activitiesData !== null && activitiesData !== undefined) {
         currentActivitiesFileLength = activitiesData.length * TIME_STEP;
         totalPassedActivitiesData = 0;
     }
@@ -1184,7 +1195,7 @@ function loadFromTimeStep(step) {
     if (step % TIME_STEP !== 0) {
         step = step - step % TIME_STEP + TIME_STEP; // Set time to be multiple of step
     }
-    var nextUrl = getUrlForPageFromIndex(step);
+    const nextUrl = getUrlForPageFromIndex(step);
     currentAsyncCall = null;
     readFileData(nextUrl, false);
     currentTimeValue = step;
@@ -1213,12 +1224,12 @@ function refreshCurrentDataSlice() {
  * Generate the url that reads one page of data starting from @param index
  */
 function getUrlForPageFromIndex(index) {
-    var fromIdx = index;
+    let fromIdx = index;
     if (fromIdx > MAX_TIME) {
         fromIdx = 0;
     }
-    var toIdx = fromIdx + pageSize * TIME_STEP;
-    return readDataPageURL(urlBase, fromIdx, toIdx, selectedStateVar, selectedMode, TIME_STEP);
+    const toIdx = fromIdx + pageSize * TIME_STEP;
+    return readDataSplitPageURL(urlBase, fromIdx, toIdx, selectedStateVar, selectedMode, TIME_STEP);
 }
 
 /**
@@ -1227,8 +1238,8 @@ function getUrlForPageFromIndex(index) {
  */
 function shouldLoadNextActivitiesFile() {
 
-    if (!isPreview && (currentAsyncCall == null) && ((currentTimeValue - totalPassedActivitiesData + NEXT_PAGE_THREASHOLD * TIME_STEP) >= currentActivitiesFileLength)) {
-        if (nextActivitiesFileData == null || nextActivitiesFileData.length === 0) {
+    if (!isPreview && (currentAsyncCall === null) && ((currentTimeValue - totalPassedActivitiesData + NEXT_PAGE_THREASHOLD * TIME_STEP) >= currentActivitiesFileLength)) {
+        if (nextActivitiesFileData === null || nextActivitiesFileData.length === 0) {
             return true;
         }
     }
@@ -1239,9 +1250,9 @@ function shouldLoadNextActivitiesFile() {
  * Start a new async call that should load required data for the next activity slice.
  */
 function loadNextActivitiesFile() {
-    var nextFileIndex = totalPassedActivitiesData + currentActivitiesFileLength;
-    var nextUrl = getUrlForPageFromIndex(nextFileIndex);
-    var asyncCallId = new Date().getTime();
+    const nextFileIndex = totalPassedActivitiesData + currentActivitiesFileLength;
+    const nextUrl = getUrlForPageFromIndex(nextFileIndex);
+    const asyncCallId = new Date().getTime();
     currentAsyncCall = asyncCallId;
     readFileData(nextUrl, true, asyncCallId);
 }
@@ -1259,7 +1270,7 @@ function shouldChangeCurrentActivitiesFile() {
  * the next one.
  */
 function changeCurrentActivitiesFile() {
-    if (nextActivitiesFileData == null || !nextActivitiesFileData.length ) {
+    if (nextActivitiesFileData === null || !nextActivitiesFileData.length) {
         // Async data call was not finished, stop incrementing call and wait for data.
         shouldIncrementTime = false;
         return;
@@ -1270,7 +1281,7 @@ function changeCurrentActivitiesFile() {
     totalPassedActivitiesData = totalPassedActivitiesData + currentActivitiesFileLength;
     currentActivitiesFileLength = activitiesData.length * TIME_STEP;
     currentAsyncCall = null;
-    if (activitiesData && activitiesData.length ) {
+    if (activitiesData && activitiesData.length) {
         shouldIncrementTime = true;
     }
     if (totalPassedActivitiesData >= MAX_TIME) {
@@ -1283,12 +1294,12 @@ function readFileData(fileUrl, async, callIdentifier) {
     nextActivitiesFileData = null;
     // Keep a call identifier so we don't "intersect" async calls when two
     // async calls are started before the first one finishes.
-    var self = this;
+    const self = this;
     self.callIdentifier = callIdentifier;
     doAjaxCall({
         url: fileUrl,
         async: async,
-        success: function(data) {
+        success: function (data) {
             if ((self.callIdentifier === currentAsyncCall) || !async) {
                 nextActivitiesFileData = eval(data);
                 data = null;

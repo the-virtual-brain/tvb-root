@@ -231,6 +231,13 @@ class TimeSeries(types_mapped.MappedType):
 
         return data
 
+    def read_data_page_split(self, from_idx, to_idx, step=None, specific_slices=None):
+        """
+        No Split needed in case of basic TS (sensors and region level)
+        """
+        return self.read_data_page(from_idx, to_idx, step, specific_slices)
+
+
     def write_time_slice(self, partial_result):
         """
         Append a new value to the ``time`` attribute.
@@ -538,6 +545,19 @@ class TimeSeriesSurface(TimeSeries):
         summary = super(TimeSeriesSurface, self)._find_summary_info()
         summary.update({"Source Surface": self.surface.display_name})
         return summary
+
+    def read_data_page_split(self, from_idx, to_idx, step=None, specific_slices=None):
+
+        basic_result = self.read_data_page(from_idx, to_idx, step, specific_slices)
+        result = []
+        if self.surface.number_of_split_slices <= 1:
+            result.append(basic_result)
+        else:
+            for slice_number in xrange(self.surface.number_of_split_slices):
+                start_idx, end_idx = self.surface._get_slice_vertex_boundaries(slice_number)
+                result.append(basic_result[:,start_idx:end_idx].tolist())
+
+        return result
 
 
 class TimeSeriesVolume(TimeSeries):

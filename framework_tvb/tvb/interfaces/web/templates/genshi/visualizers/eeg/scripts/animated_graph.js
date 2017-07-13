@@ -1,5 +1,5 @@
 /**
- * TheVirtualBrain-Framework Package. This package holds all Data Management, and 
+ * TheVirtualBrain-Framework Package. This package holds all Data Management, and
  * Web-UI helpful to run brain-simulations. To use it, you also need do download
  * TheVirtualBrain-Scientific Package (for simulators). See content of the
  * documentation-folder for more details. See also http://www.thevirtualbrain.org
@@ -99,8 +99,8 @@ var lbl_x_width = 100;
 var lbl_x_height = 30;
 var zoom_range = [0.1, 20];
 
-var AG_defaultXaxis = { zoomRange: zoom_range, labelWidth: lbl_x_width, labelHeight: lbl_x_height };
-var AG_defaultYaxis = { show: false, zoomRange: zoom_range, labelWidth: 200, labelHeight: 30};
+var AG_defaultXaxis = {zoomRange: zoom_range, labelWidth: lbl_x_width, labelHeight: lbl_x_height};
+var AG_defaultYaxis = {show: false, zoomRange: zoom_range, labelWidth: 200, labelHeight: 30};
 
 // the index of the cached file (the file that was loaded asynchronous)
 var cachedFileIndex = 0;
@@ -116,11 +116,11 @@ var AG_options = {
     }, // drawing is faster without shadows
     lines: {
         lineWidth: 1,
-        show:true
+        show: true
     },
     yaxis: AG_defaultYaxis,
     xaxis: AG_defaultXaxis,
-    grid : {
+    grid: {
         backgroundColor: 'white',
         hoverable: true,
         clickable: true
@@ -139,7 +139,7 @@ var AG_options = {
         show: false
     },
     hooks: {
-        processRawData  : [processRawDataHook]
+        processRawData: [processRawDataHook]
     }
 };
 
@@ -157,7 +157,7 @@ var numberOfPointsForVerticalLine = 1000;
 var isDoubleView = false;
 
 var AG_homeViewYValues = [];
-var AG_homeViewXValues = { zoomRange: zoom_range, labelWidth: lbl_x_width, labelHeight: lbl_x_height };
+var AG_homeViewXValues = {zoomRange: zoom_range, labelWidth: lbl_x_width, labelHeight: lbl_x_height};
 //This will be set to true in the launch_viewer method called by burst small previews
 var isSmallPreview = false;
 
@@ -176,15 +176,13 @@ var AG_regionSelector = null;
 // State mode selector. Used as a global only in dual view
 var AG_modeSelector = null;
 
-function resizeToFillParent(){
-    var canvas = $('#EEGcanvasDiv');
-    var container, width, height;
-//    if (isDoubleView) {
-//        return;
-//    }
-    if(!isSmallPreview ) {
-		// Just use parent section width and height. For width remove some space for the labels to avoid scrolls
-		// For height we have the toolbar there. Using 100% does not seem to work properly with FLOT.
+function resizeToFillParent() {
+    const canvas = $('#EEGcanvasDiv');
+    let container, width, height;
+
+    if (!isSmallPreview) {
+        // Just use parent section width and height. For width remove some space for the labels to avoid scrolls
+        // For height we have the toolbar there. Using 100% does not seem to work properly with FLOT.
         container = canvas.parent();
         width = container.width() - 40;
         height = container.height() - 80;
@@ -196,7 +194,7 @@ function resizeToFillParent(){
     canvas.width(width).height(height);
 }
 
-window.onresize = function() {
+window.onresize = function () {
     resizeToFillParent();
     redrawPlot(plot.getData());
 };
@@ -215,7 +213,7 @@ function AG_startAnimatedChart(ag_settings) {
 
     bindHoverEvent();
     initializeCanvasEvents();
-    if (! ag_settings.extended_view ) {
+    if (!ag_settings.extended_view) {
         bindZoomEvent();
     }
 }
@@ -231,8 +229,8 @@ function AG_startAnimatedChartPreview(ag_settings) {
     // warning: Assumes channel values are a range
     if (AG_submitableSelectedChannels.length === 0) {
         // Viewer breaks if this is empty. Fill the first few channels
-        var defaultSelectionLength = Math.min(totalNumberOfChannels, DEFAULT_MAX_CHANNELS);
-        for(var i=0; i < defaultSelectionLength; i++){
+        const defaultSelectionLength = Math.min(totalNumberOfChannels, DEFAULT_MAX_CHANNELS);
+        for (let i = 0; i < defaultSelectionLength; i++) {
             AG_submitableSelectedChannels.push(i);
         }
     }
@@ -244,7 +242,7 @@ function AG_rePaginate(number_of_visible_points) {
     _AG_initPaginationState(number_of_visible_points);
     $('#display-page-size').html('' + number_of_visible_points);
     refreshChannels();
-    if (isDoubleView){
+    if (isDoubleView) {
         initActivityData();
     }
 }
@@ -253,7 +251,7 @@ function AG_rePaginate(number_of_visible_points) {
  * Initialize global state. Part of the AG startup.
  * @private
  */
-function _AG_initGlobals(ag_settings){
+function _AG_initGlobals(ag_settings) {
     isDoubleView = ag_settings.extended_view;
     // dataSetUrls = $.parseJSON(dataSetPaths);
     baseDataURLS = ag_settings.baseURLS;
@@ -275,7 +273,7 @@ function _AG_initGlobals(ag_settings){
  * Initialize pagination. Part of AG startup.
  * @private
  */
-function _AG_initPaginationState(number_of_visible_points){
+function _AG_initPaginationState(number_of_visible_points) {
     AG_numberOfVisiblePoints = parseInt(number_of_visible_points);
     if (AG_numberOfVisiblePoints > maxChannelLength) {
         AG_numberOfVisiblePoints = maxChannelLength;
@@ -298,22 +296,24 @@ function _AG_preStart() {
  * It must have the same ordering as all other timeseries arrays
  * @private
  */
-function _AG_init_selection(filterGids){
-    var selectors = [];
+function _AG_init_selection(filterGids) {
+    let i;
+    let selectors = [];
+
     /**
      * Returns the selected channel indices as interpreted by AG_submitableSelectedChannels
      * ( starting at 0 and ending at len(timeseries_0_channels) + ... + len(timeseries_final_channels) )
      */
-    function getSelectedChannelsAsGlobalIndices(){
-        var all_selected = [];
-        var offset = 0;
+    function getSelectedChannelsAsGlobalIndices() {
+        let all_selected = [];
+        let offset = 0;
 
-        for(var i = 0; i < selectors.length; i++){
-            var selector = selectors[i];
-            var selected_in_current = selector.selectedIndices();
+        for (let i = 0; i < selectors.length; i++) {
+            const selector = selectors[i];
+            const selected_in_current = selector.val();
 
-            for(var j = 0; j < selected_in_current.length; j++){
-                all_selected.push( offset + selected_in_current[j] );
+            for (let j = 0; j < selected_in_current.length; j++) {
+                all_selected.push(offset + parseInt(selected_in_current[j], 10));
             }
             offset += selector._allValues.length;
         }
@@ -321,12 +321,12 @@ function _AG_init_selection(filterGids){
     }
 
     // init selectors
-    var selectorId, selector;
+    let selectorId, selector;
 
-    for(var i = 0; i < filterGids.length; i++){
+    for (i = 0; i < filterGids.length; i++) {
         selectorId = "#channelSelector" + i;
         selector = TVBUI.regionSelector(selectorId, {filterGid: filterGids[i]});
-        selector.change(function(_current_selection){
+        selector.change(function (current_selection) {
             AG_submitableSelectedChannels = getSelectedChannelsAsGlobalIndices();
             refreshChannels();
         });
@@ -341,15 +341,15 @@ function _AG_init_selection(filterGids){
 
     if (AG_submitableSelectedChannels.length === 0) {
         // Viewer breaks if this is empty. Fill the first few channels
-        var defaultSelectionLength = Math.min(totalNumberOfChannels, DEFAULT_MAX_CHANNELS);
+        const defaultSelectionLength = Math.min(totalNumberOfChannels, DEFAULT_MAX_CHANNELS);
         // we take the values form the dom, a range(defaultSelectionLength) is not a valid selection if there are multiple time series
         AG_submitableSelectedChannels = AG_regionSelector._allValues.slice(0, defaultSelectionLength);
         AG_regionSelector.val(AG_submitableSelectedChannels);
     }
 
     // Init the mode selection components. Assumes that there are part of the selector dom
-    var modeSelectors = [];
-    for(i = 0; i < filterGids.length; i++) {
+    let modeSelectors = [];
+    for (i = 0; i < filterGids.length; i++) {
         selectorId = "#channelSelector" + i;
         selector = TVBUI.modeAndStateSelector(selectorId, i);
         selector.modeChanged(_AG_changeMode);
@@ -367,50 +367,50 @@ function _AG_init_selection(filterGids){
  * @param defaultSpeed default speed when there is no speed slider
  * @private
  */
-function _AG_get_speed(defaultSpeed){
-    var speed = defaultSpeed;
-    if (!isSmallPreview  && !isDoubleView) {
+function _AG_get_speed(defaultSpeed) {
+    let speed = defaultSpeed;
+    if (!isSmallPreview && !isDoubleView) {
         speed = $("#ctrl-input-speed").slider("value");
     }
     return speed;
 }
 
+/*
+ * Create FLOT specific options dictionary for the y axis, with correct labels and positioning for
+ * all channels. Then store these values in 'AG_homeViewYValues' so they can be used in case of a
+ * 'Home' action in a series of zoom events.
+ */
 function AG_createYAxisDictionary(nr_channels) {
-    /*
-     * Create FLOT specific options dictionary for the y axis, with correct labels and positioning for
-     * all channels. Then store these values in 'AG_homeViewYValues' so they can be used in case of a
-     * 'Home' action in a series of zoom events.
-     */
-    var ticks, yaxis_dict, increment;
+    let ticks, yaxis_dict, increment;
 
     if (AG_translationStep > 0) {
         ticks = [];
-        var step = AG_computedStep * AG_translationStep;
-        for (var i=0; i<nr_channels; i++) {
+        const step = AG_computedStep * AG_translationStep;
+        for (let i = 0; i < nr_channels; i++) {
             ticks.push([i * step, chanDisplayLabels[displayedChannels[i]]]);
         }
         yaxis_dict = {
-            min: - step,
+            min: -step,
             max: (nr_channels + 1) * step,
             ticks: ticks,
             zoomRange: [0.1, 20]
         };
         increment = nr_channels * step / numberOfPointsForVerticalLine;
-        if(increment === 0) throw "infinite loop";
-        for (var k= -step; k < (nr_channels + 1) * step; k += increment) {
+        if (increment === 0) throw "infinite loop";
+        for (let k = -step; k < (nr_channels + 1) * step; k += increment) {
             followingLine.push([0, k]);
         }
     } else {
         ticks = [0, 'allChannels'];
         yaxis_dict = {
-            min: - AG_computedStep/2,
-            max: AG_computedStep/2,
+            min: -AG_computedStep / 2,
+            max: AG_computedStep / 2,
             ticks: ticks,
             zoomRange: [0.1, 20]
         };
         increment = AG_computedStep / numberOfPointsForVerticalLine;
-        if(increment === 0) throw "infinite loop";
-        for (var kk= - AG_computedStep/2; kk < AG_computedStep/2; kk += increment) {
+        if (increment === 0) throw "infinite loop";
+        for (let kk = -AG_computedStep / 2; kk < AG_computedStep / 2; kk += increment) {
             followingLine.push([0, kk]);
         }
     }
@@ -434,13 +434,13 @@ function _AG_changeStateVariable(tsIndex, val) {
     refreshChannels();
 }
 
-function _AG_getSelectedDataAndLongestChannelIndex(data){
-    var offset = 0;
-    var selectedData = [];
-    var channelLengths = [];
+function _AG_getSelectedDataAndLongestChannelIndex(data) {
+    let offset = 0;
+    let selectedData = [];
+    let channelLengths = [];
 
-    for (var i = 0; i < data.length; i++) {
-        var selectedChannels = getDisplayedChannels(data[i], offset);
+    for (let i = 0; i < data.length; i++) {
+        const selectedChannels = getDisplayedChannels(data[i], offset);
         offset += data[i].length;
         if (selectedChannels.length > 0) {
             channelLengths.push(selectedChannels[0].length);
@@ -449,15 +449,16 @@ function _AG_getSelectedDataAndLongestChannelIndex(data){
         }
         selectedData = selectedData.concat(selectedChannels);
     }
-    var longestChannelIndex = channelLengths.indexOf(Math.max.apply(Math, channelLengths));
-    return {selectedData: selectedData, longestChannelIndex:longestChannelIndex}
+    const longestChannelIndex = channelLengths.indexOf(Math.max.apply(Math, channelLengths));
+    return {selectedData: selectedData, longestChannelIndex: longestChannelIndex}
 }
 
+/*
+ * Get required data for the channels in AG_submitableSelectedChannels. If none
+ * exist then just use the previous 'displayedChannels' (or default in case of first run).
+ */
 function submitSelectedChannels(isEndOfData) {
-    /*
-     * Get required data for the channels in AG_submitableSelectedChannels. If none
-     * exist then just use the previous 'displayedChannels' (or default in case of first run).
-     */
+
     AG_currentIndex = AG_numberOfVisiblePoints;
     if (AG_submitableSelectedChannels.length === 0) {
         AG_submitableSelectedChannels = displayedChannels.slice();
@@ -468,27 +469,27 @@ function submitSelectedChannels(isEndOfData) {
         displayedChannels = AG_submitableSelectedChannels.slice(0);
         generateChannelColors(displayedChannels.length);
 
-        var results = [];
-        for (var i = 0; i < nrOfPagesSet.length; i++) {
-            var dataURL = readDataPageURL(baseDataURLS[i], 0, dataPageSize, tsStates[i], tsModes[i]);
-            var data = HLPR_readJSONfromFile(dataURL);
+        let results = [];
+        for (let i = 0; i < nrOfPagesSet.length; i++) {
+            const dataURL = readDataPageURL(baseDataURLS[i], 0, dataPageSize, tsStates[i], tsModes[i]);
+            const data = HLPR_readJSONfromFile(dataURL);
             results.push(parseData(data, i));
         }
-        var r = _AG_getSelectedDataAndLongestChannelIndex(results);
+        const r = _AG_getSelectedDataAndLongestChannelIndex(results);
         AG_allPoints = AG_allPoints.concat(r.selectedData);
         longestChannelIndex = r.longestChannelIndex;
 
         // keep data only for the selected channels
         AG_noOfLines = AG_allPoints.length;
     }
-    
+
     AG_displayedPoints = [];
     AG_displayedTimes = [];
-    for (var ii = 0; ii < AG_noOfLines; ii++) {
+    for (let ii = 0; ii < AG_noOfLines; ii++) {
         AG_displayedPoints.push([]);
     }
 
-    if (!(isEndOfData && maxDataFileIndex == 0)) {
+    if (!(isEndOfData && maxDataFileIndex === 0)) {
         //read time
         readTimeData(0, false);
         AG_time = nextTimeData.slice(0);
@@ -503,7 +504,7 @@ function submitSelectedChannels(isEndOfData) {
     totalPassedData = 0;
     currentLinePosition = 0;
     if (nanValueFound) {
-        displayMessage('The given data contains some NaN values. All the NaN values were replaced by zero.','warningMessage');
+        displayMessage('The given data contains some NaN values. All the NaN values were replaced by zero.', 'warningMessage');
     }
 
     // draw the first 'AG_numberOfVisiblePoints' points
@@ -518,7 +519,7 @@ function submitSelectedChannels(isEndOfData) {
     AG_createYAxisDictionary(AG_noOfLines);
     redrawPlot([]);
     resetToDefaultView();
-    if (AG_isStopped ) {
+    if (AG_isStopped) {
         AG_isStopped = false;
         drawGraph(false, noOfShiftedPoints);
         AG_isStopped = true;
@@ -533,9 +534,9 @@ function submitSelectedChannels(isEndOfData) {
  */
 function shouldMoveLine(direction, shiftNo) {
     shiftNo = shiftNo || 1;
-    var isEndOfGraph = false;
-    var isStartOfGraph = false;
-    if (direction == 1) {
+    let isEndOfGraph = false;
+    let isStartOfGraph = false;
+    if (direction === 1) {
         isEndOfGraph = ((totalPassedData + AG_currentIndex + noOfShiftedPoints >= totalTimeLength) && (currentLinePosition < AG_numberOfVisiblePoints + shiftNo));
         isStartOfGraph = (currentLinePosition < targetVerticalLinePosition);
         if (AG_displayedTimes[currentLinePosition] > AG_displayedPoints[longestChannelIndex][AG_displayedPoints[longestChannelIndex].length - 1][0]) {
@@ -556,28 +557,27 @@ var isEndOfData = false;
 var AG_channelColorsDict = {};
 var AG_reversedChannelColorsDict = {};
 
+/*
+ * Generate different colors for each channel.
+ */
 function generateChannelColors(nr_of_channels) {
-    /*
-     * Generate different colors for each channel.
-     */
     AG_channelColorsDict = {};
     AG_reversedChannelColorsDict = {};
-    var step = parseInt(255 / nr_of_channels);
-    for (var i=0; i<nr_of_channels; i++) {
-        var color = "rgb("+250*(i%2)+","+(200-i*step)+","+220*((i+1)%2)+")";
+    let step = parseInt(255 / nr_of_channels);
+    for (let i = 0; i < nr_of_channels; i++) {
+        const color = "rgb(" + 250 * (i % 2) + "," + (200 - i * step) + "," + 220 * ((i + 1) % 2) + ")";
         AG_channelColorsDict[color] = i;
         AG_reversedChannelColorsDict[i] = color;
     }
 }
 
-
+/*
+ * Get y-axis labels and update colors to correspond to each channel
+ */
 function setLabelColors() {
-    /*
-     * Get y-axis labels and update colors to correspond to each channel
-     */
-    var labels = $('.flot-y-axis .tickLabel');
-    for (var i=0; i<labels.length; i++) {
-        var chan_idx = chanDisplayLabels.indexOf(labels[i].firstChild.textContent);
+    const labels = $('.flot-y-axis .tickLabel');
+    for (let i = 0; i < labels.length; i++) {
+        const chan_idx = chanDisplayLabels.indexOf(labels[i].firstChild.textContent);
         if (chan_idx >= 0) {
             labels[i].style.color = AG_reversedChannelColorsDict[displayedChannels.indexOf(chan_idx)];
             labels[i].style.left = 80 + (i % 2) * 40 + 'px';
@@ -585,19 +585,19 @@ function setLabelColors() {
     }
 }
 
-
+/*
+ * This method draw the actual plot. The 'executeShift' parameter decides if a shift is
+ * to be done, or just use the previous data points. 'shiftNo' decides the number of points
+ * that will be shifted.
+ */
 function drawGraph(executeShift, shiftNo) {
-    /*
-     * This method draw the actual plot. The 'executeShift' parameter decides if a shift is
-     * to be done, or just use the previous data points. 'shiftNo' decides the number of points
-     * that will be shifted.
-     */
+    let i;
     noOfShiftedPoints = shiftNo;
     if (isEndOfData) {
         isEndOfData = false;
         submitSelectedChannels(true);
     }
-    if (t != null) {
+    if (t !== null && t !== undefined) {
         clearTimeout(t);
     }
     if (AG_isStopped) {
@@ -607,13 +607,12 @@ function drawGraph(executeShift, shiftNo) {
         loadNextDataFile();
     }
 
-    var direction = 1;
-
-    if (_AG_get_speed(1) < 0){
+    let direction = 1;
+    if (_AG_get_speed(1) < 0) {
         direction = -1;
     }
 
-    var moveLine = shouldMoveLine(direction, noOfShiftedPoints);
+    let moveLine = shouldMoveLine(direction, noOfShiftedPoints);
     //Increment line position in case we need to move the line
     if (moveLine && executeShift && !AG_isSpeedZero) {
         currentLinePosition = currentLinePosition + noOfShiftedPoints * direction;
@@ -624,8 +623,8 @@ function drawGraph(executeShift, shiftNo) {
     }
 
     if (executeShift && !AG_isSpeedZero && !moveLine) {
-        var count = 0;
-        if (direction == -1) {
+        let count = 0;
+        if (direction === -1) {
             if (currentDataFileIndex > 0 || AG_currentIndex > AG_numberOfVisiblePoints) {
                 count = 0;
                 while (count < noOfShiftedPoints && AG_currentIndex - count > AG_numberOfVisiblePoints) {
@@ -633,9 +632,9 @@ function drawGraph(executeShift, shiftNo) {
                     AG_displayedTimes.unshift(AG_time[AG_currentIndex - AG_numberOfVisiblePoints - count]);
                     for (i = 0; i < AG_displayedPoints.length; i++) {
                         AG_displayedPoints[i].unshift(
-                                [   AG_time[AG_currentIndex - AG_numberOfVisiblePoints - count],
-                                    AG_addTranslationStep(AG_allPoints[i][AG_currentIndex - AG_numberOfVisiblePoints - count], i)
-                                ]);
+                            [AG_time[AG_currentIndex - AG_numberOfVisiblePoints - count],
+                                AG_addTranslationStep(AG_allPoints[i][AG_currentIndex - AG_numberOfVisiblePoints - count], i)
+                            ]);
                         AG_displayedPoints[i].pop();
                     }
                     AG_displayedTimes.pop();
@@ -658,9 +657,9 @@ function drawGraph(executeShift, shiftNo) {
                     AG_displayedTimes.push(AG_time[AG_currentIndex + count]);
                     for (i = 0; i < AG_displayedPoints.length; i++) {
                         AG_displayedPoints[i].push(
-                                [   AG_time[AG_currentIndex + count],
-                                    AG_addTranslationStep(AG_allPoints[i][AG_currentIndex + count], i)
-                                 ]);
+                            [AG_time[AG_currentIndex + count],
+                                AG_addTranslationStep(AG_allPoints[i][AG_currentIndex + count], i)
+                            ]);
                         AG_displayedPoints[i].shift();
                     }
                     AG_displayedTimes.shift();
@@ -679,11 +678,11 @@ function drawGraph(executeShift, shiftNo) {
         }
     }
     if (!AG_isSpeedZero) {
-        for (var i=0; i<followingLine.length; i++) {
+        for (i = 0; i < followingLine.length; i++) {
             followingLine[i][0] = AG_displayedTimes[currentLinePosition];
         }
-        var preparedData = [];
-        for (var j = 0; j < AG_displayedPoints.length; j++) {
+        let preparedData = [];
+        for (let j = 0; j < AG_displayedPoints.length; j++) {
             preparedData.push({data: AG_displayedPoints[j].slice(0), color: AG_reversedChannelColorsDict[j]});
         }
         preparedData.push({data: followingLine, color: 'rgb(255, 0, 0)'});
@@ -697,17 +696,17 @@ function drawGraph(executeShift, shiftNo) {
     }
 }
 
+/*
+ * Do a redraw of the plot. Be sure to keep the resizable margin elements as the plot method seems to destroy them.
+ */
 function redrawPlot(data) {
-    /*
-     * Do a redraw of the plot. Be sure to keep the resizable margin elements as the plot method seems to destroy them.
-     */
-    var target = $('#EEGcanvasDiv');
-    var resizerChildren = target.children('.ui-resizable-handle');
-    for (var i=0; i < resizerChildren.length; i++) {
+    const target = $('#EEGcanvasDiv');
+    const resizerChildren = target.children('.ui-resizable-handle');
+    for (let i = 0; i < resizerChildren.length; i++) {
         target[0].removeChild(resizerChildren[i]);
     }
     plot = $.plot(target, data, $.extend(true, {}, AG_options));
-    for (var j=0; j < resizerChildren.length; j++) {
+    for (let j = 0; j < resizerChildren.length; j++) {
         target[0].appendChild(resizerChildren[j]);
     }
     setLabelColors();
@@ -722,12 +721,12 @@ function redrawPlot(data) {
  */
 function processRawDataHook(plot, series, data, datapoints) {
     datapoints.format = [
-        { x: true, number: true, required: true },
-        { y: true, number: true, required: true }
+        {x: true, number: true, required: true},
+        {y: true, number: true, required: true}
     ];
     datapoints.pointsize = 2;
 
-    for (var i = 0; i < data.length; i++) {
+    for (let i = 0; i < data.length; i++) {
         datapoints.points.push(data[i][0]);
         datapoints.points.push(data[i][1]);
     }
@@ -749,12 +748,11 @@ function AG_addTranslationStep(value, index) {
 }
 
 function getTimeoutBasedOnSpeed() {
-    var currentAnimationSpeedValue = _AG_get_speed(40);
-
+    const currentAnimationSpeedValue = _AG_get_speed(40);
     if (currentAnimationSpeedValue === 0) {
         return 300;
     }
-    var timeout = 10 - Math.abs(currentAnimationSpeedValue);
+    const timeout = 10 - Math.abs(currentAnimationSpeedValue);
     if (timeout === 9) {
         return 3000;
     }
@@ -767,26 +765,25 @@ function getTimeoutBasedOnSpeed() {
     return timeout * 100 + 25;
 }
 
-
+/*
+ * Load the data from a given step and center plot around that step.
+ */
 function loadEEGChartFromTimeStep(step) {
-    /*
-     * Load the data from a given step and center plot around that step.
-     */
     // Read all data for the page in which the selected step falls into
-    var chunkForStep = Math.floor(step / dataPageSize);
-    var dataUrl = readDataPageURL(baseDataURLS[0], chunkForStep * dataPageSize, (chunkForStep + 1) * dataPageSize, tsStates[0], tsModes[0]);
-    var dataPage = [parseData(HLPR_readJSONfromFile(dataUrl), 0)];
+    const chunkForStep = Math.floor(step / dataPageSize);
+    const dataUrl = readDataPageURL(baseDataURLS[0], chunkForStep * dataPageSize, (chunkForStep + 1) * dataPageSize, tsStates[0], tsModes[0]);
+    const dataPage = [parseData(HLPR_readJSONfromFile(dataUrl), 0)];
     AG_allPoints = getDisplayedChannels(dataPage[0], 0).slice(0);
     AG_time = HLPR_readJSONfromFile(timeSetUrls[0][chunkForStep]).slice(0);
 
     totalPassedData = chunkForStep * dataPageSize;	// New passed data will be all data until the start of this page
     currentDataFileIndex = chunkForStep;
     AG_displayedPoints = [];
-    var indexInPage = step % dataPageSize;	// This is the index in the current page that step will have
-    var fromIdx, toIdx;
+    const indexInPage = step % dataPageSize;	// This is the index in the current page that step will have
+    let fromIdx, toIdx;
     currentLinePosition = AG_numberOfVisiblePoints / 2; // Assume we are not end or beginning since that will be most of the times
     if (indexInPage <= AG_numberOfVisiblePoints / 2) {
-        if (chunkForStep == 0) {
+        if (chunkForStep === 0) {
             // We are at the beginning of the graph, line did not reach middle point yet, and we are still displaying the first
             // AG_numberOfVisiblePoints values
             AG_currentIndex = AG_numberOfVisiblePoints;
@@ -798,7 +795,7 @@ function loadEEGChartFromTimeStep(step) {
             addFromPreviousPage(indexInPage, chunkForStep);
         }
     } else {
-        if ((indexInPage >= pageSize - AG_numberOfVisiblePoints / 2) || (nrOfPagesSet[0] == 1 && indexInPage + AG_numberOfVisiblePoints / 2 > AG_time.length)) {
+        if ((indexInPage >= pageSize - AG_numberOfVisiblePoints / 2) || (nrOfPagesSet[0] === 1 && indexInPage + AG_numberOfVisiblePoints / 2 > AG_time.length)) {
             if (chunkForStep >= nrOfPagesSet[0] - 1) {
                 // We are at the end of the graph. The line is starting to move further right from the middle position. We are just
                 // displaying the last AG_numberOfVisiblePoints from the last page
@@ -830,30 +827,31 @@ function loadEEGChartFromTimeStep(step) {
     isNextTimeDataLoaded = false;
 }
 
-
+/*
+ * Add all required data to AG_displayedPoints and AG_displayedTimes in order to center
+ * around indexInPage, if some of the required data is on the previous page.
+ */
 function addFromPreviousPage(indexInPage, currentPage) {
-    /*
-     * Add all required data to AG_displayedPoints and AG_displayedTimes in order to center
-     * around indexInPage, if some of the required data is on the previous page.
-     */
-    var previousPageUrl = readDataPageURL(baseDataURLS[0], (currentPage - 1) * dataPageSize, currentPage * dataPageSize, tsStates[0], tsModes[0]);
-    var previousData = parseData(HLPR_readJSONfromFile(previousPageUrl), 0);
+
+    const previousPageUrl = readDataPageURL(baseDataURLS[0], (currentPage - 1) * dataPageSize, currentPage * dataPageSize, tsStates[0], tsModes[0]);
+    let previousData = parseData(HLPR_readJSONfromFile(previousPageUrl), 0);
     previousData = getDisplayedChannels(previousData, 0).slice(0);
-    var previousTimeData = HLPR_readJSONfromFile(timeSetUrls[0][currentPage - 1]);
+    const previousTimeData = HLPR_readJSONfromFile(timeSetUrls[0][currentPage - 1]);
     // Compute which slices we would need from the 'full' two-pages data.
     // We only need the difference so to center indexInPage at AG_numberOfVisiblePoints / 2
-    var fromIdx, toIdx;
+    let fromIdx, toIdx;
     fromIdx = previousData[0].length - (AG_numberOfVisiblePoints / 2 - indexInPage);  // This is from where we need to read from previous data
     AG_currentIndex = toIdx = AG_numberOfVisiblePoints - (AG_numberOfVisiblePoints / 2 - indexInPage); // This is where we need to add from the current page
     // Just generate displayed point and displayed times now
-    for (var idx = 0; idx < previousData.length; idx++) {
-        var oneLine = [];
+    for (let idx = 0; idx < previousData.length; idx++) {
+        let idy;
+        let oneLine = [];
         // Push data that is from previos slice
-        for (var idy = fromIdx; idy < previousData[0].length; idy++) {
+        for (idy = fromIdx; idy < previousData[0].length; idy++) {
             oneLine.push([previousTimeData[idy], AG_addTranslationStep(previousData[idx][idy], idx)]);
         }
         // Now that that is from our current slice
-        for (idy = 0; idy < toIdx; idy ++) {
+        for (idy = 0; idy < toIdx; idy++) {
             oneLine.push([AG_time[idy], AG_addTranslationStep(AG_allPoints[idx][idy], idx)]);
         }
         AG_displayedPoints.push(oneLine);
@@ -862,28 +860,29 @@ function addFromPreviousPage(indexInPage, currentPage) {
     previousData = null;
 }
 
-
+/*
+ * Add all required data to AG_displayedPoints and AG_displayedTimes in order to center
+ * around indexInPage, if some of the required data is on the next page.
+ */
 function addFromNextPage(indexInPage, currentPage) {
-    /*
-     * Add all required data to AG_displayedPoints and AG_displayedTimes in order to center
-     * around indexInPage, if some of the required data is on the next page.
-     */
-    var followingPageUrl = readDataPageURL(baseDataURLS[0], (currentPage + 1) * dataPageSize, (currentPage + 2) * dataPageSize, tsStates[0], tsModes[0]);
-    var followingData = parseData(HLPR_readJSONfromFile(followingPageUrl), 0);
+
+    const followingPageUrl = readDataPageURL(baseDataURLS[0], (currentPage + 1) * dataPageSize, (currentPage + 2) * dataPageSize, tsStates[0], tsModes[0]);
+    let followingData = parseData(HLPR_readJSONfromFile(followingPageUrl), 0);
     followingData = getDisplayedChannels(followingData, 0).slice(0);
-    var followingTimeData = HLPR_readJSONfromFile(timeSetUrls[0][currentPage + 1]);
-    var fromIdx, toIdx;
+    const followingTimeData = HLPR_readJSONfromFile(timeSetUrls[0][currentPage + 1]);
+    let fromIdx, toIdx;
     fromIdx = indexInPage - (AG_numberOfVisiblePoints / 2);	// We need to read starting from here from the current page
     AG_currentIndex = toIdx = fromIdx + AG_numberOfVisiblePoints - AG_allPoints[0].length;	// We need to read up to here from next page
-    for (var idx = 0; idx < AG_allPoints.length; idx++) {
-        var oneLine = [];
+    for (let idx = 0; idx < AG_allPoints.length; idx++) {
+        let idy;
+        const oneLine = [];
         // Push data that is from this slice
-        for (var idy = fromIdx; idy < AG_allPoints[0].length; idy++) {
-            oneLine.push([AG_time[idy], AG_addTranslationStep(AG_allPoints[idx][idy], idx) ]);
+        for (idy = fromIdx; idy < AG_allPoints[0].length; idy++) {
+            oneLine.push([AG_time[idy], AG_addTranslationStep(AG_allPoints[idx][idy], idx)]);
         }
         // Now that that is from next slice
-        for (idy = 0; idy < toIdx; idy ++) {
-            oneLine.push([followingTimeData[idy], AG_addTranslationStep(followingData[idx][idy], idx) ]);
+        for (idy = 0; idy < toIdx; idy++) {
+            oneLine.push([followingTimeData[idy], AG_addTranslationStep(followingData[idx][idy], idx)]);
         }
         AG_displayedPoints.push(oneLine);
     }
@@ -897,28 +896,27 @@ function addFromNextPage(indexInPage, currentPage) {
     isNextTimeDataLoaded = true;
 }
 
-
+/*
+ * Just re-populate whole displayedPoints and displayedTimes given a start and end index.
+ */
 function prepareDisplayData(fromIdx, toIdx, pointsArray, timeArray) {
-    /*
-     * Just re-populate whole displayedPoints and displayedTimes given a start and end index.
-     */
-    for (var idx = 0; idx < pointsArray.length; idx++) {
-        var oneLine = [];
-        for (var idy = fromIdx; idy < toIdx; idy++) {
-            oneLine.push([ timeArray[idy], AG_addTranslationStep(pointsArray[idx][idy], idx) ]);
+
+    for (let idx = 0; idx < pointsArray.length; idx++) {
+        let oneLine = [];
+        for (let idy = fromIdx; idy < toIdx; idy++) {
+            oneLine.push([timeArray[idy], AG_addTranslationStep(pointsArray[idx][idy], idx)]);
         }
         AG_displayedPoints.push(oneLine);
     }
     AG_displayedTimes = timeArray.slice(fromIdx, toIdx)
 }
 
-
+/*
+ * Read the next data file asyncronously. Also get the corresponding time data file.
+ */
 function loadNextDataFile() {
-    /*
-     * Read the next data file asyncronously. Also get the corresponding time data file.
-     */
     AG_isLoadStarted = true;
-    var nx_idx = getNextDataFileIndex();
+    const nx_idx = getNextDataFileIndex();
     cachedFileIndex = nx_idx;
     AG_readFileDataAsynchronous(nrOfPagesSet, noOfChannelsPerSet, nx_idx, maxChannelLength, 0);
     readTimeData(nx_idx, true);
@@ -929,7 +927,7 @@ function changeCurrentDataFile() {
         return;
     }
 
-    if (cachedFileIndex != getNextDataFileIndex()) {
+    if (cachedFileIndex !== getNextDataFileIndex()) {
         AG_isLoadStarted = false;
         isNextDataLoaded = false;
         isNextTimeDataLoaded = false;
@@ -938,13 +936,13 @@ function changeCurrentDataFile() {
         return;
     }
 
-    var speed = _AG_get_speed(100);
-    var longestChannelLength = AG_allPoints[longestChannelIndex].length;
+    const speed = _AG_get_speed(100);
+    const longestChannelLength = AG_allPoints[longestChannelIndex].length;
 
     if (speed > 0) {
         totalPassedData = totalPassedData + longestChannelLength;
         if (longestChannelLength < AG_currentIndex) {
-            AG_currentIndex = - (longestChannelLength - AG_currentIndex);
+            AG_currentIndex = -(longestChannelLength - AG_currentIndex);
         } else {
             AG_currentIndex = 0;
         }
@@ -973,9 +971,9 @@ function changeCurrentDataFile() {
 
 function shouldLoadNextDataFile() {
     if (!AG_isLoadStarted && maxDataFileIndex > 0) {
-        var nextFileIndex = getNextDataFileIndex();
-        var speed = _AG_get_speed(1); // Assume left to right pass of data
-        if (currentDataFileIndex != nextFileIndex) {
+        const nextFileIndex = getNextDataFileIndex();
+        const speed = _AG_get_speed(1); // Assume left to right pass of data
+        if (currentDataFileIndex !== nextFileIndex) {
             if ((speed > 0) && (maxChannelLength - AG_currentIndex < threshold * AG_numberOfVisiblePoints)) {
                 return true;
             }
@@ -987,13 +985,13 @@ function shouldLoadNextDataFile() {
     return false;
 }
 
+/*
+ * In case of multiple arrays find out which has the most data files that need
+ * to be loaded.
+ */
 function setMaxDataFileIndex(nrOfPagesPerArray) {
-    /*
-     * In case of multiple arrays find out which has the most data files that need
-     * to be loaded.
-     */
-    var max_ln = 0;
-    for (var i = 0; i < nrOfPagesPerArray.length; i++) {
+    let max_ln = 0;
+    for (let i = 0; i < nrOfPagesPerArray.length; i++) {
         if (nrOfPagesPerArray[i] > max_ln) {
             max_ln = nrOfPagesPerArray[i];
         }
@@ -1001,12 +999,12 @@ function setMaxDataFileIndex(nrOfPagesPerArray) {
     maxDataFileIndex = max_ln - 1;
 }
 
+/*
+ * Return the index of the next data file that should be loaded.
+ */
 function getNextDataFileIndex() {
-    /*
-     * Return the index of the next data file that should be loaded.
-     */
-    var nextIndex;
-    var speed = _AG_get_speed(100);
+    let nextIndex;
+    const speed = _AG_get_speed(100);
     if (speed > 0) {
         nextIndex = currentDataFileIndex + 1;
         if (nextIndex >= maxDataFileIndex) {
@@ -1025,16 +1023,17 @@ function AG_readFileDataAsynchronous(nrOfPages, noOfChannelsPerSet, currentFileI
     if (dataSetIndex >= nrOfPages.length) {
         isNextDataLoaded = true;
         // keep data only for the selected channels
-        var r = _AG_getSelectedDataAndLongestChannelIndex(nextData);
+        const r = _AG_getSelectedDataAndLongestChannelIndex(nextData);
         longestChannelIndex = r.longestChannelIndex;
         nextData = r.selectedData; //todo: occasional shape mismatch 3d <- 2d
         return;
     }
     if (nrOfPages[dataSetIndex] - 1 < currentFileIndex && AG_isLoadStarted) {
         // todo: assumed that this is computing a padding for smaller signals. check if this is really the purpose of this
-        var padding = [];
-        var oneChannel = [];
-        for (var j = 0; j < maxChannelLength; j++) {
+        let j;
+        let padding = [];
+        let oneChannel = [];
+        for (j = 0; j < maxChannelLength; j++) {
             oneChannel.push(0);
         }
         for (j = 0; j < noOfChannelsPerSet[dataSetIndex]; j++) {
@@ -1046,11 +1045,10 @@ function AG_readFileDataAsynchronous(nrOfPages, noOfChannelsPerSet, currentFileI
     } else {
         doAjaxCall({
             url: readDataPageURL(baseDataURLS[dataSetIndex], currentFileIndex * dataPageSize, (currentFileIndex + 1) * dataPageSize, tsStates[dataSetIndex], tsModes[dataSetIndex]),
-            success: function(data) {
+            success: function (data) {
                 if (AG_isLoadStarted) {
                     data = $.parseJSON(data);
-                    var result = parseData(data, dataSetIndex);
-                    // nextData = nextData.concat(result);
+                    const result = parseData(data, dataSetIndex);
                     nextData.push(result);
 
                     AG_readFileDataAsynchronous(nrOfPages, noOfChannelsPerSet, currentFileIndex, maxChannelLength, dataSetIndex + 1);
@@ -1060,19 +1058,20 @@ function AG_readFileDataAsynchronous(nrOfPages, noOfChannelsPerSet, currentFileI
     }
 }
 
+/*
+ * Data is received from the HLPR_parseJSON as a 500/74 array. We need to transform it
+ * into an 74/500 one and in the transformation also replace all NaN values.
+ */
 function parseData(dataArray, dataSetIndex) {
-    /*
-     * Data is recieved from the HLPR_parseJSON as a 500/74 array. We need to transform it
-     * into an 74/500 one and in the transformation also replace all NaN values.
-     */
-    var result = [];
-    for (var i = 0; i < noOfChannelsPerSet[dataSetIndex]; i++) {
+
+    let result = [];
+    for (let i = 0; i < noOfChannelsPerSet[dataSetIndex]; i++) {
         result.push([]);
     }
-    for (var j = 0; j < dataArray.length; j++) {
-        for (var k = 0; k < noOfChannelsPerSet[dataSetIndex]; k++) {
-            var arrElem = dataArray[j][k];
-            if (arrElem == 'NaN') {
+    for (let j = 0; j < dataArray.length; j++) {
+        for (let k = 0; k < noOfChannelsPerSet[dataSetIndex]; k++) {
+            let arrElem = dataArray[j][k];
+            if (arrElem === 'NaN') {
                 nanValueFound = true;
                 arrElem = 0;
             }
@@ -1090,7 +1089,7 @@ function parseData(dataArray, dataSetIndex) {
 function readTimeData(fileIndex, asyncRead) {
     if (timeSetUrls[longestChannelIndex].length <= fileIndex) {
         nextTimeData = [];
-        for (var i = 0; i < maxChannelLength; i++) {
+        for (let i = 0; i < maxChannelLength; i++) {
             nextTimeData.push(totalPassedData + i);
         }
         isNextTimeDataLoaded = true;
@@ -1098,7 +1097,7 @@ function readTimeData(fileIndex, asyncRead) {
         if (asyncRead) {
             doAjaxCall({
                 url: timeSetUrls[longestChannelIndex][fileIndex],
-                success: function(data) {
+                success: function (data) {
                     nextTimeData = $.parseJSON(data);
                     isNextTimeDataLoaded = true;
                 }
@@ -1111,18 +1110,18 @@ function readTimeData(fileIndex, asyncRead) {
 }
 
 function getArrayFromDataFile(dataFile) {
-    var fileData = dataFile.replace(/\n/g, " ").replace(/\t/g, " ");
-    var arrayData = $.trim(fileData).split(" ");
-    for (var i = 0; i < arrayData.length; i++) {
+    let fileData = dataFile.replace(/\n/g, " ").replace(/\t/g, " ");
+    let arrayData = $.trim(fileData).split(" ");
+    for (let i = 0; i < arrayData.length; i++) {
         arrayData[i] = parseFloat(arrayData[i]);
     }
     return arrayData;
 }
 
 function getDisplayedChannels(listOfAllChannels, offset) {
-    var selectedData = [];
-    for (var i = 0; i < displayedChannels.length; i++) {
-        if (listOfAllChannels[displayedChannels[i] - offset] != null) {
+    let selectedData = [];
+    for (let i = 0; i < displayedChannels.length; i++) {
+        if (listOfAllChannels[displayedChannels[i] - offset] !== undefined) {
             selectedData.push(listOfAllChannels[displayedChannels[i] - offset].slice(0));
         }
     }

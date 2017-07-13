@@ -20,21 +20,26 @@
 // ----- Datatype methods mappings start from here
 
 function readDataPageURL(baseDatatypeMethodURL, fromIdx, toIdx, stateVariable, mode, step) {
-	if (stateVariable == null) {
-		stateVariable = 0;
-	}
-	if (stateVariable == null) {
-		mode = 0;
-	}
-	if (step == null) {
-		step = 1;
-	}
-	return baseDatatypeMethodURL + '/read_data_page/False?from_idx=' + fromIdx +";to_idx=" + toIdx + ";step=" + step + ";specific_slices=[null," + stateVariable + ",null," + mode +"]";
+    if (stateVariable === null || stateVariable === undefined) {
+        stateVariable = 0;
+    }
+    if (mode === null || mode === undefined) {
+        mode = 0;
+    }
+    if (step === null || step == undefined) {
+        step = 1;
+    }
+    return baseDatatypeMethodURL + '/read_data_page/False?from_idx=' + fromIdx + ";to_idx=" + toIdx + ";step=" + step + ";specific_slices=[null," + stateVariable + ",null," + mode + "]";
+}
+
+function readDataSplitPageURL(baseDatatypeMethodURL, fromIdx, toIdx, stateVariable, mode, step) {
+    const baseURL = readDataPageURL(baseDatatypeMethodURL, fromIdx, toIdx, stateVariable, mode, step);
+    return baseURL.replace('read_data_page', 'read_data_page_split');
 }
 
 function readDataChannelURL(baseDatatypeMethodURL, fromIdx, toIdx, stateVariable, mode, step, channels) {
-	var baseURL = readDataPageURL(baseDatatypeMethodURL, fromIdx, toIdx, stateVariable, mode, step);
-	return baseURL.replace('read_data_page', 'read_channels_page') + ';channels_list=' + channels;
+    const baseURL = readDataPageURL(baseDatatypeMethodURL, fromIdx, toIdx, stateVariable, mode, step);
+    return baseURL.replace('read_data_page', 'read_channels_page') + ';channels_list=' + channels;
 }
 
 // ------ Datatype methods mappings end here
@@ -49,7 +54,7 @@ var AG_isStopped = false;
  */
 function pauseMovie() {
     AG_isStopped = !AG_isStopped;
-    var pauseButton = $("#ctrl-action-pause");
+    const pauseButton = $("#ctrl-action-pause");
     if (AG_isStopped) {
         pauseButton.attr("class", "action action-controller-launch");
     } else {
@@ -59,8 +64,7 @@ function pauseMovie() {
 
 // ------ Asynchronous geometry downloading begin
 // These are used in the surface pick and tract views
-//todo: A similar protocol might be useful for the rest of the 3d views
-//todo: use doajaxcall, cancel all requests on error
+//todo: A similar protocol might be useful for the rest of the 3d views: use doajaxcall, cancel all requests on error
 
 /**
  * Initialize the buffers for the surface that should be displayed in non-pick mode.
@@ -70,7 +74,7 @@ function pauseMovie() {
 function downloadBrainGeometry(urlVerticesDisplayList, urlTrianglesDisplayList,
                                urlNormalsDisplayList, callback) {
 
-    var drawingBrain = {
+    const drawingBrain = {
         noOfUnloadedBuffers: 3,
         vertices: [], indexes: [], normals: [],
         success: callback
@@ -82,7 +86,7 @@ function downloadBrainGeometry(urlVerticesDisplayList, urlTrianglesDisplayList,
 }
 
 function _startAsynchDownload(drawingBrain, urlList, results) {
-    if (urlList.length == 0) {
+    if (urlList.length === 0) {
         drawingBrain.noOfUnloadedBuffers -= 1;
         if (drawingBrain.noOfUnloadedBuffers === 0) {
             // Finished downloading buffer data.
@@ -101,18 +105,18 @@ function _startAsynchDownload(drawingBrain, urlList, results) {
  * Buffers the default gray surface color to the GPU
  * Saves the buffer object at index 3 & 4 in the buffersArray list
  */
-function drawingBrainUploadDefaultColorBuffer(drawingBrainVertices, buffersArray){
-    for (var i = 0; i < drawingBrainVertices.length; i++) {
-        var colorBuffer = gl.createBuffer();
+function drawingBrainUploadDefaultColorBuffer(drawingBrainVertices, buffersArray) {
+    for (let i = 0; i < drawingBrainVertices.length; i++) {
+        const colorBuffer = gl.createBuffer();
         gl.bindBuffer(gl.ARRAY_BUFFER, colorBuffer);
-        var vertexCount = drawingBrainVertices[i].length / 3;
-        var colors = new Float32Array(vertexCount * 4);
+        const vertexCount = drawingBrainVertices[i].length / 3;
+        const colors = new Float32Array(vertexCount * 4);
         gl.bufferData(gl.ARRAY_BUFFER, colors, gl.STATIC_DRAW);
         buffersArray[i][4] = colorBuffer;
 
-        var activityBuffer = gl.createBuffer();
+        const activityBuffer = gl.createBuffer();
         gl.bindBuffer(gl.ARRAY_BUFFER, activityBuffer);
-        var activity = new Float32Array(vertexCount);
+        const activity = new Float32Array(vertexCount);
         gl.bufferData(gl.ARRAY_BUFFER, activity, gl.STATIC_DRAW);
         buffersArray[i][3] = activityBuffer;
     }
@@ -122,12 +126,12 @@ function drawingBrainUploadDefaultColorBuffer(drawingBrainVertices, buffersArray
  * downloadBrainGeometry callback recieves an object containig geometry description in js lists
  * This uploads that data to the gpu. It returns a list of 3 webglbuffers :[ vertex, normal, triangles]
  */
-function drawingBrainUploadGeometryBuffers(drawingBrain){
-    var ret = [];
-    for (var i = 0; i < drawingBrain.vertices.length; i++) {
-        var vertexBuffer = HLPR_createWebGlBuffer(gl, drawingBrain.vertices[i], false, false);
-        var normalBuffer = HLPR_createWebGlBuffer(gl, drawingBrain.normals[i], false, false);
-        var trianglesBuffer = HLPR_createWebGlBuffer(gl, drawingBrain.indexes[i], true, false);
+function drawingBrainUploadGeometryBuffers(drawingBrain) {
+    let ret = [];
+    for (let i = 0; i < drawingBrain.vertices.length; i++) {
+        const vertexBuffer = HLPR_createWebGlBuffer(gl, drawingBrain.vertices[i], false, false);
+        const normalBuffer = HLPR_createWebGlBuffer(gl, drawingBrain.normals[i], false, false);
+        const trianglesBuffer = HLPR_createWebGlBuffer(gl, drawingBrain.indexes[i], true, false);
         ret.push([vertexBuffer, normalBuffer, trianglesBuffer]);
     }
     return ret;
