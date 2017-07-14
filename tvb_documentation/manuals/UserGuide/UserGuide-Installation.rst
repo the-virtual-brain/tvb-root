@@ -198,14 +198,28 @@ Use this to get to a clean state, as if |TVB| had just been installed and never 
    $ ./tvb_clean.sh
 
 The above operation will not touch `TVB_Distribution`, which represents your downloaded |TVB| app,
-together with some demo-data. Such demo-data can be found inside `TVB_Distribution`, under the following path:
-    - On Windows `TVB_Distribution/tvb_data/Lib/site-packages/tvb_data/`
-    - On Linux `TVB_Distribution/tvb_data/lib/python2.7/site-packages/tvb_data/`
-    - On Mac `TVB_Distribution/tvb.app/Contents/Resources/lib/python2.7/tvb_data/`
+but only TVB generated user data, as result of using the GUI interface, mainly.
 
-Everything under `TVB_Distribution` is not to be removed or edited.
-The files under `TVB_Distribution/..../tvb_data` can be used together with the GUI and/or the
-script interfaces, or taken as reference for you, when creating TVB compatible dataset.
+
+Finding TVB Demo Data
+---------------------
+
+We keep |TVB| demo data versioned on Github: https://github.com/the-virtual-brain/tvb-data.
+There you can find a Default TVB Project, structural Connectivity, Surfaces, Mappings, Sensors, etc.
+
+|TVB| application comes with a subset of this demo-data,
+which can be found inside `TVB_Distribution` under the following path:
+
+- On Windows `TVB_Distribution/tvb_data/Lib/site-packages/tvb_data/`
+- On Linux `TVB_Distribution/tvb_data/lib/python2.7/site-packages/tvb_data/`
+- On Mac `TVB_Distribution/tvb.app/Contents/Resources/lib/python2.7/tvb_data/`
+
+.. note::
+    Everything under `TVB_Distribution` is not to be removed or edited.
+
+The files under `TVB_Distribution/..../tvb_data` and the git repository `tvb_data`,
+can be used together with the GUI and/or the script interfaces, or taken as reference by you,
+when creating TVB compatible dataset.
 
 
 Supported operating systems
