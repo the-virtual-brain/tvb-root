@@ -54,9 +54,6 @@ LOG = get_logger(__name__)
 
 LOCK_OPEN_FILE = threading.Lock()
 
-## The chunk block size recommended by h5py should be between 10k - 300k, larger for
-## big files. Since performance will mostly be important for the simulator we'll just use the top range for now.
-CHUNK_BLOCK_SIZE = 300000
 
 
 class HDF5StorageManager(object):
@@ -118,10 +115,8 @@ class HDF5StorageManager(object):
 
         try:
             LOG.debug("Saving data into data set: %s" % dataset_name)
-            chunk_shape = self.__compute_chunk_shape(data_to_store.shape)
-
             # Open file in append mode ('a') to allow adding multiple data sets in the same file
-            hdf5File = self._open_h5_file(chunk_shape=chunk_shape)
+            hdf5File = self._open_h5_file()
 
             full_dataset_name = where + dataset_name
             if full_dataset_name not in hdf5File:
@@ -159,8 +154,7 @@ class HDF5StorageManager(object):
         data_buffer = self.data_buffers.get(where + dataset_name, None)
 
         if data_buffer is None:
-            chunk_shape = self.__compute_chunk_shape(data_to_store.shape, grow_dimension)
-            hdf5File = self._open_h5_file(chunk_shape=chunk_shape)
+            hdf5File = self._open_h5_file()
             datapath = where + dataset_name
             if datapath in hdf5File:
                 dataset = hdf5File[datapath]
@@ -234,7 +228,10 @@ class HDF5StorageManager(object):
                 data_array = hdf5File[datapath]
                 # Now read data
                 if data_slice is None:
-                    return data_array[()]
+                    result = data_array[()]
+                    if isinstance(result, hdf5.Empty):
+                        return numpy.empty([])
+                    return result
                 else:
                     return data_array[data_slice]
             else:
@@ -518,7 +515,7 @@ class HDF5StorageManager(object):
             self.__release_lock()
 
 
-    def _open_h5_file(self, mode='a', chunk_shape=None):
+    def _open_h5_file(self, mode='a'):
         """
         The synchronization of open/close doesn't seem to be needed anymore for h5py in
         contrast to PyTables for concurrent reads. However since it shouldn't add that
@@ -527,37 +524,10 @@ class HDF5StorageManager(object):
         """
         try:
             self.__aquire_lock()
-            file_obj = self.__open_h5_file(mode, chunk_shape)
+            file_obj = self.__open_h5_file(mode)
         finally:
             self.__release_lock()
         return file_obj
-
-
-    def __compute_chunk_shape(self, data_shape, grow_dim=None):
-        data_shape = list(data_shape)
-        if not data_shape:
-            return 1
-        nr_elems_per_block = CHUNK_BLOCK_SIZE / 8.0
-        if grow_dim is None:
-            # We don't know what dimension is growing or we are not in
-            # append mode and just want to write the whole data.
-            max_leng_dim = data_shape.index(max(data_shape))
-            for dim in data_shape:
-                if dim != 0:
-                    nr_elems_per_block = nr_elems_per_block / dim
-            nr_elems_per_block = nr_elems_per_block * data_shape[max_leng_dim]
-            if nr_elems_per_block < 1:
-                nr_elems_per_block = 1
-            data_shape[max_leng_dim] = int(nr_elems_per_block)
-            return tuple(data_shape)
-        else:
-            for idx, dim in enumerate(data_shape):
-                if idx != grow_dim and dim != 0:
-                    nr_elems_per_block = nr_elems_per_block / dim
-            if nr_elems_per_block < 1:
-                nr_elems_per_block = 1
-            data_shape[grow_dim] = int(nr_elems_per_block)
-            return tuple(data_shape)
 
 
     def __close_file(self):
@@ -584,13 +554,12 @@ class HDF5StorageManager(object):
 
 
     # -------------- Private methods  --------------
-    def __open_h5_file(self, mode='a', chunk_shape=None):
+    def __open_h5_file(self, mode='a'):
         """
         Open file for reading, writing or append. 
         
         :param mode: Mode to open file (possible values are w / r / a).
                     Default value is 'a', to allow adding multiple data to the same file.
-        :param chunk_shape: Shape for chunks at write.
         :returns: returns the file which stores data in HDF5 format opened for read / write according to mode param
         
         """
@@ -606,7 +575,7 @@ class HDF5StorageManager(object):
                     mode = 'w'
 
                 LOG.debug("Opening file: %s in mode: %s" % (self.__storage_full_name, mode))
-                self.__hfd5_file = hdf5.File(self.__storage_full_name, mode, libver='latest', chunks=chunk_shape)
+                self.__hfd5_file = hdf5.File(self.__storage_full_name, mode, libver='latest')
 
                 # If this is the first time we access file, write data version
                 if not file_exists:
@@ -634,6 +603,8 @@ class HDF5StorageManager(object):
         data_to_store = data_list
         if isinstance(data_to_store, list):
             data_to_store = numpy.array(data_list)
+        if data_to_store.shape == ():
+            data_to_store = hdf5.Empty("f")
         return data_to_store
 
 

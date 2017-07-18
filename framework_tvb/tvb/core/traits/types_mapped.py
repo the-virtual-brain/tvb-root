@@ -157,7 +157,7 @@ class MappedType(model.DataType, mapped.MappedTypeLight):
                 # In case of fields with data stored on disk check shape
                 if isinstance(attr, mapped.Array):
                     if attr.trait.file_storage != FILE_STORAGE_NONE:
-                    # Check if any data stored in corresponding dataset
+                        # Check if any data stored in corresponding dataset
                         try:
                             self.get_data_shape(key)
                         except MissingDataSetException:
@@ -562,8 +562,9 @@ class Array(mapped.Array):
                  and self.trait.file_storage != FILE_STORAGE_NONE) and value.size > 0):
 
             if not isinstance(value, self.trait.wraps):
-                raise Exception("Invalid DataType!! It expects %s, but is %s" % (str(self.trait.wraps),
-                                                                                 str(type(value))))
+                raise Exception("Invalid DataType!! It expects %s, but is %s for field %s" % (str(self.trait.wraps),
+                                                                                              str(type(value)),
+                                                                                              str(self.trait.name)))
             self._write_in_storage(inst, value)
 
 
@@ -727,5 +728,4 @@ class SparseMatrix(mapped.SparseMatrix, Array):
         else:
             raise Exception("Unsupported format: %s" % mtx_format)
 
-        return mtx 
-
+        return mtx

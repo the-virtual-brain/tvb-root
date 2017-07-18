@@ -1,5 +1,5 @@
 REM build env with pre-built binaries from conda repos
-conda create -y -n tvb-run scipy==0.19.0 numpy==1.12.1 networkx scikit-learn cython h5py==2.6.0 pip pil numexpr psutil coverage beautiful-soup lxml ipython ipython-notebook
+conda create -y -n tvb-run scipy==0.19.0 numpy==1.12.1 networkx scikit-learn cython h5py pip pil numexpr psutil coverage beautiful-soup lxml ipython ipython-notebook
 
 REM use environment
 call activate tvb-run
