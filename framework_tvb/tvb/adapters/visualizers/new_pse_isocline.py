@@ -216,8 +216,7 @@ class IsoclinePSEAdapter(ABCDisplayer):
         Generate the preview for the burst page.
         """
         datatype_group = dao.get_datatype_group_by_gid(datatype_group_gid)
-        result_dict = self.launch(datatype_group=datatype_group)
-        return result_dict
+        return self.launch(datatype_group=datatype_group)
 
     def get_metric_matrix(self, datatype_group, selected_metric=u'GlobalVariance'):
         self.model = PseIsoModel.from_db(datatype_group.fk_operation_group)
@@ -253,7 +252,6 @@ class IsoclinePSEAdapter(ABCDisplayer):
         operations = dao.get_operations_in_group(operation_group.id)
         node_info_array = []
         for operation_ in operations:
-            datatype = None
             datatypes = dao.get_results_for_operation(operation_.id)
             if len(datatypes) > 0:
                 datatype = datatypes[0]
@@ -273,20 +271,12 @@ class IsoclinePSEAdapter(ABCDisplayer):
 
     def launch(self, datatype_group, **kwargs):
         params = self.get_metric_matrix(datatype_group)
-        gid_matrix = self.model.datatypes_gids
-        gid_matrix = numpy.rot90(gid_matrix)
-        matrix_shape=gid_matrix.shape
-        gid_matrix = gid_matrix.tolist()
-        matrix_node_info=numpy.reshape(self.build_node_array(datatype_group),matrix_shape)
-        matrix_node_info=numpy.flipud(matrix_node_info).tolist()
         params["title"] = "Pse-Isocline Visualizer"
         params["canvasName"] = "Interpolated values for metric "
         params["xAxisName"] = self.model.range1_name
         params["yAxisName"] = self.model.range2_name
-        params["matrix_node_info"] = json.dumps(matrix_node_info)
         params["url_base"] = "/burst/explore/get_metric_matrix/" + datatype_group.gid
         params["node_info_url"] = "/burst/explore/get_node_matrix/" + datatype_group.gid
-        params["gid_matrix"] = json.dumps(gid_matrix)
         params["available_metrics"] = reversed(self.model.metrics.keys())
         return self.build_display_result('pse_isocline/new_view', params,
                                          pages=dict(controlPage="pse_isocline/controls"))

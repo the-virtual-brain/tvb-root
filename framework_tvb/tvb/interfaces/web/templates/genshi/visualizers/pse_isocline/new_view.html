@@ -55,7 +55,8 @@
 
         $(document).ready(function () {
             $("#main").addClass("colscheme-1");
-            pse_isocline_init('${canvasName}','${xAxisName}','${yAxisName}','${matrix_shape}', ${x_min}, ${x_max}, ${y_min}, ${y_max}, ${vmin}, ${vmax}, ${gid_matrix}, '${url_base}','${node_info_url}');
+            pse_isocline_init('${canvasName}','${xAxisName}','${yAxisName}','${matrix_shape}',
+                ${x_min}, ${x_max}, ${y_min}, ${y_max}, '${url_base}','${node_info_url}');
             window.onresize = drawAxis;
         });
     </script>

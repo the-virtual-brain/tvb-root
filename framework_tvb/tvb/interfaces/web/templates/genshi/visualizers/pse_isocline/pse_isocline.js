@@ -24,16 +24,14 @@
 
 var Pse_isocline = {
     Matrix2d: Matrix2d,
-    gid_matrix: null,
     initial_n: null,
     matrix_node_info: null,
     initial_m: null
 };
 
-function pse_isocline_init(canvasName,xAxisName,yAxisName,matrix_shape, x_min, x_max, y_min, y_max, vmin, vmax, gid_matrix, url_base, node_info_url) {
+function pse_isocline_init(canvasName,xAxisName,yAxisName,matrix_shape, x_min, x_max, y_min, y_max, url_base, node_info_url) {
 
-    matrix2d_init(canvasName,xAxisName,yAxisName,null, matrix_shape, x_min, x_max, y_min, y_max, vmin, vmax);
-    Pse_isocline.gid_matrix = gid_matrix;
+    matrix2d_init(canvasName,xAxisName,yAxisName,null, matrix_shape, x_min, x_max, y_min, y_max, null, null);
     Pse_isocline.initial_n = Matrix2d.n;
     Pse_isocline.initial_m = Matrix2d.m;
     loadNodeMatrix(node_info_url, matrix_shape);
@@ -71,7 +69,7 @@ function pse_isocline_init(canvasName,xAxisName,yAxisName,matrix_shape, x_min, x
     }, false);
 }
 
-function redrawCanvas(base_url, selected_metric,canvasName) {
+function redrawCanvas(base_url, selected_metric, canvasName) {
     doAjaxCall({
         url: base_url + '/' + selected_metric,
         type: 'POST',
@@ -129,7 +127,7 @@ function getGid(mousePos) {
     var indices=getIndicesForMousePosition(mousePos);
     var i=indices[0];
     var j=indices[1];
-    return Pse_isocline.gid_matrix[i][j];
+    return Pse_isocline.matrix_node_info[i][j]["datatype_gid"];
 }
 
 function getNodeInfo(mousePos) {

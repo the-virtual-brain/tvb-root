@@ -517,11 +517,8 @@ function loadGroup(groupGID) {
             }
 
             switch_top_level_visibility("#section-pse");
-            var pseElem = $('#section-pse');
-            var isoWidth = pseElem.width();
-            var isoHeight = pseElem.height();
             PSE_mainDraw('burst-pse-flot', 'burst', groupGID);
-            Isocline_MainDraw(groupGID, 'burst-pse-iso', isoWidth, isoHeight);
+            Isocline_MainDraw(groupGID, 'burst-pse-iso');
         },
         error: function() {
             displayMessage("Error while loading burst.", "errorMessage");

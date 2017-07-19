@@ -40,10 +40,7 @@ var Matrix2d = {
     vmax: null
 };
 
-function matrix2d_init(canvasName,xAxisName,yAxisName,matrix_data, matrix_shape, x_min, x_max, y_min, y_max, vmin, vmax) {
-
-    ColSch_initColorSchemeComponent(vmin, vmax);
-    ColSch_initColorSchemeGUI(vmin, vmax, drawCanvas);
+function matrix2d_init(canvasName, xAxisName, yAxisName, matrix_data, matrix_shape, x_min, x_max, y_min, y_max, vmin, vmax) {
 
     var dimensions = $.parseJSON(matrix_shape);
     var n = dimensions[0];
@@ -51,14 +48,16 @@ function matrix2d_init(canvasName,xAxisName,yAxisName,matrix_data, matrix_shape,
     var canvas = d3.select("canvas")
         .attr("width", m)
         .attr("height", n);
-    if(matrix_data){
+    if (matrix_data) {
         var data = $.parseJSON(matrix_data);
         Matrix2d.data = data;
+        Matrix2d.vmin = vmin;
+        Matrix2d.vmax = vmax;
+        ColSch_initColorSchemeComponent(vmin, vmax);
+        ColSch_initColorSchemeGUI(vmin, vmax, drawCanvas);
     }
     Matrix2d.n = n;
     Matrix2d.m = m;
-    Matrix2d.vmin = vmin;
-    Matrix2d.vmax = vmax;
     Matrix2d.canvas = canvas;
 
     var context = canvas.node().getContext("2d");
@@ -184,8 +183,6 @@ function drawAxis() {
         .attr("transform", "translate(" + xLabelWidth + ",15)");
     Matrix2d.yAxisLabel
         .attr("transform", "translate(" + yLabelWidth + ", " + yLabelHeight + ")rotate(-90)")
-
-    updateLegend(Matrix2d.vmin, Matrix2d.vmax);
 }
 
 function interpolateMatrix(cWidth, cHeight) {

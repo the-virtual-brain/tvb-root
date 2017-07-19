@@ -976,13 +976,11 @@ function hoverPlot(id, x, y, val) {
 }
 
 
-function Isocline_MainDraw(groupGID, divId, width, height) {
-    width = Math.floor(width);
-    height = Math.floor(height);
+function Isocline_MainDraw(groupGID, divId) {
     $('#' + divId).html('');
     doAjaxCall({
         type: "POST",
-        url: '/burst/explore/draw_isocline_exploration/' + groupGID + '/' + width + '/' + height,
+        url: '/burst/explore/draw_isocline_exploration/' + groupGID,
         success: function (r) {
             $('#' + divId).html(r);
         },
