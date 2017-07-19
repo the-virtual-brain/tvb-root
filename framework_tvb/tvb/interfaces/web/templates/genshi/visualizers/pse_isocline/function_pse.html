@@ -4,7 +4,7 @@
     <ul class="toolbar-inline">
         <li>
             <label for="color_metric_select">Color metric</label>
-            <select id="color_metric_select" onchange="redrawCanvas('${url_base}',this.value,'${canvasName}')">
+            <select id="color_metric_select" onchange="redrawCanvas(this.value)">
                 <py:for each="metric in available_metrics">
                     <py:if test="metric==color_metric">
                         <option value="$metric" selected="selected">$metric</option>
