@@ -1,4 +1,7 @@
-<py xmlns:py="http://genshi.edgewall.org/">
+<div xmlns:py="http://genshi.edgewall.org/" py:strip="True">
+
+    <link type="text/css" rel="stylesheet" href="/static/style/section_visualisers.css"/>
+    <script type="text/javascript" src="/static/js/d3.v3.js"></script>
 
     <!--! Controls for changing metrics -->
     <ul class="toolbar-inline">
@@ -47,4 +50,4 @@
             window.onresize = drawAxis;
         });
     </script>
-</py>
+</div>
