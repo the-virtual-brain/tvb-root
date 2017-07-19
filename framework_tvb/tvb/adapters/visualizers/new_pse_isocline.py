@@ -52,6 +52,23 @@ def dump_prec(xs, prec=3):
     format_str = "%0." + str(prec) + "g"
     return "[" + ",".join(format_str % s for s in xs) + "]"
 
+
+def interpolate_matrix(inputMatrix, matrix_shape, factor):
+    mmin = 0
+    m = matrix_shape[1]
+    n = matrix_shape[0]
+    x_array_interpolate = numpy.linspace(mmin, m-1, m)
+    y_array_interpolate = numpy.linspace(mmin, n-1, n)
+    x_matrix, y_matrix = numpy.meshgrid(x_array_interpolate, y_array_interpolate)
+    f = interpolate.interp2d(x_matrix, y_matrix, inputMatrix, kind='linear')
+
+    # use linspace so your new range also goes from 0 to 3, with 8 intervals
+    new_x_array_interpolate = numpy.linspace(mmin, m, m * factor)
+    new_y_array_interpolate = numpy.linspace(mmin, n, n * factor)
+
+    interpolated_matrix = f(new_x_array_interpolate, new_y_array_interpolate)
+    return interpolated_matrix
+
 # The resolution for computing dots inside the displayed isocline.
 # This is not the sae as display size.
 RESOLUTION = (600, 600)
@@ -167,6 +184,7 @@ class PseIsoModel(object):
             'range2': json.dumps([self.range2_name, self.range2])
         })
 
+
 class IsoclinePSEAdapter(ABCDisplayer):
     """
     Visualization adapter for Parameter Space Exploration.
@@ -230,20 +248,22 @@ class IsoclinePSEAdapter(ABCDisplayer):
 
         model = PseIsoModel.from_db(datatype_group.fk_operation_group)
 
-        data_matrix=model.apriori_data[u'GlobalVariance']
+        data_matrix = model.apriori_data[u'GlobalVariance']
         data_matrix = numpy.rot90(data_matrix)
-        data_matrix=numpy.flipud(data_matrix)
+        data_matrix = numpy.flipud(data_matrix)
+        factor = numpy.sqrt((2*10000)/(data_matrix.shape[0]*data_matrix.shape[1]))
+        data_matrix = interpolate_matrix(data_matrix, data_matrix.shape, factor)
         matrix_data = dump_prec(data_matrix.flat)
+        matrix_shape = json.dumps(data_matrix.squeeze().shape)
 
-        matrix_shape=json.dumps(data_matrix.squeeze().shape)
-        x_min=model.apriori_x[0]
-        x_max=model.apriori_x[model .apriori_x.size-1]
+        x_min = model.apriori_x[0]
+        x_max = model.apriori_x[model.apriori_x.size - 1]
         y_min = model.apriori_y[0]
         y_max = model.apriori_y[model.apriori_y.size - 1]
-        vmin=data_matrix.min()
-        vmax=data_matrix.max()
-        gid_matrix=numpy.asarray(model.datatypes_gids)
-        metrics=json.dumps(model.metrics)
+        vmin = data_matrix.min()
+        vmax = data_matrix.max()
+        gid_matrix = numpy.asarray(model.datatypes_gids)
+        metrics = json.dumps(model.metrics)
         # gid_matrix=json.dumps(gid_matrix.flat)
         params = dict(title="Pse-Isocline Visualizer",
                       matrix_data=matrix_data,
@@ -259,4 +279,3 @@ class IsoclinePSEAdapter(ABCDisplayer):
 
         return self.build_display_result('pse_isocline/new_view', params,
                                          pages=dict(controlPage="pse_isocline/controls"))
-

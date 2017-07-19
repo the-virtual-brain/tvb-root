@@ -110,7 +110,7 @@ function drawCanvas() {
     for (var i = n - 1; i >= 0; i--) {
         for (var j = 0; j < m; j++) {
             var k = m * i + j;
-            var l = (m * (n - i) + j) * 4;
+            var l = (m * (n - i - 1) + j) * 4;
             if (data[k] > vmax)
                 data[k] = vmax;
             if (data[k] < vmin)

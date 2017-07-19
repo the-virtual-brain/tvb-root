@@ -31,7 +31,7 @@
 
         <!--TODO move styles to CSS, rename and generalize wavelet components-->
         <!--TODO update viewer when metric is selected-->
-        <div style="height:90% ; position:relative;">
+        <div class="matrix2d-draw-content">
             <div class="matrix-legend" id="colorWeightsLegend"></div>
             <div class="matrix-legend">
                 <table id="table-colorWeightsLegend" class="table-legend-labels">
@@ -49,8 +49,8 @@
                     </py:for>
                 </table>
             </div>
-            <svg class="wavelet-spectrogram-svg-container" id="svg-container"></svg>
-            <canvas class="wavelet-spectrogram-main-canvas" id="main-canvas"></canvas>
+            <svg class="matrix2d-svg-container" id="svg-container"></svg>
+            <canvas class="matrix2d-main-canvas" id="main-canvas"></canvas>
         </div>
 
         <script type="text/javascript">

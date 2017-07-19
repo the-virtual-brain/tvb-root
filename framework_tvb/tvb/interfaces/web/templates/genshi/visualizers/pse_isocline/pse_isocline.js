@@ -62,9 +62,13 @@ function pse_isocline_init(matrix_data, matrix_shape, x_min, x_max, y_min, y_max
     WaveletSpect.vmax = vmax;
     WaveletSpect.canvas = canvas;
 
+
     var context = canvas.node().getContext("2d");
     var cHeight = context.canvas.clientHeight;
+    var cWidth = context.canvas.clientWidth;
     var svgContainer = d3.select("#svg-container");
+
+    // WaveletSpect.data = matrixInterpolation(cHeight, cWidth);
 
     var xAxisScale = d3.scale.linear()
         .domain([x_min, x_max]);
@@ -91,6 +95,95 @@ function pse_isocline_init(matrix_data, matrix_shape, x_min, x_max, y_min, y_max
 
     drawCanvas();
     drawAxis(x_min, x_max, y_min, y_max);
+}
+
+function matrixInterpolation(cHeight, cWidth) {
+    var dataMatrix = [];
+
+    for (var i = 0; i < WaveletSpect.n; i++) {
+        dataMatrix[i] = [];
+        for (var j = 0; j < WaveletSpect.m; j++) {
+            dataMatrix[i][j] = undefined;
+        }
+    }
+    var oldMatrix = WaveletSpect.data;
+    for (var i = 0; i < WaveletSpect.n; i++)
+        for (var j = 0; j < WaveletSpect.m; j++)
+            dataMatrix[i][j] = oldMatrix[i * WaveletSpect.m + j];
+
+    console.table(dataMatrix);
+
+    var ratio = Math.floor((cWidth / 10) / WaveletSpect.m);
+    ratio = 40;
+    var n = WaveletSpect.n * ratio;
+    var m = WaveletSpect.m * ratio;
+
+    var newMatrix = [];
+    for (i = 0; i < n; i++) {
+        newMatrix[i] = [];
+        for (j = 0; j < m; j++) {
+            newMatrix[i][j] = 0;
+        }
+    }
+
+    // interpolate lines
+    var spaceC = Math.floor((WaveletSpect.m * ratio) / (WaveletSpect.m - 1));
+    var spaceL = Math.floor((WaveletSpect.n * ratio) / (WaveletSpect.n - 1));
+    for (i = 0; i < WaveletSpect.n; i++) {
+        var line = i * spaceL;
+        if (line === n) {
+            line--;
+        }
+        var spaceC = Math.floor((WaveletSpect.m * ratio) / (WaveletSpect.m - 1));
+        var col=0;
+        for (var k = 0; k < WaveletSpect.m - 1; k++) {
+            var inter = d3.interpolateNumber(dataMatrix[i][k], dataMatrix[i][k + 1]);
+            for (j = 0; j < spaceC; j++) {
+                newMatrix[line][col] = inter(j / (spaceC - 1));
+                col++;
+            }
+        }
+    }
+
+    var resultArray = [];
+
+    for (i = 0; i < WaveletSpect.n; i++) {
+        line=i*spaceL;
+        for (j = 0; j < m; j++) {
+                if(line===n)
+                    line--;
+                resultArray[i * m + j] = newMatrix[line][j];
+        }
+    }
+    //
+    // interpolate columns
+
+    // for (j = 0; j < WaveletSpect.m; j++) {
+    //     var col = j * spaceC;
+    //     if (col === m) {
+    //         col--;
+    //     }
+    //     spaceL = Math.floor((WaveletSpect.n * ratio) / (WaveletSpect.n - 1));
+    //     var line = 0;
+    //     for (var k = 0; k < WaveletSpect.n - 1; k++) {
+    //         var inter = d3.interpolateNumber(dataMatrix[k][j], dataMatrix[k + 1][j]);
+    //         for (i = 0; i < spaceL; i++) {
+    //             newMatrix[line][col] = inter(i / (spaceL - 1));
+    //             line++;
+    //         }
+    //     }
+    // }
+    // var resultArray = [];
+    //
+    // for (i = 0; i < n; i++) {
+    //     for (j = 0; j < m; j++) {
+    //             resultArray[i * m + j] = newMatrix[i][j];
+    //     }
+    // }
+    console.table(newMatrix);
+    // WaveletSpect.n=n;
+    WaveletSpect.m=m;
+    return resultArray;
 }
 
 function updateLegend(minColor, maxColor) {
