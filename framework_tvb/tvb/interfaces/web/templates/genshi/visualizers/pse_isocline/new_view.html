@@ -49,10 +49,13 @@
         <canvas class="matrix2d-main-canvas" id="main-canvas"></canvas>
     </div>
 
+    <div class="tooltip"></div>
+
     <script type="text/javascript">
+
         $(document).ready(function () {
             $("#main").addClass("colscheme-1");
-            pse_isocline_init('${matrix_data}', '${matrix_shape}', ${x_min}, ${x_max}, ${y_min}, ${y_max}, ${vmin}, ${vmax});
+            pse_isocline_init('${matrix_data}', '${matrix_shape}', ${x_min}, ${x_max}, ${y_min}, ${y_max}, ${vmin}, ${vmax}, ${gid_matrix});
             window.onresize = drawAxis;
         });
     </script>

@@ -23,15 +23,49 @@
  */
 
 var Pse_isocline = {
-    Matrix2d: Matrix2d
+    Matrix2d: Matrix2d,
+    gid_matrix: null,
+    initial_n: null,
+    initial_m: null,
 };
 
 // TODO add hover and click events
-function pse_isocline_init(matrix_data, matrix_shape, x_min, x_max, y_min, y_max, vmin, vmax) {
+function pse_isocline_init(matrix_data, matrix_shape, x_min, x_max, y_min, y_max, vmin, vmax, gid_matrix) {
 
     matrix2d_init(matrix_data, matrix_shape, x_min, x_max, y_min, y_max, vmin, vmax, true);
-}
+    Pse_isocline.gid_matrix = gid_matrix;
 
+    var canvas = document.getElementById('main-canvas');
+    canvas.addEventListener('click', function (evt) {
+        var mousePos = getMousePos(canvas, evt);
+        displayNodeDetails(getGid(mousePos));
+    }, false);
+
+    canvas.addEventListener('mousemove', function (evt) {
+        var mousePos = getMousePos(canvas, evt);
+        var gid = getGid(mousePos);
+        var toolTipText = 'x: ' + mousePos.x + '<br/>'+ 'y: ' + mousePos.y + "<br/> gid: " + gid;
+        var toolTipDiv = d3.select(".tooltip");
+        toolTipDiv.html(toolTipText);
+        toolTipDiv.style({
+            position: "absolute",
+            left: mousePos.x + 110 + "px",
+            top: mousePos.y + 75 + "px",
+            display: "block",
+            'background-color': '#C0C0C0',
+            border: '1px solid #fdd',
+            padding: '2px',
+            opacity: 0.80
+        })
+    }, false);
+
+    canvas.addEventListener('mouseout', function (evt) {
+        var toolTipDiv = d3.select(".tooltip");
+        toolTipDiv.transition()
+                .duration(300)
+                .style("display", "none")
+     }, false);
+}
 
 function redrawCanvas(base_url, selected_metric) {
     doAjaxCall({
@@ -39,6 +73,7 @@ function redrawCanvas(base_url, selected_metric) {
         type: 'POST',
         async: false,
         success: function (data) {
+            var context = Matrix2d.canvas.node().getContext("2d");
             var dictionar = $.parseJSON(data);
             Matrix2d.data = $.parseJSON(dictionar.matrix_data);
             Matrix2d.vmin = dictionar.vmin;
@@ -46,13 +81,14 @@ function redrawCanvas(base_url, selected_metric) {
             var dimensions = $.parseJSON(dictionar.matrix_shape);
             Matrix2d.n = dimensions[0];
             Matrix2d.m = dimensions[1];
-            var interpolatedMatrix = interpolateMatrix(Matrix2d.canvas.clientWidth);
+            var interpolatedMatrix = interpolateMatrix(context.canvas.clientWidth,context.canvas.clientHeight);
             Matrix2d.data = matrixToArray(interpolatedMatrix);
             ColSch_initColorSchemeComponent(Matrix2d.vmin, Matrix2d.vmax);
             drawCanvas();
         }
     });
 }
+
 
 function getMousePos(canvas, evt) {
     var rect = canvas.getBoundingClientRect();
@@ -62,100 +98,15 @@ function getMousePos(canvas, evt) {
     };
 }
 
-function interpolateMatrix(cWidth) {
-    var dataMatrix = [];
-    for (var i = 0; i < Matrix2d.n; i++) {
-        dataMatrix[i] = [];
-        for (var j = 0; j < Matrix2d.m; j++) {
-            dataMatrix[i][j] = undefined;
-        }
-    }
-    var oldMatrix = Matrix2d.data;
-    for (var i = 0; i < Matrix2d.n; i++)
-        for (var j = 0; j < Matrix2d.m; j++)
-            dataMatrix[i][j] = oldMatrix[i * Matrix2d.m + j];
-    //TODO cWidth not initialized
-    var ratio = Math.floor((cWidth / 10) / Matrix2d.m);
-    ratio = 20;
-
-    var spaceC = Math.floor((Matrix2d.m * ratio) / (Matrix2d.m - 1));
-    var spaceL = Math.floor((Matrix2d.n * ratio) / (Matrix2d.n - 1));
-    var n = (spaceL - 1) * (Matrix2d.n - 1) + Matrix2d.n;
-    var m = (spaceC - 1) * (Matrix2d.m - 1) + Matrix2d.m;
-
-    var array = interpolateArray(dataMatrix[0], n);
-
-    var newMatrix = [];
-    for (i = 0; i < n; i++) {
-        newMatrix[i] = [];
-        for (j = 0; j < m; j++) {
-            newMatrix[i][j] = undefined;
-        }
-    }
-
-    for (i = 0; i < Matrix2d.n; i++) {
-        var line = i * spaceL;
-        var col = 0;
-        newMatrix[line][col] = dataMatrix[i][0];
-        col++;
-        for (var k = 1; k < Matrix2d.m; k++) {
-            for (j = 0; j < spaceC - 1; j++) {
-                newMatrix[line][col] = undefined;
-                col++;
-            }
-            newMatrix[line][col] = dataMatrix[i][k];
-            col++;
-        }
-    }
-    console.table(newMatrix);
-    for (j = 0; j < Matrix2d.m; j++) {
-        var column = [];
-        for (i = 0; i < Matrix2d.n; i++) {
-            column.push(dataMatrix[i][j])
-        }
-        interpolatedColumn = interpolateArray(column, n);
-        for (i = 0; i < n; i++) {
-            newMatrix[i][j * spaceC] = interpolatedColumn[i];
-        }
-    }
-    for (i = 0; i < n; i++) {
-        var intermediateLine = newMatrix[i].filter(function (element) {
-            return element !== undefined;
-        });
-        newMatrix[i]=interpolateArray(intermediateLine,m);
-    }
-    Matrix2d.n = n;
-    Matrix2d.m = m;
-    return newMatrix;
-}
-
-function linearInterpolate(before, after, atPoint) {
-    return before + (after - before) * atPoint;
-}
-
-function interpolateArray(data, fitCount) {
-    var newData = [];
-    var springFactor = (data.length - 1) / (fitCount - 1);
-    newData[0] = data[0]; // for new allocation
-    for (var i = 1; i < fitCount - 1; i++) {
-        var tmp = i * springFactor;
-        var before = Math.floor(tmp).toFixed();
-        var after = Math.ceil(tmp).toFixed();
-        var atPoint = tmp - before;
-        newData[i] = this.linearInterpolate(data[before], data[after], atPoint);
-    }
-    newData[fitCount - 1] = data[data.length - 1]; // for new allocation
-    return newData;
-}
-
-function matrixToArray(matrixData) {
-    var n = matrixData.length;
-    var m = matrixData[0].length;
-    var array = [];
-    for (i = 0; i < n; i++) {
-        for (j = 0; j < m; j++) {
-            array[i * m + j] = matrixData[i][j];
-        }
-    }
-    return array;
+function getGid(mousePos) {
+    var context = Matrix2d.canvas.node().getContext("2d");
+    var width = context.canvas.clientWidth;
+    var height = context.canvas.clientHeight;
+    var i = Math.floor((mousePos.y * Pse_isocline.initial_n) / height);
+    var j = Math.floor((mousePos.x * Pse_isocline.initial_m) / width);
+    if (i < 0)
+        i = 0;
+    if (j < 0)
+        j = 0;
+    return Pse_isocline.gid_matrix[i][j];
 }

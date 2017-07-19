@@ -32,6 +32,9 @@ var Matrix2d = {
     xAxis: null,
     yAxis: null,
     xAxisGroup: null,
+    xAxisLabel: null,
+    yAxisLabel: null,
+    viewerName: null,
     yAxisGroup: null,
     vmin: null,
     vmax: null
@@ -58,18 +61,32 @@ function matrix2d_init(matrix_data, matrix_shape, x_min, x_max, y_min, y_max, vm
     Matrix2d.canvas = canvas;
 
 
-
     var context = canvas.node().getContext("2d");
     var cHeight = context.canvas.clientHeight;
+    var xLabelHeight = cHeight + 50;
+    var yLabelHeight = cHeight / 2;
+    var xLabelWidth = context.canvas.clientWidth / 2 + 90;
+    var yLabelWidth = 50;
     var svgContainer = d3.select("#svg-container");
-
+    var xAxisLabel = svgContainer.append("text")
+        .attr("text-anchor", "middle")
+        .attr("transform", "translate(" + xLabelWidth + ", " + xLabelHeight + ")")
+        .text("X Axis Value");
+    var viewerName = svgContainer.append("text")
+        .attr("text-anchor", "middle")
+        .attr("transform", "translate(" + xLabelWidth + ",15)")
+        .text("Viewer Name");
+    var yAxisLabel = svgContainer.append("text")
+        .attr("text-anchor", "middle")
+        .attr("transform", "translate(" + yLabelWidth + ", " + yLabelHeight + ")rotate(-90)")
+        .text("Y Axis Value");
     var xAxisScale = d3.scale.linear()
         .domain([x_min, x_max]);
     var xAxis = d3.svg.axis()
         .orient("bot")
         .scale(xAxisScale);
     var xAxisGroup = svgContainer.append("g")
-        .attr("transform", "translate(35, " + cHeight + ")");
+        .attr("transform", "translate(90, " + cHeight + ")");
     var yAxisScale = d3.scale.linear()
         .domain([y_min, y_max]);
     var yAxis = d3.svg.axis()
@@ -77,7 +94,7 @@ function matrix2d_init(matrix_data, matrix_shape, x_min, x_max, y_min, y_max, vm
         .orient("left")
         .ticks(5);
     var yAxisGroup = svgContainer.append("g")
-        .attr("transform", "translate(35,0)");
+        .attr("transform", "translate(90,0)");
 
     Matrix2d.xAxisScale = xAxisScale;
     Matrix2d.yAxisScale = yAxisScale;
@@ -85,10 +102,15 @@ function matrix2d_init(matrix_data, matrix_shape, x_min, x_max, y_min, y_max, vm
     Matrix2d.yAxis = yAxis;
     Matrix2d.xAxisGroup = xAxisGroup;
     Matrix2d.yAxisGroup = yAxisGroup;
+    Matrix2d.xAxisLabel = xAxisLabel;
+    Matrix2d.yAxisLabel = yAxisLabel;
+    Matrix2d.viewerName = viewerName;
 
 
-    if(interpolate){
-        Matrix2d.data = matrixToArray(interpolateMatrix(canvas.clientWidth));
+    if (interpolate) {
+        Pse_isocline.initial_n = Matrix2d.n;
+        Pse_isocline.initial_m = Matrix2d.m;
+        Matrix2d.data = matrixToArray(interpolateMatrix(context.canvas.clientWidth, context.canvas.clientHeight));
     }
     drawCanvas();
     drawAxis(x_min, x_max, y_min, y_max);
@@ -139,6 +161,10 @@ function drawAxis() {
     var context = canvas.node().getContext("2d");
     var cWidth = context.canvas.clientWidth;
     var cHeight = context.canvas.clientHeight;
+    var xLabelHeight = cHeight + 70;
+    var yLabelHeight = cHeight / 2 + 30;
+    var xLabelWidth = context.canvas.clientWidth / 2 + 90;
+    var yLabelWidth = 50;
 
     var xAxisScale = Matrix2d.xAxisScale;
     var yAxisScale = Matrix2d.yAxisScale;
@@ -147,12 +173,106 @@ function drawAxis() {
 
     var xAxis = Matrix2d.xAxis.scale(xAxisScale);
     Matrix2d.xAxisGroup
-        .attr("transform", "translate(35, " + cHeight + ")")
+        .attr("transform", "translate(90, " + (cHeight + 30) + ")")
         .call(xAxis);
 
     var yAxis = Matrix2d.yAxis.scale(yAxisScale);
     Matrix2d.yAxisGroup
-        .attr("transform", "translate(35,0)")
+        .attr("transform", "translate(90,30)")
         .call(yAxis);
+
+    Matrix2d.xAxisLabel
+        .attr("transform", "translate(" + xLabelWidth + ", " + xLabelHeight + ")");
+     Matrix2d.viewerName
+        .attr("transform", "translate(" + xLabelWidth + ",15)");
+    Matrix2d.yAxisLabel
+        .attr("transform", "translate(" + yLabelWidth + ", " + yLabelHeight + ")rotate(-90)")
+
     updateLegend(Matrix2d.vmin, Matrix2d.vmax);
+}
+
+function interpolateMatrix(cWidth, cHeight) {
+    var dataMatrix = [];
+    for (var i = 0; i < Matrix2d.n; i++) {
+        dataMatrix[i] = [];
+        for (var j = 0; j < Matrix2d.m; j++) {
+            dataMatrix[i][j] = undefined;
+        }
+    }
+    var oldMatrix = Matrix2d.data;
+    for (i = 0; i < Matrix2d.n; i++)
+        for (j = 0; j < Matrix2d.m; j++)
+            dataMatrix[i][j] = oldMatrix[i * Matrix2d.m + j];
+    var ratioC = Math.floor((cWidth / 10) / Matrix2d.m);
+    var ratioL = Math.floor((cHeight / 10) / Matrix2d.n);
+    var spaceC = Math.floor((Matrix2d.m * ratioC) / (Matrix2d.m - 1));
+    var spaceL = Math.floor((Matrix2d.n * ratioL) / (Matrix2d.n - 1));
+    var n = (spaceL) * (Matrix2d.n - 1) + Matrix2d.n;
+    var m = (spaceC) * (Matrix2d.m - 1) + Matrix2d.m;
+    var newMatrix = [];
+    for (i = 0; i < n; i++) {
+        newMatrix[i] = [];
+        for (j = 0; j < m; j++) {
+            newMatrix[i][j] = undefined;
+        }
+    }
+    for (i = 0; i < Matrix2d.n; i++) {
+        var line = i * spaceL;
+        var col = 0;
+        newMatrix[line][col] = dataMatrix[i][0];
+        for (var k = 1; k < Matrix2d.m; k++) {
+            col += spaceC;
+            newMatrix[line][col] = dataMatrix[i][k];
+        }
+    }
+    for (j = 0; j < Matrix2d.m; j++) {
+        var column = [];
+        for (i = 0; i < Matrix2d.n; i++) {
+            column.push(dataMatrix[i][j])
+        }
+        interpolatedColumn = interpolateArray(column, n);
+        for (i = 0; i < n; i++) {
+            newMatrix[i][j * spaceC] = interpolatedColumn[i];
+        }
+    }
+    for (i = 0; i < n; i++) {
+        var intermediateLine = newMatrix[i].filter(function (element) {
+            return element !== undefined;
+        });
+        newMatrix[i] = interpolateArray(intermediateLine, m);
+    }
+    Matrix2d.n = n;
+    Matrix2d.m = m;
+    return newMatrix;
+}
+
+function linearInterpolate(before, after, atPoint) {
+    return before + (after - before) * atPoint;
+}
+
+function interpolateArray(data, fitCount) {
+    var newData = [];
+    var springFactor = (data.length - 1) / (fitCount - 1);
+    newData[0] = data[0]; // for new allocation
+    for (var i = 1; i < fitCount - 1; i++) {
+        var tmp = i * springFactor;
+        var before = Math.floor(tmp).toFixed();
+        var after = Math.ceil(tmp).toFixed();
+        var atPoint = tmp - before;
+        newData[i] = this.linearInterpolate(data[before], data[after], atPoint);
+    }
+    newData[fitCount - 1] = data[data.length - 1]; // for new allocation
+    return newData;
+}
+
+function matrixToArray(matrixData) {
+    var n = matrixData.length;
+    var m = matrixData[0].length;
+    var array = [];
+    for (i = 0; i < n; i++) {
+        for (j = 0; j < m; j++) {
+            array[i * m + j] = matrixData[i][j];
+        }
+    }
+    return array;
 }

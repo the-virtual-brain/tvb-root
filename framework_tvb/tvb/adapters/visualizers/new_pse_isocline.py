@@ -144,7 +144,7 @@ class PseIsoModel(object):
             operation_results = dao.get_results_for_operation(operation.id)
             if operation_results:
                 datatype = operation_results[0]
-                self.datatypes_gids[index_x][index_y] = datatype.gid
+                self.datatypes_gids[index_x][index_y] = str(datatype.gid)
 
                 if datatype.type == "DatatypeMeasure":
                     measures = dao.get_generic_entity(DatatypeMeasure, datatype.id)
@@ -225,13 +225,8 @@ class IsoclinePSEAdapter(ABCDisplayer):
         data_matrix = self.model.apriori_data[selected_metric]
         data_matrix = numpy.rot90(data_matrix)
         data_matrix = numpy.flipud(data_matrix)
-
-        # get a constant resolution mapping 1 point onto 5 pixels
-        # factor = numpy.sqrt((2 * 10000) / (data_matrix.shape[0] * data_matrix.shape[1]))
-        # data_matrix = interpolate_matrix(data_matrix, data_matrix.shape, 5)
         matrix_data = dump_prec(data_matrix.flat)
         matrix_shape = json.dumps(data_matrix.squeeze().shape)
-
         x_min = self.model.apriori_x[0]
         x_max = self.model.apriori_x[self.model.apriori_x.size - 1]
         y_min = self.model.apriori_y[0]
@@ -250,10 +245,12 @@ class IsoclinePSEAdapter(ABCDisplayer):
 
     def launch(self, datatype_group, **kwargs):
         params = self.get_metric_matrix(datatype_group)
-        gid_matrix = numpy.asarray(self.model.datatypes_gids)
+        gid_matrix = self.model.datatypes_gids
+        gid_matrix = numpy.rot90(gid_matrix)
+        gid_matrix=gid_matrix.tolist()
         params["title"] = "Pse-Isocline Visualizer"
         params["url_base"] = "/burst/explore/get_metric_matrix/" + datatype_group.gid
-        params["gid_matrix"] = gid_matrix
-        params["available_metrics"] = self.model.metrics.keys()
+        params["gid_matrix"] = json.dumps(gid_matrix)
+        params["available_metrics"] = reversed(self.model.metrics.keys())
         return self.build_display_result('pse_isocline/new_view', params,
                                          pages=dict(controlPage="pse_isocline/controls"))
