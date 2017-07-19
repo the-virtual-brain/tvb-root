@@ -167,6 +167,15 @@ class ABCDisplayer(ABCSynchronous):
                 'groupedLabels': sub_selectable.get_grouped_space_labels()}
 
 
+    @staticmethod
+    def dump_with_precision(xs, precision=3):
+        """
+        Dump a list of numbers into a string, each at the specified precision.
+        """
+        format_str = "%0." + str(precision) + "g"
+        return "[" + ",".join(format_str % s for s in xs) + "]"
+
+
 
 class ABCMPLH5Displayer(ABCDisplayer):
     """

@@ -83,11 +83,11 @@ class ExplorationControllerTest(BaseTransactionalControllerTest):
         """
         Test that isocline PSE gets launched.
         """
-        result = self.controller.draw_isocline_exploration(self.dt_group.gid, 500, 600)
-        self.assertTrue(DatatypesFactory.DATATYPE_MEASURE_METRIC.keys()[0] in result['figureNumbers'])
-        self.assertTrue(result['isAdapter'])
-        self.assertEqual(DatatypesFactory.DATATYPE_MEASURE_METRIC, result['metrics'])
-        self.assertTrue(result['showFullToolbar'])
+        result = self.controller.draw_isocline_exploration(self.dt_group.gid)
+        self.assertTrue(isinstance(result['canvasName'], (str, unicode)))
+        self.assertTrue(isinstance(result['xAxisName'], (str, unicode)))
+        self.assertTrue(isinstance(result['url_base'], (str, unicode)))
+        self.assertEqual(DatatypesFactory.DATATYPE_MEASURE_METRIC.keys(), result['available_metrics'])
 
 
 def suite():

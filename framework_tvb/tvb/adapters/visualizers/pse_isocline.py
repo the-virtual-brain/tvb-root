@@ -35,7 +35,6 @@
 
 import numpy
 import json
-from scipy import interpolate
 from tvb.core.adapters.abcdisplayer import ABCDisplayer
 from tvb.basic.logger.builder import get_logger
 from tvb.core.entities.model import DataTypeGroup, OperationGroup, STATUS_STARTED
@@ -43,28 +42,6 @@ from tvb.core.entities.storage import dao
 from tvb.core.adapters.exceptions import LaunchException
 from tvb.datatypes.mapped_values import DatatypeMeasure
 from tvb.basic.filters.chain import FilterChain
-
-
-def dump_prec(xs, prec=3):
-    """ Dump a list of numbers into a string, each at the specified precision. """
-    format_str = "%0." + str(prec) + "g"
-    return "[" + ",".join(format_str % s for s in xs) + "]"
-
-
-def interpolate_matrix(inputMatrix, matrix_shape, factor):
-    mmin = 0
-    m = matrix_shape[1]
-    n = matrix_shape[0]
-    x_array_interpolate = numpy.linspace(mmin, m, m)
-    y_array_interpolate = numpy.linspace(mmin, n, n)
-    x_matrix, y_matrix = numpy.meshgrid(x_array_interpolate, y_array_interpolate)
-    f = interpolate.interp2d(x_matrix, y_matrix, inputMatrix, kind='linear')
-
-    new_x_array_interpolate = numpy.linspace(mmin, m, int(round(m * factor)))
-    new_y_array_interpolate = numpy.linspace(mmin, n, int(round(n * factor)))
-
-    interpolated_matrix = f(new_x_array_interpolate, new_y_array_interpolate)
-    return interpolated_matrix
 
 
 class PseIsoModel(object):
@@ -204,12 +181,14 @@ class IsoclinePSEAdapter(ABCDisplayer):
                  'conditions': FilterChain(fields=[FilterChain.datatype + ".no_of_ranges"],
                                            operations=["=="], values=[2])}]
 
+
     def get_required_memory_size(self, **kwargs):
         """
         Return the required memory to run this algorithm.
         """
         # Don't know how much memory is needed.
         return -1
+
 
     def burst_preview(self, datatype_group_gid):
         """
@@ -218,13 +197,16 @@ class IsoclinePSEAdapter(ABCDisplayer):
         datatype_group = dao.get_datatype_group_by_gid(datatype_group_gid)
         return self.launch(datatype_group=datatype_group)
 
-    def get_metric_matrix(self, datatype_group, selected_metric=u'GlobalVariance'):
+
+    def get_metric_matrix(self, datatype_group, selected_metric=None):
         self.model = PseIsoModel.from_db(datatype_group.fk_operation_group)
+        if selected_metric is None:
+            selected_metric = self.model.metrics.keys()[0]
 
         data_matrix = self.model.apriori_data[selected_metric]
         data_matrix = numpy.rot90(data_matrix)
         data_matrix = numpy.flipud(data_matrix)
-        matrix_data = dump_prec(data_matrix.flat)
+        matrix_data = ABCDisplayer.dump_with_precision(data_matrix.flat)
         matrix_shape = json.dumps(data_matrix.squeeze().shape)
         x_min = self.model.apriori_x[0]
         x_max = self.model.apriori_x[self.model.apriori_x.size - 1]
@@ -242,11 +224,12 @@ class IsoclinePSEAdapter(ABCDisplayer):
                     vmin=vmin,
                     vmax=vmax)
 
+
     @staticmethod
     def build_node_array(datatype_group):
         if datatype_group is None:
-             raise Exception("Selected DataTypeGroup is no longer present in the database. "
-                              "It might have been remove or the specified id is not the correct one.")
+            raise Exception("Selected DataTypeGroup is no longer present in the database. "
+                            "It might have been remove or the specified id is not the correct one.")
 
         operation_group = dao.get_operationgroup_by_id(datatype_group.fk_operation_group)
         operations = dao.get_operations_in_group(operation_group.id)
@@ -256,27 +239,29 @@ class IsoclinePSEAdapter(ABCDisplayer):
             if len(datatypes) > 0:
                 datatype = datatypes[0]
                 node_info_array.append(dict(operation_id=operation_.id,
-                                        datatype_gid=datatype.gid,
-                                        datatype_type=datatype.type,
-                                        datatype_subject=datatype.subject,
-                                        datatype_invalid=datatype.invalid))
+                                            datatype_gid=datatype.gid,
+                                            datatype_type=datatype.type,
+                                            datatype_subject=datatype.subject,
+                                            datatype_invalid=datatype.invalid))
         return node_info_array
 
-    def prepare_node_data(self,datatype_group,matrix_shape):
-        matrix_shape=json.loads(matrix_shape)
-        matrix_shape=(matrix_shape[0],matrix_shape[1])
+
+    def prepare_node_data(self, datatype_group, matrix_shape):
+        matrix_shape = json.loads(matrix_shape)
+        matrix_shape = (matrix_shape[0], matrix_shape[1])
         matrix_node_info = numpy.reshape(self.build_node_array(datatype_group), matrix_shape)
         matrix_node_info = numpy.flipud(matrix_node_info).tolist()
         return matrix_node_info
 
+
     def launch(self, datatype_group, **kwargs):
         params = self.get_metric_matrix(datatype_group)
         params["title"] = "Pse-Isocline Visualizer"
-        params["canvasName"] = "Interpolated values for metric "
+        params["canvasName"] = "Interpolated values for PSE metric: "
         params["xAxisName"] = self.model.range1_name
         params["yAxisName"] = self.model.range2_name
         params["url_base"] = "/burst/explore/get_metric_matrix/" + datatype_group.gid
         params["node_info_url"] = "/burst/explore/get_node_matrix/" + datatype_group.gid
-        params["available_metrics"] = reversed(self.model.metrics.keys())
+        params["available_metrics"] = self.model.metrics.keys()
         return self.build_display_result('pse_isocline/view', params,
                                          pages=dict(controlPage="pse_isocline/controls"))

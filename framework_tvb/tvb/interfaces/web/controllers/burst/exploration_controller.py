@@ -53,7 +53,6 @@ PSE_ISO = "ISO"
 REDIRECT_MSG = '/burst/explore/pse_error?adapter_name=%s&message=%s'
 
 
-
 class ParameterExplorationController(BaseController):
     """
     Controller to handle PSE actions.
@@ -158,7 +157,7 @@ class ParameterExplorationController(BaseController):
 
 
     @expose_json
-    def get_metric_matrix(self, datatype_group_gid, metric_name):
+    def get_metric_matrix(self, datatype_group_gid, metric_name=None):
 
         algorithm = self.flow_service.get_algorithm_by_module_and_class(ISOCLINE_PSE_ADAPTER_MODULE,
                                                                         ISOCLINE_PSE_ADAPTER_CLASS)
@@ -166,7 +165,7 @@ class ParameterExplorationController(BaseController):
         if self._is_compatible(algorithm, datatype_group_gid):
             try:
                 datatype_group = dao.get_datatype_group_by_gid(datatype_group_gid)
-                return adapter.get_metric_matrix(datatype_group,metric_name)
+                return adapter.get_metric_matrix(datatype_group, metric_name)
             except LaunchException, ex:
                 self.logger.error(ex.message)
                 error_msg = urllib.quote(ex.message)
@@ -175,9 +174,10 @@ class ParameterExplorationController(BaseController):
 
         name = urllib.quote(adapter._ui_name)
         raise cherrypy.HTTPRedirect(REDIRECT_MSG % (name, error_msg))
+
 
     @expose_json
-    def get_node_matrix(self, datatype_group_gid,matrix_shape):
+    def get_node_matrix(self, datatype_group_gid, matrix_shape):
 
         algorithm = self.flow_service.get_algorithm_by_module_and_class(ISOCLINE_PSE_ADAPTER_MODULE,
                                                                         ISOCLINE_PSE_ADAPTER_CLASS)
@@ -185,7 +185,7 @@ class ParameterExplorationController(BaseController):
         if self._is_compatible(algorithm, datatype_group_gid):
             try:
                 datatype_group = dao.get_datatype_group_by_gid(datatype_group_gid)
-                return adapter.prepare_node_data(datatype_group,matrix_shape)
+                return adapter.prepare_node_data(datatype_group, matrix_shape)
             except LaunchException, ex:
                 self.logger.error(ex.message)
                 error_msg = urllib.quote(ex.message)
@@ -194,4 +194,3 @@ class ParameterExplorationController(BaseController):
 
         name = urllib.quote(adapter._ui_name)
         raise cherrypy.HTTPRedirect(REDIRECT_MSG % (name, error_msg))
-

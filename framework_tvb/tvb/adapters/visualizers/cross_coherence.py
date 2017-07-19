@@ -35,7 +35,7 @@ A displayer for the cross coherence of a time series.
 
 """
 
-from tvb.adapters.visualizers.matrix_viewer import MappedArraySVGVisualizerMixin, dump_prec
+from tvb.adapters.visualizers.matrix_viewer import MappedArraySVGVisualizerMixin
 from tvb.core.adapters.abcdisplayer import ABCDisplayer
 from tvb.datatypes.spectral import CoherenceSpectrum
 
@@ -55,7 +55,7 @@ class CrossCoherenceVisualizer(MappedArraySVGVisualizerMixin, ABCDisplayer):
         """Construct data for visualization and launch it."""
 
         # get data from coher datatype, convert to json
-        frequency = dump_prec(datatype.get_data('frequency').flat)
+        frequency = ABCDisplayer.dump_with_precision(datatype.get_data('frequency').flat)
         array_data = datatype.get_data('array_data')
 
         params = self.compute_raw_matrix_params(array_data)

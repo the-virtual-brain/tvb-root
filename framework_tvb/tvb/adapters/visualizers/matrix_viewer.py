@@ -71,11 +71,6 @@ def compute_2d_view(matrix, slice_s):
     return matrix[matrix_slice].astype(float), slice_used, matrix_slice == default
 
 
-def dump_prec(xs, prec=3):
-    """ Dump a list of numbers into a string, each at the specified precision. """
-    format_str = "%0." + str(prec) + "g"
-    return "[" + ",".join(format_str % s for s in xs) + "]"
-
 
 class MappedArraySVGVisualizerMixin(object):
     """
@@ -96,7 +91,7 @@ class MappedArraySVGVisualizerMixin(object):
         """
         Serializes matrix data, shape and stride metadata to json
         """
-        matrix_data = dump_prec(matrix.flat)
+        matrix_data = ABCDisplayer.dump_with_precision(matrix.flat)
         matrix_shape = json.dumps(matrix.shape)
         matrix_strides = json.dumps([x / matrix.itemsize for x in matrix.strides])
 
