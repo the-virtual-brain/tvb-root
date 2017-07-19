@@ -27,10 +27,10 @@
             </select>
         </li>
     </ul>
-    <div class="matrix2d-draw-content">
-        <div class="matrix-legend" id="colorWeightsLegend"></div>
+    <div class="matrix2d-draw-content" id="canvasParent">
+        <div class="matrix-legend" id="colorWeightsLegendISO"></div>
         <div class="matrix-legend">
-            <table id="table-colorWeightsLegend" class="table-legend-labels">
+            <table id="table-colorWeightsLegendISO" class="table-legend-labels">
                 <py:for each='label in range(7)'>
                     <py:if test='label != 0'>
                         <tr height="${str(100/8) + '%'}" style='vertical-align: bottom;'>
@@ -58,6 +58,7 @@
             pse_isocline_init('${canvasName}','${xAxisName}','${yAxisName}','${matrix_shape}',
                 ${x_min}, ${x_max}, ${y_min}, ${y_max}, '${url_base}','${node_info_url}');
             window.onresize = drawAxis;
+            redrawCanvas('${url_base}', 'GlobalVariance','${canvasName}');
         });
     </script>
 </div>

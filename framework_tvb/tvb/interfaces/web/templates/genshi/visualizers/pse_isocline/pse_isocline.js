@@ -26,17 +26,23 @@ var Pse_isocline = {
     Matrix2d: Matrix2d,
     initial_n: null,
     matrix_node_info: null,
-    initial_m: null
+    initial_m: null,
+    url_base: null,
+    canvas_name: null
 };
 
-function pse_isocline_init(canvasName,xAxisName,yAxisName,matrix_shape, x_min, x_max, y_min, y_max, url_base, node_info_url) {
+function pse_isocline_init(canvasName, xAxisName, yAxisName, matrix_shape, x_min, x_max, y_min, y_max, url_base, node_info_url) {
 
-    matrix2d_init(canvasName,xAxisName,yAxisName,null, matrix_shape, x_min, x_max, y_min, y_max, null, null);
+    matrix2d_init(canvasName, xAxisName, yAxisName, null, matrix_shape, x_min, x_max, y_min, y_max, null, null);
     Pse_isocline.initial_n = Matrix2d.n;
     Pse_isocline.initial_m = Matrix2d.m;
+    Pse_isocline.url_base = url_base;
+    Pse_isocline.canvas_name = canvasName;
+    // conflict between continuous and discrete IDs
+    Pse_isocline.Matrix2d.viewerType = "ISO";
     loadNodeMatrix(node_info_url, matrix_shape);
     var context = Matrix2d.canvas.node().getContext("2d");
-    redrawCanvas(url_base, 'GlobalVariance',canvasName);
+    drawAxis();
     var canvas = document.getElementById('main-canvas');
     canvas.addEventListener('click', function (evt) {
         var mousePos = getMousePos(canvas, evt);
@@ -48,11 +54,14 @@ function pse_isocline_init(canvasName,xAxisName,yAxisName,matrix_shape, x_min, x
         var nodeInfo = getNodeInfo(mousePos);
         var toolTipText = 'x: ' + mousePos.x + '<br/>' + 'y: ' + mousePos.y + "<br/> Operation id: " + nodeInfo["operation_id"] + "<br/> Datatype gid: " + nodeInfo["datatype_gid"] + "<br/> Datatype type: " + nodeInfo["datatype_type"] + "<br/> Datatype subject: " + nodeInfo["datatype_subject"] + "<br/> Datatype invalid: " + nodeInfo["datatype_invalid"];
         var toolTipDiv = d3.select(".matrix2d-toolTip");
+        var canvasParent = document.getElementById("canvasParent");
+        var xOffset = Math.floor((canvasParent.clientWidth * 10) / 100);
+        var yOffset = Math.floor((canvasParent.clientHeight * 6) / 100);
         toolTipDiv.html(toolTipText);
         toolTipDiv.style({
             position: "absolute",
-            left: mousePos.x + 100 + "px",
-            top: mousePos.y + 50 + "px",
+            left: mousePos.x + xOffset + "px",
+            top: mousePos.y + yOffset + "px",
             display: "block",
             'background-color': '#C0C0C0',
             border: '1px solid #fdd',
@@ -70,12 +79,14 @@ function pse_isocline_init(canvasName,xAxisName,yAxisName,matrix_shape, x_min, x
 }
 
 function redrawCanvas(base_url, selected_metric, canvasName) {
+    base_url = Pse_isocline.url_base;
+    canvasName = Pse_isocline.canvas_name;
     doAjaxCall({
         url: base_url + '/' + selected_metric,
         type: 'POST',
         async: false,
         success: function (data) {
-            Matrix2d.canvasTitle.text(canvasName+selected_metric);
+            Matrix2d.canvasTitle.text(canvasName + selected_metric);
             var context = Matrix2d.canvas.node().getContext("2d");
             var dictionar = $.parseJSON(data);
             Matrix2d.data = $.parseJSON(dictionar.matrix_data);
@@ -87,6 +98,7 @@ function redrawCanvas(base_url, selected_metric, canvasName) {
             var interpolatedMatrix = interpolateMatrix(context.canvas.clientWidth, context.canvas.clientHeight);
             Matrix2d.data = matrixToArray(interpolatedMatrix);
             ColSch_initColorSchemeComponent(Matrix2d.vmin, Matrix2d.vmax);
+            ColSch_initColorSchemeGUI(Matrix2d.vmin, Matrix2d.vmax, drawCanvas);
             drawCanvas();
         }
     });
@@ -121,18 +133,18 @@ function getIndicesForMousePosition(mousePos) {
         i = 0;
     if (j < 0)
         j = 0;
-    return [i,j];
+    return [i, j];
 }
 function getGid(mousePos) {
-    var indices=getIndicesForMousePosition(mousePos);
-    var i=indices[0];
-    var j=indices[1];
+    var indices = getIndicesForMousePosition(mousePos);
+    var i = indices[0];
+    var j = indices[1];
     return Pse_isocline.matrix_node_info[i][j]["datatype_gid"];
 }
 
 function getNodeInfo(mousePos) {
-   var indices=getIndicesForMousePosition(mousePos);
-    var i=indices[0];
-    var j=indices[1];
+    var indices = getIndicesForMousePosition(mousePos);
+    var i = indices[0];
+    var j = indices[1];
     return Pse_isocline.matrix_node_info[i][j];
 }

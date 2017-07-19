@@ -108,8 +108,8 @@ div.flot-tick-label{
 
 .matrix2d-main-canvas {
     position: absolute;
-    left:90px;
-    top:30px;
+    left:8%;
+    top:6%;
     width:80%;
     height: 80%;
 }

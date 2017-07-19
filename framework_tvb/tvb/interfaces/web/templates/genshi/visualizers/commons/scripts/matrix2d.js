@@ -37,7 +37,8 @@ var Matrix2d = {
     canvasTitle: null,
     yAxisGroup: null,
     vmin: null,
-    vmax: null
+    vmax: null,
+    viewerType: ""
 };
 
 function matrix2d_init(canvasName, xAxisName, yAxisName, matrix_data, matrix_shape, x_min, x_max, y_min, y_max, vmin, vmax) {
@@ -49,8 +50,7 @@ function matrix2d_init(canvasName, xAxisName, yAxisName, matrix_data, matrix_sha
         .attr("width", m)
         .attr("height", n);
     if (matrix_data) {
-        var data = $.parseJSON(matrix_data);
-        Matrix2d.data = data;
+        Matrix2d.data = $.parseJSON(matrix_data);
         Matrix2d.vmin = vmin;
         Matrix2d.vmax = vmax;
         ColSch_initColorSchemeComponent(vmin, vmax);
@@ -105,18 +105,18 @@ function matrix2d_init(canvasName, xAxisName, yAxisName, matrix_data, matrix_sha
     Matrix2d.yAxisLabel = yAxisLabel;
     Matrix2d.canvasTitle = canvasTitle;
 
-    drawAxis(x_min, x_max, y_min, y_max);
-    if (data) {
+    if (matrix_data) {
+        drawAxis(x_min, x_max, y_min, y_max);
         drawCanvas();
     }
 
 }
 
-function updateLegend(minColor, maxColor) {
+function updateLegend(minColor, maxColor, viewerName) {
     var legendContainer, legendHeight, tableContainer;
-    legendContainer = d3.select("#colorWeightsLegend");
+    legendContainer = d3.select("#colorWeightsLegend"+viewerName);
     legendHeight = legendContainer.node().getBoundingClientRect().height;
-    tableContainer = d3.select("#table-colorWeightsLegend");
+    tableContainer = d3.select("#table-colorWeightsLegend"+viewerName);
     ColSch_updateLegendColors(legendContainer.node(), legendHeight * 95 / 100);
     ColSch_updateLegendLabels(tableContainer.node(), minColor, maxColor, "95%");
 }
@@ -149,7 +149,7 @@ function drawCanvas() {
         }
     }
     context.putImageData(image, 0, 0);
-    updateLegend(vmin, vmax);
+    updateLegend(vmin, vmax, Matrix2d.viewerType);
 }
 
 function drawAxis() {
@@ -157,10 +157,13 @@ function drawAxis() {
     var context = canvas.node().getContext("2d");
     var cWidth = context.canvas.clientWidth;
     var cHeight = context.canvas.clientHeight;
-    var xLabelHeight = cHeight + 70;
-    var yLabelHeight = cHeight / 2 + 30;
-    var xLabelWidth = context.canvas.clientWidth / 2 + 90;
-    var yLabelWidth = 50;
+    var canvasParent=document.getElementById("canvasParent");
+    var xOffset=Math.floor((canvasParent.clientWidth*8)/100);
+    var yOffset=Math.floor((canvasParent.clientHeight*6)/100);
+    var xLabelHeight = cHeight + 2.5*yOffset;
+    var yLabelHeight = cHeight / 2 + yOffset;
+    var xLabelWidth = context.canvas.clientWidth / 2 + xOffset;
+    var yLabelWidth = xOffset/2;
 
     var xAxisScale = Matrix2d.xAxisScale;
     var yAxisScale = Matrix2d.yAxisScale;
@@ -169,18 +172,18 @@ function drawAxis() {
 
     var xAxis = Matrix2d.xAxis.scale(xAxisScale);
     Matrix2d.xAxisGroup
-        .attr("transform", "translate(90, " + (cHeight + 30) + ")")
+        .attr("transform", "translate("+xOffset+", " + (cHeight + yOffset) + ")")
         .call(xAxis);
 
     var yAxis = Matrix2d.yAxis.scale(yAxisScale);
     Matrix2d.yAxisGroup
-        .attr("transform", "translate(90,30)")
+        .attr("transform", "translate("+xOffset+","+yOffset+")")
         .call(yAxis);
 
     Matrix2d.xAxisLabel
         .attr("transform", "translate(" + xLabelWidth + ", " + xLabelHeight + ")");
     Matrix2d.canvasTitle
-        .attr("transform", "translate(" + xLabelWidth + ",15)");
+        .attr("transform", "translate(" + xLabelWidth + ","+yOffset/2+")");
     Matrix2d.yAxisLabel
         .attr("transform", "translate(" + yLabelWidth + ", " + yLabelHeight + ")rotate(-90)")
 }
