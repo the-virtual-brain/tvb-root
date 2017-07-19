@@ -256,7 +256,7 @@ class IsoclinePSEAdapter(ABCDisplayer):
 
     def launch(self, datatype_group, **kwargs):
         params = self.get_metric_matrix(datatype_group)
-        params["title"] = "Pse-Isocline Visualizer"
+        params["title"] = self._ui_name
         params["canvasName"] = "Interpolated values for PSE metric: "
         params["xAxisName"] = self.model.range1_name
         params["yAxisName"] = self.model.range2_name

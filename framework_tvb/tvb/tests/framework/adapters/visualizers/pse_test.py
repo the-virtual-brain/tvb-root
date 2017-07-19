@@ -79,9 +79,7 @@ class PSETest(TransactionalTestCase):
         viewer = IsoclinePSEAdapter()
         result = viewer.launch(self.group)
         self.assertEqual(viewer._ui_name, result["title"])
-        self.assertEqual(TvbProfile.current.web.MPLH5_SERVER_URL, result["mplh5ServerURL"])
-        self.assertEqual(1, len(result["figureNumbers"]))
-        self.assertEqual(1, len(result["metrics"]))
+        self.assertEqual(1, len(result["available_metrics"]))
 
 
 def suite():
