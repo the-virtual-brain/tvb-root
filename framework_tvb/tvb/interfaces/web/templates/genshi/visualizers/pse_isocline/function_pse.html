@@ -1,9 +1,4 @@
-<div xmlns:py="http://genshi.edgewall.org/">
-    <link type="text/css" rel="stylesheet" href="/static/style/section_visualisers.css"/>
-
-    <script type="text/javascript" src="/static/js/d3.v3.js"></script>
-    <script type="text/javascript" src="/static/coloring/colorSchemeComponent.js"></script>
-
+<py xmlns:py="http://genshi.edgewall.org/">
 
     <!--! Controls for changing metrics -->
     <ul class="toolbar-inline">
@@ -22,9 +17,9 @@
         </li>
     </ul>
     <div class="matrix2d-draw-content" id="canvasParent">
-        <div class="matrix-legend" id="colorWeightsLegend"></div>
+        <div class="matrix-legend" id="colorWeightsLegendISO"></div>
         <div class="matrix-legend">
-            <table id="table-colorWeightsLegend" class="table-legend-labels">
+            <table id="table-colorWeightsLegendISO" class="table-legend-labels">
                 <py:for each='label in range(7)'>
                     <py:if test='label != 0'>
                         <tr height="${str(100/8) + '%'}" style='vertical-align: bottom;'>
@@ -52,4 +47,4 @@
             window.onresize = drawAxis;
         });
     </script>
-</div>
+</py>

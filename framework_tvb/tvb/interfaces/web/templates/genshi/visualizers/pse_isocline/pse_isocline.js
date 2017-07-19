@@ -52,7 +52,7 @@ function pse_isocline_init(canvasName, xAxisName, yAxisName, matrix_shape, x_min
     canvas.addEventListener('mousemove', function (evt) {
         var mousePos = getMousePos(canvas, evt);
         var nodeInfo = getNodeInfo(mousePos);
-        var toolTipText = 'x: ' + mousePos.x + '<br/>' + 'y: ' + mousePos.y + "<br/> Operation id: " + nodeInfo["operation_id"] + "<br/> Datatype gid: " + nodeInfo["datatype_gid"] + "<br/> Datatype type: " + nodeInfo["datatype_type"] + "<br/> Datatype subject: " + nodeInfo["datatype_subject"] + "<br/> Datatype invalid: " + nodeInfo["datatype_invalid"];
+        var toolTipText = "Operation id: " + nodeInfo["operation_id"] + "<br/> Datatype gid: " + nodeInfo["datatype_gid"] + "<br/> Datatype type: " + nodeInfo["datatype_type"] + "<br/> Datatype subject: " + nodeInfo["datatype_subject"] + "<br/> Datatype invalid: " + nodeInfo["datatype_invalid"];
         var toolTipDiv = d3.select(".matrix2d-toolTip");
         var canvasParent = document.getElementById("canvasParent");
         var xOffset = Math.floor((canvasParent.clientWidth * 10) / 100);
