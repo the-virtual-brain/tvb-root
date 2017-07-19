@@ -1,0 +1,65 @@
+<div id="section-pse" class="view-column"
+     xmlns:py="http://genshi.edgewall.org/">
+
+    <link type="text/css" rel="stylesheet" href="/static/style/section_burst.css"/>
+    <link type="text/css" rel="stylesheet" href="/static/style/section_visualisers.css?$currentVersionJS"/>
+
+    <script type="text/javascript" src="/static/js/d3.v3.js"></script>
+    <!--! We need projectTree.js for launching algorithm methods, from overlay. -->
+    <script type="text/javascript" src="/static/js/projectTree.js?$currentVersionJS"></script>
+    <script type="text/javascript" src="/static/coloring/colorSchemeComponent.js?$currentVersionJS"></script>
+    <script type="text/javascript" src="/static_view/pse_isocline/pse_isocline.js?$currentVersionJS"></script>
+
+
+    <!--! Controls for changing metrics -->
+    <ul class="toolbar-inline">
+        <li>
+            <label for="color_metric_select">Color metric</label>
+            <select id="color_metric_select" onchange="drawCanvas();">
+                <option value="None">None</option>
+                <py:for each="metric in available_metrics">
+                    <py:if test="metric==color_metric">
+                        <option value="$metric" selected="selected">$metric</option>
+                    </py:if>
+                    <py:if test="metric!=color_metric">
+                        <option value="$metric">$metric</option>
+                    </py:if>
+                </py:for>
+            </select>
+        </li>
+        </ul>
+
+        <!--TODO move styles to CSS, rename and generalize wavelet components-->
+        <!--TODO update viewer when metric is selected-->
+        <div style="height:90% ; position:relative;">
+            <div class="matrix-legend" id="colorWeightsLegend"></div>
+            <div class="matrix-legend">
+                <table id="table-colorWeightsLegend" class="table-legend-labels">
+                    <py:for each='label in range(7)'>
+                        <py:if test='label != 0'>
+                            <tr height="${str(100/8) + '%'}" style='vertical-align: bottom;'>
+                                <td>${label}</td>
+                            </tr>
+                        </py:if>
+                        <py:if test='label == 0'>
+                            <tr height="20px">
+                                <td>${label}</td>
+                            </tr>
+                        </py:if>
+                    </py:for>
+                </table>
+            </div>
+            <svg class="wavelet-spectrogram-svg-container" id="svg-container"></svg>
+            <canvas class="wavelet-spectrogram-main-canvas" id="main-canvas"></canvas>
+        </div>
+
+        <script type="text/javascript">
+            $(document).ready(function () {
+                $("#main").addClass("colscheme-1");
+                pse_isocline_init('${matrix_data}', '${matrix_shape}', ${x_min}, ${x_max}, ${y_min}, ${y_max}, ${vmin}, ${vmax});
+                window.onresize = drawAxis;
+            });
+        </script>
+
+
+</div>
