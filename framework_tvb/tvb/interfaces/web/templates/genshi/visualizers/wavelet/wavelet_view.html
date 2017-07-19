@@ -29,7 +29,7 @@
     <script type="text/javascript">
         $(document).ready(function () {
             $("#main").addClass("colscheme-1");
-            matrix2d_init('${matrix_data}', '${matrix_shape}', ${start_time}, ${end_time}, ${freq_lo}, ${freq_hi}, ${vmin}, ${vmax});
+            matrix2d_init('${canvasName}','${xAxisName}','${yAxisName}','${matrix_data}', '${matrix_shape}', ${start_time}, ${end_time}, ${freq_lo}, ${freq_hi}, ${vmin}, ${vmax});
             window.onresize = drawAxis;
         });
     </script>

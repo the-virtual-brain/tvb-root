@@ -176,3 +176,22 @@ class ParameterExplorationController(BaseController):
         name = urllib.quote(adapter._ui_name)
         raise cherrypy.HTTPRedirect(REDIRECT_MSG % (name, error_msg))
 
+    @expose_json
+    def get_node_matrix(self, datatype_group_gid,matrix_shape):
+
+        algorithm = self.flow_service.get_algorithm_by_module_and_class(ISOCLINE_PSE_ADAPTER_MODULE,
+                                                                        ISOCLINE_PSE_ADAPTER_CLASS)
+        adapter = ABCAdapter.build_adapter(algorithm)
+        if self._is_compatible(algorithm, datatype_group_gid):
+            try:
+                datatype_group = dao.get_datatype_group_by_gid(datatype_group_gid)
+                return adapter.prepare_node_data(datatype_group,matrix_shape)
+            except LaunchException, ex:
+                self.logger.error(ex.message)
+                error_msg = urllib.quote(ex.message)
+        else:
+            error_msg = urllib.quote("Isocline PSE requires a 2D range of floating point values.")
+
+        name = urllib.quote(adapter._ui_name)
+        raise cherrypy.HTTPRedirect(REDIRECT_MSG % (name, error_msg))
+

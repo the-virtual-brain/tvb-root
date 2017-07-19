@@ -103,7 +103,10 @@ class WaveletSpectrogramVisualizer(ABCDisplayer):
         scale_max = data_matrix[:, scale_range_start:scale_range_end, :].max()
         matrix_data = dump_prec(data_matrix.flat)
         matrix_shape = json.dumps(data_matrix.squeeze().shape)
-        params = dict(title="Wavelet Spectrogram Visualizer",
+        params = dict(canvasName=input_data.source.type,
+                      xAxisName="Time (%s)" % str(input_data.source.sample_period_unit),
+                      yAxisName="Frequency (%s)" % str("kHz"),
+                      title="Wavelet Spectrogram Visualizer",
                       matrix_data=matrix_data,
                       matrix_shape=matrix_shape,
                       start_time=start_time,

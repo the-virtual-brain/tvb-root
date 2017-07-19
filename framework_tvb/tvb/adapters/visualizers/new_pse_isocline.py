@@ -264,6 +264,13 @@ class IsoclinePSEAdapter(ABCDisplayer):
                                         datatype_invalid=datatype.invalid))
         return node_info_array
 
+    def prepare_node_data(self,datatype_group,matrix_shape):
+        matrix_shape=json.loads(matrix_shape)
+        matrix_shape=(matrix_shape[0],matrix_shape[1])
+        matrix_node_info = numpy.reshape(self.build_node_array(datatype_group), matrix_shape)
+        matrix_node_info = numpy.flipud(matrix_node_info).tolist()
+        return matrix_node_info
+
     def launch(self, datatype_group, **kwargs):
         params = self.get_metric_matrix(datatype_group)
         gid_matrix = self.model.datatypes_gids
@@ -273,8 +280,12 @@ class IsoclinePSEAdapter(ABCDisplayer):
         matrix_node_info=numpy.reshape(self.build_node_array(datatype_group),matrix_shape)
         matrix_node_info=numpy.flipud(matrix_node_info).tolist()
         params["title"] = "Pse-Isocline Visualizer"
+        params["canvasName"] = "Interpolated values for metric "
+        params["xAxisName"] = self.model.range1_name
+        params["yAxisName"] = self.model.range2_name
         params["matrix_node_info"] = json.dumps(matrix_node_info)
         params["url_base"] = "/burst/explore/get_metric_matrix/" + datatype_group.gid
+        params["node_info_url"] = "/burst/explore/get_node_matrix/" + datatype_group.gid
         params["gid_matrix"] = json.dumps(gid_matrix)
         params["available_metrics"] = reversed(self.model.metrics.keys())
         return self.build_display_result('pse_isocline/new_view', params,

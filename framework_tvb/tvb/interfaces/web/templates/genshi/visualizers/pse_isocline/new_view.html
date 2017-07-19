@@ -15,7 +15,7 @@
     <ul class="toolbar-inline">
         <li>
             <label for="color_metric_select">Color metric</label>
-            <select id="color_metric_select" onchange="redrawCanvas('${url_base}',this.value)">
+            <select id="color_metric_select" onchange="redrawCanvas('${url_base}',this.value,'${canvasName}')">
                 <py:for each="metric in available_metrics">
                     <py:if test="metric==color_metric">
                         <option value="$metric" selected="selected">$metric</option>
@@ -55,7 +55,7 @@
 
         $(document).ready(function () {
             $("#main").addClass("colscheme-1");
-            pse_isocline_init(${matrix_node_info},'${matrix_shape}', ${x_min}, ${x_max}, ${y_min}, ${y_max}, ${vmin}, ${vmax}, ${gid_matrix}, '${url_base}');
+            pse_isocline_init('${canvasName}','${xAxisName}','${yAxisName}','${matrix_shape}', ${x_min}, ${x_max}, ${y_min}, ${y_max}, ${vmin}, ${vmax}, ${gid_matrix}, '${url_base}','${node_info_url}');
             window.onresize = drawAxis;
         });
     </script>

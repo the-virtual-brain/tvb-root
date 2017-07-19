@@ -34,13 +34,13 @@ var Matrix2d = {
     xAxisGroup: null,
     xAxisLabel: null,
     yAxisLabel: null,
-    viewerName: null,
+    canvasTitle: null,
     yAxisGroup: null,
     vmin: null,
     vmax: null
 };
 
-function matrix2d_init(matrix_data, matrix_shape, x_min, x_max, y_min, y_max, vmin, vmax) {
+function matrix2d_init(canvasName,xAxisName,yAxisName,matrix_data, matrix_shape, x_min, x_max, y_min, y_max, vmin, vmax) {
 
     ColSch_initColorSchemeComponent(vmin, vmax);
     ColSch_initColorSchemeGUI(vmin, vmax, drawCanvas);
@@ -71,15 +71,15 @@ function matrix2d_init(matrix_data, matrix_shape, x_min, x_max, y_min, y_max, vm
     var xAxisLabel = svgContainer.append("text")
         .attr("text-anchor", "middle")
         .attr("transform", "translate(" + xLabelWidth + ", " + xLabelHeight + ")")
-        .text("X Axis Value");
-    var viewerName = svgContainer.append("text")
+        .text(xAxisName);
+    var canvasTitle = svgContainer.append("text")
         .attr("text-anchor", "middle")
         .attr("transform", "translate(" + xLabelWidth + ",15)")
-        .text("Viewer Name");
+        .text(canvasName);
     var yAxisLabel = svgContainer.append("text")
         .attr("text-anchor", "middle")
         .attr("transform", "translate(" + yLabelWidth + ", " + yLabelHeight + ")rotate(-90)")
-        .text("Y Axis Value");
+        .text(yAxisName);
     var xAxisScale = d3.scale.linear()
         .domain([x_min, x_max]);
     var xAxis = d3.svg.axis()
@@ -104,7 +104,7 @@ function matrix2d_init(matrix_data, matrix_shape, x_min, x_max, y_min, y_max, vm
     Matrix2d.yAxisGroup = yAxisGroup;
     Matrix2d.xAxisLabel = xAxisLabel;
     Matrix2d.yAxisLabel = yAxisLabel;
-    Matrix2d.viewerName = viewerName;
+    Matrix2d.canvasTitle = canvasTitle;
 
     drawAxis(x_min, x_max, y_min, y_max);
     if (data) {
@@ -180,7 +180,7 @@ function drawAxis() {
 
     Matrix2d.xAxisLabel
         .attr("transform", "translate(" + xLabelWidth + ", " + xLabelHeight + ")");
-    Matrix2d.viewerName
+    Matrix2d.canvasTitle
         .attr("transform", "translate(" + xLabelWidth + ",15)");
     Matrix2d.yAxisLabel
         .attr("transform", "translate(" + yLabelWidth + ", " + yLabelHeight + ")rotate(-90)")
