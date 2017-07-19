@@ -22,8 +22,8 @@
  * Created by Dan Pop on 5/24/2017.
  */
 
-var WaveletSpect = {
-    canvas:null,
+var Matrix2d = {
+    canvas: null,
     data: null,
     n: null,
     m: null,
@@ -37,7 +37,7 @@ var WaveletSpect = {
     vmax: null
 };
 
-function wavelet_spectrogram_init(matrix_data, matrix_shape, start_time, end_time, freq_lo, freq_hi, vmin, vmax) {
+function matrix2d_init(matrix_data, matrix_shape, x_min, x_max, y_min, y_max, vmin, vmax) {
 
     ColSch_initColorSchemeComponent(vmin, vmax);
     ColSch_initColorSchemeGUI(vmin, vmax, drawCanvas);
@@ -50,26 +50,28 @@ function wavelet_spectrogram_init(matrix_data, matrix_shape, start_time, end_tim
         .attr("width", m)
         .attr("height", n);
 
-    WaveletSpect.data = data;
-    WaveletSpect.n = n;
-    WaveletSpect.m = m;
-    WaveletSpect.vmin = vmin;
-    WaveletSpect.vmax = vmax;
-    WaveletSpect.canvas = canvas;
+    Matrix2d.data = data;
+    Matrix2d.n = n;
+    Matrix2d.m = m;
+    Matrix2d.vmin = vmin;
+    Matrix2d.vmax = vmax;
+    Matrix2d.canvas = canvas;
+
 
     var context = canvas.node().getContext("2d");
     var cHeight = context.canvas.clientHeight;
+    var cWidth = context.canvas.clientWidth;
     var svgContainer = d3.select("#svg-container");
 
     var xAxisScale = d3.scale.linear()
-        .domain([start_time, end_time]);
+        .domain([x_min, x_max]);
     var xAxis = d3.svg.axis()
         .orient("bot")
         .scale(xAxisScale);
     var xAxisGroup = svgContainer.append("g")
         .attr("transform", "translate(35, " + cHeight + ")");
     var yAxisScale = d3.scale.linear()
-        .domain([freq_lo, freq_hi]);
+        .domain([y_min, y_max]);
     var yAxis = d3.svg.axis()
         .scale(yAxisScale)
         .orient("left")
@@ -77,15 +79,15 @@ function wavelet_spectrogram_init(matrix_data, matrix_shape, start_time, end_tim
     var yAxisGroup = svgContainer.append("g")
         .attr("transform", "translate(35,0)");
 
-    WaveletSpect.xAxisScale = xAxisScale;
-    WaveletSpect.yAxisScale = yAxisScale;
-    WaveletSpect.xAxis = xAxis;
-    WaveletSpect.yAxis = yAxis;
-    WaveletSpect.xAxisGroup = xAxisGroup;
-    WaveletSpect.yAxisGroup = yAxisGroup;
+    Matrix2d.xAxisScale = xAxisScale;
+    Matrix2d.yAxisScale = yAxisScale;
+    Matrix2d.xAxis = xAxis;
+    Matrix2d.yAxis = yAxis;
+    Matrix2d.xAxisGroup = xAxisGroup;
+    Matrix2d.yAxisGroup = yAxisGroup;
 
     drawCanvas();
-    drawAxis(start_time, end_time, freq_lo, freq_hi);
+    drawAxis(x_min, x_max, y_min, y_max);
 }
 
 function updateLegend(minColor, maxColor) {
@@ -98,12 +100,12 @@ function updateLegend(minColor, maxColor) {
 }
 
 function drawCanvas() {
-    var data = WaveletSpect.data;
-    var n = WaveletSpect.n;
-    var m = WaveletSpect.m;
-    var vmin = WaveletSpect.vmin;
-    var vmax = WaveletSpect.vmax;
-    var canvas = WaveletSpect.canvas;
+    var data = Matrix2d.data;
+    var n = Matrix2d.n;
+    var m = Matrix2d.m;
+    var vmin = Matrix2d.vmin;
+    var vmax = Matrix2d.vmax;
+    var canvas = Matrix2d.canvas;
     var context = canvas.node().getContext("2d"),
         image = context.createImageData(m, n);
 
@@ -127,24 +129,24 @@ function drawCanvas() {
 }
 
 function drawAxis() {
-    var canvas = WaveletSpect.canvas;
+    var canvas = Matrix2d.canvas;
     var context = canvas.node().getContext("2d");
     var cWidth = context.canvas.clientWidth;
     var cHeight = context.canvas.clientHeight;
 
-    var xAxisScale = WaveletSpect.xAxisScale;
-    var yAxisScale = WaveletSpect.yAxisScale;
+    var xAxisScale = Matrix2d.xAxisScale;
+    var yAxisScale = Matrix2d.yAxisScale;
     xAxisScale.range([0, cWidth]);
     yAxisScale.range([cHeight, 0]);
 
-    var xAxis = WaveletSpect.xAxis.scale(xAxisScale);
-    WaveletSpect.xAxisGroup
+    var xAxis = Matrix2d.xAxis.scale(xAxisScale);
+    Matrix2d.xAxisGroup
         .attr("transform", "translate(35, " + cHeight + ")")
         .call(xAxis);
 
-    var yAxis = WaveletSpect.yAxis.scale(yAxisScale);
-    WaveletSpect.yAxisGroup
+    var yAxis = Matrix2d.yAxis.scale(yAxisScale);
+    Matrix2d.yAxisGroup
         .attr("transform", "translate(35,0)")
         .call(yAxis);
-    updateLegend(WaveletSpect.vmin,WaveletSpect.vmax);
+    updateLegend(Matrix2d.vmin, Matrix2d.vmax);
 }
