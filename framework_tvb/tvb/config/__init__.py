@@ -72,7 +72,7 @@ MEASURE_METRICS_CLASS = "TimeseriesMetricsAdapter"
 DISCRETE_PSE_ADAPTER_MODULE = "tvb.adapters.visualizers.pse_discrete"
 DISCRETE_PSE_ADAPTER_CLASS = "DiscretePSEAdapter"
 
-ISOCLINE_PSE_ADAPTER_MODULE = "tvb.adapters.visualizers.new_pse_isocline"
+ISOCLINE_PSE_ADAPTER_MODULE = "tvb.adapters.visualizers.pse_isocline"
 ISOCLINE_PSE_ADAPTER_CLASS = "IsoclinePSEAdapter"
 
 TVB_IMPORTER_MODULE = "tvb.adapters.uploaders.tvb_importer"

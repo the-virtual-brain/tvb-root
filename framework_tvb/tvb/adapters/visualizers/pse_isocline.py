@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 #
 #
-# TheVirtualBrain-Framework Package. This package holds all Data Management, and 
+# TheVirtualBrain-Framework Package. This package holds all Data Management, and
 # Web-UI helpful to run brain-simulations. To use it, you also need do download
 # TheVirtualBrain-Scientific Package (for simulators). See content of the
 # documentation-folder for more details. See also http://www.thevirtualbrain.org
@@ -29,30 +29,45 @@
 #
 
 """
+.. moduleauthor:: Dan Pop <dan.pop@codemart.ro>
 .. moduleauthor:: Bogdan Neacsa <bogdan.neacsa@codemart.ro>
 """
 
-import sys
 import numpy
 import json
 from scipy import interpolate
+from tvb.core.adapters.abcdisplayer import ABCDisplayer
 from tvb.basic.logger.builder import get_logger
 from tvb.core.entities.model import DataTypeGroup, OperationGroup, STATUS_STARTED
 from tvb.core.entities.storage import dao
-from tvb.core.adapters.abcdisplayer import ABCMPLH5Displayer
 from tvb.core.adapters.exceptions import LaunchException
 from tvb.datatypes.mapped_values import DatatypeMeasure
-from tvb.basic.profile import TvbProfile
 from tvb.basic.filters.chain import FilterChain
 
 
-# The resolution for computing dots inside the displayed isocline.
-# This is not the sae as display size.
-RESOLUTION = (600, 600)
+def dump_prec(xs, prec=3):
+    """ Dump a list of numbers into a string, each at the specified precision. """
+    format_str = "%0." + str(prec) + "g"
+    return "[" + ",".join(format_str % s for s in xs) + "]"
+
+
+def interpolate_matrix(inputMatrix, matrix_shape, factor):
+    mmin = 0
+    m = matrix_shape[1]
+    n = matrix_shape[0]
+    x_array_interpolate = numpy.linspace(mmin, m, m)
+    y_array_interpolate = numpy.linspace(mmin, n, n)
+    x_matrix, y_matrix = numpy.meshgrid(x_array_interpolate, y_array_interpolate)
+    f = interpolate.interp2d(x_matrix, y_matrix, inputMatrix, kind='linear')
+
+    new_x_array_interpolate = numpy.linspace(mmin, m, int(round(m * factor)))
+    new_y_array_interpolate = numpy.linspace(mmin, n, int(round(n * factor)))
+
+    interpolated_matrix = f(new_x_array_interpolate, new_y_array_interpolate)
+    return interpolated_matrix
 
 
 class PseIsoModel(object):
-
     def __init__(self, range1, range2, apriori_data, metrics, datatype_gids):
         self.log = get_logger(self.__class__.__name__)
         # ranges
@@ -81,7 +96,6 @@ class PseIsoModel(object):
         # self.log.warning(self.as_json())
         return self
 
-
     @staticmethod
     def _find_metrics(operations):
         """ Search for an operation with results. Then get the metrics of the generated data type"""
@@ -109,7 +123,6 @@ class PseIsoModel(object):
         else:
             raise LaunchException("No datatypes were generated due to simulation errors. Nothing to display.")
 
-
     def _fill_apriori_data(self, operations):
         """ Gather apriori data from the operations. Also gather the datatype gid's"""
         for metric in self.metrics:
@@ -131,7 +144,7 @@ class PseIsoModel(object):
             operation_results = dao.get_results_for_operation(operation.id)
             if operation_results:
                 datatype = operation_results[0]
-                self.datatypes_gids[index_x][index_y] = datatype.gid
+                self.datatypes_gids[index_x][index_y] = str(datatype.gid)
 
                 if datatype.type == "DatatypeMeasure":
                     measures = dao.get_generic_entity(DatatypeMeasure, datatype.id)
@@ -146,7 +159,6 @@ class PseIsoModel(object):
                     self.apriori_data[metric][index_x][index_y] = measures[0].metrics[metric]
                 else:
                     self.apriori_data[metric][index_x][index_y] = numpy.NaN
-
 
     @staticmethod
     def _prepare_axes(original_range_values, is_numbers):
@@ -166,8 +178,7 @@ class PseIsoModel(object):
         })
 
 
-
-class IsoclinePSEAdapter(ABCMPLH5Displayer):
+class IsoclinePSEAdapter(ABCDisplayer):
     """
     Visualization adapter for Parameter Space Exploration.
     Will be used as a generic visualizer, accessible when input entity is DataTypeGroup.
@@ -177,13 +188,10 @@ class IsoclinePSEAdapter(ABCMPLH5Displayer):
     _ui_name = "Isocline Parameter Space Exploration"
     _ui_subsection = "pse_iso"
 
-
     def __init__(self):
-        ABCMPLH5Displayer.__init__(self)
-        self.figures = {}
+        ABCDisplayer.__init__(self)
         self.interp_models = {}
         self.nan_indices = {}
-
 
     def get_input_tree(self):
         """
@@ -196,7 +204,6 @@ class IsoclinePSEAdapter(ABCMPLH5Displayer):
                  'conditions': FilterChain(fields=[FilterChain.datatype + ".no_of_ranges"],
                                            operations=["=="], values=[2])}]
 
-
     def get_required_memory_size(self, **kwargs):
         """
         Return the required memory to run this algorithm.
@@ -204,168 +211,72 @@ class IsoclinePSEAdapter(ABCMPLH5Displayer):
         # Don't know how much memory is needed.
         return -1
 
-
-    def burst_preview(self, datatype_group_gid, width, height):
+    def burst_preview(self, datatype_group_gid):
         """
         Generate the preview for the burst page.
         """
-        if not width:
-            width = height
-        figure_size = (700, 700)
-        if width and height:
-            figure_size = (width, height)
         datatype_group = dao.get_datatype_group_by_gid(datatype_group_gid)
-        result_dict = self.launch(datatype_group=datatype_group, figure_size=figure_size)
-        return result_dict
+        return self.launch(datatype_group=datatype_group)
 
+    def get_metric_matrix(self, datatype_group, selected_metric=u'GlobalVariance'):
+        self.model = PseIsoModel.from_db(datatype_group.fk_operation_group)
+
+        data_matrix = self.model.apriori_data[selected_metric]
+        data_matrix = numpy.rot90(data_matrix)
+        data_matrix = numpy.flipud(data_matrix)
+        matrix_data = dump_prec(data_matrix.flat)
+        matrix_shape = json.dumps(data_matrix.squeeze().shape)
+        x_min = self.model.apriori_x[0]
+        x_max = self.model.apriori_x[self.model.apriori_x.size - 1]
+        y_min = self.model.apriori_y[0]
+        y_max = self.model.apriori_y[self.model.apriori_y.size - 1]
+        vmin = data_matrix.min()
+        vmax = data_matrix.max()
+        return dict(matrix_data=matrix_data,
+                    matrix_shape=matrix_shape,
+                    color_metric=selected_metric,
+                    x_min=x_min,
+                    x_max=x_max,
+                    y_min=y_min,
+                    y_max=y_max,
+                    vmin=vmin,
+                    vmax=vmax)
+
+    @staticmethod
+    def build_node_array(datatype_group):
+        if datatype_group is None:
+             raise Exception("Selected DataTypeGroup is no longer present in the database. "
+                              "It might have been remove or the specified id is not the correct one.")
+
+        operation_group = dao.get_operationgroup_by_id(datatype_group.fk_operation_group)
+        operations = dao.get_operations_in_group(operation_group.id)
+        node_info_array = []
+        for operation_ in operations:
+            datatypes = dao.get_results_for_operation(operation_.id)
+            if len(datatypes) > 0:
+                datatype = datatypes[0]
+                node_info_array.append(dict(operation_id=operation_.id,
+                                        datatype_gid=datatype.gid,
+                                        datatype_type=datatype.type,
+                                        datatype_subject=datatype.subject,
+                                        datatype_invalid=datatype.invalid))
+        return node_info_array
+
+    def prepare_node_data(self,datatype_group,matrix_shape):
+        matrix_shape=json.loads(matrix_shape)
+        matrix_shape=(matrix_shape[0],matrix_shape[1])
+        matrix_node_info = numpy.reshape(self.build_node_array(datatype_group), matrix_shape)
+        matrix_node_info = numpy.flipud(matrix_node_info).tolist()
+        return matrix_node_info
 
     def launch(self, datatype_group, **kwargs):
-        """
-        Also overwrite launch from ABCDisplayer, since we want to handle a list of figures,
-        instead of only one Matplotlib figure.
-
-        :raises LaunchException: when called before all operations in the group are finished
-        """
-        if self.PARAM_FIGURE_SIZE in kwargs:
-            figsize = kwargs[self.PARAM_FIGURE_SIZE]
-            figsize = ((figsize[0]) / 80, (figsize[1]) / 80)
-            del kwargs[self.PARAM_FIGURE_SIZE]
-        else:
-            figsize = (15, 7)
-
-        model = PseIsoModel.from_db(datatype_group.fk_operation_group)
-
-        figure_nrs = {}
-        for metric in model.metrics:
-            # Separate plot for each metric.
-            self._create_plot(model, metric, figsize, figure_nrs)
-
-        parameters = dict(title=self._ui_name, showFullToolbar=True, figuresJSON=json.dumps(figure_nrs),
-                          mplh5ServerURL=TvbProfile.current.web.MPLH5_SERVER_URL,
-                          figureNumbers=figure_nrs, metrics=model.metrics)
-
-        return self.build_display_result("pse_isocline/view", parameters)
-
-
-    def _plot(self, figure, model, metric):
-        """
-        Do the plot for the given figure. Also need operation group, metric and ranges
-        in order to compute the data to be plotted.
-        """
-            
-        # Convert array to 0 but keep track of nan values so we can replace after interpolation
-        # since interpolating with nan values will just break the whole process
-        apriori_data = model.apriori_data[metric]
-        nan_indices = numpy.isnan(apriori_data)
-        self.nan_indices[figure.number] = nan_indices
-        apriori_data = numpy.nan_to_num(apriori_data)
-        # NOTE: we could attempt a better interpolation strategy, (eg, changing basis function)
-        # For the time being, correctness wins over beauty. The plot will not be as smooth as it
-        # was, but it will be sufficiently correct. 
-        kx = ky = 1
-        s = interpolate.RectBivariateSpline(model.apriori_x, model.apriori_y, apriori_data, kx=kx, ky=ky)
-        # Get data of higher resolution that we'll plot later on
-        posteriori_x = numpy.arange(model.apriori_x[0], model.apriori_x[-1],
-                                    float(model.apriori_x[-1] - model.apriori_x[0]) / RESOLUTION[0])
-        posteriori_y = numpy.arange(model.apriori_y[0], model.apriori_y[-1],
-                                    float(model.apriori_y[-1] - model.apriori_y[0]) / RESOLUTION[1])
-        posteriori_data = s(posteriori_x, posteriori_y)
-        x_granularity = RESOLUTION[0] / len(model.range1)
-        y_granularity = RESOLUTION[1] / len(model.range2)
-        for idx, row in enumerate(nan_indices):
-            for idy, was_nan in enumerate(row):
-                if was_nan:
-                    # Now we want to set back all the values that were NaN before interpolation
-                    # and keep track of the change in granularity. For this reason for each nan
-                    # value we had before, we will now have a matrix of the shape [x_granularity x y_granularity]
-                    # full of NaN values
-                    start_x = idx * x_granularity
-                    end_x = (idx + 1) * x_granularity
-                    start_y = idy * y_granularity
-                    end_y = (idy + 1) * y_granularity
-                    for x_scaled in xrange(start_x, end_x, 1):
-                        for y_scaled in xrange(start_y, end_y, 1):
-                            posteriori_data[x_scaled, y_scaled] = numpy.NaN
-        # Rotate to get good plot
-        posteriori_data = numpy.rot90(posteriori_data)
-        
-        self.interp_models[figure.number] = s
-        # Do actual plot.        
-        axes = figure.gca()
-        img = axes.imshow(posteriori_data, extent=(min(model.apriori_x), max(model.apriori_x),
-                                                   min(model.apriori_y), max(model.apriori_y)),
-                          aspect='auto', interpolation='bilinear')
-        axes.set_title("Interpolated values for metric %s" % (metric,))
-        figure.colorbar(img)
-        axes.set_xlabel(model.range1_name)
-        axes.set_ylabel(model.range2_name)
-
-
-        def format_coord(x, y):
-            return 'x=%1.4f, y=%1.4f' % (x, y)
-
-        axes.format_coord = format_coord
-
-
-    def _create_plot(self, model, metric, figsize, figure_nrs):
-        """
-        Create a plot for each metric, with a given figsize:. We need also operation group,
-        ranges for data computations. figure_nrs iw a mapping between metric : figure_number
-        """
-        figure = self._create_new_figure(figsize)
-
-        # Make sure that the callbacks do not close upon the model (will keep the memory hungry model alive)
-        # Save some values needed by the on_click events
-        range1 = model.range1
-        range2 = model.range2
-        datatype_gids = model.datatypes_gids
-
-        def _get_x_index(x):
-            x_idx = -1
-            x_dist = sys.maxint
-            for idx, val in enumerate(range1):
-                if x_dist > abs(val - x):
-                    x_dist = abs(val - x)
-                    x_idx = idx
-            return x_idx
-        
-        def _get_y_index(y):
-            y_idx = -1
-            y_dist = sys.maxint
-            for idx, val in enumerate(range2):
-                if y_dist > abs(val - y):
-                    y_dist = abs(val - y)
-                    y_idx = idx
-            return y_idx
-
-        # Create events for each figure.
-        def _click_event(event, figure=figure):
-            if event.inaxes is figure.gca():
-                x, y = event.xdata, event.ydata
-                x_idx = _get_x_index(x)
-                y_idx = _get_y_index(y)
-                if datatype_gids[x_idx][y_idx]:
-                    figure.command = "clickedDatatype('%s')" % (datatype_gids[x_idx][y_idx])
-
-
-        def _hover_event(event, figure=figure):
-            if event.inaxes is figure.gca():
-                x, y = event.xdata, event.ydata
-                x_idx = _get_x_index(x)
-                y_idx = _get_y_index(y)
-                if self.nan_indices[figure.number][x_idx][y_idx]:
-                    hover_value = 'NaN'
-                else:
-                    hover_value = self.interp_models[figure.number]([x], [y])
-                figure.command = "hoverPlot(%s, %s, %s, %s)" % (figure.number, x, y, hover_value)
-
-        self._plot(figure, model, metric)
-        self.figures[figure.number] = figure
-        figure_nrs[metric] = figure.number
-        figure.canvas.mpl_connect('button_press_event', _click_event)
-        figure.canvas.mpl_connect('motion_notify_event', _hover_event)
-        figure.canvas.draw()
-
-
-    def plot(self, figure, **kwargs):
-        raise Exception("isocline should not use plot")
+        params = self.get_metric_matrix(datatype_group)
+        params["title"] = "Pse-Isocline Visualizer"
+        params["canvasName"] = "Interpolated values for metric "
+        params["xAxisName"] = self.model.range1_name
+        params["yAxisName"] = self.model.range2_name
+        params["url_base"] = "/burst/explore/get_metric_matrix/" + datatype_group.gid
+        params["node_info_url"] = "/burst/explore/get_node_matrix/" + datatype_group.gid
+        params["available_metrics"] = reversed(self.model.metrics.keys())
+        return self.build_display_result('pse_isocline/view', params,
+                                         pages=dict(controlPage="pse_isocline/controls"))

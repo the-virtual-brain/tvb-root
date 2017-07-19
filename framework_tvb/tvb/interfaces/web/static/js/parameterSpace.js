@@ -853,7 +853,7 @@ function PSEDiscreteInitialize(labelsXJson, labelsYJson, valuesXJson, valuesYJso
         max_color = 1;
     }
     _updatePlotPSE('main_div_pse', labels_x, labels_y, values_x, values_y, series_array, min_color, max_color, backPage, data);
-    updateLegend(min_color, max_color,"");
+    updateLegend(min_color, max_color);
 
     if (hasStartedOperations) {
         setTimeout("PSE_mainDraw('main_div_pse','" + backPage + "')", 3000);

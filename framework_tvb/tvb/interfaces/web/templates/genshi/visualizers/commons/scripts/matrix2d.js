@@ -112,7 +112,7 @@ function matrix2d_init(canvasName, xAxisName, yAxisName, matrix_data, matrix_sha
 
 }
 
-function updateLegend(minColor, maxColor, viewerName) {
+function updateLegend2D(minColor, maxColor, viewerName) {
     var legendContainer, legendHeight, tableContainer;
     legendContainer = d3.select("#colorWeightsLegend"+viewerName);
     legendHeight = legendContainer.node().getBoundingClientRect().height;
@@ -149,7 +149,7 @@ function drawCanvas() {
         }
     }
     context.putImageData(image, 0, 0);
-    updateLegend(vmin, vmax, Matrix2d.viewerType);
+    updateLegend2D(vmin, vmax, Matrix2d.viewerType);
 }
 
 function drawAxis() {
