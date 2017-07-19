@@ -83,7 +83,9 @@ class MappedArraySVGVisualizerMixin(object):
 
 
     def generate_preview(self, datatype, **kwargs):
-        return self.launch(datatype)
+        result = self.launch(datatype)
+        result["isPreview"] = True
+        return result
 
 
     @staticmethod
