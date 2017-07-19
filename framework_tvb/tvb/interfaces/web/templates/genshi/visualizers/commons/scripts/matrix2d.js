@@ -40,26 +40,26 @@ var Matrix2d = {
     vmax: null
 };
 
-function matrix2d_init(matrix_data, matrix_shape, x_min, x_max, y_min, y_max, vmin, vmax, interpolate) {
+function matrix2d_init(matrix_data, matrix_shape, x_min, x_max, y_min, y_max, vmin, vmax) {
 
     ColSch_initColorSchemeComponent(vmin, vmax);
     ColSch_initColorSchemeGUI(vmin, vmax, drawCanvas);
 
-    var data = $.parseJSON(matrix_data);
     var dimensions = $.parseJSON(matrix_shape);
     var n = dimensions[0];
     var m = dimensions[1];
     var canvas = d3.select("canvas")
         .attr("width", m)
         .attr("height", n);
-
-    Matrix2d.data = data;
+    if(matrix_data){
+        var data = $.parseJSON(matrix_data);
+        Matrix2d.data = data;
+    }
     Matrix2d.n = n;
     Matrix2d.m = m;
     Matrix2d.vmin = vmin;
     Matrix2d.vmax = vmax;
     Matrix2d.canvas = canvas;
-
 
     var context = canvas.node().getContext("2d");
     var cHeight = context.canvas.clientHeight;
@@ -106,14 +106,11 @@ function matrix2d_init(matrix_data, matrix_shape, x_min, x_max, y_min, y_max, vm
     Matrix2d.yAxisLabel = yAxisLabel;
     Matrix2d.viewerName = viewerName;
 
-
-    if (interpolate) {
-        Pse_isocline.initial_n = Matrix2d.n;
-        Pse_isocline.initial_m = Matrix2d.m;
-        Matrix2d.data = matrixToArray(interpolateMatrix(context.canvas.clientWidth, context.canvas.clientHeight));
-    }
-    drawCanvas();
     drawAxis(x_min, x_max, y_min, y_max);
+    if (data) {
+        drawCanvas();
+    }
+
 }
 
 function updateLegend(minColor, maxColor) {
@@ -183,7 +180,7 @@ function drawAxis() {
 
     Matrix2d.xAxisLabel
         .attr("transform", "translate(" + xLabelWidth + ", " + xLabelHeight + ")");
-     Matrix2d.viewerName
+    Matrix2d.viewerName
         .attr("transform", "translate(" + xLabelWidth + ",15)");
     Matrix2d.yAxisLabel
         .attr("transform", "translate(" + yLabelWidth + ", " + yLabelHeight + ")rotate(-90)")

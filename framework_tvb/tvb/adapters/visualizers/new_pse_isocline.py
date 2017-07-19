@@ -243,12 +243,37 @@ class IsoclinePSEAdapter(ABCDisplayer):
                     vmin=vmin,
                     vmax=vmax)
 
+    @staticmethod
+    def build_node_array(datatype_group):
+        if datatype_group is None:
+             raise Exception("Selected DataTypeGroup is no longer present in the database. "
+                              "It might have been remove or the specified id is not the correct one.")
+
+        operation_group = dao.get_operationgroup_by_id(datatype_group.fk_operation_group)
+        operations = dao.get_operations_in_group(operation_group.id)
+        node_info_array = []
+        for operation_ in operations:
+            datatype = None
+            datatypes = dao.get_results_for_operation(operation_.id)
+            if len(datatypes) > 0:
+                datatype = datatypes[0]
+                node_info_array.append(dict(operation_id=operation_.id,
+                                        datatype_gid=datatype.gid,
+                                        datatype_type=datatype.type,
+                                        datatype_subject=datatype.subject,
+                                        datatype_invalid=datatype.invalid))
+        return node_info_array
+
     def launch(self, datatype_group, **kwargs):
         params = self.get_metric_matrix(datatype_group)
         gid_matrix = self.model.datatypes_gids
         gid_matrix = numpy.rot90(gid_matrix)
-        gid_matrix=gid_matrix.tolist()
+        matrix_shape=gid_matrix.shape
+        gid_matrix = gid_matrix.tolist()
+        matrix_node_info=numpy.reshape(self.build_node_array(datatype_group),matrix_shape)
+        matrix_node_info=numpy.flipud(matrix_node_info).tolist()
         params["title"] = "Pse-Isocline Visualizer"
+        params["matrix_node_info"] = json.dumps(matrix_node_info)
         params["url_base"] = "/burst/explore/get_metric_matrix/" + datatype_group.gid
         params["gid_matrix"] = json.dumps(gid_matrix)
         params["available_metrics"] = reversed(self.model.metrics.keys())

@@ -119,3 +119,12 @@ div.flot-tick-label{
     position:relative;
     top:5%;
 }
+
+.matrix2d-toolTip {
+    position: absolute;
+    display: block;
+    background-color: #C0C0C0;
+    border: 1px solid #fdd;
+    padding: 2px;
+    opacity: 0.80;
+}

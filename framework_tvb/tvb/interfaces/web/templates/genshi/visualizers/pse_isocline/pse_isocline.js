@@ -26,14 +26,20 @@ var Pse_isocline = {
     Matrix2d: Matrix2d,
     gid_matrix: null,
     initial_n: null,
-    initial_m: null,
+    matrix_node_info: null,
+    initial_m: null
 };
 
 // TODO add hover and click events
-function pse_isocline_init(matrix_data, matrix_shape, x_min, x_max, y_min, y_max, vmin, vmax, gid_matrix) {
+function pse_isocline_init(matrix_node_info, matrix_shape, x_min, x_max, y_min, y_max, vmin, vmax, gid_matrix, url_base) {
 
-    matrix2d_init(matrix_data, matrix_shape, x_min, x_max, y_min, y_max, vmin, vmax, true);
+    matrix2d_init(null, matrix_shape, x_min, x_max, y_min, y_max, vmin, vmax);
     Pse_isocline.gid_matrix = gid_matrix;
+    Pse_isocline.initial_n = Matrix2d.n;
+    Pse_isocline.initial_m = Matrix2d.m;
+    Pse_isocline.matrix_node_info = matrix_node_info;
+    var context = Matrix2d.canvas.node().getContext("2d");
+    redrawCanvas(url_base, 'GlobalVariance');
 
     var canvas = document.getElementById('main-canvas');
     canvas.addEventListener('click', function (evt) {
@@ -43,9 +49,9 @@ function pse_isocline_init(matrix_data, matrix_shape, x_min, x_max, y_min, y_max
 
     canvas.addEventListener('mousemove', function (evt) {
         var mousePos = getMousePos(canvas, evt);
-        var gid = getGid(mousePos);
-        var toolTipText = 'x: ' + mousePos.x + '<br/>'+ 'y: ' + mousePos.y + "<br/> gid: " + gid;
-        var toolTipDiv = d3.select(".tooltip");
+        var nodeInfo = getNodeInfo(mousePos);
+        var toolTipText = 'x: ' + mousePos.x + '<br/>' + 'y: ' + mousePos.y + "<br/> Operation id: " + nodeInfo["operation_id"] + "<br/> Datatype gid: " + nodeInfo["datatype_gid"] + "<br/> Datatype type: " + nodeInfo["datatype_type"] + "<br/> Datatype subject: " + nodeInfo["datatype_subject"] + "<br/> Datatype invalid: " + nodeInfo["datatype_invalid"];
+        var toolTipDiv = d3.select(".matrix2d-toolTip");
         toolTipDiv.html(toolTipText);
         toolTipDiv.style({
             position: "absolute",
@@ -62,9 +68,9 @@ function pse_isocline_init(matrix_data, matrix_shape, x_min, x_max, y_min, y_max
     canvas.addEventListener('mouseout', function (evt) {
         var toolTipDiv = d3.select(".tooltip");
         toolTipDiv.transition()
-                .duration(300)
-                .style("display", "none")
-     }, false);
+            .duration(300)
+            .style("display", "none")
+    }, false);
 }
 
 function redrawCanvas(base_url, selected_metric) {
@@ -81,7 +87,7 @@ function redrawCanvas(base_url, selected_metric) {
             var dimensions = $.parseJSON(dictionar.matrix_shape);
             Matrix2d.n = dimensions[0];
             Matrix2d.m = dimensions[1];
-            var interpolatedMatrix = interpolateMatrix(context.canvas.clientWidth,context.canvas.clientHeight);
+            var interpolatedMatrix = interpolateMatrix(context.canvas.clientWidth, context.canvas.clientHeight);
             Matrix2d.data = matrixToArray(interpolatedMatrix);
             ColSch_initColorSchemeComponent(Matrix2d.vmin, Matrix2d.vmax);
             drawCanvas();
@@ -109,4 +115,17 @@ function getGid(mousePos) {
     if (j < 0)
         j = 0;
     return Pse_isocline.gid_matrix[i][j];
+}
+
+function getNodeInfo(mousePos) {
+    var context = Matrix2d.canvas.node().getContext("2d");
+    var width = context.canvas.clientWidth;
+    var height = context.canvas.clientHeight;
+    var i = Math.floor((mousePos.y * Pse_isocline.initial_n) / height);
+    var j = Math.floor((mousePos.x * Pse_isocline.initial_m) / width);
+    if (i < 0)
+        i = 0;
+    if (j < 0)
+        j = 0;
+    return Pse_isocline.matrix_node_info[i][j];
 }
