@@ -37,11 +37,13 @@ import urllib
 import cherrypy
 from tvb.config import DISCRETE_PSE_ADAPTER_MODULE, DISCRETE_PSE_ADAPTER_CLASS
 from tvb.config import ISOCLINE_PSE_ADAPTER_CLASS, ISOCLINE_PSE_ADAPTER_MODULE
+from tvb.core.entities.storage import dao
 from tvb.core.services.project_service import ProjectService
 from tvb.core.adapters.abcadapter import ABCAdapter
 from tvb.core.adapters.exceptions import LaunchException
 from tvb.core.entities.transient.filtering import FilterChain
-from tvb.interfaces.web.controllers.decorators import handle_error, expose_fragment, check_user, using_template
+from tvb.interfaces.web.controllers.decorators import handle_error, expose_fragment, check_user, using_template, \
+    expose_json
 from tvb.interfaces.web.controllers.base_controller import BaseController
 
 
@@ -132,19 +134,14 @@ class ParameterExplorationController(BaseController):
     @handle_error(redirect=True)
     @using_template('visualizers/pse_isocline/burst_preview')
     @check_user
-    def draw_isocline_exploration(self, datatype_group_gid, width=None, height=None):
-
-        if width is not None:
-            width = int(width)
-        if height is not None:
-            height = int(height)
+    def draw_isocline_exploration(self, datatype_group_gid):
 
         algorithm = self.flow_service.get_algorithm_by_module_and_class(ISOCLINE_PSE_ADAPTER_MODULE,
                                                                         ISOCLINE_PSE_ADAPTER_CLASS)
         adapter = ABCAdapter.build_adapter(algorithm)
         if self._is_compatible(algorithm, datatype_group_gid):
             try:
-                return adapter.burst_preview(datatype_group_gid, width, height)
+                return adapter.burst_preview(datatype_group_gid)
             except LaunchException, ex:
                 self.logger.error(ex.message)
                 error_msg = urllib.quote(ex.message)
@@ -158,4 +155,24 @@ class ParameterExplorationController(BaseController):
     @expose_fragment('burst/burst_pse_error')
     def pse_error(self, adapter_name, message):
         return {'adapter_name': adapter_name, 'message': message}
+
+
+    @expose_json
+    def get_metric_matrix(self, datatype_group_gid, metric_name):
+
+        algorithm = self.flow_service.get_algorithm_by_module_and_class(ISOCLINE_PSE_ADAPTER_MODULE,
+                                                                        ISOCLINE_PSE_ADAPTER_CLASS)
+        adapter = ABCAdapter.build_adapter(algorithm)
+        if self._is_compatible(algorithm, datatype_group_gid):
+            try:
+                datatype_group = dao.get_datatype_group_by_gid(datatype_group_gid)
+                return adapter.get_metric_matrix(datatype_group,metric_name)
+            except LaunchException, ex:
+                self.logger.error(ex.message)
+                error_msg = urllib.quote(ex.message)
+        else:
+            error_msg = urllib.quote("Isocline PSE requires a 2D range of floating point values.")
+
+        name = urllib.quote(adapter._ui_name)
+        raise cherrypy.HTTPRedirect(REDIRECT_MSG % (name, error_msg))
 

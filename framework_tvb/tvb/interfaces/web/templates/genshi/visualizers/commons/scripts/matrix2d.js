@@ -37,7 +37,7 @@ var Matrix2d = {
     vmax: null
 };
 
-function matrix2d_init(matrix_data, matrix_shape, x_min, x_max, y_min, y_max, vmin, vmax) {
+function matrix2d_init(matrix_data, matrix_shape, x_min, x_max, y_min, y_max, vmin, vmax, interpolate) {
 
     ColSch_initColorSchemeComponent(vmin, vmax);
     ColSch_initColorSchemeGUI(vmin, vmax, drawCanvas);
@@ -58,9 +58,9 @@ function matrix2d_init(matrix_data, matrix_shape, x_min, x_max, y_min, y_max, vm
     Matrix2d.canvas = canvas;
 
 
+
     var context = canvas.node().getContext("2d");
     var cHeight = context.canvas.clientHeight;
-    var cWidth = context.canvas.clientWidth;
     var svgContainer = d3.select("#svg-container");
 
     var xAxisScale = d3.scale.linear()
@@ -86,6 +86,10 @@ function matrix2d_init(matrix_data, matrix_shape, x_min, x_max, y_min, y_max, vm
     Matrix2d.xAxisGroup = xAxisGroup;
     Matrix2d.yAxisGroup = yAxisGroup;
 
+
+    if(interpolate){
+        Matrix2d.data = matrixToArray(interpolateMatrix(canvas.clientWidth));
+    }
     drawCanvas();
     drawAxis(x_min, x_max, y_min, y_max);
 }
@@ -100,15 +104,17 @@ function updateLegend(minColor, maxColor) {
 }
 
 function drawCanvas() {
+
     var data = Matrix2d.data;
     var n = Matrix2d.n;
     var m = Matrix2d.m;
     var vmin = Matrix2d.vmin;
     var vmax = Matrix2d.vmax;
     var canvas = Matrix2d.canvas;
+    canvas.attr("width", m)
+        .attr("height", n);
     var context = canvas.node().getContext("2d"),
         image = context.createImageData(m, n);
-
     for (var i = n - 1; i >= 0; i--) {
         for (var j = 0; j < m; j++) {
             var k = m * i + j;

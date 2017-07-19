@@ -29,10 +29,10 @@
 #
 
 """
+.. moduleauthor:: Dan Pop <dan.pop@codemart.ro>
 .. moduleauthor:: Bogdan Neacsa <bogdan.neacsa@codemart.ro>
 """
 
-import sys
 import numpy
 import json
 from scipy import interpolate
@@ -40,10 +40,8 @@ from tvb.core.adapters.abcdisplayer import ABCDisplayer
 from tvb.basic.logger.builder import get_logger
 from tvb.core.entities.model import DataTypeGroup, OperationGroup, STATUS_STARTED
 from tvb.core.entities.storage import dao
-from tvb.core.adapters.abcdisplayer import ABCMPLH5Displayer
 from tvb.core.adapters.exceptions import LaunchException
 from tvb.datatypes.mapped_values import DatatypeMeasure
-from tvb.basic.profile import TvbProfile
 from tvb.basic.filters.chain import FilterChain
 
 
@@ -57,21 +55,16 @@ def interpolate_matrix(inputMatrix, matrix_shape, factor):
     mmin = 0
     m = matrix_shape[1]
     n = matrix_shape[0]
-    x_array_interpolate = numpy.linspace(mmin, m-1, m)
-    y_array_interpolate = numpy.linspace(mmin, n-1, n)
+    x_array_interpolate = numpy.linspace(mmin, m, m)
+    y_array_interpolate = numpy.linspace(mmin, n, n)
     x_matrix, y_matrix = numpy.meshgrid(x_array_interpolate, y_array_interpolate)
     f = interpolate.interp2d(x_matrix, y_matrix, inputMatrix, kind='linear')
 
-    # use linspace so your new range also goes from 0 to 3, with 8 intervals
-    new_x_array_interpolate = numpy.linspace(mmin, m, m * factor)
-    new_y_array_interpolate = numpy.linspace(mmin, n, n * factor)
+    new_x_array_interpolate = numpy.linspace(mmin, m, int(round(m * factor)))
+    new_y_array_interpolate = numpy.linspace(mmin, n, int(round(n * factor)))
 
     interpolated_matrix = f(new_x_array_interpolate, new_y_array_interpolate)
     return interpolated_matrix
-
-# The resolution for computing dots inside the displayed isocline.
-# This is not the sae as display size.
-RESOLUTION = (600, 600)
 
 
 class PseIsoModel(object):
@@ -197,7 +190,6 @@ class IsoclinePSEAdapter(ABCDisplayer):
 
     def __init__(self):
         ABCDisplayer.__init__(self)
-        self.figures = {}
         self.interp_models = {}
         self.nan_indices = {}
 
@@ -219,63 +211,49 @@ class IsoclinePSEAdapter(ABCDisplayer):
         # Don't know how much memory is needed.
         return -1
 
-    def burst_preview(self, datatype_group_gid, width, height):
+    def burst_preview(self, datatype_group_gid):
         """
         Generate the preview for the burst page.
         """
-        if not width:
-            width = height
-        figure_size = (700, 700)
-        if width and height:
-            figure_size = (width, height)
         datatype_group = dao.get_datatype_group_by_gid(datatype_group_gid)
-        result_dict = self.launch(datatype_group=datatype_group, figure_size=figure_size)
+        result_dict = self.launch(datatype_group=datatype_group)
         return result_dict
 
-    def launch(self, datatype_group, **kwargs):
-        """
-        Also overwrite launch from ABCDisplayer, since we want to handle a list of figures,
-        instead of only one Matplotlib figure.
+    def get_metric_matrix(self, datatype_group, selected_metric=u'GlobalVariance'):
+        self.model = PseIsoModel.from_db(datatype_group.fk_operation_group)
 
-        :raises LaunchException: when called before all operations in the group are finished
-        """
-        if self.PARAM_FIGURE_SIZE in kwargs:
-            figsize = kwargs[self.PARAM_FIGURE_SIZE]
-            figsize = ((figsize[0]) / 80, (figsize[1]) / 80)
-            del kwargs[self.PARAM_FIGURE_SIZE]
-        else:
-            figsize = (15, 7)
-
-        model = PseIsoModel.from_db(datatype_group.fk_operation_group)
-
-        data_matrix = model.apriori_data[u'GlobalVariance']
+        data_matrix = self.model.apriori_data[selected_metric]
         data_matrix = numpy.rot90(data_matrix)
         data_matrix = numpy.flipud(data_matrix)
-        factor = numpy.sqrt((2*10000)/(data_matrix.shape[0]*data_matrix.shape[1]))
-        data_matrix = interpolate_matrix(data_matrix, data_matrix.shape, factor)
+
+        # get a constant resolution mapping 1 point onto 5 pixels
+        # factor = numpy.sqrt((2 * 10000) / (data_matrix.shape[0] * data_matrix.shape[1]))
+        # data_matrix = interpolate_matrix(data_matrix, data_matrix.shape, 5)
         matrix_data = dump_prec(data_matrix.flat)
         matrix_shape = json.dumps(data_matrix.squeeze().shape)
 
-        x_min = model.apriori_x[0]
-        x_max = model.apriori_x[model.apriori_x.size - 1]
-        y_min = model.apriori_y[0]
-        y_max = model.apriori_y[model.apriori_y.size - 1]
+        x_min = self.model.apriori_x[0]
+        x_max = self.model.apriori_x[self.model.apriori_x.size - 1]
+        y_min = self.model.apriori_y[0]
+        y_max = self.model.apriori_y[self.model.apriori_y.size - 1]
         vmin = data_matrix.min()
         vmax = data_matrix.max()
-        gid_matrix = numpy.asarray(model.datatypes_gids)
-        metrics = json.dumps(model.metrics)
-        # gid_matrix=json.dumps(gid_matrix.flat)
-        params = dict(title="Pse-Isocline Visualizer",
-                      matrix_data=matrix_data,
-                      matrix_shape=matrix_shape,
-                      available_metrics=model.metrics.keys(),
-                      color_metric=model.metrics.keys()[0],
-                      x_min=x_min,
-                      x_max=x_max,
-                      y_min=y_min,
-                      y_max=y_max,
-                      vmin=vmin,
-                      vmax=vmax)
+        return dict(matrix_data=matrix_data,
+                    matrix_shape=matrix_shape,
+                    color_metric=selected_metric,
+                    x_min=x_min,
+                    x_max=x_max,
+                    y_min=y_min,
+                    y_max=y_max,
+                    vmin=vmin,
+                    vmax=vmax)
 
+    def launch(self, datatype_group, **kwargs):
+        params = self.get_metric_matrix(datatype_group)
+        gid_matrix = numpy.asarray(self.model.datatypes_gids)
+        params["title"] = "Pse-Isocline Visualizer"
+        params["url_base"] = "/burst/explore/get_metric_matrix/" + datatype_group.gid
+        params["gid_matrix"] = gid_matrix
+        params["available_metrics"] = self.model.metrics.keys()
         return self.build_display_result('pse_isocline/new_view', params,
                                          pages=dict(controlPage="pse_isocline/controls"))

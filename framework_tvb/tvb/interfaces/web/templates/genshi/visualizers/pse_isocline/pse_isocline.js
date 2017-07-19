@@ -22,227 +22,140 @@
  * Created by Dan Pop on 5/24/2017.
  */
 
-var WaveletSpect = {
-    canvas: null,
-    data: null,
-    n: null,
-    m: null,
-    xAxisScale: null,
-    yAxisScale: null,
-    xAxis: null,
-    yAxis: null,
-    xAxisGroup: null,
-    yAxisGroup: null,
-    vmin: null,
-    vmax: null
+var Pse_isocline = {
+    Matrix2d: Matrix2d
 };
 
-
-// TODO rename and reuse wavelet
-// TODO get matrix data only when needed maybe use a parameter on drawCanvas function
-// TODO investigate D3 interpolation mechanism and decide if it can use a colorScheme or rewrite drawCanvas with variable sizes so the result will be closer to actual one
 // TODO add hover and click events
 function pse_isocline_init(matrix_data, matrix_shape, x_min, x_max, y_min, y_max, vmin, vmax) {
 
-    ColSch_initColorSchemeComponent(vmin, vmax);
-    ColSch_initColorSchemeGUI(vmin, vmax, drawCanvas);
-
-    var data = $.parseJSON(matrix_data);
-    var dimensions = $.parseJSON(matrix_shape);
-    var n = dimensions[0];
-    var m = dimensions[1];
-    var canvas = d3.select("canvas")
-        .attr("width", m)
-        .attr("height", n);
-
-    WaveletSpect.data = data;
-    WaveletSpect.n = n;
-    WaveletSpect.m = m;
-    WaveletSpect.vmin = vmin;
-    WaveletSpect.vmax = vmax;
-    WaveletSpect.canvas = canvas;
-
-
-    var context = canvas.node().getContext("2d");
-    var cHeight = context.canvas.clientHeight;
-    var cWidth = context.canvas.clientWidth;
-    var svgContainer = d3.select("#svg-container");
-
-    // WaveletSpect.data = matrixInterpolation(cHeight, cWidth);
-
-    var xAxisScale = d3.scale.linear()
-        .domain([x_min, x_max]);
-    var xAxis = d3.svg.axis()
-        .orient("bot")
-        .scale(xAxisScale);
-    var xAxisGroup = svgContainer.append("g")
-        .attr("transform", "translate(35, " + cHeight + ")");
-    var yAxisScale = d3.scale.linear()
-        .domain([y_min, y_max]);
-    var yAxis = d3.svg.axis()
-        .scale(yAxisScale)
-        .orient("left")
-        .ticks(5);
-    var yAxisGroup = svgContainer.append("g")
-        .attr("transform", "translate(35,0)");
-
-    WaveletSpect.xAxisScale = xAxisScale;
-    WaveletSpect.yAxisScale = yAxisScale;
-    WaveletSpect.xAxis = xAxis;
-    WaveletSpect.yAxis = yAxis;
-    WaveletSpect.xAxisGroup = xAxisGroup;
-    WaveletSpect.yAxisGroup = yAxisGroup;
-
-    drawCanvas();
-    drawAxis(x_min, x_max, y_min, y_max);
+    matrix2d_init(matrix_data, matrix_shape, x_min, x_max, y_min, y_max, vmin, vmax, true);
 }
 
-function matrixInterpolation(cHeight, cWidth) {
-    var dataMatrix = [];
 
-    for (var i = 0; i < WaveletSpect.n; i++) {
+function redrawCanvas(base_url, selected_metric) {
+    doAjaxCall({
+        url: base_url + '/' + selected_metric,
+        type: 'POST',
+        async: false,
+        success: function (data) {
+            var dictionar = $.parseJSON(data);
+            Matrix2d.data = $.parseJSON(dictionar.matrix_data);
+            Matrix2d.vmin = dictionar.vmin;
+            Matrix2d.vmax = dictionar.vmax;
+            var dimensions = $.parseJSON(dictionar.matrix_shape);
+            Matrix2d.n = dimensions[0];
+            Matrix2d.m = dimensions[1];
+            var interpolatedMatrix = interpolateMatrix(Matrix2d.canvas.clientWidth);
+            Matrix2d.data = matrixToArray(interpolatedMatrix);
+            ColSch_initColorSchemeComponent(Matrix2d.vmin, Matrix2d.vmax);
+            drawCanvas();
+        }
+    });
+}
+
+function getMousePos(canvas, evt) {
+    var rect = canvas.getBoundingClientRect();
+    return {
+        x: evt.clientX - rect.left,
+        y: evt.clientY - rect.top
+    };
+}
+
+function interpolateMatrix(cWidth) {
+    var dataMatrix = [];
+    for (var i = 0; i < Matrix2d.n; i++) {
         dataMatrix[i] = [];
-        for (var j = 0; j < WaveletSpect.m; j++) {
+        for (var j = 0; j < Matrix2d.m; j++) {
             dataMatrix[i][j] = undefined;
         }
     }
-    var oldMatrix = WaveletSpect.data;
-    for (var i = 0; i < WaveletSpect.n; i++)
-        for (var j = 0; j < WaveletSpect.m; j++)
-            dataMatrix[i][j] = oldMatrix[i * WaveletSpect.m + j];
+    var oldMatrix = Matrix2d.data;
+    for (var i = 0; i < Matrix2d.n; i++)
+        for (var j = 0; j < Matrix2d.m; j++)
+            dataMatrix[i][j] = oldMatrix[i * Matrix2d.m + j];
+    //TODO cWidth not initialized
+    var ratio = Math.floor((cWidth / 10) / Matrix2d.m);
+    ratio = 20;
 
-    console.table(dataMatrix);
+    var spaceC = Math.floor((Matrix2d.m * ratio) / (Matrix2d.m - 1));
+    var spaceL = Math.floor((Matrix2d.n * ratio) / (Matrix2d.n - 1));
+    var n = (spaceL - 1) * (Matrix2d.n - 1) + Matrix2d.n;
+    var m = (spaceC - 1) * (Matrix2d.m - 1) + Matrix2d.m;
 
-    var ratio = Math.floor((cWidth / 10) / WaveletSpect.m);
-    ratio = 40;
-    var n = WaveletSpect.n * ratio;
-    var m = WaveletSpect.m * ratio;
+    var array = interpolateArray(dataMatrix[0], n);
 
     var newMatrix = [];
     for (i = 0; i < n; i++) {
         newMatrix[i] = [];
         for (j = 0; j < m; j++) {
-            newMatrix[i][j] = 0;
+            newMatrix[i][j] = undefined;
         }
     }
 
-    // interpolate lines
-    var spaceC = Math.floor((WaveletSpect.m * ratio) / (WaveletSpect.m - 1));
-    var spaceL = Math.floor((WaveletSpect.n * ratio) / (WaveletSpect.n - 1));
-    for (i = 0; i < WaveletSpect.n; i++) {
+    for (i = 0; i < Matrix2d.n; i++) {
         var line = i * spaceL;
-        if (line === n) {
-            line--;
-        }
-        var spaceC = Math.floor((WaveletSpect.m * ratio) / (WaveletSpect.m - 1));
-        var col=0;
-        for (var k = 0; k < WaveletSpect.m - 1; k++) {
-            var inter = d3.interpolateNumber(dataMatrix[i][k], dataMatrix[i][k + 1]);
-            for (j = 0; j < spaceC; j++) {
-                newMatrix[line][col] = inter(j / (spaceC - 1));
+        var col = 0;
+        newMatrix[line][col] = dataMatrix[i][0];
+        col++;
+        for (var k = 1; k < Matrix2d.m; k++) {
+            for (j = 0; j < spaceC - 1; j++) {
+                newMatrix[line][col] = undefined;
                 col++;
             }
+            newMatrix[line][col] = dataMatrix[i][k];
+            col++;
         }
     }
-
-    var resultArray = [];
-
-    for (i = 0; i < WaveletSpect.n; i++) {
-        line=i*spaceL;
-        for (j = 0; j < m; j++) {
-                if(line===n)
-                    line--;
-                resultArray[i * m + j] = newMatrix[line][j];
-        }
-    }
-    //
-    // interpolate columns
-
-    // for (j = 0; j < WaveletSpect.m; j++) {
-    //     var col = j * spaceC;
-    //     if (col === m) {
-    //         col--;
-    //     }
-    //     spaceL = Math.floor((WaveletSpect.n * ratio) / (WaveletSpect.n - 1));
-    //     var line = 0;
-    //     for (var k = 0; k < WaveletSpect.n - 1; k++) {
-    //         var inter = d3.interpolateNumber(dataMatrix[k][j], dataMatrix[k + 1][j]);
-    //         for (i = 0; i < spaceL; i++) {
-    //             newMatrix[line][col] = inter(i / (spaceL - 1));
-    //             line++;
-    //         }
-    //     }
-    // }
-    // var resultArray = [];
-    //
-    // for (i = 0; i < n; i++) {
-    //     for (j = 0; j < m; j++) {
-    //             resultArray[i * m + j] = newMatrix[i][j];
-    //     }
-    // }
     console.table(newMatrix);
-    // WaveletSpect.n=n;
-    WaveletSpect.m=m;
-    return resultArray;
-}
-
-function updateLegend(minColor, maxColor) {
-    var legendContainer, legendHeight, tableContainer;
-    legendContainer = d3.select("#colorWeightsLegend");
-    legendHeight = legendContainer.node().getBoundingClientRect().height;
-    tableContainer = d3.select("#table-colorWeightsLegend");
-    ColSch_updateLegendColors(legendContainer.node(), legendHeight * 95 / 100);
-    ColSch_updateLegendLabels(tableContainer.node(), minColor, maxColor, "95%");
-}
-
-function drawCanvas() {
-    var data = WaveletSpect.data;
-    var n = WaveletSpect.n;
-    var m = WaveletSpect.m;
-    var vmin = WaveletSpect.vmin;
-    var vmax = WaveletSpect.vmax;
-    var canvas = WaveletSpect.canvas;
-    var context = canvas.node().getContext("2d"),
-        image = context.createImageData(m, n);
-
-    for (var i = n - 1; i >= 0; i--) {
-        for (var j = 0; j < m; j++) {
-            var k = m * i + j;
-            var l = (m * (n - i - 1) + j) * 4;
-            if (data[k] > vmax)
-                data[k] = vmax;
-            if (data[k] < vmin)
-                data[k] = vmin;
-            var c = ColSch_getColor(data[k]);
-            image.data[l] = c[0] * 255;
-            image.data[l + 1] = c[1] * 255;
-            image.data[l + 2] = c[2] * 255;
-            image.data[l + 3] = 255;
+    for (j = 0; j < Matrix2d.m; j++) {
+        var column = [];
+        for (i = 0; i < Matrix2d.n; i++) {
+            column.push(dataMatrix[i][j])
+        }
+        interpolatedColumn = interpolateArray(column, n);
+        for (i = 0; i < n; i++) {
+            newMatrix[i][j * spaceC] = interpolatedColumn[i];
         }
     }
-    context.putImageData(image, 0, 0);
-    updateLegend(vmin, vmax);
+    for (i = 0; i < n; i++) {
+        var intermediateLine = newMatrix[i].filter(function (element) {
+            return element !== undefined;
+        });
+        newMatrix[i]=interpolateArray(intermediateLine,m);
+    }
+    Matrix2d.n = n;
+    Matrix2d.m = m;
+    return newMatrix;
 }
 
-function drawAxis() {
-    var canvas = WaveletSpect.canvas;
-    var context = canvas.node().getContext("2d");
-    var cWidth = context.canvas.clientWidth;
-    var cHeight = context.canvas.clientHeight;
+function linearInterpolate(before, after, atPoint) {
+    return before + (after - before) * atPoint;
+}
 
-    var xAxisScale = WaveletSpect.xAxisScale;
-    var yAxisScale = WaveletSpect.yAxisScale;
-    xAxisScale.range([0, cWidth]);
-    yAxisScale.range([cHeight, 0]);
+function interpolateArray(data, fitCount) {
+    var newData = [];
+    var springFactor = (data.length - 1) / (fitCount - 1);
+    newData[0] = data[0]; // for new allocation
+    for (var i = 1; i < fitCount - 1; i++) {
+        var tmp = i * springFactor;
+        var before = Math.floor(tmp).toFixed();
+        var after = Math.ceil(tmp).toFixed();
+        var atPoint = tmp - before;
+        newData[i] = this.linearInterpolate(data[before], data[after], atPoint);
+    }
+    newData[fitCount - 1] = data[data.length - 1]; // for new allocation
+    return newData;
+}
 
-    var xAxis = WaveletSpect.xAxis.scale(xAxisScale);
-    WaveletSpect.xAxisGroup
-        .attr("transform", "translate(35, " + cHeight + ")")
-        .call(xAxis);
-
-    var yAxis = WaveletSpect.yAxis.scale(yAxisScale);
-    WaveletSpect.yAxisGroup
-        .attr("transform", "translate(35,0)")
-        .call(yAxis);
-    updateLegend(WaveletSpect.vmin, WaveletSpect.vmax);
+function matrixToArray(matrixData) {
+    var n = matrixData.length;
+    var m = matrixData[0].length;
+    var array = [];
+    for (i = 0; i < n; i++) {
+        for (j = 0; j < m; j++) {
+            array[i * m + j] = matrixData[i][j];
+        }
+    }
+    return array;
 }
