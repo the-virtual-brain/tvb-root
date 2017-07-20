@@ -42,7 +42,7 @@ function pse_isocline_init(canvasName, xAxisName, yAxisName, matrix_shape, x_min
     Pse_isocline.Matrix2d.viewerType = "ISO";
     loadNodeMatrix(node_info_url, matrix_shape);
     drawAxis();
-    const canvas = document.getElementById('main-canvas');
+    const canvas = document.getElementById('main-canvas-2d');
     canvas.addEventListener('click', function (evt) {
         const mousePos = getMousePos(canvas, evt);
         displayNodeDetails(getGid(mousePos));
@@ -87,7 +87,7 @@ function redrawCanvas(selected_metric) {
     doAjaxCall({
         url: base_url + '/' + selected_metric,
         type: 'POST',
-        async: false,
+        async: true,
         success: function (data) {
             Matrix2d.canvasTitle.text(canvasName + selected_metric);
             const context = Matrix2d.canvas.node().getContext("2d");

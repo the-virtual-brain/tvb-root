@@ -46,7 +46,7 @@ function matrix2d_init(canvasName, xAxisName, yAxisName, matrix_data, matrix_sha
     var dimensions = $.parseJSON(matrix_shape);
     var n = dimensions[0];
     var m = dimensions[1];
-    var canvas = d3.select("canvas")
+    var canvas = d3.select("#main-canvas-2d")
         .attr("width", m)
         .attr("height", n);
     if (matrix_data) {

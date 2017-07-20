@@ -1,5 +1,5 @@
 /**
- * TheVirtualBrain-Framework Package. This package holds all Data Management, and 
+ * TheVirtualBrain-Framework Package. This package holds all Data Management, and
  * Web-UI helpful to run brain-simulations. To use it, you also need do download
  * TheVirtualBrain-Scientific Package (for simulators). See content of the
  * documentation-folder for more details. See also http://www.thevirtualbrain.org
@@ -55,7 +55,6 @@ var GROUP_BURST_CLASS = 'burst-group-expanded';
 var user_edited_title = false;
 
 
-
 function clone(object_) {
     return JSON.parse(JSON.stringify(object_));
 }
@@ -65,22 +64,22 @@ function clone(object_) {
  *************************************************************************************************************************/
 
 /*
-* When clicking on the New Burst Button reset to defaults for simulator interface and portlets.
-*/
+ * When clicking on the New Burst Button reset to defaults for simulator interface and portlets.
+ */
 function resetToNewBurst() {
     doAjaxCall({
         type: "POST",
         url: '/burst/reset_burst/',
-        success: function() {
+        success: function () {
             loadSimulatorInterface();
             returnToSessionPortletConfiguration();
             setNewBurstActive();
             fill_burst_name('', false, false);
             displayMessage("Completely new configuration loaded!");
         },
-        error: function() {
-           displayMessage("We encountered an error while generating the new simulation. Please try reload and then check the logs!", "errorMessage");
-           sessionStoredBurst = clone(EMPTY_BURST);
+        error: function () {
+            displayMessage("We encountered an error while generating the new simulation. Please try reload and then check the logs!", "errorMessage");
+            sessionStoredBurst = clone(EMPTY_BURST);
         }
     });
 }
@@ -92,13 +91,13 @@ function copyBurst(burstID) {
     doAjaxCall({
         type: "POST",
         url: '/burst/copy_burst/' + burstID,
-        success: function(r) {
+        success: function (r) {
             loadSimulatorInterface();
             setNewBurstActive();
             fill_burst_name(r, false, true);
             displayMessage("A copy of previous simulation was prepared for you!");
         },
-        error: function() {
+        error: function () {
             displayMessage("We encountered an error while generating a copy of the simulation. Please try reload and then check the logs!", "errorMessage");
             sessionStoredBurst = clone(EMPTY_BURST);
         }
@@ -114,14 +113,14 @@ function loadBurstHistory() {
         url: '/burst/load_burst_history',
         cache: false,
         async: false,
-        success: function(r) {
-            var historyElem = $('#section-view-history');
+        success: function (r) {
+            const historyElem = $('#section-view-history');
             historyElem.empty();
             historyElem.append(r);
             MathJax.Hub.Queue(["Typeset", MathJax.Hub, "section-view-history"]);
             //setupMenuEvents(historyElem);
         },
-        error: function() {
+        error: function () {
             displayMessage("Simulator data could not be loaded properly..", "errorMessage");
         }
     });
@@ -145,14 +144,14 @@ function updateBurstHistoryStatus() {
     if (burst_ids.length > 0) {
         doAjaxCall({
             type: "POST",
-            data: {'burst_ids' : JSON.stringify(burst_ids)},
+            data: {'burst_ids': JSON.stringify(burst_ids)},
             url: '/burst/get_history_status',
-            success: function(r) {
+            success: function (r) {
                 var finalStatusReceived = false;
                 var changedStatusOnCurrentBurst = false;
                 var result = $.parseJSON(r);
 
-                for (var i = 0; i < result.length; i++) {
+                for (let i = 0; i < result.length; i++) {
                     if (result[i][1] !== 'running') {
                         finalStatusReceived = true;
                         if (result[i][0] === sessionStoredBurst.id) {
@@ -163,7 +162,7 @@ function updateBurstHistoryStatus() {
                 _updateBurstHistoryElapsedTime(result);
                 scheduleNewUpdate(finalStatusReceived, changedStatusOnCurrentBurst);
             },
-            error: function() {
+            error: function () {
                 displayMessage("Error during simulation status update...", "errorMessage");
                 scheduleNewUpdate(false);
             }
@@ -174,11 +173,11 @@ function updateBurstHistoryStatus() {
 /**
  * Update the burst detail pop-up of running simulations with the elapsed processing time.
  */
-function _updateBurstHistoryElapsedTime(result){
-    for (var i = 0; i < result.length; i++) {
+function _updateBurstHistoryElapsedTime(result) {
+    for (let i = 0; i < result.length; i++) {
         if (result[i][1] === 'running') {
             var el = $('#burst-history').find(' li .burst-prop-processtime span')[i];
-            $(el).text(' ~ '  + result[i][4]);
+            $(el).text(' ~ ' + result[i][4]);
         }
     }
 }
@@ -207,10 +206,10 @@ function cancelOrRemoveBurst(burst_id) {
     doAjaxCall({
         type: "POST",
         url: '/burst/cancel_or_remove_burst/' + burst_id,
-        showBlockerOverlay : true,
-        success: function(r) {
-            var liParent = document.getElementById("burst_id_"+ burst_id);
-            if (r == 'canceled') {
+        showBlockerOverlay: true,
+        success: function (r) {
+            var liParent = document.getElementById("burst_id_" + burst_id);
+            if (r === 'canceled') {
                 if (liParent.className.indexOf(ACTIVE_BURST_CLASS) >= 0) {
                     liParent.className = ACTIVE_BURST_CLASS + ' burst-canceled burst';
                 } else {
@@ -220,12 +219,12 @@ function cancelOrRemoveBurst(burst_id) {
             } else {
                 var ulGrandparent = document.getElementById("burst-history");
                 ulGrandparent.removeChild(liParent);
-                if (r == 'reset-new') {
+                if (r === 'reset-new') {
                     resetToNewBurst();
                 }
             }
-        } ,
-        error: function() {
+        },
+        error: function () {
             displayMessage("Could not cancel/remove simulation.", "errorMessage");
         }
     });
@@ -242,20 +241,20 @@ function renameBurstEntry(burst_id, new_name_id) {
         type: "POST",
         async: false,
         url: '/burst/rename_burst/' + burst_id + '/' + newValue,
-        success: function(r) {
+        success: function (r) {
             var result = $.parseJSON(r);
             if ('success' in result) {
                 displayMessage(result.success);
                 $("#burst_id_" + burst_id + " a").html(newValue);
-                if (sessionStoredBurst.id == burst_id + "") {
+                if (sessionStoredBurst.id === burst_id + "") {
                     sessionStoredBurst.name = newValue;
                     fill_burst_name(newValue, true, false);
                 }
             } else {
                 displayMessage(result.error, "errorMessage");
             }
-        } ,
-        error: function() {
+        },
+        error: function () {
             displayMessage("Error when renaming simulation.", "errorMessage");
         }
     });
@@ -310,8 +309,8 @@ function _fillSimulatorParametersArea(htmlContent, isConfigure) {
         tryExpandRangers();
     }
 
-    _toggleLaunchButtons(!isConfigure && sessionStoredBurst.id=='',
-            !isConfigure && sessionStoredBurst.id!='' && sessionStoredBurst.isFinished && !sessionStoredBurst.isRange);
+    _toggleLaunchButtons(!isConfigure && sessionStoredBurst.id == '',
+        !isConfigure && sessionStoredBurst.id != '' && sessionStoredBurst.isFinished && !sessionStoredBurst.isRange);
 
     MathJax.Hub.Queue(["Typeset", MathJax.Hub, "div-simulator-parameters"]);
     // Bind the menu events for the online help pop-ups. Needed for the new dom created
@@ -325,11 +324,11 @@ function loadSimulatorInterface() {
     doAjaxCall({
         type: "GET",
         url: '/burst/get_reduced_simulator_interface',
-        showBlockerOverlay : true,
-        success: function(r) {
+        showBlockerOverlay: true,
+        success: function (r) {
             _fillSimulatorParametersArea(r, false);
-        } ,
-        error: function() {
+        },
+        error: function () {
             displayMessage("Simulator data could not be loaded properly..", "errorMessage");
         }
     });
@@ -339,11 +338,11 @@ function tryExpandRangers() {
     doAjaxCall({
         type: "GET",
         url: '/burst/get_previous_selected_rangers',
-        success: function(r) {
+        success: function (r) {
             var result = $.parseJSON(r);
             updateRangeValues(result);
-        } ,
-        error: function() {
+        },
+        error: function () {
             displayMessage("Could not load previous rangers!.", "warningMessage");
         }
     });
@@ -354,16 +353,20 @@ function tryExpandRangers() {
  */
 function setSimulatorChangeListener(parentDivId) {
     var parentDiv = $('#' + parentDivId);
-    parentDiv.find('select').each(function() {
-        if (!this.disabled) { this.onchange(); }
+    parentDiv.find('select').each(function () {
+        if (!this.disabled) {
+            this.onchange();
+        }
     });
-    parentDiv.find('input[type="radio"]').each(function() {
-        if (!this.disabled && this.checked) { this.onchange(); }
+    parentDiv.find('input[type="radio"]').each(function () {
+        if (!this.disabled && this.checked) {
+            this.onchange();
+        }
     });
     parentDiv.find(":input").each(function () {
-        if (this.type != 'checkbox') {
-            $(this).change(function() {
-                if (this.type != 'checkbox') {
+        if (this.type !== 'checkbox') {
+            $(this).change(function () {
+                if (this.type !== 'checkbox') {
                     markBurstChanged();
                 }
             });
@@ -377,29 +380,29 @@ function setSimulatorChangeListener(parentDivId) {
  */
 function configureSimulator(configureHref) {
     // todo: do not keep app state in dom
-    if (configureHref.text == "Configure Interface") {
+    if (configureHref.text === "Configure Interface") {
         doAjaxCall({
             type: "GET",
             url: '/burst/configure_simulator_parameters',
-            showBlockerOverlay : true,
-            success: function(r) {
+            showBlockerOverlay: true,
+            success: function (r) {
                 _fillSimulatorParametersArea(r, true);
             },
-            error: function() {
+            error: function () {
                 displayMessage("Error occurred during parameter save.", "errorMessage");
             }
         });
     } else {
-        var submitableData = getSubmitableData('div-simulator-parameters', true);
+        const submitableData = getSubmitableData('div-simulator-parameters', true);
 
         doAjaxCall({
             type: "POST",
-            data: {'simulator_parameters' : JSON.stringify(submitableData)},
+            data: {'simulator_parameters': JSON.stringify(submitableData)},
             url: '/burst/save_simulator_configuration?exclude_ranges=True',
-            success: function() {
+            success: function () {
                 loadSimulatorInterface();
-            } ,
-            error: function() {
+            },
+            error: function () {
                 displayMessage("Error during saving configuration.", "errorMessage");
             }
         });
@@ -420,26 +423,28 @@ function toggleSimulatorParametersChecks(beChecked) {
 }
 
 /**
- * Submit currently set simulation parameters. 
+ * Submit currently set simulation parameters.
  * For Model-Visual-Setter important are: Connectivity and Model.
  */
 function configureModel(actionUrl) {
     var submitableData = getSubmitableData("div-simulator-parameters", false);
     doAjaxCall({
         type: "POST",
-        data: {'simulator_parameters' : JSON.stringify(submitableData),
-               'burstName': $("#input-burst-name-id").val()},
+        data: {
+            'simulator_parameters': JSON.stringify(submitableData),
+            'burstName': $("#input-burst-name-id").val()
+        },
         url: '/burst/save_simulator_configuration?exclude_ranges=False',
-        success: function() {
+        success: function () {
             // After submitting current parameters, go to a different page.
             var myForm = document.createElement("form");
-            myForm.method="POST" ;
+            myForm.method = "POST";
             myForm.action = actionUrl;
             document.body.appendChild(myForm);
             myForm.submit();
             document.body.removeChild(myForm);
-        } ,
-        error: function() {
+        },
+        error: function () {
             displayMessage("Sorry, the model visual-configurator is unavailable! Please contact your administrator!", "errorMessage");
         }
     });
@@ -462,7 +467,7 @@ function toggleConfigSurfaceModelParamsButton() {
     selectorSurfaceElem.unbind('change.configureSurfaceModelParameters');
     selectorSurfaceElem.bind('change.configureSurfaceModelParameters', function () {
         var selectedValue = this.value;
-        var show = selectedValue != null && selectedValue != 'None' && selectedValue.length !== 0 ;
+        var show = selectedValue != null && selectedValue != 'None' && selectedValue.length !== 0;
         $("#configSurfaceModelParam").toggle(show);
     });
     selectorSurfaceElem.trigger("change");
@@ -505,11 +510,11 @@ function loadGroup(groupGID) {
         type: "POST",
         async: false,
         url: '/burst/explore/get_default_pse_viewer/' + groupGID,
-        success: function(r) {
-            if (r == 'FLOT') {
+        success: function (r) {
+            if (r === 'FLOT') {
                 $('#burst-pse-flot').show();
                 $('#pse-flot').addClass('active');
-            } else if (r == 'ISO') {
+            } else if (r === 'ISO') {
                 $('#burst-pse-iso').show();
                 $('#pse-iso').addClass('active');
             } else {
@@ -520,7 +525,7 @@ function loadGroup(groupGID) {
             PSE_mainDraw('burst-pse-flot', 'burst', groupGID);
             Isocline_MainDraw(groupGID, 'burst-pse-iso');
         },
-        error: function() {
+        error: function () {
             displayMessage("Error while loading burst.", "errorMessage");
         }
     });
@@ -531,16 +536,15 @@ function changePSETab(clickedHref, toShow) {
     $("#section-portlets-ul").find("li").removeClass('active');
 
     $(clickedHref).parent().addClass('active');
-    if (toShow == 'flot') {
+    if (toShow === 'flot') {
         $('#burst-pse-flot').show();
         $('#burst-pse-iso').hide();
         redrawPlot('pse_discreet_top_id');
     } else {
         $('#burst-pse-flot').hide();
         $('#burst-pse-iso').show();
-        redrawCanvas(null,'GlobalVariance',null);
+        redrawCanvas("");
         drawAxis();
-        window.onresize = drawAxis;
     }
 }
 
@@ -561,14 +565,14 @@ function toggleMaximizeBurst(hrefElement) {
 
 
 function updatePortletsToolbar(state) {
-    var secondClass;
-    if (state == 0) {
+    let secondClass;
+    if (state === 0) {
         // Empty toolbar, when Tree TAB is selected
-        secondClass ='empty-portlets-toolbar';
-    }else if (state == 1) {
+        secondClass = 'empty-portlets-toolbar';
+    } else if (state === 1) {
         // Save and Cancel buttons when selecting currently visible portlets
         secondClass = 'select-portlets-toolbar';
-    } else if (state == 2) {
+    } else if (state === 2) {
         // Save and Cancel when filling portlet parameters to work with
         secondClass = 'parameters-portlets-toolbar';
     } else {
@@ -582,10 +586,10 @@ function updatePortletsToolbar(state) {
  * Update the selected portlets. Used when changing any of the select combos.
  */
 function updatePortletSelection(selectComponent, indexInTab) {
-    if (selectedPortlets != null) {
+    if (selectedPortlets !== null) {
         var selectedOption = selectComponent.options[selectComponent.selectedIndex];
         var portletId = selectedOption.value;
-        var portletName = selectedOption.innerHTML;
+        const portletName = selectedOption.innerHTML;
         document.getElementById('portlet-name_entry-' + indexInTab).value = portletName;
         selectedPortlets[selectedTab][indexInTab] = [parseInt(portletId), portletName];
     }
@@ -606,15 +610,15 @@ function selectPortlets(isSave) {
     } else {
         // If we want to save the configuration, show the corresponding div, and make a call
         // to server to get the previews(static images) for these portlets.
-        for (var i = 0; i < selectedPortlets[0].length; i++) {
+        for (let i = 0; i < selectedPortlets[0].length; i++) {
             selectedPortlets[selectedTab][i][1] = document.getElementById('portlet-name_entry-' + i).value;
         }
         doAjaxCall({
             type: "POST",
             data: {"tab_portlets_list": JSON.stringify(selectedPortlets)},
             url: '/burst/portlet_tab_display',
-            success: function(r) {
-                var portletDisplayElem = $("#portlets-display");
+            success: function (r) {
+                let portletDisplayElem = $("#portlets-display");
                 portletDisplayElem.replaceWith(r);
                 // When saving configuration we need to show only the static previews even if we started
                 // from the static previews page or the visualization page.
@@ -624,8 +628,8 @@ function selectPortlets(isSave) {
                 portletConfigurationActive = false;
                 markBurstChanged();
                 updatePortletsToolbar(3);
-            } ,
-            error: function() {
+            },
+            error: function () {
                 displayMessage("Selection was not saved properly.", "errorMessage");
             }
         });
@@ -640,11 +644,11 @@ function setPortletsStaticPreviews() {
     doAjaxCall({
         type: "POST",
         url: '/burst/get_configured_portlets',
-        success: function(r) {
-           $("#portlets-display").replaceWith(r);
-        } ,
-        error: function() {
-           displayMessage("Selection was not saved properly.", "errorMessage");
+        success: function (r) {
+            $("#portlets-display").replaceWith(r);
+        },
+        error: function () {
+            displayMessage("Selection was not saved properly.", "errorMessage");
         }
     });
 }
@@ -654,13 +658,13 @@ function setPortletsStaticPreviews() {
  */
 function updatePortletConfiguration() {
     var selectedPortletsForThisTab = selectedPortlets[selectedTab];
-    for (var i = 0; i < selectedPortletsForThisTab.length; i++) {
+    for (let i = 0; i < selectedPortletsForThisTab.length; i++) {
         var selectComponent = document.getElementById('selectportlet-' + i);
         var currentConfig = selectedPortletsForThisTab[i];
         var selectedIndex = 0;
-        for (var k = 0; k < selectComponent.options.length; k++) {
+        for (let k = 0; k < selectComponent.options.length; k++) {
             var selectedOption = selectComponent.options[k];
-            if (parseInt(selectedOption.value) == currentConfig[0]) {
+            if (parseInt(selectedOption.value) === currentConfig[0]) {
                 selectedIndex = k;
             }
         }
@@ -679,41 +683,41 @@ function savePortletParams() {
         data: {"portlet_parameters": JSON.stringify(submitableData)},
         url: '/burst/save_parameters/' + indexInTab,
         traditional: true,
-        success: function(r) {
+        success: function (r) {
             // When saving parameters for a portlet, a relaunch might be needed (in case analyzer param changed)
             // or might not be needed (in case of visualizer change)
-            if (r == "relaunchView" && sessionStoredBurst.id != '') {
+            if (r === "relaunchView" && sessionStoredBurst.id !== '') {
                 var currentPortletDiv = $(".portlet-" + indexInTab)[0];
                 var width = Math.floor(currentPortletDiv.clientWidth);
                 var height = Math.floor(currentPortletDiv.clientHeight);
                 doAjaxCall({
                     type: "GET",
                     url: '/burst/check_status_for_visualizer/' + selectedTab + '/' + indexInTab + '/' + width + '/' + height,
-                    success: function(r) {
+                    success: function (r) {
                         currentPortletDiv.replaceWith(r);
                         $("#portlets-display").show();
-                    } ,
-                    error: function() {
+                    },
+                    error: function () {
                         displayMessage("Error when retrieving visualizers configuration!", "errorMessage");
                     }
-               });
+                });
             } else {
                 markBurstChanged();
                 doAjaxCall({
                     type: "POST",
                     data: {"tab_portlets_list": JSON.stringify(selectedPortlets)},
                     url: '/burst/portlet_tab_display',
-                    success: function(r) {
+                    success: function (r) {
                         $("#portlets-display").replaceWith(r);
-                    } ,
-                    error: function() {
+                    },
+                    error: function () {
                         displayMessage("Selection was not saved properly.", "errorMessage");
                     }
                 });
                 displayMessage("Viewers configuration saved succesfully!", "infoMessage");
             }
-        } ,
-        error: function() {
+        },
+        error: function () {
             displayMessage("Error during saving configuration.", "errorMessage");
         }
     });
@@ -731,7 +735,7 @@ function showPortletParametersPage(tabIdx) {
     // The tabIdx received is just a relative number (the n-th portlet in this tab)
     // but the configuration stored is in the form [ [id, name], [-1, None], [-1, None], [id, name]]
     // so go through this to find out the absolute index in this tab for this portlet
-    for (var i = 0; i < selectedPortlets[selectedTab].length; i++) {
+    for (let i = 0; i < selectedPortlets[selectedTab].length; i++) {
         if (selectedPortlets[selectedTab][i][0] >= 0) {
             if (tabIdx > 0) {
                 tabIdx = tabIdx - 1;
@@ -744,7 +748,7 @@ function showPortletParametersPage(tabIdx) {
     doAjaxCall({
         type: "GET",
         url: '/burst/get_portlet_configurable_interface/' + indexInTab,
-        success: function(r) {
+        success: function (r) {
             var portletElem = $("#portlet-param-config");
             portletElem.empty();
             portletElem.append(r);
@@ -753,8 +757,8 @@ function showPortletParametersPage(tabIdx) {
             portletElem.show();
             updatePortletsToolbar(2);
             setupMenuEvents(portletElem);
-        } ,
-        error: function() {
+        },
+        error: function () {
             displayMessage("View configuration was not property loaded...", "errorMessage");
         }
     });
@@ -771,10 +775,10 @@ function returnToSessionPortletConfiguration() {
         type: "GET",
         async: false,
         url: '/burst/get_portlet_session_configuration',
-        success: function(r) {
+        success: function (r) {
             selectedPortlets = $.parseJSON(r);
-        } ,
-        error: function() {
+        },
+        error: function () {
             displayMessage("Error during retrieving viewer configuration.", "errorMessage");
         }
     });
@@ -801,19 +805,19 @@ function checkIfPortletDone(portlet_element_id, timedSelectedTab, timedTabIndex)
         doAjaxCall({
             type: "GET",
             url: '/burst/check_status_for_visualizer/' + timedSelectedTab + '/' + timedTabIndex + '/' + width + '/' + height,
-            success: function(r) {
+            success: function (r) {
                 var expectedParentElem = $("#" + portlet_element_id);
                 if (expectedParentElem.length > 0) {
                     expectedParentElem.replaceWith(r);
-                    var runningFlag = $(".portlet-"+ timedTabIndex+" input[id^='running-portlet-']");
+                    var runningFlag = $(".portlet-" + timedTabIndex + " input[id^='running-portlet-']");
                     if (runningFlag.length > 0) {
                         var new_portlet_id = $(".portlet-" + timedTabIndex)[0].id;
                         var timeout = setTimeout("checkIfPortletDone('" + new_portlet_id + "'," + selectedTab + ", " + timedTabIndex + ")", 3000);
                         refreshTimeouts.push(timeout);
                     }
                 }
-            } ,
-            error: function() {
+            },
+            error: function () {
                 displayMessage("Error during retrieving viewer configuration.", "errorMessage");
             }
         });
@@ -822,7 +826,7 @@ function checkIfPortletDone(portlet_element_id, timedSelectedTab, timedTabIndex)
 
 function _setPortletRefreshTimeouts() {
     $("input[id^='running-portlet-']").each(function () {
-        var parent_div_id = 'portlet-view-'+$(this).val();
+        var parent_div_id = 'portlet-view-' + $(this).val();
         var tabIndex = $(this)[0].id.replace('running-portlet-', '');
         var timeout = setTimeout("checkIfPortletDone('" + parent_div_id + "', " + selectedTab + ", " + tabIndex + ")", 3000);
         refreshTimeouts.push(timeout);
@@ -830,7 +834,7 @@ function _setPortletRefreshTimeouts() {
 }
 
 function _clearAllTimeouts() {
-    for (var i = 0; i < refreshTimeouts.length; i++) {
+    for (let i = 0; i < refreshTimeouts.length; i++) {
         clearTimeout(refreshTimeouts[i]);
     }
 }
@@ -846,8 +850,8 @@ function changeBurstTile(selectedHref) {
     // Refresh buttons
     returnToSessionPortletConfiguration();
     // First update with the value stored in the input fields
-    if (selectedTab >=0) {
-        for (var i = 0; i < selectedPortlets[0].length; i++) {
+    if (selectedTab >= 0) {
+        for (let i = 0; i < selectedPortlets[0].length; i++) {
             selectedPortlets[selectedTab][i][1] = $('#portlet-name_entry-' + i).val();
         }
     }
@@ -862,7 +866,7 @@ function changeBurstTile(selectedHref) {
     updatePortletConfiguration();
 
     if (!portletConfigurationActive) {
-        if (sessionStoredBurst.id == '') {
+        if (sessionStoredBurst.id === '') {
             // If we are in display phase, depending on the condition that this is a new burst or a loaded one, take the corresponding action.
             setPortletsStaticPreviews();
         } else {
@@ -872,12 +876,12 @@ function changeBurstTile(selectedHref) {
             doAjaxCall({
                 type: "POST",
                 url: '/burst/load_configured_visualizers/' + width + '/' + height,
-                success: function(r) {
+                success: function (r) {
                     $("#portlets-display").replaceWith(r);
                     _setPortletRefreshTimeouts();
                     MathJax.Hub.Queue(["Typeset", MathJax.Hub, "portlets-display"]);
-                } ,
-                error: function() {
+                },
+                error: function () {
                     displayMessage("Visualizers selection was not properly saved.", "errorMessage");
                 }
             });
@@ -902,9 +906,9 @@ function displayBurstTree(selectedHref, selectedProjectID, baseURL) {
         async: false,
         url: '/burst/change_selected_tab/-1'
     });
-    var filterValue = {'type' : 'from_burst', 'value' : sessionStoredBurst.id};
-    if (filterValue.value == '') {
-        filterValue = {'type' : 'from_burst', 'value' : "0"};
+    let filterValue = {'type': 'from_burst', 'value': sessionStoredBurst.id};
+    if (filterValue.value === '') {
+        filterValue = {'type': 'from_burst', 'value': "0"};
     }
     updateTree("#treeOverlay", selectedProjectID, baseURL, JSON.stringify(filterValue));
     $("#portlets-display").hide();
@@ -914,12 +918,12 @@ function displayBurstTree(selectedHref, selectedProjectID, baseURL) {
 }
 
 /*************************************************************************************************************************
- * 			GENERIC FUNCTIONS
+ *            GENERIC FUNCTIONS
  *************************************************************************************************************************/
 
-  /*
-   * If a burst is stored in session then load from there. Called on coming to burst page from a valid session.
-   */
+/*
+ * If a burst is stored in session then load from there. Called on coming to burst page from a valid session.
+ */
 function initBurstConfiguration(sessionPortlets, selectedTab) {
     //Get the selected burst from session and store it to be used further ....
     doAjaxCall({
@@ -927,29 +931,29 @@ function initBurstConfiguration(sessionPortlets, selectedTab) {
         url: '/burst/get_selected_burst',
         cache: false,
         async: false,
-        success: function(r) {
-            if (r != 'None') {
+        success: function (r) {
+            if (r !== 'None') {
                 sessionStoredBurst.id = r;
             } else {
                 sessionStoredBurst = clone(EMPTY_BURST);
             }
         },
-        error: function() {
+        error: function () {
             displayMessage("Simulator data could not be loaded properly..", "errorMessage");
         }
     });
 
     loadBurstHistory();
 
-    if (sessionStoredBurst.id != "") {
+    if (sessionStoredBurst.id !== "") {
         loadBurst(sessionStoredBurst.id);
     } else {
         tryExpandRangers();
     }
 
     toggleConfigSurfaceModelParamsButton();
-    
-    if ('-1' == selectedTab) {
+
+    if ('-1' === selectedTab) {
         $("#tab-burst-tree").click();
     }
     selectedPortlets = sessionPortlets;
@@ -970,50 +974,50 @@ function loadBurst(burst_id) {
     doAjaxCall({
         type: "POST",
         url: '/burst/load_burst/' + burst_id,
-        showBlockerOverlay : true,
-        success: function(r) {
-            var result = $.parseJSON(r);
+        showBlockerOverlay: true,
+        success: function (r) {
+            const result = $.parseJSON(r);
             selectedTab = result.selected_tab;
-            var groupGID = result.group_gid;
-            var selectedBurst = $("#burst_id_" + burst_id)[0];
+            const groupGID = result.group_gid;
+            const selectedBurst = $("#burst_id_" + burst_id)[0];
             // This is for the back-button issue with Chrome. Should be removed after permanent solution.
-            if (selectedBurst != null) {
+            if (selectedBurst !== null) {
                 selectedBurst.className = selectedBurst.className + ' ' + ACTIVE_BURST_CLASS;
-                sessionStoredBurst.isFinished = (result.status == 'finished');
-                sessionStoredBurst.isRange = (groupGID != null && groupGID != "None");
+                sessionStoredBurst.isFinished = (result.status === 'finished');
+                sessionStoredBurst.isRange = (groupGID !== null && groupGID !== "None" && groupGID !== undefined);
                 fill_burst_name(selectedBurst.children[0].text, true, false);
                 updatePortletsToolbar(3);
             }
             // Now load simulator interface and the corresponding right side div depending
             // on the condition if the burst was a group launch or not.
             loadSimulatorInterface();
-            if (groupGID != null && groupGID != "None") {
+            if (groupGID !== null && groupGID !== "None" && groupGID !== undefined) {
                 loadGroup(groupGID);
-            } else if (selectedTab == -1) {
+            } else if (selectedTab === -1) {
                 switch_top_level_visibility();
                 $("#section-portlets").show();
                 $("#tab-burst-tree").click();
             } else {
                 switch_top_level_visibility();
-                var sectionPortletsElem = $("#section-portlets");
+                const sectionPortletsElem = $("#section-portlets");
                 sectionPortletsElem.show();
-                var portletsDisplay = $("#portlets-display")[0];
-                var fullWidth = Math.floor(portletsDisplay.clientWidth);
-                var fullHeight = Math.floor(sectionPortletsElem[0].clientHeight - 95);
+                const portletsDisplay = $("#portlets-display")[0];
+                const fullWidth = Math.floor(portletsDisplay.clientWidth);
+                const fullHeight = Math.floor(sectionPortletsElem[0].clientHeight - 95);
                 doAjaxCall({
                     type: "POST",
                     url: '/burst/load_configured_visualizers/' + fullWidth + '/' + fullHeight,
-                    showBlockerOverlay : true,
-                    success: function(portlets) {
+                    showBlockerOverlay: true,
+                    success: function (portlets) {
                         doAjaxCall({
                             type: "POST",
                             async: false,
                             url: '/burst/get_selected_portlets',
-                            showBlockerOverlay : true,
-                            success: function(rr) {
+                            showBlockerOverlay: true,
+                            success: function (rr) {
                                 selectedPortlets = $.parseJSON(rr);
-                            } ,
-                            error: function() {
+                            },
+                            error: function () {
                                 displayMessage("Viewers not loaded completely...", "errorMessage");
                             }
                         });
@@ -1021,14 +1025,14 @@ function loadBurst(burst_id) {
                         _setPortletRefreshTimeouts();
                         MathJax.Hub.Queue(["Typeset", MathJax.Hub, "portlets-display"]);
                         displayMessage("Simulation successfully loaded!");
-                    } ,
-                    error: function() {
+                    },
+                    error: function () {
                         displayMessage("Viewers not loaded properly...", "errorMessage");
                     }
                 });
             }
         },
-        error: function() {
+        error: function () {
             displayMessage("Simulation was not loaded properly...", "errorMessage");
         }
     });
@@ -1057,11 +1061,11 @@ function setNewBurstActive() {
  * Mark current burst as changed, to see the user than the latest changes are not yet persisted.
  */
 function markBurstChanged() {
-    if (sessionStoredBurst.id == '') {
+    if (sessionStoredBurst.id === '') {
         return;
     }
-    var titleSimulation = $("#title-simulation");
-    var previousTitle = titleSimulation.html();
+    const titleSimulation = $("#title-simulation");
+    const previousTitle = titleSimulation.html();
     if (previousTitle.lastIndexOf("***") < 0) {
         titleSimulation.html(previousTitle + " ***");
     }
@@ -1074,9 +1078,9 @@ function markBurstChanged() {
  * @param {bool} addPrefix
  */
 function fill_burst_name(burstName, isReadOnly, addPrefix) {
-    var inputBurstName = $("#input-burst-name-id");
-    var titleSimulation = $("#title-simulation");
-    var titlePortlets = $("#title-visualizers");
+    const inputBurstName = $("#input-burst-name-id");
+    const titleSimulation = $("#title-simulation");
+    const titlePortlets = $("#title-visualizers");
 
     if (addPrefix && burstName.indexOf('Copy of ') < 0) {
         burstName = "Copy of " + burstName;
@@ -1087,13 +1091,13 @@ function fill_burst_name(burstName, isReadOnly, addPrefix) {
     titlePortlets.empty();
 
     if (isReadOnly) {
-        titleSimulation.append("<mark>Review</mark> Simulation core for "+ burstName);
+        titleSimulation.append("<mark>Review</mark> Simulation core for " + burstName);
         titlePortlets.append(burstName);
         sessionStoredBurst.name = burstName;
         inputBurstName.parent().parent().removeClass('is-created');
     } else {
         titleSimulation.append("<mark>Create</mark> New simulation core");
-        if (burstName != '') {
+        if (burstName !== '') {
             titlePortlets.append(burstName);
         } else {
             titlePortlets.append("New simulation");
@@ -1109,28 +1113,28 @@ function fill_burst_name(burstName, isReadOnly, addPrefix) {
  * @param launchMode: 'new' 'branch' or 'continue'
  */
 function launchNewBurst(launchMode) {
-    var newBurstName = document.getElementById('input-burst-name-id').value;
+    let newBurstName = document.getElementById('input-burst-name-id').value;
     if (newBurstName.length === 0) {
         newBurstName = "none_undefined";
     }
     displayMessage("You've submitted parameters for simulation launch! Please wait for preprocessing steps...", 'warningMessage');
-    var submitableData = getSubmitableData('div-simulator-parameters', false);
+    const submitableData = getSubmitableData('div-simulator-parameters', false);
     doAjaxCall({
         type: "POST",
         url: '/burst/launch_burst/' + launchMode + '/' + newBurstName,
-        data: { 'simulator_parameters' : JSON.stringify(submitableData) },
+        data: {'simulator_parameters': JSON.stringify(submitableData)},
         traditional: true,
-        success: function(r) {
+        success: function (r) {
             loadBurstHistory();
-            var result = $.parseJSON(r);
+            const result = $.parseJSON(r);
             if ('id' in result) {
                 changeBurstHistory(result.id);
             }
-            if ('error' in result){
+            if ('error' in result) {
                 displayMessage(result.error, "errorMessage");
             }
-        } ,
-        error: function() {
+        },
+        error: function () {
             displayMessage("Error when launching simulation. Please check te logs or contact your administrator.", "errorMessage");
         }
     });

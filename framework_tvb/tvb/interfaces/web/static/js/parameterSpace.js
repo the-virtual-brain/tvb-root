@@ -343,60 +343,12 @@ function d3Plot(placeHolder, data, options, pageParam) {
         return d3.rgb(colTest)
     }
 
-    /*
-     * This function generates range labels to assist the user in inputting a threshold for the contour tool. It simply goes through the neighbor options for every dot in the graph
-     * and determines what the differences are in size and color metric. Then the function simply returns an object of the max&mins of color and size comparisons for the labels.
-     */
-    function calcDiff() {
-        var [maxDiffCol,minDiffCol,minDiffSize,maxDiffSize,] = [0, Infinity, Infinity, 0]; //initializing the values to be returned
-        var allNeighbors = compareToNeighbors(structure, steps, inclusiveX, inclusiveY, {
-            type: 'Color',
-            value: 0,
-            not: false
-        }, _PSE_d3NodesInfo);//the type here isn't important actually
-        for (ob of allNeighbors) {
-            for (neighborStr of ob.neighbors) {
-                var [xNeighborCoord,yNeighborCoord]  = neighborStr.split(" "),
-                    neighborOb = workingData.filter(function (dataOb) {
-                        return dataOb.coords.x == xNeighborCoord && dataOb.coords.y == yNeighborCoord
-                    }),
-                    neighborSize = neighborOb[0].points.radius,
-                    neighborColorWeight = getNodeInfo({x:xNeighborCoord, y:yNeighborCoord}).color_weight,
-                    obColorWeight = getNodeInfo(ob.focalPoint.coords).color_weight,
-                    colorDiff = Math.abs(obColorWeight - neighborColorWeight),
-                    min_size = +d3.select("#minShapeLabel").node().innerHTML,
-                    max_size = +d3.select("#maxShapeLabel").node().innerHTML,
-                    sizeScale = d3.scale.linear() //todo shift sizescale into the scope of the head of the d3plot function variables, it's used in a lot of places.
-                        .range([min_size, max_size]) // these plus signs convert the string to number
-                        .domain(d3.extent(workingData, function (d) {
-                            return +d.points.radius
-                        })),
-                    sizeDiff = Math.abs(sizeScale(+neighborSize) - sizeScale(+ob.focalPoint.points.radius)); // gosh I need to have the radius to size converter on hand nearby all the time...
-                if (maxDiffCol < colorDiff) {
-                    maxDiffCol = colorDiff
-                }
-                if (minDiffCol > colorDiff && colorDiff != 0) {
-                    minDiffCol = colorDiff
-
-                }
-                if (maxDiffSize < sizeDiff) {
-                    maxDiffSize = sizeDiff
-
-                }
-                if (minDiffSize > sizeDiff && sizeDiff != 0) {
-                    minDiffSize = sizeDiff
-                }
-            }
-        }
-        return {size: [minDiffSize, maxDiffSize], color: [minDiffCol, maxDiffCol]}
-    }
-
 
     /*******************************************************************************
      *  this section below is devoted to variable declaration, and graph assembly.
      ******************************************************************************/
 
-    var myBase, workingData, canvasDimensions, canvas, xScale, yScale, xAxis, yAxis, circles, brush,
+    let myBase, workingData, canvasDimensions, canvas, xScale, yScale, xAxis, yAxis, circles, brush,
         dotsCanvas, innerHeight, innerWidth, toolTipDiv, zoom, datatypeGID, structure, inclusiveX, inclusiveY, steps;
     myBase = d3.select(placeHolder);
     workingData = sortResults(data); //structure expects the sorting that this function performs.
@@ -406,7 +358,7 @@ function d3Plot(placeHolder, data, options, pageParam) {
         , y: [+(inclusiveY[1] - inclusiveY[0]).toFixed(4)]
     };
     structure = createStructure(workingData, inclusiveX, inclusiveY);
-    for (var ind in workingData) {
+    for (let ind in workingData) {
         workingData[ind].key = parseFloat(ind)
     }
 
@@ -463,7 +415,6 @@ function d3Plot(placeHolder, data, options, pageParam) {
         .tickSize(-innerWidth, 0, 0)
         .tickFormat("");
 
-
     canvas.append("g")
         .attr("id", "yGrid")
         .attr("clip-path", "url(#genClip)") // applying the clip to limit extent of displayed grid
@@ -512,10 +463,9 @@ function d3Plot(placeHolder, data, options, pageParam) {
                 return yScale(d.coords.y)
             },
             fill: function (d) {
-
-                var color = d3.rgb("black"); // leave pending results blacked out if not complete.
-                var nodeInfo = getNodeInfo(d.coords);
-                if (nodeInfo.tooltip.search("PENDING") == -1 && nodeInfo.tooltip.search("CANCELED") == -1) { // this prevents code from trying to find reasonable color values when simulation results haven't been generated for them
+                let color = d3.rgb("black"); // leave pending results blacked out if not complete.
+                let nodeInfo = getNodeInfo(d.coords);
+                if (nodeInfo.tooltip.search("PENDING") === -1 && nodeInfo.tooltip.search("CANCELED") === -1) { // this prevents code from trying to find reasonable color values when simulation results haven't been generated for them
                     color = returnfill(nodeInfo.color_weight);
                 }
                 return color; // otherwise fill out with color in keeping with scheme.
@@ -532,7 +482,7 @@ function d3Plot(placeHolder, data, options, pageParam) {
      */
     d3.select("#Explore").on("click", function () {
         var exploreDiv = d3.select("#exploreDiv");
-        if (exploreDiv.style("display") == "none") {
+        if (exploreDiv.style("display") === "none") {
             exploreDiv.style("display", "block");
 
         } else {
@@ -719,28 +669,28 @@ function d3Plot(placeHolder, data, options, pageParam) {
         var res;
         try {
             res = _PSE_d3NodesInfo[coords.x][coords.y];
-            if (res == undefined){
+            if (res == undefined) {
                 throw Exception()
             }
             return res;
         } catch (err) {
             try {
                 res = _PSE_d3NodesInfo[coords.x.toFixed(1)][coords.y];
-                if (res == undefined){
+                if (res == undefined) {
                     throw Exception()
                 }
                 return res;
             } catch (err) {
                 try {
                     res = _PSE_d3NodesInfo[coords.x][coords.y.toFixed(1)];
-                    if (res == undefined){
+                    if (res == undefined) {
                         throw Exception()
                     }
                     return res;
                 } catch (err) {
                     try {
                         res = _PSE_d3NodesInfo[coords.x.toFixed(1)][coords.y.toFixed(1)];
-                        if (res == undefined){
+                        if (res == undefined) {
                             throw Exception()
                         }
                         return res;
@@ -781,8 +731,8 @@ function d3Plot(placeHolder, data, options, pageParam) {
      * this is the behavior for when a result is clicked. We have to bring up the window that gives the user more options relating to the specific result clicked upon.
      */
     d3.selectAll("circle").on("click", function (d) {
-        var nodeInfo = getNodeInfo(d.coords);
-        if (nodeInfo.dataType != undefined) {
+        const nodeInfo = getNodeInfo(d.coords);
+        if (nodeInfo.dataType !== undefined) {
             displayNodeDetails(nodeInfo['Gid'], nodeInfo['dataType'], pageParam); // curious because backPage isn't in the scope, but appears to work.
         }
     });
@@ -799,7 +749,7 @@ function d3Plot(placeHolder, data, options, pageParam) {
  * Do a redraw of the plot.
  */
 function redrawPlot(plotCanvasId, backPage) {
-    if (backPage == null || backPage == '') {
+    if (backPage === undefined || backPage === null || backPage === '') {
         backPage = get_URL_param('back_page');
     }
 
@@ -811,7 +761,7 @@ function redrawPlot(plotCanvasId, backPage) {
  * create a colored legend for the current colorScheme and data results, and place it in the upper right of the graphed space.
  */
 function updateLegend(minColor, maxColor) {
-    var legendContainer, legendHeight, tableContainer;
+    let legendContainer, legendHeight, tableContainer;
     legendContainer = d3.select("#colorWeightsLegend");
     legendHeight = d3.select("#table-colorWeightsLegend").node().getBoundingClientRect().height;
     tableContainer = d3.select("#table-colorWeightsLegend");
@@ -828,7 +778,7 @@ function PSEDiscreteInitialize(labelsXJson, labelsYJson, valuesXJson, valuesYJso
     var values_x = $.parseJSON(valuesXJson);
     var values_y = $.parseJSON(valuesYJson);
     var data = $.parseJSON(dataJson);
-    series_array = typeof (series_array) == "string" ? $.parseJSON(series_array) : series_array;
+    series_array = typeof (series_array) === "string" ? $.parseJSON(series_array) : series_array;
 
     min_color = parseFloat(min_color); // todo run a batch of simulations part of the way,  and then cancel to see what the result looks like.
     max_color = parseFloat(max_color);
@@ -866,21 +816,21 @@ function PSEDiscreteInitialize(labelsXJson, labelsYJson, valuesXJson, valuesYJso
  */
 function PSE_mainDraw(parametersCanvasId, backPage, groupGID) {
 
-    if (groupGID == null) {
+    if (groupGID === null || groupGID === undefined) {
         // We didn't get parameter, so try to get group id from page
         groupGID = document.getElementById("datatype-group-gid").value;
     }
-    if (backPage == null || backPage == '') {
+    if (backPage === undefined || backPage === null || backPage === '') {
         backPage = get_URL_param('back_page');
     }
 
-    var url = '/burst/explore/draw_discrete_exploration/' + groupGID + '/' + backPage;
-    var selectedColorMetric = $('#color_metric_select').val();
-    var selectedSizeMetric = $('#size_metric_select').val();
+    let url = '/burst/explore/draw_discrete_exploration/' + groupGID + '/' + backPage;
+    const selectedColorMetric = $('#color_metric_select').val();
+    const selectedSizeMetric = $('#size_metric_select').val();
 
-    if (selectedColorMetric != '' && selectedColorMetric != null) {
+    if (selectedColorMetric !== undefined && selectedColorMetric !== '' && selectedColorMetric !== null) {
         url += '/' + selectedColorMetric;
-        if (selectedSizeMetric != '' && selectedSizeMetric != null) {
+        if (selectedSizeMetric !== undefined && selectedSizeMetric !== '' && selectedSizeMetric !== null) {
             url += '/' + selectedSizeMetric;
         }
     }
@@ -901,80 +851,6 @@ function PSE_mainDraw(parametersCanvasId, backPage, groupGID) {
 /*********************************************************************************************************************
  *            ISOCLINE PSE BELLOW
  *********************************************************************************************************************/
-
-
-var serverURL = null;
-var figuresDict = null;
-var currentFigure = null;
-
-
-/*
- * Do the actual resize on currentFigure global var, and a given width and height.
- */
-function resizePlot(width, height) {
-    if (currentFigure != null) {
-        MPLH5_resize = currentFigure;
-        do_resize(currentFigure, width, height);
-        MPLH5_resize = -1;
-    }
-}
-
-/*
- * Store all needed data as js variables so we can use later on.
- */
-function initISOData(metric, figDict, servURL) {
-    figuresDict = $.parseJSON(figDict);
-    serverURL = servURL;
-    currentFigure = figuresDict[metric];
-    connect_manager(serverURL, figuresDict[metric]);
-    $('#' + metric).show();
-    initMPLH5CanvasForExportAsImage(figuresDict[metric]);
-}
-
-/*
- * On plot change update metric and do any required changes like resize on new selected plot.
- */
-function updateMetric(selectComponent) {
-    var newMetric = $(selectComponent).find(':selected').val();
-    showMetric(newMetric);
-    var pseElem = $('#section-pse');
-    var width = pseElem.width() - 60;
-    var height = pseElem.height() - 90;
-    waitOnConnection(currentFigure, 'resizePlot(' + width + ', ' + height + ')', 200, 50);
-}
-
-/*
- * Update html to show the new metric. Also connect to backend mplh5 for this new image.
- */
-function showMetric(newMetric) {
-    for (var key in figuresDict) {
-        $('#' + key).hide()
-            .find('canvas').each(function () {
-            if (this.drawForImageExport) {            // remove redrawing method such that only current view is exported
-                this.drawForImageExport = null;
-            }
-        });
-    }
-    currentFigure = figuresDict[newMetric];
-    connect_manager(serverURL, figuresDict[newMetric]);
-    $('#' + newMetric).show();
-    initMPLH5CanvasForExportAsImage(figuresDict[newMetric]);
-}
-
-/*
- * This is the callback that will get evaluated by an onClick event on the canvas through the mplh5 backend.
- */
-function clickedDatatype(datatypeGid) {
-    displayNodeDetails(datatypeGid);
-}
-
-/*
- * Update info on mouse over. This event is passed as a callback from the isocline python adapter.
- */
-function hoverPlot(id, x, y, val) {
-    $('#cursor_info_' + id).html('x axis:' + x + ' y axis:' + y + ' value:' + val);
-}
-
 
 function Isocline_MainDraw(groupGID, divId) {
     $('#' + divId).html('');
