@@ -209,11 +209,11 @@
             <input>
                 <name value="chain_2"/>
                 <label value="Second adapter from chain"/>
-                <type value="tvb.adapters.visualizers.mplh5_cross_correlation.PearsonCorrelationCoefficientVisualizer"
+                <type value="tvb.adapters.visualizers.pearson_cross_correlation.PearsonCorrelationCoefficientVisualizer"
                 />
             </input>
             <input overwrite="chain_2">
-                <name value="corr_coefficients"/>
+                <name value="datatype"/>
                 <label value="Overwrite input_data parameter of second adapter with the first release of the first adapter."/>
                 <type value="dynamic" default="step_1[0]"/>
             </input>

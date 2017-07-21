@@ -34,45 +34,42 @@
 """
 
 import numpy
-from tvb.core.adapters.abcdisplayer import ABCMPLH5Displayer
+from tvb.adapters.visualizers.matrix_viewer import MappedArrayVisualizer
 from tvb.datatypes.graph import CorrelationCoefficients
-from tvb.simulator.plot.tools import plot_tri_matrix
 
 
-class PearsonCorrelationCoefficientVisualizer(ABCMPLH5Displayer):
+class PearsonCorrelationCoefficientVisualizer(MappedArrayVisualizer):
     """
     Viewer for Pearson CorrelationCoefficients.
     Very similar to the CrossCorrelationVisualizer - this one done with Matplotlib
     """
-    _ui_name = "Pearson Correlation Coefficients (MPLH5 Visualizer)"
+    _ui_name = "Pearson Correlation Coefficients"
     _ui_subsection = "correlation_pearson"
 
 
     def get_input_tree(self):
         """ Inform caller of the data we need as input """
 
-        return [{"name": "corr_coefficients", "type": CorrelationCoefficients,
+        return [{"name": "datatype", "type": CorrelationCoefficients,
                  "label": "Correlation Coefficients", "required": True}]
 
 
-    def get_required_memory_size(self, corr_coefficients):
+    def get_required_memory_size(self, datatype):
         """Return required memory."""
 
-        input_size = corr_coefficients.read_data_shape()
+        input_size = datatype.read_data_shape()
         return numpy.prod(input_size) * 8.0
 
 
-    def plot(self, figure, corr_coefficients):
+    def launch(self, datatype):
         """Construct data for visualization and launch it."""
 
-        # Currently only the first mode & state-var are displayed.
-        # TODO: display other modes / sv
-        matrix_to_display = corr_coefficients.array_data[:, :, 0, 0]
-
-        parent_ts = corr_coefficients.source
+        matrix_to_display = datatype.array_data[:, :, 0, 0]
+        parent_ts = datatype.source
         parent_ts = self.load_entity_by_gid(parent_ts.gid)
-        labels_to_display = parent_ts.get_space_labels()
-        if not labels_to_display:
-            labels_to_display = None
-
-        plot_tri_matrix(matrix_to_display, figure=figure, node_labels=labels_to_display, color_anchor=0.)
+        labels = parent_ts.get_space_labels()
+        if not labels:
+            labels = None
+        pars = self.compute_params(matrix_to_display, 'Cross Corelation Matrix plot', labels=[labels,labels])
+        pars.update(half_of_matrix=True)
+        return self.build_display_result("matrix/svg_view", pars)

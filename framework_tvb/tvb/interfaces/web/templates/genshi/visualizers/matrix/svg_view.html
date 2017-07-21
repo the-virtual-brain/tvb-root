@@ -32,7 +32,8 @@
             matrix_view_init_svg('${matrix_data}', '${matrix_shape}',
                 '${matrix_strides}', "$viewer_title", '${matrix_labels}',
                 ["Place mouse over matrix elements to inspect their values",
-                    "Drag in colorbar to select and show entries in a range of values"]);
+                    "Drag in colorbar to select and show entries in a range of values"],
+                ${"true" if defined("half_of_matrix") else "undefined"});
         });
     </script>
 </div>

@@ -319,9 +319,12 @@ tv.plot = {
                 , ma_gp_rect_gp = ma_gp.append("g")
 
                 , ma_gp_fill = function (d, i) {
-                    var c = Math.floor(ma_sc_c(f.mat().data[i]));
-                    return "rgb(" + c + ", 0, " + (255 - c) + ")";
-                };
+                var c = Math.floor(ma_sc_c(f.mat().data[i]));
+                if (f.half_only())
+                    if (i % n > i / n)
+                        return "transparent";
+                return "rgb(" + c + ", 0, " + (255 - c) + ")";
+            };
 
             ma_gp_rect_gp.selectAll("rect").data(f.mat().data).enter()
                 .append("rect")
@@ -383,7 +386,7 @@ tv.plot = {
         };
 
         // generate configurators
-        var conf_fields = ["w", "h", "pad", "mat", "mat_over"];
+        var conf_fields = ["w", "h", "pad", "mat", "mat_over", "half_only"];
         conf_fields.map(function (name) {
             f[name] = tv.util.gen_access(f, name);
         });
