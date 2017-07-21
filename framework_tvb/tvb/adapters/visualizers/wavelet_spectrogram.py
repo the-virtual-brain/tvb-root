@@ -100,7 +100,7 @@ class WaveletSpectrogramVisualizer(ABCDisplayer):
         params = dict(canvasName="Wavelet Spectrogram for: " + input_data.source.type,
                       xAxisName="Time (%s)" % str(input_data.source.sample_period_unit),
                       yAxisName="Frequency (%s)" % str("kHz"),
-                      title="Wavelet Spectrogram Visualizer",
+                      title=self._ui_name,
                       matrix_data=matrix_data,
                       matrix_shape=matrix_shape,
                       start_time=start_time,
