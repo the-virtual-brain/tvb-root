@@ -502,13 +502,15 @@ Displays the cross-correlation matrix. Similar to the previous three visualizers
 Pearson Coefficients Visualizer
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-Displays the Pearson correlation coefficients matrix.
+Displays the Pearson cross correlation coefficients matrix.
+As the correlation matrix is symmetric, only half is actually displayed.
 
-.. figure:: screenshots/visualizer_pearson_mplh5.jpg
+
+.. figure:: screenshots/visualizer_pearson_correlation.jpg
    :width: 90%
    :align: center
 
-   Preview for Pearson Visualizer (MPLH5)
+   Preview for Pearson Cross Correlation Visualizer
 
 
 Fourier Spectrum Visualizer
