@@ -26,10 +26,14 @@
  * .. moduleauthor:: Mihai Andrei <mihai.andrei@codemart.ro>
  **/
 
-function matrix_view_init_svg(matrix_data, matrix_shape, matrix_strides, title, labels, notes, half_of_matrix){
+function matrix_view_init_svg(matrix_data, matrix_shape, matrix_strides, title, labels, notes, half_of_matrix, w, h){
     // setup dimensions, div, svg elements and plotter
     var width = 900;
     var height = 600;
+    if (w !== undefined) {
+        width = w;
+        height = h;
+    }
 
     var div = d3.select("#svg-viewer").attr("style", "width:" + width + "px;");
     var svg = div.append("svg").attr("width", width).attr("height", height);
