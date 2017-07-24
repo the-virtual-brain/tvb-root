@@ -313,12 +313,23 @@ Navigate the 3D scene like in the `Brain Activity Visualizer`_.
 Local Connectivity Visualizer
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-Once a Local Connectivity dataTypes (which in fact is a huge sparse matrix of max size surface
+Once a Local Connectivity DataTypes (which in fact is a huge sparse matrix of max size surface
 vertices x surface vertices, shaped after the cut-off) gets computed, one can view the correlation
-of a given vertex compared to all its neighbours, by launching this viewer (from the DataType overlay).
+of a given vertex compared to all its neighbours, by launching this viewer.
+The Local Connectivity viewer can be launched from the DataType overlay (after clicking on a Local Connectivity
+datatype, and then selecting TAB Visualizers), or from Connectivity (bottom page menu),
+Local Connectivity option on top of the page, then select an existing LocalConnectivity and finally click "View"
+from the right side menu.
 
-In order to see some correlation, one should pick (by mouse click) a vertex on the 3D cortical
-surface once it loads in the canvas.
+.. figure:: screenshots/local_connectivity_viewer.jpg
+   :width: 90%
+   :align: center
+
+   Inspect local connectivity on surface.
+
+In order to see actual correlations, one should pick (by mouse click) a vertex on the 3D cortical
+surface once it loads in the canvas. The colors displayed nearby, show connected vertices with the
+selected point.
 
 
 Annotations Visualizer
