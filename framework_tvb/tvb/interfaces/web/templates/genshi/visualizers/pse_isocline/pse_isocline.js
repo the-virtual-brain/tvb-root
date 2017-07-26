@@ -100,7 +100,6 @@ function redrawCanvas(selected_metric) {
             Matrix2d.m = dimensions[1];
             const interpolatedMatrix = interpolateMatrix(context.canvas.clientWidth, context.canvas.clientHeight);
             Matrix2d.data = matrixToArray(interpolatedMatrix);
-            ColSch_initColorSchemeComponent(Matrix2d.vmin, Matrix2d.vmax);
             ColSch_initColorSchemeGUI(Matrix2d.vmin, Matrix2d.vmax, drawCanvas);
             drawCanvas();
         }

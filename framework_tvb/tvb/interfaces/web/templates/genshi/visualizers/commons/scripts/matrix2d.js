@@ -53,7 +53,6 @@ function matrix2d_init(canvasName, xAxisName, yAxisName, matrix_data, matrix_sha
         Matrix2d.data = $.parseJSON(matrix_data);
         Matrix2d.vmin = vmin;
         Matrix2d.vmax = vmax;
-        ColSch_initColorSchemeComponent(vmin, vmax);
         ColSch_initColorSchemeGUI(vmin, vmax, drawCanvas);
     }
     Matrix2d.n = n;
