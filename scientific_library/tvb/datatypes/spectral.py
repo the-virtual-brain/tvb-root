@@ -410,6 +410,7 @@ class ComplexCoherenceSpectrum(arrays.MappedArray):
     _frequency = None
     _freq_step = None
     _max_freq = None
+    spectrum_types=["Imag","Re","Abs"]
 
     def configure(self):
         """After populating few fields, compute the rest of the fields"""
@@ -468,12 +469,12 @@ class ComplexCoherenceSpectrum(arrays.MappedArray):
         shape = list(self.read_data_shape())
         slices = (slice(shape[0]), slice(shape[1]), slice(shape[2]),)
 
-        if selected_spectrum == "Imag":
+        if selected_spectrum == self.spectrum_types[0]:
             data_matrix = self.get_data('array_data', slices).imag
             indices = numpy.triu_indices(shape[0], 1)
             data_matrix = data_matrix[indices]
 
-        elif selected_spectrum == "Re":
+        elif selected_spectrum == self.spectrum_types[1]:
             data_matrix = self.get_data('array_data', slices).real
             data_matrix = data_matrix.reshape(shape[0] * shape[0], shape[2])
 
