@@ -36,12 +36,11 @@ methods that are associated with the Spectral datatypes.
 .. moduleauthor:: Stuart A. Knock <Stuart@tvb.invalid>
 
 """
-
+import json
 import numpy
 from tvb.basic.logger.builder import get_logger
 from tvb.basic.traits import util, core, types_basic as basic
 from tvb.datatypes import arrays, time_series
-
 
 LOG = get_logger(__name__)
 
@@ -220,10 +219,10 @@ class WaveletCoefficients(arrays.MappedArray):
         label="Mother wavelet",
         default="morlet",
         doc="""A string specifying the type of mother wavelet to use,
-            default is 'morlet'.""") # default to 'morlet'
+            default is 'morlet'.""")  # default to 'morlet'
 
     sample_period = basic.Float(label="Sample period")
-    #sample_rate = basic.Integer(label = "")  inversely related
+    # sample_rate = basic.Integer(label = "")  inversely related
 
     frequencies = arrays.FloatArray(
         label="Frequencies",
@@ -323,7 +322,7 @@ class CoherenceSpectrum(arrays.MappedArray):
     """
     Result of a NodeCoherence Analysis.
     """
-    #Overwrite attribute from superclass
+    # Overwrite attribute from superclass
     array_data = arrays.FloatArray(file_storage=core.FILE_STORAGE_EXPAND)
 
     source = time_series.TimeSeries(
@@ -464,3 +463,35 @@ class ComplexCoherenceSpectrum(arrays.MappedArray):
                                            self.freq_step)
         util.log_debug_array(LOG, self._frequency, "frequency")
         return self._frequency
+
+    def get_spectrum_data(self, selected_spectrum):
+        shape = list(self.read_data_shape())
+        slices = (slice(shape[0]), slice(shape[1]), slice(shape[2]),)
+
+        if selected_spectrum == "Imag":
+            data_matrix = self.get_data('array_data', slices).imag
+            indices = numpy.triu_indices(shape[0], 1)
+            data_matrix = data_matrix[indices]
+
+        elif selected_spectrum == "Re":
+            data_matrix = self.get_data('array_data', slices).real
+            data_matrix = data_matrix.reshape(shape[0] * shape[0], shape[2])
+
+        else:
+            data_matrix = self.get_data('array_data', slices)
+            data_matrix = numpy.absolute(data_matrix)
+            data_matrix = data_matrix.reshape(shape[0] * shape[0], shape[2])
+
+        coh_spec_sd = numpy.std(data_matrix, axis=0)
+        coh_spec_av = numpy.mean(data_matrix, axis=0)
+
+        ymin = numpy.amin(coh_spec_av - coh_spec_sd)
+        ymax = numpy.amax(coh_spec_av + coh_spec_sd)
+
+        coh_spec_sd = json.dumps(coh_spec_sd.tolist())
+        coh_spec_av = json.dumps(coh_spec_av.tolist())
+
+        return dict(coh_spec_sd=coh_spec_sd,
+                    coh_spec_av=coh_spec_av,
+                    ymin=ymin,
+                    ymax=ymax)
