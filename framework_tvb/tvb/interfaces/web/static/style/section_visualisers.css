@@ -128,3 +128,11 @@ div.flot-tick-label{
     padding: 2px;
     opacity: 0.80;
 }
+
+.complex_coherence_draw_area {
+    height:85%;
+    width:95%;
+    position:relative;
+    top:5%;
+    left:5%;
+}

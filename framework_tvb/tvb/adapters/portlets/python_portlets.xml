@@ -50,7 +50,7 @@
             <input>
                 <name value="chain_2"/>
                 <label value="Second adapter from chain"/>
-                <type value="tvb.adapters.visualizers.mplh5_coherence_spectrum.ImaginaryCoherenceDisplay"/>
+                <type value="tvb.adapters.visualizers.complex_imaginary_coherence.ImaginaryCoherenceDisplay"/>
             </input>
             <input overwrite="chain_2">
                 <name value="input_data"/>
