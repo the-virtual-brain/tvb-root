@@ -29,6 +29,7 @@
 #
 
 """
+.. moduleauthor:: Dan Pop <dan.pop@codemart.ro>
 .. moduleauthor:: Paula Sanz Leon <Paula@tvb.invalid>
 .. moduleauthor:: Stuart A. Knock <Stuart@tvb.invalid>
 
@@ -76,10 +77,10 @@ class ImaginaryCoherenceDisplay(ABCDisplayer):
         params = dict(plotName=input_data.source.type,
                       xAxisName="Frequency [kHz]",
                       yAxisName="CohSpec",
-                      available_xScale=["linear", "log"],
+                      available_xScale=["Linear", "Logarithmic"],
                       available_spectrum=json.dumps(input_data.spectrum_types),
                       spectrum_list=input_data.spectrum_types,
-                      xscale="linear",
+                      xscale="Linear",
                       spectrum=input_data.spectrum_types[0],
                       url_base=ABCDisplayer.paths2url(input_data, "get_spectrum_data", parameter=""),
                       # TODO investigate the static xmin and xmax values
