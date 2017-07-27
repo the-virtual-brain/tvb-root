@@ -494,6 +494,7 @@ Complex Coherence Visualizer
 Displays the complex-cross-coherence matrix. Axes represent brain nodes.
 The matrix is a complex ndarray that contains the `number of nodes` x `number of nodes` cross
 spectrum for every frequency frequency and for every segment
+The thick line represents the Mean and the colored area the SD of CohSpec
 
 This visualizer is very similar with the previous one (Cross Coherence Visualizer).
 
