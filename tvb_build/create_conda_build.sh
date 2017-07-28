@@ -2,7 +2,7 @@
 
 envname="tvb-run"
 
-conda create -y -n $envname nomkl scipy==0.19.0 numpy==1.12.1 networkx scikit-learn cython h5py pip pil numexpr psutil coverage beautiful-soup lxml ipython ipython-notebook
+conda create -y -n $envname nomkl scipy numpy networkx scikit-learn cython h5py pip pil numexpr psutil coverage beautiful-soup lxml ipython ipython-notebook
 
 source activate $envname
 
