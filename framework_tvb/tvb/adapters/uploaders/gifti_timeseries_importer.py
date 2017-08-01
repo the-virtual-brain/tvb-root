@@ -83,7 +83,7 @@ class GIFTITimeSeriesImporter(ABCUploader):
 
             return [time_series]
 
-        except ParseException, excep:
+        except ParseException as excep:
             logger = get_logger(__name__)
             logger.exception(excep)
             raise LaunchException(excep)

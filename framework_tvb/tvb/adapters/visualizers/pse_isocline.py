@@ -35,6 +35,7 @@
 
 import numpy
 import json
+import six
 from tvb.core.adapters.abcdisplayer import ABCDisplayer
 from tvb.basic.logger.builder import get_logger
 from tvb.core.entities.model import DataTypeGroup, OperationGroup, STATUS_STARTED
@@ -145,7 +146,7 @@ class PseIsoModel(object):
         return result
 
     def as_json(self):
-        de_numpy_ed = dict((k, v.tolist()) for k, v in self.apriori_data.iteritems())
+        de_numpy_ed = dict((k, v.tolist()) for k, v in six.iteritems(self.apriori_data))
         return json.dumps({
             'apriori_data': de_numpy_ed,
             'metrics': self.metrics,

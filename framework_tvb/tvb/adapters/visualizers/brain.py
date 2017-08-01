@@ -224,11 +224,11 @@ class BrainViewer(ABCDisplayer):
             vert_map_dict = mappings_dict[key]
             vertices_indexes = vert_map_dict['indices']
             this_mappings.append(vertices_indexes[0].tolist())
-            for i in xrange(1, len(vertices_indexes)):
+            for i in range(1, len(vertices_indexes)):
                 if vertices_indexes[i][0] == vertices_indexes[i][1]:
                     this_mappings.append(vertices_indexes[i][0])
                 else:
-                    for index in xrange(vertices_indexes[i][0], vertices_indexes[i][1] + 1):
+                    for index in range(vertices_indexes[i][0], vertices_indexes[i][1] + 1):
                         this_mappings.append(index)
             prepared_mappings.append(this_mappings)
         return prepared_mappings
@@ -261,7 +261,7 @@ class BrainViewer(ABCDisplayer):
             processed_min_val = float(min_integer + '.' + min_decimals[:idx])
             processed_max_val = float(max_integer + '.' + max_decimals[:idx])
         value_diff = (processed_max_val - processed_min_val) / (nr_labels + 1)
-        inter_values = [round(processed_min_val + value_diff * i, idx) for i in xrange(nr_labels, 0, -1)]
+        inter_values = [round(processed_min_val + value_diff * i, idx) for i in range(nr_labels, 0, -1)]
         return [processed_max_val] + inter_values + [processed_min_val]
 
 

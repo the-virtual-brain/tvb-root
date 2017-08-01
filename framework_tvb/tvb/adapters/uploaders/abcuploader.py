@@ -124,7 +124,7 @@ class ABCUploader(ABCSynchronous):
             if dimensions:
                 return array_result.reshape(dimensions)
             return array_result
-        except ValueError, exc:
+        except ValueError as exc:
             file_ending = os.path.split(full_path)[1]
             exc.args = (exc.args[0] + " In file: " + file_ending,)
             raise

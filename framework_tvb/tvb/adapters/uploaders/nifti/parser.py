@@ -58,7 +58,7 @@ class NIFTIParser():
 
         try:
             self.nifti_image = nib.load(data_file)
-        except nib.spatialimages.ImageFileError, e:
+        except nib.spatialimages.ImageFileError as e:
             self.logger.exception(e)
             msg = "File: %s does not have a valid NIFTI-1 format." % data_file
             raise ParseException(msg)

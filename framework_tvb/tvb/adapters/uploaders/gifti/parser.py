@@ -198,7 +198,7 @@ class GIFTIParser(object):
                 data_arrays_part2 = giftiio.read(data_file_part2).darrays
             else:
                 data_arrays_part2 = None
-        except Exception, excep:
+        except Exception as excep:
             self.logger.exception(excep)
             msg = "File: %s does not have a valid GIFTI format." % data_file
             raise ParseException(msg)

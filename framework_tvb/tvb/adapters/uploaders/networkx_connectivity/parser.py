@@ -149,7 +149,7 @@ class NetworkxParser(object):
             result.tract_lengths = tract_matrix
             return result
 
-        except KeyError, err:
+        except KeyError as err:
             self.logger.exception("Could not parse Connectivity")
             raise ParseException(err)
 
@@ -190,7 +190,7 @@ class NetworkxParser(object):
                         continue
 
                     value = self._find_value(node_data, [split_keys[0]])
-                    for i in xrange(0, len(operators)):
+                    for i in range(0, len(operators)):
                         expression = "value" + operators[i] + str(self._find_value(node_data, [split_keys[i + 1]]))
                         value = eval(expression)
                     return value

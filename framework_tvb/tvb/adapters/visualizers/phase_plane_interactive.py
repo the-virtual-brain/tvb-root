@@ -32,19 +32,21 @@
 .. moduleauthor:: Mihai Andrei <mihai.andrei@codemart.ro>
 """
 import numpy
+import six
 from tvb.basic.logger.builder import get_logger
 from matplotlib import _cntr
 
 # how much courser is the grid used to show the vectors
 GRID_SUBSAMPLE = 2
-#Set the resolution of the phase-plane and sample trajectories.
-NUMBEROFGRIDPOINTS = GRID_SUBSAMPLE*42
+# Set the resolution of the phase-plane and sample trajectories.
+NUMBEROFGRIDPOINTS = GRID_SUBSAMPLE * 42
 
 
 class _PhaseSpace(object):
     """
     Dimensionality independent code
     """
+
     def __init__(self, model, integrator):
         self.log = get_logger(self.__class__.__module__)
         self.model = model
@@ -63,7 +65,7 @@ class _PhaseSpace(object):
         trajs[0, :] = states
         no_coupling = numpy.zeros((self.model.nvar, states.shape[1], self.model.number_of_modes))
         # grow trajectories step by step
-        for step in xrange(n_steps):
+        for step in range(n_steps):
             states = scheme(states, self.model.dfun, no_coupling, 0.0, 0.0)
             trajs[step + 1, :] = states
 
@@ -85,10 +87,11 @@ class PhasePlane(_PhaseSpace):
     Responsible with computing phase space slices and trajectories.
     A collection of math-y utilities it is view independent (holds no state related to views).
     """
+
     @staticmethod
     def _create_mesh_jitter():
         shape = NUMBEROFGRIDPOINTS, NUMBEROFGRIDPOINTS
-        d =  1.0 / (4 * NUMBEROFGRIDPOINTS)
+        d = 1.0 / (4 * NUMBEROFGRIDPOINTS)
         return numpy.random.normal(0, d, shape), numpy.random.normal(0, d, shape)
 
 
@@ -111,7 +114,7 @@ class PhasePlane(_PhaseSpace):
         return xgr, ygr
 
 
-    def _calc_phase_plane(self, state, svx_ind, svy_ind,  xg, yg):
+    def _calc_phase_plane(self, state, svx_ind, svy_ind, xg, yg):
         """
         Computes a 2d axis aligned rectangle of the vector field returning a u, v vector field.
         The slice passes through the `state` point and varies along the axes given by svx_ind and svy_ind.
@@ -120,7 +123,7 @@ class PhasePlane(_PhaseSpace):
         """
         state_variables = numpy.tile(state, (NUMBEROFGRIDPOINTS ** 2, 1))
 
-        for mode_idx in xrange(self.model.number_of_modes):
+        for mode_idx in range(self.model.number_of_modes):
             state_variables[svx_ind, :, mode_idx] = xg.flat
             state_variables[svy_ind, :, mode_idx] = yg.flat
 
@@ -152,10 +155,11 @@ class PhasePlaneD3(PhasePlane):
     """
     Provides data for a d3 client
     """
+
     def __init__(self, model, integrator):
         PhasePlane.__init__(self, model, integrator)
         self.mode = 0
-        self.svx_ind = 0    # x-axis: 1st state variable
+        self.svx_ind = 0  # x-axis: 1st state variable
         if self.model.nvar > 1:
             self.svy_ind = 1  # y-axis: 2nd state variable
         else:
@@ -166,13 +170,14 @@ class PhasePlaneD3(PhasePlane):
         sv_mean = sv_mean.reshape((self.model.nvar, 1, 1))
         self.default_sv = sv_mean.repeat(self.model.number_of_modes, axis=2)
         self.update_integrator_clamping()
-        self._jitter = None     #self._create_mesh_jitter()
+        self._jitter = None  # self._create_mesh_jitter()
 
     def update_integrator_clamping(self):
         clamped_sv_indices = [i for i in range(self.model.nvar) if i not in [self.svx_ind, self.svy_ind]]
         if clamped_sv_indices:
             self.integrator.clamped_state_variable_indices = numpy.array(clamped_sv_indices)
-            self.integrator.clamped_state_variable_values = self.default_sv[self.integrator.clamped_state_variable_indices]
+            self.integrator.clamped_state_variable_values = self.default_sv[
+                self.integrator.clamped_state_variable_indices]
         else:
             self.integrator.clamped_state_variable_indices = None
             self.integrator.clamped_state_variable_values = None
@@ -182,10 +187,10 @@ class PhasePlaneD3(PhasePlane):
         self.svx_ind = self.model.state_variables.index(svx)
         self.svy_ind = self.model.state_variables.index(svy)
         svr = self.model.state_variable_range
-        svr[svx][:] = x_range #todo is it ok to update the model?
+        svr[svx][:] = x_range  # todo is it ok to update the model?
         svr[svy][:] = y_range
 
-        for name, val in state_vars.iteritems():
+        for name, val in six.iteritems(state_vars):
             k = self.model.state_variables.index(name)
             self.default_sv[k] = val
         self.update_integrator_clamping()
@@ -198,26 +203,26 @@ class PhasePlaneD3(PhasePlane):
         x, y = self._get_mesh_grid(self.svx_ind, self.svy_ind, noise=self._jitter)
 
         u, v = self._calc_phase_plane(self.default_sv, self.svx_ind, self.svy_ind, x, y)
-        u = u[..., self.mode]   # project on active mode
+        u = u[..., self.mode]  # project on active mode
         v = v[..., self.mode]
         xnull = [{'path': segment.tolist(), 'nullcline_index': 0} for segment in self.nullcline(x, y, u)]
         ynull = [{'path': segment.tolist(), 'nullcline_index': 1} for segment in self.nullcline(x, y, v)]
 
         # a courser mesh for the arrows
-        xsmall = x[::GRID_SUBSAMPLE,::GRID_SUBSAMPLE]
-        ysmall = y[::GRID_SUBSAMPLE,::GRID_SUBSAMPLE]
-        usmall = u[::GRID_SUBSAMPLE,::GRID_SUBSAMPLE]
-        vsmall = v[::GRID_SUBSAMPLE,::GRID_SUBSAMPLE]
+        xsmall = x[::GRID_SUBSAMPLE, ::GRID_SUBSAMPLE]
+        ysmall = y[::GRID_SUBSAMPLE, ::GRID_SUBSAMPLE]
+        usmall = u[::GRID_SUBSAMPLE, ::GRID_SUBSAMPLE]
+        vsmall = v[::GRID_SUBSAMPLE, ::GRID_SUBSAMPLE]
 
         d = numpy.dstack((xsmall, ysmall, usmall, vsmall))
-        d = d.reshape(((NUMBEROFGRIDPOINTS/GRID_SUBSAMPLE) ** 2, 4)).tolist()
+        d = d.reshape(((NUMBEROFGRIDPOINTS / GRID_SUBSAMPLE) ** 2, 4)).tolist()
 
         return {'plane': d, 'nullclines': xnull + ynull}
 
 
     def _state_dict_to_array(self, state):
         arr = numpy.zeros(len(self.model.state_variables))
-        for svn, v in state.iteritems():
+        for svn, v in six.iteritems(state):
             svn_idx = self.model.state_variables.index(svn)
             arr[svn_idx] = v
         return arr
@@ -229,14 +234,14 @@ class PhasePlaneD3(PhasePlane):
         :return: a tuple of trajectories and signals
         """
         starting_points = numpy.array([self._state_dict_to_array(s) for s in starting_points])
-        traj = self._compute_trajectories(starting_points, n_steps) # point_on_traj_idx, sv_idx, traj_idx, mode
+        traj = self._compute_trajectories(starting_points, n_steps)  # point_on_traj_idx, sv_idx, traj_idx, mode
         # reshape it and project it on the plane defined  by the current axis state vars
-        traj = traj.transpose(2, 0, 1, 3) # traj_idx, point, sv_idx, mode
-        trajectory = traj[:, :, [self.svx_ind, self.svy_ind], self.mode] # traj_idx, points, x, y
+        traj = traj.transpose(2, 0, 1, 3)  # traj_idx, point, sv_idx, mode
+        trajectory = traj[:, :, [self.svx_ind, self.svy_ind], self.mode]  # traj_idx, points, x, y
 
         # signals for last trajectory
         signal_x = numpy.arange(n_steps + 1) * self.integrator.dt
-        signals = [ zip(signal_x, traj[-1, :, i, self.mode].tolist()) for i in [self.svx_ind, self.svy_ind]]
+        signals = [zip(signal_x, traj[-1, :, i, self.mode].tolist()) for i in [self.svx_ind, self.svy_ind]]
 
         return trajectory.tolist(), signals
 

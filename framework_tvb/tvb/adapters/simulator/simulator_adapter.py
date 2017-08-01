@@ -174,7 +174,7 @@ class SimulatorAdapter(ABCAsynchronous):
         self.log.debug("%s: Initializing storage..." % str(self))
         try:
             self.algorithm.preconfigure()
-        except ValueError, err:
+        except ValueError as err:
             raise LaunchException("Failed to configure simulator due to invalid Input Values. It could be because "
                                   "of an incompatibility between different version of TVB code.", err)
 

@@ -43,7 +43,7 @@ from tvb.datatypes.spectral import WaveletCoefficients
 
 class WaveletSpectrogramVisualizer(ABCDisplayer):
     """
-    Plot the power of a WaveletCoefficients object using a MPLH5 canvas.
+    Plot the power of a WaveletCoefficients object using SVG an D3.
     """
     _ui_name = "Spectrogram of Wavelet Power"
     _ui_subsection = "wavelet"

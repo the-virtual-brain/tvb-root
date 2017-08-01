@@ -52,16 +52,16 @@ class TVBImporter(ABCUploader):
     _ui_name = "TVB HDF5 / ZIP"
     _ui_subsection = "tvb_datatype_importer"
     _ui_description = "Upload H5 file with TVB generic entity"
-    
-    
+
+
     def get_upload_input_tree(self):
         """
             Take as input a ZIP archive or H5 file.
         """
         return [{'name': 'data_file', 'type': 'upload', 'required_type': '.zip, .h5',
                  'label': 'Please select file to import (h5 or zip)', 'required': True}]
-        
-        
+
+
     def get_output(self):
         return []
 
@@ -73,7 +73,7 @@ class TVBImporter(ABCUploader):
         self.nr_of_datatypes = 0
         msg, _ = ABCUploader._prelaunch(self, operation, uid=None, **kwargs)
         return msg, self.nr_of_datatypes
-    
+
 
     def launch(self, data_file):
         """
@@ -90,16 +90,16 @@ class TVBImporter(ABCUploader):
         if os.path.exists(data_file):
             if zipfile.is_zipfile(data_file):
                 current_op = dao.get_operation_by_id(self.operation_id)
-                
+
                 # Creates a new TMP folder where to extract data
-                tmp_folder = os.path.join(self.storage_path, "tmp_import") 
+                tmp_folder = os.path.join(self.storage_path, "tmp_import")
                 FilesHelper().unpack_zip(data_file, tmp_folder)
                 operations = ImportService().import_project_operations(current_op.project, self.storage_path)
                 shutil.rmtree(tmp_folder)
                 self.nr_of_datatypes += len(operations)
-                
+
             else:
-                #upgrade file if necessary
+                # upgrade file if necessary
                 file_update_manager = FilesUpdateManager()
                 file_update_manager.upgrade_file(data_file)
 
@@ -112,7 +112,7 @@ class TVBImporter(ABCUploader):
                         datatype = service.load_datatype_from_file(folder, h5file, self.operation_id)
                         service.store_datatype(datatype)
                         self.nr_of_datatypes += 1
-                    except Exception, excep:
+                    except Exception as excep:
                         # If import operation failed delete file from disk.
                         if datatype is not None and os.path.exists(datatype.get_storage_file_path()):
                             os.remove(datatype.get_storage_file_path())
@@ -121,8 +121,6 @@ class TVBImporter(ABCUploader):
                                               "meta-data ...  " + str(excep))
                 else:
                     raise LaunchException("Uploaded file: %s is neither in ZIP or HDF5 format" % data_file)
-                
+
         else:
             raise LaunchException("File: %s to import does not exists." % data_file)
-        
-        

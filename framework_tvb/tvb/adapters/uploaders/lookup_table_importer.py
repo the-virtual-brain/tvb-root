@@ -77,7 +77,7 @@ class LookupTableImporter(ABCUploader):
             raise LaunchException("Please select Psi table file which contains data to import")
         try:
             table_data = numpy.load(psi_table_file)
-        except IOError, msg:
+        except IOError as msg:
             self.logger.exception(msg)
             raise LaunchException("Input file is not a valid NPZ file.")
         

@@ -83,7 +83,7 @@ class TimeSeries(ABCDisplayer):
         # when surface-result, the labels will be empty, so fill some of them,
         # but not all, otherwise the viewer will take ages to load.
         if shape[2] > 0 and len(labels) == 0:
-            for n in xrange(min(self.MAX_PREVIEW_DATA_LENGTH, shape[2])):
+            for n in range(min(self.MAX_PREVIEW_DATA_LENGTH, shape[2])):
                 labels.append("Node-" + str(n))
 
         pars = {'baseURL': ABCDisplayer.VISUALIZERS_URL_PREFIX + time_series.gid,

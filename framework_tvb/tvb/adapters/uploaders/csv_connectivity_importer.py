@@ -56,7 +56,7 @@ class CSVConnectivityParser(object):
         self.line = 0
         self.permutation = range(self.connectivity_size)
         """ A permutation represented as a list index -> new_index. Defaults to the identity permutation"""
-        self.result_conn = [[] for _ in xrange(self.connectivity_size)]
+        self.result_conn = [[] for _ in range(self.connectivity_size)]
 
         rows_count = len(self.rows)
         if rows_count == self.connectivity_size + 1:
@@ -83,7 +83,7 @@ class CSVConnectivityParser(object):
         header_i.sort(key=lambda (i_, ordinal): ordinal)  # sort by the column ordinal
         inverse_permutation = [i for i, ordinal_ in header_i]
 
-        for i in xrange(len(self.permutation)):
+        for i in range(len(self.permutation)):
             self.permutation[inverse_permutation[i]] = i
 
         self.rows = self.rows[1:]  # consume header

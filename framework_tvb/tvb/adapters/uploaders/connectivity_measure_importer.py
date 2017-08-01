@@ -83,14 +83,14 @@ class ConnectivityMeasureImporter(ABCUploader):
                                       ' contains %s nodes' % (node_count, connectivity.number_of_regions))
 
             measures = []
-            for i in xrange(measurement_count):
+            for i in range(measurement_count):
                 measure = ConnectivityMeasure(storage_path=self.storage_path,
                                               connectivity=connectivity, array_data=data[i, :])
                 measure.user_tag_2 = "nr.-%d" % (i + 1)
                 measure.user_tag_3 = "conn_%d" % node_count
                 measures.append(measure)
             return measures
-        except ParseException, excep:
+        except ParseException as excep:
             logger = get_logger(__name__)
             logger.exception(excep)
             raise LaunchException(excep)

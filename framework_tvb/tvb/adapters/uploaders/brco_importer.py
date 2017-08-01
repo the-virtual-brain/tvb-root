@@ -74,6 +74,6 @@ class BRCOImporter(ABCUploader):
             annotations = parser.read_annotation_terms()
             result.set_annotations(annotations)
             return result
-        except Exception, excep:
+        except Exception as excep:
             self.log.exception("Could not process Connectivity Annotations")
             raise LaunchException(excep)

@@ -69,7 +69,7 @@ class NetworkxConnectivityImporter(ABCUploader):
             net = networkx.read_gpickle(data_file)
             connectivity = parser.parse(net)
             return [connectivity]
-        except ParseException, excep:
+        except ParseException as excep:
             self.log.exception("Could not process Connectivity")
             raise LaunchException(excep)
 

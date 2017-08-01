@@ -105,6 +105,6 @@ class ObjSurfaceImporter(ABCUploader):
 
             return [surface]
 
-        except ParseException, excep:
+        except ParseException as excep:
             self.log.exception(excep)
             raise LaunchException(excep)

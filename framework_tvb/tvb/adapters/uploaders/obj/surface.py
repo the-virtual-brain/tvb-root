@@ -98,7 +98,7 @@ class ObjSurface(object):
         if self.have_normals:
             self.normals = np.array(self.normals)
             # normalise to unit vectors
-            for k in xrange(len(self.normals)):
+            for k in range(len(self.normals)):
                 self.normals[k, :] = self.normals[k, :] / np.sqrt(np.sum(self.normals[k, :] ** 2, axis=0))
         else:
             self.normals = None

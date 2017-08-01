@@ -349,7 +349,7 @@ class Connectivity2DViewer(object):
 
         result_json = []
 
-        for i in xrange(len(positions)):
+        for i in range(len(positions)):
             x_coord = (positions[i][coord_idx1] - mid_x_value) * x_scale
             y_coord = (positions[i][coord_idx2] - mid_y_value) * y_scale
             adjacencies = Connectivity2DViewer._get_adjacencies_json(weights[i], labels)
@@ -465,7 +465,7 @@ class Connectivity2DViewer(object):
         max_value = numpy.max(weights)
         if min_value < self.MIN_WEIGHT_VALUE or max_value > self.MAX_WEIGHT_VALUE:
             for i, row in enumerate(weights):
-                for j in xrange(len(row)):
+                for j in range(len(row)):
                     if min_value == max_value:
                         weights[i][j] = self.MAX_WEIGHT_VALUE
                     else:

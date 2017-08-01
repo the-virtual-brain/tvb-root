@@ -251,7 +251,7 @@ class EegMonitor(ABCDisplayer):
         """ Replace NAN values with a given values"""
         is_any_value_nan = False
         if not numpy.isfinite(input_data).all():
-            for idx in xrange(len(input_data)):
+            for idx in range(len(input_data)):
                 input_data[idx] = numpy.nan_to_num(input_data[idx])
             is_any_value_nan = True
         return is_any_value_nan

@@ -157,7 +157,7 @@ class NIFTIImporter(ABCUploader):
             mri = self._create_mri(volume)
             return [volume, mri]
 
-        except ParseException, excep:
+        except ParseException as excep:
             logger = get_logger(__name__)
             logger.exception(excep)
             raise LaunchException(excep)

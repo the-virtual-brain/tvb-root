@@ -91,7 +91,7 @@ class GIFTISurfaceImporter(ABCUploader):
                 self.add_operation_additional_info(validation_result.summary())
 
             return [surface]             
-        except ParseException, excep:
+        except ParseException as excep:
             logger = get_logger(__name__)
             logger.exception(excep)
             raise LaunchException(excep)
