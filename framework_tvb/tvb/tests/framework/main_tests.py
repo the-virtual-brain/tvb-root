@@ -55,7 +55,6 @@ def generate_excludes(root_folders):
             for file_n in files:
                 full_path = os.path.join(root, file_n)
                 if (full_path.endswith('__init__.py') or
-                    os.path.join('interfaces', 'web', 'mplh5') in full_path or
                     os.path.join('interfaces', 'web', 'static') in full_path or
                     os.path.join('interfaces', 'web', 'templates') in full_path or
                     os.path.join('entities', 'model', 'db_update_scripts') in full_path):
@@ -80,7 +79,7 @@ if __name__ == "__main__":
         import tvb.interfaces as intf
 
         SOURCE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(intf.__file__)))
-        print 'Starting coverage on ' + SOURCE_DIR
+        print('Starting coverage on ' + SOURCE_DIR)
         COVERAGE = coverage(source=["tvb.adapters", "tvb.analyzers", "tvb.config", "tvb.core", "tvb.datatype_removers",
                                     "tvb.interfaces.web.controllers", "tvb.interfaces.web.entities"],
                             omit=generate_excludes([SOURCE_DIR]), cover_pylib=False, branch=True)
@@ -122,18 +121,18 @@ if __name__ == "__main__":
         TEST_RUNNER.run(TEST_SUITE)
 
     if KEY_XML in sys.argv:
-        XML_STREAM = file(os.path.join(TvbProfile.current.TVB_LOG_FOLDER, "TEST-RESULTS.xml"), "w")
-        OUT_STREAM = file(os.path.join(TvbProfile.current.TVB_LOG_FOLDER, "TEST.out"), "w")
+        XML_STREAM = open(os.path.join(TvbProfile.current.TVB_LOG_FOLDER, "TEST-RESULTS.xml"), "w")
+        OUT_STREAM = open(os.path.join(TvbProfile.current.TVB_LOG_FOLDER, "TEST.out"), "w")
         TEST_RUNNER = XMLTestRunner(XML_STREAM, OUT_STREAM)
         TEST_SUITE = suite()
         TEST_RUNNER.run(TEST_SUITE)
         XML_STREAM.close()
         OUT_STREAM.close()
 
-    print 'It run tests for %d sec.' % (datetime.datetime.now() - START_TIME).seconds
+    print('It run tests for %d sec.' % (datetime.datetime.now() - START_TIME).seconds)
 
     if KEY_COVERAGE in sys.argv:
-        print 'Gathering cobertura report ...'
+        print('Gathering cobertura report ...')
         COVERAGE.stop()
         COVERAGE.xml_report(outfile=os.path.join(TvbProfile.current.TVB_LOG_FOLDER, 'coverage.xml'))
 

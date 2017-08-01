@@ -159,7 +159,7 @@ class UtilsTest(TransactionalTestCase):
         """
         test_string_arrays = ['[1,2,3]', '1,2,3', '1 2 3']
         array_separators = [',', ',', ' ']
-        for idx in xrange(len(test_string_arrays)):
+        for idx in range(len(test_string_arrays)):
             result_array = string2array(test_string_arrays[idx], array_separators[idx])
             self.assertEqual(len(result_array), 3)
             self.assertEqual(result_array[0], 1)

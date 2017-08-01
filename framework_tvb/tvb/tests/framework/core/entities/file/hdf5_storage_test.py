@@ -307,7 +307,7 @@ class HDF5StorageTest(unittest.TestCase):
         self.storage.store_data(DATASET_NAME_1, self.test_2D_array)
 
         # Now check if data was persisted, but read it using slices
-        for index in xrange(len(self.test_2D_array)):
+        for index in range(len(self.test_2D_array)):
             sl = slice(index, index + 1, 1)
             read_data = self.storage.get_data(DATASET_NAME_1, sl)
             self.assertArrayEqual(self.test_2D_array[sl], read_data)

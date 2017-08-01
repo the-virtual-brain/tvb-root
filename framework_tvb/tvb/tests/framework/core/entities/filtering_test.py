@@ -130,7 +130,7 @@ class FilteringTest(TransactionalTestCase):
             query = query.filter(eval(filter_str))
             result = query.all()
             session.close_session()
-        except Exception, excep:
+        except Exception as excep:
             session.close_session()
             raise excep
         self.assertEquals(expected_number, len(result), "Expected %s DTs after filtering with %s, "

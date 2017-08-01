@@ -262,8 +262,8 @@ class BurstServiceTest(BaseTestCase):
         """
         project = model.Project("second_test_proj", self.test_user.id, "description")
         second_project = dao.store_entity(project)
-        test_project_bursts = [TestFactory.store_burst(self.test_project.id).id for _ in xrange(4)]
-        second_project_bursts = [TestFactory.store_burst(second_project.id).id for _ in xrange(3)]
+        test_project_bursts = [TestFactory.store_burst(self.test_project.id).id for _ in range(4)]
+        second_project_bursts = [TestFactory.store_burst(second_project.id).id for _ in range(3)]
         returned_test_project_bursts = [burst.id for burst in
                                         self.burst_service.get_available_bursts(self.test_project.id)]
         returned_second_project_bursts = [burst.id for burst in

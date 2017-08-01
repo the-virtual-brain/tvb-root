@@ -195,7 +195,7 @@ class ProjectStructureTest(TransactionalTestCase):
             self.assertTrue(is_visible, "The data type should be visible.")
 
         self.project_service.set_datatype_visibility(mapped_arrays[0][2], False)
-        for i in xrange(len(mapped_arrays)):
+        for i in range(len(mapped_arrays)):
             is_visible = dao.get_datatype_by_id(mapped_arrays[i][0]).visible
             if not i:
                 self.assertFalse(is_visible, "The data type should not be visible.")

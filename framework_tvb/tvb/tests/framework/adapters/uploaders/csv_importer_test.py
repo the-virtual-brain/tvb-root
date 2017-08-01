@@ -58,7 +58,7 @@ class CSVConnectivityParserTest(BaseTestCase):
         with open(cap_pth) as f:
             result_conn = CSVConnectivityParser(f).result_conn
             self.assertEqual([0, 61.7082, 50.7576, 76.4214], result_conn[0][:4])
-            for i in xrange(len(result_conn)):
+            for i in range(len(result_conn)):
                 self.assertEqual(0, result_conn[i][i])
 
 

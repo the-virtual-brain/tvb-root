@@ -115,7 +115,7 @@ class BCTTest(TransactionalTestCase):
                 results = dao.get_generic_entity(model.DataType, operation.id, 'fk_from_operation')
                 self.assertTrue(len(results) > 0)
 
-            except InvalidParameterException, excep:
+            except InvalidParameterException as excep:
                 ## Some algorithms are expected to throw validation exception.
                 if algorithm.classname not in BCTTest.EXPECTED_TO_FAIL_VALIDATION:
                     raise excep

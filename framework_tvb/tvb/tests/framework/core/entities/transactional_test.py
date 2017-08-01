@@ -190,7 +190,7 @@ class TransactionalTests(BaseTestCase):
         """
         Spawn a number of threads each storing a number of users. Wait on them by joining.
         """
-        for idx in xrange(n_of_threads):
+        for idx in range(n_of_threads):
             th = threading.Thread(target=self._store_users_happy_flow, args=(n_of_users_per_thread,),
                                   kwargs={'prefix': str(idx)})
             th.start()

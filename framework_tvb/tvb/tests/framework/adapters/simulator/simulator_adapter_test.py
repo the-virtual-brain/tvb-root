@@ -193,7 +193,7 @@ class SimulatorAdapterTest(TransactionalTestCase):
         """
         params = copy(SIMULATOR_PARAMETERS)
         params['integrator'] = u'HeunStochastic'
-        noise_4d_config = [[1 for _ in xrange(self.CONNECTIVITY_NODES)] for _ in xrange(4)]
+        noise_4d_config = [[1 for _ in range(self.CONNECTIVITY_NODES)] for _ in range(4)]
         params['integrator_parameters_option_HeunStochastic_dt'] = u'0.01220703125'
         params['integrator_parameters_option_HeunStochastic_noise'] = u'Additive'
         params['integrator_parameters_option_HeunStochastic_noise_parameters_option_Additive_nsig'] = str(noise_4d_config)
@@ -216,7 +216,7 @@ class SimulatorAdapterTest(TransactionalTestCase):
         """
         params = copy(SIMULATOR_PARAMETERS)
         params['integrator'] = u'HeunStochastic'
-        noise_2d_config = [[1 for _ in xrange(self.CONNECTIVITY_NODES)] for _ in xrange(2)]
+        noise_2d_config = [[1 for _ in range(self.CONNECTIVITY_NODES)] for _ in range(2)]
         params['integrator_parameters_option_HeunStochastic_dt'] = u'0.01220703125'
         params['integrator_parameters_option_HeunStochastic_noise'] = u'Additive'
         params['integrator_parameters_option_HeunStochastic_noise_parameters_option_Additive_nsig'] = str(noise_2d_config)

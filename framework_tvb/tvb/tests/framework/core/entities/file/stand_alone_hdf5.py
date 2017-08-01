@@ -55,15 +55,14 @@ TEST_FILE_NAME = 'test_h5'
 
 
 def test_using_hdf5manager(nr_of_threads):
-
     if os.path.exists(os.path.join(ROOT_STORAGE, TEST_FILE_NAME)):
         os.remove(os.path.join(ROOT_STORAGE, TEST_FILE_NAME))
-    
+
     def init_some_data():
         dummy_data = numpy.random.random(size=(16000, 3))
         HDF5_MANAGER = hdf5storage.HDF5StorageManager(ROOT_STORAGE, TEST_FILE_NAME)
         HDF5_MANAGER.store_data('vertices', dummy_data)
-        
+
     def read_some_data(th_nr):
         global isok
         global exception
@@ -74,38 +73,38 @@ def test_using_hdf5manager(nr_of_threads):
                 raise Exception("Something went wrong")
             if int(th_nr) > 50000:
                 raise Exception("GOT TO 50000 SHOULD STOP NOW")
-        except Exception, ex:
+        except Exception as ex:
             isok = False
             exception = ex.message
+
     init_some_data()
     read_some_data('1')
-    
+
     th_nr = 1
     while isok:
         th_nr += 1
-        for i in xrange(80):
+        for i in range(80):
             th = threading.Thread(target=read_some_data, kwargs={"th_nr": str(th_nr * 80 + i)})
             th.start()
         for thread in threading.enumerate():
             if thread is not threading.currentThread():
                 thread.join()
-    print "RAN FINE FOR " + str(th_nr * 80) + " THREADS"
-    print "STOPPED DUE TO EXCEPTION " + str(exception)
+    print("RAN FINE FOR " + str(th_nr * 80) + " THREADS")
+    print("STOPPED DUE TO EXCEPTION " + str(exception))
 
 
 def test_using_h5py(nr_of_threads):
-    
     storage_path = os.path.join(ROOT_STORAGE, TEST_FILE_NAME)
-    
+
     if os.path.exists(storage_path):
         os.remove(storage_path)
-    
+
     def init_some_data():
         dummy_data = numpy.random.random(size=(16000, 3))
         h5_file = h5py.File(storage_path, 'w')
         h5_file.create_dataset('vertices', data=dummy_data)
         h5_file.close()
-        
+
     def read_some_data(th_nr):
         global isok
         global exception
@@ -117,33 +116,32 @@ def test_using_h5py(nr_of_threads):
             h5_file.close()
             if int(th_nr) > 50000:
                 raise Exception("GOT TO 50000 SHOULD STOP NOW")
-        except Exception, ex:
+        except Exception as ex:
             isok = False
             exception = ex.message
-        
+
     init_some_data()
     read_some_data('1')
-    
+
     th_nr = 1
     while isok:
         th_nr += 1
-        for i in xrange(80):
+        for i in range(80):
             th = threading.Thread(target=read_some_data, kwargs={"th_nr": str(th_nr * 80 + i)})
             th.start()
         for thread in threading.enumerate():
             if thread is not threading.currentThread():
                 thread.join()
-    print "RAN FINE FOR " + str(th_nr * 80) + " THREADS"
-    print "STOPPED DUE TO EXCEPTION " + str(exception)
-    
-        
+    print("RAN FINE FOR " + str(th_nr * 80) + " THREADS")
+    print("STOPPED DUE TO EXCEPTION " + str(exception))
+
+
 def test_using_pytables(nr_of_threads):
-    
     storage_path = os.path.join(ROOT_STORAGE, TEST_FILE_NAME)
-    
+
     if os.path.exists(storage_path):
         os.remove(storage_path)
-    
+
     def init_some_data():
         dummy_data = numpy.random.random(size=(16000, 3))
         h5_file = hdf5.openFile(storage_path, 'w', "Testing purposes.")
@@ -152,7 +150,7 @@ def test_using_pytables(nr_of_threads):
                                           createparents=True, byteorder='little')
         data_array[:] = dummy_data
         h5_file.close()
-        
+
     def read_some_data(th_nr):
         h5_file = hdf5.openFile(storage_path, 'r', "Testing purposes.")
         read_data = h5_file.getNode('/', 'vertices')
@@ -163,13 +161,14 @@ def test_using_pytables(nr_of_threads):
             h5_file.close()
         except KeyError:
             pass
-        
+
     init_some_data()
-    
+
     while 1:
         th = threading.Thread(target=read_some_data, kwargs={"th_nr": '1'})
         th.start()
- 
+
+
 if __name__ == '__main__':
     nr_of_threads = sys.argv[2]
     if sys.argv[1] == 'tvb':
@@ -178,4 +177,3 @@ if __name__ == '__main__':
         test_using_pytables(int(nr_of_threads))
     elif sys.argv[1] == 'h5py':
         test_using_h5py(int(nr_of_threads))
-        
