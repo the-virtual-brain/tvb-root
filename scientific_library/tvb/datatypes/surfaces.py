@@ -380,8 +380,8 @@ class Surface(MappedType):
         """
         .
         """
-        neighbours = [[] for _ in xrange(self.number_of_vertices)]
-        for k in xrange(self.number_of_triangles):
+        neighbours = [[] for _ in range(self.number_of_vertices)]
+        for k in range(self.number_of_triangles):
             neighbours[self.triangles[k, 0]].append(self.triangles[k, 1])
             neighbours[self.triangles[k, 0]].append(self.triangles[k, 2])
             neighbours[self.triangles[k, 1]].append(self.triangles[k, 0])
@@ -406,8 +406,8 @@ class Surface(MappedType):
         # self.attr calls __get__@type_mapped which is performance sensitive here
         triangles = self.triangles
 
-        vertex_triangles = [[] for _ in xrange(self.number_of_vertices)]
-        for k in xrange(self.number_of_triangles):
+        vertex_triangles = [[] for _ in range(self.number_of_vertices)]
+        for k in range(self.number_of_triangles):
             vertex_triangles[triangles[k, 0]].append(k)
             vertex_triangles[triangles[k, 1]].append(k)
             vertex_triangles[triangles[k, 2]].append(k)
@@ -462,7 +462,7 @@ class Surface(MappedType):
         vert_norms = numpy.zeros((self.number_of_vertices, 3))
         bad_normal_count = 0
         # todo: vectorize this
-        for k in xrange(self.number_of_vertices):
+        for k in range(self.number_of_vertices):
             try:
                 tri_list = list(self.vertex_triangles[k])
                 angle_mask = self.triangles[tri_list, :] == k
@@ -580,7 +580,7 @@ class Surface(MappedType):
                            self.triangles[:, 2][:, numpy.newaxis]))
         edges = numpy.hstack((v0, v1))
         edges.sort(axis=1)
-        edges = set(tuple(edges[k]) for k in xrange(edges.shape[0]))
+        edges = set(tuple(edges[k]) for k in range(edges.shape[0]))
         edges = sorted(edges)
         return edges
 
@@ -649,7 +649,7 @@ class Surface(MappedType):
 
     def _find_edge_triangles(self):
         triangles = [None] * self.number_of_edges
-        for k in xrange(self.number_of_edges):
+        for k in range(self.number_of_edges):
             triangles[k] = (frozenset(self.vertex_triangles[self.edges[k][0]]) &
                             frozenset(self.vertex_triangles[self.edges[k][1]]))
         return triangles
@@ -869,7 +869,7 @@ class Surface(MappedType):
         ignored_triangles_counter = 0
         self.split_slices = {}
 
-        for i in xrange(self.number_of_split_slices):
+        for i in range(self.number_of_split_slices):
             split_triangles.append([])
             if not self.bi_hemispheric:
                 self.split_slices[i] = {KEY_VERTICES: {KEY_START: i * SPLIT_MAX_SIZE,
@@ -892,7 +892,7 @@ class Surface(MappedType):
                                             KEY_HEMISPHERE: HEMISPHERE_RIGHT}
 
         ### Iterate Triangles and find the slice where it fits best, based on its vertices indexes:
-        for i in xrange(self.number_of_triangles):
+        for i in range(self.number_of_triangles):
             current_triangle = [self.triangles[i][j] for j in range(3)]
             fit_slice, transformed_triangle = self._find_slice(current_triangle)
 
@@ -938,7 +938,7 @@ class Surface(MappedType):
         url_normals = []
         url_lines = []
         url_region_map = []
-        for i in xrange(self.number_of_split_slices):
+        for i in range(self.number_of_split_slices):
             param = "slice_number=" + str(i)
             url_vertices.append(paths2url(self, 'get_vertices_slice', parameter=param, flatten=True))
             url_triangles.append(paths2url(self, 'get_triangles_slice', parameter=param, flatten=True))
@@ -992,7 +992,7 @@ class Surface(MappedType):
         split_slices = self.split_slices  # because of performance: 1.5 times slower without this
         mn = min(triangle)
         mx = max(triangle)
-        for i in xrange(self.number_of_split_slices):
+        for i in range(self.number_of_split_slices):
             v = split_slices[i][KEY_VERTICES]  # extracted for performance
             slice_start = v[KEY_START]
             if slice_start <= mn and mx < v[KEY_END]:
@@ -1052,7 +1052,7 @@ class Surface(MappedType):
         if self.number_of_triangles % SPLIT_PICK_MAX_TRIANGLE > 0:
             number_of_split += 1
 
-        for i in xrange(number_of_split):
+        for i in range(number_of_split):
             param = "slice_number=" + str(i)
             vertices.append(paths2url(self, 'get_pick_vertices_slice', parameter=param, flatten=True))
             triangles.append(paths2url(self, 'get_pick_triangles_slice', parameter=param, flatten=True))
@@ -1081,7 +1081,7 @@ class Surface(MappedType):
         boundary_normals = []
         array_data = region_mapping.array_data
 
-        for slice_idx in xrange(self.number_of_split_slices):
+        for slice_idx in range(self.number_of_split_slices):
             # Generate the boundaries sliced for the off case where we might overflow the buffer capacity
             slice_triangles = self.get_triangles_slice(slice_idx)
             slice_vertices = self.get_vertices_slice(slice_idx)
@@ -1139,10 +1139,10 @@ class Surface(MappedType):
             """
             Helper function that for a given triangle generates a 3-way star centered in the triangle center
             """
-            center_vertex = [(point0[i] + point1[i] + point2[i]) / 3 for i in xrange(3)]
-            mid_line1 = [(point0[i] + point1[i]) / 2 for i in xrange(3)]
-            mid_line2 = [(point1[i] + point2[i]) / 2 for i in xrange(3)]
-            mid_line3 = [(point2[i] + point0[i]) / 2 for i in xrange(3)]
+            center_vertex = [(point0[i] + point1[i] + point2[i]) / 3 for i in range(3)]
+            mid_line1 = [(point0[i] + point1[i]) / 2 for i in range(3)]
+            mid_line2 = [(point1[i] + point2[i]) / 2 for i in range(3)]
+            mid_line3 = [(point2[i] + point0[i]) / 2 for i in range(3)]
             result_array.extend(center_vertex)
             result_array.extend(mid_line1)
             result_array.extend(mid_line2)
@@ -1152,8 +1152,8 @@ class Surface(MappedType):
             """
             Helper function that for a given triangle generates a line cutting thtough the middle of two edges.
             """
-            mid_line1 = [(point0[i] + point1[i]) / 2 for i in xrange(3)]
-            mid_line2 = [(point0[i] + point2[i]) / 2 for i in xrange(3)]
+            mid_line1 = [(point0[i] + point1[i]) / 2 for i in range(3)]
+            mid_line2 = [(point0[i] + point2[i]) / 2 for i in range(3)]
             result_array.extend(mid_line1)
             result_array.extend(mid_line2)
 

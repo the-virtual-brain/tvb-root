@@ -37,15 +37,16 @@ Entry point for all unit-tests for TVB Scientific Library.
 
 from tvb.tests.library import setup_test_console_env
 from tvb.basic.profile import TvbProfile
+
 setup_test_console_env()
 
 # Make sure we are in library mode and are not influenced by framework
 try:
     import tvb.interfaces
+
     raise Exception("Found framework in library mode testing. Abort....")
 except ImportError:
     pass
-
 
 import os
 from sys import argv
@@ -67,15 +68,13 @@ def generate_excludes(root_folders):
             for file_n in files:
                 full_path = os.path.join(root, file_n)
                 if (full_path.endswith('__init__.py') or
-                    os.path.join('simulator', 'demos') in full_path):
-
+                            os.path.join('simulator', 'demos') in full_path):
                     excludes.append(full_path)
     return excludes
 
 
-
 if __name__ == "__main__":
-    #Start all TVB tests (if in Coverage mode)
+    # Start all TVB tests (if in Coverage mode)
     if KEY_COVERAGE in argv:
         import tvb.simulator as sim
 
@@ -105,28 +104,25 @@ def suite():
 
 
 if __name__ == "__main__":
-    #Start all TVB tests
+    # Start all TVB tests
     START_TIME = datetime.datetime.now()
-    
+
     if KEY_CONSOLE in argv:
         TEST_RUNNER = unittest.TextTestRunner()
         TEST_SUITE = suite()
         TEST_RUNNER.run(TEST_SUITE)
     if KEY_XML in argv:
-        XML_STREAM = file(os.path.join(TvbProfile.current.TVB_LOG_FOLDER, "TEST-LIBRARY-RESULTS.xml"), "w")
-        OUT_STREAM = file(os.path.join(TvbProfile.current.TVB_LOG_FOLDER, "TEST-LIBRARY.out"), "w")
+        XML_STREAM = open(os.path.join(TvbProfile.current.TVB_LOG_FOLDER, "TEST-LIBRARY-RESULTS.xml"), "w")
+        OUT_STREAM = open(os.path.join(TvbProfile.current.TVB_LOG_FOLDER, "TEST-LIBRARY.out"), "w")
         TEST_RUNNER = XMLTestRunner(XML_STREAM, OUT_STREAM)
         TEST_SUITE = suite()
         TEST_RUNNER.run(TEST_SUITE)
         XML_STREAM.close()
         OUT_STREAM.close()
-        
-    print 'It run tests for %d sec.' % (datetime.datetime.now() - START_TIME).seconds
-    
+
+    print('It run tests for %d sec.' % (datetime.datetime.now() - START_TIME).seconds)
+
     if KEY_COVERAGE in argv:
         COVERAGE.stop()
         COVERAGE.xml_report(outfile=os.path.join(TvbProfile.current.TVB_LOG_FOLDER, 'coverage_library.xml'))
-        #COVERAGE.html_report(directory=os.path.join(TvbProfile.current.TVB_LOG_FOLDER, 'test_coverage_html'))
-
-
-
+        # COVERAGE.html_report(directory=os.path.join(TvbProfile.current.TVB_LOG_FOLDER, 'test_coverage_html'))

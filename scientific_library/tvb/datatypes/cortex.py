@@ -108,7 +108,7 @@ class Cortex(surfaces.CorticalSurface):
         for name in cortex_surface.trait:
             try:
                 setattr(self, name, getattr(cortex_surface, name))
-            except Exception, exc:
+            except Exception as exc:
                 self.logger.exception(exc)
                 self.logger.error("Could not set attribute '" + name + "' on Cortex")
         for key, value in cortex_parameters.iteritems():

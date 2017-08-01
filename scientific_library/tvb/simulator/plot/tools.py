@@ -89,8 +89,8 @@ def hinton_diagram(connectivity_weights, num, maxWeight=None):
     pyplot.axis('equal')
     weights_axes = weights_figure.gca()
 
-    for x in xrange(width):
-        for y in xrange(height):
+    for x in range(width):
+        for y in range(height):
             _x = x + 1
             _y = y + 1
             w = connectivity_weights[y, x]
@@ -339,8 +339,8 @@ def plot_matrix(mat, fig_name='plot_this_matrix', connectivity=None, binary_matr
     width  = mat.shape[0]
     height = mat.shape[1]
 
-    # for x in xrange(width):
-    #     for y in xrange(height):
+    # for x in range(width):
+    #     for y in range(height):
     #         ax.annotate(str(int(mat[x][y])),
     #                     xy=(y, x),
     #                     horizontalalignment='center',
@@ -464,7 +464,7 @@ def plot_tri_matrix(mat, figure=None, num='plot_part_of_this_matrix', size=None,
     ax.grid(True)
     #Label each of the cells with the row and the column:
     if node_labels is not None:
-        for i in xrange(0, mat_copy.shape[0]):
+        for i in range(0, mat_copy.shape[0]):
             if i < (mat_copy.shape[0] - 1):
                 ax.text(i - 0.3, i, node_labels[i], rotation=x_tick_rot)
             if i > 0:

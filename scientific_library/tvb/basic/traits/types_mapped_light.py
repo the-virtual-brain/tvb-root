@@ -44,13 +44,13 @@ Important:
 
 """
 
+import six
 import numpy
 from scipy import sparse
 from tvb.basic.logger.builder import get_logger
 from tvb.basic.traits.util import get
 from tvb.basic.traits.core import Type
 from tvb.basic.traits.types_basic import DType
-
 
 
 class MappedTypeLight(Type):
@@ -91,7 +91,7 @@ class MappedTypeLight(Type):
                          METADATA_ARRAY_VAR_NON_ZERO: '$ARRAY$[$MASK$.nonzero()].var()',
                          METADATA_ARRAY_SHAPE: '$ARRAY$.shape()'}
 
-    logger = get_logger(__module__)
+    logger = get_logger(__name__)
 
 
     def __init__(self, **kwargs):
@@ -128,7 +128,7 @@ class MappedTypeLight(Type):
         summary = self._get_summary_info(array_name, included_info, mask_array_name, key_suffix)
         ### Before return, prepare names for UI display.                
         result = dict()
-        for key, value in summary.iteritems():
+        for key, value in six.iteritems(summary):
             result[array_name.capitalize().replace("_", " ") + " - " + key] = value
         return result
 
@@ -177,7 +177,6 @@ class MappedTypeLight(Type):
         return array_data[data_slice]
 
 
-
 class Array(Type):
     """
     Traits type that wraps a NumPy NDArray.
@@ -187,10 +186,10 @@ class Array(Type):
 
     wraps = numpy.ndarray
     dtype = DType()
-    defaults = ((0, ), {})
+    defaults = ((0,), {})
     data = None
     stored_metadata = [key for key in MappedTypeLight.DEFAULT_STORED_ARRAY_METADATA]
-    logger = get_logger(__module__)
+    logger = get_logger(__name__)
 
 
     @property
@@ -277,15 +276,14 @@ class Array(Type):
             self.logger.debug("%s: %s is Empty" % (sts, name))
 
 
-
 class SparseMatrix(Array):
     """
     Map a big matrix.
     Will require storage in File Structure.
     """
     wraps = sparse.csc_matrix
-    defaults = (((1, 1), ), {'dtype': numpy.float64})
-    logger = get_logger(__module__)
+    defaults = (((1, 1),), {'dtype': numpy.float64})
+    logger = get_logger(__name__)
 
 
     def log_debug(self, owner=""):
@@ -313,4 +311,3 @@ class SparseMatrix(Array):
             self.logger.debug("%s: %s minimum: %s" % (sts, name, array_min))
         else:
             self.logger.debug("%s: %s is Empty" % (sts, name))
-

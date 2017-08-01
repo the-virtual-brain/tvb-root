@@ -174,7 +174,7 @@ class TimeSeries(types_mapped.MappedType):
         """
         if channels_list:
             channels_list = json.loads(channels_list)
-            for i in xrange(len(channels_list)):
+            for i in range(len(channels_list)):
                 channels_list[i] = int(channels_list[i])
 
         if channels_list:
@@ -205,7 +205,7 @@ class TimeSeries(types_mapped.MappedType):
 
         slices = []
         overall_shape = self.read_data_shape()
-        for i in xrange(len(overall_shape)):
+        for i in range(len(overall_shape)):
             if i == 0:
                 # Time slice
                 slices.append(
@@ -266,7 +266,7 @@ class TimeSeries(types_mapped.MappedType):
         :return: An array of strings.
         """
         if self.nr_dimensions > 2:
-            return ['signal-%d' % i for i in xrange(self._length_3d)]
+            return ['signal-%d' % i for i in range(self._length_3d)]
         else:
             return []
 
@@ -536,7 +536,7 @@ class TimeSeriesSurface(TimeSeries):
         """
         Return only the first `SELECTION_LIMIT` vertices/channels
         """
-        return ['signal-%d' % i for i in xrange(min(self._length_3d, self.SELECTION_LIMIT))]
+        return ['signal-%d' % i for i in range(min(self._length_3d, self.SELECTION_LIMIT))]
 
     def _find_summary_info(self):
         """
@@ -553,7 +553,7 @@ class TimeSeriesSurface(TimeSeries):
         if self.surface.number_of_split_slices <= 1:
             result.append(basic_result)
         else:
-            for slice_number in xrange(self.surface.number_of_split_slices):
+            for slice_number in range(self.surface.number_of_split_slices):
                 start_idx, end_idx = self.surface._get_slice_vertex_boundaries(slice_number)
                 result.append(basic_result[:,start_idx:end_idx].tolist())
 

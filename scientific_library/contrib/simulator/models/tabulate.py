@@ -80,7 +80,7 @@ class TabulateInterp(object):
         except:
             # If it fails we try passing the values one by one
             self.f = zeros(n) * f(xmin) # for the unit
-            for i in xrange(n):
+            for i in range(n):
                 self.f[i] = f(x[i])
         self.f = array(self.f)
         self.df = (self.f[range(1, n)]-self.f[range(n - 1)])*float(self.invdx)
@@ -106,4 +106,4 @@ class TabulateInterp(object):
 if __name__ == '__main__':
     f = lambda x:x**2
     g = TabulateInterp(f, 0, 1 ,1000)
-    print g([0.5, 0.8])
+    print(g([0.5, 0.8]))

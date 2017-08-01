@@ -137,7 +137,7 @@ class Sensors(MappedType):
         unit_vertices = surface_to_map.vertices / norm_verts[:, numpy.newaxis]
 
         sensor_locations = numpy.zeros((self.number_of_sensors, 3))
-        for k in xrange(self.number_of_sensors):
+        for k in range(self.number_of_sensors):
             # Find the surface vertex most closely aligned with current sensor.
             current_sensor = unit_sensors[k]
             alignment = numpy.dot(current_sensor, unit_vertices.T)

@@ -89,7 +89,7 @@ class PCA(core.Type):
         if ts_shape[0] < ts_shape[2]:
             msg = "PCA requires a longer timeseries (tpts > number of nodes)."
             LOG.error(msg)
-            raise Exception, msg
+            raise Exception(msg)
         
         #(nodes, nodes, state-variables, modes)
         weights_shape = (ts_shape[2], ts_shape[2], ts_shape[1], ts_shape[3])

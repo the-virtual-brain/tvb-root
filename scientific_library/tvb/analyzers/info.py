@@ -101,7 +101,7 @@ def sampen(y, m=2, r=None, qse=False, taus=1, info=False,
 
     # ref 2, last paragraph of methods, warn inaccurate estimate
     if c2 < 5:
-        print "m+1 template match count is low, %d < 5" % c2
+        print("m+1 template match count is low, %d < 5" % c2)
 
     p = c2 * 1.0 / c1
     e = -log(p / (2 * r) if qse else p)

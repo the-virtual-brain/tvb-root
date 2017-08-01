@@ -159,7 +159,7 @@ class Model(core.Type):
         state = state[:, numpy.newaxis]
 
         out = [state.copy()]
-        for i in xrange(n_step):
+        for i in range(n_step):
             state += dt * self.dfun(state, coupling)
             if i % n_skip == 0:
                 out.append(state.copy())

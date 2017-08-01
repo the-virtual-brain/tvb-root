@@ -893,7 +893,7 @@ class BoldRegionROI(Bold):
             t, data = result
             # TODO use reduceat
             return [t, array([data.flat[self.region_mapping==i].mean()
-                              for i in xrange(self.region_mapping.max())])]
+                              for i in range(self.region_mapping.max())])]
         else:
             return None
 

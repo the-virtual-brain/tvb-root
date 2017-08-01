@@ -92,7 +92,7 @@ def betweenness_bin(A):
     diam = d - 1                      # graph diameter
     
     #calculate dependency
-    for d in xrange(diam, 1, -1):
+    for d in range(diam, 1, -1):
         temp = (numpy.dot(((length_of_shortest_paths == d) * (1 + dependency) / number_of_shortest_paths), A.T)
                 * ((length_of_shortest_paths == (d - 1)) * number_of_shortest_paths))
                 #temp: dependencies on vertices |d-1| from source

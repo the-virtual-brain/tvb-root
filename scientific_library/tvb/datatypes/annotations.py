@@ -207,7 +207,7 @@ class ConnectivityAnnotations(MappedType):
         """
         annotations_map = dict()
         regions_map = dict()
-        for i in xrange(self.connectivity.number_of_regions):
+        for i in range(self.connectivity.number_of_regions):
             regions_map[i] = []
 
         for ann in self.region_annotations:

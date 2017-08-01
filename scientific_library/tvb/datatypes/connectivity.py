@@ -149,8 +149,8 @@ class Connectivity(MappedType):
         if new_tracts is None:
             new_tracts = self.tract_lengths
 
-        for i in xrange(len(self.weights)):
-            for j in xrange(len(self.weights)):
+        for i in range(len(self.weights)):
+            for j in range(len(self.weights)):
                 if i not in interest_areas or j not in interest_areas:
                     new_weights[i][j] = 0
 
@@ -623,7 +623,7 @@ class Connectivity(MappedType):
 
         elif mode == 'shuffle':
 
-            for i in reversed(xrange(1, D.shape[0])):
+            for i in reversed(range(1, D.shape[0])):
                 j = int(numpy.random.rand() * (i + 1))
                 D[:, i], D[:, j] = D[:, j].copy(), D[:, i].copy()
                 D[i, :], D[j, :] = D[j, :].copy(), D[i, :].copy()
@@ -883,7 +883,7 @@ class Connectivity(MappedType):
         LOG.info("Create labels: %s" % str(mode))
 
         if mode in ("numeric", "num"):
-            self.region_labels = [n for n in xrange(self.number_of_regions)]
+            self.region_labels = [n for n in range(self.number_of_regions)]
             self.region_labels = numpy.array(self.region_labels).astype(str)
         elif mode in ("alphabetic", "alpha"):
             import string

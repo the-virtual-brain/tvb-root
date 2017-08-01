@@ -237,7 +237,7 @@ def find_region_neighbours(region_adjacency):
     number_of_regions = region_adjacency.shape[0]
     xxx = numpy.nonzero(region_adjacency + region_adjacency.T)
     neighbours = {}
-    for key in xrange(number_of_regions):
+    for key in range(number_of_regions):
         #Assign 
         neighbours[key] = list(xxx[1][xxx[0]==key])
 #        # Extend neighbours to include "colourbar neighbours"
@@ -252,7 +252,7 @@ def find_number_of_neighbours(neighbours):
     """
     number_of_regions = len(neighbours)
     number_of_neighbours = numpy.zeros(number_of_regions, dtype=numpy.uint8)
-    for k in xrange(number_of_regions):
+    for k in range(number_of_regions):
         number_of_neighbours[k] = len(neighbours[k])
 
 

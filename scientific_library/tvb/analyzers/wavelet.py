@@ -154,12 +154,12 @@ class ContinuousWaveletTransform(core.Type):
         if numpy.nanmin(Q_ratio) < 5:
             msg = "Q_ratio must be not lower than 5 !"
             LOG.error(msg)
-            raise Exception, msg
+            raise Exception(msg)
         
         if numpy.nanmax(freqs) > sample_rate / 2.0:
             msg = "Sampling rate is too low for the requested frequency range !"
             LOG.error(msg)
-            raise Exception, msg
+            raise Exception(msg)
         
         #TODO: This isn't used, but min frequency seems like it should be important... Check with A.S. 
         #  fmin = 3.0 * numpy.nanmin(Q_ratio) * sample_rate / numpy.pi / nt

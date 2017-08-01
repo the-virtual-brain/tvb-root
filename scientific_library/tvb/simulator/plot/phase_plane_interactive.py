@@ -723,9 +723,9 @@ class PhasePlaneInteractive(core.Type):
                               self.model.number_of_modes))
         self.V = numpy.zeros((NUMBEROFGRIDPOINTS, NUMBEROFGRIDPOINTS,
                               self.model.number_of_modes))
-        for ii in xrange(NUMBEROFGRIDPOINTS):
+        for ii in range(NUMBEROFGRIDPOINTS):
             grid_point[svy_ind] = self.Y[ii]
-            for jj in xrange(NUMBEROFGRIDPOINTS):
+            for jj in range(NUMBEROFGRIDPOINTS):
                 #import pdb; pdb.set_trace()
                 grid_point[svx_ind] = self.X[jj]
 
@@ -838,7 +838,7 @@ if __name__ == "__main__":
     try:
         Model = getattr(models_module, sys.argv[1])
     except Exception:
-        print """
+        print("""
 usage: python -m tvb.simulator.plot.phase_plane_interactive name_of_model
 
 where name_of_model is one of
@@ -846,7 +846,7 @@ where name_of_model is one of
 %s
         """ % (
             '\n'.join(map('{0[0]:>25} - {0[1]}'.format, _list_of_models()))
-        )
+        ))
         sys.exit(1)
 
     ppi_fig = PhasePlaneInteractive(model=Model())

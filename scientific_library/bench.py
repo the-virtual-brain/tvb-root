@@ -42,9 +42,11 @@ import numpy
 
 try:
     import cpuinfo
-    print 'CPU is a %s' % (cpuinfo.get_cpu_info()['brand'], )
+
+    print('CPU is a %s' % (cpuinfo.get_cpu_info()['brand'],))
 except ImportError:
-    print 'consider `pip py-cpuinfo` to include CPU info in report'
+    print('consider `pip py-cpuinfo` to include CPU info in report')
+
 
 def get_subclasses(submodname, baseclassname):
     modname = 'tvb.simulator.' + submodname
@@ -143,10 +145,10 @@ def eps_report_for_components(comps, eps_func):
 
 
 if __name__ == '__main__':
-    print 'units in kHz'
-    print 'benchmarking models'
+    print('units in kHz')
+    print('benchmarking models')
     eps_report_for_components(models(), eps_for_Model)
-    print 'benchmarking integrators'
+    print('benchmarking integrators')
     from tvb.simulator.integrators import RungeKutta4thOrderDeterministic
     integs = list(integrators()) + [RungeKutta4thOrderDeterministic]
     eps_report_for_components(integs, eps_for_Integrator)

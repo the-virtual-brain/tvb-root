@@ -70,7 +70,7 @@ class ArraysTest(BaseTestCase):
         """
         Create a complex array, check that shape is correct.
         """
-        data = numpy.array([numpy.complex(100, 2) for _ in xrange(100)])
+        data = numpy.array([numpy.complex(100, 2) for _ in range(100)])
         array_dt = arrays.ComplexArray()
         array_dt.data = data
         self.assertEqual(array_dt.shape, (100,))
@@ -80,7 +80,7 @@ class ArraysTest(BaseTestCase):
         """
         Create a boolean array, check that shape is correct.
         """
-        data = numpy.array([[False for _ in xrange(12)] for _ in xrange(10)])
+        data = numpy.array([[False for _ in range(12)] for _ in range(10)])
         array_dt = arrays.ComplexArray()
         array_dt.data = data
         self.assertEqual(array_dt.shape, (10, 12))
@@ -90,7 +90,7 @@ class ArraysTest(BaseTestCase):
         """
         Create a string array, check that shape is correct.
         """
-        data = numpy.array([['test' for _ in xrange(12)] for _ in xrange(10)])
+        data = numpy.array([['test' for _ in range(12)] for _ in range(10)])
         array_dt = arrays.StringArray()
         array_dt.data = data
         self.assertEqual(array_dt.shape, (10, 12))
