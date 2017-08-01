@@ -46,12 +46,13 @@ CSS_LIST = []
 JS_LIST = []
 HTML_LIST = []
 
+
 def count_code_lines(filename):
     count = 0
     with open(filename) as fd:
         for line in fd:
             parts = line.strip().split()
-            if len(parts)==0 or parts[0].startswith('#'):
+            if len(parts) == 0 or parts[0].startswith('#'):
                 continue
             count += 1
     return count
@@ -90,16 +91,16 @@ for pydir, _, pyfiles in os.walk(INTROSPECT_FOLDER):
         elif pyfile.endswith(".html") and '/templates/genshi' in pydir:
             HTML_LIST.append((count_lines(totalpath), tmp))
 
-
-print "Total: %s lines in %s .py TVB files (%d lines of code)" % (sum([x[0] for x in TVB_LIST]), len(TVB_LIST), TVB_CODE_LINES)
-print "Total: %s lines in %s .py TEST files" % (sum([x[0] for x in TEST_LIST]), len(TEST_LIST))
-print "Total: %s lines in %s .CSS files" % (sum([x[0] for x in CSS_LIST]), len(CSS_LIST))
-print "Total: %s lines in %s .JS files" % (sum([x[0] for x in JS_LIST]), len(JS_LIST))
-print "Total: %s lines in %s .HTML files" % (sum([x[0] for x in HTML_LIST]), len(HTML_LIST))
+print("Total: %s lines in %s .py TVB files (%d lines of code)" % (
+    sum([x[0] for x in TVB_LIST]), len(TVB_LIST), TVB_CODE_LINES))
+print("Total: %s lines in %s .py TEST files" % (sum([x[0] for x in TEST_LIST]), len(TEST_LIST)))
+print("Total: %s lines in %s .CSS files" % (sum([x[0] for x in CSS_LIST]), len(CSS_LIST)))
+print("Total: %s lines in %s .JS files" % (sum([x[0] for x in JS_LIST]), len(JS_LIST)))
+print("Total: %s lines in %s .HTML files" % (sum([x[0] for x in HTML_LIST]), len(HTML_LIST)))
 
 TVB_LIST.extend(TEST_LIST)
 TVB_LIST.extend(CSS_LIST)
 TVB_LIST.extend(JS_LIST)
 TVB_LIST.extend(HTML_LIST)
 
-print "\nTotal: %s lines in %s tvb files (%s)" % (sum([x[0] for x in TVB_LIST]), len(TVB_LIST), INTROSPECT_FOLDER)
+print("\nTotal: %s lines in %s tvb files (%s)" % (sum([x[0] for x in TVB_LIST]), len(TVB_LIST), INTROSPECT_FOLDER))

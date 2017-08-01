@@ -175,9 +175,9 @@ class TestModel(Type):
             Y = numpy.mgrid[self.ylo[hh]:self.yhi[hh]:(self.npts*1j)]
             U = numpy.zeros((self.npts, self.npts, self.model.number_of_modes, npp))
             V = numpy.zeros((self.npts, self.npts, self.model.number_of_modes, npp))
-            for ii in xrange(self.npts):
+            for ii in range(self.npts):
                 grid_point[self.phase_plane[1, hh]] = Y[ii]
-                for jj in xrange(self.npts):
+                for jj in range(self.npts):
                     #import pdb; pdb.set_trace()
                     grid_point[self.phase_plane[0, hh]] = X[jj]
                     

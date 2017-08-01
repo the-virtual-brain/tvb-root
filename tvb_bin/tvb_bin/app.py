@@ -55,7 +55,7 @@ try:
     # Needed for builds
     import psycopg2
 except ImportError:
-    print "Could not find compatible psycopg2/postgresql bindings. Postgresql support not available."
+    print("Could not find compatible psycopg2/postgresql bindings. Postgresql support not available.")
 
 # Needed for the Mac build
 if 'py2app' in sys.argv:
@@ -70,7 +70,6 @@ CONSOLE_PROFILE_SET = ('from tvb.basic.profile import TvbProfile; '
                        'TvbProfile.set_profile("%s");')
 
 SUB_PARAMETER_RESET = "reset"
-
 
 
 def parse_commandline():
@@ -104,7 +103,6 @@ def parse_commandline():
     return parser.parse_args()
 
 
-
 def find_free_port(tested_port):
     """
     Given an input port that can be either a string or a integer, find the closest port to it that is free.
@@ -121,7 +119,7 @@ def find_free_port(tested_port):
             tested_port += 1
         except socket.error:
             port_in_use = False
-        except Exception, excep1:
+        except Exception as excep1:
             sys.stdout.write(str(excep1) + '\n')
         try_no += 1
     if not port_in_use:
@@ -129,7 +127,6 @@ def find_free_port(tested_port):
     else:
         sys.exit("Could not find a free port for back-end to start!")
     return tested_port
-
 
 
 def execute_clean():
@@ -143,10 +140,9 @@ def execute_clean():
             elif os.path.exists(tvb_storage):
                 os.remove(tvb_storage)
 
-    except Exception, excep1:
+    except Exception as excep1:
         sys.stdout.write("Could not remove TVB folder!")
         sys.stdout.write(str(excep1))
-
 
 
 def execute_stop():
@@ -181,7 +177,6 @@ def execute_stop():
     return has_processes
 
 
-
 def execute_start_web(profile, reset):
     """
     Start the web server on a free port.
@@ -192,7 +187,7 @@ def execute_start_web(profile, reset):
     cherrypy_port = find_free_port(TvbProfile.current.web.SERVER_PORT)
     mplh5_port = find_free_port(TvbProfile.current.web.MPLH5_SERVER_PORT)
     if (not os.path.isfile(TvbProfile.current.TVB_CONFIG_FILE) or TvbProfile.current.web.SERVER_PORT != cherrypy_port
-            or TvbProfile.current.web.MPLH5_SERVER_PORT != mplh5_port):
+        or TvbProfile.current.web.MPLH5_SERVER_PORT != mplh5_port):
         from tvb.basic.config import stored
         free_ports[stored.KEY_PORT] = cherrypy_port
         free_ports[stored.KEY_PORT_MPLH5] = mplh5_port
@@ -215,7 +210,6 @@ def execute_start_web(profile, reset):
     return cherrypy_process
 
 
-
 def execute_start_console(console_profile_name):
     """
     :param console_profile_name: one of the strings in RUN_CONSOLE_PROFILES
@@ -234,7 +228,6 @@ def execute_start_console(console_profile_name):
     # The child inherits the stdin stdout descriptors of the launcher so we keep the launcher alive
     # by calling wait. It would be good if this could be avoided.
     tvb_process.wait()
-
 
 
 def wait_for_tvb_process(tvb_process):
@@ -273,7 +266,6 @@ def wait_for_tvb_process(tvb_process):
         delegate = ApplicationDelegate.alloc().init()
         app.setDelegate_(delegate)
         AppHelper.runEventLoop()
-
 
 
 if __name__ == "__main__":

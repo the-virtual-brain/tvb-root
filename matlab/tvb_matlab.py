@@ -47,7 +47,7 @@ class OutStream(object):
         elif sys.platform == 'linux2':
             libname = '%s/glnxa64/libmex.so' % (matlab_root, )
         else:
-            print 'unsupported platform %r' % (sys.platform, )
+            print('unsupported platform %r' % (sys.platform,))
         self.lib = ctypes.CDLL(libname)
 
     def write(self, str):
@@ -110,7 +110,7 @@ def setup():
     # just try to import the simlab and report if it worked or not.
     try:
         import tvb.simulator.lab
-        print 'TVB modules available.'
+        print('TVB modules available.')
     except Exception as exc:
         #print 'failed to import all TVB modules, not all functionality may be .'
         pass
@@ -122,4 +122,4 @@ def run_sim_with_seed(sim, length, seed):
         rstate = np.random.RandomState(int(seed)).get_state()
         return sim.run(simulation_length=length, random_state=rstate)
     except Exception as exc:
-        print 'unable to run: %r' % (exc, )
+        print('unable to run: %r' % (exc,))

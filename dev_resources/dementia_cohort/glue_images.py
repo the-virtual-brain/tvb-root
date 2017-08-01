@@ -38,7 +38,6 @@ RAW_COUNT = 32
 BRANDING_BAR_PATH = "../../framework_tvb/tvb/core/services/resources/branding_bar.png"
 
 
-
 def glue_2_images(image1, image2, final_path):
     final_image = Image.new("RGBA", (2 * WIDTH, HEIGHT))
 
@@ -48,8 +47,7 @@ def glue_2_images(image1, image2, final_path):
     final_image.paste(img, (WIDTH, 0), img)
 
     final_image.save(final_path, "PNG")
-    print "Saved image:", final_path
-
+    print("Saved image:", final_path)
 
 
 def glue_images(no_of_rows, input_img_prefix, target_img_prefix, landscape=True):
@@ -59,9 +57,9 @@ def glue_images(no_of_rows, input_img_prefix, target_img_prefix, landscape=True)
     random.shuffle(raw_images)
     raw_idx = 0
 
-    for column in xrange(no_of_rows if landscape else no_of_rows / 4):
+    for column in range(no_of_rows if landscape else no_of_rows / 4):
 
-        for row in xrange(no_of_rows):
+        for row in range(no_of_rows):
             if raw_idx >= RAW_COUNT:
                 random.shuffle(raw_images)
                 raw_idx = 0
@@ -77,12 +75,11 @@ def glue_images(no_of_rows, input_img_prefix, target_img_prefix, landscape=True)
     final_path = target_img_prefix + str(no_of_rows) + ".png"
     final_image.save(final_path, "PNG")
 
-    print "Saved image:", final_path
-
+    print("Saved image:", final_path)
 
 
 if __name__ == "__main__":
-    for i in xrange(RAW_COUNT):
+    for i in range(RAW_COUNT):
         left_view = "raw/snapshot-" + str(i) + "A.png"
         right_view = "raw/snapshot-" + str(i) + "B.png"
         result = "glued/brain-" + str(i) + ".png"
