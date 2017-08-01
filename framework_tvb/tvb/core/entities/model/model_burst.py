@@ -34,10 +34,10 @@
 
 import json
 import copy
+import six
 from datetime import datetime
 from sqlalchemy import Integer, String, DateTime, Column, ForeignKey
 from sqlalchemy.orm import relationship, backref
-
 from tvb.core.utils import string2date
 from tvb.core.entities.exportable import Exportable
 from tvb.core.entities.model.model_base import Base
@@ -54,7 +54,6 @@ BURST_INFO_FILE = "bursts_info.json"
 BURSTS_DICT_KEY = "bursts_dict"
 DT_BURST_MAP = "dt_mapping"
 
-
 PARAM_RANGE_PREFIX = 'range_'
 RANGE_PARAMETER_1 = "range_1"
 RANGE_PARAMETER_2 = "range_2"
@@ -65,6 +64,7 @@ PARAM_MODEL = 'model'
 PARAM_INTEGRATOR = 'integrator'
 
 PARAMS_MODEL_PATTERN = 'model_parameters_option_%s_%s'
+
 
 class BurstConfiguration(Base, Exportable):
     """
@@ -213,7 +213,7 @@ class BurstConfiguration(Base, Exportable):
         """
         result = {}
         any_checked = False
-        for key, value in self.simulator_configuration.iteritems():
+        for key, value in six.iteritems(self.simulator_configuration):
             if value.get(KEY_PARAMETER_CHECKED):
                 any_checked = True
             if KEY_SAVED_VALUE not in value:
@@ -298,7 +298,7 @@ class TabConfiguration():
         """
         Set to None all portlets in current TAB.
         """
-        for idx in xrange(len(self.portlets)):
+        for idx in range(len(self.portlets)):
             self.portlets[idx] = None
 
 
@@ -331,9 +331,8 @@ class TabConfiguration():
         for portlet in self.portlets:
             repr_str += str(portlet) + '; '
         return repr_str
-    
-    
-           
+
+
 class Dynamic(Base):
     __tablename__ = 'DYNAMIC'
     id = Column(Integer, primary_key=True)

@@ -90,10 +90,10 @@ class FilesUpdateManager(UpdateManager):
         """
         try:
             file_version = self.get_file_data_version(file_path)
-        except MissingDataFileException, ex:
+        except MissingDataFileException as ex:
             self.log.exception(ex)
             return False
-        except FileStructureException, ex:
+        except FileStructureException as ex:
             self.log.exception(ex)
             return False
 
@@ -162,7 +162,7 @@ class FilesUpdateManager(UpdateManager):
                     self.log.debug("We will ignore, due to type: " + str(specific_datatype))
                     no_of_dts_ignored += 1
 
-            except Exception, ex:
+            except Exception as ex:
                 # The file/class is missing for some reason. Just mark the DataType as invalid.
                 datatype.invalid = True
                 dao.store_entity(datatype)

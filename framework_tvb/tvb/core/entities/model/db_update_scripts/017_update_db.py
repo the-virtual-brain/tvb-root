@@ -77,7 +77,7 @@ def upgrade(migrate_engine):
         session.execute(text("ALTER TABLE \"MAPPED_SIMULATION_STATE\" "
                              "ADD COLUMN _current_state VARYING CHARACTER(255)"))
         session.commit()
-    except Exception, _:
+    except Exception:
         session.close()
         session = SA_SESSIONMAKER()
         session.execute(text("ALTER TABLE \"MAPPED_SIMULATION_STATE\" "
@@ -111,7 +111,7 @@ def upgrade(migrate_engine):
         session.execute(text("""DROP TABLE "ALGORITHM_GROUPS";"""))
         session.commit()
 
-    except Exception, excep:
+    except Exception as excep:
         LOGGER.exception(excep)
     finally:
         session.close()
@@ -125,7 +125,7 @@ def upgrade(migrate_engine):
         session.execute(text("""ALTER TABLE "MAPPED_VALUE_WRAPPER" RENAME TO "MAPPED_VALUE_WRAPPER_DATA"; """))
         session.execute(text("""ALTER TABLE "MAPPED_PROJECTION_DATA" RENAME TO "MAPPED_PROJECTION_MATRIX_DATA"; """))
         session.commit()
-    except Exception, excep:
+    except Exception as excep:
         LOGGER.exception(excep)
     finally:
         session.close()

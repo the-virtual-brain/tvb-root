@@ -30,10 +30,11 @@
 """
 .. moduleauthor:: Bogdan Neacsa <bogdan.neacsa@codemart.ro>    
 """
+
 import json
+import six
 from tvb.core.entities import model
 from tvb.basic.filters.chain import FilterChain
-
 
 
 class StaticFiltersFactory():
@@ -64,8 +65,8 @@ class StaticFiltersFactory():
                 ### We have some custom filter to build
                 return StaticFiltersFactory._build_custom_filter(single_filter)
         return filters.values()
-    
-    
+
+
     @staticmethod
     def _build_custom_filter(filter_data):
         """
@@ -81,7 +82,7 @@ class StaticFiltersFactory():
             return FilterChain('Datatypes', [FilterChain.operation + '.parameters'],
                                [filter_data['value']], operations=["like"])
         return None
-    
+
 
     @staticmethod
     def build_operations_filters(simulation_algorithm, logged_user_id):
@@ -108,8 +109,8 @@ class StaticFiltersFactory():
                              model.STATUS_ERROR: "Only with Errors",
                              model.STATUS_CANCELED: "Only Canceled",
                              model.STATUS_FINISHED: "Only Finished",
-                             model.STATUS_PENDING: "Only Pending" }
-        for status, title in filtered_statuses.iteritems():
+                             model.STATUS_PENDING: "Only Pending"}
+        for status, title in six.iteritems(filtered_statuses):
             new_filter = FilterChain(title, [FilterChain.operation + '.status'], [status], operations=["=="])
             new_filters.append(new_filter)
 
@@ -124,5 +125,3 @@ class StaticFiltersFactory():
         new_filters.append(new_filter)
 
         return new_filters
-    
-    

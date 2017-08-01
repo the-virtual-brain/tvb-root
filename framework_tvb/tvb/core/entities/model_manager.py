@@ -97,12 +97,12 @@ def reset_database():
             except Exception:
                 try:
                     session.execute(text("DROP TABLE %s" % table))
-                except Exception, excep1:
+                except Exception as excep1:
                     LOGGER.error("Could no drop table %s", table)
                     LOGGER.exception(excep1)
         session.commit()
         LOGGER.info("Database was cleanup!")
-    except Exception, excep:
+    except Exception as excep:
         LOGGER.warning(excep)
     finally:
         session.close()

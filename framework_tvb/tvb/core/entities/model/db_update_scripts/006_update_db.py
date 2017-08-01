@@ -53,7 +53,7 @@ def upgrade(_migrate_engine):
                                 REPLACE(REPLACE(parameters, "first_range", "range_1"), "second_range", "range_2");"""))
         session.commit()
         session.close()
-    except Exception, excep:
+    except Exception as excep:
         ## This update is not critical. We can run even in case of error at update
         logger = get_logger(__name__)
         logger.exception(excep)
@@ -70,7 +70,7 @@ def downgrade(_migrate_engine):
                                 REPLACE(REPLACE(parameters, "range_1", "first_range"), "range_2", "second_range");"""))
         session.commit()
         session.close()
-    except Exception, excep:
+    except Exception as excep:
         ## This update is not critical. We can run even in case of error at update
         logger = get_logger(__name__)
         logger.exception(excep)

@@ -149,7 +149,7 @@ class CaseDAO(RootDAO):
         try:
             datatype = self.session.query(model.DataType).filter_by(id=dt_id).one()
             return datatype.parent_operation.user
-        except SQLAlchemyError, ex:
+        except SQLAlchemyError as ex:
             self.logger.exception(ex)
         return None
 
@@ -163,7 +163,7 @@ class CaseDAO(RootDAO):
             total_size = self.session.query(func.sum(model.DataType.disk_size)).join(model.Operation
                                         ).filter(model.Operation.fk_launched_by == user_id).scalar()
             return total_size or 0
-        except SQLAlchemyError, excep:
+        except SQLAlchemyError as excep:
             self.logger.exception(excep)
             return -1
 
@@ -207,7 +207,7 @@ class CaseDAO(RootDAO):
             total_size = self.session.query(func.sum(model.DataType.disk_size)).join(model.Operation
                                         ).filter(model.Operation.fk_launched_in == project_id).scalar()
             return total_size or 0
-        except SQLAlchemyError, excep:
+        except SQLAlchemyError as excep:
             self.logger.exception(excep)
             return -1
 
@@ -281,7 +281,7 @@ class CaseDAO(RootDAO):
             result = self.session.query(model.Links).filter(model.Links.fk_from_datatype == dt_id
                                                         ).filter(model.Links.fk_to_project == project_id).one()
             return result
-        except SQLAlchemyError, excep:
+        except SQLAlchemyError as excep:
             self.logger.exception(excep)
             return None
 
@@ -312,7 +312,7 @@ class CaseDAO(RootDAO):
             linked_project_ids.remove(current_prj[0])
             linked_projects = [entry for entry in result if entry.id in linked_project_ids]
             return filtered_result, linked_projects
-        except Exception, excep:
+        except Exception as excep:
             self.logger.exception(excep)
             return None, None
 

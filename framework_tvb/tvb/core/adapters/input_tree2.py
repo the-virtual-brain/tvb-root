@@ -388,7 +388,7 @@ class InputTreeManager(object):
                             if data_type:
                                 inputs_datatypes.append(data_type)
                                 is_datatype = True
-                    except ImportError, _:
+                    except ImportError:
                         pass
 
                 if is_datatype:
@@ -494,7 +494,7 @@ class InputTreeManager(object):
             prefix = row[KEY_NAME] + "_" + row[ATT_PARAMETERS]
             if hasattr(entity, 'shape'):
                 param_dict = {}
-                for i in xrange(1, len(entity.shape)):
+                for i in range(1, len(entity.shape)):
                     param_key = prefix + "_" + str(i - 1)
                     if param_key in kwargs:
                         param_dict[param_key] = kwargs[param_key]

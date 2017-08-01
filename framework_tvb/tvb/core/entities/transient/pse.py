@@ -39,6 +39,7 @@ The purpose of this entities is to be used in Genshi UI, or for populating visua
 
 import json
 import math
+import six
 from tvb.basic.config.utils import EnhancedDictionary
 from tvb.core.entities import model
 
@@ -52,8 +53,8 @@ class ContextDiscretePSE(EnhancedDictionary):
     KEY_OPERATION_ID = "operationId"
     KEY_TOOLTIP = "tooltip"
     LINE_SEPARATOR = "<br/>"
-    
-    
+
+
     def __init__(self, datatype_group_gid, color_metric, size_metric, back_page):
 
         super(ContextDiscretePSE, self).__init__()
@@ -85,7 +86,7 @@ class ContextDiscretePSE(EnhancedDictionary):
         self.labels_y = labels_y
         self.only_numbers = only_numbers
 
-        
+
     def prepare_individual_jsons(self):
         """
         Apply JSON.dumps on all attributes which can not be passes as they are towards UI.
@@ -96,14 +97,14 @@ class ContextDiscretePSE(EnhancedDictionary):
         self.values_y = json.dumps(self.values_y)
         self.d3_data = json.dumps(self.d3_data)
         self.has_started_ops = json.dumps(self.has_started_ops)
-    
-    
+
+
     def prepare_full_json(self):
         """
         Apply JSON.dumps on full dictionary.
         """
         return json.dumps(self)
-    
+
 
     def build_node_info(self, operation, datatype):
         """
@@ -123,15 +124,15 @@ class ContextDiscretePSE(EnhancedDictionary):
                                    "Datatype invalid: " + str(datatype.invalid))
             ### Add scientific report to the quick details.
             if datatype.summary_info is not None:
-                for key, value in datatype.summary_info.iteritems():
+                for key, value in six.iteritems(datatype.summary_info):
                     datatype_tooltip = datatype_tooltip + self.LINE_SEPARATOR + str(key) + ": " + str(value)
             node_info[self.KEY_TOOLTIP] = datatype_tooltip
         else:
             tooltip = "No result available. Operation is in status: %s" % operation.status.split('-')[1]
             node_info[self.KEY_TOOLTIP] = tooltip
         return node_info
-    
-    
+
+
     def prepare_metrics_datatype(self, measures, datatype):
         """
         Update attribute self.datatypes_dict with metric values for this DataType.
@@ -255,7 +256,7 @@ class ContextDiscretePSE(EnhancedDictionary):
             try:
                 if math.isnan(float(node_info[metric])) or math.isinf(float(node_info[metric])):
                     valid_metric = False
-            except ValueError, _:
+            except ValueError:
                 valid_metric = False
             if valid_metric:
                 return node_info[metric], None
@@ -284,7 +285,7 @@ class ContextDiscretePSE(EnhancedDictionary):
             try:
                 if math.isnan(float(node_info[metric])) or math.isinf(float(node_info[metric])):
                     valid_metric = False
-            except ValueError, _:
+            except ValueError:
                 valid_metric = False
 
             if valid_metric:
@@ -306,7 +307,7 @@ class ContextDiscretePSE(EnhancedDictionary):
         Returns the MIN and the max values of the interval from
         which may be set the size of a certain shape.
         """
-        #the arrays 'intervals' and 'values' should have the same size
+        # the arrays 'intervals' and 'values' should have the same size
         intervals = [0, 3, 5, 8, 10, 20, 30, 40, 50, 60, 90, 110, 120]
         values = [(10, 50), (10, 40), (10, 33), (8, 25), (5, 15), (4, 10),
                   (3, 8), (2, 6), (2, 5), (1, 4), (1, 3), (1, 2), (1, 2)]
@@ -319,4 +320,4 @@ class ContextDiscretePSE(EnhancedDictionary):
         else:
             for i, interval in enumerate(intervals):
                 if max_length <= interval:
-                    return values[i - 1]    
+                    return values[i - 1]

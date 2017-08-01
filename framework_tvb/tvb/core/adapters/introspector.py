@@ -79,7 +79,7 @@ class Introspector:
         try:
             event_path = __import__(module.EVENTS_FOLDER, globals(), locals(), ["__init__"])
             return os.path.dirname(event_path.__file__)
-        except Exception, exception:
+        except Exception as exception:
             self.logger.warning("Could not import events folder.\n" + str(exception))
             return None
 
@@ -112,7 +112,7 @@ class Introspector:
             self.path_types = module.DATATYPES_PATH
             self.removers_path = module.REMOVERS_PATH
             self.path_portlets = getattr(module, 'PORTLETS_PATH', [])
-        except Exception, excep:
+        except Exception as excep:
             self.logger.warning("Module " + self.module_name + " is not fully introspect compatible!")
             self.logger.warning(excep.message)
             return
@@ -240,14 +240,14 @@ class Introspector:
                                             self.logger.error("Invalid input %s for adapter %s" % (
                                                 input_entry[ABCAdapter.KEY_NAME], adapter_instance))
                                             is_valid = False
-                            except ImportError, _:
+                            except ImportError:
                                 self.logger.error("Invalid adapter declaration %s in portlet %s" % (
                                                   adapter[ABCAdapter.KEY_TYPE], algo_identifier))
                                 is_valid = False
                         if is_valid:
                             portlets_list.append(model.Portlet(algo_identifier, complete_file_path,
                                                                portlet_list[algo_identifier]['name']))
-            except XmlParserException, excep:
+            except XmlParserException as excep:
                 self.logger.exception(excep)
                 self.logger.error("Invalid Portlet description File " + file_n + " will continue without it!!")
 
@@ -286,7 +286,7 @@ class Introspector:
                 tree = inspect.getmembers(module_ref, lambda c: self._is_concrete_subclass(c, MappedType))
                 for class_name, class_ref in tree:
                     self.logger.debug("Importing class for DB table to be created: " + class_name)
-            except Exception, excep1:
+            except Exception as excep1:
                 self.logger.error('Could not import DataType!' + my_type)
                 self.logger.exception(excep1)
         self.logger.debug('DB Model update finished for ' + path_types)
@@ -358,7 +358,7 @@ class Introspector:
             module, class_name = param_to_test.rsplit('.', 1)
             reference = __import__(module, globals(), locals(), [class_name])
             return getattr(reference, class_name)
-        except Exception, excep:
+        except Exception as excep:
             self.logger.debug("Could not import class:" + str(excep))
             return None
 

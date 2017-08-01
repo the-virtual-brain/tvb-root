@@ -59,7 +59,7 @@ def update():
                 adapter = Sensors_Importer()
                 FlowService().fire_operation(adapter, dao.get_system_user(), project.id, visible=False,
                                              sensors_file=DATA_FILE, sensors_type=Sensors_Importer.INTERNAL_SENSORS)
-            except Exception, excep:
+            except Exception as excep:
                 LOGGER.exception(excep)
     
     

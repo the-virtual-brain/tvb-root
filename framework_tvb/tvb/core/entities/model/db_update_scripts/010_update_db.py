@@ -101,7 +101,7 @@ def remove_visualizer_references():
                WHERE  A.fk_algo_group = AG.id AND module = 'tvb.adapters.visualizers.cross_correlation'
                       AND classname = 'PearsonCorrelationCoefficientVisualizer');"""))
         session.commit()
-    except Exception, excep:
+    except Exception as excep:
         LOGGER.exception(excep)
     finally:
         session.close()

@@ -68,7 +68,7 @@ def update():
                 adapter = ObjSurfaceImporter()
                 FlowService().fire_operation(adapter, user, project.id, visible=False,
                                              surface_type=FACE, data_file=DATA_FILE_FACE)
-            except Exception, excep:
+            except Exception as excep:
                 LOGGER.exception(excep)
                 
     TvbProfile.current.manager.add_entries_to_config_file({stored.KEY_MATLAB_EXECUTABLE: get_matlab_executable()})

@@ -99,7 +99,7 @@ def _exec_update(boolean_value, logger):
         logger.info("DB update script 015 committed.")
         return True
 
-    except Exception, excep:
+    except Exception as excep:
         logger.exception(excep)
         return False
     finally:

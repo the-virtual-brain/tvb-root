@@ -329,7 +329,7 @@ class FilesHelper():
             if result.startswith(os.path.sep):
                 result = result.replace(os.path.sep, '', 1)
             return result
-        except Exception, excep:
+        except Exception as excep:
             logger = get_logger(__name__)
             logger.warning("Could not normalize " + str(full_path))
             logger.warning(str(excep))
@@ -410,10 +410,10 @@ class FilesHelper():
                     if not to_be_excluded(filename):
                         result.append(zip_arch.extract(filename, folder_path))
             return result
-        except BadZipfile, excep:
+        except BadZipfile as excep:
             self.logger.exception("Could not process zip file")
             raise FileStructureException("Invalid ZIP file..." + str(excep))
-        except Exception, excep:
+        except Exception as excep:
             self.logger.exception("Could not process zip file")
             raise FileStructureException("Could not unpack the given ZIP file..." + str(excep))
             

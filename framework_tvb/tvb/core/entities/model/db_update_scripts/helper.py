@@ -54,7 +54,7 @@ def change_algorithm(module, classname, new_module, new_class):
                SET module = '""" + new_module + """', classname = '""" + new_class + """'
                WHERE module = '""" + module + """' AND classname = '""" + classname + """';"""))
         session.commit()
-    except Exception, excep:
+    except Exception as excep:
         LOGGER.exception(excep)
     finally:
         session.close()

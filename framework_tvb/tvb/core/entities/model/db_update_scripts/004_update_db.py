@@ -80,7 +80,7 @@ def upgrade(migrate_engine):
 
             dao.store_entity(group)
 
-    except Exception, excep:
+    except Exception as excep:
         ## we can live with a column only having default value. We will not stop the startup.
         logger = get_logger(__name__)
         logger.exception(excep)
@@ -104,7 +104,7 @@ def upgrade(migrate_engine):
             session.delete(sim_state)
         session.commit()
         session.close()
-    except Exception, excep:
+    except Exception as excep:
         ## It might happen that SimulationState table is not yet created, e.g. if user has version 1.0.2
         logger = get_logger(__name__)
         logger.exception(excep)
