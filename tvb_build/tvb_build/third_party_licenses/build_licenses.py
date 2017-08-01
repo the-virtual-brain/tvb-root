@@ -131,7 +131,7 @@ def generate_artefact(root_folder_to_introspect, excludes=None, actual_libs=None
         dep_text += lib_text
 
     if exceptions:
-        print "Libraries: " + str(exceptions) + "\n are included in TVB package but their license were not validated!"
+        print("Libraries: " + str(exceptions) + "\n are included in TVB package but their license were not validated!")
 
     if os.path.exists(RESULT_FILE_NAME + '.rst'):
         os.remove(RESULT_FILE_NAME + '.rst')
@@ -142,7 +142,7 @@ def generate_artefact(root_folder_to_introspect, excludes=None, actual_libs=None
     dep_text = dep_text.replace("[unknown,", '[-,').replace(",unknown]", ',-]')
     dep_text = dep_text.replace("*Version:* **unknown**", "*Version:* **-**")
 
-    print " - Writing used dependencies as xml"
+    print(" - Writing used dependencies as xml")
     # this is used for logging purposes
     # Gathering all these files from the build machines will show TVB's dependencies
     parser.write_used_on_this_platform(accepted_libs, actual_libs, path=PACKAGES_USED_XML)
@@ -164,7 +164,7 @@ def generate_artefact(root_folder_to_introspect, excludes=None, actual_libs=None
             z_file.write(file_name, os.path.split(file_name)[1])
 
     os.remove(RESULT_FILE_NAME + '.html')
-    print " - THIRD_PARTY_LICENSES were generated"
+    print(" - THIRD_PARTY_LICENSES were generated")
     return RESULT_FILE_NAME + '.zip'
 
 
@@ -184,6 +184,6 @@ if __name__ == "__main__":
     for lib in to_exclude:
         del all_libs[lib]
 
-    print "Generating Dep-list with " + str(len(all_libs)) + " libraries."
+    print("Generating Dep-list with " + str(len(all_libs)) + " libraries.")
     RESULT_ZIP = generate_artefact(os.path.expanduser(os.path.join('~', 'Downloads', 'TVB_DISTRIBUTION')), [])
     os.rename(RESULT_ZIP, "_ALL_THIRD_PARTY.zip")

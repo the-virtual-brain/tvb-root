@@ -111,7 +111,7 @@ def write_file(name, text, opts, extra_toc_entries=""):
     fname = os.path.join(opts.destdir, "%s.%s" % (name, opts.suffix))
     if os.path.isfile(fname):
         if opts.force and name not in APPENDABLE_TOCS:
-            print 'File %s already exists, skipping.' % fname
+            print('File %s already exists, skipping.' % fname)
         elif '.. toctree::' in open(fname).read():
             # Appending extra toc entries only makes sense if we already have a toctree.
             #print '  Appending to file %s.' % fname
@@ -193,7 +193,7 @@ def create_package_file(root, master_package, subroot, py_files, opts, subs, exc
         if full_module_name in modules_specs:
             shutil.copy(modules_specs[full_module_name], full_module_name + '.rst')
             text += heading + '\n'
-            text += '-'.join(['' for _ in xrange(len(heading))])
+            text += '-'.join(['' for _ in range(len(heading))])
             text += '\n\n'
             text += '.. toctree::\n'
             text += '    :maxdepth: 2\n\n'

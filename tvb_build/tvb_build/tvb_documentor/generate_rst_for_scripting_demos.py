@@ -49,7 +49,7 @@ for ipynb_fname in glob.glob(os.path.join(demo_folder, '*.ipynb')):
 # generate refs first
 ref_fmt = '.. _{title}: {nburl}/{fname}'
 for fname, title in demos:
-    print ref_fmt.format(fname=fname, title=title, nburl=nburl)
+    print(ref_fmt.format(fname=fname, title=title, nburl=nburl))
 
 # now figure directives
 fig_fmt = '''.. figure:: figures/{bname}.png
@@ -62,4 +62,4 @@ fig_fmt = '''.. figure:: figures/{bname}.png
 '''
 for fname, title in demos:
     bname, _ = fname.split('.')
-    print fig_fmt.format(bname=bname, title=title)
+    print(fig_fmt.format(bname=bname, title=title))

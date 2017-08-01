@@ -84,7 +84,7 @@ EXCLUDES_DYLIB = [
     re.compile(r'libz.*\.dylib'),
     # Already included
     re.compile(r'libhdf5_hl.*\.dylib'), re.compile(r'libhdf5.*\.dylib'), 'libsqlite3.0.dylib', 'liblcms.1.0.19.dylib',
-    re.compile(r'libxslt.*\.dylib'), re.compile(r'libexslt.*\.dylib')   # Come with with libxml2
+    re.compile(r'libxslt.*\.dylib'), re.compile(r'libexslt.*\.dylib')  # Come with with libxml2
 ]
 
 # py2app adds some frameworks to package that we also need to check for licenses.
@@ -124,9 +124,9 @@ def _get_dll_version_number(filename):
                HIWORD(version_ls), LOWORD(version_ls))
         return ".".join([str(i) for i in tmp])
     except ImportError:
-        print 'Warning, win32api not found. All dll versions set to unknown'
+        print('Warning, win32api not found. All dll versions set to unknown')
     except Exception:
-        print 'DLL ' + filename + 'does not contain any information avout version'
+        print('DLL ' + filename + 'does not contain any information avout version')
     return 'unknown'
 
 
@@ -269,4 +269,4 @@ def parse_tree_structure(root_, excludes=None):
 if __name__ == '__main__':
     ROOT = 'D:\Projects\Brain\dist-repo\TVB_distribution\library.zip'
     ROOT_MAC = '../TVB_MacOS_dist/TVB_distribution/tvb.app/Contents/Resources/lib/python2.7'
-    print parse_tree_structure(ROOT)
+    print(parse_tree_structure(ROOT))

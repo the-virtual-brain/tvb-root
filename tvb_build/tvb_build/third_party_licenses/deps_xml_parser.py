@@ -81,7 +81,7 @@ def _read_all_attributes(node):
     """
     atts = {}
     all_attributes = node.attributes
-    for i in xrange(all_attributes.length):
+    for i in range(all_attributes.length):
         att = all_attributes.item(i)
         atts[att.name] = str(att.value)
     return atts
