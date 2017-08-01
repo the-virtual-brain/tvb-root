@@ -35,6 +35,7 @@ Launches the web server and configure the controllers for UI.
 """
 
 import time
+
 STARTUP_TIC = time.time()
 
 import os
@@ -43,6 +44,7 @@ import cherrypy
 import webbrowser
 from cherrypy import Tool
 from tvb.basic.profile import TvbProfile
+
 if __name__ == '__main__':
     TvbProfile.set_profile(sys.argv[1])
 
@@ -69,7 +71,6 @@ from tvb.interfaces.web.controllers.spatial.region_stimulus_controller import Re
 from tvb.interfaces.web.controllers.spatial.surface_stimulus_controller import SurfaceStimulusController
 from tvb.interfaces.web.controllers.spatial.local_connectivity_controller import LocalConnectivityController
 from tvb.interfaces.web.controllers.burst.noise_configuration_controller import NoiseConfigurationController
-from tvb.interfaces.web.controllers.api.simulator_controller import SimulatorController
 
 
 LOGGER = get_logger('tvb.interfaces.web.run')
@@ -107,20 +108,18 @@ def init_cherrypy(arguments=None):
     cherrypy.tree.mount(SurfaceStimulusController(), "/spatial/stimulus/surface/", config=CONFIGUER)
     cherrypy.tree.mount(LocalConnectivityController(), "/spatial/localconnectivity/", config=CONFIGUER)
     cherrypy.tree.mount(NoiseConfigurationController(), "/burst/noise/", config=CONFIGUER)
-    cherrypy.tree.mount(SimulatorController(), "/api/simulator/", config=CONFIGUER)
 
     cherrypy.config.update(CONFIGUER)
 
-    #----------------- Register additional request handlers -----------------
+    # ----------------- Register additional request handlers -----------------
     # This tool checks for MAX upload size
     cherrypy.tools.upload = Tool('on_start_resource', RequestHandler.check_upload_size)
     # This tools clean up files on disk (mainly after export)
     cherrypy.tools.cleanup = Tool('on_end_request', RequestHandler.clean_files_on_disk)
-    #----------------- End register additional request handlers ----------------
+    # ----------------- End register additional request handlers ----------------
 
     #### HTTP Server is fired now ######  
     cherrypy.engine.start()
-
 
 
 def start_tvb(arguments, browser=True):
@@ -129,7 +128,7 @@ def start_tvb(arguments, browser=True):
     """
 
     if PARAM_RESET_DB in arguments:
-    ##### When specified, clean everything in DB
+        ##### When specified, clean everything in DB
         reset()
         arguments.remove(PARAM_RESET_DB)
 
@@ -141,7 +140,7 @@ def start_tvb(arguments, browser=True):
 
     try:
         initialize(arguments)
-    except InvalidSettingsException, excep:
+    except InvalidSettingsException as excep:
         LOGGER.exception(excep)
         sys.exit()
 
@@ -160,7 +159,6 @@ def start_tvb(arguments, browser=True):
                 TvbProfile.current.version.CURRENT_VERSION, time.time() - STARTUP_TIC)
     cherrypy.engine.block()
     cherrypy.log.error_log
-
 
 
 @user_environment_execution
@@ -183,7 +181,6 @@ def run_browser():
     except Exception:
         LOGGER.warning("Browser could not be fired!  Please manually type in your "
                        "preferred browser: %s" % TvbProfile.current.web.BASE_LOCAL_URL)
-
 
 
 if __name__ == '__main__':
