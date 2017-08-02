@@ -431,7 +431,7 @@ class ComplexCoherenceSpectrum(arrays.MappedArray):
     _frequency = None
     _freq_step = None
     _max_freq = None
-    spectrum_types=["Imaginary", "Real", "Absolute"]
+    spectrum_types = ["Imaginary", "Real", "Absolute"]
 
     def configure(self):
         """After populating few fields, compute the rest of the fields"""

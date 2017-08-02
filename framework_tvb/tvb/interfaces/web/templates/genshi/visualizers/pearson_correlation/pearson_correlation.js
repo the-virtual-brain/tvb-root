@@ -71,8 +71,8 @@ function Pc_init(matrix_shape, title, labels, url_base, notes, pearson_min, pear
     PearsonCorrelation.notes = notes;
     PearsonCorrelation.title = title;
     PearsonCorrelation.url_base = url_base;
-    PearsonCorrelation.pearson_min = pearson_min;
-    PearsonCorrelation.pearson_max = pearson_max;
+    PearsonCorrelation.absolute_min = pearson_min;
+    PearsonCorrelation.absolute_max = pearson_max;
 
     tv.util.usage(div, title, notes);
 }

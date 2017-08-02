@@ -1,8 +1,7 @@
 <div xmlns:py="http://genshi.edgewall.org/" class="view-column">
     <script type="text/javascript" src="/static/js/d3.v3.js"></script>
     <script type="text/javascript" src="/static/js/tvbviz.js?$currentVersionJS"></script>
-    <script type="text/javascript"
-            src="/static_view/pearson_correlation/pearson_correlation.js?$currentVersionJS"></script>
+    <script type="text/javascript" src="/static_view/pearson_correlation/pearson_correlation.js?$currentVersionJS"></script>
 
     <link rel="stylesheet" href="/static/style/sections_svg.css?$currentVersionJS" type="text/css"/>
 
@@ -43,7 +42,8 @@
             $("#main").addClass("colscheme-1");
             Pc_init('${matrix_shape}', "$viewer_title", '${matrix_labels}',
                 '${url_base}', ["Place mouse over matrix elements to inspect their values",
-                    "Drag in colorbar to select and show entries in a range of values"], '${pearson_min}', '${pearson_max}', width, height);
+                    "Drag in colorbar to select and show entries in a range of values"],
+                '${pearson_min}', '${pearson_max}', width, height);
         }
 
         // For the burst Preview part
