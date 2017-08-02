@@ -42,7 +42,6 @@ from tvb.basic.traits import core, types_basic as basic
 from tvb.basic.logger.builder import get_logger
 from tvb.datatypes import arrays, time_series, connectivity
 
-
 LOG = get_logger(__name__)
 
 
