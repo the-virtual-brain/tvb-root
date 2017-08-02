@@ -108,6 +108,10 @@ class CorrelationCoefficients(arrays.MappedArray):
         summary.update(self.get_info_about_array('array_data'))
         return summary
 
+    def get_correlation_data(self, selected_state, selected_mode):
+        matrix_to_display = self.array_data[:, :, int(selected_state), int(selected_mode)]
+        return list(matrix_to_display.flat)
+
 
 class ConnectivityMeasure(arrays.MappedArray):
     """Measurement of based on a connectivity."""
