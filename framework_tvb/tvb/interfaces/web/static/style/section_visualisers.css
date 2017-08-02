@@ -98,7 +98,7 @@ div.flot-tick-label{
     top: 0;
 }
 
-.matrix2d-svg-container {
+.draw-svg-container {
     position: absolute;
     top:0;
     left:0;
@@ -129,7 +129,7 @@ div.flot-tick-label{
     opacity: 0.80;
 }
 
-.complex_coherence_draw_area {
+.curve_draw_area {
     height:85%;
     width:95%;
     position:relative;

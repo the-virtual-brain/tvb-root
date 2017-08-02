@@ -2,6 +2,7 @@
 
     <script type="text/javascript" src="/static/js/d3.v3.js"></script>
     <script type="text/javascript" src="/static_view/complex_coherence/complex_coherence.js?$currentVersionJS"></script>
+    <script type="text/javascript" src="/static_view/commons/scripts/drawCurve.js?$currentVersionJS"></script>
 
     <link type="text/css" rel="stylesheet" href="/static/style/section_visualisers.css?$currentVersionJS"/>
 
@@ -10,7 +11,7 @@
     <ul class="toolbar-inline">
         <li>
             <label for="xScale_select">X Scale</label>
-            <select id="xScale_select" onchange="Complex_changeXScale(this.value)">
+            <select id="xScale_select" onchange="Plot_changeXScale(this.value)">
                 <py:for each="scale in available_xScale">
                     <py:if test="scale==xscale">
                         <option value="$scale" selected="selected">$scale</option>
@@ -36,17 +37,17 @@
         </li>
     </ul>
 
-    <div class="complex_coherence_draw_area">
-        <svg class="matrix2d-svg-container" id="svg-container"></svg>
+    <div class="curve_draw_area">
+        <svg class="draw-svg-container" id="svg-container"></svg>
     </div>
 
     <script type="text/javascript">
 
         $(document).ready(function () {
             $("#main").addClass("colscheme-1");
-            Complex_complex_coherence_init('${plotName}', '${xAxisName}', '${yAxisName}', ${xmin}, ${xmax}, '${url_base}', '${available_spectrum}');
+            Complex_complex_coherence_init('${plotName}', '${xAxisName}', '${yAxisName}', ${xmin}, ${xmax}, '${url_base}', '${available_spectrum}', "svg-container");
             Complex_getSpectrum('${spectrum}');
-            window.onresize = Complex_drawGraph;
+            window.onresize = Plot_drawGraph;
         });
 
         // For the burst Preview part

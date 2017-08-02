@@ -37,10 +37,12 @@ var PearsonCorrelation = {
     shape: null,
     group: null,
     text: null,
+    pearson_min: null,
+    pearson_max: null,
     title: null
 };
 
-function Pc_init(matrix_shape, title, labels, url_base, notes, w, h) {
+function Pc_init(matrix_shape, title, labels, url_base, notes, pearson_min, pearson_max, w, h) {
     // setup dimensions, div, svg elements and plotter
     var width = 900;
     var height = 600;
@@ -69,6 +71,8 @@ function Pc_init(matrix_shape, title, labels, url_base, notes, w, h) {
     PearsonCorrelation.notes = notes;
     PearsonCorrelation.title = title;
     PearsonCorrelation.url_base = url_base;
+    PearsonCorrelation.pearson_min = pearson_min;
+    PearsonCorrelation.pearson_max = pearson_max;
 
     tv.util.usage(div, title, notes);
 }
@@ -98,6 +102,8 @@ function _Pc_plotFunction(matrix_data) {
 
     var plot = tv.plot.mat().w(width - 200).h(height).mat_over(mat_over);
     plot.half_only(true);
+    plot.pearson_min(PearsonCorrelation.pearson_min);
+    plot.pearson_max(PearsonCorrelation.pearson_max);
 
     plot.mat(tv.ndar.ndfrom({
             data: $.parseJSON(matrix_data),

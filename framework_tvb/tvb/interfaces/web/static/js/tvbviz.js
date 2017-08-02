@@ -29,7 +29,7 @@
  tv.plot     reusable plotting components
  tv.util     utility stuff
 
-*/
+ */
 
 /* global tv, d3 */
 
@@ -56,12 +56,12 @@ tv.util = {
         p.append("h3").classed("instructions", true).text(heading);
         p.append("ul").selectAll("li").data(notes)
             .enter().append("li").classed("instructions", true).text(function (d) {
-                return d;
-            });
+            return d;
+        });
     },
 
-    ord_nums: [ "zeroeth", "first", "second", "third", "fourth", "fifth", "sixth", "seventh", "eighth", "ninth", "tenth",
-        "eleventh", "twelfth", "thirteenth", "fourteenth", "fifteenth", "sixteenth", "seventeenth", "eighteenth", "nineteenth" ],
+    ord_nums: ["zeroeth", "first", "second", "third", "fourth", "fifth", "sixth", "seventh", "eighth", "ninth", "tenth",
+        "eleventh", "twelfth", "thirteenth", "fourteenth", "fifteenth", "sixteenth", "seventeenth", "eighteenth", "nineteenth"],
 
     /* f is a templater/formatter cf. https://gist.github.com/984375 */
     fmt: function (f) { // fhe format specifier followed by any number of arguments
@@ -69,15 +69,15 @@ tv.util = {
         var a = arguments; // store outer arguments
         return ("" + f) // force format specifier to String
             .replace( // replace tokens in format specifier
-            /\{(?:(\d+)|(\w+))\}/g, // match {token} references
-            function (s, // the matched string (ignored)
-                      i, // an argument index
-                      p // a property name
+                /\{(?:(\d+)|(\w+))\}/g, // match {token} references
+                function (s, // the matched string (ignored)
+                          i, // an argument index
+                          p // a property name
                 ) {
-                return p && a[1] // if property name and first argument exist
-                    ? a[1][p] // return property from first argument
-                    : a[i]; // assume argument index and return i-th argument
-            });
+                    return p && a[1] // if property name and first argument exist
+                        ? a[1][p] // return property from first argument
+                        : a[i]; // assume argument index and return i-th argument
+                });
     },
 
     get_array_shape: function (baseURL, callback) {
@@ -301,17 +301,25 @@ tv.plot = {
             var ma_sc_x = d3.scale.linear().domain([0, m]).range([0, f.w() * (1 - 4 * f.pad())])
                 , ma_sc_y = d3.scale.linear().domain([0, n]).range([0, f.h() * (1 - 2 * f.pad())])
                 , cb_sc_y = d3.scale.linear().domain([f.mat().max(), f.mat().min()])
-                    .range([0, f.h() * (1 - 2 * f.pad())])
+                .range([0, f.h() * (1 - 2 * f.pad())])
                 , ma_sc_c = d3.scale.linear().domain([f.mat().min(), f.mat().max()]).range([0, 255]) // block color
 
-                , ma_ax_x = d3.svg.axis().orient("top").scale(ma_sc_x)
+            if (f.pearson_min() && f.pearson_max()) {
+                cb_sc_y.domain([f.pearson_max(), f.pearson_min()]);
+                ma_sc_c.domain([f.pearson_min(), f.pearson_max()]);
+            }
+
+            var ma_ax_x = d3.svg.axis().orient("top").scale(ma_sc_x)
                 , ma_ax_y = d3.svg.axis().orient("left").scale(ma_sc_y)
                 , cb_ax_y = d3.svg.axis().orient("right").scale(cb_sc_y)
 
-                , ma_gp = root.append("g").attr("transform", "translate(" + f.pad() * f.w() + ", " + f.h() * f.pad() + ")")
-                , cb_gp = root.append("g").attr("transform", "translate(" + (f.w() * (1 - 2 * f.pad())) + ", " + f.h() * f.pad() + ")")
+                ,
+                ma_gp = root.append("g").attr("transform", "translate(" + f.pad() * f.w() + ", " + f.h() * f.pad() + ")")
+                ,
+                cb_gp = root.append("g").attr("transform", "translate(" + (f.w() * (1 - 2 * f.pad())) + ", " + f.h() * f.pad() + ")")
 
-                ;
+            ;
+
 
             // plot matrix and its axes
             var ma_sz_x = f.w() * (1 - 4 * f.pad()) / m
@@ -339,7 +347,7 @@ tv.plot = {
                 .attr("width", ma_sz_x)
                 .attr("height", ma_sz_y)
                 .on("mouseover", f.mat_over() || function () {
-                });
+                    });
 
             ma_gp.append("g").attr("class", "x axis").call(ma_ax_x);
             ma_gp.append("g").attr("class", "y axis").call(ma_ax_y);
@@ -386,7 +394,7 @@ tv.plot = {
         };
 
         // generate configurators
-        var conf_fields = ["w", "h", "pad", "mat", "mat_over", "half_only"];
+        var conf_fields = ["w", "h", "pad", "mat", "mat_over", "half_only", "pearson_min", "pearson_max"];
         conf_fields.map(function (name) {
             f[name] = tv.util.gen_access(f, name);
         });
@@ -440,11 +448,11 @@ tv.plot = {
             var f_d = f.f(), coh_d = f.coh(), acoh_d = mean_axis_1_2(coh_d);
 
             // create scales and axes for frequency display
-            var x_s = d3.scale.linear().domain([   f_d.min(), f_d.max()]).range([0, f.w() / 2 - 2 * f.pad() * f.w() ]),
+            var x_s = d3.scale.linear().domain([f_d.min(), f_d.max()]).range([0, f.w() / 2 - 2 * f.pad() * f.w()]),
                 y_s = d3.scale.linear().domain([acoh_d.min(), acoh_d.max()]).range([0, -(f.h() - 2 * f.pad() * f.h())]),
                 x_a = d3.svg.axis().orient("bottom").scale(x_s),
                 y_a = d3.svg.axis().orient("left").scale(y_s);
-                
+
             // draw axes and average coherence
             var xAxis = svg.append("g").classed("axis", true).attr("transform", llxf).call(x_a);
             var yAxis = svg.append("g").classed("axis", true).attr("transform", llxf).call(y_a);
@@ -457,32 +465,32 @@ tv.plot = {
             // Add axis titles.
             var xCoordinates = xAxis[0][0].getBoundingClientRect();
             svg.append("text")
-                    .attr("text-anchor", "middle")
-                    .attr("x", xCoordinates.left + xCoordinates.width / 2)
-                    .attr("y", f.h() - 6)
-                    .text("Frequency (Hz)");
+                .attr("text-anchor", "middle")
+                .attr("x", xCoordinates.left + xCoordinates.width / 2)
+                .attr("y", f.h() - 6)
+                .text("Frequency (Hz)");
             var yCoordinates = yAxis[0][0].getBoundingClientRect();
             svg.append("text")
-                    .attr("transform", "rotate(-90)")
-                    .attr("y", yCoordinates.left - yCoordinates.width - 5)
-                    .attr("x", 0 - (f.h() / 2))
-                    .style("text-anchor", "middle")
-                    .text("Average Cross-Coherence");
-            
+                .attr("transform", "rotate(-90)")
+                .attr("y", yCoordinates.left - yCoordinates.width - 5)
+                .attr("x", 0 - (f.h() / 2))
+                .style("text-anchor", "middle")
+                .text("Average Cross-Coherence");
+
             // setup matrix plot, initialized with all freq bands
             var selcoh_d = mean_axis_0(coh_d, 0, coh_d.shape[0]);
             var mp_pl = tv.plot.mat().w(f.w() / 2 - 1.5 * f.pad() * f.w()).h(f.h() * (1 - 2 * f.pad())).mat(selcoh_d).pad(0);
             var mp_gp = svg.append("g").attr("transform", "translate(" + f.w() / 2 + ", " + f.pad() * f.h() + ")");
 
             // Implement mat_over method set on mat() function
-            mp_pl.mat_over = function() {
+            mp_pl.mat_over = function () {
                 return function (d, i) {
-                            var matShape = f.coh().shape[1];
-                            var yVal = Math.floor(i / matShape);
-                            var xVal = i % matShape;
-                            f.infoelem().text("Value is " + d + " for Node " + xVal + " x Node " + yVal);
-                        };
+                    var matShape = f.coh().shape[1];
+                    var yVal = Math.floor(i / matShape);
+                    var xVal = i % matShape;
+                    f.infoelem().text("Value is " + d + " for Node " + xVal + " x Node " + yVal);
                 };
+            };
             mp_pl(mp_gp);
 
             // add brush to select coherence data to show
@@ -491,11 +499,11 @@ tv.plot = {
                 // find the extent and the selected index range
                 var ex = brush.extent()
                     , lo = f_d.where(function (fi, i) {
-                        return ex[0] >= fi && ex[0] < f_d.data[i + 1];
-                    })[0]
+                    return ex[0] >= fi && ex[0] < f_d.data[i + 1];
+                })[0]
                     , hi = f_d.where(function (fi, i) {
-                        return ex[1] >= fi && ex[1] < f_d.data[i + 1];
-                    })[0];
+                    return ex[1] >= fi && ex[1] < f_d.data[i + 1];
+                })[0];
 
                 // reset selected coherence data
                 selcoh_d = brush.empty() ? mean_axis_0(coh_d, 0, coh_d.shape[0]) : mean_axis_0(coh_d, lo, hi);
@@ -508,14 +516,14 @@ tv.plot = {
             // add the brush to svg
             svg.append("g").attr("transform", xl(f.pad() * f.w(), f.h() * f.pad())).classed("brush", true)
                 .call(brush).selectAll("rect").attr("height", f.h() * (1 - 2 * f.pad()));
-                
+
             // Add text element which updates with mat hover.
             var svgCoordinates = svg[0][0].getBoundingClientRect();
             f.infoelem(svg.append("text")
-                                    .attr("text-anchor", "middle")
-                                    .attr("x", 3 * svgCoordinates.width / 4)
-                                    .attr("y", f.h() - 60)
-                                    .text("Hover over nodes for info."));
+                .attr("text-anchor", "middle")
+                .attr("x", 3 * svgCoordinates.width / 4)
+                .attr("y", f.h() - 60)
+                .text("Hover over nodes for info."));
         };
 
         f.config_fields = ["f", "coh", "w", "h", "pad", "usage", "infoelem"];
@@ -560,7 +568,7 @@ tv.plot = {
 
         f.render = function () {
             f.status_line.text("waiting for data from server...");
-        //console.log(f.baseURL(), f.current_slice())
+            //console.log(f.baseURL(), f.current_slice())
             tv.util.get_array_slice(f.baseURL(), f.current_slice(), f.render_callback, f.channels(), f.mode(), f.state_var());
         };
 
@@ -573,7 +581,7 @@ tv.plot = {
             /* reformat data into normal ndar style */
             var flat = []
                 , sl = f.current_slice()[0]
-                , shape = [ (sl.hi - sl.lo) / sl.di, f.shape()[2]]
+                , shape = [(sl.hi - sl.lo) / sl.di, f.shape()[2]]
                 , strides = [f.shape()[2], 1];
 
             for (var i = 0; i < shape[0]; i++) {
@@ -610,7 +618,7 @@ tv.plot = {
             var dom = f.sc_fcs_x.domain()
                 , lo = Math.floor((dom[0] - f.t0()) / f.dt())
                 , hi = Math.floor((dom[1] - f.t0()) / f.dt())
-                , di = Math.floor((hi - lo) / (2*f.point_limit()));
+                , di = Math.floor((hi - lo) / (2 * f.point_limit()));
 
             di = di === 0 ? 1 : di;
 
@@ -619,7 +627,7 @@ tv.plot = {
                 lo = f.shape()[0];
             }
 
-            return [ {lo: lo, hi: hi, di: di} ];
+            return [{lo: lo, hi: hi, di: di}];
         };
 
         // dimensions and placement of focus and context areas
@@ -651,14 +659,14 @@ tv.plot = {
                 })
                 .attr("x", f.w() - f.pad.x / 2).attr("y", f.h() - f.pad.y / 2)
                 .attr("width", f.pad.x / 2).attr("height", f.pad.y / 2)
-                .call(d3.behavior.drag().on("drag",function () {
+                .call(d3.behavior.drag().on("drag", function () {
                     var p1 = d3.mouse(svg.node())
                         , p2 = resize_start
-                        , scl = {x: p1[0] / p2[0], y: p1[1] / p2[1] };
+                        , scl = {x: p1[0] / p2[0], y: p1[1] / p2[1]};
                     rgp.attr("transform", "scale(" + scl.x + ", " + scl.y + ")");
                     svg.attr("width", scl.x * f.w()).attr("height", scl.y * f.h());
                 }).on("dragstart", function () {
-                        resize_start = d3.mouse(rgp.node());
+                    resize_start = d3.mouse(rgp.node());
                 }));
         };
 
@@ -673,7 +681,7 @@ tv.plot = {
                 , sh = ev.shiftKey
                 , dr = !!(da > 0);
 
-        //console.log(ev)
+            //console.log(ev)
             if (sh) {
                 f.magic_fcs_amp_scl *= dr ? 1.2 : 1 / 1.2;
                 // TODO scale transform instead via direct access...
@@ -715,10 +723,10 @@ tv.plot = {
                 .append("g").classed("line-plot", true);
 
             // scales for vertical and horizontal context, and the x and y axis of the focus area
-            f.sc_ctx_y = d3.scale.linear().domain([    -1, f.shape()[2]  ]).range([f.sz_ctx_y.y, 0]);
-            f.sc_ctx_x = d3.scale.linear().domain([f.t0(), f.t0() + f.dt() * f.shape()[0]  ]).range([0, f.sz_ctx_x.x]);
-            f.sc_fcs_x = d3.scale.linear().domain([f.t0(), f.t0() + f.dt() * f.shape()[0]  ]).range([0, f.sz_fcs.x  ]);
-            f.sc_fcs_y = d3.scale.linear().domain([    -1, f.shape()[2] + 1]).range([f.sz_fcs.y, 0]);
+            f.sc_ctx_y = d3.scale.linear().domain([-1, f.shape()[2]]).range([f.sz_ctx_y.y, 0]);
+            f.sc_ctx_x = d3.scale.linear().domain([f.t0(), f.t0() + f.dt() * f.shape()[0]]).range([0, f.sz_ctx_x.x]);
+            f.sc_fcs_x = d3.scale.linear().domain([f.t0(), f.t0() + f.dt() * f.shape()[0]]).range([0, f.sz_fcs.x]);
+            f.sc_fcs_y = d3.scale.linear().domain([-1, f.shape()[2] + 1]).range([f.sz_fcs.y, 0]);
 
             // axes for each of the above scales
             f.ax_ctx_y = d3.svg.axis().orient("left").scale(f.sc_ctx_y);
@@ -781,7 +789,7 @@ tv.plot = {
                 da_x[j] = 0;
                 da_xs[j] = 0;
                 for (var i = 0; i < n_chan; i++) {
-                    datum = ys.data[ j * n_chan + i ];
+                    datum = ys.data[j * n_chan + i];
                     da_x [j] += datum;
                     da_xs[j] += datum * datum;
                 }
@@ -798,8 +806,8 @@ tv.plot = {
             // scale average siganl by ptp
             var _dar = new tv.ndar(da_x);
             var da_max = _dar.max()
-              , da_min = _dar.min()
-              , da_ptp = da_max - da_min;
+                , da_min = _dar.min()
+                , da_ptp = da_max - da_min;
 
             for (var si = 0; si < da_x.length; si++) {
                 da_x[si] = da_x[si] / da_ptp;
@@ -819,8 +827,8 @@ tv.plot = {
                 da_y[jjj] = [];
                 // This computes a slice at the beginning of the signal to be displayed on the y axis
                 // The signal might be shorter than the width hence the min
-                for (var ii = 0; ii < Math.min(f.sz_ctx_y.x, ys.shape[0]); ii++){
-                    da_y[jjj][ii] = (ys.data[ ii * n_chan + jjj ] - ys_mean) / ys_std;
+                for (var ii = 0; ii < Math.min(f.sz_ctx_y.x, ys.shape[0]); ii++) {
+                    da_y[jjj][ii] = (ys.data[ii * n_chan + jjj] - ys_mean) / ys_std;
                     // multiply by -1 because y axis points down
                     da_y[jjj][ii] *= -1;
                 }
@@ -837,8 +845,8 @@ tv.plot = {
 
             var ts = f.ts()
                 , g = f.gp_lines.selectAll("g").data(f.da_lines, function (d) {
-                    return d.id;
-                });
+                return d.id;
+            });
 
             if (!f.we_are_setup) {
                 f.line_paths = g.enter()
@@ -847,7 +855,7 @@ tv.plot = {
                         return "translate(0, " + f.sc_fcs_y(i) + ")";
                     })
                     .append("path")
-              .attr("vector-effect", "non-scaling-stroke");
+                    .attr("vector-effect", "non-scaling-stroke");
             }
 
             g.select("path").attr("d", function (d) {
@@ -910,13 +918,13 @@ tv.plot = {
             f.gp_ctx_y.append("g").selectAll("g").data(f.da_y)
                 .enter()
                 .append("g").attr("transform", function (d, i) {
-                    return "translate(0, " + f.sc_ctx_y(i) + ")";
-                })
+                return "translate(0, " + f.sc_ctx_y(i) + ")";
+            })
                 .classed("tv-ctx-line", true)
                 .append("path")
                 .attr("d", d3.svg.line().x(function (d, i) {
                     return 2 + (f.sz_ctx_y.x - 2) * i / f.sz_ctx_y.x;
-                    })
+                })
                     .y(function (d) {
                         return d;
                     }));
@@ -932,7 +940,7 @@ tv.plot = {
                 , area2 = total.x * total.y;
 
             //console.log(area / area2);
-            f.gp_lines.selectAll("g").selectAll("path").attr("stroke-width", ""+1);//4*Math.sqrt(Math.abs(area / area2)))
+            f.gp_lines.selectAll("g").selectAll("path").attr("stroke-width", "" + 1);//4*Math.sqrt(Math.abs(area / area2)))
         };
 
         f.add_brushes = function () {
@@ -950,15 +958,15 @@ tv.plot = {
                     f.gp_lines.attr("transform", "translate(" + sc(0) + ", 0) scale(" + x_scaling + ", 1)");
                 }
 
-            // vertical context brush
+                // vertical context brush
                 , br_ctx_y_fn = function () {
                     var dom = f.br_ctx_y.empty() ? f.sc_ctx_y.domain() : f.br_ctx_y.extent();
                     var yscl = f.sz_fcs.y / (dom[1] - dom[0]) / 5;
                     f.sc_fcs_y.domain(dom);
                     f.gp_ax_fcs_y.call(f.ax_fcs_y);
                     f.gp_lines.selectAll("g").attr("transform", function (d, i) {
-                        return  "translate(0, " + f.sc_fcs_y(i) + ")" +  "scale (1, " + yscl + ")"
-                    }).selectAll("path").attr("stroke-width", ""+(3/yscl));
+                        return "translate(0, " + f.sc_fcs_y(i) + ")" + "scale (1, " + yscl + ")"
+                    }).selectAll("path").attr("stroke-width", "" + (3 / yscl));
                 }
 
                 , br_ctx_end = function () {
@@ -1058,14 +1066,14 @@ tv.plot = {
 
             // draw vertical grid lines
             vt.append("g").attr("transform", "translate(" + -w / 4.5 + "," + (-h / 3 - 15) + ")").selectAll("line").data(tv.ndar.range(n).data).enter()
-                .append("line").attr("x1",function (d) {
-                    return w / 2.25 / n * d;
-                }).attr("x2", function (d) {
-                    return w / 2.25 / n * d;
-                })
+                .append("line").attr("x1", function (d) {
+                return w / 2.25 / n * d;
+            }).attr("x2", function (d) {
+                return w / 2.25 / n * d;
+            })
                 .attr("y2", 2 * h / 3).attr("y1", -15).attr("stroke", function (d) {
-                    return d % 5 === 0 ? "#ccc" : "#eee";
-                });
+                return d % 5 === 0 ? "#ccc" : "#eee";
+            });
 
             function vt_axes_yoff(d, i) {
                 return i / nkeep * 2 * h / 3 - h / 3;
@@ -1122,7 +1130,7 @@ tv.plot = {
 
         return f;
     }
-    
+
 };
 
 

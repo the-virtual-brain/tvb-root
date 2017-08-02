@@ -24,6 +24,7 @@
 
 
 var FourierSpectrum = {
+<<<<<<< HEAD
     MARGIN: {top: 30, right: 20, bottom: 30, left: 50},
     matrix_shape: null,
     data_matrix: null,
@@ -81,11 +82,22 @@ function Fourier_fourier_spectrum_init(matrix_shape, plotName, xAxisName, yAxisN
     FourierSpectrum.yAxisLabel = yAxisLabel;
     FourierSpectrum.plotTitle = plotTitle;
 
+=======
+    matrix_shape: null,
+    data_matrix: null,
+    x_values_array: null
+};
+
+function Fourier_fourier_spectrum_init(matrix_shape, plotName, xAxisName, yAxisName, x_min, x_max, url_base, svg_id) {
+
+    Plot_plot1d_init(plotName, xAxisName, yAxisName, x_min, x_max, url_base, svg_id, Fourier_drawDataCurves);
+>>>>>>> 9f4b8f98aa160a6382cf1f00fee2700befc8101f
 
     var x_values_array = [];
     for (var i = 0; i < matrix_shape[0]; i++) {
         x_values_array[i] = ((x_max - x_min) * i) / (matrix_shape[0] - 1) + x_min;
     }
+<<<<<<< HEAD
     FourierSpectrum.x_values_array = x_values_array;
 }
 
@@ -153,6 +165,20 @@ function _Fourier_drawDataCurves() {
 
     for (var i = 0; i < data_matrix.length; i++) {
         var line_data = mergeArrays(x_values_array, data_matrix[i]);
+=======
+    FourierSpectrum.matrix_shape = matrix_shape;
+    FourierSpectrum.x_values_array = x_values_array;
+}
+
+function Fourier_drawDataCurves() {
+    var svgContainer = Plot1d.svgContainer;
+    var data_matrix = FourierSpectrum.data_matrix;
+    var x_values_array = FourierSpectrum.x_values_array;
+    var lineGen = Plot_drawDataCurves();
+
+    for (var i = 0; i < data_matrix.length; i++) {
+        var line_data = _mergeArrays(x_values_array, data_matrix[i]);
+>>>>>>> 9f4b8f98aa160a6382cf1f00fee2700befc8101f
         svgContainer.append('svg:path')
             .attr('d', lineGen(line_data))
             .attr('stroke', "#469EEB")
@@ -161,6 +187,7 @@ function _Fourier_drawDataCurves() {
     }
 }
 
+<<<<<<< HEAD
 function Fourier_changeXScale(xAxisScale) {
     var svgContainer = FourierSpectrum.svgContainer;
     var width = svgContainer["0"]["0"].clientWidth - FourierSpectrum.MARGIN.left - FourierSpectrum.MARGIN.right;
@@ -186,6 +213,9 @@ function Fourier_changeYScale(yAxisScale) {
 }
 
 function mergeArrays(array1, array2) {
+=======
+function _mergeArrays(array1, array2) {
+>>>>>>> 9f4b8f98aa160a6382cf1f00fee2700befc8101f
     var result = [];
     for (var i = 0; i < array1.length; i++)
         result[i] = [array1[i], array2[i]];
@@ -203,7 +233,11 @@ function Fourier_changeNormalize(normalized) {
 }
 
 function Fourier_getData(state, mode, normalized) {
+<<<<<<< HEAD
     let url_base = FourierSpectrum.url_base;
+=======
+    let url_base = Plot1d.url_base;
+>>>>>>> 9f4b8f98aa160a6382cf1f00fee2700befc8101f
     doAjaxCall({
         url: url_base + "selected_state=" + state + ";selected_mode=" + mode + ";normalized=" + normalized,
         type: 'POST',
@@ -211,10 +245,17 @@ function Fourier_getData(state, mode, normalized) {
         success: function (data) {
             data = $.parseJSON(data);
             FourierSpectrum.data_matrix = $.parseJSON(data.data_matrix);
+<<<<<<< HEAD
             FourierSpectrum.yMin = data.ymin;
             FourierSpectrum.yMax = data.ymax;
             FourierSpectrum.yAxisScale.domain([data.ymin, data.ymax]);
             Fourier_drawGraph();
+=======
+            Plot1d.yMin = data.ymin;
+            Plot1d.yMax = data.ymax;
+            Plot1d.yAxisScale.domain([data.ymin, data.ymax]);
+            Plot_drawGraph();
+>>>>>>> 9f4b8f98aa160a6382cf1f00fee2700befc8101f
         }
     });
 }

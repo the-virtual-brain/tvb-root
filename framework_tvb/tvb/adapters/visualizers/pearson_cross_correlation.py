@@ -79,6 +79,8 @@ class PearsonCorrelationCoefficientVisualizer(MappedArrayVisualizer):
                     state_variable=state_list[0],
                     mode=mode_list[0],
                     state_list=state_list,
-                    mode_list=mode_list)
+                    mode_list=mode_list,
+                    pearson_min=-1,
+                    pearson_max=1)
 
         return self.build_display_result("pearson_correlation/view", pars)
