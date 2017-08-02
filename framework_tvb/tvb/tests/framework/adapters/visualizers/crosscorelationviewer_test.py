@@ -27,9 +27,11 @@
 #   Frontiers in Neuroinformatics (7:10. doi: 10.3389/fninf.2013.00010)
 #
 #
+
 """
 .. moduleauthor:: Bogdan Neacsa <bogdan.neacsa@codemart.ro>
 """
+
 import unittest
 from tvb.core.entities.file.files_helper import FilesHelper
 from tvb.adapters.visualizers.cross_correlation import CrossCorrelationVisualizer
@@ -43,6 +45,7 @@ class CrossCorrelationViewerTest(TransactionalTestCase):
     """
     Unit-tests for Cross Correlation Viewer.
     """
+
     def setUp(self):
         """
         Sets up the environment for running the tests;
@@ -52,19 +55,19 @@ class CrossCorrelationViewerTest(TransactionalTestCase):
         self.datatypeFactory = DatatypesFactory()
         self.test_project = self.datatypeFactory.get_project()
         self.test_user = self.datatypeFactory.get_user()
-        
+
         TestFactory.import_cff(test_user=self.test_user, test_project=self.test_project)
         self.connectivity = TestFactory.get_entity(self.test_project, Connectivity())
         self.assertTrue(self.connectivity is not None)
 
-                
+
     def tearDown(self):
         """
         Clean-up tests data
         """
         FilesHelper().remove_project_structure(self.test_project.name)
-    
-    
+
+
     def test_launch(self):
         """
         Check that all required keys are present in output from BrainViewer launch.
@@ -73,11 +76,11 @@ class CrossCorrelationViewerTest(TransactionalTestCase):
         ccorr = self.datatypeFactory.create_crosscorrelation(time_series)
         viewer = CrossCorrelationVisualizer()
         result = viewer.launch(ccorr)
-        expected_keys = ['matrix_strides', 'matrix_shape', 'matrix_data', 'mainContent', 'isAdapter']
+        expected_keys = ['matrix_shape', 'matrix_data', 'mainContent', 'isAdapter']
         for key in expected_keys:
             self.assertTrue(key in result)
-    
-    
+
+
 def suite():
     """
     Gather all the tests in a test suite.
@@ -88,7 +91,7 @@ def suite():
 
 
 if __name__ == "__main__":
-    #So you can run tests from this package individually.
+    # So you can run tests from this package individually.
     TEST_RUNNER = unittest.TextTestRunner()
     TEST_SUITE = suite()
     TEST_RUNNER.run(TEST_SUITE)

@@ -27,9 +27,11 @@
 #   Frontiers in Neuroinformatics (7:10. doi: 10.3389/fninf.2013.00010)
 #
 #
+
 """
 .. moduleauthor:: Bogdan Neacsa <bogdan.neacsa@codemart.ro>
 """
+
 import unittest
 from tvb.core.entities.file.files_helper import FilesHelper
 from tvb.adapters.visualizers.covariance import CovarianceVisualizer
@@ -37,7 +39,6 @@ from tvb.datatypes.connectivity import Connectivity
 from tvb.tests.framework.core.test_factory import TestFactory
 from tvb.tests.framework.datatypes.datatypes_factory import DatatypesFactory
 from tvb.tests.framework.core.base_testcase import TransactionalTestCase
-
 
 
 class CovarianceViewerTest(TransactionalTestCase):
@@ -76,10 +77,9 @@ class CovarianceViewerTest(TransactionalTestCase):
         covariance = self.datatypeFactory.create_covariance(time_series)
         viewer = CovarianceVisualizer()
         result = viewer.launch(covariance)
-        expected_keys = ['matrix_strides', 'matrix_shape', 'matrix_data', 'mainContent', 'isAdapter']
+        expected_keys = ['matrix_shape', 'matrix_data', 'mainContent', 'isAdapter']
         for key in expected_keys:
             self.assertTrue(key in result)
-
 
 
 def suite():
@@ -91,9 +91,8 @@ def suite():
     return test_suite
 
 
-
 if __name__ == "__main__":
-    #So you can run tests from this package individually.
+    # So you can run tests from this package individually.
     TEST_RUNNER = unittest.TextTestRunner()
     TEST_SUITE = suite()
     TEST_RUNNER.run(TEST_SUITE)
