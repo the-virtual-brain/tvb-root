@@ -23,10 +23,24 @@
  *       The Virtual Brain: a simulator of primate brain network dynamics.
  *   Frontiers in Neuroinformatics (7:10. doi: 10.3389/fninf.2013.00010)
  *
- * .. moduleauthor:: Mihai Andrei <mihai.andrei@codemart.ro>
+ * .. moduleauthor:: Dan Pop <dan.pop@codemart.ro>
  **/
 
-function matrix_view_init_svg(matrix_data, matrix_shape, title, labels, notes, w, h) {
+var PearsonCorrelation = {
+    url_base: null,
+    width: null,
+    height: null,
+    svg: null,
+    div: null,
+    notes: null,
+    labels: null,
+    shape: null,
+    group: null,
+    text: null,
+    title: null
+};
+
+function Pc_init(matrix_shape, title, labels, url_base, notes, w, h) {
     // setup dimensions, div, svg elements and plotter
     var width = 900;
     var height = 600;
@@ -35,7 +49,7 @@ function matrix_view_init_svg(matrix_data, matrix_shape, title, labels, notes, w
         height = h;
     }
 
-    var div = d3.select("#svg-viewer").attr("style", "width:" + width + "px;");
+    var div = d3.select("#pearson-viewer").attr("style", "width:" + width + "px;");
     var svg = div.append("svg").attr("width", width).attr("height", height);
     var group = svg.append("g").attr("transform", "translate(200, 0)");
     var text = svg.append("g").attr("transform", "translate(20, 100)")
@@ -44,9 +58,37 @@ function matrix_view_init_svg(matrix_data, matrix_shape, title, labels, notes, w
     var shape = $.parseJSON(matrix_shape);
     labels = $.parseJSON(labels);
 
+    PearsonCorrelation.labels = labels;
+    PearsonCorrelation.shape = shape;
+    PearsonCorrelation.group = group;
+    PearsonCorrelation.text = text;
+    PearsonCorrelation.svg = svg;
+    PearsonCorrelation.height = height;
+    PearsonCorrelation.width = width;
+    PearsonCorrelation.div = div;
+    PearsonCorrelation.notes = notes;
+    PearsonCorrelation.title = title;
+    PearsonCorrelation.url_base = url_base;
+
+    tv.util.usage(div, title, notes);
+}
+
+function _Pc_plotFunction(matrix_data) {
+    var svg = PearsonCorrelation.svg;
+    d3.selectAll("g").remove();
+    var group = svg.append("g").attr("transform", "translate(200, 0)");
+    var text = svg.append("g").attr("transform", "translate(20, 100)")
+        .append("text").attr("class", "matrix-text");
+    var height = PearsonCorrelation.height;
+    var width = PearsonCorrelation.width;
+    var labels = PearsonCorrelation.labels;
+    var shape = PearsonCorrelation.shape;
+
     function mat_over(d, i) {
         var x = Math.floor(i / shape[0]);
         var y = Math.floor(i % shape[0]);
+        if (x < y)
+            return "";
         if (labels !== null) {
             x = labels[0][x];
             y = labels[1][y];
@@ -55,6 +97,7 @@ function matrix_view_init_svg(matrix_data, matrix_shape, title, labels, notes, w
     }
 
     var plot = tv.plot.mat().w(width - 200).h(height).mat_over(mat_over);
+    plot.half_only(true);
 
     plot.mat(tv.ndar.ndfrom({
             data: $.parseJSON(matrix_data),
@@ -63,5 +106,23 @@ function matrix_view_init_svg(matrix_data, matrix_shape, title, labels, notes, w
     ));
 
     plot(group);
-    tv.util.usage(div, title, notes);
+}
+
+function Pc_changeMode(mode) {
+    Pc_getData($("#state_select option:selected").val(), mode);
+}
+function Pc_changeState(state) {
+    Pc_getData(state, $("#mode_select option:selected").text());
+}
+
+function Pc_getData(state, mode) {
+    let url_base = PearsonCorrelation.url_base;
+    doAjaxCall({
+        url: url_base + "selected_state=" + state + ";selected_mode=" + mode,
+        type: 'POST',
+        async: true,
+        success: function (data) {
+            _Pc_plotFunction(data);
+        }
+    });
 }

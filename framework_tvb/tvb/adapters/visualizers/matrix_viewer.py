@@ -71,7 +71,6 @@ def compute_2d_view(matrix, slice_s):
     return matrix[matrix_slice].astype(float), slice_used, matrix_slice == default
 
 
-
 class MappedArraySVGVisualizerMixin(object):
     """
     To be mixed in a ABCDisplayer
@@ -81,12 +80,10 @@ class MappedArraySVGVisualizerMixin(object):
         input_size = datatype.read_data_shape()
         return numpy.prod(input_size) / input_size[0] * 8.0
 
-
     def generate_preview(self, datatype, **kwargs):
         result = self.launch(datatype)
         result["isPreview"] = True
         return result
-
 
     @staticmethod
     def compute_raw_matrix_params(matrix):
@@ -95,12 +92,9 @@ class MappedArraySVGVisualizerMixin(object):
         """
         matrix_data = ABCDisplayer.dump_with_precision(matrix.flat)
         matrix_shape = json.dumps(matrix.shape)
-        matrix_strides = json.dumps([x / matrix.itemsize for x in matrix.strides])
 
         return dict(matrix_data=matrix_data,
-                    matrix_shape=matrix_shape,
-                    matrix_strides=matrix_strides)
-
+                    matrix_shape=matrix_shape)
 
     def compute_params(self, matrix, viewer_title, given_slice=None, labels=None):
         """
@@ -121,7 +115,6 @@ class MappedArraySVGVisualizerMixin(object):
                          title=viewer_title,
                          matrix_labels=json.dumps(labels))
         return view_pars
-
 
     def _get_associated_connectivity_labeling(self, datatype):
         """
@@ -148,7 +141,6 @@ class MappedArrayVisualizer(MappedArraySVGVisualizerMixin, ABCDisplayer):
                                            operations=[">="], values=[2])},
                 {'name': 'slice', 'label': 'slice indices in numpy syntax',
                  'type': 'str', 'required': False}]
-
 
     def launch(self, datatype, slice=''):
         matrix = datatype.get_data('array_data')

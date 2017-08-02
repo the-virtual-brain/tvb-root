@@ -1,0 +1,61 @@
+<div xmlns:py="http://genshi.edgewall.org/" class="view-column">
+    <script type="text/javascript" src="/static/js/d3.v3.js"></script>
+    <script type="text/javascript" src="/static/js/tvbviz.js?$currentVersionJS"></script>
+    <script type="text/javascript"
+            src="/static_view/pearson_correlation/pearson_correlation.js?$currentVersionJS"></script>
+
+    <link rel="stylesheet" href="/static/style/sections_svg.css?$currentVersionJS" type="text/css"/>
+
+    <ul class="toolbar-inline">
+        <li>
+            <label for="mode_select">Mode</label>
+            <select id="mode_select" onchange="Pc_changeMode(this.value)">
+                <py:for each="mod in mode_list">
+                    <py:if test="mod==mode">
+                        <option value="$mod" selected="selected">$mod</option>
+                    </py:if>
+                    <py:if test="mod!=mode">
+                        <option value="$mod">$mod</option>
+                    </py:if>
+                </py:for>
+            </select>
+        </li>
+        <li>
+            <label for="state_select">State Variable</label>
+            <select id="state_select" onchange="Pc_changeState(this.value)">
+                <py:for each="idx, state in enumerate(state_list)">
+                    <py:if test="state==state_variable">
+                        <option value="$idx" selected="selected">$state</option>
+                    </py:if>
+                    <py:if test="state!=state_variable">
+                        <option value="$idx">$state</option>
+                    </py:if>
+                </py:for>
+            </select>
+        </li>
+    </ul>
+
+    <div id="pearson-viewer"></div>
+
+    <script type="text/javascript">
+
+        function initPcViewer(width, height) {
+            $("#main").addClass("colscheme-1");
+            Pc_init('${matrix_shape}', "$viewer_title", '${matrix_labels}',
+                '${url_base}', ["Place mouse over matrix elements to inspect their values",
+                    "Drag in colorbar to select and show entries in a range of values"], width, height);
+        }
+
+        // For the burst Preview part
+        function launchViewer(width, height) {
+            initPcViewer(width, height);
+            Pc_getData($("#state_select option:selected").val(), $("#mode_select option:selected").text());
+        }
+        $(document).ready(function () {
+            if (! ${'true' if defined('isPreview') else 'false'}) {
+                initPcViewer();
+                Pc_getData($("#state_select option:selected").val(), $("#mode_select option:selected").text());
+            }
+        });
+    </script>
+</div>

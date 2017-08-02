@@ -27,12 +27,10 @@
     <script type="text/javascript">
 
         function initMatrixViewer(width, height) {
-             $("#main").addClass("colscheme-1");
-            matrix_view_init_svg('${matrix_data}', '${matrix_shape}',
-                '${matrix_strides}', "$viewer_title", '${matrix_labels}',
+            $("#main").addClass("colscheme-1");
+            matrix_view_init_svg('${matrix_data}', '${matrix_shape}', "$viewer_title", '${matrix_labels}',
                 ["Place mouse over matrix elements to inspect their values",
-                    "Drag in colorbar to select and show entries in a range of values"],
-                ${"true" if defined("half_of_matrix") else "undefined"}, width, height);
+                    "Drag in colorbar to select and show entries in a range of values"], width, height);
         }
 
         // For the burst Preview part
