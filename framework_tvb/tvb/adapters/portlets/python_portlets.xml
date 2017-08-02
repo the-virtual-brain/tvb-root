@@ -23,7 +23,7 @@
             <input>
                 <name value="chain_2"/>
                 <label value="Second adapter from chain"/>
-                <type value="tvb.adapters.visualizers.mplh5_fourier_spectrum.FourierSpectrumDisplay"/>
+                <type value="tvb.adapters.visualizers.fourier_spectrum.FourierSpectrumDisplay"/>
             </input>
             <input overwrite="chain_2">
                 <name value="input_data"/>

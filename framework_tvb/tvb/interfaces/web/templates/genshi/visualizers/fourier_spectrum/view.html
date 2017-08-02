@@ -1,0 +1,96 @@
+<div xmlns:py="http://genshi.edgewall.org/" id="fourier_spectrum" class="view-column">
+
+    <script type="text/javascript" src="/static/js/d3.v3.js"></script>
+    <script type="text/javascript" src="/static_view/fourier_spectrum/fourier_spectrum.js?$currentVersionJS"></script>
+
+    <link type="text/css" rel="stylesheet" href="/static/style/section_visualisers.css?$currentVersionJS"/>
+
+    <div id="svg-viewer"></div>
+
+    <ul class="toolbar-inline">
+        <li>
+            <label for="xScale_select">X Scale</label>
+            <select id="xScale_select" onchange="Fourier_changeXScale(this.value)">
+                <py:for each="scale in available_scales">
+                    <py:if test="scale==xscale">
+                        <option value="$scale" selected="selected">$scale</option>
+                    </py:if>
+                    <py:if test="scale!=xscale">
+                        <option value="$scale">$scale</option>
+                    </py:if>
+                </py:for>
+            </select>
+        </li>
+        <li>
+            <label for="yScale_select">Y Scale</label>
+            <select id="yScale_select" onchange="Fourier_changeYScale(this.value)">
+                <py:for each="scale in available_scales">
+                    <py:if test="scale==yscale">
+                        <option value="$scale" selected="selected">$scale</option>
+                    </py:if>
+                    <py:if test="scale!=yscale">
+                        <option value="$scale">$scale</option>
+                    </py:if>
+                </py:for>
+            </select>
+        </li>
+        <li>
+            <label for="mode_select">Mode</label>
+            <select id="mode_select" onchange="Fourier_changeMode(this.value)">
+                <py:for each="mod in mode_list">
+                    <py:if test="mod==mode">
+                        <option value="$mod" selected="selected">$mod</option>
+                    </py:if>
+                    <py:if test="mod!=mode">
+                        <option value="$mod">$mod</option>
+                    </py:if>
+                </py:for>
+            </select>
+        </li>
+        <li>
+            <label for="state_select">State Variable</label>
+            <select id="state_select" onchange="Fourier_changeState(this.value)">
+                <py:for each="idx, state in enumerate(state_list)">
+                    <py:if test="state==state_variable">
+                        <option value="$idx" selected="selected">$state</option>
+                    </py:if>
+                    <py:if test="state!=state_variable">
+                        <option value="$idx">$state</option>
+                    </py:if>
+                </py:for>
+            </select>
+        </li>
+        <li>
+            <label for="normalize_select">Normalize</label>
+            <select id="normalize_select" onchange="Fourier_changeNormalize(this.value)">
+                <py:for each="norm in normalize_list">
+                    <py:if test="norm==normalize">
+                        <option value="$norm" selected="selected">$norm</option>
+                    </py:if>
+                    <py:if test="norm!=normalize">
+                        <option value="$norm">$norm</option>
+                    </py:if>
+                </py:for>
+            </select>
+        </li>
+    </ul>
+
+
+    <div class="complex_coherence_draw_area">
+        <svg class="matrix2d-svg-container" id="svg-container"></svg>
+    </div>
+
+    <script type="text/javascript">
+
+        $(document).ready(function () {
+            $("#main").addClass("colscheme-1");
+            Fourier_fourier_spectrum_init(${matrix_shape}, '${plotName}', '${xAxisName}', '${yAxisName}', ${xmin}, ${xmax}, '${url_base}');
+            Fourier_getData($("#state_select option:selected").val(), $("#mode_select option:selected").text(), $("#normalize_select option:selected").text());
+            window.onresize = Fourier_drawGraph;
+        });
+
+        // For the burst Preview part
+        function launchViewer(width, height) {
+        }
+    </script>
+</div>
