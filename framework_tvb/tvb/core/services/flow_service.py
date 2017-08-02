@@ -176,11 +176,11 @@ class FlowService:
             self.logger.info("Finished operation:" + operation_name)
             return result
 
-        except TVBException, excep:
+        except TVBException as excep:
             self.logger.exception("Could not launch operation " + operation_name +
                                   " with the given set of input data, because: " + excep.message)
             raise OperationException(excep.message, excep)
-        except Exception, excep:
+        except Exception as excep:
             self.logger.exception("Could not launch operation " + operation_name + " with the given set of input data!")
             raise OperationException(str(excep))      
 

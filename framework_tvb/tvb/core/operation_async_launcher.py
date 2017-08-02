@@ -80,7 +80,7 @@ def do_operation_launch(operation_id):
         OperationService().initiate_prelaunch(curent_operation, adapter_instance, {}, **PARAMS)
         LOGGER.debug("Successfully finished operation " + str(operation_id))
 
-    except Exception, excep:
+    except Exception as excep:
         LOGGER.error("Could not execute operation " + str(sys.argv[1]))
         LOGGER.exception(excep)
         parent_burst = dao.get_burst_for_operation_id(operation_id)

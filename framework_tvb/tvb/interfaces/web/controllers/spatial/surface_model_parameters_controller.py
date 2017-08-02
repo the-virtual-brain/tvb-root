@@ -326,13 +326,13 @@ class SurfaceModelParametersController(SpatioTemporalController):
                 ui_message = self.get_ui_message(["spatial"])
 
             return {'allSeries': all_series, 'prefix': self.plotted_equations_prefixes[0], 'message': ui_message}
-        except NameError, ex:
+        except NameError as ex:
             self.logger.exception(ex)
             return {'allSeries': None, 'errorMsg': "Incorrect parameters for equation passed."}
-        except SyntaxError, ex:
+        except SyntaxError as ex:
             self.logger.exception(ex)
             return {'allSeries': None, 'errorMsg': "Some of the parameters hold invalid characters."}
-        except Exception, ex:
+        except Exception as ex:
             self.logger.exception(ex)
             return {'allSeries': None, 'errorMsg': ex.message}
         

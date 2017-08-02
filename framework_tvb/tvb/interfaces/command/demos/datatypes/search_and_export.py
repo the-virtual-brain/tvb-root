@@ -54,7 +54,7 @@ TVB_EXPORTER = "TVBExporter"
 def _retrieve_entities_by_filters(kind, project_id, filters):
 
     named_tuple_array, counter = dao.get_values_of_datatype(project_id, kind, filters)
-    print "Found " + str(counter) + " entities of type " + str(kind)
+    print("Found " + str(counter) + " entities of type " + str(kind))
 
     result = []
     for named_tuple in named_tuple_array:
@@ -95,17 +95,15 @@ def search_and_export_ts(project_id, export_folder=os.path.join("~", "TVB")):
     timeseries = _retrieve_entities_by_filters(TimeSeriesRegion, project_id, filter_timeseries)
 
     for ts in timeseries:
-        print "============================="
-        print ts.summary_info
-        print " Original file: " + str(ts.get_storage_file_path())
+        print("=============================")
+        print(ts.summary_info)
+        print(" Original file: " + str(ts.get_storage_file_path()))
         destination_file = os.path.expanduser(os.path.join(export_folder, ts.get_storage_file_name()))
         FilesHelper.copy_file(ts.get_storage_file_path(), destination_file)
         if os.path.exists(destination_file):
-            print " TS file copied at: " + destination_file
+            print(" TS file copied at: " + destination_file)
         else:
-            print " Some error happened when trying to copy at destination folder!!"
-
-
+            print(" Some error happened when trying to copy at destination folder!!")
 
 
 if __name__ == '__main__':
@@ -115,6 +113,6 @@ if __name__ == '__main__':
     else:
         PROJECT_ID = int(argv[1])
 
-    print "We will try to search datatypes in project with ID:" + str(PROJECT_ID)
+    print("We will try to search datatypes in project with ID:" + str(PROJECT_ID))
 
     search_and_export_ts(PROJECT_ID)

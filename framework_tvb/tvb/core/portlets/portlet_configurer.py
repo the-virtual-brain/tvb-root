@@ -171,7 +171,7 @@ class PortletConfigurer(object):
         """
         # Check for any defaults first in analyzer steps
         if portlet_configuration.analyzers:
-            for adapter_idx in xrange(len(portlet_interface[:-1])):
+            for adapter_idx in range(len(portlet_interface[:-1])):
                 saved_configuration = portlet_configuration.analyzers[adapter_idx]
                 replaced_defaults_dict = InputTreeManager.fill_defaults(portlet_interface[adapter_idx].interface,
                                                                         saved_configuration.static_param)
@@ -195,7 +195,7 @@ class PortletConfigurer(object):
         try:
             datatype_idx = int(datatype_idx)
             self.log.debug("%s defines an output as an entry to a workflow step." % (value,))
-        except ValueError, _:
+        except ValueError:
             self.log.debug("%s defines an input as an entry to a workflow step." % (value,))
         workflow_value = {WorkflowStepConfiguration.STEP_INDEX_KEY: int(step_idx),
                           WorkflowStepConfiguration.DATATYPE_INDEX_KEY: datatype_idx}

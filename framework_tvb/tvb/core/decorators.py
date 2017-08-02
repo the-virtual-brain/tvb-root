@@ -84,7 +84,7 @@ def user_environment_execution(func):
 
         path_segments = original_path.split(os.pathsep)
         new_path = original_path
-        for i in xrange(min(count, len(path_segments))):
+        for i in range(min(count, len(path_segments))):
             segment = path_segments[i]
             if segment_marker in segment:
                 new_path = new_path.replace(segment + os.pathsep, '', 1)

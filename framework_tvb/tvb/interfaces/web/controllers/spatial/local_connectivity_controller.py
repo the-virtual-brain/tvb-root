@@ -282,7 +282,7 @@ class LocalConnectivityController(SpatioTemporalController):
         if surface.number_of_split_slices <= 1:
             result.append(picked_data)
         else:
-            for slice_number in xrange(surface.number_of_split_slices):
+            for slice_number in range(surface.number_of_split_slices):
                 start_idx, end_idx = surface._get_slice_vertex_boundaries(slice_number)
                 result.append(picked_data[start_idx:end_idx])
 
@@ -356,19 +356,19 @@ class LocalConnectivityController(SpatioTemporalController):
                         max_y = case[1]
                 vertical_line = []
                 vertical_step = (max_y - min_y) / NO_OF_CUTOFF_POINTS
-                for i in xrange(NO_OF_CUTOFF_POINTS):
+                for i in range(NO_OF_CUTOFF_POINTS):
                     vertical_line.append([max_x, min_y + i * vertical_step])
                 all_series = self.get_series_json(ideal_case_series, average_case_series, worst_case_series,
                                                   best_case_series, vertical_line)
 
                 return {'allSeries': all_series, 'prefix': self.plotted_equations_prefixes[0], "message": None}
-            except NameError, ex:
+            except NameError as ex:
                 self.logger.exception(ex)
                 return {'allSeries': None, 'errorMsg': "Incorrect parameters for equation passed."}
-            except SyntaxError, ex:
+            except SyntaxError as ex:
                 self.logger.exception(ex)
                 return {'allSeries': None, 'errorMsg': "Some of the parameters hold invalid characters."}
-            except Exception, ex:
+            except Exception as ex:
                 self.logger.exception(ex)
                 return {'allSeries': None, 'errorMsg': ex.message}
 

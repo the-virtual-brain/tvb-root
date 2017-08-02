@@ -34,9 +34,11 @@ Service layer for USER entities.
 .. moduleauthor:: Lia Domide <lia.domide@codemart.ro>
 """
 
+import os
+import six
+import tvb_data
 from random import randint
 from hashlib import md5
-import os
 from tvb.basic.profile import TvbProfile
 from tvb.basic.logger.builder import get_logger
 from tvb.config import DEFAULT_PROJECT_GID
@@ -46,7 +48,6 @@ from tvb.core.services import email_sender
 from tvb.core.services.exceptions import UsernameException
 from tvb.core.services.import_service import ImportService
 from tvb.core.services.settings_service import SettingsService
-import tvb_data
 
 FROM_ADDRESS = 'donotreply@thevirtualbrain.org'
 SUBJECT_REGISTER = '[TVB] Registration Confirmation'
@@ -71,7 +72,6 @@ KEY_ROLE = "role"
 KEY_COMMENT = "comment"
 DEFAULT_PASS_LENGTH = 10
 USERS_PAGE_SIZE = 7
-
 
 
 class UserService:
@@ -132,7 +132,7 @@ class UserService:
                         "Could not link user_id: %d with project_gid: %s " % (user.id, DEFAULT_PROJECT_GID))
 
             return TEXT_DISPLAY
-        except Exception, excep:
+        except Exception as excep:
             self.logger.exception("Could not create user!")
             raise UsernameException(str(excep))
 
@@ -159,7 +159,7 @@ class UserService:
             self.logger.info("Resetting password for email : " + email)
             email_sender.send(FROM_ADDRESS, email, SUBJECT_RECOVERY, TEXT_RECOVERY % (user.username, new_pass))
             return TEXT_DISPLAY
-        except Exception, excep:
+        except Exception as excep:
             if old_pass and len(old_pass) > 1 and user:
                 user.password = old_pass
                 dao.store_entity(user)
@@ -197,7 +197,7 @@ class UserService:
                               "Hello " + name + TEXT_VALIDATED + TvbProfile.current.web.BASE_URL + "user/")
             self.logger.info("User:" + name + " was validated successfully" + " and notification email sent!")
             return True
-        except Exception, excep:
+        except Exception as excep:
             self.logger.warning('Could not validate user:')
             self.logger.warning('WARNING : ' + str(excep))
             return False
@@ -231,7 +231,7 @@ class UserService:
             all_users, total_pages = self.retrieve_all_users(admin_name, page)
             members = dao.get_members_of_project(project_id)
             return all_users, members, total_pages
-        except Exception, excep:
+        except Exception as excep:
             self.logger.exception("Invalid userName or project identifier")
             raise UsernameException(str(excep))
 
@@ -263,7 +263,7 @@ class UserService:
             else:
                 raise UsernameException("Invalid old password!")
         user.email = edited_user.email
-        for key, value in edited_user.preferences.iteritems():
+        for key, value in six.iteritems(edited_user.preferences):
             user.preferences[key] = value
         dao.store_entity(user)
         if user.is_administrator():
@@ -278,7 +278,7 @@ class UserService:
         try:
             dao.remove_entity(model.User, user_id)
             return True
-        except Exception, excep:
+        except Exception as excep:
             self.logger.exception(excep)
             return False
 
@@ -310,6 +310,3 @@ class UserService:
     @staticmethod
     def compute_user_generated_disk_size(user_id):
         return dao.compute_user_generated_disk_size(user_id)
-
-         
-            

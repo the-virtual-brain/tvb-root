@@ -120,7 +120,7 @@ class ParameterExplorationController(BaseController):
                 pse_context = adapter.prepare_parameters(datatype_group_gid, back_page, color_metric, size_metric)
                 pse_context.prepare_individual_jsons()
                 return pse_context
-            except LaunchException, ex:
+            except LaunchException as ex:
                 error_msg = urllib.quote(ex.message)
         else:
             error_msg = urllib.quote("Discrete PSE is incompatible (most probably due to result size being too large).")
@@ -141,7 +141,7 @@ class ParameterExplorationController(BaseController):
         if self._is_compatible(algorithm, datatype_group_gid):
             try:
                 return adapter.burst_preview(datatype_group_gid)
-            except LaunchException, ex:
+            except LaunchException as ex:
                 self.logger.error(ex.message)
                 error_msg = urllib.quote(ex.message)
         else:
@@ -166,7 +166,7 @@ class ParameterExplorationController(BaseController):
             try:
                 datatype_group = dao.get_datatype_group_by_gid(datatype_group_gid)
                 return adapter.get_metric_matrix(datatype_group, metric_name)
-            except LaunchException, ex:
+            except LaunchException as ex:
                 self.logger.error(ex.message)
                 error_msg = urllib.quote(ex.message)
         else:
@@ -186,7 +186,7 @@ class ParameterExplorationController(BaseController):
             try:
                 datatype_group = dao.get_datatype_group_by_gid(datatype_group_gid)
                 return adapter.prepare_node_data(datatype_group, matrix_shape)
-            except LaunchException, ex:
+            except LaunchException as ex:
                 self.logger.error(ex.message)
                 error_msg = urllib.quote(ex.message)
         else:

@@ -98,7 +98,7 @@ class ModelValidator(object):
                 range_values = self.operation_service.get_range_values(launch_args, key)
                 nr_of_operations *= len(range_values)
         do_launch = False
-        print "Warning! This will launch %s operations. Do you agree? (yes/no)" % nr_of_operations
+        print("Warning! This will launch %s operations. Do you agree? (yes/no)" % nr_of_operations)
         while 1:
             accept = raw_input()
             if accept.lower() == 'yes':
@@ -107,8 +107,8 @@ class ModelValidator(object):
             if accept.lower() == 'no':
                 do_launch = False
                 break
-            print "Please type either yes or no"
-        
+            print("Please type either yes or no")
+
         if do_launch:
             self.launched_operations = self.flow_service.fire_operation(simulator_adapter, self.project.administrator,
                                                                         self.project.id, **launch_args)
@@ -141,13 +141,13 @@ class ModelValidator(object):
 
 def main(settings_file):
     validator = ModelValidator(settings_file=settings_file)
-    print validator.launch_validation()
-    
+    print(validator.launch_validation())
+
 
 if __name__ == '__main__':
     if len(sys.argv) < 2:
         raise Exception("Usage should be 'python model_validations.py settings_file")
     validator = ModelValidator(settings_file=sys.argv[1])
-    print validator.launch_validation()
+    print(validator.launch_validation())
     exit(0)
 

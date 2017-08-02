@@ -93,7 +93,7 @@ if __name__ == "__main__":
     if launched_operation.status == model.STATUS_FINISHED:
         ts = dao.get_generic_entity(TimeSeriesRegion, launched_operation.id, "fk_from_operation")[0]
         LOG.info("TimeSeries result is: %s " % ts.summary_info)
-        print ts.summary_info
+        print(ts.summary_info)
     else:
         LOG.warning("Operation ended with problems [%s]: [%s]" % (launched_operation.status,
                                                                   launched_operation.additional_info))

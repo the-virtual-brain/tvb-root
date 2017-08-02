@@ -175,10 +175,10 @@ class SurfaceStimulusController(SpatioTemporalController):
             common.set_important_message("The operation for creating the stimulus was successfully launched.")
             context.selected_stimulus = None
 
-        except (NameError, ValueError, SyntaxError), _:
+        except (NameError, ValueError, SyntaxError):
             common.set_error_message("The operation failed due to invalid parameter input.")
             return False
-        except Exception, ex:
+        except Exception as ex:
             common.set_error_message(ex.message)
             return False
         return True
@@ -279,7 +279,7 @@ class SurfaceStimulusController(SpatioTemporalController):
         except (NameError, ValueError, SyntaxError):
             return {'status': 'error',
                     'errorMsg': "Could not generate stimulus data. Some of the parameters hold invalid characters."}
-        except Exception, ex:
+        except Exception as ex:
             return {'allSeries': 'error', 'errorMsg': ex.message}
 
 
@@ -335,13 +335,13 @@ class SurfaceStimulusController(SpatioTemporalController):
             if display_ui_message:
                 ui_message = self.get_ui_message(["temporal"])
             return {'allSeries': all_series, 'prefix': 'temporal', 'message': ui_message}
-        except NameError, ex:
+        except NameError as ex:
             self.logger.exception(ex)
             return {'allSeries': None, 'errorMsg': "Incorrect parameters for equation passed."}
-        except SyntaxError, ex:
+        except SyntaxError as ex:
             self.logger.exception(ex)
             return {'allSeries': None, 'errorMsg': "Some of the parameters hold invalid characters."}
-        except Exception, ex:
+        except Exception as ex:
             self.logger.exception(ex)
             return {'allSeries': None, 'errorMsg': ex.message}
 
@@ -365,13 +365,13 @@ class SurfaceStimulusController(SpatioTemporalController):
             if display_ui_message:
                 ui_message = self.get_ui_message(["spatial"])
             return {'allSeries': all_series, 'prefix': 'spatial', 'message': ui_message}
-        except NameError, ex:
+        except NameError as ex:
             self.logger.exception(ex)
             return {'allSeries': None, 'errorMsg': "Incorrect parameters for equation passed."}
-        except SyntaxError, ex:
+        except SyntaxError as ex:
             self.logger.exception(ex)
             return {'allSeries': None, 'errorMsg': "Some of the parameters hold invalid characters."}
-        except Exception, ex:
+        except Exception as ex:
             self.logger.exception(ex)
             return {'allSeries': None, 'errorMsg': ex.message}
 

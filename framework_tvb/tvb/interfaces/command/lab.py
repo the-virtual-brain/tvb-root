@@ -45,21 +45,21 @@ from tvb.core.services.user_service import UserService
 
 def list_projects():
     fmt = "%24s %5s"
-    print fmt % ('name', 'id')
+    print(fmt % ('name', 'id'))
     for p in dao.get_all_projects():
-        print  fmt % (p.name, p.id)
+        print(fmt % (p.name, p.id))
 
 
 def list_datatypes(project_id):
     fmt = "%24s %16s %5s %32s %12s"
-    print fmt % ('type', 'tag', 'id', 'gid', 'date')
+    print(fmt % ('type', 'tag', 'id', 'gid', 'date'))
     for dt in dao.get_datatypes_in_project(project_id):
-        print fmt % (dt.type, dt.user_tag_1, dt.id, dt.gid, dt.create_date)
+        print(fmt % (dt.type, dt.user_tag_1, dt.id, dt.gid, dt.create_date))
 
 
 def datatype_details(id):
     dt = dao.get_datatype_by_id(id)
-    print ProjectService().get_datatype_details(dt.gid)
+    print(ProjectService().get_datatype_details(dt.gid))
 
 
 def load_dt(id):

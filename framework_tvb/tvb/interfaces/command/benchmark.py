@@ -118,11 +118,11 @@ class Bench(object):
                                 "conduction_speed": str(conduction),
                             })
                             operation = _fire_simulation(project_id, **launch_args)
-                            self.running_times.append( operation.completion_date - operation.start_date )
+                            self.running_times.append(operation.completion_date - operation.start_date)
 
     def report(self):
         i = 0
-        print HEADER
+        print(HEADER)
         # use the same iteration order as run_benchmark to interpret running_times
         for model_kw in self.model_kws:
             for conn in self.connectivities:
@@ -130,8 +130,8 @@ class Bench(object):
                     for dt in self.int_dts:
                         for conduction in self.conductions:
                             timestr = str(self.running_times[i])[2:-5]
-                            print self.FS % (model_kw['model'], length, conn.number_of_regions, conduction, dt, timestr)
-                            print self.LINE
+                            print(self.FS % (model_kw['model'], length, conn.number_of_regions, conduction, dt, timestr))
+                            print(self.LINE)
                             i += 1
 
 
@@ -163,11 +163,11 @@ def main():
         sim_lengths=[10000]
     )
 
-    print 'Generic2dOscillator and Epileptor'
+    print('Generic2dOscillator and Epileptor')
     g2d_epi.run(prj.id)
     g2d_epi.report()
 
-    print 'LarterBreakspear'
+    print('LarterBreakspear')
     larter.run(prj.id)
     larter.report()
 

@@ -31,7 +31,9 @@
 """
 .. moduleauthor:: calin.pavel <calin.pavel@codemart.ro>
 """
+
 import os
+import six
 import shutil
 import cherrypy
 import tvb.interfaces.web.controllers.base_controller as bc
@@ -44,7 +46,6 @@ CONTENT_LENGTH_KEY = 'content-length'
 
 # Module logger
 LOG = get_logger(__name__)
-
 
 
 class RequestHandler(object):
@@ -62,7 +63,7 @@ class RequestHandler(object):
         """
         # convert the header keys to lower case
         lcHDRS = {}
-        for key, val in cherrypy.request.headers.iteritems():
+        for key, val in six.iteritems(cherrypy.request.headers):
             lcHDRS[key.lower()] = val
 
         if CONTENT_LENGTH_KEY in lcHDRS:
@@ -90,10 +91,9 @@ class RequestHandler(object):
 
                         # Delete success - now remove file from list
                         del files_list[i]
-                    except Exception, exc:
+                    except Exception as exc:
                         LOG.error("Could not delete file/folder: %s" % file_to_delete)
                         LOG.exception(exc)
                 else:
                     # File not found on disk, so we remove it from list
                     del files_list[i]
-    

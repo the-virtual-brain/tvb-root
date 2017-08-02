@@ -33,6 +33,8 @@ Service for serianlizing a Burst (Simulator) configuration.
 
 .. moduleauthor:: Mihai Andrei <mihai.andrei@codemart.ro>
 """
+
+import six
 from tvb.basic.logger.builder import get_logger
 from tvb.basic.traits.parameters_factory import get_traited_instance_for_name
 from tvb.config import SIMULATOR_MODULE, SIMULATOR_CLASS
@@ -53,6 +55,7 @@ class SerializationManager(object):
     Constructs data types based on a burst configuration.
     Updates the burst configuration.
     """
+
     def __init__(self, conf):
         """
         :param conf: burst configuration entity
@@ -138,7 +141,7 @@ class SerializationManager(object):
         """
         ret = {}
         for model_parameters in model_parameters_list:
-            for param_name, param_val in model_parameters.iteritems():
+            for param_name, param_val in six.iteritems(model_parameters):
                 if param_name not in ret:
                     ret[param_name] = []
                 ret[param_name].append(param_val)
@@ -165,7 +168,7 @@ class SerializationManager(object):
         # change selected model in burst config
         self.conf.update_simulation_parameter(PARAM_MODEL, model_name)
 
-        for param_name, param_vals in model_parameters.iteritems():
+        for param_name, param_vals in six.iteritems(model_parameters):
             full_name = PARAMS_MODEL_PATTERN % (model_name, param_name)
             self.conf.update_simulation_parameter(full_name, format_param_vals(param_vals))
 

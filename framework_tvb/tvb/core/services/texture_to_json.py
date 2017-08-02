@@ -50,7 +50,7 @@ def color_texture_to_list(img_pth, img_width, band_height):
 
     if ima.shape != (img_width, img_width, 4):
         raise ValueError("unexpected image shape " + str(ima.shape))
-    tex_vs = [(i * band_height + 0.5)/img_width for i in xrange(img_width/band_height)]
+    tex_vs = [(i * band_height + 0.5)/img_width for i in range(img_width/band_height)]
     color_schemes = []
     for v in tex_vs:
         idx = int(v * img_width)

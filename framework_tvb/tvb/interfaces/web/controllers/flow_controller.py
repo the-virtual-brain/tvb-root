@@ -40,7 +40,7 @@ import json
 import cherrypy
 import formencode
 import numpy
-
+import six
 from tvb.basic.filters.chain import FilterChain
 from tvb.core.adapters import constants
 from tvb.core.adapters.input_tree import InputTreeManager, MAXIMUM_DATA_TYPES_DISPLAYED, KEY_WARNING, WARNING_OVERFLOW
@@ -188,7 +188,7 @@ class FlowController(BaseController):
                                                   int(algorithm_id), int(step_key), **data)
         redirect_url = self._compute_back_link('operations', common.get_current_project())
         raise cherrypy.HTTPRedirect(redirect_url)
-    
+
 
     @expose_page
     @settings
@@ -285,7 +285,7 @@ class FlowController(BaseController):
                            "expected_shape": expected_shape,
                            "operations": operations}
 
-        #if reload => populate the selected values
+        # if reload => populate the selected values
         session_dict = self.context.get_current_default()
         dimensions = {1: [0], 3: [0]}
         selected_agg_functions = {}
@@ -314,7 +314,7 @@ class FlowController(BaseController):
                 template_params["array_shape"] = json.dumps(new_shape)
                 if hasattr(actual_entity, 'dimensions_labels') and actual_entity.dimensions_labels is not None:
                     labels_set = actual_entity.dimensions_labels
-                    #make sure there exists labels for each dimension
+                    # make sure there exists labels for each dimension
                     while len(labels_set) < len(array_shape):
                         labels_set.append("Undefined")
                 if (hasattr(actual_entity, 'aggregation_functions') and actual_entity.aggregation_functions is not None
@@ -336,7 +336,7 @@ class FlowController(BaseController):
                 for i, shape in enumerate(array_shape):
                     labels = []
                     values = []
-                    for j in xrange(shape):
+                    for j in range(shape):
                         labels.append(labels_set[i] + " " + str(j))
                         values.append(entity_gid + "_" + str(i) + "_" + str(j))
                     result.append([labels, values, aggregation_functions[i]])
@@ -354,7 +354,7 @@ class FlowController(BaseController):
         and also the shape of the array based on his selections
         """
         current_dim = len(array_shape)
-        for i in xrange(len(array_shape)):
+        for i in range(len(array_shape)):
             if i in selected_items and len(selected_items[i]) > 0:
                 array_shape[i] = len(selected_items[i])
                 if len(selected_items[i]) == 1:
@@ -393,15 +393,15 @@ class FlowController(BaseController):
         filters = json.loads(filters)
         availablefilter = json.loads(FilterChain.get_filters_for_type(datatype))
         for i, filter_ in enumerate(filters[FILTER_FIELDS]):
-            #Check for filter input of type 'date' as these need to be converted
+            # Check for filter input of type 'date' as these need to be converted
             if filter_ in availablefilter and availablefilter[filter_][FILTER_TYPE] == 'date':
                 try:
                     temp_date = string2date(filters[FILTER_VALUES][i], False)
                     filters[FILTER_VALUES][i] = temp_date
                 except ValueError:
                     raise
-        #In order for the filter object not to "stack up" on multiple calls to
-        #this method, create a deepCopy to work with
+        # In order for the filter object not to "stack up" on multiple calls to
+        # this method, create a deepCopy to work with
         if ABCAdapter.KEY_CONDITION in current_node:
             new_filter = copy.deepcopy(current_node[ABCAdapter.KEY_CONDITION])
         else:
@@ -409,12 +409,12 @@ class FlowController(BaseController):
         new_filter.fields.extend(filters[FILTER_FIELDS])
         new_filter.operations.extend(filters[FILTER_OPERATIONS])
         new_filter.values.extend(filters[FILTER_VALUES])
-        #Get dataTypes that match the filters from DB then populate with values
+        # Get dataTypes that match the filters from DB then populate with values
         values, total_count = InputTreeManager().populate_option_values_for_dtype(
-                                    common.get_current_project().id,
-                                    datatype, new_filter,
-                                    self.context.get_current_step() )
-        #Create a dictionary that matches what the template expects
+            common.get_current_project().id,
+            datatype, new_filter,
+            self.context.get_current_step())
+        # Create a dictionary that matches what the template expects
         parameters = {ABCAdapter.KEY_NAME: name,
                       ABCAdapter.KEY_FILTERABLE: availablefilter,
                       ABCAdapter.KEY_TYPE: ABCAdapter.TYPE_SELECT,
@@ -479,9 +479,9 @@ class FlowController(BaseController):
                 if isinstance(result, list):
                     result = "Launched %s operations." % len(result)
                 common.set_important_message(str(result))
-        except formencode.Invalid, excep:
+        except formencode.Invalid as excep:
             errors = excep.unpack_errors()
-        except OperationException, excep1:
+        except OperationException as excep1:
             self.logger.exception("Error while executing a Launch procedure:" + excep1.message)
             common.set_error_message(excep1.message)
 
@@ -495,7 +495,8 @@ class FlowController(BaseController):
         return template_specification
 
 
-    def get_template_for_adapter(self, project_id, step_key, stored_adapter, submit_url, session_reset=True, is_burst=True):
+    def get_template_for_adapter(self, project_id, step_key, stored_adapter, submit_url, session_reset=True,
+                                 is_burst=True):
         """ Get Input HTML Interface template or a given adapter """
         try:
             if session_reset:
@@ -518,13 +519,13 @@ class FlowController(BaseController):
 
             current_defaults = self.context.get_current_default()
             if current_defaults is not None:
-                #Change default values in tree, according to selected input
+                # Change default values in tree, according to selected input
                 adapter_interface = InputTreeManager.fill_defaults(adapter_interface, current_defaults)
 
             template_specification = dict(submitLink=submit_url, inputList=adapter_interface, title=title)
             self._populate_section(stored_adapter, template_specification, is_burst)
             return template_specification
-        except OperationException, oexc:
+        except OperationException as oexc:
             self.logger.error("Inconsistent Adapter")
             self.logger.exception(oexc)
             common.set_warning_message('Inconsistent Adapter!  Please review the link (development problem)!')
@@ -541,7 +542,7 @@ class FlowController(BaseController):
         try:
             with open(url2path(coded_path), "rb") as f:
                 return f.read()
-        except Exception, excep:
+        except Exception as excep:
             self.logger.error("Could not retrieve file from path:" + str(coded_path))
             self.logger.exception(excep)
 
@@ -552,7 +553,7 @@ class FlowController(BaseController):
 
         datatype_kwargs = json.loads(datatype_kwargs)
         if datatype_kwargs:
-            for key, value in datatype_kwargs.iteritems():
+            for key, value in six.iteritems(datatype_kwargs):
                 kwargs[key] = ABCAdapter.load_entity_by_gid(value)
 
         result = getattr(entity, dataset_name)
@@ -656,7 +657,7 @@ class FlowController(BaseController):
         algo_id = operation.fk_from_algo
         raise cherrypy.HTTPRedirect("/flow/" + str(category_id) + "/" + str(algo_id) + "?not_reset=True")
 
-    
+
     @cherrypy.expose
     @handle_error(redirect=True)
     @context_selected
@@ -698,8 +699,8 @@ class FlowController(BaseController):
                     ProjectService().remove_operation(operation.id)
                 result = result or tmp_res
         return result
-    
-    
+
+
     @expose_json
     def stop_burst_operation(self, operation_id, is_group, remove_after_stop=False):
         """
@@ -724,7 +725,7 @@ class FlowController(BaseController):
                 result = burst_service.cancel_or_remove_burst(operation.burst.id) or result
 
             return result
-        except Exception, ex:
+        except Exception as ex:
             self.logger.exception(ex)
             return False
 

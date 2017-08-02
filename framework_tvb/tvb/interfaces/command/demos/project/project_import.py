@@ -65,19 +65,18 @@ def run_import(project_path):
     import_service = ImportService()
     import_service.import_project_structure(project_path, admin.id)
 
-    print "Project imported successfully. Check the Web UI!"
-
+    print("Project imported successfully. Check the Web UI!")
 
 
 if __name__ == '__main__':
 
     if len(argv) < 2:
-        print "No Project path given!!!"
+        print("No Project path given!!!")
         exit(1)
 
     PROJECT_PATH = str(argv[1])
 
-    print "We will try to import project at path " + PROJECT_PATH
+    print("We will try to import project at path " + PROJECT_PATH)
 
     run_import(PROJECT_PATH)
 

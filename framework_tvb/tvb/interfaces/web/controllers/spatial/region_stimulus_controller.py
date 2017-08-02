@@ -231,7 +231,7 @@ class RegionStimulusController(SpatioTemporalController):
             scaling = json.loads(kwargs['scaling'])
             context.set_weights(scaling)
             return 'true'
-        except Exception, ex:
+        except Exception as ex:
             self.logger.exception(ex)
             return 'false'
 
@@ -252,13 +252,13 @@ class RegionStimulusController(SpatioTemporalController):
                 ui_message = self.get_ui_message(["temporal"])
 
             return {'allSeries': all_series, 'prefix': 'temporal', 'message': ui_message}
-        except NameError, ex:
+        except NameError as ex:
             self.logger.exception(ex)
             return {'allSeries': None, 'errorMsg': "Incorrect parameters for equation passed."}
-        except SyntaxError, ex:
+        except SyntaxError as ex:
             self.logger.exception(ex)
             return {'allSeries': None, 'errorMsg': "Some of the parameters hold invalid characters."}
-        except Exception, ex:
+        except Exception as ex:
             self.logger.exception(ex)
             return {'allSeries': None, 'errorMsg': ex.message}
 

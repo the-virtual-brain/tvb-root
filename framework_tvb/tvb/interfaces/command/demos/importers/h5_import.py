@@ -57,11 +57,11 @@ def import_h5(file_path, project_id):
     ## Prepare the input algorithms as if they were coming from web UI submit:
     launch_args = {"data_file": file_path}
 
-    print "We will try to import file at path " + file_path
+    print("We will try to import file at path " + file_path)
     ## launch an operation and have the results stored both in DB and on disk
     launched_operations = flow_service.fire_operation(adapter_instance,
                                                       project.administrator,
                                                       project.id,
                                                       **launch_args)
 
-    print "Operation launched. Check the web UI"
+    print("Operation launched. Check the web UI")

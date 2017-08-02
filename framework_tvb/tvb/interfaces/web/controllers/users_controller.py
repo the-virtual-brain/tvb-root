@@ -102,7 +102,7 @@ class UserController(BaseController):
                 else:
                     common.set_error_message('Wrong username/password, or user not yet validated...')
                     self.logger.debug("Wrong username " + username + " !!!")
-            except formencode.Invalid, excep:
+            except formencode.Invalid as excep:
                 template_specification[common.KEY_ERRORS] = excep.unpack_errors()
 
         return self.fill_default_attributes(template_specification)
@@ -139,9 +139,9 @@ class UserController(BaseController):
                     common.set_info_message("Changes Submitted!")
                 else:
                     common.set_info_message("Submitted!  No password changed.")
-            except formencode.Invalid, excep:
+            except formencode.Invalid as excep:
                 template_specification[common.KEY_ERRORS] = excep.unpack_errors()
-            except UsernameException, excep:
+            except UsernameException as excep:
                 self.logger.exception(excep)
                 user = common.get_logged_user()
                 common.add2session(common.KEY_USER, self.user_service.get_user_by_id(user.id))
@@ -226,10 +226,10 @@ class UserController(BaseController):
                 okmessage = self._create_user(**data)
                 common.set_info_message(okmessage)
                 redirect = True
-            except formencode.Invalid, excep:
+            except formencode.Invalid as excep:
                 template_specification[common.KEY_ERRORS] = excep.unpack_errors()
                 redirect = False
-            except Exception, excep1:
+            except Exception as excep1:
                 self.logger.error("Could not create user:" + data["username"])
                 self.logger.exception(excep1)
                 common.set_error_message("We are very sorry, but we could not create your user. Most probably is "
@@ -267,9 +267,9 @@ class UserController(BaseController):
                 self._create_user(email_msg=email_msg, validated=True, **data)
                 common.set_info_message("New user created successfully.")
                 redirect = True
-            except formencode.Invalid, excep:
+            except formencode.Invalid as excep:
                 template_specification[common.KEY_ERRORS] = excep.unpack_errors()
-            except Exception, excep:
+            except Exception as excep:
                 self.logger.exception(excep)
                 common.set_error_message("We are very sorry, but we could not create your user. Most probably is "
                                          "because it was impossible to sent emails. Please try again later...")
@@ -335,10 +335,10 @@ class UserController(BaseController):
                 okmessage = self.user_service.reset_password(**data)
                 common.set_info_message(okmessage)
                 redirect = True
-            except formencode.Invalid, excep:
+            except formencode.Invalid as excep:
                 template_specification[common.KEY_ERRORS] = excep.unpack_errors()
                 redirect = False
-            except UsernameException, excep1:
+            except UsernameException as excep1:
                 self.logger.exception("Could not reset password!")
                 common.set_error_message(excep1.message)
                 redirect = False
@@ -417,7 +417,7 @@ class UserController(BaseController):
                 pos = TvbProfile.current.web.URL_TVB_VERSION.find('/tvb')
                 self.version_info['url'] = TvbProfile.current.web.URL_TVB_VERSION[:pos]
                 self.logger.debug("Read version: " + json.dumps(self.version_info))
-            except Exception, excep:
+            except Exception as excep:
                 self.logger.warning("Could not read current version from remote server!")
                 self.logger.debug(content)
                 self.logger.exception(excep)

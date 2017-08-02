@@ -104,7 +104,7 @@ class ProjectController(BaseController):
             try:
                 selected_project = self.project_service.find_project(selected_project_id)
                 self._mark_selected(selected_project)
-            except ProjectServiceException, excep:
+            except ProjectServiceException as excep:
                 self.logger.error(excep)
                 self.logger.warning("Could not select project: " + str(selected_project_id))
                 common.set_error_message("Could not select project: " + str(selected_project_id))
@@ -128,7 +128,7 @@ class ProjectController(BaseController):
             if upload_param in data and data[upload_param]:
                 import_service = ImportService()
                 import_service.import_project_structure(data[upload_param], common.get_logged_user().id)
-        except ServicesBaseException, excep:
+        except ServicesBaseException as excep:
             self.logger.warning(excep.message)
             common.set_error_message(excep.message)
         raise cherrypy.HTTPRedirect('/project/viewall')
@@ -138,7 +138,7 @@ class ProjectController(BaseController):
         """Private method for removing project."""
         try:
             self.project_service.remove_project(project_id)
-        except ServicesBaseException, exc:
+        except ServicesBaseException as exc:
             self.logger.error("Could not delete project!")
             self.logger.exception(exc)
             common.set_error_message(exc.message)
@@ -195,10 +195,10 @@ class ProjectController(BaseController):
                 common.remove_from_session(common.KEY_CACHED_SIMULATOR_TREE)
                 self._persist_project(data, project_id, is_create, current_user)
                 raise cherrypy.HTTPRedirect('/project/viewall')
-        except formencode.Invalid, excep:
+        except formencode.Invalid as excep:
             self.logger.debug(str(excep))
             template_specification[common.KEY_ERRORS] = excep.unpack_errors()
-        except ProjectServiceException, excep:
+        except ProjectServiceException as excep:
             self.logger.debug(str(excep))
             common.set_error_message(excep.message)
             raise cherrypy.HTTPRedirect('/project/viewall')
@@ -675,10 +675,10 @@ class ProjectController(BaseController):
                 return "Remove can only be applied on a Node with GID!"
             self.logger.debug("Removing data with GID=" + str(node_gid))
             self.project_service.remove_datatype(project_id, node_gid)
-        except RemoveDataTypeException, excep:
+        except RemoveDataTypeException as excep:
             self.logger.exception("Could not execute operation Node Remove!")
             return excep.message
-        except ServicesBaseException, excep:
+        except ServicesBaseException as excep:
             self.logger.exception("Could not execute operation Node Remove!")
             return excep.message
         return None
@@ -693,7 +693,7 @@ class ProjectController(BaseController):
 
             self.project_service.update_metadata(data)
 
-        except ServicesBaseException, excep:
+        except ServicesBaseException as excep:
             self.logger.error("Could not execute MetaData update!")
             self.logger.exception(excep)
             common.set_error_message(excep.message)

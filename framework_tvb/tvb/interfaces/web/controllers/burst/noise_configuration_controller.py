@@ -84,7 +84,7 @@ class NoiseConfigurationController(BurstBaseController):
     @staticmethod
     def group_noise_array_by_state_var(noise_values, state_vars, number_of_regions):
         initial_noise = []
-        for i in xrange(number_of_regions):
+        for i in range(number_of_regions):
             node_noise = {}
             for sv_idx, sv in enumerate(state_vars):
                 node_noise[sv] = noise_values[sv_idx][i]
@@ -106,14 +106,14 @@ class NoiseConfigurationController(BurstBaseController):
             noise_values = nsig.tolist()
         except AttributeError:
             # Just fallback to default
-            return [[1 for _ in xrange(nr_nodes)] for _ in state_variables]
+            return [[1 for _ in range(nr_nodes)] for _ in state_variables]
 
         if nsig.shape == (1,):
             # Only one number for noise
             return [noise_values * nr_nodes for _ in state_variables]
         elif nsig.shape == (nr_state_vars, 1) or nsig.shape == (nr_state_vars,):
             # Only one number per state variable
-            return [[noise_values[idx]] * nr_nodes for idx in xrange(nr_state_vars)]
+            return [[noise_values[idx]] * nr_nodes for idx in range(nr_state_vars)]
         elif nsig.shape == (nr_state_vars, nr_nodes):
             return noise_values
         else:

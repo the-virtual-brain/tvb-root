@@ -208,13 +208,13 @@ class BurstController(BurstBaseController):
         tab_portlets_list = json.loads(data['tab_portlets_list'])
         burst_config = common.get_from_session(common.KEY_BURST_CONFIG)
         selected_tab_idx = burst_config.selected_tab
-        for tab_idx in xrange(len(tab_portlets_list)):
+        for tab_idx in range(len(tab_portlets_list)):
             current_tab = burst_config.tabs[tab_idx]
             ### When configuration already exists, and new portlets          #####
             ### are selected, first check if any configuration was saved for #####
             ### each portlet and if that is the case, use it. If none is present #
             ### create a new one.                                              ###
-            for idx_in_tab in xrange(len(tab_portlets_list[tab_idx])):
+            for idx_in_tab in range(len(tab_portlets_list[tab_idx])):
                 portlet_id = tab_portlets_list[tab_idx][idx_in_tab][0]
                 portlet_name = tab_portlets_list[tab_idx][idx_in_tab][1]
                 if portlet_id >= 0:
@@ -357,7 +357,7 @@ class BurstController(BurstBaseController):
             burst_id, burst_name = self.burst_service.launch_burst(burst_config, 0, self.cached_simulator_algorithm.id,
                                                                    user_id, launch_mode)
             return {'id': burst_id, 'name': burst_name}
-        except BurstServiceException, e:
+        except BurstServiceException as e:
             self.logger.exception("Could not launch burst!")
             return {'error': e.message}
 
@@ -529,7 +529,7 @@ class BurstController(BurstBaseController):
             result = self.burst_service.launch_visualization(visualizer, float(frame_width),
                                                              float(frame_height), True)[0]
             result['launch_success'] = True
-        except Exception, ex:
+        except Exception as ex:
             result['launch_success'] = False
             result['error_msg'] = str(ex)
             self.logger.exception("Could not launch Portlet Visualizer...")
@@ -741,7 +741,7 @@ class BurstController(BurstBaseController):
                 burst_entity = importer.load_burst_entity(upload_param, prj_id)
                 common.add2session(common.KEY_BURST_CONFIG, burst_entity)
 
-        except Exception, excep:
+        except Exception as excep:
             self.logger.warning(excep.message)
             common.set_error_message(excep.message)
 

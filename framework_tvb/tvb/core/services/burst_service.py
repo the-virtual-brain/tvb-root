@@ -433,14 +433,14 @@ class BurstService(object):
             for operation_id in operation_ids:
                 try:
                     OperationService().launch_operation(operation_id, True)
-                except Exception, excep:
+                except Exception as excep:
                     self.logger.error(excep)
                     wf_errs += 1
                     self.workflow_service.mark_burst_finished(burst_config, error_message=str(excep))
 
             self.logger.debug("Finished launching workflows. " + str(len(operation_ids) - wf_errs) +
                               " were launched successfully, " + str(wf_errs) + " had error on pre-launch steps")
-        except Exception, excep:
+        except Exception as excep:
             self.logger.error(excep)
             self.workflow_service.mark_burst_finished(burst_config, error_message=str(excep))
 

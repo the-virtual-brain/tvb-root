@@ -90,7 +90,7 @@ class ImportService(object):
 
         try:
             self.files_helper.unpack_zip(uq_file_name, temp_folder)
-        except FileStructureException, excep:
+        except FileStructureException as excep:
             self.logger.exception(excep)
             raise ProjectImportException("Bad ZIP archive provided. A TVB exported project is expected!")
 
@@ -132,7 +132,7 @@ class ImportService(object):
             self._download_and_unpack_project_zip(uploaded, uq_file_name, temp_folder)
             self._import_projects_from_folder(temp_folder)
 
-        except Exception, excep:
+        except Exception as excep:
             self.logger.exception("Error encountered during import. Deleting projects created during this operation.")
             # Remove project folders created so far.
             # Note that using the project service to remove the projects will not work,
@@ -497,7 +497,7 @@ class ImportService(object):
         except MissingDataSetException:
             self.logger.error("Datatype %s has missing data and could not be imported properly." % (datatype,))
             os.remove(datatype.get_storage_file_path())
-        except IntegrityError, excep:
+        except IntegrityError as excep:
             self.logger.exception(excep)
             error_msg = "Could not import data with gid: %s. There is already a one with " \
                         "the same name or gid." % datatype.gid
@@ -519,7 +519,7 @@ class ImportService(object):
         try:
             self.logger.debug("Storing imported project")
             return dao.store_entity(project_entity)
-        except IntegrityError, excep:
+        except IntegrityError as excep:
             self.logger.exception(excep)
             error_msg = ("Could not import project: %s with gid: %s. There is already a "
                          "project with the same name or gid.") % (project_entity.name, project_entity.gid)
