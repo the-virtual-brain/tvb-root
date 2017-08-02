@@ -36,6 +36,7 @@ Service Layer for the Project entity.
 """
 
 import os
+import six
 import json
 import formencode
 from tvb.core import utils
@@ -81,7 +82,6 @@ MONTH_YEAR_FORMAT = "%B %Y"
 DAY_MONTH_YEAR_FORMAT = "%d %B %Y"
 
 
-
 class ProjectService:
     """
     Services layer for Project entities.
@@ -97,7 +97,7 @@ class ProjectService:
         """
         We want to create/update a project entity.
         """
-        #Validate Unique Name
+        # Validate Unique Name
         new_name = data["name"]
         if len(new_name) < 1:
             raise ProjectServiceException("Invalid project name!")
@@ -114,21 +114,21 @@ class ProjectService:
         else:
             try:
                 current_proj = dao.get_project_by_id(selected_id)
-            except Exception, excep:
+            except Exception as excep:
                 self.logger.exception("An error has occurred!")
                 raise ProjectServiceException(str(excep))
             if current_proj.name != new_name:
                 self.structure_helper.rename_project_structure(current_proj.name, new_name)
             current_proj.name = new_name
             current_proj.description = data["description"]
-        #Commit to make sure we have a valid ID
+        # Commit to make sure we have a valid ID
         current_proj.refresh_update_date()
         self.structure_helper.write_project_metadata(current_proj)
         current_proj = dao.store_entity(current_proj)
 
-        #Retrieve, to initialize lazy attributes
+        # Retrieve, to initialize lazy attributes
         current_proj = dao.get_project_by_id(current_proj.id)
-        #Update share settings on current Project entity
+        # Update share settings on current Project entity
         visited_pages = []
         prj_admin = current_proj.administrator.username
         if 'visited_pages' in data and data['visited_pages']:
@@ -139,7 +139,7 @@ class ProjectService:
             dao.delete_members_for_project(current_proj.id, members)
         selected_user_ids = data["users"]
         dao.add_members_to_project(current_proj.id, selected_user_ids)
-        #Finish operation
+        # Finish operation
         self.logger.debug("Edit/Save OK for project:" + str(current_proj.id) + ' by user:' + current_user.username)
         return current_proj
 
@@ -150,7 +150,7 @@ class ProjectService:
         """
         try:
             return dao.get_project_by_id(project_id)
-        except Exception, excep:
+        except Exception as excep:
             self.logger.exception("Given Project ID was not found in DB!")
             raise ProjectServiceException(str(excep))
 
@@ -313,18 +313,18 @@ class ProjectService:
             dao.delete_project(project_id)
             self.logger.debug("Deleted project: id=" + str(project_id) + ' name=' + project2delete.name)
 
-        except RemoveDataTypeException, excep:
+        except RemoveDataTypeException as excep:
             self.logger.exception("Could not execute operation Node Remove!")
             raise ProjectServiceException(str(excep))
-        except FileStructureException, excep:
+        except FileStructureException as excep:
             self.logger.exception("Could not delete because of rights!")
             raise ProjectServiceException(str(excep))
-        except Exception, excep:
+        except Exception as excep:
             self.logger.exception(str(excep))
             raise ProjectServiceException(str(excep))
 
 
-    #----------------- Methods for populating Data-Structure Page ---------------
+    # ----------------- Methods for populating Data-Structure Page ---------------
 
     @staticmethod
     def get_datatype_in_group(group):
@@ -384,6 +384,7 @@ class ProjectService:
         If 'is_operation_group' is True than this method will change the visibility for all
         the operation from the OperationGroup with the GID field equal to 'entity_gid'.
         """
+
         def set_visibility(op):
             # workaround:
             # 'reload' the operation so that it has the project property set.
@@ -405,7 +406,7 @@ class ProjectService:
             set_group_descendants_visibility(op_group_id)
         else:
             operation = dao.get_operation_by_gid(entity_gid)
-            #we assure that if the operation belongs to a group than the visibility will be changed for the entire group
+            # we assure that if the operation belongs to a group than the visibility will be changed for the entire group
             if operation.fk_operation_group is not None:
                 set_group_descendants_visibility(operation.fk_operation_group)
             else:
@@ -548,7 +549,7 @@ class ProjectService:
             if links:
                 was_link = False
                 for link in links:
-                    #This means it's only a link and we need to remove it
+                    # This means it's only a link and we need to remove it
                     if link.fk_from_datatype == datatype.id and link.fk_to_project == project.id:
                         dao.remove_entity(model.Links, link.id)
                         was_link = True
@@ -656,7 +657,6 @@ class ProjectService:
             raise RemoveDataTypeException("Could not remove DataType " + str(datatype_gid))
 
 
-
     def update_metadata(self, submit_data):
         """
         Update DataType/ DataTypeGroup metadata
@@ -688,7 +688,7 @@ class ProjectService:
                 gid = new_data[CommonDetails.CODE_GID]
                 datatype = dao.get_datatype_by_gid(gid)
                 self._edit_data(datatype, new_data)
-        except Exception, excep:
+        except Exception as excep:
             self.logger.exception(excep)
             raise StructureException(str(excep))
 
@@ -772,7 +772,7 @@ class ProjectService:
                 dt_group = dao.get_datatype_by_id(data_type.fk_datatype_group)
                 datatype_groups[data_type.fk_datatype_group] = dt_group
 
-        datatypes.extend([v for _, v in datatype_groups.iteritems()])
+        datatypes.extend([v for _, v in six.iteritems(datatype_groups)])
         return datatypes
 
 
@@ -883,6 +883,7 @@ class ProjectService:
         Sets the dataType visibility. If the given dataType is a dataType group or it is part of a
         dataType group than this method will set the visibility for each dataType from this group.
         """
+
         def set_visibility(dt):
             """ set visibility flag, persist in db and h5"""
             dt.visible = is_visible
@@ -896,7 +897,7 @@ class ProjectService:
 
         datatype = dao.get_datatype_by_gid(datatype_gid)
 
-        if isinstance(datatype, DataTypeGroup):   # datatype is a group
+        if isinstance(datatype, DataTypeGroup):  # datatype is a group
             set_group_descendants_visibility(datatype.id)
         elif datatype.fk_datatype_group is not None:  # datatype is member of a group
             set_group_descendants_visibility(datatype.fk_datatype_group)
@@ -911,5 +912,3 @@ class ProjectService:
     def is_datatype_group(datatype_gid):
         """ Used to check if the dataType with the specified GID is a DataTypeGroup. """
         return dao.is_datatype_group(datatype_gid)
-
-

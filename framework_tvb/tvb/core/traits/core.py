@@ -35,6 +35,7 @@
 """
 
 import re
+import six
 import sqlalchemy
 from sqlalchemy.orm import relationship
 from sqlalchemy.ext.declarative import declarative_base, DeclarativeMeta
@@ -60,7 +61,6 @@ def compute_table_name(class_name):
     if not tablename.endswith("_DATA"):
         tablename = tablename + '_DATA'
     return tablename
-
 
 
 class DeclarativeMetaType(DeclarativeMeta, MetaType):
@@ -104,7 +104,7 @@ class DeclarativeMetaType(DeclarativeMeta, MetaType):
         mapped_parent = filter(lambda cls: issubclass(cls, Type) and hasattr(cls, '__tablename__')
                                and getattr(cls, '__tablename__') is not None, all_parents)
         # Identify DATA_TYPE class, to be used for specific references
-        datatype_class = filter(lambda cls: hasattr(cls, '__tablename__') and cls.__tablename__ == 'DATA_TYPES', 
+        datatype_class = filter(lambda cls: hasattr(cls, '__tablename__') and cls.__tablename__ == 'DATA_TYPES',
                                 all_parents)[0]
 
         ###### Map Trait attributes to SQL Columns as necessary
@@ -116,7 +116,7 @@ class DeclarativeMetaType(DeclarativeMeta, MetaType):
                                      for key in all_class_traits if key not in super_traits])
 
         LOG.debug('mapped, typed class has traits %r', newclass_only_traits)
-        for key, attr in newclass_only_traits.iteritems():
+        for key, attr in six.iteritems(newclass_only_traits):
             kwd = attr.trait.inits.kwd
             ##### Either True or a Column instance
             sql = kwd.get('db', True)
@@ -144,7 +144,7 @@ class DeclarativeMetaType(DeclarativeMeta, MetaType):
                     #### as defined in atrr description
                     rel = relationship(attr.__class__, lazy='joined', cascade="none",
                                        primaryjoin=(eval('newcls._' + key) == attr.__class__.gid),
-                                       enable_typechecks = False)
+                                       enable_typechecks=False)
                     setattr(newcls, '__' + key, rel)
 
             else:
@@ -161,7 +161,7 @@ class DeclarativeMetaType(DeclarativeMeta, MetaType):
         """
         #### Determine best FOREIGN KEY  
         mapped_parent = mapped_parent[0]
-        fkparentid = mapped_parent.__tablename__ + '.id' 
+        fkparentid = mapped_parent.__tablename__ + '.id'
         ### Update __mapper_args__ SQL_ALCHEMY attribute.    
         if newcls.__tablename__:
             LOG.debug('cls %r has dtparent %r', newcls, mapped_parent)
@@ -171,15 +171,15 @@ class DeclarativeMetaType(DeclarativeMeta, MetaType):
             setattr(newcls, 'id', column_id)
             ### We can not use such a backref for cascading deletes, as we will have a cyclic dependency
             # (DataType > Mapped DT > Operation).
-#            rel = relationship(mapped_parent, primaryjoin=(eval('newcls.id')==mapped_parent.id),
-#                               backref = backref('__' +newcls.__name__, cascade="delete"))
-#            setattr(newcls, '__id_' + mapped_parent.__name__, rel)
+            #            rel = relationship(mapped_parent, primaryjoin=(eval('newcls.id')==mapped_parent.id),
+            #                               backref = backref('__' +newcls.__name__, cascade="delete"))
+            #            setattr(newcls, '__id_' + mapped_parent.__name__, rel)
             mapper_arg = {}
             kwd = newcls.trait.inits.kwd
             if hasattr(newcls, '__mapper_args__'):
                 mapper_arg = getattr(newcls, '__mapper_args__')
 
-            if 'polymorphic_on' in mapper_arg and isinstance(mapper_arg['polymorphic_on'], (str, unicode)):
+            if 'polymorphic_on' in mapper_arg and isinstance(mapper_arg['polymorphic_on'], (str, bytes)):
                 discriminator_name = mapper_arg['polymorphic_on']
                 LOG.debug("Polymorphic_on %s - %s " % (newcls.__name__, discriminator_name))
                 mapper_arg['polymorphic_on'] = getattr(newcls, '_' + discriminator_name)
@@ -189,7 +189,5 @@ class DeclarativeMetaType(DeclarativeMeta, MetaType):
                 del mapper_arg['inherits']
             setattr(newcls, '__mapper_args__', mapper_arg)
 
-            
+
 TypeBase = declarative_base(cls=Type, name='TypeBase', metaclass=DeclarativeMetaType)
-
-

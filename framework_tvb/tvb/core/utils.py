@@ -40,6 +40,7 @@ import datetime
 import uuid
 import urllib
 import numpy
+import six
 from tvb.basic.profile import TvbProfile
 from tvb.basic.logger.builder import get_logger
 from tvb.core.decorators import user_environment_execution
@@ -71,7 +72,6 @@ def path2url_part(file_path):
     return urllib.quote(result)
 
 
-
 def url2path(encoded_path):
     """
     Retrieve File System Path from encoded URL (inverse of path2url_part).
@@ -79,13 +79,12 @@ def url2path(encoded_path):
     return encoded_path.replace(CHAR_SEPARATOR, os.sep).replace(CHAR_SPACE, " ").replace(CHAR_DRIVE, DRIVE_SEP)
 
 
-
 def get_unique_file_name(storage_folder, file_name, try_number=0):
     """
     Compute non-existent file name, in storage_folder.
     Try file_name, and if already exists, try adding a number.
     """
-    #TODO this method should be re-tought
+    # TODO this method should be re-tought
     name, ext = os.path.splitext(file_name)
     date = str(datetime.datetime.now())
     date = date.replace(' ', '').replace(':', '').replace('.', '').replace('-', '')
@@ -95,7 +94,7 @@ def get_unique_file_name(storage_folder, file_name, try_number=0):
         file_ = file_name
     full_path = os.path.join(storage_folder, file_)
     if os.path.exists(full_path):
-        #Try another name, by appending the consecutive try_number
+        # Try another name, by appending the consecutive try_number
         return get_unique_file_name(storage_folder, file_name, try_number + 1)
     return full_path, file_
 
@@ -142,10 +141,9 @@ def parse_json_parameters(parameters):
     """
     params = json.loads(parameters)
     new_params = {}
-    for key, value in params.iteritems():
+    for key, value in six.iteritems(params):
         new_params[str(key)] = value
     return new_params
-
 
 
 def string2date(string_input, complex_format=True, date_format=None):
@@ -161,7 +159,6 @@ def string2date(string_input, complex_format=True, date_format=None):
     return datetime.datetime.strptime(string_input, SIMPLE_TIME_FORMAT)
 
 
-
 def date2string(date_input, complex_format=True, date_format=None):
     """Convert date into string, after internal format"""
     if date_input is None:
@@ -173,7 +170,6 @@ def date2string(date_input, complex_format=True, date_format=None):
     if complex_format:
         return date_input.strftime(COMPLEX_TIME_FORMAT)
     return date_input.strftime(SIMPLE_TIME_FORMAT)
-
 
 
 def format_timedelta(timedelta, most_significant2=True):
@@ -212,7 +208,6 @@ DATA_UNCONVERTED = 1
 DATA_CONVERTED = 2
 
 
-
 def string2array(input_data_str, split_char, dtype=None):
     """
     Given an input string first try to load it using JSON and if that fails,
@@ -233,7 +228,6 @@ def string2array(input_data_str, split_char, dtype=None):
         return _custom_string2array(input_data_str, split_char, dtype)
 
 
-
 def _custom_string2array(input_data_str, split_char, dtype=None):
     """
     From a long string, parse a NumPy array.
@@ -241,6 +235,7 @@ def _custom_string2array(input_data_str, split_char, dtype=None):
 
     class HelperData:
         """Helper for parsing arrays"""
+
         def __init__(self, data, type_):
             self.data = data
             self.type = type_
@@ -298,7 +293,6 @@ def _custom_string2array(input_data_str, split_char, dtype=None):
     return numpy.array(data_stack[0].data)
 
 
-
 class TVBJSONEncoder(json.JSONEncoder):
     """
     Custom encoder class. Referring towards "to_json" method, when found, or default behaviour otherwise.
@@ -309,6 +303,7 @@ class TVBJSONEncoder(json.JSONEncoder):
             return obj.to_json()
 
         return json.JSONEncoder.default(self, obj)
+
 
 ################## CONVERT related methods end here ###############
 

@@ -34,6 +34,7 @@
 
 import os
 import sys
+import importlib
 import tables
 import h5py
 import numpy
@@ -183,7 +184,7 @@ def __upgrade_file(input_file_name, output_file_name):
     h5py_h5_file['/'].attrs[TVB_ATTRIBUTE_PREFIX + DATA_VERSION_ATTRIBUTE] = 2
     tables_h5_file.close()
     # Reloading h5py seems to fix the segmentation fault that used to appear.
-    reload(h5py)
+    importlib.reload(h5py)
     h5py_h5_file.close()
     
 

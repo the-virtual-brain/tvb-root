@@ -38,8 +38,9 @@ You will use this module to run high dimensional parameter space explorations an
 """
 
 import itertools
-
+import numpy
 from tvb.simulator.lab import *
+
 
 # maybe a good idea given the high dimensionality of the model parameter space
 # def sample_parameter_space_monte_carlo(some_distribution):
@@ -67,7 +68,7 @@ def _set_sim_values(sim, path_assignment):
     """
     for pth, val in path_assignment.iteritems():
         code = 'sim.%s = val' % pth
-        exec code in {'sim': sim, 'val': val}
+        exec (code, {'sim': sim, 'val': val})
 
 
 def run_exploration(sim, simulation_length, parameters):
@@ -79,8 +80,8 @@ def run_exploration(sim, simulation_length, parameters):
     :return:
     """
 
-    print 'starting model parameter space exploration'
-    print '------------------------------------------'
+    print('starting model parameter space exploration')
+    print('------------------------------------------')
 
     numpy.seterr(divide='raise', invalid='raise')
 
@@ -95,9 +96,9 @@ def run_exploration(sim, simulation_length, parameters):
                 state = traw[1]
                 if not numpy.all(numpy.isfinite(state)):
                     raise FloatingPointError('infinities generated outside numpy')
-            print 'ok'
+            print('ok')
         except FloatingPointError:
-            print 'bad'
+            print('bad')
 
 
 def example():
@@ -120,10 +121,9 @@ def example():
         # ('coupling.a', [1,3])  # you can also use non-model parameter dimensions like this
     ]
 
-    print 'cartesian sampling settings: '
-    print exploration_settings
-    print '------------------------------------------'
-
+    print('cartesian sampling settings: ')
+    print(exploration_settings)
+    print('------------------------------------------')
 
     run_exploration(
         sim,

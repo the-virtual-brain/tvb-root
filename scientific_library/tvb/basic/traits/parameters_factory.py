@@ -32,6 +32,7 @@
 """
 
 import numpy
+import six
 from tvb.basic.traits.core import TYPE_REGISTER
 
 KEYWORD_PARAMS = "_parameters_"
@@ -129,7 +130,7 @@ def collapse_params(args, simple_select_list, parent=''):
 
 def try_parse(val):
     if isinstance(val, dict):
-        return {str(k): try_parse(v) for k, v in val.iteritems()}
+        return {str(k): try_parse(v) for k, v in six.iteritems(val)}
     if isinstance(val, list):
         return val
 

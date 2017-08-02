@@ -137,25 +137,25 @@ def _copy_tvb_sources(library_folder):
             if os.path.isdir(src) and not (sub_folder.startswith('.') or sub_folder.startswith("tests")):
                 if os.path.exists(dest):
                     shutil.rmtree(dest)
-                print "  Copying TVB: " + str(src)
+                print("  Copying TVB: " + str(src))
                 ignore_patterns = shutil.ignore_patterns('*.pyc', '.svn')
                 shutil.copytree(src, dest, ignore=ignore_patterns)
 
     tests_folder = os.path.join(destination_folder, "tests")
     if os.path.exists(tests_folder):
         shutil.rmtree(tests_folder, True)
-        print "  Removed: " + str(tests_folder)
+        print("  Removed: " + str(tests_folder))
 
     for excluded in [os.path.join(destination_folder, "simulator", "doc"),
                      os.path.join(destination_folder, "simulator", "demos")]:
         if os.path.exists(excluded):
             shutil.rmtree(excluded, True)
-            print "  Removed: " + str(excluded)
+            print("  Removed: " + str(excluded))
 
 
 def _introspect_licenses(destination_folder, root_introspection, extra_licenses_check=None):
     """Generate archive with 3rd party licenses"""
-    print "- Introspecting for dependencies..." + str(root_introspection)
+    print("- Introspecting for dependencies..." + str(root_introspection))
 
     try:
         locale.getdefaultlocale()
@@ -166,7 +166,7 @@ def _introspect_licenses(destination_folder, root_introspection, extra_licenses_
     zip_name = generate_artefact(root_introspection, extra_licenses_check=extra_licenses_check)
     ZipFile(zip_name).extractall(destination_folder)
     os.remove(zip_name)
-    print "- Dependencies archive with licenses done."
+    print("- Dependencies archive with licenses done.")
 
 
 def _zipdir(basedir, archivename):
@@ -219,8 +219,8 @@ def _write_svn_current_version(dest_folder):
             version = _proc.communicate()[0]
         with open(os.path.join(dest_folder, 'tvb.version'), 'w') as f:
             f.write(version)
-    except Exception, excep:
-        print "    -- W: Could not get or persist revision number because: " + str(excep)
+    except Exception as excep:
+        print("    -- W: Could not get or persist revision number because: " + str(excep))
 
 
 def _generate_distribution(final_name, library_path, version, extra_licensing_check=None):
@@ -235,23 +235,23 @@ def _generate_distribution(final_name, library_path, version, extra_licensing_ch
 
     bin_src = os.path.join("tvb_bin", "tvb_bin")
     bin_dst = os.path.join(library_abs_path, "tvb_bin")
-    print "- Copying " + bin_src + " to " + bin_dst
+    print("- Copying " + bin_src + " to " + bin_dst)
     shutil.copytree(bin_src, bin_dst)
 
-    print "- Adding svn version"
+    print("- Adding svn version")
     _write_svn_current_version(bin_dst)
 
     demo_data_src = os.path.join(DIST_FOLDER, "_tvb_data")
     demo_data_dst = os.path.join(library_abs_path, "tvb_data")
-    print "- Moving " + demo_data_src + " to " + demo_data_dst
+    print("- Moving " + demo_data_src + " to " + demo_data_dst)
     os.rename(demo_data_src, demo_data_dst)
 
     online_help_src = os.path.join(DIST_FOLDER, "_help")
     online_help_dst = os.path.join(library_abs_path, "tvb", "interfaces", "web", "static", "help")
-    print "- Moving " + online_help_src + " to " + online_help_dst
+    print("- Moving " + online_help_src + " to " + online_help_dst)
     os.rename(online_help_src, online_help_dst)
 
-    print "- Cleaning up non-required files..."
+    print("- Cleaning up non-required files...")
     _clean_up(DIST_FOLDER, False)
     if os.path.exists(DIST_FOLDER_FINAL):
         shutil.rmtree(DIST_FOLDER_FINAL)
@@ -261,7 +261,7 @@ def _generate_distribution(final_name, library_path, version, extra_licensing_ch
     for file_zip in glob('*.zip'):
         os.unlink(file_zip)
 
-    print "- Creating required folder structure..."
+    print("- Creating required folder structure...")
     if os.path.exists(final_name):
         shutil.rmtree(final_name)
     os.mkdir(final_name)
@@ -269,30 +269,30 @@ def _generate_distribution(final_name, library_path, version, extra_licensing_ch
 
     if extra_licensing_check:
         extra_licensing_check = extra_licensing_check.split(';')
-        for idx in xrange(len(extra_licensing_check)):
+        for idx in range(len(extra_licensing_check)):
             extra_licensing_check[idx] = os.path.join(final_name, DIST_FOLDER_FINAL, extra_licensing_check[idx])
     _introspect_licenses(os.path.join(final_name, DIST_FOLDER_FINAL, 'THIRD_PARTY_LICENSES'),
                          os.path.join(final_name, DIST_FOLDER_FINAL, library_path), extra_licensing_check)
-    print "- Creating the ZIP folder of the distribution..."
+    print("- Creating the ZIP folder of the distribution...")
     zip_name = final_name + "_" + version + ".zip"
     if os.path.exists(zip_name):
         os.remove(zip_name)
     _zipdir(final_name, zip_name)
     if os.path.exists(final_name):
         shutil.rmtree(final_name)
-    print '- Finish creation of distribution ZIP'
+    print('- Finish creation of distribution ZIP')
 
 
 def prepare_py2app_dist():
-    print "Running pre-py2app:"
-    print " - Cleaning old builds"
+    print("Running pre-py2app:")
+    print(" - Cleaning old builds")
 
     if os.path.exists('build'):
         shutil.rmtree('build')
     if os.path.exists(DIST_FOLDER):
         shutil.rmtree(DIST_FOLDER)
 
-    print " - Decompressing " + STEP1_RESULT + " into '" + DIST_FOLDER
+    print(" - Decompressing " + STEP1_RESULT + " into '" + DIST_FOLDER)
     step1_tmp_dist_folder = os.path.join(TVB_ROOT, 'TVB_Distribution')
     if os.path.exists(step1_tmp_dist_folder):
         shutil.rmtree(step1_tmp_dist_folder)
@@ -303,7 +303,7 @@ def prepare_py2app_dist():
     # bin dir is initially empty, step1 does not support empty dirs in the zip
     os.mkdir(os.path.join(DIST_FOLDER, 'bin'))
 
-    print "PY2APP starting ..."
+    print("PY2APP starting ...")
     # Log everything from py2app in a log file
     real_stdout, real_stderr = sys.stdout, sys.stderr
     sys.stdout = open('PY2APP.log', 'w')
@@ -324,10 +324,10 @@ def prepare_py2app_dist():
 
     sys.stdout = real_stdout
     sys.stderr = real_stderr
-    print "PY2APP finished."
+    print("PY2APP finished.")
 
-    print "Running post-py2app build operations:"
-    print "- Start creating startup scripts..."
+    print("Running post-py2app build operations:")
+    print("- Start creating startup scripts...")
 
     _create_command_file(os.path.join(DIST_FOLDER, "bin", 'distribution'),
                          '../tvb.app/Contents/MacOS/tvb $@', '')

@@ -40,11 +40,12 @@ import __builtin__
 import traceback
 from datetime import datetime
 
+
 def timestamp():
     return datetime.now().strftime("%H:%M:%S.%f")
 
-def monkey_patch_file_to_trace(trace_file='file_open_trace'):
 
+def monkey_patch_file_to_trace(trace_file='file_open_trace'):
     _file_open_trace = open(trace_file, 'w', buffering=0)
 
     # openfiles = set()
@@ -56,7 +57,7 @@ def monkey_patch_file_to_trace(trace_file='file_open_trace'):
     class newfile(oldfile):
         def __init__(self, *args):
             self.x = args[0]
-            _file_open_trace.write("$$ %s OPENING %s\n" % ( timestamp(), str(self.x)))
+            _file_open_trace.write("$$ %s OPENING %s\n" % (timestamp(), str(self.x)))
             # traceback module will open python files to get the trace. We must exclude them from tracing otherwise stackoverflow
             if not self.x.endswith('py'):
                 _file_open_trace.write(''.join(traceback.format_stack()))
@@ -64,7 +65,7 @@ def monkey_patch_file_to_trace(trace_file='file_open_trace'):
             # openfiles.add(self)
 
         def close(self):
-            _file_open_trace.write("$$ %s CLOSING %s\n" % ( timestamp(), str(self.x)))
+            _file_open_trace.write("$$ %s CLOSING %s\n" % (timestamp(), str(self.x)))
             if not self.x.endswith('py'):
                 _file_open_trace.write(''.join(traceback.format_stack()))
             oldfile.close(self)
@@ -94,9 +95,9 @@ def parse_trace():
                 idx2 = line.find(' ', idx1 + 1)
                 idx3 = line.find(' ', idx2 + 1)
 
-                time = line[idx1+1:idx2]
-                op = line[idx2+1:idx3]
-                pth = line[idx3+1:-1]
+                time = line[idx1 + 1:idx2]
+                op = line[idx2 + 1:idx3]
+                pth = line[idx3 + 1:-1]
 
                 result.append((pth, op, time, []))
             else:
@@ -121,27 +122,27 @@ def analyse_trace(filter_path_prefix=None):
         else:
             result[pth] -= 1
 
-    print
-    print '  List of files with unbalanced open close calls '
-    print '================================================='
-    print
+    print()
+    print('  List of files with unbalanced open close calls ')
+    print('=================================================')
+    print()
 
     for guilty_pth in result:
         if result[guilty_pth] != 0:
-            print '%s %d' % (guilty_pth, result[guilty_pth])
-    print
-    print ' TRACES '
-    print '========'
-    print
+            print('%s %d' % (guilty_pth, result[guilty_pth]))
+    print()
+    print(' TRACES ')
+    print('========')
+    print()
 
     for guilty_pth in result:
         if result[guilty_pth] != 0:
-            print
-            print '=' * 80
-            print 'file: %s ' % guilty_pth
-            print 'open-close: %d' % result[guilty_pth]
-            print 'printing access log'
-            print
+            print()
+            print('=' * 80)
+            print('file: %s ' % guilty_pth)
+            print('open-close: %d' % result[guilty_pth])
+            print('printing access log')
+            print()
 
             count = 0
             for pth, op, time, stack in trace:
@@ -151,7 +152,7 @@ def analyse_trace(filter_path_prefix=None):
                     else:
                         count -= 1
 
-                    print '%s  %s %d -----------' %(time, op, count)
+                    print('%s  %s %d -----------' % (time, op, count))
                     for st in stack:
                         print st,
 

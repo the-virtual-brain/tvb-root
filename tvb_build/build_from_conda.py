@@ -69,9 +69,9 @@ class Config:
         self.commands_map = commands_map
         self.command_factory = command_factory
 
-        self.artifact_name = "TVB_" +  platform_name + "_" + VersionSettings.BASE_VERSION + ".zip"
-        _artifact_glob = "TVB_" +  platform_name + "_*.zip"
-        self.artifact_glob = join(self.build_folder, _artifact_glob) # this is used to match old artifacts
+        self.artifact_name = "TVB_" + platform_name + "_" + VersionSettings.BASE_VERSION + ".zip"
+        _artifact_glob = "TVB_" + platform_name + "_*.zip"
+        self.artifact_glob = join(self.build_folder, _artifact_glob)  # this is used to match old artifacts
         self.artifact_pth = join(self.build_folder, self.artifact_name)
 
 
@@ -104,7 +104,7 @@ class Config:
                    'set PATH=%cd%;%cd%\\Scripts;%path%; \n' + \
                    'set PYTHONPATH=%cd%\\Lib;%cd%\\Lib\\site-packages \n' + \
                    'set PYTHONHOME=\n\n' + \
-                    'REM set TVB_USER_HOME=%cd% \n'
+                   'REM set TVB_USER_HOME=%cd% \n'
 
         commands_map = {
             'bin\\distribution.bat': set_path + 'python.exe -m tvb_bin.app %1 %2 %3 %4 %5 %6\ncd ..\\bin',
@@ -126,7 +126,7 @@ class Config:
                    'export PATH=`pwd`/bin:$PATH\n' + \
                    'export PYTHONPATH=`pwd`/lib/python2.7:`pwd`/lib/python2.7/site-packages\n' + \
                    'unset PYTHONHOME\n\n' + \
-                    '# export TVB_USER_HOME=`pwd` \n'
+                   '# export TVB_USER_HOME=`pwd` \n'
 
         for env_name in ["LD_LIBRARY_PATH", "LD_RUN_PATH"]:
             set_path += "if [ ${" + env_name + "+1} ]; then\n" + \
@@ -149,15 +149,14 @@ class Config:
                       commands_map, _create_unix_command)
 
 
-
 def _log(indent, msg):
     """
     Produce a feedback about the current build procedure.
     """
     if indent == 1:
-        print " - ", msg
+        print(" - ", msg)
     else:
-        print "  " * indent, msg
+        print("  " * indent, msg)
 
 
 def _compress(folder_to_zip, result_name):
@@ -213,7 +212,7 @@ def _create_unix_command(target_file, command):
         f.write('echo "Executing ' + os.path.split(target_file)[1] + '"\n')
         f.write(command + "\n")
         f.write('echo "Done."\n')
-    os.chmod(target_file, 0755)
+    os.chmod(target_file, 0o755)
 
 
 def _create_windows_script(target_file, command):
@@ -227,7 +226,7 @@ def _create_windows_script(target_file, command):
         f.write('echo "Executing ' + os.path.split(target_file)[1] + '" \n')
         f.write(command + ' \n')
         f.write('echo "Done."\n')
-    os.chmod(target_file, 0755)
+    os.chmod(target_file, 0o755)
 
 
 def _add_sitecustomize(destination_folder):
@@ -283,7 +282,7 @@ def write_svn_current_version(dest_folder):
             version = _proc.communicate()[0]
         with open(join(dest_folder, 'tvb.version'), 'w') as f:
             f.write(version)
-    except Exception, excep:
+    except Exception as excep:
         _log(2, "-- W: Could not get or persist revision number because: " + str(excep))
 
 
@@ -348,7 +347,6 @@ def prepare_anaconda_dist(config):
     _compress(config.target_before_zip, config.artifact_pth)
     shutil.rmtree(config.target_before_zip, True)
     _log(1, "Done TVB package " + config.artifact_pth)
-
 
 
 if __name__ == "__main__":

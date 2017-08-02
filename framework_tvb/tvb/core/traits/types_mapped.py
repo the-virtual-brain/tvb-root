@@ -36,6 +36,7 @@
 """
 
 import os
+import six
 import json
 import numpy
 from scipy import sparse
@@ -152,7 +153,7 @@ class MappedType(model.DataType, mapped.MappedTypeLight):
         Method automatically called just before saving entity in DB after Type.configure was called.
         In case data is not valid an Exception should be thrown.
         """
-        for key, attr in self.trait.iteritems():
+        for key, attr in six.iteritems(self.trait):
             if attr.trait.required:
                 # In case of fields with data stored on disk check shape
                 if isinstance(attr, mapped.Array):
@@ -250,7 +251,7 @@ class MappedType(model.DataType, mapped.MappedTypeLight):
             try:
                 store_manager = self._get_file_storage_mng()
                 return store_manager.get_data_shape(data_name, where)
-            except IOError, excep:
+            except IOError as excep:
                 self.logger.warning(str(excep))
                 self.logger.warning("Could not read shape from file. Most probably because data was not written....")
                 return ()
@@ -274,10 +275,10 @@ class MappedType(model.DataType, mapped.MappedTypeLight):
                                                                    mask_array_name, key_suffix)
 
             ### Before return, prepare names for UI display.
-            for key, value in summary.iteritems():
+            for key, value in six.iteritems(summary):
                 result[array_name.capitalize().replace("_", " ") + " - " + key] = value
 
-        except Exception, exc:
+        except Exception as exc:
             self.logger.warning(exc)
 
         return result
@@ -306,7 +307,7 @@ class MappedType(model.DataType, mapped.MappedTypeLight):
                 included_info = self.trait[array_name].trait.stored_metadata or self.trait[array_name].stored_metadata
             else:
                 included_info = []
-        for key, value in summary_hdf5.iteritems():
+        for key, value in six.iteritems(summary_hdf5):
             if key in included_info:
                 result[key] = value
         return result
@@ -345,7 +346,7 @@ class MappedType(model.DataType, mapped.MappedTypeLight):
                     meta_dictionary[capitalized_name] = getattr(self, str(attr))
 
         # Now process object traits
-        for key, attr in self.trait.iteritems():
+        for key, attr in six.iteritems(self.trait):
             kwd = attr.trait.inits.kwd
             if kwd.get('db', True):
                 capitalized_name = key[0].upper() + key[1:]
@@ -379,7 +380,7 @@ class MappedType(model.DataType, mapped.MappedTypeLight):
                     setattr(self, attr, self._get_meta_value(meta_dictionary, capitalized_name))
 
         # Now process object traits
-        for key, attr in self.trait.iteritems():
+        for key, attr in six.iteritems(self.trait):
             kwd = attr.trait.inits.kwd
             if kwd.get('db', True):
                 capitalized_name = key[0].upper() + key[1:]
@@ -438,7 +439,7 @@ class MappedType(model.DataType, mapped.MappedTypeLight):
         """
         Close file used to store data.
         """
-        for data_name, new_metadata in self._current_metadata.iteritems():
+        for data_name, new_metadata in six.iteritems(self._current_metadata):
             ## Remove transient metadata, used just for performance issues
             if self._METADATA_ARRAY_SIZE in new_metadata:
                 del new_metadata[self._METADATA_ARRAY_SIZE]
@@ -491,7 +492,7 @@ class MappedType(model.DataType, mapped.MappedTypeLight):
             data = numpy.array(data)
 
         meta_dictionary = {}
-        for key, value in self.METADATA_FORMULAS.iteritems():
+        for key, value in six.iteritems(self.METADATA_FORMULAS):
             if key != self.METADATA_ARRAY_SHAPE and key in traited_attr:
                 try:
                     meta_dictionary[key] = eval(value.replace("$ARRAY$", "data").replace("$MASK$", "data"))
@@ -612,7 +613,7 @@ class Array(mapped.Array):
         elif self.trait.file_storage == FILE_STORAGE_DEFAULT:
             try:
                 return inst.get_data(self.trait.name, ignore_errors=True)
-            except StorageException, exc:
+            except StorageException as exc:
                 self.logger.debug("Missing dataSet " + self.trait.name)
                 self.logger.debug(exc)
                 return numpy.ndarray(0)
@@ -628,7 +629,7 @@ class SparseMatrix(mapped.SparseMatrix, Array):
         """
         try:
             return self._read_sparse_matrix(inst, self.trait.name)
-        except StorageException, exc:
+        except StorageException as exc:
             self.logger.debug("Missing dataSet " + self.trait.name)
             self.logger.debug(exc)
             return None

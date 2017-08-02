@@ -56,10 +56,10 @@ class ABCDisplayer(ABCSynchronous):
     PARAM_FIGURE_SIZE = 'figure_size'
     VISUALIZERS_ROOT = ''
     VISUALIZERS_URL_PREFIX = ''
-     
-     
+
+
     def get_output(self):
-        return []   
+        return []
 
 
     def generate_preview(self, **kwargs):
@@ -78,8 +78,8 @@ class ABCDisplayer(ABCSynchronous):
         self.user_id = operation.fk_launched_by
 
         return self.launch(**kwargs), 0
-    
-    
+
+
     def get_required_disk_size(self, **kwargs):
         """
         Visualizers should no occupy any additional disk space.
@@ -101,7 +101,7 @@ class ABCDisplayer(ABCSynchronous):
         if os.path.isabs(template):
             parameters[self.KEY_CONTENT_MODULE] = ""
         else:
-            content_module = self.VISUALIZERS_ROOT + "." 
+            content_module = self.VISUALIZERS_ROOT + "."
             content_module = content_module + template.replace("/", ".")
             parameters[self.KEY_CONTENT_MODULE] = content_module
 
@@ -176,15 +176,14 @@ class ABCDisplayer(ABCSynchronous):
         return "[" + ",".join(format_str % s for s in xs) + "]"
 
 
-
 class ABCMPLH5Displayer(ABCDisplayer):
     """
     Abstract class, for Displayer that will want to use MatplotLib graphs.
-    """ 
+    """
     _ui_name = "MatplotLib Display"
     SHOW_FULL_TOOLBAR = 'show_toolbar'
-    
-    
+
+
     def __init__(self):
         ABCDisplayer.__init__(self)
         self.current_page = 0
@@ -196,7 +195,7 @@ class ABCMPLH5Displayer(ABCDisplayer):
     def __del__(self):
         pass
 
-    
+
     @abstractmethod
     def plot(self, figure, **kwargs):
         """
@@ -204,12 +203,12 @@ class ABCMPLH5Displayer(ABCDisplayer):
         figure.plot, figure.gca().set_ylabel()..... .
         """
 
-    
+
     def generate_preview(self, **kwargs):
         self.is_preview = True
         return self.launch(**kwargs)
-    
-    
+
+
     def launch(self, **kwargs):
         """
         Actual drawing of data inside a new canvas.
@@ -245,4 +244,3 @@ class ABCMPLH5Displayer(ABCDisplayer):
         synchronized method to avoid creating the same figure number.
         """
         return pylab.figure(figsize=figsize)
-

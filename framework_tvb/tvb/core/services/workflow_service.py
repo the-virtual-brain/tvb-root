@@ -158,7 +158,7 @@ class WorkflowService:
                 if all_finished:
                     self.mark_burst_finished(burst_entity)
             return None
-        except Exception, excep:
+        except Exception as excep:
             self.logger.error(excep)
             self.logger.exception(excep)
             raise WorkflowInterStepsException(excep)

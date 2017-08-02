@@ -192,7 +192,7 @@ class FilterChain(object):
                 module_name, class_name = str(data_name).rsplit('.', 1)
                 module = __import__(module_name, globals(), locals(), [class_name])
                 data_class = getattr(module, class_name)
-            except Exception, excep:
+            except Exception as excep:
                 LOGGER.error("Expected DataType full class quantifier! Got:" + str(data_name))
                 LOGGER.exception(excep)
                 data_class = None
@@ -230,7 +230,7 @@ class FilterChain(object):
         self.algorithm_category_replacement = 'algocategory_to_check'
         self.operation_replacement = 'operation_to_check'
 
-        for i in xrange(len(self.fields)):
+        for i in range(len(self.fields)):
             #### Any filter validations checks start here #####
             if self.operations[i] in ('in', 'not in'):
                 try:

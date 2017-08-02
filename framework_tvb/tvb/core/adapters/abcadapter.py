@@ -93,8 +93,8 @@ def nan_not_allowed():
                 numpy.seterr(**old_fp_error_handling)
 
         return new_function
-    return wrap
 
+    return wrap
 
 
 def nan_allowed():
@@ -114,6 +114,7 @@ def nan_allowed():
                 numpy.seterr(**old_fp_error_handling)
 
         return new_function
+
     return wrap
 
 
@@ -456,7 +457,7 @@ class ABCAdapter(object):
             adapter_instance = adapter_class()
             adapter_instance.stored_adapter = stored_adapter
             return adapter_instance
-        except Exception, excep:
+        except Exception as excep:
             LOGGER.exception(excep)
             raise IntrospectionException(str(excep))
 
@@ -470,7 +471,7 @@ class ABCAdapter(object):
             ad_module = importlib.import_module(stored_adapter.module)
             # This does no work for all adapters, so let it for manually choosing by developer
             if TvbProfile.env.IS_WORK_IN_PROGRESS:
-                reload(ad_module)
+                importlib.reload(ad_module)
                 LOGGER.info("Reloaded %r", ad_module)
 
             adapter_class = getattr(ad_module, stored_adapter.classname)
@@ -510,7 +511,8 @@ class ABCAdapter(object):
         """
         Convert HTTP POST parameters into Python parameters.
         """
-        return self.tree_manager.convert_ui_inputs(self.flaten_input_interface(), kwargs, self.meta_data, validation_required)
+        return self.tree_manager.convert_ui_inputs(self.flaten_input_interface(), kwargs, self.meta_data,
+                                                   validation_required)
 
 
     def noise_configurable_parameters(self):
@@ -525,8 +527,7 @@ class ABCAdapter(object):
 
 class ABCAsynchronous(ABCAdapter):
     """
-      Abstract class, for marking adapters that are prone to be executed 
-      on Cluster.
+    Abstract class, for marking adapters that are prone to be executed  on Cluster.
     """
     __metaclass__ = ABCMeta
 
@@ -541,9 +542,8 @@ class ABCAsynchronous(ABCAdapter):
 
 class ABCSynchronous(ABCAdapter):
     """
-      Abstract class, for marking adapters that are prone to be NOT executed 
-      on Cluster.
+    Abstract class, for marking adapters that are prone to be NOT executed on Cluster.
     """
     __metaclass__ = ABCMeta
-    
+
 

@@ -58,20 +58,20 @@ class DiagnoseDiskUsage(object):
             self.expected_files.add(self.file_helper.get_project_meta_file_path(self.project.name))
             root_path = self.file_helper.get_project_folder(self.project)
 
-            print
-            print 'Reporting disk for project {} in {}'.format(self.project.name, root_path)
-            print
-            print self.HEADER_DT
+            print()
+            print('Reporting disk for project {} in {}'.format(self.project.name, root_path))
+            print()
+            print(self.HEADER_DT)
 
             for op in self.project.OPERATIONS:
                 self.analyse_operation(op)
 
-            print self.HEADER_DT
+            print(self.HEADER_DT)
             self.print_usage_line('Project', 'total', self.prj_disk_size, self.prj_db_size)
 
-            print
+            print()
             self.list_unexpected_project_files(root_path)
-            print
+            print()
         finally:
             dao.session.close_session()
 
@@ -106,13 +106,14 @@ class DiagnoseDiskUsage(object):
         else:
             delta = str(delta)
 
-        print DiagnoseDiskUsage.FORMAT_DT.format(col1, col2, '{:,}'.format(actual), '{:,}'.format(expected), delta, ratio)
+        print(DiagnoseDiskUsage.FORMAT_DT.format(col1, col2, '{:,}'.format(actual),
+                                                 '{:,}'.format(expected), delta, ratio))
 
 
     def analyse_operation(self, op):
         op_disk_size, op_db_size = 0, 0
 
-        print 'Operation {} : {}'.format(op.id, op.algorithm.name)
+        print('Operation {} : {}'.format(op.id, op.algorithm.name))
 
         for dt in op.DATA_TYPES:
             if dt.type == 'DataTypeGroup':
@@ -128,7 +129,7 @@ class DiagnoseDiskUsage(object):
             op_disk_size += dt_actual_disk_size
             op_db_size += db_disk_size
 
-            self.print_usage_line(dt.gid[:12], dt.type, dt_actual_disk_size , db_disk_size)
+            self.print_usage_line(dt.gid[:12], dt.type, dt_actual_disk_size, db_disk_size)
             self.expected_files.add(dt_pth)
 
         op_xml = self.file_helper.get_operation_meta_file_path(self.project.name, op.id)
@@ -137,7 +138,7 @@ class DiagnoseDiskUsage(object):
         self.prj_disk_size += op_disk_size
         self.prj_db_size += op_db_size
         self.print_usage_line('', 'total :', op_disk_size, op_db_size)
-        print
+        print()
 
 
     def list_unexpected_project_files(self, root_path):
@@ -148,14 +149,15 @@ class DiagnoseDiskUsage(object):
                 if pth not in self.expected_files:
                     unexpected.append(pth)
 
-        print 'Unexpected project files :'
+        print('Unexpected project files :')
         for f in unexpected:
-            print f
+            print(f)
+
         if not unexpected:
-            print 'yey! none found'
+            print('yey! none found')
 
 
-if __name__ =='__main__':
+if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='Analyse TVB disk usage vs db reported usage.')
     parser.add_argument('project_id', type=str, help='project id')
     args = parser.parse_args()

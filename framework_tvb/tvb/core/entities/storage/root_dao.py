@@ -120,7 +120,7 @@ class RootDAO(object):
         except NoResultFound:
             self.logger.info("Entity from class %s with id %s has been already removed." % (entity_class, entity_id))
             return True
-        except SQLAlchemyError, excep:
+        except SQLAlchemyError as excep:
             self.logger.exception(excep)
             return False
 
@@ -147,5 +147,3 @@ class RootDAO(object):
         result = self.session.query(model.DataType).filter_by(id=data_id).one()
         result.parent_operation.project
         return result
-    
-  

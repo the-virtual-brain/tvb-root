@@ -55,7 +55,6 @@ LOG = get_logger(__name__)
 LOCK_OPEN_FILE = threading.Lock()
 
 
-
 class HDF5StorageManager(object):
     """
     This class is responsible for saving / loading data in HDF5 file / format.
@@ -414,7 +413,7 @@ class HDF5StorageManager(object):
             msg = "Trying to get value for missing metadata %s" % meta_key
             LOG.error(msg)
             raise FileStructureException(msg)
-        except Exception, excep:
+        except Exception as excep:
             msg = "Failed to read metadata from H5 file! %s" % self.__storage_full_name
             LOG.exception(excep)
             LOG.error(msg)
@@ -544,7 +543,7 @@ class HDF5StorageManager(object):
                     h5py_buffer.flush_buffered_data()
                 self.data_buffers = {}
                 hdf5_file.close()
-            except Exception, excep:
+            except Exception as excep:
                 ### Do nothing is this situation.
                 ### The file is correctly closed, but the list of open files on HDF5 is not updated in a synch manner.
                 ### del _open_files[filename] might throw KeyError
@@ -581,13 +580,12 @@ class HDF5StorageManager(object):
                 if not file_exists:
                     os.chmod(self.__storage_full_name, TvbProfile.current.ACCESS_MODE_TVB_FILES)
                     self.__hfd5_file['/'].attrs[self.TVB_ATTRIBUTE_PREFIX +
-                            TvbProfile.current.version.DATA_VERSION_ATTRIBUTE] = TvbProfile.current.version.DATA_VERSION
-        except (IOError, OSError), err:
+                                                TvbProfile.current.version.DATA_VERSION_ATTRIBUTE] = TvbProfile.current.version.DATA_VERSION
+        except (IOError, OSError) as err:
             LOG.exception("Could not open storage file.")
             raise FileStructureException("Could not open storage file. %s" % err)
 
         return self.__hfd5_file
-
 
 
     def _check_data(self, data_list):
@@ -606,7 +604,6 @@ class HDF5StorageManager(object):
         if data_to_store.shape == ():
             data_to_store = hdf5.Empty("f")
         return data_to_store
-
 
 
     class H5pyStorageBuffer():
@@ -676,4 +673,3 @@ class HDF5StorageManager(object):
                 self.h5py_dataset.resize(tuple(new_shape))
                 self.h5py_dataset[tuple(appendTo_address)] = self.buffered_data
                 self.buffered_data = None
-

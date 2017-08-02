@@ -39,7 +39,7 @@ from tvb.core.entities.model import DataTypeGroup
 from tvb.core.services.project_service import ProjectService
 from tvb.core.adapters.abcadapter import ABCAdapter
 
-#List of DataTypes to be excluded from export due to not having a valid export mechanism implemented yet.
+# List of DataTypes to be excluded from export due to not having a valid export mechanism implemented yet.
 EXCLUDED_DATATYPES = ['Cortex', 'CortexActivity', 'CapEEGActivity', 'Cap', 'ValueWrapper', 'SpatioTermporalMask']
 
 
@@ -49,27 +49,27 @@ class ABCExporter:
     This should provide common functionality for all TVB exporters.
     """
     __metaclass__ = ABCMeta
-    
+
     @abstractmethod
     def get_supported_types(self):
         """
         This method specify what types are accepted by this exporter.
         Method should be implemented by each subclass and return
         an array with the supported types.
-            
+
         :returns: an array with the supported data types.
         """
         pass
-    
+
     def get_label(self):
         """
         This method returns a string to be used on the UI controls to initiate export
-        
+
         :returns: string to be used on UI for starting this export.
                   By default class name is returned
         """
         return self.__class__.__name__
-    
+
     def accepts(self, data):
         """
         This method specify if the current exporter can export provided data.
@@ -77,22 +77,22 @@ class ABCExporter:
         :returns: true if this data can be exported by current exporter, false otherwise.
         """
         effective_data_type = self._get_effective_data_type(data)
-        
+
         # If no data present for export, makes no sense to show exporters
         if effective_data_type is None:
             return False
-        
+
         # Now we should check if any data type is accepted by current exporter
-        # Check if the data type is one of the global exclusions 
+        # Check if the data type is one of the global exclusions
         if hasattr(effective_data_type, "type") and effective_data_type.type in EXCLUDED_DATATYPES:
             return False
-            
+
         for supported_type in self.get_supported_types():
             if isinstance(effective_data_type, supported_type):
                 return True
 
         return False
-    
+
     def _get_effective_data_type(self, data):
         """
         This method returns the data type for the provided data.
@@ -103,15 +103,15 @@ class ABCExporter:
         # first check if current data is a DataTypeGroup
         if self.is_data_a_group(data):
             data_types = ProjectService.get_datatypes_from_datatype_group(data.id)
-            
+
             if data_types is not None and len(data_types) > 0:
-                # Since all objects in a group are the same type it's enough 
+                # Since all objects in a group are the same type it's enough
                 return ABCAdapter.load_entity_by_gid(data_types[0].gid)
             else:
-                return None    
+                return None
         else:
             return data
-    
+
     def _get_all_data_types_arr(self, data):
         """
         This method builds an array with all data types to be processed later.
@@ -121,24 +121,24 @@ class ABCExporter:
         # first check if current data is a DataTypeGroup
         if self.is_data_a_group(data):
             data_types = ProjectService.get_datatypes_from_datatype_group(data.id)
-            
+
             result = []
             if data_types is not None and len(data_types) > 0:
                 for data_type in data_types:
                     entity = ABCAdapter.load_entity_by_gid(data_type.gid)
                     result.append(entity)
-                     
-            return result    
-            
+
+            return result
+
         else:
             return [data]
-    
+
     def is_data_a_group(self, data):
         """
         Checks if the provided data, ready for export is a DataTypeGroup or not
         """
-        return isinstance(data, DataTypeGroup)        
-    
+        return isinstance(data, DataTypeGroup)
+
     @abstractmethod
     def export(self, data, export_folder, project):
         """
@@ -150,7 +150,7 @@ class ABCExporter:
                               This is necessary in case new files are generated.
 
         :param project: project that contains data to be exported
-            
+
         :returns: a tuple with the following elements:
 
                         1. name of the file to be shown to user
@@ -158,7 +158,7 @@ class ABCExporter:
                         3. boolean which specify if file can be deleted after download
         """
         pass
-    
+
     def get_export_file_name(self, data):
         """
         This method computes the name used to save exported data on user computer
@@ -167,9 +167,9 @@ class ABCExporter:
         data_type_name = data.__class__.__name__
         now = datetime.now()
         date_str = now.strftime("%Y-%m-%d_%H-%M")
-        
+
         return "%s_%s.%s" % (date_str, data_type_name, file_ext)
-        
+
     @abstractmethod
     def get_export_file_extension(self, data):
         """

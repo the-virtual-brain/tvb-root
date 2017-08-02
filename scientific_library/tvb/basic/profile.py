@@ -55,7 +55,6 @@ def cleanup_metapath():
             sys.meta_path.remove(meta)
 
 
-
 class TvbProfile():
     """
     ENUM-like class with current TVB profile and accepted values.
@@ -130,7 +129,6 @@ class TvbProfile():
             msg = "Invalid profile name %r, expected one of %r"
             msg %= (selected_profile, cls.ALL)
             raise Exception(msg)
-
 
 
     @classmethod

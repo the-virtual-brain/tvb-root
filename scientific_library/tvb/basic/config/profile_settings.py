@@ -35,6 +35,7 @@ Prepare TVB settings to be grouped under various profile classes.
 """
 import os
 import sys
+import importlib
 from tvb.basic.config import stored
 from tvb.basic.config.environment import Environment
 from tvb.basic.config.settings import ClusterSettings, DBSettings, VersionSettings, WebSettings
@@ -53,7 +54,7 @@ class BaseSettingsProfile(object):
     LOGGER_CONFIG_FILE_NAME = "logger_config.conf"
 
     # Access rights for TVB generated files/folders.
-    ACCESS_MODE_TVB_FILES = 0744
+    ACCESS_MODE_TVB_FILES = 0o744
 
     ## Number used for estimation of TVB used storage space
     MAGIC_NUMBER = 9
@@ -189,7 +190,7 @@ class BaseSettingsProfile(object):
                 if (key.startswith("tvb.") and sys.modules[key] and not 'lab' in key and
                         not key.startswith("tvb.basic.profile") and not 'profile_settings' in key):
                     try:
-                        reload(sys.modules[key])
+                        importlib.reload(sys.modules[key])
                     except LibraryImportError:
                         pass
 

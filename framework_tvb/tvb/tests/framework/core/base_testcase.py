@@ -49,7 +49,7 @@ def init_test_env():
     # Set a default test profile, for when running tests from dev-env.
     if TvbProfile.CURRENT_PROFILE_NAME is None:
         TvbProfile.set_profile(TvbProfile.TEST_SQLITE_PROFILE)
-        print "Not expected to happen except from PyCharm: setting profile", TvbProfile.CURRENT_PROFILE_NAME
+        print("Not expected to happen except from PyCharm: setting profile", TvbProfile.CURRENT_PROFILE_NAME)
         db_file = TvbProfile.current.db.DB_URL.replace('sqlite:///', '')
         if os.path.exists(db_file):
             os.remove(db_file)
@@ -65,7 +65,6 @@ def init_test_env():
 if "TEST_INITIALIZATION_DONE" not in globals():
     init_test_env()
     TEST_INITIALIZATION_DONE = True
-
 
 from tvb.adapters.exporters.export_manager import ExportManager
 from tvb.basic.logger.builder import get_logger
@@ -109,7 +108,7 @@ class BaseTestCase(unittest.TestCase):
                         LOGGER.debug("Executing Delete From Table " + table.name)
                         con.execute(table.delete())
                         session.commit()
-                    except Exception, e:
+                    except Exception as e:
                         # We cache exception here, in case some table does not exists and
                         # to allow the others to be deleted
                         LOGGER.warning(e)
@@ -117,7 +116,7 @@ class BaseTestCase(unittest.TestCase):
                     finally:
                         session.close_session()
             LOGGER.info("Database was cleanup!")
-        except Exception, excep:
+        except Exception as excep:
             LOGGER.warning(excep)
             raise
 
@@ -186,7 +185,7 @@ class BaseTestCase(unittest.TestCase):
             session = SessionMaker()
             session.open_session()
             result = session.query(entity_type).count()
-        except Exception, excep:
+        except Exception as excep:
             LOGGER.warning(excep)
         finally:
             if session:
@@ -204,7 +203,7 @@ class BaseTestCase(unittest.TestCase):
             session = SessionMaker()
             session.open_session()
             result = session.query(entity_type).all()
-        except Exception, excep:
+        except Exception as excep:
             LOGGER.warning(excep)
         finally:
             if session:
@@ -228,8 +227,6 @@ class BaseTestCase(unittest.TestCase):
             self.assertTrue(key in found_dict, "%s not found in result" % key)
             if value is not None:
                 self.assertEqual(value, found_dict[key])
-
-
 
 
 def transactional_test(func, callback=None):
@@ -270,7 +267,6 @@ def transactional_test(func, callback=None):
         return func
 
 
-
 class TransactionalTestMeta(type):
     """
     New MetaClass.
@@ -306,4 +302,4 @@ class TransactionalTestCase(BaseTestCase):
     dao related operations since that might cause errors/leave some dangling sessions.
     """
     __metaclass__ = TransactionalTestMeta
-        
+

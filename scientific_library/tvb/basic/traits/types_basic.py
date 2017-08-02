@@ -56,7 +56,6 @@ from tvb.basic.logger.builder import get_logger
 LOG = get_logger(__name__)
 
 
-
 class String(core.Type):
     """
     Traits type that wraps a Python string.
@@ -71,7 +70,6 @@ class Bool(core.Type):
     The only instances of Python bool are True and False.
     """
     wraps = bool
-
 
 
 class Integer(core.Type):
@@ -89,13 +87,11 @@ class Float(core.Type):
     wraps = (float, numpy.float32, int)
 
 
-
 class Complex(core.Type):
     """
     Traits type that wraps Numpy's complex64.
     """
     wraps = numpy.complex64
-
 
 
 class MapAsJson():
@@ -163,14 +159,12 @@ class MapAsJson():
                 return json.JSONEncoder.default(self, obj)
 
 
-
 class Sequence(MapAsJson, String):
     """
     Traits type base class that wraps python sequence 
     python types (containers)
     """
     wraps = (dict, list, tuple, set, slice, numpy.ndarray)
-
 
 
 class Enumerate(Sequence):
@@ -195,10 +189,9 @@ class Enumerate(Sequence):
         if self.trait.select_multiple:
             super(Enumerate, self).__set__(inst, value)
         else:
-            #Bypass default since that only accepts arrays for multiple selects
+            # Bypass default since that only accepts arrays for multiple selects
             setattr(inst, '_' + self.trait.name, self.to_json(value))
             self.trait.value = value
-
 
 
 class Dict(Sequence):
@@ -208,13 +201,11 @@ class Dict(Sequence):
     wraps = dict
 
 
-
 class Set(Sequence):
     """
     Traits type that wraps a python set.
     """
     wraps = set
-
 
 
 class Tuple(Sequence):
@@ -233,7 +224,6 @@ class Tuple(Sequence):
         return list_value
 
 
-
 class List(Sequence):
     """
     Traits type that wraps a Python list.
@@ -241,13 +231,11 @@ class List(Sequence):
     wraps = (list, numpy.ndarray)
 
 
-
 class Slice(Sequence):
     """
     Useful of for specifying views or slices of containers.
     """
     wraps = slice
-
 
 
 class Range(core.Type):
@@ -318,7 +306,7 @@ class Range(core.Type):
 
     """
 
-    #TODO: Improve Range with a fix mutiplier and logarithmic range.
+    # TODO: Improve Range with a fix multiplier and logarithmic range.
     lo = Float(default=0, doc='start of range')
     hi = Float(default=None, doc='end of range')
 
@@ -326,10 +314,10 @@ class Range(core.Type):
     base = Float(default=2.0, doc='fixed multiplier between elements')
 
     # These modes/flags only work for additive step
-    MODE_EXCLUDE_BOTH = 0   # flag to exclude both lower and upper bounds
+    MODE_EXCLUDE_BOTH = 0  # flag to exclude both lower and upper bounds
     MODE_INCLUDE_START = 1  # flag to include lo, exclude hi
-    MODE_INCLUDE_END = 2    # flag to exclude lo, include hi
-    MODE_INCLUDE_BOTH = 3   # flag to include both lower and upper bounds
+    MODE_INCLUDE_END = 2  # flag to exclude lo, include hi
+    MODE_INCLUDE_BOTH = 3  # flag to include both lower and upper bounds
     mode = Integer(default=1, doc='default behaviour, equivalent to include lo, exclude hi')
 
 
@@ -342,7 +330,7 @@ class Range(core.Type):
                 current = start
                 if not self.mode & self.MODE_INCLUDE_START:
                     current += step
-         
+
                 while True:
                     if self.out_of_range(current, stop, self.mode, step):
                         raise StopIteration
@@ -371,11 +359,11 @@ class Range(core.Type):
         elif step < 0:
             return current <= stop
         return current >= stop
- 
- 
+
+
     def args_to_decimal(self, start, stop, step):
         if start > stop and stop is not None:
-           step = -step
+            step = -step
         if stop is None:
             stop = Decimal(str(start))
             start = Decimal(str(0.0))
@@ -390,7 +378,6 @@ class ValidationRange(core.Type):
     """
     ValidationRange represents a Range used only for validating a number.
     """
-
 
 
 class JSONType(String):
@@ -417,14 +404,13 @@ class JSONType(String):
         super(JSONType, self).__set__(inst, value)
 
 
-
 class DType(String):
     """
     Traits type that wraps a Numpy dType specification.
     """
 
     wraps = (numpy.dtype, str)
-    defaults = ((numpy.float64, ), {})
+    defaults = ((numpy.float64,), {})
 
 
     def __get__(self, inst, cls):
@@ -436,5 +422,3 @@ class DType(String):
 
     def __set__(self, inst, value):
         super(DType, self).__set__(inst, str(value))
-
-   

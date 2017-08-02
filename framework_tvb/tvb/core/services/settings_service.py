@@ -135,7 +135,7 @@ class SettingsService():
             engine = create_engine(url)
             connection = engine.connect()
             connection.close()
-        except Exception, excep:
+        except Exception as excep:
             self.logger.exception(excep)
             raise InvalidSettingsException('Could not connect to DB! ' 'Invalid URL:' + str(url))
 
@@ -226,6 +226,6 @@ class SettingsService():
         # Write in file new data
         if anything_changed:
             TvbProfile.current.manager.write_config_data(file_data)
-            os.chmod(TvbProfile.current.TVB_CONFIG_FILE, 0644)
+            os.chmod(TvbProfile.current.TVB_CONFIG_FILE, 0o644)
         return anything_changed, first_run or db_changed
 

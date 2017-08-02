@@ -103,7 +103,7 @@ class RegionMapping(arrays.MappedArray):
         """
         triangles_no = self.surface.number_of_triangles
         result = []
-        for i in xrange(triangles_no):
+        for i in range(triangles_no):
             result.append(self.array_data[self.surface.triangles[i][0]])
         return numpy.array(result)
 
@@ -174,9 +174,9 @@ class RegionVolumeMapping(VolumetricDataMixin, arrays.MappedArray):
                 raise exceptions.ValidationException('Invalid RVM data. Expected 3D.')
 
             not_matched = set()
-            for i in xrange(data.shape[0]):
-                for j in xrange(data.shape[1]):
-                    for k in xrange(data.shape[2]):
+            for i in range(data.shape[0]):
+                for j in range(data.shape[1]):
+                    for k in range(data.shape[2]):
                         val = data[i][j][k]
                         if not mapping_data.has_key(val):
                             not_matched.add(val)

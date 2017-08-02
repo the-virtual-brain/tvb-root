@@ -33,6 +33,7 @@ Python Triggers on DB operations.
 .. moduleauthor:: Lia Domide <lia.domide@codemart.ro>
 """
 
+import six
 from sqlalchemy import event
 from sqlalchemy.orm import mapper
 from tvb.basic.logger.builder import get_logger
@@ -60,10 +61,10 @@ def initialize_on_load(target, _):
     all_class_traits = getattr(target, 'trait', {})
     target.trait = all_class_traits.copy()
     LOG.debug("Custom Load event called for class:" + str(target.__class__.__name__))
-    
-    for key, attr in all_class_traits.iteritems():
+
+    for key, attr in six.iteritems(all_class_traits):
         kwd = attr.trait.inits.kwd
-        if (kwd.get('db', True) and (MappedType in attr.__class__.mro()) 
+        if (kwd.get('db', True) and (MappedType in attr.__class__.mro())
                 and hasattr(target, '__' + key) and getattr(target, '__' + key) is not None):
             ### This attribute has a relationship associated
             loaded_entity = getattr(target, '__' + key)
@@ -71,11 +72,10 @@ def initialize_on_load(target, _):
             loaded_entity.trait.name = key
             loaded_entity.trait.bound = True
             target.trait[key] = loaded_entity
-            
+
     target.initialize()
-    
-    
-    
+
+
 def fill_before_insert(_, _ignored, target):
     """
     Trigger before storing MappedEntities in DB.
@@ -91,7 +91,7 @@ def fill_before_insert(_, _ignored, target):
 
     # Fix object references
     all_class_traits = getattr(target, 'trait', {})
-    for key, attr in all_class_traits.iteritems():
+    for key, attr in six.iteritems(all_class_traits):
         kwd = attr.trait.inits.kwd
         # Here we try to resolve references in case _key is set but not key and __key
         if (kwd.get('db', True) and isinstance(attr, MappedType)
@@ -109,16 +109,9 @@ def fill_before_insert(_, _ignored, target):
     target._validate_before_store()
 
 
- 
-def attach_db_events():   
+def attach_db_events():
     """
     Attach events to all mapped tables.
     """
     event.listen(mapper, EVENT_LOAD, initialize_on_load)
     event.listen(mapper, EVENT_BEFORE_INSERT, fill_before_insert)
-
-
-
-
-
-

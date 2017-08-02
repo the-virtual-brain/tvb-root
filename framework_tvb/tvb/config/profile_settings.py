@@ -38,10 +38,7 @@ import os
 import sys
 from tvb.basic.config import stored
 from tvb.basic.config.settings import DBSettings
-from tvb.basic.config.utils import EnhancedDictionary
 from tvb.basic.config.profile_settings import BaseSettingsProfile
-
-
 
 
 class WebSettingsProfile(BaseSettingsProfile):
@@ -79,13 +76,11 @@ class WebSettingsProfile(BaseSettingsProfile):
         inside_static_folder = os.path.join(self.EXTERNALS_FOLDER_PARENT, 'tvb')
         self.web.CHERRYPY_CONFIGURATION['/statichelp']['tools.staticdir.root'] = inside_static_folder
 
-        #We want to disable warnings we get from sqlalchemy for traited attributes when we are in deployment mode.
+        # We want to disable warnings we get from sqlalchemy for traited attributes when we are in deployment mode.
         import warnings
         from sqlalchemy import exc as sa_exc
 
         warnings.simplefilter("ignore", category=sa_exc.SAWarning)
-
-
 
 
 class CommandSettingsProfile(WebSettingsProfile):
@@ -94,14 +89,12 @@ class CommandSettingsProfile(WebSettingsProfile):
     """
 
 
-
-
 class TestSQLiteProfile(WebSettingsProfile):
     """
     Defines settings for running tests on an SQLite database.
     """
 
-    #Use a different configuration file, to make it possible to run multiple instances in the same time
+    # Use a different configuration file, to make it possible to run multiple instances in the same time
     TVB_CONFIG_FILE = os.path.expanduser(os.path.join("~", '.test.tvb.configuration'))
 
     DEFAULT_STORAGE = os.path.expanduser(os.path.join('~', 'TVB_TEST'))
@@ -141,8 +134,6 @@ class TestSQLiteProfile(WebSettingsProfile):
         pass
 
 
-
-
 class TestPostgresProfile(TestSQLiteProfile):
     """
     Defines settings for running tests on a Postgres database.
@@ -154,6 +145,3 @@ class TestPostgresProfile(TestSQLiteProfile):
         # Used DB url: IP,PORT. The DB needs to be created in advance.
         self.db.DB_URL = 'postgresql+psycopg2://postgres:root@127.0.0.1:5432/tvb-test?user=postgres&password=postgres'
         self.db.SELECTED_DB = 'postgres'
-
-
-

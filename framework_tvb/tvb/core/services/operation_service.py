@@ -41,6 +41,7 @@ import os
 import json
 import zipfile
 import sys
+import six
 from copy import copy
 from cgi import FieldStorage
 from datetime import datetime
@@ -110,14 +111,14 @@ class OperationService:
         # Prepare Files parameters
         files = {}
         kw2 = copy(kwargs)
-        for i, j in kwargs.iteritems():
+        for i, j in six.iteritems(kwargs):
             if isinstance(j, FieldStorage) or isinstance(j, Part):
                 files[i] = j
                 del kw2[i]
 
         temp_files = {}
         try:
-            for i, j in files.iteritems():
+            for i, j in six.iteritems(files):
                 if j.file is None:
                     kw2[i] = None
                     continue
@@ -132,7 +133,7 @@ class OperationService:
                     file_obj.write(j.file.read())
                 self.logger.debug("Will store file:" + file_name)
             kwargs = kw2
-        except Exception, excep:
+        except Exception as excep:
             self._handle_exception(excep, temp_files, "Could not launch operation: invalid input files!")
 
         ### Store Operation entity. 
@@ -340,16 +341,16 @@ class OperationService:
             dao.store_entity(operation)
             self._remove_files(temp_files)
 
-        except zipfile.BadZipfile, excep:
+        except zipfile.BadZipfile as excep:
             msg = "The uploaded file is not a valid ZIP!"
             self._handle_exception(excep, temp_files, msg, operation)
-        except TVBException, excep:
+        except TVBException as excep:
             self._handle_exception(excep, temp_files, excep.message, operation)
         except MemoryError:
             msg = ("Could not execute operation because there is not enough free memory." +
                    " Please adjust operation parameters and re-launch it.")
             self._handle_exception(Exception(msg), temp_files, msg, operation)
-        except Exception, excep1:
+        except Exception as excep1:
             msg = "Could not launch Operation with the given input data!"
             self._handle_exception(excep1, temp_files, msg, operation)
 
@@ -364,7 +365,7 @@ class OperationService:
         for operation in operations:
             try:
                 BACKEND_CLIENT.execute(str(operation.id), current_username, adapter_instance)
-            except Exception, excep:
+            except Exception as excep:
                 self._handle_exception(excep, {}, "Could not start operation!", operation)
 
         return operations
@@ -532,5 +533,5 @@ class OperationService:
         """
         return BACKEND_CLIENT.stop_operation(int(operation_id))
 
-    
-    
+
+

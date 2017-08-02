@@ -32,10 +32,10 @@
 Preparation validation and manipulation of adapter input trees
 .. moduleauthor:: Mihai Andrei <mihai.andrei@codemart.ro>
 """
+
 from copy import copy
 import json
 import numpy
-
 from tvb.basic.filters.chain import FilterChain
 from tvb.basic.logger.builder import get_logger
 from tvb.basic.traits.exceptions import TVBException
@@ -97,7 +97,6 @@ WARNING_OVERFLOW = "Too many entities in storage; some of them were not returned
 
 
 class InputTreeManager(object):
-
     def __init__(self):
         self.log = get_logger(self.__class__.__module__)
 
@@ -390,7 +389,7 @@ class InputTreeManager(object):
                             if data_type:
                                 inputs_datatypes.append(data_type)
                                 is_datatype = True
-                    except ImportError, _:
+                    except ImportError:
                         pass
 
                 if is_datatype:
@@ -496,7 +495,7 @@ class InputTreeManager(object):
             prefix = row[KEY_NAME] + "_" + row[ATT_PARAMETERS]
             if hasattr(entity, 'shape'):
                 param_dict = {}
-                for i in xrange(1, len(entity.shape)):
+                for i in range(1, len(entity.shape)):
                     param_key = prefix + "_" + str(i - 1)
                     if param_key in kwargs:
                         param_dict[param_key] = kwargs[param_key]
@@ -634,17 +633,17 @@ class InputTreeManager(object):
 
     def populate_option_values_for_dtype(self, project_id, type_name, filter_condition=None,
                                          category_key=None):
-        '''
+        """
         Converts all datatypes that match the project_id, type_name and filter_condition
         to a {name: , value:} dict used to populate options in the input tree ui
-        '''
+        """
         # todo: normalize all itree[KEY_TYPE] to be a python type, not a str, not a None etc
         if isinstance(type_name, basestring):
             data_type_cls = get_class_by_name(type_name)
         else:
             data_type_cls = type_name
-        #todo: send category instead of category_key to avoid redundant queries
-        #NOTE these functions are coupled via data_list, _populate_values makes no sense without _get_available_datatypes
+        # todo: send category instead of category_key to avoid redundant queries
+        # NOTE these functions are coupled via data_list, _populate_values makes no sense without _get_available_datatypes
         data_list, total_count = get_filtered_datatypes(project_id, data_type_cls,
                                                         filter_condition)
         values = self._populate_values(data_list, data_type_cls, category_key)
