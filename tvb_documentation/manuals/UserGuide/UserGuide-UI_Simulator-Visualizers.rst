@@ -528,7 +528,11 @@ As the correlation matrix is symmetric, only half is actually displayed.
 Fourier Spectrum Visualizer
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-Plots the power spectrum of each node time-series.
+Plots the power spectrum of all nodes in a time-series.
+
+From the top bar, you can choose the scale (logarithmic or linear) and when the resulted Timeseries
+has multiple modes and State variables, choose which one to display.
+After you change a selection in this top bar, the viewer will automatically refresh.
 
 .. figure:: screenshots/visualizer_fft.jpg
    :width: 90%
