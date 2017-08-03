@@ -72,11 +72,7 @@ class FourierSpectrumDisplay(ABCDisplayer):
         shape = list(input_data.read_data_shape())
         state_list = input_data.source.labels_dimensions.get(input_data.source.labels_ordering[1], [])
         mode_list = range(shape[3])
-<<<<<<< HEAD
-        available_scales = ["linear", "log"]
-=======
         available_scales = ["Linear", "Logarithmic"]
->>>>>>> 9f4b8f98aa160a6382cf1f00fee2700befc8101f
 
         params = dict(matrix_shape=json.dumps([shape[0], shape[2]]),
                       plotName=input_data.source.type,
