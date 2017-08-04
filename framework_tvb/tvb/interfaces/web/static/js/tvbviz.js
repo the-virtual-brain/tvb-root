@@ -974,7 +974,7 @@ tv.plot = {
                     // to be tested further to see if it was really needed, and if so look into the problem of zooming
                     // described above.
 
-                    f.render();
+                   // f.render();
                 };
 
             f.br_ctx_y_fn = br_ctx_y_fn;
@@ -996,7 +996,7 @@ tv.plot = {
                     // to be tested further to see if it was really needed, and if so look into the problem of zooming
                     // described above.
 
-                    f.render();
+                    //f.render();
                 }
             };
 
