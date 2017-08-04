@@ -29,7 +29,7 @@
 #pca-viewer-id { padding-top: 40px; padding-left: 20px; }
 
 .axis path,
-.axis line { fill: none; stroke: black; shape-rendering: crispEdges; }
+.axis line { fill: none; stroke: black; shape-rendering: crispEdges;}
 .line-plot { fill: none; stroke: blue; }
 
 .brush { fill-opacity: 0.2; stroke: red }

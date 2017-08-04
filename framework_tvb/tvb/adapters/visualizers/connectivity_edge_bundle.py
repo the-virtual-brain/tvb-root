@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 #
 #
-# TheVirtualBrain-Framework Package. This package holds all Data Management, and 
+# TheVirtualBrain-Framework Package. This package holds all Data Management, and
 # Web-UI helpful to run brain-simulations. To use it, you also need do download
 # TheVirtualBrain-Scientific Package (for simulators). See content of the
 # documentation-folder for more details. See also http://www.thevirtualbrain.org
@@ -29,12 +29,39 @@
 #
 
 """
-List here all Python modules where Visualization adapters are described.
-Listed modules will be introspected and DB filled.
+A Javascript displayer for connectivity, using hierarchical edge bundle diagrams from d3.js.
+
+.. moduleauthor:: Vlad Farcas <vlad.farcas@codemart.ro>
+
 """
 
-__all__ = ["annotations_viewer", "brain", "connectivity_edge_bundle", "connectivity", "complex_imaginary_coherence",
-           "cross_coherence", "cross_correlation", "covariance", "histogram", "ica", "eeg_monitor", 
-           "local_connectivity_view", "matrix_viewer", "pearson_cross_correlation", "pearson_edge_bundle",
-           "mplh5_topographic", "pca", "pse_discrete", "pse_isocline", "region_volume_mapping",
-           "sensors", "surface_view", "time_series", "time_series_volume", "tract", "wavelet_spectrogram"]
+import json
+from tvb.datatypes.connectivity import Connectivity
+from tvb.core.adapters.abcdisplayer import ABCDisplayer
+
+class ConnectivityEdgeBundle(ABCDisplayer):
+    _ui_name = "Connectivity Edge Bundle View"
+    _ui_subsection = "connectivity"
+
+    def get_input_tree(self):
+        """
+        Inform caller of the data we need as input.
+        """
+        return [{"name": "connectivity",
+                 "type": Connectivity,
+                 "label": "Connectivity to be displayed in a hierarchical edge bundle",
+                 "required": True
+                 }]
+
+    def get_required_memory_size(self, **kwargs):
+        """Return required memory."""
+        return -1
+
+    def launch(self, connectivity):
+        """Construct data for visualization and launch it."""
+
+        pars = {"labels": json.dumps(connectivity.region_labels.tolist()),
+                "url_base": ABCDisplayer.paths2url(connectivity, attribute_name="tract_lengths", flatten="True")
+        }
+
+        return self.build_display_result("connectivity_edge_bundle/view", pars)

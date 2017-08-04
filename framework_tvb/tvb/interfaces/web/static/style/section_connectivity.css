@@ -1,5 +1,5 @@
 /**
- * TheVirtualBrain-Framework Package. This package holds all Data Management, and 
+ * TheVirtualBrain-Framework Package. This package holds all Data Management, and
  * Web-UI helpful to run brain-simulations. To use it, you also need do download
  * TheVirtualBrain-Scientific Package (for simulators). See content of the
  * documentation-folder for more details. See also http://www.thevirtualbrain.org
@@ -660,11 +660,11 @@ margin-right: 2px;
 }
 /* Style the 2 "new connectivity" buttons. Selectors have to be this specific.
  * Otherwise more specific styles will cascade them */
-#main .view-column .action.action-new-connectivity{
+#main .view-column .action.action-new-connectivity {
     right:40px;
 }
 
-#main .view-column .action.action-branch-connectivity{
+#main .view-column .action.action-branch-connectivity {
     background-position: -18px -1327px;
     right: -15px;
 }
