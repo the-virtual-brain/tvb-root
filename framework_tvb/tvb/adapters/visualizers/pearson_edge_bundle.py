@@ -68,14 +68,17 @@ class PearsonEdgeBundle(ABCDisplayer):
         mode_list = range(parent_ts._length_4d)
         if not labels:
             labels = None
-        # TODO use default Pearson correlation values (-1, 1) for min and max)
         pars = dict(matrix_labels=json.dumps(labels),
                     matrix_shape=json.dumps(matrix_shape),
                     viewer_title='Pearson Edge Bundle',
                     url_base=ABCDisplayer.paths2url(datatype, "get_correlation_data", flatten="True", parameter=""),
-                    state_variable=state_list[0],
+                    state_variable=0,
                     mode=mode_list[0],
                     state_list=state_list,
-                    mode_list=mode_list)
+                    mode_list=mode_list,
+                    pearson_min=CorrelationCoefficients.PEARSON_MIN,
+                    pearson_max=CorrelationCoefficients.PEARSON_MAX,
+                    thresh=0.5
+                    )
 
         return self.build_display_result("pearson_edge_bundle/view", pars)

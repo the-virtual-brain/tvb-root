@@ -20,15 +20,13 @@
 /**
  * A function for drawing a hierarchical edge bundle
  *
- * @param data    The data structure that has the region labels and the attributes matrix
- * @param svg_d3  The html svg element that is going to be mutated
+ * @param data    The data structure that has the region labels and the adjiacence matrix
+ * @param test_function  Callable for filtering edges
  */
-function init_data(data, test) {
+function HEB_InitData(data, test_function) {
 
     var l = data.region_labels.length;
-
     var svg_d3 = data.svg.d3;
-
     var jsonified_region_labels = [];
 
     for (var i = 0; i < l; i++) {
@@ -39,7 +37,7 @@ function init_data(data, test) {
             var w = 0;
             w = data.matrix[i * l + j];
             json_line.name = data.region_labels[i];
-            if (test(w)) {
+            if (test_function(w)) {
                 json_line.imports[k] = data.region_labels[j];
                 k++;
             }
@@ -47,9 +45,8 @@ function init_data(data, test) {
         jsonified_region_labels[i] = json_line;
     }
 
-    var diameter = data.svg.svg.height(),
-        radius = diameter * 0.51 + 1,
-        innerRadius = radius - 150;
+    var radius = data.svg.svg.height() / 2,
+        innerRadius = radius - 100; // substract estimated labels size
 
     var cluster = d3.cluster()
         .size([360, innerRadius]);
@@ -81,7 +78,8 @@ function init_data(data, test) {
         .data(packageImports(root.leaves()))
         .enter().append("path")
         .each(function (d) {
-            d.source = d[0], d.target = d[d.length - 1];
+            d.source = d[0];
+            d.target = d[d.length - 1];
         })
         .attr("class", "link")
         .attr("d", line);

@@ -27,7 +27,7 @@
  **/
 
 
-var ChordData = {
+var PearsonEdgesData = {
     region_labels: [""],
     matrix: [],
     svg: {
@@ -39,58 +39,59 @@ var ChordData = {
     mode_list: "",
     state: "",
     state_list: "",
-    thresh: -1,
+    thresh: 0,
 };
 
-function ajaxify() {
+function PE_InitChord(url_base, labels, state, mode, thresh) {
 
-    doAjaxCall({
-        url: ChordData.url_base + "selected_state=" + "0" + ";selected_mode=" + ChordData.mode,
-        type: 'POST',
-        async: true,
-        success: function (data) {
-            ChordData.matrix = $.parseJSON(data);
-            refresh_edges();
-        }
-    });
+    PearsonEdgesData.region_labels = labels;
+    PearsonEdgesData.state = state;
+    PearsonEdgesData.mode = mode;
+    PearsonEdgesData.svg.d3 = d3.select("#middle-edge-bundle");
+    PearsonEdgesData.svg.svg = $("#middle-edge-bundle");
+    PearsonEdgesData.url_base = url_base;
+    PearsonEdgesData.thresh = thresh;
 
+    _PE_Ajaxify();
 }
 
-function init_chord(url_base, labels, state, mode) {
+function PE_TriggerRedraw() {
 
-    ChordData.region_labels = labels;
-    ChordData.state = state;
-    ChordData.mode = mode;
-    ChordData.svg.d3 = d3.select("#middle-edge-bundle");
-    ChordData.svg.svg = $("#middle-edge-bundle");
-    ChordData.url_base = url_base;
-
-    ajaxify();
+    PearsonEdgesData.mode = ($("#mode_select").find("option:selected").attr("value"));
+    PearsonEdgesData.state = ($("#state_select").find("option:selected").attr("value"));
+    _PE_Ajaxify();
 }
 
-function triggerRedraw() {
-    ChordData.state = ($("#mode_select").find("option:selected").attr("value"));
-    ChordData.mode = ($("#state_select").find("option:selected").attr("value"));
-    ajaxify();
-}
-
-//slider for threshold
-function changeThreshold(newVal) {
+//threshold of which values in the matrix to be considered edges for display
+function PE_ChangeThreshold(newVal) {
 
     $("#slider").attr("value", newVal);
     $("#valBox").html(newVal);
     $("#slider-value").html(newVal);
-    ChordData.thresh = parseFloat($('#slider').attr("value"));
-    refresh_edges();
+    PearsonEdgesData.thresh = parseFloat(newVal);
+    _PE_RefreshEdges();
 }
 
-function refresh_edges(){
-    ChordData.svg.d3.selectAll("*").transition().duration(100).style("fill-opacity", "0");
-    ChordData.svg.d3.selectAll("*").remove();
-    ChordData.svg.d3.selectAll("*").transition().duration(100).style("fill-opacity", "1");
 
-    init_data(ChordData, function (d) {
-        return d >= ChordData.thresh;
+function _PE_Ajaxify() {
+
+    doAjaxCall({
+        url: PearsonEdgesData.url_base + "selected_state=" + PearsonEdgesData.state + ";selected_mode=" + PearsonEdgesData.mode,
+        type: 'POST',
+        async: true,
+        success: function (data) {
+            PearsonEdgesData.matrix = $.parseJSON(data);
+            _PE_RefreshEdges();
+        }
     });
+}
 
+function _PE_RefreshEdges() {
+    PearsonEdgesData.svg.d3.selectAll("*").transition().duration(100).style("fill-opacity", "0");
+    PearsonEdgesData.svg.d3.selectAll("*").remove();
+    PearsonEdgesData.svg.d3.selectAll("*").transition().duration(100).style("fill-opacity", "1");
+
+    HEB_InitData(PearsonEdgesData, function (d) {
+        return d >= PearsonEdgesData.thresh;
+    });
 }

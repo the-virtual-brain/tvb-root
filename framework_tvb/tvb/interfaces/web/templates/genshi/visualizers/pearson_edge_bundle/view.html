@@ -7,9 +7,7 @@
 
     <script type="text/javascript">
         $('document').ready(function () {
-            init_chord("${url_base}", ${matrix_labels},
-                "${state_variable}",
-                "${mode}");
+            PE_InitChord("${url_base}", ${matrix_labels}, "${state_variable}", "${mode}", ${thresh});
             $("#main").addClass("colscheme-1");
         })
     </script>
@@ -17,7 +15,7 @@
     <ul class="toolbar-inline">
         <li>
             <label for="mode_select">Mode</label>
-            <select id="mode_select" onchange="triggerRedraw()">
+            <select id="mode_select" onchange="PE_TriggerRedraw()">
                 <py:for each="mod in mode_list">
                     <py:if test="mod==mode">
                         <option value="$mod" selected="selected">$mod</option>
@@ -30,7 +28,7 @@
         </li>
         <li>
             <label for="state_select">State Variable</label>
-            <select id="state_select" onchange="triggerRedraw()">
+            <select id="state_select" onchange="PE_TriggerRedraw()">
                 <py:for each="idx, state in enumerate(state_list)">
                     <py:if test="state==state_variable">
                         <option value="$idx" selected="selected">$state</option>
@@ -42,13 +40,11 @@
             </select>
         </li>
         <li>
-            <input id="slider" type="range" oninput="{changeThreshold(this.value);}"
-                   value="0" min="-1" max="1" step="0.01" class="blue"/>
-            <output id="slider-value" type="text">0.00</output>
+            <input id="slider" type="range" oninput="PE_ChangeThreshold(this.value)"
+                   value="${thresh}" min="${pearson_min}" max="${pearson_max}" step="${(pearson_max - pearson_min) / 40.0}"/>
+            <output id="slider-value" type="text">${thresh}</output>
         </li>
-
     </ul>
-        <svg viewBox="0 0 700 700" preserveAspectRatio="xMidYMid meet" class="diagram-svg"
-             id="middle-edge-bundle"></svg>
 
+    <svg viewBox="0 0 700 700" preserveAspectRatio="xMidYMid meet" class="diagram-svg" id="middle-edge-bundle"></svg>
 </div>

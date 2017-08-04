@@ -26,53 +26,54 @@
  *
  */
 
-var ChordData = {
+var ConnectivityEdgesData = {
     region_labels: [""],
     matrix: [],
     svg: {
         d3: null,
         svg: null,
     },
-    url_base: "",
-    state: "tract_lengths"
+    data_url: "",
+    state: "weights"
 };
 
-function ajaxify() {
-
-    let newstate = ChordData.state === "weights" ? "tract_lengths" : "weights";
+function _CE_Ajaxify() {
 
     doAjaxCall({
-        url: ChordData.url_base.replace(ChordData.state, newstate),
+        url: ConnectivityEdgesData.data_url,
         type: 'POST',
         async: true,
         success: function (data) {
-            ChordData.matrix = $.parseJSON(data);
-            init_data(ChordData, function (d) {
+            ConnectivityEdgesData.matrix = $.parseJSON(data);
+            HEB_InitData(ConnectivityEdgesData, function (d) {
                 return d !== 0;
             });
         }
     });
-
-    ChordData.state = newstate;
 }
 
-function init_chord(url_base, labels) {
 
-    ChordData.region_labels = labels;
-    ChordData.svg.d3 = d3.select("#middle-edge-bundle");
-    ChordData.svg.svg = $("#middle-edge-bundle");
-    ChordData.url_base = url_base;
+function CE_InitChord(data_url, labels) {
 
-    //add event listener to switch button
-    $("#switch-matrix").on("click", function (e) {
+    ConnectivityEdgesData.region_labels = labels;
+    ConnectivityEdgesData.svg.d3 = d3.select("#middle-edge-bundle");
+    ConnectivityEdgesData.svg.svg = $("#middle-edge-bundle");
+    ConnectivityEdgesData.data_url = data_url;
 
-        ChordData.svg.d3.selectAll("*").transition().duration(100).style("fill-opacity", "0");
-        ChordData.svg.d3.selectAll("*").remove();
+    _CE_Ajaxify();
+}
 
-        ajaxify();
 
-        ChordData.svg.d3.selectAll("*").transition().duration(100).style("fill-opacity", "1");
-    });
+function CE_UpdateMatrix() {
 
-    ajaxify();
+    ConnectivityEdgesData.svg.d3.selectAll("*").transition().duration(100).style("fill-opacity", "0");
+    ConnectivityEdgesData.svg.d3.selectAll("*").remove();
+
+    // Update data URL and retrieve data from
+    let newstate = ConnectivityEdgesData.state === "weights" ? "tract_lengths" : "weights";
+    ConnectivityEdgesData.data_url = ConnectivityEdgesData.data_url.replace(ConnectivityEdgesData.state, newstate);
+    ConnectivityEdgesData.state = newstate;
+    _CE_Ajaxify();
+
+    ConnectivityEdgesData.svg.d3.selectAll("*").transition().duration(100).style("fill-opacity", "1");
 }

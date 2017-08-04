@@ -71,7 +71,6 @@ class PearsonCorrelationCoefficientVisualizer(MappedArrayVisualizer):
         mode_list = range(datatype.source._length_4d)
         if not labels:
             labels = None
-        # TODO use default Pearson correlation values (-1, 1) for min and max)
         pars = dict(matrix_labels=json.dumps([labels, labels]),
                     matrix_shape=json.dumps(matrix_shape),
                     viewer_title='Cross Corelation Matrix plot',
@@ -80,7 +79,7 @@ class PearsonCorrelationCoefficientVisualizer(MappedArrayVisualizer):
                     mode=mode_list[0],
                     state_list=state_list,
                     mode_list=mode_list,
-                    pearson_min=-1,
-                    pearson_max=1)
+                    pearson_min=CorrelationCoefficients.PEARSON_MIN,
+                    pearson_max=CorrelationCoefficients.PEARSON_MAX)
 
         return self.build_display_result("pearson_correlation/view", pars)

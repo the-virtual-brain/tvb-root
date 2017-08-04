@@ -80,6 +80,10 @@ class Covariance(arrays.MappedArray):
 class CorrelationCoefficients(arrays.MappedArray):
     """Correlation coefficients datatype."""
 
+    # Extreme values for pearson Correlation Coefficients
+    PEARSON_MIN = -1
+    PEARSON_MAX = 1
+
     array_data = arrays.FloatArray(file_storage=core.FILE_STORAGE_DEFAULT)
 
     source = time_series.TimeSeries(

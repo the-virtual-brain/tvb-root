@@ -61,7 +61,7 @@ class ConnectivityEdgeBundle(ABCDisplayer):
         """Construct data for visualization and launch it."""
 
         pars = {"labels": json.dumps(connectivity.region_labels.tolist()),
-                "url_base": ABCDisplayer.paths2url(connectivity, attribute_name="tract_lengths", flatten="True")
+                "url_base": ABCDisplayer.paths2url(connectivity, attribute_name="weights", flatten="True")
         }
 
         return self.build_display_result("connectivity_edge_bundle/view", pars)
