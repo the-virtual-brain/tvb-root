@@ -97,29 +97,31 @@ class WebStructure(object):
     ### Subsections used under BURST and PROJECT sections.
     ### These subsections can extend, and depend on existing visualizers in the system.
     SUB_SECTION_VIEW_0 = "view_connectivity"
-    SUB_SECTION_VIEW_1 = "view_brain"
-    SUB_SECTION_VIEW_2 = "view_brain_dual"
-    SUB_SECTION_VIEW_3 = "view_connectivity_local"
-    SUB_SECTION_VIEW_4 = "view_covariance"
-    SUB_SECTION_VIEW_5 = "view_coherence"
-    SUB_SECTION_VIEW_6 = "view_complex_coherence"
-    SUB_SECTION_VIEW_7 = "view_correlation"
-    SUB_SECTION_VIEW_8 = "view_correlation_pearson"
-    SUB_SECTION_VIEW_9 = "view_animated_timeseries"
-    SUB_SECTION_VIEW_10 = "view_fourier"
-    SUB_SECTION_VIEW_11 = "view_histogram"
-    SUB_SECTION_VIEW_12 = "view_ica"
-    SUB_SECTION_VIEW_13 = "view_pca"
-    SUB_SECTION_VIEW_14 = "view_pse"
-    SUB_SECTION_VIEW_15 = "view_pse_iso"
-    SUB_SECTION_VIEW_16 = "view_sensors"
-    SUB_SECTION_VIEW_17 = "view_surface"
-    SUB_SECTION_VIEW_18 = "view_timeseries"
-    SUB_SECTION_VIEW_19 = "view_volume"
-    SUB_SECTION_VIEW_20 = "view_topography"
-    SUB_SECTION_VIEW_21 = "view_wavelet"
-    SUB_SECTION_VIEW_22 = "view_annotations"
-    SUB_SECTION_VIEW_23 = "view_matrix"
+    SUB_SECTION_VIEW_1 = "view_connectivity_edge"
+    SUB_SECTION_VIEW_2 = "view_brain"
+    SUB_SECTION_VIEW_3 = "view_brain_dual"
+    SUB_SECTION_VIEW_4 = "view_connectivity_local"
+    SUB_SECTION_VIEW_5 = "view_covariance"
+    SUB_SECTION_VIEW_6 = "view_coherence"
+    SUB_SECTION_VIEW_7 = "view_complex_coherence"
+    SUB_SECTION_VIEW_8 = "view_correlation"
+    SUB_SECTION_VIEW_9 = "view_correlation_pearson"
+    SUB_SECTION_VIEW_10 = "view_correlation_pearson_edge"
+    SUB_SECTION_VIEW_11 = "view_animated_timeseries"
+    SUB_SECTION_VIEW_12 = "view_fourier"
+    SUB_SECTION_VIEW_13 = "view_histogram"
+    SUB_SECTION_VIEW_14 = "view_ica"
+    SUB_SECTION_VIEW_15 = "view_pca"
+    SUB_SECTION_VIEW_16 = "view_pse"
+    SUB_SECTION_VIEW_17 = "view_pse_iso"
+    SUB_SECTION_VIEW_18 = "view_sensors"
+    SUB_SECTION_VIEW_19 = "view_surface"
+    SUB_SECTION_VIEW_20 = "view_timeseries"
+    SUB_SECTION_VIEW_21 = "view_volume"
+    SUB_SECTION_VIEW_22 = "view_topography"
+    SUB_SECTION_VIEW_23 = "view_wavelet"
+    SUB_SECTION_VIEW_24 = "view_annotations"
+    SUB_SECTION_VIEW_25 = "view_matrix"
 
 
     ### Texts to appear in HTML page headers as section-title.
@@ -183,29 +185,31 @@ class WebStructure(object):
         SUB_SECTION_ALLEN: "Mouse",
 
         SUB_SECTION_VIEW_0: "Connectivity Visualizer",
-        SUB_SECTION_VIEW_1: "Brain Visualizer",
-        SUB_SECTION_VIEW_2: "Brain Dual Activity Visualizer (3D and 2D)",
-        SUB_SECTION_VIEW_3: "Local Connectivity Visualizer",
-        SUB_SECTION_VIEW_4: "Covariance Visualizer",
-        SUB_SECTION_VIEW_5: "Coherence Visualizer",
-        SUB_SECTION_VIEW_6: "Complex Coherence Visualizer",
-        SUB_SECTION_VIEW_7: "Cross Correlation Visualizer",
-        SUB_SECTION_VIEW_8: "Pearson Correlation Coefficients Visualizer",
-        SUB_SECTION_VIEW_9: "Animated TimeSeries Visualizer",
-        SUB_SECTION_VIEW_10: "Fourier Visualizer",
-        SUB_SECTION_VIEW_11: "Histogram Visualizer",
-        SUB_SECTION_VIEW_12: "ICA Visualizer",
-        SUB_SECTION_VIEW_13: "PCA Visualizer",
-        SUB_SECTION_VIEW_14: "Discrete PSE Visualizer",
-        SUB_SECTION_VIEW_15: "Isocline PSE Visualizer",
-        SUB_SECTION_VIEW_16: "Sensor Visualizer",
-        SUB_SECTION_VIEW_17: "Surface Visualizer",
-        SUB_SECTION_VIEW_18: "TimeSeries Visualizer",
-        SUB_SECTION_VIEW_19: "in Volume Visualizer",
-        SUB_SECTION_VIEW_20: "Topography Visualizer",
-        SUB_SECTION_VIEW_21: "Wavelet Visualizer",
-        SUB_SECTION_VIEW_22: "Annotations Visualizer",
-        SUB_SECTION_VIEW_23: "Matrix Visualizer"
+        SUB_SECTION_VIEW_1: "Connectivity Edge Visualizer",
+        SUB_SECTION_VIEW_2: "Brain Visualizer",
+        SUB_SECTION_VIEW_3: "Brain Dual Activity Visualizer (3D and 2D)",
+        SUB_SECTION_VIEW_4: "Local Connectivity Visualizer",
+        SUB_SECTION_VIEW_5: "Covariance Visualizer",
+        SUB_SECTION_VIEW_6: "Coherence Visualizer",
+        SUB_SECTION_VIEW_7: "Complex Coherence Visualizer",
+        SUB_SECTION_VIEW_8: "Cross Correlation Visualizer",
+        SUB_SECTION_VIEW_9: "Pearson Correlation Coefficients Visualizer",
+        SUB_SECTION_VIEW_10: "Pearson Correlation Coefficients Edge Visualizer",
+        SUB_SECTION_VIEW_11: "Animated TimeSeries Visualizer",
+        SUB_SECTION_VIEW_12: "Fourier Visualizer",
+        SUB_SECTION_VIEW_13: "Histogram Visualizer",
+        SUB_SECTION_VIEW_14: "ICA Visualizer",
+        SUB_SECTION_VIEW_15: "PCA Visualizer",
+        SUB_SECTION_VIEW_16: "Discrete PSE Visualizer",
+        SUB_SECTION_VIEW_17: "Isocline PSE Visualizer",
+        SUB_SECTION_VIEW_18: "Sensor Visualizer",
+        SUB_SECTION_VIEW_19: "Surface Visualizer",
+        SUB_SECTION_VIEW_20: "TimeSeries Visualizer",
+        SUB_SECTION_VIEW_21: "in Volume Visualizer",
+        SUB_SECTION_VIEW_22: "Topography Visualizer",
+        SUB_SECTION_VIEW_23: "Wavelet Visualizer",
+        SUB_SECTION_VIEW_24: "Annotations Visualizer",
+        SUB_SECTION_VIEW_25: "Matrix Visualizer"
     }
 
 
@@ -214,29 +218,31 @@ class WebStructure(object):
 
         ## Connectivity subsection link will not be needed, as we will have a full section in the help for this.
         ## SUB_SECTION_VIEW_0: "connectivity-visualizer**",
-        SUB_SECTION_VIEW_1: "brain-activity-visualizer",
-        SUB_SECTION_VIEW_2: "dual-brain-activity-visualizer",
-        SUB_SECTION_VIEW_3: "local-connectivity-visualizer",
-        SUB_SECTION_VIEW_4: "covariance-visualizer",
-        SUB_SECTION_VIEW_5: "cross-coherence-visualizer",
-        SUB_SECTION_VIEW_6: "complex-coherence-visualizer",
-        SUB_SECTION_VIEW_7: "cross-correlation-visualizer",
-        SUB_SECTION_VIEW_8: "pearson-coefficients-visualizer",
-        SUB_SECTION_VIEW_9: "animated-time-series-visualizer",
-        SUB_SECTION_VIEW_10: "fourier-spectrum-visualizer",
-        SUB_SECTION_VIEW_11: "connectivity-measure-visualizer",
-        SUB_SECTION_VIEW_12: "independent-component-visualizer",
-        SUB_SECTION_VIEW_13: "principal-component-visualizer",
-        SUB_SECTION_VIEW_14: "discrete-pse-visualizer",
-        SUB_SECTION_VIEW_15: "isocline-pse-visualizer",
-        SUB_SECTION_VIEW_16: "sensor-visualizer",
-        SUB_SECTION_VIEW_17: "surface-visualizer",
-        SUB_SECTION_VIEW_18: "time-series-visualizer-svg-d3",
-        SUB_SECTION_VIEW_19: "volume-visualizer",
-        SUB_SECTION_VIEW_20: "topographic-visualizer",
-        SUB_SECTION_VIEW_21: "wavelet-spectrogram-visualizer",
-        SUB_SECTION_VIEW_22: "annotations-visualizer",
-        SUB_SECTION_VIEW_23: "matrix-visualizer"
+        SUB_SECTION_VIEW_1: "connectivity-edge-bundle-visualizer",
+        SUB_SECTION_VIEW_2: "brain-activity-visualizer",
+        SUB_SECTION_VIEW_3: "dual-brain-activity-visualizer",
+        SUB_SECTION_VIEW_4: "local-connectivity-visualizer",
+        SUB_SECTION_VIEW_5: "covariance-visualizer",
+        SUB_SECTION_VIEW_6: "cross-coherence-visualizer",
+        SUB_SECTION_VIEW_7: "complex-coherence-visualizer",
+        SUB_SECTION_VIEW_8: "cross-correlation-visualizer",
+        SUB_SECTION_VIEW_9: "pearson-coefficients-visualizer",
+        SUB_SECTION_VIEW_10: "pearson-edge-bundle-visualizer",
+        SUB_SECTION_VIEW_11: "animated-time-series-visualizer",
+        SUB_SECTION_VIEW_12: "fourier-spectrum-visualizer",
+        SUB_SECTION_VIEW_13: "connectivity-measure-visualizer",
+        SUB_SECTION_VIEW_14: "independent-component-visualizer",
+        SUB_SECTION_VIEW_15: "principal-component-visualizer",
+        SUB_SECTION_VIEW_16: "discrete-pse-visualizer",
+        SUB_SECTION_VIEW_17: "isocline-pse-visualizer",
+        SUB_SECTION_VIEW_18: "sensor-visualizer",
+        SUB_SECTION_VIEW_19: "surface-visualizer",
+        SUB_SECTION_VIEW_20: "time-series-visualizer-svg-d3",
+        SUB_SECTION_VIEW_21: "volume-visualizer",
+        SUB_SECTION_VIEW_22: "topographic-visualizer",
+        SUB_SECTION_VIEW_23: "wavelet-spectrogram-visualizer",
+        SUB_SECTION_VIEW_24: "annotations-visualizer",
+        SUB_SECTION_VIEW_25: "matrix-visualizer"
     }
 
 

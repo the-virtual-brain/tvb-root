@@ -39,9 +39,10 @@ import json
 from tvb.datatypes.connectivity import Connectivity
 from tvb.core.adapters.abcdisplayer import ABCDisplayer
 
+
 class ConnectivityEdgeBundle(ABCDisplayer):
     _ui_name = "Connectivity Edge Bundle View"
-    _ui_subsection = "connectivity"
+    _ui_subsection = "connectivity_edge"
 
     def get_input_tree(self):
         """
@@ -62,6 +63,6 @@ class ConnectivityEdgeBundle(ABCDisplayer):
 
         pars = {"labels": json.dumps(connectivity.region_labels.tolist()),
                 "url_base": ABCDisplayer.paths2url(connectivity, attribute_name="weights", flatten="True")
-        }
+                }
 
         return self.build_display_result("connectivity_edge_bundle/view", pars)

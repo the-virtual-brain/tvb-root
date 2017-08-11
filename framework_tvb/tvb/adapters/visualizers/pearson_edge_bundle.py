@@ -41,7 +41,8 @@ class PearsonEdgeBundle(ABCDisplayer):
     Very similar to the CrossCorrelationVisualizer - this one done with Matplotlib
     """
     _ui_name = "Pearson Edge Bundle"
-    _ui_subsection = "correlation_pearson"
+    _ui_subsection = "correlation_pearson_edge"
+
 
     def get_input_tree(self):
         """ Inform caller of the data we need as input """
@@ -51,11 +52,13 @@ class PearsonEdgeBundle(ABCDisplayer):
                  "label": "Pearson Correlation to be displayed in a hierarchical edge bundle",
                  "required": True}]
 
+
     def get_required_memory_size(self, datatype):
         """Return required memory."""
 
         input_size = datatype.read_data_shape()
         return numpy.prod(input_size) * 8.0
+
 
     def launch(self, datatype):
         """Construct data for visualization and launch it."""
