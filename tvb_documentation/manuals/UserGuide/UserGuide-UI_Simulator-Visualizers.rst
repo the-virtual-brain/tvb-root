@@ -599,3 +599,26 @@ The user can also input the slice manually.
    :align: center
 
    Preview for Matrix Visualizer
+   
+   
+Connectivity Edge Bundle Visualizer
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ 
+
+Shows structural connectivity coming in and out of a brain region by highlighting paths to other regions.
+
+.. figure:: screenshots/visualizer_connectivity_edge_bundle.jpg
+   :width: 90%
+   :align: center
+   
+   Preview for Connectivity Edge Bundle Visualizer
+   
+Pearson Edge Bundle Visualizer
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Shows functional connectivity coming in and out of a brain region by highlighting paths to other regions.
+
+.. figure:: screenshots/visualizer_pearson_edge_bundle.jpg
+   :width: 90%
+   :align: center
+   
+   Preview for Pearson Edge Bundle Visualizer
