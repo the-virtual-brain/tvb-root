@@ -80,6 +80,9 @@ class BaseTopography():
         try:
             points = numpy.vstack((topography_data["sproj"][:, 0], topography_data["sproj"][:, 1])).T
             topo = griddata(points, numpy.ravel(numpy.array(topography)), (x_arr, y_arr), method='linear')
+            topo=self.extend_with_nans(topo)
+            topo=self.spiral(topo)
+            topo=self.remove_outer_nans(topo)
         except KeyError as err:
             self.log.exception("Could not execute matplotlib.mlab.griddata...")
             raise LaunchException("The measure points location is not compatible with this viewer "
@@ -87,12 +90,68 @@ class BaseTopography():
         return topo
 
     @staticmethod
-    def replace_nans(data_array, min_val):
-        data_array[numpy.isnan(data_array)]=min_val-1
-        return data_array
+    def fit_circle(data_matrix):
+
+        nx, ny = data_matrix.shape
+        radius = nx / 2
+        y, x = numpy.ogrid[-nx / 2:nx - nx / 2, -ny / 2:ny - ny / 2]
+        mask = x * x + y * y >= radius * radius
+        data_matrix[mask] = -1
+        return data_matrix
+
+    def spiral(self,array):
+        X=array.shape[0]-2
+        Y=array.shape[1]-2
+        r=X/2
+        x = y = 0
+        dx = 0
+        dy = -1
+        nx=[-1,-1,-1,0,0,1,1,1]
+        ny=[-1,0,1,-1,1,-1,0,1]
+        for i in range(max(X, Y) ** 2):
+            if (-X / 2 < x <= X / 2) and (-Y / 2 < y <= Y / 2):
+                if(numpy.isnan(array[x+r][y+r])):
+                    neighbors=[]
+                    for j in range(0,8):
+                        neighbors.append(array[x+r+nx[j]][y+r+ny[j]])
+                    array[x + r][y + r]=self.compute_avg(neighbors)
+            if x == y or (x < 0 and x == -y) or (x > 0 and x == 1 - y):
+                dx, dy = -dy, dx
+            x, y = x + dx, y + dy
+        return array
 
     @staticmethod
-    def prepare_sensors(sensor_locations, resolution=51):
+    def compute_avg(array):
+        sum = 0
+        dimension=0
+        for x in array:
+            if (not numpy.isnan(x)):
+                sum += x
+                dimension+=1
+
+        return sum/float(dimension)
+
+    def extend_with_nans(self, data_matrix):
+        n=data_matrix.shape[0]
+        extended=numpy.empty((n+2,n+2,))
+        extended[:] = numpy.nan
+        for i in range(1,n+1):
+            for j in range(1, n+1):
+                extended[i][j]=data_matrix[i-1][j-1]
+        return extended
+
+    def remove_outer_nans(self, data_matrix):
+        n=data_matrix.shape[0]
+        reduced=numpy.empty((n-2,n-2,))
+        reduced[:] = numpy.nan
+        for i in range(0,n-2):
+            for j in range(0, n-2):
+                reduced[i][j]=data_matrix[i+1][j+1]
+        return reduced
+
+
+    @staticmethod
+    def prepare_sensors(sensor_locations, resolution=100):
         """
         Common method, to pre-process sensors before display (project them in 2D).
         """
@@ -164,7 +223,7 @@ class TopographicViewer(BaseTopography, ABCDisplayer):
         min_vals = []
         max_vals = []
         data_array = []
-        title = ""
+        data_arrays = []
         for measure in [data_0, data_1, data_2]:
             if measure is not None:
                 if len(measure.connectivity.centres) != sensor_number:
@@ -185,14 +244,14 @@ class TopographicViewer(BaseTopography, ABCDisplayer):
 
         for i, array_data in enumerate(arrays):
             data_array = self._get_topography_array(array_data, self.topography_data)
-            data_array = self.replace_nans(data_array,color_bar_min)
+            data_array = self.fit_circle(data_array)
             all_zeros = not data_array.any()
-            title = titles[i] + ("\n - Topography is all zeroes -" if all_zeros else "")
+            titles[i] = titles[i] + ("\n - Topography is all zeroes -" if all_zeros else "")
+            data_arrays.append(ABCDisplayer.dump_with_precision(data_array.flat))
 
-        params = dict(matrix_data=ABCDisplayer.dump_with_precision(data_array.flat),
+        params = dict(matrix_datas=data_arrays,
                       matrix_shape=json.dumps(data_array.squeeze().shape),
-                      title=title,
-                      url_base=ABCDisplayer.paths2url(data_0, "get_topographic_data", parameter=""),
+                      titles=titles,
                       vmin=color_bar_min,
                       vmax=color_bar_max)
         return self.build_display_result("topographic/view", params)

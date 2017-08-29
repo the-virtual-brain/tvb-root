@@ -35,11 +35,17 @@
     <script type="text/javascript">
         $(document).ready(function () {
             $("#main").addClass("colscheme-1");
-            topographic_init('${title}', '${matrix_data}', '${matrix_shape}',
-                ${vmin}, ${vmax}, '${url_base}');
+            topographic_init('${titles[0]}', '${matrix_datas[0]}', '${matrix_shape}',
+                ${vmin}, ${vmax});
         });
         // For the burst Preview part
         function launchViewer(width, height) {
         }
     </script>
+    <!--<script type="text/javascript" py:if="titles.length > 1">-->
+        <!--$(document).ready(function () {-->
+            <!--topographic_init('${titles[1]}', '${matrix_datas[1]}', '${matrix_shape}',-->
+                <!--${vmin}, ${vmax});-->
+        <!--});-->
+    <!--</script>-->
 </div>

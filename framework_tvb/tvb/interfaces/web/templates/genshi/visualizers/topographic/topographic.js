@@ -25,12 +25,11 @@ var Topographic = {
     m: null,
     canvasTitle: null,
     vmin: null,
-    vmax: null,
-    url_base: null
+    vmax: null
 };
 
 
-function topographic_init(title, matrix_data, matrix_shape, vmin, vmax, url_base) {
+function topographic_init(title, matrix_data, matrix_shape, vmin, vmax) {
 
     var dimensions = $.parseJSON(matrix_shape);
     var n = dimensions[0];
@@ -46,8 +45,6 @@ function topographic_init(title, matrix_data, matrix_shape, vmin, vmax, url_base
     }
     Topographic.n = n;
     Topographic.m = m;
-    Topographic.canvas = canvas;
-    Topographic.url_base = url_base;
     Topographic.canvas = canvas;
      var width = canvas["0"]["0"].clientWidth;
      var height = canvas["0"]["0"].clientHeight;
@@ -115,15 +112,6 @@ function drawContour() {
         .attr("d", d3.geoPath(d3.geoIdentity().scale((height / m) * 0.8)))
         .attr("stroke", "black")
         .attr("stroke-width", 1)
-        .attr("transform", "translate(0,"+(height/10) + ")")
-        .attr("fill", "none");
-    //Draw head Contour
-    var headContour = d3.select("#head-contour")
-        .attr("r", height / 2 * 0.8)
-        .attr("cx", height / 2 * 0.8)
-        .attr("cy", height / 2 * 0.8)
-        .attr("stroke", "black")
-        .attr("stroke-width", 7)
         .attr("transform", "translate(0,"+(height/10) + ")")
         .attr("fill", "none");
 
