@@ -1,4 +1,4 @@
-<div xmlns:py="http://genshi.edgewall.org/" class="view-column">
+<div xmlns:py="http://genshi.edgewall.org/" xmlns:xi="http://www.w3.org/2001/XInclude" class="view-column">
 
     <script type="text/javascript" src="/static/js/d3.v3.js"></script>
     <script type="text/javascript" src="/static_view/topographic/topographic.js?$currentVersionJS"></script>
@@ -7,7 +7,28 @@
     <script type="text/javascript" src="https://d3js.org/d3-geo.v1.min.js"></script>
 
     <link type="text/css" rel="stylesheet" href="/static/style/section_visualisers.css?$currentVersionJS"/>
-
+    <py:def function="drawTopography(index,length)">
+        <div class="topographic_${length}">
+            <canvas class="topographic_canvas" id="canvas-${index}"></canvas>
+            <svg class="topographic_svg" id="svg-container-${index}"></svg>
+            <label class="topographic_title">${titles[index-1]}</label>
+            <label class="topographic_nose">Nose</label>
+            <div class="topographic_text_allign">
+                <label class="topographic_left_ear">Left Ear</label>
+                <label class="topographic_right_ear">Right Ear</label>
+            </div>
+        </div>
+        <script type="text/javascript">
+            $(document).ready(function () {
+                if("${index}==1"){
+                    $("#main").addClass("colscheme-1");
+                    window.onresize = drawContours;
+                    function launchViewer(width, height) {}
+                }
+                topographic_init('${matrix_datas[index-1]}', '${matrix_shape}', ${vmin}, ${vmax}, ${index});
+            });
+        </script>
+    </py:def>
     <div class="topographic_space">
         <div class="matrix-legend" id="colorWeightsLegend"></div>
         <div class="matrix-legend">
@@ -26,56 +47,12 @@
                 </py:for>
             </table>
         </div>
-        <div class="topographic_${len(titles)}">
-            <canvas class="topographic_canvas" id="canvas-1"></canvas>
-            <svg class="topographic_svg" id="svg-container-1"></svg>
-            <label class="topographic_title">${titles[0]}</label>
-            <label class="topographic_nose">Nose</label>
-            <div class="topographic_text_allign">
-                <label class="topographic_left_ear">Left Ear</label>
-                <label class="topographic_right_ear">Right Ear</label>
-            </div>
-        </div>
-        <div class="topographic_${len(titles)}" py:if="len(titles) &gt; 1">
-            <canvas class="topographic_canvas" id="canvas-2"></canvas>
-            <svg class="topographic_svg" id="svg-container-2"></svg>
-            <label class="topographic_title">${titles[1]}</label>
-            <label class="topographic_nose">Nose</label>
-            <div class="topographic_text_allign">
-                <label class="topographic_left_ear">Left Ear</label>
-                <label class="topographic_right_ear">Right Ear</label>
-            </div>
-        </div>
-        <div class="topographic_${len(titles)}" py:if="len(titles) &gt; 2">
-            <canvas class="topographic_canvas" id="canvas-3"></canvas>
-            <svg class="topographic_svg" id="svg-container-3"></svg>
-            <label class="topographic_title">${titles[2]}</label>
-            <label class="topographic_nose">Nose</label>
-            <div class="topographic_text_allign">
-                <label class="topographic_left_ear">Left Ear</label>
-                <label class="topographic_right_ear">Right Ear</label>
-            </div>
-        </div>
+        ${drawTopography(1,len(titles))}
+        <py:if test="len(titles) &gt; 1">
+            ${drawTopography(2,len(titles))}
+        </py:if>
+        <py:if test="len(titles) &gt; 2">
+            ${drawTopography(3,len(titles))}
+        </py:if>
     </div>
-
-    <script type="text/javascript">
-        $(document).ready(function () {
-            $("#main").addClass("colscheme-1");
-            topographic_init('${matrix_datas[0]}', '${matrix_shape}', ${vmin}, ${vmax}, 1);
-            window.onresize = drawContours;
-        });
-        // For the burst Preview part
-        function launchViewer(width, height) {
-        }
-    </script>
-    <script type="text/javascript" py:if="len(titles) &gt; 1">
-        $(document).ready(function () {
-            topographic_init('${matrix_datas[1]}', '${matrix_shape}', ${vmin}, ${vmax}, 2);
-        });
-    </script>
-    <script type="text/javascript" py:if="len(titles) &gt; 2">
-        $(document).ready(function () {
-            topographic_init('${matrix_datas[2]}', '${matrix_shape}', ${vmin}, ${vmax}, 3);
-        });
-    </script>
 </div>

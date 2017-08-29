@@ -101,7 +101,7 @@
             <input>
                 <name value="chain_2"/>
                 <label value="Second adapter from chain"/>
-                <type value="tvb.adapters.visualizers.mplh5_topographic.TopographicViewer"/>
+                <type value="tvb.adapters.visualizers.topographic.TopographicViewer"/>
             </input>
             <input overwrite="chain_2">
                 <name value="data_0"/>
@@ -137,7 +137,7 @@
             <input>
                 <name value="chain_2"/>
                 <label value="Second adapter from chain"/>
-                <type value="tvb.adapters.visualizers.mplh5_topographic.TopographicViewer"/>
+                <type value="tvb.adapters.visualizers.topographic.TopographicViewer"/>
             </input>
             <input overwrite="chain_2">
                 <name value="data_0"/>

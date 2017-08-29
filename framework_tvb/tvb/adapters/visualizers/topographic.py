@@ -240,8 +240,8 @@ class TopographicViewer(BaseTopography, ABCDisplayer):
         for i, array_data in enumerate(arrays):
             data_array = self._get_topography_array(array_data, self.topography_data)
             data_array = self.fit_circle(data_array)
-            all_zeros = not data_array.any()
-            titles[i] = titles[i] + ("\n - Topography is all zeroes -" if all_zeros else "")
+            has_nan = numpy.any(numpy.isnan(data_array))
+            titles[i] = titles[i] + ("\n - Topography contains nan -" if has_nan else "")
             data_arrays.append(ABCDisplayer.dump_with_precision(data_array.flat))
 
         params = dict(matrix_datas=data_arrays,
