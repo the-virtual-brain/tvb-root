@@ -123,9 +123,16 @@ class ClusterSettings(object):
     Cluster related settings.
     """
 
-    SCHEDULE_COMMAND = 'oarsub -p "host>\'n02\' AND host>\'n02\'" -l walltime=%s -q tvb ' \
-                       '-S "/home/tvbadmin/clusterLauncher %s %s"'
+    SCHEDULE_COMMAND = 'oarsub -q tvb -S "/home/tvbadmin/clusterLauncher %s %s" -l walltime=%s'
     STOP_COMMAND = 'oardel %s'
+    STATUS_COMMAND = 'oarstat %s'
+    JOB_ID_STRING = 'OAR_JOB_ID='
+    NODE_ENV = 'OAR_NODEFILE'
+    # SCHEDULE_COMMAND = 'sbatch /home/tvbadmin/clusterLauncher %s %s %s'
+    # STOP_COMMAND = 'scancel %s'
+    # STATUS_COMMAND = 'squeue -j %s'
+    # JOB_ID_STRING = 'JOB_ID='
+    # NODE_ENV = 'SLURM_NODEID'
 
     #Specify if the current process is executing an operation (via clusterLauncher)
     IN_OPERATION_EXECUTION_PROCESS = False
@@ -159,15 +166,18 @@ class ClusterSettings(object):
         # Check if the name wasn't computed before.
         if self._CACHED_NODE_NAME is None:
             # Read env variable which contains path the the file containing node name
-            env_oar_nodefile = os.getenv('OAR_NODEFILE')
-            if env_oar_nodefile is not None and len(env_oar_nodefile) > 0:
-                # Read node name from file
+            env_oar_nodefile = os.getenv(self.NODE_ENV)
+            if env_oar_nodefile is not None and len(env_oar_nodefile) > 0 and os.path.exists(env_oar_nodefile):
+                # Read node name from file (valid for OAR cluster)
                 with open(env_oar_nodefile, 'r') as f:
                     node_name = f.read()
+            else:
+                # Valid for SLURM clusters
+                node_name = os.getenv(self.NODE_ENV)
 
-                if node_name is not None and len(node_name.strip()) > 0:
-                    self._CACHED_NODE_NAME = node_name.strip()
-                    return self._CACHED_NODE_NAME
+            if node_name is not None and len(node_name.strip()) > 0:
+                self._CACHED_NODE_NAME = node_name.strip()
+                return self._CACHED_NODE_NAME
         else:
             return self._CACHED_NODE_NAME
 

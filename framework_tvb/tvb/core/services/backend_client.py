@@ -37,7 +37,7 @@
 import os
 import sys
 import signal
-import Queue
+import queue
 import threading
 from subprocess import Popen, PIPE
 from tvb.basic.profile import TvbProfile
@@ -52,10 +52,9 @@ LOGGER = get_logger(__name__)
 
 CURRENT_ACTIVE_THREADS = []
 
-LOCKS_QUEUE = Queue.Queue(0)
+LOCKS_QUEUE = queue.Queue(0)
 for i in range(TvbProfile.current.MAX_THREADS_NUMBER):
     LOCKS_QUEUE.put(1)
-
 
 
 class OperationExecutor(threading.Thread):
@@ -74,7 +73,7 @@ class OperationExecutor(threading.Thread):
         """
         Get the required data from the operation queue and launch the operation.
         """
-        #Try to get a spot to launch own operation.
+        # Try to get a spot to launch own operation.
         LOCKS_QUEUE.get(True)
         operation_id = self.operation_id
         run_params = [TvbProfile.current.PYTHON_INTERPRETER_PATH, '-m', 'tvb.core.operation_async_launcher',
@@ -121,7 +120,7 @@ class OperationExecutor(threading.Thread):
 
             del launched_process
 
-        #Give back empty spot now that you finished your operation
+        # Give back empty spot now that you finished your operation
         CURRENT_ACTIVE_THREADS.remove(self)
         LOCKS_QUEUE.put(1)
 
@@ -150,16 +149,15 @@ class OperationExecutor(threading.Thread):
                 handle = ctypes.windll.kernel32.OpenProcess(1, False, int(pid))
                 ctypes.windll.kernel32.TerminateProcess(handle, -1)
                 ctypes.windll.kernel32.CloseHandle(handle)
-            except OSError, _:
+            except OSError:
                 return False
         else:
             try:
                 os.kill(int(pid), signal.SIGKILL)
-            except OSError, _:
+            except OSError:
                 return False
 
         return True
-
 
 
 class StandAloneClient(object):
@@ -211,7 +209,6 @@ class StandAloneClient(object):
         return stopped
 
 
-
 class ClusterSchedulerClient(object):
     """
     Simple class, to mimic the same behavior we are expecting from StandAloneClient, but firing behind
@@ -244,10 +241,10 @@ class ClusterSchedulerClient(object):
                 hours = str(hours)
             walltime = "%s:%s:%s" % (hours, str(minutes), str(seconds))
 
-        call_arg = TvbProfile.current.cluster.SCHEDULE_COMMAND % (walltime, operation_identifier, user_name_label)
+        call_arg = TvbProfile.current.cluster.SCHEDULE_COMMAND % (operation_identifier, user_name_label, walltime)
         LOGGER.info(call_arg)
         process_ = Popen([call_arg], stdout=PIPE, shell=True)
-        job_id = process_.stdout.read().replace('\n', '').split('OAR_JOB_ID=')[-1]
+        job_id = process_.stdout.read().replace('\n', '').split(TvbProfile.current.cluster.JOB_ID_STRING)[-1]
         LOGGER.debug("Got jobIdentifier = %s for CLUSTER operationID = %s" % (operation_identifier, job_id))
         operation_identifier = model.OperationProcessIdentifier(operation_identifier, job_id=job_id)
         dao.store_entity(operation_identifier)
@@ -281,19 +278,17 @@ class ClusterSchedulerClient(object):
             LOGGER.info("Stopping cluster operation: %s" % stop_command)
             result = os.system(stop_command)
             if result != 0:
-                LOGGER.error("Stopping cluster operation was unsuccessful. "
-                             "Try following with 'oarstat' for job ID: %s" % operation_process.job_id)
+                LOGGER.error("Stopping cluster operation was unsuccessful. Try following status with '" +
+                             TvbProfile.current.cluster.STATUS_COMMAND + "'" % operation_process.job_id)
 
         WorkflowService().persist_operation_state(operation, model.STATUS_CANCELED)
 
         return result == 0
 
 
-
 if TvbProfile.current.cluster.IS_DEPLOY:
-    #Return an entity capable to submit jobs to the cluster.
+    # Return an entity capable to submit jobs to the cluster.
     BACKEND_CLIENT = ClusterSchedulerClient()
 else:
-    #Return a thread launcher.
+    # Return a thread launcher.
     BACKEND_CLIENT = StandAloneClient()
-
