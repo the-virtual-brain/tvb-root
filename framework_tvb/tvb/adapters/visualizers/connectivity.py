@@ -36,9 +36,7 @@
 import json
 import math
 import numpy
-import pylab
 from copy import copy
-from tvb.basic.profile import TvbProfile
 from tvb.basic.traits.core import KWARG_FILTERS_UI
 from tvb.basic.filters.chain import FilterChain, UIFilter
 from tvb.config import CONNECTIVITY_CREATOR_MODULE, CONNECTIVITY_CREATOR_CLASS
