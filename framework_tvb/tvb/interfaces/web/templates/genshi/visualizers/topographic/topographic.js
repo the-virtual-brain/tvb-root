@@ -20,25 +20,24 @@
 
 var Topographic = {
     canvas: null,
-    data: null,
+    data: [],
     n: null,
     m: null,
     canvasTitle: null,
     vmin: null,
-    vmax: null
+    vmax: null,
+    index: null
 };
 
 
-function topographic_init(title, matrix_data, matrix_shape, vmin, vmax) {
+function topographic_init(matrix_data, matrix_shape, vmin, vmax, index) {
 
     var dimensions = $.parseJSON(matrix_shape);
     var n = dimensions[0];
     var m = dimensions[1];
-    var canvas = d3.select("#main-canvas-2d")
-        .attr("width", m)
-        .attr("height", n);
+    var canvas = d3.select("#canvas-" + index);
     if (matrix_data) {
-        Topographic.data = $.parseJSON(matrix_data);
+        Topographic.data.push($.parseJSON(matrix_data));
         Topographic.vmin = vmin;
         Topographic.vmax = vmax;
         ColSch_initColorSchemeGUI(vmin, vmax, drawCanvas);
@@ -46,15 +45,12 @@ function topographic_init(title, matrix_data, matrix_shape, vmin, vmax) {
     Topographic.n = n;
     Topographic.m = m;
     Topographic.canvas = canvas;
-     var width = canvas["0"]["0"].clientWidth;
-     var height = canvas["0"]["0"].clientHeight;
-    var context = canvas.node().getContext("2d");
-    var svgContainer = d3.select("#svg-container");
-    Topographic.canvasTitle = svgContainer.append("text")
-        .attr("text-anchor", "middle")
-        .attr("font-size", 20)
-        .attr("transform", "translate(" + width/2 + ","+width/20+")")
-        .text(title);
+    Topographic.index = index;
+
+    var cw = $('.topographic_text_allign').width();
+    $('.topographic_text_allign').css({
+        'height': cw + 'px'
+    });
 
     if (matrix_data) {
         drawCanvas();
@@ -63,7 +59,8 @@ function topographic_init(title, matrix_data, matrix_shape, vmin, vmax) {
 
 function drawCanvas() {
 
-    var data = Topographic.data;
+    var index = Topographic.index;
+    var data = Topographic.data[index - 1];
     var n = Topographic.n;
     var m = Topographic.m;
     var vmin = Topographic.vmin;
@@ -90,29 +87,42 @@ function drawCanvas() {
     }
     context.putImageData(image, 0, 0);
     updateLegend2D(vmin, vmax, Topographic.viewerType);
-    drawContour();
+    drawContour(data, index);
 }
 
-function drawContour() {
-    var data = Topographic.data;
+function drawContours() {
+    for (var i = 0; i < Topographic.data.length; i++) {
+        drawContour(Topographic.data[i], i + 1);
+    }
+}
+
+function drawContour(data, index) {
+    var cw = $('.topographic_text_allign').width();
+    $('.topographic_text_allign').css({
+        'height': cw + 'px'
+    });
+
     var n = Topographic.n;
     var m = Topographic.m;
     var vmin = Topographic.vmin;
     var vmax = Topographic.vmax;
-    var svg = d3.select("#svg-container");
+    var svg = d3.select("#svg-container-" + index);
     var width = svg["0"]["0"].clientWidth;
     var height = svg["0"]["0"].clientHeight;
+    var scale = 0.8;
     data = flipArray(data, n, m);
+    svg.selectAll("path").remove();
     svg.selectAll("path")
         .data(d3.contours()
             .size([n, m])
             .thresholds(d3.range(vmin, vmax, (vmax - vmin) / 10))
             (data))
         .enter().append("path")
-        .attr("d", d3.geoPath(d3.geoIdentity().scale((height / m) * 0.8)))
+        .attr("d", d3.geoPath(d3.geoIdentity().scale((width / n) * scale)))
         .attr("stroke", "black")
         .attr("stroke-width", 1)
-        .attr("transform", "translate(0,"+(height/10) + ")")
+        .attr("overflow", "hidden")
+        .attr("transform", "translate(" + width * (1 - scale) / 2 + "," + (height * 0.15) + ")")
         .attr("fill", "none");
 
     // TODO Add controls and ajax calls

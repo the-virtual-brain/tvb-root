@@ -80,9 +80,9 @@ class BaseTopography():
         try:
             points = numpy.vstack((topography_data["sproj"][:, 0], topography_data["sproj"][:, 1])).T
             topo = griddata(points, numpy.ravel(numpy.array(topography)), (x_arr, y_arr), method='linear')
-            topo=self.extend_with_nans(topo)
-            topo=self.spiral(topo)
-            topo=self.remove_outer_nans(topo)
+            topo = self.extend_with_nans(topo)
+            topo = self.spiral(topo)
+            topo = self.remove_outer_nans(topo)
         except KeyError as err:
             self.log.exception("Could not execute matplotlib.mlab.griddata...")
             raise LaunchException("The measure points location is not compatible with this viewer "
@@ -99,22 +99,22 @@ class BaseTopography():
         data_matrix[mask] = -1
         return data_matrix
 
-    def spiral(self,array):
-        X=array.shape[0]-2
-        Y=array.shape[1]-2
-        r=X/2
+    def spiral(self, array):
+        X = array.shape[0] - 2
+        Y = array.shape[1] - 2
+        r = X / 2
         x = y = 0
         dx = 0
         dy = -1
-        nx=[-1,-1,-1,0,0,1,1,1]
-        ny=[-1,0,1,-1,1,-1,0,1]
+        nx = [-1, -1, -1, 0, 0, 1, 1, 1]
+        ny = [-1, 0, 1, -1, 1, -1, 0, 1]
         for i in range(max(X, Y) ** 2):
             if (-X / 2 < x <= X / 2) and (-Y / 2 < y <= Y / 2):
-                if(numpy.isnan(array[x+r][y+r])):
-                    neighbors=[]
-                    for j in range(0,8):
-                        neighbors.append(array[x+r+nx[j]][y+r+ny[j]])
-                    array[x + r][y + r]=self.compute_avg(neighbors)
+                if (numpy.isnan(array[x + r][y + r])):
+                    neighbors = []
+                    for j in range(0, 8):
+                        neighbors.append(array[x + r + nx[j]][y + r + ny[j]])
+                    array[x + r][y + r] = self.compute_avg(neighbors)
             if x == y or (x < 0 and x == -y) or (x > 0 and x == 1 - y):
                 dx, dy = -dy, dx
             x, y = x + dx, y + dy
@@ -123,32 +123,31 @@ class BaseTopography():
     @staticmethod
     def compute_avg(array):
         sum = 0
-        dimension=0
+        dimension = 0
         for x in array:
             if (not numpy.isnan(x)):
                 sum += x
-                dimension+=1
+                dimension += 1
 
-        return sum/float(dimension)
+        return sum / float(dimension)
 
     def extend_with_nans(self, data_matrix):
-        n=data_matrix.shape[0]
-        extended=numpy.empty((n+2,n+2,))
+        n = data_matrix.shape[0]
+        extended = numpy.empty((n + 2, n + 2,))
         extended[:] = numpy.nan
-        for i in range(1,n+1):
-            for j in range(1, n+1):
-                extended[i][j]=data_matrix[i-1][j-1]
+        for i in range(1, n + 1):
+            for j in range(1, n + 1):
+                extended[i][j] = data_matrix[i - 1][j - 1]
         return extended
 
     def remove_outer_nans(self, data_matrix):
-        n=data_matrix.shape[0]
-        reduced=numpy.empty((n-2,n-2,))
+        n = data_matrix.shape[0]
+        reduced = numpy.empty((n - 2, n - 2,))
         reduced[:] = numpy.nan
-        for i in range(0,n-2):
-            for j in range(0, n-2):
-                reduced[i][j]=data_matrix[i+1][j+1]
+        for i in range(0, n - 2):
+            for j in range(0, n - 2):
+                reduced[i][j] = data_matrix[i + 1][j + 1]
         return reduced
-
 
     @staticmethod
     def prepare_sensors(sensor_locations, resolution=100):
@@ -233,12 +232,8 @@ class TopographicViewer(BaseTopography, ABCDisplayer):
                 min_vals.append(measure.array_data.min())
                 max_vals.append(measure.array_data.max())
 
-        # Check that we are displaying the same metric
-        color_bar_min = 0
-        color_bar_max = 0
-        if titles.count(titles[0]) == len(titles):
-            color_bar_min = min(min_vals)
-            color_bar_max = max(max_vals)
+        color_bar_min = min(min_vals)
+        color_bar_max = max(max_vals)
 
         self.init_topography(sensor_locations)
 

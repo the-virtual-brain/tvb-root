@@ -24,9 +24,23 @@
     margin-top: 20px;
 }
 
-#histogramCanvasId { width:95%; height:90%; }
-#histogramLegend { position: absolute; right: 35px; top: 20px; height: 90%;}
-#histogramLegendLabels { position: absolute; top: 0; left:-15px; }
+#histogramCanvasId {
+    width: 95%;
+    height: 90%;
+}
+
+#histogramLegend {
+    position: absolute;
+    right: 35px;
+    top: 20px;
+    height: 90%;
+}
+
+#histogramLegendLabels {
+    position: absolute;
+    top: 0;
+    left: -15px;
+}
 
 .mplh5_button_menu {
     -moz-border-radius-bottomleft: 5px;
@@ -61,8 +75,8 @@
     position: absolute;
     display: none;
     border: 2px dashed grey;
-    top:0;
-    left:0;
+    top: 0;
+    left: 0;
 }
 
 .flot-x-axis div.flot-tick-label {
@@ -83,7 +97,7 @@
     -o-transform-origin: 0 0;
 }
 
-div.flot-tick-label{
+div.flot-tick-label {
     /* increase label contrast*/
     color: #000000;
 }
@@ -100,23 +114,23 @@ div.flot-tick-label{
 
 .draw-svg-container {
     position: absolute;
-    top:0;
-    left:0;
-    width:95%;
+    top: 0;
+    left: 0;
+    width: 95%;
     height: 95%;
 }
 
 .matrix2d-main-canvas {
     position: absolute;
-    left:8%;
-    top:6%;
+    left: 8%;
+    top: 6%;
     height: 80%;
 }
 
 .matrix2d-draw-content {
-    height:85%;
-    position:relative;
-    top:5%;
+    height: 85%;
+    position: relative;
+    top: 5%;
 }
 
 .matrix2d-toolTip {
@@ -129,30 +143,95 @@ div.flot-tick-label{
 }
 
 .curve_draw_area {
-    height:85%;
-    width:95%;
-    position:relative;
-    top:5%;
-    left:5%;
-}
-
-.topographic_data {
-    position: absolute;
-    left:8%;
-    top:16%;
-    height: 80%;
-}
-
-.topographic_contour {
-     position: absolute;
-    left:8%;
-    top:6%;
-    height: 100%;
-    width: 70%;
+    height: 85%;
+    width: 95%;
+    position: relative;
+    top: 5%;
+    left: 5%;
 }
 
 .topographic_space {
-    height:85%;
-    position:relative;
-    top:5%;
+    height: 85%;
+    position: relative;
+    top: 5%;
+    overflow: auto;
+}
+
+.topographic_canvas {
+    position: absolute;
+    left: 10%;
+    top: 20%;
+    width: 80%;
+}
+
+.topographic_svg {
+    position: absolute;
+    top: 5%;
+    left: 0;
+    height: 100%;
+    width: 100%;
+
+}
+
+.topographic_1 {
+    width: 35%;
+    height: 100%;
+    left: 20%;
+    position: relative;
+}
+
+.topographic_2 {
+    width: 35%;
+    height: 100%;
+    float: left;
+    position: relative;
+    top: 5%;
+}
+
+.topographic_3 {
+    width: 30%;
+    height: 100%;
+    float: left;
+    position: relative;
+}
+
+.topographic_left_ear {
+    position: absolute;
+    top: 45%;
+    left: 3%;
+    width: 10%;
+    font-weight: bold;
+    cursor: default;
+}
+
+.topographic_right_ear {
+    position: absolute;
+    top: 45%;
+    left: 115%;
+    width: 10%;
+    font-weight: bold;
+    cursor: default;
+}
+
+.topographic_nose {
+    left: 46%;
+    top: 15%;
+    position: absolute;
+    font-size: 15px;
+    font-weight: bold;
+    cursor: default;
+}
+
+.topographic_title {
+    display: block;
+    top: 3%;
+    font-size: 20px;
+    text-align: center;
+    cursor: default;
+}
+
+.topographic_text_allign {
+    position: absolute;
+    top: 20%;
+    width: 80%;
 }
