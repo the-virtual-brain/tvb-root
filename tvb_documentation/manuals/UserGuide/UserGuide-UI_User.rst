@@ -79,10 +79,6 @@ Cherrypy port:
     the port used by cherrypy. You need to make sure this port is not used by some other
     application otherwise |TVB| will not start.
 
-Matplotlib port:
-    the port used by matplotlib. You need to make sure this port is not used by some other
-    application otherwise some visualizers will not work.
-
 Deploy on cluster:
     set true if you want to run |TVB| on a cluster environment.
 
