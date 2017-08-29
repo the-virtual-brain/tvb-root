@@ -70,6 +70,6 @@ class PCA(ABCDisplayer):
                                                           weights_update_url=weights_update_url))
 
 
-    def generate_preview(self, pca, figure_size):
+    def generate_preview(self, pca, figure_size=None):
         return self.launch(pca)
 
