@@ -46,7 +46,7 @@ from tvb.core.entities.transient.structure_entities import DataTypeMetaData
 from tvb.core.entities.transient.burst_configuration_entities import PortletConfiguration, WorkflowStepConfiguration
 from tvb.core.entities.storage import dao, transactional
 from tvb.core.adapters.abcadapter import ABCAdapter
-from tvb.core.adapters.abcdisplayer import ABCDisplayer, ABCMPLH5Displayer
+from tvb.core.adapters.abcdisplayer import ABCDisplayer
 from tvb.core.services.operation_service import OperationService
 from tvb.core.services.flow_service import FlowService
 from tvb.core.services.workflow_service import WorkflowService
@@ -476,8 +476,6 @@ class BurstService(object):
         prepared_inputs = adapter_instance.prepare_ui_inputs(parameters_dict)
         if frame_width is not None:
             prepared_inputs[ABCDisplayer.PARAM_FIGURE_SIZE] = (frame_width, frame_height)
-        if isinstance(adapter_instance, ABCMPLH5Displayer) and is_preview is True:
-            prepared_inputs[ABCMPLH5Displayer.SHOW_FULL_TOOLBAR] = False
 
         if is_preview:
             result = adapter_instance.generate_preview(**prepared_inputs)

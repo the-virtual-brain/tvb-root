@@ -49,7 +49,6 @@ from tvb.interfaces.web.controllers import common
 from tvb.interfaces.web.controllers.settings_controller import SettingsController
 
 
-
 class SettingsControllerTest(BaseTransactionalControllerTest):
     """
     Unit tests for SettingsController class
@@ -72,9 +71,7 @@ class SettingsControllerTest(BaseTransactionalControllerTest):
                       'URL_VALUE': accepted_db_url,
 
                       'URL_WEB': "http://localhost:9999/",
-                      'URL_MPLH5': "ws://localhost:8888/",
                       'WEB_SERVER_PORT': 9999,
-                      'MPLH5_SERVER_PORT': 8888,
 
                       'ADMINISTRATOR_NAME': 'test_admin',
                       'ADMINISTRATOR_PASSWORD': "test_pass",
@@ -108,13 +105,10 @@ class SettingsControllerTest(BaseTransactionalControllerTest):
     def test_with_invalid_web_settings(self):
 
         self._assert_invalid_parameters({'URL_WEB': '',
-                                         'URL_MPLH5': '',
-                                         'WEB_SERVER_PORT': 'a',
-                                         'MPLH5_SERVER_PORT': 'b'})
+                                         'WEB_SERVER_PORT': 'a'})
 
         self._assert_invalid_parameters({'URL_WEB': 'off://bla',
-                                         'WEB_SERVER_PORT': '70000',
-                                         'MPLH5_SERVER_PORT': '-1'})
+                                         'WEB_SERVER_PORT': '70000'})
 
 
     def test_with_invalid_settings(self):
@@ -177,9 +171,7 @@ class SettingsControllerTest(BaseTransactionalControllerTest):
         self.assertEqual(submit_data['URL_VALUE'], TvbProfile.current.db.DB_URL)
 
         self.assertEqual(submit_data['URL_WEB'], TvbProfile.current.web.BASE_URL)
-        self.assertEqual(submit_data['URL_MPLH5'], TvbProfile.current.web.MPLH5_SERVER_URL)
         self.assertEqual(submit_data['WEB_SERVER_PORT'], TvbProfile.current.web.SERVER_PORT)
-        self.assertEqual(submit_data['MPLH5_SERVER_PORT'], TvbProfile.current.web.MPLH5_SERVER_PORT)
 
         self.assertEqual(submit_data['ADMINISTRATOR_NAME'], TvbProfile.current.web.admin.ADMINISTRATOR_NAME)
         self.assertEqual(submit_data['ADMINISTRATOR_EMAIL'], TvbProfile.current.web.admin.ADMINISTRATOR_EMAIL)
@@ -224,8 +216,6 @@ class SettingsControllerTest(BaseTransactionalControllerTest):
         self.assertEqual(result['status'], 'not ok')
 
 
-        
-        
 def suite():
     """
     Gather all the tests in a test suite.
@@ -236,8 +226,7 @@ def suite():
 
 
 if __name__ == "__main__":
-    #So you can run tests individually.
+    # So you can run tests individually.
     TEST_RUNNER = unittest.TextTestRunner()
     TEST_SUITE = suite()
     TEST_RUNNER.run(TEST_SUITE)
-

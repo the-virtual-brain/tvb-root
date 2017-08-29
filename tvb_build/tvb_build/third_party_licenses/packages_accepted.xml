@@ -770,16 +770,6 @@
         <copyright-notice value="Copyright (c) 2002-2009 John D. Hunter; All Rights Reserved"/>
         <description value="This package is part of Matplotlib."/>
     </dependency>
-    <dependency env="[win,mac,linux]" name="mplh5canvas">
-        <full-name value="Matplotlib HTML5 Backend"/>
-        <project-home value="http://code.google.com/p/mplh5canvas/"/>
-        <version value="1.0tvb"/>
-        <usage value="modified and included"/>
-        <license value="LICENSE_mplh5canvas_.txt"/>
-        <license-type value="New BSD_"/>
-        <copyright-notice value="Copyright (c) 2010-2011, SKA South Africa"/>
-        <description value=""/>
-    </dependency>
     <dependency env="[win,mac,linux]" name="networkx">
         <full-name value="NetworkX"/>
         <project-home value="http://networkx.lanl.gov/reference/legal.html"/>

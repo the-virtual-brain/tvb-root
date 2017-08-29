@@ -1,5 +1,15 @@
 ======================================================================================================================================
  The Virtual Brain (TVB)
+ Version: 1.5.4 - build 84xx
+ Release Date:  2017
+ Description: Visualizers Improvements.
+======================================================================================================================================
+    * Add Connectivity Edge Bundle Viewers
+    * Replace MPLH5 Visualizers with new ones based on D3.JS
+    *
+
+======================================================================================================================================
+ The Virtual Brain (TVB)
  Version: 1.5.3 - build 8255
  Release Date: 12 May 2017
  Description: Bug fixing.

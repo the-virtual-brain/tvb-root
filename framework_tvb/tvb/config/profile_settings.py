@@ -61,11 +61,6 @@ class WebSettingsProfile(BaseSettingsProfile):
         from tvb.core.traits import db_events
         db_events.attach_db_events()
 
-        from tvb.basic.logger.builder import get_logger
-        from tvb.interfaces.web.mplh5 import mplh5_server
-        log = get_logger('tvb.interfaces.web.mplh5.mplh5_server')
-        mplh5_server.start_server(log)
-
 
     def initialize_for_deployment(self):
         """

@@ -4,13 +4,6 @@
 
 # set up external dependencies that we maintain as distutils packages in externals/
 
-cd externals/mplh5canvas
-python setup.py install
-rm -rf mplh5canvas.egg-info
-rm -rf build
-rm -rf dist
-cd ../..
-
 #cd externals/geodesic_distance
 #python setup.py install
 #rm -rf build

@@ -219,7 +219,6 @@ class FlowController(BaseController):
                 ('Referer' in cherrypy.request.headers and 'step' not in cherrypy.request.headers['Referer']))
                     and 'View' in algorithm.algorithm_category.displayname):
                 # Avoid reset in case of Visualizers, as a supplementary GET
-                # might be enforced by MPLH5 on FF.
                 not_reset = True
             template_specification = self.get_template_for_adapter(project.id, step_key, algorithm,
                                                                    submit_link, not not_reset, is_burst=is_burst)

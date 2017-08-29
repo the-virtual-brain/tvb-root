@@ -45,15 +45,13 @@ KEY_ADMIN_EMAIL = 'ADMINISTRATOR_EMAIL'
 KEY_TVB_PATH = 'TVB_PATH'
 KEY_STORAGE = 'TVB_STORAGE'
 KEY_MAX_DISK_SPACE_USR = 'USR_DISK_SPACE'
-#During the introspection phase, it is checked if either Matlab or
-#octave are installed and available trough the system PATH variable
-#If so, they will be used for some analyzers
+# During the introspection phase, it is checked if either Matlab or
+# octave are installed and available trough the system PATH variable
+# If so, they will be used for some analyzers
 KEY_MATLAB_EXECUTABLE = 'MATLAB_EXECUTABLE'
 KEY_IP = 'SERVER_IP'
 KEY_PORT = 'WEB_SERVER_PORT'
-KEY_PORT_MPLH5 = 'MPLH5_SERVER_PORT'
 KEY_URL_WEB = 'URL_WEB'
-KEY_URL_MPLH5 = 'URL_MPLH5'
 KEY_SELECTED_DB = 'SELECTED_DB'
 KEY_DB_URL = 'URL_VALUE'
 KEY_URL_VERSION = 'URL_TVB_VERSION'
@@ -66,9 +64,7 @@ KEY_LAST_CHECKED_CODE_VERSION = 'LAST_CHECKED_CODE_VERSION'
 KEY_FILE_STORAGE_UPDATE_STATUS = 'FILE_STORAGE_UPDATE_STATUS'
 
 
-class SettingsManager():
-
-
+class SettingsManager(object):
     def __init__(self, config_file_location):
         self.config_file_location = config_file_location
         self.stored_settings = self._read_config_file()
@@ -138,4 +134,3 @@ class SettingsManager():
 
     def is_first_run(self):
         return self.stored_settings is None or len(self.stored_settings) <= 2
-

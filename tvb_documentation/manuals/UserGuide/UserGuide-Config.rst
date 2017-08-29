@@ -25,7 +25,6 @@ Copy the following content and edit it to suit your needs. ::
     MATLAB_EXECUTABLE=/usr/bin/octave
     MAXIMUM_NR_OF_THREADS=4
     WEB_SERVER_PORT=8080
-    URL_MPLH5=ws://127.0.0.1:9000/
     LAST_CHECKED_CODE_VERSION=6507
     USR_DISK_SPACE=5242880
     DEPLOY_CLUSTER=False
@@ -35,7 +34,6 @@ Copy the following content and edit it to suit your needs. ::
     ADMINISTRATOR_PASSWORD=[[md5 of password]]
     SELECTED_DB=sqlite
     MAXIMUM_NR_OF_VERTICES_ON_SURFACE=300000
-    MPLH5_SERVER_PORT=9000
     TVB_STORAGE=/home/tvb_user/TVB
 
 Usually one would change the web server port and domain.

@@ -92,14 +92,8 @@ class SettingsController(UserController):
 
     def _restart_services(self, should_reset):
         """
-        Restart CherryPy and Backend.
+        Restart CherryPy Backend.
         """
-        mplh5 = TvbProfile.current.web.MPLH5_Server_Thread
-        if mplh5 is not None:
-            mplh5.shutdown()
-            mplh5.server_close()
-        else:
-            self.logger.warning('For some reason the mplh5 never started.')
         cherrypy.engine.exit()
 
         self.logger.info("Waiting for Cherrypy to shut down ... ")
@@ -277,9 +271,7 @@ class SettingsForm(formencode.Schema):
     ADMINISTRATOR_EMAIL = validators.Email(not_empty=True)
 
     WEB_SERVER_PORT = PortValidator()
-    MPLH5_SERVER_PORT = PortValidator()
     URL_WEB = validators.URL(not_empty=True, require_tld=False)
-    URL_MPLH5 = AsciiValidator(not_empty=True)
 
     SELECTED_DB = validators.UnicodeString(not_empty=True)
     URL_VALUE = validators.UnicodeString(not_empty=True)

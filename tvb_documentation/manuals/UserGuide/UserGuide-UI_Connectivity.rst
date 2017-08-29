@@ -39,7 +39,6 @@ The left `View` column contains several Long Range Connectivity visualizations:
         - Right
         - Top
 
-    - a MPLH5 plot of the connectivity weights matrix
     - a 3D view showing the time evolution of the connectivity matrix
 
 The right column contains the connectivity matrix editor.
@@ -389,22 +388,6 @@ Nodes with values above the threshold will be red and those whose value are belo
       :width: 50%
       :align: center
 
-
-
-|
-|
-
-Matrix Overview
-~~~~~~~~~~~~~~~
-
-A 2D matrix plot to have a complete overview of the initially selected weighted
-connectivity matrix.
-
-.. figure:: screenshots/connectivity_mplh5.jpg
-   :width: 50%
-   :align: center
-   
-   Preview for Matrix Overview display
 
 
 |

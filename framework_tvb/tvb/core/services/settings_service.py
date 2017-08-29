@@ -45,8 +45,7 @@ from tvb.core.utils import get_matlab_executable
 from tvb.core.services.exceptions import InvalidSettingsException
 
 
-
-class SettingsService():
+class SettingsService(object):
     """
     Handle all TVB Setting related problems, at the service level.
     """
@@ -58,9 +57,7 @@ class SettingsService():
     KEY_MAX_DISK_SPACE_USR = stored.KEY_MAX_DISK_SPACE_USR
     KEY_MATLAB_EXECUTABLE = stored.KEY_MATLAB_EXECUTABLE
     KEY_PORT = stored.KEY_PORT
-    KEY_PORT_MPLH5 = stored.KEY_PORT_MPLH5
     KEY_URL_WEB = stored.KEY_URL_WEB
-    KEY_URL_MPLH5 = stored.KEY_URL_MPLH5
     KEY_SELECTED_DB = stored.KEY_SELECTED_DB
     KEY_DB_URL = stored.KEY_DB_URL
     KEY_CLUSTER = stored.KEY_CLUSTER
@@ -68,10 +65,10 @@ class SettingsService():
     KEY_MAX_RANGE = stored.KEY_MAX_RANGE_NR
     KEY_MAX_NR_SURFACE_VERTEX = stored.KEY_MAX_NR_SURFACE_VERTEX
 
-    #Display order for the keys. None means a separator/new line will be added
+    # Display order for the keys. None means a separator/new line will be added
     KEYS_DISPLAY_ORDER = [KEY_ADMIN_NAME, KEY_ADMIN_PWD, KEY_ADMIN_EMAIL, None,
                           KEY_STORAGE, KEY_MAX_DISK_SPACE_USR, KEY_MATLAB_EXECUTABLE, KEY_SELECTED_DB, KEY_DB_URL, None,
-                          KEY_PORT, KEY_PORT_MPLH5, KEY_URL_WEB, KEY_URL_MPLH5, None,
+                          KEY_PORT, KEY_URL_WEB, None,
                           KEY_CLUSTER, KEY_MAX_NR_THREADS, KEY_MAX_RANGE, KEY_MAX_NR_SURFACE_VERTEX]
 
 
@@ -97,12 +94,8 @@ class SettingsService():
 
             self.KEY_PORT: {'label': 'Port to run Cherrypy on',
                             'value': TvbProfile.current.web.SERVER_PORT, 'dtype': 'primitive', 'type': 'text'},
-            self.KEY_PORT_MPLH5: {'label': 'Port to run Matplotlib on', 'type': 'text', 'dtype': 'primitive',
-                                  'value': TvbProfile.current.web.MPLH5_SERVER_PORT},
             self.KEY_URL_WEB: {'label': 'URL for accessing web',
                                'value': TvbProfile.current.web.BASE_URL, 'type': 'text', 'dtype': 'primitive'},
-            self.KEY_URL_MPLH5: {'label': 'URL for accessing MPLH5 visualizers', 'type': 'text',
-                                 'value': TvbProfile.current.web.MPLH5_SERVER_URL, 'dtype': 'primitive'},
 
             self.KEY_MAX_NR_THREADS: {'label': 'Maximum no. of threads for local installations', 'type': 'text',
                                       'value': TvbProfile.current.MAX_THREADS_NUMBER, 'dtype': 'primitive'},
@@ -159,7 +152,7 @@ class SettingsService():
             mem_stat = os.statvfs(storage_path)
             bytes_value = mem_stat.f_frsize * mem_stat.f_bavail
             ## Occupied memory would be:
-            #bytes_value = mem_stat.f_bsize * mem_stat.f_bavail
+            # bytes_value = mem_stat.f_bsize * mem_stat.f_bavail
         return bytes_value / 2 ** 10
 
 
@@ -182,7 +175,7 @@ class SettingsService():
         matlab_exec = data[self.KEY_MATLAB_EXECUTABLE]
         if matlab_exec == 'None':
             data[self.KEY_MATLAB_EXECUTABLE] = ''
-        #Storage changed but DB didn't, just copy TVB storage to new one.
+        # Storage changed but DB didn't, just copy TVB storage to new one.
         if storage_changed and not db_changed:
             if os.path.exists(new_storage):
                 if os.access(new_storage, os.W_OK):
@@ -190,7 +183,7 @@ class SettingsService():
                 else:
                     raise InvalidSettingsException("No Write access on storage folder!!")
             shutil.copytree(previous_storage, new_storage)
-            
+
         if not os.path.isdir(new_storage):
             os.makedirs(new_storage)
         max_space = data[self.KEY_MAX_DISK_SPACE_USR]
@@ -201,7 +194,7 @@ class SettingsService():
                                            "or partition. Wanted %d" % (available_mem_kb / (2 ** 10), max_space))
         data[self.KEY_MAX_DISK_SPACE_USR] = kb_value
 
-        #Save data to file, all while checking if any data has changed
+        # Save data to file, all while checking if any data has changed
         first_run = TvbProfile.is_first_run()
         if first_run:
             data[stored.KEY_LAST_CHECKED_FILE_VERSION] = TvbProfile.current.version.DATA_VERSION
@@ -228,4 +221,3 @@ class SettingsService():
             TvbProfile.current.manager.write_config_data(file_data)
             os.chmod(TvbProfile.current.TVB_CONFIG_FILE, 0o644)
         return anything_changed, first_run or db_changed
-

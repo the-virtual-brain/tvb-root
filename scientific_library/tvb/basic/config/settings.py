@@ -195,7 +195,6 @@ class WebSettings(object):
     RENDER_HTML = True
     VISUALIZERS_ROOT = "tvb.interfaces.web.templates.genshi.visualizers"
     VISUALIZERS_URL_PREFIX = "/flow/read_datatype_attribute/"
-    MPLH5_Server_Thread = None  # This is going to be set at init-time, by MPLH5 backend
 
 
     def __init__(self, manager, enabled):
@@ -214,7 +213,6 @@ class WebSettings(object):
             self.VISUALIZERS_URL_PREFIX = ""
 
         self.SERVER_PORT = manager.get_attribute(stored.KEY_PORT, 8080, int)
-        self.MPLH5_SERVER_PORT = manager.get_attribute(stored.KEY_PORT_MPLH5, 9000, int)
 
         # Compute reference towards the current web application, valid FROM localhost
         server_IP = manager.get_attribute(stored.KEY_IP, self.LOCALHOST)
@@ -222,10 +220,6 @@ class WebSettings(object):
 
         # Compute PUBLIC reference towards the current web application, valid FROM outside
         self.BASE_URL = manager.get_attribute(stored.KEY_URL_WEB, self.BASE_LOCAL_URL)
-
-        # URL for accessing the Matplotlib HTML5 backend
-        default = "ws://%s:%s/" % (server_IP, str(self.MPLH5_SERVER_PORT))
-        self.MPLH5_SERVER_URL = manager.get_attribute(stored.KEY_URL_MPLH5, default)
 
         # URL for reading current available version information.
         default = "http://www.thevirtualbrain.org/tvb/zwei/action/serialize-version?version=1&type=json"
