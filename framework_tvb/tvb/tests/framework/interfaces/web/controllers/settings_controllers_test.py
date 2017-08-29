@@ -157,7 +157,7 @@ class SettingsControllerTest(BaseTransactionalControllerTest):
         # wait until 'restart' is done
         sleep(1)
         self.assertTrue(self.was_reset)
-        self.assertEqual(18, len(TvbProfile.current.manager.stored_settings))
+        self.assertEqual(16, len(TvbProfile.current.manager.stored_settings))
 
         self.assertEqual(submit_data['TVB_STORAGE'], TvbProfile.current.TVB_STORAGE)
         self.assertEqual(submit_data['USR_DISK_SPACE'] * 2 ** 10, TvbProfile.current.MAX_DISK_SPACE)
