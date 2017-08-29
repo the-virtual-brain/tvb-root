@@ -44,7 +44,7 @@ from tvb.datatypes.graph import ConnectivityMeasure
 from tvb.basic.filters.chain import FilterChain
 
 
-class BaseTopography():
+class BaseTopography(object):
     """
     Base class for topographic visualizers.
     """
@@ -241,8 +241,8 @@ class TopographicViewer(BaseTopography, ABCDisplayer):
             data_array = self._get_topography_array(array_data, self.topography_data)
             data_array = self.fit_circle(data_array)
             has_nan = numpy.any(numpy.isnan(data_array))
-            if(has_nan):
-                data_array[:] = color_bar_min-1
+            if (has_nan):
+                data_array[:] = color_bar_min - 1
                 titles[i] = titles[i] + "\n - Topography contains nan -"
             data_arrays.append(ABCDisplayer.dump_with_precision(data_array.flat))
 

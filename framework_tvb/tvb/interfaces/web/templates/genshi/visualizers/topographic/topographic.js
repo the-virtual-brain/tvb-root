@@ -97,7 +97,7 @@ function drawContours() {
 }
 
 function drawContour(data, index) {
-   var text_align = $('.topographic_text_allign');
+    var text_align = $('.topographic_text_allign');
     var cw = text_align.width();
     text_align.css({
         'height': cw + 'px'

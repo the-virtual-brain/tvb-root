@@ -20,10 +20,12 @@
         </div>
         <script type="text/javascript">
             $(document).ready(function () {
-                if("${index}==1"){
+                if ("${index}==1") {
                     $("#main").addClass("colscheme-1");
                     window.onresize = drawContours;
-                    function launchViewer(width, height) {}
+
+                    function launchViewer(width, height) {
+                    }
                 }
                 topographic_init('${matrix_datas[index-1]}', '${matrix_shape}', ${vmin}, ${vmax}, ${index});
             });

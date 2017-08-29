@@ -42,35 +42,6 @@
     left: -15px;
 }
 
-.mplh5_button_menu {
-    -moz-border-radius-bottomleft: 5px;
-    border-bottom-left-radius: 5px;
-    -moz-border-radius-bottomright: 5px;
-    border-bottom-right-radius: 5px;
-    background: #336699;
-    border: solid 1px grey;
-    top: -1px;
-    position: relative;
-    height: 20px;
-}
-
-.mplh5_limit_div {
-    cursor: crosshair;
-    height: 0px;
-    width: 0px;
-    border: none;
-    position: absolute;
-}
-
-.mplh5_zoom_div {
-    height: 0px;
-    width: 0px;
-    border: 1px dashed grey;
-    position: absolute;
-    left: 0px;
-    top: 0px;
-}
-
 #resize_div {
     position: absolute;
     display: none;
