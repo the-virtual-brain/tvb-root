@@ -241,7 +241,9 @@ class TopographicViewer(BaseTopography, ABCDisplayer):
             data_array = self._get_topography_array(array_data, self.topography_data)
             data_array = self.fit_circle(data_array)
             has_nan = numpy.any(numpy.isnan(data_array))
-            titles[i] = titles[i] + ("\n - Topography contains nan -" if has_nan else "")
+            if(has_nan):
+                data_array[:] = color_bar_min-1
+                titles[i] = titles[i] + "\n - Topography contains nan -"
             data_arrays.append(ABCDisplayer.dump_with_precision(data_array.flat))
 
         params = dict(matrix_datas=data_arrays,
