@@ -1,0 +1,45 @@
+<div xmlns:py="http://genshi.edgewall.org/" id="wavelet-root" class="view-column">
+
+    <script type="text/javascript" src="/static/js/d3.v3.js"></script>
+    <script type="text/javascript" src="/static_view/topographic/topographic.js?$currentVersionJS"></script>
+    <script type="text/javascript" src="/static/coloring/colorSchemeComponent.js?$currentVersionJS"></script>
+    <script type="text/javascript" src="https://d3js.org/d3-contour.v1.min.js"></script>
+    <script type="text/javascript" src="https://d3js.org/d3-geo.v1.min.js"></script>
+
+    <link type="text/css" rel="stylesheet" href="/static/style/section_visualisers.css?$currentVersionJS"/>
+
+    <div class="topographic_space" id="canvasParent">
+        <div class="matrix-legend" id="colorWeightsLegend"></div>
+        <div class="matrix-legend">
+            <table id="table-colorWeightsLegend" class="table-legend-labels">
+                <py:for each='label in range(7)'>
+                    <py:if test='label != 0'>
+                        <tr height="${str(100/8) + '%'}" style='vertical-align: bottom;'>
+                            <td>${label}</td>
+                        </tr>
+                    </py:if>
+                    <py:if test='label == 0'>
+                        <tr height="20px">
+                            <td>${label}</td>
+                        </tr>
+                    </py:if>
+                </py:for>
+            </table>
+        </div>
+        <canvas class="topographic_data" id="main-canvas-2d"></canvas>
+        <svg class="topographic_contour" id="svg-container">
+            <circle id="head-contour"></circle>
+        </svg>
+    </div>
+
+    <script type="text/javascript">
+        $(document).ready(function () {
+            $("#main").addClass("colscheme-1");
+            topographic_init('${title}', '${matrix_data}', '${matrix_shape}',
+                ${vmin}, ${vmax}, '${url_base}');
+        });
+        // For the burst Preview part
+        function launchViewer(width, height) {
+        }
+    </script>
+</div>

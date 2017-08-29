@@ -110,7 +110,6 @@ div.flot-tick-label{
     position: absolute;
     left:8%;
     top:6%;
-    width:80%;
     height: 80%;
 }
 
@@ -135,4 +134,25 @@ div.flot-tick-label{
     position:relative;
     top:5%;
     left:5%;
+}
+
+.topographic_data {
+    position: absolute;
+    left:8%;
+    top:16%;
+    height: 80%;
+}
+
+.topographic_contour {
+     position: absolute;
+    left:8%;
+    top:6%;
+    height: 100%;
+    width: 70%;
+}
+
+.topographic_space {
+    height:85%;
+    position:relative;
+    top:5%;
 }

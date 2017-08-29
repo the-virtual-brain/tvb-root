@@ -35,6 +35,6 @@ Listed modules will be introspected and DB filled.
 
 __all__ = ["annotations_viewer", "brain", "complex_imaginary_coherence", "connectivity", "connectivity_edge_bundle",
            "covariance", "cross_coherence", "cross_correlation", "eeg_monitor", "fourier_spectrum",
-           "histogram", "ica", "local_connectivity_view", "matrix_viewer", "mplh5_topographic", "pca",
-           "pearson_cross_correlation", "pearson_edge_bundle", "pse_discrete", "pse_isocline", "region_volume_mapping",
-           "sensors", "surface_view", "time_series", "time_series_volume", "tract", "wavelet_spectrogram"]
+           "histogram", "ica", "local_connectivity_view", "matrix_viewer", "pca", "pearson_cross_correlation",
+           "pearson_edge_bundle", "pse_discrete", "pse_isocline", "region_volume_mapping", "sensors", "surface_view",
+           "time_series", "time_series_volume", "tract", "topographic", "wavelet_spectrogram"]
