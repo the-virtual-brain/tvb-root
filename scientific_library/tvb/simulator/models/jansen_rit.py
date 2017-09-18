@@ -31,9 +31,10 @@ Jansen-Rit and derivative models.
 
 """
 
-from .base import ModelNumbaDfun, Model, LOG, numpy, basic, arrays
+from .base import ModelNumbaDfun, Model, numpy, basic, arrays
 import math
 from numba import guvectorize, float64
+
 
 class JansenRit(ModelNumbaDfun):
     r"""
@@ -78,7 +79,7 @@ class JansenRit(ModelNumbaDfun):
                                   'a_1', 'a_2', 'a_3', 'a_4', 'p_min', 'p_max',
                                   'mu']
 
-    #Define traited attributes for this model, these represent possible kwargs.
+    # Define traited attributes for this model, these represent possible kwargs.
     A = arrays.FloatArray(
         label=":math:`A`",
         default=numpy.array([3.25]),
@@ -148,32 +149,28 @@ class JansenRit(ModelNumbaDfun):
         label=r":math:`\alpha_1`",
         default=numpy.array([1.0]),
         range=basic.Range(lo=0.5, hi=1.5, step=0.1),
-        doc="""Average probability of synaptic contacts in the feedback
-        excitatory loop.""",
+        doc="""Average probability of synaptic contacts in the feedback excitatory loop.""",
         order=9)
 
     a_2 = arrays.FloatArray(
         label=r":math:`\alpha_2`",
         default=numpy.array([0.8]),
         range=basic.Range(lo=0.4, hi=1.2, step=0.1),
-        doc="""Average probability of synaptic contacts in the feedback
-        excitatory loop.""",
+        doc="""Average probability of synaptic contacts in the slow feedback excitatory loop.""",
         order=10)
 
     a_3 = arrays.FloatArray(
         label=r":math:`\alpha_3`",
         default=numpy.array([0.25]),
         range=basic.Range(lo=0.125, hi=0.375, step=0.005),
-        doc="""Average probability of synaptic contacts in the feedback
-        excitatory loop.""",
+        doc="""Average probability of synaptic contacts in the feedback inhibitory loop.""",
         order=11)
 
     a_4 = arrays.FloatArray(
         label=r":math:`\alpha_4`",
         default=numpy.array([0.25]),
         range=basic.Range(lo=0.125, hi=0.375, step=0.005),
-        doc="""Average probability of synaptic contacts in the slow feedback
-        inhibitory loop.""",
+        doc="""Average probability of synaptic contacts in the slow feedback inhibitory loop.""",
         order=12)
 
     p_min = arrays.FloatArray(
