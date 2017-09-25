@@ -1,0 +1,21 @@
+
+Involved tools/sites
+--------------------
+    - Slaask    https://slaask.com/widgets/5970
+    - Slack     https://thevirtualbrain.slack.com
+    - api.ai    https://api.ai
+
+
+Role in the setup
+-----------------
+Slaask takes care of that little bubble on the TVB website, which can be customized and tracked.
+It also links it to a slack channel (https://thevirtualbrain.slack.com), so we can lively interact with the users.
+Slaask passes all the users’ queries to api.ai which takes care of the machine intelligence part.
+
+
+Accounts for these
+------------------
+For slaask, the admins are: lia.domide@codemart.ro, marmaduke.woodman@university-amu.fr and tvb.thevirtualbrain@gmail.com.
+The same for the slack group. Ask to any of the above addresses for new admin/member accounts.
+For api.ai, the admin is tvb.thevirtualbrain@gmail.com and a member is lia.domide@codemart.ro.
+
