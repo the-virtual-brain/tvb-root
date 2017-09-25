@@ -1,5 +1,5 @@
 /**
- * TheVirtualBrain-Framework Package. This package holds all Data Management, and 
+ * TheVirtualBrain-Framework Package. This package holds all Data Management, and
  * Web-UI helpful to run brain-simulations. To use it, you also need do download
  * TheVirtualBrain-Scientific Package (for simulators). See content of the
  * documentation-folder for more details. See also http://www.thevirtualbrain.org
@@ -47,12 +47,12 @@ function main(weights, selectionGID) {
     StimView.setGridText(updatedRegionStimulusWeights);
 }
 
-function _STIM_server_update_scaling(){
+function _STIM_server_update_scaling() {
     doAjaxCall({
         async: false,
         type: 'POST',
-        data: {'scaling' : JSON.stringify(updatedRegionStimulusWeights)},
-        url:'/spatial/stimulus/region/update_scaling'
+        data: {'scaling': JSON.stringify(updatedRegionStimulusWeights)},
+        url: '/spatial/stimulus/region/update_scaling'
     });
 }
 
@@ -60,11 +60,11 @@ function _STIM_server_update_scaling(){
  * Saves the given weight for all the selected nodes.
  */
 function STIM_saveWeightForSelectedNodes() {
-    var weightElement = $("#current_weight");
-    var newWeight = parseFloat(weightElement.val());
+    const weightElement = $("#current_weight");
+    let newWeight = parseFloat(weightElement.val());
     if (!isNaN(newWeight)) {
-        for (var i = 0; i < GVAR_interestAreaNodeIndexes.length; i++) {
-            var nodeIndex = GVAR_interestAreaNodeIndexes[i];
+        for (let i = 0; i < GVAR_interestAreaNodeIndexes.length; i++) {
+            const nodeIndex = GVAR_interestAreaNodeIndexes[i];
             updatedRegionStimulusWeights[nodeIndex] = newWeight;
         }
         weightElement.val("");
@@ -92,19 +92,19 @@ function STIM_resetRegionStimulusWeights() {
  * @param checkScaling
  */
 function STIM_submitRegionStimulusData(actionUrl, nextStep, checkScaling) {
-	if (checkScaling) {
-		var scalingSet = false;
-		for (var i=0; i<updatedRegionStimulusWeights.length; i++) {
-			if (updatedRegionStimulusWeights[i] != 0) {
-				scalingSet = true;
-			}
-		}
-		if ( !scalingSet ) {
-			displayMessage("You should set scaling that is not 0 for at least some nodes.", "warningMessage");
-        	return;
-		}
-	}
-	_submitPageData(actionUrl, {'next_step' : nextStep})
+    if (checkScaling) {
+        let scalingSet = false;
+        for (let i = 0; i < updatedRegionStimulusWeights.length; i++) {
+            if (updatedRegionStimulusWeights[i] !== 0) {
+                scalingSet = true;
+            }
+        }
+        if (!scalingSet) {
+            displayMessage("You should set scaling that is not 0 for at least some nodes.", "warningMessage");
+            return;
+        }
+    }
+    _submitPageData(actionUrl, {'next_step': nextStep})
 }
 
 
@@ -120,15 +120,15 @@ function STIM_submitRegionStimulusData(actionUrl, nextStep, checkScaling) {
  * Parse the entry for the focal points and load them into js to be later used.
  */
 function STIM_initFocalPoints(focal_points) {
-	for (var i = 0; i < focal_points.length; i++) {
-		var focalPoint = parseInt(focal_points[i]);
-		BS_addedFocalPointsTriangles.push(focalPoint);
-		BS_addedSurfaceFocalPoints.push(focalPoint);
-		TRIANGLE_pickedIndex = focalPoint;
-		BASE_PICK_moveBrainNavigator(true);
-		BASE_PICK_addFocalPoint(focalPoint);
-	}
-	BS_drawSurfaceFocalPoints();
+    for (let i = 0; i < focal_points.length; i++) {
+        const focalPoint = parseInt(focal_points[i]);
+        BS_addedFocalPointsTriangles.push(focalPoint);
+        BS_addedSurfaceFocalPoints.push(focalPoint);
+        TRIANGLE_pickedIndex = focalPoint;
+        BASE_PICK_moveBrainNavigator(true);
+        BASE_PICK_addFocalPoint(focalPoint);
+    }
+    BS_drawSurfaceFocalPoints();
 }
 
 
@@ -136,9 +136,9 @@ function STIM_initFocalPoints(focal_points) {
  * Remove all previously defined focal points.
  */
 function STIM_deleteAllFocalPoints() {
-	for (var i = BS_addedFocalPointsTriangles.length - 1; i >= 0; i--) {
-		BS_removeFocalPoint(i);
-	}
+    for (let i = BS_addedFocalPointsTriangles.length - 1; i >= 0; i--) {
+        BS_removeFocalPoint(i);
+    }
 }
 
 
@@ -154,10 +154,10 @@ function STIM_submitSurfaceStimulusData(actionUrl, nextStep, includeFocalPoints)
         displayMessage("You should define at least one focal point.", "errorMessage");
         return;
     }
-    var baseDict = {'next_step' : nextStep};
-	if (includeFocalPoints) {
-		baseDict['defined_focal_points'] = JSON.stringify(BS_addedFocalPointsTriangles);
-	}
+    let baseDict = {'next_step': nextStep};
+    if (includeFocalPoints) {
+        baseDict['defined_focal_points'] = JSON.stringify(BS_addedFocalPointsTriangles);
+    }
     _submitPageData(actionUrl, baseDict)
 }
 
@@ -169,25 +169,25 @@ function STIM_submitSurfaceStimulusData(actionUrl, nextStep, includeFocalPoints)
  * @param baseData:
  */
 function _submitPageData(actionUrl, baseData) {
-	var pageForms = $('form');
-	for (var i=0; i<pageForms.length; i++) {
-		pageForms[i].id = "form_id_" + i;
-		var formData = getSubmitableData(pageForms[i].id, false);
-		for (key in formData) {
-			baseData[key] = formData[key];
-		}
-	}
+    const pageForms = $('form');
+    for (let i = 0; i < pageForms.length; i++) {
+        pageForms[i].id = "form_id_" + i;
+        const formData = getSubmitableData(pageForms[i].id, false);
+        for (let key in formData) {
+            baseData[key] = formData[key];
+        }
+    }
 
-    var parametersForm = document.createElement("form");
+    const parametersForm = document.createElement("form");
     parametersForm.method = "POST";
     parametersForm.action = actionUrl;
     document.body.appendChild(parametersForm);
 
-    for (var key in baseData) {
-        var input = document.createElement('INPUT');
+    for (let k in baseData) {
+        const input = document.createElement('INPUT');
         input.type = 'hidden';
-        input.name = key;
-        input.value = baseData[key];
+        input.name = k;
+        input.value = baseData[k];
         parametersForm.appendChild(input);
     }
 

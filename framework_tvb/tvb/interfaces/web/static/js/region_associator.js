@@ -43,7 +43,7 @@
  * @constructor
  */
 function RegionAssociatorView(settings){
-    var self = this;
+    let self = this;
     self.settings = settings;
     self.selector = self.createSelector(settings.selectionGID);
 
@@ -57,11 +57,11 @@ function RegionAssociatorView(settings){
  * @returns {TVBUI.TextGridSelectComponent}
  */
 RegionAssociatorView.prototype.createSelector = function(selectionGID){
-    var selector = TVBUI.textGridRegionSelector("#channelSelector", {filterGid: selectionGID, emptyValue:''});
+    let selector = TVBUI.textGridRegionSelector("#channelSelector", {filterGid: selectionGID, emptyValue: ''});
     TVBUI.quickSelector(selector, "#selection-text-area", "#loadSelectionFromTextBtn");
 
-    selector.change(function (value) {
-        GVAR_interestAreaNodeIndexes = selector.selectedIndices();
+    selector.change(function () {
+        GVAR_interestAreaNodeIndexes = selector.val();
     });
     selector.checkAll();
     return selector;
@@ -75,8 +75,8 @@ RegionAssociatorView.prototype._onCanvasPick = function(){
 };
 
 RegionAssociatorView.prototype._onSubmit = function(event){
-    var data = this.settings.prepareSubmitData();
-    if (data != null) {
+    const data = this.settings.prepareSubmitData();
+    if (data !== null) {
         $(event.target).find('input[name=node_values]').val(JSON.stringify(data));
     }else{
         event.preventDefault();
@@ -85,7 +85,7 @@ RegionAssociatorView.prototype._onSubmit = function(event){
 };
 
 RegionAssociatorView.prototype._onPut = function(){
-    var text = this.settings.onPut(this.selector.val());
+    const text = this.settings.onPut(this.selector.val());
     this.selector.setTextForSelection(text);
     this.selector.clearAll();
 };
