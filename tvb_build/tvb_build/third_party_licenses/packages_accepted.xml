@@ -323,7 +323,7 @@
     <dependency env="[win,mac,linux]" name="h5py">
         <full-name value="H5py"/>
         <project-home value="http://www.h5py.org/"/>
-        <version value="2.7.0"/>
+        <version value="[2.7.0,2.7.1]"/>
         <usage value="dynamic linking"/>
         <license value="LICENSE_h5py.txt"/>
         <license-type value="BSD_ 3rd clause"/>
@@ -610,7 +610,17 @@
         <copyright-notice value="Copyright (C) 2010, 2011 Free Software Foundation, Inc."/>
         <description value="This appeared after recent updates of numerical libraries. Sources also found here: https://gnu.googlesource.com/gcc/+/gcc-4_6_4-release/libquadmath"/>
     </dependency>
-        <dependency env="mac" name="libtcl8.5.dylib">
+    <dependency env="mac" name="libsz.2.dylib">
+        <full-name value="Szip Compression for HDF"/>
+        <project-home value="https://support.hdfgroup.org/doc_resource/SZIP/"/>
+        <version value="unknown"/>
+        <usage value="dynamic linking"/>
+        <license value="LICENSE_szip.txt"/>
+        <license-type value="custom"/>
+        <copyright-notice value="Copyright (C) 2001 Science and Technology Corporation @ UNM.  All rights released."/>
+        <description value="We use only the binary with HDF5 https://support.hdfgroup.org/doc_resource/SZIP/Commercial_szip.html"/>
+    </dependency>
+    <dependency env="mac" name="libtcl8.5.dylib">
         <full-name value="TCL85 dylib"/>
         <project-home value="http://www.tcl.tk/software/tcltk/license.html"/>
         <version value="unknown"/>
