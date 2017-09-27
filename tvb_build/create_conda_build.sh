@@ -6,7 +6,7 @@ conda create -y -n $envname nomkl scipy numpy networkx scikit-learn cython h5py 
 
 source activate $envname
 
-conda install matplotlib==1.5.1 pytables==3.0 psycopg2 numba
+conda install matplotlib pytables==3.0 psycopg2 numba
 
 pip install sqlalchemy==0.7.8 sqlalchemy-migrate==0.7.2 minixsv formencode genshi simplejson mod_pywebsocket cherrypy cfflib nibabel gdist
 
