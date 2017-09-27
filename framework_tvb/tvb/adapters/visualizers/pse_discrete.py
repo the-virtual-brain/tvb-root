@@ -103,7 +103,7 @@ class DiscretePSEAdapter(ABCDisplayer):
         contains_numbers, range_name, range_values = operation_group.load_range_numbers(range_json)
 
         if contains_numbers is None:
-            return None, range_values, range_values, True
+            return None, range_values, [model.RANGE_MISSING_STRING], False
 
         if contains_numbers:
             range_labels = range_values
@@ -119,7 +119,7 @@ class DiscretePSEAdapter(ABCDisplayer):
     @staticmethod
     def get_value_on_axe(op_range, only_numbers, range_param_name, fake_numbers):
         if range_param_name is None:
-            return model.RANGE_MISSING_STRING
+            return model.RANGE_MISSING_VALUE
         if only_numbers:
             return op_range[range_param_name]
         return fake_numbers[op_range[range_param_name]]

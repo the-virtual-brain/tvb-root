@@ -113,7 +113,7 @@ function d3Plot(placeHolder, data, options, pageParam) {
 
         } else {
             [lowerExtent, upperExtent] = d3.extent(labelArr);
-            extentPadding = ((upperExtent - lowerExtent) * .35) / 2;
+            extentPadding = (Math.max(upperExtent - lowerExtent, 1) * .35) / 2;
             [padLo, padUp] = [lowerExtent - extentPadding, upperExtent + extentPadding];
 
             newScale = d3.scale.linear()

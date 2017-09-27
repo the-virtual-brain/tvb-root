@@ -165,6 +165,7 @@ class Algorithm(Base):
 
 
 RANGE_MISSING_STRING = "-"
+RANGE_MISSING_VALUE = 1
 
 
 class OperationGroup(Base, Exportable):
@@ -236,7 +237,7 @@ class OperationGroup(Base, Exportable):
         :returns: Boolean_are_all_numbers, range_field_name, array_range_values)
         """
         if range_value is None:
-            return None, RANGE_MISSING_STRING, [RANGE_MISSING_STRING]
+            return None, RANGE_MISSING_STRING, [RANGE_MISSING_VALUE]
 
         loaded_json = json.loads(range_value)
         range_name = loaded_json[0]
@@ -252,8 +253,7 @@ class OperationGroup(Base, Exportable):
         return are_all_numbers, range_name, range_values
 
 
-
-#Possible values for Operation.status field
+# Possible values for Operation.status field
 STATUS_FINISHED = "5-FINISHED"
 STATUS_PENDING = "4-PENDING"
 STATUS_STARTED = "3-STARTED"
@@ -281,7 +281,7 @@ class Operation(Base, Exportable):
     parameters = Column(String)
     meta_data = Column(String)
     create_date = Column(DateTime)       # Date at which the user generated this entity
-    start_date = Column(DateTime)        # Actual time when the operation executions is started (without queue time) 
+    start_date = Column(DateTime)        # Actual time when the operation executions is started (without queue time)
     completion_date = Column(DateTime)   # Time when the operation got status FINISHED/ ERROR or CANCEL set.
     status = Column(String, index=True)
     visible = Column(Boolean, default=True)
@@ -354,9 +354,9 @@ class Operation(Base, Exportable):
         base_dict['fk_from_algo'] = json.dumps(dict(module=self.algorithm.module,
                                                     classname=self.algorithm.classname))
         # We keep the information for the operation_group in this place (on each operation)
-        #because we don't have an XML file for the operation_group entity.
+        # because we don't have an XML file for the operation_group entity.
         # We don't want to keep the information about the operation groups into the project XML file
-        #because it may be opened from different places and may produce conflicts.
+        # because it may be opened from different places and may produce conflicts.
         if self.operation_group:
             base_dict['fk_operation_group'] = json.dumps(self.operation_group.to_dict()[1])
         return self.__class__.__name__, base_dict
@@ -431,8 +431,8 @@ class Operation(Base, Exportable):
         self.gid = dictionary['gid']
 
         return self
-    
-    
+
+
     def _parse_status(self, status):
         """
         To keep backwards compatibility, when we import an operation that did not have new 
@@ -499,7 +499,7 @@ class ResultFigure(Base, Exportable):
         self.session_name = session_name
         self.name = name
         self.file_path = path
-        self.file_format = file_format.lower()          # some platforms have difficulties if it's not lower case
+        self.file_format = file_format.lower()  # some platforms have difficulties if it's not lower case
 
 
     def __repr__(self):
@@ -531,7 +531,3 @@ class ResultFigure(Base, Exportable):
         self.file_path = dictionary['file_path']
         self.file_format = dictionary['file_format']
         return self
-    
-    
-    
-    
