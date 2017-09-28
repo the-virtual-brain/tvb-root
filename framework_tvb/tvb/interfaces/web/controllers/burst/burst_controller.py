@@ -34,11 +34,11 @@ Control code for Main-Burst Page.
 .. moduleauthor:: Bogdan Neacsa <bogdan.neacsa@codemart.ro>
 """
 
-import re
 import json
 import copy
 import cherrypy
 import formencode
+from tvb.simulator.common import *
 from tvb.core.adapters.input_tree import InputTreeManager, KEY_PARAMETER_CHECKED
 import tvb.core.entities.model
 from formencode import validators
@@ -337,21 +337,9 @@ class BurstController(BurstBaseController):
         :param data: kwargs for simulation input parameters.
         """
         data = json.loads(data['simulator_parameters'])
-        simulation_length=data['simulation_length']
-        re_times = re.compile(r'\s*(\d+\.?\d*)\s*(sec|ms|hr|min|s|m|h)\s*')
-        re_decimals = re.compile(r'[0-9]*\.[0-9]*$')
-        if(not re_decimals.search(simulation_length)):
-            s_time, s_unit= re_times.match(simulation_length).group(1,2)
-            s_time=float(s_time)
-            if s_unit in ('s','sec'):
-                simulation_length= s_time*1000
-            elif s_unit in ('m','min'):
-                simulation_length= s_time*60000
-            elif s_unit in('hr','h'):
-                simulation_length=s_time*3600000
-            else:
-                simulation_length=s_time
-            data['simulation_length']=unicode(simulation_length)
+        simulation_length = data['simulation_length']
+        simulation_length = total_ms(simulation_length)
+        data['simulation_length']=unicode(simulation_length)
         burst_config = common.get_from_session(common.KEY_BURST_CONFIG)
 
         ## Validate new burst-name
