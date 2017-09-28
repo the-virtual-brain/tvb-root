@@ -39,6 +39,7 @@ A module of classes and functions of common use.
 
 import numpy
 import os
+import re
 import zipfile
 import logging
 from ..basic.logger.builder import GLOBAL_LOGGER_BUILDER
@@ -264,3 +265,33 @@ def zip_directory(path, zip_file):
         for filename in files:
             zip_file.write(os.path.join(dirname, filename))
         zip_file.close()
+
+
+def total_ms(duration="", hours=0, minutes=0, seconds=0):
+    re_times = re.compile(r'\s*(\d+\.?\d*)\s*(sec|ms|hr|min|s|m|h)\s*$')
+    re_decimals = re.compile(r'^[0-9]+([,.][0-9]+)?$')
+    total_milliseconds = 0
+    if (duration == ""):
+        if (not hours == 0):
+            total_milliseconds = hours * 3600000
+        elif (not minutes == 0):
+            total_milliseconds = minutes * 60000
+        elif (not seconds == 0):
+            total_milliseconds = seconds * 1000
+    elif (re_decimals.search(duration)):
+        total_milliseconds = float(duration)
+    else:
+        try:
+            s_time, s_unit = re_times.match(duration).group(1, 2)
+            s_time = float(s_time)
+            if s_unit in ('s', 'sec'):
+                total_milliseconds = s_time * 1000
+            elif s_unit in ('m', 'min'):
+                total_milliseconds = s_time * 60000
+            elif s_unit in ('hr', 'h'):
+                total_milliseconds = s_time * 3600000
+            elif s_unit in ('ms'):
+                total_milliseconds = s_time
+        except:
+            raise Exception('Input not well formed!')
+    return total_milliseconds
