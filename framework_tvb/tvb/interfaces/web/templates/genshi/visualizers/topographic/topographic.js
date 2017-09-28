@@ -29,20 +29,6 @@ var Topographic = {
     index: null
 };
 
-function addSnapshotCanvas() {
-    var main_canvas = document.createElement('canvas');
-    main_canvas.id = "snapshotCanvas";
-    main_canvas.style.display="none";
-    var body = document.getElementsByTagName("body")[0];
-    body.appendChild(main_canvas);
-    main_canvas.drawForImageExport = function () {
-        main_canvas.style.display="block";
-    };      // display
-    main_canvas.afterImageExport = function () {
-        main_canvas.style.visibility="none";
-    };     // hide
-}
-
 function topographic_init(matrix_data, matrix_shape, vmin, vmax, index) {
 
     var dimensions = $.parseJSON(matrix_shape);

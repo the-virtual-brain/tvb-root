@@ -91,11 +91,8 @@ function __storeSVG(svgElement, kwargs, save) {
     var data = wrap.innerHTML;
 
     // get the styles for the svg
-    var svg_file_name="subsection_svg";
-    if(document.title==="Connectivity Edge Bundle View | 1.5.4 The Virtual Brain"){
-        svg_file_name="subsection_edge_bundle";
-    }
-    $.get( "/static/style/"+svg_file_name+".css", function (stylesheet) {
+
+    $.get( "/static/style/subsection_svg.css", function (stylesheet) {
                                                                          // strip all
         var re = new RegExp("[\\s\\n^]*\\/\\*(.|[\\r\\n])*?\\*\\/" +     // block style comments
             "|([\\s\\n]*\\/\\/.*)" +                     // single line comments
@@ -252,4 +249,18 @@ function __buildCanvas(canvas, snapshotCanvas) {
     offsets= canvas.getBoundingClientRect();
     // ctx.drawImage(canvas, canvas.offsetLeft, canvas.offsetTop, canvas.clientWidth, canvas.clientHeight);
     ctx.drawImage(canvas, offsets.left, offsets.top, canvas.clientWidth, canvas.clientHeight);
+}
+
+function addSnapshotCanvas() {
+    var main_canvas = document.createElement('canvas');
+    main_canvas.id = "snapshotCanvas";
+    main_canvas.style.display="none";
+    var body = document.getElementsByTagName("body")[0];
+    body.appendChild(main_canvas);
+    main_canvas.drawForImageExport = function () {
+        main_canvas.style.display="block";
+    };      // display
+    main_canvas.afterImageExport = function () {
+        main_canvas.style.visibility="none";
+    };     // hide
 }
