@@ -192,12 +192,26 @@ class Simulator(core.Type):
         temporally downsampled from the raw integration rate to a sample rate of
         1024Hz.""")
 
-    simulation_length = basic.Float(
+    simulation_length_ms = basic.Float(
         label="Simulation Length (ms)",
-        default=1000.0,     # ie 1 second
+        default=1000.0,  # ie 1 second
         required=True,
         order=9,
         doc="""The length of a simulation in milliseconds (ms).""")
+
+    simulation_length_s = basic.Float(
+        label="Simulation Length (s)",
+        default=1,  # ie 1 second
+        required=True,
+        order=10,
+        doc="""The length of a simulation in milliseconds (s).""")
+
+    simulation_length_min = basic.Float(
+        label="Simulation Length (min)",
+        default=0.0166666667,  # ie 1 second
+        required=True,
+        order=11,
+        doc="""The length of a simulation in milliseconds (min).""")
 
     history = None # type: SparseHistory
 
