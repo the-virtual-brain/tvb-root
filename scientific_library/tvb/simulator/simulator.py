@@ -193,18 +193,11 @@ class Simulator(core.Type):
         1024Hz.""")
 
     simulation_length = basic.Float(
-        label="Simulation Length (ms)",
+        label="Simulation Length (ms, s, m, h)",
         default=1000.0,  # ie 1 second
         required=True,
         order=9,
-        doc="""The length of a simulation in milliseconds (ms).""")
-
-    # simulation_length_unit = basic.String(
-    #     label="Simulation Length (ms,s,m,h)",
-    #     default="1000.0 ms",  # ie 1 second
-    #     required=True,
-    #     order=10,
-    #     doc="""The length of a simulation in milliseconds (ms).""")
+        doc="""The length of a simulation (default in milliseconds).""")
 
     history = None # type: SparseHistory
 
