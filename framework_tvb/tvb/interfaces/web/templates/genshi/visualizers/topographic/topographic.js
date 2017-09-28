@@ -36,6 +36,13 @@ function topographic_init(matrix_data, matrix_shape, vmin, vmax, index) {
     var n = dimensions[0];
     var m = dimensions[1];
     var canvas = d3.select("#canvas-" + index);
+    var main_canvas = document.getElementById("canvasMain");
+    main_canvas.drawForImageExport = function () {
+        main_canvas.style.display="block";
+    };      // display
+    main_canvas.afterImageExport = function () {
+        main_canvas.style.visibility="none";
+    };     // hide
     if (matrix_data) {
         Topographic.data.push($.parseJSON(matrix_data));
         Topographic.vmin = vmin;

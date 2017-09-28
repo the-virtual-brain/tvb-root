@@ -48,6 +48,14 @@ function pse_isocline_init(canvasName, xAxisName, yAxisName, matrix_shape, x_min
         displayNodeDetails(getGid(mousePos));
     }, false);
 
+     var main_canvas = document.getElementById("canvasMain");
+    main_canvas.drawForImageExport = function () {
+        main_canvas.style.display="block";
+    };      // display
+    main_canvas.afterImageExport = function () {
+        main_canvas.style.visibility="none";
+    };     // hide
+
     canvas.addEventListener('mousemove', function (evt) {
         const mousePos = getMousePos(canvas, evt);
         const nodeInfo = getNodeInfo(mousePos);

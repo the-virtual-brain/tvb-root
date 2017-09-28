@@ -96,6 +96,15 @@ div.flot-tick-label {
     left: 8%;
     top: 6%;
     height: 80%;
+    width: 80%;
+}
+
+.matrix2d-svg-container {
+    position: absolute;
+    top:0;
+    left:0;
+    width:95%;
+    height: 95%;
 }
 
 .matrix2d-draw-content {
@@ -205,4 +214,8 @@ div.flot-tick-label {
     position: absolute;
     top: 20%;
     width: 80%;
+}
+
+.main_canvas{
+    display: none;
 }

@@ -20,7 +20,7 @@
 /* globals displayMessage */
 
 var C2I_EXPORT_HEIGHT = 1080;
-
+var canvasAndSvg=false;
 /**
  * Function called on any visualizer, to export canvases into image/svg downloadable files..
  * @param kwargs an object with 2 optional keys
@@ -32,8 +32,22 @@ function C2I_exportFigures(kwargs) {
         displayMessage("Invalid action. Please report to your TVB technical contact.", "errorMessage");
         return;
     }
+    if ($("canvas").filter(":visible").length > 0 && $("svg").filter(":visible").length > 0) {
+        canvasAndSvg = true;
+    }
+    if (canvasAndSvg) {
+        var main_canvas = document.getElementById("canvasMain");
+        main_canvas.style.visibility="visible";
+        canvasMain.width = C2I_EXPORT_HEIGHT;
+        canvasMain.height = C2I_EXPORT_HEIGHT;
+    }
     $("canvas").filter(":visible").each(function () {
-        __storeCanvas(this, kwargs);
+        if (canvasAndSvg) {
+            __buildCanvas(this, main_canvas);
+        }
+        else {
+            __storeCanvas(this, kwargs);
+        }
     });
 
     let svgRef = $("svg").filter(":visible").filter(":not([display='none'])");
@@ -57,15 +71,19 @@ function C2I_exportFigures(kwargs) {
     }
 
     svgRef.attr({ version: '1.1' , xmlns:"http://www.w3.org/2000/svg"});
-    svgRef.each(function () {
-        __storeSVG(this, kwargs);
-    });
+    for(var i = 0; i < svgRef.length; i++) {
+            if (i === svgRef.length - 1)
+                __storeSVG(svgRef[i], kwargs, save = true);
+            else {
+                __storeSVG(svgRef[i], kwargs);
+            }
+    }
 }
 
 /**
  *This method save the svg html. Before this it also adds the required css styles.
  */
-function __storeSVG(svgElement, kwargs) {
+function __storeSVG(svgElement, kwargs, save) {
 	// Wrap the svg element as to get the actual html and use that as the src for the image
 
 	var wrap = document.createElement('div');
@@ -87,24 +105,42 @@ function __storeSVG(svgElement, kwargs) {
         var startingTag = data.substr(0, data.indexOf(">") + 1);
         var restOfSvg = data.substr(data.indexOf(">") + 1, data.length + 1);
         var styleAddedData = startingTag + svgStyle + restOfSvg;
-
-        var url = '/project/figure/storeresultfigure/svg?';
-        for(var k in kwargs){
-            url = url + k + '=' + kwargs[k];
+        if(canvasAndSvg){
+            var offsets = svgElement.getBoundingClientRect();
+            var DOMURL = window.URL || window.webkitURL || window;
+            var main_canvas = document.getElementById("canvasMain");
+            var ctx = main_canvas.getContext('2d');
+            var img = new Image();
+            var svg = new Blob([styleAddedData], {type: 'image/svg+xml'});
+            var urlsvg = DOMURL.createObjectURL(svg);
+            img.src = urlsvg;
+            img.onload = function () {
+                ctx.drawImage(img, offsets.left, offsets.top);
+                DOMURL.revokeObjectURL(urlsvg);
+                if(save){
+                    __tryExport(main_canvas, kwargs, 25);
+                }
+            };
         }
-
-        // send it to server
-        doAjaxCall({  type: "POST", url: url,
-            data: {"export_data": styleAddedData},
-            success: function() {
-                displayMessage("Figure successfully saved!<br/> See Project section, Image archive sub-section.",
-                               "infoMessage")
-            } ,
-            error: function() {
-                displayMessage("Could not store preview image, sorry!", "warningMessage")
+        else {
+            var url = '/project/figure/storeresultfigure/svg?';
+            for (var k in kwargs) {
+                url = url + k + '=' + kwargs[k];
             }
-        });
 
+            // send it to server
+            doAjaxCall({
+                type: "POST", url: url,
+                data: {"export_data": styleAddedData},
+                success: function () {
+                    displayMessage("Figure successfully saved!<br/> See Project section, Image archive sub-section.",
+                        "infoMessage")
+                },
+                error: function () {
+                    displayMessage("Could not store preview image, sorry!", "warningMessage")
+                }
+            });
+        }
     } );
 }
 
@@ -149,7 +185,12 @@ function __tryExport(canvas, kwargs, remainingTrials) {
         // undefined or FALSE means it CAN BE exported
         setTimeout(function () { __tryExport(canvas, kwargs, remainingTrials - 1); }, 300);
     } else {              // canvas is ready for export
-        var data = canvas.toDataURL("image/png");
+        if(canvasAndSvg){
+            var data = canvasMain.toDataURL("image/png");
+        }
+        else{
+            var data = canvas.toDataURL("image/png");
+        }
 
         if (data){       // don't store empty images
             var url = C2IbuildUrlQueryString('/project/figure/storeresultfigure/png', kwargs);
@@ -201,4 +242,14 @@ function __storeCanvas(canvas, kwargs) {
     canvas.drawForImageExport();        // interface-like function that redraws the canvas at bigger dimension
 
     __tryExport(canvas, kwargs, 25);
+}
+
+function __buildCanvas(canvas, canvasMain) {
+    // if (!canvas.drawForImageExport) {     // canvases which didn't set this method should not be saved
+    //     return;
+    // }
+    var ctx = canvasMain.getContext('2d');
+    offsets= canvas.getBoundingClientRect();
+    // ctx.drawImage(canvas, canvas.offsetLeft, canvas.offsetTop, canvas.clientWidth, canvas.clientHeight);
+    ctx.drawImage(canvas, offsets.left, offsets.top, canvas.clientWidth, canvas.clientHeight);
 }
