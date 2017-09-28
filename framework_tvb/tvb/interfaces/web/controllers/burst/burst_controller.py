@@ -339,6 +339,8 @@ class BurstController(BurstBaseController):
         data = json.loads(data['simulator_parameters'])
         simulation_length = data['simulation_length']
         simulation_length = total_ms(simulation_length)
+        if(simulation_length == 0):
+            return {'error': "Input not well formed!"}
         data['simulation_length']=unicode(simulation_length)
         burst_config = common.get_from_session(common.KEY_BURST_CONFIG)
 
