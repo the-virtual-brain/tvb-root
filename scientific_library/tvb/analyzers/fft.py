@@ -93,7 +93,7 @@ class FFT(core.Type):
         label="Detrending",
         default=True,
         required=False,
-        doc="""Detrending is not always approapriate.
+        doc="""Detrending is not always appropriate.
             Default is True, False means no detrending is performed on the time series""",
         order=4)
     
