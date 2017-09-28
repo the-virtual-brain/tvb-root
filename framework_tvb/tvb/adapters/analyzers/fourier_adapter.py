@@ -159,7 +159,6 @@ class FourierAdapter(abcadapter.ABCAsynchronous):
         spectra = spectral.FourierSpectrum(source=time_series,
                                            segment_length=self.algorithm.segment_length,
                                            windowing_function=str(window_function),
-                                           detrend = detrend,
                                            storage_path=self.storage_path)
         
         ##------------- NOTE: Assumes 4D, Simulator timeSeries. --------------##
