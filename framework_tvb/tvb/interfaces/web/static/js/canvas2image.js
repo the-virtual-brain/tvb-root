@@ -84,22 +84,26 @@ function C2I_exportFigures(kwargs) {
  *This method save the svg html. Before this it also adds the required css styles.
  */
 function __storeSVG(svgElement, kwargs, save) {
-	// Wrap the svg element as to get the actual html and use that as the src for the image
+    // Wrap the svg element as to get the actual html and use that as the src for the image
 
-	var wrap = document.createElement('div');
-	wrap.appendChild(svgElement.cloneNode(true));
-	var data = wrap.innerHTML;
+    var wrap = document.createElement('div');
+    wrap.appendChild(svgElement.cloneNode(true));
+    var data = wrap.innerHTML;
 
     // get the styles for the svg
-    $.get( "/static/style/subsection_svg.css", function (stylesheet) {
+    var svg_file_name="subsection_svg";
+    if(document.title==="Connectivity Edge Bundle View | 1.5.4 The Virtual Brain"){
+        svg_file_name="subsection_edge_bundle";
+    }
+    $.get( "/static/style/"+svg_file_name+".css", function (stylesheet) {
                                                                          // strip all
         var re = new RegExp("[\\s\\n^]*\\/\\*(.|[\\r\\n])*?\\*\\/" +     // block style comments
-                            "|([\\s\\n]*\\/\\/.*)" +                     // single line comments
-                            "|(^\\s*[\\r\\n])", "gm");                   // empty lines
+            "|([\\s\\n]*\\/\\/.*)" +                     // single line comments
+            "|(^\\s*[\\r\\n])", "gm");                   // empty lines
 
         var svgStyle = "<defs><style type='text/css'><![CDATA["
-                     +  stylesheet.replace(re,"")
-                     + "]]></style></defs>";
+            +  stylesheet.replace(re,"")
+            + "]]></style></defs>";
 
         // embed the styles in svg
         var startingTag = data.substr(0, data.indexOf(">") + 1);
