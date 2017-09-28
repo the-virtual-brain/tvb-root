@@ -110,7 +110,7 @@ class FFT(core.Type):
             time_series = numpy.concatenate(segments, axis=4)
         else:
             self.segment_length = time_series_length
-            time_series = self.time_series.data[:, :, :, numpy.newaxis]
+            time_series = self.time_series.data[:, :, :, :, numpy.newaxis]
             seg_tpts = time_series.shape[0]
         
         LOG.debug("Segment length being used is: %s" % self.segment_length)
