@@ -86,6 +86,32 @@
                    	 	</div>      
                     </py:if>
                 </dd>
+
+                <!--Bind and convert the simulation lengths for ms, s and min-->
+                <script language="javascript" type="text/javascript">
+                    $(document).ready(bind_time_lengths);
+                    function bind_time_lengths(){
+                        addEvent(document.getElementById('simulation_length_ms'), 'keyup', function () {
+                            document.getElementById('simulation_length_s').value = parseFloat(this.value) / 1000;
+                            document.getElementById('simulation_length_min').value = parseFloat(this.value) / 60000;
+                        });
+                        addEvent(document.getElementById('simulation_length_s'), 'keyup', function () {
+                            document.getElementById('simulation_length_ms').value = parseFloat(this.value) * 1000;
+                            document.getElementById('simulation_length_min').value = parseFloat(this.value) / 60;
+                        });
+                        addEvent(document.getElementById('simulation_length_min'), 'keyup', function () {
+                            document.getElementById('simulation_length_ms').value = parseFloat(this.value) * 60000;
+                            document.getElementById('simulation_length_s').value = parseFloat(this.value) * 1000;
+                        });
+                    }
+                    function addEvent(ele, evnt, funct) {
+                        if (ele.addEventListener) // W3C
+                            return ele.addEventListener(evnt, funct, false);
+                        else if (ele.attachEvent)  // IE
+                            return ele.attachEvent("on" + evnt, funct);
+                    }
+                </script>
+
              </py:for>
         </dl>
        </fieldset>
