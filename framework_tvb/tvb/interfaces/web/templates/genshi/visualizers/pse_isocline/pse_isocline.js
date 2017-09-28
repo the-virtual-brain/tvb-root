@@ -48,8 +48,6 @@ function pse_isocline_init(canvasName, xAxisName, yAxisName, matrix_shape, x_min
         displayNodeDetails(getGid(mousePos));
     }, false);
 
-    addSnapshotCanvas();
-
     canvas.addEventListener('mousemove', function (evt) {
         const mousePos = getMousePos(canvas, evt);
         const nodeInfo = getNodeInfo(mousePos);

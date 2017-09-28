@@ -36,6 +36,7 @@ function C2I_exportFigures(kwargs) {
         canvasAndSvg = true;
     }
     if (canvasAndSvg) {
+        addSnapshotCanvas();
         var main_canvas = document.getElementById("snapshotCanvas");
         main_canvas.style.visibility="visible";
         main_canvas.width = C2I_EXPORT_HEIGHT;
@@ -252,15 +253,17 @@ function __buildCanvas(canvas, snapshotCanvas) {
 }
 
 function addSnapshotCanvas() {
-    var main_canvas = document.createElement('canvas');
-    main_canvas.id = "snapshotCanvas";
-    main_canvas.style.display="none";
-    var body = document.getElementsByTagName("body")[0];
-    body.appendChild(main_canvas);
-    main_canvas.drawForImageExport = function () {
-        main_canvas.style.display="block";
-    };      // display
-    main_canvas.afterImageExport = function () {
-        main_canvas.style.visibility="none";
-    };     // hide
+    if(document.getElementById('snapshotCanvas') === null) {
+        var main_canvas = document.createElement('canvas');
+        main_canvas.id = "snapshotCanvas";
+        main_canvas.style.display = "none";
+        var body = document.getElementsByTagName("body")[0];
+        body.appendChild(main_canvas);
+        main_canvas.drawForImageExport = function () {
+            main_canvas.style.display = "block";
+        };      // display
+        main_canvas.afterImageExport = function () {
+            main_canvas.style.visibility = "none";
+        };     // hide
+    }
 }

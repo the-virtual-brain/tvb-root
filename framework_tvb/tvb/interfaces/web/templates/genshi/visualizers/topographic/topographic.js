@@ -36,8 +36,6 @@ function topographic_init(matrix_data, matrix_shape, vmin, vmax, index) {
     var m = dimensions[1];
     var canvas = d3.select("#canvas-" + index);
 
-    addSnapshotCanvas();
-
     if (matrix_data) {
         Topographic.data.push($.parseJSON(matrix_data));
         Topographic.vmin = vmin;

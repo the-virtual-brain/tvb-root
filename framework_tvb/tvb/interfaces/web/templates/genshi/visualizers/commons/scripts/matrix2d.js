@@ -59,8 +59,6 @@ function matrix2d_init(canvasName, xAxisName, yAxisName, matrix_data, matrix_sha
     Matrix2d.m = m;
     Matrix2d.canvas = canvas;
 
-    addSnapshotCanvas();
-
     var context = canvas.node().getContext("2d");
     var cHeight = context.canvas.clientHeight;
     var xLabelHeight = cHeight + 50;
