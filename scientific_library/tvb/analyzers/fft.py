@@ -46,7 +46,10 @@ import tvb.basic.traits.util as util
 
 
 LOG = get_logger(__name__)
-SUPPORTED_WINDOWING_FUNCTIONS = ("hamming", "bartlett", "blackman", "hanning")
+SUPPORTED_WINDOWING_FUNCTIONS = dict(hamming = numpy.hamming,
+                                     bartlett = numpy.bartlett,
+                                     blackman = numpy.blackman,
+                                     hanning = numpy.hanning)
 
 
 
@@ -85,6 +88,14 @@ class FFT(core.Type):
              Default is None, possibilities are: 'hamming'; 'bartlett';
             'blackman'; and 'hanning'. See, numpy.<function_name>.""",
         order=3)
+
+    detrend = basic.Bool(
+        label="Detrending",
+        default=True,
+        required=False,
+        doc="""Detrending is not always approapriate.
+            Default is True, False means no detrending is performed on the time series""",
+        order=4)
     
     
     def evaluate(self):
@@ -106,7 +117,7 @@ class FFT(core.Type):
             starts = [max(seg * (seg_tpts - overlap), 0) for seg in range(nseg)]
             segments = [self.time_series.data[start:start + seg_tpts]
                         for start in starts]
-            segments = [segment[:, :, :, numpy.newaxis] for segment in segments]
+            segments = [segment[:, :, :, :, numpy.newaxis] for segment in segments]
             time_series = numpy.concatenate(segments, axis=4)
         else:
             self.segment_length = time_series_length
@@ -115,20 +126,17 @@ class FFT(core.Type):
         
         LOG.debug("Segment length being used is: %s" % self.segment_length)
         
-        #Base-line correct the segmented time-series  
-        time_series = sp_signal.detrend(time_series, axis=0)
-        util.log_debug_array(LOG, time_series, "time_series")
+        #Base-line correct the segmented time-series
+        if(self.detrend):
+            time_series = sp_signal.detrend(time_series, axis=0)
+            util.log_debug_array(LOG, time_series, "time_series")
         
         #Apply windowing function
         if self.window_function is not None and self.window_function != [None]:
-            if self.window_function not in SUPPORTED_WINDOWING_FUNCTIONS:
-                LOG.error("Windowing function is: %s" % self.window_function)
-                LOG.error("Must be in: %s" % str(SUPPORTED_WINDOWING_FUNCTIONS))
-            else:
-                window_function = eval("".join(("numpy.", self.window_function[0])))
-                window_mask = numpy.reshape(window_function(seg_tpts),
+            window_function = SUPPORTED_WINDOWING_FUNCTIONS[self.window_function[0]]
+            window_mask = numpy.reshape(window_function(seg_tpts),
                                             (seg_tpts, 1, 1, 1, 1))
-                time_series = time_series * window_mask
+            time_series = time_series * window_mask
 
         #Calculate the FFT
         result = numpy.fft.fft(time_series, axis=0)
