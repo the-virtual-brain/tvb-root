@@ -271,27 +271,27 @@ def total_ms(duration="", hours=0, minutes=0, seconds=0):
     re_times = re.compile(r'\s*(\d+\.?\d*)\s*(sec|ms|hr|min|s|m|h)\s*$')
     re_decimals = re.compile(r'^[0-9]+([,.][0-9]+)?$')
     total_milliseconds = 0
-    if (duration == ""):
-        if (not hours == 0):
+    if duration == "":
+        if not hours == 0:
             total_milliseconds = hours * 3600000
-        elif (not minutes == 0):
+        elif not minutes == 0:
             total_milliseconds = minutes * 60000
-        elif (not seconds == 0):
+        elif not seconds == 0:
             total_milliseconds = seconds * 1000
-    elif (re_decimals.search(duration)):
+    elif re_decimals.search(duration):
         total_milliseconds = float(duration)
     else:
-        try:
-            s_time, s_unit = re_times.match(duration).group(1, 2)
-            s_time = float(s_time)
-            if s_unit in ('s', 'sec'):
-                total_milliseconds = s_time * 1000
-            elif s_unit in ('m', 'min'):
-                total_milliseconds = s_time * 60000
-            elif s_unit in ('hr', 'h'):
-                total_milliseconds = s_time * 3600000
-            elif s_unit in ('ms'):
-                total_milliseconds = s_time
-        except:
-            return 0
+        match = re_times.match(duration)
+        if not match:
+            raise ValueError("unable to parse duration %r" % duration)
+        s_time, s_unit = match.group(1, 2)
+        s_time = float(s_time)
+        if s_unit in ('s', 'sec'):
+            total_milliseconds = s_time * 1000
+        elif s_unit in ('m', 'min'):
+            total_milliseconds = s_time * 60000
+        elif s_unit in ('hr', 'h'):
+            total_milliseconds = s_time * 3600000
+        elif s_unit in ('ms'):
+            total_milliseconds = s_time
     return total_milliseconds
