@@ -99,12 +99,15 @@ class FourierAdapter(abcadapter.ABCAsynchronous):
         LOG.debug("Provided window_function is %s" % (str(window_function)))
         LOG.debug("Detrend is %s" % (str(detrend)))
         ##-------------------- Fill Algorithm for Analysis -------------------##
+        #The enumerate set function isn't working well. A get around strategy is to create a new algorithm
+        algorithm = fft.FFT()
         if segment_length is not None:
-            self.algorithm.segment_length = segment_length
+            algorithm.segment_length = segment_length
 
-        self.algorithm.window_function = window_function
-        self.algorithm.time_series = time_series
-        self.algorithm.detrend = detrend
+        algorithm.window_function = window_function
+        algorithm.time_series = time_series
+        algorithm.detrend = detrend
+        self.algorithm = algorithm
         LOG.debug("Using segment_length is %s" % (str(self.algorithm.segment_length)))
         LOG.debug("Using window_function  is %s" % (str(self.algorithm.window_function)))
         LOG.debug("Using detrend  is %s" % (str(self.algorithm.detrend)))
