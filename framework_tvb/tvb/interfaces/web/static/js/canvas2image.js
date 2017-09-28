@@ -32,14 +32,14 @@ function C2I_exportFigures(kwargs) {
         displayMessage("Invalid action. Please report to your TVB technical contact.", "errorMessage");
         return;
     }
-    if ($("canvas").filter(":visible").length > 0 && $("svg").filter(":visible").length > 0) {
+    if ($("canvas").filter(":visible").length > 1 && $("svg").filter(":visible").length > 0) {
         canvasAndSvg = true;
     }
     if (canvasAndSvg) {
-        var main_canvas = document.getElementById("canvasMain");
+        var main_canvas = document.getElementById("snapshotCanvas");
         main_canvas.style.visibility="visible";
-        canvasMain.width = C2I_EXPORT_HEIGHT;
-        canvasMain.height = C2I_EXPORT_HEIGHT;
+        main_canvas.width = C2I_EXPORT_HEIGHT;
+        main_canvas.height = C2I_EXPORT_HEIGHT;
     }
     $("canvas").filter(":visible").each(function () {
         if (canvasAndSvg) {
@@ -108,7 +108,7 @@ function __storeSVG(svgElement, kwargs, save) {
         if(canvasAndSvg){
             var offsets = svgElement.getBoundingClientRect();
             var DOMURL = window.URL || window.webkitURL || window;
-            var main_canvas = document.getElementById("canvasMain");
+            var main_canvas = document.getElementById("snapshotCanvas");
             var ctx = main_canvas.getContext('2d');
             var img = new Image();
             var svg = new Blob([styleAddedData], {type: 'image/svg+xml'});
@@ -185,12 +185,8 @@ function __tryExport(canvas, kwargs, remainingTrials) {
         // undefined or FALSE means it CAN BE exported
         setTimeout(function () { __tryExport(canvas, kwargs, remainingTrials - 1); }, 300);
     } else {              // canvas is ready for export
-        if(canvasAndSvg){
-            var data = canvasMain.toDataURL("image/png");
-        }
-        else{
-            var data = canvas.toDataURL("image/png");
-        }
+
+        var data = canvas.toDataURL("image/png");
 
         if (data){       // don't store empty images
             var url = C2IbuildUrlQueryString('/project/figure/storeresultfigure/png', kwargs);
@@ -244,11 +240,11 @@ function __storeCanvas(canvas, kwargs) {
     __tryExport(canvas, kwargs, 25);
 }
 
-function __buildCanvas(canvas, canvasMain) {
+function __buildCanvas(canvas, snapshotCanvas) {
     // if (!canvas.drawForImageExport) {     // canvases which didn't set this method should not be saved
     //     return;
     // }
-    var ctx = canvasMain.getContext('2d');
+    var ctx = snapshotCanvas.getContext('2d');
     offsets= canvas.getBoundingClientRect();
     // ctx.drawImage(canvas, canvas.offsetLeft, canvas.offsetTop, canvas.clientWidth, canvas.clientHeight);
     ctx.drawImage(canvas, offsets.left, offsets.top, canvas.clientWidth, canvas.clientHeight);
