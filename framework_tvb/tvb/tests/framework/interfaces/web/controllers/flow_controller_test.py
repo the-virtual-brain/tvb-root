@@ -158,18 +158,17 @@ class FlowContollerTest(BaseControllersTest):
         result = self.flow_c.get_simple_adapter_interface(adapter.id)
         expected_interface = TestAdapter1().get_input_tree()
         self.assertEqual(result['inputList'], expected_interface)
-        
-    
+
+
     def _long_burst_launch(self, is_range=False):
         self.burst_c.index()
         connectivity = DatatypesFactory().create_connectivity()[1]
         launch_params = copy.deepcopy(SIMULATOR_PARAMETERS)
         launch_params['connectivity'] = dao.get_datatype_by_id(connectivity.id).gid
-        if not is_range:
-            launch_params['simulation_length'] = '10000'
-        else:
-            launch_params['simulation_length'] = '[10000,10001,10002]'
-            launch_params[model.RANGE_PARAMETER_1] = 'simulation_length'
+        launch_params['simulation_length'] = '10000'
+        if is_range:
+            launch_params['conduction_speed'] = '[10,15,20]'
+            launch_params[model.RANGE_PARAMETER_1] = 'conduction_speed'
         launch_params = {"simulator_parameters": json.dumps(launch_params)}
         burst_id = json.loads(self.burst_c.launch_burst("new", "test_burst", **launch_params))['id']
         return dao.get_burst_by_id(burst_id)
