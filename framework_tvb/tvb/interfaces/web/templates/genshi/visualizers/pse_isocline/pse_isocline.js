@@ -86,6 +86,10 @@ function pse_isocline_init(canvasName, xAxisName, yAxisName, matrix_shape, x_min
 function redrawCanvas(selected_metric) {
     let base_url = Pse_isocline.url_base;
     let canvasName = Pse_isocline.canvas_name;
+    if (base_url === null) {
+        console.warn("We won't redraw canvas because data URL hasn't been initialized yet!");
+        return;
+    }
     doAjaxCall({
         url: base_url + '/' + selected_metric,
         type: 'POST',
