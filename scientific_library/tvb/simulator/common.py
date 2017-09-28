@@ -293,5 +293,5 @@ def total_ms(duration="", hours=0, minutes=0, seconds=0):
             elif s_unit in ('ms'):
                 total_milliseconds = s_time
         except:
-            raise Exception('Input not well formed!')
+            return 0
     return total_milliseconds
