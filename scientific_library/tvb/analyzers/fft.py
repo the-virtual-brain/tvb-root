@@ -127,12 +127,13 @@ class FFT(core.Type):
         LOG.debug("Segment length being used is: %s" % self.segment_length)
         
         #Base-line correct the segmented time-series
-        if(self.detrend):
+        if self.detrend:
             time_series = sp_signal.detrend(time_series, axis=0)
             util.log_debug_array(LOG, time_series, "time_series")
         
         #Apply windowing function
-        if self.window_function is not None and self.window_function != [None]:
+        #Enumerate basic type wraps single values into a list
+        if self.window_function != [None]:
             window_function = SUPPORTED_WINDOWING_FUNCTIONS[self.window_function[0]]
             window_mask = numpy.reshape(window_function(seg_tpts),
                                             (seg_tpts, 1, 1, 1, 1))
