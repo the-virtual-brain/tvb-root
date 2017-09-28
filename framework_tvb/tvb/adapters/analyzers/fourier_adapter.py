@@ -82,7 +82,7 @@ class FourierAdapter(abcadapter.ABCAsynchronous):
         self.memory_factor = 1
         
     
-    def configure(self, time_series, segment_length=None, window_function=None):
+    def configure(self, time_series, segment_length=None, window_function=None, detrend=None):
         """
         Do any configuration needed before launching.
 
@@ -91,20 +91,25 @@ class FourierAdapter(abcadapter.ABCAsynchronous):
                                of the resulting power spectra
         :param window_function: windowing functions can be applied before the FFT is performed
         :type  window_function: None; ‘hamming’; ‘bartlett’; ‘blackman’; ‘hanning’
+        :param detrend: None; specify if detrend is performed on the time series
         """
         shape = time_series.read_data_shape()
         LOG.debug("time_series shape is %s" % (str(shape)))
         LOG.debug("Provided segment_length is %s" % (str(segment_length)))
         LOG.debug("Provided window_function is %s" % (str(window_function)))
+        LOG.debug("Detrend is %s" % (str(detrend)))
         ##-------------------- Fill Algorithm for Analysis -------------------##
         if segment_length is not None:
             self.algorithm.segment_length = segment_length
 
         self.algorithm.window_function = window_function
         self.algorithm.time_series = time_series
+        self.algorithm.detrend = detrend
         LOG.debug("Using segment_length is %s" % (str(self.algorithm.segment_length)))
         LOG.debug("Using window_function  is %s" % (str(self.algorithm.window_function)))
-    
+        LOG.debug("Using detrend  is %s" % (str(self.algorithm.detrend)))
+
+
     def get_required_memory_size(self, **kwargs):
         """
         Returns the required memory to be able to run the adapter.
@@ -130,7 +135,7 @@ class FourierAdapter(abcadapter.ABCAsynchronous):
         return self.array_size2kb(output_size)
 
 
-    def launch(self, time_series, segment_length=None, window_function=None):
+    def launch(self, time_series, segment_length=None, window_function=None, detrend=None):
         """
         Launch algorithm and build results.
 
@@ -151,6 +156,7 @@ class FourierAdapter(abcadapter.ABCAsynchronous):
         spectra = spectral.FourierSpectrum(source=time_series,
                                            segment_length=self.algorithm.segment_length,
                                            windowing_function=str(window_function),
+                                           detrend = detrend,
                                            storage_path=self.storage_path)
         
         ##------------- NOTE: Assumes 4D, Simulator timeSeries. --------------##
