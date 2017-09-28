@@ -38,7 +38,7 @@ import json
 import copy
 import cherrypy
 import formencode
-from tvb.simulator.common import *
+from tvb.simulator.common import total_ms
 from tvb.core.adapters.input_tree import InputTreeManager, KEY_PARAMETER_CHECKED
 import tvb.core.entities.model
 from formencode import validators
@@ -338,9 +338,10 @@ class BurstController(BurstBaseController):
         """
         data = json.loads(data['simulator_parameters'])
         simulation_length = data['simulation_length']
-        simulation_length = total_ms(simulation_length)
-        if(simulation_length == 0):
-            return {'error': "Input not well formed!"}
+        try:
+            simulation_length = total_ms(simulation_length)
+        except ValueError, e:
+            return {'error': e.message}
         data['simulation_length']=unicode(simulation_length)
         burst_config = common.get_from_session(common.KEY_BURST_CONFIG)
 
