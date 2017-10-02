@@ -18,6 +18,13 @@
  **/
 
 /**
+ * This separator should be present in the labels of nodes only when we want hierarchical nodes.
+ * Currently this is not used, but will be useful for macro-regions.
+ * When found in original names, will be replaced with HIERARCHY_SEPARATOR_REPLACEMENT.
+ */
+var HIERARCHY_SEPARATOR = ".";
+var HIERARCHY_SEPARATOR_REPLACEMENT = "_";
+/**
  * A function for drawing a hierarchical edge bundle
  *
  * @param data    The data structure that has the region labels and the adjiacence matrix
@@ -25,24 +32,29 @@
  */
 function HEB_InitData(data, test_function) {
 
-    var l = data.region_labels.length;
+    const l = data.region_labels.length;
     var svg_d3 = data.svg.d3;
     var jsonified_region_labels = [];
+    let has_special_characters = false;
 
-    for (var i = 0; i < l; i++) {
-        var json_line = {};
+    for (let i = 0; i < l; i++) {
+        let json_line = {};
         json_line.imports = [];
-        var k = 0; //k is a counter for connected regions with the j-th region
-        for (var j = 0; j < l; j++) {
-            var w = 0;
+        let k = 0; //k is a counter for connected regions with the j-th region
+        for (let j = 0; j < l; j++) {
+            let w = 0;
             w = data.matrix[i * l + j];
-            json_line.name = data.region_labels[i];
+            has_special_characters = has_special_characters || (data.region_labels[i].lastIndexOf(HIERARCHY_SEPARATOR) > 0);
+            json_line.name = data.region_labels[i].replace(HIERARCHY_SEPARATOR, HIERARCHY_SEPARATOR_REPLACEMENT);
             if (test_function(w)) {
-                json_line.imports[k] = data.region_labels[j];
+                json_line.imports[k] = data.region_labels[j].replace(HIERARCHY_SEPARATOR, HIERARCHY_SEPARATOR_REPLACEMENT);
                 k++;
             }
         }
         jsonified_region_labels[i] = json_line;
+    }
+    if (has_special_characters) {
+        displayMessage("Special character '" + HIERARCHY_SEPARATOR + "' has been replaced in all labels with '" + HIERARCHY_SEPARATOR_REPLACEMENT + "'", "warningMessage");
     }
 
     var radius = data.svg.svg.height() / 2,
@@ -147,7 +159,7 @@ function HEB_InitData(data, test_function) {
             if (!node) {
                 node = map[name] = data || {name: name, children: []};
                 if (name.length) {
-                    node.parent = find(name.substring(0, i = name.lastIndexOf(".")));
+                    node.parent = find(name.substring(0, i = name.lastIndexOf(HIERARCHY_SEPARATOR)));
                     node.parent.children.push(node);
                     node.key = name.substring(i + 1);
                 }
