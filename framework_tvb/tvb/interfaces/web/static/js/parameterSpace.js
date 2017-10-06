@@ -169,8 +169,8 @@ function d3Plot(placeHolder, data, options, pageParam) {
             type: 'POST',
             url: '/flow/get_pse_filters',
             success: function (r) {
-                for (var i = 0; i < d3.selectAll(".action-store")[0].length; i++) { // note the indexing due to the selectAll returning a one ele array of multiple arrays
-                    var selectElement = d3.select("#filterSelect" + i);
+                for (let i = 0; i < d3.selectAll(".action-store")[0].length; i++) { // note the indexing due to the selectAll returning a one ele array of multiple arrays
+                    const selectElement = d3.select("#filterSelect" + i);
                     selectElement.selectAll("option").remove();
                     selectElement.html(r);// this is the best way that i could come up with to separate out the returned elements
                 }
@@ -191,7 +191,7 @@ function d3Plot(placeHolder, data, options, pageParam) {
             .transition()
             .attr({
                 r: function (d) {
-                    var factor = xzoom.scale() * yzoom.scale();
+                    const factor = xzoom.scale() * yzoom.scale();
                     if (factor > 2.5) {
                         return d.points.radius * 2.5;
                     } else if (factor < .5) {
@@ -310,7 +310,7 @@ function d3Plot(placeHolder, data, options, pageParam) {
         canvas.append("g").attr("id", "brushLines");
         var lineData;
 
-        for (var xVal of d3.range(span[0][0], span[1][0], steps[0])) {
+        for (let xVal of d3.range(span[0][0], span[1][0], steps[0])) {
             lineData = [{x: xScale(xVal), y: yScale(span[0][1])}, {x: xScale(xVal), y: yScale(span[1][1])}];
             d3.select("#brushLines").append("path")
                 .attr("d", lineFunc(lineData))
@@ -320,7 +320,7 @@ function d3Plot(placeHolder, data, options, pageParam) {
                 .attr("fill", "none")
                 .attr("id", "brushLine");
         }
-        for (var yVal of d3.range(span[0][1], span[1][1], steps[1])) {
+        for (let yVal of d3.range(span[0][1], span[1][1], steps[1])) {
             lineData = [{x: xScale(span[0][0]), y: yScale(yVal)}, {x: xScale(span[1][0]), y: yScale(yVal)}];
             d3.select("#brushLines").append("path")
                 .attr("d", lineFunc(lineData))
@@ -337,7 +337,7 @@ function d3Plot(placeHolder, data, options, pageParam) {
      */
     function returnfill(weight) {
 
-        var colTest = ColSch_getGradientColorString(weight, _PSE_minColor, _PSE_maxColor).replace("a", "");
+        const colTest = ColSch_getGradientColorString(weight, _PSE_minColor, _PSE_maxColor).replace("a", "");
         // the a creates an error in the color scale creation, so it must be removed.
         // turn color string into a d3 compatible form.
         return d3.rgb(colTest)
@@ -842,7 +842,7 @@ function PSE_mainDraw(parametersCanvasId, backPage, groupGID) {
             $('#' + parametersCanvasId).html(r);
         },
         error: function () {
-            displayMessage("Could not refresh with the new metrics.", "errorMessage");
+            displayMessage("Could not refresh with the new metrics.", "warningMessage");
         }
     });
 }
@@ -861,7 +861,7 @@ function Isocline_MainDraw(groupGID, divId) {
             $('#' + divId).html(r);
         },
         error: function () {
-            displayMessage("Could not refresh with the new metrics.", "errorMessage");
+            displayMessage("Could not refresh with the new metrics.", "warningMessage");
         }
     });
 }

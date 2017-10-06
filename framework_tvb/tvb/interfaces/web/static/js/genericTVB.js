@@ -29,13 +29,13 @@ function displayMessage(msg, className) {
 
     let messageDivParent = document.getElementById("messageDivParent");
     if (messageDivParent) {
-        if (className == 'errorMessage') {
+        if (className === 'errorMessage') {
             className = 'msg-sticky msg-level-fatal';
             console.warn(msg);
-        } else if (className == 'warningMessage') {
+        } else if (className === 'warningMessage') {
             className = 'msg-transient transient-medium msg-level-warn';
             console.warn(msg);
-        } else if (className == 'importantMessage') {
+        } else if (className === 'importantMessage') {
             className = 'msg-transient transient-medium msg-level-confirm';
             console.info(msg);
         } else {
@@ -60,7 +60,7 @@ function displayMessage(msg, className) {
 function checkForIE() {
     const browserName = navigator.appName;
 
-    if (browserName == "Microsoft Internet Explorer") {
+    if (browserName === "Microsoft Internet Explorer") {
         const msg = "Internet Explorer is not supported. Please use Google Chrome, Mozilla Firefox or Apple Safari.";
         displayMessage(msg, 'errorMessage');
     }
@@ -72,7 +72,7 @@ function get_URL_param(param) {
         const key_value = pair.split('=');
         const decodedKey = decodeURIComponent(key_value[0]);
         const decodedValue = decodeURIComponent(key_value[1]);
-        if (decodedKey == param) return decodedValue;
+        if (decodedKey === param) return decodedValue;
         return null;
     };
 
@@ -116,10 +116,10 @@ function setUpKeyWatch() {
 }
 
 function redirectToHrefChild(redirectPage) {
-    if (pressedKey == 13) {
+    if (pressedKey === 13) {
         const children = redirectPage.children;
         for (let i = 0; i < children.length; i++) {
-            if (children[i].tagName == "A") {
+            if (children[i].tagName === "A") {
                 window.location = children[i].href;
                 children[i].onclick();
                 break;
@@ -129,7 +129,7 @@ function redirectToHrefChild(redirectPage) {
 }
 
 function fireOnClick(redirectElem) {
-    if (pressedKey == 13) {
+    if (pressedKey === 13) {
         redirectElem.onclick();
     }
 }
@@ -177,10 +177,10 @@ function getSubmitableData(inputDivId, allowDisabled) {
         if (!allowDisabled && thisInput.disabled) {
             continue;
         }
-        if (thisInput.type != 'button') {
-            if (thisInput.type == 'checkbox') {
+        if (thisInput.type !== 'button') {
+            if (thisInput.type === 'checkbox') {
                 submitableData[thisInput.name] = thisInput.checked;
-            } else if (thisInput.type == 'radio') {
+            } else if (thisInput.type === 'radio') {
                 if (thisInput.checked) {
                     submitableData[thisInput.name] = thisInput.value;
                 }
@@ -217,7 +217,7 @@ function submitParentForm(formToSubmitId, submitURL) {
         type: 'POST',
         url: submitURL,
         data: submittableData,
-        success: function (r) {
+        success: function () {
             displayMessage("Operation launched!");
         }
     });
@@ -228,7 +228,7 @@ function submitParentForm(formToSubmitId, submitURL) {
  */
 function toggleMaximizeColumn(link, maximizeColumnId) {
     const mainDiv = $("div[id='main']");
-    if (link.text == "Maximize") {
+    if (link.text === "Maximize") {
         if (!mainDiv.hasClass('is-maximized')) {
             mainDiv[0].className = mainDiv[0].className + " is-maximized";
             const maximizeColumn = $("#" + maximizeColumnId)[0];
@@ -308,7 +308,7 @@ function show_hide(show_class, hide_class) {
  */
 function _on_validation_finished(r) {
     r = $.parseJSON(r);
-    if (r['status'] == 'ok') {
+    if (r['status'] === 'ok') {
         displayMessage(r['message'], "infoMessage");
     } else {
         displayMessage(r['message'], "errorMessage");
@@ -344,7 +344,7 @@ function changeDBValue(selectComponent) {
     const correspondingValue = component.options[component.selectedIndex].attributes.correspondingVal.nodeValue;
     const correspondingTextField = document.getElementById('URL_VALUE');
     correspondingTextField.value = correspondingValue;
-    if (selectedValue == 'sqlite') {
+    if (selectedValue === 'sqlite') {
         correspondingTextField.setAttribute('readonly', 'readonly');
     } else {
         correspondingTextField.removeAttribute('readonly');
@@ -353,7 +353,7 @@ function changeDBValue(selectComponent) {
 
 function settingsPageInitialize() {
     $('#TVB_STORAGE').change(function () {
-        if ($('#SELECTED_DB').val() == 'sqlite') {
+        if ($('#SELECTED_DB').val() === 'sqlite') {
             let storagePath = $('#TVB_STORAGE').val();
             if (storagePath.slice(-1) !== '/') {
                 storagePath += '/'
@@ -414,13 +414,13 @@ const TVB_NODE_DATATYPE_TYPE = "datatype";
  */
 function displayNodeDetails(entity_gid, entityType, backPage, excludeTabs) {
     closeOverlay(); // If there was overlay opened, just close it
-    if (entity_gid == undefined || entity_gid == "firstOperation" || entity_gid == "fakeRootNode" || TVB_skipDisplayOverlay) {
+    if (entity_gid === undefined || entity_gid === "firstOperation" || entity_gid === "fakeRootNode" || TVB_skipDisplayOverlay) {
         return;
     }
     let url;
-    if (entityType == TVB_NODE_OPERATION_TYPE) {
+    if (entityType === TVB_NODE_OPERATION_TYPE) {
         url = '/project/get_operation_details/' + entity_gid + "/0";
-    } else if (entityType == TVB_NODE_OPERATION_GROUP_TYPE) {
+    } else if (entityType === TVB_NODE_OPERATION_GROUP_TYPE) {
         url = '/project/get_operation_details/' + entity_gid + "/1";
     } else {
         url = '/project/get_datatype_details/' + entity_gid;
@@ -445,19 +445,19 @@ function displayNodeDetails(entity_gid, entityType, backPage, excludeTabs) {
 function closeAndRefreshNodeDetailsOverlay(returnCode, backPage) {
 
     closeOverlay();
-    if (returnCode == 0) {
+    if (returnCode === 0) {
 
-        if (backPage == 'operations') {
+        if (backPage === 'operations') {
             document.getElementById('operationsForm').submit();
 
-        } else if (backPage == 'data') {
-            if ($("#lastVisibleTab").val() == GRAPH_TAB) {
+        } else if (backPage === 'data') {
+            if ($("#lastVisibleTab").val() === GRAPH_TAB) {
                 update_workflow_graph('workflowCanvasDiv', TREE_lastSelectedNode, TREE_lastSelectedNodeType);
             } else {
                 updateTree('#treeStructure');
             }
 
-        } else if (backPage == 'burst') {
+        } else if (backPage === 'burst') {
             $("#tab-burst-tree")[0].onclick();
         }
     }
@@ -585,7 +585,7 @@ function setOperationRelevant(operationGID, isGroup, toBeRelevant, submitFormId)
         entityType = "operation";
     }
     const returnCode = _markEntityVisibility(operationGID, entityType, toBeRelevant);
-    if (returnCode == 0) {
+    if (returnCode === 0) {
         document.getElementById(submitFormId).submit();
     }
 }
@@ -607,7 +607,7 @@ function _stopOperationsOrBurst(operationId, isGroup, isBurst, removeAfter) {
         type: 'POST',
         url: urlBase,
         success: function (r) {
-            if (r.toLowerCase() == 'true') {
+            if (r.toLowerCase() === 'true') {
                 displayMessage("The operation was successfully removed.", "infoMessage")
             } else {
                 displayMessage("Could not remove operation.", 'warningMessage');
@@ -673,7 +673,7 @@ function refreshOperations() {
         return;
     }
 
-    if (document.getElementById("overlay") == null) {
+    if (document.getElementById("overlay") === null) {
         // let other requests cancel the refresh . Do not set the flag
         // TVB_pageSubmitted = true
         document.getElementById('operationsForm').submit();
@@ -749,7 +749,7 @@ function closeOverlayOnEsc(evt) {
     const evt_value = (evt) ? evt : ((event) ? event : null);
 
     // handle ESC key code
-    if (evt_value.keyCode == 27) {
+    if (evt_value.keyCode === 27) {
         closeOverlay();
         // Force page reload, otherwise the div#main with position absolute will be wrongly displayed
         // The wrong display happens only when iFrame with anchors are present in the Help Inline Doc.
@@ -784,7 +784,7 @@ function selectOverlayTab(tabsPrefix, tabId) {
  */
 function showOverlayProgress() {
     const overlayElem = $("#overlay");
-    if (overlayElem != null) {
+    if (overlayElem !== null) {
         overlayElem.addClass("overlay-blocker");
         const bodyElem = $('body');
         bodyElem.unbind(_keyUpEvent, closeOverlayOnEsc);
@@ -808,7 +808,7 @@ function showBlockerOverlay(timeout, overlay_data) {
     overlay_data = checkArg(overlay_data,
         {"message_data": "Your request is being processed right now. Please wait a moment..."});
     _blockerOverlayCounter++;
-    if (_blockerOverlayCounter == 1) {
+    if (_blockerOverlayCounter === 1) {
         showOverlay("/showBlockerOverlay", false, overlay_data);
 
         // Ensure that overlay will close in 1 min
@@ -821,15 +821,15 @@ function showQuestionOverlay(question, yesCallback, noCallback) {
      * Dispaly a question overlay with yes / no answers. The params yesCallback / noCallback
      * are javascript code that will be evaluated when pressing the corresponding choice buttons.
      */
-    if (yesCallback == null) {
+    if (yesCallback === null) {
         yesCallback = 'closeOverlay()';
     }
-    if (noCallback == null) {
+    if (noCallback === null) {
         noCallback = 'closeOverlay()';
     }
     const url = "/project/show_confirmation_overlay";
     const data = {'yes_action': yesCallback, 'no_action': noCallback};
-    if (question != null) {
+    if (question !== null) {
         data['question'] = question;
     }
     showOverlay(url, true, data);
@@ -843,7 +843,7 @@ function forceCloseBlockerOverlay() {
 function closeBlockerOverlay() {
     _blockerOverlayCounter--;
     if (_blockerOverlayCounter <= 0) {
-        if (_blockerOverlayTimeout != null) {
+        if (_blockerOverlayTimeout !== null) {
             clearTimeout(_blockerOverlayTimeout);
             _blockerOverlayTimeout = null;
         }
@@ -861,10 +861,10 @@ function closeBlockerOverlay() {
  */
 function showHelpOverlay(section, subsection) {
     let url = "/help/showOnlineHelp";
-    if (section != null) {
+    if (section !== null) {
         url += "/" + section;
     }
-    if (subsection != null) {
+    if (subsection !== null) {
         url += "/" + subsection;
     }
 
@@ -887,7 +887,7 @@ function waitForStorageUpdateToEnd() {
             const message = result['message'];
             const status = result['status'];
             if (message.length > 0) {
-                if (status == true) {
+                if (status === true) {
                     displayMessage(message, "infoMessage");
                 } else {
                     displayMessage(message, "errorMessage");
@@ -980,18 +980,18 @@ function doAjaxCall(params) {
     }
 
     function onSuccess(data, textStatus, jqXHR) {
-        if (params.success != undefined) {
+        if (params.success !== undefined) {
             params.success(data, textStatus, jqXHR);
         }
     }
 
     function onError(jqXHR, textStatus, error) {
-        if (jqXHR.status == 401) {
+        if (jqXHR.status === 401) {
             displayMessage('Your session has expired. Please log in.', 'errorMessage');
-        } else if (jqXHR.status == 303) {
+        } else if (jqXHR.status === 303) {
             //handle a redirect.
             displayMessage(error, 'errorMessage');
-        } else if (params.error != undefined) {
+        } else if (params.error !== undefined) {
             params.error(jqXHR, textStatus, error);
         } else {
             displayMessage(error, 'errorMessage');
@@ -1105,7 +1105,7 @@ function HLPR_fetchNdArray(binary_url, onload, kwargs) {
     oReq.open("GET", binary_url, true);
     oReq.responseType = "arraybuffer";
 
-    oReq.onload = function (event) {
+    oReq.onload = function () {
         const arrayBuffer = oReq.response;
         let shape = oReq.getResponseHeader("X-Array-Shape");
         const dtype = oReq.getResponseHeader("X-Array-Type");
@@ -1153,10 +1153,10 @@ function checkArg(arg, def) {
  * toSignificantDigits(23.3) == "23.30"
  */
 function toSignificantDigits(number, precision) {
-    if (precision == null || precision < 0) {
+    if (precision === null || precision < 0) {
         precision = 2;
     }
-    if (number == 0 || number > 1) {
+    if (number === 0 || number > 1) {
         return number.toFixed(precision);
     } else {
         return number.toPrecision(precision);
@@ -1187,7 +1187,7 @@ function hideMenus() {
  * todo: Introduce a new class for this new menu behaviour as the above selector is complex
  */
 function setupMenuEvents(parent) {
-    if (parent == null) {
+    if (parent === undefined) {
         parent = $(document);
     }
     // By menu root understand the element which shows the menu on click. The root contains the menu dom.
@@ -1197,7 +1197,7 @@ function setupMenuEvents(parent) {
     menuRoots.on('click.menus', function (event) {
         // hide menu if the menu root of the current menu has been clicked
         // but do nothing if the menu extension was clicked
-        const clickedOnActiveMenu = activeMenu && activeMenu[0] == this;
+        const clickedOnActiveMenu = activeMenu && activeMenu[0] === this;
         if (clickedOnActiveMenu) {
             let clickedExtension = activeMenu.find('.extension').find(event.target).length;
             if (!clickedExtension) {
