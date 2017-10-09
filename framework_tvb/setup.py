@@ -49,17 +49,25 @@ TVB_TEAM += "Stuart Knock, Marmaduke Woodman, Paula Sansz Leon, "
 TVB_INSTALL_REQUIREMENTS = ["apscheduler", "beautifulsoup", "cherrypy", "genshi", "cfflib", "formencode",
                             "h5py", "lxml", "minixsv", "mod_pywebsocket", "networkx", "nibabel", "numpy",
                             "numexpr", "psutil", "scikit-learn", "scipy", "simplejson", "Pillow",
-                            "sqlalchemy==0.7.8", "sqlalchemy-migrate==0.7.2", "matplotlib"]
+                            "sqlalchemy==0.7.8", "sqlalchemy-migrate==0.7.2", "matplotlib", "tvb-library"]
 
 EXCLUDE_INTROSPECT_FOLDERS = [folder for folder in os.listdir(".")
                               if os.path.isdir(os.path.join(".", folder)) and folder != "tvb"]
 
-setuptools.setup(name="tvb",
+with open(os.path.join(os.path.dirname(__file__), 'README.rst')) as fd:
+    long_description = fd.read()
+
+setuptools.setup(name="tvb-framework",
                  version=VERSION,
                  packages=setuptools.find_packages(exclude=EXCLUDE_INTROSPECT_FOLDERS),
+                 description='A package for performing whole brain simulations',
+				 url='http://www.thevirtualbrain.org',
                  license="GPL v3",
                  author=TVB_TEAM,
                  author_email='lia.domide@codemart.ro',
+				 download_url='https://github.com/the-virtual-brain/tvb-framework',
+                 keywords='brain simulator neuroscience human animal neuronal dynamics models delay',
+                 long_description=long_description,
                  include_package_data=True,
                  install_requires=TVB_INSTALL_REQUIREMENTS,
                  extras_require={'postgres': ["psycopg2"]})
