@@ -43,35 +43,30 @@ import setuptools
 
 VERSION = "1.5.4"
 
-TVB_TEAM = "Mihai Andrei, Lia Domide, Ionel Ortelecan, Bogdan Neacsa, Calin Pavel, "
-TVB_TEAM += "Stuart Knock, Marmaduke Woodman, Paula Sansz Leon, "
+TVB_TEAM = "Mihai Andrei, Lia Domide, Stuart Knock, Bogdan Neacsa, Paula Sansz Leon, Marmaduke Woodman"
 
-TVB_INSTALL_REQUIREMENTS = ["apscheduler", "beautifulsoup", "cherrypy", "genshi", "cfflib", "formencode",
-                            "h5py", "lxml", "minixsv", "mod_pywebsocket", "networkx", "nibabel", "numpy",
-                            "numexpr", "psutil", "scikit-learn", "scipy", "simplejson", "Pillow",
-                            "sqlalchemy==0.7.8", "sqlalchemy-migrate==0.7.2", "matplotlib", "tvb-library"]
-
-EXCLUDE_INTROSPECT_FOLDERS = [folder for folder in os.listdir(".")
-                              if os.path.isdir(os.path.join(".", folder)) and folder != "tvb"]
+TVB_INSTALL_REQUIREMENTS = ["apscheduler", "beautifulsoup", "cfflib", "cherrypy", "formencode", "genshi",
+                            "h5py", "lxml", "matplotlib", "minixsv", "mod_pywebsocket", "networkx", "nibabel",
+                            "numexpr", "numpy", "Pillow", "psutil", "scikit-learn", "scipy", "simplejson",
+                            "sqlalchemy==0.7.8", "sqlalchemy-migrate==0.7.2", "tvb-library"]
 
 with open(os.path.join(os.path.dirname(__file__), 'README.rst')) as fd:
-    long_description = fd.read()
+    DESCRIPTION = fd.read()
 
 setuptools.setup(name="tvb-framework",
                  version=VERSION,
-                 packages=setuptools.find_packages(exclude=EXCLUDE_INTROSPECT_FOLDERS),
-                 description='A package for performing whole brain simulations',
-				 url='http://www.thevirtualbrain.org',
-                 license="GPL v3",
-                 author=TVB_TEAM,
-                 author_email='lia.domide@codemart.ro',
-				 download_url='https://github.com/the-virtual-brain/tvb-framework',
-                 keywords='brain simulator neuroscience human animal neuronal dynamics models delay',
-                 long_description=long_description,
+                 packages=setuptools.find_packages(),
                  include_package_data=True,
                  install_requires=TVB_INSTALL_REQUIREMENTS,
-                 extras_require={'postgres': ["psycopg2"]})
+                 extras_require={'postgres': ["psycopg2"]},
+                 description='A package for performing whole brain simulations',
+                 long_description=DESCRIPTION,
+                 license="GPL v3",
+                 author=TVB_TEAM,
+                 author_email='tvb.admin@thevirtualbrain.org',
+                 url='http://www.thevirtualbrain.org',
+                 download_url='https://github.com/the-virtual-brain/tvb-framework',
+                 keywords='brain simulator neuroscience human animal neuronal dynamics models delay')
 
 ## Clean after install      
-shutil.rmtree('tvb.egg-info', True)
-
+shutil.rmtree('tvb_framework.egg-info', True)
