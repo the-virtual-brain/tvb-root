@@ -177,7 +177,7 @@ class ParameterExplorationController(BaseController):
 
 
     @expose_json
-    def get_node_matrix(self, datatype_group_gid, matrix_shape):
+    def get_node_matrix(self, datatype_group_gid):
 
         algorithm = self.flow_service.get_algorithm_by_module_and_class(ISOCLINE_PSE_ADAPTER_MODULE,
                                                                         ISOCLINE_PSE_ADAPTER_CLASS)
@@ -185,7 +185,7 @@ class ParameterExplorationController(BaseController):
         if self._is_compatible(algorithm, datatype_group_gid):
             try:
                 datatype_group = dao.get_datatype_group_by_gid(datatype_group_gid)
-                return adapter.prepare_node_data(datatype_group, matrix_shape)
+                return adapter.prepare_node_data(datatype_group)
             except LaunchException as ex:
                 self.logger.error(ex.message)
                 error_msg = urllib.quote(ex.message)

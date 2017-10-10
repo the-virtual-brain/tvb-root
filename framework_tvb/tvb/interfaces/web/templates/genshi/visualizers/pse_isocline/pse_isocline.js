@@ -25,22 +25,24 @@
 var Pse_isocline = {
     Matrix2d: Matrix2d,
     initial_n: null,
-    matrix_node_info: null,
+    list_guids: null,
+    dict_nodes_info: null,
     initial_m: null,
     url_base: null,
     canvas_name: null
 };
 
-function pse_isocline_init(canvasName, xAxisName, yAxisName, matrix_shape, x_min, x_max, y_min, y_max, url_base, node_info_url) {
+function pse_isocline_init(canvasName, xAxisName, yAxisName, matrix_shape, matrix_guids, x_min, x_max, y_min, y_max, url_base, node_info_url) {
 
     matrix2d_init(canvasName, xAxisName, yAxisName, null, matrix_shape, x_min, x_max, y_min, y_max, null, null);
     Pse_isocline.initial_n = Matrix2d.n;
     Pse_isocline.initial_m = Matrix2d.m;
     Pse_isocline.url_base = url_base;
     Pse_isocline.canvas_name = canvasName;
+    Pse_isocline.list_guids = matrix_guids;
     // conflict between continuous and discrete IDs
     Pse_isocline.Matrix2d.viewerType = "ISO";
-    loadNodeMatrix(node_info_url, matrix_shape);
+    loadNodeMatrix(node_info_url);
     drawAxis();
     const canvas = document.getElementById('main-canvas-2d');
     canvas.addEventListener('click', function (evt) {
@@ -73,7 +75,7 @@ function pse_isocline_init(canvasName, xAxisName, yAxisName, matrix_shape, x_min
         })
     }, false);
 
-    canvas.addEventListener('mouseout', function (evt) {
+    canvas.addEventListener('mouseout', function () {
         const toolTipDiv = d3.select(".tooltip");
         toolTipDiv.transition()
             .duration(300)
@@ -110,13 +112,13 @@ function redrawCanvas(selected_metric) {
     });
 }
 
-function loadNodeMatrix(node_info_url, matrix_shape) {
+function loadNodeMatrix(node_info_url) {
     doAjaxCall({
-        url: node_info_url + '/' + matrix_shape,
-        type: 'POST',
+        url: node_info_url,
+        type: 'GET',
         async: false,
         success: function (data) {
-            Pse_isocline.matrix_node_info = $.parseJSON(data);
+            Pse_isocline.dict_nodes_info = $.parseJSON(data);
         }
     });
 }
@@ -143,10 +145,10 @@ function getIndicesForMousePosition(mousePos) {
 }
 function getGid(mousePos) {
     const indices = getIndicesForMousePosition(mousePos);
-    return Pse_isocline.matrix_node_info[indices[0]][indices[1]]["datatype_gid"];
+    return Pse_isocline.list_guids[indices[0] * Pse_isocline.initial_m + indices[1]];
 }
 
 function getNodeInfo(mousePos) {
-    const indices = getIndicesForMousePosition(mousePos);
-    return Pse_isocline.matrix_node_info[indices[0]][indices[1]];
+    const currentGUID = getGid(mousePos);
+    return Pse_isocline.dict_nodes_info[currentGUID];
 }

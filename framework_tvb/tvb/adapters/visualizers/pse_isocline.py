@@ -35,7 +35,6 @@
 
 import numpy
 import json
-import six
 from tvb.core.adapters.abcdisplayer import ABCDisplayer
 from tvb.basic.logger.builder import get_logger
 from tvb.core.entities.model import DataTypeGroup, OperationGroup, STATUS_STARTED
@@ -71,7 +70,6 @@ class PseIsoModel(object):
                    PseIsoModel._find_metrics(operations), None)
 
         self._fill_apriori_data(operations)
-        # self.log.warning(self.as_json())
         return self
 
     @staticmethod
@@ -145,16 +143,6 @@ class PseIsoModel(object):
             result = numpy.arange(len(original_range_values))
         return result
 
-    def as_json(self):
-        de_numpy_ed = dict((k, v.tolist()) for k, v in six.iteritems(self.apriori_data))
-        return json.dumps({
-            'apriori_data': de_numpy_ed,
-            'metrics': self.metrics,
-            'datatypes_gids': self.datatypes_gids,
-            'range1': json.dumps([self.range1_name, self.range1]),
-            'range2': json.dumps([self.range2_name, self.range2])
-        })
-
 
 class IsoclinePSEAdapter(ABCDisplayer):
     """
@@ -208,6 +196,8 @@ class IsoclinePSEAdapter(ABCDisplayer):
         data_matrix = numpy.rot90(data_matrix)
         data_matrix = numpy.flipud(data_matrix)
         matrix_data = ABCDisplayer.dump_with_precision(data_matrix.flat)
+        matrix_guids = self.model.datatypes_gids
+        matrix_guids = numpy.rot90(matrix_guids)
         matrix_shape = json.dumps(data_matrix.squeeze().shape)
         x_min = self.model.apriori_x[0]
         x_max = self.model.apriori_x[self.model.apriori_x.size - 1]
@@ -216,6 +206,7 @@ class IsoclinePSEAdapter(ABCDisplayer):
         vmin = data_matrix.min()
         vmax = data_matrix.max()
         return dict(matrix_data=matrix_data,
+                    matrix_guids=json.dumps(matrix_guids.flatten().tolist()),
                     matrix_shape=matrix_shape,
                     color_metric=selected_metric,
                     x_min=x_min,
@@ -227,32 +218,24 @@ class IsoclinePSEAdapter(ABCDisplayer):
 
 
     @staticmethod
-    def build_node_array(datatype_group):
+    def prepare_node_data(datatype_group):
         if datatype_group is None:
             raise Exception("Selected DataTypeGroup is no longer present in the database. "
                             "It might have been remove or the specified id is not the correct one.")
 
         operation_group = dao.get_operationgroup_by_id(datatype_group.fk_operation_group)
         operations = dao.get_operations_in_group(operation_group.id)
-        node_info_array = []
+        node_info_dict = dict()
         for operation_ in operations:
             datatypes = dao.get_results_for_operation(operation_.id)
             if len(datatypes) > 0:
                 datatype = datatypes[0]
-                node_info_array.append(dict(operation_id=operation_.id,
-                                            datatype_gid=datatype.gid,
-                                            datatype_type=datatype.type,
-                                            datatype_subject=datatype.subject,
-                                            datatype_invalid=datatype.invalid))
-        return node_info_array
-
-
-    def prepare_node_data(self, datatype_group, matrix_shape):
-        matrix_shape = json.loads(matrix_shape)
-        matrix_shape = (matrix_shape[0], matrix_shape[1])
-        matrix_node_info = numpy.reshape(self.build_node_array(datatype_group), matrix_shape)
-        matrix_node_info = numpy.flipud(matrix_node_info).tolist()
-        return matrix_node_info
+                node_info_dict[datatype.gid] = dict(operation_id=operation_.id,
+                                                    datatype_gid=datatype.gid,
+                                                    datatype_type=datatype.type,
+                                                    datatype_subject=datatype.subject,
+                                                    datatype_invalid=datatype.invalid)
+        return node_info_dict
 
 
     def launch(self, datatype_group, **kwargs):
