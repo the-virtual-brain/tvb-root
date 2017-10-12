@@ -152,7 +152,7 @@ interface and hit `Launch`.
 The algorithm returns an PrincipalComponents object that is a xD-Matrix with the 
 Dimensions {x,y,z}. The resulting time-series can be viewed with the `Pca viewer`.
 
-.. image:: screenshots/analyzers_pca.jpg
+.. image:: screenshots/visualizer_pca.jpg
      :width: 90%
      :align: center
 
@@ -172,6 +172,11 @@ interface and hit `Launch`.
 The algorithm returns an IndependentComponents object that is a xD-Matrix with the 
 Dimensions {x,y,z}. The resulting time-series can be viewed with the the corresponding ICA viewer.
 
+.. figure:: screenshots/visualizer_ica.jpg
+   :width: 90%
+   :align: center
+
+   Preview for Independent Components Analysis Visualizer
 
 
 Continuous Wavelet Transform (CWT)

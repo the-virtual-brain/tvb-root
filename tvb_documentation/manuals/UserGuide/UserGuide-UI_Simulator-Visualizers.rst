@@ -550,7 +550,7 @@ explained by each component.
 On the right, the first ten components are plotted against the brain nodes 
 (variables). 
 
-.. figure:: screenshots/analyzers_pca.jpg
+.. figure:: screenshots/visualizer_pca.jpg
    :width: 90%
    :align: center
 
@@ -566,7 +566,7 @@ As for PCA the TimeSeries datatype must be longer (more time-points) than the nu
 Mostly a problem for TimeSeriesSurface datatypes, which, if sampled at 1024Hz, would need to be greater than
 16 seconds long.
 
-.. figure:: screenshots/analyzers_ica.jpg
+.. figure:: screenshots/visualizer_ica.jpg
    :width: 90%
    :align: center
 

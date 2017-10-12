@@ -227,12 +227,12 @@ Supported operating systems
 
 The current |TVB| package was tested on :
 
-- Debian Jessie and Fedora 20.
+- Debian Jessie and Stretch, and Fedora 26.
   Other Linux flavors might also work as long as you have installed a glibc version of 2.14 or higher.
 
-- Mac OS X greater than 10.7 are supported.
+- Mac OS X 10.12 Sierra.
 
-- Windows XP (x32), Windows Server 2008 (x64) and Windows 7 (x64).
+- Windows 10.
 
 
 Application requirements
@@ -246,7 +246,7 @@ Requirements for front-end visualization:
   Your monitor should be capable of displaying at least 1600 x 1000 pixels. Some views might be truncated if TVB is run on smaller monitors.
 
 - **WebGL and WebSockets compatible browser** -
-  We've tested the software on Mozilla Firefox 30+, Apple Safari 7+ and Google Chrome 30+.
+  We've tested the software on the latest versions of Mozilla Firefox, Apple Safari and Google Chrome.
   Using a different, less capable browser might result in some features not working or the user interface looking awkward at times.
 
 - **WebGL-compatible graphics card** -

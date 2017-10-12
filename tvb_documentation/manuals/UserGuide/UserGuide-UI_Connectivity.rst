@@ -1,13 +1,12 @@
 Connectivity
 ------------
 
-In this area you can edit both types of TVB connectivity objects:
+In this area you can edit two types of TVB connectivity objects:
 
     - long-range connectivity and,
     - local connectivity.
 
-You can also download connectomes from the Allen Mouse Brain Connectivity Atlas.
-This requires AllenSDK to be installed. TVB does not package it.
+You can also download connectomes from the **Allen Mouse Brain Connectivity Atlas**.
 
 |
 
@@ -497,7 +496,9 @@ Allen Connectome Downloader
 From this page you can initiate an operation which will download data from The Allen Mouse Brain Connectivity Atlas.
 See http://connectivity.brain-map.org
 
-This feature is available only if AllenSDK is installed. TVB does not package it.
 This operation needs an internet connection and it will take many minutes to complete.
-It will produce a Connectivity and a brain Volume.
+It will produce a Structural Connectivity in TVB format and a compatible brain Volume object.
+
+Check the Project --> Operations page to see when the import from Allen is done.
+You can also find your resulted Connectivity in Project --> Data Structure area.
 
