@@ -131,12 +131,12 @@ function loadBurstHistory() {
  * Periodically look for updates in burst history status and update their classes accordingly.
  */
 function updateBurstHistoryStatus() {
-    var burst_ids = [];
+    let burst_ids = [];
     // todo: do not store app state in css classes
     $("#burst-history").find("li").each(function () {
         if (this.className.indexOf('burst-started') >= 0) {
             if (this.id.indexOf('burst_id_') >= 0) {
-                var id = this.id.replace('burst_id_', '');
+                const id = this.id.replace('burst_id_', '');
                 burst_ids.push(id);
             }
         }
@@ -147,9 +147,9 @@ function updateBurstHistoryStatus() {
             data: {'burst_ids': JSON.stringify(burst_ids)},
             url: '/burst/get_history_status',
             success: function (r) {
-                var finalStatusReceived = false;
-                var changedStatusOnCurrentBurst = false;
-                var result = $.parseJSON(r);
+                let finalStatusReceived = false;
+                let changedStatusOnCurrentBurst = false;
+                let result = $.parseJSON(r);
 
                 for (let i = 0; i < result.length; i++) {
                     if (result[i][1] !== 'running') {
@@ -176,7 +176,7 @@ function updateBurstHistoryStatus() {
 function _updateBurstHistoryElapsedTime(result) {
     for (let i = 0; i < result.length; i++) {
         if (result[i][1] === 'running') {
-            var el = $('#burst-history').find(' li .burst-prop-processtime span')[i];
+            let el = $('#burst-history').find(' li .burst-prop-processtime span')[i];
             $(el).text(' ~ ' + result[i][4]);
         }
     }
@@ -208,7 +208,7 @@ function cancelOrRemoveBurst(burst_id) {
         url: '/burst/cancel_or_remove_burst/' + burst_id,
         showBlockerOverlay: true,
         success: function (r) {
-            var liParent = document.getElementById("burst_id_" + burst_id);
+            let liParent = document.getElementById("burst_id_" + burst_id);
             if (r === 'canceled') {
                 if (liParent.className.indexOf(ACTIVE_BURST_CLASS) >= 0) {
                     liParent.className = ACTIVE_BURST_CLASS + ' burst-canceled burst';
@@ -217,7 +217,7 @@ function cancelOrRemoveBurst(burst_id) {
                 }
                 loadBurstHistory();
             } else {
-                var ulGrandparent = document.getElementById("burst-history");
+                let ulGrandparent = document.getElementById("burst-history");
                 ulGrandparent.removeChild(liParent);
                 if (r === 'reset-new') {
                     resetToNewBurst();
@@ -236,13 +236,13 @@ function cancelOrRemoveBurst(burst_id) {
  * entity.
  */
 function renameBurstEntry(burst_id, new_name_id) {
-    var newValue = document.getElementById(new_name_id).value;
+    const newValue = document.getElementById(new_name_id).value;
     doAjaxCall({
         type: "POST",
         async: false,
         url: '/burst/rename_burst/' + burst_id + '/' + newValue,
         success: function (r) {
-            var result = $.parseJSON(r);
+            const result = $.parseJSON(r);
             if ('success' in result) {
                 displayMessage(result.success);
                 $("#burst_id_" + burst_id + " a").html(newValue);
@@ -264,7 +264,7 @@ function renameBurstEntry(burst_id, new_name_id) {
  * Load a given burst entry from history. 
  */
 function changeBurstHistory(burst_id) {
-    var clickedBurst = document.getElementById("burst_id_" + burst_id);
+    const clickedBurst = document.getElementById("burst_id_" + burst_id);
     // todo : do not store app state in css classes
     if (clickedBurst.className.indexOf(ACTIVE_BURST_CLASS) >= 0 &&
         clickedBurst.className.indexOf(GROUP_BURST_CLASS) < 0) {
@@ -289,12 +289,14 @@ function _toggleLaunchButtons(beActiveLaunch, beActiveRest) {
 }
 
 function _fillSimulatorParametersArea(htmlContent, isConfigure) {
-    var simParamElem = $("#div-simulator-parameters");
+    let simParamElem = $("#div-simulator-parameters");
     simParamElem.html(htmlContent);
 
-    $("#configRegionModelParam").toggle(!isConfigure);
+    const canConfigureRegionLevelParams = !isConfigure && (sessionStoredBurst.id === '' ||
+        sessionStoredBurst.isFinished && !sessionStoredBurst.isRange);
+    $("#configRegionModelParam").toggle(canConfigureRegionLevelParams);
     $("#configSurfaceModelParam").hide();
-    $("#configNoiseValues").toggle(!isConfigure);
+    $("#configNoiseValues").toggle(canConfigureRegionLevelParams);
     $("#button-uncheck-all-params").toggle(isConfigure);
     $("#button-check-all-params").toggle(isConfigure);
 
@@ -309,8 +311,8 @@ function _fillSimulatorParametersArea(htmlContent, isConfigure) {
         tryExpandRangers();
     }
 
-    _toggleLaunchButtons(!isConfigure && sessionStoredBurst.id == '',
-        !isConfigure && sessionStoredBurst.id != '' && sessionStoredBurst.isFinished && !sessionStoredBurst.isRange);
+    _toggleLaunchButtons(!isConfigure && sessionStoredBurst.id === '',
+        !isConfigure && sessionStoredBurst.id !== '' && sessionStoredBurst.isFinished && !sessionStoredBurst.isRange);
 
     MathJax.Hub.Queue(["Typeset", MathJax.Hub, "div-simulator-parameters"]);
     // Bind the menu events for the online help pop-ups. Needed for the new dom created
@@ -339,7 +341,7 @@ function tryExpandRangers() {
         type: "GET",
         url: '/burst/get_previous_selected_rangers',
         success: function (r) {
-            var result = $.parseJSON(r);
+            const result = $.parseJSON(r);
             updateRangeValues(result);
         },
         error: function () {
@@ -352,7 +354,7 @@ function tryExpandRangers() {
  * Set on change on all simulator inputs, to set a new burst as active whenever something changes.
  */
 function setSimulatorChangeListener(parentDivId) {
-    var parentDiv = $('#' + parentDivId);
+    const parentDiv = $('#' + parentDivId);
     parentDiv.find('select').each(function () {
         if (!this.disabled) {
             this.onchange();
@@ -427,17 +429,17 @@ function toggleSimulatorParametersChecks(beChecked) {
  * For Model-Visual-Setter important are: Connectivity and Model.
  */
 function configureModel(actionUrl) {
-    var submitableData = getSubmitableData("div-simulator-parameters", false);
+    const submittableData = getSubmitableData("div-simulator-parameters", false);
     doAjaxCall({
         type: "POST",
         data: {
-            'simulator_parameters': JSON.stringify(submitableData),
+            'simulator_parameters': JSON.stringify(submittableData),
             'burstName': $("#input-burst-name-id").val()
         },
         url: '/burst/save_simulator_configuration?exclude_ranges=False',
         success: function () {
             // After submitting current parameters, go to a different page.
-            var myForm = document.createElement("form");
+            const myForm = document.createElement("form");
             myForm.method = "POST";
             myForm.action = actionUrl;
             document.body.appendChild(myForm);
