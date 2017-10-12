@@ -347,9 +347,9 @@ def check_matlab_version(matlab_path):
     """
     version = None
     logger = get_logger(__name__)
-    matlab_test_file_name = 'test_mat_version'
+    matlab_test_file_name = os.path.join(TvbProfile.current.TVB_STORAGE, 'test_mat_version')
     matlab_test_file = matlab_test_file_name + '.m'
-    matlab_log_file = 'version_log.txt'
+    matlab_log_file = os.path.join(TvbProfile.current.TVB_STORAGE, 'version_log.txt')
 
     try:
         matlab_version_txt = """tvb_checking_version = version
@@ -370,12 +370,12 @@ def check_matlab_version(matlab_path):
         os.remove(matlab_log_file)
 
     except Exception:
-        logger.error('Could not parse Matlab Version!')
+        logger.exception('Could not parse Matlab Version!')
         try:
             os.remove(matlab_test_file)
             os.remove(matlab_log_file)
         except Exception:
-            logger.error('Could not remove files in the second try...')
+            logger.exception('Could not remove files in the second try...')
 
     return version
 
