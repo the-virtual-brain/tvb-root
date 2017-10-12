@@ -415,9 +415,9 @@ function configureSimulator(configureHref) {
 function toggleSimulatorParametersChecks(beChecked) {
     $(".param-config-checkbox").each(function () {
         if (beChecked) {
-            $(this).attr("checked", 'true');
+            $(this).prop( "checked", true);
         } else {
-            $(this).removeAttr('checked');
+            $(this).prop( "checked", false);
         }
     });
 }
