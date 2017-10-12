@@ -821,14 +821,15 @@ function showQuestionOverlay(question, yesCallback, noCallback) {
      * Dispaly a question overlay with yes / no answers. The params yesCallback / noCallback
      * are javascript code that will be evaluated when pressing the corresponding choice buttons.
      */
-    if (yesCallback === null) {
+    if (yesCallback === undefined) {
         yesCallback = 'closeOverlay()';
     }
-    if (noCallback === null) {
+    if (noCallback === undefined) {
         noCallback = 'closeOverlay()';
     }
     const url = "/project/show_confirmation_overlay";
-    const data = {'yes_action': yesCallback, 'no_action': noCallback};
+    const data = {'yes_action': yesCallback,
+                  'no_action': noCallback};
     if (question !== null) {
         data['question'] = question;
     }
