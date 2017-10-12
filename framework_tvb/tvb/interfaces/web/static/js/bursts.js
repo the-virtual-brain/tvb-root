@@ -542,8 +542,9 @@ function changePSETab(clickedHref, toShow) {
         redrawPlot('pse_discreet_top_id');
     } else {
         $('#burst-pse-flot').hide();
-        $('#burst-pse-iso').show();
-        redrawCanvas("");
+        const parentPSE = $('#burst-pse-iso');
+        parentPSE.show();
+        parentPSE.find("#color_metric_select").trigger('change');
         drawAxis();
     }
 }
@@ -870,9 +871,9 @@ function changeBurstTile(selectedHref) {
             // If we are in display phase, depending on the condition that this is a new burst or a loaded one, take the corresponding action.
             setPortletsStaticPreviews();
         } else {
-            var sectionPortlets = $("#section-portlets")[0];
-            var width = Math.floor(sectionPortlets.clientWidth);
-            var height = Math.floor(sectionPortlets.clientHeight);
+            const sectionPortlets = $("#section-portlets")[0];
+            const width = Math.floor(sectionPortlets.clientWidth);
+            const height = Math.floor(sectionPortlets.clientHeight);
             doAjaxCall({
                 type: "POST",
                 url: '/burst/load_configured_visualizers/' + width + '/' + height,
