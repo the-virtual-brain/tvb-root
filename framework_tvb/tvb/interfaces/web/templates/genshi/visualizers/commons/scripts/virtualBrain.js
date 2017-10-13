@@ -184,8 +184,8 @@ function VS_SetHemisphere(h) {
     }
 }
 
-function VS_StartPortletPreview(baseDatatypeURL, urlVerticesList, urlTrianglesList, urlNormalsList,
-                                noOfMeasurePoints, urlRegionMapList, minActivity, maxActivity, oneToOneMapping) {
+function VS_StartPortletPreview(baseDatatypeURL, urlVerticesList, urlTrianglesList, urlNormalsList, noOfMeasurePoints,
+                                urlRegionMapList, boundaryURL, minActivity, maxActivity, oneToOneMapping) {
     isPreview = true;
     pageSize = 1;
     urlBase = baseDatatypeURL;
@@ -214,6 +214,7 @@ function VS_StartPortletPreview(baseDatatypeURL, urlVerticesList, urlTrianglesLi
     LEG_generateLegendBuffers();
 
     VB_BrainNavigator = new NAV_BrainNavigator(isOneToOneMapping, brainBuffers, measurePoints, measurePointsLabels);
+    regionBoundariesController = new RB_RegionBoundariesController(boundaryURL);
 
     // Enable keyboard and mouse interaction
     canvas.onkeydown = GL_handleKeyDown;

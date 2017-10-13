@@ -97,9 +97,14 @@ class BrainViewer(ABCDisplayer):
         base_activity_url, time_urls = self._prepare_data_slices(time_series)
         min_val, max_val = time_series.get_min_max_values()
 
+        if self.surface and self.region_map:
+            boundary_url = self.surface.get_url_for_region_boundaries(self.region_map)
+        else:
+            boundary_url = ''
+
         params.update(urlVertices=json.dumps(url_vertices), urlTriangles=json.dumps(url_triangles),
                       urlLines=json.dumps(url_lines), urlNormals=json.dumps(url_normals),
-                      urlRegionMap=json.dumps(url_region_map),
+                      urlRegionMap=json.dumps(url_region_map), urlRegionBoundaries=boundary_url,
                       base_activity_url=base_activity_url,
                       isOneToOneMapping=self.one_to_one_map, minActivity=min_val, maxActivity=max_val)
 
