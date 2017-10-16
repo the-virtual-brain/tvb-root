@@ -707,13 +707,23 @@ function d3Plot(placeHolder, data, options, pageParam) {
      */
     d3.selectAll("circle")
         .on("mouseover", function (d) {
+            d3.event = window.event;
+            var offsetX = d3.event.pageX;
+            var offsetY = d3.event.pageY - 100;
+            var portletContainer = document.getElementById("section-pse");
+            if (portletContainer) {
+                var relativeOffsetLeft = portletContainer.offsetLeft;
+                var relativeOffsetTop = portletContainer.offsetTop;
+                offsetX = offsetX - relativeOffsetLeft;
+                offsetY = offsetY - relativeOffsetTop;
+            }
             var nodeInfo = getNodeInfo(d.coords);
             var toolTipText = nodeInfo.tooltip.split("&amp;").join("&").split("&lt;").join("<").split("&gt;").join(">");
             toolTipDiv.html(toolTipText);
             toolTipDiv.style({
                 position: "absolute",
-                left: (d3.event.pageX) + "px",
-                top: (d3.event.pageY - 100) + "px",
+                left: (offsetX) + "px",
+                top: (offsetY) + "px",
                 display: "block",
                 'background-color': '#C0C0C0',
                 border: '1px solid #fdd',
