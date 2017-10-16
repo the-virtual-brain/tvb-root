@@ -707,18 +707,17 @@ function d3Plot(placeHolder, data, options, pageParam) {
      */
     d3.selectAll("circle")
         .on("mouseover", function (d) {
-            d3.event = window.event;
-            var offsetX = d3.event.pageX;
-            var offsetY = d3.event.pageY - 100;
-            var portletContainer = document.getElementById("section-pse");
+            let offsetX = window.event.pageX;
+            let offsetY = window.event.pageY - 100;
+            const portletContainer = document.getElementById("section-pse");
             if (portletContainer) {
-                var relativeOffsetLeft = portletContainer.offsetLeft;
-                var relativeOffsetTop = portletContainer.offsetTop;
+                let relativeOffsetLeft = portletContainer.offsetLeft;
+                let relativeOffsetTop = portletContainer.offsetTop;
                 offsetX = offsetX - relativeOffsetLeft;
                 offsetY = offsetY - relativeOffsetTop;
             }
-            var nodeInfo = getNodeInfo(d.coords);
-            var toolTipText = nodeInfo.tooltip.split("&amp;").join("&").split("&lt;").join("<").split("&gt;").join(">");
+            let nodeInfo = getNodeInfo(d.coords);
+            let toolTipText = nodeInfo.tooltip.split("&amp;").join("&").split("&lt;").join("<").split("&gt;").join(">");
             toolTipDiv.html(toolTipText);
             toolTipDiv.style({
                 position: "absolute",
@@ -728,7 +727,8 @@ function d3Plot(placeHolder, data, options, pageParam) {
                 'background-color': '#C0C0C0',
                 border: '1px solid #fdd',
                 padding: '2px',
-                opacity: 0.80
+                opacity: 0.80,
+                'z-index': 999
             })
         })
         .on("mouseout", function (d) {

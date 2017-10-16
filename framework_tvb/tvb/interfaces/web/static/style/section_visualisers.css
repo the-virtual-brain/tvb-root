@@ -134,7 +134,7 @@ div.flot-tick-label {
     height: 85%;
     position: relative;
     top: 5%;
-    overflow: auto;
+    overflow: hidden;
 }
 
 .topographic_canvas {
