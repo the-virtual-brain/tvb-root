@@ -1068,13 +1068,6 @@ top: 75px;
 height: 100%;
 }
 
-#section-pse.view-column.col-3{
-    overflow-y: hidden !important;
-}
-#section-portlets.view-column.col-3{
-    overflow-y: hidden !important;
-}
-
 #main.columnized .view-column {
 background: rgba(250, 247, 228, 0.1);
 float: left;
