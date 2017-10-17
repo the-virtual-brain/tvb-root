@@ -1,4 +1,4 @@
-.. _benchmark_tvb_14:
+.. _benchmark_tvb_14_mac:
 
 
 ********************
