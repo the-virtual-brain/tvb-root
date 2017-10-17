@@ -64,8 +64,8 @@ class NIFTIImporter(ABCUploader):
                  'label': 'Please select file to import (gz or nii)', 'required': True},
 
                 {'name': 'apply_corrections', 'label': 'Apply auto Corrections', 'type': 'bool', 'default': False,
-                 'description': 'Check this when the NII mapping is not zero based. Everything outside [0..N-1] '
-                                'Connectivity indices will be considered background (value -1)'},
+                 'description': 'Check this when the NII mapping has values outside [-1..N-1]. '
+                                'All outside range will be set -1 (background).'},
 
                 {'name': 'mappings_file', 'label': 'Mapping File', 'type': 'upload', 'required_type': '.txt',
                  'description': 'Fill this for Region Mappings, when the indices in the NII do not match the '
