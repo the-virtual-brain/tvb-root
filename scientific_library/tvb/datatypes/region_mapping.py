@@ -159,8 +159,8 @@ class RegionVolumeMapping(VolumetricDataMixin, arrays.MappedArray):
         LOG.info("Writing RegionVolumeMapping with min=%d, mix=%d" % (data.min(), data.max()))
         if self.apply_corrections:
             data = numpy.array(data, dtype=numpy.int32)
-            data = data - 1
             data[data >= self.connectivity.number_of_regions] = -1
+            data[data < -1] = -1
             LOG.debug("After corrections: RegionVolumeMapping min=%d, mix=%d" % (data.min(), data.max()))
 
         if self.mappings_file:
