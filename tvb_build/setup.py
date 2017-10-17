@@ -35,11 +35,10 @@ from setuptools import setup, find_packages
 setup(
     name='tvb_build',
     packages=find_packages(),
-    version="1.5.4",
+    version="1.5.5",
     license="GPL v3",
     author="TVB Team",
-    # once we are on pypi :
-    # install_requires=['tvb==1.5', 'tvb_bin==1.5', 'tvb_data==1.5']
+    install_requires=['tvb-library', 'tvb-framework', 'tvb-data']
 )
 
 shutil.rmtree('tvb_build.egg-info', True)

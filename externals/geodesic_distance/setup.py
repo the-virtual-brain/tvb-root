@@ -40,39 +40,40 @@ To build::
 
 """
 
+import os
 import numpy
-from setuptools import setup, Extension
+import setuptools
 from Cython.Distutils import build_ext
 
-geodesic_module = [Extension(name="gdist",              # Name of extension
-                             sources=["gdist.pyx"],     # Filename of Cython source
-                             language="c++",            # Cython create C++ source
-                             define_macros=[('NDEBUG', 1)] )]  # Disable assertions; one is failing geodesic_mesh.h:405
+GEODESIC_NAME = "gdist"
 
-include_directories = [numpy.get_include(),     # NumPy dtypes
-                       "geodesic_library"]      # geodesic distance, C++ library.
+GEODESIC_MODULE = [setuptools.Extension(name=GEODESIC_NAME,  # Name of extension
+                                        sources=["gdist.pyx"],  # Filename of Cython source
+                                        language="c++",  # Cython create C++ source
+                                        define_macros=[
+                                            ('NDEBUG', 1)])]  # Disable assertions; one is failing geodesic_mesh.h:405
 
-long_description = """
-The gdist module is a Cython interface to a C++ library
-(http://code.google.com/p/geodesic/) for computing
-geodesic distance which is the length of shortest line between two
-vertices on a triangulated mesh in three dimensions, such that the line
-lies on the surface.
+INCLUDE_DIRS = [numpy.get_include(),  # NumPy dtypes
+                "geodesic_library"]  # geodesic distance, C++ library.
 
-The algorithm is due Mitchell, Mount and Papadimitriou, 1987; the implementation
-is due to Danil Kirsanov and the Cython interface to Gaurav Malhotra and
-Stuart Knock.
-"""
+TEAM = "Danil Kirsanov, Gaurav Malhotra and Stuart Knock"
 
-setup(ext_modules=geodesic_module,
-      include_dirs=include_directories,
-      cmdclass={'build_ext': build_ext},
-      name='gdist',
-      license='GPL 2',
-      version='1.0.3',
-      url='https://github.com/the-virtual-brain/external_geodesic_library',
-      maintainer='Marmaduke Woodman',
-      maintainer_email='mmwoodman@gmail.com',
-      install_requires=['numpy', 'scipy', 'cython'],
-      description="Compute geodesic distances",
-      long_description=long_description)
+INSTALL_REQUIREMENTS = ['numpy', 'scipy', 'cython']
+
+with open(os.path.join(os.path.dirname(__file__), 'README.rst')) as fd:
+    DESCRIPTION = fd.read()
+
+setuptools.setup(name=GEODESIC_NAME,
+                 version='1.0.3',
+                 ext_modules=GEODESIC_MODULE,
+                 include_dirs=INCLUDE_DIRS,
+                 cmdclass={'build_ext': build_ext},
+                 install_requires=INSTALL_REQUIREMENTS,
+                 description="Compute geodesic distances",
+                 long_description=DESCRIPTION,
+                 license='GPL v3',
+                 author=TEAM,
+                 author_email='tvb.admin@thevirtualbrain.org',
+                 url='http://www.thevirtualbrain.org',
+                 download_url='https://github.com/the-virtual-brain/tvb-geodesic',
+                 keywords="gdist geodesic distance geo")
