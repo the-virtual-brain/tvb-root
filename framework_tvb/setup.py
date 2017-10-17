@@ -41,14 +41,14 @@ import shutil
 import setuptools
 
 
-VERSION = "1.5.4"
+VERSION = "1.5.4.1"
 
 TVB_TEAM = "Mihai Andrei, Lia Domide, Stuart Knock, Bogdan Neacsa, Paula Sansz Leon, Marmaduke Woodman"
 
-TVB_INSTALL_REQUIREMENTS = ["apscheduler", "beautifulsoup", "cfflib", "cherrypy", "formencode", "genshi",
-                            "h5py", "lxml", "matplotlib", "minixsv", "mod_pywebsocket", "networkx", "nibabel",
+TVB_INSTALL_REQUIREMENTS = ["allensdk", "apscheduler", "BeautifulSoup4", "cfflib", "cherrypy", "coverage",
+                            "formencode", "genshi", "h5py", "lxml", "minixsv", "mod_pywebsocket", "networkx", "nibabel",
                             "numexpr", "numpy", "Pillow", "psutil", "scikit-learn", "scipy", "simplejson",
-                            "sqlalchemy==0.7.8", "sqlalchemy-migrate==0.7.2", "tvb-library"]
+                            "sqlalchemy==0.7.8", "sqlalchemy-migrate==0.7.2", "tvb-data", "tvb-library"]
 
 with open(os.path.join(os.path.dirname(__file__), 'README.rst')) as fd:
     DESCRIPTION = fd.read()
@@ -66,7 +66,7 @@ setuptools.setup(name="tvb-framework",
                  author_email='tvb.admin@thevirtualbrain.org',
                  url='http://www.thevirtualbrain.org',
                  download_url='https://github.com/the-virtual-brain/tvb-framework',
-                 keywords='brain simulator neuroscience human animal neuronal dynamics models delay')
+                 keywords='tvb brain simulator neuroscience human animal neuronal dynamics models delay')
 
 ## Clean after install      
 shutil.rmtree('tvb_framework.egg-info', True)

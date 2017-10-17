@@ -9,7 +9,7 @@ and analyzing functional and structural data of human brains.
 of TVB Project, but only a part of our code. In order to use this TVB
 Python Library (modify/run/test), you are advised to follow the steps
 described here:
-http://docs.thevirtualbrain.com/advanced/link\_contributor.html
+http://docs.thevirtualbrain.com/manuals/ContributorsManual/ContributorsManual.html#contributors-manual
 
 The interaction with TVB source code is recommended for advanced users
 only, for which the concepts proposed by TVB are known and understood,

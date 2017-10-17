@@ -37,7 +37,7 @@
 import os
 import sys
 import signal
-import queue
+import Queue as queue
 import threading
 from subprocess import Popen, PIPE
 from tvb.basic.profile import TvbProfile

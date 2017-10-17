@@ -201,7 +201,7 @@ class GenshiTestSimulator(GenshiTest):
         count_disabled = 0
         for one_entry in all_inputs:
             ## Replacing with IN won't work
-            if one_entry.has_key('disabled'):
+            if one_entry.has_attr('disabled'):
                 count_disabled += 1
         self.assertTrue(len(all_inputs) > 100, "Not enough input fields generated")
         self.assertTrue(count_disabled > 100, "Not enough input fields disabled")
