@@ -53,24 +53,24 @@ def plot(subplot, title, ymax, data1, label1, data2, label2, data3, label3):
     pyplot.title(title)
 
 
-x = [1, 2, 3]
-x_labels = ["1.4", "1.4.1", "1.5"]
-figure = pyplot.figure()
+x = [1, 2, 3, 4]
+x_labels = ["1.4", "1.4.1", "1.5", "1.5.4"]
+figure = pyplot.figure(figsize=(12, 11))
 
 plot(131, "Generic2dOscillator 1000sec", 20,
-     [14.5, 17.9, 6.6], "nodes=192 dt=0.05",
-     [9.5, 11.0, 6.2], "nodes=96 dt=0.05",
-     [5, 5.9, 3.5], "nodes=96 dt=0.1")
+     [14.5, 17.9, 6.6, 6.4], "nodes=192 dt=0.05",
+     [9.5, 11.0, 6.2, 6.7], "nodes=96 dt=0.05",
+     [5, 5.9, 3.5, 3.6], "nodes=96 dt=0.1")
 
 plot(132, "Epileptor 1000sec", 30,
-     [21.8, 25.5, 9.1], "nodes=192 dt=0.05",
-     [12.8, 16.2, 8.7], "nodes=96 dt=0.05",
-     [6.7, 7.5, 4.6], "nodes=96 dt=0.1")
+     [21.8, 25.5, 9.1, 8.8], "nodes=192 dt=0.05",
+     [12.8, 16.2, 8.7, 8.7], "nodes=96 dt=0.05",
+     [6.7, 7.5, 4.6, 5.0], "nodes=96 dt=0.1")
 
 plot(133, "LarterBreakspear 10000sec", 180,
-     [159.6, 145.4, 82.8], "nodes=192 dt=0.1",
-     [88.6, 89.8, 71.1], "nodes=96 dt=0.1",
-     [40.7, 39.0, 39.1], "nodes=96 dt=0.2")
+     [159.6, 145.4, 82.8, 67.2], "nodes=192 dt=0.1",
+     [88.6, 89.8, 71.1, 64.6], "nodes=96 dt=0.1",
+     [40.7, 39.0, 39.1, 36.4], "nodes=96 dt=0.2")
 
 pyplot.show()
 figure.savefig("../../_static/benchmarks-evolution-mac.png")

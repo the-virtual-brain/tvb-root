@@ -25,6 +25,13 @@ When creating a new TVB set of release packages you should:
     		This will generate images used into Simulator documentation. PLEASE commit the used ones
     		on SVN, so they will be included in the final distribution.
     		To check, for missing images you can try to generate PDF for tvb.simulator.rst (with rst2pdf) and look for missing image errors.
+    - run benchmarks for the new release:
+        * run tvb.interfaces.command.benchmark.py and copy the resulted text from the console
+        * manually create a file tvb_x.y.rst under tvb_documentation/doc_site/benchmarks
+        * copy the output from console into this RST file and add headers where needed
+        * edit tvb_documentation/doc_site/benchmarks/top_benchmarks.rst to point towards the new file in toctree
+        * add the new x_label and values and run tvb_documentation/doc_site/benchmarks/generate_benchmark_img.py
+
     - check that all README files and manuals are still valid
 
     - fill new RELEASE_NOTES:
