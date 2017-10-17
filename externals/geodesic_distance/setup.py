@@ -42,6 +42,7 @@ To build::
 
 import os
 import numpy
+import shutil
 import setuptools
 from Cython.Distutils import build_ext
 
@@ -77,3 +78,8 @@ setuptools.setup(name=GEODESIC_NAME,
                  url='http://www.thevirtualbrain.org',
                  download_url='https://github.com/the-virtual-brain/tvb-geodesic',
                  keywords="gdist geodesic distance geo")
+
+
+shutil.rmtree(GEODESIC_NAME + '.egg-info', True)
+os.remove(GEODESIC_NAME + '.cpp')
+shutil.rmtree('build', True)
