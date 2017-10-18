@@ -10,6 +10,7 @@ faces; and surface points.
 
 #include <assert.h>
 #include <cstddef>
+#include <algorithm>
 
 namespace geodesic{
 
