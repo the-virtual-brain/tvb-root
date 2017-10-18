@@ -1,4 +1,4 @@
 include geodesic_library/*
-README
-gdist.pyx
-setup.py
+include README.rst
+include gdist.pyx
+include setup.py
