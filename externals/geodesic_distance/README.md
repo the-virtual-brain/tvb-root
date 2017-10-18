@@ -1,4 +1,6 @@
-External Library Geodesic
+# External Library Geodesic
+
+[![Build Status](https://travis-ci.org/maedoc/tvb-geodesic.svg?branch=trunk)](https://travis-ci.org/maedoc/tvb-geodesic)
 
 Original library (published under MIT license):
 http://code.google.com/p/geodesic/
