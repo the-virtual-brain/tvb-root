@@ -48,14 +48,13 @@ from Cython.Distutils import build_ext
 
 GEODESIC_NAME = "gdist"
 
-GEODESIC_MODULE = [setuptools.Extension(name=GEODESIC_NAME,  # Name of extension
-                                        sources=["gdist.pyx"],  # Filename of Cython source
-                                        language="c++",  # Cython create C++ source
-                                        define_macros=[
+GEODESIC_MODULE = [setuptools.Extension(name=GEODESIC_NAME,          # Name of extension
+                             sources=["gdist.pyx"], # Filename of Cython source
+                             language="c++",       # Cython create C++ sourcedefine_macros=[
                                             ('NDEBUG', 1)])]  # Disable assertions; one is failing geodesic_mesh.h:405
 
-INCLUDE_DIRS = [numpy.get_include(),  # NumPy dtypes
-                "geodesic_library"]  # geodesic distance, C++ library.
+INCLUDE_DIRS = [numpy.get_include(), # NumPy dtypes
+                       "geodesic_library"]  # geodesic distance, C++ library.
 
 TEAM = "Danil Kirsanov, Gaurav Malhotra and Stuart Knock"
 
