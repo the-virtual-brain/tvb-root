@@ -5,12 +5,12 @@ Maintainer: Marmaduke Woodman, <marmaduke.woodman@univ-amu.fr>
 Build-Depends: debhelper (>= 7),
 	       python (>= 2.6),
 	       python-numpy (>= 1.5),
-               cython (>=0.19)
+               cython (>=0.10)
 Standards-Version: 3.9.2
 X-Python-Version: >= 2.6
 
 Package: gdist
-Architecture: all
+Architecture: any
 Section: python
 Depends: python-numpy, ${python:Depends}
 Description: geodesic distance on polyhedral meshes
