@@ -3,6 +3,6 @@ python:
     - "2.7"
     - "3.3"
 
-install: "pip install -r requirements.txt; python setup.py install"
-script: "python -m unittest discover"
+install: "pip install -r requirements.txt"
+script: "rm -r build dist; python setup.py install; python -m unittest discover"
 
