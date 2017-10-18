@@ -53,8 +53,8 @@ GEODESIC_MODULE = [setuptools.Extension(name=GEODESIC_NAME,          # Name of e
                              language="c++",       # Cython create C++ sourcedefine_macros=[
                                             ('NDEBUG', 1)])]  # Disable assertions; one is failing geodesic_mesh.h:405
 
-INCLUDE_DIRS = [numpy.get_include(), # NumPy dtypes
-                       "geodesic_library"]  # geodesic distance, C++ library.
+INCLUDE_DIRS = [numpy.get_include(),     # NumPy dtypes
+                       "geodesic_library"]      # geodesic distance, C++ library.
 
 TEAM = "Danil Kirsanov, Gaurav Malhotra and Stuart Knock"
 
