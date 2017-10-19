@@ -3,7 +3,13 @@
 rm -Rf dist
 mkdir dist
 
-for pipPackage in "tvb_data" "framework_tvb" "scientific_library" "externals/geodesic_distance"; do
+declare -a folders2pack=("tvb_data" "framework_tvb" "scientific_library" "externals/geodesic_distance")
+if [ "$1" != "" ]; then
+    echo "$1"
+    folders2pack=("$1")
+fi
+
+for pipPackage in "${folders2pack[@]}"; do
 
     echo "============================="
     echo "Packing: " $pipPackage
@@ -13,8 +19,7 @@ for pipPackage in "tvb_data" "framework_tvb" "scientific_library" "externals/geo
     python setup.py sdist
     python setup.py bdist_wheel
 
-    if [ -d "../dist/" ]
-    then
+    if [ -d "../dist/" ]; then
         mv dist/* ../dist/
     else
         mv dist/* ../../dist/
@@ -23,8 +28,7 @@ for pipPackage in "tvb_data" "framework_tvb" "scientific_library" "externals/geo
     rm -R dist
     rm -R build
 
-    if [ -d "../dist/" ]
-    then
+    if [ -d "../dist/" ]; then
         cd ..
     else
         cd ../..
