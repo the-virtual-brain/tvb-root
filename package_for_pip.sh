@@ -5,7 +5,7 @@ mkdir dist
 
 declare -a folders2pack=("tvb_data" "framework_tvb" "scientific_library" "externals/geodesic_distance")
 if [ "$1" != "" ]; then
-    echo "$1"
+    echo "Received param: " "$1"
     folders2pack=("$1")
 fi
 
