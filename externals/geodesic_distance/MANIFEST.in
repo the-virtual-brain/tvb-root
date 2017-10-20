@@ -2,3 +2,4 @@ include geodesic_library/*
 include README.rst
 include gdist.pyx
 include setup.py
+include LICENSE
