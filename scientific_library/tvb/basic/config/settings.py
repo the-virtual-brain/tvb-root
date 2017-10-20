@@ -47,7 +47,7 @@ class VersionSettings(object):
     """
 
     # Current release number
-    BASE_VERSION = "1.5.5"
+    BASE_VERSION = "1.5.4"
 
     # Current DB version. Increment this and create a new xxx_update_db.py migrate script
     DB_STRUCTURE_VERSION = 17
@@ -100,12 +100,14 @@ class VersionSettings(object):
             pass
 
         try:
-            proc = Popen(['git', 'rev-parse', 'HEAD'], stdout=PIPE)
-            return proc.stdout.read().strip()
+            import tvb.config
+            config_folder = os.path.dirname(os.path.abspath(tvb.config.__file__))
+            with open(os.path.join(config_folder, 'tvb.version'), 'r') as version_file:
+                return self._parse_svn_version(version_file.read())
         except Exception:
             pass
 
-        raise ValueError('cannot determine svn version')
+        raise ValueError('cannot determine TVB revision number')
 
 
     @staticmethod
