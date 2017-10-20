@@ -121,8 +121,12 @@ class UserService:
             user = dao.store_entity(user)
 
             if role == model.ROLE_ADMINISTRATOR and not skip_import:
-                uploaded = os.path.join(os.path.dirname(tvb_data.__file__), "Default_Project.zip")
-                ImportService().import_project_structure(uploaded, user.id)
+                to_upload = os.path.join(os.path.dirname(tvb_data.__file__), "Default_Project.zip")
+                if not os.path.exists(to_upload):
+                    self.logger.warning("Could not find DEFAULT PROJECT at path %s. You might want to import it "
+                                        "yourself. See TVB documentation about where to find it!" % to_upload)
+                    return TEXT_DISPLAY
+                ImportService().import_project_structure(to_upload, user.id)
             else:
                 try:
                     default_prj_id = dao.get_project_by_gid(DEFAULT_PROJECT_GID).id

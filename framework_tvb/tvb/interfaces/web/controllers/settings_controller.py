@@ -96,14 +96,20 @@ class SettingsController(UserController):
         """
         cherrypy.engine.exit()
 
-        self.logger.info("Waiting for Cherrypy to shut down ... ")
+        self.logger.info("Waiting for CherryPy to shut down ... ")
 
         sleep(5)
 
         python_path = TvbProfile.current.PYTHON_INTERPRETER_PATH
-        proc_params = [python_path, '-m', 'tvb_bin.app', 'start', TvbProfile.CURRENT_PROFILE_NAME]
-        if should_reset:
-            proc_params.append('-reset')
+        try:
+            import tvb_bin
+            proc_params = [python_path, '-m', 'tvb_bin.app', 'start', TvbProfile.CURRENT_PROFILE_NAME]
+            if should_reset:
+                proc_params.append('-reset')
+        except ImportError:
+            proc_params = [python_path, '-m', 'tvb.interfaces.web.run', TvbProfile.CURRENT_PROFILE_NAME, "tvb.config"]
+            if should_reset:
+                proc_params.append('reset')
 
         self.logger.info("Starting CherryPy again ... ")
         subprocess.Popen(proc_params, shell=False)
