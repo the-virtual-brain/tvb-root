@@ -8,7 +8,7 @@ The Virtual Brain framework is a complete framework including:
 -  an HTML5 based user interface;
 -  visualizers for neuro-science related entities.
 
-The easiest way to make use of the code from this Git repo is to obtain
+The easiest way to make use of this code, is to obtain
 a Distribution of TVB with Python and all the necessary packages linked,
 and then clone this repo nearby. More details `in our
 documentation <http://docs.thevirtualbrain.org/manuals/ContributorsManual/ContributorsManual.html>`__.
@@ -26,7 +26,7 @@ repo.
 Usage
 -----
 
-To use TVB sources, clone from GitHub (https://github.com/the-virtual-brain/tvb-framework), or get from Pypi::
+To use TVB code, clone from GitHub (https://github.com/the-virtual-brain/tvb-framework), or get from Pypi::
 
     pip install tvb-framework
     python -m tvb.interfaces.web.run WEB_PROFILE tvb.config
@@ -36,9 +36,9 @@ Your port **8080** should be free, as a CherryPy service will try to run there.
 Your default browser should automatically open http://localhost:8080/ which is the way to
 interact with TVB Web Interface.
 
-When using from sources (pypi or Github, no TVB_Distribution), if you want BCT adapters enabled, you should
+When using from sources (pypi or Github, not TVB_Distribution), if you want BCT adapters enabled, you should
 manually download BCT https://sites.google.com/site/bctnet/
-and set env variable **BCT_PATH** towards the directory when you unzip BCT, plus also have Octave or
+and set env variable **BCT_PATH** towards the directory where you unzip BCT, plus also have Octave or
 Matlab installed with command line API enabled.
 
 
