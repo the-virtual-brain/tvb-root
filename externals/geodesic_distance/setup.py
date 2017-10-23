@@ -65,7 +65,7 @@ with open(os.path.join(os.path.dirname(__file__), 'README.rst')) as fd:
     DESCRIPTION = fd.read()
 
 setuptools.setup(name=GEODESIC_NAME,
-                 version='1.0.3',
+                 version='1.0.4',
                  ext_modules=GEODESIC_MODULE,
                  include_dirs=INCLUDE_DIRS,
                  cmdclass={'build_ext': build_ext},

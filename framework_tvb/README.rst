@@ -15,17 +15,32 @@ documentation <http://docs.thevirtualbrain.org/manuals/ContributorsManual/Contri
 
 Alternatively, if you plan to develop long term with TVB, extensively
 modify code, add new dependencies, or you simply prefer to use your own
-Python installation, you may want to use the
-`tvb-pack <https://github.com/the-virtual-brain/tvb-pack>`__ repo which
-gathers together several required modules and a few helpful TVB tools.
-You will need in this case to setup your machine alone. Few guidelines
-can be found
+Python installation, you may want to read this:
 `here <http://docs.thevirtualbrain.org/manuals/ContributorsManual/ContributorsManual.html#the-unaided-setup>`__.
 
 If you don't require the framework features listed above, the simulator
 and associated scientific modules can be used independently; please see
 the `tvb-library <https://github.com/the-virtual-brain/tvb-library>`__
 repo.
+
+Usage
+-----
+
+To use TVB sources, clone from GitHub (https://github.com/the-virtual-brain/tvb-framework), or get from Pypi::
+
+    pip install tvb-framework
+    python -m tvb.interfaces.web.run WEB_PROFILE tvb.config
+
+
+Your port **8080** should be free, as a CherryPy service will try to run there.
+Your default browser should automatically open http://localhost:8080/ which is the way to
+interact with TVB Web Interface.
+
+When using from sources (pypi or Github, no TVB_Distribution), if you want BCT adapters enabled, you should
+manually download BCT https://sites.google.com/site/bctnet/
+and set env variable **BCT_PATH** towards the directory when you unzip BCT, plus also have Octave or
+Matlab installed with command line API enabled.
+
 
 Further Resources
 =================

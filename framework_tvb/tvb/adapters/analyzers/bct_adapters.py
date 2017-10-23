@@ -45,6 +45,9 @@ BCT_GROUP_MODULARITY = AlgorithmTransientGroup("Modularity Algorithms", "Brain C
 BCT_GROUP_DISTANCE = AlgorithmTransientGroup("Distance Algorithms", "Brain Connectivity Toolbox", "bctdistance")
 
 BCT_PATH = os.path.join(TvbProfile.current.EXTERNALS_FOLDER_PARENT, "externals/BCT")
+BCT_PATH_ENV = 'BCT_PATH'
+if BCT_PATH_ENV in os.environ and os.path.exists(os.environ[BCT_PATH_ENV]) and os.path.isdir(os.environ[BCT_PATH_ENV]):
+    BCT_PATH = os.environ[BCT_PATH_ENV]
 
 LABEL_CONNECTIVITY_BINARY = "Binary (directed/undirected) connection matrix"
 LABEL_CONN_WEIGHTED_DIRECTED = "Weighted directed connection matrix"
