@@ -64,8 +64,8 @@ INSTALL_REQUIREMENTS = ['numpy', 'scipy', 'cython']
 with open(os.path.join(os.path.dirname(__file__), 'README.rst')) as fd:
     DESCRIPTION = fd.read()
 
-setuptools.setup(name=GEODESIC_NAME,
-                 version='1.0.4',
+setuptools.setup(name="tvb-" + GEODESIC_NAME,
+                 version='1.5.5',
                  ext_modules=GEODESIC_MODULE,
                  include_dirs=INCLUDE_DIRS,
                  cmdclass={'build_ext': build_ext},
@@ -77,8 +77,8 @@ setuptools.setup(name=GEODESIC_NAME,
                  author_email='tvb.admin@thevirtualbrain.org',
                  url='http://www.thevirtualbrain.org',
                  download_url='https://github.com/the-virtual-brain/tvb-geodesic',
-                 keywords="gdist geodesic distance geo")
+                 keywords="gdist geodesic distance geo tvb")
 
-shutil.rmtree(GEODESIC_NAME + '.egg-info', True)
+shutil.rmtree('tvb_gdist.egg-info', True)
 os.remove(GEODESIC_NAME + '.cpp')
 shutil.rmtree('build', True)

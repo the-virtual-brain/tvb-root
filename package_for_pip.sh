@@ -14,7 +14,7 @@ echo " Generating revision number: "
 echo "============================="
 
 svnVersion=$(svnversion .)
-destFile="framework_tvb/tvb/config/tvb.version"
+destFile="scientific_library/tvb/basic/config/tvb.version"
 rm $destFile
 echo "$svnVersion" > "$destFile"
 echo "Found: " $svnVersion ", written into: " $destFile

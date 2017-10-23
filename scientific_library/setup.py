@@ -40,12 +40,12 @@ import shutil
 import setuptools
 
 
-LIBRARY_VERSION = "1.5.5"
+LIBRARY_VERSION = "1.5.5.0"
 
 TVB_TEAM = "Stuart Knock, Marmaduke Woodman, Paula Sanz Leon, Laurent Pezard, Viktor Jirsa"
 
-TVB_INSTALL_REQUIREMENTS = ["gdist", "networkx", "nibabel", "numpy", "numba", "numexpr", "matplotlib",
-                            "scikit-learn", "scipy"]
+TVB_INSTALL_REQUIREMENTS = ["networkx", "nibabel", "numpy", "numba", "numexpr", "matplotlib",
+                            "scikit-learn", "scipy", "tvb-gdist"]
 
 with open(os.path.join(os.path.dirname(__file__), 'README.rst')) as fd:
     DESCRIPTION = fd.read()

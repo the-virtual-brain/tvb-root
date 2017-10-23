@@ -100,8 +100,8 @@ class VersionSettings(object):
             pass
 
         try:
-            import tvb.config
-            config_folder = os.path.dirname(os.path.abspath(tvb.config.__file__))
+            import tvb.basic.config
+            config_folder = os.path.dirname(os.path.abspath(tvb.basic.config.__file__))
             with open(os.path.join(config_folder, 'tvb.version'), 'r') as version_file:
                 return self._parse_svn_version(version_file.read())
         except Exception:

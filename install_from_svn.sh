@@ -8,7 +8,7 @@ cd externals/geodesic_distance
 python setup.py install
 rm -rf build
 rm -rf dist
-rm -rf gdist.egg-info
+rm -rf tvb_gdist.egg-info
 rm -f gdist.cpp
 cd ../..
 
