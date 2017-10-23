@@ -1,5 +1,5 @@
 include LICENSE
-include tvb/basic/logger/*.conf
+recursive-include tvb/basic *
 recursive-include tvb/simulator *
 recursive-include tvb/tests *
 recursive-exclude tvb *.pyc
