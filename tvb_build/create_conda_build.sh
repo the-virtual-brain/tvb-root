@@ -8,7 +8,7 @@ source activate $envname
 
 conda install matplotlib pytables==3.0 psycopg2 numba
 
-pip install sqlalchemy==0.7.8 sqlalchemy-migrate==0.7.2 minixsv formencode genshi simplejson mod_pywebsocket cherrypy cfflib nibabel gdist
+pip install sqlalchemy sqlalchemy-migrate minixsv formencode genshi simplejson mod_pywebsocket cherrypy cfflib nibabel gdist
 
 # The next ones are for Mac build env:
 # pip install py2app docutils apscheduler pyobjc

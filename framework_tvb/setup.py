@@ -48,7 +48,7 @@ TVB_TEAM = "Mihai Andrei, Lia Domide, Stuart Knock, Bogdan Neacsa, Paula Sansz L
 TVB_INSTALL_REQUIREMENTS = ["allensdk", "apscheduler", "BeautifulSoup4", "cfflib", "cherrypy", "coverage",
                             "formencode", "genshi", "h5py", "lxml", "minixsv", "mod_pywebsocket", "networkx", "nibabel",
                             "numexpr", "numpy", "Pillow", "psutil", "scikit-learn", "scipy", "simplejson",
-                            "sqlalchemy==0.7.8", "sqlalchemy-migrate==0.7.2", "tvb-data", "tvb-library"]
+                            "sqlalchemy", "sqlalchemy-migrate", "tvb-data", "tvb-library"]
 
 with open(os.path.join(os.path.dirname(__file__), 'README.rst')) as fd:
     DESCRIPTION = fd.read()

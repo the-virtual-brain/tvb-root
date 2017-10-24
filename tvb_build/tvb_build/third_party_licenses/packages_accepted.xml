@@ -703,7 +703,7 @@
     <dependency env="[win,mac,linux]" name="migrate">
         <full-name value="Migrate SQL Alchemy"/>
         <project-home value="http://code.google.com/p/sqlalchemy-migrate/"/>
-        <version value="0.7.2"/>
+        <version value="0.11.0"/>
         <usage value="dynamic linking"/>
         <license value="LICENSE_migrate.txt"/>
         <license-type value="MIT_"/>
@@ -879,6 +879,16 @@
         <license-type value="BSD_"/>
         <copyright-notice value="Copyright (c) 1998-2008 The OpenSSL Project.  All rights reserved."/>
         <description value="Package part of Python's distribution."/>
+    </dependency>
+    <dependency env="[win,linux]" name="pbr">
+        <full-name value="Python Build Reasonableness"/>
+        <project-home value="https://pypi.python.org/pypi/pbr"/>
+        <version value="3.1.1"/>
+        <usage value="dynamic linking"/>
+        <license value="LICENSE_pbr.txt"/>
+        <license-type value="Apache_ 2"/>
+        <copyright-notice value="Copyright (c) 2013 Hewlett-Packard Development Company, L.P."/>
+        <description value="Needed for the recent sqlalchemy."/>
     </dependency>
     <dependency env="[win,mac,linux]" name="pandas">
         <full-name value="Pandas"/>
@@ -1224,7 +1234,7 @@
     <dependency env="[win,mac,linux]" name="sqlalchemy">
         <full-name value="SQL-Alchemy"/>
         <project-home value="http://www.sqlalchemy.org/"/>
-        <version value="0.7.8"/>
+        <version value="1.1.14"/>
         <usage value="dynamic linking"/>
         <license value="LICENSE_sqlalchemy_0.6.6.txt"/>
         <license-type value="MIT_"/>
@@ -1234,7 +1244,7 @@
     <dependency env="[win,linux]" name="sqlalchemy-migrate">
         <full-name value="Migrate SQL Alchemy"/>
         <project-home value="http://code.google.com/p/sqlalchemy-migrate/"/>
-        <version value="0.7.2"/>
+        <version value="0.11.0"/>
         <usage value="dynamic linking"/>
         <license value="LICENSE_migrate.txt"/>
         <license-type value="MIT_"/>
@@ -1250,6 +1260,16 @@
         <license-type value="MIT_"/>
         <copyright-notice value="Copyright (c) 2004-2007 Gerhard Haring"/>
         <description value="Python DB-API module for SQLite 3."/>
+    </dependency>
+    <dependency env="[win,mac,linux]" name="sqlparse">
+        <full-name value="SQLparse"/>
+        <project-home value="https://pypi.python.org/pypi/sqlparse"/>
+        <version value="0.2.4"/>
+        <usage value="dynamic linking"/>
+        <license value="LICENSE_sqlparse.txt"/>
+        <license-type value="BSD_ 3 clause"/>
+        <copyright-notice value="Copyright (c) 2016, Andi Albrecht"/>
+        <description value="Non-validating SQL parser. Needed for the recent sqlalchemy."/>
     </dependency>
     <dependency env="[win,mac,linux]" name="tables">
         <full-name value="PyTables"/>
