@@ -29,11 +29,11 @@
 <text text-anchor="start" x="7.1748" y="-589.8" font-family="Times,serif" font-size="14.00">peak_to_peak</text>
 <text text-anchor="start" x="7.1748" y="-575.8" font-family="Times,serif" font-size="14.00">period : Float</text>
 <text text-anchor="start" x="7.1748" y="-561.8" font-family="Times,serif" font-size="14.00">scaling : float</text>
-<text text-anchor="start" x="7.1748" y="-547.8" font-family="Times,serif" font-size="14.00">scaling_slider : NoneType, Slider</text>
+<text text-anchor="start" x="7.1748" y="-547.8" font-family="Times,serif" font-size="14.00">scaling_slider : Slider, NoneType</text>
 <text text-anchor="start" x="7.1748" y="-533.8" font-family="Times,serif" font-size="14.00">start_button : NoneType, Button</text>
 <text text-anchor="start" x="7.1748" y="-519.8" font-family="Times,serif" font-size="14.00">start_time</text>
-<text text-anchor="start" x="7.1748" y="-505.8" font-family="Times,serif" font-size="14.00">step_back_button : Button, NoneType</text>
-<text text-anchor="start" x="7.1748" y="-491.8" font-family="Times,serif" font-size="14.00">step_forward_button : Button, NoneType</text>
+<text text-anchor="start" x="7.1748" y="-505.8" font-family="Times,serif" font-size="14.00">step_back_button : NoneType, Button</text>
+<text text-anchor="start" x="7.1748" y="-491.8" font-family="Times,serif" font-size="14.00">step_forward_button : NoneType, Button</text>
 <text text-anchor="start" x="7.1748" y="-477.8" font-family="Times,serif" font-size="14.00">time</text>
 <text text-anchor="start" x="7.1748" y="-463.8" font-family="Times,serif" font-size="14.00">time_series : TimeSeries</text>
 <text text-anchor="start" x="7.1748" y="-449.8" font-family="Times,serif" font-size="14.00">time_series_length</text>
@@ -45,7 +45,7 @@
 <text text-anchor="start" x="7.1748" y="-365.8" font-family="Times,serif" font-size="14.00">view_step : NoneType</text>
 <text text-anchor="start" x="7.1748" y="-351.8" font-family="Times,serif" font-size="14.00">whereami_ax : NoneType</text>
 <text text-anchor="start" x="7.1748" y="-337.8" font-family="Times,serif" font-size="14.00">window_length : NoneType</text>
-<text text-anchor="start" x="7.1748" y="-323.8" font-family="Times,serif" font-size="14.00">window_length_slider : NoneType, Slider</text>
+<text text-anchor="start" x="7.1748" y="-323.8" font-family="Times,serif" font-size="14.00">window_length_slider : Slider, NoneType</text>
 <polyline fill="none" stroke="black" points="-0.825195,-317 270.825,-317 "/>
 <text text-anchor="start" x="7.1748" y="-301.8" font-family="Times,serif" font-size="14.00">add_big_step_back_button()</text>
 <text text-anchor="start" x="7.1748" y="-287.8" font-family="Times,serif" font-size="14.00">add_big_step_forward_button()</text>

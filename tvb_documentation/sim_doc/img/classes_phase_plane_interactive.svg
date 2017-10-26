@@ -19,26 +19,26 @@
 <text text-anchor="start" x="7.62646" y="-827.8" font-family="Times,serif" font-size="14.00">V : NoneType</text>
 <text text-anchor="start" x="7.62646" y="-813.8" font-family="Times,serif" font-size="14.00">X : NoneType</text>
 <text text-anchor="start" x="7.62646" y="-799.8" font-family="Times,serif" font-size="14.00">Y : NoneType</text>
-<text text-anchor="start" x="7.62646" y="-785.8" font-family="Times,serif" font-size="14.00">axes_range_sliders : NoneType, dict</text>
+<text text-anchor="start" x="7.62646" y="-785.8" font-family="Times,serif" font-size="14.00">axes_range_sliders : dict, NoneType</text>
 <text text-anchor="start" x="7.62646" y="-771.8" font-family="Times,serif" font-size="14.00">default_sv : NoneType</text>
 <text text-anchor="start" x="7.62646" y="-757.8" font-family="Times,serif" font-size="14.00">integrator : Integrator</text>
 <text text-anchor="start" x="7.62646" y="-743.8" font-family="Times,serif" font-size="14.00">ipp_fig : NoneType</text>
-<text text-anchor="start" x="7.62646" y="-729.8" font-family="Times,serif" font-size="14.00">mode : NoneType, int</text>
-<text text-anchor="start" x="7.62646" y="-715.8" font-family="Times,serif" font-size="14.00">mode_selector : NoneType, RadioButtons</text>
+<text text-anchor="start" x="7.62646" y="-729.8" font-family="Times,serif" font-size="14.00">mode : int, NoneType</text>
+<text text-anchor="start" x="7.62646" y="-715.8" font-family="Times,serif" font-size="14.00">mode_selector : RadioButtons, NoneType</text>
 <text text-anchor="start" x="7.62646" y="-701.8" font-family="Times,serif" font-size="14.00">model : Model</text>
 <text text-anchor="start" x="7.62646" y="-687.8" font-family="Times,serif" font-size="14.00">no_coupling : NoneType</text>
-<text text-anchor="start" x="7.62646" y="-673.8" font-family="Times,serif" font-size="14.00">noise_slider : NoneType, Slider</text>
+<text text-anchor="start" x="7.62646" y="-673.8" font-family="Times,serif" font-size="14.00">noise_slider : Slider, NoneType</text>
 <text text-anchor="start" x="7.62646" y="-659.8" font-family="Times,serif" font-size="14.00">nullcline_x : NoneType</text>
 <text text-anchor="start" x="7.62646" y="-645.8" font-family="Times,serif" font-size="14.00">nullcline_y : NoneType</text>
-<text text-anchor="start" x="7.62646" y="-631.8" font-family="Times,serif" font-size="14.00">param_sliders : NoneType, dict</text>
-<text text-anchor="start" x="7.62646" y="-617.8" font-family="Times,serif" font-size="14.00">parameters : NoneType, dict</text>
+<text text-anchor="start" x="7.62646" y="-631.8" font-family="Times,serif" font-size="14.00">param_sliders : dict, NoneType</text>
+<text text-anchor="start" x="7.62646" y="-617.8" font-family="Times,serif" font-size="14.00">parameters : dict, NoneType</text>
 <text text-anchor="start" x="7.62646" y="-603.8" font-family="Times,serif" font-size="14.00">pp_ax : NoneType</text>
 <text text-anchor="start" x="7.62646" y="-589.8" font-family="Times,serif" font-size="14.00">pp_quivers : NoneType</text>
 <text text-anchor="start" x="7.62646" y="-575.8" font-family="Times,serif" font-size="14.00">pp_splt</text>
 <text text-anchor="start" x="7.62646" y="-561.8" font-family="Times,serif" font-size="14.00">reset_axes_button : NoneType, Button</text>
 <text text-anchor="start" x="7.62646" y="-547.8" font-family="Times,serif" font-size="14.00">reset_noise_button : NoneType, Button</text>
 <text text-anchor="start" x="7.62646" y="-533.8" font-family="Times,serif" font-size="14.00">reset_param_button : NoneType, Button</text>
-<text text-anchor="start" x="7.62646" y="-519.8" font-family="Times,serif" font-size="14.00">reset_seed_button : Button, NoneType</text>
+<text text-anchor="start" x="7.62646" y="-519.8" font-family="Times,serif" font-size="14.00">reset_seed_button : NoneType, Button</text>
 <text text-anchor="start" x="7.62646" y="-505.8" font-family="Times,serif" font-size="14.00">reset_sv_button : NoneType, Button</text>
 <text text-anchor="start" x="7.62646" y="-491.8" font-family="Times,serif" font-size="14.00">state_variable_x : NoneType, RadioButtons</text>
 <text text-anchor="start" x="7.62646" y="-477.8" font-family="Times,serif" font-size="14.00">state_variable_y : NoneType, RadioButtons</text>
