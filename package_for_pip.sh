@@ -9,15 +9,6 @@ if [ "$1" != "" ]; then
     folders2pack=("$1")
 fi
 
-echo "============================="
-echo " Generating revision number: "
-echo "============================="
-
-svnVersion=$(svnversion .)
-destFile="scientific_library/tvb/basic/config/tvb.version"
-rm $destFile
-echo "$svnVersion" > "$destFile"
-echo "Found: " $svnVersion ", written into: " $destFile
 
 
 for pipPackage in "${folders2pack[@]}"; do

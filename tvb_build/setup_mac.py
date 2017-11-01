@@ -208,21 +208,6 @@ def _clean_up(folder_path, to_delete):
         shutil.rmtree(folder_path)
 
 
-def _write_svn_current_version(dest_folder):
-    """Read current subversion number"""
-    try:
-        svn_variable = 'SVN_REVISION'
-        if svn_variable in os.environ:
-            version = os.environ[svn_variable]
-        else:
-            _proc = subprocess.Popen(["svnversion", "."], stdout=subprocess.PIPE)
-            version = _proc.communicate()[0]
-        with open(os.path.join(dest_folder, 'tvb.version'), 'w') as f:
-            f.write(version)
-    except Exception as excep:
-        print("    -- W: Could not get or persist revision number because: " + str(excep))
-
-
 def _generate_distribution(final_name, library_path, version, extra_licensing_check=None):
     # merge sources
     library_abs_path = os.path.join(DIST_FOLDER, library_path)
@@ -237,9 +222,6 @@ def _generate_distribution(final_name, library_path, version, extra_licensing_ch
     bin_dst = os.path.join(library_abs_path, "tvb_bin")
     print("- Copying " + bin_src + " to " + bin_dst)
     shutil.copytree(bin_src, bin_dst)
-
-    print("- Adding svn version")
-    _write_svn_current_version(bin_dst)
 
     demo_data_src = os.path.join(DIST_FOLDER, "_tvb_data")
     demo_data_dst = os.path.join(library_abs_path, "tvb_data")

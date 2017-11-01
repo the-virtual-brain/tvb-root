@@ -48,6 +48,7 @@ from os.path import join
 from tvb_build.tvb_documentor.doc_generator import DocGenerator
 import tvb_bin
 import tvb_data
+from subprocess import Popen, PIPE
 
 # source paths
 BIN_FOLDER = os.path.dirname(tvb_bin.__file__)
@@ -159,6 +160,45 @@ def _copy_demos_collapsed(to_copy):
                 shutil.copytree(src, dest, ignore=ignore_patters)
 
 
+def ensure_svn_current_version():
+    """
+    Enforce later revision number is written in 'tvb.version' file
+    """
+    import tvb.basic.config
+    from tvb.basic.config.settings import VersionSettings
+    config_folder = os.path.dirname(os.path.abspath(tvb.basic.config.__file__))
+
+    _proc = Popen(["svnversion", "."], stdout=PIPE)
+    real_svn_number = VersionSettings.parse_svn_version(_proc.communicate()[0])
+
+    alternative_1 = "$Revision: "
+    alternative_2 = "$Rev: "
+    ending = "$"
+    new_text = alternative_1 + ending
+
+    with open(os.path.join(config_folder, 'tvb.version'), 'r') as version_file:
+        version_line = version_file.read()
+        try:
+            written_svn_number = VersionSettings.parse_svn_version(version_line)
+        except ValueError:
+            written_svn_number = 0
+
+        if alternative_1 in version_line:
+            new_text = alternative_2 + ending
+
+    if written_svn_number == real_svn_number:
+        print "We will not change file tvb.version"
+        return
+
+    with open(os.path.join(config_folder, 'tvb.version'), 'w') as version_file:
+        version_file.write(new_text)
+        print "Updating tvb.version content to: %s because %d != %d" % (new_text, written_svn_number, real_svn_number)
+
+    _proc = Popen(["svn", "commit", "../scientific_library/tvb/basic/config/tvb.version", "-m",
+                   "Update SVN revision number automatically from Hudson"], stdout=PIPE)
+    print _proc.communicate()[0]
+
+
 def build_step1():
     build_folder = os.path.dirname(DIST_FOLDER)
 
@@ -192,5 +232,6 @@ def build_step1():
 
 
 if __name__ == '__main__':
+    ensure_svn_current_version()
     build_step1()
 

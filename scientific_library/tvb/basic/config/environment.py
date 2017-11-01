@@ -37,8 +37,10 @@ Environment related checks or operations are to be defined here.
 
 import os
 import sys
+from subprocess import Popen, PIPE
 
-class Environment():
+
+class Environment(object):
 
     IS_WORK_IN_PROGRESS = os.environ.get('TVB_WIP', False) == 'True'
 
@@ -58,16 +60,21 @@ class Environment():
     @staticmethod
     def is_development():
         """
-        Return True when TVB is used with Python installed natively.
+        Return True when TVB is used with Python installed natively (with GitHub clone, pip or conda)
         """
         try:
             import tvb_bin
-            bin_folder = os.path.dirname(os.path.abspath(tvb_bin.__file__))
-            tvb_version_file = os.path.join(bin_folder, "tvb.version")
-            if os.path.exists(tvb_version_file):
+            try:
+                _proc = Popen(["svnversion", "."], stdout=PIPE)
+                version = _proc.communicate()[0]
+                if version:
+                    # usage from SVN
+                    return True
+            except Exception:
+                # Usage from tvb_distribution
                 return False
-            return True
         except ImportError:
+            # No tvb_bin, it means usage from pip or conda
             return True
 
 

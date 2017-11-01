@@ -271,21 +271,6 @@ def _modify_pth(pth_name):
         fw.write(new_content)
 
 
-def write_svn_current_version(dest_folder):
-    """Read current subversion number"""
-    try:
-        svn_variable = 'SVN_REVISION'
-        if svn_variable in os.environ:
-            version = os.environ[svn_variable]
-        else:
-            _proc = subprocess.Popen(["svnversion", "."], stdout=subprocess.PIPE)
-            version = _proc.communicate()[0]
-        with open(join(dest_folder, 'tvb.version'), 'w') as f:
-            f.write(version)
-    except Exception as excep:
-        _log(2, "-- W: Could not get or persist revision number because: " + str(excep))
-
-
 def prepare_anaconda_dist(config):
     """
     Main method for building from Anaconda (This requires TVB_Distribution - step1 ZIP to have been generated before
@@ -312,10 +297,6 @@ def prepare_anaconda_dist(config):
 
     _log(1, "Copying TVB sources into site-packages ...")
     _copy_collapsed(config)
-
-    _log(2, "Adding svn version")
-    bin_dst = join(config.target_site_packages, "tvb_bin")
-    write_svn_current_version(bin_dst)
 
     demo_data_src = join(config.target_root, "_tvb_data")
     demo_data_dst = join(config.target_site_packages, "tvb_data")
