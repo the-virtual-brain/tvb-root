@@ -170,7 +170,7 @@ def ensure_svn_current_version():
 
     svn_variable = 'SVN_REVISION'
     if svn_variable in os.environ:
-        real_svn_number = os.environ[svn_variable]
+        real_svn_number = int(os.environ[svn_variable])
     else:
         _proc = Popen(["svnversion", "."], stdout=PIPE)
         real_svn_number = VersionSettings.parse_svn_version(_proc.communicate()[0])
