@@ -168,8 +168,12 @@ def ensure_svn_current_version():
     from tvb.basic.config.settings import VersionSettings
     config_folder = os.path.dirname(os.path.abspath(tvb.basic.config.__file__))
 
-    _proc = Popen(["svnversion", "."], stdout=PIPE)
-    real_svn_number = VersionSettings.parse_svn_version(_proc.communicate()[0])
+    svn_variable = 'SVN_REVISION'
+    if svn_variable in os.environ:
+        real_svn_number = os.environ[svn_variable]
+    else:
+        _proc = Popen(["svnversion", "."], stdout=PIPE)
+        real_svn_number = VersionSettings.parse_svn_version(_proc.communicate()[0])
 
     alternative_1 = "$Revision: "
     alternative_2 = "$Rev: "
