@@ -65,7 +65,10 @@ def compute_table_name(class_name):
 
 
 def log_warnings(message, category, filename, lineno, file=None, line=None):
-    LOG.warn("%s -- %s\n  %s : %d" % (category, message, filename, lineno))
+    LOG.warning("%s -- %s " % (category, message))
+    LOG.debug("%s : %d " % (filename, lineno))
+    if file is not None or line is not None:
+        LOG.debug("%s : %s " % (file, line))
 
 
 ## Disable SqlAlchemy recent warnings from appearing in the console, and make them respect logging strategy in TVB

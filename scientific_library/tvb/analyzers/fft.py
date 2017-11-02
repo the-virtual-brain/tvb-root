@@ -115,7 +115,7 @@ class FFT(core.Type):
             seg_tpts = numpy.ceil(self.segment_length / self.time_series.sample_period)
             overlap = (seg_tpts * nseg - tpts) / (nseg - 1.0)
             starts = [max(seg * (seg_tpts - overlap), 0) for seg in range(nseg)]
-            segments = [self.time_series.data[start:start + seg_tpts]
+            segments = [self.time_series.data[int(start):int(start) + int(seg_tpts)]
                         for start in starts]
             segments = [segment[:, :, :, :, numpy.newaxis] for segment in segments]
             time_series = numpy.concatenate(segments, axis=4)
