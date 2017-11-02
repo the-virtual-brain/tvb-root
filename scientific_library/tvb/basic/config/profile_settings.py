@@ -77,7 +77,7 @@ class BaseSettingsProfile(object):
         self.version = VersionSettings(self.manager, self.BIN_FOLDER)
 
         self.EXTERNALS_FOLDER_PARENT = os.path.dirname(self.BIN_FOLDER)
-        if self.env.is_development():
+        if not self.env.is_distribution():
             self.EXTERNALS_FOLDER_PARENT = os.path.dirname(self.EXTERNALS_FOLDER_PARENT)
 
         # The path to the matlab executable (if existent). Otherwise just return an empty string.

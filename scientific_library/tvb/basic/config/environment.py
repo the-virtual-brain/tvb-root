@@ -41,7 +41,6 @@ from subprocess import Popen, PIPE
 
 
 class Environment(object):
-
     IS_WORK_IN_PROGRESS = os.environ.get('TVB_WIP', False) == 'True'
 
     def is_framework_present(self):
@@ -58,23 +57,29 @@ class Environment(object):
 
 
     @staticmethod
-    def is_development():
+    def is_distribution():
         """
-        Return True when TVB is used with Python installed natively (with GitHub clone, pip or conda)
+        Return True when TVB is used with Python installed natively (with GitHub clone, SVN, pip or conda)
         """
+        svn_variable = 'SVN_REVISION'
+        if svn_variable in os.environ:
+            # Usage in Hudson build
+            return False
+
         try:
             import tvb_bin
-            try:
-                _proc = Popen(["svnversion", "."], stdout=PIPE)
-                version = _proc.communicate()[0]
-                if version:
-                    # usage from SVN
-                    return True
-            except Exception:
-                # Usage from tvb_distribution
-                return False
         except ImportError:
             # No tvb_bin, it means usage from pip or conda
+            return False
+
+        try:
+            _proc = Popen(["svnversion", "."], stdout=PIPE)
+            version = _proc.communicate()[0]
+            if version:
+                # usage from SVN
+                return False
+        except Exception:
+            # Usage from tvb_distribution
             return True
 
 
@@ -82,21 +87,21 @@ class Environment(object):
         """
         Return True if current run is not development and is running on Linux.
         """
-        return self.is_linux() and not self.is_development()
+        return self.is_linux() and self.is_distribution()
 
 
     def is_mac_deployment(self):
         """
         Return True if current run is not development and is running on Mac OS X
         """
-        return self.is_mac() and not self.is_development()
+        return self.is_mac() and self.is_distribution()
 
 
     def is_windows_deployment(self):
         """
         Return True if current run is not development and is running on Windows.
         """
-        return self.is_windows() and not self.is_development()
+        return self.is_windows() and self.is_distribution()
 
 
     def is_linux(self):

@@ -90,7 +90,7 @@ class TvbProfile():
         ### We should make sure UTF-8 gets set before reading from any TVB files
         ### e.g. TVB_STORAGE will differ if the .tvb.configuration file contains non-ascii bytes
         ### most of the comments in the simulator are having pieces outside of ascii coverage
-        if cls.env.is_development() and sys.getdefaultencoding().lower() != 'utf-8':
+        if not cls.env.is_distribution() and sys.getdefaultencoding().lower() != 'utf-8':
             reload(sys)
             sys.setdefaultencoding('utf-8')
 
@@ -117,7 +117,7 @@ class TvbProfile():
                 # set flags IN_OPERATION,  before initialize** calls, to avoid LoggingBuilder being created there
                 cls.current.prepare_for_operation_mode()
 
-            if not cls.env.is_development():
+            if cls.env.is_distribution():
                 # initialize deployment first, because in case of a contributor setup this tried to reload
                 # and initialize_profile loads already too many tvb modules,
                 # making the reload difficult and prone to more failures

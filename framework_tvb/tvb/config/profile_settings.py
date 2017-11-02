@@ -54,7 +54,7 @@ class WebSettingsProfile(BaseSettingsProfile):
         """
         super(WebSettingsProfile, self).initialize_profile()
 
-        if change_logger_in_dev and self.env.is_development():
+        if change_logger_in_dev and not self.env.is_distribution():
             self.LOGGER_CONFIG_FILE_NAME = "dev_logger_config.conf"
 
         ## Make sure DB events are linked.
