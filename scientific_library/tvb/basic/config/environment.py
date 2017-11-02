@@ -38,6 +38,7 @@ Environment related checks or operations are to be defined here.
 import os
 import sys
 from subprocess import Popen, PIPE
+from tvb.basic.config.settings import VersionSettings
 
 
 class Environment(object):
@@ -74,7 +75,7 @@ class Environment(object):
 
         try:
             _proc = Popen(["svnversion", "."], stdout=PIPE)
-            version = _proc.communicate()[0]
+            version = VersionSettings.parse_svn_version(_proc.communicate()[0])
             if version:
                 # usage from SVN
                 return False

@@ -74,6 +74,7 @@ PY2APP_INCLUDES = ['allensdk', 'apscheduler', 'apscheduler.scheduler', 'cfflib',
                    'mod_pywebsocket', 'mpl_toolkits.axes_grid', 'nibabel',
                    'numexpr', 'os', 'psycopg2', 'pygments.formatters.html', 'pygments.lexers.python',
                    'runpy', 'sqlite3', 'sqlalchemy', 'sqlalchemy.dialects.sqlite', 'sqlalchemy.dialects.postgresql',
+                   'sqlalchemy.sql.default_comparator',
                    'simplejson', 'six', 'StringIO', 'xml.dom', 'xml.dom.minidom', 'zlib', 'zmq']
 
 PY2APP_EXCLUDES = ['_markerlib', 'altgraph', 'coverage', 'cython', 'Cython', 'tvb_data', 'docutils',
