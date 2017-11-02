@@ -29,7 +29,6 @@
 #
 import glob
 import shutil
-import subprocess
 import zipfile
 import os.path
 from os.path import join

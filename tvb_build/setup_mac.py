@@ -40,7 +40,6 @@ Execute in root SVN:
 import os
 import sys
 import shutil
-import subprocess
 import setuptools
 import locale
 import tvb_bin
