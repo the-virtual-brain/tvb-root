@@ -191,16 +191,16 @@ def ensure_svn_current_version():
             new_text = alternative_2 + ending
 
     if written_svn_number == real_svn_number:
-        print "We will not change file tvb.version"
+        print("We will not change file tvb.version")
         return
 
     with open(os.path.join(config_folder, 'tvb.version'), 'w') as version_file:
         version_file.write(new_text)
-        print "Updating tvb.version content to: %s because %d != %d" % (new_text, written_svn_number, real_svn_number)
+        print("Updating tvb.version content to: %s because %d != %d" % (new_text, written_svn_number, real_svn_number))
 
     _proc = Popen(["svn", "commit", "../scientific_library/tvb/basic/config/tvb.version", "-m",
-                   "Update SVN revision number automatically from Hudson"], stdout=PIPE)
-    print _proc.communicate()[0]
+                   "Update SVN revision number automatically from Hudson", "--trust-server-cert"], stdout=PIPE)
+    print(_proc.communicate()[0])
 
 
 def build_step1():
