@@ -88,6 +88,7 @@ class FourierSpectrumDisplay(ABCDisplayer):
                       mode=mode_list[0],
                       xscale=available_scales[0],
                       yscale=available_scales[0],
-                      xmin=0.02,
-                      xmax=0.8)
+                      x_values=json.dumps(input_data.frequency[slice(shape[0])].tolist()),
+                      xmin=input_data.freq_step,
+                      xmax=input_data.max_freq)
         return self.build_display_result("fourier_spectrum/view", params)

@@ -29,26 +29,22 @@ var FourierSpectrum = {
     x_values_array: null
 };
 
-function Fourier_fourier_spectrum_init(matrix_shape, plotName, xAxisName, yAxisName, x_min, x_max, url_base, svg_id) {
+function Fourier_fourier_spectrum_init(matrix_shape, plotName, xAxisName, yAxisName, x_min, x_max, url_base, svg_id, x_values) {
 
     Plot_plot1d_init(plotName, xAxisName, yAxisName, x_min, x_max, url_base, svg_id, Fourier_drawDataCurves);
 
-    var x_values_array = [];
-    for (var i = 0; i < matrix_shape[0]; i++) {
-        x_values_array[i] = ((x_max - x_min) * i) / (matrix_shape[0] - 1) + x_min;
-    }
     FourierSpectrum.matrix_shape = matrix_shape;
-    FourierSpectrum.x_values_array = x_values_array;
+    FourierSpectrum.x_values_array = $.parseJSON(x_values);
 }
 
 function Fourier_drawDataCurves() {
-    var svgContainer = Plot1d.svgContainer;
-    var data_matrix = FourierSpectrum.data_matrix;
-    var x_values_array = FourierSpectrum.x_values_array;
-    var lineGen = Plot_drawDataCurves();
+    const svgContainer = Plot1d.svgContainer;
+    const data_matrix = FourierSpectrum.data_matrix;
+    const x_values_array = FourierSpectrum.x_values_array;
+    let lineGen = Plot_drawDataCurves();
 
-    for (var i = 0; i < data_matrix.length; i++) {
-        var line_data = _mergeArrays(x_values_array, data_matrix[i]);
+    for (let i = 0; i < data_matrix.length; i++) {
+        let line_data = _mergeArrays(x_values_array, data_matrix[i]);
         svgContainer.append('svg:path')
             .attr('d', lineGen(line_data))
             .attr('stroke', "#469EEB")
@@ -58,20 +54,22 @@ function Fourier_drawDataCurves() {
 }
 
 function _mergeArrays(array1, array2) {
-    var result = [];
-    for (var i = 0; i < array1.length; i++)
+    let result = [];
+    for (let i = 0; i < array1.length; i++)
         result[i] = [array1[i], array2[i]];
     return result;
 }
 
 function Fourier_changeMode(mode) {
-    Fourier_getData($("#state_select option:selected").val(), mode, $("#normalize_select option:selected").text());
+    Fourier_getData($("#state_select").find("option:selected").val(), mode, $("#normalize_select").find("option:selected").text());
 }
+
 function Fourier_changeState(state) {
-    Fourier_getData(state, $("#mode_select option:selected").text(), $("#normalize_select option:selected").text());
+    Fourier_getData(state, $("#mode_select").find("option:selected").text(), $("#normalize_select").find("option:selected").text());
 }
+
 function Fourier_changeNormalize(normalized) {
-    Fourier_getData($("#state_select option:selected").val(), $("#mode_select option:selected").text(), normalized);
+    Fourier_getData($("#state_select").find("option:selected").val(), $("#mode_select").find("option:selected").text(), normalized);
 }
 
 function Fourier_getData(state, mode, normalized) {

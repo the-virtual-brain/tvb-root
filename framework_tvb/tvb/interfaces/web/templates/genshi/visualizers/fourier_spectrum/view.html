@@ -84,7 +84,7 @@
 
         $(document).ready(function () {
             $("#main").addClass("colscheme-1");
-            Fourier_fourier_spectrum_init(${matrix_shape}, '${plotName}', '${xAxisName}', '${yAxisName}', ${xmin}, ${xmax}, '${url_base}', "svg-container");
+            Fourier_fourier_spectrum_init(${matrix_shape}, '${plotName}', '${xAxisName}', '${yAxisName}', ${xmin}, ${xmax}, '${url_base}', "svg-container", "${x_values}");
             Fourier_getData($("#state_select option:selected").val(), $("#mode_select option:selected").text(), $("#normalize_select option:selected").text());
             window.onresize = Plot_drawGraph;
         });
