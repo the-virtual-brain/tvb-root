@@ -125,6 +125,7 @@ def _copy_dataset(dataset_files, dataset_destination):
         destination_folder = os.path.dirname(destination)
         if not os.path.exists(destination_folder):
             os.makedirs(destination_folder)
+        print("Copying %s into %s" % (origin, destination))
         shutil.copyfile(origin, destination)
 
 
@@ -218,6 +219,7 @@ def build_step1():
         os.mkdir(join(DIST_FOLDER, d))
 
     # make help HTML, PDF manual and documentation site
+    print("Starting to populate %s" % DIST_FOLDER)
     doc_generator = DocGenerator(TVB_ROOT, DIST_FOLDER)
     doc_generator.generate_pdfs()
     doc_generator.generate_online_help()
@@ -233,7 +235,7 @@ def build_step1():
                            os.path.join("..", "tvb_documentation", "tutorials"): os.path.join(DIST_FOLDER, "demo_scripts")})
 
     shutil.rmtree(join(DIST_FOLDER, DocGenerator.API))
-    shutil.make_archive('TVB_build_step1', 'zip', build_folder)
+    shutil.make_archive('TVB_build_step1', 'zip', DIST_FOLDER)
     shutil.rmtree(DIST_FOLDER)
     shutil.move('TVB_build_step1.zip', build_folder)
 
