@@ -198,6 +198,8 @@ def ensure_svn_current_version():
         version_file.write(new_text)
         print("Updating tvb.version content to: %s because %d != %d" % (new_text, written_svn_number, real_svn_number))
 
+    # Update SVN_REVISION in the current build, as we are creating a new commit
+    os.environ[svn_variable] = real_svn_number + 1
     _proc = Popen(["svn", "commit", "../scientific_library/tvb/basic/config/tvb.version", "-m",
                    "Update SVN revision number automatically from Hudson", "--trust-server-cert"], stdout=PIPE)
     print(_proc.communicate()[0])
@@ -215,10 +217,11 @@ def build_step1():
     for d in top_level_folders:
         os.mkdir(join(DIST_FOLDER, d))
 
-    # make help
+    # make help HTML, PDF manual and documentation site
     doc_generator = DocGenerator(TVB_ROOT, DIST_FOLDER)
     doc_generator.generate_pdfs()
     doc_generator.generate_online_help()
+    doc_generator.generate_site()
 
     shutil.copy2(LICENSE_PATH, join(DIST_FOLDER, 'LICENSE_TVB.txt'))
     shutil.copy2(RELEASE_NOTES_PATH, join(DIST_FOLDER, 'docs', 'RELEASE_NOTES.txt'))

@@ -35,16 +35,15 @@ necessary for a distribution.
 .. moduleauthor:: Lia Domide <lia.domide@codemart.ro>
 .. moduleauthor:: Calin Pavel <calin.pavel@codemart.ro>
 """
+
+import os
 import subprocess
 import shutil
 import tempfile
+import tvb
 from optparse import OptionParser
 from contextlib import contextmanager
-
-import os
 from sphinx.cmdline import main as sphinx_build
-
-import tvb
 from tvb.basic.logger.builder import get_logger
 from tvb_build.tvb_documentor.generate_modules import process_sources, GenOptions
 
