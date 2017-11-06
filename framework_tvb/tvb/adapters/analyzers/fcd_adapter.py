@@ -38,10 +38,11 @@ Adapter that uses the traits module to generate interfaces for FCD Analyzer.
 
 import numpy as np
 from tvb.analyzers.fcd_matrix import FcdCalculator
-from tvb.core.adapters.abcadapter import ABCAsynchronous
-from tvb.datatypes.fcd import Fcd
 from tvb.basic.traits.util import log_debug_array
 from tvb.basic.filters.chain import FilterChain
+from tvb.core.adapters.abcadapter import ABCAsynchronous
+from tvb.core.adapters.exceptions import LaunchException
+from tvb.datatypes.fcd import Fcd
 from tvb.datatypes.graph import ConnectivityMeasure
 
 
@@ -84,6 +85,16 @@ class FunctionalConnectivityDynamicsAdapter(ABCAsynchronous):
 
         self.input_shape = time_series.read_data_shape()
         log_debug_array(self.log, time_series, "time_series")
+        actual_sp = float(sp) / time_series.sample_period
+        actual_sw = float(sw) / time_series.sample_period
+        actual_ts_length = self.input_shape[0]
+
+        if actual_sw >= actual_ts_length or actual_sp >= actual_ts_length or actual_sp >= actual_sw:
+            raise LaunchException(
+                "Spanning and Sliding window sizes need to less than the TS length, and Sp < Sw. "
+                "After calibration with sampling period: Sp=%d, Sw=%d, Ts=%d). "
+                "Please configure valid input parameters." % (
+                    actual_sp, actual_sw, actual_ts_length))
 
         ##-------------------- Fill Algorithm for Analysis -------------------##
 
@@ -107,17 +118,17 @@ class FunctionalConnectivityDynamicsAdapter(ABCAsynchronous):
            :returns: the fcd matrix for the given time-series, with that sw and that sp
            :rtype: `Fcd`,`ConnectivityMeasure` 
         """
-        
-        result = [] # where fcd, fcd_segmented (eventually), and connectivity measures will be stored
+
+        result = []  # where fcd, fcd_segmented (eventually), and connectivity measures will be stored
 
         [fcd, fcd_segmented, eigvect_dict, eigval_dict, Connectivity] = self.algorithm.evaluate()
-    
+
         # Create a Fcd dataType object.
         result_fcd = Fcd(storage_path=self.storage_path, source=time_series, sw=sw, sp=sp)
         result_fcd.array_data = fcd
         result.append(result_fcd)
 
-        if np.amax(fcd_segmented)==1.1 :
+        if np.amax(fcd_segmented) == 1.1:
             result_fcd_segmented = Fcd(storage_path=self.storage_path, source=time_series, sw=sw, sp=sp)
             result_fcd_segmented.array_data = fcd_segmented
             result.append(result_fcd_segmented)
@@ -128,7 +139,9 @@ class FunctionalConnectivityDynamicsAdapter(ABCAsynchronous):
                         result_eig = ConnectivityMeasure(storage_path=self.storage_path)
                         result_eig.connectivity = Connectivity
                         result_eig.array_data = eigvect_dict[mode][var][ep][eig]
-                        result_eig.title = "Epoch # %d, \n eigenvalue = %s,\n variable = %s,\n mode = %s." % (ep,eigval_dict[mode][var][ep][eig], var, mode)
+                        result_eig.title = "Epoch # %d, \n " \
+                                           "eigenvalue = %s,\n " \
+                                           "variable = %s,\n " \
+                                           "mode = %s." % (ep, eigval_dict[mode][var][ep][eig], var, mode)
                         result.append(result_eig)
         return result
-

@@ -89,7 +89,7 @@ class FcdCalculator(core.Type):
         default=120000,
         doc="""Length of the time window used to divided the time series.
         FCD matrix is calculated in the following way: the time series is divided in time window of fixed length and
-        with an overlapping of fixed length. The datapoints within each window, centered at time ti, are used to
+        with an overlapping of fixed length. The data-points within each window, centered at time ti, are used to
         calculate FC(ti) as Pearson correlation. The ij element of the FCD matrix is calculated as the Pearson
         Correlation between FC(ti) and FC(tj) arranged in a vector.""")
 
@@ -98,7 +98,7 @@ class FcdCalculator(core.Type):
         default=2000,
         doc="""Spanning= (time windows length)-(overlapping between two consecutive time window). FCD matrix is
         calculated in the following way: the time series is divided in time window of fixed length and with an
-        overlapping of fixed length. The datapoints within each window, centered at time ti, are used to calculate
+        overlapping of fixed length. The data-points within each window, centered at time ti, are used to calculate
         FC(ti) as Pearson Correlation. The ij element of the FCD matrix is calculated as the Pearson correlation
         between FC(ti) and FC(tj) arranged in a vector""")
 
@@ -115,12 +115,12 @@ class FcdCalculator(core.Type):
 
         fcd = np.zeros(result_shape)
         fc_stream = {}  # dict where the fc calculated over the sliding window will be stored
-        start = -sp  # in order to well initialize the first starting point of the FC stream
         for mode in range(result_shape[3]):
             for var in range(result_shape[2]):
+                start = -sp  # in order to well initialize the first starting point of the FC stream
                 for nfcd in range(result_shape[0]):
                     start += sp
-                    current_slice = tuple([slice(int(start), int(start+sw) + 1), slice(var, var + 1),
+                    current_slice = tuple([slice(int(start), int(start + sw) + 1), slice(var, var + 1),
                                            slice(input_shape[2]), slice(mode, mode + 1)])
                     data = self.time_series.read_data_slice(current_slice).squeeze()
                     fc = np.corrcoef(data.T)
@@ -142,6 +142,7 @@ class FcdCalculator(core.Type):
 
         eigvect_dict = {}  # holds eigenvectors of the fcs calculated over the epochs, key1=mode, key2=var, key3=numb ep
         eigval_dict = {}  # holds eigenvalues of the fcs calculated over the epochs, key1=mode, key2=var, key3=numb ep
+        fcd_segmented = None
         for mode in range(result_shape[3]):
             eigvect_dict[mode] = {}
             eigval_dict[mode] = {}
@@ -215,7 +216,7 @@ def spectral_dbscan(fcd, n_dim=2, eps=0.3, min_samples=50):
     se = SpectralEmbedding(n_dim, affinity="precomputed")
     xi = se.fit_transform(fcd)
     pd = pdist(xi)
-    eps = np.percentile(pd, 100 * eps)
+    eps = np.percentile(pd, int(100 * eps))
     db = DBSCAN(eps=eps, min_samples=min_samples).fit(xi)
     return xi.T, db.labels_
 
