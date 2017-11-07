@@ -81,14 +81,14 @@ class JansenRit(ModelNumbaDfun):
 
     # Define traited attributes for this model, these represent possible kwargs.
     A = arrays.FloatArray(
-        label=":math:`A`",
+        label="A",
         default=numpy.array([3.25]),
         range=basic.Range(lo=2.6, hi=9.75, step=0.05),
         doc="""Maximum amplitude of EPSP [mV]. Also called average synaptic gain.""",
         order=1)
 
     B = arrays.FloatArray(
-        label=":math:`B`",
+        label="B",
         default=numpy.array([22.0]),
         range=basic.Range(lo=17.6, hi=110.0, step=0.2),
         doc="""Maximum amplitude of IPSP [mV]. Also called average synaptic gain.""",
@@ -120,7 +120,7 @@ class JansenRit(ModelNumbaDfun):
         In other words, it is the value of the average membrane potential
         corresponding to the inflection point of the sigmoid [mV].
 
-	The usual value for this parameter is 6.0.""",
+	    The usual value for this parameter is 6.0.""",
         order=5)
 
     nu_max = arrays.FloatArray(

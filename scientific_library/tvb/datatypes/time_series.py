@@ -551,7 +551,7 @@ class TimeSeriesSurface(TimeSeries):
         basic_result = self.read_data_page(from_idx, to_idx, step, specific_slices)
         result = []
         if self.surface.number_of_split_slices <= 1:
-            result.append(basic_result)
+            result.append(basic_result.tolist())
         else:
             for slice_number in range(self.surface.number_of_split_slices):
                 start_idx, end_idx = self.surface._get_slice_vertex_boundaries(slice_number)
