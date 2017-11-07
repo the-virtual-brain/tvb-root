@@ -176,8 +176,8 @@ def ensure_svn_current_version():
 
     alternative_1 = "$Revision: "
     alternative_2 = "$Rev: "
-    ending = "$"
-    new_text = alternative_1 + ending
+    ending = " $"
+    new_text = alternative_1 + str(real_svn_number + 1) + ending
 
     with open(os.path.join(config_folder, 'tvb.version'), 'r') as version_file:
         version_line = version_file.read()
@@ -187,7 +187,7 @@ def ensure_svn_current_version():
             written_svn_number = 0
 
         if alternative_1 in version_line:
-            new_text = alternative_2 + ending
+            new_text = alternative_2 + str(real_svn_number + 1) + ending
 
     if written_svn_number == real_svn_number:
         print("We will not change file tvb.version")
