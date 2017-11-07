@@ -47,6 +47,7 @@ import shutil
 import tvb_bin
 import tvb_data
 from subprocess import Popen, PIPE
+from tvb_build.tvb_documentor.doc_generator import DocGenerator
 
 # source paths
 BIN_FOLDER = os.path.dirname(tvb_bin.__file__)
@@ -174,11 +175,6 @@ def ensure_svn_current_version():
         _proc = Popen(["svnversion", "."], stdout=PIPE)
         real_svn_number = VersionSettings.parse_svn_version(_proc.communicate()[0])
 
-    alternative_1 = "$Revision: "
-    alternative_2 = "$Rev: "
-    ending = " $"
-    new_text = alternative_1 + str(real_svn_number + 1) + ending
-
     with open(os.path.join(config_folder, 'tvb.version'), 'r') as version_file:
         version_line = version_file.read()
         try:
@@ -186,27 +182,21 @@ def ensure_svn_current_version():
         except ValueError:
             written_svn_number = 0
 
-        if alternative_1 in version_line:
-            new_text = alternative_2 + str(real_svn_number + 1) + ending
-
     if written_svn_number == real_svn_number:
         print("We will not change file tvb.version")
         return
 
     with open(os.path.join(config_folder, 'tvb.version'), 'w') as version_file:
+        new_text = "Revision: " + str(real_svn_number)
         version_file.write(new_text)
         print("Updating tvb.version content to: %s because %d != %d" % (new_text, written_svn_number, real_svn_number))
 
-    # Update SVN_REVISION in the current build, as we are creating a new commit
-    os.environ[svn_variable] = str(real_svn_number + 1)
     _proc = Popen(["svn", "commit", "../scientific_library/tvb/basic/config/tvb.version", "-m",
                    "Update SVN revision number automatically from Hudson", "--trust-server-cert"], stdout=PIPE)
     print(_proc.communicate()[0])
 
 
 def build_step1():
-    ## Import only after SVN_REVISION has been changed, to get the latest number in generated documentation
-    from tvb_build.tvb_documentor.doc_generator import DocGenerator
 
     build_folder = os.path.dirname(DIST_FOLDER)
     if os.path.exists(build_folder):
