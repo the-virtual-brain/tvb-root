@@ -47,7 +47,6 @@ import shutil
 import tvb_bin
 import tvb_data
 from subprocess import Popen, PIPE
-from tvb_build.tvb_documentor.doc_generator import DocGenerator
 
 # source paths
 BIN_FOLDER = os.path.dirname(tvb_bin.__file__)
