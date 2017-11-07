@@ -281,8 +281,8 @@ def prepare_anaconda_dist(config):
         os.remove(ar)
     shutil.rmtree(config.target_root, True)
 
-    _log(1, "Decompressing " + config.step1_result + " into '" + config.build_folder + "' ...")
-    zipfile.ZipFile(config.step1_result).extractall(config.build_folder)
+    _log(1, "Decompressing " + config.step1_result + " into '" + config.target_root + "' ...")
+    zipfile.ZipFile(config.step1_result).extractall(config.target_root)
 
     # make needed directory structure that is not in the step1 zip
     # bin dir is initially empty, step1 does not support empty dirs in the zip

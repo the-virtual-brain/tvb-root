@@ -278,7 +278,8 @@ def prepare_py2app_dist():
     step1_tmp_dist_folder = os.path.join(TVB_ROOT, 'TVB_Distribution')
     if os.path.exists(step1_tmp_dist_folder):
         shutil.rmtree(step1_tmp_dist_folder)
-    ZipFile(STEP1_RESULT).extractall(TVB_ROOT)
+    os.mkdir(step1_tmp_dist_folder)
+    ZipFile(STEP1_RESULT).extractall(step1_tmp_dist_folder)
     # the above created a TVB_Distribution/ we need a dist folder
     shutil.move(step1_tmp_dist_folder, DIST_FOLDER)
     # make needed directory structure that is not in the step1 zip

@@ -227,7 +227,7 @@ def build_step1():
 
     shutil.copy2(LICENSE_PATH, join(DIST_FOLDER, 'LICENSE_TVB.txt'))
     shutil.copy2(RELEASE_NOTES_PATH, join(DIST_FOLDER, 'docs', 'RELEASE_NOTES.txt'))
-    shutil.copytree(DEMOS_MATLAB_FOLDER, join(DIST_FOLDER, 'matlab'))
+    shutil.copytree(DEMOS_MATLAB_FOLDER, join(DIST_FOLDER, 'matlab'), ignore=shutil.ignore_patterns('.svn', '*.rst'))
 
     copy_distribution_dataset()
 
