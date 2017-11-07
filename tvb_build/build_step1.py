@@ -44,8 +44,6 @@ The second phase includes the source code and depends on the zip produced by thi
 """
 import os
 import shutil
-from os.path import join
-from tvb_build.tvb_documentor.doc_generator import DocGenerator
 import tvb_bin
 import tvb_data
 from subprocess import Popen, PIPE
@@ -53,16 +51,16 @@ from subprocess import Popen, PIPE
 # source paths
 BIN_FOLDER = os.path.dirname(tvb_bin.__file__)
 TVB_ROOT = os.path.dirname(os.path.dirname(BIN_FOLDER))
-FW_FOLDER = join(TVB_ROOT, 'framework_tvb')
-LICENSE_PATH = join(FW_FOLDER, 'LICENSE')
-RELEASE_NOTES_PATH = join(TVB_ROOT, 'tvb_documentation', 'RELEASE_NOTES')
+FW_FOLDER = os.path.join(TVB_ROOT, 'framework_tvb')
+LICENSE_PATH = os.path.join(FW_FOLDER, 'LICENSE')
+RELEASE_NOTES_PATH = os.path.join(TVB_ROOT, 'tvb_documentation', 'RELEASE_NOTES')
 DATA_SRC_FOLDER = os.path.dirname(tvb_data.__file__)
-DEMOS_MATLAB_FOLDER = join(TVB_ROOT, 'matlab')
+DEMOS_MATLAB_FOLDER = os.path.join(TVB_ROOT, 'matlab')
 
 # dest paths
-DIST_FOLDER = join(os.path.dirname(__file__), 'build', 'TVB_Distribution')
+DIST_FOLDER = os.path.join(os.path.dirname(__file__), 'build', 'TVB_Distribution')
 
-DATA_INSIDE_FOLDER = join(DIST_FOLDER, '_tvb_data')
+DATA_INSIDE_FOLDER = os.path.join(DIST_FOLDER, '_tvb_data')
 
 INCLUDED_INSIDE_DATA = [
     "__init__.py",
@@ -120,8 +118,8 @@ INCLUDED_INSIDE_DATA = [
 def _copy_dataset(dataset_files, dataset_destination):
     for pth in dataset_files:
         rel_pth = pth.split('/')
-        origin = join(DATA_SRC_FOLDER, *rel_pth)
-        destination = join(dataset_destination, *rel_pth)
+        origin = os.path.join(DATA_SRC_FOLDER, *rel_pth)
+        destination = os.path.join(dataset_destination, *rel_pth)
         destination_folder = os.path.dirname(destination)
         if not os.path.exists(destination_folder):
             os.makedirs(destination_folder)
@@ -207,8 +205,10 @@ def ensure_svn_current_version():
 
 
 def build_step1():
-    build_folder = os.path.dirname(DIST_FOLDER)
+    ## Import only after SVN_REVISION has been changed, to get the latest number in generated documentation
+    from tvb_build.tvb_documentor.doc_generator import DocGenerator
 
+    build_folder = os.path.dirname(DIST_FOLDER)
     if os.path.exists(build_folder):
         shutil.rmtree(build_folder)
     os.makedirs(DIST_FOLDER)
@@ -216,7 +216,7 @@ def build_step1():
     # make top level dirs
     top_level_folders = ['docs']
     for d in top_level_folders:
-        os.mkdir(join(DIST_FOLDER, d))
+        os.mkdir(os.path.join(DIST_FOLDER, d))
 
     # make help HTML, PDF manual and documentation site
     print("Starting to populate %s" % DIST_FOLDER)
@@ -225,16 +225,18 @@ def build_step1():
     doc_generator.generate_online_help()
     doc_generator.generate_site()
 
-    shutil.copy2(LICENSE_PATH, join(DIST_FOLDER, 'LICENSE_TVB.txt'))
-    shutil.copy2(RELEASE_NOTES_PATH, join(DIST_FOLDER, 'docs', 'RELEASE_NOTES.txt'))
-    shutil.copytree(DEMOS_MATLAB_FOLDER, join(DIST_FOLDER, 'matlab'), ignore=shutil.ignore_patterns('.svn', '*.rst'))
+    shutil.copy2(LICENSE_PATH, os.path.join(DIST_FOLDER, 'LICENSE_TVB.txt'))
+    shutil.copy2(RELEASE_NOTES_PATH, os.path.join(DIST_FOLDER, 'docs', 'RELEASE_NOTES.txt'))
+    shutil.copytree(DEMOS_MATLAB_FOLDER, os.path.join(DIST_FOLDER, 'matlab'),
+                    ignore=shutil.ignore_patterns('.svn', '*.rst'))
 
     copy_distribution_dataset()
 
     _copy_demos_collapsed({os.path.join("..", "tvb_documentation", "demos"): os.path.join(DIST_FOLDER, "demo_scripts"),
-                           os.path.join("..", "tvb_documentation", "tutorials"): os.path.join(DIST_FOLDER, "demo_scripts")})
+                           os.path.join("..", "tvb_documentation", "tutorials"):
+                               os.path.join(DIST_FOLDER, "demo_scripts")})
 
-    shutil.rmtree(join(DIST_FOLDER, DocGenerator.API))
+    shutil.rmtree(os.path.join(DIST_FOLDER, DocGenerator.API))
     shutil.make_archive('TVB_build_step1', 'zip', DIST_FOLDER)
     shutil.rmtree(DIST_FOLDER)
     shutil.move('TVB_build_step1.zip', build_folder)
@@ -243,4 +245,3 @@ def build_step1():
 if __name__ == '__main__':
     ensure_svn_current_version()
     build_step1()
-
