@@ -45,7 +45,7 @@ var Quadrant = function (params) {                // this keeps all necessary da
      */
     var vol = {
         ctx: null,                  // The context for drawing on current canvas.
-        backCtx: null,              // The context of the offscreen canvas.
+        backCtx: null,              // The context of the off-screen canvas.
 
         currentQuadrant: 0,         // The quadrant we're in.
         highlightedQuad: {},        // The plane to be displayed on the focus quadrant
@@ -59,7 +59,7 @@ var Quadrant = function (params) {                // this keeps all necessary da
         focusQuadrantWidth: null,   // The width of the focus quadrant
         legendHeight: 0,            // The height of the legend quadrant
         legendWidth: 0,             // The width of the legend quadrant
-        legendPadding: 80 * 2,         // Horizontal padding for the TSV viewr legend
+        legendPadding: 80 * 2,      // Horizontal padding for the TSV viewer legend
         volumeOrigin: null,         // VolumeOrigin is not used for now. if needed, use it in _setQuadrant
 
         dataSize: "",               // Used first to contain the file ID and then it's dimension.
@@ -181,6 +181,10 @@ var Quadrant = function (params) {                // this keeps all necessary da
         // because the volumetric slice is smaller than the quadrant.
         // Using focusQuadrantWidth will lead to some visual glitches.
         // Underlying issue is signal-pixel aliasing
+        vol.backCtx.setTransform(1, 0, 0, 1, 0, 0);                              // reset the transformation
+        vol.backCtx.fillStyle = 'rgba(25, 25, 25, 255)'; // todo: take this from the colorscheme theme
+        vol.backCtx.fillRect(0, 0, vol.backCtx.canvas.width, vol.backCtx.canvas.height);
+
         return vol.backCtx.createImageData(Math.round(w_voxels * (1 + vol.currentQuadrant.entityWidth)),
             Math.round(h_voxels * (1 + vol.currentQuadrant.entityHeight)));
     }
@@ -198,7 +202,7 @@ var Quadrant = function (params) {                // this keeps all necessary da
         // Now paste the buffer to the back canvas
         vol.backCtx.putImageData(imageData, 0, 0);
         // Finally paste the back canvas to the foreground one
-        // This performs alpha compositing and is the reason for this 'two step paste' drawing
+        // This performs alpha composition and is the reason for this 'two step paste' drawing
         vol.ctx.drawImage(vol.backCtx.canvas, 0, 0);
     }
 
