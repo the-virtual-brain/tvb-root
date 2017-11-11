@@ -1293,7 +1293,7 @@
     </dependency>
     <dependency env="[win,mac,linux]" name="tempita">
         <full-name value="Tempita"/>
-        <project-home value="http://pythonpaste.org/tempita/"/>
+        <project-home value="https://pypi.python.org/pypi/Tempita"/>
         <version value="[0.5.1,0.5.2]"/>
         <usage value="dynamic linking"/>
         <license value="LICENSE_tempita.txt"/>
