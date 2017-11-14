@@ -46,12 +46,14 @@ from tvb.datatypes.fcd import Fcd
 from tvb.datatypes.graph import ConnectivityMeasure
 
 
+
 class FunctionalConnectivityDynamicsAdapter(ABCAsynchronous):
     """ TVB adapter for calling the Pearson CrossCorrelation algorithm. """
 
     _ui_name = "FCD matrix"
     _ui_description = "Functional Connectivity Dynamics metric"
     _ui_subsection = "fcd_calculator"
+
 
     def get_input_tree(self):
         """
@@ -91,18 +93,18 @@ class FunctionalConnectivityDynamicsAdapter(ABCAsynchronous):
 
         if actual_sw >= actual_ts_length or actual_sp >= actual_ts_length or actual_sp >= actual_sw:
             raise LaunchException(
-                "Spanning and Sliding window sizes need to less than the TS length, and Sp < Sw. "
-                "After calibration with sampling period: Sp=%d, Sw=%d, Ts=%d). "
-                "Please configure valid input parameters." % (
-                    actual_sp, actual_sw, actual_ts_length))
+                "Spanning (Sp) and Sliding (Sw) window size parameters need to be less than the TS length, "
+                "and Sp < Sw. After calibration with sampling period, current values are: Sp=%d, Sw=%d, Ts=%d). "
+                "Please configure valid input parameters." % (actual_sp, actual_sw, actual_ts_length))
 
-        ##-------------------- Fill Algorithm for Analysis -------------------##
-
+        # -------------------- Fill Algorithm for Analysis -------------------##
         self.algorithm = FcdCalculator(time_series=time_series, sw=sw, sp=sp)
+
 
     def get_required_memory_size(self, **kwargs):
         # We do not know how much memory is needed.
         return -1
+
 
     def get_required_disk_size(self, **kwargs):
         return 0
