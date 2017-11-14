@@ -750,26 +750,6 @@
         <copyright-notice value="Copyright (c) 2014 - 2015, Hsiaoming Yang"/>
         <description value="IPython Notebook uses the mistune markdown parser - Coming with Anaconda env"/>
     </dependency>
-    <dependency env="[win,linux]" name="mod-pywebsocket">
-        <full-name value="Python Web Socket Server"/>
-        <project-home value="http://code.google.com/p/pywebsocket/"/>
-        <version value="0.7.9"/>
-        <usage value="dynamic linking"/>
-        <license value="LICENSE_websocket.txt"/>
-        <license-type value="BSD_ 3rd clause."/>
-        <copyright-notice value="Copyright 2009, Google Inc."/>
-        <description value=""/>
-    </dependency>
-    <dependency env="[win,mac,linux]" name="mod_pywebsocket">
-        <full-name value="Python Web Socket Server"/>
-        <project-home value="http://code.google.com/p/pywebsocket/"/>
-        <version value="0.7.9"/>
-        <usage value="dynamic linking"/>
-        <license value="LICENSE_websocket.txt"/>
-        <license-type value="BSD_ 3rd clause."/>
-        <copyright-notice value="Copyright 2009, Google Inc."/>
-        <description value=""/>
-    </dependency>
     <dependency env="[win,mac,linux]" name="mpl_toolkits">
         <full-name value="MatPlotLib Toolkits"/>
         <project-home value="http://matplotlib.sourceforge.net/mpl_toolkits/axes_grid/api/axes_size_api.html"/>

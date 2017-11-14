@@ -46,7 +46,7 @@ VERSION = "1.5.5"
 TVB_TEAM = "Mihai Andrei, Lia Domide, Stuart Knock, Bogdan Neacsa, Paula Sansz Leon, Marmaduke Woodman"
 
 TVB_INSTALL_REQUIREMENTS = ["allensdk", "apscheduler", "BeautifulSoup4", "cfflib", "cherrypy", "coverage",
-                            "formencode", "genshi", "h5py", "lxml", "minixsv", "mod_pywebsocket", "networkx", "nibabel",
+                            "formencode", "genshi", "h5py", "lxml", "minixsv", "networkx", "nibabel",
                             "numexpr", "numpy", "Pillow", "psutil", "scikit-learn", "scipy", "simplejson",
                             "sqlalchemy", "sqlalchemy-migrate", "tvb-data", "tvb-library"]
 

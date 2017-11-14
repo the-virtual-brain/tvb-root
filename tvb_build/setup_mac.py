@@ -71,7 +71,7 @@ PY2APP_PACKAGES = ['cherrypy', 'email', 'h5py', 'IPython', 'ipykernel', 'ipykern
 PY2APP_INCLUDES = ['allensdk', 'apscheduler', 'apscheduler.scheduler', 'cfflib', 'cmath', 'contextlib', 'formencode',
                    'gdist', 'genshi', 'genshi.template', 'genshi.template.loader', 'jinja2', 'jsonschema',
                    'logging.config', 'lxml.etree', 'lxml._elementpath', 'markupsafe', 'matplotlib', 'minixsv',
-                   'mod_pywebsocket', 'mpl_toolkits.axes_grid', 'nibabel',
+                   'mpl_toolkits.axes_grid', 'nibabel',
                    'numexpr', 'os', 'psycopg2', 'pygments.formatters.html', 'pygments.lexers.python',
                    'runpy', 'sqlite3', 'sqlalchemy', 'sqlalchemy.dialects.sqlite', 'sqlalchemy.dialects.postgresql',
                    'sqlalchemy.sql.default_comparator',

@@ -245,7 +245,7 @@ Requirements for front-end visualization:
 - **High definition monitor** -
   Your monitor should be capable of displaying at least 1600 x 1000 pixels. Some views might be truncated if TVB is run on smaller monitors.
 
-- **WebGL and WebSockets compatible browser** -
+- **WebGL compatible browser** -
   We've tested the software on the latest versions of Mozilla Firefox, Apple Safari and Google Chrome.
   Using a different, less capable browser might result in some features not working or the user interface looking awkward at times.
 

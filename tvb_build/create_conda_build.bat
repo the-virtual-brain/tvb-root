@@ -7,7 +7,7 @@ call activate tvb-run
 conda install matplotlib pytables==3.0 numba
 
 REM add locally built or pure Python packages
-pip install gdist sqlalchemy sqlalchemy-migrate minixsv formencode genshi simplejson mod_pywebsocket cherrypy cfflib nibabel psycopg2 apscheduler
+pip install gdist sqlalchemy sqlalchemy-migrate minixsv formencode genshi simplejson cherrypy cfflib nibabel psycopg2 apscheduler
 
 
 #After these run "sh install_from_svn.sh" or "python setup.py develop/install" from each of TVB packages
