@@ -67,7 +67,8 @@ class _MappedArrayVolumeBase(ABCDisplayer):
             if measure_shape[i] == nregions:
                 default[i] = slice(None)
                 return tuple(default)
-        raise LaunchException('The mapped array is not compatible with the region mapping')
+        raise LaunchException("The mapped array of shape %s is incompatible with the region mapping "
+                              "(expected values for %d connectivity regions)." %(measure_shape, nregions))
 
 
     def _ensure_region_mapping(self, region_mapping_volume):
