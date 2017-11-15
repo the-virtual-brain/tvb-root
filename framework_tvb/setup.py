@@ -45,10 +45,9 @@ VERSION = "1.5.5"
 
 TVB_TEAM = "Mihai Andrei, Lia Domide, Stuart Knock, Bogdan Neacsa, Paula Sansz Leon, Marmaduke Woodman"
 
-TVB_INSTALL_REQUIREMENTS = ["allensdk", "apscheduler", "BeautifulSoup4", "cfflib", "cherrypy", "coverage",
-                            "formencode", "genshi", "h5py", "lxml", "minixsv", "networkx", "nibabel",
-                            "numexpr", "numpy", "Pillow", "psutil", "scikit-learn", "scipy", "simplejson",
-                            "sqlalchemy", "sqlalchemy-migrate", "tvb-data", "tvb-library"]
+TVB_INSTALL_REQUIREMENTS = ["allensdk", "BeautifulSoup4", "cfflib", "cherrypy", "formencode", "genshi",
+                            "h5py", "networkx", "nibabel", "numpy", "Pillow", "psutil", "scipy",
+                            "simplejson", "sqlalchemy", "sqlalchemy-migrate", "tvb-data", "tvb-library"]
 
 with open(os.path.join(os.path.dirname(__file__), 'README.rst')) as fd:
     DESCRIPTION = fd.read()
@@ -68,5 +67,5 @@ setuptools.setup(name="tvb-framework",
                  download_url='https://github.com/the-virtual-brain/tvb-framework',
                  keywords='tvb brain simulator neuroscience human animal neuronal dynamics models delay')
 
-## Clean after install      
+# Clean after install
 shutil.rmtree('tvb_framework.egg-info', True)

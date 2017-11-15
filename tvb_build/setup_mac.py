@@ -65,13 +65,12 @@ EXCLUDED_DYNAMIC_LIBS = []
 # --------------------------- PY2APP specific configurations--------------------------------------------
 
 PY2APP_PACKAGES = ['cherrypy', 'email', 'h5py', 'IPython', 'ipykernel', 'ipykernel_launcher', 'nbformat',
-                   'lib2to3', "llvmlite", 'migrate', 'minixsv', 'numba', 'notebook', 'numpy', 'pkg_resources',
+                   'lib2to3', "llvmlite", 'migrate', 'numba', 'notebook', 'numpy', 'pkg_resources',
                    'PyObjCTools', 'scipy', 'sklearn', 'tables', 'tornado', 'tvb']
 
-PY2APP_INCLUDES = ['allensdk', 'apscheduler', 'apscheduler.scheduler', 'cfflib', 'cmath', 'contextlib', 'formencode',
+PY2APP_INCLUDES = ['allensdk', 'cfflib', 'cmath', 'contextlib', 'formencode',
                    'gdist', 'genshi', 'genshi.template', 'genshi.template.loader', 'jinja2', 'jsonschema',
-                   'logging.config', 'lxml.etree', 'lxml._elementpath', 'markupsafe', 'matplotlib', 'minixsv',
-                   'mpl_toolkits.axes_grid', 'nibabel',
+                   'logging.config', 'markupsafe', 'matplotlib', 'mpl_toolkits.axes_grid', 'nibabel',
                    'numexpr', 'os', 'psycopg2', 'pygments.formatters.html', 'pygments.lexers.python',
                    'runpy', 'sqlite3', 'sqlalchemy', 'sqlalchemy.dialects.sqlite', 'sqlalchemy.dialects.postgresql',
                    'sqlalchemy.sql.default_comparator',

@@ -2,13 +2,13 @@
 
 envname="tvb-run"
 
-conda create -y -n $envname nomkl scipy numpy networkx scikit-learn cython h5py pip pil numexpr psutil coverage beautiful-soup lxml ipython ipython-notebook
+conda create -y -n $envname nomkl scipy numpy networkx scikit-learn cython h5py pip pil numexpr psutil coverage beautiful-soup ipython ipython-notebook
 
 source activate $envname
 
 conda install matplotlib pytables==3.0 psycopg2 numba
 
-pip install sqlalchemy sqlalchemy-migrate minixsv formencode genshi simplejson cherrypy cfflib nibabel gdist
+pip install sqlalchemy sqlalchemy-migrate formencode genshi simplejson cherrypy cfflib nibabel gdist
 
 # The next ones are for Mac build env:
 # pip install py2app docutils apscheduler pyobjc

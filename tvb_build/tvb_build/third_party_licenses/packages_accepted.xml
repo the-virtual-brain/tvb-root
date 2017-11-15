@@ -30,16 +30,6 @@
         <copyright-notice value="Copyright (c) 2013, Min Ragan-Kelley"/>
         <description value="Package for disabling App Nap on OS X. Needed for IPython Notebook"/>
     </dependency>
-    <dependency env="[win,mac,linux]" name="apscheduler">
-        <full-name value="APScheduler"/>
-        <project-home value="http://pypi.python.org/pypi/APScheduler"/>
-        <version value="[3.0.3,3.3.1]"/>
-        <usage value="dynamic linking"/>
-        <license value="LICENSE_apscheduler_2.0.txt"/>
-        <license-type value="MIT_"/>
-        <copyright-notice value="Copyright (c) 2009 Evan Rosson, Jan Dittberner, Domen Kozar"/>
-        <description value="Scheduler of jobs."/>
-    </dependency>
     <dependency env="[win,mac,linux]" name="backports">
         <full-name value="Backports"/>
         <project-home value="https://pypi.python.org/pypi/backports"/>
@@ -660,16 +650,6 @@
         <copyright-notice value="Copyright (c) 2014-, Continuum Analytics, Inc."/>
         <description value="A light-weight Python binding to LLVM"/>
     </dependency>
-    <dependency env="[win,mac,linux]" name="lxml">
-        <full-name value="Lxml"/>
-        <project-home value="http://lxml.de/"/>
-        <version value="[3.4.4,3.7.3]"/>
-        <usage value="dynamic linking"/>
-        <license value="LICENSE_lxml.txt"/>
-        <license-type value="BSD_"/>
-        <copyright-notice value="Copyright (c) 2004 Infrae. All rights reserved."/>
-        <description value=""/>
-    </dependency>
     <dependency env="[win,mac,linux]" name="markupsafe">
         <full-name value="MarkupSafe"/>
         <project-home value="https://pypi.python.org/pypi/MarkupSafe"/>
@@ -709,16 +689,6 @@
         <license-type value="MIT_"/>
         <copyright-notice value="Copyright (c) 2009 Evan Rosson, Jan Dittberner, Domen Kozar"/>
         <description value="SQLAlchemy related package, for updating from one version of DB to another."/>
-    </dependency>
-    <dependency env="[win,mac,linux]" name="minixsv">
-        <full-name value="Minixsv"/>
-        <project-home value="http://www.familieleuthe.de/MiniXsv.html"/>
-        <version value="0.9.0"/>
-        <usage value="dynamic linking"/>
-        <license value="LICENSE_minixsv.txt"/>
-        <license-type value="MIT_"/>
-        <copyright-notice value="Copyright (c) 2004-2008 by Roland Leuthe"/>
-        <description value="A Lightweight XML schema validator"/>
     </dependency>
     <dependency env="[win,linux,mac]" name="mistune">
         <full-name value="Mistune"/>

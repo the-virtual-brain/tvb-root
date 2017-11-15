@@ -1,5 +1,5 @@
 REM build env with pre-built binaries from conda repos
-conda create -y -n tvb-run scipy numpy networkx scikit-learn cython h5py pip pil numexpr psutil coverage beautiful-soup lxml ipython ipython-notebook
+conda create -y -n tvb-run scipy numpy networkx scikit-learn cython h5py pip pil numexpr psutil coverage beautiful-soup ipython ipython-notebook
 
 REM use environment
 call activate tvb-run
@@ -7,7 +7,7 @@ call activate tvb-run
 conda install matplotlib pytables==3.0 numba
 
 REM add locally built or pure Python packages
-pip install gdist sqlalchemy sqlalchemy-migrate minixsv formencode genshi simplejson cherrypy cfflib nibabel psycopg2 apscheduler
+pip install gdist sqlalchemy sqlalchemy-migrate formencode genshi simplejson cherrypy cfflib nibabel psycopg2
 
 
 #After these run "sh install_from_svn.sh" or "python setup.py develop/install" from each of TVB packages

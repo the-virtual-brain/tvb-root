@@ -44,7 +44,7 @@ LIBRARY_VERSION = "1.5.5"
 
 TVB_TEAM = "Stuart Knock, Marmaduke Woodman, Paula Sanz Leon, Laurent Pezard, Viktor Jirsa"
 
-TVB_INSTALL_REQUIREMENTS = ["networkx", "nibabel", "numpy", "numba", "numexpr", "matplotlib",
+TVB_INSTALL_REQUIREMENTS = ["networkx", "numpy", "numba", "numexpr", "matplotlib",
                             "scikit-learn", "scipy", "tvb-gdist"]
 
 with open(os.path.join(os.path.dirname(__file__), 'README.rst')) as fd:
@@ -65,5 +65,5 @@ setuptools.setup(name='tvb-library',
                  download_url='https://github.com/the-virtual-brain/tvb-library',
                  keywords='tvb brain simulator neuroscience human animal neuronal dynamics models delay')
 
-## Cleanup after EGG install. These are created by running setup.py in the source tree
+# Cleanup after EGG install. These are created by running setup.py in the source tree
 shutil.rmtree('tvb_library.egg-info', True)
