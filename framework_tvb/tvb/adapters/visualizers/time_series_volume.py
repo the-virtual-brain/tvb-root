@@ -80,6 +80,9 @@ class TimeSeriesVolumeVisualiser(ABCDisplayer):
             volume_shape.extend(time_series.region_mapping_volume.shape)
 
         params = dict(title="Volumetric Time Series",
+                      ts_title=time_series.title,
+                      labelsStateVar=time_series.labels_dimensions.get(time_series.labels_ordering[1], []),
+                      labelsModes=range(time_series.read_data_shape()[3]),
                       minValue=min_value, maxValue=max_value,
                       urlVolumeData=url_volume_data,
                       urlTimeSeriesData=url_timeseries_data,

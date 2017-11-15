@@ -3,6 +3,7 @@
     <script type="text/javascript" src="/static_view/time_series_volume/scripts/volumeRPC.js?$currentVersionJS"></script>
     <script type="text/javascript" src="/static_view/time_series_volume/scripts/timeseriesVolume.js?$currentVersionJS"></script>
     <script type="text/javascript" src="/static_view/time_series_volume/scripts/timeseriesFragment.js?$currentVersionJS"></script>
+    <script type="text/javascript" src="/static_view/commons/scripts/regionSelector.js?$currentVersionJS"></script>
     <script type="text/javascript" src="/static/js/webGL_Connectivity.js?$currentVersionJS"></script>
     <script type="text/javascript" src="/static/js/d3.v3.js?$currentVersionJS"></script>
     <script type="text/javascript" src="/static/coloring/colorSchemeComponent.js?$currentVersionJS"></script>
@@ -52,9 +53,9 @@
             </h1>
         </div>
 
-        <ul class="toolbar-inline toolbar-with-sliders sortable pin" id="sortable-delete">
+        <ul class="toolbar-inline sortable pin" id="sortable-delete">
             <li>
-                <label for="relevantFeatureSelector">Relevant Sorting Feature:</label>
+                <label for="relevantFeatureSelector">Sort Feature:</label>
 
                 <select id="relevantFeatureSelector" name="relevantFeatureSelector">
                     <option value="mean" selected="selected">Mean</option>
@@ -67,7 +68,7 @@
             </li>
 
             <li>
-                <label for="sortingSelector">Sorting Order:</label>
+                <label for="sortingSelector">Sort Order:</label>
 
                 <select id="sortingSelector" name="sortingSelector">
                     <option value="ascending">Ascending</option>
@@ -87,6 +88,11 @@
                     <option value="max">Maximun</option>
                 </select>
             </li>
+
+            <li class="channel-selector">
+                <xi:include href="../commons/timeseries_selector_button.html" />
+                ${drawTimeseriesSelectorButton(ts_title, labelsStateVar, labelsModes, None)}
+			</li>
         </ul>
         <div class="ts-graph-parent">
             <div id="graph"></div>

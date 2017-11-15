@@ -23,7 +23,9 @@
         </span>
     </py:def>
 
-    <py:def function="drawTimeseriesSelectorButton(title, labelsStateVar, labelsModes, groupedOptions, initialSelection=[], namedSelections=[], buttonTitle='Select Input Signals', containerId='channelSelector')">
+    <py:def function="drawTimeseriesSelectorButton(title, labelsStateVar, labelsModes, groupedOptions=None,
+                                                   initialSelection=[], namedSelections=[],
+                                                   buttonTitle='Select Input Signals', containerId='channelSelector')">
         <xi:include href="../commons/channel_selector.html" />
 
         <nav class="inline-menu">
@@ -36,8 +38,10 @@
                         <div py:if="len(labelsStateVar) > 1 or len(labelsModes) > 1" class="modeSelectorInline">
                             ${drawStateModeSelectorInline(labelsModes, labelsStateVar)}
                         </div>
-                        ${drawRegionSelectorToolbar(namedSelections)}
-                        ${drawRegionSelectorChannels(groupedOptions, initialSelection)}
+                        <py:if test="groupedOptions is not None">
+                            ${drawRegionSelectorToolbar(namedSelections)}
+                            ${drawRegionSelectorChannels(groupedOptions, initialSelection)}
+                        </py:if>
                     </div>
                 </div>
             </div>

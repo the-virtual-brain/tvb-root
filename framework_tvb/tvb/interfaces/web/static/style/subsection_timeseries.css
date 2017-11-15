@@ -29,10 +29,6 @@
 /* ! COMPONENT: Volume Time Series Visualizer LEFT COLUMN   */
 /* !------------------------------------------------------- */
 
-.toolbar-with-sliders {
-    border-top: none;
-}
-
 .toolbar-li-with-slider {
     width: 20%;
 }
@@ -53,7 +49,6 @@
     margin: 3%;
 }
 
-.toolbar-with-sliders label,
 .movie-slider-parent label {
     color: white;
     font-size: 12px;
@@ -127,7 +122,6 @@
 #sortable-delete {
     height: 30px;
     max-height: 30px;
-    overflow: hidden;
 }
 
 .ts-graph-parent{

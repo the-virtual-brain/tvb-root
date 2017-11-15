@@ -464,7 +464,7 @@ class TimeSeriesRegion(TimeSeries):
         # Work with space inside Volume:
         x_plane, y_plane, z_plane = preprocess_space_parameters(x_plane, y_plane, z_plane, volume_rm.length_1d,
                                                                 volume_rm.length_2d, volume_rm.length_3d)
-
+        var, mode = int(var), int(mode)
         slice_x, slice_y, slice_z = self.region_mapping_volume.get_volume_slice(x_plane, y_plane, z_plane)
 
         # Read from the current TS:
@@ -508,6 +508,7 @@ class TimeSeriesRegion(TimeSeries):
         idx = int(volume_rm.get_data('array_data', idx_slices))
 
         time_length = self.read_data_shape()[0]
+        var, mode = int(var), int(mode)
         voxel_slices = prepare_time_slice(time_length), slice(var, var + 1), slice(idx, idx + 1), slice(mode, mode + 1)
         label = volume_rm.connectivity.region_labels[idx]
 
@@ -581,7 +582,7 @@ class TimeSeriesVolume(TimeSeries):
         super(TimeSeriesVolume, self).configure()
         self.has_volume_mapping = True
 
-    def get_volume_view(self, from_idx, to_idx, x_plane, y_plane, z_plane):
+    def get_volume_view(self, from_idx, to_idx, x_plane, y_plane, z_plane, **kwargs):
         """
         Retrieve 3 slices through the Volume TS, at the given X, y and Z coordinates, and in time [from_idx .. to_idx].
 
@@ -610,7 +611,7 @@ class TimeSeriesVolume(TimeSeries):
 
         return [slicex, slicey, slicez]
 
-    def get_voxel_time_series(self, x, y, z):
+    def get_voxel_time_series(self, x, y, z, **kwargs):
         """
         Retrieve for a given voxel (x,y,z) the entire timeline.
 
