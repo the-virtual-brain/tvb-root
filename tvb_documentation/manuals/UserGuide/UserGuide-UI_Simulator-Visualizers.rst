@@ -161,7 +161,7 @@ A structural mri volume may be used as a background.
    :width: 90%
    :align: center
 
-   TimeSeries Volume with selections
+   Time Series Volume with selections
 
 
 **Volumetric fragment**
@@ -192,7 +192,7 @@ This is the right part of the TimeSeries Volume visualizer and is composed of ot
    :width: 70%
    :align: center
 
-   TimeSeries Fragment
+   Time Series Volume Line Fragments
 
 
 *Global Time Series Graph*
@@ -232,7 +232,7 @@ the left-side volume regions will change accordingly.
    :width: 70%
    :align: center
 
-   TimeSeries select when multiple dimensions
+   Time Series Volume - select when multiple dimensions
 
 Already selected Time series lines on the right, will remain unchanged, when `Mode` and
 `State Variable` change, but if you click again on the left side volume, new lines will
@@ -244,9 +244,10 @@ full region name, `Mode` and `State Variable`).
    :width: 70%
    :align: center
 
-   Line title
+   Time Series Volume - Line title
 
-*Important notice*:
+*Important notice:*
+
 While these time lines share the temporal axis they do not share the vertical one.
 The signal amplitudes are dynamically scaled so as to make the signal features visible.
 Amplitudes are *not* comparable among two of these signals.
