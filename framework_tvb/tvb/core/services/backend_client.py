@@ -186,24 +186,24 @@ class StandAloneClient(object):
 
         LOGGER.debug("Stopping operation: %s" % str(operation_id))
 
-        ## Set the thread stop flag to true
+        # Set the thread stop flag to true
         for thread in CURRENT_ACTIVE_THREADS:
             if int(thread.operation_id) == operation_id:
                 thread.stop()
                 LOGGER.debug("Found running thread for operation: %d" % operation_id)
 
-        ## Kill Thread
+        # Kill Thread
         stopped = True
         operation_process = dao.get_operation_process_for_operation(operation_id)
         if operation_process is not None:
-            ## Now try to kill the operation if it exists
+            # Now try to kill the operation if it exists
             stopped = OperationExecutor.stop_pid(operation_process.pid)
             if not stopped:
                 LOGGER.debug("Operation %d was probably killed from it's specific thread." % operation_id)
             else:
                 LOGGER.debug("Stopped OperationExecutor process for %d" % operation_id)
 
-        ## Mark operation as canceled in DB and on disk
+        # Mark operation as canceled in DB and on disk
         WorkflowService().persist_operation_state(operation, model.STATUS_CANCELED)
 
         return stopped
@@ -272,7 +272,7 @@ class ClusterSchedulerClient(object):
 
         operation_process = dao.get_operation_process_for_operation(operation_id)
         result = 0
-        ## Try to kill only if operation job process is not None
+        # Try to kill only if operation job process is not None
         if operation_process is not None:
             stop_command = TvbProfile.current.cluster.STOP_COMMAND % operation_process.job_id
             LOGGER.info("Stopping cluster operation: %s" % stop_command)

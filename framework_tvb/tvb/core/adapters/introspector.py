@@ -71,19 +71,6 @@ class Introspector:
         self.logger = get_logger(self.__class__.__module__)
 
 
-    def get_events_path(self):
-        """
-        Returns the EVENTS_FOLDER variable for a given module.
-        """
-        module = __import__(self.module_name, globals(), locals(), ["__init__"])
-        try:
-            event_path = __import__(module.EVENTS_FOLDER, globals(), locals(), ["__init__"])
-            return os.path.dirname(event_path.__file__)
-        except Exception as exception:
-            self.logger.warning("Could not import events folder.\n" + str(exception))
-            return None
-
-
     def get_removers_dict(self):
         """
         Returns the removers for the datatypes of the current introspected module.

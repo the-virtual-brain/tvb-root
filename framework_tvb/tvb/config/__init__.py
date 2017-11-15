@@ -49,9 +49,6 @@ ADAPTERS = {"Analyze": {'modules': ["tvb.adapters.analyzers"],
 
 DATATYPES_PATH = ["tvb.datatypes"]
 REMOVERS_PATH = ["tvb.datatype_removers"]
-
-EVENTS_FOLDER = "tvb.config"
-
 PORTLETS_PATH = ["tvb.adapters.portlets"]
 
 SIMULATOR_MODULE = "tvb.adapters.simulator.simulator_adapter"

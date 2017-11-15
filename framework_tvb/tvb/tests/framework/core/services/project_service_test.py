@@ -35,7 +35,6 @@ import os
 import shutil
 import unittest
 import tvb_data
-import tvb.config as config
 from tvb.tests.framework.core.base_testcase import TransactionalTestCase
 from tvb.tests.framework.core.test_factory import TestFactory, ExtremeTestFactory
 from tvb.tests.framework.datatypes import datatypes_factory
@@ -68,7 +67,6 @@ class ProjectServiceTest(TransactionalTestCase):
         """
         Reset the database before each test.
         """
-        config.EVENTS_FOLDER = ''
         self.project_service = ProjectService()
         self.structure_helper = FilesHelper()
         self.test_user = TestFactory.create_user()
@@ -406,7 +404,7 @@ class ProjectServiceTest(TransactionalTestCase):
                 self.assertEqual(value, getattr(new_datatype, mapp_keys[key]))
             elif key == DataTypeMetaData.KEY_OPERATION_TAG:
                 if DataTypeMetaData.KEY_OP_GROUP_ID in expected_meta_data:
-                    ## We have a Group to check
+                    # We have a Group to check
                     op_group = new_datatype.parent_operation.fk_operation_group
                     op_group = dao.get_generic_entity(model.OperationGroup, op_group)[0]
                     self.assertEqual(value, op_group.name)

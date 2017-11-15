@@ -43,7 +43,6 @@ import json
 import random
 import tvb_data.cff as cff_dataset
 from hashlib import md5
-import tvb.config as config
 from tvb.core.entities import model
 from tvb.core.entities.storage import dao
 from tvb.core.entities.model import BurstConfiguration
@@ -56,7 +55,7 @@ from tvb.core.services.operation_service import OperationService
 from tvb.core.adapters.abcadapter import ABCAdapter
 
 
-class TestFactory():
+class TestFactory(object):
     """
     Expose mostly static methods for creating different entities used in tests.
     """
@@ -326,7 +325,6 @@ class ExtremeTestFactory():
                                 CLINICIAN and RESEARCHER and random validated state)
         :param nr_projects: maximum number of projects to be generated for each user
         """
-        config.EVENTS_FOLDER = ''
         users = []
         
         for i in range(nr_users):
@@ -348,7 +346,4 @@ class ExtremeTestFactory():
                             users=ExtremeTestFactory.get_users_ids(random.randint(0, nr_users - 3),
                                                                    nr_users, current_user.id, users))
                 ProjectService().store_project(current_user, True, None, **data)
-                ExtremeTestFactory.VALIDATION_DICT[current_user.id] += 1 
-                
-                   
-    
+                ExtremeTestFactory.VALIDATION_DICT[current_user.id] += 1
