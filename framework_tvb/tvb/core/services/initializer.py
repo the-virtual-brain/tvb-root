@@ -47,11 +47,13 @@ from tvb.core.services.user_service import UserService
 from tvb.core.services.settings_service import SettingsService
 
 
+
 def reset():
     """
     Service Layer for Database reset.
     """
     reset_database()
+
 
 
 def initialize(introspected_modules, skip_import=False):
@@ -60,23 +62,19 @@ def initialize(introspected_modules, skip_import=False):
     Check for new algorithms or new DataTypes.
     """
     SettingsService().check_db_url(TvbProfile.current.db.DB_URL)
-    
-    ## Initialize DB
+
+    # Initialize DB
     is_db_empty = initialize_startup()
-    
-    ## Create Projects storage root in case it does not exist.
+
+    # Create Projects storage root in case it does not exist.
     initialize_storage()
-    
-    ## Populate DB algorithms, by introspection
-    event_folders = []
+
+    # Populate DB algorithms, by introspection
     start_introspection_time = datetime.datetime.now()
     for module in introspected_modules:
         introspector = Introspector(module)
         # Introspection is always done, even if DB was not empty.
         introspector.introspect(True)
-        event_path = introspector.get_events_path()
-        if event_path:
-            event_folders.append(event_path)
 
     # Now remove or mark as removed any unverified Algorithm, Algo-Category or Portlet
     to_invalidate, to_remove = dao.get_non_validated_entities(start_introspection_time)
@@ -87,22 +85,21 @@ def initialize(introspected_modules, skip_import=False):
         dao.remove_entity(entity.__class__, entity.id)
 
     if not TvbProfile.is_first_run():
-        ## Create default users.
+        # Create default users.
         if is_db_empty:
             dao.store_entity(model.User(TvbProfile.current.web.admin.SYSTEM_USER_NAME, None, None, True, None))
             UserService().create_user(username=TvbProfile.current.web.admin.ADMINISTRATOR_NAME,
                                       password=TvbProfile.current.web.admin.ADMINISTRATOR_PASSWORD,
                                       email=TvbProfile.current.web.admin.ADMINISTRATOR_EMAIL,
                                       role=model.ROLE_ADMINISTRATOR, skip_import=skip_import)
-        
-        ## In case actions related to latest code-changes are needed, make sure they are executed.
+
+        # In case actions related to latest code-changes are needed, make sure they are executed.
         CodeUpdateManager().run_all_updates()
 
-        ## In case the H5 version changed, run updates on all DataTypes
+        # In case the H5 version changed, run updates on all DataTypes
         if TvbProfile.current.version.DATA_CHECKED_TO_VERSION < TvbProfile.current.version.DATA_VERSION:
             thread = threading.Thread(target=FilesUpdateManager().run_all_updates)
             thread.start()
 
-        ## Clean tvb-first-time-run temporary folder, as we are no longer at the first run:
+        # Clean tvb-first-time-run temporary folder, as we are no longer at the first run:
         shutil.rmtree(TvbProfile.current.FIRST_RUN_STORAGE, True)
-            
