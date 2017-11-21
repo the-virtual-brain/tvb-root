@@ -416,7 +416,7 @@ class Projection(Monitor):
 
         """
         if instance is None:
-            result = cls(**kwds)
+            result = cls(period=period, **kwds)
         else:
             result = instance
 
