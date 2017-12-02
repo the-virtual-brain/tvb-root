@@ -193,7 +193,7 @@
     <dependency env="[win,linux]" name="cython">
         <full-name value="Cython"/>
         <project-home value="http://cython.org/"/>
-        <version value="0.22.1"/>
+        <version value="0.26"/>
         <usage value="dynamic linking"/>
         <license value="LICENSE_cython.txt"/>
         <license-type value="Apache_ 2"/>
@@ -914,7 +914,7 @@
     <dependency env="[win,linux]" name="pillow">
         <full-name value="Pillow Library"/>
         <project-home value="https://pillow.readthedocs.org/"/>
-        <version value="2.9.0"/>
+        <version value="4.3.0"/>
         <usage value="dynamic linking"/>
         <license value="LICENSE_PIL.txt"/>
         <license-type value="MIT_"/>
@@ -1044,7 +1044,7 @@
     <dependency env="[win,linux]" name="python-dateutil">
         <full-name value="python-dateutil"/>
         <project-home value="https://dateutil.readthedocs.org/en/latest/"/>
-        <version value="2.5.3"/>
+        <version value="2.6.1"/>
         <usage value="dynamic linking"/>
         <license value="LICENSE_dateutil.txt"/>
         <license-type value="BSD_"/>
@@ -1091,7 +1091,7 @@
         <copyright-notice value="Copyright 2014 Ian Cordasco, Cory Benfield"/>
         <description value="Package needed for AllenSDK"/>
     </dependency>
-    <dependency env="mac" name="requests_toolbelt">
+    <dependency env="[win,mac,linux]" name="requests_toolbelt">
         <full-name value="Requests Toolbelt"/>
         <project-home value="https://pypi.python.org/pypi/requests-toolbelt"/>
         <version value="0.8.0"/>
@@ -1114,7 +1114,7 @@
     <dependency env="[win,linux,mac]" name="scikit-learn">
         <full-name value="Scikits Learn"/>
         <project-home value="http://scikit-learn.org/"/>
-        <version value="0.18.2"/>
+        <version value="[0.18.1,0.18.2]"/>
         <usage value="dynamic linking"/>
         <license value="LICENSE_scikits_learn.txt"/>
         <license-type value="BSD_ 3rd clause"/>
@@ -1164,7 +1164,7 @@
     <dependency env="[win,mac,linux]" name="sklearn">
         <full-name value="Scikits Learn"/>
         <project-home value="http://scikit-learn.org/"/>
-        <version value="0.18.2"/>
+        <version value="[0.18.1,0.18.2]"/>
         <usage value="dynamic linking"/>
         <license value="LICENSE_scikits_learn.txt"/>
         <license-type value="BSD_ 3rd clause"/>

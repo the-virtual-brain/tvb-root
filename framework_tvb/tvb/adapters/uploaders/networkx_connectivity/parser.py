@@ -114,8 +114,8 @@ class NetworkxParser(object):
         labels_vector, positions, cortical, hemisphere = [], [], [], []
 
         try:
-            for node in network.nodes():
-                node_data = network.node[node]
+            for node in xrange(graph_size):
+                node_data = network.nodes[node]
 
                 pos = self._find_value(node_data, self.KEY_NODE_COORDINATES)
                 positions.append(list(pos))
