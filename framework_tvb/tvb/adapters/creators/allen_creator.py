@@ -299,12 +299,14 @@ def pms_cleaner(projmaps):
         # Remove Nan areas from target list (columns+matrix)
         for inj_id in range(len(projmaps.keys())):
             targ_id = -1
-            previous_size = len(projmaps.values()[inj_id]['columns'])
-            while len(projmaps.values()[inj_id]['columns']) != (previous_size - 3 * len(nan_id)):  # 3 hemispheres
+            curr_columns_arr = projmaps.values()[inj_id]['columns']
+            previous_size = len(curr_columns_arr)
+            while len(curr_columns_arr) != (previous_size - 3 * len(nan_id)) and targ_id + 1 < len(curr_columns_arr):
+                # 3 hemispheres
                 targ_id += 1
-                column = projmaps.values()[inj_id]['columns'][targ_id]
-                if column['structure_id'] == remove:
-                    del projmaps.values()[inj_id]['columns'][targ_id]
+                column = curr_columns_arr[targ_id]
+                if column and 'structure_id' in column and column['structure_id'] == remove:
+                    del curr_columns_arr[targ_id]
                     projmaps.values()[inj_id]['matrix'] = np.delete(projmaps.values()[inj_id]['matrix'], targ_id, 1)
                     targ_id = -1
         # evaluate if there are still Nan values in the matrices

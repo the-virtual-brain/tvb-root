@@ -83,7 +83,7 @@
     <dependency env="[win,mac,linux]" name="certifi">
         <full-name value="Certifi"/>
         <project-home value="http://certifi.io/en/latest/"/>
-        <version value="2017.11.5"/>
+        <version value="[2017.11.5,2017.11.05]"/>
         <usage value="dynamic linking"/>
         <license value="LICENSE_certifi.txt"/>
         <license-type value="ISC_"/>
@@ -550,7 +550,7 @@
         <copyright-notice value="Copyright (C) 1999-2016 Free Software Foundation, Inc."/>
         <description value="The GNU Fortran compiler, part of GCC. Needed by recent numpy. https://moinmo.in/GPL"/>
     </dependency>
-    <dependency env="mac" name="libjpeg.8.dylib">
+    <dependency env="mac" name="libjpeg.9.dylib">
         <full-name value="JPEG library"/>
         <project-home value="http://libjpeg.sourceforge.net/"/>
         <version value="unknown"/>
@@ -1094,7 +1094,7 @@
     <dependency env="mac" name="requests_toolbelt">
         <full-name value="Requests Toolbelt"/>
         <project-home value="https://pypi.python.org/pypi/requests-toolbelt"/>
-        <version value="0.7.1"/>
+        <version value="0.8.0"/>
         <usage value="dynamic linking"/>
         <license value="LICENSE_req_toolbelt.txt"/>
         <license-type value="Apache_ 2"/>
