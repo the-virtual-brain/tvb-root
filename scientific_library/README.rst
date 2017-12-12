@@ -102,21 +102,19 @@ Testing
 =======
 
 For testing the package, the `Pytest  <https://docs.pytest.org/>`_
-framework is used.
+framework is used. Pytest can be installed using pip command::
 
-- Installation:
+  pip install -U pytest
 
-Pytest can be installed using pip command
-pip install -U pytest
+Pytest will run all files in the current directory and its subdirectories 
+of the form test_*.py or \*_test.py.
+More generally, it follows `standard test discovery rules 
+<https://docs.pytest.org/en/latest/getting-started.html>`_
 
-- Running tests with pytest:
+The command for running our tests is::
 
-Pytest will run all files in the current directory and its subdirectories of the form test_*.py or \*_test.py.
-More generally, it follows `standard test discovery rules <https://docs.pytest.org/en/latest/getting-started.html>`_
-
-- Command for running tests:
-
-cd .... folder pytest tvb/test
+  cd [folder_where_tvb_library_is]
+  pytest tvb/test
 
 Further Resources
 =================
