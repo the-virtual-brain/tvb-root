@@ -33,8 +33,10 @@
 """
 import unittest
 from tvb.basic.profile import TvbProfile
-
-
+from tvb.tests.library import setup_test_console_env
+if "TEST_INITIALIZATION_DONE_LIBRARY" not in globals():
+    setup_test_console_env()
+    TEST_INITIALIZATION_DONE_LIBRARY = True
 
 class BaseTestCase(unittest.TestCase):
     """

@@ -40,8 +40,6 @@ Test for tvb.simulator.coupling module
 if __name__ == "__main__":
     from tvb.tests.library import setup_test_console_env
     setup_test_console_env()
-    
-import unittest
 
 import numpy
 
@@ -144,19 +142,3 @@ class IntegratorsTest(BaseTestCase):
             x = vode.scheme(x, self._dummy_dfun, 0.0, 0.0, 0.0)
         for idx, val in zip(vode.clamped_state_variable_indices, vode.clamped_state_variable_values):
             self.assertTrue(numpy.allclose(x[idx], val))
-
-
-def suite():
-    """
-    Gather all the tests in a test suite.
-    """
-    test_suite = unittest.TestSuite()
-    test_suite.addTest(unittest.makeSuite(IntegratorsTest))
-    return test_suite
-
-
-if __name__ == "__main__":
-    #So you can run tests from this package individually.
-    TEST_RUNNER = unittest.TextTestRunner()
-    TEST_SUITE = suite()
-    TEST_RUNNER.run(TEST_SUITE)

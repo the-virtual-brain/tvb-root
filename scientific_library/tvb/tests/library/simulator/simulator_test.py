@@ -46,7 +46,6 @@ if True or __name__ == "__main__":
     setup_test_console_env()
 
 import numpy
-import unittest
 import itertools
 from tvb.simulator.common import get_logger
 from tvb.simulator import simulator, models, coupling, integrators, monitors, noise
@@ -188,21 +187,3 @@ class SimulatorTest(BaseTestCase):
 
             self.assertEqual(len(test_simulator.monitors), len(result))
             LOG.debug("Surface simulation finished for defaultConnectivity= %s" % str(default_connectivity))
-
-
-
-def suite():
-    """
-    Gather all the tests in a test suite.
-    """
-    test_suite = unittest.TestSuite()
-    test_suite.addTest(unittest.makeSuite(SimulatorTest))
-    return test_suite
-
-
-
-if __name__ == "__main__":
-    # So you can run tests from this package individually.
-    TEST_RUNNER = unittest.TextTestRunner()
-    TEST_SUITE = suite()
-    TEST_RUNNER.run(TEST_SUITE)

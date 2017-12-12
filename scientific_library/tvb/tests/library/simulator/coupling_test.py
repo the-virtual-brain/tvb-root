@@ -41,7 +41,6 @@ if True or __name__ == "__main__":
 
 import copy
 import numpy
-import unittest
 from tvb.tests.library.base_testcase import BaseTestCase
 from tvb.simulator import coupling, models, simulator
 from tvb.datatypes import cortex, connectivity
@@ -185,20 +184,3 @@ class CouplingShapeTest(BaseTestCase):
 
         for _ in sim(simulation_length=sim.integrator.dt * 2):
             pass
-
-def suite():
-    """
-    Gather all the tests in a test suite.
-    """
-    test_suite = unittest.TestSuite()
-    test_suite.addTest(unittest.makeSuite(CouplingTest))
-    test_suite.addTest(unittest.makeSuite(CouplingShapeTest))
-    return test_suite
-
-
-
-if __name__ == "__main__":
-    #So you can run tests from this package individually.
-    TEST_RUNNER = unittest.TextTestRunner()
-    TEST_SUITE = suite()
-    TEST_RUNNER.run(TEST_SUITE) 

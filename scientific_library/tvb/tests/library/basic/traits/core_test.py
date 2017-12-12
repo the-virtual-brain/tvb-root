@@ -35,14 +35,12 @@ Created on Mar 20, 2013
 if __name__ == "__main__":
     from tvb.tests.library import setup_test_console_env
     setup_test_console_env()
-    
-import unittest
 
+from tvb.tests.library.base_testcase import BaseTestCase
 from tvb.datatypes import arrays
 from tvb.basic.traits.util import str_class_name
 from tvb.basic.traits.core import FILE_STORAGE_DEFAULT
-from tvb.tests.library.base_testcase import BaseTestCase
-        
+
 class CoreTest(BaseTestCase):
     
     def test_traits_default(self):
@@ -80,19 +78,3 @@ class CoreTest(BaseTestCase):
         self.assertEqual(str_class_name(arrays.FloatArray), 'tvb.datatypes.arrays.FloatArray')
         self.assertEqual(str_class_name(arrays.FloatArray, True), 'FloatArray')
         self.assertEqual(str_class_name(1), '1')
-    
-        
-def suite():
-    """
-    Gather all the tests in a test suite.
-    """
-    test_suite = unittest.TestSuite()
-    test_suite.addTest(unittest.makeSuite(CoreTest))
-    return test_suite
-
-
-if __name__ == "__main__":
-    #So you can run tests from this package individually.
-    TEST_RUNNER = unittest.TextTestRunner()
-    TEST_SUITE = suite()
-    TEST_RUNNER.run(TEST_SUITE) 

@@ -34,8 +34,7 @@
 if __name__ == "__main__":
     from tvb.tests.library import setup_test_console_env
     setup_test_console_env()
-    
-import unittest
+
 import numpy
 import json
 from copy import deepcopy
@@ -154,23 +153,3 @@ class TraitsTest(BaseTestCase):
         loaded_dict =  json.loads(json_string, object_hook=MapAsJson.decode_map_as_json)
         eq_parameters = loaded_dict['2']['a']
         self.assertEqual(input_parameters, eq_parameters.parameters, "parameters not loaded properly from json")
-        
-        
-def suite():
-    """
-    Gather all the tests in a test suite.
-    """
-    test_suite = unittest.TestSuite()
-    test_suite.addTest(unittest.makeSuite(TraitsTest))
-    return test_suite
-
-
-if __name__ == "__main__":
-    #So you can run tests from this package individually.
-    TEST_RUNNER = unittest.TextTestRunner()
-    TEST_SUITE = suite()
-    TEST_RUNNER.run(TEST_SUITE) 
-    
-    
-    
-    

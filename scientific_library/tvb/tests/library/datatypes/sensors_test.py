@@ -36,7 +36,6 @@ if __name__ == "__main__":
     setup_test_console_env()
 
 import numpy
-import unittest
 from tvb.datatypes import sensors
 from tvb.datatypes.surfaces import SkinAir
 from tvb.datatypes.sensors import INTERNAL_POLYMORPHIC_IDENTITY, MEG_POLYMORPHIC_IDENTITY, EEG_POLYMORPHIC_IDENTITY
@@ -115,21 +114,3 @@ class SensorsTest(BaseTestCase):
         self.assertEqual(dt.number_of_sensors, 103)
         self.assertEqual(dt.orientations.shape, (0,))
         self.assertEqual(dt.sensors_type, INTERNAL_POLYMORPHIC_IDENTITY)
-
-
-
-def suite():
-    """
-    Gather all the tests in a test suite.
-    """
-    test_suite = unittest.TestSuite()
-    test_suite.addTest(unittest.makeSuite(SensorsTest))
-    return test_suite
-
-
-
-if __name__ == "__main__":
-    # So you can run tests from this package individually.
-    TEST_RUNNER = unittest.TextTestRunner()
-    TEST_SUITE = suite()
-    TEST_RUNNER.run(TEST_SUITE)

@@ -36,9 +36,7 @@ if __name__ == "__main__":
     from tvb.tests.library import setup_test_console_env
     setup_test_console_env()
  
-import numpy   
-import unittest
-
+import numpy
 from tvb.datatypes import mode_decompositions, time_series
 from tvb.tests.library.base_testcase import BaseTestCase
         
@@ -87,19 +85,3 @@ class ModeDecompositionsTest(BaseTestCase):
         self.assertEqual(dt.prewhitening_matrix.shape, (n_comp, 10, 10, 10))
         self.assertEqual(dt.norm_source.shape, (10, 10, 10, 10))
         self.assertEqual(dt.component_time_series.shape, (10, 10, n_comp, 10))
-        
-        
-def suite():
-    """
-    Gather all the tests in a test suite.
-    """
-    test_suite = unittest.TestSuite()
-    test_suite.addTest(unittest.makeSuite(ModeDecompositionsTest))
-    return test_suite
-
-
-if __name__ == "__main__":
-    #So you can run tests from this package individually.
-    TEST_RUNNER = unittest.TextTestRunner()
-    TEST_SUITE = suite()
-    TEST_RUNNER.run(TEST_SUITE) 

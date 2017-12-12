@@ -392,16 +392,3 @@ class TestSim(CudaBaseCase):
         # accept higher error because it accumulates over time
         # TODO test error proportional to time
         numpy.testing.assert_allclose(cu_data, py_data, 1e-2, 1e-2)
-
-
-def suite():
-    "Gather all the tests in a test suite."
-    test_suite = unittest.TestSuite()
-    tests = TestSimpleCfun, TestCfunExpr, TestDcfun, TestUtils, TestCfunExpr, TestSim
-    for case in tests:
-        test_suite.addTest(unittest.makeSuite(case))
-    return test_suite
-
-
-if __name__ == '__main__':
-    unittest.TextTestRunner(verbosity=2).run(suite())

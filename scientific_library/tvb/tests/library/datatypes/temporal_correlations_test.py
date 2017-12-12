@@ -36,9 +36,7 @@ if __name__ == "__main__":
     from tvb.tests.library import setup_test_console_env
     setup_test_console_env()
     
-import numpy    
-import unittest
-
+import numpy
 from tvb.datatypes import temporal_correlations, time_series
 from tvb.tests.library.base_testcase import BaseTestCase
         
@@ -58,19 +56,3 @@ class TemporalCorrelationsTest(BaseTestCase):
         self.assertEqual(dt.labels_ordering, ['Offsets', 'Node', 'Node', 'State Variable', 'Mode'])
         self.assertTrue(dt.source is not None)
         self.assertEqual(dt.time.shape, (0,))
-        
-        
-def suite():
-    """
-    Gather all the tests in a test suite.
-    """
-    test_suite = unittest.TestSuite()
-    test_suite.addTest(unittest.makeSuite(TemporalCorrelationsTest))
-    return test_suite
-
-
-if __name__ == "__main__":
-    #So you can run tests from this package individually.
-    TEST_RUNNER = unittest.TextTestRunner()
-    TEST_SUITE = suite()
-    TEST_RUNNER.run(TEST_SUITE) 

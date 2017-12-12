@@ -39,7 +39,7 @@ if __name__ == "__main__":
     from tvb.tests.library import setup_test_console_env
     setup_test_console_env()
 
-import unittest
+import pytest
 import sys
 import numpy
 from tvb.datatypes import surfaces
@@ -210,7 +210,7 @@ class SurfacesTest(BaseTestCase):
         self.assertTrue(dt.surface is None)
 
 
-    @unittest.skipIf(sys.maxsize <= 2147483647, "Cannot deal with local connectivity on a 32-bit machine.")
+    @pytest.mark.skipif(sys.maxsize <= 2147483647, reason="Cannot deal with local connectivity on a 32-bit machine.")
     def test_cortexdata(self):
 
         dt = Cortex(load_default=True)
@@ -227,23 +227,3 @@ class SurfacesTest(BaseTestCase):
         self.assertEqual(dt.get_data_shape('vertices'), (16384, 3))
         self.assertEqual(dt.get_data_shape('vertex_normals'), (16384, 3))
         self.assertEqual(dt.get_data_shape('triangles'), (32760, 3))
-
-
-
-def suite():
-    """
-    Gather all the tests in a test suite.
-    """
-    test_suite = unittest.TestSuite()
-    test_suite.addTest(unittest.makeSuite(SurfacesTest))
-    return test_suite
-
-
-
-if __name__ == "__main__":
-    #So you can run tests from this package individually.
-    TEST_RUNNER = unittest.TextTestRunner()
-    TEST_SUITE = suite()
-    TEST_RUNNER.run(TEST_SUITE) 
-    
-    

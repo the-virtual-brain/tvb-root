@@ -45,7 +45,7 @@ except Exception:
 
 import os
 import numpy
-import unittest
+import pytest
 from tvb.datatypes import connectivity
 from tvb.tests.library.base_testcase import BaseTestCase
 
@@ -155,7 +155,7 @@ class ConnectivityTest(BaseTestCase):
         self.assertEqual(conn.parent_connectivity, '')
 
 
-    @unittest.skipIf(not H5PY_SUPPORT, "HDF5 and H5PY not found on this system")
+    @pytest.mark.skipif(not H5PY_SUPPORT, reason="HDF5 and H5PY not found on this system")
     def test_connectivity_h5py_reload(self):
         """
         Reload a connectivity and check that defaults changes accordingly.
@@ -195,20 +195,3 @@ class ConnectivityTest(BaseTestCase):
         self.assertEqual(conn.idelays.shape, (0,))
         self.assertEqual(conn.delays.shape, (68, 68))
         self.assertEqual(conn.number_of_regions, 68)
-
-
-
-def suite():
-    """
-    Gather all the tests in a test suite.
-    """
-    test_suite = unittest.TestSuite()
-    test_suite.addTest(unittest.makeSuite(ConnectivityTest))
-    return test_suite
-
-
-if __name__ == "__main__":
-    #So you can run tests from this package individually.
-    TEST_RUNNER = unittest.TextTestRunner()
-    TEST_SUITE = suite()
-    TEST_RUNNER.run(TEST_SUITE) 

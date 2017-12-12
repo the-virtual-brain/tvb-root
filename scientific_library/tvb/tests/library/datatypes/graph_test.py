@@ -37,7 +37,6 @@ if __name__ == "__main__":
     setup_test_console_env()
 
 import numpy
-import unittest
 from tvb.datatypes import graph, time_series, connectivity
 from tvb.tests.library.base_testcase import BaseTestCase
 
@@ -84,19 +83,3 @@ class GraphTest(BaseTestCase):
         self.assertTrue(dt.connectivity is not None)
         summary = dt.summary_info
         self.assertEqual(summary['Graph type'], 'ConnectivityMeasure')
-        
-        
-def suite():
-    """
-    Gather all the tests in a test suite.
-    """
-    test_suite = unittest.TestSuite()
-    test_suite.addTest(unittest.makeSuite(GraphTest))
-    return test_suite
-
-
-if __name__ == "__main__":
-    #So you can run tests from this package individually.
-    TEST_RUNNER = unittest.TextTestRunner()
-    TEST_SUITE = suite()
-    TEST_RUNNER.run(TEST_SUITE) 

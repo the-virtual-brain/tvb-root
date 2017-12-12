@@ -35,8 +35,6 @@
 if __name__ == "__main__":
     from tvb.tests.library import setup_test_console_env
     setup_test_console_env()
-    
-import unittest
 
 from tvb.datatypes import projections
 from tvb.tests.library.base_testcase import BaseTestCase
@@ -70,19 +68,3 @@ class PatternsTest(BaseTestCase):
         self.assertTrue(dt.skull_skin is None)
         self.assertTrue(dt.sensors is None)
         self.assertTrue(dt.projection_data is None)
-        
-        
-def suite():
-    """
-    Gather all the tests in a test suite.
-    """
-    test_suite = unittest.TestSuite()
-    test_suite.addTest(unittest.makeSuite(PatternsTest))
-    return test_suite
-
-
-if __name__ == "__main__":
-    #So you can run tests from this package individually.
-    TEST_RUNNER = unittest.TextTestRunner()
-    TEST_SUITE = suite()
-    TEST_RUNNER.run(TEST_SUITE) 

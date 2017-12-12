@@ -36,7 +36,6 @@ if __name__ == "__main__":
     from tvb.tests.library import setup_test_console_env
     setup_test_console_env()
 
-import unittest
 from tvb.datatypes import equations
 from tvb.tests.library.base_testcase import BaseTestCase
 
@@ -106,19 +105,3 @@ class EquationsTest(BaseTestCase):
     def test_pulsetrain(self):
         dt = equations.PulseTrain()
         self.assertEqual(dt.parameters, {'onset': 30.0, 'tau': 13.0, 'T': 42.0, 'amp': 1.0})
-
-        
-def suite():
-    """
-    Gather all the tests in a test suite.
-    """
-    test_suite = unittest.TestSuite()
-    test_suite.addTest(unittest.makeSuite(EquationsTest))
-    return test_suite
-
-
-if __name__ == "__main__":
-    #So you can run tests from this package individually.
-    TEST_RUNNER = unittest.TextTestRunner()
-    TEST_SUITE = suite()
-    TEST_RUNNER.run(TEST_SUITE) 

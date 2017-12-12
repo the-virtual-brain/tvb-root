@@ -39,7 +39,7 @@ if __name__ == "__main__":
     from tvb.tests.library import setup_test_console_env
     setup_test_console_env()
     
-import unittest
+import pytest
 import numpy
 from tvb.tests.library.base_testcase import BaseTestCase
 from tvb.simulator import common
@@ -83,8 +83,8 @@ class CommonTest(BaseTestCase):
         """
         pass
 
-    @unittest.skipIf(not hasattr(numpy.add, 'at'),
-                     'Cannot test fallback numpy.add.at implementation without '
+    @pytest.mark.skipif(not hasattr(numpy.add, 'at'),
+                     reason='Cannot test fallback numpy.add.at implementation without '
                      'a version of NumPy which provides this ufunc method (>=1.8).')
     def test_add_at(self):
         ri = numpy.random.randint
@@ -99,18 +99,3 @@ class CommonTest(BaseTestCase):
 
     def setUp(self):
         pass
-        
-def suite():
-    """
-    Gather all the tests in a test suite.
-    """
-    test_suite = unittest.TestSuite()
-    test_suite.addTest(unittest.makeSuite(CommonTest))
-    return test_suite
-
-
-if __name__ == "__main__":
-    #So you can run tests from this package individually.
-    TEST_RUNNER = unittest.TextTestRunner()
-    TEST_SUITE = suite()
-    TEST_RUNNER.run(TEST_SUITE) 

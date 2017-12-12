@@ -37,11 +37,9 @@ if __name__ == "__main__":
     setup_test_console_env()
 
 import numpy
-import unittest
-
-from tvb.datatypes import spectral, time_series
 from tvb.tests.library.base_testcase import BaseTestCase
-        
+from tvb.datatypes import spectral, time_series
+
 class SpectralTest(BaseTestCase):
     """
     Tests the defaults for `tvb.datatypes.spectral` module.
@@ -130,19 +128,3 @@ class SpectralTest(BaseTestCase):
         self.assertEqual(dt.shape, (10, 10))
         self.assertTrue(dt.source is not None)
         self.assertEqual(dt.windowing_function, '')
-        
-        
-def suite():
-    """
-    Gather all the tests in a test suite.
-    """
-    test_suite = unittest.TestSuite()
-    test_suite.addTest(unittest.makeSuite(SpectralTest))
-    return test_suite
-
-
-if __name__ == "__main__":
-    #So you can run tests from this package individually.
-    TEST_RUNNER = unittest.TextTestRunner()
-    TEST_SUITE = suite()
-    TEST_RUNNER.run(TEST_SUITE) 

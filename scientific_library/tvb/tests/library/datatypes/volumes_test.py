@@ -35,8 +35,6 @@ Created on Mar 20, 2013
 if __name__ == "__main__":
     from tvb.tests.library import setup_test_console_env
     setup_test_console_env()
-    
-import unittest
 
 from tvb.datatypes import volumes
 from tvb.tests.library.base_testcase import BaseTestCase
@@ -56,19 +54,3 @@ class VolumesTest(BaseTestCase):
         self.assertEqual(dt.origin.shape, (0,))
         self.assertEqual(dt.voxel_size.shape, (0,))
         self.assertEqual(dt.voxel_unit, 'mm')
-        
-        
-def suite():
-    """
-    Gather all the tests in a test suite.
-    """
-    test_suite = unittest.TestSuite()
-    test_suite.addTest(unittest.makeSuite(VolumesTest))
-    return test_suite
-
-
-if __name__ == "__main__":
-    #So you can run tests from this package individually.
-    TEST_RUNNER = unittest.TextTestRunner()
-    TEST_SUITE = suite()
-    TEST_RUNNER.run(TEST_SUITE) 

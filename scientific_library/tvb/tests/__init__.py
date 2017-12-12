@@ -41,7 +41,6 @@ __path__ = extend_path(__path__, __name__)
 
 def run_all():
     run_framework()
-    run_library()
 
 
 def run_framework():
@@ -54,9 +53,3 @@ def run_framework():
         # ignore this when framework does not exist
         pass
 
-
-def run_library():
-    from tvb.tests.library.main_tests import suite as lib_suite
-    TEST_RUNNER = unittest.TextTestRunner()
-    TEST_SUITE = lib_suite()
-    TEST_RUNNER.run(TEST_SUITE)

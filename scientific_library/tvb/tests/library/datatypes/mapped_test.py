@@ -37,7 +37,6 @@ if __name__ == "__main__":
     setup_test_console_env()
 
 import numpy
-import unittest
 from tvb.datatypes import mapped_values, time_series
 from tvb.tests.library.base_testcase import BaseTestCase
 
@@ -58,21 +57,3 @@ class MappedTest(BaseTestCase):
         ts = time_series.TimeSeries(data=data)
         dt = mapped_values.DatatypeMeasure(analyzed_datatype=ts, metrics={"Dummy": 1})
         self.assertEqual(dt.display_name, "\nDummy : 1\n")
-
-
-
-def suite():
-    """
-    Gather all the tests in a test suite.
-    """
-    test_suite = unittest.TestSuite()
-    test_suite.addTest(unittest.makeSuite(MappedTest))
-    return test_suite
-
-
-
-if __name__ == "__main__":
-    #So you can run tests from this package individually.
-    TEST_RUNNER = unittest.TextTestRunner()
-    TEST_SUITE = suite()
-    TEST_RUNNER.run(TEST_SUITE) 

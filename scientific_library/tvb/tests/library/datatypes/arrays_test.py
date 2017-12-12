@@ -38,10 +38,8 @@ if __name__ == "__main__":
     
     
 import numpy
-import unittest
-
-from tvb.datatypes import arrays
 from tvb.tests.library.base_testcase import BaseTestCase
+from tvb.datatypes import arrays
         
 class ArraysTest(BaseTestCase):
     
@@ -131,19 +129,3 @@ class ArraysTest(BaseTestCase):
         array_dt.data = numpy.arange(30).reshape((10, 3))
         self.assertEqual(array_dt.shape, (10, 3))
         self.assertEqual(array_dt.target.shape, (10, 3))
-        
-        
-def suite():
-    """
-    Gather all the tests in a test suite.
-    """
-    test_suite = unittest.TestSuite()
-    test_suite.addTest(unittest.makeSuite(ArraysTest))
-    return test_suite
-
-
-if __name__ == "__main__":
-    #So you can run tests from this package individually.
-    TEST_RUNNER = unittest.TextTestRunner()
-    TEST_SUITE = suite()
-    TEST_RUNNER.run(TEST_SUITE) 

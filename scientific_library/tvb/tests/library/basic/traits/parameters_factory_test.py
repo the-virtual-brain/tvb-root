@@ -34,8 +34,7 @@
 if __name__ == "__main__":
     from tvb.tests.library import setup_test_console_env
     setup_test_console_env()
-    
-import unittest
+
 from tvb.datatypes import arrays
 from tvb.basic.traits.parameters_factory import get_traited_instance_for_name, get_traited_subclasses
 from tvb.basic.traits.types_mapped import Array
@@ -70,20 +69,3 @@ class ParametersFactoryTest(BaseTestCase):
         """
         inst = get_traited_instance_for_name("StringArray", Array, {})
         self.assertTrue(isinstance(inst, arrays.StringArray))
-
-
-
-def suite():
-    """
-    Gather all the tests in a test suite.
-    """
-    test_suite = unittest.TestSuite()
-    test_suite.addTest(unittest.makeSuite(ParametersFactoryTest))
-    return test_suite
-
-
-if __name__ == "__main__":
-    #So you can run tests from this package individually.
-    TEST_RUNNER = unittest.TextTestRunner()
-    TEST_SUITE = suite()
-    TEST_RUNNER.run(TEST_SUITE) 

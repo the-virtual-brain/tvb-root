@@ -37,7 +37,6 @@ handling of projection matrices, etc.
 
 """
 
-import unittest
 import numpy
 
 if __name__ == "__main__":
@@ -220,21 +219,3 @@ class AllAnalyticWithSubcortical(BaseTestCase):
 class NoSubCorticalProjection(SubcorticalProjectionTest):
     "Idem. but with 76 region connectivity"
     n_regions = 76
-
-
-def suite():
-    """
-    Gather all the tests in a test suite.
-    """
-    test_suite = unittest.TestSuite()
-    for obj in globals().itervalues():
-        if isinstance(obj, type) and issubclass(obj, BaseTestCase):
-            test_suite.addTest(unittest.makeSuite(obj))
-            LOG.info('adding test suite from class %r' % (obj, ))
-    return test_suite
-
-
-if __name__ == "__main__":
-    TEST_RUNNER = unittest.TextTestRunner()
-    TEST_SUITE = suite()
-    TEST_RUNNER.run(TEST_SUITE)

@@ -85,17 +85,3 @@ class RangeTest(unittest.TestCase):
     def test_generates_range_with_challenging_float_point_arithmetics(self):
         floats = list(Range(lo=0.0, hi=2.2, step=0.7))
         self.assertEqual(floats, [0.0, 0.7, 1.4, 2.1])
- 
-def suite():
-    """
-    Gather all the tests in a test suite.
-    """
-    test_suite = unittest.TestSuite()
-    test_suite.addTest(unittest.makeSuite(RangeTest))
-    return test_suite
-
-if __name__ == "__main__":
-    #So you can run tests from this package individually.
-    TEST_RUNNER = unittest.TextTestRunner()
-    TEST_SUITE = suite()
-    TEST_RUNNER.run(TEST_SUITE) 
