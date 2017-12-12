@@ -31,25 +31,22 @@
 """
 .. moduleauthor:: Bogdan Neacsa <bogdan.neacsa@codemart.ro>
 """
-import unittest
+
 from tvb.basic.profile import TvbProfile
 from tvb.tests.library import setup_test_console_env
 if "TEST_INITIALIZATION_DONE_LIBRARY" not in globals():
     setup_test_console_env()
     TEST_INITIALIZATION_DONE_LIBRARY = True
 
-class BaseTestCase(unittest.TestCase):
+class BaseTestCase():
     """
     This class should implement basic functionality which is common to all TVB tests.
     """
 
 
     def setUp(self):
-        self.assertFalse(TvbProfile.current.TRAITS_CONFIGURATION.use_storage)
+        assert not TvbProfile.current.TRAITS_CONFIGURATION.use_storage
 
 
     def assertEqual(self, expected, actual, message=""):
-        super(BaseTestCase, self).assertEqual(expected, actual,
-                                              message + " Expected %s but got %s." % (expected, actual))
-        
-        
+        assert expected == actual, message + " Expected %s but got %s." % (expected, actual)

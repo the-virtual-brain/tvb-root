@@ -40,7 +40,7 @@ import numpy
 from tvb.datatypes import mode_decompositions, time_series
 from tvb.tests.library.base_testcase import BaseTestCase
         
-class ModeDecompositionsTest(BaseTestCase):
+class TestModeDecompositions(BaseTestCase):
     """
     Tests the defaults for `tvb.datatypes.mode_decompositions` module.
     """
@@ -56,13 +56,13 @@ class ModeDecompositionsTest(BaseTestCase):
         dt.compute_component_time_series()
         dt.compute_normalised_component_time_series()
         summary = dt.summary_info
-        self.assertEqual(summary['Mode decomposition type'], 'PrincipalComponents')
-        self.assertTrue(dt.source is not None)
-        self.assertEqual(dt.weights.shape, (10, 10, 10, 10))
-        self.assertEqual(dt.fractions.shape, (10, 10, 10))
-        self.assertEqual(dt.norm_source.shape, (10, 10, 10, 10))
-        self.assertEqual(dt.component_time_series.shape, (10, 10, 10, 10))
-        self.assertEqual(dt.normalised_component_time_series.shape, (10, 10, 10, 10))
+        assert summary['Mode decomposition type'] == 'PrincipalComponents'
+        assert dt.source is not None
+        assert dt.weights.shape == (10, 10, 10, 10)
+        assert dt.fractions.shape == (10, 10, 10)
+        assert dt.norm_source.shape == (10, 10, 10, 10)
+        assert dt.component_time_series.shape == (10, 10, 10, 10)
+        assert dt.normalised_component_time_series.shape == (10, 10, 10, 10)
         
         
     def test_independentcomponents(self):
@@ -78,10 +78,10 @@ class ModeDecompositionsTest(BaseTestCase):
         dt.compute_component_time_series()
         dt.compute_normalised_component_time_series()
         summary = dt.summary_info
-        self.assertEqual(summary['Mode decomposition type'], 'IndependentComponents')
-        self.assertTrue(dt.source is not None)
-        self.assertEqual(dt.mixing_matrix.shape, (0,))
-        self.assertEqual(dt.unmixing_matrix.shape, (n_comp, n_comp, 10, 10))
-        self.assertEqual(dt.prewhitening_matrix.shape, (n_comp, 10, 10, 10))
-        self.assertEqual(dt.norm_source.shape, (10, 10, 10, 10))
-        self.assertEqual(dt.component_time_series.shape, (10, 10, n_comp, 10))
+        assert summary['Mode decomposition type'] == 'IndependentComponents'
+        assert dt.source is not None
+        assert dt.mixing_matrix.shape == (0,)
+        assert dt.unmixing_matrix.shape == (n_comp, n_comp, 10, 10)
+        assert dt.prewhitening_matrix.shape == (n_comp, 10, 10, 10)
+        assert dt.norm_source.shape == (10, 10, 10, 10)
+        assert dt.component_time_series.shape == (10, 10, n_comp, 10)

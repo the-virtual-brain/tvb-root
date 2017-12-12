@@ -41,6 +41,7 @@ __path__ = extend_path(__path__, __name__)
 
 def run_all():
     run_framework()
+    # to run tests on a package the followinc command line can be used: pytest "package_name"
 
 
 def run_framework():

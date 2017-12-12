@@ -41,7 +41,7 @@ from tvb.basic.traits.types_mapped import Array
 from tvb.tests.library.base_testcase import BaseTestCase
 
 
-class ParametersFactoryTest(BaseTestCase):
+class TestParametersFactory(BaseTestCase):
     
     def test_traitedsubclassed(self):
         """
@@ -60,7 +60,7 @@ class ParametersFactoryTest(BaseTestCase):
                     'ComplexArray', 'Array', 'SparseMatrix']
         subclasses = get_traited_subclasses(Array)
         for key in expected:
-            self.assertTrue(key in subclasses)
+            assert key in subclasses
             
             
     def test_get_traited_instance(self):
@@ -68,4 +68,4 @@ class ParametersFactoryTest(BaseTestCase):
         Try to create an instance of a class using the traited method.
         """
         inst = get_traited_instance_for_name("StringArray", Array, {})
-        self.assertTrue(isinstance(inst, arrays.StringArray))
+        assert isinstance(inst, arrays.StringArray)

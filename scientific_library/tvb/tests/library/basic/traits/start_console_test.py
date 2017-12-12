@@ -42,7 +42,7 @@ from tvb.datatypes.local_connectivity import LocalConnectivity
 from tvb.tests.library.base_testcase import BaseTestCase
 
             
-class ConsoleTraitedTest(BaseTestCase):
+class TestConsoleTraited(BaseTestCase):
     """
     Test using traited classes from console.
     """
@@ -53,7 +53,7 @@ class ConsoleTraitedTest(BaseTestCase):
         """
         default_cortex = Cortex.from_file()
         default_cortex.coupling_strength = 0.0121
-        self.assertTrue(default_cortex.local_connectivity is None)
+        assert default_cortex.local_connectivity is None
 
         #default_cortex.local_connectivity = surfaces.LocalConnectivity(cutoff=2, surface=default_cortex)
         #default_cortex.compute_local_connectivity()
@@ -61,4 +61,4 @@ class ConsoleTraitedTest(BaseTestCase):
 
         default_lc = LocalConnectivity(load_default=True, cutoff=2)
         other_cortex = Cortex(local_connectivity=default_lc)
-        self.assertTrue(other_cortex.local_connectivity is not None)
+        assert other_cortex.local_connectivity is not None

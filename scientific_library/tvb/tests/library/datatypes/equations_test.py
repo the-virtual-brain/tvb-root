@@ -40,68 +40,68 @@ from tvb.datatypes import equations
 from tvb.tests.library.base_testcase import BaseTestCase
 
 
-class EquationsTest(BaseTestCase):
+class TestEquations(BaseTestCase):
     """
     Tests that the equations in the `tvb.datatypes.equations` module can be instantiated.
     """
     
     def test_equation(self):
         dt = equations.Equation()
-        self.assertEqual(dt.parameters, {})
+        assert dt.parameters == {}
 
         
     def test_finitesupportequation(self):
         dt = equations.FiniteSupportEquation()
-        self.assertEqual(dt.parameters, {})
+        assert dt.parameters == {}
 
 
     def test_discrete(self):
         dt = equations.DiscreteEquation()
-        self.assertEqual(dt.parameters, {})
+        assert dt.parameters == {}
 
         
     def test_linear(self):
         dt = equations.Linear()
-        self.assertEqual(dt.parameters, {'a': 1.0, 'b': 0.0})
+        assert dt.parameters == {'a': 1.0, 'b': 0.0}
 
         
     def test_gaussian(self):
         dt = equations.Gaussian()
-        self.assertEqual(dt.parameters, {'amp': 1.0, 'sigma': 1.0, 'midpoint': 0.0, 'offset': 0.0})
+        assert dt.parameters == {'amp': 1.0, 'sigma': 1.0, 'midpoint': 0.0, 'offset': 0.0}
 
         
     def test_doublegaussian(self):
         dt = equations.DoubleGaussian()
-        self.assertEqual(dt.parameters, {'midpoint_2': 0.0, 'midpoint_1': 0.0, 
+        assert dt.parameters == {'midpoint_2': 0.0, 'midpoint_1': 0.0,
                                          'amp_2': 1.0, 'amp_1': 0.5, 'sigma_2': 10.0, 
-                                         'sigma_1': 20.0})
+                                         'sigma_1': 20.0}
 
 
     def test_sigmoid(self):
         dt = equations.Sigmoid()
-        self.assertEqual(dt.parameters, {'amp': 1.0, 'radius': 5.0, 'sigma': 1.0, 'offset': 0.0})
+        assert dt.parameters == {'amp': 1.0, 'radius': 5.0, 'sigma': 1.0, 'offset': 0.0}
 
         
     def test_generalizedsigmoid(self):
         dt = equations.GeneralizedSigmoid() 
-        self.assertEqual(dt.parameters, {'high': 1.0, 'midpoint': 1.0, 'sigma': 0.3, 'low': 0.0})
+        assert dt.parameters == {'high': 1.0, 'midpoint': 1.0, 'sigma': 0.3, 'low': 0.0}
 
         
     def test_sinusoiddata(self):
         dt = equations.Sinusoid()
-        self.assertEqual(dt.parameters, {'amp': 1.0, 'frequency': 0.01})
+        assert dt.parameters == {'amp': 1.0, 'frequency': 0.01}
 
         
     def test_cosine(self):
         dt = equations.Cosine()
-        self.assertEqual(dt.parameters, {'amp': 1.0, 'frequency': 0.01})
+        assert dt.parameters == {'amp': 1.0, 'frequency': 0.01}
 
         
     def test_alpha(self):
         dt = equations.Alpha()
-        self.assertEqual(dt.parameters, {'onset': 0.5, 'alpha': 13.0, 'beta': 42.0})
+        assert dt.parameters == {'onset': 0.5, 'alpha': 13.0, 'beta': 42.0}
 
         
     def test_pulsetrain(self):
         dt = equations.PulseTrain()
-        self.assertEqual(dt.parameters, {'onset': 30.0, 'tau': 13.0, 'T': 42.0, 'amp': 1.0})
+        assert dt.parameters == {'onset': 30.0, 'tau': 13.0, 'T': 42.0, 'amp': 1.0}

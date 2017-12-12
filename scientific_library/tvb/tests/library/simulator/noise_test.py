@@ -43,18 +43,18 @@ from tvb.tests.library.base_testcase import BaseTestCase
 from tvb.simulator import noise
 from tvb.datatypes import equations
 
-class NoiseTest(BaseTestCase):
+class TestNoise(BaseTestCase):
     def test_stream(self):
         noise_stream = noise.RandomStream()
-        self.assertEqual(noise_stream.init_seed, 42)
+        assert noise_stream.init_seed == 42
 
 
     def test_additive(self):
         noise_additive = noise.Additive()
-        self.assertEqual(noise_additive.ntau,  0.0)
+        assert noise_additive.ntau ==  0.0
         
         
     def test_multiplicative(self):
         noise_multiplicative = noise.Multiplicative()
-        self.assertEqual(noise_multiplicative.ntau,  0.0)
-        self.assertTrue(isinstance(noise_multiplicative.b, equations.Linear))
+        assert noise_multiplicative.ntau ==  0.0
+        assert isinstance(noise_multiplicative.b, equations.Linear)

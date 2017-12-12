@@ -45,7 +45,7 @@ from tvb.simulator import region_boundaries
 from tvb.datatypes import connectivity
 
 
-class RegionBoundariesTest(BaseTestCase):
+class TestRegionBoundaries(BaseTestCase):
     """
     This test is checking correspondence between cortical surface and connectivity.
     """
@@ -54,4 +54,4 @@ class RegionBoundariesTest(BaseTestCase):
         white_matter = connectivity.Connectivity(load_default=True)
         white_matter.configure()
         rb = region_boundaries.RegionBoundaries(cortex)
-        self.assertEqual(len(rb.region_neighbours.keys()), white_matter.number_of_regions)
+        assert len(rb.region_neighbours.keys()) == white_matter.number_of_regions

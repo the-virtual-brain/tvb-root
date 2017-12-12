@@ -42,18 +42,18 @@ from tvb.tests.library.base_testcase import BaseTestCase
 
 
 
-class MappedTest(BaseTestCase):
+class TestMapped(BaseTestCase):
     """
     Tests the defaults for `tvb.datatypes.mapped_values` module.
     """
 
     def test_valuewrapper(self):
         dt = mapped_values.ValueWrapper(data_value=10, data_type="Integer", data_name="TestVale")
-        self.assertEqual(dt.display_name, "Value Wrapper - TestVale : 10 (Integer)")
+        assert dt.display_name == "Value Wrapper - TestVale : 10 (Integer)"
 
 
     def test_datatypemeasure(self):
         data = numpy.random.random((10, 10, 10, 10))
         ts = time_series.TimeSeries(data=data)
         dt = mapped_values.DatatypeMeasure(analyzed_datatype=ts, metrics={"Dummy": 1})
-        self.assertEqual(dt.display_name, "\nDummy : 1\n")
+        assert dt.display_name == "\nDummy : 1\n"

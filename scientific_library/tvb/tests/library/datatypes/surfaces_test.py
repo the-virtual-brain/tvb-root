@@ -47,7 +47,7 @@ from tvb.tests.library.base_testcase import BaseTestCase
 
 
 
-class SurfacesTest(BaseTestCase):
+class TestSurfaces(BaseTestCase):
     """
     Tests the defaults for `tvb.datatypes.surfaces` module.
     """
@@ -58,53 +58,53 @@ class SurfacesTest(BaseTestCase):
         dt.triangles = numpy.array(range(9)).reshape(3, 3)
         dt.configure()
         summary_info = dt.summary_info
-        self.assertEqual(summary_info['Number of edges'], 9)
-        self.assertEqual(summary_info['Number of triangles'], 3)
-        self.assertEqual(summary_info['Number of vertices'], 10)
-        self.assertEqual(summary_info['Surface type'], 'Surface')
-        self.assertEqual(len(dt.vertex_neighbours), 10)
-        self.assertTrue(isinstance(dt.vertex_neighbours[0], frozenset))
-        self.assertEqual(len(dt.vertex_triangles), 10)
-        self.assertTrue(isinstance(dt.vertex_triangles[0], frozenset))
-        self.assertEqual(len(dt.nth_ring(0)), 0)
-        self.assertEqual(dt.triangle_areas.shape, (3, 1))
-        self.assertEqual(dt.triangle_angles.shape, (3, 3))
-        self.assertEqual(len(dt.edges), 9)
-        self.assertEqual(len(dt.edge_triangles), 9)
-        self.assertNotEqual([], dt.validate_topology_for_simulations().warnings)
-        self.assertEqual(dt.get_data_shape('vertices'), (10, 3))
-        self.assertEqual(dt.get_data_shape('vertex_normals'), (10, 3))
-        self.assertEqual(dt.get_data_shape('triangles'), (3, 3))
+        assert summary_info['Number of edges'] == 9
+        assert summary_info['Number of triangles'] == 3
+        assert summary_info['Number of vertices'] == 10
+        assert summary_info['Surface type'] == 'Surface'
+        assert len(dt.vertex_neighbours) == 10
+        assert isinstance(dt.vertex_neighbours[0], frozenset)
+        assert len(dt.vertex_triangles) == 10
+        assert isinstance(dt.vertex_triangles[0], frozenset)
+        assert len(dt.nth_ring(0)) == 0
+        assert dt.triangle_areas.shape == (3, 1)
+        assert dt.triangle_angles.shape == (3, 3)
+        assert len(dt.edges) == 9
+        assert len(dt.edge_triangles) == 9
+        assert [] != dt.validate_topology_for_simulations().warnings
+        assert dt.get_data_shape('vertices') == (10, 3)
+        assert dt.get_data_shape('vertex_normals') == (10, 3)
+        assert dt.get_data_shape('triangles') == (3, 3)
 
 
     def test_cortical_surface(self):
         dt = surfaces.CorticalSurface(load_default=True)
-        self.assertTrue(isinstance(dt, surfaces.CorticalSurface))
+        assert isinstance(dt, surfaces.CorticalSurface)
         dt.configure()
         summary_info = dt.summary_info
-        self.assertEqual(summary_info['Number of edges'], 49140)
-        self.assertEqual(summary_info['Number of triangles'], 32760)
-        self.assertEqual(summary_info['Number of vertices'], 16384)
-        self.assertEqual(dt.surface_type, surfaces.CORTICAL)
-        self.assertEqual(len(dt.vertex_neighbours), 16384)
-        self.assertTrue(isinstance(dt.vertex_neighbours[0], frozenset))
-        self.assertEqual(len(dt.vertex_triangles), 16384)
-        self.assertTrue(isinstance(dt.vertex_triangles[0], frozenset))
-        self.assertEqual(len(dt.nth_ring(0)), 17)
-        self.assertEqual(dt.triangle_areas.shape, (32760, 1))
-        self.assertEqual(dt.triangle_angles.shape, (32760, 3))
-        self.assertEqual(len(dt.edges), 49140)
-        self.assertTrue(abs(dt.edge_length_mean - 3.97605292887) < 0.00000001)
-        self.assertTrue(abs(dt.edge_length_min - 0.6638) < 0.0001)
-        self.assertTrue(abs(dt.edge_length_max - 7.7567) < 0.0001)
-        self.assertEqual(len(dt.edge_triangles), 49140)
-        self.assertEqual([], dt.validate_topology_for_simulations().warnings)
-        self.assertEqual(dt.get_data_shape('vertices'), (16384, 3))
-        self.assertEqual(dt.get_data_shape('vertex_normals'), (16384, 3))
-        self.assertEqual(dt.get_data_shape('triangles'), (32760, 3))
+        assert summary_info['Number of edges'] == 49140
+        assert summary_info['Number of triangles'] == 32760
+        assert summary_info['Number of vertices'] == 16384
+        assert dt.surface_type == surfaces.CORTICAL
+        assert len(dt.vertex_neighbours) == 16384
+        assert isinstance(dt.vertex_neighbours[0], frozenset)
+        assert len(dt.vertex_triangles) == 16384
+        assert isinstance(dt.vertex_triangles[0], frozenset)
+        assert len(dt.nth_ring(0)) == 17
+        assert dt.triangle_areas.shape == (32760, 1)
+        assert dt.triangle_angles.shape == (32760, 3)
+        assert len(dt.edges) == 49140
+        assert abs(dt.edge_length_mean - 3.97605292887) < 0.00000001
+        assert abs(dt.edge_length_min - 0.6638) < 0.0001
+        assert abs(dt.edge_length_max - 7.7567) < 0.0001
+        assert len(dt.edge_triangles) == 49140
+        assert [] == dt.validate_topology_for_simulations().warnings
+        assert dt.get_data_shape('vertices') == (16384, 3)
+        assert dt.get_data_shape('vertex_normals') == (16384, 3)
+        assert dt.get_data_shape('triangles') == (32760, 3)
         topologicals = dt.compute_topological_constants()
-        self.assertEqual(4, topologicals[0])
-        self.assertTrue(all([a.size == 0 for a in topologicals[1:]]))
+        assert 4 == topologicals[0]
+        assert all([a.size == 0 for a in topologicals[1:]])
 
 
     def test_cortical_topology_pyramid(self):
@@ -114,10 +114,10 @@ class SurfacesTest(BaseTestCase):
         dt.configure()
 
         euler, isolated, pinched_off, holes = dt.compute_topological_constants()
-        self.assertEqual(2, euler)
-        self.assertEqual(0, isolated.size)
-        self.assertEqual(0, pinched_off.size)
-        self.assertEqual(0, holes.size)
+        assert 2 == euler
+        assert 0 == isolated.size
+        assert 0 == pinched_off.size
+        assert 0 == holes.size
 
 
     def test_cortical_topology_isolated_vertex(self):
@@ -127,10 +127,10 @@ class SurfacesTest(BaseTestCase):
         dt.configure()
 
         euler, isolated, pinched_off, holes = dt.compute_topological_constants()
-        self.assertEqual(3, euler)
-        self.assertEqual(1, isolated.size)
-        self.assertEqual(0, pinched_off.size)
-        self.assertEqual(0, holes.size)
+        assert 3 == euler
+        assert 1 == isolated.size
+        assert 0 == pinched_off.size
+        assert 0 == holes.size
 
 
     def test_cortical_topology_pinched(self):
@@ -140,10 +140,10 @@ class SurfacesTest(BaseTestCase):
         dt.configure()
 
         euler, isolated, pinched_off, holes = dt.compute_topological_constants()
-        self.assertEqual(3, euler)
-        self.assertEqual(0, isolated.size)
-        self.assertEqual(3, pinched_off.size)
-        self.assertEqual(0, holes.size)
+        assert 3 == euler
+        assert 0 == isolated.size
+        assert 3 == pinched_off.size
+        assert 0 == holes.size
 
 
     def test_cortical_topology_hole(self):
@@ -153,77 +153,77 @@ class SurfacesTest(BaseTestCase):
         dt.configure()
 
         euler, isolated, pinched_off, holes = dt.compute_topological_constants()
-        self.assertEqual(1, euler)
-        self.assertEqual(3, isolated.size)
-        self.assertEqual(0, pinched_off.size)
-        self.assertEqual(3, holes.size)
+        assert 1 == euler
+        assert 3 == isolated.size
+        assert 0 == pinched_off.size
+        assert 3 == holes.size
 
 
     def test_skinair(self):
         dt = surfaces.SkinAir(load_default=True)
-        self.assertTrue(isinstance(dt, surfaces.SkinAir))
-        self.assertEqual(dt.get_data_shape('vertices'), (4096, 3))
-        self.assertEqual(dt.get_data_shape('vertex_normals'), (4096, 3))
-        self.assertEqual(dt.get_data_shape('triangles'), (8188, 3))
+        assert isinstance(dt, surfaces.SkinAir)
+        assert dt.get_data_shape('vertices') == (4096, 3)
+        assert dt.get_data_shape('vertex_normals') == (4096, 3)
+        assert dt.get_data_shape('triangles') == (8188, 3)
 
 
     def test_brainskull(self):
         dt = surfaces.BrainSkull(load_default=True)
-        self.assertTrue(isinstance(dt, surfaces.BrainSkull))
-        self.assertEqual(dt.get_data_shape('vertices'), (4096, 3))
-        self.assertEqual(dt.get_data_shape('vertex_normals'), (4096, 3))
-        self.assertEqual(dt.get_data_shape('triangles'), (8188, 3))
+        assert isinstance(dt, surfaces.BrainSkull)
+        assert dt.get_data_shape('vertices') == (4096, 3)
+        assert dt.get_data_shape('vertex_normals') == (4096, 3)
+        assert dt.get_data_shape('triangles') == (8188, 3)
 
 
     def test_skullskin(self):
         dt = surfaces.SkullSkin(load_default=True)
-        self.assertTrue(isinstance(dt, surfaces.SkullSkin))
-        self.assertEqual(dt.get_data_shape('vertices'), (4096, 3))
-        self.assertEqual(dt.get_data_shape('vertex_normals'), (4096, 3))
-        self.assertEqual(dt.get_data_shape('triangles'), (8188, 3))
+        assert isinstance(dt, surfaces.SkullSkin)
+        assert dt.get_data_shape('vertices') == (4096, 3)
+        assert dt.get_data_shape('vertex_normals') == (4096, 3)
+        assert dt.get_data_shape('triangles') == (8188, 3)
 
 
     def test_eegcap(self):
         dt = surfaces.EEGCap(load_default=True)
-        self.assertTrue(isinstance(dt, surfaces.EEGCap))
-        self.assertEqual(dt.get_data_shape('vertices'), (1082, 3))
-        self.assertEqual(dt.get_data_shape('vertex_normals'), (1082, 3))
-        self.assertEqual(dt.get_data_shape('triangles'), (2160, 3))
+        assert isinstance(dt, surfaces.EEGCap)
+        assert dt.get_data_shape('vertices') == (1082, 3)
+        assert dt.get_data_shape('vertex_normals') == (1082, 3)
+        assert dt.get_data_shape('triangles') == (2160, 3)
 
 
     def test_facesurface(self):
         dt = surfaces.FaceSurface(load_default=True)
-        self.assertTrue(isinstance(dt, surfaces.FaceSurface))
-        self.assertEqual(dt.get_data_shape('vertices'), (8614, 3))
-        self.assertEqual(dt.get_data_shape('vertex_normals'), (0,))
-        self.assertEqual(dt.get_data_shape('triangles'), (17224, 3))
+        assert isinstance(dt, surfaces.FaceSurface)
+        assert dt.get_data_shape('vertices') == (8614, 3)
+        assert dt.get_data_shape('vertex_normals') == (0,)
+        assert dt.get_data_shape('triangles') == (17224, 3)
 
 
     def test_regionmapping(self):
         dt = RegionMapping(load_default=True)
-        self.assertTrue(isinstance(dt, RegionMapping))
-        self.assertEqual(dt.shape, (16384,))
+        assert isinstance(dt, RegionMapping)
+        assert dt.shape == (16384,)
 
 
     def test_localconnectivity_empty(self):
         dt = LocalConnectivity()
-        self.assertTrue(dt.surface is None)
+        assert dt.surface is None
 
 
     @pytest.mark.skipif(sys.maxsize <= 2147483647, reason="Cannot deal with local connectivity on a 32-bit machine.")
     def test_cortexdata(self):
 
         dt = Cortex(load_default=True)
-        self.assertTrue(isinstance(dt, Cortex))
-        self.assertTrue(dt.region_mapping is not None)
+        assert isinstance(dt, Cortex)
+        assert dt.region_mapping is not None
         ## Initialize Local Connectivity, to avoid long computation time.
         dt.local_connectivity = LocalConnectivity(load_default=True)
 
         dt.configure()
         summary_info = dt.summary_info
-        self.assertTrue(abs(summary_info['Region area, maximum (mm:math:`^2`)'] - 9333.39) < 0.01)
-        self.assertTrue(abs(summary_info['Region area, mean (mm:math:`^2`)'] - 3038.51) < 0.01)
-        self.assertTrue(abs(summary_info['Region area, minimum (mm:math:`^2`)'] - 540.90) < 0.01)
-        self.assertEqual(dt.get_data_shape('vertices'), (16384, 3))
-        self.assertEqual(dt.get_data_shape('vertex_normals'), (16384, 3))
-        self.assertEqual(dt.get_data_shape('triangles'), (32760, 3))
+        assert abs(summary_info['Region area, maximum (mm:math:`^2`)'] - 9333.39) < 0.01
+        assert abs(summary_info['Region area, mean (mm:math:`^2`)'] - 3038.51) < 0.01
+        assert abs(summary_info['Region area, minimum (mm:math:`^2`)'] - 540.90) < 0.01
+        assert dt.get_data_shape('vertices') == (16384, 3)
+        assert dt.get_data_shape('vertex_normals') == (16384, 3)
+        assert dt.get_data_shape('triangles') == (32760, 3)

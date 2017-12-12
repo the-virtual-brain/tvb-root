@@ -40,7 +40,7 @@ from tvb.datatypes import patterns, equations, connectivity, surfaces
 from tvb.tests.library.base_testcase import BaseTestCase
 
 
-class PatternsTest(BaseTestCase):
+class TestPatterns(BaseTestCase):
     """
     Tests the defaults for `tvb.datatypes.patterns` module.
     """
@@ -52,10 +52,10 @@ class PatternsTest(BaseTestCase):
         dt.configure_space(numpy.arange(100).reshape((10, 10)))
         dt.configure()
         summary = dt.summary_info
-        self.assertEqual(summary['Type'], 'SpatialPattern')
-        self.assertEqual(dt.space.shape, (10, 10))
-        self.assertTrue(isinstance(dt.spatial, equations.DoubleGaussian))
-        self.assertTrue(dt.spatial_pattern.shape, (10, 1))
+        assert summary['Type'] == 'SpatialPattern'
+        assert dt.space.shape == (10, 10)
+        assert isinstance(dt.spatial, equations.DoubleGaussian)
+        assert dt.spatial_pattern.shape, (10, 1)
         
         
     def test_spatiotemporalpattern(self):
@@ -66,13 +66,13 @@ class PatternsTest(BaseTestCase):
         dt.configure_space(numpy.arange(100).reshape((10, 10)))
         dt.configure()
         summary = dt.summary_info
-        self.assertEqual(summary['Type'], 'SpatioTemporalPattern')
-        self.assertEqual(dt.space.shape, (10, 10))
-        self.assertTrue(isinstance(dt.spatial, equations.DoubleGaussian))
-        self.assertEqual(dt.spatial_pattern.shape, (10, 1))
-        self.assertTrue(isinstance(dt.temporal, equations.Gaussian))
-        self.assertTrue(dt.temporal_pattern is None)
-        self.assertTrue(dt.time is None)
+        assert summary['Type'] == 'SpatioTemporalPattern'
+        assert dt.space.shape == (10, 10)
+        assert isinstance(dt.spatial, equations.DoubleGaussian)
+        assert dt.spatial_pattern.shape == (10, 1)
+        assert isinstance(dt.temporal, equations.Gaussian)
+        assert dt.temporal_pattern is None
+        assert dt.time is None
         
         
     def test_stimuliregion(self):
@@ -84,14 +84,14 @@ class PatternsTest(BaseTestCase):
         dt.temporal = equations.Gaussian()
         dt.weight = [0 for _ in range(conn.number_of_regions)]
         dt.configure_space()
-        self.assertEqual(dt.summary_info['Type'], 'StimuliRegion')
-        self.assertTrue(dt.connectivity is not None)
-        self.assertEqual(dt.space.shape, (76, 1))
-        self.assertEqual(dt.spatial_pattern.shape, (76, 1))
-        self.assertTrue(isinstance(dt.temporal, equations.Gaussian))
-        self.assertTrue(dt.temporal_pattern is None)
-        self.assertTrue(dt.time is None)
-        
+        assert dt.summary_info['Type'] == 'StimuliRegion'
+        assert dt.connectivity is not None
+        assert dt.space.shape == (76, 1)
+        assert dt.spatial_pattern.shape == (76, 1)
+        assert isinstance(dt.temporal, equations.Gaussian)
+        assert dt.temporal_pattern is None
+        assert dt.time is None
+
      
     def test_stimulisurface(self):
         srf = surfaces.CorticalSurface(load_default=True)
@@ -105,20 +105,20 @@ class PatternsTest(BaseTestCase):
         dt.configure()
         dt.configure_space()
         summary = dt.summary_info
-        self.assertEqual(summary['Type'], "StimuliSurface")
-        self.assertEqual(dt.space.shape, (16384, 3))
-        self.assertTrue(isinstance(dt.spatial, equations.DiscreteEquation))
-        self.assertEqual(dt.spatial_pattern.shape, (16384, 1))
-        self.assertTrue(dt.surface is not None)
-        self.assertTrue(isinstance(dt.temporal, equations.Gaussian))
-        self.assertTrue(dt.temporal_pattern is None)
-        self.assertTrue(dt.time is None)
+        assert summary['Type'] == "StimuliSurface"
+        assert dt.space.shape == (16384, 3)
+        assert isinstance(dt.spatial, equations.DiscreteEquation)
+        assert dt.spatial_pattern.shape == (16384, 1)
+        assert dt.surface is not None
+        assert isinstance(dt.temporal, equations.Gaussian)
+        assert dt.temporal_pattern is None
+        assert dt.time is None
         
         
     def test_spatialpatternvolume(self):
         dt = patterns.SpatialPatternVolume()
-        self.assertTrue(dt.space is None)
-        self.assertTrue(dt.spatial is None)
-        self.assertTrue(dt.spatial_pattern is None)
-        self.assertTrue(dt.volume is None)
-        self.assertEqual(dt.focal_points_volume.shape, (0,))
+        assert dt.space is None
+        assert dt.spatial is None
+        assert dt.spatial_pattern is None
+        assert dt.volume is None
+        assert dt.focal_points_volume.shape, (0,)

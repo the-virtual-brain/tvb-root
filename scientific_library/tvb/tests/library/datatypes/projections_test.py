@@ -40,31 +40,31 @@ from tvb.datatypes import projections
 from tvb.tests.library.base_testcase import BaseTestCase
 
 
-class PatternsTest(BaseTestCase):
+class TestPatterns(BaseTestCase):
     """
     Tests the defaults for `tvb.datatypes.projections` module.
     """
     
     def test_projectionmatrix(self):
         dt = projections.ProjectionMatrix()
-        self.assertTrue(dt.sources is None)
-        self.assertTrue(dt.sensors is None)
-        self.assertTrue(dt.projection_data is None)
+        assert dt.sources is None
+        assert dt.sensors is None
+        assert dt.projection_data is None
         
         
     def test_projection_surface_eeg(self):
         dt = projections.ProjectionSurfaceEEG()
-        self.assertTrue(dt.sources is None)
-        self.assertTrue(dt.skin_air is None)
-        self.assertTrue(dt.skull_skin is None)                        
-        self.assertTrue(dt.sensors is None)
-        self.assertTrue(dt.projection_data is None)
+        assert dt.sources is None
+        assert dt.skin_air is None
+        assert dt.skull_skin is None
+        assert dt.sensors is None
+        assert dt.projection_data is None
 
 
     def test_projection_surface_meg(self):
         dt = projections.ProjectionSurfaceMEG()
-        self.assertTrue(dt.sources is None)
-        self.assertTrue(dt.skin_air is None)
-        self.assertTrue(dt.skull_skin is None)
-        self.assertTrue(dt.sensors is None)
-        self.assertTrue(dt.projection_data is None)
+        assert dt.sources is None
+        assert dt.skin_air is None
+        assert dt.skull_skin is None
+        assert dt.sensors is None
+        assert dt.projection_data is None

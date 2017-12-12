@@ -40,7 +40,7 @@ import numpy
 from tvb.tests.library.base_testcase import BaseTestCase
 from tvb.datatypes import spectral, time_series
 
-class SpectralTest(BaseTestCase):
+class TestSpectral(BaseTestCase):
     """
     Tests the defaults for `tvb.datatypes.spectral` module.
     """
@@ -52,18 +52,18 @@ class SpectralTest(BaseTestCase):
                                       segment_length=100)
         dt.configure()
         summary_info = dt.summary_info
-        self.assertEqual(summary_info['Frequency step'], 0.01)     
-        self.assertEqual(summary_info['Maximum frequency'], 0.5)  
-        self.assertEqual(summary_info['Segment length'], 100)  
-        self.assertEqual(summary_info['Windowing function'], '')  
-        self.assertEqual(summary_info['Source'], '')  
-        self.assertEqual(summary_info['Spectral type'], 'FourierSpectrum')  
-        self.assertTrue(dt.aggregation_functions is None)
-        self.assertEqual(dt.normalised_average_power.shape, (0, ))
-        self.assertEqual(dt.segment_length, 100.0)
-        self.assertEqual(dt.shape, (0, ))
-        self.assertTrue(dt.source is not None)
-        self.assertEqual(dt.windowing_function, '')
+        assert summary_info['Frequency step']  == 0.01
+        assert summary_info['Maximum frequency'] == 0.5
+        assert summary_info['Segment length'] == 100
+        assert summary_info['Windowing function'] == ''
+        assert summary_info['Source'] == ''
+        assert summary_info['Spectral type'] == 'FourierSpectrum'
+        assert dt.aggregation_functions is None
+        assert dt.normalised_average_power.shape == (0, )
+        assert dt.segment_length == 100.0
+        assert dt.shape == (0, )
+        assert dt.source is not None
+        assert dt.windowing_function == ''
         
         
     def test_waveletcoefficients(self):
@@ -78,18 +78,18 @@ class SpectralTest(BaseTestCase):
                                           array_data=numpy.random.random((10, 10)),)
         dt.configure()
         summary_info = dt.summary_info
-        self.assertEqual(summary_info['Maximum frequency'], 0.068)  
-        self.assertEqual(summary_info['Minimum frequency'], 0.008)  
-        self.assertEqual(summary_info['Normalisation'], 'energy')  
-        self.assertEqual(summary_info['Number of scales'], 4)
-        self.assertEqual(summary_info['Q-ratio'], 5.0)  
-        self.assertEqual(summary_info['Sample period'], 7.8125) 
-        self.assertEqual(summary_info['Spectral type'], 'WaveletCoefficients')  
-        self.assertEqual(summary_info['Wavelet type'], 'morlet')     
-        self.assertEqual(dt.q_ratio, 5.0)
-        self.assertEqual(dt.sample_period, 7.8125)
-        self.assertEqual(dt.shape, (10, 10))
-        self.assertTrue(dt.source is not None)
+        assert summary_info['Maximum frequency'] == 0.068
+        assert summary_info['Minimum frequency'] == 0.008
+        assert summary_info['Normalisation'], 'energy'
+        assert summary_info['Number of scales'] == 4
+        assert summary_info['Q-ratio'] == 5.0
+        assert summary_info['Sample period'] == 7.8125
+        assert summary_info['Spectral type'] == 'WaveletCoefficients'
+        assert summary_info['Wavelet type'] == 'morlet'
+        assert dt.q_ratio == 5.0
+        assert dt.sample_period == 7.8125
+        assert dt.shape == (10, 10)
+        assert dt.source is not None
         
         
     def test_coherencespectrum(self):
@@ -100,13 +100,13 @@ class SpectralTest(BaseTestCase):
                                         array_data = numpy.random.random((10, 10)),
                                         frequency = numpy.random.random((10,)))
         summary_info = dt.summary_info 
-        self.assertEqual(summary_info['Number of frequencies'], 10)
-        self.assertEqual(summary_info['Spectral type'], 'CoherenceSpectrum')
-        self.assertEqual(summary_info['FFT length (time-points)'], 4)
-        self.assertEqual(summary_info['Source'], '')
-        self.assertEqual(dt.nfft, 4)
-        self.assertEqual(dt.shape, (10, 10))
-        self.assertTrue(dt.source is not None)
+        assert summary_info['Number of frequencies'] == 10
+        assert summary_info['Spectral type'] == 'CoherenceSpectrum'
+        assert summary_info['FFT length (time-points)'] == 4
+        assert summary_info['Source'] == ''
+        assert dt.nfft == 4
+        assert dt.shape == (10, 10)
+        assert dt.source is not None
         
         
     def test_complexcoherence(self):
@@ -118,13 +118,13 @@ class SpectralTest(BaseTestCase):
                                                epoch_length = 10,
                                                segment_length = 5)
         summary_info = dt.summary_info
-        self.assertEqual(summary_info['Frequency step'], 0.2)     
-        self.assertEqual(summary_info['Maximum frequency'], 0.5)  
-        self.assertEqual(summary_info['Source'], '')  
-        self.assertEqual(summary_info['Spectral type'], 'ComplexCoherenceSpectrum')     
-        self.assertTrue(dt.aggregation_functions is None)
-        self.assertEqual(dt.epoch_length, 10)
-        self.assertEqual(dt.segment_length, 5)
-        self.assertEqual(dt.shape, (10, 10))
-        self.assertTrue(dt.source is not None)
-        self.assertEqual(dt.windowing_function, '')
+        assert summary_info['Frequency step'] == 0.2
+        assert summary_info['Maximum frequency'] == 0.5
+        assert summary_info['Source'] == ''
+        assert summary_info['Spectral type'] == 'ComplexCoherenceSpectrum'
+        assert dt.aggregation_functions is None
+        assert dt.epoch_length == 10
+        assert dt.segment_length == 5
+        assert dt.shape, (10 == 10)
+        assert dt.source is not None
+        assert dt.windowing_function == ''

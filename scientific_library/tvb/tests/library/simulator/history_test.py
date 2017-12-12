@@ -74,7 +74,7 @@ class Sum(Model):
 
 
 
-class ExactPropagationTests(BaseTestCase):
+class TestsExactPropagation(BaseTestCase):
 
     def build_simulator(self, n=4):
 
@@ -116,4 +116,4 @@ class ExactPropagationTests(BaseTestCase):
                            [30., 10., 9., 1.],
                            [38., 13., 10., 1.],
                            [48., 17., 11., 1.]])
-        self.assertTrue(numpy.allclose(xs, xs_))
+        assert numpy.allclose(xs, xs_)

@@ -41,7 +41,7 @@ from tvb.datatypes import time_series
 from tvb.tests.library.base_testcase import BaseTestCase
 
 
-class TimeseriesTest(BaseTestCase):
+class TestTimeseries(BaseTestCase):
     """
     Tests the defaults for `tvb.datatypes.time_series` module.
     """
@@ -50,71 +50,71 @@ class TimeseriesTest(BaseTestCase):
         data = numpy.random.random((10, 10))
         dt = time_series.TimeSeries(data=data)
         summary_info = dt.summary_info
-        self.assertEqual(summary_info['Dimensions'], ['Time', 'State Variable', 'Space', 'Mode'])
-        self.assertEqual(summary_info['Length'], 10.0)
-        self.assertEqual(summary_info['Sample period'], 1.0)
-        self.assertEqual(summary_info['Time units'], 'ms')
-        self.assertEqual(summary_info['Time-series name'], '')
-        self.assertEqual(summary_info['Time-series type'], 'TimeSeries') 
-        self.assertEqual(dt.data.shape, (10, 10))
-        self.assertEqual(dt.sample_period, 1.0)
-        self.assertEqual(dt.sample_rate, 0.0)
-        self.assertEqual(dt.start_time, 0.0)
-        self.assertEqual(dt.time.shape, (0,))
+        assert summary_info['Dimensions'] ==  ['Time', 'State Variable', 'Space', 'Mode']
+        assert summary_info['Length'] ==  10.0
+        assert summary_info['Sample period'] ==  1.0
+        assert summary_info['Time units'] ==  'ms'
+        assert summary_info['Time-series name'] ==  ''
+        assert summary_info['Time-series type'] ==  'TimeSeries'
+        assert dt.data.shape ==  (10, 10)
+        assert dt.sample_period ==  1.0
+        assert dt.sample_rate ==  0.0
+        assert dt.start_time ==  0.0
+        assert dt.time.shape ==  (0,)
         
         
     def test_timeserieseeg(self):
         data = numpy.random.random((10, 10))
         dt = time_series.TimeSeriesEEG(data=data)
-        self.assertEqual(dt.data.shape, (10, 10))
-        self.assertEqual(['Time', '1', 'EEG Sensor', '1'], dt.labels_ordering)
-        self.assertEqual(dt.sample_period, 1.0)
-        self.assertEqual(dt.sample_rate, 0.0)
-        self.assertTrue(dt.sensors is None)
-        self.assertEqual(dt.start_time, 0.0)
-        self.assertEqual(dt.time.shape, (0,))
+        assert dt.data.shape ==  (10, 10)
+        assert ['Time',  '1', 'EEG Sensor', '1'] ==  dt.labels_ordering
+        assert dt.sample_period ==  1.0
+        assert dt.sample_rate ==  0.0
+        assert dt.sensors is None
+        assert dt.start_time ==  0.0
+        assert dt.time.shape ==  (0,)
         
         
     def test_timeseriesmeg(self):
         data = numpy.random.random((10, 10))
         dt = time_series.TimeSeriesMEG(data=data)
-        self.assertEqual(dt.data.shape, (10, 10))
-        self.assertEqual(['Time', '1', 'MEG Sensor', '1'], dt.labels_ordering)
-        self.assertEqual(dt.sample_period, 1.0)
-        self.assertEqual(dt.sample_rate, 0.0)
-        self.assertTrue(dt.sensors is None)
-        self.assertEqual(dt.start_time, 0.0)
-        self.assertEqual(dt.time.shape, (0,))
+        assert dt.data.shape ==  (10, 10)
+        assert ['Time', '1', 'MEG Sensor', '1'] ==  dt.labels_ordering
+        assert dt.sample_period ==  1.0
+        assert dt.sample_rate ==  0.0
+        assert dt.sensors is None
+        assert dt.start_time ==  0.0
+        assert dt.time.shape ==  (0,)
         
         
     def test_timeseriesregion(self):
         data = numpy.random.random((10, 10))
         dt = time_series.TimeSeriesRegion(data=data)
-        self.assertEqual(dt.data.shape, (10, 10))
-        self.assertEqual(dt.labels_ordering, ['Time', 'State Variable', 'Region', 'Mode'])
-        self.assertEqual(dt.sample_period, 1.0)
-        self.assertEqual(dt.sample_rate, 0.0)
-        self.assertEqual(dt.start_time, 0.0)
-        self.assertEqual(dt.time.shape, (0,))
+        assert dt.data.shape ==  (10, 10)
+        assert dt.labels_ordering ==  ['Time', 'State Variable', 'Region', 'Mode']
+        assert dt.sample_period ==  1.0
+        assert dt.sample_rate ==  0.0
+        assert dt.start_time ==  0.0
+        assert dt.time.shape ==  (0,)
         
         
     def test_timeseriessurface(self):
         data = numpy.random.random((10, 10))
         dt = time_series.TimeSeriesSurface(data=data)
-        self.assertEqual(dt.data.shape, (10, 10))
-        self.assertEqual(dt.labels_ordering, ['Time', 'State Variable', 'Vertex', 'Mode'])
-        self.assertEqual(dt.sample_period, 1.0)
-        self.assertEqual(dt.sample_rate, 0.0)
-        self.assertEqual(dt.start_time, 0.0)
-        self.assertEqual(dt.time.shape, (0,))
+        assert dt.data.shape ==  (10, 10)
+        assert dt.labels_ordering ==  ['Time', 'State Variable', 'Vertex', 'Mode']
+        assert dt.sample_period ==  1.0
+        assert dt.sample_rate ==  0.0
+        assert dt.start_time ==  0.0
+        assert dt.time.shape ==  (0,)
         
         
     def test_timeseriesvolume(self):
         data = numpy.random.random((10, 10))
         dt = time_series.TimeSeriesVolume(data=data)
-        self.assertEqual(dt.data.shape, (10, 10))
-        self.assertEqual(dt.labels_ordering, ['Time', 'X', 'Y', 'Z'])
-        self.assertEqual(dt.sample_period, 1.0)
-        self.assertEqual(dt.sample_rate, 0.0)
-        self.assertEqual(dt.start_time, 0.0)
-        self.assertEqual(dt.time.shape, (0,))  
+        assert dt.data.shape ==  (10, 10)
+        assert dt.labels_ordering ==  ['Time', 'X', 'Y', 'Z']
+        assert dt.sample_period ==  1.0
+        assert dt.sample_rate ==  0.0
+        assert dt.start_time ==  0.0
+        assert dt.time.shape ==  (0,)

@@ -35,12 +35,13 @@ if __name__ == "__main__":
     from tvb.tests.library import setup_test_console_env
     setup_test_console_env()
 
+import pytest
 from tvb.basic.filters.chain import FilterChain
 from tvb.basic.filters.exceptions import InvalidFilterChainInput, InvalidFilterEntity
 from tvb.tests.library.base_testcase import BaseTestCase
 
 
-class FilteringTest(BaseTestCase):
+class TestFiltering(BaseTestCase):
     """
     Test that defining and evaluating a filter on entities is correctly processed.
     """
@@ -65,14 +66,14 @@ class FilteringTest(BaseTestCase):
             
     def __should_pass(self, filter_entity, dt_entity):
         """Private method for throwing exception when filter does not passes."""
-        self.assertTrue(filter_entity.get_python_filter_equivalent(datatype_to_check=dt_entity), 
-                        "Filter %s should pass %s but fails it for some reason!"%(filter_entity, dt_entity))
-        
-        
+        assert filter_entity.get_python_filter_equivalent(datatype_to_check=dt_entity),\
+            "Filter %s should pass %s but fails it for some reason!"%(filter_entity, dt_entity)
+
+
     def __should_fail(self, filter_entity, dt_entity):
         """Private method for throwing exception when filter does not fail to remove entity."""
-        self.assertFalse(filter_entity.get_python_filter_equivalent(datatype_to_check=dt_entity),
-                         "Filter %s should drop from results %s but passes it!"%(filter_entity, dt_entity))
+        assert not filter_entity.get_python_filter_equivalent(datatype_to_check=dt_entity),\
+            "Filter %s should drop from results %s but passes it!"%(filter_entity, dt_entity)
 
     
     def test_input_passed_simple(self):
@@ -81,43 +82,43 @@ class FilteringTest(BaseTestCase):
         """
         test_filter = FilterChain(fields = [FilterChain.datatype + '.attribute_1'], 
                                   operations = ["=="], values = ['test_val'])
-        self.__should_pass(test_filter, FilteringTest.DummyFilterClass(attribute_1 = 'test_val'))
-        self.__should_fail(test_filter, FilteringTest.DummyFilterClass(attribute_1 = 1))
+        self.__should_pass(test_filter, TestFiltering.DummyFilterClass(attribute_1 = 'test_val'))
+        self.__should_fail(test_filter, TestFiltering.DummyFilterClass(attribute_1 = 1))
         
         test_filter = FilterChain(fields = [FilterChain.datatype + '.attribute_1'], 
                                   operations = ["!="], values = ['test_val'])
-        self.__should_pass(test_filter, FilteringTest.DummyFilterClass(attribute_1 = 'test_val_other'))
-        self.__should_fail(test_filter, FilteringTest.DummyFilterClass(attribute_1 = 'test_val'))
+        self.__should_pass(test_filter, TestFiltering.DummyFilterClass(attribute_1 = 'test_val_other'))
+        self.__should_fail(test_filter, TestFiltering.DummyFilterClass(attribute_1 = 'test_val'))
         
         test_filter = FilterChain(fields = [FilterChain.datatype + '.attribute_1'], 
                                   operations = [">"],  values = [3])
-        self.__should_pass(test_filter, FilteringTest.DummyFilterClass(attribute_1 = 5))
-        self.__should_fail(test_filter, FilteringTest.DummyFilterClass(attribute_1 = 1))
+        self.__should_pass(test_filter, TestFiltering.DummyFilterClass(attribute_1 = 5))
+        self.__should_fail(test_filter, TestFiltering.DummyFilterClass(attribute_1 = 1))
         
         test_filter = FilterChain(fields = [FilterChain.datatype + '.attribute_1'], 
                                   operations = ["<"], values = [3])
-        self.__should_pass(test_filter, FilteringTest.DummyFilterClass(attribute_1 = 1))
-        self.__should_fail(test_filter, FilteringTest.DummyFilterClass(attribute_1 = 5))
+        self.__should_pass(test_filter, TestFiltering.DummyFilterClass(attribute_1 = 1))
+        self.__should_fail(test_filter, TestFiltering.DummyFilterClass(attribute_1 = 5))
         
         test_filter = FilterChain(fields = [FilterChain.datatype + '.attribute_1'], 
                                   operations = ["in"], values = ['test_val'])
-        self.__should_pass(test_filter, FilteringTest.DummyFilterClass(attribute_1 = 'test'))
-        self.__should_fail(test_filter, FilteringTest.DummyFilterClass(attribute_1 = 'test_bla'))
+        self.__should_pass(test_filter, TestFiltering.DummyFilterClass(attribute_1 = 'test'))
+        self.__should_fail(test_filter, TestFiltering.DummyFilterClass(attribute_1 = 'test_bla'))
         
         test_filter = FilterChain(fields = [FilterChain.datatype + '.attribute_1'], 
                                   operations = ["in"], values = [['test_val', 'other_val']])
-        self.__should_pass(test_filter, FilteringTest.DummyFilterClass(attribute_1 = 'test_val'))
-        self.__should_fail(test_filter, FilteringTest.DummyFilterClass(attribute_1 = 'test_bla'))
+        self.__should_pass(test_filter, TestFiltering.DummyFilterClass(attribute_1 = 'test_val'))
+        self.__should_fail(test_filter, TestFiltering.DummyFilterClass(attribute_1 = 'test_bla'))
         
         test_filter = FilterChain(fields = [FilterChain.datatype + '.attribute_1'], 
                                   operations = ["not in"], values = ['test_val'])
-        self.__should_pass(test_filter, FilteringTest.DummyFilterClass(attribute_1 = 'valoare'))
-        self.__should_fail(test_filter, FilteringTest.DummyFilterClass(attribute_1 = 'val'))
+        self.__should_pass(test_filter, TestFiltering.DummyFilterClass(attribute_1 = 'valoare'))
+        self.__should_fail(test_filter, TestFiltering.DummyFilterClass(attribute_1 = 'val'))
         
         test_filter = FilterChain(fields = [FilterChain.datatype + '.attribute_1'], 
                                   operations = ["not in"], values = [['test_val', 'other']])
-        self.__should_pass(test_filter, FilteringTest.DummyFilterClass(attribute_1 = 'taest_val'))
-        self.__should_fail(test_filter, FilteringTest.DummyFilterClass(attribute_1 = 'test_val'))
+        self.__should_pass(test_filter, TestFiltering.DummyFilterClass(attribute_1 = 'taest_val'))
+        self.__should_fail(test_filter, TestFiltering.DummyFilterClass(attribute_1 = 'test_val'))
 
 
     def test_invalid_filter(self):
@@ -126,8 +127,8 @@ class FilteringTest(BaseTestCase):
         """
         test_filter = FilterChain(fields = [FilterChain.datatype + '.attribute_1'], 
                                   operations = ["in"], values = [None])
-        self.assertRaises(InvalidFilterEntity, test_filter.get_python_filter_equivalent, 
-                          FilteringTest.DummyFilterClass(attribute_1 = ['test_val', 'test2']))
+        with pytest.raises(InvalidFilterEntity):
+            test_filter.get_python_filter_equivalent(TestFiltering.DummyFilterClass(attribute_1 = ['test_val', 'test2']))
 
         
     def test_invalid_input(self):
@@ -136,9 +137,8 @@ class FilteringTest(BaseTestCase):
         """
         test_filter = FilterChain(fields = [FilterChain.datatype + '.other_attribute_1'], 
                                   operations = ["in"], values = ['test'])
-        self.assertRaises(InvalidFilterChainInput, test_filter.get_python_filter_equivalent, 
-                          FilteringTest.DummyFilterClass(attribute_1 = ['test_val', 'test2']))
-
+        with pytest.raises(InvalidFilterChainInput):
+            test_filter.get_python_filter_equivalent(TestFiltering.DummyFilterClass(attribute_1 = ['test_val', 'test2']))
         
     def test_complex_filter(self):
         """
@@ -146,10 +146,10 @@ class FilteringTest(BaseTestCase):
         """
         test_filter = FilterChain(fields= [FilterChain.datatype+ '.attribute_1', FilterChain.datatype+ '.attribute_2'],
                                   operations = ["==", 'in'], values = ['test_val', ['test_val2', 1]])
-        self.__should_pass(test_filter, FilteringTest.DummyFilterClass(attribute_1 = 'test_val', attribute_2 = 1))
-        self.__should_pass(test_filter, FilteringTest.DummyFilterClass(attribute_1 = 'test_val', attribute_2 = 1))
-        self.__should_fail(test_filter, FilteringTest.DummyFilterClass(attribute_1 = 'test_val', attribute_2 = 2))
-        self.__should_fail(test_filter, FilteringTest.DummyFilterClass(attribute_1 = 'test_val1', attribute_2 = 1))
+        self.__should_pass(test_filter, TestFiltering.DummyFilterClass(attribute_1 = 'test_val', attribute_2 = 1))
+        self.__should_pass(test_filter, TestFiltering.DummyFilterClass(attribute_1 = 'test_val', attribute_2 = 1))
+        self.__should_fail(test_filter, TestFiltering.DummyFilterClass(attribute_1 = 'test_val', attribute_2 = 2))
+        self.__should_fail(test_filter, TestFiltering.DummyFilterClass(attribute_1 = 'test_val1', attribute_2 = 1))
 
     
     def test_filter_add_condition(self):
@@ -158,7 +158,7 @@ class FilteringTest(BaseTestCase):
         """
         test_filter = FilterChain(fields = [FilterChain.datatype + '.attribute_1'], 
                                   operations = ["=="], values = ['test_val'])
-        filter_input = FilteringTest.DummyFilterClass(attribute_1 = 'test_val', attribute_2 = 1)
+        filter_input = TestFiltering.DummyFilterClass(attribute_1 = 'test_val', attribute_2 = 1)
         self.__should_pass(test_filter, filter_input)
         test_filter.add_condition(FilterChain.datatype + '.attribute_2', '==', 2)
         self.__should_fail(test_filter, filter_input)
@@ -173,7 +173,7 @@ class FilteringTest(BaseTestCase):
         filter2 = FilterChain(fields = [FilterChain.datatype + '.attribute_2'], 
                               operations = ['in'], values = [['test_val2', 1]])
         test_filter = filter1 + filter2
-        self.__should_pass(test_filter, FilteringTest.DummyFilterClass(attribute_1 = 'test_val', attribute_2 = 1))
-        self.__should_pass(test_filter, FilteringTest.DummyFilterClass(attribute_1='test_val', attribute_2='test_val2'))
-        self.__should_fail(test_filter, FilteringTest.DummyFilterClass(attribute_1 = 'test_val', attribute_2 = 2))
-        self.__should_fail(test_filter, FilteringTest.DummyFilterClass(attribute_1 = 'test_val1', attribute_2 = 1))
+        self.__should_pass(test_filter, TestFiltering.DummyFilterClass(attribute_1 = 'test_val', attribute_2 = 1))
+        self.__should_pass(test_filter, TestFiltering.DummyFilterClass(attribute_1='test_val', attribute_2='test_val2'))
+        self.__should_fail(test_filter, TestFiltering.DummyFilterClass(attribute_1 = 'test_val', attribute_2 = 2))
+        self.__should_fail(test_filter, TestFiltering.DummyFilterClass(attribute_1 = 'test_val1', attribute_2 = 1))

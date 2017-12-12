@@ -50,7 +50,7 @@ from tvb.datatypes import connectivity
 from tvb.tests.library.base_testcase import BaseTestCase
 
 
-class ConnectivityTest(BaseTestCase):
+class TestConnectivity(BaseTestCase):
     """
     Tests the defaults for `tvb.datatypes.connectivity` module.
     """
@@ -63,24 +63,24 @@ class ConnectivityTest(BaseTestCase):
         conn.generate_surrogate_connectivity(74)
         conn.configure()
         # Check for value from tvb_data/connectivity/o52r00_irp2008
-        self.assertEqual(conn.weights.shape, (74, 74))
-        self.assertEqual(conn.weights.max(), 1.0)
-        self.assertEqual(conn.weights.min(), 0.0)
-        self.assertEqual(conn.tract_lengths.shape, (74, 74))
-        self.assertEqual(conn.tract_lengths.max(), 42.0)
-        self.assertEqual(conn.tract_lengths.min(), 0.0)
-        self.assertEqual(conn.centres.shape, (74, 3))
-        self.assertEqual(conn.orientations.shape, (74, 3))
-        self.assertEqual(conn.region_labels.shape, (74,))
-        self.assertTrue(conn.areas is not None)
-        self.assertEqual(conn.undirected, 0)
-        self.assertEqual(conn.speed, numpy.array([3.0]))
-        self.assertTrue(conn.cortical is not None)
-        self.assertTrue(conn.hemispheres is not None)
-        self.assertEqual(conn.idelays.shape, (0,))
-        self.assertEqual(conn.delays.shape, (74, 74,))
-        self.assertEqual(conn.number_of_regions, 74)
-        self.assertEqual(conn.number_of_connections, 75)
+        assert conn.weights.shape, (74, 74)
+        assert conn.weights.max() == 1.0
+        assert conn.weights.min() == 0.0
+        assert conn.tract_lengths.shape == (74, 74)
+        assert conn.tract_lengths.max() == 42.0
+        assert conn.tract_lengths.min() == 0.0
+        assert conn.centres.shape == (74, 3)
+        assert conn.orientations.shape == (74, 3)
+        assert conn.region_labels.shape == (74,)
+        assert conn.areas is not None
+        assert conn.undirected == 0
+        assert conn.speed == numpy.array([3.0])
+        assert conn.cortical is not None
+        assert conn.hemispheres is not None
+        assert conn.idelays.shape == (0,)
+        assert conn.delays.shape == (74, 74,)
+        assert conn.number_of_regions == 74
+        assert conn.number_of_connections == 75
 
     
     def test_connectivity_default(self):
@@ -91,33 +91,33 @@ class ConnectivityTest(BaseTestCase):
         conn.configure()
         n = 76
         # Check for value from tvb_data/connectivity/o52r00_irp2008
-        self.assertEqual(conn.weights.shape, (n, n))
-        self.assertEqual(conn.weights.max(), 3.0)
-        self.assertEqual(conn.weights.min(), 0.0)
-        self.assertEqual(conn.tract_lengths.shape, (n, n))
-        self.assertEqual(conn.tract_lengths.max(), 153.48574)
-        self.assertEqual(conn.tract_lengths.min(), 0.0)
-        self.assertEqual(conn.centres.shape, (n, 3))
-        self.assertEqual(conn.orientations.shape, (n, 3))
-        self.assertEqual(conn.region_labels.shape, (n,))
-        self.assertEqual(conn.areas.shape, (n,))
-        self.assertEqual(conn.undirected, 0)
-        self.assertEqual(conn.speed, numpy.array([3.0]))
-        self.assertTrue(conn.cortical.all())
-        self.assertEqual(conn.hemispheres.shape, (n,))
-        self.assertEqual(conn.idelays.shape, (0,))
-        self.assertEqual(conn.delays.shape, (n, n,))
-        self.assertEqual(conn.number_of_regions, n)
-        self.assertEqual(conn.number_of_connections, 1560)
-        self.assertTrue(conn.saved_selection is None)
-        self.assertEqual(conn.parent_connectivity, '')
+        assert conn.weights.shape == (n, n)
+        assert conn.weights.max() == 3.0
+        assert conn.weights.min() == 0.0
+        assert conn.tract_lengths.shape == (n, n)
+        assert conn.tract_lengths.max() == 153.48574
+        assert conn.tract_lengths.min() == 0.0
+        assert conn.centres.shape == (n, 3)
+        assert conn.orientations.shape == (n, 3)
+        assert conn.region_labels.shape == (n,)
+        assert conn.areas.shape == (n,)
+        assert conn.undirected == 0
+        assert conn.speed == numpy.array([3.0])
+        assert conn.cortical.all()
+        assert conn.hemispheres.shape == (n,)
+        assert conn.idelays.shape == (0,)
+        assert conn.delays.shape == (n, n,)
+        assert conn.number_of_regions == n
+        assert conn.number_of_connections == 1560
+        assert conn.saved_selection is None
+        assert conn.parent_connectivity == ''
         summary = conn.summary_info
-        self.assertEqual(summary['Number of regions'], n)
+        assert summary['Number of regions'] == n
         ## Call connectivity methods and make sure no compilation or runtime erros
         conn.compute_tract_lengths()
         conn.compute_region_labels()
         conn.try_compute_hemispheres()
-        self.assertEqual(conn.scaled_weights().shape, (n, n))
+        assert conn.scaled_weights().shape == (n, n)
         for mode in ['none', 'tract', 'region']:
             # Empirical seems to fail on some scipy installations. Error is not pinned down
             # so far, it seems to only happen on some machines. Most relevant related to this:
@@ -126,7 +126,7 @@ class ConnectivityTest(BaseTestCase):
             # http://comments.gmane.org/gmane.comp.python.scientific.devel/14816
             # http://permalink.gmane.org/gmane.comp.python.numeric.general/42082
             #conn.switch_distribution(mode=mode)
-            self.assertEqual(conn.scaled_weights(mode=mode).shape, (n, n))
+            assert conn.scaled_weights(mode=mode).shape == (n, n)
 
 
     def test_connectivity_reload(self):
@@ -135,24 +135,24 @@ class ConnectivityTest(BaseTestCase):
         """
         conn = connectivity.Connectivity.from_file("connectivity_192.zip")
         n = 192
-        self.assertEqual(conn.weights.shape, (n, n))
-        self.assertEqual(conn.weights.max(), 3.0)
-        self.assertEqual(conn.weights.min(), 0.0)
-        self.assertEqual(conn.tract_lengths.shape, (n, n))
-        self.assertEqual(conn.tract_lengths.max(), 142.1458)
-        self.assertEqual(conn.tract_lengths.min(), 0.0)
-        self.assertEqual(conn.centres.shape, (n, 3))
-        self.assertEqual(conn.orientations.shape, (n, 3))
-        self.assertEqual(conn.region_labels.shape, (n,))
-        self.assertEqual(conn.areas.shape, (n,))
-        self.assertEqual(conn.undirected, 0)
-        self.assertEqual(conn.speed, numpy.array([3.0]))
-        self.assertEqual(conn.hemispheres.shape, (0,))
-        self.assertEqual(conn.idelays.shape, (0,))
-        self.assertEqual(conn.delays.shape, (0,))
-        self.assertEqual(conn.number_of_regions, 0)
-        self.assertTrue(conn.saved_selection is None)
-        self.assertEqual(conn.parent_connectivity, '')
+        assert conn.weights.shape == (n, n)
+        assert conn.weights.max() == 3.0
+        assert conn.weights.min() == 0.0
+        assert conn.tract_lengths.shape == (n, n)
+        assert conn.tract_lengths.max() == 142.1458
+        assert conn.tract_lengths.min() == 0.0
+        assert conn.centres.shape == (n, 3)
+        assert conn.orientations.shape == (n, 3)
+        assert conn.region_labels.shape == (n,)
+        assert conn.areas.shape == (n,)
+        assert conn.undirected == 0
+        assert conn.speed == numpy.array([3.0])
+        assert conn.hemispheres.shape == (0,)
+        assert conn.idelays.shape == (0,)
+        assert conn.delays.shape == (0,)
+        assert conn.number_of_regions == 0
+        assert conn.saved_selection is None
+        assert conn.parent_connectivity == ''
 
 
     @pytest.mark.skipif(not H5PY_SUPPORT, reason="HDF5 and H5PY not found on this system")
@@ -162,36 +162,36 @@ class ConnectivityTest(BaseTestCase):
         """
         h5_full_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), "Edited_Connectivity.h5")
         conn = connectivity.Connectivity.from_file(h5_full_path)
-        self.assertEqual(conn.weights.shape, (74, 74))
-        self.assertEqual(conn.weights[0][0], 9.0)   # Edit set first weight to 9
-        self.assertEqual(conn.weights.max(), 9.0)   # Edit has a weight of value 9
-        self.assertEqual(conn.weights.min(), 0.0)
-        self.assertEqual(conn.undirected, 0)
-        self.assertEqual(conn.speed, numpy.array([3.0]))
-        self.assertEqual(conn.hemispheres.shape, (74,))
-        self.assertEqual(conn.idelays.shape, (0,))
-        self.assertEqual(conn.delays.shape, (0,))
-        self.assertEqual(conn.number_of_regions, 0)
-        self.assertTrue(conn.saved_selection is None)
-        self.assertEqual(conn.parent_connectivity, '')
+        assert conn.weights.shape == (74, 74)
+        assert conn.weights[0][0] == 9.0   # Edit set first weight to 9
+        assert conn.weights.max() == 9.0   # Edit has a weight of value 9
+        assert conn.weights.min() == 0.0
+        assert conn.undirected == 0
+        assert conn.speed == numpy.array([3.0])
+        assert conn.hemispheres.shape == (74,)
+        assert conn.idelays.shape == (0,)
+        assert conn.delays.shape == (0,)
+        assert conn.number_of_regions == 0
+        assert conn.saved_selection is None
+        assert conn.parent_connectivity == ''
 
 
     def test_connectivity_bzip_in_zip(self):
         conn = connectivity.Connectivity.from_file("connectivity_68.zip")
         conn.configure()
-        self.assertEqual(conn.weights.shape, (68, 68))
-        self.assertEqual(conn.weights.max(), 0.12053822)
-        self.assertEqual(conn.weights.min(), 0.0)
-        self.assertEqual(conn.tract_lengths.shape, (68, 68))
-        self.assertEqual(conn.tract_lengths.max(), 252.90276)
-        self.assertEqual(conn.tract_lengths.min(), 0.0)
-        self.assertEqual(conn.centres.shape, (68, 3))
-        self.assertEqual(conn.orientations.shape, (68, 3))
-        self.assertEqual(conn.region_labels.shape, (68,))
-        self.assertEqual(conn.areas.shape, (0,))
-        self.assertEqual(conn.undirected, 1)
-        self.assertEqual(conn.speed, numpy.array([3.0]))
-        self.assertEqual(conn.hemispheres.shape, (68,))
-        self.assertEqual(conn.idelays.shape, (0,))
-        self.assertEqual(conn.delays.shape, (68, 68))
-        self.assertEqual(conn.number_of_regions, 68)
+        assert conn.weights.shape == (68, 68)
+        assert conn.weights.max() == 0.12053822
+        assert conn.weights.min() == 0.0
+        assert conn.tract_lengths.shape == (68, 68)
+        assert conn.tract_lengths.max() == 252.90276
+        assert conn.tract_lengths.min() == 0.0
+        assert conn.centres.shape == (68, 3)
+        assert conn.orientations.shape == (68, 3)
+        assert conn.region_labels.shape == (68,)
+        assert conn.areas.shape == (0,)
+        assert conn.undirected == 1
+        assert conn.speed == numpy.array([3.0])
+        assert conn.hemispheres.shape == (68,)
+        assert conn.idelays.shape == (0,)
+        assert conn.delays.shape == (68, 68)
+        assert conn.number_of_regions == 68

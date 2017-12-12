@@ -41,7 +41,7 @@ import numpy
 from tvb.tests.library.base_testcase import BaseTestCase
 from tvb.datatypes import arrays
         
-class ArraysTest(BaseTestCase):
+class TestArrays(BaseTestCase):
     
     
     def test_float_array(self):
@@ -51,7 +51,7 @@ class ArraysTest(BaseTestCase):
         data = numpy.random.random((10, 10))
         array_dt = arrays.FloatArray()
         array_dt.data = data
-        self.assertEqual(array_dt.shape, (10, 10))
+        assert array_dt.shape == (10, 10)
         
         
     def test_integer_array(self):
@@ -61,7 +61,7 @@ class ArraysTest(BaseTestCase):
         data = numpy.arange(100, dtype=int)
         array_dt = arrays.IntegerArray()
         array_dt.data = data
-        self.assertEqual(array_dt.shape, (100,))
+        assert array_dt.shape == (100,)
         
         
     def test_complex_array(self):
@@ -71,7 +71,7 @@ class ArraysTest(BaseTestCase):
         data = numpy.array([numpy.complex(100, 2) for _ in range(100)])
         array_dt = arrays.ComplexArray()
         array_dt.data = data
-        self.assertEqual(array_dt.shape, (100,))
+        assert array_dt.shape == (100,)
         
         
     def test_bool_array(self):
@@ -81,7 +81,7 @@ class ArraysTest(BaseTestCase):
         data = numpy.array([[False for _ in range(12)] for _ in range(10)])
         array_dt = arrays.ComplexArray()
         array_dt.data = data
-        self.assertEqual(array_dt.shape, (10, 12))
+        assert array_dt.shape == (10, 12)
         
     
     def test_string_array(self):
@@ -91,7 +91,7 @@ class ArraysTest(BaseTestCase):
         data = numpy.array([['test' for _ in range(12)] for _ in range(10)])
         array_dt = arrays.StringArray()
         array_dt.data = data
-        self.assertEqual(array_dt.shape, (10, 12))
+        assert array_dt.shape == (10, 12)
         
         
     def test_position_array(self):
@@ -102,9 +102,9 @@ class ArraysTest(BaseTestCase):
         array_dt = arrays.PositionArray(coordinate_system="test_system",
                                         coordinate_space="test_space")
         array_dt.data = data
-        self.assertEqual(array_dt.shape, (10, 10))
-        self.assertEqual(array_dt.coordinate_space, "test_space")
-        self.assertEqual(array_dt.coordinate_system, "test_system")
+        assert array_dt.shape == (10, 10)
+        assert array_dt.coordinate_space == "test_space"
+        assert array_dt.coordinate_system == "test_system"
         
         
     def test_orientation_array(self):
@@ -114,8 +114,8 @@ class ArraysTest(BaseTestCase):
         data = numpy.random.random((10, 10))
         array_dt = arrays.OrientationArray(coordinate_system_or="test_system")
         array_dt.data = data
-        self.assertEqual(array_dt.shape, (10, 10))
-        self.assertEqual(array_dt.coordinate_system_or, "test_system")
+        assert array_dt.shape == (10, 10)
+        assert array_dt.coordinate_system_or == "test_system"
         
         
     def test_index_array(self):
@@ -127,5 +127,5 @@ class ArraysTest(BaseTestCase):
         target_array.data = target_data
         array_dt = arrays.IndexArray(target=target_array)
         array_dt.data = numpy.arange(30).reshape((10, 3))
-        self.assertEqual(array_dt.shape, (10, 3))
-        self.assertEqual(array_dt.target.shape, (10, 3))
+        assert array_dt.shape == (10, 3)
+        assert array_dt.target.shape == (10, 3)

@@ -35,6 +35,7 @@ if __name__ == "__main__":
     from tvb.tests.library import setup_test_console_env
     setup_test_console_env()
 
+import pytest
 import numpy
 from tvb.datatypes import sensors
 from tvb.datatypes.surfaces import SkinAir
@@ -42,7 +43,7 @@ from tvb.datatypes.sensors import INTERNAL_POLYMORPHIC_IDENTITY, MEG_POLYMORPHIC
 from tvb.tests.library.base_testcase import BaseTestCase
 
 
-class SensorsTest(BaseTestCase):
+class TestSensors(BaseTestCase):
     """
     Tests the defaults for `tvb.datatypes.sensors` module.
     """
@@ -53,20 +54,20 @@ class SensorsTest(BaseTestCase):
         dt.configure()
 
         summary_info = dt.summary_info
-        self.assertEqual(summary_info['Sensor type'], '')
-        self.assertEqual(summary_info['Number of Sensors'], 65)
-        self.assertFalse(dt.has_orientation)
-        self.assertEqual(dt.labels.shape, (65,))
-        self.assertEqual(dt.locations.shape, (65, 3))
-        self.assertEqual(dt.number_of_sensors, 65)
-        self.assertEqual(dt.orientations.shape, (0,))
-        self.assertEqual(dt.sensors_type, '')
+        assert summary_info['Sensor type'] == ''
+        assert summary_info['Number of Sensors'] == 65
+        assert not dt.has_orientation
+        assert dt.labels.shape == (65,)
+        assert dt.locations.shape == (65, 3)
+        assert dt.number_of_sensors == 65
+        assert dt.orientations.shape == (0,)
+        assert dt.sensors_type == ''
 
         ## Mapping 62 sensors on a Skin surface should work
         surf = SkinAir(load_default=True)
         surf.configure()
         mapping = dt.sensors_to_surface(surf)
-        self.assertEqual(mapping.shape, (65, 3))
+        assert mapping.shape == (65, 3)
 
         ## Mapping on a surface with holes should fail
         dummy_surf = SkinAir()
@@ -75,7 +76,7 @@ class SensorsTest(BaseTestCase):
         dummy_surf.configure()
         try:
             dt.sensors_to_surface(dummy_surf)
-            self.fail("Should have failed for this simple surface!")
+            pytest.fail("Should have failed for this simple surface!")
         except Exception:
             pass
 
@@ -83,34 +84,34 @@ class SensorsTest(BaseTestCase):
     def test_sensorseeg(self):
         dt = sensors.SensorsEEG(load_default=True)
         dt.configure()
-        self.assertTrue(isinstance(dt, sensors.SensorsEEG))
-        self.assertFalse(dt.has_orientation)
-        self.assertEqual(dt.labels.shape, (65,))
-        self.assertEqual(dt.locations.shape, (65, 3))
-        self.assertEqual(dt.number_of_sensors, 65)
-        self.assertEqual(dt.orientations.shape, (0,))
-        self.assertEqual(dt.sensors_type, EEG_POLYMORPHIC_IDENTITY)
+        assert isinstance(dt, sensors.SensorsEEG)
+        assert not dt.has_orientation
+        assert dt.labels.shape == (65,)
+        assert dt.locations.shape == (65, 3)
+        assert dt.number_of_sensors == 65
+        assert dt.orientations.shape == (0,)
+        assert dt.sensors_type == EEG_POLYMORPHIC_IDENTITY
 
 
     def test_sensorsmeg(self):
         dt = sensors.SensorsMEG(load_default=True)
         dt.configure()
-        self.assertTrue(isinstance(dt, sensors.SensorsMEG))
-        self.assertTrue(dt.has_orientation)
-        self.assertEqual(dt.labels.shape, (151,))
-        self.assertEqual(dt.locations.shape, (151, 3))
-        self.assertEqual(dt.number_of_sensors, 151)
-        self.assertEqual(dt.orientations.shape, (151, 3))
-        self.assertEqual(dt.sensors_type, MEG_POLYMORPHIC_IDENTITY)
+        assert isinstance(dt, sensors.SensorsMEG)
+        assert dt.has_orientation
+        assert dt.labels.shape == (151,)
+        assert dt.locations.shape == (151, 3)
+        assert dt.number_of_sensors == 151
+        assert dt.orientations.shape == (151, 3)
+        assert dt.sensors_type == MEG_POLYMORPHIC_IDENTITY
 
 
     def test_sensorsinternal(self):
         dt = sensors.SensorsInternal(load_default=True)
         dt.configure()
-        self.assertTrue(isinstance(dt, sensors.SensorsInternal))
-        self.assertFalse(dt.has_orientation)
-        self.assertEqual(dt.labels.shape, (103,))
-        self.assertEqual(dt.locations.shape, (103, 3))
-        self.assertEqual(dt.number_of_sensors, 103)
-        self.assertEqual(dt.orientations.shape, (0,))
-        self.assertEqual(dt.sensors_type, INTERNAL_POLYMORPHIC_IDENTITY)
+        assert isinstance(dt, sensors.SensorsInternal)
+        assert not dt.has_orientation
+        assert dt.labels.shape == (103,)
+        assert dt.locations.shape == (103, 3)
+        assert dt.number_of_sensors == 103
+        assert dt.orientations.shape == (0,)
+        assert dt.sensors_type == INTERNAL_POLYMORPHIC_IDENTITY

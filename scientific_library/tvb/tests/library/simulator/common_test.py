@@ -45,7 +45,7 @@ from tvb.tests.library.base_testcase import BaseTestCase
 from tvb.simulator import common
 
 
-class CommonTest(BaseTestCase):
+class TestCommon(BaseTestCase):
     """
     Define test cases for common:
         - initialise each class
@@ -54,8 +54,8 @@ class CommonTest(BaseTestCase):
     """
     def test_struct(self):
         st = common.Struct(x =42.0, y=33.0)
-        self.assertEqual(st.x, 42.0)
-        self.assertEqual(st.y, 33.0)
+        assert st.x == 42.0
+        assert st.y == 33.0
         
     
     def test_linear_interpolation(self):
@@ -65,7 +65,7 @@ class CommonTest(BaseTestCase):
         y_end   = 8.0
         t_mid   = 0.5
         val = common.linear_interp1d(t_start, t_end, y_start, y_end, t_mid)
-        self.assertEqual(val, 6.0)
+        assert val == 6.0
         
         
     def test_unravel_history(self):
@@ -95,7 +95,7 @@ class CommonTest(BaseTestCase):
             expected, actual = numpy.zeros((2, m) + rest)
             numpy.add.at(expected, map, source)
             common._add_at(actual, map, source)
-            self.assertTrue(numpy.allclose(expected, actual))
+            assert numpy.allclose(expected, actual)
 
     def setUp(self):
         pass

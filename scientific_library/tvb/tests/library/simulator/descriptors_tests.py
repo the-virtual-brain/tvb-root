@@ -35,15 +35,17 @@ Tests for data descriptors for declaring workspace for algorithms and checking u
 """
 
 import unittest
+import pytest
 import numpy
 from tvb.simulator.descriptors import StaticAttr, NDArray, ImmutableAttrError, Final, Dim
 import six
 
 
-class TestStaticAttr(unittest.TestCase):
+class TestStaticAttr():
     "Test API of StaticAttr base class."
 
-    def setUp(self):
+    @classmethod
+    def setup_class(self):
         class TestClass(StaticAttr):
             x = 5
             z = 2
@@ -56,19 +58,21 @@ class TestStaticAttr(unittest.TestCase):
         self.test_class = TestClass()
 
     def test_set_existing_ok(self):
-        self.assertEqual(self.test_class.z, 42)
-        self.assertEqual(self.test_class.x, 5)
+        assert self.test_class.z == 42
+        assert self.test_class.x == 5
         self.test_class.set_x()
-        self.assertEqual(self.test_class.x, 6)
+        assert self.test_class.x == 6
 
     def test_set_non_existing_y(self):
-        self.assertRaises(AttributeError, self.test_class.set_y)
+        with pytest.raises(AttributeError):
+            self.test_class.set_y()
 
 
-class TestNDArray(unittest.TestCase):
+class TestNDArray():
     "Test API of NDArray descriptor."
 
-    def setUp(self):
+    @classmethod
+    def setup_class(self):
         class PointSet(object):
             positions = NDArray(('n_point', 'dim'), 'f')
             counts = NDArray(('n_point',), 'i', read_only=False)
@@ -81,16 +85,16 @@ class TestNDArray(unittest.TestCase):
     def test_shape_dtype(self):
         pos = self.ps50.positions
         cnt = self.ps50.counts
-        self.assertEqual(pos.shape, (50, 3))
-        self.assertEqual(cnt.shape, (50, ))
-        self.assertEqual(pos.dtype, numpy.float32)
-        self.assertEqual(cnt.dtype, numpy.int32)
+        assert pos.shape == (50, 3)
+        assert cnt.shape == (50, )
+        assert pos.dtype == numpy.float32
+        assert cnt.dtype == numpy.int32
         pos = self.ps25.positions
         cnt = self.ps25.counts
-        self.assertEqual(pos.shape, (25, 3))
-        self.assertEqual(cnt.shape, (25, ))
+        assert pos.shape == (25, 3)
+        assert cnt.shape == (25, )
 
-        self.assertNotEqual(self.ps50.positions.shape, self.ps25.positions.shape)
+        assert self.ps50.positions.shape != self.ps25.positions.shape
 
     def _set_positions(self):
         self.ps50.positions = numpy.random.randn(*self.ps50.positions.shape)
@@ -100,7 +104,9 @@ class TestNDArray(unittest.TestCase):
 
     def test_mutability(self):
         self._set_positions()
-        self.assertRaises(ImmutableAttrError, self._set_positions)
+        with pytest.raises(ImmutableAttrError):
+            self.ps50.positions = numpy.random.randn(*self.ps50.positions.shape)
+
         self._set_counts()
         self._set_counts()
 
@@ -108,12 +114,14 @@ class TestNDArray(unittest.TestCase):
         self.ps50.counts = numpy.array([2, 3])
 
     def test_incorrect_shape(self):
-        self.assertRaises(ValueError, self._set_incorrect_shape)
+        with pytest.raises(ValueError):
+            self._set_incorrect_shape()
 
 
-class TestFinal(unittest.TestCase):
+class TestFinal():
 
-    def setUp(self):
+    @classmethod
+    def setup_class(self):
         class Inst(object):
             n = Final()
             m0, m1, m2, m3, m4 = Dim(), Dim(), Dim(), Dim(), Dim()
@@ -131,23 +139,26 @@ class TestFinal(unittest.TestCase):
         self.bar = Inst()
 
     def test_immutability(self):
-        self.assertEqual(self.foo.n, 42)
-        self.assertRaises(AttributeError, self.foo.change_n)
+        assert self.foo.n == 42
+        with pytest.raises(AttributeError):
+            self.foo.change_n()
 
     def test_class_get_descriptor(self):
-        self.assertIsInstance(self.Inst.n, Final)
+        assert isinstance(self.Inst.n, Final)
 
     def test_count_weakref(self):
-        self.assertEqual(len(self.Inst.n.instance_state), 2)
+        assert len(self.Inst.n.instance_state) == 2
         delattr(self, 'foo')
-        self.assertEqual(len(self.Inst.n.instance_state), 1)
+        assert len(self.Inst.n.instance_state) == 1
         delattr(self, 'bar')
-        self.assertEqual(len(self.Inst.n.instance_state), 0)
+        assert len(self.Inst.n.instance_state) == 0
 
     def test_type_check(self):
-        self.assertRaises(AttributeError, self.foo.set_x_int)
+        with pytest.raises(AttributeError):
+            self.foo.set_x_int()
+
         self.foo.set_x_float()
-        self.assertEqual(self.foo.x, 2.3)
+        assert self.foo.x == 2.3
 
     def test_dim_accepts_many_int_types(self):
         int_types = list(six.integer_types) + [numpy.int32, numpy.uint32, numpy.int64]

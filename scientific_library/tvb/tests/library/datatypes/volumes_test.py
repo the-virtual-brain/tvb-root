@@ -39,7 +39,7 @@ if __name__ == "__main__":
 from tvb.datatypes import volumes
 from tvb.tests.library.base_testcase import BaseTestCase
         
-class VolumesTest(BaseTestCase):
+class TestVolumes(BaseTestCase):
     """
     Tests the defaults for `tvb.datatypes.volumes` module.
     """
@@ -47,10 +47,10 @@ class VolumesTest(BaseTestCase):
     def test_volume(self):
         dt = volumes.Volume()
         summary_info = dt.summary_info
-        self.assertEqual(summary_info['Origin'].shape, (0,))
-        self.assertEqual(summary_info['Voxel size'].shape, (0,))
-        self.assertEqual(summary_info['Volume type'], 'Volume')
-        self.assertEqual(summary_info['Units'], 'mm')
-        self.assertEqual(dt.origin.shape, (0,))
-        self.assertEqual(dt.voxel_size.shape, (0,))
-        self.assertEqual(dt.voxel_unit, 'mm')
+        assert summary_info['Origin'].shape == (0,)
+        assert summary_info['Voxel size'].shape == (0,)
+        assert summary_info['Volume type'] == 'Volume'
+        assert summary_info['Units'] == 'mm'
+        assert dt.origin.shape == (0,)
+        assert dt.voxel_size.shape == (0,)
+        assert dt.voxel_unit == 'mm'

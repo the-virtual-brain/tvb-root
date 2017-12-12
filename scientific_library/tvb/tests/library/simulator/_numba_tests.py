@@ -35,7 +35,7 @@ Tests for the experiment Numba simulator component implementations.
 
 """
 
-import unittest
+import pytest
 import numpy
 import numpy.testing
 
@@ -63,8 +63,7 @@ from tvb.simulator import coupling as py_coupling, simulator, models, monitors, 
 from tvb.datatypes import connectivity
 
 
-def skip_if_no_numba(f):
-    return unittest.skipIf(not HAVE_NUMBA, "Numba unavailable")(f)
+skip_if_no_numba = pytest.mark.skipif(not HAVE_NUMBA, reason="Numba unavailable")
 
 class CudaBaseCase(BaseTestCase):
 
@@ -112,7 +111,7 @@ class TestUtils(CudaBaseCase):
     @skip_if_no_numba
     def test_pow_2(self):
         for n, e in ((5, 8), (32, 64), (63, 64)):
-            self.assertEqual(e, next_pow_of_2(n))
+            assert e == next_pow_of_2(n)
 
     @skip_if_no_numba
     def test_mod_pow_2(self):
@@ -244,9 +243,11 @@ class TestDcfun(CudaBaseCase):
             numpy.testing.assert_allclose(afferent, out[step], 1e-5, 1e-6)
 
     @skip_if_no_numba
-    @unittest.skipIf(CUDA_SIM, "https://github.com/numba/numba/issues/1837")
+    @pytest.mark.skipif(CUDA_SIM, reason="https://github.com/numba/numba/issues/1837")
     def test_dcfun_horizons(self):
         self.assertRaises(ValueError, self._do_for_params, 13)
+        # with pytest.raises(ValueError):
+        #     self._do_for_params(13)
         for horizon in (16, 32, 64):
             self._do_for_params(horizon)
 
@@ -306,7 +307,7 @@ class TestCuExpr(CudaBaseCase):
 class TestSim(CudaBaseCase):
 
     @skip_if_no_numba
-    @unittest.skipIf(CUDA_SIM, "https://github.com/numba/numba/issues/1837")
+    @pytest.mark.skipif(CUDA_SIM, reason="https://github.com/numba/numba/issues/1837")
     def test_kuramoto(self):
 
         # build & run Python simulations

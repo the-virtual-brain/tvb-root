@@ -41,7 +41,7 @@ from tvb.datatypes import graph, time_series, connectivity
 from tvb.tests.library.base_testcase import BaseTestCase
 
 
-class GraphTest(BaseTestCase):
+class TestGraph(BaseTestCase):
     """
     Tests the defaults for `tvb.datatypes.graph` module.
     """
@@ -51,12 +51,12 @@ class GraphTest(BaseTestCase):
         ts = time_series.TimeSeries(data=data, title="test")
         dt = graph.Covariance(source=ts, array_data=data)
 
-        self.assertEqual(dt.shape, (10, 10))
-        self.assertEqual(dt.array_data.shape, (10, 10))
+        assert dt.shape == (10, 10)
+        assert dt.array_data.shape == (10, 10)
 
         summary = dt.summary_info
-        self.assertEqual(summary['Graph type'], "Covariance")
-        self.assertEqual(summary['Source'], "test")
+        assert summary['Graph type'] == "Covariance"
+        assert summary['Source'] == "test"
 
 
     def test_correlation_coefficients(self):
@@ -64,22 +64,22 @@ class GraphTest(BaseTestCase):
         ts = time_series.TimeSeries(data=data, title="test-ts")
         dt = graph.CorrelationCoefficients(source=ts, array_data=data)
 
-        self.assertEqual(dt.shape, (13, 14))
-        self.assertEqual(dt.array_data.shape, (13, 14))
+        assert dt.shape == (13, 14)
+        assert dt.array_data.shape == (13, 14)
 
         summary = dt.summary_info
-        self.assertEqual(summary['Graph type'], "CorrelationCoefficients")
-        self.assertEqual(summary['Source'], "test-ts")
-        self.assertEqual(summary['Dimensions'], dt.labels_ordering)
+        assert summary['Graph type'] == "CorrelationCoefficients"
+        assert summary['Source'] == "test-ts"
+        assert summary['Dimensions'] == dt.labels_ordering
 
-        self.assertEqual(dt.labels_ordering, ["Node", "Node", "State Variable", "Mode"])
-        
-        
+        assert dt.labels_ordering == ["Node", "Node", "State Variable", "Mode"]
+
+
     def test_connectivitymeasure(self):
         conn = connectivity.Connectivity()
         dt = graph.ConnectivityMeasure(connectivity=conn)
-        self.assertEqual(dt.shape, (0,))
-        self.assertTrue(dt.dimensions_labels is None)
-        self.assertTrue(dt.connectivity is not None)
+        assert dt.shape == (0,)
+        assert dt.dimensions_labels is None
+        assert dt.connectivity is not None
         summary = dt.summary_info
-        self.assertEqual(summary['Graph type'], 'ConnectivityMeasure')
+        assert summary['Graph type'] == 'ConnectivityMeasure'

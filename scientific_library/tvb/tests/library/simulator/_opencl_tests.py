@@ -35,7 +35,7 @@ Test suite for experimental OpenCL components.
 
 """
 
-import unittest
+import pytest
 import numpy
 from tvb.tests.library.base_testcase import BaseTestCase
 
@@ -46,8 +46,8 @@ except ImportError:
     PYOPENCL_AVAILABLE = False
 
 
-@unittest.skipIf(not PYOPENCL_AVAILABLE, 'PyOpenCL not available')
-class TestCLRWW(unittest.TestCase):
+@pytest.mark.skipif(not PYOPENCL_AVAILABLE, reason='PyOpenCL not available')
+class TestCLRWW():
 
     def setUp(self):
         from tvb.simulator._opencl.util import create_cpu_context, context_and_queue
@@ -70,8 +70,8 @@ class TestCLRWW(unittest.TestCase):
 
         numpy.testing.assert_allclose(cl_dx, np_dx, 1e-5, 1e-6)
 
-@unittest.skipIf(not PYOPENCL_AVAILABLE, 'PyOpenCL not available')
-class TestModels(unittest.TestCase):
+@pytest.mark.skipif(not PYOPENCL_AVAILABLE, reason='PyOpenCL not available')
+class TestModels():
     def setUp(self):
         from tvb.simulator._opencl.util import create_cpu_context, context_and_queue
         self.context, self.queue = context_and_queue(create_cpu_context())
@@ -190,8 +190,8 @@ class TestModels(unittest.TestCase):
 #     TEST_RUNNER = unittest.TextTestRunner()
 #     TEST_SUITE = suite()
 #     TEST_RUNNER.run(TEST_SUITE)
-@unittest.skipIf(not PYOPENCL_AVAILABLE, 'PyOpenCL not available')
-class TestIntegrator(unittest.TestCase):
+@pytest.mark.skipif(not PYOPENCL_AVAILABLE, 'PyOpenCL not available')
+class TestIntegrator():
     def setUp(self):
         from tvb.simulator._opencl.util import create_cpu_context, context_and_queue
         from tvb.simulator._opencl.cl_models import CL_Linear

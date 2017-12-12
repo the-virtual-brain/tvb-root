@@ -40,7 +40,7 @@ import numpy
 from tvb.datatypes import temporal_correlations, time_series
 from tvb.tests.library.base_testcase import BaseTestCase
         
-class TemporalCorrelationsTest(BaseTestCase):
+class TestTemporalCorrelations(BaseTestCase):
     """
     Tests the defaults for `tvb.datatypes.temporal_correlations` module.
     """
@@ -50,9 +50,9 @@ class TemporalCorrelationsTest(BaseTestCase):
         ts = time_series.TimeSeries(data=data)
         dt = temporal_correlations.CrossCorrelation(source=ts)
         summary_info = dt.summary_info
-        self.assertEqual(summary_info['Dimensions'], ['Offsets', 'Node', 'Node', 'State Variable', 'Mode'])
-        self.assertEqual(summary_info['Source'], '')
-        self.assertEqual(summary_info['Temporal correlation type'], 'CrossCorrelation')
-        self.assertEqual(dt.labels_ordering, ['Offsets', 'Node', 'Node', 'State Variable', 'Mode'])
-        self.assertTrue(dt.source is not None)
-        self.assertEqual(dt.time.shape, (0,))
+        assert summary_info['Dimensions'] == ['Offsets', 'Node', 'Node', 'State Variable', 'Mode']
+        assert summary_info['Source'] == ''
+        assert summary_info['Temporal correlation type'] == 'CrossCorrelation'
+        assert dt.labels_ordering == ['Offsets', 'Node', 'Node', 'State Variable', 'Mode']
+        assert dt.source is not None
+        assert dt.time.shape == (0,)

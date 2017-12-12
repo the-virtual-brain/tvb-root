@@ -52,84 +52,77 @@ from tvb.datatypes.cortex import Cortex
 from tvb.datatypes.region_mapping import RegionMapping
 from tvb.datatypes.sensors import SensorsInternal
 
-
 LOG = get_logger(__name__)
 
 
-class MonitorsTest(BaseTestCase):
+class TestMonitors(BaseTestCase):
     """
     Define test cases for monitors:
         - initialise each class
         - check default parameters (period)
-        - 
+        -
     """
 
     default_period = 0.9765625  # 1024Hz
 
     def test_monitor_raw(self):
         monitors.Raw()
-    
-    
+
     def test_monitor_tavg(self):
         monitor = monitors.TemporalAverage()
-        self.assertEqual(monitor.period, self.default_period)
-        
-        
+        assert monitor.period == self.default_period
+
     def test_monitor_gavg(self):
         monitor = monitors.GlobalAverage()
-        self.assertEqual(monitor.period, self.default_period)
-        
-        
+        assert monitor.period == self.default_period
+
     def test_monitor_savg(self):
         monitor = monitors.SpatialAverage()
-        self.assertEqual(monitor.period, self.default_period)
-        
-        
+        assert monitor.period == self.default_period
+
     def test_monitor_subsample(self):
         monitor = monitors.SubSample()
-        self.assertEqual(monitor.period, self.default_period)
-    
+        assert monitor.period == self.default_period
 
     def test_monitor_eeg(self):
         monitor = monitors.EEG()
-        self.assertEqual(monitor.period, self.default_period)
-
+        assert monitor.period == self.default_period
 
     def test_monitor_meg(self):
         monitor = monitors.MEG()
-        self.assertEqual(monitor.period, self.default_period)
-        
+        assert monitor.period == self.default_period
+
     def test_monitor_stereoeeg(self):
         """
         This has to be verified.
         """
         monitor = monitors.iEEG()
         monitor.sensors = sensors.SensorsInternal(load_default=True)
-        self.assertEqual(monitor.period, self.default_period)
-
+        assert monitor.period == self.default_period
 
     def test_monitor_bold(self):
         """
         This has to be verified.
         """
         monitor = monitors.Bold()
-        self.assertEqual(monitor.period, 2000.0)
+        assert monitor.period == 2000.0
 
-        
-class MonitorsConfigurationTest(BaseTestCase):
+
+class TestMonitorsConfiguration(BaseTestCase):
     """
     Configure Monitors
-    
+
     """
+
     def test_monitor_bold(self):
         """
         This has to be verified.
         """
         monitor = monitors.Bold()
-        self.assertEqual(monitor.period, 2000.0)
+        assert monitor.period == 2000.0
 
 
-class SubcorticalProjectionTest(BaseTestCase):
+class TestSubcorticalProjection(BaseTestCase):
     """
     Cortical surface with subcortical regions, sEEG, EEG & MEG, using a stochastic
     integration. This test verifies the shapes of the projection matrices, and
@@ -139,17 +132,18 @@ class SubcorticalProjectionTest(BaseTestCase):
 
     # hard code parameters to smoke test
     speed = 4.0
-    period = 1e3/1024.0 # 1024 Hz
+    period = 1e3 / 1024.0  # 1024 Hz
     coupling_a = 0.014
     n_regions = 192
 
-    def setUp(self):
+    @classmethod
+    def setup_class(self):
         oscillator = models.Generic2dOscillator()
-        white_matter = connectivity.Connectivity.from_file('connectivity_%d.zip' % (self.n_regions, ))
+        white_matter = connectivity.Connectivity.from_file('connectivity_%d.zip' % (self.n_regions,))
         white_matter.speed = numpy.array([self.speed])
         white_matter_coupling = coupling.Difference(a=self.coupling_a)
         heunint = integrators.HeunStochastic(
-            dt=2**-4,
+            dt=2 ** -4,
             noise=noise.Additive(nsig=numpy.array([2 ** -10, ]))
         )
         mons = (
@@ -158,7 +152,7 @@ class SubcorticalProjectionTest(BaseTestCase):
             monitors.iEEG.from_file(period=self.period),
         )
         local_coupling_strength = numpy.array([2 ** -10])
-        region_mapping = RegionMapping.from_file('regionMapping_16k_%d.txt' % (self.n_regions, ))
+        region_mapping = RegionMapping.from_file('regionMapping_16k_%d.txt' % (self.n_regions,))
         default_cortex = Cortex(region_mapping_data=region_mapping, load_default=True)
         default_cortex.coupling_strength = local_coupling_strength
         self.sim = simulator.Simulator(model=oscillator, connectivity=white_matter, coupling=white_matter_coupling,
@@ -167,17 +161,17 @@ class SubcorticalProjectionTest(BaseTestCase):
 
     def test_connectivity(self):
         conn = self.sim.connectivity
-        self.assertEqual(conn.number_of_regions, self.n_regions)
-        self.assertEqual(conn.speed, self.speed)
+        assert conn.number_of_regions == self.n_regions
+        assert conn.speed == self.speed
 
     def test_monitor_properties(self):
         lc_n_node = self.sim.surface.local_connectivity.matrix.shape[0]
         for mon in self.sim.monitors:
-            self.assertEqual(mon.period, self.period)
+            assert mon.period == self.period
             n_sens, g_n_node = mon.gain.shape
-            self.assertEqual(g_n_node, self.sim.number_of_nodes)
-            self.assertEqual(n_sens, mon.sensors.number_of_sensors)
-            self.assertEqual(lc_n_node, g_n_node)
+            assert g_n_node == self.sim.number_of_nodes
+            assert n_sens == mon.sensors.number_of_sensors
+            assert lc_n_node == g_n_node
 
     def test_output_shape(self):
         ys = {}
@@ -191,16 +185,19 @@ class SubcorticalProjectionTest(BaseTestCase):
                     ys[key].append(y)
         for mon, key in zip(self.sim.monitors, mons):
             ys[key] = numpy.array(ys[key])
-            self.assertEqual(ys[key].shape[2], mon.gain.shape[0])
+            assert ys[key].shape[2] == mon.gain.shape[0]
 
-    def tearDown(self):
+    @classmethod
+    def teardown_class(self):
         # gc sim so multiple test suites don't hog memory
         del self.sim
 
 
-class AllAnalyticWithSubcortical(BaseTestCase):
+class TestAllAnalyticWithSubcortical(BaseTestCase):
     "Test correct gain matrix shape for all analytic with subcortical nodes."
-    def setUp(self):
+
+    @classmethod
+    def setup_class(self):
         self.sim = simulator.Simulator(
             connectivity=connectivity.Connectivity.from_file('connectivity_192.zip'),
             monitors=(monitors.iEEG(
@@ -210,12 +207,12 @@ class AllAnalyticWithSubcortical(BaseTestCase):
         ).configure()
 
     def test_gain_size(self):
-        ieeg = self.sim.monitors[0] # type: SensorsInternal
+        ieeg = self.sim.monitors[0]  # type: SensorsInternal
         n_sens, n_reg = ieeg.gain.shape
-        self.assertEqual(ieeg.sensors.locations.shape[0], n_sens)
-        self.assertEqual(self.sim.connectivity.number_of_regions, n_reg)
+        assert ieeg.sensors.locations.shape[0] == n_sens
+        assert self.sim.connectivity.number_of_regions == n_reg
 
 
-class NoSubCorticalProjection(SubcorticalProjectionTest):
+class TestNoSubCorticalProjection(TestSubcorticalProjection):
     "Idem. but with 76 region connectivity"
     n_regions = 76

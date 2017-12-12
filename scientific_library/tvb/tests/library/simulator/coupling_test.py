@@ -46,7 +46,7 @@ from tvb.simulator import coupling, models, simulator
 from tvb.datatypes import cortex, connectivity
 from tvb.simulator.history import SparseHistory
 
-class CouplingTest(BaseTestCase):
+class TestCoupling(BaseTestCase):
     """
     Define test cases for coupling:
         - initialise each class
@@ -76,10 +76,10 @@ class CouplingTest(BaseTestCase):
 
     def test_difference_coupling(self):
         k = coupling.Difference()
-        self.assertEqual(k.a, 0.1)
+        assert k.a, 0.1
 
         result = self._apply_coupling(k)
-        self.assertEqual(result.shape, (1, 2, 1))           # One state variable, two nodes, one mode
+        assert result.shape, (1, 2 == 1)           # One state variable, two nodes, one mode
 
         result = result[0, :, 0].tolist()
         expected_result = [
@@ -88,71 +88,71 @@ class CouplingTest(BaseTestCase):
             k.a*(  self.weights[1, 0] * (self.state_1sv[0, 0, 0] - self.state_1sv[0, 1, 0])
                  + self.weights[1, 1] * (self.state_1sv[0, 1, 0] - self.state_1sv[0, 1, 0]))]
 
-        self.assertAlmostEqual(result, expected_result)
+        assert numpy.isclose(result, expected_result)
 
 
     def test_hyperbolic_coupling(self):
         k = coupling.HyperbolicTangent()
-        self.assertEqual(k.a, 1)
-        self.assertEqual(k.b, 1)
-        self.assertEqual(k.midpoint, 0)
-        self.assertEqual(k.sigma, 1)
+        assert k.a == 1
+        assert k.b == 1
+        assert k.midpoint == 0
+        assert k.sigma == 1
         self._apply_coupling(k)
 
 
     def test_kuramoto_coupling(self):
         k = coupling.Kuramoto()
-        self.assertEqual(k.a, 1)
+        assert k.a == 1
         self._apply_coupling(k)
 
 
     def test_linear_coupling(self):
         k = coupling.Linear()
-        self.assertEqual(k.a, 0.00390625)
-        self.assertEqual(k.b, 0.0)
+        assert k.a == 0.00390625
+        assert k.b == 0.0
         self._apply_coupling(k)
 
 
     def test_pre_sigmoidal_coupling(self):
         k = coupling.PreSigmoidal()
-        self.assertEqual(k.H, 0.5)
-        self.assertEqual(k.Q, 1.)
-        self.assertEqual(k.G, 60.)
-        self.assertEqual(k.P, 1.)
-        self.assertEqual(k.theta, 0.5)
-        self.assertEqual(k.dynamic, True)
-        self.assertEqual(k.globalT, False)
+        assert k.H == 0.5
+        assert k.Q == 1.
+        assert k.G == 60.
+        assert k.P == 1.
+        assert k.theta == 0.5
+        assert k.dynamic == True
+        assert k.globalT == False
         self._apply_coupling_2sv(k)
 
 
     def test_scaling_coupling(self):
         k = coupling.Scaling()
         # Check scaling -factor
-        self.assertEqual(k.a, 0.00390625)
+        assert k.a == 0.00390625
         self._apply_coupling(k)
 
 
     def test_sigmoidal_coupling(self):
         k = coupling.Sigmoidal()
-        self.assertEqual(k.cmin, -1.0)
-        self.assertEqual(k.cmax, 1.0)
-        self.assertEqual(k.midpoint, 0.0)
-        self.assertEqual(k.sigma, 230.)
-        self.assertEqual(k.a, 1.0)
+        assert k.cmin == -1.0
+        assert k.cmax == 1.0
+        assert k.midpoint == 0.0
+        assert k.sigma == 230.
+        assert k.a == 1.0
         self._apply_coupling(k)
 
 
     def test_sigmoidal_jr_coupling(self):
         k = coupling.SigmoidalJansenRit()
-        self.assertEqual(k.cmin, 0.0)
-        self.assertEqual(k.cmax, 2.0 * 0.0025)
-        self.assertEqual(k.midpoint, 6.0)
-        self.assertEqual(k.r, 1.0)
-        self.assertEqual(k.a, 0.56)
+        assert k.cmin == 0.0
+        assert k.cmax == 2.0 * 0.0025
+        assert k.midpoint == 6.0
+        assert k.r == 1.0
+        assert k.a == 0.56
         self._apply_coupling_2sv(k)
 
 
-class CouplingShapeTest(BaseTestCase):
+class TestCouplingShape(BaseTestCase):
 
     def test_shape(self):
 
