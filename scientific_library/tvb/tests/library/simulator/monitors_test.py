@@ -136,8 +136,7 @@ class TestSubcorticalProjection(BaseTestCase):
     coupling_a = 0.014
     n_regions = 192
 
-    @classmethod
-    def setup_class(self):
+    def setup_method(self):
         oscillator = models.Generic2dOscillator()
         white_matter = connectivity.Connectivity.from_file('connectivity_%d.zip' % (self.n_regions,))
         white_matter.speed = numpy.array([self.speed])
@@ -187,8 +186,7 @@ class TestSubcorticalProjection(BaseTestCase):
             ys[key] = numpy.array(ys[key])
             assert ys[key].shape[2] == mon.gain.shape[0]
 
-    @classmethod
-    def teardown_class(self):
+    def teardown_method(self):
         # gc sim so multiple test suites don't hog memory
         del self.sim
 
@@ -196,8 +194,7 @@ class TestSubcorticalProjection(BaseTestCase):
 class TestAllAnalyticWithSubcortical(BaseTestCase):
     "Test correct gain matrix shape for all analytic with subcortical nodes."
 
-    @classmethod
-    def setup_class(self):
+    def setup_method(self):
         self.sim = simulator.Simulator(
             connectivity=connectivity.Connectivity.from_file('connectivity_192.zip'),
             monitors=(monitors.iEEG(

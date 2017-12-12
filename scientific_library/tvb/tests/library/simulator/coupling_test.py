@@ -88,7 +88,7 @@ class TestCoupling(BaseTestCase):
             k.a*(  self.weights[1, 0] * (self.state_1sv[0, 0, 0] - self.state_1sv[0, 1, 0])
                  + self.weights[1, 1] * (self.state_1sv[0, 1, 0] - self.state_1sv[0, 1, 0]))]
 
-        assert numpy.isclose(result, expected_result)
+        assert self.almost_equal(result, expected_result)
 
 
     def test_hyperbolic_coupling(self):

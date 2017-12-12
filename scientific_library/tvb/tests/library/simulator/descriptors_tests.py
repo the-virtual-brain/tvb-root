@@ -34,7 +34,6 @@ Tests for data descriptors for declaring workspace for algorithms and checking u
 
 """
 
-import unittest
 import pytest
 import numpy
 from tvb.simulator.descriptors import StaticAttr, NDArray, ImmutableAttrError, Final, Dim
@@ -44,8 +43,7 @@ import six
 class TestStaticAttr():
     "Test API of StaticAttr base class."
 
-    @classmethod
-    def setup_class(self):
+    def setup_method(self):
         class TestClass(StaticAttr):
             x = 5
             z = 2
@@ -71,8 +69,7 @@ class TestStaticAttr():
 class TestNDArray():
     "Test API of NDArray descriptor."
 
-    @classmethod
-    def setup_class(self):
+    def setup_method(self):
         class PointSet(object):
             positions = NDArray(('n_point', 'dim'), 'f')
             counts = NDArray(('n_point',), 'i', read_only=False)
@@ -120,8 +117,7 @@ class TestNDArray():
 
 class TestFinal():
 
-    @classmethod
-    def setup_class(self):
+    def setup_method(self):
         class Inst(object):
             n = Final()
             m0, m1, m2, m3, m4 = Dim(), Dim(), Dim(), Dim(), Dim()
