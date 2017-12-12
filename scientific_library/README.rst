@@ -98,6 +98,48 @@ To contribute to this repo, you are advised to first fork it under
 GitHub (through the web ui), and next clone that fork on your machine,
 and use it as you use any other git repository.
 
+Testing
+=======
+
+For testing the package, the `Pytest  <https://docs.pytest.org/>`_
+framework is used.
+
+- Installation:
+
+Pytest can be installed using pip command
+pip install -U pytest
+
+- Running tests with pytest:
+
+Pytest will run all files in the current directory and its subdirectories of the form test_\*.py or \*_test.py.
+More generally, it follows `standard test discovery rules <https://docs.pytest.org/en/latest/getting-started.html>`_
+
+- Commands for running tests:
+
+    You can invoke testing through the Python interpreter from the command line:
+
+        python -m pytest [...]
+
+    Run tests in a module:
+
+        pytest test_mod.py
+
+    Run tests in a directory:
+
+        pytest testing/
+
+    To run a specific test within a module:
+
+        pytest test_mod.py::test_func
+
+    Another example specifying a test method in the command line:
+
+        pytest test_mod.py::TestClass::test_method
+
+    Run tests from packages:
+
+        pytest --pyargs pkg.testing
+
 Further Resources
 =================
 
