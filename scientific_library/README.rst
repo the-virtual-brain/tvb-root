@@ -111,34 +111,12 @@ pip install -U pytest
 
 - Running tests with pytest:
 
-Pytest will run all files in the current directory and its subdirectories of the form test_\*.py or \*_test.py.
+Pytest will run all files in the current directory and its subdirectories of the form test_*.py or \*_test.py.
 More generally, it follows `standard test discovery rules <https://docs.pytest.org/en/latest/getting-started.html>`_
 
-- Commands for running tests:
+- Command for running tests:
 
-    You can invoke testing through the Python interpreter from the command line:
-
-        python -m pytest [...]
-
-    Run tests in a module:
-
-        pytest test_mod.py
-
-    Run tests in a directory:
-
-        pytest testing/
-
-    To run a specific test within a module:
-
-        pytest test_mod.py::test_func
-
-    Another example specifying a test method in the command line:
-
-        pytest test_mod.py::TestClass::test_method
-
-    Run tests from packages:
-
-        pytest --pyargs pkg.testing
+cd .... folder pytest tvb/test
 
 Further Resources
 =================
