@@ -46,7 +46,7 @@ class TestsModelManager(BaseTestCase):
     This class contains tests for the tvb.core.entities.modelmanager module.
     """
 
-    def tearDown(self):
+    def teardown_method(self):
         init_test_env()
 
 

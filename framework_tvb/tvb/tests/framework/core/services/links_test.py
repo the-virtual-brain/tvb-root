@@ -33,7 +33,7 @@ Testing linking datatypes between projects.
 
 .. moduleauthor:: Mihai Andrei <mihai.andrei@codemart.ro>
 """
-import unittest
+from tvb.tests.framework.core.base_testcase import TransactionalTestCase
 from tvb.adapters.exporters.export_manager import ExportManager
 from tvb.core.entities.file.files_helper import TvbZip
 from tvb.core.entities.storage import dao
@@ -41,7 +41,6 @@ from tvb.core.services.flow_service import FlowService
 from tvb.core.services.project_service import ProjectService
 from tvb.core.services.import_service import ImportService
 from tvb.core.entities.transient.structure_entities import DataTypeMetaData
-from tvb.tests.framework.core.base_testcase import TransactionalTestCase
 from tvb.tests.framework.datatypes.datatypes_factory import DatatypesFactory
 from tvb.tests.framework.datatypes.datatype1 import Datatype1
 from tvb.tests.framework.datatypes.datatype2 import Datatype2

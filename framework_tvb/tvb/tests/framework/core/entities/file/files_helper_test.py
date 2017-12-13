@@ -34,6 +34,7 @@
 
 import os
 import pytest
+from tvb.tests.framework.core.base_testcase import TransactionalTestCase
 from tvb.basic.profile import TvbProfile
 from tvb.basic.traits.types_mapped import MappedType
 from tvb.core.entities.file.xml_metadata_handlers import XMLReader
@@ -41,8 +42,7 @@ from tvb.core.entities import model
 from tvb.core.entities.storage import dao
 from tvb.core.entities.file.exceptions import FileStructureException
 from tvb.core.entities.file.files_helper import FilesHelper
-from tvb.tests.framework.core.base_testcase import TransactionalTestCase
-from tvb.tests.framework.core.test_factory import TestFactory
+from tvb.tests.framework.core.factory import TestFactory
 
 
 root_storage = TvbProfile.current.TVB_STORAGE
@@ -96,7 +96,7 @@ class TestFilesHelper(TransactionalTestCase):
         """ Try to rename the folder structure of a project. Standard flow. """
         self.files_helper.get_project_folder(self.test_project)
         path, name = self.files_helper.rename_project_structure(self.test_project.name, "new_name")
-        self.assertNotEqual(path, name, "Rename didn't take effect.")
+        assert path != name, "Rename didn't take effect."
 
 
     def test_rename_structure_same_name(self):
@@ -131,8 +131,8 @@ class TestFilesHelper(TransactionalTestCase):
         del expected_dict['last_updated']
         found_dict = loaded_project.to_dict()[1]
         del found_dict['last_updated']
-        self.assertDictContainsSubset(expected_dict, found_dict)
-        self.assertDictContainsSubset(found_dict, expected_dict)
+        self._dictContainsSubset(expected_dict, found_dict)
+        self._dictContainsSubset(found_dict, expected_dict)
     
     
     def test_write_operation_metadata(self):
@@ -152,7 +152,7 @@ class TestFilesHelper(TransactionalTestCase):
         for key, value in expected_dict.iteritems():
             assert str(value) == str(found_dict[key])
         # Now validate that operation metaData can be also updated
-        self.assertNotEqual("new_group_name", found_dict['user_group'])
+        assert "new_group_name" != found_dict['user_group']
         self.files_helper.update_operation_metadata(self.PROJECT_NAME, "new_group_name", operation.id) 
         found_dict = XMLReader(expected_file).read_metadata()  
         assert "new_group_name" == found_dict['user_group']
@@ -168,7 +168,7 @@ class TestFilesHelper(TransactionalTestCase):
         open(datatype.get_storage_file_path(), 'w') 
         assert os.path.exists(datatype.get_storage_file_path()), "Test file was not created!"
         self.files_helper.remove_datatype(datatype) 
-        assert not os.path.exists(datatype.get_storage_file_path()), "Test file was not deleted!"  
+        assert not os.path.exists(datatype.get_storage_file_path()), "Test file was not deleted!"
         
         
     def test_remove_dt_non_existent(self):
@@ -251,3 +251,13 @@ class TestFilesHelper(TransactionalTestCase):
         with pytest.raises(FileStructureException):
             self.files_helper.remove_folder(folder_name, False)
 
+    def _dictContainsSubset(self, expected, actual, msg=None):
+        """Checks whether actual is a superset of expected."""
+        missing = []
+        mismatched = []
+        for key, value in expected.iteritems():
+            if key not in actual:
+                return False
+            elif value != actual[key]:
+                return False
+        return True

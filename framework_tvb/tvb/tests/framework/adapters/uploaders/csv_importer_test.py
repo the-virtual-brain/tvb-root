@@ -35,6 +35,7 @@
 import pytest
 import tvb_data
 from os import path
+from tvb.tests.framework.core.base_testcase import TransactionalTestCase, BaseTestCase
 from tvb.adapters.uploaders.csv_connectivity_importer import CSVConnectivityParser
 from tvb.basic.filters.chain import FilterChain
 from tvb.core.entities.file.files_helper import FilesHelper
@@ -42,8 +43,7 @@ from tvb.core.services.exceptions import OperationException
 from tvb.core.services.flow_service import FlowService
 from tvb.datatypes.connectivity import Connectivity
 from tvb.tests.framework.adapters.uploaders.connectivity_zip_importer_test import TestConnectivityZip
-from tvb.tests.framework.core.base_testcase import TransactionalTestCase, BaseTestCase
-from tvb.tests.framework.core.test_factory import TestFactory
+from tvb.tests.framework.core.factory import TestFactory
 
 
 TEST_SUBJECT_A = "TEST_SUBJECT_A"
@@ -62,7 +62,7 @@ class TestCSVConnectivityParser(BaseTestCase):
                 assert 0 == result_conn[i][i]
 
 
-class CSVConnectivityImporterTest(TransactionalTestCase):
+class TestCSVConnectivityImporter(TransactionalTestCase):
     """
     Unit-tests for csv connectivity importer.
     """

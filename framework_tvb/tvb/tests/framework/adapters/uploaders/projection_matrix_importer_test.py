@@ -34,13 +34,12 @@
 """
 
 import os
-import unittest
 import tvb_data.sensors
 import tvb_data.surfaceData
 import tvb_data.projectionMatrix as dataset
-from tvb.adapters.uploaders.sensors_importer import Sensors_Importer
 from tvb.tests.framework.core.base_testcase import TransactionalTestCase
-from tvb.tests.framework.core.test_factory import TestFactory
+from tvb.adapters.uploaders.sensors_importer import Sensors_Importer
+from tvb.tests.framework.core.factory import TestFactory
 from tvb.core.services.flow_service import FlowService
 from tvb.core.services.exceptions import OperationException
 from tvb.core.entities.file.files_helper import FilesHelper

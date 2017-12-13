@@ -33,7 +33,6 @@
 """
 
 import json
-import unittest
 from tvb.tests.framework.interfaces.web.controllers.base_controller_test import BaseTransactionalControllerTest
 from tvb.tests.framework.datatypes.datatypes_factory import DatatypesFactory
 from tvb.interfaces.web.controllers.burst.exploration_controller import ParameterExplorationController

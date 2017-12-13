@@ -35,6 +35,7 @@
 import json
 import pytest
 from copy import copy
+from tvb.tests.framework.core.base_testcase import TransactionalTestCase
 from tvb.config import SIMULATOR_CLASS, SIMULATOR_MODULE
 from tvb.core.adapters.abcadapter import ABCAdapter
 from tvb.core.entities import model
@@ -42,8 +43,7 @@ from tvb.core.entities.storage import dao
 from tvb.core.services.project_service import initialize_storage
 from tvb.core.services.operation_service import OperationService
 from tvb.datatypes.time_series import TimeSeriesRegion
-from tvb.tests.framework.core.test_factory import TestFactory
-from tvb.tests.framework.core.base_testcase import TransactionalTestCase
+from tvb.tests.framework.core.factory import TestFactory
 from tvb.tests.framework.datatypes.datatypes_factory import DatatypesFactory
 
 

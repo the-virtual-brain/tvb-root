@@ -33,16 +33,13 @@
 """
 
 import os
-import unittest
 import json
 from tvb.core.entities import model
 from tvb.core.entities.transient.structure_entities import GenericMetaData
 from tvb.core.entities.file.xml_metadata_handlers import XMLReader, XMLWriter
 
 
-
-
-class MetaDataReadXMLTest(unittest.TestCase):
+class TestMetaDataReadXML():
     """
     Tests for tvb.core.entities.file.metadatahandler.XMLReader class.
     """   
@@ -55,7 +52,7 @@ class MetaDataReadXMLTest(unittest.TestCase):
                                                        'module': 'tvb.adapters.uploaders.cff_importer'})
                            }
         
-    def setUp(self):
+    def setup_method(self):
         """
         Sets up necessary files for the tests.
         """
@@ -69,29 +66,27 @@ class MetaDataReadXMLTest(unittest.TestCase):
         actual content of the XML.
         """
         meta_data = self.meta_reader.read_metadata()
-        self.assertTrue(isinstance(meta_data, GenericMetaData))
+        assert isinstance(meta_data, GenericMetaData)
         for key, value in self.EXPECTED_DICTIONARY.iteritems():
             found_value = meta_data[key]
-            self.assertEqual(value, found_value)
+            assert value == found_value
         
     def test_read_gid(self):
         """
         Test that value returned by read_only_element matches the actual value from the XML file.
         """
         read_value = self.meta_reader.read_only_element('gid')
-        self.assertTrue(isinstance(read_value, str))
-        self.assertEqual(read_value, self.EXPECTED_DICTIONARY['gid'])
-        
-        
-        
+        assert isinstance(read_value, str)
+        assert read_value == self.EXPECTED_DICTIONARY['gid']
+
      
-class MetaDataWriteXMLTest(unittest.TestCase):  
+class TestMetaDataWriteXML():
     """
     Tests for XMLWriter.
     """ 
-    WRITABLE_METADATA = MetaDataReadXMLTest.EXPECTED_DICTIONARY
+    WRITABLE_METADATA = TestMetaDataReadXML.EXPECTED_DICTIONARY
     
-    def setUp(self):
+    def setup_method(self):
         """
         Sets up necessary files for the tests.
         """
@@ -99,40 +94,21 @@ class MetaDataWriteXMLTest(unittest.TestCase):
         self.meta_writer = XMLWriter(meta_data_entity)
         self.result_path = os.path.join(os.path.dirname(__file__), "Operation.xml")
       
-    def tearDown(self):
+    def teardown_method(self):
         """
         Remove created XML file.
         """
-        unittest.TestCase.tearDown(self)
         os.remove(self.result_path)
         
     def test_write_metadata(self):
         """
         Test that an XML file is created and correct data is written in it.
         """
-        self.assertFalse(os.path.exists(self.result_path))
+        assert not os.path.exists(self.result_path)
         self.meta_writer.write(self.result_path)
-        self.assertTrue(os.path.exists(self.result_path))
+        assert os.path.exists(self.result_path)
         reader = XMLReader(self.result_path)
         meta_data = reader.read_metadata()
-        for key, value in MetaDataReadXMLTest.EXPECTED_DICTIONARY.iteritems():
+        for key, value in TestMetaDataReadXML.EXPECTED_DICTIONARY.iteritems():
             found_value = meta_data[key]
-            self.assertEqual(value, found_value)
-    
-    
-
-def suite():
-    """
-    Gather all the tests in a test suite.
-    """
-    test_suite = unittest.TestSuite()
-    test_suite.addTest(unittest.makeSuite(MetaDataReadXMLTest))
-    test_suite.addTest(unittest.makeSuite(MetaDataWriteXMLTest))
-    return test_suite
-
-
-if __name__ == "__main__":
-    unittest.main()
-    
-    
-    
+            assert value == found_value

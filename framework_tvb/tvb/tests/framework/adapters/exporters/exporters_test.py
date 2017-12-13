@@ -35,6 +35,7 @@ import pytest
 import os.path
 import shutil
 import zipfile
+from tvb.tests.framework.core.base_testcase import TransactionalTestCase
 from contextlib import closing
 from tvb.core.entities.storage import dao
 from tvb.core.entities.file.files_helper import FilesHelper
@@ -42,7 +43,6 @@ from tvb.adapters.exporters.export_manager import ExportManager
 from tvb.adapters.exporters.exceptions import ExportException, InvalidExportDataException
 from tvb.tests.framework.datatypes.datatypes_factory import DatatypesFactory
 from tvb.basic.profile import TvbProfile
-from tvb.tests.framework.core.base_testcase import TransactionalTestCase
 
 
 

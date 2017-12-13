@@ -37,9 +37,9 @@ import os
 import numpy
 import pytest
 from datetime import datetime
+from tvb.tests.framework.core.base_testcase import TransactionalTestCase
 from tvb.config import DISCRETE_PSE_ADAPTER_CLASS
 from tvb.core.adapters.exceptions import IntrospectionException
-from tvb.tests.framework.core.base_testcase import TransactionalTestCase
 from tvb.datatypes.arrays import MappedArray
 from tvb.basic.filters.chain import FilterChain
 from tvb.core.entities import model
@@ -49,7 +49,7 @@ from tvb.core.adapters.abcadapter import ABCSynchronous, ABCAdapter
 from tvb.core.services.flow_service import FlowService
 from tvb.tests.framework.datatypes.datatype1 import Datatype1
 from tvb.tests.framework.datatypes.datatype2 import Datatype2
-from tvb.tests.framework.core.test_factory import TestFactory
+from tvb.tests.framework.core.factory import TestFactory
 from tvb.tests.framework.datatypes.datatypes_factory import DatatypesFactory
 
 

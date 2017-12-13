@@ -33,6 +33,7 @@
 """
 
 import pytest
+from tvb.tests.framework.core.base_testcase import TransactionalTestCase
 from hashlib import md5
 from tvb.core.entities import model
 from tvb.basic.profile import TvbProfile
@@ -40,7 +41,6 @@ from tvb.core.entities.storage import dao
 from tvb.core.services.exceptions import UsernameException
 from tvb.core.services.user_service import UserService, USERS_PAGE_SIZE
 from tvb.core.services.project_service import ProjectService
-from tvb.tests.framework.core.base_testcase import TransactionalTestCase
 
 
 

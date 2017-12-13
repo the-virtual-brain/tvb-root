@@ -39,10 +39,10 @@ import numpy
 import cherrypy
 import tvb.basic.traits as trait
 import tvb.interfaces.web.templates.genshi.flow as root_html
+from tvb.tests.framework.core.base_testcase import BaseTestCase
 from bs4 import BeautifulSoup
 from genshi.template.loader import TemplateLoader
 from tvb.core.adapters.input_tree import InputTreeManager
-from tvb.tests.framework.core.base_testcase import BaseTestCase
 from tvb.basic.profile import TvbProfile
 from tvb.interfaces.web.controllers import common
 from tvb.core.adapters.abcadapter import ABCAdapter
@@ -53,7 +53,7 @@ from tvb.datatypes.arrays import MappedArray
 from tvb.interfaces.web.controllers.flow_controller import FlowController
 from tvb.interfaces.web.entities.context_selected_adapter import SelectedAdapterContext
 from tvb.tests.framework.adapters.ndimensionarrayadapter import NDimensionArrayAdapter
-from tvb.tests.framework.core.test_factory import TestFactory
+from tvb.tests.framework.core.factory import TestFactory
 
 
 
@@ -114,7 +114,7 @@ class GenshiTest(BaseTestCase):
     This class contains the base initialization for tests for the GENSHI TemplateLoader.
     """
 
-    def setUp(self):
+    def setup_method(self):
         """
         Define a default template specification.
         """
@@ -129,7 +129,7 @@ class GenshiTest(BaseTestCase):
         TvbProfile.current.web.RENDER_HTML = True
 
 
-    def tearDown(self):
+    def teardown_method(self):
         TvbProfile.current.web.RENDER_HTML = False
 
 
@@ -164,7 +164,7 @@ class TestGenthiTrait(GenshiTest):
 
 
 
-class GenshiTestSimulator(GenshiTest):
+class TestGenshiSimulator(GenshiTest):
     """
     For the simulator interface, test that various fields are generated correctly.
     """
@@ -174,11 +174,11 @@ class GenshiTestSimulator(GenshiTest):
     input_tree = InputTreeManager.prepare_param_names(input_tree)
 
 
-    def setUp(self):
+    def setup_method(self):
         """
         Set up any additionally needed parameters.
         """
-        super(GenshiTestSimulator, self).setUp()
+        super(TestGenshiSimulator, self).setup_method()
 
         self.template_specification['inputList'] = self.input_tree
         self.template_specification['draw_hidden_ranges'] = True
@@ -265,29 +265,29 @@ class GenshiTestSimulator(GenshiTest):
 
 
 
-class GenshiTestNDimensionArray(GenshiTest):
+class TestGenshiNDimensionArray(GenshiTest):
     """
     This class tests the generation of the component which allows
     a user to reduce the dimension of an array.
     """
 
 
-    def setUp(self):
+    def setup_method(self):
         """
         Set up any additionally needed parameters.
         """
         self.clean_database()
-        super(GenshiTestNDimensionArray, self).setUp()
+        super(TestGenshiNDimensionArray, self).setup_method()
         self.test_user = TestFactory.create_user()
         self.test_project = TestFactory.create_project(self.test_user)
         self.operation = TestFactory.create_operation(test_user=self.test_user, test_project=self.test_project)
 
 
-    def tearDown(self):
+    def teardown_method(self):
         """
         Reset the database when test is done.
         """
-        super(GenshiTestNDimensionArray, self).tearDown()
+        super(TestGenshiNDimensionArray, self).teardown_method()
         self.clean_database()
 
 

@@ -55,7 +55,7 @@ class TestSettingsService(BaseTestCase):
                      SettingsService.KEY_MAX_DISK_SPACE_USR: 2 ** 8}
 
 
-    def setUp(self):
+    def setup_method(self):
         """
         Prepare the usage of a different config file for this class only.
         """
@@ -68,7 +68,7 @@ class TestSettingsService(BaseTestCase):
         self.settings_service = SettingsService()
         
             
-    def tearDown(self):
+    def teardown_method(self):
         """
         Restore configuration file
         """

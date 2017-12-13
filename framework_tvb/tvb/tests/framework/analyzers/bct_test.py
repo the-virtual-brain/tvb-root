@@ -34,16 +34,16 @@
 
 import numpy
 import pytest
+from tvb.tests.framework.core.base_testcase import TransactionalTestCase
 from tvb.core.adapters.abcadapter import ABCAdapter
 from tvb.core.entities.model import STATUS_FINISHED
-from tvb.tests.framework.core.base_testcase import TransactionalTestCase
 from tvb.core.utils import get_matlab_executable
 from tvb.core.entities import model
 from tvb.core.entities.storage import dao
 from tvb.core.services.operation_service import OperationService
 from tvb.core.adapters.exceptions import InvalidParameterException
 from tvb.datatypes.connectivity import Connectivity
-from tvb.tests.framework.core.test_factory import TestFactory
+from tvb.tests.framework.core.factory import TestFactory
 
 
 class TestBCT(TransactionalTestCase):
@@ -126,5 +126,7 @@ class TestBCT(TransactionalTestCase):
         Iterate all BCT algorithms and check that description has been extracted from *.m files.
         """
         for adapter_instance in self.bct_adapters:
-            assert len(adapter_instance.stored_adapter.description) > 10, "Description was not loaded properly for algorithm %s" % (str(adapter_instance))
+            assertlen(adapter_instance.stored_adapter.description) > 10,
+                           \ "Description was not loaded properly for algorithm %s" % (str(adapter_instance))
+
 

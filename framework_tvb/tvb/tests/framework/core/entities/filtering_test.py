@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 #
 #
-# TheVirtualBrain-Framework Package. This package holds all Data Management, and 
+# TheVirtualBrain-Framework Package. This package holds all Data Management, and
 # Web-UI helpful to run brain-simulations. To use it, you also need do download
 # TheVirtualBrain-Scientific Package (for simulators). See content of the
 # documentation-folder for more details. See also http://www.thevirtualbrain.org
@@ -33,10 +33,10 @@
 """
 ## Used in sql filter eval
 from sqlalchemy import and_
+from tvb.tests.framework.core.base_testcase import TransactionalTestCase
 from tvb.core.entities.transient.filtering import StaticFiltersFactory
 from tvb.core.entities.storage.session_maker import SessionMaker
 from tvb.basic.filters.chain import FilterChain
-from tvb.tests.framework.core.base_testcase import TransactionalTestCase
 from tvb.tests.framework.datatypes import datatypes_factory
 from tvb.tests.framework.datatypes.datatype1 import Datatype1
 
@@ -45,7 +45,7 @@ class TestFiltering(TransactionalTestCase):
     """
     Test that defining and evaluating a filter on entities is correctly processed.
     """
-    
+
     class DummyFilterClass():
         """
         This class is a class with some attributes that is used to test the filtering module.
@@ -53,7 +53,7 @@ class TestFiltering(TransactionalTestCase):
         attribute_1 = None
         attribute_2 = None
         attribute_3 = None
-        
+
         def __init__(self, attribute_1=None, attribute_2=None, attribute_3=None):
             self.attribute_1 = attribute_1
             self.attribute_2 = attribute_2
@@ -63,8 +63,8 @@ class TestFiltering(TransactionalTestCase):
         def __str__(self):
             return self.__class__.__name__ + '(attribute_1=%s, attribute_2=%s, attribute_3=%s)' % (
                 self.attribute_1, self.attribute_2, self.attribute_3)
-            
-            
+
+
     def tearDown(self):
         self.clean_database()
 
@@ -80,8 +80,7 @@ class TestFiltering(TransactionalTestCase):
         assert isinstance(op_page_filters, list), "We expect a list of filters."
         for entry in op_page_filters:
             assert isinstance(entry, FilterChain), "We expect a list of filters."
-    
-    
+
     def test_filter_sql_equivalent(self):
         """
         Test applying a filter on DB.
@@ -107,16 +106,15 @@ class TestFiltering(TransactionalTestCase):
                                     operations=['==', 'in'], values=["value1", ['value1', 'value2']])
         test_filter_4 = FilterChain(fields=[FilterChain.datatype + '._row1', FilterChain.datatype + '._row2'],
                                     operations=['==', 'in'], values=["value1", ['value5', 'value6']])
-        
+
         all_stored_dts = self.count_all_entities(Datatype1)
         assert 3 == all_stored_dts
-        
         self._evaluate_db_filter(test_filter_1, 2)
         self._evaluate_db_filter(test_filter_2, 0)
         self._evaluate_db_filter(test_filter_3, 1)
         self._evaluate_db_filter(test_filter_4, 0)
-        
-    
+
+
     def _evaluate_db_filter(self, filter_chain, expected_number):
         """
         Evaluate filter on DB and assert number of results.
@@ -132,5 +130,6 @@ class TestFiltering(TransactionalTestCase):
         except Exception as excep:
             session.close_session()
             raise excep
-        assert expected_number == len(result), "Expected %s DTs after filtering with %s, but got %s instead." % (expected_number, filter_chain, len(result,))
+        assert expected_number == len(result), "Expected %s DTs after filtering with %s, "\
+        "but got %s instead." % (expected_number, filter_chain, len(result,))
 

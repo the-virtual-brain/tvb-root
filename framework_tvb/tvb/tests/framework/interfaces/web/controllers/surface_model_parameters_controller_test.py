@@ -32,7 +32,6 @@
 .. moduleauthor:: Bogdan Neacsa <bogdan.neacsa@codemart.ro>
 """
 
-import unittest
 import cherrypy
 from tvb.tests.framework.interfaces.web.controllers.base_controller_test import BaseTransactionalControllerTest
 from tvb.interfaces.web.controllers.spatial.surface_model_parameters_controller import SurfaceModelParametersController
@@ -72,7 +71,8 @@ class TestSurfaceModelParametersController(BaseTransactionalControllerTest):
                          'urlVertices', 'urlVerticesPick', 'mainContent', 'inputList',
                          'equationViewerUrl', 'equationsPrefixes', 'data', 'brainCenter',
                          'applied_equations']
-        map(lambda x: self.assertTrue(x in result_dict), expected_keys)
+        # map(lambda x: self.assertTrue(x in result_dict), expected_keys)
+        assert all(x in result_dict for x in expected_keys)
         assert result_dict['equationViewerUrl'] ==\
                          '/spatial/modelparameters/surface/get_equation_chart'
         assert result_dict['mainContent'] == 'spatial/model_param_surface_main'

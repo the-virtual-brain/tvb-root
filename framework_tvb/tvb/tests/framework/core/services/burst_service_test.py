@@ -33,12 +33,12 @@
 """
 
 import copy
-import unittest
+import pytest
 import numpy
 import json
 from time import sleep
+from tvb.tests.framework.core.base_testcase import BaseTestCase, init_test_env
 from tvb.core.adapters.input_tree import InputTreeManager
-from tvb.tests.framework.core.base_testcase import BaseTestCase
 from tvb.config import SIMULATOR_MODULE, SIMULATOR_CLASS
 from tvb.datatypes.connectivity import Connectivity
 from tvb.datatypes.mapped_values import DatatypeMeasure
@@ -59,7 +59,7 @@ from tvb.core.services.exceptions import InvalidPortletConfiguration
 from tvb.core.portlets.xml_reader import KEY_DYNAMIC
 from tvb.core.portlets.portlet_configurer import ADAPTER_PREFIX_ROOT
 from tvb.core.adapters.abcadapter import ABCAdapter
-from tvb.tests.framework.core.test_factory import TestFactory
+from tvb.tests.framework.core.factory import TestFactory
 from tvb.tests.framework.datatypes.datatype1 import Datatype1
 from tvb.tests.framework.datatypes.datatype2 import Datatype2
 from tvb.tests.framework.datatypes import datatypes_factory
@@ -68,7 +68,7 @@ from tvb.tests.framework.adapters.simulator.simulator_adapter_test import SIMULA
 
 
 
-class BurstServiceTest(BaseTestCase):
+class TestBurstService(BaseTestCase):
     """
     Test the service layer for BURST PAGE. We can't have this transactional since
     we launch operations in different threads and the transactional operator only rolls back 
@@ -86,7 +86,7 @@ class BurstServiceTest(BaseTestCase):
     local_simulation_params = copy.deepcopy(SIMULATOR_PARAMETERS)
 
 
-    def setUp(self):
+    def setup_method(self):
         """
         Sets up the environment for running the tests;
         cleans the database before testing and saves config file;
@@ -99,7 +99,7 @@ class BurstServiceTest(BaseTestCase):
         self.test_project = TestFactory.create_project(self.test_user)
 
 
-    def tearDown(self):
+    def teardown_method(self):
         """
         Remove project folders and clean up database.
         """
@@ -112,20 +112,21 @@ class BurstServiceTest(BaseTestCase):
         Test that the correct portlet configuration is generated for the test portlet.
         """
         # Passing an invalid portlet ID should fail and raise an InvalidPortletConfiguration exception.
-        self.assertRaises(InvalidPortletConfiguration, self.burst_service.new_portlet_configuration, -1)
+        with pytest.raises(InvalidPortletConfiguration):
+            self.burst_service.new_portlet_configuration(-1)
 
         # Now the happy flow
         test_portlet = dao.get_portlet_by_identifier(self.PORTLET_ID)
         portlet_configuration = self.burst_service.new_portlet_configuration(test_portlet.id)
         analyzers = portlet_configuration.analyzers
-        self.assertEqual(len(analyzers), 1, "Portlet configuration not build properly."
-                                            " Portlet's analyzers list has unexpected number of elements.")
-        self.assertEqual(analyzers[0].dynamic_param, {u'test_dt_input': {wf_cfg.DATATYPE_INDEX_KEY: 0,
-                                                                         wf_cfg.STEP_INDEX_KEY: 0}},
-                         "Dynamic parameters not loaded properly")
+        assert len(analyzers) == 1, "Portlet configuration not build properly."\
+                                            " Portlet's analyzers list has unexpected number of elements."
+        assert analyzers[0].dynamic_param == {u'test_dt_input': {wf_cfg.DATATYPE_INDEX_KEY: 0,
+                                                                         wf_cfg.STEP_INDEX_KEY: 0}},\
+                         "Dynamic parameters not loaded properly"
         visualizer = portlet_configuration.visualizer
-        self.assertEqual(visualizer.dynamic_param, {}, "Dynamic parameters not loaded properly")
-        self.assertEqual(visualizer.static_param, {u'test2': u'0'}, 'Static parameters not loaded properly')
+        assert visualizer.dynamic_param == {}, "Dynamic parameters not loaded properly"
+        assert visualizer.static_param == {u'test2': u'0'}, 'Static parameters not loaded properly'
 
 
     def test_build_portlet_interface(self):
@@ -146,9 +147,9 @@ class BurstServiceTest(BaseTestCase):
         for idx, entry in enumerate(expected_steps):
             step = actual_interface[idx]
             for key in entry:
-                self.assertEqual(entry.get(key), getattr(step, key))
+                assert entry.get(key) == getattr(step, key)
             for key in expected_interface[idx]:
-                self.assertEqual(expected_interface[idx].get(key, False), step.interface[0].get(key, False))
+                assert expected_interface[idx].get(key, False) == step.interface[0].get(key, False)
 
 
     def test_build_portlet_interface_invalid(self):
@@ -158,8 +159,8 @@ class BurstServiceTest(BaseTestCase):
         test_portlet = dao.get_portlet_by_identifier(self.PORTLET_ID)
         portlet_configuration = self.burst_service.new_portlet_configuration(test_portlet.id)
         portlet_configuration.portlet_id = "this-is-invalid"
-        self.assertRaises(InvalidPortletConfiguration, self.burst_service.build_portlet_interface,
-                          portlet_configuration, self.test_project.id)
+        with pytest.raises(InvalidPortletConfiguration):
+            self.burst_service.build_portlet_interface(portlet_configuration, self.test_project.id)
 
 
     def test_update_portlet_config(self):
@@ -180,8 +181,8 @@ class BurstServiceTest(BaseTestCase):
                 visualizer parameter change or an analyzer one)
             """
             result = self.burst_service.update_portlet_configuration(portlet_configuration, declared_overwrites)
-            self.assertEqual(expected_result, result,
-                             "After update expected %s as 'need_restart' but got %s." % (expected_result, result))
+            assert expected_result == result,\
+                             "After update expected %s as 'need_restart' but got %s." % (expected_result, result)
 
 
         test_portlet = dao.get_portlet_by_identifier(self.PORTLET_ID)
@@ -206,13 +207,13 @@ class BurstServiceTest(BaseTestCase):
         invalid_overwrites = {'this_is_not_a_valid_key': 'for_test_portlet_update'}
         before_update = copy.deepcopy(portlet_configuration)
         self.burst_service.update_portlet_configuration(portlet_configuration, invalid_overwrites)
-        self.assertEqual(set(dir(before_update)), set(dir(portlet_configuration)))
+        assert set(dir(before_update)) == set(dir(portlet_configuration))
         #An update with invalid input data should have no effect on the configuration, but attributes changed
         for key in portlet_configuration.__dict__.keys():
             if hasattr(getattr(portlet_configuration, key), '__call__'):
-                self.assertEqual(getattr(before_update, key), getattr(portlet_configuration, key),
-                                 "The value of attribute %s changed by a update with invalid data "
-                                 "when it shouldn't have." % key)
+                assert getattr(before_update, key) == getattr(portlet_configuration, key),\
+                                 "The value of attribute %s changed by a update with invalid data "\
+                                 "when it shouldn't have." % key
 
 
     def test_clone_burst_configuration(self):
@@ -223,9 +224,9 @@ class BurstServiceTest(BaseTestCase):
         first_burst = TestFactory.store_burst(self.test_project.id)
         cloned_burst = first_burst.clone()
         self._compare_bursts(first_burst, cloned_burst)
-        self.assertEqual(first_burst.selected_tab, cloned_burst.selected_tab, "Selected tabs not equal for bursts.")
-        self.assertEqual(len(first_burst.tabs), len(cloned_burst.tabs), "Tabs not equal for bursts.")
-        self.assertTrue(cloned_burst.id is None, 'id should be none for cloned entry.')
+        assert first_burst.selected_tab == cloned_burst.selected_tab, "Selected tabs not equal for bursts."
+        assert len(first_burst.tabs) == len(cloned_burst.tabs), "Tabs not equal for bursts."
+        assert cloned_burst.id is None, 'id should be none for cloned entry.'
 
 
     def test_store_burst_config(self):
@@ -233,9 +234,9 @@ class BurstServiceTest(BaseTestCase):
         Test that a burst entity is properly stored in db.
         """
         burst_config = TestFactory.store_burst(self.test_project.id)
-        self.assertTrue(burst_config.id is not None, 'Burst was not stored properly.')
+        assert burst_config.id is not None, 'Burst was not stored properly.'
         stored_entity = dao.get_burst_by_id(burst_config.id)
-        self.assertTrue(stored_entity is not None, 'Burst was not stored properly.')
+        assert stored_entity is not None, 'Burst was not stored properly.'
         self._compare_bursts(burst_config, stored_entity)
 
 
@@ -243,9 +244,9 @@ class BurstServiceTest(BaseTestCase):
         """
         Compare that all important attributes are the same between two bursts. (name, project id and status)
         """
-        self.assertEqual(first_burst.name, second_burst.name, "Names not equal for bursts.")
-        self.assertEqual(first_burst.fk_project, second_burst.fk_project, "Projects not equal for bursts.")
-        self.assertEqual(first_burst.status, second_burst.status, "Statuses not equal for bursts.")
+        assert first_burst.name == second_burst.name, "Names not equal for bursts."
+        assert first_burst.fk_project == second_burst.fk_project, "Projects not equal for bursts."
+        assert first_burst.status == second_burst.status, "Statuses not equal for bursts."
 
 
     def test_getavailablebursts_none(self):
@@ -253,7 +254,7 @@ class BurstServiceTest(BaseTestCase):
         Test that an empty list is returned if no data is available in db.
         """
         bursts = self.burst_service.get_available_bursts(self.test_project.id)
-        self.assertEqual(bursts, [], "Unexpected result returned : %s" % (bursts,))
+        assert bursts == [], "Unexpected result returned : %s" % (bursts,)
 
 
     def test_get_available_bursts_happy(self):
@@ -268,14 +269,14 @@ class BurstServiceTest(BaseTestCase):
                                         self.burst_service.get_available_bursts(self.test_project.id)]
         returned_second_project_bursts = [burst.id for burst in
                                           self.burst_service.get_available_bursts(second_project.id)]
-        self.assertEqual(len(test_project_bursts), len(returned_test_project_bursts),
-                         "Incorrect bursts retrieved for project %s." % self.test_project)
-        self.assertEqual(len(second_project_bursts), len(returned_second_project_bursts),
-                         "Incorrect bursts retrieved for project %s." % second_project)
-        self.assertEqual(set(second_project_bursts), set(returned_second_project_bursts),
-                         "Incorrect bursts retrieved for project %s." % second_project)
-        self.assertEqual(set(test_project_bursts), set(returned_test_project_bursts),
-                         "Incorrect bursts retrieved for project %s." % self.test_project)
+        assert len(test_project_bursts) == len(returned_test_project_bursts),\
+                         "Incorrect bursts retrieved for project %s." % self.test_project
+        assert len(second_project_bursts) == len(returned_second_project_bursts),\
+                         "Incorrect bursts retrieved for project %s." % second_project
+        assert set(second_project_bursts) == set(returned_second_project_bursts),\
+                         "Incorrect bursts retrieved for project %s." % second_project
+        assert set(test_project_bursts) == set(returned_test_project_bursts),\
+                         "Incorrect bursts retrieved for project %s." % self.test_project
 
 
     def test_select_simulator_inputs(self):
@@ -306,7 +307,7 @@ class BurstServiceTest(BaseTestCase):
                             break
             if found_it:
                 break
-        self.assertTrue(child_parameter != '', "Could not find any sub-tree entry in simulator interface.")
+        assert child_parameter != '', "Could not find any sub-tree entry in simulator interface."
         subtree = InputTreeManager.select_simulator_inputs(simulator_input_tree, checked_parameters)
         #After the select method we expect only the checked parameters entries to remain with
         #the new values updated accordingly.
@@ -316,12 +317,12 @@ class BurstServiceTest(BaseTestCase):
                              ABCAdapter.KEY_DEFAULT: 'new_value'},
                             {ABCAdapter.KEY_NAME: child_parameter,
                              ABCAdapter.KEY_DEFAULT: 'new_value'}]
-        self.assertEqual(len(expected_outputs), len(subtree),
-                         "Some entries that should not have been displayed still are.")
+        assert len(expected_outputs) == len(subtree),\
+                         "Some entries that should not have been displayed still are."
         for idx, entry in enumerate(expected_outputs):
-            self.assertEqual(expected_outputs[idx][ABCAdapter.KEY_NAME], subtree[idx][ABCAdapter.KEY_NAME])
-            self.assertEqual(expected_outputs[idx][ABCAdapter.KEY_DEFAULT], subtree[idx][ABCAdapter.KEY_DEFAULT],
-                             'Default value not update properly.')
+            assert expected_outputs[idx][ABCAdapter.KEY_NAME] == subtree[idx][ABCAdapter.KEY_NAME]
+            assert expected_outputs[idx][ABCAdapter.KEY_DEFAULT] == subtree[idx][ABCAdapter.KEY_DEFAULT],\
+                             'Default value not update properly.'
 
 
     def test_rename_burst(self):
@@ -331,7 +332,7 @@ class BurstServiceTest(BaseTestCase):
         burst_config = TestFactory.store_burst(self.test_project.id)
         self.burst_service.rename_burst(burst_config.id, "new_burst_name")
         loaded_burst = dao.get_burst_by_id(burst_config.id)
-        self.assertEqual(loaded_burst.name, "new_burst_name", "Burst was not renamed properly.")
+        assert loaded_burst.name == "new_burst_name", "Burst was not renamed properly."
 
 
     def test_load_burst(self):
@@ -342,12 +343,12 @@ class BurstServiceTest(BaseTestCase):
         """
         burst_config = TestFactory.store_burst(self.test_project.id)
         loaded_burst = self.burst_service.load_burst(burst_config.id)[0]
-        self.assertEqual(loaded_burst.simulator_configuration, {}, "No simulator configuration should have been loaded")
-        self.assertEqual(burst_config.fk_project, loaded_burst.fk_project, "Loaded burst different from original one.")
+        assert loaded_burst.simulator_configuration == {}, "No simulator configuration should have been loaded"
+        assert burst_config.fk_project == loaded_burst.fk_project, "Loaded burst different from original one."
         burst_config = TestFactory.store_burst(self.test_project.id, simulator_config={"test": "test"})
         loaded_burst, _ = self.burst_service.load_burst(burst_config.id)
-        self.assertEqual(loaded_burst.simulator_configuration, {"test": "test"}, "different burst loaded")
-        self.assertEqual(burst_config.fk_project, loaded_burst.fk_project, "Loaded burst different from original one.")
+        assert loaded_burst.simulator_configuration == {"test": "test"}, "different burst loaded"
+        assert burst_config.fk_project == loaded_burst.fk_project, "Loaded burst different from original one."
 
 
     def test_remove_burst(self):
@@ -376,8 +377,8 @@ class BurstServiceTest(BaseTestCase):
 
         ts_regions = self.count_all_entities(TimeSeriesRegion)
         sim_states = self.count_all_entities(SimulationState)
-        self.assertEqual(2, ts_regions, "An operation group should have been created for each step.")
-        self.assertEqual(2, sim_states, "An dataType group should have been created for each step.")
+        assert 2 == ts_regions, "An operation group should have been created for each step."
+        assert 2 == sim_states, "An dataType group should have been created for each step."
 
 
     def test_remove_group_burst(self):
@@ -389,16 +390,16 @@ class BurstServiceTest(BaseTestCase):
         burst_config = self._prepare_and_launch_async_burst(length=1, is_range=True, nr_ops=4, wait_to_finish=60)
 
         launched_workflows = dao.get_workflows_for_burst(burst_config.id, is_count=True)
-        self.assertEqual(4, launched_workflows, "4 workflows should have been launched due to group parameter.")
+        assert 4 == launched_workflows, "4 workflows should have been launched due to group parameter."
 
         got_deleted = self.burst_service.cancel_or_remove_burst(burst_config.id)
-        self.assertTrue(got_deleted, "Burst should be deleted")
+        assert got_deleted, "Burst should be deleted"
 
         launched_workflows = dao.get_workflows_for_burst(burst_config.id, is_count=True)
-        self.assertEqual(0, launched_workflows, "No workflows should remain after delete.")
+        assert 0 == launched_workflows, "No workflows should remain after delete."
 
         burst_config = dao.get_burst_by_id(burst_config.id)
-        self.assertTrue(burst_config is None, "Removing a canceled burst should delete it from db.")
+        assert burst_config is None, "Removing a canceled burst should delete it from db."
 
 
     def test_remove_started_burst(self):
@@ -406,17 +407,17 @@ class BurstServiceTest(BaseTestCase):
         Try removing a started burst, which should result in it getting canceled.
         """
         burst_entity = self._prepare_and_launch_async_burst(length=20000)
-        self.assertEqual(BurstConfiguration.BURST_RUNNING, burst_entity.status,
-                         'A 20000 length simulation should still be started immediately after launch.')
+        assert BurstConfiguration.BURST_RUNNING == burst_entity.status,\
+                         'A 20000 length simulation should still be started immediately after launch.'
         got_deleted = self.burst_service.cancel_or_remove_burst(burst_entity.id)
-        self.assertFalse(got_deleted, "Burst should be cancelled before deleted.")
+        assert not got_deleted, "Burst should be cancelled before deleted."
         burst_entity = dao.get_burst_by_id(burst_entity.id)
-        self.assertEqual(BurstConfiguration.BURST_CANCELED, burst_entity.status,
-                         'Deleting a running burst should just cancel it first.')
+        assert BurstConfiguration.BURST_CANCELED == burst_entity.status,\
+                         'Deleting a running burst should just cancel it first.'
         got_deleted = self.burst_service.cancel_or_remove_burst(burst_entity.id)
-        self.assertTrue(got_deleted, "Burst should be deleted if status is cancelled.")
+        assert got_deleted, "Burst should be deleted if status is cancelled."
         burst_entity = dao.get_burst_by_id(burst_entity.id)
-        self.assertTrue(burst_entity is None, "Removing a canceled burst should delete it from db.")
+        assert burst_entity is None, "Removing a canceled burst should delete it from db."
 
 
     def test_burst_delete_with_project(self):
@@ -440,21 +441,21 @@ class BurstServiceTest(BaseTestCase):
         """
         loaded_burst, workflow_step_list = self._prepare_and_launch_sync_burst()
         finished, started, error, _, _ = dao.get_operation_numbers(self.test_project.id)
-        self.assertEqual(finished, 1, "One operations should have been generated for this burst.")
-        self.assertEqual(started, 0, "No operations should remain started since workflow was launched synchronous.")
-        self.assertEqual(error, 0, "No operations should return error status.")
-        self.assertTrue(loaded_burst.tabs[0].portlets[0] is not None, "Portlet not loaded from config!")
+        assert finished == 1, "One operations should have been generated for this burst."
+        assert started == 0, "No operations should remain started since workflow was launched synchronous."
+        assert error == 0, "No operations should return error status."
+        assert loaded_burst.tabs[0].portlets[0] is not None, "Portlet not loaded from config!"
         portlet_config = loaded_burst.tabs[0].portlets[0]
         analyzers = portlet_config.analyzers
-        self.assertEqual(len(analyzers), 0, "Only have 'simulator' and a visualizer. No analyzers should be loaded.")
+        assert len(analyzers) == 0, "Only have 'simulator' and a visualizer. No analyzers should be loaded."
         visualizer = portlet_config.visualizer
-        self.assertTrue(visualizer is not None, "Visualizer should not be none.")
-        self.assertEqual(visualizer.fk_algorithm, workflow_step_list[0].fk_algorithm,
-                         "Different ids after burst load for visualizer.")
-        self.assertEqual(visualizer.static_param, workflow_step_list[0].static_param,
-                         "Different static params after burst load for visualizer.")
-        self.assertEqual(visualizer.dynamic_param, workflow_step_list[0].dynamic_param,
-                         "Different static params after burst load for visualizer.")
+        assert visualizer is not None, "Visualizer should not be none."
+        assert visualizer.fk_algorithm == workflow_step_list[0].fk_algorithm,\
+                         "Different ids after burst load for visualizer."
+        assert visualizer.static_param == workflow_step_list[0].static_param,\
+                         "Different static params after burst load for visualizer."
+        assert visualizer.dynamic_param == workflow_step_list[0].dynamic_param,\
+                         "Different static params after burst load for visualizer."
 
 
     def test_launch_burst(self):
@@ -479,8 +480,8 @@ class BurstServiceTest(BaseTestCase):
         burst_config.update_simulator_configuration(kwargs_replica)
         burst_id, _ = self.burst_service.launch_burst(burst_config, 0, first_step_algo.id, self.test_user.id)
         burst_config = dao.get_burst_by_id(burst_id)
-        self.assertTrue(burst_config.status in (BurstConfiguration.BURST_FINISHED, BurstConfiguration.BURST_RUNNING),
-                        "Burst not launched successfully!")
+        assert burst_config.status in (BurstConfiguration.BURST_FINISHED, BurstConfiguration.BURST_RUNNING),\
+                        "Burst not launched successfully!"
         # Wait maximum x seconds for burst to finish
         self._wait_for_burst(burst_config)
 
@@ -500,12 +501,12 @@ class BurstServiceTest(BaseTestCase):
         self._wait_for_burst(burst_config)
 
         launched_workflows = dao.get_workflows_for_burst(burst_id, is_count=True)
-        self.assertEqual(3, launched_workflows, "3 workflows should have been launched due to group parameter.")
+        assert 3 == launched_workflows, "3 workflows should have been launched due to group parameter."
 
         group_id = self.burst_service.load_burst(burst_id)[1]
-        self.assertTrue(group_id >= 0, "Should be part of group.")
+        assert group_id >= 0, "Should be part of group."
         datatype_measures = self.count_all_entities(DatatypeMeasure)
-        self.assertEqual(3, datatype_measures)
+        assert 3 == datatype_measures
 
 
     def test_launch_burst_invalid_simulator_parameters(self):
@@ -566,14 +567,14 @@ class BurstServiceTest(BaseTestCase):
 
         burst_wf = dao.get_workflows_for_burst(burst_config.id)[0]
         wf_steps = dao.get_workflow_steps(burst_wf.id)
-        self.assertTrue(len(wf_steps) == 2,
-                        "Should have exactly 2 wf steps. One for 'simulation' one for portlet analyze operation.")
+        assert len(wf_steps) == 2,\
+                        "Should have exactly 2 wf steps. One for 'simulation' one for portlet analyze operation."
         simulator_op = dao.get_operation_by_id(wf_steps[0].fk_operation)
-        self.assertEqual(model.STATUS_FINISHED, simulator_op.status,
-                         "First operation should be simulator which should have 'finished' status.")
+        assert model.STATUS_FINISHED == simulator_op.status,\
+                         "First operation should be simulator which should have 'finished' status."
         portlet_analyze_op = dao.get_operation_by_id(wf_steps[1].fk_operation)
-        self.assertEqual(portlet_analyze_op.status, model.STATUS_ERROR,
-                         "Second operation should be portlet analyze step which should have 'error' status.")
+        assert portlet_analyze_op.status == model.STATUS_ERROR,\
+                         "Second operation should be portlet analyze step which should have 'error' status."
 
 
     def test_launch_group_burst_happy_flow(self):
@@ -584,14 +585,14 @@ class BurstServiceTest(BaseTestCase):
         burst_config = self._prepare_and_launch_async_burst(length=1, is_range=True, nr_ops=4, wait_to_finish=120)
         if burst_config.status != BurstConfiguration.BURST_FINISHED:
             self.burst_service.stop_burst(burst_config)
-            self.fail("Burst should have finished successfully.")
+            raise AssertionError("Burst should have finished successfully.")
 
         op_groups = self.count_all_entities(model.OperationGroup)
         dt_groups = self.get_all_entities(model.DataTypeGroup)
-        self.assertEqual(2, op_groups, "An operation group should have been created for each step.")
-        self.assertEqual(len(dt_groups), 2, "An dataType group should have been created for each step.")
+        assert 2 == op_groups, "An operation group should have been created for each step."
+        assert len(dt_groups) == 2, "An dataType group should have been created for each step."
         for datatype in dt_groups:
-            self.assertEqual(4, datatype.count_results, "Should have 4 datatypes in group")
+            assert 4 == datatype.count_results, "Should have 4 datatypes in group"
 
 
     def test_launch_group_burst_no_metric(self):
@@ -614,12 +615,12 @@ class BurstServiceTest(BaseTestCase):
         self._wait_for_burst(burst_config, error_expected=True)
 
         launched_workflows = dao.get_workflows_for_burst(burst_id, is_count=True)
-        self.assertEqual(3, launched_workflows, "3 workflows should have been launched due to group parameter.")
+        assert 3 == launched_workflows, "3 workflows should have been launched due to group parameter."
 
         op_groups = self.count_all_entities(model.OperationGroup)
         dt_groups = self.count_all_entities(model.DataTypeGroup)
-        self.assertEqual(5, op_groups, "An operation group should have been created for each step.")
-        self.assertEqual(5, dt_groups, "An dataType group should have been created for each step.")
+        assert 5 == op_groups, "An operation group should have been created for each step."
+        assert 5 == dt_groups, "An dataType group should have been created for each step."
 
 
     def test_load_tab_configuration(self):
@@ -646,15 +647,15 @@ class BurstServiceTest(BaseTestCase):
         burst_config.prepare_after_load()
         for tab in burst_config.tabs:
             for portlet in tab.portlets:
-                self.assertTrue(portlet is None, "Before loading the tab configuration all portlets should be none.")
+                assert portlet is None, "Before loading the tab configuration all portlets should be none."
         burst_config = self.burst_service.load_tab_configuration(burst_config, wf_step.fk_operation)
         for tab_idx, tab in enumerate(burst_config.tabs):
             for portlet_idx, portlet in enumerate(tab.portlets):
                 if (tab_idx == 0 and portlet_idx in [0, 1]) or (tab_idx == 1 and portlet_idx == 0):
-                    self.assertTrue(portlet is not None, "portlet gonfiguration not set")
-                    self.assertEqual(test_portlet.id, portlet.portlet_id, "Unexpected portlet entity loaded.")
+                    assert portlet is not None, "portlet gonfiguration not set"
+                    assert test_portlet.id == portlet.portlet_id, "Unexpected portlet entity loaded."
                 else:
-                    self.assertTrue(portlet is None, "Before loading the tab configuration all portlets should be none")
+                    assert portlet is None, "Before loading the tab configuration all portlets should be none"
 
 
     def _wait_for_burst(self, burst_config, error_expected=False, timeout=500):
@@ -672,17 +673,17 @@ class BurstServiceTest(BaseTestCase):
 
         if waited > timeout:
             self.burst_service.stop_burst(burst_config)
-            self.fail("Timed out waiting for simulations to finish. We will cancel it")
+            raise AssertionError("Timed out waiting for simulations to finish. We will cancel it")
 
         if error_expected and burst_config.status != BurstConfiguration.BURST_ERROR:
             self.burst_service.stop_burst(burst_config)
-            self.fail("Burst should have failed due to invalid input data.")
+            raise AssertionError("Burst should have failed due to invalid input data.")
 
         if (not error_expected) and burst_config.status != BurstConfiguration.BURST_FINISHED:
             msg = "Burst status should have been FINISH. Instead got %s %s" % (burst_config.status,
                                                                                burst_config.error_message)
             self.burst_service.stop_burst(burst_config)
-            self.fail(msg)
+            raise AssertionError(msg)
 
         return burst_config
 
@@ -763,18 +764,18 @@ class BurstServiceTest(BaseTestCase):
         any workflow steps and any datatypes resulted from the burst are also removed.
         """
         remaining_bursts = dao.get_bursts_for_project(self.test_project.id)
-        self.assertEqual(0, len(remaining_bursts), "Burst was not deleted")
+        assert 0 == len(remaining_bursts), "Burst was not deleted"
         ops_number = dao.get_operation_numbers(self.test_project.id)[0]
-        self.assertEqual(0, ops_number, "Operations were not deleted.")
+        assert 0 == ops_number, "Operations were not deleted."
         datatypes = dao.get_datatypes_in_project(self.test_project.id)
-        self.assertEqual(0, len(datatypes))
+        assert 0 == len(datatypes)
 
         wf_steps = self.count_all_entities(model.WorkflowStep)
         datatype1_stored = self.count_all_entities(Datatype1)
         datatype2_stored = self.count_all_entities(Datatype2)
-        self.assertEqual(0, wf_steps, "Workflow steps were not deleted.")
-        self.assertEqual(0, datatype1_stored, "Specific datatype entries for DataType1 were not deleted.")
-        self.assertEqual(0, datatype2_stored, "Specific datatype entries for DataType2 were not deleted.")
+        assert 0 == wf_steps, "Workflow steps were not deleted."
+        assert 0 == datatype1_stored, "Specific datatype entries for DataType1 were not deleted."
+        assert 0 == datatype2_stored, "Specific datatype entries for DataType2 were not deleted."
 
 
     def _add_portlets_to_burst(self, burst_config, portlet_dict):
@@ -826,20 +827,3 @@ class BurstServiceTest(BaseTestCase):
         adapter_instance = StoreAdapter([connectivity])
         self.operation_service.initiate_prelaunch(self.operation, adapter_instance, {})
         return connectivity
-
-
-
-def suite():
-    """
-    Gather all the tests in a test suite.
-    """
-    test_suite = unittest.TestSuite()
-    test_suite.addTest(unittest.makeSuite(BurstServiceTest))
-    return test_suite
-
-
-if __name__ == "__main__":
-    #So you can run tests individually.
-    TEST_RUNNER = unittest.TextTestRunner()
-    TEST_SUITE = suite()
-    TEST_RUNNER.run(TEST_SUITE)

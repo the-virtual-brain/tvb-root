@@ -31,15 +31,15 @@
 .. moduleauthor:: Bogdan Neacsa <bogdan.neacsa@codemart.ro>
 """
 
-import unittest
+import pytest
 import threading
+from tvb.tests.framework.core.base_testcase import BaseTestCase, transactional_test
 from tvb.basic.profile import TvbProfile
 from tvb.core.entities import model
 from tvb.core.entities.storage import dao, transactional
 from tvb.core.entities.storage.session_maker import add_session, SessionMaker
 from tvb.core.entities.storage.exceptions import NestedTransactionUnsupported
-from tvb.tests.framework.core.test_factory import TestFactory
-from tvb.tests.framework.core.base_testcase import BaseTestCase, transactional_test
+from tvb.tests.framework.core.factory import TestFactory
 
 SESSIONMAKER = SessionMaker()
 
@@ -50,14 +50,14 @@ class TestsTransactional(BaseTestCase):
     """
     session = SessionMaker()
     
-    def setUp(self):
+    def setup_method(self):
         """
         Set-up the environment for testing; clean the database and save events
         """
         self.clean_database()
 
         
-    def tearDown(self):
+    def teardown_method(self):
         """
         Clean-up after testing; clean the database and restore events
         """
@@ -131,7 +131,9 @@ class TestsTransactional(BaseTestCase):
         user_id = stored_user.id
         self._dao_delete_user_forget_commit(user_id)
         final_user_count = dao.get_all_users(is_count=True)
-        assert initial_user_count == final_user_count, "Added user should have been deleted even without explicit commit call..Expected %s but got %s" % (initial_user_count, final_user_count)
+        assert initial_user_count == final_user_count, \
+            "Added user should have been deleted even without explicit commit call.." \
+            "Expected %s but got %s" % (initial_user_count, final_user_count)
 
     
     def test_multi_threaded_access(self):
@@ -178,7 +180,8 @@ class TestsTransactional(BaseTestCase):
         """    
         TvbProfile.current.db.ALLOW_NESTED_TRANSACTIONS = False
         try:
-            self.assertRaises(NestedTransactionUnsupported, self._store_users_nested, 4, self._store_users_happy_flow)
+            with pytest.raises(NestedTransactionUnsupported):
+                self._store_users_nested(4, self._store_users_happy_flow)
         finally:
             TvbProfile.current.db.ALLOW_NESTED_TRANSACTIONS = True
 

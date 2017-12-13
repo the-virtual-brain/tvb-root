@@ -35,6 +35,7 @@
 import pytest
 import json
 import numpy
+from tvb.tests.framework.core.base_testcase import BaseTestCase
 from tvb.basic.profile import TvbProfile
 from tvb.core.utils import string2array
 from tvb.core.entities import model
@@ -47,8 +48,7 @@ from tvb.core.services.flow_service import FlowService
 from tvb.tests.framework.datatypes.datatype1 import Datatype1
 from tvb.tests.framework.datatypes.datatype2 import Datatype2
 from tvb.tests.framework.adapters.ndimensionarrayadapter import NDimensionArrayAdapter
-from tvb.tests.framework.core.base_testcase import BaseTestCase
-from tvb.tests.framework.core.test_factory import TestFactory
+from tvb.tests.framework.core.factory import TestFactory
 from tvb.core.adapters.exceptions import NoMemoryAvailableException
 
 
@@ -61,7 +61,7 @@ class TestOperationService(BaseTestCase):
     """
 
 
-    def setUp(self):
+    def setup_method(self):
         """
         Reset the database before each test.
         """
@@ -73,7 +73,7 @@ class TestOperationService(BaseTestCase):
         self.backup_hdd_size = TvbProfile.current.MAX_DISK_SPACE
 
 
-    def tearDown(self):
+    def teardown_method(self):
         """
         Reset the database when test is done.
         """

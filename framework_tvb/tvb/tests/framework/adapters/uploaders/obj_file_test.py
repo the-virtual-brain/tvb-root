@@ -32,13 +32,12 @@
 .. moduleauthor:: Mihai Andrei <mihai.andrei@codemart.ro>
 """
 
-import unittest
 from StringIO import StringIO
 from tvb.adapters.uploaders.obj.parser import ObjWriter, ObjParser
 
 
 
-class TestObjFiles(unittest.TestCase):
+class TestObjFiles():
 
     def test_write_simple(self):
         f = StringIO()

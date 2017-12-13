@@ -32,17 +32,16 @@
 .. moduleauthor:: Lia Domide <lia.domide@codemart.ro>
 """
 
-import unittest
 import numpy
 import copy
+from tvb.tests.framework.core.base_testcase import BaseTestCase
 from tvb.datatypes.arrays import MappedArray
 from tvb.basic.traits import types_basic as basic
 from tvb.basic.traits.types_mapped import MappedType
 from tvb.core.entities import model
 from tvb.core.entities.storage import dao, SA_SESSIONMAKER
 from tvb.core.services.flow_service import FlowService
-from tvb.tests.framework.core.test_factory import TestFactory
-from tvb.tests.framework.core.base_testcase import BaseTestCase
+from tvb.tests.framework.core.factory import TestFactory
 
 
 class MappedTestClass(MappedType):
@@ -58,7 +57,7 @@ class TestMapping(BaseTestCase):
     This class contains tests for the tvb.core.datatype module.
     """  
     
-    def setUp(self):
+    def setup_method(self):
         """
         Reset the database before each test.
         """
@@ -69,7 +68,7 @@ class TestMapping(BaseTestCase):
         self.operation = TestFactory.create_operation(test_user=self.test_user, test_project=self.test_project)
 
     
-    def tearDown(self):
+    def teardown_method(self):
         """
         Reset the database when test is done.
         """

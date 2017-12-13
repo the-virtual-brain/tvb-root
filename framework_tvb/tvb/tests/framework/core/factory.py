@@ -346,4 +346,6 @@ class ExtremeTestFactory():
                             users=ExtremeTestFactory.get_users_ids(random.randint(0, nr_users - 3),
                                                                    nr_users, current_user.id, users))
                 ProjectService().store_project(current_user, True, None, **data)
-                ExtremeTestFactory.VALIDATION_DICT[current_user.id] += 1
+                ExtremeTestFactory.VALIDATION_DICT[current_user.id] += 1 
+                
+                   

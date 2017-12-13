@@ -32,11 +32,11 @@
 .. moduleauthor:: bogdan.neacsa <bogdan.neacsa@codemart.ro>
 """
 
+from tvb.tests.framework.core.base_testcase import TransactionalTestCase
 from tvb.core.entities import model
 from tvb.core.entities.storage import dao
 from tvb.core.entities.file.files_helper import FilesHelper
 from tvb.core.portlets.portlet_configurer import PortletConfigurer
-from tvb.tests.framework.core.base_testcase import TransactionalTestCase
 
 
 class TestPythonPortlets(TransactionalTestCase):
@@ -75,4 +75,4 @@ class TestPythonPortlets(TransactionalTestCase):
                     assert entry['default'] == 'step_0[0]', "Overwritten default not in effect."
                 if entry['name'] == 'test2':
                     assert entry['default'] == '0', "Value that was not overwritten changed."
-        
+

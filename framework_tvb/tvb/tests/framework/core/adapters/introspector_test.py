@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 #
 #
-# TheVirtualBrain-Framework Package. This package holds all Data Management, and 
+# TheVirtualBrain-Framework Package. This package holds all Data Management, and
 # Web-UI helpful to run brain-simulations. To use it, you also need do download
 # TheVirtualBrain-Scientific Package (for simulators). See content of the
 # documentation-folder for more details. See also http://www.thevirtualbrain.org
@@ -33,7 +33,6 @@
 """
 
 import os
-import unittest
 from tvb.tests.framework.core.base_testcase import BaseTestCase
 from tvb.basic.profile import TvbProfile
 from tvb.core.entities.storage import dao
@@ -47,7 +46,7 @@ class TestIntrospector(BaseTestCase):
     old_current_dir = TvbProfile.current.web.CURRENT_DIR
 
 
-    def setUp(self):
+    def setup_method(self):
         """
         Introspect supplementary folder:
         """
@@ -56,9 +55,9 @@ class TestIntrospector(BaseTestCase):
 
         self.introspector = Introspector("tvb.tests.framework")
         self.introspector.introspect(True)
-        
-        
-    def tearDown(self):
+
+
+    def teardown_method(self):
         """
         Revert changes settings and remove recently imported algorithms
         """
@@ -70,19 +69,20 @@ class TestIntrospector(BaseTestCase):
         Test that expected categories and groups are found in DB after introspection.
         We also check algorithms introspected during base_testcase.init_test_env
         """
-        
+
         all_categories = dao.get_algorithm_categories()
         category_ids = [cat.id for cat in all_categories if cat.displayname == "AdaptersTest"]
         adapters = dao.get_adapters_from_categories(category_ids)
         assert 8 == len(adapters), "Introspection failed!"
         nr_adapters_mod2 = 0
         for algorithm in adapters:
-            assert algorithm.module in ['tvb.tests.framework.adapters.testadapter1',
+            assertalgorithm.module in ['tvb.tests.framework.adapters.testadapter1',
                                                  'tvb.tests.framework.adapters.testadapter2',
                                                  'tvb.tests.framework.adapters.testadapter3',
                                                  'tvb.tests.framework.adapters.ndimensionarrayadapter',
-                                                 'tvb.tests.framework.adapters.testgroupadapter'], "Unknown Adapter module:" + str(algorithm.module)
-            assert algorithm.classname in ["TestAdapter1", "TestAdapterDatatypeInput",
+                                                 'tvb.tests.framework.adapters.testgroupadapter'],
+                           \ "Unknown Adapter module:" + str(algorithm.module)
+            assertalgorithm.classname in ["TestAdapter1", "TestAdapterDatatypeInput",
                                                     "TestAdapter2", "TestAdapter22", "TestAdapterHugeMemoryRequired",
                                                     "TestAdapter3", "TestAdapterHDDRequired",
                                                     "NDimensionArrayAdapter"

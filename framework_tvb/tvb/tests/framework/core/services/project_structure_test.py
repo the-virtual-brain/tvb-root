@@ -33,8 +33,8 @@
 .. moduleauthor:: Bogdan Neacsa <bogdan.neacsa@codemart.ro>
 """
 
-import unittest
 import json
+from tvb.tests.framework.core.base_testcase import TransactionalTestCase
 from tvb.core.adapters.abcadapter import ABCAdapter
 from tvb.core.entities import model
 from tvb.core.entities.storage import dao
@@ -43,8 +43,7 @@ from tvb.core.entities.transient.structure_entities import DataTypeMetaData
 from tvb.core.entities.transient.filtering import StaticFiltersFactory
 from tvb.core.services.project_service import ProjectService
 from tvb.core.services.flow_service import FlowService
-from tvb.tests.framework.core.base_testcase import TransactionalTestCase
-from tvb.tests.framework.core.test_factory import TestFactory
+from tvb.tests.framework.core.factory import TestFactory
 from tvb.tests.framework.core.services.project_service_test import TestProjectService
 from tvb.tests.framework.core.services.flow_service_test import TEST_ADAPTER_VALID_MODULE, TEST_ADAPTER_VALID_CLASS
 
@@ -84,10 +83,10 @@ class TestProjectStructure(TransactionalTestCase):
         self.__init_algorithmn()
         op1 = model.Operation(self.test_user.id, self.test_project.id, self.algo_inst.id, "")
         op1 = dao.store_entity(op1)
-        self.assertTrue(op1.visible, "The operation should be visible.")
+        assert op1.visible, "The operation should be visible."
         self.project_service.set_operation_and_group_visibility(op1.gid, False)
         updated_op = dao.get_operation_by_id(op1.id)
-        self.assertFalse(updated_op.visible, "The operation should not be visible.")
+        assert not updated_op.visible, "The operation should not be visible."
 
 
     def test_set_op_and_group_visibility(self):
@@ -98,11 +97,11 @@ class TestProjectStructure(TransactionalTestCase):
         _, group_id = TestFactory.create_group(self.test_user, subject="test-subject-1")
         list_of_operations = dao.get_operations_in_group(group_id)
         for operation in list_of_operations:
-            self.assertTrue(operation.visible, "The operation should be visible.")
+            assert operation.visible, "The operation should be visible."
         self.project_service.set_operation_and_group_visibility(list_of_operations[0].gid, False)
         operations = dao.get_operations_in_group(group_id)
         for operation in operations:
-            self.assertFalse(operation.visible, "The operation should not be visible.")
+            assert not operation.visible, "The operation should not be visible."
 
 
     def test_set_op_group_visibility(self):
@@ -112,12 +111,12 @@ class TestProjectStructure(TransactionalTestCase):
         _, group_id = TestFactory.create_group(self.test_user, subject="test-subject-1")
         list_of_operations = dao.get_operations_in_group(group_id)
         for operation in list_of_operations:
-            self.assertTrue(operation.visible, "The operation should be visible.")
+            assert operation.visible, "The operation should be visible."
         op_group = dao.get_operationgroup_by_id(group_id)
         self.project_service.set_operation_and_group_visibility(op_group.gid, False, True)
         operations = dao.get_operations_in_group(group_id)
         for operation in operations:
-            self.assertFalse(operation.visible, "The operation should not be visible.")
+            assert not operation.visible, "The operation should not be visible."
 
 
     def test_is_upload_operation(self):
@@ -130,9 +129,9 @@ class TestProjectStructure(TransactionalTestCase):
         op2 = model.Operation(self.test_user.id, self.test_project.id, upload_algo.id, "")
         operations = dao.store_entities([op1, op2])
         is_upload_operation = self.project_service.is_upload_operation(operations[0].gid)
-        self.assertFalse(is_upload_operation, "The operation is not an upload operation.")
+        assert not is_upload_operation, "The operation is not an upload operation."
         is_upload_operation = self.project_service.is_upload_operation(operations[1].gid)
-        self.assertTrue(is_upload_operation, "The operation is an upload operation.")
+        assert is_upload_operation, "The operation is an upload operation."
 
 
     def test_get_upload_operations(self):
@@ -156,11 +155,11 @@ class TestProjectStructure(TransactionalTestCase):
         assert 2 == len(upload_operations), "Wrong number of upload operations."
         upload_ids = [operation.id for operation in upload_operations]
         for i in [3, 4]:
-            self.assertTrue(operations[i].id in upload_ids,
-                            "The operation should be an upload operation.")
+            assert operations[i].id in upload_ids,\
+                            "The operation should be an upload operation."
         for i in [0, 1, 2]:                    
-            self.assertFalse(operations[i].id in upload_ids, 
-                             "The operation should not be an upload operation.")
+            assert not operations[i].id in upload_ids,\
+                             "The operation should not be an upload operation."
 
 
     def test_is_datatype_group(self):
@@ -170,9 +169,9 @@ class TestProjectStructure(TransactionalTestCase):
         _, dt_group_id, first_dt, _ = self._create_datatype_group()
         dt_group = dao.get_generic_entity(model.DataTypeGroup, dt_group_id)[0]
         is_dt_group = self.project_service.is_datatype_group(dt_group.gid)
-        self.assertTrue(is_dt_group, "The datatype should be a datatype group.")
+        assert is_dt_group, "The datatype should be a datatype group."
         is_dt_group = self.project_service.is_datatype_group(first_dt.gid)
-        self.assertFalse(is_dt_group, "The datatype should not be a datatype group.")
+        assert not is_dt_group, "The datatype should not be a datatype group."
 
 
     def test_count_datatypes_in_group(self):
@@ -192,15 +191,15 @@ class TestProjectStructure(TransactionalTestCase):
         mapped_arrays = self._create_mapped_arrays(self.test_project.id)
         for mapped_array in mapped_arrays:
             is_visible = dao.get_datatype_by_id(mapped_array[0]).visible
-            self.assertTrue(is_visible, "The data type should be visible.")
+            assert is_visible, "The data type should be visible."
 
         self.project_service.set_datatype_visibility(mapped_arrays[0][2], False)
         for i in range(len(mapped_arrays)):
             is_visible = dao.get_datatype_by_id(mapped_arrays[i][0]).visible
             if not i:
-                self.assertFalse(is_visible, "The data type should not be visible.")
+                assert not is_visible, "The data type should not be visible."
             else:
-                self.assertTrue(is_visible, "The data type should be visible.")
+                assert is_visible, "The data type should be visible."
 
 
     def test_set_visibility_for_dt_in_group(self):
@@ -208,17 +207,17 @@ class TestProjectStructure(TransactionalTestCase):
         Check if the visibility for a datatype from a datatype group is set correct.
         """
         _, dt_group_id, first_dt, second_dt = self._create_datatype_group()
-        self.assertTrue(first_dt.visible, "The data type should be visible.")
-        self.assertTrue(second_dt.visible, "The data type should be visible.")
+        assert first_dt.visible, "The data type should be visible."
+        assert second_dt.visible, "The data type should be visible."
         self.project_service.set_datatype_visibility(first_dt.gid, False)
 
         db_dt_group = self.project_service.get_datatype_by_id(dt_group_id)
         db_first_dt = self.project_service.get_datatype_by_id(first_dt.id)
         db_second_dt = self.project_service.get_datatype_by_id(second_dt.id)
 
-        self.assertFalse(db_dt_group.visible, "The data type should be visible.")
-        self.assertFalse(db_first_dt.visible, "The data type should not be visible.")
-        self.assertFalse(db_second_dt.visible, "The data type should be visible.")
+        assert not db_dt_group.visible, "The data type should be visible."
+        assert not db_first_dt.visible, "The data type should not be visible."
+        assert not db_second_dt.visible, "The data type should be visible."
 
 
     def test_set_visibility_for_group(self):
@@ -228,18 +227,18 @@ class TestProjectStructure(TransactionalTestCase):
         _, dt_group_id, first_dt, second_dt = self._create_datatype_group()
         dt_group = dao.get_generic_entity(model.DataTypeGroup, dt_group_id)[0]
 
-        self.assertTrue(dt_group.visible, "The data type group should be visible.")
-        self.assertTrue(first_dt.visible, "The data type should be visible.")
-        self.assertTrue(second_dt.visible, "The data type should be visible.")
+        assert dt_group.visible, "The data type group should be visible."
+        assert first_dt.visible, "The data type should be visible."
+        assert second_dt.visible, "The data type should be visible."
         self.project_service.set_datatype_visibility(dt_group.gid, False)
 
         updated_dt_group = self.project_service.get_datatype_by_id(dt_group_id)
         updated_first_dt = self.project_service.get_datatype_by_id(first_dt.id)
         updated_second_dt = self.project_service.get_datatype_by_id(second_dt.id)
 
-        self.assertFalse(updated_dt_group.visible, "The data type group should be visible.")
-        self.assertFalse(updated_first_dt.visible, "The data type should be visible.")
-        self.assertFalse(updated_second_dt.visible, "The data type should be visible.")
+        assert not updated_dt_group.visible, "The data type group should be visible."
+        assert not updated_first_dt.visible, "The data type should be visible."
+        assert not updated_second_dt.visible, "The data type should be visible."
 
 
     def test_getdatatypes_from_dtgroup(self):
@@ -275,14 +274,14 @@ class TestProjectStructure(TransactionalTestCase):
         created_ops, datatype_gid = self._create_operations_with_inputs()
         operations = self.project_service.get_operations_for_datatype(datatype_gid, self.relevant_filter)
         assert len(operations) == 2
-        self.assertTrue(created_ops[0].id in [operations[0].id, operations[1].id], "Retrieved wrong operations.")
-        self.assertTrue(created_ops[2].id in [operations[0].id, operations[1].id], "Retrieved wrong operations.")
+        assert created_ops[0].id in [operations[0].id, operations[1].id], "Retrieved wrong operations."
+        assert created_ops[2].id in [operations[0].id, operations[1].id], "Retrieved wrong operations."
 
         operations = self.project_service.get_operations_for_datatype(datatype_gid, self.full_filter)
         assert len(operations) == 4
         ids = [operations[0].id, operations[1].id, operations[2].id, operations[3].id]
         for i in range(4):
-            self.assertTrue(created_ops[i].id in ids, "Retrieved wrong operations.")
+            assert created_ops[i].id in ids, "Retrieved wrong operations."
 
         operations = self.project_service.get_operations_for_datatype(datatype_gid, self.relevant_filter, True)
         assert len(operations) == 1
@@ -290,8 +289,8 @@ class TestProjectStructure(TransactionalTestCase):
 
         operations = self.project_service.get_operations_for_datatype(datatype_gid, self.full_filter, True)
         assert len(operations) == 2
-        self.assertTrue(created_ops[4].id in [operations[0].id, operations[1].id], "Retrieved wrong operations.")
-        self.assertTrue(created_ops[5].id in [operations[0].id, operations[1].id], "Retrieved wrong operations.")
+        assert created_ops[4].id in [operations[0].id, operations[1].id], "Retrieved wrong operations."
+        assert created_ops[5].id in [operations[0].id, operations[1].id], "Retrieved wrong operations."
 
 
     def test_get_operations_for_dt_group(self):
@@ -303,14 +302,14 @@ class TestProjectStructure(TransactionalTestCase):
 
         ops = self.project_service.get_operations_for_datatype_group(dt_group_id, self.relevant_filter)
         assert len(ops) == 2
-        self.assertTrue(created_ops[0].id in [ops[0].id, ops[1].id], "Retrieved wrong operations.")
-        self.assertTrue(created_ops[2].id in [ops[0].id, ops[1].id], "Retrieved wrong operations.")
+        assert created_ops[0].id in [ops[0].id, ops[1].id], "Retrieved wrong operations."
+        assert created_ops[2].id in [ops[0].id, ops[1].id], "Retrieved wrong operations."
 
         ops = self.project_service.get_operations_for_datatype_group(dt_group_id, self.full_filter)
         assert len(ops) == 4, "Incorrect number of operations."
         ids = [ops[0].id, ops[1].id, ops[2].id, ops[3].id]
         for i in range(4):
-            self.assertTrue(created_ops[i].id in ids, "Retrieved wrong operations.")
+            assert created_ops[i].id in ids, "Retrieved wrong operations."
 
         ops = self.project_service.get_operations_for_datatype_group(dt_group_id, self.relevant_filter, True)
         assert len(ops) == 1
@@ -318,8 +317,8 @@ class TestProjectStructure(TransactionalTestCase):
 
         ops = self.project_service.get_operations_for_datatype_group(dt_group_id, self.full_filter, True)
         assert len(ops), 2
-        self.assertTrue(created_ops[4].id in [ops[0].id, ops[1].id], "Retrieved wrong operations.")
-        self.assertTrue(created_ops[5].id in [ops[0].id, ops[1].id], "Retrieved wrong operations.")
+        assert created_ops[4].id in [ops[0].id, ops[1].id], "Retrieved wrong operations."
+        assert created_ops[5].id in [ops[0].id, ops[1].id], "Retrieved wrong operations."
 
 
     def test_get_inputs_for_operation(self):
@@ -346,16 +345,16 @@ class TestProjectStructure(TransactionalTestCase):
         inputs = self.project_service.get_datatype_and_datatypegroup_inputs_for_operation(operation.gid,
                                                                                           self.relevant_filter)
         assert len(inputs) == 2
-        self.assertTrue(ids[1] in [inputs[0].id, inputs[1].id], "Retrieved wrong dataType.")
-        self.assertTrue(ids[2] in [inputs[0].id, inputs[1].id], "Retrieved wrong dataType.")
-        self.assertFalse(ids[0] in [inputs[0].id, inputs[1].id], "Retrieved wrong dataType.")
+        assert ids[1] in [inputs[0].id, inputs[1].id], "Retrieved wrong dataType."
+        assert ids[2] in [inputs[0].id, inputs[1].id], "Retrieved wrong dataType."
+        assert not ids[0] in [inputs[0].id, inputs[1].id], "Retrieved wrong dataType."
 
         inputs = self.project_service.get_datatype_and_datatypegroup_inputs_for_operation(operation.gid,
                                                                                           self.full_filter)
         assert len(inputs) == 3, "Incorrect number of operations."
-        self.assertTrue(ids[0] in [inputs[0].id, inputs[1].id, inputs[2].id], "Retrieved wrong dataType.")
-        self.assertTrue(ids[1] in [inputs[0].id, inputs[1].id, inputs[2].id], "Retrieved wrong dataType.")
-        self.assertTrue(ids[2] in [inputs[0].id, inputs[1].id, inputs[2].id], "Retrieved wrong dataType.")
+        assert ids[0] in [inputs[0].id, inputs[1].id, inputs[2].id], "Retrieved wrong dataType."
+        assert ids[1] in [inputs[0].id, inputs[1].id, inputs[2].id], "Retrieved wrong dataType."
+        assert ids[2] in [inputs[0].id, inputs[1].id, inputs[2].id], "Retrieved wrong dataType."
 
         project, dt_group_id, first_dt, _ = self._create_datatype_group()
         first_dt.visible = False
@@ -371,7 +370,7 @@ class TestProjectStructure(TransactionalTestCase):
                                                                                           self.full_filter)
         assert len(inputs) == 1, "Incorrect number of dataTypes."
         assert inputs[0].id == dt_group_id, "Wrong dataType."
-        self.assertTrue(inputs[0].id != first_dt.id, "Wrong dataType.")
+        assert inputs[0].id != first_dt.id, "Wrong dataType."
 
 
     def test_get_inputs_for_op_group(self):
@@ -401,24 +400,24 @@ class TestProjectStructure(TransactionalTestCase):
 
         inputs = self.project_service.get_datatypes_inputs_for_operation_group(op_group.id, self.full_filter)
         assert len(inputs) == 1, "Incorrect number of dataTypes."
-        self.assertFalse(first_dt.id == inputs[0].id, "Retrieved wrong dataType.")
-        self.assertFalse(second_dt.id == inputs[0].id, "Retrieved wrong dataType.")
-        self.assertTrue(dt_group_id == inputs[0].id, "Retrieved wrong dataType.")
+        assert not first_dt.id == inputs[0].id, "Retrieved wrong dataType."
+        assert not second_dt.id == inputs[0].id, "Retrieved wrong dataType."
+        assert dt_group_id == inputs[0].id, "Retrieved wrong dataType."
 
         first_dt.visible = True
         dao.store_entity(first_dt)
 
         inputs = self.project_service.get_datatypes_inputs_for_operation_group(op_group.id, self.relevant_filter)
         assert len(inputs) == 1, "Incorrect number of dataTypes."
-        self.assertFalse(first_dt.id == inputs[0].id, "Retrieved wrong dataType.")
-        self.assertFalse(second_dt.id == inputs[0].id, "Retrieved wrong dataType.")
-        self.assertTrue(dt_group_id == inputs[0].id, "Retrieved wrong dataType.")
+        assert not first_dt.id == inputs[0].id, "Retrieved wrong dataType."
+        assert not second_dt.id == inputs[0].id, "Retrieved wrong dataType."
+        assert dt_group_id == inputs[0].id, "Retrieved wrong dataType."
 
         inputs = self.project_service.get_datatypes_inputs_for_operation_group(op_group.id, self.full_filter)
         assert len(inputs) == 1, "Incorrect number of dataTypes."
-        self.assertFalse(first_dt.id == inputs[0].id, "Retrieved wrong dataType.")
-        self.assertFalse(second_dt.id == inputs[0].id, "Retrieved wrong dataType.")
-        self.assertTrue(dt_group_id == inputs[0].id, "Retrieved wrong dataType.")
+        assert not first_dt.id == inputs[0].id, "Retrieved wrong dataType."
+        assert not second_dt.id == inputs[0].id, "Retrieved wrong dataType."
+        assert dt_group_id == inputs[0].id, "Retrieved wrong dataType."
 
 
     def test_get_inputs_for_op_group_simple_inputs(self):
@@ -451,15 +450,15 @@ class TestProjectStructure(TransactionalTestCase):
 
         inputs = self.project_service.get_datatypes_inputs_for_operation_group(op_group.id, self.relevant_filter)
         assert len(inputs) == 2
-        self.assertFalse(array_wrapper_ids[0] in [inputs[0].id, inputs[1].id], "Retrieved wrong dataType.")
-        self.assertTrue(array_wrapper_ids[1] in [inputs[0].id, inputs[1].id], "Retrieved wrong dataType.")
-        self.assertTrue(array_wrapper_ids[2] in [inputs[0].id, inputs[1].id], "Retrieved wrong dataType.")
+        assert not array_wrapper_ids[0] in [inputs[0].id, inputs[1].id], "Retrieved wrong dataType."
+        assert array_wrapper_ids[1] in [inputs[0].id, inputs[1].id], "Retrieved wrong dataType."
+        assert array_wrapper_ids[2] in [inputs[0].id, inputs[1].id], "Retrieved wrong dataType."
 
         inputs = self.project_service.get_datatypes_inputs_for_operation_group(op_group.id, self.full_filter)
         assert len(inputs) == 3, "Incorrect number of dataTypes."
-        self.assertTrue(array_wrapper_ids[0] in [inputs[0].id, inputs[1].id, inputs[2].id])
-        self.assertTrue(array_wrapper_ids[1] in [inputs[0].id, inputs[1].id, inputs[2].id])
-        self.assertTrue(array_wrapper_ids[2] in [inputs[0].id, inputs[1].id, inputs[2].id])
+        assert array_wrapper_ids[0] in [inputs[0].id, inputs[1].id, inputs[2].id]
+        assert array_wrapper_ids[1] in [inputs[0].id, inputs[1].id, inputs[2].id]
+        assert array_wrapper_ids[2] in [inputs[0].id, inputs[1].id, inputs[2].id]
 
 
     def test_remove_datatype(self):
@@ -609,12 +608,12 @@ class TestProjectStructure(TransactionalTestCase):
         """
         try:
             dao.get_datatype_by_id(datatype.id)
-            self.fail("The datatype was not deleted.")
+            raise AssertionError("The datatype was not deleted.")
         except Exception:
             pass
         try:
             dao.get_operation_by_id(datatype.fk_from_operation)
-            self.fail("The operation was not deleted.")
+            raise AssertionError("The operation was not deleted.")
         except Exception:
             pass
 
@@ -625,13 +624,13 @@ class TestProjectStructure(TransactionalTestCase):
         """
         try:
             dao.get_generic_entity(model.DataTypeGroup, datatype_group_id)
-            self.fail("The DataTypeGroup entity was not removed.")
+            raise AssertionError("The DataTypeGroup entity was not removed.")
         except Exception:
             pass
 
         try:
             dao.get_operationgroup_by_id(operation_groupp_id)
-            self.fail("The OperationGroup entity was not removed.")
+            raise AssertionError("The OperationGroup entity was not removed.")
         except Exception:
             pass
 

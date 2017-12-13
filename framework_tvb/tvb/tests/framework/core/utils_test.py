@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 #
 #
-# TheVirtualBrain-Framework Package. This package holds all Data Management, and 
+# TheVirtualBrain-Framework Package. This package holds all Data Management, and
 # Web-UI helpful to run brain-simulations. To use it, you also need do download
 # TheVirtualBrain-Scientific Package (for simulators). See content of the
 # documentation-folder for more details. See also http://www.thevirtualbrain.org
@@ -37,17 +37,17 @@
 import os
 import pytest
 import datetime
+from tvb.tests.framework.core.base_testcase import TransactionalTestCase
 from tvb.core.utils import path2url_part, get_unique_file_name, string2date, date2string, string2bool
 from tvb.core.utils import string2array
-from tvb.tests.framework.core.base_testcase import TransactionalTestCase
 
 
 class TestUtils(TransactionalTestCase):
     """
     This class contains test helper methods.
-    """  
-    
-    
+    """
+
+
     def setUp(self):
         """
         Reset the database before each test.
@@ -87,8 +87,8 @@ class TestUtils(TransactionalTestCase):
         assert len(file_names) == len(set(file_names)), 'No duplicate files should be generated.'
         for file_n in file_names:
             os.remove(file_n)
-        
-        
+
+
     def test_string2date(self):
         """
         Test the string2date function with different formats.
@@ -97,17 +97,14 @@ class TestUtils(TransactionalTestCase):
         simple_date = string2date(simple_time_string, complex_format=False)
         assert simple_date == datetime.datetime(1999, 3, 3),\
                          "Did not get expected datetime from conversion object."
-        
         complex_time_string = "1999-03-16,18-20-33.1"
         complex_date = string2date(complex_time_string)
         assert complex_date == datetime.datetime(1999, 3, 16, 18, 20, 33, 100000),\
                          "Did not get expected datetime from conversion object."
-        
         complex_time_stringv1 = "1999-03-16,18-20-33"
         complexv1_date = string2date(complex_time_stringv1)
         assert complexv1_date == datetime.datetime(1999, 3, 16, 18, 20, 33),\
                          "Did not get expected datetime from conversion object."
-        
         custom_format = "%Y"
         custom_time_string = "1999"
         custom_date = string2date(custom_time_string, date_format=custom_format)
@@ -121,7 +118,6 @@ class TestUtils(TransactionalTestCase):
         """
         with pytest.raises(ValueError):
             string2date("somethinginvalid")
-        
     def test_date2string(self):
         """
         Check the date2string method for various inputs.
@@ -129,14 +125,13 @@ class TestUtils(TransactionalTestCase):
         date_input = datetime.datetime(1999, 3, 16, 18, 20, 33, 100000)
         assert date2string(date_input, complex_format=False) == '03-16-1999',\
                          "Did not get expected string from datetime conversion object."
-        
         custom_format = "%Y"
         assert date2string(date_input, date_format=custom_format) == '1999',\
                          "Did not get expected string from datetime conversion object."
-        
+
         assert date2string(date_input, complex_format=True) == '1999-03-16,18-20-33.100000',\
                          "Did not get expected string from datetime conversion object."
-        
+
         assert "None" == date2string(None), "Expected to return 'None' for None input."
 
 
@@ -152,8 +147,7 @@ class TestUtils(TransactionalTestCase):
         assert not string2bool(u"False"), "Expect True boolean for input u'False'"
         assert not string2bool("somethingelse"), "Expect True boolean for input 'somethingelse'"
         assert not string2bool(u"somethingelse"), "Expect True boolean for input u'somethingelse'"
-        
-        
+
     def test_string2array(self):
         """
         Check the string2array method for various inputs

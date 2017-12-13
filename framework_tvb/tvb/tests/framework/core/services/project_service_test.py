@@ -36,7 +36,7 @@ import shutil
 import pytest
 import tvb_data
 from tvb.tests.framework.core.base_testcase import TransactionalTestCase
-from tvb.tests.framework.core.test_factory import TestFactory, ExtremeTestFactory
+from tvb.tests.framework.core.factory import TestFactory, ExtremeTestFactory
 from tvb.tests.framework.datatypes import datatypes_factory
 from tvb.tests.framework.datatypes.datatype1 import Datatype1
 from tvb.tests.framework.adapters.storeadapter import StoreAdapter
@@ -431,7 +431,9 @@ class TestProjectService(TransactionalTestCase):
         sub_files = os.listdir(op_folder)
         assert 2 == len(sub_files)
         ### Validate that no more files are created than needed.
-        
+
+        if(dao.get_system_user() is None):
+            dao.store_entity(model.User(TvbProfile.current.web.admin.SYSTEM_USER_NAME, None, None, True, None))
         self.project_service._remove_project_node_files(inserted_project.id, gid)
         sub_files = os.listdir(op_folder)
         assert 1 == len(sub_files)

@@ -37,7 +37,6 @@ unless we rewrite major parts from the setup.
 .. moduleauthor:: Lia Domide <lia.domide@codemart.ro>
 """
 
-import unittest
 from sqlalchemy import Column, Integer, String, ForeignKey, create_engine
 from sqlalchemy.orm import sessionmaker
 #from sqlalchemy.ext.declarative import declarative_base

@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 #
 #
-# TheVirtualBrain-Framework Package. This package holds all Data Management, and 
+# TheVirtualBrain-Framework Package. This package holds all Data Management, and
 # Web-UI helpful to run brain-simulations. To use it, you also need do download
 # TheVirtualBrain-Scientific Package (for simulators). See content of the
 # documentation-folder for more details. See also http://www.thevirtualbrain.org
@@ -32,11 +32,11 @@
 """
 
 import pytest
+from tvb.tests.framework.core.base_testcase import TransactionalTestCase
 from tvb.core.entities import model
 from tvb.core.entities.storage import dao
 from tvb.core.adapters.abcadapter import ABCSynchronous
-from tvb.tests.framework.core.base_testcase import TransactionalTestCase
-from tvb.tests.framework.core.test_factory import TestFactory
+from tvb.tests.framework.core.factory import TestFactory
 
 
 class ComplexInterfaceAdapter(ABCSynchronous):
@@ -59,10 +59,10 @@ class ComplexInterfaceAdapter(ABCSynchronous):
                                              {'name': 'mon_att4', 'type': 'str', 'default': '1'}]}]
                  },
                 {'name': 'length', 'type': 'int', 'default': '0'}]
-    
+
     def get_output(self):
         pass
-    
+
     def launch(self, **kwargs):
         pass
 
@@ -71,18 +71,17 @@ class ComplexInterfaceAdapter(ABCSynchronous):
 
     def get_required_disk_size(self, **kwargs):
         return 0
-        
- 
+
+
 
 class TestAdapterABC(TransactionalTestCase):
-    """Unit test for ABCAdapter""" 
-    
+    """Unit test for ABCAdapter"""
     EXPECTED_FLAT_NAMES = ["surface", "surface_parameters_att1", "surface_parameters_att2",
                            "monitors", "length",
                            "monitors_parameters_option_EEG_mon_att1", "monitors_parameters_option_EEG_mon_att2",
                            "monitors_parameters_option_MEEG_mon_att1", "monitors_parameters_option_MEEG_mon_att3",
                            "monitors_parameters_option_BOLD_mon_att1", "monitors_parameters_option_BOLD_mon_att4"]
-    
+
     SUBMIT_DATASET_1 = {"surface": "",
                         "surface_parameters_option_456-GID-1_att1": "10",
                         "surface_parameters_option_456-GID-1_att2": "4.2",
@@ -92,9 +91,9 @@ class TestAdapterABC(TransactionalTestCase):
                         "monitors_parameters_option_BOLD_mon_att1": "42",
                         "monitors_parameters_option_BOLD_mon_att4": "string_value",
                         "length": "23"}
-    EXPECTED_FILTERED_SET1 = {"surface": None.__class__, "monitors": list, 
+    EXPECTED_FILTERED_SET1 = {"surface": None.__class__, "monitors": list,
                               "monitors_parameters": dict, "length": int}
-    
+
     SUBMIT_DATASET_2 = {"surface": "",
                         "surface_parameters_option_456-GID-1_att1": "10",
                         "surface_parameters_option_456-GID-1_att2": "4.2",
@@ -102,7 +101,7 @@ class TestAdapterABC(TransactionalTestCase):
                         "monitors_parameters_option_EEG_mon_att1": "should_have_been_int",
                         "monitors_parameters_option_EEG_mon_att2": "should_have_been_float",
                         "length": "23"}
-    
+
     SUBMIT_DATASET_3 = {"surface": "$GID$",
                         "surface_parameters_option_$GID$_att1": "10",
                         "surface_parameters_option_$GID$_att2": "4.2",
@@ -110,9 +109,9 @@ class TestAdapterABC(TransactionalTestCase):
                         "monitors_parameters_option_EEG_mon_att1": "2",
                         "monitors_parameters_option_EEG_mon_att2": "7.3",
                         "length": "23"}
-    EXPECTED_FILTERED_SET3 = {"monitors": list, "monitors_parameters": dict, 
+    EXPECTED_FILTERED_SET3 = {"monitors": list, "monitors_parameters": dict,
                               "length": int, "surface": model.DataType, 'surface_parameters': dict}
-    
+
     SUBMIT_DATASET_4 = {"surface": "",
                         "surface_parameters_option_456-GID-1_att1": "10",
                         "surface_parameters_option_456-GID-1_att2": "4.2",
@@ -122,52 +121,49 @@ class TestAdapterABC(TransactionalTestCase):
                         "monitors_parameters_option_BOLD_mon_att1": "42",
                         "monitors_parameters_option_BOLD_mon_att4": "string_value",
                         "length": "23"}
-    EXPECTED_FILTERED_SET4 = {"surface": None.__class__, "monitors": list, 
+    EXPECTED_FILTERED_SET4 = {"surface": None.__class__, "monitors": list,
                               "monitors_parameters": dict, "length": int}
-    
-    
+
+
     def setUp(self):
         """
         Reset the database before each test.
         """
         self.test_adapter = ComplexInterfaceAdapter()
-        
-        
+
+
     def test_flat_interface(self):
         """
         Test method flaten_input_interface on a complex adapter interface.
-        """ 
+        """
         list_flat = self.test_adapter.flaten_input_interface()
         assert len(self.EXPECTED_FLAT_NAMES) == len(list_flat)
         for row in list_flat:
             assert row["name"] in self.EXPECTED_FLAT_NAMES
-            
-    
+
     def test_prepare_ui_inputs_simple(self):
         """
         Test for ABCAdapter.prepare_ui_inputs on a complex adapter interface.
         We need to make sure that sub-attributes for un-submitted select options are dropped.
         """
         kwargs = self.test_adapter.prepare_ui_inputs(self.SUBMIT_DATASET_1)
-        
+
         for expected_name, expected_type in self.EXPECTED_FILTERED_SET1.iteritems():
             assert expected_name in kwargs
             assert isinstance(kwargs[expected_name], expected_type)
         assert len(self.EXPECTED_FILTERED_SET1) == len(kwargs)
-        
+
         assert 2 == len(kwargs["monitors_parameters"]["EEG"])
         assert isinstance(kwargs["monitors_parameters"]["EEG"]["mon_att1"], int)
         assert isinstance(kwargs["monitors_parameters"]["EEG"]["mon_att2"], float)
-    
-    
+
     def test_prepare_inputs_wrong_type(self):
         """
         Test for ABCAdapter.prepare_ui_inputs, when invalid values passed for numeric fields.
         """
         with pytest.raises(Exception):
             self.test_adapter.prepare_ui_inputs( self.SUBMIT_DATASET_2)
-        
-    
+
     def test_prepare_inputs_datatype(self):
         """
         Test for ABCAdapter.prepare_ui_inputs method when submitting DataType with sub-attributes.
@@ -177,36 +173,39 @@ class TestAdapterABC(TransactionalTestCase):
         dataset_3 = {}
         for key, value in self.SUBMIT_DATASET_3.iteritems():
             dataset_3[key.replace("$GID$", test_entity.gid)] = value.replace("$GID$", test_entity.gid)
-            
+
         kwargs = self.test_adapter.prepare_ui_inputs(dataset_3)
-        
+
         for expected_name, expected_type in self.EXPECTED_FILTERED_SET3.iteritems():
             assert expected_name in kwargs
             assert isinstance(kwargs[expected_name], expected_type)
         assert len(self.EXPECTED_FILTERED_SET3) == len(kwargs)
-        
+
         assert 2 == len(kwargs["surface_parameters"])
         assert isinstance(kwargs["surface_parameters"]["att1"], int)
         assert isinstance(kwargs["surface_parameters"]["att2"], float)
-    
-      
+
     def test_prepare_select_multiple(self):
         """
         Test for ABCAdapter.prepare_ui_inputs method when submitting 2 values in a multiple-select input.
         """
         kwargs = self.test_adapter.prepare_ui_inputs(self.SUBMIT_DATASET_4)
-        
-        for expected_name, expected_type in self.EXPECTED_FILTERED_SET4.iteritems():
-            assert expected_name in kwargs
-            assert isinstance(kwargs[expected_name], expected_type)
-        assert len(self.EXPECTED_FILTERED_SET4) == len(kwargs)
-        
-        assert 2 == len(kwargs["monitors_parameters"]["BOLD"])
-        assert 2 == len(kwargs["monitors_parameters"]["EEG"])
-        assert isinstance(kwargs["monitors_parameters"]["BOLD"]["mon_att1"], int)
-        assert 42 == kwargs["monitors_parameters"]["BOLD"]["mon_att1"]
-        assert 43 == kwargs["monitors_parameters"]["EEG"]["mon_att1"]
-        assert isinstance(kwargs["monitors_parameters"]["BOLD"]["mon_att4"], str)
 
+        for expected_name, expected_type in self.EXPECTED_FILTERED_SET4.iteritems():
+            assertexpected_name in kwargs
+            assertisinstance(kwargs[expected_name], expected_type)
+        assertlen(self.EXPECTED_FILTERED_SET4)== len(kwargs)
+
+        assert2== len(kwargs["monitors_parameters"]["BOLD"])
+        assert2== len(kwargs["monitors_parameters"]["EEG"])
+        assertisinstance(kwargs["monitors_parameters"]["BOLD"]["mon_att1"], int)
+        assert42== kwargs["monitors_parameters"]["BOLD"]["mon_att1"]
+        assert43== kwargs["monitors_parameters"]["EEG"]["mon_att1"]
+        assertisinstance(kwargs["monitors_parameters"]["BOLD"]["mon_att4"], str)
+
+
+
+    
+    
       
         

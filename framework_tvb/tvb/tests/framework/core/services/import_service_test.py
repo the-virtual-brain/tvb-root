@@ -36,6 +36,7 @@ import os
 import shutil
 import pytest
 import numpy
+from tvb.tests.framework.core.base_testcase import TransactionalTestCase
 from tvb.basic.profile import TvbProfile
 from tvb.core.entities.storage import dao
 from tvb.core.entities.file.files_helper import FilesHelper
@@ -48,9 +49,8 @@ from tvb.core.adapters.abcadapter import ABCAdapter
 from tvb.adapters.exporters.export_manager import ExportManager
 from tvb.datatypes.mapped_values import ValueWrapper
 from tvb.datatypes.time_series import TimeSeries
-from tvb.tests.framework.core.test_factory import TestFactory
+from tvb.tests.framework.core.factory import TestFactory
 from tvb.tests.framework.adapters.storeadapter import StoreAdapter
-from tvb.tests.framework.core.base_testcase import TransactionalTestCase
 
 
 

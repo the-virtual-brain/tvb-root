@@ -32,7 +32,6 @@
 module docstring
 .. moduleauthor:: Mihai Andrei <mihai.andrei@codemart.ro>
 """
-import unittest
 
 from tvb.basic.traits.itree_model import TypeNode, SelectTypeNode, DictNode, EnumerateNode
 from tvb.simulator.simulator import Simulator

@@ -137,7 +137,7 @@ class TestHDF5Storage():
         try:
             ## But update with a different shape should throw an exception
             self.storage.store_data(DATASET_NAME_1, self.test_3D_array)
-            self.fail("Update with a different shape is expected to fail")
+            raise AssertionError("Update with a different shape is expected to fail")
         except IncompatibleFileManagerException:
             pass
 

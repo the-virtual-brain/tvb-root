@@ -32,13 +32,12 @@
 
 """
 from os import path
-import unittest
 import tvb_data
+from tvb.tests.framework.core.base_testcase import TransactionalTestCase
 from tvb.datatypes.connectivity import Connectivity
 from tvb.core.services.flow_service import FlowService
 from tvb.core.entities.transient.structure_entities import DataTypeMetaData
-from tvb.tests.framework.core.test_factory import TestFactory
-from tvb.tests.framework.core.base_testcase import TransactionalTestCase
+from tvb.tests.framework.core.factory import TestFactory
 
 
 class TestConnectivityZip(TransactionalTestCase):

@@ -61,7 +61,7 @@ class TestBurstContoller(BaseControllersTest):
     """ Unit tests for burst_controller """
 
 
-    def setUp(self):
+    def setup_method(self):
         """
         Sets up the environment for testing;
         creates a `BurstController`
@@ -70,7 +70,7 @@ class TestBurstContoller(BaseControllersTest):
         self.burst_c = BurstController()
 
 
-    def tearDown(self):
+    def teardown_method(self):
         """
         Cleans up the environment after testing is done
         """

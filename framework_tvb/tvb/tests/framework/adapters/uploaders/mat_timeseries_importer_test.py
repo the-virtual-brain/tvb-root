@@ -34,16 +34,15 @@ Unit-test for mat_timeseries_importer and mat_parser.
 .. moduleauthor:: Mihai Andrei <mihai.andrei@codemart.ro>
 """
 
-import unittest
 import os
 import tvb_data
+from tvb.tests.framework.core.base_testcase import TransactionalTestCase
 from tvb.datatypes.connectivity import Connectivity
 from tvb.datatypes.time_series import TimeSeriesRegion
 from tvb.core.entities.file.files_helper import FilesHelper
 from tvb.core.services.flow_service import FlowService
-from tvb.tests.framework.core.test_factory import TestFactory
+from tvb.tests.framework.core.factory import TestFactory
 from tvb.tests.framework.datatypes.datatypes_factory import DatatypesFactory
-from tvb.tests.framework.core.base_testcase import TransactionalTestCase
 
 
 class TestMatTimeSeriesImporter(TransactionalTestCase):

@@ -33,12 +33,11 @@
 .. moduleauthor:: Bogdan Neacsa <bogdan.neacsa@codemart.ro>
 """
 
-import unittest
 from tvb.basic.profile import TvbProfile
+from tvb.tests.framework.core.base_testcase import TransactionalTestCase
 from tvb.adapters.visualizers.pse_discrete import DiscretePSEAdapter
 from tvb.adapters.visualizers.pse_isocline import IsoclinePSEAdapter
 from tvb.tests.framework.datatypes.datatypes_factory import DatatypesFactory
-from tvb.tests.framework.core.base_testcase import TransactionalTestCase
 
 
 class TestPSE(TransactionalTestCase):

@@ -34,6 +34,7 @@
 
 import numpy
 import json
+from tvb.tests.framework.core.base_testcase import TransactionalTestCase
 from tvb.config import SIMULATOR_MODULE, SIMULATOR_CLASS
 from tvb.core.entities import model
 from tvb.core.entities.storage import dao
@@ -44,8 +45,7 @@ from tvb.datatypes.mapped_values import DatatypeMeasure
 from tvb.core.entities.transient.structure_entities import DataTypeMetaData
 from tvb.core.services.operation_service import OperationService
 from tvb.core.services.flow_service import FlowService
-from tvb.tests.framework.core.test_factory import TestFactory
-from tvb.tests.framework.core.base_testcase import TransactionalTestCase
+from tvb.tests.framework.core.factory import TestFactory
 from tvb.tests.framework.adapters.storeadapter import StoreAdapter
 
 

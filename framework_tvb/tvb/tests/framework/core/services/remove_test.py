@@ -32,7 +32,7 @@
 .. moduleauthor:: Bogdan Neacsa <bogdan.neacsa@codemart.ro>
 .. moduleauthor:: Ionel Ortelecan <ionel.ortelecan@codemart.ro>
 """
-import unittest
+
 import numpy
 from tvb.tests.framework.core.base_testcase import TransactionalTestCase
 from tvb.core.entities.storage import dao
@@ -51,7 +51,7 @@ from tvb.datatypes.connectivity import Connectivity
 from tvb.datatypes.surfaces import Surface
 from tvb.datatypes.region_mapping import RegionMapping
 from tvb.datatypes.local_connectivity import LocalConnectivity
-from tvb.tests.framework.core.test_factory import TestFactory
+from tvb.tests.framework.core.factory import TestFactory
 from tvb.tests.framework.adapters.storeadapter import StoreAdapter
 
 

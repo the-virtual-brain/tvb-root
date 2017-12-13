@@ -34,7 +34,7 @@
 
 import cherrypy
 from tvb.tests.framework.interfaces.web.controllers.base_controller_test import BaseTransactionalControllerTest
-from tvb.tests.framework.core.test_factory import TestFactory
+from tvb.tests.framework.core.factory import TestFactory
 from tvb.core.entities.storage import dao
 from tvb.interfaces.web.controllers.project.figure_controller import FigureController
 

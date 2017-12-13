@@ -39,7 +39,7 @@ from tvb.tests.framework.interfaces.web.controllers.base_controller_test import 
 import tvb.interfaces.web.controllers.common as common
 from tvb.core.entities.storage import dao
 from tvb.interfaces.web.controllers.project.project_controller import ProjectController
-from tvb.tests.framework.core.test_factory import TestFactory
+from tvb.tests.framework.core.factory import TestFactory
 from tvb.tests.framework.datatypes.datatypes_factory import DatatypesFactory
 
 
