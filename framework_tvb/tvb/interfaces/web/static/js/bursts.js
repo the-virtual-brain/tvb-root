@@ -559,7 +559,7 @@ function changePSETab(clickedHref, toShow) {
 function toggleMaximizeBurst(hrefElement) {
     toggleMaximizeColumn(hrefElement, 'section-pse');
     if ($('#pse-iso').hasClass('active')) {
-        resizeIsoFigures();
+        drawAxis();
     }
     if ($('#pse-flot').hasClass('active')) {
         redrawPlot('pse_discreet_top_id');
