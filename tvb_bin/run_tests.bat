@@ -5,9 +5,8 @@ rem Make sure TVB application is not running....
 python tvb_bin\app.py stop
 
 echo 'Executing clean before tests...'
-rmdir TEST_OUTPUT /s /q
-mkdir TEST_OUTPUT
 python tvb_bin\app.py clean TEST_SQLITE_PROFILE
+mkdir TEST_OUTPUT
 
 echo 'Starting TVB tests...'
 pytest --pyargs tvb.tests.framework --junitxml=TEST_OUTPUT\TEST-RESULTS.xml > TEST_OUTPUT\TEST.out 2>&1
