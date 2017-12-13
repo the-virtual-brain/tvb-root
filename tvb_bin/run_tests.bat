@@ -5,6 +5,8 @@ rem Make sure TVB application is not running....
 python tvb_bin\app.py stop
 
 echo 'Executing clean before tests...'
+rmdir TEST_OUTPUT /s /q
+mkdir TEST_OUTPUT
 python tvb_bin\app.py clean TEST_SQLITE_PROFILE
 
 echo 'Starting TVB tests...'
