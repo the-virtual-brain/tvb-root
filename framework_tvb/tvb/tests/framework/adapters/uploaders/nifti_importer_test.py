@@ -49,7 +49,7 @@ from tvb.datatypes.time_series import TimeSeriesVolume
 from tvb.datatypes.structural import StructuralMRI
 
 
-class NIFTIImporterTest(TransactionalTestCase):
+class TestNIFTIImporter(TransactionalTestCase):
     """
     Unit-tests for NIFTI importer.
     """
@@ -91,10 +91,10 @@ class NIFTIImporterTest(TransactionalTestCase):
         FlowService().fire_operation(importer, self.test_user, self.test_project.id, **args)
 
         dts, count = dao.get_values_of_datatype(self.test_project.id, expected_result_class, None)
-        self.assertEqual(1, count, "Project should contain only one data type.")
+        assert 1, count == "Project should contain only one data type."
 
         result = ABCAdapter.load_entity_by_gid(dts[0][2])
-        self.assertTrue(result is not None, "Result should not be none")
+        assert result is not None, "Result should not be none"
         return result
 
 
@@ -106,23 +106,23 @@ class NIFTIImporterTest(TransactionalTestCase):
 
         # Since self.assertAlmostEquals is not available on all machine
         # We compare floats as following
-        self.assertTrue(abs(1.0 - time_series.sample_period) <= 0.001)
-        self.assertEqual("sec", str(time_series.sample_period_unit))
-        self.assertEqual(0.0, time_series.start_time)
-        self.assertTrue(time_series.title.startswith("NIFTI"))
+        assert abs(1.0 - time_series.sample_period) <= 0.001
+        assert "sec" == str(time_series.sample_period_unit)
+        assert 0.0 == time_series.start_time
+        assert time_series.title.startswith("NIFTI")
 
         data_shape = time_series.read_data_shape()
-        self.assertEquals(4, len(data_shape))
+        assert 4 == len(data_shape)
         # We have 5 time points
-        self.assertEqual(5, data_shape[0])
+        assert 5 == data_shape[0]
         dimension_labels = time_series.labels_ordering
-        self.assertTrue(dimension_labels is not None)
-        self.assertEquals(4, len(dimension_labels))
+        assert dimension_labels is not None
+        assert 4 == len(dimension_labels)
 
         volume = time_series.volume
-        self.assertTrue(volume is not None)
-        self.assertTrue(numpy.equal(self.DEFAULT_ORIGIN, volume.origin).all())
-        self.assertEquals("mm", volume.voxel_unit)
+        assert volume is not None
+        assert numpy.equal(self.DEFAULT_ORIGIN, volume.origin).all()
+        assert "mm" == volume.voxel_unit
 
 
     def test_import_nii_without_time_dimension(self):
@@ -130,19 +130,19 @@ class NIFTIImporterTest(TransactionalTestCase):
         This method tests import of a NIFTI file.
         """
         structure = self._import(self.NII_FILE)
-        self.assertEqual("T1", structure.weighting)
+        assert "T1" == structure.weighting
 
         data_shape = structure.array_data.shape
-        self.assertEquals(3, len(data_shape))
-        self.assertEqual(64, data_shape[0])
-        self.assertEqual(64, data_shape[1])
-        self.assertEqual(10, data_shape[2])
+        assert 3 == len(data_shape)
+        assert 64 == data_shape[0]
+        assert 64 == data_shape[1]
+        assert 10 == data_shape[2]
 
         volume = structure.volume
-        self.assertTrue(volume is not None)
-        self.assertTrue(numpy.equal(self.DEFAULT_ORIGIN, volume.origin).all())
-        self.assertTrue(numpy.equal([3.0, 3.0, 3.0], volume.voxel_size).all())
-        self.assertEquals(self.UNKNOWN_STR, volume.voxel_unit)
+        assert volume is not None
+        assert numpy.equal(self.DEFAULT_ORIGIN, volume.origin).all()
+        assert numpy.equal([3.0, 3.0, 3.0], volume.voxel_size).all()
+        assert self.UNKNOWN_STR == volume.voxel_unit
 
 
     def test_import_nifti_compressed(self):
@@ -150,7 +150,7 @@ class NIFTIImporterTest(TransactionalTestCase):
         This method tests import of a NIFTI file compressed in GZ format.
         """
         structure = self._import(self.GZ_NII_FILE)
-        self.assertEqual("T1", structure.weighting)
+        assert "T1" == structure.weighting
 
 
     def test_import_region_mapping(self):
@@ -160,18 +160,18 @@ class NIFTIImporterTest(TransactionalTestCase):
         to_link_conn = self.datatypeFactory.create_connectivity()[1]
         mapping = self._import(self.GZ_NII_FILE, RegionVolumeMapping, to_link_conn.gid)
 
-        self.assertTrue(-1 <= mapping.array_data.min())
-        self.assertTrue(mapping.array_data.max() < to_link_conn.number_of_regions)
+        assert -1 <= mapping.array_data.min()
+        assert mapping.array_data.max() < to_link_conn.number_of_regions
 
         conn = mapping.connectivity
-        self.assertTrue(conn is not None)
-        self.assertEquals(to_link_conn.number_of_regions, conn.number_of_regions)
+        assert conn is not None
+        assert to_link_conn.number_of_regions == conn.number_of_regions
 
         volume = mapping.volume
-        self.assertTrue(volume is not None)
-        self.assertTrue(numpy.equal(self.DEFAULT_ORIGIN, volume.origin).all())
-        self.assertTrue(numpy.equal([3.0, 3.0, 3.0], volume.voxel_size).all())
-        self.assertEquals(self.UNKNOWN_STR, volume.voxel_unit)
+        assert volume is not None
+        assert numpy.equal(self.DEFAULT_ORIGIN, volume.origin).all()
+        assert numpy.equal([3.0, 3.0, 3.0], volume.voxel_size).all()
+        assert self.UNKNOWN_STR == volume.voxel_unit
 
 
 
@@ -181,23 +181,8 @@ class NIFTIImporterTest(TransactionalTestCase):
         """
         try:
             self._import(self.WRONG_NII_FILE)
-            self.fail("Import should fail in case of a wrong NIFTI format.")
+            raise AssertionError("Import should fail in case of a wrong NIFTI format.")
         except OperationException:
             # Expected exception
             pass
 
-
-def suite():
-    """
-    Gather all the tests in a test suite.
-    """
-    test_suite = unittest.TestSuite()
-    test_suite.addTest(unittest.makeSuite(NIFTIImporterTest))
-    return test_suite
-
-
-if __name__ == "__main__":
-    # So you can run tests from this package individually.
-    TEST_RUNNER = unittest.TextTestRunner()
-    TEST_SUITE = suite()
-    TEST_RUNNER.run(TEST_SUITE)

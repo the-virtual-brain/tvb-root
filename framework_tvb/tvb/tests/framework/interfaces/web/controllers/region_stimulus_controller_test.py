@@ -35,7 +35,7 @@ from tvb.tests.framework.interfaces.web.controllers.base_controller_test import 
 from tvb.interfaces.web.controllers.spatial.region_stimulus_controller import RegionStimulusController
 
 
-class RegionsStimulusControllerTest(BaseTransactionalControllerTest):
+class TestRegionsStimulusController(BaseTransactionalControllerTest):
     """ Unit tests for RegionStimulusController """
     
     def setUp(self):
@@ -59,24 +59,8 @@ class RegionsStimulusControllerTest(BaseTransactionalControllerTest):
         """
         self.region_s_c.step_1_submit(1, 1)
         result_dict = self.region_s_c.step_1()
-        self.assertEqual(result_dict['equationViewerUrl'], '/spatial/stimulus/region/get_equation_chart')
-        self.assertTrue('fieldsPrefixes' in result_dict)
-        self.assertEqual(result_dict['loadExistentEntityUrl'], '/spatial/stimulus/region/load_region_stimulus')
-        self.assertEqual(result_dict['mainContent'], 'spatial/stimulus_region_step1_main')
-        self.assertEqual(result_dict['next_step_url'], '/spatial/stimulus/region/step_1_submit')
-
-            
-def suite():
-    """
-    Gather all the tests in a test suite.
-    """
-    test_suite = unittest.TestSuite()
-    test_suite.addTest(unittest.makeSuite(RegionsStimulusControllerTest))
-    return test_suite
-
-
-if __name__ == "__main__":
-    #So you can run tests individually.
-    TEST_RUNNER = unittest.TextTestRunner()
-    TEST_SUITE = suite()
-    TEST_RUNNER.run(TEST_SUITE)
+        assert result_dict['equationViewerUrl'] == '/spatial/stimulus/region/get_equation_chart'
+        assert 'fieldsPrefixes' in result_dict
+        assert result_dict['loadExistentEntityUrl'] == '/spatial/stimulus/region/load_region_stimulus'
+        assert result_dict['mainContent'] == 'spatial/stimulus_region_step1_main'
+        assert result_dict['next_step_url'] == '/spatial/stimulus/region/step_1_submit'

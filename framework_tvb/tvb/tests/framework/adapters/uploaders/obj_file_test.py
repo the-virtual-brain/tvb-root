@@ -38,14 +38,14 @@ from tvb.adapters.uploaders.obj.parser import ObjWriter, ObjParser
 
 
 
-class ObjFilesTest(unittest.TestCase):
+class TestObjFiles(unittest.TestCase):
 
     def test_write_simple(self):
         f = StringIO()
         w = ObjWriter(f)
         w.write([[0, 0, 0], [1, 0, 0], [0, 1, 0], [0, 0, 1]],
                 [[0, 1, 2], [0, 1, 3]])
-        self.assertTrue(len(f.getvalue()) > 15)
+        assert len(f.getvalue()) > 15
 
 
     def test_write_with_normals(self):
@@ -55,7 +55,7 @@ class ObjFilesTest(unittest.TestCase):
                 [[0, 1, 2], [0, 1, 3]],
                 [[0, 0, 1], [0, 0, 1], [0, 0, 1], [0, 0, 1]],
                 comment="exported from test")
-        self.assertTrue(len(f.getvalue()) > 15)
+        assert len(f.getvalue()) > 15
 
 
     def test_write_parse_cycle(self):
@@ -70,23 +70,7 @@ class ObjFilesTest(unittest.TestCase):
 
         p = ObjParser()
         p.read(f)
-        self.assertEqual(vertices, p.vertices)
-        self.assertEqual(normals, p.normals)
-        # self.assertEqual(triangles, p.faces)
-
-
-
-def suite():
-    """
-    Gather all the tests in a test suite.
-    """
-    test_suite = unittest.TestSuite()
-    test_suite.addTest(unittest.makeSuite(ObjFilesTest))
-    return test_suite
-
-
-
-if __name__ == "__main__":
-    #To run tests individually.
-    unittest.main()
+        assert vertices == p.vertices
+        assert normals == p.normals
+        # assert triangles == p.faces
 

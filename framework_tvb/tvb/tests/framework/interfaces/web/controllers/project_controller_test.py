@@ -32,7 +32,7 @@
 .. moduleauthor:: Bogdan Neacsa <bogdan.neacsa@codemart.ro>
 """
 
-import unittest
+import pytest
 import cherrypy
 from sqlalchemy.orm.exc import NoResultFound
 from tvb.tests.framework.interfaces.web.controllers.base_controller_test import BaseTransactionalControllerTest
@@ -44,7 +44,7 @@ from tvb.tests.framework.datatypes.datatypes_factory import DatatypesFactory
 
 
 
-class ProjectControllerTest(BaseTransactionalControllerTest):
+class TestProjectController(BaseTransactionalControllerTest):
     """ Unit tests for ProjectController """
 
 
@@ -75,10 +75,10 @@ class ProjectControllerTest(BaseTransactionalControllerTest):
         Verifies that result dictionary has the expected keys / values
         """
         result = self.project_c.index()
-        self.assertEqual(result['mainContent'], "project_submenu")
-        self.assertEqual(result[common.KEY_PROJECT].id, self.test_project.id)
-        self.assertEqual(result['subsection_name'], 'project')
-        self.assertEqual(result[common.KEY_USER].id, self.test_user.id)
+        assert result['mainContent'] == "project_submenu"
+        assert result[common.KEY_PROJECT].id == self.test_project.id
+        assert result['subsection_name'] == 'project'
+        assert result[common.KEY_USER].id == self.test_user.id
 
 
     def test_viewall_valid_data(self):
@@ -91,9 +91,9 @@ class ProjectControllerTest(BaseTransactionalControllerTest):
         result = self.project_c.viewall(selected_project_id=project1.id)
         projects_list = result['projectsList']
         ## Use this old version of SET builder, otherwise it will fain on Python 2.6
-        self.assertEqual(set([prj.name for prj in projects_list]), {'prj1', 'prj2', 'prj3', 'Test'})
-        self.assertEqual(result['page_number'], 1)
-        self.assertEqual(result[common.KEY_PROJECT].name, 'prj1')
+        assert set([prj.name for prj in projects_list]) == {'prj1', 'prj2', 'prj3', 'Test'}
+        assert result['page_number'] == 1
+        assert result[common.KEY_PROJECT].name == 'prj1'
 
 
     def test_viewall_invalid_projectid(self):
@@ -101,8 +101,8 @@ class ProjectControllerTest(BaseTransactionalControllerTest):
         Try to pass on an invalid id for the selected project.
         """
         result = self.project_c.viewall(selected_project_id='invalid')
-        self.assertEqual(result[common.KEY_MESSAGE_TYPE], common.TYPE_ERROR)
-        self.assertEqual(result[common.KEY_PROJECT].id, self.test_project.id)
+        assert result[common.KEY_MESSAGE_TYPE] == common.TYPE_ERROR
+        assert result[common.KEY_PROJECT].id == self.test_project.id
 
 
     def test_viewall_post_create(self):
@@ -128,7 +128,8 @@ class ProjectControllerTest(BaseTransactionalControllerTest):
         cherrypy.request.method = "POST"
         self._expect_redirect('/project/viewall', self.project_c.editone,
                               self.test_project.id, delete=True)
-        self.assertRaises(NoResultFound, dao.get_project_by_id, self.test_project.id)
+        with pytest.raises(NoResultFound):
+            dao.get_project_by_id(self.test_project.id)
 
 
     def test_editone_create(self):
@@ -143,7 +144,7 @@ class ProjectControllerTest(BaseTransactionalControllerTest):
         cherrypy.request.method = "POST"
         self._expect_redirect('/project/viewall', self.project_c.editone, save=True, **data)
         projects = dao.get_projects_for_user(self.test_user.id)
-        self.assertEqual(len(projects), 2)
+        assert len(projects) == 2
 
 
     def test_getmemberspage(self):
@@ -154,10 +155,10 @@ class ProjectControllerTest(BaseTransactionalControllerTest):
         user = TestFactory.create_user('usr', 'pass')
         test_project = TestFactory.create_project(user, 'new_name')
         result = self.project_c.getmemberspage(0, test_project.id)
-        self.assertEqual(result['usersMembers'], [])
+        assert result['usersMembers'] == []
         # Same users as before should be available since we created new one
         # as owned for the project.
-        self.assertEqual(len(result['usersList']), users_count)
+        assert len(result['usersList']) == users_count
 
 
     def test_set_visibility_datatype(self):
@@ -165,13 +166,13 @@ class ProjectControllerTest(BaseTransactionalControllerTest):
         Set datatype visibility to true and false and check results are updated.
         """
         datatype = DatatypesFactory().create_datatype_with_storage()
-        self.assertTrue(datatype.visible)
+        assert datatype.visible
         self.project_c.set_visibility('datatype', datatype.gid, 'False')
         datatype = dao.get_datatype_by_gid(datatype.gid)
-        self.assertFalse(datatype.visible)
+        assert not datatype.visible
         self.project_c.set_visibility('datatype', datatype.gid, 'True')
         datatype = dao.get_datatype_by_gid(datatype.gid)
-        self.assertTrue(datatype.visible)
+        assert datatype.visible
 
 
     def test_set_visibility_operation(self):
@@ -181,13 +182,13 @@ class ProjectControllerTest(BaseTransactionalControllerTest):
         """
         dt_factory = DatatypesFactory()
         operation = dt_factory.operation
-        self.assertTrue(operation.visible)
+        assert operation.visible
         self.project_c.set_visibility('operation', operation.gid, 'False')
         operation = dao.get_operation_by_gid(operation.gid)
-        self.assertFalse(operation.visible)
+        assert not operation.visible
         self.project_c.set_visibility('operation', operation.gid, 'True')
         operation = dao.get_operation_by_gid(operation.gid)
-        self.assertTrue(operation.visible)
+        assert operation.visible
 
 
     def test_viewoperations(self):
@@ -198,10 +199,10 @@ class ProjectControllerTest(BaseTransactionalControllerTest):
                                                  test_project=self.test_project)
         result_dict = self.project_c.viewoperations(self.test_project.id)
         operation_list = result_dict['operationsList']
-        self.assertEqual(len(operation_list), 1)
-        self.assertEqual(operation_list[0]['id'], str(operation.id))
-        self.assertTrue('no_filter_selected' in result_dict)
-        self.assertTrue('total_op_count' in result_dict)
+        assert len(operation_list) == 1
+        assert operation_list[0]['id'] == str(operation.id)
+        assert 'no_filter_selected' in result_dict
+        assert 'total_op_count' in result_dict
 
 
     def test_get_datatype_details(self):
@@ -210,11 +211,11 @@ class ProjectControllerTest(BaseTransactionalControllerTest):
         """
         datatype = DatatypesFactory().create_datatype_with_storage()
         dt_details = self.project_c.get_datatype_details(datatype.gid)
-        self.assertEqual(dt_details['datatype_id'], datatype.id)
-        self.assertEqual(dt_details['entity_gid'], datatype.gid)
-        self.assertFalse(dt_details['isGroup'])
-        self.assertTrue(dt_details['isRelevant'])
-        self.assertEqual(len(dt_details['overlay_indexes']), len(dt_details['overlay_tabs_horizontal']))
+        assert dt_details['datatype_id'] == datatype.id
+        assert dt_details['entity_gid'] == datatype.gid
+        assert not dt_details['isGroup']
+        assert dt_details['isRelevant']
+        assert len(dt_details['overlay_indexes']) == len(dt_details['overlay_tabs_horizontal'])
 
 
     def test_get_linkable_projects(self):
@@ -223,8 +224,8 @@ class ProjectControllerTest(BaseTransactionalControllerTest):
         """
         datatype = DatatypesFactory().create_datatype_with_storage()
         result_dict = self.project_c.get_linkable_projects(datatype.id, False, False)
-        self.assertTrue(result_dict['projectslinked'] is None)
-        self.assertEqual(result_dict['datatype_id'], datatype.id)
+        assert result_dict['projectslinked'] is None
+        assert result_dict['datatype_id'] == datatype.id
 
 
     def test_get_operation_details(self):
@@ -236,13 +237,13 @@ class ProjectControllerTest(BaseTransactionalControllerTest):
                                                  test_project=self.test_project,
                                                  parameters='{"test" : "test"}')
         result_dict = self.project_c.get_operation_details(operation.gid)
-        self.assertEqual(result_dict['entity_gid'], operation.gid)
-        self.assertEqual(result_dict['nodeType'], 'operation')
+        assert result_dict['entity_gid'] == operation.gid
+        assert result_dict['nodeType'] == 'operation'
         operation_dict = result_dict['nodeFields'][0]
-        self.assertEqual(operation_dict['burst_name']['value'], '')
-        self.assertEqual(operation_dict['count']['value'], 1)
-        self.assertEqual(operation_dict['gid']['value'], operation.gid)
-        self.assertEqual(operation_dict['operation_id']['value'], operation.id)
+        assert operation_dict['burst_name']['value'] == ''
+        assert operation_dict['count']['value'] == 1
+        assert operation_dict['gid']['value'] == operation.gid
+        assert operation_dict['operation_id']['value'] == operation.id
 
 
     def test_editstructure_invalid_proj(self):
@@ -254,24 +255,6 @@ class ProjectControllerTest(BaseTransactionalControllerTest):
         Pass valid project to edit structure and check some entries from result dict.
         """
         result_dict = self.project_c.editstructure(self.test_project.id)
-        self.assertEqual(result_dict['mainContent'], 'project/structure')
-        self.assertEqual(result_dict['firstLevelSelection'], 'Data_State')
-        self.assertEqual(result_dict['secondLevelSelection'], 'Data_Subject')
-
-
-
-def suite():
-    """
-    Gather all the tests in a test suite.
-    """
-    test_suite = unittest.TestSuite()
-    test_suite.addTest(unittest.makeSuite(ProjectControllerTest))
-    return test_suite
-
-
-
-if __name__ == "__main__":
-    #So you can run tests individually.
-    TEST_RUNNER = unittest.TextTestRunner()
-    TEST_SUITE = suite()
-    TEST_RUNNER.run(TEST_SUITE)
+        assert result_dict['mainContent'] == 'project/structure'
+        assert result_dict['firstLevelSelection'] == 'Data_State'
+        assert result_dict['secondLevelSelection'] == 'Data_Subject'

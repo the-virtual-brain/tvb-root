@@ -40,7 +40,7 @@ from tvb.interfaces.web.controllers.spatial.local_connectivity_controller import
 from tvb.interfaces.web.controllers.spatial.local_connectivity_controller import KEY_LCONN_CONTEXT
 
 
-class LocalConnectivityControllerTest(BaseTransactionalControllerTest):
+class TestLocalConnectivityController(BaseTransactionalControllerTest):
     """ Unit tests for LocalConnectivityController """
     
     def setUp(self):
@@ -62,8 +62,8 @@ class LocalConnectivityControllerTest(BaseTransactionalControllerTest):
         Check for some info that should be true for all steps from the
         local connectivity controller.
         """
-        self.assertEqual(result_dict['data'], {})
-        self.assertTrue(isinstance(result_dict['existentEntitiesInputList'], list))
+        assert result_dict['data'] == {}
+        assert isinstance(result_dict['existentEntitiesInputList'], list)
     
     
     def test_step_1(self):
@@ -72,17 +72,17 @@ class LocalConnectivityControllerTest(BaseTransactionalControllerTest):
         """
         result_dict = self.local_p_c.step_1(1)
         self._default_checks(result_dict)
-        self.assertEqual(result_dict['equationViewerUrl'], 
-                         '/spatial/localconnectivity/get_equation_chart')
-        self.assertTrue(isinstance(result_dict['inputList'], list))
-        self.assertEqual(result_dict['mainContent'], 'spatial/local_connectivity_step1_main')
-        self.assertEqual(result_dict['next_step_url'], '/spatial/localconnectivity/step_2')
-        self.assertEqual(result_dict['resetToDefaultUrl'], 
-                         '/spatial/localconnectivity/reset_local_connectivity')
-        self.assertEqual(result_dict['submit_parameters_url'], 
-                         '/spatial/localconnectivity/create_local_connectivity')
-        self.assertEqual(result_dict['resetToDefaultUrl'], 
-                         '/spatial/localconnectivity/reset_local_connectivity')
+        assert result_dict['equationViewerUrl'] ==\
+                         '/spatial/localconnectivity/get_equation_chart'
+        assert isinstance(result_dict['inputList'], list)
+        assert result_dict['mainContent'] == 'spatial/local_connectivity_step1_main'
+        assert result_dict['next_step_url'] == '/spatial/localconnectivity/step_2'
+        assert result_dict['resetToDefaultUrl'] ==\
+                         '/spatial/localconnectivity/reset_local_connectivity'
+        assert result_dict['submit_parameters_url'] ==\
+                         '/spatial/localconnectivity/create_local_connectivity'
+        assert result_dict['resetToDefaultUrl'] ==\
+                         '/spatial/localconnectivity/reset_local_connectivity'
         
         
     def test_step_2(self):
@@ -93,27 +93,7 @@ class LocalConnectivityControllerTest(BaseTransactionalControllerTest):
         cherrypy.session[KEY_LCONN_CONTEXT] = context
         result_dict = self.local_p_c.step_2()
         self._default_checks(result_dict)
-        self.assertEqual(result_dict['loadExistentEntityUrl'], '/spatial/localconnectivity/load_local_connectivity')
-        self.assertEqual(result_dict['mainContent'], 'spatial/local_connectivity_step2_main')
-        self.assertEqual(result_dict['next_step_url'], '/spatial/localconnectivity/step_1')
+        assert result_dict['loadExistentEntityUrl'] == '/spatial/localconnectivity/load_local_connectivity'
+        assert result_dict['mainContent'] == 'spatial/local_connectivity_step2_main'
+        assert result_dict['next_step_url'] == '/spatial/localconnectivity/step_1'
         
-        
-            
-def suite():
-    """
-    Gather all the tests in a test suite.
-    """
-    test_suite = unittest.TestSuite()
-    test_suite.addTest(unittest.makeSuite(LocalConnectivityControllerTest))
-    return test_suite
-
-
-if __name__ == "__main__":
-    #So you can run tests individually.
-    TEST_RUNNER = unittest.TextTestRunner()
-    TEST_SUITE = suite()
-    TEST_RUNNER.run(TEST_SUITE)
-    
-    
-    
-    

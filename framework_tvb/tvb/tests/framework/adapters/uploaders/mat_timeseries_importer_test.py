@@ -46,7 +46,7 @@ from tvb.tests.framework.datatypes.datatypes_factory import DatatypesFactory
 from tvb.tests.framework.core.base_testcase import TransactionalTestCase
 
 
-class MatTimeSeriesImporterTest(TransactionalTestCase):
+class TestMatTimeSeriesImporter(TransactionalTestCase):
 
     base_pth = os.path.join(os.path.dirname(tvb_data.__file__), 'berlinSubjects', 'QL_20120814')
     bold_path = os.path.join(base_pth, 'QL_BOLD_regiontimecourse.mat')
@@ -89,21 +89,6 @@ class MatTimeSeriesImporterTest(TransactionalTestCase):
 
         tsr = TestFactory.get_entity(self.test_project, TimeSeriesRegion())
 
-        self.assertEqual((661, 1, 68, 1), tsr.read_data_shape())
+        assert (661, 1, 68, 1) == tsr.read_data_shape()
 
 
-
-def suite():
-    """
-    Gather all the tests in a test suite.
-    """
-    test_suite = unittest.TestSuite()
-    test_suite.addTest(unittest.makeSuite(MatTimeSeriesImporterTest))
-    return test_suite
-
-
-if __name__ == "__main__":
-    #So you can run tests from this package individually.
-    TEST_RUNNER = unittest.TextTestRunner()
-    TEST_SUITE = suite()
-    TEST_RUNNER.run(TEST_SUITE)

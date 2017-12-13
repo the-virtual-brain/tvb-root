@@ -49,7 +49,7 @@ from tvb.datatypes.region_mapping import RegionMapping
 from tvb.datatypes.connectivity import Connectivity
 
 
-class RegionMappingImporterTest(TransactionalTestCase):
+class TestRegionMappingImporter(TransactionalTestCase):
     """
     Unit-tests for RegionMapping importer.
     """
@@ -92,10 +92,10 @@ class RegionMappingImporterTest(TransactionalTestCase):
         """
         dt_full_name = expected_data.__module__ + "." + expected_data.__name__
         data_types = FlowService().get_available_datatypes(self.test_project.id,dt_full_name, filters)[0]
-        self.assertEqual(1, len(data_types), "Project should contain only one data type:" + str(expected_data.type))
+        assert 1, len(data_types) == "Project should contain only one data type:" + str(expected_data.type)
         
         entity = ABCAdapter.load_entity_by_gid(data_types[0][2])
-        self.assertTrue(entity is not None, "Instance should not be none")
+        assert entity is not None, "Instance should not be none"
         return entity
 
 
@@ -130,14 +130,14 @@ class RegionMappingImporterTest(TransactionalTestCase):
         """
         try:
             self._import(self.TXT_FILE, None, self.connectivity.gid)
-            self.fail("Import should fail in case Surface is missing")
+            raise AssertionError("Import should fail in case Surface is missing")
         except OperationException:
             # Expected exception
             pass
 
         try:
             self._import(self.TXT_FILE, self.surface.gid, None)
-            self.fail("Import should fail in case Connectivity is missing")
+            raise AssertionError("Import should fail in case Connectivity is missing")
         except OperationException:
             # Expected exception
             pass
@@ -170,12 +170,12 @@ class RegionMappingImporterTest(TransactionalTestCase):
         """
         region_mapping = self._import(import_file, self.surface.gid, self.connectivity.gid) 
         
-        self.assertTrue(region_mapping.surface is not None)
-        self.assertTrue(region_mapping.connectivity is not None)
+        assert region_mapping.surface is not None
+        assert region_mapping.connectivity is not None
         
         array_data = region_mapping.array_data
-        self.assertTrue(array_data is not None)
-        self.assertEqual(16384, len(array_data))
+        assert array_data is not None
+        assert 16384 == len(array_data)
 
 
     def test_import_wrong_file_content(self):
@@ -187,38 +187,22 @@ class RegionMappingImporterTest(TransactionalTestCase):
         """
         try:
             self._import(self.WRONG_FILE_1, self.surface.gid, self.connectivity.gid)
-            self.fail("Import should fail in case of invalid region number")
+            raise AssertionError("Import should fail in case of invalid region number")
         except OperationException:
             # Expected exception
             pass
 
         try:
             self._import(self.WRONG_FILE_2, self.surface.gid, self.connectivity.gid)
-            self.fail("Import should fail in case of invalid regions number")
+            raise AssertionError("Import should fail in case of invalid regions number")
         except OperationException:
             # Expected exception
             pass
         
         try:
             self._import(self.WRONG_FILE_3, self.surface.gid, self.connectivity.gid)
-            self.fail("Import should fail in case of invalid region number (negative number)")
+            raise AssertionError("Import should fail in case of invalid region number (negative number)")
         except OperationException:
             # Expected exception
             pass
                 
-
-        
-def suite():
-    """
-    Gather all the tests in a test suite.
-    """
-    test_suite = unittest.TestSuite()
-    test_suite.addTest(unittest.makeSuite(RegionMappingImporterTest))
-    return test_suite
-
-
-if __name__ == "__main__":
-    #So you can run tests from this package individually.
-    TEST_RUNNER = unittest.TextTestRunner()
-    TEST_SUITE = suite()
-    TEST_RUNNER.run(TEST_SUITE)

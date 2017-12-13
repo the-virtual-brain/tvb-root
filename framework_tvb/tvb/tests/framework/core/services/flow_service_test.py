@@ -35,7 +35,7 @@
 
 import os
 import numpy
-import unittest
+import pytest
 from datetime import datetime
 from tvb.config import DISCRETE_PSE_ADAPTER_CLASS
 from tvb.core.adapters.exceptions import IntrospectionException
@@ -101,7 +101,7 @@ class InvalidTestAdapter():
 
 
 
-class FlowServiceTest(TransactionalTestCase):
+class TestFlowService(TransactionalTestCase):
     """
     This class contains tests for the tvb.core.services.flow_service module.
     """
@@ -126,21 +126,21 @@ class FlowServiceTest(TransactionalTestCase):
     def test_get_uploaders(self):
 
         result = self.flow_service.get_upload_algorithms()
-        self.assertEqual(29, len(result))
+        assert 29 == len(result)
         found = False
         for algo in result:
             if algo.classname == self.algorithm.classname and algo.module == self.algorithm.module:
                 found = True
                 break
-        self.assertTrue(found, "Uploader incorrectly returned")
+        assert found, "Uploader incorrectly returned"
 
 
     def test_get_analyze_groups(self):
 
         category, groups = self.flow_service.get_analyze_groups()
-        self.assertEqual(category.displayname, 'Analyze')
-        self.assertTrue(len(groups) > 1)
-        self.assertTrue(isinstance(groups[0], model.AlgorithmTransientGroup))
+        assert category.displayname == 'Analyze'
+        assert len(groups) > 1
+        assert isinstance(groups[0], model.AlgorithmTransientGroup)
 
 
     def test_get_visualizers_for_group(self):
@@ -149,8 +149,8 @@ class FlowServiceTest(TransactionalTestCase):
         dt_group = dao.get_datatypegroup_by_op_group_id(op_group_id)
         result = self.flow_service.get_visualizers_for_group(dt_group.gid)
         # Only the discreet is expected
-        self.assertEqual(1, len(result))
-        self.assertEqual(DISCRETE_PSE_ADAPTER_CLASS, result[0].classname)
+        assert 1 == len(result)
+        assert DISCRETE_PSE_ADAPTER_CLASS == result[0].classname
 
 
     def test_get_launchable_algorithms(self):
@@ -159,8 +159,8 @@ class FlowServiceTest(TransactionalTestCase):
         conn = factory.create_connectivity(4)[1]
         ts = factory.create_timeseries(conn)
         result = self.flow_service.get_launchable_algorithms(ts.gid)
-        self.assertTrue('Analyze' in result)
-        self.assertTrue('View' in result)
+        assert 'Analyze' in result
+        assert 'View' in result
 
 
 
@@ -169,10 +169,10 @@ class FlowServiceTest(TransactionalTestCase):
         Test for the get_algorithm_by_identifier.
         """
         algo_ret = self.flow_service.get_algorithm_by_identifier(self.algorithm.id)
-        self.assertEqual(algo_ret.id, self.algorithm.id, "ID-s are different!")
-        self.assertEqual(algo_ret.module, self.algorithm.module, "Modules are different!")
-        self.assertEqual(algo_ret.fk_category, self.algorithm.fk_category, "Categories are different!")
-        self.assertEqual(algo_ret.classname, self.algorithm.classname, "Class names are different!")
+        assert algo_ret.id == self.algorithm.id, "ID-s are different!"
+        assert algo_ret.module == self.algorithm.module, "Modules are different!"
+        assert algo_ret.fk_category == self.algorithm.fk_category, "Categories are different!"
+        assert algo_ret.classname == self.algorithm.classname, "Class names are different!"
 
 
     def test_build_adapter_instance(self):
@@ -180,7 +180,7 @@ class FlowServiceTest(TransactionalTestCase):
         Test standard flow for building an adapter instance.
         """
         adapter = TestFactory.create_adapter(TEST_ADAPTER_VALID_MODULE, TEST_ADAPTER_VALID_CLASS)
-        self.assertTrue(isinstance(adapter, ABCSynchronous), "Something went wrong with valid data!")
+        assert isinstance(adapter, ABCSynchronous), "Something went wrong with valid data!"
 
 
     def test_build_adapter_invalid(self):
@@ -188,7 +188,8 @@ class FlowServiceTest(TransactionalTestCase):
         Test flow for trying to build an adapter that does not inherit from ABCAdapter.
         """
         group = dao.get_algorithm_by_module(TEST_ADAPTER_VALID_MODULE, TEST_ADAPTER_INVALID_CLASS)
-        self.assertRaises(IntrospectionException, ABCAdapter.build_adapter, group)
+        with pytest.raises(IntrospectionException):
+            ABCAdapter.build_adapter(group)
 
 
     def test_prepare_adapter(self):
@@ -197,13 +198,13 @@ class FlowServiceTest(TransactionalTestCase):
         """
         stored_adapter = dao.get_algorithm_by_module(TEST_ADAPTER_VALID_MODULE, TEST_ADAPTER_VALID_CLASS)
         interface = self.flow_service.prepare_adapter(self.test_project.id, stored_adapter)
-        self.assertTrue(isinstance(stored_adapter, model.Algorithm), "Something went wrong with valid data!")
-        self.assertTrue("name" in interface[0], "Bad interface created!")
-        self.assertEquals(interface[0]["name"], "test", "Bad interface!")
-        self.assertTrue("type" in interface[0], "Bad interface created!")
-        self.assertEquals(interface[0]["type"], "int", "Bad interface!")
-        self.assertTrue("default" in interface[0], "Bad interface created!")
-        self.assertEquals(interface[0]["default"], "0", "Bad interface!")
+        assert isinstance(stored_adapter, model.Algorithm), "Something went wrong with valid data!"
+        assert "name" in interface[0], "Bad interface created!"
+        assert interface[0]["name"] == "test", "Bad interface!"
+        assert "type" in interface[0], "Bad interface created!"
+        assert interface[0]["type"] == "int", "Bad interface!"
+        assert "default" in interface[0], "Bad interface created!"
+        assert interface[0]["default"] == "0", "Bad interface!"
 
 
     def test_fire_operation(self):
@@ -213,7 +214,7 @@ class FlowServiceTest(TransactionalTestCase):
         adapter = TestFactory.create_adapter(TEST_ADAPTER_VALID_MODULE, TEST_ADAPTER_VALID_CLASS)
         data = {"test": 5}
         result = self.flow_service.fire_operation(adapter, self.test_user, self.test_project.id, **data)
-        self.assertTrue(result.endswith("has finished."), "Operation fail")
+        assert result.endswith("has finished."), "Operation fail"
 
 
     def test_get_filtered_by_column(self):
@@ -231,23 +232,23 @@ class FlowServiceTest(TransactionalTestCase):
         self._store_float_array(two_dim_array, "John Doe 3", operation_2.id)
 
         count = self.flow_service.get_available_datatypes(self.test_project.id, "tvb.datatypes.arrays.MappedArray")[1]
-        self.assertEqual(count, 3, "Problems with inserting data")
+        assert count, 3 == "Problems with inserting data"
         first_filter = FilterChain(fields=[FilterChain.datatype + '._nr_dimensions'], operations=["=="], values=[1])
         count = self.flow_service.get_available_datatypes(self.test_project.id,
                                                           "tvb.datatypes.arrays.MappedArray", first_filter)[1]
-        self.assertEqual(count, 2, "Data was not filtered")
+        assert count, 2 == "Data was not filtered"
 
         second_filter = FilterChain(fields=[FilterChain.datatype + '._nr_dimensions'], operations=["=="], values=[2])
         filtered_data = self.flow_service.get_available_datatypes(self.test_project.id,
                                                                   "tvb.datatypes.arrays.MappedArray", second_filter)[0]
-        self.assertEqual(len(filtered_data), 1, "Data was not filtered")
-        self.assertEqual(filtered_data[0][3], "John Doe 3")
+        assert len(filtered_data), 1 == "Data was not filtered"
+        assert filtered_data[0][3] == "John Doe 3"
 
         third_filter = FilterChain(fields=[FilterChain.datatype + '._length_1d'], operations=["=="], values=[3])
         filtered_data = self.flow_service.get_available_datatypes(self.test_project.id,
                                                                   "tvb.datatypes.arrays.MappedArray", third_filter)[0]
-        self.assertEqual(len(filtered_data), 1, "Data was not filtered correct")
-        self.assertEqual(filtered_data[0][3], "John Doe 3")
+        assert len(filtered_data), 1 == "Data was not filtered correct"
+        assert filtered_data[0][3] == "John Doe 3"
         try:
             if os.path.exists('One_dim.txt'):
                 os.remove('One_dim.txt')
@@ -314,8 +315,8 @@ class FlowServiceTest(TransactionalTestCase):
         returned_data = self.flow_service.get_available_datatypes(self.test_project.id, Datatype1)[0]
         for row in returned_data:
             if row[1] != 'Datatype1':
-                self.fail("Some invalid data was returned!")
-        self.assertEqual(4, len(returned_data), "Invalid length of result")
+                raise AssertionError("Some invalid data was returned!")
+        assert 4 == len(returned_data), "Invalid length of result"
 
         filter_op = FilterChain(fields=[FilterChain.datatype + ".state", FilterChain.operation + ".start_date"],
                                 values=["RAW", datetime.strptime("08-01-2010", "%m-%d-%Y")], operations=["==", ">"])
@@ -323,24 +324,4 @@ class FlowServiceTest(TransactionalTestCase):
         returned_subjects = [one_data[3] for one_data in returned_data]
 
         if "John Doe0" not in returned_subjects or "John Doe1" not in returned_subjects or len(returned_subjects) != 2:
-            self.fail("DataTypes were not filtered properly!")
-
-
-
-def suite():
-    """
-    Gather all the tests in a test suite.
-    """
-    test_suite = unittest.TestSuite()
-    test_suite.addTest(unittest.makeSuite(FlowServiceTest))
-    return test_suite
-
-
-
-if __name__ == "__main__":
-    #So you can run tests from this package individually.
-    TEST_RUNNER = unittest.TextTestRunner()
-    TEST_SUITE = suite()
-    TEST_RUNNER.run(TEST_SUITE)
-    
-    
+            raise AssertionError("DataTypes were not filtered properly!")

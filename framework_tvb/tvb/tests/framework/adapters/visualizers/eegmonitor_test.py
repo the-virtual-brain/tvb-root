@@ -43,7 +43,7 @@ from tvb.tests.framework.datatypes.datatypes_factory import DatatypesFactory
 from tvb.tests.framework.core.base_testcase import TransactionalTestCase
 
 
-class EEGMonitorTest(TransactionalTestCase):
+class TestEEGMonitor(TransactionalTestCase):
     """
     Unit-tests for EEG Viewer.
     """
@@ -59,7 +59,7 @@ class EEGMonitorTest(TransactionalTestCase):
         
         TestFactory.import_cff(test_user=self.test_user, test_project=self.test_project)
         self.connectivity = TestFactory.get_entity(self.test_project, Connectivity())
-        self.assertTrue(self.connectivity is not None)
+        assert self.connectivity is not None
 
                 
     def tearDown(self):
@@ -85,7 +85,7 @@ class EEGMonitorTest(TransactionalTestCase):
                          'extended_view', 'initialSelection', 'ag_settings', 'ag_settings']
 
         for key in expected_keys:
-            self.assertTrue(key in result, "key not found %s" % key)
+            assert key in result, "key not found %s" % key
 
         expected_ag_settings = ['channelsPerSet', 'channelLabels', 'noOfChannels', 'translationStep',
                                 'normalizedSteps', 'nan_value_found', 'baseURLS', 'pageSize',
@@ -95,20 +95,5 @@ class EEGMonitorTest(TransactionalTestCase):
         ag_settings = json.loads(result['ag_settings'])
 
         for key in expected_ag_settings:
-            self.assertTrue(key in ag_settings, "ag_settings should have the key %s" % key)
+            assert key in ag_settings, "ag_settings should have the key %s" % key
 
-
-def suite():
-    """
-    Gather all the tests in a test suite.
-    """
-    test_suite = unittest.TestSuite()
-    test_suite.addTest(unittest.makeSuite(EEGMonitorTest))
-    return test_suite
-
-
-if __name__ == "__main__":
-    #So you can run tests from this package individually.
-    TEST_RUNNER = unittest.TextTestRunner()
-    TEST_SUITE = suite()
-    TEST_RUNNER.run(TEST_SUITE)

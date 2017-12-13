@@ -47,7 +47,7 @@ IMG_DATA = ("iVBORw0KGgoAAAANSUhEUgAAAAgAAAAICAYAAADED76LAAAAJElEQVQYV2Pcv3"
             "//fwYk4OjoyIjMZ6SDAmT7QGx0K1EcRBsFAFAcHPlrTpAmAAAAAElFTkSuQmCC")
 
 
-class FigureServiceTest(TransactionalTestCase):
+class TestFigureService(TransactionalTestCase):
     """
     Tests for the figure service
     """
@@ -66,7 +66,7 @@ class FigureServiceTest(TransactionalTestCase):
         try:
             Image.open(image_path).load()
         except (IOError, ValueError):
-            self.fail("Could not open %s as a image" % image_path)
+            raise AssertionError("Could not open %s as a image" % image_path)
 
 
     def store_test_png(self):
@@ -93,7 +93,7 @@ class FigureServiceTest(TransactionalTestCase):
         self.figure_service.store_result_figure(self.project, self.user, "png",
                                                 IMG_DATA, operation_id=test_operation.id)
         figures = dao.get_figures_for_operation(test_operation.id)
-        self.assertEqual(1, len(figures))
+        assert 1 == len(figures)
         image_path = self.files_helper.get_images_folder(self.project.name)
         image_path = os.path.join(image_path, figures[0].file_path)
         self.assertCanReadImage(image_path)
@@ -102,7 +102,7 @@ class FigureServiceTest(TransactionalTestCase):
     def test_store_and_retrieve_image(self):
         self.store_test_png()
         figures = self.retrieve_images()
-        self.assertEqual(1, len(figures))
+        assert 1 == len(figures)
         image_path = utils.url2path(figures[0].file_path)
         self.assertCanReadImage(image_path)
 
@@ -120,31 +120,14 @@ class FigureServiceTest(TransactionalTestCase):
         figures = self.retrieve_images()
         self.figure_service.edit_result_figure(figures[0].id, session_name=session_name, name=name)
         figures_by_session, _ = self.figure_service.retrieve_result_figures(self.project, self.user)
-        self.assertEqual([session_name], figures_by_session.keys())
-        self.assertEqual(name, figures_by_session.values()[0][0].name)
+        assert [session_name] == figures_by_session.keys()
+        assert name == figures_by_session.values()[0][0].name
 
 
     def test_remove_figure(self):
         self.store_test_png()
         figures = self.retrieve_images()
-        self.assertEqual(1, len(figures))
+        assert 1 == len(figures)
         self.figure_service.remove_result_figure(figures[0].id)
         figures = self.retrieve_images()
-        self.assertEqual(0, len(figures))
-
-
-
-def suite():
-    """
-    Gather all the tests in a test suite.
-    """
-    test_suite = unittest.TestSuite()
-    test_suite.addTest(unittest.makeSuite(FigureServiceTest))
-    return test_suite
-
-
-if __name__ == "__main__":
-    #So you can run tests from this package individually.
-    TEST_RUNNER = unittest.TextTestRunner()
-    TEST_SUITE = suite()
-    TEST_RUNNER.run(TEST_SUITE)
+        assert 0 == len(figures)

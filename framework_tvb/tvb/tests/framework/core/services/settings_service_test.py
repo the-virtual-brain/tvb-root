@@ -35,7 +35,7 @@
 
 import os
 import shutil
-import unittest
+import pytest
 from tvb.tests.framework.core.base_testcase import BaseTestCase
 from tvb.basic.profile import TvbProfile
 from tvb.core.services.settings_service import SettingsService, InvalidSettingsException
@@ -44,7 +44,7 @@ from tvb.core.services.settings_service import SettingsService, InvalidSettingsE
 TEST_CONFIG_FILE = os.path.expanduser(os.path.join("~", 'tvb.tests.framework.configuration'))
 
 
-class SettingsServiceTest(BaseTestCase):
+class TestSettingsService(BaseTestCase):
     """
     This class contains tests for the tvb.core.services.settings_service module.
     """
@@ -84,7 +84,8 @@ class SettingsServiceTest(BaseTestCase):
         """
         Make sure a proper exception is raised in case an invalid database url is passed.
         """
-        self.assertRaises(InvalidSettingsException, self.settings_service.check_db_url, "this-url-should-be-invalid")
+        with pytest.raises(InvalidSettingsException):
+            self.settings_service.check_db_url("this-url-should-be-invalid")
         
     
     def test_get_free_disk_space(self):
@@ -94,7 +95,7 @@ class SettingsServiceTest(BaseTestCase):
         Not most precise check but other does not seem possible so far.
         """
         disk_space = self.settings_service.get_disk_free_space(TvbProfile.current.TVB_STORAGE)
-        self.assertTrue(disk_space > 0, "Disk space should never be negative.")
+        assert disk_space > 0, "Disk space should never be negative."
     
             
     def test_first_run_save(self):
@@ -104,20 +105,20 @@ class SettingsServiceTest(BaseTestCase):
         """
         initial_configurations = self.settings_service.configurable_keys
         first_run = TvbProfile.is_first_run()
-        self.assertTrue(first_run, "Invalid First_Run flag!!")
-        self.assertFalse(os.path.exists(TEST_CONFIG_FILE))
-        self.assertTrue(len(TvbProfile.current.manager.stored_settings) == 0)
+        assert first_run, "Invalid First_Run flag!!"
+        assert not os.path.exists(TEST_CONFIG_FILE)
+        assert len(TvbProfile.current.manager.stored_settings) == 0
 
         to_store_data = {key: value['value'] for key, value in initial_configurations.iteritems()}
         for key, value in self.TEST_SETTINGS.iteritems():
             to_store_data[key] = value
         _, shoud_reset = self.settings_service.save_settings(**to_store_data)
 
-        self.assertTrue(shoud_reset)
+        assert shoud_reset
         first_run = TvbProfile.is_first_run()
-        self.assertFalse(first_run, "Invalid First_Run flag!!")
-        self.assertTrue(os.path.exists(TEST_CONFIG_FILE))
-        self.assertFalse(len(TvbProfile.current.manager.stored_settings) == 0)
+        assert not first_run, "Invalid First_Run flag!!"
+        assert os.path.exists(TEST_CONFIG_FILE)
+        assert not len(TvbProfile.current.manager.stored_settings) == 0
         
         
     def test_read_stored_settings(self):
@@ -131,7 +132,7 @@ class SettingsServiceTest(BaseTestCase):
             to_store_data[key] = value
 
         is_changed, shoud_reset = self.settings_service.save_settings(**to_store_data)
-        self.assertTrue(shoud_reset and is_changed)
+        assert shoud_reset and is_changed
 
         # enforce keys to get repopulated:
         TvbProfile._build_profile_class(TvbProfile.CURRENT_PROFILE_NAME)
@@ -140,13 +141,12 @@ class SettingsServiceTest(BaseTestCase):
         updated_configurations = self.settings_service.configurable_keys
         for key, value in updated_configurations.iteritems():
             if key in self.TEST_SETTINGS:
-                self.assertEqual(self.TEST_SETTINGS[key], value['value'])
+                assert self.TEST_SETTINGS[key] == value['value']
             elif key == SettingsService.KEY_ADMIN_PWD:
-                self.assertEqual(TvbProfile.current.web.admin.ADMINISTRATOR_PASSWORD, value['value'])
-                self.assertEqual(TvbProfile.current.web.admin.ADMINISTRATOR_BLANK_PWD,
-                                 initial_configurations[key]['value'])
+                assert TvbProfile.current.web.admin.ADMINISTRATOR_PASSWORD == value['value']
+                assert TvbProfile.current.web.admin.ADMINISTRATOR_BLANK_PWD == initial_configurations[key]['value']
             else:
-                self.assertEqual(initial_configurations[key]['value'], value['value'])
+                assert initial_configurations[key]['value'] == value['value']
 
                     
     def test_update_settings(self):
@@ -159,7 +159,7 @@ class SettingsServiceTest(BaseTestCase):
             to_store_data[key] = value
 
         is_changed, shoud_reset = self.settings_service.save_settings(**to_store_data)
-        self.assertTrue(shoud_reset and is_changed)
+        assert shoud_reset and is_changed
 
         # 2. Reload and save with the same values (is_changed expected to be False)
         TvbProfile._build_profile_class(TvbProfile.CURRENT_PROFILE_NAME)
@@ -167,8 +167,8 @@ class SettingsServiceTest(BaseTestCase):
         to_store_data = {key: value['value'] for key, value in self.settings_service.configurable_keys.iteritems()}
 
         is_changed, shoud_reset = self.settings_service.save_settings(**to_store_data)
-        self.assertFalse(is_changed)
-        self.assertFalse(shoud_reset)
+        assert not is_changed
+        assert not shoud_reset
 
         # 3. Reload and check that changing TVB_STORAGE is done correctly
         TvbProfile._build_profile_class(TvbProfile.CURRENT_PROFILE_NAME)
@@ -182,31 +182,12 @@ class SettingsServiceTest(BaseTestCase):
         file_writer.close()
 
         is_changed, shoud_reset = self.settings_service.save_settings(**to_store_data)
-        self.assertTrue(is_changed)
-        self.assertFalse(shoud_reset)
+        assert is_changed
+        assert not shoud_reset
         # Check that the file was correctly moved:
         data = open(os.path.join(TvbProfile.current.TVB_STORAGE, 'RENAMED', "test_rename-xxx43"), 'r').read()
-        self.assertEqual(data, 'test-content')
+        assert data == 'test-content'
 
         shutil.rmtree(os.path.join(TvbProfile.current.TVB_STORAGE, 'RENAMED'))
         os.remove(os.path.join(TvbProfile.current.TVB_STORAGE, "test_rename-xxx43"))
 
-
-
-def suite():
-    """
-    Gather all the tests in a test suite.
-    """
-    test_suite = unittest.TestSuite()
-    test_suite.addTest(unittest.makeSuite(SettingsServiceTest))
-    return test_suite
-
-
-if __name__ == "__main__":
-    #So you can run tests individually.
-    TEST_RUNNER = unittest.TextTestRunner()
-    TEST_SUITE = suite()
-    TEST_RUNNER.run(TEST_SUITE)
-    
-    
-    

@@ -33,7 +33,7 @@
 """
 
 import json
-import unittest
+import pytest
 from tvb.core.entities import model
 from tvb.core.entities.storage import dao
 from tvb.core.adapters.exceptions import NoMemoryAvailableException
@@ -42,7 +42,7 @@ from tvb.tests.framework.core.base_testcase import TransactionalTestCase
 from tvb.tests.framework.core.test_factory import TestFactory
 
 
-class AdapterMemoryUsageTest(TransactionalTestCase):
+class TestAdapterMemoryUsage(TransactionalTestCase):
     """
     Test class for the module handling methods computing required memory for an adapter to run.
     """
@@ -61,7 +61,7 @@ class AdapterMemoryUsageTest(TransactionalTestCase):
         get_required_memory_size method is not implemented.
         """
         adapter = TestFactory.create_adapter("tvb.tests.framework.adapters.testadapter3", "TestAdapterHDDRequired")
-        self.assertEqual(42, adapter.get_required_memory_size())
+        assert 42 == adapter.get_required_memory_size()
         
         
     def test_adapter_huge_memory_requirement(self):
@@ -75,19 +75,7 @@ class AdapterMemoryUsageTest(TransactionalTestCase):
         operation = model.Operation(self.test_user.id, self.test_project.id, adapter.stored_adapter.id,
                                     json.dumps(data), json.dumps({}), status=model.STATUS_STARTED)
         operation = dao.store_entity(operation)
-        self.assertRaises(NoMemoryAvailableException, OperationService().initiate_prelaunch, operation, adapter, {})
+        with pytest.raises(NoMemoryAvailableException):
+            OperationService().initiate_prelaunch(operation, adapter, {})
 
 
-
-def suite():
-    """
-    Gather all the tests in a test suite.
-    """
-    test_suite = unittest.TestSuite()
-    test_suite.addTest(unittest.makeSuite(AdapterMemoryUsageTest))
-    return test_suite
-
-
-if __name__ == "__main__":
-    #So you can run tests from this package individually.
-    unittest.main()     

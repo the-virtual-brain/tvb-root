@@ -39,7 +39,7 @@ from tvb.simulator.simulator import Simulator
 from pprint import pprint
 
 
-class ExperimentalInputTreeTest(unittest.TestCase):
+class TestExperimentalInputTree():
 
     def test_experimental_does_not_crash(self):
         sim2 = Simulator()
@@ -53,10 +53,10 @@ class ExperimentalInputTreeTest(unittest.TestCase):
         This compares the tree structures. It tests that the trees have the similar topology.
         The only attribute tested is the node name
         '''
-        self.assertEqual(len(itree_exp), len(itree))
+        assert len(itree_exp) == len(itree)
 
         for nexp, ndict in zip(itree_exp, itree):
-            self.assertEqual(nexp.name, ndict.get('name'))
+            assert nexp.name == ndict.get('name')
 
             if isinstance(nexp, SelectTypeNode):
                 self._cmp_attributes_or_options(nexp.options, ndict['options'])
@@ -78,22 +78,4 @@ class ExperimentalInputTreeTest(unittest.TestCase):
         itree_exp = sim2.interface_experimental
 
         self._cmp_attributes_or_options(itree_exp, itree)
-
-
-
-
-def suite():
-    """
-    Gather all the tests in a test suite.
-    """
-    test_suite = unittest.TestSuite()
-    test_suite.addTest(unittest.makeSuite(ExperimentalInputTreeTest))
-    return test_suite
-
-
-if __name__ == "__main__":
-    # So you can run tests from this package individually.
-    TEST_RUNNER = unittest.TextTestRunner()
-    TEST_SUITE = suite()
-    TEST_RUNNER.run(TEST_SUITE)
 

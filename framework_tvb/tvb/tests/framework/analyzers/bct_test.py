@@ -33,7 +33,7 @@
 """
 
 import numpy
-import unittest
+import pytest
 from tvb.core.adapters.abcadapter import ABCAdapter
 from tvb.core.entities.model import STATUS_FINISHED
 from tvb.tests.framework.core.base_testcase import TransactionalTestCase
@@ -46,7 +46,7 @@ from tvb.datatypes.connectivity import Connectivity
 from tvb.tests.framework.core.test_factory import TestFactory
 
 
-class BCTTest(TransactionalTestCase):
+class TestBCT(TransactionalTestCase):
     """
     Test that all BCT analyzers are executed without error.
     We do not verify that the algorithms are correct, because that is outside the purpose of TVB framework.
@@ -56,7 +56,7 @@ class BCTTest(TransactionalTestCase):
                                    "TransitivityBinaryUnDirected", "TransitivityWeightedUnDirected"]
 
 
-    @unittest.skipIf(get_matlab_executable() is None, "Matlab or Octave not installed!")
+    @pytest.mark.skipif(get_matlab_executable() is None, reason="Matlab or Octave not installed!")
     def setUp(self):
         """
         Sets up the environment for running the tests;
@@ -74,8 +74,8 @@ class BCTTest(TransactionalTestCase):
         self.connectivity.weights = w + w.T - numpy.diag(w.diagonal())
 
         algorithms = dao.get_generic_entity(model.Algorithm, 'Brain Connectivity Toolbox', 'group_description')
-        self.assertTrue(algorithms is not None)
-        self.assertTrue(len(algorithms) > 5)
+        assert algorithms is not None
+        assert len(algorithms) > 5
 
         self.bct_adapters = []
         for algo in algorithms:
@@ -88,8 +88,7 @@ class BCTTest(TransactionalTestCase):
         """
         self.clean_database(True)
 
-
-    @unittest.skipIf(get_matlab_executable() is None, "Matlab or Octave not installed!")
+    @pytest.mark.skipif(get_matlab_executable() is None, reason="Matlab or Octave not installed!")
     def test_bct_all(self):
         """
         Iterate all BCT algorithms and execute them.
@@ -99,49 +98,33 @@ class BCTTest(TransactionalTestCase):
             operation = TestFactory.create_operation(algorithm=algorithm, test_user=self.test_user,
                                                      test_project=self.test_project,
                                                      operation_status=model.STATUS_STARTED)
-            self.assertEqual(model.STATUS_STARTED, operation.status)
+            assert model.STATUS_STARTED == operation.status
             ### Launch BCT algorithm
             submit_data = {algorithm.parameter_name: self.connectivity.gid}
             try:
                 OperationService().initiate_prelaunch(operation, adapter_instance, {}, **submit_data)
-                if algorithm.classname in BCTTest.EXPECTED_TO_FAIL_VALIDATION:
+                if algorithm.classname in TestBCT.EXPECTED_TO_FAIL_VALIDATION:
                     raise Exception("Algorithm %s was expected to throw input validation "
                                     "exception, but did not!" % (algorithm.classname,))
 
                 operation = dao.get_operation_by_id(operation.id)
                 ### Check that operation status after execution is success.
-                self.assertEqual(STATUS_FINISHED, operation.status)
+                assert STATUS_FINISHED == operation.status
                 ### Make sure at least one result exists for each BCT algorithm
                 results = dao.get_generic_entity(model.DataType, operation.id, 'fk_from_operation')
-                self.assertTrue(len(results) > 0)
+                assert len(results) > 0
 
             except InvalidParameterException as excep:
                 ## Some algorithms are expected to throw validation exception.
-                if algorithm.classname not in BCTTest.EXPECTED_TO_FAIL_VALIDATION:
+                if algorithm.classname not in TestBCT.EXPECTED_TO_FAIL_VALIDATION:
                     raise excep
 
 
-    @unittest.skipIf(get_matlab_executable() is None, "Matlab or Octave not installed!")
+    @pytest.mark.skipif(get_matlab_executable() is None, reason="Matlab or Octave not installed!")
     def test_bct_descriptions(self):
         """
         Iterate all BCT algorithms and check that description has been extracted from *.m files.
         """
         for adapter_instance in self.bct_adapters:
-            self.assertTrue(len(adapter_instance.stored_adapter.description) > 10,
-                            "Description was not loaded properly for algorithm %s" % (str(adapter_instance)))
+            assert len(adapter_instance.stored_adapter.description) > 10, "Description was not loaded properly for algorithm %s" % (str(adapter_instance))
 
-
-def suite():
-    """
-    Gather all the tests in a test suite.
-    """
-    test_suite = unittest.TestSuite()
-    test_suite.addTest(unittest.makeSuite(BCTTest))
-    return test_suite
-
-
-if __name__ == "__main__":
-    # So you can run tests from this package individually.
-    TEST_RUNNER = unittest.TextTestRunner()
-    TEST_SUITE = suite()
-    TEST_RUNNER.run(TEST_SUITE)

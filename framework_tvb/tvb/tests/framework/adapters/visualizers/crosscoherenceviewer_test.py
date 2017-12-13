@@ -41,7 +41,7 @@ from tvb.tests.framework.datatypes.datatypes_factory import DatatypesFactory
 from tvb.tests.framework.core.base_testcase import TransactionalTestCase
 
 
-class CrossCoherenceViewerTest(TransactionalTestCase):
+class TestCrossCoherenceViewer(TransactionalTestCase):
     """
     Unit-tests for Cross Coherence Viewer.
     """
@@ -58,7 +58,7 @@ class CrossCoherenceViewerTest(TransactionalTestCase):
 
         TestFactory.import_cff(test_user=self.test_user, test_project=self.test_project)
         self.connectivity = TestFactory.get_entity(self.test_project, Connectivity())
-        self.assertTrue(self.connectivity is not None)
+        assert self.connectivity is not None
 
 
     def tearDown(self):
@@ -78,20 +78,5 @@ class CrossCoherenceViewerTest(TransactionalTestCase):
         result = viewer.launch(cross_coherence)
         expected_keys = ['matrix_data', 'matrix_shape', 'frequency']
         for key in expected_keys:
-            self.assertTrue(key in result)
+            assert key in result
 
-
-def suite():
-    """
-    Gather all the tests in a test suite.
-    """
-    test_suite = unittest.TestSuite()
-    test_suite.addTest(unittest.makeSuite(CrossCoherenceViewerTest))
-    return test_suite
-
-
-if __name__ == "__main__":
-    # So you can run tests from this package individually.
-    TEST_RUNNER = unittest.TextTestRunner()
-    TEST_SUITE = suite()
-    TEST_RUNNER.run(TEST_SUITE)

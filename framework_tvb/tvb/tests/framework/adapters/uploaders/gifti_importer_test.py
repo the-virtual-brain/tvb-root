@@ -49,7 +49,7 @@ import tvb_data.gifti as demo_data
 
 
 
-class GIFTISurfaceImporterTest(TransactionalTestCase):
+class TestGIFTISurfaceImporter(TransactionalTestCase):
     """
     Unit-tests for GIFTI Surface importer.
     """
@@ -89,10 +89,10 @@ class GIFTISurfaceImporterTest(TransactionalTestCase):
         surface = CorticalSurface()
         data_types = FlowService().get_available_datatypes(self.test_project.id,
                                                            surface.module + "." + surface.type)[0]
-        self.assertEqual(1, len(data_types), "Project should contain only one data type.")
+        assert 1, len(data_types) == "Project should contain only one data type."
 
         surface = ABCAdapter.load_entity_by_gid(data_types[0][2])
-        self.assertTrue(surface is not None, "TimeSeries should not be none")
+        assert surface is not None == "TimeSeries should not be none"
 
         return surface
 
@@ -110,8 +110,8 @@ class GIFTISurfaceImporterTest(TransactionalTestCase):
         parser = GIFTIParser(storage_path, operation_id)
         surface = parser.parse(self.GIFTI_SURFACE_FILE)
 
-        self.assertEqual(131342, len(surface.vertices))
-        self.assertEqual(262680, len(surface.triangles))
+        assert 131342 == len(surface.vertices)
+        assert 262680 == len(surface.triangles)
 
 
     def test_import_timeseries_gifti_data(self):
@@ -129,8 +129,8 @@ class GIFTISurfaceImporterTest(TransactionalTestCase):
 
         data_shape = time_series.read_data_shape()
 
-        self.assertEqual(135, data_shape[0])
-        self.assertEqual(143479, data_shape[1])
+        assert 135 == data_shape[0]
+        assert 143479 == data_shape[1]
 
 
     def test_import_wrong_gii_file(self):
@@ -139,25 +139,8 @@ class GIFTISurfaceImporterTest(TransactionalTestCase):
         """
         try:
             self._importSurface(self.WRONG_GII_FILE)
-            self.fail("Import should fail in case of a wrong GIFTI format.")
+            raise AssertionError("Import should fail in case of a wrong GIFTI format.")
         except OperationException:
             # Expected exception
             pass
 
-
-
-def suite():
-    """
-    Gather all the tests in a test suite.
-    """
-    test_suite = unittest.TestSuite()
-    test_suite.addTest(unittest.makeSuite(GIFTISurfaceImporterTest))
-    return test_suite
-
-
-
-if __name__ == "__main__":
-    #So you can run tests from this package individually.
-    TEST_RUNNER = unittest.TextTestRunner()
-    TEST_SUITE = suite()
-    TEST_RUNNER.run(TEST_SUITE)

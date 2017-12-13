@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 #
 #
-# TheVirtualBrain-Framework Package. This package holds all Data Management, and 
+# TheVirtualBrain-Framework Package. This package holds all Data Management, and
 # Web-UI helpful to run brain-simulations. To use it, you also need do download
 # TheVirtualBrain-Scientific Package (for simulators). See content of the
 # documentation-folder for more details. See also http://www.thevirtualbrain.org
@@ -33,7 +33,6 @@ module docstring
 .. moduleauthor:: Mihai Andrei <mihai.andrei@codemart.ro>
 """
 import json
-import unittest
 from tvb.core.entities.model import BurstConfiguration
 from tvb.core.services.burst_config_serialization import INTEGRATOR_PARAMETERS, MODEL_PARAMETERS, SerializationManager
 from tvb.simulator.integrators import HeunStochastic
@@ -43,7 +42,7 @@ from tvb.tests.framework.core.test_factory import TestFactory
 from tvb.tests.framework.datatypes.datatypes_factory import DatatypesFactory
 
 
-class SerializationManagerTest(TransactionalTestCase):
+class TestSerializationManager(TransactionalTestCase):
     CONF_HOPFIELD_HEUN_STOCH_RANGES = r"""
     {"": {"value": "0.1"},
     "model_parameters_option_Hopfield_noise_parameters_option_Noise_random_stream": {"value": "RandomStream"},
@@ -96,8 +95,8 @@ class SerializationManagerTest(TransactionalTestCase):
 
 
     def test_has_model_pse_ranges(self):
-        self.assertTrue(self.s_manager.has_model_pse_ranges())
-        self.assertFalse(self.empty_manager.has_model_pse_ranges())
+        assert self.s_manager.has_model_pse_ranges()
+        assert not self.empty_manager.has_model_pse_ranges()
 
 
     def test_get_params_dict(self):
@@ -105,24 +104,24 @@ class SerializationManagerTest(TransactionalTestCase):
         mp = d[MODEL_PARAMETERS]
         ip = d[INTEGRATOR_PARAMETERS]
         # test model param deserialization
-        self.assertEqual([5], mp['tauT'].tolist())
-        self.assertEqual([{'step': 0.1, 'maxValue': 1, 'minValue': 0.7}], mp['taux'].tolist())
+        assert [5] == mp['tauT'].tolist()
+        assert [{'step': 0.1, 'maxValue': 1, 'minValue': 0.7}] == mp['taux'].tolist()
         # test integrator param deserialization
-        self.assertEqual(0.09765625, ip['dt'])
-        self.assertEqual([ 0.00123], ip['noise_parameters']['nsig'].tolist())
+        assert 0.09765625 == ip['dt']
+        assert [ 0.00123] == ip['noise_parameters']['nsig'].tolist()
 
 
     def test_make_model_and_integrator(self):
         m ,i = self.s_manager.make_model_and_integrator()
-        self.assertIsInstance(m, Hopfield)
-        self.assertIsInstance(i, HeunStochastic)
+        assert isinstance(m,Hopfield)
+        assert isinstance(i, HeunStochastic)
 
 
     def test_group_parameter_values_by_name(self):
         gp = SerializationManager.group_parameter_values_by_name(
             [{"a": 2.0, 'b': 1.0},
              {"a": 3.0, 'b': 7.0}])
-        self.assertEqual({'a': [2.0, 3.0], 'b': [1.0, 7.0]}, gp)
+        assert {'a': [2.0, 3.0], 'b': [1.0, 7.0]} == gp
 
 
     def test_write_model_parameters_one_dynamic(self):
@@ -134,16 +133,16 @@ class SerializationManagerTest(TransactionalTestCase):
 
         sc = self.s_manager.conf.simulator_configuration
         # Default model in these tests is Hopfield. Test if the model was changed to Generic2dOscillator
-        self.assertEqual(Generic2dOscillator.__name__, sc['model']['value'])
+        assert Generic2dOscillator.__name__ == sc['model']['value']
 
         # a modified parameter
         expected = [1.75]  # we expect same value arrays to contract to 1 element
         actual = json.loads(sc['model_parameters_option_Generic2dOscillator_a']['value'])
-        self.assertEqual(expected, actual)
+        assert expected == actual
         # one with the same value as the default
         expected = [-10.0]
         actual = json.loads(sc['model_parameters_option_Generic2dOscillator_b']['value'])
-        self.assertEqual(expected, actual)
+        assert expected == actual
 
 
     def test_write_model_parameters_two_dynamics(self):
@@ -160,17 +159,17 @@ class SerializationManagerTest(TransactionalTestCase):
 
         sc = self.s_manager.conf.simulator_configuration
         # Default model in these tests is Hopfield. Test if the model was changed to Generic2dOscillator
-        self.assertEqual(Generic2dOscillator.__name__, sc['model']['value'])
+        assert Generic2dOscillator.__name__ == sc['model']['value']
 
         expected = [1.75]  # array contracted to one value
         actual = json.loads(sc['model_parameters_option_Generic2dOscillator_a']['value'])
-        self.assertEqual(expected, actual)
+        assert expected == actual
 
         # b is not the same across models. We will have a full array
         expected = [-10.0 for _ in range(self.connectivity.number_of_regions)]
         expected[0] = -5.0
         actual = json.loads(sc['model_parameters_option_Generic2dOscillator_b']['value'])
-        self.assertEqual(expected, actual)
+        assert expected == actual
 
 
     def test_write_noise_parameters(self):
@@ -178,26 +177,11 @@ class SerializationManagerTest(TransactionalTestCase):
         self.s_manager.write_noise_parameters(disp)
 
         sc = self.s_manager.conf.simulator_configuration
-        self.assertEqual(HeunStochastic.__name__, sc['integrator']['value'])
+        assert HeunStochastic.__name__ == sc['integrator']['value']
         nodes_nr = self.connectivity.number_of_regions
         expected = [[4] * nodes_nr , [2] * nodes_nr]
         actual = json.loads(sc['integrator_parameters_option_HeunStochastic_noise_parameters_option_Additive_nsig']['value'])
-        self.assertEqual(expected, actual)
-
-
-def suite():
-    test_suite = unittest.TestSuite()
-    test_suite.addTest(unittest.makeSuite(SerializationManagerTest))
-    return test_suite
-
-
-if __name__ == "__main__":
-    #So you can run tests individually.
-    TEST_RUNNER = unittest.TextTestRunner()
-    TEST_SUITE = suite()
-    TEST_RUNNER.run(TEST_SUITE)
-
-
+        assert expected == actual
 
 
 

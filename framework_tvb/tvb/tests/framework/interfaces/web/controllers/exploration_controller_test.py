@@ -39,7 +39,7 @@ from tvb.tests.framework.datatypes.datatypes_factory import DatatypesFactory
 from tvb.interfaces.web.controllers.burst.exploration_controller import ParameterExplorationController
 
 
-class ExplorationControllerTest(BaseTransactionalControllerTest):
+class TestExplorationController(BaseTransactionalControllerTest):
     """
     Unit tests ParameterExplorationController
     """
@@ -64,19 +64,19 @@ class ExplorationControllerTest(BaseTransactionalControllerTest):
         Test that Discrete PSE is getting launched and correct fields are prepared.
         """
         result = self.controller.draw_discrete_exploration(self.dt_group.gid, 'burst', None, None)
-        self.assertTrue(result['available_metrics'] == DatatypesFactory.DATATYPE_MEASURE_METRIC.keys())
-        self.assertEqual(result['color_metric'], DatatypesFactory.DATATYPE_MEASURE_METRIC.keys()[0])
-        self.assertEqual(result['size_metric'], None)
-        self.assertEqual(DatatypesFactory.RANGE_1[1], json.loads(result['labels_x']))
-        self.assertEqual(DatatypesFactory.RANGE_2[1], json.loads(result['labels_y']))
+        assert result['available_metrics'] == DatatypesFactory.DATATYPE_MEASURE_METRIC.keys()
+        assert result['color_metric'] == DatatypesFactory.DATATYPE_MEASURE_METRIC.keys()[0]
+        assert result['size_metric'] == None
+        assert DatatypesFactory.RANGE_1[1] == json.loads(result['labels_x'])
+        assert DatatypesFactory.RANGE_2[1] == json.loads(result['labels_y'])
         data = json.loads(result['d3_data'])
-        self.assertEqual(len(data), len(DatatypesFactory.RANGE_1[1]))
+        assert len(data) == len(DatatypesFactory.RANGE_1[1])
         for row in data.values():
-            self.assertEqual(len(row), len(DatatypesFactory.RANGE_2[1]))
+            assert len(row) == len(DatatypesFactory.RANGE_2[1])
             for entry in row.values():
-                self.assertEqual(entry['dataType'], 'Datatype2')
+                assert entry['dataType'] == 'Datatype2'
                 for key in ['Gid', 'color_weight', 'operationId', 'tooltip']:
-                    self.assertTrue(key in entry)
+                    assert key in entry
 
 
     def test_draw_isocline_exploration(self):
@@ -84,23 +84,7 @@ class ExplorationControllerTest(BaseTransactionalControllerTest):
         Test that isocline PSE gets launched.
         """
         result = self.controller.draw_isocline_exploration(self.dt_group.gid)
-        self.assertTrue(isinstance(result['canvasName'], (str, unicode)))
-        self.assertTrue(isinstance(result['xAxisName'], (str, unicode)))
-        self.assertTrue(isinstance(result['url_base'], (str, unicode)))
-        self.assertEqual(DatatypesFactory.DATATYPE_MEASURE_METRIC.keys(), result['available_metrics'])
-
-
-def suite():
-    """
-    Gather all the tests in a test suite.
-    """
-    test_suite = unittest.TestSuite()
-    test_suite.addTest(unittest.makeSuite(ExplorationControllerTest))
-    return test_suite
-
-
-if __name__ == "__main__":
-    # So you can run tests individually.
-    TEST_RUNNER = unittest.TextTestRunner()
-    TEST_SUITE = suite()
-    TEST_RUNNER.run(TEST_SUITE)
+        assert isinstance(result['canvasName'], (str, unicode))
+        assert isinstance(result['xAxisName'], (str, unicode))
+        assert isinstance(result['url_base'], (str, unicode))
+        assert DatatypesFactory.DATATYPE_MEASURE_METRIC.keys() == result['available_metrics']

@@ -33,7 +33,7 @@
 """
 
 import os
-import unittest
+import pytest
 from tvb.tests.framework.core.base_testcase import BaseTestCase, init_test_env
 from tvb.basic.profile import TvbProfile
 from tvb.core.entities.storage import dao
@@ -41,7 +41,7 @@ from tvb.core.entities.model_manager import initialize_startup, reset_database
 
 
 
-class ModelManagerTests(BaseTestCase):
+class TestsModelManager(BaseTestCase):
     """
     This class contains tests for the tvb.core.entities.modelmanager module.
     """
@@ -56,28 +56,12 @@ class ModelManagerTests(BaseTestCase):
         """
         reset_database()
         # Table USERS should not exist:
-        self.assertRaises(Exception, dao.get_all_users)
+        with pytest.raises(Exception): dao.get_all_users()
         
         initialize_startup()
         # Table exists, but no rows
-        self.assertEqual(0, len(dao.get_all_users()))
-        self.assertEqual(None, dao.get_system_user())
+        assert 0 == len(dao.get_all_users())
+        assert None == dao.get_system_user()
         # DB revisions folder should exist:
-        self.assertTrue(os.path.exists(TvbProfile.current.db.DB_VERSIONING_REPO))
-    
-
-
-def suite():
-    """
-    Gather all the tests in a test suite.
-    """
-    test_suite = unittest.TestSuite()
-    test_suite.addTest(unittest.makeSuite(ModelManagerTests))
-    return test_suite
-
-
-if __name__ == "__main__":
-    #So you can run tests from this package individually.
-    unittest.main()   
-    
+        assert os.path.exists(TvbProfile.current.db.DB_VERSIONING_REPO)
     

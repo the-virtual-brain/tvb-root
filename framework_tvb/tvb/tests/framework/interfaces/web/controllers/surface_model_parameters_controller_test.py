@@ -42,7 +42,7 @@ from tvb.tests.framework.adapters.simulator.simulator_adapter_test import SIMULA
 import tvb.interfaces.web.controllers.common as common
 
 
-class SurfaceModelParametersControllerTest(BaseTransactionalControllerTest):
+class TestSurfaceModelParametersController(BaseTransactionalControllerTest):
     """ Unit tests for SurfaceModelParametersController """
     
     def setUp(self):
@@ -73,23 +73,6 @@ class SurfaceModelParametersControllerTest(BaseTransactionalControllerTest):
                          'equationViewerUrl', 'equationsPrefixes', 'data', 'brainCenter',
                          'applied_equations']
         map(lambda x: self.assertTrue(x in result_dict), expected_keys)
-        self.assertEqual(result_dict['equationViewerUrl'], 
-                         '/spatial/modelparameters/surface/get_equation_chart')
-        self.assertEqual(result_dict['mainContent'], 'spatial/model_param_surface_main')
-        
-
-
-def suite():
-    """
-    Gather all the tests in a test suite.
-    """
-    test_suite = unittest.TestSuite()
-    test_suite.addTest(unittest.makeSuite(SurfaceModelParametersControllerTest))
-    return test_suite
-
-
-if __name__ == "__main__":
-    #So you can run tests individually.
-    TEST_RUNNER = unittest.TextTestRunner()
-    TEST_SUITE = suite()
-    TEST_RUNNER.run(TEST_SUITE)
+        assert result_dict['equationViewerUrl'] ==\
+                         '/spatial/modelparameters/surface/get_equation_chart'
+        assert result_dict['mainContent'] == 'spatial/model_param_surface_main'

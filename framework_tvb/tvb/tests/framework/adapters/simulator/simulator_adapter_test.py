@@ -33,7 +33,7 @@
 """
 
 import json
-import unittest
+import pytest
 from copy import copy
 from tvb.config import SIMULATOR_CLASS, SIMULATOR_MODULE
 from tvb.core.adapters.abcadapter import ABCAdapter
@@ -85,7 +85,7 @@ SIMULATOR_PARAMETERS = {
     "simulation_length": "32"}
 
 
-class SimulatorAdapterTest(TransactionalTestCase):
+class TestSimulatorAdapter(TransactionalTestCase):
     """
     Basic testing that Simulator is still working from UI.
     """
@@ -115,7 +115,7 @@ class SimulatorAdapterTest(TransactionalTestCase):
         """
         OperationService().initiate_prelaunch(self.operation, self.simulator_adapter, {}, **SIMULATOR_PARAMETERS)
         sim_result = dao.get_generic_entity(TimeSeriesRegion, 'TimeSeriesRegion', 'type')[0]
-        self.assertEquals(sim_result.read_data_shape(), (32, 1, self.CONNECTIVITY_NODES, 1))
+        assert sim_result.read_data_shape() == (32, 1, self.CONNECTIVITY_NODES, 1)
 
 
     def _estimate_hdd(self, new_parameters_dict):
@@ -133,20 +133,20 @@ class SimulatorAdapterTest(TransactionalTestCase):
         simulation_parameters = copy(SIMULATOR_PARAMETERS)
         ## Estimate HDD with default simulation parameters
         estimate1 = self._estimate_hdd(simulation_parameters)
-        self.assertTrue(estimate1 > 1)
+        assert estimate1 > 1
 
         ## Change simulation length and monitor period, we expect a direct proportial increase in estimated HDD
         simulation_parameters['simulation_length'] = float(simulation_parameters['simulation_length']) * factor
         period = float(simulation_parameters['monitors_parameters_option_TemporalAverage_period'])
         simulation_parameters['monitors_parameters_option_TemporalAverage_period'] = period / factor
         estimate2 = self._estimate_hdd(simulation_parameters)
-        self.assertEqual(estimate1, estimate2 / factor / factor)
+        assert estimate1 == estimate2 / factor / factor
 
         ## Change number of nodes in connectivity. Expect HDD estimation increase.
         large_conn_gid = self.datatypes_factory.create_connectivity(self.CONNECTIVITY_NODES * factor)[1].gid
         simulation_parameters['connectivity'] = large_conn_gid
         estimate3 = self._estimate_hdd(simulation_parameters)
-        self.assertEqual(estimate2, estimate3 / factor)
+        assert estimate2 == estimate3 / factor
 
 
     def test_estimate_execution_time(self):
@@ -161,7 +161,7 @@ class SimulatorAdapterTest(TransactionalTestCase):
         params['surface'] = "GID_surface"
         estimation2 = self.simulator_adapter.get_execution_time_approximation(**params)
 
-        self.assertEqual(estimation1, estimation2 / 500)
+        assert estimation1 == estimation2 / 500
         params['surface'] = ""
 
         ## Modify integration step and simulation length:
@@ -174,17 +174,17 @@ class SimulatorAdapterTest(TransactionalTestCase):
 
             estimation3 = self.simulator_adapter.get_execution_time_approximation(**params)
 
-            self.assertEqual(estimation1, estimation3 / factor / factor)
+            assert estimation1 == estimation3 / factor / factor
 
         ## Check that no division by zero happens
         params['integrator_parameters']['dt'] = 0
         estimation4 = self.simulator_adapter.get_execution_time_approximation(**params)
-        self.assertTrue(estimation4 > 0)
+        assert estimation4 > 0
 
         ## even with length zero, still a positive estimation should be returned
         params['simulation_length'] = 0
         estimation5 = self.simulator_adapter.get_execution_time_approximation(**params)
-        self.assertTrue(estimation5 > 0)
+        assert estimation5 > 0
 
 
     def test_noise_2d_bad_shape(self):
@@ -203,11 +203,11 @@ class SimulatorAdapterTest(TransactionalTestCase):
         filtered_params = self.simulator_adapter.prepare_ui_inputs(params)
         self.simulator_adapter.configure(**filtered_params)
         if hasattr(self.simulator_adapter, 'algorithm'):
-            self.assertEqual((4, 74), self.simulator_adapter.algorithm.integrator.noise.nsig.shape)
+            assert (4, 74) == self.simulator_adapter.algorithm.integrator.noise.nsig.shape
         else:
-            self.fail("Simulator adapter was not initialized properly")
-        self.assertRaises(Exception, OperationService().initiate_prelaunch, self.operation,
-                          self.simulator_adapter, {}, **params)
+            raise AssertionError("Simulator adapter was not initialized properly")
+        with pytest.raises(Exception):
+            OperationService().initiate_prelaunch(self.operation,self.simulator_adapter, {}, **params)
 
 
     def test_noise_2d_happy_flow(self):
@@ -227,7 +227,7 @@ class SimulatorAdapterTest(TransactionalTestCase):
         self._launch_and_check_noise(params, (2, 74))
 
         sim_result = dao.get_generic_entity(TimeSeriesRegion, 'TimeSeriesRegion', 'type')[0]
-        self.assertEquals(sim_result.read_data_shape(), (32, 1, self.CONNECTIVITY_NODES, 1))
+        assert sim_result.read_data_shape() == (32, 1, self.CONNECTIVITY_NODES, 1)
 
         params['integrator_parameters_option_HeunStochastic_noise_parameters_option_Additive_nsig'] = '[1]'
         self._launch_and_check_noise(params, (1,))
@@ -239,9 +239,9 @@ class SimulatorAdapterTest(TransactionalTestCase):
         self.simulator_adapter.configure(**filtered_params)
 
         if hasattr(self.simulator_adapter, 'algorithm'):
-            self.assertEqual(expected_noise_shape, self.simulator_adapter.algorithm.integrator.noise.nsig.shape)
+            assert expected_noise_shape == self.simulator_adapter.algorithm.integrator.noise.nsig.shape
         else:
-            self.fail("Simulator adapter was not initialized properly")
+            raise AssertionError("Simulator adapter was not initialized properly")
 
         OperationService().initiate_prelaunch(self.operation, self.simulator_adapter, {}, **params)
 
@@ -256,19 +256,3 @@ class SimulatorAdapterTest(TransactionalTestCase):
         filtered_params = self.simulator_adapter.prepare_ui_inputs(params)
         self.simulator_adapter.configure(**filtered_params)
         OperationService().initiate_prelaunch(self.operation, self.simulator_adapter, {}, **params)
-
-
-def suite():
-    """
-    Gather all the tests in a test suite.
-    """
-    test_suite = unittest.TestSuite()
-    test_suite.addTest(unittest.makeSuite(SimulatorAdapterTest))
-    return test_suite
-
-
-if __name__ == "__main__":
-    # So you can run tests from this package individually.
-    TEST_RUNNER = unittest.TextTestRunner()
-    TEST_SUITE = suite()
-    TEST_RUNNER.run(TEST_SUITE)

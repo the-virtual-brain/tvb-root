@@ -47,7 +47,7 @@ import tvb_data.obj
 
 
 
-class ObjSurfaceImporterTest(TransactionalTestCase):
+class TestObjSurfaceImporter(TransactionalTestCase):
     """
     Unit-tests for Obj Surface importer.
     """
@@ -78,10 +78,10 @@ class ObjSurfaceImporterTest(TransactionalTestCase):
         FlowService().fire_operation(importer, self.test_user, self.test_project.id, **args)
 
         data_types = FlowService().get_available_datatypes(self.test_project.id, FaceSurface)[0]
-        self.assertEqual(1, len(data_types), "Project should contain only one data type.")
+        assert 1, len(data_types) == "Project should contain only one data type."
 
         surface = ABCAdapter.load_entity_by_gid(data_types[0][2])
-        self.assertTrue(surface is not None, "Surface should not be None")
+        assert surface is not None, "Surface should not be None"
         return surface
 
 
@@ -90,9 +90,9 @@ class ObjSurfaceImporterTest(TransactionalTestCase):
         Test that import works with a file which contains quads and no normals
         """
         surface = self._importSurface(self.face)
-        self.assertEqual(8614, len(surface.vertices))
-        self.assertEqual(8614, len(surface.vertex_normals))
-        self.assertEqual(17224, len(surface.triangles))
+        assert 8614 == len(surface.vertices)
+        assert 8614 == len(surface.vertex_normals)
+        assert 17224 == len(surface.triangles)
 
 
     def test_import_simple_with_normals(self):
@@ -100,23 +100,7 @@ class ObjSurfaceImporterTest(TransactionalTestCase):
         Test that import works with an OBJ file which included normals
         """
         surface = self._importSurface(self.torrus)
-        self.assertEqual(441, surface.number_of_vertices)
-        self.assertEqual(441, len(surface.vertex_normals))
-        self.assertEqual(800, surface.number_of_triangles)
+        assert 441 == surface.number_of_vertices
+        assert 441 == len(surface.vertex_normals)
+        assert 800 == surface.number_of_triangles
 
-
-
-def suite():
-    """
-    Gather all the tests in a test suite.
-    """
-    test_suite = unittest.TestSuite()
-    test_suite.addTest(unittest.makeSuite(ObjSurfaceImporterTest))
-    return test_suite
-
-
-if __name__ == "__main__":
-    #So you can run tests from this package individually.
-    TEST_RUNNER = unittest.TextTestRunner()
-    TEST_SUITE = suite()
-    TEST_RUNNER.run(TEST_SUITE)

@@ -40,7 +40,7 @@ from tvb.tests.framework.datatypes.datatypes_factory import DatatypesFactory
 from tvb.tests.framework.core.base_testcase import TransactionalTestCase
 
 
-class ConnectivityViewerTest(TransactionalTestCase):
+class TestConnectivityViewer(TransactionalTestCase):
     """
     Unit-tests for Connectivity Viewer.
     """
@@ -57,7 +57,7 @@ class ConnectivityViewerTest(TransactionalTestCase):
         
         TestFactory.import_cff(test_user=self.test_user, test_project=self.test_project)
         self.connectivity = TestFactory.get_entity(self.test_project, Connectivity())
-        self.assertTrue(self.connectivity is not None)
+        assert self.connectivity is not None
 
                 
     def tearDown(self):
@@ -78,20 +78,5 @@ class ConnectivityViewerTest(TransactionalTestCase):
                          'rightHemisphereJson', 'raysArray', 'rayMin', 'rayMax', 'positions',
                          'leftHemisphereJson', 'connectivity_entity', 'bothHemisphereJson']
         for key in expected_keys:
-            self.assertTrue(key in result)
+            assert key in result
     
-    
-def suite():
-    """
-    Gather all the tests in a test suite.
-    """
-    test_suite = unittest.TestSuite()
-    test_suite.addTest(unittest.makeSuite(ConnectivityViewerTest))
-    return test_suite
-
-
-if __name__ == "__main__":
-    #So you can run tests from this package individually.
-    TEST_RUNNER = unittest.TextTestRunner()
-    TEST_SUITE = suite()
-    TEST_RUNNER.run(TEST_SUITE)

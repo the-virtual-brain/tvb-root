@@ -48,7 +48,7 @@ from tvb.core.entities.model import UserPreferences
 
 
 
-class UsersControllerTest(BaseTransactionalControllerTest):
+class TestUsersController(BaseTransactionalControllerTest):
     """Unit test for UserController"""
     
     def setUp(self):
@@ -101,7 +101,7 @@ class UsersControllerTest(BaseTransactionalControllerTest):
         cherrypy.request.method = "GET"
         template_dict = self.user_c.profile()
         self._check_default_attributes(template_dict, {}, {})
-        self.assertEqual(template_dict[common.KEY_USER].id, self.test_user.id)
+        assert template_dict[common.KEY_USER].id == self.test_user.id
         
     
     def test_profile_edit(self):
@@ -112,7 +112,7 @@ class UsersControllerTest(BaseTransactionalControllerTest):
         cherrypy.request.method = "POST"
         self.user_c.profile(save=True, **edited_data)
         user = dao.get_user_by_id(self.test_user.id)
-        self.assertEqual('jira1.tvb@gmail.com', user.email)
+        assert 'jira1.tvb@gmail.com' == user.email
         
         
     def test_logout(self):
@@ -122,7 +122,7 @@ class UsersControllerTest(BaseTransactionalControllerTest):
         cherrypy.request.config = {'tools.sessions.name': 'session_id'}
         cherrypy.serving.response.cookie['session_id'] = 1
         self._expect_redirect('/user', self.user_c.logout)
-        self.assertTrue(common.KEY_USER not in cherrypy.session, "User should be removed after logout.")
+        assert common.KEY_USER not in cherrypy.session, "User should be removed after logout."
         
     
     def test_switch_online_help(self):
@@ -130,8 +130,8 @@ class UsersControllerTest(BaseTransactionalControllerTest):
         Test the switch_online_help method and make sure it adds corresponding entry to UserPreferences.
         """
         self._expect_redirect('/user/profile', self.user_c.switch_online_help)
-        self.assertFalse(utils.string2bool(self.test_user.preferences[UserPreferences.ONLINE_HELP_ACTIVE]),
-                         "Online help should be switched to False.")
+        assert not utils.string2bool(self.test_user.preferences[UserPreferences.ONLINE_HELP_ACTIVE]),\
+                         "Online help should be switched to False."
         
         
     def test_register_cancel(self):
@@ -154,7 +154,7 @@ class UsersControllerTest(BaseTransactionalControllerTest):
                     role="CLINICIAN")
         self._expect_redirect('/user', self.user_c.register, **data)
         stored_user = dao.get_user_by_name('registered_user')
-        self.assertTrue(stored_user is not None, "New user should be saved.")
+        assert stored_user is not None, "New user should be saved."
         
         
     def test_register_post_invalid_data(self):
@@ -169,7 +169,7 @@ class UsersControllerTest(BaseTransactionalControllerTest):
                     comment="This is some dummy comment",
                     role="CLINICIAN")
         template_dict = self.user_c.register(**data)
-        self.assertTrue(template_dict[common.KEY_ERRORS] != {}, "Errors should contain some data.")
+        assert template_dict[common.KEY_ERRORS] != {}, "Errors should contain some data."
         
         
     def test_create_new_cancel(self):
@@ -192,7 +192,7 @@ class UsersControllerTest(BaseTransactionalControllerTest):
         cherrypy.request.method = "POST"
         self._expect_redirect('/user/usermanagement', self.user_c.create_new, **data)
         created_user = dao.get_user_by_name("registered_user")
-        self.assertTrue(created_user is not None, "Should have a new user created.")
+        assert created_user is not None, "Should have a new user created."
         
     
     def test_usermanagement_no_access(self):
@@ -201,7 +201,7 @@ class UsersControllerTest(BaseTransactionalControllerTest):
         """
         self.test_user.role = "TEST"
         self._expect_redirect('/tvb', self.user_c.usermanagement)
-        self.assertEqual(cherrypy.session[common.KEY_MESSAGE_TYPE], common.TYPE_ERROR)
+        assert cherrypy.session[common.KEY_MESSAGE_TYPE] == common.TYPE_ERROR
         
     
     def test_usermanagement_cancel(self):
@@ -224,18 +224,18 @@ class UsersControllerTest(BaseTransactionalControllerTest):
         TestFactory.create_user(username="to_be_deleted")
         TestFactory.create_user(username="to_validate", validated=False)
         user_before_delete = dao.get_user_by_name("to_be_deleted")
-        self.assertTrue(user_before_delete is not None)
+        assert user_before_delete is not None
         user_before_validation = dao.get_user_by_name("to_validate")
-        self.assertFalse(user_before_validation.validated)
+        assert not user_before_validation.validated
         data = {"delete_%i" % user_before_delete.id: True,
                 "role_%i" % user_before_validation.id: "ADMINISTRATOR",
                 "validate_%i" % user_before_validation.id: True}
         self.user_c.usermanagement(do_persist=True, **data)
         user_after_delete = dao.get_user_by_id(user_before_delete.id)
-        self.assertTrue(user_after_delete is None, "User should be deleted.")
+        assert user_after_delete is None, "User should be deleted."
         user_after_validation = dao.get_user_by_id(user_before_validation.id)
-        self.assertTrue(user_after_validation.validated, "User should be validated now.")
-        self.assertTrue(user_after_validation.role == "ADMINISTRATOR", "Role has not changed.")
+        assert user_after_validation.validated, "User should be validated now."
+        assert user_after_validation.role == "ADMINISTRATOR", "Role has not changed."
         
         
     def test_recoverpassword_cancel(self):
@@ -254,8 +254,8 @@ class UsersControllerTest(BaseTransactionalControllerTest):
         data = {"email": self.test_user.email,
                 "username": ""}
         self._expect_redirect("/user", self.user_c.recoverpassword, **data)
-        self.assertTrue(cherrypy.session[common.KEY_MESSAGE_TYPE] == common.TYPE_INFO,
-                        "Info message informing successfull reset should be present")
+        assert cherrypy.session[common.KEY_MESSAGE_TYPE] == common.TYPE_INFO,\
+                        "Info message informing successfull reset should be present"
         
         
     def test_validate_valid(self):
@@ -267,11 +267,11 @@ class UsersControllerTest(BaseTransactionalControllerTest):
         cherrypy.session[common.KEY_USER] = self.test_user
         TestFactory.create_user(username="to_validate", validated=False)
         user_before_validation = dao.get_user_by_name("to_validate")
-        self.assertFalse(user_before_validation.validated)
+        assert not user_before_validation.validated
         self._expect_redirect('/tvb', self.user_c.validate, user_before_validation.username)
         user_after_validation = dao.get_user_by_id(user_before_validation.id)
-        self.assertTrue(user_after_validation.validated, "User should be validated.")
-        self.assertTrue(cherrypy.session[common.KEY_MESSAGE_TYPE] == common.TYPE_INFO)
+        assert user_after_validation.validated, "User should be validated."
+        assert cherrypy.session[common.KEY_MESSAGE_TYPE] == common.TYPE_INFO
         
         
     def test_validate_invalid(self):
@@ -279,35 +279,20 @@ class UsersControllerTest(BaseTransactionalControllerTest):
         Pass a valid user and test that it is actually validate.
         """
         unexisting = dao.get_user_by_name("should-not-exist")
-        self.assertTrue(unexisting is None, "This user should not exist")
+        assert unexisting is None, "This user should not exist"
         self._expect_redirect('/tvb', self.user_c.validate, "should-not-exist")
-        self.assertTrue(cherrypy.session[common.KEY_MESSAGE_TYPE] == common.TYPE_ERROR)
+        assert cherrypy.session[common.KEY_MESSAGE_TYPE] == common.TYPE_ERROR
     
     
     def _check_default_attributes(self, template_dict, data, errors):
         """
         Check that all the defaults are present in the template dictionary.
         """
-        self.assertEqual(template_dict[common.KEY_LINK_ANALYZE], '/flow/step_analyzers')
-        self.assertEqual(template_dict[common.KEY_BACK_PAGE], False)
-        self.assertEqual(template_dict[common.KEY_LINK_CONNECTIVITY_TAB], '/flow/step_connectivity')
-        self.assertEqual(template_dict[common.KEY_CURRENT_TAB], 'nav-user')
-        self.assertEqual(template_dict[common.KEY_FORM_DATA], data)
-        self.assertEqual(template_dict[common.KEY_ERRORS], errors)
-        self.assertEqual(template_dict[common.KEY_INCLUDE_TOOLTIP], True)
+        assert template_dict[common.KEY_LINK_ANALYZE] == '/flow/step_analyzers'
+        assert template_dict[common.KEY_BACK_PAGE] == False
+        assert template_dict[common.KEY_LINK_CONNECTIVITY_TAB] == '/flow/step_connectivity'
+        assert template_dict[common.KEY_CURRENT_TAB] == 'nav-user'
+        assert template_dict[common.KEY_FORM_DATA] == data
+        assert template_dict[common.KEY_ERRORS] == errors
+        assert template_dict[common.KEY_INCLUDE_TOOLTIP] == True
         
-        
-def suite():
-    """
-    Gather all the tests in a test suite.
-    """
-    test_suite = unittest.TestSuite()
-    test_suite.addTest(unittest.makeSuite(UsersControllerTest))
-    return test_suite
-
-
-if __name__ == "__main__":
-    #So you can run tests individually.
-    TEST_RUNNER = unittest.TextTestRunner()
-    TEST_SUITE = suite()
-    TEST_RUNNER.run(TEST_SUITE)

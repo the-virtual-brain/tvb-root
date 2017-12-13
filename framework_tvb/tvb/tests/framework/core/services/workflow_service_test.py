@@ -48,7 +48,7 @@ from tvb.tests.framework.core.test_factory import TestFactory
 
 
 
-class WorkflowTest(TransactionalTestCase):
+class TestWorkflow(TransactionalTestCase):
     """
     Test that workflow conversion methods are valid.
     """
@@ -129,14 +129,14 @@ class WorkflowTest(TransactionalTestCase):
                                                                static_kwargs={"test1_val1": 1, "test1_val2": 1})]
         self.__create_complex_workflow(workflow_step_list)
         stored_datatypes = dao.get_datatypes_in_project(self.test_project.id)
-        self.assertTrue(len(stored_datatypes) == 2, "DataType from second step was not stored.")
-        self.assertTrue(stored_datatypes[0].type == 'Datatype1', "Wrong type was stored.")
-        self.assertTrue(stored_datatypes[1].type == 'Datatype1', "Wrong type was stored.")
+        assert  len(stored_datatypes) == 2, "DataType from second step was not stored."
+        assert  stored_datatypes[0].type == 'Datatype1', "Wrong type was stored."
+        assert  stored_datatypes[1].type == 'Datatype1', "Wrong type was stored."
 
         finished, started, error, _, _ = dao.get_operation_numbers(self.test_project.id)
-        self.assertEqual(finished, 3, "Didnt start operations for both adapters in workflow.")
-        self.assertEqual(started, 0, "Some operations from workflow didnt finish.")
-        self.assertEqual(error, 0, "Some operations finished with error status.")
+        assert  finished == 3, "Didnt start operations for both adapters in workflow."
+        assert  started == 0, "Some operations from workflow didnt finish."
+        assert  error == 0, "Some operations finished with error status."
 
 
     def test_workflow_dynamic_params(self):
@@ -161,14 +161,14 @@ class WorkflowTest(TransactionalTestCase):
 
         self.__create_complex_workflow(workflow_step_list)
         stored_datatypes = dao.get_datatypes_in_project(self.test_project.id)
-        self.assertTrue(len(stored_datatypes) == 3, "DataType from all step were not stored.")
+        assert  len(stored_datatypes) == 3, "DataType from all step were not stored."
         for result_row in stored_datatypes:
-            self.assertTrue(result_row.type in ['Datatype1', 'Datatype2'], "Wrong type was stored.")
+            assert  result_row.type in ['Datatype1', 'Datatype2'], "Wrong type was stored."
 
         finished, started, error, _, _ = dao.get_operation_numbers(self.test_project.id)
-        self.assertEqual(finished, 3, "Didn't start operations for both adapters in workflow.")
-        self.assertEqual(started, 0, "Some operations from workflow didn't finish.")
-        self.assertEqual(error, 0, "Some operations finished with error status.")
+        assert  finished == 3, "Didn't start operations for both adapters in workflow."
+        assert  started == 0, "Some operations from workflow didn't finish."
+        assert  error == 0, "Some operations finished with error status."
 
 
     def test_configuration2workflow(self):
@@ -181,11 +181,11 @@ class WorkflowTest(TransactionalTestCase):
                                                          dynamic_kwargs={"dynamic_param": {wf_cfg.STEP_INDEX_KEY: 0,
                                                                                            wf_cfg.DATATYPE_INDEX_KEY: 0}},
                                                          step_index=1, base_step=5)
-        self.assertEqual(workflow_step.step_index, 1, "Wrong step index in created workflow step.")
-        self.assertEqual(workflow_step.static_param, {'static_param': 'test'}, 'Different static parameters on step.')
-        self.assertEqual(workflow_step.dynamic_param, {'dynamic_param': {wf_cfg.STEP_INDEX_KEY: 5,
-                                                                         wf_cfg.DATATYPE_INDEX_KEY: 0}},
-                         "Dynamic parameters not saved properly, or base workflow index not added to step index.")
+        assert  workflow_step.step_index == 1, "Wrong step index in created workflow step."
+        assert  workflow_step.static_param == {'static_param': 'test'}, 'Different static parameters on step.'
+        assert  workflow_step.dynamic_param == {'dynamic_param': {wf_cfg.STEP_INDEX_KEY: 5,
+                                                                         wf_cfg.DATATYPE_INDEX_KEY: 0}},\
+                         "Dynamic parameters not saved properly, or base workflow index not added to step index."
 
 
     def test_create_workflow(self):
@@ -200,25 +200,6 @@ class WorkflowTest(TransactionalTestCase):
                                                                static_kwargs={"test1_val1": 1, "test1_val2": 1})]
         burst_id = self.__create_complex_workflow(workflow_step_list)
         workflow_entities = dao.get_workflows_for_burst(burst_id)
-        self.assertTrue(len(workflow_entities) == 1, "For some reason workflow was not stored in database.")
+        assert  len(workflow_entities) == 1, "For some reason workflow was not stored in database."
         workflow_steps = dao.get_workflow_steps(workflow_entities[0].id)
-        self.assertEqual(len(workflow_steps), len(workflow_step_list) + 1, "Wrong number of workflow steps created.")
-
-
-
-def suite():
-    """
-    Gather all the tests in a test suite.
-    """
-    test_suite = unittest.TestSuite()
-    test_suite.addTest(unittest.makeSuite(WorkflowTest))
-    return test_suite
-
-
-
-if __name__ == "__main__":
-    #So you can run tests from this package individually.
-    unittest.main() 
-    
-    
-    
+        assert  len(workflow_steps) == len(workflow_step_list) + 1, "Wrong number of workflow steps created."

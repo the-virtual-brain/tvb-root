@@ -33,7 +33,6 @@
 """
 
 import json
-import unittest
 import cherrypy
 from tvb.tests.framework.interfaces.web.controllers.base_controller_test import BaseTransactionalControllerTest
 from tvb.tests.framework.datatypes.datatypes_factory import DatatypesFactory
@@ -48,7 +47,7 @@ from tvb.simulator.models import Generic2dOscillator
 from tvb.simulator.noise import Additive
 
 
-class NoiseConfigurationControllerTest(BaseTransactionalControllerTest):
+class TestNoiseConfigurationController(BaseTransactionalControllerTest):
 
     def setUp(self):
         """
@@ -98,21 +97,4 @@ class NoiseConfigurationControllerTest(BaseTransactionalControllerTest):
         nsig_key = 'integrator_parameters_option_EulerStochastic_noise_parameters_option_Additive_nsig'
         actual_noise_arr = json.loads(simulator_configuration[nsig_key]['value'])
 
-        self.assertEquals(expected_noise_arr, actual_noise_arr)
-
-
-def suite():
-    """
-    Gather all the tests in a test suite.
-    """
-    test_suite = unittest.TestSuite()
-    test_suite.addTest(unittest.makeSuite(NoiseConfigurationControllerTest))
-    return test_suite
-
-
-
-if __name__ == "__main__":
-    #So you can run tests individually.
-    TEST_RUNNER = unittest.TextTestRunner()
-    TEST_SUITE = suite()
-    TEST_RUNNER.run(TEST_SUITE)
+        assert expected_noise_arr == actual_noise_arr

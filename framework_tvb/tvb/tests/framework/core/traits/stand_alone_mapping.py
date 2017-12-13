@@ -130,7 +130,7 @@ class PolymorphicBase2(PolymorphicBase):
 #                       "polymorphic_identity":"BASE" }
     
     
-class DBMappingTest(unittest.TestCase):
+class DBMappingTest():
     
     
     def test_storage(self):
@@ -150,10 +150,10 @@ class DBMappingTest(unittest.TestCase):
         
         session = SESSION()
         retrieved_child = session.query(ConnectivityMeasure).filter_by(id=child.id).one()
-        self.assertEqual(child.granpda_name, retrieved_child.granpda_name)
-        self.assertEqual(child.child_name, retrieved_child.child_name)
-        #self.assertEqual(child.extra_field, retrieved_child.extra_field)
-        self.assertEqual(child.parent_name, retrieved_child.parent_name)
+        assert child.granpda_name == retrieved_child.granpda_name
+        assert child.child_name == retrieved_child.child_name
+        #assert child.extra_field, retrieved_child.extra_field)
+        assert child.parent_name == retrieved_child.parent_name
         session.close()
     
     
@@ -181,17 +181,17 @@ class DBMappingTest(unittest.TestCase):
         
         session = SESSION()
         all_class = session.query(PolymorphicBase).all()
-        self.assertEqual(2, len(all_class))
-        self.assertEqual("grandpa", all_class[0].object_name)
+        assert 2 == len(all_class)
+        assert "grandpa" == all_class[0].object_name
         all_subclasses = session.query(PolymorphicSubClass).all()
-        self.assertEqual(1, len(all_subclasses))
-        self.assertEqual("grandpa", all_subclasses[0].object_name)
-        self.assertEqual("test-child", all_subclasses[0].child_field)
+        assert 1 == len(all_subclasses)
+        assert "grandpa" == all_subclasses[0].object_name
+        assert "test-child" == all_subclasses[0].child_field
         
         all_subclasses = session.query(PolymorphicFramework).all()
-        self.assertEqual(1, len(all_subclasses))
+        assert 1 == len(all_subclasses)
         all_class = session.query(PolymorphicBase2).all()
-        #self.assertEqual(2, len(all_class))
+        #assert 2, len(all_class))
         session.close()
         
         session = SESSION()
@@ -200,24 +200,3 @@ class DBMappingTest(unittest.TestCase):
             session.delete(entity)
         session.commit()
         session.close()
-        
-    
-    
-def suite():
-    """
-    Gather all the tests in a test suite.
-    """
-    test_suite = unittest.TestSuite()
-    test_suite.addTest(unittest.makeSuite(DBMappingTest))
-    return test_suite
-
-
-if __name__ == "__main__":
-    #So you can run tests from this package individually.
-    TEST_RUNNER = unittest.TextTestRunner()
-    TEST_SUITE = suite()
-    TEST_RUNNER.run(TEST_SUITE)
-    
-    
-    
-    

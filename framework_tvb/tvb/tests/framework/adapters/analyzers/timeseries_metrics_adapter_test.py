@@ -33,7 +33,6 @@
 """
 
 import numpy
-import unittest
 import json
 from tvb.config import SIMULATOR_MODULE, SIMULATOR_CLASS
 from tvb.core.entities import model
@@ -51,7 +50,7 @@ from tvb.tests.framework.adapters.storeadapter import StoreAdapter
 
 
 
-class TimeSeriesMetricsAdapterTest(TransactionalTestCase):
+class TestTimeSeriesMetricsAdapter(TransactionalTestCase):
     """
     Test the timeseries metric adapter.
     """
@@ -90,7 +89,7 @@ class TimeSeriesMetricsAdapterTest(TransactionalTestCase):
         # Get connectivity
         connectivities = FlowService().get_available_datatypes(self.test_project.id,
                                                                "tvb.datatypes.connectivity.Connectivity")[0]
-        self.assertEqual(2, len(connectivities))
+        assert 2 == len(connectivities)
         connectivity_gid = connectivities[0][2]
 
         dummy_time_series = TimeSeriesRegion()
@@ -108,24 +107,9 @@ class TimeSeriesMetricsAdapterTest(TransactionalTestCase):
         dummy_time_series = dao.get_generic_entity(dummy_time_series.__class__, dummy_time_series.gid, 'gid')[0]
         ts_metric_adapter = TimeseriesMetricsAdapter()
         resulted_metric = ts_metric_adapter.launch(dummy_time_series)
-        self.assertTrue(isinstance(resulted_metric, DatatypeMeasure), "Result should be a datatype measure.")
-        self.assertTrue(len(resulted_metric.metrics) >= len(ts_metric_adapter.available_algorithms.keys()),
-                        "At least a result should have been generated for every metric.")
+        assert isinstance(resulted_metric, DatatypeMeasure), "Result should be a datatype measure."
+        assert len(resulted_metric.metrics) >= len(ts_metric_adapter.available_algorithms.keys()),\
+                        "At least a result should have been generated for every metric."
         for metric_value in resulted_metric.metrics.values():
-            self.assertTrue(isinstance(metric_value, (float, int)))
+            assert isinstance(metric_value, (float, int))
 
-
-
-def suite():
-    """
-        Gather all the tests in a test suite.
-    """
-    test_suite = unittest.TestSuite()
-    test_suite.addTest(unittest.makeSuite(TimeSeriesMetricsAdapterTest))
-    return test_suite
-
-
-
-if __name__ == "__main__":
-    #So you can run tests from this package individually.
-    unittest.main()         

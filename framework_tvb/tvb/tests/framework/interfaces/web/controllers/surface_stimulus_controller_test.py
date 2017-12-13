@@ -42,7 +42,7 @@ from tvb.core.entities.transient.context_stimulus import SURFACE_PARAMETER
 
 
 
-class SurfaceStimulusControllerTest(BaseTransactionalControllerTest):
+class TestSurfaceStimulusController(BaseTransactionalControllerTest):
     """ Unit tests for SurfaceStimulusController """
     
     def setUp(self):
@@ -62,8 +62,8 @@ class SurfaceStimulusControllerTest(BaseTransactionalControllerTest):
                          'spatialPlotInputList', 'spatialFieldsPrefixes', 'spatialEquationViewerUrl',
                          'selectedFocalPoints', 'mainContent', 'existentEntitiesInputList']
         map(lambda x: self.assertTrue(x in result_dict), expected_keys)
-        self.assertEqual(result_dict['mainContent'], 'spatial/stimulus_surface_step1_main')
-        self.assertEqual(result_dict['next_step_url'], '/spatial/stimulus/surface/step_1_submit')
+        assert result_dict['mainContent'] == 'spatial/stimulus_surface_step1_main'
+        assert result_dict['next_step_url'] == '/spatial/stimulus/surface/step_1_submit'
         
      
     def test_step_2(self):
@@ -76,22 +76,7 @@ class SurfaceStimulusControllerTest(BaseTransactionalControllerTest):
                          'urlNormalsPick', 'urlNormals', 'surfaceGID', 'mainContent', 
                          'loadExistentEntityUrl', 'existentEntitiesInputList', 'definedFocalPoints']
         map(lambda x: self.assertTrue(x in result_dict), expected_keys)
-        self.assertEqual(result_dict['next_step_url'], '/spatial/stimulus/surface/step_2_submit')
-        self.assertEqual(result_dict['mainContent'], 'spatial/stimulus_surface_step2_main')
-        self.assertEqual(result_dict['loadExistentEntityUrl'], '/spatial/stimulus/surface/load_surface_stimulus')
+        assert result_dict['next_step_url'] == '/spatial/stimulus/surface/step_2_submit'
+        assert result_dict['mainContent'] == 'spatial/stimulus_surface_step2_main'
+        assert result_dict['loadExistentEntityUrl'] == '/spatial/stimulus/surface/load_surface_stimulus'
 
-
-def suite():
-    """
-    Gather all the tests in a test suite.
-    """
-    test_suite = unittest.TestSuite()
-    test_suite.addTest(unittest.makeSuite(SurfaceStimulusControllerTest))
-    return test_suite
-
-
-if __name__ == "__main__":
-    #So you can run tests individually.
-    TEST_RUNNER = unittest.TextTestRunner()
-    TEST_SUITE = suite()
-    TEST_RUNNER.run(TEST_SUITE)

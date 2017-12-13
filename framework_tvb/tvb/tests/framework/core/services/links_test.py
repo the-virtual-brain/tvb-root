@@ -94,29 +94,29 @@ class _BaseLinksTest(TransactionalTestCase):
 
 
 
-class LinksTest(_BaseLinksTest):
+class TestLinks(_BaseLinksTest):
     """
     Test case for datatype linking functionality
     """
 
     def assertRedsInDest(self, count):
-        self.assertEqual(count, self.red_datatypes_in(self.dest_project.id))
+        assert count == self.red_datatypes_in(self.dest_project.id)
 
 
     def test_create_link(self):
         dest_id = self.dest_project.id
-        self.assertEqual(0, self.red_datatypes_in(dest_id))
+        assert 0 == self.red_datatypes_in(dest_id)
         self.flow_service.create_link([self.red_datatype.id], dest_id)
-        self.assertEqual(1, self.red_datatypes_in(dest_id))
-        self.assertEqual(0, self.blue_datatypes_in(dest_id))
+        assert 1 == self.red_datatypes_in(dest_id)
+        assert 0 == self.blue_datatypes_in(dest_id)
 
     def test_remove_link(self):
         dest_id = self.dest_project.id
-        self.assertEqual(0, self.red_datatypes_in(dest_id))
+        assert 0 == self.red_datatypes_in(dest_id)
         self.flow_service.create_link([self.red_datatype.id], dest_id)
-        self.assertEqual(1, self.red_datatypes_in(dest_id))
+        assert 1 == self.red_datatypes_in(dest_id)
         self.flow_service.remove_link(self.red_datatype.id, dest_id)
-        self.assertEqual(0, self.red_datatypes_in(dest_id))
+        assert 0 == self.red_datatypes_in(dest_id)
 
 
     def test_link_appears_in_project_structure(self):
@@ -124,24 +124,24 @@ class LinksTest(_BaseLinksTest):
         self.flow_service.create_link([self.red_datatype.id], dest_id)
         # Test getting information about linked datatypes, from low level methods to the one used by the UI
         dt_1s = dao.get_linked_datatypes_in_project(dest_id)
-        self.assertEqual(1, len(dt_1s))
-        self.assertEqual(1, self.red_datatypes_in(dest_id))
+        assert 1 == len(dt_1s)
+        assert 1 == self.red_datatypes_in(dest_id)
         json = self.project_service.get_project_structure(self.dest_project, None, DataTypeMetaData.KEY_STATE,
                                                           DataTypeMetaData.KEY_SUBJECT, None)
-        self.assertTrue(self.red_datatype.gid in json)
+        assert self.red_datatype.gid in json
 
 
     def test_remove_entity_with_links_moves_links(self):
         dest_id = self.dest_project.id
         self.flow_service.create_link([self.red_datatype.id], dest_id)
-        self.assertEqual(1, self.red_datatypes_in(dest_id))
+        assert 1 == self.red_datatypes_in(dest_id)
         # remove original datatype
         self.project_service.remove_datatype(self.src_project.id, self.red_datatype.gid)
         # datatype has been moved to one of it's links
-        self.assertEqual(1, self.red_datatypes_in(dest_id))
+        assert 1 == self.red_datatypes_in(dest_id)
         # project dest no longer has a link but owns the data type
         dt_links = dao.get_linked_datatypes_in_project(dest_id)
-        self.assertEqual(0, len(dt_links))
+        assert 0 == len(dt_links)
 
 
 class ImportExportProjectWithLinksTest(_BaseLinksTest):
@@ -164,7 +164,7 @@ class ImportExportProjectWithLinksTest(_BaseLinksTest):
     def test_export(self):
         export_file = self.export_mng.export_project(self.dest_project)
         with TvbZip(export_file) as z:
-            self.assertTrue('links-to-external-projects/Operation.xml' in z.namelist())
+            assert 'links-to-external-projects/Operation.xml' in z.namelist()
 
 
     def _export_and_remove(self, project):
@@ -185,10 +185,10 @@ class ImportExportProjectWithLinksTest(_BaseLinksTest):
     def test_links_recreated_on_import(self):
         export_file = self._export_and_remove(self.dest_project)
         imported_proj_id = self._import(export_file, self.dest_usr_id)
-        self.assertEqual(1, self.red_datatypes_in(imported_proj_id))
-        self.assertEqual(1, self.blue_datatypes_in(imported_proj_id))
+        assert 1 == self.red_datatypes_in(imported_proj_id)
+        assert 1 == self.blue_datatypes_in(imported_proj_id)
         links = dao.get_linked_datatypes_in_project(imported_proj_id)
-        self.assertEqual(2, len(links))
+        assert 2 == len(links)
 
 
     def test_datatypes_recreated_on_import(self):
@@ -197,10 +197,10 @@ class ImportExportProjectWithLinksTest(_BaseLinksTest):
         # both projects have been deleted
         # import should recreate links as datatypes
         imported_proj_id = self._import(export_file, self.dest_usr_id)
-        self.assertEqual(1, self.red_datatypes_in(imported_proj_id))
-        self.assertEqual(1, self.blue_datatypes_in(imported_proj_id))
+        assert 1 == self.red_datatypes_in(imported_proj_id)
+        assert 1 == self.blue_datatypes_in(imported_proj_id)
         links = dao.get_linked_datatypes_in_project(imported_proj_id)
-        self.assertEqual(0, len(links))
+        assert 0 == len(links)
 
 
     def test_datatypes_and_links_recreated_on_import(self):
@@ -209,12 +209,12 @@ class ImportExportProjectWithLinksTest(_BaseLinksTest):
         self.project_service.remove_datatype(self.src_project.id, self.blue_datatype.gid)
         imported_proj_id = self._import(export_file, self.dest_usr_id)
         # both datatypes should be recreated
-        self.assertEqual(1, self.red_datatypes_in(imported_proj_id))
-        self.assertEqual(1, self.blue_datatypes_in(imported_proj_id))
+        assert 1 == self.red_datatypes_in(imported_proj_id)
+        assert 1 == self.blue_datatypes_in(imported_proj_id)
         # only datatype 1 should be a link
         links = dao.get_linked_datatypes_in_project(imported_proj_id)
-        self.assertEqual(1, len(links))
-        self.assertEquals(self.red_datatype.gid, links[0].gid)
+        assert 1 == len(links)
+        assert self.red_datatype.gid == links[0].gid
 
 
     def _create_interlinked_projects(self):
@@ -231,10 +231,10 @@ class ImportExportProjectWithLinksTest(_BaseLinksTest):
         # then link the time series in the src project
         self.flow_service.create_link([ts.id], self.src_project.id)
 
-        self.assertEqual(3, len(dao.get_datatypes_in_project(self.src_project.id)))
-        self.assertEqual(1, len(dao.get_linked_datatypes_in_project(self.src_project.id)))
-        self.assertEqual(1, len(dao.get_datatypes_in_project(self.dest_project.id)))
-        self.assertEqual(3, len(dao.get_linked_datatypes_in_project(self.dest_project.id)))
+        assert 3 == len(dao.get_datatypes_in_project(self.src_project.id))
+        assert 1 == len(dao.get_linked_datatypes_in_project(self.src_project.id))
+        assert 1 == len(dao.get_datatypes_in_project(self.dest_project.id))
+        assert 3 == len(dao.get_linked_datatypes_in_project(self.dest_project.id))
 
 
     def test_create_interlinked_projects(self):
@@ -245,50 +245,34 @@ class ImportExportProjectWithLinksTest(_BaseLinksTest):
         self._create_interlinked_projects()
         # export both then remove them
         export_file_src = self._export_and_remove(self.src_project)
-        self.assertEqual(4, len(dao.get_datatypes_in_project(self.dest_project.id)))
-        self.assertEqual(0, len(dao.get_linked_datatypes_in_project(self.dest_project.id)))
+        assert 4 == len(dao.get_datatypes_in_project(self.dest_project.id))
+        assert 0 == len(dao.get_linked_datatypes_in_project(self.dest_project.id))
         export_file_dest = self._export_and_remove(self.dest_project)
 
         # importing both projects should work
         imported_id_1 = self._import(export_file_src, self.src_usr_id)
-        self.assertEqual(4, len(dao.get_datatypes_in_project(imported_id_1)))
-        self.assertEqual(0, len(dao.get_linked_datatypes_in_project(imported_id_1)))
+        assert 4 == len(dao.get_datatypes_in_project(imported_id_1))
+        assert 0 == len(dao.get_linked_datatypes_in_project(imported_id_1))
 
         imported_id_2 = self._import(export_file_dest, self.dest_usr_id)
-        self.assertEqual(0, len(dao.get_datatypes_in_project(imported_id_2)))
-        self.assertEqual(4, len(dao.get_linked_datatypes_in_project(imported_id_2)))
+        assert 0 == len(dao.get_datatypes_in_project(imported_id_2))
+        assert 4 == len(dao.get_linked_datatypes_in_project(imported_id_2))
 
 
     def test_linked_datatype_dependencies_restored_on_import_inverse_order(self):
         self._create_interlinked_projects()
         # export both then remove them
         export_file_src = self._export_and_remove(self.src_project)
-        self.assertEqual(4, len(dao.get_datatypes_in_project(self.dest_project.id)))
-        self.assertEqual(0, len(dao.get_linked_datatypes_in_project(self.dest_project.id)))
+        assert 4 == len(dao.get_datatypes_in_project(self.dest_project.id))
+        assert 0 == len(dao.get_linked_datatypes_in_project(self.dest_project.id))
         export_file_dest = self._export_and_remove(self.dest_project)
 
         # importing dest before src should work
         imported_id_2 = self._import(export_file_dest, self.dest_usr_id)
-        self.assertEqual(4, len(dao.get_datatypes_in_project(imported_id_2)))
-        self.assertEqual(0, len(dao.get_linked_datatypes_in_project(imported_id_2)))
+        assert 4 == len(dao.get_datatypes_in_project(imported_id_2))
+        assert 0 == len(dao.get_linked_datatypes_in_project(imported_id_2))
 
         imported_id_1 = self._import(export_file_src, self.src_usr_id)
-        self.assertEqual(0, len(dao.get_datatypes_in_project(imported_id_1)))
-        self.assertEqual(4, len(dao.get_linked_datatypes_in_project(imported_id_1)))
+        assert 0 == len(dao.get_datatypes_in_project(imported_id_1))
+        assert 4 == len(dao.get_linked_datatypes_in_project(imported_id_1))
 
-
-def suite():
-    """
-    Gather all the tests in a test suite.
-    """
-    test_suite = unittest.TestSuite()
-    test_suite.addTest(unittest.makeSuite(LinksTest))
-    test_suite.addTest(unittest.makeSuite(ImportExportProjectWithLinksTest))
-    return test_suite
-
-
-if __name__ == "__main__":
-    #So you can run tests from this package individually.
-    TEST_RUNNER = unittest.TextTestRunner()
-    TEST_SUITE = suite()
-    TEST_RUNNER.run(TEST_SUITE)

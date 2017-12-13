@@ -32,7 +32,6 @@
 .. moduleauthor:: Bogdan Neacsa <bogdan.neacsa@codemart.ro>
 """
 
-import unittest
 import cherrypy
 from tvb.tests.framework.interfaces.web.controllers.base_controller_test import BaseTransactionalControllerTest
 from tvb.tests.framework.core.test_factory import TestFactory
@@ -41,7 +40,7 @@ from tvb.interfaces.web.controllers.project.figure_controller import FigureContr
 
 
 
-class FigureControllerTest(BaseTransactionalControllerTest):
+class TestFigureController(BaseTransactionalControllerTest):
     """ Unit tests for FigureController """
 
 
@@ -74,7 +73,7 @@ class FigureControllerTest(BaseTransactionalControllerTest):
 
         result_dict = self.figure_c.displayresultfigures()
         figures = result_dict['selected_sessions_data']['test']
-        self.assertEqual(set([fig.id for fig in figures]), {figure1.id, figure2.id})
+        assert set([fig.id for fig in figures]) == {figure1.id, figure2.id}
         
         
     def test_editresultfigures_remove_fig(self):
@@ -87,12 +86,12 @@ class FigureControllerTest(BaseTransactionalControllerTest):
                                             self.test_project.id, name="figure1", 
                                             path="path-to-figure1", session_name="test")
         figs = dao.get_figures_for_operation(self.operation.id)
-        self.assertEqual(len(figs), 1)
+        assert len(figs) == 1
         data = {'figure_id': figure1.id}
         self._expect_redirect('/project/figure/displayresultfigures', self.figure_c.editresultfigures,
                               remove_figure=True, **data)
         figs = dao.get_figures_for_operation(self.operation.id)
-        self.assertEqual(len(figs), 0)
+        assert len(figs) == 0
         
         
     def test_editresultfigures_rename_session(self):
@@ -106,13 +105,13 @@ class FigureControllerTest(BaseTransactionalControllerTest):
         TestFactory.create_figure(self.operation.id, self.test_user.id, self.test_project.id, name="figure2",
                                   path="path-to-figure2", session_name="test")
         figs, _ = dao.get_previews(self.test_project.id, self.test_user.id, "test")  
-        self.assertEqual(len(figs['test']), 2)
+        assert len(figs['test']) == 2
         data = {'old_session_name': 'test', 'new_session_name': 'test_renamed'}
         self._expect_redirect('/project/figure/displayresultfigures', self.figure_c.editresultfigures,
                               rename_session=True, **data)
         figs, previews = dao.get_previews(self.test_project.id, self.test_user.id, "test")
-        self.assertEqual(len(figs['test']), 0)
-        self.assertEqual(previews['test_renamed'], 2)
+        assert len(figs['test']) == 0
+        assert previews['test_renamed'] == 2
             
             
     def test_editresultfigures_remove_session(self):
@@ -126,26 +125,10 @@ class FigureControllerTest(BaseTransactionalControllerTest):
         TestFactory.create_figure(self.operation.id, self.test_user.id, self.test_project.id, name="figure2",
                                   path="path-to-figure2", session_name="test")
         figs, _ = dao.get_previews(self.test_project.id, self.test_user.id, "test")  
-        self.assertEqual(len(figs['test']), 2)
+        assert len(figs['test']) == 2
         data = {'old_session_name': 'test', 'new_session_name': 'test_renamed'}
         self._expect_redirect('/project/figure/displayresultfigures', self.figure_c.editresultfigures,
                               remove_session=True, **data)
         figs, previews = dao.get_previews(self.test_project.id, self.test_user.id, "test")
-        self.assertEqual(len(figs['test']), 0)
-        self.assertEqual(previews, {})
-            
-            
-def suite():
-    """
-    Gather all the tests in a test suite.
-    """
-    test_suite = unittest.TestSuite()
-    test_suite.addTest(unittest.makeSuite(FigureControllerTest))
-    return test_suite
-
-
-if __name__ == "__main__":
-    #So you can run tests individually.
-    TEST_RUNNER = unittest.TextTestRunner()
-    TEST_SUITE = suite()
-    TEST_RUNNER.run(TEST_SUITE)
+        assert len(figs['test']) == 0
+        assert previews == {}

@@ -32,7 +32,6 @@
 .. moduleauthor:: Lia Domide <lia.domide@codemart.ro>
 """
 
-import unittest
 import numpy
 import os
 import shutil
@@ -40,13 +39,13 @@ from tvb.basic.traits.types_mapped import MappedType
 from tvb.basic.profile import TvbProfile
 
 
-class MappedTypeStorageTests(unittest.TestCase):
+class TestsMappedTypeStorage():
     """
     Test class for testing mapped type data storage into file.
     Most of the storage functionality is tested in the test suite 
     of HDF5StorageManager 
     """
-    def setUp(self):
+    def setup_method(self):
         """
         Prepare data for tests
         """
@@ -63,7 +62,7 @@ class MappedTypeStorageTests(unittest.TestCase):
         self.test_2D_array = numpy.random.random((10, 10))
         self.data_name = "vertex"
 
-    def tearDown(self):
+    def teardown_method(self):
         """
         Clean up tests data
         """
@@ -98,12 +97,12 @@ class MappedTypeStorageTests(unittest.TestCase):
         value = "meva_val"
         self.data_type.set_metadata({key: value}, self.data_name)
         read_meta_data = self.data_type.get_metadata(self.data_name)
-        self.assertEqual(value, read_meta_data[key], "Meta value is not correct")
+        assert value == read_meta_data[key], "Meta value is not correct"
         
         # Now we'll store metadata on file /root node
         self.data_type.set_metadata({key: value})
         read_meta_data = self.data_type.get_metadata()
-        self.assertEqual(value, read_meta_data[key], "Meta value is not correct")
+        assert value == read_meta_data[key], "Meta value is not correct"
         
     def test_remove_metadata(self):
         """
@@ -116,29 +115,9 @@ class MappedTypeStorageTests(unittest.TestCase):
         value = "meva_val"
         self.data_type.set_metadata({key: value}, self.data_name)
         read_meta_data = self.data_type.get_metadata(self.data_name)
-        self.assertEqual(value, read_meta_data[key], "Meta value is not correct")
+        assert value == read_meta_data[key], "Meta value is not correct"
         
         # Now delete metadata
         self.data_type.remove_metadata(key, self.data_name)
         read_meta_data = self.data_type.get_metadata(self.data_name)
-        self.assertEqual(0, len(read_meta_data), "There should be no metadata on node")
-        
-        
-def suite():
-    """
-    Gather all the tests in a test suite.
-    """
-    test_suite = unittest.TestSuite()
-    test_suite.addTest(unittest.makeSuite(MappedTypeStorageTests))
-    return test_suite
-
-
-if __name__ == "__main__":
-    #So you can run tests from this package individually.
-    TEST_RUNNER = unittest.TextTestRunner()
-    TEST_SUITE = suite()
-    TEST_RUNNER.run(TEST_SUITE) 
-    
-    
-    
-    
+        assert 0 == len(read_meta_data), "There should be no metadata on node"

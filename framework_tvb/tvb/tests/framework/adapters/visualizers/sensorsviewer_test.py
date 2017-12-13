@@ -47,7 +47,7 @@ from tvb.tests.framework.core.base_testcase import TransactionalTestCase
 
 
 
-class SensorViewersTest(TransactionalTestCase):
+class TestSensorViewers(TransactionalTestCase):
     """
     Unit-tests for Sensors viewers.
     """
@@ -106,14 +106,13 @@ class SensorViewersTest(TransactionalTestCase):
         result = viewer.launch(sensors, eeg_cap_surface)
         self.assert_compliant_dictionary(self.EXPECTED_KEYS_EEG, result)
         for key in ['urlVertices', 'urlTriangles', 'urlLines', 'urlNormals']:
-            self.assertIsNotNone(result[key], "Value at key %s should not be None" % key)
+            assert result[key] != None, "Value at key %s should not be None" % key
 
         ## Launch without EEG Cap
         result = viewer.launch(sensors)
         self.assert_compliant_dictionary(self.EXPECTED_KEYS_EEG, result)
         for key in ['urlVertices', 'urlTriangles', 'urlLines', 'urlNormals']:
-            self.assertTrue(not result[key] or result[key] == "[]",
-                            "Value at key %s should be None or empty, but is %s" % (key, result[key]))
+            assert not result[key] or result[key] == "[]", "Value at key %s should be None or empty, but is %s" % (key, result[key])
 
 
     def test_launch_MEG(self):
@@ -146,20 +145,3 @@ class SensorViewersTest(TransactionalTestCase):
         result = viewer.launch(sensors)
         self.assert_compliant_dictionary(self.EXPECTED_KEYS_INTERNAL, result)
 
-
-
-def suite():
-    """
-    Gather all the tests in a test suite.
-    """
-    test_suite = unittest.TestSuite()
-    test_suite.addTest(unittest.makeSuite(SensorViewersTest))
-    return test_suite
-
-
-
-if __name__ == "__main__":
-    #So you can run tests from this package individually.
-    TEST_RUNNER = unittest.TextTestRunner()
-    TEST_SUITE = suite()
-    TEST_RUNNER.run(TEST_SUITE)

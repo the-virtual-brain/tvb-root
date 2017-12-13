@@ -32,7 +32,6 @@
 .. moduleauthor:: bogdan.neacsa <bogdan.neacsa@codemart.ro>
 """
 
-import unittest
 from tvb.core.entities import model
 from tvb.core.entities.storage import dao
 from tvb.core.entities.file.files_helper import FilesHelper
@@ -40,7 +39,7 @@ from tvb.core.portlets.portlet_configurer import PortletConfigurer
 from tvb.tests.framework.core.base_testcase import TransactionalTestCase
 
 
-class PythonPortletsTest(TransactionalTestCase):
+class TestPythonPortlets(TransactionalTestCase):
     
     
     def setUp(self):
@@ -69,25 +68,11 @@ class PythonPortletsTest(TransactionalTestCase):
         test_portlet = dao.get_portlet_by_identifier("TA1TA2")
         
         result = PortletConfigurer(test_portlet).get_configurable_interface()
-        self.assertEqual(len(result), 2, "Length of the resulting interface not as expected")
+        assert len(result) == 2, "Length of the resulting interface not as expected"
         for one_entry in result:
             for entry in one_entry.interface:
                 if entry['name'] == 'test1':
-                    self.assertTrue(entry['default'] == 'step_0[0]', "Overwritten default not in effect.")
+                    assert entry['default'] == 'step_0[0]', "Overwritten default not in effect."
                 if entry['name'] == 'test2':
-                    self.assertTrue(entry['default'] == '0', "Value that was not overwritten changed.")
+                    assert entry['default'] == '0', "Value that was not overwritten changed."
         
-        
-def suite():
-    """
-    Gather all the tests in a test suite.
-    """
-    test_suite = unittest.TestSuite()
-    test_suite.addTest(unittest.makeSuite(PythonPortletsTest))
-    return test_suite
-
-
-if __name__ == "__main__":
-    #So you can run tests from this package individually.
-    unittest.main() 
-

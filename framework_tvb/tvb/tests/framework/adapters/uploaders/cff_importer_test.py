@@ -33,7 +33,7 @@
 
 """
 import os
-import unittest
+import pytest
 import tvb_data.cff as dataset
 from tvb.tests.framework.core.base_testcase import TransactionalTestCase
 from tvb.core.services.exceptions import OperationException
@@ -42,7 +42,7 @@ from tvb.core.entities.transient.structure_entities import DataTypeMetaData
 from tvb.tests.framework.core.test_factory import TestFactory
 
 
-class CFFUploadTest(TransactionalTestCase):
+class TestCFFUpload(TransactionalTestCase):
     """
     Unit-tests for CFF-importer.
     """
@@ -72,9 +72,10 @@ class CFFUploadTest(TransactionalTestCase):
         Test that an empty CFF path does not import anything
         """
         all_dt = self.get_all_datatypes()
-        self.assertEqual(0, len(all_dt))
+        assert 0 == len(all_dt)
 
-        self.assertRaises(OperationException, self._run_cff_importer, self.INVALID_CFF)
+        with pytest.raises(OperationException):
+            self._run_cff_importer(self.INVALID_CFF)
 
     
     def test_happy_flow_import(self):
@@ -82,28 +83,10 @@ class CFFUploadTest(TransactionalTestCase):
         Test that importing a CFF generates at least one DataType in DB.
         """
         all_dt = self.get_all_datatypes()
-        self.assertEqual(0, len(all_dt))
+        assert 0 == len(all_dt)
 
         self._run_cff_importer(self.VALID_CFF)
 
         all_dt = self.get_all_datatypes()
-        self.assertTrue(0 < len(all_dt))
+        assert 0 < len(all_dt)
 
-
-     
-     
-def suite():
-    """
-    Gather all the tests in a test suite.
-    """
-    test_suite = unittest.TestSuite()
-    test_suite.addTest(unittest.makeSuite(CFFUploadTest))
-    return test_suite
-
-
-if __name__ == "__main__":
-    #So you can run tests from this package individually.
-    TEST_RUNNER = unittest.TextTestRunner()
-    TEST_SUITE = suite()
-    TEST_RUNNER.run(TEST_SUITE)
-    

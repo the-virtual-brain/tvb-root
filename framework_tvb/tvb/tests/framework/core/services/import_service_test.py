@@ -34,7 +34,7 @@
 """
 import os
 import shutil
-import unittest
+import pytest
 import numpy
 from tvb.basic.profile import TvbProfile
 from tvb.core.entities.storage import dao
@@ -54,7 +54,7 @@ from tvb.tests.framework.core.base_testcase import TransactionalTestCase
 
 
 
-class ImportServiceTest(TransactionalTestCase):
+class TestImportService(TransactionalTestCase):
     """
     This class contains tests for the tvb.core.services.import_service module.
     """  
@@ -105,47 +105,47 @@ class ImportServiceTest(TransactionalTestCase):
         OperationService().initiate_prelaunch(self.operation, self.adapter_instance, {}, **data)
         inserted = self.flow_service.get_available_datatypes(self.test_project.id,
                                                              "tvb.datatypes.arrays.MappedArray")[1]
-        self.assertEqual(1, inserted, "Problems when inserting data")
+        assert 1 == inserted, "Problems when inserting data"
         
         #create a value wrapper
         value_wrapper = self._create_value_wrapper()
         count_operations = dao.get_filtered_operations(self.test_project.id, None, is_count=True)
-        self.assertEqual(2, count_operations, "Invalid ops number before export!")
+        assert 2 == count_operations, "Invalid ops number before export!"
 
         # Export project as ZIP
         self.zip_path = ExportManager().export_project(self.test_project)
-        self.assertTrue(self.zip_path is not None, "Exported file is none")
+        assert self.zip_path is not None, "Exported file is none"
         
         # Remove the original project
         self.project_service.remove_project(self.test_project.id)
         result, lng_ = self.project_service.retrieve_projects_for_user(self.test_user.id)
-        self.assertEqual(0, len(result), "Project Not removed!")
-        self.assertEqual(0, lng_, "Project Not removed!")
+        assert 0 == len(result), "Project Not removed!"
+        assert 0 == lng_, "Project Not removed!"
         
         # Now try to import again project
         self.import_service.import_project_structure(self.zip_path, self.test_user.id)
         result = self.project_service.retrieve_projects_for_user(self.test_user.id)[0]
-        self.assertEqual(len(result), 1, "There should be only one project.")
-        self.assertEqual(result[0].name, "GeneratedProject", "The project name is not correct.")
-        self.assertEqual(result[0].description, "test_desc", "The project description is not correct.")
+        assert len(result) == 1, "There should be only one project."
+        assert result[0].name == "GeneratedProject", "The project name is not correct."
+        assert result[0].description == "test_desc", "The project description is not correct."
         self.test_project = result[0]
         
         count_operations = dao.get_filtered_operations(self.test_project.id, None, is_count=True)
         
         #1 op. - import cff; 2 op. - save the array wrapper;
-        self.assertEqual(2, count_operations, "Invalid ops number after export and import !")
+        assert 2 == count_operations, "Invalid ops number after export and import !"
         for gid in expected_results:
             datatype = dao.get_datatype_by_gid(gid)
-            self.assertEqual(datatype.module, expected_results[gid][0], 'DataTypes not imported correctly')
-            self.assertEqual(datatype.type, expected_results[gid][1], 'DataTypes not imported correctly')
+            assert datatype.module == expected_results[gid][0], 'DataTypes not imported correctly'
+            assert datatype.type == expected_results[gid][1], 'DataTypes not imported correctly'
         #check the value wrapper
         new_val = self.flow_service.get_available_datatypes(self.test_project.id, 
                                                             "tvb.datatypes.mapped_values.ValueWrapper")[0]
-        self.assertEqual(1, len(new_val), "One !=" + str(len(new_val)))
+        assert 1 == len(new_val), "One !=" + str(len(new_val))
         new_val = ABCAdapter.load_entity_by_gid(new_val[0][2])
-        self.assertEqual(value_wrapper.data_value, new_val.data_value, "Data value incorrect")
-        self.assertEqual(value_wrapper.data_type, new_val.data_type, "Data type incorrect")
-        self.assertEqual(value_wrapper.data_name, new_val.data_name, "Data name incorrect")
+        assert value_wrapper.data_value == new_val.data_value, "Data value incorrect"
+        assert value_wrapper.data_type == new_val.data_type, "Data type incorrect"
+        assert value_wrapper.data_name == new_val.data_name, "Data name incorrect"
         
 
     def test_import_export_existing(self):
@@ -154,13 +154,13 @@ class ImportServiceTest(TransactionalTestCase):
         The project contains the following data types: Connectivity, Surface, MappedArray and ValueWrapper.
         """
         count_operations = dao.get_filtered_operations(self.test_project.id, None, is_count=True)
-        self.assertEqual(2, count_operations, "Invalid ops before export!")
+        assert 2 == count_operations, "Invalid ops before export!"
 
         self.zip_path = ExportManager().export_project(self.test_project)
-        self.assertTrue(self.zip_path is not None, "Exported file is none")
+        assert self.zip_path is not None, "Exported file is none"
 
-        self.assertRaises(ProjectImportException, self.import_service.import_project_structure,
-                          self.zip_path, self.test_user.id)
+        with pytest.raises(ProjectImportException):
+            self.import_service.import_project_structure(self.zip_path, self.test_user.id)
 
 
     def _create_timeseries(self):
@@ -175,7 +175,7 @@ class ImportServiceTest(TransactionalTestCase):
         self._store_entity(time_series, "TimeSeries", "tvb.datatypes.time_series")
         timeseries_count = self.flow_service.get_available_datatypes(self.test_project.id,
                                                                      "tvb.datatypes.time_series.TimeSeries")[1]
-        self.assertEqual(timeseries_count, 1, "Should be only one TimeSeries")
+        assert timeseries_count == 1, "Should be only one TimeSeries"
 
 
     def _create_value_wrapper(self):
@@ -184,7 +184,7 @@ class ImportServiceTest(TransactionalTestCase):
         self._store_entity(value_, "ValueWrapper", "tvb.datatypes.mapped_values")
         valuew = self.flow_service.get_available_datatypes(self.test_project.id,
                                                            "tvb.datatypes.mapped_values.ValueWrapper")[0]
-        self.assertEqual(len(valuew), 1, "Should be only one value wrapper")
+        assert len(valuew) == 1, "Should be only one value wrapper"
         return ABCAdapter.load_entity_by_gid(valuew[0][2])
 
 
@@ -197,23 +197,6 @@ class ImportServiceTest(TransactionalTestCase):
         entity.set_operation_id(self.operation.id)
         adapter_instance = StoreAdapter([entity])
         OperationService().initiate_prelaunch(self.operation, adapter_instance, {})
-
-    
-def suite():
-    """
-    Gather all the tests in a test suite.
-    """
-    test_suite = unittest.TestSuite()
-    test_suite.addTest(unittest.makeSuite(ImportServiceTest))
-    return test_suite
-
-
-if __name__ == "__main__":
-    #So you can run tests from this package individually.
-    TEST_RUNNER = unittest.TextTestRunner()
-    TEST_SUITE = suite()
-    TEST_RUNNER.run(TEST_SUITE)
-
 
 
 

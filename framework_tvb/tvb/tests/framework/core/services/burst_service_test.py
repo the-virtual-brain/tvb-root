@@ -363,7 +363,7 @@ class BurstServiceTest(BaseTestCase):
         """
         Test the branching of an existing burst.
         """
-        burst_config = self._prepare_and_launch_async_burst(wait_to_finish=60)
+        burst_config = self._prepare_and_launch_async_burst(wait_to_finish=500)
         burst_config.prepare_after_load()
 
         launch_params = self._prepare_simulation_params(4)
@@ -657,7 +657,7 @@ class BurstServiceTest(BaseTestCase):
                     self.assertTrue(portlet is None, "Before loading the tab configuration all portlets should be none")
 
 
-    def _wait_for_burst(self, burst_config, error_expected=False, timeout=40):
+    def _wait_for_burst(self, burst_config, error_expected=False, timeout=500):
         """
         Method that just waits until a burst configuration is finished or a maximum timeout is reached.
 

@@ -31,7 +31,7 @@
 .. moduleauthor:: Lia Domide <lia.domide@codemart.ro>
 """
 
-import unittest
+import pytest
 from tvb.core.entities import model
 from tvb.core.entities.storage import dao
 from tvb.core.adapters.abcadapter import ABCSynchronous
@@ -74,7 +74,7 @@ class ComplexInterfaceAdapter(ABCSynchronous):
         
  
 
-class AdapterABCTest(TransactionalTestCase): 
+class TestAdapterABC(TransactionalTestCase):
     """Unit test for ABCAdapter""" 
     
     EXPECTED_FLAT_NAMES = ["surface", "surface_parameters_att1", "surface_parameters_att2",
@@ -138,9 +138,9 @@ class AdapterABCTest(TransactionalTestCase):
         Test method flaten_input_interface on a complex adapter interface.
         """ 
         list_flat = self.test_adapter.flaten_input_interface()
-        self.assertEqual(len(self.EXPECTED_FLAT_NAMES), len(list_flat))
+        assert len(self.EXPECTED_FLAT_NAMES) == len(list_flat)
         for row in list_flat:
-            self.assertTrue(row["name"] in self.EXPECTED_FLAT_NAMES)
+            assert row["name"] in self.EXPECTED_FLAT_NAMES
             
     
     def test_prepare_ui_inputs_simple(self):
@@ -151,20 +151,21 @@ class AdapterABCTest(TransactionalTestCase):
         kwargs = self.test_adapter.prepare_ui_inputs(self.SUBMIT_DATASET_1)
         
         for expected_name, expected_type in self.EXPECTED_FILTERED_SET1.iteritems():
-            self.assertTrue(expected_name in kwargs)
-            self.assertTrue(isinstance(kwargs[expected_name], expected_type))
-        self.assertEqual(len(self.EXPECTED_FILTERED_SET1), len(kwargs))
+            assert expected_name in kwargs
+            assert isinstance(kwargs[expected_name], expected_type)
+        assert len(self.EXPECTED_FILTERED_SET1) == len(kwargs)
         
-        self.assertEqual(2, len(kwargs["monitors_parameters"]["EEG"]))
-        self.assertTrue(isinstance(kwargs["monitors_parameters"]["EEG"]["mon_att1"], int))
-        self.assertTrue(isinstance(kwargs["monitors_parameters"]["EEG"]["mon_att2"], float))
+        assert 2 == len(kwargs["monitors_parameters"]["EEG"])
+        assert isinstance(kwargs["monitors_parameters"]["EEG"]["mon_att1"], int)
+        assert isinstance(kwargs["monitors_parameters"]["EEG"]["mon_att2"], float)
     
     
     def test_prepare_inputs_wrong_type(self):
         """
         Test for ABCAdapter.prepare_ui_inputs, when invalid values passed for numeric fields.
         """
-        self.assertRaises(Exception, self.test_adapter.prepare_ui_inputs, self.SUBMIT_DATASET_2)
+        with pytest.raises(Exception):
+            self.test_adapter.prepare_ui_inputs( self.SUBMIT_DATASET_2)
         
     
     def test_prepare_inputs_datatype(self):
@@ -180,13 +181,13 @@ class AdapterABCTest(TransactionalTestCase):
         kwargs = self.test_adapter.prepare_ui_inputs(dataset_3)
         
         for expected_name, expected_type in self.EXPECTED_FILTERED_SET3.iteritems():
-            self.assertTrue(expected_name in kwargs)
-            self.assertTrue(isinstance(kwargs[expected_name], expected_type))
-        self.assertEqual(len(self.EXPECTED_FILTERED_SET3), len(kwargs))
+            assert expected_name in kwargs
+            assert isinstance(kwargs[expected_name], expected_type)
+        assert len(self.EXPECTED_FILTERED_SET3) == len(kwargs)
         
-        self.assertEqual(2, len(kwargs["surface_parameters"]))
-        self.assertTrue(isinstance(kwargs["surface_parameters"]["att1"], int))
-        self.assertTrue(isinstance(kwargs["surface_parameters"]["att2"], float))
+        assert 2 == len(kwargs["surface_parameters"])
+        assert isinstance(kwargs["surface_parameters"]["att1"], int)
+        assert isinstance(kwargs["surface_parameters"]["att2"], float)
     
       
     def test_prepare_select_multiple(self):
@@ -196,33 +197,16 @@ class AdapterABCTest(TransactionalTestCase):
         kwargs = self.test_adapter.prepare_ui_inputs(self.SUBMIT_DATASET_4)
         
         for expected_name, expected_type in self.EXPECTED_FILTERED_SET4.iteritems():
-            self.assertTrue(expected_name in kwargs)
-            self.assertTrue(isinstance(kwargs[expected_name], expected_type))
-        self.assertEqual(len(self.EXPECTED_FILTERED_SET4), len(kwargs))
+            assert expected_name in kwargs
+            assert isinstance(kwargs[expected_name], expected_type)
+        assert len(self.EXPECTED_FILTERED_SET4) == len(kwargs)
         
-        self.assertEqual(2, len(kwargs["monitors_parameters"]["BOLD"]))
-        self.assertEqual(2, len(kwargs["monitors_parameters"]["EEG"]))
-        self.assertTrue(isinstance(kwargs["monitors_parameters"]["BOLD"]["mon_att1"], int))
-        self.assertEqual(42, kwargs["monitors_parameters"]["BOLD"]["mon_att1"])
-        self.assertEqual(43, kwargs["monitors_parameters"]["EEG"]["mon_att1"])
-        self.assertTrue(isinstance(kwargs["monitors_parameters"]["BOLD"]["mon_att4"], str))  
-       
-       
-def suite():
-    """
-    Gather all the tests in a test suite.
-    """
-    test_suite = unittest.TestSuite()
-    test_suite.addTest(unittest.makeSuite(AdapterABCTest))
-    return test_suite
+        assert 2 == len(kwargs["monitors_parameters"]["BOLD"])
+        assert 2 == len(kwargs["monitors_parameters"]["EEG"])
+        assert isinstance(kwargs["monitors_parameters"]["BOLD"]["mon_att1"], int)
+        assert 42 == kwargs["monitors_parameters"]["BOLD"]["mon_att1"]
+        assert 43 == kwargs["monitors_parameters"]["EEG"]["mon_att1"]
+        assert isinstance(kwargs["monitors_parameters"]["BOLD"]["mon_att4"], str)
 
-
-if __name__ == "__main__":
-    #So you can run tests individually.
-    TEST_RUNNER = unittest.TextTestRunner()
-    TEST_SUITE = suite()
-    TEST_RUNNER.run(TEST_SUITE)   
-    
-    
       
         

@@ -35,7 +35,7 @@
 import copy
 import json
 import numpy
-import unittest
+import pytest
 import cherrypy
 from time import sleep
 from tvb.tests.framework.interfaces.web.controllers.base_controller_test import BaseControllersTest
@@ -57,7 +57,7 @@ from tvb.tests.framework.adapters.simulator.simulator_adapter_test import SIMULA
 
 
 
-class BurstContollerTest(BaseControllersTest):
+class TestBurstContoller(BaseControllersTest):
     """ Unit tests for burst_controller """
 
 
@@ -85,20 +85,20 @@ class BurstContollerTest(BaseControllersTest):
         the TimeSeries portlet and the rest are empty.
         """
         result_dict = self.burst_c.index()
-        self.assertTrue('burst_list' in result_dict and result_dict['burst_list'] == [])
-        self.assertTrue('available_metrics' in result_dict and isinstance(result_dict['available_metrics'], list))
-        self.assertTrue('portletList' in result_dict and isinstance(result_dict['portletList'], list))
-        self.assertEqual(result_dict[common.KEY_SECTION], "burst")
-        self.assertTrue('burstConfig' in result_dict and isinstance(result_dict['burstConfig'], BurstConfiguration))
+        assert 'burst_list' in result_dict and result_dict['burst_list'] == []
+        assert 'available_metrics' in result_dict and isinstance(result_dict['available_metrics'], list)
+        assert 'portletList' in result_dict and isinstance(result_dict['portletList'], list)
+        assert result_dict[common.KEY_SECTION] == "burst"
+        assert 'burstConfig' in result_dict and isinstance(result_dict['burstConfig'], BurstConfiguration)
         portlets = json.loads(result_dict['selectedPortlets'])
         portlet_id = dao.get_portlet_by_identifier("TimeSeries").id
         for tab_idx, tab in enumerate(portlets):
             for index_in_tab, value in enumerate(tab):
                 if tab_idx == 0 and index_in_tab == 0:
-                    self.assertEqual(value, [portlet_id, "TimeSeries"])
+                    assert value == [portlet_id, "TimeSeries"]
                 else:
-                    self.assertEqual(value, [-1, "None"])
-        self.assertTrue(result_dict['draw_hidden_ranges'])
+                    assert value == [-1, "None"]
+        assert result_dict['draw_hidden_ranges']
 
 
     def test_load_burst_history(self):
@@ -111,9 +111,9 @@ class BurstContollerTest(BaseControllersTest):
         cherrypy.session[common.KEY_BURST_CONFIG] = burst
         result_dict = self.burst_c.load_burst_history()
         burst_history = result_dict['burst_list']
-        self.assertEqual(len(burst_history), 2)
+        assert len(burst_history) == 2
         for burst in burst_history:
-            self.assertTrue(burst.name in ('burst1', 'burst2'))
+            assert burst.name in ('burst1', 'burst2')
 
 
     def test_get_selected_burst(self):
@@ -125,11 +125,11 @@ class BurstContollerTest(BaseControllersTest):
         burst_entity = BurstConfiguration(self.test_project.id, 'started', {}, 'burst1')
         cherrypy.session[common.KEY_BURST_CONFIG] = burst_entity
         stored_id = self.burst_c.get_selected_burst()
-        self.assertEqual(stored_id, 'None')
+        assert stored_id == 'None'
         burst_entity = dao.store_entity(burst_entity)
         cherrypy.session[common.KEY_BURST_CONFIG] = burst_entity
         stored_id = self.burst_c.get_selected_burst()
-        self.assertEqual(str(stored_id), str(burst_entity.id))
+        assert str(stored_id) == str(burst_entity.id)
 
 
     def test_get_portlet_configurable_interface(self):
@@ -140,13 +140,13 @@ class BurstContollerTest(BaseControllersTest):
         """
         self.burst_c.index()
         result = self.burst_c.get_portlet_configurable_interface(0)
-        self.assertTrue(common.KEY_PARAMETERS_CONFIG in result)
-        self.assertFalse(result[common.KEY_PARAMETERS_CONFIG])
+        assert common.KEY_PARAMETERS_CONFIG in result
+        assert not result[common.KEY_PARAMETERS_CONFIG]
         adapter_config = result['adapters_list']
         # Default TimeSeries portlet should be available, so we expect
         # adapter_config to be a list of AdapterConfiguration with one element
-        self.assertEqual(len(adapter_config), 1)
-        self.assertTrue(isinstance(adapter_config[0], AdapterConfiguration))
+        assert len(adapter_config) == 1
+        assert isinstance(adapter_config[0], AdapterConfiguration)
 
 
     def test_portlet_tab_display(self):
@@ -162,7 +162,7 @@ class BurstContollerTest(BaseControllersTest):
         result = self.burst_c.portlet_tab_display(**data)
         selected_portlets = result['portlet_tab_list']
         for entry in selected_portlets:
-            self.assertEqual(entry.id, portlet_id)
+            assert entry.id == portlet_id
 
 
     def test_get_configured_portlets_no_session(self):
@@ -171,8 +171,8 @@ class BurstContollerTest(BaseControllersTest):
         portlet list is reduced.
         """
         result = self.burst_c.get_configured_portlets()
-        self.assertTrue('portlet_tab_list' in result)
-        self.assertTrue(result['portlet_tab_list'] == [])
+        assert 'portlet_tab_list' in result
+        assert result['portlet_tab_list'] == []
 
 
     def test_get_configured_portlets_default(self):
@@ -182,10 +182,10 @@ class BurstContollerTest(BaseControllersTest):
         """
         self.burst_c.index()
         result = self.burst_c.get_configured_portlets()
-        self.assertTrue('portlet_tab_list' in result)
+        assert 'portlet_tab_list' in result
         portlets_list = result['portlet_tab_list']
-        self.assertEqual(len(portlets_list), 1)
-        self.assertTrue(portlets_list[0].algorithm_identifier == 'TimeSeries')
+        assert len(portlets_list) == 1
+        assert portlets_list[0].algorithm_identifier == 'TimeSeries'
 
 
     def test_get_portlet_session_configuration(self):
@@ -199,9 +199,9 @@ class BurstContollerTest(BaseControllersTest):
         for tab_idx, tab in enumerate(result):
             for index_in_tab, value in enumerate(tab):
                 if tab_idx == 0 and index_in_tab == 0:
-                    self.assertEqual(value, [portlet_id, "TimeSeries"])
+                    assert value == [portlet_id, "TimeSeries"]
                 else:
-                    self.assertEqual(value, [-1, "None"])
+                    assert value == [-1, "None"]
 
 
     def test_save_parameters_no_relaunch(self):
@@ -211,7 +211,7 @@ class BurstContollerTest(BaseControllersTest):
         should not be required.
         """
         self.burst_c.index()
-        self.assertEqual('noRelaunch', self.burst_c.save_parameters(0, portlet_parameters="{}"))
+        assert 'noRelaunch' == self.burst_c.save_parameters(0, portlet_parameters="{}")
 
 
     def test_rename_burst(self):
@@ -222,7 +222,7 @@ class BurstContollerTest(BaseControllersTest):
         burst = self._store_burst(self.test_project.id, 'started', {'test': 'test'}, 'burst1')
         self.burst_c.rename_burst(burst.id, "test_new_burst_name")
         renamed_burst = dao.get_burst_by_id(burst.id)
-        self.assertEqual(renamed_burst.name, "test_new_burst_name")
+        assert renamed_burst.name == "test_new_burst_name"
 
 
     def test_launch_burst(self):
@@ -244,10 +244,10 @@ class BurstContollerTest(BaseControllersTest):
             waited += 0.5
             burst_config = dao.get_burst_by_id(burst_config.id)
         if waited > timeout:
-            self.fail("Timed out waiting for simulations to finish.")
+            raise AssertionError("Timed out waiting for simulations to finish.")
         if burst_config.status != BurstConfiguration.BURST_FINISHED:
             BurstService().stop_burst(burst_config)
-            self.fail("Burst should have finished successfully.")
+            raise AssertionError("Burst should have finished successfully.")
 
 
     def test_load_burst(self):
@@ -257,9 +257,9 @@ class BurstContollerTest(BaseControllersTest):
         self.burst_c.index()
         burst = self._store_burst(self.test_project.id, 'started', {'test': 'test'}, 'burst1')
         result = json.loads(self.burst_c.load_burst(burst.id))
-        self.assertEqual(result["status"], "started")
-        self.assertEqual(result['group_gid'], None)
-        self.assertEqual(result['selected_tab'], 0)
+        assert result["status"] == "started"
+        assert result['group_gid'] == None
+        assert result['selected_tab'] == 0
 
 
     def test_load_burst_removed(self):
@@ -271,8 +271,9 @@ class BurstContollerTest(BaseControllersTest):
         cherrypy.session[common.KEY_BURST_CONFIG] = burst
         burst_id = burst.id
         BurstService().cancel_or_remove_burst(burst_id)
-        self.assertRaises(Exception, self.burst_c.load_burst, burst_id)
-        self.assertTrue(common.KEY_BURST_CONFIG not in cherrypy.session)
+        with pytest.raises(Exception):
+            self.burst_c.load_burst(burst_id)
+        assert common.KEY_BURST_CONFIG not in cherrypy.session
 
 
     def test_remove_burst_not_session(self):
@@ -284,7 +285,7 @@ class BurstContollerTest(BaseControllersTest):
         cherrypy.session[common.KEY_BURST_CONFIG] = burst
         another_burst = self._store_burst(self.test_project.id, 'finished', {'test': 'test'}, 'burst1')
         result = self.burst_c.cancel_or_remove_burst(another_burst.id)
-        self.assertEqual(result, 'done')
+        assert result == 'done'
 
 
     def test_remove_burst_in_session(self):
@@ -295,7 +296,7 @@ class BurstContollerTest(BaseControllersTest):
         burst = self._store_burst(self.test_project.id, 'finished', {'test': 'test'}, 'burst1')
         cherrypy.session[common.KEY_BURST_CONFIG] = burst
         result = self.burst_c.cancel_or_remove_burst(burst.id)
-        self.assertEqual(result, 'reset-new')
+        assert result == 'reset-new'
 
 
     def _store_burst(self, proj_id, status, sim_config, name):
@@ -326,23 +327,3 @@ class BurstContollerTest(BaseControllersTest):
         adapter_instance = StoreAdapter([connectivity])
         OperationService().initiate_prelaunch(self.operation, adapter_instance, {})
         return connectivity
-
-
-
-def suite():
-    """
-    Gather all the tests in a test suite.
-    """
-    test_suite = unittest.TestSuite()
-    test_suite.addTest(unittest.makeSuite(BurstContollerTest))
-    return test_suite
-
-
-
-if __name__ == "__main__":
-    #So you can run tests individually.
-    TEST_RUNNER = unittest.TextTestRunner()
-    TEST_SUITE = suite()
-    TEST_RUNNER.run(TEST_SUITE)
-    
-    

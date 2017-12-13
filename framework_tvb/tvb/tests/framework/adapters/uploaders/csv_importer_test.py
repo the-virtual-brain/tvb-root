@@ -32,7 +32,7 @@
 .. moduleauthor:: Mihai Andrei <mihai.andrei@codemart.ro>
 """
 
-import unittest
+import pytest
 import tvb_data
 from os import path
 from tvb.adapters.uploaders.csv_connectivity_importer import CSVConnectivityParser
@@ -41,7 +41,7 @@ from tvb.core.entities.file.files_helper import FilesHelper
 from tvb.core.services.exceptions import OperationException
 from tvb.core.services.flow_service import FlowService
 from tvb.datatypes.connectivity import Connectivity
-from tvb.tests.framework.adapters.uploaders.connectivity_zip_importer_test import ConnectivityZipTest
+from tvb.tests.framework.adapters.uploaders.connectivity_zip_importer_test import TestConnectivityZip
 from tvb.tests.framework.core.base_testcase import TransactionalTestCase, BaseTestCase
 from tvb.tests.framework.core.test_factory import TestFactory
 
@@ -49,7 +49,7 @@ from tvb.tests.framework.core.test_factory import TestFactory
 TEST_SUBJECT_A = "TEST_SUBJECT_A"
 TEST_SUBJECT_B = "TEST_SUBJECT_B"
 
-class CSVConnectivityParserTest(BaseTestCase):
+class TestCSVConnectivityParser(BaseTestCase):
     BASE_PTH = path.join(path.dirname(tvb_data.__file__), 'dti_pipeline', 'Output_Toronto')
 
     def test_parse_happy(self):
@@ -57,9 +57,9 @@ class CSVConnectivityParserTest(BaseTestCase):
 
         with open(cap_pth) as f:
             result_conn = CSVConnectivityParser(f).result_conn
-            self.assertEqual([0, 61.7082, 50.7576, 76.4214], result_conn[0][:4])
+            assert [0, 61.7082, 50.7576, 76.4214] == result_conn[0][:4]
             for i in range(len(result_conn)):
-                self.assertEqual(0, result_conn[i][i])
+                assert 0 == result_conn[i][i]
 
 
 class CSVConnectivityImporterTest(TransactionalTestCase):
@@ -105,7 +105,7 @@ class CSVConnectivityImporterTest(TransactionalTestCase):
         """
         Test that importing a CFF generates at least one DataType in DB.
         """
-        ConnectivityZipTest.import_test_connectivity96(self.test_user,
+        TestConnectivityZip.import_test_connectivity96(self.test_user,
                                                        self.test_project,
                                                        subject=TEST_SUBJECT_A)
 
@@ -118,20 +118,20 @@ class CSVConnectivityImporterTest(TransactionalTestCase):
         self._import_csv_test_connectivity(reference_connectivity.gid, TEST_SUBJECT_B)
 
         dt_count_after = TestFactory.get_entity_count(self.test_project, Connectivity())
-        self.assertEqual(dt_count_before + 1, dt_count_after)
+        assert dt_count_before + 1 == dt_count_after
 
         filters = FilterChain('', [field], [TEST_SUBJECT_B], ['like'])
         imported_connectivity = TestFactory.get_entity(self.test_project, Connectivity(), filters)
 
         # check relationship between the imported connectivity and the reference
-        self.assertTrue((reference_connectivity.centres == imported_connectivity.centres).all())
-        self.assertTrue((reference_connectivity.orientations == imported_connectivity.orientations).all())
+        assert (reference_connectivity.centres == imported_connectivity.centres).all()
+        assert (reference_connectivity.orientations == imported_connectivity.orientations).all()
 
-        self.assertEqual(reference_connectivity.number_of_regions, imported_connectivity.number_of_regions)
-        self.assertTrue((reference_connectivity.region_labels == imported_connectivity.region_labels).all())
+        assert reference_connectivity.number_of_regions == imported_connectivity.number_of_regions
+        assert (reference_connectivity.region_labels == imported_connectivity.region_labels).all()
 
-        self.assertFalse((reference_connectivity.weights == imported_connectivity.weights).all())
-        self.assertFalse((reference_connectivity.tract_lengths == imported_connectivity.tract_lengths).all())
+        assert not (reference_connectivity.weights == imported_connectivity.weights).all()
+        assert not(reference_connectivity.tract_lengths == imported_connectivity.tract_lengths).all()
 
 
 
@@ -141,24 +141,6 @@ class CSVConnectivityImporterTest(TransactionalTestCase):
         filters = FilterChain('', [field], [TEST_SUBJECT_A], ['!='])
         bad_reference_connectivity = TestFactory.get_entity(self.test_project, Connectivity(), filters)
 
-        self.assertRaises(OperationException, self._import_csv_test_connectivity,
-                          bad_reference_connectivity.gid, TEST_SUBJECT_A)
+        with pytest.raises(OperationException):
+            self._import_csv_test_connectivity(bad_reference_connectivity.gid, TEST_SUBJECT_A)
 
-
-
-def suite():
-    """
-    Gather all the tests in a test suite.
-    """
-    test_suite = unittest.TestSuite()
-    test_suite.addTest(unittest.makeSuite(CSVConnectivityParserTest))
-    test_suite.addTest(unittest.makeSuite(CSVConnectivityImporterTest))
-    return test_suite
-
-
-
-if __name__ == "__main__":
-    #So you can run tests from this package individually.
-    TEST_RUNNER = unittest.TextTestRunner()
-    TEST_SUITE = suite()
-    TEST_RUNNER.run(TEST_SUITE)

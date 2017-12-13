@@ -32,7 +32,7 @@
 .. moduleauthor:: Bogdan Neacsa <bogdan.neacsa@codemart.ro>
 """
 
-import unittest
+import pytest
 from hashlib import md5
 from tvb.core.entities import model
 from tvb.basic.profile import TvbProfile
@@ -63,7 +63,7 @@ userservice.email_sender = MainSenderDummy
 
 
 
-class UserServiceTest(TransactionalTestCase):
+class TestUserService(TransactionalTestCase):
     """
     This class contains tests for the tvb.core.services.user_service module.
     """
@@ -81,7 +81,7 @@ class UserServiceTest(TransactionalTestCase):
                                       role=model.ROLE_ADMINISTRATOR, skip_import=True)
         available_users = dao.get_all_users()
         if len(available_users) != 1:
-            self.fail("Something went wrong with database initialization!")
+            raise AssertionError("Something went wrong with database initialization!")
 
 
     def tearDown(self):
@@ -100,13 +100,13 @@ class UserServiceTest(TransactionalTestCase):
                     email="test_user@tvb.org", role="user", comment="")
         self.user_service.create_user(**data)
         final_user_count = dao.get_all_users()
-        self.assertEqual(len(initial_user_count), len(final_user_count) - 1,
-                         "User count was not increased after create.")
+        assert len(initial_user_count) == len(final_user_count) - 1,\
+                         "User count was not increased after create."
         inserted_user = dao.get_user_by_name("test_user")
-        self.assertEqual(inserted_user.password, md5("test_password").hexdigest(), "Incorrect password")
-        self.assertEqual(inserted_user.email, "test_user@tvb.org", "The email inserted is not correct.")
-        self.assertEqual(inserted_user.role, "user", "The role inserted is not correct.")
-        self.assertFalse(inserted_user.validated, "User validation  is not correct.")
+        assert inserted_user.password == md5("test_password").hexdigest(), "Incorrect password"
+        assert inserted_user.email == "test_user@tvb.org", "The email inserted is not correct."
+        assert inserted_user.role == "user", "The role inserted is not correct."
+        assert not inserted_user.validated, "User validation  is not correct."
 
 
     def test_create_user_empty_password(self):
@@ -114,7 +114,8 @@ class UserServiceTest(TransactionalTestCase):
         Try to create a user with an empty password field.
         """
         data = dict(username="test_user", password="", email="test_user@tvb.org", role="user", comment="")
-        self.assertRaises(UsernameException, self.user_service.create_user, **data)
+        with pytest.raises(UsernameException):
+            self.user_service.create_user(**data)
 
 
     def test_create_user_no_password(self):
@@ -122,7 +123,8 @@ class UserServiceTest(TransactionalTestCase):
         Try to create a user with no password data.
         """
         data = dict(username="test_user", email="test_user@tvb.org", role="user", comment="")
-        self.assertRaises(UsernameException, self.user_service.create_user, **data)
+        with pytest.raises(UsernameException):
+            self.user_service.create_user(**data)
 
 
     def test_create_user_empty_username(self):
@@ -130,7 +132,8 @@ class UserServiceTest(TransactionalTestCase):
         Try to create a user with an empty username field.
         """
         data = dict(username="", password="test_pass", email="test_user@tvb.org", role="user", comment="")
-        self.assertRaises(UsernameException, self.user_service.create_user, **data)
+        with pytest.raises(UsernameException):
+            self.user_service.create_user(**data)
 
 
     def test_create_user_no_username(self):
@@ -138,7 +141,8 @@ class UserServiceTest(TransactionalTestCase):
         Try to create a user with no username data.
         """
         data = dict(password="test_pass", email="test_user@tvb.org", role="user", comment="")
-        self.assertRaises(UsernameException, self.user_service.create_user, **data)
+        with pytest.raises(UsernameException):
+            self.user_service.create_user(**data)
 
 
     def test_create_user_no_email(self):
@@ -146,7 +150,8 @@ class UserServiceTest(TransactionalTestCase):
         Try to create a user with an empty email field.
         """
         data = dict(username="test_username", password="test_password", email="", role="user", comment="")
-        self.assertRaises(UsernameException, self.user_service.create_user, **data)
+        with pytest.raises(UsernameException):
+            self.user_service.create_user(**data)
 
 
     def test_reset_password_happy_flow(self):
@@ -157,25 +162,26 @@ class UserServiceTest(TransactionalTestCase):
                     email="test_user@tvb.org", role="user", comment="")
         self.user_service.create_user(**data)
         inserted_user = dao.get_user_by_name("test_user")
-        self.assertEqual(inserted_user.password, md5("test_password").hexdigest(), "Incorrect password")
+        assert inserted_user.password == md5("test_password").hexdigest(), "Incorrect password"
         reset_pass_data = dict(username="test_user", email="test_user@tvb.org")
         self.user_service.reset_password(**reset_pass_data)
         inserted_user = dao.get_user_by_name("test_user")
-        self.assertNotEqual(inserted_user.password, md5("test_password"), "Password not reset for some reason!")
+        assert  inserted_user.password != md5("test_password"), "Password not reset for some reason!"
 
 
     def test_reset_pass_wrong_email(self):
         """
-        Test method for the reset password method. Email is not valid, 
+        Test method for the reset password method. Email is not valid,
         should raise exception
         """
         data = dict(username="test_user", password=md5("test_password").hexdigest(),
                     email="test_user@tvb.org", role="user", comment="")
         self.user_service.create_user(**data)
         inserted_user = dao.get_user_by_name("test_user")
-        self.assertEqual(inserted_user.password, md5("test_password").hexdigest(), "Incorrect password")
+        assert inserted_user.password == md5("test_password").hexdigest(), "Incorrect password"
         reset_pass_data = dict(username="test_user", email="wrong_mail@tvb.org")
-        self.assertRaises(UsernameException, self.user_service.reset_password, **reset_pass_data)
+        with pytest.raises(UsernameException):
+            self.user_service.reset_password(**reset_pass_data)
 
 
     def test_change_password_happy_flow(self):
@@ -185,8 +191,8 @@ class UserServiceTest(TransactionalTestCase):
         inserted_user = self._prepare_user_for_change_pwd()
         self.user_service.edit_user(inserted_user, md5("test_password").hexdigest())
         changed_user = dao.get_user_by_name("test_user")
-        self.assertEqual(changed_user.password, md5("new_test_password").hexdigest(),
-                         "The password did not change.")
+        assert changed_user.password == md5("new_test_password").hexdigest(),\
+                         "The password did not change."
 
 
     def test_change_password_wrong_old(self):
@@ -195,10 +201,11 @@ class UserServiceTest(TransactionalTestCase):
         """
         inserted_user = self._prepare_user_for_change_pwd()
         params = dict(edited_user=inserted_user, old_password=md5("wrong_old_pwd").hexdigest())
-        self.assertRaises(UsernameException, self.user_service.edit_user, **params)
+        with pytest.raises(UsernameException):
+            self.user_service.edit_user(**params)
         user = dao.get_user_by_name("test_user")
-        self.assertEqual(user.password, md5("test_password").hexdigest(),
-                         "The password should have not been changed!")
+        assert user.password == md5("test_password").hexdigest(),\
+                         "The password should have not been changed!"
 
 
     def _prepare_user_for_change_pwd(self):
@@ -208,8 +215,8 @@ class UserServiceTest(TransactionalTestCase):
         self.user_service.create_user(**data)
         self.user_service.validate_user("test_user")
         inserted_user = dao.get_user_by_name("test_user")
-        self.assertEqual(inserted_user.password, md5("test_password").hexdigest(),
-                         "The password inserted is not correct.")
+        assert inserted_user.password == md5("test_password").hexdigest(),\
+                         "The password inserted is not correct."
         inserted_user.password = md5('new_test_password').hexdigest()
         return inserted_user
 
@@ -221,8 +228,8 @@ class UserServiceTest(TransactionalTestCase):
         """
         user = model.User("test_user", "test_pass", "test_mail@tvb.org", False, "user")
         dao.store_entity(user)
-        self.assertFalse(self.user_service.is_username_valid("test_user"), "Should be False but got True")
-        self.assertTrue(self.user_service.is_username_valid("test_user2"), "Should be True but got False")
+        assert not self.user_service.is_username_valid("test_user"), "Should be False but got True"
+        assert self.user_service.is_username_valid("test_user2"), "Should be True but got False"
 
 
     def test_validate_user_happy_flow(self):
@@ -231,7 +238,7 @@ class UserServiceTest(TransactionalTestCase):
         """
         user = model.User("test_user", "test_pass", "test_mail@tvb.org", False, "user")
         dao.store_entity(user)
-        self.assertTrue(self.user_service.validate_user("test_user"), "Validation failed when it shouldn't have.")
+        assert self.user_service.validate_user("test_user"), "Validation failed when it shouldn't have."
 
 
     def test_validate_user_validated(self):
@@ -240,7 +247,7 @@ class UserServiceTest(TransactionalTestCase):
         """
         user = model.User("test_user", "test_pass", "test_mail@tvb.org", True, "user")
         dao.store_entity(user)
-        self.assertFalse(self.user_service.validate_user("test_user"), "Validation invalid.")
+        assert not self.user_service.validate_user("test_user"), "Validation invalid."
 
 
     def test_validate_user_non_existent(self):
@@ -249,7 +256,7 @@ class UserServiceTest(TransactionalTestCase):
         """
         user = model.User("test_user", "test_pass", "test_mail@tvb.org", True, "user")
         dao.store_entity(user)
-        self.assertFalse(self.user_service.validate_user("test_user2"), "Validation done even tho user is non-existent")
+        assert not self.user_service.validate_user("test_user2"), "Validation done even tho user is non-existent"
 
 
     def test_check_login_happy_flow(self):
@@ -259,9 +266,9 @@ class UserServiceTest(TransactionalTestCase):
         user = model.User("test_user", md5("test_pass").hexdigest(), "test_mail@tvb.org", True, "user")
         dao.store_entity(user)
         available_users = dao.get_all_users()
-        self.assertEqual(2, len(available_users))
-        self.assertTrue(self.user_service.check_login("test_user", "test_pass")
-                        is not None, "Login failed when it shouldn't.")
+        assert 2 == len(available_users)
+        assert self.user_service.check_login("test_user", "test_pass")\
+                        is not None, "Login failed when it shouldn't."
 
 
     def test_check_login_bad_pass(self):
@@ -271,9 +278,9 @@ class UserServiceTest(TransactionalTestCase):
         user = model.User("test_user", md5("test_pass").hexdigest(), "test_mail@tvb.org", True, "user")
         dao.store_entity(user)
         available_users = dao.get_all_users()
-        self.assertEqual(2, len(available_users))
-        self.assertTrue(self.user_service.check_login("test_user", "bad_pass") is None,
-                        "Login succeeded with bad password.")
+        assert 2 == len(available_users)
+        assert self.user_service.check_login("test_user", "bad_pass") is None,\
+                        "Login succeeded with bad password."
 
 
     def test_check_login_bad_user(self):
@@ -283,9 +290,9 @@ class UserServiceTest(TransactionalTestCase):
         user = model.User("test_user", md5("test_pass").hexdigest(), "test_mail@tvb.org", True, "user")
         dao.store_entity(user)
         available_users = dao.get_all_users()
-        self.assertEqual(2, len(available_users))
-        self.assertTrue(self.user_service.check_login("bad_user", "test_pass") is None,
-                        "Login succeeded with bad userName.")
+        assert 2 == len(available_users)
+        assert self.user_service.check_login("bad_user", "test_pass") is None,\
+                        "Login succeeded with bad userName."
 
 
     def test_get_users_for_project(self):
@@ -308,12 +315,12 @@ class UserServiceTest(TransactionalTestCase):
         data = dict(name="test_proj", description="test_desc", users=[member1.id, member2.id])
         project = ProjectService().store_project(admin, True, None, **data)
         all_users, members, pag = self.user_service.get_users_for_project(admin.username, project.id)
-        self.assertEquals(len(members), 2, "More members than there should be.")
-        self.assertEquals(len(all_users), 5, "Admin should not be viewed as member. "
-                                             "Neither should users that were not part of the project's users list.")
-        self.assertEqual(pag, 1, "Invalid total pages number.")
+        assert len(members) == 2, "More members than there should be."
+        assert len(all_users) == 5, "Admin should not be viewed as member. "\
+                                             "Neither should users that were not part of the project's users list."
+        assert pag == 1, "Invalid total pages number."
         for user in all_users:
-            self.assertNotEqual(user.username, admin.username, "Admin is in members!")
+            assert  user.username != admin.username, "Admin is in members!"
 
 
     def test_get_users_second_page(self):
@@ -331,9 +338,9 @@ class UserServiceTest(TransactionalTestCase):
                     users=[eval('member' + str(i) + '.id') for i in range(USERS_PAGE_SIZE + 3)])
         project = ProjectService().store_project(admin, True, None, **data)
         page_users, all_users, pag = self.user_service.get_users_for_project(admin.username, project.id, 2)
-        self.assertEqual(len(page_users), (USERS_PAGE_SIZE + 3) % USERS_PAGE_SIZE)
-        self.assertEqual(len(all_users), USERS_PAGE_SIZE + 3, 'Not all members returned')
-        self.assertEqual(pag, 2, 'Invalid page number returned')
+        assert len(page_users) == (USERS_PAGE_SIZE + 3) % USERS_PAGE_SIZE
+        assert len(all_users) == USERS_PAGE_SIZE + 3, 'Not all members returned'
+        assert pag == 2, 'Invalid page number returned'
 
 
     def test_get_users_second_page_del(self):
@@ -353,18 +360,18 @@ class UserServiceTest(TransactionalTestCase):
                     users=[eval('member' + str(i) + '.id') for i in range(USERS_PAGE_SIZE + 1)])
         project = ProjectService().store_project(admin, True, None, **data)
         page_users, all_users, pag = self.user_service.get_users_for_project(admin.username, project.id, 2)
-        self.assertEqual(len(page_users), 1, 'Paging not working properly')
-        self.assertEqual(len(all_users), USERS_PAGE_SIZE + 1, 'Not all members returned')
-        self.assertEqual(pag, 2, 'Invalid page number returned')
+        assert len(page_users) == 1, 'Paging not working properly'
+        assert len(all_users) == USERS_PAGE_SIZE + 1, 'Not all members returned'
+        assert pag == 2, 'Invalid page number returned'
         self.user_service.delete_user(member2.id)
         page_users, all_users, pag = self.user_service.get_users_for_project(admin.username, project.id, 2)
-        self.assertEqual(len(page_users), 0, 'Paging not working properly')
-        self.assertEqual(len(all_users), USERS_PAGE_SIZE, 'Not all members returned')
-        self.assertEqual(pag, 1, 'Invalid page number returned')
+        assert len(page_users) == 0, 'Paging not working properly'
+        assert len(all_users) == USERS_PAGE_SIZE, 'Not all members returned'
+        assert pag == 1, 'Invalid page number returned'
         page_users, all_users, pag = self.user_service.get_users_for_project(admin.username, project.id, 1)
-        self.assertEqual(len(page_users), USERS_PAGE_SIZE, 'Paging not working properly')
-        self.assertEqual(len(all_users), USERS_PAGE_SIZE, 'Not all members returned')
-        self.assertEqual(pag, 1, 'Invalid page number returned')
+        assert len(page_users) == USERS_PAGE_SIZE, 'Paging not working properly'
+        assert len(all_users) == USERS_PAGE_SIZE, 'Not all members returned'
+        assert pag == 1, 'Invalid page number returned'
 
 
     def test_edit_user_happy_flow(self):
@@ -375,40 +382,18 @@ class UserServiceTest(TransactionalTestCase):
                     email="test_user@tvb.org", role="user", comment="")
         self.user_service.create_user(**data)
         inserted_user = dao.get_user_by_name("test_user")
-        self.assertEqual(inserted_user.password, md5("test_password").hexdigest(), "Incorrect password")
+        assert inserted_user.password == md5("test_password").hexdigest(), "Incorrect password"
         inserted_user.role = "new_role"
         inserted_user.validated = 1
         self.user_service.edit_user(inserted_user)
         changed_user = dao.get_user_by_name("test_user")
-        self.assertEqual(changed_user.role, "new_role", "role unchanged")
-        self.assertEqual(changed_user.validated, 1, "user not validated")
+        assert changed_user.role == "new_role", "role unchanged"
+        assert changed_user.validated == 1, "user not validated"
 
 
     def test_get_users_when_no_projects(self):
         """
         Assert exception is thrown when no project is found gor the given ID.
         """
-        self.assertRaises(UsernameException, self.user_service.get_users_for_project,
-                          TvbProfile.current.web.admin.ADMINISTRATOR_NAME, self.NOT_EXISTENT_PROJECT_ID)
-
-
-
-def suite():
-    """
-    Gather all the tests in a test suite.
-    """
-    test_suite = unittest.TestSuite()
-    test_suite.addTest(unittest.makeSuite(UserServiceTest))
-    return test_suite
-
-
-
-if __name__ == "__main__":
-    #So you can run tests individually.
-    TEST_RUNNER = unittest.TextTestRunner()
-    TEST_SUITE = suite()
-    TEST_RUNNER.run(TEST_SUITE)
-        
-        
-        
-        
+        with pytest.raises(UsernameException):
+            self.user_service.get_users_for_project(TvbProfile.current.web.admin.ADMINISTRATOR_NAME, self.NOT_EXISTENT_PROJECT_ID)

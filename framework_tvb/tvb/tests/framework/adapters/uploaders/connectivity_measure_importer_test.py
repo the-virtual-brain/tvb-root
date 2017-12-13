@@ -33,7 +33,7 @@ module docstring
 .. moduleauthor:: Mihai Andrei <mihai.andrei@codemart.ro>
 """
 
-import unittest
+import pytest
 import os.path
 import tvb_data
 from tvb.core.entities.file.files_helper import FilesHelper
@@ -47,7 +47,7 @@ from tvb.core.services.flow_service import FlowService
 from tvb.tests.framework.adapters.uploaders import test_data
 
 
-class ConnectivityMeasureImporterTest(TransactionalTestCase):
+class TestConnectivityMeasureImporter(TransactionalTestCase):
     """
     Unit-tests for ConnectivityMeasureImporter
     """
@@ -79,26 +79,11 @@ class ConnectivityMeasureImporterTest(TransactionalTestCase):
 
 
     def test_happy_flow(self):
-        self.assertEqual(0, TestFactory.get_entity_count(self.test_project, ConnectivityMeasure()))
+        assert 0 == TestFactory.get_entity_count(self.test_project, ConnectivityMeasure())
         self._import('mantini_networks.mat')
-        self.assertEqual(6, TestFactory.get_entity_count(self.test_project, ConnectivityMeasure()))
+        assert 6 == TestFactory.get_entity_count(self.test_project, ConnectivityMeasure())
 
     def test_connectivity_mismatch(self):
-        self.assertRaises(OperationException, self._import, 'mantini_networks_33.mat')
+        with pytest.raises(OperationException):
+            self._import( 'mantini_networks_33.mat')
 
-
-
-def suite():
-    """
-    Gather all the tests in a test suite.
-    """
-    test_suite = unittest.TestSuite()
-    test_suite.addTest(unittest.makeSuite(ConnectivityMeasureImporterTest))
-    return test_suite
-
-
-if __name__ == "__main__":
-    #So you can run tests from this package individually.
-    TEST_RUNNER = unittest.TextTestRunner()
-    TEST_SUITE = suite()
-    TEST_RUNNER.run(TEST_SUITE)

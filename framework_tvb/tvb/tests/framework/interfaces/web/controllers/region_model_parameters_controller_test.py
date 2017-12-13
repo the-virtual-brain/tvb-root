@@ -33,7 +33,7 @@
 """
 
 import json
-import unittest
+import pytest
 import cherrypy
 from tvb.tests.framework.interfaces.web.controllers.base_controller_test import BaseTransactionalControllerTest
 from tvb.core.entities.model import Dynamic
@@ -47,7 +47,7 @@ from tvb.tests.framework.adapters.simulator.simulator_adapter_test import SIMULA
 import tvb.interfaces.web.controllers.common as common
 
 
-class RegionsModelParametersControllerTest(BaseTransactionalControllerTest):
+class TestRegionsModelParametersController(BaseTransactionalControllerTest):
     """ Unit tests for RegionsModelParametersController """
 
 
@@ -92,14 +92,14 @@ class RegionsModelParametersControllerTest(BaseTransactionalControllerTest):
         `edit_model_parameters()`
         """
         result_dict = self.region_m_p_c.index()
-        self.assertEqual(self.connectivity.gid, result_dict['connectivity_entity'].gid)
-        self.assertEqual(result_dict['mainContent'], 'burst/model_param_region')
-        self.assertEqual(result_dict['submit_parameters_url'], 
-                         '/burst/modelparameters/regions/submit_model_parameters')
-        self.assertTrue('dynamics' in result_dict)
-        self.assertTrue('dynamics_json' in result_dict)
-        self.assertTrue('pointsLabels' in result_dict)
-        self.assertTrue('positions' in result_dict)
+        assert self.connectivity.gid == result_dict['connectivity_entity'].gid
+        assert result_dict['mainContent'] == 'burst/model_param_region'
+        assert result_dict['submit_parameters_url'] ==\
+                         '/burst/modelparameters/regions/submit_model_parameters'
+        assert 'dynamics' in result_dict
+        assert 'dynamics_json' in result_dict
+        assert 'pointsLabels' in result_dict
+        assert 'positions' in result_dict
 
         json.loads(result_dict['dynamics_json'])
 
@@ -122,20 +122,5 @@ class RegionsModelParametersControllerTest(BaseTransactionalControllerTest):
         dynamic_ids[-1] = self.dynamic_k.id
         dynamic_ids = json.dumps(dynamic_ids)
 
-        self.assertRaises(Exception, self.region_m_p_c.submit_model_parameters, dynamic_ids)
-
-
-def suite():
-    """
-    Gather all the tests in a test suite.
-    """
-    test_suite = unittest.TestSuite()
-    test_suite.addTest(unittest.makeSuite(RegionsModelParametersControllerTest))
-    return test_suite
-
-
-if __name__ == "__main__":
-    #So you can run tests individually.
-    TEST_RUNNER = unittest.TextTestRunner()
-    TEST_SUITE = suite()
-    TEST_RUNNER.run(TEST_SUITE)
+        with pytest.raises(Exception):
+            self.region_m_p_c.submit_model_parameters(dynamic_ids)

@@ -36,7 +36,7 @@
 import os
 import numpy
 import shutil
-import unittest
+import pytest
 import tvb.core.entities.file.hdf5_storage_manager as hdf5
 from tvb.basic.profile import TvbProfile
 from tvb.core.entities.file.exceptions import FileStructureException, MissingDataSetException
@@ -54,13 +54,13 @@ STORE_PATH = "/node1/node2"
 
 
 
-class HDF5StorageTest(unittest.TestCase):
+class TestHDF5Storage():
     """
     This tests storage of data into HDF5 format (H5 files).
     """
 
 
-    def setUp(self):
+    def setup_method(self):
         """
         Set up the context needed by the tests.
         """
@@ -78,7 +78,7 @@ class HDF5StorageTest(unittest.TestCase):
         self.test_string_array = numpy.array([["a", "b"], ["c", "d"]])
 
 
-    def tearDown(self):
+    def teardown_method(self):
         """
         Tear down to revert any changes made by a test.
         """
@@ -99,7 +99,7 @@ class HDF5StorageTest(unittest.TestCase):
         """
         self.storage.store_data(DATASET_NAME_1, self.test_2D_array)
         full_path = os.path.join(self.storage_folder, STORAGE_FILE_NAME)
-        self.assertTrue(os.path.exists(full_path), "Storage file not created.")
+        assert os.path.exists(full_path), "Storage file not created."
 
 
     def test_invalid_storage_path(self):
@@ -107,10 +107,12 @@ class HDF5StorageTest(unittest.TestCase):
         This method will test scenarios where no storage path or storage file is provided
         """
         # Test if folder name is None
-        self.assertRaises(FileStructureException, hdf5.HDF5StorageManager, None, STORAGE_FILE_NAME)
+        with pytest.raises(FileStructureException):
+            hdf5.HDF5StorageManager(None, STORAGE_FILE_NAME)
 
         # Test if file name is None
-        self.assertRaises(FileStructureException, hdf5.HDF5StorageManager, self.storage_folder, None)
+        with pytest.raises(FileStructureException):
+            hdf5.HDF5StorageManager( self.storage_folder, None)
 
 
     def test_simple_data_storage(self):
@@ -120,6 +122,7 @@ class HDF5StorageTest(unittest.TestCase):
         self.storage.store_data(DATASET_NAME_1, self.test_2D_array)
         # Now read data
         read_data = self.storage.get_data(DATASET_NAME_1)
+
         self.assertArrayEqual(self.test_2D_array, read_data, "Did not get the expected data")
 
 
@@ -167,7 +170,8 @@ class HDF5StorageTest(unittest.TestCase):
         """
         Test scenario when trying to store None data
         """
-        self.assertRaises(FileStructureException, self.storage.store_data, DATASET_NAME_1, None)
+        with pytest.raises(FileStructureException):
+            self.storage.store_data( DATASET_NAME_1, None)
 
 
     def test_append_data1(self):
@@ -232,7 +236,8 @@ class HDF5StorageTest(unittest.TestCase):
         """
         Test appending null value to dataset
         """
-        self.assertRaises(FileStructureException, self.storage.append_data, DATASET_NAME_1, None)
+        with pytest.raises(FileStructureException):
+            self.storage.append_data(DATASET_NAME_1, None)
 
 
     def test_append_without_closing_file(self):
@@ -275,7 +280,8 @@ class HDF5StorageTest(unittest.TestCase):
 
         # Now delete dataset
         self.storage.remove_data(DATASET_NAME_1)
-        self.assertRaises(MissingDataSetException, self.storage.get_data, DATASET_NAME_1)
+        with pytest.raises(MissingDataSetException):
+            self.storage.get_data(DATASET_NAME_1)
 
 
     def test_delete_dataset_on_path(self):
@@ -290,14 +296,16 @@ class HDF5StorageTest(unittest.TestCase):
 
         # Now delete dataset
         self.storage.remove_data(DATASET_NAME_1, STORE_PATH)
-        self.assertRaises(MissingDataSetException, self.storage.get_data, DATASET_NAME_1)
+        with pytest.raises(MissingDataSetException):
+            self.storage.get_data( DATASET_NAME_1)
 
 
     def test_delete_missing_dataset(self):
         """
         This test checks deletion of non existing  dataset.
         """
-        self.assertRaises(FileStructureException, self.storage.remove_data, DATASET_NAME_1)
+        with pytest.raises(FileStructureException):
+            self.storage.remove_data(DATASET_NAME_1)
 
 
     def test_read_sliced_data(self):
@@ -323,12 +331,12 @@ class HDF5StorageTest(unittest.TestCase):
         # Now add meta info to it.
         self.storage.set_metadata(META_DICT, DATASET_NAME_1)
         read_meta_value = self.storage.get_metadata(DATASET_NAME_1)
-        self.assertEqual(META_VALUE, read_meta_value[META_KEY])
+        assert META_VALUE == read_meta_value[META_KEY]
 
         # Now we'll test adding metadata on root node
         self.storage.set_metadata(META_DICT)
         read_meta_value = self.storage.get_metadata()
-        self.assertEqual(META_VALUE, read_meta_value[META_KEY])
+        assert META_VALUE == read_meta_value[META_KEY]
 
 
     def test_add_metadata_on_path(self):
@@ -341,7 +349,7 @@ class HDF5StorageTest(unittest.TestCase):
         # Now add meta info to it.
         self.storage.set_metadata(META_DICT, DATASET_NAME_1, where=STORE_PATH)
         read_meta_value = self.storage.get_metadata(DATASET_NAME_1, where=STORE_PATH)
-        self.assertEqual(META_VALUE, read_meta_value[META_KEY])
+        assert META_VALUE == read_meta_value[META_KEY]
 
 
     def test_delete_metadata(self):
@@ -354,18 +362,18 @@ class HDF5StorageTest(unittest.TestCase):
         # Now add meta info to it.
         self.storage.set_metadata(META_DICT, DATASET_NAME_1)
         read_meta_data = self.storage.get_metadata(DATASET_NAME_1)
-        self.assertEqual(META_VALUE, read_meta_data[META_KEY])
+        assert META_VALUE == read_meta_data[META_KEY]
         self.storage.remove_metadata(META_KEY, DATASET_NAME_1)
         read_meta_data = self.storage.get_metadata(DATASET_NAME_1)
-        self.assertEqual(0, len(read_meta_data), "There should be no metadata stored on dataset")
+        assert 0 == len(read_meta_data), "There should be no metadata stored on dataset"
 
         # Now we'll test removal of metadata on root node
         self.storage.set_metadata(META_DICT)
         read_meta_data = self.storage.get_metadata()
-        self.assertEqual(META_VALUE, read_meta_data[META_KEY], "Retrieved meta value is not correct")
+        assert META_VALUE == read_meta_data[META_KEY], "Retrieved meta value is not correct"
         self.storage.remove_metadata(META_KEY)
         read_meta_data = self.storage.get_metadata()
-        self.assertEqual(1, len(read_meta_data), "There should be no metadata stored on root node, except data version")
+        assert 1, len(read_meta_data) == "There should be no metadata stored on root node, except data version"
 
 
     def test_delete_metadata_on_path(self):
@@ -378,10 +386,10 @@ class HDF5StorageTest(unittest.TestCase):
         # Now add meta info to it.
         self.storage.set_metadata(META_DICT, DATASET_NAME_1, where=STORE_PATH)
         read_meta_data = self.storage.get_metadata(DATASET_NAME_1, where=STORE_PATH)
-        self.assertEqual(META_VALUE, read_meta_data[META_KEY])
+        assert META_VALUE == read_meta_data[META_KEY]
         self.storage.remove_metadata(META_KEY, DATASET_NAME_1, where=STORE_PATH)
         read_meta_data = self.storage.get_metadata(DATASET_NAME_1, where=STORE_PATH)
-        self.assertEqual(0, len(read_meta_data), "There should be no metadata stored on dataset")
+        assert 0 == len(read_meta_data), "There should be no metadata stored on dataset"
 
 
     def test_delete_missing_metadata(self):
@@ -391,11 +399,11 @@ class HDF5StorageTest(unittest.TestCase):
         self.storage.store_data(DATASET_NAME_1, self.test_2D_array)
         # Test delete on a node
         read_meta_data = self.storage.get_metadata(DATASET_NAME_1)
-        self.assertEqual(0, len(read_meta_data), "There should be no metadata stored on dataset")
+        assert 0 == len(read_meta_data), "There should be no metadata stored on dataset"
 
         # Test delete on root node
         read_meta_data = self.storage.get_metadata()
-        self.assertEqual(1, len(read_meta_data), "There should be no metadata stored on root node, except data version")
+        assert 1, len(read_meta_data) == "There should be no metadata stored on root node, except data version"
 
 
     def test_delete_metadata_missing_dataset(self):
@@ -404,7 +412,8 @@ class HDF5StorageTest(unittest.TestCase):
         """
         # Create
         self.storage.store_data(DATASET_NAME_1, self.test_2D_array)
-        self.assertRaises(MissingDataSetException, self.storage.get_metadata, DATASET_NAME_2)
+        with pytest.raises(MissingDataSetException):
+            self.storage.get_metadata(DATASET_NAME_2)
 
 
     def test_concurent_file_access(self):
@@ -434,12 +443,12 @@ class HDF5StorageTest(unittest.TestCase):
         # Now add meta info to it.
         self.storage.set_metadata(META_DICT, DATASET_NAME_1, False)
         read_meta_value = self.storage.get_metadata(DATASET_NAME_1)
-        self.assertEqual(META_VALUE, read_meta_value[META_KEY])
+        assert META_VALUE == read_meta_value[META_KEY]
 
         # Now we'll test adding metadata on root node
         self.storage.set_metadata(META_DICT, '', False)
         read_meta_value = self.storage.get_metadata()
-        self.assertEqual(META_VALUE, read_meta_value[META_KEY])
+        assert META_VALUE == read_meta_value[META_KEY]
 
 
     def test_delete_metadata_non_tvb_specific(self):
@@ -452,18 +461,18 @@ class HDF5StorageTest(unittest.TestCase):
         # Now add meta info to it.
         self.storage.set_metadata(META_DICT, DATASET_NAME_1, False)
         read_meta_data = self.storage.get_metadata(DATASET_NAME_1)
-        self.assertEqual(META_VALUE, read_meta_data[META_KEY])
+        assert META_VALUE == read_meta_data[META_KEY]
         self.storage.remove_metadata(META_KEY, DATASET_NAME_1, False)
         read_meta_data = self.storage.get_metadata(DATASET_NAME_1)
-        self.assertEqual(0, len(read_meta_data))
+        assert 0 == len(read_meta_data)
 
         # Now we'll test removal of metadata on root node
         self.storage.set_metadata(META_DICT, '', False)
         read_meta_data = self.storage.get_metadata()
-        self.assertEqual(META_VALUE, read_meta_data[META_KEY])
+        assert META_VALUE == read_meta_data[META_KEY]
         self.storage.remove_metadata(META_KEY, '', False)
         read_meta_data = self.storage.get_metadata()
-        self.assertEqual(1, len(read_meta_data))
+        assert 1 == len(read_meta_data)
 
 
     def test_data_version(self):
@@ -477,21 +486,3 @@ class HDF5StorageTest(unittest.TestCase):
         self.assertArrayEqual(TvbProfile.current.version.DATA_VERSION,
                               read_data[TvbProfile.current.version.DATA_VERSION_ATTRIBUTE])
 
-
-
-def suite():
-    """
-    Gather all the tests in a test suite.
-    """
-    test_suite = unittest.TestSuite()
-    test_suite.addTest(unittest.makeSuite(HDF5StorageTest))
-    return test_suite
-
-
-
-if __name__ == "__main__":
-    #So you can run tests individually.
-    TEST_RUNNER = unittest.TextTestRunner()
-    TEST_SUITE = suite()
-    TEST_RUNNER.run(TEST_SUITE)
-    

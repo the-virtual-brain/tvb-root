@@ -35,14 +35,14 @@
 """
 
 import os
-import unittest
+import pytest
 import datetime
 from tvb.core.utils import path2url_part, get_unique_file_name, string2date, date2string, string2bool
 from tvb.core.utils import string2array
 from tvb.tests.framework.core.base_testcase import TransactionalTestCase
 
 
-class UtilsTest(TransactionalTestCase):
+class TestUtils(TransactionalTestCase):
     """
     This class contains test helper methods.
     """  
@@ -67,9 +67,9 @@ class UtilsTest(TransactionalTestCase):
         Test that all invalid characters are removed from the url.
         """
         processed_path = path2url_part("C:" + os.sep + "testtesttest test:aa")
-        self.assertFalse(os.sep in processed_path, "Invalid character " + os.sep + " should have beed removed")
-        self.assertFalse(' ' in processed_path, "Invalid character ' ' should have beed removed")
-        self.assertFalse(':' in processed_path, "Invalid character ':' should have beed removed")
+        assert not os.sep in processed_path, "Invalid character " + os.sep + " should have beed removed"
+        assert not ' ' in processed_path, "Invalid character ' ' should have beed removed"
+        assert not ':' in processed_path, "Invalid character ':' should have beed removed"
 
 
     def test_get_unique_file_name(self):
@@ -84,7 +84,7 @@ class UtilsTest(TransactionalTestCase):
             fp.write('test')
             fp.close()
             file_names.append(file_name)
-        self.assertEqual(len(file_names), len(set(file_names)), 'No duplicate files should be generated.')
+        assert len(file_names) == len(set(file_names)), 'No duplicate files should be generated.'
         for file_n in file_names:
             os.remove(file_n)
         
@@ -95,62 +95,63 @@ class UtilsTest(TransactionalTestCase):
         """
         simple_time_string = "03-03-1999"
         simple_date = string2date(simple_time_string, complex_format=False)
-        self.assertEqual(simple_date, datetime.datetime(1999, 3, 3), 
-                         "Did not get expected datetime from conversion object.")
+        assert simple_date == datetime.datetime(1999, 3, 3),\
+                         "Did not get expected datetime from conversion object."
         
         complex_time_string = "1999-03-16,18-20-33.1"
         complex_date = string2date(complex_time_string)
-        self.assertEqual(complex_date, datetime.datetime(1999, 3, 16, 18, 20, 33, 100000), 
-                         "Did not get expected datetime from conversion object.")
+        assert complex_date == datetime.datetime(1999, 3, 16, 18, 20, 33, 100000),\
+                         "Did not get expected datetime from conversion object."
         
         complex_time_stringv1 = "1999-03-16,18-20-33"
         complexv1_date = string2date(complex_time_stringv1)
-        self.assertEqual(complexv1_date, datetime.datetime(1999, 3, 16, 18, 20, 33), 
-                         "Did not get expected datetime from conversion object.")
+        assert complexv1_date == datetime.datetime(1999, 3, 16, 18, 20, 33),\
+                         "Did not get expected datetime from conversion object."
         
         custom_format = "%Y"
         custom_time_string = "1999"
         custom_date = string2date(custom_time_string, date_format=custom_format)
-        self.assertEqual(custom_date, datetime.datetime(1999, 1, 1), 
-                         "Did not get expected datetime from conversion object.")
+        assert custom_date == datetime.datetime(1999, 1, 1),\
+                         "Did not get expected datetime from conversion object."
 
 
     def test_string2date_invalid(self):
         """
         Check that a ValueError is raised in case some invalid date is passed.
         """
-        self.assertRaises(ValueError, string2date, "somethinginvalid")
+        with pytest.raises(ValueError):
+            string2date("somethinginvalid")
         
     def test_date2string(self):
         """
         Check the date2string method for various inputs.
         """
         date_input = datetime.datetime(1999, 3, 16, 18, 20, 33, 100000)
-        self.assertEqual(date2string(date_input, complex_format=False), '03-16-1999', 
-                         "Did not get expected string from datetime conversion object.")
+        assert date2string(date_input, complex_format=False) == '03-16-1999',\
+                         "Did not get expected string from datetime conversion object."
         
         custom_format = "%Y"
-        self.assertEqual(date2string(date_input, date_format=custom_format), '1999', 
-                         "Did not get expected string from datetime conversion object.")
+        assert date2string(date_input, date_format=custom_format) == '1999',\
+                         "Did not get expected string from datetime conversion object."
         
-        self.assertEqual(date2string(date_input, complex_format=True), '1999-03-16,18-20-33.100000', 
-                         "Did not get expected string from datetime conversion object.")
+        assert date2string(date_input, complex_format=True) == '1999-03-16,18-20-33.100000',\
+                         "Did not get expected string from datetime conversion object."
         
-        self.assertEqual("None", date2string(None), "Expected to return 'None' for None input.")
+        assert "None" == date2string(None), "Expected to return 'None' for None input."
 
 
     def test_string2bool(self):
         """
         Check the date2string method for various inputs.
         """
-        self.assertTrue(string2bool("True"), "Expect True boolean for input 'True'")
-        self.assertTrue(string2bool(u"True"), "Expect True boolean for input u'True'")
-        self.assertTrue(string2bool("true"), "Expect True boolean for input 'true'")
-        self.assertTrue(string2bool(u"true"), "Expect True boolean for input u'true'")
-        self.assertFalse(string2bool("False"), "Expect True boolean for input 'False'")
-        self.assertFalse(string2bool(u"False"), "Expect True boolean for input u'False'")
-        self.assertFalse(string2bool("somethingelse"), "Expect True boolean for input 'somethingelse'")
-        self.assertFalse(string2bool(u"somethingelse"), "Expect True boolean for input u'somethingelse'")
+        assert string2bool("True"), "Expect True boolean for input 'True'"
+        assert string2bool(u"True"), "Expect True boolean for input u'True'"
+        assert string2bool("true"), "Expect True boolean for input 'true'"
+        assert string2bool(u"true"), "Expect True boolean for input u'true'"
+        assert not string2bool("False"), "Expect True boolean for input 'False'"
+        assert not string2bool(u"False"), "Expect True boolean for input u'False'"
+        assert not string2bool("somethingelse"), "Expect True boolean for input 'somethingelse'"
+        assert not string2bool(u"somethingelse"), "Expect True boolean for input u'somethingelse'"
         
         
     def test_string2array(self):
@@ -161,25 +162,7 @@ class UtilsTest(TransactionalTestCase):
         array_separators = [',', ',', ' ']
         for idx in range(len(test_string_arrays)):
             result_array = string2array(test_string_arrays[idx], array_separators[idx])
-            self.assertEqual(len(result_array), 3)
-            self.assertEqual(result_array[0], 1)
-            self.assertEqual(result_array[1], 2)
-            self.assertEqual(result_array[2], 3)
-
-        
-        
-def suite():
-    """
-    Gather all the tests in a test suite.
-    """
-    test_suite = unittest.TestSuite()
-    test_suite.addTest(unittest.makeSuite(UtilsTest))
-    return test_suite
-
-
-if __name__ == "__main__":
-    #So you can run tests from this package individually.
-    TEST_RUNNER = unittest.TextTestRunner()
-    TEST_SUITE = suite()
-    TEST_RUNNER.run(TEST_SUITE)
-
+            assert len(result_array) == 3
+            assert result_array[0] == 1
+            assert result_array[1] == 2
+            assert result_array[2] == 3

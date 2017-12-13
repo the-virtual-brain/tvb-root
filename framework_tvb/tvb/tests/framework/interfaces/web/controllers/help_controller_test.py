@@ -36,7 +36,7 @@ from tvb.interfaces.web.structure import WebStructure
 from tvb.interfaces.web.controllers.help.help_controller import HelpController
 
 
-class HelpControllerTest(BaseTransactionalControllerTest):
+class TestHelpController(BaseTransactionalControllerTest):
     """ Unit tests for HelpController """
     
     def setUp(self):
@@ -58,24 +58,9 @@ class HelpControllerTest(BaseTransactionalControllerTest):
         Verifies that result dictionary has the expected keys / values
         """
         result_dict = self.help_c.showOnlineHelp(WebStructure.SECTION_PROJECT, WebStructure.SUB_SECTION_OPERATIONS)
-        self.assertTrue('helpURL' in result_dict)
-        self.assertEqual(result_dict['helpURL'], '/statichelp/manuals/UserGuide/UserGuide-UI_Project.html#operations')
-        self.assertEqual(result_dict['overlay_class'], 'help')
-        self.assertEqual(result_dict['overlay_content_template'], 'help/online_help')
-        self.assertEqual(result_dict['overlay_description'], 'Online-Help')
+        assert 'helpURL' in result_dict
+        assert result_dict['helpURL'] == '/statichelp/manuals/UserGuide/UserGuide-UI_Project.html#operations'
+        assert result_dict['overlay_class'] == 'help'
+        assert result_dict['overlay_content_template'] == 'help/online_help'
+        assert result_dict['overlay_description'] == 'Online-Help'
         
-            
-def suite():
-    """
-    Gather all the tests in a test suite.
-    """
-    test_suite = unittest.TestSuite()
-    test_suite.addTest(unittest.makeSuite(HelpControllerTest))
-    return test_suite
-
-
-if __name__ == "__main__":
-    #So you can run tests individually.
-    TEST_RUNNER = unittest.TextTestRunner()
-    TEST_SUITE = suite()
-    TEST_RUNNER.run(TEST_SUITE)

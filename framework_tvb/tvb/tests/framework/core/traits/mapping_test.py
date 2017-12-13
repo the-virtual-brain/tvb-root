@@ -53,7 +53,7 @@ class MappedTestClass(MappedType):
     json = basic.JSONType
   
 
-class MappingTest(BaseTestCase):
+class TestMapping(BaseTestCase):
     """
     This class contains tests for the tvb.core.datatype module.
     """  
@@ -98,10 +98,10 @@ class MappingTest(BaseTestCase):
         test_inst = dao.store_entity(test_inst)
 
         test_inst = dao.get_generic_entity(MappedTestClass, test_inst.gid, 'gid')[0]
-        self.assertEqual(test_inst.dikt, dikt)
-        self.assertEqual(test_inst.tup, tup)
-        self.assertEqual(test_inst.dtype, dtype)
-        self.assertEqual(test_inst.json, json)
+        assert  test_inst.dikt == dikt
+        assert  test_inst.tup == tup
+        assert  test_inst.dtype == dtype
+        assert  test_inst.json == json
 
     
         
@@ -123,42 +123,24 @@ class MappingTest(BaseTestCase):
         
         inserted_data = self.flow_service.get_available_datatypes(self.test_project.id,
                                                                   "tvb.datatypes.arrays.MappedArray")[0]
-        self.assertEqual(len(inserted_data), 4, "Found " + str(len(inserted_data)))
+        assert  len(inserted_data) == 4, "Found " + str(len(inserted_data))
  
         for i in range(4):
             ## inserted_data will be retrieved in the opposite order than the insert order
             actual_datatype = dao.get_generic_entity(MappedArray, inserted_data[3 - i][2], 'gid')[0]
-            self.assertEqual(actual_datatype.length_1d, shapes[i][0])
+            assert  actual_datatype.length_1d, shapes[i][0]
             if i > 0:
-                self.assertEqual(actual_datatype.length_2d, shapes[i][1])
+                assert  actual_datatype.length_2d == shapes[i][1]
             expected_arr = test_array.reshape(shapes[i])
-            self.assertTrue(numpy.equal(actual_datatype.array_data, expected_arr).all(), 
-                            str(i + 1) + "D Data not read correctly")
+            assert numpy.equal(actual_datatype.array_data, expected_arr).all(),\
+                            str(i + 1) + "D Data not read correctly"
             actual_datatype.array_data = None
             ### Check that meta-data are also written for Array attributes.
             metadata = actual_datatype.get_metadata('array_data')
-            self.assertTrue(actual_datatype.METADATA_ARRAY_MAX in metadata)
-            self.assertEqual(metadata[actual_datatype.METADATA_ARRAY_MAX], 15)
-            self.assertTrue(actual_datatype.METADATA_ARRAY_MIN in metadata)
-            self.assertEqual(metadata[actual_datatype.METADATA_ARRAY_MIN], 0)
-            self.assertTrue(actual_datatype.METADATA_ARRAY_MEAN in metadata)
-            self.assertEqual(metadata[actual_datatype.METADATA_ARRAY_MEAN], 7.5)
+            assert actual_datatype.METADATA_ARRAY_MAX in metadata
+            assert  metadata[actual_datatype.METADATA_ARRAY_MAX] == 15
+            assert actual_datatype.METADATA_ARRAY_MIN in metadata
+            assert  metadata[actual_datatype.METADATA_ARRAY_MIN] == 0
+            assert actual_datatype.METADATA_ARRAY_MEAN in metadata
+            assert  metadata[actual_datatype.METADATA_ARRAY_MEAN] == 7.5
         
-        
-def suite():
-    """
-    Gather all the tests in a test suite.
-    """
-    test_suite = unittest.TestSuite()
-    test_suite.addTest(unittest.makeSuite(MappingTest))
-    return test_suite
-
-
-if __name__ == "__main__":
-    #So you can run tests from this package individually.
-    TEST_RUNNER = unittest.TextTestRunner()
-    TEST_SUITE = suite()
-    TEST_RUNNER.run(TEST_SUITE)
-    
-    
-    

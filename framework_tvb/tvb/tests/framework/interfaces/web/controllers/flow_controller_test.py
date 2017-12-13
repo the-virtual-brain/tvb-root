@@ -49,7 +49,7 @@ from tvb.tests.framework.datatypes.datatypes_factory import DatatypesFactory
 from tvb.tests.framework.adapters.simulator.simulator_adapter_test import SIMULATOR_PARAMETERS
 
 
-class FlowContollerTest(BaseControllersTest):
+class TestFlowContoller(BaseControllersTest):
     """ Unit tests for FlowController """
     
     def setUp(self):
@@ -83,9 +83,9 @@ class FlowContollerTest(BaseControllersTest):
         page has it's title given by category name.
         """
         result_dict = self.flow_c.step_analyzers()
-        self.assertTrue(common.KEY_SUBMENU_LIST in result_dict,
-                        "Expect to have a submenu with available algorithms for category.")
-        self.assertEqual(result_dict["section_name"], 'analyze')
+        assert common.KEY_SUBMENU_LIST in result_dict,\
+                        "Expect to have a submenu with available algorithms for category."
+        assert result_dict["section_name"] == 'analyze'
 
 
     def test_step_connectivity(self):
@@ -93,8 +93,8 @@ class FlowContollerTest(BaseControllersTest):
         Check that the correct section name and connectivity sub-menu are returned for the connectivity step.
         """
         result_dict = self.flow_c.step_connectivity()
-        self.assertEqual(result_dict['section_name'], 'connectivity')
-        self.assertEqual(result_dict['submenu_list'], self.flow_c.connectivity_submenu)
+        assert result_dict['section_name'] == 'connectivity'
+        assert result_dict['submenu_list'] == self.flow_c.connectivity_submenu
 
 
     def test_default(self):
@@ -108,9 +108,9 @@ class FlowContollerTest(BaseControllersTest):
             algo_groups = dao.get_adapters_from_categories([categ.id])
             for algo in algo_groups:
                 result_dict = self.flow_c.default(categ.id, algo.id)
-                self.assertEqual(result_dict[common.KEY_SUBMIT_LINK], '/flow/%i/%i' % (categ.id, algo.id))
-                self.assertTrue('mainContent' in result_dict)
-                self.assertTrue(result_dict['isAdapter'])
+                assert result_dict[common.KEY_SUBMIT_LINK] == '/flow/%i/%i' % (categ.id, algo.id)
+                assert 'mainContent' in result_dict
+                assert result_dict['isAdapter']
                 
                 
     def test_default_cancel(self):
@@ -139,7 +139,7 @@ class FlowContollerTest(BaseControllersTest):
         dt = DatatypesFactory().create_datatype_with_storage("test_subject", "RAW_STATE",
                                                              'this is the stored data'.split())
         returned_data = self.flow_c.read_datatype_attribute(dt.gid, "string_data")
-        self.assertEqual(returned_data, '["this", "is", "the", "stored", "data"]')
+        assert returned_data == '["this", "is", "the", "stored", "data"]'
         
         
     def test_read_datatype_attribute_method_call(self):
@@ -150,14 +150,14 @@ class FlowContollerTest(BaseControllersTest):
                                                              'this is the stored data'.split())
         args = {'length': 101}
         returned_data = self.flow_c.read_datatype_attribute(dt.gid, 'return_test_data', **args)
-        self.assertTrue(returned_data == str(range(101)))
+        assert returned_data == str(range(101))
         
         
     def test_get_simple_adapter_interface(self):
         adapter = dao.get_algorithm_by_module('tvb.tests.framework.adapters.testadapter1', 'TestAdapter1')
         result = self.flow_c.get_simple_adapter_interface(adapter.id)
         expected_interface = TestAdapter1().get_input_tree()
-        self.assertEqual(result['inputList'], expected_interface)
+        assert result['inputList'] == expected_interface
 
 
     def _long_burst_launch(self, is_range=False):
@@ -190,10 +190,10 @@ class FlowContollerTest(BaseControllersTest):
     def test_stop_burst_operation(self):
         burst_config = self._long_burst_launch()
         operation = self._wait_for_burst_ops(burst_config)[0]
-        self.assertFalse(operation.has_finished)
+        assert not operation.has_finished
         self.flow_c.stop_burst_operation(operation.id, 0, False)
         operation = dao.get_operation_by_id(operation.id)
-        self.assertEqual(operation.status, model.STATUS_CANCELED)
+        assert operation.status == model.STATUS_CANCELED
         
         
     def test_stop_burst_operation_group(self):
@@ -201,21 +201,21 @@ class FlowContollerTest(BaseControllersTest):
         operations = self._wait_for_burst_ops(burst_config)
         operations_group_id = 0
         for operation in operations:
-            self.assertFalse(operation.has_finished)
+            assert not operation.has_finished
             operations_group_id = operation.fk_operation_group
         self.flow_c.stop_burst_operation(operations_group_id, 1, False)
         for operation in operations:
             operation = dao.get_operation_by_id(operation.id)
-            self.assertEqual(operation.status, model.STATUS_CANCELED)
+            assert operation.status == model.STATUS_CANCELED
         
         
     def test_remove_burst_operation(self):
         burst_config = self._long_burst_launch()
         operation = self._wait_for_burst_ops(burst_config)[0]
-        self.assertFalse(operation.has_finished)
+        assert not operation.has_finished
         self.flow_c.stop_burst_operation(operation.id, 0, True)
         operation = dao.try_get_operation_by_id(operation.id)
-        self.assertTrue(operation is None)
+        assert operation is None
         
         
     def test_remove_burst_operation_group(self):
@@ -223,12 +223,12 @@ class FlowContollerTest(BaseControllersTest):
         operations = self._wait_for_burst_ops(burst_config)
         operations_group_id = 0
         for operation in operations:
-            self.assertFalse(operation.has_finished)
+            assert not operation.has_finished
             operations_group_id = operation.fk_operation_group
         self.flow_c.stop_burst_operation(operations_group_id, 1, True)
         for operation in operations:
             operation = dao.try_get_operation_by_id(operation.id)
-            self.assertTrue(operation is None)
+            assert operation is None
 
 
     def _launch_test_algo_on_cluster(self, **data):
@@ -245,10 +245,10 @@ class FlowContollerTest(BaseControllersTest):
         data = {"test1_val1": 5, 'test1_val2': 5}
         operations = self._launch_test_algo_on_cluster(**data)
         operation = dao.get_operation_by_id(operations[0].id)
-        self.assertFalse(operation.has_finished)
+        assert not operation.has_finished
         self.flow_c.stop_operation(operation.id, 0, False)
         operation = dao.get_operation_by_id(operation.id)
-        self.assertEqual(operation.status, model.STATUS_CANCELED)
+        assert operation.status == model.STATUS_CANCELED
         
         
     def test_stop_operations_group(self):
@@ -257,26 +257,9 @@ class FlowContollerTest(BaseControllersTest):
         operation_group_id = 0
         for operation in operations:
             operation = dao.get_operation_by_id(operation.id)
-            self.assertFalse(operation.has_finished)
+            assert not operation.has_finished
             operation_group_id = operation.fk_operation_group
         self.flow_c.stop_operation(operation_group_id, 1, False)
         for operation in operations:
             operation = dao.get_operation_by_id(operation.id)
-            self.assertEqual(operation.status, model.STATUS_CANCELED)
-        
-        
-
-def suite():
-    """
-    Gather all the tests in a test suite.
-    """
-    test_suite = unittest.TestSuite()
-    test_suite.addTest(unittest.makeSuite(FlowContollerTest))
-    return test_suite
-
-
-if __name__ == "__main__":
-    #So you can run tests individually.
-    TEST_RUNNER = unittest.TextTestRunner()
-    TEST_SUITE = suite()
-    TEST_RUNNER.run(TEST_SUITE)
+            assert operation.status == model.STATUS_CANCELED

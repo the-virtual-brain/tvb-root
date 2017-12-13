@@ -37,7 +37,7 @@ import os
 import json
 import copy
 import shutil
-import unittest
+import pytest
 import cherrypy
 from time import sleep
 from hashlib import md5
@@ -49,7 +49,7 @@ from tvb.interfaces.web.controllers import common
 from tvb.interfaces.web.controllers.settings_controller import SettingsController
 
 
-class SettingsControllerTest(BaseTransactionalControllerTest):
+class TestSettingsController(BaseTransactionalControllerTest):
     """
     Unit tests for SettingsController class
     """
@@ -82,7 +82,7 @@ class SettingsControllerTest(BaseTransactionalControllerTest):
 
         self.init(with_data=False)
         self.settings_c = SettingsController()
-        self.assertTrue(TvbProfile.is_first_run())
+        assert TvbProfile.is_first_run()
 
 
     def tearDown(self):
@@ -142,9 +142,9 @@ class SettingsControllerTest(BaseTransactionalControllerTest):
 
         response = self.settings_c.settings(save_settings=True, **submit_data)
 
-        self.assertTrue(common.KEY_ERRORS in response)
+        assert common.KEY_ERRORS in response
         for key in params_dictionary:
-            self.assertTrue(key in response[common.KEY_ERRORS], "Not found in errors %s" % key)
+            assert key in response[common.KEY_ERRORS], "Not found in errors %s" % key
 
 
     def test_with_valid_settings(self):
@@ -152,31 +152,32 @@ class SettingsControllerTest(BaseTransactionalControllerTest):
         submit_data = self.VALID_SETTINGS
         self.settings_c._restart_services = self._fake_restart_services
 
-        self.assertRaises(cherrypy.HTTPRedirect, self.settings_c.settings, save_settings=True, **self.VALID_SETTINGS)
+        with pytest.raises(cherrypy.HTTPRedirect):
+            self.settings_c.settings(save_settings=True, **self.VALID_SETTINGS)
 
         # wait until 'restart' is done
         sleep(1)
-        self.assertTrue(self.was_reset)
-        self.assertEqual(16, len(TvbProfile.current.manager.stored_settings))
+        assert self.was_reset
+        assert 16 == len(TvbProfile.current.manager.stored_settings)
 
-        self.assertEqual(submit_data['TVB_STORAGE'], TvbProfile.current.TVB_STORAGE)
-        self.assertEqual(submit_data['USR_DISK_SPACE'] * 2 ** 10, TvbProfile.current.MAX_DISK_SPACE)
-        self.assertEqual(submit_data['MAXIMUM_NR_OF_THREADS'], TvbProfile.current.MAX_THREADS_NUMBER)
-        self.assertEqual(submit_data['MAXIMUM_NR_OF_OPS_IN_RANGE'], TvbProfile.current.MAX_RANGE_NUMBER)
-        self.assertEqual(submit_data['MAXIMUM_NR_OF_VERTICES_ON_SURFACE'],
-                         TvbProfile.current.MAX_SURFACE_VERTICES_NUMBER)
+        assert submit_data['TVB_STORAGE'] == TvbProfile.current.TVB_STORAGE
+        assert submit_data['USR_DISK_SPACE'] * 2 ** 10 == TvbProfile.current.MAX_DISK_SPACE
+        assert submit_data['MAXIMUM_NR_OF_THREADS'] == TvbProfile.current.MAX_THREADS_NUMBER
+        assert submit_data['MAXIMUM_NR_OF_OPS_IN_RANGE'] == TvbProfile.current.MAX_RANGE_NUMBER
+        assert submit_data['MAXIMUM_NR_OF_VERTICES_ON_SURFACE'],\
+                         TvbProfile.current.MAX_SURFACE_VERTICES_NUMBER
 
-        self.assertEqual(submit_data['DEPLOY_CLUSTER'], str(TvbProfile.current.cluster.IS_DEPLOY))
-        self.assertEqual(submit_data['SELECTED_DB'], TvbProfile.current.db.SELECTED_DB)
-        self.assertEqual(submit_data['URL_VALUE'], TvbProfile.current.db.DB_URL)
+        assert submit_data['DEPLOY_CLUSTER'] == str(TvbProfile.current.cluster.IS_DEPLOY)
+        assert submit_data['SELECTED_DB'] == TvbProfile.current.db.SELECTED_DB
+        assert submit_data['URL_VALUE'] == TvbProfile.current.db.DB_URL
 
-        self.assertEqual(submit_data['URL_WEB'], TvbProfile.current.web.BASE_URL)
-        self.assertEqual(submit_data['WEB_SERVER_PORT'], TvbProfile.current.web.SERVER_PORT)
+        assert submit_data['URL_WEB'] == TvbProfile.current.web.BASE_URL
+        assert submit_data['WEB_SERVER_PORT'] == TvbProfile.current.web.SERVER_PORT
 
-        self.assertEqual(submit_data['ADMINISTRATOR_NAME'], TvbProfile.current.web.admin.ADMINISTRATOR_NAME)
-        self.assertEqual(submit_data['ADMINISTRATOR_EMAIL'], TvbProfile.current.web.admin.ADMINISTRATOR_EMAIL)
-        self.assertEqual(md5(submit_data['ADMINISTRATOR_PASSWORD']).hexdigest(),
-                         TvbProfile.current.web.admin.ADMINISTRATOR_PASSWORD)
+        assert submit_data['ADMINISTRATOR_NAME'] == TvbProfile.current.web.admin.ADMINISTRATOR_NAME
+        assert submit_data['ADMINISTRATOR_EMAIL'] == TvbProfile.current.web.admin.ADMINISTRATOR_EMAIL
+        assert md5(submit_data['ADMINISTRATOR_PASSWORD']).hexdigest(),\
+                         TvbProfile.current.web.admin.ADMINISTRATOR_PASSWORD
 
 
     def _fake_restart_services(self, should_reset):
@@ -195,38 +196,22 @@ class SettingsControllerTest(BaseTransactionalControllerTest):
         submit_data = {stored.KEY_STORAGE: TvbProfile.current.TVB_STORAGE,
                        stored.KEY_DB_URL: TvbProfile.current.db.DB_URL}
         result = json.loads(self.settings_c.check_db_url(**submit_data))
-        self.assertEqual(result['status'], 'ok')
+        assert result['status'] == 'ok'
 
         submit_data[stored.KEY_DB_URL] = "this URL should be invalid"
         result = json.loads(self.settings_c.check_db_url(**submit_data))
-        self.assertEqual(result['status'], 'not ok')
+        assert result['status'] == 'not ok'
 
 
-    @unittest.skipIf(get_matlab_executable() is None, "Matlab or Octave not installed!")
+    @pytest.mark.skipif(get_matlab_executable() is None, reason="Matlab or Octave not installed!")
     def test_check_matlab_path(self):
         """
         Test that for a various Matlab paths, the correct check response is returned.
         """
         submit_data = {stored.KEY_MATLAB_EXECUTABLE: get_matlab_executable()}
         result = json.loads(self.settings_c.validate_matlab_path(**submit_data))
-        self.assertEqual(result['status'], 'ok')
+        assert result['status'] == 'ok'
 
         submit_data[stored.KEY_MATLAB_EXECUTABLE] = "/this/path/should/be/invalid"
         result = json.loads(self.settings_c.validate_matlab_path(**submit_data))
-        self.assertEqual(result['status'], 'not ok')
-
-
-def suite():
-    """
-    Gather all the tests in a test suite.
-    """
-    test_suite = unittest.TestSuite()
-    test_suite.addTest(unittest.makeSuite(SettingsControllerTest))
-    return test_suite
-
-
-if __name__ == "__main__":
-    # So you can run tests individually.
-    TEST_RUNNER = unittest.TextTestRunner()
-    TEST_SUITE = suite()
-    TEST_RUNNER.run(TEST_SUITE)
+        assert result['status'] == 'not ok'

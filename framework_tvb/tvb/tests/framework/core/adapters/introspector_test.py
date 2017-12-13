@@ -40,7 +40,7 @@ from tvb.core.entities.storage import dao
 from tvb.core.adapters.introspector import Introspector
 
 
-class IntrospectorTest(BaseTestCase):
+class TestIntrospector(BaseTestCase):
     """
     Test class for the introspection module.
     """
@@ -74,36 +74,20 @@ class IntrospectorTest(BaseTestCase):
         all_categories = dao.get_algorithm_categories()
         category_ids = [cat.id for cat in all_categories if cat.displayname == "AdaptersTest"]
         adapters = dao.get_adapters_from_categories(category_ids)
-        self.assertEqual(8, len(adapters), "Introspection failed!")
+        assert 8 == len(adapters), "Introspection failed!"
         nr_adapters_mod2 = 0
         for algorithm in adapters:
-            self.assertTrue(algorithm.module in ['tvb.tests.framework.adapters.testadapter1',
+            assert algorithm.module in ['tvb.tests.framework.adapters.testadapter1',
                                                  'tvb.tests.framework.adapters.testadapter2',
                                                  'tvb.tests.framework.adapters.testadapter3',
                                                  'tvb.tests.framework.adapters.ndimensionarrayadapter',
-                                                 'tvb.tests.framework.adapters.testgroupadapter'],
-                            "Unknown Adapter module:" + str(algorithm.module))
-            self.assertTrue(algorithm.classname in ["TestAdapter1", "TestAdapterDatatypeInput",
+                                                 'tvb.tests.framework.adapters.testgroupadapter'], "Unknown Adapter module:" + str(algorithm.module)
+            assert algorithm.classname in ["TestAdapter1", "TestAdapterDatatypeInput",
                                                     "TestAdapter2", "TestAdapter22", "TestAdapterHugeMemoryRequired",
                                                     "TestAdapter3", "TestAdapterHDDRequired",
                                                     "NDimensionArrayAdapter"
-                                                    ],
-                            "Unknown Adapter Class:" + str(algorithm.classname))
+                                                    ], "Unknown Adapter Class:" + str(algorithm.classname)
             if algorithm.module == 'tvb.tests.framework.adapters.testadapter2':
                 nr_adapters_mod2 += 1
-        self.assertEqual(nr_adapters_mod2, 2)
+        assert nr_adapters_mod2 == 2
 
-
-def suite():
-    """
-    Gather all the tests in a test suite.
-    """
-    test_suite = unittest.TestSuite()
-    test_suite.addTest(unittest.makeSuite(IntrospectorTest))
-    return test_suite
-
-
-if __name__ == "__main__":
-    #To run tests individually.
-    unittest.main()  
-    

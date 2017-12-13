@@ -47,7 +47,7 @@ from tvb.tests.framework.core.base_testcase import TransactionalTestCase
 
 
 
-class TVBImporterTest(TransactionalTestCase):
+class TestTVBImporter(TransactionalTestCase):
     """
     Unit-tests for TVB importer.
     """
@@ -73,12 +73,12 @@ class TVBImporterTest(TransactionalTestCase):
         shutil.copy(exported_h5_file, TvbProfile.current.TVB_TEMP_FOLDER)
         self.h5_file_path = os.path.join(TvbProfile.current.TVB_TEMP_FOLDER, h5_file_name)
 
-        self.assertTrue(os.path.exists(self.h5_file_path), "Simple data type was not exported correct")
+        assert os.path.exists(self.h5_file_path), "Simple data type was not exported correct"
 
         # Generate data type group and export it to ZIP file
         self.datatype_group = self.datatypeFactory.create_datatype_group()
         _, self.zip_file_path, _ = export_manager.export_data(self.datatype_group, self.TVB_EXPORTER, self.test_project)
-        self.assertTrue(os.path.exists(self.zip_file_path), "Data type group was not exported correct")
+        assert os.path.exists(self.zip_file_path), "Data type group was not exported correct"
 
         FilesHelper().remove_project_structure(self.test_project.name)
         self.clean_database(delete_folders=False)
@@ -110,7 +110,7 @@ class TVBImporterTest(TransactionalTestCase):
         self._import(self.zip_file_path)
         count = FlowService().get_available_datatypes(self.test_project.id,
                                                       self.datatype.module + "." + self.datatype.type)[1]
-        self.assertEqual(9, count, "9 datatypes should have been imported from group.")
+        assert 9, count == "9 datatypes should have been imported from group."
 
 
     def test_h5_import(self):
@@ -121,11 +121,11 @@ class TVBImporterTest(TransactionalTestCase):
 
         data_types = FlowService().get_available_datatypes(self.test_project.id,
                                                            self.datatype.module + "." + self.datatype.type)[0]
-        self.assertEqual(1, len(data_types), "Project should contain only one data type.")
+        assert 1, len(data_types) == "Project should contain only one data type."
 
         data_type_entity = ABCAdapter.load_entity_by_gid(data_types[0][2])
-        self.assertTrue(data_type_entity is not None, "Datatype should not be none")
-        self.assertEqual(self.datatype.gid, data_type_entity.gid, "Imported datatype should have the same gid")
+        assert data_type_entity is not None, "Datatype should not be none"
+        assert self.datatype.gid, data_type_entity.gid == "Imported datatype should have the same gid"
 
 
     def test_import_invalid_file(self):
@@ -135,7 +135,7 @@ class TVBImporterTest(TransactionalTestCase):
         """
         try:
             self._import("invalid_path")
-            self.fail("System should throw an exception if trying to import an invalid file")
+            raise AssertionError("System should throw an exception if trying to import an invalid file")
         except OperationException:
             # Expected
             pass
@@ -147,25 +147,8 @@ class TVBImporterTest(TransactionalTestCase):
 
         try:
             self._import(file_path)
-            self.fail("System should throw an exception if trying to import a file with wrong format")
+            raise AssertionError("System should throw an exception if trying to import a file with wrong format")
         except OperationException:
             # Expected
             pass
 
-
-
-def suite():
-    """
-    Gather all the tests in a test suite.
-    """
-    test_suite = unittest.TestSuite()
-    test_suite.addTest(unittest.makeSuite(TVBImporterTest))
-    return test_suite
-
-
-
-if __name__ == "__main__":
-    #So you can run tests from this package individually.
-    TEST_RUNNER = unittest.TextTestRunner()
-    TEST_SUITE = suite()
-    TEST_RUNNER.run(TEST_SUITE)

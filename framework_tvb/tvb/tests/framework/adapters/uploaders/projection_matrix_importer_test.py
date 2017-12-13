@@ -50,7 +50,7 @@ from tvb.datatypes.sensors import SensorsEEG
 from tvb.datatypes.surfaces import CorticalSurface, CORTICAL
 
 
-class ProjectionMatrixTest(TransactionalTestCase):
+class TestProjectionMatrix(TransactionalTestCase):
     """
     Unit-tests for CFF-importer.
     """
@@ -69,9 +69,9 @@ class ProjectionMatrixTest(TransactionalTestCase):
         TestFactory.import_surface_zip(self.test_user, self.test_project, zip_path, CORTICAL, True)
 
         self.surface = TestFactory.get_entity(self.test_project, CorticalSurface())
-        self.assertTrue(self.surface is not None)
+        assert self.surface is not None
         self.sensors = TestFactory.get_entity(self.test_project, SensorsEEG())
-        self.assertTrue(self.sensors is not None)
+        assert self.sensors is not None
 
         self.importer = TestFactory.create_adapter('tvb.adapters.uploaders.projection_matrix_importer',
                                                    'ProjectionMatrixSurfaceEEGImporter')
@@ -98,7 +98,7 @@ class ProjectionMatrixTest(TransactionalTestCase):
 
         try:
             FlowService().fire_operation(self.importer, self.test_user, self.test_project.id, **args)
-            self.fail("This was expected not to run! 62 rows in proj matrix, but 65 sensors")
+            raise AssertionError("This was expected not to run! 62 rows in proj matrix, but 65 sensors")
         except OperationException:
             pass
 
@@ -119,28 +119,5 @@ class ProjectionMatrixTest(TransactionalTestCase):
         FlowService().fire_operation(self.importer, self.test_user, self.test_project.id, **args)
         dt_count_after = TestFactory.get_entity_count(self.test_project, ProjectionSurfaceEEG())
 
-        self.assertEqual(dt_count_before + 1, dt_count_after)
-    
-        
-def suite():
-    """
-    Gather all the tests in a test suite.
-    """
-    test_suite = unittest.TestSuite()
-    test_suite.addTest(unittest.makeSuite(ProjectionMatrixTest))
-    return test_suite
-
-
-if __name__ == "__main__":
-    #So you can run tests from this package individually.
-    TEST_RUNNER = unittest.TextTestRunner()
-    TEST_SUITE = suite()
-    TEST_RUNNER.run(TEST_SUITE)
-    
-    
-    
-       
-        
-        
-        
+        assert dt_count_before + 1 == dt_count_after
     

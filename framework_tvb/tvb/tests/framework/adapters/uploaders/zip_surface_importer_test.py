@@ -46,7 +46,7 @@ import tvb_data.surfaceData
 
 
 
-class ZIPSurfaceImporterTest(TransactionalTestCase):
+class TestZIPSurfaceImporter(TransactionalTestCase):
     """
     Unit-tests for Zip Surface importer.
     """
@@ -75,35 +75,19 @@ class ZIPSurfaceImporterTest(TransactionalTestCase):
         FlowService().fire_operation(importer, self.test_user, self.test_project.id, **args)
 
         data_types = FlowService().get_available_datatypes(self.test_project.id, SkullSkin)[0]
-        self.assertEqual(1, len(data_types), "Project should contain only one data type.")
+        assert 1, len(data_types) == "Project should contain only one data type."
 
         surface = ABCAdapter.load_entity_by_gid(data_types[0][2])
-        self.assertTrue(surface is not None, "Surface should not be None")
+        assert surface is not None, "Surface should not be None"
         return surface
 
 
     def test_import_surf_zip(self):
         surface = self._importSurface(self.surf_skull)
-        self.assertEqual(4096, len(surface.vertices))
-        self.assertEqual(4096, surface.number_of_vertices)
-        self.assertEqual(8188, len(surface.triangles))
-        self.assertEqual(8188, surface.number_of_triangles)
-        self.assertEqual('', surface.user_tag_3)
-        self.assertTrue(surface.valid_for_simulations)
-
-
-def suite():
-    """
-    Gather all the tests in a test suite.
-    """
-    test_suite = unittest.TestSuite()
-    test_suite.addTest(unittest.makeSuite(ZIPSurfaceImporterTest))
-    return test_suite
-
-
-if __name__ == "__main__":
-    #So you can run tests from this package individually.
-    TEST_RUNNER = unittest.TextTestRunner()
-    TEST_SUITE = suite()
-    TEST_RUNNER.run(TEST_SUITE)
+        assert 4096 == len(surface.vertices)
+        assert 4096 == surface.number_of_vertices
+        assert 8188 == len(surface.triangles)
+        assert 8188 == surface.number_of_triangles
+        assert '' == surface.user_tag_3
+        assert surface.valid_for_simulations
 

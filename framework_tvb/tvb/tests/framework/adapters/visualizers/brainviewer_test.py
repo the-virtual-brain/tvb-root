@@ -43,7 +43,7 @@ from tvb.tests.framework.datatypes.datatypes_factory import DatatypesFactory
 from tvb.tests.framework.core.base_testcase import TransactionalTestCase
 
 
-class BrainViewerTest(TransactionalTestCase):
+class TestBrainViewer(TransactionalTestCase):
     """
     Unit-tests for BrainViewer.
     """
@@ -67,10 +67,10 @@ class BrainViewerTest(TransactionalTestCase):
         self.datatypeFactory.project = self.test_project
 
         self.connectivity = TestFactory.get_entity(self.test_project, Connectivity())
-        self.assertTrue(self.connectivity is not None)
+        assert self.connectivity is not None
         self.face_surface = TestFactory.get_entity(self.test_project, FaceSurface())
-        self.assertTrue(self.face_surface is not None)
-        self.assertTrue(TestFactory.get_entity(self.test_project, EEGCap()) is not None)
+        assert self.face_surface is not None
+        assert TestFactory.get_entity(self.test_project, EEGCap()) is not None
 
 
     def tearDown(self):
@@ -89,9 +89,9 @@ class BrainViewerTest(TransactionalTestCase):
         viewer.current_project_id = self.test_project.id
         result = viewer.launch(time_series=time_series)
 
-        for key in BrainViewerTest.EXPECTED_KEYS + BrainViewerTest.EXPECTED_EXTRA_KEYS:
-            self.assertTrue(key in result and result[key] is not None)
-        self.assertFalse(result['extended_view'])
+        for key in TestBrainViewer.EXPECTED_KEYS + TestBrainViewer.EXPECTED_EXTRA_KEYS:
+            assert key in result and result[key] is not None
+        assert not result['extended_view']
 
     
     def test_get_required_memory(self):
@@ -99,7 +99,7 @@ class BrainViewerTest(TransactionalTestCase):
         Brainviewer should know required memory so expect positive number and not -1.
         """
         time_series = self.datatypeFactory.create_timeseries(self.connectivity)
-        self.assertTrue(BrainViewer().get_required_memory_size(time_series) > 0)
+        assert BrainViewer().get_required_memory_size(time_series) > 0
         
         
     def test_generate_preview(self):
@@ -109,8 +109,8 @@ class BrainViewerTest(TransactionalTestCase):
         time_series = self.datatypeFactory.create_timeseries(self.connectivity)
         viewer = BrainViewer()
         result = viewer.generate_preview(time_series, figure_size=(500, 200))
-        for key in BrainViewerTest.EXPECTED_KEYS:
-            self.assertTrue(key in result and result[key] is not None, key)
+        for key in TestBrainViewer.EXPECTED_KEYS:
+            assert key in result and result[key] is not None, key
         
         
     def test_launch_eeg(self):
@@ -123,22 +123,6 @@ class BrainViewerTest(TransactionalTestCase):
         viewer = DualBrainViewer()
         viewer.current_project_id = self.test_project.id
         result = viewer.launch(time_series)
-        for key in BrainViewerTest.EXPECTED_KEYS + BrainViewerTest.EXPECTED_EXTRA_KEYS:
-            self.assertTrue(key in result and result[key] is not None)
-        self.assertTrue(result['extended_view'])
-    
-        
-def suite():
-    """
-    Gather all the tests in a test suite.
-    """
-    test_suite = unittest.TestSuite()
-    test_suite.addTest(unittest.makeSuite(BrainViewerTest))
-    return test_suite
-
-
-if __name__ == "__main__":
-    #So you can run tests from this package individually.
-    TEST_RUNNER = unittest.TextTestRunner()
-    TEST_SUITE = suite()
-    TEST_RUNNER.run(TEST_SUITE)
+        for key in TestBrainViewer.EXPECTED_KEYS + TestBrainViewer.EXPECTED_EXTRA_KEYS:
+            assert key in result and result[key] is not None
+        assert result['extended_view']

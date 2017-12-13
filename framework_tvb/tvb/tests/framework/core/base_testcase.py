@@ -86,8 +86,7 @@ class BaseTestCase(unittest.TestCase):
 
 
     def assertEqual(self, expected, actual, message=""):
-        super(BaseTestCase, self).assertEqual(expected, actual,
-                                              message + " Expected %s but got %s." % (expected, actual))
+        assert expected == actual,message + " Expected %s but got %s." % (expected, actual)
 
 
     def clean_database(self, delete_folders=True):
@@ -224,9 +223,9 @@ class BaseTestCase(unittest.TestCase):
         When in expected_dictionary the value is not None, validate also to be found in found_dict.
         """
         for key, value in expected.iteritems():
-            self.assertTrue(key in found_dict, "%s not found in result" % key)
+            assert key in found_dict, "%s not found in result" % key
             if value is not None:
-                self.assertEqual(value, found_dict[key])
+                assert value == found_dict[key]
 
 
 def transactional_test(func, callback=None):

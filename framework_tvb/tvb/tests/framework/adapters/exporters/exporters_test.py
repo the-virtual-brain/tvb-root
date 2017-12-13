@@ -31,7 +31,7 @@
 """
 .. moduleauthor:: calin.pavel <calin.pavel@codemart.ro>
 """
-import unittest
+import pytest
 import os.path
 import shutil
 import zipfile
@@ -46,7 +46,7 @@ from tvb.tests.framework.core.base_testcase import TransactionalTestCase
 
 
 
-class ExportersTest(TransactionalTestCase):
+class TestExporters(TransactionalTestCase):
     """
     Test export functionality.
     """
@@ -80,14 +80,15 @@ class ExportersTest(TransactionalTestCase):
         exporters = self.export_manager.get_exporters_for_data(datatype)
         
         # Only TVB export can export any type of data type
-        self.assertEqual(1, len(exporters), "Incorrect number of exporters.")
+        assert 1, len(exporters) == "Incorrect number of exporters."
         
         
     def test_get_exporters_for_data_with_no_data(self):
         """
         Test retrieval of exporters when data == None.
         """        
-        self.assertRaises(InvalidExportDataException, self.export_manager.get_exporters_for_data, None)
+        with pytest.raises(InvalidExportDataException):
+            self.export_manager.get_exporters_for_data(None)
         
     
     def test_tvb_export_of_simple_datatype(self):
@@ -97,9 +98,9 @@ class ExportersTest(TransactionalTestCase):
         datatype = self.datatypeFactory.create_simple_datatype()       
         file_name, file_path, _ = self.export_manager.export_data(datatype, self.TVB_EXPORTER, self.project)
         
-        self.assertTrue(file_name is not None, "Export process should return a file name")
-        self.assertTrue(file_path is not None, "Export process should return path to export file")
-        self.assertTrue(os.path.exists(file_path), "Could not find export file: %s on disk." % file_path)
+        assert file_name is not None, "Export process should return a file name"
+        assert file_path is not None, "Export process should return path to export file"
+        assert os.path.exists(file_path), "Could not find export file: %s on disk." % file_path
 
 
     def test_tvb_export_of_datatype_with_storage(self):
@@ -109,9 +110,9 @@ class ExportersTest(TransactionalTestCase):
         datatype = self.datatypeFactory.create_datatype_with_storage()       
         file_name, file_path, _ = self.export_manager.export_data(datatype, self.TVB_EXPORTER, self.project)
         
-        self.assertTrue(file_name is not None, "Export process should return a file name")
-        self.assertTrue(file_path is not None, "Export process should return path to export file")
-        self.assertTrue(os.path.exists(file_path), "Could not find export file: %s on disk." % file_path)
+        assert file_name is not None, "Export process should return a file name"
+        assert file_path is not None, "Export process should return path to export file"
+        assert os.path.exists(file_path), "Could not find export file: %s on disk." % file_path
 
 
     def test_tvb_export_for_datatype_group(self):
@@ -121,12 +122,12 @@ class ExportersTest(TransactionalTestCase):
         datatype_group = self.datatypeFactory.create_datatype_group()       
         file_name, file_path, _ = self.export_manager.export_data(datatype_group, self.TVB_EXPORTER, self.project)
         
-        self.assertTrue(file_name is not None, "Export process should return a file name")
-        self.assertTrue(file_path is not None, "Export process should return path to export file")
-        self.assertTrue(os.path.exists(file_path), "Could not find export file: %s on disk." % file_path)
+        assert file_name is not None, "Export process should return a file name"
+        assert file_path is not None, "Export process should return path to export file"
+        assert os.path.exists(file_path), "Could not find export file: %s on disk." % file_path
         
         # Now check if the generated file is a correct ZIP file
-        self.assertTrue(zipfile.is_zipfile(file_path), "Generated file is not a valid ZIP file")
+        assert zipfile.is_zipfile(file_path), "Generated file is not a valid ZIP file"
         
         with closing(zipfile.ZipFile(file_path)) as zip_file:
             list_of_files = zip_file.namelist()
@@ -134,8 +135,7 @@ class ExportersTest(TransactionalTestCase):
             count_datatypes = dao.count_datatypes_in_group(datatype_group.id)
             
             # Check if ZIP files contains files for data types + operation
-            self.assertEqual(count_datatypes * 2, len(list_of_files), 
-                             "Should have 2 x nr datatypes files, one for operations one for datatypes")
+            assert count_datatypes * 2 == len(list_of_files), "Should have 2 x nr datatypes files, one for operations one for datatypes"
 
         
     def test_export_with_invalid_data(self):
@@ -143,25 +143,29 @@ class ExportersTest(TransactionalTestCase):
         Test scenarios when data provided to export method is invalid
         """
         # Test with no datatype
-        self.assertRaises(InvalidExportDataException, self.export_manager.export_data, 
-                          None, self.TVB_EXPORTER, self.project)
+        with pytest.raises(InvalidExportDataException):
+            self.export_manager.export_data(None, self.TVB_EXPORTER, self.project)
         
         # Test with no exporter 
         datatype = self.datatypeFactory.create_datatype_with_storage()  
-        self.assertRaises(ExportException, self.export_manager.export_data, datatype, None, self.project)
+        with pytest.raises(ExportException):
+            self.export_manager.export_data( datatype, None, self.project)
         
         # test with wrong exporter
-        self.assertRaises(ExportException, self.export_manager.export_data, datatype, "wrong_exporter", self.project)
+        with pytest.raises(ExportException):
+            self.export_manager.export_data(datatype, "wrong_exporter", self.project)
         
         # test with no project folder
-        self.assertRaises(ExportException, self.export_manager.export_data, datatype, self.TVB_EXPORTER, None)
+        with pytest.raises(ExportException):
+            self.export_manager.export_data(datatype, self.TVB_EXPORTER, None)
 
 
     def test_export_project_failure(self):
         """
         This method tests export of project with None data
         """
-        self.assertRaises(ExportException, self.export_manager.export_project, None)
+        with pytest.raises(ExportException):
+            self.export_manager.export_project(None)
 
 
     def tet_export_project(self):
@@ -171,21 +175,8 @@ class ExportersTest(TransactionalTestCase):
         project = self.datatypeFactory.get_project()
         export_file = self.export_manager.export_project(project)
         
-        self.assertTrue(export_file is not None, "Export process should return path to export file")
-        self.assertTrue(os.path.exists(export_file), "Could not find export file: %s on disk." % export_file)
+        assert export_file is not None, "Export process should return path to export file"
+        assert os.path.exists(export_file), "Could not find export file: %s on disk." % export_file
         # Now check if the generated file is a correct ZIP file
-        self.assertTrue(zipfile.is_zipfile(export_file), "Generated file is not a valid ZIP file")
+        assert zipfile.is_zipfile(export_file), "Generated file is not a valid ZIP file"
 
-
-            
-def suite():
-    """ 
-    Gather all the tests in a test suite.
-    """
-    test_suite = unittest.TestSuite()
-    test_suite.addTest(unittest.makeSuite(ExportersTest))
-    return test_suite
-
-if __name__ == "__main__":
-    #So you can run tests from this package individually.
-    unittest.main()
