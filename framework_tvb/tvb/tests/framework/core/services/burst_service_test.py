@@ -364,7 +364,7 @@ class TestBurstService(BaseTestCase):
         """
         Test the branching of an existing burst.
         """
-        burst_config = self._prepare_and_launch_async_burst(wait_to_finish=500)
+        burst_config = self._prepare_and_launch_async_burst(wait_to_finish=60)
         burst_config.prepare_after_load()
 
         launch_params = self._prepare_simulation_params(4)
