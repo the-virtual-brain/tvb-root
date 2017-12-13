@@ -102,9 +102,7 @@ Testing
 =======
 
 For testing the package, the `Pytest  <https://docs.pytest.org/>`_
-framework is used. Pytest can be installed using pip command::
-
-    pip install -U pytest
+framework is used. Pytest can be installed using pip.
 
 Pytest will run all files in the current directory and its subdirectories
 of the form test_*.py or \*_test.py.
@@ -117,10 +115,9 @@ Recommendation when working with a git clone of tvb-library::
     cd [folder_where_tvb_library_is]
     pytest tvb/test [--junitxml=path]
 
-When installing TVB from Pypi, the recommendation is to run our tests with::
+The second alternative form of running TVB tests, when installing TVB from Pypi, is::
 
     pip install -U tvb-library
-    pip install -U tvb-data
     pytest --pyargs tvb.tests.library
 
 
