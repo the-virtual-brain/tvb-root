@@ -56,9 +56,9 @@ More generally, it follows `standard test discovery rules
 The command for running our tests has two forms.
 Recommendation when working with a git clone of tvb-framework::
 
-  cd [folder_where_tvb_framework_is]
-  pytest tvb/test/framework [--profile=TEST_POSTGRES_PROFILE] [--junitxml=path]
-  # default profile value is TEST_SQLITE_PROFILE
+    cd [folder_where_tvb_framework_is]
+    pytest tvb/test/framework [--profile=TEST_POSTGRES_PROFILE] [--junitxml=path]
+    # default profile value is TEST_SQLITE_PROFILE
 
 The second alternative form of running TVB tests, when installing TVB from Pypi, is::
 
