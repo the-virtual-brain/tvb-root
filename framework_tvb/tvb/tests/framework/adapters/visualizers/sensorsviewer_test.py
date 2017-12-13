@@ -45,7 +45,6 @@ from tvb.tests.framework.core.factory import TestFactory
 from tvb.tests.framework.datatypes.datatypes_factory import DatatypesFactory
 
 
-
 class TestSensorViewers(TransactionalTestCase):
     """
     Unit-tests for Sensors viewers.
@@ -61,21 +60,19 @@ class TestSensorViewers(TransactionalTestCase):
     EXPECTED_KEYS_MEG = EXPECTED_KEYS_EEG.copy()
     EXPECTED_KEYS_MEG.update({'noOfMeasurePoints': 151, 'maxMeasure': 151})
 
-
     def setUp(self):
         """
         Sets up the environment for running the tests;
         creates a test user, a test project, a connectivity and a surface;
         imports a CFF data-set
         """
-        self.datatypeFactory = DatatypesFactory()
-        self.test_project = self.datatypeFactory.get_project()
-        self.test_user = self.datatypeFactory.get_user()
+        self.factory = DatatypesFactory()
+        self.test_project = self.factory.get_project()
+        self.test_user = self.factory.get_user()
 
         ## Import Shelf Face Object
         face_path = os.path.join(os.path.dirname(tvb_data.obj.__file__), 'face_surface.obj')
         TestFactory.import_surface_obj(self.test_user, self.test_project, face_path, FACE)
-
 
     def tearDown(self):
         """
@@ -83,8 +80,7 @@ class TestSensorViewers(TransactionalTestCase):
         """
         FilesHelper().remove_project_structure(self.test_project.name)
 
-
-    def test_launch_EEG(self):
+    def test_launch_eeg(self):
         """
         Check that all required keys are present in output from EegSensorViewer launch.
         """
@@ -105,17 +101,16 @@ class TestSensorViewers(TransactionalTestCase):
         result = viewer.launch(sensors, eeg_cap_surface)
         self.assert_compliant_dictionary(self.EXPECTED_KEYS_EEG, result)
         for key in ['urlVertices', 'urlTriangles', 'urlLines', 'urlNormals']:
-            assert result[key] != None, "Value at key %s should not be None" % key
+            assert result[key] is not None, "Value at key %s should not be None" % key
 
         ## Launch without EEG Cap
         result = viewer.launch(sensors)
         self.assert_compliant_dictionary(self.EXPECTED_KEYS_EEG, result)
         for key in ['urlVertices', 'urlTriangles', 'urlLines', 'urlNormals']:
-            assertnot result[key] or result[key] == "[]",
-                           \ "Value at key %s should be None or empty, but is %s" % (key, result[key])
+            assert not result[key] or result[key] == "[]", "Value at key %s should be None or empty, " \
+                                                           "but is %s" % (key, result[key])
 
-
-    def test_launch_MEG(self):
+    def test_launch_meg(self):
         """
         Check that all required keys are present in output from MEGSensorViewer launch.
         """
@@ -130,7 +125,6 @@ class TestSensorViewers(TransactionalTestCase):
         result = viewer.launch(sensors)
         self.assert_compliant_dictionary(self.EXPECTED_KEYS_MEG, result)
 
-
     def test_launch_internal(self):
         """
         Check that all required keys are present in output from InternalSensorViewer launch.
@@ -144,4 +138,3 @@ class TestSensorViewers(TransactionalTestCase):
 
         result = viewer.launch(sensors)
         self.assert_compliant_dictionary(self.EXPECTED_KEYS_INTERNAL, result)
-

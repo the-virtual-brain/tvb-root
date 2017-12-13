@@ -55,7 +55,6 @@ class TestBCT(TransactionalTestCase):
                                    "ClusteringCoefficientBU", "ClusteringCoefficientWU",
                                    "TransitivityBinaryUnDirected", "TransitivityWeightedUnDirected"]
 
-
     @pytest.mark.skipif(get_matlab_executable() is None, reason="Matlab or Octave not installed!")
     def setUp(self):
         """
@@ -80,7 +79,6 @@ class TestBCT(TransactionalTestCase):
         self.bct_adapters = []
         for algo in algorithms:
             self.bct_adapters.append(ABCAdapter.build_adapter(algo))
-
 
     def tearDown(self):
         """
@@ -119,14 +117,11 @@ class TestBCT(TransactionalTestCase):
                 if algorithm.classname not in TestBCT.EXPECTED_TO_FAIL_VALIDATION:
                     raise excep
 
-
     @pytest.mark.skipif(get_matlab_executable() is None, reason="Matlab or Octave not installed!")
     def test_bct_descriptions(self):
         """
         Iterate all BCT algorithms and check that description has been extracted from *.m files.
         """
         for adapter_instance in self.bct_adapters:
-            assertlen(adapter_instance.stored_adapter.description) > 10,
-                           \ "Description was not loaded properly for algorithm %s" % (str(adapter_instance))
-
-
+            assert len(adapter_instance.stored_adapter.description) > 10, "Description was not loaded properly for " \
+                                                                          "algorithm %s" % (str(adapter_instance))

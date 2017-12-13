@@ -45,7 +45,6 @@ class TestIntrospector(BaseTestCase):
     """
     old_current_dir = TvbProfile.current.web.CURRENT_DIR
 
-
     def setup_method(self):
         """
         Introspect supplementary folder:
@@ -56,13 +55,11 @@ class TestIntrospector(BaseTestCase):
         self.introspector = Introspector("tvb.tests.framework")
         self.introspector.introspect(True)
 
-
     def teardown_method(self):
         """
         Revert changes settings and remove recently imported algorithms
         """
         TvbProfile.current.web.CURRENT_DIR = self.old_current_dir
-
 
     def test_introspect(self):
         """
@@ -76,18 +73,17 @@ class TestIntrospector(BaseTestCase):
         assert 8 == len(adapters), "Introspection failed!"
         nr_adapters_mod2 = 0
         for algorithm in adapters:
-            assertalgorithm.module in ['tvb.tests.framework.adapters.testadapter1',
-                                                 'tvb.tests.framework.adapters.testadapter2',
-                                                 'tvb.tests.framework.adapters.testadapter3',
-                                                 'tvb.tests.framework.adapters.ndimensionarrayadapter',
-                                                 'tvb.tests.framework.adapters.testgroupadapter'],
-                           \ "Unknown Adapter module:" + str(algorithm.module)
-            assertalgorithm.classname in ["TestAdapter1", "TestAdapterDatatypeInput",
-                                                    "TestAdapter2", "TestAdapter22", "TestAdapterHugeMemoryRequired",
-                                                    "TestAdapter3", "TestAdapterHDDRequired",
-                                                    "NDimensionArrayAdapter"
-                                                    ], "Unknown Adapter Class:" + str(algorithm.classname)
+            assert algorithm.module in ['tvb.tests.framework.adapters.testadapter1',
+                                        'tvb.tests.framework.adapters.testadapter2',
+                                        'tvb.tests.framework.adapters.testadapter3',
+                                        'tvb.tests.framework.adapters.ndimensionarrayadapter',
+                                        'tvb.tests.framework.adapters.testgroupadapter'], "Unknown Adapter module:" + str(
+                algorithm.module)
+            assert algorithm.classname in ["TestAdapter1", "TestAdapterDatatypeInput",
+                                           "TestAdapter2", "TestAdapter22", "TestAdapterHugeMemoryRequired",
+                                           "TestAdapter3", "TestAdapterHDDRequired",
+                                           "NDimensionArrayAdapter"
+                                           ], "Unknown Adapter Class:" + str(algorithm.classname)
             if algorithm.module == 'tvb.tests.framework.adapters.testadapter2':
                 nr_adapters_mod2 += 1
         assert nr_adapters_mod2 == 2
-
