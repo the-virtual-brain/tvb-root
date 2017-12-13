@@ -57,17 +57,13 @@ The command for running our tests has two forms.
 Recommendation when working with a git clone of tvb-framework::
 
   cd [folder_where_tvb_framework_is]
-  pytest tvb/test [--profile=TEST_POSTGRES_PROFILE] [--junitxml=path]
+  pytest tvb/test/framework [--profile=TEST_POSTGRES_PROFILE] [--junitxml=path]
+  # default profile value is TEST_SQLITE_PROFILE
 
 The second alternative form of running TVB tests, when installing TVB from Pypi, is::
 
     pip install -U tvb-framework
     pytest --pyargs tvb.tests.framework
-
-In both forms, for changing the testing profile (and database), at runtime use the command::
-
-  pytest --profile=TEST_POSTGRES_PROFILE ...
-  # default profile value is TEST_SQLITE_PROFILE
 
 
 Coverage
