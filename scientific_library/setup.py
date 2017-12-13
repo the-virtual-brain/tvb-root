@@ -40,12 +40,12 @@ import shutil
 import setuptools
 
 
-LIBRARY_VERSION = "1.5.5"
+LIBRARY_VERSION = "1.5.6"
 
 TVB_TEAM = "Stuart Knock, Marmaduke Woodman, Paula Sanz Leon, Laurent Pezard, Viktor Jirsa"
 
 TVB_INSTALL_REQUIREMENTS = ["networkx", "numpy", "numba", "numexpr", "matplotlib",
-                            "scikit-learn", "scipy", "tvb-gdist"]
+                            "pytest", "scikit-learn", "scipy", "tvb-gdist", "tvb-data"]
 
 with open(os.path.join(os.path.dirname(__file__), 'README.rst')) as fd:
     DESCRIPTION = fd.read()
@@ -55,7 +55,6 @@ setuptools.setup(name='tvb-library',
                  packages=setuptools.find_packages(),
                  include_package_data=True,
                  install_requires=TVB_INSTALL_REQUIREMENTS,
-                 extras_require={'tvb-data': ["tvb-data"]},
                  description='A package for performing whole brain simulations',
                  long_description=DESCRIPTION,
                  license="GPL v3",

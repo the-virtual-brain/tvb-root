@@ -8,10 +8,10 @@ echo 'Executing clean before tests...'
 python tvb_bin\app.py clean TEST_SQLITE_PROFILE
 
 echo 'Starting TVB tests...'
-python -m tvb.tests.framework.main_tests TEST_SQLITE_PROFILE xml
+pytest --pyargs tvb.tests.framework --profile=TEST_SQLITE_PROFILE --junitxml=TEST_OUTPUT/TEST-RESULTS.xml
 
 echo 'Starting TVB Scientific Library tests'
-python -m tvb.tests.library.main_tests xml
+pytest --pyargs tvb.tests.library --junitxml=TEST_OUTPUT/TEST-LIBRARY-RESULTS.xml
 
 echo 'Tests done.'
 
