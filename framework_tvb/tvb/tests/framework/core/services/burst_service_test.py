@@ -37,7 +37,7 @@ import pytest
 import numpy
 import json
 from time import sleep
-from tvb.tests.framework.core.base_testcase import BaseTestCase, init_test_env
+from tvb.tests.framework.core.base_testcase import BaseTestCase
 from tvb.core.adapters.input_tree import InputTreeManager
 from tvb.config import SIMULATOR_MODULE, SIMULATOR_CLASS
 from tvb.datatypes.connectivity import Connectivity
@@ -106,7 +106,6 @@ class TestBurstService(BaseTestCase):
         FilesHelper().remove_project_structure(self.test_project.name)
         self.clean_database()
 
-
     def test_new_portlet_configuration(self):
         """
         Test that the correct portlet configuration is generated for the test portlet.
@@ -119,11 +118,12 @@ class TestBurstService(BaseTestCase):
         test_portlet = dao.get_portlet_by_identifier(self.PORTLET_ID)
         portlet_configuration = self.burst_service.new_portlet_configuration(test_portlet.id)
         analyzers = portlet_configuration.analyzers
-        assert len(analyzers) == 1, "Portlet configuration not build properly."\
-                                            " Portlet's analyzers list has unexpected number of elements."
+        assert len(
+            analyzers) == 1, "Portlet configuration not build properly. " \
+                             "Portlet's analyzers list has unexpected number of elements."
         assert analyzers[0].dynamic_param == {u'test_dt_input': {wf_cfg.DATATYPE_INDEX_KEY: 0,
-                                                                         wf_cfg.STEP_INDEX_KEY: 0}},\
-                         "Dynamic parameters not loaded properly"
+                                                                 wf_cfg.STEP_INDEX_KEY: 0}}, \
+            "Dynamic parameters not loaded properly"
         visualizer = portlet_configuration.visualizer
         assert visualizer.dynamic_param == {}, "Dynamic parameters not loaded properly"
         assert visualizer.static_param == {u'test2': u'0'}, 'Static parameters not loaded properly'
@@ -181,8 +181,8 @@ class TestBurstService(BaseTestCase):
                 visualizer parameter change or an analyzer one)
             """
             result = self.burst_service.update_portlet_configuration(portlet_configuration, declared_overwrites)
-            assert expected_result == result,\
-                             "After update expected %s as 'need_restart' but got %s." % (expected_result, result)
+            assert expected_result == result, "After update expected %s as 'need_restart' but got %s." \
+                                              "" % (expected_result, result)
 
 
         test_portlet = dao.get_portlet_by_identifier(self.PORTLET_ID)
@@ -364,7 +364,7 @@ class TestBurstService(BaseTestCase):
         """
         Test the branching of an existing burst.
         """
-        burst_config = self._prepare_and_launch_async_burst(wait_to_finish=500)
+        burst_config = self._prepare_and_launch_async_burst(wait_to_finish=60)
         burst_config.prepare_after_load()
 
         launch_params = self._prepare_simulation_params(4)

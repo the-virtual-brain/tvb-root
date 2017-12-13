@@ -42,7 +42,6 @@ from tvb.tests.framework.core.factory import TestFactory
 class ComplexInterfaceAdapter(ABCSynchronous):
     """Adapter with a complex interface, target for testing ABCAdapter methods."""
 
-
     def get_input_tree(self):
         return [{'name': 'surface', 'type': 'tvb.core.entities.model.DataType', "datatype": True,
                  'attributes': [{'name': 'att1', 'type': 'int', 'default': '0'},
@@ -71,7 +70,6 @@ class ComplexInterfaceAdapter(ABCSynchronous):
 
     def get_required_disk_size(self, **kwargs):
         return 0
-
 
 
 class TestAdapterABC(TransactionalTestCase):
@@ -124,13 +122,11 @@ class TestAdapterABC(TransactionalTestCase):
     EXPECTED_FILTERED_SET4 = {"surface": None.__class__, "monitors": list,
                               "monitors_parameters": dict, "length": int}
 
-
     def setUp(self):
         """
         Reset the database before each test.
         """
         self.test_adapter = ComplexInterfaceAdapter()
-
 
     def test_flat_interface(self):
         """
@@ -162,7 +158,7 @@ class TestAdapterABC(TransactionalTestCase):
         Test for ABCAdapter.prepare_ui_inputs, when invalid values passed for numeric fields.
         """
         with pytest.raises(Exception):
-            self.test_adapter.prepare_ui_inputs( self.SUBMIT_DATASET_2)
+            self.test_adapter.prepare_ui_inputs(self.SUBMIT_DATASET_2)
 
     def test_prepare_inputs_datatype(self):
         """
@@ -192,20 +188,13 @@ class TestAdapterABC(TransactionalTestCase):
         kwargs = self.test_adapter.prepare_ui_inputs(self.SUBMIT_DATASET_4)
 
         for expected_name, expected_type in self.EXPECTED_FILTERED_SET4.iteritems():
-            assertexpected_name in kwargs
-            assertisinstance(kwargs[expected_name], expected_type)
-        assertlen(self.EXPECTED_FILTERED_SET4)== len(kwargs)
+            assert expected_name in kwargs
+            assert isinstance(kwargs[expected_name], expected_type)
+        assert len(self.EXPECTED_FILTERED_SET4) == len(kwargs)
 
-        assert2== len(kwargs["monitors_parameters"]["BOLD"])
-        assert2== len(kwargs["monitors_parameters"]["EEG"])
-        assertisinstance(kwargs["monitors_parameters"]["BOLD"]["mon_att1"], int)
-        assert42== kwargs["monitors_parameters"]["BOLD"]["mon_att1"]
-        assert43== kwargs["monitors_parameters"]["EEG"]["mon_att1"]
-        assertisinstance(kwargs["monitors_parameters"]["BOLD"]["mon_att4"], str)
-
-
-
-    
-    
-      
-        
+        assert 2 == len(kwargs["monitors_parameters"]["BOLD"])
+        assert 2 == len(kwargs["monitors_parameters"]["EEG"])
+        assert isinstance(kwargs["monitors_parameters"]["BOLD"]["mon_att1"], int)
+        assert 42 == kwargs["monitors_parameters"]["BOLD"]["mon_att1"]
+        assert 43 == kwargs["monitors_parameters"]["EEG"]["mon_att1"]
+        assert isinstance(kwargs["monitors_parameters"]["BOLD"]["mon_att4"], str)

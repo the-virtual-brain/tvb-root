@@ -36,3 +36,7 @@ This is the tests folder for the entire TVB project.
 """
 For running test on tvb-framework use the command: pytest tvb-framework
 """
+
+from pkgutil import extend_path
+
+__path__ = extend_path(__path__, __name__)

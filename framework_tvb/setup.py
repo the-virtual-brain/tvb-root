@@ -41,12 +41,12 @@ import shutil
 import setuptools
 
 
-VERSION = "1.5.5"
+VERSION = "1.5.6"
 
 TVB_TEAM = "Mihai Andrei, Lia Domide, Stuart Knock, Bogdan Neacsa, Paula Sansz Leon, Marmaduke Woodman"
 
 TVB_INSTALL_REQUIREMENTS = ["allensdk", "BeautifulSoup4", "cfflib", "cherrypy", "formencode", "genshi",
-                            "h5py", "networkx", "nibabel", "numpy", "Pillow", "psutil", "scipy",
+                            "h5py", "networkx", "nibabel", "numpy", "Pillow", "psutil", "pytest", "scipy",
                             "simplejson", "sqlalchemy", "sqlalchemy-migrate", "tvb-data", "tvb-library"]
 
 with open(os.path.join(os.path.dirname(__file__), 'README.rst')) as fd:

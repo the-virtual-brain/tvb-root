@@ -72,7 +72,7 @@ class TestICA(TransactionalTestCase):
         Check that all required keys are present in output from BrainViewer launch.
         """
         time_series = self.datatypeFactory.create_timeseries(self.connectivity)
-        conn_measure = self.datatypeFactory.create_ICA(time_series)
+        conn_measure = self.datatypeFactory.create_ica(time_series)
         viewer = ICA()
         result = viewer.launch(conn_measure)
         expected_keys = ['matrix_shape', 'matrix_data', 'mainContent', 'isAdapter']

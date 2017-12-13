@@ -42,7 +42,6 @@ from tvb.basic.profile import TvbProfile
 from tvb.core.entities.file.exceptions import FileStructureException, MissingDataSetException
 from tvb.core.entities.file.exceptions import IncompatibleFileManagerException
 
-
 # Some constants used by tests
 STORAGE_FILE_NAME = "test_data.h5"
 DATASET_NAME_1 = "dataset1"
@@ -53,12 +52,10 @@ META_DICT = {META_KEY: META_VALUE}
 STORE_PATH = "/node1/node2"
 
 
-
-class TestHDF5Storage():
+class TestHDF5Storage(object):
     """
     This tests storage of data into HDF5 format (H5 files).
     """
-
 
     def setup_method(self):
         """
@@ -77,7 +74,6 @@ class TestHDF5Storage():
         self.test_3D_array = numpy.random.random((3, 3, 3))
         self.test_string_array = numpy.array([["a", "b"], ["c", "d"]])
 
-
     def teardown_method(self):
         """
         Tear down to revert any changes made by a test.
@@ -87,10 +83,9 @@ class TestHDF5Storage():
         if os.path.exists(self.storage_folder):
             shutil.rmtree(self.storage_folder)
 
-
-    def assertArrayEqual(self, expected_arr, current_arr, message=None):
+    @staticmethod
+    def _assert_arrays_are_equal(expected_arr, current_arr, message=None):
         numpy.testing.assert_array_equal(expected_arr, current_arr, message)
-
 
     # -------------- TESTS ---------------------
     def test_file_creation(self):
@@ -100,7 +95,6 @@ class TestHDF5Storage():
         self.storage.store_data(DATASET_NAME_1, self.test_2D_array)
         full_path = os.path.join(self.storage_folder, STORAGE_FILE_NAME)
         assert os.path.exists(full_path), "Storage file not created."
-
 
     def test_invalid_storage_path(self):
         """
@@ -112,8 +106,7 @@ class TestHDF5Storage():
 
         # Test if file name is None
         with pytest.raises(FileStructureException):
-            hdf5.HDF5StorageManager( self.storage_folder, None)
-
+            hdf5.HDF5StorageManager(self.storage_folder, None)
 
     def test_simple_data_storage(self):
         """
@@ -123,8 +116,7 @@ class TestHDF5Storage():
         # Now read data
         read_data = self.storage.get_data(DATASET_NAME_1)
 
-        self.assertArrayEqual(self.test_2D_array, read_data, "Did not get the expected data")
-
+        self._assert_arrays_are_equal(self.test_2D_array, read_data, "Did not get the expected data")
 
     def test_store_data_repeatedly(self):
         """
@@ -143,8 +135,7 @@ class TestHDF5Storage():
 
         # Now read data
         read_data = self.storage.get_data(DATASET_NAME_1)
-        self.assertArrayEqual(self.test_2D_array, read_data, "Did not get the expected data")
-
+        self._assert_arrays_are_equal(self.test_2D_array, read_data, "Did not get the expected data")
 
     def test_simple_data_storage_on_path(self):
         """
@@ -153,8 +144,7 @@ class TestHDF5Storage():
         self.storage.store_data(DATASET_NAME_1, self.test_2D_array, STORE_PATH)
         # Now read data
         read_data = self.storage.get_data(DATASET_NAME_1, None, STORE_PATH)
-        self.assertArrayEqual(self.test_2D_array, read_data)
-
+        self._assert_arrays_are_equal(self.test_2D_array, read_data)
 
     def test_string_data_storage(self):
         """
@@ -163,16 +153,14 @@ class TestHDF5Storage():
         self.storage.store_data(DATASET_NAME_1, self.test_string_array)
         # Now read data
         read_data = self.storage.get_data(DATASET_NAME_1)
-        self.assertArrayEqual(self.test_string_array, read_data)
-
+        self._assert_arrays_are_equal(self.test_string_array, read_data)
 
     def test_store_none_data(self):
         """
         Test scenario when trying to store None data
         """
         with pytest.raises(FileStructureException):
-            self.storage.store_data( DATASET_NAME_1, None)
-
+            self.storage.store_data(DATASET_NAME_1, None)
 
     def test_append_data1(self):
         """
@@ -180,8 +168,7 @@ class TestHDF5Storage():
         """
         self.storage.append_data(DATASET_NAME_1, self.test_3D_array)
         read_data = self.storage.get_data(DATASET_NAME_1)
-        self.assertArrayEqual(self.test_3D_array, read_data)
-
+        self._assert_arrays_are_equal(self.test_3D_array, read_data)
 
     def test_append_data2(self):
         """
@@ -194,8 +181,7 @@ class TestHDF5Storage():
 
         self.storage.close_file()
         read_data = self.storage.get_data(DATASET_NAME_1)
-        self.assertArrayEqual(self.test_2D_array, read_data)
-
+        self._assert_arrays_are_equal(self.test_2D_array, read_data)
 
     def test_append_data_on_path(self):
         """
@@ -203,8 +189,7 @@ class TestHDF5Storage():
         """
         self.storage.append_data(DATASET_NAME_1, self.test_3D_array, where=STORE_PATH)
         read_data = self.storage.get_data(DATASET_NAME_1, where=STORE_PATH)
-        self.assertArrayEqual(self.test_3D_array, read_data)
-
+        self._assert_arrays_are_equal(self.test_3D_array, read_data)
 
     def test_append_other_dimension(self):
         """
@@ -216,8 +201,7 @@ class TestHDF5Storage():
             self.storage.append_data(DATASET_NAME_1, self.test_2D_array[slices], 0)
 
         read_data = self.storage.get_data(DATASET_NAME_1)
-        self.assertArrayEqual(self.test_2D_array, read_data)
-
+        self._assert_arrays_are_equal(self.test_2D_array, read_data)
 
     def test_append_strings(self):
         """
@@ -229,8 +213,7 @@ class TestHDF5Storage():
             self.storage.append_data(DATASET_NAME_1, self.test_string_array[slices])
 
         read_data = self.storage.get_data(DATASET_NAME_1)
-        self.assertArrayEqual(self.test_string_array, read_data)
-
+        self._assert_arrays_are_equal(self.test_string_array, read_data)
 
     def test_append_none_data(self):
         """
@@ -238,7 +221,6 @@ class TestHDF5Storage():
         """
         with pytest.raises(FileStructureException):
             self.storage.append_data(DATASET_NAME_1, None)
-
 
     def test_append_without_closing_file(self):
         """
@@ -251,8 +233,7 @@ class TestHDF5Storage():
         self.storage.close_file()
 
         read_data = self.storage.get_data(DATASET_NAME_1)
-        self.assertArrayEqual(self.test_3D_array, read_data)
-
+        self._assert_arrays_are_equal(self.test_3D_array, read_data)
 
     def test_close_file_multiple_time(self):
         """
@@ -266,8 +247,7 @@ class TestHDF5Storage():
         self.storage.close_file()
 
         read_data = self.storage.get_data(DATASET_NAME_1)
-        self.assertArrayEqual(self.test_3D_array, read_data)
-
+        self._assert_arrays_are_equal(self.test_3D_array, read_data)
 
     def test_delete_dataset(self):
         """
@@ -276,13 +256,12 @@ class TestHDF5Storage():
         self.storage.store_data(DATASET_NAME_1, self.test_2D_array)
         # Now check if data was persisted. 
         read_data = self.storage.get_data(DATASET_NAME_1)
-        self.assertArrayEqual(self.test_2D_array, read_data)
+        self._assert_arrays_are_equal(self.test_2D_array, read_data)
 
         # Now delete dataset
         self.storage.remove_data(DATASET_NAME_1)
         with pytest.raises(MissingDataSetException):
             self.storage.get_data(DATASET_NAME_1)
-
 
     def test_delete_dataset_on_path(self):
         """
@@ -292,13 +271,12 @@ class TestHDF5Storage():
         self.storage.store_data(DATASET_NAME_1, self.test_2D_array, STORE_PATH)
         # Now check if data was persisted. 
         read_data = self.storage.get_data(DATASET_NAME_1, None, STORE_PATH)
-        self.assertArrayEqual(self.test_2D_array, read_data)
+        self._assert_arrays_are_equal(self.test_2D_array, read_data)
 
         # Now delete dataset
         self.storage.remove_data(DATASET_NAME_1, STORE_PATH)
         with pytest.raises(MissingDataSetException):
-            self.storage.get_data( DATASET_NAME_1)
-
+            self.storage.get_data(DATASET_NAME_1)
 
     def test_delete_missing_dataset(self):
         """
@@ -306,7 +284,6 @@ class TestHDF5Storage():
         """
         with pytest.raises(FileStructureException):
             self.storage.remove_data(DATASET_NAME_1)
-
 
     def test_read_sliced_data(self):
         """
@@ -318,8 +295,7 @@ class TestHDF5Storage():
         for index in range(len(self.test_2D_array)):
             sl = slice(index, index + 1, 1)
             read_data = self.storage.get_data(DATASET_NAME_1, sl)
-            self.assertArrayEqual(self.test_2D_array[sl], read_data)
-
+            self._assert_arrays_are_equal(self.test_2D_array[sl], read_data)
 
     def test_add_metadata(self):
         """
@@ -338,7 +314,6 @@ class TestHDF5Storage():
         read_meta_value = self.storage.get_metadata()
         assert META_VALUE == read_meta_value[META_KEY]
 
-
     def test_add_metadata_on_path(self):
         """
         This method checks metadata add for a dataset stored under a given path
@@ -350,7 +325,6 @@ class TestHDF5Storage():
         self.storage.set_metadata(META_DICT, DATASET_NAME_1, where=STORE_PATH)
         read_meta_value = self.storage.get_metadata(DATASET_NAME_1, where=STORE_PATH)
         assert META_VALUE == read_meta_value[META_KEY]
-
 
     def test_delete_metadata(self):
         """
@@ -373,8 +347,7 @@ class TestHDF5Storage():
         assert META_VALUE == read_meta_data[META_KEY], "Retrieved meta value is not correct"
         self.storage.remove_metadata(META_KEY)
         read_meta_data = self.storage.get_metadata()
-        assert 1, len(read_meta_data) == "There should be no metadata stored on root node, except data version"
-
+        assert 1 == len(read_meta_data), "There should be no metadata stored on root node, except data version"
 
     def test_delete_metadata_on_path(self):
         """
@@ -391,7 +364,6 @@ class TestHDF5Storage():
         read_meta_data = self.storage.get_metadata(DATASET_NAME_1, where=STORE_PATH)
         assert 0 == len(read_meta_data), "There should be no metadata stored on dataset"
 
-
     def test_delete_missing_metadata(self):
         """
         This method tests removal of a missing metadata
@@ -405,7 +377,6 @@ class TestHDF5Storage():
         read_meta_data = self.storage.get_metadata()
         assert 1, len(read_meta_data) == "There should be no metadata stored on root node, except data version"
 
-
     def test_delete_metadata_missing_dataset(self):
         """
         Test retrieval of metadata for a missing dataset.
@@ -414,7 +385,6 @@ class TestHDF5Storage():
         self.storage.store_data(DATASET_NAME_1, self.test_2D_array)
         with pytest.raises(MissingDataSetException):
             self.storage.get_metadata(DATASET_NAME_2)
-
 
     def test_concurent_file_access(self):
         """
@@ -430,8 +400,7 @@ class TestHDF5Storage():
 
             # Now try to read file
             read_data = new_storage.get_data(DATASET_NAME_2)
-            self.assertArrayEqual(self.test_2D_array, read_data)
-
+            self._assert_arrays_are_equal(self.test_2D_array, read_data)
 
     def test_add_metadata_non_tvb_specific(self):
         """
@@ -449,7 +418,6 @@ class TestHDF5Storage():
         self.storage.set_metadata(META_DICT, '', False)
         read_meta_value = self.storage.get_metadata()
         assert META_VALUE == read_meta_value[META_KEY]
-
 
     def test_delete_metadata_non_tvb_specific(self):
         """
@@ -474,7 +442,6 @@ class TestHDF5Storage():
         read_meta_data = self.storage.get_metadata()
         assert 1 == len(read_meta_data)
 
-
     def test_data_version(self):
         """
         Test if data version meta data is assigned when H5 file is created
@@ -483,6 +450,5 @@ class TestHDF5Storage():
 
         # Now read meta data for root node
         read_data = self.storage.get_metadata()
-        self.assertArrayEqual(TvbProfile.current.version.DATA_VERSION,
-                              read_data[TvbProfile.current.version.DATA_VERSION_ATTRIBUTE])
-
+        self._assert_arrays_are_equal(TvbProfile.current.version.DATA_VERSION,
+                                      read_data[TvbProfile.current.version.DATA_VERSION_ATTRIBUTE])

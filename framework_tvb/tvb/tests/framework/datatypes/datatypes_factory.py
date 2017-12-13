@@ -34,7 +34,6 @@ This module contains methods for creating persisted data-types for tests.
 .. moduleauthor:: Calin Pavel <calin.pavel@codemart.ro>
 """
 
-
 import json
 import numpy
 import time
@@ -62,7 +61,6 @@ from tvb.tests.framework.datatypes.datatype2 import Datatype2
 from tvb.tests.framework.adapters.storeadapter import StoreAdapter
 
 
-
 class DatatypesFactory(object):
     """
     This class provides a set of methods that helps user to create
@@ -80,7 +78,6 @@ class DatatypesFactory(object):
     user = None
     project = None
     operation = None
-
 
     def __init__(self):
         micro_postfix = "_%d" % int(time.time() * 1000000)
@@ -101,18 +98,17 @@ class DatatypesFactory(object):
         # Create algorithm
         alg_category = model.AlgorithmCategory('one', True)
         dao.store_entity(alg_category)
-        ad = model.Algorithm("tvb.adapters.simulator.simulator_adapter", "SimulatorAdapter", alg_category.id)
-        self.algorithm = dao.get_algorithm_by_module("tvb.adapters.simulator.simulator_adapter", "SimulatorAdapter")
-        if(self.algorithm is None):
+        ad = model.Algorithm(SIMULATOR_MODULE, SIMULATOR_CLASS, alg_category.id)
+        self.algorithm = dao.get_algorithm_by_module(SIMULATOR_MODULE, SIMULATOR_CLASS)
+        if self.algorithm is None:
             self.algorithm = dao.store_entity(ad)
 
-        #Create an operation
+        # Create an operation
         self.meta = {DataTypeMetaData.KEY_SUBJECT: self.USER_FULL_NAME,
                      DataTypeMetaData.KEY_STATE: self.DATATYPE_STATE}
         operation = model.Operation(self.user.id, self.project.id, self.algorithm.id, 'test parameters',
                                     meta=json.dumps(self.meta), status=model.STATUS_FINISHED)
         self.operation = dao.store_entity(operation)
-
 
     def get_project(self):
         """
@@ -120,20 +116,17 @@ class DatatypesFactory(object):
         """
         return self.project
 
-
     def get_operation(self):
         """
         Return operation to which generated data types are assigned
         """
         return self.operation
 
-
     def get_user(self):
         """
         Return user to which generated data types are assigned
         """
         return self.user
-
 
     def _store_datatype(self, data_type, operation_id=None):
         """
@@ -152,7 +145,6 @@ class DatatypesFactory(object):
 
         return data_type
 
-
     def create_simple_datatype(self, subject=USER_FULL_NAME, state=DATATYPE_STATE):
         """
         This method creates a simple data type
@@ -163,7 +155,6 @@ class DatatypesFactory(object):
         # Store data type
         return self._store_datatype(datatype_inst)
 
-
     def create_datatype_with_storage(self, subject=USER_FULL_NAME, state=DATATYPE_STATE,
                                      data=DATATYPE_DATA, operation_id=None):
         """
@@ -173,9 +164,7 @@ class DatatypesFactory(object):
         self._fill_datatype(datatype_inst, subject, state, operation_id)
 
         datatype_inst.string_data = data
-
         return self._store_datatype(datatype_inst, operation_id)
-
 
     def _fill_datatype(self, datatype, subject, state, operation_id=None):
         """
@@ -186,7 +175,6 @@ class DatatypesFactory(object):
         datatype.state = state
         # Set_operation_id also sets storage_path attribute
         datatype.set_operation_id(operation_id)
-
 
     def __create_operation(self):
         """
@@ -200,7 +188,6 @@ class DatatypesFactory(object):
         storage_path = FilesHelper().get_project_folder(self.project, str(operation.id))
         return operation, algorithm.id, storage_path
 
-
     def create_connectivity(self, nodes=74):
         """
         Create a connectivity that will be used in "non-dummy" burst launches (with the actual simulator).
@@ -212,7 +199,6 @@ class DatatypesFactory(object):
         adapter_instance = StoreAdapter([connectivity])
         OperationService().initiate_prelaunch(operation, adapter_instance, {})
         return algo_id, connectivity
-
 
     def create_timeseries(self, connectivity, ts_type=None, sensors=None):
         """
@@ -238,7 +224,6 @@ class DatatypesFactory(object):
         time_series = dao.get_datatype_by_gid(time_series.gid)
         return time_series
 
-
     def create_stimulus(self, connectivity):
         """
         :param connectivity: Connectivity to create stimuli for its regions
@@ -255,7 +240,6 @@ class DatatypesFactory(object):
         OperationService().initiate_prelaunch(operation, adapter_instance, {})
         return stimuli_region
 
-
     def create_covariance(self, time_series):
         """
         :returns: a stored DataType Covariance.
@@ -266,7 +250,6 @@ class DatatypesFactory(object):
         adapter_instance = StoreAdapter([covariance])
         OperationService().initiate_prelaunch(operation, adapter_instance, {})
         return covariance
-
 
     def create_crosscoherence(self, time_series):
         """
@@ -281,7 +264,6 @@ class DatatypesFactory(object):
         OperationService().initiate_prelaunch(operation, adapter_instance, {})
         return coherence
 
-
     def create_crosscorrelation(self, time_series):
         """
         :returns: `CrossCorrelation` stored entity.
@@ -294,7 +276,6 @@ class DatatypesFactory(object):
         adapter_instance = StoreAdapter([crossc])
         OperationService().initiate_prelaunch(operation, adapter_instance, {})
         return crossc
-
 
     def create_surface(self):
         """
@@ -321,7 +302,6 @@ class DatatypesFactory(object):
         OperationService().initiate_prelaunch(operation, adapter_instance, {})
         return algo_id, surface
 
-
     def create_connectivity_measure(self, connectivity):
         """
         :returns: persisted entity ConnectivityMeasure
@@ -332,7 +312,6 @@ class DatatypesFactory(object):
         adapter_instance = StoreAdapter([conn_measure])
         OperationService().initiate_prelaunch(operation, adapter_instance, {})
         return conn_measure
-
 
     def create_datatype_measure(self, analyzed_entity, operation=None, storage_path=None):
         """
@@ -346,8 +325,7 @@ class DatatypesFactory(object):
         OperationService().initiate_prelaunch(operation, adapter_instance, {})
         return measure
 
-
-    def create_ICA(self, timeseries):
+    def create_ica(self, timeseries):
         """
         :returns: persisted entity IndependentComponents
         """
@@ -364,7 +342,6 @@ class DatatypesFactory(object):
         adapter_instance = StoreAdapter([ica])
         OperationService().initiate_prelaunch(operation, adapter_instance, {})
         return ica
-
 
     def create_datatype_group(self, subject=USER_FULL_NAME, state=DATATYPE_STATE, ):
         """ 

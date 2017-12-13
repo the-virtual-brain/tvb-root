@@ -46,9 +46,7 @@ Testing
 =======
 
 For testing the package, the `Pytest  <https://docs.pytest.org/>`_
-framework is used. Pytest can be installed using pip command::
-
-  pip install -U pytest
+framework is used. Pytest can be installed using pip.
 
 Pytest will run all files in the current directory and its subdirectories
 of the form test_*.py or \*_test.py.
@@ -56,33 +54,30 @@ More generally, it follows `standard test discovery rules
 <https://docs.pytest.org/en/latest/getting-started.html>`_
 
 The command for running our tests has two forms.
-Recommandation when working with a git clone of tvb-framework::
+Recommendation when working with a git clone of tvb-framework::
 
   cd [folder_where_tvb_framework_is]
   pytest tvb/test [--profile=TEST_POSTGRES_PROFILE] [--junitxml=path]
 
-When installing TVB from Pypi, the recommandation is to run our tests with::
+The second alternative form of running TVB tests, when installing TVB from Pypi, is::
 
-pip install -U tvb-framework
-pip install -U tvb-data
-pytest --pyargs tvb.tests.framework
-pytest --pyargs tvb.tests.framework
+    pip install -U tvb-framework
+    pytest --pyargs tvb.tests.framework
 
+In both forms, for changing the testing profile (and database), at runtime use the command::
 
-For changing the testing profile at runtime use the command::
+  pytest --profile=TEST_POSTGRES_PROFILE ...
+  # default profile value is TEST_SQLITE_PROFILE
 
-  pytest --profile=TEST_POSTGRES_PROFILE
-  default value is TEST_SQLITE_PROFILE
 
 Coverage
 ========
 
-
-
 A coverage report can be generated with::
 
-pip install pytest-cov
-py.test --cov=[folder_where_tvb_framework_is] tvb/tests/ --cov-branch --cov-report xml:[file_where_xml_will_be_generated]
+    pip install pytest-cov
+    py.test --cov=[folder_where_tvb_framework_is] tvb/tests/ --cov-branch --cov-report xml:[file_where_xml_will_be_generated]
+
 
 Further Resources
 =================

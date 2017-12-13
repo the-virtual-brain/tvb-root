@@ -94,11 +94,10 @@ class OperationExecutor(threading.Thread):
             op_ident = model.OperationProcessIdentifier(operation_id, pid=launched_process.pid)
             dao.store_entity(op_ident)
 
-            #
-            # if self.stopped():
-            #     # In the exceptional case where the user pressed stop while the Thread startup is done.
-            #     # and stop_operation is concurrently asking about OperationProcessIdentity.
-            #     self.stop_pid(launched_process.pid)
+            if self.stopped():
+                # In the exceptional case where the user pressed stop while the Thread startup is done.
+                # and stop_operation is concurrently asking about OperationProcessIdentity.
+                self.stop_pid(launched_process.pid)
 
             subprocess_result = launched_process.communicate()
             LOGGER.info("Finished with launch of operation %s" % operation_id)
