@@ -34,8 +34,8 @@
 .. moduleauthor:: Calin Pavel <calin.pavel@codemart.ro>
 """
 
-import unittest
 import os
+import sys
 import shutil
 from functools import wraps
 from types import FunctionType
@@ -48,7 +48,7 @@ def init_test_env():
     """
     # Set a default test profile, for when running tests from dev-env.
     if TvbProfile.CURRENT_PROFILE_NAME is None:
-        TvbProfile.set_profile(TvbProfile.TEST_SQLITE_PROFILE)
+        TvbProfile.set_profile(TvbProfile.TEST_POSTGRES_PROFILE)
         print("Not expected to happen except from PyCharm: setting profile", TvbProfile.CURRENT_PROFILE_NAME)
         db_file = TvbProfile.current.db.DB_URL.replace('sqlite:///', '')
         if os.path.exists(db_file):

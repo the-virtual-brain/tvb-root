@@ -101,8 +101,10 @@ class DatatypesFactory(object):
         # Create algorithm
         alg_category = model.AlgorithmCategory('one', True)
         dao.store_entity(alg_category)
-        ad = model.Algorithm("test_module1", "classname1", alg_category.id)
-        self.algorithm = dao.store_entity(ad)
+        ad = model.Algorithm("tvb.adapters.simulator.simulator_adapter", "SimulatorAdapter", alg_category.id)
+        self.algorithm = dao.get_algorithm_by_module("tvb.adapters.simulator.simulator_adapter", "SimulatorAdapter")
+        if(self.algorithm is None):
+            self.algorithm = dao.store_entity(ad)
 
         #Create an operation
         self.meta = {DataTypeMetaData.KEY_SUBJECT: self.USER_FULL_NAME,
