@@ -32,21 +32,16 @@
 .. moduleauthor:: Lia Domide <lia.domide@codemart.ro>
 """
 
-
-if __name__ == "__main__":
-    from tvb.tests.library import setup_test_console_env
-    setup_test_console_env()
-
+from tvb.tests.library.base_testcase import BaseTestCase
 from tvb.datatypes.cortex import Cortex
 from tvb.datatypes.local_connectivity import LocalConnectivity
-from tvb.tests.library.base_testcase import BaseTestCase
 
-            
+
 class TestConsoleTraited(BaseTestCase):
     """
     Test using traited classes from console.
     """
-        
+
     def test_assign_complex_attr(self):
         """
         Test scientific methods are executed
@@ -55,9 +50,9 @@ class TestConsoleTraited(BaseTestCase):
         default_cortex.coupling_strength = 0.0121
         assert default_cortex.local_connectivity is None
 
-        #default_cortex.local_connectivity = surfaces.LocalConnectivity(cutoff=2, surface=default_cortex)
-        #default_cortex.compute_local_connectivity()
-        #self.assertTrue(default_cortex.local_connectivity is not None)
+        # default_cortex.local_connectivity = surfaces.LocalConnectivity(cutoff=2, surface=default_cortex)
+        # default_cortex.compute_local_connectivity()
+        # self.assertTrue(default_cortex.local_connectivity is not None)
 
         default_lc = LocalConnectivity(load_default=True, cutoff=2)
         other_cortex = Cortex(local_connectivity=default_lc)

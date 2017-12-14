@@ -35,16 +35,13 @@ Test for tvb.simulator.coupling module
 
 """
 
-if True or __name__ == "__main__":
-    from tvb.tests.library import setup_test_console_env
-    setup_test_console_env()
-
 import copy
 import numpy
 from tvb.tests.library.base_testcase import BaseTestCase
 from tvb.simulator import coupling, models, simulator
 from tvb.datatypes import cortex, connectivity
 from tvb.simulator.history import SparseHistory
+
 
 class TestCoupling(BaseTestCase):
     """
@@ -55,11 +52,11 @@ class TestCoupling(BaseTestCase):
     """
     weights = numpy.array([[0, 1], [1, 0]])
 
-    state_1sv = numpy.array([[[1], [2]]])               # (state_variables, nodes, modes)
+    state_1sv = numpy.array([[[1], [2]]])  # (state_variables, nodes, modes)
     state_2sv = numpy.array([[[1], [2]], [[1], [2]]])
 
-    history_1sv = SparseHistory(weights, weights*0, numpy.r_[0], 1)
-    history_2sv = SparseHistory(weights, weights*0, numpy.r_[0, 1], 1)
+    history_1sv = SparseHistory(weights, weights * 0, numpy.r_[0], 1)
+    history_2sv = SparseHistory(weights, weights * 0, numpy.r_[0, 1], 1)
 
     history_1sv.update(0, state_1sv)
     history_2sv.update(0, state_2sv)
@@ -68,28 +65,25 @@ class TestCoupling(BaseTestCase):
         k.configure()
         return k(0, self.history_1sv)
 
-
     def _apply_coupling_2sv(self, k):
         k.configure()
         return k(0, self.history_2sv)
-
 
     def test_difference_coupling(self):
         k = coupling.Difference()
         assert k.a, 0.1
 
         result = self._apply_coupling(k)
-        assert result.shape, (1, 2 == 1)           # One state variable, two nodes, one mode
+        assert result.shape, (1, 2 == 1)  # One state variable, two nodes, one mode
 
         result = result[0, :, 0].tolist()
         expected_result = [
-            k.a*(  self.weights[0, 0] * (self.state_1sv[0, 0, 0] - self.state_1sv[0, 0, 0])
-                 + self.weights[0, 1] * (self.state_1sv[0, 1, 0] - self.state_1sv[0, 0, 0])),
-            k.a*(  self.weights[1, 0] * (self.state_1sv[0, 0, 0] - self.state_1sv[0, 1, 0])
-                 + self.weights[1, 1] * (self.state_1sv[0, 1, 0] - self.state_1sv[0, 1, 0]))]
+            k.a * (self.weights[0, 0] * (self.state_1sv[0, 0, 0] - self.state_1sv[0, 0, 0])
+                   + self.weights[0, 1] * (self.state_1sv[0, 1, 0] - self.state_1sv[0, 0, 0])),
+            k.a * (self.weights[1, 0] * (self.state_1sv[0, 0, 0] - self.state_1sv[0, 1, 0])
+                   + self.weights[1, 1] * (self.state_1sv[0, 1, 0] - self.state_1sv[0, 1, 0]))]
 
         assert self.almost_equal(result, expected_result)
-
 
     def test_hyperbolic_coupling(self):
         k = coupling.HyperbolicTangent()
@@ -99,19 +93,16 @@ class TestCoupling(BaseTestCase):
         assert k.sigma == 1
         self._apply_coupling(k)
 
-
     def test_kuramoto_coupling(self):
         k = coupling.Kuramoto()
         assert k.a == 1
         self._apply_coupling(k)
-
 
     def test_linear_coupling(self):
         k = coupling.Linear()
         assert k.a == 0.00390625
         assert k.b == 0.0
         self._apply_coupling(k)
-
 
     def test_pre_sigmoidal_coupling(self):
         k = coupling.PreSigmoidal()
@@ -120,17 +111,15 @@ class TestCoupling(BaseTestCase):
         assert k.G == 60.
         assert k.P == 1.
         assert k.theta == 0.5
-        assert k.dynamic == True
-        assert k.globalT == False
+        assert k.dynamic is True
+        assert k.globalT is False
         self._apply_coupling_2sv(k)
-
 
     def test_scaling_coupling(self):
         k = coupling.Scaling()
         # Check scaling -factor
         assert k.a == 0.00390625
         self._apply_coupling(k)
-
 
     def test_sigmoidal_coupling(self):
         k = coupling.Sigmoidal()
@@ -140,7 +129,6 @@ class TestCoupling(BaseTestCase):
         assert k.sigma == 230.
         assert k.a == 1.0
         self._apply_coupling(k)
-
 
     def test_sigmoidal_jr_coupling(self):
         k = coupling.SigmoidalJansenRit()
@@ -153,7 +141,6 @@ class TestCoupling(BaseTestCase):
 
 
 class TestCouplingShape(BaseTestCase):
-
     def test_shape(self):
 
         # try to avoid introspector picking up this model
@@ -168,7 +155,7 @@ class TestCouplingShape(BaseTestCase):
 
             def dfun(self, state, coupling, local_coupling):
                 if self.test_case is not None:
-                    self.test_case.assertEqual(
+                    self.test_case.assert_equal(
                         (2, self.n_node, 1),
                         coupling.shape
                     )

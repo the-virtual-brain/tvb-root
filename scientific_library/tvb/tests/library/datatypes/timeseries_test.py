@@ -32,89 +32,80 @@
 .. moduleauthor:: Bogdan Neacsa <bogdan.neacsa@codemart.ro>
 """
 
-if __name__ == "__main__":
-    from tvb.tests.library import setup_test_console_env
-    setup_test_console_env()
-    
 import numpy
-from tvb.datatypes import time_series
 from tvb.tests.library.base_testcase import BaseTestCase
+from tvb.datatypes import time_series
 
 
 class TestTimeseries(BaseTestCase):
     """
     Tests the defaults for `tvb.datatypes.time_series` module.
     """
-    
+
     def test_timeseries(self):
         data = numpy.random.random((10, 10))
         dt = time_series.TimeSeries(data=data)
         summary_info = dt.summary_info
-        assert summary_info['Dimensions'] ==  ['Time', 'State Variable', 'Space', 'Mode']
-        assert summary_info['Length'] ==  10.0
-        assert summary_info['Sample period'] ==  1.0
-        assert summary_info['Time units'] ==  'ms'
-        assert summary_info['Time-series name'] ==  ''
-        assert summary_info['Time-series type'] ==  'TimeSeries'
-        assert dt.data.shape ==  (10, 10)
-        assert dt.sample_period ==  1.0
-        assert dt.sample_rate ==  0.0
-        assert dt.start_time ==  0.0
-        assert dt.time.shape ==  (0,)
-        
-        
+        assert summary_info['Dimensions'] == ['Time', 'State Variable', 'Space', 'Mode']
+        assert summary_info['Length'] == 10.0
+        assert summary_info['Sample period'] == 1.0
+        assert summary_info['Time units'] == 'ms'
+        assert summary_info['Time-series name'] == ''
+        assert summary_info['Time-series type'] == 'TimeSeries'
+        assert dt.data.shape == (10, 10)
+        assert dt.sample_period == 1.0
+        assert dt.sample_rate == 0.0
+        assert dt.start_time == 0.0
+        assert dt.time.shape == (0,)
+
     def test_timeserieseeg(self):
         data = numpy.random.random((10, 10))
         dt = time_series.TimeSeriesEEG(data=data)
-        assert dt.data.shape ==  (10, 10)
-        assert ['Time',  '1', 'EEG Sensor', '1'] ==  dt.labels_ordering
-        assert dt.sample_period ==  1.0
-        assert dt.sample_rate ==  0.0
+        assert dt.data.shape == (10, 10)
+        assert ['Time', '1', 'EEG Sensor', '1'] == dt.labels_ordering
+        assert dt.sample_period == 1.0
+        assert dt.sample_rate == 0.0
         assert dt.sensors is None
-        assert dt.start_time ==  0.0
-        assert dt.time.shape ==  (0,)
-        
-        
+        assert dt.start_time == 0.0
+        assert dt.time.shape == (0,)
+
     def test_timeseriesmeg(self):
         data = numpy.random.random((10, 10))
         dt = time_series.TimeSeriesMEG(data=data)
-        assert dt.data.shape ==  (10, 10)
-        assert ['Time', '1', 'MEG Sensor', '1'] ==  dt.labels_ordering
-        assert dt.sample_period ==  1.0
-        assert dt.sample_rate ==  0.0
+        assert dt.data.shape == (10, 10)
+        assert ['Time', '1', 'MEG Sensor', '1'] == dt.labels_ordering
+        assert dt.sample_period == 1.0
+        assert dt.sample_rate == 0.0
         assert dt.sensors is None
-        assert dt.start_time ==  0.0
-        assert dt.time.shape ==  (0,)
-        
-        
+        assert dt.start_time == 0.0
+        assert dt.time.shape == (0,)
+
     def test_timeseriesregion(self):
         data = numpy.random.random((10, 10))
         dt = time_series.TimeSeriesRegion(data=data)
-        assert dt.data.shape ==  (10, 10)
-        assert dt.labels_ordering ==  ['Time', 'State Variable', 'Region', 'Mode']
-        assert dt.sample_period ==  1.0
-        assert dt.sample_rate ==  0.0
-        assert dt.start_time ==  0.0
-        assert dt.time.shape ==  (0,)
-        
-        
+        assert dt.data.shape == (10, 10)
+        assert dt.labels_ordering == ['Time', 'State Variable', 'Region', 'Mode']
+        assert dt.sample_period == 1.0
+        assert dt.sample_rate == 0.0
+        assert dt.start_time == 0.0
+        assert dt.time.shape == (0,)
+
     def test_timeseriessurface(self):
         data = numpy.random.random((10, 10))
         dt = time_series.TimeSeriesSurface(data=data)
-        assert dt.data.shape ==  (10, 10)
-        assert dt.labels_ordering ==  ['Time', 'State Variable', 'Vertex', 'Mode']
-        assert dt.sample_period ==  1.0
-        assert dt.sample_rate ==  0.0
-        assert dt.start_time ==  0.0
-        assert dt.time.shape ==  (0,)
-        
-        
+        assert dt.data.shape == (10, 10)
+        assert dt.labels_ordering == ['Time', 'State Variable', 'Vertex', 'Mode']
+        assert dt.sample_period == 1.0
+        assert dt.sample_rate == 0.0
+        assert dt.start_time == 0.0
+        assert dt.time.shape == (0,)
+
     def test_timeseriesvolume(self):
         data = numpy.random.random((10, 10))
         dt = time_series.TimeSeriesVolume(data=data)
-        assert dt.data.shape ==  (10, 10)
-        assert dt.labels_ordering ==  ['Time', 'X', 'Y', 'Z']
-        assert dt.sample_period ==  1.0
-        assert dt.sample_rate ==  0.0
-        assert dt.start_time ==  0.0
-        assert dt.time.shape ==  (0,)
+        assert dt.data.shape == (10, 10)
+        assert dt.labels_ordering == ['Time', 'X', 'Y', 'Z']
+        assert dt.sample_period == 1.0
+        assert dt.sample_rate == 0.0
+        assert dt.start_time == 0.0
+        assert dt.time.shape == (0,)

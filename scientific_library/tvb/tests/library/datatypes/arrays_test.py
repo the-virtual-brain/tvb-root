@@ -32,18 +32,12 @@ Created on Mar 20, 2013
 
 .. moduleauthor:: Bogdan Neacsa <bogdan.neacsa@codemart.ro>
 """
-if __name__ == "__main__":
-    from tvb.tests.library import setup_test_console_env
-    setup_test_console_env()
-    
-    
 import numpy
 from tvb.tests.library.base_testcase import BaseTestCase
 from tvb.datatypes import arrays
-        
+
+
 class TestArrays(BaseTestCase):
-    
-    
     def test_float_array(self):
         """
         Create a float array, check that shape is correct.
@@ -52,8 +46,7 @@ class TestArrays(BaseTestCase):
         array_dt = arrays.FloatArray()
         array_dt.data = data
         assert array_dt.shape == (10, 10)
-        
-        
+
     def test_integer_array(self):
         """
         Create an integer array, check that shape is correct.
@@ -62,8 +55,7 @@ class TestArrays(BaseTestCase):
         array_dt = arrays.IntegerArray()
         array_dt.data = data
         assert array_dt.shape == (100,)
-        
-        
+
     def test_complex_array(self):
         """
         Create a complex array, check that shape is correct.
@@ -72,8 +64,7 @@ class TestArrays(BaseTestCase):
         array_dt = arrays.ComplexArray()
         array_dt.data = data
         assert array_dt.shape == (100,)
-        
-        
+
     def test_bool_array(self):
         """
         Create a boolean array, check that shape is correct.
@@ -82,8 +73,7 @@ class TestArrays(BaseTestCase):
         array_dt = arrays.ComplexArray()
         array_dt.data = data
         assert array_dt.shape == (10, 12)
-        
-    
+
     def test_string_array(self):
         """
         Create a string array, check that shape is correct.
@@ -92,8 +82,7 @@ class TestArrays(BaseTestCase):
         array_dt = arrays.StringArray()
         array_dt.data = data
         assert array_dt.shape == (10, 12)
-        
-        
+
     def test_position_array(self):
         """
         Create a position array, check that shape is correct.
@@ -105,8 +94,7 @@ class TestArrays(BaseTestCase):
         assert array_dt.shape == (10, 10)
         assert array_dt.coordinate_space == "test_space"
         assert array_dt.coordinate_system == "test_system"
-        
-        
+
     def test_orientation_array(self):
         """
         Create an orientation array, check that shape is correct.
@@ -116,8 +104,7 @@ class TestArrays(BaseTestCase):
         array_dt.data = data
         assert array_dt.shape == (10, 10)
         assert array_dt.coordinate_system_or == "test_system"
-        
-        
+
     def test_index_array(self):
         """
         Create an index array, check that shape is correct.

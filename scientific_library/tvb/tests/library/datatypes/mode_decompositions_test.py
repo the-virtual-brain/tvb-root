@@ -32,25 +32,23 @@ Created on Mar 20, 2013
 
 .. moduleauthor:: Bogdan Neacsa <bogdan.neacsa@codemart.ro>
 """
-if __name__ == "__main__":
-    from tvb.tests.library import setup_test_console_env
-    setup_test_console_env()
- 
+
 import numpy
-from tvb.datatypes import mode_decompositions, time_series
 from tvb.tests.library.base_testcase import BaseTestCase
-        
+from tvb.datatypes import mode_decompositions, time_series
+
+
 class TestModeDecompositions(BaseTestCase):
     """
     Tests the defaults for `tvb.datatypes.mode_decompositions` module.
     """
-    
+
     def test_principalcomponents(self):
         data = numpy.random.random((10, 10, 10, 10))
         ts = time_series.TimeSeries(data=data)
-        dt = mode_decompositions.PrincipalComponents(source = ts,
-                                                    fractions = numpy.random.random((10, 10, 10)),
-                                                    weights = data)
+        dt = mode_decompositions.PrincipalComponents(source=ts,
+                                                     fractions=numpy.random.random((10, 10, 10)),
+                                                     weights=data)
         dt.configure()
         dt.compute_norm_source()
         dt.compute_component_time_series()
@@ -63,17 +61,16 @@ class TestModeDecompositions(BaseTestCase):
         assert dt.norm_source.shape == (10, 10, 10, 10)
         assert dt.component_time_series.shape == (10, 10, 10, 10)
         assert dt.normalised_component_time_series.shape == (10, 10, 10, 10)
-        
-        
+
     def test_independentcomponents(self):
         data = numpy.random.random((10, 10, 10, 10))
         ts = time_series.TimeSeries(data=data)
         n_comp = 5
-        dt = mode_decompositions.IndependentComponents(  source = ts,
-                                         component_time_series = numpy.random.random((10, n_comp, 10, 10)), 
-                                         prewhitening_matrix = numpy.random.random((n_comp, 10, 10, 10)),
-                                         unmixing_matrix = numpy.random.random((n_comp, n_comp, 10, 10)),
-                                         n_components = n_comp)
+        dt = mode_decompositions.IndependentComponents(source=ts,
+                                                       component_time_series=numpy.random.random((10, n_comp, 10, 10)),
+                                                       prewhitening_matrix=numpy.random.random((n_comp, 10, 10, 10)),
+                                                       unmixing_matrix=numpy.random.random((n_comp, n_comp, 10, 10)),
+                                                       n_components=n_comp)
         dt.compute_norm_source()
         dt.compute_component_time_series()
         dt.compute_normalised_component_time_series()

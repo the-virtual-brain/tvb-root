@@ -34,27 +34,21 @@ Test for tvb.simulator.noise module
 .. moduleauthor:: Paula Sanz Leon <sanzleon.paula@gmail.com>
 
 """
-
-if __name__ == "__main__":
-    from tvb.tests.library import setup_test_console_env
-    setup_test_console_env()
-
 from tvb.tests.library.base_testcase import BaseTestCase
 from tvb.simulator import noise
 from tvb.datatypes import equations
+
 
 class TestNoise(BaseTestCase):
     def test_stream(self):
         noise_stream = noise.RandomStream()
         assert noise_stream.init_seed == 42
 
-
     def test_additive(self):
         noise_additive = noise.Additive()
-        assert noise_additive.ntau ==  0.0
-        
-        
+        assert noise_additive.ntau == 0.0
+
     def test_multiplicative(self):
         noise_multiplicative = noise.Multiplicative()
-        assert noise_multiplicative.ntau ==  0.0
+        assert noise_multiplicative.ntau == 0.0
         assert isinstance(noise_multiplicative.b, equations.Linear)

@@ -31,13 +31,9 @@
 .. moduleauthor:: Bogdan Neacsa <bogdan.neacsa@codemart.ro>
 """
 
-if __name__ == "__main__":
-    from tvb.tests.library import setup_test_console_env
-    setup_test_console_env()
-
 import numpy
-from tvb.datatypes import patterns, equations, connectivity, surfaces
 from tvb.tests.library.base_testcase import BaseTestCase
+from tvb.datatypes import patterns, equations, connectivity, surfaces
 
 
 class TestPatterns(BaseTestCase):
@@ -56,8 +52,7 @@ class TestPatterns(BaseTestCase):
         assert dt.space.shape == (10, 10)
         assert isinstance(dt.spatial, equations.DoubleGaussian)
         assert dt.spatial_pattern.shape, (10, 1)
-        
-        
+
     def test_spatiotemporalpattern(self):
         dt = patterns.SpatioTemporalPattern()
         dt.spatial = equations.DoubleGaussian()
@@ -73,8 +68,7 @@ class TestPatterns(BaseTestCase):
         assert isinstance(dt.temporal, equations.Gaussian)
         assert dt.temporal_pattern is None
         assert dt.time is None
-        
-        
+
     def test_stimuliregion(self):
         conn = connectivity.Connectivity(load_default=True)
         conn.configure()
@@ -92,7 +86,6 @@ class TestPatterns(BaseTestCase):
         assert dt.temporal_pattern is None
         assert dt.time is None
 
-     
     def test_stimulisurface(self):
         srf = surfaces.CorticalSurface(load_default=True)
         srf.configure()
@@ -113,8 +106,7 @@ class TestPatterns(BaseTestCase):
         assert isinstance(dt.temporal, equations.Gaussian)
         assert dt.temporal_pattern is None
         assert dt.time is None
-        
-        
+
     def test_spatialpatternvolume(self):
         dt = patterns.SpatialPatternVolume()
         assert dt.space is None

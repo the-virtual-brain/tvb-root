@@ -32,20 +32,16 @@
 .. moduleauthor:: Bogdan Neacsa <bogdan.neacsa@codemart.ro>
 """
 
-if __name__ == "__main__":
-    from tvb.tests.library import setup_test_console_env
-    setup_test_console_env()
-
 import numpy
-from tvb.datatypes import graph, time_series, connectivity
 from tvb.tests.library.base_testcase import BaseTestCase
+from tvb.datatypes import graph, time_series, connectivity
 
 
 class TestGraph(BaseTestCase):
     """
     Tests the defaults for `tvb.datatypes.graph` module.
     """
-    
+
     def test_covariance(self):
         data = numpy.random.random((10, 10))
         ts = time_series.TimeSeries(data=data, title="test")
@@ -57,7 +53,6 @@ class TestGraph(BaseTestCase):
         summary = dt.summary_info
         assert summary['Graph type'] == "Covariance"
         assert summary['Source'] == "test"
-
 
     def test_correlation_coefficients(self):
         data = numpy.random.random((13, 14))
@@ -73,7 +68,6 @@ class TestGraph(BaseTestCase):
         assert summary['Dimensions'] == dt.labels_ordering
 
         assert dt.labels_ordering == ["Node", "Node", "State Variable", "Mode"]
-
 
     def test_connectivitymeasure(self):
         conn = connectivity.Connectivity()

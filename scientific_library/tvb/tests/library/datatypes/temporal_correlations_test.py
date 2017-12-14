@@ -32,19 +32,17 @@ Created on Mar 20, 2013
 
 .. moduleauthor:: Bogdan Neacsa <bogdan.neacsa@codemart.ro>
 """
-if __name__ == "__main__":
-    from tvb.tests.library import setup_test_console_env
-    setup_test_console_env()
-    
+
 import numpy
-from tvb.datatypes import temporal_correlations, time_series
 from tvb.tests.library.base_testcase import BaseTestCase
-        
+from tvb.datatypes import temporal_correlations, time_series
+
+
 class TestTemporalCorrelations(BaseTestCase):
     """
     Tests the defaults for `tvb.datatypes.temporal_correlations` module.
     """
-    
+
     def test_crosscorrelation(self):
         data = numpy.random.random((10, 10))
         ts = time_series.TimeSeries(data=data)

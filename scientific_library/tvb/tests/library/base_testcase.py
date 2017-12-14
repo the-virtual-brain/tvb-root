@@ -32,7 +32,6 @@
 .. moduleauthor:: Bogdan Neacsa <bogdan.neacsa@codemart.ro>
 """
 
-import unittest
 from tvb.basic.profile import TvbProfile
 from tvb.tests.library import setup_test_console_env
 
@@ -41,12 +40,13 @@ if "TEST_INITIALIZATION_DONE_LIBRARY" not in globals():
     TEST_INITIALIZATION_DONE_LIBRARY = True
 
 
-class BaseTestCase():
+class BaseTestCase(object):
     """
     This class should implement basic functionality which is common to all TVB tests.
     """
 
-    def almost_equal(self, first, second, places=None, msg=None, delta=None):
+    @staticmethod
+    def almost_equal(first, second, places=None, delta=None):
         if first == second:
             return True
 
@@ -69,5 +69,6 @@ class BaseTestCase():
     def setup_method(self):
         assert not TvbProfile.current.TRAITS_CONFIGURATION.use_storage
 
-    def assertEqual(self, expected, actual, message=""):
+    @staticmethod
+    def assert_equal(expected, actual, message=""):
         assert expected == actual, message + " Expected %s but got %s." % (expected, actual)

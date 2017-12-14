@@ -32,26 +32,21 @@
 .. moduleauthor:: Bogdan Neacsa <bogdan.neacsa@codemart.ro>
 """
 
-if __name__ == "__main__":
-    from tvb.tests.library import setup_test_console_env
-    setup_test_console_env()
-
-from tvb.datatypes import projections
 from tvb.tests.library.base_testcase import BaseTestCase
+from tvb.datatypes import projections
 
 
 class TestPatterns(BaseTestCase):
     """
     Tests the defaults for `tvb.datatypes.projections` module.
     """
-    
+
     def test_projectionmatrix(self):
         dt = projections.ProjectionMatrix()
         assert dt.sources is None
         assert dt.sensors is None
         assert dt.projection_data is None
-        
-        
+
     def test_projection_surface_eeg(self):
         dt = projections.ProjectionSurfaceEEG()
         assert dt.sources is None
@@ -59,7 +54,6 @@ class TestPatterns(BaseTestCase):
         assert dt.skull_skin is None
         assert dt.sensors is None
         assert dt.projection_data is None
-
 
     def test_projection_surface_meg(self):
         dt = projections.ProjectionSurfaceMEG()

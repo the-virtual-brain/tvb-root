@@ -33,21 +33,17 @@
 .. moduleauthor:: Bogdan Neacsa <bogdan.neacsa@codemart.ro>
 """
 
-if __name__ == "__main__":
-    from tvb.tests.library import setup_test_console_env
-    setup_test_console_env()
-
 try:
     H5PY_SUPPORT = True
     import h5py as hdf5
-except Exception:
+except ImportError:
     H5PY_SUPPORT = False
 
 import os
 import numpy
 import pytest
-from tvb.datatypes import connectivity
 from tvb.tests.library.base_testcase import BaseTestCase
+from tvb.datatypes import connectivity
 
 
 class TestConnectivity(BaseTestCase):
@@ -82,7 +78,6 @@ class TestConnectivity(BaseTestCase):
         assert conn.number_of_regions == 74
         assert conn.number_of_connections == 75
 
-    
     def test_connectivity_default(self):
         """
         Create a default connectivity and check that everything gets loaded
@@ -125,9 +120,8 @@ class TestConnectivity(BaseTestCase):
             # http://projects.scipy.org/scipy/ticket/1735
             # http://comments.gmane.org/gmane.comp.python.scientific.devel/14816
             # http://permalink.gmane.org/gmane.comp.python.numeric.general/42082
-            #conn.switch_distribution(mode=mode)
+            # conn.switch_distribution(mode=mode)
             assert conn.scaled_weights(mode=mode).shape == (n, n)
-
 
     def test_connectivity_reload(self):
         """
@@ -154,7 +148,6 @@ class TestConnectivity(BaseTestCase):
         assert conn.saved_selection is None
         assert conn.parent_connectivity == ''
 
-
     @pytest.mark.skipif(not H5PY_SUPPORT, reason="HDF5 and H5PY not found on this system")
     def test_connectivity_h5py_reload(self):
         """
@@ -163,8 +156,8 @@ class TestConnectivity(BaseTestCase):
         h5_full_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), "Edited_Connectivity.h5")
         conn = connectivity.Connectivity.from_file(h5_full_path)
         assert conn.weights.shape == (74, 74)
-        assert conn.weights[0][0] == 9.0   # Edit set first weight to 9
-        assert conn.weights.max() == 9.0   # Edit has a weight of value 9
+        assert conn.weights[0][0] == 9.0  # Edit set first weight to 9
+        assert conn.weights.max() == 9.0  # Edit has a weight of value 9
         assert conn.weights.min() == 0.0
         assert conn.undirected == 0
         assert conn.speed == numpy.array([3.0])
@@ -174,7 +167,6 @@ class TestConnectivity(BaseTestCase):
         assert conn.number_of_regions == 0
         assert conn.saved_selection is None
         assert conn.parent_connectivity == ''
-
 
     def test_connectivity_bzip_in_zip(self):
         conn = connectivity.Connectivity.from_file("connectivity_68.zip")

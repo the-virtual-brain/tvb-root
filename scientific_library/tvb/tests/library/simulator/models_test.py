@@ -35,12 +35,8 @@ Test for tvb.simulator.models module
 
 """
 
-if __name__ == "__main__":
-    from tvb.tests.library import setup_test_console_env
-    setup_test_console_env()
-
-from tvb.simulator import models
 from tvb.tests.library.base_testcase import BaseTestCase
+from tvb.simulator import models
 import numpy
 
 
@@ -54,8 +50,8 @@ class TestModels(BaseTestCase):
 
     """
 
-
-    def _validate_initialization(self, model, expected_sv, expected_models=1):
+    @staticmethod
+    def _validate_initialization(model, expected_sv, expected_models=1):
 
         model.configure()
         dt = 2 ** -4
@@ -72,7 +68,7 @@ class TestModels(BaseTestCase):
 
         state = numpy.zeros((expected_sv, 10, model.number_of_modes))
         obser = model.observe(state)
-        assert (len(model.variables_of_interest), 10, model.number_of_modes)  == obser.shape
+        assert (len(model.variables_of_interest), 10, model.number_of_modes) == obser.shape
         return state, obser
 
     def test_wilson_cowan(self):
@@ -81,7 +77,6 @@ class TestModels(BaseTestCase):
         """
         model = models.WilsonCowan()
         self._validate_initialization(model, 2)
-
 
     def test_g2d(self):
         """
@@ -115,7 +110,7 @@ class TestModels(BaseTestCase):
 
     def test_g2d_voi(self):
         model = models.Generic2dOscillator(
-            variables_of_interest = ['W', 'W - V']
+            variables_of_interest=['W', 'W - V']
         )
         (V, W), (voi_W, voi_WmV) = self._validate_initialization(model, 2)
         numpy.testing.assert_allclose(voi_W, W)
@@ -127,13 +122,11 @@ class TestModels(BaseTestCase):
         model = models.JansenRit()
         self._validate_initialization(model, 6)
 
-
     def test_sj2d(self):
         """
         """
         model = models.ReducedSetFitzHughNagumo()
         self._validate_initialization(model, 4, 3)
-
 
     def test_sj3d(self):
         """
@@ -141,13 +134,11 @@ class TestModels(BaseTestCase):
         model = models.ReducedSetHindmarshRose()
         self._validate_initialization(model, 6, 3)
 
-
     def test_reduced_wong_wang(self):
         """
         """
         model = models.ReducedWongWang()
         self._validate_initialization(model, 1)
-
 
     def test_zetterberg_jansen(self):
         """
@@ -155,13 +146,11 @@ class TestModels(BaseTestCase):
         model = models.ZetterbergJansen()
         self._validate_initialization(model, 12)
 
-
     def test_epileptor(self):
         """
         """
         model = models.Epileptor()
         self._validate_initialization(model, 6)
-
 
     def test_hopfield(self):
         """
@@ -169,13 +158,11 @@ class TestModels(BaseTestCase):
         model = models.Hopfield()
         self._validate_initialization(model, 2)
 
-
     def test_kuramoto(self):
         """
         """
         model = models.Kuramoto()
         self._validate_initialization(model, 1)
-
 
     def test_larter(self):
         """

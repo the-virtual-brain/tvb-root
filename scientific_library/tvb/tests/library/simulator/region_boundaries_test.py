@@ -34,13 +34,8 @@ Test for tvb.simulator.region_boundaries module
 .. moduleauthor:: Paula Sanz Leon <sanzleon.paula@gmail.com>
 
 """
-from tvb.datatypes.cortex import Cortex
-
-if __name__ == "__main__":
-    from tvb.tests.library import setup_test_console_env
-    setup_test_console_env()
-
 from tvb.tests.library.base_testcase import BaseTestCase
+from tvb.datatypes.cortex import Cortex
 from tvb.simulator import region_boundaries
 from tvb.datatypes import connectivity
 
@@ -49,6 +44,7 @@ class TestRegionBoundaries(BaseTestCase):
     """
     This test is checking correspondence between cortical surface and connectivity.
     """
+
     def test_region_boundaries(self):
         cortex = Cortex.from_file()
         white_matter = connectivity.Connectivity(load_default=True)

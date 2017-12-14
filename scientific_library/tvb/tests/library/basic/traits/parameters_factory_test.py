@@ -31,38 +31,29 @@
 """
 .. moduleauthor:: Bogdan Neacsa <bogdan.neacsa@codemart.ro>
 """
-if __name__ == "__main__":
-    from tvb.tests.library import setup_test_console_env
-    setup_test_console_env()
-
+from tvb.tests.library.base_testcase import BaseTestCase
 from tvb.datatypes import arrays
 from tvb.basic.traits.parameters_factory import get_traited_instance_for_name, get_traited_subclasses
 from tvb.basic.traits.types_mapped import Array
-from tvb.tests.library.base_testcase import BaseTestCase
 
 
 class TestParametersFactory(BaseTestCase):
-    
     def test_traitedsubclassed(self):
         """
         Tests successful creation of traited classes.
         """
         # We imported array so we should have all these traited classes registered
         expected = [
-                    'IntegerArray',
-                    'StringArray', 'PositionArray',
-                    'IndexArray',
-
-                    'BoolArray', 'OrientationArray',
-
-
-                    'FloatArray',
-                    'ComplexArray', 'Array', 'SparseMatrix']
+            'IntegerArray',
+            'StringArray', 'PositionArray',
+            'IndexArray',
+            'BoolArray', 'OrientationArray',
+            'FloatArray',
+            'ComplexArray', 'Array', 'SparseMatrix']
         subclasses = get_traited_subclasses(Array)
         for key in expected:
             assert key in subclasses
-            
-            
+
     def test_get_traited_instance(self):
         """
         Try to create an instance of a class using the traited method.

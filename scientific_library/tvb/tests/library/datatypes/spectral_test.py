@@ -32,19 +32,17 @@ Created on Mar 20, 2013
 
 .. moduleauthor:: Bogdan Neacsa <bogdan.neacsa@codemart.ro>
 """
-if __name__ == "__main__":
-    from tvb.tests.library import setup_test_console_env
-    setup_test_console_env()
 
 import numpy
 from tvb.tests.library.base_testcase import BaseTestCase
 from tvb.datatypes import spectral, time_series
 
+
 class TestSpectral(BaseTestCase):
     """
     Tests the defaults for `tvb.datatypes.spectral` module.
     """
-    
+
     def test_fourierspectrum(self):
         data = numpy.random.random((10, 10))
         ts = time_series.TimeSeries(data=data)
@@ -52,20 +50,19 @@ class TestSpectral(BaseTestCase):
                                       segment_length=100)
         dt.configure()
         summary_info = dt.summary_info
-        assert summary_info['Frequency step']  == 0.01
+        assert summary_info['Frequency step'] == 0.01
         assert summary_info['Maximum frequency'] == 0.5
         assert summary_info['Segment length'] == 100
         assert summary_info['Windowing function'] == ''
         assert summary_info['Source'] == ''
         assert summary_info['Spectral type'] == 'FourierSpectrum'
         assert dt.aggregation_functions is None
-        assert dt.normalised_average_power.shape == (0, )
+        assert dt.normalised_average_power.shape == (0,)
         assert dt.segment_length == 100.0
-        assert dt.shape == (0, )
+        assert dt.shape == (0,)
         assert dt.source is not None
         assert dt.windowing_function == ''
-        
-        
+
     def test_waveletcoefficients(self):
         data = numpy.random.random((10, 10))
         ts = time_series.TimeSeries(data=data)
@@ -75,7 +72,7 @@ class TestSpectral(BaseTestCase):
                                           frequencies=[0.008, 0.028, 0.048, 0.068],
                                           normalisation="energy",
                                           q_ratio=5.0,
-                                          array_data=numpy.random.random((10, 10)),)
+                                          array_data=numpy.random.random((10, 10)), )
         dt.configure()
         summary_info = dt.summary_info
         assert summary_info['Maximum frequency'] == 0.068
@@ -90,16 +87,15 @@ class TestSpectral(BaseTestCase):
         assert dt.sample_period == 7.8125
         assert dt.shape == (10, 10)
         assert dt.source is not None
-        
-        
+
     def test_coherencespectrum(self):
         data = numpy.random.random((10, 10))
         ts = time_series.TimeSeries(data=data)
         dt = spectral.CoherenceSpectrum(source=ts,
-                                        nfft = 4,
-                                        array_data = numpy.random.random((10, 10)),
-                                        frequency = numpy.random.random((10,)))
-        summary_info = dt.summary_info 
+                                        nfft=4,
+                                        array_data=numpy.random.random((10, 10)),
+                                        frequency=numpy.random.random((10,)))
+        summary_info = dt.summary_info
         assert summary_info['Number of frequencies'] == 10
         assert summary_info['Spectral type'] == 'CoherenceSpectrum'
         assert summary_info['FFT length (time-points)'] == 4
@@ -107,16 +103,15 @@ class TestSpectral(BaseTestCase):
         assert dt.nfft == 4
         assert dt.shape == (10, 10)
         assert dt.source is not None
-        
-        
+
     def test_complexcoherence(self):
         data = numpy.random.random((10, 10))
         ts = time_series.TimeSeries(data=data)
         dt = spectral.ComplexCoherenceSpectrum(source=ts,
-                                               array_data = numpy.random.random((10, 10)),
-                                               cross_spectrum = numpy.random.random((10, 10)),
-                                               epoch_length = 10,
-                                               segment_length = 5)
+                                               array_data=numpy.random.random((10, 10)),
+                                               cross_spectrum=numpy.random.random((10, 10)),
+                                               epoch_length=10,
+                                               segment_length=5)
         summary_info = dt.summary_info
         assert summary_info['Frequency step'] == 0.2
         assert summary_info['Maximum frequency'] == 0.5

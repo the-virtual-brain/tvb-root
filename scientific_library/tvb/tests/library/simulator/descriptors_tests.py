@@ -40,19 +40,23 @@ from tvb.simulator.descriptors import StaticAttr, NDArray, ImmutableAttrError, F
 import six
 
 
-class TestStaticAttr():
-    "Test API of StaticAttr base class."
+class TestStaticAttr(object):
+    """Test API of StaticAttr base class."""
 
     def setup_method(self):
         class TestClass(StaticAttr):
             x = 5
             z = 2
+
             def __init__(self):
                 self.z = 42
+
             def set_x(self):
                 self.x = 6
+
             def set_y(self):
                 self.y = 'hello'
+
         self.test_class = TestClass()
 
     def test_set_existing_ok(self):
@@ -66,16 +70,18 @@ class TestStaticAttr():
             self.test_class.set_y()
 
 
-class TestNDArray():
-    "Test API of NDArray descriptor."
+class TestNDArray(object):
+    """Test API of NDArray descriptor."""
 
     def setup_method(self):
         class PointSet(object):
             positions = NDArray(('n_point', 'dim'), 'f')
             counts = NDArray(('n_point',), 'i', read_only=False)
+
             def __init__(self, n_point, dim=3):
                 self.n_point = n_point
                 self.dim = dim
+
         self.ps50 = PointSet(50)
         self.ps25 = PointSet(25)
 
@@ -83,13 +89,13 @@ class TestNDArray():
         pos = self.ps50.positions
         cnt = self.ps50.counts
         assert pos.shape == (50, 3)
-        assert cnt.shape == (50, )
+        assert cnt.shape == (50,)
         assert pos.dtype == numpy.float32
         assert cnt.dtype == numpy.int32
         pos = self.ps25.positions
         cnt = self.ps25.counts
         assert pos.shape == (25, 3)
-        assert cnt.shape == (25, )
+        assert cnt.shape == (25,)
 
         assert self.ps50.positions.shape != self.ps25.positions.shape
 
@@ -115,21 +121,25 @@ class TestNDArray():
             self._set_incorrect_shape()
 
 
-class TestFinal():
-
+class TestFinal(object):
     def setup_method(self):
         class Inst(object):
             n = Final()
             m0, m1, m2, m3, m4 = Dim(), Dim(), Dim(), Dim(), Dim()
             x = Final(float)
+
             def __init__(self):
                 self.n = 42
+
             def change_n(self):
                 self.n = 'asdf'
+
             def set_x_int(self):
                 self.x = 32
+
             def set_x_float(self):
                 self.x = 2.3
+
         self.Inst = Inst
         self.foo = Inst()
         self.bar = Inst()

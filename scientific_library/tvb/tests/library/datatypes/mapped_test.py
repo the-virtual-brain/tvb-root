@@ -32,14 +32,9 @@
 .. moduleauthor:: Bogdan Neacsa <bogdan.neacsa@codemart.ro>
 """
 
-if __name__ == "__main__":
-    from tvb.tests.library import setup_test_console_env
-    setup_test_console_env()
-
 import numpy
-from tvb.datatypes import mapped_values, time_series
 from tvb.tests.library.base_testcase import BaseTestCase
-
+from tvb.datatypes import mapped_values, time_series
 
 
 class TestMapped(BaseTestCase):
@@ -50,7 +45,6 @@ class TestMapped(BaseTestCase):
     def test_valuewrapper(self):
         dt = mapped_values.ValueWrapper(data_value=10, data_type="Integer", data_name="TestVale")
         assert dt.display_name == "Value Wrapper - TestVale : 10 (Integer)"
-
 
     def test_datatypemeasure(self):
         data = numpy.random.random((10, 10, 10, 10))

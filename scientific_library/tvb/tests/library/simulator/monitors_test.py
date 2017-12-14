@@ -38,15 +38,10 @@ handling of projection matrices, etc.
 """
 
 import numpy
-
-if __name__ == "__main__":
-    from tvb.tests.library import setup_test_console_env
-    setup_test_console_env()
-
+from tvb.tests.library.base_testcase import BaseTestCase
 from tvb.datatypes import sensors
 from tvb.simulator import monitors, models, coupling, integrators, noise, simulator
 from tvb.basic.logger.builder import get_logger
-from tvb.tests.library.base_testcase import BaseTestCase
 from tvb.datatypes import connectivity
 from tvb.datatypes.cortex import Cortex
 from tvb.datatypes.region_mapping import RegionMapping
@@ -192,7 +187,7 @@ class TestSubcorticalProjection(BaseTestCase):
 
 
 class TestAllAnalyticWithSubcortical(BaseTestCase):
-    "Test correct gain matrix shape for all analytic with subcortical nodes."
+    """Test correct gain matrix shape for all analytic with subcortical nodes."""
 
     def setup_method(self):
         self.sim = simulator.Simulator(
@@ -211,5 +206,5 @@ class TestAllAnalyticWithSubcortical(BaseTestCase):
 
 
 class TestNoSubCorticalProjection(TestSubcorticalProjection):
-    "Idem. but with 76 region connectivity"
+    """Idem. but with 76 region connectivity"""
     n_regions = 76

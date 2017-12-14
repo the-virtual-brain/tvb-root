@@ -31,16 +31,12 @@
 .. moduleauthor:: Bogdan Neacsa <bogdan.neacsa@codemart.ro>
 """
 
-if __name__ == "__main__":
-    from tvb.tests.library import setup_test_console_env
-    setup_test_console_env()
-
 import pytest
 import numpy
+from tvb.tests.library.base_testcase import BaseTestCase
 from tvb.datatypes import sensors
 from tvb.datatypes.surfaces import SkinAir
 from tvb.datatypes.sensors import INTERNAL_POLYMORPHIC_IDENTITY, MEG_POLYMORPHIC_IDENTITY, EEG_POLYMORPHIC_IDENTITY
-from tvb.tests.library.base_testcase import BaseTestCase
 
 
 class TestSensors(BaseTestCase):
@@ -80,7 +76,6 @@ class TestSensors(BaseTestCase):
         except Exception:
             pass
 
-
     def test_sensorseeg(self):
         dt = sensors.SensorsEEG(load_default=True)
         dt.configure()
@@ -92,7 +87,6 @@ class TestSensors(BaseTestCase):
         assert dt.orientations.shape == (0,)
         assert dt.sensors_type == EEG_POLYMORPHIC_IDENTITY
 
-
     def test_sensorsmeg(self):
         dt = sensors.SensorsMEG(load_default=True)
         dt.configure()
@@ -103,7 +97,6 @@ class TestSensors(BaseTestCase):
         assert dt.number_of_sensors == 151
         assert dt.orientations.shape == (151, 3)
         assert dt.sensors_type == MEG_POLYMORPHIC_IDENTITY
-
 
     def test_sensorsinternal(self):
         dt = sensors.SensorsInternal(load_default=True)

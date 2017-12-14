@@ -37,19 +37,15 @@ Test for tvb.simulator.coupling module
 
 """
 
-if __name__ == "__main__":
-    from tvb.tests.library import setup_test_console_env
-    setup_test_console_env()
-
 import numpy
 import pytest
-
 from tvb.tests.library.base_testcase import BaseTestCase
 from tvb.simulator import integrators
 from tvb.simulator import noise
 
 # For the moment all integrators inherit dt from the base class
 dt = integrators.Integrator.dt.interface['default']
+
 
 class TestIntegrators(BaseTestCase):
     """
@@ -110,8 +106,10 @@ class TestIntegrators(BaseTestCase):
     def test_identity_scheme(self):
         "Verify identity scheme works"
         x, c, lc, s = 1, 2, 3, 4
+
         def dfun(x, c, lc):
             return x + c - lc
+
         integ = integrators.Identity()
         xp1 = integ.scheme(x, dfun, c, lc, s)
         assert xp1 == 4

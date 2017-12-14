@@ -32,18 +32,16 @@ Created on Mar 20, 2013
 
 .. moduleauthor:: Bogdan Neacsa <bogdan.neacsa@codemart.ro>
 """
-if __name__ == "__main__":
-    from tvb.tests.library import setup_test_console_env
-    setup_test_console_env()
 
-from tvb.datatypes import volumes
 from tvb.tests.library.base_testcase import BaseTestCase
-        
+from tvb.datatypes import volumes
+
+
 class TestVolumes(BaseTestCase):
     """
     Tests the defaults for `tvb.datatypes.volumes` module.
     """
-    
+
     def test_volume(self):
         dt = volumes.Volume()
         summary_info = dt.summary_info

@@ -41,12 +41,9 @@ schemes (region and surface based simulations).
 # TODO: check the defaults of simulator.Simulator() (?)
 # TODO: continuation support or maybe test that particular feature elsewhere
 
-if True or __name__ == "__main__":
-    from tvb.tests.library import setup_test_console_env
-    setup_test_console_env()
-
 import numpy
 import itertools
+from tvb.tests.library.base_testcase import BaseTestCase
 from tvb.simulator.common import get_logger
 from tvb.simulator import simulator, models, coupling, integrators, monitors, noise
 from tvb.datatypes.connectivity import Connectivity
@@ -54,7 +51,6 @@ from tvb.datatypes.cortex import Cortex
 from tvb.datatypes.local_connectivity import LocalConnectivity
 from tvb.datatypes.region_mapping import RegionMapping
 from tvb.basic.traits.parameters_factory import get_traited_subclasses
-from tvb.tests.library.base_testcase import BaseTestCase
 
 LOG = get_logger(__name__)
 
@@ -70,7 +66,6 @@ class Simulator(object):
     Simulator test class
     
     """
-
 
     def __init__(self):
         """
@@ -92,7 +87,6 @@ class Simulator(object):
         self.method = None
         self.sim = None
 
-
     def run_simulation(self, simulation_length=2 ** 2):
         """
         Test a simulator constructed with one of the <model>_<scheme> methods.
@@ -106,7 +100,6 @@ class Simulator(object):
                     results[i].append(result)
 
         return results
-
 
     def configure(self, dt=2 ** -3, model=models.Generic2dOscillator, speed=4.0,
                   coupling_strength=0.00042, method="HeunDeterministic",
@@ -157,9 +150,7 @@ class Simulator(object):
         self.sim.configure()
 
 
-
 class TestSimulator(BaseTestCase):
-
     def test_simulator_region(self):
 
         test_simulator = Simulator()
@@ -169,11 +160,10 @@ class TestSimulator(BaseTestCase):
                                      surface_sim=False)
             result = test_simulator.run_simulation()
 
-            self.assertEqual(len(test_simulator.monitors), len(result))
+            self.assert_equal(len(test_simulator.monitors), len(result))
             for ts in result:
                 assert ts is not None
                 assert len(ts) > 0
-
 
     def test_simulator_surface(self):
         """

@@ -35,11 +35,8 @@ Test history in simulator.
 
 """
 
-if __name__ == "__main__":
-    from tvb.tests.library import setup_test_console_env
-    setup_test_console_env()
-
 import numpy
+from tvb.tests.library.base_testcase import BaseTestCase
 import tvb.basic.traits.types_basic as basic
 from tvb.datatypes.connectivity import Connectivity
 from tvb.simulator.coupling import Coupling
@@ -47,8 +44,6 @@ from tvb.simulator.integrators import Identity
 from tvb.simulator.models import Model
 from tvb.simulator.monitors import Raw
 from tvb.simulator.simulator import Simulator
-from tvb.tests.library.base_testcase import BaseTestCase
-
 
 
 class IdCoupling(Coupling):
@@ -58,7 +53,6 @@ class IdCoupling(Coupling):
         g_ij = history.es_weights
         x_i, x_j = history.query(step)
         return (g_ij * x_j).sum(axis=2).transpose((1, 0, 2))
-
 
 
 class Sum(Model):
@@ -73,9 +67,7 @@ class Sum(Model):
         return X + coupling + local_coupling
 
 
-
 class TestsExactPropagation(BaseTestCase):
-
     def build_simulator(self, n=4):
 
         self.conn = numpy.zeros((n, n), numpy.int32)
@@ -93,10 +85,9 @@ class TestsExactPropagation(BaseTestCase):
             simulation_length=10,
             connectivity=Connectivity(weights=self.conn, tract_lengths=self.dist, speed=1),
             model=Sum(),
-            monitors=(Raw(), ),
+            monitors=(Raw(),),
         )
         self.sim.configure()
-
 
     def test_propagation(self):
         n = 4
