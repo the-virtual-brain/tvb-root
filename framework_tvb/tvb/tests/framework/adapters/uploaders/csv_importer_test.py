@@ -45,9 +45,9 @@ from tvb.datatypes.connectivity import Connectivity
 from tvb.tests.framework.adapters.uploaders.connectivity_zip_importer_test import TestConnectivityZip
 from tvb.tests.framework.core.factory import TestFactory
 
-
 TEST_SUBJECT_A = "TEST_SUBJECT_A"
 TEST_SUBJECT_B = "TEST_SUBJECT_B"
+
 
 class TestCSVConnectivityParser(BaseTestCase):
     BASE_PTH = path.join(path.dirname(tvb_data.__file__), 'dti_pipeline', 'Output_Toronto')
@@ -72,22 +72,19 @@ class TestCSVConnectivityImporter(TransactionalTestCase):
         self.test_project = TestFactory.create_project(self.test_user)
         self.helper = FilesHelper()
 
-
     def tearDown(self):
         """
         Clean-up tests data
         """
         FilesHelper().remove_project_structure(self.test_project.name)
 
-
     def _import_csv_test_connectivity(self, reference_connectivity_gid, subject):
-
         ### First prepare input data:
         data_dir = path.abspath(path.dirname(tvb_data.__file__))
 
-        torronto_dir = path.join(data_dir, 'dti_pipeline', 'Output_Toronto')
-        weights = path.join(torronto_dir, 'output_ConnectionCapacityMatrix.csv')
-        tracts = path.join(torronto_dir, 'output_ConnectionDistanceMatrix.csv')
+        toronto_dir = path.join(data_dir, 'dti_pipeline', 'Output_Toronto')
+        weights = path.join(toronto_dir, 'output_ConnectionCapacityMatrix.csv')
+        tracts = path.join(toronto_dir, 'output_ConnectionDistanceMatrix.csv')
         weights_tmp = weights + '.tmp'
         tracts_tmp = tracts + '.tmp'
         self.helper.copy_file(weights, weights_tmp)
@@ -99,7 +96,6 @@ class TestCSVConnectivityImporter(TransactionalTestCase):
         FlowService().fire_operation(importer, self.test_user, self.test_project.id,
                                      weights=weights_tmp, tracts=tracts_tmp, Data_Subject=subject,
                                      input_data=reference_connectivity_gid)
-
 
     def test_happy_flow_import(self):
         """
@@ -131,9 +127,7 @@ class TestCSVConnectivityImporter(TransactionalTestCase):
         assert (reference_connectivity.region_labels == imported_connectivity.region_labels).all()
 
         assert not (reference_connectivity.weights == imported_connectivity.weights).all()
-        assert not(reference_connectivity.tract_lengths == imported_connectivity.tract_lengths).all()
-
-
+        assert not (reference_connectivity.tract_lengths == imported_connectivity.tract_lengths).all()
 
     def test_bad_reference(self):
         TestFactory.import_cff(test_user=self.test_user, test_project=self.test_project)
@@ -143,4 +137,3 @@ class TestCSVConnectivityImporter(TransactionalTestCase):
 
         with pytest.raises(OperationException):
             self._import_csv_test_connectivity(bad_reference_connectivity.gid, TEST_SUBJECT_A)
-
