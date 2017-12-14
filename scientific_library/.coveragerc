@@ -1,5 +1,6 @@
-[run]
-omit = */tests/*
-
 [report]
-omit = */tests/*
+omit =
+    */tests/*
+    */_numba/*
+    */_opencl/*
+    */plot/*
