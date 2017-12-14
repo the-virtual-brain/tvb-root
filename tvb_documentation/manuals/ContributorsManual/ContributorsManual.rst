@@ -156,12 +156,45 @@ Test suite
 ----------
 
 TVB's test suite takes a long time to run, but a patch will have to pass it.
-We recommend running tests before submitting changes that touch code that you have not written.
+We recommend running tests before submitting changes that touch code that you have not written::
 
-.. code-block:: bash
+   $ pip install pytest
+   $ cd [folder_where_tvb_library_is]
+   $ pytest tvb/test [--junitxml=path]
+   $
+   $ cd [folder_where_tvb_framework_is]
+   $ pytest tvb/test [--profile=TEST_POSTGRES_PROFILE] [--junitxml=path]
+   $
+   $ pip install pytest-cov
+   $ cd [folder_where_tvb_library_is]
+   $ py.test --cov-config .coveragerc --cov=tvb tvb/tests/ --cov-branch --cov-report xml:[file_where_xml_will_be_generated]
 
-   $ cd my_tvb_workspace/tvb_bin
-   $ sh run_tests.sh
+
+In the above example of running tvb framework test, the default TVB profile value is TEST_SQLITE_PROFILE,
+when nothing else is specified. Accepted profiles for tests are: TEST_SQLITE_PROFILE and TEST_POSTGRES_PROFILE.
+
+We have some conventions when writing unit tests in TVB:
+   - follow  `standard test discovery rules <https://docs.pytest.org/en/latest/getting-started.html>`_ from pytest
+   - To ensure the correct TVB Profile is set in tests, before ANY tvb import in the unit test,
+   setup the correct tvb test profile::
+
+        from tvb.tests.library import setup_test_console_env
+        setup_test_console_env()
+        # OR
+        from tvb.tests.framework.core.base_testcase import init_test_env
+        init_test_env()
+
+   You can do this implicitly (as done currently in the majority of our example unit tests,
+   by importing BaseTestCase FIRST::
+
+        from tvb.tests.library.base_testcase import BaseTestCase
+        # OR
+        from tvb.tests.framework.core.base_testcase import BaseTestCase
+
+   - in tvb-framework, if you want to inherit from `TransactionalTestCase` and you want the unit-test method setup to
+   be done in the same transaction as the unit-test (recommended situation), then define in your subclass methods:
+      * 'transactional_setup_method'
+      * 'transactional_teardown_method'
 
 
 Contribution guidelines
