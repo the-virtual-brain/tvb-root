@@ -90,6 +90,3 @@ class TestCommon(BaseTestCase):
             numpy.add.at(expected, map, source)
             common._add_at(actual, map, source)
             assert numpy.allclose(expected, actual)
-
-    def setUp(self):
-        pass

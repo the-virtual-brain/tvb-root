@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 #
 #
-#  TheVirtualBrain-Scientific Package. This package holds all simulators, and
+# TheVirtualBrain-Scientific Package. This package holds all simulators, and
 # analysers necessary to run brain-simulations. You can use it stand alone or
 # in conjunction with TheVirtualBrain-Framework Package. See content of the
 # documentation-folder for more details. See also http://www.thevirtualbrain.org
@@ -30,11 +30,26 @@
 
 
 """
-This is the tests folder for the entire TVB project.
-"""
+This is the root of TVB tests. It overlaps between tvb-library and tvb-framework packages.
 
-"""
-For running test on tvb-framework use the command: pytest tvb-framework
+For running test use the command: pytest [tests_folder]
+
+IMPORTANT: To ensure the correct TVB Profile is set in tests, before ANY tvb import in the unit test,
+    setup the correct tvb test profile::
+
+        from tvb.tests.library import setup_test_console_env
+        setup_test_console_env()
+
+        # OR
+        from tvb.tests.framework.core.base_testcase import init_test_env
+        init_test_env()
+
+    You can do this implicitly (as done currently in the majority of our example unit tests,
+    by importing BaseTestCase FIRST::
+
+        from tvb.tests.library.base_testcase import BaseTestCase
+        # OR
+        from tvb.tests.framework.core.base_testcase import BaseTestCase
 """
 
 from pkgutil import extend_path
