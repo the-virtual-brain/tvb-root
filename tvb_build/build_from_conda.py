@@ -115,8 +115,8 @@ class Config:
             'bin\\contributor_setup.bat': set_path + 'python.exe -m  tvb_bin.git_setup %1 %2\ncd ..\\bin'
         }
 
-        return Config("Windows", "C:\\ProgramData\\anaconda2\\envs\\tvb-run", join("Lib", "site-packages"),
-                      commands_map, _create_windows_script)
+        return Config("Windows", "C:\\Users\\tvb\\AppData\\Local\\conda\\conda\\envs\\tvb-run",
+                      join("Lib", "site-packages"), commands_map, _create_windows_script)
 
 
     @staticmethod
