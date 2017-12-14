@@ -45,27 +45,23 @@ from tvb.datatypes.surfaces import FaceSurface, FACE
 import tvb_data.obj
 
 
-
 class TestObjSurfaceImporter(TransactionalTestCase):
     """
     Unit-tests for Obj Surface importer.
     """
 
-    torrus = os.path.join(os.path.dirname(tvb_data.obj.__file__), 'test_torus.obj')
+    torus = os.path.join(os.path.dirname(tvb_data.obj.__file__), 'test_torus.obj')
     face = os.path.join(os.path.dirname(tvb_data.obj.__file__), 'face_surface.obj')
 
-
-    def setUp(self):
+    def transactional_setup_method(self):
         self.datatypeFactory = DatatypesFactory()
         self.test_project = self.datatypeFactory.get_project()
         self.test_user = self.datatypeFactory.get_user()
 
-
-    def tearDown(self):
+    def transactional_teardown_method(self):
         FilesHelper().remove_project_structure(self.test_project.name)
 
-
-    def _importSurface(self, import_file_path=None):
+    def _import_surface(self, import_file_path=None):
         ### Retrieve Adapter instance
         importer = TestFactory.create_adapter('tvb.adapters.uploaders.obj_importer', 'ObjSurfaceImporter')
 
@@ -83,23 +79,20 @@ class TestObjSurfaceImporter(TransactionalTestCase):
         assert surface is not None, "Surface should not be None"
         return surface
 
-
     def test_import_quads_no_normals(self):
         """
         Test that import works with a file which contains quads and no normals
         """
-        surface = self._importSurface(self.face)
+        surface = self._import_surface(self.face)
         assert 8614 == len(surface.vertices)
         assert 8614 == len(surface.vertex_normals)
         assert 17224 == len(surface.triangles)
-
 
     def test_import_simple_with_normals(self):
         """
         Test that import works with an OBJ file which included normals
         """
-        surface = self._importSurface(self.torrus)
+        surface = self._import_surface(self.torus)
         assert 441 == surface.number_of_vertices
         assert 441 == len(surface.vertex_normals)
         assert 800 == surface.number_of_triangles
-

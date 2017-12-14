@@ -47,7 +47,7 @@ class TestAdapterMemoryUsage(TransactionalTestCase):
     Test class for the module handling methods computing required memory for an adapter to run.
     """
     
-    def setUp(self):
+    def transactional_setup_method(self):
         """
         Reset the database before each test.
         """

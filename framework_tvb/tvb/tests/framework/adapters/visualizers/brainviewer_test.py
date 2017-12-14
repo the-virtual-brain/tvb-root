@@ -54,7 +54,7 @@ class TestBrainViewer(TransactionalTestCase):
                            'extended_view', 'legendLabels', 'labelsStateVar', 'labelsModes', 'title']
 
 
-    def setUp(self):
+    def transactional_setup_method(self):
         """
         Sets up the environment for running the tests;
         creates a test user, a test project, a connectivity, a cortical surface and a face surface;
@@ -72,7 +72,7 @@ class TestBrainViewer(TransactionalTestCase):
         assert TestFactory.get_entity(self.test_project, EEGCap()) is not None
 
 
-    def tearDown(self):
+    def transactional_teardown_method(self):
         """
         Clean-up tests data
         """

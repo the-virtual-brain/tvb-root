@@ -34,10 +34,10 @@
 """
 
 import os
+from tvb.tests.framework.core.base_testcase import TransactionalTestCase
 import tvb_data.sensors
 import tvb_data.surfaceData
 import tvb_data.projectionMatrix as dataset
-from tvb.tests.framework.core.base_testcase import TransactionalTestCase
 from tvb.adapters.uploaders.sensors_importer import Sensors_Importer
 from tvb.tests.framework.core.factory import TestFactory
 from tvb.core.services.flow_service import FlowService
@@ -54,7 +54,7 @@ class TestProjectionMatrix(TransactionalTestCase):
     Unit-tests for CFF-importer.
     """
     
-    def setUp(self):
+    def transactional_setup_method(self):
         """
         Reset the database before each test.
         """
@@ -76,7 +76,7 @@ class TestProjectionMatrix(TransactionalTestCase):
                                                    'ProjectionMatrixSurfaceEEGImporter')
 
 
-    def tearDown(self):
+    def transactional_teardown_method(self):
         """
         Clean-up tests data
         """

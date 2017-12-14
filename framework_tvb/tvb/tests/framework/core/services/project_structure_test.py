@@ -54,7 +54,7 @@ class TestProjectStructure(TransactionalTestCase):
     Test ProjectService methods (part related to Project Data Structure).
     """
 
-    def setUp(self):
+    def transactional_setup_method(self):
         """
         Prepare before each test.
         """
@@ -69,7 +69,7 @@ class TestProjectStructure(TransactionalTestCase):
         self.full_filter = StaticFiltersFactory.build_datatype_filters(single_filter=StaticFiltersFactory.FULL_VIEW)
 
     
-    def tearDown(self):
+    def transactional_teardown_method(self):
         """
         Clear project folders after testing
         """

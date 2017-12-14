@@ -59,7 +59,7 @@ class TestImportService(TransactionalTestCase):
     This class contains tests for the tvb.core.services.import_service module.
     """  
     
-    def setUp(self):
+    def transactional_setup_method(self):
         """
         Reset the database before each test.
         """
@@ -75,7 +75,7 @@ class TestImportService(TransactionalTestCase):
         self.zip_path = None 
         
 
-    def tearDown(self):
+    def transactional_teardown_method(self):
         """
         Reset the database when test is done.
         """

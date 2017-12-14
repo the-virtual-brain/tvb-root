@@ -48,7 +48,7 @@ class TestProjectController(BaseTransactionalControllerTest):
     """ Unit tests for ProjectController """
 
 
-    def setUp(self):
+    def transactional_setup_method(self):
         """
         Sets up the environment for testing;
         creates a `ProjectController`
@@ -57,7 +57,7 @@ class TestProjectController(BaseTransactionalControllerTest):
         self.project_c = ProjectController()
 
 
-    def tearDown(self):
+    def transactional_teardown_method(self):
         """ Cleans the testing environment """
         self.cleanup()
 

@@ -50,7 +50,7 @@ class TestCFFUpload(TransactionalTestCase):
     VALID_CFF = os.path.join(os.path.dirname(dataset.__file__), 'connectivities.cff')
 
 
-    def setUp(self):
+    def transactional_setup_method(self):
         """
         Reset the database before each test.
         """

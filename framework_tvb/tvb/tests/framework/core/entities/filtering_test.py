@@ -65,7 +65,7 @@ class TestFiltering(TransactionalTestCase):
                 self.attribute_1, self.attribute_2, self.attribute_3)
 
 
-    def tearDown(self):
+    def transactional_teardown_method(self):
         self.clean_database()
 
 

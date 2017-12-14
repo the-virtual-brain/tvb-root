@@ -46,7 +46,7 @@ class TestCovarianceViewer(TransactionalTestCase):
     """
 
 
-    def setUp(self):
+    def transactional_setup_method(self):
         """
         Sets up the environment for running the tests;
         creates a test user, a test project, a connectivity and a surface;
@@ -61,7 +61,7 @@ class TestCovarianceViewer(TransactionalTestCase):
         assert self.connectivity is not None
 
 
-    def tearDown(self):
+    def transactional_teardown_method(self):
         """
         Clean-up tests data
         """

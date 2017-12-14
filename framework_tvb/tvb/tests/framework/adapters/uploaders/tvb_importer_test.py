@@ -53,7 +53,7 @@ class TestTVBImporter(TransactionalTestCase):
     TVB_EXPORTER = "TVBExporter"
 
 
-    def setUp(self):
+    def transactional_setup_method(self):
         """
         Sets up the environment for running the tests;
         creates a test user, a test project, a datatype and a datatype_group;

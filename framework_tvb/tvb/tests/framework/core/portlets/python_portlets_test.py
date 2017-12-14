@@ -42,7 +42,7 @@ from tvb.core.portlets.portlet_configurer import PortletConfigurer
 class TestPythonPortlets(TransactionalTestCase):
     
     
-    def setUp(self):
+    def transactional_setup_method(self):
         """
         Sets up the environment for testing;
         creates a test user, a test project and saves config file
@@ -54,7 +54,7 @@ class TestPythonPortlets(TransactionalTestCase):
         self.test_project = dao.store_entity(project)
         
         
-    def tearDown(self):
+    def transactional_teardown_method(self):
         """
         Remove project folders and restore config file
         """

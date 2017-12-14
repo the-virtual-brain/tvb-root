@@ -45,13 +45,12 @@ class TestConnectivityZip(TransactionalTestCase):
     Unit-tests for CFF-importer.
     """
 
-    def setUp(self):
+    def transactional_setup_method(self):
         """
         Reset the database before each test.
         """
         self.test_user = TestFactory.create_user('CFF_User')
         self.test_project = TestFactory.create_project(self.test_user, "CFF_Project")
-
 
     @staticmethod
     def import_test_connectivity96(test_user, test_project, subject=DataTypeMetaData.DEFAULT_SUBJECT):
@@ -66,7 +65,6 @@ class TestConnectivityZip(TransactionalTestCase):
         ### Launch Operation
         FlowService().fire_operation(importer, test_user, test_project.id, uploaded=zip_path, Data_Subject=subject)
 
-
     def test_happy_flow_import(self):
         """
         Test that importing a CFF generates at least one DataType in DB.
@@ -77,8 +75,3 @@ class TestConnectivityZip(TransactionalTestCase):
 
         dt_count_after = TestFactory.get_entity_count(self.test_project, Connectivity())
         assert dt_count_before + 1 == dt_count_after
-
-
-        
-        
-    

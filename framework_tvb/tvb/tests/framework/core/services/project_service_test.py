@@ -63,7 +63,7 @@ class TestProjectService(TransactionalTestCase):
     This class contains tests for the tvb.core.services.project_service module.
     """    
     
-    def setUp(self):
+    def transactional_setup_method(self):
         """
         Reset the database before each test.
         """
@@ -72,7 +72,7 @@ class TestProjectService(TransactionalTestCase):
         self.test_user = TestFactory.create_user()
     
     
-    def tearDown(self):
+    def transactional_teardown_method(self):
         """
         Remove project folders and clean up database.
         """

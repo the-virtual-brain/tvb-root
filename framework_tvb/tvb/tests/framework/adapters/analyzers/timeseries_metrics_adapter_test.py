@@ -56,7 +56,7 @@ class TestTimeSeriesMetricsAdapter(TransactionalTestCase):
     """
 
 
-    def setUp(self):
+    def transactional_setup_method(self):
         """
         Sets up the environment for running the tests;
         creates a test user and a test project, saves old configuration and imports a CFF data-set
@@ -66,7 +66,7 @@ class TestTimeSeriesMetricsAdapter(TransactionalTestCase):
         TestFactory.import_cff(test_user=self.test_user, test_project=self.test_project)
 
 
-    def tearDown(self):
+    def transactional_teardown_method(self):
         """
         Remove project folders and clean up database.
         """

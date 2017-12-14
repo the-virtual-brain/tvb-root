@@ -38,7 +38,7 @@ from tvb.interfaces.web.controllers.spatial.region_stimulus_controller import Re
 class TestRegionsStimulusController(BaseTransactionalControllerTest):
     """ Unit tests for RegionStimulusController """
     
-    def setUp(self):
+    def transactional_setup_method(self):
         """
         Sets up the environment for testing;
         creates a `RegionStimulusController`
@@ -47,7 +47,7 @@ class TestRegionsStimulusController(BaseTransactionalControllerTest):
         self.region_s_c = RegionStimulusController()
 
 
-    def tearDown(self):
+    def transactional_teardown_method(self):
         """ Cleans the testing environment """
         self.cleanup()
 

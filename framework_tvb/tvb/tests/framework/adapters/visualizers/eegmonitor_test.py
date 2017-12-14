@@ -32,8 +32,8 @@
 """
 import json
 import os
-import tvb_data.sensors as sensors_dataset
 from tvb.tests.framework.core.base_testcase import TransactionalTestCase
+import tvb_data.sensors as sensors_dataset
 from tvb.core.entities.file.files_helper import FilesHelper
 from tvb.adapters.visualizers.eeg_monitor import EegMonitor
 from tvb.datatypes.connectivity import Connectivity
@@ -46,7 +46,7 @@ class TestEEGMonitor(TransactionalTestCase):
     """
     Unit-tests for EEG Viewer.
     """
-    def setUp(self):
+    def transactional_setup_method(self):
         """
         Sets up the environment for running the tests;
         creates a test user, a test project, a connectivity and a surface;
@@ -61,7 +61,7 @@ class TestEEGMonitor(TransactionalTestCase):
         assert self.connectivity is not None
 
                 
-    def tearDown(self):
+    def transactional_teardown_method(self):
         """
         Clean-up tests data
         """

@@ -43,7 +43,7 @@ class TestConnectivityViewer(TransactionalTestCase):
     Unit-tests for Connectivity Viewer.
     """
 
-    def setUp(self):
+    def transactional_setup_method(self):
         """
         Sets up the environment for running the tests;
         creates a test user, a test project, a connectivity and a surface;
@@ -52,19 +52,17 @@ class TestConnectivityViewer(TransactionalTestCase):
         self.datatypeFactory = DatatypesFactory()
         self.test_project = self.datatypeFactory.get_project()
         self.test_user = self.datatypeFactory.get_user()
-        
+
         TestFactory.import_cff(test_user=self.test_user, test_project=self.test_project)
         self.connectivity = TestFactory.get_entity(self.test_project, Connectivity())
         assert self.connectivity is not None
 
-                
-    def tearDown(self):
+    def transactional_teardown_method(self):
         """
         Clean-up tests data
         """
         FilesHelper().remove_project_structure(self.test_project.name)
-    
-    
+
     def test_launch(self):
         """
         Check that all required keys are present in output from BrainViewer launch.
@@ -77,4 +75,3 @@ class TestConnectivityViewer(TransactionalTestCase):
                          'leftHemisphereJson', 'connectivity_entity', 'bothHemisphereJson']
         for key in expected_keys:
             assert key in result
-    

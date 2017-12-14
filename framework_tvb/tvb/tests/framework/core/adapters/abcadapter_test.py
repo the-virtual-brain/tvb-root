@@ -122,7 +122,7 @@ class TestAdapterABC(TransactionalTestCase):
     EXPECTED_FILTERED_SET4 = {"surface": None.__class__, "monitors": list,
                               "monitors_parameters": dict, "length": int}
 
-    def setUp(self):
+    def transactional_setup_method(self):
         """
         Reset the database before each test.
         """

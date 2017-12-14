@@ -44,7 +44,7 @@ class TestFigureController(BaseTransactionalControllerTest):
     """ Unit tests for FigureController """
 
 
-    def setUp(self):
+    def transactional_setup_method(self):
         """
         Sets up the environment for running the tests;
         creates a `FigureController` and an operation
@@ -55,7 +55,7 @@ class TestFigureController(BaseTransactionalControllerTest):
                                                       test_project=self.test_project)
             
             
-    def tearDown(self):
+    def transactional_teardown_method(self):
         """ Cleans the testing environment """
         self.cleanup()
 

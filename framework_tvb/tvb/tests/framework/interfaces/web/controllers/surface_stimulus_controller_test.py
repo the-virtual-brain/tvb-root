@@ -44,12 +44,12 @@ from tvb.core.entities.transient.context_stimulus import SURFACE_PARAMETER
 class TestSurfaceStimulusController(BaseTransactionalControllerTest):
     """ Unit tests for SurfaceStimulusController """
     
-    def setUp(self):
+    def transactional_setup_method(self):
         self.init()
         self.surface_s_c = SurfaceStimulusController()
 
 
-    def tearDown(self):
+    def transactional_teardown_method(self):
         """ Cleans the testing environment """
         self.cleanup()
 

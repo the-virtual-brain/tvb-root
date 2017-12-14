@@ -246,16 +246,16 @@ def transactional_test(func, callback=None):
             session_maker.start_transaction()
             try:
                 try:
-                    if hasattr(args[0], 'setUpTVB'):
+                    if hasattr(args[0], 'transactional_setup_method_TVB'):
                         LOGGER.debug(args[0].__class__.__name__ + "->" + func.__name__
                                      + "- Transactional SETUP starting...")
-                        args[0].setUpTVB()
+                        args[0].transactional_setup_method_TVB()
                     result = func(*args, **kwargs)
                 finally:
-                    if hasattr(args[0], 'tearDownTVB'):
+                    if hasattr(args[0], 'transactional_teardown_method_TVB'):
                         LOGGER.debug(args[0].__class__.__name__ + "->" + func.__name__
                                      + "- Transactional TEARDOWN starting...")
-                        args[0].tearDownTVB()
+                        args[0].transactional_teardown_method_TVB()
                         args[0].delete_project_folders()
             finally:
                 session_maker.rollback_transaction()
@@ -286,8 +286,8 @@ class TransactionalTestMeta(type):
                                                          and attribute.__name__.endswith('__'))):
                 if attr_name.startswith('test_'):
                     attribute = transactional_test(attribute)
-                if attr_name in ('setUp', 'tearDown'):
-                    new_class_dict[attr_name + 'TVB'] = attribute
+                if attr_name in ('transactional_setup_method', 'transactional_teardown_method'):
+                    new_class_dict[attr_name + '_TVB'] = attribute
                 else:
                     new_class_dict[attr_name] = attribute
             else:
@@ -301,6 +301,12 @@ class TransactionalTestCase(BaseTestCase):
     This class makes sure that any test case it contains is ran in a transactional
     environment and a rollback is issued at the end of that transaction. This should
     improve performance for most cases.
+
+    IMPORTANT: in case you want the unit-test method setup to be done in the same transaction
+    as the unit-test (recommended situation), then define methods:
+    - 'transactional_setup_method'
+    - 'transactional_teardown_method'
+    in your subclass of TransactionalTestCase!
     
     WARNING! Do not use this is any test class that has uses multiple threads to do
     dao related operations since that might cause errors/leave some dangling sessions.

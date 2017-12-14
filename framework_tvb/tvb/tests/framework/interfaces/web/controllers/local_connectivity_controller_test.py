@@ -41,49 +41,42 @@ from tvb.interfaces.web.controllers.spatial.local_connectivity_controller import
 
 class TestLocalConnectivityController(BaseTransactionalControllerTest):
     """ Unit tests for LocalConnectivityController """
-    
-    def setUp(self):
+
+    def transactional_setup_method(self):
         """
         Sets up the environment for testing;
-        creates a `LolcalConnectivityController`
+        creates a `LocalConnectivityController`
         """
         self.init()
         self.local_p_c = LocalConnectivityController()
 
-
-    def tearDown(self):
+    def transactional_teardown_method(self):
         """ Cleans the testing environment """
         self.cleanup()
 
-            
-    def _default_checks(self, result_dict):
+    @staticmethod
+    def _default_checks(result_dict):
         """
         Check for some info that should be true for all steps from the
         local connectivity controller.
         """
         assert result_dict['data'] == {}
         assert isinstance(result_dict['existentEntitiesInputList'], list)
-    
-    
+
     def test_step_1(self):
         """
         Test that the dictionary returned by the controller for the LC Workflow first step is correct.
         """
         result_dict = self.local_p_c.step_1(1)
         self._default_checks(result_dict)
-        assert result_dict['equationViewerUrl'] ==\
-                         '/spatial/localconnectivity/get_equation_chart'
+        assert result_dict['equationViewerUrl'] == '/spatial/localconnectivity/get_equation_chart'
         assert isinstance(result_dict['inputList'], list)
         assert result_dict['mainContent'] == 'spatial/local_connectivity_step1_main'
         assert result_dict['next_step_url'] == '/spatial/localconnectivity/step_2'
-        assert result_dict['resetToDefaultUrl'] ==\
-                         '/spatial/localconnectivity/reset_local_connectivity'
-        assert result_dict['submit_parameters_url'] ==\
-                         '/spatial/localconnectivity/create_local_connectivity'
-        assert result_dict['resetToDefaultUrl'] ==\
-                         '/spatial/localconnectivity/reset_local_connectivity'
-        
-        
+        assert result_dict['resetToDefaultUrl'] == '/spatial/localconnectivity/reset_local_connectivity'
+        assert result_dict['submit_parameters_url'] == '/spatial/localconnectivity/create_local_connectivity'
+        assert result_dict['resetToDefaultUrl'] == '/spatial/localconnectivity/reset_local_connectivity'
+
     def test_step_2(self):
         """
         Test that the dictionary returned by the controller for the LC Workflow second step is correct.
@@ -95,4 +88,3 @@ class TestLocalConnectivityController(BaseTransactionalControllerTest):
         assert result_dict['loadExistentEntityUrl'] == '/spatial/localconnectivity/load_local_connectivity'
         assert result_dict['mainContent'] == 'spatial/local_connectivity_step2_main'
         assert result_dict['next_step_url'] == '/spatial/localconnectivity/step_1'
-        

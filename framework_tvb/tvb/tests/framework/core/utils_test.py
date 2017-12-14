@@ -48,14 +48,14 @@ class TestUtils(TransactionalTestCase):
     """
 
 
-    def setUp(self):
+    def transactional_setup_method(self):
         """
         Reset the database before each test.
         """
         pass
 
 
-    def tearDown(self):
+    def transactional_teardown_method(self):
         """
         Reset the database when test is done.
         """

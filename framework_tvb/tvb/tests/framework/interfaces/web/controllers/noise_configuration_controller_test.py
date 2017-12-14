@@ -49,7 +49,7 @@ from tvb.simulator.noise import Additive
 
 class TestNoiseConfigurationController(BaseTransactionalControllerTest):
 
-    def setUp(self):
+    def transactional_setup_method(self):
         """
         Sets up the environment for testing
         creates a `NoiseConfigurationController`
@@ -74,7 +74,7 @@ class TestNoiseConfigurationController(BaseTransactionalControllerTest):
 
         self.noise_c.index()
 
-    def tearDown(self):
+    def transactional_teardown_method(self):
         """ Cleans the testing environment """
         self.cleanup()
 

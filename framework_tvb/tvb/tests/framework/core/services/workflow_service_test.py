@@ -53,7 +53,7 @@ class TestWorkflow(TransactionalTestCase):
     """
 
 
-    def setUp(self):
+    def transactional_setup_method(self):
         """
         Sets up the testing environment;
         saves config file;
@@ -68,7 +68,7 @@ class TestWorkflow(TransactionalTestCase):
         self.flow_service = FlowService()
 
 
-    def tearDown(self):
+    def transactional_teardown_method(self):
         """
         Remove project folders and clean up database.
         """

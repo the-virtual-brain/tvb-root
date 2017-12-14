@@ -52,7 +52,7 @@ class TestConnectivityMeasureImporter(TransactionalTestCase):
     Unit-tests for ConnectivityMeasureImporter
     """
 
-    def setUp(self):
+    def transactional_setup_method(self):
         zip_path = os.path.join(os.path.dirname(tvb_data.__file__), 'connectivity', 'connectivity_66.zip')
         self.test_user = TestFactory.create_user('Test_User')
         self.test_project = TestFactory.create_project(self.test_user, "Test_Project")
@@ -60,7 +60,7 @@ class TestConnectivityMeasureImporter(TransactionalTestCase):
         self.connectivity = TestFactory.get_entity(self.test_project, Connectivity())
 
 
-    def tearDown(self):
+    def transactional_teardown_method(self):
         FilesHelper().remove_project_structure(self.test_project.name)
 
 

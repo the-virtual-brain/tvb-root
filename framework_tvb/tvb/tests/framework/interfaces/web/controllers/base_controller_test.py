@@ -66,9 +66,9 @@ class BaseControllersTest(BaseTestCase):
 
     def init(self, with_data=True, user_role="test"):
         """
-        Have a different name than setUp so we can use it safely in transactions and it will
+        Have a different name than transactional_setup_method so we can use it safely in transactions and it will
         not be called before running actual test.
-        Using setUp inheritance here won't WORK!! See TransactionalTest
+        Using transactional_setup_method inheritance here won't WORK!! See TransactionalTest
         """
         cherrypy.session = BaseControllersTest.CherrypySession()
 
@@ -86,9 +86,9 @@ class BaseControllersTest(BaseTestCase):
 
     def cleanup(self):
         """
-        Have a different name than tearDown so we can use it safely in transactions and it will
+        Have a different name than transactional_teardown_method so we can use it safely in transactions and it will
         not be called after running actual test.
-        Using tearDown here won't WORK!! See TransactionalTest
+        Using transactional_teardown_method here won't WORK!! See TransactionalTest
         """
         if os.path.exists(TvbProfile.current.TVB_CONFIG_FILE):
             os.remove(TvbProfile.current.TVB_CONFIG_FILE)

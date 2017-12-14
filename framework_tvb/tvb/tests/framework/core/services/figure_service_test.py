@@ -50,14 +50,14 @@ class TestFigureService(TransactionalTestCase):
     """
     Tests for the figure service
     """
-    def setUp(self):
+    def transactional_setup_method(self):
         self.figure_service = FigureService()
         self.user = TestFactory.create_user()
         self.project = TestFactory.create_project(admin=self.user)
         self.files_helper = FilesHelper()
 
 
-    def tearDown(self):
+    def transactional_teardown_method(self):
         self.delete_project_folders()
 
 

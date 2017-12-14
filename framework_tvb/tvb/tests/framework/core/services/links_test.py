@@ -75,12 +75,12 @@ class _BaseLinksTest(TransactionalTestCase):
         self.project_service = ProjectService()
 
 
-    def setUp(self):
+    def transactional_setup_method(self):
         self.clean_database(delete_folders=True)
         self._initialize_two_projects()
 
 
-    def tearDown(self):
+    def transactional_teardown_method(self):
         self.clean_database(delete_folders=True)
 
 
@@ -145,7 +145,7 @@ class TestLinks(_BaseLinksTest):
 
 class ImportExportProjectWithLinksTest(_BaseLinksTest):
 
-    def setUp(self):
+    def transactional_setup_method(self):
         """
         Adds to the _BaseLinksTest setup the following
         2 links from src to dest project

@@ -33,7 +33,6 @@
 .. moduleauthor:: Bogdan Neacsa <bogdan.neacsa@codemart.ro>
 """
 
-from tvb.basic.profile import TvbProfile
 from tvb.tests.framework.core.base_testcase import TransactionalTestCase
 from tvb.adapters.visualizers.pse_discrete import DiscretePSEAdapter
 from tvb.adapters.visualizers.pse_isocline import IsoclinePSEAdapter
@@ -45,15 +44,13 @@ class TestPSE(TransactionalTestCase):
     Unit-tests for BrainViewer.
     """
 
-
-    def setUp(self):
+    def transactional_setup_method(self):
         """
         Sets up the environment for running the tests;
         creates a datatype group
         """
         self.datatypeFactory = DatatypesFactory()
         self.group = self.datatypeFactory.create_datatype_group()
-
 
     def test_launch_discrete(self):
         """
@@ -70,7 +67,6 @@ class TestPSE(TransactionalTestCase):
         assert self.group.gid == result["datatype_group_gid"]
         assert 'false' == result["has_started_ops"]
 
-
     def test_launch_isocline(self):
         """
         Check that all required keys are present in output from PSE Discrete Adapter launch.
@@ -79,4 +75,3 @@ class TestPSE(TransactionalTestCase):
         result = viewer.launch(self.group)
         assert viewer._ui_name == result["title"]
         assert 1 == len(result["available_metrics"])
-

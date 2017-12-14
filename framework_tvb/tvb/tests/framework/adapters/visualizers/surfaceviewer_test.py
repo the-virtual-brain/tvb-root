@@ -50,7 +50,7 @@ class TestSurfaceViewers(TransactionalTestCase):
                      'noOfMeasurePoints': 76, 'urlMeasurePoints': None, 'boundaryURL': None, 'minMeasure': 0,
                      'maxMeasure': 76, 'clientMeasureUrl': None}
 
-    def setUp(self):
+    def transactional_setup_method(self):
         """
         Sets up the environment for running the tests;
         creates a test user, a test project, a connectivity and a surface;
@@ -66,7 +66,7 @@ class TestSurfaceViewers(TransactionalTestCase):
         assert self.region_mapping is not None
 
 
-    def tearDown(self):
+    def transactional_teardown_method(self):
         """
         Clean-up tests data
         """

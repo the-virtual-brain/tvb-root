@@ -37,8 +37,8 @@ from tvb.interfaces.web.controllers.help.help_controller import HelpController
 
 class TestHelpController(BaseTransactionalControllerTest):
     """ Unit tests for HelpController """
-    
-    def setUp(self):
+
+    def transactional_setup_method(self):
         """
         Sets up the environment for testing;
         creates a `HelpController`
@@ -46,12 +46,10 @@ class TestHelpController(BaseTransactionalControllerTest):
         self.init()
         self.help_c = HelpController()
 
-
-    def tearDown(self):
+    def transactional_teardown_method(self):
         """ Cleans the testing environment """
         self.cleanup()
 
-            
     def test_show_online_help(self):
         """
         Verifies that result dictionary has the expected keys / values
@@ -62,4 +60,3 @@ class TestHelpController(BaseTransactionalControllerTest):
         assert result_dict['overlay_class'] == 'help'
         assert result_dict['overlay_content_template'] == 'help/online_help'
         assert result_dict['overlay_description'] == 'Online-Help'
-        

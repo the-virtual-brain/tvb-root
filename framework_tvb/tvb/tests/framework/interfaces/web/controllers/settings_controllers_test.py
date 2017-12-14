@@ -78,14 +78,14 @@ class TestSettingsController(BaseTransactionalControllerTest):
                       'ADMINISTRATOR_EMAIL': 'admin@test.test'}
 
 
-    def setUp(self):
+    def transactional_setup_method(self):
 
         self.init(with_data=False)
         self.settings_c = SettingsController()
         assert TvbProfile.is_first_run()
 
 
-    def tearDown(self):
+    def transactional_teardown_method(self):
         """ Cleans the testing environment """
         self.cleanup()
 

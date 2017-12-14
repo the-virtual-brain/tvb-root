@@ -55,7 +55,7 @@ class TestFilesHelper(TransactionalTestCase):
     PROJECT_NAME = "test_proj"
            
            
-    def setUp(self):
+    def transactional_setup_method(self):
         """
         Set up the context needed by the tests.
         """
@@ -64,7 +64,7 @@ class TestFilesHelper(TransactionalTestCase):
         self.test_project = TestFactory.create_project(self.test_user, self.PROJECT_NAME)
     
     
-    def tearDown(self):
+    def transactional_teardown_method(self):
         """ Remove generated project during tests. """
         self.delete_project_folders()
     

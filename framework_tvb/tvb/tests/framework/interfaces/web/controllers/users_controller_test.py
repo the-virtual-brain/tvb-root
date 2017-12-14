@@ -46,11 +46,10 @@ from tvb.core.entities.storage import dao
 from tvb.core.entities.model import UserPreferences
 
 
-
 class TestUsersController(BaseTransactionalControllerTest):
     """Unit test for UserController"""
-    
-    def setUp(self):
+
+    def transactional_setup_method(self):
         """
         Sets up the testing environment;
         creates a `UserController`
@@ -58,12 +57,10 @@ class TestUsersController(BaseTransactionalControllerTest):
         self.init(user_role=model.ROLE_ADMINISTRATOR)
         self.user_c = UserController()
 
-
-    def tearDown(self):
+    def transactional_teardown_method(self):
         """ Cleans the testing environment """
         self.cleanup()
 
-    
     def test_index_valid_post(self):
         """
         Tests for a valid redirect on user login
@@ -73,16 +70,14 @@ class TestUsersController(BaseTransactionalControllerTest):
         login_data = {'username': 'valid_user', 'password': 'valid_pass'}
         cherrypy.request.method = "POST"
         self._expect_redirect('/user/profile', self.user_c.index, **login_data)
-    
-    
+
     def test_profile_logout(self):
         """
         Simulate a logout and make sure we are redirected to the logout page.
         """
         cherrypy.request.method = "POST"
         self._expect_redirect('/user/logout', self.user_c.profile, logout=True)
-        
-        
+
     def test_profile_no_settings(self):
         """
         Delete the dummy tvb settings file and make sure we are redirected to the settings page.
@@ -91,7 +86,6 @@ class TestUsersController(BaseTransactionalControllerTest):
         TvbProfile.current.manager.stored_settings = None
         self._expect_redirect('/settings/settings', self.user_c.profile)
 
-        
     def test_profile_get(self):
         """
         Simulate a GET request and make sure all required information for the user profile
@@ -101,8 +95,7 @@ class TestUsersController(BaseTransactionalControllerTest):
         template_dict = self.user_c.profile()
         self._check_default_attributes(template_dict, {}, {})
         assert template_dict[common.KEY_USER].id == self.test_user.id
-        
-    
+
     def test_profile_edit(self):
         """
         Simulate a edit of the email and check that data is actually changed.
@@ -112,8 +105,7 @@ class TestUsersController(BaseTransactionalControllerTest):
         self.user_c.profile(save=True, **edited_data)
         user = dao.get_user_by_id(self.test_user.id)
         assert 'jira1.tvb@gmail.com' == user.email
-        
-        
+
     def test_logout(self):
         """
         Test that a logout removes the user from session.
@@ -122,24 +114,21 @@ class TestUsersController(BaseTransactionalControllerTest):
         cherrypy.serving.response.cookie['session_id'] = 1
         self._expect_redirect('/user', self.user_c.logout)
         assert common.KEY_USER not in cherrypy.session, "User should be removed after logout."
-        
-    
+
     def test_switch_online_help(self):
         """
         Test the switch_online_help method and make sure it adds corresponding entry to UserPreferences.
         """
         self._expect_redirect('/user/profile', self.user_c.switch_online_help)
-        assert not utils.string2bool(self.test_user.preferences[UserPreferences.ONLINE_HELP_ACTIVE]),\
-                         "Online help should be switched to False."
-        
-        
+        assert not utils.string2bool(self.test_user.preferences[UserPreferences.ONLINE_HELP_ACTIVE]), \
+            "Online help should be switched to False."
+
     def test_register_cancel(self):
         """
         Test cancel on registration page.
         """
         self._expect_redirect('/user', self.user_c.register, cancel=True)
-            
-    
+
     def test_register_post_valid(self):
         """
         Test with valid data and check user is created.
@@ -154,8 +143,7 @@ class TestUsersController(BaseTransactionalControllerTest):
         self._expect_redirect('/user', self.user_c.register, **data)
         stored_user = dao.get_user_by_name('registered_user')
         assert stored_user is not None, "New user should be saved."
-        
-        
+
     def test_register_post_invalid_data(self):
         """
         Check that errors field from template is filled in case invalid data is submitted.
@@ -169,15 +157,13 @@ class TestUsersController(BaseTransactionalControllerTest):
                     role="CLINICIAN")
         template_dict = self.user_c.register(**data)
         assert template_dict[common.KEY_ERRORS] != {}, "Errors should contain some data."
-        
-        
+
     def test_create_new_cancel(self):
         """
         Test that a cancel brings you back to usermanagement.
         """
         self._expect_redirect('/user/usermanagement', self.user_c.create_new, cancel=True)
-    
-    
+
     def test_create_new_valid_post(self):
         """
         Test that a valid create new post will actually create a new user in database.
@@ -192,8 +178,7 @@ class TestUsersController(BaseTransactionalControllerTest):
         self._expect_redirect('/user/usermanagement', self.user_c.create_new, **data)
         created_user = dao.get_user_by_name("registered_user")
         assert created_user is not None, "Should have a new user created."
-        
-    
+
     def test_usermanagement_no_access(self):
         """
         Since we need to be admin to access this, we should get redirect to /tvb.
@@ -201,8 +186,7 @@ class TestUsersController(BaseTransactionalControllerTest):
         self.test_user.role = "TEST"
         self._expect_redirect('/tvb', self.user_c.usermanagement)
         assert cherrypy.session[common.KEY_MESSAGE_TYPE] == common.TYPE_ERROR
-        
-    
+
     def test_usermanagement_cancel(self):
         """
         Test that a cancel redirects us to a corresponding page.
@@ -211,8 +195,7 @@ class TestUsersController(BaseTransactionalControllerTest):
         self.test_user = dao.store_entity(self.test_user)
         cherrypy.session[common.KEY_USER] = self.test_user
         self._expect_redirect('/user/profile', self.user_c.usermanagement, cancel=True)
-        
-        
+
     def test_usermanagement_post_valid(self):
         """
         Create a valid post and check that user is created.
@@ -235,16 +218,14 @@ class TestUsersController(BaseTransactionalControllerTest):
         user_after_validation = dao.get_user_by_id(user_before_validation.id)
         assert user_after_validation.validated, "User should be validated now."
         assert user_after_validation.role == "ADMINISTRATOR", "Role has not changed."
-        
-        
+
     def test_recoverpassword_cancel(self):
         """
         Test that cancel redirects to user page.
         """
         cherrypy.request.method = "POST"
         self._expect_redirect('/user', self.user_c.recoverpassword, cancel=True)
-    
-    
+
     def test_recoverpassword_valid_post(self):
         """
         Test a valid password recovery.
@@ -253,10 +234,9 @@ class TestUsersController(BaseTransactionalControllerTest):
         data = {"email": self.test_user.email,
                 "username": ""}
         self._expect_redirect("/user", self.user_c.recoverpassword, **data)
-        assert cherrypy.session[common.KEY_MESSAGE_TYPE] == common.TYPE_INFO,\
-                        "Info message informing successfull reset should be present"
-        
-        
+        assert cherrypy.session[common.KEY_MESSAGE_TYPE] == common.TYPE_INFO, \
+            "Info message informing successfull reset should be present"
+
     def test_validate_valid(self):
         """
         Pass a valid user and test that it is actually validate.
@@ -271,8 +251,7 @@ class TestUsersController(BaseTransactionalControllerTest):
         user_after_validation = dao.get_user_by_id(user_before_validation.id)
         assert user_after_validation.validated, "User should be validated."
         assert cherrypy.session[common.KEY_MESSAGE_TYPE] == common.TYPE_INFO
-        
-        
+
     def test_validate_invalid(self):
         """
         Pass a valid user and test that it is actually validate.
@@ -281,8 +260,7 @@ class TestUsersController(BaseTransactionalControllerTest):
         assert unexisting is None, "This user should not exist"
         self._expect_redirect('/tvb', self.user_c.validate, "should-not-exist")
         assert cherrypy.session[common.KEY_MESSAGE_TYPE] == common.TYPE_ERROR
-    
-    
+
     def _check_default_attributes(self, template_dict, data, errors):
         """
         Check that all the defaults are present in the template dictionary.
@@ -293,5 +271,4 @@ class TestUsersController(BaseTransactionalControllerTest):
         assert template_dict[common.KEY_CURRENT_TAB] == 'nav-user'
         assert template_dict[common.KEY_FORM_DATA] == data
         assert template_dict[common.KEY_ERRORS] == errors
-        assert template_dict[common.KEY_INCLUDE_TOOLTIP] == True
-        
+        assert template_dict[common.KEY_INCLUDE_TOOLTIP] is True

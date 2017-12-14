@@ -107,7 +107,7 @@ class TestFlowService(TransactionalTestCase):
     """
 
 
-    def setUp(self):
+    def transactional_setup_method(self):
         """ Prepare some entities to work with during tests:"""
 
         self.flow_service = FlowService()
@@ -119,7 +119,7 @@ class TestFlowService(TransactionalTestCase):
                                                           TEST_ADAPTER_VALID_CLASS, category.id))
 
 
-    def tearDown(self):
+    def transactional_teardown_method(self):
         dao.remove_entity(model.Algorithm, self.algorithm)
 
 

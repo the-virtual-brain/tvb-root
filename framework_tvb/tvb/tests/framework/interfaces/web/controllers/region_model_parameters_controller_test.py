@@ -51,7 +51,7 @@ class TestRegionsModelParametersController(BaseTransactionalControllerTest):
     """ Unit tests for RegionsModelParametersController """
 
 
-    def setUp(self):
+    def transactional_setup_method(self):
         """
         Sets up the environment for testing;
         creates a `RegionsModelParametersController` and a connectivity
@@ -68,7 +68,7 @@ class TestRegionsModelParametersController(BaseTransactionalControllerTest):
         stored_burst.simulator_configuration = new_params
         self._setup_dynamic()
 
-    def tearDown(self):
+    def transactional_teardown_method(self):
         """ Cleans the testing environment """
         self.cleanup()
 
@@ -94,8 +94,7 @@ class TestRegionsModelParametersController(BaseTransactionalControllerTest):
         result_dict = self.region_m_p_c.index()
         assert self.connectivity.gid == result_dict['connectivity_entity'].gid
         assert result_dict['mainContent'] == 'burst/model_param_region'
-        assert result_dict['submit_parameters_url'] ==\
-                         '/burst/modelparameters/regions/submit_model_parameters'
+        assert result_dict['submit_parameters_url'] == '/burst/modelparameters/regions/submit_model_parameters'
         assert 'dynamics' in result_dict
         assert 'dynamics_json' in result_dict
         assert 'pointsLabels' in result_dict

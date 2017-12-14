@@ -53,13 +53,13 @@ class TestExporters(TransactionalTestCase):
     TVB_EXPORTER = "TVBExporter"
     CIFTI_EXPORTER = "CIFTIExporter"
     
-    def setUp(self):
+    def transactional_setup_method(self):
         self.export_manager = ExportManager()
         self.datatypeFactory = DatatypesFactory()
         self.project = self.datatypeFactory.get_project()
 
 
-    def tearDown(self):
+    def transactional_teardown_method(self):
         """
         Clean-up tests data
         """

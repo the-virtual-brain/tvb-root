@@ -62,7 +62,7 @@ class TestRemove(TransactionalTestCase):
     """
 
 
-    def setUp(self):
+    def transactional_setup_method(self):
         """
         Prepare the database before each test.
         """
@@ -82,7 +82,7 @@ class TestRemove(TransactionalTestCase):
         self.adapter_instance = TestFactory.create_adapter()
 
 
-    def tearDown(self):
+    def transactional_teardown_method(self):
         """
         Reset the database when test is done.
         """

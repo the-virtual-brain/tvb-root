@@ -33,9 +33,9 @@
 """
 
 import os
+from tvb.tests.framework.core.base_testcase import TransactionalTestCase
 import tvb_data.obj
 import tvb_data.sensors
-from tvb.tests.framework.core.base_testcase import TransactionalTestCase
 from tvb.adapters.uploaders.sensors_importer import Sensors_Importer
 from tvb.adapters.visualizers.sensors import SensorsViewer
 from tvb.core.entities.file.files_helper import FilesHelper
@@ -60,7 +60,7 @@ class TestSensorViewers(TransactionalTestCase):
     EXPECTED_KEYS_MEG = EXPECTED_KEYS_EEG.copy()
     EXPECTED_KEYS_MEG.update({'noOfMeasurePoints': 151, 'maxMeasure': 151})
 
-    def setUp(self):
+    def transactional_setup_method(self):
         """
         Sets up the environment for running the tests;
         creates a test user, a test project, a connectivity and a surface;
@@ -74,7 +74,7 @@ class TestSensorViewers(TransactionalTestCase):
         face_path = os.path.join(os.path.dirname(tvb_data.obj.__file__), 'face_surface.obj')
         TestFactory.import_surface_obj(self.test_user, self.test_project, face_path, FACE)
 
-    def tearDown(self):
+    def transactional_teardown_method(self):
         """
         Clean-up tests data
         """

@@ -29,7 +29,6 @@
 #
 
 """
-module docstring
 .. moduleauthor:: Mihai Andrei <mihai.andrei@codemart.ro>
 """
 import json
@@ -80,7 +79,7 @@ class TestSerializationManager(TransactionalTestCase):
      }
     """
 
-    def setUp(self):
+    def transactional_setup_method(self):
         _, self.connectivity = DatatypesFactory().create_connectivity()
         self.test_user = TestFactory.create_user(username="test_user")
         self.test_project = TestFactory.create_project(self.test_user, "Test")

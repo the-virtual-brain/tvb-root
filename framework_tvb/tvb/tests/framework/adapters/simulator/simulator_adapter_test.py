@@ -91,7 +91,7 @@ class TestSimulatorAdapter(TransactionalTestCase):
     """
     CONNECTIVITY_NODES = 74
 
-    def setUp(self):
+    def transactional_setup_method(self):
         """
         Reset the database before each test.
         """

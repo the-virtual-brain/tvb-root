@@ -43,7 +43,7 @@ class TestExplorationController(BaseTransactionalControllerTest):
     Unit tests ParameterExplorationController
     """
 
-    def setUp(self):
+    def transactional_setup_method(self):
         """
         Sets up the environment for testing;
         creates a datatype group and a Parameter Exploration Controller
@@ -53,7 +53,7 @@ class TestExplorationController(BaseTransactionalControllerTest):
         self.controller = ParameterExplorationController()
 
 
-    def tearDown(self):
+    def transactional_teardown_method(self):
         """ Cleans the testing environment """
         self.cleanup()
 
@@ -65,7 +65,7 @@ class TestExplorationController(BaseTransactionalControllerTest):
         result = self.controller.draw_discrete_exploration(self.dt_group.gid, 'burst', None, None)
         assert result['available_metrics'] == DatatypesFactory.DATATYPE_MEASURE_METRIC.keys()
         assert result['color_metric'] == DatatypesFactory.DATATYPE_MEASURE_METRIC.keys()[0]
-        assert result['size_metric'] == None
+        assert result['size_metric'] is None
         assert DatatypesFactory.RANGE_1[1] == json.loads(result['labels_x'])
         assert DatatypesFactory.RANGE_2[1] == json.loads(result['labels_y'])
         data = json.loads(result['d3_data'])

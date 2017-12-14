@@ -58,13 +58,13 @@ class TestGIFTISurfaceImporter(TransactionalTestCase):
     WRONG_GII_FILE = os.path.abspath(__file__)
 
 
-    def setUp(self):
+    def transactional_setup_method(self):
         self.datatypeFactory = DatatypesFactory()
         self.test_project = self.datatypeFactory.get_project()
         self.test_user = self.datatypeFactory.get_user()
 
 
-    def tearDown(self):
+    def transactional_teardown_method(self):
         """
         Clean-up tests data
         """

@@ -37,9 +37,9 @@ import os
 import re
 import numpy
 import cherrypy
+from tvb.tests.framework.core.base_testcase import BaseTestCase
 import tvb.basic.traits as trait
 import tvb.interfaces.web.templates.genshi.flow as root_html
-from tvb.tests.framework.core.base_testcase import BaseTestCase
 from bs4 import BeautifulSoup
 from genshi.template.loader import TemplateLoader
 from tvb.core.adapters.input_tree import InputTreeManager

@@ -44,7 +44,7 @@ import tvb.interfaces.web.controllers.common as common
 class TestSurfaceModelParametersController(BaseTransactionalControllerTest):
     """ Unit tests for SurfaceModelParametersController """
     
-    def setUp(self):
+    def transactional_setup_method(self):
         self.init()
         self.surface_m_p_c = SurfaceModelParametersController()
         BurstController().index()
@@ -60,7 +60,7 @@ class TestSurfaceModelParametersController(BaseTransactionalControllerTest):
         stored_burst.simulator_configuration = new_params
 
 
-    def tearDown(self):
+    def transactional_teardown_method(self):
         """ Cleans the testing environment """
         self.cleanup()
 
@@ -73,6 +73,5 @@ class TestSurfaceModelParametersController(BaseTransactionalControllerTest):
                          'applied_equations']
         # map(lambda x: self.assertTrue(x in result_dict), expected_keys)
         assert all(x in result_dict for x in expected_keys)
-        assert result_dict['equationViewerUrl'] ==\
-                         '/spatial/modelparameters/surface/get_equation_chart'
+        assert result_dict['equationViewerUrl'] == '/spatial/modelparameters/surface/get_equation_chart'
         assert result_dict['mainContent'] == 'spatial/model_param_surface_main'

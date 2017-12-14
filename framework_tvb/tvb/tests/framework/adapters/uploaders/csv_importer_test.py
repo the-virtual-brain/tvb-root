@@ -67,12 +67,12 @@ class TestCSVConnectivityImporter(TransactionalTestCase):
     Unit-tests for csv connectivity importer.
     """
 
-    def setUp(self):
+    def transactional_setup_method(self):
         self.test_user = TestFactory.create_user()
         self.test_project = TestFactory.create_project(self.test_user)
         self.helper = FilesHelper()
 
-    def tearDown(self):
+    def transactional_teardown_method(self):
         """
         Clean-up tests data
         """

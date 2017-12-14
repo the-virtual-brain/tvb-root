@@ -62,7 +62,7 @@ class TestRegionMappingImporter(TransactionalTestCase):
     WRONG_FILE_2 = os.path.join(os.path.dirname(test_data.__file__), 'region_mapping_wrong_2.txt')
     WRONG_FILE_3 = os.path.join(os.path.dirname(test_data.__file__), 'region_mapping_wrong_3.txt')
     
-    def setUp(self):
+    def transactional_setup_method(self):
         """
         Sets up the environment for running the tests;
         creates a test user, a test project, a connectivity and a surface;
@@ -74,7 +74,7 @@ class TestRegionMappingImporter(TransactionalTestCase):
         self.surface = self._get_entity(CorticalSurface)
 
 
-    def tearDown(self):
+    def transactional_teardown_method(self):
         """
         Clean-up tests data
         """

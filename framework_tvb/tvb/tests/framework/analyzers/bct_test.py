@@ -56,7 +56,7 @@ class TestBCT(TransactionalTestCase):
                                    "TransitivityBinaryUnDirected", "TransitivityWeightedUnDirected"]
 
     @pytest.mark.skipif(get_matlab_executable() is None, reason="Matlab or Octave not installed!")
-    def setUp(self):
+    def transactional_setup_method(self):
         """
         Sets up the environment for running the tests;
         creates a test user, a test project, a connectivity and a list of BCT adapters;
@@ -80,7 +80,7 @@ class TestBCT(TransactionalTestCase):
         for algo in algorithms:
             self.bct_adapters.append(ABCAdapter.build_adapter(algo))
 
-    def tearDown(self):
+    def transactional_teardown_method(self):
         """
         Cleans the database after the tests
         """

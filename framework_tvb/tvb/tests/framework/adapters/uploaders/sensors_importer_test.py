@@ -55,7 +55,7 @@ class TestSensorsImporter(TransactionalTestCase):
     MEG_FILE = os.path.join(os.path.dirname(demo_data.__file__), 'meg_151.txt.bz2')
 
 
-    def setUp(self):
+    def transactional_setup_method(self):
         """
         Sets up the environment for running the tests;
         creates a test user, a test project and a `Sensors_Importer`
@@ -66,7 +66,7 @@ class TestSensorsImporter(TransactionalTestCase):
         self.importer = Sensors_Importer()
 
 
-    def tearDown(self):
+    def transactional_teardown_method(self):
         """
         Clean-up tests data
         """
