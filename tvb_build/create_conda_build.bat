@@ -1,23 +1,29 @@
 REM build env with pre-built binaries from conda repos
-conda create -y -n tvb-run scipy numpy networkx scikit-learn cython h5py pip pil numexpr psutil coverage beautiful-soup ipython ipython-notebook
+conda create -y -n tvb-run scipy numpy networkx scikit-learn cython h5py pip numexpr psutil ipython ipython-notebook
 
 REM use environment
 call activate tvb-run
 
-conda install matplotlib pytables==3.0 numba
+conda install matplotlib pytables numba scikit-image pytest pytest-cov simplejson cherrypy sqlalchemy psycopg2 docutils
+
+REM make sure at least networkx 2.0 is installed
+conda update networkx
 
 REM add locally built or pure Python packages
-pip install gdist sqlalchemy sqlalchemy-migrate formencode genshi simplejson cherrypy cfflib nibabel psycopg2
+pip install tvb-gdist formencode cfflib genshi nibabel sqlalchemy-migrate allensdk BeautifulSoup4
 
 
-#After these run "sh install_from_svn.sh" or "python setup.py develop/install" from each of TVB packages
+REM Now Install TVB packages in the correct order:
+cd ..\framework_tvb
+python setup.py develop
 
 cd ..\scientific_library
 python setup.py develop
 
-cd ..\framework_tvb
+cd ..\tvb_data
 python setup.py develop
 
-conda uninstall pyside
+cd ..\tvb_bin
+python setup.py develop
 
 REM [anaconda-env]/Lib/site-packages/matplotlib/mpl-data/matplotlibrc to Agg
