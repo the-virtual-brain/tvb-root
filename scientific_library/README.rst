@@ -127,7 +127,8 @@ Coverage
 A coverage report can be generated with::
 
     pip install pytest-cov
-    py.test --cov=[folder_where_tvb_library_is] tvb/tests/ --cov-branch --cov-report xml:[file_where_xml_will_be_generated]
+    cd [folder_where_tvb_library_is]
+    py.test --cov-config .coveragerc --cov=tvb tvb/tests/ --cov-branch --cov-report xml:[file_where_xml_will_be_generated]
 
 
 Further Resources
