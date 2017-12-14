@@ -176,7 +176,7 @@ when nothing else is specified. Accepted profiles for tests are: TEST_SQLITE_PRO
 We have some conventions when writing unit tests in TVB:
    - follow  `standard test discovery rules <https://docs.pytest.org/en/latest/getting-started.html>`_ from pytest
    - To ensure the correct TVB Profile is set in tests, before ANY tvb import in the unit test,
-   setup the correct tvb test profile::
+     setup the correct tvb test profile::
 
         from tvb.tests.library import setup_test_console_env
         setup_test_console_env()
@@ -184,17 +184,17 @@ We have some conventions when writing unit tests in TVB:
         from tvb.tests.framework.core.base_testcase import init_test_env
         init_test_env()
 
-   You can do this implicitly (as done currently in the majority of our example unit tests,
-   by importing BaseTestCase FIRST::
+     You can do this implicitly (as done currently in the majority of our example unit tests,
+     by importing BaseTestCase FIRST::
 
         from tvb.tests.library.base_testcase import BaseTestCase
         # OR
         from tvb.tests.framework.core.base_testcase import BaseTestCase
 
    - in tvb-framework, if you want to inherit from `TransactionalTestCase` and you want the unit-test method setup to
-   be done in the same transaction as the unit-test (recommended situation), then define in your subclass methods:
-      * 'transactional_setup_method'
-      * 'transactional_teardown_method'
+     be done in the same transaction as the unit-test (recommended situation), then define in your subclass methods:
+      - `transactional_setup_method`
+      - `transactional_teardown_method`
 
 
 Contribution guidelines
