@@ -128,16 +128,21 @@ class ParameterExplorationController(BaseController):
         raise cherrypy.HTTPRedirect(REDIRECT_MSG % (name, error_msg))
 
     @expose_json
-    def get_series_array_discrete(self, datatype_group_gid, backPage):
+    def get_series_array_discrete(self, datatype_group_gid, backPage, color_metric=None, size_metric=None):
         """
         Create new data for when the user chooses to refresh from the UI.
         """
+        if color_metric == 'None':
+            color_metric = None
+        if size_metric == 'None':
+            size_metric = None
+
         algorithm = self.flow_service.get_algorithm_by_module_and_class(DISCRETE_PSE_ADAPTER_MODULE,
                                                                         DISCRETE_PSE_ADAPTER_CLASS)
         adapter = ABCAdapter.build_adapter(algorithm)
         if self._is_compatible(algorithm, datatype_group_gid):
             try:
-                pse_context = adapter.prepare_parameters(datatype_group_gid, backPage)
+                pse_context = adapter.prepare_parameters(datatype_group_gid, backPage, color_metric, size_metric)
                 return dict(series_array=pse_context.series_array,
                             has_started_ops=pse_context.has_started_ops)
             except LaunchException as ex:

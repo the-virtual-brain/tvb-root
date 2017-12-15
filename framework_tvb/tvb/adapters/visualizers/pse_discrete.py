@@ -132,8 +132,8 @@ class DiscretePSEAdapter(ABCDisplayer):
 
         :param datatype_group_gid: the group id for the `DataType` to be visualised
         :param back_page: Page where back button will direct
-        :param color_metric: a list of `DataTypeMeasure` which has been executed on `datatype_group_gid`
-        :param size_metric:  a list of `DataTypeMeasure` which has been executed on `datatype_group_gid`
+        :param color_metric: String referring to metric to apply on colors
+        :param size_metric:  String referring to metric to apply on sizes
 
         :returns: `ContextDiscretePSE`
         :raises Exception: when `datatype_group_id` is invalid (not in database)

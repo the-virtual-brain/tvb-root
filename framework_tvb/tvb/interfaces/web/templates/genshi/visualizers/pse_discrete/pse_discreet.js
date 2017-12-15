@@ -803,16 +803,10 @@ function PSEDiscreet_BurstDraw(parametersCanvasId, backPage, groupGID) {
         backPage = get_URL_param('back_page');
     }
 
-    let url = '/burst/explore/draw_discrete_exploration/' + groupGID + '/' + backPage;
     const selectedColorMetric = $('#color_metric_select').val();
     const selectedSizeMetric = $('#size_metric_select').val();
-
-    if (selectedColorMetric !== undefined && selectedColorMetric !== '' && selectedColorMetric !== null) {
-        url += '/' + selectedColorMetric;
-        if (selectedSizeMetric !== undefined && selectedSizeMetric !== '' && selectedSizeMetric !== null) {
-            url += '/' + selectedSizeMetric;
-        }
-    }
+    const url = '/burst/explore/draw_discrete_exploration/' + groupGID + '/' + backPage +
+                '/' + selectedColorMetric + '/' + selectedSizeMetric;
 
     doAjaxCall({
         type: "POST",
@@ -836,14 +830,19 @@ function PSEDiscreet_RedrawResize(){
 }
 
 
-function PSEDiscreet_LoadNodesMatrix(groupGID=null) {
-     if (groupGID === null || groupGID === undefined) {
+function PSEDiscreet_LoadNodesMatrix(groupGID) {
+    if (groupGID === null || groupGID === undefined) {
         groupGID = document.getElementById("datatype-group-gid").value;
     }
+    const selectedColorMetric = $('#color_metric_select').val();
+    const selectedSizeMetric = $('#size_metric_select').val();
+
     doAjaxCall({
         url: '/burst/explore/get_series_array_discrete/',
         data: {'datatype_group_gid': groupGID,
-                'backPage':_PSE_back_page},
+               'backPage':_PSE_back_page,
+               'color_metric': selectedColorMetric,
+               'size_metric': selectedSizeMetric},
         type: 'GET',
         async: false,
         success: function (data) {
