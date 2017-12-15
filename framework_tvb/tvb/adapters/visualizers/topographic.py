@@ -239,4 +239,5 @@ class TopographicViewer(ABCDisplayer):
                       titles=titles,
                       vmin=color_bar_min,
                       vmax=color_bar_max)
-        return self.build_display_result("topographic/view", params)
+        return self.build_display_result("topographic/view", params,
+                                         pages={"controlPage": "topographic/controls"})
