@@ -38,6 +38,8 @@ var _PSE_minColor;
 var _PSE_maxColor;
 var _PSE_plot;
 
+var local_back_page;
+var local_seriesArray;
 /*
  * @param canvasId: the id of the HTML DIV on which the drawing is done. This should have sizes defined or else FLOT can't do the drawing.
  * @param xLabels: the labels for the x - axis
@@ -466,7 +468,7 @@ function d3Plot(placeHolder, data, options, pageParam) {
                 let color = d3.rgb("black"); // leave pending results blacked out if not complete.
                 let nodeInfo = getNodeInfo(d.coords);
                 if (nodeInfo.tooltip.search("PENDING") === -1 && nodeInfo.tooltip.search("CANCELED") === -1) { // this prevents code from trying to find reasonable color values when simulation results haven't been generated for them
-                    color = returnfill(nodeInfo.color_weight);
+                        color = returnfill(nodeInfo.color_weight);
                 }
                 return color; // otherwise fill out with color in keeping with scheme.
             }
@@ -755,17 +757,6 @@ function d3Plot(placeHolder, data, options, pageParam) {
 
     })
 }
-/*
- * Do a redraw of the plot.
- */
-function redrawPlot(plotCanvasId, backPage) {
-    if (backPage === undefined || backPage === null || backPage === '') {
-        backPage = get_URL_param('back_page');
-    }
-
-    PSE_mainDraw(plotCanvasId, backPage);
-}
-
 
 /*
  * create a colored legend for the current colorScheme and data results, and place it in the upper right of the graphed space.
@@ -789,7 +780,8 @@ function PSEDiscreteInitialize(labelsXJson, labelsYJson, valuesXJson, valuesYJso
     var values_y = $.parseJSON(valuesYJson);
     var data = $.parseJSON(dataJson);
     series_array = typeof (series_array) === "string" ? $.parseJSON(series_array) : series_array;
-
+    local_seriesArray = series_array;
+    local_back_page = backPage
     min_color = parseFloat(min_color); // todo run a batch of simulations part of the way,  and then cancel to see what the result looks like.
     max_color = parseFloat(max_color);
     min_size = parseFloat(min_size);
@@ -808,54 +800,18 @@ function PSEDiscreteInitialize(labelsXJson, labelsYJson, valuesXJson, valuesYJso
     _fmt_lbl('#minShapeLabel', min_size);
     _fmt_lbl('#maxShapeLabel', max_size);
 
+    updateLegend(min_color, max_color);
     if (Number.isNaN(min_color)) {
         min_color = 0;
         max_color = 1;
     }
     _updatePlotPSE('main_div_pse', labels_x, labels_y, values_x, values_y, series_array, min_color, max_color, backPage, data);
-    updateLegend(min_color, max_color);
 
     if (hasStartedOperations) {
-        setTimeout("PSE_mainDraw('main_div_pse','" + backPage + "')", 3000);
+        setTimeout("RedrawPlotOnResize()", 3000);
     }
 }
 
-
-/*
- * Take currently selected metrics and refresh the plot.
- */
-function PSE_mainDraw(parametersCanvasId, backPage, groupGID) {
-
-    if (groupGID === null || groupGID === undefined) {
-        // We didn't get parameter, so try to get group id from page
-        groupGID = document.getElementById("datatype-group-gid").value;
-    }
-    if (backPage === undefined || backPage === null || backPage === '') {
-        backPage = get_URL_param('back_page');
-    }
-
-    let url = '/burst/explore/draw_discrete_exploration/' + groupGID + '/' + backPage;
-    const selectedColorMetric = $('#color_metric_select').val();
-    const selectedSizeMetric = $('#size_metric_select').val();
-
-    if (selectedColorMetric !== undefined && selectedColorMetric !== '' && selectedColorMetric !== null) {
-        url += '/' + selectedColorMetric;
-        if (selectedSizeMetric !== undefined && selectedSizeMetric !== '' && selectedSizeMetric !== null) {
-            url += '/' + selectedSizeMetric;
-        }
-    }
-
-    doAjaxCall({
-        type: "POST",
-        url: url,
-        success: function (r) {
-            $('#' + parametersCanvasId).html(r);
-        },
-        error: function () {
-            displayMessage("Could not refresh with the new metrics.", "warningMessage");
-        }
-    });
-}
 
 
 /*********************************************************************************************************************
@@ -874,4 +830,9 @@ function Isocline_MainDraw(groupGID, divId) {
             displayMessage("Could not refresh with the new metrics.", "warningMessage");
         }
     });
+}
+
+
+function RedrawPlotOnResize(){
+    d3Plot('#main_div_pse', local_seriesArray, $.extend(true, {}, _PSE_plotOptions), local_back_page);
 }

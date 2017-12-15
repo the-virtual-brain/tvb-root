@@ -119,8 +119,8 @@ ColSch.schemes = {
  * @constructor
  */
 function ColorScale(minValue, maxValue, colorSchemeName, colorBins, centralHoleDiameter){
-    if (minValue == null) {minValue = 0;}
-    if (maxValue == null) {maxValue = 1;}
+    if (Number.isNaN(minValue)) {minValue = 0;}
+    if (Number.isNaN(maxValue)) {maxValue = 1;}
     if (colorSchemeName == null) {colorSchemeName = 'linear';}
     if (colorBins == null) {colorBins = 256;}
     this._minRange = minValue;       // the interest interval. Set by a slider in the ui
