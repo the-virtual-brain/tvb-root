@@ -30,6 +30,16 @@
         <copyright-notice value="Copyright (c) 2013, Min Ragan-Kelley"/>
         <description value="Package for disabling App Nap on OS X. Needed for IPython Notebook"/>
     </dependency>
+    <dependency env="[win,mac,linux]" name="attr">
+        <full-name value="Attr"/>
+        <project-home value="https://pypi.python.org/pypi/attrs"/>
+        <version value="17.3.0"/>
+        <usage value="dynamic linking"/>
+        <license value="LICENSE_attrs.txt"/>
+        <license-type value="MIT_"/>
+        <copyright-notice value="Copyright (c) 2015 Hynek Schlawack"/>
+        <description value="Classes Without Boilerplate"/>
+    </dependency>
     <dependency env="[win,mac,linux]" name="backports">
         <full-name value="Backports"/>
         <project-home value="https://pypi.python.org/pypi/backports"/>
@@ -109,6 +119,16 @@
         <license-type value="BSD_ 3 clause"/>
         <copyright-notice value="Copyright (C) 2009-2011, Ecole Polytechnique Federale de Lausanne (EPFL) and Hospital Center and University of Lausanne (UNIL-CHUV), Switzerland"/>
         <description value=""/>
+    </dependency>
+    <dependency env="[win,mac,linux]" name="chardet">
+        <full-name value="Chardet"/>
+        <project-home value="https://chardet.github.io/"/>
+        <version value="3.0.4"/>
+        <usage value="dynamic linking"/>
+        <license value="LICENSE_chardet.txt"/>
+        <license-type value="LGPL_"/>
+        <copyright-notice value="Copyright (C) 2017 ajung, MarkPilgrim, erikrose, Daniel.Blanchard, graffatcolmingov"/>
+        <description value="Python Universal Character Encoding Detector"/>
     </dependency>
     <dependency env="[win,mac,linux]" name="cherrypy">
         <full-name value="CherryPy Server"/>
@@ -329,6 +349,16 @@
         <license-type value="BSD_"/>
         <copyright-notice value="Copyright 2006-2011 by The HDF Group. Copyright 1998-2006 by the Board of Trustees of the University of Illinois."/>
         <description value="Library used for efficient storage."/>
+    </dependency>
+    <dependency env="[win,mac,linux]" name="idna">
+        <full-name value="IDNA"/>
+        <project-home value="https://pypi.python.org/pypi/idna"/>
+        <version value="2.6"/>
+        <usage value="dynamic linking"/>
+        <license value="LICENSE_idna.txt"/>
+        <license-type value="BSD_ like"/>
+        <copyright-notice value="Copyright (c) 2013-2017, Kim Davies. All rights reserved."/>
+        <description value="Internationalized Domain Names in Applications"/>
     </dependency>
     <dependency env="mac" name="idlelib">
         <full-name value="IDLE"/>
@@ -730,6 +760,16 @@
         <copyright-notice value="Copyright (c) 2002-2009 John D. Hunter; All Rights Reserved"/>
         <description value="This package is part of Matplotlib."/>
     </dependency>
+    <dependency env="[win,mac,linux]" name="more_itertools">
+        <full-name value="more_itertools"/>
+        <project-home value="https://github.com/erikrose/more-itertools"/>
+        <version value="4.0.1"/>
+        <usage value="dynamic linking"/>
+        <license value="LICENSE_more_itertools.txt"/>
+        <license-type value="MIT_"/>
+        <copyright-notice value="Copyright (c) 2012 Erik Rose"/>
+        <description value="More routines for operating on iterables, beyond itertools"/>
+    </dependency>
     <dependency env="[win,mac,linux]" name="networkx">
         <full-name value="NetworkX"/>
         <project-home value="http://networkx.lanl.gov/reference/legal.html"/>
@@ -830,15 +870,15 @@
         <copyright-notice value="Copyright (c) 1998-2008 The OpenSSL Project.  All rights reserved."/>
         <description value="Package part of Python's distribution."/>
     </dependency>
-    <dependency env="[win,linux]" name="pbr">
-        <full-name value="Python Build Reasonableness"/>
-        <project-home value="https://pypi.python.org/pypi/pbr"/>
-        <version value="3.1.1"/>
+    <dependency env="[win,mac,linux]" name="patsy">
+        <full-name value="Patsy"/>
+        <project-home value="https://pypi.python.org/pypi/patsy"/>
+        <version value="0.4.1"/>
         <usage value="dynamic linking"/>
-        <license value="LICENSE_pbr.txt"/>
-        <license-type value="Apache_ 2"/>
-        <copyright-notice value="Copyright (c) 2013 Hewlett-Packard Development Company, L.P."/>
-        <description value="Needed for the recent sqlalchemy."/>
+        <license value="LICENSE_patsy.txt"/>
+        <license-type value="BSD_ 2nd clause"/>
+        <copyright-notice value="Copyright (C) 2011-2012, Patsy Developers. All rights reserved."/>
+        <description value="A Python package for describing statistical models and for building design matrices."/>
     </dependency>
     <dependency env="[win,mac,linux]" name="pandas">
         <full-name value="Pandas"/>
@@ -881,10 +921,20 @@
         <copyright-notice value="Copyright (c) 2017 Jason Orendorff"/>
         <description value="A module wrapper for os.path"/>
     </dependency>
-    <dependency env="mac" name="pexpect">
+    <dependency env="[win,linux]" name="pbr">
+        <full-name value="Python Build Reasonableness"/>
+        <project-home value="https://pypi.python.org/pypi/pbr"/>
+        <version value="3.1.1"/>
+        <usage value="dynamic linking"/>
+        <license value="LICENSE_pbr.txt"/>
+        <license-type value="Apache_ 2"/>
+        <copyright-notice value="Copyright (c) 2013 Hewlett-Packard Development Company, L.P."/>
+        <description value="Needed for the recent sqlalchemy."/>
+    </dependency>
+    <dependency env="[mac,linux]" name="pexpect">
         <full-name value="Pexpect"/>
         <project-home value="https://pexpect.readthedocs.io/"/>
-        <version value="4.2.1"/>
+        <version value="4.3.1"/>
         <usage value="dynamic linking"/>
         <license value="LICENSE_pexpect.txt"/>
         <license-type value="ISC_"/>
@@ -931,6 +981,16 @@
         <copyright-notice value="Copyright (c) 2008-2014 The pip developers"/>
         <description value="Python packager - Coming with Anaconda env"/>
     </dependency>
+    <dependency env="[win,mac,linux]" name="pluggy">
+        <full-name value="Pluggy"/>
+        <project-home value="https://github.com/pytest-dev/pluggy"/>
+        <version value="0.6.0"/>
+        <usage value="packaging"/>
+        <license value="LICENSE_pluggy.txt"/>
+        <license-type value="MIT_"/>
+        <copyright-notice value="Copyright (c) 2015 holger krekel (rather uses bitbucket/hpk42)"/>
+        <description value="plugin and hook calling mechanisms for python"/>
+    </dependency>
     <dependency env="mac" name="prompt_toolkit">
         <full-name value="Prompt Toolkit"/>
         <project-home value="https://github.com/jonathanslenders/python-prompt-toolkit"/>
@@ -971,15 +1031,25 @@
         <copyright-notice value="Copyright (c) 2010 - Daniele Varrazzo"/>
         <description value="Psycopg is the most popular PostgreSQL adapter for the Python programming language. It has a choosable license (LGPL v3 or BSD Like) and we choose the BSD like one."/>
     </dependency>
-    <dependency env="linux" name="ptyprocess">
+    <dependency env="[mac,linux]" name="ptyprocess">
         <full-name value="Ptyprocess"/>
         <project-home value="https://github.com/pexpect/ptyprocess"/>
-        <version value="[0.4,0.5.1]"/>
+        <version value="0.5.2"/>
         <usage value="dynamic linking"/>
         <license value="LICENSE_ptyprocess.txt"/>
         <license-type value="ISC_"/>
         <copyright-notice value="Copyright (c) 2013-2014, Pexpect development team; Copyright (c) 2012, Noah Spurrier &lt;noah@noah.org&gt;"/>
         <description value="Used by IPython Notebook - Coming with Anaconda env "/>
+    </dependency>
+    <dependency env="[win,mac,linux]" name="py">
+        <full-name value="Py"/>
+        <project-home value="https://pypi.python.org/pypi/py"/>
+        <version value="1.5.2"/>
+        <usage value="dynamic linking"/>
+        <license value="LICENSE_py.txt"/>
+        <license-type value="MIT_"/>
+        <copyright-notice value="Copyright (c) Holger Krekel and others, 2004-2017"/>
+        <description value="library with cross-python path, ini-parsing, io, code, log facilities"/>
     </dependency>
     <dependency env="mac" name="pycparser">
         <full-name value="PyCparser"/>
@@ -1030,6 +1100,16 @@
         <license-type value="BSD_"/>
         <copyright-notice value="Copyright (c) 2006 Jorgen Stenarson &lt;jorgen.stenarson@bostream.nu&gt;. Copyright (c) 2003-2006 Gary Bishop. Copyright (c) 2003-2006 Jack Trainor"/>
         <description value="For IPython Notebook - Coming with Anaconda env"/>
+    </dependency>
+    <dependency env="[win,mac,linux]" name="_pytest">
+        <full-name value="PyTest"/>
+        <project-home value="http://docs.pytest.org/"/>
+        <version value="3.3.1"/>
+        <usage value="dynamic linking"/>
+        <license value="LICENSE_pytest.txt"/>
+        <license-type value="MIT_"/>
+        <copyright-notice value="Copyright (c) 2004-2017 Holger Krekel and others"/>
+        <description value="Used in TVB unit-tests"/>
     </dependency>
     <dependency env="[win,mac,linux]" name="python">
         <full-name value="Python"/>
@@ -1221,6 +1301,16 @@
         <copyright-notice value="Copyright (c) 2016, Andi Albrecht"/>
         <description value="Non-validating SQL parser. Needed for the recent sqlalchemy."/>
     </dependency>
+    <dependency env="[win,mac,linux]" name="statsmodels">
+        <full-name value="statsmodels"/>
+        <project-home value="http://www.statsmodels.org/stable/index.html"/>
+        <version value="0.8.0"/>
+        <usage value="dynamic linking"/>
+        <license value="LICENSE_statsmodels.txt"/>
+        <license-type value="BSD_ 3 clause"/>
+        <copyright-notice value="Copyright (C) 2006, Jonathan E. Taylor. Copyright (c) 2006-2008 Scipy Developers. Copyright (c) 2009-2012 Statsmodels Developers."/>
+        <description value="Statistical computations and models for Python"/>
+    </dependency>
     <dependency env="[win,mac,linux]" name="tables">
         <full-name value="PyTables"/>
         <project-home value="http://www.pytables.org/moin/License"/>
@@ -1264,7 +1354,7 @@
     <dependency env="[linux,mac]" name="terminado">
         <full-name value="Terminado"/>
         <project-home value="https://pypi.python.org/pypi/terminado"/>
-        <version value="[0.5,0.6]"/>
+        <version value="0.8.1"/>
         <usage value="dynamic linking"/>
         <license value="LICENSE_terminado.txt"/>
         <license-type value="BSD_"/>
@@ -1320,6 +1410,16 @@
         <license-type value="CC0_"/>
         <copyright-notice value="No Copyright"/>
         <description value="- Coming with Anaconda env"/>
+    </dependency>
+    <dependency env="[win,linux,mac]" name="urllib3">
+        <full-name value="urllib3"/>
+        <project-home value="https://urllib3.readthedocs.io/en/latest/"/>
+        <version value="1.22"/>
+        <usage value="dynamic linking"/>
+        <license value="LICENSE_urllib3.txt"/>
+        <license-type value="MIT_"/>
+        <copyright-notice value="Copyright 2008-2016 Andrey Petrov and contributors (see CONTRIBUTORS.txt)"/>
+        <description value="HTTP library with thread-safe connection pooling, file post, and more."/>
     </dependency>
     <dependency env="mac" name="wcwidth">
         <full-name value="wcwidth (for terminal)"/>

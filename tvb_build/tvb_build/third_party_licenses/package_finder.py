@@ -80,6 +80,8 @@ EXCLUDES_DYLIB = [
     'libcrypto.1.0.0.dylib', 'libncursesw.5.dylib', 'libpq.5.dylib', 'libpq.5.8.dylib',
     'libssl.1.0.0.dylib', 'libpython2.7.dylib', 'libsz.2.0.0.dylib',
     re.compile(r'libgcc.*\.dylib'),
+    # Public domain:
+    'liblzma.5.dylib',
     # Libz is needed by psycopg2
     re.compile(r'libz.*\.dylib'),
     # Already included
