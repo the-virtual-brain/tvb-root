@@ -128,6 +128,28 @@ class ParameterExplorationController(BaseController):
         name = urllib.quote(adapter._ui_name)
         raise cherrypy.HTTPRedirect(REDIRECT_MSG % (name, error_msg))
 
+    @expose_json
+    def get_series_array_discrete(self, datatype_group_gid,backPage):
+        """
+        Create new data for when the user chooses to refresh from the UI.
+        """
+        algorithm = self.flow_service.get_algorithm_by_module_and_class(DISCRETE_PSE_ADAPTER_MODULE,
+                                                                        DISCRETE_PSE_ADAPTER_CLASS)
+        adapter = ABCAdapter.build_adapter(algorithm)
+        if self._is_compatible(algorithm, datatype_group_gid):
+            try:
+                pse_context = adapter.prepare_parameters(datatype_group_gid,backPage)
+                return dict(series_array=pse_context.series_array,
+                            has_started_ops=pse_context.has_started_ops)
+            except LaunchException as ex:
+                error_msg = urllib.quote(ex.message)
+        else:
+            error_msg = urllib.quote(
+                "Discrete PSE is incompatible (most probably due to result size being too large).")
+
+        name = urllib.quote(adapter._ui_name)
+        raise cherrypy.HTTPRedirect(REDIRECT_MSG % (name, error_msg))
+
 
     @cherrypy.expose
     @handle_error(redirect=True)
