@@ -60,7 +60,6 @@ class NetworkxParser(object):
 
     OPERATORS = "[*-+:]"
 
-
     def __init__(self, storage_path, key_edge_weight=None, key_edge_tract=None, key_node_coordinates=None,
                  key_node_label=None, key_node_region=None, key_node_hemisphere=None):
 
@@ -73,7 +72,6 @@ class NetworkxParser(object):
         NetworkxParser._append_key(key_node_label, self.KEY_NODE_LABEL)
         NetworkxParser._append_key(key_node_region, self.KEY_NODE_REGION)
         NetworkxParser._append_key(key_node_hemisphere, self.KEY_NODE_HEMISPHERE)
-
 
     @staticmethod
     def prepare_input_params_tree(prefix=None):
@@ -98,7 +96,6 @@ class NetworkxParser(object):
 
         return result
 
-
     def parse(self, network):
         """
         Populate Connectivity DataType from NetworkX object.
@@ -114,7 +111,7 @@ class NetworkxParser(object):
         labels_vector, positions, cortical, hemisphere = [], [], [], []
 
         try:
-            for node in xrange(graph_size):
+            for node in xrange(1, graph_size + 1):
                 node_data = network.nodes[node]
 
                 pos = self._find_value(node_data, self.KEY_NODE_COORDINATES)
@@ -153,7 +150,6 @@ class NetworkxParser(object):
             self.logger.exception("Could not parse Connectivity")
             raise ParseException(err)
 
-
     @staticmethod
     def _append_key(key, current_keys):
         """
@@ -164,7 +160,6 @@ class NetworkxParser(object):
         """
         if key and key not in current_keys:
             current_keys.insert(0, key)
-
 
     def _find_value(self, node_data, candidate_keys):
         """

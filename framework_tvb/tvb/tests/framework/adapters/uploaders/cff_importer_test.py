@@ -49,7 +49,6 @@ class TestCFFUpload(TransactionalTestCase):
     INVALID_CFF = ''
     VALID_CFF = os.path.join(os.path.dirname(dataset.__file__), 'connectivities.cff')
 
-
     def transactional_setup_method(self):
         """
         Reset the database before each test.
@@ -57,15 +56,13 @@ class TestCFFUpload(TransactionalTestCase):
         self.test_user = TestFactory.create_user('CFF_User')
         self.test_project = TestFactory.create_project(self.test_user, "CFF_Project")
 
-
     def _run_cff_importer(self, cff_path):
-        ### Retrieve Adapter instance
+        # Retrieve Adapter instance
         importer = TestFactory.create_adapter('tvb.adapters.uploaders.cff_importer', 'CFF_Importer')
         args = {'cff': cff_path, DataTypeMetaData.KEY_SUBJECT: DataTypeMetaData.DEFAULT_SUBJECT}
 
-        ### Launch Operation
+        # Launch Operation
         FlowService().fire_operation(importer, self.test_user, self.test_project.id, **args)
-
 
     def test_invalid_input(self):
         """
@@ -77,7 +74,6 @@ class TestCFFUpload(TransactionalTestCase):
         with pytest.raises(OperationException):
             self._run_cff_importer(self.INVALID_CFF)
 
-    
     def test_happy_flow_import(self):
         """
         Test that importing a CFF generates at least one DataType in DB.
@@ -89,4 +85,3 @@ class TestCFFUpload(TransactionalTestCase):
 
         all_dt = self.get_all_datatypes()
         assert 0 < len(all_dt)
-
