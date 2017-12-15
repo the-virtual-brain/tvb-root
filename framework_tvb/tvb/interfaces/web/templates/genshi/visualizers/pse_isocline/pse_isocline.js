@@ -152,3 +152,17 @@ function getNodeInfo(mousePos) {
     const currentGUID = getGid(mousePos);
     return Pse_isocline.dict_nodes_info[currentGUID];
 }
+
+function Isocline_MainDraw(groupGID, divId) {
+    $('#' + divId).html('');
+    doAjaxCall({
+        type: "POST",
+        url: '/burst/explore/draw_isocline_exploration/' + groupGID,
+        success: function (r) {
+            $('#' + divId).html(r);
+        },
+        error: function () {
+            displayMessage("Could not refresh with the new metrics.", "warningMessage");
+        }
+    });
+}

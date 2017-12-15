@@ -42,10 +42,9 @@ from tvb.core.services.project_service import ProjectService
 from tvb.core.adapters.abcadapter import ABCAdapter
 from tvb.core.adapters.exceptions import LaunchException
 from tvb.core.entities.transient.filtering import FilterChain
-from tvb.interfaces.web.controllers.decorators import handle_error, expose_fragment, check_user, using_template, \
-    expose_json
+from tvb.interfaces.web.controllers.decorators import handle_error, expose_fragment, check_user
+from tvb.interfaces.web.controllers.decorators import using_template, expose_json
 from tvb.interfaces.web.controllers.base_controller import BaseController
-
 
 PSE_FLOT = "FLOT"
 PSE_ISO = "ISO"
@@ -58,11 +57,9 @@ class ParameterExplorationController(BaseController):
     Controller to handle PSE actions.
     """
 
-
     def __init__(self):
         BaseController.__init__(self)
         self.project_service = ProjectService()
-
 
     @cherrypy.expose
     @handle_error(redirect=False)
@@ -84,7 +81,6 @@ class ParameterExplorationController(BaseController):
 
         return None
 
-
     def _is_compatible(self, algorithm, datatype_group_gid):
         """
         Check if PSE view filters are compatible with current DataType.
@@ -98,6 +94,9 @@ class ParameterExplorationController(BaseController):
             return True
         return False
 
+    @expose_fragment('burst/burst_pse_error')
+    def pse_error(self, adapter_name, message):
+        return {'adapter_name': adapter_name, 'message': message}
 
     @cherrypy.expose
     @handle_error(redirect=True)
@@ -129,7 +128,7 @@ class ParameterExplorationController(BaseController):
         raise cherrypy.HTTPRedirect(REDIRECT_MSG % (name, error_msg))
 
     @expose_json
-    def get_series_array_discrete(self, datatype_group_gid,backPage):
+    def get_series_array_discrete(self, datatype_group_gid, backPage):
         """
         Create new data for when the user chooses to refresh from the UI.
         """
@@ -138,7 +137,7 @@ class ParameterExplorationController(BaseController):
         adapter = ABCAdapter.build_adapter(algorithm)
         if self._is_compatible(algorithm, datatype_group_gid):
             try:
-                pse_context = adapter.prepare_parameters(datatype_group_gid,backPage)
+                pse_context = adapter.prepare_parameters(datatype_group_gid, backPage)
                 return dict(series_array=pse_context.series_array,
                             has_started_ops=pse_context.has_started_ops)
             except LaunchException as ex:
@@ -149,7 +148,6 @@ class ParameterExplorationController(BaseController):
 
         name = urllib.quote(adapter._ui_name)
         raise cherrypy.HTTPRedirect(REDIRECT_MSG % (name, error_msg))
-
 
     @cherrypy.expose
     @handle_error(redirect=True)
@@ -172,12 +170,6 @@ class ParameterExplorationController(BaseController):
         name = urllib.quote(adapter._ui_name)
         raise cherrypy.HTTPRedirect(REDIRECT_MSG % (name, error_msg))
 
-
-    @expose_fragment('burst/burst_pse_error')
-    def pse_error(self, adapter_name, message):
-        return {'adapter_name': adapter_name, 'message': message}
-
-
     @expose_json
     def get_metric_matrix(self, datatype_group_gid, metric_name=None):
 
@@ -196,7 +188,6 @@ class ParameterExplorationController(BaseController):
 
         name = urllib.quote(adapter._ui_name)
         raise cherrypy.HTTPRedirect(REDIRECT_MSG % (name, error_msg))
-
 
     @expose_json
     def get_node_matrix(self, datatype_group_gid):

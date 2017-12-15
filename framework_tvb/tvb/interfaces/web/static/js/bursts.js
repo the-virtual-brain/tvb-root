@@ -17,7 +17,8 @@
  *
  **/
 
-/* global doAjaxCall, displayMessage, minimizeColumn, MathJax, redrawPlot */
+/* global doAjaxCall, displayMessage, minimizeColumn, MathJax,
+   PSEDiscreet_BurstDraw, PSEDiscreet_RedrawResize, Isocline_MainDraw */
 
 /*
  * SIMULATOR (BURST) related JS calls.
@@ -524,7 +525,7 @@ function loadGroup(groupGID) {
             }
 
             switch_top_level_visibility("#section-pse");
-            PSE_mainDraw('burst-pse-flot', 'burst', groupGID);
+            PSEDiscreet_BurstDraw('burst-pse-flot', 'burst', groupGID);
             Isocline_MainDraw(groupGID, 'burst-pse-iso');
         },
         error: function () {
@@ -541,7 +542,7 @@ function changePSETab(clickedHref, toShow) {
     if (toShow === 'flot') {
         $('#burst-pse-flot').show();
         $('#burst-pse-iso').hide();
-        redrawPlot('pse_discreet_top_id');
+        PSEDiscreet_RedrawResize();
     } else {
         $('#burst-pse-flot').hide();
         const parentPSE = $('#burst-pse-iso');
@@ -562,7 +563,7 @@ function toggleMaximizeBurst(hrefElement) {
         drawAxis();
     }
     if ($('#pse-flot').hasClass('active')) {
-        redrawPlot('pse_discreet_top_id');
+        PSEDiscreet_RedrawResize();
     }
 }
 

@@ -39,7 +39,7 @@
         </li>
 
         <li>
-		<a href="#" onclick="PSE_mainDraw('pse_discreet_top_id', '${pse_back_page}')" title="Refresh..." class="action action-refresh">Refresh</a>
+		<a href="#" onclick="PSEDiscreet_BurstDraw('pse_discreet_top_id', '${pse_back_page}')" title="Refresh..." class="action action-refresh">Refresh</a>
         </li>
         <li>
             <button id="Explore" class="action action-analyze" disabled="disabled">Explore</button>
@@ -188,11 +188,11 @@
 
         $(document).ready(function () {
             // the line below this is just to keep certain things in this genshi from being run multiple times
-            PSEDiscreteInitialize('$labels_x', '$labels_y', '$values_x', '$values_y', '$d3_data', '$pse_back_page',
+            PSEDiscreet_Initialize('$labels_x', '$labels_y', '$values_x', '$values_y', '$d3_data', '$pse_back_page',
                     $has_started_ops, '$min_color', '$max_color', '$min_shape_size', '$max_shape_size');
 
             window.onresize = function () {
-                RedrawPlotOnResize();
+                PSEDiscreet_RedrawResize();
             };
 
             // TODO: not yet complete. Needed for Explore functionality
@@ -210,7 +210,7 @@
                     d3.select('input[name="yStepInput"]').property('value', ui.value);
                 }
             });
-            loadNodeMatrixDiscrete();
+            PSEDiscreet_LoadNodesMatrix();
         });
     </script>
 

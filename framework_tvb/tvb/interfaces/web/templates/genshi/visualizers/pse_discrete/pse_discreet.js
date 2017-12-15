@@ -17,30 +17,20 @@
  *
  **/
 /* global doAjaxCall, displayMessage */
-//general chores
-//todo create an exporting function that can save the figure
-//todo create a function that will normalize the size attributes that belong to the results
-
-
-//finish creating the explore box, and it's little tooltip window.
-//should the hover tooltip have information about the color and weight metric?
-
-// what to start on tomorrow: try to determine the relation to the correct values for the brush section and the placement of the grids.
-//also write a grid function that is flexible to input stepvalue and doesn't have a base line to make things look wierd
-//change the selection bars to being only session stored, and make them not specific to the datatypegid
 
 
 // We keep all-nodes information for current PSE as a global, to have them ready at node-selection, node-overlay.
 var _PSE_d3NodesInfo;
+var _PSE_seriesArray;
+var _PSE_hasStartedOperations;
+
 // Keep Plot-options and MIN/MAx colors for redraw (e.g. at resize).
 var _PSE_plotOptions;
 var _PSE_minColor;
 var _PSE_maxColor;
 var _PSE_plot;
-
 var _PSE_back_page;
-var _PSE_seriesArray;
-var _PSE_hasStartedOperations;
+
 /*
  * @param canvasId: the id of the HTML DIV on which the drawing is done. This should have sizes defined or else FLOT can't do the drawing.
  * @param xLabels: the labels for the x - axis
@@ -51,32 +41,6 @@ var _PSE_hasStartedOperations;
  * @param max_color: maximum color, used for gradient
  * @param backPage: page where visualizers fired from overlay should take you back.
  */
-function _updatePlotPSE(canvasId, xLabels, yLabels, xValues, yValues, min_color, max_color, backPage, d3Data) {
-
-    // why is it that we don't associate the labels into the attributes of the actual data_info or seriesArray?
-    // where does the seriesArray structure get created?
-    _PSE_minColor = min_color;
-    _PSE_maxColor = max_color;
-    _PSE_d3NodesInfo = d3Data;
-    _PSE_plotOptions = {
-        margins: { // is this the correct way to be doing margins? It's just how I have in the past,
-            top: 20,
-            bottom: 40,
-            left: 50,
-            right: 50
-        },
-        xaxis: {
-            labels: xLabels,
-            values: xValues
-        },
-        yaxis: {
-            labels: yLabels,
-            values: yValues
-        }
-
-    };
-}
-
 
 function d3Plot(placeHolder, data, options, pageParam) {
 
@@ -757,33 +721,10 @@ function d3Plot(placeHolder, data, options, pageParam) {
 
     })
 }
-/*
- * Do a redraw of the plot.
- */
-function redrawPlot(plotCanvasId, backPage) {
-    if (backPage === undefined || backPage === null || backPage === '') {
-        backPage = get_URL_param('back_page');
-    }
-
-    PSE_mainDraw(plotCanvasId, backPage);
-}
 
 
-/*
- * create a colored legend for the current colorScheme and data results, and place it in the upper right of the graphed space.
- */
-function updateLegend(minColor, maxColor) {
-    let legendContainer, legendHeight, tableContainer;
-    legendContainer = d3.select("#colorWeightsLegend");
-    legendHeight = d3.select("#table-colorWeightsLegend").node().getBoundingClientRect().height;
-    tableContainer = d3.select("#table-colorWeightsLegend");
-    ColSch_updateLegendColors(legendContainer.node(), legendHeight);
-    ColSch_updateLegendLabels(tableContainer.node(), minColor, maxColor, legendHeight);
-}
-
-
-function PSEDiscreteInitialize(labelsXJson, labelsYJson, valuesXJson, valuesYJson, dataJson, backPage, hasStartedOperations,
-                               min_color, max_color, min_size, max_size) {
+function PSEDiscreet_Initialize(labelsXJson, labelsYJson, valuesXJson, valuesYJson, dataJson, backPage,
+                                hasStartedOperations, min_color, max_color, min_size, max_size) {
 
     var labels_x = $.parseJSON(labelsXJson);
     var labels_y = $.parseJSON(labelsYJson);
@@ -791,12 +732,12 @@ function PSEDiscreteInitialize(labelsXJson, labelsYJson, valuesXJson, valuesYJso
     var values_y = $.parseJSON(valuesYJson);
     var data = $.parseJSON(dataJson);
     _PSE_back_page = backPage
-    min_color = parseFloat(min_color); // todo run a batch of simulations part of the way,  and then cancel to see what the result looks like.
+    min_color = parseFloat(min_color);
     max_color = parseFloat(max_color);
     min_size = parseFloat(min_size);
     max_size = parseFloat(max_size);
 
-    ColSch_initColorSchemeGUI(min_color, max_color, function () { //this now doesn't create error in simulator panel, why?
+    ColSch_initColorSchemeGUI(min_color, max_color, function () {
         _updatePlotPSE('main_div_pse', labels_x, labels_y, values_x, values_y, min_color, max_color, backPage, data);
     });
 
@@ -809,7 +750,14 @@ function PSEDiscreteInitialize(labelsXJson, labelsYJson, valuesXJson, valuesYJso
     _fmt_lbl('#minShapeLabel', min_size);
     _fmt_lbl('#maxShapeLabel', max_size);
 
-    updateLegend(min_color, max_color);
+    // updateLegend with min_color and max_color
+    let legendContainer, legendHeight, tableContainer;
+    legendContainer = d3.select("#colorWeightsLegend");
+    legendHeight = d3.select("#table-colorWeightsLegend").node().getBoundingClientRect().height;
+    tableContainer = d3.select("#table-colorWeightsLegend");
+    ColSch_updateLegendColors(legendContainer.node(), legendHeight);
+    ColSch_updateLegendLabels(tableContainer.node(), min_color, max_color, legendHeight);
+
     if (Number.isNaN(min_color)) {
         min_color = 0;
         max_color = 1;
@@ -818,27 +766,34 @@ function PSEDiscreteInitialize(labelsXJson, labelsYJson, valuesXJson, valuesYJso
 }
 
 
+function _updatePlotPSE(canvasId, xLabels, yLabels, xValues, yValues, min_color, max_color, backPage, d3Data) {
 
-/*********************************************************************************************************************
- *            ISOCLINE PSE BELLOW
- *********************************************************************************************************************/
-
-function Isocline_MainDraw(groupGID, divId) {
-    $('#' + divId).html('');
-    doAjaxCall({
-        type: "POST",
-        url: '/burst/explore/draw_isocline_exploration/' + groupGID,
-        success: function (r) {
-            $('#' + divId).html(r);
+    // why is it that we don't associate the labels into the attributes of the actual data_info or seriesArray?
+    // where does the seriesArray structure get created?
+    _PSE_minColor = min_color;
+    _PSE_maxColor = max_color;
+    _PSE_d3NodesInfo = d3Data;
+    _PSE_plotOptions = {
+        margins: { // is this the correct way to be doing margins? It's just how I have in the past,
+            top: 20,
+            bottom: 40,
+            left: 50,
+            right: 50
         },
-        error: function () {
-            displayMessage("Could not refresh with the new metrics.", "warningMessage");
+        xaxis: {
+            labels: xLabels,
+            values: xValues
+        },
+        yaxis: {
+            labels: yLabels,
+            values: yValues
         }
-    });
+
+    };
 }
 
 
-function PSE_mainDraw(parametersCanvasId, backPage, groupGID) {
+function PSEDiscreet_BurstDraw(parametersCanvasId, backPage, groupGID) {
 
     if (groupGID === null || groupGID === undefined) {
         // We didn't get parameter, so try to get group id from page
@@ -871,16 +826,17 @@ function PSE_mainDraw(parametersCanvasId, backPage, groupGID) {
     });
 }
 
-function RedrawPlotOnResize(){
+
+function PSEDiscreet_RedrawResize(){
     d3Plot('#main_div_pse', _PSE_seriesArray, $.extend(true, {}, _PSE_plotOptions), _PSE_back_page);
 
     if (_PSE_hasStartedOperations) {
-        setTimeout("loadNodeMatrixDiscrete()", 3000);
+        setTimeout("PSEDiscreet_LoadNodesMatrix()", 3000);
     }
 }
 
 
-function loadNodeMatrixDiscrete(groupGID=null) {
+function PSEDiscreet_LoadNodesMatrix(groupGID=null) {
      if (groupGID === null || groupGID === undefined) {
         groupGID = document.getElementById("datatype-group-gid").value;
     }
@@ -894,7 +850,7 @@ function loadNodeMatrixDiscrete(groupGID=null) {
             let pse_context=$.parseJSON(data);
             _PSE_hasStartedOperations=pse_context.has_started_ops;
             _PSE_seriesArray = $.parseJSON(pse_context.series_array);
-            RedrawPlotOnResize();
+            PSEDiscreet_RedrawResize();
         }
     });
 }
