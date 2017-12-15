@@ -106,9 +106,9 @@ class ParameterExplorationController(BaseController):
         """
         Create new data for when the user chooses to refresh from the UI.
         """
-        if color_metric == 'None':
+        if color_metric == 'None' or color_metric == "undefined":
             color_metric = None
-        if size_metric == 'None':
+        if size_metric == 'None' or size_metric == "undefined":
             size_metric = None
 
         algorithm = self.flow_service.get_algorithm_by_module_and_class(DISCRETE_PSE_ADAPTER_MODULE,
