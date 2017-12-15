@@ -42,9 +42,7 @@ from tvb.datatypes.sensors import SensorsEEG, SensorsMEG, SensorsInternal
 from tvb.adapters.uploaders.sensors_importer import Sensors_Importer
 from tvb.tests.framework.core.factory import TestFactory
 from tvb.tests.framework.datatypes.datatypes_factory import DatatypesFactory
-
 import tvb_data.sensors as demo_data
-
 
 
 class TestSensorsImporter(TransactionalTestCase):
@@ -53,7 +51,6 @@ class TestSensorsImporter(TransactionalTestCase):
     """
     EEG_FILE = os.path.join(os.path.dirname(demo_data.__file__), 'eeg_unitvector_62.txt.bz2')
     MEG_FILE = os.path.join(os.path.dirname(demo_data.__file__), 'meg_151.txt.bz2')
-
 
     def transactional_setup_method(self):
         """
@@ -65,13 +62,11 @@ class TestSensorsImporter(TransactionalTestCase):
         self.test_user = self.datatypeFactory.get_user()
         self.importer = Sensors_Importer()
 
-
     def transactional_teardown_method(self):
         """
         Clean-up tests data
         """
         FilesHelper().remove_project_structure(self.test_project.name)
-
 
     def _import(self, import_file_path, sensors_type, expected_data):
         """
@@ -89,13 +84,12 @@ class TestSensorsImporter(TransactionalTestCase):
 
         data_types = FlowService().get_available_datatypes(self.test_project.id,
                                                            expected_data.module + "." + expected_data.type)[0]
-        assert 1, len(data_types) == "Project should contain only one data type = Sensors."
+        assert 1 == len(data_types), "Project should contain only one data type = Sensors."
 
         time_series = ABCAdapter.load_entity_by_gid(data_types[0][2])
         assert time_series is not None, "Sensors instance should not be none"
 
         return time_series
-
 
     def test_import_eeg_sensors(self):
         """
@@ -109,7 +103,6 @@ class TestSensorsImporter(TransactionalTestCase):
         assert expected_size == len(eeg_sensors.locations)
         assert (expected_size, 3) == eeg_sensors.locations.shape
         assert expected_size == eeg_sensors.number_of_sensors
-
 
     def test_import_meg_sensors(self):
         """
@@ -127,7 +120,6 @@ class TestSensorsImporter(TransactionalTestCase):
         assert expected_size == len(meg_sensors.orientations)
         assert (expected_size, 3) == meg_sensors.orientations.shape
 
-
     def test_import_meg_without_orientation(self):
         """
         This method tests import of a file without orientation.
@@ -139,7 +131,6 @@ class TestSensorsImporter(TransactionalTestCase):
             # Expected exception
             pass
 
-
     def test_import_internal_sensors(self):
         """
         This method tests import of a file containing internal sensors.
@@ -148,8 +139,7 @@ class TestSensorsImporter(TransactionalTestCase):
 
         expected_size = 62
         assert internal_sensors.labels is not None
-        assert expected_size, len(internal_sensors.labels)
-        assert expected_size, len(internal_sensors.locations)
-        assert (expected_size, 3), internal_sensors.locations.shape
-        assert expected_size, internal_sensors.number_of_sensors
-
+        assert expected_size == len(internal_sensors.labels)
+        assert expected_size == len(internal_sensors.locations)
+        assert (expected_size, 3) == internal_sensors.locations.shape
+        assert expected_size == internal_sensors.number_of_sensors
