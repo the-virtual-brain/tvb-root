@@ -113,17 +113,17 @@
     <dependency env="[win,mac,linux]" name="cherrypy">
         <full-name value="CherryPy Server"/>
         <project-home value="http://www.cherrypy.org"/>
-        <version value="[3.8.0,10.2.1]"/>
+        <version value="[12.0.1,13.0.0]"/>
         <usage value="dynamic linking"/>
         <license value="LICENSE_CherryPy.txt"/>
         <license-type value="BSD_"/>
         <copyright-notice value="Copyright (c) 2002-2008, CherryPy Team (team@cherrypy.org)"/>
         <description value="We use this library for web server."/>
     </dependency>
-    <dependency env="mac" name="cheroot">
+    <dependency env="[win,mac,linux]" name="cheroot">
         <full-name value="Cheroot"/>
         <project-home value="https://pypi.python.org/pypi/Cheroot"/>
-        <version value="5.5.0"/>
+        <version value="[5.10.0,6.0.0]"/>
         <usage value="dynamic linking"/>
         <license value="LICENSE_cheroot.txt"/>
         <license-type value="BSD_"/>
@@ -133,7 +133,7 @@
     <dependency env="win" name="colorama">
         <full-name value="Colorama"/>
         <project-home value="https://pypi.python.org/pypi/colorama"/>
-        <version value="0.3.7"/>
+        <version value="0.3.9"/>
         <usage value="dynamic linking"/>
         <license value="LICENSE_colorama.txt"/>
         <license-type value="BSD_"/>
@@ -193,7 +193,7 @@
     <dependency env="[win,linux]" name="cython">
         <full-name value="Cython"/>
         <project-home value="http://cython.org/"/>
-        <version value="0.26"/>
+        <version value="0.27.3"/>
         <usage value="dynamic linking"/>
         <license value="LICENSE_cython.txt"/>
         <license-type value="Apache_ 2"/>
@@ -343,7 +343,7 @@
     <dependency env="[win,mac,linux]" name="ipython">
         <full-name value="iPython"/>
         <project-home value="http://ipython.org/"/>
-        <version value="5.3.0"/>
+        <version value="[5.4.1,5.5.0]"/>
         <usage value="dynamic linking"/>
         <license value="LICENSE_ipython.txt"/>
         <license-type value="BSD_ revised"/>
@@ -420,10 +420,10 @@
         <copyright-notice value="Copyright (c) Jupyter Development Team. Distributed under the terms of the Modified BSD License."/>
         <description value=""/>
     </dependency>
-    <dependency env="mac" name="jupyter_client">
+    <dependency env="[mac,win,linux]" name="jupyter_client">
         <full-name value="Jupyter Client"/>
         <project-home value="http://jupyter.org/"/>
-        <version value="5.0.1"/>
+        <version value="5.1.0"/>
         <usage value="dynamic linking"/>
         <license value="LICENSE_jupyter.txt"/>
         <license-type value="BSD_ modified"/>
@@ -433,7 +433,7 @@
     <dependency env="[win,linux]" name="jupyter-client">
         <full-name value="Jupyter Client"/>
         <project-home value="http://jupyter.org/"/>
-        <version value="5.0.1"/>
+        <version value="5.1.0"/>
         <usage value="dynamic linking"/>
         <license value="LICENSE_jupyter.txt"/>
         <license-type value="BSD_ modified"/>
@@ -443,7 +443,7 @@
     <dependency env="[win,linux]" name="jupyter_console">
         <full-name value="Jupyter Console"/>
         <project-home value="http://jupyter.org/"/>
-        <version value="5.1.0"/>
+        <version value="5.2.0"/>
         <usage value="dynamic linking"/>
         <license value="LICENSE_jupyter.txt"/>
         <license-type value="BSD_ modified"/>
@@ -453,7 +453,7 @@
     <dependency env="[win,linux]" name="jupyter-console">
         <full-name value="Jupyter Console"/>
         <project-home value="http://jupyter.org/"/>
-        <version value="5.1.0"/>
+        <version value="5.2.0"/>
         <usage value="dynamic linking"/>
         <license value="LICENSE_jupyter.txt"/>
         <license-type value="BSD_ modified"/>
@@ -463,7 +463,7 @@
     <dependency env="mac" name="jupyter_core">
         <full-name value="Jupyter Core"/>
         <project-home value="http://jupyter.org/"/>
-        <version value="4.3.0"/>
+        <version value="4.4.0"/>
         <usage value="dynamic linking"/>
         <license value="LICENSE_jupyter.txt"/>
         <license-type value="BSD_ modified"/>
@@ -473,7 +473,7 @@
     <dependency env="[win,linux]" name="jupyter-core">
         <full-name value="Jupyter Core"/>
         <project-home value="http://jupyter.org/"/>
-        <version value="4.3.0"/>
+        <version value="4.4.0"/>
         <usage value="dynamic linking"/>
         <license value="LICENSE_jupyter.txt"/>
         <license-type value="BSD_ modified"/>
@@ -643,7 +643,7 @@
     <dependency env="[win,mac,linux]" name="llvmlite">
         <full-name value="llvmlite"/>
         <project-home value="http://llvmlite.pydata.org/en/latest/"/>
-        <version value="[0.10.0,0.18.0]"/>
+        <version value="0.21.0"/>
         <usage value="dynamic linking"/>
         <license value="LICENSE_llvmlite.txt"/>
         <license-type value="BSD_"/>
@@ -743,7 +743,7 @@
     <dependency env="[win,mac,linux]" name="nibabel">
         <full-name value="Nibabel"/>
         <project-home value="http://nipy.sourceforge.net/nibabel/"/>
-        <version value="[1.3.0,2.0.1,2.1.0]"/>
+        <version value="2.2.1"/>
         <usage value="dynamic linking"/>
         <license value="LICENSE_nibabel.txt"/>
         <license-type value="MIT_"/>
@@ -760,10 +760,10 @@
         <copyright-notice value="Copyright (c) 2008 by Armin Ronacher"/>
         <description value="Setuptools extensions. Nibabel uses these routines, and houses them, and installs them - Coming with Anaconda env"/>
     </dependency>
-    <dependency env="mac" name="notebook">
+    <dependency env="[win,mac,linux]" name="notebook">
         <full-name value="iPython Notebook"/>
         <project-home value="http://ipython.org/"/>
-        <version value="5.0.0"/>
+        <version value="5.2.2"/>
         <usage value="dynamic linking"/>
         <license value="LICENSE_ipython.txt"/>
         <license-type value="BSD_ revised"/>
@@ -793,7 +793,7 @@
     <dependency env="[win,mac,linux]" name="numba">
         <full-name value="Numba"/>
         <project-home value="http://numba.pydata.org/"/>
-        <version value="[0.25.0,0.32.0]"/>
+        <version value="[0.36.1+0.gf639188.dirty,0.36.1,0.36.1+0.gf6391886b.dirty]"/>
         <usage value="dynamic linking"/>
         <license value="LICENSE_numba.txt"/>
         <license-type value="BSD_"/>
@@ -803,7 +803,7 @@
     <dependency env="[win,mac,linux]" name="numexpr">
         <full-name value="NumExpr"/>
         <project-home value="http://code.google.com/p/numexpr/"/>
-        <version value="2.6.2"/>
+        <version value="2.6.4"/>
         <usage value="dynamic linking"/>
         <license value="LICENSE_numexpr.txt"/>
         <license-type value="MIT_"/>
@@ -934,7 +934,7 @@
     <dependency env="mac" name="prompt_toolkit">
         <full-name value="Prompt Toolkit"/>
         <project-home value="https://github.com/jonathanslenders/python-prompt-toolkit"/>
-        <version value="1.0.14"/>
+        <version value="1.0.15"/>
         <usage value="dynamic linking"/>
         <license value="LICENSE_prompt_toolkit.txt"/>
         <license-type value="BSD_"/>
@@ -944,7 +944,7 @@
     <dependency env="[win,linux]" name="prompt-toolkit">
         <full-name value="Prompt Toolkit"/>
         <project-home value="https://github.com/jonathanslenders/python-prompt-toolkit"/>
-        <version value="1.0.14"/>
+        <version value="1.0.15"/>
         <usage value="dynamic linking"/>
         <license value="LICENSE_prompt_toolkit.txt"/>
         <license-type value="BSD_"/>
@@ -954,7 +954,7 @@
     <dependency env="[win,mac,linux]" name="psutil">
         <full-name value="psutil"/>
         <project-home value="http://code.google.com/p/psutil/"/>
-        <version value="[2.2.1,5.2.2]"/>
+        <version value="[5.4.1,5.4.2]"/>
         <usage value="dynamic linking"/>
         <license value="LICENSE_psutil.txt"/>
         <license-type value="BSD_ 3rd clause"/>
@@ -964,7 +964,7 @@
     <dependency env="[win,mac,linux]" name="psycopg2">
         <full-name value="Psycopg2"/>
         <project-home value="http://initd.org/psycopg/"/>
-        <version value="[2.7.1 (dt dec pq3 ext lo64),2.6,2.6.1]"/>
+        <version value="[2.7.3.2,2.7.1 (dt dec pq3 ext lo64),2.7.1]"/>
         <usage value="dynamic linking"/>
         <license value="LICENSE_psycopg.txt"/>
         <license-type value="ZPL-License"/>
@@ -1034,7 +1034,7 @@
     <dependency env="[win,mac,linux]" name="python">
         <full-name value="Python"/>
         <project-home value="http://docs.python.org/license.html"/>
-        <version value="2.7.13"/>
+        <version value="2.7.14"/>
         <usage value="dynamic linking"/>
         <license value="LICENSE_python.txt"/>
         <license-type value="PSF_"/>
@@ -1064,7 +1064,7 @@
     <dependency env="[win,linux]" name="pyzmq">
         <full-name value="zeromq"/>
         <project-home value="http://zguide.zeromq.org"/>
-        <version value="[14.7.0]"/>
+        <version value="16.0.3"/>
         <usage value="dynamic linking"/>
         <license value="LICENSE_zmq.txt"/>
         <license-type value="LGPLv3_"/>
@@ -1114,7 +1114,7 @@
     <dependency env="[win,linux,mac]" name="scikit-learn">
         <full-name value="Scikits Learn"/>
         <project-home value="http://scikit-learn.org/"/>
-        <version value="[0.18.1,0.18.2]"/>
+        <version value="0.19.1"/>
         <usage value="dynamic linking"/>
         <license value="LICENSE_scikits_learn.txt"/>
         <license-type value="BSD_ 3rd clause"/>
@@ -1184,7 +1184,7 @@
     <dependency env="[win,mac,linux]" name="sqlalchemy">
         <full-name value="SQL-Alchemy"/>
         <project-home value="http://www.sqlalchemy.org/"/>
-        <version value="1.1.14"/>
+        <version value="[1.1.13,1.1.14]"/>
         <usage value="dynamic linking"/>
         <license value="LICENSE_sqlalchemy_0.6.6.txt"/>
         <license-type value="MIT_"/>
@@ -1224,7 +1224,7 @@
     <dependency env="[win,mac,linux]" name="tables">
         <full-name value="PyTables"/>
         <project-home value="http://www.pytables.org/moin/License"/>
-        <version value="[3.0.0,3.3.0]"/>
+        <version value="3.4.2"/>
         <usage value="dynamic linking"/>
         <license value="LICENSE_pytables.txt"/>
         <license-type value="BSD_"/>
@@ -1294,7 +1294,7 @@
     <dependency env="[win,mac,linux]" name="tornado">
         <full-name value="Tornado"/>
         <project-home value="http://www.tornadoweb.org/en/stable/"/>
-        <version value="[4.2,4.5.1]"/>
+        <version value="4.5.2"/>
         <usage value="dynamic linking"/>
         <license value="LICENSE_tornado.txt"/>
         <license-type value="Apache_ 2"/>
@@ -1404,7 +1404,7 @@
     <dependency env="[win,mac,linux]" name="zmq">
         <full-name value="zeromq"/>
         <project-home value="http://zguide.zeromq.org"/>
-        <version value="[14.7.0,16.0.2]"/>
+        <version value="16.0.3"/>
         <usage value="dynamic linking"/>
         <license value="LICENSE_zmq.txt"/>
         <license-type value="LGPLv3_"/>
