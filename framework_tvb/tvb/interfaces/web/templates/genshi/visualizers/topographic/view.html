@@ -22,12 +22,12 @@
             $(document).ready(function () {
                 if ("${index}==0") {
                     $("#main").addClass("colscheme-1");
-                    window.onresize = drawContours;
+                    window.onresize = TOPO_DrawContours;
 
                     function launchViewer(width, height) {
                     }
                 }
-                topographic_init('${matrix_datas[index]}', '${matrix_shape}', ${vmin}, ${vmax}, ${index});
+                TOPO_Init('${matrix_datas[index]}', '${matrix_shape}', ${vmin}, ${vmax}, ${index});
             });
         </script>
     </py:def>

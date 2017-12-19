@@ -963,7 +963,7 @@
     <dependency env="[win,mac,linux]" name="pil">
         <full-name value="Pillow Library"/>
         <project-home value="https://pillow.readthedocs.org/"/>
-        <version value="[unknown,4.3.0]"/>
+        <version value="4.3.0"/>
         <usage value="dynamic linking"/>
         <license value="LICENSE_PIL.txt"/>
         <license-type value="MIT_"/>
