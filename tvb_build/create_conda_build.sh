@@ -22,6 +22,8 @@ pip install tvb-gdist formencode cfflib genshi nibabel sqlalchemy-migrate allens
 cd ..
 sh install_from_svn.sh
 
-conda uninstall pyside shiboken cairo
+conda uninstall pyside shiboken cairo pycairo pywavelets
+
+rm -R /root/anaconda/envs/tvb-run/lib/python2.7/site-packages/nibabel/nicom/tests
 
 # python2.7/site-packages/matplotlib/mpl-data/matplotlibrc to Agg

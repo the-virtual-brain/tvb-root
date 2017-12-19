@@ -830,6 +830,16 @@
         <copyright-notice value="Copyright (c) 2005-2008 Jason Pellerin"/>
         <description value="Tests - Coming with Anaconda env"/>
     </dependency>
+    <dependency env="[win,linux]" name="olefile">
+        <full-name value="OLEfile"/>
+        <project-home value="https://www.decalage.info/python/olefileio"/>
+        <version value="0.44"/>
+        <usage value="unit tests"/>
+        <license value="LICENSE_olefile.txt"/>
+        <license-type value="BSD_"/>
+        <copyright-notice value="Copyright (c) 2005-2017 Philippe Lagadec"/>
+        <description value="Ole Files parser from PIL, the Python Image Library"/>
+    </dependency>
     <dependency env="[win,mac,linux]" name="pynrrd">
         <full-name value="PyNRRD"/>
         <project-home value="https://pypi.python.org/pypi/pynrrd"/>
