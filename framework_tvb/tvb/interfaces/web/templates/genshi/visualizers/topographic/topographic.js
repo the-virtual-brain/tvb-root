@@ -19,14 +19,9 @@
 
 
 var Topographic = {
-    canvas: null,
-    data: [],
-    n: null,
-    m: null,
-    canvasTitle: null,
+    topographic_container:[],
     vmin: null,
     vmax: null,
-    index: null
 };
 
 function topographic_init(matrix_data, matrix_shape, vmin, vmax, index) {
@@ -34,18 +29,29 @@ function topographic_init(matrix_data, matrix_shape, vmin, vmax, index) {
     var dimensions = $.parseJSON(matrix_shape);
     var n = dimensions[0];
     var m = dimensions[1];
-    var canvas = d3.select("#canvas-" + index);
+    var canvas = d3.select("#canvas-" + (index+1));
+
+    var Topographic_element ={
+        canvas: null,
+        data: null,
+        n: null,
+        m: null
+    }
 
     if (matrix_data) {
-        Topographic.data.push($.parseJSON(matrix_data));
+        Topographic_element.data = ($.parseJSON(matrix_data));
+        Topographic_element.n = n;
+        Topographic_element.m = m;
+    }
+    Topographic_element.canvas=canvas;
+    Topographic.topographic_container.push(Topographic_element);
+
+    if(index==0){
         Topographic.vmin = vmin;
         Topographic.vmax = vmax;
-        ColSch_initColorSchemeGUI(vmin, vmax, drawCanvas);
+        ColSch_initColorSchemeGUI(vmin, vmax, drawAllCanvases);
     }
-    Topographic.n = n;
-    Topographic.m = m;
-    Topographic.canvas = canvas;
-    Topographic.index = index;
+
     var text_align = $('.topographic_text_allign');
     var cw = text_align.width();
     text_align.css({
@@ -53,19 +59,23 @@ function topographic_init(matrix_data, matrix_shape, vmin, vmax, index) {
     });
 
     if (matrix_data) {
-        drawCanvas();
+        drawCanvas(index);
     }
 }
 
-function drawCanvas() {
+function drawAllCanvases(){
+    for(var i =0; i<Topographic.topographic_container.length;i++){
+        drawCanvas(i);
+    }
+}
 
-    var index = Topographic.index;
-    var data = Topographic.data[index - 1];
-    var n = Topographic.n;
-    var m = Topographic.m;
+function drawCanvas(index) {
     var vmin = Topographic.vmin;
     var vmax = Topographic.vmax;
-    var canvas = Topographic.canvas;
+    var n = Topographic.topographic_container[index].n;
+    var m = Topographic.topographic_container[index].m;
+    var data = Topographic.topographic_container[index].data;
+    var canvas = Topographic.topographic_container[index].canvas;
 
     canvas.attr("width", m)
         .attr("height", n);
@@ -86,13 +96,13 @@ function drawCanvas() {
         }
     }
     context.putImageData(image, 0, 0);
-    updateLegend2D(vmin, vmax, Topographic.viewerType);
+    updateLegend2D(vmin, vmax);
     drawContour(data, index);
 }
 
 function drawContours() {
-    for (var i = 0; i < Topographic.data.length; i++) {
-        drawContour(Topographic.data[i], i + 1);
+    for (var i = 0; i < Topographic.topographic_container.length; i++) {
+        drawContour(Topographic.topographic_container[i].data, i);
     }
 }
 
@@ -103,11 +113,11 @@ function drawContour(data, index) {
         'height': cw + 'px'
     });
 
-    var n = Topographic.n;
-    var m = Topographic.m;
+    var n = Topographic.topographic_container[index].n;
+    var m = Topographic.topographic_container[index].m;
     var vmin = Topographic.vmin;
     var vmax = Topographic.vmax;
-    var svg = d3.select("#svg-container-" + index);
+    var svg = d3.select("#svg-container-" + (index+1));
     var width = svg["0"]["0"].clientWidth;
     var height = svg["0"]["0"].clientHeight;
     var scale = 0.8;

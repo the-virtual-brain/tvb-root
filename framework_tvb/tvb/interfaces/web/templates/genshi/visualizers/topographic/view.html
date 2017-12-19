@@ -9,9 +9,9 @@
     <link type="text/css" rel="stylesheet" href="/static/style/section_visualisers.css?$currentVersionJS"/>
     <py:def function="drawTopography(index,length)">
         <div class="topographic_${length}">
-            <canvas class="topographic_canvas" id="canvas-${index}"></canvas>
-            <svg class="topographic_svg" id="svg-container-${index}"></svg>
-            <label class="topographic_title">${titles[index-1]}</label>
+            <canvas class="topographic_canvas" id="canvas-${index+1}"></canvas>
+            <svg class="topographic_svg" id="svg-container-${index+1}"></svg>
+            <label class="topographic_title">${titles[index]}</label>
             <label class="topographic_nose">Nose</label>
             <div class="topographic_text_allign">
                 <label class="topographic_left_ear">Left Ear</label>
@@ -20,14 +20,14 @@
         </div>
         <script type="text/javascript">
             $(document).ready(function () {
-                if ("${index}==1") {
+                if ("${index}==0") {
                     $("#main").addClass("colscheme-1");
                     window.onresize = drawContours;
 
                     function launchViewer(width, height) {
                     }
                 }
-                topographic_init('${matrix_datas[index-1]}', '${matrix_shape}', ${vmin}, ${vmax}, ${index});
+                topographic_init('${matrix_datas[index]}', '${matrix_shape}', ${vmin}, ${vmax}, ${index});
             });
         </script>
     </py:def>
@@ -49,12 +49,12 @@
                 </py:for>
             </table>
         </div>
-        ${drawTopography(1,len(titles))}
+        ${drawTopography(0,len(titles))}
         <py:if test="len(titles) &gt; 1">
-            ${drawTopography(2,len(titles))}
+            ${drawTopography(1,len(titles))}
         </py:if>
         <py:if test="len(titles) &gt; 2">
-            ${drawTopography(3,len(titles))}
+            ${drawTopography(2,len(titles))}
         </py:if>
     </div>
 </div>
