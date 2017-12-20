@@ -80,10 +80,10 @@
         <copyright-notice value="Copyright (c) 2004-2012 Leonard Richardson"/>
         <description value="Tree Parser - Coming with Anaconda env"/>
     </dependency>
-    <dependency env="linux" name="bleach">
+    <dependency env="[win,linux]" name="bleach">
         <full-name value="Bleach"/>
         <project-home value="https://pypi.python.org/pypi/bleach"/>
-        <version value="2.0.0"/>
+        <version value="[2.1.1,2.0.0]"/>
         <usage value="static linking"/>
         <license value="LICENSE_bleach.txt"/>
         <license-type value="Apache_"/>
@@ -190,10 +190,10 @@
         <copyright-notice value="Copyright (c) Ronald Oussoren"/>
         <description value="We use this library for the Mac OS TVB distribution to appear in the doc bar."/>
     </dependency>
-    <dependency env="[win,linux]" name="coverage">
+    <dependency env="win" name="coverage">
         <full-name value="Coverage"/>
         <project-home value="https://pypi.python.org/pypi/coverage"/>
-        <version value="3.7.1"/>
+        <version value="4.4.2"/>
         <usage value="unit tests"/>
         <license value="LICENSE_coverage.txt"/>
         <license-type value="BSD_"/>
@@ -1564,6 +1564,16 @@
         <full-name value="Zope"/>
         <project-home value="https://pypi.python.org/pypi/zope.interface"/>
         <version value="unknown"/>
+        <usage value="dynamic linking"/>
+        <license value="LICENSE_zope.txt"/>
+        <license-type value="ZPL 2.1"/>
+        <copyright-notice value="Copyright (c) 2012, Zope Foundation contributors"/>
+        <description value="The IPython Notebook uses it"/>
+    </dependency>
+    <dependency env="win" name="zope.interface">
+        <full-name value="Zope Interface"/>
+        <project-home value="https://pypi.python.org/pypi/zope.interface"/>
+        <version value="4.4.3"/>
         <usage value="dynamic linking"/>
         <license value="LICENSE_zope.txt"/>
         <license-type value="ZPL 2.1"/>
