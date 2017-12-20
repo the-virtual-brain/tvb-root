@@ -590,6 +590,16 @@
         <copyright-notice value="Copyright (C) 1999-2016 Free Software Foundation, Inc."/>
         <description value="The GNU Fortran compiler, part of GCC. Needed by recent numpy. https://moinmo.in/GPL"/>
     </dependency>
+    <dependency env="mac" name="libjpeg.8.dylib">
+        <full-name value="JPEG library"/>
+        <project-home value="http://libjpeg.sourceforge.net/"/>
+        <version value="unknown"/>
+        <usage value="dynamic linking"/>
+        <license value="LICENSE_libjpeg.txt"/>
+        <license-type value="Free Software MIT_ like"/>
+        <copyright-notice value="Copyright (C) 1991-1998, Thomas G. Lane."/>
+        <description value="LIBJPEG is included because PIL needs it for exporting our TVB images"/>
+    </dependency>
     <dependency env="mac" name="libjpeg.9.dylib">
         <full-name value="JPEG library"/>
         <project-home value="http://libjpeg.sourceforge.net/"/>

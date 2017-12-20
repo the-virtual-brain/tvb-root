@@ -64,8 +64,8 @@ EXCLUDED_DYNAMIC_LIBS = []
 
 # --------------------------- PY2APP specific configurations--------------------------------------------
 
-PY2APP_PACKAGES = ['cherrypy', 'email', 'h5py', 'IPython', 'ipykernel', 'ipykernel_launcher', 'nbformat',
-                   'lib2to3', "llvmlite", 'migrate', 'numba', 'notebook', 'numpy', 'pkg_resources',
+PY2APP_PACKAGES = ['BaseHTTPServer', 'cherrypy', 'email', 'h5py', 'IPython', 'ipykernel', 'ipykernel_launcher',
+                   'nbformat', 'lib2to3', "llvmlite", 'migrate', 'numba', 'notebook', 'numpy', 'pkg_resources',
                    'PyObjCTools', 'scipy', 'sklearn', 'tables', 'tornado', 'tvb']
 
 PY2APP_INCLUDES = ['allensdk', 'cfflib', 'cmath', 'contextlib', 'formencode',
@@ -73,7 +73,7 @@ PY2APP_INCLUDES = ['allensdk', 'cfflib', 'cmath', 'contextlib', 'formencode',
                    'logging.config', 'markupsafe', 'matplotlib', 'mpl_toolkits.axes_grid', 'nibabel',
                    'numexpr', 'os', 'psycopg2', 'pygments.formatters.html', 'pygments.lexers.python',
                    'runpy', 'sqlite3', 'sqlalchemy', 'sqlalchemy.dialects.sqlite', 'sqlalchemy.dialects.postgresql',
-                   'sqlalchemy.sql.default_comparator', 'six.moves.BaseHTTPServer'
+                   'sqlalchemy.sql.default_comparator',
                    'simplejson', 'six', 'StringIO', 'xml.dom', 'xml.dom.minidom', 'zlib', 'zmq']
 
 PY2APP_EXCLUDES = ['_markerlib', 'altgraph', 'coverage', 'cython', 'Cython', 'tvb_data', 'docutils',
