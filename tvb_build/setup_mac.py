@@ -42,6 +42,7 @@ import sys
 import shutil
 import setuptools
 import locale
+import importlib
 import tvb_bin
 from glob import glob
 from zipfile import ZipFile, ZIP_DEFLATED
@@ -62,10 +63,14 @@ FOLDERS_TO_DELETE = ['.svn', '.project', '.settings']
 FILES_TO_DELETE = ['.DS_Store', 'dev_logger_config.conf']
 EXCLUDED_DYNAMIC_LIBS = []
 
+# Modules to be copied manually into "packages" locations, as they are not found by py2app.
+# These are six modules.
+EXTRA_MODULES = ['six.moves.BaseHTTPServer']
+
 # --------------------------- PY2APP specific configurations--------------------------------------------
 
-PY2APP_PACKAGES = ['BaseHTTPServer', 'cherrypy', 'email', 'h5py', 'IPython', 'ipykernel', 'ipykernel_launcher',
-                   'nbformat', 'lib2to3', "llvmlite", 'migrate', 'numba', 'notebook', 'numpy', 'pkg_resources',
+PY2APP_PACKAGES = ['cherrypy', 'email', 'h5py', 'IPython', 'ipykernel', 'ipykernel_launcher', 'nbformat',
+                   'lib2to3', "llvmlite", 'migrate', 'numba', 'notebook', 'numpy', 'pkg_resources',
                    'PyObjCTools', 'scipy', 'sklearn', 'tables', 'tornado', 'tvb']
 
 PY2APP_INCLUDES = ['allensdk', 'cfflib', 'cmath', 'contextlib', 'formencode',
@@ -116,6 +121,7 @@ def _create_command_file(command_file_path, command, before_message, done_messag
 
 def _add_sitecustomize(base_folder, destination_folder):
     full_path = os.path.join(base_folder, destination_folder, "sitecustomize.py")
+    print("- Writing file: " + full_path)
     with open(full_path, 'w') as sc_file:
         sc_file.write("# -*- coding: utf-8 -*-\n\n")
         sc_file.write("import sys\n")
@@ -126,6 +132,7 @@ def _copy_tvb_sources(library_folder):
     """
     Make sure all TVB folders are collapsed together in one folder in the distribution.
     """
+    print("- Start to copy TVB resources into: " + library_folder)
     import tvb
 
     destination_folder = os.path.join(library_folder, 'tvb')
@@ -136,7 +143,7 @@ def _copy_tvb_sources(library_folder):
             if os.path.isdir(src) and not (sub_folder.startswith('.') or sub_folder.startswith("tests")):
                 if os.path.exists(dest):
                     shutil.rmtree(dest)
-                print("  Copying TVB: " + str(src))
+                print("  Copy: " + str(src))
                 ignore_patterns = shutil.ignore_patterns('*.pyc', '.svn')
                 shutil.copytree(src, dest, ignore=ignore_patterns)
 
@@ -150,6 +157,14 @@ def _copy_tvb_sources(library_folder):
         if os.path.exists(excluded):
             shutil.rmtree(excluded, True)
             print("  Removed: " + str(excluded))
+
+
+def _copy_module(module_str, destination_folder):
+    """Import module, find its origin __file__ and copy it into distribution"""
+    imported_module = importlib.import_module(module_str)
+    six_extra_src = imported_module.__file__
+    print("- Copying " + six_extra_src + " into " + destination_folder)
+    shutil.copy2(six_extra_src, destination_folder)
 
 
 def _introspect_licenses(destination_folder, root_introspection, extra_licenses_check=None):
@@ -213,7 +228,13 @@ def _generate_distribution(final_name, library_path, version, extra_licensing_ch
 
     _copy_tvb_sources(library_abs_path)
 
-    shutil.copytree(os.path.join("externals", "BCT"), os.path.join(DIST_FOLDER, library_path, "externals", "BCT"))
+    bct_src = os.path.join("externals", "BCT")
+    bct_dst = os.path.join(DIST_FOLDER, library_path, "externals", "BCT")
+    print("- Copying " + bct_src + " to " + bct_dst)
+    shutil.copytree(bct_src, bct_dst)
+
+    for extra in EXTRA_MODULES:
+        _copy_module(extra, library_abs_path)
 
     _add_sitecustomize(DIST_FOLDER, library_path)
 
