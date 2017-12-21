@@ -420,6 +420,16 @@
         <copyright-notice value="Copyright (c) Jason R. Coombs"/>
         <description value="Jaraco utility functions"/>
     </dependency>
+    <dependency env="[win,linux]" name="jaraco.classes">
+        <full-name value="Jaraco Classes"/>
+        <project-home value="https://github.com/jaraco/jaraco.classes"/>
+        <version value="1.4.3"/>
+        <usage value="dynamic linking"/>
+        <license value="LICENSE_jaraco.txt"/>
+        <license-type value="MIT_"/>
+        <copyright-notice value="Copyright (c) Jason R. Coombs"/>
+        <description value="Jaraco utility functions for classes"/>
+    </dependency>
     <dependency env="[win,mac,linux]" name="jinja2">
         <full-name value="Jinja"/>
         <project-home value="http://jinja.pocoo.org/"/>
