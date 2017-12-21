@@ -374,6 +374,13 @@ function ColSch_initColorSchemeGUI(minValue, maxValue, refreshFunction) {
     var elemSliderMiddleHole = $('#rangerForMiddleHoleDiameter');
 
     // initialise the range UI
+    if(isNaN(minValue) || isNaN(maxValue)){
+        elemSliderSelector.slider({ disabled: true });
+    }
+    else{
+        elemSliderSelector.slider({ disabled: false });
+    }
+
     elemSliderSelector.slider({
         range: true, min: minValue, max: maxValue, step: (maxValue - minValue) / 1000, // 1000 steps between max and min
         values: [minValue, maxValue],
@@ -382,8 +389,10 @@ function ColSch_initColorSchemeGUI(minValue, maxValue, refreshFunction) {
             elemMax.html(ui.values[1].toFixed(3));
         },
         change: function(event, ui) {
-            ColSch.colorScale._minRange = ui.values[0];
-            ColSch.colorScale._maxRange = ui.values[1];
+            if(!isNaN(ui.value)){
+                ColSch.colorScale._minRange = ui.values[0];
+                ColSch.colorScale._maxRange = ui.values[1];
+            }
             if (ColSch._refreshCallback) { ColSch._refreshCallback(); }
         }
     });
