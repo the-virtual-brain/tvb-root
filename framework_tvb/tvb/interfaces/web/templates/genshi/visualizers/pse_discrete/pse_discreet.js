@@ -753,12 +753,7 @@ function PSEDiscreet_Initialize(labelsXJson, labelsYJson, valuesXJson, valuesYJs
     _fmt_lbl('#maxShapeLabel', max_size);
 
     // updateLegend with min_color and max_color
-    let legendContainer, legendHeight, tableContainer;
-    legendContainer = d3.select("#colorWeightsLegend");
-    legendHeight = d3.select("#table-colorWeightsLegend").node().getBoundingClientRect().height;
-    tableContainer = d3.select("#table-colorWeightsLegend");
-    ColSch_updateLegendColors(legendContainer.node(), legendHeight);
-    ColSch_updateLegendLabels(tableContainer.node(), min_color, max_color, legendHeight);
+    updateLegend2D(min_color, max_color);
 
     if (Number.isNaN(min_color)) {
         min_color = 0;
@@ -863,7 +858,9 @@ function updateLegend2D(minColor, maxColor) {
     legendHeight = legendContainer.node().getBoundingClientRect().height;
     tableContainer = d3.select("#table-colorWeightsLegend");
     ColSch_updateLegendColors(legendContainer.node(), legendHeight);
-    if(_PSE_hasDatatypeMeasure){
-        ColSch_updateLegendLabels(tableContainer.node(), minColor, maxColor, legendHeight);
+    if(!_PSE_hasDatatypeMeasure){
+        minColor=NaN;
+        maxColor=NaN;
     }
+    ColSch_updateLegendLabels(tableContainer.node(), minColor, maxColor, legendHeight);
 }
