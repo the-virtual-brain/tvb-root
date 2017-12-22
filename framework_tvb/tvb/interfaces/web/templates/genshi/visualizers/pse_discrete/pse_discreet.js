@@ -30,6 +30,7 @@ var _PSE_minColor;
 var _PSE_maxColor;
 var _PSE_plot;
 var _PSE_back_page;
+var _PSE_hasDatatypeMeasure=true;
 
 /*
  * @param canvasId: the id of the HTML DIV on which the drawing is done. This should have sizes defined or else FLOT can't do the drawing.
@@ -738,7 +739,8 @@ function PSEDiscreet_Initialize(labelsXJson, labelsYJson, valuesXJson, valuesYJs
     max_size = parseFloat(max_size);
 
     ColSch_initColorSchemeGUI(min_color, max_color, function () {
-        _updatePlotPSE('main_div_pse', labels_x, labels_y, values_x, values_y, min_color, max_color, backPage, data);
+         updateLegend2D(min_color,max_color);
+         d3Plot('#main_div_pse', _PSE_seriesArray, $.extend(true, {}, _PSE_plotOptions), _PSE_back_page);
     });
 
     function _fmt_lbl(sel, v) {
@@ -761,6 +763,7 @@ function PSEDiscreet_Initialize(labelsXJson, labelsYJson, valuesXJson, valuesYJs
     if (Number.isNaN(min_color)) {
         min_color = 0;
         max_color = 1;
+        _PSE_hasDatatypeMeasure=false;
     }
     _updatePlotPSE('main_div_pse', labels_x, labels_y, values_x, values_y, min_color, max_color, backPage, data);
 }
@@ -852,4 +855,15 @@ function PSEDiscreet_LoadNodesMatrix(groupGID) {
             PSEDiscreet_RedrawResize();
         }
     });
+}
+
+function updateLegend2D(minColor, maxColor) {
+    let legendContainer, legendHeight, tableContainer;
+    legendContainer = d3.select("#colorWeightsLegend");
+    legendHeight = legendContainer.node().getBoundingClientRect().height;
+    tableContainer = d3.select("#table-colorWeightsLegend");
+    ColSch_updateLegendColors(legendContainer.node(), legendHeight);
+    if(_PSE_hasDatatypeMeasure){
+        ColSch_updateLegendLabels(tableContainer.node(), minColor, maxColor, legendHeight);
+    }
 }
