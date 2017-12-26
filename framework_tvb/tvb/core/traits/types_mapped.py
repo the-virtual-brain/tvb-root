@@ -395,6 +395,7 @@ class MappedType(model.DataType, mapped.MappedTypeLight):
                             ### Some traites classes have a specific JSON encoder/encoder
                             field_value = attr.from_json(field_value)
                         else:
+                            self.logger.debug("Unpacking " + str(key) + " : " + str(field_value))
                             field_value = json.loads(field_value)
                         setattr(self, key, field_value)
 

@@ -118,7 +118,8 @@ examples.
 .. _Exploring Longer Time Series: http://nbviewer.ipython.org/url/docs.thevirtualbrain.org/demos/exploring_longer_time_series.ipynb
 .. _Exploring The Bold Monitor: http://nbviewer.ipython.org/url/docs.thevirtualbrain.org/demos/exploring_the_bold_monitor.ipynb
 .. _Exporing A Surface Mesh: http://nbviewer.ipython.org/url/docs.thevirtualbrain.org/demos/exporing_a_surface_mesh.ipynb
-.. _Generate Surrogate Connectivity: http://nbviewer.ipython.org/url/docs.thevirtualbrain.org/demos/generate_surrogate_connectivity.ipynb
+.. _Generate TimeSeries for import in Web GUI: http://nbviewer.ipython.org/url/docs.thevirtualbrain.org/demos/generate_surrogate_connectivity.ipynb
+.. _Generate Surrogate Connectivity: http://nbviewer.ipython.org/url/docs.thevirtualbrain.org/demos/generate_ts_h5_from_library.ipynb
 .. _Interacting With The Framework: http://nbviewer.ipython.org/url/docs.thevirtualbrain.org/demos/interacting_with_the_framework.ipynb
 .. _Interacting With The Framework and Allen: http://nbviewer.ipython.org/url/docs.thevirtualbrain.org/demos/interacting_with_Allen.ipynb
 .. _Simulate for Mouse: http://nbviewer.ipython.org/url/docs.thevirtualbrain.org/demos/simulate_for_mouse.ipynb
@@ -267,6 +268,14 @@ Interact with TVB Framework
       :target: `Interacting With The Framework`_
 
       `Interacting With The Framework`_
+
+
+.. figure:: figures/interacting_with_the_framework.png
+      :width: 200px
+      :figclass: demo-figure
+      :target: `Generate TimeSeries for import in Web GUI`_
+
+      `Generate TimeSeries for import in Web GUI`_
 
 
 Mouse
