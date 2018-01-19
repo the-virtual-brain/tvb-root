@@ -9,6 +9,7 @@
     * Bug fixes in: FFT visualizer, FCD analyzer, Brain Surface visualizer, Volumetric viewer on Safari, PSE Discreet
     * Publish on conda-forge (tvb-data, tvb-gdist, tvb-library)
     * Bug fixes in tvb-framework flow (start/stop/show correct version) when used from Pypi package
+    * 2 new Epileptor model variants ([Saggioetal_2017] Fast–Slow Bursters in the Unfolding of a High Codimension Singularity and the Ultra-slow Transitions of Classes
 
 ======================================================================================================================================
  The Virtual Brain (TVB)

@@ -49,4 +49,4 @@ from .wong_wang import ReducedWongWang
 from .linear import Linear
 from .hopfield import Hopfield
 from .epileptor import Epileptor
-from .epileptorcodim3 import EpileptorCodim3, EpileptorCodim3_slowmod
+from .epileptorcodim3 import EpileptorCodim3, EpileptorCodim3SlowMod

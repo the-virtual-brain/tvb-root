@@ -34,8 +34,8 @@ Saggio codimension 3 Epileptor model
 
 """
 
-from .base import LOG, numpy, basic, arrays, ModelNumbaDfun
-from numba import guvectorize, float64, int32
+from .base import numpy, basic, arrays, ModelNumbaDfun
+from numba import guvectorize, float64, int_
 
 
 class EpileptorCodim3(ModelNumbaDfun):
@@ -67,92 +67,106 @@ class EpileptorCodim3(ModelNumbaDfun):
                                   'c', 'dstar', 'N', 'Ks']
 
     mu1_start = arrays.FloatArray(
-        label="mu1_start",
+        label="mu1 start",
         default=numpy.array([-0.02285]),
         range=basic.Range(lo=-1.0, hi=1.0),
         doc="The bifurcation parameter mu1 at the offset point for the given class, default for class c2s "
-            "(Saddle-Node at onset and Saddle-Homoclinic at offset)")
+            "(Saddle-Node at onset and Saddle-Homoclinic at offset)",
+        order=1)
 
     mu2_start = arrays.FloatArray(
-        label="mu2_start",
+        label="mu2 start",
         default=numpy.array([0.3448]),
         range=basic.Range(lo=-1.0, hi=1.0),
         doc="The bifurcation mu2 parameter at the offset point for the given class, default for class c2s "
-            "(Saddle-Node at onset and Saddle-Homoclinic at offset)")
+            "(Saddle-Node at onset and Saddle-Homoclinic at offset)",
+        order=2)
 
     nu_start = arrays.FloatArray(
-        label="nu_start",
+        label="nu start",
         default=numpy.array([0.2014]),
         range=basic.Range(lo=-1.0, hi=1.0),
         doc="The bifurcation nu parameter at the offset point for the given class, default for class c2s "
-            "(Saddle-Node at onset and Saddle-Homoclinic at offset)")
+            "(Saddle-Node at onset and Saddle-Homoclinic at offset)",
+        order=3)
 
     mu1_stop = arrays.FloatArray(
-        label="mu1_stop",
+        label="mu1 stop",
         default=numpy.array([-0.07465]),
         range=basic.Range(lo=-1.0, hi=1.0),
         doc="The bifurcation mu1 parameter at the onset point for the given class, default for class c2s "
-            "(Saddle-Node at onset and Saddle-Homoclinic at offset)")
+            "(Saddle-Node at onset and Saddle-Homoclinic at offset)",
+        order=4)
 
     mu2_stop = arrays.FloatArray(
-        label="mu2_stop",
+        label="mu2 stop",
         default=numpy.array([0.3351]),
         range=basic.Range(lo=-1.0, hi=1.0),
         doc="The bifurcation mu2 parameter at the onset point for the given class, default for class c2s "
-            "(Saddle-Node at onset and Saddle-Homoclinic at offset)")
+            "(Saddle-Node at onset and Saddle-Homoclinic at offset)",
+        order=5)
 
     nu_stop = arrays.FloatArray(
-        label="nu_stop",
+        label="nu stop",
         default=numpy.array([0.2053]),
         range=basic.Range(lo=-1.0, hi=1.0),
         doc="The bifurcation nu parameter at the onset point for the given class, default for class c2s "
-            "(Saddle-Node at onset and Saddle-Homoclinic at offset)")
+            "(Saddle-Node at onset and Saddle-Homoclinic at offset)",
+        order=6)
 
     b = arrays.FloatArray(
         label="b",
         default=numpy.array([1.0]),
-        doc="Unfolding type of the degenerate Takens-Bogdanov bifurcation, default is a focus type")
+        doc="Unfolding type of the degenerate Takens-Bogdanov bifurcation, default is a focus type",
+        order=7)
 
     R = arrays.FloatArray(
         label="R",
         default=numpy.array([0.4]),
         range=basic.Range(lo=0.0, hi=2.5),
-        doc="Radius in unfolding")
+        doc="Radius in unfolding",
+        order=8)
 
     c = arrays.FloatArray(
         label="c",
         default=numpy.array([0.001]),
         range=basic.Range(lo=0.0, hi=0.01),
-        doc="Speed of the slow variable")
+        doc="Speed of the slow variable",
+        order=9)
 
     dstar = arrays.FloatArray(
         label="dstar",
         default=numpy.array([0.3]),
         range=basic.Range(lo=-0.1, hi=0.5),
-        doc="Threshold for the inversion of the slow variable")
+        doc="Threshold for the inversion of the slow variable",
+        order=10)
 
     Ks = arrays.FloatArray(
         label="Ks",
         default=numpy.array([0.0]),
-        doc="Slow permittivity coupling strength, the default is no coupling")
+        doc="Slow permittivity coupling strength, the default is no coupling",
+        order=11)
 
     N = arrays.IntegerArray(
         label="N",
         default=numpy.array([1]),
-        doc="The branch of the resting state, default is 1")
+        doc="The branch of the resting state, default is 1",
+        order=12)
 
     modification = arrays.BoolArray(
         label="modification",
         default=numpy.array([1]),
         doc="When modification is True, then use the modification to stabilise the system for negative values of "
-            "dstar. If modification is False, then don't use the modification. The default value is True ")
+            "dstar. If modification is False, then don't use the modification. The default value is True ",
+        order=13)
 
     state_variable_range = basic.Dict(
         label="State variable ranges [lo, hi]",
         default={"x": numpy.array([0.4, 0.6]),
                  "y": numpy.array([-0.1, 0.1]),
                  "z": numpy.array([0.0, 0.15])},
-        doc="Typical bounds on state variables."
+        doc="Typical bounds on state variables.",
+        order=99
     )
 
     variables_of_interest = basic.Enumerate(
@@ -160,7 +174,8 @@ class EpileptorCodim3(ModelNumbaDfun):
         options=['x', 'y', 'z'],
         default=['x', 'z'],
         select_multiple=True,
-        doc="Quantities available to monitor."
+        doc="Quantities available to monitor.",
+        order=100
     )
 
     # state variables names
@@ -288,7 +303,7 @@ class EpileptorCodim3(ModelNumbaDfun):
 
 
 @guvectorize([(float64[:], float64[:], float64[:], float64[:], float64[:], float64[:], float64[:], float64[:],
-               float64[:], float64[:], float64[:], float64[:], float64[:], int32[:], int32[:], float64[:])],
+               float64[:], float64[:], float64[:], float64[:], float64[:], int_[:], int_[:], float64[:])],
              '(n),(m)' + ',()' * 13 + '->(n)', nopython=True)
 def _numba_dfun(state_variables, coupling, E0, E1, E2, F0, F1, F2, b, R, c, dstar, Ks, modification, N, derivative):
     """Gufunction for the Epileptor Codim 3 model"""
@@ -325,7 +340,7 @@ def _numba_dfun(state_variables, coupling, E0, E1, E2, F0, F1, F2, b, R, c, dsta
         numpy.sqrt((x - xs) ** 2 + y ** 2) - dstar[0] + modification[0] * 0.1 * (z - 0.5) ** 7 + Ks[0] * coupling[0])
 
 
-class EpileptorCodim3_slowmod(ModelNumbaDfun):
+class EpileptorCodim3SlowMod(ModelNumbaDfun):
     r"""
     .. [Saggioetal_2017] Saggio ML, Spiegler A, Bernard C, Jirsa VK.
     *Fast–Slow Bursters in the Unfolding of a High Codimension Singularity
@@ -358,127 +373,148 @@ class EpileptorCodim3_slowmod(ModelNumbaDfun):
                                   'c', 'dstar', 'N']
 
     mu1_Ain = arrays.FloatArray(
-        label="mu1_start",
+        label="mu1 Ain",
         default=numpy.array([0.05494]),
         range=basic.Range(lo=-1.0, hi=1.0),
-        doc="The bifurcation parameter mu1 at the initial point at bursting offset.")
+        doc="The bifurcation parameter mu1 at the initial point at bursting offset.",
+        order=1)
 
     mu2_Ain = arrays.FloatArray(
-        label="mu2_start",
+        label="mu2 Ain",
         default=numpy.array([0.2731]),
         range=basic.Range(lo=-1.0, hi=1.0),
-        doc="The bifurcation parameter mu2 at the initial point at bursting offset.")
+        doc="The bifurcation parameter mu2 at the initial point at bursting offset.",
+        order=2)
 
     nu_Ain = arrays.FloatArray(
-        label="nu_start",
+        label="nu Ain",
         default=numpy.array([0.287]),
         range=basic.Range(lo=-1.0, hi=1.0),
-        doc="The bifurcation parameter nu at the initial point at bursting offset.")
+        doc="The bifurcation parameter nu at the initial point at bursting offset.",
+        order=3)
 
     mu1_Bin = arrays.FloatArray(
-        label="mu1_stop",
+        label="mu1 Bin",
         default=numpy.array([-0.0461]),
         range=basic.Range(lo=-1.0, hi=1.0),
-        doc="The bifurcation parameter mu1 at the initial point at bursting onset.")
+        doc="The bifurcation parameter mu1 at the initial point at bursting onset.",
+        order=4)
 
     mu2_Bin = arrays.FloatArray(
-        label="mu2_stop",
+        label="mu2 Bin",
         default=numpy.array([0.243]),
         range=basic.Range(lo=-1.0, hi=1.0),
-        doc="The bifurcation parameter mu2 at the initial point at bursting onset.")
+        doc="The bifurcation parameter mu2 at the initial point at bursting onset.",
+        order=5)
 
     nu_Bin = arrays.FloatArray(
-        label="nu_stop",
+        label="nu Bin",
         default=numpy.array([0.3144]),
         range=basic.Range(lo=-1.0, hi=1.0),
-        doc="The bifurcation parameter nu at the initial point at bursting onset.")
+        doc="The bifurcation parameter nu at the initial point at bursting onset.",
+        order=6)
 
     mu1_Aend = arrays.FloatArray(
-        label="mu1_start",
+        label="mu1 Aend",
         default=numpy.array([0.06485]),
         range=basic.Range(lo=-1.0, hi=1.0),
-        doc="The bifurcation parameter mu1 at the initial point at bursting offset.")
+        doc="The bifurcation parameter mu1 at the initial point at bursting offset.",
+        order=7)
 
     mu2_Aend = arrays.FloatArray(
-        label="mu2_start",
+        label="mu2 Aend",
         default=numpy.array([0.07337]),
         range=basic.Range(lo=-1.0, hi=1.0),
-        doc="The bifurcation parameter mu2 at the initial point at bursting offset.")
+        doc="The bifurcation parameter mu2 at the initial point at bursting offset.",
+        order=8)
 
     nu_Aend = arrays.FloatArray(
-        label="nu_start",
+        label="nu Aend",
         default=numpy.array([-0.3878]),
         range=basic.Range(lo=-1.0, hi=1.0),
-        doc="The bifurcation parameter nu at the initial point at bursting offset.")
+        doc="The bifurcation parameter nu at the initial point at bursting offset.",
+        order=9)
 
     mu1_Bend = arrays.FloatArray(
-        label="mu1_stop",
+        label="mu1 Bend",
         default=numpy.array([0.03676]),
         range=basic.Range(lo=-1.0, hi=1.0),
-        doc="The bifurcation parameter mu1 at the initial point at bursting onset.")
+        doc="The bifurcation parameter mu1 at the initial point at bursting onset.",
+        order=10)
 
     mu2_Bend = arrays.FloatArray(
-        label="mu2_stop",
+        label="mu2 Bend",
         default=numpy.array([-0.02792]),
         range=basic.Range(lo=-1.0, hi=1.0),
-        doc="The bifurcation parameter mu2 at the initial point at bursting onset.")
+        doc="The bifurcation parameter mu2 at the initial point at bursting onset.",
+        order=11)
 
     nu_Bend = arrays.FloatArray(
-        label="nu_stop",
+        label="nu Bend",
         default=numpy.array([-0.3973]),
         range=basic.Range(lo=-1.0, hi=1.0),
-        doc="The bifurcation parameter nu at the initial point at bursting onset.")
+        doc="The bifurcation parameter nu at the initial point at bursting onset.",
+        order=12)
 
     b = arrays.FloatArray(
         label="b",
         default=numpy.array([1.0]),
-        doc="Unfolding type of the degenerate Takens-Bogdanov bifurcation, default is a focus type")
+        doc="Unfolding type of the degenerate Takens-Bogdanov bifurcation, default is a focus type",
+        order=13)
 
     R = arrays.FloatArray(
         label="R",
         default=numpy.array([0.4]),
         range=basic.Range(lo=0.0, hi=2.5),
-        doc="Radius in unfolding")
+        doc="Radius in unfolding",
+        order=14)
 
     c = arrays.FloatArray(
         label="c",
         default=numpy.array([0.002]),
         range=basic.Range(lo=0.0, hi=0.01),
-        doc="Speed of the slow variable")
+        doc="Speed of the slow variable",
+        order=15)
 
     cA = arrays.FloatArray(
         label="cA",
         default=numpy.array([0.0001]),
         range=basic.Range(lo=0.0, hi=0.001),
-        doc="Speed of the ultra-slow transition of the initial point")
+        doc="Speed of the ultra-slow transition of the initial point",
+        order=16)
 
     cB = arrays.FloatArray(
         label="cB",
         default=numpy.array([0.00012]),
         range=basic.Range(lo=0.0, hi=0.001),
-        doc="Speed of the ultra-slow transition of the final point")
+        doc="Speed of the ultra-slow transition of the final point",
+        order=17)
 
     dstar = arrays.FloatArray(
         label="dstar",
         default=numpy.array([0.3]),
         range=basic.Range(lo=-0.1, hi=0.5),
-        doc="Threshold for the inversion of the slow variable")
+        doc="Threshold for the inversion of the slow variable",
+        order=18)
 
     Ks = arrays.FloatArray(
         label="Ks",
         default=numpy.array([0.0]),
-        doc="Slow permittivity coupling strength, the default is no coupling")
+        doc="Slow permittivity coupling strength, the default is no coupling",
+        order=19)
 
     N = arrays.IntegerArray(
         label="N",
         default=numpy.array([1]),
-        doc="The branch of the resting state, default is 1")
+        doc="The branch of the resting state, default is 1",
+        order=20)
 
     modification = arrays.BoolArray(
         label="modification",
         default=numpy.array([1]),
         doc="When modification is True, then use the modification to stabilise the system for negative values of "
-            "dstar. If modification is False, then don't use the modification. The default value is True "
+            "dstar. If modification is False, then don't use the modification. The default value is True ",
+        order=21
     )
 
     state_variable_range = basic.Dict(
@@ -488,7 +524,8 @@ class EpileptorCodim3_slowmod(ModelNumbaDfun):
                  "z": numpy.array([0.0, 0.1]),
                  "uA": numpy.array([0.0, 0.0]),
                  "uB": numpy.array([0.0, 0.0])},
-        doc="Typical bounds on state variables."
+        doc="Typical bounds on state variables.",
+        order=99
     )
 
     variables_of_interest = basic.Enumerate(
@@ -496,7 +533,8 @@ class EpileptorCodim3_slowmod(ModelNumbaDfun):
         options=['x', 'y', 'z'],
         default=['x', 'z'],
         select_multiple=True,
-        doc="Quantities available to monitor."
+        doc="Quantities available to monitor.",
+        order=100
     )
 
     # state variables names
@@ -669,7 +707,7 @@ class EpileptorCodim3_slowmod(ModelNumbaDfun):
 
 @guvectorize([(float64[:], float64[:], float64[:], float64[:], float64[:], float64[:], float64[:], float64[:],
                float64[:], float64[:], float64[:], float64[:], float64[:], float64[:], float64[:], float64[:],
-               float64[:], float64[:], float64[:], float64[:], float64[:], int32[:], int32[:], float64[:])],
+               float64[:], float64[:], float64[:], float64[:], float64[:], int_[:], int_[:], float64[:])],
              '(n),(m)' + ',()' * 21 + '->(n)', nopython=True)
 def _numba_dfun_slowmod(state_variables, coupling, G0, G1, G2, H0, H1, H2, L0, L1, L2, M0, M1, M2, b, R, c, cA, cB,
                         dstar, Ks, modification, N, derivative):
