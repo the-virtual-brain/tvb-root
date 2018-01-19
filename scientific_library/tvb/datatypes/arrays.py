@@ -44,9 +44,10 @@ from tvb.basic.traits.exceptions import ValidationException
 
 
 class BaseArray(Array):
-    "Base class for array-type traits."
+    """Base class for array-type traits."""
+
     def _find_summary_info(self):
-        "Summarize array contents."
+        """Summarize array contents."""
         summary = {"Array type": self.__class__.__name__,
                    "Shape": self.shape,
                    "Maximum": self.value.max(),
@@ -63,7 +64,7 @@ class FloatArray(BaseArray):
 
 class IntegerArray(BaseArray):
     _ui_name = "Array of integers"
-    dtype = basic.DType(default=numpy.int32)
+    dtype = basic.DType(default=numpy.int_)
 
 
 class ComplexArray(BaseArray):
@@ -81,7 +82,7 @@ class BoolArray(BaseArray):
         summary = {"Array type": self.__class__.__name__,
                    "Shape": self.shape,
                    'Number True': self.value.sum(),
-                   'Percent True': self.value.mean()*100,}
+                   'Percent True': self.value.mean() * 100, }
         return summary
 
 
@@ -92,6 +93,7 @@ class StringArray(BaseArray):
     # e.g. dtype='100a' for a string w/ max len 100 characters.
     dtype = None
     stored_metadata = [MappedType.METADATA_ARRAY_SHAPE]
+
     def _find_summary_info(self):
         summary = {"Array type": self.__class__.__name__,
                    "Shape": self.shape}
@@ -201,22 +203,21 @@ class MappedArray(MappedType):
         dimension is selected
         """
 
-        #The fields 'aggregation_functions' and 'dimensions' will be of form:
-        #- aggregation_functions = {dimension: agg_func, ...} e.g.: {0: sum, 1: average, 2: none, ...}
-        #- dimensions = {dimension: [list_of_indexes], ...} e.g.: {0: [0,1], 1: [5,500],...}
+        # The fields 'aggregation_functions' and 'dimensions' will be of form:
+        # - aggregation_functions = {dimension: agg_func, ...} e.g.: {0: sum, 1: average, 2: none, ...}
+        # - dimensions = {dimension: [list_of_indexes], ...} e.g.: {0: [0,1], 1: [5,500],...}
         dimensions, aggregation_functions, required_dimension, shape_restrictions = \
             self.parse_selected_items(ui_selected_items)
 
         if required_dimension is not None:
-            #find the dimension of the resulted array
+            # find the dimension of the resulted array
             dim = len(self.shape)
             for key in aggregation_functions.keys():
                 if aggregation_functions[key] != "none":
                     dim -= 1
             for key in dimensions.keys():
                 if (len(dimensions[key]) == 1 and
-                    (key not in aggregation_functions
-                     or aggregation_functions[key] == "none")):
+                        (key not in aggregation_functions or aggregation_functions[key] == "none")):
                     dim -= 1
             if dim != required_dimension:
                 self.logger.debug("Dimension for selected array is incorrect")
@@ -239,7 +240,7 @@ class MappedArray(MappedType):
                     result = eval("numpy." + aggregation_functions[i] + "(result,axis=" + str(i - cut_dimensions) + ")")
                     cut_dimensions += 1
 
-        #check that the shape for the resulted array respects given conditions
+        # check that the shape for the resulted array respects given conditions
         result_shape = result.shape
         for i in range(len(result_shape)):
             if i in shape_restrictions:
@@ -307,8 +308,7 @@ class MappedArray(MappedType):
         The result will be: {1: {'size':512, 'operation':'<'}}
         """
         result = {}
-        if len(expected_shape_str.strip()) == 0 or \
-           len(operations_str.strip()) == 0:
+        if len(expected_shape_str.strip()) == 0 or len(operations_str.strip()) == 0:
             return result
 
         shape_array = str(expected_shape_str).split(",")
@@ -338,4 +338,3 @@ class MappedArray(MappedType):
                       '&le;': '<=',
                       '==': '=='}
         return operations
-

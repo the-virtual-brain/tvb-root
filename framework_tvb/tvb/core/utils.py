@@ -45,7 +45,6 @@ from tvb.basic.profile import TvbProfile
 from tvb.basic.logger.builder import get_logger
 from tvb.core.decorators import user_environment_execution
 
-
 MATLAB = "matlab"
 OCTAVE = "octave"
 
@@ -175,6 +174,7 @@ def date2string(date_input, complex_format=True, date_format=None):
 def format_timedelta(timedelta, most_significant2=True):
     """
     Format a datetime.timedelta.
+    :param timedelta: object timedelta to format
     :param most_significant2: Will show only the 2 most significant units (ex: hours, minutes). Default True.
     """
     days = timedelta.days
@@ -223,7 +223,7 @@ def string2array(input_data_str, split_char, dtype=None):
         return numpy.array(array)
     except ValueError:
         logger = get_logger(__name__)
-        logger.debug("Received input array %s is poorly formated and could not be evaluated by Python."
+        logger.debug("Received input array %s is poorly formatted and could not be evaluated by Python."
                      "Falling back to _custom_string2array." % prepared_input_data_str)
         return _custom_string2array(input_data_str, split_char, dtype)
 
@@ -423,6 +423,7 @@ def extract_matlab_doc_string(file_n):
                 if doc_started_flag:
                     break
     return unicode(result, errors="ignore")
+
 
 ################## MATLAB methods end here     ##############
 
