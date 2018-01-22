@@ -800,6 +800,16 @@
         <copyright-notice value="Copyright (c) 2014 - 2015, Hsiaoming Yang"/>
         <description value="IPython Notebook uses the mistune markdown parser - Coming with Anaconda env"/>
     </dependency>
+    <dependency env="[win,mac,linux]" name="more_itertools">
+        <full-name value="more_itertools"/>
+        <project-home value="https://github.com/erikrose/more-itertools"/>
+        <version value="4.0.1"/>
+        <usage value="dynamic linking"/>
+        <license value="LICENSE_more_itertools.txt"/>
+        <license-type value="MIT_"/>
+        <copyright-notice value="Copyright (c) 2012 Erik Rose"/>
+        <description value="More routines for operating on iterables, beyond itertools"/>
+    </dependency>
     <dependency env="[win,mac,linux]" name="mpl_toolkits">
         <full-name value="MatPlotLib Toolkits"/>
         <project-home value="http://matplotlib.sourceforge.net/mpl_toolkits/axes_grid/api/axes_size_api.html"/>
@@ -810,15 +820,15 @@
         <copyright-notice value="Copyright (c) 2002-2009 John D. Hunter; All Rights Reserved"/>
         <description value="This package is part of Matplotlib."/>
     </dependency>
-    <dependency env="[win,mac,linux]" name="more_itertools">
-        <full-name value="more_itertools"/>
-        <project-home value="https://github.com/erikrose/more-itertools"/>
-        <version value="4.0.1"/>
+    <dependency env="[win]" name="msgpack">
+        <full-name value="msgpack"/>
+        <project-home value="https://msgpack.org/"/>
+        <version value="(0, 4, 8)"/>
         <usage value="dynamic linking"/>
-        <license value="LICENSE_more_itertools.txt"/>
-        <license-type value="MIT_"/>
-        <copyright-notice value="Copyright (c) 2012 Erik Rose"/>
-        <description value="More routines for operating on iterables, beyond itertools"/>
+        <license value="LICENSE_msgpack.txt"/>
+        <license-type value="Apache_ 2"/>
+        <copyright-notice value="Copyright (c) 2008-2011 INADA Naoki"/>
+        <description value="MessagePack (de)serializer."/>
     </dependency>
     <dependency env="[win,mac,linux]" name="networkx">
         <full-name value="NetworkX"/>
@@ -1229,6 +1239,16 @@
         <license-type value="MIT_"/>
         <copyright-notice value="Copyright (c) 2003-2009 Stuart Bishop &lt;stuart@stuartbishop.net&gt;"/>
         <description value=""/>
+    </dependency>
+    <dependency env="[win]" name="yaml">
+        <full-name value="PyYAML"/>
+        <project-home value="http://pyyaml.org/wiki/PyYAML"/>
+        <version value="3.12"/>
+        <usage value="dynamic linking"/>
+        <license value="LICENSE_pyyaml.txt"/>
+        <license-type value="MIT_"/>
+        <copyright-notice value="Copyright (c) 2006 Kirill Simonov"/>
+        <description value="YAML parser and emitter for Python"/>
     </dependency>
     <dependency env="[win,linux]" name="pyzmq">
         <full-name value="zeromq"/>

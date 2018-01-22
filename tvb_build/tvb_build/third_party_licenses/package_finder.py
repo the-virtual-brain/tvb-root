@@ -57,8 +57,8 @@ EXCLUDES = [
     'hotshot', 'lib-dynload', '_markupbase',
     'openglcontext', 'pydoc_data', 'pysqlite2', 'pyximport',  # part of cython
     'queue', 'stdsuites', 'wxpython',
-    # We exclude bellow shorter names for packages already introspected (Maily Mac)
-    "foundation", "exceptionhandling", "pytest_cov",
+    # We exclude bellow shorter names for packages already introspected (mainly Mac)
+    "foundation", "exceptionhandling", "pytest_cov", "pypiwin32", "pyyaml", "msgpack-python",
     "objc", "appkit", "pyobjctools", "cocoa",
     "ipykernel", "ipython_genutils", "nbformat", "nbconvert",
     'finder', 'unittest', 'email', 'encodings', 'multiprocessing', 'json', 'curses', 'importlib', 'xml', 'logging'
@@ -68,7 +68,7 @@ EXCLUDES_DLL = []
 
 # Windows *.pyds that are part of python standard libs
 EXCLUDES_PYD = [
-    '_psutil_windows.pyd', 'gdist.pyd', "_cffi_backend.pyd", "_scandir.pyd"
+    '_psutil_windows.pyd', 'gdist.pyd', "_cffi_backend.pyd", "_scandir.pyd", "_yaml.pyd"
 ]
 
 # libpq dependencies on dynamic psycopg linux 32
