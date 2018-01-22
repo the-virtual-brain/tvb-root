@@ -150,11 +150,11 @@ def _get_module_version(module_name):
     try:
         module = __import__(str(module_name), globals(), locals(), [])
         if hasattr(module, '__version__'):
-            return module.__version__
+            return str(module.__version__)
         if hasattr(module, 'version') and not isinstance(module.version, ModuleType):
-            return module.version
+            return str(module.version)
         if hasattr(module, 'version') and isinstance(module.version, ModuleType) and hasattr(module.version, 'version'):
-            return module.version.version
+            return str(module.version.version)
         pkg_search_name = module_name.replace('-', '').replace('_', '').lower()
         if pkg_search_name in SETUPTOOLS_PACKAGE_VERSION:
             return SETUPTOOLS_PACKAGE_VERSION[pkg_search_name]

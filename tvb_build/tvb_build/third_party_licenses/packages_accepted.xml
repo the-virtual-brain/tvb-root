@@ -1150,6 +1150,16 @@
         <copyright-notice value="Copyright (c) 2006-2015 by the respective authors (see AUTHORS file)"/>
         <description value="The syntax-highlighting in IPython Notebook is done by pygments - Coming with Anaconda env "/>
     </dependency>
+    <dependency env="[win]" name="pympler">
+        <full-name value="Pympler"/>
+        <project-home value="http://pythonhosted.org/Pympler/"/>
+        <version value="0.5"/>
+        <usage value="dynamic linking"/>
+        <license value="LICENSE_pympler.txt"/>
+        <license-type value="Apache_ 2"/>
+        <copyright-notice value="Copyright (c) Jean Brouwers, Ludwig Haehne, Robert Schuppenies"/>
+        <description value="Needed due to pytest"/>
+    </dependency>
     <dependency env="[win,mac,linux]" name="pyopencl">
         <full-name value="PyOpenCL"/>
         <project-home value="https://github.com/pyopencl/pyopencl"/>
@@ -1239,16 +1249,6 @@
         <license-type value="MIT_"/>
         <copyright-notice value="Copyright (c) 2003-2009 Stuart Bishop &lt;stuart@stuartbishop.net&gt;"/>
         <description value=""/>
-    </dependency>
-    <dependency env="[win]" name="yaml">
-        <full-name value="PyYAML"/>
-        <project-home value="http://pyyaml.org/wiki/PyYAML"/>
-        <version value="3.12"/>
-        <usage value="dynamic linking"/>
-        <license value="LICENSE_pyyaml.txt"/>
-        <license-type value="MIT_"/>
-        <copyright-notice value="Copyright (c) 2006 Kirill Simonov"/>
-        <description value="YAML parser and emitter for Python"/>
     </dependency>
     <dependency env="[win,linux]" name="pyzmq">
         <full-name value="zeromq"/>
@@ -1649,6 +1649,16 @@
         <license-type value="PSF_"/>
         <copyright-notice value="Copyright Phillip J. Eby **"/>
         <description value="The Web Server Gateway Interface (WSGI) is a standard interface between web server software and web applications written in Python."/>
+    </dependency>
+    <dependency env="[win]" name="yaml">
+        <full-name value="PyYAML"/>
+        <project-home value="http://pyyaml.org/wiki/PyYAML"/>
+        <version value="3.12"/>
+        <usage value="dynamic linking"/>
+        <license value="LICENSE_pyyaml.txt"/>
+        <license-type value="MIT_"/>
+        <copyright-notice value="Copyright (c) 2006 Kirill Simonov"/>
+        <description value="YAML parser and emitter for Python"/>
     </dependency>
     <dependency env="[win,mac,linux]" name="zlib">
         <full-name value="Python ZLIB"/>
