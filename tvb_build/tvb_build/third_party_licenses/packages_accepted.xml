@@ -1050,6 +1050,16 @@
         <copyright-notice value="Copyright (c) 2015 holger krekel (rather uses bitbucket/hpk42)"/>
         <description value="plugin and hook calling mechanisms for python"/>
     </dependency>
+    <dependency env="[win,linux]" name="portend">
+        <full-name value="Portend"/>
+        <project-home value="https://pypi.python.org/pypi/portend"/>
+        <version value="2.2"/>
+        <usage value="dynamic linking"/>
+        <license value="LICENSE_portend.txt"/>
+        <license-type value="MIT_"/>
+        <copyright-notice value="Copyright (c) Jason R. Coombs"/>
+        <description value="TCP port monitoring utilities"/>
+    </dependency>
     <dependency env="mac" name="prompt_toolkit">
         <full-name value="Prompt Toolkit"/>
         <project-home value="https://github.com/jonathanslenders/python-prompt-toolkit"/>
@@ -1179,6 +1189,16 @@
         <license-type value="MIT_"/>
         <copyright-notice value="Copyright (c) 2004-2017 Holger Krekel and others"/>
         <description value="Used in TVB unit-tests"/>
+    </dependency>
+    <dependency env="[win]" name="pytest-cov">
+        <full-name value="PyTest Coverage"/>
+        <project-home value="https://pypi.python.org/pypi/pytest-cov"/>
+        <version value="2.5.1"/>
+        <usage value="dynamic linking"/>
+        <license value="LICENSE_pytest_cov.txt"/>
+        <license-type value="MIT_"/>
+        <copyright-notice value="Copyright (c) 2010 Meme Dough"/>
+        <description value="Used for TVB unit-tests coverage"/>
     </dependency>
     <dependency env="[win,mac,linux]" name="python">
         <full-name value="Python"/>
@@ -1320,6 +1340,26 @@
         <copyright-notice value="Copyright (c) 2006 Bob Ippolito"/>
         <description value="Library for JSON encoding/decoding"/>
     </dependency>
+    <dependency env="[linux]" name="sip.so">
+        <full-name value="Sip"/>
+        <project-home value="https://www.riverbankcomputing.com/software/sip/intro"/>
+        <version value="unknown"/>
+        <usage value="dynamic linking"/>
+        <license value="LICENSE_sip.txt"/>
+        <license-type value="BSD_ like or GPLv3_"/>
+        <copyright-notice value="Copyright (c) 2007 Free Software Foundation, Inc."/>
+        <description value="Python extension module generator for C and C++ libraries"/>
+    </dependency>
+    <dependency env="[linux]" name="sip.pyd">
+        <full-name value="Sip"/>
+        <project-home value="https://www.riverbankcomputing.com/software/sip/intro"/>
+        <version value="unknown"/>
+        <usage value="dynamic linking"/>
+        <license value="LICENSE_sip.txt"/>
+        <license-type value="BSD_ like or GPLv3_"/>
+        <copyright-notice value="Copyright (c) 2007 Free Software Foundation, Inc."/>
+        <description value="Python extension module generator for C and C++ libraries"/>
+    </dependency>
     <dependency env="[win,linux, Mac]" name="six">
         <full-name value="six"/>
         <project-home value="https://pypi.python.org/pypi/six/"/>
@@ -1399,6 +1439,16 @@
         <license-type value="BSD_ 3 clause"/>
         <copyright-notice value="Copyright (C) 2006, Jonathan E. Taylor. Copyright (c) 2006-2008 Scipy Developers. Copyright (c) 2009-2012 Statsmodels Developers."/>
         <description value="Statistical computations and models for Python"/>
+    </dependency>
+    <dependency env="[linux]" name="subprocess32">
+        <full-name value="SubProcess32"/>
+        <project-home value="https://github.com/google/python-subprocess32"/>
+        <version value="3.2.7"/>
+        <usage value="dynamic linking"/>
+        <license value="LICENSE_subprocess32.txt"/>
+        <license-type value="PSF_"/>
+        <copyright-notice value="Copyright (C) Gregory P. Smith, Python Software Foundation"/>
+        <description value="A backport of the subprocess module from Python 3.2/3.3 for use on 2.x."/>
     </dependency>
     <dependency env="[win,mac,linux]" name="tables">
         <full-name value="PyTables"/>

@@ -48,17 +48,17 @@ EXCLUDES = [
     'tvb_bin', 'tvb_data', 'tvb', 'gdist',
     # part of python and setuptools
     'distutils', 'packaging', 'pkg_resources', 'setuptools', 'socketserver', '_thread', '_dummy_thread',
-    # python 3 backports
-    'futures', 'libfuturize', 'libpasteurize', 'lib2to3', 'past',
-    'singledispatch', 'funcsigs', 'enum34', 'enum', 'reprlib',
+    # python 3 backports (PSF licensed)
+    'futures', 'libfuturize', 'libpasteurize', 'lib2to3', 'past', 'ordereddict',
+    'singledispatch', 'funcsigs', 'enum34', 'enum', 'reprlib', 'backports-abc', 'backports.functools-lru-cache',
     'backports.ssl-match-hostname', 'backports.shutil-get-terminal-size', 'copyreg', 'winreg',
     # others
     '_builtinsuites', 'builtins', 'bsddb', 'carbon', 'compiler', 'config', 'http', 'html',
     'hotshot', 'lib-dynload', '_markupbase',
     'openglcontext', 'pydoc_data', 'pysqlite2', 'pyximport',  # part of cython
     'queue', 'stdsuites', 'wxpython',
-    ## Mac: We exclude bellow shorter names for packages already introspected.
-    "foundation", "exceptionhandling",
+    # We exclude bellow shorter names for packages already introspected (Maily Mac)
+    "foundation", "exceptionhandling", "pytest_cov",
     "objc", "appkit", "pyobjctools", "cocoa",
     "ipykernel", "ipython_genutils", "nbformat", "nbconvert",
     'finder', 'unittest', 'email', 'encodings', 'multiprocessing', 'json', 'curses', 'importlib', 'xml', 'logging'
@@ -73,7 +73,8 @@ EXCLUDES_PYD = [
 
 # libpq dependencies on dynamic psycopg linux 32
 EXCLUDES_SO = [
-    '_psutil_linux.so', '_psutil_posix.so', 'gdist.so', '_scandir.so'
+    '_psutil_linux.so', '_psutil_posix.so', 'gdist.so', '_scandir.so',
+    '_posixsubprocess.so' # already reported as subprocess32
 ]
 
 EXCLUDES_DYLIB = [
