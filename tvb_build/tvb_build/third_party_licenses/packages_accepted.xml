@@ -1597,7 +1597,7 @@
         <usage value="dynamic linking"/>
         <license value="LICENSE_tblib.txt"/>
         <license-type value="BSD_"/>
-        <copyright-notice value="Copyright (c) 2013-2017, Ionel Cristian Mărieș"/>
+        <copyright-notice value="Copyright (c) 2013-2017, Ionel Cristian Maries"/>
         <description value="Traceback serialization library."/>
     </dependency>
     <dependency env="linux" name="testpath">
