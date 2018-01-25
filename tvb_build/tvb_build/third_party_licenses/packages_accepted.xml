@@ -90,6 +90,16 @@
         <copyright-notice value="Copyright (c) 2014-2017, Mozilla Foundation"/>
         <description value="An easy safelist-based HTML-sanitizing tool."/>
     </dependency>
+    <dependency env="[win]" name="bokeh">
+        <full-name value="Bokeh"/>
+        <project-home value="https://bokeh.pydata.org/en/latest/"/>
+        <version value="0.12.13"/>
+        <usage value="dynamic linking"/>
+        <license value="LICENSE_bokeh.txt"/>
+        <license-type value="New BSD_"/>
+        <copyright-notice value="Copyright (c) 2012, Anaconda, Inc."/>
+        <description value="Interactive plots and applications in the browser from Python"/>
+    </dependency>
     <dependency env="[win,mac,linux]" name="bs4">
         <full-name value="Beautiful Soup (BS4)"/>
         <project-home value="http://www.crummy.com/software/BeautifulSoup"/>
@@ -159,6 +169,26 @@
         <license-type value="BSD_"/>
         <copyright-notice value="Copyright (c) 2004-2016, CherryPy Team (team@cherrypy.org)"/>
         <description value="Highly-optimized, pure-python HTTP server. Used by CherryPy"/>
+    </dependency>
+    <dependency env="[win]" name="click">
+        <full-name value="Click"/>
+        <project-home value="http://github.com/mitsuhiko/click"/>
+        <version value="6.7"/>
+        <usage value="dynamic linking"/>
+        <license value="LICENSE_click.txt"/>
+        <license-type value="BSD_"/>
+        <copyright-notice value="Copyright (c) 2014 by Armin Ronacher"/>
+        <description value="A simple wrapper around optparse for powerful command line utilities."/>
+    </dependency>
+    <dependency env="[win]" name="cloudpickle">
+        <full-name value="Cloudpickle"/>
+        <project-home value="https://pypi.python.org/pypi/cloudpickle"/>
+        <version value="0.5.2"/>
+        <usage value="dynamic linking"/>
+        <license value="LICENSE_cloudpickle.txt"/>
+        <license-type value="BSD_"/>
+        <copyright-notice value="Copyright (c) 2015, Cloudpickle contributors. Copyright (c) 2012, Regents of the University of California. Copyright (c) 2009 PiCloud, Inc. http://www.picloud.com."/>
+        <description value="Extended pickling support for Python objects"/>
     </dependency>
     <dependency env="win" name="colorama">
         <full-name value="Colorama"/>
@@ -240,6 +270,16 @@
         <copyright-notice value="Copyright (c) 2013, Michael Bostock"/>
         <description value="JS library."/>
     </dependency>
+    <dependency env="[win]" name="dask">
+        <full-name value="Dask"/>
+        <project-home value="https://dask.pydata.org/en/latest/"/>
+        <version value="0.16.0"/>
+        <usage value="dynamic linking"/>
+        <license value="LICENSE_dask.txt"/>
+        <license-type value="new BSD_"/>
+        <copyright-notice value="Copyright (c) 2014-2017, Anaconda, Inc. and contributors"/>
+        <description value="Parallel PyData with Task Scheduling"/>
+    </dependency>
     <dependency env="[win,mac,linux]" name="dateutil">
         <full-name value="python-dateutil"/>
         <project-home value="https://dateutil.readthedocs.org/en/latest/"/>
@@ -259,6 +299,16 @@
         <license-type value="BSD_"/>
         <copyright-notice value="Copyright (c) 2005-2015, Michele Simionato"/>
         <description value="Better living through Python with decorators"/>
+    </dependency>
+    <dependency env="[win]" name="distributed">
+        <full-name value="Distributed"/>
+        <project-home value="https://distributed.readthedocs.io/en/latest/"/>
+        <version value="1.20.2"/>
+        <usage value="dynamic linking"/>
+        <license value="LICENSE_distributed.txt"/>
+        <license-type value="BSD_"/>
+        <copyright-notice value="Copyright (c) 2015-2017, Anaconda, Inc. and contributors"/>
+        <description value="A library for distributed computation"/>
     </dependency>
     <dependency env="[win,linux]" name="docutils">
         <full-name value="DocUtils"/>
@@ -360,6 +410,26 @@
         <copyright-notice value="Copyright 2006-2011 by The HDF Group. Copyright 1998-2006 by the Board of Trustees of the University of Illinois."/>
         <description value="Library used for efficient storage."/>
     </dependency>
+    <dependency env="[win]" name="heapdict">
+        <full-name value="HeapDict"/>
+        <project-home value="http://stutzbachenterprises.com/"/>
+        <version value="1.0.0"/>
+        <usage value="dynamic linking"/>
+        <license value="LICENSE_heapdict.txt"/>
+        <license-type value="BSD_"/>
+        <copyright-notice value="Copyright 2009 Stutzbach Enterprises, LLC (daniel@stutzbachenterprises.com)"/>
+        <description value="A heap with decrease-key and increase-key operations"/>
+    </dependency>
+    <dependency env="[win]" name="hypothesis">
+        <full-name value="Hypothesis"/>
+        <project-home value="https://github.com/HypothesisWorks/hypothesis-python"/>
+        <version value="3.38.5"/>
+        <usage value="dynamic linking"/>
+        <license value="LICENSE_hypothesis.txt"/>
+        <license-type value="MPLv2_"/>
+        <copyright-notice value="Copyright (c) 2013, David R. MacIver"/>
+        <description value="A library for property based testing"/>
+    </dependency>
     <dependency env="[win,mac,linux]" name="idna">
         <full-name value="IDNA"/>
         <project-home value="https://pypi.python.org/pypi/idna"/>
@@ -379,6 +449,16 @@
         <license-type value="PSF_"/>
         <copyright-notice value="Copyright (c) 1990-2012, Python Software Foundation."/>
         <description value="Used for console interface. Is a python library."/>
+    </dependency>
+    <dependency env="win" name="imageio">
+        <full-name value="imageio"/>
+        <project-home value="http://imageio.github.io/"/>
+        <version value="2.2.0"/>
+        <usage value="dynamic linking"/>
+        <license value="LICENSE_imageio.txt"/>
+        <license-type value="BSD_ 2nd clause"/>
+        <copyright-notice value="Copyright (c) 2014, imageio developers"/>
+        <description value="Library for reading and writing a wide range of image, video, scientific, and volumetric data formats."/>
     </dependency>
     <dependency env="[win,mac,linux]" name="ipython">
         <full-name value="iPython"/>
@@ -730,6 +810,16 @@
         <copyright-notice value="Copyright (c) 2014-, Continuum Analytics, Inc."/>
         <description value="A light-weight Python binding to LLVM"/>
     </dependency>
+    <dependency env="[win]" name="locket">
+        <full-name value="locket"/>
+        <project-home value="https://github.com/mwilliamson/locket.py"/>
+        <version value="0.2.0"/>
+        <usage value="dynamic linking"/>
+        <license value="LICENSE_locket.txt"/>
+        <license-type value="BSD_"/>
+        <copyright-notice value="Copyright (c) 2012, Michael Williamson"/>
+        <description value="File-based locks for Python for Linux and Windows"/>
+    </dependency>
     <dependency env="[win,mac,linux]" name="markupsafe">
         <full-name value="MarkupSafe"/>
         <project-home value="https://pypi.python.org/pypi/MarkupSafe"/>
@@ -969,6 +1059,16 @@
         <license-type value="BSD_ 3rd clause"/>
         <copyright-notice value="Copyright (c) 2013, John MacFarlane"/>
         <description value="A python module for writing pandoc filters"/>
+    </dependency>
+    <dependency env="[win]" name="partd">
+        <full-name value="Partd"/>
+        <project-home value="https://github.com/dask/partd/"/>
+        <version value="0.3.8"/>
+        <usage value="dynamic linking"/>
+        <license value="LICENSE_partd.txt"/>
+        <license-type value="BSD_ 3rd clause"/>
+        <copyright-notice value="Copyright (c) 2015, Continuum Analytics, Inc. and contributors"/>
+        <description value="Appendable key-value storage"/>
     </dependency>
     <dependency env="[win,linux]" name="pathlib2">
         <full-name value="Pathlib2"/>
@@ -1400,6 +1500,16 @@
         <copyright-notice value="Copyright (c) 2007 - 2012 The scikit-learn developers."/>
         <description value=""/>
     </dependency>
+    <dependency env="[win]" name="sortedcontainers">
+        <full-name value="Sortedcontainers"/>
+        <project-home value="http://www.grantjenks.com/docs/sortedcontainers/"/>
+        <version value="1.5.7"/>
+        <usage value="dynamic linking"/>
+        <license value="LICENSE_sortedcontainers.txt"/>
+        <license-type value="Apache_ 2"/>
+        <copyright-notice value="Copyright (c) 2014-2016 Grant Jenks"/>
+        <description value="Python Sorted Container Types: SortedList, SortedDict, and SortedSet"/>
+    </dependency>
     <dependency env="linux" name="sphinx">
         <full-name value="Sphinx python documentation generator"/>
         <project-home value="http://sphinx-doc.org/"/>
@@ -1480,6 +1590,16 @@
         <copyright-notice value="Copyright Notice and Statement for PyTables Software Library and Utilities: Copyright (c) 2002-2004 by Francesc Alted  Copyright (c) 2005-2007 by Carabos Coop. V.  Copyright (c) 2008-2010 by Francesc Alted"/>
         <description value="Open source software, under BSD_ license."/>
     </dependency>
+    <dependency env="[win]" name="tblib">
+        <full-name value="Tblib"/>
+        <project-home value="https://github.com/ionelmc/python-tblib"/>
+        <version value="1.3.2"/>
+        <usage value="dynamic linking"/>
+        <license value="LICENSE_tblib.txt"/>
+        <license-type value="BSD_"/>
+        <copyright-notice value="Copyright (c) 2013-2017, Ionel Cristian Mărieș"/>
+        <description value="Traceback serialization library."/>
+    </dependency>
     <dependency env="linux" name="testpath">
         <full-name value="Testpath"/>
         <project-home value="https://pypi.python.org/pypi/testpath"/>
@@ -1539,6 +1659,16 @@
         <license-type value="BSD_ revised"/>
         <copyright-notice value="Copyright (c) 2011, IPython Development Team"/>
         <description value="Traitlets Python config system - iPython"/>
+    </dependency>
+    <dependency env="[win]" name="toolz">
+        <full-name value="ToolZ"/>
+        <project-home value="https://pypi.python.org/pypi/toolz"/>
+        <version value="0.8.2"/>
+        <usage value="dynamic linking"/>
+        <license value="LICENSE_toolz.txt"/>
+        <license-type value="BSD_"/>
+        <copyright-notice value="Copyright (c) 2013 Matthew Rocklin"/>
+        <description value="List processing tools and functional utilities"/>
     </dependency>
     <dependency env="[win,mac,linux]" name="tornado">
         <full-name value="Tornado"/>
@@ -1640,6 +1770,16 @@
         <copyright-notice value="wheel copyright (c) 2012-2014 Daniel Holth &lt;dholth@fastmail.fm&gt; and contributors."/>
         <description value="Binary python packager - Coming with Anaconda env"/>
     </dependency>
+    <dependency env="[win]" name="wincertstore">
+        <full-name value="Wincertstore"/>
+        <project-home value="https://bitbucket.org/tiran/wincertstore"/>
+        <version value="0.2"/>
+        <usage value="dynamic linking"/>
+        <license value="LICENSE_wincertstore.txt"/>
+        <license-type value="PSF_"/>
+        <copyright-notice value="Copyright (c) 2013, 2014 by Christian Heimes"/>
+        <description value="Python module to extract CA and CRL certs from Windows' cert store (ctypes based)."/>
+    </dependency>
     <dependency env="[win,mac,linux]" name="wsgiref">
         <full-name value="Python module wsgiref"/>
         <project-home value="http://pypi.python.org/pypi/wsgiref"/>
@@ -1659,6 +1799,16 @@
         <license-type value="MIT_"/>
         <copyright-notice value="Copyright (c) 2006 Kirill Simonov"/>
         <description value="YAML parser and emitter for Python"/>
+    </dependency>
+    <dependency env="[win]" name="zict">
+        <full-name value="Zict"/>
+        <project-home value="http://zict.readthedocs.io/en/latest/"/>
+        <version value="0.1.3"/>
+        <usage value="dynamic linking"/>
+        <license value="LICENSE_zict.txt"/>
+        <license-type value="BSD_"/>
+        <copyright-notice value="Copyright (c) 2016 Matthew Rocklin"/>
+        <description value="Mutable mapping tools"/>
     </dependency>
     <dependency env="[win,mac,linux]" name="zlib">
         <full-name value="Python ZLIB"/>

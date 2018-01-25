@@ -58,7 +58,7 @@ EXCLUDES = [
     'openglcontext', 'pydoc_data', 'pysqlite2', 'pyximport',  # part of cython
     'queue', 'stdsuites', 'wxpython',
     # We exclude bellow shorter names for packages already introspected (mainly Mac)
-    "foundation", "exceptionhandling", "pytest_cov", "pypiwin32", "pyyaml", "msgpack-python",
+    "foundation", "exceptionhandling", "pytest_cov", "pypiwin32", "pyyaml", "msgpack-python", "tlz",
     "objc", "appkit", "pyobjctools", "cocoa",
     "ipykernel", "ipython_genutils", "nbformat", "nbconvert",
     'finder', 'unittest', 'email', 'encodings', 'multiprocessing', 'json', 'curses', 'importlib', 'xml', 'logging'

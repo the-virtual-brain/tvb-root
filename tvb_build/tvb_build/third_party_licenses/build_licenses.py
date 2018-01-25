@@ -70,6 +70,7 @@ FULL_TEMPLATE = "===========================\
                 \n.. _GPLv3: http://www.gnu.org/licenses/gpl.html\
                 \n.. _ISC: http://opensource.org/licenses/ISC\
                 \n.. _CC0: http://creativecommons.org/publicdomain/zero/1.0/\
+                \n.. _MPLv2: http://mozilla.org/MPL/2.0/\
                 \n\n .. footer:: Includes $$COUNT$$ licenses. \
                                  Generated at $$DATE$$."
 ONE_LIB_TEMPLATE = "Library: `$$FULL-NAME$$ <$$PROJECT-HOME$$>`_  \
