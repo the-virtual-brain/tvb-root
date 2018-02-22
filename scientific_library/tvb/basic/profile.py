@@ -91,8 +91,10 @@ class TvbProfile():
         ### e.g. TVB_STORAGE will differ if the .tvb.configuration file contains non-ascii bytes
         ### most of the comments in the simulator are having pieces outside of ascii coverage
         if not cls.env.is_distribution() and sys.getdefaultencoding().lower() != 'utf-8':
+            old_out = sys.stdout
             reload(sys)
             sys.setdefaultencoding('utf-8')
+            sys.stdout = old_out
 
         if selected_profile is not None:
             cleanup_metapath()

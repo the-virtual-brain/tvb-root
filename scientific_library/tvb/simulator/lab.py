@@ -47,17 +47,10 @@ if sys.platform in ('linux2', ) and 'DISPLAY' not in os.environ:
     except Exception:
         pass
 
-# copy reference to intended stdout
-_sys_stdout = sys.stdout
-
 from tvb.basic.profile import TvbProfile
 TvbProfile.set_profile(TvbProfile.LIBRARY_PROFILE)
 
 from tvb.simulator.common import get_logger, log_debug
-
-# restore intended stdout 
-sys.stdout = _sys_stdout
-del _sys_stdout
 
 log_debug(False)
 
