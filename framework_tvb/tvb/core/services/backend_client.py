@@ -245,7 +245,7 @@ class ClusterSchedulerClient(object):
         LOGGER.info(call_arg)
         process_ = Popen([call_arg], stdout=PIPE, shell=True)
         job_id = process_.stdout.read().replace('\n', '').split(TvbProfile.current.cluster.JOB_ID_STRING)[-1]
-        LOGGER.debug("Got jobIdentifier = %s for CLUSTER operationID = %s" % (operation_identifier, job_id))
+        LOGGER.info("Got jobIdentifier = %s for CLUSTER operationID = %s" % (job_id, operation_identifier))
         operation_identifier = model.OperationProcessIdentifier(operation_identifier, job_id=job_id)
         dao.store_entity(operation_identifier)
 

@@ -156,7 +156,7 @@ class ClusterSettings(object):
     def JOB_ID_STRING(self):
         if self.CLUSTER_SCHEDULER == self.SCHEDULER_OAR:
             return 'OAR_JOB_ID='
-        return 'JOB_ID='
+        return 'Submitted batch job '
 
     @property
     def NODE_ENV(self):
