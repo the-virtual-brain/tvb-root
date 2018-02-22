@@ -38,9 +38,9 @@ import json
 import copy
 import shutil
 import pytest
+import hashlib
 import cherrypy
 from time import sleep
-from hashlib import md5
 from tvb.tests.framework.interfaces.web.controllers.base_controller_test import BaseTransactionalControllerTest
 from tvb.basic.profile import TvbProfile
 from tvb.basic.config import stored
@@ -67,6 +67,7 @@ class TestSettingsController(BaseTransactionalControllerTest):
                       'MATLAB_EXECUTABLE': '',
 
                       'DEPLOY_CLUSTER': 'True',
+                      'CLUSTER_SCHEDULER': TvbProfile.current.cluster.SCHEDULER_OAR,
                       'SELECTED_DB': TvbProfile.current.db.SELECTED_DB,  # Not changeable,due to test profile overwrites
                       'URL_VALUE': accepted_db_url,
 
@@ -158,14 +159,13 @@ class TestSettingsController(BaseTransactionalControllerTest):
         # wait until 'restart' is done
         sleep(1)
         assert self.was_reset
-        assert 16 == len(TvbProfile.current.manager.stored_settings)
+        assert 17 == len(TvbProfile.current.manager.stored_settings)
 
         assert submit_data['TVB_STORAGE'] == TvbProfile.current.TVB_STORAGE
         assert submit_data['USR_DISK_SPACE'] * 2 ** 10 == TvbProfile.current.MAX_DISK_SPACE
         assert submit_data['MAXIMUM_NR_OF_THREADS'] == TvbProfile.current.MAX_THREADS_NUMBER
         assert submit_data['MAXIMUM_NR_OF_OPS_IN_RANGE'] == TvbProfile.current.MAX_RANGE_NUMBER
-        assert submit_data['MAXIMUM_NR_OF_VERTICES_ON_SURFACE'],\
-                         TvbProfile.current.MAX_SURFACE_VERTICES_NUMBER
+        assert submit_data['MAXIMUM_NR_OF_VERTICES_ON_SURFACE'] == TvbProfile.current.MAX_SURFACE_VERTICES_NUMBER
 
         assert submit_data['DEPLOY_CLUSTER'] == str(TvbProfile.current.cluster.IS_DEPLOY)
         assert submit_data['SELECTED_DB'] == TvbProfile.current.db.SELECTED_DB
@@ -176,8 +176,8 @@ class TestSettingsController(BaseTransactionalControllerTest):
 
         assert submit_data['ADMINISTRATOR_NAME'] == TvbProfile.current.web.admin.ADMINISTRATOR_NAME
         assert submit_data['ADMINISTRATOR_EMAIL'] == TvbProfile.current.web.admin.ADMINISTRATOR_EMAIL
-        assert md5(submit_data['ADMINISTRATOR_PASSWORD']).hexdigest(),\
-                         TvbProfile.current.web.admin.ADMINISTRATOR_PASSWORD
+        assert hashlib.md5(
+            submit_data['ADMINISTRATOR_PASSWORD']).hexdigest() == TvbProfile.current.web.admin.ADMINISTRATOR_PASSWORD
 
 
     def _fake_restart_services(self, should_reset):
