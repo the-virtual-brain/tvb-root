@@ -21,7 +21,7 @@
 								<input name='$key' id='$key' class="inputField" type="checkbox" checked="checked" py:if="data.type=='boolean' and data.value"/>
 								<input name='$key' id='$key' class="inputField" type="checkbox" py:if="data.type=='boolean' and not data.value"/>
 								
-								<select name="$key" id='$key' class="inputField" onchange="changeDBValue(this);" py:if="data.type=='select' and ('readonly' not in data or not data.readonly)">
+								<select name="$key" id='$key' class="inputField" onchange="changeDBValue(this);" py:if="data.type=='select' and key=='URL_VALUE' and ('readonly' not in data or not data.readonly)">
                         			<py:for each="option in data.options">
                             			<option value="${option}" selected="selected" py:if="(option == data.value)" correspondingVal='${data.options[option]}'>
                               	 			 ${option} </option>
@@ -29,7 +29,15 @@
                               	 			 ${option} </option>
                         			</py:for>            
                     			</select>
-                                <!--! The select tag doesn't have the readonly attribute.-->
+                                <select name="$key" id='$key' class="inputField" py:if="data.type=='select' and key!='URL_VALUE' and ('readonly' not in data or not data.readonly)">
+                        			<py:for each="option in data.options">
+                            			<option value="${option}" selected="selected" py:if="(option == data.value)" correspondingVal='${data.options[option]}'>
+                              	 			 ${option} </option>
+                            			<option value="${option}" py:if="option != data.value" correspondingVal='${data.options[option]}'>
+                              	 			 ${option} </option>
+                        			</py:for>
+                    			</select>
+                                <!--! The select is readonly-->
                     			<select name="$key" id='$key' class="inputField" disabled="disabled" py:if="data.type=='select' and ('readonly' in data and data.readonly)">
                         			<py:for each="option in data.options">
                                         <py:if test="option == data.value">

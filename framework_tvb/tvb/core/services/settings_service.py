@@ -36,7 +36,7 @@ Service layer for saving/editing TVB settings.
 import os
 import sys
 import shutil
-from hashlib import md5
+import hashlib
 from sqlalchemy import create_engine
 from tvb.basic.profile import TvbProfile
 from tvb.basic.config import stored
@@ -61,6 +61,7 @@ class SettingsService(object):
     KEY_SELECTED_DB = stored.KEY_SELECTED_DB
     KEY_DB_URL = stored.KEY_DB_URL
     KEY_CLUSTER = stored.KEY_CLUSTER
+    KEY_CLUSTER_SCHEDULER = stored.KEY_CLUSTER_SCHEDULER
     KEY_MAX_NR_THREADS = stored.KEY_MAX_THREAD_NR
     KEY_MAX_RANGE = stored.KEY_MAX_RANGE_NR
     KEY_MAX_NR_SURFACE_VERTEX = stored.KEY_MAX_NR_SURFACE_VERTEX
@@ -69,8 +70,8 @@ class SettingsService(object):
     KEYS_DISPLAY_ORDER = [KEY_ADMIN_NAME, KEY_ADMIN_PWD, KEY_ADMIN_EMAIL, None,
                           KEY_STORAGE, KEY_MAX_DISK_SPACE_USR, KEY_MATLAB_EXECUTABLE, KEY_SELECTED_DB, KEY_DB_URL, None,
                           KEY_PORT, KEY_URL_WEB, None,
-                          KEY_CLUSTER, KEY_MAX_NR_THREADS, KEY_MAX_RANGE, KEY_MAX_NR_SURFACE_VERTEX]
-
+                          KEY_CLUSTER, KEY_CLUSTER_SCHEDULER,
+                          KEY_MAX_NR_THREADS, KEY_MAX_RANGE, KEY_MAX_NR_SURFACE_VERTEX]
 
     def __init__(self):
         self.logger = get_logger(__name__)
@@ -108,6 +109,9 @@ class SettingsService(object):
             self.KEY_CLUSTER: {'label': 'Deploy on cluster', 'value': TvbProfile.current.cluster.IS_DEPLOY,
                                'description': 'Check this only if on the web-server machine OARSUB command is enabled.',
                                'dtype': 'primitive', 'type': 'boolean'},
+            self.KEY_CLUSTER_SCHEDULER: {'label': 'Cluster Scheduler', 'readonly': False,
+                                         'value': TvbProfile.current.cluster.CLUSTER_SCHEDULER, 'type': 'select',
+                                         'options': TvbProfile.current.cluster.ACCEPTED_SCHEDULERS},
             self.KEY_ADMIN_NAME: {'label': 'Administrator User Name',
                                   'value': TvbProfile.current.web.admin.ADMINISTRATOR_NAME,
                                   'type': 'text', 'readonly': not first_run,
@@ -201,7 +205,7 @@ class SettingsService(object):
             data[stored.KEY_LAST_CHECKED_CODE_VERSION] = TvbProfile.current.version.SVN_VERSION
             file_data = data
             if self.KEY_ADMIN_PWD in data:
-                data[self.KEY_ADMIN_PWD] = md5(data[self.KEY_ADMIN_PWD]).hexdigest()
+                data[self.KEY_ADMIN_PWD] = hashlib.md5(data[self.KEY_ADMIN_PWD]).hexdigest()
             anything_changed = True
         else:
             file_data = TvbProfile.current.manager.stored_settings

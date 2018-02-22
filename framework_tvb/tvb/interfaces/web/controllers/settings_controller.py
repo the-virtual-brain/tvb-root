@@ -284,6 +284,7 @@ class SettingsForm(formencode.Schema):
     SELECTED_DB = validators.UnicodeString(not_empty=True)
     URL_VALUE = validators.UnicodeString(not_empty=True)
     DEPLOY_CLUSTER = validators.Bool()
+    CLUSTER_SCHEDULER = validators.UnicodeString(not_empty=True)
 
     TVB_STORAGE = AsciiValidator(not_empty=True)
     USR_DISK_SPACE = DiskSpaceValidator(not_empty=True)

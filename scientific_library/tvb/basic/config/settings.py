@@ -118,19 +118,10 @@ class ClusterSettings(object):
     """
     Cluster related settings.
     """
+    SCHEDULER_OAR = "oar"
+    SCHEDULER_SLURM = "slurm"
 
-    SCHEDULE_COMMAND = 'oarsub -q tvb -S "/home/tvbadmin/clusterLauncher %s %s" -l walltime=%s'
-    STOP_COMMAND = 'oardel %s'
-    STATUS_COMMAND = 'oarstat %s'
-    JOB_ID_STRING = 'OAR_JOB_ID='
-    NODE_ENV = 'OAR_NODEFILE'
-    # SCHEDULE_COMMAND = 'sbatch /home/tvbadmin/clusterLauncher %s %s %s'
-    # STOP_COMMAND = 'scancel %s'
-    # STATUS_COMMAND = 'squeue -j %s'
-    # JOB_ID_STRING = 'JOB_ID='
-    # NODE_ENV = 'SLURM_NODEID'
-
-    #Specify if the current process is executing an operation (via clusterLauncher)
+    # Specify if the current process is executing an operation (via clusterLauncher)
     IN_OPERATION_EXECUTION_PROCESS = False
 
     _CACHED_IS_RUNNING_ON_CLUSTER = None
@@ -139,7 +130,39 @@ class ClusterSettings(object):
 
     def __init__(self, manager):
         self.IS_DEPLOY = manager.get_attribute(stored.KEY_CLUSTER, False, eval)
+        self.CLUSTER_SCHEDULER = manager.get_attribute(stored.KEY_CLUSTER_SCHEDULER, self.SCHEDULER_OAR)
+        self.ACCEPTED_SCHEDULERS = {self.SCHEDULER_OAR: self.SCHEDULER_OAR,
+                                    self.SCHEDULER_SLURM: self.SCHEDULER_SLURM}
 
+    @property
+    def SCHEDULE_COMMAND(self):
+        if self.CLUSTER_SCHEDULER == self.SCHEDULER_OAR:
+            return 'oarsub -q tvb -S "/home/tvbadmin/clusterLauncher %s %s" -l walltime=%s'
+        return 'sbatch /home/tvbadmin/clusterLauncher %s %s %s'
+
+    @property
+    def STOP_COMMAND(self):
+        if self.CLUSTER_SCHEDULER == self.SCHEDULER_OAR:
+            return 'oardel %s'
+        return 'scancel %s'
+
+    @property
+    def STATUS_COMMAND(self):
+        if self.CLUSTER_SCHEDULER == self.SCHEDULER_OAR:
+            return 'oarstat %s'
+        return 'squeue -j %s'
+
+    @property
+    def JOB_ID_STRING(self):
+        if self.CLUSTER_SCHEDULER == self.SCHEDULER_OAR:
+            return 'OAR_JOB_ID='
+        return 'JOB_ID='
+
+    @property
+    def NODE_ENV(self):
+        if self.CLUSTER_SCHEDULER == self.SCHEDULER_OAR:
+            return 'OAR_NODEFILE'
+        return 'SLURM_NODEID'
 
     @property
     def IS_RUNNING_ON_CLUSTER_NODE(self):
@@ -240,8 +263,8 @@ class WebSettings(object):
                                              'tools.sessions.timeout': 600,  # 10 hours
                                              'response.timeout': 1000000,
                                              'tools.sessions.locking': 'explicit',
-                                             'tools.upload.on': True,    # Tool to check upload content size
-                                             'tools.cleanup.on': True    # Tool to clean up files on disk
+                                             'tools.upload.on': True,  # Tool to check upload content size
+                                             'tools.cleanup.on': True  # Tool to clean up files on disk
                                              },
                                        '/static': {'tools.staticdir.root': self.CURRENT_DIR,
                                                    'tools.staticdir.on': True,
@@ -299,7 +322,6 @@ class DBSettings(object):
     ALLOW_NESTED_TRANSACTIONS = False
 
     def __init__(self, manager, default_storage, current_storage):
-
         # A dictionary with accepted db's and their default URLS
         default_pg = 'postgresql+psycopg2://postgres:root@127.0.0.1:5432/tvb?user=postgres&password=postgres'
         default_lite = 'sqlite:///' + os.path.join(default_storage, 'tvb-database.db')
@@ -315,5 +337,3 @@ class DBSettings(object):
 
         # Upgrade/Downgrade repository
         self.DB_VERSIONING_REPO = os.path.join(current_storage, 'db_repo')
-
-
