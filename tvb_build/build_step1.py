@@ -81,6 +81,7 @@ INCLUDED_INSIDE_DATA = [
     "regionMapping/__init__.py",
     "regionMapping/regionMapping_16k_76.txt",
     "regionMapping/regionMapping_80k_80.txt",
+    "regionMapping/regionMapping_16k_192.txt",
 
     "sensors/eeg_unitvector_62.txt.bz2",
     "sensors/eeg_brainstorm_65.txt",
