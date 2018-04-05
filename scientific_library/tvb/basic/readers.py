@@ -114,9 +114,10 @@ class FileReader(object):
             # Try to read Matlab format:
             return self._read_matlab(self.file_stream, matlab_data_name)
 
-        except Exception:
-            self.logger.exception("Could not read from %s file" % self.file_path)
-            raise ReaderException("Could not read from %s file" % self.file_path)
+        except Exception, e:
+            msg = "Could not read from %s file \n %s" % (self.file_path, e)
+            self.logger.exception(msg)
+            raise ReaderException(msg)
 
 
     def _read_text(self, file_stream, dtype, skip_rows, use_cols):
@@ -162,6 +163,11 @@ class ZipReader(object):
         self.logger = get_logger(__name__)
         self.zip_archive = zipfile.ZipFile(zip_path)
 
+    def has_file_like(self, file_name):
+        for actual_name in self.zip_archive.namelist():
+            if file_name in actual_name:
+                return True
+        return False
 
     def read_array_from_file(self, file_name, dtype=numpy.float64, skip_rows=0, use_cols=None, matlab_data_name=None):
 
