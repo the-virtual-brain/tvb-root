@@ -34,8 +34,8 @@ Hindmarsh-Rose-Jirsa Epileptor model.
 from .base import ModelNumbaDfun, LOG, numpy, basic, arrays
 from numba import guvectorize, float64
 
-@guvectorize([(float64[:],) * 18], '(n),(m)' + ',()'*15 + '->(n)', nopython=True)
-def _numba_dfun(y, c_pop, x0, Iext, Iext2, a, b, slope, tt, Kvf, c, d, r, Ks, Kf, aa, tau, ydot):
+@guvectorize([(float64[:],) * 20], '(n),(m)' + ',()'*17 + '->(n)', nopython=True)
+def _numba_dfun(y, c_pop, x0, Iext, Iext2, a, b, slope, tt, Kvf, c, d, r, Ks, Kf, aa, bb, tau, modification, ydot):
     "Gufunc for Hindmarsh-Rose-Jirsa Epileptor model equations."
 
     c_pop1 = c_pop[0]
@@ -54,10 +54,14 @@ def _numba_dfun(y, c_pop, x0, Iext, Iext2, a, b, slope, tt, Kvf, c, d, r, Ks, Kf
         ydot[2] = - 0.1 * y[2] ** 7
     else:
         ydot[2] = 0.0
-    ydot[2] = tt[0] * (r[0] * (4 * (y[0] - x0[0]) - y[2] + ydot[2] + Ks[0] * c_pop1))
+    if modification[0]:
+        h =  x0[0] + 3/(1 + numpy.exp(-(y[0]+0.5)/0.1))
+    else:
+        h = 4 * (y[0] - x0[0]) + ydot[2]
+    ydot[2] = tt[0] * (r[0] * (h - y[2]  + Ks[0] * c_pop1))
 
     # population 2
-    ydot[3] = tt[0] * (-y[4] + y[3] - y[3] ** 3 + Iext2[0] + 2 * y[5] - 0.3 * (y[2] - 3.5) + Kf[0] * c_pop2)
+    ydot[3] = tt[0] * (-y[4] + y[3] - y[3] ** 3 + Iext2[0] + bb[0] * y[5] - 0.3 * (y[2] - 3.5) + Kf[0] * c_pop2)
     if y[3] < -0.25:
         ydot[4] = 0.0
     else:
@@ -144,6 +148,14 @@ class Epileptor(ModelNumbaDfun):
             0 & \text{if } x_{2} <-0.25\\
             a_{2}(x_{2} + 0.25) & \text{if } x_{2} \geq -0.25
             \end{cases}
+            
+    Note Feb. 2017: the slow permittivity variable can be modify to account for the time
+    difference between interictal and ictal states (see [Proixetal_2014]).
+    
+    .. [Proixetal_2014] Proix, T.; Bartolomei, F; Chauvel, P; Bernard, C; Jirsa, V.K. *
+        Permittivity coupling across brain regions determines seizure recruitment in
+        partial epilepsy.* J Neurosci 2014, 34:15009-21.
+
     """
 
     _ui_name = "Epileptor"
@@ -227,6 +239,12 @@ class Epileptor(ModelNumbaDfun):
         default=numpy.array([6]),
         doc="Linear coefficient in fifth state variable",
         order=-1)
+        
+    bb = arrays.FloatArray(
+        label="bb",
+        default=numpy.array([2]),
+        doc="Linear coefficient of lowpass excitatory coupling in fourth state variable",
+        order=-1)
 
     Kvf = arrays.FloatArray(
         label="K_vf",
@@ -255,6 +273,13 @@ class Epileptor(ModelNumbaDfun):
         range=basic.Range(lo=0.001, hi=10.0, step=0.001),
         doc="Time scaling of the whole system",
         order=9)
+        
+    modification = arrays.BoolArray(
+        label="modification",
+        default=numpy.array([0]),
+        doc="When modification is True, then use nonlinear influence on z. \
+        The default value is False, i.e., linear influence.",
+        order=10)
 
     state_variable_range = basic.Dict(
         label="State variable ranges [lo, hi]",
@@ -332,24 +357,28 @@ class Epileptor(ModelNumbaDfun):
         c_pop2 = coupling[1, :]
 
         # population 1
-        if_ydot0 = - self.a*y[0]**2 + self.b*y[0]
-        else_ydot0 = self.slope - y[3] + 0.6*(y[2]-4.0)**2
-        ydot[0] = self.tt*(y[1] - y[2] + Iext + self.Kvf*c_pop1 + where(y[0] < 0., if_ydot0, else_ydot0) * y[0])
-        ydot[1] = self.tt*(self.c - self.d*y[0]**2 - y[1])
+        if_ydot0 = - self.a * y[0] ** 2 + self.b * y[0]
+        else_ydot0 = self.slope - y[3] + 0.6 * (y[2] - 4.0) ** 2
+        ydot[0] = self.tt * (y[1] - y[2] + Iext + self.Kvf * c_pop1 + where(y[0] < 0., if_ydot0, else_ydot0) * y[0])
+        ydot[1] = self.tt * (self.c - self.d * y[0] ** 2 - y[1])
 
         # energy
-        if_ydot2 = - 0.1*y[2]**7
+        if_ydot2 = - 0.1 * y[2] ** 7
         else_ydot2 = 0
-        ydot[2] = self.tt*(self.r * ( 4*(y[0] - self.x0) - y[2] + where(y[2] < 0., if_ydot2, else_ydot2) + self.Ks*c_pop1))
+        if modification:
+            h = h = self.x0 + 3. / (1. + numpy.exp(- (y[0] + 0.5) / 0.1))
+        else:
+            h = 4 * (y[0] - self.x0) + where(y[2] < 0., if_ydot2, else_ydot2)
+        ydot[2] = self.tt * (self.r * (h - y[2] + self.Ks * c_pop1))
 
         # population 2
-        ydot[3] = self.tt*(-y[4] + y[3] - y[3]**3 + self.Iext2 + 2*y[5] - 0.3*(y[2] - 3.5) + self.Kf*c_pop2)
+        ydot[3] = self.tt * (-y[4] + y[3] - y[3] ** 3 + self.Iext2 + self.bb * y[5] - 0.3 * (y[2] - 3.5) + self.Kf * c_pop2)
         if_ydot4 = 0
-        else_ydot4 = self.aa*(y[3] + 0.25)
-        ydot[4] = self.tt*((-y[4] + where(y[3] < -0.25, if_ydot4, else_ydot4))/self.tau)
+        else_ydot4 = self.aa * (y[3] + 0.25)
+        ydot[4] = self.tt * ((-y[4] + where(y[3] < -0.25, if_ydot4, else_ydot4)) / self.tau)
 
         # filter
-        ydot[5] = self.tt*(-0.01*(y[5] - 0.1*y[0]))
+        ydot[5] = self.tt * (-0.01 * (y[5] - 0.1 * y[0]))
 
         return ydot
 
@@ -359,5 +388,216 @@ class Epileptor(ModelNumbaDfun):
         Iext = self.Iext + local_coupling * x[0, :, 0]
         deriv = _numba_dfun(x_, c_,
                          self.x0, Iext, self.Iext2, self.a, self.b, self.slope, self.tt, self.Kvf,
-                         self.c, self.d, self.r, self.Ks, self.Kf, self.aa, self.tau)
+                         self.c, self.d, self.r, self.Ks, self.Kf, self.aa, self.bb, self.tau, self.modification)
         return deriv.T[..., numpy.newaxis]
+
+
+
+
+class Epileptor2D(ModelNumbaDfun):
+    r"""
+        Two-dimensional reduction of the Epileptor.
+        
+        .. moduleauthor:: courtiol.julie@gmail.com
+        
+        Taking advantage of time scale separation and focusing on the slower time scale, 
+        the five-dimensional Epileptor reduces to a two-dimensional system (see [Proixetal_2014, 
+        Proixetal_2017]).
+        
+        Note: the slow permittivity variable can be modify to account for the time
+        difference between interictal and ictal states (see [Proixetal_2014]).
+        
+        Equations and default parameters are taken from [Proixetal_2014]:
+        
+        .. math::
+            \dot{x_{1,i}} &=& - x_{1,i}^{3} - 2x_{1,i}^{2}  + 1 - z_{i} + I_{ext1,i} \\
+            \dot{z_{i}} &=& r(h - z_{i})
+        
+        with 
+            h = x_{0} + 3 / (exp((x_{1} + 0.5)/0.1)) if modification
+            h = 4 (x_{1,i} - x_{0})
+            
+        References:
+            [Proixetal_2014] Proix, T.; Bartolomei, F; Chauvel, P; Bernard, C; Jirsa, V.K. *
+            Permittivity coupling across brain regions determines seizure recruitment in 
+            partial epilepsy.* J Neurosci 2014, 34:15009-21.
+            
+            [Proixetal_2017] Proix, T.; Bartolomei, F; Guye, M.; Jirsa, V.K. *Individual brain 
+            structure and modelling predict seizure propagation.* Brain 2017, 140; 641–654.
+    """
+
+
+    _ui_name = "Epileptor2D"
+    ui_configurable_parameters = ["r", "Iext", "x0"]
+    
+    a = arrays.FloatArray(
+        label="a",
+        default=numpy.array([1]),
+        doc="Coefficient of the cubic term in the first state-variable.",
+        order=1)
+
+    b = arrays.FloatArray(
+        label="b",
+        default=numpy.array([3]),
+        doc="Coefficient of the squared term in the first state-variable.",
+        order=2)
+    
+    c = arrays.FloatArray(
+        label="c",
+        default=numpy.array([1]),
+        doc="Additive coefficient for the second state-variable x_{2}, \
+        called :math:`y_{0}` in Jirsa paper.",
+        order=3)
+
+    d = arrays.FloatArray(
+        label="d",
+        default=numpy.array([5]),
+        doc="Coefficient of the squared term in the second state-variable x_{2}.",
+        order=4)
+
+    r = arrays.FloatArray(
+        label="r",
+        range=basic.Range(lo=0.0, hi=0.001, step=0.00005),
+        default=numpy.array([0.00035]),
+        doc="Temporal scaling in the slow state-variable, \
+        called :math:`1\\tau_{0}` in Jirsa paper (see class Epileptor).",
+        order=5)
+
+    x0 = arrays.FloatArray(
+        label="x0",
+        range=basic.Range(lo=-3.0, hi=-1.0, step=0.1),
+        default=numpy.array([-1.6]),
+        doc="Epileptogenicity parameter.",
+        order=6)
+
+    Iext = arrays.FloatArray(
+        label="Iext",
+        range=basic.Range(lo=1.5, hi=5.0, step=0.1),
+        default=numpy.array([3.1]),
+        doc="External input current to the first state-variable.",
+        order=7)
+
+    slope = arrays.FloatArray(
+        label="slope",
+        range=basic.Range(lo=-16.0, hi=6.0, step=0.1),
+        default=numpy.array([0.]),
+        doc="Linear coefficient in the first state-variable.",
+        order=8)
+        
+    Kvf = arrays.FloatArray(
+        label="K_vf",
+        default=numpy.array([0.0]),
+        range=basic.Range(lo=0.0, hi=4.0, step=0.5),
+        doc="Coupling scaling on a very fast time scale.",
+        order=9)
+
+    Ks = arrays.FloatArray(
+        label="K_s",
+        default=numpy.array([0.0]),
+        range=basic.Range(lo=-4.0, hi=4.0, step=0.1),
+        doc="Permittivity coupling, that is from the fast time scale toward the slow time scale.",
+        order=10)
+        
+    tt = arrays.FloatArray(
+        label="tt",
+        default=numpy.array([1.0]),
+        range=basic.Range(lo=0.001, hi=1.0, step=0.001),
+        doc="Time scaling of the whole system to the system in real time.",
+        order=11)
+
+    modification = arrays.BoolArray(
+        label="modification",
+        default=numpy.array([0]),
+        doc="When modification is True, then use nonlinear influence on z. \
+        The default value is False, i.e., linear influence.",
+        order=12)
+
+    state_variable_range = basic.Dict(
+        label="State variable ranges [lo, hi]",
+        default={"x1": numpy.array([-2., 1.]),
+        "z": numpy.array([2.0, 5.0])},
+        doc="Typical bounds on state-variables in the Epileptor 2D model.",
+        order=99)
+    
+    variables_of_interest = basic.Enumerate(
+        label="Variables watched by Monitors",
+        options=['x1', 'z'],
+        default=['x1'],
+        select_multiple=True,
+        doc="Quantities of the Epileptor 2D available to monitor.",
+        order=100)
+    
+    state_variables = ['x1', 'z']
+
+    _nvar = 2
+    cvar = numpy.array([0], dtype=numpy.int32)
+
+
+    def _numpy_dfun(self, state_variables, coupling, local_coupling=0.0,
+                array=numpy.array, where=numpy.where, concat=numpy.concatenate):
+        r"""
+        Computes the derivatives of the state-variables of the Epileptor 2D
+        with respect to time.
+        """
+
+        y = state_variables
+        ydot = numpy.empty_like(state_variables)
+        
+        Iext = self.Iext + local_coupling * y[0]
+        c_pop = coupling[0, :]
+
+        # population 1
+        if_ydot0 = self.a * y[0] ** 2 + (self.d - self.b) * y[0]
+        else_ydot0 = - self.slope - 0.6 * (y[1] - 4.0) ** 2 + self.d * y[0]
+
+        ydot[0] = self.tt * (self.c - y[1] + Iext + self.Kvf * c_pop - (where(y[0] < 0., if_ydot0, else_ydot0)) * y[0])
+        
+        # energy
+        if_ydot1 = - 0.1 * y[1] ** 7
+        else_ydot1 = 0
+        
+        if self.modification:
+            h = self.x0 + 3. / (1. + numpy.exp(- (y[0] + 0.5) / 0.1))
+        else:
+            h = 4 * (y[0] - self.x0) + where(y[1] < 0., if_ydot1, else_ydot1)
+        
+        ydot[1] = self.tt * (self.r * (h - y[1] + self.Ks * c_pop))
+
+        return ydot
+
+    def dfun(self, x, c, local_coupling=0.0):
+        """"The dfun using numba for speed."""
+        
+        x_ = x.reshape(x.shape[:-1]).T
+        c_ = c.reshape(c.shape[:-1]).T
+        Iext = self.Iext + local_coupling * x[0, :, 0]
+        deriv = _numba_dfun_epi2d(x_, c_,
+                            self.x0, Iext, self.a, self.b, self.slope, self.c,
+                            self.d, self.r, self.Kvf, self.Ks, self.tt, self.modification)
+        return deriv.T[..., numpy.newaxis]
+
+@guvectorize([(float64[:],) * 15], '(n),(m)' + ',()'* 12 + '->(n)', nopython=True)
+def _numba_dfun_epi2d(y, c_pop, x0, Iext, a, b, slope, c, d, r, Kvf, Ks, tt, modification, ydot):
+    "Gufunction for Epileptor 2D model equations."
+
+    c_pop = c_pop[0]
+
+    # population 1
+    if y[0] < 0.0:
+        ydot[0] = a[0] * y[0] ** 2 + (d[0] - b[0]) * y[0]
+    else:
+        ydot[0] = - slope[0] - 0.6 * (y[1] - 4.0) ** 2 + d[0] * y[0]
+    ydot[0] = tt[0] * (c[0] - y[1] + Iext[0] + Kvf[0] * c_pop - ydot[0] * y[0])
+
+     # energy
+    if y[1] < 0.0:
+        ydot[1] = - 0.1 * y[1] ** 7
+    else:
+        ydot[1] = 0.0
+
+    if modification[0]:
+        h = x0[0] + 3. / (1. + numpy.exp(- (y[0] + 0.5) / 0.1))
+    else:
+        h = 4 * (y[0] - x0[0]) + ydot[1]
+
+    ydot[1] = tt[0] * (r[0] * (h - y[1] + Ks[0] * c_pop))
