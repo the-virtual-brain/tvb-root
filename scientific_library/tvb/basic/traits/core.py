@@ -502,11 +502,22 @@ class Type(object):
         "Generate HTML repr for use in IPython notebook."
         info = self.summary_info
         if info is None or len(info) == 0:
-            info = {key: getattr(self, key) for key in self.trait.keys()}
+            info = {}
+            for key in self.trait.keys():
+                info[key] = [getattr(self,key),
+                             getattr(self.__class__,key).trait.inits.kwd['doc']]
         html = ['<table width=100%>']
-        row_fmt = '<tr><td>%s</td><td>%s</td></tr>'
-        for key, value in info.items():
-            html.append(row_fmt % (key, value))
+        row_fmt = '<tr><td>%s</td><td>%s</td><td>%s</td></tr>'
+        header_fmt = '<tr><th>%s</th><th>%s</th><th>%s</th></tr>'
+        html.append(header_fmt  % ('Parameter', 'Value', 'Description'))
+        for paramname,value in info.items():
+            paramdescr = '' # default: no param description given
+            # ..if param description present (list len==2), use it
+            if type(value) == list:
+              paramval, paramdescr = value
+            else:  
+              paramval = value
+            html.append(row_fmt % (paramname, paramval, paramdescr))
         return ''.join(html)
 
     def _find_summary_info(self):
