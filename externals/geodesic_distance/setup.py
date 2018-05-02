@@ -65,7 +65,7 @@ with open(os.path.join(os.path.dirname(__file__), 'README.rst')) as fd:
     DESCRIPTION = fd.read()
 
 setuptools.setup(name="tvb-" + GEODESIC_NAME,
-                 version='1.5.5',
+                 version='1.5.6',
                  ext_modules=GEODESIC_MODULE,
                  include_dirs=INCLUDE_DIRS,
                  cmdclass={'build_ext': build_ext},
@@ -80,5 +80,6 @@ setuptools.setup(name="tvb-" + GEODESIC_NAME,
                  keywords="gdist geodesic distance geo tvb")
 
 shutil.rmtree('tvb_gdist.egg-info', True)
-os.remove(GEODESIC_NAME + '.cpp')
+if os.path.exists(GEODESIC_NAME + '.cpp'):
+    os.remove(GEODESIC_NAME + '.cpp')
 shutil.rmtree('build', True)
