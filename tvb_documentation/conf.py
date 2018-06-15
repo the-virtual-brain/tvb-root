@@ -22,10 +22,12 @@ from tvb.basic.profile import TvbProfile
 
 # If your documentation needs a minimal Sphinx version, state it here.
 #needs_sphinx = '1.0'
-
+ math_ext = 'sphinx.ext.mathjax'
+ mathjax_path = '/MathJax/MathJax.js?config=TeX-AMS-MML_HTMLorMML'
+ 
 # Add any Sphinx extension module names here, as strings. They can be extensions
 # coming with Sphinx (named 'sphinx.ext.*') or your custom ones.
-extensions = ['sphinx.ext.autodoc', 'sphinx.ext.mathjax', 'sphinx.ext.viewcode']
+extensions = ['sphinx.ext.autodoc', math_ext, 'sphinx.ext.viewcode']
 
 # This is NOT an error but sphinx tags api being crazy http://sphinx-doc.org/config.html
 # Once we transition to sphinx 1.3 or use custom themes this is no longer necessary
