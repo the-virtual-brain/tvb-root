@@ -23,7 +23,7 @@ from tvb.basic.profile import TvbProfile
 # If your documentation needs a minimal Sphinx version, state it here.
 #needs_sphinx = '1.0'
 math_ext = 'sphinx.ext.mathjax'
-mathjax_path = '/MathJax/MathJax.js?config=TeX-AMS-MML_HTMLorMML'
+mathjax_path = '/_static/MathJax/MathJax.js?config=TeX-AMS-MML_HTMLorMML'
 
 # Add any Sphinx extension module names here, as strings. They can be extensions
 # coming with Sphinx (named 'sphinx.ext.*') or your custom ones.
