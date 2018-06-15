@@ -29,6 +29,7 @@ Rights of the persons affected
 ---------------
 
 Using the contact details of our privacy officer (specified at the end of this document), you can exercise the following rights at any time:
+
 * disclosure about the data we have stored about you and how we handle it
 * amendment of inaccurate personal data
 * deletion of your stored data
@@ -42,6 +43,7 @@ You are entitled to file a complaint at your responsible regulatory authority. W
 Purposes of data processing through the controller and third parties
 ---------------
 We are processing your personally identifiable data only for purposes outlined in this privacy policy. A transfer of your personal data to third parties concerning other purposes will not occur. We will only transfer your personal data to third parties if:
+
 * you gave us explicit consent
 * handling is necessary for the purpose of transacting a contract with you
 * handling is necessary for the purpose of fulfilling legal duties
@@ -75,6 +77,7 @@ Usage of Google Maps
 ---------------
 This website uses the Google Maps API to display geographical information. When viewing Google Maps, Google is obtaining, processing and using data about how website visitors use such maps. You can get more information about Google's data processing in the Google privacy policy. In their data protection center, you can configure your individual privacy settings.
 You can find comprehensive tutorials about managing your own data in regard to Google products |google_policy_link|.
+
 Usage of Monotype fonts
 ---------------
 We are using fonts from Monotype to design our website. Monotype Imaging Holdings Inc. is a provider offering us access to their typeface library. In order to track how we are using their fonts, we are contractually stipulated to connect to servers of Monotype in the USA to update counters for our user account. By this connection, Monotype obtains the information that our website was viewed from your IP address. You can find more information about Monotype's privacy policy |monotype_policy_link|.
@@ -104,17 +107,34 @@ Questions for our privacy officer
 ---------------
 If you have questions regarding privacy and data protection, please send us an email to |mail_viktor|.
 
+.. toctree::
+    :hidden:
+	
 .. |ndpa_link| raw:: html 
+	
 	<a href="https://en.wikipedia.org/wiki/National_data_protection_authority" target="_blank">here</a>
+	
 .. |youtube_policy_link| raw:: html 
+	
 	<a href="http://www.google.com/privacypolicy.html">here</a>
+	
 .. |google_policy_link| raw:: html 
+	
 	<a href="http://www.dataliberation.org/">here</a>
+	
 .. |monotype_policy_link| raw:: html 
+	
 	<a href="http://www.google.com/privacypolicy.html">here</a>
+	
 .. |browser_plugin_link| raw:: html 
+	
 	<a href="http://tools.google.com/dlpage/gaoptout?hl=en-GB">installing this browser plug-in</a>
+	
 .. |gaOptout_link| raw:: html 
+	
 	<a href="#" title="Install Google Analytics opt-out cookie" onclick="gaOptout();alert('Google Analytics is now disabled');">clicking on this link</a>
+	
 .. |mail_viktor| raw:: html 
+	
 	<a href="mailto:vjirsa@thevirtualbrain.org" title="Send us an email…">vjirsa@thevirtualbrain.org</a>
+	
