@@ -114,27 +114,34 @@ If you have questions regarding privacy and data protection, please send us an e
 	
 	<a href="https://en.wikipedia.org/wiki/National_data_protection_authority" target="_blank">here</a>
 	
+	
 .. |youtube_policy_link| raw:: html 
 	
 	<a href="http://www.google.com/privacypolicy.html">here</a>
+	
 	
 .. |google_policy_link| raw:: html 
 	
 	<a href="http://www.dataliberation.org/">here</a>
 	
+	
 .. |monotype_policy_link| raw:: html 
 	
 	<a href="http://www.google.com/privacypolicy.html">here</a>
+	
 	
 .. |browser_plugin_link| raw:: html 
 	
 	<a href="http://tools.google.com/dlpage/gaoptout?hl=en-GB">installing this browser plug-in</a>
 	
+	
 .. |gaOptout_link| raw:: html 
 	
 	<a href="#" title="Install Google Analytics opt-out cookie" onclick="gaOptout();alert('Google Analytics is now disabled');">clicking on this link</a>
 	
+	
 .. |mail_viktor| raw:: html 
 	
 	<a href="mailto:vjirsa@thevirtualbrain.org" title="Send us an email…">vjirsa@thevirtualbrain.org</a>
+	
 	
