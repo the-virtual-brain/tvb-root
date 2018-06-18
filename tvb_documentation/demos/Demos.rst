@@ -315,7 +315,7 @@ be expanded in the future.
 .. figure:: ../../matlab/html/tvb_demo_region_rww_01.png
       :width: 200px
       :figclass: demo-figure
-      :target: :ref:`tvb_demo_region_rww`
+      :target: Demos_Matlab.html#tvb-demo-region-rww
 
       :ref:`tvb_demo_region_rww`
 
@@ -323,6 +323,6 @@ be expanded in the future.
 .. figure:: ../../matlab/html/tvb_demo_two_epi_01.png
       :width: 200px
       :figclass: demo-figure
-      :target: :ref:`tvb_demo_two_epi`
+      :target: Demos_Matlab.html#tvb-demo-two-epi
 
       :ref:`tvb_demo_two_epi`
