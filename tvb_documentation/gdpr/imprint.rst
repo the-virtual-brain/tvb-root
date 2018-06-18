@@ -7,26 +7,26 @@ Imprint
 **********
 
 Responsible for this website
----------------
+----------------------------
 
-*The Virtual Brain Foundation*
-75 Chemin des Garrigues
-13400 Aubagne
-France
+| **The Virtual Brain Foundation**
+| 75 Chemin des Garrigues
+| 13400 Aubagne
+| France
 
-*Viktor Jirsa*
-*email:* vjirsa@thevirtualbrain.org
-*phone:* +33 (491) 32 42 23
+| **Viktor Jirsa**
+| *email:* vjirsa@thevirtualbrain.org
+| *phone:* +33 (491) 32 42 23
 
 
-Privacy policy (last update: May 24, 2018)
----------------
+Privacy policy (last update: June 17, 2018)
+-------------------------------------------
 
-Responsible for our privacy policy, i.e. the EU GDPR, is Viktor Jirsa.
+Responsible for our privacy policy, i.e. the EU GDPR, is *Viktor Jirsa*.
 
 
 Rights of the persons affected
----------------
+------------------------------
 
 Using the contact details of our privacy officer (specified at the end of this document), you can exercise the following rights at any time:
 
@@ -41,7 +41,7 @@ You are entitled to file a complaint at your responsible regulatory authority. W
 
 
 Purposes of data processing through the controller and third parties
----------------
+--------------------------------------------------------------------
 We are processing your personally identifiable data only for purposes outlined in this privacy policy. A transfer of your personal data to third parties concerning other purposes will not occur. We will only transfer your personal data to third parties if:
 
 * you gave us explicit consent
@@ -50,61 +50,41 @@ We are processing your personally identifiable data only for purposes outlined i
 * handling is necessary for the purpose of adhering legitimate interests and there is reason to assume that you have a predominant interest in objecting the transmission of data.
 
 Deletion or blocking of data
----------------
+----------------------------
 We are following the principles of data reduction and data economy. Therefore, we are only storing your data as long as it is necessary for attaining stated reasons or as long as storage periods are stipulated by law. After cessation of respective purposes or expiration of the time stated in these storage periods, respective data will be deleted or blocked routinely and following legal requirements.
 
 Collection of general information
----------------
+---------------------------------
 When you are accessing our website, some general information will be collected automatically. This information (server logs) include things like the kind of web browser, used operating software, domain name of your internet service provider and the like. This information is in no way sufficent to make you as a person identifiable. This information is necessary for technical reasons as it helps deliver the contents you requested from the website and is compelling when using the internet. We are statistically evaluating anonymous information of said kind for improving our website and the underlying technology.
 
-SSL encryption
----------------
-To protect your data during transmission, we are using state-of-the-art encryption technology (SSL/HTTPS).
-
-Newsletter
----------------
-Based on your explicit consent, we are sending you emails with our newsletter or similar information from time to time. Your name and email address is sufficient to receive our newsletter. The data we obtain from you when you register for our newsletter will only be used for this purpose and not be transferred to third parties. Subscribers might also be notified by email when relevant issues about this service or registration arise (e.g. changes to our newsletter service or technical issues).
-We need a valid email address for an effective registration. To verify whether the registration was truly made by the owner of an email address, we use the “double opt-in” process. This means that we log the newsletter subscription, the sending of a confirmation email and the receipt of a designated reaction we have asked for in that confirmation email.
-
-Embedded YouTube videos
----------------
-On some pages of our website, we are embedding YouTube videos. Provider of these plug-ins is YouTube, LLC, 901 Cherry Ave., San Bruno, CA 94066, USA. When you visit a page with an embedded YouTube plug-in, it establishes a connection to YouTube servers, letting them know which page on our website you are visiting. If you are logged into your YouTube user account, YouTube can track your surfing habits and associate it with your personal data. You can prevent this by logging out of your YouTube account before visiting our website.
-If you play an embedded YouTube video, the provider uses cookies which are tracking your usage behavior.
-If you have disabled cookies for the Google Ad program, you don't have to expect such cookies when viewing embedded YouTube videos. However, YouTube also stores non-personal usage data in other cookies. If you want to prevent this, you have to block cookies in your browser.
-You can find more information about YouTube's privacy policy |youtube_policy_link|.
-
-Usage of Google Maps
----------------
-This website uses the Google Maps API to display geographical information. When viewing Google Maps, Google is obtaining, processing and using data about how website visitors use such maps. You can get more information about Google's data processing in the Google privacy policy. In their data protection center, you can configure your individual privacy settings.
-You can find comprehensive tutorials about managing your own data in regard to Google products |google_policy_link|.
-
-Usage of Monotype fonts
----------------
-We are using fonts from Monotype to design our website. Monotype Imaging Holdings Inc. is a provider offering us access to their typeface library. In order to track how we are using their fonts, we are contractually stipulated to connect to servers of Monotype in the USA to update counters for our user account. By this connection, Monotype obtains the information that our website was viewed from your IP address. You can find more information about Monotype's privacy policy |monotype_policy_link|.
-
 Usage of Google Analytics
----------------
+-------------------------
 This website uses Google Analytics, a web analytics service provided by Google, Inc. (“Google”). Google Analytics uses “cookies” – text files placed on your computer – to help the website analyze how you are using the site. The information generated by the cookie about your usage of the website will usually be transmitted to and stored by Google on servers in the USA. Due to activation of the IP anonymisation on this website, Google will truncate the IP address within member states of the European Union, as well as within other states subject to an Agreement on the European Economic Area.
+
 Only in exceptional cases, the full IP address is sent to Google servers in the USA and only shortened at this location. On behalf of the provider of this website, Google will use this information for the purpose of evaluating your usage of the website, compiling reports on user activity for website operators and providing other services relating to website activity and internet usage to the website provider. Google will not associate your IP address with any other data held by Google.
+
 You may refuse the use of cookies by selecting the appropriate settings on your browser. However, please note that if you do this, you may not be able to use the full functionality of this website. Furthermore, you can prevent Google’s collection and usage of data (cookies and IP address) by downloading and |browser_plugin_link|.
+
 Additionally or as an alternative to the browser plug-in, you can prevent being tracked by Google Analytics on our website by |gaOptout_link|. This installs an opt-out cookie on your device. This cookie prevents any future data acquisition by Google Analytics for this website and your browser as long as you keep this cookie installed in your browser.
 
 Cookies
 ---------------
 Like many other web sites, we are using so-called “Cookies”. Cookies are small text files which are placed by websites on the computers and mobile devices of people who visit those websites. This way we are automatically receiving some data like your IP address, the browser you are using, your operating software and your connection to the internet. Cookies cannot be used to start programs or transfer computer viruses to your computer. Using the information stored in cookies, we can improve your navigation through this website and configure our website to be shown correctly. On no account will data collected by us transferred to third parties or associated to your identity without your consent.
+
 Of course you are also able to view our web site without the usage of cookies. Internet browsers are generally configured in a way that they accept cookies. You can always deactivate the usage of cookies via settings of your browser. Please use the help function of your internet browser to learn how to change these settings. Please take into account that some functions of our web site might not work if you deactivate cookies.
 
 Your rights regarding disclosure, correction, blockage, deletion and objection
----------------
+------------------------------------------------------------------------------
 At any time, you are entitled to demand disclosure about the data that we have stored about you. Furthermore, you are entitled to demand correction, blockage or – apart from the stipulated storage period to conduct business with you – deletion of your personally identifiable data. In this case please contact our privacy officer. You will find the contact details at the end of this document. In order to consider a blockage of data at any time, this data has to be kept available in a blockage file for control purposes.
+
 You can also demand deletion of your data as long as there is no legal obligation to archive this data. In case there is such an obligation, we will block your data as you wish. You can undertake changes or revocation of a consent through a respective message to us with effect regarding the future.
 
 Change of data protection regulations
----------------
+-------------------------------------
 We reserve the right to adapt this privacy policy from time to time, so it always complies to current legal requirements or to implement changes regarding our services within our privacy policy, e.g. when introducing new services. The new privacy policy will then become effective with your next visit.
 
 Questions for our privacy officer
----------------
+---------------------------------
 If you have questions regarding privacy and data protection, please send us an email to |mail_viktor|.
 
 .. toctree::
@@ -115,19 +95,9 @@ If you have questions regarding privacy and data protection, please send us an e
 	<a href="https://en.wikipedia.org/wiki/National_data_protection_authority" target="_blank">here</a>
 	
 	
-.. |youtube_policy_link| raw:: html 
-	
-	<a href="http://www.google.com/privacypolicy.html">here</a>
-	
-	
 .. |google_policy_link| raw:: html 
 	
 	<a href="http://www.dataliberation.org/">here</a>
-	
-	
-.. |monotype_policy_link| raw:: html 
-	
-	<a href="http://www.google.com/privacypolicy.html">here</a>
 	
 	
 .. |browser_plugin_link| raw:: html 
