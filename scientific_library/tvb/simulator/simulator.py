@@ -416,7 +416,7 @@ class Simulator(core.Type):
                 yield output
 
         self.current_state = state
-        self.current_step = self.current_step + n_steps - 1  # -1 : don't repeat last point
+        self.current_step = self.current_step + n_steps
 
     def _configure_history(self, initial_conditions):
         """
