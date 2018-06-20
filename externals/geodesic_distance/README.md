@@ -10,6 +10,12 @@ We added a python wrapped and made small fixes to the original library, to make 
 To install this, either run `pip install gdist` or download these
 sources and run `python setup.py install` in current folder.
 
+Basic test could be:
+```
+python
+import gdist
+```
+
 Python 2.7, Cython, and a C++ compiler are required.
 
 ## Debian package
