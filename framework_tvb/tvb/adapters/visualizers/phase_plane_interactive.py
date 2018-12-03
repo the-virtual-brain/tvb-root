@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 #
 #
-# TheVirtualBrain-Framework Package. This package holds all Data Management, and 
+# TheVirtualBrain-Framework Package. This package holds all Data Management, and
 # Web-UI helpful to run brain-simulations. To use it, you also need do download
 # TheVirtualBrain-Scientific Package (for simulators). See content of the
 # documentation-folder for more details. See also http://www.thevirtualbrain.org
@@ -34,7 +34,36 @@
 import numpy
 import six
 from tvb.basic.logger.builder import get_logger
-from matplotlib import _cntr
+
+# To plot nullclines we need a function that computes contours of a scalar field.
+# We use the internal matplotlib one.
+# Now that newer matplotlib versions have changed this internal API it would be a
+# good idea to use a proper library for this.
+
+try:
+    from matplotlib import _cntr
+    # older matplotlib
+
+    def nullcline(x, y, z):
+        c = _cntr.Cntr(x, y, z)
+        # trace a contour
+        res = c.trace(0.0)
+        if not res:
+            return numpy.array([])
+        # result is a list of arrays of vertices and path codes
+        # (see docs for matplotlib.path.Path)
+        nseg = len(res) // 2
+        segments, codes = res[:nseg], res[nseg:]
+        return segments
+
+except ImportError:
+    from matplotlib import _contour
+    # newer matplotlib >= 2.2
+
+    def nullcline(x, y, z):
+        c = _contour.QuadContourGenerator(x, y, z, None, True, 0)
+        segments = c.create_contour(0.0)
+        return segments
 
 # how much courser is the grid used to show the vectors
 GRID_SUBSAMPLE = 2
@@ -137,19 +166,6 @@ class PhasePlane(_PhaseSpace):
         return u, v
 
 
-    # @staticmethod
-    def nullcline(self, x, y, z):
-        c = _cntr.Cntr(x, y, z)
-        # trace a contour
-        res = c.trace(0.0)
-        if not res:
-            return numpy.array([])
-        # result is a list of arrays of vertices and path codes
-        # (see docs for matplotlib.path.Path)
-        nseg = len(res) // 2
-        segments, codes = res[:nseg], res[nseg:]
-        return segments
-
 
 class PhasePlaneD3(PhasePlane):
     """
@@ -205,8 +221,8 @@ class PhasePlaneD3(PhasePlane):
         u, v = self._calc_phase_plane(self.default_sv, self.svx_ind, self.svy_ind, x, y)
         u = u[..., self.mode]  # project on active mode
         v = v[..., self.mode]
-        xnull = [{'path': segment.tolist(), 'nullcline_index': 0} for segment in self.nullcline(x, y, u)]
-        ynull = [{'path': segment.tolist(), 'nullcline_index': 1} for segment in self.nullcline(x, y, v)]
+        xnull = [{'path': segment.tolist(), 'nullcline_index': 0} for segment in nullcline(x, y, u)]
+        ynull = [{'path': segment.tolist(), 'nullcline_index': 1} for segment in nullcline(x, y, v)]
 
         # a courser mesh for the arrows
         xsmall = x[::GRID_SUBSAMPLE, ::GRID_SUBSAMPLE]
