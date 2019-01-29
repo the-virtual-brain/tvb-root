@@ -144,7 +144,8 @@ class Config:
             'bin/contributor_setup.sh': set_path + './bin/python -m tvb_bin.git_setup $1 $2\ncd ../bin'
         }
 
-        return Config("Linux", "/root/anaconda/envs/tvb-run", join("lib", "python2.7", "site-packages"),
+        #TODO: This is changed to docker container env locations
+        return Config("Linux", "/opt/conda/envs/tvb-run", join("lib", "python2.7", "site-packages"),
                       commands_map, _create_unix_command)
 
 
