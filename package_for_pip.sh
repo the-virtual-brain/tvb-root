@@ -3,7 +3,7 @@
 rm -Rf dist
 mkdir dist
 
-declare -a folders2pack=("tvb_data" "framework_tvb" "scientific_library" "externals/geodesic_distance")
+declare -a folders2pack=("tvb_data" "framework_tvb" "scientific_library" "externals/tvb_gdist")
 if [ "$1" != "" ]; then
     echo "Received param: " "$1"
     folders2pack=("$1")

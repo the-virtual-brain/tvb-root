@@ -4,7 +4,7 @@
 
 # set up external dependencies that we maintain as distutils packages in externals/
 
-cd externals/geodesic_distance
+cd externals/tvb_gdist
 python setup.py install
 rm -rf build
 rm -rf dist

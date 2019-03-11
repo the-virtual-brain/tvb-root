@@ -25,7 +25,7 @@ pipeline {
             steps {
                 sh '''#!/bin/bash
                     source activate tvb-docs
-                    sh install_from_svn.sh
+                    sh install_full_tvb.sh
                     cd tvb_build
                     python build_step1.py
                 '''
@@ -42,7 +42,7 @@ pipeline {
             steps {
                 sh '''#!/bin/bash
                     source activate tvb-run
-                    sh install_from_svn.sh
+                    sh install_full_tvb.sh
                     service postgresql start
                     cd tvb_bin
                     bash run_tests.sh postgres
@@ -60,7 +60,7 @@ pipeline {
                 sh 'rm -R -f tvb_build/build/TVB_Distribution'
                 sh '''#!/bin/bash
                     source activate tvb-run
-                    sh install_from_svn.sh
+                    sh install_full_tvb.sh
                     cd tvb_build
                     rm -R -f build/TVB_Distribution
                     python build_from_conda.py
@@ -78,7 +78,7 @@ pipeline {
             steps {
                 sh '''#!/bin/bash
                     source activate tvb-run
-                    sh install_from_svn.sh
+                    sh install_full_tvb.sh
                     cd scientific_library
                     py.test --cov-config .coveragerc --cov=tvb tvb/tests --cov-branch --cov-report xml:TEST_OUTPUT/coverage_library.xml --junitxml=TEST_OUTPUT/TEST-LIBRARY-RESULTS.xml
                 '''

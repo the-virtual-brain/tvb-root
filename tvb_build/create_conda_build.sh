@@ -17,10 +17,10 @@ pip install tvb-gdist formencode cfflib genshi nibabel sqlalchemy-migrate allens
 # Edit python2.7/site-packages/macholib/MatchOGraph.py loader= into loader_path=
 # Add an empty __init__.py in python2.7/site-packages/PyObjCTools/ folder or else py2app won't be able to process this module
 
-# After these run "sh install_from_svn.sh" or "python setup.py develop/install" from each of TVB packages in the correct order
+# After these run "sh install_full_tvb.sh" or "python setup.py develop/install" from each of TVB packages in the correct order
 
 cd ..
-sh install_from_svn.sh
+sh install_full_tvb.sh
 
 conda uninstall pyside shiboken cairo pycairo pywavelets
 
