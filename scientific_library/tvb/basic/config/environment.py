@@ -42,7 +42,6 @@ from tvb.basic.config.settings import VersionSettings
 
 
 class Environment(object):
-    IS_WORK_IN_PROGRESS = os.environ.get('TVB_WIP', False) == 'True'
 
     def is_framework_present(self):
         """

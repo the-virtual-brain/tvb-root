@@ -68,7 +68,6 @@ class BaseSettingsProfile(object):
         self.TVB_STORAGE = self.manager.get_attribute(stored.KEY_STORAGE, self.FIRST_RUN_STORAGE, unicode)
         self.TVB_LOG_FOLDER = os.path.join(self.TVB_STORAGE, "logs")
         self.TVB_TEMP_FOLDER = os.path.join(self.TVB_STORAGE, "TEMP")
-        self.TVB_PATH = self.manager.get_attribute(stored.KEY_TVB_PATH, '')
 
         self.env = Environment()
         self.cluster = ClusterSettings(self.manager)
@@ -151,8 +150,7 @@ class BaseSettingsProfile(object):
         library_folder = self.env.get_library_folder(self.BIN_FOLDER)
 
         if self.env.is_windows_deployment():
-            # Add self.TVB_PATH as first in PYTHONPATH so we can find TVB there in case of GIT contributors
-            self.env.setup_python_path(self.TVB_PATH, library_folder, os.path.join(library_folder, 'lib-tk'))
+            self.env.setup_python_path(library_folder, os.path.join(library_folder, 'lib-tk'))
             self.env.append_to_path(library_folder)
             self.env.setup_tk_tcl_environ(library_folder)
 
@@ -164,13 +162,13 @@ class BaseSettingsProfile(object):
             tcl_root = os.path.dirname(os.path.dirname(os.path.dirname(library_folder)))
             self.env.setup_tk_tcl_environ(tcl_root)
 
-            self.env.setup_python_path(self.TVB_PATH, library_folder, os.path.join(library_folder, 'site-packages.zip'),
+            self.env.setup_python_path(library_folder, os.path.join(library_folder, 'site-packages.zip'),
                                        os.path.join(library_folder, 'lib-dynload'))
 
         if self.env.is_linux_deployment():
             # Note that for the Linux package some environment variables like LD_LIBRARY_PATH,
             # LD_RUN_PATH, PYTHONPATH and PYTHONHOME are set also in the startup scripts.
-            self.env.setup_python_path(self.TVB_PATH, library_folder, os.path.join(library_folder, 'lib-tk'))
+            self.env.setup_python_path(library_folder, os.path.join(library_folder, 'lib-tk'))
             self.env.setup_tk_tcl_environ(library_folder)
 
             ### Correctly set MatplotLib Path, before start.
@@ -180,20 +178,6 @@ class BaseSettingsProfile(object):
                 os.environ['MATPLOTLIBDATA'] = mpl_data_path_maybe
             except:
                 pass
-
-        if self.TVB_PATH:
-            # In case of contributor setup, we want to make sure that all dev files are loaded first, so
-            # we need to reload all tvb related modules, since any call done with
-            # 'python -m ...' will consider the current folder as the first to search in.
-            sys.path = os.environ.get("PYTHONPATH", "").split(os.pathsep) + sys.path
-            for key in sys.modules.keys():
-                if (key.startswith("tvb.") and sys.modules[key] and not 'lab' in key and
-                        not key.startswith("tvb.basic.profile") and not 'profile_settings' in key):
-                    try:
-                        importlib.reload(sys.modules[key])
-                    except LibraryImportError:
-                        pass
-
 
 
 

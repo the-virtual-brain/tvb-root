@@ -469,11 +469,6 @@ class ABCAdapter(object):
         """
         try:
             ad_module = importlib.import_module(stored_adapter.module)
-            # This does no work for all adapters, so let it for manually choosing by developer
-            if TvbProfile.env.IS_WORK_IN_PROGRESS:
-                importlib.reload(ad_module)
-                LOGGER.info("Reloaded %r", ad_module)
-
             adapter_class = getattr(ad_module, stored_adapter.classname)
             adapter_instance = adapter_class()
             adapter_instance.stored_adapter = stored_adapter

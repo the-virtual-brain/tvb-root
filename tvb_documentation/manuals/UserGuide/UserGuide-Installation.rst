@@ -48,7 +48,6 @@ In the TVB_Distribution folder you should find a sub-folder `bin` with a number 
 - tvb_start
 - tvb_clean
 - tvb_stop
-- contributor_setup
 - distribution
 - ipython_notebook
 

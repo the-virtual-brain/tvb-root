@@ -347,17 +347,6 @@ def prepare_py2app_dist():
                       '../tvb.app/Contents/MacOS/python -m tvb_bin.run_ipython notebook '
     _create_command_file(os.path.join(DIST_FOLDER, "bin", 'ipython_notebook'),
                          ipython_command + '../demo_scripts', 'Launching IPython Notebook from TVB Distribution')
-    # _create_command_file(os.path.join(DIST_FOLDER, "demo_scripts", 'ipython_notebook'), IPYTHON_COMMAND, '')
-
-    _create_command_file(os.path.join(DIST_FOLDER, "bin", 'contributor_setup'),
-                         'cd ..\n'
-                         'export PYTHONPATH=tvb.app/Contents/Resources/lib/python2.7:'
-                         'tvb.app/Contents/Resources/lib/python2.7/site-packages.zip:'
-                         'tvb.app/Contents/Resources/lib/python2.7/lib-dynload\n'
-                         './tvb.app/Contents/MacOS/python  '
-                         'tvb.app/Contents/Resources/lib/python2.7/tvb_bin/git_setup.py $1 $2\n'
-                         'cd bin\n',
-                         'Setting-up contributor environment', True)
 
     # py2app should have a --exclude-dynamic parameter but it doesn't seem to work until now
     for entry in EXCLUDED_DYNAMIC_LIBS:

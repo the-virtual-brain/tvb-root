@@ -1,5 +1,5 @@
 .. |TITLE| replace:: TVB Contributors Manual
-.. |DESCRIPTION| replace:: Provides a tutorial with the steps you need to take in order to start contributing into TVB code, as well as a demo of using TVB Framework in console mode.
+.. |DESCRIPTION| replace:: Provides a tutorial with the steps you need to take in order to start contributing into TVB code.
 .. |VERSION| replace:: 1.0
 .. |REVISION| replace:: 3
 
@@ -9,7 +9,6 @@
 
 
 .. _TVB Web Page: http://www.thevirtualbrain.org
-.. _TVB Library Repository: https://github.com/the-virtual-brain/tvb-library
 .. _mailing list: https://groups.google.com/forum/#!forum/tvb-users
 .. _contributors_manual:
 
@@ -20,129 +19,49 @@ So you want to contribute to TVB. Maybe add a model or another feature.
 Thank you for helping! We welcome and appreciate contributions.
 
 Get in touch with the |TVB| team, we are glad to help tvb.admin@thevirtualbrain.org.
-
 Sign up for the `mailing list`_ and introduce yourself.
 
-Read trough these docs. Get to know TVB by installing a TVB distribution and playing with the GUI or following tutorials.
+Read trough these docs. Get to know TVB by installing a TVB Distribution
+(from `TVB Web Page`_) and playing with the GUI or following tutorials first.
 
 Have a look at the open tasks in our Jira |open_issues|.
 
-Finally revisit this document and find out how to set up |TVB| for a developer.
+Finally revisit this document and find out how to set up |TVB| as a developer.
 
 
 The source code
 ---------------
 
-First you will need to fork the source code.
-You will need to have git installed. And we recommend a github account as it makes collaboration easy.
-
-TVB's source is hosted on `github <https://github.com/the-virtual-brain>`_ .
-
-It is spread in several repositories. These are the most important:
-
-* tvb-library contains the scientific code.
-* tvb-framework contains data management services and the web interface of TVB.
-* tvb-data contains demonstration data.
-
-Fork the `TVB Library Repository`_ for your account.
-
-.. figure:: images/fork_repo.jpg
-   :align: center
+.. _github: https://github.com/the-virtual-brain
 
 
-If you want to contribute to the framework then fork that repository as well.
-
-Do not clone your forks yet, read about the contributor setup.
-
-
-The contributor setup
----------------------
-
-You can just clone your forks then install |TVB|'s distutils packages.
-That approach is described in `The unaided setup`_.
-It seems easy but |TVB| has some heavy dependencies.
-To avoid having contributors deal with installing those we have created the contributor setup.
-
-In the contributor setup you will have to :ref:`install <installing_tvb>` the latest |TVB| distribution.
-This is the same install that end users will use.
-
-Then use a special script to clone the repositories you want to modify.
-This setup will use the python and the dependencies from the |TVB| distribution, sidestepping the need to install them.
-You will run |TVB| from the distribution and the changes you have made to your local git repo will be visible.
-This works by placing your repository in PYTHONPATH ahead of the code from the distribution.
-
-Below are the commands for getting a contributor setup for the tvb-library.
-You should do the same for tvb-framework if you need to change that.
-
-The commands below are for Linux, adapt the extensions for your operating system.
-Also replace [github_account] with your github account name to get a valid url to your fork.
-
-Assuming you have your TVB Distribution package unpacked in a folder ``TVB_Distribution`` run:
-
-.. code-block:: bash
-
-   $ cd TVB_Distribution/bin
-   $ sh contributor_setup.sh https://github.com/[github_account]/tvb-library.git
-
-The steps above will create a folder *TVB_Distribution/tvb-library*.
-This is a clone of your forked repository. You are now ready to contribute to TVB. Good luck!
-
-NOTE: Each time you do a clean of TVB using the tvb_clean.sh script, make sure to re-run the above described commands in order to re-initialize TVB_PATH properly. This will give you some GIT related warning which you can just ignore.
+TVB's source code is hosted on `github`_ . Fork the **tvb-pack** into your account.
+You will need to have git installed locally and a Github account prepared.
+Then clone the repo locally.
 
 
-The unaided setup
------------------
+The work environment
+--------------------
 
 .. _anaconda: https://store.continuum.io/cshop/anaconda/
-.. _virtualenv: https://virtualenv.pypa.io/en/latest/index.html
 
-The contributor setup avoids having to deal with dependencies. But you might want to do exactly that, adding a dependency to |TVB| or changing the ones it already has.
-
-The unaided setup is the usual way to install python packages.
-
-Clone the repositories (after forking them in a github account of your own), noting that now it is likely that you will need all three.
+We recommend preparing your local Python environment for TVB with `anaconda`_.
+Using a virtual environment inside Anaconda is a good idea.
 
 .. code-block:: bash
 
-   $ cd my_tvb_workspace
-   $ git clone https://github.com/[github_account]/tvb-library.git
-   $ # these might be optional
-   $ git clone https://github.com/[github_account]/tvb-framework.git
-   $ git clone https://github.com/[github_account]/tvb-data.git
+   $ envname="tvb-run"
+   $ conda create -y -n $envname numpy
+   $ source activate $envname
+   $ conda config --add channels conda-forge
+   $ conda install tvb-framework  # This will bring tvb and all its dependencies
+   $ python -m tvb.interfaces.web.run WEB_PROFILE tvb.config  # Launch TVB web server locally
 
-|TVB| depends on numpy and scipy, heavy native libraries.
-If you can please install them using you operating system package manager.
-On Linux apt-get, yum, dnf etc.
+Similarly as using conda-forge repo above, you could install from Pypi **tvb-framework** and/or **tvb-library**.
 
-.. code-block:: bash
-
-   $ sudo yum install Cython numpy scipy
-
-If such native package managers are not available please install the `anaconda`_ python distribution and use TVB with it.
-
-If you leave the installation of these dependencies to distutils then it will try to compile them from source.
-For that to work you will need C and Fortran compilers, and development libraries, not an easy task.
-
-Using a virtual python environment is a good idea.
-For vanilla python get `virtualenv`_ then create and activate an enviroment:
-
-.. code-block:: bash
-
-   $ virtualenv tvb_venv
-   $ source tvb_venv/bin/activate
-
-Anaconda has it's own way of creating environments, see `anaconda`_ site.
-
-
-Now to install the |TVB| packages in develop mode using distutils :
-
-.. code-block:: bash
-
-   $ cd my_tvb_workspace
-   $ cd scientific_library
-   $ python setup.py develop
-   $ cd ../framework_tvb
-   $ python setup.py develop
+The above setup will bring you the latest release code of TVB into your Anaconda env.
+As last step, you should replace that released TVB link from your env, with your local clone of the code.
+You can use the script *install_full_tvb* from tvb root repo.
 
 
 Support
@@ -159,43 +78,8 @@ TVB's test suite takes a long time to run, but a patch will have to pass it.
 We recommend running tests before submitting changes that touch code that you have not written::
 
    $ pip install pytest
-   $ cd [folder_where_tvb_library_is]
-   $ pytest tvb/test [--junitxml=path]
-   $
-   $ cd [folder_where_tvb_framework_is]
-   $ pytest tvb/test [--profile=TEST_POSTGRES_PROFILE] [--junitxml=path]
-   $
-   $ pip install pytest-cov
-   $ cd [folder_where_tvb_library_is]
-   $ py.test --cov-config .coveragerc --cov=tvb tvb/tests/ --cov-branch --cov-report xml:[file_where_xml_will_be_generated]
-
-
-In the above example of running tvb framework test, the default TVB profile value is TEST_SQLITE_PROFILE,
-when nothing else is specified. Accepted profiles for tests are: TEST_SQLITE_PROFILE and TEST_POSTGRES_PROFILE.
-
-We have some conventions when writing unit tests in TVB:
-
-- follow  `standard test discovery rules <https://docs.pytest.org/en/latest/getting-started.html>`_ from pytest
-- to ensure the correct TVB Profile is set in tests, before ANY tvb import in the unit test,
-  setup the correct tvb test profile::
-
-        from tvb.tests.library import setup_test_console_env
-        setup_test_console_env()
-        # OR
-        from tvb.tests.framework.core.base_testcase import init_test_env
-        init_test_env()
-
-  You can do this implicitly (as done currently in the majority of our example unit tests),
-  by importing BaseTestCase first::
-
-        from tvb.tests.library.base_testcase import BaseTestCase
-        # OR
-        from tvb.tests.framework.core.base_testcase import BaseTestCase
-
-- in tvb-framework, if you want to inherit from ``TransactionalTestCase`` and you want the unit-test method setup to
-  be done in the same transaction as the unit-test (recommended situation), then define in your subclass methods:
-      - transactional_setup_method
-      - transactional_teardown_method
+   $ pytest --pyargs tvb.tests.library
+   $ pytest --pyargs tvb.tests.framework
 
 
 Contribution guidelines
@@ -228,19 +112,13 @@ Avoid reinventing the wheel. Use the python built in functions, the standard lib
 Git guidelines
 --------------
 
-By default, the only branch available is 'trunk'. You should **always** create a separate branch with a self-explanatory name for the new features you want to add to TVB.
-In order to do this assuming you are using the contributor setup do :
-
-.. code-block:: bash
-
-   $ cd TVB_Distribution/scientific_library
-   $ git checkout -b my-awesome-new-feature-url
-
+By default, the only branch available is 'trunk'. You should **always** create a separate branch with a self-explanatory
+name for the new features you want to add to TVB.
 
 While making your modifications/contributions, make sure that
 
 1) you are working in the right branch and
-2) you make pull requests from master ('trunk') often, in order to quickly solve any conflicts which might appear.
+2) you make pull requests from master often, in order to quickly solve any conflicts which might appear.
 3) You follow the `Contribution guidelines`_
 
 Once you are done with your changes and you believe that they can be integrated into TVB master repository, go to your GitHub repository,
@@ -252,7 +130,7 @@ Tools
 -----
 
 We use pycharm to develop and debug TVB.
-To test quick ideas we like ipython.
+To test quick ideas we like ipython notebooks.
 
 
 Technologies used by TVB
