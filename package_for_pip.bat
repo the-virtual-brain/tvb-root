@@ -3,10 +3,10 @@ rmdir dist
 mkdir dist
 
 echo "====================================="
-echo "Packing: externals/geodesic_distance"
+echo "Packing: externals/tvb_gdist"
 echo "====================================="
 
-cd externals\geodesic_distance
+cd externals\tvb_gdist
 python setup.py sdist
 python setup.py bdist_wheel
 
