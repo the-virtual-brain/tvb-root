@@ -63,7 +63,7 @@ class JansenRit(ModelNumbaDfun):
 
     .. math::
         \dot{y_0} &= y_3 \\
-        \dot{y_3} &= A a\,S[y_1 - y_2] - 2a\,y_3 - 2a^2\, y_0 \\
+        \dot{y_3} &= A a\,S[y_1 - y_2] - 2a\,y_3 - a^2\, y_0 \\
         \dot{y_1} &= y_4\\
         \dot{y_4} &= A a \,[p(t) + \alpha_2 J + S[\alpha_1 J\,y_0]+ c_0]
                     -2a\,y - a^2\,y_1 \\

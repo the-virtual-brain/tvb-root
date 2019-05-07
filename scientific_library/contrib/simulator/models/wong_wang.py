@@ -56,6 +56,11 @@ class WongWang(models.Model):
                 Journal of Neuroscience 26(4), 1314-1328, 2006.
 
     .. [WW_2006_SI] Supplementary Information
+                
+    .. [WW_2007] Kong-Fatt Wong, Alexander C. Huk2, Michael N. Shadlen,
+                Xiao-Jing Wang, *Neural circuit dynamics underlying accumulation
+                of time-varying evidence during perceptual decision making*.
+                Front. Comput. Neurosci., 2007.
 
     A reduced model by Wong and Wang: A reduced two-variable neural model 
     that offers a simple yet biophysically plausible framework for studying 
@@ -65,131 +70,119 @@ class WongWang(models.Model):
     corresponding to AMPAand GABA gating variables, it is assumed that is 
     :math:`S_{NMDA}` that dominates the time evolution of the system.
 
-    The model (:math:`S1`, :math:`S2`) phase-plane, including a representation 
+    The model (:math:`Sl`, :math:`Sr`) phase-plane, including a representation 
     of the vector field as well as its nullclines, using default parameters, 
     can be seen below:
 
-    .. figure :: img/WongWang_01_mode_0_pplane.svg
-    .. _phase-plane-WongWang:
-        :alt: Phase plane of the reduced model by Wong and Wang (S1, S2)
+    Notation and parameter selection follows _Materials and methods_ from [WW_2007].
 
-    To reproduce the phase plane in Figure 4A, page 1319 (five steady states):
-        J11 = 0.54
-        J22 = 0.18
-        J12 = 0.08
-        J21 = 0.58
-        J_ext = 0.0
-        I_o = 0.34
-        sigma_noise = 0.02
-        mu_o = 0.00
-        c = 100.0
+    To reproduce the phase plane in Figure 5B, page 1320:
+        Jll = Jrr = 0.3725
+        Jlr = Jrl = 0.1137
+        J_ext = 1.1e-3
+        I_o = 0.3297
+        mu_o = 30
+        c = 6.4 
 
-    To reproduce the phase plane in Figure 4B, page 1319 (saddle-type point):
-        b = 0.108
-        d = 121.0
-        gamma = 0.11
-        tau_s = 100.
-        J11 = 0.78
-        J22 = 0.59
-        J12 = 0.72
-        J21 = 0.67
-        J_ext = 0.52
-        I_o = 0.3255
-        sigma_noise = 0.02
-        mu_o = 0.35
-        c = 0.0
+    To reproduce C & D vary c parameter respectively.
 
     .. automethod:: __init__
 
     """
-    _ui_name = "Wong-Wang (Original)"
+    _ui_name = "Wong-Wang (2D)"
 
     #Define traited attributes for this model, these represent possible kwargs.
     a = arrays.FloatArray(
         label=":math:`a`",
-        default=numpy.array([0.270, ]),
-        range=basic.Range(lo=0.0, hi=1.0),
-        doc=""" (mVnC)^{-1}. Parameter chosen to ﬁt numerical solutions.""")
+        default=numpy.array([270., ]),
+        range=basic.Range(lo=0.0, hi=1000.0),
+        doc="""[Hz/nA] Parameter chosen to ﬁt numerical solutions.""")
 
     b = arrays.FloatArray(
         label=":math:`b`",
-        default=numpy.array([0.108, ]),
+        default=numpy.array([108, ]),
         range=basic.Range(lo=0.0, hi=1.0),
-        doc="""[kHz]. Parameter chosen to ﬁt numerical solutions.""")
+        doc="""[Hz]. Parameter chosen to ﬁt numerical solutions.""")
 
     d = arrays.FloatArray(
         label=":math:`d`",
-        default=numpy.array([154.0, ]),
+        default=numpy.array([0.154, ]),
         range=basic.Range(lo=0.0, hi=200.0),
-        doc="""[ms]. Parameter chosen to ﬁt numerical solutions.""")
+        doc="""[s]. Parameter chosen to ﬁt numerical solutions.""")
 
     gamma = arrays.FloatArray(
         label=r":math:`\gamma`",
-        default=numpy.array([0.0641, ]),
+        default=numpy.array([0.641, ]),
         range=basic.Range(lo=0.0, hi=1.0),
-        doc="""Kinetic parameter divided by 1000 to set the time scale in ms""")
+        doc="""Kinetic parameter""")
 
     tau_s = arrays.FloatArray(
         label=r":math:`\tau_S`",
-        default=numpy.array([100., ]),
+        default=numpy.array([60., ]),
         range=basic.Range(lo=50.0, hi=150.0),
-        doc="""Kinetic parameter. NMDA decay time constant.""")
+        doc="""[ms] Kinetic parameter. NMDA decay time constant.""")
 
-    tau_ampa = arrays.FloatArray(
-        label=r":math:`\tau_{ampa}`",
+    tau_noise = arrays.FloatArray(
+        label=r":math:`\tau_{noise}`",
         default=numpy.array([2., ]),
         range=basic.Range(lo=1.0, hi=10.0),
-        doc="""Kinetic parameter. AMPA decay time constant.""",
+        doc="""[ms] Noise decay time constant.""",
         order=-1)
 
-    J11 = arrays.FloatArray(
-        label=":math:`J_{11}`",
-        default=numpy.array([0.2609, ]),
+    Jll = arrays.FloatArray(
+        label=":math:`J_{ll}`",
+        default=numpy.array([0.3725, ]),
         range=basic.Range(lo=0.0, hi=1.0),
         doc="""Synaptic coupling""")
 
-    J22 = arrays.FloatArray(
-        label=":math:`J_{22}`",
-        default=numpy.array([0.2609, ]),
+    Jrr = arrays.FloatArray(
+        label=":math:`J_{rr}`",
+        default=numpy.array([0.3725, ]),
         range=basic.Range(lo=0.0, hi=1.0),
         doc="""Synaptic coupling""")
 
-    J12 = arrays.FloatArray(
-        label=":math:`J_{12}`",
-        default=numpy.array([0.0497, ]),
+    Jlr = arrays.FloatArray(
+        label=":math:`J_{lr}`",
+        default=numpy.array([0.1137, ]),
         range=basic.Range(lo=0.0, hi=1.0),
         doc="""Synaptic coupling""")
 
-    J21 = arrays.FloatArray(
-        label=":math:`J_{21}`",
-        default=numpy.array([0.0497, ]),
+    Jrl = arrays.FloatArray(
+        label=":math:`J_{rl}`",
+        default=numpy.array([0.1137, ]),
         range=basic.Range(lo=0.0, hi=1.0),
         doc="""Synaptic coupling""")
+
+    J_N = arrays.FloatArray(
+        label=":math:`J_{N}`",
+        default=numpy.array([0.1137, ]),
+        range=basic.Range(lo=0.0, hi=1.0),
+        doc="""External synaptic coupling""")
 
     J_ext = arrays.FloatArray(
         label=":math:`J_{ext}`",
-        default=numpy.array([0.52, ]),
-        range=basic.Range(lo=0.0, hi=1.0),
-        doc="""Synaptic coupling""")
+        default=numpy.array([1.1e-3, ]),
+        range=basic.Range(lo=0.0, hi=0.01),
+        doc="""[nA/Hz] Synaptic coupling""")
 
     I_o = arrays.FloatArray(
         label=":math:`I_{o}`",
-        default=numpy.array([0.3255, ]),
+        default=numpy.array([0.3297, ]),
         range=basic.Range(lo=0.0, hi=1.0),
         doc="""Effective external input""")
 
     sigma_noise = arrays.FloatArray(
         label=r":math:`\sigma_{noise}`",
-        default=numpy.array([0.02, ]),
+        default=numpy.array([0.009, ]),
         range=basic.Range(lo=0.0, hi=1.0),
         doc="""Noise amplitude. Take this value into account for stochatic
         integration schemes.""")
 
     mu_o = arrays.FloatArray(
         label=r":math:`\mu_{0}`",
-        default=numpy.array([0.03, ]),
-        range=basic.Range(lo=0.0, hi=1.0),
-        doc="""Stimulus amplitude""")
+        default=numpy.array([30, ]),
+        range=basic.Range(lo=0.0, hi=50.0),
+        doc="""[Hz] Stimulus amplitude""")
 
     c = arrays.FloatArray(
         label=":math:`c`",
@@ -198,22 +191,29 @@ class WongWang(models.Model):
         doc="""[%].  Percentage coherence or motion strength. This parameter
         comes from experiments in MT cells.""")
 
+    f = arrays.FloatArray(
+        label=":math:`f`",
+        default=numpy.array([1., ]), #0.45
+        range=basic.Range(lo=0.0, hi=100.0),
+        doc=""" Gain of MT firing rates""")
+
     state_variable_range = basic.Dict(
         label="State variable ranges [lo, hi]",
-        default={"S1": numpy.array([0.0, 0.3]),
-                 "S2": numpy.array([0.0, 0.3])},
+        default={"Sl": numpy.array([0., 1.]),
+                 "Sr": numpy.array([0., 1.])},
         doc="n/a",
         order=-1
     )
 
     variables_of_interest = basic.Enumerate(
         label="Variables watched by Monitors",
-        options=["S1", "S2"],
-        default=["S1"],
+        options=["Sl", "Sr"],
+        default=["Sl"],
         select_multiple=True,
         doc="""default state variables to be monitored""",
         order=10)
 
+    state_variables = ['Sl', 'Sr']
 
     def __init__(self, **kwargs):
         """
@@ -221,17 +221,14 @@ class WongWang(models.Model):
 
         """
 
-        #LOG.info('%s: initing...' % str(self))
-
         super(WongWang, self).__init__(**kwargs)
 
-        #self._state_variables = ["S1", "S2"]
         self._nvar = 2
         self.cvar = numpy.array([0], dtype=numpy.int32)
 
         #derived parameters
-        self.I_1 = None
-        self.I_2 = None
+        self.I_mot_l = None
+        self.I_mot_r = None
 
         LOG.debug('%s: inited.' % repr(self))
 
@@ -243,38 +240,26 @@ class WongWang(models.Model):
 
     def dfun(self, state_variables, coupling, local_coupling=0.0):
         r"""
-        These dynamic equations, taken from [WW_2006]_, ...
-
-        ..math::
-
-            \frac{dS_{i}}{dt} &= - \frac{S_{i}}{\tau_{S}} + (1 - S_{i})\gamma H_{i} \\
-            H_{i} &= \frac{a x_{i} - b}{1- \exp[-d (a x_{i} - b)]} \\
-            x_{1} &= J11  S_{1} - J_{12}S_{2} + I_{0} + I_{1} \\
-            x_{2} &= J22  S_{2} - J_{21}S_{1} + I_{0} + I_{2} \\
-            I_{i} &= J_{ext} \mu_{0} \left( 1 \pm \frac{c}{100}\right)
-
-        where :math:`i=` 1, 2 labels the selective population.
-
+        The notation of those dynamic equations follows [WW_2007].
+        Derivatives of s are multiplied by 0.001 constant to match ms time scale.
         """
         # add global coupling?
-        s1 = state_variables[0, :]
-        s2 = state_variables[1, :]
+        sl = state_variables[0, :]
+        sr = state_variables[1, :]
 
-        c_0 = coupling[0]
+        c_0 = coupling[0, :]
+        lc_0_l = local_coupling * sl
+        lc_0_r = local_coupling * sr
 
-        x1 = self.J11 * s1 - self.J12 * s2 + self.I_o + self.I_1
-        x2 = self.J21 * s2 - self.J22 * s1 + self.I_o + self.I_2
+        I_l = self.Jll * sl - self.Jlr*sr + self.I_mot_l + self.I_o + self.J_N * c_0 + self.J_N * lc_0_l
+        I_r = self.Jrr * sr - self.Jrl*sl + self.I_mot_r + self.I_o + self.J_N * c_0 + self.J_N * lc_0_r
 
-        H1 = (self.a * x1 - self.b) / (1 - numpy.exp(-self.d * (self.a * x1 - \
-                                                                self.b)))
-        H2 = (self.a * x2 - self.b) / (1 - numpy.exp(-self.d * (self.a * x2 - \
-                                                                self.b)))
+        r = lambda I_i: (self.a*I_i - self.b)*1./(1 - numpy.exp(-self.d*(self.a*I_i - self.b)))
 
-        ds1 = - (s1 / self.tau_s) + (1 - s1) * H1 * self.gamma
-        ds2 = - (s2 / self.tau_s) + (1 - s2) * H2 * self.gamma
+        ds1 = -sl*1./ self.tau_s + (1 - sl) * self.gamma * r(I_l) * 0.001 # to ms
+        ds2 = -sr*1./ self.tau_s + (1 - sr) * self.gamma * r(I_r) * 0.001 # to ms
 
         derivative = numpy.array([ds1, ds2])
-
         return derivative
 
 
@@ -282,9 +267,12 @@ class WongWang(models.Model):
         """
         Derived parameters
         """
-
-        self.I_1 = self.J_ext * self.mu_o * (1 + self.c / 100)
-        self.I_2 = self.J_ext * self.mu_o * (1 - self.c / 100)
+        # Additional parameter g_stim introduced that controls I_mot strength
+        self.I_mot_l = self.J_ext * self.mu_o * (1 + self.f * self.c *1. / 100)
+        self.I_mot_r = self.J_ext * self.mu_o * (1 - self.f * self.c *1. / 100)
+        if len(self.I_mot_l) > 1:
+            self.I_mot_l = numpy.expand_dims(self.I_mot_l, -1)
+            self.I_mot_r = numpy.expand_dims(self.I_mot_r, -1)
 
 
 
@@ -298,6 +286,8 @@ if __name__ == "__main__":
     
     #Initialise Models in their default state:
     WW = WongWang()
+    WW.c = 11
+    WW.configure()
         
     LOG.info("Model initialised in its default state without error...")
     
@@ -307,7 +297,7 @@ if __name__ == "__main__":
     from tvb.simulator.plot.phase_plane_interactive import PhasePlaneInteractive
     import tvb.simulator.integrators
         
-    INTEGRATOR = tvb.simulator.integrators.HeunDeterministic(dt=2**-5)
+    INTEGRATOR = tvb.simulator.integrators.HeunDeterministic(dt=0.1)
     ppi_fig = PhasePlaneInteractive(model=WW, integrator=INTEGRATOR)
     ppi_fig.show()
 

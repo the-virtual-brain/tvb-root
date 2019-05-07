@@ -135,8 +135,8 @@ class FFT(core.Type):
         #Enumerate basic type wraps single values into a list
         if self.window_function != [None]:
             window_function = SUPPORTED_WINDOWING_FUNCTIONS[self.window_function[0]]
-            window_mask = numpy.reshape(window_function(seg_tpts),
-                                            (seg_tpts, 1, 1, 1, 1))
+            window_mask = numpy.reshape(window_function(int(seg_tpts)),
+                                            (int(seg_tpts), 1, 1, 1, 1))
             time_series = time_series * window_mask
 
         #Calculate the FFT

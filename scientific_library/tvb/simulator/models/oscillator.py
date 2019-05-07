@@ -530,3 +530,115 @@ class Kuramoto(Model):
 
         # all this pi makeh me have great hungary, can has sum NaN?
         return self.derivative
+
+
+class supHopf(ModelNumbaDfun):
+    r"""
+    The supHopf model describes the normal form of a supercritical Hopf bifurcation in Cartesian coordinates.
+    This normal form has a supercritical bifurcation at a=0 with a the bifurcation parameter in the model. So 
+    for a < 0, the local dynamics has a stable fixed point and the system corresponds to a damped oscillatory 
+    state, whereas for a > 0, the local dynamics enters in a stable limit cycle and the system switches to an 
+    oscillatory state.
+    
+    See for examples:
+    
+    .. [Kuznetsov_2013] Kuznetsov, Y.A. *Elements of applied bifurcation theory.* Springer Sci & Business
+        Media, 2013, vol. 112.
+    
+    .. [Deco_2017a] Deco, G., Kringelbach, M.L., Jirsa, V.K., Ritter, P. *The dynamics of resting fluctuations
+       in the brain: metastability and its dynamical cortical core* Sci Reports, 2017, 7: 3095.
+    
+    The equations of the supHopf equations read as follows:
+    
+    .. math::
+        \dot{x}_{i} &= (a_{i} - x_{i}^{2} - y_{i}^{2})x_{i} - omega{i}y_{i} \\
+        \dot{y}_{i} &= (a_{i} - x_{i}^{2} - y_{i}^{2})y_{i} + omega{i}x_{i}
+    
+    where a is the local bifurcation parameter and omega the angular frequency.
+    """
+
+    _ui_name = "supHopf"
+    ui_configurable_parameters = ['a', 'omega']
+
+    #supHopf's parameters.
+    a = arrays.FloatArray(
+        label=r":math:`a`",
+        default=numpy.array([-0.5]),
+        range=basic.Range(lo=-10.0, hi=10.0, step=0.01),
+        doc="""Local bifurcation parameter.""",
+        order=1)
+
+    omega = arrays.FloatArray(
+        label=r":math:`\omega`",
+        default=numpy.array([1.]),
+        range=basic.Range(lo=0.05, hi=630.0, step=0.01),
+        doc="""Angular frequency.""",
+        order=2)
+
+    # Initialization.
+    state_variable_range = basic.Dict(
+        label="State Variable ranges [lo, hi]",
+        default={"x": numpy.array([-5.0, 5.0]),
+                 "y": numpy.array([-5.0, 5.0])},
+        doc="""The values for each state-variable should be set to encompass
+               the expected dynamic range of that state-variable for the current
+               parameters, it is used as a mechanism for bounding random initial
+               conditions when the simulation isn't started from an explicit
+               history, it is also provides the default range of phase-plane plots.""",
+        order=3)
+
+    variables_of_interest = basic.Enumerate(
+        label="Variables watched by Monitors",
+        options=["x", "y"],
+        default=["x"],
+        select_multiple=True,
+        doc="Quantities of supHopf available to monitor.",
+        order=4)
+
+    state_variables = ["x", "y"]
+    
+    _nvar = 2                                           # number of state-variables
+    cvar = numpy.array([0, 1], dtype=numpy.int32)       # coupling variables
+
+    def _numpy_dfun(self, state_variables, coupling, local_coupling=0.0, 
+                    array=numpy.array, where=numpy.where, concat=numpy.concatenate):
+        r"""
+        Computes the derivatives of the state-variables of supHopf
+        with respect to time.
+        """
+
+        y = state_variables
+        ydot = numpy.empty_like(state_variables)
+        
+        # long-range coupling
+        c_0 = coupling[0]
+        c_1 = coupling[1]
+
+        # short-range (local) coupling
+        lc_0 = local_coupling * y[0]
+
+        #supHopf's equations in Cartesian coordinates:
+        ydot[0] = (self.a - y[0]**2 - y[1]**2) * y[0] - self.omega * y[1] + c_0 + lc_0
+        ydot[1] = (self.a - y[0]**2 - y[1]**2) * y[1] + self.omega * y[0] + c_1
+
+        return ydot
+
+    def dfun(self, x, c, local_coupling=0.0):
+        x_ = x.reshape(x.shape[:-1]).T
+        c_ = c.reshape(c.shape[:-1]).T
+        lc_0 = local_coupling * x[0, :, 0]
+        deriv = _numba_dfun(x_, c_, self.a, self.omega, lc_0)
+        
+        return deriv.T[..., numpy.newaxis]
+
+@guvectorize([(float64[:],) * 6], '(n),(m)' + ',()' * 3 + '->(n)', nopython=True)
+def _numba_dfun_supHopf(y, c, a, omega, lc_0, ydot):
+    "Gufunc for supHopf model equations."
+
+    #long-range coupling
+    c_0 = c[0]
+    c_1 = c[1]
+
+    #supHopf equations
+    ydot[0] = (a[0] - y[0]**2 - y[1]**2) * y[0] - omega[0] * y[1] + c_0 + lc_0[0]
+    ydot[1] = (a[0] - y[0]**2 - y[1]**2) * y[1] + omega[0] * y[0] + c_1

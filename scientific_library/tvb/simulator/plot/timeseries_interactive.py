@@ -175,7 +175,7 @@ class TimeSeriesInteractive(core.Type):
             (not self.time_series.connectivity is None)):
             self.labels = self.time_series.connectivity.region_labels
         elif (isinstance(self.time_series, (time_series_datatypes.TimeSeriesEEG,
-            time_series_datatypes.TimeSeriesMEG) and (not self.time_series.sensors is None))):
+            time_series_datatypes.TimeSeriesMEG)) and (not self.time_series.sensors is None)):
             self.labels = self.time_series.sensors.labels
         else:
             self.labels = ["channel_%0.2d"%k for k in range(self.nsrs)] 
