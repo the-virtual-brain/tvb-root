@@ -390,7 +390,7 @@ def matlab_cmd(matlab_path, script_name, log_file):
         os.environ['PATH'] = os.environ.get('PATH', '') + os.pathsep + folder_path
     if MATLAB in exe_name:
         base = exe_name + ' '
-        opts = ' -nodesktop -nojvm -nosplash -logfile %s -r "%s;"' % (log_file, script_name)
+        opts = ' -nodesktop -nojvm -nosplash -logfile %s -r "run %s "' % (log_file, script_name)
         if os.name == 'nt':
             opts = '-minimize ' + opts
         command = base + opts
