@@ -627,7 +627,7 @@ class supHopf(ModelNumbaDfun):
         x_ = x.reshape(x.shape[:-1]).T
         c_ = c.reshape(c.shape[:-1]).T
         lc_0 = local_coupling * x[0, :, 0]
-        deriv = _numba_dfun(x_, c_, self.a, self.omega, lc_0)
+        deriv = _numba_dfun_supHopf(x_, c_, self.a, self.omega, lc_0)
         
         return deriv.T[..., numpy.newaxis]
 
