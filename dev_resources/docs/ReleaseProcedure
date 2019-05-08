@@ -4,7 +4,6 @@ TVB RELEASE PROCEDURE
 When creating a new TVB set of release packages you should:
 
 	- update version number in: framework_tvb/tvb/config/settings.py BASE_VERSION
-        
     - in case DB changes happened:
         * increment in scientific_library/tvb/basic/config/settings.py DB_CURRENT_VERSION
         * create a new DB update script in: framework_tvb/tvb/core/entities/model/db_update_scripts/
@@ -25,6 +24,7 @@ When creating a new TVB set of release packages you should:
     		This will generate images used into Simulator documentation. PLEASE commit the used ones
     		on SVN, so they will be included in the final distribution.
     		To check, for missing images you can try to generate PDF for tvb.simulator.rst (with rst2pdf) and look for missing image errors.
+
     - run benchmarks for the new release:
         * run tvb.interfaces.command.benchmark.py and copy the resulted text from the console
         * manually create a file tvb_x.y.rst under tvb_documentation/doc_site/benchmarks
@@ -33,44 +33,26 @@ When creating a new TVB set of release packages you should:
         * add the new x_label and values and run tvb_documentation/doc_site/benchmarks/generate_benchmark_img.py
 
     - check that all README files and manuals are still valid
-
     - fill new RELEASE_NOTES:
     	* if the release is an internal release add description only in ZWEI
     	* if the release is an official one, update also [tvb-root]/tvb_documentation/RELEASE_NOTES
 
     - run TVB unit tests (cd tvb_bin sh run_tests.sh) to make sure that everything is correct.
-    - generate distribution packages with http://hudson.codemart.ro/ 
+    - generate distribution packages with http://jenkins.codemart.ro/
         * when the release is public, copy the distribution files on [tvb-live-server]:/opt/tvb-public-releases/[version]
     - http://www.thevirtualbrain.org/tvb/zwei/cms#
-        admin/admintvb23
-        Upload new ZIP with distributions under "Document" entity
+        Upload new ZIPs with distributions under "Document" entity
         Create new entity TVB-Release with references towards the ZIP documents uploaded at the previous step.
     - TVB Documentation Site needs to be updated separately, by copying from Hudson the latest ZIP
-        https://hudson.codemart.ro/hudson/view/TVB/job/TVB%20-%20Documentation%20Site/
-        scp -i [] -P 2222 tvb-documentation-site.zip root@req.thevirtualbrain.org:/root/
-        Unzip and copy at location /opt/tvb-documentation-site
+        https://jenkins.codemart.ro/view/TVB/job/TVB%20-%20Build%20-%20Linux/
+        Unzip and copy 	tvb-documentation-site.zip	at location /opt/tvb-documentation-site
         Check at http://docs.thevirtualbrain.com/
 
-    - connecting to the live server:
-            scp -i [] -P 2222 TVB_Linux_[x.y.z].zip root@req.thevirtualbrain.org:/home/tvb
-	    	ssh -i [authorized-private-key-path] -p *** root@req.thevirtualbrain.org
-	    	su tvb
-	    	cd ~/TVB_Distribution/bin
-	    	sh tvb_start.sh
-	    	# check http://www.thevirtualbrain.org/demo
+    - create release tag on GitHub also.
 
-	    	# Update Zwei Site
-	    	cd /opt/apache-tomcat/bin
-	    	sh shutdown.sh
-	    	rm -R rm /opt/apache-tomcat/webapps/tvb/
-	    	rm /opt/apache-tomcat/webapps/tvb.war
-	    	cp [new WAR] /opt/apache-tomcat/tomcat/webapps/tvb.war
-	    	cd cd /opt/apache-tomcat/bin
-	    	sh startup.sh
-	    	# you should not remove /opt/apache-tomcat/.tvb folder, because in there we keep the DB where registered users are placed.
+    - upload new packages on Pypi
 
-    - update Git repositories (dev/HowToGIT)
-      Create release tag on Git also.
+    - make sure conda-forge packages are also released based on new Pypi packs
        
     - let the Force be with Us!
     
