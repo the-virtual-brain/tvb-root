@@ -52,43 +52,19 @@ order to work with the same data. In TVB architecture, that "common
 language" is represented by Data Types. TVB Data Types declarations are
 located in this package.
 
-Most of the datatypes here have a diamond like inheritance structure of
-the following form:
-
-::
-
-                            DataTypeData
-                                 |
-                                / \\
-               DataTypeFramework   DataTypeScientific
-                                \ /
-                                 |
-                              DataType
-                              
-
-The DataTypeData holds the actual structure of the datatype.
-DataTypeScientific holds any methods required from a scientific point of
-view. DataTypeFramework should just be ignored from a library user point
-of view as it holds framework related methods and will be removed
-altogether in the near future. DataType just brings all the above
-together and is the class you should actually use in your code.
-
 -  tvb.simulator
 
 The Simulation Component is the most important component in The Virtual
 Brain solution, as it is the component responsible for all the
 scientific computation related to brain models and data.
 
-You can find various demos of using the simulator under
-tvb/simulator/demos as well as some nice tutorials under
-tvb/simulator/doc/tutorials/ .
+You can find various demos of using the simulator here:
+http://docs.thevirtualbrain.org/demos/Demos.html .
 
 -  tvb.analyzers
 
 Holds modules that can run various analysis of data resulted from the
-simulator. There are a few demos which use the PCA analyzer like
-tvb/simulator/demos/pca\_analyse\_view\_region and
-tvb/simulator/demos/pca\_analyse\_view\_surface . TVB is not strong in
+simulator. TVB is not strong in
 doing data analysis, we barely have a minimum set of analyzers for
 immediate needs.
 
