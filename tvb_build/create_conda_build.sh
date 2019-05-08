@@ -19,7 +19,6 @@ pip install tvb-gdist formencode cfflib genshi nibabel sqlalchemy-migrate allens
 
 # After these run "sh install_full_tvb.sh" or "python setup.py develop/install" from each of TVB packages in the correct order
 
-cd ..
 sh install_full_tvb.sh
 
 conda uninstall pyside shiboken cairo pycairo pywavelets

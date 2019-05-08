@@ -6,7 +6,7 @@ echo "====================================="
 echo "Packing: externals/tvb_gdist"
 echo "====================================="
 
-cd externals\tvb_gdist
+cd ..\externals\tvb_gdist
 python setup.py sdist
 python setup.py bdist_wheel
 

@@ -26,7 +26,6 @@ pipeline {
                 sh '''#!/bin/bash
                     source activate tvb-docs
                     sh install_full_tvb.sh
-                    cd tvb_build
                     python build_step1.py
                 '''
                 archiveArtifacts artifacts: 'tvb_build/build/*.zip'
@@ -44,7 +43,7 @@ pipeline {
                     source activate tvb-run
                     sh install_full_tvb.sh
                     service postgresql start
-                    cd tvb_bin
+                    cd ../tvb_bin
                     bash run_tests.sh postgres
                 '''
             }
@@ -61,7 +60,6 @@ pipeline {
                 sh '''#!/bin/bash
                     source activate tvb-run
                     sh install_full_tvb.sh
-                    cd tvb_build
                     rm -R -f build/TVB_Distribution
                     python build_from_conda.py
                 '''
@@ -79,7 +77,7 @@ pipeline {
                 sh '''#!/bin/bash
                     source activate tvb-run
                     sh install_full_tvb.sh
-                    cd scientific_library
+                    cd ../scientific_library
                     py.test --cov-config .coveragerc --cov=tvb tvb/tests --cov-branch --cov-report xml:TEST_OUTPUT/coverage_library.xml --junitxml=TEST_OUTPUT/TEST-LIBRARY-RESULTS.xml
                 '''
                 junit 'scientific_library/TEST_OUTPUT/TEST-LIBRARY-RESULTS.xml'

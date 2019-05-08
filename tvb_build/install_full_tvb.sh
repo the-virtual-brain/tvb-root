@@ -3,6 +3,7 @@
 # Use this script to install TVB's distutils packages, from the svn source, to the current python installation
 
 # set up external dependencies that we maintain as distutils packages in externals/
+cd ..
 
 cd externals/tvb_gdist
 python setup.py install
@@ -26,4 +27,4 @@ cd ..
 
 cd tvb_bin
 python setup.py develop
-cd ..
+cd ../tvb_build

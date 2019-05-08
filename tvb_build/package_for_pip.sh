@@ -10,7 +10,7 @@ if [ "$1" != "" ]; then
 fi
 
 
-
+cd ..
 for pipPackage in "${folders2pack[@]}"; do
 
     echo "============================="
