@@ -88,11 +88,11 @@ class AllenConnectomeBuilder(ABCAsynchronous):
             {'name': 'weighting', 'type': 'select', 'label': 'Definition of the weights of the connectivity :',
              'required': True, 'options': self.WEIGHTS_OPTIONS, 'default': '1'},
 
-            {'name': 'inf_vox_thresh', 'type': 'float',
-             'label': 'Min infected voxels',
-             'description': 'To build the volume and the connectivity select only the areas where there is at '
-                            'least one infection experiment that had infected more than ... voxels in that areas.',
-             'required': True, 'default': '50'},
+            {'name': 'inj_f_thresh', 'type': 'float',
+             'label': 'Injected percentage of voxels in the inj site',
+             'description': 'To build the connectivity select only the experiment where the percentage of infected '
+                            'voxels in the injection structure is greater than: ',
+             'required': True, 'default': '80'},
 
             {'name': 'vol_thresh', 'type': 'float',
              'label': 'Min volume',
@@ -104,10 +104,10 @@ class AllenConnectomeBuilder(ABCAsynchronous):
         return [Connectivity, Volume, RegionVolumeMapping, StructuralMRI]
 
 
-    def launch(self, resolution, weighting, inf_vox_thresh, vol_thresh):
+    def launch(self, resolution, weighting, inj_f_thresh, vol_thresh):
         resolution = int(resolution)
         weighting = int(weighting)
-        inf_vox_thresh = float(inf_vox_thresh)
+        inj_f_thresh = float(inj_f_thresh)/100.
         vol_thresh = float(vol_thresh)
 
         project = dao.get_project_by_id(self.current_project_id)
@@ -128,18 +128,18 @@ class AllenConnectomeBuilder(ABCAsynchronous):
         vol, annot_info = cache.get_annotation_volume()
         template, template_info = cache.get_template_volume()
 
-        # grab the StructureTree instance
-        structure_tree = cache.get_structure_tree()
-
         # rotate template in the TVB 3D reference:
         template = rotate_reference(template)
 
+        # grab the StructureTree instance
+        structure_tree = cache.get_structure_tree()
+
         # the method includes in the parcellation only brain regions whose volume is greater than vol_thresh
         projmaps = areas_volume_threshold(cache, projmaps, vol_thresh, resolution)
-
-        # the method includes in the parcellation only brain regions where at least one injection experiment
-        # had infected more than N voxel (where N is inf_vox_thresh)
-        projmaps = areas_voxel_threshold(cache, projmaps, inf_vox_thresh, vol, structure_tree)
+        
+        # the method exclude from the experimental dataset
+        # those exps where the injected fraction of pixel in the injection site is lower than than the inj_f_thr 
+        projmaps = infected_threshold(cache, projmaps, inj_f_thresh)
 
         # the method creates file order and keyword that will be the link between the SC order and the
         # id key in the Allen database
@@ -203,11 +203,10 @@ def dictionary_builder(tvb_mcc, transgenic_line):
     # build dict of injection structure id to experiment list
     ist2e = {}
     for eid in all_experiments.index:
-        for ist in all_experiments.ix[eid]['injection-structures']:
-            isti = ist['id']
-            if isti not in ist2e:
-                ist2e[isti] = []
-            ist2e[isti].append(eid)
+        isti = all_experiments.loc[eid]['primary_injection_structure']
+        if isti not in ist2e:
+            ist2e[isti] = []
+        ist2e[isti].append(eid)
     return ist2e
 
 
@@ -254,7 +253,7 @@ def pms_cleaner(projmaps):
     def get_structure_id_set(pm):
         return set([c['structure_id'] for c in pm['columns']])
 
-    sis0 = get_structure_id_set(projmaps[515])
+    sis0 = get_structure_id_set(projmaps[502])
     # 1) All the target sites are the same for all the injection sites? If not remove those injection sites
     for inj_id in projmaps.keys():
         sis_i = get_structure_id_set(projmaps[inj_id])
@@ -285,31 +284,37 @@ def pms_cleaner(projmaps):
                     nan_id[inj_id] = []
                 nan_id[inj_id].append(projmaps[inj_id]['columns'][targ_id]['structure_id'])
     while bool(nan_id):
-        # I created the while in order to remove less structure as possible, maybe in some case the nan values refer
-        # always to the same target structure (a lot of inj structure could have nan value for the same target),
-        # in order to prevent to remove all that inj structure I will remove only the one with more target nan values
-        # and I will check if the problem is solved in the last part of the while loop
-        len_remove = 0
-        for i in nan_id.keys():
-            if len(nan_id[i]) > len_remove:
-                remove = i
-                len_remove = len(nan_id)
-        nan_id.pop(remove, None)
-        projmaps.pop(remove, None)
-        # Remove Nan areas from target list (columns+matrix)
-        for inj_id in range(len(projmaps.keys())):
-            targ_id = -1
-            curr_columns_arr = projmaps.values()[inj_id]['columns']
-            previous_size = len(curr_columns_arr)
-            while len(curr_columns_arr) != (previous_size - 3 * len(nan_id)) and targ_id + 1 < len(curr_columns_arr):
-                # 3 hemispheres
-                targ_id += 1
-                column = curr_columns_arr[targ_id]
-                if column and 'structure_id' in column and column['structure_id'] == remove:
-                    del curr_columns_arr[targ_id]
-                    projmaps.values()[inj_id]['matrix'] = np.delete(projmaps.values()[inj_id]['matrix'], targ_id, 1)
-                    targ_id = -1
-        # evaluate if there are still Nan values in the matrices
+        remove = []
+        nan_inj_max = 0
+        while nan_id.keys()[0] != nan_inj_max:
+            len_max = 0
+            for inj_id in nan_id.keys():
+                if len(nan_id[inj_id]) > len_max:
+                    nan_inj_max = inj_id
+                    len_max = len(nan_id[inj_id])
+            if nan_id.keys()[0] != nan_inj_max:
+                nan_id.pop(nan_inj_max)
+                remove.append(nan_inj_max)
+        if len(remove) == 0:
+            for inj_id in nan_id.keys():
+                for target_id in nan_id[inj_id]:
+                    if target_id not in remove:
+                        remove.append(target_id)
+        for rem in remove:
+            if rem in projmaps.keys():
+                projmaps.pop(rem)
+            # Remove Nan areas from targe list (columns+matrix)
+            for inj_id in range(len(projmaps.keys())):
+                targ_id = -1
+                previous_size = len(projmaps.values()[inj_id]['columns'])
+                while len(projmaps.values()[inj_id]['columns']) != (previous_size - 3):  # 3 hemispheres
+                    targ_id += 1
+                    column = projmaps.values()[inj_id]['columns'][targ_id]
+                    if column['structure_id'] == rem:
+                        del projmaps.values()[inj_id]['columns'][targ_id]
+                        projmaps.values()[inj_id]['matrix'] = np.delete(projmaps.values()[inj_id]['matrix'], targ_id, 1)
+                        targ_id = -1
+                        # evaluate if there are still Nan values in the matrices
         nan_id = {}
         for inj_id in projmaps.keys():
             mat = projmaps[inj_id]['matrix']
@@ -349,46 +354,24 @@ def areas_volume_threshold(tvb_mcc, projmaps, vol_thresh, resolution):
     return projmaps
 
 
-# the method includes in the parcellation only brain regions where at least one injection experiment had infected
-# more than N voxel (where N is inf_vox_thresh)
-# what can be download is the Injection fraction: fraction of pixels belonging to manually annotated injection site
-# (http://help.brain-map.org/display/mouseconnectivity/API)
-# when this fraction is greater than inf_vox_thresh that area is included in the parcellation
-def areas_voxel_threshold(tvb_mcc, projmaps, inf_vox_thresh, vol, structure_tree):
-    id_ok = []
+
+# the method includes in the dataset for creating the SC only the experiments whose fraction of infected pixels (in the injection site) 
+# is greater than inj_f_threshold
+def infected_threshold(tvb_mcc, projmaps, inj_f_threshold):
+    id_ok=[]
     for ID in projmaps.keys():
+        exp_not_accepted=[]
         for exp in projmaps[ID]['rows']:
-            inj_f, inf_info = tvb_mcc.get_injection_fraction(exp)
-            inj_voxels = np.where(inj_f >= 0)  # coordinates of the injected voxels with inj fraction >= 0
-            id_infected = vol[inj_voxels]  # id of area located in Vol where injf >= 0
-            #  (thus the id of the infected structure)
-            myid_infected = np.where(id_infected == ID)
-            inj_f_id = 0  # fraction of injected voxels for the ID I am currently examining
-            for index in myid_infected[0]:
-                inj_f_id += inj_f[inj_voxels[0][index], inj_voxels[1][index], inj_voxels[2][index]]
-                if inj_f_id >= inf_vox_thresh:
-                    break
-            if inj_f_id >= inf_vox_thresh:
-                id_ok.append(ID)
-                break
-            else:  # check for child of that area
-                child = []
-                for ii in range(len(structure_tree.children([ID])[0])):
-                    child.append(structure_tree.children([ID])[0][ii]['id'])
-                while len(child) != 0:
-                    myid_infected = np.where(id_infected == child[0])
-                    if len(myid_infected[0]) != 0:
-                        for index in myid_infected[0]:
-                            inj_f_id += inj_f[inj_voxels[0][index], inj_voxels[1][index], inj_voxels[2][index]]
-                            if inj_f_id >= inf_vox_thresh:
-                                break
-                        if inj_f_id >= inf_vox_thresh:
-                            id_ok.append(ID)
-                            break
-                    child.remove(child[0])
-            if inj_f_id >= inf_vox_thresh:
-                break
-    # Remove areas that are not in id_ok from the injection list
+            inj_info=tvb_mcc.get_structure_unionizes([exp], is_injection=True, structure_ids=[ID],include_descendants=True, hemisphere_ids=[2])
+            if len(inj_info)==0:
+                exp_not_accepted.append(exp)
+            else:
+                inj_f=inj_info['sum_projection_pixels'][0]/inj_info['sum_pixels'][0]
+                if inj_f<inj_f_threshold:
+                    exp_not_accepted.append(exp) 
+        if len(exp_not_accepted)<len(projmaps[ID]['rows']):
+            id_ok.append(ID)
+            projmaps[ID]['rows']= list(set(projmaps[ID]['rows']).difference(set(exp_not_accepted)))
     for checkid in projmaps.keys():
         if checkid not in id_ok:
             projmaps.pop(checkid, None)
@@ -400,7 +383,7 @@ def areas_voxel_threshold(tvb_mcc, projmaps, inf_vox_thresh, vol, structure_tree
             if projmaps.values()[indexinj]['columns'][indextarg]['structure_id'] not in id_ok:
                 del projmaps.values()[indexinj]['columns'][indextarg]
                 projmaps.values()[indexinj]['matrix'] = np.delete(projmaps.values()[indexinj]['matrix'], indextarg, 1)
-                indextarg = -1
+                indextarg = -1   
     return projmaps
 
 
@@ -610,9 +593,13 @@ def mouse_brain_visualizer(vol, order, key_ord, unique_parents, unique_grandpare
     vol_r = vol_r.astype(np.float64)
     vol_l = vol_parcel[:, :, (vol.shape[2] / 2):]
     vol_l = vol_l.astype(np.float64)
+
     for node_id in not_assigned:
         node_id = int(node_id)
-        ancestor = structure_tree.get_structures_by_id([node_id])[0]['structure_id_path']
+        if structure_tree.get_structures_by_id([node_id])[0] is not None:
+            ancestor = structure_tree.get_structures_by_id([node_id])[0]['structure_id_path']
+        else:
+            ancestor = []
         while len(ancestor) > 0:
             pp = ancestor[-1]
             if pp in unique_parents.keys():
@@ -632,12 +619,15 @@ def mouse_brain_visualizer(vol, order, key_ord, unique_parents, unique_grandpare
     vol_l = vol_l.astype(np.float64)
     for node_id in not_assigned:
         node_id = int(node_id)
-        ancestor = structure_tree.get_structures_by_id([node_id])[0]['structure_id_path']
+        if structure_tree.get_structures_by_id([node_id])[0] is not None:
+            ancestor = structure_tree.get_structures_by_id([node_id])[0]['structure_id_path']
+        else:
+            ancestor = []
         while len(ancestor) > 0:
             pp = ancestor[-1]
             if pp in unique_grandparents.keys():
-                vol_r[vol_r == node_id] = indexed_vec[unique_parents[pp]]
-                vol_l[vol_l == node_id] = indexed_vec[unique_parents[pp] + left]
+                vol_r[vol_r == node_id] = indexed_vec[unique_grandparents[pp]]
+                vol_l[vol_l == node_id] = indexed_vec[unique_grandparents[pp] + left]
                 ancestor = []
             else:
                 ancestor.remove(pp)

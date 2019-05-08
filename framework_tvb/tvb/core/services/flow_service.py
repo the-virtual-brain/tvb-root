@@ -173,7 +173,7 @@ class FlowService:
             
             result = OperationService().initiate_operation(current_user, project.id, adapter_instance, 
                                                            tmp_folder, visible, **data)
-            self.logger.info("Finished operation:" + operation_name)
+            self.logger.info("Finished operation launch:" + operation_name)
             return result
 
         except TVBException as excep:
