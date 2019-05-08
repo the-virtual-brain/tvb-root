@@ -55,7 +55,7 @@ FW_FOLDER = os.path.join(TVB_ROOT, 'framework_tvb')
 LICENSE_PATH = os.path.join(FW_FOLDER, 'LICENSE')
 RELEASE_NOTES_PATH = os.path.join(TVB_ROOT, 'tvb_documentation', 'RELEASE_NOTES')
 DATA_SRC_FOLDER = os.path.dirname(tvb_data.__file__)
-DEMOS_MATLAB_FOLDER = os.path.join(TVB_ROOT, 'matlab')
+DEMOS_MATLAB_FOLDER = os.path.join(TVB_ROOT, 'tvb_documentation', 'matlab')
 
 # dest paths
 DIST_FOLDER = os.path.join(os.path.dirname(__file__), 'build', 'TVB_Distribution')

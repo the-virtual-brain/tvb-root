@@ -26,7 +26,7 @@ end
 
 %% Write list of rst files
 fd_demos = fopen('../tvb_documentation/demos/Demos_Matlab.rst', 'w');
-include_fmt = '.. include:: ../../matlab/html/%s.rst\n\n';
+include_fmt = '.. include:: ../matlab/html/%s.rst\n\n';
 for i=1:length(rst_results)
     
     % add rst to list of demos

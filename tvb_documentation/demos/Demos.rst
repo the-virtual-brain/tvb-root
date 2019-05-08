@@ -312,7 +312,7 @@ MATLAB Demos
 These are the first demos of the experimental use of TVB from the MATLAB environment, and they will
 be expanded in the future.
 
-.. figure:: ../../matlab/html/tvb_demo_region_rww_01.png
+.. figure:: ../matlab/html/tvb_demo_region_rww_01.png
       :width: 200px
       :figclass: demo-figure
       :target: Demos_Matlab.html#tvb-demo-region-rww
@@ -320,7 +320,7 @@ be expanded in the future.
       :ref:`tvb_demo_region_rww`
 
 
-.. figure:: ../../matlab/html/tvb_demo_two_epi_01.png
+.. figure:: ../matlab/html/tvb_demo_two_epi_01.png
       :width: 200px
       :figclass: demo-figure
       :target: Demos_Matlab.html#tvb-demo-two-epi

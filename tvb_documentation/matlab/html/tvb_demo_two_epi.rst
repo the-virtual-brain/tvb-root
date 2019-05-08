@@ -105,7 +105,7 @@ NB dimensions will be [mode, node, state var, time]::
     xlabel('Time (ms)')
 
 
-.. figure:: ../../matlab/html/tvb_demo_two_epi_01.png
+.. figure:: ../matlab/html/tvb_demo_two_epi_01.png
       :width: 560px
       :figclass: demo-figure
 

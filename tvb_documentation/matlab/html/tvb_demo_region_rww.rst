@@ -50,7 +50,7 @@ Plot connectivity weights and tract lengths
     subplot 122, imagesc(np2m(conn.tract_lengths)), colorbar
     title('Tract Lengths (mm)')
 
-.. figure:: ../../matlab/html/tvb_demo_region_rww_01.png
+.. figure:: ../matlab/html/tvb_demo_region_rww_01.png
       :width: 1000px
       :figclass: demo-figure
 
@@ -82,7 +82,7 @@ NB Dimensions will be [mode, node, state var, time]::
     title(sprintf('Reduced Wong-Wang, %d Regions', conn.weights.shape{1}*1))
 
 
-.. figure:: ../../matlab/html/tvb_demo_region_rww_02.png
+.. figure:: ../matlab/html/tvb_demo_region_rww_02.png
       :width: 560px
       :figclass: demo-figure
 
