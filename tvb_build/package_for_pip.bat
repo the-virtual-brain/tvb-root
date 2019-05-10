@@ -1,4 +1,5 @@
 REM Package Geodesic Distance for Pypi
+cd ..
 rmdir dist
 mkdir dist
 
@@ -6,7 +7,7 @@ echo "====================================="
 echo "Packing: externals/tvb_gdist"
 echo "====================================="
 
-cd ..\externals\tvb_gdist
+cd externals\tvb_gdist
 python setup.py sdist
 python setup.py bdist_wheel
 
