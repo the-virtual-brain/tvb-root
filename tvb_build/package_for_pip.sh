@@ -1,5 +1,7 @@
 #!/usr/bin/env bash
 
+cd ..
+
 rm -Rf dist
 mkdir dist
 
@@ -10,7 +12,6 @@ if [ "$1" != "" ]; then
 fi
 
 
-cd ..
 for pipPackage in "${folders2pack[@]}"; do
 
     echo "============================="
