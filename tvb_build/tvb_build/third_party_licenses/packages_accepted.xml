@@ -183,7 +183,7 @@
     <dependency env="[win,mac,linux]" name="cloudpickle">
         <full-name value="Cloudpickle"/>
         <project-home value="https://pypi.python.org/pypi/cloudpickle"/>
-        <version value="1.0.0"/>
+        <version value="[0.5.2,1.0.0]"/>
         <usage value="dynamic linking"/>
         <license value="LICENSE_cloudpickle.txt"/>
         <license-type value="BSD_"/>
