@@ -1,12 +1,12 @@
 ======================================================================================================================================
  The Virtual Brain (TVB)
- Version: 1.5.6 - build 87xx
- Release Date: 2018
+ Version: 1.5.6 - build 8820
+ Release Date: 15 May 2019
  Description: Bug fixing and dependencies upgrade.
 ======================================================================================================================================
-    * Upgrade to allenSDK 0.14
+    * Upgrade to allenSDK 0.16
     * Upgrade to SqlAlchemy 1.1.14 and sql-migrate 0.11
-    * Bug fixes in: FFT visualizer, FCD analyzer, Brain Surface visualizer, Volumetric viewer on Safari, PSE Discreet
+    * Bug fixes in: FFT visualizer, FCD analyzer, Brain Surface visualizer, Volumetric viewer on Safari, PSE Discreet, Phase Plane
     * Publish on conda-forge (tvb-data, tvb-gdist, tvb-library)
     * Bug fixes in tvb-framework flow (start/stop/show correct version) when used from Pypi package
     * 2 new Epileptor model variants ([Saggioetal_2017] Fast–Slow Bursters in the Unfolding of a High Codimension Singularity and the Ultra-slow Transitions of Classes

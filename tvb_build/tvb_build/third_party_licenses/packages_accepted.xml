@@ -3,7 +3,7 @@
     <dependency env="[win,mac,linux]" name="allensdk">
         <full-name value="AllenSDK"/>
         <project-home value="https://github.com/AllenInstitute/AllenSDK"/>
-        <version value="0.14.3"/>
+        <version value="0.16.2"/>
         <usage value="dynamic linking"/>
         <license value="LICENSE_allen.txt"/>
         <license-type value="BSD_ 2nd clause"/>
@@ -180,10 +180,10 @@
         <copyright-notice value="Copyright (c) 2014 by Armin Ronacher"/>
         <description value="A simple wrapper around optparse for powerful command line utilities."/>
     </dependency>
-    <dependency env="[win]" name="cloudpickle">
+    <dependency env="[win,mac,linux]" name="cloudpickle">
         <full-name value="Cloudpickle"/>
         <project-home value="https://pypi.python.org/pypi/cloudpickle"/>
-        <version value="0.5.2"/>
+        <version value="1.0.0"/>
         <usage value="dynamic linking"/>
         <license value="LICENSE_cloudpickle.txt"/>
         <license-type value="BSD_"/>
@@ -273,7 +273,7 @@
     <dependency env="[win]" name="dask">
         <full-name value="Dask"/>
         <project-home value="https://dask.pydata.org/en/latest/"/>
-        <version value="0.16.0"/>
+        <version value="1.2.2"/>
         <usage value="dynamic linking"/>
         <license value="LICENSE_dask.txt"/>
         <license-type value="new BSD_"/>
@@ -393,7 +393,7 @@
     <dependency env="[win,mac,linux]" name="h5py">
         <full-name value="H5py"/>
         <project-home value="http://www.h5py.org/"/>
-        <version value="2.7.1"/>
+        <version value="2.9.0"/>
         <usage value="dynamic linking"/>
         <license value="LICENSE_h5py.txt"/>
         <license-type value="BSD_ 3rd clause"/>
@@ -716,7 +716,7 @@
         <version value="unknown"/>
         <usage value="dynamic linking"/>
         <license value="LICENSE_libopenjpeg.txt"/>
-        <license-type value="BDS_ 2nd clause"/>
+        <license-type value="BSD_ 2nd clause"/>
         <copyright-notice value="Copyright (C) 2002-2014, Universite catholique de Louvain (UCL), Belgium. 2002-2014, Professor Benoit Macq. 2003-2014, Antonin Descampe"/>
         <description value="Lib Open JPEG is included because PIL needs it"/>
     </dependency>
@@ -770,7 +770,7 @@
         <copyright-notice value="Copyright (C) 2001 Science and Technology Corporation @ UNM.  All rights released."/>
         <description value="We use only the binary with HDF5 https://support.hdfgroup.org/doc_resource/SZIP/Commercial_szip.html"/>
     </dependency>
-    <dependency env="mac" name="libtcl8.5.dylib">
+    <dependency env="mac" name="libtcl8.6.dylib">
         <full-name value="TCL85 dylib"/>
         <project-home value="http://www.tcl.tk/software/tcltk/license.html"/>
         <version value="unknown"/>
@@ -780,7 +780,7 @@
         <copyright-notice value="Copyright (C) 1989-2008 by Regents of the University of California, Sun Microsystems, Inc., Scriptics Corporation, and other parties"/>
         <description value="Library used as IDLE dependency, for the console-users."/>
     </dependency>
-    <dependency env="mac" name="libtk8.5.dylib">
+    <dependency env="mac" name="libtk8.6.dylib">
         <full-name value="TK85 dylib"/>
         <project-home value="http://tkinter.unpythonic.net/wiki/Tkinter"/>
         <version value="unknown"/>
@@ -843,7 +843,7 @@
     <dependency env="[win,mac,linux]" name="matplotlib">
         <full-name value="MatPlotLib"/>
         <project-home value="http://matplotlib.sourceforge.net/users/license.html"/>
-        <version value="[1.5.3,2.1.1]"/>
+        <version value="[1.5.3,2.1.0]"/>
         <usage value="dynamic linking"/>
         <license value="LICENSE_matplotlib.txt"/>
         <license-type value="BSD_ (PSF_ based)"/>
@@ -889,6 +889,16 @@
         <license-type value="BSD_"/>
         <copyright-notice value="Copyright (c) 2014 - 2015, Hsiaoming Yang"/>
         <description value="IPython Notebook uses the mistune markdown parser - Coming with Anaconda env"/>
+    </dependency>
+        <dependency env="[win,mac,linux]" name="mock">
+        <full-name value="mock"/>
+        <project-home value="https://pypi.org/project/mock/"/>
+        <version value="3.0.5"/>
+        <usage value="dynamic linking"/>
+        <license value="LICENSE_mock.txt"/>
+        <license-type value="BSD_"/>
+        <copyright-notice value="Copyright (c) 2003-2013, Michael Foord and the mock team"/>
+        <description value="Mock is a library for testing in Python"/>
     </dependency>
     <dependency env="[win,mac,linux]" name="more_itertools">
         <full-name value="more_itertools"/>
@@ -1013,7 +1023,7 @@
     <dependency env="[win,mac,linux]" name="numpy">
         <full-name value="Numpy"/>
         <project-home value="http://numpy.scipy.org/license.html#license"/>
-        <version value="1.13.3"/>
+        <version value="1.16.3"/>
         <usage value="dynamic linking"/>
         <license value="LICENSE_numpy.txt"/>
         <license-type value="BSD_"/>
@@ -1043,7 +1053,7 @@
     <dependency env="[win,mac,linux]" name="pandas">
         <full-name value="Pandas"/>
         <project-home value="http://pandas.pydata.org/"/>
-        <version value="0.19.2"/>
+        <version value="0.24.2"/>
         <usage value="dynamic linking"/>
         <license value="LICENSE_pandas.txt"/>
         <license-type value="BSD_"/>
@@ -1143,7 +1153,7 @@
     <dependency env="[win,linux]" name="pip">
         <full-name value="PIP Library"/>
         <project-home value="https://pip.pypa.io/en/stable/"/>
-        <version value="9.0.1"/>
+        <version value="19.1.1"/>
         <usage value="packaging"/>
         <license value="LICENSE_pip.txt"/>
         <license-type value="MIT_"/>
@@ -1323,7 +1333,7 @@
     <dependency env="[win,mac,linux]" name="python">
         <full-name value="Python"/>
         <project-home value="http://docs.python.org/license.html"/>
-        <version value="2.7.14"/>
+        <version value="2.7.16"/>
         <usage value="dynamic linking"/>
         <license value="LICENSE_python.txt"/>
         <license-type value="PSF_"/>
@@ -1348,6 +1358,16 @@
         <license value="LICENSE_pytz.txt"/>
         <license-type value="MIT_"/>
         <copyright-notice value="Copyright (c) 2003-2009 Stuart Bishop &lt;stuart@stuartbishop.net&gt;"/>
+        <description value=""/>
+    </dependency>
+    <dependency env="[win,linux]" name="pywavelets">
+        <full-name value="Python wavelet transforms module"/>
+        <project-home value="https://pypi.org/project/PyWavelets/"/>
+        <version value="[1.0.1,1.0.3]"/>
+        <usage value="dynamic linking"/>
+        <license value="LICENSE_pywavelets.txt"/>
+        <license-type value="MIT_"/>
+        <copyright-notice value="Copyright (c) 2012-2019 The PyWavelets Developers"/>
         <description value=""/>
     </dependency>
     <dependency env="[win,linux]" name="pyzmq">
@@ -1403,7 +1423,7 @@
     <dependency env="[win,linux]" name="scikit-image">
         <full-name value="Scikit Image"/>
         <project-home value="http://scikit-image.org/"/>
-        <version value="[0.13.0,0.13.1]"/>
+        <version value="[0.14.2]"/>
         <usage value="dynamic linking"/>
         <license value="LICENSE_scikit_image.txt"/>
         <license-type value="BSD_ modified"/>
@@ -1413,14 +1433,44 @@
     <dependency env="[win,linux]" name="skimage">
         <full-name value="Scikit Image"/>
         <project-home value="http://scikit-image.org/"/>
-        <version value="[0.13.0,0.13.1]"/>
+        <version value="[0.14.2]"/>
         <usage value="dynamic linking"/>
         <license value="LICENSE_scikit_image.txt"/>
         <license-type value="BSD_ modified"/>
         <copyright-notice value="Copyright (C) 2011, the scikit-image team"/>
         <description value="Image processing in Python"/>
     </dependency>
+    <dependency env="[win,mac,linux]" name="skbuild">
+        <full-name value="Scikits Build"/>
+        <project-home value="https://scikit-build.readthedocs.io/en/latest/"/>
+        <version value="0.9.0"/>
+        <usage value="dynamic linking"/>
+        <license value="LICENSE_scikits_build.txt"/>
+        <license-type value="MIT_"/>
+        <copyright-notice value="Copyright (c) 2014 Mike Sarahan"/>
+        <description value=""/>
+    </dependency>
+    <dependency env="[win,mac,linux]" name="scikit-build">
+        <full-name value="Scikits Build"/>
+        <project-home value="https://scikit-build.readthedocs.io/en/latest/"/>
+        <version value="0.9.0"/>
+        <usage value="dynamic linking"/>
+        <license value="LICENSE_scikits_build.txt"/>
+        <license-type value="MIT_"/>
+        <copyright-notice value="Copyright (c) 2014 Mike Sarahan"/>
+        <description value=""/>
+    </dependency>
     <dependency env="[win,linux,mac]" name="scikit-learn">
+        <full-name value="Scikits Learn"/>
+        <project-home value="http://scikit-learn.org/"/>
+        <version value="0.19.1"/>
+        <usage value="dynamic linking"/>
+        <license value="LICENSE_scikits_learn.txt"/>
+        <license-type value="BSD_ 3rd clause"/>
+        <copyright-notice value="Copyright (c) 2007 - 2012 The scikit-learn developers."/>
+        <description value=""/>
+    </dependency>
+    <dependency env="[win,mac,linux]" name="sklearn">
         <full-name value="Scikits Learn"/>
         <project-home value="http://scikit-learn.org/"/>
         <version value="0.19.1"/>
@@ -1490,15 +1540,15 @@
         <copyright-notice value="Copyright (c) 2010-2015 Benjamin Peterson"/>
         <description value="Python 2 and 3 compatibility library"/>
     </dependency>
-    <dependency env="[win,mac,linux]" name="sklearn">
-        <full-name value="Scikits Learn"/>
-        <project-home value="http://scikit-learn.org/"/>
-        <version value="0.19.1"/>
+    <dependency env="[win,mac]" name="simpleitk">
+        <full-name value="simpleitk"/>
+        <project-home value="http://www.simpleitk.org/"/>
+        <version value="1.2.0"/>
         <usage value="dynamic linking"/>
-        <license value="LICENSE_scikits_learn.txt"/>
-        <license-type value="BSD_ 3rd clause"/>
-        <copyright-notice value="Copyright (c) 2007 - 2012 The scikit-learn developers."/>
-        <description value=""/>
+        <license value="LICENSE_simpleitk.txt"/>
+        <license-type value="Apache_ 2"/>
+        <copyright-notice value="Copyright (c) Insight Software Consortium"/>
+        <description value="Insight Segmentation and Registration Toolkit (ITK)"/>
     </dependency>
     <dependency env="[win]" name="sortedcontainers">
         <full-name value="Sortedcontainers"/>
@@ -1583,7 +1633,7 @@
     <dependency env="[win,mac,linux]" name="tables">
         <full-name value="PyTables"/>
         <project-home value="http://www.pytables.org/moin/License"/>
-        <version value="3.4.2"/>
+        <version value="3.5.1"/>
         <usage value="dynamic linking"/>
         <license value="LICENSE_pytables.txt"/>
         <license-type value="BSD_"/>
