@@ -11,11 +11,13 @@ USER root
 
 RUN conda update -n base -c defaults conda
 RUN conda create -y --name tvb-docs python=2.7 nomkl scipy numpy networkx scikit-learn cython h5py pip numexpr psutil
+RUN conda install -y --name tvb-run pytest
 RUN conda install -y --name tvb-docs pytables numba scikit-image==0.14.2 simplejson cherrypy
+RUN conda install -y --name tvb-run -c conda-forge subprocess32
 RUN /opt/conda/envs/tvb-docs/bin/pip install --upgrade pip
 RUN /opt/conda/envs/tvb-docs/bin/pip install matplotlib==2.1.0 sphinx==1.3.1 docutils==0.12
 RUN /opt/conda/envs/tvb-docs/bin/pip install formencode cfflib genshi nibabel sqlalchemy==1.1.14 sqlalchemy-migrate==0.11.0 allensdk BeautifulSoup4
-RUN /opt/conda/envs/tvb-docs/bin/pip install tvb-gdist
+RUN /opt/conda/envs/tvb-docs/bin/pip install tvb-gdist mod-pywebsocket apscheduler lxml minixsv tzlocal
 
 RUN conda create -y --name tvb-run python=2.7 nomkl scipy numpy networkx scikit-learn cython h5py pip numexpr psutil
 RUN conda install -y --name tvb-run pytest pytest-cov ipython ipython-notebook psycopg2
@@ -25,7 +27,6 @@ RUN /opt/conda/envs/tvb-run/bin/pip install --upgrade pip
 RUN /opt/conda/envs/tvb-run/bin/pip install matplotlib==2.1.0
 RUN /opt/conda/envs/tvb-run/bin/pip install formencode cfflib genshi nibabel sqlalchemy==1.1.14 sqlalchemy-migrate==0.11.0 allensdk BeautifulSoup4
 RUN /opt/conda/envs/tvb-run/bin/pip install tvb-gdist mod-pywebsocket apscheduler lxml minixsv tzlocal
-RUN conda uninstall -y --name tvb-run pywavelets
 
 # Check why this is not created
 RUN mkdir /root/.tvb-temp
