@@ -1,17 +1,18 @@
 #!/usr/bin/env bash
 
-# Use this script to install TVB's distutils packages, from the svn source, to the current python installation
+# Use this script to install TVB from the main code sources repo, to the current python installation
 
 # set up external dependencies that we maintain as distutils packages in externals/
 cd ..
 
-cd externals/tvb_gdist
-python setup.py install
-rm -rf build
-rm -rf dist
-rm -rf tvb_gdist.egg-info
-rm -f gdist.cpp
-cd ../..
+# Temporarily comment tvb-gdist install, as it has bugs.
+#cd externals/tvb_gdist
+#python setup.py install
+#rm -rf build
+#rm -rf dist
+#rm -rf tvb_gdist.egg-info
+#rm -f gdist.cpp
+#cd ../..
 
 cd framework_tvb
 python setup.py develop
