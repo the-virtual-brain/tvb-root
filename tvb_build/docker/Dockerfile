@@ -19,7 +19,7 @@ RUN conda create -y --name tvb-run python=2.7 nomkl scipy numpy networkx scikit-
 RUN conda install -y --name tvb-run pytest pytest-cov ipython ipython-notebook
 RUN conda install -y --name tvb-run psycopg2
 RUN conda install -y --name tvb-run matplotlib==2.1.0 pytables numba scikit-image==0.14.2 simplejson cherrypy docutils
-RUN conda install -y --name tvb-run -c conda-forge subprocess32
+## RUN conda install -y --name tvb-run -c conda-forge subprocess32
 RUN /opt/conda/envs/tvb-run/bin/pip install --upgrade pip
 RUN /opt/conda/envs/tvb-run/bin/pip install tvb-gdist formencode cfflib genshi nibabel sqlalchemy==1.1.14 sqlalchemy-migrate==0.11.0 allensdk BeautifulSoup4
 RUN /opt/conda/envs/tvb-run/bin/pip install tvb-framework
