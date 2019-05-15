@@ -9,6 +9,7 @@ RUN service postgresql start && createdb -O postgres tvb-test && psql --command 
 
 USER root
 
+RUN conda update -n base -c defaults conda
 RUN conda create -y --name tvb-docs python=2.7 nomkl scipy numpy networkx scikit-learn cython h5py pip numexpr psutil
 RUN conda install -y --name tvb-docs pytables numba scikit-image==0.14.2 simplejson cherrypy
 RUN /opt/conda/envs/tvb-docs/bin/pip install --upgrade pip
