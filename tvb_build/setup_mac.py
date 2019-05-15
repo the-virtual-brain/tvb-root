@@ -74,7 +74,7 @@ PY2APP_PACKAGES = ['cherrypy', 'email', 'h5py', 'IPython', 'ipykernel', 'ipykern
                    'PyObjCTools', 'scipy', 'sklearn', 'tables', 'tornado', 'tvb']
 
 PY2APP_INCLUDES = ['allensdk', 'cfflib', 'cmath', 'contextlib', 'formencode', 'gdist',
-                   'genshi', 'genshi.template', 'genshi.template.loader', 'jinja2', 'jinja2.ext.i18n', 'jsonschema',
+                   'genshi', 'genshi.template', 'genshi.template.loader', 'jinja2', 'jinja2.ext', 'jsonschema',
                    'logging.config', 'markupsafe', 'matplotlib', 'mpl_toolkits.axes_grid', 'nibabel',
                    'numexpr', 'os', 'pandas._libs.skiplist', 'psycopg2',
                    'pygments.formatters.html', 'pygments.lexers.python', 'runpy', 'sqlite3', 'sqlalchemy',
