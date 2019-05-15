@@ -1690,10 +1690,10 @@
         <copyright-notice value="Copyright (c) 2013-2017, Ionel Cristian Maries"/>
         <description value="Traceback serialization library."/>
     </dependency>
-    <dependency env="linux" name="testpath">
+    <dependency env="[win,linux]" name="testpath">
         <full-name value="Testpath"/>
         <project-home value="https://pypi.python.org/pypi/testpath"/>
-        <version value="0.4.2"/>
+        <version value="[0.3.1,0.4.2]"/>
         <usage value="dynamic linking"/>
         <license value="LICENSE_testpath.txt"/>
         <license-type value="MIT_"/>
