@@ -10,7 +10,7 @@ RUN service postgresql start && createdb -O postgres tvb-test && psql --command 
 USER root
 
 RUN conda create -y --name tvb-docs python=2.7 nomkl scipy numpy networkx scikit-learn cython h5py pip numexpr psutil
-RUN conda install -y --name tvb-docs matplotlib==2.1.0 pytables numba scikit-image==0.14.2 simplejson cherrypy docutils
+RUN conda install -y --name tvb-docs matplotlib==2.1.0 pytables numba scikit-image==0.14.2 simplejson cherrypy
 RUN /opt/conda/envs/tvb-docs/bin/pip install --upgrade pip
 RUN /opt/conda/envs/tvb-docs/bin/pip install tvb-gdist formencode cfflib genshi nibabel sqlalchemy==1.1.14 sqlalchemy-migrate==0.11.0 allensdk BeautifulSoup4
 RUN /opt/conda/envs/tvb-docs/bin/pip install sphinx==1.3.1 docutils==0.12
