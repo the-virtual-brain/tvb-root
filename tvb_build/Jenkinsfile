@@ -4,6 +4,7 @@ pipeline {
     environment {
         FULL_DOCKER_IMAGE_NAME = 'docker-repository.codemart.ro/tvb-build'
         LATEST_TAG = 'latest'
+        SVN_ACCESS  = credentials('TVB_SVN')
     }
 
     stages {
@@ -24,7 +25,7 @@ pipeline {
             }
             steps {
                 sh '''#!/bin/bash
-                    svn upgrade
+                    svn upgrade --username ${SVN_ACCESS_USR} --password ${SVN_ACCESS_PSW}
                     source activate tvb-docs
                     cd tvb_build
                     sh install_full_tvb.sh
