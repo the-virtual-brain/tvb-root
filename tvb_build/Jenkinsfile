@@ -4,7 +4,7 @@ pipeline {
     environment {
         FULL_DOCKER_IMAGE_NAME = 'docker-repository.codemart.ro/tvb-build'
         LATEST_TAG = 'latest'
-        SVN_ACCESS  = credentials('TVB-SVN')
+        SVN_ACCESS  = credentials('933642b4-f11d-4c4c-8e2f-7d316127c0ce')
     }
 
     stages {
