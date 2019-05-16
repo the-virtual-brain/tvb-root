@@ -73,7 +73,7 @@ class Environment(object):
             return False
 
         try:
-            _proc = Popen(["svnversion", "."], stdout=PIPE)
+            _proc = Popen(["svnversion", "."], stdout=PIPE, stderr=PIPE)
             version = VersionSettings.parse_svn_version(_proc.communicate()[0])
             if version:
                 # usage from SVN

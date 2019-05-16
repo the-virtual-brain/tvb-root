@@ -88,7 +88,7 @@ class VersionSettings(object):
             return os.environ[svn_variable]
 
         try:
-            _proc = Popen(["svnversion", "."], stdout=PIPE)
+            _proc = Popen(["svnversion", "."], stdout=PIPE, stderr=PIPE)
             return self.parse_svn_version(_proc.communicate()[0])
         except Exception:
             pass
