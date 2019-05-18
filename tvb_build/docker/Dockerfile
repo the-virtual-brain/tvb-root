@@ -26,7 +26,7 @@ RUN conda install -y --name tvb-run -c conda-forge subprocess32
 RUN /opt/conda/envs/tvb-run/bin/pip install --upgrade pip
 RUN /opt/conda/envs/tvb-run/bin/pip install matplotlib==2.1.0
 RUN /opt/conda/envs/tvb-run/bin/pip install formencode cfflib genshi nibabel sqlalchemy==1.1.14 sqlalchemy-migrate==0.11.0 allensdk BeautifulSoup4
-RUN /opt/conda/envs/tvb-run/bin/pip install tvb-gdist mod-pywebsocket apscheduler lxml minixsv tzlocal
+RUN /opt/conda/envs/tvb-run/bin/pip install tvb-gdist
 
 # Check why this is not created
 RUN mkdir /root/.tvb-temp
