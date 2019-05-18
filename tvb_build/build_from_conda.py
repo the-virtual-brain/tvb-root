@@ -113,7 +113,7 @@ class Config:
             'demo_scripts\\ipython_notebook.bat': set_path + 'cd ..\\demo_scripts\n..\\tvb_data\\Scripts\\ipython notebook'
         }
 
-        return Config("Windows", "C:\\Users\\tvb\\AppData\\Local\\conda\\conda\\envs\\tvb-run",
+        return Config("Windows", "C:\\Users\\tvb\\.conda\\envs\\tvb-run",
                       join("Lib", "site-packages"), commands_map, _create_windows_script)
 
 
