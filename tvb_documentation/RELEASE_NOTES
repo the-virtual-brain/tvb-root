@@ -1,5 +1,13 @@
 ======================================================================================================================================
  The Virtual Brain (TVB)
+ Version: 1.5.7 - build 8852
+ Release Date: 18 May 2019
+ Description: Bug fix on Windows.
+======================================================================================================================================
+    * Fix Windows distribution (was incompatible with windows 10)
+
+======================================================================================================================================
+ The Virtual Brain (TVB)
  Version: 1.5.6 - build 8850
  Release Date: 16 May 2019
  Description: Bug fixing and dependencies upgrade.
