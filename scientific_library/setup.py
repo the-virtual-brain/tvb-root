@@ -40,7 +40,7 @@ import shutil
 import setuptools
 
 
-LIBRARY_VERSION = "1.5.7"
+LIBRARY_VERSION = "1.5.8"
 
 TVB_TEAM = "Stuart Knock, Marmaduke Woodman, Paula Sanz Leon, Laurent Pezard, Viktor Jirsa"
 

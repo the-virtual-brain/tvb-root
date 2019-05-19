@@ -99,7 +99,7 @@ class Config:
     @staticmethod
     def win64():
         set_path = 'cd ..\\tvb_data \n' + \
-                   'set PATH=%cd%;%cd%\\Scripts;%path%; \n' + \
+                   'set PATH=%cd%;%cd%\\Library\\mingw-w64\\bin;%cd%\\Library\\bin;%cd%\\Scripts;%path%; \n' + \
                    'set PYTHONPATH=%cd%\\Lib;%cd%\\Lib\\site-packages \n' + \
                    'set PYTHONHOME=\n\n' + \
                    'REM set TVB_USER_HOME=%cd% \n'
