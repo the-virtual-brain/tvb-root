@@ -28,6 +28,8 @@ RUN /opt/conda/envs/tvb-run/bin/pip install matplotlib==2.1.0
 RUN /opt/conda/envs/tvb-run/bin/pip install formencode cfflib genshi nibabel sqlalchemy==1.1.14 sqlalchemy-migrate==0.11.0 allensdk BeautifulSoup4
 RUN /opt/conda/envs/tvb-run/bin/pip install tvb-gdist
 
+COPY kernel.json /opt/conda/envs/tvb-run/share/jupyter/kernels/python2/
+
 # Check why this is not created
 RUN mkdir /root/.tvb-temp
 RUN mkdir /root/.tvb-temp/logs
