@@ -50,3 +50,4 @@ from .linear import Linear
 from .hopfield import Hopfield
 from .epileptor import Epileptor
 from .epileptorcodim3 import EpileptorCodim3, EpileptorCodim3SlowMod
+from .Zerlaut import Zerlaut_adaptation_first_order, Zerlaut_adaptation_second_order
