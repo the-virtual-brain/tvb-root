@@ -193,7 +193,7 @@
     <dependency env="win" name="colorama">
         <full-name value="Colorama"/>
         <project-home value="https://pypi.python.org/pypi/colorama"/>
-        <version value="0.3.9"/>
+        <version value="0.4.1"/>
         <usage value="dynamic linking"/>
         <license value="LICENSE_colorama.txt"/>
         <license-type value="BSD_"/>
@@ -1253,7 +1253,7 @@
     <dependency env="[win,mac,linux]" name="psycopg2">
         <full-name value="Psycopg2"/>
         <project-home value="http://initd.org/psycopg/"/>
-        <version value="[2.7.3.2,2.7.1 (dt dec pq3 ext lo64),2.7.1,2.7.6.1]"/>
+        <version value="[2.7.5,2.7.1 (dt dec pq3 ext lo64),2.7.6.1]"/>
         <usage value="dynamic linking"/>
         <license value="LICENSE_psycopg.txt"/>
         <license-type value="ZPL-License"/>
@@ -1333,7 +1333,7 @@
     <dependency env="win" name="pyreadline">
         <full-name value="Pyreadline"/>
         <project-home value="http://pythonhosted.org/pyreadline//"/>
-        <version value="2.0"/>
+        <version value="2.1"/>
         <usage value="dynamic linking"/>
         <license value="LICENSE_pyreadline.txt"/>
         <license-type value="BSD_"/>
@@ -1353,7 +1353,7 @@
     <dependency env="[win,linux]" name="pytest">
         <full-name value="PyTest"/>
         <project-home value="http://docs.pytest.org/"/>
-        <version value="[3.3.1,4.4.2]"/>
+        <version value="[4.5.0,4.4.2]"/>
         <usage value="dynamic linking"/>
         <license value="LICENSE_pytest.txt"/>
         <license-type value="MIT_"/>
@@ -1423,7 +1423,7 @@
     <dependency env="[win,mac,linux]" name="requests">
         <full-name value="Requests"/>
         <project-home value="https://pypi.python.org/pypi/requests"/>
-        <version value="[2.18.4,2.21.0]"/>
+        <version value="[2.22.0,2.18.4,2.21.0]"/>
         <usage value="dynamic linking"/>
         <license value="LICENSE_req.txt"/>
         <license-type value="Apache_ 2"/>
@@ -1793,7 +1793,7 @@
     <dependency env="[win,linux,mac]" name="urllib3">
         <full-name value="urllib3"/>
         <project-home value="https://urllib3.readthedocs.io/en/latest/"/>
-        <version value="[1.22,1.24.3]"/>
+        <version value="[1.25.2,1.22,1.24.3]"/>
         <usage value="dynamic linking"/>
         <license value="LICENSE_urllib3.txt"/>
         <license-type value="MIT_"/>
@@ -1853,7 +1853,7 @@
     <dependency env="[win,linux]" name="wheel">
         <full-name value="A built-package format for Python."/>
         <project-home value="https://bitbucket.org/pypa/wheel"/>
-        <version value="[0.30.0,0.33.2]"/>
+        <version value="[0.33.4,0.33.2]"/>
         <usage value="packaging"/>
         <license value="LICENSE_wheel.txt"/>
         <license-type value="MIT_"/>

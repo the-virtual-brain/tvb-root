@@ -54,7 +54,7 @@ EXCLUDES = [
     'backports.ssl-match-hostname', 'backports.shutil-get-terminal-size', 'copyreg', 'winreg',
     # others
     '_builtinsuites', 'builtins', 'bsddb', 'carbon', 'compiler', 'config', 'http', 'html',
-    'hotshot', 'lib-dynload', '_markupbase',
+    'hotshot', 'lib-dynload', '_markupbase', '_pytest',
     'openglcontext', 'pydoc_data', 'pysqlite2', 'pyximport',  # part of cython
     'queue', 'stdsuites', 'wxpython',
     # We exclude bellow shorter names for packages already introspected (mainly Mac)
