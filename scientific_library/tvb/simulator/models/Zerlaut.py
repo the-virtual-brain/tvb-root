@@ -93,7 +93,7 @@ class Zerlaut_adaptation_first_order(Model):
             F_\lambda = Erfc(V^{eff}_{thre}-\mu_V/\sqrt(2)\sigma_V)
 
     """
-    _ui_name = "Zerlaut_adaptation_first_order"
+    _ui_name = "Zerlaut adaptation first order"
     ui_configurable_parameters = ['g_L', 'E_L_e', 'E_L_i', 'C_m', 'b', 'tau_w',
                                   'E_e', 'E_i', 'Q_e', 'Q_i', 'tau_e', 'tau_i',
                                   'N_tot', 'p_connect', 'g', 'T',
@@ -464,7 +464,7 @@ class Zerlaut_adaptation_second_order(Zerlaut_adaptation_first_order):
         \right.
     """
 
-    _ui_name = "Zerlaut_adaptation_second_order"
+    _ui_name = "Zerlaut adaptation second order"
 
     #  Used for phase-plane axis ranges and to bound random initial() conditions.
     state_variable_range = basic.Dict(
