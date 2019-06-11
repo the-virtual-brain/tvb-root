@@ -47,13 +47,13 @@ from tvb.tests.framework.core.factory import TestFactory
 
 TEST_SUBJECT_A = "TEST_SUBJECT_A"
 TEST_SUBJECT_B = "TEST_SUBJECT_B"
+BASE_PTH = path.join(path.dirname(tvb_data.__file__), 'dti_pipeline_toronto')
 
 
 class TestCSVConnectivityParser(BaseTestCase):
-    BASE_PTH = path.join(path.dirname(tvb_data.__file__), 'dti_pipeline', 'Output_Toronto')
 
     def test_parse_happy(self):
-        cap_pth = path.join(self.BASE_PTH, 'output_ConnectionDistanceMatrix.csv')
+        cap_pth = path.join(BASE_PTH, 'output_ConnectionDistanceMatrix.csv')
 
         with open(cap_pth) as f:
             result_conn = CSVConnectivityParser(f).result_conn
@@ -80,11 +80,8 @@ class TestCSVConnectivityImporter(TransactionalTestCase):
 
     def _import_csv_test_connectivity(self, reference_connectivity_gid, subject):
         ### First prepare input data:
-        data_dir = path.abspath(path.dirname(tvb_data.__file__))
-
-        toronto_dir = path.join(data_dir, 'dti_pipeline', 'Output_Toronto')
-        weights = path.join(toronto_dir, 'output_ConnectionCapacityMatrix.csv')
-        tracts = path.join(toronto_dir, 'output_ConnectionDistanceMatrix.csv')
+        weights = path.join(BASE_PTH, 'output_ConnectionCapacityMatrix.csv')
+        tracts = path.join(BASE_PTH, 'output_ConnectionDistanceMatrix.csv')
         weights_tmp = weights + '.tmp'
         tracts_tmp = tracts + '.tmp'
         self.helper.copy_file(weights, weights_tmp)
