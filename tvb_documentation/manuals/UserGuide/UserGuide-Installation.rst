@@ -49,7 +49,7 @@ In the TVB_Distribution folder you should find a sub-folder `bin` with a number 
 - tvb_clean
 - tvb_stop
 - distribution
-- ipython_notebook
+- jupyter_notebook
 
 On Linux these scripts will have the `.sh` termination, on Mac the `.command` termination and on Windows the `.bat` termination.
 We will omit the termination in this manual. For example if you are using Windows and tvb_start is mentioned
@@ -112,14 +112,14 @@ There are more scripting interface flavors. They differ in what shell is used an
 In the COMMAND_PROFILE interfaces you can use the data management facilities of |TVB|.
 In the LIBRARY_PROFILE you use |TVB| as you would use a library and it will not manage data for you.
 
-The most user friendly interface is the ipython notebook one. It is a LIBRARY_PROFILE interface.
-It's shell is the browser based ipython notebook.
-To launch it run the `ipython_notebook` script from the `TVB_Distribution/bin/` folder.
+The most user friendly interface is the Jupyter notebook one. It is a LIBRARY_PROFILE interface.
+It's shell is the browser based jupyter notebook.
+To launch it run the `jupyter_notebook` script from the `TVB_Distribution/bin/` folder.
 
 .. code-block:: bash
 
    $ cd TVB_Distribution/bin
-   $ ./ipython_notebook.sh
+   $ ./jupyter_notebook.sh
 
 The `distribution` script is used from a terminal to control the |TVB| distribution.
 Run `distribution -h` too get help with this command:

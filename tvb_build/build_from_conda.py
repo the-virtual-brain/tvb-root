@@ -88,8 +88,8 @@ class Config:
             'bin/tvb_start.command': 'source ./distribution.command start',
             'bin/tvb_clean.command': 'source ./distribution.command clean',
             'bin/tvb_stop.command': 'source ./distribution.command stop',
-            'bin/ipython_notebook.sh': set_path + '../tvb_data/bin/python -m tvb_bin.run_ipython notebook ../demo_scripts',
-            'demo_scripts/ipython_notebook.sh': set_path + '../tvb_data/bin/python -m tvb_bin.run_ipython notebook'
+            'bin/jupyter_notebook.sh': set_path + '../tvb_data/bin/python -m tvb_bin.run_jupyter notebook ../demo_scripts',
+            'demo_scripts/jupyter_notebook.sh': set_path + '../tvb_data/bin/python -m tvb_bin.run_jupyter notebook'
         }
 
         return Config("MacOS", "/anaconda/envs/tvb-run3", join("lib", "python2.7", "site-packages"),
@@ -109,8 +109,8 @@ class Config:
             'bin\\tvb_start.bat': 'distribution start',
             'bin\\tvb_clean.bat': 'distribution clean',
             'bin\\tvb_stop.bat': 'distribution stop',
-            'bin\\ipython_notebook.bat': set_path + 'cd ..\\bin\n..\\tvb_data\\Scripts\\ipython notebook ..\\demo_scripts',
-            'demo_scripts\\ipython_notebook.bat': set_path + 'cd ..\\demo_scripts\n..\\tvb_data\\Scripts\\ipython notebook'
+            'bin\\jupyter_notebook.bat': set_path + 'cd ..\\bin\n..\\tvb_data\\Scripts\\ipython notebook ..\\demo_scripts',
+            'demo_scripts\\jupyter_notebook.bat': set_path + 'cd ..\\demo_scripts\n..\\tvb_data\\Scripts\\ipython notebook'
         }
 
         return Config("Windows", "C:\\Users\\tvb\\.conda\\envs\\tvb-run",
@@ -137,8 +137,8 @@ class Config:
             'bin/tvb_start.sh': 'bash ./distribution.sh start',
             'bin/tvb_clean.sh': 'bash ./distribution.sh clean',
             'bin/tvb_stop.sh': 'bash ./distribution.sh stop',
-            'bin/ipython_notebook.sh': set_path + 'cd ../bin\n../tvb_data/bin/python -m tvb_bin.run_ipython notebook ../demo_scripts',
-            'demo_scripts/ipython_notebook.sh': set_path + 'cd ../demo_scripts\n../tvb_data/bin/python -m tvb_bin.run_ipython notebook'
+            'bin/jupyter_notebook.sh': set_path + 'cd ../bin\n../tvb_data/bin/python -m tvb_bin.run_jupyter notebook ../demo_scripts',
+            'demo_scripts/jupyter_notebook.sh': set_path + 'cd ../demo_scripts\n../tvb_data/bin/python -m tvb_bin.run_jupyter notebook'
         }
 
         #TODO: This is changed to docker container env locations

@@ -29,11 +29,11 @@
 #
 
 """
-Utility file to fire an IPython.
+Utility file to fire an Jupyter Notebook.
 """
 
 if __name__ == '__main__':
     import sys
-    from IPython import start_ipython
+    import jupyter_core.command
 
-    sys.exit(start_ipython())
+    sys.exit(jupyter_core.command.main())

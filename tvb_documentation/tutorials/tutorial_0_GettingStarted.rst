@@ -190,7 +190,7 @@ Export and Read
 
 From an **ipython** shell you can follow the commands presented below. 
 You can also use a **ipython notebook** by going into *TVB_Distribution/bin/* and 
-start the ipython_notebook script.
+start the jupyter_notebook script.
 
 
 ::
