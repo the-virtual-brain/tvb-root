@@ -61,9 +61,6 @@ class ReducedWongWang(ModelNumbaDfun):
                   Neuroscience 32(27), 11239-11252, 2013.
 
 
-
-    .. automethod:: ReducedWongWang.__init__
-
     Equations taken from [DPA_2013]_ , page 11242
 
     .. math::

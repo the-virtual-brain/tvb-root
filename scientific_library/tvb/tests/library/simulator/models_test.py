@@ -173,3 +173,10 @@ class TestModels(BaseTestCase):
     def test_linear(self):
         model = models.Linear()
         self._validate_initialization(model, 1)
+
+    def test_ww(self):
+        model = models.ReducedWongWang()
+        self._validate_initialization(model, 1)
+
+        model = models.ReducedWongWangExcIOInhI()
+        self._validate_initialization(model, 2)
