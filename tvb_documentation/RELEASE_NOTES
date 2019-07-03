@@ -1,4 +1,14 @@
 ======================================================================================================================================
+ The Virtual Brain (TVB) tvb-library
+ Version: 1.5.9 - build 8865
+ Release Date: 4 July 2019
+ Description: New TVB models.
+======================================================================================================================================
+    * Add Zerlaut model
+    * Add model Reduced Wong-Wang with Excitatory and Inhibitory Coupled Populations
+    * Replace ipython with jupyter command
+
+======================================================================================================================================
  The Virtual Brain (TVB)
  Version: 1.5.8 - build 8852
  Release Date: 19 May 2019
