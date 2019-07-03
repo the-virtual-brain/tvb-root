@@ -226,7 +226,7 @@ class TestGenshiSimulator(GenshiTest):
         enabled_algo = self.soup.find_all('div', attrs=dict(id=exp, style="display:block"))
         all_algo_disabled = self.soup.find_all('div', attrs=dict(id=exp, style="display:none"))
         assert 1 == len(enabled_algo)
-        assert 16 == len(all_algo_disabled)
+        assert 18 == len(all_algo_disabled)
         assert not enabled_algo[0] in all_algo_disabled, fail_message
 
 
