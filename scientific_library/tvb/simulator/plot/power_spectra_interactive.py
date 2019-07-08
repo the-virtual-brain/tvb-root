@@ -235,7 +235,7 @@ class PowerSpectraInteractive(core.Type):
         should use.
         """
         pos_shp = [0.45, 0.02, 0.05, 0.104]
-        rax = self.ifft_fig.add_axes(pos_shp, axisbg=AXCOLOUR, title="xscale")
+        rax = self.ifft_fig.add_axes(pos_shp, facecolor=AXCOLOUR, title="xscale")
         xscale_tuple = ("log", "linear")
         self.xscale_selector = widgets.RadioButtons(rax, xscale_tuple, active=1)
         self.xscale_selector.on_clicked(self.update_xscale)
@@ -247,7 +247,7 @@ class PowerSpectraInteractive(core.Type):
         should use.
         """
         pos_shp = [0.02, 0.5, 0.05, 0.104]
-        rax = self.ifft_fig.add_axes(pos_shp, axisbg=AXCOLOUR, title="yscale")
+        rax = self.ifft_fig.add_axes(pos_shp, facecolor=AXCOLOUR, title="yscale")
         yscale_tuple = ("log", "linear")
         self.yscale_selector = widgets.RadioButtons(rax, yscale_tuple, active=0)
         self.yscale_selector.on_clicked(self.update_yscale)
@@ -259,7 +259,7 @@ class PowerSpectraInteractive(core.Type):
         should be displayed.
         """
         pos_shp = [0.02, 0.07, 0.05, 0.1+0.002*self.data.shape[3]]
-        rax = self.ifft_fig.add_axes(pos_shp, axisbg=AXCOLOUR, title="Mode")
+        rax = self.ifft_fig.add_axes(pos_shp, facecolor=AXCOLOUR, title="Mode")
         mode_tuple = tuple(range(self.data.shape[3]))
         self.mode_selector = widgets.RadioButtons(rax, mode_tuple, active=0)
         self.mode_selector.on_clicked(self.update_mode)
@@ -273,7 +273,7 @@ class PowerSpectraInteractive(core.Type):
         noc = self.data.shape[1] # number of choices
         #State variable for the x axis
         pos_shp = [0.02, 0.22, 0.05, 0.12+0.008*noc]
-        rax = self.ifft_fig.add_axes(pos_shp, axisbg=AXCOLOUR, 
+        rax = self.ifft_fig.add_axes(pos_shp, facecolor=AXCOLOUR, 
                                      title="state variable")
         self.variable_selector = widgets.RadioButtons(rax, tuple(range(noc)), 
                                                     active=0)
@@ -287,7 +287,7 @@ class PowerSpectraInteractive(core.Type):
         noc = self.possible_window_lengths.shape[0] # number of choices
         #State variable for the x axis
         pos_shp = [0.88, 0.07, 0.1, 0.12+0.02*noc]
-        rax = self.ifft_fig.add_axes(pos_shp, axisbg=AXCOLOUR, 
+        rax = self.ifft_fig.add_axes(pos_shp, facecolor=AXCOLOUR, 
                                      title="Segment length")
         wl_tup = tuple(self.possible_window_lengths)
         self.window_length_selector = widgets.RadioButtons(rax, wl_tup, active=4)
@@ -303,7 +303,7 @@ class PowerSpectraInteractive(core.Type):
         noc = len(wf_tup) # number of choices
         #State variable for the x axis
         pos_shp = [0.88, 0.77, 0.085, 0.12+0.01*noc]
-        rax = self.ifft_fig.add_axes(pos_shp, axisbg=AXCOLOUR, 
+        rax = self.ifft_fig.add_axes(pos_shp, facecolor=AXCOLOUR, 
                                     title="Windowing function")
         self.window_function_selector = widgets.RadioButtons(rax, wf_tup, active=0)
         self.window_function_selector.on_clicked(self.update_window_function)
@@ -315,7 +315,7 @@ class PowerSpectraInteractive(core.Type):
         shouold be normalised to 1.
         """
         pos_shp = [0.02, 0.8, 0.05, 0.104]
-        rax = self.ifft_fig.add_axes(pos_shp, axisbg=AXCOLOUR, title="normalise")
+        rax = self.ifft_fig.add_axes(pos_shp, facecolor=AXCOLOUR, title="normalise")
         np_tuple = ("yes", "no")
         self.normalise_power_selector = widgets.RadioButtons(rax, np_tuple, active=1)
         self.normalise_power_selector.on_clicked(self.update_normalise_power)
