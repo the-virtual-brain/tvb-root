@@ -39,6 +39,7 @@ but also user related annotation (checked-logged).
 import os
 import json
 import time
+import ssl
 import cherrypy
 import formencode
 from hashlib import md5
@@ -412,7 +413,8 @@ class UserController(BaseController):
         content = ""
         if self.version_info is None:
             try:
-                content = urlopen(TvbProfile.current.web.URL_TVB_VERSION, timeout=7).read()
+                context = ssl.SSLContext(ssl.PROTOCOL_TLS)
+                content = urlopen(TvbProfile.current.web.URL_TVB_VERSION, timeout=7, context=context).read()
                 self.version_info = json.loads(content)
                 pos = TvbProfile.current.web.URL_TVB_VERSION.find('/tvb')
                 self.version_info['url'] = TvbProfile.current.web.URL_TVB_VERSION[:pos]
