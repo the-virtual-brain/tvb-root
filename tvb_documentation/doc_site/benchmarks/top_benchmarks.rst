@@ -33,6 +33,7 @@ Performance evolution from a TVB version to another.
 .. toctree::
    :maxdepth: 2
 
+   tvb_1.5.9_mac
    tvb_1.5.4_mac
    tvb_1.5_mac
    tvb_1.4.1_mac
