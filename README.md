@@ -25,6 +25,12 @@ you do not need to do anything else other than unzip and double click on **tvb_s
     
         sh install_full_tvb.sh
 
+
+**NOTE:**
+
+To contribute to this repo, you are advised to first fork it under GitHub (through the web ui), 
+and next clone that fork on your machine, and use it as you use any other git repository.
+
 More details on our documentation site: <http://docs.thevirtualbrain.org>.
 
    
