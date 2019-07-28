@@ -33,7 +33,7 @@ git svn dcommit
 
 ## Initialize new 3rd party SYNCHRONIZATION REPO:
 
-    git svn --authors-file=[authors.txt] clone -s -r6000:HEAD --no-minimize-url https://repo.thevirtualbrain.org/svn/tvb/trunk/ --trunk=tvb_data --prefix=svn/ --ignore-paths="/brainstorm/"
+    git svn --authors-file=[authors.txt] clone -s -r6000:HEAD --no-minimize-url https://repo.thevirtualbrain.org/svn/tvb/ --trunk=trunk --prefix=svn/ --ignore-paths="(data_processing|brainstorm|openmeeg|/epfl/|TVB_Distribution_a.zip|Default_Project_v1.4.zip|spatial_wavelet_analysis.tar.gz|projection_SEEG_surface.npy|caret_gifti.zip|tvb_nifti_demo_data.nii.gz|/recon-tools/)"
     cd trunk
     git remote add github https://github.com/the-virtual-brain/tvb-data.git
     git push github master

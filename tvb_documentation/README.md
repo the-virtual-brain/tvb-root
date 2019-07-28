@@ -1,3 +1,5 @@
+**Using this repository (tvb-documentation) from github is now considered DEPRECATED.
+We advise you to use our main tvb-root repository instead**
 
 # TVB Documentation
 
