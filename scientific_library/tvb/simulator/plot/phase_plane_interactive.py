@@ -72,7 +72,7 @@ LOG = get_logger(__name__)
 import tvb.simulator.models as models_module
 import tvb.simulator.integrators as integrators_module
 
-import tvb.basic.traits.core as core
+from tvb.basic.neotraits.api import HasTraits, Attr
 
 # Define a colour theme... see: matplotlib.colors.cnames.keys()
 BACKGROUNDCOLOUR = "lightgray"
@@ -94,7 +94,7 @@ def get_color(num_colours):
 
 
 
-class PhasePlaneInteractive(core.Type):
+class PhasePlaneInteractive(HasTraits):
     """
     The GUI for the interactive phase-plane viewer provides sliders for setting:
         - The value of all parameters of the Model.
@@ -111,16 +111,18 @@ class PhasePlaneInteractive(core.Type):
 
     """
 
-    model = models_module.Model(
-        label = "Model",
-        default = models_module.Generic2dOscillator,
-        doc = """An instance of the local dynamic model to be investigated with
+    model = Attr(
+        field_type=models_module.Model,
+        label="Model",
+        default=models_module.Generic2dOscillator(),
+        doc="""An instance of the local dynamic model to be investigated with
         PhasePlaneInteractive.""")
 
-    integrator = integrators_module.Integrator(
-        label = "Integrator",
-        default = integrators_module.RungeKutta4thOrderDeterministic,
-        doc = """The integration scheme used to for generating sample
+    integrator = Attr(
+        field_type=integrators_module.Integrator,
+        label="Integrator",
+        default=integrators_module.RungeKutta4thOrderDeterministic(),
+        doc="""The integration scheme used to for generating sample
         trajectories on the phase-plane. NOTE: This is not used for generating
         the phase-plane itself, ie the vector field and nulclines.""")
 
@@ -677,7 +679,7 @@ class PhasePlaneInteractive(core.Type):
         """
         self.parameters = {}
         #import pdb; pdb.set_trace()
-        for key in self.model.trait.keys():
+        for key in self.model.trait.keys():  # TODO: uses "trait" attribute
             attr = getattr(self.model, key)
             if (isinstance(attr, numpy.ndarray) and (attr.size == 1) and 
                 attr.dtype.type in (numpy.float, numpy.float64)):

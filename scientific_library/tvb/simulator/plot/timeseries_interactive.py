@@ -68,8 +68,7 @@ LOG = get_logger(__name__)
 
 import tvb.datatypes.time_series as time_series_datatypes
 
-import tvb.basic.traits.core as core
-import tvb.basic.traits.types_basic as basic
+from tvb.basic.neotraits.api import HasTraits, Attr, Int
 
 
 # Define a colour theme... see: matplotlib.colors.cnames.keys()
@@ -83,7 +82,7 @@ TIME_RESOLUTION = 1024 #512 is too coarse; 2048 is a bit slow... ?Make it a trai
 
 #TODO: check for fence-posts, I did this tired...
 
-class TimeSeriesInteractive(core.Type):
+class TimeSeriesInteractive(HasTraits):
     """
     For generating an interactive time-series figure, given one of TVB's 
     TimeSeries datatypes to initialise it. The graphical interface for 
@@ -96,17 +95,16 @@ class TimeSeriesInteractive(core.Type):
 
     """
 
-    time_series = time_series_datatypes.TimeSeries(
+    time_series = Attr(
+        field_type=time_series_datatypes.TimeSeries,
         label = "Timeseries",
         default = None,
-        required = True,
         doc = """The TVB TimeSeries datatype to be displayed.""")
 
-    first_n = basic.Integer(
-        label = "Display the first 'n'",
-        default = -1,
-        required = True,
-        doc = """Primarily intended for displaying the first N components of a 
+    first_n = Int(
+        label="Display the first 'n'",
+        default=-1,
+        doc="""Primarily intended for displaying the first N components of a 
             surface PCA timeseries. Defaults to -1, meaning it'll display all
             of 'space' (ie, regions or vertices or channels). In other words,
             for Region or M/EEG timeseries you can ignore this, but, for a 

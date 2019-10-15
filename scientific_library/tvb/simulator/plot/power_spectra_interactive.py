@@ -68,9 +68,7 @@ from tvb.simulator.common import get_logger
 LOG = get_logger(__name__)
 
 import tvb.datatypes.time_series as time_series_datatypes
-
-import tvb.basic.traits.core as core
-import tvb.basic.traits.types_basic as basic
+from tvb.basic.neotraits.api import HasTraits, Attr, Int
 
 # Define a colour theme... see: matplotlib.colors.cnames.keys()
 BACKGROUNDCOLOUR = "slategrey"
@@ -80,7 +78,7 @@ BUTTONCOLOUR = "steelblue"
 HOVERCOLOUR = "blue"
 
 
-class PowerSpectraInteractive(core.Type):
+class PowerSpectraInteractive(HasTraits):
     """
     The graphical interface for visualising the power-spectra (FFT) of a
     timeseries provide controls for setting:
@@ -95,17 +93,16 @@ class PowerSpectraInteractive(core.Type):
 
     """
 
-    time_series = time_series_datatypes.TimeSeries(
-        label = "Timeseries",
-        default = None,
-        required = True,
-        doc = """ The timeseries to which the FFT is to be applied.""")
+    time_series = Attr(
+        field_type=time_series_datatypes.TimeSeries,
+        label="Timeseries",
+        default=None,
+        doc=""" The timeseries to which the FFT is to be applied.""")
 
-    first_n = basic.Integer(
-        label = "Display the first 'n'",
-        default = -1,
-        required = True,
-        doc = """Primarily intended for displaying the first N components of a 
+    first_n = Int(
+        label="Display the first 'n'",
+        default=-1,
+        doc="""Primarily intended for displaying the first N components of a 
             surface PCA timeseries. Defaults to -1, meaning it'll display all
             of 'space' (ie, regions or vertices or channels). In other words,
             for Region or M/EEG timeseries you can ignore this, but, for a 
