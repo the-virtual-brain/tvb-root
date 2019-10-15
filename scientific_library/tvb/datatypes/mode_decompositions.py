@@ -39,48 +39,51 @@ framework methods that are associated with the Mode Decomposition datatypes.
 
 import numpy
 from tvb.basic.logger.builder import get_logger
-import tvb.basic.traits.core as core
-import tvb.basic.traits.types_basic as basic
-import tvb.datatypes.arrays as arrays
 import tvb.datatypes.time_series as time_series
-from tvb.basic.traits.types_mapped import MappedType
+from tvb.basic.traits.neotraits import HasTraits, Attr, NArray
 
 
 LOG = get_logger(__name__)
 
 
-class PrincipalComponents(MappedType):
+class PrincipalComponents(HasTraits):
     """
     Result of a Principal Component Analysis (PCA).
     """
 
-    source = time_series.TimeSeries(
+    source = Attr(
+        time_series.TimeSeries,
         label="Source time-series",
-        doc="Links to the time-series on which the PCA is applied.")
+        doc="Links to the time-series on which the PCA is applied."
+    )
 
-    weights = arrays.FloatArray(
+    weights = NArray(
+        dtype=float,
         label="Principal vectors",
-        doc="""The vectors of the 'weights' with which each time-series is
-            represented in each component.""",
-        file_storage=core.FILE_STORAGE_EXPAND)
+        doc="""The vectors of the 'weights' with which each time-series is represented in each component."""
+    )
 
-    fractions = arrays.FloatArray(
+    fractions = NArray(
+        dtype=float,
         label="Fraction explained",
         doc="""A vector or collection of vectors representing the fraction of
-            the variance explained by each principal component.""",
-        file_storage=core.FILE_STORAGE_EXPAND)
+                the variance explained by each principal component."""
+    )
 
-    norm_source = arrays.FloatArray(
-        label="Normalised source time series",
-        file_storage=core.FILE_STORAGE_EXPAND)
+    norm_source = NArray(
+        dtype=float,
+        label="Normalised source time series"
+    )
 
-    component_time_series = arrays.FloatArray(
-        label="Component time series",
-        file_storage=core.FILE_STORAGE_EXPAND)
+    component_time_series = NArray(
+        dtype=float,
+        label="Component time series"
+    )
 
-    normalised_component_time_series = arrays.FloatArray(
-        label="Normalised component time series",
-        file_storage=core.FILE_STORAGE_EXPAND)
+    normalised_component_time_series = NArray(
+        dtype=float,
+        label="Normalised component time series"
+    )
 
 
     def write_data_slice(self, partial_result):
@@ -196,45 +199,56 @@ class PrincipalComponents(MappedType):
         self.trait["normalised_component_time_series"].log_debug(owner=self.__class__.__name__)
 
 
-class IndependentComponents(MappedType):
+class IndependentComponents(HasTraits):
     """
     Result of an Independent Component Analysis.
 
     """
-    source = time_series.TimeSeries(
+    source = Attr(
+        time_series.TimeSeries,
         label="Source time-series",
-        doc="Links to the time-series on which the ICA is applied.")
+        doc="Links to the time-series on which the ICA is applied."
+    )
 
-    mixing_matrix = arrays.FloatArray(
+    mixing_matrix = NArray(
+        dtype=float,
         label="Mixing matrix - Spatial Maps",
-        doc="""The linear mixing matrix (Mixing matrix) """)
+        doc="""The linear mixing matrix (Mixing matrix) """
+    )
 
-    unmixing_matrix = arrays.FloatArray(
+    unmixing_matrix = NArray(
+        dtype=float,
         label="Unmixing matrix - Spatial maps",
-        doc="""The estimated unmixing matrix used to obtain the unmixed
-            sources from the data""")
+        doc="""The estimated unmixing matrix used to obtain the unmixed sources from the data"""
+    )
 
-    prewhitening_matrix = arrays.FloatArray(
+    prewhitening_matrix = NArray(
+        dtype=float,
         label="Pre-whitening matrix",
-        doc=""" """)
+        doc=""" """
+    )
 
-    n_components = basic.Integer(
+    n_components = Attr(
+        int,
         label="Number of independent components",
         doc=""" Observed data matrix is considered to be a linear combination
-        of :math:`n` non-Gaussian independent components""")
+            of :math:`n` non-Gaussian independent components"""
+    )
 
-    norm_source = arrays.FloatArray(
-        label="Normalised source time series. Zero centered and whitened.",
-        file_storage=core.FILE_STORAGE_EXPAND)
+    norm_source = NArray(
+        dtype=float,
+        label="Normalised source time series. Zero centered and whitened."
+    )
 
-    component_time_series = arrays.FloatArray(
-        label="Component time series. Unmixed sources.",
-        file_storage=core.FILE_STORAGE_EXPAND)
+    component_time_series = NArray(
+        dtype=float,
+        label="Component time series. Unmixed sources."
+    )
 
-    normalised_component_time_series = arrays.FloatArray(
-        label="Normalised component time series",
-        file_storage=core.FILE_STORAGE_EXPAND)
-
+    normalised_component_time_series = NArray(
+        dtype=float,
+        label="Normalised component time series"
+    )
 
     def write_data_slice(self, partial_result):
         """

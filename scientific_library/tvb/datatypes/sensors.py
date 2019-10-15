@@ -39,11 +39,9 @@ methods that are associated with the sensor dataTypes.
 """
 
 import numpy
-from tvb.datatypes import arrays
 from tvb.basic.logger.builder import get_logger
-from tvb.basic.traits import types_basic
-from tvb.basic.traits.types_mapped import MappedType
 from tvb.basic.readers import FileReader, try_get_absolute_path
+from tvb.basic.traits.neotraits import HasTraits, Attr, NArray
 
 LOG = get_logger(__name__)
 
@@ -52,7 +50,7 @@ MEG_POLYMORPHIC_IDENTITY = "MEG"
 INTERNAL_POLYMORPHIC_IDENTITY = "Internal"
 
 
-class Sensors(MappedType):
+class Sensors(HasTraits):
     """
     Base Sensors class.
     All sensors have locations.
@@ -61,26 +59,33 @@ class Sensors(MappedType):
 
     _ui_name = "Unknown sensors"
 
-    sensors_type = types_basic.String
+    sensors_type = Attr(str)
 
     __mapper_args__ = {'polymorphic_on': 'sensors_type'}
 
-    labels = arrays.StringArray(label="Sensor labels")
+    labels = NArray(dtype=str, label="Sensor labels")
 
-    locations = arrays.FloatArray(label="Sensor locations")
+    locations = NArray(dtype=float, label="Sensor locations")
 
-    has_orientation = types_basic.Bool(default=False)
+    has_orientation = Attr(bool, default=False)
 
-    orientations = arrays.FloatArray(required=False)
+    orientations = NArray(dtype=float, required=False)
 
-    number_of_sensors = types_basic.Integer(label="Number of sensors",
-                                            doc="""The number of sensors described by these Sensors.""")
+    number_of_sensors = Attr(
+        int,
+        label="Number of sensors",
+        doc="""The number of sensors described by these Sensors."""
+    )
 
     # introduced to accommodate real sensors sets which have sensors
     # that should be zero during simulation i.e. ECG (heart), EOG,
     # reference gradiometers, etc.
-    usable = arrays.BoolArray(required=False, label="Usable sensors",
-                              doc="The sensors in set which are used for signal data.")
+    usable = NArray(
+        dtype=bool,
+        required=False,
+        label="Usable sensors",
+        doc="The sensors in set which are used for signal data."
+    )
 
     @classmethod
     def from_file(cls, source_file="eeg_brainstorm_65.txt", instance=None):
@@ -213,10 +218,9 @@ class SensorsEEG(Sensors):
 
     __mapper_args__ = {'polymorphic_identity': EEG_POLYMORPHIC_IDENTITY}
 
-    sensors_type = types_basic.String(default=EEG_POLYMORPHIC_IDENTITY)
+    sensors_type = Attr(str, default=EEG_POLYMORPHIC_IDENTITY)
 
-    has_orientation = types_basic.Bool(default=False, order=-1)
-
+    has_orientation = Attr(bool, default=False)
 
 class SensorsMEG(Sensors):
     """
@@ -237,13 +241,14 @@ class SensorsMEG(Sensors):
 
     __mapper_args__ = {'polymorphic_identity': MEG_POLYMORPHIC_IDENTITY}
 
-    sensors_type = types_basic.String(default=MEG_POLYMORPHIC_IDENTITY)
+    sensors_type = Attr(str, default=MEG_POLYMORPHIC_IDENTITY)
 
-    orientations = arrays.FloatArray(label="Sensor orientations",
-                                           doc="An array representing the orientation of the MEG SQUIDs")
-
-    has_orientation = types_basic.Bool(default=True, order=-1)
-
+    orientations = NArray(
+        dtype=float,
+        label="Sensor orientations",
+        doc="An array representing the orientation of the MEG SQUIDs"
+    )
+    has_orientation = Attr(bool, default=True)
 
     @classmethod
     def from_file(cls, source_file="meg_151.txt.bz2", instance=None):
@@ -266,8 +271,7 @@ class SensorsInternal(Sensors):
 
     __mapper_args__ = {'polymorphic_identity': INTERNAL_POLYMORPHIC_IDENTITY}
 
-    sensors_type = types_basic.String(default=INTERNAL_POLYMORPHIC_IDENTITY)
-
+    sensors_type = Attr(str, default=INTERNAL_POLYMORPHIC_IDENTITY)
 
     @classmethod
     def from_file(cls, source_file="seeg_39.txt.bz2", instance=None):
