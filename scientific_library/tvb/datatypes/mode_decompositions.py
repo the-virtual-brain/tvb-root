@@ -125,15 +125,15 @@ class PrincipalComponents(HasTraits):
         """
         super(PrincipalComponents, self).configure()
 
-        if self.trait.use_storage is False and sum(self.get_data_shape('weights')) != 0:
-            if self.norm_source.size == 0:
-                self.compute_norm_source()
-
-            if self.component_time_series.size == 0:
-                self.compute_component_time_series()
-
-            if self.normalised_component_time_series.size == 0:
-                self.compute_normalised_component_time_series()
+        # if self.trait.use_storage is False and sum(self.get_data_shape('weights')) != 0:
+        #     if self.norm_source.size == 0:
+        #         self.compute_norm_source()
+        #
+        #     if self.component_time_series.size == 0:
+        #         self.compute_component_time_series()
+        #
+        #     if self.normalised_component_time_series.size == 0:
+        #         self.compute_normalised_component_time_series()
 
     def _find_summary_info(self):
         """
@@ -152,7 +152,7 @@ class PrincipalComponents(HasTraits):
         """Normalised source time-series."""
         self.norm_source = ((self.source.data - self.source.data.mean(axis=0)) /
                             self.source.data.std(axis=0))
-        self.trait["norm_source"].log_debug(owner=self.__class__.__name__)
+        # self.trait["norm_source"].log_debug(owner=self.__class__.__name__)
 
     # TODO: ??? Any value in making this a TimeSeries datatypes ???
     def compute_component_time_series(self):
@@ -167,7 +167,7 @@ class PrincipalComponents(HasTraits):
                 component_ts[:, var, :, mode] = numpy.dot(w, ts.T).T
 
         self.component_time_series = component_ts
-        self.trait["component_time_series"].log_debug(owner=self.__class__.__name__)
+        # self.trait["component_time_series"].log_debug(owner=self.__class__.__name__)
 
     # TODO: ??? Any value in making this a TimeSeries datatypes ???
     def compute_normalised_component_time_series(self):
@@ -182,7 +182,7 @@ class PrincipalComponents(HasTraits):
                 component_ts[:, var, :, mode] = numpy.dot(w, nts.T).T
 
         self.normalised_component_time_series = component_ts
-        self.trait["normalised_component_time_series"].log_debug(owner=self.__class__.__name__)
+        # self.trait["normalised_component_time_series"].log_debug(owner=self.__class__.__name__)
 
 
 class IndependentComponents(HasTraits):
@@ -244,13 +244,13 @@ class IndependentComponents(HasTraits):
         set during initialisation.
         """
         super(IndependentComponents, self).configure()
-        if self.trait.use_storage is False and sum(self.get_data_shape('unmixing_matrix')) != 0:
-            if self.norm_source.size == 0:
-                self.compute_norm_source()
-            if self.component_time_series.size == 0:
-                self.compute_component_time_series()
-            if self.normalised_component_time_series.size == 0:
-                self.compute_normalised_component_time_series()
+        # if self.trait.use_storage is False and sum(self.get_data_shape('unmixing_matrix')) != 0:
+        #     if self.norm_source.size == 0:
+        #         self.compute_norm_source()
+        #     if self.component_time_series.size == 0:
+        #         self.compute_component_time_series()
+        #     if self.normalised_component_time_series.size == 0:
+        #         self.compute_normalised_component_time_series()
 
     def compute_norm_source(self):
         """Normalised source time-series."""
