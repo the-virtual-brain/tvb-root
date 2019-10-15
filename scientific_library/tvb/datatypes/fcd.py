@@ -78,13 +78,6 @@ class Fcd(HasTraits):
 
     __generate_table__ = True
 
-    def configure(self):
-        """After populating few fields, compute the rest of the fields"""
-        # Do not call super, because that accesses data not-chunked
-        self.nr_dimensions = self.array_data.ndim
-        # for i in range(self.nr_dimensions):
-        #     setattr(self, 'length_%dd' % (i + 1), int(self.read_data_shape()[i]))
-
     def _find_summary_info(self):
         """
         Gather scientifically interesting summary information from an instance of this datatype.

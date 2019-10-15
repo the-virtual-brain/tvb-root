@@ -71,24 +71,6 @@ class PrincipalComponents(HasTraits):
 
     normalised_component_time_series = NArray(label="Normalised component time series")
 
-
-    def configure(self):
-        """
-        Invoke the compute methods for computable attributes that haven't been
-        set during initialization.
-        """
-        super(PrincipalComponents, self).configure()
-
-        # if self.trait.use_storage is False and sum(self.get_data_shape('weights')) != 0:
-        #     if self.norm_source.size == 0:
-        #         self.compute_norm_source()
-        #
-        #     if self.component_time_series.size == 0:
-        #         self.compute_component_time_series()
-        #
-        #     if self.normalised_component_time_series.size == 0:
-        #         self.compute_normalised_component_time_series()
-
     def _find_summary_info(self):
         """
         Gather scientifically interesting summary information from an instance
@@ -171,21 +153,6 @@ class IndependentComponents(HasTraits):
     component_time_series = NArray(label="Component time series. Unmixed sources.")
 
     normalised_component_time_series = NArray(label="Normalised component time series")
-
-
-    def configure(self):
-        """
-        Invoke the compute methods for computable attributes that haven't been
-        set during initialisation.
-        """
-        super(IndependentComponents, self).configure()
-        # if self.trait.use_storage is False and sum(self.get_data_shape('unmixing_matrix')) != 0:
-        #     if self.norm_source.size == 0:
-        #         self.compute_norm_source()
-        #     if self.component_time_series.size == 0:
-        #         self.compute_component_time_series()
-        #     if self.normalised_component_time_series.size == 0:
-        #         self.compute_normalised_component_time_series()
 
     def compute_norm_source(self):
         """Normalised source time-series."""

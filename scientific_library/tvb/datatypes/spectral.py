@@ -216,21 +216,6 @@ class WaveletCoefficients(HasTraits):
 
     __generate_table__ = True
 
-    def configure(self):
-        """After populating few fields, compute the rest of the fields"""
-        # Do not call super, because that accesses data not-chunked
-        self.nr_dimensions = self.array_data.ndim
-        # for i in range(self.nr_dimensions):
-        #     setattr(self, 'length_%dd' % (i + 1), int(self.read_data_shape()[i]))
-
-        # if self.trait.use_storage is False and sum(self.get_data_shape('array_data')) != 0:
-        #     if self.amplitude.size == 0:
-        #         self.compute_amplitude()
-        #     if self.phase.size == 0:
-        #         self.compute_phase()
-        #     if self.power.size == 0:
-        #         self.compute_power()
-
     def _find_summary_info(self):
         """
         Gather scientifically interesting summary information from an instance of this datatype.
@@ -291,13 +276,6 @@ class CoherenceSpectrum(HasTraits):
     frequency = NArray(label="Frequency")
 
     __generate_table__ = True
-
-    def configure(self):
-        """After populating few fields, compute the rest of the fields"""
-        # Do not call super, because that accesses data not-chunked
-        self.nr_dimensions = self.array_data.ndim
-        # for i in range(min(self.nr_dimensions, 4)):
-        #     setattr(self, 'length_%dd' % (i + 1), int(data_shape[i]))
 
     def _find_summary_info(self):
         """
@@ -367,13 +345,6 @@ class ComplexCoherenceSpectrum(HasTraits):
     _freq_step = None
     _max_freq = None
     spectrum_types = ["Imaginary", "Real", "Absolute"]
-
-    def configure(self):
-        """After populating few fields, compute the rest of the fields"""
-        # Do not call super, because that accesses data not-chunked
-        self.nr_dimensions = self.array_data.ndim
-        # for i in range(min(self.nr_dimensions, 4)):
-        #     setattr(self, 'length_%dd' % (i + 1), int(data_shape[i]))
 
     def _find_summary_info(self):
         """
