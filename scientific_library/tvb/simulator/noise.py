@@ -40,15 +40,15 @@ Specific noises inherit from the abstract class Noise
 """
 
 import numpy
-from tvb.datatypes import arrays, equations
-from tvb.basic.traits import types_basic as basic, core
+from tvb.datatypes import equations
 from .common import get_logger, simple_gen_astr
-
+#TODO: add Range for NArray/Replace old equation traits
+from tvb.basic.traits.neotraits import Attr, HasTraits, NArray
 
 LOG = get_logger(__name__)
 
 
-class Noise(core.Type):
+class Noise(HasTraits):
     """
     Defines a base class for noise. Specific noises are derived from this class
     for use in stochastic integrations.
@@ -79,19 +79,24 @@ class Noise(core.Type):
     .. automethod:: Noise.coloured
 
     """
-    _base_classes = ['Noise', 'MultiplicativeSimple']
 
     #NOTE: nsig is not declared here because we use this class directly as the
     #      inital conditions noise source, and in that use the job of nsig is
     #      filled by the state_variable_range attribute of the Model.
 
-    ntau = basic.Float(
+    ntau = Attr(
+        float,
+        default=0.0,
+        # range=basic.Range(lo=0.0, hi=20.0, step=1.0),
         label=r":math:`\tau`",
-        required=True,
-        default=0.0, range=basic.Range(lo=0.0, hi=20.0, step=1.0),
-        doc="""The noise correlation time""")
+        doc="""The noise correlation time"""
 
-    noise_seed = basic.Float(default=142, doc='')
+    )
+
+    noise_seed = Attr(
+        float,
+        default=42,
+    )
 
     def __init__(self):
         self.random_stream = numpy.random.RandomState(self.noise_seed)
@@ -190,16 +195,16 @@ class Additive(Noise):
 
     """
 
-    nsig = arrays.FloatArray(
-        configurable_noise=True,
+    nsig = NArray(
+        dtype=float,
         label=":math:`D`",
-        required=True,
-        default=numpy.array([1.0]), range=basic.Range(lo=0.0, hi=10.0, step=0.1),
-        order=1,
+        default=numpy.array([1.0]),
+        # range=basic.Range(lo=0.0, hi=10.0, step=0.1),
         doc="""The noise dispersion, it is the standard deviation of the
-        distribution from which the Gaussian random variates are drawn. NOTE:
-        Sensible values are typically ~<< 1% of the dynamic range of a Model's
-        state variables.""")
+            distribution from which the Gaussian random variates are drawn. NOTE:
+            Sensible values are typically ~<< 1% of the dynamic range of a Model's
+            state variables."""
+    )
 
     def gfun(self, state_variables):
         r"""
@@ -229,16 +234,16 @@ class Multiplicative(Noise):
 
     """
 
-    nsig = arrays.FloatArray(
-        configurable_noise=True,
+    nsig = NArray(
+        dtype=float,
         label=":math:`D`",
-        required=True,
-        default=numpy.array([1.0, ]), range=basic.Range(lo=0.0, hi=10.0, step=0.1),
-        order=1,
+        default=numpy.array([1.0, ]),
+        # range=basic.Range(lo=0.0, hi=10.0, step=0.1),
         doc="""The noise dispersion, it is the standard deviation of the
-        distribution from which the Gaussian random variates are drawn. NOTE:
-        Sensible values are typically ~<< 1% of the dynamic range of a Model's
-        state variables.""")
+            distribution from which the Gaussian random variates are drawn. NOTE:
+            Sensible values are typically ~<< 1% of the dynamic range of a Model's
+            state variables."""
+    )
 
     b = equations.TemporalApplicableEquation(
         label=":math:`b`",
