@@ -241,9 +241,9 @@ class MetaType(abc.ABCMeta):
             # these getattr's call the descriptors, should we bypass them?
             attr = getattr(cls, k)
             if attr.required and getattr(instance, k) is None:
-                raise ValueError('attribute {}.{} = {} is required. '
-                                 'Initialize it in __init__ or declare a default '
-                                 .format(cls.__name__, k, attr))
+                log.warning('attribute {}.{} = {} is required. '
+                            'Initialize it in __init__ or declare a default '
+                            .format(cls.__name__, k, attr))
 
 
     def __call__(cls, *args, **kwargs):
@@ -300,3 +300,9 @@ class HasTraits(object):
         result.append(')')
         return '\n'.join(result)
 
+    def configure(self, *args, **kwargs):
+        """
+        This is here only because a lot of code relies on configure calls.
+        This is the default do nothing base implementation
+        todo: deleteme
+        """
