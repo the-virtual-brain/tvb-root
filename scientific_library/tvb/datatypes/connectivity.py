@@ -440,7 +440,7 @@ class Connectivity(HasTraits):
         self.trait["delays"].log_debug(owner=self.__class__.__name__)
 
         if (self.weights.transpose() == self.weights).all():
-            self.undirected = 1
+            self.undirected = True
 
     def _find_summary_info(self):
         """
