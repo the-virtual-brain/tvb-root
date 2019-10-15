@@ -8,18 +8,42 @@ import numpy
 
 
 def auto_docstring(cls):
+    # type: (HasTraits) -> str
     """ generate a docstring for the new class in which the Attrs are documented """
     doc = [
         'Traited class [{}.{}]'.format(cls.__module__, cls.__name__),
-        '  + Attributes declared by the type:',
-        '  {'
+        '',
+        '  Attributes declared',
+        '  -------------------',
+        ''
     ]
 
     for attr_name in cls.declarative_attrs:
-        attr_repr = str(getattr(cls, attr_name))
-        attr_repr = '\n      '.join(attr_repr.split(','))
-        doc.append('    {} = {}'.format(attr_name, attr_repr))
-    doc.append('  }')
+        attr = getattr(cls, attr_name)
+        # the standard repr of the attribute
+        doc.append('  {} : {}'.format(attr_name, str(attr)))
+        # and now the doc property
+        for line in attr.doc.splitlines():
+            doc.append('    ' + line.lstrip())
+
+    doc.extend([
+        '',
+        '  Properties declared',
+        '  -------------------',
+        ''
+    ])
+
+    for prop_name in cls.declarative_props:
+        prop = getattr(cls, prop_name)
+        # the standard repr
+        doc.append('  {} : {}'.format(prop_name, str(prop)))
+        # now fish the docstrings
+        for line in prop.attr.doc.splitlines():
+            doc.append('    ' + line.lstrip())
+        if prop.fget.__doc__ is not None:
+            for line in prop.fget.__doc__.splitlines():
+                doc.append('    ' + line.lstrip())
+
     doc = '\n'.join(doc)
 
     if cls.__doc__ is not None:
@@ -30,11 +54,16 @@ def auto_docstring(cls):
 
 def narray_describe(ar):
     if ar is None:
-        return str(ar)
+        return 'None'
     ret = [
         'shape    {}'.format(ar.shape),
         'dtype    {}'.format(ar.dtype),
     ]
+
+    if ar.size == 0:
+        ret.append('is empty')
+        return '\n'.join(ret)
+
     if ar.dtype.kind in 'iufc':
         ret += [
             'has NaN  {}'.format(numpy.isnan(ar).any()),
