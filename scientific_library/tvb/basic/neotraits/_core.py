@@ -32,6 +32,8 @@
 This module implements neotraits.
 It is private only to shield public usage of the imports and logger.
 """
+import sys
+import uuid
 import numpy
 import logging
 from six import add_metaclass
@@ -39,7 +41,6 @@ from ._attr import Attr
 from ._declarative_base import _Property, MetaType
 from .info import trait_object_str, trait_object_repr_html, narray_summary_info
 from .ex import TraitAttributeError, TraitTypeError, TraitValueError, TraitError
-import sys
 
 if sys.version_info[0] == 3:
     import typing
@@ -141,6 +142,14 @@ def cached_trait_property(attr):
 
 @add_metaclass(MetaType)
 class HasTraits(object):
+    __metaclass__ = MetaType
+
+    # The base __init__ and __str__ rely upon metadata gathered by MetaType
+    # we could have injected these in MetaType, but we don't need meta powers
+    # this is simpler to grok
+
+    gid = Attr(field_type=uuid.UUID)
+
     def __init__(self, **kwargs):
         """
         The default init accepts kwargs for all declarative attrs
@@ -149,9 +158,17 @@ class HasTraits(object):
         # cls just to emphasise that the metadata is on the class not on instances
         cls = type(self)
 
-        # defined before the kwargs loop, so that a title Attr can overwrite this defaults
+        # defined before the kwargs loop, so that a title or gid Attr can overwrite this defaults
 
-        self.title = '{}'.format(self.__class__.__name__)
+        self.gid = uuid.uuid4()
+        """ 
+        gid identifies a specific instance of the hastraits
+        it is used by serializers as an identifier.
+        For non-datatype HasTraits this is less usefull but still
+        provides a unique id for example for a model configuration
+        """  # these strings are interpreted as docstrings by many tools, not by python though
+
+        self.title = '{} gid: {}'.format(self.__class__.__name__, self.gid)
         """ a generic name that the user can set to easily recognize the instance """
 
         for k, v in kwargs.items():
