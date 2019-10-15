@@ -39,8 +39,7 @@ temporal_correlations.CrossCorrelation dataype.
 import numpy
 import tvb.datatypes.time_series as time_series
 import tvb.datatypes.temporal_correlations as temporal_correlations
-import tvb.basic.traits.util as util
-from tvb.basic.neotraits.api import HasTraits, Attr
+from tvb.basic.neotraits.api import HasTraits, Attr, narray_describe
 from scipy.signal.signaltools import correlate
 from tvb.basic.logger.builder import get_logger
 
@@ -82,17 +81,18 @@ class CrossCorrelate(HasTraits):
         #TODO: For region level, 4s, 2000Hz, this takes ~3hours...(which makes node_coherence seem positively speedy...)
         # Probably best to add a keyword for offsets, so we just compute +- some "small" range...
         # One inter-node correlation, across offsets, for each state-var & mode.
-        for mode in range(result_shape[4]):
-            for var in range(result_shape[3]):
+        for mode in xrange(result_shape[4]):
+            for var in xrange(result_shape[3]):
                 data = self.time_series.data[:, var, :, mode]
                 data = data - data.mean(axis=0)[numpy.newaxis, :]
                 #TODO: Work out a way around the 4 level loop:
-                for n1 in range(result_shape[1]):
-                    for n2 in range(result_shape[2]):
+                for n1 in xrange(result_shape[1]):
+                    for n2 in xrange(result_shape[2]):
                         result[:, n1, n2, var, mode] = correlate(data[:, n1], data[:, n2], mode="same")
-        
-        util.log_debug_array(LOG, result, "result")
-        
+
+        LOG.debug("result")
+        LOG.debug(narray_describe(result))
+
         offset = (self.time_series.sample_period *
                   numpy.arange(-numpy.floor(result_shape[0] / 2.0), numpy.ceil(result_shape[0] / 2.0)))
 

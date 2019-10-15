@@ -38,8 +38,7 @@ return a ComplexCoherence datatype.
 
 import numpy
 import tvb.datatypes.spectral as spectral
-import tvb.basic.traits.util as util
-from tvb.basic.neotraits.api import HasTraits, Attr, Int, Float
+from tvb.basic.neotraits.api import HasTraits, Attr, Int, Float, narray_describe
 from scipy import signal as sp_signal
 from tvb.datatypes.time_series import TimeSeries
 from tvb.basic.logger.builder import get_logger
@@ -293,7 +292,8 @@ class NodeComplexCoherence(HasTraits):
                     temp = numpy.matrix(numpy.squeeze(cs[:, :, i, j]))
                     coh[:, :, i, j] = temp / numpy.sqrt(temp.diagonal().conj().T * temp.diagonal().T)
 
-        util.log_debug_array(LOG, cs, "result")
+        LOG.debug("result")
+        LOG.debug(narray_describe(cs))
         spectra = spectral.ComplexCoherenceSpectrum(source=self.time_series,
                                                     array_data=coh,
                                                     cross_spectrum=cs,

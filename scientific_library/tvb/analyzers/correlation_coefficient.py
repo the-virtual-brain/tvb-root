@@ -42,8 +42,7 @@ import numpy
 #TODO: Currently built around the Simulator's 4D timeseries -- generalise...
 import tvb.datatypes.time_series as time_series
 import tvb.datatypes.graph as graph
-import tvb.basic.traits.util as util
-from tvb.basic.neotraits.api import HasTraits, Attr, Float
+from tvb.basic.neotraits.api import HasTraits, Attr, Float, narray_describe
 from tvb.basic.logger.builder import get_logger
 
 LOG = get_logger(__name__)
@@ -92,9 +91,6 @@ class CorrelationCoefficient(HasTraits):
         is defined by t_start, t_end
 
         """
-        cls_attr_name = self.__class__.__name__ + ".time_series"
-        # self.time_series.trait["data"].log_debug(owner=cls_attr_name)
-
         #(nodes, nodes, state-variables, modes)
         input_shape = self.time_series.data.shape
         result_shape = self.result_shape(input_shape)
@@ -109,16 +105,16 @@ class CorrelationCoefficient(HasTraits):
         t_hi = max(t_hi, input_shape[0])
 
         #One correlation coeff matrix, for each state-var & mode.
-        for mode in range(result_shape[3]):
-            for var in range(result_shape[2]):
+        for mode in xrange(result_shape[3]):
+            for var in xrange(result_shape[2]):
                 current_slice = tuple([slice(t_lo, t_hi + 1), slice(var, var + 1),
                                        slice(input_shape[2]), slice(mode, mode + 1)])
                 # TODO: Double check whether this should read from H5 and move to framework
                 data = self.time_series.data[current_slice].squeeze()
                 result[:, :, var, mode] = numpy.corrcoef(data.T)
 
-
-        util.log_debug_array(LOG, result, "result")
+        LOG.debug("result")
+        LOG.debug(narray_describe(result))
 
         corr_coeff = graph.CorrelationCoefficients(source=self.time_series,
                                                    array_data=result)

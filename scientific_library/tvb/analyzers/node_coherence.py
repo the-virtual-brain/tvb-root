@@ -42,8 +42,7 @@ from matplotlib.pylab import detrend_linear
 #TODO: Currently built around the Simulator's 4D timeseries -- generalise...
 import tvb.datatypes.time_series as time_series
 import tvb.datatypes.spectral as spectral
-import tvb.basic.traits.util as util
-from tvb.basic.neotraits.api import HasTraits, Attr, Int
+from tvb.basic.neotraits.api import HasTraits, Attr, Int, narray_describe
 from tvb.basic.logger.builder import get_logger
 
 LOG = get_logger(__name__)
@@ -79,12 +78,12 @@ def coherence_mlab(data, sample_rate, nfft=256):
     coh_shape = nfft/2 + 1, nnode, nnode, nsvar, nmode
     LOG.info("coh shape will be: %s" % (coh_shape, ))
     coh = numpy.zeros(coh_shape)
-    for mode in range(nmode):
-        for var in range(nsvar):
+    for mode in xrange(nmode):
+        for var in xrange(nsvar):
             data = data[:, var, :, mode].copy()
             data -= data.mean(axis=0)[numpy.newaxis, :]
-            for n1 in range(nnode):
-                for n2 in range(nnode):
+            for n1 in xrange(nnode):
+                for n2 in xrange(nnode):
                     cxy, freq = mlab.cohere(data[:, n1], data[:, n2],
                                             NFFT=nfft,
                                             Fs=sample_rate,
@@ -114,7 +113,7 @@ def coherence(data, sample_rate, nfft=256, imag=False):
     G = F[:, numpy.newaxis] * F.conj()
     if imag:
         G = G.imag
-    dG = numpy.array([G[i, i] for i in range(nn)])
+    dG = numpy.array([G[i, i] for i in xrange(nn)])
     C = (numpy.abs(G)**2 / (dG[:, numpy.newaxis] * dG)).mean(axis=-2)
     mask = fs > 0.0
     # C_ = numpy.abs(C.mean(axis=0).mean(axis=0))
@@ -141,8 +140,11 @@ class NodeCoherence(HasTraits):
         # self.time_series.trait["data"].log_debug(owner=cls_attr_name)
         srate = self.time_series.sample_rate
         coh, freq = coherence(self.time_series.data, srate, nfft=self.nfft)
-        util.log_debug_array(LOG, coh, "coherence")
-        util.log_debug_array(LOG, freq, "freq")
+        LOG.debug("coherence")
+        LOG.debug(narray_describe(coh))
+        LOG.debug("freq")
+        LOG.debug(narray_describe(freq))
+
         spec = spectral.CoherenceSpectrum(
             source=self.time_series,
             nfft=self.nfft,

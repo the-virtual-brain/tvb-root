@@ -43,12 +43,11 @@ import scipy.sparse
 import warnings
 import json
 import numpy
-from tvb.basic.traits import util
 from tvb.basic import exceptions
 from tvb.basic.logger.builder import get_logger
 from tvb.basic.profile import TvbProfile
 from tvb.basic.readers import ZipReader, try_get_absolute_path
-from tvb.basic.neotraits.api import HasTraits, Attr, NArray, Const, Int, Float
+from tvb.basic.neotraits.api import HasTraits, Attr, NArray, Const, Int, Float, narray_describe
 
 try:
     import gdist
@@ -446,7 +445,8 @@ class Surface(HasTraits):
             # TODO: NaN generation would stop execution, however for normals this case could maybe be
             # handled in a better way.
             self.triangle_normals = tri_norm
-        util.log_debug_array(LOG, self.triangle_normals, "triangle_normals", owner=self.__class__.__name__)
+        LOG.debug("triangle_normals")
+        LOG.debug(narray_describe(self.triangle_normals))
 
     def compute_vertex_normals(self):
         """
@@ -475,7 +475,8 @@ class Surface(HasTraits):
                 bad_normal_count += 1
         if bad_normal_count:
             self.logger.warn(" %d vertices have bad normals" % bad_normal_count)
-        util.log_debug_array(LOG, vert_norms, "vertex_normals", owner=self.__class__.__name__)
+        LOG.debug("vertex_normals")
+        LOG.debug(narray_describe(self.vertex_normals))
         self.vertex_normals = vert_norms
 
     @property
@@ -493,7 +494,8 @@ class Surface(HasTraits):
         tri_norm = numpy.cross(tri_u, tri_v)
         triangle_areas = numpy.sqrt(numpy.sum(tri_norm ** 2, axis=1)) / 2.0
         triangle_areas = triangle_areas[:, numpy.newaxis]
-        util.log_debug_array(LOG, triangle_areas, "triangle_areas", owner=self.__class__.__name__)
+        LOG.debug("triangle_areas")
+        LOG.debug(narray_describe(self.triangle_areas))
 
         return triangle_areas
 
@@ -512,7 +514,8 @@ class Surface(HasTraits):
         """
         tri_verts = self.vertices[self.triangles, :]
         tri_centres = numpy.mean(tri_verts, axis=1)
-        util.log_debug_array(LOG, tri_centres, "tri_centres")
+        LOG.debug("tri_centres")
+        LOG.debug(narray_describe(tri_centres))
         return tri_centres
 
     @property
@@ -548,7 +551,9 @@ class Surface(HasTraits):
         a1 = _angle(edges[:, 0, :], - edges[:, 1, :])
         a2 = 2 * numpy.pi - a0 - a1
         angles = numpy.hstack([a0, a1, a2])
-        util.log_debug_array(LOG, angles, "triangle_angles", owner=self.__class__.__name__)
+        LOG.debug("triangle_angles")
+        LOG.debug(narray_describe(angles))
+
         return angles
 
     @property

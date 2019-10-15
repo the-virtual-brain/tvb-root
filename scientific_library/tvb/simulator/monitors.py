@@ -66,9 +66,8 @@ from tvb.datatypes.region_mapping import RegionMapping
 from tvb.datatypes.projections import (ProjectionMatrix,
     ProjectionSurfaceEEG, ProjectionSurfaceMEG, ProjectionSurfaceSEEG)
 import tvb.datatypes.equations as equations
-import tvb.basic.traits.util as util
 from tvb.simulator.common import iround, numpy_add_at
-from tvb.basic.neotraits.api import HasTraits, Attr, NArray, Float
+from tvb.basic.neotraits.api import HasTraits, Attr, NArray, Float, narray_describe
 
 LOG = get_logger(__name__)
 
@@ -287,14 +286,17 @@ class SpatialAverage(Monitor):
                     "contiguous set of indices starting from zero.")
             raise Exception(msg)
 
-        util.log_debug_array(LOG, self.spatial_mask, "spatial_mask", owner=self.__class__.__name__)
+        LOG.debug("spatial_mask")
+        LOG.debug(narray_describe(self.spatial_mask))
         spatial_sum = numpy.zeros((number_of_nodes, number_of_areas))
         spatial_sum[numpy.arange(number_of_nodes), self.spatial_mask] = 1
         spatial_sum = spatial_sum.T
-        util.log_debug_array(LOG, spatial_sum, "spatial_sum")
+        LOG.debug("spatial_sum")
+        LOG.debug(narray_describe(spatial_sum))
         nodes_per_area = numpy.sum(spatial_sum, axis=1)[:, numpy.newaxis]
         self.spatial_mean = spatial_sum / nodes_per_area
-        util.log_debug_array(LOG, self.spatial_mean, "spatial_mean", owner=self.__class__.__name__)
+        LOG.debug("spatial_mean")
+        LOG.debug(narray_describe(self.spatial_mean))
 
 
     def sample(self, step, state):

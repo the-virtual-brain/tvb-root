@@ -44,8 +44,7 @@ import matplotlib.mlab as mlab
 #TODO: Currently built around the Simulator's 4D timeseries -- generalise...
 import tvb.datatypes.time_series as time_series
 import tvb.datatypes.mode_decompositions as mode_decompositions
-import tvb.basic.traits.util as util
-from tvb.basic.neotraits.api import HasTraits, Attr
+from tvb.basic.neotraits.api import HasTraits, Attr, narray_describe
 from tvb.basic.logger.builder import get_logger
 
 LOG = get_logger(__name__)
@@ -103,16 +102,18 @@ class PCA(HasTraits):
         fractions = numpy.zeros(fractions_shape)
         
         #One inter-node temporal covariance matrix for each state-var & mode.
-        for mode in range(ts_shape[3]):
-            for var in range(ts_shape[1]):
+        for mode in xrange(ts_shape[3]):
+            for var in xrange(ts_shape[1]):
                 data = self.time_series.data[:, var, :, mode]
                 data_pca = mlab.PCA(data)
                 fractions[:, var, mode ] = data_pca.fracs
                 weights[:, :, var, mode] = data_pca.Wt
-        
-        util.log_debug_array(LOG, fractions, "fractions")
-        util.log_debug_array(LOG, weights, "weights")
-        
+
+        LOG.debug("fractions")
+        LOG.debug(narray_describe(fractions))
+        LOG.debug("weights")
+        LOG.debug(narray_describe(weights))
+
         pca_result = mode_decompositions.PrincipalComponents(
             source = self.time_series,
             fractions = fractions,

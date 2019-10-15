@@ -43,9 +43,7 @@ import numpy
 import scipy.signal as signal
 import tvb.datatypes.time_series as time_series
 import tvb.datatypes.spectral as spectral
-import tvb.basic.traits.types_basic as basic
-import tvb.basic.traits.util as util
-from tvb.basic.neotraits.api import HasTraits, Attr, Range, Float
+from tvb.basic.neotraits.api import HasTraits, Attr, Range, Float, narray_describe
 from tvb.simulator.common import iround
 from tvb.basic.logger.builder import get_logger
 
@@ -130,13 +128,15 @@ class ContinuousWaveletTransform(HasTraits):
         
         if (freqs.size == 0) or any(freqs <= 0.0): #TODO: Maybe should limit number of freqs... ~100 is probably a reasonable upper bound.
             LOG.warning("Invalid frequency range! Falling back to default.")
-            util.log_debug_array(LOG, freqs, "freqs")
-            self.frequencies = basic.Range(lo = 0.008, hi = 0.060, step = 0.002)
+            LOG.debug("freqs")
+            LOG.debug(narray_describe(freqs))
+            self.frequencies = Range(lo=0.008, hi=0.060, step=0.002)
             freqs = numpy.arange(self.frequencies.lo, self.frequencies.hi,
                                  self.frequencies.step)
-        
-        util.log_debug_array(LOG, freqs, "freqs")
-        
+
+        LOG.debug("freqs")
+        LOG.debug(narray_describe(freqs))
+
         sample_rate = self.time_series.sample_rate
         
         # Duke: code below is as given by Andreas Spiegler, I've just wrapped 
@@ -172,7 +172,9 @@ class ContinuousWaveletTransform(HasTraits):
         coef_shape = (nf, nt, ts_shape[1], ts_shape[2], ts_shape[3])
         
         coef = numpy.zeros(coef_shape, dtype = numpy.complex128)
-        util.log_debug_array(LOG, coef, "coef")
+        LOG.debug("coef")
+        LOG.debug(narray_describe(coef))
+
         scales = numpy.arange(0, nf, 1)
         for i in scales:
             f0 = freqs[i]
@@ -183,9 +185,9 @@ class ContinuousWaveletTransform(HasTraits):
             wvlt = numpy.hstack((numpy.conjugate(wvlt[-1:0:-1]), wvlt))
             #util.log_debug_array(LOG, wvlt, "wvlt")
             
-            for var in range(ts_shape[1]):
-                for node in range(ts_shape[2]):
-                    for mode in range(ts_shape[3]):
+            for var in xrange(ts_shape[1]):
+                for node in xrange(ts_shape[2]):
+                    for mode in xrange(ts_shape[3]):
                         data = self.time_series.data[:, var, node, mode]
                         wt = signal.convolve(data, wvlt, 'same')
                         #util.log_debug_array(LOG, wt, "wt")
@@ -194,9 +196,10 @@ class ContinuousWaveletTransform(HasTraits):
                         # when using dt and sample periods which are not powers of 2.
                         coef[i, :, var, node, mode] = res if len(res) == nt else res[:coef.shape[1]] 
                         
-        
-        util.log_debug_array(LOG, coef, "coef")
-        
+
+        LOG.debug("coef")
+        LOG.debug(narray_describe(coef))
+
         spectra = spectral.WaveletCoefficients(
             source = self.time_series,
             mother = self.mother,
