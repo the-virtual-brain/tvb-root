@@ -42,7 +42,7 @@ Demo::
     ppi_fig.show()
 
 
-Example spcifying a Model and stochastic sample trajectories::
+Example specifying a Model and stochastic sample trajectories::
 
     import tvb.simulator.models
     from tvb.simulator.plot.phase_plane_interactive import PhasePlaneInteractive
