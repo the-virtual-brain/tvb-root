@@ -84,7 +84,7 @@ class TimeSeries(HasTraits):
         default=4
     )
 
-    length_1d, length_2d, length_3d, length_4d = [Attr(field_type=int)] * 4
+    length_1d, length_2d, length_3d, length_4d = [Attr(field_type=int) for _ in range(4)]
 
     labels_ordering = List(
         default=("Time", "State Variable", "Space", "Mode"),
