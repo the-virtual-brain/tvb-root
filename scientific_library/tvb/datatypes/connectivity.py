@@ -126,7 +126,7 @@ class Connectivity(HasTraits):
 
     # In case of edited Connectivity, this are the nodes left in interest area,
     # the rest were part of a lesion, so they were removed.
-    saved_selection = List(of=str)
+    saved_selection = List(of=int)
 
     @property
     def display_name(self):
