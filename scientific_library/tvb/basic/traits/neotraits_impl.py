@@ -29,6 +29,7 @@ class Attr(object):
                  required=True, readonly=False, choices=None):
         # type: (type, typing.Any, str, str, bool, bool, typing.Optional[tuple]) -> None
         self.field_name = None  # type: str  # to be set by metaclass
+        self.owner = None  # type: type  # to be set by metaclass
         self.field_type = field_type
         self.default = default
         self.doc = doc
@@ -130,6 +131,10 @@ class Attr(object):
         return '{}(field_type={}, default={}, required={})'.format(
             type(self).__name__, self.field_type, self.default, self.required)
 
+    def __setattr__(self, key, value):
+        if getattr(self, 'owner', None) is not None:
+            raise AttributeError("can't change any field after the Attr has been bound to a class")
+        super(Attr, self).__setattr__(key, value)
 
 
 def _auto_docstring(namespace):
@@ -211,22 +216,31 @@ class MetaType(abc.ABCMeta):
         Gathers the names of all declarative fields.
         Tell each Attr of the name of the field it is bound to.
         """
-        # todo find a reliable way to refuse creating classes that are not subclasses of Base
+        # gather all declarative attributes defined in the class to be constructed.
+        # validate all declarations before constructing the new type
         attrs = []
 
         for k, v in namespace.iteritems():
             if isinstance(v, Attr):
                 attrs.append(k)
-                v.field_name = k
-                v._post_bind_validate(type_name)
 
+        # record the names of the declarative attrs in the _own_declarative_attrs field
         if '_own_declarative_attrs' in namespace:
             raise TypeError('class attribute _own_declarative_attrs is reserved in traited classes')
 
         namespace['_own_declarative_attrs'] = tuple(attrs)
         namespace['__doc__'] = _auto_docstring(namespace)
-
+        # construct the class
         cls = super(MetaType, mcs).__new__(mcs, type_name, bases, namespace)
+
+        # inform the Attr instances about the class their are bound to
+        for attr_name in attrs:
+            v = namespace[attr_name]
+            v.field_name = attr_name
+            v.owner = cls
+            v._post_bind_validate(type_name)
+
+        # update the HasTraits class registry
         mcs.__classes.append(cls)
         return cls
 

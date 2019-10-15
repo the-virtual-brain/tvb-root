@@ -248,3 +248,10 @@ def test_str_ndarrays_are_problematic():
     # do we create a new attribute String that has relaxed checks and infers dtype from default if it exists?
     # do we burden the user with giving a precise dtype like |S32?
     # do we discourage ndarray[str] in favor of plain python lists? and let storage deal with string sizes
+
+
+def test_multidecl_fail():
+    with pytest.raises(AttributeError):
+        class A(HasTraits):
+            a, b = [Attr(int)] * 2
+
