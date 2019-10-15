@@ -73,25 +73,6 @@ FACE = "Face"
 
 ALL_SURFACES = [CORTICAL, INNER_SKULL, OUTER_SKULL, OUTER_SKIN, EEG_CAP, FACE, WHITE_MATTER]
 
-# Slices are for vertices [0.....SPLIT_MAX_SIZE + SPLIT_BUFFER_SIZE]
-# [SPLIT_MAX_SIZE ..... 2 * SPLIT_BUFFER_SIZE + SPLIT_BUFFER_SIZE]
-# Triangles [0, 1, 2], [3, 4, 5], [6, 7, 8].....
-# Vertices -  no of triangles * 3
-
-SPLIT_MAX_SIZE = 40000
-SPLIT_BUFFER_SIZE = 15000
-SPLIT_PICK_MAX_TRIANGLE = 20000
-
-KEY_TRIANGLES = "triangles"
-KEY_VERTICES = "vertices"
-KEY_HEMISPHERE = "hemisphere"
-KEY_START = "start_idx"
-KEY_END = "end_idx"
-
-HEMISPHERE_LEFT = "LEFT"
-HEMISPHERE_RIGHT = "RIGHT"
-HEMISPHERE_UNKNOWN = "NONE"
-
 
 class ValidationResult(object):
     """
@@ -165,12 +146,6 @@ class Surface(HasTraits):
 
     zero_based_triangles = Attr(field_type=bool)
 
-    split_triangles = NArray(dtype=int, required=False)
-
-    number_of_split_slices = Int(required=False)
-
-    split_slices = Attr(field_type=dict, required=False)
-
     bi_hemispheric = Attr(field_type=bool, default=False)
 
     surface_type = Attr(field_type=str)
@@ -200,6 +175,7 @@ class Surface(HasTraits):
 
         self.number_of_vertices = int(self.vertices.shape[0])
         self.number_of_triangles = int(self.triangles.shape[0])
+        self.bi_hemispheric = self.hemisphere_mask is not None and numpy.unique(self.hemisphere_mask).size > 1
 
         if self.triangle_normals is None or self.triangle_normals.size == 0:
             LOG.debug("Triangle normals not available. Start to compute them.")
