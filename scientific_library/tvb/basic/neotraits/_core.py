@@ -186,14 +186,9 @@ class HasTraits(object):
         cls = type(self)
 
         for k in cls.declarative_attrs:
-            # these getattr's call the descriptors, should we bypass them?
-            attr = getattr(cls, k)
-            if attr.required and getattr(self, k) is None:
-                # log.warning(
-                raise TraitValueError(
-                    'Attribute is required. You should set it or declare a default',
-                    attr=attr
-                )
+            # read all declarative attributes. This will trigger errors if they are
+            # in an invalid state, like beeing required but not set
+            getattr(self, k)
 
 
     def configure(self, *args, **kwargs):

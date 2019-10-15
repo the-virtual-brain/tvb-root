@@ -54,11 +54,14 @@ def test_defaults_and_required():
         a = A(ra='opaline')
         a.ra = None
 
-    with pytest.raises(ValueError):
+    with pytest.raises(TraitAttributeError):
+        aincomplete.ra
+
+    with pytest.raises(TraitAttributeError):
         aincomplete.validate()
 
-    with pytest.raises(ValueError):
-        # the default configure calls validate
+    # the default configure calls validate
+    with pytest.raises(TraitAttributeError):
         aincomplete.configure()
 
 
@@ -295,8 +298,10 @@ def test_const_attr():
         final_c = Attr(int, final=True)
 
     a = A()
-    # in neotraits uninitialized attrs with no defaults return None even if required!
-    assert a.final_c is None
+    # in neotraits uninitialized required attrs with no defaults raise on read
+    with pytest.raises(TraitAttributeError):
+        a.final_c
+
     a.final_c = 42
 
     with pytest.raises(TraitAttributeError):

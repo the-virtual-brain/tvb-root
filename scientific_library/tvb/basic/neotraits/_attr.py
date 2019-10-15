@@ -40,7 +40,7 @@ class Attr(_Attr):
                         Take care with mutable defaults.
         :param doc: Documentation for this field.
         :param label: A short description.
-        :param required: required fields should not be None. Not strongly enforced.
+        :param required: required fields should not be None.
         :param final: Final fields can only be assigned once.
         :param choices: A tuple of the values that this field is allowed to take.
         """
@@ -135,9 +135,11 @@ class Attr(_Attr):
             # lost as a new one is created every time.
             instance.__dict__[self.field_name] = default
 
-        # todo: consider raising AttributeError instead of returning None if required is True
-
-        return instance.__dict__[self.field_name]
+        value = instance.__dict__[self.field_name]
+        if self.required and value is None:
+            raise TraitAttributeError('required attribute referenced before assignment. '
+                                      'Use a default or assign a value before reading it', attr=self)
+        return value
 
 
     def __set__(self, instance, value):
@@ -146,10 +148,11 @@ class Attr(_Attr):
 
         if self.final:
             # non-set to set final transition happens when instance stored value becomes not none
-            # getattr will call __get__. We want that.
+            # getattr will call __get__. We want that in order to allow the default to be set.
             # If __set__ is called before a __get__ then no defaults have been assigned.
-            # Note that if the default is None, then this is still write-able
-            present_value = getattr(instance, self.field_name)
+            # subtlety: if the value of this final field is not set then __get__ will raise
+            #           getattr with a default value swallows that exception and returns false
+            present_value = getattr(instance, self.field_name, None)
             if present_value is not None:
                 raise TraitAttributeError("can't write final attribute")
 
