@@ -47,16 +47,16 @@ def _numba_dfun(S, c, ae, be, de, ge, te, wp, we, jn, ai, bi, di, gi, ti, wi, ji
     cc = g[0]*jn[0]*c[0]
 
     if S[0] < 0.0:
-        S_e = 0.0  # - S[0] # TODO: clarify the boundary to be reflective or saturated!!!
+        S_e = 0.0
     elif S[0] > 1.0:
-        S_e = 1.0  # - S[0] # TODO: clarify the boundary to be reflective or saturated!!!
+        S_e = 1.0
     else:
         S_e = S[0]
 
     if S[1] < 0.0:
-        S_i = 0.0  # - S[1]  TODO: clarify the boundary to be reflective or saturated!!!
+        S_i = 0.0
     elif S[1] > 1.0:
-        S_i = 1.0  #  - S[1] TODO: clarify the boundary to be reflective or saturated!!!
+        S_i = 1.0
     else:
         S_i = S[1]
 
