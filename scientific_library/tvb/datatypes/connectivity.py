@@ -37,20 +37,17 @@ methods that are associated with the connectivity data.
 
 """
 
-from copy import copy
 import numpy
 import scipy.stats
+from copy import copy
 from tvb.basic.logger.builder import get_logger
 from tvb.basic.readers import ZipReader, H5Reader, try_get_absolute_path
 from tvb.basic.neotraits.api import Attr, NArray, List, HasTraits, Int, narray_summary_info
-
 
 LOG = get_logger(__name__)
 
 
 class Connectivity(HasTraits):
-
-    # data
     region_labels = NArray(
         dtype='U128',
         label="Region labels",
@@ -58,7 +55,6 @@ class Connectivity(HasTraits):
 
     weights = NArray(
         label="Connection strengths",
-        # stored_metadata=[key for key in MappedType.DEFAULT_WITH_ZERO_METADATA],
         doc="""Matrix of values representing the strength of connections between regions, arbitrary units.""")
 
     undirected = Attr(
@@ -68,84 +64,71 @@ class Connectivity(HasTraits):
 
     tract_lengths = NArray(
         label="Tract lengths",
-        # stored_metadata=[key for key in MappedType.DEFAULT_WITH_ZERO_METADATA],
         doc="""The length of myelinated fibre tracts between regions.
-            If not provided Euclidean distance between region centres is used."""
-    )
+            If not provided Euclidean distance between region centres is used.""")
 
     speed = NArray(
         label="Conduction speed",
-        default=numpy.array([3.0]),  # file_storage=core.FILE_STORAGE_NONE,
+        default=numpy.array([3.0]),
         doc="""A single number or matrix of conduction speeds for the myelinated fibre tracts between regions.""")
 
     centres = NArray(
         label="Region centres",
-        doc="An array specifying the location of the centre of each region."
-    )
+        doc="An array specifying the location of the centre of each region.")
 
     cortical = NArray(
         dtype=bool,
         label="Cortical",
         required=False,
-        doc="""A boolean vector specifying whether or not a region is part of the cortex."""
-    )
+        doc="""A boolean vector specifying whether or not a region is part of the cortex.""")
 
     hemispheres = NArray(
         dtype=bool,
         label="Hemispheres (True for Right and False for Left Hemisphere",
         required=False,
-        doc="""A boolean vector specifying whether or not a region is part of the right hemisphere"""
-    )
+        doc="""A boolean vector specifying whether or not a region is part of the right hemisphere""")
 
     orientations = NArray(
         label="Average region orientation",
         required=False,
         doc="""Unit vectors of the average orientation of the regions represented in the connectivity matrix.
-            NOTE: Unknown data should be zeros."""
-    )
+            NOTE: Unknown data should be zeros.""")
 
     areas = NArray(
         label="Area of regions",
         required=False,
         doc="""Estimated area represented by the regions in the connectivity matrix.
-            NOTE: Unknown data should be zeros."""
-    )
+            NOTE: Unknown data should be zeros.""")
 
     idelays = NArray(
         dtype=int,
         label="Conduction delay indices",
-        required=False,  # file_storage=core.FILE_STORAGE_NONE,
+        required=False,
         doc="An array of time delays between regions in integration steps.")
 
     delays = NArray(
         label="Conduction delay",
-        # file_storage=core.FILE_STORAGE_NONE,
         required=False,
         doc="""Matrix of time delays between regions in physical units, setting conduction speed automatically
-            combines with tract lengths to update this matrix, i.e. don't try and change it manually."""
-    )
+            combines with tract lengths to update this matrix, i.e. don't try and change it manually.""")
 
     number_of_regions = Int(
         field_type=int,
         label="Number of regions",
-        doc="""The number of regions represented in this Connectivity """
-    )
+        doc="""The number of regions represented in this Connectivity """)
 
     number_of_connections = Int(
         field_type=int,
         label="Number of connections",
-        doc="""The number of non-zero entries represented in this Connectivity """
-    )
+        doc="""The number of non-zero entries represented in this Connectivity """)
 
     # Original Connectivity, from which current connectivity was edited.
     parent_connectivity = Attr(field_type=str, required=False)
 
     # In case of edited Connectivity, this are the nodes left in interest area,
     # the rest were part of a lesion, so they were removed.
-    # saved_selection = basic.JSONType(required=False)
     saved_selection = List(of=str)
 
-    # framework
     @property
     def display_name(self):
         """
@@ -153,102 +136,6 @@ class Connectivity(HasTraits):
         """
         previous = "Connectivity"
         return previous + " " + str(self.number_of_regions)
-
-    def branch_connectivity(self, new_weights, interest_areas, storage_path, new_tracts=None):
-        """
-        Generate new Connectivity based on current one, by changing weights (e.g. simulate lesion).
-        The returned connectivity has the same number of nodes. The edges of unselected nodes will have weight 0.
-        :param new_weights: weights matrix for the new connectivity
-        :param interest_areas: ndarray of the selected node id's
-        :param new_tracts: tracts matrix for the new connectivity
-        """
-        if new_tracts is None:
-            new_tracts = self.tract_lengths
-
-        for i in range(len(self.weights)):
-            for j in range(len(self.weights)):
-                if i not in interest_areas or j not in interest_areas:
-                    new_weights[i][j] = 0
-
-        final_conn = self.__class__()
-        final_conn.parent_connectivity = self.gid
-        final_conn.storage_path = storage_path
-        final_conn.weights = new_weights
-        final_conn.centres = self.centres
-        final_conn.region_labels = self.region_labels
-        final_conn.orientations = self.orientations
-        final_conn.cortical = self.cortical
-        final_conn.hemispheres = self.hemispheres
-        final_conn.areas = self.areas
-        final_conn.tract_lengths = new_tracts
-        final_conn.saved_selection = interest_areas.tolist()
-        final_conn.subject = self.subject
-        return final_conn
-
-    def cut_connectivity(self, new_weights, interest_areas, new_tracts=None):
-        """
-        Generate new Connectivity object based on current one, by removing nodes (e.g. simulate lesion).
-        Only the selected nodes will get used in the result. The order of the indices in interest_areas matters.
-        If indices are not sorted then the nodes will be permuted accordingly.
-        :param new_weights: weights matrix for the new connectivity
-        :param interest_areas: ndarray with the selected node id's.
-        :param new_tracts: tracts matrix for the new connectivity
-        """
-        if new_tracts is None:
-            new_tracts = self.tract_lengths[interest_areas, :][:, interest_areas]
-        else:
-            new_tracts = new_tracts[interest_areas, :][:, interest_areas]
-        new_weights = new_weights[interest_areas, :][:, interest_areas]
-
-        final_conn = self.__class__()
-        final_conn.parent_connectivity = None
-        final_conn.weights = new_weights
-        final_conn.centres = self.centres[interest_areas, :]
-        final_conn.region_labels = self.region_labels[interest_areas]
-        if self.orientations is not None and len(self.orientations):
-            final_conn.orientations = self.orientations[interest_areas, :]
-        if self.cortical is not None and len(self.cortical):
-            final_conn.cortical = self.cortical[interest_areas]
-        if self.hemispheres is not None and len(self.hemispheres):
-            final_conn.hemispheres = self.hemispheres[interest_areas]
-        if self.areas is not None and len(self.areas):
-            final_conn.areas = self.areas[interest_areas]
-        final_conn.tract_lengths = new_tracts
-        final_conn.saved_selection = []
-        #TODO: do this on index
-        # final_conn.subject = self.subject
-        return final_conn
-
-    def _reorder_arrays(self, new_weights, interest_areas, new_tracts=None):
-        """
-        Returns ordered versions of the parameters according to the hemisphere permutation.
-        """
-        permutation = self.hemisphere_order_indices
-        inverse_permutation = numpy.argsort(permutation)  # trick to invert a permutation represented as an array
-        interest_areas = inverse_permutation[interest_areas]
-        # see :meth"`ordered_weights` for why [p:][:p]
-        new_weights = new_weights[inverse_permutation, :][:, inverse_permutation]
-
-        if new_tracts is not None:
-            new_tracts = new_tracts[inverse_permutation, :][:, inverse_permutation]
-
-        return new_weights, interest_areas, new_tracts
-
-    def branch_connectivity_from_ordered_arrays(self, new_weights, interest_areas, storage_path, new_tracts=None):
-        """
-        Similar to :meth:`branch_connectivity` but the parameters are consistent with the ordered versions of weights, tracts, labels
-        Used by the connectivity viewer to save a lesion.
-        """
-        new_weights, interest_areas, new_tracts = self._reorder_arrays(new_weights, interest_areas, new_tracts)
-        return self.branch_connectivity(new_weights, interest_areas, storage_path, new_tracts)
-
-    def cut_new_connectivity_from_ordered_arrays(self, new_weights, interest_areas, new_tracts=None):
-        """
-        Similar to :meth:`cut_connectivity` but using hemisphere ordered parameters.
-        Used by the connectivity viewer to save a smaller connectivity.
-        """
-        new_weights, interest_areas, new_tracts = self._reorder_arrays(new_weights, interest_areas, new_tracts)
-        return self.cut_connectivity(new_weights, interest_areas, new_tracts)
 
     @property
     def saved_selection_labels(self):
@@ -369,9 +256,6 @@ class Connectivity(HasTraits):
         result = numpy.where(self.weights > 0, 1, result)
         return result
 
-    # scientific
-
-
     def configure(self):
         """
         Invoke the compute methods for computable attributes that haven't been
@@ -381,17 +265,6 @@ class Connectivity(HasTraits):
         self.number_of_regions = int(self.weights.shape[0])
         # NOTE: In numpy 1.8 there is a function called count_zeros
         self.number_of_connections = int(self.weights.nonzero()[0].shape[0])
-
-        # self.trait["weights"].log_debug(owner=self.__class__.__name__)
-        # self.trait["tract_lengths"].log_debug(owner=self.__class__.__name__)
-        # self.trait["speed"].log_debug(owner=self.__class__.__name__)
-        # self.trait["centres"].log_debug(owner=self.__class__.__name__)
-        # self.trait["orientations"].log_debug(owner=self.__class__.__name__)
-        # self.trait["areas"].log_debug(owner=self.__class__.__name__)
-
-        # todo: review these 2 following is None checks
-        # the neotraits do not default declarative numpy arrays to 0 dimensional empty ones
-        # we let a missing array be represented by None
 
         if self.tract_lengths is None or self.tract_lengths.size == 0:
             self.compute_tract_lengths()
@@ -414,13 +287,11 @@ class Connectivity(HasTraits):
         # NOTE: Because of the conduction_speed hack for UI this must be evaluated here, even if delays
         # already has a value, otherwise setting speed in the UI has no effect...
         self.delays = self.tract_lengths / self.speed
-        # self.trait["delays"].log_debug(owner=self.__class__.__name__)
 
         if (self.weights.transpose() == self.weights).all():
             self.undirected = True
 
         self.validate()
-
 
     def summary_info(self):
         summary = {
@@ -478,10 +349,11 @@ class Connectivity(HasTraits):
             tract_lengths[region, :] = numpy.sqrt(numpy.sum(temp ** 2, axis=1))
 
         self.tract_lengths = tract_lengths
-        # self.trait["tract_lengths"].log_debug(owner=self.__class__.__name__)
 
     def compute_region_labels(self):
-        """ """
+        """
+        Compute some labers, if missing
+        """
         labels = ["region_%03d" % n for n in range(self.number_of_regions)]
         self.region_labels = numpy.array(labels, dtype="128a")
 
@@ -491,7 +363,7 @@ class Connectivity(HasTraits):
         """
         if self.region_labels is not None and self.region_labels.size > 0:
             hemispheres = []
-            ## Check if all labels are prefixed with R / L
+            # Check if all labels are prefixed with R / L
             for label in self.region_labels:
                 if label is not None and label.lower().startswith('r'):
                     hemispheres.append(True)
@@ -500,7 +372,7 @@ class Connectivity(HasTraits):
                 else:
                     hemispheres = None
                     break
-            ## Check if all labels are sufixed with R / L
+            # Check if all labels are sufixed with R / L
             if hemispheres is None:
                 hemispheres = []
                 for label in self.region_labels:
@@ -517,9 +389,7 @@ class Connectivity(HasTraits):
     def transform_remove_self_connections(self):
         """
         Remove the values from the main diagonal (self-connections)
-
         """
-
         nor = self.number_of_regions
         result = copy(self.weights)
         result = result - result * numpy.eye(nor, nor)
@@ -585,74 +455,6 @@ class Connectivity(HasTraits):
         result = copy(self.weights)
         result = numpy.where(result > 0, 1, result)
         return result
-
-    def switch_distribution(self, matrix='tract_lengths', mode='none', seed=42):
-        """
-        Permutation and resampling methods for the weights and distance
-        (tract_lengths) matrices.
-        'normal'    : leaves the matrix unchanged
-        'shuffle'   : randomize the elements of the 'matrix' matrix. Fisher-Yates
-                      algorithm.
-
-                      for i from n - 1 downto 1 do
-                          j <- random integer with 0 :math:`\leq` j :math:`\leq` i
-                          exchange a[j] and a[i]
-
-        'mean'      : sets all the values to the sample mean value.
-        'empirical' : uses the gaussian_kde to estimate the underlying pdf of the
-                      values and randomly samples a new matrix.
-
-        'analytical': defined pdf. Fits the data to the distribution to get the
-                      corresponding parameters and then randomly samples a new
-                      matrix.
-        """
-        # Empirical seems to fail on some scipy installations. Error is not pinned down
-        # so far, it seems to only happen on some machines. Most relevant related to this:
-        #
-        # http://projects.scipy.org/scipy/ticket/1735
-        # http://comments.gmane.org/gmane.comp.python.scientific.devel/14816
-        # http://permalink.gmane.org/gmane.comp.python.numeric.general/42082
-        numpy.random.RandomState(seed)
-        temp = eval("self." + matrix)
-        D = copy(temp)
-        msg = "The distribution of the %s matrix will be changed" % matrix
-        LOG.info(msg)
-
-        if mode == 'none':
-            LOG.info("Maybe not ... Doing nothing")
-
-        elif mode == 'shuffle':
-
-            for i in reversed(list(range(1, D.shape[0]))):
-                j = int(numpy.random.rand() * (i + 1))
-                D[:, i], D[:, j] = D[:, j].copy(), D[:, i].copy()
-                D[i, :], D[j, :] = D[j, :].copy(), D[i, :].copy()
-
-        elif mode == 'mean':
-            D[:] = D[self.weights > 0].mean()
-
-        elif mode == 'empirical':
-
-            from scipy import stats
-            kernel = stats.gaussian_kde(D[D > 0].flatten())
-            D = kernel.resample(size=(D.shape))
-
-            if numpy.any(D < 0):
-                # NOTE: The KDE method is not perfect, there are still very
-                #       small probabilities for negative values around 0.
-                # TODO: change the kde bandwidth method
-                LOG.warning("Found negative values. Setting them to 0.0")
-                D = numpy.where(D < 0.0, 0.0, D)
-
-                # NOTE: if we need the cdf: kernel.integrate_box_1d(lo, hi)
-                # TODO: make a subclass using rv_continous, might be more accurate
-
-        elif mode == 'analytical':
-            LOG.warning("Analytical mode has not been implemented yet.")
-            # NOTE: pdf name could be an argument.
-        D = numpy.where(temp > 0, D, 0)
-        # NOTE: Consider saving a copy of the original delays matrix?
-        # exec("self." + matrix + "[:] = D")
 
     def motif_linear_directed(self, number_of_regions=4, max_radius=100., return_type=None):
         """
@@ -887,7 +689,8 @@ class Connectivity(HasTraits):
             self.region_labels = numpy.array(region_labels).astype(str)
         elif mode in ("alphabetic", "alpha"):
             if self.number_of_regions < 26:
-                self.region_labels = numpy.array(list(map(chr, list(range(65, 65 + self.number_of_regions))))).astype(str)
+                self.region_labels = numpy.array(list(map(chr, list(range(65, 65 + self.number_of_regions))))).astype(
+                    str)
             else:
                 LOG.info("I'm too lazy to create several strategies to label regions. \\")
                 LOG.info("Please choose mode 'numeric' or set your own labels\\")
@@ -905,7 +708,6 @@ class Connectivity(HasTraits):
 
         return numpy.setdiff1d(numpy.r_[:self.number_of_regions], region_mapping)
 
-    # final
     @staticmethod
     def from_file(source_file="connectivity_76.zip", instance=None):
 
@@ -917,7 +719,6 @@ class Connectivity(HasTraits):
         source_full_path = try_get_absolute_path("tvb_data.connectivity", source_file)
 
         if source_file.endswith(".h5"):
-
             reader = H5Reader(source_full_path)
 
             result.weights = reader.read_field("weights")
@@ -946,5 +747,3 @@ class Connectivity(HasTraits):
             result.tract_lengths = reader.read_array_from_file("tract_lengths")
 
         return result
-
-
