@@ -451,6 +451,27 @@ def test_declarative_property():
     assert a.expensive_once.shape == (12, 12)
 
 
+def test_bool_failure():
+    class A(HasTraits):
+        does_it_sink = Attr(bool)
+
+    a = A()
+
+    with pytest.raises(TraitTypeError) as e:
+        a.does_it_sink = (numpy.zeros(4) == 0).all()
+
+    # bool is not numpy.bool_ !!
+    # should we introduce a Bool Attr like we had to do for the Int ??
+
+    # I'd blame numpy if the following assertion would have failed:
+    # WHY python? Why must bool be a int, this is not C and even there ...
+    assert True + True == 2
+    # for more fun philosophy:
+    # truth without truth is falsity
+    assert True - True == False
+    # Half a truth is a falsity
+    assert True // 2 == False
+
 
 def test_int_attribute():
     class A(HasTraits):
