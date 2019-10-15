@@ -368,6 +368,8 @@ class HasTraits(object):
     # we could have injected these in MetaType, but we don't need meta powers
     # this is simpler to grok
 
+    gid = Attr(field_type=uuid.UUID)
+
     def __init__(self, **kwargs):
         """
         The default init accepts kwargs for all declarative attrs

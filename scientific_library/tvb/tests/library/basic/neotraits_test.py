@@ -1,4 +1,5 @@
 import abc
+import uuid
 
 import numpy
 import numpy as np
@@ -117,7 +118,7 @@ def test_declarative_attrs():
     class Inherit(B, A):
         c = Attr(str)
 
-    assert set(Inherit.declarative_attrs) == {'c', 'b', 'a'}
+    assert set(Inherit.declarative_attrs) == {'c', 'b', 'a', 'gid'}
     assert Inherit._own_declarative_attrs == ('c',)
     assert Inherit.own_declarative_attrs == ('c', )
 
@@ -128,7 +129,7 @@ def test_declarative_attrs():
     with pytest.raises(AttributeError):
         t.declarative_attrs
 
-    assert type(t).declarative_attrs == ('c', 'b', 'a')
+    assert set(type(t).declarative_attrs) == {'c', 'b', 'a', 'gid'}
 
 
 
@@ -404,7 +405,7 @@ def test_dynamic_attributes_behave_statically_and_warn():
 
     # the rest of the api assumes you don't change the attributes
     # this is the surprising result, no b in the declarative attr list
-    assert A.declarative_attrs == ('a',)
+    assert set(A.declarative_attrs) == {'a', 'gid'}
 
     # this fails
     with pytest.raises(AttributeError):
@@ -417,7 +418,7 @@ def test_dynamic_attributes_behave_statically_and_warn():
 
     # the rest of the api assumes you don't change the attributes
     # this is the surprising result a not deleted from declarative attr list
-    assert B.declarative_attrs == ('a',)
+    assert set(B.declarative_attrs) == {'a', 'gid'}
 
 
 
@@ -465,6 +466,7 @@ def test_summary_info():
 
     ainst = A(b=np.arange(3))
     ainst.title = 'the red rose'
+    ainst.gid = uuid.UUID(int=0)
     zinst = Z(zu=2)
     zinst.title = 'Z zuzu'
     ainst.ref = zinst
@@ -478,6 +480,7 @@ def test_summary_info():
         'b shape': '(3L,)',
         'b [min, median, max]': '[0, 1, 2]',
         'ref': 'Z zuzu',
+        'gid': "UUID('00000000-0000-0000-0000-000000000000')"
     }
 
 def test_hastraits_str_does_not_crash():
