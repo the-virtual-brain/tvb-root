@@ -33,10 +33,8 @@
 """
 
 import numpy
-from tvb.basic.traits import types_basic
-from tvb.basic.traits.types_mapped import MappedType, Array
-from tvb.datatypes import connectivity
-
+from tvb.datatypes.connectivity import Connectivity
+from tvb.basic.neotraits.api import Attr, NArray, HasTraits, narray_summary_info
 
 ANNOTATION_DTYPE = numpy.dtype([('id', 'i'),
                                 ('parent_id', 'i'),
@@ -63,7 +61,6 @@ class AnnotationTerm(object):
     One single annotation node (in the tree of annotations / region)
     """
 
-
     def __init__(self, id, parent, parent_left, parent_right, relation, label, definition=None, synonym=None, uri=None,
                  tvb_left=None, tvb_right=None):
         self.id = id
@@ -79,16 +76,13 @@ class AnnotationTerm(object):
         self.synonym_tvb_right = tvb_right or -1
         self.children = []
 
-
     def add_child(self, annotation_child):
         self.children.append(annotation_child)
-
 
     def to_tuple(self):
         return self.id, self.parent_id, self.parent_left, self.parent_right, \
                self.relation, self.label, self.definition, self.synonym, self.uri, \
                self.synonym_tvb_left, self.synonym_tvb_right
-
 
     def to_json(self, is_right_hemisphere=False, activation_patterns=None):
 
@@ -115,47 +109,35 @@ class AnnotationTerm(object):
                     state="close", children=children)
 
 
+class ConnectivityAnnotations(HasTraits):
+    """
+    Ontology annotations for a Connectivity.
+    """
 
-class AnnotationArray(Array):
+    connectivity = Attr(field_type=Connectivity)
+
     """
     Holds a flatten form for the annotations for a full connectivity.
     Each region in the connectivity can have None, or a tree of AnnotationTerms
     To be stored in a compound DS in H5.
     """
-
-    dtype = ANNOTATION_DTYPE
-
-    stored_metadata = [MappedType.METADATA_ARRAY_SHAPE]
-
-
-
-class ConnectivityAnnotations(MappedType):
-    """
-    Ontology annotations for a Connectivity.
-    """
-
-    connectivity = connectivity.Connectivity
-
-    region_annotations = AnnotationArray(
+    region_annotations = NArray(
         default=numpy.array([], dtype=ANNOTATION_DTYPE),
         label="Region Annotations",
         doc="""Flat tree of annotations for every connectivity region.""")
-
 
     def set_annotations(self, annotation_terms):
         annotations = [ann.to_tuple() for ann in annotation_terms]
         annotations = numpy.array(annotations, dtype=ANNOTATION_DTYPE)
         self.region_annotations = annotations
 
-
-    def _find_summary_info(self):
+    def summary_info(self):
         """
         Gather interesting summary information from an instance of this dataType.
         """
         summary = {"Connectivity": self.connectivity.display_name}
-        summary.update(self.get_info_about_array('region_annotations', [self.METADATA_ARRAY_SHAPE]))
+        summary.update(narray_summary_info(self.region_annotations, ar_name='region_annotations'))
         return summary
-
 
     def get_activation_patterns(self):
         """
@@ -183,7 +165,6 @@ class ConnectivityAnnotations(MappedType):
 
         return map_by_brco_id
 
-
     def get_activation_pattern_labels(self):
         """
         :return: map {brco_id: list of TVB regions LABELS in which the same BRCO term is being subclass}
@@ -199,7 +180,6 @@ class ConnectivityAnnotations(MappedType):
                 map_with_labels[ann_id].append(conn_label)
 
         return map_with_labels
-
 
     def tree_json(self):
         """
