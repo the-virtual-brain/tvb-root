@@ -115,8 +115,6 @@ class HasTraits(object):
     # we could have injected these in MetaType, but we don't need meta powers
     # this is simpler to grok
 
-    gid = Attr(field_type=uuid.UUID)
-
     def __init__(self, **kwargs):
         """
         The default init accepts kwargs for all declarative attrs
@@ -125,17 +123,9 @@ class HasTraits(object):
         # cls just to emphasise that the metadata is on the class not on instances
         cls = type(self)
 
-        # defined before the kwargs loop, so that a title or gid Attr can overwrite this defaults
+        # defined before the kwargs loop, so that a title Attr can overwrite this defaults
 
-        self.gid = uuid.uuid4()
-        """ 
-        gid identifies a specific instance of the hastraits
-        it is used by serializers as an identifier.
-        For non-datatype HasTraits this is less usefull but still
-        provides a unique id for example for a model configuration
-        """  # these strings are interpreted as docstrings by many tools, not by python though
-
-        self.title = '{} gid: {}'.format(self.__class__.__name__, self.gid)
+        self.title = '{}'.format(self.__class__.__name__)
         """ a generic name that the user can set to easily recognize the instance """
 
         for k, v in kwargs.iteritems():
