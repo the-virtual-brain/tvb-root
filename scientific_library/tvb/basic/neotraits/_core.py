@@ -42,8 +42,8 @@ class Attr(object):
         :param readonly: If assignment should be prohibited.
         :param choices: A tuple of the values that this field is allowed to take.
         """
-        self.field_name = None  # type: str  # to be set by metaclass
-        self.owner = None  # type: type  # to be set by metaclass
+        self.field_name = None  # type: typing.Optional[str]  # to be set by metaclass
+        self.owner = None       # type: typing.Optional[MetaType]  # to be set by metaclass
         self.field_type = field_type
         self.default = default
         self.doc = doc
@@ -96,6 +96,7 @@ class Attr(object):
 
 
     def _validate_set(self, instance, value):
+        # type: ('HasTraits', typing.Any) -> typing.Any
         """
         Called before updating the value of an attribute.
         It checks the type *AND* returns the valid value.
@@ -126,7 +127,7 @@ class Attr(object):
     # descriptor protocol
 
     def __get__(self, instance, owner):
-        # type: (typing.Any, type) -> typing.Any
+        # type: (typing.Optional['HasTraits'], 'MetaType') -> typing.Any
         self._assert_have_field_name()
         if instance is None:
             # called from class, not an instance
@@ -141,6 +142,7 @@ class Attr(object):
 
 
     def __set__(self, instance, value):
+        # type: ('HasTraits', typing.Any) -> None
         self._assert_have_field_name()
         if self.readonly:
             raise AttributeError("can't set readonly attribute")
@@ -171,12 +173,13 @@ class Attr(object):
 
 
     def __delattr__(self, item):
-        raise ValueError("Deleting an Attr field is not supported.")
+        raise AttributeError("Deleting an Attr field is not supported.")
 
 
 
 class TraitProperty(object):
     def __init__(self, fget, attr):
+        # type: (typing.Callable, Attr) -> None
         self.fget = fget
         self.__doc__ = fget.__doc__
         self.attr = attr
@@ -220,8 +223,8 @@ class MetaType(abc.ABCMeta):
 
     # here to avoid some hasattr; is None etc checks. And to make pycharm happy
     # should be harmless and shadowed by _declarative_attrs on the returned classes
-    _own_declarative_attrs = ()  # type: typing.Tuple[str] # name of all declarative fields on this class
-    _own_declarative_props = ()
+    _own_declarative_attrs = ()  # type: typing.Tuple[str, ...] # name of all declarative fields on this class
+    _own_declarative_props = ()  # type: typing.Tuple[str, ...]
 
     # A record of all the classes we have created.
     # note: As this holds references and not weakrefs it will prevent class garbage collection.

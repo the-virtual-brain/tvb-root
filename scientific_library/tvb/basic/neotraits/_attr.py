@@ -4,6 +4,8 @@ import numpy
 import logging
 from ._core import Attr
 
+if typing.TYPE_CHECKING:
+    from ._core import HasTraits, MetaType
 
 # a logger for the whole traits system
 log = logging.getLogger('tvb.traits')
@@ -79,12 +81,12 @@ class List(Attr):
 
 
     def __get__(self, instance, owner):
-        # type: (typing.Any, type) -> typing.Sequence
+        # type: (typing.Optional[HasTraits], MetaType) -> typing.Sequence
         return super(List, self).__get__(instance, owner)
 
 
     def __set__(self, instance, value):
-        # type: (object, typing.Sequence) -> None
+        # type: (HasTraits, typing.Sequence) -> None
         super(List, self).__set__(instance, value)
 
     def __str__(self):
@@ -261,11 +263,11 @@ class NArray(Attr):
 
     # here only for typing purposes, so ide's can get better suggestions
     def __get__(self, instance, owner):
-        # type: (typing.Optional[object], type) -> typing.Union[numpy.ndarray, 'NArray']
+        # type: (typing.Optional['HasTraits'], 'MetaType') -> typing.Union[numpy.ndarray, 'NArray']
         return super(NArray, self).__get__(instance, owner)
 
     def __set__(self, instance, value):
-        # type: (object, numpy.ndarray) -> None
+        # type: (HasTraits, numpy.ndarray) -> None
         super(NArray, self).__set__(instance, value)
 
     def __str__(self):
