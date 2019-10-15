@@ -62,18 +62,14 @@ Example specifying a Model and stochastic sample trajectories::
 #      check for leaks or look into "forcing" cleanup...
 
 import numpy
-# import matplotlib; matplotlib.use('TkAgg')
 import pylab
 import matplotlib.widgets as widgets
-
-from tvb.basic.neotraits._attr import List
 from tvb.simulator.common import get_logger
-LOG = get_logger(__name__)
-
 import tvb.simulator.models as models_module
 import tvb.simulator.integrators as integrators_module
+from tvb.basic.neotraits.api import HasTraits, Attr, NArray, List
 
-from tvb.basic.neotraits.api import HasTraits, Attr, NArray
+LOG = get_logger(__name__)
 
 # Define a colour theme... see: matplotlib.colors.cnames.keys()
 BACKGROUNDCOLOUR = "lightgray"
