@@ -33,6 +33,7 @@
 """
 
 import numpy
+from tvb.datatypes.sensors import SensorsEEG, SensorsMEG
 from tvb.tests.library.base_testcase import BaseTestCase
 from tvb.datatypes import time_series
 
@@ -60,23 +61,23 @@ class TestTimeseries(BaseTestCase):
 
     def test_timeserieseeg(self):
         data = numpy.random.random((10, 10))
-        dt = time_series.TimeSeriesEEG(data=data)
+        dt = time_series.TimeSeriesEEG(data=data, sensors=SensorsEEG())
         assert dt.data.shape == (10, 10)
         assert ('Time', '1', 'EEG Sensor', '1') == dt.labels_ordering
         assert dt.sample_period == 1.0
         assert dt.sample_rate == 0.0
-        assert dt.sensors is None
+        assert dt.sensors is not None
         assert dt.start_time == 0.0
         assert dt.time is None
 
     def test_timeseriesmeg(self):
         data = numpy.random.random((10, 10))
-        dt = time_series.TimeSeriesMEG(data=data)
+        dt = time_series.TimeSeriesMEG(data=data, sensors=SensorsMEG(orientations=numpy.array([])))
         assert dt.data.shape == (10, 10)
         assert ('Time', '1', 'MEG Sensor', '1') == dt.labels_ordering
         assert dt.sample_period == 1.0
         assert dt.sample_rate == 0.0
-        assert dt.sensors is None
+        assert dt.sensors is not None
         assert dt.start_time == 0.0
         assert dt.time is None
 

@@ -48,7 +48,7 @@ class Volume(HasTraits):
     Data defined on a regular grid in three dimensions.
     """
     origin = NArray(label="Volume origin coordinates")
-    voxel_size = NArray(label="Voxel size", required=False) # need a triplet, xyz
+    voxel_size = NArray(label="Voxel size") # need a triplet, xyz
     voxel_unit = Attr(str, label="Voxel Measure Unit", default="mm")
 
     def summary_info(self):

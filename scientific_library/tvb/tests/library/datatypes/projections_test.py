@@ -33,6 +33,8 @@
 """
 
 import numpy
+from tvb.datatypes.sensors import SensorsEEG, SensorsMEG
+from tvb.datatypes.surfaces import CorticalSurface
 from tvb.tests.library.base_testcase import BaseTestCase
 from tvb.datatypes import projections
 
@@ -43,23 +45,23 @@ class TestPatterns(BaseTestCase):
     """
 
     def test_projectionmatrix(self):
-        dt = projections.ProjectionMatrix(projection_data=numpy.array([]))
-        assert dt.sources is None
+        dt = projections.ProjectionMatrix(projection_type=str(""), sources=CorticalSurface(), projection_data=numpy.array([]))
+        assert dt.sources is not None
         assert dt.sensors is None
         assert dt.projection_data is not None
 
     def test_projection_surface_eeg(self):
-        dt = projections.ProjectionSurfaceEEG(projection_data=numpy.array([]))
-        assert dt.sources is None
+        dt = projections.ProjectionSurfaceEEG(sensors=SensorsEEG(),projection_data=numpy.array([]), sources=CorticalSurface())
+        assert dt.sources is not None
         assert dt.skin_air is None
         assert dt.skull_skin is None
-        assert dt.sensors is None
+        assert dt.sensors is not None
         assert dt.projection_data is not None
 
     def test_projection_surface_meg(self):
-        dt = projections.ProjectionSurfaceMEG(projection_data=numpy.array([]))
-        assert dt.sources is None
+        dt = projections.ProjectionSurfaceMEG(sensors=SensorsMEG(),projection_data=numpy.array([]), sources=CorticalSurface())
+        assert dt.sources is not None
         assert dt.skin_air is None
         assert dt.skull_skin is None
-        assert dt.sensors is None
+        assert dt.sensors is not None
         assert dt.projection_data is not None

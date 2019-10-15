@@ -44,12 +44,12 @@ class TestVolumes(BaseTestCase):
     """
 
     def test_volume(self):
-        dt = volumes.Volume(origin=numpy.array([]))
+        dt = volumes.Volume(origin=numpy.array([]), voxel_size=numpy.array([]))
         summary_info = dt.summary_info()
         assert summary_info['Origin'] is not None
-        assert summary_info['Voxel size'] is None
+        assert summary_info['Voxel size'] is not None
         assert summary_info['Volume type'] == 'Volume'
         assert summary_info['Units'] == 'mm'
         assert dt.origin is not None
-        assert dt.voxel_size is None
+        assert dt.voxel_size is not None
         assert dt.voxel_unit == 'mm'

@@ -54,7 +54,6 @@ class Connectivity(HasTraits):
     region_labels = NArray(
         dtype='U128',
         label="Region labels",
-        required=False,
         doc="""Short strings, 'labels', for the regions represented by the connectivity matrix.""")
 
     weights = NArray(

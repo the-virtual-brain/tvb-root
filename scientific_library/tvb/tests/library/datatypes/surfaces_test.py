@@ -34,6 +34,7 @@
 import sys
 import numpy
 import pytest
+from tvb.datatypes.surfaces import CorticalSurface
 from tvb.tests.library.base_testcase import BaseTestCase
 from tvb.datatypes.cortex import Cortex
 from tvb.datatypes.local_connectivity import LocalConnectivity
@@ -47,7 +48,7 @@ class TestSurfaces(BaseTestCase):
     """
 
     def test_surface(self):
-        dt = surfaces.Surface()
+        dt = surfaces.Surface(valid_for_simulations=True)
         dt.vertices = numpy.array(list(range(30))).reshape(10, 3).astype(numpy.float64)
         dt.triangles = numpy.array(list(range(9))).reshape(3, 3)
         dt.configure()
@@ -71,7 +72,8 @@ class TestSurfaces(BaseTestCase):
         assert dt.triangles.shape == (3, 3)
 
     def test_cortical_surface(self):
-        dt = surfaces.CorticalSurface.from_file()
+        dt = surfaces.CorticalSurface().from_file()
+        dt.__setattr__('valid_for_simulations', True)
         assert isinstance(dt, surfaces.CorticalSurface)
         dt.configure()
         summary_info = dt.summary_info()
@@ -188,12 +190,13 @@ class TestSurfaces(BaseTestCase):
         assert dt.array_data.shape == (16384,)
 
     def test_localconnectivity_empty(self):
-        dt = LocalConnectivity()
-        assert dt.surface is None
+        dt = LocalConnectivity(surface=CorticalSurface())
+        assert dt.surface is not None
 
     @pytest.mark.skipif(sys.maxsize <= 2147483647, reason="Cannot deal with local connectivity on a 32-bit machine.")
     def test_cortexdata(self):
         dt = Cortex.from_file()
+        dt.__setattr__('valid_for_simulations', True)
         assert isinstance(dt, Cortex)
         assert dt.region_mapping is not None
         ## Initialize Local Connectivity, to avoid long computation time.

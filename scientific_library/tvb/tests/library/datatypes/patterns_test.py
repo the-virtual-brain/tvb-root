@@ -32,6 +32,8 @@
 """
 
 import numpy
+from tvb.datatypes.equations import FiniteSupportEquation
+from tvb.datatypes.volumes import Volume
 from tvb.tests.library.base_testcase import BaseTestCase
 from tvb.datatypes import patterns, equations, connectivity, surfaces
 
@@ -106,9 +108,9 @@ class TestPatterns(BaseTestCase):
         assert dt.time is None
 
     def test_spatialpatternvolume(self):
-        dt = patterns.SpatialPatternVolume()
+        dt = patterns.SpatialPatternVolume(spatial=FiniteSupportEquation(), volume=Volume(origin=numpy.array([]), voxel_size=numpy.array([])), focal_points_volume=numpy.array([1]))
         assert dt.space is None
-        assert dt.spatial is None
+        assert dt.spatial is not None
         assert dt.spatial_pattern is None
-        assert dt.volume is None
-        assert dt.focal_points_volume is None
+        assert dt.volume is not None
+        assert dt.focal_points_volume is not None

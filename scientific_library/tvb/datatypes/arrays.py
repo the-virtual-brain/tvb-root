@@ -126,7 +126,6 @@ class IndexArray(BaseArray):
                    doc="A link to the array that the indices index.")
 
 
-
 class MappedArray(MappedType):
     "An array stored in the database."
     KEY_SIZE = "size"
