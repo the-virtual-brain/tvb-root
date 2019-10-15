@@ -32,7 +32,6 @@
 .. moduleauthor:: Bogdan Neacsa <bogdan.neacsa@codemart.ro>
 """
 
-from tvb.basic.profile import TvbProfile
 from tvb.tests.library import setup_test_console_env
 
 if "TEST_INITIALIZATION_DONE_LIBRARY" not in globals():
@@ -65,9 +64,6 @@ class BaseTestCase(object):
                 return True
 
         raise False
-
-    def setup_method(self):
-        assert not TvbProfile.current.TRAITS_CONFIGURATION.use_storage
 
     @staticmethod
     def assert_equal(expected, actual, message=""):
