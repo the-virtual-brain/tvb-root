@@ -386,11 +386,24 @@ class HasTraits(object):
                 raise TypeError('Valid kwargs for type {!r} are: {}. You have given: {!r}'
                                 .format(cls, repr(cls.declarative_attrs), k))
             setattr(self, k, v)
-        # gid identifies a specific instance of the hastraits
-        # it is used by serializers as an identifier.
-        # For non-datatype HasTraits this is less usefull but still
-        # provides a unique id for example for a model configuration
+
         self.gid = uuid.uuid4()
+        """ 
+        gid identifies a specific instance of the hastraits
+        it is used by serializers as an identifier.
+        For non-datatype HasTraits this is less usefull but still
+        provides a unique id for example for a model configuration
+        """  # these strings are interpreted as docstrings by many tools, not by python though
+
+        self.title = '{}@{}'.format(self.__class__.__name__, id(self))
+        """ a generic name that the user can set to easily recognize the instance """
+
+        self.tags = {}
+        """
+        a generic collections of tags. The trait system is not using them
+        nor should any other code. They should not alter behaviour
+        They should describe the instance for the user
+        """
 
 
     def __str__(self):
@@ -400,6 +413,16 @@ class HasTraits(object):
     def _repr_html_(self):
         return trait_object_repr_html(self)
 
+    def tag(self, tag_name, tag_value=None):
+        # type: (str, str) -> None
+        """
+        Add a tag to this trait instance.
+        The tags are for user to recognize and categorize the instances
+        They should never influence the behaviour of the program
+        :param tag_name: an arbitrary tag
+        :param tag_value: an optional tag value
+        """
+        self.tags[str(tag_name)] = str(tag_value)
 
     def configure(self, *args, **kwargs):
         """
@@ -407,3 +430,5 @@ class HasTraits(object):
         This is the default do nothing base implementation
         todo: deleteme
         """
+
+
