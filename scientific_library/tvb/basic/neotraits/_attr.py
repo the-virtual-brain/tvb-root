@@ -113,11 +113,17 @@ class _Number(Attr):
             else:
                 return value
 
+        if not isinstance(value, (int, long, float, complex, numpy.number)):
+            # we have to check that the value is numeric before the can_cast check
+            # as can_cast works with dtype strings as well
+            # can_cast('i8', 'i32')
+            raise TypeError(self._err_msg("can't be set to {!r}. Need a number.".format(value)))
+
         if not numpy.can_cast(value, self.field_type, 'safe'):
-            raise TypeError(self._err_msg("can't be set to {}. No safe cast.".format(value)))
+            raise TypeError(self._err_msg("can't be set to {!r}. No safe cast.".format(value)))
         if self.choices is not None:
             if value not in self.choices:
-                raise ValueError(self._err_msg("value {} must be one of {}".format(value, self.choices)))
+                raise ValueError(self._err_msg("value {!r} must be one of {}".format(value, self.choices)))
         return self.field_type(value)
 
 
