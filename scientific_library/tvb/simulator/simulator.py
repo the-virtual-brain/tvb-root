@@ -129,19 +129,19 @@ class Simulator(HasTraits):
         # surface-based simulation, the option to configure the spatial spread of
         # the ``Local Connectivity`` is available.""")
 
-    stimulus = None  # patterns.SpatioTemporalPattern(
-        # label="Spatiotemporal stimulus",
-        # default=None,
-        # order=4,
-        # required=False,
-        # doc="""A ``Spatiotemporal stimulus`` can be defined at the region or surface level.
-        # It's composed of spatial and temporal components. For region defined stimuli
-        # the spatial component is just the strength with which the temporal
-        # component is applied to each region. For surface defined stimuli,  a
-        # (spatial) function, with finite-support, is used to define the strength
-        # of the stimuli on the surface centred around one or more focal points.
-        # In the current version of TVB, stimuli are applied to the first state
-        # variable of the ``Local dynamic model``.""")
+    stimulus = Attr(
+        field_type=patterns.SpatioTemporalPattern,
+        label="Spatiotemporal stimulus",
+        default=None,
+        required=False,
+        doc="""A ``Spatiotemporal stimulus`` can be defined at the region or surface level.
+        It's composed of spatial and temporal components. For region defined stimuli
+        the spatial component is just the strength with which the temporal
+        component is applied to each region. For surface defined stimuli,  a
+        (spatial) function, with finite-support, is used to define the strength
+        of the stimuli on the surface centred around one or more focal points.
+        In the current version of TVB, stimuli are applied to the first state
+        variable of the ``Local dynamic model``.""")
 
     model = Attr(
         field_type=models.Model,

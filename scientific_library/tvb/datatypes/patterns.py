@@ -39,21 +39,21 @@ methods that are associated with the pattern datatypes.
 
 
 import numpy
-#TODO: Eliminate equations import
 from tvb.datatypes import surfaces, volumes, connectivity, equations
 from tvb.basic.logger.builder import get_logger
-from tvb.basic.traits.neotraits import HasTraits, Attr, NArray, List
+from tvb.basic.traits.neotraits import HasTraits, NArray, Attr
 
 
 LOG = get_logger(__name__)
 
 
-class SpatialPattern(types_mapped.MappedType):
+class SpatialPattern(HasTraits):
     """
     Equation for space variation.
     """
 
-    spatial = equations.FiniteSupportEquation(label="Spatial Equation", order=2)
+    spatial = Attr(field_type=equations.FiniteSupportEquation, label="Spatial Equation")
+
     space = None
     _spatial_pattern = None
 
@@ -93,7 +93,7 @@ class SpatioTemporalPattern(SpatialPattern):
     Combine space and time equations.
     """
 
-    temporal = equations.TemporalApplicableEquation(label="Temporal Equation", order=3)
+    temporal = Attr(field_type=equations.TemporalApplicableEquation, label="Temporal Equation")
     #space must be shape (x, 1); time must be shape (1, t)
     time = None
     _temporal_pattern = None
@@ -157,13 +157,13 @@ class StimuliRegion(SpatioTemporalPattern):
     A class that bundles the temporal profile of the stimulus, together with the
     list of scaling weights of the regions where it will applied.
     """
-    # partially disable this declaration, coexistence of neotraits and traits
-    connectivity = None #connectivity.Connectivity(label="Connectivity", order=1)
+    connectivity = Attr(field_type=connectivity.Connectivity, label="Connectivity")
 
-    spatial = equations.DiscreteEquation(label="Spatial Equation", default=equations.DiscreteEquation,
-                                         fixed_type=True, order=-1)
+    spatial = Attr(field_type=equations.DiscreteEquation,
+                   label="Spatial Equation",
+                   default=equations.DiscreteEquation())  # fixed_type=True, order=-1)
 
-    weight = List(label="scaling")
+    weight = NArray(label="scaling")  # , locked=True, order=4)
 
     @staticmethod
     def get_default_weights(number_of_regions):
@@ -200,11 +200,11 @@ class StimuliSurface(SpatioTemporalPattern):
     It includes the list of focal points.
     """
 
-    surface = Attr(surfaces.CorticalSurface, label="Surface")
+    surface = Attr(field_type=surfaces.CorticalSurface, label="Surface")
 
-    focal_points_surface = List(label="Focal points")
+    focal_points_surface = NArray(dtype=long, label="Focal points")  # , locked=True, order=4)
 
-    focal_points_triangles = List(label="Focal points triangles")
+    focal_points_triangles = NArray(dtype=long, label="Focal points triangles")  # , locked=True, order=4)
 
     def configure_space(self, region_mapping=None):
         """
@@ -230,4 +230,4 @@ class SpatialPatternVolume(SpatialPattern):
 
     volume = Attr(volumes.Volume, label="Volume")
 
-    focal_points_volume  = NArray(dtype=int, label="Focal points")
+    focal_points_volume = NArray(dtype=long, label="Focal points")
