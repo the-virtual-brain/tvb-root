@@ -50,10 +50,10 @@ class BaseArray(Array):
         """Summarize array contents."""
         summary = {"Array type": self.__class__.__name__,
                    "Shape": self.shape,
-                   "Maximum": self.value.max(),
-                   "Minimum": self.value.min(),
-                   "Mean": self.value.mean(),
-                   "Median": numpy.median(self.value)}
+                   "Maximum": self.trait.value.max(),
+                   "Minimum": self.trait.value.min(),
+                   "Mean": self.trait.value.mean(),
+                   "Median": numpy.median(self.trait.value)}
         return summary
 
 
