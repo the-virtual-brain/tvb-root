@@ -33,7 +33,7 @@ Generic linear model.
 
 import numpy
 from .base import Model
-from tvb.basic.traits.neotraits import NArray, Attr, List
+from tvb.basic.traits.neotraits import NArray, Attr, List, Range
 
 
 class Linear(Model):
@@ -43,7 +43,7 @@ class Linear(Model):
     gamma = NArray(
         label=r":math:`\gamma`",
         default=numpy.array([-10.0]),
-        # range=basic.Range(lo=-100.0, hi=0.0, step=1.0),
+        domain=Range(lo=-100.0, hi=0.0, step=1.0),
         doc="The damping coefficient specifies how quickly the node's activity relaxes, must be larger"
             " than the node's in-degree in order to remain stable.")
 

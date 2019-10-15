@@ -37,7 +37,7 @@ Saggio codimension 3 Epileptor model
 import numpy
 from .base import ModelNumbaDfun
 from numba import guvectorize, float64, int_
-from tvb.basic.traits.neotraits import NArray, Attr, List
+from tvb.basic.traits.neotraits import NArray, Attr, List, Range
 
 
 class EpileptorCodim3(ModelNumbaDfun):
@@ -71,42 +71,42 @@ class EpileptorCodim3(ModelNumbaDfun):
     mu1_start = NArray(
         label="mu1 start",
         default=numpy.array([-0.02285]),
-        # range=basic.Range(lo=-1.0, hi=1.0),
+        domain=Range(lo=-1.0, hi=1.0),
         doc="The bifurcation parameter mu1 at the offset point for the given class, default for class c2s "
             "(Saddle-Node at onset and Saddle-Homoclinic at offset)")
 
     mu2_start = NArray(
         label="mu2 start",
         default=numpy.array([0.3448]),
-        # range=basic.Range(lo=-1.0, hi=1.0),
+        domain=Range(lo=-1.0, hi=1.0),
         doc="The bifurcation mu2 parameter at the offset point for the given class, default for class c2s "
             "(Saddle-Node at onset and Saddle-Homoclinic at offset)")
 
     nu_start = NArray(
         label="nu start",
         default=numpy.array([0.2014]),
-        # range=basic.Range(lo=-1.0, hi=1.0),
+        domain=Range(lo=-1.0, hi=1.0),
         doc="The bifurcation nu parameter at the offset point for the given class, default for class c2s "
             "(Saddle-Node at onset and Saddle-Homoclinic at offset)")
 
     mu1_stop = NArray(
         label="mu1 stop",
         default=numpy.array([-0.07465]),
-        # range=basic.Range(lo=-1.0, hi=1.0),
+        domain=Range(lo=-1.0, hi=1.0),
         doc="The bifurcation mu1 parameter at the onset point for the given class, default for class c2s "
             "(Saddle-Node at onset and Saddle-Homoclinic at offset)")
 
     mu2_stop = NArray(
         label="mu2 stop",
         default=numpy.array([0.3351]),
-        # range=basic.Range(lo=-1.0, hi=1.0),
+        domain=Range(lo=-1.0, hi=1.0),
         doc="The bifurcation mu2 parameter at the onset point for the given class, default for class c2s "
             "(Saddle-Node at onset and Saddle-Homoclinic at offset)")
 
     nu_stop = NArray(
         label="nu stop",
         default=numpy.array([0.2053]),
-        # range=basic.Range(lo=-1.0, hi=1.0),
+        domain=Range(lo=-1.0, hi=1.0),
         doc="The bifurcation nu parameter at the onset point for the given class, default for class c2s "
             "(Saddle-Node at onset and Saddle-Homoclinic at offset)")
 
@@ -118,19 +118,19 @@ class EpileptorCodim3(ModelNumbaDfun):
     R = NArray(
         label="R",
         default=numpy.array([0.4]),
-        # range=basic.Range(lo=0.0, hi=2.5),
+        domain=Range(lo=0.0, hi=2.5),
         doc="Radius in unfolding")
 
     c = NArray(
         label="c",
         default=numpy.array([0.001]),
-        # range=basic.Range(lo=0.0, hi=0.01),
+        domain=Range(lo=0.0, hi=0.01),
         doc="Speed of the slow variable")
 
     dstar = NArray(
         label="dstar",
         default=numpy.array([0.3]),
-        # range=basic.Range(lo=-0.1, hi=0.5),
+        domain=Range(lo=-0.1, hi=0.5),
         doc="Threshold for the inversion of the slow variable")
 
     Ks = NArray(
@@ -363,73 +363,73 @@ class EpileptorCodim3SlowMod(ModelNumbaDfun):
     mu1_Ain = NArray(
         label="mu1 Ain",
         default=numpy.array([0.05494]),
-        # range=basic.Range(lo=-1.0, hi=1.0),
+        domain=Range(lo=-1.0, hi=1.0),
         doc="The bifurcation parameter mu1 at the initial point at bursting offset.")
 
     mu2_Ain = NArray(
         label="mu2 Ain",
         default=numpy.array([0.2731]),
-        # range=basic.Range(lo=-1.0, hi=1.0),
+        domain=Range(lo=-1.0, hi=1.0),
         doc="The bifurcation parameter mu2 at the initial point at bursting offset.")
 
     nu_Ain = NArray(
         label="nu Ain",
         default=numpy.array([0.287]),
-        # range=basic.Range(lo=-1.0, hi=1.0),
+        domain=Range(lo=-1.0, hi=1.0),
         doc="The bifurcation parameter nu at the initial point at bursting offset.")
 
     mu1_Bin = NArray(
         label="mu1 Bin",
         default=numpy.array([-0.0461]),
-        # range=basic.Range(lo=-1.0, hi=1.0),
+        domain=Range(lo=-1.0, hi=1.0),
         doc="The bifurcation parameter mu1 at the initial point at bursting onset.")
 
     mu2_Bin = NArray(
         label="mu2 Bin",
         default=numpy.array([0.243]),
-        # range=basic.Range(lo=-1.0, hi=1.0),
+        domain=Range(lo=-1.0, hi=1.0),
         doc="The bifurcation parameter mu2 at the initial point at bursting onset.")
 
     nu_Bin = NArray(
         label="nu Bin",
         default=numpy.array([0.3144]),
-        # range=basic.Range(lo=-1.0, hi=1.0),
+        domain=Range(lo=-1.0, hi=1.0),
         doc="The bifurcation parameter nu at the initial point at bursting onset.")
 
     mu1_Aend = NArray(
         label="mu1 Aend",
         default=numpy.array([0.06485]),
-        # range=basic.Range(lo=-1.0, hi=1.0),
+        domain=Range(lo=-1.0, hi=1.0),
         doc="The bifurcation parameter mu1 at the initial point at bursting offset.")
 
     mu2_Aend = NArray(
         label="mu2 Aend",
         default=numpy.array([0.07337]),
-        # range=basic.Range(lo=-1.0, hi=1.0),
+        domain=Range(lo=-1.0, hi=1.0),
         doc="The bifurcation parameter mu2 at the initial point at bursting offset.")
 
     nu_Aend = NArray(
         label="nu Aend",
         default=numpy.array([-0.3878]),
-        # range=basic.Range(lo=-1.0, hi=1.0),
+        domain=Range(lo=-1.0, hi=1.0),
         doc="The bifurcation parameter nu at the initial point at bursting offset.")
 
     mu1_Bend = NArray(
         label="mu1 Bend",
         default=numpy.array([0.03676]),
-        # range=basic.Range(lo=-1.0, hi=1.0),
+        domain=Range(lo=-1.0, hi=1.0),
         doc="The bifurcation parameter mu1 at the initial point at bursting onset.")
 
     mu2_Bend = NArray(
         label="mu2 Bend",
         default=numpy.array([-0.02792]),
-        # range=basic.Range(lo=-1.0, hi=1.0),
+        domain=Range(lo=-1.0, hi=1.0),
         doc="The bifurcation parameter mu2 at the initial point at bursting onset.")
 
     nu_Bend = NArray(
         label="nu Bend",
         default=numpy.array([-0.3973]),
-        # range=basic.Range(lo=-1.0, hi=1.0),
+        domain=Range(lo=-1.0, hi=1.0),
         doc="The bifurcation parameter nu at the initial point at bursting onset.")
 
     b = NArray(
@@ -440,31 +440,31 @@ class EpileptorCodim3SlowMod(ModelNumbaDfun):
     R = NArray(
         label="R",
         default=numpy.array([0.4]),
-        # range=basic.Range(lo=0.0, hi=2.5),
+        domain=Range(lo=0.0, hi=2.5),
         doc="Radius in unfolding")
 
     c = NArray(
         label="c",
         default=numpy.array([0.002]),
-        # range=basic.Range(lo=0.0, hi=0.01),
+        domain=Range(lo=0.0, hi=0.01),
         doc="Speed of the slow variable")
 
     cA = NArray(
         label="cA",
         default=numpy.array([0.0001]),
-        # range=basic.Range(lo=0.0, hi=0.001),
+        domain=Range(lo=0.0, hi=0.001),
         doc="Speed of the ultra-slow transition of the initial point")
 
     cB = NArray(
         label="cB",
         default=numpy.array([0.00012]),
-        # range=basic.Range(lo=0.0, hi=0.001),
+        domain=Range(lo=0.0, hi=0.001),
         doc="Speed of the ultra-slow transition of the final point")
 
     dstar = NArray(
         label="dstar",
         default=numpy.array([0.3]),
-        # range=basic.Range(lo=-0.1, hi=0.5),
+        domain=Range(lo=-0.1, hi=0.5),
         doc="Threshold for the inversion of the slow variable")
 
     Ks = NArray(

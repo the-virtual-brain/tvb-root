@@ -34,7 +34,7 @@ Models based on Wong-Wang's work.
 import numpy
 from .base import ModelNumbaDfun
 from numba import guvectorize, float64
-from tvb.basic.traits.neotraits import NArray, Attr, List
+from tvb.basic.traits.neotraits import NArray, Attr, List, Range
 
 
 @guvectorize([(float64[:],)*11], '(n),(m)' + ',()'*8 + '->(n)', nopython=True)
@@ -79,55 +79,55 @@ class ReducedWongWang(ModelNumbaDfun):
     a = NArray(
         label=":math:`a`",
         default=numpy.array([0.270, ]),
-        # range=basic.Range(lo=0.0, hi=0.270, step=0.01),
+        domain=Range(lo=0.0, hi=0.270, step=0.01),
         doc="[n/C]. Input gain parameter, chosen to fit numerical solutions.")
 
     b = NArray(
         label=":math:`b`",
         default=numpy.array([0.108, ]),
-        # range=basic.Range(lo=0.0, hi=1.0, step=0.01),
+        domain=Range(lo=0.0, hi=1.0, step=0.01),
         doc="[kHz]. Input shift parameter chosen to fit numerical solutions.")
 
     d = NArray(
         label=":math:`d`",
         default=numpy.array([154., ]),
-        # range=basic.Range(lo=0.0, hi=200.0, step=0.01),
+        domain=Range(lo=0.0, hi=200.0, step=0.01),
         doc="""[ms]. Parameter chosen to fit numerical solutions.""")
 
     gamma = NArray(
         label=r":math:`\gamma`",
         default=numpy.array([0.641, ]),
-        # range=basic.Range(lo=0.0, hi=1.0, step=0.01),
+        domain=Range(lo=0.0, hi=1.0, step=0.01),
         doc="""Kinetic parameter""")
 
     tau_s = NArray(
         label=r":math:`\tau_S`",
         default=numpy.array([100., ]),
-        # range=basic.Range(lo=50.0, hi=150.0, step=1.0),
+        domain=Range(lo=50.0, hi=150.0, step=1.0),
         doc="""Kinetic parameter. NMDA decay time constant.""")
 
     w = NArray(
         label=r":math:`w`",
         default=numpy.array([0.6, ]),
-        # range=basic.Range(lo=0.0, hi=1.0, step=0.01),
+        domain=Range(lo=0.0, hi=1.0, step=0.01),
         doc="""Excitatory recurrence""")
 
     J_N = NArray(
         label=r":math:`J_{N}`",
         default=numpy.array([0.2609, ]),
-        # range=basic.Range(lo=0.2609, hi=0.5, step=0.001),
+        domain=Range(lo=0.2609, hi=0.5, step=0.001),
         doc="""Excitatory recurrence""")
 
     I_o = NArray(
         label=":math:`I_{o}`",
         default=numpy.array([0.33, ]),
-        # range=basic.Range(lo=0.0, hi=1.0, step=0.01),
+        domain=Range(lo=0.0, hi=1.0, step=0.01),
         doc="""[nA] Effective external input""")
 
     sigma_noise = NArray(
         label=r":math:`\sigma_{noise}`",
         default=numpy.array([0.000000001, ]),
-        # range=basic.Range(lo=0.0, hi=0.005),
+        domain=Range(lo=0.0, hi=0.005, step=0.0001),
         doc="""[nA] Noise amplitude. Take this value into account for stochatic
         integration schemes.""")
 

@@ -35,7 +35,7 @@ from .base import Model, ModelNumbaDfun
 import numexpr
 import numpy
 from numba import guvectorize, float64
-from tvb.basic.traits.neotraits import NArray, Attr, List
+from tvb.basic.traits.neotraits import NArray, Attr, List, Range
 
 
 class Generic2dOscillator(ModelNumbaDfun):
@@ -237,7 +237,7 @@ class Generic2dOscillator(ModelNumbaDfun):
     tau = NArray(
         label=r":math:`\tau`",
         default=numpy.array([1.0]),
-        # range=basic.Range(lo=1.0, hi=5.0, step=0.01),
+        domain=Range(lo=1.0, hi=5.0, step=0.01),
         doc="""A time-scale hierarchy can be introduced for the state
         variables :math:`V` and :math:`W`. Default parameter is 1, which means
         no time-scale hierarchy.""")
@@ -246,35 +246,35 @@ class Generic2dOscillator(ModelNumbaDfun):
     I = NArray(
         label=":math:`I_{ext}`",
         default=numpy.array([0.0]),
-        # range=basic.Range(lo=-5.0, hi=5.0, step=0.01),
+        domain=Range(lo=-5.0, hi=5.0, step=0.01),
         doc="""Baseline shift of the cubic nullcline""")
         # order=2)
 
     a = NArray(
         label=":math:`a`",
         default=numpy.array([-2.0]),
-        # range=basic.Range(lo=-5.0, hi=5.0, step=0.01),
+        domain=Range(lo=-5.0, hi=5.0, step=0.01),
         doc="""Vertical shift of the configurable nullcline""")
         # order=3)
 
     b = NArray(
         label=":math:`b`",
         default=numpy.array([-10.0]),
-        # range=basic.Range(lo=-20.0, hi=15.0, step=0.01),
+        domain=Range(lo=-20.0, hi=15.0, step=0.01),
         doc="""Linear slope of the configurable nullcline""")
         # order=4)
 
     c = NArray(
         label=":math:`c`",
         default=numpy.array([0.0]),
-        # range=basic.Range(lo=-10.0, hi=10.0, step=0.01),
+        domain=Range(lo=-10.0, hi=10.0, step=0.01),
         doc="""Parabolic term of the configurable nullcline""")
         # order=5)
 
     d = NArray(
         label=":math:`d`",
         default=numpy.array([0.02]),
-        # range=basic.Range(lo=0.0001, hi=1.0, step=0.0001),
+        domain=Range(lo=0.0001, hi=1.0, step=0.0001),
         doc="""Temporal scale factor. Warning: do not use it unless
         you know what you are doing and know about time tides.""")
         # order=13)
@@ -282,28 +282,28 @@ class Generic2dOscillator(ModelNumbaDfun):
     e = NArray(
         label=":math:`e`",
         default=numpy.array([3.0]),
-        # range=basic.Range(lo=-5.0, hi=5.0, step=0.0001),
+        domain=Range(lo=-5.0, hi=5.0, step=0.0001),
         doc="""Coefficient of the quadratic term of the cubic nullcline.""")
         # order=6)
 
     f = NArray(
         label=":math:`f`",
         default=numpy.array([1.0]),
-        # range=basic.Range(lo=-5.0, hi=5.0, step=0.0001),
+        domain=Range(lo=-5.0, hi=5.0, step=0.0001),
         doc="""Coefficient of the cubic term of the cubic nullcline.""")
         # order=7)
 
     g = NArray(
         label=":math:`g`",
         default=numpy.array([0.0]),
-        # range=basic.Range(lo=-5.0, hi=5.0, step=0.5),
+        domain=Range(lo=-5.0, hi=5.0, step=0.5),
         doc="""Coefficient of the linear term of the cubic nullcline.""")
         # order=8)
 
     alpha = NArray(
         label=r":math:`\alpha`",
         default=numpy.array([1.0]),
-        # range=basic.Range(lo=-5.0, hi=5.0, step=0.0001),
+        domain=Range(lo=-5.0, hi=5.0, step=0.0001),
         doc="""Constant parameter to scale the rate of feedback from the
             slow variable to the fast variable.""")
         # order=9)
@@ -311,7 +311,7 @@ class Generic2dOscillator(ModelNumbaDfun):
     beta = NArray(
         label=r":math:`\beta`",
         default=numpy.array([1.0]),
-        # range=basic.Range(lo=-5.0, hi=5.0, step=0.0001),
+        domain=Range(lo=-5.0, hi=5.0, step=0.0001),
         doc="""Constant parameter to scale the rate of feedback from the
             slow variable to itself""")
         # order=10)
@@ -320,7 +320,7 @@ class Generic2dOscillator(ModelNumbaDfun):
     gamma = NArray(
         label=r":math:`\gamma`",
         default=numpy.array([1.0]),
-        # range=basic.Range(lo=-1.0, hi=1.0, step=0.1),
+        domain=Range(lo=-1.0, hi=1.0, step=0.1),
         doc="""Constant parameter to reproduce FHN dynamics where
                excitatory input currents are negative.
                It scales both I and the long range coupling term.""")
@@ -466,7 +466,7 @@ class Kuramoto(Model):
     omega = NArray(
         label=r":math:`\omega`",
         default=numpy.array([1.0]),
-        # range=basic.Range(lo=0.01, hi=200.0, step=0.1),
+        domain=Range(lo=0.01, hi=200.0, step=0.1),
         doc=""":math:`\omega` sets the base line frequency for the
             Kuramoto oscillator in [rad/ms]""")
         # order=1)

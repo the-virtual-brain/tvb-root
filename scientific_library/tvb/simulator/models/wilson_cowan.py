@@ -32,7 +32,7 @@ Wilson-Cowan equations based model definition.
 """
 import numpy
 from .base import Model
-from tvb.basic.traits.neotraits import NArray, Attr, List
+from tvb.basic.traits.neotraits import NArray, Attr, List, Range
 
 
 class WilsonCowan(Model):
@@ -156,137 +156,137 @@ class WilsonCowan(Model):
     c_ee = NArray(
         label=":math:`c_{ee}`",
         default=numpy.array([12.0]),
-        # range=basic.Range(lo=11.0, hi=16.0, step=0.01),
+        domain=Range(lo=11.0, hi=16.0, step=0.01),
         doc="""Excitatory to excitatory  coupling coefficient""")
 
     c_ie = NArray(
         label=":math:`c_{ei}`",
         default=numpy.array([4.0]),
-        # range=basic.Range(lo=2.0, hi=15.0, step=0.01),
+        domain=Range(lo=2.0, hi=15.0, step=0.01),
         doc="""Inhibitory to excitatory coupling coefficient""")
 
     c_ei = NArray(
         label=":math:`c_{ie}`",
         default=numpy.array([13.0]),
-        # range=basic.Range(lo=2.0, hi=22.0, step=0.01),
+        domain=Range(lo=2.0, hi=22.0, step=0.01),
         doc="""Excitatory to inhibitory coupling coefficient.""")
 
     c_ii = NArray(
         label=":math:`c_{ii}`",
         default=numpy.array([11.0]),
-        # range=basic.Range(lo=2.0, hi=15.0, step=0.01),
+        domain=Range(lo=2.0, hi=15.0, step=0.01),
         doc="""Inhibitory to inhibitory coupling coefficient.""")
 
     tau_e = NArray(
         label=r":math:`\tau_e`",
         default=numpy.array([10.0]),
-        # range=basic.Range(lo=0.0, hi=150.0, step=0.01),
+        domain=Range(lo=0.0, hi=150.0, step=0.01),
         doc="""Excitatory population, membrane time-constant [ms]""")
 
     tau_i = NArray(
         label=r":math:`\tau_i`",
         default=numpy.array([10.0]),
-        # range=basic.Range(lo=0.0, hi=150.0, step=0.01),
+        domain=Range(lo=0.0, hi=150.0, step=0.01),
         doc="""Inhibitory population, membrane time-constant [ms]""")
 
     a_e = NArray(
         label=":math:`a_e`",
         default=numpy.array([1.2]),
-        # range=basic.Range(lo=0.0, hi=1.4, step=0.01),
+        domain=Range(lo=0.0, hi=1.4, step=0.01),
         doc="""The slope parameter for the excitatory response function""")
 
     b_e = NArray(
         label=":math:`b_e`",
         default=numpy.array([2.8]),
-        # range=basic.Range(lo=1.4, hi=6.0, step=0.01),
+        domain=Range(lo=1.4, hi=6.0, step=0.01),
         doc="""Position of the maximum slope of the excitatory sigmoid function""")
 
     c_e = NArray(
         label=":math:`c_e`",
         default=numpy.array([1.0]),
-        # range=basic.Range(lo=1.0, hi=20.0, step=1.0),
+        domain=Range(lo=1.0, hi=20.0, step=1.0),
         doc="""The amplitude parameter for the excitatory response function""")
 
     theta_e = NArray(
         label=r":math:`\theta_e`",
         default=numpy.array([0.0]),
-        # range=basic.Range(lo=0.0, hi=60., step=0.01),
+        domain=Range(lo=0.0, hi=60., step=0.01),
         doc="""Excitatory threshold""")
 
     a_i = NArray(
         label=":math:`a_i`",
         default=numpy.array([1.0]),
-        # range=basic.Range(lo=0.0, hi=2.0, step=0.01),
+        domain=Range(lo=0.0, hi=2.0, step=0.01),
         doc="""The slope parameter for the inhibitory response function""")
 
     b_i = NArray(
         label=r":math:`b_i`",
         default=numpy.array([4.0]),
-        # range=basic.Range(lo=2.0, hi=6.0, step=0.01),
+        domain=Range(lo=2.0, hi=6.0, step=0.01),
         doc="""Position of the maximum slope of a sigmoid function [in
         threshold units]""")
 
     theta_i = NArray(
         label=r":math:`\theta_i`",
         default=numpy.array([0.0]),
-        # range=basic.Range(lo=0.0, hi=60.0, step=0.01),
+        domain=Range(lo=0.0, hi=60.0, step=0.01),
         doc="""Inhibitory threshold""")
 
     c_i = NArray(
         label=":math:`c_i`",
         default=numpy.array([1.0]),
-        # range=basic.Range(lo=1.0, hi=20.0, step=1.0),
+        domain=Range(lo=1.0, hi=20.0, step=1.0),
         doc="""The amplitude parameter for the inhibitory response function""")
 
     r_e = NArray(
         label=":math:`r_e`",
         default=numpy.array([1.0]),
-        # range=basic.Range(lo=0.5, hi=2.0, step=0.01),
+        domain=Range(lo=0.5, hi=2.0, step=0.01),
         doc="""Excitatory refractory period""")
 
     r_i = NArray(
         label=":math:`r_i`",
         default=numpy.array([1.0]),
-        # range=basic.Range(lo=0.5, hi=2.0, step=0.01),
+        domain=Range(lo=0.5, hi=2.0, step=0.01),
         doc="""Inhibitory refractory period""")
 
     k_e = NArray(
         label=":math:`k_e`",
         default=numpy.array([1.0]),
-        # range=basic.Range(lo=0.5, hi=2.0, step=0.01),
+        domain=Range(lo=0.5, hi=2.0, step=0.01),
         doc="""Maximum value of the excitatory response function""")
 
     k_i = NArray(
         label=":math:`k_i`",
         default=numpy.array([1.0]),
-        # range=basic.Range(lo=0.0, hi=2.0, step=0.01),
+        domain=Range(lo=0.0, hi=2.0, step=0.01),
         doc="""Maximum value of the inhibitory response function""")
 
     P = NArray(
         label=":math:`P`",
         default=numpy.array([0.0]),
-        # range=basic.Range(lo=0.0, hi=20.0, step=0.01),
+        domain=Range(lo=0.0, hi=20.0, step=0.01),
         doc="""External stimulus to the excitatory population.
         Constant intensity.Entry point for coupling.""")
 
     Q = NArray(
         label=":math:`Q`",
         default=numpy.array([0.0]),
-        # range=basic.Range(lo=0.0, hi=20.0, step=0.01),
+        domain=Range(lo=0.0, hi=20.0, step=0.01),
         doc="""External stimulus to the inhibitory population.
         Constant intensity.Entry point for coupling.""")
 
     alpha_e = NArray(
         label=r":math:`\alpha_e`",
         default=numpy.array([1.0]),
-        # range=basic.Range(lo=0.0, hi=20.0, step=0.01),
+        domain=Range(lo=0.0, hi=20.0, step=0.01),
         doc="""External stimulus to the excitatory population.
         Constant intensity.Entry point for coupling.""")
 
     alpha_i = NArray(
         label=r":math:`\alpha_i`",
         default=numpy.array([1.0]),
-        # range=basic.Range(lo=0.0, hi=20.0, step=0.01),
+        domain=Range(lo=0.0, hi=20.0, step=0.01),
         doc="""External stimulus to the inhibitory population.
         Constant intensity.Entry point for coupling.""")
 

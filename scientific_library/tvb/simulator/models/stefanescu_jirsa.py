@@ -34,7 +34,7 @@ import numpy
 from scipy.integrate import trapz as scipy_integrate_trapz
 from scipy.stats import norm as scipy_stats_norm
 from .base import Model
-from tvb.basic.traits.neotraits import NArray, Attr, List
+from tvb.basic.traits.neotraits import NArray, Attr, List, Range
 
 
 class ReducedSetBase(Model):
@@ -116,49 +116,49 @@ class ReducedSetFitzHughNagumo(ReducedSetBase):
     tau = NArray(
         label=r":math:`\tau`",
         default=numpy.array([3.0]),
-        # range=basic.Range(lo=1.5, hi=4.5, step=0.01),
+        domain=Range(lo=1.5, hi=4.5, step=0.01),
         doc="""doc...(prob something about timescale seperation)""")
 
     a = NArray(
         label=":math:`a`",
         default=numpy.array([0.45]),
-        # range=basic.Range(lo=0.0, hi=1.0, step=0.01),
+        domain=Range(lo=0.0, hi=1.0, step=0.01),
         doc="""doc...""")
 
     b = NArray(
         label=":math:`b`",
         default=numpy.array([0.9]),
-        # range=basic.Range(lo=0.0, hi=1.0, step=0.01),
+        domain=Range(lo=0.0, hi=1.0, step=0.01),
         doc="""doc...""")
 
     K11 = NArray(
         label=":math:`K_{11}`",
         default=numpy.array([0.5]),
-        # range=basic.Range(lo=0.0, hi=1.0, step=0.01),
+        domain=Range(lo=0.0, hi=1.0, step=0.01),
         doc="""Internal coupling, excitatory to excitatory""")
 
     K12 = NArray(
         label=":math:`K_{12}`",
         default=numpy.array([0.15]),
-        # range=basic.Range(lo=0.0, hi=1.0, step=0.01),
+        domain=Range(lo=0.0, hi=1.0, step=0.01),
         doc="""Internal coupling, inhibitory to excitatory""")
 
     K21 = NArray(
         label=":math:`K_{21}`",
         default=numpy.array([0.15]),
-        # range=basic.Range(lo=0.0, hi=1.0, step=0.01),
+        domain=Range(lo=0.0, hi=1.0, step=0.01),
         doc="""Internal coupling, excitatory to inhibitory""")
 
     sigma = NArray(
         label=r":math:`\sigma`",
         default=numpy.array([0.35]),
-        # range=basic.Range(lo=0.0, hi=1.0, step=0.01),
+        domain=Range(lo=0.0, hi=1.0, step=0.01),
         doc="""Standard deviation of Gaussian distribution""")
 
     mu = NArray(
         label=r":math:`\mu`",
         default=numpy.array([0.0]),
-        # range=basic.Range(lo=0.0, hi=1.0, step=0.01),
+        domain=Range(lo=0.0, hi=1.0, step=0.01),
         doc="""Mean of Gaussian distribution""")
 
     # Used for phase-plane axis ranges and to bound random initial() conditions.
@@ -393,73 +393,73 @@ class ReducedSetHindmarshRose(ReducedSetBase):
     r = NArray(
         label=":math:`r`",
         default=numpy.array([0.006]),
-        # range=basic.Range(lo=0.0, hi=0.1, step=0.0005),
+        domain=Range(lo=0.0, hi=0.1, step=0.0005),
         doc="""Adaptation parameter""")
 
     a = NArray(
         label=":math:`a`",
         default=numpy.array([1.0]),
-        # range=basic.Range(lo=0.0, hi=1.0, step=0.01),
+        domain=Range(lo=0.0, hi=1.0, step=0.01),
         doc="""Dimensionless parameter as in the Hindmarsh-Rose model""")
 
     b = NArray(
         label=":math:`b`",
         default=numpy.array([3.0]),
-        # range=basic.Range(lo=0.0, hi=3.0, step=0.01),
+        domain=Range(lo=0.0, hi=3.0, step=0.01),
         doc="""Dimensionless parameter as in the Hindmarsh-Rose model""")
 
     c = NArray(
         label=":math:`c`",
         default=numpy.array([1.0]),
-        # range=basic.Range(lo=0.0, hi=1.0, step=0.01),
+        domain=Range(lo=0.0, hi=1.0, step=0.01),
         doc="""Dimensionless parameter as in the Hindmarsh-Rose model""")
 
     d = NArray(
         label=":math:`d`",
         default=numpy.array([5.0]),
-        # range=basic.Range(lo=2.5, hi=7.5, step=0.01),
+        domain=Range(lo=2.5, hi=7.5, step=0.01),
         doc="""Dimensionless parameter as in the Hindmarsh-Rose model""")
 
     s = NArray(
         label=":math:`s`",
         default=numpy.array([4.0]),
-        # range=basic.Range(lo=2.0, hi=6.0, step=0.01),
+        domain=Range(lo=2.0, hi=6.0, step=0.01),
         doc="""Adaptation paramters, governs feedback""")
 
     xo = NArray(
         label=":math:`x_{o}`",
         default=numpy.array([-1.6]),
-        # range=basic.Range(lo=-2.4, hi=-0.8, step=0.01),
+        domain=Range(lo=-2.4, hi=-0.8, step=0.01),
         doc="""Leftmost equilibrium point of x""")
 
     K11 = NArray(
         label=":math:`K_{11}`",
         default=numpy.array([0.5]),
-        # range=basic.Range(lo=0.0, hi=1.0, step=0.01),
+        domain=Range(lo=0.0, hi=1.0, step=0.01),
         doc="""Internal coupling, excitatory to excitatory""")
 
     K12 = NArray(
         label=":math:`K_{12}`",
         default=numpy.array([0.1]),
-        # range=basic.Range(lo=0.0, hi=1.0, step=0.01),
+        domain=Range(lo=0.0, hi=1.0, step=0.01),
         doc="""Internal coupling, inhibitory to excitatory""")
 
     K21 = NArray(
         label=":math:`K_{21}`",
         default=numpy.array([0.15]),
-        # range=basic.Range(lo=0.0, hi=1.0, step=0.01),
+        domain=Range(lo=0.0, hi=1.0, step=0.01),
         doc="""Internal coupling, excitatory to inhibitory""")
 
     sigma = NArray(
         label=r":math:`\sigma`",
         default=numpy.array([0.3]),
-        # range=basic.Range(lo=0.0, hi=1.0, step=0.01),
+        domain=Range(lo=0.0, hi=1.0, step=0.01),
         doc="""Standard deviation of Gaussian distribution""")
 
     mu = NArray(
         label=r":math:`\mu`",
         default=numpy.array([3.3]),
-        # range=basic.Range(lo=1.1, hi=3.3, step=0.01),
+        domain=Range(lo=1.1, hi=3.3, step=0.01),
         doc="""Mean of Gaussian distribution""")
 
     # Used for phase-plane axis ranges and to bound random initial() conditions.

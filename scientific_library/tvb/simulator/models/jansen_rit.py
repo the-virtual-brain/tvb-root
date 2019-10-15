@@ -34,7 +34,7 @@ import math
 import numpy
 from .base import ModelNumbaDfun, Model
 from numba import guvectorize, float64
-from tvb.basic.traits.neotraits import NArray, Attr, List
+from tvb.basic.traits.neotraits import NArray, Attr, List, Range
 
 
 class JansenRit(ModelNumbaDfun):
@@ -84,19 +84,19 @@ class JansenRit(ModelNumbaDfun):
     A = NArray(
         label="A",
         default=numpy.array([3.25]),
-        # range=basic.Range(lo=2.6, hi=9.75, step=0.05),
+        domain=Range(lo=2.6, hi=9.75, step=0.05),
         doc="""Maximum amplitude of EPSP [mV]. Also called average synaptic gain.""")
 
     B = NArray(
         label="B",
         default=numpy.array([22.0]),
-        # range=basic.Range(lo=17.6, hi=110.0, step=0.2),
+        domain=Range(lo=17.6, hi=110.0, step=0.2),
         doc="""Maximum amplitude of IPSP [mV]. Also called average synaptic gain.""")
 
     a = NArray(
         label=":math:`a`",
         default=numpy.array([0.1]),
-        # range=basic.Range(lo=0.05, hi=0.15, step=0.01),
+        domain=Range(lo=0.05, hi=0.15, step=0.01),
         doc="""Reciprocal of the time constant of passive membrane and all
         other spatially distributed delays in the dendritic network [ms^-1].
         Also called average synaptic time constant.""")
@@ -104,7 +104,7 @@ class JansenRit(ModelNumbaDfun):
     b = NArray(
         label=":math:`b`",
         default=numpy.array([0.05]),
-        # range=basic.Range(lo=0.025, hi=0.075, step=0.005),
+        domain=Range(lo=0.025, hi=0.075, step=0.005),
         doc="""Reciprocal of the time constant of passive membrane and all
         other spatially distributed delays in the dendritic network [ms^-1].
         Also called average synaptic time constant.""")
@@ -112,7 +112,7 @@ class JansenRit(ModelNumbaDfun):
     v0 = NArray(
         label=":math:`v_0`",
         default=numpy.array([5.52]),
-        # range=basic.Range(lo=3.12, hi=6.0, step=0.02),
+        domain=Range(lo=3.12, hi=6.0, step=0.02),
         doc="""Firing threshold (PSP) for which a 50% firing rate is achieved.
         In other words, it is the value of the average membrane potential
         corresponding to the inflection point of the sigmoid [mV].
@@ -122,62 +122,62 @@ class JansenRit(ModelNumbaDfun):
     nu_max = NArray(
         label=r":math:`\nu_{max}`",
         default=numpy.array([0.0025]),
-        # range=basic.Range(lo=0.00125, hi=0.00375, step=0.00001),
+        domain=Range(lo=0.00125, hi=0.00375, step=0.00001),
         doc="""Determines the maximum firing rate of the neural population
         [s^-1].""")
 
     r = NArray(
         label=":math:`r`",
         default=numpy.array([0.56]),
-        # range=basic.Range(lo=0.28, hi=0.84, step=0.01),
+        domain=Range(lo=0.28, hi=0.84, step=0.01),
         doc="""Steepness of the sigmoidal transformation [mV^-1].""")
 
     J = NArray(
         label=":math:`J`",
         default=numpy.array([135.0]),
-        # range=basic.Range(lo=65.0, hi=1350.0, step=1.),
+        domain=Range(lo=65.0, hi=1350.0, step=1.),
         doc="""Average number of synapses between populations.""")
 
     a_1 = NArray(
         label=r":math:`\alpha_1`",
         default=numpy.array([1.0]),
-        # range=basic.Range(lo=0.5, hi=1.5, step=0.1),
+        domain=Range(lo=0.5, hi=1.5, step=0.1),
         doc="""Average probability of synaptic contacts in the feedback excitatory loop.""")
 
     a_2 = NArray(
         label=r":math:`\alpha_2`",
         default=numpy.array([0.8]),
-        # range=basic.Range(lo=0.4, hi=1.2, step=0.1),
+        domain=Range(lo=0.4, hi=1.2, step=0.1),
         doc="""Average probability of synaptic contacts in the slow feedback excitatory loop.""")
 
     a_3 = NArray(
         label=r":math:`\alpha_3`",
         default=numpy.array([0.25]),
-        # range=basic.Range(lo=0.125, hi=0.375, step=0.005),
+        domain=Range(lo=0.125, hi=0.375, step=0.005),
         doc="""Average probability of synaptic contacts in the feedback inhibitory loop.""")
 
     a_4 = NArray(
         label=r":math:`\alpha_4`",
         default=numpy.array([0.25]),
-        # range=basic.Range(lo=0.125, hi=0.375, step=0.005),
+        domain=Range(lo=0.125, hi=0.375, step=0.005),
         doc="""Average probability of synaptic contacts in the slow feedback inhibitory loop.""")
 
     p_min = NArray(
         label=":math:`p_{min}`",
         default=numpy.array([0.12]),
-        # range=basic.Range(lo=0.0, hi=0.12, step=0.01),
+        domain=Range(lo=0.0, hi=0.12, step=0.01),
         doc="""Minimum input firing rate.""")
 
     p_max = NArray(
         label=":math:`p_{max}`",
         default=numpy.array([0.32]),
-        # range=basic.Range(lo=0.0, hi=0.32, step=0.01),
+        domain=Range(lo=0.0, hi=0.32, step=0.01),
         doc="""Maximum input firing rate.""")
 
     mu = NArray(
         label=r":math:`\mu_{max}`",
         default=numpy.array([0.22]),
-        # range=basic.Range(lo=0.0, hi=0.22, step=0.01),
+        domain=Range(lo=0.0, hi=0.22, step=0.01),
         doc="""Mean input firing rate""")
 
     #Used for phase-plane axis ranges and to bound random initial() conditions.
@@ -345,19 +345,19 @@ class ZetterbergJansen(Model):
     He = NArray(
         label=":math:`H_e`",
         default=numpy.array([3.25]),
-        # range=basic.Range(lo=2.6, hi=9.75, step=0.05),
+        domain=Range(lo=2.6, hi=9.75, step=0.05),
         doc="""Maximum amplitude of EPSP [mV]. Also called average synaptic gain.""")
 
     Hi = NArray(
         label=":math:`H_i`",
         default=numpy.array([22.0]),
-        # range=basic.Range(lo=17.6, hi=110.0, step=0.2),
+        domain=Range(lo=17.6, hi=110.0, step=0.2),
         doc="""Maximum amplitude of IPSP [mV]. Also called average synaptic gain.""")
 
     ke = NArray(
         label=r":math:`\kappa_e`",
         default=numpy.array([0.1]),
-        # range=basic.Range(lo=0.05, hi=0.15, step=0.01),
+        domain=Range(lo=0.05, hi=0.15, step=0.01),
         doc="""Reciprocal of the time constant of passive membrane and all
         other spatially distributed delays in the dendritic network [ms^-1].
         Also called average synaptic time constant.""")
@@ -365,7 +365,7 @@ class ZetterbergJansen(Model):
     ki = NArray(
         label=r":math:`\kappa_i`",
         default=numpy.array([0.05]),
-        # range=basic.Range(lo=0.025, hi=0.075, step=0.005),
+        domain=Range(lo=0.025, hi=0.075, step=0.005),
         doc="""Reciprocal of the time constant of passive membrane and all
         other spatially distributed delays in the dendritic network [ms^-1].
         Also called average synaptic time constant.""")
@@ -374,14 +374,14 @@ class ZetterbergJansen(Model):
     e0 = NArray(
         label=r":math:`e_0`",
         default=numpy.array([0.0025]),
-        # range=basic.Range(lo=0.00125, hi=0.00375, step=0.00001),
+        domain=Range(lo=0.00125, hi=0.00375, step=0.00001),
         doc="""Half of the maximum population mean firing rate [ms^-1].""")
 
 
     rho_2 = NArray(
         label=r":math:`\rho_2`",
         default=numpy.array([6.0]),
-        # range=basic.Range(lo=3.12, hi=10.0, step=0.02),
+        domain=Range(lo=3.12, hi=10.0, step=0.02),
         doc="""Firing threshold (PSP) for which a 50% firing rate is achieved.
         In other words, it is the value of the average membrane potential
         corresponding to the inflection point of the sigmoid [mV]. Population mean firing threshold.""")
@@ -389,76 +389,76 @@ class ZetterbergJansen(Model):
     rho_1 = NArray(
         label=r":math:`\rho_1`",
         default=numpy.array([0.56]),
-        # range=basic.Range(lo=0.28, hi=0.84, step=0.01),
+        domain=Range(lo=0.28, hi=0.84, step=0.01),
         doc="""Steepness of the sigmoidal transformation [mV^-1].""")
 
     gamma_1 = NArray(
         label=r":math:`\gamma_1`",
         default=numpy.array([135.0]),
-        # range=basic.Range(lo=65.0, hi=1350.0, step=5.),
+        domain=Range(lo=65.0, hi=1350.0, step=5.),
         doc="""Average number of synapses between populations (pyramidal to stellate).""")
 
     gamma_2 = NArray(
         label=r":math:`\gamma_2`",
         default=numpy.array([108.]),
-        # range=basic.Range(lo=0.0, hi=200, step=10.0),
+        domain=Range(lo=0.0, hi=200, step=10.0),
         doc="""Average number of synapses between populations (stellate to pyramidal).""")
 
     gamma_3 = NArray(
         label=r":math:`\gamma_3`",
         default=numpy.array([33.75]),
-        # range=basic.Range(lo=0.0, hi=200, step=10.0),
+        domain=Range(lo=0.0, hi=200, step=10.0),
         doc="""Connectivity constant (pyramidal to interneurons)""")
 
     gamma_4 = NArray(
         label=r":math:`\gamma_4`",
         default=numpy.array([33.75]),
-        # range=basic.Range(lo=0.0, hi=200, step=10.0),
+        domain=Range(lo=0.0, hi=200, step=10.0),
         doc="""Connectivity constant (interneurons to pyramidal)""")
 
 
     gamma_5 = NArray(
         label=r":math:`\gamma_5`",
         default=numpy.array([15.0]),
-        # range=basic.Range(lo=0.0, hi=100, step=10.0),
+        domain=Range(lo=0.0, hi=100, step=10.0),
         doc="""Connectivity constant (interneurons to interneurons)""")
 
     gamma_1T = NArray(
         label=r":math:`\gamma_{1T}`",
         default=numpy.array([1.0]),
-        # range=basic.Range(lo=0.0, hi=1000.0, step=5.),
+        domain=Range(lo=0.0, hi=1000.0, step=5.),
         doc="""Coupling factor from the extrinisic input to the spiny stellate population.""")
 
     gamma_2T = NArray(
         label=r":math:`\gamma_{2T}`",
         default=numpy.array([1.0]),
-        # range=basic.Range(lo=0.0, hi=1000.0, step=5.),
+        domain=Range(lo=0.0, hi=1000.0, step=5.),
         doc="""Coupling factor from the extrinisic input to the pyramidal population.""")
 
     gamma_3T = NArray(
         label=r":math:`\gamma_{3T}`",
         default=numpy.array([1.0]),
-        # range=basic.Range(lo=0.0, hi=1000.0, step=5.),
+        domain=Range(lo=0.0, hi=1000.0, step=5.),
         doc="""Coupling factor from the extrinisic input to the inhibitory population.""")
 
     P = NArray(
         label=":math:`P`",
         default=numpy.array([0.12]),
-        # range=basic.Range(lo=0.0, hi=0.350, step=0.01),
+        domain=Range(lo=0.0, hi=0.350, step=0.01),
         doc="""Maximum firing rate to the pyramidal population [ms^-1].
         (External stimulus. Constant intensity.Entry point for coupling.)""")
 
     U = NArray(
         label=":math:`U`",
         default=numpy.array([0.12]),
-        # range=basic.Range(lo=0.0, hi=0.350, step=0.01),
+        domain=Range(lo=0.0, hi=0.350, step=0.01),
         doc="""Maximum firing rate to the stellate population [ms^-1].
         (External stimulus. Constant intensity.Entry point for coupling.)""")
 
     Q = NArray(
         label=":math:`Q`",
         default=numpy.array([0.12]),
-        # range=basic.Range(lo=0.0, hi=0.350, step=0.01),
+        domain=Range(lo=0.0, hi=0.350, step=0.01),
         doc="""Maximum firing rate to the interneurons population [ms^-1].
         (External stimulus. Constant intensity.Entry point for coupling.)""")
 
