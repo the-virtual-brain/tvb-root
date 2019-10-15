@@ -222,6 +222,12 @@ class Simulator(HasTraits):
     # 4) loop step
     # 5) estimations
 
+    @property
+    def is_surface_simulation(self):
+        if self.surface:
+            return True
+        return False
+
     def preconfigure(self):
         "Configure just the basic fields, so that memory can be estimated."
         self.connectivity.configure()
@@ -678,7 +684,6 @@ class Simulator(HasTraits):
             memreq += self.surface.triangles.nbytes * 2
             memreq += self.surface.vertices.nbytes * 2
             memreq += self.surface.region_mapping.nbytes * self.number_of_nodes * 8. * 4  # region_average, region_sum
-            memreq += self.surface.eeg_projection.nbytes
             memreq += self.surface.local_connectivity.matrix.nnz * 8
         except AttributeError:
             pass

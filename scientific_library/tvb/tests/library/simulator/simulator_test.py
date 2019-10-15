@@ -41,6 +41,7 @@ schemes (region and surface based simulations).
 import pytest
 import numpy
 import itertools
+from tvb.datatypes.surfaces import CorticalSurface
 from tvb.tests.library.base_testcase import BaseTestCase
 from tvb.simulator.common import get_logger
 from tvb.simulator import simulator, models, coupling, integrators, monitors, noise
@@ -118,6 +119,7 @@ class Simulator(object):
         else:
             white_matter = Connectivity.from_file(source_file="connectivity_192.zip")
             region_mapping = RegionMapping.from_file(source_file="regionMapping_16k_192.txt")
+        region_mapping.surface = CorticalSurface.from_file()
 
         white_matter_coupling = coupling.Linear(a=numpy.array([coupling_strength]))
         white_matter.speed = numpy.array([speed])  # no longer allow scalars to numpy array promotion
@@ -139,7 +141,7 @@ class Simulator(object):
                 default_cortex.local_connectivity = LocalConnectivity.from_file()
             else:
                 default_cortex.local_connectivity = LocalConnectivity()
-            default_cortex.local_connectivity.surface = default_cortex
+            default_cortex.local_connectivity.surface = default_cortex.region_mapping_data.surface
         else:
             default_cortex = None
 

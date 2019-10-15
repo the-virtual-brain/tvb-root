@@ -38,6 +38,7 @@ handling of projection matrices, etc.
 """
 
 import numpy
+from tvb.datatypes.surfaces import CorticalSurface
 from tvb.tests.library.base_testcase import BaseTestCase
 from tvb.datatypes import sensors
 from tvb.simulator import monitors, models, coupling, integrators, noise, simulator
@@ -150,6 +151,7 @@ class TestProjectionMonitorsWithSubcorticalRegions(BaseTestCase):
         )
         local_coupling_strength = numpy.array([2 ** -10])
         region_mapping = RegionMapping.from_file('regionMapping_16k_%d.txt' % (self.n_regions,))
+        region_mapping.surface = CorticalSurface.from_file()
         default_cortex = Cortex.from_file()
         default_cortex.region_mapping_data = region_mapping
         default_cortex.coupling_strength = local_coupling_strength

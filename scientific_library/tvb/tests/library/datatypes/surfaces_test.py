@@ -203,10 +203,6 @@ class TestSurfaces(BaseTestCase):
         dt.local_connectivity = LocalConnectivity.from_file()
 
         dt.configure()
-        summary_info = dt.summary_info()
-        assert abs(summary_info['Region area, maximum (mm:math:`^2`)'] - 9333.39) < 0.01
-        assert abs(summary_info['Region area, mean (mm:math:`^2`)'] - 3038.51) < 0.01
-        assert abs(summary_info['Region area, minimum (mm:math:`^2`)'] - 540.90) < 0.01
         assert dt.vertices.shape == (16384, 3)
         assert dt.vertex_normals.shape == (16384, 3)
         assert dt.triangles.shape == (32760, 3)
