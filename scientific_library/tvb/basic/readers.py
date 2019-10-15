@@ -145,7 +145,7 @@ class FileReader(object):
         expected_fields = ['Gain', 'GridLoc', 'GridOrient']
 
         for field in expected_fields:
-            if field not in list(mat.keys()):
+            if field not in mat.keys():
                 raise ReaderException("Brainstorm format is expecting field %s" % field)
 
         gain, loc, ori = (mat[field] for field in expected_fields)

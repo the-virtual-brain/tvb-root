@@ -65,12 +65,12 @@ class CLModel(CLComponent):
             #arrays['param'] = (len(self._opencl_ordered_params), n_nodes, n_mode)
         # alloc opencl device arrays
         self._arrays = {}
-        for name, shape in list(arrays.items()):
+        for name, shape in arrays.items():
             self._arrays[name] = pyopencl.array.Array(self._queue, shape, 'f')
 
         # fill parameter values
         if hasattr(self, '_opencl_ordered_params'):
-            if(DEBUG): print((self._opencl_ordered_params))
+            if(DEBUG): print(self._opencl_ordered_params)
             for i, name in enumerate(self._opencl_ordered_params):
                 if(DEBUG): print((i, name))
                 val = getattr(self, name)
@@ -105,7 +105,7 @@ class CLModel(CLComponent):
         if isinstance(state_variables, numpy.ndarray):
             # state_variables, coupling will be (1, n, 1)
             if(DEBUG):
-                print(("state_variables are ndarray", "states:", state_variables.shape, "coupling:", coupling.shape))
+                print("state_variables are ndarray", "states:", state_variables.shape, "coupling:", coupling.shape)
 
             #self._arrays['state'][:] = state_variables.reshape((1, n_states*n_nodes*n_mode)).astype('f')
             #self._arrays['coupling'][:] = coupling.reshape((1, n_nodes)).astype('f')
@@ -113,9 +113,9 @@ class CLModel(CLComponent):
             # self._arrays['state'] = state_variables.flatten()
             #self._arrays['coupling'] = coupling.reshape((1, n_nodes)).astype('f')
             if (DEBUG):
-                print(("state_variable shape:",
-                      state_variables.reshape((n_states, n_nodes * n_mode, 1)).astype('f').shape))
-                print(("array state shape", self._arrays['state'][:].shape))
+                print("state_variable shape:",
+                      state_variables.reshape((n_states, n_nodes * n_mode, 1)).astype('f').shape)
+                print("array state shape", self._arrays['state'][:].shape)
             self._arrays['state'][:] = state_variables.reshape((n_states,  n_nodes , n_mode)).astype('f')
             self._arrays['coupling'][:] = coupling.reshape((1, n_nodes)).astype('f')
 
@@ -141,7 +141,7 @@ class CLModel(CLComponent):
         # return derivatives following input type
         deriv = self._arrays['deriv']
         if(DEBUG):
-            print(("derive shape:", deriv.shape))
+            print("derive shape:", deriv.shape)
         if isinstance(state_variables, numpy.ndarray):
             deriv = deriv.get().reshape((n_states, n_nodes, n_mode)).astype('d')
 

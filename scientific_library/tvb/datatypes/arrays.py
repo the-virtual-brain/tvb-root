@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 #
 #
-#  TheVirtualBrain-Scientific Package. This package holds all simulators, and 
+#  TheVirtualBrain-Scientific Package. This package holds all simulators, and
 # analysers necessary to run brain-simulations. You can use it stand alone or
 # in conjunction with TheVirtualBrain-Framework Package. See content of the
 # documentation-folder for more details. See also http://www.thevirtualbrain.org
@@ -30,7 +30,7 @@
 
 """
 
-The Array datatypes. This brings together the scientific and framework 
+The Array datatypes. This brings together the scientific and framework
 methods that are associated with the Array datatypes.
 
 .. moduleauthor:: Stuart A. Knock <Stuart@tvb.invalid>
@@ -99,32 +99,6 @@ class StringArray(BaseArray):
         summary = {"Array type": self.__class__.__name__,
                    "Shape": self.shape}
         return summary
-
-class PositionArray(FloatArray):
-    _ui_name = "Array of positions"
-
-    coordinate_system = basic.String(label="Coordinate system",
-                                     default="cartesian",
-                                     doc="""The coordinate system used to specify the positions.
-                                     Eg: 'spherical', 'polar'""")
-
-    coordinate_space = basic.String(label="Coordinate space",
-                                    default="None",
-                                    doc="The standard space the positions are in, eg, 'MNI', 'colin27'")
-
-
-class OrientationArray(FloatArray):
-    _ui_name = "Array of orientations"
-    coordinate_system_or = basic.String(label="Coordinate system",
-                                        default="cartesian")
-
-
-class IndexArray(BaseArray):
-    _ui_name = "Index array"
-    target = Array(label="Indexed array",
-                   file_storage=core.FILE_STORAGE_NONE,
-                   doc="A link to the array that the indices index.")
-
 
 class MappedArray(MappedType):
     "An array stored in the database."
@@ -212,10 +186,10 @@ class MappedArray(MappedType):
         if required_dimension is not None:
             # find the dimension of the resulted array
             dim = len(self.shape)
-            for key in list(aggregation_functions.keys()):
+            for key in aggregation_functions.keys():
                 if aggregation_functions[key] != "none":
                     dim -= 1
-            for key in list(dimensions.keys()):
+            for key in dimensions.keys():
                 if (len(dimensions[key]) == 1 and
                         (key not in aggregation_functions or aggregation_functions[key] == "none")):
                     dim -= 1
@@ -227,7 +201,7 @@ class MappedArray(MappedType):
         full = slice(0, None)
         cut_dimensions = 0
         for i in range(len(self.shape)):
-            if i in list(dimensions.keys()):
+            if i in dimensions.keys():
                 my_slice = [full for _ in range(i - cut_dimensions)]
                 if len(dimensions[i]) == 1:
                     my_slice.extend(dimensions[i])
@@ -235,7 +209,7 @@ class MappedArray(MappedType):
                 else:
                     my_slice.append(dimensions[i])
                 result = result[tuple(my_slice)]
-            if i in list(aggregation_functions.keys()):
+            if i in aggregation_functions.keys():
                 if aggregation_functions[i] != "none":
                     result = eval("numpy." + aggregation_functions[i] + "(result,axis=" + str(i - cut_dimensions) + ")")
                     cut_dimensions += 1
@@ -275,7 +249,7 @@ class MappedArray(MappedType):
         dimensions = dict()
         aggregation_functions = dict()
         required_dimension = None
-        for key in list(ui_selected_items.keys()):
+        for key in ui_selected_items.keys():
             split_array = str(key).split("_")
             current_dim = split_array[len(split_array) - 1]
             list_values = ui_selected_items[key]

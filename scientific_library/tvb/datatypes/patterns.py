@@ -202,9 +202,9 @@ class StimuliSurface(SpatioTemporalPattern):
 
     surface = Attr(field_type=surfaces.CorticalSurface, label="Surface")
 
-    focal_points_surface = NArray(dtype=long, label="Focal points")  # , locked=True, order=4)
+    focal_points_surface = NArray(dtype=int, label="Focal points")  # , locked=True, order=4)
 
-    focal_points_triangles = NArray(dtype=long, label="Focal points triangles")  # , locked=True, order=4)
+    focal_points_triangles = NArray(dtype=int, label="Focal points triangles")  # , locked=True, order=4)
 
     def configure_space(self, region_mapping=None):
         """

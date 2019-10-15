@@ -85,7 +85,7 @@ def narray_summary_info(ar, ar_name='', omit_shape=False):
         ret['[min, median, max]'] = '[{:g}, {:g}, {:g}]'.format(ar.min(), numpy.median(ar), ar.max())
 
     if ar_name:
-        return {ar_name + ' ' + k: v for k, v in list(ret.items())}
+        return {ar_name + ' ' + k: v for k, v in ret.items()}
     else:
         return ret
 

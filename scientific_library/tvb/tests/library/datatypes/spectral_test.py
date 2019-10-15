@@ -107,6 +107,7 @@ class TestSpectral(BaseTestCase):
         data = numpy.random.random((10, 10))
         ts = time_series.TimeSeries(data=data, title='meh')
         dt = spectral.ComplexCoherenceSpectrum(source=ts,
+                                               windowing_function=str(''),
                                                array_data=numpy.random.random((10, 10)),
                                                cross_spectrum=numpy.random.random((10, 10)),
                                                epoch_length=10,
@@ -120,4 +121,4 @@ class TestSpectral(BaseTestCase):
         assert dt.segment_length == 5
         assert dt.array_data.shape, (10 == 10)
         assert dt.source is not None
-        assert dt.windowing_function is None
+        assert dt.windowing_function is not None

@@ -124,7 +124,7 @@ class MetaType(abc.ABCMeta):
         """
         ret = {}
 
-        for k, c in cls.__classes.iteritems():
+        for k, c in cls.__classes.items():
             if issubclass(c, cls):
                 if inspect.isabstract(c) and not include_abstract:
                     continue
@@ -179,7 +179,7 @@ class MetaType(abc.ABCMeta):
         attrs = []
         props = []
 
-        for k, v in list(namespace.items()):
+        for k, v in namespace.items():
             if isinstance(v, _Attr):
                 attrs.append(k)
             elif isinstance(v, _Property):

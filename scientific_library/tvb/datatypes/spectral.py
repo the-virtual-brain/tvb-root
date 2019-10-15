@@ -309,7 +309,6 @@ class ComplexCoherenceSpectrum(HasTraits):
     windowing_function = Attr(
         field_type=str,
         label="Windowing function",
-        required=False,
         doc="""The windowing function applied to each time segment prior to
                 application of the FFT.""")
 

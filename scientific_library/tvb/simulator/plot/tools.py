@@ -283,7 +283,7 @@ def show_me_the_colours():
     """
     Create a plot of matplotlibs built-in "named" colours...
     """
-    colours = list(matplotlib.colors.cnames.keys())
+    colours = matplotlib.colors.cnames.keys()
     number_of_colors = len(colours)
     colours_fig = pyplot.figure(num="Built-in colours")
     rows = int(numpy.ceil(numpy.sqrt(number_of_colors)))

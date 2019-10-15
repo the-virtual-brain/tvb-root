@@ -153,12 +153,12 @@ class Surface(HasTraits):
         doc="""A sparse matrix of truncated geodesic distances""")  # 'CS'
 
     number_of_vertices = Int(
-        field_type=long,
+        field_type=int,
         label="Number of vertices",
         doc="""The number of vertices making up this surface.""")
 
     number_of_triangles = Int(
-        field_type=long,
+        field_type=int,
         label="Number of triangles",
         doc="""The number of triangles making up this surface.""")
 
@@ -360,8 +360,8 @@ class Surface(HasTraits):
         """
         .
         """
-        neighbours = [[] for _ in xrange(self.number_of_vertices)]
-        for k in xrange(self.number_of_triangles):
+        neighbours = [[] for _ in range(self.number_of_vertices)]
+        for k in range(self.number_of_triangles):
             neighbours[self.triangles[k, 0]].append(self.triangles[k, 1])
             neighbours[self.triangles[k, 0]].append(self.triangles[k, 2])
             neighbours[self.triangles[k, 1]].append(self.triangles[k, 0])
@@ -1011,7 +1011,7 @@ class WhiteMatterSurface(Surface):
 class CorticalSurface(Surface):
     """Cortical or pial surface."""
     _ui_name = "A cortical surface"
-    surface_type = Attr(field_type=basestring, default=CORTICAL)
+    surface_type = Attr(field_type=str, default=CORTICAL)
 
 
 class SkinAir(Surface):

@@ -124,7 +124,7 @@ class HasTraits(object):
         self.title = '{}'.format(self.__class__.__name__)
         """ a generic name that the user can set to easily recognize the instance """
 
-        for k, v in list(kwargs.items()):
+        for k, v in kwargs.items():
             if k not in cls.declarative_attrs:
                 raise TraitTypeError(
                     'Valid kwargs for type {!r} are: {}. You have given: {!r}'.format(

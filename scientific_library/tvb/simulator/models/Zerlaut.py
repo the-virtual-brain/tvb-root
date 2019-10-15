@@ -200,7 +200,6 @@ class Zerlaut_adaptation_first_order(Model):
         doc="""time scale of describing network activity""")
 
     P_e = NArray(
-        dtype=numpy.int,
         label=":math:`P_e`",  # TODO need to check the size of the array when it's used
         default=numpy.array([-4.98e-02, 5.06e-03, -2.5e-02, 1.4e-03,
                              -4.1e-04, 1.05e-02, -3.6e-02, 7.4e-03,
@@ -208,7 +207,6 @@ class Zerlaut_adaptation_first_order(Model):
         doc="""Polynome of excitatory phenomenological threshold (order 9)""")
 
     P_i = NArray(
-        dtype=numpy.int,
         label=":math:`P_i`",  # TODO need to check the size of the array when it's used
         default=numpy.array([-5.14e-02, 4.0e-03, -8.3e-03, 2.0e-04,
                              -5.0e-04, 1.4e-03, -1.46e-02, 4.5e-03,

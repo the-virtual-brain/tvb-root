@@ -126,13 +126,13 @@ class Connectivity(HasTraits):
     )
 
     number_of_regions = Int(
-        field_type=long,
+        field_type=int,
         label="Number of regions",
         doc="""The number of regions represented in this Connectivity """
     )
 
     number_of_connections = Int(
-        field_type=long,
+        field_type=int,
         label="Number of connections",
         doc="""The number of non-zero entries represented in this Connectivity """
     )
@@ -143,7 +143,7 @@ class Connectivity(HasTraits):
     # In case of edited Connectivity, this are the nodes left in interest area,
     # the rest were part of a lesion, so they were removed.
     # saved_selection = basic.JSONType(required=False)
-    saved_selection = List(of=basestring)
+    saved_selection = List(of=str)
 
     # framework
     @property
@@ -493,9 +493,6 @@ class Connectivity(HasTraits):
             hemispheres = []
             ## Check if all labels are prefixed with R / L
             for label in self.region_labels:
-                ## Decode the label in case it is an instance of bytes
-                if isinstance(label, bytes):
-                    label = label.decode('ascii')
                 if label is not None and label.lower().startswith('r'):
                     hemispheres.append(True)
                 elif label is not None and label.lower().startswith('l'):
@@ -507,9 +504,6 @@ class Connectivity(HasTraits):
             if hemispheres is None:
                 hemispheres = []
                 for label in self.region_labels:
-                    ## Decode the label in case it is an instance of bytes
-                    if isinstance(label, bytes):
-                        label = label.decode('ascii')
                     if label is not None and label.lower().endswith('r'):
                         hemispheres.append(True)
                     elif label is not None and label.lower().endswith('l'):

@@ -161,7 +161,7 @@ class Simulator(object):
 
 class TestSimulator(BaseTestCase):
     @pytest.mark.slow
-    @pytest.mark.parametrize('model_class,method_class', itertools.product(MODEL_CLASSES, METHOD_NAMES))
+    @pytest.mark.parametrize('model_class,method_class', itertools.product(MODEL_CLASSES, METHOD_CLASSES))
     def test_simulator_region(self, model_class, method_class):
 
         test_simulator = Simulator()

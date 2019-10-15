@@ -69,7 +69,7 @@ class Sensors(HasTraits):
 
     orientations = NArray(required=False)
 
-    number_of_sensors = Int(field_type=long, label="Number of sensors",
+    number_of_sensors = Int(field_type=int, label="Number of sensors",
                              doc="""The number of sensors described by these Sensors.""")
 
     # introduced to accommodate real sensors sets which have sensors
@@ -89,9 +89,8 @@ class Sensors(HasTraits):
         source_full_path = try_get_absolute_path("tvb_data.sensors", source_file)
         reader = FileReader(source_full_path)
 
-        bytes_labels = reader.read_array(dtype=numpy.bytes_, use_cols=(0,)).tolist()
+        result.labels = reader.read_array(dtype=numpy.str, use_cols=(0,))
 
-        result.labels = numpy.array([l.decode("ascii", "replace") for l in bytes_labels])
         result.locations = reader.read_array(use_cols=(1, 2, 3))
 
         return result

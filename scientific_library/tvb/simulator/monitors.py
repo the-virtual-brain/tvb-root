@@ -392,11 +392,12 @@ class Projection(Monitor):
             " connectivity. For iEEG/EEG/MEG monitors, this must be specified when performing a region"
             " simulation but is optional for a surface simulation.")
 
-    obsnoise = noise.Noise(
-        label = "Observation Noise",
-        default = noise.Additive,
-        required = False,
-        doc = """The monitor's noise source. It incorporates its
+    obsnoise = Attr(
+        noise.Noise,
+        label="Observation Noise",
+        default=noise.Additive(),
+        required=False,
+        doc="""The monitor's noise source. It incorporates its
         own instance of Numpy's RandomState.""")
 
     @staticmethod

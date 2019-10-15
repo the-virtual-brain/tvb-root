@@ -332,7 +332,7 @@ class Int(_Number):
         )
 
     def _post_bind_validate(self):
-        if not issubclass(self.field_type, (int, int, numpy.integer)):
+        if not issubclass(self.field_type, (int, numpy.integer)):
             msg = 'field_type must be a python int or a numpy.integer not {!r}.'.format(self.field_type)
             raise TraitTypeError(msg, attr=self)
         # super call after the field_type check above
