@@ -43,9 +43,9 @@ import numpy
 import scipy.signal as signal
 import tvb.datatypes.time_series as time_series
 import tvb.datatypes.spectral as spectral
-import tvb.basic.traits.core as core
 import tvb.basic.traits.types_basic as basic
 import tvb.basic.traits.util as util
+from tvb.basic.neotraits.api import HasTraits, Attr, Range
 from tvb.simulator.common import iround
 from tvb.basic.logger.builder import get_logger
 
@@ -54,7 +54,7 @@ SUPPORTED_WAVELET_FUNCTIONS = ("morlet",)
 
 
 
-class ContinuousWaveletTransform(core.Type):
+class ContinuousWaveletTransform(HasTraits):
     """
     A class for calculating the wavelet transform of a TimeSeries object of TVB
     and returning a WaveletSpectrum object. The sampling period and frequency
@@ -71,46 +71,46 @@ class ContinuousWaveletTransform(core.Type):
         
     """
     
-    time_series = time_series.TimeSeries(
-        label = "Time Series",
-        required = True,
-        doc = """The timeseries to which the wavelet is to be applied.""")
+    time_series = Attr(
+        field_type=time_series.TimeSeries,
+        label="Time Series",
+        doc="""The timeseries to which the wavelet is to be applied.""")
     
-    mother = basic.String(
-        label = "Wavelet function",
-        default = "morlet",
-        required = True,
-        doc = """The mother wavelet function used in the transform. Default is
+    mother = Attr(
+        field_type=str,
+        label="Wavelet function",
+        default="morlet",
+        doc="""The mother wavelet function used in the transform. Default is
             'morlet', possibilities are: 'morlet'...""")
     
-    sample_period = basic.Float(
-        label = "Sample period of result (ms)",
-        default = 7.8125, #7.8125 => 128 Hz
-        required = True,
-        doc = """The sampling period of the computed wavelet spectrum. NOTE:
+    sample_period = Attr(
+        field_type=float,
+        label="Sample period of result (ms)",
+        default=7.8125, #7.8125 => 128 Hz
+        doc="""The sampling period of the computed wavelet spectrum. NOTE:
             This should be an integral multiple of the of the sampling period 
             of the source time series, otherwise the actual resulting sample
             period will be the first correct value below that requested.""")
-    
-    frequencies = basic.Range(
-        label = "Frequency range of result (kHz).",
-        default = basic.Range(lo = 0.008, hi = 0.060, step = 0.002),
-        required = True,
-        doc = """The frequency resolution and range returned. Requested
+
+    frequencies = Attr(
+        field_type=Range,
+        label="Frequency range of result (kHz).",
+        default=Range(lo=0.008, hi=0.060, step=0.002),
+        doc="""The frequency resolution and range returned. Requested
             frequencies are converted internally into appropriate scales.""")
     
-    normalisation = basic.String(
-        label = "Normalisation",
-        default = "energy",
-        required = True,
-        doc = """The type of normalisation for the resulting wavet spectrum.
+    normalisation = Attr(
+        field_type=str,
+        label="Normalisation",
+        default="energy",
+        doc="""The type of normalisation for the resulting wavet spectrum.
             Default is 'energy', options are: 'energy'; 'gabor'.""")
     
-    q_ratio = basic.Float(
-        label = "Q-ratio",
-        default = 5.0,
-        required = True,
-        doc = """NFC. Must be greater than 5. Ratios of the center frequencies to bandwidths.""")
+    q_ratio = Attr(
+        field_type=float,
+        label="Q-ratio",
+        default=5.0,
+        doc="""NFC. Must be greater than 5. Ratios of the center frequencies to bandwidths.""")
     
     
     
