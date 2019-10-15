@@ -1,9 +1,15 @@
+import abc
+
+import numpy
 import numpy as np
 import pytest
 
-from tvb.basic.neotraits._attr import Int, Float
+from tvb.basic.neotraits._attr import LinspaceRange
 from tvb.basic.neotraits._core import TraitProperty
-from tvb.basic.neotraits.api import HasTraits, Attr, NArray, Const, List, traitproperty
+from tvb.basic.neotraits.api import (
+    HasTraits, Attr, NArray, Const, List, traitproperty,
+    Int, Float, Range
+)
 
 
 def test_simple_declaration():
@@ -68,7 +74,6 @@ def test_composition():
     comp = Comp(a=A(), b=B())
 
 
-@pytest.mark.skip('required checks not yet strict. feature under review')
 def test_inheritance():
     class A(HasTraits):
         a = Attr(str)
@@ -83,10 +88,6 @@ def test_inheritance():
 
     class Inherit(Mixin, B, A):
         c = Attr(str)
-
-    # test that constructor fails cause of missing default for the b attr declared in a superclass
-    with pytest.raises(ValueError):
-        t = Inherit(a="ana", c="are")
 
     # c has been correctly overridden and is of type str not float
     t = Inherit(a="ana", c="are", b=2)
@@ -223,7 +224,7 @@ def test_lists():
     a = A()
 
     with pytest.raises(ValueError):
-        a.picked_dimensions = ['times']
+        a.picked_dimensions = ['value not in choices']
 
     # on set we can complain about types and wrong choices
     with pytest.raises(TypeError):
@@ -237,6 +238,22 @@ def test_lists():
     with pytest.raises(AttributeError):
         a.picked_dimensions = ('time', 'space')
         a.picked_dimensions.append(76)
+
+
+def test_list_default_right_type():
+    with pytest.raises(TypeError):
+        class A(HasTraits):
+            picked_dimensions = List(of=str, default=('time', 42.24))
+
+
+def test_list_default_must_respect_choices():
+    with pytest.raises(TypeError):
+        class A(HasTraits):
+            picked_dimensions = List(
+                of=str,
+                default=('time',),
+                choices=('a', 'b', 'c')
+            )
 
 
 def test_str_ndarrays():
@@ -261,6 +278,17 @@ def test_reusing_attribute_instances_fail():
     with pytest.raises(AttributeError):
         class A(HasTraits):
             a, b = [Attr(int)] * 2
+
+
+def test_changing_Attr_after_bind_fails():
+    class A(HasTraits):
+        a = Attr(str)
+
+    with pytest.raises(AttributeError):
+        A.a.default = 'ana'
+
+    with pytest.raises(AttributeError):
+        del A.a.default
 
 
 def test_declarative_property():
@@ -356,4 +384,140 @@ def test_float_attribute():
         ainst.c = 2**30
 
 
+def test_deleting_a_declared_attribute_not_supported():
+    class A(HasTraits):
+        a = Attr(str)
+
+    ainst = A()
+    ainst.a = 'ana'
+
+    with pytest.raises(AttributeError):
+        del ainst.a
+
+
+def test_dynamic_attributes_behave_statically_and_warn():
+    class A(HasTraits):
+        a = Attr(str)
+
+    # these are logged warnings not errors. hard to test. here for coverage
+    A.b = Attr(int)
+
+    # this fails
+    with pytest.raises(AttributeError):
+        A().b
+
+    class B(HasTraits):
+        a = Attr(str)
+
+    del B.a
+
+    with pytest.raises(AttributeError):
+        B()
+
+
+
+def test_declarative_properties_are_readonly():
+    class A(HasTraits):
+        @traitproperty(Attr(int))
+        def xprop(self):
+            return 23
+
+    a = A()
+    assert a.xprop == 23
+
+    with pytest.raises(AttributeError):
+        a.xprop = 2
+
+    with pytest.raises(AttributeError):
+        del a.xprop
+
+
+def test_get_known_subclasses():
+    class A(HasTraits):
+        @abc.abstractmethod
+        def frob(self):
+            pass
+
+    class B(A):
+        def frob(self):
+            pass
+
+    class C(B):
+        pass
+
+    assert set(A.get_known_subclasses()) == {B, C}
+    assert set(A.get_known_subclasses(include_abstract=True)) == {A, B, C}
+
+
+def test_summary_info():
+    class Z(HasTraits):
+        zu = Attr(int)
+
+    class A(HasTraits):
+        a = Attr(str, default='ana')
+        b = NArray(dtype=int)
+        ref = Attr(field_type=Z)
+
+    ainst = A(b=np.arange(3))
+    ainst.title = 'the red rose'
+    zinst = Z(zu=2)
+    zinst.title = 'Z zuzu'
+    ainst.ref = zinst
+    summary = ainst.summary_info()
+
+    assert summary == {
+        'Type': 'A',
+        'title': 'the red rose',
+        'a': "'ana'",
+        'b dtype': 'int32',
+        'b shape': '(3L,)',
+        'b [min, median, max]': '[0, 1, 2]',
+        'ref': 'Z zuzu',
+    }
+
+def test_hastraits_str_does_not_crash():
+    class A(HasTraits):
+        a = Attr(str, default='ana')
+        b = NArray(dtype=int)
+        pom = 'prun'
+
+        @traitproperty(Attr(int))
+        def xprop(self):
+            return 23
+
+    ainst = A(b=np.arange(3))
+    str(ainst)
+
+
+def test_hastraits_html_repr_does_not_crash():
+    class A(HasTraits):
+        a = Attr(str, default='ana')
+        b = NArray(dtype=int)
+
+    ainst = A(b=np.arange(3))
+    ainst._repr_html_()
+
+
+def test_special_attributes_disallowed():
+    with pytest.raises(TypeError):
+        class A(HasTraits):
+            _own_declarative_attrs = ('a')
+
+    with pytest.raises(TypeError):
+        class A(HasTraits):
+            _own_declarative_props = ('a')
+
+
+
+
+def test_linspacerange():
+    ls = LinspaceRange(0, 10, 5)
+    assert 1 in ls
+
+    numpy.testing.assert_allclose(
+        ls.to_array(),
+        [0.0, 2.5, 5.0, 7.5, 10],
+    )
+    # test that repr will not crash
+    repr(ls)
 

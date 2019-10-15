@@ -4,4 +4,4 @@
 .idea/
 TEST_OUTPUT/
 .mypy_cache/
-.ipynp_checkpoints/
+.ipynb_checkpoints/
