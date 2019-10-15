@@ -54,6 +54,7 @@ from tvb.simulator import models, integrators, monitors, coupling
 from .common import psutil, get_logger, numpy_add_at
 from .history import SparseHistory, DenseHistory
 
+from tvb.basic.traits.neotraits import Attr, NArray
 
 LOG = get_logger(__name__)
 
@@ -63,32 +64,33 @@ LOG = get_logger(__name__)
 class Simulator(core.Type):
     "A Simulator assembles components required to perform simulations."
 
-    connectivity = connectivity.Connectivity(
-        label="Long-range connectivity",
-        default=None,
-        order=1,
-        required=True,
-        filters_ui=[UIFilter(linked_elem_name="region_mapping_data",
-                             linked_elem_field=FilterChain.datatype + "._connectivity",
-                             linked_elem_parent_name="surface",
-                             linked_elem_parent_option=None),
-                    UIFilter(linked_elem_name="region_mapping",
-                             linked_elem_field=FilterChain.datatype + "._connectivity",
-                             linked_elem_parent_name="monitors",
-                             linked_elem_parent_option="EEG"),
-                    UIFilter(linked_elem_name="region_mapping",
-                             linked_elem_field=FilterChain.datatype + "._connectivity",
-                             linked_elem_parent_name="monitors",
-                             linked_elem_parent_option="MEG"),
-                    UIFilter(linked_elem_name="region_mapping",
-                             linked_elem_field=FilterChain.datatype + "._connectivity",
-                             linked_elem_parent_name="monitors",
-                             linked_elem_parent_option="iEEG")],
-        doc="""A tvb.datatypes.Connectivity object which contains the
-        structural long-range connectivity data (i.e., white-matter tracts). In
-        combination with the ``Long-range coupling function`` it defines the inter-regional
-        connections. These couplings undergo a time delay via signal propagation 
-        with a propagation speed of ``Conduction Speed``""")
+    # connectivity = Attr(
+    #     connectivity.Connectivity,
+    #     label="Long-range connectivity",
+    #     default=None,
+    #     # order=1,
+    #     required=True,
+    #     # filters_ui=[UIFilter(linked_elem_name="region_mapping_data",
+    #     #                      linked_elem_field=FilterChain.datatype + "._connectivity",
+    #     #                      linked_elem_parent_name="surface",
+    #     #                      linked_elem_parent_option=None),
+    #     #             UIFilter(linked_elem_name="region_mapping",
+    #     #                      linked_elem_field=FilterChain.datatype + "._connectivity",
+    #     #                      linked_elem_parent_name="monitors",
+    #     #                      linked_elem_parent_option="EEG"),
+    #     #             UIFilter(linked_elem_name="region_mapping",
+    #     #                      linked_elem_field=FilterChain.datatype + "._connectivity",
+    #     #                      linked_elem_parent_name="monitors",
+    #     #                      linked_elem_parent_option="MEG"),
+    #     #             UIFilter(linked_elem_name="region_mapping",
+    #     #                      linked_elem_field=FilterChain.datatype + "._connectivity",
+    #     #                      linked_elem_parent_name="monitors",
+    #     #                      linked_elem_parent_option="iEEG")],
+    #     doc="""A tvb.datatypes.Connectivity object which contains the
+    #     structural long-range connectivity data (i.e., white-matter tracts). In
+    #     combination with the ``Long-range coupling function`` it defines the inter-regional
+    #     connections. These couplings undergo a time delay via signal propagation
+    #     with a propagation speed of ``Conduction Speed``""")
 
     conduction_speed = basic.Float(
         label="Conduction Speed",
@@ -178,19 +180,19 @@ class Simulator(core.Type):
         array will be padded with random values based on the 'state_variables_range'
         attribute.""")
 
-    monitors = monitors.Monitor(
-        label="Monitor(s)",
-        default=monitors.TemporalAverage,
-        required=True,
-        order=8,
-        select_multiple=True,
-        doc="""A tvb.simulator.Monitor or a list of tvb.simulator.Monitor
-        objects that 'know' how to record relevant data from the simulation. Two
-        main types exist: 1) simple, spatial and temporal, reductions (subsets
-        or averages); 2) physiological measurements, such as EEG, MEG and fMRI.
-        By default the Model's specified variables_of_interest are returned,
-        temporally downsampled from the raw integration rate to a sample rate of
-        1024Hz.""")
+    monitors = monitors.Monitor()
+        # label="Monitor(s)",
+        # default=monitors.TemporalAverage,
+        # required=True,
+        # order=8,
+      #  select_multiple=True,
+      #   doc="""A tvb.simulator.Monitor or a list of tvb.simulator.Monitor
+      #   objects that 'know' how to record relevant data from the simulation. Two
+      #   main types exist: 1) simple, spatial and temporal, reductions (subsets
+      #   or averages); 2) physiological measurements, such as EEG, MEG and fMRI.
+      #   By default the Model's specified variables_of_interest are returned,
+      #   temporally downsampled from the raw integration rate to a sample rate of
+      #   1024Hz.""")
 
     simulation_length = basic.Float(
         label="Simulation Length (ms, s, m, h)",

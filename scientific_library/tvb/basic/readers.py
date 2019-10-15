@@ -200,7 +200,7 @@ class ZipReader(object):
         try:
             return self.read_array_from_file(file_name, dtype, skip_rows, use_cols, matlab_data_name)
         except ReaderException:
-            return numpy.array([])
+            return numpy.array([], dtype=dtype)
 
 
 

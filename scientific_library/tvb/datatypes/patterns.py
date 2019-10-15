@@ -180,8 +180,8 @@ class StimuliRegion(SpatioTemporalPattern):
     A class that bundles the temporal profile of the stimulus, together with the
     list of scaling weights of the regions where it will applied.
     """
-
-    connectivity = Attr(connectivity.Connectivity, label="Connectivity")
+    # partially disable this declaration, coexistence of neotraits and traits
+    connectivity = None #connectivity.Connectivity(label="Connectivity", order=1)
 
     spatial = equations.DiscreteEquation(label="Spatial Equation", default=equations.DiscreteEquation,
                                          fixed_type=True, order=-1)

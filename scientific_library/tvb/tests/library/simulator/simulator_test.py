@@ -78,9 +78,13 @@ class Simulator(object):
         gavg = monitors.GlobalAverage(period=2 ** -2)
         subsamp = monitors.SubSample(period=2 ** -2)
         tavg = monitors.TemporalAverage(period=2 ** -2)
-        eeg = monitors.EEG(load_default=True, period=2 ** -2)
-        eeg2 = monitors.EEG(load_default=True, period=2 ** -2, reference='Fp2')  # EEG with a reference electrode
-        meg = monitors.MEG(load_default=True, period=2 ** -2)
+        eeg = monitors.EEG.from_file()
+        eeg.period = 2 ** -2
+        eeg2 = monitors.EEG.from_file()
+        eeg2.period = 2 ** -2
+        eeg2.reference='Fp2'  # EEG with a reference electrode
+        meg = monitors.MEG.from_file()
+        meg.period=2 ** -2
 
         self.monitors = (raw, gavg, subsamp, tavg, eeg, eeg2, meg)
 
@@ -114,14 +118,14 @@ class Simulator(object):
         self.method = method
 
         if default_connectivity:
-            white_matter = Connectivity(load_default=True)
+            white_matter = Connectivity.from_file()
             region_mapping = RegionMapping.from_file(source_file="regionMapping_16k_76.txt")
         else:
             white_matter = Connectivity.from_file(source_file="connectivity_192.zip")
             region_mapping = RegionMapping.from_file(source_file="regionMapping_16k_192.txt")
 
         white_matter_coupling = coupling.Linear(a=coupling_strength)
-        white_matter.speed = speed
+        white_matter.speed = numpy.array([speed])  # no longer allow scalars to numpy array promotion
 
         dynamics = model()
 
@@ -142,11 +146,11 @@ class Simulator(object):
 
         # Order of monitors determines order of returned values.
         self.sim = simulator.Simulator(model=dynamics,
-                                       connectivity=white_matter,
-                                       coupling=white_matter_coupling,
                                        integrator=integrator,
-                                       monitors=self.monitors,
                                        surface=default_cortex)
+        self.sim.connectivity = white_matter
+        self.sim.coupling = white_matter_coupling
+        self.sim.monitors = self.monitors
         self.sim.configure()
 
 
@@ -177,3 +181,22 @@ class TestSimulator(BaseTestCase):
 
             assert len(test_simulator.monitors) == len(result)
             LOG.debug("Surface simulation finished for defaultConnectivity= %s" % str(default_connectivity))
+
+
+from tvb.simulator.models.epileptor import Epileptor
+
+
+class TestSimShort(BaseTestCase):
+    def test_reg(self):
+        test_simulator = Simulator()
+
+        test_simulator.configure(model=Epileptor,
+                                 method='HeunStochastic',
+                                 surface_sim=False)
+        result = test_simulator.run_simulation()
+
+        self.assert_equal(len(test_simulator.monitors), len(result))
+        for ts in result:
+            assert ts is not None
+            assert len(ts) > 0
+
