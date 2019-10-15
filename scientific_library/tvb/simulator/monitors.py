@@ -237,7 +237,7 @@ class SpatialAverage(Monitor):
             specifying the "region" to which it belongs. The default usage is
             for mapping a surface based simulation back to the regions used in 
             its `Long-range Connectivity.`""")
-    
+
     default_mask = Attr(
         str,
         choices=("cortical", "hemispheres"),
@@ -254,7 +254,7 @@ class SpatialAverage(Monitor):
         self.is_default_special_mask = False
 
         # setup given spatial mask or default to region mapping
-        if self.spatial_mask.size == 0:
+        if self.spatial_mask is None:
             self.is_default_special_mask = True
             if not (simulator.surface is None):
                 self.spatial_mask = simulator.surface.region_mapping
@@ -941,3 +941,6 @@ class ProgressLogger(Monitor):
             self._last_step = step
         if (step - self._last_step) % self._istep == 0:
             self.logger.info('step %d time %.4f s', step, step * self._dt / 1e3)
+
+    def sample(self, step, state):
+        raise NotImplementedError
