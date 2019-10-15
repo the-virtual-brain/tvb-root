@@ -205,7 +205,7 @@ class BalloonModel(HasTraits):
         Calculate simulated BOLD signal
         """
         cls_attr_name = self.__class__.__name__ + ".time_series"
-        self.time_series.trait["data"].log_debug(owner=cls_attr_name)
+        # self.time_series.trait["data"].log_debug(owner=cls_attr_name)
 
         #NOTE: Just using the first state variable, although in the Bold monitor
         #      input is the sum over the state-variables. Only time-series

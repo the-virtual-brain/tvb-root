@@ -86,7 +86,7 @@ class KuramotoIndex(metrics_base.BaseTimeseriesMetricAlgorithm):
         """
 
         cls_attr_name = self.__class__.__name__ + ".time_series"
-        self.time_series.trait["data"].log_debug(owner=cls_attr_name)
+        # self.time_series.trait["data"].log_debug(owner=cls_attr_name)
 
         if self.time_series.data.shape[1] < 2:
             msg = " The number of state variables should be at least 2."

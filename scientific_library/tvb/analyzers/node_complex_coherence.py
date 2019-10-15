@@ -171,7 +171,7 @@ class NodeComplexCoherence(HasTraits):
         `segment_length` respectively, filtered by `window_function`.
         """
         cls_attr_name = self.__class__.__name__ + ".time_series"
-        self.time_series.trait["data"].log_debug(owner=cls_attr_name)
+        # self.time_series.trait["data"].log_debug(owner=cls_attr_name)
         tpts = self.time_series.data.shape[0]
         time_series_length = tpts * self.time_series.sample_period
 

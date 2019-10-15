@@ -138,7 +138,7 @@ class NodeCoherence(HasTraits):
     def evaluate(self):
         "Evaluate coherence on time series."
         cls_attr_name = self.__class__.__name__+".time_series"
-        self.time_series.trait["data"].log_debug(owner=cls_attr_name)
+        # self.time_series.trait["data"].log_debug(owner=cls_attr_name)
         srate = self.time_series.sample_rate
         coh, freq = coherence(self.time_series.data, srate, nfft=self.nfft)
         util.log_debug_array(LOG, coh, "coherence")

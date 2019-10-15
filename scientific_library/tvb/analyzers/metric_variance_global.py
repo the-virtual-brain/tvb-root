@@ -64,7 +64,7 @@ class GlobalVariance(metrics_base.BaseTimeseriesMetricAlgorithm):
         Compute the zero centered global variance of the time_series. 
         """
         cls_attr_name = self.__class__.__name__ + ".time_series"
-        self.time_series.trait["data"].log_debug(owner=cls_attr_name)
+        # self.time_series.trait["data"].log_debug(owner=cls_attr_name)
 
 
         shape = self.time_series.data.shape

@@ -71,7 +71,7 @@ class CrossCorrelate(HasTraits):
         Cross-correlate two one-dimensional arrays.
         """
         cls_attr_name = self.__class__.__name__ + ".time_series"
-        self.time_series.trait["data"].log_debug(owner=cls_attr_name)
+        # self.time_series.trait["data"].log_debug(owner=cls_attr_name)
         
         #(tpts, nodes, nodes, state-variables, modes)
         result_shape = self.result_shape(self.time_series.data.shape)
