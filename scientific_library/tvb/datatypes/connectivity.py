@@ -916,8 +916,8 @@ class Connectivity(HasTraits):
         LOG.info("Create labels: %s" % str(mode))
 
         if mode in ("numeric", "num"):
-            self.region_labels = [n for n in range(self.number_of_regions)]
-            self.region_labels = numpy.array(self.region_labels).astype(str)
+            region_labels = [n for n in range(self.number_of_regions)]
+            self.region_labels = numpy.array(region_labels).astype(str)
         elif mode in ("alphabetic", "alpha"):
             import string
             if self.number_of_regions < 26:
