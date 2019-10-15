@@ -157,16 +157,16 @@ class Simulator(core.Type):
         monitor. By default the 'Generic2dOscillator' model is used. Read the 
         Scientific documentation to learn more about this model.""")
 
-    integrator = integrators.Integrator(
-        label="Integration scheme",
-        default=integrators.HeunDeterministic,
-        required=True,
-        order=6,
-        doc="""A tvb.simulator.Integrator object which is
-            an integration scheme with supporting attributes such as 
-            integration step size and noise specification for stochastic 
-            methods. It is used to compute the time courses of the model state 
-            variables.""")
+    integrator = None #integrators.Integrator(
+        # label="Integration scheme",
+        # default=integrators.HeunDeterministic,
+        # required=True,
+        # order=6,
+        # doc="""A tvb.simulator.Integrator object which is
+        #     an integration scheme with supporting attributes such as
+        #     integration step size and noise specification for stochastic
+        #     methods. It is used to compute the time courses of the model state
+        #     variables.""")
 
     initial_conditions = arrays.FloatArray(
         label="Initial Conditions",
@@ -181,7 +181,7 @@ class Simulator(core.Type):
         array will be padded with random values based on the 'state_variables_range'
         attribute.""")
 
-    monitors = monitors.Monitor()
+    monitors = None #monitors.Monitor()
         # label="Monitor(s)",
         # default=monitors.TemporalAverage,
         # required=True,

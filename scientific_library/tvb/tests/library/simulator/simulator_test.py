@@ -55,9 +55,9 @@ from tvb.basic.traits.parameters_factory import get_traited_subclasses
 LOG = get_logger(__name__)
 
 AVAILABLE_MODELS = get_traited_subclasses(models.Model)
-AVAILABLE_METHODS = get_traited_subclasses(integrators.Integrator)
+AVAILABLE_METHODS = integrators.Integrator.get_known_subclasses()
 MODEL_CLASSES = AVAILABLE_MODELS.values()
-METHOD_NAMES = AVAILABLE_METHODS.keys()
+METHOD_NAMES = [m.__name__ for m in AVAILABLE_METHODS]
 METHOD_NAMES.append('RungeKutta4thOrderDeterministic')
 
 
@@ -146,8 +146,8 @@ class Simulator(object):
 
         # Order of monitors determines order of returned values.
         self.sim = simulator.Simulator(model=dynamics,
-                                       integrator=integrator,
                                        surface=default_cortex)
+        self.sim.integrator = integrator
         self.sim.connectivity = white_matter
         self.sim.coupling = white_matter_coupling
         self.sim.monitors = self.monitors

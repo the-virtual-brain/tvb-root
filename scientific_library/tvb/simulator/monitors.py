@@ -53,6 +53,7 @@ Conversion of power of 2 sample-rates(Hz) to Monitor periods(ms)
 .. moduleauthor:: Jan Fousek <izaak@mail.muni.cz>
 
 """
+import abc
 
 import numpy
 from tvb.datatypes.time_series import (TimeSeries, TimeSeriesRegion,
@@ -134,15 +135,12 @@ class Monitor(HasTraits):
         """
         return self.sample(step, observed)
 
+    @abc.abstractmethod
     def sample(self, step, state):
         """
         This method provides monitor output, and should be overridden by subclasses.
 
         """
-
-        raise NotImplementedError(
-            "The Monitor base class does not provide any observation model and "
-            "should be subclasses with an implementation of the `sample` method.")
 
     def create_time_series(self, storage_path, connectivity=None, surface=None,
                            region_map=None, region_volume_map=None):
