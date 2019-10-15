@@ -45,7 +45,6 @@ class Model(HasTraits):
 
     """
 
-    _base_classes = ['Model', 'ReducedSetBase', 'ModelNumbaDfun']
     # NOTE: the parameters that are contained in the following list will be
     # editable from the ui in an visual manner
     ui_configurable_parameters = []

@@ -69,7 +69,6 @@ class Integrator(HasTraits):
         40: 3381, 1989.
 
     """
-    _base_classes = ['Integrator', 'IntegratorStochastic', 'RungeKutta4thOrderDeterministic']
 
     dt = Float(
         label = "Integration-step size (ms)", 
@@ -146,7 +145,7 @@ class IntegratorStochastic(Integrator):
         default=noise.Additive(),
         required = True,
         doc = """The stochastic integrator's noise source. It incorporates its
-        own instance of Numpy's RandomState.""")
+        own instance of Numpy's RandomState.""")  # type: noise.Noise
 
     def __str__(self):
         return simple_gen_astr(self, 'dt noise')

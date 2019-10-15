@@ -39,6 +39,7 @@ simulation and the method for running the simulation.
 
 """
 
+import typing
 import time
 import math
 import numpy
@@ -87,7 +88,7 @@ class Simulator(HasTraits):
          structural long-range connectivity data (i.e., white-matter tracts). In
          combination with the ``Long-range coupling function`` it defines the inter-regional
          connections. These couplings undergo a time delay via signal propagation
-         with a propagation speed of ``Conduction Speed``""")
+         with a propagation speed of ``Conduction Speed``""")  # type: connectivity.Connectivity
 
     conduction_speed = Float(
         label="Conduction Speed",
@@ -104,7 +105,7 @@ class Simulator(HasTraits):
         doc="""The coupling function is applied to the activity propagated
         between regions by the ``Long-range connectivity`` before it enters the local
         dynamic equations of the Model. Its primary purpose is to 'rescale' the
-        incoming activity to a level appropriate to Model.""")
+        incoming activity to a level appropriate to Model.""")  # type: coupling.Coupling
 
     surface = Attr(
         field_type=cortex.Cortex,
@@ -126,7 +127,7 @@ class Simulator(HasTraits):
         cortical surface defined by points in the 3D physical space and their
         neighborhood relationship. In the current TVB version, when setting up a
         surface-based simulation, the option to configure the spatial spread of
-        the ``Local Connectivity`` is available.""")
+        the ``Local Connectivity`` is available.""")  # type: cortex.Cortex
 
     stimulus = Attr(
         field_type=patterns.SpatioTemporalPattern,
@@ -140,7 +141,7 @@ class Simulator(HasTraits):
         (spatial) function, with finite-support, is used to define the strength
         of the stimuli on the surface centred around one or more focal points.
         In the current version of TVB, stimuli are applied to the first state
-        variable of the ``Local dynamic model``.""")
+        variable of the ``Local dynamic model``.""")   # type: patterns.SpatioTemporalPattern
 
     model = Attr(
         field_type=models.Model,
@@ -151,7 +152,7 @@ class Simulator(HasTraits):
         equations, their parameters, and, to some extent, where connectivity
         (local and long-range) enters and which state-variables the Monitors
         monitor. By default the 'Generic2dOscillator' model is used. Read the
-        Scientific documentation to learn more about this model.""")
+        Scientific documentation to learn more about this model.""")  # type: models.Model
 
     integrator = Attr(
         field_type=integrators.Integrator,
@@ -162,7 +163,7 @@ class Simulator(HasTraits):
             an integration scheme with supporting attributes such as
             integration step size and noise specification for stochastic
             methods. It is used to compute the time courses of the model state
-            variables.""")
+            variables.""")   # type: integrators.Integrator
 
     initial_conditions = NArray(
         label="Initial Conditions",
@@ -185,7 +186,7 @@ class Simulator(HasTraits):
         or averages); 2) physiological measurements, such as EEG, MEG and fMRI.
         By default the Model's specified variables_of_interest are returned,
         temporally downsampled from the raw integration rate to a sample rate of
-        1024Hz.""")
+        1024Hz.""")    # type: typing.Collection[monitors.Monitor]
 
     simulation_length = Float(
         label="Simulation Length (ms, s, m, h)",

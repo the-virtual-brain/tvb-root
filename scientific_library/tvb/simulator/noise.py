@@ -38,6 +38,7 @@ Specific noises inherit from the abstract class Noise
 .. moduleauthor:: Noelia Montejo <Noelia@tvb.invalid>
 
 """
+import abc
 
 import numpy
 from tvb.datatypes import equations
@@ -194,6 +195,10 @@ class Noise(HasTraits):
         "Generate white noise."
         noise = numpy.sqrt(self.dt) * self.random_stream.normal(size=shape)
         return noise
+
+    @abc.abstractmethod
+    def gfun(self, state_variables):
+        pass
 
 
 class Additive(Noise):
