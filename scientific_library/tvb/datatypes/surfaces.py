@@ -77,7 +77,6 @@ WHITE_MATTER = "White Matter"
 EEG_CAP = "EEG Cap"
 FACE = "Face"
 
-# TODO document magic numbers here
 # Slices are for vertices [0.....SPLIT_MAX_SIZE + SPLIT_BUFFER_SIZE]
 # [SPLIT_MAX_SIZE ..... 2 * SPLIT_BUFFER_SIZE + SPLIT_BUFFER_SIZE]
 # Triangles [0, 1, 2], [3, 4, 5], [6, 7, 8].....
@@ -296,12 +295,6 @@ class Surface(HasTraits):
         the distance to all vertices on the surface will be returned.
 
         """
-        # TODO: Probably should check that targets and start_vertex are less than
-        #      number of vertices, etc...
-        # if NO_GEODESIC_DISTANCE:
-        #    LOG.error("%s: The geodesic distance library didn't load" % repr(self))
-        #    return
-
         if max_dist is not None and targets is not None:
             raise ValueError("Specifying both targets and max_dist doesn't work.")
 
@@ -442,7 +435,6 @@ class Surface(HasTraits):
         """
         vert_norms = numpy.zeros((self.number_of_vertices, 3))
         bad_normal_count = 0
-        # todo: vectorize this
         for k in range(self.number_of_vertices):
             try:
                 tri_list = list(self.vertex_triangles[k])
@@ -726,7 +718,6 @@ class Surface(HasTraits):
 
         return lbo
 
-    # TODO
     def scientific_validate(self):
         self.number_of_vertices = self.vertices.shape[0]
         self.number_of_triangles = self.triangles.shape[0]
@@ -998,8 +989,6 @@ class Surface(HasTraits):
             result_lines = [0, 1]
         return result_vertices, result_lines, result_normals
 
-
-# TODO consider using just an enum on surface to indicate type, avoid excess classes.
 
 
 class WhiteMatterSurface(Surface):

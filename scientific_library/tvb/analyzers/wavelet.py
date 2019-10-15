@@ -126,7 +126,8 @@ class ContinuousWaveletTransform(HasTraits):
         freqs = numpy.arange(self.frequencies.lo, self.frequencies.hi,
                              self.frequencies.step)
         
-        if (freqs.size == 0) or any(freqs <= 0.0): #TODO: Maybe should limit number of freqs... ~100 is probably a reasonable upper bound.
+        if (freqs.size == 0) or any(freqs <= 0.0):
+            #TODO: Maybe should limit number of freqs... ~100 is probably a reasonable upper bound.
             LOG.warning("Invalid frequency range! Falling back to default.")
             LOG.debug("freqs")
             LOG.debug(narray_describe(freqs))
@@ -145,12 +146,11 @@ class ContinuousWaveletTransform(HasTraits):
         temporal_step = max((1, iround(self.sample_period / self.time_series.sample_period)))
         nt = int(numpy.ceil(ts_shape[0] /  temporal_step))
         
-        
         if not isinstance(self.q_ratio, numpy.ndarray):
-            Q_ratio = self.q_ratio * numpy.ones((1, nf))
+            q_ratio = self.q_ratio * numpy.ones((1, nf))
         
-        if numpy.nanmin(Q_ratio) < 5:
-            msg = "Q_ratio must be not lower than 5 !"
+        if numpy.nanmin(q_ratio) < 5:
+            msg = "q_ratio must be not lower than 5 !"
             LOG.error(msg)
             raise Exception(msg)
         
@@ -160,8 +160,8 @@ class ContinuousWaveletTransform(HasTraits):
             raise Exception(msg)
         
         #TODO: This isn't used, but min frequency seems like it should be important... Check with A.S. 
-        #  fmin = 3.0 * numpy.nanmin(Q_ratio) * sample_rate / numpy.pi / nt
-        sigma_f = freqs / Q_ratio
+        #  fmin = 3.0 * numpy.nanmin(q_ratio) * sample_rate / numpy.pi / nt
+        sigma_f = freqs / q_ratio
         sigma_t = 1.0 / (2.0 * numpy.pi * sigma_f)
         
         if self.normalisation == 'energy':

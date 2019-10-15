@@ -39,7 +39,6 @@ Compute cross coherence between all nodes in a time series.
 import numpy
 import matplotlib.mlab as mlab
 from matplotlib.pylab import detrend_linear
-#TODO: Currently built around the Simulator's 4D timeseries -- generalise...
 import tvb.datatypes.time_series as time_series
 import tvb.datatypes.spectral as spectral
 from tvb.basic.neotraits.api import HasTraits, Attr, Int, narray_describe
@@ -47,7 +46,6 @@ from tvb.basic.logger.builder import get_logger
 
 LOG = get_logger(__name__)
 
-#TODO: Make an appropriate spectral datatype for the output
 #TODO: Should do this properly, ie not with mlab, returning both coherence and
 #      the complex coherence spectra, then supporting magnitude squared
 #      coherence, etc in a similar fashion to the FourierSpectrum datatype...

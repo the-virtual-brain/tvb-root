@@ -30,7 +30,6 @@
 
 """
 Test for tvb.simulator.coupling module
-# TODO: evaluate equations?
 
 .. moduleauthor:: Paula Sanz Leon <sanzleon.paula@gmail.com>
 .. moduleauthor:: Marmaduke Woodman <mmwoodman@gmail.com>
@@ -130,8 +129,7 @@ class TestIntegrators(BaseTestCase):
     def test_clamp(self):
         vode = integrators.VODE(
             clamped_state_variable_indices=numpy.r_[0, 3],
-            clamped_state_variable_values=numpy.array([[42.0, 24.0]])
-        )
+            clamped_state_variable_values=numpy.array([[42.0, 24.0]]))
         x = numpy.ones((5, 4, 2))
         for i in range(10):
             x = vode.scheme(x, self._dummy_dfun, 0.0, 0.0, 0.0)

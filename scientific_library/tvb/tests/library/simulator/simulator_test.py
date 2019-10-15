@@ -38,8 +38,6 @@ schemes (region and surface based simulations).
 
 """
 
-# TODO: check the defaults of simulator.Simulator() (?)
-# TODO: continuation support or maybe test that particular feature elsewhere
 import pytest
 import numpy
 import itertools
@@ -50,12 +48,9 @@ from tvb.datatypes.connectivity import Connectivity
 from tvb.datatypes.cortex import Cortex
 from tvb.datatypes.local_connectivity import LocalConnectivity
 from tvb.datatypes.region_mapping import RegionMapping
+from tvb.simulator.integrators import HeunDeterministic, IntegratorStochastic
 
 LOG = get_logger(__name__)
-# unused ones here to ensure that the classes in these modules get created and registered with traits
-import tvb.simulator.models.JCepileptor
-from tvb.simulator.integrators import (RungeKutta4thOrderDeterministic, HeunDeterministic,
-                                       IntegratorStochastic, HeunStochastic)
 
 MODEL_CLASSES = models.Model.get_known_subclasses().values()
 METHOD_CLASSES = integrators.Integrator.get_known_subclasses().values()
@@ -82,9 +77,9 @@ class Simulator(object):
         eeg.period = 2 ** -2
         eeg2 = monitors.EEG.from_file()
         eeg2.period = 2 ** -2
-        eeg2.reference='Fp2'  # EEG with a reference electrode
+        eeg2.reference = 'Fp2'  # EEG with a reference electrode
         meg = monitors.MEG.from_file()
-        meg.period=2 ** -2
+        meg.period = 2 ** -2
 
         self.monitors = (raw, gavg, subsamp, tavg, eeg, eeg2, meg)
 
@@ -138,7 +133,7 @@ class Simulator(object):
         if surface_sim:
             local_coupling_strength = numpy.array([2 ** -10])
             default_cortex = Cortex.from_file()
-            default_cortex.region_mapping_data=region_mapping
+            default_cortex.region_mapping_data = region_mapping
             default_cortex.coupling_strength = local_coupling_strength
             if default_connectivity:
                 default_cortex.local_connectivity = LocalConnectivity.from_file()
@@ -163,18 +158,14 @@ class TestSimulator(BaseTestCase):
     @pytest.mark.slow
     @pytest.mark.parametrize('model_class,method_class', itertools.product(MODEL_CLASSES, METHOD_CLASSES))
     def test_simulator_region(self, model_class, method_class):
-
         test_simulator = Simulator()
-        test_simulator.configure(model=model_class,
-                                 method=method_class,
-                                 surface_sim=False)
+        test_simulator.configure(model=model_class, method=method_class, surface_sim=False)
         result = test_simulator.run_simulation()
 
         self.assert_equal(len(test_simulator.monitors), len(result))
         for ts in result:
             assert ts is not None
             assert len(ts) > 0
-
 
     @pytest.mark.slow
     @pytest.mark.parametrize('default_connectivity', [True, False])
@@ -189,5 +180,3 @@ class TestSimulator(BaseTestCase):
 
         assert len(test_simulator.monitors) == len(result)
         LOG.debug("Surface simulation finished for defaultConnectivity= %s" % str(default_connectivity))
-
-

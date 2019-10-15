@@ -390,6 +390,5 @@ class TestSim(CudaBaseCase):
             cu_data[:, step_] = state[0, :, 0].T
             cu_coupling0[step_] = coupling0
 
-        # accept higher error because it accumulates over time
-        # TODO test error proportional to time
+        # Maybe accept higher error because it accumulates over time
         numpy.testing.assert_allclose(cu_data, py_data, 1e-2, 1e-2)

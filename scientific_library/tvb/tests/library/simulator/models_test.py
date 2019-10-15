@@ -44,8 +44,6 @@ class TestModels(BaseTestCase):
     """
     Define test cases for models:
         - initialise each class
-        TODO - check default parameters (should correspond to those used in the original work with the aim to
-         reproduce at least one figure)
         - check that initial conditions are always in range
 
     """
