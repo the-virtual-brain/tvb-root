@@ -199,7 +199,7 @@ class Connectivity(HasTraits):
         final_conn.subject = self.subject
         return final_conn
 
-    def cut_connectivity(self, new_weights, interest_areas, storage_path, new_tracts=None):
+    def cut_connectivity(self, new_weights, interest_areas, new_tracts=None):
         """
         Generate new Connectivity object based on current one, by removing nodes (e.g. simulate lesion).
         Only the selected nodes will get used in the result. The order of the indices in interest_areas matters.
@@ -216,7 +216,6 @@ class Connectivity(HasTraits):
 
         final_conn = self.__class__()
         final_conn.parent_connectivity = None
-        final_conn.storage_path = storage_path
         final_conn.weights = new_weights
         final_conn.centres = self.centres[interest_areas, :]
         final_conn.region_labels = self.region_labels[interest_areas]
@@ -229,8 +228,9 @@ class Connectivity(HasTraits):
         if self.areas is not None and len(self.areas):
             final_conn.areas = self.areas[interest_areas]
         final_conn.tract_lengths = new_tracts
-        final_conn.saved_selection = None
-        final_conn.subject = self.subject
+        final_conn.saved_selection = []
+        #TODO: do this on index
+        # final_conn.subject = self.subject
         return final_conn
 
     def _reorder_arrays(self, new_weights, interest_areas, new_tracts=None):
@@ -256,13 +256,13 @@ class Connectivity(HasTraits):
         new_weights, interest_areas, new_tracts = self._reorder_arrays(new_weights, interest_areas, new_tracts)
         return self.branch_connectivity(new_weights, interest_areas, storage_path, new_tracts)
 
-    def cut_new_connectivity_from_ordered_arrays(self, new_weights, interest_areas, storage_path, new_tracts=None):
+    def cut_new_connectivity_from_ordered_arrays(self, new_weights, interest_areas, new_tracts=None):
         """
         Similar to :meth:`cut_connectivity` but using hemisphere ordered parameters.
         Used by the connectivity viewer to save a smaller connectivity.
         """
         new_weights, interest_areas, new_tracts = self._reorder_arrays(new_weights, interest_areas, new_tracts)
-        return self.cut_connectivity(new_weights, interest_areas, storage_path, new_tracts)
+        return self.cut_connectivity(new_weights, interest_areas, new_tracts)
 
     @property
     def saved_selection_labels(self):
@@ -370,7 +370,7 @@ class Connectivity(HasTraits):
     def get_default_selection(self):
         # should this be sub-selection or all always?
         sel = self.saved_selection
-        if sel is not None:
+        if sel is not None and len(sel) > 0:
             return sel
         else:
             return range(len(self.region_labels))
