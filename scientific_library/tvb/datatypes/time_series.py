@@ -38,53 +38,25 @@ methods that are associated with the time-series data.
 
 from tvb.datatypes import sensors, surfaces, volumes, region_mapping, connectivity
 from tvb.basic.logger.builder import get_logger
-from tvb.basic.neotraits.api import HasTraits, Attr, NArray, List, Int, Float, narray_summary_info
+from tvb.basic.neotraits.api import HasTraits, Attr, NArray, List, Float, narray_summary_info
 
 LOG = get_logger(__name__)
-
-
-def prepare_time_slice(total_time_length, max_length=10 ** 4):
-    """
-    Limit the time dimension when retrieving from TS.
-    If total time length is greater than MAX, then retrieve only the last part of the TS
-
-    :param total_time_length: TS time dimension
-    :param max_length: limiting number of TS steps
-
-    :return: python slice
-    """
-
-    if total_time_length < max_length:
-        return slice(total_time_length)
-
-    return slice(total_time_length - max_length, total_time_length)
 
 
 class TimeSeries(HasTraits):
     """
     Base time-series dataType.
     """
-
     title = Attr(str)
 
     data = NArray(
         label="Time-series data",
-        # file_storage=core.FILE_STORAGE_EXPAND,
         doc="""An array of time-series data, with a shape of [tpts, :], where ':' represents 1 or more dimensions""")
-
-    # mhtodo: should this not be a property
-    nr_dimensions = Int(
-        label="Number of dimension in timeseries",
-        default=4
-    )
-
-    # length_1d, length_2d, length_3d, length_4d = [Int() for _ in range(4)]
 
     labels_ordering = List(
         default=("Time", "State Variable", "Space", "Mode"),
         label="Dimension Names",
-        doc="""List of strings representing names of each data dimension"""
-    )
+        doc="""List of strings representing names of each data dimension""")
 
     labels_dimensions = Attr(
         field_type=dict,
@@ -93,12 +65,10 @@ class TimeSeries(HasTraits):
         doc=""" A dictionary containing mappings of the form {'dimension_name' : [labels for this dimension] }""")
 
     time = NArray(
-        # file_storage=core.FILE_STORAGE_EXPAND,
         label="Time-series time",
         required=False,
         doc="""An array of time values for the time-series, with a shape of [tpts,].
-            This is 'time' as returned by the simulator's monitors."""
-    )
+            This is 'time' as returned by the simulator's monitors.""")
 
     start_time = Float(label="Start Time:")
 
@@ -108,27 +78,15 @@ class TimeSeries(HasTraits):
     sample_period_unit = Attr(
         field_type=str,
         label="Sample Period Measure Unit",
-        default="ms"
-    )
+        default="ms")
 
-    sample_rate = Float(
-        label="Sample rate",
-        doc="""The sample rate of the timeseries"""
-    )
+    @property
+    def nr_dimensions(self):
+        return self.data.ndim
 
-    # has_surface_mapping = Attr(field_type=bool, default=True)
-    # has_volume_mapping = Attr(field_type=bool, default=False)
-
-    def configure(self):
-        """
-        After populating few fields, compute the rest of the fields
-        """
-        super(TimeSeries, self).configure()
-        self.nr_dimensions = self.data.ndim
-        self.sample_rate = 1.0 / self.sample_period
-
-        # for i in range(min(self.nr_dimensions, 4)):
-        #     setattr(self, 'length_%dd' % (i + 1), int(data_shape[i]))
+    @property
+    def sample_rate(self):
+        return 1.0 / self.sample_period
 
     def summary_info(self):
         """
@@ -147,10 +105,7 @@ class TimeSeries(HasTraits):
 
 
 class SensorsTSBase(TimeSeries):
-    """
-    Add framework related functionality for TS Sensor classes
 
-    """
     def summary_info(self):
         """
         Gather scientifically interesting summary information from an instance of this datatype.
@@ -162,7 +117,6 @@ class SensorsTSBase(TimeSeries):
 
 class TimeSeriesEEG(SensorsTSBase):
     """ A time series associated with a set of EEG sensors. """
-    _ui_name = "EEG time-series"
 
     sensors = Attr(field_type=sensors.SensorsEEG)
     labels_ordering = List(of=str, default=("Time", "1", "EEG Sensor", "1"))
@@ -170,7 +124,6 @@ class TimeSeriesEEG(SensorsTSBase):
 
 class TimeSeriesMEG(SensorsTSBase):
     """ A time series associated with a set of MEG sensors. """
-    _ui_name = "MEG time-series"
 
     sensors = Attr(field_type=sensors.SensorsMEG)
     labels_ordering = List(of=str, default=("Time", "1", "MEG Sensor", "1"))
@@ -178,7 +131,6 @@ class TimeSeriesMEG(SensorsTSBase):
 
 class TimeSeriesSEEG(SensorsTSBase):
     """ A time series associated with a set of Internal sensors. """
-    _ui_name = "Stereo-EEG time-series"
 
     sensors = Attr(field_type=sensors.SensorsInternal)
     labels_ordering = List(of=str, default=("Time", "1", "sEEG Sensor", "1"))
@@ -186,19 +138,11 @@ class TimeSeriesSEEG(SensorsTSBase):
 
 class TimeSeriesRegion(TimeSeries):
     """ A time-series associated with the regions of a connectivity. """
-    _ui_name = "Region time-series"
+
     connectivity = Attr(field_type=connectivity.Connectivity)
     region_mapping_volume = Attr(field_type=region_mapping.RegionVolumeMapping, required=False)
     region_mapping = Attr(field_type=region_mapping.RegionMapping, required=False)
     labels_ordering = List(of=str, default=("Time", "State Variable", "Region", "Mode"))
-
-    def configure(self):
-        """
-        After populating few fields, compute the rest of the fields
-        """
-        super(TimeSeriesRegion, self).configure()
-        # self.has_surface_mapping = self.region_mapping is not None or self._region_mapping is not None
-        # self.has_volume_mapping = self.region_mapping_volume is not None or self._region_mapping_volume is not None
 
     def summary_info(self):
         """
@@ -216,7 +160,7 @@ class TimeSeriesRegion(TimeSeries):
 
 class TimeSeriesSurface(TimeSeries):
     """ A time-series associated with a Surface. """
-    _ui_name = "Surface time-series"
+
     surface = Attr(field_type=surfaces.CorticalSurface)
     labels_ordering = List(of=str, default=("Time", "State Variable", "Vertex", "Mode"))
 
@@ -229,10 +173,9 @@ class TimeSeriesSurface(TimeSeries):
         return summary
 
 
-
 class TimeSeriesVolume(TimeSeries):
     """ A time-series associated with a Volume. """
-    _ui_name = "Volume time-series"
+
     volume = Attr(field_type=volumes.Volume)
     labels_ordering = List(of=str, default=("Time", "X", "Y", "Z"))
 
@@ -243,11 +186,3 @@ class TimeSeriesVolume(TimeSeries):
         summary = super(TimeSeriesVolume, self).summary_info()
         summary.update({"Source Volume": self.volume.title})
         return summary
-
-    def configure(self):
-        """
-        After populating few fields, compute the rest of the fields
-        """
-        super(TimeSeriesVolume, self).configure()
-        self.has_volume_mapping = True
-
