@@ -65,14 +65,14 @@ def trait_object_repr_html(self):
     cls = type(self)
     result = [
         '<table>',
-        '<caption>{}</caption>'.format(self.__class__.__name__),
+        '<h3>{}</h3>'.format(self.__class__.__name__),
         '<thead><tr><th>attribute</th><th style="text-align:left;width:40%">value</th><th>about</th></tr></thead>',
         '<tbody>']
 
     for aname in cls.declarative_attrs:
         attr_field = getattr(self, aname)
         attr_doc = getattr(cls, aname).doc
-        row_fmt = '<tr><td>{}</td><td><pre>{}</pre></td><td>{}</td>'
+        row_fmt = '<tr><td>{}</td><td style="text-align:left;"><pre>{}</pre></td><td style="text-align:left;">{}</td>'
         if isinstance(attr_field, numpy.ndarray):
             attr_repr = narray_describe(attr_field).splitlines()
         else:

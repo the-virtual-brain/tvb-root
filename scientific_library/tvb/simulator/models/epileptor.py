@@ -33,7 +33,7 @@ Hindmarsh-Rose-Jirsa Epileptor model.
 import numpy
 from .base import ModelNumbaDfun
 from numba import guvectorize, float64
-from tvb.basic.neotraits.api import NArray, Attr, List, Range
+from tvb.basic.neotraits.api import NArray, List, Range, Const
 
 
 @guvectorize([(float64[:],) * 20], '(n),(m)' + ',()'*17 + '->(n)', nopython=True)
@@ -266,15 +266,16 @@ class Epileptor(ModelNumbaDfun):
         doc="When modification is True, then use nonlinear influence on z. \
         The default value is False, i.e., linear influence.")
 
-    state_variable_range = Attr(
-        field_type=dict,
+    state_variable_range = Const(
+        {
+            "x1": numpy.array([-2., 1.]),
+            "y1": numpy.array([-20., 2.]),
+            "z": numpy.array([2.0, 5.0]),
+            "x2": numpy.array([-2., 0.]),
+            "y2": numpy.array([0., 2.]),
+            "g": numpy.array([-1., 1.])
+        },
         label="State variable ranges [lo, hi]",
-        default={"x1": numpy.array([-2., 1.]),
-                 "y1": numpy.array([-20., 2.]),
-                 "z": numpy.array([2.0, 5.0]),
-                 "x2": numpy.array([-2., 0.]),
-                 "y2": numpy.array([0., 2.]),
-                 "g": numpy.array([-1., 1.])},
         doc="Typical bounds on state variables in the Epileptor model.")
 
     variables_of_interest = List(
@@ -485,10 +486,9 @@ class Epileptor2D(ModelNumbaDfun):
         doc="When modification is True, then use nonlinear influence on z. \
         The default value is False, i.e., linear influence.")
 
-    state_variable_range = Attr(
-        field_type=dict,
+    state_variable_range = Const(
+        {"x1": numpy.array([-2., 1.]), "z": numpy.array([2.0, 5.0])},
         label="State variable ranges [lo, hi]",
-        default={"x1": numpy.array([-2., 1.]), "z": numpy.array([2.0, 5.0])},
         doc="Typical bounds on state-variables in the Epileptor 2D model.")
 
     variables_of_interest = List(

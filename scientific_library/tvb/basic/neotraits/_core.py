@@ -39,8 +39,8 @@ class Attr(object):
         self.default = default
         self.doc = doc
         self.label = label
-        self.required = required
-        self.readonly = readonly
+        self.required = bool(required)
+        self.readonly = bool(readonly)
         self.choices = choices
 
 
@@ -61,6 +61,10 @@ class Attr(object):
         We do checks here and not in init in order to give better error messages.
         Attr should be considered initialized only after this has run
         """
+        if not isinstance(self.field_type, type):
+            msg = 'field_type must be a type not {!r}. Did you mean to use it as the default?'.format(self.field_type)
+            raise TypeError(self._err_msg(msg))
+
         if self.default is not None and not isinstance(self.default, self.field_type):
             msg = 'should have a default of type {} not {}'.format(
                 self.field_type, type(self.default))

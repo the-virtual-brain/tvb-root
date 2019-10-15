@@ -96,6 +96,12 @@ def test_inheritance():
         t.m = 2
 
 
+def test_attr_misuse_fails():
+    with pytest.raises(TypeError):
+        class A(HasTraits):
+            a = Attr('ana')
+
+
 def test_declarative_attrs():
     class A(HasTraits):
         a = Attr(str)
