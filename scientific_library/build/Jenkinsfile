@@ -12,6 +12,7 @@ pipeline {
             agent {
                 docker {
                     image '${FULL_DOCKER_IMAGE_NAME}:${PY2_TAG}'
+                    alwaysPull true
                 }
             }
             steps {
@@ -45,6 +46,7 @@ pipeline {
             agent {
                 docker {
                     image '${FULL_DOCKER_IMAGE_NAME}:${PY3_TAG}'
+                    alwaysPull true
                 }
             }
             steps {
