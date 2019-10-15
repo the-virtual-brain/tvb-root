@@ -700,3 +700,27 @@ def test_pedantic_edge_cases_for_coverage():
     a.tag('subject', 'john doe')
     str(Attr(object))
 
+
+def access_attr(a):
+    a.s = 'has'
+    a.arr = numpy.eye(3) + a.arr
+
+
+@pytest.mark.benchmark
+def test_perf_plain(benchmark):
+    class Plain(object):
+        def __init__(self):
+            self.a = None
+            self.arr = numpy.eye(3)
+
+    benchmark(access_attr, Plain())
+
+
+@pytest.mark.benchmark
+def test_perf_trait(benchmark):
+    class A(HasTraits):
+        s = Attr(str, choices=('Ana', 'has', 'some', 'apples'))
+        arr = NArray(ndim=2, default=numpy.eye(3))
+
+    benchmark(access_attr, A())
+
