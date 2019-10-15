@@ -751,27 +751,13 @@ def test_summary_info():
     ainst.ref = zinst
     summary = ainst.summary_info()
 
-    if sys.version_info[0] < 3:
-        assert summary == {
-            'Type': 'A',
-            'title': 'the red rose',
-            'a': "'ana'",
-            'b dtype': 'int32',
-            'b shape': '(3L,)',
-            'b [min, median, max]': '[0, 1, 2]',
-            'ref': 'Z zuzu',
-        }
-    else:
-        assert summary == {
-            'Type': 'A',
-            'title': 'the red rose',
-            'a': "'ana'",
-            'b dtype': 'int32',
-            'b shape': '(3,)',
-            'b [min, median, max]': '[0, 1, 2]',
-            'ref': 'Z zuzu',
-        }
-
+    assert summary['Type'] == 'A'
+    assert summary['title'] == 'the red rose'
+    assert summary['a'] == "'ana'"
+    assert summary['b dtype'].startswith('int')
+    assert summary['b shape'].startswith('(3')
+    assert summary['b [min, median, max]'] == '[0, 1, 2]'
+    assert summary['ref'] == 'Z zuzu'
 
 
 def test_hastraits_str_does_not_crash():
