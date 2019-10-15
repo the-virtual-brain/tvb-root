@@ -47,7 +47,7 @@ class TestPatterns(BaseTestCase):
         dt.spatial_pattern = numpy.arange(100).reshape((10, 10))
         dt.configure_space(numpy.arange(100).reshape((10, 10)))
         dt.configure()
-        summary = dt.summary_info
+        summary = dt.summary_info()
         assert summary['Type'] == 'SpatialPattern'
         assert dt.space.shape == (10, 10)
         assert isinstance(dt.spatial, equations.DoubleGaussian)
@@ -60,7 +60,7 @@ class TestPatterns(BaseTestCase):
         dt.spatial_pattern = numpy.arange(100).reshape((10, 10))
         dt.configure_space(numpy.arange(100).reshape((10, 10)))
         dt.configure()
-        summary = dt.summary_info
+        summary = dt.summary_info()
         assert summary['Type'] == 'SpatioTemporalPattern'
         assert dt.space.shape == (10, 10)
         assert isinstance(dt.spatial, equations.DoubleGaussian)
@@ -70,15 +70,15 @@ class TestPatterns(BaseTestCase):
         assert dt.time is None
 
     def test_stimuliregion(self):
-        conn = connectivity.Connectivity(load_default=True)
+        conn = connectivity.Connectivity.from_file()
         conn.configure()
         dt = patterns.StimuliRegion()
         dt.connectivity = conn
         dt.spatial = equations.DiscreteEquation()
         dt.temporal = equations.Gaussian()
-        dt.weight = [0 for _ in range(conn.number_of_regions)]
+        dt.weight = numpy.array([0 for _ in range(conn.number_of_regions)])
         dt.configure_space()
-        assert dt.summary_info['Type'] == 'StimuliRegion'
+        assert dt.summary_info()['Type'] == 'StimuliRegion'
         assert dt.connectivity is not None
         assert dt.space.shape == (76, 1)
         assert dt.spatial_pattern.shape == (76, 1)
@@ -87,17 +87,17 @@ class TestPatterns(BaseTestCase):
         assert dt.time is None
 
     def test_stimulisurface(self):
-        srf = surfaces.CorticalSurface(load_default=True)
+        srf = surfaces.CorticalSurface.from_file()
         srf.configure()
         dt = patterns.StimuliSurface()
         dt.surface = srf
         dt.spatial = equations.DiscreteEquation()
         dt.temporal = equations.Gaussian()
-        dt.focal_points_surface = [0, 1, 2]
-        dt.focal_points_triangles = [0, 1, 2]
+        dt.focal_points_surface = numpy.array([0, 1, 2])
+        dt.focal_points_triangles = numpy.array([0, 1, 2])
         dt.configure()
         dt.configure_space()
-        summary = dt.summary_info
+        summary = dt.summary_info()
         assert summary['Type'] == "StimuliSurface"
         assert dt.space.shape == (16384, 3)
         assert isinstance(dt.spatial, equations.DiscreteEquation)
@@ -113,4 +113,4 @@ class TestPatterns(BaseTestCase):
         assert dt.spatial is None
         assert dt.spatial_pattern is None
         assert dt.volume is None
-        assert dt.focal_points_volume.shape, (0,)
+        assert dt.focal_points_volume is None

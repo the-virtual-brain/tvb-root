@@ -68,12 +68,12 @@ class TestConnectivity(BaseTestCase):
         assert conn.centres.shape == (74, 3)
         assert conn.orientations.shape == (74, 3)
         assert conn.region_labels.shape == (74,)
-        assert conn.areas is not None
+        assert conn.areas is None
         assert conn.undirected == 0
         assert conn.speed == numpy.array([3.0])
-        assert conn.cortical is not None
-        assert conn.hemispheres is not None
-        assert conn.idelays.shape == (0,)
+        assert conn.cortical is None
+        assert conn.hemispheres is None
+        assert conn.idelays is None
         assert conn.delays.shape == (74, 74,)
         assert conn.number_of_regions == 74
         assert conn.number_of_connections == 75
@@ -82,7 +82,7 @@ class TestConnectivity(BaseTestCase):
         """
         Create a default connectivity and check that everything gets loaded
         """
-        conn = connectivity.Connectivity(load_default=True)
+        conn = connectivity.Connectivity.from_file()
         conn.configure()
         n = 76
         # Check for value from tvb_data/connectivity/o52r00_irp2008
@@ -100,13 +100,13 @@ class TestConnectivity(BaseTestCase):
         assert conn.speed == numpy.array([3.0])
         assert conn.cortical.all()
         assert conn.hemispheres.shape == (n,)
-        assert conn.idelays.shape == (0,)
+        assert conn.idelays is None
         assert conn.delays.shape == (n, n,)
         assert conn.number_of_regions == n
         assert conn.number_of_connections == 1560
-        assert conn.saved_selection is None
-        assert conn.parent_connectivity == ''
-        summary = conn.summary_info
+        assert conn.saved_selection is ()
+        assert conn.parent_connectivity is None
+        summary = conn.summary_info()
         assert summary['Number of regions'] == n
         ## Call connectivity methods and make sure no compilation or runtime erros
         conn.compute_tract_lengths()
@@ -142,11 +142,11 @@ class TestConnectivity(BaseTestCase):
         assert conn.undirected == 0
         assert conn.speed == numpy.array([3.0])
         assert conn.hemispheres.shape == (0,)
-        assert conn.idelays.shape == (0,)
-        assert conn.delays.shape == (0,)
+        assert conn.idelays is None
+        assert conn.delays is None
         assert conn.number_of_regions == 0
-        assert conn.saved_selection is None
-        assert conn.parent_connectivity == ''
+        assert conn.saved_selection is ()
+        assert conn.parent_connectivity is None
 
     @pytest.mark.skipif(not H5PY_SUPPORT, reason="HDF5 and H5PY not found on this system")
     def test_connectivity_h5py_reload(self):
@@ -184,6 +184,6 @@ class TestConnectivity(BaseTestCase):
         assert conn.undirected == 1
         assert conn.speed == numpy.array([3.0])
         assert conn.hemispheres.shape == (68,)
-        assert conn.idelays.shape == (0,)
+        assert conn.idelays is None
         assert conn.delays.shape == (68, 68)
         assert conn.number_of_regions == 68

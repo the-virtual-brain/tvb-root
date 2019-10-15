@@ -53,7 +53,7 @@ class TestModeDecompositions(BaseTestCase):
         dt.compute_norm_source()
         dt.compute_component_time_series()
         dt.compute_normalised_component_time_series()
-        summary = dt.summary_info
+        summary = dt.summary_info()
         assert summary['Mode decomposition type'] == 'PrincipalComponents'
         assert dt.source is not None
         assert dt.weights.shape == (10, 10, 10, 10)
@@ -74,10 +74,10 @@ class TestModeDecompositions(BaseTestCase):
         dt.compute_norm_source()
         dt.compute_component_time_series()
         dt.compute_normalised_component_time_series()
-        summary = dt.summary_info
+        summary = dt.summary_info()
         assert summary['Mode decomposition type'] == 'IndependentComponents'
         assert dt.source is not None
-        assert dt.mixing_matrix.shape == (0,)
+        assert dt.mixing_matrix is None
         assert dt.unmixing_matrix.shape == (n_comp, n_comp, 10, 10)
         assert dt.prewhitening_matrix.shape == (n_comp, 10, 10, 10)
         assert dt.norm_source.shape == (10, 10, 10, 10)

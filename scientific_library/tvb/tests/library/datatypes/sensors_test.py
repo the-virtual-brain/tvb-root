@@ -46,21 +46,21 @@ class TestSensors(BaseTestCase):
 
     def test_sensors(self):
 
-        dt = sensors.Sensors(load_default=True)
+        dt = sensors.Sensors.from_file()
         dt.configure()
 
-        summary_info = dt.summary_info
-        assert summary_info['Sensor type'] == ''
+        summary_info = dt.summary_info()
+        assert summary_info['Sensor type'] is None
         assert summary_info['Number of Sensors'] == 65
         assert not dt.has_orientation
         assert dt.labels.shape == (65,)
         assert dt.locations.shape == (65, 3)
         assert dt.number_of_sensors == 65
-        assert dt.orientations.shape == (0,)
-        assert dt.sensors_type == ''
+        assert dt.orientations is None
+        assert dt.sensors_type is None
 
         ## Mapping 62 sensors on a Skin surface should work
-        surf = SkinAir(load_default=True)
+        surf = SkinAir.from_file()
         surf.configure()
         mapping = dt.sensors_to_surface(surf)
         assert mapping.shape == (65, 3)
@@ -77,18 +77,18 @@ class TestSensors(BaseTestCase):
             pass
 
     def test_sensorseeg(self):
-        dt = sensors.SensorsEEG(load_default=True)
+        dt = sensors.SensorsEEG.from_file()
         dt.configure()
         assert isinstance(dt, sensors.SensorsEEG)
         assert not dt.has_orientation
         assert dt.labels.shape == (65,)
         assert dt.locations.shape == (65, 3)
         assert dt.number_of_sensors == 65
-        assert dt.orientations.shape == (0,)
+        assert dt.orientations is None
         assert dt.sensors_type == EEG_POLYMORPHIC_IDENTITY
 
     def test_sensorsmeg(self):
-        dt = sensors.SensorsMEG(load_default=True)
+        dt = sensors.SensorsMEG.from_file()
         dt.configure()
         assert isinstance(dt, sensors.SensorsMEG)
         assert dt.has_orientation
@@ -99,12 +99,12 @@ class TestSensors(BaseTestCase):
         assert dt.sensors_type == MEG_POLYMORPHIC_IDENTITY
 
     def test_sensorsinternal(self):
-        dt = sensors.SensorsInternal(load_default=True)
+        dt = sensors.SensorsInternal.from_file()
         dt.configure()
         assert isinstance(dt, sensors.SensorsInternal)
         assert not dt.has_orientation
         assert dt.labels.shape == (103,)
         assert dt.locations.shape == (103, 3)
         assert dt.number_of_sensors == 103
-        assert dt.orientations.shape == (0,)
+        assert dt.orientations is None
         assert dt.sensors_type == INTERNAL_POLYMORPHIC_IDENTITY
