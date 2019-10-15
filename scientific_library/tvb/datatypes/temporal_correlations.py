@@ -39,7 +39,7 @@ framework methods that are associated with the Temporal Correlation datatypes.
 
 import tvb.datatypes.time_series as time_series
 from tvb.basic.logger.builder import get_logger
-from tvb.basic.traits.neotraits import HasTraits, Attr, NArray, List
+from tvb.basic.neotraits.api import HasTraits, Attr, NArray, List
 
 LOG = get_logger(__name__)
 
@@ -48,20 +48,15 @@ class CrossCorrelation(HasTraits):
     """
     Result of a CrossCorrelation Analysis.
     """
-    array_data = NArray(
-        dtype=float,
-    )
+    array_data = NArray()
 
     source = Attr(
-        time_series.TimeSeries,
+        field_type=time_series.TimeSeries,
         label="Source time-series",
         doc="""Links to the time-series on which the cross_correlation is applied."""
     )
 
-    time = NArray(
-        dtype=float,
-        label="Temporal Offsets"
-    )
+    time = NArray(label="Temporal Offsets")
 
     labels_ordering = List(
         of=str,

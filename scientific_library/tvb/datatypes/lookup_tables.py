@@ -40,7 +40,7 @@ methods that are associated with the precalculated look up tables.
 import numpy
 from tvb.basic.readers import try_get_absolute_path
 from tvb.basic.logger.builder import get_logger
-from tvb.basic.traits.neotraits import HasTraits, Attr, NArray
+from tvb.basic.neotraits.api import HasTraits, Attr, NArray
 
 
 LOG = get_logger(__name__)
@@ -55,56 +55,42 @@ class LookUpTable(HasTraits):
     _base_classes = ['LookUpTables']
 
     equation = Attr(
-        str,
+        field_type=str,
         label="String representation of the precalculated function",
         doc="""A latex representation of the function whose values are stored
-                in the table, with the extra escaping needed for interpretation via sphinx."""
-    )
+                in the table, with the extra escaping needed for interpretation via sphinx.""")
 
     xmin = NArray(
-        dtype=float,
         label="x-min",
-        doc="""Minimum value"""
-    )
+        doc="""Minimum value""")
 
     xmax = NArray(
-        dtype=float,
         label="x-max",
-        doc="""Maximum value"""
-    )
+        doc="""Maximum value""")
 
     data = NArray(
-        dtype=float,
         label="data",
-        doc="""Tabulated values"""
-    )
+        doc="""Tabulated values""")
 
     number_of_values = Attr(
-        int,
+        field_type=int,
         label="Number of values",
         default=0,
-        doc="""The number of values in the table """
-    )
+        doc="""The number of values in the table """)
 
     df = NArray(
-        dtype=float,
         label="df",
-        doc="""."""
-    )
+        doc=""".""")
 
     dx = NArray(
-        dtype=float,
         label="dx",
         default=numpy.array([]),
-        doc="""Tabulation step"""
-    )
+        doc="""Tabulation step""")
 
     invdx = NArray(
-        dtype=float,
         label="invdx",
         default=numpy.array([]),
-        doc="""."""
-    )
+        doc=""".""")
 
     @staticmethod
     def populate_table(result, source_file):

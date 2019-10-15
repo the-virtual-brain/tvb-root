@@ -36,7 +36,7 @@ module docstring
 import numpy
 from tvb.basic.logger.builder import get_logger
 from tvb.datatypes.region_mapping import RegionVolumeMapping
-from tvb.basic.traits.neotraits import HasTraits, Attr, NArray
+from tvb.basic.neotraits.api import HasTraits, Attr, NArray
 
 LOG = get_logger(__name__)
 TRACTS_CHUNK_SIZE = 100
@@ -48,7 +48,6 @@ class Tracts(HasTraits):
     MAX_N_VERTICES = 2 ** 16
 
     vertices = NArray(
-        dtype=float,
         label="Vertex positions",
         doc="""An array specifying coordinates for the tracts vertices."""
     )
@@ -70,7 +69,7 @@ class Tracts(HasTraits):
     )
 
     region_volume_map = Attr(
-        RegionVolumeMapping,
+        field_type=RegionVolumeMapping,
         label="Region volume Mapping used to create the tract_region index",
         required=False
     )

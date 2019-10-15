@@ -40,7 +40,7 @@ framework methods that are associated with the Mode Decomposition datatypes.
 import numpy
 from tvb.basic.logger.builder import get_logger
 import tvb.datatypes.time_series as time_series
-from tvb.basic.traits.neotraits import HasTraits, Attr, NArray
+from tvb.basic.neotraits.api import HasTraits, Attr, NArray
 
 
 LOG = get_logger(__name__)
@@ -52,38 +52,24 @@ class PrincipalComponents(HasTraits):
     """
 
     source = Attr(
-        time_series.TimeSeries,
+        field_type=time_series.TimeSeries,
         label="Source time-series",
-        doc="Links to the time-series on which the PCA is applied."
-    )
+        doc="Links to the time-series on which the PCA is applied.")
 
     weights = NArray(
-        dtype=float,
         label="Principal vectors",
-        doc="""The vectors of the 'weights' with which each time-series is represented in each component."""
-    )
+        doc="""The vectors of the 'weights' with which each time-series is represented in each component.""")
 
     fractions = NArray(
-        dtype=float,
         label="Fraction explained",
         doc="""A vector or collection of vectors representing the fraction of
-                the variance explained by each principal component."""
-    )
+                the variance explained by each principal component.""")
 
-    norm_source = NArray(
-        dtype=float,
-        label="Normalised source time series"
-    )
+    norm_source = NArray(label="Normalised source time series")
 
-    component_time_series = NArray(
-        dtype=float,
-        label="Component time series"
-    )
+    component_time_series = NArray(label="Component time series")
 
-    normalised_component_time_series = NArray(
-        dtype=float,
-        label="Normalised component time series"
-    )
+    normalised_component_time_series = NArray(label="Normalised component time series")
 
 
     def write_data_slice(self, partial_result):
@@ -205,50 +191,33 @@ class IndependentComponents(HasTraits):
 
     """
     source = Attr(
-        time_series.TimeSeries,
+        field_type=time_series.TimeSeries,
         label="Source time-series",
-        doc="Links to the time-series on which the ICA is applied."
-    )
+        doc="Links to the time-series on which the ICA is applied.")
 
     mixing_matrix = NArray(
-        dtype=float,
         label="Mixing matrix - Spatial Maps",
-        doc="""The linear mixing matrix (Mixing matrix) """
-    )
+        doc="""The linear mixing matrix (Mixing matrix) """)
 
     unmixing_matrix = NArray(
-        dtype=float,
         label="Unmixing matrix - Spatial maps",
-        doc="""The estimated unmixing matrix used to obtain the unmixed sources from the data"""
-    )
+        doc="""The estimated unmixing matrix used to obtain the unmixed sources from the data""")
 
     prewhitening_matrix = NArray(
-        dtype=float,
         label="Pre-whitening matrix",
-        doc=""" """
-    )
+        doc=""" """)
 
     n_components = Attr(
-        int,
+        field_type=int,
         label="Number of independent components",
         doc=""" Observed data matrix is considered to be a linear combination
-            of :math:`n` non-Gaussian independent components"""
-    )
+            of :math:`n` non-Gaussian independent components""")
 
-    norm_source = NArray(
-        dtype=float,
-        label="Normalised source time series. Zero centered and whitened."
-    )
+    norm_source = NArray(label="Normalised source time series. Zero centered and whitened.")
 
-    component_time_series = NArray(
-        dtype=float,
-        label="Component time series. Unmixed sources."
-    )
+    component_time_series = NArray(label="Component time series. Unmixed sources.")
 
-    normalised_component_time_series = NArray(
-        dtype=float,
-        label="Normalised component time series"
-    )
+    normalised_component_time_series = NArray(label="Normalised component time series")
 
     def write_data_slice(self, partial_result):
         """

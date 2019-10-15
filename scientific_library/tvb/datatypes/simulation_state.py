@@ -33,7 +33,7 @@ DataType for storing a simulator's state in files and as DB reference.
 .. moduleauthor:: Lia Domide <lia.domide@codemart.ro>
 """
 
-from tvb.basic.traits.neotraits import HasTraits, Attr, NArray
+from tvb.basic.neotraits.api import HasTraits, Attr, NArray
 
 
 class SimulationState(HasTraits):
@@ -42,84 +42,31 @@ class SimulationState(HasTraits):
     """
 
     # History Array
-    history = NArray(
-        dtype=float,
-        required=False
-    )
+    history = NArray(required=False)
 
     # State array, all state variables
-    current_state = NArray(
-        dtype=float,
-        required=False
-    )
+    current_state = NArray(required=False)
 
     # Simulator's current step number (in time)
-    current_step = Attr(
-        int
-    )
+    current_step = Attr(field_type=int)
 
     # Array with _stock array for every monitor configured in current simulation.
     # As the monitors are dynamic, we prepare a bunch of arrays for storage in H5 file.
-    monitor_stock_1 = NArray(
-        dtype=float,
-        required=False
-    )
-    monitor_stock_2 = NArray(
-        dtype=float,
-        required=False
-    )
-    monitor_stock_3 = NArray(
-        dtype=float,
-        required=False
-    )
-    monitor_stock_4 = NArray(
-        dtype=float,
-        required=False
-    )
-    monitor_stock_5 = NArray(
-        dtype=float,
-        required=False
-    )
-    monitor_stock_6 = NArray(
-        dtype=float,
-        required=False
-    )
-    monitor_stock_7 = NArray(
-        dtype=float,
-        required=False
-    )
-    monitor_stock_8 = NArray(
-        dtype=float,
-        required=False
-    )
-    monitor_stock_9 = NArray(
-        dtype=float,
-        required=False
-    )
-    monitor_stock_10 = NArray(
-        dtype=float,
-        required=False
-    )
-    monitor_stock_11 = NArray(
-        dtype=float,
-        required=False
-    )
-    monitor_stock_12 = NArray(
-        dtype=float,
-        required=False
-    )
-    monitor_stock_13 = NArray(
-        dtype=float,
-        required=False
-    )
-    monitor_stock_14 = NArray(
-        dtype=float,
-        required=False
-    )
-    monitor_stock_15 = NArray(
-        dtype=float,
-        required=False
-    )
+    monitor_stock_1 = NArray(required=False)
+    monitor_stock_2 = NArray(required=False)
+    monitor_stock_3 = NArray(required=False)
+    monitor_stock_4 = NArray(required=False)
+    monitor_stock_5 = NArray(required=False)
+    monitor_stock_6 = NArray(required=False)
+    monitor_stock_7 = NArray(required=False)
+    monitor_stock_8 = NArray(required=False)
+    monitor_stock_9 = NArray(required=False)
+    monitor_stock_10 = NArray(required=False)
+    monitor_stock_11 = NArray(required=False)
+    monitor_stock_12 = NArray(required=False)
+    monitor_stock_13 = NArray(required=False)
+    monitor_stock_14 = NArray(required=False)
+    monitor_stock_15 = NArray(required=False)
 
 
     def __init__(self, **kwargs):
